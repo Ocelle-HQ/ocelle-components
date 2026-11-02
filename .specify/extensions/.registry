@@ -1,42 +1,6 @@
 {
   "schema_version": "1.0",
   "extensions": {
-    "story": {
-      "version": "1.2.1",
-      "source": "local",
-      "manifest_hash": "sha256:bfeb0312f9722f740a01257764eaa7565b0e0b8ddb1bae5a1ff6d69667e317b9",
-      "enabled": true,
-      "priority": 10,
-      "registered_commands": {
-        "claude": [
-          "speckit.story.implement",
-          "speckit.story.review",
-          "speckit.story.fix"
-        ]
-      },
-      "registered_skills": [],
-      "installed_at": "2026-11-02T15:33:10.415974+00:00"
-    },
-    "squad": {
-      "version": "1.1.0",
-      "source": "local",
-      "manifest_hash": "sha256:9d992a465d1a8dc38360217e26b5532d08224fbca3d859c1fe6e878e2915a53f",
-      "enabled": true,
-      "priority": 10,
-      "registered_commands": {
-        "claude": [
-          "speckit.squad.spec-check",
-          "speckit.squad.spec-fix",
-          "speckit.squad.analyze",
-          "speckit.squad.lens",
-          "speckit.squad.refute",
-          "speckit.squad.fix",
-          "speckit.squad.verify"
-        ]
-      },
-      "registered_skills": [],
-      "installed_at": "2026-11-02T15:33:11.340806+00:00"
-    },
     "triage": {
       "version": "1.1.0",
       "source": "local",
@@ -51,6 +15,42 @@
       },
       "registered_skills": [],
       "installed_at": "2026-11-02T15:33:12.313683+00:00"
+    },
+    "story": {
+      "version": "1.2.2",
+      "source": "local",
+      "manifest_hash": "sha256:0343eb92b9d5d664cd474018bfa8ab17f42495aef1d16c2d40e6ade3f1335a94",
+      "enabled": true,
+      "priority": 10,
+      "registered_commands": {
+        "claude": [
+          "speckit.story.implement",
+          "speckit.story.review",
+          "speckit.story.fix"
+        ]
+      },
+      "registered_skills": [],
+      "installed_at": "2026-11-02T18:13:47.663587+00:00"
+    },
+    "squad": {
+      "version": "1.1.1",
+      "source": "local",
+      "manifest_hash": "sha256:5eff5e30aec03ae43971e7004f174b232d7a0c57529c90c12eb6831a332d5b04",
+      "enabled": true,
+      "priority": 10,
+      "registered_commands": {
+        "claude": [
+          "speckit.squad.spec-check",
+          "speckit.squad.spec-fix",
+          "speckit.squad.analyze",
+          "speckit.squad.lens",
+          "speckit.squad.refute",
+          "speckit.squad.fix",
+          "speckit.squad.verify"
+        ]
+      },
+      "registered_skills": [],
+      "installed_at": "2026-11-02T18:14:05.471641+00:00"
     }
   }
 }

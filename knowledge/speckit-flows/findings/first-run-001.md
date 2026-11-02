@@ -15,8 +15,13 @@ status: draft
 | /ocelle-run asked operator questions at the gate, after the last check | the answers would have needed a fourth spec check, over the cap of three | questions are asked when a check raises them, before the next fix |
 | Operator questions were free text | the operator asked for multiple choice | rule 5: every question is multiple choice |
 | analyst-anouk's report said 8 blocking findings, its table had 7 | none: the script count decides | watch: report text and record disagree; the scripts are the authority |
+| `story_run_tests_at` read `test_command` from the commit it checked out | a phase whose base predates the test runner could never pass the red/green check (found by three squad lenses) | commands come from the current configuration (story 1.2.2); regression-tested |
+| `round.sh` left `round-R/base.sha` uncommitted | the tree was not clean before the lenses ran | `round.sh` commits it (squad 1.1.1) |
+| Lens files stayed uncommitted while other lenses ran; the stop hook asks for a commit and push | the orchestrator committed each finished lens file alone; one landed while the refuter worked, so the round commit held only `refute.md` | watch: harmless, but the "refute commits the round" rule does not survive an environment that pushes at every stop |
 | planner-pim added rules beyond an operator answer (FR-024) | caught at the gate and confirmed by the operator | watch: fixers extending operator decisions |
 
 # Numbers so far
 
 Three spec checks: 7, then 1, then 1 blocking findings; 4 + 2 operator questions; every scope check passed.
+Plan squad round 1: 43 findings (correctness 12, a11y-security 8, testability 11, fresh 12); refuted 2, duplicates 13,
+confirmed 28 (19 fixes, 9 forks decided by the operator).
