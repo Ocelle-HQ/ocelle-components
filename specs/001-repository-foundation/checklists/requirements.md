@@ -47,3 +47,10 @@
 - Spec check 2 (2026-11-02): blocking finding SPEC-2-01 is fixed (every sample a gate must fail on is a plant under
   `gates/plants/`, FR-009, FR-025, FR-028, US1 and US2 Independent Tests); notes SPEC-2-06 to SPEC-2-15 are folded in.
   See `reviews/spec/check-2-fixes.md`. Every requirement is now testable and unambiguous.
+- Operator answers (spec gate, 2026-11-02) to spec check 3 questions 1 and 2 are applied: a `CODEOWNERS` file naming
+  `@MOES-Media` as owner of the whole repository (new FR-035, SC-006) and `@MOES-Media` as the pre-1.0 security
+  contact in FR-032 (SPEC-3-02); acknowledgement within 3 working days and a status update within 10 working days in
+  FR-032 (SPEC-3-03). The operator also confirmed that CSS system colour keywords stay allowed under FR-024.
+- Spec check 3 (2026-11-02): blocking finding SPEC-3-01 is fixed (a mutant no test covers counts as surviving,
+  FR-011; a second mutation plant for an uncovered changed line, FR-025; US2 scenario 3). Notes SPEC-3-04 to
+  SPEC-3-13 are folded in. See `reviews/spec/check-3-fixes.md`. Requirements remain testable and unambiguous.
