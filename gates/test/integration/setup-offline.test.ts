@@ -63,7 +63,7 @@ describe("offline setup (gates/bin/setup-offline.ts)", () => {
     async () => {
       const root = workspace("setup-offline/no-dependencies", [], false);
       const env: Record<string, string> = { ...offlineEnv(), PLAYWRIGHT_BROWSERS_PATH: tempDir("browsers") };
-      delete env["OCELLE_CHROMIUM_PATH"];
+      delete env.OCELLE_CHROMIUM_PATH;
       const ran = await setupOffline(root, env);
       expect(ran.code).toBe(2);
       expect(ran.stderr).toHaveLength(1);

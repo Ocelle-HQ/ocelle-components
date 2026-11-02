@@ -1,0 +1,15 @@
+author: Ada Example <ada@example.com>
+
+Add the first change
+
+Signed-off-by: Ada Example <ada@example.com>
+%%
+author: Bob Example <bob@example.org>
+parent: 0
+
+Add a change on a side branch
+%%
+author: Ada Example <ada@example.com>
+merge: 1 2
+
+Merge the side branch

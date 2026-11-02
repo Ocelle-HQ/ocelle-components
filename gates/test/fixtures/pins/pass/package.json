@@ -1,0 +1,9 @@
+{
+  "name": "pins-fixture",
+  "private": true,
+  "packageManager": "pnpm@12.16.1",
+  "devDependencies": {
+    "jiti": "2.7.0",
+    "typescript": "6.0.3"
+  }
+}
