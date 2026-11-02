@@ -213,7 +213,7 @@ makes every GitHub-side check and records each result, with its evidence (comman
    contracts/ci-checks.md, matching the list in `gates/README.md`, so a pull request that removes a gate from
    `ci.yml`, `gates.json` and `registry.ts` together cannot merge with that check missing (operator decision, plan
    squad round 2).
-4. Timings: SC-001 (cold install plus tests) and SC-005 (one full shard, quickstart step 11).
+4. Timings: SC-001 (cold install plus tests) and SC-005 (one full shard, quickstart step 12).
 
 ## Complexity Tracking
 

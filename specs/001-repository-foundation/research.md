@@ -222,7 +222,7 @@ round 1 re-pinned every registry package published less than 7 days before 2026-
      requires (plan.md § Verification); the helper jobs are not required by name, since the matrix names vary.
   The split (`--plan`) and `--files` are wrapper behaviour, tested red first in phase 3 by gate tests on fixture
   repositories. No gate source file of this feature has more than 500 lines, so this feature's own pull request
-  splits into shards within the bound; SC-005 is measured on one full shard (quickstart step 11).
+  splits into shards within the bound; SC-005 is measured on one full shard (quickstart step 12).
 - **Story workflow (FR-007)**: `mutation_command: "pnpm run gate:mutation"`; the story review command is changed to
   read `FEATURE_DIR/reviews/phase-<N>/base.sha` and run `pnpm run gate:mutation -- --base <sha>`, a command the
   `.claude/settings.json` allowlist (`Bash(pnpm run:*)`) covers in unattended runs. No environment variable is used.
