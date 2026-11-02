@@ -245,7 +245,8 @@ in this feature depends on it.
     mutation tools as "no coverage"), so new source without tests fails. A mutant is **killed** only when a test
     fails on it, or the test run times out or ends in a runtime error with it in place.
   - A mutant that does not compile (the type checker rejects it, so no test runs on it) is **invalid**: it is
-    neither killed nor surviving, and it does not fail the run (operator amendment, plan squad round 3).
+    neither killed nor surviving, and it does not fail the run (operator amendment, plan squad round 3, approved by
+    the operator, human:jeroennouwsdev, 2026-11-02).
 - **FR-012**: A surviving mutant MAY be recorded as equivalent only with a written reason, kept next to the mutated
   code. The mutation report MUST list every such record in the changed code, with its location and reason, so the
   review can see and record it.

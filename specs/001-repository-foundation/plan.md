@@ -99,8 +99,8 @@ so shard time follows the line bound; SC-005 is measured on this feature's real 
 through the gate's normal file collection (`repo-tree` for typecheck, lint, test lint, unit tests and
 config-copies), and no plant carries a tsconfig. A cache-warming workflow on `main` makes "cache restored" in SC-005
 reachable. The Node and pnpm pins are exempt from the release-age window by operator decision (R-01), which the
-constitution does not govern. FR-011 states that a mutant that does not compile is invalid (operator amendment). No
-new exception.
+constitution does not govern. FR-011 states that a mutant that does not compile is invalid (operator amendment,
+approved by the operator on 2026-11-02 after verify 1 of round 3). No new exception.
 
 ## Project Structure
 

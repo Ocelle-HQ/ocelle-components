@@ -198,7 +198,8 @@ round 1 re-pinned every registry package published less than 7 days before 2026-
      `thresholds.break` (a crash and a low score both exit 1): any `Survived` or `NoCoverage` mutant on a changed
      line is a finding (exit 1); `Killed`, `Timeout` and `RuntimeError` are killed and pass, and `CompileError` (a
      mutant the typescript-checker rejects) is invalid, neither killed nor surviving, and passes (FR-011's
-     definitions, amended in plan squad round 3); no report, or a report from a failed dry run, is exit 2.
+     definitions, as amended in plan squad round 3 with the operator's approval, 2026-11-02); no report, or a
+     report from a failed dry run, is exit 2.
   5. Equivalent mutants: `// Stryker disable next-line <mutator[,mutator]|all>: <reason>` directly above the code;
      Stryker reports them as `Ignored` with the reason, and the wrapper prints each as a record line (path, line,
      mutator, reason) for the review (FR-012). In the changed files the wrapper rejects, as findings, a next-line
