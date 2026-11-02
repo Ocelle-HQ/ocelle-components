@@ -1,0 +1,8 @@
+packages:
+  - "packages/*"
+
+# Supply-chain policy (research.md R-04): registry packages must be at least 7 days old (in minutes),
+# with no exclusion, and no dependency may run an install script.
+minimumReleaseAge: 10080
+minimumReleaseAgeStrict: true
+allowBuilds: {}
