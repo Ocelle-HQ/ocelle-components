@@ -1,98 +1,99 @@
 ---
-analyzed_at: 2026-11-02T19:46:02Z
-head: 3a60b7f6756c7194280e5ebfc36282f66f42665e
-critical: 2
-high: 1
+analyzed_at: 2026-11-02T20:01:06Z
+head: 84763aae8c0a5ba8c1b262ecb2d66e909d8da10c
+critical: 1
+high: 0
 medium: 6
-low: 5
+low: 2
 coverage: 100
 ---
 
-<!-- Written by analyst-anouk (speckit-squad-analyze). The harness refused the subagent's own file write ("Subagents
-should return findings as text, not write report files"), so the orchestrator recorded the report verbatim from the
-subagent's hand-back. -->
+<!-- Written by analyst-anouk (speckit-squad-analyze, analysis 2). The harness refused the subagent's own file write
+("Subagents should return findings as text, not write report files"), so the orchestrator recorded the report
+verbatim from the subagent's hand-back. -->
 
 ## Specification Analysis Report
 
-Feature: `specs/001-repository-foundation` (spec.md, plan.md, tasks.md; research.md and contracts/ read where tasks defer to them). Constitution: v1.3.1.
+Feature: `specs/001-repository-foundation` (spec.md, plan.md, tasks.md T001-T090 after `reviews/analysis-fixes-1.md`;
+research.md, data-model.md, quickstart.md and contracts/ read where tasks defer to them; the story extension's
+`tdd-check.sh`, `base.sh` and `common.sh` read where tasks depend on how they behave). Constitution: v1.3.1. Every
+finding of analysis 1 (head 3a60b7f) was checked against the fixed artifacts and is resolved. The findings below are
+new, or were introduced by the fixes.
 
 | ID | Category | Severity | Location(s) | Summary | Recommendation |
 |----|----------|----------|-------------|---------|----------------|
-| C1 | Constitution | CRITICAL | tasks.md:L94 (T029), L108 (T037), L136 (T045), L155 (T058); research.md R-08; contracts/gate-cli.md L46 | `gates/lib/eslint-report.ts` sorts ESLint's JSON output into "defects found" (exit 1) or "could not run" (exit 2) for both `test-lint` and `lint`. It is created in a green task (T037) and reused in T058, but no scaffold includes it (T029, T045) and no red test covers it (T030-T035, T046-T055). The test-lint gate entry is never named as a module, and its exit 0/1/2 behaviour has no red test either. This breaks Principle VIII (red first) and contradicts the plan's Constitution Check row VIII ("every gate and script behaviour is written red first"). | Add eslint-report.ts (and the test-lint entry) to the T029 scaffold. Add a red test, `gates/test/eslint-report.test.ts`, on recorded ESLint JSON in `gates/test/fixtures/eslint/`: non-fatal messages give exit 1; ESLint exit 2, no JSON or a fatal message give exit 2. |
-| C2 | Constitution | CRITICAL | tasks.md:L62-66 (T016-T020), L71 (T022), L161 (T064); contracts/gate-cli.md L9-12, L17-19; research.md R-09 | Gate command-line behaviour is built in green with no red test. (a) The top-level catch in `gates/lib/cli.ts` turns any uncaught error into exit 2 (T022); T016 tests only the finding format. (b) T064 adds `--root` to every phase 4 gate after the red commit; T046-T055 test pure functions only and never pass `--root`. The plant job relies on the catch-all to tell "could not run" (exit 2) apart from "found defects". This breaks Principle VIII (red first). | Phase 2 red commit: add a cli test showing that an error thrown inside `run()` gives exit 2 and one line naming the cause (not Node's exit 1), and that `--root` sets the root and working directory. Phase 4: put `--root` in the T045 scaffold signatures and add red tests running each gate with `--root` on a fixture tree (in gates-integration where a real tool starts). |
-| G1 | Coverage Gap | HIGH | spec.md:L53-57 (US1 sc. 8), L366-373 (FR-027); tasks.md:L152 (T052), L171 (T071); contracts/plants.md L41; research.md R-14 | Several pins rules have neither a red test (T052) nor a plant: a missing or non-exact `.node-version` or `packageManager` (an FR-027 MUST); a `~` range (named in US1 scenario 8); `minimumReleaseAgeStrict` missing or false; a `minimumReleaseAgeExclude` entry; `dangerouslyAllowAllBuilds`; and R-14's hoisting rules (`shamefullyHoist`, `publicHoistPattern`, `nodeLinker`). | Extend T052 and the pins row of contracts/plants.md (built in T071) with a failing case for each of these. |
-| I1 | Inconsistency | MEDIUM | tasks.md:L29 (T002), L40 (T013) | T013 runs `setup:online` to create and commit the lockfile, but T002 defines `setup:online` as `pnpm install --frozen-lockfile ...`. A frozen install fails when there is no lockfile yet. | In T013, create the lockfile first with a non-frozen `pnpm install` (or `--lockfile-only`) and commit it. Then run `setup:online` and confirm no tracked file changes. |
-| G2 | Coverage Gap | MEDIUM | spec.md:L441-443 (SC-003); tasks.md:L78 (T028) | No task covers SC-003's second clause: the check must report `fail` on a phase whose final tests already pass at its base. T028 shows only the `pass` case. | Add a task (in phase 2 or the operator verification) that runs `tdd-check.sh` on a throwaway phase whose tests pass at its base, and records the `fail`. |
-| G3 | Coverage Gap | MEDIUM | research.md R-08 (L220-226); tasks.md:L103 (T035) | R-08 promises a red gates-integration test proving that a mutant covered only by a gates-integration test is reported `NoCoverage`. T035 only compares the two Vitest project lists. | Add R-08's Stryker test on a fixture repository to the phase 3 red commit, in `gates/test/integration/`. |
-| I2 | Inconsistency | MEDIUM | tasks.md:L65 (T019); research.md R-04 (L97-103), R-08 (L216-221) | T019 puts the offline-setup test in the in-process `gates` project, which Stryker runs, yet the test must prove no network call is made. R-04 places tests that run pnpm and count socket connections in gates-integration. As written, Stryker would start pnpm for each mutant, which breaks the SC-005 shard-time reasoning. R-04's filled-store success case (exit 0) is also missing. | Split T019: translation of recorded pnpm error text in `gates/test/`; the empty-store, empty-browser-path, zero-connection and filled-store cases in `gates/test/integration/`. |
-| I3 | Inconsistency | MEDIUM | tasks.md:L156 (T059); research.md R-07 (L150-155) | T059 says "no `allowEmptyInput`"; R-07 decides `allowEmptyInput` is on. | Pick one and align the other. |
-| I4 | Inconsistency | MEDIUM | tasks.md:L156 (T059); spec.md:L293-297 (FR-024), L376 (FR-028); research.md R-07 | T059 limits style-lint input to `src/`. FR-024, FR-028 and R-07 cover all package source of elements and styles, so stylesheets outside `src/` would go unchecked. | Use R-07's whole-package globs with the test-code and `dist` ignores, or narrow FR-024 explicitly. |
-| I5 | Inconsistency | LOW | spec.md:L326-328, L424-425; contracts/plants.md L30; data-model.md L25; tasks.md:L54, L148 | The spec says "breaking plant"; the contracts, data model and tasks say "error plant". | Use one term, or note "breaking (`error`)" once in data-model.md. |
-| I6 | Inconsistency | LOW | spec.md:L274-277 (FR-022); research.md R-12 (L388); tasks.md:L144, L167 | The plan and tasks match `sk-` names case-insensitively (the `<SK-Button>` plant). FR-022 says only the monospace match is case-insensitive. | Add "case-insensitive" to FR-022's name rule. |
-| A1 | Ambiguity | LOW | spec.md:L311-312, L346; research.md R-07 | FR-025 says "five properties" for unitless numbers, but FR-024 lists flex and its longhands too, and R-07 names seven properties. | Say "outside the properties FR-024 lists". |
-| D1 | Duplication | LOW | spec.md:L198-199 (FR-003), L366-367 (FR-027) | FR-003 and FR-027 state the same lockfile-mismatch rule. | Have FR-003 refer to FR-027, or merge them. |
-| U1 | Underspecification | LOW | tasks.md:L76 (T027); constitution.md L124-126; research.md R-03 | T027 adds a test in the green commit that already passes at the phase base, as R-03 intends. Principle VIII says the final tests MUST fail against the old code. Nothing says whether `tdd-check.sh` judges the whole suite or each test. | Record in T027 or the phase 2 review that the suite is judged as a whole, and why this sample is acceptable. |
+| C1 | Constitution | CRITICAL | tasks.md:L146 (T051), L159 (T061), L160 (T062); research.md R-09 (L291-295) | T062 builds each temporary repository with `gates/lib/plant-repo.ts` (T061). At the red commit that module comes from the phase 4 scaffold, so it builds nothing and "returns empty values" (T051). Every T062 case therefore fails because its own setup builds nothing: the guard assertion that the configuration files exist fails on an empty or missing directory. No gate's `--root` behaviour is ever exercised. The `tdd-check.sh` run against the scaffold fails for the same reason, so a T062 loosened after the red commit would not be caught. Principle VIII requires the red failure to be "the missing behaviour, not a syntax, import or setup error". | Have T062 build its temporary repositories in the test itself, as T019, T021, T035 and T041 do (copy the fixture tree and the configuration set, link `node_modules`, and for `signoff` run `git init` and commit the records). Do not use `plant-repo.ts`, and keep T061 as that module's own red test. Alternatively, move T062 so that it does not depend on any module of the same scaffold. |
+| G1 | Coverage Gap | MEDIUM | tasks.md:L95 (phase 3 Independent Test), L105-107 (T033-T035), L118 (T043), L177 (T074); spec.md:L234-236 (FR-010), L445-447 (SC-004) | Phase 3's Independent Test says the test lint "reports each of the seven FR-010 patterns", but its red tests cover only two: `ocelle/no-snapshot-only` (T033) and `expect-expect` (T035). Five rule settings in `eslint.test.config.ts` (T043) have no phase 3 test: `no-disabled-tests`, `no-focused-tests`, `no-conditional-expect`, `no-standalone-expect`, and `valid-expect` with `alwaysAwait` together with `valid-expect-in-promise`. The plants prove them only in phase 4 (T074), so the phase 3 review cannot confirm its own Independent Test. | Extend T035 with one fixture per FR-010 pattern, each exiting 1 with exactly its rule's finding. Or reword the phase 3 Independent Test to name what phase 3 proves and point to T074 for the rest. |
+| U1 | Underspecification | MEDIUM | tasks.md:L107 (T035), L112 (T040), L113 (T041), L118 (T043), L120 (T045); constitution.md L117-120 | Three red tests in phase 3 read configuration files that only the green commit creates: `eslint.test.config.ts` (T043), `stryker.config.json` and `vitest.mutation.config.ts` (T045). T040 has no existence guard, so at the red commit it fails on loading a missing file (an import or setup error) unless it loads the file inside the test after an assertion; the task does not say which. T035 and T041 guard first, so every one of their cases fails on "configuration file missing", not on the entry's exit codes. | Give T040 the same guard as T035 and T041 (assert the file exists, then load it dynamically inside the test). Record in the phase 3 review, under Principle VIII, that these configuration files are part of the phase's missing behaviour (the FR-010 rule set, R-08's runner split), with the red output kept. |
+| I1 | Inconsistency | MEDIUM | tasks.md:L66 (T019); research.md R-03 (L55-61); contracts/plants.md L88 | T019 runs `gates/bin/test.ts --root <fixture workspace>`, apparently directly on the fixture directory. R-03's test seam builds a temporary workspace from the fixture tree, copies the repository's `vitest.config.ts` into it unchanged and links `node_modules`; T021, T035 and T041 do the same. Run in place, Vitest finds no config at the fixture root, so the `elements` Chromium project and the repository's `include` and `exclude` are not exercised, and Vitest may write cache files inside `gates/test/fixtures/`. | Have T019 build a temporary workspace from `gates/test/fixtures/<...>/` as R-03 describes: copy `vitest.config.ts`, link `node_modules`, and run from a different working directory. |
+| I2 | Inconsistency | MEDIUM | tasks.md:L84 (T031); `.specify/.gitignore` L6; `.specify/extensions/story/scripts/common.sh` L8-13; `.specify/scripts/bash/common.sh` L185-213 | T031 runs `base.sh 99`, `red.sh 99 phase` and `tdd-check.sh 99` in a fresh `git clone`. These scripts find FEATURE_DIR through `check-prerequisites.sh`, which needs `SPECIFY_FEATURE_DIRECTORY` or `.specify/feature.json`. `feature.json` is gitignored, so a clone has none and the scripts stop with "Feature directory not found" before the demonstration can report `fail`. | In T031, set `SPECIFY_FEATURE_DIRECTORY=specs/001-repository-foundation` (or copy `.specify/feature.json`) in the clone, and run `pnpm run setup:online` there before `tdd-check.sh` if the store is not shared. Record both in `sc-003-fail-demo.md`. |
+| I3 | Inconsistency | MEDIUM | tasks.md:L156 (T058); research.md R-08 (L220-230), R-09 (L287-291), R-14 (L423-424); plan.md L38-43 | T058 tests the pins gate in-process (`gates/test/`, the `gates` project that Stryker runs) on mini-workspaces, including the lockfile-mismatch case. R-14 decides that case by running `pnpm install --frozen-lockfile --lockfile-only --offline`, a real tool. The design rule (R-08, R-09, plan Technical Context) puts every test that starts a real tool in `gates-integration`, so that Stryker does not start pnpm for each mutant. This is the same split analysis 1 asked for in setup-offline (I2 there, now T020/T021). | Split T058. Keep the manifest, pin-file and workspace-setting rules in-process, as pure functions on the parsed files. Test the lockfile case either on recorded pnpm output (in-process) or end to end in a `gates-integration` test with `--root` (T062 already runs `pins` that way). |
+| G2 | Coverage Gap | MEDIUM | spec.md:L436-439 (SC-001); tasks.md:L40 (T013), L113 (T041), L160 (T062), L185 (T082), L212 (T090), L218-224 (operator verification) | Analysis 1 added real-tool tests to `pnpm test` through `gates-integration`: Stryker on a fixture repository (T041), seven gates on temporary repositories (T062), ESLint (T035), pnpm offline installs (T021) and Vitest runs (T019). SC-001 bounds cold install plus the full test run at under 5 minutes on a 2 vCPU runner. Only T013 (phase 1, almost no tests) and the operator's verification after phase 5 time it, so an overrun is found only after every phase has been reviewed. | Add to T082 (or T090) a timed cold run (empty store and browser cache: `setup:online`, then `pnpm test`), recorded in `reviews/phase-4/` (or `phase-5/`), with an overrun reported to the operator as T050 does for shards. |
+| G3 | Coverage Gap | LOW | contracts/plants.md L93 (pins row); tasks.md:L156 (T058), L180 (T077); spec.md:L367-372 (FR-027) | The pins fail plants omit three FR-027 cases that T058 tests: `workspace:*`, `workspace:~` and a `workspace:` version that differs from the package's. The plants are not required to cover them (FR-025 says "at least these"), but they are the only proof that the shipped gate rejects those cases. | Add the three cases to the pins row of contracts/plants.md, so that T077 builds them. |
+| I4 | Inconsistency | LOW | contracts/gate-cli.md L25-29; research.md R-06 (L147-151), R-09 (L277-278); tasks.md:L118 (T043), L167-169 (T064-T066) | The "Command (normal)" column of contracts/gate-cli.md still names the bare tools for `typecheck`, `lint`, `style-lint` and `test-lint` (`tsc -p ...`, `eslint --config ...`, `stylelint ...`). The tasks now build `gates/bin/<id>.ts` entries for all four (`gate:test-lint` = `node gates/bin/test-lint.ts`), and those entries are what `--root`, exit 2 and the plant job rely on. | Change those rows to `gates/bin/<id>.ts` (running the tool named), as the `unit-tests` row already does. |
 
 **Coverage Summary Table:**
 
 | Requirement Key | Has Task? | Task IDs | Notes |
 |-----------------|-----------|----------|-------|
 | FR-001 | Yes | T002, T008-T010 | |
-| FR-002 | Yes | T002-T007, T013, T057, T067 | |
-| FR-003 | Yes | T002, T013, T052, T063 | I1, D1 |
-| FR-004 | Yes | T017, T018, T023, T026 | Scenarios 4 and 10 are proven by plants (T068) |
-| FR-005 | Yes | T011, T027, T068 | |
-| FR-006 | Yes | T014, T020, T025, T040, T071 | `test_pathspec` is already set in both copies |
-| FR-007 | Yes | T038, T040, T041 | |
-| FR-008 | Yes | T002, T019, T024, T026 | I2 |
-| FR-009 | Yes | T011, T012, T067-T072 | |
-| FR-010 | Yes | T030, T037, T068 | C1 |
-| FR-011 | Yes | T031, T032, T038, T069 | G3 |
-| FR-012 | Yes | T033, T038, T069 | |
-| FR-013 | Yes | T034, T038, T044, T073, T077 | |
-| FR-020 | Yes | T053, T065, T073 | |
-| FR-021 | Yes | T049, T060, T071 | |
-| FR-022 | Yes | T050, T061, T070 | I6 |
-| FR-023 | Yes | T051, T062, T071 | |
-| FR-024 | Yes | T047, T048, T059, T070 | I3, I4 |
-| FR-025 | Yes | T054, T055, T066-T072, T076 | |
-| FR-026 | Yes | T075 | |
-| FR-027 | Yes | T003, T052, T063, T071 | Partial: G1 |
-| FR-028 | Yes | T007, T011, T037, T058, T059, T064 | |
-| FR-030 | Yes | T079 | |
-| FR-031 | Yes | T078, T080 | |
-| FR-032 | Yes | T078, T081 | |
-| FR-033 | Yes | T082 | |
-| FR-034 | Yes | T071 | Checked by the story review, as the spec intends |
-| FR-035 | Yes | T078, T083 | |
-| SC-001 | Yes | T013, T073, T074 | Measured during operator verification |
-| SC-002 | Yes | T066, T076 | |
-| SC-003 | Yes | T028 | Partial: G2 |
-| SC-004 | Yes | T030, T037, T068 | |
-| SC-005 | Yes | T044, T073, T077 | Also measured during operator verification |
-| SC-006 | Yes | T078 | |
+| FR-002 | Yes | T002-T007, T013, T058, T070 | |
+| FR-003 | Yes | T002, T013, T058, T070 | Lockfile rule held by FR-027 |
+| FR-004 | Yes | T018, T019, T025, T028, T074 | Scenarios 4 and 10 are proven by unit-tests plants (R-03); I1 |
+| FR-005 | Yes | T011, T029, T074 | |
+| FR-006 | Yes | T014, T022, T027, T046, T077 | |
+| FR-007 | Yes | T046, T047 | |
+| FR-008 | Yes | T002, T020, T021, T026, T028 | |
+| FR-009 | Yes | T011, T012, T073-T078 | |
+| FR-010 | Yes | T033-T035, T043, T074 | Partial in phase 3: G1 |
+| FR-011 | Yes | T036, T037, T041, T044, T075 | U1 |
+| FR-012 | Yes | T038, T044, T075 | |
+| FR-013 | Yes | T039, T050, T079, T083 | |
+| FR-020 | Yes | T059, T071, T079, T081 | |
+| FR-021 | Yes | T055, T067, T077 | |
+| FR-022 | Yes | T056, T068, T076 | |
+| FR-023 | Yes | T057, T069, T077 | |
+| FR-024 | Yes | T053, T054, T066, T076 | |
+| FR-025 | Yes | T060, T061, T072-T078, T082 | |
+| FR-026 | Yes | T081 | |
+| FR-027 | Yes | T003, T058, T070, T077 | I3, G3 |
+| FR-028 | Yes | T007, T011, T036, T043, T065, T066 | |
+| FR-030 | Yes | T085 | |
+| FR-031 | Yes | T084, T086 | |
+| FR-032 | Yes | T084, T087 | |
+| FR-033 | Yes | T088 | |
+| FR-034 | Yes | T077 | Checked by the story review, as the spec intends |
+| FR-035 | Yes | T084, T089 | |
+| SC-001 | Yes | T013 | Measured during operator verification; G2 |
+| SC-002 | Yes | T072, T082 | |
+| SC-003 | Yes | T030, T031 | I2 |
+| SC-004 | Yes | T034, T035, T074, T082 | G1 |
+| SC-005 | Yes | T039, T050, T079, T083 | Also measured during operator verification |
+| SC-006 | Yes | T084 | |
 
 **Constitution Alignment Issues:**
-- C1 and C2 (Principle VIII, red first): three pieces of gate behaviour reach green commits with no red test — the ESLint report classification, the cli catch-all that turns errors into exit 2, and phase 4's `--root`. The later mutation catch-up does not replace the red step.
-- No other conflict. Deferred gates and the phase 1 bootstrap exemption are recorded in Complexity Tracking with sunsets.
+- C1 (Principle VIII, red first): T062's red failure comes from its own setup, through the phase 4 scaffold's empty `plant-repo.ts`, not from each gate's missing `--root` behaviour. So the red step and the check against the scaffold prove nothing about `--root` in phase 4.
+- Analysis 1's C1 and C2 are resolved: `eslint-report.ts`, the test-lint entry, the cli entry wrapper and `--root` each have a red test in their phase.
+- Deferred gates and the phase 1 bootstrap exemption are recorded in Complexity Tracking with sunsets.
 
-**Unmapped Tasks:** none. T001 maps to Principle VIII (the exemption record), T043 to FR-011 and FR-012, and T044 and T077 to FR-013 and SC-005.
+**Unmapped Tasks:** none. T001 maps to Principle VIII (the exemption record); T015, T032 and T051 to the scaffolds of Principle VIII; T023, T042 and T063 to the red commits; T049 to FR-011 for phase 2's gate source; T080 to SC-005's cache precondition.
 
 **Metrics:**
 - Total Requirements: 34 (28 FR, 6 SC)
-- Total Tasks: 84
-- Coverage %: 100% (FR-027 and SC-003 partial)
-- Ambiguity Count: 1
-- Duplication Count: 1
-- Critical Issues Count: 2
+- Total Tasks: 90
+- Coverage %: 100% (FR-010 partial within phase 3; every requirement has at least one task)
+- Ambiguity Count: 0
+- Duplication Count: 0
+- Critical Issues Count: 1
 
 ## Next Actions
-- **Resolve C1 and C2 before `/speckit-implement`** by editing tasks.md by hand:
-  - Phase 3: add eslint-report.ts and the test-lint entry to the T029 scaffold, plus a red classification test.
-  - Phase 2: add a red cli test for the catch-all and `--root`.
-  - Phase 4: move `--root` into the T045 scaffold, with red tests per gate.
-  - Then adjust plan.md's Constitution Check row VIII if its wording changes.
-- **Resolve G1:** extend T052 and the pins plants (contracts/plants.md, T071) to every FR-027 and R-14 clause.
-- **MEDIUM items:** I1 (T013 ordering), G2 (SC-003 `fail` demonstration), G3 (R-08 NoCoverage test), I2 (split T019), I3 and I4 (align T059 with R-07). Edit tasks.md, or research.md where a decision changes.
-- **LOW items:** I5, I6, A1, D1, U1 can go into the same edit; spec wording fixes go through `/speckit-specify` refinement.
+- **Resolve C1 before `/speckit-implement`** by editing tasks.md by hand: T062 builds its own temporary repositories, without `gates/lib/plant-repo.ts`, so each case fails on the gate's exit code at the red commit.
+- **MEDIUM items** (edit tasks.md, and research.md where a decision changes):
+  - G1: extend T035 to the seven FR-010 patterns, or reword the phase 3 Independent Test.
+  - U1: add a guard to T040 and record the configuration-file reasoning for the phase 3 review.
+  - I1: give T019 a temporary workspace, as R-03 describes.
+  - I2: set the feature directory in T031's clone.
+  - I3: split T058's lockfile case out of the `gates` project.
+  - G2: add a cold `setup:online` plus `pnpm test` timing for SC-001 before the operator's verification.
+- **LOW items:** G3 (add the three missing pins plants to contracts/plants.md) and I4 (update the command column of contracts/gate-cli.md) can go into the same edit.
 - **Re-run this analysis** after the edits.
