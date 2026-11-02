@@ -1,0 +1,102 @@
+{
+  "numTotalTestSuites": 3,
+  "numPassedTestSuites": 0,
+  "numFailedTestSuites": 3,
+  "numPendingTestSuites": 0,
+  "numTotalTests": 3,
+  "numPassedTests": 1,
+  "numFailedTests": 2,
+  "numPendingTests": 0,
+  "numTodoTests": 0,
+  "snapshot": {
+    "added": 0,
+    "failure": false,
+    "filesAdded": 0,
+    "filesRemoved": 0,
+    "filesRemovedList": [],
+    "filesUnmatched": 0,
+    "filesUpdated": 0,
+    "matched": 0,
+    "total": 0,
+    "unchecked": 0,
+    "uncheckedKeysByFile": [],
+    "unmatched": 0,
+    "updated": 0,
+    "didUpdate": false
+  },
+  "startTime": 1793651325745,
+  "success": false,
+  "testResults": [
+    {
+      "assertionResults": [
+        {
+          "ancestorTitles": [
+            "sum"
+          ],
+          "fullName": "sum adds two numbers",
+          "status": "passed",
+          "title": "adds two numbers",
+          "duration": 1.6149059999999622,
+          "failureMessages": [],
+          "location": {
+            "line": 4,
+            "column": 3
+          },
+          "meta": {},
+          "tags": [],
+          "benchmarks": []
+        },
+        {
+          "ancestorTitles": [
+            "sum"
+          ],
+          "fullName": "sum adds three numbers",
+          "status": "failed",
+          "title": "adds three numbers",
+          "duration": 4.2422260000000165,
+          "failureMessages": [
+            "AssertionError: expected 3 to be 4 // Object.is equality\n    at /work/repo/packages/tokens/test/sum.test.ts:9:23\n    at file:///work/ocelle/node_modules/.pnpm/vitest@5.0.5_@types+node@26.6.5_@vitest+browser-playwright@5.0.5_@vitest+ui@5.0.5_vite@_3f4f90f7c354f8d241029d67cf87ee2e/node_modules/vitest/dist/chunks/run.BPv-BBRv.js:1632:35\n    at file:///work/ocelle/node_modules/.pnpm/vitest@5.0.5_@types+node@26.6.5_@vitest+browser-playwright@5.0.5_@vitest+ui@5.0.5_vite@_3f4f90f7c354f8d241029d67cf87ee2e/node_modules/vitest/dist/chunks/run.BPv-BBRv.js:2801:26\n    at file:///work/ocelle/node_modules/.pnpm/vitest@5.0.5_@types+node@26.6.5_@vitest+browser-playwright@5.0.5_@vitest+ui@5.0.5_vite@_3f4f90f7c354f8d241029d67cf87ee2e/node_modules/vitest/dist/chunks/run.BPv-BBRv.js:3338:20\n    at new Promise (<anonymous>)\n    at runWithCancel (file:///work/ocelle/node_modules/.pnpm/vitest@5.0.5_@types+node@26.6.5_@vitest+browser-playwright@5.0.5_@vitest+ui@5.0.5_vite@_3f4f90f7c354f8d241029d67cf87ee2e/node_modules/vitest/dist/chunks/run.BPv-BBRv.js:3333:10)\n    at file:///work/ocelle/node_modules/.pnpm/vitest@5.0.5_@types+node@26.6.5_@vitest+browser-playwright@5.0.5_@vitest+ui@5.0.5_vite@_3f4f90f7c354f8d241029d67cf87ee2e/node_modules/vitest/dist/chunks/run.BPv-BBRv.js:3318:20\n    at new Promise (<anonymous>)\n    at runWithTimeout (file:///work/ocelle/node_modules/.pnpm/vitest@5.0.5_@types+node@26.6.5_@vitest+browser-playwright@5.0.5_@vitest+ui@5.0.5_vite@_3f4f90f7c354f8d241029d67cf87ee2e/node_modules/vitest/dist/chunks/run.BPv-BBRv.js:3276:10)\n    at file:///work/ocelle/node_modules/.pnpm/vitest@5.0.5_@types+node@26.6.5_@vitest+browser-playwright@5.0.5_@vitest+ui@5.0.5_vite@_3f4f90f7c354f8d241029d67cf87ee2e/node_modules/vitest/dist/chunks/run.BPv-BBRv.js:3904:64"
+          ],
+          "location": {
+            "line": 8,
+            "column": 3
+          },
+          "meta": {},
+          "tags": [],
+          "benchmarks": []
+        }
+      ],
+      "startTime": 1793651326092,
+      "endTime": 1793651326097.2422,
+      "status": "failed",
+      "message": "",
+      "name": "/work/repo/packages/tokens/test/sum.test.ts"
+    },
+    {
+      "assertionResults": [
+        {
+          "ancestorTitles": [],
+          "fullName": "reads the document title",
+          "status": "failed",
+          "title": "reads the document title",
+          "duration": 154.5,
+          "failureMessages": [
+            "AssertionError: expected 'Vitest Browser Tester' to be 'Ocelle' // Object.is equality\n    at http://localhost:63315/work/repo/packages/elements/test/title.test.ts?import&browserv=1793651327062:3:25\n    at http://localhost:63315/node_modules/.vite/vitest/6851b3982dec35e29a2f2f6d0b028f8311aa1a47/deps/plugins.DPQHVT0p-CDYt6VGP.js?v=e0b3fa24:4120:35\n    at http://localhost:63315/node_modules/.vite/vitest/6851b3982dec35e29a2f2f6d0b028f8311aa1a47/deps/plugins.DPQHVT0p-CDYt6VGP.js?v=e0b3fa24:5237:26\n    at http://localhost:63315/node_modules/.vite/vitest/6851b3982dec35e29a2f2f6d0b028f8311aa1a47/deps/plugins.DPQHVT0p-CDYt6VGP.js?v=e0b3fa24:5725:20\n    at new Promise (<anonymous>)\n    at runWithCancel (http://localhost:63315/node_modules/.vite/vitest/6851b3982dec35e29a2f2f6d0b028f8311aa1a47/deps/plugins.DPQHVT0p-CDYt6VGP.js?v=e0b3fa24:5720:10)\n    at http://localhost:63315/node_modules/.vite/vitest/6851b3982dec35e29a2f2f6d0b028f8311aa1a47/deps/plugins.DPQHVT0p-CDYt6VGP.js?v=e0b3fa24:5709:20\n    at new Promise (<anonymous>)\n    at runWithTimeout (http://localhost:63315/node_modules/.vite/vitest/6851b3982dec35e29a2f2f6d0b028f8311aa1a47/deps/plugins.DPQHVT0p-CDYt6VGP.js?v=e0b3fa24:5673:10)\n    at http://localhost:63315/node_modules/.vite/vitest/6851b3982dec35e29a2f2f6d0b028f8311aa1a47/deps/plugins.DPQHVT0p-CDYt6VGP.js?v=e0b3fa24:6245:64"
+          ],
+          "location": {
+            "line": 3,
+            "column": 1
+          },
+          "meta": {},
+          "tags": [],
+          "benchmarks": []
+        }
+      ],
+      "startTime": 1793651327077,
+      "endTime": 1793651327231.5,
+      "status": "failed",
+      "message": "",
+      "name": "/work/repo/packages/elements/test/title.test.ts"
+    }
+  ]
+}

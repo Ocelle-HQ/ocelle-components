@@ -1,0 +1,8 @@
+{"time":1793651384074,"hostname":"host","pid":1,"name":"pnpm:scope","level":"debug","selected":1}
+{"time":1793651384074,"hostname":"host","pid":1,"name":"pnpm:package-manifest","level":"debug","prefix":"/work/repo","initial":{"name":"fixture","private":true,"dependencies":{"is-number":"7.0.0"}}}
+{"time":1793651384074,"hostname":"host","pid":1,"name":"pnpm:context","level":"debug","currentLockfileExists":false,"storeDir":"/tmp/x/v11","virtualStoreDir":"/work/repo/node_modules/.pnpm"}
+{"time":1793651384074,"hostname":"host","pid":1,"name":"pnpm:stage","level":"debug","prefix":"/work/repo","stage":"importing_started"}
+{"time":1793651384075,"hostname":"host","pid":1,"name":"pnpm","level":"info","message":"Lockfile is up to date, resolution step is skipped","prefix":"/work/repo"}
+{"time":1793651384083,"hostname":"host","pid":1,"name":"pnpm:lockfile-verification","level":"debug","status":"cached","verifiedAt":"2026-11-02T20:26:59.042Z","lockfilePath":"/work/repo/pnpm-lock.yaml"}
+{"time":1793651384092,"hostname":"host","pid":1,"name":"pnpm:progress","level":"debug","status":"resolved","packageId":"is-number@7.0.0","requester":"/work/repo"}
+{"time":1793651384095,"hostname":"host","pid":1,"name":"pnpm","level":"error","code":"ERR_PNPM_NO_OFFLINE_TARBALL","message":"installing dependencies: Failed to fetch tarball for is-number@7.0.0 from http://127.0.0.1:4873/is-number/-/is-number-7.0.0.tgz in offline mode: snapshot not present in local store","prefix":"/work/repo"}
