@@ -84,6 +84,14 @@ round 1 re-pinned every registry package published less than 7 days before 2026-
   unset or empty, Playwright's own browser is used. It exists so the tests can run on a Chromium already installed
   where Playwright's download is blocked; CI and normal machines do not set it, and `pnpm run setup:online` still
   downloads Playwright's own build wherever the network allows.
+  The Chromium check of `gates/bin/test.ts` (and of `gates/bin/setup-offline.ts`, which shares it) honours the
+  override (phase 2, deciding review note R1-03 of phase 1): when `OCELLE_CHROMIUM_PATH` is set and non-empty it checks
+  that executable, the one the elements project will launch, and exits 2 naming it, `OCELLE_CHROMIUM_PATH` and
+  `pnpm run setup:online` when it does not exist; unset or empty, it checks Playwright's own Chromium
+  (`chromium.executablePath()` of the `playwright` package, which reads `PLAYWRIGHT_BROWSERS_PATH`). Red-tested in
+  `gates/test/test-command.test.ts` and `gates/test/integration/test-command.test.ts`. Without the override the check
+  looks at Playwright's full Chromium build, which `playwright install chromium` installs together with the headless
+  shell that headless runs launch.
 - **Rationale**: one runner for Node and browser tests, real Chromium for elements (constitution III and V need the
   real accessibility tree), and the tooling issue #4 named. Vitest 5.1.0 was published on the day of planning and
   is outside the release-age window (R-04); 5.0.5 (2026-10-15) is the newest release outside it.
@@ -109,6 +117,13 @@ round 1 re-pinned every registry package published less than 7 days before 2026-
     assert exit 2, a message naming the missing package (or Chromium) and `pnpm run setup:online`, and zero
     connections to that socket (FR-008 "never falls back to the network"). A test against a store filled by a fixture
     lockfile with no dependencies, with the installed browser path, asserts exit 0.
+  - **pnpm 12 configuration from the environment** (verified in phase 2): pnpm 12.16.1 reads settings from
+    `pnpm_config_<name>` environment variables (`pnpm_config_store_dir`, `pnpm_config_cache_dir`,
+    `pnpm_config_registry`) and ignores `npm_config_store_dir`, so the test seam and the gates-integration tests set
+    those. `setup-offline.ts` runs pnpm with `--reporter=ndjson` and reads its error record: an offline install
+    reports a tarball missing from the store as `ERR_PNPM_NO_OFFLINE_TARBALL` and package metadata missing from the
+    cache as `ERR_PNPM_NO_OFFLINE_META` (inside `ERR_PNPM_META_FETCH_FAIL`); both name the package and become
+    "missing: <package>; run pnpm run setup:online".
   - **Supply-chain policy** (operator decision, plan squad round 1): `pnpm-workspace.yaml` sets
     `minimumReleaseAge: 10080` (7 days, in minutes) with `minimumReleaseAgeStrict: true` and no
     `minimumReleaseAgeExclude`, and `allowBuilds: {}`, an explicit, empty allow-list of dependencies that may run

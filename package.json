@@ -8,9 +8,11 @@
     "pnpm": "12.16.1"
   },
   "scripts": {
-    "test": "vitest run",
+    "test": "node gates/bin/test.ts",
     "setup:online": "pnpm install --frozen-lockfile && pnpm exec playwright install chromium",
-    "setup:offline": "pnpm install --frozen-lockfile --offline"
+    "setup:offline": "node gates/bin/setup-offline.ts",
+    "gate:unit-tests": "node gates/bin/test.ts",
+    "gate:config-copies": "node gates/bin/config-copies.ts"
   },
   "devDependencies": {
     "@eslint/js": "10.0.1",
