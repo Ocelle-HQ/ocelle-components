@@ -18,13 +18,13 @@ export function tempDir(prefix: string): string {
 }
 
 /**
- * A temporary workspace: the fixture tree under gates/test/fixtures/<fixture>/, the named repository files copied in
- * unchanged, and (when asked) node_modules linked from the repository.
+ * A temporary workspace: the fixture tree under gates/test/fixtures/<fixture>/, the named repository files (or
+ * directories) copied in unchanged at the same paths, and (when asked) node_modules linked from the repository.
  */
 export function workspace(fixture: string, repoFiles: readonly string[], linkModules: boolean): string {
   const dir = tempDir("ws");
   cpSync(join(repo, "gates/test/fixtures", fixture), dir, { recursive: true });
-  for (const file of repoFiles) cpSync(join(repo, file), join(dir, file));
+  for (const file of repoFiles) cpSync(join(repo, file), join(dir, file), { recursive: true });
   if (linkModules) symlinkSync(join(repo, "node_modules"), join(dir, "node_modules"), "dir");
   return dir;
 }
