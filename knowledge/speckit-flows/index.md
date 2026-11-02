@@ -24,7 +24,7 @@ okf_version: "0.2"
 
 # Findings
 
-* [Headless agent steps need permissions](findings/headless-permissions.md) - claude -p cannot answer permission prompts, so agent steps stall without an allowlist
+* [Headless agent steps need permissions](findings/headless-permissions.md) - claude -p cannot answer permission prompts; resolved with a committed allowlist
 * [Review evidence was left uncommitted](findings/review-evidence-uncommitted.md) - The review committed its verdict but not the check results it relied on
 
 # Runs

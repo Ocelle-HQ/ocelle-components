@@ -80,11 +80,11 @@ must set up the test runner and fill these in.
 
 ## Running the agent steps headless
 
-Each agent step is `claude -p`, which cannot answer permission prompts: without permissions configured,
-the agent reads but cannot write, run scripts or commit. Before the first real run, allow what the
-commands need in `.claude/settings.json` (file edits, local git without push, the Spec Kit and story
-scripts, the pnpm scripts) and deny push, publish, `reset --hard` and `clean`. Spec Kit also passes extra
-flags through `SPECKIT_INTEGRATION_CLAUDE_EXTRA_ARGS` (for example a permission mode).
+Each agent step is `claude -p`, which cannot answer permission prompts. `.claude/settings.json` allows
+what the commands need (file edits, local git without push, the Spec Kit and story scripts, the pnpm
+scripts) and denies push, publish, `reset --hard`, `clean` and reading `.env` files. When a new script
+or command joins the flows, add it to the allowlist. Spec Kit also passes extra flags through
+`SPECKIT_INTEGRATION_CLAUDE_EXTRA_ARGS` (for example a permission mode) for a one-off run.
 
 Reviews live in the feature directory (`specs/NNN-name/reviews/`), so they are part of the
 project record. A rerun of `ocelle-implement` skips phases that are done and approved (or accepted).

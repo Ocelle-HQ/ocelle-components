@@ -1,6 +1,7 @@
 # Spec Kit Flows Diary
 
 ## 2026-11-02
+* **Update**: `.claude/settings.json` allowlist committed with the operator's approval, so headless agent steps can edit, run the flow scripts and commit, but not push or publish. Resolves [the finding](/findings/headless-permissions.md); the first real run confirms it.
 * **Update**: [story extension](/flows/story-extension.md) 1.2.0 adds `summary.sh`; [ocelle-implement](/flows/ocelle-implement.md) 1.1.0 writes and commits each feature's [run summary](/runs/) before its final gate. These summaries are the data for [the baseline experiment](/experiments/2026-11-02-spec-kit-baseline.md).
 * **Creation**: Started this bundle to record how the Spec Kit flows of this repository are tuned. Run summaries are generated into [runs](/runs/) from each feature's review files.
 * **Fix**: Reviews and fixes now commit the evidence under `reviews/phase-N/` with their own change; the review used to commit only its verdict. See [the finding](/findings/review-evidence-uncommitted.md).

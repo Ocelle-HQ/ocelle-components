@@ -1,0 +1,47 @@
+{
+  "permissions": {
+    "allow": [
+      "Read",
+      "Edit",
+      "Write",
+      "Glob",
+      "Grep",
+      "Bash(git status:*)",
+      "Bash(git diff:*)",
+      "Bash(git log:*)",
+      "Bash(git show:*)",
+      "Bash(git rev-parse:*)",
+      "Bash(git ls-files:*)",
+      "Bash(git add:*)",
+      "Bash(git commit:*)",
+      "Bash(git merge-base:*)",
+      "Bash(git worktree:*)",
+      "Bash(.specify/scripts/bash/check-prerequisites.sh:*)",
+      "Bash(.specify/scripts/bash/setup-plan.sh:*)",
+      "Bash(.specify/scripts/bash/setup-tasks.sh:*)",
+      "Bash(.specify/scripts/bash/create-new-feature.sh:*)",
+      "Bash(.specify/scripts/bash/resolve-template.sh:*)",
+      "Bash(.specify/extensions/story/scripts/base.sh:*)",
+      "Bash(.specify/extensions/story/scripts/red.sh:*)",
+      "Bash(.specify/extensions/story/scripts/tdd-check.sh:*)",
+      "Bash(.specify/extensions/story/scripts/verdict.sh:*)",
+      "Bash(.specify/extensions/story/scripts/units.sh:*)",
+      "Bash(.specify/extensions/story/scripts/summary.sh:*)",
+      "Bash(pnpm install:*)",
+      "Bash(pnpm test:*)",
+      "Bash(pnpm run:*)",
+      "Bash(pnpm exec:*)",
+      "Bash(pnpm typecheck:*)",
+      "Bash(pnpm lint:*)"
+    ],
+    "deny": [
+      "Bash(git push:*)",
+      "Bash(git reset --hard:*)",
+      "Bash(git clean:*)",
+      "Bash(npm publish:*)",
+      "Bash(pnpm publish:*)",
+      "Read(./.env)",
+      "Read(./.env.*)"
+    ]
+  }
+}
