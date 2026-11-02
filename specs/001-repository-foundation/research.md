@@ -44,14 +44,33 @@ round 1 re-pinned every registry package published less than 7 days before 2026-
   pinned in the root devDependencies: it is a required peer of Vitest (`^6.4.0 || ^7.0.0 || ^8.0.0`) and would
   otherwise be auto-installed at an unpinned version. One root command, `pnpm test`, runs `gates/bin/test.ts`, which
   (1) checks that Playwright's Chromium executable exists and otherwise exits 2 naming `pnpm run setup:online`
-  (FR-004, US1 scenario 9), then (2) runs `vitest run`. Vitest exits non-zero when no test file is found in the whole
-  run, and passes a project with no test files when others have them; phase 2 proves both red-first (US1 scenarios
-  5 and 10) and fixes the configuration if Vitest 5 differs. Phase 1 wires `pnpm test` plainly to `vitest run`.
+  (FR-004, US1 scenario 9), then (2) runs `vitest run --reporter json` and classifies the report (contracts/gate-cli.md).
+  Phase 1 wires `pnpm test` plainly to `vitest run`; phase 2's green commit rewires it to `gates/bin/test.ts`.
+- **Test seam** (plan squad round 2): `test.ts` takes `--root <dir>` (the workspace whose tests it runs; default the
+  repository root) and reads the browser path from `PLAYWRIGHT_BROWSERS_PATH`, like `setup-offline.ts` (R-04). Its
+  tests in `gates/test/` build a temporary workspace from a fixture tree under `gates/test/fixtures/` (package
+  directories with test files), copy the repository's `vitest.config.ts` into it unchanged, link `node_modules` from
+  the workspace, and run `test.ts --root <tmp>`. Fixtures are excluded from the repository's own Vitest run (R-10),
+  so the tests never recurse into the repository suite, and they exercise the repository's configuration.
+- **Which US1 scenarios are `test.ts` behaviour** (red first in phase 2, each assertion false at the phase base where
+  `pnpm test` is plain `vitest run`): scenario 9 (browser missing: exit 2, a message naming
+  `pnpm run setup:online`, no test skipped); scenario 5 in the gate contract's form (exit 1 and one finding line per
+  failed test, rule = the test's full name, which plain Vitest does not print); FR-004's "no test file at all" as
+  exit 2 with "no test file found" (a broken file pattern is "could not run"; plain Vitest exits 1); a test file that
+  fails to load as exit 2. **Which hold through Vitest at the phase 1 base** and are therefore not claimed red first:
+  scenario 4 (all packages' tests run, exit 0) and scenario 10 (a project with no test file beside one with passing
+  tests exits 0). They are proven by the unit-tests plants, whose pass plants each hold a passing test in one project
+  only, so the other projects are empty (contracts/plants.md), and by quickstart step 3 on the repository.
 - **Chromium evidence (US1 scenario 6)**: `packages/elements/test/chromium.test.ts` is a passing sample test that
   asserts something only real Chromium gives: `navigator.userAgentData.brands` includes `Chromium` (absent under
-  jsdom, happy-dom, Firefox and WebKit). The unit-tests Chromium plant (contracts/plants.md) is the same assertion
-  with a wrong expected brand, and its expected finding names that test and a message containing `Chromium`, so a
-  plant run that fails for any other reason (Chromium not starting, a Node environment) does not count as caught.
+  jsdom, happy-dom, Firefox and WebKit). TypeScript 6.0.3's `lib.dom.d.ts` declares neither `userAgentData` nor
+  `NavigatorUAData` (probed, plan squad round 2), so the test declares a minimal local type,
+  `interface NavigatorUAData { readonly brands: readonly { readonly brand: string; readonly version: string }[] }`,
+  and reads `navigator` through it (`(navigator as Navigator & { readonly userAgentData?: NavigatorUAData })`), with
+  no `any` and no lint disable, so the strict typecheck and `strictTypeChecked` lint both pass. The unit-tests
+  Chromium plant (contracts/plants.md) is the same assertion in the same typed form with a wrong expected brand, and
+  its expected finding names that test and a message containing `Chromium`, so a plant run that fails for any other
+  reason (Chromium not starting, a Node environment) does not count as caught.
 - **Rationale**: one runner for Node and browser tests, real Chromium for elements (constitution III and V need the
   real accessibility tree), and the tooling issue #4 named. Vitest 5.1.0 was published on the day of planning and
   is outside the release-age window (R-04); 5.0.5 (2026-10-15) is the newest release outside it.
@@ -95,7 +114,11 @@ round 1 re-pinned every registry package published less than 7 days before 2026-
 - **Decision**: ESLint 10.13.0 flat config (`eslint.config.ts`) with `@eslint/js` 10.0.1 recommended and
   typescript-eslint 8.72.0 `strictTypeChecked` + `stylisticTypeChecked`, over all repository TypeScript except
   `gates/plants/` and `gates/test/fixtures/`, plus `no-restricted-imports` rejecting relative `.js` specifiers (R-02).
-  Its plant violates `@typescript-eslint/no-floating-promises`, a rule the test lint does not have. ESLint loads a
+  Its plant violates `@typescript-eslint/no-floating-promises`, a rule the test lint does not have. The type-aware
+  rules use typescript-eslint's project service, which resolves each file through the nearest `tsconfig.json`; a
+  lint plant carries its own `tsconfig.json` under the plant configuration rule (it extends the root
+  `tsconfig.json` and sets only `include` and `exclude`, R-10), so the project service resolves the plant file
+  through it with the repository's compiler options and no parser option changes in plant mode. ESLint loads a
   `.ts` config through jiti unless the `unstable_native_nodejs_ts_config` flag is passed, and jiti is only an
   optional peer of ESLint, so jiti 2.7.0 is pinned in the root devDependencies. The stable jiti path is preferred
   over an `unstable_` flag.
@@ -107,7 +130,10 @@ round 1 re-pinned every registry package published less than 7 days before 2026-
   `no-focused-tests`, `no-conditional-expect`, `no-standalone-expect`, `valid-expect` (with `alwaysAwait`) and
   `valid-expect-in-promise`, as errors; plus a local rule `ocelle/no-snapshot-only` (in `gates/eslint/`) that
   reports a test whose only assertions are snapshot matchers (`toMatchSnapshot`, `toMatchInlineSnapshot`,
-  `toMatchFileSnapshot`). No upstream rule covers that pattern.
+  `toMatchFileSnapshot`). No upstream rule covers that pattern. None of these rules needs type information, so the
+  test-lint config uses the typescript-eslint parser without the project service and its plants carry no
+  `tsconfig.json`; if phase 3 finds a rule that needs types, the test-lint plants carry the same plant
+  `tsconfig.json` as the lint plants (R-05, R-10).
 - **Rationale**: a separate config keeps the test lint a separate named gate (FR-020) and lets its plants be run
   alone.
 
@@ -117,7 +143,9 @@ round 1 re-pinned every registry package published less than 7 days before 2026-
   plain CSS for `*.css` in `packages/elements/` and `packages/styles/`, limited to package source as FR-028 defines
   it: `ignoreFiles` holds `gates/plants/**`, `gates/test/fixtures/**`, `packages/*/dist/**` and the test-code globs
   (`**/*.test.ts`, `**/*.spec.ts`, `**/test/**`, `**/*.stories.ts`). `allowEmptyInput` is on, because this feature
-  ships no stylesheet; the plants prove the gate can fail. The rule is a local plugin `ocelle/token-only`
+  ships no stylesheet. A wrong or stale glob cannot hide behind it: the style-lint plants are repo-tree plants run
+  in normal mode (R-10), so a glob that misses `packages/elements/src/*.ts` or the `.css` files makes the fail plants
+  pass and the plant job fail (US3 scenario 9). The rule is a local plugin `ocelle/token-only`
   (`gates/stylelint/token-only.ts`) that implements FR-024's allow-list exactly: every declaration value is parsed
   with postcss-value-parser 4.2.0, and each word, string, number, function and `var()` fallback is classified:
   - **allowed**: `0`; percentages; unitless numbers in `line-height`, `flex`, `flex-grow`, `flex-shrink`,
@@ -156,6 +184,8 @@ round 1 re-pinned every registry package published less than 7 days before 2026-
      :(exclude,glob)**/test/** :(exclude,glob)**/*.stories.ts :(exclude,glob)**/*.d.ts
      :(exclude,glob)packages/*/dist/**`. No range: print "nothing to mutate" and exit 0 (US2 scenario 5).
   3. Stryker runs with `mutate` set to `file.ts:start-end` ranges, so only changed lines are mutated (FR-011).
+     `--files <path>[,<path>...]` limits the run to those changed files (a CI shard); without it every changed file
+     is mutated (the story review's local run).
   4. The wrapper decides from Stryker's JSON report (`reporters` includes `json`), not from Stryker's exit code or
      `thresholds.break` (a crash and a low score both exit 1): any `Survived` or `NoCoverage` mutant on a changed
      line is a finding (exit 1); `Killed`, `Timeout`, `RuntimeError` and `CompileError` pass (FR-011's definitions);
@@ -175,9 +205,24 @@ round 1 re-pinned every registry package published less than 7 days before 2026-
 - **Rationale**: line ranges give FR-011's "changed lines" precisely, so no incremental cache is needed and every
   run is cold (SC-005's "no earlier mutation result"). Issue #4's "incremental" intent is met by mutating only the
   change.
-- **CI**: its own job with `timeout-minutes: 10` (FR-013), checkout with `fetch-depth: 0`, and
-  `--base ${{ github.event.pull_request.base.sha }}` (contracts/ci-checks.md). The merge ref minus that commit is
-  exactly the pull request's change.
+- **CI, sharded** (operator decision, plan squad round 2; spec FR-013/SC-005 amended): three jobs, all with checkout
+  `fetch-depth: 0` and `--base ${{ github.event.pull_request.base.sha }}` (contracts/ci-checks.md). The merge ref
+  minus that commit is exactly the pull request's change.
+  1. `mutation-plan` runs `pnpm run gate:mutation -- --base <sha> --plan`, which prints the shards as JSON and sets
+     them as the job output (exit 2 on an unresolvable base). Split: the changed files of step 2, sorted by path,
+     are filled greedily into shards; the next file starts a new shard when adding it would exceed 10 files or 500
+     changed lines; a file with more than 500 changed lines is a shard on its own (FR-013 expects such a change to
+     be split). No changed file: zero shards.
+  2. `mutation-shard`, a matrix over the shards (skipped when there are none), each shard a job with
+     `timeout-minutes: 10` that runs `pnpm run gate:mutation -- --base <sha> --files <the shard's files>`. A timeout
+     ends the job as a failure.
+  3. `mutation`, the check named **Mutation testing**, `needs` both and runs `if: always()`; it passes only when
+     `mutation-plan` succeeded and either `mutation-shard` succeeded or it was skipped because the plan had zero
+     shards. A failed, cancelled or timed-out shard, or a failed plan, fails it. This is the check the ruleset
+     requires (plan.md § Verification); the helper jobs are not required by name, since the matrix names vary.
+  The split (`--plan`) and `--files` are wrapper behaviour, tested red first in phase 3 by gate tests on fixture
+  repositories. No gate source file of this feature has more than 500 lines, so this feature's own pull request
+  splits into shards within the bound; SC-005 is measured on one full shard (quickstart step 11).
 - **Story workflow (FR-007)**: `mutation_command: "pnpm run gate:mutation"`; the story review command is changed to
   read `FEATURE_DIR/reviews/phase-<N>/base.sha` and run `pnpm run gate:mutation -- --base <sha>`, a command the
   `.claude/settings.json` allowlist (`Bash(pnpm run:*)`) covers in unattended runs. No environment variable is used.
@@ -215,18 +260,34 @@ round 1 re-pinned every registry package published less than 7 days before 2026-
   no finding (and, where given, exactly the expected records); an `error` case does not exit 2; a gate lacks a
   `fail`, a `pass` or an `error` case; or a plant has no or an invalid `plant.json`.
 - **Same configuration, only the inputs swapped** (FR-025, constitution VIII): plant mode runs the gate with the
-  repository's own configuration. A typecheck plant's `tsconfig.json` has no keys other than `extends` and `include`,
-  and in a `fail` or `pass` plant its `extends` resolves to the repository's `tsconfig.base.json`; the typecheck
-  `error` plant keeps the same two keys but its `extends` names a file that does not exist (tsc reports `TS5083`,
-  which the wrapper classifies as exit 2), so the missing base is its only breaking input; ESLint, Stylelint and Vitest load the repository's configs and only lift the
-  `gates/plants/` exclusion for the plant directory; unit-test plants run inside the named project of the
-  repository's `vitest.config.ts`; mutation uses the repository's `stryker.config.json`. The plant job rejects (exit
-  1, "plant X carries gate configuration") a plant directory that holds a tsconfig with any key other than `extends` and
-  `include` (such as `compilerOptions`, `files` or `references`), a `fail` or `pass` plant whose tsconfig `extends`
-  does not resolve to `tsconfig.base.json`, or any ESLint, Stylelint, Vitest, Vite or Stryker configuration file.
-- **Normal input collection for commit and mutation plants** (operator decision, plan squad round 1): for sign-off
-  and mutation the plant job builds a temporary git repository from the plant and runs the gate in normal mode with
-  `--root <tmp>` and `--range` or `--base`; plant mode changes only the repository root. Sign-off: one commit per
+  repository's own configuration. Typecheck and lint plants carry a `tsconfig.json` with no keys other than
+  `extends`, `include` and `exclude`; in a `fail` or `pass` plant its `extends` resolves to the repository's root
+  `tsconfig.json`, the file the typecheck gate runs (`tsc -p tsconfig.json`), so every option the gate runs with,
+  including any a pull request adds to the root file, applies to the plant (operator decision, plan squad round 2).
+  `exclude` is allowed because it is inherited through `extends`: the root file excludes `gates/plants/**`, so the
+  plant sets `"exclude": []` (or a narrower list) to let its own files in. The typecheck `error` plant keeps the same
+  keys but its `extends` names a file that does not exist (tsc reports `TS5083`, which the wrapper classifies as
+  exit 2), so the missing base is its only breaking input. The lint plant's `tsconfig.json` is what typescript-eslint's
+  project service resolves the plant file through (R-05); test-lint plants carry none (R-06). ESLint and Vitest load
+  the repository's configs and only lift the `gates/plants/` exclusion for the plant directory; unit-test plants run
+  inside the named project of the repository's `vitest.config.ts`; style lint, prefix, CSP, sign-off and mutation
+  plants run in a temporary repository with the repository's configuration files (below); mutation uses the
+  repository's `stryker.config.json`. The plant job rejects (exit 1, "plant X carries gate configuration") a plant
+  directory that holds a tsconfig with any key other than `extends`, `include` and `exclude` (such as
+  `compilerOptions`, `files` or `references`), a `fail` or `pass` plant whose tsconfig `extends` does not resolve to
+  the root `tsconfig.json`, a tsconfig in a plant of a gate other than typecheck and lint, or any ESLint, Stylelint,
+  Vitest, Vite or Stryker configuration file.
+- **Normal input collection for file, commit and mutation plants** (operator decisions, plan squad rounds 1 and 2):
+  for sign-off and mutation (round 1), and for style lint, prefix and CSP (round 2, plant form `repo-tree`), the plant
+  job builds a temporary repository from the plant and runs the gate in normal mode with `--root <tmp>` (plus
+  `--range` or `--base`); `--root` changes only the repository root. Repo-tree: the plant's `tree/` directory holds
+  its input files at repository paths (for example `packages/elements/src/x.ts`, `packages/elements/src/x.stories.ts`,
+  `packages/styles/src/x.css`, `packages/tokens/dist/index.js`); the plant job copies the repository's gate
+  configuration files (`stylelint.config.ts`, the root `package.json`, the tsconfig files) into a temporary
+  directory unchanged, lays `tree/` over it, links `node_modules` from the workspace and runs the gate there. So the
+  gate's own file globs, its exclusions (test code, stories, `dist/`) and the path-bound postcss-lit syntax of R-07
+  are what decide which plant files it checks: a glob that misses covered files makes a fail plant pass and the
+  plant job fail. Sign-off: one commit per
   record of `commits.txt` (author, message, and for a merge record a real merge of two branches), then
   `--range <first parent of the first record>..HEAD`. Mutation: a first commit with the repository's gate
   configuration (`stryker.config.json`, `vitest.config.ts`, the tsconfig files) and the plant's `base/` tree laid
@@ -237,7 +298,12 @@ round 1 re-pinned every registry package published less than 7 days before 2026-
   `.github/workflows/ci.yml` (all jobs except the plant job) and the FR-020 list held in `gates/lib/registry.ts`, and
   exits 1 naming each id missing from one of them ("gate X has no registry entry", "gate X has no CI job"). Its own
   plants live in `gates/plants/plants/<case>/` (a `gates.json` and `ci.yml` pair: one with a missing entry, one with
-  a missing job, one matching pass plant); the plant job runs them through the same check after the gates.
+  a missing job, one matching pass plant); the plant job runs them through the same check after the gates. A gate
+  is matched to its CI job by job id; a registry entry's `helperJobs` (data-model.md) names the extra jobs that serve
+  it (`mutation-plan` and `mutation-shard` for `mutation`), which the check does not count as gates. The registry
+  check compares files that one pull request can change together, so it does not stop a coordinated removal of a
+  gate from `ci.yml`, `gates.json` and `registry.ts`; the ruleset on `main` that requires the twelve check names does
+  (plan.md § Verification, operator decision, plan squad round 2), and `gates/README.md` lists that required set.
 - **Gate tests and their inputs** (operator decision, plan squad round 1): gate tests in `gates/test/` read their
   inputs from `gates/test/fixtures/` and never from `gates/plants/`. Fixtures are test code by the story
   configuration's `test_pathspec` (`**/test/**`), so they arrive in red commits with the tests that use them. They
@@ -275,15 +341,21 @@ round 1 re-pinned every registry package published less than 7 days before 2026-
 ## R-12 Prefix check (FR-022)
 
 - **Decision**: `gates/bin/prefix.ts` over package source, test code and built output of the three packages. Name
-  rule: `(?<![A-Za-z0-9_-])sk-` and `(?<![A-Za-z0-9_])--sk-`. Font rule: inside `font-family`/`font` declarations and
+  rule, matched case-insensitively (the `i` flag; HTML lower-cases tag names, so `<SK-Button>` and
+  `document.createElement('SK-BUTTON')` create an `sk-button` element): `(?<![A-Za-z0-9_-])sk-` and
+  `(?<![A-Za-z0-9_])--sk-`. The boundary look-behind still keeps `task-list`, `desk-row` and `--risk-level` passing
+  in any case. A fail plant holds `<SK-Button>` (contracts/plants.md). Font rule: inside `font-family`/`font` declarations and
   `@font-face` `font-family` descriptors, case-insensitive match of FR-022's list.
 
 ## R-13 Sign-off check (FR-023)
 
 - **Decision**: `gates/bin/signoff.ts` reads commit records from `git log --format=<record> <base>..<head>` (in CI the
   pull request's base and head commits). A record carries the hash, parents, author `name <email>` and message.
-  Merge commits (more than one parent) and `d08d413` are skipped; every other commit needs a `Signed-off-by:` trailer
-  equal to its author. A range that does not resolve, or that holds no commit, is exit 2. Plants are `commits.txt`
+  Merge commits (more than one parent) and the root commit are skipped; the root commit is exempt only by its full
+  hash `d08d4133bf0034e3d1ff29cddf2b0f13ca63290a` and only when it has no parent (FR-023 exempts one commit; a
+  7-hex prefix could be mined in minutes). A gate test fixture record whose hash starts with `d08d413` but differs
+  from the full hash, or that has a parent, is still reported `no-signoff`. Every other commit needs a
+  `Signed-off-by:` trailer equal to its author. A range that does not resolve, or that holds no commit, is exit 2. Plants are `commits.txt`
   files in the same record format, from which the plant job builds a temporary repository and runs the gate in
   normal mode (R-10). Every identity in a plant is invented and uses a reserved domain (RFC 2606, for example
   `Ada Example <ada@example.com>`), never a real name or address (FR-034).
@@ -321,8 +393,14 @@ round 1 re-pinned every registry package published less than 7 days before 2026-
   top-level `permissions: contents: read` and nothing else; every `actions/checkout` step sets
   `persist-credentials: false`, so the token is not left in `.git/config` for dependency or pull-request code; no job
   references a secret. A shared setup step restores the pnpm store and Playwright cache and runs
-  `pnpm run setup:online`. The mutation job has `timeout-minutes: 10`; the mutation and sign-off jobs check out with
-  `fetch-depth: 0` and take their base from `github.event.pull_request.base.sha` (R-08, R-13).
+  `pnpm run setup:online`. Mutation testing runs as a plan job, a matrix of shard jobs each with
+  `timeout-minutes: 10`, and the verdict job named **Mutation testing** (R-08); the mutation jobs and the sign-off
+  job check out with `fetch-depth: 0` and take their base from `github.event.pull_request.base.sha` (R-08, R-13).
+- **Required checks** (operator decision, plan squad round 2): the workflow runs the pull request's own `ci.yml`, so
+  only a list held outside the branch makes a gate block the merge. The operator configures a ruleset (or branch
+  protection) on `main` that requires the twelve check names of contracts/ci-checks.md, as a step of the feature
+  verification (plan.md § Verification); `gates/README.md` lists the same twelve names, so a change to the set is
+  visible in review and is followed by a ruleset change the operator makes.
 - **Rationale**: every job installs third-party dev tools and runs pull-request code; same-repository pull requests
   get the repository's default token permissions, which may be read-write.
 
@@ -331,9 +409,13 @@ round 1 re-pinned every registry package published less than 7 days before 2026-
 - **Decision**: `LICENSE` (Apache-2.0 text), `CONTRIBUTING.md`, `SECURITY.md`, `THIRD_PARTY_NOTICES` (no asset ships
   yet; states so) and `.github/CODEOWNERS` (`* @MOES-Media`). SC-006 is `gates/test/governance.test.ts`, a test of the
   repository's own files, run by `pnpm test`.
-- **Verification** (operator decision, plan squad round 1): SC-006 checks text only, and GitHub ignores a CODEOWNERS
-  owner that is not a user or `@org/team` with write access. Phase 5 and the quickstart therefore confirm on GitHub,
-  once the file is on the pull request branch, that GitHub reports no CODEOWNERS errors for it and that
-  `@MOES-Media` is a user or team with write access to the repository. If it is not, the operator names a
-  replacement owner, and FR-032/FR-035 are amended through the operator. The result is recorded in the phase 5
-  review. FR-032's wording is unchanged.
+- **Verification** (operator decision, plan squad round 1; moved to the operator, plan squad round 2): SC-006 checks
+  text only, and GitHub ignores a CODEOWNERS owner that is not a user or `@org/team` with write access. Agents cannot
+  push, open a pull request or call `gh api` (`.claude/settings.json` deny list; the story implement command says
+  "Do not push"), so this is not part of phase 5 or its review. After the operator pushes the branch and opens the
+  pull request, the operator confirms on GitHub that it reports no CODEOWNERS errors for the file on the pull request
+  branch and that `@MOES-Media` is a user or team with write access to the repository, and records the result in
+  `specs/001-repository-foundation/verification.md` (plan.md § Verification), together with the other GitHub-side
+  checks (the twelve named checks, the required-check ruleset, the SC-001 and SC-005 timings). If the owner is not
+  valid, the operator names a replacement owner, and FR-032/FR-035 are amended through the operator. FR-032's wording
+  is unchanged.

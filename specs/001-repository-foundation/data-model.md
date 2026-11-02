@@ -8,11 +8,12 @@
 | `check` | string | the CI check name shown on pull requests (contracts/ci-checks.md) |
 | `command` | string | the command a normal run executes |
 | `plantCommand` | string | the command run per plant, with `{plant}` replaced by the plant directory (or `{root}` by the temporary repository built from it) |
-| `plantForm` | enum | `files`, `test-files`, `workspace`, `built-output`, `commit-repo`, `config-pair`, `mutation-repo` (contracts/plants.md) |
+| `plantForm` | enum | `files`, `test-files`, `workspace`, `repo-tree`, `commit-repo`, `config-pair`, `mutation-repo` (contracts/plants.md) |
 | `scope` | string | the files it checks, as in spec FR-028 |
+| `helperJobs` | string[] | optional; job ids in `ci.yml` that serve this gate and are not gates themselves (`mutation-plan`, `mutation-shard` for `mutation`, research.md R-08) |
 
-Validation: the set of gate ids equals the set of gate jobs in `.github/workflows/ci.yml` (the plant job excluded)
-and the FR-020 list in `gates/lib/registry.ts`; the plant job checks this first and exits 1 naming each id missing
+Validation: the set of gate ids equals the set of gate jobs in `.github/workflows/ci.yml` (the plant job and every
+`helperJobs` id excluded) and the FR-020 list in `gates/lib/registry.ts`; the plant job checks this first and exits 1 naming each id missing
 from one of the three (research.md R-10). The plant job fails when an entry lacks a `fail`, a `pass` or an `error`
 plant.
 
@@ -23,7 +24,7 @@ plant.
 | input files | the case directory | in the gate's `plantForm`; inputs only, no gate configuration (below) |
 | `expect` | `plant.json` | `fail` (a planted defect), `pass` (a near-miss or clean input the gate must accept) or `error` (a breaking plant: an input the gate cannot process) |
 | `why` | `plant.json` | the defect, near-miss or breakage, in one sentence, naming the FR |
-| `findings` | `plant.json`, `fail` only | the exact list of expected findings: `location` and `rule` (as in § Finding, `location` relative to the plant; for a `commit-repo` plant `commit:<n>`, the n-th record of `commits.txt`), and optionally `message`, a substring the finding's message must contain |
+| `findings` | `plant.json`, `fail` only | the exact list of expected findings: `location` and `rule` (as in § Finding, `location` relative to the plant; for a `repo-tree` or `mutation-repo` plant relative to the temporary repository, that is the repository path below `tree/` or `head/`; for a `commit-repo` plant `commit:<n>`, the n-th record of `commits.txt`), and optionally `message`, a substring the finding's message must contain |
 | `records` | `plant.json`, mutation `pass` only | the expected equivalent-mutant records: `location`, `mutator`, `reason` |
 
 State: a plant is **caught** when the gate exits 1 on a `fail` plant and its findings, compared as a set of
@@ -31,11 +32,14 @@ State: a plant is **caught** when the gate exits 1 on a `fail` plant and its fin
 0 on a `pass` plant with no finding (and, where given, exactly the expected `records`); **reported broken** when the
 gate exits 2 on an `error` plant. Anything else makes the plant job fail.
 
-Configuration rule: plant mode runs the repository's own gate configuration and swaps only the inputs. A plant's
-`tsconfig.json` has no keys other than `extends` and `include`, and in a `fail` or `pass` plant its `extends` resolves
-to the repository's `tsconfig.base.json` (an `error` plant's `extends` may name a missing file, its breaking input);
-a plant directory holds no ESLint, Stylelint, Vitest, Vite or Stryker configuration. The plant job rejects a plant
-that breaks this rule ("plant X carries gate configuration").
+Configuration rule: plant mode runs the repository's own gate configuration and swaps only the inputs. Only
+typecheck and lint plants carry a `tsconfig.json` (the lint plant's is what typescript-eslint's project service
+resolves the plant through); it has no keys other than `extends`, `include` and `exclude`, and in a `fail` or `pass`
+plant its `extends` resolves to the repository's root `tsconfig.json`, the file the typecheck gate runs (an `error`
+plant's `extends` may name a missing file, its breaking input); `exclude` is allowed because the root file's
+`exclude` of `gates/plants/**` is inherited and must be overridden. A plant directory holds no ESLint, Stylelint,
+Vitest, Vite or Stryker configuration. The plant job rejects a plant that breaks this rule ("plant X carries gate
+configuration").
 
 Identities: every name and e-mail address in a plant (sign-off records) is invented and uses a reserved domain
 (RFC 2606: `example.com`, `example.org`, `example.net`), never a real person's (FR-034).
@@ -71,7 +75,9 @@ lists every record in changed code with path, line, mutator and reason.
 
 ## Commit record (sign-off check)
 
-`hash`, `parents[]`, `author` (`Name <email>`), `message`. Exempt when `parents.length > 1` or `hash` starts with
-`d08d413`. Passes when the message has a `Signed-off-by: <author>` trailer equal to `author`. In plants, `commits.txt`
-holds the records in order (a merge record names the two records it merges), and the plant job builds a temporary
-repository from them (research.md R-10).
+`hash`, `parents[]`, `author` (`Name <email>`), `message`. Exempt when `parents.length > 1`, or when `hash` equals
+the full hash of the repository's root commit, `d08d4133bf0034e3d1ff29cddf2b0f13ca63290a`, and `parents` is empty
+(FR-023 exempts that one commit; a record whose hash only starts with `d08d413` is not exempt). Passes when the
+message has a `Signed-off-by: <author>` trailer equal to `author`. In plants, `commits.txt` holds the records in
+order (a merge record names the two records it merges), and the plant job builds a temporary repository from them
+(research.md R-10).

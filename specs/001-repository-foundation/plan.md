@@ -43,8 +43,9 @@ mutants in gate source (child-process tests only for the thin CLI entry); their 
 
 **Project Type**: library monorepo (three packages) with repository tooling
 
-**Performance Goals**: cold install plus test run under 5 minutes (SC-001); mutation of a bounded pull request under
-10 minutes (SC-005, FR-013)
+**Performance Goals**: cold install plus test run under 5 minutes (SC-001); mutation of one shard (up to 10 changed
+files and 500 changed lines of package and gate source) under 10 minutes, the CI mutation check split into such
+shards (SC-005, FR-013, R-08)
 
 **Constraints**: offline setup never touches the network (FR-008); no gate reads `gates/plants/` except the plant job,
 and nothing but the gate tests reads `gates/test/fixtures/` (FR-028); plant mode runs the repository's own gate
@@ -66,9 +67,9 @@ and not persisted (R-16)
 | V. Storybook and tests | Pass, partial | Tests per behaviour; Storybook and visual baselines deferred to #10 (Complexity Tracking). |
 | VI. Consumer needs, own code | Pass | Scope from issue #4 and the triage record; nothing copied. |
 | VII. Semver of the public surface | Pass | No public surface changes (semver none). |
-| VIII. Test-first, non-vacuous | Pass with one exemption | Every gate and script behaviour is written red first; mutation testing (of package source and gate source, FR-011) and the test lint are delivered here; every gate has fail, pass and breaking plants judged by their expected findings, run through the gate's normal input collection where it has one (R-10). Phase 1 bootstrap exemption below. |
+| VIII. Test-first, non-vacuous | Pass with one exemption | Every gate and script behaviour is written red first; a scaffold commit before each red commit adds the new modules with their signatures and no behaviour, so red tests load and fail on their assertions, not on a missing module (§ Phases); mutation testing (of package source and gate source, FR-011) and the test lint are delivered here; every gate has fail, pass and breaking plants judged by their expected findings, run through the gate's normal input collection where it has one (R-10). Phase 1 bootstrap exemption below. |
 | Technology, licence, supply chain | Pass | Exact pins (workspace packages as `workspace:<exact version>`), committed lockfile, 7-day minimum release age and an empty install-script allow-list enforced by the pins gate (R-04, R-14), Apache-2.0, no third-party asset ships, no secrets (CI token read-only, R-16), DCO via the sign-off gate. |
-| Workflow and quality gates | Pass, partial | Eleven gates + plant job; the remaining constitution gates are deferred with sunsets. |
+| Workflow and quality gates | Pass, partial | Eleven gates + plant job; the twelve check names are required on `main` by a ruleset the operator configures (§ Verification); the remaining constitution gates are deferred with sunsets. |
 
 **Post-design re-check (after Phase 1)**: unchanged. The design adds no package dependency at runtime, keeps every
 gate behind the exit 0/1/2 contract, and keeps plants and gate-test fixtures out of the normal gates by configuration
@@ -77,6 +78,13 @@ gate behind the exit 0/1/2 contract, and keeps plants and gate-test fixtures out
 **Re-check after plan squad round 1**: VIII now covers gate source in mutation testing (operator decision) and judges
 plants by expected findings; the bootstrap exemption covers exactly phase 1; the supply-chain row gains the release
 age and install-script policy. No new exception.
+
+**Re-check after plan squad round 2**: VIII gains the scaffold commit before each red commit (operator decision), so
+every red step fails for the missing behaviour, not an import error; a scaffold carries no behaviour and is accepted
+by the review only as such. Typecheck and lint plants extend the root `tsconfig.json` the gate runs with, and the
+file gates' plants run through their normal file collection (R-10). The merge rule of the Development Workflow is
+enforced by a ruleset on `main` that requires the twelve checks (operator decision). Mutation testing in CI runs in
+shards, each within the FR-013 bound (operator decision, spec FR-013/SC-005 amended). No new exception.
 
 ## Project Structure
 
@@ -95,6 +103,7 @@ specs/001-repository-foundation/
 │   └── ci-checks.md     # the named CI checks
 ├── checklists/requirements.md
 ├── reviews/spec/        # spec checks 1-3 and fixes
+├── verification.md      # operator's GitHub-side verification (§ Verification)
 └── tasks.md             # Phase 2 (/speckit-tasks)
 ```
 
@@ -118,7 +127,7 @@ packages/
 ├── styles/   package.json  tsconfig.json  src/index.ts  test/
 └── elements/ package.json  tsconfig.json  src/index.ts  test/
 gates/
-├── README.md                # every gate, its check name, its plants; deferred gates (FR-026)
+├── README.md                # every gate, its check name, its plants; the required checks on main; deferred gates (FR-026)
 ├── gates.json               # gate registry (data-model.md)
 ├── bin/                     # test, setup-offline, csp, prefix, signoff, pins, config-copies, mutation, plants
 ├── lib/                     # shared: findings output, plant mode, registry loading
@@ -128,7 +137,7 @@ gates/
 │   └── fixtures/            # inputs of the gate tests only; excluded from every normal gate (FR-028)
 └── plants/<gate-id>/<case>/ # fail, pass and breaking plants, plant.json each
 .github/
-├── workflows/ci.yml         # one job per gate + plant job
+├── workflows/ci.yml         # one job per gate (mutation: plan, shards, verdict) + plant job
 └── CODEOWNERS               # * @MOES-Media
 LICENSE  CONTRIBUTING.md  SECURITY.md  THIRD_PARTY_NOTICES
 ```
@@ -153,23 +162,58 @@ missing behaviour rather than for a missing runner. (Since story extension 1.2.2
 `setup_command` from the current configuration, not from the commit it checks out; the split does not depend on
 that.)
 
+Every phase from 2 on starts, after `base.sh` and before its first red commit, with a **scaffold commit** (operator
+decision, plan squad round 2): it adds each new module the phase's tests import (under `gates/bin`, `gates/lib`,
+`gates/eslint` or `gates/stylelint`, none of which `test_pathspec` matches) with its exported signatures and no
+behaviour: `run()` returns 0 and prints nothing, every other exported function returns an empty or zero value, the
+ESLint rule and the Stylelint plugin report nothing. The scaffold wires nothing: no `package.json` script, story
+configuration value, ESLint, Stylelint, Vitest or Stryker configuration points at a scaffolded module (so `pnpm test`
+and the setup command stay as they were at the phase base until a green commit rewires them). The red tests then
+load and fail on their assertions, the missing behaviour that constitution VIII requires. A later unit of the same
+phase that needs another new module adds its own scaffold commit, under the same rule, before its red commit. The
+mechanics hold: `red.sh` judges a red commit tests-only against its own parent (the scaffold), and `tdd-check.sh`
+runs the final tests against `base.sha` (before the scaffold), where they still fail. The phase review accepts a
+scaffold commit only when it carries no behaviour (the rule above) and records that under constitution VIII's
+exemption ("scaffolding": no test could fail for it); a scaffold with behaviour is a blocking finding.
+
 1. **Bootstrap (exempt)**: `tdd-exempt.md` and no red commit. Install (`package.json`, `pnpm-workspace.yaml`,
    lockfile, `.node-version`, `.gitignore`), the three package skeletons, `tsconfig.base.json`/`tsconfig.json`,
    `vitest.config.ts` with its four projects, `pnpm test` wired plainly to `vitest run`, `setup:online` and
    `setup:offline` wired plainly to the pnpm and Playwright commands, and `test_command` and `setup_command` set in
    both story configuration copies (contracts/story-config.md). No behaviour of its own.
-2. **US1, workspace and test command (P1)**, red first; the demo phase of SC-003: the test command's exit codes
-   (zero tests, failing test, missing browser, empty package) in `gates/bin/test.ts`, offline setup's failure cases
-   in `gates/bin/setup-offline.ts` (R-04 test seam), the Chromium-only sample test (R-03), the configuration-copies
-   check. Its base has the runner and both commands, so its red commits fail for the missing behaviour.
+2. **US1, workspace and test command (P1)**, red first; the demo phase of SC-003: the behaviour of
+   `gates/bin/test.ts` (missing browser, failed tests as findings, no test file found, through its `--root` seam on
+   fixture workspaces; R-03 lists which US1 scenarios are its behaviour and which hold through Vitest at the phase 1
+   base), offline setup's failure cases in `gates/bin/setup-offline.ts` (R-04 test seam), the Chromium-only sample
+   test (R-03), the configuration-copies check. Its base has the runner and both commands, and its scaffold commit
+   gives the red tests modules to load, so its red commits fail for the missing behaviour.
 3. **US2, test quality (P2)**: test lint (including `ocelle/no-snapshot-only`), mutation wrapper (base argument,
    changed ranges over package and gate source, survivors including no-coverage, equivalent records and rejected
-   disable forms), `mutation_command` in both copies, story review command change and reinstall.
+   disable forms, the shard split and `--files`, R-08), `mutation_command` in both copies, story review command change and reinstall.
 4. **US3, merge gates (P3)**: code lint, typecheck, style lint plugin, CSP, prefix, sign-off, pins checks; the gate
-   registry and its check against `ci.yml` and FR-020; the plant job and every plant; `ci.yml`; `gates/README.md`
-   with deferred gates.
-5. **US4, governance (P4)**: LICENSE, CONTRIBUTING, SECURITY, THIRD_PARTY_NOTICES, CODEOWNERS, the SC-006 test, and
-   the CODEOWNERS verification of R-17.
+   registry and its check against `ci.yml` and FR-020; the plant job and every plant (repo-tree plants for style
+   lint, prefix and CSP, R-10); `ci.yml` (with the sharded mutation jobs); `gates/README.md` with deferred gates and
+   the list of the twelve checks required on `main`.
+5. **US4, governance (P4)**: LICENSE, CONTRIBUTING, SECURITY, THIRD_PARTY_NOTICES, CODEOWNERS, the SC-006 test. No
+   GitHub-side check is part of this phase or its review (agents cannot push, open pull requests or call `gh api`);
+   those are the operator's verification below.
+
+## Verification (operator, after the phases)
+
+After phase 5 is reviewed, the operator pushes the branch and opens the pull request (agents never push), then
+makes every GitHub-side check and records each result, with its evidence (command output, run links, durations), in
+`specs/001-repository-foundation/verification.md`:
+
+1. CODEOWNERS: GitHub reports no CODEOWNERS errors for the pull request branch
+   (`gh api repos/Ocelle-HQ/ocelle-components/codeowners/errors?ref=<branch>` returns an empty `errors` list) and
+   `@MOES-Media` is a user or `@org/team` with write access to the repository; if not, the operator names a
+   replacement owner and amends FR-032/FR-035 (R-17).
+2. Checks: the pull request shows the twelve named checks of contracts/ci-checks.md, all green (US3 scenario 1).
+3. Required checks: a ruleset (or branch protection) on `main` requires the twelve check names of
+   contracts/ci-checks.md, matching the list in `gates/README.md`, so a pull request that removes a gate from
+   `ci.yml`, `gates.json` and `registry.ts` together cannot merge with that check missing (operator decision, plan
+   squad round 2).
+4. Timings: SC-001 (cold install plus tests) and SC-005 (one full shard, quickstart step 11).
 
 ## Complexity Tracking
 
