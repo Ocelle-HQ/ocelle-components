@@ -166,6 +166,15 @@ evidence of the behaviour it names.
   feature per `specs/NNN-name/` directory and branch. Feature directories are kept after
   merge: they are the project record, and kitty-mission-ui reads them as its first real
   Spec Kit project.
+- After `/speckit-specify`, a spec check reads the spec on its own (ambiguity, testability,
+  acceptance scenarios, constitution conflicts); blocking findings are fixed before planning, and
+  questions only the operator can answer go to the operator. The full `/speckit-analyze` runs
+  after `/speckit-tasks`.
+- After `/speckit-plan`, an adversarial review squad attacks the spec and plan before any task is
+  generated: four lenses (correctness, accessibility and security, testability, fresh eyes) in
+  separate sessions, a refuter that keeps only findings that survive, operator decisions on forks,
+  fixes, and an independent verify. Fresh-eyes rounds repeat on the fixed artifacts until one
+  confirms nothing (three rounds at most). The squad runs after planning only.
 - `tasks.md` is implemented one phase (user story) at a time. Each phase is written test
   first (Principle VIII), checked by the automatic red/green check, and then reviewed by an
   independent reviewer session; blocking findings are fixed in review rounds until the
@@ -193,4 +202,4 @@ redefining a principle, MINOR for adding a principle or materially expanding gui
 PATCH for clarifications. The decision records behind this document are ADR-0079 (Ocelle
 component library) and ADR-0071 (open-source strategy) in the Ocelle-HQ docs repository.
 
-**Version**: 1.1.0 | **Ratified**: 2026-11-02 | **Last Amended**: 2026-11-02
+**Version**: 1.2.0 | **Ratified**: 2026-11-02 | **Last Amended**: 2026-11-02

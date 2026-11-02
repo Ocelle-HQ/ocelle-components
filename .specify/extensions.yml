@@ -1,4 +1,5 @@
 installed:
+- squad
 - story
 settings:
   auto_execute_hooks: true

@@ -19,7 +19,9 @@ specify workflow remove ocelle-story && specify workflow add --dev tooling/speck
 
 | Workflow | Does |
 |---|---|
-| `ocelle-sdd` | specify → gate → plan → gate → tasks → analyze → gate → `ocelle-implement` |
+| `ocelle-sdd` | specify → `ocelle-spec-check` → plan → `ocelle-plan-squad` → gate → tasks → analyze → gate → `ocelle-implement` |
+| `ocelle-spec-check` | spec-only check after specify; fixes blocking findings (up to three checks); operator gate |
+| `ocelle-plan-squad` | adversarial squad on spec and plan: lenses → refute → forks → fix → verify; fresh-eyes rounds until clean (three rounds at most) |
 | `ocelle-implement` | for every phase that still needs work, in order: `ocelle-story`; then a final gate |
 | `ocelle-story` | one phase: red → green, then batches of up to three rounds of check → review → fix; after a batch without approval the operator picks more rounds, accept or stop |
 
@@ -58,6 +60,30 @@ run by hand in Claude Code: `/speckit-story-implement 3`, `/speckit-story-review
 4. After a batch without approval the gate offers **more-rounds** (another batch of three),
    **accept** (records `operator-accepted.md`, continues) or **reject** (stops). After five batches
    (15 rounds) only accept or reject remain.
+
+## Spec check (after specify)
+
+`/speckit-analyze` needs `tasks.md`, so the spec gets its own check (`squad` extension):
+`/speckit-squad-spec-check` writes `reviews/spec/check-K.md` (blocking / operator / note findings, a
+`clean` or `issues` verdict); `/speckit-squad-spec-fix` fixes the blocking ones. The loop stops when no
+blocking finding is left (three checks at most); operator questions go to the gate, where the operator
+answers them in `spec.md` or with `/speckit-clarify`.
+
+## Adversarial plan squad (after plan)
+
+Per round, under `reviews/plan/round-R/`:
+
+1. **Lenses** (`/speckit-squad-lens`, four fresh sessions in parallel, no commits):
+   `correctness`, `a11y-security`, `testability`, `fresh`. Each writes `lens-<name>.yaml` with
+   evidence-backed findings and one remedy (a fix) or several (a fork).
+2. **Refute** (`/speckit-squad-refute`): tries to knock every finding down against the artifacts and the
+   repository; writes `refute.md` with confirmed / refuted / duplicate and fix / fork; commits the round.
+3. **Forks**: the operator writes the chosen letter in the Decision column; the gate asks again until
+   every fork is decided.
+4. **Fix → verify** (`/speckit-squad-fix`, then `/speckit-squad-verify` in a fresh session), up to three
+   passes per batch; after a batch with unresolved findings: more-rounds, accept (recorded) or reject.
+5. Round 1 runs every lens; rounds 2 and 3 run only `fresh`, attacking the fixes. A round that confirms
+   nothing ends the squad.
 
 ## Guards against vacuous tests
 

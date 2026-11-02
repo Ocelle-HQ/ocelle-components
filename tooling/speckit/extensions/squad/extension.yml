@@ -1,0 +1,59 @@
+schema_version: "1.0"
+
+extension:
+  id: squad
+  name: "Spec Check and Adversarial Plan Squad"
+  version: "1.0.0"
+  description: "A spec-only check after specify, and an adversarial review squad on spec and plan after the plan phase: lenses, refute, operator forks, fix and verify"
+  author: Ocelle-HQ
+  repository: https://github.com/Ocelle-HQ/ocelle-components
+  license: Apache-2.0
+
+requires:
+  speckit_version: ">=1.2.5"
+  tools:
+    - name: git
+      required: true
+
+provides:
+  commands:
+    - name: speckit.squad.spec-check
+      file: commands/speckit.squad.spec-check.md
+      description: "Check spec.md on its own: ambiguity, testability, acceptance scenarios, constitution conflicts; write a report, change nothing"
+    - name: speckit.squad.spec-fix
+      file: commands/speckit.squad.spec-fix.md
+      description: "Resolve the blocking findings of the latest spec check in spec.md"
+    - name: speckit.squad.lens
+      file: commands/speckit.squad.lens.md
+      description: "One adversarial lens on spec and plan: write findings with evidence for the current squad round, change nothing"
+    - name: speckit.squad.refute
+      file: commands/speckit.squad.refute.md
+      description: "Try to refute every lens finding of the current round; confirm, refute or mark duplicate; split fixes from forks"
+    - name: speckit.squad.fix
+      file: commands/speckit.squad.fix.md
+      description: "Apply the confirmed fixes and the operator's fork decisions to spec, plan and design artifacts"
+    - name: speckit.squad.verify
+      file: commands/speckit.squad.verify.md
+      description: "Check, finding by finding, that the squad round's fixes resolved what was confirmed"
+  scripts:
+    - name: squad-spec-status
+      file: scripts/spec-status.sh
+      description: "Report the latest spec check verdict as JSON"
+      runtimes: [bash]
+    - name: squad-round
+      file: scripts/round.sh
+      description: "Open the next squad round and list its lenses as JSON"
+      runtimes: [bash]
+    - name: squad-status
+      file: scripts/status.sh
+      description: "Report the current squad round: confirmed findings, forks, undecided forks, unresolved findings"
+      runtimes: [bash]
+    - name: squad-accept
+      file: scripts/accept.sh
+      description: "Record that the operator accepted the plan with unresolved squad findings"
+      runtimes: [bash]
+
+tags:
+  - "review"
+  - "adversarial"
+  - "workflow"

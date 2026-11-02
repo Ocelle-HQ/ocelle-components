@@ -1,0 +1,138 @@
+schema_version: "1.0"
+workflow:
+  id: "ocelle-plan-squad"
+  name: "Adversarial Plan Squad"
+  version: "1.0.0"
+  author: "Ocelle-HQ"
+  description: "Adversarial review of spec and plan after the plan phase: four lenses in parallel, refute, operator forks, fix and verify; then fresh-eyes rounds on the fixes until one confirms nothing (at most three rounds)"
+
+requires:
+  speckit_version: ">=1.2.5"
+  integrations:
+    any: ["claude"]
+
+inputs:
+  integration:
+    type: string
+    default: "auto"
+
+steps:
+  # Round 1 runs every lens; rounds 2 and 3 run fresh eyes on the fixed artifacts. A round that
+  # confirms nothing ends the squad.
+  - id: squad-rounds
+    type: do-while
+    condition: "{{ steps.round-status.output.data.confirmed > 0 and steps.fix-decision.output.choice != 'accept' }}"
+    max_iterations: 3
+    steps:
+      - id: round
+        type: shell
+        run: ".specify/extensions/squad/scripts/round.sh"
+        output_format: json
+
+      # Each lens is a separate, fresh agent session; they run in parallel and do not commit.
+      - id: lenses
+        type: fan-out
+        items: "{{ steps.round.output.data.lenses }}"
+        max_concurrency: 4
+        step:
+          id: lens
+          command: speckit.squad.lens
+          integration: "{{ inputs.integration }}"
+          input:
+            args: "lens={{ item }}"
+
+      - id: refute
+        command: speckit.squad.refute
+        integration: "{{ inputs.integration }}"
+
+      - id: round-status
+        type: shell
+        run: ".specify/extensions/squad/scripts/status.sh"
+        output_format: json
+
+      # Forks wait for the operator: a letter in the Decision column of refute.md for each.
+      - id: forks
+        type: do-while
+        condition: "{{ steps.fork-recheck.output.data.undecided > 0 }}"
+        max_iterations: 5
+        steps:
+          - id: fork-status
+            type: shell
+            run: ".specify/extensions/squad/scripts/status.sh"
+            output_format: json
+
+          - id: ask
+            type: if
+            condition: "{{ steps.fork-status.output.data.undecided > 0 }}"
+            then:
+              - id: decide-forks
+                type: gate
+                message: "Squad round {{ steps.fork-status.output.data.round }} has {{ steps.fork-status.output.data.undecided }} undecided forks. Write the chosen option letter in the Decision column of {{ steps.fork-status.output.data.dir }}/refute.md for each fork, then choose decided; reject stops the run."
+                options: [decided, reject]
+                on_reject: abort
+
+          - id: fork-recheck
+            type: shell
+            run: ".specify/extensions/squad/scripts/status.sh"
+            output_format: json
+
+      - id: fixing
+        type: if
+        condition: "{{ steps.round-status.output.data.confirmed > 0 }}"
+        then:
+          - id: batches
+            type: do-while
+            condition: "{{ steps.batch-status.output.data.unresolved > 0 and steps.fix-decision.output.choice == 'more-rounds' }}"
+            max_iterations: 5
+            steps:
+              - id: passes
+                type: do-while
+                condition: "{{ steps.verify-status.output.data.unresolved > 0 }}"
+                max_iterations: 3
+                steps:
+                  - id: fix
+                    command: speckit.squad.fix
+                    integration: "{{ inputs.integration }}"
+
+                  # A fresh session that did not make the fixes judges them.
+                  - id: verify
+                    command: speckit.squad.verify
+                    integration: "{{ inputs.integration }}"
+
+                  - id: verify-status
+                    type: shell
+                    run: ".specify/extensions/squad/scripts/status.sh"
+                    output_format: json
+
+              - id: batch-status
+                type: shell
+                run: ".specify/extensions/squad/scripts/status.sh"
+                output_format: json
+
+              - id: escalate
+                type: if
+                condition: "{{ steps.batch-status.output.data.unresolved > 0 }}"
+                then:
+                  - id: fix-decision
+                    type: gate
+                    message: "Squad round {{ steps.batch-status.output.data.round }} still has {{ steps.batch-status.output.data.unresolved }} unresolved findings after verify {{ steps.batch-status.output.data.verify }} ({{ steps.batch-status.output.data.dir }}). more-rounds: three more fix and verify passes. accept: accept the plan as it is (recorded). reject: stop the run."
+                    options: [more-rounds, accept, reject]
+                    on_reject: abort
+
+                  - id: accepted
+                    type: if
+                    condition: "{{ steps.fix-decision.output.choice == 'accept' }}"
+                    then:
+                      - id: record-acceptance
+                        type: shell
+                        run: ".specify/extensions/squad/scripts/accept.sh"
+                        output_format: json
+
+  - id: final-status
+    type: shell
+    run: ".specify/extensions/squad/scripts/status.sh"
+    output_format: json
+
+outputs:
+  rounds:
+    value: "{{ steps.final-status.output.data.round }}"

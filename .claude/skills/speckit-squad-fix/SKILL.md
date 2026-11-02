@@ -1,0 +1,1 @@
+../../../.specify/extensions/squad/.specify-dev/agent-commands/claude/speckit-squad-fix/SKILL.md

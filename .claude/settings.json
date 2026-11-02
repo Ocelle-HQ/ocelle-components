@@ -27,6 +27,8 @@
       "Bash(.specify/extensions/story/scripts/verdict.sh:*)",
       "Bash(.specify/extensions/story/scripts/units.sh:*)",
       "Bash(.specify/extensions/story/scripts/summary.sh:*)",
+      "Bash(.specify/extensions/squad/scripts/spec-status.sh:*)",
+      "Bash(.specify/extensions/squad/scripts/status.sh:*)",
       "Bash(pnpm install:*)",
       "Bash(pnpm test:*)",
       "Bash(pnpm run:*)",

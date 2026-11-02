@@ -9,14 +9,6 @@
       "installed_at": "2026-11-02T13:20:13.199707+00:00",
       "updated_at": "2026-11-02T13:20:13.199720+00:00"
     },
-    "ocelle-sdd": {
-      "name": "Ocelle SDD Cycle with Story Reviews",
-      "version": "1.0.0",
-      "description": "specify \u2192 plan \u2192 tasks \u2192 analyze with operator gates, then implements by user story with review and fix rounds after each",
-      "source": "tooling/speckit/workflows/ocelle-sdd",
-      "installed_at": "2026-11-02T13:29:09.288806+00:00",
-      "updated_at": "2026-11-02T13:29:09.288824+00:00"
-    },
     "ocelle-story": {
       "name": "One Phase: Implement, Review, Fix",
       "version": "1.1.0",
@@ -32,6 +24,30 @@
       "source": "tooling/speckit/workflows/ocelle-implement",
       "installed_at": "2026-11-02T13:52:06.397377+00:00",
       "updated_at": "2026-11-02T13:52:06.397397+00:00"
+    },
+    "ocelle-spec-check": {
+      "name": "Spec Check",
+      "version": "1.0.0",
+      "description": "Checks spec.md on its own after specify, fixes blocking findings for up to three checks, then asks the operator to approve the spec",
+      "source": "tooling/speckit/workflows/ocelle-spec-check",
+      "installed_at": "2026-11-02T14:20:59.621007+00:00",
+      "updated_at": "2026-11-02T14:20:59.621048+00:00"
+    },
+    "ocelle-plan-squad": {
+      "name": "Adversarial Plan Squad",
+      "version": "1.0.0",
+      "description": "Adversarial review of spec and plan after the plan phase: four lenses in parallel, refute, operator forks, fix and verify; then fresh-eyes rounds on the fixes until one confirms nothing (at most three rounds)",
+      "source": "tooling/speckit/workflows/ocelle-plan-squad",
+      "installed_at": "2026-11-02T14:21:00.327495+00:00",
+      "updated_at": "2026-11-02T14:21:00.327516+00:00"
+    },
+    "ocelle-sdd": {
+      "name": "Ocelle SDD Cycle with Spec Check, Plan Squad and Story Reviews",
+      "version": "1.1.0",
+      "description": "specify \u2192 spec check \u2192 plan \u2192 adversarial plan squad \u2192 tasks \u2192 analyze, with operator gates, then implementation by user story with review and fix rounds",
+      "source": "tooling/speckit/workflows/ocelle-sdd",
+      "installed_at": "2026-11-02T14:21:01.030377+00:00",
+      "updated_at": "2026-11-02T14:21:01.030396+00:00"
     }
   }
 }

@@ -1,0 +1,56 @@
+schema_version: "1.0"
+workflow:
+  id: "ocelle-spec-check"
+  name: "Spec Check"
+  version: "1.0.0"
+  author: "Ocelle-HQ"
+  description: "Checks spec.md on its own after specify, fixes blocking findings for up to three checks, then asks the operator to approve the spec"
+
+requires:
+  speckit_version: ">=1.2.5"
+  integrations:
+    any: ["claude"]
+
+inputs:
+  integration:
+    type: string
+    default: "auto"
+
+steps:
+  # check → fix → check, while blocking findings remain (operator questions do not loop: only the operator answers them).
+  - id: checks
+    type: do-while
+    condition: "{{ steps.spec-status.output.data.blocking > 0 }}"
+    max_iterations: 3
+    steps:
+      - id: check
+        command: speckit.squad.spec-check
+        integration: "{{ inputs.integration }}"
+
+      - id: spec-status
+        type: shell
+        run: ".specify/extensions/squad/scripts/spec-status.sh"
+        output_format: json
+
+      - id: needs-fix
+        type: if
+        condition: "{{ steps.spec-status.output.data.blocking > 0 }}"
+        then:
+          - id: fix
+            command: speckit.squad.spec-fix
+            integration: "{{ inputs.integration }}"
+
+  - id: final-status
+    type: shell
+    run: ".specify/extensions/squad/scripts/spec-status.sh"
+    output_format: json
+
+  - id: review-spec
+    type: gate
+    message: "Spec check {{ steps.final-status.output.data.check }}: {{ steps.final-status.output.data.verdict }}, {{ steps.final-status.output.data.blocking }} blocking, {{ steps.final-status.output.data.operator_questions }} operator questions ({{ steps.final-status.output.data.file }}). Answer operator questions in spec.md (or run /speckit-clarify), then approve to plan; reject to stop."
+    options: [approve, reject]
+    on_reject: abort
+
+outputs:
+  verdict:
+    value: "{{ steps.final-status.output.data.verdict }}"

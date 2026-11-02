@@ -1,10 +1,10 @@
 schema_version: "1.0"
 workflow:
   id: "ocelle-sdd"
-  name: "Ocelle SDD Cycle with Story Reviews"
-  version: "1.0.0"
+  name: "Ocelle SDD Cycle with Spec Check, Plan Squad and Story Reviews"
+  version: "1.1.0"
   author: "Ocelle-HQ"
-  description: "specify → plan → tasks → analyze with operator gates, then implements by user story with review and fix rounds after each"
+  description: "specify → spec check → plan → adversarial plan squad → tasks → analyze, with operator gates, then implementation by user story with review and fix rounds"
 
 requires:
   speckit_version: ">=1.2.5"
@@ -27,11 +27,12 @@ steps:
     input:
       args: "{{ inputs.spec }}"
 
-  - id: review-spec
-    type: gate
-    message: "Review the spec (run /speckit-clarify first if it has open questions) before planning."
-    options: [approve, reject]
-    on_reject: abort
+  # Spec-only analysis (the full /speckit-analyze needs tasks.md), fix loop, then the spec gate.
+  - id: spec-check
+    type: workflow
+    workflow: "ocelle-spec-check"
+    input:
+      integration: "{{ inputs.integration }}"
 
   - id: plan
     command: speckit.plan
@@ -39,9 +40,15 @@ steps:
     input:
       args: "{{ inputs.spec }}"
 
+  - id: squad
+    type: workflow
+    workflow: "ocelle-plan-squad"
+    input:
+      integration: "{{ inputs.integration }}"
+
   - id: review-plan
     type: gate
-    message: "Review the plan and its Constitution Check before generating tasks."
+    message: "The plan went through {{ steps.squad.output.rounds }} squad rounds (reviews/plan/ in the feature directory). Review the plan, its Constitution Check and the squad results before generating tasks."
     options: [approve, reject]
     on_reject: abort
 
