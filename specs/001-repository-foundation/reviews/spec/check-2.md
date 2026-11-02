@@ -1,0 +1,48 @@
+---
+check: 2
+verdict: issues
+---
+
+# Spec check 2
+
+Inputs: `spec.md` (after the check 1 fixes, commit `04c8c96`), `checklists/requirements.md`, constitution v1.3.1,
+`reviews/spec/check-1.md`, `reviews/spec/check-1-fixes.md`, triage record `triage/001-repository-foundation.md`, and
+the tracked copies of `story-config.yml`.
+
+Earlier checks: all seven blocking findings of check 1 (SPEC-1-01, -02, -03, -05, -06, -10, -11) are resolved as the
+fix note says. FR-028, FR-022, FR-024, FR-027, FR-008, SC-001, SC-005, SC-006 and FR-013 contain the stated changes,
+and the notes SPEC-1-12 to SPEC-1-20 are folded in where the fix note says. One new gap in the SPEC-1-01 fix is
+SPEC-2-01. The four operator findings of check 1 (SPEC-1-04, -07, -08, -09) are still unanswered. The spec has not
+changed on those points, so they are carried forward as SPEC-2-02 to SPEC-2-05.
+
+| ID | Severity | Where | Finding | Fix |
+|----|----------|-------|---------|-----|
+| SPEC-2-01 | blocking | spec.md US1 Independent Test (line 28-31); FR-009; FR-028; FR-004; FR-020 | US1's independent test needs "a sample failing test (in each of the three packages, and one needing a browser)". FR-009 calls such samples "fixtures or plants" but does not say where fixtures live. FR-028 excludes only `gates/plants/` from the normal gates. A failing fixture placed in a package, where US1 puts it, is a test file under FR-028. The unit-test gate (FR-004 command) then fails on every pull request, and the test lint and prefix check read it too. This is the SPEC-1-01 problem again, coming back through the new "fixture" category. | State that failing (and vacuous) samples are plants under `gates/plants/`, or define where fixtures live and exclude that location from the normal gates in FR-028. Reword US1's Independent Test so that "in each of the three packages" means the plant job (or the test command run explicitly against the plant) and not the normal run. |
+| SPEC-2-02 | operator | spec.md FR-024; constitution II (carried from SPEC-1-04) | The literal values the style lint allows are still undefined. "Size" is not defined either (px, rem, em, %, vh, unitless). A strict lint blocks every later element, and a loose one lets literals through. | Operator answers question 1; record the allow-list in FR-024. |
+| SPEC-2-03 | operator | spec.md FR-005; SC-001 (carried from SPEC-1-07) | "A real browser engine" still names no engine. The choice drives the online install (FR-008), the browser cache and the SC-001 time. | Operator answers question 2; record the engines in FR-005. |
+| SPEC-2-04 | operator | spec.md FR-032 vs FR-034; US4 scenario 3; Assumptions line 314-316 (carried from SPEC-1-08) | Until 1.0.0, `SECURITY.md` must name a private contact with the maintainers, but FR-032 does not say which one. A personal address or handle would be personal data, which FR-034 forbids. FR-032 cannot be tested, and SC-006 ("contains the reporting route of FR-032") has nothing to look for. | Operator answers question 3; FR-032 names the contact and FR-034 allows it. |
+| SPEC-2-05 | operator | spec.md FR-023; US3 scenario 6; Edge Cases line 155 (carried from SPEC-1-09) | The sign-off rule is still undefined: whether the identity must match the author, whether an agent's sign-off is valid, whether merge commits are checked, and whether the unsigned root commit `d08d413` is exempt. Every commit on this branch is authored and signed off by `Claude <noreply@anthropic.com>`. | Operator answers question 4; FR-023 states the rule. |
+| SPEC-2-06 | note | spec.md SC-004 vs FR-010 and US2 scenarios 1-2; FR-025 | SC-004 says "each of the six forbidden test patterns of FR-010", but FR-010 lists seven: no assertion, skipped, focused, conditional, outside a test, not awaited or completed, snapshot-only. FR-025's minimum plant list has no test-lint plants, yet SC-004 measures "100% of planted cases". | Correct the count, or enumerate the patterns in SC-004. Add one test-lint plant per pattern to FR-025's list. |
+| SPEC-2-07 | note | spec.md FR-006, US1 scenario 7, Edge Cases line 159, Key Entities; repository | The spec speaks of "both copies" of the story configuration but never names their paths. Three tracked, identical copies exist: `.specify/extensions/story/story-config.yml`, `tooling/speckit/extensions/story/story-config.yml` and `.specify/extensions/.backup/story/story-config.yml`. The configuration-copies check must know which files to compare, and the backup copy will silently diverge. | Name the two paths in FR-006 (and FR-028's row for the check), and say whether the `.backup` copy is in or out of the check. |
+| SPEC-2-08 | note | spec.md FR-028 ("test file") vs FR-006 and current `test_pathspec` | FR-028 defines a test file as `*.test.ts` or `*.spec.ts`. The story configuration's `test_pathspec` also counts `**/test/**` and `**/*.stories.ts` as test files, and FR-006 makes that configuration set "the test file patterns of this repository". So a helper under `packages/*/test/` is a test file for the red commit but package source for the gates: it is mutated, it is not test-linted, and the unit-test gate does not run it. | Align the two: either FR-028 adopts the pathspec, or FR-006 sets the pathspec to FR-028's definition. |
+| SPEC-2-09 | note | spec.md FR-020, FR-025, US3 scenario 9; constitution "Development Workflow and Quality Gates" ("the gate plants") | The constitution lists the gate plants as a merge gate, and US3 scenario 9 needs the plant job to run "in the same run" as the gates. Neither FR-020 nor FR-025 says that the plant job runs on every pull request as a named, required check. | Add the plant job to FR-020 (or FR-025) as a named check that runs on every pull request. |
+| SPEC-2-10 | note | spec.md FR-025, FR-023, FR-021, FR-011 | Every gate needs a plant "under `gates/plants/`", but three gates do not read ordinary files: the sign-off check reads commits, the content-security check reads built output, and mutation testing reads a diff against a base branch. The spec leaves open how such a plant is shaped and fed to its gate. That is acceptable for the plan, but the spec should not imply that a file is enough. | Optional: state that the plan defines, for each gate, how its plant is presented to it (for example a commit range or bundle for sign-off, a prebuilt output for the content-security check, a source-and-base pair for mutation). |
+| SPEC-2-11 | note | spec.md FR-011, FR-007 | Mutation testing compares against "the pull request's base branch". FR-007 also sets `mutation_command` for the reviewer, who runs it on a phase outside any pull request. The baseline for that run is not defined (phase base commit? `main`?). | State what the mutation command compares against when no pull request exists, for example the phase's base commit passed in by the story workflow. |
+| SPEC-2-12 | note | spec.md FR-013, SC-005 | SC-005 bounds a pull request at 10 files and 500 lines. A larger pull request can hit the 10-minute limit, and FR-013 then fails it, with no way to merge short of splitting it. That may be intended, but the spec does not say so. | State that pull requests over the SC-005 bound are expected to be split, or what else happens. |
+| SPEC-2-13 | note | spec.md FR-001, FR-028 ("every TypeScript file in the workspace") | FR-001 makes the workspace "exactly three packages". So it is unclear whether typecheck and code lint cover TypeScript outside them: root configuration and the gate scripts themselves (for example under `gates/`). It is also unclear whether FR-001 allows a private root or tooling package. | Say whether "workspace" means the three packages or the whole repository minus FR-028's exclusions. Say whether a private tooling package is allowed. |
+| SPEC-2-14 | note | spec.md FR-022, FR-028 (prefix check over test files) | "A font declaration" is not defined (`font-family`, the `font` shorthand, `@font-face`, `font` strings in TypeScript). Because test files are in scope, a later test that asserts the absence of an `sk-` name by writing it as a literal will fail the prefix check. | Define "font declaration". Accept the test-file consequence knowingly, or name how a test refers to a forbidden name. |
+| SPEC-2-15 | note | spec.md SC-001 | SC-005 is enforced by FR-013's job limit, but nothing measures or enforces SC-001's 5-minute bound. It can be shown false only if a run is timed. | Optional: state how SC-001 is measured (for example a cold-cache CI job with a time limit). |
+
+## Operator questions
+
+1. **FR-024, raw values:** Which literal values may element styles contain without a token: `0`, percentages (such as
+   `100%`), keywords (`auto`, `inherit`, `none`, `currentColor`), unitless numbers (`line-height`, `flex`, `z-index`),
+   `fr` units, and `calc()` over tokens? Everything else is rejected by the style lint.
+2. **FR-005, browser engines:** Which browser engines must element tests run in: Chromium only, or also WebKit (the
+   Tauri webview on macOS and Linux) and Firefox?
+3. **FR-032 / FR-034, pre-1.0 security contact:** What private contact does `SECURITY.md` name until GitHub private
+   vulnerability reporting is switched on (for example a role mailbox, or a maintainer's GitHub handle)? Is that
+   contact allowed in the repository despite FR-034's "no personal data"?
+4. **FR-023, sign-off:** Must the `Signed-off-by` identity match the commit author? Is a sign-off by an agent identity
+   (`Claude <noreply@anthropic.com>`, as on this branch) acceptable, or must a human sign off agent commits? Are merge
+   commits checked? Is the unsigned root commit `d08d413` exempt?
