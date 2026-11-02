@@ -11,23 +11,23 @@ export interface ToolRun {
   readonly stderr: string;
 }
 
-// Stryker disable next-line all: process boundary, covered by gates-integration
+// Stryker disable next-line all: process boundary, covered by gates-integration: gates/test/integration/setup-offline.test.ts "exits 2 naming the missing package and pnpm run setup:online on an empty store, without the network"
 export function runTool(command: string, args: readonly string[], cwd: string, env: Io["env"]): Promise<ToolRun> {
-  // Stryker disable next-line all: process boundary, covered by gates-integration
+  // Stryker disable next-line all: process boundary, covered by gates-integration: gates/test/integration/setup-offline.test.ts "exits 2 naming the missing package and pnpm run setup:online on an empty store, without the network"
   return new Promise((resolve, reject) => {
-    // Stryker disable next-line all: process boundary, covered by gates-integration
+    // Stryker disable next-line all: process boundary, covered by gates-integration: gates/test/integration/setup-offline.test.ts "exits 2 naming the missing package and pnpm run setup:online on an empty store, without the network"
     const child = spawn(command, args, { cwd, env });
-    // Stryker disable next-line all: process boundary, covered by gates-integration
+    // Stryker disable next-line all: process boundary, covered by gates-integration: gates/test/integration/setup-offline.test.ts "exits 2 naming the missing package and pnpm run setup:online on an empty store, without the network"
     let stdout = "";
-    // Stryker disable next-line all: process boundary, covered by gates-integration
+    // Stryker disable next-line all: process boundary, covered by gates-integration: gates/test/integration/setup-offline.test.ts "exits 2 naming the missing package and pnpm run setup:online on an empty store, without the network"
     let stderr = "";
-    // Stryker disable next-line all: process boundary, covered by gates-integration
+    // Stryker disable next-line all: process boundary, covered by gates-integration: gates/test/integration/setup-offline.test.ts "exits 2 naming the missing package and pnpm run setup:online on an empty store, without the network"
     child.stdout.on("data", (chunk: Buffer) => (stdout += chunk.toString()));
-    // Stryker disable next-line all: process boundary, covered by gates-integration
+    // Stryker disable next-line all: process boundary, covered by gates-integration: gates/test/integration/setup-offline.test.ts "exits 2 naming the missing package and pnpm run setup:online on an empty store, without the network"
     child.stderr.on("data", (chunk: Buffer) => (stderr += chunk.toString()));
-    // Stryker disable next-line all: process boundary, covered by gates-integration
+    // Stryker disable next-line all: process boundary, covered by gates-integration: gates/test/integration/setup-offline.test.ts "exits 2 naming the missing package and pnpm run setup:online on an empty store, without the network"
     child.on("error", reject);
-    // Stryker disable next-line all: process boundary, covered by gates-integration
+    // Stryker disable next-line all: process boundary, covered by gates-integration: gates/test/integration/setup-offline.test.ts "exits 2 naming the missing package and pnpm run setup:online on an empty store, without the network"
     child.on("close", (exitCode) => {
       resolve({ exitCode, stdout, stderr });
     });

@@ -167,3 +167,35 @@ describe("ocelle plugin, unchecked assertions", () => {
     ]);
   });
 });
+
+// Added in the green step to kill surviving mutants (phase 3 round 3 mutation run): only `void` is the floating
+// operator, one asserting callback among several is enough, and a function declaration in a catch is a nested
+// function, so its assertion does not count for the catch.
+new RuleTester().run("ocelle/no-floating-promise-expect (operators and arguments)", noFloatingPromiseExpect, {
+  valid: [],
+  invalid: [
+    {
+      name: "other unary operators are not void; a chain call with an asserting and a plain callback is reported",
+      code: [
+        "!p.then((v) => expect(v).toBe(1));",
+        "typeof p.then((v) => expect(v).toBe(1));",
+        "void p.then((v) => expect(v).toBe(1), (e) => log(e));",
+      ].join("\n"),
+      errors: [floating(3)],
+    },
+  ],
+});
+
+new RuleTester().run("ocelle/no-swallowed-expect (function declarations)", noSwallowedExpect, {
+  valid: [],
+  invalid: [
+    {
+      name: "an assertion in a function declared in the catch does not stop the catch from swallowing",
+      code: [
+        "try { expect(1).toBe(2); } catch (e) { function f() { expect(e).toBe(1); } }",
+        "try { expect(1).toBe(2); } catch (e) { expect(e).toBe(1); }",
+      ].join("\n"),
+      errors: [swallowed(1)],
+    },
+  ],
+});

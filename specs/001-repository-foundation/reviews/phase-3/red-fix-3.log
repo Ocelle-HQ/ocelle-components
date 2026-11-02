@@ -1,0 +1,48 @@
+Scope: all 4 workspace projects
+✓ Lockfile passes supply-chain policies (verified 2h ago)
+Lockfile is up to date, resolution step is skipped
+Packages are hard linked from the content-addressable store to the virtual store.
+  Content-addressable store is at: /root/.local/share/pnpm/store/v11
+  Virtual store is at:             node_modules/.pnpm
+Packages: +405
+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+Progress: resolved 405, reused 405, downloaded 0, added 405, done
+
+devDependencies:
++ @eslint/js 10.0.1
++ @stryker-mutator/core 10.1.1
++ @stryker-mutator/typescript-checker 10.1.1
++ @stryker-mutator/vitest-runner 10.1.1
++ @types/node 26.6.5
++ @vitest/browser-playwright 5.0.5
++ @vitest/eslint-plugin 1.6.28
++ eslint 10.13.0
++ jiti 2.7.0
++ parse5 8.0.1
++ playwright 1.64.1
++ postcss 8.5.31
++ postcss-lit 1.4.1
++ postcss-value-parser 4.2.0
++ stylelint 17.16.0
++ typescript 6.0.3
++ typescript-eslint 8.72.0
++ vite 8.3.5
++ vitest 5.0.5
+
+Done in 2.4s using pnpm v12.16.1
+$ node gates/bin/setup-offline.ts
+setup: installed offline; Chromium at /opt/pw-browsers/chromium_headless_shell-1243/chrome-headless-shell-linux64/chrome-headless-shell
+$ node gates/bin/test.ts
+gates/test/integration/test-lint.test.ts:136: unit-tests: test lint, unchecked assertions (gates/bin/test-lint.ts) exits 1 with exactly the one finding of no-floating-promise-expect: AssertionError: expected { code: +0, …(2) } to deeply equal { code: 1, stdout: [ …(2) ], …(1) }
+gates/test/integration/test-lint.test.ts:136: unit-tests: test lint, unchecked assertions (gates/bin/test-lint.ts) exits 1 with exactly the one finding of no-timer-expect: AssertionError: expected { code: +0, …(2) } to deeply equal { code: 1, stdout: [ …(2) ], …(1) }
+gates/test/integration/test-lint.test.ts:136: unit-tests: test lint, unchecked assertions (gates/bin/test-lint.ts) exits 1 with exactly the one finding of no-swallowed-expect: AssertionError: expected { code: +0, …(2) } to deeply equal { code: 1, stdout: [ …(2) ], …(1) }
+gates/test/unchecked-expect.test.ts: unit-tests: ocelle/no-floating-promise-expect invalid void on a chain with an assertion in a callback; awaited, returned, arrow-bodied and bare chains are not: AssertionError [ERR_ASSERTION]: Should have 1 error but had 0: []
+gates/test/unchecked-expect.test.ts: unit-tests: ocelle/no-floating-promise-expect invalid the whole chain is searched: then, catch and finally, inner calls, function expressions, nested callbacks: AssertionError [ERR_ASSERTION]: Should have 5 errors but had 0: []
+gates/test/unchecked-expect.test.ts: unit-tests: ocelle/no-floating-promise-expect invalid not a promise chain, not a callback, or not an assertion: AssertionError [ERR_ASSERTION]: Should have 1 error but had 0: []
+gates/test/unchecked-expect.test.ts: unit-tests: ocelle/no-timer-expect invalid setTimeout, setInterval and a member timer with an asserting callback; a callback without one is not: AssertionError [ERR_ASSERTION]: Should have 4 errors but had 0: []
+gates/test/unchecked-expect.test.ts: unit-tests: ocelle/no-timer-expect invalid other schedulers, other functions, a non-function or later argument, and no argument are not reported: AssertionError [ERR_ASSERTION]: Should have 1 error but had 0: []
+gates/test/unchecked-expect.test.ts: unit-tests: ocelle/no-swallowed-expect invalid catch clauses that swallow; a rethrowing or asserting catch and try ... finally do not: AssertionError [ERR_ASSERTION]: Should have 4 errors but had 0: []
+gates/test/unchecked-expect.test.ts: unit-tests: ocelle/no-swallowed-expect invalid a throw only counts at the catch's top level; an assertion counts anywhere but in a nested function: AssertionError [ERR_ASSERTION]: Should have 5 errors but had 0: []
+gates/test/unchecked-expect.test.ts:134: unit-tests: ocelle plugin, unchecked assertions reports each pattern under its rule id with the message of research.md R-06: AssertionError: expected [] to deeply equal [ { …(3) }, { …(3) }, { …(3) } ]
+unit-tests: 11 of 191 tests failed
+[ELIFECYCLE] Test failed. See above for more details.
