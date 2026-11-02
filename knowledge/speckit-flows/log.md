@@ -1,0 +1,11 @@
+# Spec Kit Flows Diary
+
+## 2026-11-02
+* **Update**: [story extension](/flows/story-extension.md) 1.2.0 adds `summary.sh`; [ocelle-implement](/flows/ocelle-implement.md) 1.1.0 writes and commits each feature's [run summary](/runs/) before its final gate. These summaries are the data for [the baseline experiment](/experiments/2026-11-02-spec-kit-baseline.md).
+* **Creation**: Started this bundle to record how the Spec Kit flows of this repository are tuned. Run summaries are generated into [runs](/runs/) from each feature's review files.
+* **Fix**: Reviews and fixes now commit the evidence under `reviews/phase-N/` with their own change; the review used to commit only its verdict. See [the finding](/findings/review-evidence-uncommitted.md).
+* **Finding**: Agent steps run as `claude -p` and stall on permission prompts. An allowlist in `.claude/settings.json` is needed before the first real run and is waiting on the operator. See [the finding](/findings/headless-permissions.md).
+* **Update**: [ocelle-story](/flows/ocelle-story.md) 1.1.0 runs review rounds in batches of three. After a batch without approval the operator picks more-rounds, accept or reject; five batches at most. Asked for by the operator, who wanted to opt in to more rounds instead of a hard stop at three.
+* **Update**: Constitution 1.0.0 → 1.1.0 adds Principle VIII, Test-First, Proven Non-Vacuous. The [story extension](/flows/story-extension.md) 1.1.0 enforces it with `red.sh` and `tdd-check.sh`; see [Vacuous tests](/guards/vacuous-tests.md). Reason: vacuous tests are a known failure of agentic coding, and a principle alone does not stop an agent.
+* **Creation**: [story extension](/flows/story-extension.md) 1.0.0 and the workflows [ocelle-story](/flows/ocelle-story.md), [ocelle-implement](/flows/ocelle-implement.md) and [ocelle-sdd](/flows/ocelle-sdd.md) 1.0.0: implementation one tasks.md phase at a time, with an independent review and fix rounds after each. Reason: Spec Kit's `/speckit-implement` has no review step, and Spec Kitty's implement-review loop was the part worth keeping.
+* **Initialization**: Spec Kit 1.2.5 initialised with the Claude integration; constitution 1.0.0 ratified. Started [the baseline experiment](/experiments/2026-11-02-spec-kit-baseline.md).

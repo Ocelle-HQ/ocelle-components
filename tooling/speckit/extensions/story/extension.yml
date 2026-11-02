@@ -3,7 +3,7 @@ schema_version: "1.0"
 extension:
   id: story
   name: "Story Review Loop"
-  version: "1.1.0"
+  version: "1.2.0"
   description: "Implement tasks.md one phase (user story) at a time, with an independent review and fix rounds after each phase"
   author: Ocelle-HQ
   repository: https://github.com/Ocelle-HQ/ocelle-components
@@ -46,6 +46,10 @@ provides:
     - name: story-tdd-check
       file: scripts/tdd-check.sh
       description: "Independent red/green check of a phase in clean worktrees, run before every review"
+      runtimes: [bash]
+    - name: story-summary
+      file: scripts/summary.sh
+      description: "Write the feature's run summary into the OKF bundle of the Spec Kit flows"
       runtimes: [bash]
     - name: story-accept
       file: scripts/accept.sh

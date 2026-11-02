@@ -89,3 +89,19 @@ story_run_tests_at() {
   git worktree remove --force "$wt" >/dev/null 2>&1 || rm -rf "$wt"
   echo "$code"
 }
+
+# Tab-separated "phase title open total" for every "## Phase N:" section of a tasks.md.
+story_phase_table() {
+  awk '
+    function flush() { if (phase != "") printf "%s\t%s\t%d\t%d\n", phase, title, open, total }
+    /^## Phase [0-9]+:/ {
+      flush()
+      phase = $3; sub(/:$/, "", phase)
+      title = $0; sub(/^## Phase [0-9]+:[[:space:]]*/, "", title); gsub(/\t/, " ", title)
+      open = 0; total = 0; next
+    }
+    /^## / { flush(); phase = ""; next }
+    phase != "" && /^[[:space:]]*- \[[ xX]\] T[0-9]+/ { total++; if ($0 ~ /^[[:space:]]*- \[ \]/) open++ }
+    END { flush() }
+  ' "$1"
+}
