@@ -1,4 +1,6 @@
-// Gate entry wrapper and `--root` parsing (contracts/gate-cli.md, research.md R-09). Scaffold: signatures only.
+// Gate entry wrapper and `--root` parsing (contracts/gate-cli.md, research.md R-09).
+import { resolve } from "node:path";
+import { oneLine } from "./findings.ts";
 import type { Write } from "./findings.ts";
 
 /** What a gate run sees of its process: working directory, environment and output. */
@@ -19,21 +21,56 @@ export interface Context {
 /** A gate's run function: returns the exit code under the 0/1/2 contract. */
 export type Run = (argv: readonly string[], io: Io) => number | Promise<number>;
 
-export function parseArgs(_argv: readonly string[], _cwd: string): Context {
-  return { root: "", toolCwd: "", args: [] };
+/**
+ * `--root <dir>` sets the repository root and the tool's working directory (default: the current directory) and
+ * changes nothing else; every other argument is kept in order.
+ */
+export function parseArgs(argv: readonly string[], cwd: string): Context {
+  let root = cwd;
+  const args: string[] = [];
+  for (let i = 0; i < argv.length; i += 1) {
+    const arg = argv[i] ?? "";
+    if (arg !== "--root") {
+      args.push(arg);
+      continue;
+    }
+    const dir = argv[i + 1];
+    if (dir === undefined || dir === "") throw new Error("--root needs a directory");
+    root = resolve(cwd, dir);
+    i += 1;
+  }
+  return { root, toolCwd: root, args };
+}
+
+function describe(error: unknown): string {
+  return error instanceof Error ? error.message : String(error);
 }
 
 /** Calls a gate's run function; any uncaught error becomes exit 2 with one line naming its cause. */
-export async function entry(_run: Run, _argv: readonly string[], _io: Io): Promise<number> {
-  return 0;
+export async function entry(run: Run, argv: readonly string[], io: Io): Promise<number> {
+  let code: number;
+  try {
+    code = await run(argv, io);
+  } catch (error) {
+    io.err(oneLine(`could not run: ${describe(error)}`));
+    return 2;
+  }
+  if (code === 0 || code === 1 || code === 2) return code;
+  io.err(`could not run: the gate returned exit code ${String(code)}, outside the 0/1/2 contract`);
+  return 2;
 }
 
 /** The Io of the current process. */
 export function processIo(): Io {
-  return { cwd: "", env: {}, out: () => undefined, err: () => undefined };
+  return {
+    cwd: process.cwd(),
+    env: process.env,
+    out: (line) => process.stdout.write(`${line}\n`),
+    err: (line) => process.stderr.write(`${line}\n`),
+  };
 }
 
 /** Runs a gate as the process entry point and sets the process exit code. */
-export async function main(_run: Run): Promise<void> {
-  // Scaffold: no behaviour.
+export async function main(run: Run): Promise<void> {
+  process.exitCode = await entry(run, process.argv.slice(2), processIo());
 }
