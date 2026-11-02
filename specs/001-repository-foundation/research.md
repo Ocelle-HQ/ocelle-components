@@ -293,9 +293,11 @@ round 1 re-pinned every registry package published less than 7 days before 2026-
   `gates/lib/cli.ts` and are red-tested in phase 2; each gate's entry takes `--root` from its phase's scaffold on, and
   a `gates-integration` test in that phase's red commit runs the gate with `--root` on a temporary repository from a
   different working directory (analysis 1). That test builds its temporary repository itself (copy the fixture tree
-  and the configuration set, link `node_modules`, and for sign-off `git init` and commit the records), never through
+  and only the configuration files that gate reads, link `node_modules`, and for sign-off `git init` and commit the records), never through
   a module of the same phase's scaffold such as `gates/lib/plant-repo.ts`, which builds nothing until green, so its
-  red failure is the gate's missing behaviour and not its own setup (analysis 2).
+  red failure is the gate's missing behaviour and not its own setup (analysis 2). It copies only the files its gate
+  reads, not the whole configuration set (R-10), because part of that set (`eslint.config.ts`, `stylelint.config.ts`)
+  is created only by phase 4's green commit (analysis 3).
 - **Rationale**: exit 1 vs 2, together with the expected findings of each plant (R-10), lets the plant job tell "the
   gate caught the plant" from "the gate is broken".
 
