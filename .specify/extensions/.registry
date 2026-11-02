@@ -1,22 +1,6 @@
 {
   "schema_version": "1.0",
   "extensions": {
-    "story": {
-      "version": "1.2.0",
-      "source": "local",
-      "manifest_hash": "sha256:8028a1f21378e1538cc0d199dfd72d899dc9d076d620728c6c9a54b539e309ef",
-      "enabled": true,
-      "priority": 10,
-      "registered_commands": {
-        "claude": [
-          "speckit.story.implement",
-          "speckit.story.review",
-          "speckit.story.fix"
-        ]
-      },
-      "registered_skills": [],
-      "installed_at": "2026-11-02T13:52:05.451367+00:00"
-    },
     "squad": {
       "version": "1.1.0",
       "source": "local",
@@ -36,6 +20,37 @@
       },
       "registered_skills": [],
       "installed_at": "2026-11-02T14:35:47.057134+00:00"
+    },
+    "triage": {
+      "version": "1.0.0",
+      "source": "local",
+      "manifest_hash": "sha256:adb6a12e8b33f4df3a016ab4d50e3444bce181bab94f20bda713b087bcaee3c2",
+      "enabled": true,
+      "priority": 10,
+      "registered_commands": {
+        "claude": [
+          "speckit.triage.assess",
+          "speckit.triage.op-setup"
+        ]
+      },
+      "registered_skills": [],
+      "installed_at": "2026-11-02T15:08:56.953793+00:00"
+    },
+    "story": {
+      "version": "1.2.1",
+      "source": "local",
+      "manifest_hash": "sha256:bfeb0312f9722f740a01257764eaa7565b0e0b8ddb1bae5a1ff6d69667e317b9",
+      "enabled": true,
+      "priority": 10,
+      "registered_commands": {
+        "claude": [
+          "speckit.story.implement",
+          "speckit.story.review",
+          "speckit.story.fix"
+        ]
+      },
+      "registered_skills": [],
+      "installed_at": "2026-11-02T15:08:58.070633+00:00"
     }
   }
 }

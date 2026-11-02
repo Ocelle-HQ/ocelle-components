@@ -166,6 +166,14 @@ evidence of the behaviour it names.
   feature per `specs/NNN-name/` directory and branch. Feature directories are kept after
   merge: they are the project record, and kitty-mission-ui reads them as its first real
   Spec Kit project.
+- Work starts from a triage record (`triage/NNN-slug.md`) written by the `triage-tara` agent
+  profile and approved by the operator. It reads the issues and every related issue, pull
+  request, feature and op, and decides: a **mission** (new or changed public surface, a design
+  decision, more than one user story, or accessibility or security behaviour: the full cycle
+  below), an **op** (one bounded change with no new public surface and no open design question,
+  recorded in `ops/NNN-slug/op.md` and implemented and reviewed exactly like a mission phase), a
+  **fold** into work in progress, **none**, or a decision the operator must take first. In doubt,
+  a mission. No code change starts without an approved triage record.
 - After `/speckit-specify`, a spec check reads the spec on its own (ambiguity, testability,
   acceptance scenarios, constitution conflicts); blocking findings are fixed before planning, and
   questions only the operator can answer go to the operator. The full `/speckit-analyze` runs
@@ -202,4 +210,4 @@ redefining a principle, MINOR for adding a principle or materially expanding gui
 PATCH for clarifications. The decision records behind this document are ADR-0079 (Ocelle
 component library) and ADR-0071 (open-source strategy) in the Ocelle-HQ docs repository.
 
-**Version**: 1.2.0 | **Ratified**: 2026-11-02 | **Last Amended**: 2026-11-02
+**Version**: 1.3.0 | **Ratified**: 2026-11-02 | **Last Amended**: 2026-11-02

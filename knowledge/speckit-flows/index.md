@@ -8,6 +8,9 @@ okf_version: "0.2"
 
 # Flows
 
+* [ocelle-triage](flows/ocelle-triage.md) - Start here: triage issues into a mission, an op, a fold or no work
+* [triage-tara](flows/triage-tara.md) - The agent profile that triages
+* [triage extension](flows/triage-extension.md) - Commands and scripts for triage and ops
 * [ocelle-sdd](flows/ocelle-sdd.md) - specify, spec check, plan, plan squad, tasks and analyze with operator gates, then implementation by user story
 * [ocelle-implement](flows/ocelle-implement.md) - Runs the per-phase loop for every tasks.md phase that still needs work
 * [ocelle-story](flows/ocelle-story.md) - One phase: red, green, then batches of checked review and fix rounds

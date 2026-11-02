@@ -48,6 +48,14 @@
       "source": "tooling/speckit/workflows/ocelle-sdd",
       "installed_at": "2026-11-02T14:35:47.935942+00:00",
       "updated_at": "2026-11-02T14:35:47.935972+00:00"
+    },
+    "ocelle-triage": {
+      "name": "Triage, then Mission or Op",
+      "version": "1.0.0",
+      "description": "triage-tara decides mission, op, fold, none or decision-needed for the given issues; the operator approves; a mission runs ocelle-sdd, an op is set up and runs ocelle-implement",
+      "source": "tooling/speckit/workflows/ocelle-triage",
+      "installed_at": "2026-11-02T15:09:30.564313+00:00",
+      "updated_at": "2026-11-02T15:09:30.564330+00:00"
     }
   }
 }

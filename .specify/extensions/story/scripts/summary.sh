@@ -5,6 +5,7 @@
 # Reads only files under specs/<feature>/: tasks.md and reviews/phase-N/.
 source "$(dirname "${BASH_SOURCE[0]}")/common.sh"
 root=$(story_repo_root); feature_dir=$(story_feature_dir); feature=$(basename "$feature_dir")
+[[ "$(basename "$(dirname "$feature_dir")")" == ops ]] && feature="op-$feature"   # ops/NNN-x and specs/NNN-x never share a summary
 kdir=$(story_config knowledge_dir); kdir=${kdir:-knowledge/speckit-flows}
 [[ "$kdir" =~ ^[A-Za-z0-9._/-]+$ && "$kdir" != /* && "$kdir" != *..* ]] || { echo "story: bad knowledge_dir '$kdir'" >&2; exit 2; }
 runs="$root/$kdir/runs"; mkdir -p "$runs"

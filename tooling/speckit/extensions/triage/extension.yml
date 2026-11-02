@@ -1,0 +1,45 @@
+schema_version: "1.0"
+
+extension:
+  id: triage
+  name: "Issue Triage and Ops"
+  version: "1.0.0"
+  description: "Triage issues into a mission, an op, a fold, no work or an operator decision (the triage-tara profile), and set up ops: small governed changes that still run test-first with review rounds"
+  author: Ocelle-HQ
+  repository: https://github.com/Ocelle-HQ/ocelle-components
+  license: Apache-2.0
+
+requires:
+  speckit_version: ">=1.2.5"
+  tools:
+    - name: git
+      required: true
+    - name: gh
+      required: false
+
+provides:
+  commands:
+    - name: speckit.triage.assess
+      file: commands/speckit.triage.assess.md
+      description: "Triage GitHub issues with the triage-tara profile and write a triage record; change no code"
+    - name: speckit.triage.op-setup
+      file: commands/speckit.triage.op-setup.md
+      description: "Set up an approved op: op.md record, a short spec, plan and one-phase tasks under ops/NNN-slug"
+  scripts:
+    - name: triage-status
+      file: scripts/status.sh
+      description: "Report the latest triage record's decision, scope and spec prompt as JSON"
+      runtimes: [bash]
+    - name: triage-decide
+      file: scripts/decide.sh
+      description: "Record the operator's approval or rejection in the latest triage record and commit it"
+      runtimes: [bash]
+    - name: triage-op-new
+      file: scripts/op-new.sh
+      description: "Create ops/NNN-slug and point Spec Kit's current feature at it"
+      runtimes: [bash]
+
+tags:
+  - "triage"
+  - "governance"
+  - "ops"

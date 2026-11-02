@@ -1,0 +1,104 @@
+schema_version: "1.0"
+workflow:
+  id: "ocelle-triage"
+  name: "Triage, then Mission or Op"
+  version: "1.0.0"
+  author: "Ocelle-HQ"
+  description: "triage-tara decides mission, op, fold, none or decision-needed for the given issues; the operator approves; a mission runs ocelle-sdd, an op is set up and runs ocelle-implement"
+
+requires:
+  speckit_version: ">=1.2.5"
+  integrations:
+    any: ["claude"]
+
+inputs:
+  issues:
+    type: string
+    required: true
+    prompt: "Issue numbers to triage (for example: #4 #5), optionally with a note"
+  integration:
+    type: string
+    default: "auto"
+
+steps:
+  # The issues go to the agent as command arguments only, never into a shell command.
+  - id: assess
+    command: speckit.triage.assess
+    integration: "{{ inputs.integration }}"
+    input:
+      args: "{{ inputs.issues }}"
+
+  - id: status
+    type: shell
+    run: ".specify/extensions/triage/scripts/status.sh"
+    output_format: json
+
+  - id: valid
+    type: if
+    condition: "{{ steps.status.output.data.decision == 'missing' or steps.status.output.data.decision == 'invalid' }}"
+    then:
+      - id: no-record
+        type: shell
+        run: "echo 'triage: no valid triage record was written' >&2; exit 1"
+
+  - id: review-triage
+    type: gate
+    message: "Triage {{ steps.status.output.data.triage }} ({{ steps.status.output.data.record }}): {{ steps.status.output.data.decision }}, target {{ steps.status.output.data.target }}, in scope {{ steps.status.output.data.in_scope }}, semver {{ steps.status.output.data.semver }}. Approve to record your approval and continue; reject to record the rejection and stop."
+    options: [approve, reject]
+    on_reject: skip
+
+  - id: record-decision
+    type: if
+    condition: "{{ steps.review-triage.output.choice == 'approve' }}"
+    then:
+      - id: approved
+        type: shell
+        run: ".specify/extensions/triage/scripts/decide.sh approved"
+        output_format: json
+
+      - id: route
+        type: switch
+        expression: "{{ steps.status.output.data.decision }}"
+        cases:
+          mission:
+            - id: mission
+              type: workflow
+              workflow: "ocelle-sdd"
+              input:
+                spec: "{{ steps.status.output.data.spec_prompt }}"
+                integration: "{{ inputs.integration }}"
+          op:
+            - id: op-setup
+              command: speckit.triage.op-setup
+              integration: "{{ inputs.integration }}"
+
+            - id: review-op
+              type: gate
+              message: "Review the op under ops/ (op.md, spec.md, plan.md, tasks.md). Approve to implement it test-first with review rounds; reject to stop."
+              options: [approve, reject]
+              on_reject: abort
+
+            - id: op-implement
+              type: workflow
+              workflow: "ocelle-implement"
+              input:
+                integration: "{{ inputs.integration }}"
+          fold:
+            - id: fold-note
+              type: gate
+              message: "Fold into {{ steps.status.output.data.target }}: amend that feature's spec with the issues in scope (the record says what it must gain), then rerun its flow. Acknowledge to finish."
+              options: [acknowledge]
+              on_reject: skip
+        default:
+          - id: no-work
+            type: shell
+            run: "echo 'No work started: the approved decision is {{ steps.status.output.data.decision }}.'"
+
+  - id: record-rejection
+    type: if
+    condition: "{{ steps.review-triage.output.choice == 'reject' }}"
+    then:
+      - id: rejected
+        type: shell
+        run: ".specify/extensions/triage/scripts/decide.sh rejected"
+        output_format: json

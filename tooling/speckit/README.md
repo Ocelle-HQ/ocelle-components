@@ -19,6 +19,7 @@ specify workflow remove ocelle-story && specify workflow add --dev tooling/speck
 
 | Workflow | Does |
 |---|---|
+| `ocelle-triage` | `triage-tara` decides mission / op / fold / none / decision-needed for the given issues → operator gate (recorded) → a mission runs `ocelle-sdd`; an op is set up under `ops/` and runs `ocelle-implement` |
 | `ocelle-sdd` | specify → `ocelle-spec-check` → plan → `ocelle-plan-squad` → gate → tasks → analyze (saved as `analysis-report.md`) → gate → `ocelle-implement` |
 | `ocelle-spec-check` | spec-only check after specify; fixes blocking findings (up to three checks); operator gate |
 | `ocelle-plan-squad` | adversarial squad on spec and plan: lenses → refute → forks → fix → verify; fresh-eyes rounds until clean (three rounds at most) |
@@ -26,6 +27,7 @@ specify workflow remove ocelle-story && specify workflow add --dev tooling/speck
 | `ocelle-story` | one phase: red → green, then batches of up to three rounds of check → review → fix; after a batch without approval the operator picks more rounds, accept or stop |
 
 ```bash
+specify workflow run ocelle-triage -i issues="#4"                  # start here: triage, then mission or op
 specify workflow run ocelle-sdd -i spec="Design tokens package"   # the whole cycle
 specify workflow run ocelle-implement                              # tasks.md exists already
 specify workflow run ocelle-story -i phase=3                       # one phase
@@ -60,6 +62,21 @@ run by hand in Claude Code: `/speckit-story-implement 3`, `/speckit-story-review
 4. After a batch without approval the gate offers **more-rounds** (another batch of three),
    **accept** (records `operator-accepted.md`, continues) or **reject** (stops). After five batches
    (15 rounds) only accept or reject remain.
+
+## Triage and ops (before anything else)
+
+The `triage-tara` agent profile (`.claude/agents/triage-tara.md`) reads the issues, searches related issues,
+pull requests, `specs/`, `ops/` and earlier triage records, and writes `triage/NNN-slug.md`: the decision, the
+issues in and out of scope, the semver impact and a one-line spec prompt. It never touches GitHub. The operator
+approves or rejects at the gate; `decide.sh` writes `status`, `decided_by` (git user.name) and `decided_at`
+into the record and commits it.
+
+| Decision | Then |
+|---|---|
+| mission | `ocelle-sdd` with the record's spec prompt |
+| op | `/speckit-triage-op-setup` writes `ops/NNN-slug/` (`op.md` record, short spec, plan, one-phase tasks) and makes it the current feature; after the op gate, `ocelle-implement` runs it test-first with review rounds |
+| fold | a note naming the feature whose spec must grow |
+| none, decision-needed | nothing starts |
 
 ## Spec check (after specify)
 

@@ -3,7 +3,7 @@ schema_version: "1.0"
 extension:
   id: story
   name: "Story Review Loop"
-  version: "1.2.0"
+  version: "1.2.1"
   description: "Implement tasks.md one phase (user story) at a time, with an independent review and fix rounds after each phase"
   author: Ocelle-HQ
   repository: https://github.com/Ocelle-HQ/ocelle-components
