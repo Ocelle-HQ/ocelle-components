@@ -4,7 +4,9 @@
 #   1. every recorded red commit changes only test files and its tests fail at that commit;
 #   2. the phase's final test files, run against the code from before the phase (base), fail
 #      (so tests rewritten after the red step cannot pass vacuously);
-#   3. the tests pass at HEAD.
+#   3. if the phase has a scaffold commit (scaffold.sh), the final test files, run against the scaffold, fail too:
+#      against the base a missing module alone makes them fail, so only the scaffold run shows they test behaviour;
+#   4. the tests pass at HEAD.
 # Writes reviews/phase-N/tdd-check.json and prints it. status: pass | fail | exempt | unavailable.
 # Always exits 0: the review reads the status, and a "fail" is a blocking finding.
 source "$(dirname "${BASH_SOURCE[0]}")/common.sh"
@@ -52,6 +54,17 @@ else
   (( vs_base != 0 )) || problems+=("the final tests pass against the code from before the phase: they do not test the change")
 fi
 
+if [[ -f "$dir/scaffold.sha" ]]; then
+  scaffold=$(tr -d '[:space:]' < "$dir/scaffold.sha")
+  if (( ${#final_tests[@]} > 0 )); then
+    vs_scaffold=$(story_run_tests_at "$scaffold" "$dir/check-final-tests-on-scaffold.log" "$head" "${final_tests[@]}")
+    (( vs_scaffold != 0 )) || problems+=("the final tests pass against the scaffold (no behaviour): they do not test the change")
+  fi
+  git merge-base --is-ancestor "$scaffold" "$head" || problems+=("scaffold commit ($scaffold) is not in the history of HEAD")
+else
+  vs_scaffold=null
+fi
+
 at_head=$(story_run_tests_at "$head" "$dir/check-head.log" "")
 (( at_head == 0 )) || problems+=("tests fail at HEAD")
 
@@ -59,4 +72,4 @@ status=pass; (( ${#problems[@]} == 0 )) || status=fail
 plist='['; first=1
 for p in "${problems[@]}"; do (( first )) || plist+=','; first=0; plist+="\"$(story_json_escape "$p")\""; done
 plist+=']'
-emit "{\"phase\":\"$phase\",\"status\":\"$status\",\"base\":\"$base\",\"head\":\"$head\",\"red_commits\":$reds,\"final_tests_on_base_exit\":$vs_base,\"head_exit\":$at_head,\"problems\":$plist}"
+emit "{\"phase\":\"$phase\",\"status\":\"$status\",\"base\":\"$base\",\"head\":\"$head\",\"red_commits\":$reds,\"final_tests_on_base_exit\":$vs_base,\"final_tests_on_scaffold_exit\":${vs_scaffold:-null},\"head_exit\":$at_head,\"problems\":$plist}"

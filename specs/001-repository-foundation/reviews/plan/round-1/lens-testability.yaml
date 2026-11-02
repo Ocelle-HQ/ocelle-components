@@ -1,0 +1,171 @@
+schema: review-findings/v1
+complete: true
+phase: plan
+round: 1
+lens: testability
+findings:
+  - id: PLAN-TESTABILITY-1-001
+    severity: 4
+    title: "Phase 1 cannot pass the red/green check: the story config is filled in last, and tdd-check reads it from the commit under test"
+    evidence:
+      - artifact: "plan.md § Phases, 1: 'bootstrap (exempt, see below), then red-first: the test command's exit codes ..., offline setup, configuration-copies check, story configuration filled in.' Complexity Tracking: bootstrap exemption 'Ends with phase 1.'"
+      - code: ".specify/extensions/story/scripts/common.sh:43-54 story_config resolves story_repo_root (git rev-parse --show-toplevel), and story_run_tests_at runs it after 'cd \"$wt\"' (lines 83-85). So setup_command and test_command come from the story-config.yml of the commit being checked out, not from HEAD."
+      - code: ".specify/extensions/story/story-config.yml at base e4aea87: test_command: \"\" and setup_command: \"\". At such a commit line 85 runs 'bash -c \"\"', which exits 0."
+      - code: ".specify/extensions/story/scripts/tdd-check.sh:22 exempt only when red-commits is empty; :36 'tests pass, so they were not red' when exit 0; :51 final tests run at the phase base, and if that exits 0 it records 'the final tests pass against the code from before the phase'."
+    claim: |
+      Phase 1 mixes an exempt bootstrap with red commits. As soon as it records a red commit, tdd-check ignores
+      tdd-exempt.md and runs the full check. The base of phase 1 is the commit before the bootstrap, where test_command
+      is empty, so 'final tests on base' always exits 0 and the check reports fail. Any red commit made before the
+      config change lands also exits 0 and is reported as "not red". story-config.yml is not a test file, so a red
+      commit cannot set it either. As planned, phase 1 can only end in 'fail', never 'pass'. That breaks SC-003 and
+      the claim that every behaviour in phase 1 is red first. This is a property of the tooling in the repository, so
+      tasks cannot work around it.
+    remedies:
+      - "Split phase 1 into two story phases. Phase 1 is the bootstrap only, with tdd-exempt.md and no red commits: install, the three skeletons, the test command's wiring, and test_command and setup_command set in both config copies. Phase 2 holds the red-first behaviour (exit codes, offline setup, configuration-copies check). Its base already has a working runner and config. Renumber the later phases, and state in Complexity Tracking that the exemption covers exactly that phase."
+  - id: PLAN-TESTABILITY-1-002
+    severity: 4
+    title: "The plant job judges plants by exit code alone, but exit 1 also means a crash, an import error, a parse error or no files found"
+    evidence:
+      - artifact: "research.md § R-09: 'exit 1 vs 2 lets the plant job tell \"the gate caught the plant\" from \"the gate is broken\"'. contracts/plants.md: 'a fail plant's gate exits other than 1' is the only check. data-model.md § Plant: plant.json has only expect and why."
+      - code: "Probe (Node 22, scratchpad): a missing module (ERR_MODULE_NOT_FOUND) exits 1, and an uncaught exception exits 1. A gates/bin/<id>.ts that crashes or does not exist yet therefore 'catches' every fail plant."
+      - code: "Probe (vitest 5.1.0): no test files found exits 1, an import error in a test file exits 1, and a failing test exits 1. All three look the same to the unit-tests plants."
+      - code: "Probe (eslint 10.14.0 + typescript-eslint 8.72.1, projectService): a clean file outside the tsconfig gives 'Parsing error: ... was not found by the project service' and exits 1."
+      - code: "Probe: stylelint 17.16.0 exits 2 for lint problems and 1 for 'no files'. tsc 6.0.2 exits 2 for type errors and 1 for a missing project. Both are the reverse of the contract, so the wrappers must remap codes per tool, and the plan names no test that proves the mapping."
+    claim: |
+      SC-002 and SC-004 can be met vacuously. A fail plant counts as caught when the gate exits 1 for any reason: a
+      crash, a wrong include pattern, a parse error, or a different rule than the one planted. For the seven test-lint
+      plants (SC-004), the code-lint floating-promise plant and the Chromium unit-test plant, exit code alone cannot
+      show that the planted defect was what failed. The 1-vs-2 split in R-09 rests on an assumption that the probes
+      above disprove. This is the gate-level form of the vacuous test that Principle VIII forbids ('Gates are proven,
+      too').
+    remedies:
+      - "Add an 'expect_findings' field to plant.json listing each expected finding: path, line, and rule id or a message fragment. The plant job then requires exit 1 AND exactly those findings in the gate's output (no parse errors, no extra findings). Pass plants require exit 0 and no finding lines. For unit-test plants, the expected finding is the failing test's name and the project it ran in."
+      - "In contracts/gate-cli.md, document the tool-to-contract exit mapping for tsc, ESLint, Stylelint, Vitest, Stryker and pnpm. Give each mapping a gate test, red first, including 'crash or missing script maps to 2', for example by catching top-level errors in gates/lib and exiting 2."
+  - id: PLAN-TESTABILITY-1-003
+    severity: 3
+    title: "Plant mode for the tool-backed gates is unspecified, and the obvious implementations either test a different configuration or never see the plant"
+    evidence:
+      - artifact: "research.md § R-10: normal configurations exclude gates/plants/** (ESLint ignores, Stylelint ignoreFiles, Vitest exclude, tsconfig exclude). contracts/plants.md, typecheck row: 'files: a .ts file and a strict tsconfig'. contracts/gate-cli.md: plant mode 'checks only the plant's inputs', with no word on configuration."
+      - code: "Probe (eslint 10.14.0): linting a file matched by 'ignores' gives 'File ignored because of a matching ignore pattern' as a warning and exits 0. With --no-ignore, a file outside the tsconfig gets a parsing error and exits 1 (see 002)."
+    claim: |
+      The typecheck plant carries its own strict tsconfig, so it proves that tsc with that plant's options reports an
+      implicit any. The repository's tsconfig.json and tsconfig.base.json could drop 'strict' and the plant would still
+      be caught, so FR-002's strict mode is never proven. For ESLint, Stylelint and Vitest, running the normal config
+      on a plant either skips it (exit 0, so the plant job fails for a working gate) or needs a separate plant config.
+      A separate plant config can diverge from the normal one, for example a plant ESLint config that enables
+      no-floating-promises while eslint.config.ts does not. Either way the plant does not prove the gate that runs on
+      pull requests.
+    remedies:
+      - "Require plant mode to load the same configuration module as normal mode and change only the file roots: ESLint via the same config with --no-ignore and a generated tsconfig that only 'extends' the repository tsconfig.base.json and 'include's the plant; Stylelint via the same config with ignoreFiles overridden; Vitest via the same project definitions with include and root overridden. Forbid compiler options in the typecheck plant's tsconfig, and add a gate test that fails when a plant tsconfig sets any compilerOptions."
+  - id: PLAN-TESTABILITY-1-004
+    severity: 3
+    title: "Plants go through a separate input path from normal mode, so a gate that finds nothing to check on pull requests still passes the plant job"
+    evidence:
+      - artifact: "research.md § R-13: in plant mode, signoff reads 'commits.txt in the same record format' instead of 'git log ... <base>..<head>'. contracts/plants.md, mutation: 'base/ and head/ source + tests', instead of research.md § R-08 steps 1-2 (base resolution, git diff --unified=0). § R-11: normal csp scans 'packages/*/dist/**' after 'pnpm -r build'."
+      - artifact: "contracts/gate-cli.md, exit 0: 'the gate checked its files and found nothing', with no rule for zero files checked. spec.md US3 scenario 9: 'no gate passes only because there is nothing to check'."
+      - code: "Probe: stylelint 17.16.0 exits 1 when no files match. This feature ships no stylesheet, so the style-lint gate will need allowEmptyInput, or an equivalent, to pass on the clean tree."
+    claim: |
+      The plant job proves the defect-detection core of each gate. It never proves the normal-mode collection step:
+      the git log range in CI (shallow fetch, a wrong ref, origin/$BASE), the mutation base resolution and the parsing
+      of the diff, the dist glob versus tsc's real outDir, and the style-lint file globs. If that step collects nothing,
+      the gate exits 0 on every pull request while the plant job stays green. That is exactly the 'passes only because
+      there is nothing to check' case of US3 scenario 9. The packages are near-empty, so nobody would notice.
+    remedies:
+      - "Give the commit and mutation plants the gate's real input form: the plant job builds a temporary git repository from the plant (a script or a git bundle), then runs the gate in normal mode with --range or --base against it. Plant mode changes only the repository root."
+      - "Make normal mode exit 2 when it collects zero commits (signoff), zero built files (csp, prefix) or a base it cannot resolve (mutation). Add a gate test, red first, that asserts each gate's normal-mode file list equals the FR-028 set computed from 'git ls-files' on a fixture tree. This covers style lint, where an empty set is legitimate in this feature."
+  - id: PLAN-TESTABILITY-1-005
+    severity: 3
+    title: "The gates' own tests have no permitted place for the defective inputs they need"
+    evidence:
+      - artifact: "spec.md FR-009: 'Every sample that a gate must fail on ... is a plant under gates/plants/ and is run only by the plant job'. FR-028: no normal gate reads gates/plants/. FR-025: 'a gate's red step is a failing test of the gate itself, and the plants it reads arrive with the green commit (the plan says where gate tests live)'. plan.md: 'gates/test/ # tests of the gates'."
+      - code: "story-config.yml test_pathspec includes ':(glob)**/test/**', so any fixture under gates/test/ is test code. The test lint covers all test code (FR-028), and any *.test.ts fixture there is run by 'pnpm test'."
+    claim: |
+      Every gate test in gates/test needs a defective input: a failing test, a vacuous test, an sk- name, an unsigned
+      commit. The plan offers three places to get one, and each breaks a rule.
+      - Reading gates/plants makes the unit-tests gate read plants (FR-028, US3 scenario 8).
+      - In the red commit those plants do not exist yet, so the red failure is a missing file, a setup error that
+        Principle VIII rules out.
+      - A fixture under gates/test/ is linted by the test lint and, if it is a .test.ts file, run by the unit tests.
+        A vacuous-test fixture then fails the normal gates.
+      The plan says where gate tests live (FR-025 asks it to), but not where their inputs live, and the tasks will
+      run into this in the first gate phase.
+    remedies:
+      - "State in the plan that gate tests build their inputs at run time in a temp directory from inline strings, and that only the plant job reads gates/plants/. Amend FR-009 to say such generated inputs are not plants. Add a test that fails if any file under gates/test reads a path under gates/plants."
+      - "Alternatively, declare a fixture directory, for example gates/test/fixtures/, that is excluded from the unit-test include and from the test lint. Have the config-copies check keep that exclusion in test_pathspec consistent, and record the exception against FR-028."
+  - id: PLAN-TESTABILITY-1-006
+    severity: 3
+    title: "Mutation testing never reaches this feature's own code: all the behaviour is in gates/, and the scope is packages/*/src"
+    evidence:
+      - artifact: "research.md § R-08 step 2: 'git diff --unified=0 <base> -- packages/*/src'. spec.md FR-028: mutation scope is 'package source TypeScript'. plan.md: the packages are 'src/index.ts' with no public surface. gates/bin, gates/lib, gates/eslint and gates/stylelint hold every behaviour of this feature."
+      - artifact: "constitution.md § VIII: 'Changed source is mutation-tested. A surviving mutant in new or changed code is a blocking review finding'. plan.md § Constitution Check VIII says 'Pass' and lists no exception for gates/."
+      - artifact: "R-08 narrows FR-028's 'package source' (every file in a package except test code and built output) to packages/*/src, so a source file at a package root is never mutated either."
+    claim: |
+      The reviewer runs mutation_command on every phase of this feature. Each run will print 'nothing to mutate' and
+      exit 0, so the code most likely to hide vacuous tests, the token-only allow-list, the prefix regexes, the CSP
+      patterns and the sign-off matcher, gets no mutation check at all. Every later feature then relies on those
+      gates. The Constitution Check marks Principle VIII as met, but this gap is neither covered nor recorded as an
+      exception.
+    remedies:
+      - "Add gates/ source (bin, lib, eslint, stylelint; not test and not plants) to the mutation scope. It runs in the Node 'gates' Vitest project, which the Stryker vitest-runner reaches. Amend FR-028's mutation row to match, and align R-08's pathspec with FR-028's definition of package source."
+      - "Or record in Complexity Tracking, with the operator's approval, that gate scripts are not mutation-tested, with a sunset condition. Have the phase reviews of this feature record that the mutation result is vacuous."
+  - id: PLAN-TESTABILITY-1-007
+    severity: 2
+    title: "The equivalent-mutant behaviour (FR-012, US2 scenario 4) has no plant, and file-wide disable comments are not handled"
+    evidence:
+      - artifact: "contracts/plants.md, mutation row: fail plants 'covered line not checked; changed line no test runs', pass plant 'a change fully checked'. No plant for a reasoned disable comment or for a disable comment without a reason."
+      - artifact: "research.md § R-08 step 5 and data-model.md: only the form '// Stryker disable next-line <mutator>: <reason>' is defined. Stryker also honours '// Stryker disable all' and block 'disable'/'restore' comments, which silence every mutant after them."
+    claim: |
+      'A disable comment without a reason fails the run' and 'records are listed' are behaviour of a gate that has no
+      plant, against Principle VIII's 'every CI gate has a planted defect'. A file-wide '// Stryker disable all' turns
+      every mutant in the file into 'Ignored'. That is not 'next to the mutated code' (FR-012), and the plan neither
+      rejects nor lists it, so a change could silence mutation testing with one line.
+    remedies:
+      - "Add mutation-fixture plants: (fail) a next-line disable with no reason; (fail) '// Stryker disable all' or a block disable in changed code; (pass) a survivor with a reasoned next-line disable, where the plant's expected output includes the listed record (path, line, mutator, reason). Specify that the wrapper rejects any disable comment other than the next-line form."
+  - id: PLAN-TESTABILITY-1-008
+    severity: 2
+    title: "Two fail plants for the style lint cannot show that FR-024's allow-list is enforced"
+    evidence:
+      - artifact: "contracts/plants.md, style-lint row: two fail plants ('raw literal in a css template in .ts; raw literal in .css') against seven pass plants."
+      - artifact: "spec.md FR-024 rejects lengths, times, colour literals, named colours, raw font families, numeric font-weight, angles, aspect-ratio, unitless numbers outside five properties, raw var() fallbacks and raw calc() operands."
+    claim: |
+      An ocelle/token-only that rejects only 'px' passes the plant job. The pass plants check the allow side, but
+      nothing checks most of the reject side. Finding 006 means the plugin is not mutation-tested either, so the most
+      detailed rule of the feature is the least proven.
+    remedies:
+      - "Add a fail plant for each rejected class in FR-024: rem length, ms time, hex, rgb(), named colour 'red', raw font family, font-weight 600, 'width: 2' (unitless outside the five properties), 'var(--x, 4px)' fallback and 'calc(var(--a) + 4px)'. Add a pass plant for a system colour inside a var() fallback."
+  - id: PLAN-TESTABILITY-1-009
+    severity: 2
+    title: "The offline-setup behaviour (US1-2, US1-3, FR-008 'never falls back to the network') has no automated test seam"
+    evidence:
+      - artifact: "plan.md § Phases 1: 'offline setup' is listed as red-first. quickstart.md step 2: 'with the network off', a manual step. research.md § R-04 relies on 'pnpm install --offline' and says nothing on how a test observes 'no network' or 'store lacks X'."
+    claim: |
+      A red-first test of setup-offline.ts needs an empty or partial store and an empty browser cache that it
+      controls, and a way to observe that no network request was made. The plan names neither, and turning off the
+      network on a GitHub runner or a contributor machine is not something a unit test can do. Without a seam, the
+      phase will either write a test that cannot fail on a network fallback, or fall back to the manual quickstart
+      step, which is not a test.
+    remedies:
+      - "Specify that setup-offline.ts takes the store directory and PLAYWRIGHT_BROWSERS_PATH from the environment. Its tests run it against an empty temp store and an empty browser path, with npm_config_registry pointed at a local socket the test opens. Assert exit 2, a message naming the missing package and 'pnpm run setup:online', and zero connections to that socket."
+  - id: PLAN-TESTABILITY-1-010
+    severity: 2
+    title: "US1 scenario 6 (a real browser engine, not a simulated DOM) has no planned observable assertion"
+    evidence:
+      - artifact: "spec.md US1-6 and FR-005. research.md § R-03 configures browser mode. contracts/plants.md, unit-tests: 'failing test needing Chromium', judged only by exit 1 (see 002)."
+    claim: |
+      Nothing planned fails if the elements project silently runs under jsdom or happy-dom, or under another
+      Playwright browser. A Chromium-specific test passes in either case, and the Chromium plant also 'fails' when
+      Chromium cannot start.
+    remedies:
+      - "Add a sample test in packages/elements that asserts something only real Chromium gives: for example, that navigator.userAgentData brands include 'Chromium' and that a computed accessible role or name is read through Vitest browser commands. Make the Chromium plant's expected finding name that assertion."
+  - id: PLAN-TESTABILITY-1-011
+    severity: 2
+    title: "SC-005's bound (10 files, 500 lines, under 10 minutes) is never measured"
+    evidence:
+      - artifact: "spec.md SC-005: 'The CI job's 10-minute limit (FR-013) enforces it'. quickstart.md times only SC-001 (step 9), and the only mutation step (6) mutates nothing."
+    claim: |
+      The timeout turns a slow run into a failure, but nothing shows that a pull request within the SC-005 bound
+      fits. The feature can be accepted with SC-005 untested. The first element feature would then learn from a
+      timed-out gate that the bound is unattainable, for example once Stryker starts a Vitest run with a Chromium
+      project per mutant.
+    remedies:
+      - "Add a verification step: a generated change of 10 package-source files and 500 lines, with tests that kill all mutants, run once through the CI mutation job with a cold mutation result. Record the duration with the feature verification, as SC-001 is."

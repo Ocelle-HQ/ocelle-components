@@ -36,6 +36,8 @@ The input names the phase: `phase=<N>` or a bare number. If it names none, stop 
    - every test asserts observable behaviour and can fail: no assertion-free tests, conditional assertions,
      `skip`/`only`, snapshot-only assertions, assertions on mocks instead of the unit, or swallowed errors;
    - each acceptance scenario of the story and each event and keyboard path has a test.
+   - if `scaffold.sha` exists: the scaffold commit (`git show <scaffold sha>`) adds signatures only, with no behaviour
+     and no test file, and `tdd-check.json` shows the final tests fail against it.
    - If `mutation_command` is set in `.specify/extensions/story/story-config.yml`, run it on the changed source.
      A surviving mutant in new or changed code is blocking unless you record it as an equivalent mutant with
      the reason.

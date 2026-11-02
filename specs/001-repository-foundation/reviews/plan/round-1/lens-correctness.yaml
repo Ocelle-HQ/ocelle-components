@@ -1,0 +1,183 @@
+schema: review-findings/v1
+complete: true
+phase: plan
+round: 1
+lens: correctness
+findings:
+  - id: PLAN-CORRECTNESS-1-001
+    severity: 3
+    title: "Phase 1 as planned can never get a tdd-check status of pass or exempt"
+    evidence:
+      - artifact: "plan.md § Phases 1: 'bootstrap (exempt, see below), then red-first: ... story configuration filled in'; § Complexity Tracking row 1: 'Only install, the three package skeletons and the test command's wiring ... every behaviour in phase 1 is red first'"
+      - code: ".specify/extensions/story/scripts/tdd-check.sh:129-131 returns 'exempt' only when tdd-exempt.md exists AND red-commits is empty; with any red commit the full check runs"
+      - code: ".specify/extensions/story/scripts/common.sh:83-85 story_run_tests_at does 'cd $wt' and then calls story_config, which resolves the repo root with 'git rev-parse --show-toplevel' (common.sh:5,45), so it reads the story-config.yml of the commit under test, not HEAD's"
+      - code: "Phase 1's base is a commit at which both story-config.yml copies have test_command: \"\" and setup_command: \"\" (.specify/extensions/story/story-config.yml:11-12). At base the check therefore runs bash -c \"\", which exits 0. tdd-check.sh:158-159 then records 'the final tests pass against the code from before the phase', so the status is fail."
+      - code: ".specify/extensions/story/scripts/red.sh:16 reports 'unavailable' and records nothing while the working tree's test_command is empty, but plan phase 1 fills in the story configuration last"
+    claim: |
+      The plan puts an exempt bootstrap and red-first behaviour in the same phase 1. The story workflow's red/green
+      check does not support that mix. Because red commits exist, the exemption is ignored. The "final tests against
+      base" run then reads the base commit's empty test_command and exits 0, so tdd-check always reports fail for
+      phase 1. If the configuration is filled in last, as the plan's order says, red.sh cannot record any phase-1 red
+      commit either. Phase 1 cannot be approved under the review rule ("tdd_check is pass, or a justified exempt"),
+      and SC-003's "pass on a demo phase" cannot come from phase 1.
+    remedies:
+      - "Split the bootstrap into its own exempt phase. That phase sets test_command and setup_command in both copies, installs the workspace, and has tdd-exempt.md and no red commits. Every red-first behaviour of US1 goes in the next phase, whose base then has a working test command. Name which phase is SC-003's demo phase."
+      - "Keep one phase, but change tooling/speckit/extensions/story/scripts/tdd-check.sh (then reinstall) to treat an empty test_command at a base commit as 'no tests can pass' (non-zero), and to support an exemption that covers named bootstrap commits. Order phase 1 so that the configuration is filled in before the first red commit."
+  - id: PLAN-CORRECTNESS-1-002
+    severity: 3
+    title: "Gate scripts are excluded from mutation testing, but the Constitution Check reports Principle VIII as passing with only the bootstrap exemption"
+    evidence:
+      - artifact: "plan.md § Constitution Check VIII: 'Pass with one exemption ... Bootstrap exemption below'; § Complexity Tracking has no row for mutation scope"
+      - artifact: "research.md R-08 step 2: 'git diff --unified=0 <base> -- packages/*/src (package source only)'; spec.md FR-028 mutation row: 'package source TypeScript'"
+      - artifact: "constitution.md VIII 'Mutation testing. Changed source is mutation-tested'; Governance: 'a plan that violates a principle states the violation and its justification in Complexity Tracking or is not accepted'"
+      - code: "plan.md § Source Code: all behaviour this feature adds lives in gates/bin, gates/lib, gates/eslint and gates/stylelint. packages/*/src holds only empty index.ts files, so the reviewer's mutation run (speckit.story.review.md step 4) mutates nothing in any phase of this feature."
+    claim: |
+      Nearly all source this feature adds is gate code: the CSP scanner, the prefix regexes, the sign-off parser,
+      the token-only Stylelint plugin, the no-snapshot-only rule and the mutation wrapper. These gates are what
+      "keep agents honest". Under the plan none of this code is ever mutation-tested, and later features that change
+      gates will not mutation-test them either. The constitution requires changed source to be mutation-tested. The
+      plan's Constitution Check does not record this departure, and Complexity Tracking has no scope or sunset for
+      it.
+    remedies:
+      - "Extend the mutation gate's scope to gate source (gates/bin, gates/lib, gates/eslint, gates/stylelint; tests in gates/test, Node project). Update FR-028's mutation row and R-08's diff pathspec, and run it in the reviewer's mutation command for this feature's phases."
+      - "Keep the scope, but record the exclusion of gate code from mutation testing in Complexity Tracking with a rationale and a sunset, mark Principle VIII as 'Pass, partial', and get the operator's approval."
+  - id: PLAN-CORRECTNESS-1-003
+    severity: 3
+    title: "No .gitignore change: node_modules, dist and Stryker output appear as untracked files and break the workflow's scope check and commit guard"
+    evidence:
+      - code: ".gitignore (root) holds only '.specify/.workflow-install.lock' and '.specify/workflows/runs/'. plan.md § Source Code does not list .gitignore, and no plan artifact mentions node_modules or ignoring dist/."
+      - code: "tooling/speckit/bin/scope-check.sh:22 counts 'git status --porcelain --untracked-files=all', so after an install every lens, review, refute or verify step lists node_modules/** (and dist/**, .stryker-tmp/** after a build or mutation run) as 'outside' and the step is redone"
+      - code: "tooling/speckit/bin/guard-commit.sh:15-23 counts untracked files ('git ls-files --others --exclude-standard') as code changes"
+      - artifact: "quickstart.md step 1: 'pnpm run setup:online → succeeds; git status shows no change (US1-1)', which is false while node_modules/ is not ignored"
+      - artifact: "contracts/plants.md csp row: 'built-output: dist/ files'. A blanket 'dist/' ignore rule would also stop the CSP plants from being committed."
+    claim: |
+      The plan installs dependencies, builds to packages/*/dist and runs Stryker (sandbox and reports), and Vitest
+      browser mode writes failure screenshots. Nothing in the plan ignores any of this output. The repository's own
+      orchestration scripts count untracked files, so the first install makes every read-only role's scope check
+      fail. The quickstart's "no change" check also fails. Adding the obvious 'dist/' rule would silently drop the
+      CSP plants' dist/ inputs from git.
+    remedies:
+      - "Add .gitignore to plan.md § Source Code with node_modules/, packages/*/dist/, .stryker-tmp/, reports/ and Vitest's __screenshots__/ (any path the tools write). Scope the dist rule to packages/*/dist/, or add a negation for gates/plants/**, so the CSP plants stay tracked. Add a quickstart check that 'git status --porcelain' is empty after setup:online, pnpm -r build, pnpm test and gate:mutation."
+  - id: PLAN-CORRECTNESS-1-004
+    severity: 3
+    title: "The mutation CI job has no history or base-branch fetch, so it cannot find origin/$GITHUB_BASE_REF"
+    evidence:
+      - artifact: "contracts/ci-checks.md: only the Sign-off row has 'full history fetch'; the Mutation testing row has only 'timeout-minutes: 10'. The common steps are 'checkout, Node and pnpm from the pins, restore ..., pnpm run setup:online'"
+      - artifact: "research.md R-08 step 1: 'in CI the merge base with origin/$GITHUB_BASE_REF; none of these: exit 2'"
+      - code: "actions/checkout defaults to fetch-depth: 1 and fetches only the pull request's merge ref, so origin/<base> does not exist and no merge base can be computed"
+    claim: |
+      As specified, the Mutation testing check exits 2 ("could not run") on every pull request. Either it blocks all
+      merges, or someone weakens it to get past. FR-011 and SC-005 cannot be met until the job fetches the base
+      branch with enough history to compute the merge base.
+    remedies:
+      - "In contracts/ci-checks.md, give the Mutation testing job (like Sign-off) checkout with fetch-depth: 0, or an explicit fetch of the base branch. Have the job pass --base \"$(git merge-base origin/$GITHUB_BASE_REF HEAD)\" so the wrapper's base resolution is shown in the contract."
+  - id: PLAN-CORRECTNESS-1-005
+    severity: 3
+    title: "The typecheck plant supplies its own strict tsconfig, so it cannot detect the repository typecheck losing strict mode"
+    evidence:
+      - artifact: "contracts/plants.md typecheck row: 'files: a .ts file and a strict tsconfig'"
+      - artifact: "spec.md FR-002 'All repository TypeScript MUST be checked in TypeScript's strict mode'; FR-025 typecheck plant 'a type error that only strict mode reports'; constitution VIII 'Gates are proven ... so a gate that silently passes everything is caught'"
+      - artifact: "contracts/gate-cli.md: normal command 'tsc -p tsconfig.json --noEmit' (the repository tsconfig.json extending tsconfig.base.json)"
+    claim: |
+      The point of the typecheck plant is to show the real gate enforces strict mode. If the plant brings its own
+      strict tsconfig, the plant job still passes when someone removes "strict" or "noImplicitAny" from
+      tsconfig.base.json: the plant's tsconfig still catches the implicit any while the real gate passes everything.
+      The same gap exists for the unit-tests plants: the plan does not say whether plant mode uses the real
+      vitest.config.ts projects. A broken include glob for one project passes silently under US1-10 and would not be
+      caught.
+    remedies:
+      - "Require plant mode for typecheck to extend the repository's tsconfig.base.json (the plant's tsconfig sets only 'extends' and 'include'/'files', and the plant job rejects a plant tsconfig that sets compilerOptions). Require plant mode for unit-tests to run under the repository's vitest.config.ts projects, with only the root or include mapped to the plant. State both in contracts/plants.md."
+  - id: PLAN-CORRECTNESS-1-006
+    severity: 2
+    title: "The dependency list omits Vite (a required peer of Vitest 5.1.0) and jiti (needed by ESLint 10 to load eslint.config.ts)"
+    evidence:
+      - artifact: "plan.md § Technical Context Primary Dependencies (no vite, no jiti); research.md R-01: 'no extra runner dependency'; contracts/gate-cli.md lint: 'eslint --config eslint.config.ts .' (no --flag)"
+      - code: "npm view vitest@5.1.0: 'vite' is in peerDependencies ('^6.4.0 || ^7.0.0 || ^8.0.0', peerDependenciesMeta optional:false) and not in dependencies"
+      - code: "eslint@10.14.0 lib/config/config-loader.js:246-266: for a .ts config, without the unstable_native_nodejs_ts_config flag, Node.js loads it through loadTypeScriptConfigFileWithJiti, which throws \"The 'jiti' library is required for loading TypeScript configuration files\" when jiti is absent. jiti is only an optional peer of eslint."
+      - artifact: "constitution.md § Technology: 'Stack: ... Vite ... every dependency is pinned exactly'"
+    claim: |
+      If Vite is not pinned in a manifest, it enters only through pnpm's peer auto-install, at whatever version
+      resolves on the day. That breaks the "every dependency pinned exactly" rule, and the install-and-pins gate
+      cannot see it because it scans manifests only. As written, both ESLint gates (code lint and test lint) fail to
+      load their TypeScript configs and exit 2.
+    remedies:
+      - "Add vite (an exact version in Vitest 5.1.0's peer range) and jiti (exact) to the root devDependencies in plan.md's dependency list. Alternatively, run eslint with '--flag unstable_native_nodejs_ts_config' in both ESLint gate commands and drop jiti. Record the choice in R-05/R-06."
+  - id: PLAN-CORRECTNESS-1-007
+    severity: 2
+    title: "The mutation diff and the style lint glob packages/*/src without excluding test code there, contrary to FR-028 and FR-024"
+    evidence:
+      - artifact: "research.md R-08 step 2: 'git diff --unified=0 <base> -- packages/*/src (package source only, test code excluded)'. The pathspec has no exclusions."
+      - artifact: "research.md R-07: 'postcss-lit ... for *.ts in packages/elements/src, and plain CSS for *.css in packages/elements/src and packages/styles/src'; R-10 lists only gates/plants/** as Stylelint ignoreFiles"
+      - artifact: "spec.md FR-028: test code = '*.test.ts', '*.spec.ts', files under 'test/', and '*.stories.ts' wherever they are; FR-024: 'test code, stories included, is not covered'"
+    claim: |
+      Colocated tests and stories (src/button.test.ts, src/button.stories.ts, which #10 is likely to add) fall
+      inside packages/*/src. Under the plan, Stryker would mutate test files and stories, and the style lint would
+      reject raw values in story CSS, which FR-024 explicitly leaves out of scope. The plan claims "test code
+      excluded" with a pathspec that does not exclude it. Non-TypeScript files under src (such as .css) would also
+      reach Stryker's mutate list, while FR-028's mutation scope is package source TypeScript only.
+    remedies:
+      - "Derive both scopes from FR-028's definitions. Mutation diff: packages/*/src/**/*.ts minus :(exclude,glob)**/*.test.ts, **/*.spec.ts, **/test/**, **/*.stories.ts. Stylelint: ignoreFiles adds the same test-code globs. Add a pass plant (or gate test) with a raw value in a *.stories.ts under src to show it is accepted."
+  - id: PLAN-CORRECTNESS-1-008
+    severity: 2
+    title: "The unit-tests plant puts the elements failing test in Node, contradicting R-03 and FR-025"
+    evidence:
+      - artifact: "contracts/plants.md unit-tests row: 'failing test as each of tokens, styles, elements (Node), failing test needing Chromium'"
+      - artifact: "research.md R-03 and plan.md Testing: the 'elements' project is browser mode (Chromium); there is no Node elements project. spec.md FR-025: 'a failing test set up as a test of each of the three packages'"
+    claim: |
+      A Node-run "elements" plant does not show that the real elements project, which runs in Chromium, collects
+      and fails a failing test. Under R-03 that configuration does not exist, so the contract contradicts the
+      research decision it is based on.
+    remedies:
+      - "In contracts/plants.md, run the elements plant under the elements (Chromium) project, so it doubles as the failing test that needs Chromium, or keep both but drop '(Node)'. State the project for each of the four unit-test plants."
+  - id: PLAN-CORRECTNESS-1-009
+    severity: 2
+    title: "Nothing checks that the gate registry lists every FR-020 gate, so a gate missing from gates.json is never plant-tested"
+    evidence:
+      - artifact: "research.md R-10: the plant job runs 'for every gate in gates.json'; data-model.md Gate: 'Validation: every gate of FR-020 has exactly one entry' (no owner or check named)"
+      - artifact: "contracts/ci-checks.md: ci.yml jobs are listed independently of the registry"
+      - artifact: "spec.md FR-025: 'Every gate of FR-020 MUST have at least one planted defect'; Edge Cases: 'A plant accidentally ... deleted: the plant job must fail (\"gate X has no plant\")'"
+    claim: |
+      The plant job's coverage is only as complete as gates.json. If a CI job exists without a registry entry, or an
+      entry is removed, that gate runs on pull requests with no plant and the plant job stays green. That is exactly
+      the silent-gate case FR-025 and constitution VIII aim to rule out. The data model states the rule, but no
+      gate or test enforces it.
+    remedies:
+      - "Have the plant job (or a gate test in gates/test) check that the set of gate ids in gates.json equals the set of gate jobs in .github/workflows/ci.yml (excluding the plant job) and the FR-020 list. Fail with 'gate X has no registry entry' otherwise, and add a plant for it."
+  - id: PLAN-CORRECTNESS-1-010
+    severity: 2
+    title: "The plan does not say whether gate tests in gates/test read gates/plants/; if they do, the unit-tests gate reads plants"
+    evidence:
+      - artifact: "spec.md FR-025: 'a gate's red step is a failing test of the gate itself, and the plants it reads arrive with the green commit (the plan says where gate tests live)'"
+      - artifact: "plan.md Constraints: 'no gate reads gates/plants/ except the plant job (FR-028)'; spec.md US3 scenario 8; research.md R-10 excludes gates/plants/** only from tool configurations"
+      - artifact: "plan.md Testing: 'the gate scripts are tested in gates/test/' run by pnpm test (the unit-tests gate). No artifact says where those tests' fixtures live."
+    claim: |
+      If the gate tests use the plants as fixtures, the normal unit-tests gate reads gates/plants/, which breaks
+      FR-028 and the plan's own constraint. A plant edit could then also fail the normal unit-test run, which US3
+      scenario 8 forbids. If they do not, the plan needs a separate fixture set and does not say so. Either way, an
+      implementer has to guess, and one of the guesses breaks a requirement.
+    remedies:
+      - "State in research.md R-10 that gate tests use their own fixtures under gates/test/fixtures/ and never read gates/plants/, with the plant job as the only reader."
+      - "Or state that gate tests may read gates/plants/, and amend FR-028, US3 scenario 8 and the plan's constraint to allow the unit-tests gate to read plants through gate tests only."
+  - id: PLAN-CORRECTNESS-1-011
+    severity: 1
+    title: "The story review command change names only .specify/, but the reviewer follows .claude/skills/speckit-story-review/SKILL.md"
+    evidence:
+      - artifact: "plan.md § Source Code: 'the story review command (passes the phase base to mutation testing; reinstalled into .specify/)'; research.md R-08 'then reinstalled into .specify/'"
+      - code: ".claude/agents/reviewer-renata.md:11 'Follow .claude/skills/speckit-story-review/SKILL.md exactly'. That file and .specify/extensions/story/.specify-dev/agent-commands/claude/speckit-story-review/SKILL.md are further copies of the same command (diff: only frontmatter differs)."
+      - code: "tooling/speckit/README.md:9-14: specify installs copies into .specify/ and .claude/skills/"
+    claim: |
+      If the implementer updates only the copies the plan names, the reviewer keeps running the mutation command
+      with no base. Under R-08 that exits 2, so FR-007 is not met in practice.
+    remedies:
+      - "List every copy the change must reach (tooling source, .specify/extensions/story/commands, .specify/.../.specify-dev/..., .claude/skills/speckit-story-review/SKILL.md) or the exact reinstall command from tooling/speckit/README.md. Add a check (in config-copies or a gate test) that the installed review command contains OCELLE_MUTATION_BASE."
+  - id: PLAN-CORRECTNESS-1-012
+    severity: 1
+    title: "The finding output format is inconsistent between artifacts and does not fit gates whose findings have no file line"
+    evidence:
+      - artifact: "research.md R-09: 'each printed as path:line: message'; contracts/gate-cli.md and data-model.md Finding: '<path>:<line>: <gate-id>: <message>'"
+      - artifact: "spec.md FR-023 'names the commit'; US1 scenario 8 / FR-027 'names the file' (a lockfile mismatch or a missing pin has no line); config-copies compares whole files"
+    claim: |
+      Two formats are given for the same output. The required path:line form cannot express a sign-off finding (a
+      commit) or a lockfile-mismatch finding, so these gates will either break the contract or invent line numbers.
+    remedies:
+      - "Make data-model.md the single definition, align R-09 to it, and define the forms for non-line findings (for example '<commit-sha>: signoff: <message>' and '<path>: pins: <message>' without a line)."

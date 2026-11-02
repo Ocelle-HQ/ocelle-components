@@ -1,0 +1,198 @@
+schema: review-findings/v1
+complete: true
+phase: plan
+round: 1
+lens: fresh
+findings:
+  - id: PLAN-FRESH-1-001
+    severity: 3
+    title: "Phase 1's red/green check cannot pass: the check reads the base commit's empty test_command"
+    evidence:
+      - artifact: "plan.md § Phases, item 1: 'bootstrap (exempt, see below), then red-first: ... story configuration filled in.' and § Complexity Tracking: 'Phase 1 bootstrap without a red step (tdd-exempt.md) ... every behaviour in phase 1 is red first. Ends with phase 1.'"
+      - code: ".specify/extensions/story/scripts/common.sh story_run_tests_at: after 'cd \"$wt\"' it calls story_config, which resolves story_repo_root inside the worktree, so it reads the story-config.yml of the commit under test, not of HEAD"
+      - code: "git show HEAD:.specify/extensions/story/story-config.yml -> test_command: \"\" (so the phase-1 base commit has an empty test command)"
+      - code: "probe: bash -c \"\"; echo $? -> 0. tdd-check.sh runs the final tests 'against base' via bash -c \"$tests\" with tests empty, gets 0, and records 'the final tests pass against the code from before the phase: they do not test the change' -> status fail"
+      - code: "tdd-check.sh: the 'exempt' status applies only when tdd-exempt.md exists AND red-commits is empty; phase 1 has red commits (behaviour is red first), so the full check runs"
+      - code: "red.sh: returns status 'unavailable' when test_command is empty at the time it runs; and a red commit made before the configuration is filled in runs with an empty test command and exits 0 ('tests pass, so they were not red')"
+    claim: |
+      The plan puts the exempt bootstrap and the red-first behaviour of US1 in one phase. The story workflow's
+      red/green check runs the phase's final tests in a worktree of the phase base and reads that worktree's own
+      story configuration, in which test_command is empty, so the 'final tests against base' step always exits 0
+      and the check always reports fail for phase 1, however correct the work is. In addition, the plan lists
+      'story configuration filled in' last among phase 1's red-first items; if it is filled in after the red commit,
+      red.sh reports unavailable or records nothing. Phase 1 would then loop through review rounds on a finding no
+      fix can clear, ending at the operator's three-round decision. SC-003 is about a later demo phase and does not
+      catch this.
+    remedies:
+      - "Split US1 into two phases in plan.md § Phases: Phase 1 = bootstrap only (install, package skeletons, test command wiring, and both story-config copies' test_command and setup_command set), with tdd-exempt.md and no red commit; Phase 2 = US1 behaviour, red first, whose base then has a working test command. State in the plan that the story configuration is set in the bootstrap commit, before any red commit."
+      - "Keep one phase but change the story extension (both copies, reinstalled) so story_run_tests_at reads test_command and setup_command from HEAD's configuration rather than from the checked-out commit, and record this tooling change in plan.md and contracts/story-config.md."
+  - id: PLAN-FRESH-1-002
+    severity: 3
+    title: "The exit 0/1/2 contract is built on tool exit codes that mean the opposite or cannot be told apart"
+    evidence:
+      - artifact: "contracts/gate-cli.md: 'Tool-backed gates (typecheck, lint, style-lint, test-lint, unit-tests) are wrapped by gates/lib so their exit codes follow the table (tool errors in configuration map to 2, findings to 1).' research.md R-08 step 4: 'thresholds.break: 100 ... so any survivor or uncovered mutant fails the run'"
+      - code: "probe with typescript@6.0.3 (tarball from the npm registry): a strict-mode implicit any with --noEmit -> exit 2; -p missing.json -> exit 1; an unknown compiler option -> exit 2 (same as a type error)"
+      - code: "stylelint@17.16.0 lib/constants.mjs: EXIT_CODE_FATAL_ERROR = 1, EXIT_CODE_LINT_PROBLEM = 2, EXIT_CODE_INVALID_USAGE = 64, EXIT_CODE_INVALID_CONFIG = 78"
+      - code: "@stryker-mutator/core@10.1.1 dist/src/reporters/mutation-test-report-helper.js:135-141 sets exit code 1 when the score is under thresholds.break; dist/src/stryker-cli.js run() does not catch errors from runMutationTest, so a crash (for example a failing dry run) also ends with exit 1"
+      - artifact: "contracts/plants.md: no pass plant for typecheck, lint, unit-tests, pins or config-copies"
+    claim: |
+      The plant job's whole value (R-09: 'a gate that crashes on its plant does not count as catching it') depends
+      on each wrapper turning 'found defects' into 1 and 'could not run' into 2. For tsc the codes are inverted
+      (type errors are 2, a missing config is 1) and an invalid option is the same 2 as a type error; for Stylelint
+      lint problems are 2 and fatal errors 1; for Stryker a surviving mutant and a crash are both 1; Vitest also
+      exits 1 both for failing tests and for startup errors. The plan says only 'configuration errors map to 2',
+      which cannot be done from exit codes alone. A wrapper that maps non-zero to 1 makes a broken gate look as if
+      it caught its plant, and five gates have no pass plant that would expose a gate that fails on everything.
+    remedies:
+      - "In contracts/gate-cli.md give, per tool-backed gate, how findings are told from breakage using the tool's structured output, not its exit code: tsc diagnostics with codes outside the configuration ranges (TS5xxx/TS6xxx are configuration) -> 1; Stylelint JSON results with warnings -> 1, exit 1/64/78 -> 2; ESLint JSON with messages -> 1, fatal parse/config messages -> 2; Vitest JSON reporter with failed tests -> 1, no report or errors outside tests -> 2; mutation from Stryker's JSON report (Survived/NoCoverage on changed lines -> 1; no report -> 2) instead of thresholds.break. Add one plant per gate that breaks the gate's configuration and must give exit 2."
+      - "In contracts/plants.md give every gate at least one pass plant (a clean typecheck file, a clean lint file, a passing test per project, a matching mini-workspace, two equal copies), so a gate that fails on everything is caught by the plant job."
+  - id: PLAN-FRESH-1-003
+    severity: 3
+    title: "Plants bring their own configuration, so the plant job proves the tool works, not that the repository's gate is configured"
+    evidence:
+      - artifact: "contracts/plants.md, typecheck row: 'files: a .ts file and a strict tsconfig'; mutation row: 'mutation-fixture: base/ and head/ source + tests'; data-model.md § Gate: plantCommand 'the command run per plant'"
+      - artifact: "spec.md US3 scenario 9: 'the plant job has shown in the same run that it can fail, so no gate passes only because there is nothing to check'; constitution VIII: 'Every CI gate has a planted defect that makes it fail, run in CI, so a gate that silently passes everything is caught.'"
+      - code: "plan.md § Source Code: tsconfig.base.json holds the strict options; stryker.config.json holds thresholds; eslint.config.ts and stylelint.config.ts hold the rule sets"
+    claim: |
+      If a typecheck plant carries its own strict tsconfig, someone can switch off strict (or noImplicitAny) in
+      tsconfig.base.json and the plant still fails, so the plant job stays green while the real gate has gone soft.
+      The same applies if the mutation fixture has its own Stryker or Vitest configuration (the repository's
+      thresholds or mutate settings could be weakened unseen), and if ESLint, Stylelint or Vitest plant modes load a
+      plant-specific config. The plan nowhere states that plant mode must run the repository's own gate configuration
+      on the plant inputs, which is exactly the regression Principle VIII's gate plants exist to catch.
+    remedies:
+      - "Add a rule to contracts/plants.md and data-model.md: plant mode runs the gate with the repository's own configuration and only swaps the input files. The typecheck plant's tsconfig contains only 'extends' of the repository tsconfig.base.json and an include (no compilerOptions); ESLint, Stylelint and Vitest plant modes load the repository configs and only lift the gates/plants exclusion for the plant directory; the mutation plant uses the repository's stryker.config.json thresholds and mutator settings. Add a plant-job assertion (or a gates/test test) that fails if a plant directory contains its own compiler, lint, test or Stryker options."
+  - id: PLAN-FRESH-1-004
+    severity: 3
+    title: "None of this feature's code is mutation-tested: all behaviour lives in gates/, which is outside the mutation scope"
+    evidence:
+      - artifact: "spec.md FR-028 table: 'mutation testing | package source TypeScript changed relative to the pull request's base branch'; plan.md § Constitution Check VIII: 'Pass with one exemption ... mutation testing and the test lint are delivered here'"
+      - artifact: "plan.md § Phases: all four phases change gates/bin, gates/lib, gates/eslint, gates/stylelint and configuration; the three packages stay empty (FR-001, 'src/index.ts')"
+      - artifact: "research.md R-08 step 2: 'git diff --unified=0 <base> -- packages/*/src ... no range: print \"nothing to mutate\" and exit 0'"
+      - artifact: "constitution VIII: 'Mutation testing. Changed source is mutation-tested. A surviving mutant in new or changed code is a blocking review finding'"
+    claim: |
+      Every phase review of this feature, and every later change to a gate, will get 'nothing to mutate', because
+      the gate scripts are not package source. The gates are the code whose silent weakening the constitution is
+      most worried about, and their tests are the ones most likely to be vacuous (for example asserting only that a
+      script exits non-zero). Plants cover each gate's main failure path but not, for example, the mutation wrapper's
+      changed-range logic, the sign-off merge exemption or the CSP string-argument rule. The Constitution Check marks
+      VIII as passing with only the bootstrap exemption, so this gap is neither stated nor approved. Also, if gate
+      tests run the scripts as child processes, Stryker's in-process mutant switching cannot reach them, so the scope
+      cannot simply be widened later without changing how gate tests are written.
+    remedies:
+      - "Extend the mutation scope to the gate scripts (gates/bin, gates/lib, gates/eslint, gates/stylelint; not gates/plants or gates/test) in spec FR-011/FR-028 and R-08, and state in the plan that gate tests call the gate's exported functions in-process (child-process tests only for the thin CLI shell), so Stryker can kill mutants in them."
+      - "Keep the scope as specified and add a Complexity Tracking row 'gate scripts not mutation-tested', with the reason, a sunset condition and the operator's approval, as the constitution's governance section requires."
+  - id: PLAN-FRESH-1-005
+    severity: 2
+    title: "Node 26's native TypeScript is strip-only and ESLint does not use it by default; the plan's TS settings and dependency list do not account for it"
+    evidence:
+      - artifact: "research.md R-01: 'Node 26 runs TypeScript files natively (type stripping), so gate scripts are TypeScript run by node with no build step and no extra runner dependency.' plan.md § Technical Context: strict, noUncheckedIndexedAccess, exactOptionalPropertyTypes only. research.md R-11: 'Packages build with tsc to dist/'"
+      - code: "probe with the Node v26.13.0 linux-x64 binary from nodejs.org: process.features.typescript -> 'strip'; a file with 'enum E { A }' -> SyntaxError at the enum; 'import { x } from \"./y\"' (no .ts extension) -> ERR_MODULE_NOT_FOUND"
+      - code: "eslint@10.14.0 lib/config/config-loader.js:238-262 and :142-169: a .ts config file is loaded with jiti unless the unstable_native_nodejs_ts_config flag is passed; package.json lists jiti only as an optional peer dependency. The plan's pinned dependencies have no jiti, and contracts/gate-cli.md runs 'eslint --config eslint.config.ts .' with no flag"
+    claim: |
+      The typecheck gate will accept TypeScript that Node 26 cannot run (enums, namespaces, parameter properties,
+      extensionless relative imports), so a gate script can pass typecheck and lint and then crash, which the
+      contract then reports as exit 2 at best. Making imports carry '.ts' needs allowImportingTsExtensions, which
+      tsc allows only with noEmit or rewriteRelativeImportExtensions, which in turn interacts with the packages'
+      tsc build to dist/ that shares tsconfig.base.json. Both ESLint gates as specified fail to load their config
+      ('The jiti library is required') unless jiti is added or the flag is passed. None of this is decided in the
+      plan, so phase 1 or 3 will discover it and make an unreviewed decision.
+    remedies:
+      - "In plan.md § Technical Context and R-01/R-02: add erasableSyntaxOnly and verbatimModuleSyntax to the compiler options for repository TypeScript; use '.ts' extensions in relative imports with allowImportingTsExtensions plus rewriteRelativeImportExtensions (or keep a separate build tsconfig per package); and in contracts/gate-cli.md run ESLint with '--flag unstable_native_nodejs_ts_config' (or add an exactly pinned jiti to the dependency list, or use eslint.config.js)."
+  - id: PLAN-FRESH-1-006
+    severity: 2
+    title: "Mutation testing in CI cannot find its base: only the sign-off job fetches history"
+    evidence:
+      - artifact: "contracts/ci-checks.md: only the Sign-off row has 'full history fetch'; the Mutation testing row runs 'pnpm run gate:mutation (base: the pull request's base branch)'"
+      - artifact: "research.md R-08 step 1: 'in CI the merge base with origin/$GITHUB_BASE_REF; none of these: exit 2'"
+      - code: "actions/checkout's default is fetch-depth 1 on the pull request's merge ref; it does not create origin/<base branch>, so 'git merge-base HEAD origin/$GITHUB_BASE_REF' has nothing to resolve"
+    claim: |
+      As contracted, the mutation job exits 2 on every pull request that changes package source (and, depending on
+      the order of checks in the wrapper, possibly on every pull request). The cold mutation budget of SC-005 also
+      does not include the history fetch.
+    remedies:
+      - "In contracts/ci-checks.md give the Mutation testing job 'fetch-depth: 0' (or an explicit fetch of the base branch to the depth needed for the merge base), and state in R-08 that the base is resolved from github.event.pull_request.base.sha when origin/$GITHUB_BASE_REF is absent."
+  - id: PLAN-FRESH-1-007
+    severity: 2
+    title: "The reviewer's mutation command cannot run in unattended mode and misses installed copies"
+    evidence:
+      - artifact: "contracts/story-config.md: 'run the mutation command as OCELLE_MUTATION_BASE=$(cat FEATURE_DIR/reviews/phase-<N>/base.sha) <mutation_command>'; research.md R-08 'Story workflow (FR-007)'"
+      - code: ".claude/settings.json permissions.allow has 'Bash(pnpm run:*)' and no rule for a command that starts with a variable assignment or contains $(cat ...); tooling/speckit/README.md: unattended runs use 'the .claude/settings.json allowlist only'"
+      - code: "the review procedure exists in four places: tooling/speckit/extensions/story/commands/speckit.story.review.md, .specify/extensions/story/commands/speckit.story.review.md, .specify/extensions/story/.specify-dev/agent-commands/claude/speckit-story-review/SKILL.md and .claude/skills/speckit-story-review/SKILL.md (all mention mutation_command at the same step); the plan names only the tooling source 'reinstalled into .specify/'"
+    claim: |
+      In the unattended Spec Kit workflow the reviewer's 'OCELLE_MUTATION_BASE=$(cat ...) pnpm run gate:mutation' is
+      not covered by the allowlist, so the mutation step is refused and the reviewer either skips mutation evidence
+      or blocks on it. Both runners are supposed to use the same commands (constitution, development workflow). The
+      wrapper already accepts '--base <sha>', so the environment-variable form adds a failure mode for nothing.
+    remedies:
+      - "Change contracts/story-config.md and R-08 so the review runs 'pnpm run gate:mutation -- --phase <N>' (the wrapper reads FEATURE_DIR/reviews/phase-<N>/base.sha itself) or 'pnpm run gate:mutation -- --base <sha>' with the sha read by the reviewer beforehand; both match 'Bash(pnpm run:*)'. List all installed copies of the review command (including .claude/skills/speckit-story-review/SKILL.md) as changed by the reinstall, and have the configuration-copies check or a test confirm they match the source."
+  - id: PLAN-FRESH-1-008
+    severity: 2
+    title: "The exact-pin rule rejects the workspace dependency every later package needs"
+    evidence:
+      - artifact: "spec.md FR-027: 'when any manifest declares a dependency by anything other than an exact version'; research.md R-14: 'a scan of every manifest's dependency fields for anything but an exact version'"
+      - artifact: "constitution II: 'All styling comes from the --ocelle-* tokens in @ocelle/tokens' (so @ocelle/elements and @ocelle/styles will depend on @ocelle/tokens from #5/#7 on)"
+    claim: |
+      The usual way to depend on a sibling in a pnpm workspace is 'workspace:*' or 'workspace:^', which the pins
+      gate as specified rejects. The first feature that wires elements or styles to tokens (#5 or #7) will either
+      have to weaken the gate under time pressure or use a form nobody decided ('workspace:0.0.0', which must then be
+      bumped in lockstep). Since this feature is the one that writes the rule and its plants, the decision belongs
+      here.
+    remedies:
+      - "Decide in FR-027 and R-14 how workspace dependencies are written: either allow 'workspace:*' only for the three @ocelle packages (pnpm publish replaces it with the exact version), or require 'workspace:<exact version>'; add a pass plant for the allowed form and a fail plant for 'workspace:^'."
+  - id: PLAN-FRESH-1-009
+    severity: 2
+    title: "The token-only style lint has no rule for strings and author-defined identifiers, and 'CSS keyword' has no source"
+    evidence:
+      - artifact: "spec.md FR-024: allowed are '0 and percentages', 'CSS keywords, such as auto, inherit ...', unitless numbers in five properties, fr, calc(); 'Everything else is rejected'"
+      - artifact: "research.md R-07: 'a local plugin ocelle/token-only that implements FR-024's allow-list exactly: every declaration value is parsed ... and each word, number, function and var() fallback is checked'"
+    claim: |
+      Element CSS routinely needs values that are neither tokens nor CSS keywords: strings (content: \"\" on
+      ::before/::after, grid-template-areas), author-defined identifiers (animation-name, grid-area names,
+      container-name, view-transition-name) and dashed identifiers for anchor positioning (anchor-name: --tip,
+      position-anchor: --tip), which tooltips (constitution III, WCAG 1.4.13) are likely to use. Read literally, the
+      allow-list rejects them all; read loosely, the plugin needs a definition of 'keyword' that tells auto from red
+      and from Menlo, which neither the spec nor R-07 gives (a keyword list per property, a colour-name list, or
+      something else). The plugin will be built to whatever its author guesses, and the first element feature will
+      hit it.
+    remedies:
+      - "In R-07 (and FR-024 if the operator agrees) define the plugin's classification: strings allowed except in font and font-family; author-defined and dashed identifiers allowed in the properties that take them (animation-name, grid-area and the grid line names, container-name, anchor-name, position-anchor, view-transition-name, counter-*); 'keyword' = any identifier that is not a named colour (from a fixed list) and not in a font-family or font value; with a pass plant for content: \"\" and anchor-name: --tip and a fail plant for color: red."
+  - id: PLAN-FRESH-1-010
+    severity: 2
+    title: "@MOES-Media may be neither a valid CODEOWNERS owner nor a private channel"
+    evidence:
+      - artifact: "spec.md FR-032: 'until then it MUST name @MOES-Media ... and tell reporters to contact it directly and privately'; FR-035 and plan.md § Source Code: '.github/CODEOWNERS  # * @MOES-Media'; SC-006 checks only the text of the files"
+      - code: "git remote -v -> github.com/Ocelle-HQ/ocelle-components; knowledge/speckit-flows/flows/ocelle-plan-squad.md:12 links github.com/MOES-Media/kitty-mission-ui, so MOES-Media owns repositories and may be an organisation. Could not confirm the account type: the GitHub API path /users/MOES-Media returned 403 from this session's proxy"
+    claim: |
+      GitHub accepts as code owners only users or teams (@org/team) with write access to the repository; a bare
+      organisation handle, or an account without write access to Ocelle-HQ/ocelle-components, is shown as an
+      invalid owner and is ignored. And a GitHub handle is not a private contact route: GitHub has no direct
+      messages, so 'contact it directly and privately' gives a reporter no way to do so without a public issue,
+      which FR-032 forbids. SC-006's script will pass either way, because it only reads the text.
+    remedies:
+      - "Add to quickstart.md (and the phase 4 tasks) a check that GitHub shows CODEOWNERS without errors and that @MOES-Media is a user or team with write access; if MOES-Media is an organisation, ask the operator for a user or @org/team owner."
+      - "Give SECURITY.md a concrete private route that exists today (a security e-mail address, or the maintainer's listed e-mail), keeping @MOES-Media as the accountable owner; this needs the operator's decision since FR-032 is an operator decision."
+  - id: PLAN-FRESH-1-011
+    severity: 1
+    title: "The mutation diff pathspec is both narrower and wider than FR-028's package source"
+    evidence:
+      - artifact: "research.md R-08 step 2: 'git diff --unified=0 <base> -- packages/*/src (package source only, test code excluded)'"
+      - artifact: "spec.md FR-028: 'package source is every file in a package's directory except its test code and its built output'; test code includes '*.test.ts', '*.spec.ts' and '*.stories.ts' wherever they are"
+    claim: |
+      The pathspec misses package source outside src/ (for example a build or entry file at the package root) and
+      includes colocated test files and stories under src/, which Stryker would then mutate. The comment 'test code
+      excluded' is not true of the command given.
+    remedies:
+      - "In R-08 use 'packages/*' with exclude pathspecs for the test code patterns of FR-028 (the same as test_pathspec) and for dist/, limited to *.ts, and add a mutation pass plant whose only change is to a colocated test file."
+  - id: PLAN-FRESH-1-012
+    severity: 1
+    title: "The unit-tests plant puts 'elements' in Node, against R-03"
+    evidence:
+      - artifact: "contracts/plants.md, unit-tests row: 'failing test as each of tokens, styles, elements (Node), failing test needing Chromium'"
+      - artifact: "research.md R-03: 'elements (browser mode, @vitest/browser-playwright ... Chromium only)'"
+    claim: |
+      The elements project runs in Chromium, so an 'elements (Node)' plant either needs a project that does not
+      exist or does not run as a test of @ocelle/elements, which spec FR-025 requires ('a failing test set up as a
+      test of each of the three packages').
+    remedies:
+      - "Change the row to: a failing test as each of tokens and styles (Node) and of elements (Chromium), plus one elements test that fails only because it needs a real browser API (for example the accessibility tree), and say how plant mode runs a plant file inside the named project with the repository's Vitest configuration."

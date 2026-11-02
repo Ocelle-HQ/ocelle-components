@@ -1,0 +1,193 @@
+schema: review-findings/v1
+complete: true
+phase: plan
+round: 2
+lens: fresh
+findings:
+  - id: PLAN-FRESH-2-001
+    severity: 3
+    title: "Every red step of phases 2 to 5 fails on a missing module, which Principle VIII and the implement command reject as a wrong-reason red"
+    evidence:
+      - artifact: "plan.md § Testing: 'the gate scripts are tested in gates/test/, calling each gate''s exported functions in-process'; research.md R-08: 'Each gates/bin/<id>.ts is a thin entry that calls an exported run(argv, io)'"
+      - artifact: "research.md R-10: gate fixtures 'are test code by the story configuration''s test_pathspec (**/test/**), so they arrive in red commits'; FR-025: 'a gate''s red step is a failing test of the gate itself, and the plants it reads arrive with the green commit'"
+      - artifact: "contracts/gate-cli.md, unit-tests row: exit 2 (could not run) for 'a test file that fails to load'"
+      - code: ".specify/memory/constitution.md VIII: 'the failure MUST be the missing behaviour, not a syntax, import or setup error'"
+      - code: ".specify/extensions/story/commands/speckit.story.implement.md step 4: 'Change only test files (the test_pathspec ...)' and 'every new test must fail because the behaviour is missing, not because of a syntax, import or setup error. If any test ... fails for the wrong reason, fix the tests, amend the red commit'"
+      - code: ".specify/extensions/story/commands/speckit.story.review.md:33: reviewer checks 'each test failed in the red step for the right reason (missing behaviour, not a setup error)'"
+      - code: "story-config.yml test_pathspec ':(glob)**/*.test.ts :(glob)**/*.spec.ts :(glob)**/test/** :(glob)**/*.stories.ts': gates/bin/*.ts, gates/lib/*.ts, gates/eslint/*.ts and gates/stylelint/*.ts are not test files, so a red commit cannot add them"
+    claim: |
+      All behaviour of this feature lives in new modules under gates/ (test.ts, setup-offline.ts, config-copies.ts,
+      mutation.ts, csp.ts, prefix.ts, signoff.ts, pins.ts, plants.ts, registry.ts, the ESLint rule and the
+      Stylelint plugin). The red commit may only change test files, so every gate test in every red commit
+      imports a module that does not exist yet and fails with ERR_MODULE_NOT_FOUND / a load error, before any
+      assertion runs. From phase 3 on, the test command is gates/bin/test.ts, which reports exactly that case as
+      exit 2 'could not run'. red.sh records it (it only checks a non-zero exit), but the implementer is told to
+      amend such a red commit and the reviewer to block it, and no amendment that stays tests-only can fix it.
+      The plan never says how a gate test can fail for the missing behaviour, so phases 2 to 5 either loop in
+      review or are accepted against the constitution's NON-NEGOTIABLE principle. The same holds for the
+      ESLint rule ocelle/no-snapshot-only and the Stylelint plugin, which ESLint/Stylelint fail to load.
+    remedies:
+      - "Add to plan.md § Phases a scaffold step per unit: before the red commit, a non-test commit adds each new module with its exported signatures and no behaviour (for example run() returns 0 and prints nothing; the ESLint rule and Stylelint plugin report nothing), so the red tests load and fail on their assertions. State that tdd-check's 'final tests against base' still runs against the phase base (before the scaffold), and that the review accepts scaffold commits that contain no behaviour."
+      - "Have gate tests load the unit under test through a helper that turns a missing module into an assertion failure naming the missing behaviour, and record in plan.md and Constitution Check VIII why that counts as a missing-behaviour red rather than an import error."
+  - id: PLAN-FRESH-2-002
+    severity: 2
+    title: "The test command's own behaviour has no test seam, and two of its red-first behaviours already hold at the phase-2 base"
+    evidence:
+      - artifact: "research.md R-03: 'Vitest exits non-zero when no test file is found in the whole run, and passes a project with no test files when others have them; phase 2 proves both red-first (US1 scenarios 5 and 10)' and 'Phase 1 wires pnpm test plainly to vitest run'"
+      - artifact: "research.md R-04 gives setup-offline.ts a test seam (store dir, PLAYWRIGHT_BROWSERS_PATH, local registry socket); R-03 gives gates/bin/test.ts none (no root, config or project argument)"
+      - code: ".specify/extensions/story/commands/speckit.story.implement.md step 4: 'Each test asserts something that is false today.'"
+    claim: |
+      Phase 1 makes pnpm test a plain 'vitest run'. If Vitest 5 already fails on zero test files and passes an
+      empty project (which R-03 asserts), tests of US1 scenarios 5 and 10 pass at the phase-2 base, so they cannot
+      be red first; R-03's 'phase 2 proves both red-first' cannot happen. Second, a test of gates/bin/test.ts that
+      runs it to observe its exit codes (failing test, zero tests, missing browser) runs vitest run on the
+      repository from inside pnpm test: without a root or config argument it recurses into the whole suite, and
+      with a fixture vitest config it tests a configuration that is not the repository's. The plan defines no
+      seam, so US1 scenarios 4, 5, 9 and 10 have no planned test that is both non-recursive and red at base.
+    remedies:
+      - "In R-03, give gates/bin/test.ts a seam like setup-offline.ts (for example --root <dir> and the browser path from the environment), have its tests run it on fixture workspaces under gates/test/fixtures/ that use the repository's vitest.config.ts, and state which US1 scenarios are behaviour of test.ts (red first) and which already hold through Vitest at the phase-1 base (verified by a gate test or the unit-tests plants instead, not claimed red-first)."
+  - id: PLAN-FRESH-2-003
+    severity: 3
+    title: "The mutation time bound counts only package source, but mutation now covers gate source, and this feature's own pull request adds all of it"
+    evidence:
+      - artifact: "spec.md FR-013: 'A pull request that changes more package source than the SC-005 bound is expected to be split'; SC-005: 'changes up to 10 package source files and up to 500 lines of package source'"
+      - artifact: "spec.md FR-011 and FR-028 mutation row (after round 1): 'package source TypeScript and gate source changed relative to the pull request''s base branch'; contracts/ci-checks.md: Mutation testing job 'timeout-minutes: 10'"
+      - artifact: "plan.md § Phases: all five phases on one branch (claude/kitty-ui-speckit-decouple-x3prkx), one feature, one pull request; gates/bin holds 10 entries plus gates/lib, gates/eslint, gates/stylelint"
+      - code: "@stryker-mutator/vitest-runner 10.1.1 dist/src/vitest-test-runner.js:106-107 runs Vitest with maxWorkers: 1 per test runner; mutantRun reruns the covering tests per mutant"
+      - code: "research.md R-08/R-10: gate tests call run() in-process, and run() starts tsc, ESLint (typed), Stylelint, pnpm, git and Stryker itself for the mutation and plant fixtures, each taking seconds per mutant run"
+    claim: |
+      Round 1 added gate source to mutation testing but did not update FR-013 or SC-005, which still bound and
+      split only package source. The first pull request that runs the mutation job is this feature's own, whose
+      diff against main is every line of gate source (thousands of lines across a dozen files, each mutant
+      re-running tests that spawn compilers and linters, on a 2-vCPU runner). It cannot finish in 10 minutes, and
+      FR-013 says a timeout is a failure and the limit is not raised. The feature therefore cannot pass its own
+      merge gate, and later gate changes have no bound or split rule at all.
+    remedies:
+      - "Extend SC-005 and FR-013 to gate source (one bound for package and gate source together) and plan how this feature's pull request meets it: for example one pull request per phase, each within the bound, with the bound measured on gate-like code (quickstart step 11)."
+      - "Record in Complexity Tracking an operator-approved, one-time exception for this feature's pull request (the mutation job runs with the phase reviews' local mutation results as evidence instead of the 10-minute CI run), with the sunset 'this pull request merged'."
+      - "Shard the CI mutation job by changed file across a matrix, each shard under the 10-minute limit, and amend FR-013/SC-005 to bound a shard instead of the pull request."
+  - id: PLAN-FRESH-2-004
+    severity: 3
+    title: "Style lint, prefix and CSP plants are passed as explicit files, so the normal file collection is never proven, and Stylelint's allowEmptyInput hides a broken glob"
+    evidence:
+      - artifact: "contracts/gate-cli.md § Plant mode: 'pnpm run gate:<id> -- --plant <dir> checks only the plant''s inputs'; contracts/plants.md: style-lint, prefix and csp plants have plant form 'files' / 'built-output'"
+      - artifact: "research.md R-07: 'postcss-lit 1.4.1 as custom syntax for *.ts in packages/elements/' and 'allowEmptyInput is on, because this feature ships no stylesheet'"
+      - artifact: "research.md R-10: 'Normal input collection for commit and mutation plants' (round-1 fork PLAN-TESTABILITY-1-004 option (a) applied to sign-off and mutation only)"
+      - artifact: "contracts/plants.md style-lint pass plant: 'a raw 4px in a *.stories.ts under packages/elements/src (not covered)', a repository path that a plant under gates/plants/style-lint/<case>/ does not have"
+      - code: "spec.md US3 scenario 9: 'no gate passes only because there is nothing to check'"
+    claim: |
+      Round 1 made sign-off and mutation plants go through normal input collection but left the file gates with
+      explicit inputs. For style lint this is worse than untested: the postcss-lit syntax is bound to the path
+      packages/elements/**/*.ts, so a TypeScript plant under gates/plants/ is either parsed as plain CSS (a syntax
+      error, exit 2) or needs the plant runner to apply postcss-lit itself, which is configuration the plant job
+      forbids. The story-file pass plant and the test-code exclusion are path rules that a plant outside
+      packages/ cannot exercise. And because allowEmptyInput is on, a mistyped file glob (or a later move of
+      element source) makes the normal gate check nothing and exit 0 on every pull request, while the plant job,
+      handing files over by name, stays green. The first element feature would then merge raw values unseen.
+      The same gap applies to the prefix check's and the CSP check's own globs over packages/*/src, test code and
+      packages/*/dist.
+    remedies:
+      - "Give the file gates a 'repo-tree' plant form like mutation-repo: the plant job lays the plant's files out at repository paths (for example packages/elements/src/x.ts, packages/elements/src/x.stories.ts, packages/tokens/dist/index.js) in a temporary tree with the repository's configuration and runs the gate in normal mode with --root, so the gate's own file collection and path-bound syntax are exercised; update contracts/plants.md, data-model.md plantForm and R-10."
+      - "Additionally (or instead), add a gate test per file gate that asserts its normal-mode file list on a fixture tree equals FR-028's set, and replace allowEmptyInput with an explicit check that fails (exit 2) when the configured globs match no file once a stylesheet exists, or state why an empty match is safe."
+  - id: PLAN-FRESH-2-005
+    severity: 2
+    title: "Typecheck plants extend tsconfig.base.json, so a weakened root tsconfig.json (the file the gate runs) passes the plant job"
+    evidence:
+      - artifact: "contracts/gate-cli.md: typecheck command 'tsc -p tsconfig.json --noEmit'; plan.md § Source Code: 'tsconfig.json # all repository TypeScript (typecheck gate)'"
+      - artifact: "contracts/plants.md and data-model.md § Plant: 'in a fail or pass plant its extends resolves to the repository''s tsconfig.base.json'"
+    claim: |
+      The round-1 fix (PLAN-FRESH-1-003) made plants extend tsconfig.base.json, but the gate runs tsc -p
+      tsconfig.json, which extends the base and may override it. A pull request that adds
+      "compilerOptions": {"strict": false} (or "noImplicitAny": false, "skipLibCheck", a narrowed include) to the
+      root tsconfig.json switches off the strict typecheck for the whole repository, and the implicit-any plant
+      still fails under the untouched base, so the plant job stays green. That is the defect class the round-1
+      finding was raised for.
+    remedies:
+      - "Have typecheck plants extend the repository's root tsconfig.json (overriding only include), so every option the gate runs with applies to the plant; adjust the configuration rule in contracts/plants.md, data-model.md and R-10."
+      - "Or keep extends tsconfig.base.json and add a pins-style check (with a plant) that the root tsconfig.json sets no compilerOptions other than noEmit and no key other than extends, include and exclude."
+  - id: PLAN-FRESH-2-006
+    severity: 2
+    title: "Code-lint plants have no TypeScript project, so the type-aware floating-promise plant cannot be linted"
+    evidence:
+      - artifact: "research.md R-05: typescript-eslint strictTypeChecked + stylisticTypeChecked; 'Its plant violates @typescript-eslint/no-floating-promises'; R-10: plant tsconfig 'Normal gate configurations exclude gates/plants/** ... tsconfig exclude'"
+      - artifact: "contracts/plants.md lint row: plant form 'files' (no tsconfig, unlike the typecheck row); contracts/gate-cli.md: a fatal ESLint message is exit 2"
+    claim: |
+      no-floating-promises and every *TypeChecked rule need type information. A plant file under
+      gates/plants/lint/<case>/ is excluded by the root tsconfig.json, and the lint plant form carries no
+      tsconfig, so typescript-eslint's project service finds no project for it and reports a parsing error,
+      which the contract maps to exit 2. The fail plant then reads as 'could not run' and the pass plant fails
+      too; making it work needs either a plant tsconfig (not allowed for the lint form) or a parser option in plant
+      mode (gate configuration the plant job forbids). The plan has no consistent way to lint a plant with
+      types.
+    remedies:
+      - "Allow the lint and test-lint plant forms the same tsconfig as typecheck plants (only extends of the repository tsconfig and include), and state in R-05/R-10 that the ESLint project service resolves the plant through it; or lay lint plants out at repository paths (see PLAN-FRESH-2-004) so the root tsconfig includes them."
+  - id: PLAN-FRESH-2-007
+    severity: 2
+    title: "The sign-off exemption matches a 7-character hash prefix, which anyone can mine to skip the DCO check"
+    evidence:
+      - artifact: "data-model.md § Commit record: 'Exempt when parents.length > 1 or hash starts with d08d413'; research.md R-13: 'Merge commits ... and d08d413 are skipped'"
+      - code: "git rev-parse d08d413 -> d08d4133bf0034e3d1ff29cddf2b0f13ca63290a (a parentless root commit)"
+    claim: |
+      A 7-hex prefix is 28 bits; varying a commit's timestamp or a header line until its hash starts with
+      d08d413 takes about 2^28 SHA-1 hashes, minutes on a laptop. Any such commit, with any content and no
+      sign-off, is then skipped, so the DCO gate (the legal provenance check the constitution requires before
+      going public) is bypassable by design. The operator's decision exempts one commit, not every commit with
+      that prefix.
+    remedies:
+      - "Exempt only the full hash d08d4133bf0034e3d1ff29cddf2b0f13ca63290a, and only when the commit has no parent; add a gate test (fixture record) whose hash starts with d08d413 but differs from the full hash, and which must still be reported as no-signoff."
+  - id: PLAN-FRESH-2-008
+    severity: 2
+    title: "Verification steps assigned to phase 5 and its review need GitHub actions that agents are denied"
+    evidence:
+      - artifact: "research.md R-17: 'Phase 5 and the quickstart therefore confirm on GitHub, once the file is on the pull request branch ... The result is recorded in the phase 5 review'; quickstart.md step 9: 'gh api repos/Ocelle-HQ/ocelle-components/codeowners/errors?ref=<branch>'; steps 10 and 11: open pull requests and time CI runs"
+      - code: ".claude/settings.json permissions.deny: 'Bash(git push:*)', 'Bash(gh api:*)', 'Bash(gh pr create:*)'"
+      - code: ".specify/extensions/story/commands/speckit.story.implement.md step 8: 'Do not push'; constitution: 'The operator merges; agents never merge'"
+    claim: |
+      The phase 5 implementer and reviewer cannot push the branch, cannot call gh api and cannot open a pull
+      request, so the CODEOWNERS check of R-17 cannot be made or recorded 'in the phase 5 review'; at review time
+      the file is not on any remote branch. The same holds for the SC-001 and SC-005 timings and for US3
+      scenario 1 (each gate as its own named check), which only a pushed pull request shows. As planned, the
+      phase 5 review either blocks on a step it cannot perform or records it as done without evidence.
+    remedies:
+      - "Move every GitHub-side verification (CODEOWNERS errors and owner access, the 12 named checks green, SC-001 and SC-005 timings) into an explicit operator step after the branch is pushed and the pull request opened, recorded in a named file (for example FEATURE_DIR/verification.md), and remove it from the phase 5 review in R-17, plan.md § Phases and quickstart.md."
+  - id: PLAN-FRESH-2-009
+    severity: 2
+    title: "Nothing makes the gates required, and one pull request can delete a gate from ci.yml, gates.json and registry.ts together"
+    evidence:
+      - artifact: "research.md R-10 Registry check: compares gates.json, the ci.yml gate jobs and the FR-020 list in gates/lib/registry.ts, all files in the repository"
+      - artifact: "research.md R-16 / contracts/ci-checks.md: workflow on pull_request; no branch protection, ruleset or required-check list in any artifact"
+      - code: ".specify/memory/constitution.md Development Workflow: 'A pull request merges only when all of these pass: ...'"
+      - code: "grep -ri 'branch protection|ruleset|required check' over specs/001-repository-foundation, triage, .specify/memory: no plan or research hit"
+    claim: |
+      pull_request workflows run the pull request's own ci.yml. A change that removes, say, the mutation job and
+      its entries in gates.json and registry.ts shows every remaining check green, and the registry check agrees
+      with itself. Only a list of required checks held outside the branch (a ruleset or branch protection on
+      main naming the 12 check names) makes a missing or failing gate block the merge; without it the gates are
+      advisory and the constitution's merge rule depends on the operator noticing a check that is no longer
+      there.
+    remedies:
+      - "Add an operator step (plan.md phase 4 or the verification step) that configures a ruleset on main requiring the 12 check names of contracts/ci-checks.md, and add the required-check list to gates/README.md so a later change to it is visible; record that the plant job's registry check does not protect against a coordinated removal."
+  - id: PLAN-FRESH-2-010
+    severity: 1
+    title: "The Chromium sample test reads navigator.userAgentData, which TypeScript 6.0.3's DOM library does not declare"
+    evidence:
+      - artifact: "research.md R-03: 'packages/elements/test/chromium.test.ts ... asserts ... navigator.userAgentData.brands includes Chromium'; FR-028/FR-002: all repository TypeScript, test code included, is typechecked strictly and code-linted with strictTypeChecked"
+      - code: "probe: npm pack typescript@6.0.3; grep -c userAgentData package/lib/lib.dom.d.ts -> 0 (no NavigatorUAData in any lib file)"
+    claim: |
+      The test as described is a TS2339 error under the typecheck gate, and the obvious workaround (a cast to
+      any) is rejected by typescript-eslint's no-unsafe-member-access under strictTypeChecked. The plan should name
+      the typed access so the phase-2 test does not end up with a lint disable or an untyped cast.
+    remedies:
+      - "State in R-03 that the test declares a minimal NavigatorUAData interface (a local type for brands) and reads navigator through it, or uses another Chromium-only property that lib.dom declares."
+  - id: PLAN-FRESH-2-011
+    severity: 1
+    title: "The sk- name rule is case-sensitive, but HTML tag names are not"
+    evidence:
+      - artifact: "research.md R-12: name rule '(?<![A-Za-z0-9_-])sk-' and '(?<![A-Za-z0-9_])--sk-' with no case flag, while the font rule is explicitly case-insensitive"
+      - code: "constitution I: 'No sk- name ... appears in source or build output'; HTML parsing lower-cases tag names, so <SK-Button> in a template and document.createElement('SK-BUTTON') create an sk-button element"
+    claim: |
+      An element written in upper or mixed case in markup or createElement passes the prefix check while the
+      page gets an sk- element. Custom-property and event names are case-sensitive, so the fix is only needed for
+      element names in markup and createElement.
+    remedies:
+      - "Match sk- case-insensitively for element names (or for all names), and add a fail plant <SK-Button>."

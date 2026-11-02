@@ -73,15 +73,18 @@ story_test_changes() {
 # Runs setup and tests in a detached worktree of a commit; prints the test exit code.
 # $1 commit, $2 log file, $3 optional: commit whose versions of $4.. files are checked out on top.
 story_run_tests_at() {
-  local commit="$1" log="$2" overlay="${3:-}" wt code
+  local commit="$1" log="$2" overlay="${3:-}" wt code setup tests
   shift 3
+  # Commands come from the current configuration, never from the commit being checked out: an old commit may
+  # predate the test runner, and its empty test_command would make every run "pass".
+  setup=$(story_config setup_command); tests=$(story_config test_command)
+  [[ -n "$tests" ]] || { echo "story: test_command is not set" > "$log"; echo 2; return; }
   wt=$(mktemp -d)
   git worktree add --quiet --detach "$wt" "$commit" >/dev/null
   if [[ -n "$overlay" && $# -gt 0 ]]; then (cd "$wt" && git checkout --quiet "$overlay" -- "$@"); fi
   set +e
   (
     cd "$wt"
-    setup=$(story_config setup_command); tests=$(story_config test_command)
     { [[ -z "$setup" ]] || bash -c "$setup"; } && bash -c "$tests"
   ) > "$log" 2>&1
   code=$?

@@ -1,0 +1,153 @@
+schema: review-findings/v1
+complete: true
+phase: plan
+round: 3
+lens: fresh
+# Checked for this round: spec.md, plan.md, research.md, data-model.md, quickstart.md, contracts/*, the constitution,
+# round 1 and 2 refute/fixes/verify. Repository: .specify/extensions/story/scripts/{common,red,tdd-check,base}.sh,
+# tooling/speckit/extensions/story/commands/speckit.story.{implement,review}.md, tooling/speckit/bin/guard-commit.sh,
+# .claude/settings.json, git log (every commit since d08d413 carries a matching Signed-off-by). Packages read from
+# the registry (not executed): vitest@5.0.5 dist (test-file collection), @stryker-mutator/vitest-runner@10.1.1 dist
+# (dry run uses related files, per-test runs), stylelint@17.16.0 (accepts stylelint.config.ts), `npm view pnpm time`.
+findings:
+  - id: PLAN-FRESH-3-001
+    severity: 3
+    title: "The round-2 repo-tree fix covers only style lint, prefix and CSP; typecheck, code lint, test lint, unit tests and config-copies plants still bypass the gate's own file collection"
+    evidence:
+      - artifact: "contracts/plants.md table: typecheck and lint `files` (plant tsconfig sets its own `include` and `exclude`), unit-tests and test-lint `test-files`, config-copies `config-pair: a.yml, b.yml`; research.md R-10: 'ESLint and Vitest load the repository's configs and only lift the gates/plants/ exclusion for the plant directory; unit-test plants run inside the named project of the repository's vitest.config.ts'"
+      - artifact: "round-2/refute.md PLAN-FRESH-2-004 option (a) and fixes-1.md: the repo-tree form was applied to style-lint, prefix and csp only"
+      - code: "vitest@5.0.5 package/dist/chunks/index.1TqnEahn.js:6585-6600: `globTestFiles(filters)` first globs each project's `include`/`exclude`, then `filterFiles(testFiles, filters, dir)`; a CLI path is only a filter over that set, so a plant file under gates/plants/ (outside every project's include, inside the exclude) is never collected unless plant mode rewrites include/exclude, i.e. the configuration the plant rule forbids changing"
+      - code: "contracts/gate-cli.md config-copies: normal mode reads the two fixed paths of FR-006; plant mode is handed a.yml and b.yml directly"
+    claim: |
+      Round 2 established (PLAN-FRESH-2-004) that a plant presented outside the gate's normal file collection cannot
+      catch a broken glob, and fixed it for three gates. The same defect remains in five others:
+      - typecheck: the plant tsconfig overrides `include`, so a root tsconfig.json whose `include` stops matching
+        gates/** or packages/*/test/** typechecks less while every typecheck plant still fails and passes as expected;
+      - code lint and test lint: plants are linted as explicit paths with the plants ignore lifted, so a flat-config
+        `files` or `ignores` entry that drops packages/*/test/** or gates/** from the test lint goes unnoticed;
+      - unit tests: Vitest only runs a CLI path that the project's own include already matches (probe above), so
+        plant mode must widen include for the plant, and an elements project whose include is wrong (for example
+        `packages/element/**`) silently stops running the Chromium tests in the normal run while the other projects
+        keep `pnpm test` green and the plant job stays green, against US3 scenario 9;
+      - config-copies: a gate whose two path constants name the same file passes every normal run and still catches
+        the a.yml/b.yml plant.
+      This is the US3 scenario 9 case the constitution's "gates are proven, too" exists for. The cheapest fix is the
+      seam that already exists: test.ts takes `--root` (R-03) and repo-tree runs any gate in normal mode with
+      `--root`. A typecheck or lint plant laid out at a repository path also needs no plant tsconfig, which removes
+      the whole tsconfig exception of R-10 and data-model.md.
+    remedies:
+      - "Extend the repo-tree form (contracts/plants.md, data-model.md plantForm, R-10, gate-cli.md plant mode) to typecheck, lint, test-lint, unit-tests and config-copies: plant inputs at repository paths under tree/ (for example packages/tokens/src/x.ts, gates/lib/x.ts, packages/elements/test/x.test.ts, .specify/extensions/story/story-config.yml and tooling/speckit/extensions/story/story-config.yml), the repository's configuration copied unchanged, the gate in normal mode with --root; drop the plant-tsconfig exception; add for each a fail plant at a path only the normal collection reaches (a test file under packages/elements/test/, a gate source file under gates/bin/)."
+      - "Keep the forms, and add a red-first gate test per gate that its normal-mode file list on the repository equals FR-028's set (tsc --listFilesOnly, ESLint calculateConfigForFile/isPathIgnored, `vitest list --json` per project, the two config paths are distinct and exist), so a broken glob fails the unit-tests gate."
+  - id: PLAN-FRESH-3-002
+    severity: 3
+    title: "The scaffold-commit fix leaves the automatic old-code check failing on a missing module, and the plan's multi-unit red commits are not supported by red.sh or the implement command"
+    evidence:
+      - artifact: "plan.md § Phases: 'tdd-check.sh runs the final tests against base.sha (before the scaffold), where they still fail'; 'A later unit of the same phase that needs another new module adds its own scaffold commit, under the same rule, before its red commit.'"
+      - code: ".specify/extensions/story/scripts/tdd-check.sh:47-53: the final test files are overlaid on base.sha and run; any non-zero exit satisfies the check. At base.sha the modules added by the scaffold do not exist, so every final test fails at import whatever it asserts"
+      - code: ".specify/extensions/story/scripts/red.sh:12,24: the label is 'phase' or 'fix-<round>', and `sed -i \"/^$label /d\"` deletes the earlier 'phase' entry, so a phase records exactly one red commit; tdd-check.sh:31-42 checks only the recorded ones"
+      - code: "tooling/speckit/extensions/story/commands/speckit.story.implement.md step 4: 'Write the tests for the whole phase first ... Commit them alone', then step 5 green; no scaffold step. Plan § Source Code changes only speckit.story.review.md"
+      - artifact: "constitution VIII 'Proven against the old code ... so tests rewritten after the red step cannot pass vacuously'; 'the failure MUST be the missing behaviour, not a syntax, import or setup error'"
+    claim: |
+      The round-2 decision moved the import error from the red step to the automatic old-code check. In phases 2 to 5
+      every final test imports a module that is new in the phase, so tdd-check's check 2 always reports "fails
+      against the code from before the phase" for an import reason. A test loosened after its red commit (for example
+      `toBe(1)` relaxed to a type check) still passes check 2; the automatic guard VIII names is vacuous for every
+      phase with behaviour, and only the reviewer's manual `git diff <red sha>..HEAD` remains.
+      That manual diff is also broken by the plan's own multi-unit rule: a second unit's red commit is recorded under
+      the same `phase` label and replaces the first, so tdd-check and the reviewer see only the last red commit, and
+      a unit-1 test weakened during unit 1's green (before red 2) is in neither diff. And the implementer follows the
+      implement command, which has no scaffold step and asks for one red commit for the whole phase; the plan does
+      not change that command, so in an unattended run the scaffold commit depends on the agent reading plan.md
+      against its own procedure.
+    remedies:
+      - "Change the story extension in this feature (both copies, reinstalled like the review command): the implement command gains the scaffold step (after base.sh, before the red commit, one per phase); tdd-check additionally runs the final tests against the red commit's parent (the scaffold) and requires a non-zero exit there; plan.md drops the 'later unit ... own scaffold and red commit' clause, so a phase has one scaffold and one red commit."
+      - "Run base.sh after the scaffold commit (scaffold first, then base.sh, then red), so base.sha contains the scaffold and check 2 runs the final tests against signatures without behaviour; the review then reads the scaffold commit separately (base.sha^..base.sha) and accepts it only without behaviour. State the order in plan.md § Phases and in the implement command."
+  - id: PLAN-FRESH-3-003
+    severity: 3
+    title: "Phase 2's gate source is never mutation-tested or test-linted in a review: the mutation command and the test lint arrive in phase 3, and phase 3's review diffs from its own base"
+    evidence:
+      - artifact: "contracts/story-config.md: 'Phase 1 (bootstrap) sets test_command and setup_command; phase 3 (US2) sets mutation_command.' plan.md phase 2 delivers gates/bin/test.ts, gates/bin/setup-offline.ts and the config-copies gate; phase 3 delivers the test lint and the mutation wrapper"
+      - code: "tooling/speckit/extensions/story/commands/speckit.story.review.md:39: 'If `mutation_command` is set ... run it on the changed source' (empty at the phase 2 review); contracts/story-config.md review change: the phase 3 review runs `--base` = reviews/phase-3/base.sha, which excludes phase 2's lines"
+      - artifact: "plan.md Complexity Tracking lists only the phase 1 exemption for VIII; constitution VIII: 'Changed source is mutation-tested. A surviving mutant in new or changed code is a blocking review finding'"
+    claim: |
+      The first code this feature mutation-tests in a review is phase 3's. Phase 2's gate source (the test command
+      wrapper, offline setup, config-copies check) is reviewed without mutation testing and its tests without the test
+      lint, and no later review covers it, because each review's base is its own phase. Its survivors appear first
+      in CI on the feature's pull request, after every phase is approved, where fixing them is outside the story
+      workflow's red-first fix rounds. This is an exception to Principle VIII for a phase with behaviour, and the
+      plan neither records it in Complexity Tracking nor asks the operator, which Governance requires.
+    remedies:
+      - "Add to phase 3 (after its mutation wrapper and test lint are green) a task that runs `pnpm run gate:mutation -- --base <phase 2 base.sha>` and the test lint over phase 2's tests, with survivors fixed test-first in phase 3 and recorded in its review; state it in plan.md § Phases."
+      - "Record a Complexity Tracking row 'phase 2 reviewed without mutation testing and test lint', scope phase 2, sunset the CI run of this feature's pull request, for operator approval, and mark Constitution Check VIII 'Pass, partial'."
+  - id: PLAN-FRESH-3-004
+    severity: 3
+    title: "The shard bound counts files and lines, but mutation time here is set by gate tests that start Stryker, Vitest with Chromium and every gate; the SC-005 measurement uses generated code instead of those tests"
+    evidence:
+      - artifact: "research.md R-08: 'No gate source file of this feature has more than 500 lines, so this feature's own pull request splits into shards within the bound'"
+      - artifact: "quickstart.md step 12: 'generate a change of 10 files and 500 lines of gate source under gates/lib/ ... with tests that kill every mutant'"
+      - artifact: "research.md R-03 (test.ts tests build a workspace and run Vitest, Chromium project included), R-08 (wrapper behaviour tested 'by gate tests on fixture repositories', i.e. Stryker runs), R-10 (plants.ts runs every gate on every plant); plan.md Testing: gate tests call the exported functions in-process"
+      - code: "@stryker-mutator/vitest-runner@10.1.1 dist/src/vitest-test-runner.js:158-195: the dry run and each mutant run execute the Vitest tests related to (importing) the mutated file; for a file of gates/lib/ used by the mutation wrapper or the plant job, those are the tests that spawn Stryker or the gates"
+      - artifact: "spec.md FR-013: 'the limit is not raised for it'"
+    claim: |
+      FR-013 bounds a shard by 10 files and 500 lines and SC-005 promises such a shard finishes in 10 minutes, but the
+      wall time of a mutation run is (mutants) x (time of the tests covering each mutant) / concurrency. For the
+      mutation wrapper, test.ts and the plant job, the covering tests each start Stryker on a fixture repository,
+      Vitest with Chromium, or several gates; at, say, 20 s per covering run (an estimate, not measured), 60 mutants
+      on 2 vCPU already exceed 10 minutes. A shard of 3 such files within the line bound can therefore time out, and
+      FR-013 forbids raising the limit, so this feature's own pull request can stay red with no path but rewriting
+      tests. Quickstart step 12 cannot reveal this: it measures generated gates/lib code with generated tests, not the
+      real slowest shard, and it runs only at the operator's verification after all five phases.
+    remedies:
+      - "Add a design rule to R-08/R-09: each gate's decision logic (classification of tool output, diff ranges, shard split, finding format, plant judging) is a pure function tested in-process on recorded tool outputs under gates/test/fixtures/; tests that start a real tool live in a separate Vitest project that Stryker does not run, and the thin adapter lines they alone cover are kept to the CLI entry and the spawn call and recorded under FR-012. Measure SC-005 (quickstart step 12) on this feature's real shards, starting in phase 3."
+      - "Keep the tests as planned, and make the phase 3 and phase 4 reviews run `gate:mutation --plan` and each resulting shard locally with timing on a 2-CPU limit, so a shard over the limit is found in the phase; if one is, the operator amends FR-013/SC-005 before CI."
+  - id: PLAN-FRESH-3-005
+    severity: 2
+    title: "No workflow ever saves the pnpm store or browser cache on main, so 'cache restored' in SC-005 and quickstart step 12 cannot happen on a pull request's first run"
+    evidence:
+      - artifact: "contracts/ci-checks.md: 'Workflow .github/workflows/ci.yml, trigger pull_request'; 'Every job: ... restore the pnpm store and Playwright cache'; R-16 the same"
+      - artifact: "spec.md SC-005: 'with the package store and browser cache restored'; quickstart.md step 12: 'open a pull request ... and let the mutation jobs run once with the package store and browser cache restored'"
+      - code: "GitHub Actions cache access rules (docs, 'Restrictions for accessing a cache', not probed from here): a run can restore caches created on its own ref or on the default/base branch; a pull_request run's caches are scoped to refs/pull/<n>/merge and are not visible to other pull requests. With only a pull_request trigger, no cache is ever created on main"
+    claim: |
+      Every new pull request starts cold in every one of its 14+ jobs (online install and Chromium download), and the
+      10-minute shard limit (FR-013) includes that setup. The operator's SC-005 measurement on a fresh throwaway pull
+      request cannot meet its own precondition; it either measures a re-run or silently measures a cold run.
+    remedies:
+      - "Add a cache-warming workflow on push to main (permissions contents: read, no secrets) that runs setup:online and saves the pnpm store and Playwright cache keyed on the lockfile hash and the Playwright version; ci.yml only restores. Record it in R-16, contracts/ci-checks.md and plan.md Source Code."
+      - "Keep pull_request only, and amend SC-005 and quickstart step 12 (with the operator) to a cold first run, the shard limit covering setup."
+  - id: PLAN-FRESH-3-006
+    severity: 1
+    title: "The pinned pnpm and Node releases are inside the 7-day window the plan adopts for every other package"
+    evidence:
+      - code: "`npm view pnpm time`: 12.16.1 published 2026-10-27T15:27Z (6 days before 2026-11-02); 12.15.0 on 2026-10-21. research.md R-01: Node 26.13.0 'released 2026-10-28'"
+      - artifact: "research.md R-01: 'Node and pnpm are toolchain pins, not registry dependencies, so pnpm's release-age setting (R-04) does not govern them'; R-04 rationale: 'the release-age window is when compromised releases are usually found and withdrawn, and every CI job installs dependencies'"
+    claim: |
+      pnpm is fetched from the same npm registry and runs every install, including the one that enforces the
+      release-age policy; Node runs everything. The R-04 rationale applies to both more than to any dev dependency,
+      and the exemption is asserted rather than decided by the operator, unlike the other supply-chain choices.
+    remedies:
+      - "Pin pnpm 12.15.0 (or the newest release at least 7 days old that reads minimumReleaseAge, minimumReleaseAgeStrict and allowBuilds) and a Node 26 release at least 7 days old, and state in R-01 that toolchain pins follow the same window, checked by hand when they change."
+      - "Keep the pins and record the toolchain exemption as an operator decision in R-01."
+  - id: PLAN-FRESH-3-007
+    severity: 1
+    title: "Sign-off plants build their range from the first parent of the first record, which a freshly built repository does not have"
+    evidence:
+      - artifact: "research.md R-10: 'Sign-off: one commit per record of commits.txt ..., then `--range <first parent of the first record>..HEAD`'"
+      - artifact: "research.md R-13: 'A range that does not resolve, or that holds no commit, is exit 2'"
+    claim: |
+      If the plant job builds the temporary repository from the records alone, the first record is a root commit
+      with no parent, the range does not resolve, and every sign-off fail and pass plant ends in exit 2 instead of the
+      expected result. The plan does not say that an initial commit precedes the records.
+    remedies:
+      - "State in R-10 and contracts/plants.md that the plant job first makes an empty base commit (signed off, invented identity) and runs `--range <base commit>..HEAD`."
+  - id: PLAN-FRESH-3-008
+    severity: 1
+    title: "R-08 lets CompileError mutants pass, which FR-011's definition of 'killed' does not include"
+    evidence:
+      - artifact: "research.md R-08 step 4: '`Killed`, `Timeout`, `RuntimeError` and `CompileError` pass (FR-011's definitions)'"
+      - artifact: "spec.md FR-011: 'A mutant survives when no test kills it ... A mutant is killed only when a test fails on it, or the test run times out or ends in a runtime error'"
+    claim: |
+      By FR-011's words a mutant rejected by the typescript-checker is not killed, so it survives and should fail the
+      run; R-08 says the opposite and cites FR-011 for it. Treating compile errors as invalid mutants is the right
+      behaviour, but spec and plan disagree, and a gate test written from the spec would assert the wrong thing.
+    remedies:
+      - "Amend FR-011 (operator) to say a mutant that does not compile is invalid, neither killed nor surviving, and does not fail the run; keep R-08."
