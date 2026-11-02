@@ -1,13 +1,24 @@
-// The mutation gate (FR-011 to FR-013, research.md R-08). Scaffold: signatures only.
+// The mutation gate (FR-011 to FR-013, research.md R-08): mutation-tests the package source and gate source lines
+// changed since `--base <sha>` with Stryker (mutate ranges), and decides from Stryker's JSON report, never from its
+// exit code. `--plan` prints the CI shards; `--files <path>[,<path>...]` limits a run to one shard. `mutation()` is
+// the decision, tested in-process with doubles for git, the file system and Stryker; `run()` gives it the real tools
+// of the `--root` repository (the process boundary, tested by gates/test/integration/mutation.test.ts).
+import { readFile, rm } from "node:fs/promises";
+import { join } from "node:path";
+import { main, parseArgs } from "../lib/cli.ts";
 import type { Context, Io } from "../lib/cli.ts";
+import { emit, plural } from "../lib/findings.ts";
+import type { Finding } from "../lib/findings.ts";
+import { changedFiles, mutateSpecs, scopePathspecs } from "../lib/mutation/ranges.ts";
+import { formatRecord, scanRecords } from "../lib/mutation/records.ts";
+import type { EquivalentRecord } from "../lib/mutation/records.ts";
+import { classifyMutants } from "../lib/mutation/report.ts";
 import type { StrykerRun } from "../lib/mutation/report.ts";
+import { formatPlan, planShards, selectFiles } from "../lib/mutation/shards.ts";
+import { runTool } from "../lib/spawn.ts";
+import type { ToolRun } from "../lib/spawn.ts";
 
-/** One run of a tool: exit code and output. */
-export interface ToolRun {
-  readonly exitCode: number | null;
-  readonly stdout: string;
-  readonly stderr: string;
-}
+export type { ToolRun } from "../lib/spawn.ts";
 
 /** The tools the mutation gate uses, all in the repository root. */
 export interface MutationTools {
@@ -19,10 +30,125 @@ export interface MutationTools {
   readonly stryker: (mutate: readonly string[]) => Promise<StrykerRun>;
 }
 
-export function mutation(_context: Context, _tools: MutationTools, _io: Io): Promise<number> {
-  return Promise.resolve(0);
+interface Options {
+  readonly base: string | undefined;
+  readonly plan: boolean;
+  readonly files: string | undefined;
 }
 
-export function run(_argv: readonly string[], _io: Io): Promise<number> {
-  return Promise.resolve(0);
+const usage = "usage: gate:mutation -- --base <sha> [--plan | --files <path>[,<path>...]]";
+
+/** The gate's options, or the problem with its arguments. A lone `--` (from `pnpm run ... --`) is skipped. */
+function parseOptions(args: readonly string[]): Options | string {
+  let base: string | undefined;
+  let files: string | undefined;
+  let plan = false;
+  for (let i = 0; i < args.length; i += 1) {
+    const arg = args[i];
+    if (arg === "--") continue;
+    if (arg === "--plan") {
+      plan = true;
+      continue;
+    }
+    if (arg !== "--base" && arg !== "--files") return `unknown argument ${String(arg)}`;
+    const value = args[i + 1];
+    if (value === undefined || value === "") return `${arg} needs a value`;
+    if (arg === "--base") base = value;
+    else files = value;
+    i += 1;
+  }
+  return { base, plan, files };
 }
+
+export async function mutation(context: Context, tools: MutationTools, io: Io): Promise<number> {
+  const fail = (cause: string): number => emit({ exit: 2, cause: `mutation: could not run: ${cause}` }, io.out, io.err);
+  const options = parseOptions(context.args);
+  if (typeof options === "string") return fail(`${options}; ${usage}`);
+  const { base } = options;
+  if (base === undefined) {
+    return fail(`--base <sha> is required (the pull request's base commit, or the phase's base.sha); ${usage}`);
+  }
+  const resolved = await tools.git(["rev-parse", "--verify", "--quiet", `${base}^{commit}`]);
+  if (resolved.exitCode !== 0) {
+    return fail(`--base ${base} does not resolve to a commit; pass an existing commit (in CI, check out with fetch-depth: 0)`);
+  }
+  const diff = await tools.git(["diff", "--unified=0", "--no-color", "--no-ext-diff", base, "--", ...scopePathspecs]);
+  if (diff.exitCode !== 0) return fail(`git diff failed (${String(diff.stderr.trim().split("\n")[0])})`);
+  const changed = changedFiles(diff.stdout);
+  if (options.plan) {
+    io.out(formatPlan(planShards(changed)));
+    return 0;
+  }
+
+  let selected = changed;
+  if (options.files !== undefined) {
+    const selection = selectFiles(changed, options.files);
+    if ("missing" in selection) {
+      const missing = selection.missing.join(", ");
+      return fail(`--files names a file with no changed package or gate source line: ${missing}; run --plan for the shards`);
+    }
+    selected = [...selection.files];
+  }
+  if (selected.length === 0) {
+    io.out(`mutation: nothing to mutate: no package or gate source line changed since ${base}`);
+    return 0;
+  }
+
+  const records: EquivalentRecord[] = [];
+  const findings: Finding[] = [];
+  for (const file of selected) {
+    const source = await tools.read(file.path);
+    if (source === undefined) return fail(`cannot read ${file.path}; check out the files of the change`);
+    const scan = scanRecords(file, source);
+    records.push(...scan.records);
+    findings.push(...scan.findings);
+  }
+  const verdict = classifyMutants(await tools.stryker(mutateSpecs(selected)), selected);
+  if (!verdict.ok) return emit({ exit: 2, cause: verdict.cause }, io.out, io.err);
+
+  for (const record of records) io.out(formatRecord(record));
+  findings.push(...verdict.findings);
+  const files = selected.length;
+  if (findings.length > 0) {
+    const summary = `mutation: ${plural(findings.length, "finding")} in ${plural(files, "changed file")} (${plural(verdict.mutants, "mutant")} on changed lines)`;
+    return emit({ exit: 1, findings, summary }, io.out, io.err);
+  }
+  const summary = `mutation: ${plural(verdict.mutants, "mutant")} on the changed lines of ${plural(files, "file")}, none survived; ${plural(records.length, "equivalent record")}`;
+  return emit({ exit: 0, summary }, io.out, io.err);
+}
+
+/** Stryker's JSON report, as stryker.config.json names it (`jsonReporter.fileName`). */
+// Stryker disable next-line all: process boundary, covered by gates-integration
+const reportFile = join("reports", "mutation", "mutation.json");
+
+// Stryker disable next-line all: process boundary, covered by gates-integration
+function realTools(root: string, env: Io["env"]): MutationTools {
+  // Stryker disable next-line all: process boundary, covered by gates-integration
+  const read = (path: string): Promise<string | undefined> => readFile(join(root, path), "utf8").catch(() => undefined);
+  // Stryker disable next-line all: process boundary, covered by gates-integration
+  const stryker = join(root, "node_modules", "@stryker-mutator", "core", "bin", "stryker.js");
+  // Stryker disable next-line all: process boundary, covered by gates-integration
+  return {
+    // Stryker disable next-line all: process boundary, covered by gates-integration
+    git: (args) => runTool("git", args, root, env),
+    read,
+    // Stryker disable next-line all: process boundary, covered by gates-integration
+    stryker: async (mutate) => {
+      // Stryker disable next-line all: process boundary, covered by gates-integration
+      await rm(join(root, reportFile), { force: true });
+      // Stryker disable next-line all: process boundary, covered by gates-integration
+      const ran = await runTool(process.execPath, [stryker, "run", "--mutate", mutate.join(",")], root, env);
+      // Stryker disable next-line all: process boundary, covered by gates-integration
+      return { report: await read(reportFile), exitCode: ran.exitCode, output: `${ran.stdout}${ran.stderr}` };
+    },
+  };
+}
+
+// Stryker disable next-line all: process boundary, covered by gates-integration
+export async function run(argv: readonly string[], io: Io): Promise<number> {
+  const context = parseArgs(argv, io.cwd);
+  return mutation(context, realTools(context.root, io.env), io);
+}
+
+// Stryker disable next-line all: process boundary, covered by gates-integration
+if (import.meta.main) await main(run);

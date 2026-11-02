@@ -46,9 +46,14 @@ describe("scanRecords", () => {
     });
   });
 
-  it("does not list a record two lines or more away from the changed lines", () => {
-    expect(scanRecords(file([{ start: 1, end: 1 }, { start: 8, end: 9 }]), recorded)).toEqual({
-      records: [{ path, line: 2, mutator: "ConditionalExpression", reason: "the guard only narrows the type" }],
+  it("does not list a record when neither its own line nor its mutated line changed, at both edges", () => {
+    // Changed lines 3 and 6: the record on line 2 (mutating line 3) and the record on line 6 are listed; the record
+    // on line 4 (mutating line 5) lies between them, one line after line 3 and one line before line 6, and is not.
+    expect(scanRecords(file([{ start: 3, end: 3 }, { start: 6, end: 6 }]), recorded)).toEqual({
+      records: [
+        { path, line: 2, mutator: "ConditionalExpression", reason: "the guard only narrows the type" },
+        { path, line: 6, mutator: "all", reason: "process boundary, covered by gates-integration" },
+      ],
       findings: [],
     });
   });
@@ -87,6 +92,26 @@ describe("scanRecords", () => {
         finding(10, otherForm),
         finding(11, otherForm),
       ],
+    });
+  });
+});
+
+describe("scanRecords: the forms Stryker reads (added: mutation run)", () => {
+  it("reads a record without a space after the slashes and trims the mutator list, as Stryker does", () => {
+    const source = [
+      "//Stryker disable next-line all: no space after the slashes",
+      "x();",
+      "// Stryker disable next-line StringLiteral : a space before the colon",
+      "y();",
+      "// Stryker disable next-line all; Stryker reads this as a record without a reason",
+      "z();",
+    ].join("\n");
+    expect(scanRecords(file([{ start: 1, end: 6 }]), source)).toEqual({
+      records: [
+        { path, line: 1, mutator: "all", reason: "no space after the slashes" },
+        { path, line: 3, mutator: "StringLiteral", reason: "a space before the colon" },
+      ],
+      findings: [{ location: { path, line: 5 }, gate: "mutation", rule: "disable-form", message: noReason }],
     });
   });
 });

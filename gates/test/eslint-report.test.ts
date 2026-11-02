@@ -138,6 +138,14 @@ describe("classifyEslint", () => {
     });
   });
 
+  it("takes the error line only where a line starts with the error's name (added: mutation run)", () => {
+    const output = "Oops! An Error occurred:\nTypeError: boom\n";
+    expect(classifyEslint("test-lint", { report: "", exitCode: 2, output, root })).toEqual({
+      exit: 2,
+      cause: "test-lint: could not run: ESLint exited 2 (TypeError: boom); check the ESLint configuration",
+    });
+  });
+
   it("is exit 2 when the report is JSON but not a list of files", () => {
     expect(classifyEslint("test-lint", { report: '{"messages":[]}', exitCode: 0, output: "", root })).toEqual({
       exit: 2,

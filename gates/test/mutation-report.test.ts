@@ -131,6 +131,30 @@ describe("classifyMutants", () => {
     });
   });
 
+  it("writes a survivor without a replacement as its status alone (added: mutation run)", () => {
+    const mutant = {
+      id: "0",
+      mutatorName: "BlockStatement",
+      status: "Survived",
+      location: { start: { line: 3, column: 1 }, end: { line: 3, column: 2 } },
+    };
+    const run = { report: JSON.stringify({ files: { [sample]: { mutants: [mutant] } } }), exitCode: 1, output: "" };
+    expect(classifyMutants(run, [changed(sample, [{ start: 3, end: 3 }])])).toEqual({
+      ok: true,
+      mutants: 1,
+      findings: [survivor(3, "BlockStatement", "Survived: replaced by")],
+    });
+  });
+
+  it("cannot decide on a report whose files are not an object (added: mutation run)", () => {
+    const files = [changed(sample, [{ start: 3, end: 3 }])];
+    expect(classifyMutants({ report: '{"files":"x"}', exitCode: 1, output: "" }, files)).toEqual({
+      ok: false,
+      cause:
+        "mutation: could not run: the Stryker report is not a JSON object with files; run pnpm test and check stryker.config.json",
+    });
+  });
+
   it("cannot decide on a report that is not JSON or has no files", () => {
     const cause =
       "mutation: could not run: the Stryker report is not a JSON object with files; run pnpm test and check stryker.config.json";
