@@ -127,28 +127,28 @@ export async function mutation(context: Context, tools: MutationTools, io: Io): 
   return emit({ exit: 0, summary }, io.out, io.err);
 }
 
-// Stryker disable next-line all: process boundary, covered by gates-integration
+// Stryker disable next-line all: process boundary, covered by gates-integration: gates/test/integration/mutation.test.ts "--files mutates only the listed file"
 function realTools(root: string, env: Io["env"]): MutationTools {
-  // Stryker disable next-line all: process boundary, covered by gates-integration
+  // Stryker disable next-line all: process boundary, covered by gates-integration: gates/test/integration/mutation.test.ts "--files mutates only the listed file"
   const stryker = join(root, "node_modules", "@stryker-mutator", "core", "bin", "stryker.js");
-  // Stryker disable next-line all: process boundary, covered by gates-integration
+  // Stryker disable next-line all: process boundary, covered by gates-integration: gates/test/integration/mutation.test.ts "--files mutates only the listed file"
   return {
-    // Stryker disable next-line all: process boundary, covered by gates-integration
+    // Stryker disable next-line all: process boundary, covered by gates-integration: gates/test/integration/mutation.test.ts "--files mutates only the listed file"
     git: (args) => runTool("git", args, root, env),
-    // Stryker disable next-line all: process boundary, covered by gates-integration
+    // Stryker disable next-line all: process boundary, covered by gates-integration: gates/test/integration/mutation.test.ts "deletes an earlier run's report: a Stryker run that writes none exits 2 (review round 1, R1-01)"
     read: (path) => readFile(join(root, path), "utf8").catch(() => undefined),
-    // Stryker disable next-line all: process boundary, covered by gates-integration (a stale report and no new one)
+    // Stryker disable next-line all: process boundary, covered by gates-integration: gates/test/integration/mutation.test.ts "deletes an earlier run's report: a Stryker run that writes none exits 2 (review round 1, R1-01)"
     remove: (path) => rm(join(root, path), { force: true }),
-    // Stryker disable next-line all: process boundary, covered by gates-integration
+    // Stryker disable next-line all: process boundary, covered by gates-integration: gates/test/integration/mutation.test.ts "--files mutates only the listed file"
     stryker: (mutate) => runTool(process.execPath, [stryker, "run", "--mutate", mutate.join(",")], root, env),
   };
 }
 
-// Stryker disable next-line all: process boundary, covered by gates-integration
+// Stryker disable next-line all: process boundary, covered by gates-integration: gates/test/integration/mutation.test.ts "--files mutates only the listed file"
 export async function run(argv: readonly string[], io: Io): Promise<number> {
   const context = parseArgs(argv, io.cwd);
   return mutation(context, realTools(context.root, io.env), io);
 }
 
-// Stryker disable next-line all: process boundary, covered by gates-integration
+// Stryker disable next-line all: process boundary, covered by gates-integration: gates/test/integration/mutation.test.ts "--files mutates only the listed file"
 if (import.meta.main) await main(run);

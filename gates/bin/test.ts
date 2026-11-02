@@ -76,25 +76,25 @@ export async function unitTests(context: Context, tools: UnitTestTools, io: Io):
 }
 
 /** Playwright's own Chromium executable (it reads PLAYWRIGHT_BROWSERS_PATH from the environment). */
-// Stryker disable next-line all: process boundary, covered by gates-integration
+// Stryker disable next-line all: process boundary, covered by gates-integration: gates/test/integration/test-command.test.ts "exits 2 naming pnpm run setup:online when Chromium is missing, and runs no test (US1 scenario 9)"
 async function playwrightChromium(): Promise<string | undefined> {
   const { chromium } = await import("playwright");
-  // Stryker disable next-line all: process boundary, covered by gates-integration
+  // Stryker disable next-line all: process boundary, covered by gates-integration: gates/test/integration/test-command.test.ts "exits 2 naming pnpm run setup:online when Chromium is missing, and runs no test (US1 scenario 9)"
   try {
     return chromium.executablePath();
   }
-  // Stryker disable next-line all: process boundary, covered by gates-integration
+  // Stryker disable next-line BlockStatement: equivalent, an empty catch returns undefined as well (no gates-integration case makes Playwright throw)
   catch {
     return undefined;
   }
 }
 
 /** The Chromium check of this process's environment; shared with gates/bin/setup-offline.ts. */
-// Stryker disable next-line all: process boundary, covered by gates-integration
+// Stryker disable next-line all: process boundary, covered by gates-integration: gates/test/integration/test-command.test.ts "exits 2 naming the override when OCELLE_CHROMIUM_PATH points at no executable"
 export async function checkChromium(env: Io["env"]): Promise<ChromiumCheck> {
-  // Stryker disable next-line all: process boundary, covered by gates-integration
+  // Stryker disable next-line all: process boundary, covered by gates-integration: gates/test/integration/test-command.test.ts "exits 2 naming the override when OCELLE_CHROMIUM_PATH points at no executable"
   return chromiumCheck({
-    // Stryker disable next-line all: process boundary, covered by gates-integration
+    // Stryker disable next-line all: process boundary, covered by gates-integration: gates/test/integration/test-command.test.ts "exits 2 naming the override when OCELLE_CHROMIUM_PATH points at no executable"
     override: env["OCELLE_CHROMIUM_PATH"],
     playwrightPath: await playwrightChromium(),
     exists: existsSync,
@@ -102,35 +102,35 @@ export async function checkChromium(env: Io["env"]): Promise<ChromiumCheck> {
 }
 
 /** Vitest as a child process, its JSON report written to a temporary file that is removed afterwards. */
-// Stryker disable next-line all: process boundary, covered by gates-integration
+// Stryker disable next-line all: process boundary, covered by gates-integration: gates/test/integration/test-command.test.ts "exits 1 naming the failing test as a finding (US1 scenario 5)"
 async function runVitest(vitest: string, args: readonly string[], cwd: string, env: Io["env"]): Promise<Omit<VitestRun, "root">> {
-  // Stryker disable next-line all: process boundary, covered by gates-integration
+  // Stryker disable next-line all: process boundary, covered by gates-integration: gates/test/integration/test-command.test.ts "exits 1 naming the failing test as a finding (US1 scenario 5)"
   const dir = mkdtempSync(join(tmpdir(), "ocelle-unit-tests-"));
-  // Stryker disable next-line all: process boundary, covered by gates-integration
+  // Stryker disable next-line all: process boundary, covered by gates-integration: gates/test/integration/test-command.test.ts "exits 1 naming the failing test as a finding (US1 scenario 5)"
   const reportFile = join(dir, "report.json");
-  // Stryker disable next-line all: process boundary, covered by gates-integration
+  // Stryker disable next-line all: process boundary, covered by gates-integration: gates/test/integration/test-command.test.ts "exits 1 naming the failing test as a finding (US1 scenario 5)"
   const ran = await runTool(process.execPath, [vitest, ...args, `--outputFile.json=${reportFile}`], cwd, env);
-  // Stryker disable next-line all: process boundary, covered by gates-integration
+  // Stryker disable next-line all: process boundary, covered by gates-integration: gates/test/integration/test-command.test.ts "exits 1 naming the failing test as a finding (US1 scenario 5)"
   const report = existsSync(reportFile) ? readFileSync(reportFile, "utf8") : undefined;
-  // Stryker disable next-line all: process boundary, covered by gates-integration
+  // Stryker disable next-line all: process boundary, covered by gates-integration: gates/test/integration/test-command.test.ts "exits 1 naming the failing test as a finding (US1 scenario 5)"
   rmSync(dir, { recursive: true, force: true });
-  // Stryker disable next-line all: process boundary, covered by gates-integration
+  // Stryker disable next-line all: process boundary, covered by gates-integration: gates/test/integration/test-command.test.ts "exits 1 naming the failing test as a finding (US1 scenario 5)"
   return { report, exitCode: ran.exitCode, output: `${ran.stdout}${ran.stderr}` };
 }
 
-// Stryker disable next-line all: process boundary, covered by gates-integration
+// Stryker disable next-line all: process boundary, covered by gates-integration: gates/test/integration/test-command.test.ts "exits 1 naming the failing test as a finding (US1 scenario 5)"
 export async function run(argv: readonly string[], io: Io): Promise<number> {
   const context = parseArgs(argv, io.cwd);
-  // Stryker disable next-line all: process boundary, covered by gates-integration
+  // Stryker disable next-line all: process boundary, covered by gates-integration: gates/test/integration/test-command.test.ts "exits 1 naming the failing test as a finding (US1 scenario 5)"
   const tools: UnitTestTools = {
-    // Stryker disable next-line all: process boundary, covered by gates-integration
+    // Stryker disable next-line all: process boundary, covered by gates-integration: gates/test/integration/test-command.test.ts "exits 2 naming the override when OCELLE_CHROMIUM_PATH points at no executable"
     chromium: () => checkChromium(io.env),
     exists: existsSync,
-    // Stryker disable next-line all: process boundary, covered by gates-integration
+    // Stryker disable next-line all: process boundary, covered by gates-integration: gates/test/integration/test-command.test.ts "exits 1 naming the failing test as a finding (US1 scenario 5)"
     vitest: (vitest, args) => runVitest(vitest, args, context.toolCwd, io.env),
   };
   return unitTests(context, tools, io);
 }
 
-// Stryker disable next-line all: process boundary, covered by gates-integration
+// Stryker disable next-line all: process boundary, covered by gates-integration: gates/test/integration/test-command.test.ts "exits 1 naming the failing test as a finding (US1 scenario 5)"
 if (import.meta.main) await main(run);

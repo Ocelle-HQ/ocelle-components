@@ -65,16 +65,16 @@ export function processIo(): Io {
   return {
     cwd: process.cwd(),
     env: process.env,
-    // Stryker disable next-line all: process boundary, covered by gates-integration
+    // Stryker disable next-line all: process boundary, covered by gates-integration: gates/test/integration/test-command.test.ts "exits 0 with a one-line summary when every test passes"
     out: (line) => process.stdout.write(`${line}\n`),
-    // Stryker disable next-line all: process boundary, covered by gates-integration
+    // Stryker disable next-line all: process boundary, covered by gates-integration: gates/test/integration/test-command.test.ts "exits 2 when no test file is found (FR-004)"
     err: (line) => process.stderr.write(`${line}\n`),
   };
 }
 
 /** Runs a gate as the process entry point and sets the process exit code. */
-// Stryker disable next-line all: process boundary, covered by gates-integration
+// Stryker disable next-line all: process boundary, covered by gates-integration: gates/test/integration/test-command.test.ts "exits 0 with a one-line summary when every test passes"
 export async function main(run: Run): Promise<void> {
-  // Stryker disable next-line all: process boundary, covered by gates-integration
+  // Stryker disable next-line all: process boundary, covered by gates-integration: gates/test/integration/test-command.test.ts "exits 0 with a one-line summary when every test passes"
   process.exitCode = await entry(run, process.argv.slice(2), processIo());
 }

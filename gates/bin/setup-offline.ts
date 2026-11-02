@@ -83,23 +83,23 @@ export async function setupOffline(tools: SetupTools, io: Io): Promise<number> {
   return emit(decideSetup(install, chromium), io.out, io.err);
 }
 
-// Stryker disable next-line all: process boundary, covered by gates-integration
+// Stryker disable next-line all: process boundary, covered by gates-integration: gates/test/integration/setup-offline.test.ts "exits 2 naming the missing package and pnpm run setup:online on an empty store, without the network"
 export async function run(argv: readonly string[], io: Io): Promise<number> {
   const context: Context = parseArgs(argv, io.cwd);
-  // Stryker disable next-line all: process boundary, covered by gates-integration
+  // Stryker disable next-line all: process boundary, covered by gates-integration: gates/test/integration/setup-offline.test.ts "exits 2 naming the missing package and pnpm run setup:online on an empty store, without the network"
   const tools: SetupTools = {
-    // Stryker disable next-line all: process boundary, covered by gates-integration
+    // Stryker disable next-line all: process boundary, covered by gates-integration: gates/test/integration/setup-offline.test.ts "exits 2 naming the missing package and pnpm run setup:online on an empty store, without the network"
     pnpm: async (args) => {
-      // Stryker disable next-line all: process boundary, covered by gates-integration
+      // Stryker disable next-line all: process boundary, covered by gates-integration: gates/test/integration/setup-offline.test.ts "exits 2 naming the missing package and pnpm run setup:online on an empty store, without the network"
       const ran = await runTool("pnpm", args, context.toolCwd, io.env);
-      // Stryker disable next-line all: process boundary, covered by gates-integration
+      // Stryker disable next-line all: process boundary, covered by gates-integration: gates/test/integration/setup-offline.test.ts "exits 2 naming the missing package and pnpm run setup:online on an empty store, without the network"
       return { exitCode: ran.exitCode, output: `${ran.stdout}\n${ran.stderr}` };
     },
-    // Stryker disable next-line all: process boundary, covered by gates-integration
+    // Stryker disable next-line all: process boundary, covered by gates-integration: gates/test/integration/setup-offline.test.ts "exits 2 naming Chromium and pnpm run setup:online on an empty browser path, without the network"
     chromium: () => checkChromium(io.env),
   };
   return setupOffline(tools, io);
 }
 
-// Stryker disable next-line all: process boundary, covered by gates-integration
+// Stryker disable next-line all: process boundary, covered by gates-integration: gates/test/integration/setup-offline.test.ts "exits 2 naming the missing package and pnpm run setup:online on an empty store, without the network"
 if (import.meta.main) await main(run);
