@@ -89,6 +89,10 @@ that its tests do not check, and a changed line of sample source that no test ru
    mutation report lists the record so the review can see it.
 5. **Given** a change that touches no source, **When** mutation testing runs, **Then** it finishes without mutating
    anything and succeeds.
+6. **Given** an assertion inside a promise callback that is neither returned nor awaited (including
+   `void p.then(...)`), inside a `setTimeout` or `setInterval` callback, or inside a `try` block whose `catch`
+   swallows the failure, **When** the test lint runs, **Then** each one is reported as an error; an awaited or
+   returned promise and a `catch` that rethrows are not reported (FR-010, added at the phase 3 gate).
 
 ---
 
@@ -233,7 +237,12 @@ in this feature depends on it.
 
 - **FR-010**: A test lint MUST reject tests without an assertion, skipped and focused tests, assertions inside
   conditionals, assertions outside a test, assertions that are not awaited or completed, and tests whose only
-  assertion is a snapshot.
+  assertion is a snapshot. It MUST also reject three further patterns (operator decision, phase 3 gate,
+  2026-11-02: "Add rule now: add an ocelle rule for these patterns as a small extra task before phase 4,
+  test-first."): an assertion inside a promise callback that is neither returned nor awaited, including
+  `void p.then(() => expect(...))`; an assertion inside a `setTimeout` or `setInterval` callback; and an assertion
+  inside a `try` block whose `catch` swallows the failure (research.md R-06 defines each). An awaited or returned
+  promise, and a `catch` that rethrows or asserts, are not these patterns.
 - **FR-011**: Mutation testing MUST run on the package source and gate source (FR-028) changed relative to the pull
   request's base branch (outside a pull request, the base commit of FR-007), MUST fail when a mutant survives in
   changed code, and MUST report each survivor's location (operator decision, plan squad round 1: the gate scripts
@@ -337,7 +346,8 @@ in this feature depends on it.
   - code lint: a violation of a rule of its rule set that the test lint does not have;
   - unit tests: a failing test set up as a test of each of the three packages, and a failing test that needs a
     browser (US1);
-  - test lint: one plant for each of the seven forbidden patterns of FR-010;
+  - test lint: one plant for each of the seven forbidden patterns of FR-010 that SC-004 lists (the three patterns
+    added at the phase 3 gate are proven by the test-lint gate's own tests, one fixture per pattern, tasks.md T091);
   - mutation testing: a change to a covered line of sample source that its tests do not check, and a changed line of
     sample source that no test runs (FR-011); an equivalent-mutant record without a reason, and a disable comment
     that is not a next-line record (FR-012); and the pass plant of a survivor with a reasoned record, which the
@@ -383,7 +393,10 @@ in this feature depends on it.
   excluded from every gate except where the table names built output; the plant job reads only `gates/plants/`, and
   only the gates' own tests read `gates/test/fixtures/` (an exception to the test file and test code rows below:
   fixtures are neither run nor test-linted; operator decision, plan squad round 1). Any sample a gate must fail on is
-  a plant or such a fixture (FR-009), so no normal gate ever sees one. Within that, each gate checks:
+  a plant or such a fixture (FR-009), so no normal gate ever sees one. Stryker's sandbox copies under
+  `.stryker-tmp/` (ignored by git) are not repository files, and the test lint does not check them (operator
+  decision, phase 3 gate, 2026-11-02: "Fix in phase 4, test-first: add .stryker-tmp/ to the test-lint ignores.").
+  Within that, each gate checks:
 
   | Gate | Files checked |
   |------|---------------|
@@ -444,7 +457,9 @@ in this feature depends on it.
   code from before the phase it reports `fail`.
 - **SC-004**: Each of the seven forbidden test patterns of FR-010 (no assertion, skipped, focused, assertion inside a
   conditional, assertion outside a test, assertion not awaited or completed, snapshot as the only assertion) is
-  reported as an error in 100% of its plants (FR-025).
+  reported as an error in 100% of its plants (FR-025). Each of the three patterns added to FR-010 at the phase 3
+  gate is reported as exactly one error by the test-lint gate on its fixture, and its allowed look-alikes are not
+  reported by its rule (research.md R-06).
 - **SC-005**: Mutation testing of one shard (FR-013: up to 10 changed files and up to 500 changed lines of package
   source and gate source together) finishes in under 10 minutes on the runner of SC-001, with the package store and
   browser cache restored and no earlier mutation result available. Each shard job's 10-minute limit (FR-013)
