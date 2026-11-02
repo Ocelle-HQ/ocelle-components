@@ -29,7 +29,7 @@ command, so the next feature's phases can be proven red first.
 packages make it succeed. Then the plant job runs the same test command against the failing-test plants under
 `gates/plants/` (FR-009, FR-025): one set up as a test of each of the three packages and one needing a browser; the
 command fails on each. The normal test run never reads these plants (FR-028). The story workflow's red/green check on
-a demo phase reports "pass" instead of "unavailable".
+the demo phase (SC-003) reports "pass" instead of "unavailable".
 
 **Acceptance Scenarios**:
 
@@ -50,9 +50,11 @@ a demo phase reports "pass" instead of "unavailable".
    **Then** the test runs in a real browser engine (Chromium, FR-005), not a simulated DOM.
 7. **Given** both copies of the story extension's configuration (FR-006), **When** the red/green check runs on a
    phase with a red commit, **Then** it uses the test command and reports `pass` or `fail`, never `unavailable`.
-8. **Given** a lockfile that does not match the manifests, or a manifest that declares a dependency by a range (such
-   as `^1.2.3` or `~1.2.3`) instead of an exact version, **When** the install-and-pins gate (FR-027) runs, **Then** it
-   fails and names the file.
+8. **Given** a lockfile that does not match the manifests, a manifest that declares a dependency by a range (such
+   as `^1.2.3`, `~1.2.3` or `workspace:^`) instead of an exact version, or a workspace configuration whose
+   release-age or install-script setting (FR-027) is missing or loosened, **When** the install-and-pins gate (FR-027)
+   runs, **Then** it fails and names the file. A dependency on one of the three packages written as
+   `workspace:<exact version>` with that package's current version passes.
 9. **Given** a machine on which the browser engine of FR-005 is not installed, **When** the test command runs,
    **Then** it exits non-zero with a message naming the online install command (FR-008), and it skips no test.
 10. **Given** a package with no test file while another package has passing tests, **When** the test command runs,
@@ -79,8 +81,9 @@ that its tests do not check, and a changed line of sample source that no test ru
    assertion that is never awaited or completed, or a test whose only assertion is a snapshot, **When** the test
    lint runs, **Then** each one is reported as an error.
 3. **Given** a change to source that its tests exercise but do not check, or a changed line of source that no test
-   runs at all, **When** mutation testing runs on the change, **Then** it reports at least one surviving mutant with
-   its location and fails (FR-011: a mutant no test covers counts as surviving).
+   runs at all, in package source or in gate source (FR-028), **When** mutation testing runs on the change, **Then**
+   it reports at least one surviving mutant with its location and fails (FR-011: a mutant no test covers counts as
+   surviving).
 4. **Given** a surviving mutant recorded as equivalent with a written reason, **When** mutation testing runs again,
    **Then** that mutant no longer fails the run, the reason is kept next to the mutated code (FR-012), and the
    mutation report lists the record so the review can see it.
@@ -107,7 +110,8 @@ plant: every gate fails, with a message naming the defect.
 1. **Given** a pull request, **When** CI runs, **Then** each gate of FR-020 runs as its own named check.
 2. **Given** a raw colour, font, size, radius, shadow or duration value in styles the style lint covers (FR-024),
    including a style embedded in an element's TypeScript, **When** the style lint runs, **Then** it fails, even
-   though no design token exists yet.
+   though no design token exists yet. A string (such as `content: ""`) outside a font value, or an author-defined or
+   dashed identifier (such as `anchor-name: --tip`), passes; a named colour (such as `color: red`) fails.
 3. **Given** built package output that contains an inline script, an inline style element or attribute, an event
    handler attribute, or a dynamic-code call, **When** the content-security check runs on it, **Then** it fails.
 4. **Given** a name starting with `sk-` or `--sk-` at a name boundary (FR-022), or a monospace font family, in any
@@ -118,8 +122,9 @@ plant: every gate fails, with a message naming the defect.
 6. **Given** a non-merge commit in the pull request without a `Signed-off-by` line, or whose `Signed-off-by`
    identity does not match its author, **When** the sign-off check runs, **Then** it fails and names the commit
    (FR-023).
-7. **Given** each gate's planted defect, **When** the plant job runs, **Then** every gate fails on its plant; if any
-   gate passes on its plant, or fails on one of its pass plants (FR-025), the plant job fails.
+7. **Given** each gate's planted defect, **When** the plant job runs, **Then** every gate fails on its plant with
+   exactly the findings the plant expects; if any gate passes on its plant, reports other findings, fails on one of
+   its pass plants, or does not report "could not run" on one of its breaking plants (FR-025), the plant job fails.
 8. **Given** a pull request, **When** the normal gates run, **Then** none of them reads `gates/plants/`, so the plants
    never make a normal gate fail.
 9. **Given** the near-empty packages of this feature, **When** a gate passes, **Then** the plant job has shown in the
@@ -219,17 +224,20 @@ in this feature depends on it.
   are not part of any package's built output. A sample that must pass every gate (a passing test that checks what it
   tests) MAY live in a package as an ordinary test file. Every sample that a gate must fail on (a failing test, a
   vacuous test, source with a change its tests do not check) is a plant under `gates/plants/` and is run only by the
-  plant job (FR-025, FR-028), never by the normal gates.
+  plant job (FR-025, FR-028), never by the normal gates. The one exception is the inputs of the gates' own tests:
+  they live under `gates/test/fixtures/`, are read only by those tests, and are excluded from every normal gate like
+  the plants (FR-028; operator decision, plan squad round 1).
 
 **Test quality (Story 2)**
 
 - **FR-010**: A test lint MUST reject tests without an assertion, skipped and focused tests, assertions inside
   conditionals, assertions outside a test, assertions that are not awaited or completed, and tests whose only
   assertion is a snapshot.
-- **FR-011**: Mutation testing MUST run on the package source (FR-028) changed relative to the pull request's base
-  branch (outside a pull request, the base commit of FR-007), MUST fail when a mutant survives in changed code, and
-  MUST report each survivor's location.
-  - **Changed code** is the lines of package source added or modified relative to that base. Only mutants on those
+- **FR-011**: Mutation testing MUST run on the package source and gate source (FR-028) changed relative to the pull
+  request's base branch (outside a pull request, the base commit of FR-007), MUST fail when a mutant survives in
+  changed code, and MUST report each survivor's location (operator decision, plan squad round 1: the gate scripts
+  are mutation-tested too).
+  - **Changed code** is the lines of package source or gate source added or modified relative to that base. Only mutants on those
     lines decide the result. A tool may mutate whole changed files, but a survivor on an unchanged line of a changed
     file does not fail the run.
   - A mutant **survives** when no test kills it. That includes a mutant on a line that no test runs (reported by
@@ -284,7 +292,14 @@ in this feature depends on it.
   - CSS keywords, such as `auto`, `inherit`, `initial`, `unset`, `none`, `currentColor` and `transparent`, and the
     CSS system colour keywords (such as `Canvas`, `CanvasText`, `Highlight` and `ButtonText`), so forced-colours
     styling stays possible (operator confirmation, 2026-11-02); a named colour (such as `red`) and a font family
-    name are raw values, not keywords;
+    name are raw values, not keywords. A keyword is any identifier that is neither a named colour (the fixed list of
+    CSS named colours, `transparent` and `currentColor` excepted) nor part of a `font` or `font-family` value, where
+    only the CSS-wide keywords are allowed (operator decision, plan squad round 1);
+  - author-defined and dashed identifiers in the properties that take them (such as `animation-name`, `grid-area`
+    and grid line names, `container-name`, `anchor-name`, `position-anchor`, `view-transition-name` and the
+    `counter-*` properties), for example `anchor-name: --tip` (operator decision, plan squad round 1);
+  - strings (such as `content: ""` or `grid-template-areas: "a b"`), except in `font` and `font-family` values
+    (operator decision, plan squad round 1);
   - unitless numbers in properties that take them: `line-height`, `flex` (and its longhands), `z-index`, `opacity`
     and `order`;
   - `fr` units;
@@ -298,8 +313,11 @@ in this feature depends on it.
   is declared in covered styles), but a fallback inside it (such as the `4px` in `var(--ocelle-x, 4px)`) is checked
   like any other value and is rejected when raw.
 - **FR-025**: Every gate of FR-020 MUST have at least one planted defect under `gates/plants/`, and a CI job (the plant
-  job) MUST run each gate against its plants and fail unless every gate fails on each of its plants. A gate MAY also
-  have pass plants (near-misses it must accept); the plant job MUST fail when a gate fails on a pass plant. Gates
+  job) MUST run each gate against its plants and fail unless every gate fails on each of its plants and reports
+  exactly the findings the plant lists. Every gate MUST also have at least one pass plant (a near-miss or clean input
+  it must accept) and at least one breaking plant (an input that makes it unable to run, which it must report as
+  "could not run", not as a finding); the plant job MUST fail when a gate fails on a pass plant or does not report a
+  breaking plant as "could not run" (operator decision, plan squad round 1). Gates
   that do not read ordinary source files are given their plants in the form they read: the plan defines, for each
   gate, how its plant is presented to it (for example a commit range or bundle for the sign-off check, prebuilt
   output for the content-security check, a source-and-base pair for mutation testing). Plants are not test code
@@ -312,14 +330,24 @@ in this feature depends on it.
     browser (US1);
   - test lint: one plant for each of the seven forbidden patterns of FR-010;
   - mutation testing: a change to a covered line of sample source that its tests do not check, and a changed line of
-    sample source that no test runs (FR-011);
-  - style lint: a raw literal inside a style template embedded in a TypeScript file, and one in a stylesheet;
+    sample source that no test runs (FR-011); an equivalent-mutant record without a reason, and a disable comment
+    that is not a next-line record (FR-012); and the pass plant of a survivor with a reasoned record, which the
+    report lists;
+  - style lint: a raw literal inside a style template embedded in a TypeScript file, and one in a stylesheet; one
+    plant per class FR-024 rejects (a `rem` length, a `ms` time, a hex colour, `rgb()`, a named colour, a raw font
+    family, a numeric `font-weight`, a unitless number outside the five properties, a raw `var()` fallback and a
+    raw `calc()` operand); and the pass plants `content: ""`, `anchor-name: --tip` and a raw value in a story file
+    under a package's source directory (not covered, FR-024);
   - prefix check: an `sk-` element name, a `--sk-` custom property, an `sk-` event name, a generic `monospace` and a
     named monospace family; and the pass plants `task-list`, `desk-row` and `--risk-level`;
-  - install-and-pins check: a lockfile that does not match its manifest, and a manifest with a `^` range;
+  - install-and-pins check: a lockfile that does not match its manifest, a manifest with a `^` range, a
+    `workspace:^` dependency, and a missing or loosened release-age or install-script setting; and the pass plant of a
+    `workspace:<exact version>` dependency;
   - content-security check: one plant for each construct FR-021 names: an inline `<script>` element, a `<style>`
     element, a `style` attribute, an `on*=` event handler attribute, `eval`, `new Function`, the `Function`
     constructor called without `new`, `setTimeout` with a string argument and `setInterval` with a string argument;
+    plus a `style` attribute separated by a newline, a `/onload=` handler and an indirect `eval`; and the pass plants
+    of identifiers that only contain these names (`retrieval(`, `isFunction(`);
   - configuration-copies check: two copies that differ in one setting;
   - sign-off check: a commit with no `Signed-off-by` line and a commit whose `Signed-off-by` identity does not match
     its author; and the pass plants of a commit authored and signed off by the same agent identity and an unsigned
@@ -329,16 +357,24 @@ in this feature depends on it.
   manifest check (the first element feature, #7, or #10, whichever lands first).
 - **FR-027**: The install-and-pins check MUST fail when the lockfile does not match the manifests (a frozen install
   would change it), when any manifest declares a dependency by anything other than an exact version, or when the
-  runtime or package-manager version pin is missing or is not an exact version.
+  runtime or package-manager version pin is missing or is not an exact version. A dependency on one of the three
+  workspace packages is written `workspace:<exact version>`, where the version equals that package's current version
+  and is bumped in lockstep with it; `workspace:*`, `workspace:^` and `workspace:~` are not exact (operator decision,
+  plan squad round 1). The check MUST also fail when the workspace configuration's minimum release age for new
+  dependency versions (7 days) or its empty allow-list of dependencies that may run install scripts is missing or
+  loosened (operator decision, plan squad round 1).
 - **FR-028**: Gate scope. Definitions: **test file** is a file whose name ends in `.test.ts` or `.spec.ts`; **test
   code** is every test file, every file under a directory named `test`, and every file whose name ends in
   `.stories.ts`; **package source** is every file in a package's directory except its test code and its built output;
   **built output** is every file the package build produces; **documentation and tooling** is `specs/`, `.specify/`,
   `.claude/`, `tooling/`, `knowledge/`, `triage/` and every Markdown file; **repository TypeScript** is every
-  TypeScript file in the repository, inside or outside the packages (root configuration and gate scripts included).
-  `gates/plants/`, installed dependencies and built output are excluded from every gate except where the table names
-  built output; the plant job reads only `gates/plants/`. Any sample a gate must fail on is a plant (FR-009), so no
-  normal gate ever sees one. Within that, each gate checks:
+  TypeScript file in the repository, inside or outside the packages (root configuration and gate scripts included);
+  **gate source** is every TypeScript file under `gates/bin/`, `gates/lib/`, `gates/eslint/` and `gates/stylelint/`
+  that is not test code. `gates/plants/`, `gates/test/fixtures/`, installed dependencies and built output are
+  excluded from every gate except where the table names built output; the plant job reads only `gates/plants/`, and
+  only the gates' own tests read `gates/test/fixtures/` (an exception to the test file and test code rows below:
+  fixtures are neither run nor test-linted; operator decision, plan squad round 1). Any sample a gate must fail on is
+  a plant or such a fixture (FR-009), so no normal gate ever sees one. Within that, each gate checks:
 
   | Gate | Files checked |
   |------|---------------|
@@ -346,7 +382,7 @@ in this feature depends on it.
   | style lint | the styles of FR-024 |
   | unit tests | every test file in the repository |
   | test lint | all test code in the repository |
-  | mutation testing | package source TypeScript changed relative to the pull request's base branch; only mutants on changed lines decide the result (FR-011) |
+  | mutation testing | package source TypeScript and gate source changed relative to the pull request's base branch; only mutants on changed lines decide the result (FR-011) |
   | content-security check | built output of the three packages |
   | prefix check | package source, test code and built output of the three packages only; not documentation and tooling, and not code or tests outside the packages (FR-022) |
   | configuration-copies check | the two story configuration copies named in FR-006 |
@@ -376,8 +412,9 @@ in this feature depends on it.
 
 - **Gate**: a named merge check; has a command, the CI check it runs as, the files it checks (FR-028), and at least
   one plant.
-- **Plant**: a deliberate defect under `gates/plants/` that one gate must fail on; a pass plant is a near-miss under
-  `gates/plants/` that the gate must accept.
+- **Plant**: a deliberate defect under `gates/plants/` that one gate must fail on, with the findings it must report;
+  a pass plant is a near-miss under `gates/plants/` that the gate must accept; a breaking plant is an input the gate
+  cannot process, which it must report as "could not run".
 - **Story configuration**: the story extension's settings (test, setup, mutation commands; test file patterns),
   present in the two copies named in FR-006, which must match.
 - **Equivalent-mutant record**: a surviving mutant accepted with its location and reason, kept next to the mutated
@@ -393,8 +430,9 @@ in this feature depends on it.
   feature is verified; it is not a merge gate.
 - **SC-002**: In the plant job, every gate of FR-020 fails on 100% of its plants and accepts 100% of its pass plants
   (FR-025).
-- **SC-003**: The story workflow's red/green check on a demo phase reports `pass` (not `unavailable`) after this
-  feature, and `fail` when its final tests pass against the code from before the phase.
+- **SC-003**: The story workflow's red/green check on the demo phase, phase 2 of this feature (the first red-first
+  phase, US1's behaviour), reports `pass` (not `unavailable`), and on a phase whose final tests pass against the
+  code from before the phase it reports `fail`.
 - **SC-004**: Each of the seven forbidden test patterns of FR-010 (no assertion, skipped, focused, assertion inside a
   conditional, assertion outside a test, assertion not awaited or completed, snapshot as the only assertion) is
   reported as an error in 100% of its plants (FR-025).
@@ -420,7 +458,8 @@ in this feature depends on it.
   vulnerability reporting is documented for public repositories, so it is switched on at the 1.0.0 flip (#11);
   until then reports go privately to `@MOES-Media`, the owner named in the `CODEOWNERS` file this feature adds
   (FR-035) (operator decisions, 2026-11-02).
-- The first phase may use `tdd-exempt.md` for the workspace and runner bootstrap only (install, the three package
-  skeletons and the test command's wiring), since no runner exists before it. The behaviour in that phase (the
-  FR-004 exit codes, the FR-006 configuration-copies check, the zero-test and missing-browser cases) is written red
-  first, as is every later phase.
+- The first phase is the workspace and runner bootstrap only (install, the three package skeletons, the test and
+  offline setup commands' plain wiring, and the test and setup commands set in both story configuration copies), and
+  it uses `tdd-exempt.md` with no red commit, since no runner exists before it. The behaviour of Story 1 (the FR-004
+  exit codes, the offline setup's failure cases, the FR-006 configuration-copies check, the zero-test and
+  missing-browser cases) is the next phase and is written red first, as is every later phase (plan squad round 1).

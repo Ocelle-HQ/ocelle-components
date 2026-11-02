@@ -7,26 +7,53 @@
 | `id` | string | kebab-case, unique; also the `pnpm run gate:<id>` script and the plants directory name |
 | `check` | string | the CI check name shown on pull requests (contracts/ci-checks.md) |
 | `command` | string | the command a normal run executes |
-| `plantCommand` | string | the command run per plant, with `{plant}` replaced by the plant directory |
-| `plantForm` | enum | `files`, `test-files`, `workspace`, `built-output`, `commits`, `config-pair`, `mutation-fixture` (contracts/plants.md) |
+| `plantCommand` | string | the command run per plant, with `{plant}` replaced by the plant directory (or `{root}` by the temporary repository built from it) |
+| `plantForm` | enum | `files`, `test-files`, `workspace`, `built-output`, `commit-repo`, `config-pair`, `mutation-repo` (contracts/plants.md) |
 | `scope` | string | the files it checks, as in spec FR-028 |
 
-Validation: every gate of FR-020 has exactly one entry; the plant job fails when an entry has no `fail` plant.
+Validation: the set of gate ids equals the set of gate jobs in `.github/workflows/ci.yml` (the plant job excluded)
+and the FR-020 list in `gates/lib/registry.ts`; the plant job checks this first and exits 1 naming each id missing
+from one of the three (research.md R-10). The plant job fails when an entry lacks a `fail`, a `pass` or an `error`
+plant.
 
 ## Plant (`gates/plants/<gate-id>/<case>/`)
 
 | Field | Where | Rule |
 |---|---|---|
-| input files | the case directory | in the gate's `plantForm` |
-| `expect` | `plant.json` | `fail` (a planted defect) or `pass` (a near-miss the gate must accept) |
-| `why` | `plant.json` | the defect or near-miss, in one sentence, naming the FR |
+| input files | the case directory | in the gate's `plantForm`; inputs only, no gate configuration (below) |
+| `expect` | `plant.json` | `fail` (a planted defect), `pass` (a near-miss or clean input the gate must accept) or `error` (a breaking plant: an input the gate cannot process) |
+| `why` | `plant.json` | the defect, near-miss or breakage, in one sentence, naming the FR |
+| `findings` | `plant.json`, `fail` only | the exact list of expected findings: `location` and `rule` (as in § Finding, `location` relative to the plant; for a `commit-repo` plant `commit:<n>`, the n-th record of `commits.txt`), and optionally `message`, a substring the finding's message must contain |
+| `records` | `plant.json`, mutation `pass` only | the expected equivalent-mutant records: `location`, `mutator`, `reason` |
 
-State: a plant is **caught** when the gate exits 1 on a `fail` plant, **accepted** when it exits 0 on a `pass` plant;
-any other exit code (including 2) makes the plant job fail.
+State: a plant is **caught** when the gate exits 1 on a `fail` plant and its findings, compared as a set of
+(`location`, `rule`) with each given `message` substring present, equal `findings`; **accepted** when the gate exits
+0 on a `pass` plant with no finding (and, where given, exactly the expected `records`); **reported broken** when the
+gate exits 2 on an `error` plant. Anything else makes the plant job fail.
+
+Configuration rule: plant mode runs the repository's own gate configuration and swaps only the inputs. A plant's
+`tsconfig.json` holds only `extends` (of the repository's `tsconfig.base.json`) and `include`; a plant directory
+holds no ESLint, Stylelint, Vitest, Vite or Stryker configuration. The plant job rejects a plant that breaks this
+rule ("plant X carries gate configuration").
+
+Identities: every name and e-mail address in a plant (sign-off records) is invented and uses a reserved domain
+(RFC 2606: `example.com`, `example.org`, `example.net`), never a real person's (FR-034).
 
 ## Finding (gate output line)
 
-`<path>:<line>: <gate-id>: <message>`; `path` relative to the repository (or the plant directory in plant mode).
+The one definition of a gate's finding line (contracts/gate-cli.md and research.md R-09 refer here):
+
+`<location>: <gate-id>: <rule>: <message>`
+
+| Part | Rule |
+|---|---|
+| `location` | `<path>:<line>` for a finding in a file at a line; `<path>` for a finding about a whole file (a lockfile that does not match, a missing or loose pin, a workspace setting, two configuration copies that differ, a plant that carries configuration); `<sha>`, the full 40-character commit hash, for a finding about a commit (sign-off). `path` is relative to the repository root (or to the plant directory or temporary repository in plant mode). |
+| `gate-id` | the registry id |
+| `rule` | the tool's rule or diagnostic id (ESLint or Stylelint rule, `TS<code>` for tsc, the test's full name for unit tests, the mutator for a surviving mutant), or the gate's own rule id (for example `inline-script`, `style-attribute`, `event-handler`, `eval`, `sk-name`, `monospace`, `no-signoff`, `signoff-mismatch`, `range`, `lockfile`, `release-age`, `allow-builds`, `copies-differ`, `disable-form`) |
+| `message` | one line, naming the defect |
+
+Equivalent-mutant records (FR-012) are printed as separate lines `<path>:<line>: mutation: record: <mutator>:
+<reason>`; they are not findings.
 
 ## Story configuration (two copies, FR-006)
 
@@ -36,10 +63,14 @@ contracts/story-config.md. The two copies are byte-identical.
 ## Equivalent-mutant record (FR-012)
 
 A Stryker disable comment directly above the mutated line:
-`// Stryker disable next-line <mutator>: <reason>`. `reason` is required; the mutation wrapper fails on a record
-without one and lists every record in changed code with path, line, mutator and reason.
+`// Stryker disable next-line <mutator[,mutator]|all>: <reason>`. `reason` is required. In changed files the mutation
+wrapper reports as a finding (rule `disable-form`) a next-line record without a reason and every other disable form
+(a `// Stryker disable ...` without `next-line`, including `// Stryker disable all`, and `// Stryker restore`), and
+lists every record in changed code with path, line, mutator and reason.
 
 ## Commit record (sign-off check)
 
 `hash`, `parents[]`, `author` (`Name <email>`), `message`. Exempt when `parents.length > 1` or `hash` starts with
-`d08d413`. Passes when the message has a `Signed-off-by: <author>` trailer equal to `author`.
+`d08d413`. Passes when the message has a `Signed-off-by: <author>` trailer equal to `author`. In plants, `commits.txt`
+holds the records in order (a merge record names the two records it merges), and the plant job builds a temporary
+repository from them (research.md R-10).
