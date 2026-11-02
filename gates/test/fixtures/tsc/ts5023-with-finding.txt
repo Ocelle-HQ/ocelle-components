@@ -1,0 +1,2 @@
+packages/tokens/src/x.ts(1,19): error TS7006: Parameter 'a' implicitly has an 'any' type.
+tsconfig.json(3,5): error TS5023: Unknown compiler option 'bogus'.

@@ -1,0 +1,172 @@
+import { describe, expect, it } from "vitest";
+import { checkPackages, isCovered, scanText } from "../bin/prefix.ts";
+import type { Finding } from "../lib/findings.ts";
+
+// The prefix gate's decision (FR-022, research.md R-12): `sk-` and `--sk-` names at a name boundary,
+// case-insensitive, and FR-022's monospace families in font declarations, in package source, test code and built
+// output of the three packages only. This file is gate test code outside the packages, so it may name them.
+const path = "packages/elements/src/x.ts";
+
+function at(line: number, rule: string, message: string): Finding {
+  return { location: { path, line }, gate: "prefix", rule, message };
+}
+
+const name = (found: string): string => `forbidden name ${found}; use the ocelle- prefix (FR-022)`;
+const mono = (family: string): string => `monospace font family ${family} in a font declaration (FR-022)`;
+
+describe("scanText: names", () => {
+  it.each([
+    { text: "<sk-button></sk-button>", found: "sk-button" },
+    { text: "<SK-Button>", found: "SK-Button" },
+    { text: 'document.createElement("sk-select");', found: "sk-select" },
+    { text: 'this.dispatchEvent(new CustomEvent("sk-select-change"));', found: "sk-select-change" },
+    { text: "  --sk-color: red;", found: "--sk-color" },
+    { text: "color: var(--SK-Color);", found: "--SK-Color" },
+    { text: "sk-", found: "sk-" },
+    { text: "a.sk-row { }", found: "sk-row" },
+  ])("finds $found in $text", ({ text, found }) => {
+    expect(scanText(path, `const a = 1;\n${text}\n`)).toEqual([at(2, "sk-name", name(found))]);
+  });
+
+  it("names every forbidden name of a line in one finding", () => {
+    expect(scanText(path, "<sk-a><sk-b>")).toEqual([at(1, "sk-name", name("sk-a, sk-b"))]);
+  });
+
+  it.each([
+    "task-list",
+    "desk-row",
+    "--risk-level",
+    "mask-image",
+    "_sk-x",
+    "1sk-x",
+    "a-sk-b",
+    "x--sk-y",
+    "ask",
+  ])("finds nothing in %s (only the control name on the next line)", (text) => {
+    expect(scanText(path, `${text}\nsk-control`)).toEqual([at(2, "sk-name", name("sk-control"))]);
+  });
+});
+
+describe("scanText: monospace", () => {
+  it.each([
+    { text: "font-family: monospace;", family: "monospace" },
+    { text: "  font-family: ui-monospace, sans-serif;", family: "ui-monospace" },
+    { text: "font: 12px Menlo, sans-serif;", family: "Menlo" },
+    { text: "font-family: Monaco", family: "Monaco" },
+    { text: "FONT-FAMILY: Consolas;", family: "Consolas" },
+    { text: 'font-family: "Courier New";', family: "Courier New" },
+    { text: "font-family: Courier;", family: "Courier" },
+    { text: "font-family: SFMono-Regular;", family: "SFMono-Regular" },
+    { text: "font-family: 'SF Mono';", family: "SF Mono" },
+    { text: "font-family: Liberation Mono;", family: "Liberation Mono" },
+    { text: "font-family: DejaVu Sans Mono;", family: "DejaVu Sans Mono" },
+    { text: "font-family: Lucida Console;", family: "Lucida Console" },
+    { text: "font-family: Roboto Mono;", family: "Roboto Mono" },
+    { text: "font-family: Source Code Pro;", family: "Source Code Pro" },
+    { text: "font-family: Fira Code;", family: "Fira Code" },
+    { text: "font-family: Fira Mono;", family: "Fira Mono" },
+    { text: "font-family: JetBrains Mono;", family: "JetBrains Mono" },
+    { text: "font-family: Cascadia Code;", family: "Cascadia Code" },
+    { text: "font-family: Cascadia Mono;", family: "Cascadia Mono" },
+    { text: "@font-face { font-family: 'jetbrains mono'; src: url(x.woff2); }", family: "jetbrains mono" },
+    { text: "a { font-size: 1rem; font-family: MONOSPACE }", family: "MONOSPACE" },
+    { text: "font-family:monospace", family: "monospace" },
+  ])("finds $family in $text", ({ text, family }) => {
+    expect(scanText(path, `const a = 1;\n${text}\n`)).toEqual([at(2, "monospace", mono(family))]);
+  });
+
+  it.each([
+    "font-family: var(--ocelle-font);",
+    "font-family: 'Schibsted Grotesk', sans-serif;",
+    "font-family: Monospaced Sans;",
+    "/* monospace */ color: red;",
+    'const fontFamily = "monospace";',
+    "font-size: 12px; color: monospace;",
+    "font-family: Arial; content: 'Menlo';",
+    "x-font-family: monospace;",
+  ])("finds nothing in %s (only the control family on the next line)", (text) => {
+    expect(scanText(path, `${text}\nfont-family: monospace;`)).toEqual([at(2, "monospace", mono("monospace"))]);
+  });
+
+  it("reports a name and a monospace family on the same line as two findings", () => {
+    expect(scanText(path, ":host { --sk-x: 1; font-family: monospace; }")).toEqual([
+      at(1, "sk-name", name("--sk-x")),
+      at(1, "monospace", mono("monospace")),
+    ]);
+  });
+});
+
+describe("isCovered", () => {
+  it("selects the text files of the three packages, without installed dependencies, Markdown, binaries and maps", () => {
+    const paths = [
+      "packages/elements/src/x.ts",
+      "packages/tokens/test/x.test.ts",
+      "packages/elements/src/x.stories.ts",
+      "packages/elements/dist/index.js",
+      "packages/elements/dist/index.d.ts",
+      "packages/styles/x.css",
+      "packages/styles/src/page.html",
+      "packages/tokens/package.json",
+      "packages/tokens/src/icon.svg",
+      "packages/tokens/src/x.mjs",
+      "packages/tokens/src/x.cjs",
+      "packages/tokens/src/x.mts",
+      "packages/tokens/src/x.cts",
+      "packages/elements/node_modules/x/index.js",
+      "packages/elements/src/node_modules/x.js",
+      "packages/tokens/README.md",
+      "packages/tokens/src/font.woff2",
+      "packages/elements/dist/index.js.map",
+      "packages/x.ts",
+      "gates/x.ts",
+      "gates/plants/prefix/a/tree/packages/elements/src/x.ts",
+      "xpackages/a/x.ts",
+    ];
+    expect(paths.filter((file) => isCovered(file))).toEqual(paths.slice(0, 13));
+  });
+});
+
+describe("checkPackages", () => {
+  const encode = (text: string): Uint8Array => new TextEncoder().encode(text);
+
+  it("exits 0 naming the number of covered files checked", () => {
+    const files = [
+      { path: "packages/tokens/src/index.ts", bytes: encode("export {};\n") },
+      { path: "packages/tokens/README.md", bytes: encode("sk-button\n") },
+      { path: "packages/elements/dist/index.js", bytes: encode("export {};\n") },
+    ];
+    expect(checkPackages(files)).toEqual({ exit: 0, summary: "prefix: 2 files checked, no finding" });
+  });
+
+  it("exits 1 with the findings of covered files only", () => {
+    const files = [
+      { path, bytes: encode("const a = 1;\nconst t = 'sk-button';\n") },
+      { path: "gates/x.ts", bytes: encode("sk-button\n") },
+      { path: "packages/styles/src/x.css", bytes: encode("a { font-family: Menlo; }\n") },
+    ];
+    expect(checkPackages(files)).toEqual({
+      exit: 1,
+      findings: [
+        at(2, "sk-name", name("sk-button")),
+        { location: { path: "packages/styles/src/x.css", line: 1 }, gate: "prefix", rule: "monospace", message: mono("Menlo") },
+      ],
+      summary: "prefix: 2 findings in 2 files",
+    });
+  });
+
+  it("exits 2 naming a covered file that is not valid UTF-8", () => {
+    const files = [
+      { path: "packages/tokens/src/a.ts", bytes: encode("export {};\n") },
+      { path: "packages/tokens/src/b.ts", bytes: new Uint8Array([0x61, 0xff, 0xfe, 0x0a]) },
+    ];
+    expect(checkPackages(files)).toEqual({
+      exit: 2,
+      cause: "prefix: could not run: packages/tokens/src/b.ts is not valid UTF-8; fix or remove the file",
+    });
+  });
+
+  it("does not read an uncovered file that is not valid UTF-8", () => {
+    const files = [{ path: "packages/tokens/src/font.woff2", bytes: new Uint8Array([0xff, 0xfe]) }];
+    expect(checkPackages(files)).toEqual({ exit: 0, summary: "prefix: 0 files checked, no finding" });
+  });
+});

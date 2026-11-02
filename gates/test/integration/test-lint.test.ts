@@ -161,3 +161,23 @@ describe("test lint, unchecked assertions (gates/bin/test-lint.ts)", () => {
     timeout,
   );
 });
+
+// Stryker's sandbox copies under .stryker-tmp/ are not repository files, and the test lint does not check them
+// (operator decision, phase 3 gate, 2026-11-02, on review note R2-02; spec FR-028, research.md R-06, tasks.md T092).
+// The fixture holds a test with one real assertion and, in a sandbox copy, a test file that does not parse (the state
+// R2-02 observed during a mutation run).
+describe("test lint, Stryker sandbox (gates/bin/test-lint.ts)", () => {
+  it(
+    "does not check .stryker-tmp/: exits 0 with the one repository test file checked",
+    async () => {
+      expect(existsSync(join(repo, config))).toBe(true);
+      const ran = await testLint("stryker-sandbox");
+      expect({ code: ran.code, stdout: ran.stdout, stderr: ran.stderr }).toEqual({
+        code: 0,
+        stdout: ["test-lint: 1 file checked, no finding"],
+        stderr: [],
+      });
+    },
+    timeout,
+  );
+});

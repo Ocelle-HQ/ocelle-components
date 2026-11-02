@@ -1,0 +1,5 @@
+node:internal/modules/cjs/loader:1228
+  throw err;
+  ^
+
+Error: Cannot find module '/work/repo/node_modules/typescript/bin/tsc'

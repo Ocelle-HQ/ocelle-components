@@ -18,7 +18,7 @@ describe("test command (gates/bin/test.ts)", () => {
     "exits 2 naming pnpm run setup:online when Chromium is missing, and runs no test (US1 scenario 9)",
     async () => {
       const env: Record<string, string> = { ...baseEnv(), PLAYWRIGHT_BROWSERS_PATH: tempDir("browsers") };
-      delete env["OCELLE_CHROMIUM_PATH"];
+      delete env.OCELLE_CHROMIUM_PATH;
       const ran = await testCommand("passing", env);
       expect(ran.code).toBe(2);
       expect(ran.stderr).toHaveLength(1);

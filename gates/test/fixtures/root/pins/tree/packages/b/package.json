@@ -1,0 +1,8 @@
+{
+  "name": "@ocelle/styles",
+  "version": "0.0.0",
+  "private": true,
+  "dependencies": {
+    "@ocelle/tokens": "workspace:0.0.0"
+  }
+}

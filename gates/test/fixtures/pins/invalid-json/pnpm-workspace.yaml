@@ -1,0 +1,7 @@
+packages:
+  - "packages/*"
+
+# Supply-chain policy (research.md R-04).
+minimumReleaseAge: 10080
+minimumReleaseAgeStrict: true
+allowBuilds: {}

@@ -1,0 +1,1 @@
+[{"source":"/work/repo/packages/elements/src/x.ts","deprecations":[],"invalidOptionWarnings":[],"parseErrors":[{"line":2,"column":1,"stylelintType":"parseError","text":"Unexpected token (postcss-lit)"}],"errored":true,"warnings":[]}]

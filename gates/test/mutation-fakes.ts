@@ -93,7 +93,7 @@ export function fakeRepo(
 
 /** A Stryker JSON report with these mutants by path. */
 export function strykerReport(files: Readonly<Record<string, readonly object[]>>): string {
-  const entries = Object.entries(files).map(([path, mutants]) => [path, { mutants }]);
+  const entries = Object.entries(files).map(([path, mutants]): [string, { mutants: readonly object[] }] => [path, { mutants }]);
   return JSON.stringify({ schemaVersion: "1.0", files: Object.fromEntries(entries) });
 }
 

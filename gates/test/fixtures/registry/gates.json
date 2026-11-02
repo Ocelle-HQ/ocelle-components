@@ -1,0 +1,94 @@
+[
+  {
+    "id": "typecheck",
+    "check": "Typecheck",
+    "command": "pnpm run gate:typecheck",
+    "plantCommand": "node gates/bin/typecheck.ts --root {root}",
+    "plantForm": "repo-tree",
+    "scope": "files"
+  },
+  {
+    "id": "lint",
+    "check": "Code lint",
+    "command": "pnpm run gate:lint",
+    "plantCommand": "node gates/bin/lint.ts --root {root}",
+    "plantForm": "repo-tree",
+    "scope": "files"
+  },
+  {
+    "id": "style-lint",
+    "check": "Style lint",
+    "command": "pnpm run gate:style-lint",
+    "plantCommand": "node gates/bin/style-lint.ts --root {root}",
+    "plantForm": "repo-tree",
+    "scope": "files"
+  },
+  {
+    "id": "unit-tests",
+    "check": "Unit tests",
+    "command": "pnpm run gate:unit-tests",
+    "plantCommand": "node gates/bin/unit-tests.ts --root {root}",
+    "plantForm": "repo-tree",
+    "scope": "files"
+  },
+  {
+    "id": "test-lint",
+    "check": "Test lint",
+    "command": "pnpm run gate:test-lint",
+    "plantCommand": "node gates/bin/test-lint.ts --root {root}",
+    "plantForm": "repo-tree",
+    "scope": "files"
+  },
+  {
+    "id": "mutation",
+    "check": "Mutation testing",
+    "command": "pnpm run gate:mutation",
+    "plantCommand": "node gates/bin/mutation.ts --root {root}",
+    "plantForm": "mutation-repo",
+    "scope": "files",
+    "helperJobs": [
+      "mutation-plan",
+      "mutation-shard"
+    ]
+  },
+  {
+    "id": "csp",
+    "check": "Content security",
+    "command": "pnpm run gate:csp",
+    "plantCommand": "node gates/bin/csp.ts --root {root}",
+    "plantForm": "repo-tree",
+    "scope": "files"
+  },
+  {
+    "id": "prefix",
+    "check": "Prefix",
+    "command": "pnpm run gate:prefix",
+    "plantCommand": "node gates/bin/prefix.ts --root {root}",
+    "plantForm": "repo-tree",
+    "scope": "files"
+  },
+  {
+    "id": "config-copies",
+    "check": "Story config copies",
+    "command": "pnpm run gate:config-copies",
+    "plantCommand": "node gates/bin/config-copies.ts --root {root}",
+    "plantForm": "repo-tree",
+    "scope": "files"
+  },
+  {
+    "id": "pins",
+    "check": "Install and pins",
+    "command": "pnpm run gate:pins",
+    "plantCommand": "node gates/bin/pins.ts --root {root}",
+    "plantForm": "workspace",
+    "scope": "files"
+  },
+  {
+    "id": "signoff",
+    "check": "Sign-off",
+    "command": "pnpm run gate:signoff",
+    "plantCommand": "node gates/bin/signoff.ts --root {root}",
+    "plantForm": "commit-repo",
+    "scope": "files"
+  }
+]
