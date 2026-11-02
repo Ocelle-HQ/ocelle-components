@@ -274,8 +274,8 @@ round 1 re-pinned every registry package published less than 7 days before 2026-
 
 ## R-09 Gate scripts and their contract
 
-- **Decision**: every gate is a command `pnpm run gate:<id>` backed by `gates/bin/<id>.ts` (or a wrapped tool
-  invocation for typecheck, code lint, style lint, test lint and unit tests) with one contract
+- **Decision**: every gate is a command `pnpm run gate:<id>` backed by `gates/bin/<id>.ts` (for typecheck, code lint,
+  style lint, test lint and unit tests the entry runs the tool and classifies its output; analysis 1) with one contract
   (contracts/gate-cli.md): exit 0 pass, exit 1 the gate found defects (each printed as a finding in the one format
   of data-model.md § Finding), exit 2 the gate could not run. Every entry catches any exception at the top and exits
   2, so an uncaught error (which Node reports as exit 1) never reaches the plant job as "caught". A registry
@@ -292,7 +292,10 @@ round 1 re-pinned every registry package published less than 7 days before 2026-
   working directory of the tool, and changes nothing else (R-10). The entry wrapper and `--root` parsing live in
   `gates/lib/cli.ts` and are red-tested in phase 2; each gate's entry takes `--root` from its phase's scaffold on, and
   a `gates-integration` test in that phase's red commit runs the gate with `--root` on a temporary repository from a
-  different working directory (analysis 1).
+  different working directory (analysis 1). That test builds its temporary repository itself (copy the fixture tree
+  and the configuration set, link `node_modules`, and for sign-off `git init` and commit the records), never through
+  a module of the same phase's scaffold such as `gates/lib/plant-repo.ts`, which builds nothing until green, so its
+  red failure is the gate's missing behaviour and not its own setup (analysis 2).
 - **Rationale**: exit 1 vs 2, together with the expected findings of each plant (R-10), lets the plant job tell "the
   gate caught the plant" from "the gate is broken".
 
@@ -435,6 +438,11 @@ round 1 re-pinned every registry package published less than 7 days before 2026-
     is a finding, so root files resolve only declared dependencies.
   Plant mode (`--plant <dir>`) runs the same on the plant's mini-workspace; pins is the one gate whose plants are
   not `repo-tree`, since a plant is its whole input (R-10).
+- **Test seam** (analysis 2, the design rule of R-08 and R-09): every rule above but the lockfile one is a pure
+  function on the parsed files, and the lockfile verdict is a pure function on pnpm's output and exit code; both
+  are tested in-process in the `gates` project on fixture mini-workspaces and recorded pnpm output, so Stryker never
+  starts pnpm. The real `pnpm install --frozen-lockfile --lockfile-only --offline` run is tested end to end in
+  `gates-integration` by phase 4's `--root` test, whose pins case is a mini-workspace with an outdated lockfile.
 
 ## R-15 Configuration-copies check (FR-006)
 

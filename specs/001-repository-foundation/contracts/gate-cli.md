@@ -22,11 +22,11 @@ A gate MUST NOT read `gates/plants/` or `gates/test/fixtures/` outside plant mod
 
 | id | Check (CI) | Command (normal) | Checks |
 |---|---|---|---|
-| `typecheck` | Typecheck | `tsc -p tsconfig.json --noEmit` | repository TypeScript |
-| `lint` | Code lint | `eslint --config eslint.config.ts .` | repository TypeScript |
-| `style-lint` | Style lint | `stylelint` per `stylelint.config.ts` | FR-024 styles |
+| `typecheck` | Typecheck | `gates/bin/typecheck.ts` (runs `tsc -p tsconfig.json --noEmit --pretty false`) | repository TypeScript |
+| `lint` | Code lint | `gates/bin/lint.ts` (runs `eslint --config eslint.config.ts --format json .`) | repository TypeScript |
+| `style-lint` | Style lint | `gates/bin/style-lint.ts` (runs `stylelint --formatter json` per `stylelint.config.ts`) | FR-024 styles |
 | `unit-tests` | Unit tests | `pnpm test` (`gates/bin/test.ts`) | every test file |
-| `test-lint` | Test lint | `eslint --config eslint.test.config.ts` | all test code |
+| `test-lint` | Test lint | `gates/bin/test-lint.ts` (runs `eslint --config eslint.test.config.ts --format json`) | all test code |
 | `mutation` | Mutation testing | `gates/bin/mutation.ts --base <sha>` (`--plan` prints the CI shards as JSON; `--files <paths>` limits a run to one shard, research.md R-08) | changed package source and gate source lines |
 | `csp` | Content security | `gates/bin/csp.ts` (after `pnpm -r build`) | built output |
 | `prefix` | Prefix | `gates/bin/prefix.ts` | packages: source, test code, built output |

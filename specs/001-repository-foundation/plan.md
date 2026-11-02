@@ -108,6 +108,13 @@ that phase's scaffold: the CLI entry wrapper (exit 2 on any uncaught error) and 
 ESLint report classification and the test-lint entry in phase 3, and `--root` on each phase 3 and phase 4 gate,
 run in `gates-integration` (R-06, R-09). No new exception.
 
+**Re-check after analysis 2** (operator: "fix all, then one last re-analysis", tasks gate 2026-11-02): phase 4's
+`--root` test builds its temporary repositories itself rather than through `gates/lib/plant-repo.ts`, a module of
+the same scaffold, so its red failure is each gate's missing behaviour, not its own setup (R-09); red tests that
+assert a configuration file the green commit creates record that file as part of the phase's missing behaviour in
+the phase review; the pins lockfile verdict is tested in-process on recorded pnpm output and the real pnpm run only
+in `gates-integration` (R-14). No new exception.
+
 ## Project Structure
 
 ### Documentation (this feature)
@@ -248,7 +255,9 @@ test could fail for it); a scaffold with behaviour is a blocking finding.
    commit-repo plants on an empty base commit; R-10); `ci.yml` (with the sharded mutation jobs, restoring caches
    only) and `cache.yml` (R-16); `gates/README.md` with deferred gates and the list of the twelve checks required on
    `main`. The phase ends with the same shard timing task as phase 3, recorded in
-   `reviews/phase-4/mutation-shards.md`.
+   `reviews/phase-4/mutation-shards.md`, and an early SC-001 timing (a cold `setup:online` plus `pnpm test` in a
+   fresh clone with an empty store and browser cache, recorded in `reviews/phase-4/sc-001-timing.md`; an overrun is
+   reported to the operator), since phases 2 to 4 add the real-tool `gates-integration` tests (analysis 2).
 5. **US4, governance (P4)**: LICENSE, CONTRIBUTING, SECURITY, THIRD_PARTY_NOTICES, CODEOWNERS, the SC-006 test. No
    GitHub-side check is part of this phase or its review (agents cannot push, open pull requests or call `gh api`);
    those are the operator's verification below.
