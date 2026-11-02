@@ -13,7 +13,7 @@
 
 ## Requirement Completeness
 
-- [ ] No [NEEDS CLARIFICATION] markers remain
+- [x] No [NEEDS CLARIFICATION] markers remain
 - [x] Requirements are testable and unambiguous
 - [x] Success criteria are measurable
 - [x] Success criteria are technology-agnostic (no implementation details)
@@ -34,4 +34,5 @@
 - This feature is tooling, so its requirements necessarily name the artefacts it delivers (the three packages, the
   licence files, the gates). Tool choices (pnpm, Vitest, StrykerJS, the ESLint plugin, GitHub Actions) are kept in
   Assumptions for the plan to confirm; the requirements state behaviour only.
-- One [NEEDS CLARIFICATION] remains: the SECURITY.md reporting channel (FR-032). Asked of the operator.
+- FR-032 clarified by the operator (2026-11-02): GitHub private vulnerability reporting once public; contact the
+  maintainers privately until then.

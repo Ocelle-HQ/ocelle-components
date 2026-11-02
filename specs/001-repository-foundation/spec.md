@@ -119,8 +119,9 @@ in this feature depends on it.
    text, `CONTRIBUTING.md`, `SECURITY.md` and `THIRD_PARTY_NOTICES`.
 2. **Given** `CONTRIBUTING.md`, **When** a contributor reads it, **Then** it explains sign-off (`git commit -s`),
    states there is no contributor licence agreement, and points to the Spec Kit flow and the constitution.
-3. **Given** `SECURITY.md`, **When** a reporter reads it, **Then** it names a private reporting channel, what to
-   include, and what response to expect, and it does not ask for public issues.
+3. **Given** `SECURITY.md`, **When** a reporter reads it, **Then** it names GitHub private vulnerability reporting
+   (switched on when the repository goes public) and, until then, a direct private contact with the maintainers;
+   what to include; and what response to expect; and it does not ask for public issues.
 4. **Given** `THIRD_PARTY_NOTICES`, **When** it is read, **Then** it lists every third-party asset that ships in a
    package and no asset that does not.
 
@@ -192,10 +193,10 @@ in this feature depends on it.
 - **FR-030**: `LICENSE` MUST contain the Apache License 2.0.
 - **FR-031**: `CONTRIBUTING.md` MUST explain sign-off, state that there is no contributor licence agreement, and
   point to the Spec Kit flow and the constitution.
-- **FR-032**: `SECURITY.md` MUST name a private reporting channel: [NEEDS CLARIFICATION: which private channel —
-  GitHub private vulnerability reporting may be unavailable while the repository is internal; a security mailbox
-  needs an address],
-  what to include in a report and the expected response time, and MUST NOT ask for public issues.
+- **FR-032**: `SECURITY.md` MUST name GitHub private vulnerability reporting as the reporting channel and state that
+  it is switched on when the repository goes public (1.0.0, #11); until then it MUST tell reporters to contact the
+  maintainers directly and privately, not through an issue. It MUST say what to include in a report and the expected
+  response time, and MUST NOT ask for public issues.
 - **FR-033**: `THIRD_PARTY_NOTICES` MUST list every third-party asset that ships in a package with its licence, and
   only those.
 - **FR-034**: No file of this feature MAY contain a secret, token or personal data.
@@ -231,6 +232,8 @@ in this feature depends on it.
 - Storybook, visual regression and axe CI are out of scope (#10); the contrast check is out of scope (#5); the
   custom-elements manifest check comes with the first element feature. Until those land, `main` merges without them,
   and FR-026 makes that visible.
-- The repository stays internal until 1.0.0 (#2, #11); nothing is published in this feature.
+- The repository stays internal until 1.0.0 (#2, #11); nothing is published in this feature. GitHub private
+  vulnerability reporting is documented for public repositories, so it is switched on at the 1.0.0 flip (#11);
+  until then reports go privately to the maintainers (operator decision, 2026-11-02).
 - The first phase (workspace and test command) may use `tdd-exempt.md`, since no runner exists before it; every later
   phase runs red first.
