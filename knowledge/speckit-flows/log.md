@@ -1,6 +1,7 @@
 # Spec Kit Flows Diary
 
 ## 2026-11-02
+* **Fix**: the `/speckit-analyze` report is now saved as `analysis-report.md` and summarised in the tasks gate ([squad extension](/flows/squad-extension.md) 1.1.0, [ocelle-sdd](/flows/ocelle-sdd.md) 1.2.0). Found while explaining the gates; see [the finding](/findings/analysis-not-saved.md).
 * **Creation**: [squad extension](/flows/squad-extension.md) 1.0.0, [ocelle-spec-check](/flows/ocelle-spec-check.md) and [ocelle-plan-squad](/flows/ocelle-plan-squad.md) 1.0.0; [ocelle-sdd](/flows/ocelle-sdd.md) 1.1.0 runs both; constitution 1.1.0 → 1.2.0 records them. Asked for by the operator: an analysis after every specify, and an adversarial squad on spec and plan after the plan phase, as the Spec Kitty repositories do. `/speckit-analyze` needs `tasks.md`, so the spec stage got its own check; the operator chose four lenses: correctness, a11y-security, testability and fresh. See [Adversarial plan squad](/guards/adversarial-squad.md).
 * **Update**: `.claude/settings.json` allowlist committed with the operator's approval, so headless agent steps can edit, run the flow scripts and commit, but not push or publish. Resolves [the finding](/findings/headless-permissions.md); the first real run confirms it.
 * **Update**: [story extension](/flows/story-extension.md) 1.2.0 adds `summary.sh`; [ocelle-implement](/flows/ocelle-implement.md) 1.1.0 writes and commits each feature's [run summary](/runs/) before its final gate. These summaries are the data for [the baseline experiment](/experiments/2026-11-02-spec-kit-baseline.md).

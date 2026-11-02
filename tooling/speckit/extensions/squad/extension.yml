@@ -3,7 +3,7 @@ schema_version: "1.0"
 extension:
   id: squad
   name: "Spec Check and Adversarial Plan Squad"
-  version: "1.0.0"
+  version: "1.1.0"
   description: "A spec-only check after specify, and an adversarial review squad on spec and plan after the plan phase: lenses, refute, operator forks, fix and verify"
   author: Ocelle-HQ
   repository: https://github.com/Ocelle-HQ/ocelle-components
@@ -23,6 +23,9 @@ provides:
     - name: speckit.squad.spec-fix
       file: commands/speckit.squad.spec-fix.md
       description: "Resolve the blocking findings of the latest spec check in spec.md"
+    - name: speckit.squad.analyze
+      file: commands/speckit.squad.analyze.md
+      description: "Run /speckit-analyze's cross-artifact analysis unchanged and save the report as analysis-report.md"
     - name: speckit.squad.lens
       file: commands/speckit.squad.lens.md
       description: "One adversarial lens on spec and plan: write findings with evidence for the current squad round, change nothing"
@@ -39,6 +42,10 @@ provides:
     - name: squad-spec-status
       file: scripts/spec-status.sh
       description: "Report the latest spec check verdict as JSON"
+      runtimes: [bash]
+    - name: squad-analysis-status
+      file: scripts/analysis-status.sh
+      description: "Report the severity counts and coverage of analysis-report.md as JSON"
       runtimes: [bash]
     - name: squad-round
       file: scripts/round.sh

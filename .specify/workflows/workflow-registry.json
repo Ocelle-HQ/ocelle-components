@@ -43,11 +43,11 @@
     },
     "ocelle-sdd": {
       "name": "Ocelle SDD Cycle with Spec Check, Plan Squad and Story Reviews",
-      "version": "1.1.0",
+      "version": "1.2.0",
       "description": "specify \u2192 spec check \u2192 plan \u2192 adversarial plan squad \u2192 tasks \u2192 analyze, with operator gates, then implementation by user story with review and fix rounds",
       "source": "tooling/speckit/workflows/ocelle-sdd",
-      "installed_at": "2026-11-02T14:21:01.030377+00:00",
-      "updated_at": "2026-11-02T14:21:01.030396+00:00"
+      "installed_at": "2026-11-02T14:35:47.935942+00:00",
+      "updated_at": "2026-11-02T14:35:47.935972+00:00"
     }
   }
 }

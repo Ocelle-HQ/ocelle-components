@@ -19,7 +19,7 @@ specify workflow remove ocelle-story && specify workflow add --dev tooling/speck
 
 | Workflow | Does |
 |---|---|
-| `ocelle-sdd` | specify → `ocelle-spec-check` → plan → `ocelle-plan-squad` → gate → tasks → analyze → gate → `ocelle-implement` |
+| `ocelle-sdd` | specify → `ocelle-spec-check` → plan → `ocelle-plan-squad` → gate → tasks → analyze (saved as `analysis-report.md`) → gate → `ocelle-implement` |
 | `ocelle-spec-check` | spec-only check after specify; fixes blocking findings (up to three checks); operator gate |
 | `ocelle-plan-squad` | adversarial squad on spec and plan: lenses → refute → forks → fix → verify; fresh-eyes rounds until clean (three rounds at most) |
 | `ocelle-implement` | for every phase that still needs work, in order: `ocelle-story`; then a final gate |

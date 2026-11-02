@@ -18,15 +18,16 @@
       "installed_at": "2026-11-02T13:52:05.451367+00:00"
     },
     "squad": {
-      "version": "1.0.0",
+      "version": "1.1.0",
       "source": "local",
-      "manifest_hash": "sha256:6b9b8f8f2480d314984a2eb15eb05e3901fe17704201fe4c566a9b30ddf8377c",
+      "manifest_hash": "sha256:9d992a465d1a8dc38360217e26b5532d08224fbca3d859c1fe6e878e2915a53f",
       "enabled": true,
       "priority": 10,
       "registered_commands": {
         "claude": [
           "speckit.squad.spec-check",
           "speckit.squad.spec-fix",
+          "speckit.squad.analyze",
           "speckit.squad.lens",
           "speckit.squad.refute",
           "speckit.squad.fix",
@@ -34,7 +35,7 @@
         ]
       },
       "registered_skills": [],
-      "installed_at": "2026-11-02T14:20:58.834875+00:00"
+      "installed_at": "2026-11-02T14:35:47.057134+00:00"
     }
   }
 }

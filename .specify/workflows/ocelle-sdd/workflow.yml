@@ -2,7 +2,7 @@ schema_version: "1.0"
 workflow:
   id: "ocelle-sdd"
   name: "Ocelle SDD Cycle with Spec Check, Plan Squad and Story Reviews"
-  version: "1.1.0"
+  version: "1.2.0"
   author: "Ocelle-HQ"
   description: "specify → spec check → plan → adversarial plan squad → tasks → analyze, with operator gates, then implementation by user story with review and fix rounds"
 
@@ -58,13 +58,19 @@ steps:
     input:
       args: "{{ inputs.spec }}"
 
+  # /speckit-analyze's analysis, saved to analysis-report.md so the gate (and later readers) can see it.
   - id: analyze
-    command: speckit.analyze
+    command: speckit.squad.analyze
     integration: "{{ inputs.integration }}"
+
+  - id: analysis-status
+    type: shell
+    run: ".specify/extensions/squad/scripts/analysis-status.sh"
+    output_format: json
 
   - id: review-tasks
     type: gate
-    message: "Review tasks.md and the analysis. Each '## Phase N' becomes one implement-review-fix unit; user-story phases should be independently testable."
+    message: "Review tasks.md and {{ steps.analysis-status.output.data.file }} (report written: {{ steps.analysis-status.output.data.present }}): {{ steps.analysis-status.output.data.critical }} critical, {{ steps.analysis-status.output.data.high }} high, {{ steps.analysis-status.output.data.medium }} medium, {{ steps.analysis-status.output.data.low }} low, coverage {{ steps.analysis-status.output.data.coverage }}%. Resolve critical findings before approving. Each '## Phase N' becomes one implement-review-fix unit; user-story phases should be independently testable."
     options: [approve, reject]
     on_reject: abort
 
