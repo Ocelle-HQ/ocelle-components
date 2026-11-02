@@ -27,23 +27,31 @@ command, so the next feature's phases can be proven red first.
 
 **Independent Test**: In a fresh clone, install and run the single test command: a sample passing test makes it
 succeed, a sample failing test (in each of the three packages, and one needing a browser) makes it fail; the story
-workflow's red/green check on a demo phase reports "pass" instead of "unavailable".
+workflow's red/green check on a demo phase reports "pass" instead of "unavailable". The sample tests are fixtures
+(FR-009): they are not exported and not part of any package's built output.
 
 **Acceptance Scenarios**:
 
-1. **Given** a fresh clone with the pinned runtime and package-manager versions, **When** dependencies are installed
-   from the lockfile with no network access to registries beyond the lockfile's packages, **Then** the install
-   succeeds and changes no tracked file.
-2. **Given** the workspace, **When** the test command runs, **Then** it runs the tests of all three packages and
+1. **Given** a fresh clone with the pinned runtime and package-manager versions, **When** the online install
+   (FR-008) runs, **Then** it succeeds, fills the local package store and browser cache, and leaves the lockfile and
+   every other tracked file unchanged.
+2. **Given** a machine on which the online install has run once, and a fresh worktree of the repository, **When** the
+   offline setup command (FR-006, FR-008) runs with network access disabled, **Then** it succeeds and changes no
+   tracked file.
+3. **Given** a local package store or browser cache that lacks something the lockfile or the tests need, **When** the
+   offline setup command runs with network access disabled, **Then** it fails with a message naming what is missing
+   and the online install command that fills it.
+4. **Given** the workspace, **When** the test command runs, **Then** it runs the tests of all three packages and
    exits zero when they pass.
-3. **Given** a failing test in any one package, **When** the test command runs, **Then** it exits non-zero and names
+5. **Given** a failing test in any one package, **When** the test command runs, **Then** it exits non-zero and names
    the failing test.
-4. **Given** a test that renders a custom element and reads the accessibility tree, **When** the test command runs,
+6. **Given** a test that renders a custom element and reads the accessibility tree, **When** the test command runs,
    **Then** the test runs in a real browser engine, not a simulated DOM.
-5. **Given** both copies of the story extension's configuration, **When** the red/green check runs on a phase with a
+7. **Given** both copies of the story extension's configuration, **When** the red/green check runs on a phase with a
    red commit, **Then** it uses the test command and reports `pass` or `fail`, never `unavailable`.
-6. **Given** an install that would change the lockfile or use an unpinned version, **When** it runs in CI, **Then**
-   it fails.
+8. **Given** a lockfile that does not match the manifests, or a manifest that declares a dependency by a range (such
+   as `^1.2.3` or `~1.2.3`) instead of an exact version, **When** the install-and-pins gate (FR-027) runs, **Then** it
+   fails and names the file.
 
 ---
 
@@ -56,7 +64,7 @@ rejects tests which cannot fail, and mutation testing of changed source that rep
 as "planned (issue #4)". Without them the story reviews carry that load alone.
 
 **Independent Test**: Plant each forbidden pattern in a scratch test and run the lint; change a covered line of
-sample source in a way its tests do not check and run mutation testing on that change.
+sample source (a fixture, FR-009) in a way its tests do not check and run mutation testing on that change.
 
 **Acceptance Scenarios**:
 
@@ -67,7 +75,8 @@ sample source in a way its tests do not check and run mutation testing on that c
 3. **Given** a change to source that its tests exercise but do not check, **When** mutation testing runs on the
    changed files, **Then** it reports at least one surviving mutant with its location and fails.
 4. **Given** a surviving mutant recorded as equivalent with a written reason, **When** mutation testing runs again,
-   **Then** that mutant no longer fails the run, and the reason is kept next to the code.
+   **Then** that mutant no longer fails the run, the reason is kept next to the mutated code (FR-012), and the
+   mutation report lists the record so the review can see it.
 5. **Given** a change that touches no source, **When** mutation testing runs, **Then** it finishes without mutating
    anything and succeeds.
 
@@ -77,28 +86,35 @@ sample source in a way its tests do not check and run mutation testing on that c
 
 The operator opens a pull request and sees every merge gate of this feature run: typecheck, code lint, style lint
 (token-only), unit tests, the test lint, mutation testing, the strict content-security check on built output, the
-prefix check and the sign-off check. For each gate a planted defect exists and a CI job shows the gate fails on it.
+prefix check, the configuration-copies check, the install-and-pins check and the sign-off check. For each gate a
+planted defect exists and a CI job shows the gate fails on it.
 
 **Why this priority**: Gates are what keep agents honest after this feature; a gate that passes everything is worse
 than none. It depends on Stories 1 and 2.
 
-**Independent Test**: Open a pull request that changes nothing: every gate passes. Then run each gate against its
+**Independent Test**: Open a pull request with a change that touches no checked file (FR-028): every gate passes. Then run each gate against its
 plant: every gate fails, with a message naming the defect.
 
 **Acceptance Scenarios**:
 
 1. **Given** a pull request, **When** CI runs, **Then** each gate of FR-020 runs as its own named check.
-2. **Given** a raw colour, font, size, radius, shadow or duration value in element styles, **When** the style lint
-   runs, **Then** it fails, even though no design token exists yet.
+2. **Given** a raw colour, font, size, radius, shadow or duration value in styles the style lint covers (FR-024),
+   including a style embedded in an element's TypeScript, **When** the style lint runs, **Then** it fails, even
+   though no design token exists yet.
 3. **Given** built package output that contains an inline script, an inline style element or attribute, an event
    handler attribute, or a dynamic-code call, **When** the content-security check runs on it, **Then** it fails.
-4. **Given** an element name, token name or event name starting with `sk-` / `--sk-`, or a `monospace` font family,
-   anywhere in source or build output, **When** the prefix check runs, **Then** it fails and names the file and line.
-5. **Given** a commit in the pull request without a `Signed-off-by` line, **When** the sign-off check runs, **Then**
+4. **Given** a name starting with `sk-` or `--sk-` at a name boundary (FR-022), or a monospace font family, in any
+   file the prefix check covers (FR-028), **When** the prefix check runs, **Then** it fails and names the file and
+   line.
+5. **Given** a name that only contains `sk-` inside a longer word, such as `task-list`, `desk-row` or `--risk-level`,
+   **When** the prefix check runs, **Then** it passes.
+6. **Given** a commit in the pull request without a `Signed-off-by` line, **When** the sign-off check runs, **Then**
    it fails and names the commit.
-6. **Given** each gate's planted defect, **When** the plant job runs, **Then** every gate fails on its plant; if any
-   gate passes on its plant, the plant job fails.
-7. **Given** the near-empty packages of this feature, **When** a gate passes, **Then** the plant job has shown in the
+7. **Given** each gate's planted defect, **When** the plant job runs, **Then** every gate fails on its plant; if any
+   gate passes on its plant, or fails on one of its pass plants (FR-025), the plant job fails.
+8. **Given** a pull request, **When** the normal gates run, **Then** none of them reads `gates/plants/`, so the plants
+   never make a normal gate fail.
+9. **Given** the near-empty packages of this feature, **When** a gate passes, **Then** the plant job has shown in the
    same run that it can fail, so no gate passes only because there is nothing to check.
 
 ---
@@ -129,14 +145,17 @@ in this feature depends on it.
 
 ### Edge Cases
 
-- A test file in a package that has no tests yet: the test command must still run the other packages and succeed;
-  an empty package must not fail the run.
+- A package with no test files yet: the test command must still run the other packages and succeed; an empty
+  package must not fail the run. A run that finds no test file at all in the workspace fails (FR-004), so a broken
+  file pattern cannot pass silently.
 - A browser engine missing on the machine: the test command fails with a message saying how to install it, never
   silently skips browser tests.
 - A pull request with no source change: mutation testing must not mutate the whole code base.
 - A plant accidentally fixed or deleted: the plant job must fail ("gate X has no plant" or "plant X did not fail").
 - A commit authored by an agent: it needs a sign-off like any other commit.
-- A lockfile change in a pull request without a matching manifest change: the install check fails.
+- A lockfile change in a pull request without a matching manifest change: the install-and-pins gate fails (FR-027).
+- The offline setup runs on a machine where the online install never ran: it fails with a message naming the online
+  install command, never reaches for the network (FR-008).
 - The story extension's two configuration copies disagree: a check must flag it.
 - `THIRD_PARTY_NOTICES` while no third-party asset ships yet: it states that, and the font entry is added by #5 when
   the font is vendored.
@@ -153,40 +172,91 @@ in this feature depends on it.
   pinned to an exact version, and the lockfile MUST be committed.
 - **FR-003**: A frozen install from the lockfile MUST succeed in a fresh clone and MUST fail when the lockfile would
   change.
-- **FR-004**: One root command MUST run every test of every package and exit non-zero when any test fails.
+- **FR-004**: One root command MUST run every test file (FR-028) and exit non-zero when any test fails or when it
+  finds no test file at all.
 - **FR-005**: Tests of elements MUST run in a real browser engine.
-- **FR-006**: Both copies of the story extension's configuration MUST set the test command, an offline setup command
-  and the test file patterns of this repository, and MUST be identical; a check MUST fail when they differ.
+- **FR-006**: Both copies of the story extension's configuration MUST set the test command, the offline setup command
+  (FR-008) and the test file patterns of this repository, and MUST be identical; a check MUST fail when they differ.
 - **FR-007**: The mutation command MUST be set in both configuration copies (Story 2).
+- **FR-008**: Installing has two documented commands:
+  - The **online install** fetches the lockfile's packages from the configured package registry and the browser
+    engine(s) of FR-005 at the version pinned by the test tooling. It stores them in a local package store and a
+    browser cache outside the repository, and it changes no tracked file.
+  - The **offline setup** (the story configuration's setup command) installs the workspace in a checkout using only
+    that local store and cache, with no network access. It changes no tracked file. When the store or cache lacks
+    anything it needs, it fails with a message naming what is missing and the online install command; it never
+    falls back to the network.
+- **FR-009**: Sample tests and sample source used to demonstrate Stories 1 and 2 are fixtures or plants. They are not
+  exported by any package and are not part of any package's built output.
 
 **Test quality (Story 2)**
 
 - **FR-010**: A test lint MUST reject tests without an assertion, skipped and focused tests, assertions inside
   conditionals, assertions outside a test, assertions that are not awaited or completed, and tests whose only
   assertion is a snapshot.
-- **FR-011**: Mutation testing MUST run on the source changed relative to the target branch, MUST fail when a mutant
-  survives in changed code, and MUST report each survivor's location.
-- **FR-012**: A surviving mutant MAY be recorded as equivalent only with a written reason kept in the repository.
-- **FR-013**: Mutation testing in CI MUST finish within the time budget of SC-005.
+- **FR-011**: Mutation testing MUST run on the package source (FR-028) changed relative to the pull request's base
+  branch, MUST fail when a mutant survives in changed code, and MUST report each survivor's location.
+- **FR-012**: A surviving mutant MAY be recorded as equivalent only with a written reason, kept next to the mutated
+  code. The mutation report MUST list every such record in the changed code, with its location and reason, so the
+  review can see and record it.
+- **FR-013**: Mutation testing in CI MUST run under a job time limit of 10 minutes (SC-005). A run that exceeds the
+  limit MUST end as a failure, never as a pass.
 
 **Merge gates (Story 3)**
 
 - **FR-020**: Pull-request CI MUST run these gates as separate named checks: typecheck, code lint, style lint
   (token-only), unit tests (the FR-004 command), test lint (FR-010), mutation testing (FR-011), the content-security
-  check on built output (FR-021), the prefix check (FR-022), the configuration-copies check (FR-006) and the sign-off
-  check (FR-023).
-- **FR-021**: The content-security check MUST fail on any inline script, inline style element or attribute, event
-  handler attribute, or dynamic-code call in the packages' built output.
-- **FR-022**: The prefix check MUST fail on any `sk-` element name, `--sk-` token name, `sk-` event name or
-  `monospace` font family in source or build output, naming file and line.
+  check on built output (FR-021), the prefix check (FR-022), the configuration-copies check (FR-006), the
+  install-and-pins check (FR-027) and the sign-off check (FR-023). Each gate checks exactly the files FR-028 gives it.
+- **FR-021**: The content-security check MUST fail on any of these in the packages' built output (every JavaScript,
+  CSS and HTML file the package build produces): an inline `<script>` element, a `<style>` element or `style`
+  attribute, an event handler attribute (`on*=`), each in markup (HTML files and HTML templates inside JavaScript),
+  or a dynamic-code call (`eval`, `new Function`, the `Function` constructor, or `setTimeout`/`setInterval` with a
+  string argument). Remote loads (constitution IV) are not part of this gate in this feature.
+- **FR-022**: The prefix check MUST fail, naming file and line, on:
+  - any name that starts with `sk-` or `--sk-` at a name boundary: the `sk-` is not preceded by a letter, a digit,
+    `_` or `-`, except for the leading `--` of a custom property. This covers element names, custom-element
+    definitions, CSS custom properties and event names, and does not match `task-list`, `desk-row` or `--risk-level`;
+  - any monospace font family in a font declaration, case-insensitive: the generic families `monospace` and
+    `ui-monospace`, and the named monospace families Menlo, Monaco, Consolas, Courier, Courier New, SFMono-Regular,
+    SF Mono, Liberation Mono, DejaVu Sans Mono, Lucida Console, Roboto Mono, Source Code Pro, Fira Code, Fira Mono,
+    JetBrains Mono, Cascadia Code and Cascadia Mono.
 - **FR-023**: The sign-off check MUST fail on any commit in a pull request without a `Signed-off-by` line.
-- **FR-024**: The style lint MUST reject raw colour, font, size, radius, shadow and duration values in element
-  styles without depending on any design token existing.
-- **FR-025**: Every gate of FR-020 MUST have a planted defect under `gates/plants/`, and a CI job MUST run each gate
-  against its plant and fail unless every gate fails on its plant.
-- **FR-026**: Gates that this feature does not deliver MUST be named in the repository's gate documentation with the
-  issue that delivers them: Storybook build, visual regression and accessibility checks (#10), contrast check (#5),
-  custom-elements manifest check (first element feature, #7 or #10).
+- **FR-024**: The style lint MUST reject raw colour, font, size, radius, shadow and duration values in the styles it
+  covers (FR-028), without depending on any design token existing. It covers styles embedded in the TypeScript of
+  `@ocelle/elements` (tagged style templates) and every stylesheet in the source of `@ocelle/elements` and
+  `@ocelle/styles`. The token definitions in `@ocelle/tokens` are excluded, since they are the raw values.
+- **FR-025**: Every gate of FR-020 MUST have at least one planted defect under `gates/plants/`, and a CI job (the plant
+  job) MUST run each gate against its plants and fail unless every gate fails on each of its plants. A gate MAY also
+  have pass plants (near-misses it must accept); the plant job MUST fail when a gate fails on a pass plant. At least
+  these plants exist:
+  - style lint: a raw literal inside a style template embedded in a TypeScript file, and one in a stylesheet;
+  - prefix check: an `sk-` element name, a `--sk-` custom property, an `sk-` event name, a generic `monospace` and a
+    named monospace family; and the pass plants `task-list`, `desk-row` and `--risk-level`;
+  - install-and-pins check: a lockfile that does not match its manifest, and a manifest with a `^` range.
+- **FR-026**: Gates that this feature does not deliver MUST be named in `gates/README.md` with the issue that delivers
+  them: Storybook build, visual regression and accessibility checks (#10), contrast check (#5), custom-elements
+  manifest check (the first element feature, #7, or #10, whichever lands first).
+- **FR-027**: The install-and-pins check MUST fail when the lockfile does not match the manifests (a frozen install
+  would change it), when any manifest declares a dependency by anything other than an exact version, or when the
+  runtime or package-manager version pin is missing or is not an exact version.
+- **FR-028**: Gate scope. Definitions: **package source** is every file in a package's directory except its test
+  files and its built output; **test file** is a file whose name ends in `.test.ts` or `.spec.ts`; **built output**
+  is every file the package build produces; **documentation and tooling** is `specs/`, `.specify/`, `.claude/`,
+  `tooling/`, `knowledge/`, `triage/` and every Markdown file. `gates/plants/` and installed dependencies are excluded
+  from every gate except the plant job, which reads only `gates/plants/`. Within that, each gate checks:
+
+  | Gate | Files checked |
+  |------|---------------|
+  | typecheck, code lint | every TypeScript file in the workspace |
+  | style lint | the styles of FR-024 |
+  | unit tests, test lint | every test file in the workspace |
+  | mutation testing | package source TypeScript changed relative to the pull request's base branch |
+  | content-security check | built output of the three packages |
+  | prefix check | package source, test files and built output of the three packages; not documentation and tooling |
+  | configuration-copies check | the two story configuration copies |
+  | install-and-pins check | the workspace and package manifests, the lockfile and the version pin files |
+  | sign-off check | the commits in the pull request (base branch to head) |
 
 **Licence and governance (Story 4)**
 
@@ -199,29 +269,38 @@ in this feature depends on it.
   response time, and MUST NOT ask for public issues.
 - **FR-033**: `THIRD_PARTY_NOTICES` MUST list every third-party asset that ships in a package with its licence, and
   only those.
-- **FR-034**: No file of this feature MAY contain a secret, token or personal data.
+- **FR-034**: No file of this feature MAY contain a secret, credential or access token, or personal data. This is
+  verified by the story review; this feature adds no secret-scan gate.
 
 ### Key Entities
 
-- **Gate**: a named merge check; has a command, the CI check it runs as, and one plant.
-- **Plant**: a deliberate defect under `gates/plants/` that one gate must fail on.
+- **Gate**: a named merge check; has a command, the CI check it runs as, the files it checks (FR-028), and at least
+  one plant.
+- **Plant**: a deliberate defect under `gates/plants/` that one gate must fail on; a pass plant is a near-miss under
+  `gates/plants/` that the gate must accept.
 - **Story configuration**: the story extension's settings (test, setup, mutation commands; test file patterns),
   present in two copies that must match.
-- **Equivalent-mutant record**: a surviving mutant accepted with its location and reason.
+- **Equivalent-mutant record**: a surviving mutant accepted with its location and reason, kept next to the mutated
+  code and listed in the mutation report.
 
 ## Success Criteria *(mandatory)*
 
 ### Measurable Outcomes
 
-- **SC-001**: In a fresh clone, install plus the full test run completes in under 5 minutes on a standard CI runner.
-- **SC-002**: 100% of the gates in FR-020 fail on their plant in the plant job, and 0 gates pass on their plant.
+- **SC-001**: In a fresh clone, the online install plus the full test run completes in under 5 minutes on the
+  GitHub-hosted `ubuntu-latest` standard runner available to this repository (2 vCPU while it is internal), with no
+  cache restored (empty package store and browser cache).
+- **SC-002**: In the plant job, every gate of FR-020 fails on 100% of its plants and accepts 100% of its pass plants
+  (FR-025).
 - **SC-003**: The story workflow's red/green check on a demo phase reports `pass` (not `unavailable`) after this
   feature, and `fail` when its final tests pass against the code from before the phase.
 - **SC-004**: Each of the six forbidden test patterns of FR-010 is reported as an error in 100% of planted cases.
-- **SC-005**: Mutation testing of a typical pull request (up to 10 changed source files) finishes in under 10
-  minutes in CI.
-- **SC-006**: A first-time contributor finds the licence, the sign-off rule and the vulnerability reporting route in
-  under 2 minutes from the repository root.
+- **SC-005**: Mutation testing of a pull request that changes up to 10 package source files and up to 500 lines of
+  package source finishes in under 10 minutes on the runner of SC-001, with the package store and browser cache
+  restored and no earlier mutation result available. The CI job's 10-minute limit (FR-013) enforces it.
+- **SC-006**: A script run in a fresh clone confirms that `LICENSE`, `CONTRIBUTING.md`, `SECURITY.md` and
+  `THIRD_PARTY_NOTICES` exist at the repository root under exactly these names, that `CONTRIBUTING.md` contains the
+  sign-off rule (`Signed-off-by`, `git commit -s`), and that `SECURITY.md` contains the reporting route of FR-032.
 
 ## Assumptions
 
@@ -231,9 +310,11 @@ in this feature depends on it.
 - No third-party asset ships in this feature; the Schibsted Grotesk font and its OFL entry arrive with #5.
 - Storybook, visual regression and axe CI are out of scope (#10); the contrast check is out of scope (#5); the
   custom-elements manifest check comes with the first element feature. Until those land, `main` merges without them,
-  and FR-026 makes that visible.
+  and FR-026 makes that visible in `gates/README.md`.
 - The repository stays internal until 1.0.0 (#2, #11); nothing is published in this feature. GitHub private
   vulnerability reporting is documented for public repositories, so it is switched on at the 1.0.0 flip (#11);
   until then reports go privately to the maintainers (operator decision, 2026-11-02).
-- The first phase (workspace and test command) may use `tdd-exempt.md`, since no runner exists before it; every later
-  phase runs red first.
+- The first phase may use `tdd-exempt.md` for the workspace and runner bootstrap only (install, the three package
+  skeletons and the test command's wiring), since no runner exists before it. The behaviour in that phase (the
+  FR-004 exit codes, the FR-006 configuration-copies check, the zero-test and missing-browser cases) is written red
+  first, as is every later phase.
