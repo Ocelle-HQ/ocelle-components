@@ -21,13 +21,12 @@ function setting(text: string, key: string): string | undefined {
     .replace(/^"(.*)"$/, "$1");
 }
 
+/** The first line (1-based) where two different texts differ, counting a line one of them lacks as different. */
 function firstDifferingLine(a: string, b: string): number {
   const left = a.split("\n");
   const right = b.split("\n");
-  for (let i = 0; i < Math.max(left.length, right.length); i += 1) {
-    if (left[i] !== right[i]) return i + 1;
-  }
-  return 0;
+  const length = Math.max(left.length, right.length);
+  return Array.from({ length }, (_, i) => left[i] === right[i]).indexOf(false) + 1;
 }
 
 function compare(specify: string, tooling: string): GateResult {
@@ -65,7 +64,9 @@ function compare(specify: string, tooling: string): GateResult {
 async function read(root: string, path: string): Promise<string | undefined> {
   try {
     return await readFile(join(root, path), "utf8");
-  } catch {
+  }
+  // Stryker disable next-line BlockStatement: equivalent, an empty catch also makes the function return undefined
+  catch {
     return undefined;
   }
 }
@@ -73,14 +74,16 @@ async function read(root: string, path: string): Promise<string | undefined> {
 export async function run(argv: readonly string[], io: Io): Promise<number> {
   const context = parseArgs(argv, io.cwd);
   const [specifyPath, toolingPath] = copies;
-  const specify = await read(context.root, specifyPath);
-  const tooling = await read(context.root, toolingPath);
-  const unreadable = specify === undefined ? specifyPath : tooling === undefined ? toolingPath : undefined;
-  if (specify === undefined || tooling === undefined) {
-    const cause = `${gate}: could not run: cannot read ${unreadable ?? ""}; restore it from git (both copies must exist)`;
+  const unreadable = (path: string): number => {
+    const cause = `${gate}: could not run: cannot read ${path}; restore it from git (both copies must exist)`;
     return emit({ exit: 2, cause }, io.out, io.err);
-  }
+  };
+  const specify = await read(context.root, specifyPath);
+  if (specify === undefined) return unreadable(specifyPath);
+  const tooling = await read(context.root, toolingPath);
+  if (tooling === undefined) return unreadable(toolingPath);
   return emit(compare(specify, tooling), io.out, io.err);
 }
 
+// Stryker disable next-line all: process boundary, covered by gates-integration
 if (import.meta.main) await main(run);

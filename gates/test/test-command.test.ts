@@ -1,6 +1,8 @@
 import { readFileSync } from "node:fs";
 import { describe, expect, it } from "vitest";
-import { chromiumCheck } from "../bin/test.ts";
+import { chromiumCheck, unitTests } from "../bin/test.ts";
+import type { UnitTestTools } from "../bin/test.ts";
+import type { Io } from "../lib/cli.ts";
 import { classifyVitest } from "../lib/vitest-report.ts";
 
 const root = "/work/repo";
@@ -151,5 +153,174 @@ describe("chromiumCheck", () => {
   it("treats an empty override as unset, like vitest.config.ts does", () => {
     const check = chromiumCheck({ override: "", playwrightPath, exists: (p) => p === playwrightPath });
     expect(check).toEqual({ executable: playwrightPath, problem: undefined });
+  });
+});
+
+// Added in the phase 3 mutation catch-up of phase 2 (T049): mutants that survived the phase 2 tests.
+interface VitestReport {
+  success: boolean;
+  testResults: {
+    name: string;
+    status: string;
+    message: string;
+    assertionResults: { fullName: string; status: string; failureMessages: string[] }[];
+  }[];
+}
+
+function report(name: string): VitestReport {
+  return JSON.parse(fixture(name)) as VitestReport;
+}
+
+function first<T>(items: readonly T[]): T {
+  const [item] = items;
+  if (item === undefined) throw new Error("fixture has no item");
+  return item;
+}
+
+describe("classifyVitest (mutation catch-up)", () => {
+  it("names the first non-blank line of a failure message, without colour codes or indentation", () => {
+    const failing = report("failing.json");
+    const failed = first(failing.testResults).assertionResults[1];
+    if (failed === undefined) throw new Error("fixture has no failed test");
+    failed.failureMessages = ["\n   \u001b[31mAssertionError\u001b[39m: expected 3 to be 4\n    at sum.test.ts:8"];
+    const result = classifyVitest({ report: JSON.stringify(failing), exitCode: 1, output: "", root });
+    expect(result).toMatchObject({ exit: 1, findings: [{ message: "AssertionError: expected 3 to be 4" }, {}] });
+  });
+
+  it("names a failed test without a failure message 'failed', and an empty message as empty", () => {
+    const failing = report("failing.json");
+    const [sum, title] = failing.testResults;
+    if (sum === undefined || title === undefined) throw new Error("fixture has two files");
+    const failed = sum.assertionResults[1];
+    const other = title.assertionResults[0];
+    if (failed === undefined || other === undefined) throw new Error("fixture has failed tests");
+    failed.failureMessages = [];
+    other.failureMessages = [""];
+    const result = classifyVitest({ report: JSON.stringify(failing), exitCode: 1, output: "", root });
+    expect(result).toMatchObject({ exit: 1, findings: [{ message: "failed" }, { message: "" }] });
+  });
+
+  it("keeps the path of a test file outside the repository root as it is", () => {
+    const failing = report("failing.json");
+    first(failing.testResults).name = "/elsewhere/sum.test.ts";
+    const result = classifyVitest({ report: JSON.stringify(failing), exitCode: 1, output: "", root });
+    expect(result).toMatchObject({
+      exit: 1,
+      findings: [{ location: { path: "/elsewhere/sum.test.ts" } }, { location: { path: "packages/elements/test/title.test.ts" } }],
+    });
+  });
+
+  it("cannot run on an error outside the tests of a file whose tests all passed", () => {
+    const passing = report("passing.json");
+    passing.success = false;
+    const file = first(passing.testResults);
+    file.status = "failed";
+    file.message = "Error: afterAll hook failed";
+    expect(classifyVitest({ report: JSON.stringify(passing), exitCode: 1, output: "", root })).toEqual({
+      exit: 2,
+      cause: "unit-tests: could not run: packages/tokens/test/sum.test.ts: error outside tests: Error: afterAll hook failed",
+    });
+  });
+
+  it("counts only passed tests in the summary, not skipped ones", () => {
+    const passing = report("passing.json");
+    const skipped = first(passing.testResults).assertionResults[1];
+    if (skipped === undefined) throw new Error("fixture has two tests");
+    skipped.status = "skipped";
+    expect(classifyVitest({ report: JSON.stringify(passing), exitCode: 0, output: "", root })).toEqual({
+      exit: 0,
+      summary: "unit-tests: 2 tests passed in 2 files",
+    });
+  });
+
+  it("cannot run without a report, naming Vitest's exit code when its output names no error", () => {
+    expect(classifyVitest({ report: undefined, exitCode: 1, output: "", root })).toEqual({
+      exit: 2,
+      cause: "unit-tests: could not run: no Vitest report (Vitest exited 1); run pnpm run setup:offline and check vitest.config.ts",
+    });
+  });
+
+  it("cannot run without a report, naming the error line of the output (colour codes and indentation removed)", () => {
+    const output = "Vitest reports an Error: below\n  \u001b[31mTypeError\u001b[39m: late boom\n";
+    expect(classifyVitest({ report: undefined, exitCode: 1, output, root })).toEqual({
+      exit: 2,
+      cause:
+        "unit-tests: could not run: no Vitest report (TypeError: late boom); run pnpm run setup:offline and check vitest.config.ts",
+    });
+  });
+
+  it("cannot run on a report that is null or has no list of test results", () => {
+    const cause =
+      "unit-tests: could not run: no Vitest report (Vitest exited 1); run pnpm run setup:offline and check vitest.config.ts";
+    expect(classifyVitest({ report: "null", exitCode: 1, output: "", root })).toEqual({ exit: 2, cause });
+    expect(classifyVitest({ report: "{}", exitCode: 1, output: "", root })).toEqual({ exit: 2, cause });
+  });
+
+  it("cannot run when Vitest fails with no failed test and no error in its output", () => {
+    expect(classifyVitest({ report: fixture("passing.json"), exitCode: 1, output: "", root })).toEqual({
+      exit: 2,
+      cause: "unit-tests: could not run: Vitest reported errors outside tests: Vitest exited 1 with no failed test",
+    });
+  });
+});
+
+describe("unitTests (mutation catch-up)", () => {
+  const vitestPath = `${root}/node_modules/vitest/vitest.mjs`;
+  const args = ["run", "--reporter", "default", "--reporter", "json", "--includeTaskLocation"];
+
+  function capture(): { io: Io; out: string[]; err: string[] } {
+    const out: string[] = [];
+    const err: string[] = [];
+    return { io: { cwd: root, env: {}, out: (l) => out.push(l), err: (l) => err.push(l) }, out, err };
+  }
+
+  /** Vitest that writes the passing report only when run as the gate must run it. */
+  function tools(chromiumProblem: string | undefined, installed: boolean, extra: readonly string[] = []): UnitTestTools {
+    return {
+      chromium: () => Promise.resolve({ executable: "/chrome", problem: chromiumProblem }),
+      exists: (path) => installed && path === vitestPath,
+      vitest: (vitest, given) => {
+        const expected = [...args, ...extra];
+        const right = vitest === vitestPath && given.join(" ") === expected.join(" ");
+        return Promise.resolve(
+          right
+            ? { report: fixture("passing.json"), exitCode: 0, output: "" }
+            : { report: undefined, exitCode: 1, output: `Error: unexpected vitest call ${given.join(" ")}` },
+        );
+      },
+    };
+  }
+
+  const noVitest: UnitTestTools["vitest"] = () => Promise.reject(new Error("Vitest must not run"));
+
+  it("runs no test when Chromium is missing, exit 2 naming the problem", async () => {
+    const c = capture();
+    const code = await unitTests({ root, toolCwd: root, args: [] }, { ...tools("Chromium not found", true), vitest: noVitest }, c.io);
+    expect({ code, out: c.out, err: c.err }).toEqual({
+      code: 2,
+      out: [],
+      err: ["unit-tests: could not run: Chromium not found"],
+    });
+  });
+
+  it("exits 2 naming the setup when Vitest is not installed in the root", async () => {
+    const c = capture();
+    const code = await unitTests({ root, toolCwd: root, args: [] }, { ...tools(undefined, false), vitest: noVitest }, c.io);
+    expect({ code, out: c.out, err: c.err }).toEqual({
+      code: 2,
+      out: [],
+      err: [`unit-tests: could not run: Vitest is not installed in ${root}; run pnpm run setup:offline`],
+    });
+  });
+
+  it("runs Vitest with the JSON report and test locations, passing extra arguments on, and classifies the report", async () => {
+    const c = capture();
+    const extra = ["--project", "tokens"];
+    const code = await unitTests({ root, toolCwd: root, args: extra }, tools(undefined, true, extra), c.io);
+    expect({ code, out: c.out, err: c.err }).toEqual({
+      code: 0,
+      out: ["unit-tests: 3 tests passed in 2 files"],
+      err: [],
+    });
   });
 });

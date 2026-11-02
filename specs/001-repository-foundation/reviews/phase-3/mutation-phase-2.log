@@ -1,0 +1,228 @@
+# T049 mutation catch-up for phase 2: pnpm run gate:mutation -- --base 20793235eaca1afa1fa3f37b97a22625a41f76ae
+# Run 1, at ee60010 (phase 3 green, before the catch-up): exit 1
+
+Scope: all 4 workspace projects
+✓ Lockfile passes supply-chain policies (verified 1h ago)
+Lockfile is up to date, resolution step is skipped
+Already up to date
+Done in 155ms using pnpm v12.16.1
+$ node gates/bin/mutation.ts -- --base 20793235eaca1afa1fa3f37b97a22625a41f76ae
+gates/bin/mutation.ts:121: mutation: record: all: process boundary, covered by gates-integration
+gates/bin/mutation.ts:124: mutation: record: all: process boundary, covered by gates-integration
+gates/bin/mutation.ts:126: mutation: record: all: process boundary, covered by gates-integration
+gates/bin/mutation.ts:128: mutation: record: all: process boundary, covered by gates-integration
+gates/bin/mutation.ts:130: mutation: record: all: process boundary, covered by gates-integration
+gates/bin/mutation.ts:132: mutation: record: all: process boundary, covered by gates-integration
+gates/bin/mutation.ts:135: mutation: record: all: process boundary, covered by gates-integration
+gates/bin/mutation.ts:137: mutation: record: all: process boundary, covered by gates-integration
+gates/bin/mutation.ts:139: mutation: record: all: process boundary, covered by gates-integration
+gates/bin/mutation.ts:141: mutation: record: all: process boundary, covered by gates-integration
+gates/bin/mutation.ts:147: mutation: record: all: process boundary, covered by gates-integration
+gates/bin/mutation.ts:153: mutation: record: all: process boundary, covered by gates-integration
+gates/bin/test-lint.ts:11: mutation: record: all: process boundary, covered by gates-integration
+gates/bin/test-lint.ts:14: mutation: record: all: process boundary, covered by gates-integration
+gates/bin/test-lint.ts:16: mutation: record: all: process boundary, covered by gates-integration
+gates/bin/test-lint.ts:18: mutation: record: all: process boundary, covered by gates-integration
+gates/bin/test-lint.ts:23: mutation: record: all: process boundary, covered by gates-integration
+gates/lib/eslint-report.ts:39: mutation: record: BlockStatement: equivalent, an empty catch leaves value undefined, which the check below also rejects
+gates/lib/mutation/report.ts:53: mutation: record: BlockStatement: equivalent, an empty catch leaves value undefined, which the check below also rejects
+gates/bin/config-copies.ts:21: mutation: Regex: Survived: replaced by /"(.*)"$/
+gates/bin/config-copies.ts:21: mutation: Regex: Survived: replaced by /^"(.*)"/
+gates/bin/config-copies.ts:27: mutation: EqualityOperator: Survived: replaced by i <= Math.max(left.length, right.length)
+gates/bin/config-copies.ts:27: mutation: MethodExpression: Survived: replaced by Math.min(left.length, right.length)
+gates/bin/config-copies.ts:42: mutation: ConditionalExpression: Survived: replaced by false
+gates/bin/config-copies.ts:42: mutation: StringLiteral: NoCoverage: replaced by ""
+gates/bin/config-copies.ts:60: mutation: StringLiteral: Survived: replaced by ``
+gates/bin/config-copies.ts:68: mutation: BlockStatement: Survived: replaced by {}
+gates/bin/config-copies.ts:78: mutation: ConditionalExpression: Survived: replaced by false
+gates/bin/config-copies.ts:78: mutation: ConditionalExpression: Survived: replaced by true
+gates/bin/config-copies.ts:80: mutation: StringLiteral: NoCoverage: replaced by "Stryker was here!"
+gates/bin/config-copies.ts:86: mutation: ConditionalExpression: Survived: replaced by true
+gates/bin/config-copies.ts:86: mutation: ConditionalExpression: Survived: replaced by false
+gates/bin/setup-offline.ts:28: mutation: ConditionalExpression: Survived: replaced by false
+gates/bin/setup-offline.ts:28: mutation: StringLiteral: Survived: replaced by ""
+gates/bin/setup-offline.ts:32: mutation: BlockStatement: NoCoverage: replaced by {}
+gates/bin/setup-offline.ts:35: mutation: ConditionalExpression: Survived: replaced by false
+gates/bin/setup-offline.ts:35: mutation: LogicalOperator: Survived: replaced by typeof record !== "object" && record === null
+gates/bin/setup-offline.ts:35: mutation: ConditionalExpression: Survived: replaced by false
+gates/bin/setup-offline.ts:35: mutation: ConditionalExpression: Survived: replaced by false
+gates/bin/setup-offline.ts:38: mutation: StringLiteral: NoCoverage: replaced by "Stryker was here!"
+gates/bin/setup-offline.ts:38: mutation: StringLiteral: NoCoverage: replaced by "Stryker was here!"
+gates/bin/setup-offline.ts:57: mutation: LogicalOperator: Survived: replaced by error.message.split("\n")[0] && ""
+gates/bin/setup-offline.ts:57: mutation: StringLiteral: Survived: replaced by ""
+gates/bin/setup-offline.ts:57: mutation: StringLiteral: NoCoverage: replaced by "Stryker was here!"
+gates/bin/setup-offline.ts:64: mutation: StringLiteral: NoCoverage: replaced by ""
+gates/bin/setup-offline.ts:68: mutation: BlockStatement: NoCoverage: replaced by {}
+gates/bin/setup-offline.ts:69: mutation: StringLiteral: NoCoverage: replaced by ""
+gates/bin/setup-offline.ts:69: mutation: StringLiteral: NoCoverage: replaced by ""
+gates/bin/setup-offline.ts:69: mutation: StringLiteral: NoCoverage: replaced by ""
+gates/bin/setup-offline.ts:69: mutation: StringLiteral: NoCoverage: replaced by ""
+gates/bin/setup-offline.ts:70: mutation: StringLiteral: NoCoverage: replaced by ""
+gates/bin/setup-offline.ts:70: mutation: ObjectLiteral: NoCoverage: replaced by {}
+gates/bin/setup-offline.ts:71: mutation: StringLiteral: NoCoverage: replaced by "Stryker was here!"
+gates/bin/setup-offline.ts:72: mutation: CallExpression: NoCoverage: replaced by ;
+gates/bin/setup-offline.ts:72: mutation: StringLiteral: NoCoverage: replaced by ""
+gates/bin/setup-offline.ts:72: mutation: ArrowFunction: NoCoverage: replaced by () => undefined
+gates/bin/setup-offline.ts:73: mutation: CallExpression: NoCoverage: replaced by ;
+gates/bin/setup-offline.ts:73: mutation: StringLiteral: NoCoverage: replaced by ""
+gates/bin/setup-offline.ts:73: mutation: ArrowFunction: NoCoverage: replaced by () => undefined
+gates/bin/setup-offline.ts:74: mutation: StringLiteral: NoCoverage: replaced by ""
+gates/bin/setup-offline.ts:75: mutation: StringLiteral: NoCoverage: replaced by ""
+gates/bin/setup-offline.ts:75: mutation: BlockStatement: NoCoverage: replaced by {}
+gates/bin/setup-offline.ts:85: mutation: ConditionalExpression: NoCoverage: replaced by true
+gates/bin/setup-offline.ts:85: mutation: ConditionalExpression: NoCoverage: replaced by false
+gates/bin/setup-offline.ts:85: mutation: EqualityOperator: NoCoverage: replaced by install.exitCode !== 0
+gates/bin/setup-offline.ts:89: mutation: ConditionalExpression: Survived: replaced by false
+gates/bin/setup-offline.ts:89: mutation: ConditionalExpression: Survived: replaced by true
+gates/bin/test.ts:51: mutation: BlockStatement: NoCoverage: replaced by {}
+gates/bin/test.ts:53: mutation: BlockStatement: NoCoverage: replaced by {}
+gates/bin/test.ts:61: mutation: StringLiteral: NoCoverage: replaced by ""
+gates/bin/test.ts:73: mutation: BlockStatement: NoCoverage: replaced by {}
+gates/bin/test.ts:74: mutation: ArrayDeclaration: NoCoverage: replaced by []
+gates/bin/test.ts:74: mutation: ObjectLiteral: NoCoverage: replaced by {}
+gates/bin/test.ts:75: mutation: StringLiteral: NoCoverage: replaced by "Stryker was here!"
+gates/bin/test.ts:76: mutation: CallExpression: NoCoverage: replaced by ;
+gates/bin/test.ts:76: mutation: StringLiteral: NoCoverage: replaced by ""
+gates/bin/test.ts:76: mutation: ArrowFunction: NoCoverage: replaced by () => undefined
+gates/bin/test.ts:77: mutation: CallExpression: NoCoverage: replaced by ;
+gates/bin/test.ts:77: mutation: StringLiteral: NoCoverage: replaced by ""
+gates/bin/test.ts:77: mutation: ArrowFunction: NoCoverage: replaced by () => undefined
+gates/bin/test.ts:78: mutation: StringLiteral: NoCoverage: replaced by ""
+gates/bin/test.ts:79: mutation: StringLiteral: NoCoverage: replaced by ""
+gates/bin/test.ts:79: mutation: BlockStatement: NoCoverage: replaced by {}
+gates/bin/test.ts:88: mutation: ConditionalExpression: NoCoverage: replaced by true
+gates/bin/test.ts:88: mutation: ConditionalExpression: NoCoverage: replaced by false
+gates/bin/test.ts:88: mutation: EqualityOperator: NoCoverage: replaced by chromium.problem === undefined
+gates/bin/test.ts:88: mutation: BlockStatement: NoCoverage: replaced by {}
+gates/bin/test.ts:89: mutation: StringLiteral: NoCoverage: replaced by ``
+gates/bin/test.ts:91: mutation: StringLiteral: NoCoverage: replaced by ""
+gates/bin/test.ts:91: mutation: StringLiteral: NoCoverage: replaced by ""
+gates/bin/test.ts:91: mutation: StringLiteral: NoCoverage: replaced by ""
+gates/bin/test.ts:92: mutation: BooleanLiteral: NoCoverage: replaced by existsSync(vitest)
+gates/bin/test.ts:92: mutation: ConditionalExpression: NoCoverage: replaced by true
+gates/bin/test.ts:92: mutation: ConditionalExpression: NoCoverage: replaced by false
+gates/bin/test.ts:92: mutation: BlockStatement: NoCoverage: replaced by {}
+gates/bin/test.ts:94: mutation: StringLiteral: NoCoverage: replaced by ``
+gates/bin/test.ts:99: mutation: StringLiteral: NoCoverage: replaced by ""
+gates/bin/test.ts:101: mutation: StringLiteral: NoCoverage: replaced by ""
+gates/bin/test.ts:103: mutation: StringLiteral: NoCoverage: replaced by ""
+gates/bin/test.ts:104: mutation: StringLiteral: NoCoverage: replaced by ""
+gates/bin/test.ts:105: mutation: StringLiteral: NoCoverage: replaced by ""
+gates/bin/test.ts:106: mutation: StringLiteral: NoCoverage: replaced by ""
+gates/bin/test.ts:107: mutation: StringLiteral: NoCoverage: replaced by ""
+gates/bin/test.ts:108: mutation: StringLiteral: NoCoverage: replaced by ``
+gates/bin/test.ts:109: mutation: StringLiteral: NoCoverage: replaced by ""
+gates/bin/test.ts:120: mutation: ObjectLiteral: NoCoverage: replaced by {}
+gates/bin/test.ts:119: mutation: BlockStatement: NoCoverage: replaced by {}
+gates/bin/test.ts:120: mutation: BooleanLiteral: NoCoverage: replaced by false
+gates/bin/test.ts:120: mutation: BooleanLiteral: NoCoverage: replaced by false
+gates/bin/test.ts:124: mutation: ConditionalExpression: Survived: replaced by false
+gates/lib/cli.ts:32: mutation: StringLiteral: NoCoverage: replaced by "Stryker was here!"
+gates/lib/cli.ts:38: mutation: ConditionalExpression: Survived: replaced by false
+gates/lib/cli.ts:38: mutation: StringLiteral: Survived: replaced by "Stryker was here!"
+gates/lib/cli.ts:58: mutation: ConditionalExpression: Survived: replaced by false
+gates/lib/cli.ts:68: mutation: ArrowFunction: NoCoverage: replaced by () => undefined
+gates/lib/cli.ts:68: mutation: StringLiteral: NoCoverage: replaced by ``
+gates/lib/cli.ts:69: mutation: ArrowFunction: NoCoverage: replaced by () => undefined
+gates/lib/cli.ts:69: mutation: StringLiteral: NoCoverage: replaced by ``
+gates/lib/cli.ts:74: mutation: BlockStatement: NoCoverage: replaced by {}
+gates/lib/cli.ts:75: mutation: MethodExpression: NoCoverage: replaced by process.argv
+gates/lib/vitest-report.ts:37: mutation: StringLiteral: Survived: replaced by ``
+gates/lib/vitest-report.ts:37: mutation: StringLiteral: Survived: replaced by ""
+gates/lib/vitest-report.ts:45: mutation: StringLiteral: Survived: replaced by "Stryker was here!"
+gates/lib/vitest-report.ts:47: mutation: MethodExpression: Survived: replaced by l
+gates/lib/vitest-report.ts:48: mutation: ConditionalExpression: Survived: replaced by true
+gates/lib/vitest-report.ts:48: mutation: EqualityOperator: Survived: replaced by l.length >= 0
+gates/lib/vitest-report.ts:49: mutation: StringLiteral: NoCoverage: replaced by "Stryker was here!"
+gates/lib/vitest-report.ts:53: mutation: ConditionalExpression: Survived: replaced by false
+gates/lib/vitest-report.ts:53: mutation: StringLiteral: NoCoverage: replaced by "Stryker was here!"
+gates/lib/vitest-report.ts:60: mutation: ConditionalExpression: Survived: replaced by false
+gates/lib/vitest-report.ts:60: mutation: ConditionalExpression: Survived: replaced by false
+gates/lib/vitest-report.ts:60: mutation: LogicalOperator: Survived: replaced by (typeof value !== "object" || value === null) && !Array.isArray((value as Report).testResults)
+gates/lib/vitest-report.ts:60: mutation: LogicalOperator: Survived: replaced by typeof value !== "object" && value === null
+gates/lib/vitest-report.ts:60: mutation: ConditionalExpression: Survived: replaced by false
+gates/lib/vitest-report.ts:60: mutation: ConditionalExpression: Survived: replaced by false
+gates/lib/vitest-report.ts:62: mutation: BlockStatement: Survived: replaced by {}
+gates/lib/vitest-report.ts:68: mutation: ConditionalExpression: Survived: replaced by false
+gates/lib/vitest-report.ts:70: mutation: MethodExpression: Survived: replaced by rel.endsWith("..")
+gates/lib/vitest-report.ts:76: mutation: StringLiteral: Survived: replaced by "Stryker was here!"
+gates/lib/vitest-report.ts:78: mutation: MethodExpression: Survived: replaced by l
+gates/lib/vitest-report.ts:79: mutation: Regex: Survived: replaced by /[A-Za-z]*Error:/
+gates/lib/vitest-report.ts:79: mutation: Regex: Survived: replaced by /^[^A-Za-z]*Error:/
+gates/lib/vitest-report.ts:85: mutation: LogicalOperator: Survived: replaced by outsideError(run.output) && `Vitest exited ${String(run.exitCode)}`
+gates/lib/vitest-report.ts:85: mutation: StringLiteral: Survived: replaced by ``
+gates/lib/vitest-report.ts:93: mutation: ConditionalExpression: Survived: replaced by true
+gates/lib/vitest-report.ts:96: mutation: ConditionalExpression: Survived: replaced by true
+gates/lib/vitest-report.ts:96: mutation: StringLiteral: NoCoverage: replaced by ``
+gates/lib/vitest-report.ts:109: mutation: StringLiteral: NoCoverage: replaced by ""
+gates/lib/vitest-report.ts:116: mutation: StringLiteral: NoCoverage: replaced by ``
+gates/lib/vitest-report.ts:119: mutation: MethodExpression: Survived: replaced by tests
+gates/lib/vitest-report.ts:119: mutation: ConditionalExpression: Survived: replaced by true
+mutation: 132 findings in 14 changed files (1134 mutants on changed lines)
+[ELIFECYCLE] Command failed with exit code 1.
+
+# Final run, after the catch-up (working tree of the catch-up commit): exit 0
+
+$ node gates/bin/mutation.ts -- --base 20793235eaca1afa1fa3f37b97a22625a41f76ae
+gates/bin/config-copies.ts:68: mutation: record: BlockStatement: equivalent, an empty catch also makes the function return undefined
+gates/bin/config-copies.ts:88: mutation: record: all: process boundary, covered by gates-integration
+gates/bin/mutation.ts:121: mutation: record: all: process boundary, covered by gates-integration
+gates/bin/mutation.ts:124: mutation: record: all: process boundary, covered by gates-integration
+gates/bin/mutation.ts:126: mutation: record: all: process boundary, covered by gates-integration
+gates/bin/mutation.ts:128: mutation: record: all: process boundary, covered by gates-integration
+gates/bin/mutation.ts:130: mutation: record: all: process boundary, covered by gates-integration
+gates/bin/mutation.ts:132: mutation: record: all: process boundary, covered by gates-integration
+gates/bin/mutation.ts:135: mutation: record: all: process boundary, covered by gates-integration
+gates/bin/mutation.ts:137: mutation: record: all: process boundary, covered by gates-integration
+gates/bin/mutation.ts:139: mutation: record: all: process boundary, covered by gates-integration
+gates/bin/mutation.ts:141: mutation: record: all: process boundary, covered by gates-integration
+gates/bin/mutation.ts:147: mutation: record: all: process boundary, covered by gates-integration
+gates/bin/mutation.ts:153: mutation: record: all: process boundary, covered by gates-integration
+gates/bin/setup-offline.ts:32: mutation: record: BlockStatement: equivalent, an empty catch leaves record undefined, which the level check below skips
+gates/bin/setup-offline.ts:86: mutation: record: all: process boundary, covered by gates-integration
+gates/bin/setup-offline.ts:89: mutation: record: all: process boundary, covered by gates-integration
+gates/bin/setup-offline.ts:91: mutation: record: all: process boundary, covered by gates-integration
+gates/bin/setup-offline.ts:93: mutation: record: all: process boundary, covered by gates-integration
+gates/bin/setup-offline.ts:95: mutation: record: all: process boundary, covered by gates-integration
+gates/bin/setup-offline.ts:98: mutation: record: all: process boundary, covered by gates-integration
+gates/bin/setup-offline.ts:104: mutation: record: all: process boundary, covered by gates-integration
+gates/bin/test-lint.ts:11: mutation: record: all: process boundary, covered by gates-integration
+gates/bin/test-lint.ts:14: mutation: record: all: process boundary, covered by gates-integration
+gates/bin/test-lint.ts:16: mutation: record: all: process boundary, covered by gates-integration
+gates/bin/test-lint.ts:18: mutation: record: all: process boundary, covered by gates-integration
+gates/bin/test-lint.ts:23: mutation: record: all: process boundary, covered by gates-integration
+gates/bin/test.ts:79: mutation: record: all: process boundary, covered by gates-integration
+gates/bin/test.ts:82: mutation: record: all: process boundary, covered by gates-integration
+gates/bin/test.ts:86: mutation: record: all: process boundary, covered by gates-integration
+gates/bin/test.ts:93: mutation: record: all: process boundary, covered by gates-integration
+gates/bin/test.ts:95: mutation: record: all: process boundary, covered by gates-integration
+gates/bin/test.ts:97: mutation: record: all: process boundary, covered by gates-integration
+gates/bin/test.ts:105: mutation: record: all: process boundary, covered by gates-integration
+gates/bin/test.ts:107: mutation: record: all: process boundary, covered by gates-integration
+gates/bin/test.ts:109: mutation: record: all: process boundary, covered by gates-integration
+gates/bin/test.ts:111: mutation: record: all: process boundary, covered by gates-integration
+gates/bin/test.ts:113: mutation: record: all: process boundary, covered by gates-integration
+gates/bin/test.ts:115: mutation: record: all: process boundary, covered by gates-integration
+gates/bin/test.ts:117: mutation: record: all: process boundary, covered by gates-integration
+gates/bin/test.ts:121: mutation: record: all: process boundary, covered by gates-integration
+gates/bin/test.ts:124: mutation: record: all: process boundary, covered by gates-integration
+gates/bin/test.ts:126: mutation: record: all: process boundary, covered by gates-integration
+gates/bin/test.ts:129: mutation: record: all: process boundary, covered by gates-integration
+gates/bin/test.ts:135: mutation: record: all: process boundary, covered by gates-integration
+gates/lib/cli.ts:68: mutation: record: all: process boundary, covered by gates-integration
+gates/lib/cli.ts:70: mutation: record: all: process boundary, covered by gates-integration
+gates/lib/cli.ts:76: mutation: record: all: process boundary, covered by gates-integration
+gates/lib/cli.ts:78: mutation: record: all: process boundary, covered by gates-integration
+gates/lib/eslint-report.ts:39: mutation: record: BlockStatement: equivalent, an empty catch leaves value undefined, which the check below also rejects
+gates/lib/mutation/report.ts:53: mutation: record: BlockStatement: equivalent, an empty catch leaves value undefined, which the check below also rejects
+gates/lib/spawn.ts:14: mutation: record: all: process boundary, covered by gates-integration
+gates/lib/spawn.ts:16: mutation: record: all: process boundary, covered by gates-integration
+gates/lib/spawn.ts:18: mutation: record: all: process boundary, covered by gates-integration
+gates/lib/spawn.ts:20: mutation: record: all: process boundary, covered by gates-integration
+gates/lib/spawn.ts:22: mutation: record: all: process boundary, covered by gates-integration
+gates/lib/spawn.ts:24: mutation: record: all: process boundary, covered by gates-integration
+gates/lib/spawn.ts:26: mutation: record: all: process boundary, covered by gates-integration
+gates/lib/spawn.ts:28: mutation: record: all: process boundary, covered by gates-integration
+gates/lib/spawn.ts:30: mutation: record: all: process boundary, covered by gates-integration
+gates/lib/vitest-report.ts:59: mutation: record: BlockStatement: equivalent, an empty catch leaves value undefined, which the check below also rejects
+mutation: 1086 mutants on the changed lines of 15 files, none survived; 61 equivalent records

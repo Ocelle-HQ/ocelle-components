@@ -1,0 +1,15 @@
+# Story extension settings. One "key: value" per line; values on one line.
+#
+# test_command   Runs the whole test suite from the repository root; exits non-zero when any test
+#                fails. Empty until the project has a test runner: the red/green check then reports
+#                "unavailable" and the review treats that as blocking for any phase with behaviour.
+# setup_command  Run once in each fresh worktree before test_command (install dependencies).
+# test_pathspec  Git pathspecs, space separated, that count as test files. A red commit may change
+#                only these (and the feature's specs/ directory).
+# mutation_command  Mutation test run for the reviewer; empty until set up (see the foundation work).
+# knowledge_dir  The OKF bundle that run summaries are written to (runs/<feature>.md), two levels below the root.
+test_command: "pnpm test"
+setup_command: "pnpm run setup:offline"
+test_pathspec: prefix ":(glob)**/*.test.ts"
+mutation_command: ""
+knowledge_dir: "knowledge/speckit-flows"

@@ -1,13 +1,14 @@
 // The unit-tests gate and `pnpm test` (research.md R-03): checks that Chromium exists, then runs every Vitest project
 // with a JSON report and classifies it (contracts/gate-cli.md). `--root <dir>` is the workspace whose tests it runs.
-import { spawn } from "node:child_process";
 import { existsSync, mkdtempSync, readFileSync, rmSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { main, parseArgs } from "../lib/cli.ts";
-import type { Io } from "../lib/cli.ts";
+import type { Context, Io } from "../lib/cli.ts";
 import { emit } from "../lib/findings.ts";
+import { runTool } from "../lib/spawn.ts";
 import { classifyVitest } from "../lib/vitest-report.ts";
+import type { VitestRun } from "../lib/vitest-report.ts";
 
 /** What the Chromium check reads: the override, Playwright's own executable path, and a file test. */
 export interface ChromiumLookup {
@@ -45,80 +46,91 @@ export function chromiumCheck(lookup: ChromiumLookup): ChromiumCheck {
   return { executable, problem };
 }
 
+/** The tools the unit-tests gate uses. */
+export interface UnitTestTools {
+  /** The Chromium check of the environment (checkChromium). */
+  readonly chromium: () => Promise<ChromiumCheck>;
+  /** Whether a file exists. */
+  readonly exists: (path: string) => boolean;
+  /** Runs `node <vitest> <args>` in the tool working directory with a JSON report; the report is undefined when none was written. */
+  readonly vitest: (vitest: string, args: readonly string[]) => Promise<Omit<VitestRun, "root">>;
+}
+
+/**
+ * The unit-tests gate: the Chromium check first, so no test runs without the browser, then every Vitest project with
+ * the default and JSON reporters and test locations, extra arguments passed on, the report classified.
+ */
+export async function unitTests(context: Context, tools: UnitTestTools, io: Io): Promise<number> {
+  const chromium = await tools.chromium();
+  if (chromium.problem !== undefined) {
+    return emit({ exit: 2, cause: `unit-tests: could not run: ${chromium.problem}` }, io.out, io.err);
+  }
+  const vitest = join(context.root, "node_modules", "vitest", "vitest.mjs");
+  if (!tools.exists(vitest)) {
+    const cause = `unit-tests: could not run: Vitest is not installed in ${context.root}; run pnpm run setup:offline`;
+    return emit({ exit: 2, cause }, io.out, io.err);
+  }
+  const args = ["run", "--reporter", "default", "--reporter", "json", "--includeTaskLocation", ...context.args];
+  const ran = await tools.vitest(vitest, args);
+  return emit(classifyVitest({ ...ran, root: context.root }), io.out, io.err);
+}
+
 /** Playwright's own Chromium executable (it reads PLAYWRIGHT_BROWSERS_PATH from the environment). */
+// Stryker disable next-line all: process boundary, covered by gates-integration
 async function playwrightChromium(): Promise<string | undefined> {
   const { chromium } = await import("playwright");
+  // Stryker disable next-line all: process boundary, covered by gates-integration
   try {
     return chromium.executablePath();
-  } catch {
+  }
+  // Stryker disable next-line all: process boundary, covered by gates-integration
+  catch {
     return undefined;
   }
 }
 
 /** The Chromium check of this process's environment; shared with gates/bin/setup-offline.ts. */
+// Stryker disable next-line all: process boundary, covered by gates-integration
 export async function checkChromium(env: Io["env"]): Promise<ChromiumCheck> {
+  // Stryker disable next-line all: process boundary, covered by gates-integration
   return chromiumCheck({
+    // Stryker disable next-line all: process boundary, covered by gates-integration
     override: env["OCELLE_CHROMIUM_PATH"],
     playwrightPath: await playwrightChromium(),
     exists: existsSync,
   });
 }
 
-interface Spawned {
-  readonly exitCode: number | null;
-  readonly output: string;
+/** Vitest as a child process, its JSON report written to a temporary file that is removed afterwards. */
+// Stryker disable next-line all: process boundary, covered by gates-integration
+async function runVitest(vitest: string, args: readonly string[], cwd: string, env: Io["env"]): Promise<Omit<VitestRun, "root">> {
+  // Stryker disable next-line all: process boundary, covered by gates-integration
+  const dir = mkdtempSync(join(tmpdir(), "ocelle-unit-tests-"));
+  // Stryker disable next-line all: process boundary, covered by gates-integration
+  const reportFile = join(dir, "report.json");
+  // Stryker disable next-line all: process boundary, covered by gates-integration
+  const ran = await runTool(process.execPath, [vitest, ...args, `--outputFile.json=${reportFile}`], cwd, env);
+  // Stryker disable next-line all: process boundary, covered by gates-integration
+  const report = existsSync(reportFile) ? readFileSync(reportFile, "utf8") : undefined;
+  // Stryker disable next-line all: process boundary, covered by gates-integration
+  rmSync(dir, { recursive: true, force: true });
+  // Stryker disable next-line all: process boundary, covered by gates-integration
+  return { report, exitCode: ran.exitCode, output: `${ran.stdout}${ran.stderr}` };
 }
 
-function runVitest(vitest: string, args: readonly string[], cwd: string, env: Io["env"]): Promise<Spawned> {
-  return new Promise((resolve, reject) => {
-    const child = spawn(process.execPath, [vitest, ...args], { cwd, env });
-    let output = "";
-    child.stdout.on("data", (d: Buffer) => (output += d.toString()));
-    child.stderr.on("data", (d: Buffer) => (output += d.toString()));
-    child.on("error", reject);
-    child.on("close", (exitCode) => {
-      resolve({ exitCode, output });
-    });
-  });
-}
-
+// Stryker disable next-line all: process boundary, covered by gates-integration
 export async function run(argv: readonly string[], io: Io): Promise<number> {
   const context = parseArgs(argv, io.cwd);
-  const chromium = await checkChromium(io.env);
-  if (chromium.problem !== undefined) {
-    return emit({ exit: 2, cause: `unit-tests: could not run: ${chromium.problem}` }, io.out, io.err);
-  }
-  const vitest = join(context.root, "node_modules", "vitest", "vitest.mjs");
-  if (!existsSync(vitest)) {
-    return emit(
-      { exit: 2, cause: `unit-tests: could not run: Vitest is not installed in ${context.root}; run pnpm run setup:offline` },
-      io.out,
-      io.err,
-    );
-  }
-  const dir = mkdtempSync(join(tmpdir(), "ocelle-unit-tests-"));
-  try {
-    const reportFile = join(dir, "report.json");
-    const args = [
-      "run",
-      "--reporter",
-      "default",
-      "--reporter",
-      "json",
-      `--outputFile.json=${reportFile}`,
-      "--includeTaskLocation",
-      ...context.args,
-    ];
-    const ran = await runVitest(vitest, args, context.toolCwd, io.env);
-    const report = existsSync(reportFile) ? readFileSync(reportFile, "utf8") : undefined;
-    return emit(
-      classifyVitest({ report, exitCode: ran.exitCode, output: ran.output, root: context.root }),
-      io.out,
-      io.err,
-    );
-  } finally {
-    rmSync(dir, { recursive: true, force: true });
-  }
+  // Stryker disable next-line all: process boundary, covered by gates-integration
+  const tools: UnitTestTools = {
+    // Stryker disable next-line all: process boundary, covered by gates-integration
+    chromium: () => checkChromium(io.env),
+    exists: existsSync,
+    // Stryker disable next-line all: process boundary, covered by gates-integration
+    vitest: (vitest, args) => runVitest(vitest, args, context.toolCwd, io.env),
+  };
+  return unitTests(context, tools, io);
 }
 
+// Stryker disable next-line all: process boundary, covered by gates-integration
 if (import.meta.main) await main(run);

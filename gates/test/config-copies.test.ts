@@ -59,3 +59,57 @@ describe("config-copies gate", () => {
     expect(result.err[0]).toContain(tooling);
   });
 });
+
+// Added in the phase 3 mutation catch-up of phase 2 (T049): mutants that survived the phase 2 tests.
+describe("config-copies gate (mutation catch-up)", () => {
+  const expected = '":(glob)**/*.test.ts :(glob)**/*.spec.ts :(glob)**/test/** :(glob)**/*.stories.ts"';
+
+  it("names the first line one copy has and the other lacks, and counts the findings in the summary", async () => {
+    expect(await check("appended")).toEqual({
+      code: 1,
+      out: [
+        `${tooling}: config-copies: copies-differ: differs from ${specify} at line 16`,
+        "config-copies: 1 finding(s) in the two copies",
+      ],
+      err: [],
+    });
+  });
+
+  it("removes quotes only when they wrap the whole test_pathspec value", async () => {
+    expect(await check("quotes")).toEqual({
+      code: 1,
+      out: [
+        `${tooling}: config-copies: copies-differ: differs from ${specify} at line 13`,
+        `${specify}: config-copies: test-pathspec: test_pathspec is "prefix ":(glob)**/*.test.ts"", expected ${expected}`,
+        `${tooling}: config-copies: test-pathspec: test_pathspec is "":(glob)**/*.test.ts" suffix", expected ${expected}`,
+        "config-copies: 3 finding(s) in the two copies",
+      ],
+      err: [],
+    });
+  });
+
+  it("names a copy without test_pathspec as missing", async () => {
+    expect(await check("no-pathspec")).toEqual({
+      code: 1,
+      out: [
+        `${tooling}: config-copies: copies-differ: differs from ${specify} at line 13`,
+        `${specify}: config-copies: test-pathspec: test_pathspec is missing, expected ${expected}`,
+        "config-copies: 2 finding(s) in the two copies",
+      ],
+      err: [],
+    });
+  });
+
+  it("cannot run when either copy is missing, naming exactly that copy", async () => {
+    expect(await check("missing-specify")).toEqual({
+      code: 2,
+      out: [],
+      err: [`config-copies: could not run: cannot read ${specify}; restore it from git (both copies must exist)`],
+    });
+    expect(await check("missing")).toEqual({
+      code: 2,
+      out: [],
+      err: [`config-copies: could not run: cannot read ${tooling}; restore it from git (both copies must exist)`],
+    });
+  });
+});
