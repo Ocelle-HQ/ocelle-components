@@ -80,7 +80,7 @@ requests; an element that breaks either cannot be used at all.
   has a committed visual baseline produced in a pinned container.
 - Interaction tests assert every event an element emits and its payload, and every
   keyboard path.
-- A behaviour change without a test that fails before it and passes after it is not done.
+- How those tests are written and proven is Principle VIII.
 - Baselines change only in a pull request whose description says why.
 
 Rationale: a component library is judged by its pixels and its behaviour; both need
@@ -110,6 +110,40 @@ it replaces would carry its gaps and its licence questions with it.
 Rationale: three consumers pin these packages; they need to know from the version number
 whether an upgrade can break them.
 
+### VIII. Test-First, Proven Non-Vacuous (NON-NEGOTIABLE)
+
+Every behaviour change is test-driven, red first, and every test must be shown able to fail.
+
+- **Red first.** The tests for a unit of work are written and committed before the code
+  that makes them pass, in a commit that changes only test files. Run against the code as
+  it was, they MUST fail, and the failure MUST be the missing behaviour, not a syntax,
+  import or setup error. The red run's output is kept with the review.
+- **Green, without touching the tests' meaning.** The implementation makes the tests pass.
+  A test written in the red step is not weakened, skipped, deleted or loosened afterwards;
+  a test that turns out wrong is replaced by a stricter one with the reason recorded.
+- **Proven against the old code.** The final tests of a unit, run against the code from
+  before the unit, MUST fail. This is checked automatically before every review, so tests
+  rewritten after the red step cannot pass vacuously.
+- **Assertions that can fail.** Every test asserts observable behaviour (rendered DOM and
+  accessibility tree, emitted events and payloads, computed styles from tokens, keyboard
+  results). Forbidden: tests without an assertion, assertions inside conditionals that may
+  not run, `skip` and `only`, snapshots as the only assertion of behaviour, assertions on
+  the mock instead of the unit, and catching the failure the test is meant to report.
+  Lint enforces what it can.
+- **Mutation testing.** Changed source is mutation-tested. A surviving mutant in new or
+  changed code is a blocking review finding unless the review records it as an equivalent
+  mutant with the reason.
+- **Fixes are test-first too.** A review finding about behaviour is fixed by first adding
+  a test that fails because of the finding, then the fix.
+- **Gates are proven, too.** Every CI gate has a planted defect that makes it fail, run in
+  CI, so a gate that silently passes everything is caught.
+- **Exemption.** A unit with no behaviour (scaffolding, configuration, documentation) may
+  skip the red step only if its review states why no test could fail for it.
+
+Rationale: an agent can make any check pass by weakening the check. Only a test that has
+been seen failing for the right reason, and that still fails against the old code, is
+evidence of the behaviour it names.
+
 ## Technology, Licence and Supply Chain
 
 - Packages: `@ocelle/tokens`, `@ocelle/styles`, `@ocelle/elements`, published to the public
@@ -128,14 +162,22 @@ whether an upgrade can break them.
 ## Development Workflow and Quality Gates
 
 - Work goes through Spec Kit: `/speckit-specify`, `/speckit-plan` (its Constitution Check
-  gates on this document), `/speckit-tasks`, `/speckit-implement`, one feature per
-  `specs/NNN-name/` directory and branch. Feature directories are kept after merge: they are
-  the project record, and kitty-mission-ui reads them as its first real Spec Kit project.
+  gates on this document), `/speckit-tasks`, then the `ocelle-implement` workflow, one
+  feature per `specs/NNN-name/` directory and branch. Feature directories are kept after
+  merge: they are the project record, and kitty-mission-ui reads them as its first real
+  Spec Kit project.
+- `tasks.md` is implemented one phase (user story) at a time. Each phase is written test
+  first (Principle VIII), checked by the automatic red/green check, and then reviewed by an
+  independent reviewer session; blocking findings are fixed in review rounds until the
+  review approves. After three rounds the operator decides: more rounds, accept the phase
+  as it is (recorded), or stop.
 - Changes reach `main` through pull requests. The operator merges; agents never merge.
 - A pull request merges only when all of these pass: typecheck, ESLint, Stylelint
   (token-only), unit and interaction tests, Storybook build, visual regression, axe, the
   contrast check, the strict-CSP check on built output, the custom-elements manifest check,
-  the prefix check (no `sk-` names, no monospace family) and the DCO check.
+  the prefix check (no `sk-` names, no monospace family), the test-quality lint (no
+  assertion-free, skipped, focused or conditional-assertion tests), mutation testing of
+  changed source, the gate plants, and the DCO check.
 - Any exception to a principle is recorded in the plan's Complexity Tracking table with
   scope, rationale and a sunset condition, and needs the operator's approval.
 
@@ -151,4 +193,4 @@ redefining a principle, MINOR for adding a principle or materially expanding gui
 PATCH for clarifications. The decision records behind this document are ADR-0079 (Ocelle
 component library) and ADR-0071 (open-source strategy) in the Ocelle-HQ docs repository.
 
-**Version**: 1.0.0 | **Ratified**: 2026-11-02 | **Last Amended**: 2026-11-02
+**Version**: 1.1.0 | **Ratified**: 2026-11-02 | **Last Amended**: 2026-11-02

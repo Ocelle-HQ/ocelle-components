@@ -2,9 +2,9 @@ schema_version: "1.0"
 workflow:
   id: "ocelle-story"
   name: "One Phase: Implement, Review, Fix"
-  version: "1.0.0"
+  version: "1.1.0"
   author: "Ocelle-HQ"
-  description: "Implements one tasks.md phase, then runs independent review and fix rounds until the review approves (at most three), and asks the operator when it does not"
+  description: "Implements one tasks.md phase test-first, then runs red/green-checked review and fix rounds in batches of three; after each batch without approval the operator chooses more rounds, accept or stop"
 
 requires:
   speckit_version: ">=1.2.5"
@@ -21,65 +21,107 @@ inputs:
     default: "auto"
 
 steps:
-  # Records the commit the phase starts from; the review diffs from it. The phase is a
-  # number input, so nothing but digits reaches the shell.
+  # Records the commit the phase starts from; the checks and the review diff from it. The phase is
+  # a number input, so nothing but digits reaches the shell.
   - id: base
     type: shell
     run: ".specify/extensions/story/scripts/base.sh {{ inputs.phase }}"
     output_format: json
 
+  # Red first: the command commits the failing tests alone and proves them red with red.sh,
+  # then implements.
   - id: implement
     command: speckit.story.implement
     integration: "{{ inputs.integration }}"
     input:
       args: "phase={{ inputs.phase }}"
 
-  # Each command step is a fresh agent session, so the reviewer has not seen the implementer's
-  # reasoning, only the code, the spec and the constitution.
-  - id: rounds
+  # Batches of up to three review rounds. After a batch that ends without approval, the operator
+  # picks: more-rounds (another batch), accept (recorded) or reject (stop the run).
+  - id: batches
     type: do-while
-    condition: "{{ steps.verdict.output.data.verdict == 'changes_requested' }}"
-    max_iterations: 3
+    condition: "{{ steps.batch-verdict.output.data.verdict != 'approved' and steps.operator-decision.output.choice == 'more-rounds' }}"
+    max_iterations: 5
     steps:
-      - id: review
-        command: speckit.story.review
-        integration: "{{ inputs.integration }}"
-        input:
-          args: "phase={{ inputs.phase }}"
-
-      - id: verdict
-        type: shell
-        run: ".specify/extensions/story/scripts/verdict.sh {{ inputs.phase }}"
-        output_format: json
-
-      - id: needs-fix
-        type: if
+      # Each command step is a fresh agent session, so the reviewer has not seen the implementer's
+      # reasoning, only the code, the spec, the constitution and the check results.
+      - id: rounds
+        type: do-while
         condition: "{{ steps.verdict.output.data.verdict == 'changes_requested' }}"
-        then:
-          - id: fix
-            command: speckit.story.fix
+        max_iterations: 3
+        steps:
+          # Independent red/green check in clean worktrees; the review treats a failure as blocking.
+          - id: tdd-check
+            type: shell
+            run: ".specify/extensions/story/scripts/tdd-check.sh {{ inputs.phase }}"
+            output_format: json
+            timeout: 3600
+
+          - id: review
+            command: speckit.story.review
             integration: "{{ inputs.integration }}"
             input:
               args: "phase={{ inputs.phase }}"
 
-  # Re-read the verdict after the loop: after the last allowed round the fixes have not been
-  # reviewed yet, and a review that wrote no verdict reads as missing.
+          - id: verdict
+            type: shell
+            run: ".specify/extensions/story/scripts/verdict.sh {{ inputs.phase }}"
+            output_format: json
+
+          - id: needs-fix
+            type: if
+            condition: "{{ steps.verdict.output.data.verdict == 'changes_requested' }}"
+            then:
+              - id: fix
+                command: speckit.story.fix
+                integration: "{{ inputs.integration }}"
+                input:
+                  args: "phase={{ inputs.phase }}"
+
+      # Re-read the verdict after the batch: after its last round the fixes have not been reviewed
+      # yet, and a review that wrote no verdict reads as missing.
+      - id: batch-verdict
+        type: shell
+        run: ".specify/extensions/story/scripts/verdict.sh {{ inputs.phase }}"
+        output_format: json
+
+      - id: escalate
+        type: if
+        condition: "{{ steps.batch-verdict.output.data.verdict != 'approved' }}"
+        then:
+          - id: operator-decision
+            type: gate
+            message: "Phase {{ inputs.phase }} is not approved after review round {{ steps.batch-verdict.output.data.round }} ({{ steps.batch-verdict.output.data.verdict }}; latest review: {{ steps.batch-verdict.output.data.file }}). more-rounds: run up to three more review and fix rounds. accept: accept the phase as it is (recorded) and continue. reject: stop the run."
+            options: [more-rounds, accept, reject]
+            on_reject: abort
+
+          - id: accepted
+            type: if
+            condition: "{{ steps.operator-decision.output.choice == 'accept' }}"
+            then:
+              - id: record-acceptance
+                type: shell
+                run: ".specify/extensions/story/scripts/accept.sh {{ inputs.phase }}"
+                output_format: json
+
+  # The batch cap (5 batches, 15 rounds) ends the loop even when more-rounds was chosen last time;
+  # a phase that is neither approved nor accepted then stops the run instead of passing silently.
   - id: final-verdict
     type: shell
     run: ".specify/extensions/story/scripts/verdict.sh {{ inputs.phase }}"
     output_format: json
 
-  - id: escalate
+  - id: require-outcome
     type: if
-    condition: "{{ steps.final-verdict.output.data.verdict != 'approved' }}"
+    condition: "{{ steps.final-verdict.output.data.verdict != 'approved' and steps.operator-decision.output.choice != 'accept' }}"
     then:
-      - id: operator-decision
+      - id: last-decision
         type: gate
-        message: "Phase {{ inputs.phase }} is not approved after the allowed review rounds (latest: round {{ steps.final-verdict.output.data.round }}, {{ steps.final-verdict.output.data.verdict }}, {{ steps.final-verdict.output.data.file }}). Approve to accept the phase as it is and continue, or reject to stop the run."
-        options: [approve, reject]
+        message: "Phase {{ inputs.phase }} reached the limit of 15 review rounds without approval. accept: accept it as it is (recorded). reject: stop the run."
+        options: [accept, reject]
         on_reject: abort
 
-      - id: record-acceptance
+      - id: record-last-acceptance
         type: shell
         run: ".specify/extensions/story/scripts/accept.sh {{ inputs.phase }}"
         output_format: json

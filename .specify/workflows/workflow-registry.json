@@ -9,14 +9,6 @@
       "installed_at": "2026-11-02T13:20:13.199707+00:00",
       "updated_at": "2026-11-02T13:20:13.199720+00:00"
     },
-    "ocelle-story": {
-      "name": "One Phase: Implement, Review, Fix",
-      "version": "1.0.0",
-      "description": "Implements one tasks.md phase, then runs independent review and fix rounds until the review approves (at most three), and asks the operator when it does not",
-      "source": "tooling/speckit/workflows/ocelle-story",
-      "installed_at": "2026-11-02T13:29:07.623511+00:00",
-      "updated_at": "2026-11-02T13:29:07.623529+00:00"
-    },
     "ocelle-implement": {
       "name": "Implement by User Story with Review Rounds",
       "version": "1.0.0",
@@ -32,6 +24,14 @@
       "source": "tooling/speckit/workflows/ocelle-sdd",
       "installed_at": "2026-11-02T13:29:09.288806+00:00",
       "updated_at": "2026-11-02T13:29:09.288824+00:00"
+    },
+    "ocelle-story": {
+      "name": "One Phase: Implement, Review, Fix",
+      "version": "1.1.0",
+      "description": "Implements one tasks.md phase test-first, then runs red/green-checked review and fix rounds in batches of three; after each batch without approval the operator chooses more rounds, accept or stop",
+      "source": "tooling/speckit/workflows/ocelle-story",
+      "installed_at": "2026-11-02T13:44:16.660651+00:00",
+      "updated_at": "2026-11-02T13:44:16.660669+00:00"
     }
   }
 }

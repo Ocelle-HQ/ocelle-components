@@ -3,7 +3,7 @@ schema_version: "1.0"
 extension:
   id: story
   name: "Story Review Loop"
-  version: "1.0.0"
+  version: "1.1.0"
   description: "Implement tasks.md one phase (user story) at a time, with an independent review and fix rounds after each phase"
   author: Ocelle-HQ
   repository: https://github.com/Ocelle-HQ/ocelle-components
@@ -39,10 +39,24 @@ provides:
       file: scripts/verdict.sh
       description: "Report the verdict of the latest review round of a phase, as JSON"
       runtimes: [bash]
+    - name: story-red
+      file: scripts/red.sh
+      description: "Record a tests-only red commit and prove its tests fail"
+      runtimes: [bash]
+    - name: story-tdd-check
+      file: scripts/tdd-check.sh
+      description: "Independent red/green check of a phase in clean worktrees, run before every review"
+      runtimes: [bash]
     - name: story-accept
       file: scripts/accept.sh
       description: "Record that the operator accepted a phase whose latest review is not approved"
       runtimes: [bash]
+
+  config:
+    - name: story-config.yml
+      template: story-config.yml
+      description: "Test command, setup command, test file pathspecs and mutation command for the red/green check"
+      required: false
 
 tags:
   - "review"
