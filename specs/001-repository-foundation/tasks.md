@@ -126,7 +126,7 @@ change, passes with "nothing to mutate" on a change to no source, and lists reas
 ### Closing tasks (operator decisions, plan squad round 3)
 
 - [X] T049 [US2] Mutation catch-up for phase 2: run `pnpm run gate:mutation -- --base $(cat specs/001-repository-foundation/reviews/phase-2/base.sha)`, save the output as `specs/001-repository-foundation/reviews/phase-3/mutation-phase-2.log`, and resolve every survivor test-first (a killing test, a failing test before a behaviour fix, or a reasoned equivalent record); re-run until no survivor remains
-- [ ] T050 [US2] Shard timing: `pnpm run gate:mutation -- --base $(cat specs/001-repository-foundation/reviews/phase-1/base.sha) --plan`, run each shard with `--files`, record each duration in `specs/001-repository-foundation/reviews/phase-3/mutation-shards.md` (SC-005; any shard over 10 minutes is reported to the operator)
+- [X] T050 [US2] Shard timing: `pnpm run gate:mutation -- --base $(cat specs/001-repository-foundation/reviews/phase-1/base.sha) --plan`, run each shard with `--files`, record each duration in `specs/001-repository-foundation/reviews/phase-3/mutation-shards.md` (SC-005; any shard over 10 minutes is reported to the operator)
 
 **Checkpoint**: US1 and US2 both work; every later review runs mutation testing.
 
