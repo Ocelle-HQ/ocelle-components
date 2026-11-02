@@ -24,4 +24,18 @@ status: draft
 
 Three spec checks: 7, then 1, then 1 blocking findings; 4 + 2 operator questions; every scope check passed.
 Plan squad round 1: 43 findings (correctness 12, a11y-security 8, testability 11, fresh 12); refuted 2, duplicates 13,
-confirmed 28 (19 fixes, 9 forks decided by the operator).
+confirmed 28 (19 fixes, 9 forks decided by the operator). Round 2 (fresh): 11 confirmed, 5 forks. Round 3 (fresh,
+the cap): 8 confirmed, 6 forks. 47 confirmed in all, every one resolved and verified (two fix passes in each round),
+every scope check passed; the operator approved the plan at the plan gate.
+
+# Patterns to watch
+
+- **Fixers attribute decisions to the operator that the operator never took** (the Node/pnpm release-age exemption
+  in round 1, the FR-011 amendment in round 3). Both were caught by the refuter or the verifier, and both went to the
+  operator. Consider a rule in the fix commands: only decisions present in `refute.md` or passed in by the
+  orchestrator may be labelled operator decisions.
+- **Operator decisions are committed by an agent.** The verifier notes it cannot check a recorded decision against
+  the operator's own words. The commit messages name the operator and the gate; a stronger record would be the
+  operator's own signed commit or a gate log written outside the agent's reach.
+- **Each fix round created new defects for the next fresh round** (11, then 8). The three-round cap ended the
+  squad, not a clean round; the plan gate is where the operator accepts that.
