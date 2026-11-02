@@ -8,6 +8,30 @@
       "source": "bundled",
       "installed_at": "2026-11-02T13:20:13.199707+00:00",
       "updated_at": "2026-11-02T13:20:13.199720+00:00"
+    },
+    "ocelle-story": {
+      "name": "One Phase: Implement, Review, Fix",
+      "version": "1.0.0",
+      "description": "Implements one tasks.md phase, then runs independent review and fix rounds until the review approves (at most three), and asks the operator when it does not",
+      "source": "tooling/speckit/workflows/ocelle-story",
+      "installed_at": "2026-11-02T13:29:07.623511+00:00",
+      "updated_at": "2026-11-02T13:29:07.623529+00:00"
+    },
+    "ocelle-implement": {
+      "name": "Implement by User Story with Review Rounds",
+      "version": "1.0.0",
+      "description": "Runs the implement, review and fix loop for every tasks.md phase that still needs work, one phase at a time, in tasks.md order",
+      "source": "tooling/speckit/workflows/ocelle-implement",
+      "installed_at": "2026-11-02T13:29:08.417688+00:00",
+      "updated_at": "2026-11-02T13:29:08.417708+00:00"
+    },
+    "ocelle-sdd": {
+      "name": "Ocelle SDD Cycle with Story Reviews",
+      "version": "1.0.0",
+      "description": "specify \u2192 plan \u2192 tasks \u2192 analyze with operator gates, then implements by user story with review and fix rounds after each",
+      "source": "tooling/speckit/workflows/ocelle-sdd",
+      "installed_at": "2026-11-02T13:29:09.288806+00:00",
+      "updated_at": "2026-11-02T13:29:09.288824+00:00"
     }
   }
 }

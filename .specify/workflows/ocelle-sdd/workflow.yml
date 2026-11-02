@@ -1,0 +1,68 @@
+schema_version: "1.0"
+workflow:
+  id: "ocelle-sdd"
+  name: "Ocelle SDD Cycle with Story Reviews"
+  version: "1.0.0"
+  author: "Ocelle-HQ"
+  description: "specify → plan → tasks → analyze with operator gates, then implements by user story with review and fix rounds after each"
+
+requires:
+  speckit_version: ">=1.2.5"
+  integrations:
+    any: ["claude"]
+
+inputs:
+  spec:
+    type: string
+    required: true
+    prompt: "Describe what you want to build"
+  integration:
+    type: string
+    default: "auto"
+
+steps:
+  - id: specify
+    command: speckit.specify
+    integration: "{{ inputs.integration }}"
+    input:
+      args: "{{ inputs.spec }}"
+
+  - id: review-spec
+    type: gate
+    message: "Review the spec (run /speckit-clarify first if it has open questions) before planning."
+    options: [approve, reject]
+    on_reject: abort
+
+  - id: plan
+    command: speckit.plan
+    integration: "{{ inputs.integration }}"
+    input:
+      args: "{{ inputs.spec }}"
+
+  - id: review-plan
+    type: gate
+    message: "Review the plan and its Constitution Check before generating tasks."
+    options: [approve, reject]
+    on_reject: abort
+
+  - id: tasks
+    command: speckit.tasks
+    integration: "{{ inputs.integration }}"
+    input:
+      args: "{{ inputs.spec }}"
+
+  - id: analyze
+    command: speckit.analyze
+    integration: "{{ inputs.integration }}"
+
+  - id: review-tasks
+    type: gate
+    message: "Review tasks.md and the analysis. Each '## Phase N' becomes one implement-review-fix unit; user-story phases should be independently testable."
+    options: [approve, reject]
+    on_reject: abort
+
+  - id: implement
+    type: workflow
+    workflow: "ocelle-implement"
+    input:
+      integration: "{{ inputs.integration }}"

@@ -1,0 +1,1 @@
+../../../.specify/extensions/story/.specify-dev/agent-commands/claude/speckit-story-implement/SKILL.md

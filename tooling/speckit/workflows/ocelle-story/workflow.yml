@@ -1,0 +1,91 @@
+schema_version: "1.0"
+workflow:
+  id: "ocelle-story"
+  name: "One Phase: Implement, Review, Fix"
+  version: "1.0.0"
+  author: "Ocelle-HQ"
+  description: "Implements one tasks.md phase, then runs independent review and fix rounds until the review approves (at most three), and asks the operator when it does not"
+
+requires:
+  speckit_version: ">=1.2.5"
+  integrations:
+    any: ["claude"]
+
+inputs:
+  phase:
+    type: number
+    required: true
+    prompt: "Phase number in tasks.md (## Phase N)"
+  integration:
+    type: string
+    default: "auto"
+
+steps:
+  # Records the commit the phase starts from; the review diffs from it. The phase is a
+  # number input, so nothing but digits reaches the shell.
+  - id: base
+    type: shell
+    run: ".specify/extensions/story/scripts/base.sh {{ inputs.phase }}"
+    output_format: json
+
+  - id: implement
+    command: speckit.story.implement
+    integration: "{{ inputs.integration }}"
+    input:
+      args: "phase={{ inputs.phase }}"
+
+  # Each command step is a fresh agent session, so the reviewer has not seen the implementer's
+  # reasoning, only the code, the spec and the constitution.
+  - id: rounds
+    type: do-while
+    condition: "{{ steps.verdict.output.data.verdict == 'changes_requested' }}"
+    max_iterations: 3
+    steps:
+      - id: review
+        command: speckit.story.review
+        integration: "{{ inputs.integration }}"
+        input:
+          args: "phase={{ inputs.phase }}"
+
+      - id: verdict
+        type: shell
+        run: ".specify/extensions/story/scripts/verdict.sh {{ inputs.phase }}"
+        output_format: json
+
+      - id: needs-fix
+        type: if
+        condition: "{{ steps.verdict.output.data.verdict == 'changes_requested' }}"
+        then:
+          - id: fix
+            command: speckit.story.fix
+            integration: "{{ inputs.integration }}"
+            input:
+              args: "phase={{ inputs.phase }}"
+
+  # Re-read the verdict after the loop: after the last allowed round the fixes have not been
+  # reviewed yet, and a review that wrote no verdict reads as missing.
+  - id: final-verdict
+    type: shell
+    run: ".specify/extensions/story/scripts/verdict.sh {{ inputs.phase }}"
+    output_format: json
+
+  - id: escalate
+    type: if
+    condition: "{{ steps.final-verdict.output.data.verdict != 'approved' }}"
+    then:
+      - id: operator-decision
+        type: gate
+        message: "Phase {{ inputs.phase }} is not approved after the allowed review rounds (latest: round {{ steps.final-verdict.output.data.round }}, {{ steps.final-verdict.output.data.verdict }}, {{ steps.final-verdict.output.data.file }}). Approve to accept the phase as it is and continue, or reject to stop the run."
+        options: [approve, reject]
+        on_reject: abort
+
+      - id: record-acceptance
+        type: shell
+        run: ".specify/extensions/story/scripts/accept.sh {{ inputs.phase }}"
+        output_format: json
+
+outputs:
+  verdict:
+    value: "{{ steps.final-verdict.output.data.verdict }}"
+  round:
+    value: "{{ steps.final-verdict.output.data.round }}"

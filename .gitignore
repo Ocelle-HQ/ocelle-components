@@ -1,0 +1,3 @@
+# Spec Kit machine-local state
+.specify/.workflow-install.lock
+.specify/workflows/runs/

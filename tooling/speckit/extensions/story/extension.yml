@@ -1,0 +1,50 @@
+schema_version: "1.0"
+
+extension:
+  id: story
+  name: "Story Review Loop"
+  version: "1.0.0"
+  description: "Implement tasks.md one phase (user story) at a time, with an independent review and fix rounds after each phase"
+  author: Ocelle-HQ
+  repository: https://github.com/Ocelle-HQ/ocelle-components
+  license: Apache-2.0
+
+requires:
+  speckit_version: ">=1.2.5"
+  tools:
+    - name: git
+      required: true
+
+provides:
+  commands:
+    - name: speckit.story.implement
+      file: commands/speckit.story.implement.md
+      description: "Implement the open tasks of one tasks.md phase (a user story) and commit them"
+    - name: speckit.story.review
+      file: commands/speckit.story.review.md
+      description: "Review one implemented phase against its spec, plan, tasks and the constitution; write a verdict, change no code"
+    - name: speckit.story.fix
+      file: commands/speckit.story.fix.md
+      description: "Fix every blocking finding of the latest review of one phase and record how each was resolved"
+  scripts:
+    - name: story-units
+      file: scripts/units.sh
+      description: "List the tasks.md phases that still need implementing or an approved review, as JSON"
+      runtimes: [bash]
+    - name: story-base
+      file: scripts/base.sh
+      description: "Record the commit a phase starts from, so its review covers exactly its changes"
+      runtimes: [bash]
+    - name: story-verdict
+      file: scripts/verdict.sh
+      description: "Report the verdict of the latest review round of a phase, as JSON"
+      runtimes: [bash]
+    - name: story-accept
+      file: scripts/accept.sh
+      description: "Record that the operator accepted a phase whose latest review is not approved"
+      runtimes: [bash]
+
+tags:
+  - "review"
+  - "workflow"
+  - "quality"

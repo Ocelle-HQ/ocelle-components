@@ -1,0 +1,42 @@
+schema_version: "1.0"
+workflow:
+  id: "ocelle-implement"
+  name: "Implement by User Story with Review Rounds"
+  version: "1.0.0"
+  author: "Ocelle-HQ"
+  description: "Runs the implement, review and fix loop for every tasks.md phase that still needs work, one phase at a time, in tasks.md order"
+
+requires:
+  speckit_version: ">=1.2.5"
+  integrations:
+    any: ["claude"]
+
+inputs:
+  integration:
+    type: string
+    default: "auto"
+
+steps:
+  # Phases with open tasks or without an approved review. A rerun skips finished phases.
+  - id: units
+    type: shell
+    run: ".specify/extensions/story/scripts/units.sh"
+    output_format: json
+
+  - id: phases
+    type: fan-out
+    items: "{{ steps.units.output.data }}"
+    max_concurrency: 1
+    step:
+      id: phase
+      type: workflow
+      workflow: "ocelle-story"
+      input:
+        phase: "{{ item.phase }}"
+        integration: "{{ inputs.integration }}"
+
+  - id: feature-review
+    type: gate
+    message: "Every phase is implemented and reviewed (review files under the feature's reviews/ directory). Approve to finish, or reject to stop before opening a pull request."
+    options: [approve, reject]
+    on_reject: abort
