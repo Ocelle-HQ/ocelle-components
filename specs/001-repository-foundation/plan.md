@@ -103,7 +103,7 @@ packages/
 gates/
 ├── README.md                # every gate, its check name, its plants; deferred gates (FR-026)
 ├── gates.json               # gate registry (data-model.md)
-├── bin/                     # test, setup-offline, typecheck?, csp, prefix, signoff, pins, config-copies, mutation, plants
+├── bin/                     # test, setup-offline, csp, prefix, signoff, pins, config-copies, mutation, plants
 ├── lib/                     # shared: findings output, plant mode, registry loading
 ├── eslint/                  # local rule ocelle/no-snapshot-only
 ├── stylelint/               # local plugin ocelle/token-only
