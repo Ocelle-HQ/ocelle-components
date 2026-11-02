@@ -32,9 +32,10 @@ State: a plant is **caught** when the gate exits 1 on a `fail` plant and its fin
 gate exits 2 on an `error` plant. Anything else makes the plant job fail.
 
 Configuration rule: plant mode runs the repository's own gate configuration and swaps only the inputs. A plant's
-`tsconfig.json` holds only `extends` (of the repository's `tsconfig.base.json`) and `include`; a plant directory
-holds no ESLint, Stylelint, Vitest, Vite or Stryker configuration. The plant job rejects a plant that breaks this
-rule ("plant X carries gate configuration").
+`tsconfig.json` has no keys other than `extends` and `include`, and in a `fail` or `pass` plant its `extends` resolves
+to the repository's `tsconfig.base.json` (an `error` plant's `extends` may name a missing file, its breaking input);
+a plant directory holds no ESLint, Stylelint, Vitest, Vite or Stryker configuration. The plant job rejects a plant
+that breaks this rule ("plant X carries gate configuration").
 
 Identities: every name and e-mail address in a plant (sign-off records) is invented and uses a reserved domain
 (RFC 2606: `example.com`, `example.org`, `example.net`), never a real person's (FR-034).

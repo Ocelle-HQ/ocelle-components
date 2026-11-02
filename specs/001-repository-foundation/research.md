@@ -215,12 +215,15 @@ round 1 re-pinned every registry package published less than 7 days before 2026-
   no finding (and, where given, exactly the expected records); an `error` case does not exit 2; a gate lacks a
   `fail`, a `pass` or an `error` case; or a plant has no or an invalid `plant.json`.
 - **Same configuration, only the inputs swapped** (FR-025, constitution VIII): plant mode runs the gate with the
-  repository's own configuration. A typecheck plant's `tsconfig.json` holds only `extends` of the repository's
-  `tsconfig.base.json` and `include`; ESLint, Stylelint and Vitest load the repository's configs and only lift the
+  repository's own configuration. A typecheck plant's `tsconfig.json` has no keys other than `extends` and `include`,
+  and in a `fail` or `pass` plant its `extends` resolves to the repository's `tsconfig.base.json`; the typecheck
+  `error` plant keeps the same two keys but its `extends` names a file that does not exist (tsc reports `TS5083`,
+  which the wrapper classifies as exit 2), so the missing base is its only breaking input; ESLint, Stylelint and Vitest load the repository's configs and only lift the
   `gates/plants/` exclusion for the plant directory; unit-test plants run inside the named project of the
   repository's `vitest.config.ts`; mutation uses the repository's `stryker.config.json`. The plant job rejects (exit
-  1, "plant X carries gate configuration") a plant directory that holds `compilerOptions` in a tsconfig, or any
-  ESLint, Stylelint, Vitest, Vite or Stryker configuration file.
+  1, "plant X carries gate configuration") a plant directory that holds a tsconfig with any key other than `extends` and
+  `include` (such as `compilerOptions`, `files` or `references`), a `fail` or `pass` plant whose tsconfig `extends`
+  does not resolve to `tsconfig.base.json`, or any ESLint, Stylelint, Vitest, Vite or Stryker configuration file.
 - **Normal input collection for commit and mutation plants** (operator decision, plan squad round 1): for sign-off
   and mutation the plant job builds a temporary git repository from the plant and runs the gate in normal mode with
   `--root <tmp>` and `--range` or `--base`; plant mode changes only the repository root. Sign-off: one commit per
