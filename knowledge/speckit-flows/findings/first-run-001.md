@@ -28,6 +28,16 @@ confirmed 28 (19 fixes, 9 forks decided by the operator). Round 2 (fresh): 11 co
 the cap): 8 confirmed, 6 forks. 47 confirmed in all, every one resolved and verified (two fix passes in each round),
 every scope check passed; the operator approved the plan at the plan gate.
 
+Analysis after tasks: three analyses (2 critical + 1 high, then 1 critical, then 0 critical + 1 high), each round's
+fixes introducing smaller new findings; the operator stopped after the third ("fix the three, then implement").
+
+# Flow defects found after the plan gate
+
+| Defect | Effect | Change |
+|---|---|---|
+| No fix step after the analysis: the tasks gate offered only approve or reject | the orchestrator added "fix, then re-analyze" options and gave planner-pim an ad-hoc procedure three times | to do: an analysis-fix command and an analyze → fix loop with a cap, like the spec check |
+| The harness refused subagents' writes of report and note files ("Subagents should return findings as text, not write report files"), though the same profiles wrote such files earlier in the run | analysis reports and fix notes were recorded verbatim by the orchestrator from the hand-backs, each commit saying so | watch: if it persists, have profiles return reports and let the orchestrator write them by design |
+
 # Patterns to watch
 
 - **Fixers attribute decisions to the operator that the operator never took** (the Node/pnpm release-age exemption
