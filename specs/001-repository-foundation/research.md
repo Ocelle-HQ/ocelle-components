@@ -157,7 +157,9 @@ round 1 re-pinned every registry package published less than 7 days before 2026-
 ## R-06 Test lint (FR-010)
 
 - **Decision**: a second ESLint config (`eslint.test.config.ts`, loaded through jiti like R-05) over all test code
-  except `gates/test/fixtures/`, with `@vitest/eslint-plugin` 1.6.28 rules `expect-expect`, `no-disabled-tests`,
+  except `gates/test/fixtures/` (and Stryker's sandbox copies under `.stryker-tmp/`, from phase 4: operator
+  decision, phase 3 gate, 2026-11-02, on review note R2-02: "Fix in phase 4, test-first: add .stryker-tmp/ to the
+  test-lint ignores."; tasks.md T092), with `@vitest/eslint-plugin` 1.6.28 rules `expect-expect`, `no-disabled-tests`,
   `no-focused-tests`, `no-conditional-expect`, `no-standalone-expect`, `valid-expect` (with `alwaysAwait`) and
   `valid-expect-in-promise`, as errors; plus a local rule `ocelle/no-snapshot-only` (in `gates/eslint/`) that
   reports a test whose only assertions are snapshot matchers (`toMatchSnapshot`, `toMatchInlineSnapshot`,
@@ -172,6 +174,55 @@ round 1 re-pinned every registry package published less than 7 days before 2026-
   `gates-integration`, in phase 3's red commit.
 - **Rationale**: a separate config keeps the test lint a separate named gate (FR-020) and lets its plants be run
   alone.
+- **Unchecked assertions** (operator decision, phase 3 gate, 2026-11-02, on review note R1-03: "Add rule now: add
+  an ocelle rule for these patterns as a small extra task before phase 4, test-first."). The phase 3 review found
+  that the rule set above reports none of `void p.then((v) => expect(v).toBe(2))`, an assertion in a `setTimeout`
+  callback, or `try { expect(...) } catch {}`. A probe of the same config when this decision was recorded
+  confirmed this and found the same for `void p.finally(...)`, `setInterval`, and a `catch (e) { console.log(e) }`
+  handler. Three local rules
+  close the gap, in a new module `gates/eslint/unchecked-expect.ts` next to `gates/eslint/no-snapshot-only.ts`:
+  - **Assertion**, for all three rules: a call whose callee chain starts at the identifier `expect` (the
+    `rootName` walk of `no-snapshot-only`: `expect(...)`, `expect(...).not.toBe(...)`, `expect.soft(...)`,
+    `expect.unreachable()`). "Contains an assertion" means one occurs anywhere inside the node, nested functions
+    included, unless a rule says otherwise.
+  - **`ocelle/no-floating-promise-expect`** reports a `void` expression whose operand is a promise chain with an
+    assertion in a callback. A promise chain is a call whose callee is a member `.then`, `.catch` or `.finally`,
+    followed down through `callee.object` while that is again such a call (so `void p.then(f).catch(g)` is one
+    chain); it has an assertion in a callback when a function-expression or arrow argument of any call in the chain
+    contains an assertion. The rule reports the `void` expression once, at its line, with message id `floating`:
+    "Assertion in a promise callback that is neither awaited nor returned; await or return the promise (FR-010)".
+    A chain that is an expression statement on its own (`p.then(...)`), or assigned and never awaited, is left to
+    `vitest/valid-expect-in-promise`, which already reports it; this rule does not report it, so no pattern gets two
+    findings. A chain that is awaited (`await p.then(...)`), returned (`return p.then(...)`) or an arrow's
+    expression body (`() => p.then(...)`) is never the operand of `void` and is not reported. An assertion in a
+    `.catch` callback is also reported by `vitest/no-conditional-expect`, so the rule's fixture uses `.then`.
+  - **`ocelle/no-timer-expect`** reports a call whose callee is the identifier `setTimeout` or `setInterval`, or a
+    member with one of those property names (`globalThis.setTimeout`), when its first argument is a function
+    expression or arrow that contains an assertion. It reports the call once, at its line, with message id `timer`:
+    "Assertion in a timer callback runs outside the test's control; await the condition, then assert (FR-010)". A
+    timer whose callback holds no assertion (`await new Promise((r) => setTimeout(r, 10))` followed by the
+    assertion) is not reported. Only the two timers the decision names are in scope; `setImmediate` and
+    `queueMicrotask` are not.
+  - **`ocelle/no-swallowed-expect`** reports a `try` statement whose `block` contains an assertion and whose
+    `catch` clause swallows. A `catch` clause **swallows** unless its body (the clause's block, not counting
+    nested function bodies) has a `throw` statement as one of its own top-level statements (not inside an `if`, a
+    loop, a nested block or a function), or contains an assertion. So `catch {}`, `catch (e) { console.log(e) }`,
+    `catch (e) { if (x) throw e }` and `catch (e) { fail(e) }` (a helper call is not a `throw`) swallow, while
+    `catch (e) { cleanup(); throw e }` and `catch (e) { expect(e).toBeInstanceOf(SyntaxError) }` do not. A `try`
+    without a `catch` clause (`try ... finally`) is not reported. It reports the `try` statement once, at its
+    line, with message id `swallowed`: "Assertion inside a try whose catch neither rethrows nor asserts; the
+    failure is swallowed (FR-010)". A `catch` that asserts is still reported by `vitest/no-conditional-expect`
+    (an assertion inside a `catch` is conditional), so the gate rejects it on that rule, not on this one.
+  - **Files**: the rules apply to every file the test-lint config already covers (`**/*.test.ts`, `**/*.spec.ts`,
+    `**/test/**/*.ts`, `**/*.stories.ts`, minus its ignores), inside and outside a test block. They need no type
+    information.
+  - **Wiring**: the module exports the three rules and a `plugin` object with them, as `no-snapshot-only.ts` does;
+    `eslint.test.config.ts` registers one `ocelle` plugin whose `rules` are the union of both modules' rules and
+    sets the three rules to `"error"`.
+  - **Proof** (tasks.md T091, test-first): `RuleTester` unit tests per rule (reported cases and the look-alikes
+    above), and `gates-integration` fixtures run through `gates/bin/test-lint.ts --root`, one per rule exiting 1
+    with exactly that rule's one finding, plus a fixture per allowed look-alike. The three patterns have no plant of
+    their own under `gates/plants/test-lint/`; the gate's plants stay those of SC-004.
 
 ## R-07 Style lint (FR-024)
 
@@ -251,9 +302,21 @@ round 1 re-pinned every registry package published less than 7 days before 2026-
   out `gates-integration`. Phase 3 proves that red first with a gate test on a fixture repository (in
   `gates-integration`, running `gates/bin/mutation.ts --root <tmp> --base <sha>`, which also covers `--files` and an
   unresolvable base end to end): a mutant covered only by a `gates-integration` test is reported `NoCoverage`. The adapter
-  lines that only `gates-integration` tests cover are kept to the CLI entry (the `import.meta.main` guard) and the
-  call that spawns the tool; each of their mutants is recorded as equivalent with a next-line record and its reason
-  ("process boundary, covered by gates-integration", FR-012), which the review sees in the report. Any other
+  lines that only `gates-integration` tests cover are kept to three kinds (operator decision, phase 3 gate,
+  2026-11-02, on review notes R1-02 and R2-01: "Reword R-08: allow records on thin adapter functions that only call
+  an outside tool, if an integration test covers them."):
+  1. the CLI entry (the `import.meta.main` guard);
+  2. the call that spawns the tool;
+  3. a thin adapter function that only calls an outside tool (git, the file system, pnpm, Vitest, ESLint, Stryker
+     or a child process) and passes arguments and results through, with no branch and no computation that the
+     gate's decision depends on, when a `gates-integration` test covers it.
+
+  Each of their mutants is recorded as equivalent with a next-line record and its reason ("process boundary,
+  covered by gates-integration", FR-012), which the review sees in the report. A record of the third kind also
+  names the `gates-integration` case that covers it, as file and test name, for example
+  `// Stryker disable next-line StringLiteral: process boundary, covered by gates-integration:
+  gates/test/integration/mutation.test.ts "--files mutates only the listed file"` (one line in the source). Logic that
+  decides the gate's result does not belong in such a function; it moves into the tested seam (R-09). Any other
   survivor in gate source is a finding like any other.
 - **Rationale**: line ranges give FR-011's "changed lines" precisely, so no incremental cache is needed and every
   run is cold (SC-005's "no earlier mutation result"). Issue #4's "incremental" intent is met by mutating only the
@@ -307,7 +370,7 @@ round 1 re-pinned every registry package published less than 7 days before 2026-
   structured output (contracts/gate-cli.md table) and exits 1 only when that output holds findings.
 - **Design rule** (operator decision, plan squad round 3): every gate is split into a pure decision part (parse
   and classify the tool's output, compute ranges, shards and findings, judge plants) and a thin adapter (the CLI
-  entry and the call that spawns the tool or reads git). The decision part is tested in-process on recorded tool
+  entry and the call that spawns the tool or reads git, and the thin adapter functions of R-08). The decision part is tested in-process on recorded tool
   output under `gates/test/fixtures/`; the adapter is tested in the `gates-integration` Vitest project, which
   Stryker does not run (R-08). `--root <dir>` is part of every gate's adapter: it sets the repository root and the
   working directory of the tool, and changes nothing else (R-10). The entry wrapper and `--root` parsing live in

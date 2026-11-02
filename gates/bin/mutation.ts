@@ -1,8 +1,9 @@
 // The mutation gate (FR-011 to FR-013, research.md R-08): mutation-tests the package source and gate source lines
 // changed since `--base <sha>` with Stryker (mutate ranges), and decides from Stryker's JSON report, never from its
 // exit code. `--plan` prints the CI shards; `--files <path>[,<path>...]` limits a run to one shard. `mutation()` is
-// the decision, tested in-process with doubles for git, the file system and Stryker; `run()` gives it the real tools
-// of the `--root` repository (the process boundary, tested by gates/test/integration/mutation.test.ts).
+// the decision, tested in-process with doubles for git, the file system and Stryker: it deletes an earlier run's
+// report, runs Stryker and reads the report that run wrote. `run()` gives it the real tools of the `--root`
+// repository (the process boundary, tested by gates/test/integration/mutation.test.ts).
 import { readFile, rm } from "node:fs/promises";
 import { join } from "node:path";
 import { main, parseArgs } from "../lib/cli.ts";
@@ -26,8 +27,10 @@ export interface MutationTools {
   readonly git: (args: readonly string[]) => Promise<ToolRun>;
   /** Reads a repository file (path relative to the root); undefined when it cannot be read. */
   readonly read: (path: string) => Promise<string | undefined>;
-  /** Runs Stryker on these `mutate` entries and returns its JSON report and output. */
-  readonly stryker: (mutate: readonly string[]) => Promise<StrykerRun>;
+  /** Deletes a repository file (path relative to the root), if it exists. */
+  readonly remove: (path: string) => Promise<void>;
+  /** Runs Stryker on these `mutate` entries and returns its exit code and output. */
+  readonly stryker: (mutate: readonly string[]) => Promise<ToolRun>;
 }
 
 interface Options {
@@ -35,6 +38,9 @@ interface Options {
   readonly plan: boolean;
   readonly files: string | undefined;
 }
+
+/** Stryker's JSON report, as stryker.config.json names it (`jsonReporter.fileName`). */
+const reportFile = "reports/mutation/mutation.json";
 
 const usage = "usage: gate:mutation -- --base <sha> [--plan | --files <path>[,<path>...]]";
 
@@ -103,7 +109,11 @@ export async function mutation(context: Context, tools: MutationTools, io: Io): 
     records.push(...scan.records);
     findings.push(...scan.findings);
   }
-  const verdict = classifyMutants(await tools.stryker(mutateSpecs(selected)), selected);
+  await tools.remove(reportFile);
+  const ran = await tools.stryker(mutateSpecs(selected));
+  const report = await tools.read(reportFile);
+  const stryker: StrykerRun = { report, exitCode: ran.exitCode, output: `${ran.stdout}${ran.stderr}` };
+  const verdict = classifyMutants(stryker, selected);
   if (!verdict.ok) return emit({ exit: 2, cause: verdict.cause }, io.out, io.err);
 
   for (const record of records) io.out(formatRecord(record));
@@ -117,30 +127,20 @@ export async function mutation(context: Context, tools: MutationTools, io: Io): 
   return emit({ exit: 0, summary }, io.out, io.err);
 }
 
-/** Stryker's JSON report, as stryker.config.json names it (`jsonReporter.fileName`). */
-// Stryker disable next-line all: process boundary, covered by gates-integration
-const reportFile = join("reports", "mutation", "mutation.json");
-
 // Stryker disable next-line all: process boundary, covered by gates-integration
 function realTools(root: string, env: Io["env"]): MutationTools {
-  // Stryker disable next-line all: process boundary, covered by gates-integration
-  const read = (path: string): Promise<string | undefined> => readFile(join(root, path), "utf8").catch(() => undefined);
   // Stryker disable next-line all: process boundary, covered by gates-integration
   const stryker = join(root, "node_modules", "@stryker-mutator", "core", "bin", "stryker.js");
   // Stryker disable next-line all: process boundary, covered by gates-integration
   return {
     // Stryker disable next-line all: process boundary, covered by gates-integration
     git: (args) => runTool("git", args, root, env),
-    read,
     // Stryker disable next-line all: process boundary, covered by gates-integration
-    stryker: async (mutate) => {
-      // Stryker disable next-line all: process boundary, covered by gates-integration
-      await rm(join(root, reportFile), { force: true });
-      // Stryker disable next-line all: process boundary, covered by gates-integration
-      const ran = await runTool(process.execPath, [stryker, "run", "--mutate", mutate.join(",")], root, env);
-      // Stryker disable next-line all: process boundary, covered by gates-integration
-      return { report: await read(reportFile), exitCode: ran.exitCode, output: `${ran.stdout}${ran.stderr}` };
-    },
+    read: (path) => readFile(join(root, path), "utf8").catch(() => undefined),
+    // Stryker disable next-line all: process boundary, covered by gates-integration (a stale report and no new one)
+    remove: (path) => rm(join(root, path), { force: true }),
+    // Stryker disable next-line all: process boundary, covered by gates-integration
+    stryker: (mutate) => runTool(process.execPath, [stryker, "run", "--mutate", mutate.join(",")], root, env),
   };
 }
 

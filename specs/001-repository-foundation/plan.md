@@ -115,6 +115,15 @@ assert a configuration file the green commit creates record that file as part of
 the phase review; the pins lockfile verdict is tested in-process on recorded pnpm output and the real pnpm run only
 in `gates-integration` (R-14). No new exception.
 
+**Re-check after the phase 3 gate** (operator decisions, 2026-11-02, on review notes R1-02, R1-03, R2-01 and
+R2-02): VIII gains three test-lint rules for assertions that cannot fail the test (FR-010 amended, R-06), added
+test-first in phase 3 as T091: a stub commit gives its red tests a module to load, as a scaffold does, and its red
+commit is recorded under the next fix label of phase 3. The three patterns are proven by the gate's own fixtures in
+`gates-integration`, not by new plants; the test-lint gate keeps its plants (SC-004). R-08's equivalent records may
+also cover thin adapter functions that only call an outside tool, each naming the `gates-integration` case that
+covers it, so the review can check the claim line by line. The test lint ignores `.stryker-tmp/` from phase 4
+(T092, red first). No new exception.
+
 ## Project Structure
 
 ### Documentation (this feature)
