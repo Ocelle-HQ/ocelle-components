@@ -2,7 +2,7 @@ import { readFileSync } from "node:fs";
 import { describe, expect, it } from "vitest";
 import { mutation } from "../bin/mutation.ts";
 import { changedFiles, inScope, mutateSpecs, scopePathspecs } from "../lib/mutation/ranges.ts";
-import { base, capture, context, fakeGit, fakeRead, noStryker, scope } from "./mutation-fakes.ts";
+import { base, capture, context, fakeGit, fakeRepo, scope } from "./mutation-fakes.ts";
 
 // Changed line ranges over FR-028's package source and gate source, from recorded `git diff --unified=0` output
 // (gates/test/fixtures/git-diff/), and "nothing to mutate" when no such line changed (US2 scenario 5, FR-011).
@@ -186,7 +186,7 @@ describe("mutation gate: nothing to mutate (US2 scenario 5)", () => {
       .filter((part) => /^diff --git a\/(docs|packages\/tokens\/test|gates\/lib\/cli\.ts)/.test(part))
       .join("");
     const { io, out, err } = capture();
-    const code = await mutation(context(["--base", base]), { git: fakeGit(onlyTestsAndDocs), read: fakeRead({}), stryker: noStryker }, io);
+    const code = await mutation(context(["--base", base]), { git: fakeGit(onlyTestsAndDocs), ...fakeRepo({}) }, io);
     expect({ code, out, err }).toEqual({
       code: 0,
       out: [`mutation: nothing to mutate: no package or gate source line changed since ${base}`],

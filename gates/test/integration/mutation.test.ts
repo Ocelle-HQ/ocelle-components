@@ -1,5 +1,5 @@
 import { execFileSync } from "node:child_process";
-import { cpSync, existsSync, symlinkSync, writeFileSync } from "node:fs";
+import { cpSync, existsSync, mkdirSync, readFileSync, symlinkSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 import { afterEach, describe, expect, it } from "vitest";
 import { baseEnv, cleanUp, repo, runGate, tempDir } from "./workspace.ts";
@@ -75,6 +75,26 @@ describe("mutation gate (gates/bin/mutation.ts)", () => {
       expect(ran.stdout[0]).toMatch(
         /^mutation: \d+ mutants? on the changed lines of 1 file, none survived; 0 equivalent records$/,
       );
+    },
+    timeout,
+  );
+
+  it(
+    "deletes an earlier run's report: a Stryker run that writes none exits 2 (review round 1, R1-01)",
+    async () => {
+      expect(configsExist()).toEqual([true, true]);
+      const { root, base } = mutationRepo();
+      const reportDir = join(root, "reports", "mutation");
+      mkdirSync(reportDir, { recursive: true });
+      writeFileSync(join(reportDir, "mutation.json"), JSON.stringify({ schemaVersion: "1.0", files: {} }));
+      const config = JSON.parse(readFileSync(join(root, "stryker.config.json"), "utf8")) as Record<string, unknown>;
+      writeFileSync(join(root, "stryker.config.json"), JSON.stringify({ ...config, testRunner: "nonexistent" }));
+      const ran = await runGate("gates/bin/mutation.ts", ["--root", root, "--base", base, "--files", "gates/lib/other.ts"], {
+        cwd: tempDir("cwd"),
+        env: baseEnv(),
+      });
+      expect({ code: ran.code, stdout: ran.stdout, stderr: ran.stderr.length }).toEqual({ code: 2, stdout: [], stderr: 1 });
+      expect(ran.stderr[0]).toMatch(/^mutation: could not run: Stryker wrote no report \(.*"nonexistent".*\); /);
     },
     timeout,
   );

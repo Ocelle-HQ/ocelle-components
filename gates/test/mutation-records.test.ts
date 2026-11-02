@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { mutation } from "../bin/mutation.ts";
 import { formatRecord, scanRecords } from "../lib/mutation/records.ts";
-import { base, capture, context, fakeGit, fakeRead, fakeStryker } from "./mutation-fakes.ts";
+import { base, capture, context, fakeGit, fakeRepo, fakeStryker } from "./mutation-fakes.ts";
 
 // Equivalent-mutant records (FR-012, data-model.md): a reasoned next-line record in changed code is listed with its
 // path, line, mutator and reason; a record without a reason and every other disable form in a changed file is a
@@ -138,7 +138,7 @@ describe("mutation gate: records and disable forms (US2 scenario 4)", () => {
 
   it("passes with every mutant killed and lists the records for the review", async () => {
     const { io, out, err } = capture();
-    const tools = { git: fakeGit(diff), read: fakeRead({ [path]: recorded }), stryker: fakeStryker(() => "Killed") };
+    const tools = { git: fakeGit(diff), ...fakeRepo({ [path]: recorded }, fakeStryker(() => "Killed")) };
     const code = await mutation(context(["--base", base]), tools, io);
     expect({ code, out, err }).toEqual({
       code: 0,
@@ -154,7 +154,7 @@ describe("mutation gate: records and disable forms (US2 scenario 4)", () => {
   it("fails on a disable form in a changed file even when every mutant is killed", async () => {
     const source = recorded.replace("// Stryker disable next-line all: process boundary", "// Stryker disable all: process boundary");
     const { io, out, err } = capture();
-    const tools = { git: fakeGit(diff), read: fakeRead({ [path]: source }), stryker: fakeStryker(() => "Killed") };
+    const tools = { git: fakeGit(diff), ...fakeRepo({ [path]: source }, fakeStryker(() => "Killed")) };
     const code = await mutation(context(["--base", base]), tools, io);
     expect({ code, out, err }).toEqual({
       code: 1,
@@ -170,7 +170,7 @@ describe("mutation gate: records and disable forms (US2 scenario 4)", () => {
 
   it("exits 2 when a changed file cannot be read", async () => {
     const { io, out, err } = capture();
-    const tools = { git: fakeGit(diff), read: fakeRead({}), stryker: fakeStryker(() => "Killed") };
+    const tools = { git: fakeGit(diff), ...fakeRepo({}, fakeStryker(() => "Killed")) };
     const code = await mutation(context(["--base", base]), tools, io);
     expect({ code, out, err }).toEqual({
       code: 2,

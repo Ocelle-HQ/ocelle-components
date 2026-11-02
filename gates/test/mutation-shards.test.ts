@@ -3,7 +3,7 @@ import { mutation } from "../bin/mutation.ts";
 import type { MutationTools } from "../bin/mutation.ts";
 import type { ChangedFile } from "../lib/mutation/ranges.ts";
 import { formatPlan, planShards, selectFiles } from "../lib/mutation/shards.ts";
-import { base, capture, context, fakeGit, fakeRead, fakeStryker, newFilesDiff, noStryker } from "./mutation-fakes.ts";
+import { base, capture, context, fakeGit, fakeRepo, fakeStryker, mutant, newFilesDiff, reportPath, strykerReport } from "./mutation-fakes.ts";
 
 // CI shards (FR-013, research.md R-08): changed files sorted by path, filled greedily into shards of at most 10 files
 // and 500 changed lines, a file over 500 lines alone; `--plan` prints them, `--files` limits a run to one shard; and
@@ -79,8 +79,8 @@ describe("selectFiles", () => {
 
 describe("mutation gate: --plan, --files and --base", () => {
   const diff = newFilesDiff({ "gates/lib/b.ts": 3, "gates/lib/a.ts": 2 });
-  const sources = fakeRead({ "gates/lib/a.ts": "export const a = 1;\n", "gates/lib/b.ts": "export const b = 1;\n" });
-  const survives: MutationTools["stryker"] = fakeStryker(() => "Survived");
+  const files = { "gates/lib/a.ts": "export const a = 1;\n", "gates/lib/b.ts": "export const b = 1;\n" };
+  const survives = fakeStryker(() => "Survived");
 
   async function gate(args: readonly string[], tools: MutationTools) {
     const { io, out, err } = capture();
@@ -89,7 +89,7 @@ describe("mutation gate: --plan, --files and --base", () => {
   }
 
   it("--plan prints the shards of the changed files and runs no Stryker", async () => {
-    expect(await gate(["--base", base, "--plan"], { git: fakeGit(diff), read: sources, stryker: noStryker })).toEqual({
+    expect(await gate(["--base", base, "--plan"], { git: fakeGit(diff), ...fakeRepo(files) })).toEqual({
       code: 0,
       out: ['[{"files":"gates/lib/a.ts,gates/lib/b.ts","lines":5}]'],
       err: [],
@@ -97,7 +97,7 @@ describe("mutation gate: --plan, --files and --base", () => {
   });
 
   it("--plan prints no shard when nothing changed", async () => {
-    expect(await gate(["--plan", "--base", base], { git: fakeGit(""), read: sources, stryker: noStryker })).toEqual({
+    expect(await gate(["--plan", "--base", base], { git: fakeGit(""), ...fakeRepo(files) })).toEqual({
       code: 0,
       out: ["[]"],
       err: [],
@@ -105,7 +105,7 @@ describe("mutation gate: --plan, --files and --base", () => {
   });
 
   it("mutates every changed file without --files", async () => {
-    expect(await gate(["--", "--base", base], { git: fakeGit(diff), read: sources, stryker: survives })).toEqual({
+    expect(await gate(["--", "--base", base], { git: fakeGit(diff), ...fakeRepo(files, survives) })).toEqual({
       code: 1,
       out: [
         "gates/lib/b.ts:1: mutation: ConditionalExpression: Survived: replaced by true",
@@ -119,8 +119,7 @@ describe("mutation gate: --plan, --files and --base", () => {
   it("--files limits the run to the listed changed files", async () => {
     const result = await gate(["--base", base, "--files", "gates/lib/a.ts"], {
       git: fakeGit(diff),
-      read: sources,
-      stryker: survives,
+      ...fakeRepo(files, survives),
     });
     expect(result).toEqual({
       code: 1,
@@ -136,8 +135,7 @@ describe("mutation gate: --plan, --files and --base", () => {
     expect(
       await gate(["--base", base, "--files", "gates/lib/a.ts,gates/lib/x.ts"], {
         git: fakeGit(diff),
-        read: sources,
-        stryker: noStryker,
+        ...fakeRepo(files),
       }),
     ).toEqual({
       code: 2,
@@ -150,7 +148,7 @@ describe("mutation gate: --plan, --files and --base", () => {
   });
 
   it("exits 2 when --base does not resolve to a commit", async () => {
-    expect(await gate(["--base", "nope"], { git: fakeGit(diff), read: sources, stryker: noStryker })).toEqual({
+    expect(await gate(["--base", "nope"], { git: fakeGit(diff), ...fakeRepo(files) })).toEqual({
       code: 2,
       out: [],
       err: [
@@ -161,7 +159,7 @@ describe("mutation gate: --plan, --files and --base", () => {
   });
 
   it("exits 2 when --base is missing", async () => {
-    expect(await gate(["--plan"], { git: fakeGit(diff), read: sources, stryker: noStryker })).toEqual({
+    expect(await gate(["--plan"], { git: fakeGit(diff), ...fakeRepo(files) })).toEqual({
       code: 2,
       out: [],
       err: [
@@ -177,7 +175,7 @@ describe("mutation gate: --plan, --files and --base", () => {
     { args: ["--base", base, "--files", ""], problem: "--files needs a value" },
     { args: ["--base", base, "--verbose"], problem: "unknown argument --verbose" },
   ])("exits 2 on $problem", async ({ args, problem }) => {
-    expect(await gate(args, { git: fakeGit(diff), read: sources, stryker: noStryker })).toEqual({
+    expect(await gate(args, { git: fakeGit(diff), ...fakeRepo(files) })).toEqual({
       code: 2,
       out: [],
       err: [
@@ -188,7 +186,7 @@ describe("mutation gate: --plan, --files and --base", () => {
 
   it("exits 2 with git's message when git diff fails", async () => {
     const git = fakeGit(diff, "fatal: bad object 4ac76fd7\nmore detail\n");
-    expect(await gate(["--base", base], { git, read: sources, stryker: noStryker })).toEqual({
+    expect(await gate(["--base", base], { git, ...fakeRepo(files) })).toEqual({
       code: 2,
       out: [],
       err: ["mutation: could not run: git diff failed (fatal: bad object 4ac76fd7)"],
@@ -197,7 +195,7 @@ describe("mutation gate: --plan, --files and --base", () => {
 
   it("exits 2 with the first line of git's message after leading blank lines (added: mutation run)", async () => {
     const git = fakeGit(diff, "\n  fatal: bad revision\nmore detail\n");
-    expect(await gate(["--base", base], { git, read: sources, stryker: noStryker })).toEqual({
+    expect(await gate(["--base", base], { git, ...fakeRepo(files) })).toEqual({
       code: 2,
       out: [],
       err: ["mutation: could not run: git diff failed (fatal: bad revision)"],
@@ -208,8 +206,7 @@ describe("mutation gate: --plan, --files and --base", () => {
     expect(
       await gate(["--base", base, "--files", "gates/lib/x.ts,gates/lib/a.ts,gates/lib/y.ts"], {
         git: fakeGit(diff),
-        read: sources,
-        stryker: noStryker,
+        ...fakeRepo(files),
       }),
     ).toMatchObject({
       code: 2,
@@ -221,12 +218,61 @@ describe("mutation gate: --plan, --files and --base", () => {
   });
 
   it("exits 2 when Stryker's report cannot be used, after nothing else is printed", async () => {
-    const stryker: MutationTools["stryker"] = () =>
-      Promise.resolve({ report: undefined, exitCode: 1, output: "ERROR Stryker Something broke.\n" });
-    expect(await gate(["--base", base], { git: fakeGit(diff), read: sources, stryker })).toEqual({
+    const stryker = () => ({ exitCode: 1, stdout: "ERROR Stryker Something broke.\n", stderr: "" });
+    expect(await gate(["--base", base], { git: fakeGit(diff), ...fakeRepo(files, stryker) })).toEqual({
       code: 2,
       out: [],
       err: ["mutation: could not run: Stryker wrote no report (Something broke.); run pnpm test and check stryker.config.json"],
+    });
+  });
+});
+
+describe("mutation gate: the report of this run, never an earlier one (review round 1, R1-01)", () => {
+  const diff = newFilesDiff({ "gates/lib/a.ts": 2 });
+  const files = { "gates/lib/a.ts": "export const a = 1;\nexport const b = 2;\n" };
+  const killedEarlier = strykerReport({ "gates/lib/a.ts": [mutant("0", 1, "Killed"), mutant("1", 2, "Killed")] });
+  const survivedEarlier = strykerReport({ "gates/lib/a.ts": [mutant("0", 1, "Survived")] });
+
+  async function gate(tools: MutationTools) {
+    const { io, out, err } = capture();
+    const code = await mutation(context(["--base", base]), tools, io);
+    return { code, out, err };
+  }
+
+  it("exits 2 when Stryker writes no report, even though an earlier run left one that passes", async () => {
+    const writesNone = () => ({
+      exitCode: 1,
+      stdout: "12:00:00 (4242) INFO ProjectReader Found 1 of 9 file(s) to be mutated.\n",
+      stderr: '12:00:01 (4242) ERROR Stryker Cannot find TestRunner plugin "nonexistent".\n',
+    });
+    expect(await gate({ git: fakeGit(diff), ...fakeRepo({ ...files, [reportPath]: killedEarlier }, writesNone) })).toEqual({
+      code: 2,
+      out: [],
+      err: [
+        'mutation: could not run: Stryker wrote no report (Cannot find TestRunner plugin "nonexistent".); ' +
+          "run pnpm test and check stryker.config.json",
+      ],
+    });
+  });
+
+  it("names the last error of Stryker's stdout and then its stderr", async () => {
+    const writesNone = () => ({
+      exitCode: 1,
+      stdout: "12:00:00 (4242) ERROR Stryker first on stdout\n",
+      stderr: "12:00:01 (4242) ERROR Stryker last on stderr\n",
+    });
+    expect(await gate({ git: fakeGit(diff), ...fakeRepo(files, writesNone) })).toMatchObject({
+      code: 2,
+      err: ["mutation: could not run: Stryker wrote no report (last on stderr); run pnpm test and check stryker.config.json"],
+    });
+  });
+
+  it("decides on the report this run wrote, over an earlier run's report", async () => {
+    const tools = { git: fakeGit(diff), ...fakeRepo({ ...files, [reportPath]: survivedEarlier }, fakeStryker(() => "Killed")) };
+    expect(await gate(tools)).toEqual({
+      code: 0,
+      out: ["mutation: 1 mutant on the changed lines of 1 file, none survived; 0 equivalent records"],
+      err: [],
     });
   });
 });
