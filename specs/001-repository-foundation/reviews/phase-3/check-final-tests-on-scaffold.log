@@ -1,0 +1,130 @@
+Scope: all 4 workspace projects
+✓ Lockfile passes supply-chain policies (verified 1h ago)
+Lockfile is up to date, resolution step is skipped
+Packages are hard linked from the content-addressable store to the virtual store.
+  Content-addressable store is at: /root/.local/share/pnpm/store/v11
+  Virtual store is at:             node_modules/.pnpm
+Packages: +405
+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+Progress: resolved 405, reused 405, downloaded 0, added 405, done
+
+devDependencies:
++ @eslint/js 10.0.1
++ @stryker-mutator/core 10.1.1
++ @stryker-mutator/typescript-checker 10.1.1
++ @stryker-mutator/vitest-runner 10.1.1
++ @types/node 26.6.5
++ @vitest/browser-playwright 5.0.5
++ @vitest/eslint-plugin 1.6.28
++ eslint 10.13.0
++ jiti 2.7.0
++ parse5 8.0.1
++ playwright 1.64.1
++ postcss 8.5.31
++ postcss-lit 1.4.1
++ postcss-value-parser 4.2.0
++ stylelint 17.16.0
++ typescript 6.0.3
++ typescript-eslint 8.72.0
++ vite 8.3.5
++ vitest 5.0.5
+
+Done in 253ms using pnpm v12.16.1
+$ node gates/bin/setup-offline.ts
+setup: installed offline; Chromium at /opt/pw-browsers/chromium_headless_shell-1243/chrome-headless-shell-linux64/chrome-headless-shell
+$ node gates/bin/test.ts
+gates/test/integration/mutation.test.ts:46: unit-tests: mutation gate (gates/bin/mutation.ts) reports a mutant on a changed line that only a gates-integration test covers as a NoCoverage finding (exit 1): AssertionError: expected [ false, false ] to deeply equal [ true, true ]
+gates/test/integration/mutation.test.ts:65: unit-tests: mutation gate (gates/bin/mutation.ts) --files mutates only the listed file: AssertionError: expected [ false, false ] to deeply equal [ true, true ]
+gates/test/integration/mutation.test.ts:82: unit-tests: mutation gate (gates/bin/mutation.ts) exits 2 when --base does not resolve: AssertionError: expected [ false, false ] to deeply equal [ true, true ]
+gates/test/integration/test-lint.test.ts:64: unit-tests: test lint (gates/bin/test-lint.ts) exits 1 with exactly the one finding of expect-expect: AssertionError: expected false to be true // Object.is equality
+gates/test/integration/test-lint.test.ts:64: unit-tests: test lint (gates/bin/test-lint.ts) exits 1 with exactly the one finding of no-disabled-tests: AssertionError: expected false to be true // Object.is equality
+gates/test/integration/test-lint.test.ts:64: unit-tests: test lint (gates/bin/test-lint.ts) exits 1 with exactly the one finding of no-focused-tests: AssertionError: expected false to be true // Object.is equality
+gates/test/integration/test-lint.test.ts:64: unit-tests: test lint (gates/bin/test-lint.ts) exits 1 with exactly the one finding of no-conditional-expect: AssertionError: expected false to be true // Object.is equality
+gates/test/integration/test-lint.test.ts:64: unit-tests: test lint (gates/bin/test-lint.ts) exits 1 with exactly the one finding of no-standalone-expect: AssertionError: expected false to be true // Object.is equality
+gates/test/integration/test-lint.test.ts:64: unit-tests: test lint (gates/bin/test-lint.ts) exits 1 with exactly the one finding of valid-expect: AssertionError: expected false to be true // Object.is equality
+gates/test/integration/test-lint.test.ts:64: unit-tests: test lint (gates/bin/test-lint.ts) exits 1 with exactly the one finding of valid-expect-in-promise: AssertionError: expected false to be true // Object.is equality
+gates/test/integration/test-lint.test.ts:64: unit-tests: test lint (gates/bin/test-lint.ts) exits 1 with exactly the one finding of no-snapshot-only: AssertionError: expected false to be true // Object.is equality
+gates/test/integration/test-lint.test.ts:78: unit-tests: test lint (gates/bin/test-lint.ts) exits 0 on a test with one real assertion: AssertionError: expected false to be true // Object.is equality
+gates/test/integration/test-lint.test.ts:92: unit-tests: test lint (gates/bin/test-lint.ts) exits 2 naming the file when a test file does not parse: AssertionError: expected false to be true // Object.is equality
+gates/test/integration/vitest-mutation-config.test.ts:24: unit-tests: vitest.mutation.config.ts holds every project of vitest.config.ts except gates-integration: AssertionError: expected false to be true // Object.is equality
+gates/test/eslint-report.test.ts:17: unit-tests: classifyEslint is exit 0 with the number of files checked when ESLint reports no message: AssertionError: expected { exit: +0, summary: '' } to deeply equal { exit: +0, …(1) }
+gates/test/eslint-report.test.ts:24: unit-tests: classifyEslint says 1 file when one file was checked: AssertionError: expected { exit: +0, summary: '' } to deeply equal { exit: +0, …(1) }
+gates/test/eslint-report.test.ts:31: unit-tests: classifyEslint makes each non-fatal message one finding at path:line with its rule id, and is exit 1: AssertionError: expected { exit: +0, summary: '' } to deeply equal { exit: 1, …(2) }
+gates/test/eslint-report.test.ts:64: unit-tests: classifyEslint uses the gate id it is given in findings and summary: AssertionError: expected { exit: +0, summary: '' } to match object { exit: 1, …(2) }
+gates/test/eslint-report.test.ts:72: unit-tests: classifyEslint counts a warning as a finding even when ESLint exits 0: AssertionError: expected { exit: +0, summary: '' } to deeply equal { exit: 1, …(2) }
+gates/test/eslint-report.test.ts:88: unit-tests: classifyEslint joins a message over several lines into one line: AssertionError: expected { exit: +0, summary: '' } to match object { exit: 1, findings: [ { …(1) } ] }
+gates/test/eslint-report.test.ts:96: unit-tests: classifyEslint is exit 2 naming the file and the parse error when a file does not parse, even next to findings: AssertionError: expected { exit: +0, summary: '' } to deeply equal { exit: 2, …(1) }
+gates/test/eslint-report.test.ts:103: unit-tests: classifyEslint is exit 2 with the error line of ESLint's output when ESLint exits 2 (configuration error): AssertionError: expected { exit: +0, summary: '' } to deeply equal { exit: 2, …(1) }
+gates/test/eslint-report.test.ts:112: unit-tests: classifyEslint is exit 2 when ESLint exits 2 even with a clean JSON report: AssertionError: expected { exit: +0, summary: '' } to deeply equal { exit: 2, …(1) }
+gates/test/eslint-report.test.ts:118: unit-tests: classifyEslint is exit 2 when ESLint was killed by a signal: AssertionError: expected { exit: +0, summary: '' } to deeply equal { exit: 2, …(1) }
+gates/test/eslint-report.test.ts:124: unit-tests: classifyEslint is exit 2 with the first output line when ESLint writes no JSON report: AssertionError: expected { exit: +0, summary: '' } to deeply equal { exit: 2, …(1) }
+gates/test/eslint-report.test.ts:134: unit-tests: classifyEslint is exit 2 when the output has no error line, naming its first line: AssertionError: expected { exit: +0, summary: '' } to deeply equal { exit: 2, …(1) }
+gates/test/eslint-report.test.ts:141: unit-tests: classifyEslint takes the error line only where a line starts with the error's name (added: mutation run): AssertionError: expected { exit: +0, summary: '' } to deeply equal { exit: 2, …(1) }
+gates/test/eslint-report.test.ts:149: unit-tests: classifyEslint is exit 2 when the report is JSON but not a list of files: AssertionError: expected { exit: +0, summary: '' } to deeply equal { exit: 2, …(1) }
+gates/test/mutation-ranges.test.ts:12: unit-tests: scopePathspecs are FR-028's package source TypeScript and gate source, as the pathspecs of research.md R-08: AssertionError: expected [] to deeply equal [ ':(glob)packages/*/**/*.ts', …(10) ]
+gates/test/mutation-ranges.test.ts:18: unit-tests: inScope takes package source and gate source TypeScript only: AssertionError: expected [] to deeply equal [ 'gates/bin/mutation.ts', …(7) ]
+gates/test/mutation-ranges.test.ts:63: unit-tests: changedFiles gives the added and modified lines of package and gate source, leaving out test code, stories and the rest: AssertionError: expected [] to deeply equal [ { …(3) }, { …(3) }, { …(3) }, …(1) ]
+gates/test/mutation-ranges.test.ts:79: unit-tests: changedFiles reads a hunk without a count as one line, skips pure deletions, and takes paths from file headers only: AssertionError: expected [] to deeply equal [ …(2) ]
+gates/test/mutation-ranges.test.ts:130: unit-tests: changedFiles and inScope (added: mutation run) reads counts of 10 and more, ignores hunk-like text in added lines and lines before the first file header: AssertionError: expected [] to deeply equal [ { path: 'gates/lib/y.ts', …(2) } ]
+gates/test/mutation-ranges.test.ts:158: unit-tests: changedFiles and inScope (added: mutation run) keeps gate source whose path only contains a package's dist directory further down: AssertionError: expected false to be true // Object.is equality
+gates/test/mutation-ranges.test.ts:165: unit-tests: mutateSpecs gives one Stryker mutate entry path:start-end per changed range: AssertionError: expected [] to deeply equal [ 'gates/lib/a.ts:2-2', …(2) ]
+gates/test/mutation-ranges.test.ts:183: unit-tests: mutation gate: nothing to mutate (US2 scenario 5) exits 0 without running Stryker when no package or gate source line changed: AssertionError: expected { code: +0, out: [], err: [] } to deeply equal { code: +0, …(2) }
+gates/test/mutation-records.test.ts:30: unit-tests: scanRecords lists the reasoned next-line records whose own line or mutated line changed: AssertionError: expected { records: [], findings: [] } to deeply equal { …(2) }
+gates/test/mutation-records.test.ts:40: unit-tests: scanRecords lists a record whose own line changed even when its mutated line did not: AssertionError: expected { records: [], findings: [] } to deeply equal { records: [ { …(4) } ], findings: [] }
+gates/test/mutation-records.test.ts:49: unit-tests: scanRecords does not list a record when neither its own line nor its mutated line changed, at both edges: AssertionError: expected { records: [], findings: [] } to deeply equal { …(2) }
+gates/test/mutation-records.test.ts:61: unit-tests: scanRecords makes a record without a reason and every other disable form in the changed file a finding: AssertionError: expected { records: [], findings: [] } to deeply equal { records: [], findings: [ …(8) ] }
+gates/test/mutation-records.test.ts:100: unit-tests: scanRecords: the forms Stryker reads (added: mutation run) reads a record without a space after the slashes and trims the mutator list, as Stryker does: AssertionError: expected { records: [], findings: [] } to deeply equal { …(2) }
+gates/test/mutation-records.test.ts:120: unit-tests: formatRecord writes <path>:<line>: mutation: record: <mutator>: <reason> (data-model.md § Finding): AssertionError: expected '' to be 'gates/lib/a.ts:2: mutation: record: C…' // Object.is equality
+gates/test/mutation-records.test.ts:139: unit-tests: mutation gate: records and disable forms (US2 scenario 4) passes with every mutant killed and lists the records for the review: AssertionError: expected { code: +0, out: [], err: [] } to deeply equal { code: +0, out: [ …(3) ], err: [] }
+gates/test/mutation-records.test.ts:154: unit-tests: mutation gate: records and disable forms (US2 scenario 4) fails on a disable form in a changed file even when every mutant is killed: AssertionError: expected { code: +0, out: [], err: [] } to deeply equal { code: 1, out: [ …(4) ], err: [] }
+gates/test/mutation-records.test.ts:171: unit-tests: mutation gate: records and disable forms (US2 scenario 4) exits 2 when a changed file cannot be read: AssertionError: expected { code: +0, out: [], err: [] } to deeply equal { code: 2, out: [], …(1) }
+gates/test/mutation-report.test.ts:25: unit-tests: classifyMutants makes Survived and NoCoverage mutants on changed lines findings; Killed, Timeout, RuntimeError, CompileError and Ignored pass: AssertionError: expected { ok: true, findings: [], mutants: +0 } to deeply equal { ok: true, mutants: 10, …(1) }
+gates/test/mutation-report.test.ts:44: unit-tests: classifyMutants leaves out survivors on unchanged lines of a changed file: AssertionError: expected { ok: true, findings: [], mutants: +0 } to deeply equal { ok: true, mutants: 5, …(1) }
+gates/test/mutation-report.test.ts:57: unit-tests: classifyMutants leaves out mutants of a file that did not change: AssertionError: expected { ok: true, findings: [], mutants: +0 } to deeply equal { ok: true, mutants: 1, findings: [] }
+gates/test/mutation-report.test.ts:63: unit-tests: classifyMutants counts a mutant whose lines overlap a changed range, at the range's first and last line too: AssertionError: expected { ok: true, findings: [], mutants: +0 } to deeply equal { ok: true, mutants: 4, …(1) }
+gates/test/mutation-report.test.ts:85: unit-tests: classifyMutants joins a replacement over several lines into one line: AssertionError: expected { ok: true, findings: [], mutants: +0 } to deeply equal { ok: true, mutants: 1, …(1) }
+gates/test/mutation-report.test.ts:101: unit-tests: classifyMutants cannot decide on a changed-line mutant that Stryker left in another state: AssertionError: expected { ok: true, findings: [], mutants: +0 } to deeply equal { ok: false, …(1) }
+gates/test/mutation-report.test.ts:116: unit-tests: classifyMutants cannot decide without a report, naming Stryker's error (a failed dry run): AssertionError: expected { ok: true, findings: [], mutants: +0 } to deeply equal { ok: false, …(1) }
+gates/test/mutation-report.test.ts:126: unit-tests: classifyMutants cannot decide without a report, naming Stryker's exit code when its output has no error: AssertionError: expected { ok: true, findings: [], mutants: +0 } to deeply equal { ok: false, …(1) }
+gates/test/mutation-report.test.ts:134: unit-tests: classifyMutants writes a survivor without a replacement as its status alone (added: mutation run): AssertionError: expected { ok: true, findings: [], mutants: +0 } to deeply equal { ok: true, mutants: 1, …(1) }
+gates/test/mutation-report.test.ts:149: unit-tests: classifyMutants cannot decide on a report whose files are not an object (added: mutation run): AssertionError: expected { ok: true, findings: [], mutants: +0 } to deeply equal { ok: false, …(1) }
+gates/test/mutation-report.test.ts:158: unit-tests: classifyMutants cannot decide on a report that is not JSON or has no files: AssertionError: expected { ok: true, findings: [], mutants: +0 } to deeply equal { ok: false, …(1) }
+gates/test/mutation-shards.test.ts:20: unit-tests: planShards has no shard when no file changed, and one shard for one changed file: AssertionError: expected [] to deeply equal [ { files: [ 'a.ts' ], lines: 3 } ]
+gates/test/mutation-shards.test.ts:25: unit-tests: planShards fills shards of up to 10 files, in path order: AssertionError: expected [] to deeply equal [ …(2) ]
+gates/test/mutation-shards.test.ts:33: unit-tests: planShards fills shards of up to 500 changed lines, exactly 500 included: AssertionError: expected [] to deeply equal [ { …(2) }, { …(2) }, { …(2) } ]
+gates/test/mutation-shards.test.ts:42: unit-tests: planShards gives a file of more than 500 changed lines a shard of its own: AssertionError: expected [] to deeply equal [ …(3) ]
+gates/test/mutation-shards.test.ts:53: unit-tests: formatPlan prints the shards as one line of JSON, each with its files comma-separated for --files: AssertionError: expected '' to be '[{"files":"gates/lib/a.ts,gates/lib/b…' // Object.is equality
+gates/test/mutation-shards.test.ts:67: unit-tests: selectFiles selects the listed changed files, ignoring spaces and empty entries: AssertionError: expected { files: [] } to deeply equal { files: [ { …(3) }, { …(3) } ] }
+gates/test/mutation-shards.test.ts:73: unit-tests: selectFiles names every listed path that is not a changed file: AssertionError: expected { files: [] } to deeply equal { missing: [ 'gates/lib/x.ts', …(1) ] }
+gates/test/mutation-shards.test.ts:91: unit-tests: mutation gate: --plan, --files and --base --plan prints the shards of the changed files and runs no Stryker: AssertionError: expected { code: +0, out: [], err: [] } to deeply equal { code: +0, …(2) }
+gates/test/mutation-shards.test.ts:99: unit-tests: mutation gate: --plan, --files and --base --plan prints no shard when nothing changed: AssertionError: expected { code: +0, out: [], err: [] } to deeply equal { code: +0, out: [ '[]' ], err: [] }
+gates/test/mutation-shards.test.ts:107: unit-tests: mutation gate: --plan, --files and --base mutates every changed file without --files: AssertionError: expected { code: +0, out: [], err: [] } to deeply equal { code: 1, out: [ …(3) ], err: [] }
+gates/test/mutation-shards.test.ts:119: unit-tests: mutation gate: --plan, --files and --base --files limits the run to the listed changed files: AssertionError: expected { code: +0, out: [], err: [] } to deeply equal { code: 1, out: [ …(2) ], err: [] }
+gates/test/mutation-shards.test.ts:135: unit-tests: mutation gate: --plan, --files and --base --files naming a file with no changed line exits 2: AssertionError: expected { code: +0, out: [], err: [] } to deeply equal { code: 2, out: [], …(1) }
+gates/test/mutation-shards.test.ts:152: unit-tests: mutation gate: --plan, --files and --base exits 2 when --base does not resolve to a commit: AssertionError: expected { code: +0, out: [], err: [] } to deeply equal { code: 2, out: [], …(1) }
+gates/test/mutation-shards.test.ts:163: unit-tests: mutation gate: --plan, --files and --base exits 2 when --base is missing: AssertionError: expected { code: +0, out: [], err: [] } to deeply equal { code: 2, out: [], …(1) }
+gates/test/mutation-shards.test.ts:179: unit-tests: mutation gate: --plan, --files and --base exits 2 on --base needs a value: AssertionError: expected { code: +0, out: [], err: [] } to deeply equal { code: 2, out: [], …(1) }
+gates/test/mutation-shards.test.ts:179: unit-tests: mutation gate: --plan, --files and --base exits 2 on --files needs a value: AssertionError: expected { code: +0, out: [], err: [] } to deeply equal { code: 2, out: [], …(1) }
+gates/test/mutation-shards.test.ts:179: unit-tests: mutation gate: --plan, --files and --base exits 2 on --files needs a value: AssertionError: expected { code: +0, out: [], err: [] } to deeply equal { code: 2, out: [], …(1) }
+gates/test/mutation-shards.test.ts:179: unit-tests: mutation gate: --plan, --files and --base exits 2 on unknown argument --verbose: AssertionError: expected { code: +0, out: [], err: [] } to deeply equal { code: 2, out: [], …(1) }
+gates/test/mutation-shards.test.ts:189: unit-tests: mutation gate: --plan, --files and --base exits 2 with git's message when git diff fails: AssertionError: expected { code: +0, out: [], err: [] } to deeply equal { code: 2, out: [], …(1) }
+gates/test/mutation-shards.test.ts:198: unit-tests: mutation gate: --plan, --files and --base exits 2 with the first line of git's message after leading blank lines (added: mutation run): AssertionError: expected { code: +0, out: [], err: [] } to deeply equal { code: 2, out: [], …(1) }
+gates/test/mutation-shards.test.ts:207: unit-tests: mutation gate: --plan, --files and --base names every listed file with no changed line, comma-separated (added: mutation run): AssertionError: expected { code: +0, out: [], err: [] } to match object { code: 2, …(1) }
+gates/test/mutation-shards.test.ts:223: unit-tests: mutation gate: --plan, --files and --base exits 2 when Stryker's report cannot be used, after nothing else is printed: AssertionError: expected { code: +0, out: [], err: [] } to deeply equal { code: 2, out: [], …(1) }
+gates/test/no-snapshot-only.test.ts: unit-tests: ocelle/no-snapshot-only invalid toMatchSnapshot as the only assertion, next to a test that also asserts the behaviour: AssertionError [ERR_ASSERTION]: Should have 1 error but had 0: []
+gates/test/no-snapshot-only.test.ts: unit-tests: ocelle/no-snapshot-only invalid toMatchInlineSnapshot and toMatchFileSnapshot as the only assertions; a test without assertions is not this rule's: AssertionError [ERR_ASSERTION]: Should have 2 errors but had 0: []
+gates/test/no-snapshot-only.test.ts: unit-tests: ocelle/no-snapshot-only invalid snapshot matchers behind not, resolves and rejects; rejects and expect.soft are real assertions: AssertionError [ERR_ASSERTION]: Should have 2 errors but had 0: []
+gates/test/no-snapshot-only.test.ts: unit-tests: ocelle/no-snapshot-only invalid expect.assertions and a matcher-named call on something other than expect are not assertions: AssertionError [ERR_ASSERTION]: Should have 1 error but had 0: []
+gates/test/no-snapshot-only.test.ts: unit-tests: ocelle/no-snapshot-only invalid tests inside describe, in callbacks, it.each and test.concurrent: AssertionError [ERR_ASSERTION]: Should have 3 errors but had 0: []
+gates/test/no-snapshot-only.test.ts: unit-tests: ocelle/no-snapshot-only invalid snapshots outside a test, in another function's callback and in a test without a callback are not tests: AssertionError [ERR_ASSERTION]: Should have 1 error but had 0: []
+gates/test/no-snapshot-only.test.ts:120: unit-tests: ocelle plugin reports a snapshot-only test under the rule id ocelle/no-snapshot-only with its message: AssertionError: expected [] to deeply equal [ { …(3) } ]
+gates/test/no-snapshot-only.test.ts: unit-tests: ocelle/no-snapshot-only (call chains) invalid a matcher-named call on a call that is not expect is not an assertion: AssertionError [ERR_ASSERTION]: Should have 1 error but had 0: []
+gates/test/no-snapshot-only.test.ts: unit-tests: ocelle/no-snapshot-only (call chains) invalid a computed member is not a modifier, and a real assertion next to it keeps the test: AssertionError [ERR_ASSERTION]: Should have 1 error but had 0: []
+gates/test/setup-offline.test.ts:115: unit-tests: setupOffline (mutation catch-up) installs frozen and offline with the ndjson log, then checks Chromium: TypeError: (0 , __vite_ssr_import_2__.setupOffline) is not a function
+gates/test/setup-offline.test.ts:126: unit-tests: setupOffline (mutation catch-up) reports a missing Chromium after a successful install: TypeError: (0 , __vite_ssr_import_2__.setupOffline) is not a function
+gates/test/setup-offline.test.ts:137: unit-tests: setupOffline (mutation catch-up) reports a failed install on its own, without checking Chromium: TypeError: (0 , __vite_ssr_import_2__.setupOffline) is not a function
+gates/test/test-command.test.ts:296: unit-tests: unitTests (mutation catch-up) runs no test when Chromium is missing, exit 2 naming the problem: TypeError: (0 , __vite_ssr_import_2__.unitTests) is not a function
+gates/test/test-command.test.ts:306: unit-tests: unitTests (mutation catch-up) exits 2 naming the setup when Vitest is not installed in the root: TypeError: (0 , __vite_ssr_import_2__.unitTests) is not a function
+gates/test/test-command.test.ts:316: unit-tests: unitTests (mutation catch-up) runs Vitest with the JSON report and test locations, passing extra arguments on, and classifies the report: TypeError: (0 , __vite_ssr_import_2__.unitTests) is not a function
+unit-tests: 93 of 172 tests failed
+[ELIFECYCLE] Test failed. See above for more details.
