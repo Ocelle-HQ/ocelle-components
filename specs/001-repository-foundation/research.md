@@ -94,13 +94,15 @@ round 1 re-pinned every registry package published less than 7 days before 2026-
     `pnpm install --frozen-lockfile --offline`; from phase 2 `gates/bin/setup-offline.ts`, which runs that command,
     translates pnpm's missing-tarball error into "missing: <package>; run pnpm run setup:online", then checks the
     Chromium executable the same way as `pnpm test`, and exits 2 on either failure.
-  - **Test seam**: `setup-offline.ts` takes the pnpm store directory (pnpm's `store-dir` setting, from the
-    environment) and `PLAYWRIGHT_BROWSERS_PATH` from its environment and passes the environment on to pnpm. The
-    translation of pnpm's error text is tested in the `gates` project on recorded pnpm output; its
-    `gates-integration` tests run it against an empty temporary store and an empty temporary browser path, with the
-    registry setting pointed at a local TCP socket the test opens, and assert exit 2, a message naming the missing package (or
-    Chromium) and `pnpm run setup:online`, and zero connections to that socket (FR-008 "never falls back to the
-    network"). A test against a store filled by a fixture lockfile with no dependencies asserts exit 0.
+  - **Test seam**: `setup-offline.ts` takes `--root <dir>` (the workspace it installs; default the repository
+    root), the pnpm store directory (pnpm's `store-dir` setting, from the environment) and `PLAYWRIGHT_BROWSERS_PATH`
+    from its environment and passes the environment on to pnpm. The translation of pnpm's error text is tested in
+    the `gates` project on recorded pnpm output; its `gates-integration` tests run it with `--root` on a temporary
+    workspace built from a fixture (never on the repository's own `node_modules`), against an empty temporary store
+    and an empty temporary browser path, with the registry setting pointed at a local TCP socket the test opens, and
+    assert exit 2, a message naming the missing package (or Chromium) and `pnpm run setup:online`, and zero
+    connections to that socket (FR-008 "never falls back to the network"). A test against a store filled by a fixture
+    lockfile with no dependencies, with the installed browser path, asserts exit 0.
   - **Supply-chain policy** (operator decision, plan squad round 1): `pnpm-workspace.yaml` sets
     `minimumReleaseAge: 10080` (7 days, in minutes) with `minimumReleaseAgeStrict: true` and no
     `minimumReleaseAgeExclude`, and `allowBuilds: {}`, an explicit, empty allow-list of dependencies that may run
@@ -142,6 +144,11 @@ round 1 re-pinned every registry package published less than 7 days before 2026-
   test-lint config uses the typescript-eslint parser without the project service. Test-lint plants are `repo-tree`
   plants (R-10), so if phase 3 finds a rule that needs types, the copied tsconfig files serve it as they do for the
   lint plants (R-05).
+- **Gate entry** (analysis 1): `gates/bin/test-lint.ts` runs ESLint with `eslint.test.config.ts` and
+  `--format json` in the `--root` directory and classifies the output with `gates/lib/eslint-report.ts`
+  (contracts/gate-cli.md), the same module the code lint uses in phase 4. Both are in phase 3's scaffold; the
+  classification is red-tested in-process on recorded ESLint JSON and the entry's exit 0/1/2 and `--root` in
+  `gates-integration`, in phase 3's red commit.
 - **Rationale**: a separate config keeps the test lint a separate named gate (FR-020) and lets its plants be run
   alone.
 
@@ -221,7 +228,8 @@ round 1 re-pinned every registry package published less than 7 days before 2026-
   (`gates/test/integration/`), which `pnpm test` runs and Stryker does not: `stryker.config.json` points the
   vitest-runner at `vitest.mutation.config.ts`, which imports the project list of `vitest.config.ts` and leaves
   out `gates-integration`. Phase 3 proves that red first with a gate test on a fixture repository (in
-  `gates-integration`): a mutant covered only by a `gates-integration` test is reported `NoCoverage`. The adapter
+  `gates-integration`, running `gates/bin/mutation.ts --root <tmp> --base <sha>`, which also covers `--files` and an
+  unresolvable base end to end): a mutant covered only by a `gates-integration` test is reported `NoCoverage`. The adapter
   lines that only `gates-integration` tests cover are kept to the CLI entry (the `import.meta.main` guard) and the
   call that spawns the tool; each of their mutants is recorded as equivalent with a next-line record and its reason
   ("process boundary, covered by gates-integration", FR-012), which the review sees in the report. Any other
@@ -281,7 +289,10 @@ round 1 re-pinned every registry package published less than 7 days before 2026-
   entry and the call that spawns the tool or reads git). The decision part is tested in-process on recorded tool
   output under `gates/test/fixtures/`; the adapter is tested in the `gates-integration` Vitest project, which
   Stryker does not run (R-08). `--root <dir>` is part of every gate's adapter: it sets the repository root and the
-  working directory of the tool, and changes nothing else (R-10).
+  working directory of the tool, and changes nothing else (R-10). The entry wrapper and `--root` parsing live in
+  `gates/lib/cli.ts` and are red-tested in phase 2; each gate's entry takes `--root` from its phase's scaffold on, and
+  a `gates-integration` test in that phase's red commit runs the gate with `--root` on a temporary repository from a
+  different working directory (analysis 1).
 - **Rationale**: exit 1 vs 2, together with the expected findings of each plant (R-10), lets the plant job tell "the
   gate caught the plant" from "the gate is broken".
 

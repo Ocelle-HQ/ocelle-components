@@ -195,8 +195,8 @@ in this feature depends on it.
 - **FR-002**: The runtime and package-manager versions MUST be pinned in the repository, every dependency MUST be
   pinned to an exact version, and the lockfile MUST be committed. All repository TypeScript (FR-028) MUST be checked
   in TypeScript's strict mode (constitution, Technology).
-- **FR-003**: A frozen install from the lockfile MUST succeed in a fresh clone and MUST fail when the lockfile would
-  change.
+- **FR-003**: A frozen install from the lockfile MUST succeed in a fresh clone. A lockfile that does not match the
+  manifests is caught by the install-and-pins check (FR-027), which states that rule.
 - **FR-004**: One root command MUST run every test file (FR-028) and exit non-zero when any test fails or when it
   finds no test file at all. A package with no test file does not fail a run that finds test files elsewhere. When
   the browser engine of FR-005 is missing, the command MUST exit non-zero with a message naming the online install
@@ -272,8 +272,9 @@ in this feature depends on it.
   or a dynamic-code call (`eval`, `new Function`, the `Function` constructor, or `setTimeout`/`setInterval` with a
   string argument). Remote loads (constitution IV) are not part of this gate in this feature.
 - **FR-022**: The prefix check MUST fail, naming file and line, on:
-  - any name that starts with `sk-` or `--sk-` at a name boundary: the `sk-` is not preceded by a letter, a digit,
-    `_` or `-`, except for the leading `--` of a custom property. This covers element names, custom-element
+  - any name that starts with `sk-` or `--sk-` at a name boundary, case-insensitive (HTML lower-cases tag names, so
+    `<SK-Button>` names an `sk-button` element): the `sk-` is not preceded by a letter, a digit, `_` or `-`, except
+    for the leading `--` of a custom property. This covers element names, custom-element
     definitions, CSS custom properties and event names, and does not match `task-list`, `desk-row` or `--risk-level`;
   - any monospace font family in a font declaration, case-insensitive: the generic families `monospace` and
     `ui-monospace`, and the named monospace families Menlo, Monaco, Consolas, Courier, Courier New, SFMono-Regular,
@@ -343,8 +344,8 @@ in this feature depends on it.
     report lists;
   - style lint: a raw literal inside a style template embedded in a TypeScript file, and one in a stylesheet; one
     plant per class FR-024 rejects (a `rem` length, a `ms` time, a hex colour, `rgb()`, a named colour, a raw font
-    family, a numeric `font-weight`, a unitless number outside the five properties, a raw `var()` fallback and a
-    raw `calc()` operand); and the pass plants `content: ""`, `anchor-name: --tip` and a raw value in a story file
+    family, a numeric `font-weight`, a unitless number outside the properties FR-024 allows them in, a raw `var()`
+    fallback and a raw `calc()` operand); and the pass plants `content: ""`, `anchor-name: --tip` and a raw value in a story file
     under a package's source directory (not covered, FR-024);
   - prefix check: an `sk-` element name, a `--sk-` custom property, an `sk-` event name, a generic `monospace` and a
     named monospace family; and the pass plants `task-list`, `desk-row` and `--risk-level`;

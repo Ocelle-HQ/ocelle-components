@@ -71,7 +71,7 @@ pinned by SHA; CI token read-only and not persisted (R-16)
 | V. Storybook and tests | Pass, partial | Tests per behaviour; Storybook and visual baselines deferred to #10 (Complexity Tracking). |
 | VI. Consumer needs, own code | Pass | Scope from issue #4 and the triage record; nothing copied. |
 | VII. Semver of the public surface | Pass | No public surface changes (semver none). |
-| VIII. Test-first, non-vacuous | Pass with one exemption | Every gate and script behaviour is written red first; one scaffold commit per phase, before its one red commit, adds the new modules with their signatures and no behaviour, so red tests load and fail on their assertions, and `tdd-check.sh` proves the final tests fail against the scaffold too, not only against the base (story extension 1.3.0, § Phases); mutation testing (of package source and gate source, FR-011) and the test lint are delivered here, and phase 3 mutation-tests phase 2's gate source, so no phase with behaviour goes without it (§ Phases); each gate's decision logic is pure and tested in-process, so a shard's mutation run stays within its time bound (R-08); every gate has fail, pass and breaking plants judged by their expected findings, and every plant but the pins mini-workspaces is laid out at repository paths and run through the gate's normal file collection with `--root` (R-10). Phase 1 bootstrap exemption below. |
+| VIII. Test-first, non-vacuous | Pass with one exemption | Every gate and script behaviour is written red first, including each wrapper's classification of tool output, the CLI entry wrapper's exit 2 on an uncaught error and every gate's `--root`; one scaffold commit per phase, before its one red commit, adds the new modules with their signatures and no behaviour, so red tests load and fail on their assertions, and `tdd-check.sh` proves the final tests fail against the scaffold too, not only against the base (story extension 1.3.0, § Phases); mutation testing (of package source and gate source, FR-011) and the test lint are delivered here, and phase 3 mutation-tests phase 2's gate source, so no phase with behaviour goes without it (§ Phases); each gate's decision logic is pure and tested in-process, so a shard's mutation run stays within its time bound (R-08); every gate has fail, pass and breaking plants judged by their expected findings, and every plant but the pins mini-workspaces is laid out at repository paths and run through the gate's normal file collection with `--root` (R-10). Phase 1 bootstrap exemption below. |
 | Technology, licence, supply chain | Pass | Exact pins (workspace packages as `workspace:<exact version>`), committed lockfile, 7-day minimum release age for registry packages (the Node and pnpm toolchain pins are exempt by operator decision, R-01) and an empty install-script allow-list enforced by the pins gate (R-04, R-14), Apache-2.0, no third-party asset ships, no secrets (CI token read-only, R-16), DCO via the sign-off gate. |
 | Workflow and quality gates | Pass, partial | Eleven gates + plant job; the twelve check names are required on `main` by a ruleset the operator configures (§ Verification); the remaining constitution gates are deferred with sunsets. |
 
@@ -101,6 +101,12 @@ config-copies), and no plant carries a tsconfig. A cache-warming workflow on `ma
 reachable. The Node and pnpm pins are exempt from the release-age window by operator decision (R-01), which the
 constitution does not govern. FR-011 states that a mutant that does not compile is invalid (operator amendment,
 approved by the operator on 2026-11-02 after verify 1 of round 3). No new exception.
+
+**Re-check after analysis 1** (operator: "fix all, then re-analyze", tasks gate 2026-11-02): three pieces of gate
+behaviour had reached green tasks without a red test; each now has one in its phase's red commit and its module in
+that phase's scaffold: the CLI entry wrapper (exit 2 on any uncaught error) and `--root` parsing in phase 2, the
+ESLint report classification and the test-lint entry in phase 3, and `--root` on each phase 3 and phase 4 gate,
+run in `gates-integration` (R-06, R-09). No new exception.
 
 ## Project Structure
 
@@ -146,8 +152,8 @@ packages/
 gates/
 ├── README.md                # every gate, its check name, its plants; the required checks on main; deferred gates (FR-026)
 ├── gates.json               # gate registry (data-model.md)
-├── bin/                     # test, setup-offline, csp, prefix, signoff, pins, config-copies, mutation, plants
-├── lib/                     # shared: findings output, plant mode, registry loading
+├── bin/                     # test, setup-offline, config-copies, test-lint, mutation, typecheck, lint, style-lint, csp, prefix, signoff, pins, plants
+├── lib/                     # shared: CLI entry and --root, findings output, tool-output reports, plant mode, registry
 ├── eslint/                  # local rule ocelle/no-snapshot-only
 ├── stylelint/               # local plugin ocelle/token-only
 ├── test/                    # in-process tests of the gates (and governance.test.ts for SC-006)
@@ -215,12 +221,16 @@ test could fail for it); a scaffold with behaviour is a blocking finding.
    `gates/bin/test.ts` (missing browser, failed tests as findings, no test file found, through its `--root` seam on
    fixture workspaces; R-03 lists which US1 scenarios are its behaviour and which hold through Vitest at the phase 1
    base), offline setup's failure cases in `gates/bin/setup-offline.ts` (R-04 test seam), the Chromium-only sample
-   test (R-03), the configuration-copies check (with `--root`, R-15). Its base has the runner and both commands, and
-   its scaffold commit gives the red tests modules to load, so its red commit fails for the missing behaviour.
-3. **US2, test quality (P2)**: test lint (including `ocelle/no-snapshot-only`), mutation wrapper (base argument,
-   changed ranges over package and gate source, survivors including no-coverage, compile errors as invalid,
-   equivalent records and rejected disable forms, the shard split and `--files`, `vitest.mutation.config.ts`
-   leaving out `gates-integration`, R-08), `mutation_command` in both copies, story review command change and
+   test (R-03), the configuration-copies check (with `--root`, R-15), and `gates/lib/cli.ts`'s entry wrapper (exit 2
+   on any uncaught error) and `--root` parsing (R-09). Its base has the runner and both commands, and
+   its scaffold commit gives the red tests modules to load, so its red commit fails for the missing behaviour. It
+   closes by showing, in a disposable clone, that `tdd-check.sh` reports `fail` on a throwaway phase whose final tests
+   pass at its base (SC-003's second clause).
+3. **US2, test quality (P2)**: test lint (including `ocelle/no-snapshot-only`, the entry `gates/bin/test-lint.ts`
+   with `--root` and the ESLint report classification `gates/lib/eslint-report.ts`, R-06), mutation wrapper
+   (`--root`, base argument, changed ranges over package and gate source, survivors including no-coverage, compile
+   errors as invalid, equivalent records and rejected disable forms, the shard split and `--files`,
+   `vitest.mutation.config.ts` leaving out `gates-integration`, R-08), `mutation_command` in both copies, story review command change and
    reinstall. Two tasks close the phase (operator decisions, plan squad round 3):
    - **Phase 2's gate source**: once the mutation wrapper is green, run
      `pnpm run gate:mutation -- --base <reviews/phase-2/base.sha>` (phase 2's review ran before mutation testing
@@ -232,7 +242,8 @@ test could fail for it); a scaffold with behaviour is a blocking finding.
    - **Shard timing**: `pnpm run gate:mutation -- --base <reviews/phase-1/base.sha> --plan`, then each shard with
      `--files`, timed, durations recorded in `reviews/phase-3/mutation-shards.md` (R-08).
 4. **US3, merge gates (P3)**: code lint, typecheck, style lint plugin, CSP, prefix, sign-off, pins checks; the gate
-   registry and its check against `ci.yml` and FR-020; `--root` on every gate (R-09); the plant job and every plant
+   registry and its check against `ci.yml` and FR-020; `--root` on every phase 4 gate, in its scaffold signature and
+   red-tested in `gates-integration` (R-09); the plant job and every plant
    (repo-tree plants for typecheck, code lint, style lint, unit tests, test lint, prefix, CSP and config-copies; the
    commit-repo plants on an empty base commit; R-10); `ci.yml` (with the sharded mutation jobs, restoring caches
    only) and `cache.yml` (R-16); `gates/README.md` with deferred gates and the list of the twelve checks required on
