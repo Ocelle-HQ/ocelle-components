@@ -5,6 +5,11 @@ import { defineConfig } from "vitest/config";
 // (FR-028, research.md R-10): every project excludes them.
 const excluded = ["**/node_modules/**", "**/dist/**", "gates/plants/**", "gates/test/fixtures/**"];
 
+// Optional, environment-only Chromium override (research.md R-03, operator decision 2026-11-02): when
+// OCELLE_CHROMIUM_PATH is set and non-empty, the elements project launches that executable; otherwise Playwright's own.
+const chromiumPath = process.env["OCELLE_CHROMIUM_PATH"];
+const launchOptions = chromiumPath ? { executablePath: chromiumPath } : {};
+
 export default defineConfig({
   test: {
     projects: [
@@ -31,7 +36,7 @@ export default defineConfig({
           exclude: excluded,
           browser: {
             enabled: true,
-            provider: playwright(),
+            provider: playwright({ launchOptions }),
             headless: true,
             instances: [{ browser: "chromium" }],
           },

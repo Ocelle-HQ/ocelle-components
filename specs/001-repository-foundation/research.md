@@ -78,6 +78,12 @@ round 1 re-pinned every registry package published less than 7 days before 2026-
   Chromium plant (contracts/plants.md) is the same assertion in the same typed form with a wrong expected brand, and
   its expected finding names that test and a message containing `Chromium`, so a plant run that fails for any other
   reason (Chromium not starting, a Node environment) does not count as caught.
+- **Chromium override** (operator decision, human:jeroennouwsdev, 2026-11-02, after the environment's network policy
+  denied `cdn.playwright.dev`): when the environment variable `OCELLE_CHROMIUM_PATH` is set and non-empty,
+  `vitest.config.ts` launches the elements project's Chromium from that executable (`launchOptions.executablePath`);
+  unset or empty, Playwright's own browser is used. It exists so the tests can run on a Chromium already installed
+  where Playwright's download is blocked; CI and normal machines do not set it, and `pnpm run setup:online` still
+  downloads Playwright's own build wherever the network allows.
 - **Rationale**: one runner for Node and browser tests, real Chromium for elements (constitution III and V need the
   real accessibility tree), and the tooling issue #4 named. Vitest 5.1.0 was published on the day of planning and
   is outside the release-age window (R-04); 5.0.5 (2026-10-15) is the newest release outside it.
