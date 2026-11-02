@@ -32,8 +32,16 @@ the ruleset requires):
 | `mutation-plan` | `pnpm run gate:mutation -- --base ${{ github.event.pull_request.base.sha }} --plan`; outputs the shards | `fetch-depth: 0` |
 | `mutation-shard` | matrix over the plan's shards, skipped when there are none: `pnpm run gate:mutation -- --base ${{ github.event.pull_request.base.sha }} --files <the shard's files>` | `fetch-depth: 0`; `timeout-minutes: 10` per shard (FR-013) |
 
-Every job: checkout (`persist-credentials: false`), Node and pnpm from the pins, restore the pnpm store and
-Playwright cache, `pnpm run setup:online`.
+Every job: checkout (`persist-credentials: false`), Node and pnpm from the pins, restore (never save) the pnpm store
+and Playwright cache, `pnpm run setup:online`.
+
+Cache warming (research.md R-16; operator decision, plan squad round 3): a second workflow,
+`.github/workflows/cache.yml`, trigger `push` to `main`, top-level `permissions: contents: read`, checkout with
+`persist-credentials: false`, no secret, every action pinned by commit SHA. One job: Node and pnpm from the pins,
+`pnpm run setup:online`, then save the pnpm store under a key from the hash of `pnpm-lock.yaml` and the Playwright
+browser cache under a key from the pinned Playwright version, the keys `ci.yml` restores. Pull requests can restore
+caches saved on their base branch, so after the first run on `main` every pull request starts with both caches.
+It is not a gate, reports no check that the ruleset requires, and the registry check does not read it.
 
 The set of gate jobs (every row of the first table but Plants) equals the gate ids of `gates/gates.json` and the
 FR-020 list; the plant job checks this (research.md R-10).

@@ -8,7 +8,7 @@
 | `check` | string | the CI check name shown on pull requests (contracts/ci-checks.md) |
 | `command` | string | the command a normal run executes |
 | `plantCommand` | string | the command run per plant, with `{plant}` replaced by the plant directory (or `{root}` by the temporary repository built from it) |
-| `plantForm` | enum | `files`, `test-files`, `workspace`, `repo-tree`, `commit-repo`, `config-pair`, `mutation-repo` (contracts/plants.md) |
+| `plantForm` | enum | `repo-tree`, `commit-repo`, `mutation-repo` (each run in a temporary repository, the gate in normal mode with `--root`) or `workspace` (pins); contracts/plants.md |
 | `scope` | string | the files it checks, as in spec FR-028 |
 | `helperJobs` | string[] | optional; job ids in `ci.yml` that serve this gate and are not gates themselves (`mutation-plan`, `mutation-shard` for `mutation`, research.md R-08) |
 
@@ -32,14 +32,12 @@ State: a plant is **caught** when the gate exits 1 on a `fail` plant and its fin
 0 on a `pass` plant with no finding (and, where given, exactly the expected `records`); **reported broken** when the
 gate exits 2 on an `error` plant. Anything else makes the plant job fail.
 
-Configuration rule: plant mode runs the repository's own gate configuration and swaps only the inputs. Only
-typecheck and lint plants carry a `tsconfig.json` (the lint plant's is what typescript-eslint's project service
-resolves the plant through); it has no keys other than `extends`, `include` and `exclude`, and in a `fail` or `pass`
-plant its `extends` resolves to the repository's root `tsconfig.json`, the file the typecheck gate runs (an `error`
-plant's `extends` may name a missing file, its breaking input); `exclude` is allowed because the root file's
-`exclude` of `gates/plants/**` is inherited and must be overridden. A plant directory holds no ESLint, Stylelint,
-Vitest, Vite or Stryker configuration. The plant job rejects a plant that breaks this rule ("plant X carries gate
-configuration").
+Configuration rule: plant mode runs the repository's own gate configuration and swaps only the inputs. A plant
+carries no configuration: no `tsconfig*.json` and no ESLint, Stylelint, Vitest, Vite or Stryker configuration file
+anywhere in its directory. `repo-tree`, `commit-repo` and `mutation-repo` plants are laid out at repository paths in
+a temporary repository that holds the configuration set of research.md R-10, copied unchanged, and the gate runs
+there in normal mode with `--root`, so its own file collection decides what it checks (plan squad round 3). The
+plant job rejects a plant that breaks this rule ("plant X carries gate configuration").
 
 Identities: every name and e-mail address in a plant (sign-off records) is invented and uses a reserved domain
 (RFC 2606: `example.com`, `example.org`, `example.net`), never a real person's (FR-034).
@@ -80,4 +78,4 @@ the full hash of the repository's root commit, `d08d4133bf0034e3d1ff29cddf2b0f13
 (FR-023 exempts that one commit; a record whose hash only starts with `d08d413` is not exempt). Passes when the
 message has a `Signed-off-by: <author>` trailer equal to `author`. In plants, `commits.txt` holds the records in
 order (a merge record names the two records it merges), and the plant job builds a temporary repository from them
-(research.md R-10).
+on an empty, signed-off base commit and checks `<base commit>..HEAD` (research.md R-10).

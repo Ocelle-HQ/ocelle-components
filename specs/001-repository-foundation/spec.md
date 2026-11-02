@@ -169,6 +169,7 @@ in this feature depends on it.
 - A changed line that no test runs: its mutants count as surviving, so new code without tests fails mutation testing
   (FR-011).
 - A survivor on an unchanged line of a changed file: it does not fail the pull request (FR-011).
+- A mutant that does not compile: it is invalid, neither killed nor surviving, and does not fail the run (FR-011).
 - A plant accidentally fixed or deleted: the plant job must fail ("gate X has no plant" or "plant X did not fail").
 - A commit authored by an agent: it needs a sign-off like any other commit; a sign-off by the agent identity that
   authored it is valid (FR-023).
@@ -243,6 +244,8 @@ in this feature depends on it.
   - A mutant **survives** when no test kills it. That includes a mutant on a line that no test runs (reported by
     mutation tools as "no coverage"), so new source without tests fails. A mutant is **killed** only when a test
     fails on it, or the test run times out or ends in a runtime error with it in place.
+  - A mutant that does not compile (the type checker rejects it, so no test runs on it) is **invalid**: it is
+    neither killed nor surviving, and it does not fail the run (operator amendment, plan squad round 3).
 - **FR-012**: A surviving mutant MAY be recorded as equivalent only with a written reason, kept next to the mutated
   code. The mutation report MUST list every such record in the changed code, with its location and reason, so the
   review can see and record it.

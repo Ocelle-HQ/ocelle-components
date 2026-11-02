@@ -6,8 +6,12 @@ round 1 re-pinned every registry package published less than 7 days before 2026-
 ## R-01 Runtime and package manager
 
 - **Decision**: Node.js 26.13.0 (current LTS, "Lithium", released 2026-10-28) pinned in `.node-version` and
-  `package.json#engines`; pnpm 12.16.1 pinned in `package.json#packageManager` and `engines`. Node and pnpm are
-  toolchain pins, not registry dependencies, so pnpm's release-age setting (R-04) does not govern them.
+  `package.json#engines`; pnpm 12.16.1 pinned in `package.json#packageManager` and `engines`.
+- **Toolchain exemption from the release-age window** (operator decision, plan squad round 3): Node and pnpm are
+  toolchain pins, and the 7-day window of R-04 does not apply to them. Both pins are inside it and are kept
+  knowingly: pnpm 12.16.1 was published on 2026-10-27 and Node 26.13.0 released on 2026-10-28, 6 and 5 days before
+  pinning on 2026-11-02. pnpm's `minimumReleaseAge` setting governs only the packages pnpm installs, and the pins
+  gate (R-14) checks only that `.node-version` and `packageManager` are exact, not their age.
 - **Rationale**: every tool chosen below supports Node 26 (Vitest `^22.12 || ^24 || >=26`, ESLint `>=24`,
   Stryker `>=22`, Stylelint `>=20.19`, Vite `>=22.12`). Node 26 runs TypeScript files natively by type stripping
   (`process.features.typescript` is `strip`), so gate scripts are TypeScript run by `node` with no build step. Type
@@ -40,7 +44,9 @@ round 1 re-pinned every registry package published less than 7 days before 2026-
 ## R-03 Test runner (FR-004, FR-005)
 
 - **Decision**: Vitest 5.0.5 with `projects`: `tokens` and `styles` (Node environment), `elements` (browser mode,
-  `@vitest/browser-playwright` 5.0.5 with Playwright 1.64.1, Chromium only, headless), `gates` (Node). Vite 8.3.5 is
+  `@vitest/browser-playwright` 5.0.5 with Playwright 1.64.1, Chromium only, headless), `gates` (Node, in-process
+  gate tests) and `gates-integration` (Node, `gates/test/integration/`: tests that start a real tool; Stryker does
+  not run it, R-08, plan squad round 3). Vite 8.3.5 is
   pinned in the root devDependencies: it is a required peer of Vitest (`^6.4.0 || ^7.0.0 || ^8.0.0`) and would
   otherwise be auto-installed at an unpinned version. One root command, `pnpm test`, runs `gates/bin/test.ts`, which
   (1) checks that Playwright's Chromium executable exists and otherwise exits 2 naming `pnpm run setup:online`
@@ -48,7 +54,8 @@ round 1 re-pinned every registry package published less than 7 days before 2026-
   Phase 1 wires `pnpm test` plainly to `vitest run`; phase 2's green commit rewires it to `gates/bin/test.ts`.
 - **Test seam** (plan squad round 2): `test.ts` takes `--root <dir>` (the workspace whose tests it runs; default the
   repository root) and reads the browser path from `PLAYWRIGHT_BROWSERS_PATH`, like `setup-offline.ts` (R-04). Its
-  tests in `gates/test/` build a temporary workspace from a fixture tree under `gates/test/fixtures/` (package
+  report classification is tested in the `gates` project on recorded Vitest JSON reports; its end-to-end tests in
+  `gates/test/integration/` build a temporary workspace from a fixture tree under `gates/test/fixtures/` (package
   directories with test files), copy the repository's `vitest.config.ts` into it unchanged, link `node_modules` from
   the workspace, and run `test.ts --root <tmp>`. Fixtures are excluded from the repository's own Vitest run (R-10),
   so the tests never recurse into the repository suite, and they exercise the repository's configuration.
@@ -88,9 +95,10 @@ round 1 re-pinned every registry package published less than 7 days before 2026-
     translates pnpm's missing-tarball error into "missing: <package>; run pnpm run setup:online", then checks the
     Chromium executable the same way as `pnpm test`, and exits 2 on either failure.
   - **Test seam**: `setup-offline.ts` takes the pnpm store directory (pnpm's `store-dir` setting, from the
-    environment) and `PLAYWRIGHT_BROWSERS_PATH` from its environment and passes the environment on to pnpm. Its
-    tests run it against an empty temporary store and an empty temporary browser path, with the registry setting
-    pointed at a local TCP socket the test opens, and assert exit 2, a message naming the missing package (or
+    environment) and `PLAYWRIGHT_BROWSERS_PATH` from its environment and passes the environment on to pnpm. The
+    translation of pnpm's error text is tested in the `gates` project on recorded pnpm output; its
+    `gates-integration` tests run it against an empty temporary store and an empty temporary browser path, with the
+    registry setting pointed at a local TCP socket the test opens, and assert exit 2, a message naming the missing package (or
     Chromium) and `pnpm run setup:online`, and zero connections to that socket (FR-008 "never falls back to the
     network"). A test against a store filled by a fixture lockfile with no dependencies asserts exit 0.
   - **Supply-chain policy** (operator decision, plan squad round 1): `pnpm-workspace.yaml` sets
@@ -115,10 +123,10 @@ round 1 re-pinned every registry package published less than 7 days before 2026-
   typescript-eslint 8.72.0 `strictTypeChecked` + `stylisticTypeChecked`, over all repository TypeScript except
   `gates/plants/` and `gates/test/fixtures/`, plus `no-restricted-imports` rejecting relative `.js` specifiers (R-02).
   Its plant violates `@typescript-eslint/no-floating-promises`, a rule the test lint does not have. The type-aware
-  rules use typescript-eslint's project service, which resolves each file through the nearest `tsconfig.json`; a
-  lint plant carries its own `tsconfig.json` under the plant configuration rule (it extends the root
-  `tsconfig.json` and sets only `include` and `exclude`, R-10), so the project service resolves the plant file
-  through it with the repository's compiler options and no parser option changes in plant mode. ESLint loads a
+  rules use typescript-eslint's project service, which resolves each file through the nearest `tsconfig.json`. Lint
+  plants are `repo-tree` plants (R-10): their files sit at repository paths in a temporary repository that holds
+  the repository's own tsconfig files, so the project service resolves a plant file exactly as it resolves a
+  repository file, and no plant carries a `tsconfig.json` (plan squad round 3). ESLint loads a
   `.ts` config through jiti unless the `unstable_native_nodejs_ts_config` flag is passed, and jiti is only an
   optional peer of ESLint, so jiti 2.7.0 is pinned in the root devDependencies. The stable jiti path is preferred
   over an `unstable_` flag.
@@ -131,9 +139,9 @@ round 1 re-pinned every registry package published less than 7 days before 2026-
   `valid-expect-in-promise`, as errors; plus a local rule `ocelle/no-snapshot-only` (in `gates/eslint/`) that
   reports a test whose only assertions are snapshot matchers (`toMatchSnapshot`, `toMatchInlineSnapshot`,
   `toMatchFileSnapshot`). No upstream rule covers that pattern. None of these rules needs type information, so the
-  test-lint config uses the typescript-eslint parser without the project service and its plants carry no
-  `tsconfig.json`; if phase 3 finds a rule that needs types, the test-lint plants carry the same plant
-  `tsconfig.json` as the lint plants (R-05, R-10).
+  test-lint config uses the typescript-eslint parser without the project service. Test-lint plants are `repo-tree`
+  plants (R-10), so if phase 3 finds a rule that needs types, the copied tsconfig files serve it as they do for the
+  lint plants (R-05).
 - **Rationale**: a separate config keeps the test lint a separate named gate (FR-020) and lets its plants be run
   alone.
 
@@ -188,8 +196,9 @@ round 1 re-pinned every registry package published less than 7 days before 2026-
      is mutated (the story review's local run).
   4. The wrapper decides from Stryker's JSON report (`reporters` includes `json`), not from Stryker's exit code or
      `thresholds.break` (a crash and a low score both exit 1): any `Survived` or `NoCoverage` mutant on a changed
-     line is a finding (exit 1); `Killed`, `Timeout`, `RuntimeError` and `CompileError` pass (FR-011's definitions);
-     no report, or a report from a failed dry run, is exit 2.
+     line is a finding (exit 1); `Killed`, `Timeout` and `RuntimeError` are killed and pass, and `CompileError` (a
+     mutant the typescript-checker rejects) is invalid, neither killed nor surviving, and passes (FR-011's
+     definitions, amended in plan squad round 3); no report, or a report from a failed dry run, is exit 2.
   5. Equivalent mutants: `// Stryker disable next-line <mutator[,mutator]|all>: <reason>` directly above the code;
      Stryker reports them as `Ignored` with the reason, and the wrapper prints each as a record line (path, line,
      mutator, reason) for the review (FR-012). In the changed files the wrapper rejects, as findings, a next-line
@@ -199,9 +208,23 @@ round 1 re-pinned every registry package published less than 7 days before 2026-
 - **Gate source is in scope** (operator decision, plan squad round 1): gate tests in `gates/test/` import the gate's
   exported functions and run them in-process in the `gates` Vitest project, which the Stryker vitest-runner reaches.
   Each `gates/bin/<id>.ts` is a thin entry that calls an exported `run(argv, io)` returning the exit code; only its
-  `import.meta.main` guard line behaves differently only when the file runs as a script. A child-process test per
-  entry covers that line; Stryker cannot see a child process, so a mutant of the guard that survives may be recorded
-  as equivalent with a next-line record and its reason (FR-012), which the review sees in the report.
+  `import.meta.main` guard line behaves differently only when the file runs as a script.
+- **Pure decision logic, tool runs apart** (operator decision, plan squad round 3; the design rule of R-09): the
+  Stryker vitest-runner runs, for each mutant, the tests covering it, so a shard's time is mutants x covering-test
+  time / concurrency, not a function of files and lines. Each gate's decision logic (classifying tool output, diff
+  ranges, the shard split, the finding format, plant judging, the registry check) is a pure function, tested
+  in-process in the `gates` project on recorded tool output under `gates/test/fixtures/` (tsc diagnostics, ESLint,
+  Stylelint and Vitest JSON reports, Stryker JSON reports, `git diff --unified=0` and `git log` output, pnpm error
+  text). Tests that start a real tool (tsc, ESLint, Stylelint, Vitest with Chromium, Stryker, pnpm, git, a gate as a
+  child process, the plant job on plants) live in a separate Vitest project, `gates-integration`
+  (`gates/test/integration/`), which `pnpm test` runs and Stryker does not: `stryker.config.json` points the
+  vitest-runner at `vitest.mutation.config.ts`, which imports the project list of `vitest.config.ts` and leaves
+  out `gates-integration`. Phase 3 proves that red first with a gate test on a fixture repository (in
+  `gates-integration`): a mutant covered only by a `gates-integration` test is reported `NoCoverage`. The adapter
+  lines that only `gates-integration` tests cover are kept to the CLI entry (the `import.meta.main` guard) and the
+  call that spawns the tool; each of their mutants is recorded as equivalent with a next-line record and its reason
+  ("process boundary, covered by gates-integration", FR-012), which the review sees in the report. Any other
+  survivor in gate source is a finding like any other.
 - **Rationale**: line ranges give FR-011's "changed lines" precisely, so no incremental cache is needed and every
   run is cold (SC-005's "no earlier mutation result"). Issue #4's "incremental" intent is met by mutating only the
   change.
@@ -220,9 +243,15 @@ round 1 re-pinned every registry package published less than 7 days before 2026-
      `mutation-plan` succeeded and either `mutation-shard` succeeded or it was skipped because the plan had zero
      shards. A failed, cancelled or timed-out shard, or a failed plan, fails it. This is the check the ruleset
      requires (plan.md § Verification); the helper jobs are not required by name, since the matrix names vary.
-  The split (`--plan`) and `--files` are wrapper behaviour, tested red first in phase 3 by gate tests on fixture
-  repositories. No gate source file of this feature has more than 500 lines, so this feature's own pull request
-  splits into shards within the bound; SC-005 is measured on one full shard (quickstart step 12).
+  The split (`--plan`) and `--files` are wrapper behaviour: the split is a pure function tested in the `gates`
+  project on recorded diff output, and `--files` end to end by a `gates-integration` test on a fixture repository,
+  both red first in phase 3. The line bound does not by itself bound time; the design rule above does, because each
+  mutant runs only in-process tests. SC-005 is measured on this feature's real shards (operator decision, plan squad
+  round 3): from phase 3 on, the last task of phases 3 and 4 runs `pnpm run gate:mutation -- --base <phase 1
+  base.sha> --plan` and then each shard with `--files`, timed, and records the durations in
+  `FEATURE_DIR/reviews/phase-<N>/mutation-shards.md`, which the phase review reads; a shard whose local run takes
+  more than 10 minutes is a blocking review finding. The CI run of the feature's pull request is the measurement on
+  the runner of SC-001 (quickstart step 12).
 - **Story workflow (FR-007)**: `mutation_command: "pnpm run gate:mutation"`; the story review command is changed to
   read `FEATURE_DIR/reviews/phase-<N>/base.sha` and run `pnpm run gate:mutation -- --base <sha>`, a command the
   `.claude/settings.json` allowlist (`Bash(pnpm run:*)`) covers in unattended runs. No environment variable is used.
@@ -246,6 +275,12 @@ round 1 re-pinned every registry package published less than 7 days before 2026-
   findings from breakage (tsc exits 2 on a type error and 1 on a missing project; Stylelint's lint problem is 2 and
   its fatal error 1; Stryker and Vitest exit 1 both on findings and on crashes), so each wrapper reads the tool's
   structured output (contracts/gate-cli.md table) and exits 1 only when that output holds findings.
+- **Design rule** (operator decision, plan squad round 3): every gate is split into a pure decision part (parse
+  and classify the tool's output, compute ranges, shards and findings, judge plants) and a thin adapter (the CLI
+  entry and the call that spawns the tool or reads git). The decision part is tested in-process on recorded tool
+  output under `gates/test/fixtures/`; the adapter is tested in the `gates-integration` Vitest project, which
+  Stryker does not run (R-08). `--root <dir>` is part of every gate's adapter: it sets the repository root and the
+  working directory of the tool, and changes nothing else (R-10).
 - **Rationale**: exit 1 vs 2, together with the expected findings of each plant (R-10), lets the plant job tell "the
   gate caught the plant" from "the gate is broken".
 
@@ -260,40 +295,48 @@ round 1 re-pinned every registry package published less than 7 days before 2026-
   no finding (and, where given, exactly the expected records); an `error` case does not exit 2; a gate lacks a
   `fail`, a `pass` or an `error` case; or a plant has no or an invalid `plant.json`.
 - **Same configuration, only the inputs swapped** (FR-025, constitution VIII): plant mode runs the gate with the
-  repository's own configuration. Typecheck and lint plants carry a `tsconfig.json` with no keys other than
-  `extends`, `include` and `exclude`; in a `fail` or `pass` plant its `extends` resolves to the repository's root
-  `tsconfig.json`, the file the typecheck gate runs (`tsc -p tsconfig.json`), so every option the gate runs with,
-  including any a pull request adds to the root file, applies to the plant (operator decision, plan squad round 2).
-  `exclude` is allowed because it is inherited through `extends`: the root file excludes `gates/plants/**`, so the
-  plant sets `"exclude": []` (or a narrower list) to let its own files in. The typecheck `error` plant keeps the same
-  keys but its `extends` names a file that does not exist (tsc reports `TS5083`, which the wrapper classifies as
-  exit 2), so the missing base is its only breaking input. The lint plant's `tsconfig.json` is what typescript-eslint's
-  project service resolves the plant file through (R-05); test-lint plants carry none (R-06). ESLint and Vitest load
-  the repository's configs and only lift the `gates/plants/` exclusion for the plant directory; unit-test plants run
-  inside the named project of the repository's `vitest.config.ts`; style lint, prefix, CSP, sign-off and mutation
-  plants run in a temporary repository with the repository's configuration files (below); mutation uses the
-  repository's `stryker.config.json`. The plant job rejects (exit 1, "plant X carries gate configuration") a plant
-  directory that holds a tsconfig with any key other than `extends`, `include` and `exclude` (such as
-  `compilerOptions`, `files` or `references`), a `fail` or `pass` plant whose tsconfig `extends` does not resolve to
-  the root `tsconfig.json`, a tsconfig in a plant of a gate other than typecheck and lint, or any ESLint, Stylelint,
-  Vitest, Vite or Stryker configuration file.
-- **Normal input collection for file, commit and mutation plants** (operator decisions, plan squad rounds 1 and 2):
-  for sign-off and mutation (round 1), and for style lint, prefix and CSP (round 2, plant form `repo-tree`), the plant
-  job builds a temporary repository from the plant and runs the gate in normal mode with `--root <tmp>` (plus
-  `--range` or `--base`); `--root` changes only the repository root. Repo-tree: the plant's `tree/` directory holds
-  its input files at repository paths (for example `packages/elements/src/x.ts`, `packages/elements/src/x.stories.ts`,
-  `packages/styles/src/x.css`, `packages/tokens/dist/index.js`); the plant job copies the repository's gate
-  configuration files (`stylelint.config.ts`, the root `package.json`, the tsconfig files) into a temporary
-  directory unchanged, lays `tree/` over it, links `node_modules` from the workspace and runs the gate there. So the
-  gate's own file globs, its exclusions (test code, stories, `dist/`) and the path-bound postcss-lit syntax of R-07
-  are what decide which plant files it checks: a glob that misses covered files makes a fail plant pass and the
-  plant job fail. Sign-off: one commit per
-  record of `commits.txt` (author, message, and for a merge record a real merge of two branches), then
-  `--range <first parent of the first record>..HEAD`. Mutation: a first commit with the repository's gate
-  configuration (`stryker.config.json`, `vitest.config.ts`, the tsconfig files) and the plant's `base/` tree laid
-  out at repository paths (for example `packages/tokens/src/x.ts` or `gates/lib/x.ts`), a second commit with the
-  `head/` tree, `node_modules` linked from the workspace, then `--base <first commit>`. So base resolution, the git
-  log range and the diff parsing are exercised by every such plant.
+  repository's own configuration and swaps only the inputs. No plant carries configuration: the plant job rejects
+  (exit 1, "plant X carries gate configuration") a plant that holds, anywhere in its directory (including `tree/`,
+  `base/` and `head/`), a `tsconfig*.json` or any ESLint, Stylelint, Vitest, Vite or Stryker configuration file
+  (plan squad round 3: the plant-tsconfig exception of round 2 is gone, since no plant needs one).
+- **Normal input collection for every file, commit and mutation plant** (operator decisions, plan squad rounds 1, 2
+  and 3): for sign-off and mutation (round 1), for style lint, prefix and CSP (round 2) and for typecheck, code lint,
+  test lint, unit tests and config-copies (round 3), the plant job builds a temporary repository (outside the
+  repository, in the system temporary directory) from the plant and runs the gate in normal mode with
+  `--root <tmp>` (plus `--range` or `--base`); `--root` sets the repository root and the tool's working directory
+  and changes nothing else (R-09). Only the pins plants are presented differently: a pins plant is a whole
+  mini-workspace, which is the pins gate's full input (R-14).
+  - **Configuration set**: the files the plant job copies into every temporary repository unchanged, from the
+    working tree it runs in: the root `package.json`, `pnpm-workspace.yaml`, `tsconfig.base.json`, `tsconfig.json`,
+    `eslint.config.ts`, `eslint.test.config.ts`, `stylelint.config.ts`, `vitest.config.ts`,
+    `vitest.mutation.config.ts` and `stryker.config.json`; each `packages/*/package.json` and
+    `packages/*/tsconfig.json`; and the modules those configurations import (`gates/eslint/`, `gates/stylelint/`).
+    `node_modules` is linked from the workspace. The copied modules are clean repository source, so they add no
+    finding to any plant.
+  - **Repo-tree** (`repo-tree`): the plant's `tree/` directory holds its input files at repository paths (for
+    example `packages/tokens/src/x.ts`, `gates/lib/x.ts`, `packages/elements/test/x.test.ts`,
+    `packages/elements/src/x.stories.ts`, `packages/styles/src/x.css`, `packages/tokens/dist/index.js`,
+    `.specify/extensions/story/story-config.yml`); the plant job lays `tree/` over the configuration set and runs
+    the gate there. So the gate's own file collection decides which plant files it checks: the root `tsconfig.json`
+    `include` and `exclude` for typecheck, the flat configs' `files` and `ignores` for code lint and test lint (and
+    the nearest `tsconfig.json` the project service resolves through, R-05), each Vitest project's `include` and
+    `exclude` for unit tests, Stylelint's globs, `ignoreFiles` and the path-bound postcss-lit syntax of R-07 for
+    style lint, the scripts' roots for prefix and CSP, and the two fixed paths of FR-006 for config-copies. A glob
+    that misses covered files makes a fail plant pass and the plant job fail (US3 scenario 9). Each of these gates
+    has, besides its basic fail plant, fail plants at paths only its normal collection reaches (contracts/plants.md):
+    gate source under `gates/bin/` and `gates/lib/`, test code under `packages/*/test/` and colocated test files, an
+    element test that must run in Chromium, and the two story configuration paths. Near-miss pass plants put a
+    defect under `gates/test/fixtures/`, which every normal gate excludes (FR-028), so an exclusion that is lost
+    shows too.
+  - **Sign-off** (`commit-repo`): the plant job first makes an empty base commit (signed off by an invented RFC 2606
+    identity, `Plant Base <base@example.com>`), then one commit per record of `commits.txt` (author, message, and
+    for a merge record a real merge of two branches), then runs `--range <base commit>..HEAD`. The base commit gives
+    the first record a parent, so the range resolves and holds exactly the records (plan squad round 3).
+  - **Mutation** (`mutation-repo`): a first commit with the configuration set and the plant's `base/` tree laid out
+    at repository paths (for example `packages/tokens/src/x.ts` or `gates/lib/x.ts`), a second commit with the
+    `head/` tree, `node_modules` linked from the workspace, then `--base <first commit>`; mutation uses the
+    repository's `stryker.config.json` and `vitest.mutation.config.ts`.
+  So base resolution, the git log range and the diff parsing are exercised by every such plant.
 - **Registry check**: the plant job compares the gate ids in `gates.json`, the gate jobs of
   `.github/workflows/ci.yml` (all jobs except the plant job) and the FR-020 list held in `gates/lib/registry.ts`, and
   exits 1 naming each id missing from one of them ("gate X has no registry entry", "gate X has no CI job"). Its own
@@ -355,10 +398,11 @@ round 1 re-pinned every registry package published less than 7 days before 2026-
   hash `d08d4133bf0034e3d1ff29cddf2b0f13ca63290a` and only when it has no parent (FR-023 exempts one commit; a
   7-hex prefix could be mined in minutes). A gate test fixture record whose hash starts with `d08d413` but differs
   from the full hash, or that has a parent, is still reported `no-signoff`. Every other commit needs a
-  `Signed-off-by:` trailer equal to its author. A range that does not resolve, or that holds no commit, is exit 2. Plants are `commits.txt`
-  files in the same record format, from which the plant job builds a temporary repository and runs the gate in
-  normal mode (R-10). Every identity in a plant is invented and uses a reserved domain (RFC 2606, for example
-  `Ada Example <ada@example.com>`), never a real name or address (FR-034).
+  `Signed-off-by:` trailer equal to its author. A range that does not resolve, or that holds no commit, is exit 2.
+  Plants are `commits.txt` files in the same record format, from which the plant job builds a temporary repository
+  on an empty base commit and runs the gate in normal mode over `<base commit>..HEAD` (R-10). Every identity in a
+  plant is invented and uses a reserved domain (RFC 2606, for example `Ada Example <ada@example.com>`), never a real
+  name or address (FR-034).
 - **Rationale**: no GitHub App and no third-party action, so the check runs the same locally, in CI and on plants.
 
 ## R-14 Install-and-pins check (FR-027)
@@ -377,14 +421,17 @@ round 1 re-pinned every registry package published less than 7 days before 2026-
     squad round 1);
   - hoisting stays off: `shamefullyHoist`, a non-empty `publicHoistPattern` or a `nodeLinker` other than `isolated`
     is a finding, so root files resolve only declared dependencies.
-  Plant mode runs the same on a copied mini-workspace in the plant directory.
+  Plant mode (`--plant <dir>`) runs the same on the plant's mini-workspace; pins is the one gate whose plants are
+  not `repo-tree`, since a plant is its whole input (R-10).
 
 ## R-15 Configuration-copies check (FR-006)
 
 - **Decision**: `gates/bin/config-copies.ts` compares the two story configuration files byte for byte and checks that
   their `test_pathspec` equals FR-028's test code
   (`:(glob)**/*.test.ts :(glob)**/*.spec.ts :(glob)**/test/** :(glob)**/*.stories.ts`), which the current copies
-  already hold.
+  already hold. The two paths are fixed constants relative to the repository root, which `--root` sets; its plants
+  are `repo-tree` plants that lay the two copies at those paths (R-10), so two constants that name the same file, or
+  a wrong one, fail a plant.
 
 ## R-16 CI
 
@@ -392,10 +439,18 @@ round 1 re-pinned every registry package published less than 7 days before 2026-
   plant job, each a separate named check (FR-020). Actions are pinned by full commit SHA. The workflow sets
   top-level `permissions: contents: read` and nothing else; every `actions/checkout` step sets
   `persist-credentials: false`, so the token is not left in `.git/config` for dependency or pull-request code; no job
-  references a secret. A shared setup step restores the pnpm store and Playwright cache and runs
+  references a secret. A shared setup step restores the pnpm store and Playwright cache (restore only) and runs
   `pnpm run setup:online`. Mutation testing runs as a plan job, a matrix of shard jobs each with
   `timeout-minutes: 10`, and the verdict job named **Mutation testing** (R-08); the mutation jobs and the sign-off
   job check out with `fetch-depth: 0` and take their base from `github.event.pull_request.base.sha` (R-08, R-13).
+- **Cache warming** (operator decision, plan squad round 3): GitHub Actions scopes a pull request run's caches to its
+  merge ref, so other pull requests can restore only caches saved on the base branch. A second workflow,
+  `.github/workflows/cache.yml`, runs on `push` to `main` with top-level `permissions: contents: read`, checkout
+  with `persist-credentials: false` and no secret; it runs `pnpm run setup:online` and saves the pnpm store keyed on
+  the hash of `pnpm-lock.yaml` and the Playwright browser cache keyed on the pinned Playwright version. `ci.yml`
+  restores these keys and never saves, so pull request code never writes a cache another run reads. It is not a
+  gate and reports no required check. The feature's own pull request runs before the workflow has ever run on
+  `main`, so its jobs start cold (quickstart step 12).
 - **Required checks** (operator decision, plan squad round 2): the workflow runs the pull request's own `ci.yml`, so
   only a list held outside the branch makes a gate block the merge. The operator configures a ruleset (or branch
   protection) on `main` that requires the twelve check names of contracts/ci-checks.md, as a step of the feature

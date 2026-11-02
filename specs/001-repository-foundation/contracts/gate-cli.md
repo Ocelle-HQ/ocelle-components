@@ -11,14 +11,14 @@ Every gate runs as `pnpm run gate:<id>` from the repository root and follows one
 Every gate entry catches any exception at the top and exits 2, so Node's own exit 1 for an uncaught error never
 reads as "found defects".
 
-Plant mode: `pnpm run gate:<id> -- --plant <dir>` checks only the plant's inputs (contracts/plants.md) with the
-repository's own gate configuration, and follows the same exit codes; it is used by the `files`, `test-files`,
-`workspace` and `config-pair` plant forms. For the style-lint, prefix, CSP (`repo-tree`), sign-off and mutation
-gates the plant job instead builds a temporary repository from the plant and runs the gate in normal mode with
-`--root <tmp>` (plus `--range` or `--base`); `--root` changes only the repository root, so the gate's own file
-collection is exercised. `unit-tests` (`gates/bin/test.ts`) also takes `--root <dir>`, its test seam (research.md
-R-03). A gate MUST NOT read
-`gates/plants/` or `gates/test/fixtures/` outside plant mode.
+Plant mode: for every gate but pins, the plant job builds a temporary repository from the plant (contracts/plants.md:
+`repo-tree`, `commit-repo`, `mutation-repo`) with the repository's configuration copied in unchanged and runs the
+gate in normal mode with `--root <tmp>` (plus `--range` or `--base`), so the gate's own file collection is exercised
+(operator decisions, plan squad rounds 1 to 3). Every gate but the plant job takes `--root <dir>`: it sets the
+repository root and the working directory of the tool and changes nothing else (research.md R-09); for
+`unit-tests` (`gates/bin/test.ts`) it is also the test seam of research.md R-03. Only pins has a separate plant mode,
+`pnpm run gate:pins -- --plant <dir>`, which checks the plant's mini-workspace with the same rules and exit codes.
+A gate MUST NOT read `gates/plants/` or `gates/test/fixtures/` outside plant mode.
 
 | id | Check (CI) | Command (normal) | Checks |
 |---|---|---|---|
@@ -46,7 +46,7 @@ structured output. The tool's exit code is used only where it is unambiguous.
 | `lint`, `test-lint` | ESLint `--format json` | messages that are not fatal | ESLint exit 2 or no JSON (configuration errors), or a fatal message (a file that does not parse) |
 | `style-lint` | Stylelint `--formatter json` | warnings other than `CssSyntaxError` | Stylelint exit 1, 64 or 78, no JSON, or a `CssSyntaxError` warning |
 | `unit-tests` | Vitest `--reporter json` (plus the Chromium check of `gates/bin/test.ts`) | failed tests (one finding each, rule = the test's full name) | no report, the browser missing, no test file found in the run, a test file that fails to load, or errors outside tests (unhandled errors, failed collection) |
-| `mutation` | Stryker's JSON report (research.md R-08) | `Survived` or `NoCoverage` on a changed line; a disable comment other than a reasoned next-line record | no report, a failed dry run, an unresolvable `--base` |
+| `mutation` | Stryker's JSON report (research.md R-08) | `Survived` or `NoCoverage` on a changed line; a disable comment other than a reasoned next-line record (`CompileError` mutants are invalid and pass, FR-011) | no report, a failed dry run, an unresolvable `--base` |
 
 The script gates (`csp`, `prefix`, `config-copies`, `pins`, `signoff`, `plants`) produce findings themselves and
 follow the same split: an input they cannot read or parse is exit 2.
