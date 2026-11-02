@@ -39,7 +39,8 @@ The input names the phase: `phase=<N>` or a bare number. If it names none, stop 
 6. Write `FEATURE_DIR/reviews/phase-<N>/round-<k>-fixes.md` with one row per finding:
    `| ID | Resolution | Red test | Where |`, where Resolution is `fixed`, `disputed: <reason>` or
    `deferred: <reason>` (notes only; a blocking finding is never deferred).
-7. Commit the fixes and the note together: `fix(<feature>): phase <N> review round <k>`, signed off. Do not push.
+7. Commit the fixes, the note and the new evidence under `FEATURE_DIR/reviews/phase-<N>/` (red logs, `red-commits`)
+   together: `fix(<feature>): phase <N> review round <k>`, signed off. Do not push.
    Do not edit the review file and do not write a verdict: the next review round decides.
 
 ## Report

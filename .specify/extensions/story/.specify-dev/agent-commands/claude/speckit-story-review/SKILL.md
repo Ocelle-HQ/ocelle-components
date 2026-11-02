@@ -89,7 +89,9 @@ The input names the phase: `phase=<N>` or a bare number. If it names none, stop 
 
    `verdict` is `approved` only when there is no blocking finding, every check passes and `tdd_check` is `pass`
    (or a justified `exempt`); otherwise `changes_requested`.
-8. Commit only the review file: `docs(review): phase <N> round <k> — <verdict>`, signed off. Do not push.
+8. Commit the review file together with the evidence it rests on, and nothing else: everything new or changed
+   under `FEATURE_DIR/reviews/phase-<N>/` (`tdd-check.json`, the `check-*.log` and `red-*.log` files). Message:
+   `docs(review): phase <N> round <k> — <verdict>`, signed off. Do not push.
 
 ## Report
 
