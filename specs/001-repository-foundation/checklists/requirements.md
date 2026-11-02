@@ -40,7 +40,10 @@
   monospace match rule FR-022, style-lint scope FR-024, the install-and-pins gate FR-027, online install and offline
   setup FR-008, and checkable SC-001, SC-005 and SC-006); notes SPEC-1-12 to SPEC-1-20 are folded in where they touch
   the spec. See `reviews/spec/check-1-fixes.md`.
-- Open for the operator (spec check 1, questions 1 to 4): the FR-024 allow-list of literal values (SPEC-1-04), the
-  browser engines of FR-005 (SPEC-1-07), the pre-1.0 security contact of FR-032 and its FR-034 exemption
-  (SPEC-1-08), and the FR-023 sign-off rule (SPEC-1-09). Until they are answered, "Requirements are testable and
-  unambiguous" holds for every requirement except those four.
+- Operator answers (spec gate, 2026-11-02) to spec check 2 questions 1 to 4 are applied: the FR-024 allow-list of
+  literal values (SPEC-2-02), Chromium only in FR-005 (SPEC-2-03), the maintainers' GitHub handles as the pre-1.0
+  security contact in FR-032 with the FR-034 exemption for public handles (SPEC-2-04), and the FR-023 sign-off rule
+  (identity matches the author, agent sign-off valid, merge commits and root commit `d08d413` exempt) (SPEC-2-05).
+- Spec check 2 (2026-11-02): blocking finding SPEC-2-01 is fixed (every sample a gate must fail on is a plant under
+  `gates/plants/`, FR-009, FR-025, FR-028, US1 and US2 Independent Tests); notes SPEC-2-06 to SPEC-2-15 are folded in.
+  See `reviews/spec/check-2-fixes.md`. Every requirement is now testable and unambiguous.

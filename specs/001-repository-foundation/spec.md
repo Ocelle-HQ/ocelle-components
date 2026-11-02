@@ -25,10 +25,11 @@ command, so the next feature's phases can be proven red first.
 **Why this priority**: Nothing else can be built test-first until this exists; the red/green check reports
 "unavailable" today and blocks every phase with behaviour.
 
-**Independent Test**: In a fresh clone, install and run the single test command: a sample passing test makes it
-succeed, a sample failing test (in each of the three packages, and one needing a browser) makes it fail; the story
-workflow's red/green check on a demo phase reports "pass" instead of "unavailable". The sample tests are fixtures
-(FR-009): they are not exported and not part of any package's built output.
+**Independent Test**: In a fresh clone, install and run the single test command: the passing sample tests in the
+packages make it succeed. Then the plant job runs the same test command against the failing-test plants under
+`gates/plants/` (FR-009, FR-025): one set up as a test of each of the three packages and one needing a browser; the
+command fails on each. The normal test run never reads these plants (FR-028). The story workflow's red/green check on
+a demo phase reports "pass" instead of "unavailable".
 
 **Acceptance Scenarios**:
 
@@ -46,9 +47,9 @@ workflow's red/green check on a demo phase reports "pass" instead of "unavailabl
 5. **Given** a failing test in any one package, **When** the test command runs, **Then** it exits non-zero and names
    the failing test.
 6. **Given** a test that renders a custom element and reads the accessibility tree, **When** the test command runs,
-   **Then** the test runs in a real browser engine, not a simulated DOM.
-7. **Given** both copies of the story extension's configuration, **When** the red/green check runs on a phase with a
-   red commit, **Then** it uses the test command and reports `pass` or `fail`, never `unavailable`.
+   **Then** the test runs in a real browser engine (Chromium, FR-005), not a simulated DOM.
+7. **Given** both copies of the story extension's configuration (FR-006), **When** the red/green check runs on a
+   phase with a red commit, **Then** it uses the test command and reports `pass` or `fail`, never `unavailable`.
 8. **Given** a lockfile that does not match the manifests, or a manifest that declares a dependency by a range (such
    as `^1.2.3` or `~1.2.3`) instead of an exact version, **When** the install-and-pins gate (FR-027) runs, **Then** it
    fails and names the file.
@@ -63,8 +64,9 @@ rejects tests which cannot fail, and mutation testing of changed source that rep
 **Why this priority**: The constitution's Principle VIII names both as merge gates; the vacuous-test guard has them
 as "planned (issue #4)". Without them the story reviews carry that load alone.
 
-**Independent Test**: Plant each forbidden pattern in a scratch test and run the lint; change a covered line of
-sample source (a fixture, FR-009) in a way its tests do not check and run mutation testing on that change.
+**Independent Test**: Run the test lint against the plants under `gates/plants/` that hold each forbidden pattern
+(FR-009, FR-025); run mutation testing against the mutation plant, a change to a covered line of sample source that
+its tests do not check.
 
 **Acceptance Scenarios**:
 
@@ -108,8 +110,9 @@ plant: every gate fails, with a message naming the defect.
    line.
 5. **Given** a name that only contains `sk-` inside a longer word, such as `task-list`, `desk-row` or `--risk-level`,
    **When** the prefix check runs, **Then** it passes.
-6. **Given** a commit in the pull request without a `Signed-off-by` line, **When** the sign-off check runs, **Then**
-   it fails and names the commit.
+6. **Given** a non-merge commit in the pull request without a `Signed-off-by` line, or whose `Signed-off-by`
+   identity does not match its author, **When** the sign-off check runs, **Then** it fails and names the commit
+   (FR-023).
 7. **Given** each gate's planted defect, **When** the plant job runs, **Then** every gate fails on its plant; if any
    gate passes on its plant, or fails on one of its pass plants (FR-025), the plant job fails.
 8. **Given** a pull request, **When** the normal gates run, **Then** none of them reads `gates/plants/`, so the plants
@@ -136,7 +139,8 @@ in this feature depends on it.
 2. **Given** `CONTRIBUTING.md`, **When** a contributor reads it, **Then** it explains sign-off (`git commit -s`),
    states there is no contributor licence agreement, and points to the Spec Kit flow and the constitution.
 3. **Given** `SECURITY.md`, **When** a reporter reads it, **Then** it names GitHub private vulnerability reporting
-   (switched on when the repository goes public) and, until then, a direct private contact with the maintainers;
+   (switched on when the repository goes public) and, until then, the maintainers' GitHub handles as the private
+   contact (FR-032);
    what to include; and what response to expect; and it does not ask for public issues.
 4. **Given** `THIRD_PARTY_NOTICES`, **When** it is read, **Then** it lists every third-party asset that ships in a
    package and no asset that does not.
@@ -152,11 +156,13 @@ in this feature depends on it.
   silently skips browser tests.
 - A pull request with no source change: mutation testing must not mutate the whole code base.
 - A plant accidentally fixed or deleted: the plant job must fail ("gate X has no plant" or "plant X did not fail").
-- A commit authored by an agent: it needs a sign-off like any other commit.
+- A commit authored by an agent: it needs a sign-off like any other commit; a sign-off by the agent identity that
+  authored it is valid (FR-023).
+- A merge commit, or the repository's unsigned root commit `d08d413`: the sign-off check skips it (FR-023).
 - A lockfile change in a pull request without a matching manifest change: the install-and-pins gate fails (FR-027).
 - The offline setup runs on a machine where the online install never ran: it fails with a message naming the online
   install command, never reaches for the network (FR-008).
-- The story extension's two configuration copies disagree: a check must flag it.
+- The story extension's two configuration copies (FR-006) disagree: a check must flag it.
 - `THIRD_PARTY_NOTICES` while no third-party asset ships yet: it states that, and the font entry is added by #5 when
   the font is vendored.
 
@@ -167,27 +173,37 @@ in this feature depends on it.
 **Workspace and test command (Story 1)**
 
 - **FR-001**: The repository MUST be a workspace of exactly three packages, `@ocelle/tokens`, `@ocelle/styles` and
-  `@ocelle/elements`, each with no public surface yet (no tokens, styles or elements).
+  `@ocelle/elements`, each with no public surface yet (no tokens, styles or elements). No other workspace package,
+  private or public, exists; root configuration and gate scripts live in the repository outside the packages.
 - **FR-002**: The runtime and package-manager versions MUST be pinned in the repository, every dependency MUST be
   pinned to an exact version, and the lockfile MUST be committed.
 - **FR-003**: A frozen install from the lockfile MUST succeed in a fresh clone and MUST fail when the lockfile would
   change.
 - **FR-004**: One root command MUST run every test file (FR-028) and exit non-zero when any test fails or when it
   finds no test file at all.
-- **FR-005**: Tests of elements MUST run in a real browser engine.
-- **FR-006**: Both copies of the story extension's configuration MUST set the test command, the offline setup command
-  (FR-008) and the test file patterns of this repository, and MUST be identical; a check MUST fail when they differ.
-- **FR-007**: The mutation command MUST be set in both configuration copies (Story 2).
+- **FR-005**: Tests of elements MUST run in a real browser engine: Chromium, and only Chromium (operator decision,
+  2026-11-02).
+- **FR-006**: Both copies of the story extension's configuration, `.specify/extensions/story/story-config.yml` and
+  `tooling/speckit/extensions/story/story-config.yml`, MUST set the test command, the offline setup command (FR-008)
+  and the test file patterns, and MUST be identical; a check MUST fail when they differ. The test file patterns MUST
+  match exactly the test code of FR-028. The installer backup `.specify/extensions/.backup/story/story-config.yml`
+  is not read by the story workflow and is not part of the check.
+- **FR-007**: The mutation command MUST be set in both configuration copies (Story 2). Run outside a pull request (by
+  the story workflow's reviewer), it compares against a base commit passed in by its caller (for a phase, the
+  phase's base commit) instead of the pull request's base branch (FR-011).
 - **FR-008**: Installing has two documented commands:
   - The **online install** fetches the lockfile's packages from the configured package registry and the browser
-    engine(s) of FR-005 at the version pinned by the test tooling. It stores them in a local package store and a
+    engine of FR-005 at the version pinned by the test tooling. It stores them in a local package store and a
     browser cache outside the repository, and it changes no tracked file.
   - The **offline setup** (the story configuration's setup command) installs the workspace in a checkout using only
     that local store and cache, with no network access. It changes no tracked file. When the store or cache lacks
     anything it needs, it fails with a message naming what is missing and the online install command; it never
     falls back to the network.
-- **FR-009**: Sample tests and sample source used to demonstrate Stories 1 and 2 are fixtures or plants. They are not
-  exported by any package and are not part of any package's built output.
+- **FR-009**: Sample tests and sample source used to demonstrate Stories 1 and 2 are not exported by any package and
+  are not part of any package's built output. A sample that must pass every gate (a passing test that checks what it
+  tests) MAY live in a package as an ordinary test file. Every sample that a gate must fail on (a failing test, a
+  vacuous test, source with a change its tests do not check) is a plant under `gates/plants/` and is run only by the
+  plant job (FR-025, FR-028), never by the normal gates.
 
 **Test quality (Story 2)**
 
@@ -195,12 +211,14 @@ in this feature depends on it.
   conditionals, assertions outside a test, assertions that are not awaited or completed, and tests whose only
   assertion is a snapshot.
 - **FR-011**: Mutation testing MUST run on the package source (FR-028) changed relative to the pull request's base
-  branch, MUST fail when a mutant survives in changed code, and MUST report each survivor's location.
+  branch (outside a pull request, the base commit of FR-007), MUST fail when a mutant survives in changed code, and
+  MUST report each survivor's location.
 - **FR-012**: A surviving mutant MAY be recorded as equivalent only with a written reason, kept next to the mutated
   code. The mutation report MUST list every such record in the changed code, with its location and reason, so the
   review can see and record it.
 - **FR-013**: Mutation testing in CI MUST run under a job time limit of 10 minutes (SC-005). A run that exceeds the
-  limit MUST end as a failure, never as a pass.
+  limit MUST end as a failure, never as a pass. A pull request that changes more package source than the SC-005
+  bound is expected to be split into smaller pull requests; the limit is not raised for it.
 
 **Merge gates (Story 3)**
 
@@ -208,6 +226,7 @@ in this feature depends on it.
   (token-only), unit tests (the FR-004 command), test lint (FR-010), mutation testing (FR-011), the content-security
   check on built output (FR-021), the prefix check (FR-022), the configuration-copies check (FR-006), the
   install-and-pins check (FR-027) and the sign-off check (FR-023). Each gate checks exactly the files FR-028 gives it.
+  The plant job (FR-025) MUST run on every pull request as its own named check, alongside these gates.
 - **FR-021**: The content-security check MUST fail on any of these in the packages' built output (every JavaScript,
   CSS and HTML file the package build produces): an inline `<script>` element, a `<style>` element or `style`
   attribute, an event handler attribute (`on*=`), each in markup (HTML files and HTML templates inside JavaScript),
@@ -220,16 +239,41 @@ in this feature depends on it.
   - any monospace font family in a font declaration, case-insensitive: the generic families `monospace` and
     `ui-monospace`, and the named monospace families Menlo, Monaco, Consolas, Courier, Courier New, SFMono-Regular,
     SF Mono, Liberation Mono, DejaVu Sans Mono, Lucida Console, Roboto Mono, Source Code Pro, Fira Code, Fira Mono,
-    JetBrains Mono, Cascadia Code and Cascadia Mono.
-- **FR-023**: The sign-off check MUST fail on any commit in a pull request without a `Signed-off-by` line.
+    JetBrains Mono, Cascadia Code and Cascadia Mono. A font declaration is a CSS `font-family` or `font` declaration
+    or an `@font-face` `font-family` descriptor, in a stylesheet or in a style template embedded in TypeScript.
+
+  Test files are in scope, so a test that needs a forbidden name does not write it as a literal (it builds the name at
+  run time, for example from parts); literal forbidden names belong only in plants under `gates/plants/`.
+- **FR-023**: The sign-off check MUST fail on any commit in a pull request (FR-028) that has no `Signed-off-by` line
+  whose identity (name and email) matches the commit's author. A commit authored by an agent and signed off by that
+  same agent identity passes; operator accountability for agent work comes from the triage and gate records, not
+  from the sign-off. Merge commits and the repository's root commit `d08d413` are exempt (operator decision,
+  2026-11-02).
 - **FR-024**: The style lint MUST reject raw colour, font, size, radius, shadow and duration values in the styles it
   covers (FR-028), without depending on any design token existing. It covers styles embedded in the TypeScript of
   `@ocelle/elements` (tagged style templates) and every stylesheet in the source of `@ocelle/elements` and
   `@ocelle/styles`. The token definitions in `@ocelle/tokens` are excluded, since they are the raw values.
+  In the covered styles a value MAY contain, without a token, only (operator decision, 2026-11-02):
+  - `0` and percentages (such as `100%`);
+  - CSS keywords, such as `auto`, `inherit`, `initial`, `unset`, `none`, `currentColor` and `transparent`; a named
+    colour (such as `red`) and a font family name are raw values, not keywords;
+  - unitless numbers in properties that take them: `line-height`, `flex` (and its longhands), `z-index`, `opacity`
+    and `order`;
+  - `fr` units;
+  - `calc()` whose operands are tokens and the values above.
+
+  Everything else is rejected, including every length with a unit (such as `px`, `rem`, `em`, `vh`, `vw`, `ch`), every
+  time (`ms`, `s`), every colour literal (hex, `rgb()`, `hsl()` and similar) and every raw font family.
 - **FR-025**: Every gate of FR-020 MUST have at least one planted defect under `gates/plants/`, and a CI job (the plant
   job) MUST run each gate against its plants and fail unless every gate fails on each of its plants. A gate MAY also
-  have pass plants (near-misses it must accept); the plant job MUST fail when a gate fails on a pass plant. At least
-  these plants exist:
+  have pass plants (near-misses it must accept); the plant job MUST fail when a gate fails on a pass plant. Gates
+  that do not read ordinary source files are given their plants in the form they read: the plan defines, for each
+  gate, how its plant is presented to it (for example a commit range or bundle for the sign-off check, prebuilt
+  output for the content-security check, a source-and-base pair for mutation testing). At least these plants exist:
+  - unit tests: a failing test set up as a test of each of the three packages, and a failing test that needs a
+    browser (US1);
+  - test lint: one plant for each of the seven forbidden patterns of FR-010;
+  - mutation testing: a change to a covered line of sample source that its tests do not check;
   - style lint: a raw literal inside a style template embedded in a TypeScript file, and one in a stylesheet;
   - prefix check: an `sk-` element name, a `--sk-` custom property, an `sk-` event name, a generic `monospace` and a
     named monospace family; and the pass plants `task-list`, `desk-row` and `--risk-level`;
@@ -240,23 +284,28 @@ in this feature depends on it.
 - **FR-027**: The install-and-pins check MUST fail when the lockfile does not match the manifests (a frozen install
   would change it), when any manifest declares a dependency by anything other than an exact version, or when the
   runtime or package-manager version pin is missing or is not an exact version.
-- **FR-028**: Gate scope. Definitions: **package source** is every file in a package's directory except its test
-  files and its built output; **test file** is a file whose name ends in `.test.ts` or `.spec.ts`; **built output**
-  is every file the package build produces; **documentation and tooling** is `specs/`, `.specify/`, `.claude/`,
-  `tooling/`, `knowledge/`, `triage/` and every Markdown file. `gates/plants/` and installed dependencies are excluded
-  from every gate except the plant job, which reads only `gates/plants/`. Within that, each gate checks:
+- **FR-028**: Gate scope. Definitions: **test file** is a file whose name ends in `.test.ts` or `.spec.ts`; **test
+  code** is every test file, every file under a directory named `test`, and every file whose name ends in
+  `.stories.ts`; **package source** is every file in a package's directory except its test code and its built output;
+  **built output** is every file the package build produces; **documentation and tooling** is `specs/`, `.specify/`,
+  `.claude/`, `tooling/`, `knowledge/`, `triage/` and every Markdown file; **repository TypeScript** is every
+  TypeScript file in the repository, inside or outside the packages (root configuration and gate scripts included).
+  `gates/plants/`, installed dependencies and built output are excluded from every gate except where the table names
+  built output; the plant job reads only `gates/plants/`. Any sample a gate must fail on is a plant (FR-009), so no
+  normal gate ever sees one. Within that, each gate checks:
 
   | Gate | Files checked |
   |------|---------------|
-  | typecheck, code lint | every TypeScript file in the workspace |
+  | typecheck, code lint | repository TypeScript |
   | style lint | the styles of FR-024 |
-  | unit tests, test lint | every test file in the workspace |
-  | mutation testing | package source TypeScript changed relative to the pull request's base branch |
+  | unit tests | every test file in the repository |
+  | test lint | all test code in the repository |
+  | mutation testing | package source TypeScript changed relative to the pull request's base branch (FR-011) |
   | content-security check | built output of the three packages |
-  | prefix check | package source, test files and built output of the three packages; not documentation and tooling |
-  | configuration-copies check | the two story configuration copies |
+  | prefix check | package source, test code and built output of the three packages; not documentation and tooling |
+  | configuration-copies check | the two story configuration copies named in FR-006 |
   | install-and-pins check | the workspace and package manifests, the lockfile and the version pin files |
-  | sign-off check | the commits in the pull request (base branch to head) |
+  | sign-off check | the commits in the pull request (base branch to head), except those FR-023 exempts |
 
 **Licence and governance (Story 4)**
 
@@ -264,13 +313,15 @@ in this feature depends on it.
 - **FR-031**: `CONTRIBUTING.md` MUST explain sign-off, state that there is no contributor licence agreement, and
   point to the Spec Kit flow and the constitution.
 - **FR-032**: `SECURITY.md` MUST name GitHub private vulnerability reporting as the reporting channel and state that
-  it is switched on when the repository goes public (1.0.0, #11); until then it MUST tell reporters to contact the
-  maintainers directly and privately, not through an issue. It MUST say what to include in a report and the expected
-  response time, and MUST NOT ask for public issues.
+  it is switched on when the repository goes public (1.0.0, #11); until then it MUST name the maintainers' GitHub
+  handles (the same handles as in the repository's `CODEOWNERS`) as the private contact and tell reporters to contact
+  them directly and privately, not through an issue (operator decision, 2026-11-02). It MUST say what to include in
+  a report and the expected response time, and MUST NOT ask for public issues.
 - **FR-033**: `THIRD_PARTY_NOTICES` MUST list every third-party asset that ships in a package with its licence, and
   only those.
 - **FR-034**: No file of this feature MAY contain a secret, credential or access token, or personal data. This is
-  verified by the story review; this feature adds no secret-scan gate.
+  verified by the story review; this feature adds no secret-scan gate. Public GitHub handles (such as the maintainer
+  handles of FR-032) are not personal data under this rule (operator decision, 2026-11-02).
 
 ### Key Entities
 
@@ -279,7 +330,7 @@ in this feature depends on it.
 - **Plant**: a deliberate defect under `gates/plants/` that one gate must fail on; a pass plant is a near-miss under
   `gates/plants/` that the gate must accept.
 - **Story configuration**: the story extension's settings (test, setup, mutation commands; test file patterns),
-  present in two copies that must match.
+  present in the two copies named in FR-006, which must match.
 - **Equivalent-mutant record**: a surviving mutant accepted with its location and reason, kept next to the mutated
   code and listed in the mutation report.
 
@@ -289,18 +340,22 @@ in this feature depends on it.
 
 - **SC-001**: In a fresh clone, the online install plus the full test run completes in under 5 minutes on the
   GitHub-hosted `ubuntu-latest` standard runner available to this repository (2 vCPU while it is internal), with no
-  cache restored (empty package store and browser cache).
+  cache restored (empty package store and browser cache). It is measured by timing such a cold-cache CI run when the
+  feature is verified; it is not a merge gate.
 - **SC-002**: In the plant job, every gate of FR-020 fails on 100% of its plants and accepts 100% of its pass plants
   (FR-025).
 - **SC-003**: The story workflow's red/green check on a demo phase reports `pass` (not `unavailable`) after this
   feature, and `fail` when its final tests pass against the code from before the phase.
-- **SC-004**: Each of the six forbidden test patterns of FR-010 is reported as an error in 100% of planted cases.
+- **SC-004**: Each of the seven forbidden test patterns of FR-010 (no assertion, skipped, focused, assertion inside a
+  conditional, assertion outside a test, assertion not awaited or completed, snapshot as the only assertion) is
+  reported as an error in 100% of its plants (FR-025).
 - **SC-005**: Mutation testing of a pull request that changes up to 10 package source files and up to 500 lines of
   package source finishes in under 10 minutes on the runner of SC-001, with the package store and browser cache
   restored and no earlier mutation result available. The CI job's 10-minute limit (FR-013) enforces it.
 - **SC-006**: A script run in a fresh clone confirms that `LICENSE`, `CONTRIBUTING.md`, `SECURITY.md` and
   `THIRD_PARTY_NOTICES` exist at the repository root under exactly these names, that `CONTRIBUTING.md` contains the
-  sign-off rule (`Signed-off-by`, `git commit -s`), and that `SECURITY.md` contains the reporting route of FR-032.
+  sign-off rule (`Signed-off-by`, `git commit -s`), and that `SECURITY.md` contains the reporting route of FR-032
+  (GitHub private vulnerability reporting, and the maintainers' GitHub handles from `CODEOWNERS`).
 
 ## Assumptions
 
@@ -313,7 +368,8 @@ in this feature depends on it.
   and FR-026 makes that visible in `gates/README.md`.
 - The repository stays internal until 1.0.0 (#2, #11); nothing is published in this feature. GitHub private
   vulnerability reporting is documented for public repositories, so it is switched on at the 1.0.0 flip (#11);
-  until then reports go privately to the maintainers (operator decision, 2026-11-02).
+  until then reports go privately to the maintainers, named by their GitHub handles as in `CODEOWNERS` (operator
+  decisions, 2026-11-02).
 - The first phase may use `tdd-exempt.md` for the workspace and runner bootstrap only (install, the three package
   skeletons and the test command's wiring), since no runner exists before it. The behaviour in that phase (the
   FR-004 exit codes, the FR-006 configuration-copies check, the zero-test and missing-browser cases) is written red
