@@ -33,7 +33,12 @@ never picks a phase itself.
 3. Find the `## Phase <N>:` section. Its open tasks (`- [ ] T...`) are the work. If it has none, report that and
    stop without a commit. For a user-story phase, read that story in `spec.md` (acceptance scenarios,
    independent test): the phase is done when those scenarios pass, not merely when its tasks are ticked.
-4. **Red.** Write the tests for the whole phase first: one or more tests per acceptance scenario and per
+4. **Scaffold (only if the tests need modules that do not exist yet).** Commit the new modules with their exported
+   signatures and no behaviour (functions throw `not implemented` or return a neutral value; nothing is wired into
+   existing code), and no test file: `chore(<feature>): phase <N> scaffold`, signed off. Run
+   `.specify/extensions/story/scripts/scaffold.sh <N>`; it must report `"recorded": true`. At most one scaffold per
+   phase, before the red commit. Without it, red tests would fail on a missing module, which is the wrong reason.
+5. **Red.** Write the tests for the whole phase first: one or more tests per acceptance scenario and per
    behaviour the tasks name (rendered DOM and accessibility tree, events and payloads, keyboard paths, token
    styles). Each test asserts something that is false today. No assertion-free tests, no assertions in
    conditionals, no `skip`/`only`, no snapshot as the only assertion, no assertion on a mock instead of the unit.
@@ -46,12 +51,12 @@ never picks a phase itself.
    - If `red.sh` reports `unavailable` (no test runner yet), the phase must be the one that sets the runner up,
      or a phase without behaviour: in that case write `FEATURE_DIR/reviews/phase-<N>/tdd-exempt.md` saying
      why no test could fail for it, and skip the red step.
-5. **Green.** Implement the tasks in order, respecting `[P]` markers and file dependencies, keeping to the
+6. **Green.** Implement the tasks in order, respecting `[P]` markers and file dependencies, keeping to the
    constitution. Do not weaken, skip, delete or loosen any test written in the red step. If a red test is
    wrong, replace it with a stricter one and record the reason in the commit body.
-6. Tick each finished task as `- [X]` in `tasks.md`. Leave a task open if it is not finished, and say why.
-7. Run the project's fast checks that exist (typecheck, lint, unit and interaction tests). All tests must pass.
-8. Commit: `feat(<feature>): phase <N> — <phase title>` with the task ids in the body, signed off. Do not push.
+7. Tick each finished task as `- [X]` in `tasks.md`. Leave a task open if it is not finished, and say why.
+8. Run the project's fast checks that exist (typecheck, lint, unit and interaction tests). All tests must pass.
+9. Commit: `feat(<feature>): phase <N> — <phase title>` with the task ids in the body, signed off. Do not push.
 
 ## Report
 
