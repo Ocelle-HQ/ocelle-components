@@ -126,6 +126,41 @@ describe("changedFiles", () => {
   });
 });
 
+describe("changedFiles and inScope (added: mutation run)", () => {
+  it("reads counts of 10 and more, ignores hunk-like text in added lines and lines before the first file header", () => {
+    const diff = [
+      "+++ b/gates/lib/before-any-header.ts",
+      "@@ -0,0 +1 @@",
+      "+export const early = 1;",
+      "diff --git a/gates/lib/y.ts b/gates/lib/y.ts",
+      "index 1111111..2222222 100644",
+      "--- a/gates/lib/y.ts",
+      "+++ b/gates/lib/y.ts",
+      "@@ -30,15 +40,2 @@ export const a = 1;",
+      '+const hunk = "@@ -1 +90 @@";',
+      "+export const b = 2;",
+      "@@ -50,0 +56,12 @@ export const c = 3;",
+      ...Array.from({ length: 12 }, (_, i) => `+export const d${String(i)} = ${String(i)};`),
+      "",
+    ].join("\n");
+    expect(changedFiles(diff)).toEqual([
+      {
+        path: "gates/lib/y.ts",
+        ranges: [
+          { start: 40, end: 41 },
+          { start: 56, end: 67 },
+        ],
+        lines: 14,
+      },
+    ]);
+  });
+
+  it("keeps gate source whose path only contains a package's dist directory further down", () => {
+    expect(inScope("gates/lib/packages/tokens/dist/a.ts")).toBe(true);
+    expect(inScope("packages/tokens/dist/a.ts")).toBe(false);
+  });
+});
+
 describe("mutateSpecs", () => {
   it("gives one Stryker mutate entry path:start-end per changed range", () => {
     expect(

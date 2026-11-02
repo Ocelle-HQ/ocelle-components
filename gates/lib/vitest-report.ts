@@ -1,5 +1,6 @@
 // Classification of a Vitest JSON report (contracts/gate-cli.md, unit-tests row).
-import { isAbsolute, relative } from "node:path";
+import { relative } from "node:path";
+import { plural } from "./findings.ts";
 import type { Finding, GateResult } from "./findings.ts";
 
 /** One Vitest run as the unit-tests gate saw it. */
@@ -49,23 +50,21 @@ function firstLine(text: string): string {
   return line ?? "";
 }
 
-function plural(n: number, word: string): string {
-  return `${String(n)} ${word}${n === 1 ? "" : "s"}`;
-}
-
 function parse(text: string | undefined): Report | undefined {
   if (text === undefined) return undefined;
+  let value: unknown;
   try {
-    const value: unknown = JSON.parse(text);
-    if (typeof value !== "object" || value === null || !Array.isArray((value as Report).testResults)) return undefined;
-    return value as Report;
-  } catch {
+    value = JSON.parse(text);
+  }
+  // Stryker disable next-line BlockStatement: equivalent, an empty catch leaves value undefined, which the check below also rejects
+  catch {
     return undefined;
   }
+  return Array.isArray((value as { testResults?: unknown } | null)?.testResults) ? (value as Report) : undefined;
 }
 
+/** A report path relative to the root; a path outside the root stays as it is. Vitest reports absolute paths. */
 function repoPath(root: string, file: string): string {
-  if (!isAbsolute(file)) return file;
   const rel = relative(root, file);
   return rel.startsWith("..") ? file : rel;
 }

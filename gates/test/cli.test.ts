@@ -116,3 +116,23 @@ describe("parseArgs", () => {
     expect(() => parseArgs(["--root"], "/w")).toThrow(/--root/);
   });
 });
+
+// Added in the phase 3 mutation catch-up of phase 2 (T049): mutants that survived the phase 2 tests.
+describe("entry and parseArgs (mutation catch-up)", () => {
+  it("writes nothing to stderr when run() returns 0, 1 or 2", async () => {
+    const runs = [0, 1, 2].map(async (n) => {
+      const c = capture();
+      return { code: await entry(() => n, [], c.io), err: c.err };
+    });
+    expect(await Promise.all(runs)).toEqual([
+      { code: 0, err: [] },
+      { code: 1, err: [] },
+      { code: 2, err: [] },
+    ]);
+  });
+
+  it("rejects --root without a directory and --root with an empty one, naming the option", () => {
+    expect(() => parseArgs(["--root"], "/w")).toThrow("--root needs a directory");
+    expect(() => parseArgs(["--root", ""], "/w")).toThrow("--root needs a directory");
+  });
+});

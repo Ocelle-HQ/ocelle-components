@@ -29,7 +29,7 @@ export function parseArgs(argv: readonly string[], cwd: string): Context {
   let root = cwd;
   const args: string[] = [];
   for (let i = 0; i < argv.length; i += 1) {
-    const arg = argv[i] ?? "";
+    const arg = String(argv[i]);
     if (arg !== "--root") {
       args.push(arg);
       continue;
@@ -65,12 +65,16 @@ export function processIo(): Io {
   return {
     cwd: process.cwd(),
     env: process.env,
+    // Stryker disable next-line all: process boundary, covered by gates-integration
     out: (line) => process.stdout.write(`${line}\n`),
+    // Stryker disable next-line all: process boundary, covered by gates-integration
     err: (line) => process.stderr.write(`${line}\n`),
   };
 }
 
 /** Runs a gate as the process entry point and sets the process exit code. */
+// Stryker disable next-line all: process boundary, covered by gates-integration
 export async function main(run: Run): Promise<void> {
+  // Stryker disable next-line all: process boundary, covered by gates-integration
   process.exitCode = await entry(run, process.argv.slice(2), processIo());
 }

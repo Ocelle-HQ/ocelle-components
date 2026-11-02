@@ -19,6 +19,11 @@ export type GateResult =
 /** Writes one line of output. */
 export type Write = (line: string) => void;
 
+/** A count and its noun: `1 file`, `2 files`. */
+export function plural(count: number, noun: string): string {
+  return `${String(count)} ${noun}${count === 1 ? "" : "s"}`;
+}
+
 /** Joins the lines of a text into one line, so every finding and every cause stays one output line. */
 export function oneLine(text: string): string {
   return text.replace(/\s*\r?\n\s*/g, " ").trim();

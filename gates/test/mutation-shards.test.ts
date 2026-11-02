@@ -195,6 +195,31 @@ describe("mutation gate: --plan, --files and --base", () => {
     });
   });
 
+  it("exits 2 with the first line of git's message after leading blank lines (added: mutation run)", async () => {
+    const git = fakeGit(diff, "\n  fatal: bad revision\nmore detail\n");
+    expect(await gate(["--base", base], { git, read: sources, stryker: noStryker })).toEqual({
+      code: 2,
+      out: [],
+      err: ["mutation: could not run: git diff failed (fatal: bad revision)"],
+    });
+  });
+
+  it("names every listed file with no changed line, comma-separated (added: mutation run)", async () => {
+    expect(
+      await gate(["--base", base, "--files", "gates/lib/x.ts,gates/lib/a.ts,gates/lib/y.ts"], {
+        git: fakeGit(diff),
+        read: sources,
+        stryker: noStryker,
+      }),
+    ).toMatchObject({
+      code: 2,
+      err: [
+        "mutation: could not run: --files names a file with no changed package or gate source line: " +
+          "gates/lib/x.ts, gates/lib/y.ts; run --plan for the shards",
+      ],
+    });
+  });
+
   it("exits 2 when Stryker's report cannot be used, after nothing else is printed", async () => {
     const stryker: MutationTools["stryker"] = () =>
       Promise.resolve({ report: undefined, exitCode: 1, output: "ERROR Stryker Something broke.\n" });

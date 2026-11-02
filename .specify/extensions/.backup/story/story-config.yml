@@ -8,8 +8,8 @@
 #                only these (and the feature's specs/ directory).
 # mutation_command  Mutation test run for the reviewer; empty until set up (see the foundation work).
 # knowledge_dir  The OKF bundle that run summaries are written to (runs/<feature>.md), two levels below the root.
-test_command: ""
-setup_command: ""
+test_command: "pnpm test"
+setup_command: "pnpm run setup:offline"
 test_pathspec: ":(glob)**/*.test.ts :(glob)**/*.spec.ts :(glob)**/test/** :(glob)**/*.stories.ts"
-mutation_command: ""
+mutation_command: "pnpm run gate:mutation"
 knowledge_dir: "knowledge/speckit-flows"

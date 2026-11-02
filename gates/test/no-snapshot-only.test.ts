@@ -131,3 +131,30 @@ describe("ocelle plugin", () => {
     ]);
   });
 });
+
+// Added in the green step to kill surviving mutants (phase 3 mutation run): a call chain that does not start at
+// `expect` is not an assertion, and a computed member is not a modifier.
+new RuleTester().run("ocelle/no-snapshot-only (call chains)", noSnapshotOnly, {
+  valid: [],
+  invalid: [
+    {
+      name: "a matcher-named call on a call that is not expect is not an assertion",
+      code: ['it("checks", () => {', "  check(a).toBe(1);", "  expect(a).toMatchSnapshot();", "});"].join("\n"),
+      errors: [reported(1)],
+    },
+    {
+      name: "a computed member is not a modifier, and a real assertion next to it keeps the test",
+      code: [
+        'it("computed", () => {',
+        '  expect(a)["not"].toMatchSnapshot();',
+        "  expect(a).toMatchSnapshot();",
+        "});",
+        'it("computed and real", () => {',
+        '  expect(a)["not"].toMatchSnapshot();',
+        "  expect(a).toBe(1);",
+        "});",
+      ].join("\n"),
+      errors: [reported(1)],
+    },
+  ],
+});
