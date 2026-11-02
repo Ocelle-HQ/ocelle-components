@@ -7,7 +7,9 @@ in_scope: [4]
 out_of_scope: [1, 2, 3, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17]
 semver: none
 spec_prompt: "Build the repository foundation from issue #4 (triage/001-repository-foundation.md): Apache-2.0 LICENSE, CONTRIBUTING.md with DCO sign-off, SECURITY.md with a private reporting channel, THIRD_PARTY_NOTICES, a pinned pnpm workspace with empty @ocelle/tokens, @ocelle/styles and @ocelle/elements packages, a Vitest (browser mode) runner behind one command wired into story-config.yml (both copies), test-quality lint, incremental StrykerJS mutation testing of changed source, and pull-request CI for typecheck, ESLint, Stylelint token-only, unit tests, strict-CSP check on built output, the sk-/monospace prefix check and DCO, each gate proven by a planted defect under gates/plants/; Storybook build, visual regression and axe stay with #10, and tokens with #5."
-status: proposed
+status: approved
+decided_by: "human:Claude"
+decided_at: 2026-11-02T15:32:14Z
 ---
 
 # Triage 001: Repository foundation - licence, governance, workspace, test tooling and CI
