@@ -2,7 +2,7 @@ schema_version: "1.0"
 workflow:
   id: "ocelle-sdd"
   name: "Ocelle SDD Cycle with Spec Check, Plan Squad and Story Reviews"
-  version: "1.2.0"
+  version: "1.3.0"
   author: "Ocelle-HQ"
   description: "specify → spec check → plan → adversarial plan squad → tasks → analyze, with operator gates, then implementation by user story with review and fix rounds"
 
@@ -26,6 +26,12 @@ steps:
     integration: "{{ inputs.integration }}"
     input:
       args: "{{ inputs.spec }}"
+
+  # Governance: the feature must trace to an approved mission triage record; fails the run otherwise.
+  - id: link-triage
+    type: shell
+    run: ".specify/extensions/triage/scripts/link.sh"
+    output_format: json
 
   # Spec-only analysis (the full /speckit-analyze needs tasks.md), fix loop, then the spec gate.
   - id: spec-check

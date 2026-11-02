@@ -15,6 +15,29 @@ specify workflow remove ocelle-story && specify workflow add --dev tooling/speck
 # likewise ocelle-implement and ocelle-sdd
 ```
 
+## Two ways to run the same flow
+
+| | Interactive: `/ocelle-run` | Unattended: Spec Kit workflows |
+|---|---|---|
+| Start | `/ocelle-run #4` or `/ocelle-run resume` in Claude Code | `specify workflow run ocelle-triage -i issues="#4"` |
+| Roles | subagents (agent profiles in `.claude/agents/`) | one `claude -p` process per command step |
+| Gates | questions in the chat | terminal prompts or `specify workflow resume` |
+| Loops and caps | the skill, deciding only from the scripts' JSON | the Spec Kit engine |
+| Permissions | the session's, answered live | the `.claude/settings.json` allowlist only |
+
+Both use the same commands, scripts and record files, so run summaries and the diary compare across them.
+
+**Agent profiles:** `triage-tara`, `analyst-anouk` (spec check, analysis), `planner-pim` (spec and squad fixes, op
+setup; never code), `lens-lotte`, `refuter-rik`, `verifier-vera`, `implementer-ivan`, `reviewer-renata`. Each
+follows the matching command file, so both runners share one procedure. Read-only roles have no Edit tool.
+
+**Enforced outside the model:**
+- `bin/scope-check.sh <role> <base>`: after each delegated step, the files changed since `<base>` must be ones the
+  role may touch (for example a review only under `reviews/phase-N/`); `/ocelle-run` redoes a step that strays.
+- `bin/guard-commit.sh`, a PreToolUse hook in `.claude/settings.json`: blocks `git commit --no-verify`, and blocks
+  a commit that changes code unless the current feature links to an approved triage record (`triage.ref` for a
+  mission, written by `link.sh`; the `triage:` field of `op.md` for an op).
+
 ## What runs
 
 | Workflow | Does |

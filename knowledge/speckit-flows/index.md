@@ -8,6 +8,8 @@ okf_version: "0.2"
 
 # Flows
 
+* [/ocelle-run](flows/ocelle-run.md) - Interactive runner: subagents for every role, script-driven loops, gates in the chat
+* [Agent profiles](flows/agent-profiles.md) - The eight subagents and their tools
 * [ocelle-triage](flows/ocelle-triage.md) - Start here: triage issues into a mission, an op, a fold or no work
 * [triage-tara](flows/triage-tara.md) - The agent profile that triages
 * [triage extension](flows/triage-extension.md) - Commands and scripts for triage and ops
@@ -23,6 +25,7 @@ okf_version: "0.2"
 
 * [Vacuous tests](guards/vacuous-tests.md) - The checks that stop a test from passing without testing anything
 * [Review escalation](guards/review-escalation.md) - What happens when a phase is not approved after a batch of rounds
+* [Role scope and commit guard](guards/role-scope.md) - Deterministic checks on what each role touches and on code commits without triage
 * [Adversarial plan squad](guards/adversarial-squad.md) - Stops a wrong or untestable plan before tasks are generated
 
 # Experiments

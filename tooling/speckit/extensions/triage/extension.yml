@@ -3,7 +3,7 @@ schema_version: "1.0"
 extension:
   id: triage
   name: "Issue Triage and Ops"
-  version: "1.0.0"
+  version: "1.1.0"
   description: "Triage issues into a mission, an op, a fold, no work or an operator decision (the triage-tara profile), and set up ops: small governed changes that still run test-first with review rounds"
   author: Ocelle-HQ
   repository: https://github.com/Ocelle-HQ/ocelle-components
@@ -33,6 +33,10 @@ provides:
     - name: triage-decide
       file: scripts/decide.sh
       description: "Record the operator's approval or rejection in the latest triage record and commit it"
+      runtimes: [bash]
+    - name: triage-link
+      file: scripts/link.sh
+      description: "Link the current feature to the latest approved mission triage record (triage.ref)"
       runtimes: [bash]
     - name: triage-op-new
       file: scripts/op-new.sh

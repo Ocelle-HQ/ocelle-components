@@ -4,7 +4,7 @@ title: ocelle-sdd
 description: specify, spec check, plan, plan squad, tasks and analyze with operator gates, then implementation by user story with review rounds
 resource: /tooling/speckit/workflows/ocelle-sdd/workflow.yml
 tags: [spec-kit, workflow]
-version: 1.2.0
+version: 1.3.0
 generated: { by: claude-code/agent, at: 2026-11-02T14:00:00Z }
 status: draft
 ---
@@ -32,6 +32,7 @@ Approve continues, reject stops; edit files before approving to change anything.
 
 # History
 
+- 1.3.0: `link.sh` after specify: the run stops unless an approved mission triage record exists.
 - 1.2.0: the analysis is saved to `analysis-report.md` and summarised in the tasks gate.
 - 1.1.0: spec check after specify; adversarial plan squad after plan.
 - 1.0.0: specify, plan, tasks, analyze with gates, then ocelle-implement.

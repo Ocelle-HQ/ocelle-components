@@ -173,7 +173,11 @@ evidence of the behaviour it names.
   below), an **op** (one bounded change with no new public surface and no open design question,
   recorded in `ops/NNN-slug/op.md` and implemented and reviewed exactly like a mission phase), a
   **fold** into work in progress, **none**, or a decision the operator must take first. In doubt,
-  a mission. No code change starts without an approved triage record.
+  a mission. No code change starts without an approved triage record; a hook blocks code commits
+  that are not linked to one.
+- The flow runs either interactively (`/ocelle-run`: each role a subagent with its agent profile,
+  gates as questions to the operator) or unattended (the Spec Kit workflows). Both use the same
+  commands, scripts and records, and in both every loop decision comes from a script, not a model.
 - After `/speckit-specify`, a spec check reads the spec on its own (ambiguity, testability,
   acceptance scenarios, constitution conflicts); blocking findings are fixed before planning, and
   questions only the operator can answer go to the operator. The full `/speckit-analyze` runs
@@ -210,4 +214,4 @@ redefining a principle, MINOR for adding a principle or materially expanding gui
 PATCH for clarifications. The decision records behind this document are ADR-0079 (Ocelle
 component library) and ADR-0071 (open-source strategy) in the Ocelle-HQ docs repository.
 
-**Version**: 1.3.0 | **Ratified**: 2026-11-02 | **Last Amended**: 2026-11-02
+**Version**: 1.3.1 | **Ratified**: 2026-11-02 | **Last Amended**: 2026-11-02
