@@ -49,7 +49,8 @@ Issue numbers start new work at step 1. `resume` continues existing work (see "R
 4. **Caps:** three spec checks; three squad rounds; three fix → verify passes per squad batch and three review
    rounds per story batch; five batches at most. Count them from the record files, not from memory.
 5. **Gates are the operator's.** Ask with AskUserQuestion, with exactly the options named below, a summary that
-   stands on its own, and the record path. Never answer a gate yourself, never skip one, never treat silence as
+   stands on its own, and the record path. Every question to the operator is multiple choice (AskUserQuestion
+   always offers "Other" for a free answer): turn an open question from a profile into 2-4 concrete options. Never answer a gate yourself, never skip one, never treat silence as
    approval.
 6. Never push, never touch GitHub, never edit a review, verdict or check file a profile wrote. The only records you
    write yourself are the operator's decisions (named below), each committed alone.
@@ -74,11 +75,14 @@ Script locations: `S=.specify/extensions/story/scripts`, `Q=.specify/extensions/
    points at an approved record. If `link.sh` fails, stop.
 2. **Spec check**, up to three checks:
    - delegate "spec check" to `analyst-anouk`; scope `spec-check`; run `$Q/spec-status.sh`;
-   - if `blocking > 0` and fewer than three checks exist: delegate "spec fix" to `planner-pim`; scope `planner`;
-     check again.
-   - **Gate "spec"**: show verdict, blocking count and the operator questions word for word. Ask each operator
-     question separately (free answers allowed), delegate "spec fix" to `planner-pim` with the answers, and run one
-     more check if there were answers. Then options: `approve`, `reject`. Reject: stop.
+   - if the check has operator questions, ask them now (see rule 5), before the next spec fix, so the answers go
+     into that fix and are covered by a check within the cap;
+   - if `blocking > 0` or there were answers, and fewer than three checks exist: delegate "spec fix" to
+     `planner-pim` with the answers; scope `planner`; check again.
+   - **Gate "spec"**: show verdict, blocking count and any questions still open (ask those too). If the cap is
+     reached with blocking findings left, the options are `approve after a final fix` (one more spec fix, no
+     further check; the plan squad reads the spec next), `approve as is`, `reject`; otherwise `approve`,
+     `reject`. Reject: stop.
 3. **Plan.** Run `/speckit-plan` with the spec prompt.
 4. **Plan squad**, rounds while the last round confirmed something and the operator did not accept, three at most:
    1. `$Q/round.sh` opens the round and lists its lenses.
