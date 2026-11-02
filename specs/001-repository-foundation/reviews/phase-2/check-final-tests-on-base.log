@@ -1,0 +1,290 @@
+Scope: all 4 workspace projects
+✓ Lockfile passes supply-chain policies (verified 22m ago)
+Lockfile is up to date, resolution step is skipped
+Packages are hard linked from the content-addressable store to the virtual store.
+  Content-addressable store is at: /root/.local/share/pnpm/store/v11
+  Virtual store is at:             node_modules/.pnpm
+Packages: +405
+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+Progress: resolved 405, reused 405, downloaded 0, added 405, done
+
+devDependencies:
++ @eslint/js 10.0.1
++ @stryker-mutator/core 10.1.1
++ @stryker-mutator/typescript-checker 10.1.1
++ @stryker-mutator/vitest-runner 10.1.1
++ @types/node 26.6.5
++ @vitest/browser-playwright 5.0.5
++ @vitest/eslint-plugin 1.6.28
++ eslint 10.13.0
++ jiti 2.7.0
++ parse5 8.0.1
++ playwright 1.64.1
++ postcss 8.5.31
++ postcss-lit 1.4.1
++ postcss-value-parser 4.2.0
++ stylelint 17.16.0
++ typescript 6.0.3
++ typescript-eslint 8.72.0
++ vite 8.3.5
++ vitest 5.0.5
+
+Done in 727ms using pnpm v12.16.1
+$ pnpm install --frozen-lockfile --offline
+Scope: all 4 workspace projects
+✓ Lockfile passes supply-chain policies (verified 22m ago)
+Lockfile is up to date, resolution step is skipped
+Done in 27ms using pnpm v12.16.1
+$ vitest run
+
+ RUN  v5.0.5 /tmp/tmp.l2WqdebsNQ
+
+ ❯ |gates| gates/test/cli.test.ts (0 test)
+ ❯ |gates| gates/test/findings.test.ts (0 test)
+ ❯ |gates| gates/test/test-command.test.ts (0 test)
+ ❯ |gates| gates/test/config-copies.test.ts (0 test)
+ ❯ |gates| gates/test/setup-offline.test.ts (0 test)
+ ❯ |gates-integration| gates/test/integration/setup-offline.test.ts (3 tests | 3 failed) 167ms
+   ❯ offline setup (gates/bin/setup-offline.ts) (3)
+     × exits 2 naming the missing package and pnpm run setup:online on an empty store, without the network 52ms
+     × exits 2 naming Chromium and pnpm run setup:online on an empty browser path, without the network 63ms
+     × exits 0 with a lockfile without dependencies and the installed browser, changing no workspace file 49ms
+ ❯ |gates-integration| gates/test/integration/test-command.test.ts (5 tests | 5 failed) 229ms
+   ❯ test command (gates/bin/test.ts) (5)
+     × exits 2 naming pnpm run setup:online when Chromium is missing, and runs no test (US1 scenario 9) 57ms
+     × exits 2 naming the override when OCELLE_CHROMIUM_PATH points at no executable 48ms
+     × exits 1 naming the failing test as a finding (US1 scenario 5) 45ms
+     × exits 2 when no test file is found (FR-004) 38ms
+     × exits 0 with a one-line summary when every test passes 40ms
+
+⎯⎯⎯⎯⎯⎯ Failed Suites 5 ⎯⎯⎯⎯⎯⎯⎯
+
+ FAIL  |gates| gates/test/cli.test.ts [ gates/test/cli.test.ts ]
+Error: Cannot find module '../lib/cli.ts' imported from /tmp/tmp.l2WqdebsNQ/gates/test/cli.test.ts
+ ❯ gates/test/cli.test.ts:2:1
+      1| import { describe, expect, it } from "vitest";
+      2| import { entry, parseArgs } from "../lib/cli.ts";
+       | ^
+      3| import type { Io, Run } from "../lib/cli.ts";
+      4|
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[1/13]⎯
+
+ FAIL  |gates| gates/test/config-copies.test.ts [ gates/test/config-copies.test.ts ]
+Error: Cannot find module '../bin/config-copies.ts' imported from /tmp/tmp.l2WqdebsNQ/gates/test/config-copies.test.ts
+ ❯ gates/test/config-copies.test.ts:3:1
+      1| import { fileURLToPath } from "node:url";
+      2| import { describe, expect, it } from "vitest";
+      3| import { run } from "../bin/config-copies.ts";
+       | ^
+      4| import type { Io } from "../lib/cli.ts";
+      5|
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[2/13]⎯
+
+ FAIL  |gates| gates/test/findings.test.ts [ gates/test/findings.test.ts ]
+Error: Cannot find module '../lib/findings.ts' imported from /tmp/tmp.l2WqdebsNQ/gates/test/findings.test.ts
+ ❯ gates/test/findings.test.ts:2:1
+      1| import { describe, expect, it } from "vitest";
+      2| import { emit, formatFinding, formatLocation } from "../lib/findings.t…
+       | ^
+      3| import type { GateResult } from "../lib/findings.ts";
+      4|
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[3/13]⎯
+
+ FAIL  |gates| gates/test/setup-offline.test.ts [ gates/test/setup-offline.test.ts ]
+Error: Cannot find module '../bin/setup-offline.ts' imported from /tmp/tmp.l2WqdebsNQ/gates/test/setup-offline.test.ts
+ ❯ gates/test/setup-offline.test.ts:3:1
+      1| import { readFileSync } from "node:fs";
+      2| import { describe, expect, it } from "vitest";
+      3| import { decideSetup } from "../bin/setup-offline.ts";
+       | ^
+      4| import type { ChromiumCheck } from "../bin/test.ts";
+      5|
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[4/13]⎯
+
+ FAIL  |gates| gates/test/test-command.test.ts [ gates/test/test-command.test.ts ]
+Error: Cannot find module '../bin/test.ts' imported from /tmp/tmp.l2WqdebsNQ/gates/test/test-command.test.ts
+ ❯ gates/test/test-command.test.ts:3:1
+      1| import { readFileSync } from "node:fs";
+      2| import { describe, expect, it } from "vitest";
+      3| import { chromiumCheck } from "../bin/test.ts";
+       | ^
+      4| import { classifyVitest } from "../lib/vitest-report.ts";
+      5|
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[5/13]⎯
+
+
+⎯⎯⎯⎯⎯⎯⎯ Failed Tests 8 ⎯⎯⎯⎯⎯⎯⎯
+
+ FAIL  |gates-integration| gates/test/integration/setup-offline.test.ts > offline setup (gates/bin/setup-offline.ts) > exits 2 naming the missing package and pnpm run setup:online on an empty store, without the network
+AssertionError: expected 1 to be 2 // Object.is equality
+
+- Expected
++ Received
+
+- 2
++ 1
+
+ ❯ gates/test/integration/setup-offline.test.ts:52:24
+     50|       const root = workspace("setup-offline/with-dependency", [], fals…
+     51|       const ran = await setupOffline(root, offlineEnv());
+     52|       expect(ran.code).toBe(2);
+       |                        ^
+     53|       expect(ran.stderr).toHaveLength(1);
+     54|       expect(ran.stderr[0]).toContain("missing: is-number");
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[6/13]⎯
+
+ FAIL  |gates-integration| gates/test/integration/setup-offline.test.ts > offline setup (gates/bin/setup-offline.ts) > exits 2 naming Chromium and pnpm run setup:online on an empty browser path, without the network
+AssertionError: expected 1 to be 2 // Object.is equality
+
+- Expected
++ Received
+
+- 2
++ 1
+
+ ❯ gates/test/integration/setup-offline.test.ts:68:24
+     66|       delete env["OCELLE_CHROMIUM_PATH"];
+     67|       const ran = await setupOffline(root, env);
+     68|       expect(ran.code).toBe(2);
+       |                        ^
+     69|       expect(ran.stderr).toHaveLength(1);
+     70|       expect(ran.stderr[0]).toContain("Chromium");
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[7/13]⎯
+
+ FAIL  |gates-integration| gates/test/integration/setup-offline.test.ts > offline setup (gates/bin/setup-offline.ts) > exits 0 with a lockfile without dependencies and the installed browser, changing no workspace file
+AssertionError: expected 1 to be +0 // Object.is equality
+
+- Expected
++ Received
+
+- 0
++ 1
+
+ ❯ gates/test/integration/setup-offline.test.ts:87:24
+     85|       };
+     86|       const ran = await setupOffline(root, offlineEnv());
+     87|       expect(ran.code).toBe(0);
+       |                        ^
+     88|       expect(ran.stdout).toHaveLength(1);
+     89|       expect(ran.stdout[0]).toContain("installed offline");
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[8/13]⎯
+
+ FAIL  |gates-integration| gates/test/integration/test-command.test.ts > test command (gates/bin/test.ts) > exits 2 naming pnpm run setup:online when Chromium is missing, and runs no test (US1 scenario 9)
+AssertionError: expected 1 to be 2 // Object.is equality
+
+- Expected
++ Received
+
+- 2
++ 1
+
+ ❯ gates/test/integration/test-command.test.ts:23:24
+     21|       delete env["OCELLE_CHROMIUM_PATH"];
+     22|       const ran = await testCommand("passing", env);
+     23|       expect(ran.code).toBe(2);
+       |                        ^
+     24|       expect(ran.stderr).toHaveLength(1);
+     25|       expect(ran.stderr[0]).toContain("Chromium");
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[9/13]⎯
+
+ FAIL  |gates-integration| gates/test/integration/test-command.test.ts > test command (gates/bin/test.ts) > exits 2 naming the override when OCELLE_CHROMIUM_PATH points at no executable
+AssertionError: expected 1 to be 2 // Object.is equality
+
+- Expected
++ Received
+
+- 2
++ 1
+
+ ❯ gates/test/integration/test-command.test.ts:37:24
+     35|       const missing = `${tempDir("browsers")}/chrome`;
+     36|       const ran = await testCommand("passing", { ...baseEnv(), OCELLE_…
+     37|       expect(ran.code).toBe(2);
+       |                        ^
+     38|       expect(ran.stderr).toHaveLength(1);
+     39|       expect(ran.stderr[0]).toContain(missing);
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[10/13]⎯
+
+ FAIL  |gates-integration| gates/test/integration/test-command.test.ts > test command (gates/bin/test.ts) > exits 1 naming the failing test as a finding (US1 scenario 5)
+AssertionError: expected [] to deeply equal [ …(2) ]
+
+- Expected
++ Received
+
+- [
+-   "packages/tokens/test/sum.test.ts:8: unit-tests: sum adds three numbers: AssertionError: expected 3 to be 4 // Object.is equality",
+-   "unit-tests: 1 of 2 tests failed",
+- ]
++ []
+
+ ❯ gates/test/integration/test-command.test.ts:50:26
+     48|       const ran = await testCommand("failing", baseEnv());
+     49|       expect(ran.code).toBe(1);
+     50|       expect(ran.stdout).toEqual([
+       |                          ^
+     51|         "packages/tokens/test/sum.test.ts:8: unit-tests: sum adds thre…
+     52|           "AssertionError: expected 3 to be 4 // Object.is equality",
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[11/13]⎯
+
+ FAIL  |gates-integration| gates/test/integration/test-command.test.ts > test command (gates/bin/test.ts) > exits 2 when no test file is found (FR-004)
+AssertionError: expected 1 to be 2 // Object.is equality
+
+- Expected
++ Received
+
+- 2
++ 1
+
+ ❯ gates/test/integration/test-command.test.ts:63:24
+     61|     async () => {
+     62|       const ran = await testCommand("no-test-file", baseEnv());
+     63|       expect(ran.code).toBe(2);
+       |                        ^
+     64|       expect(ran.stderr).toHaveLength(1);
+     65|       expect(ran.stderr[0]).toContain("no test file found");
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[12/13]⎯
+
+ FAIL  |gates-integration| gates/test/integration/test-command.test.ts > test command (gates/bin/test.ts) > exits 0 with a one-line summary when every test passes
+AssertionError: expected { code: 1, stdout: [] } to deeply equal { code: +0, …(1) }
+
+- Expected
++ Received
+
+  {
+-   "code": 0,
+-   "stdout": [
+-     "unit-tests: 2 tests passed in 1 file",
+-   ],
++   "code": 1,
++   "stdout": [],
+  }
+
+ ❯ gates/test/integration/test-command.test.ts:74:54
+     72|     async () => {
+     73|       const ran = await testCommand("passing", baseEnv());
+     74|       expect({ code: ran.code, stdout: ran.stdout }).toEqual({
+       |                                                      ^
+     75|         code: 0,
+     76|         stdout: ["unit-tests: 2 tests passed in 1 file"],
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[13/13]⎯
+
+
+ Test Files  7 failed | 4 passed (11)
+      Tests  8 failed | 4 passed (12)
+   Start at  20:37:49
+   Duration  1.81s (worker 52%, transform 27%, tests 12%, import 8%)
+
+[ELIFECYCLE] Test failed. See above for more details.

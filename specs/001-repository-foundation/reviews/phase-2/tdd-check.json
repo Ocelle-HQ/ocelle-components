@@ -1,0 +1,1 @@
+{"phase":"2","status":"pass","base":"20793235eaca1afa1fa3f37b97a22625a41f76ae","head":"a41609ab6c247cdd47c56a2e879788cafc05d1c8","red_commits":[{"label":"phase","sha":"0f3052c96f4dc683980433b81a2b04d9ed54c346","exit_code":1}],"final_tests_on_base_exit":1,"final_tests_on_scaffold_exit":1,"head_exit":0,"problems":[]}
