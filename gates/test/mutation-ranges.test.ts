@@ -2,7 +2,7 @@ import { readFileSync } from "node:fs";
 import { describe, expect, it } from "vitest";
 import { mutation } from "../bin/mutation.ts";
 import { changedFiles, inScope, mutateSpecs, scopePathspecs } from "../lib/mutation/ranges.ts";
-import { base, capture, context, fakeGit, fakeRepo, scope } from "./mutation-fakes.ts";
+import { base, capture, context, fakeGit, fakeRepo, fakeStryker, newFilesDiff, noStryker, scope } from "./mutation-fakes.ts";
 
 // Changed line ranges over FR-028's package source and gate source, from recorded `git diff --unified=0` output
 // (gates/test/fixtures/git-diff/), and "nothing to mutate" when no such line changed (US2 scenario 5, FR-011).
@@ -191,6 +191,216 @@ describe("mutation gate: nothing to mutate (US2 scenario 5)", () => {
       code: 0,
       out: [`mutation: nothing to mutate: no package or gate source line changed since ${base}`],
       err: [],
+    });
+  });
+});
+
+// Phase 3 round 7 (operator round from the PR #18 landing review, O7-01 and O7-02; tasks.md T095). git writes
+// `+++ b/<path>` followed by a tab for a path with a space, and `+++ "b/<escaped>"` (C quoting, octal byte escapes)
+// for a path with a non-ASCII or special character; gates/test/fixtures/git-diff/quoted-paths.diff is
+// `git diff --unified=0 --no-color --no-ext-diff HEAD --` recorded from a scratch repository (git 2.43.0) with such
+// files, and mnemonic-prefix.diff the same diff under `diff.mnemonicPrefix=true` (`+++ w/<path>`), a header the gate
+// cannot read. A changed path that Stryker cannot take verbatim as a `mutate` input (minimatch reads `*?[]{}!`, a
+// backslash and the extglobs `+(` and `@(`; a comma splits `--mutate`) is exit 2 before Stryker runs.
+const quoted = readFileSync(new URL("fixtures/git-diff/quoted-paths.diff", import.meta.url), "utf8");
+const mnemonic = readFileSync(new URL("fixtures/git-diff/mnemonic-prefix.diff", import.meta.url), "utf8");
+const space = "packages/tokens/src/a b.ts";
+const accent = "packages/tokens/src/é.ts";
+const both = "packages/tokens/src/é b.ts";
+const ok = "packages/tokens/src/ok.ts";
+
+/** The parts of a recorded diff whose `diff --git` line contains `name`, in diff order. */
+function parts(diff: string, ...names: string[]): string {
+  return diff
+    .split(/(?=^diff --git )/m)
+    .filter((part) => names.some((name) => part.split("\n")[0]?.includes(name)))
+    .join("");
+}
+
+const headerHint = "the gate reads +++ b/<path>, a C-quoted \"b/<path>\" or /dev/null (check diff.noprefix and diff.mnemonicPrefix)";
+
+function headerCause(header: string): string {
+  return `mutation: could not run: git diff wrote a file header the gate cannot read: ${JSON.stringify(header)}; ${headerHint}`;
+}
+
+function pathsCause(paths: readonly string[]): string {
+  return (
+    "mutation: could not run: Stryker cannot take these changed paths as mutate input " +
+    `(a glob metacharacter *?[]{}!, a comma, a backslash or an extglob +( @( ): ${paths.map((path) => JSON.stringify(path)).join(", ")}; rename them`
+  );
+}
+
+describe("changedFiles: the headers git writes (phase 3 round 7, O7-01)", () => {
+  it("reads a tab-suffixed header (a path with a space) as the path without the tab, with its ranges", () => {
+    expect(changedFiles(parts(quoted, "a b.ts"))).toEqual([{ path: space, ranges: [{ start: 1, end: 1 }], lines: 1 }]);
+  });
+
+  it("reads a quoted header with octal escapes (a non-ASCII path) as the UTF-8 path, with its ranges", () => {
+    expect(changedFiles(parts(quoted, "\\303\\251.ts"))).toEqual([{ path: accent, ranges: [{ start: 1, end: 2 }], lines: 2 }]);
+  });
+
+  it("reads all files of a diff holding a tab-suffixed, a quoted, a quoted and tab-suffixed, and a plain header", () => {
+    expect(changedFiles(quoted)).toEqual([
+      { path: space, ranges: [{ start: 1, end: 1 }], lines: 1 },
+      { path: ok, ranges: [{ start: 1, end: 2 }], lines: 2 },
+      { path: both, ranges: [{ start: 1, end: 1 }], lines: 1 },
+      { path: accent, ranges: [{ start: 1, end: 2 }], lines: 2 },
+    ]);
+  });
+
+  it("decodes every C escape git writes in a quoted header", () => {
+    const diff = [
+      'diff --git "a/gates/lib/q.ts" "b/gates/lib/q.ts"',
+      '+++ "b/gates/lib/q\\"\\\\\\a\\b\\t\\n\\v\\f\\r\\101\\060\\177.ts"',
+      "@@ -0,0 +1 @@",
+      "+export const q = 1;",
+      "",
+    ].join("\n");
+    expect(changedFiles(diff)).toEqual([
+      { path: 'gates/lib/q"\\\u0007\b\t\n\u000b\f\rA0\u007f.ts', ranges: [{ start: 1, end: 1 }], lines: 1 },
+    ]);
+  });
+
+  it("reads a deletion's +++ /dev/null as no file", () => {
+    const diff = ["diff --git a/gates/lib/gone.ts b/gates/lib/gone.ts", "+++ /dev/null", "@@ -1 +0,0 @@", "-old", ""].join("\n");
+    expect(changedFiles(diff)).toEqual([]);
+  });
+
+  it.each([
+    { name: "a mnemonic prefix", header: "+++ w/gates/lib/a.ts" },
+    { name: "no prefix", header: "+++ gates/lib/a.ts" },
+    { name: "a quoted mnemonic prefix", header: '+++ "w/gates/lib/a.ts"' },
+    { name: "an unterminated quote", header: '+++ "b/gates/lib/a.ts' },
+    { name: "a quote ending in an escape", header: '+++ "b/gates/lib/a.ts\\"' },
+    { name: "an unknown escape", header: '+++ "b/gates/lib/a\\q.ts"' },
+    { name: "a short octal escape", header: '+++ "b/gates/lib/a\\1.ts"' },
+    { name: "an octal escape over 377", header: '+++ "b/gates/lib/a\\400.ts"' },
+    { name: "bytes that are not UTF-8", header: '+++ "b/gates/lib/a\\377.ts"' },
+    { name: "text after the closing quote", header: '+++ "b/gates/lib/a.ts"x' },
+    { name: "text after /dev/null", header: "+++ /dev/nullx" },
+    { name: "an empty name", header: "+++ " },
+  ])("fails naming the header on $name", ({ header }) => {
+    const diff = ["diff --git a/gates/lib/a.ts b/gates/lib/a.ts", header, "@@ -0,0 +1 @@", "+export {};", ""].join("\n");
+    expect(() => changedFiles(diff)).toThrow(`git diff wrote a file header the gate cannot read: ${JSON.stringify(header)}`);
+  });
+
+  it("takes a path with any character git writes into scope, a newline included", () => {
+    expect(inScope("gates/lib/a\nb.ts")).toBe(true);
+    expect(inScope("gates/lib/a.ts\n")).toBe(false);
+  });
+});
+
+describe("mutation gate: diff headers and mutate inputs (phase 3 round 7, O7-01 and O7-02)", () => {
+  const sources = {
+    [space]: "export const space = 1;\n",
+    [ok]: "export const ok = 2;\nexport const more = 3;\n",
+    [both]: "export const both = 1;\n",
+    [accent]: "export const accent = 1;\nexport const two = 2;\n",
+  };
+
+  async function gate(args: readonly string[], diff: string, files: Readonly<Record<string, string>> = {}, killed = false) {
+    const { io, out, err } = capture();
+    const mutated: string[] = [];
+    const stryker = fakeStryker(() => "Killed");
+    const code = await mutation(
+      context(args),
+      { git: fakeGit(diff), ...fakeRepo(files, killed ? (mutate, tree) => (mutated.push(...mutate), stryker(mutate, tree)) : noStryker) },
+      io,
+    );
+    return { code, out, err, mutated };
+  }
+
+  it("mutates the files of tab-suffixed and quoted headers in a normal run", async () => {
+    expect(await gate(["--base", base], quoted, sources, true)).toEqual({
+      code: 0,
+      out: ["mutation: 4 mutants on the changed lines of 4 files, none survived; 0 equivalent records"],
+      err: [],
+      mutated: [`${space}:1-1`, `${ok}:1-2`, `${both}:1-1`, `${accent}:1-2`],
+    });
+  });
+
+  it("plans the files of tab-suffixed and quoted headers", async () => {
+    expect(await gate(["--base", base, "--plan"], quoted)).toEqual({
+      code: 0,
+      out: [JSON.stringify([{ files: [space, both, accent, ok].join(","), lines: 6 }])],
+      err: [],
+      mutated: [],
+    });
+  });
+
+  it("--files selects the file of a quoted header", async () => {
+    expect(await gate(["--base", base, "--files", accent], quoted, sources, true)).toEqual({
+      code: 0,
+      out: ["mutation: 1 mutant on the changed lines of 1 file, none survived; 0 equivalent records"],
+      err: [],
+      mutated: [`${accent}:1-2`],
+    });
+  });
+
+  it.each([
+    { mode: "a normal run", args: ["--base", base] },
+    { mode: "--plan", args: ["--base", base, "--plan"] },
+    { mode: "--files", args: ["--base", base, "--files", ok] },
+  ])(
+    "exits 2 naming a header it cannot read, before Stryker runs ($mode)",
+    async ({ args }) => {
+      expect(await gate(args, mnemonic, sources, true)).toEqual({
+        code: 2,
+        out: [],
+        err: [headerCause("+++ w/packages/tokens/src/a b.ts\t")],
+        mutated: [],
+      });
+    },
+  );
+
+  it.each(["*", "?", "[", "]", "{", "}", "!", ",", "+(", "@("])(
+    "exits 2 naming a changed path holding %j, before Stryker runs",
+    async (part) => {
+      const path = part.endsWith("(") ? `gates/lib/a${part}b).ts` : `gates/lib/a${part}b.ts`;
+      expect(await gate(["--base", base], newFilesDiff({ [path]: 1 }), { [path]: "export {};\n" }, true)).toEqual({
+        code: 2,
+        out: [],
+        err: [pathsCause([path])],
+        mutated: [],
+      });
+    },
+  );
+
+  it("exits 2 naming a changed path holding a backslash (a quoted header), before Stryker runs", async () => {
+    const diff = ['diff --git "a/gates/lib/a\\\\b.ts" "b/gates/lib/a\\\\b.ts"', '+++ "b/gates/lib/a\\\\b.ts"', "@@ -0,0 +1 @@", "+export {};", ""];
+    expect(await gate(["--base", base], diff.join("\n"), { "gates/lib/a\\b.ts": "export {};\n" }, true)).toEqual({
+      code: 2,
+      out: [],
+      err: [pathsCause(["gates/lib/a\\b.ts"])],
+      mutated: [],
+    });
+  });
+
+  it.each([
+    { mode: "a normal run", args: ["--base", base] },
+    { mode: "--plan", args: ["--base", base, "--plan"] },
+    { mode: "--files", args: ["--base", base, "--files", "gates/lib/ok.ts"] },
+  ])(
+    "names every such path in one cause line, in diff order ($mode)",
+    async ({ args }) => {
+      const diff = newFilesDiff({ "gates/lib/a*.ts": 1, "gates/lib/ok.ts": 1, "gates/lib/b,c.ts": 2 });
+      const files = { "gates/lib/a*.ts": "export {};\n", "gates/lib/ok.ts": "export {};\n", "gates/lib/b,c.ts": "export {};\n" };
+      expect(await gate(args, diff, files, true)).toEqual({
+        code: 2,
+        out: [],
+        err: [pathsCause(["gates/lib/a*.ts", "gates/lib/b,c.ts"])],
+        mutated: [],
+      });
+    },
+  );
+
+  it.each(["+", "@", "(", " ", "#", ":", "é"])("runs Stryker on a changed path holding %j alone", async (part) => {
+    const path = `gates/lib/a${part}b.ts`;
+    expect(await gate(["--base", base], newFilesDiff({ [path]: 1 }), { [path]: "export {};\n" }, true)).toEqual({
+      code: 0,
+      out: ["mutation: 1 mutant on the changed lines of 1 file, none survived; 0 equivalent records"],
+      err: [],
+      mutated: [`${path}:1-1`],
     });
   });
 });
