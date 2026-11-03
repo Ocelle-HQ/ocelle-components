@@ -1,0 +1,16 @@
+$ node gates/bin/mutation.ts -- --base bdb9b70 --files gates/lib/spawn.ts,gates/bin/config-copies.ts,gates/bin/test-lint.ts
+gates/bin/config-copies.ts:83: mutation: record: all: process boundary, covered by gates-integration: gates/test/integration/config-copies.test.ts "exits 0 with a one-line summary on two identical copies"
+gates/bin/test-lint.ts:11: mutation: record: all: process boundary, covered by gates-integration: gates/test/integration/test-lint.test.ts "exits 0 on a test with one real assertion"
+gates/bin/test-lint.ts:14: mutation: record: all: process boundary, covered by gates-integration: gates/test/integration/test-lint.test.ts "exits 0 on a test with one real assertion"
+gates/bin/test-lint.ts:16: mutation: record: all: process boundary, covered by gates-integration: gates/test/integration/test-lint.test.ts "exits 0 on a test with one real assertion"
+gates/bin/test-lint.ts:18: mutation: record: all: process boundary, covered by gates-integration: gates/test/integration/test-lint.test.ts "exits 0 on a test with one real assertion"
+gates/bin/test-lint.ts:23: mutation: record: all: process boundary, covered by gates-integration: gates/test/integration/test-lint.test.ts "exits 0 on a test with one real assertion"
+gates/lib/spawn.ts:16: mutation: record: all: process boundary, covered by gates-integration: gates/test/integration/setup-offline.test.ts "exits 2 naming the missing package and pnpm run setup:online on an empty store, without the network"
+gates/lib/spawn.ts:18: mutation: record: all: process boundary, covered by gates-integration: gates/test/integration/setup-offline.test.ts "exits 2 naming the missing package and pnpm run setup:online on an empty store, without the network"
+gates/lib/spawn.ts:20: mutation: record: all: process boundary, covered by gates-integration: gates/test/integration/setup-offline.test.ts "exits 2 naming the missing package and pnpm run setup:online on an empty store, without the network"
+gates/lib/spawn.ts:22: mutation: record: all: process boundary, covered by gates-integration: gates/test/integration/setup-offline.test.ts "exits 2 naming the missing package and pnpm run setup:online on an empty store, without the network"
+gates/lib/spawn.ts:24: mutation: record: all: process boundary, covered by gates-integration: gates/test/integration/setup-offline.test.ts "exits 2 naming the missing package and pnpm run setup:online on an empty store, without the network"
+gates/lib/spawn.ts:26: mutation: record: all: process boundary, covered by gates-integration: gates/test/integration/setup-offline.test.ts "exits 2 naming the missing package and pnpm run setup:online on an empty store, without the network"
+gates/lib/spawn.ts:28: mutation: record: all: process boundary, covered by gates-integration: gates/test/integration/setup-offline.test.ts "exits 2 naming the missing package and pnpm run setup:online on an empty store, without the network"
+gates/lib/spawn.ts:31: mutation: record: all: process boundary, covered by gates-integration: gates/test/integration/setup-offline.test.ts "exits 2 naming the missing package and pnpm run setup:online on an empty store, without the network"
+mutation: 110 mutants on the changed lines of 3 files, none survived; 14 equivalent records

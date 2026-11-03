@@ -1,6 +1,8 @@
 // Runs a tool as a child process and collects its exit code and output: the process boundary of the gates
 // (research.md R-09). The gates-integration tests run it; Stryker does not (research.md R-08), so each line with a
-// mutant carries an equivalent-mutant record.
+// mutant carries an equivalent-mutant record. The one exception is the spawn error path, `child.on("error", reject)`:
+// a command that cannot be started starts no process, so gates/test/spawn.test.ts runs it in process and kills its
+// mutant (phase 3 review round 5, O5-01).
 import { spawn } from "node:child_process";
 import type { Io } from "./cli.ts";
 
@@ -25,7 +27,6 @@ export function runTool(command: string, args: readonly string[], cwd: string, e
     child.stdout.on("data", (chunk: Buffer) => (stdout += chunk.toString()));
     // Stryker disable next-line all: process boundary, covered by gates-integration: gates/test/integration/setup-offline.test.ts "exits 2 naming the missing package and pnpm run setup:online on an empty store, without the network"
     child.stderr.on("data", (chunk: Buffer) => (stderr += chunk.toString()));
-    // Stryker disable next-line all: process boundary, covered by gates-integration: gates/test/integration/setup-offline.test.ts "exits 2 naming the missing package and pnpm run setup:online on an empty store, without the network"
     child.on("error", reject);
     // Stryker disable next-line all: process boundary, covered by gates-integration: gates/test/integration/setup-offline.test.ts "exits 2 naming the missing package and pnpm run setup:online on an empty store, without the network"
     child.on("close", (exitCode) => {

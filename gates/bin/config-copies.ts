@@ -61,14 +61,9 @@ function compare(specify: string, tooling: string): GateResult {
   return { exit: 0, summary: `${gate}: ${specifyPath} and ${toolingPath} are identical` };
 }
 
+/** The file's text, or undefined when it cannot be read. */
 async function read(root: string, path: string): Promise<string | undefined> {
-  try {
-    return await readFile(join(root, path), "utf8");
-  }
-  // Stryker disable next-line BlockStatement: equivalent, an empty catch also makes the function return undefined
-  catch {
-    return undefined;
-  }
+  return readFile(join(root, path), "utf8").catch(() => undefined);
 }
 
 export async function run(argv: readonly string[], io: Io): Promise<number> {
@@ -85,5 +80,5 @@ export async function run(argv: readonly string[], io: Io): Promise<number> {
   return emit(compare(specify, tooling), io.out, io.err);
 }
 
-// Stryker disable next-line all: process boundary, covered by gates-integration
+// Stryker disable next-line all: process boundary, covered by gates-integration: gates/test/integration/config-copies.test.ts "exits 0 with a one-line summary on two identical copies"
 if (import.meta.main) await main(run);
