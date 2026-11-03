@@ -69,8 +69,8 @@ attribute selector without `:not()` (gives the wrong answer for system dark with
 ## R-03 Browser tests: what they serve, what they compare, what they observe
 
 **Decision**: Theme, motion and font behaviour are tested in Chromium driven by Playwright from Node tests in the
-`tokens-browser` Vitest project (`packages/tokens/test/browser/*.test.ts`; excluded from mutation runs, *Mutation
-path* below), using the pinned `playwright` 1.64.1 and the
+`tokens-browser` Vitest project (`packages/tokens/test/browser/**/*.test.ts`, which the `tokens` project excludes;
+excluded from mutation runs, *Mutation path* below), using the pinned `playwright` 1.64.1 and the
 existing `OCELLE_CHROMIUM_PATH` override.
 
 *What is served* (PLAN-CORRECTNESS-1-002, squad round 1 verify 1): the browser suites never read a pre-existing
@@ -88,7 +88,10 @@ against every test of every project it runs, Chromium suites and a Storybook bui
 `mutation-shard` limit (`ci.yml`) that 001 already had to meet by halving the shard size. The browser suites are
 therefore a project of their own, `tokens-browser`, and the build-dependent Storybook tests a project
 `storybook-integration`; `vitest.mutation.config.ts` excludes both, as it excludes `gates-integration`
-(contracts/gates.md § Mutation). The browser suites prove behaviour against current output and are **not** counted
+(contracts/gates.md § Mutation). Excluding a project is not enough on its own: the existing `tokens` project's
+include `packages/tokens/**/*.test.ts` also matches `test/browser/`, so the `tokens` project excludes
+`packages/tokens/test/browser/**` (as `gates` excludes `gates/test/integration/**`), and a test of the Vitest
+configuration asserts that no test file belongs both to a mutated project and to an excluded one. The browser suites prove behaviour against current output and are **not** counted
 on to kill mutants. Value mutants of `source.ts` are killed by a node test that runs the generator on the real
 source and compares its output with the transcribed Appendix A table (data-model.md § Expected tables: the token
 stream for colours, the exact text for the others, and `json()`'s resolved values); mutants of `css()`, `json()` and

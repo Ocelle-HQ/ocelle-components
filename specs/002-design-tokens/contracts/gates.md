@@ -102,13 +102,19 @@ hand with those paths and recorded in the review; they are not a gate result.
 - `vitest.config.ts` gains (PLAN-FRESH-2-002):
   - a `tokens-browser` project (node, `packages/tokens/test/browser/**/*.test.ts`): the Playwright suites, which
     generate what they serve in each suite's `beforeAll` inside the worker, with no `globalSetup` (research R-03);
+    the existing `tokens` project, whose include `packages/tokens/**/*.test.ts` also matches these files, adds
+    `packages/tokens/test/browser/**` to its exclude, as `gates` excludes `gates/test/integration/**`, so each
+    browser suite belongs to `tokens-browser` only;
   - a `storybook` project (node, `storybook/test/unit/**/*.test.ts`): the externalise, swatches, telemetry and
     scope unit tests, with no build; these kill the mutants of `storybook/scripts/**` and `storybook/.storybook/**`;
   - a `storybook-integration` project (node, `storybook/test/integration/**/*.test.ts`) with a global setup that
     builds the Storybook into a per-run temporary directory, holding the run-time CSP test (research R-10).
 - `vitest.mutation.config.ts` excludes `tokens-browser` and `storybook-integration` besides `gates-integration`, so
   Stryker never launches Chromium or builds Storybook; a test of the mutation config asserts the excluded project
-  list. `pnpm test` and the `unit-tests` CI job still run every project.
+  list, and a second test resolves every project's `include` and `exclude` against the repository's test files and
+  asserts that no test file belongs both to a project `vitest.mutation.config.ts` keeps and to one it excludes (it
+  fails if the `tokens` project's browser exclude, or the `gates` project's integration exclude, is removed).
+  `pnpm test` and the `unit-tests` CI job still run every project, and each test file in exactly one of them.
 - Mutants of `source.ts` (all static: the module-level records) are killed by the node test that compares the
   generator output from the real source with the transcribed Appendix A table (data-model § Expected tables);
   mutants of `css()`, `json()` and `resolve()` by the generator tests on fixture sources. The browser suites prove

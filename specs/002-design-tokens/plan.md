@@ -43,7 +43,8 @@ project; a `storybook` project (node unit tests, no build) and a `storybook-inte
 builds Storybook into a temporary directory; expected values transcribed from Appendix A in the tests, and a node
 test comparing the generator output from the real source with that table; gate tests in the `gates` project; plants
 through `gate:plants`; Stryker on changed source, now including `storybook/scripts/` and `storybook/.storybook/`,
-with `tokens-browser` and `storybook-integration` excluded from mutation runs like `gates-integration` and
+with `tokens-browser` and `storybook-integration` excluded from mutation runs like `gates-integration` (the `tokens`
+project excluding `test/browser/`, so no test file sits in both a mutated and an excluded project) and
 `ignoreStatic` off (research R-03, *Mutation path*).
 
 **Target Platform**: evergreen browsers; Chromium in tests; hosts under the strict CSP of constitution IV plus
@@ -75,7 +76,7 @@ exclusions); 7 brand rules; 4 user stories.
 | V. Storybook is the visual source | Token stories per group in light and dark; baselines and visual regression stay with #10, which builds on this Storybook. |
 | VI. Consumer-driven, own code | Consumers named in the spec; values from #5 and the operator's prototype table as values only (R-05); font from upstream. |
 | VII. Semver | Token names are new surface: MINOR, changelog entry (R-11); pre-1.0. |
-| VIII. Test-first, non-vacuous | Each phase red first; generator, `build.ts` (thin I/O boundary) and gates mutation-tested, and `storybook/scripts/` and `.storybook/` brought into the mutation and typecheck scope; expected values transcribed from Appendix A (not read from the source), a node test comparing the generator output from the real source with them, and the required pair set pinned to A.8, so source mutants are killed without browser suites or a Storybook build in the mutation path (those projects excluded, `ignoreStatic` off, shard time measured; PLAN-FRESH-2-002); one resolver (`resolve()`) shared by the JSON export, validation and the contrast gate, with unit tests (PLAN-FRESH-2-005); browser tests serve current generator output, observe used values and the platform font, and their CSP collector has a control violation; every new gate and rule has fail, pass and breaking plants, each fail plant listing every finding its change gives (PLAN-FRESH-2-006); the token source is in the plant configuration set, plants change it only by `tree.patch` deltas, proven to survive an unrelated token change (PLAN-FRESH-2-007), and plants and tests using `--ocelle-x` move to real names with the reason recorded; the contrast gate exits 2 on zero pairs. |
+| VIII. Test-first, non-vacuous | Each phase red first; generator, `build.ts` (thin I/O boundary) and gates mutation-tested, and `storybook/scripts/` and `.storybook/` brought into the mutation and typecheck scope; expected values transcribed from Appendix A (not read from the source), a node test comparing the generator output from the real source with them, and the required pair set pinned to A.8, so source mutants are killed without browser suites or a Storybook build in the mutation path (those projects excluded, no test file in both a mutated and an excluded project, `ignoreStatic` off, shard time measured; PLAN-FRESH-2-002); one resolver (`resolve()`) shared by the JSON export, validation and the contrast gate, with unit tests (PLAN-FRESH-2-005); browser tests serve current generator output, observe used values and the platform font, and their CSP collector has a control violation; every new gate and rule has fail, pass and breaking plants, each fail plant listing every finding its change gives (PLAN-FRESH-2-006); the token source is in the plant configuration set, plants change it only by `tree.patch` deltas, proven to survive an unrelated token change (PLAN-FRESH-2-007), and plants and tests using `--ocelle-x` move to real names with the reason recorded; the contrast gate exits 2 on zero pairs. |
 | Workflow gates | `contrast` and `brand-rules` become required checks (operator ruleset change); the "Contrast check" deferral ends. |
 
 ## Decisions the operator should see at the plan gate
@@ -171,8 +172,10 @@ storybook/                   # private workspace package
 │                            token source into .generated/, R-10)
 ├── test/unit/ (externalise, swatches, telemetry, scope tests; `storybook` project)
 └── test/integration/csp.test.ts  (`storybook-integration` project, global setup builds Storybook)
-vitest.config.ts             # + tokens-browser, storybook, storybook-integration projects
-vitest.mutation.config.ts    # also excludes tokens-browser, storybook-integration
+vitest.config.ts             # + tokens-browser, storybook, storybook-integration projects; tokens project
+                             # excludes packages/tokens/test/browser/**
+vitest.mutation.config.ts    # also excludes tokens-browser, storybook-integration (test: no test file in both a
+                             # mutated and an excluded project)
 tsconfig.json                # + storybook/.storybook/**/*.ts
 .gitignore                   # + storybook/dist/, storybook/.generated/
 .github/workflows/ci.yml     # jobs contrast, brand-rules
@@ -186,7 +189,8 @@ workspace so that #10 can extend it and nothing of it is published.
 ## Phases (user stories) for `/speckit-tasks`
 
 1. **US1 Tokens and themes** (P1): source (with `color-scheme`), generator with `resolve()`, thin build, exports,
-   JSON, source-table node test on the real source, `tokens-browser` project and mutation exclusion, browser test
+   JSON, source-table node test on the real source, `tokens-browser` project (and the `tokens` project's browser
+   exclude) and mutation exclusion with the project-overlap test, browser test
    setup in the worker (`serve.ts`) and violation collector, theme, value and motion tests against the transcribed
    table, README (host contract, brand rules, forced colours), configuration set change with `tree.patch` plants,
    unknown-token style-lint rule (with exact-name element exemption from the manifest) and plants, `--ocelle-x`
