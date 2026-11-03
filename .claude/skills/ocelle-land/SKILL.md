@@ -28,7 +28,8 @@ $ARGUMENTS
    by SHA (`reviews/phase-N/red-commits`, `scaffold.sha`, `base.sha`, `tdd-check.json`). A rebase, a hand squash or
    a reword breaks it. The fold script keeps every commit the evidence needs and remaps the records. Update a branch
    by merging `origin/main` into it (`git merge --signoff origin/main`), never by rebasing, and only after the fold.
-   The squash at merge time is the operator's.
+   The squash at merge time is the operator's. Mission and op PRs are squash-merged (operator decision, landing
+   round 1 note L1-08), so the evidence SHAs live only on the folded branch and its archive ref: never delete them.
 3. **Every commit is signed off** (`git commit -s`, the Sign-off check, FR-023) and ends with the attribution
    trailers the harness gives you. Commit subjects are conventional (`<type>(landing): …` for landing folds).
 4. **Delegate roles to their agent profiles** (`.claude/agents/`): code to `implementer-ivan`, spec and plan changes
@@ -172,8 +173,8 @@ surface, gate or contract change, as opposed to a mechanical chore: a pin bump, 
       - `$S/summary.sh --commit`.
    4. Ask the operator, multiple choice, before the push: force-push with lease
       (`git push --force-with-lease=<branch>:<old-head-sha> origin <branch>`), and whether to keep the pre-fold history
-      on the remote as `archive/<branch>-prefold`. After a force-push GitHub stops keeping the old SHAs that the review
-      files name. Never push without that answer.
+      on the remote as `archive/<branch>-prefold` (recommended: the review files name the old SHAs, and after a
+      force-push GitHub stops keeping them). Never push without that answer.
 
 ## 3. Deliverable hygiene
 
@@ -233,6 +234,7 @@ when the change is its own record.
    - CI on `main` is green;
    - `cache.yml` ran and saved its caches (the first merge after mission 001).
 2. Remove your worktree and local branch.
-3. Ask before deleting the PR branch on the remote. Each deletion needs its own yes, and the branch may be the
-   evidence home for a mission's red commits.
+3. On a mission or op PR, keep the folded PR branch and `archive/<branch>-prefold` on the remote: after the squash
+   they are the only home of the commits the evidence names. Never offer to delete them. On a contributor PR or a
+   chore, ask before deleting its branch; each deletion needs its own yes.
 4. Tell the operator what landed and where the records are.
