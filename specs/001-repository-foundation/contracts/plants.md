@@ -1,9 +1,13 @@
 # Contract: plants
 
 Layout: `gates/plants/<gate-id>/<case>/plant.json` plus inputs. `plant.json` (data-model.md § Plant):
-`{"expect": "fail"|"pass"|"error", "why": "...", "findings": [...], "records": [...]}`; `findings` is required for a
-`fail` plant and lists exactly the findings the gate must report (location and rule, optionally a message
-substring).
+`{"expect": "fail"|"pass"|"error", "why": "...", "findings": [...], "records": [...], "base": "..."}`; `findings` is
+required for a `fail` plant and lists exactly the findings the gate must report (location and rule, optionally a
+message substring). `base` is optional (a non-empty string): the plant runner puts it in place of `{base}` in the
+gate's plant command instead of the temporary repository's base commit; the mutation breaking plant
+`error-unresolvable-base` sets `refs/heads/no-such-base` to present a `--base` that does not resolve (mutation row
+below). It is an input of the gate, not gate configuration (operator decision, phase 4 round 2 note R2-02, feature
+gate, human:jeroennouwsdev, 2026-11-03).
 
 Plant mode runs the repository's own gate configuration and swaps only the inputs. A plant carries no
 configuration: no `tsconfig*.json` and no ESLint, Stylelint, Vitest, Vite or Stryker configuration file anywhere in

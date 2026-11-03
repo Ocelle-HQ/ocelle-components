@@ -142,6 +142,19 @@ for one test-first unit, reviewed as phase 3's next round before phase 4 starts.
   4. **Check**: `pnpm test`, `pnpm run gate:test-lint` (exit 0 on the repository's own test code), `pnpm run gate:mutation -- --base $(cat specs/001-repository-foundation/reviews/phase-3/base.sha)` (no survivor in the new module; the rules are pure and killed in-process by the `RuleTester` tests), then commit green
   5. **Records** (operator decision at the phase 3 gate, 2026-11-02: "In this round: the implementer adds the covering test's name to each existing record in the same phase 3 round as the new rule."): every existing integration-only record in `gates/bin/test.ts`, `gates/bin/setup-offline.ts`, `gates/bin/mutation.ts`, `gates/lib/spawn.ts` and `gates/lib/cli.ts` names its covering `gates-integration` case (file and test name) as research.md R-08 requires; a record that no case covers is removed and its mutants killed test-first or shown equivalent; commit with the green commit or as `refactor(001-repository-foundation): phase 3 addendum records`
 
+### Operator addendum (feature gate)
+
+Operator decision at the feature gate, 2026-11-03 (human:jeroennouwsdev, recorded as phase 3 round 5, findings
+O5-01 and O5-02, on round 4 notes R4-02 and R4-03): "Fix in this PR" ("One more fix round now, test-first, before
+merge."). Phase 3 was approved in round 4; this task reopens it for one test-first unit, reviewed as phase 3's
+round 6.
+
+- [ ] T094 [US2] Spawn error path and integration-only records (research.md R-08, R-09; reviews/phase-3/round-5.md O5-01, O5-02), test-first:
+  1. **Stub**: none needed; `gates/lib/spawn.ts`, `gates/bin/config-copies.ts`, `gates/bin/test-lint.ts` and their tests exist.
+  2. **Red** (test files and fixtures only, one commit): (O5-01) a test that starts a command that does not exist through `gates/lib/spawn.ts` and asserts the exact outcome the gate contract requires (exit 2, "could not run", contracts/gate-cli.md), so that a mutant of `child.on("error", reject)` fails it; in process in the `gates` project where the line can be reached there, otherwise a `gates-integration` case under `gates/test/integration/`. (O5-02) For each `// Stryker disable` record in `gates/bin/config-copies.ts` and `gates/bin/test-lint.ts` that names no covering case: where no `gates-integration` case runs its line, add one here. Commit alone, run `red.sh 3 fix-5` (round 5 is the operator round that requests this addendum) and confirm every new failure is an assertion failure against the current code, not a load error. A case that passes at once because the behaviour already exists is reported in the round's notes with the mutant it kills, not forced red
+  3. **Green**: make the new cases pass; set the record on `child.on("error", reject)` to name the case of step 2 if it stays integration-only, or remove it if the case kills its mutants in process; make every record in `gates/bin/config-copies.ts` and `gates/bin/test-lint.ts` name its covering `gates-integration` case as file and test name (R-08), or remove the record and kill its mutants
+  4. **Check**: `pnpm test`, every `pnpm run gate:<id>` (exit 0) and `pnpm run gate:plants` (exit 0), and `pnpm run gate:mutation -- --base $(cat specs/001-repository-foundation/reviews/phase-3/base.sha) --files gates/lib/spawn.ts,gates/bin/config-copies.ts,gates/bin/test-lint.ts` (the changed files; no survivor, every record reasoned and naming its case); commit green
+
 **Checkpoint**: US1 and US2 both work; every later review runs mutation testing.
 
 ---
@@ -272,6 +285,7 @@ feature's shards are not timed cold (quickstart step 12).
 - Phase 2: the red tests T016 to T022 are separate files; in green, T024, T026, T027 and T029 are independent.
 - Phase 3: T033 to T041 in parallel; T043 and T045 in parallel with T044.
 - Phase 3 addendum: T091 is one unit (stub, red, green, check) after T050; nothing runs in parallel with it.
+- Phase 3 addendum (feature gate): T094 is one unit (red, green, check) after phase 4's round 4 review; nothing runs in parallel with it.
 - Phase 4: T052 to T062 and T092 in parallel; T064 to T070 in parallel; the plant groups T073 to T078 in parallel; T080 and T081 in parallel with T079.
 - Phase 4 addendum: T093 is one unit (red, green, check) after phase 5's review; nothing runs in parallel with it.
 - Phase 5: T085 to T089 in parallel.

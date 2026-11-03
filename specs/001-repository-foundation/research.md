@@ -347,6 +347,16 @@ round 1 re-pinned every registry package published less than 7 days before 2026-
   `FEATURE_DIR/reviews/phase-<N>/mutation-shards.md`, which the phase review reads; a shard whose local run takes
   more than 10 minutes is a blocking review finding. The CI run of the feature's pull request is the measurement on
   the runner of SC-001 (quickstart step 12).
+- **SC-005 measurement** (operator decision, phase 4 round 4 note R4-01, feature gate, human:jeroennouwsdev,
+  2026-11-03: "Accept for now: Record this run as the SC-005 measurement, and investigate any cancelled shard if one
+  happens."): SC-005 is measured on GitHub run
+  https://github.com/Ocelle-HQ/ocelle-components/actions/runs/41613884529 (head `e985ed3`): 18 shards, all
+  finished, the longest 8:01 (`gates/lib/pins-rules.ts` alone, 137 changed lines). Shard time follows the mutants
+  per file (the TypeScript checker handles one file's mutants in sequence), not the changed lines, so a lower line
+  bound does not shorten a single-file shard. A shard cancelled at the 10-minute limit is a failure to investigate,
+  not to re-run blindly. If it recurs, the known lever is to split a file's changed line ranges across shards
+  (`mutateSpecs` already emits `path:start-end` per range, `gates/lib/mutation/ranges.ts`), which needs a spec
+  change, since FR-013 makes a file over the bound a shard of its own.
 - **Story workflow (FR-007)**: `mutation_command: "pnpm run gate:mutation"`; the story review command is changed to
   read `FEATURE_DIR/reviews/phase-<N>/base.sha` and run `pnpm run gate:mutation -- --base <sha>`, a command the
   `.claude/settings.json` allowlist (`Bash(pnpm run:*)`) covers in unattended runs. No environment variable is used.

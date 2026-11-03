@@ -131,6 +131,14 @@ runner variance took a 435-line shard past 10 minutes): the FR-013 shard bound g
 250 changed lines is a shard on its own. More shard jobs run in parallel with the same mutation strength.
 `gates/lib/mutation/shards.ts` changes test-first as T093 (red under `red.sh 4 fix-3`). No new exception.
 
+**Re-check after the feature gate** (operator decisions, human:jeroennouwsdev, 2026-11-03): SC-005 is measured on
+GitHub run 41613884529 and accepted with its 1:59 margin; a cancelled shard is investigated (phase 4 round 4 note
+R4-01, § Verification, R-08). The optional `plant.json` field `base` is in data-model.md § Plant and
+contracts/plants.md (phase 4 round 2 note R2-02). Phase 3 reopens for one test-first unit, T094 (red under
+`red.sh 3 fix-5`), so that `gates/lib/spawn.ts`'s `child.on("error")` path is covered and the equivalent-mutant
+records of `gates/bin/config-copies.ts` and `gates/bin/test-lint.ts` name their covering `gates-integration` case
+as R-08 requires (phase 3 round 5, O5-01 and O5-02: "Fix in this PR"). No new exception.
+
 ## Project Structure
 
 ### Documentation (this feature)
@@ -294,7 +302,14 @@ makes every GitHub-side check and records each result, with its evidence (comman
    `ci.yml`, `gates.json` and `registry.ts` together cannot merge with that check missing (operator decision, plan
    squad round 2).
 4. Timings: SC-001 (cold install plus tests) and SC-005 (every mutation shard of the feature's pull request,
-   quickstart step 12; cold, since `cache.yml` first runs when the feature merges).
+   quickstart step 12; cold, since `cache.yml` first runs when the feature merges). SC-005 is measured on GitHub
+   run https://github.com/Ocelle-HQ/ocelle-components/actions/runs/41613884529 (head `e985ed3`): 18 shards, all
+   finished, the longest 8:01 (`gates/lib/pins-rules.ts` alone, 137 changed lines). Shard time follows the
+   mutants per file, not the changed lines, so the line bound does not shorten a single-file shard. A shard
+   cancelled at the 10-minute limit is a failure to investigate, not to re-run blindly; if it recurs, splitting a
+   file's changed line ranges across shards is the known lever (R-08; a spec change to FR-013). Operator decision,
+   phase 4 round 4 note R4-01, feature gate, human:jeroennouwsdev, 2026-11-03: "Accept for now: Record this run as
+   the SC-005 measurement, and investigate any cancelled shard if one happens."
 
 ## Complexity Tracking
 

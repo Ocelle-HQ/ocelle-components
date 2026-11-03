@@ -26,6 +26,7 @@ plant.
 | `why` | `plant.json` | the defect, near-miss or breakage, in one sentence, naming the FR |
 | `findings` | `plant.json`, `fail` only | the exact list of expected findings: `location` and `rule` (as in § Finding, `location` relative to the plant; for a `repo-tree` or `mutation-repo` plant relative to the temporary repository, that is the repository path below `tree/` or `head/`; for a `commit-repo` plant `commit:<n>`, the n-th record of `commits.txt`), and optionally `message`, a substring the finding's message must contain |
 | `records` | `plant.json`, mutation `pass` only | the expected equivalent-mutant records: `location`, `mutator`, `reason` |
+| `base` | `plant.json`, optional, any `expect` | a non-empty string: the base the plant presents to its gate, which the plant runner puts in place of `{base}` in the gate's plant command instead of the temporary repository's base commit (`gates/lib/plant-runner.ts` `plantValues`); a `workspace` plant has no `{base}`, so it has no effect there. Used by the mutation breaking plant `gates/plants/mutation/error-unresolvable-base/` (`refs/heads/no-such-base`, a `--base` that does not resolve). An input of the gate, like the plant's files, not gate configuration (operator decision, phase 4 round 2 note R2-02, feature gate, human:jeroennouwsdev, 2026-11-03: "Planner adds it now") |
 
 State: a plant is **caught** when the gate exits 1 on a `fail` plant and its findings, compared as a set of
 (`location`, `rule`) with each given `message` substring present, equal `findings`; **accepted** when the gate exits
