@@ -1,0 +1,11 @@
+{
+  "expect": "fail",
+  "why": "minimumReleaseAge is missing (FR-027, research.md R-04).",
+  "findings": [
+    {
+      "location": "pnpm-workspace.yaml",
+      "rule": "release-age",
+      "message": "minimumReleaseAge is missing"
+    }
+  ]
+}

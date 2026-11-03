@@ -1,0 +1,17 @@
+lockfileVersion: '9.0'
+
+settings:
+  autoInstallPeers: true
+  excludeLinksFromLockfile: false
+
+importers:
+
+  .: {}
+
+  packages/elements:
+    dependencies:
+      '@ocelle/tokens':
+        specifier: workspace:0.0.0
+        version: link:../tokens
+
+  packages/tokens: {}

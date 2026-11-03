@@ -1,0 +1,11 @@
+{
+  "expect": "fail",
+  "why": "dangerouslyAllowAllBuilds: true (FR-027).",
+  "findings": [
+    {
+      "location": "pnpm-workspace.yaml",
+      "rule": "allow-builds",
+      "message": "dangerouslyAllowAllBuilds"
+    }
+  ]
+}

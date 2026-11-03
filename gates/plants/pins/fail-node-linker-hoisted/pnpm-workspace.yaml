@@ -1,0 +1,8 @@
+# Plant for the install-and-pins check: a mini-workspace.
+packages:
+  - "packages/*"
+
+minimumReleaseAge: 10080
+minimumReleaseAgeStrict: true
+allowBuilds: {}
+nodeLinker: hoisted

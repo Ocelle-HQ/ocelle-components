@@ -1,0 +1,11 @@
+{
+  "expect": "fail",
+  "why": "An allowBuilds entry set to true lets a dependency run install scripts (FR-027).",
+  "findings": [
+    {
+      "location": "pnpm-workspace.yaml",
+      "rule": "allow-builds",
+      "message": "esbuild"
+    }
+  ]
+}

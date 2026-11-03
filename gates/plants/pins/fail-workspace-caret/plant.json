@@ -1,0 +1,11 @@
+{
+  "expect": "fail",
+  "why": "workspace:^ on a workspace package is not an exact version (FR-027).",
+  "findings": [
+    {
+      "location": "packages/elements/package.json",
+      "rule": "range",
+      "message": "workspace:^"
+    }
+  ]
+}
