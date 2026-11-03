@@ -1,0 +1,11 @@
+{
+  "expect": "fail",
+  "why": "A raw length in a stylesheet of @ocelle/styles outside src/ is package source too (FR-024, FR-028).",
+  "findings": [
+    {
+      "location": "packages/styles/x.css:3",
+      "rule": "ocelle/token-only",
+      "message": "4px"
+    }
+  ]
+}

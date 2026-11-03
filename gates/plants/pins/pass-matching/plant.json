@@ -1,0 +1,4 @@
+{
+  "expect": "pass",
+  "why": "A matching mini-workspace with workspace:0.0.0 on a sibling at 0.0.0, exact pins and the policy settings passes (FR-027)."
+}

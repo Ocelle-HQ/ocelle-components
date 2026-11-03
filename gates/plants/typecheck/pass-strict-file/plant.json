@@ -1,0 +1,4 @@
+{
+  "expect": "pass",
+  "why": "A clean strict file in package source passes (FR-020)."
+}

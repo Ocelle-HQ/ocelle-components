@@ -1,0 +1,5 @@
+author: Ada Example <ada@example.com>
+
+Add a change signed off by someone else
+
+Signed-off-by: Bob Example <bob@example.org>

@@ -1,0 +1,15 @@
+{
+  "expect": "fail",
+  "why": "workspace:0.0.1 on a sibling at version 0.0.0 differs from the package's version (FR-027); pnpm cannot resolve it, so no lockfile matches it, and the lockfile of the matching workspace is reported too.",
+  "findings": [
+    {
+      "location": "packages/elements/package.json",
+      "rule": "workspace",
+      "message": "0.0.1"
+    },
+    {
+      "location": "pnpm-lock.yaml",
+      "rule": "lockfile"
+    }
+  ]
+}

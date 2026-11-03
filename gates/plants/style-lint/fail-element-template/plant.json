@@ -1,0 +1,11 @@
+{
+  "expect": "fail",
+  "why": "A raw length in a css template of @ocelle/elements source is reported (FR-024, postcss-lit).",
+  "findings": [
+    {
+      "location": "packages/elements/src/x.ts:6",
+      "rule": "ocelle/token-only",
+      "message": "4px"
+    }
+  ]
+}

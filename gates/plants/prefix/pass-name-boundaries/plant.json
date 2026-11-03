@@ -1,0 +1,4 @@
+{
+  "expect": "pass",
+  "why": "task-list, desk-row and --risk-level contain sk- but not at a name boundary (FR-022)."
+}

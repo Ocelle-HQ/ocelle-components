@@ -1,0 +1,4 @@
+{
+  "expect": "pass",
+  "why": "Identifiers that only contain eval or Function (retrieval, isFunction) are not calls of them (FR-021, research.md R-11)."
+}

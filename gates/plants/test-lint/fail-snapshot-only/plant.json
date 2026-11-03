@@ -1,0 +1,10 @@
+{
+  "expect": "fail",
+  "why": "A test whose only assertion is a snapshot (FR-010, SC-004).",
+  "findings": [
+    {
+      "location": "packages/tokens/test/x.test.ts:5",
+      "rule": "ocelle/no-snapshot-only"
+    }
+  ]
+}

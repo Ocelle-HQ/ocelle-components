@@ -95,7 +95,7 @@ export async function checkChromium(env: Io["env"]): Promise<ChromiumCheck> {
   // Stryker disable next-line all: process boundary, covered by gates-integration: gates/test/integration/test-command.test.ts "exits 2 naming the override when OCELLE_CHROMIUM_PATH points at no executable"
   return chromiumCheck({
     // Stryker disable next-line all: process boundary, covered by gates-integration: gates/test/integration/test-command.test.ts "exits 2 naming the override when OCELLE_CHROMIUM_PATH points at no executable"
-    override: env["OCELLE_CHROMIUM_PATH"],
+    override: env.OCELLE_CHROMIUM_PATH,
     playwrightPath: await playwrightChromium(),
     exists: existsSync,
   });

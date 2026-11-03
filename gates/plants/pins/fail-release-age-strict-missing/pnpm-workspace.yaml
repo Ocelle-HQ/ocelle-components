@@ -1,0 +1,6 @@
+# Plant for the install-and-pins check: a mini-workspace.
+packages:
+  - "packages/*"
+
+minimumReleaseAge: 10080
+allowBuilds: {}

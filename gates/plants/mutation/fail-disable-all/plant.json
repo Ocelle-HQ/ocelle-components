@@ -1,0 +1,10 @@
+{
+  "expect": "fail",
+  "why": "A disable comment that is not a next-line record (// Stryker disable all) in changed code (FR-012).",
+  "findings": [
+    {
+      "location": "packages/tokens/src/x.ts:3",
+      "rule": "disable-form"
+    }
+  ]
+}

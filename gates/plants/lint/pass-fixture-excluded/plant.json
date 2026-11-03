@@ -1,0 +1,4 @@
+{
+  "expect": "pass",
+  "why": "A floating promise under gates/test/fixtures/ is not linted: fixtures are excluded from every gate (FR-028)."
+}

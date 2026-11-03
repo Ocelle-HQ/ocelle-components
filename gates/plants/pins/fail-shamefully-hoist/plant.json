@@ -1,0 +1,11 @@
+{
+  "expect": "fail",
+  "why": "shamefullyHoist: true turns hoisting on (FR-027, research.md R-14).",
+  "findings": [
+    {
+      "location": "pnpm-workspace.yaml",
+      "rule": "hoisting",
+      "message": "shamefullyHoist"
+    }
+  ]
+}

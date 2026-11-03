@@ -1,0 +1,10 @@
+{
+  "expect": "fail",
+  "why": "A /onload= handler on an svg element in built markup (FR-021, research.md R-11).",
+  "findings": [
+    {
+      "location": "packages/elements/dist/x.js:2",
+      "rule": "event-handler"
+    }
+  ]
+}

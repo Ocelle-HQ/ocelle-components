@@ -1,0 +1,4 @@
+{
+  "expect": "pass",
+  "why": "An inline script in package source is not built output, so this gate does not read it (FR-021, FR-028)."
+}

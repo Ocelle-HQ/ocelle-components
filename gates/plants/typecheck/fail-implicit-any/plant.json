@@ -1,0 +1,11 @@
+{
+  "expect": "fail",
+  "why": "An implicit any (TS7006) in package source is a strict-mode type error (FR-020, FR-002).",
+  "findings": [
+    {
+      "location": "packages/tokens/src/x.ts:2",
+      "rule": "TS7006",
+      "message": "implicitly has an 'any' type"
+    }
+  ]
+}

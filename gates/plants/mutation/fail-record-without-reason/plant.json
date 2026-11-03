@@ -1,0 +1,11 @@
+{
+  "expect": "fail",
+  "why": "An equivalent-mutant record without a reason (FR-012).",
+  "findings": [
+    {
+      "location": "packages/tokens/src/x.ts:3",
+      "rule": "disable-form",
+      "message": "without a reason"
+    }
+  ]
+}

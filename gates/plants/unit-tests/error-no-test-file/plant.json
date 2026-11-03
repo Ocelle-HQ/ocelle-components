@@ -1,0 +1,4 @@
+{
+  "expect": "error",
+  "why": "No test file in any project: the gate could not run, \"no test file found\" (FR-004)."
+}

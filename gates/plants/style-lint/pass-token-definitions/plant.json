@@ -1,0 +1,4 @@
+{
+  "expect": "pass",
+  "why": "A raw length in @ocelle/tokens is a token definition, not covered (FR-024)."
+}

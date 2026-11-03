@@ -1,0 +1,4 @@
+{
+  "expect": "pass",
+  "why": "A dashed identifier (anchor-name: --tip) is allowed (FR-024)."
+}

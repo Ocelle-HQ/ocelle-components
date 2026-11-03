@@ -1,0 +1,11 @@
+{
+  "expect": "fail",
+  "why": "A failing test of @ocelle/elements runs in real Chromium: it asserts a browser brand that does not exist, and its message names the Chromium brands (FR-005, research.md R-03).",
+  "findings": [
+    {
+      "location": "packages/elements/test/x.test.ts:10",
+      "rule": "planted elements runs in a browser brand that does not exist",
+      "message": "Chromium"
+    }
+  ]
+}

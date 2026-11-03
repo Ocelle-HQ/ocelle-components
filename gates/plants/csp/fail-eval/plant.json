@@ -1,0 +1,10 @@
+{
+  "expect": "fail",
+  "why": "eval() in built output (FR-021).",
+  "findings": [
+    {
+      "location": "packages/elements/dist/x.js:3",
+      "rule": "eval"
+    }
+  ]
+}

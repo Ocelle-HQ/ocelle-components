@@ -1,0 +1,10 @@
+{
+  "expect": "fail",
+  "why": "An assertion outside a test (FR-010, SC-004).",
+  "findings": [
+    {
+      "location": "packages/tokens/test/x.test.ts:4",
+      "rule": "vitest/no-standalone-expect"
+    }
+  ]
+}

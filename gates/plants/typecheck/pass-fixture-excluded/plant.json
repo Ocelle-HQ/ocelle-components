@@ -1,0 +1,4 @@
+{
+  "expect": "pass",
+  "why": "An implicit any under gates/test/fixtures/ is not checked: fixtures are excluded from every gate (FR-028)."
+}

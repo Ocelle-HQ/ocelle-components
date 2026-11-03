@@ -1,0 +1,4 @@
+/* Plant for the style lint. */
+:host {
+  transition-duration: 150ms;
+}

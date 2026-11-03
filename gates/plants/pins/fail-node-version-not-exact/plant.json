@@ -1,0 +1,11 @@
+{
+  "expect": "fail",
+  "why": ".node-version is 26, not an exact version (FR-027).",
+  "findings": [
+    {
+      "location": ".node-version",
+      "rule": "node-version",
+      "message": "\"26\""
+    }
+  ]
+}

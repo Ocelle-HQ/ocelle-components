@@ -1,0 +1,11 @@
+{
+  "expect": "fail",
+  "why": "An sk- event name in built output (FR-022, FR-028).",
+  "findings": [
+    {
+      "location": "packages/elements/dist/x.js:3",
+      "rule": "sk-name",
+      "message": "sk-select"
+    }
+  ]
+}

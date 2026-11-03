@@ -1,0 +1,11 @@
+{
+  "expect": "fail",
+  "why": "A ~ range (FR-027, US1 scenario 8).",
+  "findings": [
+    {
+      "location": "package.json",
+      "rule": "range",
+      "message": "~2.7.0"
+    }
+  ]
+}

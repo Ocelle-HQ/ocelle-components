@@ -1,0 +1,11 @@
+{
+  "expect": "fail",
+  "why": "A rem length (margin: 2rem) is rejected (FR-024).",
+  "findings": [
+    {
+      "location": "packages/styles/src/x.css:3",
+      "rule": "ocelle/token-only",
+      "message": "2rem"
+    }
+  ]
+}

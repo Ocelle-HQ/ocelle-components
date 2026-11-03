@@ -1,0 +1,11 @@
+{
+  "expect": "fail",
+  "why": "An rgb() colour (color: rgb(0 0 0)) is rejected (FR-024).",
+  "findings": [
+    {
+      "location": "packages/styles/src/x.css:3",
+      "rule": "ocelle/token-only",
+      "message": "rgb(0 0 0)"
+    }
+  ]
+}

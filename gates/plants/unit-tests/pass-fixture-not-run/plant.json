@@ -1,0 +1,4 @@
+{
+  "expect": "pass",
+  "why": "A failing test file under gates/test/fixtures/ is not run (FR-028), so a passing tokens test beside it passes."
+}
