@@ -1,13 +1,15 @@
 // Temporary repositories for plants (research.md R-10, contracts/plants.md): `repo-tree` lays a plant's `tree/` over
 // the repository's configuration set, `commit-repo` builds a git history from a plant's commits.txt on an empty
 // signed-off base commit, and `mutation-repo` commits the configuration set with the plant's `base/`, then its
-// `head/`. node_modules is linked from the repository in each. configurationSet, carriesConfiguration and
-// parseCommits are pure and tested in process; the builders only copy files and run git (the process boundary,
-// tested by gates/test/integration/plant-repo.test.ts).
+// `head/`. node_modules is linked from the repository in each. The decisions (configurationSet, packagePaths,
+// carriesConfiguration, parseCommits, recordsOf, parentRecords, identityEnv, baseCommit, ignoreMissing) are pure and tested in
+// process (gates/test/plant-repo.test.ts); the builders only copy files and run git with their results (the process
+// boundary, tested by gates/test/integration/plant-repo.test.ts).
 import { execFile } from "node:child_process";
 import { cp, mkdir, readdir, readFile, rm, symlink, writeFile } from "node:fs/promises";
 import { basename, join } from "node:path";
 import { promisify } from "node:util";
+import { directoryNames, filePaths } from "./entries.ts";
 
 /** One record of a commit plant's commits.txt. */
 export interface CommitSpec {
@@ -52,6 +54,11 @@ export function carriesConfiguration(paths: readonly string[]): string[] {
   return paths.filter((path) => configurationName.test(basename(path))).sort();
 }
 
+/** The package directories of the configuration set, by package directory name. */
+export function packagePaths(names: readonly string[]): string[] {
+  return names.map((name) => `packages/${name}`);
+}
+
 /** The records of a commits.txt text; throws naming the problem when a record is invalid. */
 export function parseCommits(text: string): CommitSpec[] {
   const chunks = text.split(/^%%(?:\n|$)/m).filter((chunk) => chunk.trim() !== "");
@@ -67,7 +74,9 @@ export function parseCommits(text: string): CommitSpec[] {
     let parent: number | undefined;
     let merge: [number, number] | undefined;
     for (const line of head) {
-      const [, key = "", value = ""] = /^([\w-]+): (.*)$/.exec(line) ?? [];
+      const header = /^([\w-]+): (.*)/.exec(line);
+      if (header === null) throw new Error(`${at}: unknown header ${line}`);
+      const [, key, value] = header as unknown as [string, string, string];
       if (key === "author") {
         if (!/^[^<>]+ <[^<>\s]+>$/.test(value)) throw new Error(`${at}: author must be Name <email>`);
         author = value;
@@ -76,19 +85,52 @@ export function parseCommits(text: string): CommitSpec[] {
         if (!/^\d+$/.test(value) || parent >= number) throw new Error(`${at}: parent ${value} is not an earlier record`);
       } else if (key === "merge") {
         const [a, b, extra] = value.split(" ").map(Number);
-        const earlier = (n: number | undefined): n is number => n !== undefined && Number.isInteger(n) && n >= 0 && n < number;
+        const earlier = (n: number | undefined): n is number => Number.isInteger(n) && Number(n) >= 0 && Number(n) < number;
         if (!earlier(a) || !earlier(b) || a === b || extra !== undefined) {
           throw new Error(`${at}: merge ${value} must name two different earlier records`);
         }
         merge = [a, b];
       } else {
-        throw new Error(`${at}: unknown header ${key === "" ? line : key}`);
+        throw new Error(`${at}: unknown header ${key}`);
       }
     }
     if (author === undefined) throw new Error(`${at} has no author`);
     if (message === "") throw new Error(`${at} has no message`);
     return { author, message, ...(parent === undefined ? {} : { parent }), ...(merge === undefined ? {} : { merge }) };
   });
+}
+
+/** The records of a commit plant's commits.txt; none when the plant has no commits.txt (an empty range). */
+export function recordsOf(text: string | undefined): CommitSpec[] {
+  return text === undefined ? [] : parseCommits(text);
+}
+
+/** The records whose commits are a record's parents (0 is the base commit): its merge, its parent, or the one before. */
+export function parentRecords(record: CommitSpec, index: number): readonly number[] {
+  return record.merge ?? [record.parent ?? index];
+}
+
+/** The environment that makes `author` (a valid `Name <email>`) the author and committer of a commit. */
+export function identityEnv(author: string): Record<string, string> {
+  const at = author.lastIndexOf(" <");
+  const name = author.slice(0, at);
+  const email = author.slice(at + 2, -1);
+  return { GIT_AUTHOR_NAME: name, GIT_AUTHOR_EMAIL: email, GIT_COMMITTER_NAME: name, GIT_COMMITTER_EMAIL: email };
+}
+
+/** The empty base commit of a commit plant: an invented RFC 2606 identity that signs it off (research.md R-10). */
+export function baseCommit(): { readonly author: string; readonly message: string } {
+  const author = "Plant Base <base@example.com>";
+  return { author, message: `Plant base\n\nSigned-off-by: ${author}` };
+}
+
+/** The author of a mutation plant's two commits. */
+export const mutationAuthor = "Plant Author <plant@example.com>";
+
+/** Rethrows a file system error unless it says the file does not exist (a plant without that optional part). */
+export function ignoreMissing(error: unknown): undefined {
+  if ((error as { code?: unknown } | null)?.code !== "ENOENT") throw error;
+  return undefined;
 }
 
 // Stryker disable next-line all: process boundary, covered by gates-integration: gates/test/integration/plant-repo.test.ts "buildCommitRepo makes an empty base commit signed off by Plant Base, then one commit per record, with real merges"
@@ -103,25 +145,13 @@ async function git(dir: string, args: readonly string[], env: Record<string, str
   return stdout.trim();
 }
 
-/** The environment that makes `author` (`Name <email>`) the author and committer of a commit. */
-// Stryker disable next-line all: process boundary, covered by gates-integration: gates/test/integration/plant-repo.test.ts "buildCommitRepo makes an empty base commit signed off by Plant Base, then one commit per record, with real merges"
-function as(author: string): Record<string, string> {
-  // Stryker disable next-line all: process boundary, covered by gates-integration: gates/test/integration/plant-repo.test.ts "buildCommitRepo makes an empty base commit signed off by Plant Base, then one commit per record, with real merges"
-  const [, name = "", email = ""] = /^(.*) <(.*)>$/.exec(author) ?? [];
-  // Stryker disable next-line all: process boundary, covered by gates-integration: gates/test/integration/plant-repo.test.ts "buildCommitRepo makes an empty base commit signed off by Plant Base, then one commit per record, with real merges"
-  return { GIT_AUTHOR_NAME: name, GIT_AUTHOR_EMAIL: email, GIT_COMMITTER_NAME: name, GIT_COMMITTER_EMAIL: email };
-}
-
 /** Copies the configuration set of `repo` into `into` and links `repo`'s node_modules there. */
 // Stryker disable next-line all: process boundary, covered by gates-integration: gates/test/integration/plant-repo.test.ts "buildRepoTree copies the configuration set unchanged, lays tree/ over it at repository paths, and links node_modules"
 async function copyConfiguration(repo: string, into: string): Promise<void> {
   // Stryker disable next-line all: process boundary, covered by gates-integration: gates/test/integration/plant-repo.test.ts "buildRepoTree copies the configuration set unchanged, lays tree/ over it at repository paths, and links node_modules"
-  const packages = (await readdir(join(repo, "packages"), { withFileTypes: true })).filter((entry) => entry.isDirectory());
+  const packages = packagePaths(directoryNames(await readdir(join(repo, "packages"), { withFileTypes: true })));
   // Stryker disable next-line all: process boundary, covered by gates-integration: gates/test/integration/plant-repo.test.ts "buildRepoTree copies the configuration set unchanged, lays tree/ over it at repository paths, and links node_modules"
-  for (const path of configurationSet(packages.map((entry) => `packages/${entry.name}`))) {
-    // Stryker disable next-line all: process boundary, covered by gates-integration: gates/test/integration/plant-repo.test.ts "buildRepoTree copies the configuration set unchanged, lays tree/ over it at repository paths, and links node_modules"
-    await cp(join(repo, path), join(into, path), { recursive: true });
-  }
+  for (const path of configurationSet(packages)) await cp(join(repo, path), join(into, path), { recursive: true });
   // Stryker disable next-line all: process boundary, covered by gates-integration: gates/test/integration/plant-repo.test.ts "buildRepoTree copies the configuration set unchanged, lays tree/ over it at repository paths, and links node_modules"
   await symlink(join(repo, "node_modules"), join(into, "node_modules"), "dir");
 }
@@ -130,10 +160,7 @@ async function copyConfiguration(repo: string, into: string): Promise<void> {
 // Stryker disable next-line all: process boundary, covered by gates-integration: gates/test/integration/plant-repo.test.ts "buildRepoTree builds the configuration set alone for a plant without tree/"
 async function layOver(plant: string, part: string, into: string): Promise<void> {
   // Stryker disable next-line all: process boundary, covered by gates-integration: gates/test/integration/plant-repo.test.ts "buildRepoTree builds the configuration set alone for a plant without tree/"
-  await cp(join(plant, part), into, { recursive: true }).catch((error: unknown) => {
-    // Stryker disable next-line all: process boundary, covered by gates-integration: gates/test/integration/plant-repo.test.ts "buildRepoTree builds the configuration set alone for a plant without tree/"
-    if ((error as NodeJS.ErrnoException).code !== "ENOENT") throw error;
-  });
+  await cp(join(plant, part), into, { recursive: true }).catch(ignoreMissing);
 }
 
 /** Lays the configuration set of `repo` and the plant's `tree/` into `into`, and links `repo`'s node_modules. */
@@ -145,36 +172,28 @@ export async function buildRepoTree(repo: string, plant: string, into: string): 
   await layOver(plant, "tree", into);
 }
 
-const base = "Plant Base <base@example.com>";
-
 /**
  * A git repository in `into`: an empty signed-off base commit, then one commit per record of the plant's commits.txt
- * (none when the plant has no commits.txt).
+ * (none when the plant has no commits.txt: HEAD is the base commit and the range base..HEAD is empty).
  */
 // Stryker disable next-line all: process boundary, covered by gates-integration: gates/test/integration/plant-repo.test.ts "buildCommitRepo makes an empty base commit signed off by Plant Base, then one commit per record, with real merges"
 export async function buildCommitRepo(plant: string, into: string): Promise<{ readonly base: string; readonly commits: readonly string[] }> {
   // Stryker disable next-line all: process boundary, covered by gates-integration: gates/test/integration/plant-repo.test.ts "buildCommitRepo makes an empty base commit signed off by Plant Base, then one commit per record, with real merges"
-  const text = await readFile(join(plant, "commits.txt"), "utf8").catch((error: unknown) => {
-    // Stryker disable next-line all: process boundary, covered by the plant job: gates/plants/signoff/error-empty-range has no commits.txt
-    if ((error as NodeJS.ErrnoException).code !== "ENOENT") throw error;
-  });
-  // A plant without commits.txt has no record: HEAD is the base commit and the range base..HEAD is empty.
-  // Stryker disable next-line all: process boundary, covered by the plant job: gates/plants/signoff/error-empty-range has no commits.txt
-  const records = text === undefined ? [] : parseCommits(text);
+  const records = recordsOf(await readFile(join(plant, "commits.txt"), "utf8").catch(ignoreMissing));
   // Stryker disable next-line all: process boundary, covered by gates-integration: gates/test/integration/plant-repo.test.ts "buildCommitRepo makes an empty base commit signed off by Plant Base, then one commit per record, with real merges"
   await git(into, ["init", "-q", "-b", "main"]);
   // Stryker disable next-line all: process boundary, covered by gates-integration: gates/test/integration/plant-repo.test.ts "buildCommitRepo makes an empty base commit signed off by Plant Base, then one commit per record, with real merges"
   const tree = await git(into, ["hash-object", "-t", "tree", "-w", "/dev/null"]);
   // Stryker disable next-line all: process boundary, covered by gates-integration: gates/test/integration/plant-repo.test.ts "buildCommitRepo makes an empty base commit signed off by Plant Base, then one commit per record, with real merges"
-  const hashes = [await git(into, ["commit-tree", tree, "-m", `Plant base\n\nSigned-off-by: ${base}`], as(base))];
+  const { author, message } = baseCommit();
+  // Stryker disable next-line all: process boundary, covered by gates-integration: gates/test/integration/plant-repo.test.ts "buildCommitRepo makes an empty base commit signed off by Plant Base, then one commit per record, with real merges"
+  const hashes = [await git(into, ["commit-tree", tree, "-m", message], identityEnv(author))];
   // Stryker disable next-line all: process boundary, covered by gates-integration: gates/test/integration/plant-repo.test.ts "buildCommitRepo makes an empty base commit signed off by Plant Base, then one commit per record, with real merges"
   for (const [index, record] of records.entries()) {
     // Stryker disable next-line all: process boundary, covered by gates-integration: gates/test/integration/plant-repo.test.ts "buildCommitRepo makes an empty base commit signed off by Plant Base, then one commit per record, with real merges"
-    const parents = record.merge ?? [record.parent ?? index];
+    const parentArgs = parentRecords(record, index).flatMap((parent) => ["-p", String(hashes[parent])]);
     // Stryker disable next-line all: process boundary, covered by gates-integration: gates/test/integration/plant-repo.test.ts "buildCommitRepo makes an empty base commit signed off by Plant Base, then one commit per record, with real merges"
-    const parentArgs = parents.flatMap((parent) => ["-p", String(hashes[parent])]);
-    // Stryker disable next-line all: process boundary, covered by gates-integration: gates/test/integration/plant-repo.test.ts "buildCommitRepo makes an empty base commit signed off by Plant Base, then one commit per record, with real merges"
-    hashes.push(await git(into, ["commit-tree", tree, ...parentArgs, "-m", record.message], as(record.author)));
+    hashes.push(await git(into, ["commit-tree", tree, ...parentArgs, "-m", record.message], identityEnv(record.author)));
   }
   // Stryker disable next-line all: process boundary, covered by gates-integration: gates/test/integration/plant-repo.test.ts "buildCommitRepo makes an empty base commit signed off by Plant Base, then one commit per record, with real merges"
   await git(into, ["reset", "-q", "--hard", String(hashes.at(-1))]);
@@ -186,7 +205,7 @@ export async function buildCommitRepo(plant: string, into: string): Promise<{ re
 // Stryker disable next-line all: process boundary, covered by gates-integration: gates/test/integration/plant-repo.test.ts "buildMutationRepo commits the configuration set with base/, then head/ (files only in base/ deleted), node_modules linked and untracked"
 export async function buildMutationRepo(repo: string, plant: string, into: string): Promise<{ readonly base: string }> {
   // Stryker disable next-line all: process boundary, covered by gates-integration: gates/test/integration/plant-repo.test.ts "buildMutationRepo commits the configuration set with base/, then head/ (files only in base/ deleted), node_modules linked and untracked"
-  const author = as("Plant Author <plant@example.com>");
+  const author = identityEnv(mutationAuthor);
   // Stryker disable next-line all: process boundary, covered by gates-integration: gates/test/integration/plant-repo.test.ts "buildMutationRepo commits the configuration set with base/, then head/ (files only in base/ deleted), node_modules linked and untracked"
   await copyConfiguration(repo, into);
   // Stryker disable next-line all: process boundary, covered by gates-integration: gates/test/integration/plant-repo.test.ts "buildMutationRepo commits the configuration set with base/, then head/ (files only in base/ deleted), node_modules linked and untracked"
@@ -204,9 +223,9 @@ export async function buildMutationRepo(repo: string, plant: string, into: strin
   // Stryker disable next-line all: process boundary, covered by gates-integration: gates/test/integration/plant-repo.test.ts "buildMutationRepo commits the configuration set with base/, then head/ (files only in base/ deleted), node_modules linked and untracked"
   const baseCommit = await git(into, ["rev-parse", "HEAD"]);
   // Stryker disable next-line all: process boundary, covered by gates-integration: gates/test/integration/plant-repo.test.ts "buildMutationRepo commits the configuration set with base/, then head/ (files only in base/ deleted), node_modules linked and untracked"
-  const files = (await readdir(join(plant, "base"), { recursive: true, withFileTypes: true }).catch(() => [])).filter((entry) => entry.isFile());
+  const base = join(plant, "base");
   // Stryker disable next-line all: process boundary, covered by gates-integration: gates/test/integration/plant-repo.test.ts "buildMutationRepo commits the configuration set with base/, then head/ (files only in base/ deleted), node_modules linked and untracked"
-  for (const file of files) await rm(join(into, join(file.parentPath, file.name).slice(join(plant, "base").length)), { force: true });
+  for (const path of filePaths(await readdir(base, { recursive: true, withFileTypes: true }).catch(() => []), base)) await rm(join(into, path), { force: true });
   // Stryker disable next-line all: process boundary, covered by gates-integration: gates/test/integration/plant-repo.test.ts "buildMutationRepo commits the configuration set with base/, then head/ (files only in base/ deleted), node_modules linked and untracked"
   await layOver(plant, "head", into);
   // Stryker disable next-line all: process boundary, covered by gates-integration: gates/test/integration/plant-repo.test.ts "buildMutationRepo commits the configuration set with base/, then head/ (files only in base/ deleted), node_modules linked and untracked"
