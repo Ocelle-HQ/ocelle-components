@@ -1,0 +1,211 @@
+schema: review-findings/v1
+complete: true
+phase: plan
+round: 1
+lens: a11y-security
+# Checks run for this lens (scratch probes, not committed):
+# - All 130 required pairs per theme recomputed with the WCAG 2.x formula from Appendix A plus R-04's #211D18:
+#   none below threshold in either theme (spec A.8/A.9 claims confirmed). Extra probes are cited per finding.
+# - storybook@10.6.4 tarball fetched from the npm registry (published 2026-10-26T10:38:18Z, so it passes
+#   minimumReleaseAge on 2026-11-03) and its dist/ grepped; axe-core@4.14.0 tarball grepped.
+findings:
+  - id: PLAN-A11Y-SECURITY-1-001
+    severity: 3
+    title: "Storybook cannot run at all under the planned CSP: it fetches index.json (connect-src) and frames iframe.html (frame-src), neither of which default-src 'none' allows"
+    evidence:
+      - artifact: "research.md § R-10: the spike 'serves it with the constitution's CSP header plus `font-src 'self'`'; the techniques it tries are (1) Emotion into adopted sheets, (2) preview alone, (3) a setting that disables run-time style injection; all three are about style-src only"
+      - artifact: "spec.md FR-023 / US1 scenario 11, plan.md Decision 4: zero CSP violations under the constitution's CSP; R-10 csp.test.ts asserts zero securitypolicyviolation events"
+      - code: "storybook@10.6.4 dist/_browser-chunks/chunk-M6YZR3ZW.js:1762 and dist/preview/runtime.js:35840: `STORY_INDEX_PATH = \"./index.json\"`; chunk-M6YZR3ZW.js:1837 `getStoryIndexFromServer() { let result = await fetch(STORY_INDEX_PATH);` (the preview's own story index load); dist/manager/globals-runtime.js:62708 the manager does the same"
+      - code: "storybook@10.6.4 dist/manager/runtime.js:3044, 14528, 27773: the manager renders the preview through \"iframe.html\""
+      - code: "CSP3: fetch() is governed by connect-src and iframes by frame-src (via child-src); both fall back to default-src, which is 'none' in constitution IV"
+    claim: |
+      Even if every inline script and style is externalised and Emotion is tamed, a built Storybook under
+      `default-src 'none'; script-src 'self'; style-src 'self'; font-src 'self'` blocks the same-origin
+      `fetch("./index.json")` that both the preview and the manager need to render any story, and blocks the
+      manager's preview iframe. Technique (2) (preview alone) still fetches index.json. So the run-time CSP test of
+      R-10 cannot reach zero violations with any of the planned techniques, and the stop the plan foresees will
+      happen for a reason the spike is not designed to see. The operator was asked (SPEC-1-05, SPEC-3-01) on the
+      premise that only inline script and style stood in the way; the real choice involves widening the host CSP
+      with `connect-src 'self'` (and `frame-src 'self'` for the manager), which is the same kind of host-side
+      addition as `font-src 'self'` but has not been put to the operator.
+    remedies:
+      - "Put the fork to the operator at the plan gate now: allow `connect-src 'self'` (and `frame-src 'self'` if the manager UI is kept) as host additions for the Storybook test page only, recorded in the Constitution Check like `font-src`, with the run-time test asserting that exact header."
+      - "Or drop the manager and Storybook's runtime for the token reference: generate a static, script-free token reference page from the token source (no fetch, no iframe), and leave Storybook itself to #10."
+      - "In either case add to R-10's spike a first probe that runs the built preview under the exact header and records every violation by directive, not only style-src."
+
+  - id: PLAN-A11Y-SECURITY-1-002
+    severity: 3
+    title: "The widened static `csp` gate will fail on Storybook's own runtime files (Function(\"return this\") and `<span style=…>` strings), which externalise.ts cannot fix and FR-023's stop conditions do not name"
+    evidence:
+      - artifact: "research.md § R-10: externalise.ts moves inline `<script>` and `<style>` to files; contracts/gates.md: `isBuiltOutput` widened to `storybook/dist/**` (.js, .css, .html)"
+      - artifact: "spec.md FR-023: the stop-and-ask conditions are inline script and a monospace family; nothing about eval-like calls or style attributes inside shipped JavaScript"
+      - code: "gates/bin/csp.ts:2-6: built JavaScript string and template literals containing `<` go through parse5 (a `style` attribute is a finding), and `Function()` calls are findings (csp.ts:170 `function-call`)"
+      - code: "storybook@10.6.4 dist/preview/runtime.js:6934, 7538, 12216 and dist/manager/globals-runtime.js:24042, 24646, 30269: `Function(\"return this\")()`; preview/runtime.js:13253, 13262 and manager/globals-runtime.js:30964: template literals `<span style=\"color: #FF4785\">…` and `<span style=\"color: gray\">`"
+    claim: |
+      These runtime files are shipped into the static build. The gate, correctly, flags them; the planned
+      post-processing does not touch them, and the spike only records run-time violations, so the conflict surfaces
+      after the gate is widened. The likely shortcut is to narrow the gate (exclude vendor files) or allow-list
+      findings, which weakens a required CSP check (Principle VIII rationale). It must be decided before tasks.
+    remedies:
+      - "Make the spike also run the widened `csp` and `prefix` gates on the built Storybook and record their findings; add 'the static csp gate finds eval-like calls or style attributes in Storybook's shipped runtime' to FR-023's stop-and-ask conditions."
+      - "Or take PLAN-A11Y-SECURITY-1-001's second remedy (a generated static token page), which keeps the gate scope honest with no vendor code in it."
+
+  - id: PLAN-A11Y-SECURITY-1-003
+    severity: 3
+    title: "Forced colours: the ring and state tokens are box-shadows, which forced-colours mode removes, and the deferred check (axe in #10) cannot test forced colours"
+    evidence:
+      - artifact: "spec.md FR-018 (line 304): 'Contrast of rendered elements in forced-colours mode is checked by the element issues and by axe in #10; #5's \"including forced colours\" is met by this guard together with that later check'"
+      - artifact: "spec.md Edge Cases: 'Forced-colours mode: the system replaces the colours; the token values are not used for contrast there'; contracts/token-package.md:21 'Forced colours: the tokens never override the system palette'"
+      - artifact: "research.md § R-05: `elevation-row`/`elevation-seg` are `0 0 0 1px var(--ocelle-color-control-border), …` (selected row, pressed segment per sources/console-v2-tokens.md); `elevation-sheet` is `0 0 0 1px` rule ring"
+      - code: "CSS Color Adjustment 1 § 3.1 (forced colours): box-shadow and text-shadow are forced to `none`; background colours are forced to system colours"
+      - code: "axe-core@4.14.0 axe.js: 0 occurrences of `forced-colors` or `forcedColors` (probe: grep -c on the npm tarball)"
+    claim: |
+      The tokens encode two states (selected row, pressed segment) and the card/sheet edge as box-shadow rings plus a
+      background fill. In forced-colours mode both are removed or replaced, so those states and boundaries vanish
+      unless each element adds a transparent border or outline. Constitution III requires WCAG 2.2 AA in forced
+      colours; the spec meets #5's 'including forced colours' by pointing at axe, which has no forced-colours
+      logic. Nothing in this feature or the deferred plan would ever see the failure, and the token documentation
+      tells element authors the opposite ('the token values are not used there', so nothing to do).
+    remedies:
+      - "Record in the package documentation (and A.5's use column) that `elevation-*` rings disappear in forced colours and that elements using `elevation-row`/`elevation-seg`/`elevation-sheet` for a state or boundary must also draw a border or outline (transparent in normal mode) so forced colours show it."
+      - "Correct FR-018: forced-colours behaviour of rendered elements is checked by element tests under Playwright `emulateMedia({ forcedColors: 'active' })` (or Chromium's forced-colors emulation in the element test runner), not by axe; record that requirement for #10 and the element issues."
+
+  - id: PLAN-A11Y-SECURITY-1-004
+    severity: 2
+    title: "`color-scheme` is left to #6, but #6 is told not to repeat the theme selectors, so native controls and scrollbars cannot follow `data-theme`"
+    evidence:
+      - artifact: "research.md § R-02 line 45: `color-scheme` 'is set by base styles, #6'"
+      - artifact: "spec.md Assumptions, 'Theme selectors belong here': '#6 (base styles) builds on them and does not repeat them'"
+      - artifact: "research.md § R-02 block list: no `color-scheme` declaration in any of the four blocks"
+    claim: |
+      With `data-theme="dark"` on a light system (or `data-theme="light"` on a dark one), the UA's form controls,
+      scrollbars, caret, autofill and the `Canvas`/`CanvasText` defaults follow `color-scheme`, not the tokens. If
+      #6 sets `color-scheme: light dark` without the theme selectors it follows the system and mismatches the token
+      theme (light native inputs on a dark sheet, dark scrollbars on bone), giving unchecked low-contrast native
+      parts in two of the six theme conditions. The plan's selector ownership makes the right fix impossible for #6.
+    remedies:
+      - "Emit `color-scheme: light` in block 1 and `color-scheme: dark` in blocks 2 and 3 of tokens.css (or a theme-dependent token such as `--ocelle-color-scheme` that #6 applies), and assert the computed `color-scheme` of `<html>` in all six theme conditions of FR-006."
+
+  - id: PLAN-A11Y-SECURITY-1-005
+    severity: 2
+    title: "`color-link` is below 3:1 against the body text colours in both themes, so links need a non-colour cue (WCAG 1.4.1), and nothing records it"
+    evidence:
+      - artifact: "spec.md Assumptions, 'Rendered brand rules are not checked here' lists chrome, digest grouping and ochre fill; FR-019 (b) only checks link vs accent and link on grounds; no mention of underline anywhere in spec, plan or research (grep 'underline' → none)"
+      - code: "probe (WCAG 2.x): `color-link` vs `color-ink` 2.93 light, 1.85 dark; vs `color-ink-soft` 1.78 / 1.36; vs `color-ink-muted` 1.11 / 1.21"
+    claim: |
+      WCAG 1.4.1 (failure F73, technique G183) allows a colour-only inline link only when the link has at least 3:1
+      against the surrounding text and gains a non-colour cue on hover and focus. Every link/text pair here is below
+      3:1, so inline links in body text must be underlined (or carry another non-colour mark). This is a rendered
+      rule like the others the spec defers, but it is a WCAG AA requirement that follows directly from the token
+      values, and the package documentation that 'records those rules' would omit it.
+    remedies:
+      - "Add to the rendered rules recorded in the package documentation (and to the Assumptions list handed to #6 and the elements) that inline links are underlined because `color-link` is below 3:1 against `color-ink`, `color-ink-soft` and `color-ink-muted` in both themes, with the computed figures."
+
+  - id: PLAN-A11Y-SECURITY-1-006
+    severity: 2
+    title: "`size-rail-item` (40 px) is below `target-min` (44 px) and `size-step` (22.4 px) below WCAG 2.5.8's 24 px, with no recorded limit on their use"
+    evidence:
+      - artifact: "spec.md A.3: `target-min` 2.75rem, `size-rail-item` 2.5rem, `size-step` 1.4rem, no use column; sources/console-v2-tokens.md: `size-rail-item` 'rail item box (40px, kept; PE-47)', the rail's Approvals/History/Admin icons"
+      - code: ".specify/memory/constitution.md:56 'Interactive targets meet `--ocelle-target-min` where the element is a primary action.'"
+      - artifact: "plan.md Constitution Check, III: cites `--ocelle-target-min` 2.75rem as meeting the principle, but says nothing about the smaller interactive-box tokens"
+    claim: |
+      The icon rail is primary navigation; its item token is 40 px, below the constitution's target size, and the
+      plan's Constitution Check does not record a reading for it. `size-step` (a step marker) is below the WCAG 2.2
+      AA minimum of 24 px if a stepper makes it interactive. Shipping the tokens without a recorded use limit invites
+      elements to size targets from them.
+    remedies:
+      - "Record in A.3's use column and the Constitution Check that `size-rail-item` is the visual box only and the rail item's hit target is at least `target-min` (the 52 px rail allows it), and that `size-step` and `size-dot` are never the size of an interactive target."
+      - "Or raise `size-rail-item` to `target-min` (operator decision, since PE-47 kept 40 px)."
+
+  - id: PLAN-A11Y-SECURITY-1-007
+    severity: 2
+    title: "The contrast and brand-rules gates execute the checked tree's `source.ts`/`generate.ts` in their own process, so the input can alter the checker"
+    evidence:
+      - artifact: "research.md § R-07: `gates/lib/token-source.ts` 'loads `packages/tokens/src/source.ts` under `--root` by dynamic import'; § R-08: brand-rules imports `generate.ts` under `--root`; § R-09: style-lint plugin reads source.ts at plugin load"
+      - artifact: "research.md § R-01: the source is a TypeScript module, chosen over JSON"
+    claim: |
+      A required check that imports the code it judges runs that code with the gate's globals: a module-level
+      statement in source.ts can patch `Math.pow`, `Number.prototype.toFixed`, `process.exit` or `console`, and the
+      `wcag.ts` computation or the exit code is no longer the gate's. Under Principle VIII's rationale (an agent can
+      make any check pass by weakening it) the data the contrast gate trusts should not be able to change the
+      contrast gate. Data validation (`validateSource`) runs after the import, too late.
+    remedies:
+      - "Load the token source in a child process (node with type stripping) that only prints the records as JSON, and have the gates validate and compute on that JSON; or constrain source.ts by lint to a single `export const` of literals (no imports, no statements) and add a brand-rules/contrast breaking plant whose source.ts patches a global, expected to give exit 2 or a finding, never exit 0."
+
+  - id: PLAN-A11Y-SECURITY-1-008
+    severity: 2
+    title: "Storybook build sends telemetry to storybook.js.org unless disabled; the plan's 'no network at build' constraint does not say so"
+    evidence:
+      - artifact: "plan.md Technical Context, Constraints: 'no network at build or run time'; R-10 adds `storybook build` with no telemetry setting"
+      - code: "storybook@10.6.4 dist/core-server/index.js:7627 `await telemetry2(\"build\", payload, …)`; dist/_node-chunks/chunk-OHHOJXSR.js:1057 `URL = process.env.STORYBOOK_TELEMETRY_URL || \"https://storybook.js.org/event-log\"`; dist/core-server/presets/common-preset.js:2204 `disableTelemetry: options.disableTelemetry || … STORYBOOK_DISABLE_TELEMETRY`"
+    claim: |
+      Every build of the private repository's Storybook (developer sessions, CI) posts an event with project metadata
+      to a third party by default. It breaks the plan's own constraint and leaks information about an internal
+      repository; with no network it only fails silently, so no test would notice.
+    remedies:
+      - "Set `core: { disableTelemetry: true, enableCrashReports: false }` in `storybook/.storybook/main.ts` and `STORYBOOK_DISABLE_TELEMETRY=1` in the build script, and add a node test that loads main.ts and asserts both settings (or runs the build with outbound requests recorded and asserts none)."
+
+  - id: PLAN-A11Y-SECURITY-1-009
+    severity: 2
+    title: "The CSP tests rely on `securitypolicyviolation` events that Playwright does not surface; without an installed listener 'zero violations' passes vacuously"
+    evidence:
+      - artifact: "research.md § R-03 line 68: 'CSP violation events (`securitypolicyviolation`, and console messages) are first-class in Playwright'; R-10: csp.test.ts asserts 'zero `securitypolicyviolation` events'"
+      - code: "Playwright Page events (close, console, crash, dialog, domcontentloaded, download, filechooser, frame*, load, pageerror, popup, request*, response, websocket, worker): no CSP violation event; the DOM event fires in the page and must be collected by a page-side listener"
+      - artifact: "the fixture page cannot carry an inline listener under the very CSP it tests (constitution IV)"
+    claim: |
+      The strict-CSP proofs of US2 scenario 6, SC-003 and US1 scenario 11/R-10 depend on counting violations. If the
+      test counts an event it never subscribed to, it reports zero for any page, including one that breaks the CSP.
+      The plan does not say how the listener gets into a page that forbids inline script.
+    remedies:
+      - "State in R-03 that violations are collected by a listener added with `page.addInitScript` (injected by the browser automation, not subject to the page's CSP) into an array read after load, cross-checked with Chromium's console 'Refused to …' messages; and add a control case per suite (a fixture with one inline style) that must report exactly one violation, so the collector is shown able to fail."
+
+  - id: PLAN-A11Y-SECURITY-1-010
+    severity: 1
+    title: "Reduced motion as `0ms` suppresses `transitionend`; elements that wait for it will hang"
+    evidence:
+      - artifact: "research.md § R-02 block 4 (line 32): `--ocelle-motion-fast: 0ms; --ocelle-motion-base: 0ms`"
+      - code: "CSS Transitions 1 § 3: a transition starts only if the combined duration is greater than 0s, so no `transitionend` fires"
+    claim: |
+      The value is #5's and correct for users, but an element that closes a dialog or collapses a panel on
+      `transitionend` never completes under reduced motion. The token documentation is where element authors learn
+      the reduced-motion contract.
+    remedies:
+      - "Record in the package documentation that under reduced motion the durations are 0ms and no transition events fire, so elements must not wait for `transitionend`/`animationend` (or keep 0ms and require elements to complete state changes synchronously)."
+
+  - id: PLAN-A11Y-SECURITY-1-011
+    severity: 1
+    title: "Rule (g) as planned rejects any `--ocelle-color-*` in a forced-colours block, including system-colour keywords that help forced colours"
+    evidence:
+      - artifact: "spec.md FR-018: forbid a forced-colours rule 'that sets colour tokens to fixed values'"
+      - artifact: "research.md § R-08 line 194-195: fails on 'any `@media (forced-colors: …)` block that sets an `--ocelle-color-*` property'"
+    claim: |
+      Mapping tokens to CSS system colours (`--ocelle-color-focus: Highlight`, `--ocelle-color-control-border:
+      ButtonBorder`) in forced colours is a standard way to keep non-forced uses (SVG, custom properties in
+      shadows replaced by borders) aligned with the user's palette. R-08 is stricter than FR-018 and would forbid it;
+      the spec and research disagree on what (g) checks.
+    remedies:
+      - "Align R-08 with FR-018: fail on `forced-color-adjust: none` and on a forced-colours block that sets an `--ocelle-color-*` to anything other than a CSS system colour keyword; add a pass plant with a system-colour mapping."
+
+  - id: PLAN-A11Y-SECURITY-1-012
+    severity: 1
+    title: "The current-item indicator (`color-current`) and the state backgrounds are not in the required pair set"
+    evidence:
+      - artifact: "spec.md A.8: no row for `color-current`; the main grounds exclude `color-*-bg` state grounds and `color-disabled-bg` for `color-ink`, `color-link`, `color-focus`"
+      - code: "probe: `color-current` on `color-chrome`/`color-chrome-hover`/`color-rail` light 3.34/3.01/4.43, dark 8.75/7.18/7.78 (pass today only because it derives from `color-accent-strong`, like `color-focus`); `color-focus` on state -bg light 4.27–4.71; `color-control-border` on `color-neutral-bg` light 2.91"
+    claim: |
+      The 3 px current bar is the non-text indicator of the current item on the chrome rail and the sidebar
+      (WCAG 1.4.11); it is checked only by coincidence of derivation. Links, focus rings and controls inside state
+      banners and pills are unguarded; `color-control-border` on `color-neutral-bg` is already below 3:1.
+    remedies:
+      - "Add `color-current` (non-text) on `color-chrome`, `color-chrome-hover`, `color-rail`, `color-accent-low` to A.8, and either add the state -bg grounds for `color-link` and `color-focus` or record in A.9/documentation that controls are not drawn on state backgrounds."
+
+  - id: PLAN-A11Y-SECURITY-1-013
+    severity: 1
+    title: "Font provenance is self-attested: SOURCE.json's hash is written by the same person who downloads the file"
+    evidence:
+      - artifact: "research.md § R-06: the implementer fetches the file, records its SHA-256 in SOURCE.json, and a test recomputes the hash of the committed file against that record"
+    claim: |
+      The test proves the file has not changed since commit, not that it is upstream's file. A reviewer cannot check
+      the claim without re-downloading. Upstream's git blob id is independently verifiable from the commit tree.
+    remedies:
+      - "Record in SOURCE.json the git blob SHA-1 of each file at the resolved commit (from the upstream tree) and have the test compute `git hash-object` form (`blob <len>\\0` + bytes, SHA-1) of the committed file and compare, so the record can be checked against GitHub's tree API without trusting the downloader."

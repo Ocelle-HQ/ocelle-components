@@ -1,0 +1,162 @@
+schema: review-findings/v1
+complete: true
+phase: plan
+round: 1
+lens: correctness
+# Checked and found consistent (no finding): the 130 required pairs of A.8 recomputed from Appendix A (130 per
+# theme; 134 light / 133 dark entries with the A.9 exclusions); every A.7 figure matches its computed ratio at its
+# precision; the only below-threshold required pairs are the exempt disabled-ink pairs listed in A.9; FR-019 (b),
+# (d) and (e) hold with Appendix A's values; R-04's #211D18 reproduced (HLS lightness step 776/1000, focus 3.012,
+# chrome-muted 6.218, luminance 0.0127, 1.107 against chrome); R-05's values match sources/console-v2-tokens.md
+# (SHA-256 7b0a5d0c...e61a verified); README required checks go from 12 to 14 as the contract says.
+findings:
+  - id: PLAN-CORRECTNESS-1-001
+    severity: 3
+    title: "The unknown-token style-lint rule breaks the existing style-lint plants and cannot find the token source in a plant repository"
+    evidence:
+      - artifact: "research.md § R-09: 'The list is read from the root's packages/tokens/src/source.ts at plugin load'; contracts/gates.md § style-lint: 'Exit 2 if the token source does not load'; plants table: style-lint breaking '(existing)', no change to existing plants"
+      - code: "gates/lib/plant-repo.ts:24-45 configurationSet copies root config files, packages/<dir>/package.json and tsconfig.json, gates/eslint and gates/stylelint only; packages/tokens/src/source.ts is not in it, so in every repo-tree style-lint plant the plugin's token source is absent"
+      - code: "gates/plants/style-lint/pass-var-token/tree/packages/styles/src/x.css:3 'margin: var(--ocelle-x);' and pass-var-keyword-fallback/.../x.css:3 'var(--ocelle-x, Canvas)'; fail-var-fallback/.../x.css:3 'var(--ocelle-x, 4px)' expects exactly one finding"
+      - code: "gates/test/token-only.test.ts:24,25,44,68,87 use var(--ocelle-x) / var(--ocelle-y) as accepted token references"
+    claim: |
+      With the rule as planned, every style-lint plant either exits 2 (the plugin cannot load
+      packages/tokens/src/source.ts in the temporary repository, since the plant runner copies only the
+      configuration set) or, if the source is found, the two pass plants that use `--ocelle-x` become fail plants and
+      `fail-var-fallback` gets a second finding (`unknown token --ocelle-x`) and no longer matches its expected
+      findings exactly. The 001 token-only unit tests that use `--ocelle-x` as a valid token change meaning too. The
+      plant job, which is a required check, would fail on the first commit of the rule. The plan names neither the
+      configuration-set change nor the rewrite of the existing plants and tests (which constitution VIII lets happen
+      only as a stricter replacement with a recorded reason).
+    remedies:
+      - "State in R-09 how the plugin obtains the name list under --root in a plant repository (add packages/tokens/src/source.ts, or the generated name list, to configurationSet in gates/lib/plant-repo.ts, with its own test), and list the existing style-lint plants (pass-var-token, pass-var-keyword-fallback, fail-var-fallback) and gates/test/token-only.test.ts cases that move from --ocelle-x to a real token, with the reason recorded as constitution VIII requires."
+      - "Alternatively make the name list an explicit plugin option set in stylelint.config.ts from the token source, so plants and unit tests can supply their own list, and record that choice in R-09 and contracts/gates.md."
+
+  - id: PLAN-CORRECTNESS-1-002
+    severity: 3
+    title: "Browser tests and the Storybook CSP test need built output that the unit-tests job never builds, and storybook/test is in no Vitest project"
+    evidence:
+      - artifact: "research.md § R-03: 'A small static server ... serves the built dist/'; § R-10: 'storybook/test/csp.test.ts ... opens the built Storybook'; plan.md § Project Structure: 'storybook/ ... test/csp.test.ts'"
+      - code: ".github/workflows/ci.yml:46-54 job unit-tests runs only 'pnpm run gate:unit-tests', no build step (only csp and prefix run 'pnpm -r build &&', lines 132 and 141)"
+      - code: "vitest.config.ts:16-63 projects tokens (packages/tokens/**), styles, elements, gates, gates-integration; no include covers storybook/**/*.test.ts"
+      - code: ".gitignore ignores packages/*/dist/ only, so packages/tokens/dist is absent on a fresh checkout and in Stryker's sandbox; storybook/dist is not ignored at all"
+    claim: |
+      The six-condition theme tests, the font, request and CSP tests (FR-006, FR-015, SC-001, SC-003) read
+      packages/tokens/dist, but the Unit tests check runs without a build, so they fail in CI (or, if written to skip
+      when dist is absent, pass vacuously). The Storybook run-time CSP test of R-10 (US1 scenarios 11 and 12, SC-008)
+      is placed where no Vitest project includes it, so `pnpm test` and the Unit tests check never run it and
+      quickstart step 2's claim that it runs is false. The mutation gate runs the tokens project too
+      (vitest.mutation.config.ts keeps it), so a dry run without dist also breaks there. The plan states none of
+      the build ordering this needs.
+    remedies:
+      - "Plan where the build happens for tests: either the browser tests build what they read (call the generator and copy fonts into a temporary directory in a global setup, so no dist is needed and mutants of generate.ts are seen), or add 'pnpm -r build' before the unit-tests gate in ci.yml and in gates/bin/test.ts and say how the mutation sandbox gets dist. Add a Vitest project (or include) for storybook/test, add storybook/dist/ to .gitignore and to the ESLint and tsconfig excludes, and update quickstart."
+
+  - id: PLAN-CORRECTNESS-1-003
+    severity: 3
+    title: "The new storybook/ workspace source falls outside the mutation and typecheck gates"
+    evidence:
+      - artifact: "plan.md § Constitution Check VIII: 'generator and gates mutation-tested'; § Project Structure: 'storybook/ ... .storybook/ (main.ts, preview.ts, manager.ts, theme) ... scripts/externalise.ts scripts/swatches.ts'"
+      - code: "gates/lib/mutation/ranges.ts:23-35 scopePathspecs = packages/*/**/*.ts and gates/{bin,lib,eslint,stylelint}/**/*.ts; storybook/scripts/externalise.ts and swatches.ts are never mutated"
+      - code: "probe: tsc 6.0.2 with include ['**/*.ts'] (as root tsconfig.json) on a tree with storybook/.storybook/main.ts and storybook/stories/x.ts lists only stories/x.ts; files under the dot directory .storybook are not type-checked"
+    claim: |
+      externalise.ts is the code that makes the Storybook output satisfy constitution IV (it moves inline script
+      and style out), swatches.ts generates the swatch stylesheet, and preview.ts sets data-theme from the toolbar:
+      all behaviour. Constitution VIII requires changed source to be mutation-tested, but the mutation gate's scope
+      excludes storybook/, and the plan does not widen it. The root typecheck gate also silently skips
+      storybook/.storybook/*.ts, while ESLint (files '**/*.ts', projectService) will meet those files outside any
+      tsconfig. The plan's claim that the new code is mutation-tested holds only for packages/ and gates/.
+    remedies:
+      - "Widen scopePathspecs (and the mutation gate's scope text in gates.json and README) to storybook/scripts/**/*.ts and storybook/.storybook/**/*.ts, add '.storybook/**/*.ts' (or 'storybook/.storybook/**/*.ts') to the root tsconfig include, and record these scope changes in the plan with their plants."
+      - "Or move the testable logic (externalise, swatches) into gates/lib or packages/tokens/scripts, which are already in scope, and keep storybook/ to configuration only, stated in the plan."
+
+  - id: PLAN-CORRECTNESS-1-004
+    severity: 3
+    title: "The brand-rules gate does not read the pair list, but FR-019 (b) is a rule about the pair list"
+    evidence:
+      - artifact: "spec.md FR-019 (b): 'and the pair color-accent on color-canvas in light is listed as an excluded text pair'; FR-020: brand-rules covers FR-018, FR-019"
+      - artifact: "contracts/gates.md § brand-rules: 'Inputs under --root: packages/tokens/src/source.ts, packages/tokens/src/generate.ts'; research.md § R-08 checks 'on the token source and on the stylesheet text'"
+      - artifact: "contracts/gates.md plants: brand-rules fail 'b-link-equals-accent' only"
+    claim: |
+      As contracted, the brand-rules gate cannot check the second half of rule (b) (the ochre-on-bone exclusion in
+      packages/tokens/contrast/pairs.json), and no other gate is assigned it: the contrast gate only requires that
+      an excluded entry has a reason and is not a required pair; it does not require this entry to exist. Deleting
+      the accent-on-canvas entry from the pair list would pass both gates, so "ochre text never on bone" is not
+      enforced as constitution II requires.
+    remedies:
+      - "Add packages/tokens/contrast/pairs.json to the brand-rules inputs (contracts/gates.md, R-08), check rule (b)'s excluded pair there (and link at 4.5:1 on canvas and sheet in both themes), and add a fail plant with the entry removed."
+
+  - id: PLAN-CORRECTNESS-1-005
+    severity: 2
+    title: "The c-extra-radius plant uses radius-3, which source validation rejects before the rule runs"
+    evidence:
+      - artifact: "contracts/gates.md plants: brand-rules fail 'c-extra-radius (a radius-3 at 4px)'; contract: brand-rules 'Exit 2 when either does not load'"
+      - artifact: "data-model.md § Token: name 'never in A.6'; 'Validation (validateSource, used by the build, the gates and a test)'; spec A.6 lists radius-3 as an excluded token"
+    claim: |
+      If brand-rules validates the source as data-model.md says the gates do, the planted radius-3 fails
+      validation and the gate exits 2 (could not run), not 1 with a radius-set finding; the fail plant then fails
+      the plant job, or, if the plant is rewritten to expect exit 2, rule (c)'s extra-radius branch is never proven.
+      The plan does not say whether brand-rules runs validateSource or which outcome the plant expects.
+    remedies:
+      - "Use a name outside A.6 for the plant (for example radius-card at 4px) and state in contracts/gates.md whether brand-rules validates the source first and which validation failures are exit 2."
+
+  - id: PLAN-CORRECTNESS-1-006
+    severity: 2
+    title: "Spec and plan disagree on four points the plan defers to the squad fix"
+    evidence:
+      - artifact: "spec.md FR-016: 'a required pair present in the list as an excluded pair with a non-empty reason is not a missing required pair' vs research.md § R-07 rule 'excluded entry that is a required pair -> required pair excluded' and data-model 'must not be a required pair'"
+      - artifact: "spec.md § Assumptions 'Values #5 describes but does not give': 'The tests check the described structure (number of shadows, ring colour, dark values...)' vs plan.md Decisions 5: 'tested against the exact values of R-05, not a described structure'"
+      - artifact: "spec.md A.1 color-chrome-hover light: 'the plan computes it'; A.5 elevation-raised/-row/-seg light: 'described'; SC-001: 'the Appendix A value is the one the plan records and adds to Appendix A' vs research.md § R-04, R-05: '#211D18' and the shadows, 'added to the spec's Appendix A ... by the squad fix'"
+      - artifact: "spec.md FR-017 'a figure of 5.3 matches [5.25, 5.35)' and A.7 color-chrome-muted on chrome-hover light; plan R-04 records 6.22 from first computation (consistent), but A.7 still shows 5.6 as the #5 figure"
+    claim: |
+      Appendix A is the reference for every test and success criterion (spec header), yet it does not yet hold the
+      light chrome-hover, the light shadows, the ring width or the dialog units the plan decided, and FR-016 still
+      allows what R-07 makes a finding. Tasks generated from the spec would test the described structure and
+      accept excluded required pairs; tasks generated from the plan would not. One of the two must change before
+      /speckit-tasks.
+    remedies:
+      - "Amend the spec: add #211D18 to A.1, the R-05 shadows, ring width 1px and the vw/dvh dialog values to A.4/A.5, replace the 'described structure' sentence with exact-value tests, and replace FR-016's sentence on excluded required pairs with R-07's 'required pair excluded' finding (and add it to FR-020's plant list)."
+
+  - id: PLAN-CORRECTNESS-1-007
+    severity: 2
+    title: "No package documentation is planned, though FR-012 and the Assumptions require it"
+    evidence:
+      - artifact: "spec.md FR-012: 'The package's documentation MUST state what a host's CSP needs to load it: font-src self'; Assumptions 'Rendered brand rules are not checked here': 'This feature ... records those rules in the package documentation'"
+      - artifact: "plan.md § Project Structure packages/tokens/ lists src, scripts, contrast, fonts, CHANGELOG.md, test; no README; research.md § R-11 files ['dist', 'CHANGELOG.md']"
+      - code: "packages/tokens/ has no README.md today (ls packages/tokens: package.json src test tsconfig.json)"
+    claim: |
+      contracts/token-package.md has the host contract, but it is a spec artifact, not shipped with the package.
+      Nothing in the plan produces the host-facing documentation of the font-src allowance, the theme attribute or
+      the rendered brand rules (chrome use, digests in groups of four, ochre fill never alone) that FR-012 and the
+      Assumptions require, so a phase can finish with those requirements unmet.
+    remedies:
+      - "Add packages/tokens/README.md to the project structure and US1/US2 phases with the host contract (load once, theme rule, font-src 'self', forced colours, rendered brand rules), and a check that it states the CSP allowance."
+
+  - id: PLAN-CORRECTNESS-1-008
+    severity: 2
+    title: "The Storybook spike checks only CSP, not FR-023's second stop condition (monospace in the output)"
+    evidence:
+      - artifact: "spec.md FR-023: 'if the built output still carries a monospace family in a font or font-family declaration that the theme cannot remove, so that the widened prefix gate fails on Storybook's code, the phase likewise stops and asks the operator'"
+      - artifact: "research.md § R-10: the spike 'serves it with the constitution's CSP header ... and records the CSP violations'; nothing about running the prefix gate on storybook/dist"
+      - code: "gates/bin/prefix.ts:26-48 matches any font or font-family declaration naming monospace, ui-monospace, Menlo, Monaco, Courier New, SF Mono and others, in any .js/.css/.html line"
+    claim: |
+      Storybook's manager and preview bundles carry code-font declarations (its own code blocks and syntax
+      highlighting) independent of the UI theme's fontCode. If the spike establishes only zero CSP violations, the
+      phase can proceed through the token stories and the csp work and discover only at the widened prefix gate
+      that it must stop, wasting the phase. The plan's decision 4 names only the CSP stop.
+    remedies:
+      - "Make the spike run the widened prefix gate on the built storybook/dist as well, and stop and ask the operator at the spike if either condition fails (plan.md Decisions 4, R-10)."
+
+  - id: PLAN-CORRECTNESS-1-009
+    severity: 1
+    title: "Small inconsistencies among research, data model and contracts"
+    evidence:
+      - artifact: "research.md § R-07 finding names with spaces ('unknown token', 'required pair excluded', 'not an opaque colour') vs data-model.md § Gate findings rule ids 'unknown-token', 'required-pair-excluded', 'not-opaque'"
+      - artifact: "research.md § R-07 output '(<r> required per theme)' vs contracts/gates.md '(130 required per theme)' hard-coded"
+      - artifact: "research.md § R-12 JSON '\"ref\": \"space-4\"' vs contracts/token-package.md '\"ref\": \"--ocelle-space-4\"'"
+      - artifact: "data-model.md § Token: one 'ref' per token vs spec A.5 elevation-raised 'Derived from color-rule-strong (dark)' only, and dialog-max-* values mixing 100vw/100dvh literals with var(--ocelle-gutter), not 'var() or a calc() over refs'"
+      - artifact: "research.md § R-06: 'font-display: swap ... is what makes the no font-src case render in a fallback family' (a CSP-blocked font load fails and the fallback applies under any font-display value)"
+    claim: |
+      Plant findings must match exactly (gates/README.md), so the rule id spelling and the success line must be one
+      form; the JSON ref form is public surface (constitution VII); a per-theme ref is needed for elevation-raised.
+      The font-display rationale is wrong, so a test built on it would test the wrong cause.
+    remedies:
+      - "Pick one rule-id form (the hyphenated ids of data-model.md) and one success line, one ref form in the JSON contract, allow 'ref' per theme (or a list) in data-model.md, and correct R-06's font-display rationale."
