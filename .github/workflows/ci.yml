@@ -75,8 +75,10 @@ jobs:
           fetch-depth: 0
       - uses: ./.github/actions/setup
       - id: plan
+        env:
+          BASE: ${{ github.event.pull_request.base.sha }}
         run: |
-          shards="$(pnpm --silent run gate:mutation -- --base ${{ github.event.pull_request.base.sha }} --plan)"
+          shards="$(pnpm --silent run gate:mutation -- --base "$BASE" --plan)"
           echo "$shards"
           echo "shards=$shards" >> "$GITHUB_OUTPUT"
   mutation-shard:
@@ -95,7 +97,11 @@ jobs:
           persist-credentials: false
           fetch-depth: 0
       - uses: ./.github/actions/setup
-      - run: pnpm run gate:mutation -- --base ${{ github.event.pull_request.base.sha }} --files ${{ matrix.shard.files }}
+      # Values reach the script through the environment, never pasted into it (a shard's file list comes from the pull request).
+      - env:
+          BASE: ${{ github.event.pull_request.base.sha }}
+          FILES: ${{ matrix.shard.files }}
+        run: pnpm run gate:mutation -- --base "$BASE" --files "$FILES"
   mutation:
     name: Mutation testing
     needs: [mutation-plan, mutation-shard]
@@ -160,7 +166,10 @@ jobs:
           persist-credentials: false
           fetch-depth: 0
       - uses: ./.github/actions/setup
-      - run: pnpm run gate:signoff -- --range ${{ github.event.pull_request.base.sha }}..${{ github.event.pull_request.head.sha }}
+      - env:
+          BASE: ${{ github.event.pull_request.base.sha }}
+          HEAD: ${{ github.event.pull_request.head.sha }}
+        run: pnpm run gate:signoff -- --range "$BASE..$HEAD"
   plants:
     name: Plants
     runs-on: ubuntu-24.04
