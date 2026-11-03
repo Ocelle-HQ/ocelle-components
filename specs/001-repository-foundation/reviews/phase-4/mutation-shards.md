@@ -49,3 +49,47 @@ Every finding line is in `mutation-shards.log` in this directory (one section pe
   (`mutation-plants-after-7fbecda.log`, 7 min 13 s) reports 25 findings, all in the decision part. Constitution
   VIII makes each remaining survivor a blocking review finding until a killing test (or a reasoned equivalent
   record) resolves it; they are left to the phase 4 review.
+
+
+## Review round 1 (fixes, 2026-11-03)
+
+Measured at the last fix commit (`e4d14f9`), working tree clean, shards one after the other, same sandbox (4 vCPU),
+now with `concurrency: 8` and `vitest.related: false` in stryker.config.json (round-1-fixes.md, R1-02 and R1-10).
+
+What a shard's time depends on (R1-02): Stryker's TypeScript checker, not the test runs. On `gates/bin/pins.ts` lines
+38-110 (206 mutants) one run took 197 s with the checker and 15 s without it. The checker checks the mutants of one
+file one at a time and groups mutants of files that do not import each other, so a shard of one large file was the
+slowest case (`gates/bin/pins.ts` alone: 642 mutants, 10 min 10 s). With pins.ts split into three modules and twice as
+many checker processes as cores, the same code takes about 2 minutes. The shard bound (FR-013, research.md R-08) is
+unchanged.
+
+Against the phase base (`base.sha`, 4df12b0), `pnpm run gate:mutation -- --base <sha> --plan`, then each shard with
+`--files` (log: `round-1-mutation-phase-base.log`):
+
+| Shard | Files | Mutants on changed lines | Result | Equivalent records | Duration |
+|---|---|---|---|---|---|
+| 1 | gates/bin/csp.ts, gates/bin/lint.ts, gates/bin/mutation.ts, gates/bin/pins.ts | 465 | exit 0, none survived | 22 | 216 s (3 min 36 s) |
+| 2 | gates/bin/plants.ts, gates/bin/prefix.ts, gates/bin/signoff.ts | 452 | exit 0, none survived | 32 | 162 s (2 min 42 s) |
+| 3 | gates/bin/style-lint.ts, gates/bin/test.ts, gates/bin/typecheck.ts, gates/lib/entries.ts, gates/lib/mutation/coverage.ts, gates/lib/pins-rules.ts, gates/lib/plant-judge.ts | 656 | exit 0, none survived | 17 | 244 s (4 min 4 s) |
+| 4 | gates/lib/plant-repo.ts, gates/lib/plant-runner.ts, gates/lib/registry.ts | 531 | exit 0, none survived | 40 | 219 s (3 min 39 s) |
+| 5 | gates/lib/stylelint-report.ts, gates/lib/tsc-report.ts, gates/lib/workspace-yaml.ts, gates/stylelint/token-only.ts | 497 | exit 0, none survived | 1 | 217 s (3 min 37 s) |
+
+Against the pull request's base (`bdb9b70`, the base of the CI sign-off range of run 41565348139; its plan is the CI
+plan of this pull request, 9 shards; log: `round-1-mutation-pr-base.log`):
+
+| Shard | Files | Mutants on changed lines | Result | Equivalent records | Duration |
+|---|---|---|---|---|---|
+| 1 | gates/bin/config-copies.ts, gates/bin/csp.ts, gates/bin/lint.ts | 375 | exit 0, none survived | 16 | 204 s (3 min 24 s) |
+| 2 | gates/bin/mutation.ts, gates/bin/pins.ts | 318 | exit 0, none survived | 16 | 124 s (2 min 4 s) |
+| 3 | gates/bin/plants.ts, gates/bin/prefix.ts, gates/bin/setup-offline.ts | 394 | exit 0, none survived | 37 | 147 s (2 min 27 s) |
+| 4 | gates/bin/signoff.ts, gates/bin/style-lint.ts, gates/bin/test-lint.ts, gates/bin/test.ts, gates/bin/typecheck.ts, gates/eslint/no-snapshot-only.ts | 357 | exit 0, none survived | 41 | 132 s (2 min 12 s) |
+| 5 | gates/eslint/unchecked-expect.ts, gates/lib/cli.ts, gates/lib/entries.ts, gates/lib/eslint-report.ts, gates/lib/findings.ts, gates/lib/mutation/coverage.ts, gates/lib/mutation/ranges.ts | 402 | exit 0, none survived | 5 | 159 s (2 min 39 s) |
+| 6 | gates/lib/mutation/records.ts, gates/lib/mutation/report.ts, gates/lib/mutation/shards.ts, gates/lib/pins-rules.ts | 477 | exit 0, none survived | 2 | 225 s (3 min 45 s) |
+| 7 | gates/lib/plant-judge.ts, gates/lib/plant-repo.ts | 634 | exit 0, none survived | 40 | 246 s (4 min 6 s) |
+| 8 | gates/lib/plant-runner.ts, gates/lib/registry.ts, gates/lib/spawn.ts, gates/lib/stylelint-report.ts, gates/lib/tsc-report.ts | 431 | exit 0, none survived | 10 | 212 s (3 min 32 s) |
+| 9 | gates/lib/vitest-report.ts, gates/lib/workspace-yaml.ts, gates/stylelint/token-only.ts, packages/elements/src/index.ts, packages/styles/src/index.ts, packages/tokens/src/index.ts | 420 | exit 0, none survived | 1 | 181 s (3 min 1 s) |
+
+Every shard exits 0 with no survivor. The longest local shard takes 246 s (4 min 6 s), against 592 s for the
+cancelled CI shard's files before the fixes. The CI runner (ubuntu-24.04) is the measurement of SC-001/SC-005; the
+cancelled shard ran there about as long as here (9 min 48 s against 9 min 52 s), so these timings leave a margin of
+more than half the 10-minute limit.
