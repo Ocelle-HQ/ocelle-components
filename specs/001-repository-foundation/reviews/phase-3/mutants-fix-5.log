@@ -1,0 +1,188 @@
+=== mutant: gates/lib/spawn.ts: 'child.on("error", reject)' -> 'child.on("", reject)'; tests: gates/test/spawn.test.ts
+
+ RUN  v5.0.5 /home/user/ocelle-components
+
+ ❯ |gates| gates/test/spawn.test.ts (2 tests | 2 failed) 10022ms
+   ❯ runTool (gates/lib/spawn.ts), a command that cannot be started (2)
+     × rejects with the spawn error naming the command 5013ms
+     × makes the gate exit 2 with one line: could not run, naming the command (signoff without git) 5007ms
+
+⎯⎯⎯⎯⎯⎯⎯ Failed Tests 2 ⎯⎯⎯⎯⎯⎯⎯
+
+ FAIL  |gates| gates/test/spawn.test.ts > runTool (gates/lib/spawn.ts), a command that cannot be started > rejects with the spawn error naming the command
+Error: Test timed out in 5000ms.
+If this is a long-running test, pass a timeout value as the last argument or configure it globally with "testTimeout".
+ ❯ gates/test/spawn.test.ts:27:3
+     25|
+     26| describe("runTool (gates/lib/spawn.ts), a command that cannot be start…
+     27|   it("rejects with the spawn error naming the command", async () => {
+       |   ^
+     28|     const dir = emptyDir();
+     29|     await expect(runTool("ocelle-missing-tool", ["--version"], dir, { …
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[1/2]⎯
+
+ FAIL  |gates| gates/test/spawn.test.ts > runTool (gates/lib/spawn.ts), a command that cannot be started > makes the gate exit 2 with one line: could not run, naming the command (signoff without git)
+Error: Test timed out in 5000ms.
+If this is a long-running test, pass a timeout value as the last argument or configure it globally with "testTimeout".
+ ❯ gates/test/spawn.test.ts:34:3
+     32|   });
+     33|
+     34|   it("makes the gate exit 2 with one line: could not run, naming the c…
+       |   ^
+     35|     const dir = emptyDir();
+     36|     const out: string[] = [];
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[2/2]⎯
+
+⎯⎯⎯⎯⎯⎯ Unhandled Errors ⎯⎯⎯⎯⎯⎯
+
+Vitest caught 2 unhandled errors during the test run.
+This might cause false positive tests. Resolve unhandled errors to make sure your tests are not affected.
+
+⎯⎯⎯⎯⎯ Uncaught Exception ⎯⎯⎯⎯⎯
+Error: spawn ocelle-missing-tool ENOENT
+ ❯ ChildProcess._handle.onexit node:internal/child_process:315:19
+ ❯ onErrorNT node:internal/child_process:553:16
+ ❯ process.processTicksAndRejections node:internal/process/task_queues:90:21
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯
+Serialized Error: { errno: -2, code: 'ENOENT', syscall: 'spawn ocelle-missing-tool', path: 'ocelle-missing-tool', spawnargs: [ '--version' ] }
+This error originated in "gates/test/spawn.test.ts" test file. It doesn't mean the error was thrown inside the file itself, but while it was running.
+The last test to run before this error was "rejects with the spawn error naming the command". This means either:
+- the error was thrown while Vitest was running this test, or
+- the error was thrown after the test completed, and this was the most recent test at that point.
+
+⎯⎯⎯⎯⎯ Uncaught Exception ⎯⎯⎯⎯⎯
+Error: spawn git ENOENT
+ ❯ ChildProcess._handle.onexit node:internal/child_process:315:19
+ ❯ onErrorNT node:internal/child_process:553:16
+ ❯ process.processTicksAndRejections node:internal/process/task_queues:90:21
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯
+Serialized Error: { errno: -2, code: 'ENOENT', syscall: 'spawn git', path: 'git', spawnargs: [ 'log', '--format=%H%x1f%P%x1f%an <%ae>%x1f%B%x1e', 'HEAD~1..HEAD' ] }
+This error originated in "gates/test/spawn.test.ts" test file. It doesn't mean the error was thrown inside the file itself, but while it was running.
+The last test to run before this error was "makes the gate exit 2 with one line: could not run, naming the command (signoff without git)". This means either:
+- the error was thrown while Vitest was running this test, or
+- the error was thrown after the test completed, and this was the most recent test at that point.
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯
+
+
+ Test Files  1 failed (1)
+      Tests  2 failed (2)
+     Errors  2 errors
+   Start at  10:11:58
+   Duration  10.28s (tests 99%)
+
+vitest exit 1
+=== mutant: gates/bin/config-copies.ts: 'if (import.meta.main) await' -> 'if (false) await'; tests: gates/test/integration/config-copies.test.ts
+
+ RUN  v5.0.5 /home/user/ocelle-components
+
+ ❯ |gates-integration| gates/test/integration/config-copies.test.ts (2 tests | 2 failed) 227ms
+   ❯ config copies (gates/bin/config-copies.ts) (2)
+     × exits 0 with a one-line summary on two identical copies 122ms
+     × exits 2 naming the missing tooling copy 102ms
+
+⎯⎯⎯⎯⎯⎯⎯ Failed Tests 2 ⎯⎯⎯⎯⎯⎯⎯
+
+ FAIL  |gates-integration| gates/test/integration/config-copies.test.ts > config copies (gates/bin/config-copies.ts) > exits 0 with a one-line summary on two identical copies
+AssertionError: expected { code: +0, stdout: [], stderr: [] } to deeply equal { code: +0, …(2) }
+
+- Expected
++ Received
+
+  {
+    "code": 0,
+    "stderr": [],
+-   "stdout": [
+-     "config-copies: .specify/extensions/story/story-config.yml and tooling/speckit/extensions/story/story-config.yml are identical",
+-   ],
++   "stdout": [],
+  }
+
+ ❯ gates/test/integration/config-copies.test.ts:24:74
+     22|     async () => {
+     23|       const ran = await configCopies("equal");
+     24|       expect({ code: ran.code, stdout: ran.stdout, stderr: ran.stderr …
+       |                                                                          ^
+     25|         code: 0,
+     26|         stdout: [`config-copies: ${specify} and ${tooling} are identic…
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[1/2]⎯
+
+ FAIL  |gates-integration| gates/test/integration/config-copies.test.ts > config copies (gates/bin/config-copies.ts) > exits 2 naming the missing tooling copy
+AssertionError: expected { code: +0, stdout: [], stderr: [] } to deeply equal { code: 2, stdout: [], …(1) }
+
+- Expected
++ Received
+
+  {
+-   "code": 2,
+-   "stderr": [
+-     "config-copies: could not run: cannot read tooling/speckit/extensions/story/story-config.yml; restore it from git (both copies must exist)",
+-   ],
++   "code": 0,
++   "stderr": [],
+    "stdout": [],
+  }
+
+ ❯ gates/test/integration/config-copies.test.ts:37:74
+     35|     async () => {
+     36|       const ran = await configCopies("missing");
+     37|       expect({ code: ran.code, stdout: ran.stdout, stderr: ran.stderr …
+       |                                                                          ^
+     38|         code: 2,
+     39|         stdout: [],
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[2/2]⎯
+
+
+ Test Files  1 failed (1)
+      Tests  2 failed (2)
+   Start at  10:12:09
+   Duration  449ms (tests 85%, import 9%, transform 4%, worker 3%)
+
+vitest exit 1
+=== mutant: gates/bin/test-lint.ts: 'if (import.meta.main) await' -> 'if (false) await'; tests: gates/test/integration/test-lint.test.ts -t exits 0 on a test with one real assertion
+
+ RUN  v5.0.5 /home/user/ocelle-components
+
+ ❯ |gates-integration| gates/test/integration/test-lint.test.ts (18 tests | 1 failed | 17 skipped) 180ms
+   ❯ test lint (gates/bin/test-lint.ts) (10)
+     × exits 0 on a test with one real assertion 177ms
+
+⎯⎯⎯⎯⎯⎯⎯ Failed Tests 1 ⎯⎯⎯⎯⎯⎯⎯
+
+ FAIL  |gates-integration| gates/test/integration/test-lint.test.ts > test lint (gates/bin/test-lint.ts) > exits 0 on a test with one real assertion
+AssertionError: expected { code: +0, stdout: [], stderr: [] } to deeply equal { code: +0, …(2) }
+
+- Expected
++ Received
+
+  {
+    "code": 0,
+    "stderr": [],
+-   "stdout": [
+-     "test-lint: 1 file checked, no finding",
+-   ],
++   "stdout": [],
+  }
+
+ ❯ gates/test/integration/test-lint.test.ts:83:74
+     81|       expect(existsSync(join(repo, config))).toBe(true);
+     82|       const ran = await testLint("pass");
+     83|       expect({ code: ran.code, stdout: ran.stdout, stderr: ran.stderr …
+       |                                                                          ^
+     84|         code: 0,
+     85|         stdout: ["test-lint: 1 file checked, no finding"],
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[1/1]⎯
+
+
+ Test Files  1 failed (1)
+      Tests  1 failed | 17 skipped (18)
+   Start at  10:12:11
+   Duration  383ms (tests 77%, transform 11%, import 10%, worker 2%)
+
+vitest exit 1

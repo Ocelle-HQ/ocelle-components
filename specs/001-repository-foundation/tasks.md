@@ -142,6 +142,34 @@ for one test-first unit, reviewed as phase 3's next round before phase 4 starts.
   4. **Check**: `pnpm test`, `pnpm run gate:test-lint` (exit 0 on the repository's own test code), `pnpm run gate:mutation -- --base $(cat specs/001-repository-foundation/reviews/phase-3/base.sha)` (no survivor in the new module; the rules are pure and killed in-process by the `RuleTester` tests), then commit green
   5. **Records** (operator decision at the phase 3 gate, 2026-11-02: "In this round: the implementer adds the covering test's name to each existing record in the same phase 3 round as the new rule."): every existing integration-only record in `gates/bin/test.ts`, `gates/bin/setup-offline.ts`, `gates/bin/mutation.ts`, `gates/lib/spawn.ts` and `gates/lib/cli.ts` names its covering `gates-integration` case (file and test name) as research.md R-08 requires; a record that no case covers is removed and its mutants killed test-first or shown equivalent; commit with the green commit or as `refactor(001-repository-foundation): phase 3 addendum records`
 
+### Operator addendum (feature gate)
+
+Operator decision at the feature gate, 2026-11-03 (human:jeroennouwsdev, recorded as phase 3 round 5, findings
+O5-01 and O5-02, on round 4 notes R4-02 and R4-03): "Fix in this PR" ("One more fix round now, test-first, before
+merge."). Phase 3 was approved in round 4; this task reopens it for one test-first unit, reviewed as phase 3's
+round 6.
+
+- [X] T094 [US2] Spawn error path and integration-only records (research.md R-08, R-09; reviews/phase-3/round-5.md O5-01, O5-02), test-first:
+  1. **Stub**: none needed; `gates/lib/spawn.ts`, `gates/bin/config-copies.ts`, `gates/bin/test-lint.ts` and their tests exist.
+  2. **Red** (test files and fixtures only, one commit): (O5-01) a test that starts a command that does not exist through `gates/lib/spawn.ts` and asserts the exact outcome the gate contract requires (exit 2, "could not run", contracts/gate-cli.md), so that a mutant of `child.on("error", reject)` fails it; in process in the `gates` project where the line can be reached there, otherwise a `gates-integration` case under `gates/test/integration/`. (O5-02) For each `// Stryker disable` record in `gates/bin/config-copies.ts` and `gates/bin/test-lint.ts` that names no covering case: where no `gates-integration` case runs its line, add one here. Commit alone, run `red.sh 3 fix-5` (round 5 is the operator round that requests this addendum) and confirm every new failure is an assertion failure against the current code, not a load error. A case that passes at once because the behaviour already exists is reported in the round's notes with the mutant it kills, not forced red
+  3. **Green**: make the new cases pass; set the record on `child.on("error", reject)` to name the case of step 2 if it stays integration-only, or remove it if the case kills its mutants in process; make every record in `gates/bin/config-copies.ts` and `gates/bin/test-lint.ts` name its covering `gates-integration` case as file and test name (R-08), or remove the record and kill its mutants
+  4. **Check**: `pnpm test`, every `pnpm run gate:<id>` (exit 0) and `pnpm run gate:plants` (exit 0), and `pnpm run gate:mutation -- --base $(cat specs/001-repository-foundation/reviews/phase-3/base.sha) --files gates/lib/spawn.ts,gates/bin/config-copies.ts,gates/bin/test-lint.ts` (the changed files; no survivor, every record reasoned and naming its case); commit green
+
+### Operator addendum (landing review)
+
+Operator decisions in the /ocelle-land landing pass of PR #18, 2026-11-03 (human:jeroennouwsdev, recorded as phase 3
+round 7, findings O7-01 and O7-02, on landing review notes L1-01 and L1-02): "Fix now, test-first (Recommended)"
+and "L1-02 missing file (Recommended)", the latter amended the same day to "Guard the input instead
+(Recommended)" (a path Stryker cannot take as input is exit 2 before Stryker runs; a file absent from the report
+still counts as zero mutants, so type-only changes keep passing). Phase 3 was approved in round 6; this task reopens it for one test-first
+unit, reviewed as phase 3's round 8.
+
+- [ ] T095 [US2] Mutation gate fails closed on diff headers it cannot parse and on changed paths Stryker cannot take as input (spec FR-011, contracts/gate-cli.md, research.md R-08 steps 2 and 4; reviews/phase-3/round-7.md O7-01, O7-02), test-first:
+  1. **Stub**: none needed; `gates/lib/mutation/ranges.ts`, `gates/lib/mutation/report.ts`, `gates/bin/mutation.ts` and their tests exist.
+  2. **Red** (test files and fixtures only, one commit): (O7-01) in `gates/test/mutation-ranges.test.ts`, on recorded `git diff --unified=0` output under `gates/test/fixtures/` (recorded from a scratch repository, as the landing review reproduced it): a tab-suffixed header (`+++ b/packages/tokens/src/a b.ts` followed by a tab, the form git writes for a path with a space) yields the path `packages/tokens/src/a b.ts` with its ranges; a quoted header with octal escapes (`+++ "b/packages/tokens/src/\303\251.ts"`, the form git writes for a non-ASCII or special character) yields `packages/tokens/src/é.ts` with its ranges; a diff holding both plus a plain `+++ b/.../ok.ts` yields all three files; and a `+++` header that is neither a parsable `b/<path>` (plain, tab-suffixed or quoted) nor `+++ /dev/null` makes the parse fail with a cause naming the header, which the gate reports as exit 2 (could not run), for a normal run, `--files` and `--plan` alike (`--plan` takes its shards from the same parse). (O7-02) in the test of the module that builds the `mutate` list (`gates/test/mutation-ranges.test.ts`, or the test of `gates/bin/mutation.ts`): a changed in-scope path containing a glob metacharacter (`*?[]{}!`, one case each) or a comma, or otherwise not passable verbatim, makes the gate exit 2 before Stryker runs, with one cause line naming each such path, for a normal run, `--files` and `--plan` alike; and in `gates/test/mutation-report.test.ts`, on a recorded Stryker JSON report: a changed in-scope file with changed lines that the report does not list counts as zero mutants and passes (a type-only or comment-only change), and a file the report lists, with every mutant killed, still passes. Commit alone, run `red.sh 3 fix-7` (round 7 is the operator round that requests this addendum) and confirm every new failure is an assertion failure against the current code, not a load error. A case that passes at once because the behaviour already exists is reported in the round's notes, not forced red
+  3. **Green**: in `gates/lib/mutation/ranges.ts`, read a `+++` header as `b/<path>` with any trailing tab and what follows it removed, or as a C-quoted `"b/<escaped>"` decoded as git writes it (octal byte escapes as UTF-8 bytes, `\"`, `\\`, `\t`, `\n` and the other C escapes), or as `/dev/null`; any other `+++` header is an error naming the header, which `gates/bin/mutation.ts` turns into exit 2. Where the `mutate` list is built (before Stryker runs), a changed in-scope path that Stryker cannot take as a `mutate` input (it contains a glob metacharacter `*?[]{}!` or a comma, or otherwise cannot be passed verbatim) is exit 2 naming each such path; in `gates/lib/mutation/report.ts`, a changed file absent from the report counts as zero mutants (a type-only or comment-only change passes). Decision (operator, PR #18 landing review, human:jeroennouwsdev, 2026-11-03: "Guard the input instead (Recommended)"): Stryker 10.1.1 lists only files with mutants, and the real cause of an uninstrumented file is a path Stryker cannot take as input, so the gate guards the input; exit 2, not a finding, because such a path is a file the gate could not check, not a defect found in checked code (contracts/gate-cli.md). Update the header comments of the changed modules and the mutation row of `gates/README.md` if it states the exit 2 causes
+  4. **Check**: `pnpm test`, every `pnpm run gate:<id>` (exit 0) and `pnpm run gate:plants` (exit 0), and `pnpm run gate:mutation -- --base $(cat specs/001-repository-foundation/reviews/phase-3/base.sha) --files <the changed gate source files, comma-separated, for example gates/lib/mutation/ranges.ts,gates/lib/mutation/report.ts,gates/bin/mutation.ts>` (no survivor; every record reasoned and, where integration-only, naming its covering case, R-08); commit green
+
 **Checkpoint**: US1 and US2 both work; every later review runs mutation testing.
 
 ---
@@ -211,11 +239,24 @@ roughly 18 shards). Planner updates R-08/plan, implementer changes shards.ts tes
 mutation strength." Phase 4 was approved in round 2; this task reopens it for one test-first unit, reviewed as
 phase 4's round 4.
 
-- [ ] T093 [US3] Shard bound of 250 changed lines (spec FR-013/SC-005 as amended, research.md R-08 "CI, sharded"; 10 files per shard and the 10-minute shard job limit unchanged), test-first:
+- [X] T093 [US3] Shard bound of 250 changed lines (spec FR-013/SC-005 as amended, research.md R-08 "CI, sharded"; 10 files per shard and the 10-minute shard job limit unchanged), test-first:
   1. **Stub**: none needed; `gates/lib/mutation/shards.ts` and its test exist since phase 3.
   2. **Red** (test file only, one commit): update and add cases in `gates/test/mutation-shards.test.ts` (T039's test) on recorded diff output asserting the 250-line split: a file with 251 changed lines is a shard on its own; two files whose changed lines sum to 251 are split into two shards; two files summing to exactly 250 fit in one shard. Cases that assumed 500 are changed to the new bound. Commit alone, run `red.sh 4 fix-3` (round 3 is the operator round that requests this addendum) and confirm every new failure is an assertion failure against the current 500-line code, not a load error
   3. **Green**: set the bound to 250 in `gates/lib/mutation/shards.ts` (constant and header comment) and update the bound's wording in `gates/README.md`
   4. **Check**: `pnpm test`, every `pnpm run gate:<id>` (exit 0) and `pnpm run gate:plants` (exit 0); `pnpm run gate:mutation -- --base bdb9b70 --plan` (the pull request base, the CI plan) to show the new shard list, then each shard with `--files`, timed; record the new shard list and timings in `specs/001-repository-foundation/reviews/phase-4/mutation-shards.md`, add the CI run 4, 6 and 7 durations of round 3's evidence, and correct its margin sentence to the measured CI margin (round 2 note R2-01); a shard over 10 minutes is reported to the operator; commit green
+
+### Operator addendum (landing review)
+
+Operator decision in the /ocelle-land landing pass of PR #18, 2026-11-03 (human:jeroennouwsdev, recorded as phase 4
+round 5, findings O5-01 and O5-02, on landing review notes L1-04 and L1-05): "L1-04, L1-05 plants (Recommended)":
+"Breaking plants check the cause of exit 2, not just the code; pass plants may not set 'base'." Phase 4 was
+approved in round 4; this task reopens it for one test-first unit, reviewed as phase 4's round 6.
+
+- [ ] T096 [US3] Breaking plants state their expected cause, and pass plants may not set `base` (spec FR-025, data-model.md § Plant, contracts/plants.md, research.md R-10; reviews/phase-4/round-5.md O5-01, O5-02), test-first:
+  1. **Stub**: none needed; `gates/lib/plant-judge.ts`, `gates/lib/plant-runner.ts` and their tests exist.
+  2. **Red** (test files and fixtures only, one commit): in `gates/test/plant-judge.test.ts` (and `gates/test/plant-runner.test.ts` where the plant definition is read there): (O5-01) an `error` plant whose `plant.json` has `cause` is judged reported broken when the gate exits 2 and a line of its error output contains `cause`, and fails (a problem naming the expected cause and the first error line) when the gate exits 2 with a different cause; an `error` plant without `cause`, or with an empty one, is an invalid `plant.json`; `cause` on a `fail` or `pass` plant is an invalid `plant.json`. (O5-02) a `pass` plant with `base` is an invalid `plant.json` (a plant definition error); `base` on a `fail` or `error` plant stays accepted. Commit alone, run `red.sh 4 fix-5` (round 5 is the operator round that requests this addendum) and confirm every new failure is an assertion failure against the current code, not a load error. A case that passes at once because the behaviour already exists is reported in the round's notes, not forced red
+  3. **Green**: read and validate `cause` and the `base` restriction in the plant definition, and check `cause` in `judgePlant`; add `cause` to every existing breaking plant's `plant.json` (each `gates/plants/<gate>/error-*/`, 14 today), a substring of the cause line its gate prints today for exactly that breakage (for example the unresolvable-base message for `mutation/error-unresolvable-base`, the parse error for each `error-unparsable`), checked by running the plant; update `gates/README.md` where it describes `plant.json`
+  4. **Check**: `pnpm test`, every `pnpm run gate:<id>` (exit 0) and `pnpm run gate:plants` (exit 0, every breaking plant judged on its cause), and `pnpm run gate:mutation -- --base $(cat specs/001-repository-foundation/reviews/phase-4/base.sha) --files <the changed gate source files, comma-separated, for example gates/lib/plant-judge.ts,gates/lib/plant-runner.ts>` (no survivor; every record reasoned, R-08); commit green
 
 **Checkpoint**: all twelve checks run locally and the plant job proves each gate can fail.
 
@@ -252,7 +293,7 @@ No scaffold: the phase's test reads repository files and imports no new module.
 The operator pushes the branch, opens the pull request and records each result in
 `specs/001-repository-foundation/verification.md` (plan.md § Verification): CODEOWNERS accepted by GitHub and
 `@MOES-Media` with write access; the twelve checks green; a ruleset on `main` requiring the twelve checks; SC-001 and
-SC-005 timings (quickstart steps 11 and 12). Consider merging `cache.yml` first in a small pull request so the
+SC-005 timings (quickstart steps 11 and 12); the merge method (squash) and the remote branch or `archive/` ref kept as the home of the red/green evidence SHAs, with its head SHA (plan.md § Verification item 5, operator decision, PR #18 landing review, human:jeroennouwsdev, 2026-11-03). Consider merging `cache.yml` first in a small pull request so the
 feature's shards are not timed cold (quickstart step 12).
 
 ---
@@ -272,8 +313,10 @@ feature's shards are not timed cold (quickstart step 12).
 - Phase 2: the red tests T016 to T022 are separate files; in green, T024, T026, T027 and T029 are independent.
 - Phase 3: T033 to T041 in parallel; T043 and T045 in parallel with T044.
 - Phase 3 addendum: T091 is one unit (stub, red, green, check) after T050; nothing runs in parallel with it.
+- Phase 3 addendum (feature gate): T094 is one unit (red, green, check) after phase 4's round 4 review; nothing runs in parallel with it.
 - Phase 4: T052 to T062 and T092 in parallel; T064 to T070 in parallel; the plant groups T073 to T078 in parallel; T080 and T081 in parallel with T079.
 - Phase 4 addendum: T093 is one unit (red, green, check) after phase 5's review; nothing runs in parallel with it.
+- Landing review addenda: T095 (phase 3) and T096 (phase 4) are each one unit (red, green, check) after landing review round 1 and before the next landing pass. They touch separate modules (`gates/lib/mutation/` versus `gates/lib/plant-judge.ts`, `gates/lib/plant-runner.ts` and the breaking plants' `plant.json`), but run one after the other, T095 first, so each red commit stands alone under its own label (`red.sh 3 fix-7`, then `red.sh 4 fix-5`) and T096's `gate:plants` check runs the mutation plants on T095's gate; each is reviewed as its phase's next round (phase 3 round 8, phase 4 round 6); nothing runs in parallel with either.
 - Phase 5: T085 to T089 in parallel.
 
 ## Implementation Strategy

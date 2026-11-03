@@ -256,6 +256,15 @@ in this feature depends on it.
   - A mutant that does not compile (the type checker rejects it, so no test runs on it) is **invalid**: it is
     neither killed nor surviving, and it does not fail the run (operator amendment, plan squad round 3, approved by
     the operator, human:jeroennouwsdev, 2026-11-02).
+  - Mutation testing MUST NOT pass with changed code it did not check. A changed file whose path it cannot read
+    from the diff (any path git writes, including one with spaces, non-ASCII or special characters, MUST be read),
+    and a changed in-scope file whose path the mutation tool cannot take as a mutate input (it contains a glob
+    metacharacter `*?[]{}!` or a comma, or otherwise cannot be passed verbatim), end the run as "could not run"
+    (exit 2 of the gate contract) before the tool runs, naming the file or diff line, never as a pass (operator
+    decision, PR #18 landing review, human:jeroennouwsdev, 2026-11-03). A changed file the mutation tool's report
+    does not list counts as zero mutants, so a change with no mutable code (type-only or comment-only) passes
+    (operator decision, PR #18 landing review, human:jeroennouwsdev, 2026-11-03: "Guard the input instead
+    (Recommended)").
 - **FR-012**: A surviving mutant MAY be recorded as equivalent only with a written reason, kept next to the mutated
   code. The mutation report MUST list every such record in the changed code, with its location and reason, so the
   review can see and record it.
@@ -336,7 +345,10 @@ in this feature depends on it.
   exactly the findings the plant lists. Every gate MUST also have at least one pass plant (a near-miss or clean input
   it must accept) and at least one breaking plant (an input that makes it unable to run, which it must report as
   "could not run", not as a finding); the plant job MUST fail when a gate fails on a pass plant or does not report a
-  breaking plant as "could not run" (operator decision, plan squad round 1). Gates
+  breaking plant as "could not run" (operator decision, plan squad round 1). A breaking plant names the cause it
+  expects, and the plant job MUST also fail when the gate reports "could not run" for another cause; a pass plant
+  MUST NOT replace the base its gate is given (operator decision, PR #18 landing review, human:jeroennouwsdev,
+  2026-11-03). Gates
   that do not read ordinary source files are given their plants in the form they read: the plan defines, for each
   gate, how its plant is presented to it (for example a commit range or bundle for the sign-off check, prebuilt
   output for the content-security check, a source-and-base pair for mutation testing). Plants are not test code

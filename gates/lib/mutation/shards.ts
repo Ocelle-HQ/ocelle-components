@@ -1,5 +1,6 @@
 // Mutation shards for CI (FR-013, research.md R-08): the changed files, sorted by path, filled greedily into shards
-// of at most 10 files and 500 changed lines; a file of more than 500 changed lines is a shard on its own.
+// of at most 10 files and 250 changed lines (operator decision, phase 4 round 3: 500 lines let a shard run past the
+// 10-minute CI job limit); a file of more than 250 changed lines is a shard on its own.
 import type { ChangedFile } from "./ranges.ts";
 
 /** One CI shard: changed files and their number of changed lines. */
@@ -12,7 +13,7 @@ export interface Shard {
 export type Selection = { readonly files: readonly ChangedFile[] } | { readonly missing: readonly string[] };
 
 const maxFiles = 10;
-const maxLines = 500;
+const maxLines = 250;
 
 export function planShards(files: readonly ChangedFile[]): Shard[] {
   const shards: { files: string[]; lines: number }[] = [];

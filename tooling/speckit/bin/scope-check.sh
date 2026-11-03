@@ -8,6 +8,7 @@ role=${1:-}; base=${2:-}
 declare -A allowed=(
   [triage]='triage/*'
   [review]='specs/*/reviews/phase-* ops/*/reviews/phase-*'
+  [landing]='specs/*/reviews/landing/* ops/*/reviews/landing/* triage/*-landing-*.md'
   [spec-check]='specs/*/reviews/spec/* ops/*/reviews/spec/*'
   [analyze]='specs/*/analysis-report.md ops/*/analysis-report.md'
   [lens]='specs/*/reviews/plan/round-*/lens-*.yaml'
