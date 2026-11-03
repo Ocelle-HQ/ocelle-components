@@ -9,14 +9,14 @@ real-tool `gates-integration` tests to `pnpm test`.
 
 ```bash
 T=$(mktemp -d <scratch>/sc001-XXXX)
-git clone -q /home/user/ocelle-components "$T/clone"
+git clone -q <repo> "$T/clone"
 mkdir -p "$T/store" "$T/browsers" "$T/cache"
 cd "$T/clone"
 export npm_config_store_dir="$T/store" PLAYWRIGHT_BROWSERS_PATH="$T/browsers"
 pnpm store path
 ```
 
-**Store check 1** (`npm_config_store_dir`): `pnpm store path` printed `/root/.local/share/pnpm/store/v11`, the
+**Store check 1** (`npm_config_store_dir`): `pnpm store path` printed `<pnpm store>`, the
 machine's existing store, not the new directory: pnpm 12.16.1 ignores `npm_config_store_dir` (as research.md R-04
 records). So the run did not go on with it.
 

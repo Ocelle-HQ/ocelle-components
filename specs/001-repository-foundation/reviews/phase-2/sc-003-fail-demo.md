@@ -7,7 +7,7 @@ repository. Environment: Node 26.13.0 and pnpm 12.16.1 from `/opt/node26/bin`.
 
 ```bash
 D=/tmp/claude-0/-home-user/487f8758-2b55-59a1-b0c5-2dfdf59aac74/scratchpad/sc003-clone
-git clone /home/user/ocelle-components "$D"     # at 5dca197, the phase 2 green commit
+git clone <repo> "$D"     # at 5dca197, the phase 2 green commit
 cd "$D"
 export PATH=/opt/node26/bin:$PATH
 export SPECIFY_FEATURE_DIRECTORY=specs/001-repository-foundation   # the clone has no .specify/feature.json

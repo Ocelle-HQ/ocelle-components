@@ -64,7 +64,7 @@ No blocking finding.
 
 ## Checks run
 
-At ca5a14f in /home/user/ocelle-components:
+At ca5a14f in <repo>:
 
 - typecheck, lint, style-lint, test-lint, config-copies, csp, prefix, pins: exit 0.
 - signoff `--range d15962b..HEAD`: 3 commits checked, no finding.

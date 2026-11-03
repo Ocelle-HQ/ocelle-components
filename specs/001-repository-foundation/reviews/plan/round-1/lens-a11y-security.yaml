@@ -55,7 +55,7 @@ findings:
     evidence:
       - artifact: "research.md R-16: 'one workflow .github/workflows/ci.yml on pull_request, one job per gate ... Actions are pinned by full commit SHA. A shared setup step ... runs pnpm run setup:online'; contracts/ci-checks.md 'Every job: checkout, ... pnpm run setup:online'; nothing in plan, research or contracts mentions 'permissions:' or 'persist-credentials'"
       - code: "gh api repos/Ocelle-HQ/ocelle-components -> owner type Organization, visibility internal: pull requests come from branches of the same repository (agents push branches here), so the pull_request token is not the read-only fork token"
-      - code: "ls /home/user/ocelle-components/.github -> does not exist: the workflow and its permissions are entirely this feature's decision"
+      - code: "ls <repo>/.github -> does not exist: the workflow and its permissions are entirely this feature's decision"
     claim: |
       Each of twelve jobs runs a full dependency install (third-party code, some 15 dev tools and their transitive
       trees) and then runs code from the pull request itself (tests, plants, gate scripts). For same-repository
