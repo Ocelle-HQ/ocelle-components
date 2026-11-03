@@ -44,6 +44,7 @@ describe("judgePlant: output lines", () => {
   it("reads a finding line without a message: the rest after the gate is the rule", () => {
     expect(judgePlant("g", fail, run(1, ["a.ts:1: g: r"]))).toBeUndefined();
     expect(judgePlant("g", { ...fail, findings: [{ location: "a.ts:1", rule: "r", message: "x" }] }, run(1, ["a.ts:1: g: r"]))).toBe('finding a.ts:1 r lacks "x"');
+    expect(judgePlant("g", { ...fail, findings: [{ location: "a.ts:1", rule: "r", message: "here" }] }, run(1, ["a.ts:1: g: r"]))).toBe('finding a.ts:1 r lacks "here"');
   });
 
   it("splits the rule from the message at the first colon and space", () => {

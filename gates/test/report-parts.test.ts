@@ -55,6 +55,15 @@ describe("classifyStylelint: tool output and parse errors", () => {
   const report = (text: string): string =>
     JSON.stringify([{ source: `${root}/a.css`, warnings: [{ line: 2, rule: "CssSyntaxError", text }], parseErrors: [], invalidOptionWarnings: [] }]);
 
+  it("keeps a warning's text whole when it does not end with its rule", () => {
+    const text = JSON.stringify([{ source: `${root}/a.css`, warnings: [{ line: 1, rule: "r", text: "raw value (x)" }], parseErrors: [], invalidOptionWarnings: [] }]);
+    expect(classifyStylelint({ report: text, exitCode: 2, output: "", root })).toEqual({
+      exit: 1,
+      findings: [{ location: { path: "a.css", line: 1 }, gate: "style-lint", rule: "r", message: "raw value (x)" }],
+      summary: "style-lint: 1 finding in 1 file",
+    });
+  });
+
   it("drops only the rule suffix at the end of a parse error's text", () => {
     expect(classifyStylelint({ report: report("Unknown word (a) here (CssSyntaxError)"), exitCode: 2, output: "", root })).toEqual({
       exit: 2,

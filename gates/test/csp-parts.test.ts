@@ -27,6 +27,7 @@ describe("scanScript: the line of markup in a template", () => {
     { name: "a later part that starts with a newline", text: "const t = `<p>${x}\n<b onclick=1>`;\n", line: 2 },
     { name: "the third part", text: "const t = `<p>${a}</p>${\nb\n}\n\n<b onclick=1>`;\n", line: 5 },
     { name: "an attribute on a later line of a later part", text: "const t = `<p>${a}</p><b\nonclick=1>`;\n", line: 2 },
+    { name: "an attribute just before a newline in the third part", text: "const t = `${a}${b}<b on\n>`;\n", line: 1 },
   ])("reports $name at line $line", ({ text, line }) => {
     expect(lines(text)).toEqual([line]);
   });

@@ -69,6 +69,7 @@ describe("rawValues: functions", () => {
     { value: 'var(--a "," 4px, red)', raw: ["red"] },
     { value: "var(4px, Canvas)", raw: [] },
     { value: "var(--x 4px, Canvas)", raw: [] },
+    { value: "var(--a / 4px)", raw: [] },
     { value: "VAR(--a, 4px)", raw: ["4px"] },
     { value: "calc(2 * min(4px, 1px))", raw: ["min(4px, 1px)"] },
     { value: "calc((var(--a) + 4px) * 2)", raw: ["4px"] },
@@ -95,8 +96,8 @@ describe("the rule in Stylelint", () => {
     expect(await lint(true)).toEqual({ warnings: ["color: raw red; use a --ocelle-* token (FR-024) (ocelle/token-only)"], invalid: [] });
   });
 
-  it("reports an invalid option and checks nothing with it", async () => {
-    const result = await lint("yes");
+  it.each([["yes"], [[]], [1]])("reports the invalid option %j and checks nothing with it", async (option) => {
+    const result = await lint(option);
     expect({ warnings: result.warnings, invalid: result.invalid.length }).toEqual({ warnings: [], invalid: 1 });
   });
 });

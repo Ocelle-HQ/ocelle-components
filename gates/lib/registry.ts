@@ -107,7 +107,7 @@ export interface RegistryInput {
 /** One finding per gate id missing from the registry, the workflow's gate jobs or the FR-020 list. */
 export function checkRegistry(input: RegistryInput): Finding[] {
   const registered = new Set(input.registry.map((gate) => gate.id));
-  const helpers = new Set(input.registry.flatMap((gate) => gate.helperJobs ?? []));
+  const helpers = new Set(input.registry.flatMap((gate) => gate.helperJobs));
   const gateJobs = new Set(input.jobs.filter((job) => job !== plantJob && !helpers.has(job)));
   const listed = new Set(fr020);
   const finding = (path: string, rule: string, message: string): Finding => ({ location: { path }, gate: "plants", rule, message });

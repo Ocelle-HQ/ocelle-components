@@ -192,6 +192,22 @@ describe("limiter", () => {
     expect(await Promise.all(results)).toEqual(["failed a", "b", "c", "d"]);
   });
 
+  it("frees the slot of a finished task for a task started later", async () => {
+    const log: string[] = [];
+    const limit = limiter(1);
+    const first = deferred(log, "a");
+    const done = limit(first.task);
+    await settle();
+    first.finish();
+    await done;
+    const second = deferred(log, "b");
+    const later = limit(second.task);
+    await settle();
+    expect(log).toEqual(["start a", "end a", "start b"]);
+    second.finish();
+    expect(await later).toBe("b");
+  });
+
   it("runs one task at a time with size 1", async () => {
     const log: string[] = [];
     const limit = limiter(1);

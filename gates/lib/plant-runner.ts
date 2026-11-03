@@ -56,8 +56,8 @@ export async function runPlant(tools: RunnerTools, root: string, gate: Gate, pat
     const built = await tools.build[gate.plantForm](join(root, path), into).catch((error: unknown) => {
       throw new Error(`${path}: cannot build its temporary repository (${errorText(error)})`, { cause: error });
     });
-    const [command = "", ...args] = plantArgs(gate.plantCommand, plantValues(gate.plantForm, into, built, plant));
-    const ran = await tools.run(command === "node" ? tools.node : command, args);
+    const [command, ...args] = plantArgs(gate.plantCommand, plantValues(gate.plantForm, into, built, plant));
+    const ran = await tools.run(command === "node" ? tools.node : String(command), args);
     const commits = built.commits === undefined ? {} : { commits: built.commits };
     return { exit: ran.exitCode, stdout: outputLines(ran.stdout), stderr: outputLines(ran.stderr), ...commits };
   } finally {

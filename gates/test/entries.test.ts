@@ -40,4 +40,8 @@ describe("filePaths", () => {
   it("lists none for no entries", () => {
     expect(filePaths([], "/r")).toEqual([]);
   });
+
+  it("sorts the files whatever order the entries come in", () => {
+    expect(filePaths([entry("/r", "b.ts", "file"), entry("/r/a", "c.ts", "file"), entry("/r", "a.ts", "file")], "/r")).toEqual(["a.ts", "a/c.ts", "b.ts"]);
+  });
 });

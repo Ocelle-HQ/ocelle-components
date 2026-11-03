@@ -63,10 +63,10 @@ describe("parseCommits: separators and headers", () => {
   const record = (message: string): string => `author: A <a@example.com>\n\n${message}\n`;
 
   it("splits records only at a line that is %% alone, also at the end of the text, and skips blank records", () => {
-    const text = `${record("one %% two")}%%\n\n%%\n${record("three\n%%x")}%%`;
+    const text = `${record("one %% two")}%%\n\n%%\n${record("three\n%%x\nfour %%")}%%`;
     expect(parseCommits(text)).toEqual([
       { author: "A <a@example.com>", message: "one %% two" },
-      { author: "A <a@example.com>", message: "three\n%%x" },
+      { author: "A <a@example.com>", message: "three\n%%x\nfour %%" },
     ]);
   });
 
@@ -85,9 +85,13 @@ describe("parseCommits: separators and headers", () => {
     { line: "parent: x0", problem: "record 1: parent x0 is not an earlier record" },
     { line: "merge: 1.5 0", problem: "record 1: merge 1.5 0 must name two different earlier records" },
     { line: "merge: 0 -1", problem: "record 1: merge 0 -1 must name two different earlier records" },
-    { line: "merge: 0 1 2", problem: "record 1: merge 0 1 2 must name two different earlier records" },
   ])("rejects the header $line", ({ line, problem }) => {
     expect(() => parseCommits(`${line}\n\nm\n`)).toThrow(problem);
+  });
+
+  it("rejects a merge of two valid earlier records with a third", () => {
+    const text = `${record("one")}%%\n${record("two")}%%\nauthor: A <a@example.com>\nmerge: 1 2 0\n\nthree\n`;
+    expect(() => parseCommits(text)).toThrow("record 3: merge 1 2 0 must name two different earlier records");
   });
 
   it("reads a parent with leading zeros and a merge of the base commit", () => {

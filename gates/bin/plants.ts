@@ -50,7 +50,12 @@ const missed = { fail: "not-caught", pass: "not-accepted", error: "not-reported-
 
 /** The registry check on a registry plant's gates.json and ci.yml, as a gate run (exit 0, 1 or 2). */
 function registryRun(registryText: string | undefined, workflow: string | undefined): PlantRun {
-  const broken = (cause: string): PlantRun => ({ exit: 2, stdout: [], stderr: [`${gateId}: could not run: ${cause}`] });
+  const broken = (cause: string): PlantRun => ({
+    exit: 2,
+    // Stryker disable next-line ArrayDeclaration: equivalent, the verdict reads a run's stdout only for lines of this gate, and any other text there is ignored
+    stdout: [],
+    stderr: [`${gateId}: could not run: ${cause}`],
+  });
   if (registryText === undefined) return broken("gates.json is missing");
   if (workflow === undefined) return broken("ci.yml is missing");
   let registry: readonly Gate[];

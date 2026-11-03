@@ -175,7 +175,8 @@ export function judgePlant(gate: string, plant: Plant, run: PlantRun): string | 
   if (plant.expect === "pass") {
     if (run.exit !== 0 || findings.length > 0) return `expected exit 0 with no finding, got exit ${exit}${detail(findings, run)}`;
     if (plant.records === undefined) return undefined;
-    const records = lines.filter(isRecord).map((found) => {
+    // Here every line is a record: a pass plant with any other finding line was rejected above.
+    const records = lines.map((found) => {
       const end = found.rest.indexOf(": ");
       return `${found.location} ${found.rest.slice(0, end)} "${found.rest.slice(end + 2)}"`;
     });
