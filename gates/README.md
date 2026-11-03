@@ -71,8 +71,15 @@ makes a gate block the merge. The ruleset (or branch protection) on `main` requi
 A change to this set is a change to the ruleset, which the operator makes. The jobs `mutation-plan` and
 `mutation-shard` serve the Mutation testing check and are not required themselves. `mutation-plan` splits the changed
 files into entries, a file of more than 120 changed lines into line-range entries `path:start-end` of at most 120
-changed lines, and fills them into shards of at most 10 entries and 250 changed lines (FR-013); each `mutation-shard`
-job passes its shard's entries unchanged to `--files` and runs under a 10-minute limit. `.github/workflows/cache.yml`
+changed lines, and fills them into shards of at most 10 entries and 250 changed lines (FR-013); two entries of one
+file never share a shard, so no shard holds more than 120 changed lines of one file, while an entry may share a shard
+with other files' entries. A cut is the boundary between two consecutive entries of one file. A mutant whose node
+spans a cut (starts in one entry of a file and ends in the next) is mutated in no shard, since Stryker mutates a node
+only when it lies wholly inside one `mutate` range; the smaller mutants inside it, each within one entry, still are.
+This is an accepted limit (operator decision, phase 3 round 10, O10-02; research.md R-08, "Cuts, an accepted limit").
+`--plan` reports the number of shards and of cuts it made on stderr, in one line,
+`mutation: plan: <s> shards, <c> cuts within files (...)`, and the JSON on stdout stays the one array the job
+reads. Each `mutation-shard` job passes its shard's entries unchanged to `--files` and runs under a 10-minute limit. `.github/workflows/cache.yml`
 (cache warming on `main`) is not a gate.
 
 ## Deferred gates (FR-026)

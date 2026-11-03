@@ -84,3 +84,70 @@ Cut boundaries, measured on csp.ts, whose entries land in different shards (1 an
 together mutate 279. The two that neither shard mutates span the cut at line 120/121:
 `BlockStatement 113:68-123:2` (CompileError when run whole) and `BlockStatement 119:98-121:4` (Killed when run
 whole).
+
+## Round 10 fix (T098): one file's entries in separate shards
+
+Measured on 2026-11-03 on the round 10 fix tree: red commit 9f712c8 plus the fix. The code is the same as in the
+fix commit `fix(001-repository-foundation): phase 3 review round 10`. Same sandbox as above: 4 vCPU, Node 26.13.0,
+pnpm 12.16.1, StrykerJS 10.1.1, `concurrency` 8, cold runs (`incremental` off). Base: bdb9b70, the pull request
+base and the plan CI runs. The shards ran one after the other, never two at once, and no other mutation run or
+tdd-check run was going at the same time.
+
+```bash
+pnpm run gate:mutation -- --base bdb9b70 --plan
+pnpm run gate:mutation -- --base bdb9b70 --files "<the shard's files value>"   # once per shard, timed
+```
+
+Plan output on stdout (21 shards; no entry over 120 changed lines of one file, no shard over 10 entries or 250
+changed lines, and no shard holding two entries of one file; the largest shard by lines is shard 9, 4 entries
+and 241 lines, and by entries shard 21, 6 entries and 199 lines):
+
+```json
+[{"files":"gates/bin/config-copies.ts,gates/bin/csp.ts:1-120","lines":204},{"files":"gates/bin/csp.ts:121-240","lines":120},{"files":"gates/bin/csp.ts:241-248,gates/bin/lint.ts,gates/bin/mutation.ts:1-120","lines":152},{"files":"gates/bin/mutation.ts:121-195,gates/bin/pins.ts:1-120","lines":195},{"files":"gates/bin/pins.ts:121-157,gates/bin/plants.ts:1-120","lines":157},{"files":"gates/bin/plants.ts:121-233,gates/bin/prefix.ts","lines":230},{"files":"gates/bin/setup-offline.ts,gates/bin/signoff.ts","lines":221},{"files":"gates/bin/style-lint.ts,gates/bin/test-lint.ts,gates/bin/test.ts:1-120","lines":183},{"files":"gates/bin/test.ts:121-136,gates/bin/typecheck.ts,gates/eslint/no-snapshot-only.ts,gates/eslint/unchecked-expect.ts:1-120","lines":241},{"files":"gates/eslint/unchecked-expect.ts:121-140,gates/lib/cli.ts,gates/lib/entries.ts,gates/lib/eslint-report.ts","lines":211},{"files":"gates/lib/findings.ts,gates/lib/mutation/coverage.ts,gates/lib/mutation/ranges.ts:1-120","lines":195},{"files":"gates/lib/mutation/ranges.ts:121-131,gates/lib/mutation/records.ts,gates/lib/mutation/report.ts","lines":162},{"files":"gates/lib/mutation/shards.ts:1-120","lines":120},{"files":"gates/lib/mutation/shards.ts:121-166,gates/lib/pins-rules.ts:1-120","lines":166},{"files":"gates/lib/pins-rules.ts:121-137,gates/lib/plant-judge.ts:1-120","lines":137},{"files":"gates/lib/plant-judge.ts:121-216,gates/lib/plant-repo.ts:1-120","lines":216},{"files":"gates/lib/plant-repo.ts:121-237,gates/lib/plant-runner.ts","lines":203},{"files":"gates/lib/registry.ts:1-120","lines":120},{"files":"gates/lib/registry.ts:121-121,gates/lib/spawn.ts,gates/lib/stylelint-report.ts,gates/lib/tsc-report.ts","lines":222},{"files":"gates/lib/vitest-report.ts:1-120","lines":120},{"files":"gates/lib/vitest-report.ts:121-123,gates/lib/workspace-yaml.ts,gates/stylelint/token-only.ts,packages/elements/src/index.ts,packages/styles/src/index.ts,packages/tokens/src/index.ts","lines":199}]
+```
+
+On stderr:
+
+```text
+mutation: plan: 21 shards, 14 cuts within files (a mutant spanning a cut is mutated in no shard, see gates/README.md)
+```
+
+The 14 cuts: csp.ts 2, mutation.ts 1, pins.ts 1, plants.ts 1, test.ts 1, unchecked-expect.ts 1, ranges.ts 1,
+shards.ts 1, pins-rules.ts 1, plant-judge.ts 1, plant-repo.ts 1, registry.ts 1, vitest-report.ts 1.
+
+| Shard | Entries | Count | Changed lines | Mutants on changed lines | Result | Equivalent records | Duration |
+|---|---|---|---|---|---|---|---|
+| 1 | gates/bin/config-copies.ts, gates/bin/csp.ts:1-120 | 2 | 204 | 189 | exit 0, none survived | 2 | 122 s (2 min 2 s) |
+| 2 | gates/bin/csp.ts:121-240 | 1 | 120 | 160 | exit 0, none survived | 6 | 137 s (2 min 17 s) |
+| 3 | gates/bin/csp.ts:241-248, gates/bin/lint.ts, gates/bin/mutation.ts:1-120 | 3 | 152 | 115 | exit 0, none survived | 8 | 104 s (1 min 44 s) |
+| 4 | gates/bin/mutation.ts:121-195, gates/bin/pins.ts:1-120 | 2 | 195 | 190 | exit 0, none survived | 9 | 121 s (2 min 1 s) |
+| 5 | gates/bin/pins.ts:121-157, gates/bin/plants.ts:1-120 | 2 | 157 | 125 | exit 0, none survived | 8 | 100 s (1 min 40 s) |
+| 6 | gates/bin/plants.ts:121-233, gates/bin/prefix.ts | 2 | 230 | 241 | exit 0, none survived | 28 | 149 s (2 min 29 s) |
+| 7 | gates/bin/setup-offline.ts, gates/bin/signoff.ts | 2 | 221 | 210 | exit 0, none survived | 11 | 133 s (2 min 13 s) |
+| 8 | gates/bin/style-lint.ts, gates/bin/test-lint.ts, gates/bin/test.ts:1-120 | 3 | 183 | 105 | exit 0, none survived | 28 | 77 s (1 min 17 s) |
+| 9 | gates/bin/test.ts:121-136, gates/bin/typecheck.ts, gates/eslint/no-snapshot-only.ts, gates/eslint/unchecked-expect.ts:1-120 | 4 | 241 | 222 | exit 0, none survived | 10 | 133 s (2 min 13 s) |
+| 10 | gates/eslint/unchecked-expect.ts:121-140, gates/lib/cli.ts, gates/lib/entries.ts, gates/lib/eslint-report.ts | 4 | 211 | 152 | exit 0, none survived | 5 | 102 s (1 min 42 s) |
+| 11 | gates/lib/findings.ts, gates/lib/mutation/coverage.ts, gates/lib/mutation/ranges.ts:1-120 | 3 | 195 | 189 | exit 0, none survived | 0 | 190 s (3 min 10 s) |
+| 12 | gates/lib/mutation/ranges.ts:121-131, gates/lib/mutation/records.ts, gates/lib/mutation/report.ts | 3 | 162 | 159 | exit 0, none survived | 1 | 150 s (2 min 30 s) |
+| 13 | gates/lib/mutation/shards.ts:1-120 | 1 | 120 | 102 | exit 0, none survived | 0 | 130 s (2 min 10 s) |
+| 14 | gates/lib/mutation/shards.ts:121-166, gates/lib/pins-rules.ts:1-120 | 2 | 166 | 357 | exit 0, none survived | 1 | 235 s (3 min 55 s) |
+| 15 | gates/lib/pins-rules.ts:121-137, gates/lib/plant-judge.ts:1-120 | 2 | 137 | 197 | exit 0, none survived | 0 | 172 s (2 min 52 s) |
+| 16 | gates/lib/plant-judge.ts:121-216, gates/lib/plant-repo.ts:1-120 | 2 | 216 | 381 | exit 0, none survived | 0 | 256 s (4 min 16 s) |
+| 17 | gates/lib/plant-repo.ts:121-237, gates/lib/plant-runner.ts | 2 | 203 | 163 | exit 0, none survived | 40 | 78 s (1 min 18 s) |
+| 18 | gates/lib/registry.ts:1-120 | 1 | 120 | 167 | exit 0, none survived | 0 | 222 s (3 min 42 s) |
+| 19 | gates/lib/registry.ts:121-121, gates/lib/spawn.ts, gates/lib/stylelint-report.ts, gates/lib/tsc-report.ts | 4 | 222 | 210 | exit 0, none survived | 9 | 143 s (2 min 23 s) |
+| 20 | gates/lib/vitest-report.ts:1-120 | 1 | 120 | 110 | exit 0, none survived | 1 | 126 s (2 min 6 s) |
+| 21 | gates/lib/vitest-report.ts:121-123, gates/lib/workspace-yaml.ts, gates/stylelint/token-only.ts, packages/elements/src/index.ts, packages/styles/src/index.ts, packages/tokens/src/index.ts | 6 | 199 | 308 | exit 0, none survived | 0 | 224 s (3 min 44 s) |
+
+All 21 shards exit 0 with no survivor. Together they take 3104 s (51 min 44 s). The longest is shard 16,
+`gates/lib/plant-judge.ts:121-216` and `gates/lib/plant-repo.ts:1-120` (216 lines, 381 mutants), at 256 s
+(4 min 16 s). No shard came near the 10-minute limit here, so there is nothing to report under the limit.
+
+For the operator: `gates/lib/plant-judge.ts` is now in two shards, `:1-120` in shard 15 (with the last 17 lines of
+pins-rules.ts, 197 mutants, 172 s) and `:121-216` in shard 16. The round 9 shard of plant-judge.ts alone had 353
+mutants and took 301 s here. But shard 16 holds more mutants (381) than that shard did, because the second entry of
+plant-judge.ts now shares its shard with the first entry of plant-repo.ts. Shard 14 (357 mutants) and shard 21
+(308) are also over 300. The fill bounds entries, lines and lines of one file, not mutants. In this sandbox,
+shard 16 took 256 s against the 301 s of the round 9 plant-judge.ts shard, which matches the research note that
+time follows the mutants per file, not the total. Whether that holds on GitHub's runner is measured only by the CI
+run of the pull request.

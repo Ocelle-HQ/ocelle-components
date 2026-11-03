@@ -4,8 +4,12 @@
 // falling inside a changed range where the count reaches 120, each entry running from its first to its last changed
 // line (operator decision, phase 3 round 9, O9-01: plant-judge.ts alone took 9:49 of the 10-minute CI job limit). The
 // entries, in that order, are filled greedily into shards of at most 10 entries and 250 changed lines (operator
-// decision, phase 4 round 3: 500 lines let a shard run past the limit); an entry never crosses a shard. `--files`
-// takes a shard's entries back: `selectFiles` cuts each file's changed ranges to the entries naming it.
+// decision, phase 4 round 3: 500 lines let a shard run past the limit); an entry never crosses a shard, and the next
+// entry starts a new shard when the current one already holds an entry of its file, so no shard holds more than 120
+// changed lines of one file (operator decision, phase 3 round 10, O10-01). A cut, the boundary between two
+// consecutive entries of one file, is counted by `countCuts`: a mutant spanning it is mutated in no shard, an
+// accepted limit (O10-02, gates/README.md). `--files` takes a shard's entries back: `selectFiles` cuts each file's
+// changed ranges to the entries naming it.
 import type { ChangedFile, LineRange } from "./ranges.ts";
 
 /** One CI shard: its entries (`path` or `path:start-end`) and their number of changed lines. */
@@ -30,6 +34,7 @@ const maxLines = 250;
 
 interface Entry {
   readonly entry: string;
+  readonly path: string;
   readonly lines: number;
 }
 
@@ -39,13 +44,13 @@ function lineCount(ranges: readonly LineRange[]): number {
 
 /** A file's entries: its path, or line ranges of at most 120 changed lines each when it has more. */
 function splitFile(file: ChangedFile): Entry[] {
-  if (file.lines <= maxEntryLines) return [{ entry: file.path, lines: file.lines }];
+  if (file.lines <= maxEntryLines) return [{ entry: file.path, path: file.path, lines: file.lines }];
   const entries: Entry[] = [];
   let first = 0;
   let last = 0;
   let count = 0;
   const close = (): void => {
-    entries.push({ entry: `${file.path}:${String(first)}-${String(last)}`, lines: count });
+    entries.push({ entry: `${file.path}:${String(first)}-${String(last)}`, path: file.path, lines: count });
     count = 0;
   };
   for (const range of file.ranges) {
@@ -64,16 +69,29 @@ function splitFile(file: ChangedFile): Entry[] {
 export function planShards(files: readonly ChangedFile[]): Shard[] {
   const shards: { files: string[]; lines: number }[] = [];
   const sorted = [...files].sort((a, b) => a.path.localeCompare(b.path));
-  for (const { entry, lines } of sorted.flatMap(splitFile)) {
+  let lastPath: string | undefined;
+  for (const { entry, path, lines } of sorted.flatMap(splitFile)) {
     const last = shards.at(-1);
-    if (last !== undefined && last.files.length < maxEntries && last.lines + lines <= maxLines) {
+    // Entries come in path order, so the current shard holds an entry of this file only if its last entry is one.
+    if (last !== undefined && path !== lastPath && last.files.length < maxEntries && last.lines + lines <= maxLines) {
       last.files.push(entry);
       last.lines += lines;
     } else {
       shards.push({ files: [entry], lines });
     }
+    lastPath = path;
   }
   return shards;
+}
+
+/**
+ * The plan's cuts within files: a file of `n` entries has `n - 1`, summed over the files, so the entries less the
+ * files. An entry's file is the entry less its last `:start-end`; a whole entry is a changed path, which ends in
+ * `.ts`, so it is its own file.
+ */
+export function countCuts(shards: readonly Shard[]): number {
+  const entries = shards.flatMap((shard) => shard.files);
+  return entries.length - new Set(entries.map((entry) => /(.*):\d+-\d+$/.exec(entry)?.[1] ?? entry)).size;
 }
 
 /** The `--plan` output: the shards as one line of JSON, each shard's entries comma-separated for `--files`. */

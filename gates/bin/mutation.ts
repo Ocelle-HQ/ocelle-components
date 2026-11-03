@@ -4,8 +4,10 @@
 // verbatim as a `mutate` input, is exit 2 naming the header or every such path (phase 3 round 7, O7-01 and O7-02),
 // so the gate never passes with changed code it did not check; a changed file absent from Stryker's report has no
 // mutant on its changed lines and passes (report.ts). `--plan` prints the CI shards, splitting a file of more than
-// 120 changed lines into `path:start-end` entries; `--files <entry>[,<entry>...]` limits a run to one shard's entries
-// and mutates only the changed lines inside them (shards.ts; phase 3 round 9, O9-01). `mutation()` is
+// 120 changed lines into `path:start-end` entries, two entries of one file never in one shard, and writes the number
+// of shards and of cuts within files to stderr, the JSON on stdout staying one array for ci.yml (phase 3 round 10,
+// O10-01 and O10-02); `--files <entry>[,<entry>...]` limits a run to one shard's entries and mutates only the
+// changed lines inside them (shards.ts; phase 3 round 9, O9-01). `mutation()` is
 // the decision, tested in-process with doubles for git, the file system and Stryker: it deletes an earlier run's
 // report, runs Stryker and reads the report that run wrote. `run()` gives it the real tools of the `--root`
 // repository (the process boundary, tested by gates/test/integration/mutation.test.ts).
@@ -22,7 +24,7 @@ import { formatRecord, scanRecords } from "../lib/mutation/records.ts";
 import type { EquivalentRecord } from "../lib/mutation/records.ts";
 import { classifyMutants } from "../lib/mutation/report.ts";
 import type { StrykerRun } from "../lib/mutation/report.ts";
-import { formatPlan, planShards, selectFiles } from "../lib/mutation/shards.ts";
+import { countCuts, formatPlan, planShards, selectFiles } from "../lib/mutation/shards.ts";
 import { runTool } from "../lib/spawn.ts";
 import type { ToolRun } from "../lib/spawn.ts";
 
@@ -118,7 +120,10 @@ export async function mutation(context: Context, tools: MutationTools, io: Io): 
     return fail(`Stryker cannot take these changed paths as mutate input (${unusableKinds}): ${paths}; rename them`);
   }
   if (options.plan) {
-    io.out(formatPlan(planShards(changed)));
+    const shards = planShards(changed);
+    io.out(formatPlan(shards));
+    const counts = `${plural(shards.length, "shard")}, ${plural(countCuts(shards), "cut")}`;
+    io.err(`mutation: plan: ${counts} within files (a mutant spanning a cut is mutated in no shard, see gates/README.md)`);
     return 0;
   }
 

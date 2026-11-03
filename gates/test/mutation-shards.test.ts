@@ -4,7 +4,7 @@ import { mutation } from "../bin/mutation.ts";
 import type { MutationTools } from "../bin/mutation.ts";
 import { changedFiles } from "../lib/mutation/ranges.ts";
 import type { ChangedFile, LineRange } from "../lib/mutation/ranges.ts";
-import { formatPlan, planShards, selectFiles } from "../lib/mutation/shards.ts";
+import { countCuts, formatPlan, planShards, selectFiles } from "../lib/mutation/shards.ts";
 import { base, capture, context, fakeGit, fakeRepo, fakeStryker, mutant, newFilesDiff, reportPath, strykerReport } from "./mutation-fakes.ts";
 
 // CI shards (FR-013, research.md R-08): the changed files, sorted by path, become entries: a file of at most 120
@@ -203,6 +203,32 @@ describe("planShards: one file's entries in separate shards (phase 3 round 10, O
       { files: ["gates/lib/a.ts", "gates/lib/plant-judge.ts:1-120"], lines: 150 },
       { files: ["gates/lib/plant-judge.ts:121-216", "gates/lib/z.ts"], lines: 196 },
     ]);
+  });
+});
+
+describe("countCuts (phase 3 round 10, O10-02)", () => {
+  it("counts no cut in no shard, nor in whole files", () => {
+    expect(countCuts([])).toBe(0);
+    expect(countCuts(planShards([file("gates/lib/a.ts", 120), file("gates/lib/b.ts", 3)]))).toBe(0);
+  });
+
+  it("counts n - 1 cuts for a file of n entries, summed over the files", () => {
+    expect(countCuts(planShards([file("gates/lib/a.ts", 121)]))).toBe(1);
+    expect(countCuts(planShards([file("gates/lib/a.ts", 241), file("gates/lib/b.ts", 7), file("gates/lib/c.ts", 700)]))).toBe(2 + 5);
+  });
+
+  it("reads an entry's file as the entry less its last :start-end, so a path holding :1-2 keeps it", () => {
+    const shards = planShards([file("gates/lib/x:1-2.ts", 130), file("gates/lib/x.ts", 130)]);
+    expect(shards.map((shard) => shard.files)).toEqual([
+      ["gates/lib/x:1-2.ts:1-120"],
+      ["gates/lib/x:1-2.ts:121-130", "gates/lib/x.ts:1-120"],
+      ["gates/lib/x.ts:121-130"],
+    ]);
+    expect(countCuts(shards)).toBe(2);
+  });
+
+  it("reads a whole entry whose path holds :start- before .ts as its own file", () => {
+    expect(countCuts(planShards([file("gates/lib/x:1-2.ts", 7), file("gates/lib/x:3-4.ts", 7)]))).toBe(0);
   });
 });
 
