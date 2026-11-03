@@ -1,4 +1,5 @@
 {
   "expect": "error",
-  "why": "A test file that does not parse is a fatal ESLint message: the gate could not run (contracts/gate-cli.md)."
+  "why": "A test file that does not parse is a fatal ESLint message: the gate could not run (contracts/gate-cli.md).",
+  "cause": "test-lint: could not run: packages/tokens/test/x.test.ts:4 does not parse"
 }

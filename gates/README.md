@@ -38,12 +38,15 @@ The plant job (`gates/bin/plants.ts`) first checks that `gates/gates.json`, the 
 `.github/workflows/ci.yml` and the FR-020 list are one set, then runs every plant through its gate in normal mode on
 a temporary repository built from the plant and the repository's own configuration (only the inputs are swapped),
 and fails when a fail plant is not caught with exactly its expected findings, a pass plant is not accepted, a
-breaking plant is not reported as "could not run", a gate lacks a fail, pass or breaking plant, a `plant.json` is
+breaking plant is not reported as "could not run" for the cause it names, a gate lacks a fail, pass or breaking plant, a `plant.json` is
 missing or invalid, or a plant carries gate configuration.
 
-A plant's `plant.json` holds only what the plant expects (`expect`, `why`, `findings`, `records`) and, for a
-plant that presents its gate another base than its temporary repository's base commit, `base`: the plant runner puts
-it in place of `{base}` in the gate's plant command. The mutation plant `error-unresolvable-base` uses it to present
+A plant's `plant.json` holds only what the plant expects (`expect`, `why`, `findings`, `records`, `cause`) and, for a
+fail or breaking plant that presents its gate another base than its temporary repository's base commit, `base`: the
+plant runner puts it in place of `{base}` in the gate's plant command. Every breaking plant names its `cause`, a
+substring of a line the gate prints on its error output when it exits 2, so a breakage for another reason fails the
+plant job; `cause` on a fail or pass plant, and `base` on a pass plant (which could then pass vacuously), make the
+`plant.json` invalid (contracts/plants.md). The mutation plant `error-unresolvable-base` uses it to present
 a `--base` that does not resolve in the temporary repository (contracts/plants.md, mutation row). It is an input of
 the gate, like the plant's files, not gate configuration.
 

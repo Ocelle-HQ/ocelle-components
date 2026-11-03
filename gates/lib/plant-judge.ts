@@ -1,6 +1,10 @@
 // A plant's plant.json and the verdict on one gate run on it (FR-025, research.md R-10, contracts/plants.md,
 // data-model.md § Plant): parsePlant reads plant.json, plantArgs builds the plant command, judgePlant compares a
 // gate's exit code and output lines with what the plant expects. Pure, tested in process (gates/test/plants.test.ts).
+// An error plant names the cause it expects: a gate's exit 2 proves the plant only when a line of its error output
+// contains that cause, and a pass plant may not set `base` (phase 4 round 5, O5-01 and O5-02, operator decision,
+// PR #18 landing review: "Breaking plants check the cause of exit 2, not just the code; pass plants may not set
+// 'base'").
 import { oneLine, plural } from "./findings.ts";
 
 /** One expected finding of a fail plant. */
@@ -23,11 +27,13 @@ export interface Plant {
   readonly why: string;
   readonly findings?: readonly ExpectedFinding[];
   readonly records?: readonly ExpectedRecord[];
+  /** An error plant's expected cause: a substring of a line of the gate's error output at exit 2. */
+  readonly cause?: string;
   /** The base the plant presents to its gate (`{base}`) instead of its temporary repository's base commit. */
   readonly base?: string;
 }
 
-const keys = new Set(["expect", "why", "findings", "records", "base"]);
+const keys = new Set(["expect", "why", "findings", "records", "cause", "base"]);
 
 function isText(value: unknown): value is string {
   return typeof value === "string" && value !== "";
@@ -90,7 +96,14 @@ export function parsePlant(text: string): Plant | string {
     if (typeof records === "string") return records;
     plant = { ...plant, records };
   }
+  if (expect === "error") {
+    if (!isText(fields.cause)) return "an error plant names its cause, a non-empty string";
+    plant = { ...plant, cause: fields.cause };
+  } else if (fields.cause !== undefined) {
+    return "only an error plant names a cause";
+  }
   if (fields.base !== undefined) {
+    if (expect === "pass") return "a pass plant may not set base";
     if (!isText(fields.base)) return "base must be a non-empty string";
     plant = { ...plant, base: fields.base };
   }
@@ -168,7 +181,12 @@ function detail(findings: readonly Reported[], run: PlantRun): string {
 /** The problem with a gate's run on a plant, or undefined when the gate did what the plant expects. */
 export function judgePlant(gate: string, plant: Plant, run: PlantRun): string | undefined {
   const exit = String(run.exit);
-  if (plant.expect === "error") return run.exit === 2 ? undefined : `expected exit 2 (could not run), got exit ${exit}`;
+  if (plant.expect === "error") {
+    if (run.exit !== 2) return `expected exit 2 (could not run), got exit ${exit}`;
+    const cause = plant.cause ?? "";
+    if (run.stderr.some((line) => line.includes(cause))) return undefined;
+    return `expected exit 2 (could not run) with the cause "${cause}", got exit 2${detail([], run)}`;
+  }
   const lines = reported(gate, run);
   const isRecord = (found: Reported): boolean => gate === "mutation" && found.rule === "record";
   const findings = lines.filter((found) => !isRecord(found));
