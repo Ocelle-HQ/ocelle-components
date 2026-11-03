@@ -327,7 +327,7 @@ describe("mutation gate: diff headers and mutate inputs (phase 3 round 7, O7-01 
     expect(await gate(["--base", base, "--plan"], quoted)).toEqual({
       code: 0,
       out: [JSON.stringify([{ files: [space, both, accent, ok].join(","), lines: 6 }])],
-      err: [],
+      err: ["mutation: plan: 1 shard, 0 cuts within files (a mutant spanning a cut is mutated in no shard, see gates/README.md)"],
       mutated: [],
     });
   });

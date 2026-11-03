@@ -11,9 +11,10 @@ import { base, capture, context, fakeGit, fakeRepo, fakeStryker, mutant, newFile
 // changed lines is one entry `path`, a file of more is split by line range into entries `path:start-end` of at most
 // 120 changed lines (operator decision, phase 3 round 9, O9-01: plant-judge.ts alone took 9:49 of 10 minutes); the
 // entries are filled greedily into shards of at most 10 entries and 250 changed lines (500 until T093, operator
-// decision, phase 4 round 3), an entry never crossing a shard. `--plan` prints them, `--files` limits a run to one
-// shard's entries and mutates only the changed lines inside them; and the base argument (`--base`, required, must
-// resolve to a commit).
+// decision, phase 4 round 3), an entry never crossing a shard and two entries of one file never sharing one
+// (operator decision, phase 3 round 10, O10-01). `--plan` prints them, and on stderr the number of shards and of cuts
+// within files (O10-02); `--files` limits a run to one shard's entries and mutates only the changed lines inside
+// them; and the base argument (`--base`, required, must resolve to a commit).
 function file(path: string, lines: number): ChangedFile {
   return { path, ranges: [{ start: 1, end: lines }], lines };
 }
@@ -35,21 +36,24 @@ describe("planShards: the split within files (phase 3 round 9, O9-01)", () => {
     expect(planShards([file("gates/lib/a.ts", 120)])).toEqual([{ files: ["gates/lib/a.ts"], lines: 120 }]);
   });
 
-  it("splits a file of 121 changed lines into an entry of 120 lines and one of 1", () => {
+  it("splits a file of 121 changed lines into an entry of 120 lines and one of 1, in two shards", () => {
     expect(planShards([file("gates/lib/a.ts", 121)])).toEqual([
-      { files: ["gates/lib/a.ts:1-120", "gates/lib/a.ts:121-121"], lines: 121 },
+      { files: ["gates/lib/a.ts:1-120"], lines: 120 },
+      { files: ["gates/lib/a.ts:121-121"], lines: 1 },
     ]);
   });
 
   it("cuts inside a changed range where the count reaches 120, each entry from its first to its last changed line", () => {
     expect(planShards([ranged("gates/lib/a.ts", { start: 5, end: 54 }, { start: 60, end: 150 })])).toEqual([
-      { files: ["gates/lib/a.ts:5-129", "gates/lib/a.ts:130-150"], lines: 141 },
+      { files: ["gates/lib/a.ts:5-129"], lines: 120 },
+      { files: ["gates/lib/a.ts:130-150"], lines: 21 },
     ]);
   });
 
   it("starts the next entry at its first changed line when a cut falls at the end of a range", () => {
     expect(planShards([ranged("gates/lib/a.ts", { start: 1, end: 120 }, { start: 200, end: 210 })])).toEqual([
-      { files: ["gates/lib/a.ts:1-120", "gates/lib/a.ts:200-210"], lines: 131 },
+      { files: ["gates/lib/a.ts:1-120"], lines: 120 },
+      { files: ["gates/lib/a.ts:200-210"], lines: 11 },
     ]);
   });
 
@@ -58,27 +62,30 @@ describe("planShards: the split within files (phase 3 round 9, O9-01)", () => {
     expect(changed.lines).toBe(216);
     // 3-40, 50 and 60-140 are 38 + 1 + 81 = 120 changed lines; 141-160 and 200-275 are 20 + 76 = 96.
     expect(planShards([changed, file("gates/lib/b.ts", 34)])).toEqual([
-      { files: ["gates/lib/a.ts:3-140", "gates/lib/a.ts:141-275", "gates/lib/b.ts"], lines: 250 },
-    ]);
-    expect(planShards([changed, file("gates/lib/b.ts", 35)])).toEqual([
-      { files: ["gates/lib/a.ts:3-140", "gates/lib/a.ts:141-275"], lines: 216 },
-      { files: ["gates/lib/b.ts"], lines: 35 },
+      { files: ["gates/lib/a.ts:3-140"], lines: 120 },
+      { files: ["gates/lib/a.ts:141-275", "gates/lib/b.ts"], lines: 130 },
     ]);
   });
 
-  it("splits gates/lib/plant-judge.ts as changed at fffb7e7 (216 lines) into entries of 120 and 96 lines", () => {
+  it("splits gates/lib/plant-judge.ts as changed at fffb7e7 (216 lines) into entries of 120 and 96 lines, in two shards", () => {
     expect(planShards(changedFiles(plantJudge))).toEqual([
-      { files: ["gates/lib/plant-judge.ts:1-120", "gates/lib/plant-judge.ts:121-216"], lines: 216 },
+      { files: ["gates/lib/plant-judge.ts:1-120"], lines: 120 },
+      { files: ["gates/lib/plant-judge.ts:121-216"], lines: 96 },
     ]);
   });
 
   it("splits a file of exactly 240 changed lines into two entries of 120, and no empty third", () => {
-    expect(planShards([file("gates/lib/a.ts", 240)])).toEqual([{ files: ["gates/lib/a.ts:1-120", "gates/lib/a.ts:121-240"], lines: 240 }]);
+    expect(planShards([file("gates/lib/a.ts", 240)])).toEqual([
+      { files: ["gates/lib/a.ts:1-120"], lines: 120 },
+      { files: ["gates/lib/a.ts:121-240"], lines: 120 },
+    ]);
   });
 
-  it("splits a file of 241 changed lines into entries of 120, 120 and 1", () => {
+  it("splits a file of 241 changed lines into entries of 120, 120 and 1, in three shards", () => {
     expect(planShards([file("gates/lib/a.ts", 241)])).toEqual([
-      { files: ["gates/lib/a.ts:1-120", "gates/lib/a.ts:121-240", "gates/lib/a.ts:241-241"], lines: 241 },
+      { files: ["gates/lib/a.ts:1-120"], lines: 120 },
+      { files: ["gates/lib/a.ts:121-240"], lines: 120 },
+      { files: ["gates/lib/a.ts:241-241"], lines: 1 },
     ]);
   });
 });
@@ -98,31 +105,34 @@ describe("planShards", () => {
   });
 
   it("fills shards of up to 250 changed lines, exactly 250 included, splitting files over 120 lines", () => {
-    const changed = [file("a.ts", 150), file("b.ts", 100), file("c.ts", 1), file("d.ts", 249), file("e.ts", 1)];
+    const changed = [file("a.ts", 150), file("b.ts", 100), file("c.ts", 120), file("d.ts", 1)];
     expect(planShards(changed)).toEqual([
-      { files: ["a.ts:1-120", "a.ts:121-150", "b.ts"], lines: 250 },
-      { files: ["c.ts", "d.ts:1-120", "d.ts:121-240", "d.ts:241-249"], lines: 250 },
-      { files: ["e.ts"], lines: 1 },
+      { files: ["a.ts:1-120"], lines: 120 },
+      { files: ["a.ts:121-150", "b.ts", "c.ts"], lines: 250 },
+      { files: ["d.ts"], lines: 1 },
     ]);
   });
 
-  it("fits two files of exactly 250 changed lines together in one shard, as four entries", () => {
+  it("fits a file's last entry and the next file's first entry in one shard, never two entries of one file", () => {
     expect(planShards([file("a.ts", 125), file("b.ts", 125)])).toEqual([
-      { files: ["a.ts:1-120", "a.ts:121-125", "b.ts:1-120", "b.ts:121-125"], lines: 250 },
+      { files: ["a.ts:1-120"], lines: 120 },
+      { files: ["a.ts:121-125", "b.ts:1-120"], lines: 125 },
+      { files: ["b.ts:121-125"], lines: 5 },
     ]);
   });
 
-  it("splits two files of 251 changed lines together into two shards, no entry crossing a shard", () => {
-    expect(planShards([file("a.ts", 200), file("b.ts", 51)])).toEqual([
-      { files: ["a.ts:1-120", "a.ts:121-200"], lines: 200 },
-      { files: ["b.ts"], lines: 51 },
+  it("splits entries of 251 changed lines together into two shards, no entry crossing a shard", () => {
+    expect(planShards([file("a.ts", 120), file("b.ts", 120), file("c.ts", 11)])).toEqual([
+      { files: ["a.ts", "b.ts"], lines: 240 },
+      { files: ["c.ts"], lines: 11 },
     ]);
   });
 
   it("splits a file of 251 changed lines across shards by line range (phase 3 round 9, O9-01)", () => {
     const changed = [file("a.ts", 10), file("b.ts", 251), file("c.ts", 10)];
     expect(planShards(changed)).toEqual([
-      { files: ["a.ts", "b.ts:1-120", "b.ts:121-240"], lines: 250 },
+      { files: ["a.ts", "b.ts:1-120"], lines: 130 },
+      { files: ["b.ts:121-240"], lines: 120 },
       { files: ["b.ts:241-251", "c.ts"], lines: 21 },
     ]);
   });
@@ -130,24 +140,68 @@ describe("planShards", () => {
   it("splits a file of more than 250 changed lines across shards by line range (phase 3 round 9, O9-01)", () => {
     const changed = [file("a.ts", 10), file("b.ts", 700), file("c.ts", 10)];
     expect(planShards(changed)).toEqual([
-      { files: ["a.ts", "b.ts:1-120", "b.ts:121-240"], lines: 250 },
-      { files: ["b.ts:241-360", "b.ts:361-480"], lines: 240 },
-      { files: ["b.ts:481-600", "b.ts:601-700", "c.ts"], lines: 230 },
+      { files: ["a.ts", "b.ts:1-120"], lines: 130 },
+      { files: ["b.ts:121-240"], lines: 120 },
+      { files: ["b.ts:241-360"], lines: 120 },
+      { files: ["b.ts:361-480"], lines: 120 },
+      { files: ["b.ts:481-600"], lines: 120 },
+      { files: ["b.ts:601-700", "c.ts"], lines: 110 },
     ]);
   });
 
-  it("puts entries of one file in one shard when they fit", () => {
-    expect(planShards([file("a.ts", 200)])).toEqual([{ files: ["a.ts:1-120", "a.ts:121-200"], lines: 200 }]);
+  it("starts a new shard for the next entry of a file, though both would fit (phase 3 round 10, O10-01)", () => {
+    expect(planShards([file("a.ts", 200)])).toEqual([
+      { files: ["a.ts:1-120"], lines: 120 },
+      { files: ["a.ts:121-200"], lines: 80 },
+    ]);
   });
 
   it("starts a new shard when the next entry would make 11 entries, counting a split file's entries", () => {
-    const changed = [file("gates/lib/a.ts", 130), ...files(9, 1)];
+    const changed = [file("gates/lib/a.ts", 130), ...files(10, 1)];
     expect(planShards(changed)).toEqual([
-      {
-        files: ["gates/lib/a.ts:1-120", "gates/lib/a.ts:121-130", ...files(8, 1).map((f) => f.path)],
-        lines: 138,
-      },
-      { files: ["gates/lib/f08.ts"], lines: 1 },
+      { files: ["gates/lib/a.ts:1-120"], lines: 120 },
+      { files: ["gates/lib/a.ts:121-130", ...files(9, 1).map((f) => f.path)], lines: 19 },
+      { files: ["gates/lib/f09.ts"], lines: 1 },
+    ]);
+  });
+});
+
+describe("planShards: one file's entries in separate shards (phase 3 round 10, O10-01)", () => {
+  // The path of an entry: the text before the last `:start-end`, or the whole entry.
+  const pathOf = (entry: string): string => entry.replace(/:\d+-\d+$/, "");
+  const mixed = [
+    file("gates/lib/a.ts", 7),
+    file("gates/lib/b.ts", 361),
+    ranged("gates/lib/c.ts", { start: 4, end: 90 }, { start: 100, end: 260 }),
+    file("gates/lib/d.ts", 120),
+    file("gates/lib/e.ts", 121),
+    ...files(12, 3),
+    file("packages/tokens/src/g.ts", 249),
+  ];
+
+  it("holds no two entries of one file in any shard, within the 10-entry and 250-line bounds", () => {
+    const shards = planShards(mixed);
+    for (const shard of shards) {
+      const paths = shard.files.map(pathOf);
+      expect(new Set(paths).size).toBe(paths.length);
+      expect(shard.files.length).toBeLessThanOrEqual(10);
+      expect(shard.lines).toBeLessThanOrEqual(250);
+    }
+    expect(shards.reduce((sum, shard) => sum + shard.lines, 0)).toBe(mixed.reduce((sum, f) => sum + f.lines, 0));
+  });
+
+  it("lets an entry share a shard with other files: after a smaller file, and before the next file", () => {
+    expect(planShards([file("a.ts", 30), file("b.ts", 130), file("c.ts", 40)])).toEqual([
+      { files: ["a.ts", "b.ts:1-120"], lines: 150 },
+      { files: ["b.ts:121-130", "c.ts"], lines: 50 },
+    ]);
+  });
+
+  it("puts the recorded plant-judge.ts entries in separate shards, each beside other files", () => {
+    const changed = [file("gates/lib/a.ts", 30), ...changedFiles(plantJudge), file("gates/lib/z.ts", 100)];
+    expect(planShards(changed)).toEqual([
+      { files: ["gates/lib/a.ts", "gates/lib/plant-judge.ts:1-120"], lines: 150 },
+      { files: ["gates/lib/plant-judge.ts:121-216", "gates/lib/z.ts"], lines: 196 },
     ]);
   });
 });
@@ -165,7 +219,7 @@ describe("formatPlan", () => {
 
   it("prints a shard's line-range entries comma-separated in files", () => {
     expect(formatPlan(planShards([file("gates/lib/a.ts", 130), file("gates/lib/b.ts", 3)]))).toBe(
-      '[{"files":"gates/lib/a.ts:1-120,gates/lib/a.ts:121-130,gates/lib/b.ts","lines":133}]',
+      '[{"files":"gates/lib/a.ts:1-120","lines":120},{"files":"gates/lib/a.ts:121-130,gates/lib/b.ts","lines":13}]',
     );
   });
 });
@@ -244,6 +298,8 @@ describe("mutation gate: --plan, --files and --base", () => {
   const diff = newFilesDiff({ "gates/lib/b.ts": 3, "gates/lib/a.ts": 2 });
   const files = { "gates/lib/a.ts": "export const a = 1;\n", "gates/lib/b.ts": "export const b = 1;\n" };
   const survives = fakeStryker(() => "Survived");
+  const planLine = (counts: string): string =>
+    `mutation: plan: ${counts} within files (a mutant spanning a cut is mutated in no shard, see gates/README.md)`;
 
   async function gate(args: readonly string[], tools: MutationTools) {
     const { io, out, err } = capture();
@@ -255,15 +311,43 @@ describe("mutation gate: --plan, --files and --base", () => {
     expect(await gate(["--base", base, "--plan"], { git: fakeGit(diff), ...fakeRepo(files) })).toEqual({
       code: 0,
       out: ['[{"files":"gates/lib/a.ts,gates/lib/b.ts","lines":5}]'],
-      err: [],
+      err: [planLine("1 shard, 0 cuts")],
     });
   });
 
-  it("--plan prints no shard when nothing changed", async () => {
+  it("--plan prints no shard when nothing changed, and 0 shards and 0 cuts on stderr", async () => {
     expect(await gate(["--plan", "--base", base], { git: fakeGit(""), ...fakeRepo(files) })).toEqual({
       code: 0,
       out: ["[]"],
-      err: [],
+      err: [planLine("0 shards, 0 cuts")],
+    });
+  });
+
+  it("--plan writes 1 cut in the singular, for a file split into two entries (phase 3 round 10, O10-02)", async () => {
+    const split = newFilesDiff({ "gates/lib/a.ts": 130 });
+    expect(await gate(["--base", base, "--plan"], { git: fakeGit(split), ...fakeRepo(files) })).toEqual({
+      code: 0,
+      out: ['[{"files":"gates/lib/a.ts:1-120","lines":120},{"files":"gates/lib/a.ts:121-130","lines":10}]'],
+      err: [planLine("2 shards, 1 cut")],
+    });
+  });
+
+  it("--plan writes the cuts of several split files summed, n - 1 for a file of n entries (phase 3 round 10, O10-02)", async () => {
+    const split = newFilesDiff({ "gates/lib/a.ts": 250, "gates/lib/b.ts": 130, "gates/lib/c.ts": 5, "gates/lib/d.ts": 361 });
+    expect(await gate(["--base", base, "--plan"], { git: fakeGit(split), ...fakeRepo(files) })).toEqual({
+      code: 0,
+      out: [
+        JSON.stringify([
+          { files: "gates/lib/a.ts:1-120", lines: 120 },
+          { files: "gates/lib/a.ts:121-240", lines: 120 },
+          { files: "gates/lib/a.ts:241-250,gates/lib/b.ts:1-120", lines: 130 },
+          { files: "gates/lib/b.ts:121-130,gates/lib/c.ts,gates/lib/d.ts:1-120", lines: 135 },
+          { files: "gates/lib/d.ts:121-240", lines: 120 },
+          { files: "gates/lib/d.ts:241-360", lines: 120 },
+          { files: "gates/lib/d.ts:361-361", lines: 1 },
+        ]),
+      ],
+      err: [planLine("7 shards, 6 cuts")],
     });
   });
 
@@ -422,8 +506,8 @@ describe("mutation gate: --plan and --files with line-range entries (phase 3 rou
   it("--plan splits a file of more than 120 changed lines into path:start-end entries", async () => {
     expect(await gate(["--base", base, "--plan"])).toEqual({
       code: 0,
-      out: ['[{"files":"gates/lib/a.ts,gates/lib/b.ts:1-120,gates/lib/b.ts:121-130","lines":146}]'],
-      err: [],
+      out: ['[{"files":"gates/lib/a.ts,gates/lib/b.ts:1-120","lines":136},{"files":"gates/lib/b.ts:121-130","lines":10}]'],
+      err: ["mutation: plan: 2 shards, 1 cut within files (a mutant spanning a cut is mutated in no shard, see gates/README.md)"],
       mutated: [],
     });
   });
