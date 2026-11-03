@@ -1,0 +1,1319 @@
+Scope: all 4 workspace projects
+✓ Lockfile passes supply-chain policies (verified 17m ago)
+Lockfile is up to date, resolution step is skipped
+Packages are hard linked from the content-addressable store to the virtual store.
+  Content-addressable store is at: <pnpm store>
+  Virtual store is at:             node_modules/.pnpm
+Packages: +405
+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+Progress: resolved 405, reused 405, downloaded 0, added 405, done
+
+devDependencies:
++ @eslint/js 10.0.1
++ @stryker-mutator/core 10.1.1
++ @stryker-mutator/typescript-checker 10.1.1
++ @stryker-mutator/vitest-runner 10.1.1
++ @types/node 26.6.5
++ @vitest/browser-playwright 5.0.5
++ @vitest/eslint-plugin 1.6.28
++ eslint 10.13.0
++ jiti 2.7.0
++ parse5 8.0.1
++ playwright 1.64.1
++ postcss 8.5.31
++ postcss-lit 1.4.1
++ postcss-value-parser 4.2.0
++ stylelint 17.16.0
++ typescript 6.0.3
++ typescript-eslint 8.72.0
++ vite 8.3.5
++ vitest 5.0.5
+
+Done in 369ms using pnpm v12.16.1
+$ pnpm install --frozen-lockfile --offline
+Scope: all 4 workspace projects
+✓ Lockfile passes supply-chain policies (verified 17m ago)
+Lockfile is up to date, resolution step is skipped
+Done in 37ms using pnpm v12.16.1
+$ vitest run
+
+ RUN  v5.0.5 /tmp/tmp.hSmLcUL8tU
+
+ ❯ |gates| gates/test/cli.test.ts (11 tests | 11 failed) 25ms
+   ❯ entry (6)
+     × returns exit 2, not Node's exit 1, when run() throws, with one line naming the cause 7ms
+     × returns exit 2 with one line when an async run() rejects with a multi-line error 1ms
+     × returns exit 2 with one line naming a thrown value that is not an Error 1ms
+     × returns the code run() returns for 0, 1 and 2 4ms
+     × returns exit 2 with one line when run() returns a code outside the contract 1ms
+     × passes argv and io to run() 2ms
+   ❯ parseArgs (5)
+     × defaults the repository root and the tool working directory to the current directory 1ms
+     × sets the repository root and the tool working directory from --root <dir> 2ms
+     × resolves a relative --root against the current directory 1ms
+     × leaves every other argument unchanged and in order 1ms
+     × rejects --root without a directory 2ms
+ ❯ |gates| gates/test/findings.test.ts (10 tests | 10 failed) 24ms
+   ❯ formatLocation (3)
+     × writes a file location at a line as path:line 11ms
+     × writes a whole-file location as the path alone 1ms
+     × writes a commit location as the full hash 1ms
+   ❯ formatFinding (4)
+     × writes <location>: <gate-id>: <rule>: <message> for a path:line location 1ms
+     × writes <location>: <gate-id>: <rule>: <message> for a path location 1ms
+     × writes <location>: <gate-id>: <rule>: <message> for a commit location 1ms
+     × keeps a finding on one line when its message has line breaks 0ms
+   ❯ emit (3)
+     × prints the one-line summary of a pass on stdout and returns 0 4ms
+     × prints each finding and then the summary on stdout and returns 1 1ms
+     × prints the cause of a run that could not run as one line on stderr and returns 2 3ms
+ ❯ |gates| gates/test/test-command.test.ts (16 tests | 16 failed) 55ms
+   ❯ classifyVitest (10)
+     × passes a run whose tests all passed, with a one-line summary of the count 18ms
+     × reports each failed test as one finding at its file and line, rule = the full test name 2ms
+     × reports a failed test without a recorded location at its file 7ms
+     × cannot run when no test file is found (a broken file pattern does not pass) 1ms
+     × cannot run when a test file fails to load, naming the file and the error 5ms
+     × cannot run when a test file does not parse, naming the file without terminal colour codes 4ms
+     × cannot run on errors outside tests even when every test passed, naming the error 1ms
+     × cannot run when a failed test comes with a file that failed to load 1ms
+     × cannot run without a report 1ms
+     × cannot run on a report that is not JSON 1ms
+   ❯ chromiumCheck (6)
+     × checks Playwright's own Chromium when no override is set and finds no problem when it exists 9ms
+     × names pnpm run setup:online when Playwright's Chromium is missing 0ms
+     × names pnpm run setup:online when Playwright cannot name a Chromium executable 0ms
+     × checks the OCELLE_CHROMIUM_PATH override instead of Playwright's Chromium when it is set (R1-03) 0ms
+     × names the override and pnpm run setup:online when the override does not exist 0ms
+     × treats an empty override as unset, like vitest.config.ts does 4ms
+ ❯ |gates| gates/test/setup-offline.test.ts (7 tests | 7 failed) 17ms
+   ❯ decideSetup (7)
+     × turns a tarball missing from the store into 'missing: <package>; run pnpm run setup:online', exit 2 9ms
+     × turns package metadata missing from the cache into 'missing: <package>; run pnpm run setup:online', exit 2 1ms
+     × reports any other pnpm failure as exit 2 naming pnpm's error code 1ms
+     × reports a pnpm failure without an error record as exit 2 naming its exit code 1ms
+     × names Chromium and pnpm run setup:online when the install succeeds but Chromium is missing, exit 2 1ms
+     × names the missing package first when both the store and Chromium lack something 1ms
+     × passes a successful install with Chromium present, naming the Chromium it found 1ms
+ ❯ |gates| gates/test/config-copies.test.ts (4 tests | 4 failed) 16ms
+   ❯ config-copies gate (4)
+     × passes two byte-identical copies whose test_pathspec is FR-028's test code 10ms
+     × fails when one setting differs, naming both copies and the first differing line 3ms
+     × fails on equal copies whose test_pathspec is not FR-028's test code, one finding per copy 1ms
+     × cannot run when a copy is missing, naming it 1ms
+ ❯ |gates-integration| gates/test/integration/setup-offline.test.ts (3 tests | 3 failed) 281ms
+   ❯ offline setup (gates/bin/setup-offline.ts) (3)
+     × exits 2 naming the missing package and pnpm run setup:online on an empty store, without the network 116ms
+     × exits 2 naming Chromium and pnpm run setup:online on an empty browser path, without the network 79ms
+     × exits 0 with a lockfile without dependencies and the installed browser, changing no workspace file 84ms
+ ❯ |gates-integration| gates/test/integration/test-command.test.ts (5 tests | 5 failed) 393ms
+   ❯ test command (gates/bin/test.ts) (5)
+     × exits 2 naming pnpm run setup:online when Chromium is missing, and runs no test (US1 scenario 9) 95ms
+     × exits 2 naming the override when OCELLE_CHROMIUM_PATH points at no executable 85ms
+     × exits 1 naming the failing test as a finding (US1 scenario 5) 63ms
+     × exits 2 when no test file is found (FR-004) 75ms
+     × exits 0 with a one-line summary when every test passes 73ms
+
+⎯⎯⎯⎯⎯⎯ Failed Tests 56 ⎯⎯⎯⎯⎯⎯⎯
+
+ FAIL  |gates-integration| gates/test/integration/setup-offline.test.ts > offline setup (gates/bin/setup-offline.ts) > exits 2 naming the missing package and pnpm run setup:online on an empty store, without the network
+AssertionError: expected +0 to be 2 // Object.is equality
+
+- Expected
++ Received
+
+- 2
++ 0
+
+ ❯ gates/test/integration/setup-offline.test.ts:52:24
+     50|       const root = workspace("setup-offline/with-dependency", [], fals…
+     51|       const ran = await setupOffline(root, offlineEnv());
+     52|       expect(ran.code).toBe(2);
+       |                        ^
+     53|       expect(ran.stderr).toHaveLength(1);
+     54|       expect(ran.stderr[0]).toContain("missing: is-number");
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[1/56]⎯
+
+ FAIL  |gates-integration| gates/test/integration/setup-offline.test.ts > offline setup (gates/bin/setup-offline.ts) > exits 2 naming Chromium and pnpm run setup:online on an empty browser path, without the network
+AssertionError: expected +0 to be 2 // Object.is equality
+
+- Expected
++ Received
+
+- 2
++ 0
+
+ ❯ gates/test/integration/setup-offline.test.ts:68:24
+     66|       delete env["OCELLE_CHROMIUM_PATH"];
+     67|       const ran = await setupOffline(root, env);
+     68|       expect(ran.code).toBe(2);
+       |                        ^
+     69|       expect(ran.stderr).toHaveLength(1);
+     70|       expect(ran.stderr[0]).toContain("Chromium");
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[2/56]⎯
+
+ FAIL  |gates-integration| gates/test/integration/setup-offline.test.ts > offline setup (gates/bin/setup-offline.ts) > exits 0 with a lockfile without dependencies and the installed browser, changing no workspace file
+AssertionError: expected [] to have a length of 1 but got +0
+
+- Expected
++ Received
+
+- 1
++ 0
+
+ ❯ gates/test/integration/setup-offline.test.ts:88:26
+     86|       const ran = await setupOffline(root, offlineEnv());
+     87|       expect(ran.code).toBe(0);
+     88|       expect(ran.stdout).toHaveLength(1);
+       |                          ^
+     89|       expect(ran.stdout[0]).toContain("installed offline");
+     90|       expect({
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[3/56]⎯
+
+ FAIL  |gates-integration| gates/test/integration/test-command.test.ts > test command (gates/bin/test.ts) > exits 2 naming pnpm run setup:online when Chromium is missing, and runs no test (US1 scenario 9)
+AssertionError: expected +0 to be 2 // Object.is equality
+
+- Expected
++ Received
+
+- 2
++ 0
+
+ ❯ gates/test/integration/test-command.test.ts:23:24
+     21|       delete env["OCELLE_CHROMIUM_PATH"];
+     22|       const ran = await testCommand("passing", env);
+     23|       expect(ran.code).toBe(2);
+       |                        ^
+     24|       expect(ran.stderr).toHaveLength(1);
+     25|       expect(ran.stderr[0]).toContain("Chromium");
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[4/56]⎯
+
+ FAIL  |gates-integration| gates/test/integration/test-command.test.ts > test command (gates/bin/test.ts) > exits 2 naming the override when OCELLE_CHROMIUM_PATH points at no executable
+AssertionError: expected +0 to be 2 // Object.is equality
+
+- Expected
++ Received
+
+- 2
++ 0
+
+ ❯ gates/test/integration/test-command.test.ts:37:24
+     35|       const missing = `${tempDir("browsers")}/chrome`;
+     36|       const ran = await testCommand("passing", { ...baseEnv(), OCELLE_…
+     37|       expect(ran.code).toBe(2);
+       |                        ^
+     38|       expect(ran.stderr).toHaveLength(1);
+     39|       expect(ran.stderr[0]).toContain(missing);
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[5/56]⎯
+
+ FAIL  |gates-integration| gates/test/integration/test-command.test.ts > test command (gates/bin/test.ts) > exits 1 naming the failing test as a finding (US1 scenario 5)
+AssertionError: expected +0 to be 1 // Object.is equality
+
+- Expected
++ Received
+
+- 1
++ 0
+
+ ❯ gates/test/integration/test-command.test.ts:49:24
+     47|     async () => {
+     48|       const ran = await testCommand("failing", baseEnv());
+     49|       expect(ran.code).toBe(1);
+       |                        ^
+     50|       expect(ran.stdout).toEqual([
+     51|         "packages/tokens/test/sum.test.ts:8: unit-tests: sum adds thre…
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[6/56]⎯
+
+ FAIL  |gates-integration| gates/test/integration/test-command.test.ts > test command (gates/bin/test.ts) > exits 2 when no test file is found (FR-004)
+AssertionError: expected +0 to be 2 // Object.is equality
+
+- Expected
++ Received
+
+- 2
++ 0
+
+ ❯ gates/test/integration/test-command.test.ts:63:24
+     61|     async () => {
+     62|       const ran = await testCommand("no-test-file", baseEnv());
+     63|       expect(ran.code).toBe(2);
+       |                        ^
+     64|       expect(ran.stderr).toHaveLength(1);
+     65|       expect(ran.stderr[0]).toContain("no test file found");
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[7/56]⎯
+
+ FAIL  |gates-integration| gates/test/integration/test-command.test.ts > test command (gates/bin/test.ts) > exits 0 with a one-line summary when every test passes
+AssertionError: expected { code: +0, stdout: [] } to deeply equal { code: +0, …(1) }
+
+- Expected
++ Received
+
+  {
+    "code": 0,
+-   "stdout": [
+-     "unit-tests: 2 tests passed in 1 file",
+-   ],
++   "stdout": [],
+  }
+
+ ❯ gates/test/integration/test-command.test.ts:74:54
+     72|     async () => {
+     73|       const ran = await testCommand("passing", baseEnv());
+     74|       expect({ code: ran.code, stdout: ran.stdout }).toEqual({
+       |                                                      ^
+     75|         code: 0,
+     76|         stdout: ["unit-tests: 2 tests passed in 1 file"],
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[8/56]⎯
+
+ FAIL  |gates| gates/test/cli.test.ts > entry > returns exit 2, not Node's exit 1, when run() throws, with one line naming the cause
+AssertionError: expected +0 to be 2 // Object.is equality
+
+- Expected
++ Received
+
+- 2
++ 0
+
+ ❯ gates/test/cli.test.ts:24:18
+     22|     };
+     23|     const code = await entry(run, [], c.io);
+     24|     expect(code).toBe(2);
+       |                  ^
+     25|     expect(c.out).toEqual([]);
+     26|     expect(c.err).toHaveLength(1);
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[9/56]⎯
+
+ FAIL  |gates| gates/test/cli.test.ts > entry > returns exit 2 with one line when an async run() rejects with a multi-line error
+AssertionError: expected +0 to be 2 // Object.is equality
+
+- Expected
++ Received
+
+- 2
++ 0
+
+ ❯ gates/test/cli.test.ts:34:18
+     32|     const run: Run = () => Promise.reject(new Error("spawn vitest ENOE…
+     33|     const code = await entry(run, [], c.io);
+     34|     expect(code).toBe(2);
+       |                  ^
+     35|     expect(c.err).toHaveLength(1);
+     36|     expect(c.err[0]).toContain("spawn vitest ENOENT");
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[10/56]⎯
+
+ FAIL  |gates| gates/test/cli.test.ts > entry > returns exit 2 with one line naming a thrown value that is not an Error
+AssertionError: expected +0 to be 2 // Object.is equality
+
+- Expected
++ Received
+
+- 2
++ 0
+
+ ❯ gates/test/cli.test.ts:46:18
+     44|     };
+     45|     const code = await entry(run, [], c.io);
+     46|     expect(code).toBe(2);
+       |                  ^
+     47|     expect(c.err).toHaveLength(1);
+     48|     expect(c.err[0]).toContain("plain string failure");
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[11/56]⎯
+
+ FAIL  |gates| gates/test/cli.test.ts > entry > returns the code run() returns for 0, 1 and 2
+AssertionError: expected [ +0, +0, +0 ] to deeply equal [ +0, 1, 2 ]
+
+- Expected
++ Received
+
+  [
+    0,
+-   1,
+-   2,
++   0,
++   0,
+  ]
+
+ ❯ gates/test/cli.test.ts:53:19
+     51|   it("returns the code run() returns for 0, 1 and 2", async () => {
+     52|     const codes = await Promise.all([0, 1, 2].map((n) => entry(() => n…
+     53|     expect(codes).toEqual([0, 1, 2]);
+       |                   ^
+     54|   });
+     55|
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[12/56]⎯
+
+ FAIL  |gates| gates/test/cli.test.ts > entry > returns exit 2 with one line when run() returns a code outside the contract
+AssertionError: expected +0 to be 2 // Object.is equality
+
+- Expected
++ Received
+
+- 2
++ 0
+
+ ❯ gates/test/cli.test.ts:59:18
+     57|     const c = capture();
+     58|     const code = await entry(() => 7, [], c.io);
+     59|     expect(code).toBe(2);
+       |                  ^
+     60|     expect(c.err).toHaveLength(1);
+     61|     expect(c.err[0]).toContain("7");
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[13/56]⎯
+
+ FAIL  |gates| gates/test/cli.test.ts > entry > passes argv and io to run()
+AssertionError: expected { code: +0, seen: [], out: [] } to deeply equal { code: 1, …(2) }
+
+- Expected
++ Received
+
+  {
+-   "code": 1,
+-   "out": [
+-     "ran",
+-   ],
+-   "seen": [
+-     "--root",
+-     "/x",
+-     "a",
+-   ],
++   "code": 0,
++   "out": [],
++   "seen": [],
+  }
+
+ ❯ gates/test/cli.test.ts:76:40
+     74|       c.io,
+     75|     );
+     76|     expect({ code, seen, out: c.out }).toEqual({ code: 1, seen: ["--ro…
+       |                                        ^
+     77|   });
+     78| });
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[14/56]⎯
+
+ FAIL  |gates| gates/test/cli.test.ts > parseArgs > defaults the repository root and the tool working directory to the current directory
+AssertionError: expected { root: '', toolCwd: '', args: [] } to deeply equal { root: '/work/repo', …(2) }
+
+- Expected
++ Received
+
+  {
+-   "args": [
+-     "--base",
+-     "abc",
+-   ],
+-   "root": "/work/repo",
+-   "toolCwd": "/work/repo",
++   "args": [],
++   "root": "",
++   "toolCwd": "",
+  }
+
+ ❯ gates/test/cli.test.ts:82:56
+     80| describe("parseArgs", () => {
+     81|   it("defaults the repository root and the tool working directory to t…
+     82|     expect(parseArgs(["--base", "abc"], "/work/repo")).toEqual({
+       |                                                        ^
+     83|       root: "/work/repo",
+     84|       toolCwd: "/work/repo",
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[15/56]⎯
+
+ FAIL  |gates| gates/test/cli.test.ts > parseArgs > sets the repository root and the tool working directory from --root <dir>
+AssertionError: expected { root: '', toolCwd: '', args: [] } to deeply equal { root: '/tmp/plant', …(2) }
+
+- Expected
++ Received
+
+  {
+    "args": [],
+-   "root": "/tmp/plant",
+-   "toolCwd": "/tmp/plant",
++   "root": "",
++   "toolCwd": "",
+  }
+
+ ❯ gates/test/cli.test.ts:90:63
+     88|
+     89|   it("sets the repository root and the tool working directory from --r…
+     90|     expect(parseArgs(["--root", "/tmp/plant"], "/work/repo")).toEqual({
+       |                                                               ^
+     91|       root: "/tmp/plant",
+     92|       toolCwd: "/tmp/plant",
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[16/56]⎯
+
+ FAIL  |gates| gates/test/cli.test.ts > parseArgs > resolves a relative --root against the current directory
+AssertionError: expected { root: '', toolCwd: '', args: [] } to deeply equal { root: '/work/repo/plant', …(2) }
+
+- Expected
++ Received
+
+  {
+    "args": [],
+-   "root": "/work/repo/plant",
+-   "toolCwd": "/work/repo/plant",
++   "root": "",
++   "toolCwd": "",
+  }
+
+ ❯ gates/test/cli.test.ts:98:58
+     96|
+     97|   it("resolves a relative --root against the current directory", () =>…
+     98|     expect(parseArgs(["--root", "plant"], "/work/repo")).toEqual({
+       |                                                          ^
+     99|       root: "/work/repo/plant",
+    100|       toolCwd: "/work/repo/plant",
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[17/56]⎯
+
+ FAIL  |gates| gates/test/cli.test.ts > parseArgs > leaves every other argument unchanged and in order
+AssertionError: expected [] to deeply equal [ '--range', 'a..b', '--files', …(2) ]
+
+- Expected
++ Received
+
+- [
+-   "--range",
+-   "a..b",
+-   "--files",
+-   "x.ts",
+-   "y.ts",
+- ]
++ []
+
+ ❯ gates/test/cli.test.ts:106:102
+    104|
+    105|   it("leaves every other argument unchanged and in order", () => {
+    106|     expect(parseArgs(["--range", "a..b", "--root", "/tmp/r", "--files"…
+       |                                                                                                      ^
+    107|       "--range",
+    108|       "a..b",
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[18/56]⎯
+
+ FAIL  |gates| gates/test/cli.test.ts > parseArgs > rejects --root without a directory
+AssertionError: expected [Function] to throw an error
+
+- Expected:
+null
+
++ Received:
+undefined
+
+ ❯ gates/test/cli.test.ts:116:47
+    114|
+    115|   it("rejects --root without a directory", () => {
+    116|     expect(() => parseArgs(["--root"], "/w")).toThrow(/--root/);
+       |                                               ^
+    117|   });
+    118| });
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[19/56]⎯
+
+ FAIL  |gates| gates/test/config-copies.test.ts > config-copies gate > passes two byte-identical copies whose test_pathspec is FR-028's test code
+AssertionError: expected { code: +0, out: [], err: [] } to deeply equal { code: +0, …(2) }
+
+- Expected
++ Received
+
+  {
+    "code": 0,
+    "err": [],
+-   "out": [
+-     "config-copies: .specify/extensions/story/story-config.yml and tooling/speckit/extensions/story/story-config.yml are identical",
+-   ],
++   "out": [],
+  }
+
+ ❯ gates/test/config-copies.test.ts:28:20
+     26|   it("passes two byte-identical copies whose test_pathspec is FR-028's…
+     27|     const result = await check("equal");
+     28|     expect(result).toEqual({
+       |                    ^
+     29|       code: 0,
+     30|       out: [`config-copies: ${specify} and ${tooling} are identical`],
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[20/56]⎯
+
+ FAIL  |gates| gates/test/config-copies.test.ts > config-copies gate > fails when one setting differs, naming both copies and the first differing line
+AssertionError: expected +0 to be 1 // Object.is equality
+
+- Expected
++ Received
+
+- 1
++ 0
+
+ ❯ gates/test/config-copies.test.ts:37:25
+     35|   it("fails when one setting differs, naming both copies and the first…
+     36|     const result = await check("differ");
+     37|     expect(result.code).toBe(1);
+       |                         ^
+     38|     expect(result.err).toEqual([]);
+     39|     expect(result.out[0]).toBe(`${tooling}: config-copies: copies-diff…
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[21/56]⎯
+
+ FAIL  |gates| gates/test/config-copies.test.ts > config-copies gate > fails on equal copies whose test_pathspec is not FR-028's test code, one finding per copy
+AssertionError: expected +0 to be 1 // Object.is equality
+
+- Expected
++ Received
+
+- 1
++ 0
+
+ ❯ gates/test/config-copies.test.ts:45:25
+     43|   it("fails on equal copies whose test_pathspec is not FR-028's test c…
+     44|     const result = await check("pathspec");
+     45|     expect(result.code).toBe(1);
+       |                         ^
+     46|     expect(result.out.slice(0, 2)).toEqual([
+     47|       `${specify}: config-copies: test-pathspec: test_pathspec is ":(g…
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[22/56]⎯
+
+ FAIL  |gates| gates/test/config-copies.test.ts > config-copies gate > cannot run when a copy is missing, naming it
+AssertionError: expected +0 to be 2 // Object.is equality
+
+- Expected
++ Received
+
+- 2
++ 0
+
+ ❯ gates/test/config-copies.test.ts:56:25
+     54|   it("cannot run when a copy is missing, naming it", async () => {
+     55|     const result = await check("missing");
+     56|     expect(result.code).toBe(2);
+       |                         ^
+     57|     expect(result.out).toEqual([]);
+     58|     expect(result.err).toHaveLength(1);
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[23/56]⎯
+
+ FAIL  |gates| gates/test/findings.test.ts > formatLocation > writes a file location at a line as path:line
+AssertionError: expected '' to be 'packages/tokens/src/x.ts:12' // Object.is equality
+
+- Expected
++ Received
+
+- packages/tokens/src/x.ts:12
+
+ ❯ gates/test/findings.test.ts:13:76
+     11| describe("formatLocation", () => {
+     12|   it("writes a file location at a line as path:line", () => {
+     13|     expect(formatLocation({ path: "packages/tokens/src/x.ts", line: 12…
+       |                                                                            ^
+     14|   });
+     15|
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[24/56]⎯
+
+ FAIL  |gates| gates/test/findings.test.ts > formatLocation > writes a whole-file location as the path alone
+AssertionError: expected '' to be 'pnpm-lock.yaml' // Object.is equality
+
+- Expected
++ Received
+
+- pnpm-lock.yaml
+
+ ❯ gates/test/findings.test.ts:17:56
+     15|
+     16|   it("writes a whole-file location as the path alone", () => {
+     17|     expect(formatLocation({ path: "pnpm-lock.yaml" })).toBe("pnpm-lock…
+       |                                                        ^
+     18|   });
+     19|
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[25/56]⎯
+
+ FAIL  |gates| gates/test/findings.test.ts > formatLocation > writes a commit location as the full hash
+AssertionError: expected '' to be '0123456789abcdef0123456789abcdef01234…' // Object.is equality
+
+- Expected
++ Received
+
+- 0123456789abcdef0123456789abcdef01234567
+
+ ❯ gates/test/findings.test.ts:21:45
+     19|
+     20|   it("writes a commit location as the full hash", () => {
+     21|     expect(formatLocation({ commit: sha })).toBe(sha);
+       |                                             ^
+     22|   });
+     23| });
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[26/56]⎯
+
+ FAIL  |gates| gates/test/findings.test.ts > formatFinding > writes <location>: <gate-id>: <rule>: <message> for a path:line location
+AssertionError: expected '' to be 'gates/lib/x.ts:3: lint: no-floating-p…' // Object.is equality
+
+- Expected
++ Received
+
+- gates/lib/x.ts:3: lint: no-floating-promises: Promises must be awaited
+
+ ❯ gates/test/findings.test.ts:33:18
+     31|       message: "Promises must be awaited",
+     32|     });
+     33|     expect(line).toBe("gates/lib/x.ts:3: lint: no-floating-promises: P…
+       |                  ^
+     34|   });
+     35|
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[27/56]⎯
+
+ FAIL  |gates| gates/test/findings.test.ts > formatFinding > writes <location>: <gate-id>: <rule>: <message> for a path location
+AssertionError: expected '' to be 'pnpm-lock.yaml: pins: lockfile: the l…' // Object.is equality
+
+- Expected
++ Received
+
+- pnpm-lock.yaml: pins: lockfile: the lockfile does not match the manifests
+
+ ❯ gates/test/findings.test.ts:43:18
+     41|       message: "the lockfile does not match the manifests",
+     42|     });
+     43|     expect(line).toBe("pnpm-lock.yaml: pins: lockfile: the lockfile do…
+       |                  ^
+     44|   });
+     45|
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[28/56]⎯
+
+ FAIL  |gates| gates/test/findings.test.ts > formatFinding > writes <location>: <gate-id>: <rule>: <message> for a commit location
+AssertionError: expected '' to be '0123456789abcdef0123456789abcdef01234…' // Object.is equality
+
+- Expected
++ Received
+
+- 0123456789abcdef0123456789abcdef01234567: signoff: no-signoff: no Signed-off-by line
+
+ ❯ gates/test/findings.test.ts:53:18
+     51|       message: "no Signed-off-by line",
+     52|     });
+     53|     expect(line).toBe(`${sha}: signoff: no-signoff: no Signed-off-by l…
+       |                  ^
+     54|   });
+     55|
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[29/56]⎯
+
+ FAIL  |gates| gates/test/findings.test.ts > formatFinding > keeps a finding on one line when its message has line breaks
+AssertionError: expected '' to be 'a.ts:1: unit-tests: sum adds: Asserti…' // Object.is equality
+
+- Expected
++ Received
+
+- a.ts:1: unit-tests: sum adds: AssertionError: expected 3 to be 4 at a.ts:1:1 more
+
+ ❯ gates/test/findings.test.ts:63:18
+     61|       message: "AssertionError: expected 3 to be 4\n    at a.ts:1:1\r\…
+     62|     });
+     63|     expect(line).toBe("a.ts:1: unit-tests: sum adds: AssertionError: e…
+       |                  ^
+     64|   });
+     65| });
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[30/56]⎯
+
+ FAIL  |gates| gates/test/findings.test.ts > emit > prints the one-line summary of a pass on stdout and returns 0
+AssertionError: expected { code: +0, out: [], err: [] } to deeply equal { code: +0, …(2) }
+
+- Expected
++ Received
+
+  {
+    "code": 0,
+    "err": [],
+-   "out": [
+-     "unit-tests: 3 tests passed",
+-   ],
++   "out": [],
+  }
+
+ ❯ gates/test/findings.test.ts:71:48
+     69|     const io = capture();
+     70|     const code = emit({ exit: 0, summary: "unit-tests: 3 tests passed"…
+     71|     expect({ code, out: io.out, err: io.err }).toEqual({ code: 0, out:…
+       |                                                ^
+     72|   });
+     73|
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[31/56]⎯
+
+ FAIL  |gates| gates/test/findings.test.ts > emit > prints each finding and then the summary on stdout and returns 1
+AssertionError: expected { code: +0, out: [], err: [] } to deeply equal { code: 1, out: [ …(3) ], err: [] }
+
+- Expected
++ Received
+
+  {
+-   "code": 1,
++   "code": 0,
+    "err": [],
+-   "out": [
+-     "a.ts:1: unit-tests: t one: m one",
+-     "b.ts: unit-tests: t two: m two",
+-     "unit-tests: 2 of 5 tests failed",
+-   ],
++   "out": [],
+  }
+
+ ❯ gates/test/findings.test.ts:85:48
+     83|     };
+     84|     const code = emit(result, (l) => io.out.push(l), (l) => io.err.pus…
+     85|     expect({ code, out: io.out, err: io.err }).toEqual({
+       |                                                ^
+     86|       code: 1,
+     87|       out: ["a.ts:1: unit-tests: t one: m one", "b.ts: unit-tests: t t…
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[32/56]⎯
+
+ FAIL  |gates| gates/test/findings.test.ts > emit > prints the cause of a run that could not run as one line on stderr and returns 2
+AssertionError: expected { code: +0, out: [], err: [] } to deeply equal { code: 2, out: [], …(1) }
+
+- Expected
++ Received
+
+  {
+-   "code": 2,
+-   "err": [
+-     "unit-tests: could not run: no test file found second line",
+-   ],
++   "code": 0,
++   "err": [],
+    "out": [],
+  }
+
+ ❯ gates/test/findings.test.ts:99:48
+     97|       (l) => io.err.push(l),
+     98|     );
+     99|     expect({ code, out: io.out, err: io.err }).toEqual({
+       |                                                ^
+    100|       code: 2,
+    101|       out: [],
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[33/56]⎯
+
+ FAIL  |gates| gates/test/setup-offline.test.ts > decideSetup > turns a tarball missing from the store into 'missing: <package>; run pnpm run setup:online', exit 2
+AssertionError: expected { exit: +0, summary: '' } to deeply equal { exit: 2, …(1) }
+
+- Expected
++ Received
+
+  {
+-   "cause": "setup: missing: is-number@7.0.0; run pnpm run setup:online",
+-   "exit": 2,
++   "exit": 0,
++   "summary": "",
+  }
+
+ ❯ gates/test/setup-offline.test.ts:20:20
+     18|   it("turns a tarball missing from the store into 'missing: <package>;…
+     19|     const result = decideSetup({ exitCode: 1, output: pnpm("no-offline…
+     20|     expect(result).toEqual({ exit: 2, cause: "setup: missing: is-numbe…
+       |                    ^
+     21|   });
+     22|
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[34/56]⎯
+
+ FAIL  |gates| gates/test/setup-offline.test.ts > decideSetup > turns package metadata missing from the cache into 'missing: <package>; run pnpm run setup:online', exit 2
+AssertionError: expected { exit: +0, summary: '' } to deeply equal { exit: 2, …(1) }
+
+- Expected
++ Received
+
+  {
+-   "cause": "setup: missing: is-number; run pnpm run setup:online",
+-   "exit": 2,
++   "exit": 0,
++   "summary": "",
+  }
+
+ ❯ gates/test/setup-offline.test.ts:25:20
+     23|   it("turns package metadata missing from the cache into 'missing: <pa…
+     24|     const result = decideSetup({ exitCode: 1, output: pnpm("no-offline…
+     25|     expect(result).toEqual({ exit: 2, cause: "setup: missing: is-numbe…
+       |                    ^
+     26|   });
+     27|
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[35/56]⎯
+
+ FAIL  |gates| gates/test/setup-offline.test.ts > decideSetup > reports any other pnpm failure as exit 2 naming pnpm's error code
+AssertionError: expected +0 to be 2 // Object.is equality
+
+- Expected
++ Received
+
+- 2
++ 0
+
+ ❯ gates/test/setup-offline.test.ts:30:25
+     28|   it("reports any other pnpm failure as exit 2 naming pnpm's error cod…
+     29|     const result = decideSetup({ exitCode: 1, output: pnpm("outdated-l…
+     30|     expect(result.exit).toBe(2);
+       |                         ^
+     31|     const cause = result.exit === 2 ? result.cause : "";
+     32|     expect(cause).toContain("ERR_PNPM_OUTDATED_LOCKFILE");
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[36/56]⎯
+
+ FAIL  |gates| gates/test/setup-offline.test.ts > decideSetup > reports a pnpm failure without an error record as exit 2 naming its exit code
+AssertionError: expected +0 to be 2 // Object.is equality
+
+- Expected
++ Received
+
+- 2
++ 0
+
+ ❯ gates/test/setup-offline.test.ts:38:25
+     36|   it("reports a pnpm failure without an error record as exit 2 naming …
+     37|     const result = decideSetup({ exitCode: 9, output: "" }, present);
+     38|     expect(result.exit).toBe(2);
+       |                         ^
+     39|     expect(result.exit === 2 ? result.cause : "").toContain("exit 9");
+     40|   });
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[37/56]⎯
+
+ FAIL  |gates| gates/test/setup-offline.test.ts > decideSetup > names Chromium and pnpm run setup:online when the install succeeds but Chromium is missing, exit 2
+AssertionError: expected { exit: +0, summary: '' } to deeply equal { exit: 2, …(1) }
+
+- Expected
++ Received
+
+  {
+-   "cause": "setup: Chromium not found at /home/u/.cache/ms-playwright/chromium-1248/chrome-linux64/chrome; run pnpm run setup:online",
+-   "exit": 2,
++   "exit": 0,
++   "summary": "",
+  }
+
+ ❯ gates/test/setup-offline.test.ts:44:20
+     42|   it("names Chromium and pnpm run setup:online when the install succee…
+     43|     const result = decideSetup({ exitCode: 0, output: pnpm("success.nd…
+     44|     expect(result).toEqual({ exit: 2, cause: `setup: Chromium not foun…
+       |                    ^
+     45|   });
+     46|
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[38/56]⎯
+
+ FAIL  |gates| gates/test/setup-offline.test.ts > decideSetup > names the missing package first when both the store and Chromium lack something
+AssertionError: expected { exit: +0, summary: '' } to deeply equal { exit: 2, …(1) }
+
+- Expected
++ Received
+
+  {
+-   "cause": "setup: missing: is-number@7.0.0; run pnpm run setup:online",
+-   "exit": 2,
++   "exit": 0,
++   "summary": "",
+  }
+
+ ❯ gates/test/setup-offline.test.ts:49:20
+     47|   it("names the missing package first when both the store and Chromium…
+     48|     const result = decideSetup({ exitCode: 1, output: pnpm("no-offline…
+     49|     expect(result).toEqual({ exit: 2, cause: "setup: missing: is-numbe…
+       |                    ^
+     50|   });
+     51|
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[39/56]⎯
+
+ FAIL  |gates| gates/test/setup-offline.test.ts > decideSetup > passes a successful install with Chromium present, naming the Chromium it found
+AssertionError: expected { exit: +0, summary: '' } to deeply equal { exit: +0, …(1) }
+
+- Expected
++ Received
+
+  {
+    "exit": 0,
+-   "summary": "setup: installed offline; Chromium at /home/u/.cache/ms-playwright/chromium-1248/chrome-linux64/chrome",
++   "summary": "",
+  }
+
+ ❯ gates/test/setup-offline.test.ts:54:20
+     52|   it("passes a successful install with Chromium present, naming the Ch…
+     53|     const result = decideSetup({ exitCode: 0, output: pnpm("success.nd…
+     54|     expect(result).toEqual({ exit: 0, summary: `setup: installed offli…
+       |                    ^
+     55|   });
+     56| });
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[40/56]⎯
+
+ FAIL  |gates| gates/test/test-command.test.ts > classifyVitest > passes a run whose tests all passed, with a one-line summary of the count
+AssertionError: expected { exit: +0, summary: '' } to deeply equal { exit: +0, …(1) }
+
+- Expected
++ Received
+
+  {
+    "exit": 0,
+-   "summary": "unit-tests: 3 tests passed in 2 files",
++   "summary": "",
+  }
+
+ ❯ gates/test/test-command.test.ts:15:20
+     13|   it("passes a run whose tests all passed, with a one-line summary of …
+     14|     const result = classifyVitest({ report: fixture("passing.json"), e…
+     15|     expect(result).toEqual({ exit: 0, summary: "unit-tests: 3 tests pa…
+       |                    ^
+     16|   });
+     17|
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[41/56]⎯
+
+ FAIL  |gates| gates/test/test-command.test.ts > classifyVitest > reports each failed test as one finding at its file and line, rule = the full test name
+AssertionError: expected { exit: +0, summary: '' } to deeply equal { exit: 1, …(2) }
+
+- Expected
++ Received
+
+  {
+-   "exit": 1,
+-   "findings": [
+-     {
+-       "gate": "unit-tests",
+-       "location": {
+-         "line": 8,
+-         "path": "packages/tokens/test/sum.test.ts",
+-       },
+-       "message": "AssertionError: expected 3 to be 4 // Object.is equality",
+-       "rule": "sum adds three numbers",
+-     },
+-     {
+-       "gate": "unit-tests",
+-       "location": {
+-         "line": 3,
+-         "path": "packages/elements/test/title.test.ts",
+-       },
+-       "message": "AssertionError: expected 'Vitest Browser Tester' to be 'Ocelle' // Object.is equality",
+-       "rule": "reads the document title",
+-     },
+-   ],
+-   "summary": "unit-tests: 2 of 3 tests failed",
++   "exit": 0,
++   "summary": "",
+  }
+
+ ❯ gates/test/test-command.test.ts:20:20
+     18|   it("reports each failed test as one finding at its file and line, ru…
+     19|     const result = classifyVitest({ report: fixture("failing.json"), e…
+     20|     expect(result).toEqual({
+       |                    ^
+     21|       exit: 1,
+     22|       findings: [
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[42/56]⎯
+
+ FAIL  |gates| gates/test/test-command.test.ts > classifyVitest > reports a failed test without a recorded location at its file
+AssertionError: expected +0 to be 1 // Object.is equality
+
+- Expected
++ Received
+
+- 1
++ 0
+
+ ❯ gates/test/test-command.test.ts:48:25
+     46|     }
+     47|     const result = classifyVitest({ report: JSON.stringify(report), ex…
+     48|     expect(result.exit).toBe(1);
+       |                         ^
+     49|     expect(result.exit === 1 ? result.findings.map((f) => f.location) …
+     50|       { path: "packages/tokens/test/sum.test.ts" },
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[43/56]⎯
+
+ FAIL  |gates| gates/test/test-command.test.ts > classifyVitest > cannot run when no test file is found (a broken file pattern does not pass)
+AssertionError: expected +0 to be 2 // Object.is equality
+
+- Expected
++ Received
+
+- 2
++ 0
+
+ ❯ gates/test/test-command.test.ts:57:25
+     55|   it("cannot run when no test file is found (a broken file pattern doe…
+     56|     const result = classifyVitest({ report: fixture("no-test-file.json…
+     57|     expect(result.exit).toBe(2);
+       |                         ^
+     58|     expect(result.exit === 2 ? result.cause : "").toContain("no test f…
+     59|   });
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[44/56]⎯
+
+ FAIL  |gates| gates/test/test-command.test.ts > classifyVitest > cannot run when a test file fails to load, naming the file and the error
+AssertionError: expected { exit: +0, summary: '' } to deeply equal { exit: 2, …(1) }
+
+- Expected
++ Received
+
+  {
+-   "cause": "unit-tests: could not run: packages/tokens/test/a.test.ts failed to load: Cannot find module './missing.ts' imported from /work/repo/packages/tokens/test/a.test.ts",
+-   "exit": 2,
++   "exit": 0,
++   "summary": "",
+  }
+
+ ❯ gates/test/test-command.test.ts:63:20
+     61|   it("cannot run when a test file fails to load, naming the file and t…
+     62|     const result = classifyVitest({ report: fixture("load-failure.json…
+     63|     expect(result).toEqual({
+       |                    ^
+     64|       exit: 2,
+     65|       cause:
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[45/56]⎯
+
+ FAIL  |gates| gates/test/test-command.test.ts > classifyVitest > cannot run when a test file does not parse, naming the file without terminal colour codes
+AssertionError: expected +0 to be 2 // Object.is equality
+
+- Expected
++ Received
+
+- 2
++ 0
+
+ ❯ gates/test/test-command.test.ts:73:25
+     71|   it("cannot run when a test file does not parse, naming the file with…
+     72|     const result = classifyVitest({ report: fixture("syntax-error.json…
+     73|     expect(result.exit).toBe(2);
+       |                         ^
+     74|     const cause = result.exit === 2 ? result.cause : "";
+     75|     expect(cause).toContain("packages/tokens/test/a.test.ts failed to …
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[46/56]⎯
+
+ FAIL  |gates| gates/test/test-command.test.ts > classifyVitest > cannot run on errors outside tests even when every test passed, naming the error
+AssertionError: expected { exit: +0, summary: '' } to deeply equal { exit: 2, …(1) }
+
+- Expected
++ Received
+
+  {
+-   "cause": "unit-tests: could not run: Vitest reported errors outside tests: Error: late boom",
+-   "exit": 2,
++   "exit": 0,
++   "summary": "",
+  }
+
+ ❯ gates/test/test-command.test.ts:86:20
+     84|       root,
+     85|     });
+     86|     expect(result).toEqual({
+       |                    ^
+     87|       exit: 2,
+     88|       cause: "unit-tests: could not run: Vitest reported errors outsid…
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[47/56]⎯
+
+ FAIL  |gates| gates/test/test-command.test.ts > classifyVitest > cannot run when a failed test comes with a file that failed to load
+AssertionError: expected +0 to be 2 // Object.is equality
+
+- Expected
++ Received
+
+- 2
++ 0
+
+ ❯ gates/test/test-command.test.ts:97:25
+     95|     failing.testResults.push(...load.testResults);
+     96|     const result = classifyVitest({ report: JSON.stringify(failing), e…
+     97|     expect(result.exit).toBe(2);
+       |                         ^
+     98|     expect(result.exit === 2 ? result.cause : "").toContain("packages/…
+     99|   });
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[48/56]⎯
+
+ FAIL  |gates| gates/test/test-command.test.ts > classifyVitest > cannot run without a report
+AssertionError: expected +0 to be 2 // Object.is equality
+
+- Expected
++ Received
+
+- 2
++ 0
+
+ ❯ gates/test/test-command.test.ts:103:25
+    101|   it("cannot run without a report", () => {
+    102|     const result = classifyVitest({ report: undefined, exitCode: 1, ou…
+    103|     expect(result.exit).toBe(2);
+       |                         ^
+    104|     expect(result.exit === 2 ? result.cause : "").toContain("no Vitest…
+    105|   });
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[49/56]⎯
+
+ FAIL  |gates| gates/test/test-command.test.ts > classifyVitest > cannot run on a report that is not JSON
+AssertionError: expected +0 to be 2 // Object.is equality
+
+- Expected
++ Received
+
+- 2
++ 0
+
+ ❯ gates/test/test-command.test.ts:109:25
+    107|   it("cannot run on a report that is not JSON", () => {
+    108|     const result = classifyVitest({ report: "{ not json", exitCode: 1,…
+    109|     expect(result.exit).toBe(2);
+       |                         ^
+    110|     expect(result.exit === 2 ? result.cause : "").toContain("no Vitest…
+    111|   });
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[50/56]⎯
+
+ FAIL  |gates| gates/test/test-command.test.ts > chromiumCheck > checks Playwright's own Chromium when no override is set and finds no problem when it exists
+AssertionError: expected { executable: undefined, …(1) } to deeply equal { …(2) }
+
+- Expected
++ Received
+
+  {
+-   "executable": "/home/u/.cache/ms-playwright/chromium-1248/chrome-linux64/chrome",
++   "executable": undefined,
+    "problem": undefined,
+  }
+
+ ❯ gates/test/test-command.test.ts:120:19
+    118|   it("checks Playwright's own Chromium when no override is set and fin…
+    119|     const check = chromiumCheck({ override: undefined, playwrightPath,…
+    120|     expect(check).toEqual({ executable: playwrightPath, problem: undef…
+       |                   ^
+    121|   });
+    122|
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[51/56]⎯
+
+ FAIL  |gates| gates/test/test-command.test.ts > chromiumCheck > names pnpm run setup:online when Playwright's Chromium is missing
+AssertionError: expected undefined to be '/home/u/.cache/ms-playwright/chromium…' // Object.is equality
+
+- Expected:
+"/home/u/.cache/ms-playwright/chromium-1248/chrome-linux64/chrome"
+
++ Received:
+undefined
+
+ ❯ gates/test/test-command.test.ts:125:30
+    123|   it("names pnpm run setup:online when Playwright's Chromium is missin…
+    124|     const check = chromiumCheck({ override: undefined, playwrightPath,…
+    125|     expect(check.executable).toBe(playwrightPath);
+       |                              ^
+    126|     expect(check.problem ?? "").toContain("Chromium");
+    127|     expect(check.problem ?? "").toContain(playwrightPath);
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[52/56]⎯
+
+ FAIL  |gates| gates/test/test-command.test.ts > chromiumCheck > names pnpm run setup:online when Playwright cannot name a Chromium executable
+AssertionError: expected '' to contain 'Chromium'
+
+- Expected
++ Received
+
+- Chromium
+
+ ❯ gates/test/test-command.test.ts:134:33
+    132|     const check = chromiumCheck({ override: undefined, playwrightPath:…
+    133|     expect(check.executable).toBeUndefined();
+    134|     expect(check.problem ?? "").toContain("Chromium");
+       |                                 ^
+    135|     expect(check.problem ?? "").toContain("pnpm run setup:online");
+    136|   });
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[53/56]⎯
+
+ FAIL  |gates| gates/test/test-command.test.ts > chromiumCheck > checks the OCELLE_CHROMIUM_PATH override instead of Playwright's Chromium when it is set (R1-03)
+AssertionError: expected { executable: undefined, …(1) } to deeply equal { …(2) }
+
+- Expected
++ Received
+
+  {
+-   "executable": "/opt/pw-browsers/chromium_headless_shell-1243/chrome-headless-shell",
++   "executable": undefined,
+    "problem": undefined,
+  }
+
+ ❯ gates/test/test-command.test.ts:140:19
+    138|   it("checks the OCELLE_CHROMIUM_PATH override instead of Playwright's…
+    139|     const check = chromiumCheck({ override, playwrightPath, exists: (p…
+    140|     expect(check).toEqual({ executable: override, problem: undefined }…
+       |                   ^
+    141|   });
+    142|
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[54/56]⎯
+
+ FAIL  |gates| gates/test/test-command.test.ts > chromiumCheck > names the override and pnpm run setup:online when the override does not exist
+AssertionError: expected undefined to be '/opt/pw-browsers/chromium_headless_sh…' // Object.is equality
+
+- Expected:
+"/opt/pw-browsers/chromium_headless_shell-1243/chrome-headless-shell"
+
++ Received:
+undefined
+
+ ❯ gates/test/test-command.test.ts:145:30
+    143|   it("names the override and pnpm run setup:online when the override d…
+    144|     const check = chromiumCheck({ override, playwrightPath, exists: (p…
+    145|     expect(check.executable).toBe(override);
+       |                              ^
+    146|     expect(check.problem ?? "").toContain(override);
+    147|     expect(check.problem ?? "").toContain("OCELLE_CHROMIUM_PATH");
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[55/56]⎯
+
+ FAIL  |gates| gates/test/test-command.test.ts > chromiumCheck > treats an empty override as unset, like vitest.config.ts does
+AssertionError: expected { executable: undefined, …(1) } to deeply equal { …(2) }
+
+- Expected
++ Received
+
+  {
+-   "executable": "/home/u/.cache/ms-playwright/chromium-1248/chrome-linux64/chrome",
++   "executable": undefined,
+    "problem": undefined,
+  }
+
+ ❯ gates/test/test-command.test.ts:153:19
+    151|   it("treats an empty override as unset, like vitest.config.ts does", …
+    152|     const check = chromiumCheck({ override: "", playwrightPath, exists…
+    153|     expect(check).toEqual({ executable: playwrightPath, problem: undef…
+       |                   ^
+    154|   });
+    155| });
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[56/56]⎯
+
+
+ Test Files  7 failed | 3 passed (10)
+      Tests  56 failed | 3 passed (59)
+   Start at  20:32:29
+   Duration  1.82s (transform 43%, tests 22%, import 18%, worker 17%)
+
+[ELIFECYCLE] Test failed. See above for more details.

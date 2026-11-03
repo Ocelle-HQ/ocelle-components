@@ -1,0 +1,3 @@
+author: Ada Example <ada@example.com>
+
+Add a change without a sign-off

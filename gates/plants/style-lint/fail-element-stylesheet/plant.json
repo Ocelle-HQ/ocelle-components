@@ -1,0 +1,11 @@
+{
+  "expect": "fail",
+  "why": "A raw length in a stylesheet of @ocelle/elements source is reported (FR-024).",
+  "findings": [
+    {
+      "location": "packages/elements/src/x.css:3",
+      "rule": "ocelle/token-only",
+      "message": "4px"
+    }
+  ]
+}

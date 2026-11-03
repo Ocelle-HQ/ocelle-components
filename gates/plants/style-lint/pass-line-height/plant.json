@@ -1,0 +1,4 @@
+{
+  "expect": "pass",
+  "why": "A unitless line-height (line-height: 1.5) is allowed (FR-024)."
+}

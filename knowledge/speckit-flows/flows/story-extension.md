@@ -4,7 +4,7 @@ title: story extension
 description: Commands, scripts and configuration behind the per-phase implement, check, review and fix loop
 resource: /tooling/speckit/extensions/story/extension.yml
 tags: [spec-kit, extension]
-version: 1.2.0
+version: 1.3.0
 generated: { by: claude-code/agent, at: 2026-11-02T14:00:00Z }
 status: draft
 ---
@@ -19,7 +19,7 @@ status: draft
 
 # Scripts
 
-`units.sh`, `base.sh`, `red.sh`, `tdd-check.sh`, `verdict.sh`, `accept.sh` take the phase as a number and refuse anything else. `summary.sh` writes the feature's run summary into this bundle (`knowledge_dir`).
+`units.sh`, `base.sh`, `scaffold.sh`, `red.sh`, `tdd-check.sh`, `verdict.sh`, `accept.sh` take the phase as a number and refuse anything else. `summary.sh` writes the feature's run summary into this bundle (`knowledge_dir`).
 
 # Configuration
 

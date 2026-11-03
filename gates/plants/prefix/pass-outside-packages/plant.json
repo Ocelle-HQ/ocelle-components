@@ -1,0 +1,4 @@
+{
+  "expect": "pass",
+  "why": "An sk- name outside the three packages is not covered (FR-022, FR-028)."
+}

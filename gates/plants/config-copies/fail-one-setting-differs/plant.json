@@ -1,0 +1,11 @@
+{
+  "expect": "fail",
+  "why": "The two story configuration copies differ in one setting (FR-006).",
+  "findings": [
+    {
+      "location": "tooling/speckit/extensions/story/story-config.yml",
+      "rule": "copies-differ",
+      "message": "differs from .specify/extensions/story/story-config.yml at line 15"
+    }
+  ]
+}

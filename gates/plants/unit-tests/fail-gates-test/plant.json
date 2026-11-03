@@ -1,0 +1,11 @@
+{
+  "expect": "fail",
+  "why": "A failing gate test (project gates) is a finding (FR-004, FR-028).",
+  "findings": [
+    {
+      "location": "gates/test/x.test.ts:5",
+      "rule": "planted gates-test adds wrongly",
+      "message": "expected 2 to be 3"
+    }
+  ]
+}

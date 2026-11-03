@@ -1,0 +1,11 @@
+{
+  "expect": "fail",
+  "why": "<SK-Button> names an sk-button element: the name rule is case-insensitive (FR-022, research.md R-12).",
+  "findings": [
+    {
+      "location": "packages/elements/src/x.ts:2",
+      "rule": "sk-name",
+      "message": "SK-Button"
+    }
+  ]
+}

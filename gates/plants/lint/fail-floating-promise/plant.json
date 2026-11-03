@@ -1,0 +1,10 @@
+{
+  "expect": "fail",
+  "why": "A floating promise in package source violates @typescript-eslint/no-floating-promises, a rule the test lint does not have (FR-020, FR-025).",
+  "findings": [
+    {
+      "location": "packages/tokens/src/x.ts:6",
+      "rule": "@typescript-eslint/no-floating-promises"
+    }
+  ]
+}

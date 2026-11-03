@@ -1,0 +1,467 @@
+### shard 1: shard 1 exit 1 seconds 261
+gates/bin/config-copies.ts:68: mutation: record: BlockStatement: equivalent, an empty catch also makes the function return undefined
+gates/bin/config-copies.ts:88: mutation: record: all: process boundary, covered by gates-integration
+gates/bin/csp.ts:213: mutation: record: all: process boundary, covered by gates-integration: gates/test/integration/gates-root.test.ts "csp --root <tmp> exits 1 with exactly the defect's finding at its repository path"
+gates/bin/csp.ts:215: mutation: record: all: process boundary, covered by gates-integration: gates/test/integration/gates-root.test.ts "csp --root <tmp> exits 1 with exactly the defect's finding at its repository path"
+gates/bin/csp.ts:217: mutation: record: all: process boundary, covered by gates-integration: gates/test/integration/gates-root.test.ts "csp --root <tmp> exits 1 with exactly the defect's finding at its repository path"
+gates/bin/csp.ts:221: mutation: record: all: process boundary, covered by gates-integration: gates/test/integration/gates-root.test.ts "csp --root <tmp> exits 1 with exactly the defect's finding at its repository path"
+gates/bin/csp.ts:224: mutation: record: all: process boundary, covered by gates-integration: gates/test/integration/gates-root.test.ts "csp --root <tmp> exits 1 with exactly the defect's finding at its repository path"
+gates/bin/csp.ts:226: mutation: record: all: process boundary, covered by gates-integration: gates/test/integration/gates-root.test.ts "csp --root <tmp> exits 1 with exactly the defect's finding at its repository path"
+gates/bin/csp.ts:228: mutation: record: all: process boundary, covered by gates-integration: gates/test/integration/gates-root.test.ts "csp --root <tmp> exits 1 with exactly the defect's finding at its repository path"
+gates/bin/csp.ts:233: mutation: record: all: process boundary, covered by gates-integration: gates/test/integration/gates-root.test.ts "csp --root <tmp> exits 1 with exactly the defect's finding at its repository path"
+gates/bin/lint.ts:11: mutation: record: all: process boundary, covered by gates-integration: gates/test/integration/gates-root.test.ts "lint --root <tmp> exits 1 with exactly the defect's finding at its repository path"
+gates/bin/lint.ts:14: mutation: record: all: process boundary, covered by gates-integration: gates/test/integration/gates-root.test.ts "lint --root <tmp> exits 1 with exactly the defect's finding at its repository path"
+gates/bin/lint.ts:16: mutation: record: all: process boundary, covered by gates-integration: gates/test/integration/gates-root.test.ts "lint --root <tmp> exits 1 with exactly the defect's finding at its repository path"
+gates/bin/lint.ts:18: mutation: record: all: process boundary, covered by gates-integration: gates/test/integration/gates-root.test.ts "lint --root <tmp> exits 1 with exactly the defect's finding at its repository path"
+gates/bin/lint.ts:23: mutation: record: all: process boundary, covered by gates-integration: gates/test/integration/gates-root.test.ts "lint --root <tmp> exits 1 with exactly the defect's finding at its repository path"
+gates/bin/csp.ts:33: mutation: StringLiteral: Survived: replaced by ""
+gates/bin/csp.ts:92: mutation: BooleanLiteral: Survived: replaced by false
+gates/bin/csp.ts:118: mutation: ConditionalExpression: Survived: replaced by true
+gates/bin/csp.ts:127: mutation: ConditionalExpression: Survived: replaced by true
+gates/bin/csp.ts:133: mutation: ArrayDeclaration: Survived: replaced by []
+gates/bin/csp.ts:135: mutation: StringLiteral: Survived: replaced by "Stryker was here!"
+gates/bin/csp.ts:138: mutation: ConditionalExpression: Survived: replaced by true
+gates/bin/csp.ts:138: mutation: ConditionalExpression: Survived: replaced by false
+gates/bin/csp.ts:138: mutation: EqualityOperator: Survived: replaced by index >= 0
+gates/bin/csp.ts:138: mutation: EqualityOperator: Survived: replaced by index <= 0
+gates/bin/csp.ts:138: mutation: StringLiteral: Survived: replaced by ""
+gates/bin/csp.ts:140: mutation: LogicalOperator: Survived: replaced by literal.rawText && literal.text
+gates/bin/csp.ts:164: mutation: BooleanLiteral: Survived: replaced by false
+gates/bin/csp.ts:167: mutation: StringLiteral: Survived: replaced by ""
+gates/bin/csp.ts:174: mutation: StringLiteral: Survived: replaced by ""
+gates/bin/csp.ts:177: mutation: StringLiteral: Survived: replaced by ""
+gates/bin/csp.ts:180: mutation: ConditionalExpression: Survived: replaced by true
+gates/bin/csp.ts:180: mutation: EqualityOperator: Survived: replaced by start.joined < offset
+gates/bin/csp.ts:181: mutation: ArithmeticOperator: Survived: replaced by part.source + offset + part.joined
+gates/bin/csp.ts:203: mutation: EqualityOperator: Survived: replaced by found.length <= 0
+mutation: 20 findings in 3 changed files (384 mutants on changed lines)
+### shard 2: shard 2 exit 1 seconds 592
+gates/bin/mutation.ts:130: mutation: record: all: process boundary, covered by gates-integration: gates/test/integration/mutation.test.ts "--files mutates only the listed file"
+gates/bin/mutation.ts:132: mutation: record: all: process boundary, covered by gates-integration: gates/test/integration/mutation.test.ts "--files mutates only the listed file"
+gates/bin/mutation.ts:134: mutation: record: all: process boundary, covered by gates-integration: gates/test/integration/mutation.test.ts "--files mutates only the listed file"
+gates/bin/mutation.ts:136: mutation: record: all: process boundary, covered by gates-integration: gates/test/integration/mutation.test.ts "--files mutates only the listed file"
+gates/bin/mutation.ts:138: mutation: record: all: process boundary, covered by gates-integration: gates/test/integration/mutation.test.ts "deletes an earlier run's report: a Stryker run that writes none exits 2 (review round 1, R1-01)"
+gates/bin/mutation.ts:140: mutation: record: all: process boundary, covered by gates-integration: gates/test/integration/mutation.test.ts "deletes an earlier run's report: a Stryker run that writes none exits 2 (review round 1, R1-01)"
+gates/bin/mutation.ts:142: mutation: record: all: process boundary, covered by gates-integration: gates/test/integration/mutation.test.ts "--files mutates only the listed file"
+gates/bin/mutation.ts:147: mutation: record: all: process boundary, covered by gates-integration: gates/test/integration/mutation.test.ts "--files mutates only the listed file"
+gates/bin/mutation.ts:153: mutation: record: all: process boundary, covered by gates-integration: gates/test/integration/mutation.test.ts "--files mutates only the listed file"
+gates/bin/pins.ts:322: mutation: record: all: process boundary, covered by gates-integration: gates/test/integration/gates-root.test.ts "pins --root <tmp> exits 1 with exactly the lockfile finding"
+gates/bin/pins.ts:324: mutation: record: all: process boundary, covered by gates-integration: gates/test/integration/gates-root.test.ts "pins --root <tmp> exits 1 with exactly the lockfile finding"
+gates/bin/pins.ts:326: mutation: record: all: process boundary, covered by gates-integration: gates/test/integration/gates-root.test.ts "pins --root <tmp> exits 1 with exactly the lockfile finding"
+gates/bin/pins.ts:328: mutation: record: all: process boundary, covered by gates-integration: gates/test/integration/gates-root.test.ts "pins --root <tmp> exits 1 with exactly the lockfile finding"
+gates/bin/pins.ts:330: mutation: record: all: process boundary, covered by gates-integration: gates/test/integration/gates-root.test.ts "pins --root <tmp> exits 1 with exactly the lockfile finding"
+gates/bin/pins.ts:335: mutation: record: all: process boundary, covered by gates-integration: gates/test/integration/gates-root.test.ts "pins --root <tmp> exits 1 with exactly the lockfile finding"
+gates/bin/pins.ts:341: mutation: record: all: process boundary, covered by gates-integration: gates/test/integration/gates-root.test.ts "pins --root <tmp> exits 1 with exactly the lockfile finding"
+gates/bin/pins.ts:29: mutation: Regex: Survived: replaced by /^\d\.\d+\.\d+(?:-[0-9A-Za-z.-]+)?(?:\+[0-9A-Za-z.-]+)?$/
+gates/bin/pins.ts:29: mutation: Regex: Survived: replaced by /^\d+\.\d+\.\d+(?:-[0-9A-Za-z.-]+)?(?:\+[0-9A-Za-z.-]+)?/
+gates/bin/pins.ts:29: mutation: Regex: Survived: replaced by /^\d+\.\d\.\d+(?:-[0-9A-Za-z.-]+)?(?:\+[0-9A-Za-z.-]+)?$/
+gates/bin/pins.ts:29: mutation: Regex: Survived: replaced by /^\d+\.\d+\.\d(?:-[0-9A-Za-z.-]+)?(?:\+[0-9A-Za-z.-]+)?$/
+gates/bin/pins.ts:39: mutation: ConditionalExpression: Survived: replaced by false
+gates/bin/pins.ts:39: mutation: ConditionalExpression: NoCoverage: replaced by true
+gates/bin/pins.ts:39: mutation: EqualityOperator: NoCoverage: replaced by value === null
+gates/bin/pins.ts:45: mutation: Regex: Survived: replaced by /(['"]).*\1$/
+gates/bin/pins.ts:45: mutation: Regex: Survived: replaced by /^(['"]).*\1/
+gates/bin/pins.ts:46: mutation: ConditionalExpression: Survived: replaced by false
+gates/bin/pins.ts:46: mutation: StringLiteral: Survived: replaced by ""
+gates/bin/pins.ts:47: mutation: ConditionalExpression: Survived: replaced by false
+gates/bin/pins.ts:47: mutation: ConditionalExpression: Survived: replaced by false
+gates/bin/pins.ts:47: mutation: ConditionalExpression: Survived: replaced by false
+gates/bin/pins.ts:47: mutation: StringLiteral: Survived: replaced by ""
+gates/bin/pins.ts:47: mutation: ConditionalExpression: Survived: replaced by false
+gates/bin/pins.ts:47: mutation: StringLiteral: Survived: replaced by ""
+gates/bin/pins.ts:47: mutation: ConditionalExpression: Survived: replaced by false
+gates/bin/pins.ts:47: mutation: StringLiteral: Survived: replaced by "Stryker was here!"
+gates/bin/pins.ts:48: mutation: Regex: Survived: replaced by /^-?\d+(?:\.\d+)?/
+gates/bin/pins.ts:48: mutation: Regex: Survived: replaced by /^-?\d+(?:\.\d)?$/
+gates/bin/pins.ts:48: mutation: Regex: Survived: replaced by /^-?\d+(?:\.\D+)?$/
+gates/bin/pins.ts:56: mutation: Regex: Survived: replaced by /\[(.*)\]$/
+gates/bin/pins.ts:56: mutation: Regex: Survived: replaced by /^\[(.*)\]/
+gates/bin/pins.ts:57: mutation: MethodExpression: Survived: replaced by list[1]
+gates/bin/pins.ts:58: mutation: Regex: Survived: replaced by /\{(.*)\}$/
+gates/bin/pins.ts:58: mutation: Regex: Survived: replaced by /^\{(.*)\}/
+gates/bin/pins.ts:63: mutation: StringLiteral: NoCoverage: replaced by ""
+gates/bin/pins.ts:65: mutation: Regex: NoCoverage: replaced by /\s*([^:]+?)\s*:\s*(.*)$/
+gates/bin/pins.ts:65: mutation: Regex: NoCoverage: replaced by /^\s*([^:]+?)\s*:\s*(.*)/
+gates/bin/pins.ts:65: mutation: Regex: NoCoverage: replaced by /^\s([^:]+?)\s*:\s*(.*)$/
+gates/bin/pins.ts:65: mutation: Regex: NoCoverage: replaced by /^\S*([^:]+?)\s*:\s*(.*)$/
+gates/bin/pins.ts:65: mutation: Regex: NoCoverage: replaced by /^\s*([^:])\s*:\s*(.*)$/
+gates/bin/pins.ts:65: mutation: Regex: NoCoverage: replaced by /^\s*([:]+?)\s*:\s*(.*)$/
+gates/bin/pins.ts:65: mutation: Regex: NoCoverage: replaced by /^\s*([^:]+?)\s:\s*(.*)$/
+gates/bin/pins.ts:65: mutation: Regex: NoCoverage: replaced by /^\s*([^:]+?)\S*:\s*(.*)$/
+gates/bin/pins.ts:65: mutation: Regex: NoCoverage: replaced by /^\s*([^:]+?)\s*:\s(.*)$/
+gates/bin/pins.ts:65: mutation: Regex: NoCoverage: replaced by /^\s*([^:]+?)\s*:\S*(.*)$/
+gates/bin/pins.ts:65: mutation: Regex: NoCoverage: replaced by /^\s*([^:]+?)\s*:\s*(.)$/
+gates/bin/pins.ts:66: mutation: StringLiteral: NoCoverage: replaced by ``
+gates/bin/pins.ts:66: mutation: MethodExpression: NoCoverage: replaced by entry
+gates/bin/pins.ts:67: mutation: ArrayDeclaration: NoCoverage: replaced by []
+gates/bin/pins.ts:78: mutation: ConditionalExpression: Survived: replaced by true
+gates/bin/pins.ts:78: mutation: EqualityOperator: Survived: replaced by Object.keys(open.map).length >= 0
+gates/bin/pins.ts:82: mutation: Regex: Survived: replaced by /\s+#.*/
+gates/bin/pins.ts:82: mutation: Regex: Survived: replaced by /\s#.*$/
+gates/bin/pins.ts:82: mutation: Regex: Survived: replaced by /#.*$/
+gates/bin/pins.ts:82: mutation: Regex: Survived: replaced by /^#.*/
+gates/bin/pins.ts:83: mutation: MethodExpression: Survived: replaced by line
+gates/bin/pins.ts:84: mutation: Regex: Survived: replaced by / */
+gates/bin/pins.ts:86: mutation: CallExpression: Survived: replaced by ;
+gates/bin/pins.ts:87: mutation: Regex: Survived: replaced by /([A-Za-z][\w-]*)\s*:(.*)$/
+gates/bin/pins.ts:87: mutation: Regex: Survived: replaced by /^([A-Za-z][\w-]*)\s*:(.*)/
+gates/bin/pins.ts:87: mutation: Regex: Survived: replaced by /^([A-Za-z][\w-]*)\S*:(.*)$/
+gates/bin/pins.ts:88: mutation: MethodExpression: Survived: replaced by line
+gates/bin/pins.ts:89: mutation: StringLiteral: NoCoverage: replaced by "Stryker was here!"
+gates/bin/pins.ts:89: mutation: StringLiteral: NoCoverage: replaced by "Stryker was here!"
+gates/bin/pins.ts:90: mutation: MethodExpression: Survived: replaced by rest
+gates/bin/pins.ts:95: mutation: MethodExpression: Survived: replaced by line
+gates/bin/pins.ts:98: mutation: Regex: Survived: replaced by / *- (.*)$/
+gates/bin/pins.ts:98: mutation: Regex: Survived: replaced by /^ *- (.*)/
+gates/bin/pins.ts:103: mutation: Regex: Survived: replaced by / *([^:]+?)\s*:(.*)$/
+gates/bin/pins.ts:103: mutation: Regex: Survived: replaced by /^ *([^:]+?)\s*:(.*)/
+gates/bin/pins.ts:103: mutation: Regex: Survived: replaced by /^ ([^:]+?)\s*:(.*)$/
+gates/bin/pins.ts:104: mutation: StringLiteral: NoCoverage: replaced by ``
+gates/bin/pins.ts:104: mutation: MethodExpression: NoCoverage: replaced by line
+gates/bin/pins.ts:120: mutation: ConditionalExpression: Survived: replaced by false
+gates/bin/pins.ts:124: mutation: Regex: Survived: replaced by /workspace:(.*)$/
+gates/bin/pins.ts:124: mutation: Regex: Survived: replaced by /^workspace:(.*)/
+gates/bin/pins.ts:130: mutation: ConditionalExpression: Survived: replaced by true
+gates/bin/pins.ts:145: mutation: Regex: Survived: replaced by /pnpm@\d+\.\d+\.\d+(?:\+[\w.-]+)?$/
+gates/bin/pins.ts:145: mutation: Regex: Survived: replaced by /^pnpm@\d+\.\d+\.\d+(?:\+[\w.-]+)?/
+gates/bin/pins.ts:145: mutation: Regex: Survived: replaced by /^pnpm@\d+\.\d+\.\d(?:\+[\w.-]+)?$/
+gates/bin/pins.ts:150: mutation: Regex: Survived: replaced by /v?\d+\.\d+\.\d+$/
+gates/bin/pins.ts:150: mutation: Regex: Survived: replaced by /^v?\d+\.\d+\.\d+/
+gates/bin/pins.ts:150: mutation: Regex: Survived: replaced by /^v?\d+\.\d+\.\d$/
+gates/bin/pins.ts:178: mutation: StringLiteral: Survived: replaced by ""
+gates/bin/pins.ts:185: mutation: StringLiteral: Survived: replaced by ""
+gates/bin/pins.ts:213: mutation: MethodExpression: Survived: replaced by manifests
+gates/bin/pins.ts:214: mutation: ConditionalExpression: Survived: replaced by true
+gates/bin/pins.ts:214: mutation: StringLiteral: Survived: replaced by ""
+gates/bin/pins.ts:217: mutation: ConditionalExpression: Survived: replaced by true
+gates/bin/pins.ts:234: mutation: BlockStatement: Survived: replaced by {}
+gates/bin/pins.ts:275: mutation: ConditionalExpression: Survived: replaced by false
+gates/bin/pins.ts:275: mutation: StringLiteral: Survived: replaced by "Stryker was here!"
+gates/bin/pins.ts:285: mutation: ArrayDeclaration: Survived: replaced by ["Stryker was here"]
+gates/bin/pins.ts:286: mutation: ArrayDeclaration: NoCoverage: replaced by ["Stryker was here"]
+gates/bin/pins.ts:287: mutation: Regex: Survived: replaced by /(.*)\/\*$/
+gates/bin/pins.ts:287: mutation: Regex: Survived: replaced by /^(.*)\/\*/
+gates/bin/pins.ts:291: mutation: MethodExpression: Survived: replaced by dirs
+gates/bin/pins.ts:298: mutation: ConditionalExpression: Survived: replaced by false
+gates/bin/pins.ts:298: mutation: StringLiteral: Survived: replaced by "Stryker was here!"
+gates/bin/pins.ts:316: mutation: ArrowFunction: Survived: replaced by () => undefined
+gates/bin/pins.ts:316: mutation: StringLiteral: NoCoverage: replaced by "Stryker was here!"
+mutation: 94 findings in 2 changed files (814 mutants on changed lines)
+### shard 3: shard 3 exit 1 seconds 433
+gates/bin/plants.ts:349: mutation: record: all: process boundary, covered by the plant job itself: pnpm run gate:plants (CI check Plants) runs every plant through it
+gates/bin/plants.ts:351: mutation: record: all: process boundary, covered by the plant job itself: pnpm run gate:plants (CI check Plants) runs every plant through it
+gates/bin/plants.ts:356: mutation: record: all: process boundary, covered by the plant job itself: pnpm run gate:plants (CI check Plants) runs every plant through it
+gates/bin/plants.ts:358: mutation: record: all: process boundary, covered by the plant job itself: pnpm run gate:plants (CI check Plants) runs every plant through it
+gates/bin/plants.ts:361: mutation: record: all: process boundary, covered by the plant job itself: pnpm run gate:plants (CI check Plants) runs every plant through it
+gates/bin/plants.ts:363: mutation: record: all: process boundary, covered by the plant job itself: pnpm run gate:plants (CI check Plants) runs every plant through it
+gates/bin/plants.ts:366: mutation: record: all: process boundary, covered by the plant job itself: pnpm run gate:plants (CI check Plants) runs every plant through it
+gates/bin/plants.ts:368: mutation: record: all: process boundary, covered by the plant job itself: pnpm run gate:plants (CI check Plants) runs every plant through it
+gates/bin/plants.ts:372: mutation: record: all: process boundary, covered by the plant job itself: pnpm run gate:plants (CI check Plants) runs every plant through it
+gates/bin/plants.ts:374: mutation: record: all: process boundary, covered by the plant job itself: pnpm run gate:plants (CI check Plants) runs every plant through it
+gates/bin/plants.ts:378: mutation: record: all: process boundary, covered by the plant job itself: pnpm run gate:plants (CI check Plants) runs every plant through it
+gates/bin/plants.ts:380: mutation: record: all: process boundary, covered by the plant job itself: pnpm run gate:plants (CI check Plants) runs every plant through it
+gates/bin/plants.ts:382: mutation: record: all: process boundary, covered by the plant job itself: pnpm run gate:plants (CI check Plants) runs every plant through it
+gates/bin/plants.ts:388: mutation: record: all: process boundary, covered by the plant job itself: pnpm run gate:plants (CI check Plants) runs every plant through it
+gates/bin/plants.ts:390: mutation: record: all: process boundary, covered by the plant job itself: pnpm run gate:plants (CI check Plants) runs every plant through it
+gates/bin/plants.ts:392: mutation: record: all: process boundary, covered by the plant job itself: pnpm run gate:plants (CI check Plants) runs every plant through it
+gates/bin/plants.ts:394: mutation: record: all: process boundary, covered by the plant job itself: pnpm run gate:plants (CI check Plants) runs every plant through it
+gates/bin/plants.ts:396: mutation: record: all: process boundary, covered by the plant job itself: pnpm run gate:plants (CI check Plants) runs every plant through it
+gates/bin/plants.ts:398: mutation: record: all: process boundary, covered by the plant job itself: pnpm run gate:plants (CI check Plants) runs every plant through it
+gates/bin/plants.ts:400: mutation: record: all: process boundary, covered by the plant job itself: pnpm run gate:plants (CI check Plants) runs every plant through it
+gates/bin/plants.ts:402: mutation: record: all: process boundary, covered by the plant job itself: pnpm run gate:plants (CI check Plants) runs every plant through it
+gates/bin/plants.ts:405: mutation: record: all: process boundary, covered by the plant job itself: pnpm run gate:plants (CI check Plants) runs every plant through it
+gates/bin/plants.ts:407: mutation: record: all: process boundary, covered by the plant job itself: pnpm run gate:plants (CI check Plants) runs every plant through it
+gates/bin/plants.ts:414: mutation: record: all: process boundary, covered by the plant job itself: pnpm run gate:plants (CI check Plants) runs every plant through it
+gates/bin/plants.ts:417: mutation: record: all: process boundary, covered by the plant job itself: pnpm run gate:plants (CI check Plants) runs every plant through it
+gates/bin/plants.ts:419: mutation: record: all: process boundary, covered by the plant job itself: pnpm run gate:plants (CI check Plants) runs every plant through it
+gates/bin/plants.ts:421: mutation: record: all: process boundary, covered by the plant job itself: pnpm run gate:plants (CI check Plants) runs every plant through it
+gates/bin/plants.ts:423: mutation: record: all: process boundary, covered by the plant job itself: pnpm run gate:plants (CI check Plants) runs every plant through it
+gates/bin/plants.ts:425: mutation: record: all: process boundary, covered by the plant job itself: pnpm run gate:plants (CI check Plants) runs every plant through it
+gates/bin/plants.ts:427: mutation: record: all: process boundary, covered by the plant job itself: pnpm run gate:plants (CI check Plants) runs every plant through it
+gates/bin/plants.ts:429: mutation: record: all: process boundary, covered by the plant job itself: pnpm run gate:plants (CI check Plants) runs every plant through it
+gates/bin/plants.ts:431: mutation: record: all: process boundary, covered by the plant job itself: pnpm run gate:plants (CI check Plants) runs every plant through it
+gates/bin/plants.ts:433: mutation: record: all: process boundary, covered by the plant job itself: pnpm run gate:plants (CI check Plants) runs every plant through it
+gates/bin/plants.ts:435: mutation: record: all: process boundary, covered by the plant job itself: pnpm run gate:plants (CI check Plants) runs every plant through it
+gates/bin/plants.ts:437: mutation: record: all: process boundary, covered by the plant job itself: pnpm run gate:plants (CI check Plants) runs every plant through it
+gates/bin/plants.ts:439: mutation: record: all: process boundary, covered by the plant job itself: pnpm run gate:plants (CI check Plants) runs every plant through it
+gates/bin/plants.ts:442: mutation: record: all: process boundary, covered by the plant job itself: pnpm run gate:plants (CI check Plants) runs every plant through it
+gates/bin/plants.ts:444: mutation: record: all: process boundary, covered by the plant job itself: pnpm run gate:plants (CI check Plants) runs every plant through it
+gates/bin/plants.ts:446: mutation: record: all: process boundary, covered by the plant job itself: pnpm run gate:plants (CI check Plants) runs every plant through it
+gates/bin/plants.ts:449: mutation: record: all: process boundary, covered by the plant job itself: pnpm run gate:plants (CI check Plants) runs every plant through it
+gates/bin/plants.ts:456: mutation: record: all: process boundary, covered by the plant job itself: pnpm run gate:plants (CI check Plants) runs every plant through it
+gates/bin/plants.ts:459: mutation: record: all: process boundary, covered by the plant job itself: pnpm run gate:plants (CI check Plants) runs every plant through it
+gates/bin/plants.ts:463: mutation: record: all: process boundary, covered by the plant job itself: pnpm run gate:plants (CI check Plants) runs every plant through it
+gates/bin/plants.ts:50: mutation: ConditionalExpression: Survived: replaced by true
+gates/bin/plants.ts:50: mutation: StringLiteral: Survived: replaced by "Stryker was here!"
+gates/bin/plants.ts:89: mutation: ConditionalExpression: Survived: replaced by false
+gates/bin/plants.ts:151: mutation: EqualityOperator: Survived: replaced by at < 0
+gates/bin/plants.ts:157: mutation: ConditionalExpression: Survived: replaced by false
+gates/bin/plants.ts:157: mutation: StringLiteral: NoCoverage: replaced by "Stryker was here!"
+gates/bin/plants.ts:166: mutation: ConditionalExpression: Survived: replaced by true
+gates/bin/plants.ts:168: mutation: ConditionalExpression: Survived: replaced by true
+gates/bin/plants.ts:168: mutation: EqualityOperator: Survived: replaced by missing.length >= 0
+gates/bin/plants.ts:168: mutation: StringLiteral: Survived: replaced by ""
+gates/bin/plants.ts:168: mutation: ArrayDeclaration: NoCoverage: replaced by ["Stryker was here"]
+gates/bin/plants.ts:176: mutation: StringLiteral: Survived: replaced by ""
+gates/bin/plants.ts:186: mutation: ConditionalExpression: Survived: replaced by true
+gates/bin/plants.ts:191: mutation: MethodExpression: Survived: replaced by lines
+gates/bin/plants.ts:206: mutation: MethodExpression: Survived: replaced by findings
+gates/bin/plants.ts:206: mutation: ConditionalExpression: Survived: replaced by true
+gates/bin/plants.ts:207: mutation: MethodExpression: Survived: replaced by matches.every(found => found.rest.includes(message))
+gates/bin/plants.ts:229: mutation: ArrayDeclaration: NoCoverage: replaced by ["Stryker was here"]
+gates/bin/plants.ts:229: mutation: ArrayDeclaration: NoCoverage: replaced by []
+gates/bin/plants.ts:229: mutation: StringLiteral: NoCoverage: replaced by ``
+gates/bin/plants.ts:230: mutation: StringLiteral: NoCoverage: replaced by ""
+gates/bin/plants.ts:231: mutation: StringLiteral: NoCoverage: replaced by ""
+gates/bin/plants.ts:238: mutation: StringLiteral: Survived: replaced by ""
+gates/bin/plants.ts:280: mutation: MethodExpression: Survived: replaced by [...(await tools.dirs(dir))]
+gates/bin/plants.ts:316: mutation: MethodExpression: Survived: replaced by [...(await tools.dirs(plantsDir))]
+gates/bin/plants.ts:360: mutation: ConditionalExpression: NoCoverage: replaced by case "repo-tree":
+gates/bin/plants.ts:365: mutation: ConditionalExpression: NoCoverage: replaced by case "commit-repo":
+gates/bin/plants.ts:371: mutation: ConditionalExpression: NoCoverage: replaced by case "mutation-repo":
+gates/bin/plants.ts:404: mutation: BlockStatement: NoCoverage: replaced by {}
+gates/bin/plants.ts:428: mutation: ArrowFunction: NoCoverage: replaced by () => undefined
+gates/bin/plants.ts:430: mutation: MethodExpression: NoCoverage: replaced by join(entry.parentPath, entry.name)
+gates/bin/plants.ts:430: mutation: ArithmeticOperator: NoCoverage: replaced by join(root, path).length - 1
+gates/bin/plants.ts:448: mutation: BlockStatement: NoCoverage: replaced by {}
+mutation: 33 findings in 1 changed file (553 mutants on changed lines)
+### shard 4: shard 4 exit 1 seconds 128
+gates/bin/prefix.ts:98: mutation: record: all: process boundary, covered by gates-integration: gates/test/integration/gates-root.test.ts "prefix --root <tmp> exits 1 with exactly the defect's finding at its repository path"
+gates/bin/prefix.ts:101: mutation: record: all: process boundary, covered by gates-integration: gates/test/integration/gates-root.test.ts "prefix --root <tmp> exits 1 with exactly the defect's finding at its repository path"
+gates/bin/prefix.ts:103: mutation: record: all: process boundary, covered by gates-integration: gates/test/integration/gates-root.test.ts "prefix --root <tmp> exits 1 with exactly the defect's finding at its repository path"
+gates/bin/prefix.ts:105: mutation: record: all: process boundary, covered by gates-integration: gates/test/integration/gates-root.test.ts "prefix --root <tmp> exits 1 with exactly the defect's finding at its repository path"
+gates/bin/prefix.ts:107: mutation: record: all: process boundary, covered by gates-integration: gates/test/integration/gates-root.test.ts "prefix --root <tmp> exits 1 with exactly the defect's finding at its repository path"
+gates/bin/prefix.ts:112: mutation: record: all: process boundary, covered by gates-integration: gates/test/integration/gates-root.test.ts "prefix --root <tmp> exits 1 with exactly the defect's finding at its repository path"
+gates/bin/setup-offline.ts:32: mutation: record: BlockStatement: equivalent, an empty catch leaves record undefined, which the level check below skips
+gates/bin/setup-offline.ts:86: mutation: record: all: process boundary, covered by gates-integration: gates/test/integration/setup-offline.test.ts "exits 2 naming the missing package and pnpm run setup:online on an empty store, without the network"
+gates/bin/setup-offline.ts:89: mutation: record: all: process boundary, covered by gates-integration: gates/test/integration/setup-offline.test.ts "exits 2 naming the missing package and pnpm run setup:online on an empty store, without the network"
+gates/bin/setup-offline.ts:91: mutation: record: all: process boundary, covered by gates-integration: gates/test/integration/setup-offline.test.ts "exits 2 naming the missing package and pnpm run setup:online on an empty store, without the network"
+gates/bin/setup-offline.ts:93: mutation: record: all: process boundary, covered by gates-integration: gates/test/integration/setup-offline.test.ts "exits 2 naming the missing package and pnpm run setup:online on an empty store, without the network"
+gates/bin/setup-offline.ts:95: mutation: record: all: process boundary, covered by gates-integration: gates/test/integration/setup-offline.test.ts "exits 2 naming the missing package and pnpm run setup:online on an empty store, without the network"
+gates/bin/setup-offline.ts:98: mutation: record: all: process boundary, covered by gates-integration: gates/test/integration/setup-offline.test.ts "exits 2 naming Chromium and pnpm run setup:online on an empty browser path, without the network"
+gates/bin/setup-offline.ts:104: mutation: record: all: process boundary, covered by gates-integration: gates/test/integration/setup-offline.test.ts "exits 2 naming the missing package and pnpm run setup:online on an empty store, without the network"
+gates/bin/signoff.ts:106: mutation: record: all: process boundary, covered by gates-integration: gates/test/integration/gates-root.test.ts "signoff --root <tmp> --range <base>..HEAD exits 1 with exactly the finding of the commit without a sign-off"
+gates/bin/signoff.ts:109: mutation: record: all: process boundary, covered by gates-integration: gates/test/integration/gates-root.test.ts "signoff --root <tmp> --range <base>..HEAD exits 1 with exactly the finding of the commit without a sign-off"
+gates/bin/signoff.ts:113: mutation: record: all: process boundary, covered by gates-integration: gates/test/integration/gates-root.test.ts "signoff --root <tmp> --range <base>..HEAD exits 1 with exactly the finding of the commit without a sign-off"
+gates/bin/style-lint.ts:16: mutation: record: all: process boundary, covered by gates-integration: gates/test/integration/gates-root.test.ts "style-lint --root <tmp> exits 1 with exactly the defect's finding at its repository path"
+gates/bin/style-lint.ts:19: mutation: record: all: process boundary, covered by gates-integration: gates/test/integration/gates-root.test.ts "style-lint --root <tmp> exits 1 with exactly the defect's finding at its repository path"
+gates/bin/style-lint.ts:21: mutation: record: all: process boundary, covered by gates-integration: gates/test/integration/gates-root.test.ts "style-lint --root <tmp> exits 1 with exactly the defect's finding at its repository path"
+gates/bin/style-lint.ts:23: mutation: record: all: process boundary, covered by gates-integration: gates/test/integration/gates-root.test.ts "style-lint --root <tmp> exits 1 with exactly the defect's finding at its repository path"
+gates/bin/style-lint.ts:25: mutation: record: all: process boundary, covered by gates-integration: gates/test/integration/gates-root.test.ts "style-lint --root <tmp> exits 1 with exactly the defect's finding at its repository path"
+gates/bin/style-lint.ts:27: mutation: record: all: process boundary, covered by gates-integration: gates/test/integration/gates-root.test.ts "style-lint --root <tmp> exits 1 with exactly the defect's finding at its repository path"
+gates/bin/style-lint.ts:29: mutation: record: all: process boundary, covered by gates-integration: gates/test/integration/gates-root.test.ts "style-lint --root <tmp> exits 1 with exactly the defect's finding at its repository path"
+gates/bin/style-lint.ts:31: mutation: record: all: process boundary, covered by gates-integration: gates/test/integration/gates-root.test.ts "style-lint --root <tmp> exits 1 with exactly the defect's finding at its repository path"
+gates/bin/style-lint.ts:33: mutation: record: all: process boundary, covered by gates-integration: gates/test/integration/gates-root.test.ts "style-lint --root <tmp> exits 1 with exactly the defect's finding at its repository path"
+gates/bin/style-lint.ts:38: mutation: record: all: process boundary, covered by gates-integration: gates/test/integration/gates-root.test.ts "style-lint --root <tmp> exits 1 with exactly the defect's finding at its repository path"
+gates/bin/test-lint.ts:11: mutation: record: all: process boundary, covered by gates-integration
+gates/bin/test-lint.ts:14: mutation: record: all: process boundary, covered by gates-integration
+gates/bin/test-lint.ts:16: mutation: record: all: process boundary, covered by gates-integration
+gates/bin/test-lint.ts:18: mutation: record: all: process boundary, covered by gates-integration
+gates/bin/test-lint.ts:23: mutation: record: all: process boundary, covered by gates-integration
+gates/bin/prefix.ts:25: mutation: Regex: Survived: replaced by /(?<![\w-])font(?:-family)?\S*:([^;{}]*)/gi
+gates/bin/prefix.ts:66: mutation: StringLiteral: Survived: replaced by ""
+gates/bin/prefix.ts:89: mutation: ConditionalExpression: Survived: replaced by true
+gates/bin/prefix.ts:89: mutation: EqualityOperator: Survived: replaced by found.length >= 0
+gates/bin/signoff.ts:36: mutation: StringLiteral: NoCoverage: replaced by "Stryker was here!"
+gates/bin/signoff.ts:36: mutation: StringLiteral: Survived: replaced by "Stryker was here!"
+gates/bin/signoff.ts:36: mutation: StringLiteral: Survived: replaced by "Stryker was here!"
+gates/bin/signoff.ts:36: mutation: StringLiteral: Survived: replaced by "Stryker was here!"
+gates/bin/signoff.ts:45: mutation: Regex: Survived: replaced by /^signed-off-by:(.*)/gim
+gates/bin/signoff.ts:93: mutation: MethodExpression: Survived: replaced by log.stderr
+gates/bin/style-lint.ts:14: mutation: ArrayDeclaration: NoCoverage: replaced by []
+gates/bin/style-lint.ts:14: mutation: StringLiteral: NoCoverage: replaced by ""
+gates/bin/style-lint.ts:14: mutation: StringLiteral: NoCoverage: replaced by ""
+gates/bin/style-lint.ts:14: mutation: StringLiteral: NoCoverage: replaced by ""
+mutation: 14 findings in 5 changed files (390 mutants on changed lines)
+### shard 5: shard 5 exit 0 seconds 143
+gates/bin/test.ts:79: mutation: record: all: process boundary, covered by gates-integration: gates/test/integration/test-command.test.ts "exits 2 naming pnpm run setup:online when Chromium is missing, and runs no test (US1 scenario 9)"
+gates/bin/test.ts:82: mutation: record: all: process boundary, covered by gates-integration: gates/test/integration/test-command.test.ts "exits 2 naming pnpm run setup:online when Chromium is missing, and runs no test (US1 scenario 9)"
+gates/bin/test.ts:86: mutation: record: BlockStatement: equivalent, an empty catch returns undefined as well (no gates-integration case makes Playwright throw)
+gates/bin/test.ts:93: mutation: record: all: process boundary, covered by gates-integration: gates/test/integration/test-command.test.ts "exits 2 naming the override when OCELLE_CHROMIUM_PATH points at no executable"
+gates/bin/test.ts:95: mutation: record: all: process boundary, covered by gates-integration: gates/test/integration/test-command.test.ts "exits 2 naming the override when OCELLE_CHROMIUM_PATH points at no executable"
+gates/bin/test.ts:97: mutation: record: all: process boundary, covered by gates-integration: gates/test/integration/test-command.test.ts "exits 2 naming the override when OCELLE_CHROMIUM_PATH points at no executable"
+gates/bin/test.ts:105: mutation: record: all: process boundary, covered by gates-integration: gates/test/integration/test-command.test.ts "exits 1 naming the failing test as a finding (US1 scenario 5)"
+gates/bin/test.ts:107: mutation: record: all: process boundary, covered by gates-integration: gates/test/integration/test-command.test.ts "exits 1 naming the failing test as a finding (US1 scenario 5)"
+gates/bin/test.ts:109: mutation: record: all: process boundary, covered by gates-integration: gates/test/integration/test-command.test.ts "exits 1 naming the failing test as a finding (US1 scenario 5)"
+gates/bin/test.ts:111: mutation: record: all: process boundary, covered by gates-integration: gates/test/integration/test-command.test.ts "exits 1 naming the failing test as a finding (US1 scenario 5)"
+gates/bin/test.ts:113: mutation: record: all: process boundary, covered by gates-integration: gates/test/integration/test-command.test.ts "exits 1 naming the failing test as a finding (US1 scenario 5)"
+gates/bin/test.ts:115: mutation: record: all: process boundary, covered by gates-integration: gates/test/integration/test-command.test.ts "exits 1 naming the failing test as a finding (US1 scenario 5)"
+gates/bin/test.ts:117: mutation: record: all: process boundary, covered by gates-integration: gates/test/integration/test-command.test.ts "exits 1 naming the failing test as a finding (US1 scenario 5)"
+gates/bin/test.ts:121: mutation: record: all: process boundary, covered by gates-integration: gates/test/integration/test-command.test.ts "exits 1 naming the failing test as a finding (US1 scenario 5)"
+gates/bin/test.ts:124: mutation: record: all: process boundary, covered by gates-integration: gates/test/integration/test-command.test.ts "exits 1 naming the failing test as a finding (US1 scenario 5)"
+gates/bin/test.ts:126: mutation: record: all: process boundary, covered by gates-integration: gates/test/integration/test-command.test.ts "exits 2 naming the override when OCELLE_CHROMIUM_PATH points at no executable"
+gates/bin/test.ts:129: mutation: record: all: process boundary, covered by gates-integration: gates/test/integration/test-command.test.ts "exits 1 naming the failing test as a finding (US1 scenario 5)"
+gates/bin/test.ts:135: mutation: record: all: process boundary, covered by gates-integration: gates/test/integration/test-command.test.ts "exits 1 naming the failing test as a finding (US1 scenario 5)"
+gates/bin/typecheck.ts:12: mutation: record: all: process boundary, covered by gates-integration: gates/test/integration/gates-root.test.ts "typecheck --root <tmp> exits 1 with exactly the defect's finding at its repository path"
+gates/bin/typecheck.ts:15: mutation: record: all: process boundary, covered by gates-integration: gates/test/integration/gates-root.test.ts "typecheck --root <tmp> exits 1 with exactly the defect's finding at its repository path"
+gates/bin/typecheck.ts:17: mutation: record: all: process boundary, covered by gates-integration: gates/test/integration/gates-root.test.ts "typecheck --root <tmp> exits 1 with exactly the defect's finding at its repository path"
+gates/bin/typecheck.ts:19: mutation: record: all: process boundary, covered by gates-integration: gates/test/integration/gates-root.test.ts "typecheck --root <tmp> exits 1 with exactly the defect's finding at its repository path"
+gates/bin/typecheck.ts:24: mutation: record: all: process boundary, covered by gates-integration: gates/test/integration/gates-root.test.ts "typecheck --root <tmp> exits 1 with exactly the defect's finding at its repository path"
+gates/lib/cli.ts:68: mutation: record: all: process boundary, covered by gates-integration: gates/test/integration/test-command.test.ts "exits 0 with a one-line summary when every test passes"
+gates/lib/cli.ts:70: mutation: record: all: process boundary, covered by gates-integration: gates/test/integration/test-command.test.ts "exits 2 when no test file is found (FR-004)"
+gates/lib/cli.ts:76: mutation: record: all: process boundary, covered by gates-integration: gates/test/integration/test-command.test.ts "exits 0 with a one-line summary when every test passes"
+gates/lib/cli.ts:78: mutation: record: all: process boundary, covered by gates-integration: gates/test/integration/test-command.test.ts "exits 0 with a one-line summary when every test passes"
+mutation: 358 mutants on the changed lines of 5 files, none survived; 27 equivalent records
+### shard 6: shard 6 exit 0 seconds 186
+gates/lib/eslint-report.ts:39: mutation: record: BlockStatement: equivalent, an empty catch leaves value undefined, which the check below also rejects
+gates/lib/mutation/report.ts:53: mutation: record: BlockStatement: equivalent, an empty catch leaves value undefined, which the check below also rejects
+mutation: 410 mutants on the changed lines of 6 files, none survived; 2 equivalent records
+### shard 7: shard 7 exit 1 seconds 192
+gates/lib/plant-repo.ts:94: mutation: record: all: process boundary, covered by gates-integration: gates/test/integration/plant-repo.test.ts "buildCommitRepo makes an empty base commit signed off by Plant Base, then one commit per record, with real merges"
+gates/lib/plant-repo.ts:98: mutation: record: all: process boundary, covered by gates-integration: gates/test/integration/plant-repo.test.ts "buildCommitRepo makes an empty base commit signed off by Plant Base, then one commit per record, with real merges"
+gates/lib/plant-repo.ts:100: mutation: record: all: process boundary, covered by gates-integration: gates/test/integration/plant-repo.test.ts "buildCommitRepo makes an empty base commit signed off by Plant Base, then one commit per record, with real merges"
+gates/lib/plant-repo.ts:102: mutation: record: all: process boundary, covered by gates-integration: gates/test/integration/plant-repo.test.ts "buildCommitRepo makes an empty base commit signed off by Plant Base, then one commit per record, with real merges"
+gates/lib/plant-repo.ts:107: mutation: record: all: process boundary, covered by gates-integration: gates/test/integration/plant-repo.test.ts "buildCommitRepo makes an empty base commit signed off by Plant Base, then one commit per record, with real merges"
+gates/lib/plant-repo.ts:109: mutation: record: all: process boundary, covered by gates-integration: gates/test/integration/plant-repo.test.ts "buildCommitRepo makes an empty base commit signed off by Plant Base, then one commit per record, with real merges"
+gates/lib/plant-repo.ts:111: mutation: record: all: process boundary, covered by gates-integration: gates/test/integration/plant-repo.test.ts "buildCommitRepo makes an empty base commit signed off by Plant Base, then one commit per record, with real merges"
+gates/lib/plant-repo.ts:116: mutation: record: all: process boundary, covered by gates-integration: gates/test/integration/plant-repo.test.ts "buildRepoTree copies the configuration set unchanged, lays tree/ over it at repository paths, and links node_modules"
+gates/lib/plant-repo.ts:118: mutation: record: all: process boundary, covered by gates-integration: gates/test/integration/plant-repo.test.ts "buildRepoTree copies the configuration set unchanged, lays tree/ over it at repository paths, and links node_modules"
+gates/lib/plant-repo.ts:120: mutation: record: all: process boundary, covered by gates-integration: gates/test/integration/plant-repo.test.ts "buildRepoTree copies the configuration set unchanged, lays tree/ over it at repository paths, and links node_modules"
+gates/lib/plant-repo.ts:122: mutation: record: all: process boundary, covered by gates-integration: gates/test/integration/plant-repo.test.ts "buildRepoTree copies the configuration set unchanged, lays tree/ over it at repository paths, and links node_modules"
+gates/lib/plant-repo.ts:125: mutation: record: all: process boundary, covered by gates-integration: gates/test/integration/plant-repo.test.ts "buildRepoTree copies the configuration set unchanged, lays tree/ over it at repository paths, and links node_modules"
+gates/lib/plant-repo.ts:130: mutation: record: all: process boundary, covered by gates-integration: gates/test/integration/plant-repo.test.ts "buildRepoTree builds the configuration set alone for a plant without tree/"
+gates/lib/plant-repo.ts:132: mutation: record: all: process boundary, covered by gates-integration: gates/test/integration/plant-repo.test.ts "buildRepoTree builds the configuration set alone for a plant without tree/"
+gates/lib/plant-repo.ts:134: mutation: record: all: process boundary, covered by gates-integration: gates/test/integration/plant-repo.test.ts "buildRepoTree builds the configuration set alone for a plant without tree/"
+gates/lib/plant-repo.ts:140: mutation: record: all: process boundary, covered by gates-integration: gates/test/integration/plant-repo.test.ts "buildRepoTree copies the configuration set unchanged, lays tree/ over it at repository paths, and links node_modules"
+gates/lib/plant-repo.ts:142: mutation: record: all: process boundary, covered by gates-integration: gates/test/integration/plant-repo.test.ts "buildRepoTree copies the configuration set unchanged, lays tree/ over it at repository paths, and links node_modules"
+gates/lib/plant-repo.ts:144: mutation: record: all: process boundary, covered by gates-integration: gates/test/integration/plant-repo.test.ts "buildRepoTree copies the configuration set unchanged, lays tree/ over it at repository paths, and links node_modules"
+gates/lib/plant-repo.ts:154: mutation: record: all: process boundary, covered by gates-integration: gates/test/integration/plant-repo.test.ts "buildCommitRepo makes an empty base commit signed off by Plant Base, then one commit per record, with real merges"
+gates/lib/plant-repo.ts:156: mutation: record: all: process boundary, covered by gates-integration: gates/test/integration/plant-repo.test.ts "buildCommitRepo makes an empty base commit signed off by Plant Base, then one commit per record, with real merges"
+gates/lib/plant-repo.ts:158: mutation: record: all: process boundary, covered by the plant job: gates/plants/signoff/error-empty-range has no commits.txt
+gates/lib/plant-repo.ts:162: mutation: record: all: process boundary, covered by the plant job: gates/plants/signoff/error-empty-range has no commits.txt
+gates/lib/plant-repo.ts:164: mutation: record: all: process boundary, covered by gates-integration: gates/test/integration/plant-repo.test.ts "buildCommitRepo makes an empty base commit signed off by Plant Base, then one commit per record, with real merges"
+gates/lib/plant-repo.ts:166: mutation: record: all: process boundary, covered by gates-integration: gates/test/integration/plant-repo.test.ts "buildCommitRepo makes an empty base commit signed off by Plant Base, then one commit per record, with real merges"
+gates/lib/plant-repo.ts:168: mutation: record: all: process boundary, covered by gates-integration: gates/test/integration/plant-repo.test.ts "buildCommitRepo makes an empty base commit signed off by Plant Base, then one commit per record, with real merges"
+gates/lib/plant-repo.ts:170: mutation: record: all: process boundary, covered by gates-integration: gates/test/integration/plant-repo.test.ts "buildCommitRepo makes an empty base commit signed off by Plant Base, then one commit per record, with real merges"
+gates/lib/plant-repo.ts:172: mutation: record: all: process boundary, covered by gates-integration: gates/test/integration/plant-repo.test.ts "buildCommitRepo makes an empty base commit signed off by Plant Base, then one commit per record, with real merges"
+gates/lib/plant-repo.ts:174: mutation: record: all: process boundary, covered by gates-integration: gates/test/integration/plant-repo.test.ts "buildCommitRepo makes an empty base commit signed off by Plant Base, then one commit per record, with real merges"
+gates/lib/plant-repo.ts:176: mutation: record: all: process boundary, covered by gates-integration: gates/test/integration/plant-repo.test.ts "buildCommitRepo makes an empty base commit signed off by Plant Base, then one commit per record, with real merges"
+gates/lib/plant-repo.ts:179: mutation: record: all: process boundary, covered by gates-integration: gates/test/integration/plant-repo.test.ts "buildCommitRepo makes an empty base commit signed off by Plant Base, then one commit per record, with real merges"
+gates/lib/plant-repo.ts:181: mutation: record: all: process boundary, covered by gates-integration: gates/test/integration/plant-repo.test.ts "buildCommitRepo makes an empty base commit signed off by Plant Base, then one commit per record, with real merges"
+gates/lib/plant-repo.ts:186: mutation: record: all: process boundary, covered by gates-integration: gates/test/integration/plant-repo.test.ts "buildMutationRepo commits the configuration set with base/, then head/ (files only in base/ deleted), node_modules linked and untracked"
+gates/lib/plant-repo.ts:188: mutation: record: all: process boundary, covered by gates-integration: gates/test/integration/plant-repo.test.ts "buildMutationRepo commits the configuration set with base/, then head/ (files only in base/ deleted), node_modules linked and untracked"
+gates/lib/plant-repo.ts:190: mutation: record: all: process boundary, covered by gates-integration: gates/test/integration/plant-repo.test.ts "buildMutationRepo commits the configuration set with base/, then head/ (files only in base/ deleted), node_modules linked and untracked"
+gates/lib/plant-repo.ts:192: mutation: record: all: process boundary, covered by gates-integration: gates/test/integration/plant-repo.test.ts "buildMutationRepo commits the configuration set with base/, then head/ (files only in base/ deleted), node_modules linked and untracked"
+gates/lib/plant-repo.ts:194: mutation: record: all: process boundary, covered by gates-integration: gates/test/integration/plant-repo.test.ts "buildMutationRepo commits the configuration set with base/, then head/ (files only in base/ deleted), node_modules linked and untracked"
+gates/lib/plant-repo.ts:196: mutation: record: all: process boundary, covered by gates-integration: gates/test/integration/plant-repo.test.ts "buildMutationRepo commits the configuration set with base/, then head/ (files only in base/ deleted), node_modules linked and untracked"
+gates/lib/plant-repo.ts:198: mutation: record: all: process boundary, covered by gates-integration: gates/test/integration/plant-repo.test.ts "buildMutationRepo commits the configuration set with base/, then head/ (files only in base/ deleted), node_modules linked and untracked"
+gates/lib/plant-repo.ts:200: mutation: record: all: process boundary, covered by gates-integration: gates/test/integration/plant-repo.test.ts "buildMutationRepo commits the configuration set with base/, then head/ (files only in base/ deleted), node_modules linked and untracked"
+gates/lib/plant-repo.ts:202: mutation: record: all: process boundary, covered by gates-integration: gates/test/integration/plant-repo.test.ts "buildMutationRepo commits the configuration set with base/, then head/ (files only in base/ deleted), node_modules linked and untracked"
+gates/lib/plant-repo.ts:204: mutation: record: all: process boundary, covered by gates-integration: gates/test/integration/plant-repo.test.ts "buildMutationRepo commits the configuration set with base/, then head/ (files only in base/ deleted), node_modules linked and untracked"
+gates/lib/plant-repo.ts:206: mutation: record: all: process boundary, covered by gates-integration: gates/test/integration/plant-repo.test.ts "buildMutationRepo commits the configuration set with base/, then head/ (files only in base/ deleted), node_modules linked and untracked"
+gates/lib/plant-repo.ts:208: mutation: record: all: process boundary, covered by gates-integration: gates/test/integration/plant-repo.test.ts "buildMutationRepo commits the configuration set with base/, then head/ (files only in base/ deleted), node_modules linked and untracked"
+gates/lib/plant-repo.ts:210: mutation: record: all: process boundary, covered by gates-integration: gates/test/integration/plant-repo.test.ts "buildMutationRepo commits the configuration set with base/, then head/ (files only in base/ deleted), node_modules linked and untracked"
+gates/lib/plant-repo.ts:212: mutation: record: all: process boundary, covered by gates-integration: gates/test/integration/plant-repo.test.ts "buildMutationRepo commits the configuration set with base/, then head/ (files only in base/ deleted), node_modules linked and untracked"
+gates/lib/plant-repo.ts:214: mutation: record: all: process boundary, covered by gates-integration: gates/test/integration/plant-repo.test.ts "buildMutationRepo commits the configuration set with base/, then head/ (files only in base/ deleted), node_modules linked and untracked"
+gates/lib/plant-repo.ts:216: mutation: record: all: process boundary, covered by gates-integration: gates/test/integration/plant-repo.test.ts "buildMutationRepo commits the configuration set with base/, then head/ (files only in base/ deleted), node_modules linked and untracked"
+gates/lib/spawn.ts:14: mutation: record: all: process boundary, covered by gates-integration: gates/test/integration/setup-offline.test.ts "exits 2 naming the missing package and pnpm run setup:online on an empty store, without the network"
+gates/lib/spawn.ts:16: mutation: record: all: process boundary, covered by gates-integration: gates/test/integration/setup-offline.test.ts "exits 2 naming the missing package and pnpm run setup:online on an empty store, without the network"
+gates/lib/spawn.ts:18: mutation: record: all: process boundary, covered by gates-integration: gates/test/integration/setup-offline.test.ts "exits 2 naming the missing package and pnpm run setup:online on an empty store, without the network"
+gates/lib/spawn.ts:20: mutation: record: all: process boundary, covered by gates-integration: gates/test/integration/setup-offline.test.ts "exits 2 naming the missing package and pnpm run setup:online on an empty store, without the network"
+gates/lib/spawn.ts:22: mutation: record: all: process boundary, covered by gates-integration: gates/test/integration/setup-offline.test.ts "exits 2 naming the missing package and pnpm run setup:online on an empty store, without the network"
+gates/lib/spawn.ts:24: mutation: record: all: process boundary, covered by gates-integration: gates/test/integration/setup-offline.test.ts "exits 2 naming the missing package and pnpm run setup:online on an empty store, without the network"
+gates/lib/spawn.ts:26: mutation: record: all: process boundary, covered by gates-integration: gates/test/integration/setup-offline.test.ts "exits 2 naming the missing package and pnpm run setup:online on an empty store, without the network"
+gates/lib/spawn.ts:28: mutation: record: all: process boundary, covered by gates-integration: gates/test/integration/setup-offline.test.ts "exits 2 naming the missing package and pnpm run setup:online on an empty store, without the network"
+gates/lib/spawn.ts:30: mutation: record: all: process boundary, covered by gates-integration: gates/test/integration/setup-offline.test.ts "exits 2 naming the missing package and pnpm run setup:online on an empty store, without the network"
+gates/lib/stylelint-report.ts:43: mutation: record: BlockStatement: equivalent, an empty catch leaves value undefined, which the check below also rejects
+gates/lib/plant-repo.ts:48: mutation: Regex: Survived: replaced by /(?:tsconfig.*\.json|eslint(?:\.[\w-]+)?\.config\.\w+|\.eslintrc.*|stylelint\.config\.\w+|\.stylelintrc.*|vitest(?:\.[\w-]+)?\.(?:config|workspace)\.\w+|vite(?:\.[\w-]+)?\.config\.\w+|stryker\.conf(?:ig)?\.\w+)$/
+gates/lib/plant-repo.ts:48: mutation: Regex: Survived: replaced by /^(?:tsconfig.*\.json|eslint(?:\.[\w-]+)?\.config\.\w+|\.eslintrc.*|stylelint\.config\.\w+|\.stylelintrc.*|vitest(?:\.[\w-]+)?\.(?:config|workspace)\.\w+|vite(?:\.[\w-]+)?\.config\.\w+|stryker\.conf(?:ig)?\.\w+)/
+gates/lib/plant-repo.ts:48: mutation: Regex: Survived: replaced by /^(?:tsconfig.*\.json|eslint(?:\.[\w-]+)?\.config\.\w+|\.eslintrc.*|stylelint\.config\.\w+|\.stylelintrc.*|vitest(?:\.[\w-]+)?\.(?:config|workspace)\.\w+|vite(?:\.[\w-])?\.config\.\w+|stryker\.conf(?:ig)?\.\w+)$/
+gates/lib/plant-repo.ts:48: mutation: Regex: Survived: replaced by /^(?:tsconfig.*\.json|eslint(?:\.[\w-]+)?\.config\.\w+|\.eslintrc.*|stylelint\.config\.\w+|\.stylelintrc.*|vitest(?:\.[\w-]+)?\.(?:config|workspace)\.\w+|vite(?:\.[^\w-]+)?\.config\.\w+|stryker\.conf(?:ig)?\.\w+)$/
+gates/lib/plant-repo.ts:48: mutation: Regex: Survived: replaced by /^(?:tsconfig.*\.json|eslint(?:\.[\w-]+)?\.config\.\w+|\.eslintrc.*|stylelint\.config\.\w+|\.stylelintrc.*|vitest(?:\.[\w-]+)?\.(?:config|workspace)\.\w+|vite(?:\.[\W-]+)?\.config\.\w+|stryker\.conf(?:ig)?\.\w+)$/
+gates/lib/plant-repo.ts:57: mutation: Regex: Survived: replaced by /%%(?:\n|$)/m
+gates/lib/plant-repo.ts:57: mutation: Regex: Survived: replaced by /^%%(?:\n)/m
+gates/lib/plant-repo.ts:57: mutation: MethodExpression: Survived: replaced by chunk
+gates/lib/plant-repo.ts:64: mutation: ConditionalExpression: Survived: replaced by false
+gates/lib/plant-repo.ts:65: mutation: ConditionalExpression: Survived: replaced by false
+gates/lib/plant-repo.ts:65: mutation: StringLiteral: NoCoverage: replaced by "Stryker was here!"
+gates/lib/plant-repo.ts:70: mutation: StringLiteral: NoCoverage: replaced by "Stryker was here!"
+gates/lib/plant-repo.ts:70: mutation: StringLiteral: NoCoverage: replaced by "Stryker was here!"
+gates/lib/plant-repo.ts:70: mutation: Regex: Survived: replaced by /([\w-]+): (.*)$/
+gates/lib/plant-repo.ts:70: mutation: Regex: Survived: replaced by /^([\w-]+): (.*)/
+gates/lib/plant-repo.ts:70: mutation: ArrayDeclaration: NoCoverage: replaced by ["Stryker was here"]
+gates/lib/plant-repo.ts:72: mutation: Regex: Survived: replaced by /[^<>]+ <[^<>\s]+>$/
+gates/lib/plant-repo.ts:72: mutation: Regex: Survived: replaced by /^[^<>]+ <[^<>\s]+>/
+gates/lib/plant-repo.ts:76: mutation: Regex: Survived: replaced by /\d+$/
+gates/lib/plant-repo.ts:76: mutation: Regex: Survived: replaced by /^\d+/
+gates/lib/plant-repo.ts:76: mutation: Regex: Survived: replaced by /^\d$/
+gates/lib/plant-repo.ts:79: mutation: ConditionalExpression: Survived: replaced by true
+gates/lib/plant-repo.ts:79: mutation: EqualityOperator: Survived: replaced by n > 0
+gates/lib/plant-repo.ts:80: mutation: ConditionalExpression: Survived: replaced by false
+gates/lib/plant-repo.ts:85: mutation: ConditionalExpression: Survived: replaced by true
+gates/lib/plant-repo.ts:85: mutation: ConditionalExpression: Survived: replaced by false
+gates/lib/plant-repo.ts:85: mutation: EqualityOperator: Survived: replaced by key !== ""
+gates/lib/plant-repo.ts:85: mutation: StringLiteral: Survived: replaced by "Stryker was here!"
+gates/lib/plant-repo.ts:148: mutation: StringLiteral: Survived: replaced by ""
+gates/lib/registry.ts:44: mutation: ConditionalExpression: Survived: replaced by false
+gates/lib/registry.ts:54: mutation: MethodExpression: Survived: replaced by helperJobs.some(job => typeof job === "string" && job !== "")
+gates/lib/registry.ts:54: mutation: ConditionalExpression: Survived: replaced by true
+gates/lib/registry.ts:66: mutation: ObjectLiteral: Survived: replaced by {}
+gates/lib/registry.ts:83: mutation: BooleanLiteral: Survived: replaced by true
+gates/lib/registry.ts:85: mutation: ConditionalExpression: Survived: replaced by false
+gates/lib/registry.ts:85: mutation: Regex: Survived: replaced by /^\s(?:#.*)?$/
+gates/lib/registry.ts:85: mutation: Regex: Survived: replaced by /^\s*(?:#.*)$/
+gates/lib/registry.ts:85: mutation: Regex: Survived: replaced by /^\s*(?:#.)?$/
+gates/lib/registry.ts:86: mutation: Regex: Survived: replaced by / */
+gates/lib/registry.ts:88: mutation: Regex: Survived: replaced by /jobs:\s*$/
+gates/lib/registry.ts:88: mutation: Regex: Survived: replaced by /^jobs:\s*/
+gates/lib/registry.ts:88: mutation: Regex: Survived: replaced by /^jobs:\S*$/
+gates/lib/registry.ts:93: mutation: Regex: Survived: replaced by / *(['"]?)([\w-]+)\1:/
+gates/lib/registry.ts:110: mutation: ArrayDeclaration: Survived: replaced by ["Stryker was here"]
+gates/lib/stylelint-report.ts:54: mutation: MethodExpression: Survived: replaced by line
+gates/lib/stylelint-report.ts:56: mutation: ArrowFunction: Survived: replaced by () => undefined
+gates/lib/stylelint-report.ts:56: mutation: Regex: Survived: replaced by /\w*Error\b/
+gates/lib/stylelint-report.ts:56: mutation: Regex: Survived: replaced by /^\wError\b/
+gates/lib/stylelint-report.ts:56: mutation: Regex: Survived: replaced by /^\W*Error\b/
+gates/lib/stylelint-report.ts:61: mutation: StringLiteral: Survived: replaced by ``
+gates/lib/stylelint-report.ts:85: mutation: Regex: Survived: replaced by / \([^()]*\)/
+mutation: 51 findings in 4 changed files (615 mutants on changed lines)
+### shard 8: shard 8 exit 1 seconds 178
+gates/lib/vitest-report.ts:59: mutation: record: BlockStatement: equivalent, an empty catch leaves value undefined, which the check below also rejects
+gates/lib/tsc-report.ts:27: mutation: Regex: Survived: replaced by /(?:(.+)\((\d+),\d+\): )?error (TS\d+): (.*)$/
+gates/lib/tsc-report.ts:27: mutation: Regex: Survived: replaced by /^(?:(.+)\((\d+),\d+\): )?error (TS\d+): (.*)/
+gates/lib/tsc-report.ts:27: mutation: Regex: Survived: replaced by /^(?:(.+)\((\d),\d+\): )?error (TS\d+): (.*)$/
+gates/lib/tsc-report.ts:34: mutation: UnaryOperator: Survived: replaced by +1
+gates/lib/tsc-report.ts:36: mutation: Regex: Survived: replaced by /\s/
+gates/lib/tsc-report.ts:39: mutation: StringLiteral: NoCoverage: replaced by "Stryker was here!"
+gates/lib/tsc-report.ts:39: mutation: StringLiteral: NoCoverage: replaced by "Stryker was here!"
+gates/lib/tsc-report.ts:58: mutation: MethodExpression: Survived: replaced by line
+gates/lib/tsc-report.ts:60: mutation: Regex: Survived: replaced by /\w*Error\b/
+gates/lib/tsc-report.ts:60: mutation: Regex: Survived: replaced by /^\W*Error\b/
+gates/lib/tsc-report.ts:65: mutation: Regex: Survived: replaced by /TS[56]\d{3}$/
+gates/stylelint/token-only.ts:12: mutation: StringLiteral: Survived: replaced by ""
+gates/stylelint/token-only.ts:14: mutation: StringLiteral: Survived: replaced by ""
+gates/stylelint/token-only.ts:14: mutation: StringLiteral: Survived: replaced by ""
+gates/stylelint/token-only.ts:14: mutation: StringLiteral: Survived: replaced by ""
+gates/stylelint/token-only.ts:16: mutation: StringLiteral: Survived: replaced by ""
+gates/stylelint/token-only.ts:16: mutation: StringLiteral: Survived: replaced by ""
+gates/stylelint/token-only.ts:16: mutation: StringLiteral: Survived: replaced by ""
+gates/stylelint/token-only.ts:16: mutation: StringLiteral: Survived: replaced by ""
+gates/stylelint/token-only.ts:21: mutation: StringLiteral: Survived: replaced by ""
+gates/stylelint/token-only.ts:20: mutation: StringLiteral: Survived: replaced by ""
+gates/stylelint/token-only.ts:23: mutation: StringLiteral: Survived: replaced by ""
+gates/stylelint/token-only.ts:22: mutation: StringLiteral: Survived: replaced by ""
+gates/stylelint/token-only.ts:24: mutation: StringLiteral: Survived: replaced by ""
+gates/stylelint/token-only.ts:25: mutation: StringLiteral: Survived: replaced by ""
+gates/stylelint/token-only.ts:26: mutation: StringLiteral: Survived: replaced by ""
+gates/stylelint/token-only.ts:27: mutation: StringLiteral: Survived: replaced by ""
+gates/stylelint/token-only.ts:28: mutation: StringLiteral: Survived: replaced by ""
+gates/stylelint/token-only.ts:29: mutation: StringLiteral: Survived: replaced by ""
+gates/stylelint/token-only.ts:30: mutation: StringLiteral: Survived: replaced by ""
+gates/stylelint/token-only.ts:32: mutation: StringLiteral: Survived: replaced by ""
+gates/stylelint/token-only.ts:33: mutation: StringLiteral: Survived: replaced by ""
+gates/stylelint/token-only.ts:43: mutation: ConditionalExpression: Survived: replaced by false
+gates/stylelint/token-only.ts:61: mutation: ConditionalExpression: Survived: replaced by true
+gates/stylelint/token-only.ts:61: mutation: LogicalOperator: Survived: replaced by child.type === "div" || child.value === ","
+gates/stylelint/token-only.ts:61: mutation: ConditionalExpression: Survived: replaced by true
+gates/stylelint/token-only.ts:61: mutation: ConditionalExpression: Survived: replaced by true
+gates/stylelint/token-only.ts:62: mutation: MethodExpression: Survived: replaced by node.nodes
+gates/stylelint/token-only.ts:62: mutation: ArithmeticOperator: Survived: replaced by comma - 1
+gates/stylelint/token-only.ts:64: mutation: LogicalOperator: Survived: replaced by name === "" || inCalc
+gates/stylelint/token-only.ts:64: mutation: ConditionalExpression: Survived: replaced by true
+gates/stylelint/token-only.ts:77: mutation: ConditionalExpression: Survived: replaced by false
+gates/stylelint/token-only.ts:77: mutation: BlockStatement: NoCoverage: replaced by {}
+gates/stylelint/token-only.ts:78: mutation: CallExpression: NoCoverage: replaced by ;
+gates/stylelint/token-only.ts:94: mutation: ConditionalExpression: Survived: replaced by false
+gates/stylelint/token-only.ts:94: mutation: ArrayDeclaration: Survived: replaced by []
+mutation: 46 findings in 6 changed files (393 mutants on changed lines)

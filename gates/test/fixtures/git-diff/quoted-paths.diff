@@ -1,0 +1,30 @@
+diff --git a/packages/tokens/src/a b.ts b/packages/tokens/src/a b.ts
+new file mode 100644
+index 0000000..5d90aec
+--- /dev/null
++++ b/packages/tokens/src/a b.ts	
+@@ -0,0 +1 @@
++export const space = 1;
+diff --git a/packages/tokens/src/ok.ts b/packages/tokens/src/ok.ts
+index d6ca325..4721ef8 100644
+--- a/packages/tokens/src/ok.ts
++++ b/packages/tokens/src/ok.ts
+@@ -1 +1,2 @@
+-export const ok = 1;
++export const ok = 2;
++export const more = 3;
+diff --git "a/packages/tokens/src/\303\251 b.ts" "b/packages/tokens/src/\303\251 b.ts"
+new file mode 100644
+index 0000000..67e0719
+--- /dev/null
++++ "b/packages/tokens/src/\303\251 b.ts"	
+@@ -0,0 +1 @@
++export const both = 1;
+diff --git "a/packages/tokens/src/\303\251.ts" "b/packages/tokens/src/\303\251.ts"
+new file mode 100644
+index 0000000..e27549b
+--- /dev/null
++++ "b/packages/tokens/src/\303\251.ts"
+@@ -0,0 +1,2 @@
++export const accent = 1;
++export const two = 2;

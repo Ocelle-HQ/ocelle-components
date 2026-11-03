@@ -1,0 +1,6 @@
+
+Oops! Something went wrong! :(
+
+ESLint: 10.13.0
+
+TypeError: Key "rules": Key "vitest/no-such-rule": Could not find "no-such-rule" in plugin "vitest".

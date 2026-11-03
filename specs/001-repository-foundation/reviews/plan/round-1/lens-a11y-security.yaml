@@ -1,0 +1,146 @@
+schema: review-findings/v1
+complete: true
+phase: plan
+round: 1
+lens: a11y-security
+# Checked: spec.md, plan.md, research.md, data-model.md, quickstart.md, contracts/*, constitution 1.3.1,
+# triage/001-repository-foundation.md, reviews/spec/check-1..3. Round 1, so no earlier refute/verify to respect.
+# Probes: npm registry (npm view <pkg> time[<ver>], dist), npm pack @vitest/browser@5.1.0, ivya, stylelint
+# dependency list; gh api repos/Ocelle-HQ/ocelle-components (owner type, visibility). No repository file changed.
+findings:
+  - id: PLAN-A11Y-SECURITY-1-001
+    severity: 3
+    title: "The 'accessibility tree' that browser tests read is a JavaScript emulation, not Chromium's tree, and it ignores ElementInternals"
+    evidence:
+      - artifact: "spec.md US1 scenario 6: 'Given a test that renders a custom element and reads the accessibility tree ... Then the test runs in a real browser engine'; plan.md Constitution Check III: 'Real-Chromium tests (FR-005) make accessibility-tree tests possible from #5/#7 on'; research.md R-03 Rationale: 'real Chromium for elements (constitution III and V need the real accessibility tree)'"
+      - artifact: "constitution III: elements that need an ID reference 'use ElementInternals'; 'ARIA state set on a host ... reaches the real inner control'"
+      - code: "npm pack @vitest/browser@5.1.0: dist/expect-element.js implements toHaveAccessibleName/toHaveRole in page JavaScript (function X ... computes the name in-page); package.json depends on 'ivya' ^1.8.2, a port of Playwright's injected roleUtils (ivya/dist/src-*.js getAriaRole, getElementAccessibleName)"
+      - code: "grep -c 'internals' in ivya/package/dist/*.js -> 0: the in-page role/name computation has no notion of ElementInternals default semantics (internals.role, internals.ariaLabel)"
+    claim: |
+      Vitest browser mode runs the test inside the page. Its role and accessible-name matchers and getByRole locators
+      compute ARIA in JavaScript (ivya), not from Chromium's accessibility tree, which is only reachable from outside
+      the page (CDP Accessibility domain). The plan treats 'runs in Chromium' as equivalent to 'reads the real
+      accessibility tree' and plans nothing more: no helper, no plant. Constitution III depends on exactly the cases
+      where the emulation and Chromium disagree: names and roles set through ElementInternals, ARIA crossing shadow
+      roots, and host-to-inner-control delegation. Element features from #7 on would write accessibility tests that
+      pass or fail against the emulation, while assistive technology reads Chromium's tree. US1 scenario 6 cannot be
+      shown true by the planned plant ('a failing test needing Chromium'), because that plant does not read any
+      accessibility tree.
+    remedies:
+      - "Add a Vitest browser command (server side, Playwright CDPSession: Accessibility.getPartialAXTree for the element's backend node) exposed as a test helper in this feature, state in research.md that the built-in role/name matchers are emulated and are not the evidence for constitution III, and add a unit-tests plant whose failure only the real tree reports (a custom element whose role or name comes only from ElementInternals)."
+      - "Narrow US1 scenario 6 and the plan's Constitution Check III wording to 'tests run in Chromium', and record in Complexity Tracking that reading the real accessibility tree is delivered by the first element feature (#7), with its sunset."
+
+  - id: PLAN-A11Y-SECURITY-1-002
+    severity: 3
+    title: "Deferred accessibility and no-network gates have sunsets that do not stop an element from merging without them"
+    evidence:
+      - artifact: "plan.md Complexity Tracking: 'Storybook build, visual regression and axe gates absent | ... sunset when #10 merges'; 'Contrast gate absent | ... Sunset when #5 merges'; 'CSP gate does not check remote loads | ... Sunset with the first element feature'"
+      - artifact: "spec.md FR-026: 'custom-elements manifest check (the first element feature, #7, or #10, whichever lands first)': the spec expects #7 may land before #10. FR-026's list for gates/README.md does not include the remote-load (no-network) check at all"
+      - artifact: "constitution III (NON-NEGOTIABLE): 'axe reports no serious or critical finding on any story', 'Text and non-text contrast is verified by an automated check'; constitution IV: 'Elements make no network requests'"
+      - artifact: "triage/001-repository-foundation.md: #7, #8, #9, #12-#17 are 'blocked by #4' only, not by #10 or #5"
+    claim: |
+      A sunset of 'when #10 merges' is a promise, not a condition. Nothing in the plan, gates/README.md or the gate
+      registry stops #7 (or any element issue, all of which are blocked only by #4) from merging the first
+      interactive element with no axe gate, no contrast gate and no remote-load check. That is a NON-NEGOTIABLE
+      principle (III) and a 'no exception' principle (IV) waived for shipped elements, which goes beyond what the
+      operator approved for this feature (a foundation that renders nothing). The remote-load deferral is also
+      invisible: it is only in plan.md, not in the FR-026 list, so nobody reading gates/README.md learns of it.
+    remedies:
+      - "Change the sunsets to entry conditions: no feature that adds an element to @ocelle/elements may merge until the axe gate (#10), the contrast gate (#5) and the remote-load check exist; record this in gates/README.md beside each deferred gate, add the remote-load check to the FR-026 list with an owning issue, and make the gate registry (or a check in the plant job) fail when packages/elements/src defines a custom element while those gates are absent from gates.json."
+      - "Keep the sunsets, but record the risk in Complexity Tracking with explicit operator approval, and add the remote-load check to FR-026's gates/README.md list with an owning issue."
+
+  - id: PLAN-A11Y-SECURITY-1-003
+    severity: 3
+    title: "CI runs dependency install scripts and pull-request code with an unspecified GITHUB_TOKEN scope and persisted credentials"
+    evidence:
+      - artifact: "research.md R-16: 'one workflow .github/workflows/ci.yml on pull_request, one job per gate ... Actions are pinned by full commit SHA. A shared setup step ... runs pnpm run setup:online'; contracts/ci-checks.md 'Every job: checkout, ... pnpm run setup:online'; nothing in plan, research or contracts mentions 'permissions:' or 'persist-credentials'"
+      - code: "gh api repos/Ocelle-HQ/ocelle-components -> owner type Organization, visibility internal: pull requests come from branches of the same repository (agents push branches here), so the pull_request token is not the read-only fork token"
+      - code: "ls <repo>/.github -> does not exist: the workflow and its permissions are entirely this feature's decision"
+    claim: |
+      Each of twelve jobs runs a full dependency install (third-party code, some 15 dev tools and their transitive
+      trees) and then runs code from the pull request itself (tests, plants, gate scripts). For same-repository
+      pull requests the GITHUB_TOKEN gets the repository's default workflow permissions, which for an organisation
+      repository may be read-write, and actions/checkout leaves that token in .git/config by default. A compromised
+      dev dependency or a malicious agent-written test could then push to branches, alter workflows' outputs or
+      tamper with caches. The constitution's supply-chain section and the triage record's 'security behaviour' scope
+      (supply-chain pins) make this in scope; pinning actions by SHA alone does not cover it.
+    remedies:
+      - "In R-16 and contracts/ci-checks.md: top-level 'permissions: contents: read' (and nothing else) for ci.yml, 'persist-credentials: false' on checkout (the sign-off job fetches history with the token passed only to that fetch step), no secrets referenced by any job, and a configuration-level check (or a plant in the plant job) that fails when ci.yml lacks the permissions block or grants write."
+
+  - id: PLAN-A11Y-SECURITY-1-004
+    severity: 2
+    title: "The CSP check's text patterns miss common inline-handler and inline-style forms and flag harmless identifiers"
+    evidence:
+      - artifact: "research.md R-11: patterns '<script (inline: no src=)', '<style', ' style=', ' on[a-z]+=', 'eval(', 'new Function', 'Function( called as a constructor', setTimeout/setInterval 'whose first argument is a string literal'"
+      - artifact: "spec.md FR-021: the check MUST fail on 'a style attribute, an event handler attribute (on*=) ... in markup (HTML files and HTML templates inside JavaScript)'; constitution IV: built output runs under 'default-src 'none'; script-src 'self'; style-src 'self'' 'with no exception', 'No inline script'"
+      - code: "HTML attribute separators include tab, LF, FF, CR and '/': a Lit template written over several lines ('<div\\n    style=...', '<button\\n  onclick=...') or '<svg/onload=...' does not contain ' style=' or ' on[a-z]+=' (leading U+0020) and passes R-11"
+      - code: "'eval(' is a substring of 'retrieval(' and 'Function(' of 'isFunction(' / 'createFunction(': plain identifiers in built JS would be reported as defects; '(0, eval)(s)' (indirect eval) contains no 'eval(' and passes"
+    claim: |
+      The gate is the only evidence for constitution IV in this feature, and the plants (contracts/plants.md: one
+      per construct, each written in the pattern's own form) cannot show its blind spots, because every plant uses
+      the single-space form the regex expects. Multi-line Lit templates are the normal style in element code, so the
+      first element with a 'style=' or 'on...=' attribute on its own line ships past the gate. 'javascript:' URLs
+      (inline script under script-src without 'unsafe-inline') are not in FR-021 or R-11 at all. The false positives
+      push contributors toward weakening the pattern list.
+    remedies:
+      - "Replace the text patterns in R-11 with a tokenizer pass: parse HTML files and the static parts of tagged html templates with an HTML tokenizer (attributes found regardless of separator), and parse JS with an ES parser to find eval / Function / indirect eval / string-argument timers by AST; add FR-021 'javascript: URLs in markup'; add plants for a newline-separated style attribute, a '/onload=' handler, indirect eval and a 'javascript:' href, and pass plants for 'retrieval(' and 'isFunction('."
+      - "Keep a cheap static scan but add a runtime check: load each package's built output in the already-installed Chromium from a local file server sending the exact constitution IV header, and fail on any securitypolicyviolation event; plants are built-output pages that trigger each violation."
+
+  - id: PLAN-A11Y-SECURITY-1-005
+    severity: 2
+    title: "Supply-chain policy stops at exact pins: same-day releases are pinned, and install scripts have no policy"
+    evidence:
+      - artifact: "research.md header: 'Versions read from the npm registry and nodejs.org on 2026-11-02'; plan.md Technical Context pins Vitest 5.1.0 and @vitest/browser-playwright 5.1.0"
+      - code: "npm view vitest time[5.1.0] -> 2026-11-02T16:12:37Z; npm view @vitest/browser-playwright time[5.1.0] -> 2026-11-02T16:11:35Z: both published hours before they were chosen. Others: eslint 10.14.0 2026-10-30, pnpm 12.16.1 2026-10-27, typescript-eslint 8.72.1 2026-10-26"
+      - artifact: "plan.md, research.md R-04, R-14: no mention of a release-age cooldown, of which dependencies may run lifecycle (install/postinstall) scripts, or of registry signature/provenance verification; R-14's pins gate checks only exact versions, lockfile match and the runtime/package-manager pins"
+    claim: |
+      Exact pins plus a lockfile freeze whatever was resolved, including a release that is hours old: the window in
+      which compromised npm releases are usually found and unpublished. Every gate job runs 'pnpm install' on CI, so
+      a bad dev dependency runs with the job's token (see 003). The constitution asks for pinning and a committed
+      lockfile; the triage record names 'the supply-chain pins' as security behaviour of this mission. Without a
+      stated policy the first implementer who hits a 'build scripts ignored' warning has no rule for answering it.
+    remedies:
+      - "Add to research.md and pnpm-workspace.yaml: a minimum release age for new versions (pnpm minimumReleaseAge, for example 7 days), re-pinning Vitest and @vitest/browser-playwright to a release outside that window; an explicit, empty-by-default allow-list of dependencies permitted to run install scripts (with strict failure on others); and extend the pins gate and its plants to fail when either setting is missing or loosened."
+
+  - id: PLAN-A11Y-SECURITY-1-006
+    severity: 2
+    title: "The style-lint plugin imports postcss-value-parser, an undeclared transitive dependency"
+    evidence:
+      - artifact: "research.md R-07: 'every declaration value is parsed (postcss-value-parser, a Stylelint dependency)'; plan.md Technical Context dependency list does not include postcss-value-parser or postcss (peer of postcss-lit)"
+      - code: "npm view stylelint@17.16.0 dependencies -> \"postcss-value-parser\": \"^4.2.0\" (a range, resolved by the lockfile, not by a manifest of this repository); npm view postcss-lit@1.4.1 peerDependencies -> postcss ^8.3.11"
+      - artifact: "constitution Technology: 'every dependency is pinned exactly'; spec FR-027: the pins check fails when 'any manifest declares a dependency by anything other than an exact version'"
+    claim: |
+      gates/stylelint/token-only.ts would import a package no manifest declares. Under pnpm's isolated node_modules a
+      root file cannot resolve a transitive dependency, so either the import fails or someone turns on hoisting
+      (public-hoist-pattern / shamefully-hoist), which reopens phantom dependencies for every package. Even if it
+      resolves, its version is chosen by Stylelint's range, not pinned by this repository, and the pins gate cannot
+      see it, so an upstream Stylelint bump silently swaps the parser the token-only gate depends on.
+    remedies:
+      - "Declare postcss-value-parser (and postcss, the peer of postcss-lit) as exact devDependencies in the root manifest, list them in plan.md Technical Context, and state in R-10/R-14 that hoisting stays off."
+
+  - id: PLAN-A11Y-SECURITY-1-007
+    severity: 2
+    title: "@MOES-Media as CODEOWNERS owner and private security contact is unverified, and the planned test cannot tell"
+    evidence:
+      - artifact: "spec.md FR-032: until 1.0.0 SECURITY.md names '@MOES-Media ... as the private contact and tell reporters to contact it directly and privately'; FR-035 and research.md R-17: '.github/CODEOWNERS (* @MOES-Media)'; SC-006 / R-17: governance.test.ts checks the text of the files only"
+      - code: "gh api repos/Ocelle-HQ/ocelle-components -> owner Ocelle-HQ (Organization), visibility internal; knowledge/speckit-flows/flows/ocelle-plan-squad.md:12 shows MOES-Media owning repositories (github.com/MOES-Media/kitty-mission-ui). Whether MOES-Media is a user or an organisation could not be confirmed from this session (users/ endpoint blocked)"
+    claim: |
+      GitHub accepts only users and '@org/team' entries with write access in CODEOWNERS; a bare organisation handle,
+      or a user without write access to Ocelle-HQ/ocelle-components, is an unknown owner and GitHub ignores the line,
+      so review-by-owner silently does not apply. GitHub also has no direct messages, so a handle alone gives a
+      reporter no private route: 'contact it directly and privately' names no medium. The SC-006 test checks strings
+      and passes in both failure cases, so the security contact can ship unusable with every gate green.
+    remedies:
+      - "Add to research.md R-17 a verification step: confirm MOES-Media is a user account (or replace it with an @Ocelle-HQ/<team>) with write access, and check GitHub's CODEOWNERS errors endpoint for the file after it lands (recorded in the phase review); have SECURITY.md state the concrete private medium reachable through that handle (operator to name it, as an amendment to the FR-032 decision)."
+
+  - id: PLAN-A11Y-SECURITY-1-008
+    severity: 1
+    title: "Sign-off plants need author identities, and the plan does not keep them free of personal data"
+    evidence:
+      - artifact: "contracts/plants.md signoff row: 'commits: commits.txt in the record format' with author 'Name <email>' (data-model.md Commit record); spec FR-034: 'No file of this feature MAY contain ... personal data' (public GitHub handles only are allowed)"
+    claim: |
+      Each sign-off plant holds author names and e-mail addresses. Copying a real commit's identity (the operator's or
+      an agent's real address) into a committed fixture is personal data that FR-034 forbids and that the story
+      review alone must catch, since this feature has no secret or PII scan.
+    remedies:
+      - "State in contracts/plants.md that every identity in a plant uses a reserved domain (example.com, RFC 2606) and an invented name, and have the plant job reject a commits.txt whose e-mail domain is not reserved."

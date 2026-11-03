@@ -1,0 +1,11 @@
+{
+  "expect": "fail",
+  "why": "minimumReleaseAgeStrict: false (FR-027).",
+  "findings": [
+    {
+      "location": "pnpm-workspace.yaml",
+      "rule": "release-age",
+      "message": "minimumReleaseAgeStrict is false"
+    }
+  ]
+}

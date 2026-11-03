@@ -1,0 +1,4 @@
+{
+  "expect": "pass",
+  "why": "A changed line whose test checks it: every mutant is killed (FR-011)."
+}

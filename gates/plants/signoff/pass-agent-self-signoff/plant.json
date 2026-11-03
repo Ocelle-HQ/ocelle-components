@@ -1,0 +1,4 @@
+{
+  "expect": "pass",
+  "why": "A commit authored by an agent identity and signed off by that same identity passes (FR-023)."
+}

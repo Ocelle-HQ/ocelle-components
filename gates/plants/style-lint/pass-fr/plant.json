@@ -1,0 +1,4 @@
+{
+  "expect": "pass",
+  "why": "An fr length (grid-template-columns: 1fr) is allowed (FR-024)."
+}

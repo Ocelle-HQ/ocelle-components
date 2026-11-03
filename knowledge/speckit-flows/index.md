@@ -35,6 +35,7 @@ okf_version: "0.2"
 # Findings
 
 * [Headless agent steps need permissions](findings/headless-permissions.md) - claude -p cannot answer permission prompts; resolved with a committed allowlist
+* [First interactive run (mission 001)](findings/first-run-001.md) - Flow defects found while running /ocelle-run on issue #4
 * [The analysis was not saved](findings/analysis-not-saved.md) - /speckit-analyze only printed its report; it is now saved as analysis-report.md
 * [Review evidence was left uncommitted](findings/review-evidence-uncommitted.md) - The review committed its verdict but not the check results it relied on
 

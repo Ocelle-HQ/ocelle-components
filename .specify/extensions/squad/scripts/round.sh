@@ -8,5 +8,8 @@ base="$fd/reviews/plan"; mkdir -p "$base"
 r=$(( $(squad_latest "$base" round- "") + 1 ))
 mkdir -p "$base/round-$r"
 git rev-parse HEAD > "$base/round-$r/base.sha"
+# Commit the round's opening alone, so the tree is clean before the lenses run (their scope check counts files).
+git add -- "$base/round-$r/base.sha"
+git commit -q -s -m "docs(plan): open squad round $r" -- "$base/round-$r/base.sha"
 if (( r == 1 )); then lenses='["correctness","a11y-security","testability","fresh"]'; else lenses='["fresh"]'; fi
 printf '{"round":%d,"lenses":%s,"dir":"%s"}\n' "$r" "$lenses" "$(squad_json_escape "$base/round-$r")"

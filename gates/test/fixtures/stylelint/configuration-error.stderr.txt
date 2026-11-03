@@ -1,0 +1,2 @@
+ConfigurationError: Could not find "./gates/stylelint/token-only.ts". Do you need to install the package or use the "configBasedir" option?
+    at getModulePath (file:///work/repo/node_modules/stylelint/lib/utils/getModulePath.mjs:29:9)

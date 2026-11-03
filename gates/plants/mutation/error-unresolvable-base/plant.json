@@ -1,0 +1,6 @@
+{
+  "expect": "error",
+  "why": "A --base that does not resolve in the temporary repository (contracts/plants.md): the plant presents refs/heads/no-such-base as {base} instead of its base commit, so the gate could not run (contracts/gate-cli.md).",
+  "cause": "mutation: could not run: --base refs/heads/no-such-base does not resolve to a commit",
+  "base": "refs/heads/no-such-base"
+}

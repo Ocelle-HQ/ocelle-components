@@ -1,0 +1,4 @@
+{
+  "expect": "pass",
+  "why": "A passing test in project tokens alone, every other project without a test file, passes (US1 scenario 10)."
+}

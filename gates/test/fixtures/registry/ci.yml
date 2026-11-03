@@ -1,0 +1,79 @@
+name: CI
+on:
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  typecheck:
+    name: Typecheck
+    runs-on: ubuntu-latest
+    steps:
+      - run: pnpm run gate:typecheck
+  lint:
+    name: Code lint
+    runs-on: ubuntu-latest
+    steps:
+      - run: pnpm run gate:lint
+  # A comment between jobs.
+  style-lint:
+    name: Style lint
+    runs-on: ubuntu-latest
+    steps:
+      - run: pnpm run gate:style-lint
+  "unit-tests":
+    name: Unit tests
+    runs-on: ubuntu-latest
+    steps:
+      - run: pnpm run gate:unit-tests
+  test-lint:
+    name: Test lint
+    steps:
+      - run: pnpm run gate:test-lint
+  mutation-plan:
+    outputs:
+      shards: ${{ steps.plan.outputs.shards }}
+    steps:
+      - id: plan
+        run: pnpm run gate:mutation -- --plan
+  mutation-shard:
+    needs: mutation-plan
+    strategy:
+      matrix:
+        shard: ${{ fromJSON(needs.mutation-plan.outputs.shards) }}
+    steps:
+      - run: pnpm run gate:mutation
+  mutation:
+    name: Mutation testing
+    needs: [mutation-plan, mutation-shard]
+    if: always()
+    steps:
+      - run: "true"
+  csp:
+    name: Content security
+    steps:
+      - run: pnpm run gate:csp
+  prefix:
+    name: Prefix
+    steps:
+      - run: pnpm run gate:prefix
+  config-copies:
+    name: Story config copies
+    steps:
+      - run: pnpm run gate:config-copies
+  pins:
+    name: Install and pins
+    steps:
+      - run: pnpm run gate:pins
+  signoff:
+    name: Sign-off
+    steps:
+      - run: pnpm run gate:signoff
+  plants:
+    name: Plants
+    steps:
+      - run: pnpm run gate:plants
+
+env:
+  not-a-job: 1

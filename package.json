@@ -1,0 +1,48 @@
+{
+  "name": "ocelle-components",
+  "private": true,
+  "type": "module",
+  "packageManager": "pnpm@12.16.1",
+  "engines": {
+    "node": "26.13.0",
+    "pnpm": "12.16.1"
+  },
+  "scripts": {
+    "test": "node gates/bin/test.ts",
+    "setup:online": "pnpm install --frozen-lockfile && pnpm exec playwright install chromium",
+    "setup:offline": "node gates/bin/setup-offline.ts",
+    "gate:unit-tests": "node gates/bin/test.ts",
+    "gate:config-copies": "node gates/bin/config-copies.ts",
+    "gate:test-lint": "node gates/bin/test-lint.ts",
+    "gate:mutation": "node gates/bin/mutation.ts",
+    "gate:typecheck": "node gates/bin/typecheck.ts",
+    "gate:lint": "node gates/bin/lint.ts",
+    "gate:style-lint": "node gates/bin/style-lint.ts",
+    "gate:csp": "node gates/bin/csp.ts",
+    "gate:prefix": "node gates/bin/prefix.ts",
+    "gate:signoff": "node gates/bin/signoff.ts",
+    "gate:pins": "node gates/bin/pins.ts",
+    "gate:plants": "node gates/bin/plants.ts"
+  },
+  "devDependencies": {
+    "@eslint/js": "10.0.1",
+    "@stryker-mutator/core": "10.1.1",
+    "@stryker-mutator/typescript-checker": "10.1.1",
+    "@stryker-mutator/vitest-runner": "10.1.1",
+    "@types/node": "26.6.5",
+    "@vitest/browser-playwright": "5.0.5",
+    "@vitest/eslint-plugin": "1.6.28",
+    "eslint": "10.13.0",
+    "jiti": "2.7.0",
+    "parse5": "8.0.1",
+    "playwright": "1.64.1",
+    "postcss": "8.5.31",
+    "postcss-lit": "1.4.1",
+    "postcss-value-parser": "4.2.0",
+    "stylelint": "17.16.0",
+    "typescript": "6.0.3",
+    "typescript-eslint": "8.72.0",
+    "vite": "8.3.5",
+    "vitest": "5.0.5"
+  }
+}

@@ -1,0 +1,11 @@
+{
+  "expect": "fail",
+  "why": "A named colour (color: red) is rejected (FR-024).",
+  "findings": [
+    {
+      "location": "packages/styles/src/x.css:3",
+      "rule": "ocelle/token-only",
+      "message": "red"
+    }
+  ]
+}

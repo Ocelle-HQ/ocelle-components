@@ -1,0 +1,11 @@
+{
+  "expect": "fail",
+  "why": "A raw var() fallback (margin: var(--ocelle-x, 4px)) is rejected (FR-024).",
+  "findings": [
+    {
+      "location": "packages/styles/src/x.css:3",
+      "rule": "ocelle/token-only",
+      "message": "4px"
+    }
+  ]
+}

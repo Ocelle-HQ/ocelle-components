@@ -1,0 +1,11 @@
+{
+  "expect": "fail",
+  "why": "A minimumReleaseAgeExclude entry loosens the release-age window (FR-027).",
+  "findings": [
+    {
+      "location": "pnpm-workspace.yaml",
+      "rule": "release-age",
+      "message": "jiti"
+    }
+  ]
+}

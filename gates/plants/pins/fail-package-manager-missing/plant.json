@@ -1,0 +1,10 @@
+{
+  "expect": "fail",
+  "why": "packageManager is missing (FR-027).",
+  "findings": [
+    {
+      "location": "package.json",
+      "rule": "package-manager"
+    }
+  ]
+}

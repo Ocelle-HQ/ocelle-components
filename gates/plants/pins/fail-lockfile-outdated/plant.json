@@ -1,0 +1,10 @@
+{
+  "expect": "fail",
+  "why": "The lockfile does not match the manifests: a frozen install would change it (FR-027).",
+  "findings": [
+    {
+      "location": "pnpm-lock.yaml",
+      "rule": "lockfile"
+    }
+  ]
+}

@@ -1,0 +1,4 @@
+{
+  "expect": "pass",
+  "why": "setTimeout with a function argument is allowed (FR-021)."
+}

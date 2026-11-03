@@ -1,0 +1,74 @@
+Scope: all 4 workspace projects
+✓ Lockfile passes supply-chain policies (verified 22h ago)
+Lockfile is up to date, resolution step is skipped
+Packages are hard linked from the content-addressable store to the virtual store.
+  Content-addressable store is at: <pnpm store>
+  Virtual store is at:             node_modules/.pnpm
+Packages: +405
+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+Progress: resolved 405, reused 405, downloaded 0, added 405, done
+
+devDependencies:
++ @eslint/js 10.0.1
++ @stryker-mutator/core 10.1.1
++ @stryker-mutator/typescript-checker 10.1.1
++ @stryker-mutator/vitest-runner 10.1.1
++ @types/node 26.6.5
++ @vitest/browser-playwright 5.0.5
++ @vitest/eslint-plugin 1.6.28
++ eslint 10.13.0
++ jiti 2.7.0
++ parse5 8.0.1
++ playwright 1.64.1
++ postcss 8.5.31
++ postcss-lit 1.4.1
++ postcss-value-parser 4.2.0
++ stylelint 17.16.0
++ typescript 6.0.3
++ typescript-eslint 8.72.0
++ vite 8.3.5
++ vitest 5.0.5
+
+Done in 579ms using pnpm v12.16.1
+$ node gates/bin/setup-offline.ts
+setup: installed offline; Chromium at /opt/pw-browsers/chromium_headless_shell-1243/chrome-headless-shell-linux64/chrome-headless-shell
+$ node gates/bin/test.ts
+gates/test/mutation-ranges.test.ts:234: unit-tests: changedFiles: the headers git writes (phase 3 round 7, O7-01) reads a tab-suffixed header (a path with a space) as the path without the tab, with its ranges: AssertionError: expected [] to deeply equal [ { …(3) } ]
+gates/test/mutation-ranges.test.ts:238: unit-tests: changedFiles: the headers git writes (phase 3 round 7, O7-01) reads a quoted header with octal escapes (a non-ASCII path) as the UTF-8 path, with its ranges: AssertionError: expected [] to deeply equal [ { …(3) } ]
+gates/test/mutation-ranges.test.ts:242: unit-tests: changedFiles: the headers git writes (phase 3 round 7, O7-01) reads all files of a diff holding a tab-suffixed, a quoted, a quoted and tab-suffixed, and a plain header: AssertionError: expected [ { …(3) } ] to deeply equal [ { …(3) }, { …(3) }, { …(3) }, …(1) ]
+gates/test/mutation-ranges.test.ts:251: unit-tests: changedFiles: the headers git writes (phase 3 round 7, O7-01) decodes every C escape git writes in a quoted header: AssertionError: expected [] to deeply equal [ { …(3) } ]
+gates/test/mutation-ranges.test.ts:282: unit-tests: changedFiles: the headers git writes (phase 3 round 7, O7-01) fails naming the header on a mnemonic prefix: AssertionError: expected [Function] to throw an error
+gates/test/mutation-ranges.test.ts:282: unit-tests: changedFiles: the headers git writes (phase 3 round 7, O7-01) fails naming the header on no prefix: AssertionError: expected [Function] to throw an error
+gates/test/mutation-ranges.test.ts:282: unit-tests: changedFiles: the headers git writes (phase 3 round 7, O7-01) fails naming the header on a quoted mnemonic prefix: AssertionError: expected [Function] to throw an error
+gates/test/mutation-ranges.test.ts:282: unit-tests: changedFiles: the headers git writes (phase 3 round 7, O7-01) fails naming the header on an unterminated quote: AssertionError: expected [Function] to throw an error
+gates/test/mutation-ranges.test.ts:282: unit-tests: changedFiles: the headers git writes (phase 3 round 7, O7-01) fails naming the header on a quote ending in an escape: AssertionError: expected [Function] to throw an error
+gates/test/mutation-ranges.test.ts:282: unit-tests: changedFiles: the headers git writes (phase 3 round 7, O7-01) fails naming the header on an unknown escape: AssertionError: expected [Function] to throw an error
+gates/test/mutation-ranges.test.ts:282: unit-tests: changedFiles: the headers git writes (phase 3 round 7, O7-01) fails naming the header on a short octal escape: AssertionError: expected [Function] to throw an error
+gates/test/mutation-ranges.test.ts:282: unit-tests: changedFiles: the headers git writes (phase 3 round 7, O7-01) fails naming the header on an octal escape over 377: AssertionError: expected [Function] to throw an error
+gates/test/mutation-ranges.test.ts:282: unit-tests: changedFiles: the headers git writes (phase 3 round 7, O7-01) fails naming the header on bytes that are not UTF-8: AssertionError: expected [Function] to throw an error
+gates/test/mutation-ranges.test.ts:282: unit-tests: changedFiles: the headers git writes (phase 3 round 7, O7-01) fails naming the header on text after the closing quote: AssertionError: expected [Function] to throw an error
+gates/test/mutation-ranges.test.ts:282: unit-tests: changedFiles: the headers git writes (phase 3 round 7, O7-01) fails naming the header on text after /dev/null: AssertionError: expected [Function] to throw an error
+gates/test/mutation-ranges.test.ts:282: unit-tests: changedFiles: the headers git writes (phase 3 round 7, O7-01) fails naming the header on an empty name: AssertionError: expected [Function] to throw an error
+gates/test/mutation-ranges.test.ts:287: unit-tests: changedFiles: the headers git writes (phase 3 round 7, O7-01) takes a path with any character git writes into scope, a newline included: AssertionError: expected false to be true // Object.is equality
+gates/test/mutation-ranges.test.ts:313: unit-tests: mutation gate: diff headers and mutate inputs (phase 3 round 7, O7-01 and O7-02) mutates the files of tab-suffixed and quoted headers in a normal run: AssertionError: expected { code: +0, …(3) } to deeply equal { code: +0, …(3) }
+gates/test/mutation-ranges.test.ts:322: unit-tests: mutation gate: diff headers and mutate inputs (phase 3 round 7, O7-01 and O7-02) plans the files of tab-suffixed and quoted headers: AssertionError: expected { code: +0, …(3) } to deeply equal { code: +0, …(3) }
+gates/test/mutation-ranges.test.ts:331: unit-tests: mutation gate: diff headers and mutate inputs (phase 3 round 7, O7-01 and O7-02) --files selects the file of a quoted header: AssertionError: expected { code: 2, out: [], …(2) } to deeply equal { code: +0, …(3) }
+gates/test/mutation-ranges.test.ts:344: unit-tests: mutation gate: diff headers and mutate inputs (phase 3 round 7, O7-01 and O7-02) exits 2 naming a header it cannot read, before Stryker runs (a normal run): AssertionError: expected { code: +0, …(3) } to deeply equal { code: 2, out: [], …(2) }
+gates/test/mutation-ranges.test.ts:344: unit-tests: mutation gate: diff headers and mutate inputs (phase 3 round 7, O7-01 and O7-02) exits 2 naming a header it cannot read, before Stryker runs (--plan): AssertionError: expected { code: +0, …(3) } to deeply equal { code: 2, out: [], …(2) }
+gates/test/mutation-ranges.test.ts:344: unit-tests: mutation gate: diff headers and mutate inputs (phase 3 round 7, O7-01 and O7-02) exits 2 naming a header it cannot read, before Stryker runs (--files): AssertionError: expected { code: +0, …(3) } to deeply equal { code: 2, out: [], …(2) }
+gates/test/mutation-ranges.test.ts:356: unit-tests: mutation gate: diff headers and mutate inputs (phase 3 round 7, O7-01 and O7-02) exits 2 naming a changed path holding "*", before Stryker runs: AssertionError: expected { code: +0, …(3) } to deeply equal { code: 2, out: [], …(2) }
+gates/test/mutation-ranges.test.ts:356: unit-tests: mutation gate: diff headers and mutate inputs (phase 3 round 7, O7-01 and O7-02) exits 2 naming a changed path holding "?", before Stryker runs: AssertionError: expected { code: +0, …(3) } to deeply equal { code: 2, out: [], …(2) }
+gates/test/mutation-ranges.test.ts:356: unit-tests: mutation gate: diff headers and mutate inputs (phase 3 round 7, O7-01 and O7-02) exits 2 naming a changed path holding "[", before Stryker runs: AssertionError: expected { code: +0, …(3) } to deeply equal { code: 2, out: [], …(2) }
+gates/test/mutation-ranges.test.ts:356: unit-tests: mutation gate: diff headers and mutate inputs (phase 3 round 7, O7-01 and O7-02) exits 2 naming a changed path holding "]", before Stryker runs: AssertionError: expected { code: +0, …(3) } to deeply equal { code: 2, out: [], …(2) }
+gates/test/mutation-ranges.test.ts:356: unit-tests: mutation gate: diff headers and mutate inputs (phase 3 round 7, O7-01 and O7-02) exits 2 naming a changed path holding "{", before Stryker runs: AssertionError: expected { code: +0, …(3) } to deeply equal { code: 2, out: [], …(2) }
+gates/test/mutation-ranges.test.ts:356: unit-tests: mutation gate: diff headers and mutate inputs (phase 3 round 7, O7-01 and O7-02) exits 2 naming a changed path holding "}", before Stryker runs: AssertionError: expected { code: +0, …(3) } to deeply equal { code: 2, out: [], …(2) }
+gates/test/mutation-ranges.test.ts:356: unit-tests: mutation gate: diff headers and mutate inputs (phase 3 round 7, O7-01 and O7-02) exits 2 naming a changed path holding "!", before Stryker runs: AssertionError: expected { code: +0, …(3) } to deeply equal { code: 2, out: [], …(2) }
+gates/test/mutation-ranges.test.ts:356: unit-tests: mutation gate: diff headers and mutate inputs (phase 3 round 7, O7-01 and O7-02) exits 2 naming a changed path holding ",", before Stryker runs: AssertionError: expected { code: +0, …(3) } to deeply equal { code: 2, out: [], …(2) }
+gates/test/mutation-ranges.test.ts:356: unit-tests: mutation gate: diff headers and mutate inputs (phase 3 round 7, O7-01 and O7-02) exits 2 naming a changed path holding "+(", before Stryker runs: AssertionError: expected { code: +0, …(3) } to deeply equal { code: 2, out: [], …(2) }
+gates/test/mutation-ranges.test.ts:356: unit-tests: mutation gate: diff headers and mutate inputs (phase 3 round 7, O7-01 and O7-02) exits 2 naming a changed path holding "@(", before Stryker runs: AssertionError: expected { code: +0, …(3) } to deeply equal { code: 2, out: [], …(2) }
+gates/test/mutation-ranges.test.ts:369: unit-tests: mutation gate: diff headers and mutate inputs (phase 3 round 7, O7-01 and O7-02) exits 2 naming a changed path holding a backslash (a quoted header), before Stryker runs: AssertionError: expected { code: +0, …(3) } to deeply equal { code: 2, out: [], …(2) }
+gates/test/mutation-ranges.test.ts:383: unit-tests: mutation gate: diff headers and mutate inputs (phase 3 round 7, O7-01 and O7-02) names every such path in one cause line, in diff order (a normal run): AssertionError: expected { code: +0, …(3) } to deeply equal { code: 2, out: [], …(2) }
+gates/test/mutation-ranges.test.ts:383: unit-tests: mutation gate: diff headers and mutate inputs (phase 3 round 7, O7-01 and O7-02) names every such path in one cause line, in diff order (--plan): AssertionError: expected { code: +0, …(3) } to deeply equal { code: 2, out: [], …(2) }
+gates/test/mutation-ranges.test.ts:383: unit-tests: mutation gate: diff headers and mutate inputs (phase 3 round 7, O7-01 and O7-02) names every such path in one cause line, in diff order (--files): AssertionError: expected { code: +0, …(3) } to deeply equal { code: 2, out: [], …(2) }
+unit-tests: 37 of 1162 tests failed
+[ELIFECYCLE] Test failed. See above for more details.

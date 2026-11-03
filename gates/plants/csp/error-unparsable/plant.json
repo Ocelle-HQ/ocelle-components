@@ -1,0 +1,5 @@
+{
+  "expect": "error",
+  "why": "A built .js file that does not parse: the gate could not run (contracts/gate-cli.md).",
+  "cause": "csp: could not run: packages/elements/dist/x.js:2 does not parse"
+}

@@ -23,6 +23,7 @@
       "Bash(.specify/scripts/bash/resolve-template.sh:*)",
       "Bash(.specify/extensions/story/scripts/base.sh:*)",
       "Bash(.specify/extensions/story/scripts/red.sh:*)",
+      "Bash(.specify/extensions/story/scripts/scaffold.sh:*)",
       "Bash(.specify/extensions/story/scripts/tdd-check.sh:*)",
       "Bash(.specify/extensions/story/scripts/verdict.sh:*)",
       "Bash(.specify/extensions/story/scripts/units.sh:*)",

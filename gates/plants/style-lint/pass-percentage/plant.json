@@ -1,0 +1,4 @@
+{
+  "expect": "pass",
+  "why": "A percentage (width: 100%) is allowed (FR-024)."
+}

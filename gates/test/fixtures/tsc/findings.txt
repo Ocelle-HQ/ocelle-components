@@ -1,0 +1,6 @@
+packages/tokens/src/x.ts(1,19): error TS7006: Parameter 'a' implicitly has an 'any' type.
+gates/lib/y.ts(4,7): error TS2322: Type '{ a: number; }' is not assignable to type 'B'.
+  Types of property 'a' are incompatible.
+    Type 'number' is not assignable to type 'string'.
+gates/lib/y.ts(9,3): error TS2304: Cannot find name 'missing'.
+/work/repo/gates/lib/z.ts(2,1): error TS1005: ';' expected.

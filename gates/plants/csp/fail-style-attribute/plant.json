@@ -1,0 +1,10 @@
+{
+  "expect": "fail",
+  "why": "A style attribute in built markup (FR-021).",
+  "findings": [
+    {
+      "location": "packages/elements/dist/x.js:2",
+      "rule": "style-attribute"
+    }
+  ]
+}

@@ -1,0 +1,4 @@
+{
+  "expect": "pass",
+  "why": "A test with one real assertion passes (FR-010)."
+}

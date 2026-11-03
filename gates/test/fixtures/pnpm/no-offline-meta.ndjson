@@ -1,0 +1,8 @@
+{"time":1793651384187,"hostname":"host","pid":1,"name":"pnpm:scope","level":"debug","selected":1}
+{"time":1793651384188,"hostname":"host","pid":1,"name":"pnpm:package-manifest","level":"debug","prefix":"/work/repo","initial":{"name":"fixture","private":true,"dependencies":{"is-number":"7.0.0"}}}
+{"time":1793651384188,"hostname":"host","pid":1,"name":"pnpm:context","level":"debug","currentLockfileExists":false,"storeDir":"/tmp/x/v11","virtualStoreDir":"/work/repo/node_modules/.pnpm"}
+{"time":1793651384188,"hostname":"host","pid":1,"name":"pnpm:stage","level":"debug","prefix":"/work/repo","stage":"importing_started"}
+{"time":1793651384188,"hostname":"host","pid":1,"name":"pnpm","level":"info","message":"Lockfile is up to date, resolution step is skipped","prefix":"/work/repo"}
+{"time":1793651384194,"hostname":"host","pid":1,"name":"pnpm:lockfile-verification","level":"debug","status":"started","entries":1,"lockfilePath":"/work/repo/pnpm-lock.yaml"}
+{"time":1793651384195,"hostname":"host","pid":1,"name":"pnpm:lockfile-verification","level":"debug","status":"failed","entries":1,"elapsedMs":0,"lockfilePath":"/work/repo/pnpm-lock.yaml"}
+{"time":1793651384205,"hostname":"host","pid":1,"name":"pnpm","level":"error","code":"ERR_PNPM_META_FETCH_FAIL","message":"installing dependencies: ERR_PNPM_NO_OFFLINE_META: Failed to resolve is-number in package mirror /tmp/x/v12/metadata-full/http%3A+127.0.0.1+4873/is-number.jsonl","prefix":"/work/repo"}

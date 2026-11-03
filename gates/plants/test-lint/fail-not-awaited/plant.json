@@ -1,0 +1,10 @@
+{
+  "expect": "fail",
+  "why": "An async assertion that is not awaited (FR-010, SC-004).",
+  "findings": [
+    {
+      "location": "packages/tokens/test/x.test.ts:6",
+      "rule": "vitest/valid-expect"
+    }
+  ]
+}

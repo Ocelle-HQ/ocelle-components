@@ -1,0 +1,2 @@
+$ node gates/bin/mutation.ts -- --base bdb9b70 --files gates/lib/mutation/shards.ts:1-120
+mutation: 95 mutants on the changed lines of 1 file, none survived; 0 equivalent records

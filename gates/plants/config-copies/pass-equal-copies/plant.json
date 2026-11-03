@@ -1,0 +1,4 @@
+{
+  "expect": "pass",
+  "why": "Two equal copies with FR-028's test_pathspec (FR-006)."
+}

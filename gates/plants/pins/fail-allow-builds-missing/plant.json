@@ -1,0 +1,11 @@
+{
+  "expect": "fail",
+  "why": "allowBuilds is missing (FR-027).",
+  "findings": [
+    {
+      "location": "pnpm-workspace.yaml",
+      "rule": "allow-builds",
+      "message": "allowBuilds is missing"
+    }
+  ]
+}

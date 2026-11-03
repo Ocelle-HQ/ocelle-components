@@ -1,0 +1,4 @@
+{
+  "expect": "pass",
+  "why": "A calc() of a token and a number (width: calc(var(--a) * 2)) is allowed (FR-024)."
+}

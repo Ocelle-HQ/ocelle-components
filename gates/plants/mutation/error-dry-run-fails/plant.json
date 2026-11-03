@@ -1,0 +1,5 @@
+{
+  "expect": "error",
+  "why": "The change's own test fails without any mutant, so Stryker's dry run fails and writes no report: the gate could not run (contracts/gate-cli.md).",
+  "cause": "mutation: could not run: Stryker wrote no report (There were failed tests in the initial test run.)"
+}

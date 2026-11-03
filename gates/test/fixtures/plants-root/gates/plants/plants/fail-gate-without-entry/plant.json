@@ -1,0 +1,5 @@
+{
+  "expect": "fail",
+  "why": "Fixture: a registry without the csp entry (its gates.json and ci.yml are written by the test).",
+  "findings": [{ "location": "gates.json", "rule": "no-registry-entry", "message": "gate csp" }]
+}

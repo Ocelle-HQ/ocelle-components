@@ -1,0 +1,56 @@
+# Shared setup of every CI job (contracts/ci-checks.md, research.md R-16): Node and pnpm from the repository's pins,
+# the pnpm store and the Playwright browser cache restored (never saved here; .github/workflows/cache.yml saves them
+# on main under the same keys), then `pnpm run setup:online`. Every action is pinned by commit SHA. Run it after an
+# actions/checkout step with `persist-credentials: false`.
+name: Setup
+description: Node and pnpm from the pins, caches restored, pnpm run setup:online
+inputs:
+  restore:
+    description: Restore the pnpm store and the Playwright cache ("true" in ci.yml; "false" in cache.yml, which saves them)
+    default: "true"
+outputs:
+  store-path:
+    description: The pnpm store directory
+    value: ${{ steps.keys.outputs.store-path }}
+  store-key:
+    description: The cache key of the pnpm store (the hash of pnpm-lock.yaml)
+    value: ${{ steps.keys.outputs.store-key }}
+  playwright-path:
+    description: The Playwright browser cache directory
+    value: ${{ steps.keys.outputs.playwright-path }}
+  playwright-key:
+    description: The cache key of the Playwright browser cache (the pinned Playwright version)
+    value: ${{ steps.keys.outputs.playwright-key }}
+runs:
+  using: composite
+  steps:
+    # pnpm from package.json's packageManager (pnpm@12.16.1).
+    - uses: pnpm/action-setup@ea17c68df8912ef543352723c149a84f56e3d413 # v6.1.0
+      with:
+        run_install: false
+    - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
+      with:
+        node-version-file: .node-version
+    - id: keys
+      shell: bash
+      run: |
+        test "$(node --version)" = "v$(cat .node-version)"
+        playwright="$(node -p 'require("./package.json").devDependencies.playwright')"
+        {
+          echo "store-path=$(pnpm store path --silent)"
+          echo "store-key=pnpm-store-${RUNNER_OS}-${{ hashFiles('pnpm-lock.yaml') }}"
+          echo "playwright-path=${HOME}/.cache/ms-playwright"
+          echo "playwright-key=playwright-${RUNNER_OS}-${playwright}"
+        } >> "$GITHUB_OUTPUT"
+    - if: inputs.restore == 'true'
+      uses: actions/cache/restore@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+      with:
+        path: ${{ steps.keys.outputs.store-path }}
+        key: ${{ steps.keys.outputs.store-key }}
+    - if: inputs.restore == 'true'
+      uses: actions/cache/restore@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+      with:
+        path: ${{ steps.keys.outputs.playwright-path }}
+        key: ${{ steps.keys.outputs.playwright-key }}
+    - shell: bash
+      run: pnpm run setup:online

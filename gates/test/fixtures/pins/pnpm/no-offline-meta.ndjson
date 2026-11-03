@@ -1,0 +1,2 @@
+{"time":1793662839376,"hostname":"host","pid":1,"name":"pnpm:scope","level":"debug","selected":1}
+{"time":1793662839376,"hostname":"host","pid":1,"name":"pnpm","level":"error","code":"ERR_PNPM_META_FETCH_FAIL","message":"installing dependencies: ERR_PNPM_NO_OFFLINE_META: Failed to resolve jiti in package mirror /cache/v12/metadata-full/https%3A+registry.npmjs.org/jiti.jsonl","prefix":"/work/repo"}

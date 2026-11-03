@@ -1,0 +1,2 @@
+$ node gates/bin/mutation.ts -- --base 4df12b0823f1a777cf37c501271201fdf4daca64 --files gates/lib/plant-judge.ts
+mutation: 353 mutants on the changed lines of 1 file, none survived; 0 equivalent records

@@ -1,0 +1,11 @@
+{
+  "expect": "fail",
+  "why": "A changed line that no test runs, alone: the change is only a new file no test imports, beside an unchanged, tested x.ts, so the mutant has no coverage (FR-011, US2 scenario 3).",
+  "findings": [
+    {
+      "location": "packages/tokens/src/y.ts:2",
+      "rule": "StringLiteral",
+      "message": "NoCoverage"
+    }
+  ]
+}

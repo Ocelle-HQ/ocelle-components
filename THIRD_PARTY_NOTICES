@@ -1,0 +1,10 @@
+Third-party notices for ocelle-components
+
+This file lists every third-party asset that ships in an @ocelle/tokens, @ocelle/styles or @ocelle/elements
+package, with its licence (FR-033). The code of these packages is the project's own, under the Apache License 2.0
+in LICENSE; development dependencies are not shipped and are not listed here.
+
+No third-party asset ships yet.
+
+The Schibsted Grotesk font (SIL Open Font License 1.1) is the only planned third-party asset. Its entry, with its
+licence text beside the font files, is added here by #5, when the font is vendored in @ocelle/tokens.

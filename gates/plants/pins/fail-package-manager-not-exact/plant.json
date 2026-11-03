@@ -1,0 +1,11 @@
+{
+  "expect": "fail",
+  "why": "packageManager is pnpm@12, not an exact version (FR-027).",
+  "findings": [
+    {
+      "location": "package.json",
+      "rule": "package-manager",
+      "message": "pnpm@12"
+    }
+  ]
+}

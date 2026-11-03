@@ -1,0 +1,11 @@
+{
+  "expect": "fail",
+  "why": "A ~ range (FR-027, US1 scenario 8), on a dependency the plant's overrides link to its own vendor/x, so the lockfile check needs no registry metadata and the plant gives the same result on a cold pnpm cache.",
+  "findings": [
+    {
+      "location": "package.json",
+      "rule": "range",
+      "message": "~1.0.0"
+    }
+  ]
+}

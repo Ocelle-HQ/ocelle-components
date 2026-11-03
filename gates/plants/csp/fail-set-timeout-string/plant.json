@@ -1,0 +1,10 @@
+{
+  "expect": "fail",
+  "why": "setTimeout with a string argument in built output (FR-021).",
+  "findings": [
+    {
+      "location": "packages/elements/dist/x.js:3",
+      "rule": "string-timer"
+    }
+  ]
+}

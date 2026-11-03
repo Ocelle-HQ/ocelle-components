@@ -1,0 +1,11 @@
+{
+  "expect": "fail",
+  "why": "minimumReleaseAge: 1440 is below 7 days (FR-027).",
+  "findings": [
+    {
+      "location": "pnpm-workspace.yaml",
+      "rule": "release-age",
+      "message": "1440"
+    }
+  ]
+}

@@ -1,0 +1,4 @@
+{
+  "expect": "pass",
+  "why": "A test without an assertion under gates/test/fixtures/ is not linted: fixtures are excluded (FR-028); the tokens test beside it, with a real assertion, is."
+}

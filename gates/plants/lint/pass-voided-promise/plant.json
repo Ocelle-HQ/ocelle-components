@@ -1,0 +1,4 @@
+{
+  "expect": "pass",
+  "why": "The same promise, explicitly voided, is a clean file (FR-020)."
+}

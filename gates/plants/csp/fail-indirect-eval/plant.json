@@ -1,0 +1,10 @@
+{
+  "expect": "fail",
+  "why": "An indirect eval, (0, eval)(s), in built output (FR-021, research.md R-11).",
+  "findings": [
+    {
+      "location": "packages/elements/dist/x.js:3",
+      "rule": "eval"
+    }
+  ]
+}

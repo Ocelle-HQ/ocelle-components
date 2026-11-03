@@ -1,0 +1,11 @@
+{
+  "expect": "fail",
+  "why": "A named monospace family (Menlo) in a font declaration (FR-022).",
+  "findings": [
+    {
+      "location": "packages/styles/src/x.css:3",
+      "rule": "monospace",
+      "message": "Menlo"
+    }
+  ]
+}

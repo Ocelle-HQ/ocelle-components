@@ -1,0 +1,10 @@
+{
+  "expect": "fail",
+  "why": "A floating promise in gate source is a finding: the project service resolves gates/bin/ through the root tsconfig.json (research.md R-05).",
+  "findings": [
+    {
+      "location": "gates/bin/x.ts:6",
+      "rule": "@typescript-eslint/no-floating-promises"
+    }
+  ]
+}

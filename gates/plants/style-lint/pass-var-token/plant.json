@@ -1,0 +1,4 @@
+{
+  "expect": "pass",
+  "why": "A var() token (margin: var(--ocelle-x)) is allowed (FR-024)."
+}

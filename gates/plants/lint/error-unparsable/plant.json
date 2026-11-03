@@ -1,0 +1,5 @@
+{
+  "expect": "error",
+  "why": "A TypeScript file that does not parse is a fatal ESLint message: the gate could not run (contracts/gate-cli.md).",
+  "cause": "lint: could not run: packages/tokens/src/x.ts:2 does not parse"
+}

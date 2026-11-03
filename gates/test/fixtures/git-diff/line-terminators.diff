@@ -1,0 +1,36 @@
+diff --git "a/packages/tokens/src/a\nb.ts" "b/packages/tokens/src/a\nb.ts"
+new file mode 100644
+index 0000000..da1371a
+--- /dev/null
++++ "b/packages/tokens/src/a\nb.ts"
+@@ -0,0 +1 @@
++export const lf = 1;
+diff --git "a/packages/tokens/src/a\rb.ts" "b/packages/tokens/src/a\rb.ts"
+new file mode 100644
+index 0000000..95ff4bf
+--- /dev/null
++++ "b/packages/tokens/src/a\rb.ts"
+@@ -0,0 +1,2 @@
++export const cr = 1;
++export const two = 2;
+diff --git "a/packages/tokens/src/a\342\200\250b.ts" "b/packages/tokens/src/a\342\200\250b.ts"
+new file mode 100644
+index 0000000..66b36bb
+--- /dev/null
++++ "b/packages/tokens/src/a\342\200\250b.ts"
+@@ -0,0 +1 @@
++export const ls = 1;
+diff --git "a/packages/tokens/src/a\342\200\251b.ts" "b/packages/tokens/src/a\342\200\251b.ts"
+new file mode 100644
+index 0000000..cdc845a
+--- /dev/null
++++ "b/packages/tokens/src/a\342\200\251b.ts"
+@@ -0,0 +1 @@
++export const ps = 1;
+diff --git a/packages/tokens/src/ok.ts b/packages/tokens/src/ok.ts
+new file mode 100644
+index 0000000..d6ca325
+--- /dev/null
++++ b/packages/tokens/src/ok.ts
+@@ -0,0 +1 @@
++export const ok = 1;

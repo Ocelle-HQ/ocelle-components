@@ -1,0 +1,76 @@
+Scope: all 4 workspace projects
+✓ Lockfile passes supply-chain policies (verified 22h ago)
+Lockfile is up to date, resolution step is skipped
+Packages are hard linked from the content-addressable store to the virtual store.
+  Content-addressable store is at: <pnpm store>
+  Virtual store is at:             node_modules/.pnpm
+Packages: +405
+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+Progress: resolved 405, reused 405, downloaded 0, added 405, done
+
+devDependencies:
++ @eslint/js 10.0.1
++ @stryker-mutator/core 10.1.1
++ @stryker-mutator/typescript-checker 10.1.1
++ @stryker-mutator/vitest-runner 10.1.1
++ @types/node 26.6.5
++ @vitest/browser-playwright 5.0.5
++ @vitest/eslint-plugin 1.6.28
++ eslint 10.13.0
++ jiti 2.7.0
++ parse5 8.0.1
++ playwright 1.64.1
++ postcss 8.5.31
++ postcss-lit 1.4.1
++ postcss-value-parser 4.2.0
++ stylelint 17.16.0
++ typescript 6.0.3
++ typescript-eslint 8.72.0
++ vite 8.3.5
++ vitest 5.0.5
+
+Done in 677ms using pnpm v12.16.1
+$ node gates/bin/setup-offline.ts
+setup: installed offline; Chromium at /opt/pw-browsers/chromium_headless_shell-1243/chrome-headless-shell-linux64/chrome-headless-shell
+$ node gates/bin/test.ts
+gates/test/integration/plants.test.ts:63: unit-tests: plant job (gates/bin/plants.ts) plants --root <tmp> runs each plant form through its gate and judges it: AssertionError: expected { code: 1, stdout: [ …(34) ], …(1) } to deeply equal { code: 1, stdout: [ …(30) ], …(1) }
+gates/test/plant-judge.test.ts:100: unit-tests: parsePlant: cause and base (phase 4 round 5, O5-01 and O5-02) reads an error plant's cause, with and without a base: AssertionError: expected 'unknown key cause' to deeply equal { expect: 'error', why: 'w', …(1) }
+gates/test/plant-judge.test.ts:121: unit-tests: parsePlant: cause and base (phase 4 round 5, O5-01 and O5-02) rejects { expect: 'error', why: 'w' }: AssertionError: expected { expect: 'error', why: 'w' } to be 'an error plant names its cause, a non…' // Object.is equality
+gates/test/plant-judge.test.ts:121: unit-tests: parsePlant: cause and base (phase 4 round 5, O5-01 and O5-02) rejects { expect: 'error', why: 'w', cause: '' }: AssertionError: expected 'unknown key cause' to be 'an error plant names its cause, a non…' // Object.is equality
+gates/test/plant-judge.test.ts:121: unit-tests: parsePlant: cause and base (phase 4 round 5, O5-01 and O5-02) rejects { expect: 'error', why: 'w', cause: 2 }: AssertionError: expected 'unknown key cause' to be 'an error plant names its cause, a non…' // Object.is equality
+gates/test/plant-judge.test.ts:121: unit-tests: parsePlant: cause and base (phase 4 round 5, O5-01 and O5-02) rejects { expect: 'error', why: 'w', …(1) }: AssertionError: expected { expect: 'error', why: 'w', …(1) } to be 'an error plant names its cause, a non…' // Object.is equality
+gates/test/plant-judge.test.ts:121: unit-tests: parsePlant: cause and base (phase 4 round 5, O5-01 and O5-02) rejects { expect: 'fail', why: 'w', …(2) }: AssertionError: expected 'unknown key cause' to be 'only an error plant names a cause' // Object.is equality
+gates/test/plant-judge.test.ts:121: unit-tests: parsePlant: cause and base (phase 4 round 5, O5-01 and O5-02) rejects { expect: 'pass', why: 'w', cause: 'x' }: AssertionError: expected 'unknown key cause' to be 'only an error plant names a cause' // Object.is equality
+gates/test/plant-judge.test.ts:121: unit-tests: parsePlant: cause and base (phase 4 round 5, O5-01 and O5-02) rejects { expect: 'pass', why: 'w', …(1) }: AssertionError: expected { expect: 'pass', why: 'w', …(1) } to be 'a pass plant may not set base' // Object.is equality
+gates/test/plant-judge.test.ts:121: unit-tests: parsePlant: cause and base (phase 4 round 5, O5-01 and O5-02) rejects { expect: 'pass', why: 'w', base: '' }: AssertionError: expected 'base must be a non-empty string' to be 'a pass plant may not set base' // Object.is equality
+gates/test/plant-judge.test.ts:121: unit-tests: parsePlant: cause and base (phase 4 round 5, O5-01 and O5-02) rejects { expect: 'pass', why: 'w', …(2) }: AssertionError: expected { expect: 'pass', why: 'w', …(2) } to be 'a pass plant may not set base' // Object.is equality
+gates/test/plant-judge.test.ts:134: unit-tests: judgePlant: error plants and their cause (phase 4 round 5, O5-01) fails exit 2 for another cause, naming the expected cause and the first error line: AssertionError: expected undefined to be 'expected exit 2 (could not run) with …' // Object.is equality
+gates/test/plant-judge.test.ts:140: unit-tests: judgePlant: error plants and their cause (phase 4 round 5, O5-01) does not read the cause from standard output, and names no line when the error output is empty: AssertionError: expected undefined to be 'expected exit 2 (could not run) with …' // Object.is equality
+gates/test/plants-job.test.ts:56: unit-tests: plants: order names problems by gate in registry order and by plant in name order, whatever order the directories come in: AssertionError: expected { code: 1, out: [ …(29) ] } to deeply equal { code: 1, out: [ …(7) ] }
+gates/test/plants-job.test.ts:84: unit-tests: plants: registry plants reports a registry plant without its gates.json as broken: AssertionError: expected [ …(24) ] to deeply equal [ …(2) ]
+gates/test/plants-job.test.ts:84: unit-tests: plants: registry plants reports a registry plant without its ci.yml as broken: AssertionError: expected [ …(24) ] to deeply equal [ …(2) ]
+gates/test/plants-job.test.ts:93: unit-tests: plants: registry plants reports a registry plant with an invalid gates.json as broken, naming the problem: AssertionError: expected [ …(24) ] to deeply equal [ …(2) ]
+gates/test/plants-job.test.ts:102: unit-tests: plants: registry plants locates a registry plant's findings at its gates.json and ci.yml: AssertionError: expected { code: 1, out: [ …(23) ] } to deeply equal { code: +0, …(1) }
+gates/test/plants-job.test.ts:111: unit-tests: plants: registry plants skips a directory of the registry plants without a plant.json, and needs a registry fail plant: AssertionError: expected [ …(24) ] to deeply equal [ …(2) ]
+gates/test/plants.test.ts:87: unit-tests: plants (the job) exits 0 when every gate does what each of its plants expects and the registry matches: AssertionError: expected { code: 1, out: [ …(23) ], err: [] } to deeply equal { code: +0, …(2) }
+gates/test/plants.test.ts:99: unit-tests: plants (the job) fails when a gate passes its fail plant: AssertionError: expected { code: 1, out: [ …(24) ], err: [] } to deeply equal { code: 1, out: [ …(2) ], err: [] }
+gates/test/plants.test.ts:111: unit-tests: plants (the job) fails when a gate breaks on its fail plant, naming its cause: AssertionError: expected 'gates/plants/typecheck/error-basic/pl…' to be 'gates/plants/csp/fail-basic: plants: …' // Object.is equality
+gates/test/plants.test.ts:118: unit-tests: plants (the job) fails when a gate breaks on its breaking plant for another cause, naming the expected cause (phase 4 round 5, O5-01): AssertionError: expected { code: 1, out: [ …(23) ], err: [] } to deeply equal { code: 1, out: [ …(2) ], err: [] }
+gates/test/plants.test.ts:131: unit-tests: plants (the job) rejects a pass plant that sets base and a breaking plant without a cause as invalid plants (phase 4 round 5, O5-01 and O5-02): AssertionError: expected { code: 1, out: [ …(21) ], err: [] } to deeply equal { code: 1, out: [ …(5) ], err: [] }
+gates/test/plants.test.ts:148: unit-tests: plants (the job) fails when a gate reports other findings than its fail plant expects: AssertionError: expected { code: 1, out: [ …(24) ], err: [] } to deeply equal { code: 1, out: [ …(2) ], err: [] }
+gates/test/plants.test.ts:166: unit-tests: plants (the job) fails when a finding lacks the message its plant expects: AssertionError: expected 'gates/plants/typecheck/error-basic/pl…' to be 'gates/plants/pins/fail-basic: plants:…' // Object.is equality
+gates/test/plants.test.ts:174: unit-tests: plants (the job) fails when a gate rejects its pass plant: AssertionError: expected { code: 1, out: [ …(24) ], err: [] } to deeply equal { code: 1, out: [ …(2) ], err: [] }
+gates/test/plants.test.ts:187: unit-tests: plants (the job) fails when a gate does not report its breaking plant as could not run: AssertionError: expected [ …(23) ] to deeply equal [ …(2) ]
+gates/test/plants.test.ts:195: unit-tests: plants (the job) fails when a gate has no fail, pass or breaking plant: AssertionError: expected { code: 1, out: [ …(23) ], err: [] } to deeply equal { code: 1, out: [ …(5) ], err: [] }
+gates/test/plants.test.ts:212: unit-tests: plants (the job) fails when the registry has no fail or pass plant: AssertionError: expected [ …(24) ] to deeply equal [ …(2) ]
+gates/test/plants.test.ts:221: unit-tests: plants (the job) fails on a plant without a valid plant.json, and does not run it: AssertionError: expected { code: 1, out: [ …(25) ], err: [] } to deeply equal { code: 1, out: [ …(3) ], err: [] }
+gates/test/plants.test.ts:238: unit-tests: plants (the job) fails on a plant that carries gate configuration, and does not run it: AssertionError: expected { code: 1, out: [ …(24) ], err: [] } to deeply equal { code: 1, out: [ …(2) ], err: [] }
+gates/test/plants.test.ts:256: unit-tests: plants (the job) fails when the repository's registry, CI jobs and FR-020 list differ, and on plants of an unknown gate: AssertionError: expected { code: 1, out: [ …(24) ], err: [] } to deeply equal { code: 1, out: [ …(4) ], err: [] }
+gates/test/plants.test.ts:272: unit-tests: plants (the job) fails when a registry plant is not caught: AssertionError: expected [ …(24) ] to deeply equal [ …(2) ]
+gates/test/plants.test.ts:281: unit-tests: plants (the job) judges a commit plant's findings by record number: AssertionError: expected { code: 1, out: [ …(23) ], err: [] } to deeply equal { code: +0, …(2) }
+gates/test/plants.test.ts:293: unit-tests: plants (the job) hands each plant's parsed plant.json to the runner, so a mutation plant's base reaches it (review round 1, R1-11): AssertionError: expected 1 to be +0 // Object.is equality
+gates/test/plants.test.ts:396: unit-tests: parsePlant reads a fail, a pass and an error plant: AssertionError: expected 'unknown key cause' to deeply equal { expect: 'error', why: 'w', …(1) }
+gates/test/plants.test.ts:404: unit-tests: parsePlant reads the base a plant presents to its gate instead of the base commit (review round 1, R1-11): AssertionError: expected 'unknown key cause' to deeply equal { expect: 'error', why: 'w', …(2) }
+gates/test/plants.test.ts:427: unit-tests: parsePlant rejects { expect: 'error', why: 'w', …(2) }: AssertionError: expected 'unknown key cause' to match /^only a pass plant lists records$/
+unit-tests: 39 of 1179 tests failed
+[ELIFECYCLE] Test failed. See above for more details.
