@@ -1,6 +1,9 @@
 // The mutation gate (FR-011 to FR-013, research.md R-08): mutation-tests the package source and gate source lines
 // changed since `--base <sha>` with Stryker (mutate ranges), and decides from Stryker's JSON report, never from its
-// exit code. `--plan` prints the CI shards; `--files <path>[,<path>...]` limits a run to one shard. `mutation()` is
+// exit code. Before any mode runs, a `git diff` file header it cannot read, or a changed path Stryker cannot take
+// verbatim as a `mutate` input, is exit 2 naming the header or every such path (phase 3 round 7, O7-01 and O7-02),
+// so the gate never passes with changed code it did not check; a changed file absent from Stryker's report has no
+// mutant on its changed lines and passes (report.ts). `--plan` prints the CI shards; `--files <path>[,<path>...]` limits a run to one shard. `mutation()` is
 // the decision, tested in-process with doubles for git, the file system and Stryker: it deletes an earlier run's
 // report, runs Stryker and reads the report that run wrote. `run()` gives it the real tools of the `--root`
 // repository (the process boundary, tested by gates/test/integration/mutation.test.ts).
@@ -11,7 +14,8 @@ import type { Context, Io } from "../lib/cli.ts";
 import { emit, plural } from "../lib/findings.ts";
 import type { Finding } from "../lib/findings.ts";
 import { strykerEnv } from "../lib/mutation/coverage.ts";
-import { changedFiles, mutateSpecs, scopePathspecs } from "../lib/mutation/ranges.ts";
+import { changedFiles, mutateSpecs, scopePathspecs, unusableMutatePaths } from "../lib/mutation/ranges.ts";
+import type { ChangedFile } from "../lib/mutation/ranges.ts";
 import { formatRecord, scanRecords } from "../lib/mutation/records.ts";
 import type { EquivalentRecord } from "../lib/mutation/records.ts";
 import { classifyMutants } from "../lib/mutation/report.ts";
@@ -42,6 +46,12 @@ interface Options {
 
 /** Stryker's JSON report, as stryker.config.json names it (`jsonReporter.fileName`). */
 const reportFile = "reports/mutation/mutation.json";
+
+/** What the gate reads as a `+++` header of `git diff` (ranges.ts), for the cause of a header it cannot read. */
+const headerHint = 'the gate reads +++ b/<path>, a C-quoted "b/<path>" or /dev/null (check diff.noprefix and diff.mnemonicPrefix)';
+
+/** What makes a path unusable as a Stryker `mutate` input (ranges.ts `unusableMutatePaths`). */
+const unusableKinds = "a glob metacharacter *?[]{}!, a comma, a backslash or an extglob +( @( ";
 
 const usage = "usage: gate:mutation -- --base <sha> [--plan | --files <path>[,<path>...]]";
 
@@ -81,7 +91,17 @@ export async function mutation(context: Context, tools: MutationTools, io: Io): 
   }
   const diff = await tools.git(["diff", "--unified=0", "--no-color", "--no-ext-diff", base, "--", ...scopePathspecs]);
   if (diff.exitCode !== 0) return fail(`git diff failed (${String(diff.stderr.trim().split("\n")[0])})`);
-  const changed = changedFiles(diff.stdout);
+  let changed: ChangedFile[];
+  try {
+    changed = changedFiles(diff.stdout);
+  } catch (error) {
+    return fail(`${(error as Error).message}; ${headerHint}`);
+  }
+  const unusable = unusableMutatePaths(changed);
+  if (unusable.length > 0) {
+    const paths = unusable.map((path) => JSON.stringify(path)).join(", ");
+    return fail(`Stryker cannot take these changed paths as mutate input (${unusableKinds}): ${paths}; rename them`);
+  }
   if (options.plan) {
     io.out(formatPlan(planShards(changed)));
     return 0;
