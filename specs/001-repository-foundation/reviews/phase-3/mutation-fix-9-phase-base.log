@@ -1,0 +1,10 @@
+gates/bin/mutation.ts:166: mutation: record: all: process boundary, covered by gates-integration: gates/test/integration/mutation.test.ts "--files mutates only the listed file"
+gates/bin/mutation.ts:168: mutation: record: all: process boundary, covered by gates-integration: gates/test/integration/mutation.test.ts "--files mutates only the listed file"
+gates/bin/mutation.ts:170: mutation: record: all: process boundary, covered by gates-integration: gates/test/integration/mutation.test.ts "--files mutates only the listed file"
+gates/bin/mutation.ts:172: mutation: record: all: process boundary, covered by gates-integration: gates/test/integration/mutation.test.ts "--files mutates only the listed file"
+gates/bin/mutation.ts:174: mutation: record: all: process boundary, covered by gates-integration: gates/test/integration/mutation.test.ts "deletes an earlier run's report: a Stryker run that writes none exits 2 (review round 1, R1-01)"
+gates/bin/mutation.ts:176: mutation: record: all: process boundary, covered by gates-integration: gates/test/integration/mutation.test.ts "deletes an earlier run's report: a Stryker run that writes none exits 2 (review round 1, R1-01)"
+gates/bin/mutation.ts:178: mutation: record: all: process boundary, covered by gates-integration: gates/test/integration/mutation.test.ts "reports a change only to source no test imports as a located NoCoverage finding (exit 1), not as could not run (review round 1, R1-10)"
+gates/bin/mutation.ts:183: mutation: record: all: process boundary, covered by gates-integration: gates/test/integration/mutation.test.ts "--files mutates only the listed file"
+gates/bin/mutation.ts:189: mutation: record: all: process boundary, covered by gates-integration: gates/test/integration/mutation.test.ts "--files mutates only the listed file"
+mutation: 523 mutants on the changed lines of 3 files, none survived; 9 equivalent records

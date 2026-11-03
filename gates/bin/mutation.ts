@@ -3,7 +3,9 @@
 // exit code. Before any mode runs, a `git diff` file header it cannot read, or a changed path Stryker cannot take
 // verbatim as a `mutate` input, is exit 2 naming the header or every such path (phase 3 round 7, O7-01 and O7-02),
 // so the gate never passes with changed code it did not check; a changed file absent from Stryker's report has no
-// mutant on its changed lines and passes (report.ts). `--plan` prints the CI shards; `--files <path>[,<path>...]` limits a run to one shard. `mutation()` is
+// mutant on its changed lines and passes (report.ts). `--plan` prints the CI shards, splitting a file of more than
+// 120 changed lines into `path:start-end` entries; `--files <entry>[,<entry>...]` limits a run to one shard's entries
+// and mutates only the changed lines inside them (shards.ts; phase 3 round 9, O9-01). `mutation()` is
 // the decision, tested in-process with doubles for git, the file system and Stryker: it deletes an earlier run's
 // report, runs Stryker and reads the report that run wrote. `run()` gives it the real tools of the `--root`
 // repository (the process boundary, tested by gates/test/integration/mutation.test.ts).
@@ -51,9 +53,22 @@ const reportFile = "reports/mutation/mutation.json";
 const headerHint = 'the gate reads +++ b/<path>, a C-quoted "b/<path>" or /dev/null (check diff.noprefix and diff.mnemonicPrefix)';
 
 /** What makes a path unusable as a Stryker `mutate` input (ranges.ts `unusableMutatePaths`). */
-const unusableKinds = "a glob metacharacter *?[]{}!, a comma, a backslash or an extglob +( @( ";
+const unusableKinds =
+  "a glob metacharacter *?[]{}!, a comma, a backslash, an extglob +( @( or a line terminator \\n \\r U+2028 U+2029";
 
-const usage = "usage: gate:mutation -- --base <sha> [--plan | --files <path>[,<path>...]]";
+const usage = "usage: gate:mutation -- --base <sha> [--plan | --files <path>[:<start>-<end>][,...]]";
+
+/** A path as JSON, U+2028 and U+2029 escaped too, so the cause stays one line. */
+function quote(path: string): string {
+  return JSON.stringify(path).replace(/\u2028/g, "\\u2028").replace(/\u2029/g, "\\u2029");
+}
+
+/** The cause of a `--files` list that selects nothing, by what is wrong with its entries (shards.ts `selectFiles`). */
+const selectionProblems = {
+  malformed: "--files names a malformed range (path:start-end, 1 <= start <= end)",
+  missing: "--files names a file with no changed package or gate source line",
+  empty: "--files names a range with no changed line",
+} as const;
 
 /** The gate's options, or the problem with its arguments. A lone `--` (from `pnpm run ... --`) is skipped. */
 function parseOptions(args: readonly string[]): Options | string {
@@ -99,7 +114,7 @@ export async function mutation(context: Context, tools: MutationTools, io: Io): 
   }
   const unusable = unusableMutatePaths(changed);
   if (unusable.length > 0) {
-    const paths = unusable.map((path) => JSON.stringify(path)).join(", ");
+    const paths = unusable.map(quote).join(", ");
     return fail(`Stryker cannot take these changed paths as mutate input (${unusableKinds}): ${paths}; rename them`);
   }
   if (options.plan) {
@@ -110,9 +125,9 @@ export async function mutation(context: Context, tools: MutationTools, io: Io): 
   let selected = changed;
   if (options.files !== undefined) {
     const selection = selectFiles(changed, options.files);
-    if ("missing" in selection) {
-      const missing = selection.missing.join(", ");
-      return fail(`--files names a file with no changed package or gate source line: ${missing}; run --plan for the shards`);
+    if (!("files" in selection)) {
+      const [problem, entries] = Object.entries(selection)[0] as [keyof typeof selectionProblems, readonly string[]];
+      return fail(`${selectionProblems[problem]}: ${entries.join(", ")}; run --plan for the shards`);
     }
     selected = [...selection.files];
   }
