@@ -1,0 +1,10 @@
+{
+  "expect": "fail",
+  "why": "An assertion inside a conditional (FR-010, SC-004).",
+  "findings": [
+    {
+      "location": "packages/tokens/test/x.test.ts:8",
+      "rule": "vitest/no-conditional-expect"
+    }
+  ]
+}

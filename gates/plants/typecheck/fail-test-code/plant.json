@@ -1,0 +1,10 @@
+{
+  "expect": "fail",
+  "why": "An implicit any in an element test file, reached only through the root tsconfig.json include, is a finding (FR-028 repository TypeScript).",
+  "findings": [
+    {
+      "location": "packages/elements/test/x.test.ts:2",
+      "rule": "TS7006"
+    }
+  ]
+}

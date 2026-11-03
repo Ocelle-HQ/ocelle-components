@@ -1,0 +1,4 @@
+{
+  "expect": "pass",
+  "why": "A passing test in project gates alone passes (US1 scenario 10)."
+}

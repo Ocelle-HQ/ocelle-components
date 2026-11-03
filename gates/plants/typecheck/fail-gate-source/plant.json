@@ -1,0 +1,10 @@
+{
+  "expect": "fail",
+  "why": "An implicit any in gate source, reached only through the root tsconfig.json include, is a finding (FR-028 repository TypeScript).",
+  "findings": [
+    {
+      "location": "gates/lib/x.ts:2",
+      "rule": "TS7006"
+    }
+  ]
+}

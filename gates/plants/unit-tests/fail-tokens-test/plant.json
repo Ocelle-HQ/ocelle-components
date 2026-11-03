@@ -1,0 +1,11 @@
+{
+  "expect": "fail",
+  "why": "A failing test of @ocelle/tokens (Node project tokens) is a finding (FR-004, FR-025).",
+  "findings": [
+    {
+      "location": "packages/tokens/test/x.test.ts:5",
+      "rule": "planted tokens-test adds wrongly",
+      "message": "expected 2 to be 3"
+    }
+  ]
+}

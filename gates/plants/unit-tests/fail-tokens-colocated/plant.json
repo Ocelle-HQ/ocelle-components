@@ -1,0 +1,11 @@
+{
+  "expect": "fail",
+  "why": "A failing colocated test file in package source is a test file (FR-028) and runs (FR-004).",
+  "findings": [
+    {
+      "location": "packages/tokens/src/x.test.ts:5",
+      "rule": "planted tokens-colocated adds wrongly",
+      "message": "expected 2 to be 3"
+    }
+  ]
+}
