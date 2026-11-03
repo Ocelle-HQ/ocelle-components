@@ -1,0 +1,69 @@
+gates/bin/plants.ts:349: mutation: record: all: process boundary, covered by the plant job itself: pnpm run gate:plants (CI check Plants) runs every plant through it
+gates/bin/plants.ts:351: mutation: record: all: process boundary, covered by the plant job itself: pnpm run gate:plants (CI check Plants) runs every plant through it
+gates/bin/plants.ts:362: mutation: record: all: process boundary, covered by the plant job itself: pnpm run gate:plants (CI check Plants) runs every plant through it
+gates/bin/plants.ts:364: mutation: record: all: process boundary, covered by the plant job itself: pnpm run gate:plants (CI check Plants) runs every plant through it
+gates/bin/plants.ts:366: mutation: record: all: process boundary, covered by the plant job itself: pnpm run gate:plants (CI check Plants) runs every plant through it
+gates/bin/plants.ts:368: mutation: record: all: process boundary, covered by the plant job itself: pnpm run gate:plants (CI check Plants) runs every plant through it
+gates/bin/plants.ts:370: mutation: record: all: process boundary, covered by the plant job itself: pnpm run gate:plants (CI check Plants) runs every plant through it
+gates/bin/plants.ts:372: mutation: record: all: process boundary, covered by the plant job itself: pnpm run gate:plants (CI check Plants) runs every plant through it
+gates/bin/plants.ts:374: mutation: record: all: process boundary, covered by the plant job itself: pnpm run gate:plants (CI check Plants) runs every plant through it
+gates/bin/plants.ts:379: mutation: record: all: process boundary, covered by the plant job itself: pnpm run gate:plants (CI check Plants) runs every plant through it
+gates/bin/plants.ts:381: mutation: record: all: process boundary, covered by the plant job itself: pnpm run gate:plants (CI check Plants) runs every plant through it
+gates/bin/plants.ts:383: mutation: record: all: process boundary, covered by the plant job itself: pnpm run gate:plants (CI check Plants) runs every plant through it
+gates/bin/plants.ts:385: mutation: record: all: process boundary, covered by the plant job itself: pnpm run gate:plants (CI check Plants) runs every plant through it
+gates/bin/plants.ts:387: mutation: record: all: process boundary, covered by the plant job itself: pnpm run gate:plants (CI check Plants) runs every plant through it
+gates/bin/plants.ts:389: mutation: record: all: process boundary, covered by the plant job itself: pnpm run gate:plants (CI check Plants) runs every plant through it
+gates/bin/plants.ts:392: mutation: record: all: process boundary, covered by the plant job itself: pnpm run gate:plants (CI check Plants) runs every plant through it
+gates/bin/plants.ts:394: mutation: record: all: process boundary, covered by the plant job itself: pnpm run gate:plants (CI check Plants) runs every plant through it
+gates/bin/plants.ts:396: mutation: record: all: process boundary, covered by the plant job itself: pnpm run gate:plants (CI check Plants) runs every plant through it
+gates/bin/plants.ts:398: mutation: record: all: process boundary, covered by the plant job itself: pnpm run gate:plants (CI check Plants) runs every plant through it
+gates/bin/plants.ts:404: mutation: record: all: process boundary, covered by the plant job itself: pnpm run gate:plants (CI check Plants) runs every plant through it
+gates/bin/plants.ts:406: mutation: record: all: process boundary, covered by the plant job itself: pnpm run gate:plants (CI check Plants) runs every plant through it
+gates/bin/plants.ts:408: mutation: record: all: process boundary, covered by the plant job itself: pnpm run gate:plants (CI check Plants) runs every plant through it
+gates/bin/plants.ts:410: mutation: record: all: process boundary, covered by the plant job itself: pnpm run gate:plants (CI check Plants) runs every plant through it
+gates/bin/plants.ts:413: mutation: record: all: process boundary, covered by the plant job itself: pnpm run gate:plants (CI check Plants) runs every plant through it
+gates/bin/plants.ts:415: mutation: record: all: process boundary, covered by the plant job itself: pnpm run gate:plants (CI check Plants) runs every plant through it
+gates/bin/plants.ts:417: mutation: record: all: process boundary, covered by the plant job itself: pnpm run gate:plants (CI check Plants) runs every plant through it
+gates/bin/plants.ts:419: mutation: record: all: process boundary, covered by the plant job itself: pnpm run gate:plants (CI check Plants) runs every plant through it
+gates/bin/plants.ts:421: mutation: record: all: process boundary, covered by the plant job itself: pnpm run gate:plants (CI check Plants) runs every plant through it
+gates/bin/plants.ts:424: mutation: record: all: process boundary, covered by the plant job itself: pnpm run gate:plants (CI check Plants) runs every plant through it
+gates/bin/plants.ts:429: mutation: record: all: process boundary, covered by the plant job itself: pnpm run gate:plants (CI check Plants) runs every plant through it
+gates/bin/plants.ts:431: mutation: record: all: process boundary, covered by the plant job itself: pnpm run gate:plants (CI check Plants) runs every plant through it
+gates/bin/plants.ts:433: mutation: record: all: process boundary, covered by the plant job itself: pnpm run gate:plants (CI check Plants) runs every plant through it
+gates/bin/plants.ts:438: mutation: record: all: process boundary, covered by the plant job itself: pnpm run gate:plants (CI check Plants) runs every plant through it
+gates/bin/plants.ts:441: mutation: record: all: process boundary, covered by the plant job itself: pnpm run gate:plants (CI check Plants) runs every plant through it
+gates/bin/plants.ts:443: mutation: record: all: process boundary, covered by the plant job itself: pnpm run gate:plants (CI check Plants) runs every plant through it
+gates/bin/plants.ts:445: mutation: record: all: process boundary, covered by the plant job itself: pnpm run gate:plants (CI check Plants) runs every plant through it
+gates/bin/plants.ts:447: mutation: record: all: process boundary, covered by the plant job itself: pnpm run gate:plants (CI check Plants) runs every plant through it
+gates/bin/plants.ts:449: mutation: record: all: process boundary, covered by the plant job itself: pnpm run gate:plants (CI check Plants) runs every plant through it
+gates/bin/plants.ts:451: mutation: record: all: process boundary, covered by the plant job itself: pnpm run gate:plants (CI check Plants) runs every plant through it
+gates/bin/plants.ts:456: mutation: record: all: process boundary, covered by the plant job itself: pnpm run gate:plants (CI check Plants) runs every plant through it
+gates/bin/plants.ts:458: mutation: record: all: process boundary, covered by the plant job itself: pnpm run gate:plants (CI check Plants) runs every plant through it
+gates/bin/plants.ts:460: mutation: record: all: process boundary, covered by the plant job itself: pnpm run gate:plants (CI check Plants) runs every plant through it
+gates/bin/plants.ts:464: mutation: record: all: process boundary, covered by the plant job itself: pnpm run gate:plants (CI check Plants) runs every plant through it
+gates/bin/plants.ts:50: mutation: ConditionalExpression: Survived: replaced by true
+gates/bin/plants.ts:50: mutation: StringLiteral: Survived: replaced by "Stryker was here!"
+gates/bin/plants.ts:89: mutation: ConditionalExpression: Survived: replaced by false
+gates/bin/plants.ts:151: mutation: EqualityOperator: Survived: replaced by at < 0
+gates/bin/plants.ts:157: mutation: ConditionalExpression: Survived: replaced by false
+gates/bin/plants.ts:157: mutation: StringLiteral: NoCoverage: replaced by "Stryker was here!"
+gates/bin/plants.ts:166: mutation: ConditionalExpression: Survived: replaced by true
+gates/bin/plants.ts:168: mutation: ConditionalExpression: Survived: replaced by true
+gates/bin/plants.ts:168: mutation: EqualityOperator: Survived: replaced by missing.length >= 0
+gates/bin/plants.ts:168: mutation: StringLiteral: Survived: replaced by ""
+gates/bin/plants.ts:168: mutation: ArrayDeclaration: NoCoverage: replaced by ["Stryker was here"]
+gates/bin/plants.ts:176: mutation: StringLiteral: Survived: replaced by ""
+gates/bin/plants.ts:186: mutation: ConditionalExpression: Survived: replaced by true
+gates/bin/plants.ts:191: mutation: MethodExpression: Survived: replaced by lines
+gates/bin/plants.ts:206: mutation: MethodExpression: Survived: replaced by findings
+gates/bin/plants.ts:206: mutation: ConditionalExpression: Survived: replaced by true
+gates/bin/plants.ts:207: mutation: MethodExpression: Survived: replaced by matches.every(found => found.rest.includes(message))
+gates/bin/plants.ts:229: mutation: ArrayDeclaration: NoCoverage: replaced by ["Stryker was here"]
+gates/bin/plants.ts:229: mutation: ArrayDeclaration: NoCoverage: replaced by []
+gates/bin/plants.ts:229: mutation: StringLiteral: NoCoverage: replaced by ``
+gates/bin/plants.ts:230: mutation: StringLiteral: NoCoverage: replaced by ""
+gates/bin/plants.ts:231: mutation: StringLiteral: NoCoverage: replaced by ""
+gates/bin/plants.ts:238: mutation: StringLiteral: Survived: replaced by ""
+gates/bin/plants.ts:280: mutation: MethodExpression: Survived: replaced by [...(await tools.dirs(dir))]
+gates/bin/plants.ts:316: mutation: MethodExpression: Survived: replaced by [...(await tools.dirs(plantsDir))]
+mutation: 25 findings in 1 changed file (559 mutants on changed lines)
