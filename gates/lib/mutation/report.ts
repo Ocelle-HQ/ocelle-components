@@ -1,7 +1,9 @@
 // Classification of a Stryker JSON report (FR-011 as amended on 2026-11-02, contracts/gate-cli.md, mutation row):
 // only mutants on changed lines decide; Survived and NoCoverage are findings; Killed, Timeout and RuntimeError are
 // killed, CompileError is invalid and Ignored is an equivalent record, all of which pass; no usable report, or a
-// mutant left in any other state, means the gate could not run.
+// mutant left in any other state, means the gate could not run. Stryker lists only files with mutants, so a changed
+// file the report does not list has none on its changed lines (a type-only or comment-only change) and passes; the
+// gate checks before Stryker runs that every changed path can be passed to it verbatim (phase 3 round 7, O7-02).
 import { oneLine } from "../findings.ts";
 import type { Finding } from "../findings.ts";
 import type { ChangedFile } from "./ranges.ts";
