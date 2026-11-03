@@ -90,6 +90,76 @@ plan of this pull request, 9 shards; log: `round-1-mutation-pr-base.log`):
 | 9 | gates/lib/vitest-report.ts, gates/lib/workspace-yaml.ts, gates/stylelint/token-only.ts, packages/elements/src/index.ts, packages/styles/src/index.ts, packages/tokens/src/index.ts | 420 | exit 0, none survived | 1 | 181 s (3 min 1 s) |
 
 Every shard exits 0 with no survivor. The longest local shard takes 246 s (4 min 6 s), against 592 s for the
-cancelled CI shard's files before the fixes. The CI runner (ubuntu-24.04) is the measurement of SC-001/SC-005; the
-cancelled shard ran there about as long as here (9 min 48 s against 9 min 52 s), so these timings leave a margin of
-more than half the 10-minute limit.
+cancelled CI shard's files before the fixes. The CI runner (ubuntu-24.04) is the measurement of SC-001/SC-005.
+
+Correction (review round 2 note R2-01, round 3 O3-01): this paragraph first said these timings leave "a margin of
+more than half the 10-minute limit", because the cancelled shard had run on CI about as long as here. That was
+wrong. CI run 4 (below) took 1.5 to 3.4 times the local time per shard, and its longest job left about 12-17 % of
+the limit; run 7 cancelled a shard at the limit. Local sandbox times do not predict GitHub runner times.
+
+## Review round 3 (operator addendum O3-01, shard bound 250 lines, 2026-11-03)
+
+### CI evidence that led to the change (round-3.md)
+
+GitHub `ubuntu-24.04` runners, whole job time, the same code at three heads, bound 500 lines (9 shards):
+
+| Shard | Changed lines | Run 4 (2dc6d9a) | Run 6 (2a32ba8) | Run 7 (ca5a14f) |
+|---|---|---|---|---|
+| `gates/lib/plant-judge.ts,gates/lib/plant-repo.ts` | 435 | 7:31 | 8:53 | 10:20, cancelled |
+| `gates/lib/mutation/records.ts,…,gates/lib/pins-rules.ts` | 330 | 6:51 | 9:22 | 9:38 |
+| `gates/bin/plants.ts,gates/bin/prefix.ts,gates/bin/setup-offline.ts` | 455 | 8:53 | 5:45 | 8:12 |
+
+The same shard varies by up to 2.5 minutes between runs on the same runner type (runner variance), so a shard of
+up to 500 changed lines does not meet FR-013/SC-005 reliably.
+
+### Local timings at the new bound
+
+Measured at the T093 green change (`gates/lib/mutation/shards.ts` bound 250), working tree otherwise clean, shards one
+after the other, same sandbox (4 vCPU, Node 26.13.0, StrykerJS 10.1.1, `concurrency: 8`), every run cold. Plan
+against the pull request base, the CI plan (`pnpm run gate:mutation -- --base bdb9b70 --plan`), 18 shards; then each
+shard with `--files` (log: `round-3-mutation-pr-base.log`):
+
+| Shard | Files | Changed lines | Mutants on changed lines | Result | Equivalent records | Duration |
+|---|---|---|---|---|---|---|
+| 1 | gates/bin/config-copies.ts | 89 | 78 | exit 0, none survived | 2 | 91 s (1 min 31 s) |
+| 2 | gates/bin/csp.ts | 248 | 281 | exit 0, none survived | 9 | 270 s (4 min 30 s) |
+| 3 | gates/bin/lint.ts, gates/bin/mutation.ts | 179 | 171 | exit 0, none survived | 14 | 155 s (2 min 35 s) |
+| 4 | gates/bin/pins.ts | 157 | 163 | exit 0, none survived | 7 | 162 s (2 min 42 s) |
+| 5 | gates/bin/plants.ts | 233 | 185 | exit 0, none survived | 24 | 147 s (2 min 27 s) |
+| 6 | gates/bin/prefix.ts, gates/bin/setup-offline.ts | 222 | 209 | exit 0, none survived | 13 | 144 s (2 min 24 s) |
+| 7 | gates/bin/signoff.ts, gates/bin/style-lint.ts, gates/bin/test-lint.ts | 179 | 177 | exit 0, none survived | 18 | 149 s (2 min 29 s) |
+| 8 | gates/bin/test.ts, gates/bin/typecheck.ts, gates/eslint/no-snapshot-only.ts | 241 | 180 | exit 0, none survived | 23 | 110 s (1 min 50 s) |
+| 9 | gates/eslint/unchecked-expect.ts, gates/lib/cli.ts, gates/lib/entries.ts | 248 | 188 | exit 0, none survived | 4 | 139 s (2 min 19 s) |
+| 10 | gates/lib/eslint-report.ts, gates/lib/findings.ts, gates/lib/mutation/coverage.ts, gates/lib/mutation/ranges.ts | 235 | 214 | exit 0, none survived | 1 | 185 s (3 min 5 s) |
+| 11 | gates/lib/mutation/records.ts, gates/lib/mutation/report.ts, gates/lib/mutation/shards.ts | 194 | 210 | exit 0, none survived | 1 | 120 s (2 min 0 s) |
+| 12 | gates/lib/pins-rules.ts | 137 | 267 | exit 0, none survived | 1 | 240 s (4 min 0 s) |
+| 13 | gates/lib/plant-judge.ts | 198 | 323 | exit 0, none survived | 0 | 272 s (4 min 32 s) |
+| 14 | gates/lib/plant-repo.ts | 237 | 311 | exit 0, none survived | 40 | 216 s (3 min 36 s) |
+| 15 | gates/lib/plant-runner.ts, gates/lib/registry.ts, gates/lib/spawn.ts | 242 | 239 | exit 0, none survived | 9 | 250 s (4 min 10 s) |
+| 16 | gates/lib/stylelint-report.ts, gates/lib/tsc-report.ts | 185 | 192 | exit 0, none survived | 1 | 117 s (1 min 57 s) |
+| 17 | gates/lib/vitest-report.ts, gates/lib/workspace-yaml.ts | 212 | 244 | exit 0, none survived | 1 | 140 s (2 min 20 s) |
+| 18 | gates/stylelint/token-only.ts, packages/elements/src/index.ts, packages/styles/src/index.ts, packages/tokens/src/index.ts | 107 | 176 | exit 0, none survived | 0 | 181 s (3 min 1 s) |
+
+Every shard exits 0 with no survivor; together they take 3088 s (51 min 28 s) one after the other, against 1630 s
+for the 9 shards of round 1. The longest local shard is 272 s (4 min 32 s), `gates/lib/plant-judge.ts` alone.
+
+### Margin (R2-01), stated honestly
+
+These local timings do not show that the new bound meets the 10-minute limit on CI, and this record does not claim
+a margin. Two reasons:
+
+- **Local times do not predict GitHub runner times.** CI run 4 took 1.5 to 3.4 times the local time per shard, and
+  the same shard varied by up to 2.5 minutes between CI runs 4, 6 and 7. No fixed factor converts a sandbox time
+  into a runner time.
+- **Halving the lines did not halve the local time of the slowest shards.** A shard has a fixed cost (Stryker's
+  start, the dry run of every test, the TypeScript checker's start; shard 1, 78 mutants, takes 91 s), and the
+  checker checks the mutants of one file one at a time (round 1, R1-02), so a shard of one large file does not get
+  faster by being alone. `gates/lib/plant-judge.ts` and `gates/lib/plant-repo.ts` took 246 s together in round 1
+  (634 mutants, before later changes) and 272 s and 216 s apart now; `gates/bin/csp.ts` alone takes 270 s. The
+  smaller bound shortens the multi-file shards and halves the mutants per shard, which is what reduces CPU time
+  per job on a slower runner; how much it reduces the wall time there is not measurable here.
+
+The evidence for FR-013/SC-005 at the 250-line bound is therefore the next CI run on GitHub's runners: each of the
+18 `mutation-shard` jobs must finish within `timeout-minutes: 10` (ci.yml), and the job durations of that run are
+the measured margin. Until such a run exists, the margin is unknown, not "more than half".
+

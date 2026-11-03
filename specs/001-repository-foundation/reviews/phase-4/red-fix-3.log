@@ -1,0 +1,41 @@
+Scope: all 4 workspace projects
+✓ Lockfile passes supply-chain policies (verified 12h ago)
+Lockfile is up to date, resolution step is skipped
+Progress: resolved 1, reused 0, downloaded 0, added 0
+Packages are hard linked from the content-addressable store to the virtual store.
+  Content-addressable store is at: /root/.local/share/pnpm/store/v11
+  Virtual store is at:             node_modules/.pnpm
+Packages: +405
+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+Progress: resolved 405, reused 405, downloaded 0, added 405, done
+
+devDependencies:
++ @eslint/js 10.0.1
++ @stryker-mutator/core 10.1.1
++ @stryker-mutator/typescript-checker 10.1.1
++ @stryker-mutator/vitest-runner 10.1.1
++ @types/node 26.6.5
++ @vitest/browser-playwright 5.0.5
++ @vitest/eslint-plugin 1.6.28
++ eslint 10.13.0
++ jiti 2.7.0
++ parse5 8.0.1
++ playwright 1.64.1
++ postcss 8.5.31
++ postcss-lit 1.4.1
++ postcss-value-parser 4.2.0
++ stylelint 17.16.0
++ typescript 6.0.3
++ typescript-eslint 8.72.0
++ vite 8.3.5
++ vitest 5.0.5
+
+Done in 2.3s using pnpm v12.16.1
+$ node gates/bin/setup-offline.ts
+setup: installed offline; Chromium at /opt/pw-browsers/chromium_headless_shell-1243/chrome-headless-shell-linux64/chrome-headless-shell
+$ node gates/bin/test.ts
+gates/test/mutation-shards.test.ts:33: unit-tests: planShards fills shards of up to 250 changed lines, exactly 250 included: AssertionError: expected [ …(2) ] to deeply equal [ { …(2) }, { …(2) }, { …(2) } ]
+gates/test/mutation-shards.test.ts:46: unit-tests: planShards splits two files of 251 changed lines together into two shards: AssertionError: expected [ { files: [ 'a.ts', 'b.ts' ], …(1) } ] to deeply equal [ …(2) ]
+gates/test/mutation-shards.test.ts:53: unit-tests: planShards gives a file of 251 changed lines a shard of its own: AssertionError: expected [ { files: [ 'a.ts', …(2) ], …(1) } ] to deeply equal [ …(3) ]
+unit-tests: 3 of 1111 tests failed
+[ELIFECYCLE] Test failed. See above for more details.

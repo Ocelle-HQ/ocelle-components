@@ -211,7 +211,7 @@ roughly 18 shards). Planner updates R-08/plan, implementer changes shards.ts tes
 mutation strength." Phase 4 was approved in round 2; this task reopens it for one test-first unit, reviewed as
 phase 4's round 4.
 
-- [ ] T093 [US3] Shard bound of 250 changed lines (spec FR-013/SC-005 as amended, research.md R-08 "CI, sharded"; 10 files per shard and the 10-minute shard job limit unchanged), test-first:
+- [X] T093 [US3] Shard bound of 250 changed lines (spec FR-013/SC-005 as amended, research.md R-08 "CI, sharded"; 10 files per shard and the 10-minute shard job limit unchanged), test-first:
   1. **Stub**: none needed; `gates/lib/mutation/shards.ts` and its test exist since phase 3.
   2. **Red** (test file only, one commit): update and add cases in `gates/test/mutation-shards.test.ts` (T039's test) on recorded diff output asserting the 250-line split: a file with 251 changed lines is a shard on its own; two files whose changed lines sum to 251 are split into two shards; two files summing to exactly 250 fit in one shard. Cases that assumed 500 are changed to the new bound. Commit alone, run `red.sh 4 fix-3` (round 3 is the operator round that requests this addendum) and confirm every new failure is an assertion failure against the current 500-line code, not a load error
   3. **Green**: set the bound to 250 in `gates/lib/mutation/shards.ts` (constant and header comment) and update the bound's wording in `gates/README.md`

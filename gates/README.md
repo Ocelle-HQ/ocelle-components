@@ -66,7 +66,9 @@ makes a gate block the merge. The ruleset (or branch protection) on `main` requi
 12. Plants
 
 A change to this set is a change to the ruleset, which the operator makes. The jobs `mutation-plan` and
-`mutation-shard` serve the Mutation testing check and are not required themselves. `.github/workflows/cache.yml`
+`mutation-shard` serve the Mutation testing check and are not required themselves. `mutation-plan` splits the changed
+files into shards of at most 10 files and 250 changed lines (a file of more than 250 changed lines is a shard on its
+own; FR-013), and each `mutation-shard` job runs one shard under a 10-minute limit. `.github/workflows/cache.yml`
 (cache warming on `main`) is not a gate.
 
 ## Deferred gates (FR-026)
