@@ -52,7 +52,7 @@ it with the same table and with the stylesheet.
    renders, **Then** every colour token of Appendix A has its light value (for example
    `--ocelle-color-canvas` is `#F1EEE8`).
 2. **Given** a system that prefers dark and no `data-theme` attribute, **When** the page renders, **Then** every
-   colour, elevation and other theme-dependent token has its dark value (for example `--ocelle-color-canvas` is
+   colour and elevation token has its dark value (for example `--ocelle-color-canvas` is
    `#15130F` and `--ocelle-elevation-bar` is `none`).
 3. **Given** a system that prefers light, **When** the page renders, **Then** every token has its light value.
 4. **Given** a system that prefers dark and `data-theme="light"` on `<html>`, **When** the page renders, **Then**
@@ -133,12 +133,14 @@ pairs and rules they checked); run the plant job, whose new plants (FR-020) each
 
 1. **Given** the tokens and the contrast pair list (FR-016), **When** the contrast gate runs, **Then** it computes the
    ratio of every pair in both themes, passes, and reports the number of pairs checked per theme, which is greater
-   than zero, equals the number of pairs in the list for that theme, and is at least the number of required pairs
-   (130 per theme with Appendix A, A.8).
+   than zero, equals the number of pairs in the list for that theme (excluded pairs count as checked, FR-016), and is
+   at least the number of required pairs (130 per theme with Appendix A, A.8; with the excluded pairs of A.9 the list
+   has 134 light and 133 dark entries).
 2. **Given** a text pair whose ratio drops below 4.5:1 in one theme (for example `color-ink-muted` changed so that it
    is 4.3:1 on `color-inset`), **When** the gate runs, **Then** it fails with one finding naming the theme, the two
    tokens, the ratio and the threshold.
-3. **Given** a non-text pair below 3:1 (for example `color-control-border` on `color-rail` in light), **When** the
+3. **Given** a non-text pair whose ratio drops below 3:1 (for example `color-control-border` changed so that it is
+   below 3:1 on `color-rail` in light; it is 3.02 with Appendix A's values), **When** the
    gate runs, **Then** it fails the same way with the 3:1 threshold.
 4. **Given** a pair whose computed ratio differs from the figure recorded for it by more than the rounding of that
    figure (FR-017), **When** the gate runs, **Then** it fails and names the recorded and computed figures, even if
@@ -151,12 +153,16 @@ pairs and rules they checked); run the plant job, whose new plants (FR-020) each
    - the list lacks a pair that FR-016 requires (derived from the intended grounds recorded in the token source):
      exit 1, one finding `missing required pair` naming the theme, the foreground and the ground.
 6. **Given** a token set in which a brand rule of FR-019 is broken (for example `color-link` set equal to
-   `color-accent` in light, a second radius at 4 px, or a monospace family in `font-sans`), **When** the
+   `color-accent` in light, a second radius at 4 px, a radius token outside the closed set of FR-019 (c), or a
+   monospace family in `font-sans`), **When** the
    `brand-rules` gate runs, **Then** it fails naming the rule and the token.
-7. **Given** the plant job, **When** it runs, **Then** every new gate has fail, pass and breaking plants that behave
-   as `gates/README.md` requires, and the registry, CI jobs and FR-020 list of 001 include the new gate.
-8. **Given** `gates/README.md` after this feature, **When** it is read, **Then** the contrast gate is in "The gates"
-   table and the "Required checks" list, and the "Contrast check" row is gone from "Deferred gates".
+7. **Given** the plant job, **When** it runs, **Then** both new gates (`contrast` and `brand-rules`) have fail, pass
+   and breaking plants that behave as `gates/README.md` requires, and the registry, CI jobs and FR-020 list of 001
+   include both gates.
+8. **Given** `gates/README.md` after this feature, **When** it is read, **Then** the `contrast` and `brand-rules` gates
+   are in "The gates" table and their checks ("Contrast", "Brand rules") in the "Required checks" list, the widened
+   scopes of the `csp` and `prefix` gates (FR-023) are recorded, and the "Contrast check" row is gone from "Deferred
+   gates".
 
 ---
 
@@ -197,8 +203,8 @@ can be built.
   fails naming the file; it does not ship without the font or with a different file.
 - **Contrast of a translucent colour** (`color-overlay`): it is not a text or UI-component colour and is not in the
   pair list; a pair that needs it is out of scope (dialogs are an element issue).
-- **Ratio exactly on a threshold** (for example 3.02 rounding to 3.0): the gate compares unrounded ratios with the
-  threshold, so 2.995 fails 3:1 even if it prints as 3.0.
+- **Ratio just below a threshold** (for example 2.995, which prints as 3.0 at one decimal): the gate compares
+  unrounded ratios with the threshold, so 2.995 fails 3:1.
 - **Recorded figure wrong in #5**: if a figure recorded from #5 (Appendix A, A.7) does not match the computed ratio,
   the implementer corrects the recorded figure in the pair list with the reason in the commit and in the review, and
   the correction needs the operator's approval in that review, since it changes the operator's design data; the
@@ -275,13 +281,17 @@ can be built.
 - **FR-016**: A contrast pair list in the repository MUST name every pair to check, per theme, with its kind (text,
   4.5:1; non-text, 3:1) and its recorded figure. The required pairs are those of Appendix A, A.8 (130 per theme with
   the current token set): every foreground token on every ground it is intended for, which includes every pair of
-  A.7 that #5 records at or above its threshold. In addition, the pair list MUST carry the two below-threshold pairs
-  #5 records (A.7: `color-control-border` on `color-accent-low`, #5 rule 1; `color-accent` on `color-canvas` in
-  light, "ochre text never on bone") as excluded pairs with #5's reason. The intended grounds are recorded per foreground token in the token source (FR-008), and the gate
-  derives the required pair set from them; the pair list cannot shrink it. A pair below its threshold that the
-  design does not use MUST be listed as an excluded pair with a non-empty reason, not left out; an excluded pair is
-  still computed and must still match its recorded figure, but its threshold is not applied. The pairs that are
-  below threshold with Appendix A's values are listed in A.9. The pair list MAY hold pairs beyond the required set.
+  A.7 that #5 records at or above its threshold. In addition, the pair list MUST carry, in each theme where it
+  applies, every excluded pair of A.9 with its reason: `color-control-border` on `color-accent-low` (#5 rule 1);
+  `color-control-border` on `color-inset` and on `color-hover-bg` (#5 rule 1 extended to these grounds, operator
+  decision 2026-11-03, SPEC-2-01: a control drawn on them uses `color-accent-strong` for its border); `color-accent`
+  on `color-canvas` in light ("ochre text never on bone"). The intended grounds are recorded per foreground token in
+  the token source (FR-008), and the gate derives the required pair set from them; the pair list cannot shrink it. A
+  pair below its threshold that the design does not use MUST be listed as an excluded pair with a non-empty reason,
+  not left out; an excluded pair is still computed and must still match its recorded figure, but its threshold is
+  not applied. An excluded pair counts among the pairs checked (FR-021), and a required pair present in the list as
+  an excluded pair with a non-empty reason is not a `missing required pair`. The pairs that are below threshold with
+  Appendix A's values are listed in A.9. The pair list MAY hold pairs beyond the required set.
 - **FR-017**: The contrast gate MUST compute each pair's ratio with the WCAG 2.x relative-luminance formula from the
   token values (resolving derived tokens), compare the unrounded ratio with the threshold, and compare it with the
   recorded figure at the figure's precision (a figure of `5.3` matches a computed ratio in [5.25, 5.35); `3.02`
@@ -296,11 +306,13 @@ can be built.
 - **FR-019**: A brand-rule check MUST reject a token set that breaks any of these rules, which hold on token values
   alone: (a) no font token names a monospace family; (b) `color-link` differs from `color-accent` and meets 4.5:1 on
   `color-canvas` and `color-sheet` in both themes, and the pair `color-accent` on `color-canvas` in light is listed as
-  an excluded text pair ("ochre text never on bone"); (c) exactly one radius token is 4 px (`radius-2`), `radius-row`
-  is 6 px and `radius-pill` is 999 px; (d) `color-rule` and `color-rule-strong` are below 3:1 on `canvas` and `sheet`
-  while `color-control-border` is at or above 3:1 on them, so the decorative rule cannot serve as a control boundary
-  by mistake; (e) dark chrome, per token: `color-chrome` and `color-chrome-hover` each have a WCAG relative luminance
-  of at most 0.05 in both themes (at that bound white text has at least 10.5:1 on them; Appendix A's values are 0.004
+  an excluded text pair ("ochre text never on bone"); (c) the radius tokens are exactly the closed set `radius-1`
+  (2 px), `radius-2` (4 px, the one radius of constitution II), `radius-row` (6 px), `radius-shell` (10 px) and
+  `radius-pill` (999 px), each with that value: any other `radius-*` token, a missing one or a different value fails
+  (operator decision 2026-11-03, SPEC-2-03; the named use of each is in A.3); (d) `color-rule` and
+  `color-rule-strong` are below 3:1 on `canvas` and `sheet` while `color-control-border` is at or above 3:1 on
+  them, so the decorative rule cannot serve as a control boundary by mistake; (e) dark chrome, per token:
+  `color-chrome` and `color-chrome-hover` each have a WCAG relative luminance of at most 0.05 in both themes (at that bound white text has at least 10.5:1 on them; Appendix A's values are 0.004
   to 0.020), and `color-chrome-ink` and `color-chrome-muted` each have the same value in both themes, their contrast
   being checked by their required pairs (FR-016); (f) the reduced-motion values of FR-007; (g) the forced-colours
   guard of FR-018. Brand rules that only hold in rendered elements (chrome used by the top bar, digests in groups of
@@ -335,8 +347,11 @@ can be built.
   `gates/gates.json` and `gates/README.md`; the `csp` gate MUST gain a fail plant with an inline script in the
   Storybook output and a pass plant with an external script there. If Storybook cannot be built without inline script
   under the pinned versions, the phase stops and asks the operator; no Complexity Tracking exception is taken without
-  the operator's approval. The Storybook build gate, visual regression and axe stay with #10 (still deferred in
-  `gates/README.md`); #10 builds on this Storybook rather than adding a second one.
+  the operator's approval. Storybook's own UI theme is set so that it uses the token fonts; if the built output still
+  carries a monospace family in a `font` or `font-family` declaration that the theme cannot remove, so that the
+  widened `prefix` gate fails on Storybook's code, the phase likewise stops and asks the operator. The Storybook
+  build gate, visual regression and axe stay with #10 (still deferred in `gates/README.md`); #10 builds on this
+  Storybook rather than adding a second one.
 - **FR-024**: A mapping table MUST map each of the 55 `--sk-*` roles kitty-mission-ui uses to its `--ocelle-*`
   token, listing each dropped or merged role with its replacement. It MUST live outside the three packages (for
   example in this feature's directory or the repository's docs) so no `sk-` name enters package source or output
@@ -353,7 +368,11 @@ can be built.
 - **FR-025**: The package's changelog MUST record the token names as added public surface (constitution VII, MINOR;
   pre-1.0, so the version may stay below 1.0.0).
 - **FR-026**: No value, name or asset is copied from the Spec Kitty design library (constitution VI): values come from
-  Appendix A (#5, the operator's console prototype), and the font from its upstream repository.
+  Appendix A (#5, the operator's console prototype), and the font from its upstream repository. Values read from the
+  console prototype's `prototype/css/tokens.css` (SPEC-2-02) are taken as values only; no code is copied from it
+  (constitution VI). This requirement has no behaviour a test could fail on (constitution VIII, exemption); it is
+  shown by review: every value is traced to Appendix A or to the prototype file the plan records, and the font to
+  its upstream checksum (FR-011).
 
 ### Key Entities
 
@@ -372,13 +391,15 @@ can be built.
 ### Measurable Outcomes
 
 - **SC-001**: 100% of the tokens in Appendix A exist with their Appendix A value in each of the six theme conditions,
-  and none of the six excluded tokens exists; checked by browser tests.
+  and none of the six excluded tokens exists; checked by browser tests. For the values the plan supplies (the light
+  `color-chrome-hover`, the light shadows and ring width of A.5), the Appendix A value is the one the plan records
+  and adds to Appendix A.
 - **SC-002**: The stylesheet and the JSON export agree on 100% of tokens and values.
 - **SC-003**: A page under the strict CSP of constitution IV plus `font-src 'self'` renders text in Schibsted Grotesk
   with zero requests outside its own origin and zero CSP violations.
 - **SC-004**: The `contrast` gate checks every pair of FR-016 in both themes (the count it reports per theme equals
-  the pair list's size for that theme and is at least 130), and every fail plant of the `contrast` and `brand-rules`
-  gates is caught with exactly its expected finding by the plant job.
+  the pair list's size for that theme, excluded pairs included, and is at least 130), and every fail plant of the
+  `contrast` and `brand-rules` gates is caught with exactly its expected finding by the plant job.
 - **SC-005**: Changing any one checked token value so that a pair falls below its threshold makes the pull request's
   contrast check fail; restoring it makes it pass.
 - **SC-006**: An element author who writes `var(--ocelle-color-canvs)` (misspelt) gets a style-lint failure naming
@@ -394,15 +415,36 @@ can be built.
   operator's approval if a computation shows one is wrong.
 - **Values #5 describes but does not give.** For five values #5 gives a description, not a value (A.4 and A.5, marked
   "described"): the light `elevation-raised` ("two soft shadows"), the light shadow of `elevation-row` and
-  `elevation-seg`, and `dialog-max-inline` and `dialog-max-block` ("viewport minus two gutters"). The tests check the
-  described structure (number of shadows, ring colour, dark values; the dialog sizes at a known viewport).
-  The geometry and colour of the three light shadows are not in the repository; the plan obtains them from the
-  operator before User Story 1 is implemented, and they are then added to Appendix A.
-- **Pairs below threshold with Appendix A's values.** A.9 lists the required pairs that fall below their threshold
-  with the current values. Two have a reason in #5 (rule 1; "ochre text never on bone"). Three do not:
-  `color-control-border` on `color-inset` and on `color-hover-bg`, and `color-focus` on `color-chrome-hover` in light.
-  Before the pair list is written, the operator decides for each whether it is an excluded pair (with the reason) or
-  a value change; neither is decided by the implementer.
+  `elevation-seg`, and `dialog-max-inline` and `dialog-max-block` ("viewport minus two gutters"); #5 also gives no ring
+  width for `elevation-row` and `elevation-seg`. The tests check the described structure (number of shadows, ring
+  colour, dark values; the dialog sizes at a known viewport).
+- **Light shadows and ring width from the prototype file** (operator decision 2026-11-03, SPEC-2-02). The exact light
+  shadows of `elevation-raised`, `elevation-row` and `elevation-seg` (offsets, blur, spread, colour) and the ring width
+  of `elevation-row` and `elevation-seg` are taken from `prototype/css/tokens.css` of the console prototype v2, which
+  the operator provides; the file is not in the repository yet. Only the values are taken, no code (constitution VI,
+  FR-026). The plan records the values, the file they were read from and its checksum, and they are added to A.5
+  before User Story 1 is implemented. If the file is not provided, or does not contain one of these values, the phase
+  stops and asks the operator.
+- **Dialog size unit.** "The viewport's inline (block) size" in A.4 leaves the viewport unit open (`100vw`, `100dvw`,
+  `100svw` or the containing block). The plan fixes the unit, and the test of the dialog sizes at a known viewport
+  uses it.
+- **Pairs below threshold with Appendix A's values** (operator decisions 2026-11-03, SPEC-2-01). A.9 lists the required
+  or recorded pairs that fall below their threshold. `color-control-border` on `color-inset` and on `color-hover-bg`
+  are handled like #5's rule 1: a control drawn on these grounds uses `color-accent-strong` for its border, so those
+  pairs are excluded pairs and `color-accent-strong` on them is required instead (A.8). `color-focus` on
+  `color-chrome-hover` in light is resolved by changing the light `color-chrome-hover` (A.1): the plan computes the
+  nearest value to `#2A261F` at which `color-focus` has at least 3:1 (unrounded) on it, and records the new value and
+  the reason, which is then added to A.1. The plan states its measure of "nearest" (for example: the same hue and
+  saturation as `#2A261F`, the highest lightness that meets 3:1); the new value MUST also keep FR-019 (e) and 4.5:1
+  for `color-chrome-ink` and `color-chrome-muted` on it. #5's figure 5.6 for `color-chrome-muted` on
+  `color-chrome-hover` in light (A.7) no longer applies to the new value; that pair's light figure is recorded from
+  its first computation, approved by this operator decision. The dark `color-chrome-hover` is unchanged.
+- **Radius tokens** (operator decision 2026-11-03, SPEC-2-03). `radius-1` and `radius-shell` are kept with a named
+  use: `radius-1` for small marks (such as dots and focus corners), `radius-shell` for the outer app shell only.
+  Constitution II's "one radius" is read as one general radius (`radius-2`) beside these named-use radii; the plan's
+  Constitution Check records this reading. Whether elements use each radius only for its named use holds only in
+  rendered elements and is checked there, like the other rendered brand rules; the token check is the closed set of
+  FR-019 (c).
 - **Theme selectors belong here.** #5 states the theme rule as part of the tokens, so the `prefers-color-scheme` and
   `data-theme` selectors ship in the tokens stylesheet; #6 (base styles) builds on them and does not repeat them.
 - **Elements read tokens through inheritance.** The host loads the tokens stylesheet once on the document; elements
@@ -454,7 +496,7 @@ themes and is written as such.
 | `color-chrome` | `#15130F` | `#0D0C0A` | | top bar, icon rail, personal rail |
 | `color-chrome-ink` | `#EDE9E1` | `#EDE9E1` | | on chrome |
 | `color-chrome-muted` | `#A39D92` | `#A39D92` | | on chrome |
-| `color-chrome-hover` | `#2A261F` | `#24211B` | | on chrome |
+| `color-chrome-hover` | changed from #5's `#2A261F`: the plan computes it (operator, SPEC-2-01; Assumptions) | `#24211B` | | on chrome |
 | `color-accent` | `#C68A1E` | `#C68A1E` (same) | | ochre fill |
 | `color-on-accent` | `#15130F` | `#15130F` (same) | | black on the ochre fill |
 | `color-accent-low` | `#F1E1C0` | `#3A2B10` | | selected rows, current nav |
@@ -527,6 +569,10 @@ The `font-size-*` names follow #5's excluded `font-size-ui`; the sizes are given
 | `size-rail-item` | size | `2.5rem` | |
 | `size-visually-hidden` | size | `1px` | |
 
+Named radius uses (operator decision 2026-11-03, SPEC-2-03): `radius-1` for small marks (such as dots and focus
+corners); `radius-2` the one general radius; `radius-row` for rows and cards; `radius-shell` for the outer app shell
+only; `radius-pill` for state pills only. These five are the closed set of FR-019 (c).
+
 ### A.4 Shell and measure (group **shell**, theme-independent)
 
 | Token | Value | Derived from |
@@ -547,6 +593,9 @@ The `font-size-*` names follow #5's excluded `font-size-ui`; the sizes are given
 | `dialog-max-block` | described: the viewport's block size minus two `gutter` | `gutter` |
 | `bar-block-narrow` | `calc(2 * target-min + 3 * space-2)` (decision bar) | `target-min`, `space-2` |
 
+The viewport unit of `dialog-max-inline` and `dialog-max-block` is fixed by the plan (Assumptions, "Dialog size
+unit").
+
 ### A.5 Elevation and motion (group **elevation**, theme-dependent; group **motion**, theme-independent)
 
 | Token | Group | Light | Dark | Derived from |
@@ -561,7 +610,11 @@ The `font-size-*` names follow #5's excluded `font-size-ui`; the sizes are given
 | `easing-standard` | motion | `cubic-bezier(0.22, 1, 0.36, 1)` | same | |
 
 "Described" values are not given in #5; see Assumptions, "Values #5 describes but does not give". #5 gives no ring
-width for `elevation-row` and `elevation-seg`; the plan takes it with the shadow values from the operator.
+width for `elevation-row` and `elevation-seg`. The exact light shadows of `elevation-raised`, `elevation-row` and
+`elevation-seg` and the ring width of `elevation-row` and `elevation-seg` are taken, as values only, from the console
+prototype v2's `prototype/css/tokens.css`, which the operator provides (operator decision 2026-11-03, SPEC-2-02); the
+plan records them and they are added to this table (Assumptions, "Light shadows and ring width from the prototype
+file").
 
 ### A.6 Excluded tokens (MUST NOT exist)
 
@@ -590,7 +643,7 @@ figure of those pairs is recorded from its first computation (FR-017).
 | `color-link` | `color-rail` | light | text | 5.0 |
 | each state colour (`danger`, `warning`, `success`, `info`, `neutral`) | its own `-bg` | both (#5) | text | range 5.3 to 9.4 |
 | `color-chrome-ink` | `color-chrome` | light | text | 15.3 |
-| `color-chrome-muted` | `color-chrome-hover` | light | text | 5.6 |
+| `color-chrome-muted` | `color-chrome-hover` | light | text | 5.6 (for #5's `#2A261F`; superseded by the changed light `color-chrome-hover`, recorded from first computation; SPEC-2-01) |
 | `color-on-accent` | `color-accent` | both (same values) | text | 6.2 |
 | `color-focus` | `color-sheet` | light | non-text | 5.3 |
 | `color-focus` | `color-chrome` | light (#5) | non-text | 3.3 |
@@ -602,6 +655,9 @@ figure of those pairs is recorded from its first computation (FR-017).
 #5's two contrast rules: (1) a control drawn on `color-accent-low` uses `color-accent-strong` for its border, since
 `color-control-border` on `color-accent-low` is 2.9:1; (2) in light mode the ochre fill is never the only mark of
 state on a light ground (2.6 to 3.0:1), pair it with `color-accent-strong` or with text.
+
+Rule 1 extended (operator decision 2026-11-03, SPEC-2-01): a control drawn on `color-inset` or `color-hover-bg` also
+uses `color-accent-strong` for its border, in both themes.
 
 ### A.8 Required contrast pairs (intended grounds)
 
@@ -617,12 +673,14 @@ token source records these intended grounds per foreground token (FR-008); each 
 | `color-chrome-ink`, `color-chrome-muted` | text | `color-chrome`, `color-chrome-hover` | 4 |
 | `color-on-accent` | text | `color-accent` | 1 |
 | `color-focus` | non-text | every main ground, `color-chrome`, `color-chrome-hover` | 11 |
-| `color-control-border` | non-text | every main ground except `color-accent-low` (#5 rule 1) | 8 |
-| `color-accent-strong` | non-text | `color-accent-low` (#5 rule 1) | 1 |
+| `color-control-border` | non-text | every main ground except `color-accent-low`, `color-inset` and `color-hover-bg` (#5 rule 1, extended by the operator, SPEC-2-01) | 6 |
+| `color-accent-strong` | non-text | `color-accent-low`, `color-inset`, `color-hover-bg` (#5 rule 1, extended by the operator, SPEC-2-01) | 3 |
 | | | **total** | **130** |
 
 Every pair of A.7 is in this set, except `color-control-border` on `color-accent-low` and `color-accent` on
-`color-canvas` in light, which FR-016 requires the pair list to carry as excluded pairs (FR-019 (b)).
+`color-canvas` in light, which FR-016 requires the pair list to carry as excluded pairs (FR-019 (b)). The pair list
+also carries `color-control-border` on `color-inset` and on `color-hover-bg` in both themes as excluded pairs (A.9).
+With these excluded pairs the list has 134 entries in light and 133 in dark, all counted as checked (FR-016, FR-021).
 
 ### A.9 Required or recorded pairs below threshold with Appendix A's values
 
@@ -632,8 +690,8 @@ Computed for this spec on 2026-11-03 with the WCAG 2.x formula; the gate's own c
 |---|---|---|---|---|
 | `color-control-border` on `color-accent-low` | light, dark | 2.94, 2.88 | 3:1 | excluded, #5 rule 1 (`color-accent-strong` on it: 4.31, 6.13) |
 | `color-accent` on `color-canvas` | light | 2.57 | 4.5:1 | excluded, "ochre text never on bone" |
-| `color-control-border` on `color-inset` | light, dark | 2.80, 2.96 | 3:1 | open: operator decides (Assumptions) |
-| `color-control-border` on `color-hover-bg` | light | 2.80 | 3:1 | open: operator decides (Assumptions) |
-| `color-focus` on `color-chrome-hover` | light | 2.71 | 3:1 | open: operator decides (Assumptions) |
+| `color-control-border` on `color-inset` | light, dark | 2.80, 2.95 | 3:1 | excluded, #5 rule 1 extended (operator, SPEC-2-01; `color-accent-strong` on it: 4.11, 6.28) |
+| `color-control-border` on `color-hover-bg` | light, dark | 2.80, 3.17 | 3:1 | excluded in both themes, #5 rule 1 extended (operator, SPEC-2-01; `color-accent-strong` on it: 4.11, 6.74) |
+| `color-focus` on `color-chrome-hover` | light | 2.71 (with #5's `#2A261F`) | 3:1 | resolved by changing the light `color-chrome-hover` (operator, SPEC-2-01; Assumptions); at least 3:1 with the plan's value |
 | `color-disabled-ink` on `color-rail`, `color-inset`, `color-accent-low`, `color-hover-bg`, `color-disabled-bg` | light | 4.38, 4.07, 4.27, 4.07, 4.23 | none (exempt) | checked against figure only |
 | `color-disabled-ink` on `color-inset`, `color-accent-low`, `color-hover-bg`, `color-disabled-bg` | dark | 3.84, 3.75, 4.12, 4.12 | none (exempt) | checked against figure only |

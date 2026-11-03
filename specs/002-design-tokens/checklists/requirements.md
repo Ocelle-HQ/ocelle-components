@@ -43,6 +43,12 @@
   `contrast` and `brand-rules` (FR-020).
 - Operator answer to SPEC-1-05 (2026-11-03, "Hold to strict CSP"): the Storybook output is held to constitution IV's
   strict CSP and the `csp` gate's scope is widened to cover it (FR-023, SC-008).
-- Open operator items recorded in Assumptions, not [NEEDS CLARIFICATION]: the light shadow values #5 only describes
-  (A.5; the plan obtains them before User Story 1), and three required pairs below threshold with #5's values with no
-  reason in #5 (A.9: control-border on inset and hover-bg, focus on chrome-hover in light).
+- Operator answers to spec check 2 (2026-11-03): SPEC-2-01, `color-control-border` on `color-inset` and
+  `color-hover-bg` handled like #5 rule 1 (excluded pairs; `color-accent-strong` required on those grounds, A.8, A.9),
+  and the light `color-chrome-hover` changed so that `color-focus` has at least 3:1 on it (the plan computes and
+  records the value; Assumptions, A.1); SPEC-2-02, the light shadows and ring width of A.5 taken as values only from
+  the operator's `prototype/css/tokens.css` (Assumptions, A.5, FR-026); SPEC-2-03, `radius-1` and `radius-shell` kept
+  with named uses, FR-019 (c) tests the closed set of five radius tokens (A.3).
+- Values the plan supplies before User Story 1 (recorded in Assumptions, not [NEEDS CLARIFICATION]): the light
+  `color-chrome-hover`, the light shadows and ring width of A.5 (from the prototype file the operator provides), and
+  the viewport unit of the dialog sizes.
