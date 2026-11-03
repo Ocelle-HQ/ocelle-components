@@ -2,8 +2,10 @@
 // changed since `--base <sha>` with Stryker (mutate ranges), and decides from Stryker's JSON report, never from its
 // exit code. Before any mode runs, a `git diff` file header it cannot read, or a changed path Stryker cannot take
 // verbatim as a `mutate` input, is exit 2 naming the header or every such path (phase 3 round 7, O7-01 and O7-02),
-// so the gate never passes with changed code it did not check; a changed file absent from Stryker's report has no
-// mutant on its changed lines and passes (report.ts). `--plan` prints the CI shards, splitting a file of more than
+// so the gate never passes with changed code it did not check; nor does it after Stryker runs: a `mutate` entry
+// Stryker's output reports it did not read (a file under a folder such as `.next`) is exit 2 naming each such entry,
+// in the whole-diff and `--files` runs alike (phase 3 round 12, O12-01); a changed file Stryker read that is absent
+// from its report has no mutant on its changed lines and passes (report.ts). `--plan` prints the CI shards, splitting a file of more than
 // 120 changed lines into `path:start-end` entries, two entries of one file never in one shard, and writes the number
 // of shards and of cuts within files to stderr, the JSON on stdout staying one array for ci.yml (phase 3 round 10,
 // O10-01 and O10-02); `--files <entry>[,<entry>...]` limits a run to one shard's entries and mutates only the

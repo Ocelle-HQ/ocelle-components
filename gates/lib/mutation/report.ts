@@ -4,6 +4,10 @@
 // mutant left in any other state, means the gate could not run. Stryker lists only files with mutants, so a changed
 // file the report does not list has none on its changed lines (a type-only or comment-only change) and passes; the
 // gate checks before Stryker runs that every changed path can be passed to it verbatim (phase 3 round 7, O7-02).
+// That holds only for a file Stryker read: Stryker 10.1.1 never reads a file under a folder named node_modules,
+// .git, .next, .nuxt, .svelte-kit or .stryker-tmp and only logs `Glob pattern "<entry>" did not result in any
+// files.`, so before the report is classified, any such line in Stryker's output means could not run, naming each
+// entry as logged (phase 3 round 12, O12-01; research.md R-08 "Unread `mutate` entries").
 import { oneLine } from "../findings.ts";
 import type { Finding } from "../findings.ts";
 import type { ChangedFile } from "./ranges.ts";
@@ -60,7 +64,23 @@ function filesOf(report: string): Files | undefined {
   return typeof files === "object" && files !== null ? (files as Files) : undefined;
 }
 
+/** Stryker's warning for a `mutate` entry it did not read; the entry is the text between the quotes. */
+const unreadWarning = /Glob pattern "(.*)" did not result in any files\./g;
+
+/** The `mutate` entries Stryker's output reports it did not read, in its order, as logged. */
+function unreadEntries(output: string): string[] {
+  return [...output.matchAll(unreadWarning)].map((match) => String(match[1]));
+}
+
 export function classifyMutants(run: StrykerRun, changed: readonly ChangedFile[]): MutantVerdict {
+  const unread = unreadEntries(run.output);
+  if (unread.length > 0) {
+    const skipped = "node_modules, .git, .next, .nuxt, .svelte-kit or .stryker-tmp, in any case";
+    return cannotRun(
+      `Stryker did not read these mutate entries (it skips every file under a folder named ${skipped}): ` +
+        `${unread.join(", ")}; move the files out of such a folder`,
+    );
+  }
   if (run.report === undefined) {
     return cannotRun(`Stryker wrote no report (${lastError(run.output) ?? `Stryker exited ${String(run.exitCode)}`}); ${fix}`);
   }

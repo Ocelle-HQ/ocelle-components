@@ -106,8 +106,11 @@ interface Wanted {
   readonly window: LineRange;
 }
 
-/** An entry `<path>.ts:<range>`: the range is the text after the last `.ts:`. */
-const rangeSuffix = /^(.*\.ts):(.*)$/s;
+/**
+ * An entry `<path>.ts:<range>` is split at its last `.ts:`, the path ending in `.ts` and the range the rest. A split
+ * without a regex leaves no anchor whose removal is equivalent (phase 3 round 12, O12-02).
+ */
+const pathEnd = ".ts:";
 const lineRange = /^(\d+)-(\d+)$/;
 
 /**
@@ -117,13 +120,13 @@ const lineRange = /^(\d+)-(\d+)$/;
 function readEntry(entry: string, changed: ReadonlySet<string>): Wanted | undefined {
   const whole: Wanted = { entry, path: entry, window: { start: 1, end: Infinity } };
   if (changed.has(entry)) return whole;
-  const suffix = rangeSuffix.exec(entry);
-  if (suffix === null) return whole;
-  const range = lineRange.exec(String(suffix[2]));
+  const split = entry.lastIndexOf(pathEnd);
+  if (split === -1) return whole;
+  const range = lineRange.exec(entry.slice(split + pathEnd.length));
   const start = Number(range?.[1]);
   const end = Number(range?.[2]);
   if (!(start >= 1 && start <= end)) return undefined;
-  return { entry, path: String(suffix[1]), window: { start, end } };
+  return { entry, path: entry.slice(0, split + ".ts".length), window: { start, end } };
 }
 
 /** The changed ranges cut to the windows, sorted, overlapping or adjacent ranges joined. */

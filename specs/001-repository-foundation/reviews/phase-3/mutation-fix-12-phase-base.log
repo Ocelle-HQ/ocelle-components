@@ -1,0 +1,12 @@
+$ node gates/bin/mutation.ts -- --base 4ac76fd7fb68ba7c8f15b4bc4177e64b518d56c8 --files gates/lib/mutation/report.ts,gates/lib/mutation/shards.ts,gates/bin/mutation.ts
+gates/bin/mutation.ts:173: mutation: record: all: process boundary, covered by gates-integration: gates/test/integration/mutation.test.ts "--files mutates only the listed file"
+gates/bin/mutation.ts:175: mutation: record: all: process boundary, covered by gates-integration: gates/test/integration/mutation.test.ts "--files mutates only the listed file"
+gates/bin/mutation.ts:177: mutation: record: all: process boundary, covered by gates-integration: gates/test/integration/mutation.test.ts "--files mutates only the listed file"
+gates/bin/mutation.ts:179: mutation: record: all: process boundary, covered by gates-integration: gates/test/integration/mutation.test.ts "--files mutates only the listed file"
+gates/bin/mutation.ts:181: mutation: record: all: process boundary, covered by gates-integration: gates/test/integration/mutation.test.ts "deletes an earlier run's report: a Stryker run that writes none exits 2 (review round 1, R1-01)"
+gates/bin/mutation.ts:183: mutation: record: all: process boundary, covered by gates-integration: gates/test/integration/mutation.test.ts "deletes an earlier run's report: a Stryker run that writes none exits 2 (review round 1, R1-01)"
+gates/bin/mutation.ts:185: mutation: record: all: process boundary, covered by gates-integration: gates/test/integration/mutation.test.ts "reports a change only to source no test imports as a located NoCoverage finding (exit 1), not as could not run (review round 1, R1-10)"
+gates/bin/mutation.ts:190: mutation: record: all: process boundary, covered by gates-integration: gates/test/integration/mutation.test.ts "--files mutates only the listed file"
+gates/bin/mutation.ts:196: mutation: record: all: process boundary, covered by gates-integration: gates/test/integration/mutation.test.ts "--files mutates only the listed file"
+gates/lib/mutation/report.ts:59: mutation: record: BlockStatement: equivalent, an empty catch leaves value undefined, which the check below also rejects
+mutation: 499 mutants on the changed lines of 3 files, none survived; 10 equivalent records
