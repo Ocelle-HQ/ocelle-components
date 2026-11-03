@@ -52,8 +52,13 @@ Issue numbers start new work at step 1. `resume` continues existing work (see "R
    stands on its own, and the record path. Every question to the operator is multiple choice (AskUserQuestion
    always offers "Other" for a free answer): turn an open question from a profile into 2-4 concrete options. Never answer a gate yourself, never skip one, never treat silence as
    approval.
-6. Never push, never touch GitHub, never edit a review, verdict or check file a profile wrote. The only records you
-   write yourself are the operator's decisions (named below), each committed alone.
+6. **Push the feature branch after each step**, so no work is lost: when a step's commits are in (a profile's,
+   yours or a script's) and `git status --porcelain` is empty, run `git push -u origin <feature branch>`. Never push
+   to `main`, never force-push without the operator's explicit approval, and never push with uncommitted or
+   in-progress work from a running profile. Pull-request CI runs only on `pull_request`, so a branch push starts no
+   CI. Profiles do not push; only you do. Beyond pushing, never touch GitHub (no comments, labels, state changes or
+   pull requests). Never edit a review, verdict or check file a profile wrote. The only records you write yourself
+   are the operator's decisions (named below), each committed alone.
 
 Script locations: `S=.specify/extensions/story/scripts`, `Q=.specify/extensions/squad/scripts`,
 `T=.specify/extensions/triage/scripts`.
