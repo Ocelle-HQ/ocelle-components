@@ -27,6 +27,12 @@ specify workflow remove ocelle-story && specify workflow add --dev tooling/speck
 
 Both use the same commands, scripts and record files, so run summaries and the diary compare across them.
 
+**Landing:** `/ocelle-land <PR>` (`.claude/skills/ocelle-land/`) is the maintainer pass after a mission or op PR
+is ready, or on a contributor PR: viability triage, bring the branch up to date by merging `main` (never a rebase,
+which would break the red/green evidence SHAs), classify every red check, a fresh `reviewer-renata` landing review
+(scope role `landing`), test-first folds through operator rounds, deliverable hygiene, then hand-off. The operator
+merges.
+
 **Agent profiles:** `triage-tara`, `analyst-anouk` (spec check, analysis), `planner-pim` (spec and squad fixes, op
 setup; never code), `lens-lotte`, `refuter-rik`, `verifier-vera`, `implementer-ivan`, `reviewer-renata`. Each
 follows the matching command file, so both runners share one procedure. Read-only roles have no Edit tool.
