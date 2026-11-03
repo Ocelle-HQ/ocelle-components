@@ -4,9 +4,10 @@
 // declaration (`font`, `font-family`, including the `@font-face` descriptor) are findings, one per line and rule.
 // A covered file that is not valid UTF-8 is exit 2.
 import { readdir, readFile } from "node:fs/promises";
-import { join, relative } from "node:path";
+import { join } from "node:path";
 import { main, parseArgs } from "../lib/cli.ts";
 import type { Io } from "../lib/cli.ts";
+import { filePaths } from "../lib/entries.ts";
 import { emit, plural } from "../lib/findings.ts";
 import type { Finding, GateResult } from "../lib/findings.ts";
 
@@ -95,15 +96,18 @@ export function checkPackages(files: readonly PackageFile[]): GateResult {
   return { exit: 0, summary: `${gate}: ${plural(checked, "file")} checked, no finding` };
 }
 
+/** The package files the gate reads, by repository path, sorted. */
+export function selectCovered(paths: readonly string[]): string[] {
+  return paths.filter((path) => isCovered(path)).sort();
+}
+
 // Stryker disable next-line all: process boundary, covered by gates-integration: gates/test/integration/gates-root.test.ts "prefix --root <tmp> exits 1 with exactly the defect's finding at its repository path"
 export async function run(argv: readonly string[], io: Io): Promise<number> {
   const context = parseArgs(argv, io.cwd);
   // Stryker disable next-line all: process boundary, covered by gates-integration: gates/test/integration/gates-root.test.ts "prefix --root <tmp> exits 1 with exactly the defect's finding at its repository path"
   const entries = await readdir(join(context.root, "packages"), { recursive: true, withFileTypes: true }).catch(() => []);
   // Stryker disable next-line all: process boundary, covered by gates-integration: gates/test/integration/gates-root.test.ts "prefix --root <tmp> exits 1 with exactly the defect's finding at its repository path"
-  const paths = entries.filter((entry) => entry.isFile()).map((entry) => relative(context.root, join(entry.parentPath, entry.name)));
-  // Stryker disable next-line all: process boundary, covered by gates-integration: gates/test/integration/gates-root.test.ts "prefix --root <tmp> exits 1 with exactly the defect's finding at its repository path"
-  const selected = paths.filter((path) => isCovered(path)).sort();
+  const selected = selectCovered(filePaths(entries, context.root));
   // Stryker disable next-line all: process boundary, covered by gates-integration: gates/test/integration/gates-root.test.ts "prefix --root <tmp> exits 1 with exactly the defect's finding at its repository path"
   const files = await Promise.all(selected.map(async (path) => ({ path, bytes: await readFile(join(context.root, path)) })));
   return emit(checkPackages(files), io.out, io.err);

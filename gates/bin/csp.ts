@@ -6,12 +6,13 @@
 // `new Function`, `Function()` and `setTimeout`/`setInterval` with a string argument are findings. A JavaScript file
 // that does not parse is exit 2. CSS files are read and counted; no FR-021 construct can occur in them.
 import { readdir, readFile } from "node:fs/promises";
-import { join, relative } from "node:path";
+import { join } from "node:path";
 import { Tokenizer, TokenizerMode } from "parse5";
 import type { Token } from "parse5";
 import ts from "typescript";
 import { main, parseArgs } from "../lib/cli.ts";
 import type { Io } from "../lib/cli.ts";
+import { filePaths } from "../lib/entries.ts";
 import { emit, plural } from "../lib/findings.ts";
 import type { Finding, GateResult } from "../lib/findings.ts";
 
@@ -89,6 +90,7 @@ function markupFindings(path: string, markup: string, at: (offset: number) => nu
       onWhitespaceCharacter: ignore,
     },
   );
+  // Stryker disable next-line BooleanLiteral: equivalent, a start tag is emitted at its ">" whether or not the chunk is the last, and a tag left open at the end is dropped either way (no element), so no finding depends on the flag
   tokenizer.write(markup, true);
   return found;
 }
@@ -127,19 +129,35 @@ function isStringy(expression: ts.Expression): boolean {
   return ts.isBinaryExpression(bare) && bare.operatorToken.kind === ts.SyntaxKind.PlusToken && (isStringy(bare.left) || isStringy(bare.right));
 }
 
-/** The static parts of a template literal, each with its source start, joined with a placeholder per expression. */
-function templateParts(node: ts.TemplateExpression | ts.NoSubstitutionTemplateLiteral, file: ts.SourceFile): { text: string; starts: { joined: number; source: number }[] } {
+/** Where one static part of a template starts: in the joined text, and in the source. */
+interface PartStart {
+  readonly joined: number;
+  readonly source: number;
+}
+
+/**
+ * The static parts of a template literal as written (raw, so offsets match the source), joined with one placeholder
+ * character per expression, each with its start in the joined text and in the source (after its "`" or "}").
+ */
+export function templateParts(node: ts.TemplateExpression | ts.NoSubstitutionTemplateLiteral, file: ts.SourceFile): { text: string; starts: PartStart[] } {
   const literals: (ts.TemplateLiteralLikeNode & ts.Node)[] = ts.isNoSubstitutionTemplateLiteral(node)
     ? [node]
     : [node.head, ...node.templateSpans.map((span) => span.literal)];
-  let text = "";
-  const starts: { joined: number; source: number }[] = [];
-  literals.forEach((literal, index) => {
-    if (index > 0) text += "x";
-    starts.push({ joined: text.length, source: literal.getStart(file) + 1 });
-    text += literal.rawText ?? literal.text;
+  const parts = literals.map((literal) => ({ text: literal.rawText ?? literal.text, source: literal.getStart(file) + 1 }));
+  let joined = 0;
+  const starts = parts.map((part) => {
+    const start = { joined, source: part.source };
+    joined += part.text.length + 1;
+    return start;
   });
-  return { text, starts };
+  return { text: parts.map((part) => part.text).join("x"), starts };
+}
+
+/** The source offset of an offset in the joined text: in the last part that starts at or before it (the first starts at 0). */
+export function sourceOffset(starts: readonly PartStart[], offset: number): number {
+  let source = 0;
+  for (const start of starts) if (start.joined <= offset) source = start.source + offset - start.joined;
+  return source;
 }
 
 function dynamicCode(node: ts.Node, path: string, line: number): Finding | undefined {
@@ -161,26 +179,26 @@ function dynamicCode(node: ts.Node, path: string, line: number): Finding | undef
 export function scanScript(file: OutputFile): ScriptScan {
   const diagnostics = ts.transpileModule(file.text, { fileName: file.path, reportDiagnostics: true }).diagnostics ?? [];
   const syntax = diagnostics[0];
-  const source = ts.createSourceFile(file.path, file.text, ts.ScriptTarget.Latest, true, ts.ScriptKind.JS);
+  const source = ts.createSourceFile(file.path, file.text, ts.ScriptTarget.Latest, undefined, ts.ScriptKind.JS);
   if (syntax !== undefined) {
     const line = source.getLineAndCharacterOfPosition(syntax.start ?? 0).line + 1;
-    return { cause: `${file.path}:${String(line)} does not parse (${ts.flattenDiagnosticMessageText(syntax.messageText, " ")})` };
+    // Stryker disable next-line StringLiteral: equivalent, the parser's syntax diagnostics are single messages, not chains, so the separator is never used
+    const message = ts.flattenDiagnosticMessageText(syntax.messageText, " ");
+    return { cause: `${file.path}:${String(line)} does not parse (${message})` };
   }
   const found: Finding[] = [];
   const lineOf = (position: number): number => source.getLineAndCharacterOfPosition(position).line + 1;
   const visit = (node: ts.Node): void => {
     const dynamic = dynamicCode(node, file.path, lineOf(node.getStart(source)));
     if (dynamic !== undefined) found.push(dynamic);
+    // Stryker disable next-line StringLiteral: equivalent, a string without "<" holds no tag, so scanning it finds nothing; the check only skips the work
     if (ts.isStringLiteral(node) && node.text.includes("<")) {
       found.push(...scanMarkup(file.path, node.text, lineOf(node.getStart(source))));
     }
+    // Stryker disable next-line StringLiteral: equivalent, a template without "<" holds no tag, so scanning it finds nothing; the check only skips the work
     if ((ts.isTemplateExpression(node) || ts.isNoSubstitutionTemplateLiteral(node)) && node.getText(source).includes("<")) {
       const { text, starts } = templateParts(node, source);
-      const at = (offset: number): number => {
-        const part = starts.findLast((start) => start.joined <= offset) ?? { joined: 0, source: 0 };
-        return lineOf(part.source + offset - part.joined);
-      };
-      found.push(...markupFindings(file.path, text, at));
+      found.push(...markupFindings(file.path, text, (offset) => lineOf(sourceOffset(starts, offset))));
     }
     ts.forEachChild(node, visit);
   };
@@ -209,22 +227,18 @@ export function checkOutput(files: readonly OutputFile[]): GateResult {
   return { exit: 0, summary: `${gate}: ${plural(files.length, "file")} checked, no finding` };
 }
 
-/** Every file below a directory, as absolute paths; none when it does not exist. */
-// Stryker disable next-line all: process boundary, covered by gates-integration: gates/test/integration/gates-root.test.ts "csp --root <tmp> exits 1 with exactly the defect's finding at its repository path"
-async function filesBelow(dir: string): Promise<string[]> {
-  // Stryker disable next-line all: process boundary, covered by gates-integration: gates/test/integration/gates-root.test.ts "csp --root <tmp> exits 1 with exactly the defect's finding at its repository path"
-  const entries = await readdir(dir, { recursive: true, withFileTypes: true }).catch(() => []);
-  // Stryker disable next-line all: process boundary, covered by gates-integration: gates/test/integration/gates-root.test.ts "csp --root <tmp> exits 1 with exactly the defect's finding at its repository path"
-  return entries.filter((entry) => entry.isFile()).map((entry) => join(entry.parentPath, entry.name));
+/** The built output files the gate checks, by repository path, sorted. */
+export function selectOutput(paths: readonly string[]): string[] {
+  return paths.filter((path) => isBuiltOutput(path)).sort();
 }
 
 // Stryker disable next-line all: process boundary, covered by gates-integration: gates/test/integration/gates-root.test.ts "csp --root <tmp> exits 1 with exactly the defect's finding at its repository path"
 export async function run(argv: readonly string[], io: Io): Promise<number> {
   const context = parseArgs(argv, io.cwd);
   // Stryker disable next-line all: process boundary, covered by gates-integration: gates/test/integration/gates-root.test.ts "csp --root <tmp> exits 1 with exactly the defect's finding at its repository path"
-  const paths = (await filesBelow(join(context.root, "packages"))).map((path) => relative(context.root, path));
+  const entries = await readdir(join(context.root, "packages"), { recursive: true, withFileTypes: true }).catch(() => []);
   // Stryker disable next-line all: process boundary, covered by gates-integration: gates/test/integration/gates-root.test.ts "csp --root <tmp> exits 1 with exactly the defect's finding at its repository path"
-  const selected = paths.filter((path) => isBuiltOutput(path)).sort();
+  const selected = selectOutput(filePaths(entries, context.root));
   // Stryker disable next-line all: process boundary, covered by gates-integration: gates/test/integration/gates-root.test.ts "csp --root <tmp> exits 1 with exactly the defect's finding at its repository path"
   const files = await Promise.all(selected.map(async (path) => ({ path, text: await readFile(join(context.root, path), "utf8") })));
   return emit(checkOutput(files), io.out, io.err);
