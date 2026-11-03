@@ -260,9 +260,10 @@ in this feature depends on it.
   code. The mutation report MUST list every such record in the changed code, with its location and reason, so the
   review can see and record it.
 - **FR-013**: Mutation testing in CI MUST run in shards, each a separate CI job under a job time limit of 10 minutes
-  (SC-005). A shard holds the changed package source and gate source (FR-028) of up to 10 files and up to 500
-  changed lines; the plan defines how the changed files are split into shards. A shard that exceeds the limit MUST
-  end as a failure, never as a pass, and the mutation testing check MUST fail unless every shard passes. A single
+  (SC-005). A shard holds the changed package source and gate source (FR-028) of up to 10 files and up to 250
+  changed lines (operator decision, phase 4 round 3, human:jeroennouwsdev, 2026-11-03: GitHub runner variance took
+  a 435-line shard past 10 minutes); the plan defines how the changed files are split into shards. A shard that
+  exceeds the limit MUST end as a failure, never as a pass, and the mutation testing check MUST fail unless every shard passes. A single
   file whose change exceeds the shard bound is expected to be split across smaller pull requests; the limit is not
   raised for it (operator decision, plan squad round 2: the bound covers gate source and applies to a shard, not to
   the whole pull request).
@@ -460,9 +461,10 @@ in this feature depends on it.
   reported as an error in 100% of its plants (FR-025). Each of the three patterns added to FR-010 at the phase 3
   gate is reported as exactly one error by the test-lint gate on its fixture, and its allowed look-alikes are not
   reported by its rule (research.md R-06).
-- **SC-005**: Mutation testing of one shard (FR-013: up to 10 changed files and up to 500 changed lines of package
-  source and gate source together) finishes in under 10 minutes on the runner of SC-001, with the package store and
-  browser cache restored and no earlier mutation result available. Each shard job's 10-minute limit (FR-013)
+- **SC-005**: Mutation testing of one shard (FR-013: up to 10 changed files and up to 250 changed lines of package
+  source and gate source together; 250 by operator decision, phase 4 round 3, human:jeroennouwsdev, 2026-11-03:
+  GitHub runner variance took a 435-line shard past 10 minutes) finishes in under 10 minutes on the runner of
+  SC-001, with the package store and browser cache restored and no earlier mutation result available. Each shard job's 10-minute limit (FR-013)
   enforces it (operator decision, plan squad round 2).
 - **SC-006**: A script run in a fresh clone confirms that `LICENSE`, `CONTRIBUTING.md`, `SECURITY.md` and
   `THIRD_PARTY_NOTICES` exist at the repository root under exactly these names, that `CONTRIBUTING.md` contains the

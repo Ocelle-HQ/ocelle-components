@@ -47,8 +47,9 @@ decision, plan squad round 3). Test inputs live in `gates/test/fixtures/` (R-10)
 **Project Type**: library monorepo (three packages) with repository tooling
 
 **Performance Goals**: cold install plus test run under 5 minutes (SC-001); mutation of one shard (up to 10 changed
-files and 500 changed lines of package and gate source) under 10 minutes, the CI mutation check split into such
-shards (SC-005, FR-013, R-08)
+files and 250 changed lines of package and gate source; 250 by operator decision, phase 4 round 3,
+human:jeroennouwsdev, 2026-11-03: GitHub runner variance took a 435-line shard past 10 minutes) under 10 minutes,
+the CI mutation check split into such shards (SC-005, FR-013, R-08)
 
 **Constraints**: offline setup never touches the network (FR-008); no gate reads `gates/plants/` except the plant job,
 and nothing but the gate tests reads `gates/test/fixtures/` (FR-028); plant mode runs the repository's own gate
@@ -123,6 +124,12 @@ commit is recorded under the next fix label of phase 3. The three patterns are p
 also cover thin adapter functions that only call an outside tool, each naming the `gates-integration` case that
 covers it, so the review can check the claim line by line. The test lint ignores `.stryker-tmp/` from phase 4
 (T092, red first). No new exception.
+
+**Re-check after phase 4 round 3** (operator decision, phase 4 round 3, human:jeroennouwsdev, 2026-11-03: GitHub
+runner variance took a 435-line shard past 10 minutes): the FR-013 shard bound goes from 500 to 250 changed lines
+(spec FR-013/SC-005, R-08); 10 files per shard and the 10-minute shard job limit stay, and a file with more than
+250 changed lines is a shard on its own. More shard jobs run in parallel with the same mutation strength.
+`gates/lib/mutation/shards.ts` changes test-first as T093 (red under `red.sh 4 fix-3`). No new exception.
 
 ## Project Structure
 

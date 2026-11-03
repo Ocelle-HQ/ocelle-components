@@ -326,9 +326,11 @@ round 1 re-pinned every registry package published less than 7 days before 2026-
   minus that commit is exactly the pull request's change.
   1. `mutation-plan` runs `pnpm run gate:mutation -- --base <sha> --plan`, which prints the shards as JSON and sets
      them as the job output (exit 2 on an unresolvable base). Split: the changed files of step 2, sorted by path,
-     are filled greedily into shards; the next file starts a new shard when adding it would exceed 10 files or 500
-     changed lines; a file with more than 500 changed lines is a shard on its own (FR-013 expects such a change to
-     be split). No changed file: zero shards.
+     are filled greedily into shards; the next file starts a new shard when adding it would exceed 10 files or 250
+     changed lines; a file with more than 250 changed lines is a shard on its own (FR-013 expects such a change to
+     be split). No changed file: zero shards. The bound is 250 lines, down from 500 (operator decision, phase 4
+     round 3, human:jeroennouwsdev, 2026-11-03: GitHub runner variance took a 435-line shard past 10 minutes);
+     the 10-file bound and the 10-minute shard limit are unchanged.
   2. `mutation-shard`, a matrix over the shards (skipped when there are none), each shard a job with
      `timeout-minutes: 10` that runs `pnpm run gate:mutation -- --base <sha> --files <the shard's files>`. A timeout
      ends the job as a failure.
