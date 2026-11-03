@@ -10,6 +10,7 @@ import { main, parseArgs } from "../lib/cli.ts";
 import type { Context, Io } from "../lib/cli.ts";
 import { emit, plural } from "../lib/findings.ts";
 import type { Finding } from "../lib/findings.ts";
+import { strykerEnv } from "../lib/mutation/coverage.ts";
 import { changedFiles, mutateSpecs, scopePathspecs } from "../lib/mutation/ranges.ts";
 import { formatRecord, scanRecords } from "../lib/mutation/records.ts";
 import type { EquivalentRecord } from "../lib/mutation/records.ts";
@@ -139,8 +140,8 @@ function realTools(root: string, env: Io["env"]): MutationTools {
     read: (path) => readFile(join(root, path), "utf8").catch(() => undefined),
     // Stryker disable next-line all: process boundary, covered by gates-integration: gates/test/integration/mutation.test.ts "deletes an earlier run's report: a Stryker run that writes none exits 2 (review round 1, R1-01)"
     remove: (path) => rm(join(root, path), { force: true }),
-    // Stryker disable next-line all: process boundary, covered by gates-integration: gates/test/integration/mutation.test.ts "--files mutates only the listed file"
-    stryker: (mutate) => runTool(process.execPath, [stryker, "run", "--mutate", mutate.join(",")], root, env),
+    // Stryker disable next-line all: process boundary, covered by gates-integration: gates/test/integration/mutation.test.ts "reports a change only to source no test imports as a located NoCoverage finding (exit 1), not as could not run (review round 1, R1-10)"
+    stryker: (mutate) => runTool(process.execPath, [stryker, "run", "--mutate", mutate.join(",")], root, strykerEnv(env)),
   };
 }
 
