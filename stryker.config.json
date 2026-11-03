@@ -5,7 +5,7 @@
   "checkers": ["typescript"],
   "tsconfigFile": "tsconfig.json",
   "coverageAnalysis": "perTest",
-  "concurrency": "200%",
+  "concurrency": 8,
   "incremental": false,
   "mutate": [],
   "reporters": ["json", "clear-text"],
