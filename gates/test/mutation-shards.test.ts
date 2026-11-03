@@ -6,7 +6,7 @@ import { formatPlan, planShards, selectFiles } from "../lib/mutation/shards.ts";
 import { base, capture, context, fakeGit, fakeRepo, fakeStryker, mutant, newFilesDiff, reportPath, strykerReport } from "./mutation-fakes.ts";
 
 // CI shards (FR-013, research.md R-08): changed files sorted by path, filled greedily into shards of at most 10 files
-// and 500 changed lines, a file over 500 lines alone; `--plan` prints them, `--files` limits a run to one shard; and
+// and 250 changed lines (500 until T093, operator decision, phase 4 round 3), a file over 250 lines alone; `--plan` prints them, `--files` limits a run to one shard; and
 // the base argument (`--base`, required, must resolve to a commit).
 function file(path: string, lines: number): ChangedFile {
   return { path, ranges: [{ start: 1, end: lines }], lines };
@@ -30,16 +30,36 @@ describe("planShards", () => {
     ]);
   });
 
-  it("fills shards of up to 500 changed lines, exactly 500 included", () => {
-    const changed = [file("a.ts", 300), file("b.ts", 200), file("c.ts", 1), file("d.ts", 499), file("e.ts", 1)];
+  it("fills shards of up to 250 changed lines, exactly 250 included", () => {
+    const changed = [file("a.ts", 150), file("b.ts", 100), file("c.ts", 1), file("d.ts", 249), file("e.ts", 1)];
     expect(planShards(changed)).toEqual([
-      { files: ["a.ts", "b.ts"], lines: 500 },
-      { files: ["c.ts", "d.ts"], lines: 500 },
+      { files: ["a.ts", "b.ts"], lines: 250 },
+      { files: ["c.ts", "d.ts"], lines: 250 },
       { files: ["e.ts"], lines: 1 },
     ]);
   });
 
-  it("gives a file of more than 500 changed lines a shard of its own", () => {
+  it("fits two files of exactly 250 changed lines together in one shard", () => {
+    expect(planShards([file("a.ts", 125), file("b.ts", 125)])).toEqual([{ files: ["a.ts", "b.ts"], lines: 250 }]);
+  });
+
+  it("splits two files of 251 changed lines together into two shards", () => {
+    expect(planShards([file("a.ts", 200), file("b.ts", 51)])).toEqual([
+      { files: ["a.ts"], lines: 200 },
+      { files: ["b.ts"], lines: 51 },
+    ]);
+  });
+
+  it("gives a file of 251 changed lines a shard of its own", () => {
+    const changed = [file("a.ts", 10), file("b.ts", 251), file("c.ts", 10)];
+    expect(planShards(changed)).toEqual([
+      { files: ["a.ts"], lines: 10 },
+      { files: ["b.ts"], lines: 251 },
+      { files: ["c.ts"], lines: 10 },
+    ]);
+  });
+
+  it("gives a file of more than 250 changed lines a shard of its own", () => {
     const changed = [file("a.ts", 10), file("b.ts", 700), file("c.ts", 10)];
     expect(planShards(changed)).toEqual([
       { files: ["a.ts"], lines: 10 },
