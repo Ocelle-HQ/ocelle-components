@@ -358,9 +358,20 @@ round 1 re-pinned every registry package published less than 7 days before 2026-
      are cut into consecutive chunks of 120 changed lines (the last chunk holds the rest), a cut falling inside a
      changed range where the count reaches 120; each chunk is one entry `path:start-end` from its first to its last
      changed line, so a file's entries never overlap. The entries, in that order, are filled greedily into shards;
-     the next entry starts a new shard when adding it would exceed 10 entries or 250 changed lines. Each entry lies
-     whole in one shard (a range never crosses a shard), and since no entry exceeds 120 lines, every shard holds at
-     most 10 entries and 250 changed lines. No changed file: zero shards. The bound is 250 lines, down from 500
+     the next entry starts a new shard when adding it would exceed 10 entries or 250 changed lines, or when the
+     current shard already holds an entry of the same file (operator decision, phase 3 round 10,
+     human:jeroennouwsdev, 2026-11-03: "Chunks never share (Recommended)": "Two chunks of one file never go in the
+     same shard; a chunk can still share a shard with other files."). Each entry lies whole in one shard (a range
+     never crosses a shard), and since no entry exceeds 120 lines, every shard holds at most 10 entries and 250
+     changed lines, and no two entries of one file, so at most 120 changed lines of one file. A file's last entry
+     may still share its shard with the entries of the next files. No changed file: zero shards. Besides the JSON
+     on stdout, `--plan` writes one line to stderr with the number of shards and the number of cuts:
+     `mutation: plan: <s> shards, <c> cuts within files (a mutant spanning a cut is mutated in no shard, see
+     gates/README.md)`, with `1 shard` and `1 cut` in the singular, printed also when both are 0. A cut is the
+     boundary between two consecutive entries of one file, so a file split into `n` entries has `n - 1` cuts and
+     `<c>` is their sum over all files. The count goes to stderr, not into the JSON: ci.yml's `mutation-plan`
+     step captures stdout whole as `shards=<stdout>` for the matrix's `fromJSON`, so the JSON stays one array of
+     shards and ci.yml is unchanged, while stderr reaches the job log. The bound is 250 lines, down from 500
      (operator decision, phase 4 round 3, human:jeroennouwsdev, 2026-11-03: GitHub runner variance took a 435-line
      shard past 10 minutes); the 10-minute shard limit is unchanged.
   2. `mutation-shard`, a matrix over the shards (skipped when there are none), each shard a job with
@@ -372,7 +383,7 @@ round 1 re-pinned every registry package published less than 7 days before 2026-
      requires (plan.md § Verification); the helper jobs are not required by name, since the matrix names vary.
   The split (`--plan`) and `--files` are wrapper behaviour: the split is a pure function tested in the `gates`
   project on recorded diff output, and `--files` end to end by a `gates-integration` test on a fixture repository
-  (including `path:start-end` entries), both red first in phase 3 (the split within files under T097). The line bound does not by itself bound time; the design rule above does, because each
+  (including `path:start-end` entries), both red first in phase 3 (the split within files under T097; one file's entries in separate shards and the cut count under T098). The line bound does not by itself bound time; the design rule above does, because each
   mutant runs only in-process tests. SC-005 is measured on this feature's real shards (operator decision, plan squad
   round 3): from phase 3 on, the last task of phases 3 and 4 runs `pnpm run gate:mutation -- --base <phase 1
   base.sha> --plan` and then each shard with `--files`, timed, and records the durations in
@@ -390,8 +401,23 @@ round 1 re-pinned every registry package published less than 7 days before 2026-
   https://github.com/Ocelle-HQ/ocelle-components/actions/runs/41635769914 (head `fffb7e7`) took 9:49 for
   `gates/lib/plant-judge.ts` alone (216 changed lines, 353 mutants). The lever was taken (operator decision, phase
   3 round 9, human:jeroennouwsdev, 2026-11-03: plant-judge.ts alone took 9:49 of 10 minutes): a file over 120
-  changed lines is split by line range across entries (step 1 of "CI, sharded" above), so no shard holds more than
-  120 changed lines of one file.
+  changed lines is split by line range across entries (step 1 of "CI, sharded" above). As first built (T097),
+  the greedy fill still put a file's entries together whenever the shard had room, so the shard of
+  `gates/lib/plant-judge.ts:1-120,gates/lib/plant-judge.ts:121-216` held the same 353 mutants as before
+  (reviews/phase-3/round-9-fixes.md); since phase 3 round 10 (T098) two entries of one file never share a shard,
+  so no shard holds more than 120 changed lines of one file.
+- **Cuts, an accepted limit** (operator decision, phase 3 round 10, human:jeroennouwsdev, 2026-11-03: "Accept,
+  record it (Recommended)": "The lost mutants are only large blocks across a cut; the statements inside them are
+  still mutated. Record the limit in research R-08 and gates/README.md, and have the plan print how many cuts it
+  made."): Stryker 10.1.1 mutates a node only if it lies wholly inside one `mutate` range (`locationIncluded` in
+  `@stryker-mutator/instrumenter`). A node that starts in one entry of a file and ends in the next (one that
+  spans a cut) is therefore mutated in no shard; the smaller nodes inside it, within one entry, still are. Since
+  two entries of one file never share a shard, every cut the plan makes is such a boundary in CI. Measured on
+  `gates/bin/csp.ts` (reviews/phase-3/mutation-shards.md, round 9): 281 mutants when the file runs whole, 279
+  across its entries `:1-120` and `:121-240`; the two lost are the block statements spanning lines 113-123 and
+  119-121, across the cut at 120/121. The count `--plan` prints is of every cut, wherever it falls, not of the
+  mutants lost (which only Stryker's instrumenter knows). `gates/README.md` states this limit, and `--plan` reports the number of cuts on stderr (step 1 of "CI,
+  sharded").
 - **Story workflow (FR-007)**: `mutation_command: "pnpm run gate:mutation"`; the story review command is changed to
   read `FEATURE_DIR/reviews/phase-<N>/base.sha` and run `pnpm run gate:mutation -- --base <sha>`, a command the
   `.claude/settings.json` allowlist (`Bash(pnpm run:*)`) covers in unattended runs. No environment variable is used.
