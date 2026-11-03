@@ -1,0 +1,4 @@
+{
+  "expect": "pass",
+  "why": "An unsigned merge commit is exempt; the commits it merges are signed off (FR-023)."
+}

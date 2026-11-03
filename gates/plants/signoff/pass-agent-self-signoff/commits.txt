@@ -1,0 +1,5 @@
+author: Agent Example <agent@example.net>
+
+Add a change made by an agent
+
+Signed-off-by: Agent Example <agent@example.net>

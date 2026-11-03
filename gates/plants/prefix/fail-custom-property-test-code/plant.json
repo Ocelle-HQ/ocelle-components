@@ -1,0 +1,11 @@
+{
+  "expect": "fail",
+  "why": "An --sk- custom property in test code of a package (FR-022, FR-028).",
+  "findings": [
+    {
+      "location": "packages/tokens/test/x.test.ts:2",
+      "rule": "sk-name",
+      "message": "--sk-color"
+    }
+  ]
+}

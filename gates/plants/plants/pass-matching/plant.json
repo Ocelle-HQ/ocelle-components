@@ -1,0 +1,4 @@
+{
+  "expect": "pass",
+  "why": "A registry and a workflow with the same gates as FR-020 match (research.md R-10)."
+}

@@ -1,0 +1,4 @@
+{
+  "expect": "pass",
+  "why": "A var() whose fallback is a keyword (color: var(--ocelle-x, Canvas)) is allowed (FR-024)."
+}

@@ -1,0 +1,4 @@
+{
+  "expect": "pass",
+  "why": "A system colour keyword (color: Canvas) is allowed (FR-024)."
+}

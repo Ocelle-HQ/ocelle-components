@@ -1,0 +1,10 @@
+{
+  "expect": "fail",
+  "why": "A commit with no Signed-off-by line (FR-023).",
+  "findings": [
+    {
+      "location": "commit:1",
+      "rule": "no-signoff"
+    }
+  ]
+}

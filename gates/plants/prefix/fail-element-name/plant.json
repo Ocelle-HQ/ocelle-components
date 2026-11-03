@@ -1,0 +1,11 @@
+{
+  "expect": "fail",
+  "why": "An sk- element name in package source (FR-022).",
+  "findings": [
+    {
+      "location": "packages/elements/src/x.ts:2",
+      "rule": "sk-name",
+      "message": "sk-button"
+    }
+  ]
+}

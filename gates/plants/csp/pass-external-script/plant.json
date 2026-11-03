@@ -1,0 +1,4 @@
+{
+  "expect": "pass",
+  "why": "An external module script (<script src>) is allowed (FR-021)."
+}

@@ -1,0 +1,14 @@
+{
+  "expect": "fail",
+  "why": "Two equal copies whose test_pathspec is not FR-028's test code (FR-006, FR-028).",
+  "findings": [
+    {
+      "location": ".specify/extensions/story/story-config.yml",
+      "rule": "test-pathspec"
+    },
+    {
+      "location": "tooling/speckit/extensions/story/story-config.yml",
+      "rule": "test-pathspec"
+    }
+  ]
+}

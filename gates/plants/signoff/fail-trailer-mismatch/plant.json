@@ -1,0 +1,11 @@
+{
+  "expect": "fail",
+  "why": "A commit whose Signed-off-by identity is not its author (FR-023).",
+  "findings": [
+    {
+      "location": "commit:1",
+      "rule": "signoff-mismatch",
+      "message": "Bob Example <bob@example.org>"
+    }
+  ]
+}

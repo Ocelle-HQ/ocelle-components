@@ -1,0 +1,11 @@
+{
+  "expect": "fail",
+  "why": "A gate with a CI job but no registry entry is reported (research.md R-10).",
+  "findings": [
+    {
+      "location": "gates.json",
+      "rule": "no-registry-entry",
+      "message": "gate csp has no registry entry"
+    }
+  ]
+}

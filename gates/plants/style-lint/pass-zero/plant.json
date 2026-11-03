@@ -1,0 +1,4 @@
+{
+  "expect": "pass",
+  "why": "0 (margin: 0) is allowed (FR-024)."
+}

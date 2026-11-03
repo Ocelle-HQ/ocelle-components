@@ -1,0 +1,4 @@
+{
+  "expect": "pass",
+  "why": "A raw length in an element test file is test code, not covered (FR-024, FR-028)."
+}
