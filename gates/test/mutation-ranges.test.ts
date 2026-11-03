@@ -1,7 +1,7 @@
 import { readFileSync } from "node:fs";
 import { describe, expect, it } from "vitest";
 import { mutation } from "../bin/mutation.ts";
-import { changedFiles, inScope, mutateSpecs, scopePathspecs } from "../lib/mutation/ranges.ts";
+import { changedFiles, inScope, mutateSpecs, scopePathspecs, unusableMutatePaths } from "../lib/mutation/ranges.ts";
 import { base, capture, context, fakeGit, fakeRepo, fakeStryker, newFilesDiff, noStryker, scope } from "./mutation-fakes.ts";
 
 // Changed line ranges over FR-028's package source and gate source, from recorded `git diff --unified=0` output
@@ -223,10 +223,14 @@ function headerCause(header: string): string {
   return `mutation: could not run: git diff wrote a file header the gate cannot read: ${JSON.stringify(header)}; ${headerHint}`;
 }
 
+/** The kinds of path Stryker cannot take verbatim, as the cause names them (line terminators: phase 3 round 8, R8-01). */
+const unusableKinds =
+  "a glob metacharacter *?[]{}!, a comma, a backslash, an extglob +( @( or a line terminator \\n \\r U+2028 U+2029";
+
 function pathsCause(paths: readonly string[]): string {
   return (
     "mutation: could not run: Stryker cannot take these changed paths as mutate input " +
-    `(a glob metacharacter *?[]{}!, a comma, a backslash or an extglob +( @( ): ${paths.map((path) => JSON.stringify(path)).join(", ")}; rename them`
+    `(${unusableKinds}): ${paths.map((path) => JSON.stringify(path)).join(", ")}; rename them`
   );
 }
 
@@ -401,6 +405,90 @@ describe("mutation gate: diff headers and mutate inputs (phase 3 round 7, O7-01 
       out: ["mutation: 1 mutant on the changed lines of 1 file, none survived; 0 equivalent records"],
       err: [],
       mutated: [`${path}:1-1`],
+    });
+  });
+});
+
+// Phase 3 round 8 (R8-01; tasks.md T097): Stryker 10.1.1 splits a `mutate` entry with MUTATION_RANGE_REGEX, which has
+// no `s` flag and no `^` anchor, so of a path holding a line terminator it takes only the text after the last one and
+// mutates nothing in the file. gates/test/fixtures/git-diff/line-terminators.diff is
+// `git diff --cached --unified=0 --no-color --no-ext-diff HEAD --` recorded from a scratch repository (git 2.43.0) with
+// new files whose names hold `\n`, `\r`, U+2028 and U+2029, beside ok.ts. Each such path is exit 2 before Stryker
+// runs, in every mode; the cause names the path as JSON, with U+2028 and U+2029 escaped so the cause stays one line.
+const terminators = readFileSync(new URL("fixtures/git-diff/line-terminators.diff", import.meta.url), "utf8");
+const lf = "packages/tokens/src/a\nb.ts";
+const cr = "packages/tokens/src/a\rb.ts";
+const ls = "packages/tokens/src/a\u2028b.ts";
+const ps = "packages/tokens/src/a\u2029b.ts";
+const terminated = [
+  { name: "\\n", header: "a\\nb.ts", path: lf, named: '"packages/tokens/src/a\\nb.ts"' },
+  { name: "\\r", header: "a\\rb.ts", path: cr, named: '"packages/tokens/src/a\\rb.ts"' },
+  { name: "U+2028", header: "a\\342\\200\\250b.ts", path: ls, named: '"packages/tokens/src/a\\u2028b.ts"' },
+  { name: "U+2029", header: "a\\342\\200\\251b.ts", path: ps, named: '"packages/tokens/src/a\\u2029b.ts"' },
+];
+
+describe("changedFiles and unusableMutatePaths: line terminators in paths (phase 3 round 8, R8-01)", () => {
+  it("reads every file of the recorded diff, the paths holding a line terminator in scope", () => {
+    expect(changedFiles(terminators)).toEqual([
+      { path: lf, ranges: [{ start: 1, end: 1 }], lines: 1 },
+      { path: cr, ranges: [{ start: 1, end: 2 }], lines: 2 },
+      { path: ls, ranges: [{ start: 1, end: 1 }], lines: 1 },
+      { path: ps, ranges: [{ start: 1, end: 1 }], lines: 1 },
+      { path: ok, ranges: [{ start: 1, end: 1 }], lines: 1 },
+    ]);
+  });
+
+  it("names every path holding \\n, \\r, U+2028 or U+2029 as unusable, in diff order", () => {
+    expect(unusableMutatePaths(changedFiles(terminators))).toEqual([lf, cr, ls, ps]);
+  });
+});
+
+describe("mutation gate: a changed path holding a line terminator (phase 3 round 8, R8-01)", () => {
+  const sources = {
+    [lf]: "export const lf = 1;\n",
+    [cr]: "export const cr = 1;\nexport const two = 2;\n",
+    [ls]: "export const ls = 1;\n",
+    [ps]: "export const ps = 1;\n",
+    [ok]: "export const ok = 1;\n",
+  };
+  const modes = [
+    { mode: "a normal run", args: ["--base", base] },
+    { mode: "--plan", args: ["--base", base, "--plan"] },
+    { mode: "--files", args: ["--base", base, "--files", ok] },
+  ];
+  const cases = terminated.flatMap((terminator) => modes.map((mode) => ({ ...terminator, ...mode })));
+
+  it.each(cases)("exits 2 naming the path holding $name, before Stryker runs ($mode)", async ({ header, args, named }) => {
+    const { io, out, err } = capture();
+    const mutated: string[] = [];
+    const stryker = fakeStryker(() => "Killed");
+    const code = await mutation(
+      context(args),
+      { git: fakeGit(parts(terminators, header, "ok.ts")), ...fakeRepo(sources, (mutate, tree) => (mutated.push(...mutate), stryker(mutate, tree))) },
+      io,
+    );
+    expect({ code, out, err, mutated }).toEqual({
+      code: 2,
+      out: [],
+      err: [`mutation: could not run: Stryker cannot take these changed paths as mutate input (${unusableKinds}): ${named}; rename them`],
+      mutated: [],
+    });
+  });
+
+  it("names all four paths in one cause line, in diff order", async () => {
+    const { io, out, err } = capture();
+    const mutated: string[] = [];
+    const stryker = fakeStryker(() => "Killed");
+    const tools = { git: fakeGit(terminators), ...fakeRepo(sources, (mutate, tree) => (mutated.push(...mutate), stryker(mutate, tree))) };
+    const code = await mutation(context(["--base", base]), tools, io);
+    expect({ code, out, err, mutated }).toEqual({
+      code: 2,
+      out: [],
+      mutated: [],
+      err: [
+        `mutation: could not run: Stryker cannot take these changed paths as mutate input (${unusableKinds}): ` +
+          `${terminated.map((terminator) => terminator.named).join(", ")}; rename them`,
+      ],
     });
   });
 });

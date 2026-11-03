@@ -109,14 +109,14 @@ export function mutant(id: string, line: number, status: string): object {
 }
 
 /**
- * A Stryker that mutates exactly the `mutate` entries `path:start-end` it is given: one mutant at the first line of
+ * A Stryker that mutates exactly the `mutate` entries `path:start-end` it is given (any path, line terminators too): one mutant at the first line of
  * each entry, with the status `statusOf(path)`, in a JSON report like Stryker's at `reportPath`; it exits 0.
  */
 export function fakeStryker(statusOf: (path: string) => string): FakeStryker {
   return (mutate, files) => {
     const mutants: Record<string, object[]> = {};
     mutate.forEach((entry, index) => {
-      const match = /^(.*):(\d+)-(\d+)$/.exec(entry);
+      const match = /^(.*):(\d+)-(\d+)$/s.exec(entry);
       if (match === null) throw new Error(`not a mutate range: ${entry}`);
       const [, path = "", start = "0"] = match;
       (mutants[path] ??= []).push(mutant(String(index), Number(start), statusOf(path)));
