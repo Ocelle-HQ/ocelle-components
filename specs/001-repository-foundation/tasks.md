@@ -217,16 +217,16 @@ No scaffold: the phase's test reads repository files and imports no new module.
 
 ### Tests (red, one commit)
 
-- [ ] T084 [US4] `gates/test/governance.test.ts`: `LICENSE`, `CONTRIBUTING.md`, `SECURITY.md`, `THIRD_PARTY_NOTICES` exist at the root under exactly these names; `CONTRIBUTING.md` contains `Signed-off-by` and `git commit -s`; `.github/CODEOWNERS` names `@MOES-Media` as the only owner of every path; `SECURITY.md` names GitHub private vulnerability reporting, `@MOES-Media`, 3 working days and 10 working days (SC-006); commit it alone and run `red.sh 5 phase`
+- [X] T084 [US4] `gates/test/governance.test.ts`: `LICENSE`, `CONTRIBUTING.md`, `SECURITY.md`, `THIRD_PARTY_NOTICES` exist at the root under exactly these names; `CONTRIBUTING.md` contains `Signed-off-by` and `git commit -s`; `.github/CODEOWNERS` names `@MOES-Media` as the only owner of every path; `SECURITY.md` names GitHub private vulnerability reporting, `@MOES-Media`, 3 working days and 10 working days (SC-006); commit it alone and run `red.sh 5 phase`
 
 ### Implementation (green)
 
-- [ ] T085 [P] [US4] `LICENSE` with the Apache License 2.0 text (FR-030)
-- [ ] T086 [P] [US4] `CONTRIBUTING.md`: sign-off with `git commit -s`, no contributor licence agreement, the Spec Kit flow and the constitution (FR-031)
-- [ ] T087 [P] [US4] `SECURITY.md`: GitHub private vulnerability reporting once public (1.0.0, #11); until then contact `@MOES-Media` privately, not through an issue; what to include; acknowledgement within 3 working days and a status update within 10 (FR-032, operator decisions 2026-11-02)
-- [ ] T088 [P] [US4] `THIRD_PARTY_NOTICES` stating that no third-party asset ships yet and that the Schibsted Grotesk entry arrives with #5 (FR-033)
-- [ ] T089 [P] [US4] `.github/CODEOWNERS` with `* @MOES-Media` and no other owner (FR-035)
-- [ ] T090 [US4] Run `pnpm test` and every gate, and commit green
+- [X] T085 [P] [US4] `LICENSE` with the Apache License 2.0 text (FR-030)
+- [X] T086 [P] [US4] `CONTRIBUTING.md`: sign-off with `git commit -s`, no contributor licence agreement, the Spec Kit flow and the constitution (FR-031)
+- [X] T087 [P] [US4] `SECURITY.md`: GitHub private vulnerability reporting once public (1.0.0, #11); until then contact `@MOES-Media` privately, not through an issue; what to include; acknowledgement within 3 working days and a status update within 10 (FR-032, operator decisions 2026-11-02)
+- [X] T088 [P] [US4] `THIRD_PARTY_NOTICES` stating that no third-party asset ships yet and that the Schibsted Grotesk entry arrives with #5 (FR-033)
+- [X] T089 [P] [US4] `.github/CODEOWNERS` with `* @MOES-Media` and no other owner (FR-035)
+- [X] T090 [US4] Run `pnpm test` and every gate, and commit green
 
 **Checkpoint**: all four stories complete; the operator's verification can start.
 
