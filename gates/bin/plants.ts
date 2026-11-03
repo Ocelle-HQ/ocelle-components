@@ -352,36 +352,27 @@ function lines(text: string): string[] {
   return text.split("\n").filter((line) => line !== "");
 }
 
-/** Builds the temporary repository of a plant in `into` and the placeholder values of its plant command. */
+/** What a plant's temporary repository gives its plant command: the placeholder values, and the commit hashes. */
+interface Built {
+  readonly values: Record<string, string>;
+  readonly commits?: readonly string[];
+}
+
+/** Builds the temporary repository of a plant in `into` (the pins plant: a copy of its mini-workspace). */
 // Stryker disable next-line all: process boundary, covered by the plant job itself: pnpm run gate:plants (CI check Plants) runs every plant through it
-async function build(root: string, gate: Gate, plant: string, into: string): Promise<{ values: Record<string, string>; commits?: readonly string[] }> {
+async function build(root: string, gate: Gate, plant: string, into: string): Promise<Built> {
   // Stryker disable next-line all: process boundary, covered by the plant job itself: pnpm run gate:plants (CI check Plants) runs every plant through it
-  switch (gate.plantForm) {
-    case "repo-tree":
-      // Stryker disable next-line all: process boundary, covered by the plant job itself: pnpm run gate:plants (CI check Plants) runs every plant through it
-      await buildRepoTree(root, plant, into);
-      // Stryker disable next-line all: process boundary, covered by the plant job itself: pnpm run gate:plants (CI check Plants) runs every plant through it
-      return { values: { root: into } };
-    case "commit-repo": {
-      // Stryker disable next-line all: process boundary, covered by the plant job itself: pnpm run gate:plants (CI check Plants) runs every plant through it
-      const { base, commits } = await buildCommitRepo(plant, into);
-      // Stryker disable next-line all: process boundary, covered by the plant job itself: pnpm run gate:plants (CI check Plants) runs every plant through it
-      return { values: { root: into, base }, commits };
-    }
-    case "mutation-repo": {
-      // Stryker disable next-line all: process boundary, covered by the plant job itself: pnpm run gate:plants (CI check Plants) runs every plant through it
-      const { base } = await buildMutationRepo(root, plant, into);
-      // Stryker disable next-line all: process boundary, covered by the plant job itself: pnpm run gate:plants (CI check Plants) runs every plant through it
-      return { values: { root: into, base } };
-    }
-    case "workspace":
-      // Stryker disable next-line all: process boundary, covered by the plant job itself: pnpm run gate:plants (CI check Plants) runs every plant through it
-      await cp(plant, into, { recursive: true });
-      // Stryker disable next-line all: process boundary, covered by the plant job itself: pnpm run gate:plants (CI check Plants) runs every plant through it
-      await rm(join(into, "plant.json"));
-      // Stryker disable next-line all: process boundary, covered by the plant job itself: pnpm run gate:plants (CI check Plants) runs every plant through it
-      return { values: { plant: into } };
-  }
+  if (gate.plantForm === "repo-tree") return buildRepoTree(root, plant, into).then(() => ({ values: { root: into } }));
+  // Stryker disable next-line all: process boundary, covered by the plant job itself: pnpm run gate:plants (CI check Plants) runs every plant through it
+  if (gate.plantForm === "commit-repo") return buildCommitRepo(plant, into).then(({ base, commits }) => ({ values: { root: into, base }, commits }));
+  // Stryker disable next-line all: process boundary, covered by the plant job itself: pnpm run gate:plants (CI check Plants) runs every plant through it
+  if (gate.plantForm === "mutation-repo") return buildMutationRepo(root, plant, into).then(({ base }) => ({ values: { root: into, base } }));
+  // Stryker disable next-line all: process boundary, covered by the plant job itself: pnpm run gate:plants (CI check Plants) runs every plant through it
+  await cp(plant, into, { recursive: true });
+  // Stryker disable next-line all: process boundary, covered by the plant job itself: pnpm run gate:plants (CI check Plants) runs every plant through it
+  await rm(join(into, "plant.json"));
+  // Stryker disable next-line all: process boundary, covered by the plant job itself: pnpm run gate:plants (CI check Plants) runs every plant through it
+  return { values: { plant: into } };
 }
 
 /** A limit on how many tasks run at once: `limit(task)` starts `task` when one of `size` slots is free. */
@@ -392,22 +383,55 @@ function limiter(size: number): <T>(task: () => Promise<T>) => Promise<T> {
   // Stryker disable next-line all: process boundary, covered by the plant job itself: pnpm run gate:plants (CI check Plants) runs every plant through it
   const waiting: (() => void)[] = [];
   // Stryker disable next-line all: process boundary, covered by the plant job itself: pnpm run gate:plants (CI check Plants) runs every plant through it
+  const release = (): void => {
+    // Stryker disable next-line all: process boundary, covered by the plant job itself: pnpm run gate:plants (CI check Plants) runs every plant through it
+    running -= 1;
+    // Stryker disable next-line all: process boundary, covered by the plant job itself: pnpm run gate:plants (CI check Plants) runs every plant through it
+    waiting.shift()?.();
+  };
+  // Stryker disable next-line all: process boundary, covered by the plant job itself: pnpm run gate:plants (CI check Plants) runs every plant through it
   return async (task) => {
     // Stryker disable next-line all: process boundary, covered by the plant job itself: pnpm run gate:plants (CI check Plants) runs every plant through it
     if (running >= size) await new Promise<void>((resolve) => waiting.push(resolve));
     // Stryker disable next-line all: process boundary, covered by the plant job itself: pnpm run gate:plants (CI check Plants) runs every plant through it
     running += 1;
     // Stryker disable next-line all: process boundary, covered by the plant job itself: pnpm run gate:plants (CI check Plants) runs every plant through it
-    try {
-      // Stryker disable next-line all: process boundary, covered by the plant job itself: pnpm run gate:plants (CI check Plants) runs every plant through it
-      return await task();
-    } finally {
-      // Stryker disable next-line all: process boundary, covered by the plant job itself: pnpm run gate:plants (CI check Plants) runs every plant through it
-      running -= 1;
-      // Stryker disable next-line all: process boundary, covered by the plant job itself: pnpm run gate:plants (CI check Plants) runs every plant through it
-      waiting.shift()?.();
-    }
+    return task().finally(release);
   };
+}
+
+/** Builds the plant's temporary repository, runs the gate's plant command on it, and removes the repository. */
+// Stryker disable next-line all: process boundary, covered by the plant job itself: pnpm run gate:plants (CI check Plants) runs every plant through it
+async function runPlantIn(root: string, io: Io, gate: Gate, plant: string): Promise<PlantRun> {
+  // Stryker disable next-line all: process boundary, covered by the plant job itself: pnpm run gate:plants (CI check Plants) runs every plant through it
+  const into = await mkdtemp(join(tmpdir(), `ocelle-plant-${gate.id}-`));
+  // Stryker disable next-line all: process boundary, covered by the plant job itself: pnpm run gate:plants (CI check Plants) runs every plant through it
+  const cannotBuild = (error: unknown): never => {
+    // Stryker disable next-line all: process boundary, covered by the plant job itself: pnpm run gate:plants (CI check Plants) runs every plant through it
+    throw new Error(`${plant}: cannot build its temporary repository (${error instanceof Error ? error.message : String(error)})`, { cause: error });
+  };
+  // Stryker disable next-line all: process boundary, covered by the plant job itself: pnpm run gate:plants (CI check Plants) runs every plant through it
+  const run = async (): Promise<PlantRun> => {
+    // Stryker disable next-line all: process boundary, covered by the plant job itself: pnpm run gate:plants (CI check Plants) runs every plant through it
+    const { values, commits } = await build(root, gate, join(root, plant), into).catch(cannotBuild);
+    // Stryker disable next-line all: process boundary, covered by the plant job itself: pnpm run gate:plants (CI check Plants) runs every plant through it
+    const [command = "", ...args] = plantArgs(gate.plantCommand, values);
+    // Stryker disable next-line all: process boundary, covered by the plant job itself: pnpm run gate:plants (CI check Plants) runs every plant through it
+    const ran = await runTool(command === "node" ? process.execPath : command, args, root, io.env);
+    // Stryker disable next-line all: process boundary, covered by the plant job itself: pnpm run gate:plants (CI check Plants) runs every plant through it
+    return { exit: ran.exitCode, stdout: lines(ran.stdout), stderr: lines(ran.stderr), ...(commits === undefined ? {} : { commits }) };
+  };
+  // Stryker disable next-line all: process boundary, covered by the plant job itself: pnpm run gate:plants (CI check Plants) runs every plant through it
+  return run().finally(() => rm(into, { recursive: true, force: true }));
+}
+
+/** Every file below a directory of the repository, as paths relative to that directory. */
+// Stryker disable next-line all: process boundary, covered by the plant job itself: pnpm run gate:plants (CI check Plants) runs every plant through it
+async function filesBelow(root: string, path: string): Promise<string[]> {
+  // Stryker disable next-line all: process boundary, covered by the plant job itself: pnpm run gate:plants (CI check Plants) runs every plant through it
+  const entries = await readdir(join(root, path), { recursive: true, withFileTypes: true }).catch(() => []);
+  // Stryker disable next-line all: process boundary, covered by the plant job itself: pnpm run gate:plants (CI check Plants) runs every plant through it
+  return entries.filter((entry) => entry.isFile()).map((entry) => join(entry.parentPath, entry.name).slice(join(root, path).length + 1));
 }
 
 /** The file system and gate processes of the repository at `root`. */
@@ -423,38 +447,15 @@ function realTools(root: string, io: Io): PlantTools {
     // Stryker disable next-line all: process boundary, covered by the plant job itself: pnpm run gate:plants (CI check Plants) runs every plant through it
     dirs: async (path) => (await readdir(join(root, path), { withFileTypes: true }).catch(() => [])).filter((entry) => entry.isDirectory()).map((entry) => entry.name),
     // Stryker disable next-line all: process boundary, covered by the plant job itself: pnpm run gate:plants (CI check Plants) runs every plant through it
-    files: async (path) => (await readdir(join(root, path), { recursive: true, withFileTypes: true }).catch(() => []))
-      // Stryker disable next-line all: process boundary, covered by the plant job itself: pnpm run gate:plants (CI check Plants) runs every plant through it
-      .filter((entry) => entry.isFile())
-      // Stryker disable next-line all: process boundary, covered by the plant job itself: pnpm run gate:plants (CI check Plants) runs every plant through it
-      .map((entry) => join(entry.parentPath, entry.name).slice(join(root, path).length + 1)),
+    files: (path) => filesBelow(root, path),
     // Stryker disable next-line all: process boundary, covered by the plant job itself: pnpm run gate:plants (CI check Plants) runs every plant through it
-    runPlant: (gate, plant) => limit(async () => {
-      // Stryker disable next-line all: process boundary, covered by the plant job itself: pnpm run gate:plants (CI check Plants) runs every plant through it
-      const into = await mkdtemp(join(tmpdir(), `ocelle-plant-${gate.id}-`));
-      // Stryker disable next-line all: process boundary, covered by the plant job itself: pnpm run gate:plants (CI check Plants) runs every plant through it
-      try {
-        // Stryker disable next-line all: process boundary, covered by the plant job itself: pnpm run gate:plants (CI check Plants) runs every plant through it
-        const { values, commits } = await build(root, gate, join(root, plant), into).catch((error: unknown) => {
-          // Stryker disable next-line all: process boundary, covered by the plant job itself: pnpm run gate:plants (CI check Plants) runs every plant through it
-          throw new Error(`${plant}: cannot build its temporary repository (${error instanceof Error ? error.message : String(error)})`, { cause: error });
-        });
-        // Stryker disable next-line all: process boundary, covered by the plant job itself: pnpm run gate:plants (CI check Plants) runs every plant through it
-        const [command = "", ...args] = plantArgs(gate.plantCommand, values);
-        // Stryker disable next-line all: process boundary, covered by the plant job itself: pnpm run gate:plants (CI check Plants) runs every plant through it
-        const ran = await runTool(command === "node" ? process.execPath : command, args, root, io.env);
-        // Stryker disable next-line all: process boundary, covered by the plant job itself: pnpm run gate:plants (CI check Plants) runs every plant through it
-        return { exit: ran.exitCode, stdout: lines(ran.stdout), stderr: lines(ran.stderr), ...(commits === undefined ? {} : { commits }) };
-      } finally {
-        // Stryker disable next-line all: process boundary, covered by the plant job itself: pnpm run gate:plants (CI check Plants) runs every plant through it
-        await rm(into, { recursive: true, force: true });
-      }
-    }),
+    runPlant: (gate, plant) => limit(() => runPlantIn(root, io, gate, plant)),
   };
 }
 
 // Stryker disable next-line all: process boundary, covered by the plant job itself: pnpm run gate:plants (CI check Plants) runs every plant through it
 export async function run(argv: readonly string[], io: Io): Promise<number> {
+  // Stryker disable next-line all: process boundary, covered by the plant job itself: pnpm run gate:plants (CI check Plants) runs every plant through it
   const context = parseArgs(argv, io.cwd);
   // Stryker disable next-line all: process boundary, covered by the plant job itself: pnpm run gate:plants (CI check Plants) runs every plant through it
   return plants(context, realTools(context.root, io), io);
