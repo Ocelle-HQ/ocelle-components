@@ -17,9 +17,9 @@ const gate = "pins";
 const exact = /^\d+\.\d+\.\d+(?:-[0-9A-Za-z.-]+)?(?:\+[0-9A-Za-z.-]+)?$/;
 const dependencyFields = ["dependencies", "devDependencies", "optionalDependencies", "peerDependencies"];
 
-/** A setting's value as one line of text: a scalar as written, a collection as JSON. */
+/** A value read from JSON or YAML as one line of text: a string as written, anything else as JSON. */
 export function show(value: unknown): string {
-  return typeof value === "object" && value !== null ? JSON.stringify(value) : String(value);
+  return typeof value === "string" ? value : JSON.stringify(value);
 }
 
 function finding(path: string, rule: string, message: string): Finding {
@@ -35,14 +35,16 @@ export function dependencyFindings(path: string, manifest: Record<string, unknow
     for (const [name, value] of Object.entries(dependencies as Record<string, unknown>)) {
       const spec = String(value);
       const sibling = siblings.get(name);
-      const workspace = /^workspace:(.*)$/.exec(spec)?.[1];
+      const workspace = /^workspace:(.*)/.exec(spec)?.[1];
       const named = `${field}.${name} is "${spec}"`;
       if (workspace !== undefined && !exact.test(workspace)) {
         found.push(finding(path, "range", `${named}, not an exact version`));
       } else if (workspace !== undefined && sibling === undefined) {
         found.push(finding(path, "workspace", `${named}, but ${name} is not a workspace package`));
-      } else if (sibling !== undefined && workspace !== sibling) {
-        found.push(finding(path, "workspace", `${named}, but ${name} is at ${sibling}; write "workspace:${sibling}"`));
+      } else if (workspace !== sibling) {
+        // Here sibling is set: without it, a workspace: spec is reported above and any other spec is not workspace's.
+        const version = String(sibling);
+        found.push(finding(path, "workspace", `${named}, but ${name} is at ${version}; write "workspace:${version}"`));
       } else if (sibling === undefined && !exact.test(spec)) {
         found.push(finding(path, "range", `${named}, not an exact version`));
       }
@@ -108,7 +110,9 @@ function firstError(output: string): { readonly code: string; readonly message: 
     let record: unknown;
     try {
       record = JSON.parse(line);
-    } catch {
+    }
+    // Stryker disable next-line BlockStatement: equivalent, an empty catch leaves record undefined, which the level check below also skips
+    catch {
       continue;
     }
     const fields = record as { level?: unknown; code?: unknown; message?: unknown } | null;

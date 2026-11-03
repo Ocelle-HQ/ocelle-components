@@ -33,7 +33,7 @@ function scalar(text: string): Scalar {
 
 /** A `name: rest` line or flow map entry: the name as text and the text after the first colon. */
 function entry(text: string): { readonly name: string; readonly rest: string } {
-  const match = /^([^:]+):(.*)$/.exec(text.trim());
+  const match = /^([^:]+):(.*)/.exec(text);
   if (match === null) throw new Error(`unsupported line ${text.trim()}`);
   return { name: String(scalar(String(match[1]))), rest: String(match[2]) };
 }
@@ -65,17 +65,17 @@ export function parseWorkspaceYaml(text: string): Record<string, Yaml> {
   const settings: Record<string, Yaml> = {};
   let block: Block | undefined;
   for (const raw of text.split(/\r?\n/)) {
-    const line = raw.replace(/(?:^|\s)#.*$/, "");
+    const line = raw.replace(/(?:^|\s)#.*/, "");
     if (line.trim() === "") continue;
     const indent = line.length - line.trimStart().length;
     if (indent === 0) {
       const { name, rest } = entry(line);
       block = rest.trim() === "" ? { key: name } : undefined;
-      settings[name] = block === undefined ? flow(rest) : null;
+      settings[name] = flow(rest);
       continue;
     }
     if (block === undefined || (block.indent ??= indent) !== indent) throw new Error(`unexpected indentation at ${line.trim()}`);
-    const item = /^- (.*)$/.exec(line.trim());
+    const item = /^- (.*)/.exec(line.trim());
     block.value ??= item === null ? {} : [];
     if (Array.isArray(block.value) !== (item !== null)) throw new Error(`a list and a map in one block at ${line.trim()}`);
     if (Array.isArray(block.value)) block.value.push(scalar(String(item?.[1])));

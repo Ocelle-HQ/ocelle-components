@@ -48,7 +48,7 @@ const workspace = (packages: string): Record<string, string> => ({
 describe("pins: the workspace packages", () => {
   it("lists `<dir>/*` packages and literal package directories, sorted, and skips a directory without package.json", async () => {
     const files = {
-      ...workspace("['packages/*', 'tools/cli', 'missing']"),
+      ...workspace("['packages/*', 'tools/cli', 'missing', 'tools/*x']"),
       "packages/b/package.json": manifest("b", { x: "^1" }),
       "packages/a/package.json": manifest("a", { y: "~1" }),
       "packages/empty/README.md": "x",
@@ -71,6 +71,7 @@ describe("pins: the workspace packages", () => {
       "packages/a/package.json",
       "packages/b/package.json",
       "packages/empty/package.json",
+      "tools/*x/package.json",
       "tools/cli/package.json",
     ]);
   });
@@ -80,6 +81,7 @@ describe("pins: the workspace packages", () => {
       const files = { ...workspace("x"), "pnpm-workspace.yaml": `${packages === "" ? "" : `packages: ${packages}\n`}${policy}`, "packages/a/package.json": manifest("a", { y: "~1" }) };
       const ran = gate(files, []);
       expect({ code: await ran.done, out: ran.out }).toEqual({ code: 0, out: ["pins: 1 manifest checked, no finding"] });
+      expect(ran.reads.filter((path) => path.endsWith("package.json"))).toEqual(["package.json"]);
     }
   });
 

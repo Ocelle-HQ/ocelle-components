@@ -29,12 +29,19 @@ describe("parseWorkspaceYaml: scalars", () => {
     { text: "a: isolated", value: "isolated" },
     { text: "a: link:vendor/x", value: "link:vendor/x" },
     { text: "a:   spaced out  ", value: "spaced out" },
+    { text: "a: x[1]", value: "x[1]" },
+    { text: "a: x{b: 1}", value: "x{b: 1}" },
   ])("reads $text", ({ text, value }) => {
     expect(parseWorkspaceYaml(text)).toEqual({ a: value });
   });
 
   it.each(["&anchor", "*alias", "!tag", "|", ">", "[open", "]", "{open", "}", ",x"])("rejects a value starting with a YAML indicator: %s", (value) => {
     expect(() => parseWorkspaceYaml(`a: ${value}`)).toThrow(`unsupported value ${value}`);
+  });
+
+  it("rejects a flow collection followed by more text", () => {
+    expect(() => parseWorkspaceYaml("a: [1]x")).toThrow("unsupported value [1]x");
+    expect(() => parseWorkspaceYaml("a: {b: 1}x")).toThrow("unsupported value {b: 1}x");
   });
 
   it("names the value of a block item it rejects", () => {
@@ -66,6 +73,10 @@ describe("parseWorkspaceYaml: collections", () => {
     expect(parseWorkspaceYaml(text)).toEqual({ packages: ["packages/*", "tools"], allowBuilds: { esbuild: true, "@scope/x": false }, last: 1 });
   });
 
+  it("opens a block after a key followed only by spaces", () => {
+    expect(parseWorkspaceYaml("a:   \n  - x\n")).toEqual({ a: ["x"] });
+  });
+
   it("reads a key with no block below it as null", () => {
     expect(parseWorkspaceYaml("a:\nb: 1\nc:")).toEqual({ a: null, b: 1, c: null });
   });
@@ -93,6 +104,11 @@ describe("parseWorkspaceYaml: collections", () => {
     expect(() => parseWorkspaceYaml("no colon here\n")).toThrow("unsupported line no colon here");
     expect(() => parseWorkspaceYaml("a:\n  plain\n")).toThrow("unsupported line plain");
     expect(() => parseWorkspaceYaml("a:\n  -\n")).toThrow("unsupported line -");
+    expect(() => parseWorkspaceYaml("a:\n  x - y\n")).toThrow("unsupported line x - y");
+  });
+
+  it("rejects a line that starts with a colon", () => {
+    expect(() => parseWorkspaceYaml(":a: b\n")).toThrow("unsupported line :a: b");
   });
 });
 

@@ -11,7 +11,7 @@ import { join, relative, resolve } from "node:path";
 import { main, parseArgs } from "../lib/cli.ts";
 import type { Context, Io } from "../lib/cli.ts";
 import { directoryNames } from "../lib/entries.ts";
-import { emit, plural } from "../lib/findings.ts";
+import { emit, formatLocation, plural } from "../lib/findings.ts";
 import { dependencyFindings, lockfileVerdict, pinFindings, workspaceFindings } from "../lib/pins-rules.ts";
 import type { PinsCheck, Settings } from "../lib/pins-rules.ts";
 import { runTool } from "../lib/spawn.ts";
@@ -99,7 +99,7 @@ async function packageDirs(settings: Settings, at: (path: string) => string, too
   const patterns = settings.packages;
   const dirs: string[] = [];
   for (const pattern of Array.isArray(patterns) ? patterns.map(String) : []) {
-    const parent = /^(.*)\/\*$/.exec(pattern)?.[1];
+    const parent = /(.*)\/\*$/.exec(pattern)?.[1];
     if (parent === undefined) dirs.push(pattern);
     else dirs.push(...(await tools.dirs(at(parent))).map((name) => `${parent}/${name}`));
   }
@@ -110,7 +110,7 @@ export async function pins(context: Context, tools: PinsTools, io: Io): Promise<
   const fail = (cause: string): number => emit({ exit: 2, cause: `${gate}: could not run: ${cause}` }, io.out, io.err);
   const plant = parsePlant(context);
   if ("problem" in plant) return fail(`${plant.problem}; ${usage}`);
-  const at = (path: string): string => (plant.dir === "" ? path : join(plant.dir, path));
+  const at = (path: string): string => join(plant.dir, path);
   const rootText = await tools.read(at("package.json"));
   if (rootText === undefined) return fail("package.json is missing; run the gate in the workspace root");
   const workspaceYaml = await tools.read(at("pnpm-workspace.yaml"));
@@ -128,7 +128,7 @@ export async function pins(context: Context, tools: PinsTools, io: Io): Promise<
   if ("cause" in lockfile) return fail(lockfile.cause);
   const findings = [...lockfile.findings, ...checked.findings];
   if (findings.length > 0) {
-    const files = new Set(findings.map((found) => ("path" in found.location ? found.location.path : ""))).size;
+    const files = new Set(findings.map((found) => formatLocation(found.location))).size;
     return emit({ exit: 1, findings, summary: `${gate}: ${plural(findings.length, "finding")} in ${plural(files, "file")}` }, io.out, io.err);
   }
   return emit({ exit: 0, summary: `${gate}: ${plural(manifests.length, "manifest")} checked, no finding` }, io.out, io.err);
