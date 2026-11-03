@@ -1,3 +1,3 @@
 # Run summaries
 
-* [How summaries are made](/flows/ocelle-implement.md) - The summary step of ocelle-implement writes one summary per feature here; none has run yet
+* [001-repository-foundation](001-repository-foundation.md) - Review rounds, findings and TDD checks per phase of 001-repository-foundation, generated from its review files
