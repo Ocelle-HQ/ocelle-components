@@ -283,8 +283,8 @@ round 1 re-pinned every registry package published less than 7 days before 2026-
      `mutate` range syntax), as `--plan` prints them (operator decision, phase 3 round 9, human:jeroennouwsdev,
      2026-11-03: plant-judge.ts alone took 9:49 of 10 minutes). A run with entries mutates only the changed lines
      inside them: each `mutate` range is a changed range of the file cut to the entry's lines. The range suffix is
-     the last `:<digits>-<digits>` of the entry; an in-scope path ends in `.ts`, so it never ends in such a suffix
-     itself. An entry whose path is not a changed in-scope file, whose range holds no changed line, or whose range
+     the text after the entry's last `.ts:` (split there without a regex, phase 3 round 12, O12-02), which must be
+     `<digits>-<digits>`; an in-scope path ends in `.ts`, so it never ends in such a suffix itself. An entry whose path is not a changed in-scope file, whose range holds no changed line, or whose range
      is malformed (not `start-end` with 1 <= start <= end) is exit 2 naming the entry, as an unchanged path already
      is.
   4. The wrapper decides from Stryker's JSON report (`reporters` includes `json`), not from Stryker's exit code or
@@ -301,15 +301,31 @@ round 1 re-pinned every registry package published less than 7 days before 2026-
      Stryker runs, a changed in-scope path that Stryker cannot take as a `mutate` input (it contains a glob
      metacharacter `*?[]{}!`, a comma, or a line terminator `\n`, `\r`, U+2028 or U+2029, or otherwise cannot be
      passed verbatim) is exit 2, naming each such path
-     (a file the gate could not check, contracts/gate-cli.md, not a finding). With every path passed verbatim, a
-     changed file absent from Stryker's report counts as zero mutants and passes: its changed lines hold no
-     mutable code (a type-only or comment-only change).
+     (a file the gate could not check, contracts/gate-cli.md, not a finding). With every path passed verbatim and
+     read by Stryker (see "Unread `mutate` entries" below), a changed file absent from Stryker's report counts as
+     zero mutants and passes: its changed lines hold no mutable code (a type-only or comment-only change).
   5. Equivalent mutants: `// Stryker disable next-line <mutator[,mutator]|all>: <reason>` directly above the code;
      Stryker reports them as `Ignored` with the reason, and the wrapper prints each as a record line (path, line,
      mutator, reason) for the review (FR-012). In the changed files the wrapper rejects, as findings, a next-line
      comment without a reason and every other disable form (`// Stryker disable <...>` without `next-line`, which
      disables until a `// Stryker restore`, including `// Stryker disable all`), since only the next-line form is
      "next to the mutated code".
+- **Unread `mutate` entries** (operator decision, phase 3 round 12, O12-01, human:jeroennouwsdev, 2026-11-03: "Fail
+  on unread files (Recommended)"; landing note L2-01): Stryker 10.1.1 never reads a file under a folder named
+  `node_modules`, `.git`, `.next`, `.nuxt` or `.svelte-kit` (`ALWAYS_IGNORE` in
+  `core/dist/src/fs/project-reader.js`) or `.stryker-tmp` (`tempDirName`), matched in any directory and ignoring
+  case. For such an entry it only logs `Glob pattern "<entry>" did not result in any files.` (a warning, printed
+  whenever `mutate` is not Stryker's default, which the gate's `--mutate` never is) and goes on, so the file was
+  missing from the report and passed as zero mutants; git tracks `.next/`, `.nuxt/` and `.svelte-kit/` here. The
+  gate therefore exits 2 when Stryker's output (stdout and stderr, which the gate already reads for the cause of a
+  missing report) holds that warning, naming each entry as logged, in the whole-diff and `--files` runs alike, before
+  it classifies the report. The signal is the warning, not the report and not a list of folder names: the report
+  lists only files with mutants (`toFileResults` builds it from the mutant results), so an unread file and a read
+  file with no mutable code on its changed lines are both absent from it and cannot be told apart there; and a
+  copy of Stryker's ignore list in the gate (the landing review's option (a)) would go stale with the next Stryker
+  rule, while the warning covers any path Stryker skips. The warning prints at Stryker's default console
+  `logLevel` (`info`); `stryker.config.json` sets none, and a test pins that it sets none above `warn`, so a later
+  config change cannot hide it.
 - **Gate source is in scope** (operator decision, plan squad round 1): gate tests in `gates/test/` import the gate's
   exported functions and run them in-process in the `gates` Vitest project, which the Stryker vitest-runner reaches.
   Each `gates/bin/<id>.ts` is a thin entry that calls an exported `run(argv, io)` returning the exit code; only its

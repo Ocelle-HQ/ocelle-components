@@ -261,10 +261,14 @@ in this feature depends on it.
     and a changed in-scope file whose path the mutation tool cannot take as a mutate input (it contains a glob
     metacharacter `*?[]{}!` or a comma, or otherwise cannot be passed verbatim), end the run as "could not run"
     (exit 2 of the gate contract) before the tool runs, naming the file or diff line, never as a pass (operator
-    decision, PR #18 landing review, human:jeroennouwsdev, 2026-11-03). A changed file the mutation tool's report
-    does not list counts as zero mutants, so a change with no mutable code (type-only or comment-only) passes
-    (operator decision, PR #18 landing review, human:jeroennouwsdev, 2026-11-03: "Guard the input instead
-    (Recommended)").
+    decision, PR #18 landing review, human:jeroennouwsdev, 2026-11-03). A mutate input the mutation tool reports
+    it did not read (it says the pattern "did not result in any files", as it does for a file in a folder it always
+    skips) also ends the run as "could not run" (exit 2), naming each such entry, whether the run covers the whole
+    diff or a listed shard; this covers any path the tool skips, not only the folders it skips today (operator
+    decision, phase 3 round 12, O12-01, human:jeroennouwsdev, 2026-11-03: "Fail on unread files (Recommended)").
+    A changed file the tool read but its report does not list counts as zero mutants, so a change with no mutable
+    code (type-only or comment-only) passes (operator decision, PR #18 landing review, human:jeroennouwsdev,
+    2026-11-03: "Guard the input instead (Recommended)").
 - **FR-012**: A surviving mutant MAY be recorded as equivalent only with a written reason, kept next to the mutated
   code. The mutation report MUST list every such record in the changed code, with its location and reason, so the
   review can see and record it.

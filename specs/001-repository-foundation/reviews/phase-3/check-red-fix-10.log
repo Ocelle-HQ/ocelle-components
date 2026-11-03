@@ -1,0 +1,60 @@
+Scope: all 4 workspace projects
+✓ Lockfile passes supply-chain policies (verified 19h ago)
+Lockfile is up to date, resolution step is skipped
+Packages are hard linked from the content-addressable store to the virtual store.
+  Content-addressable store is at: /root/.local/share/pnpm/store/v11
+  Virtual store is at:             node_modules/.pnpm
+Packages: +405
+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+Progress: resolved 405, reused 405, downloaded 0, added 405, done
+
+devDependencies:
++ @eslint/js 10.0.1
++ @stryker-mutator/core 10.1.1
++ @stryker-mutator/typescript-checker 10.1.1
++ @stryker-mutator/vitest-runner 10.1.1
++ @types/node 26.6.5
++ @vitest/browser-playwright 5.0.5
++ @vitest/eslint-plugin 1.6.28
++ eslint 10.13.0
++ jiti 2.7.0
++ parse5 8.0.1
++ playwright 1.64.1
++ postcss 8.5.31
++ postcss-lit 1.4.1
++ postcss-value-parser 4.2.0
++ stylelint 17.16.0
++ typescript 6.0.3
++ typescript-eslint 8.72.0
++ vite 8.3.5
++ vitest 5.0.5
+
+Done in 603ms using pnpm v12.16.1
+$ node gates/bin/setup-offline.ts
+setup: installed offline; Chromium at /opt/pw-browsers/chromium_headless_shell-1243/chrome-headless-shell-linux64/chrome-headless-shell
+$ node gates/bin/test.ts
+gates/test/mutation-ranges.test.ts:326: unit-tests: mutation gate: diff headers and mutate inputs (phase 3 round 7, O7-01 and O7-02) plans the files of tab-suffixed and quoted headers: AssertionError: expected { code: +0, …(3) } to deeply equal { code: +0, …(3) }
+gates/test/mutation-shards.test.ts:39: unit-tests: planShards: the split within files (phase 3 round 9, O9-01) splits a file of 121 changed lines into an entry of 120 lines and one of 1, in two shards: AssertionError: expected [ { files: [ …(2) ], lines: 121 } ] to deeply equal [ { …(2) }, { …(2) } ]
+gates/test/mutation-shards.test.ts:46: unit-tests: planShards: the split within files (phase 3 round 9, O9-01) cuts inside a changed range where the count reaches 120, each entry from its first to its last changed line: AssertionError: expected [ { files: [ …(2) ], lines: 141 } ] to deeply equal [ { …(2) }, { …(2) } ]
+gates/test/mutation-shards.test.ts:53: unit-tests: planShards: the split within files (phase 3 round 9, O9-01) starts the next entry at its first changed line when a cut falls at the end of a range: AssertionError: expected [ { files: [ …(2) ], lines: 131 } ] to deeply equal [ { …(2) }, { …(2) } ]
+gates/test/mutation-shards.test.ts:60: unit-tests: planShards: the split within files (phase 3 round 9, O9-01) splits a file of 216 changed lines across several ranges into entries of 120 and 96 lines: AssertionError: expected [ { files: [ …(3) ], lines: 250 } ] to deeply equal [ { …(2) }, …(1) ]
+gates/test/mutation-shards.test.ts:70: unit-tests: planShards: the split within files (phase 3 round 9, O9-01) splits gates/lib/plant-judge.ts as changed at fffb7e7 (216 lines) into entries of 120 and 96 lines, in two shards: AssertionError: expected [ { files: [ …(2) ], lines: 216 } ] to deeply equal [ { …(2) }, { …(2) } ]
+gates/test/mutation-shards.test.ts:77: unit-tests: planShards: the split within files (phase 3 round 9, O9-01) splits a file of exactly 240 changed lines into two entries of 120, and no empty third: AssertionError: expected [ { files: [ …(2) ], lines: 240 } ] to deeply equal [ { …(2) }, { …(2) } ]
+gates/test/mutation-shards.test.ts:84: unit-tests: planShards: the split within files (phase 3 round 9, O9-01) splits a file of 241 changed lines into entries of 120, 120 and 1, in three shards: AssertionError: expected [ { files: [ …(3) ], lines: 241 } ] to deeply equal [ { …(2) }, { …(2) }, { …(2) } ]
+gates/test/mutation-shards.test.ts:107: unit-tests: planShards fills shards of up to 250 changed lines, exactly 250 included, splitting files over 120 lines: AssertionError: expected [ …(2) ] to deeply equal [ …(3) ]
+gates/test/mutation-shards.test.ts:116: unit-tests: planShards fits a file's last entry and the next file's first entry in one shard, never two entries of one file: AssertionError: expected [ { …(2) } ] to deeply equal [ …(3) ]
+gates/test/mutation-shards.test.ts:131: unit-tests: planShards splits a file of 251 changed lines across shards by line range (phase 3 round 9, O9-01): AssertionError: expected [ …(2) ] to deeply equal [ …(3) ]
+gates/test/mutation-shards.test.ts:140: unit-tests: planShards splits a file of more than 250 changed lines across shards by line range (phase 3 round 9, O9-01): AssertionError: expected [ …(3) ] to deeply equal [ …(6) ]
+gates/test/mutation-shards.test.ts:152: unit-tests: planShards starts a new shard for the next entry of a file, though both would fit (phase 3 round 10, O10-01): AssertionError: expected [ { …(2) } ] to deeply equal [ …(2) ]
+gates/test/mutation-shards.test.ts:159: unit-tests: planShards starts a new shard when the next entry would make 11 entries, counting a split file's entries: AssertionError: expected [ …(2) ] to deeply equal [ { …(2) }, …(2) ]
+gates/test/mutation-shards.test.ts:182: unit-tests: planShards: one file's entries in separate shards (phase 3 round 10, O10-01) holds no two entries of one file in any shard, within the 10-entry and 250-line bounds: AssertionError: expected 2 to be 3 // Object.is equality
+gates/test/mutation-shards.test.ts:193: unit-tests: planShards: one file's entries in separate shards (phase 3 round 10, O10-01) lets an entry share a shard with other files: after a smaller file, and before the next file: AssertionError: expected [ { files: [ 'a.ts', …(3) ], …(1) } ] to deeply equal [ …(2) ]
+gates/test/mutation-shards.test.ts:200: unit-tests: planShards: one file's entries in separate shards (phase 3 round 10, O10-01) puts the recorded plant-judge.ts entries in separate shards, each beside other files: AssertionError: expected [ …(2) ] to deeply equal [ …(2) ]
+gates/test/mutation-shards.test.ts:220: unit-tests: formatPlan prints a shard's line-range entries comma-separated in files: AssertionError: expected '[{"files":"gates/lib/a.ts:1-120,gates…' to be '[{"files":"gates/lib/a.ts:1-120","lin…' // Object.is equality
+gates/test/mutation-shards.test.ts:310: unit-tests: mutation gate: --plan, --files and --base --plan prints the shards of the changed files and runs no Stryker: AssertionError: expected { code: +0, …(2) } to deeply equal { code: +0, …(2) }
+gates/test/mutation-shards.test.ts:318: unit-tests: mutation gate: --plan, --files and --base --plan prints no shard when nothing changed, and 0 shards and 0 cuts on stderr: AssertionError: expected { code: +0, out: [ '[]' ], err: [] } to deeply equal { code: +0, out: [ '[]' ], …(1) }
+gates/test/mutation-shards.test.ts:326: unit-tests: mutation gate: --plan, --files and --base --plan writes 1 cut in the singular, for a file split into two entries (phase 3 round 10, O10-02): AssertionError: expected { code: +0, …(2) } to deeply equal { code: +0, …(2) }
+gates/test/mutation-shards.test.ts:335: unit-tests: mutation gate: --plan, --files and --base --plan writes the cuts of several split files summed, n - 1 for a file of n entries (phase 3 round 10, O10-02): AssertionError: expected { code: +0, …(2) } to deeply equal { code: +0, …(2) }
+gates/test/mutation-shards.test.ts:506: unit-tests: mutation gate: --plan and --files with line-range entries (phase 3 round 9, O9-01) --plan splits a file of more than 120 changed lines into path:start-end entries: AssertionError: expected { code: +0, …(3) } to deeply equal { code: +0, …(3) }
+unit-tests: 23 of 1236 tests failed
+[ELIFECYCLE] Test failed. See above for more details.

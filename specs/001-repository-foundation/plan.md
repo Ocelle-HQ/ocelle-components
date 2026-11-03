@@ -148,7 +148,8 @@ as R-08 requires (phase 3 round 5, O5-01 and O5-02: "Fix in this PR"). No new ex
 reads tab-suffixed and C-quoted `+++` diff headers and exits 2 on any header it cannot parse, and a changed
 in-scope path that Stryker cannot take as a `mutate` input (a glob metacharacter `*?[]{}!` or a comma, or
 otherwise not passable verbatim) is exit 2 before Stryker runs ("could not run", contracts/gate-cli.md), while a
-changed file absent from Stryker's report counts as zero mutants, so a type-only or comment-only change passes
+changed file Stryker read but absent from its report counts as zero mutants (an unread file is exit 2 since phase 3
+round 12, below), so a type-only or comment-only change passes
 (spec FR-011, R-08; phase 3 round 7, O7-01 and O7-02; O7-02 as amended: "Guard the input instead
 (Recommended)"): phase 3 reopens for T095 (red under
 `red.sh 3 fix-7`). Every breaking plant names the cause its gate must report with exit 2, and a pass plant may not
@@ -183,6 +184,22 @@ inner statements are still mutated). This is the range rule Stryker already appl
 range, now at the cuts too, and the operator accepted it, so it is a recorded limit, not an entry in Complexity
 Tracking. Phase 3 reopens for one test-first fix round, T098 (red under `red.sh 3 fix-10`), reviewed with round 9's
 fix as phase 3 round 11.
+
+**Re-check after phase 3 round 12** (operator decisions, phase 3 round 12, human:jeroennouwsdev, 2026-11-03, on
+landing note L2-01 and CI run 41677290625: "Fail on unread files (Recommended)" and "Rewrite without regex
+(Recommended)"): VIII is tightened once more where the mutation gate could pass changed code it did not check.
+Stryker 10.1.1 never reads a file under a folder it always skips (`node_modules`, `.git`, `.next`, `.nuxt`,
+`.svelte-kit`, `.stryker-tmp`, any case, any depth) and only logs that the pattern "did not result in any files".
+The gate's exit-2 causes are now: an unresolvable or missing `--base`; a `+++` diff header it cannot read; a
+changed in-scope path Stryker cannot take verbatim as a `mutate` input (checked before Stryker runs); a malformed,
+unchanged or empty `--files` entry; a changed file it cannot read from the checkout; a `mutate` entry Stryker reports it did not read, read from Stryker's output
+and naming each such entry, in the whole-diff and `--files` runs alike (FR-011, R-08 "Unread `mutate` entries",
+contracts/gate-cli.md; O12-01); no usable report or a failed dry run; and a mutant in an unknown state. A changed
+file Stryker read but its report does not list still counts as zero mutants. The shard-entry parser in
+`gates/lib/mutation/shards.ts` splits an entry at its last `.ts:` without a regex, so the two equivalent anchor
+mutants that failed a CI shard are gone, and every regex under `gates/` is surveyed for anchors whose removal is
+equivalent (O12-02; no requirement changes). Phase 3 reopens for one test-first fix round covering both, T099 (red
+under `red.sh 3 fix-12`), reviewed as phase 3 round 13. No new exception.
 
 ## Project Structure
 
