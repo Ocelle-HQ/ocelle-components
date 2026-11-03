@@ -72,6 +72,10 @@ describe("planShards: the split within files (phase 3 round 9, O9-01)", () => {
     ]);
   });
 
+  it("splits a file of exactly 240 changed lines into two entries of 120, and no empty third", () => {
+    expect(planShards([file("gates/lib/a.ts", 240)])).toEqual([{ files: ["gates/lib/a.ts:1-120", "gates/lib/a.ts:121-240"], lines: 240 }]);
+  });
+
   it("splits a file of 241 changed lines into entries of 120, 120 and 1", () => {
     expect(planShards([file("gates/lib/a.ts", 241)])).toEqual([
       { files: ["gates/lib/a.ts:1-120", "gates/lib/a.ts:121-240", "gates/lib/a.ts:241-241"], lines: 241 },
@@ -209,6 +213,11 @@ describe("selectFiles: path:start-end entries (phase 3 round 9, O9-01)", () => {
       files: [file("gates/lib/a:b.ts", 2)],
     });
     expect(selectFiles(changed, "gates/lib/a:b.ts:2-2")).toEqual({ files: [ranged("gates/lib/a:b.ts", { start: 2, end: 2 })] });
+  });
+
+  it("takes a changed path holding .ts: whole, before reading a range suffix", () => {
+    const odd = file("gates/lib/a.ts:b.ts", 2);
+    expect(selectFiles([odd], "gates/lib/a.ts:b.ts")).toEqual({ files: [odd] });
   });
 
   it("names an entry whose path is not a changed file", () => {

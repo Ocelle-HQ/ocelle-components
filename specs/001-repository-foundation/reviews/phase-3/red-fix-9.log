@@ -1,0 +1,108 @@
+Scope: all 4 workspace projects
+✓ Lockfile passes supply-chain policies (verified 16h ago)
+Lockfile is up to date, resolution step is skipped
+Progress: resolved 1, reused 0, downloaded 0, added 0
+Packages are hard linked from the content-addressable store to the virtual store.
+  Content-addressable store is at: /root/.local/share/pnpm/store/v11
+  Virtual store is at:             node_modules/.pnpm
+Packages: +405
+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+Progress: resolved 405, reused 405, downloaded 0, added 405, done
+
+devDependencies:
++ @eslint/js 10.0.1
++ @stryker-mutator/core 10.1.1
++ @stryker-mutator/typescript-checker 10.1.1
++ @stryker-mutator/vitest-runner 10.1.1
++ @types/node 26.6.5
++ @vitest/browser-playwright 5.0.5
++ @vitest/eslint-plugin 1.6.28
++ eslint 10.13.0
++ jiti 2.7.0
++ parse5 8.0.1
++ playwright 1.64.1
++ postcss 8.5.31
++ postcss-lit 1.4.1
++ postcss-value-parser 4.2.0
++ stylelint 17.16.0
++ typescript 6.0.3
++ typescript-eslint 8.72.0
++ vite 8.3.5
++ vitest 5.0.5
+
+Done in 2.2s using pnpm v12.16.1
+$ node gates/bin/setup-offline.ts
+setup: installed offline; Chromium at /opt/pw-browsers/chromium_headless_shell-1243/chrome-headless-shell-linux64/chrome-headless-shell
+$ node gates/bin/test.ts
+gates/test/integration/mutation.test.ts:107: unit-tests: mutation gate (gates/bin/mutation.ts) --files with an entry path:start-end mutates only the changed lines inside it (phase 3 round 9, O9-01): AssertionError: expected { code: 2, …(2) } to deeply equal { code: +0, stderr: [], lines: 1 }
+gates/test/mutation-ranges.test.ts:360: unit-tests: mutation gate: diff headers and mutate inputs (phase 3 round 7, O7-01 and O7-02) exits 2 naming a changed path holding "*", before Stryker runs: AssertionError: expected { code: 2, out: [], …(2) } to deeply equal { code: 2, out: [], …(2) }
+gates/test/mutation-ranges.test.ts:360: unit-tests: mutation gate: diff headers and mutate inputs (phase 3 round 7, O7-01 and O7-02) exits 2 naming a changed path holding "?", before Stryker runs: AssertionError: expected { code: 2, out: [], …(2) } to deeply equal { code: 2, out: [], …(2) }
+gates/test/mutation-ranges.test.ts:360: unit-tests: mutation gate: diff headers and mutate inputs (phase 3 round 7, O7-01 and O7-02) exits 2 naming a changed path holding "[", before Stryker runs: AssertionError: expected { code: 2, out: [], …(2) } to deeply equal { code: 2, out: [], …(2) }
+gates/test/mutation-ranges.test.ts:360: unit-tests: mutation gate: diff headers and mutate inputs (phase 3 round 7, O7-01 and O7-02) exits 2 naming a changed path holding "]", before Stryker runs: AssertionError: expected { code: 2, out: [], …(2) } to deeply equal { code: 2, out: [], …(2) }
+gates/test/mutation-ranges.test.ts:360: unit-tests: mutation gate: diff headers and mutate inputs (phase 3 round 7, O7-01 and O7-02) exits 2 naming a changed path holding "{", before Stryker runs: AssertionError: expected { code: 2, out: [], …(2) } to deeply equal { code: 2, out: [], …(2) }
+gates/test/mutation-ranges.test.ts:360: unit-tests: mutation gate: diff headers and mutate inputs (phase 3 round 7, O7-01 and O7-02) exits 2 naming a changed path holding "}", before Stryker runs: AssertionError: expected { code: 2, out: [], …(2) } to deeply equal { code: 2, out: [], …(2) }
+gates/test/mutation-ranges.test.ts:360: unit-tests: mutation gate: diff headers and mutate inputs (phase 3 round 7, O7-01 and O7-02) exits 2 naming a changed path holding "!", before Stryker runs: AssertionError: expected { code: 2, out: [], …(2) } to deeply equal { code: 2, out: [], …(2) }
+gates/test/mutation-ranges.test.ts:360: unit-tests: mutation gate: diff headers and mutate inputs (phase 3 round 7, O7-01 and O7-02) exits 2 naming a changed path holding ",", before Stryker runs: AssertionError: expected { code: 2, out: [], …(2) } to deeply equal { code: 2, out: [], …(2) }
+gates/test/mutation-ranges.test.ts:360: unit-tests: mutation gate: diff headers and mutate inputs (phase 3 round 7, O7-01 and O7-02) exits 2 naming a changed path holding "+(", before Stryker runs: AssertionError: expected { code: 2, out: [], …(2) } to deeply equal { code: 2, out: [], …(2) }
+gates/test/mutation-ranges.test.ts:360: unit-tests: mutation gate: diff headers and mutate inputs (phase 3 round 7, O7-01 and O7-02) exits 2 naming a changed path holding "@(", before Stryker runs: AssertionError: expected { code: 2, out: [], …(2) } to deeply equal { code: 2, out: [], …(2) }
+gates/test/mutation-ranges.test.ts:373: unit-tests: mutation gate: diff headers and mutate inputs (phase 3 round 7, O7-01 and O7-02) exits 2 naming a changed path holding a backslash (a quoted header), before Stryker runs: AssertionError: expected { code: 2, out: [], …(2) } to deeply equal { code: 2, out: [], …(2) }
+gates/test/mutation-ranges.test.ts:387: unit-tests: mutation gate: diff headers and mutate inputs (phase 3 round 7, O7-01 and O7-02) names every such path in one cause line, in diff order (a normal run): AssertionError: expected { code: 2, out: [], …(2) } to deeply equal { code: 2, out: [], …(2) }
+gates/test/mutation-ranges.test.ts:387: unit-tests: mutation gate: diff headers and mutate inputs (phase 3 round 7, O7-01 and O7-02) names every such path in one cause line, in diff order (--plan): AssertionError: expected { code: 2, out: [], …(2) } to deeply equal { code: 2, out: [], …(2) }
+gates/test/mutation-ranges.test.ts:387: unit-tests: mutation gate: diff headers and mutate inputs (phase 3 round 7, O7-01 and O7-02) names every such path in one cause line, in diff order (--files): AssertionError: expected { code: 2, out: [], …(2) } to deeply equal { code: 2, out: [], …(2) }
+gates/test/mutation-ranges.test.ts:441: unit-tests: changedFiles and unusableMutatePaths: line terminators in paths (phase 3 round 8, R8-01) names every path holding \n, \r, U+2028 or U+2029 as unusable, in diff order: AssertionError: expected [] to deeply equal [ 'packages/tokens/src/a\nb.ts', …(3) ]
+gates/test/mutation-ranges.test.ts:461: unit-tests: mutation gate: a changed path holding a line terminator (phase 3 round 8, R8-01) exits 2 naming the path holding \n, before Stryker runs (a normal run): AssertionError: expected { code: +0, …(3) } to deeply equal { code: 2, out: [], …(2) }
+gates/test/mutation-ranges.test.ts:461: unit-tests: mutation gate: a changed path holding a line terminator (phase 3 round 8, R8-01) exits 2 naming the path holding \n, before Stryker runs (--plan): AssertionError: expected { code: +0, …(3) } to deeply equal { code: 2, out: [], …(2) }
+gates/test/mutation-ranges.test.ts:461: unit-tests: mutation gate: a changed path holding a line terminator (phase 3 round 8, R8-01) exits 2 naming the path holding \n, before Stryker runs (--files): AssertionError: expected { code: +0, …(3) } to deeply equal { code: 2, out: [], …(2) }
+gates/test/mutation-ranges.test.ts:461: unit-tests: mutation gate: a changed path holding a line terminator (phase 3 round 8, R8-01) exits 2 naming the path holding \r, before Stryker runs (a normal run): AssertionError: expected { code: +0, …(3) } to deeply equal { code: 2, out: [], …(2) }
+gates/test/mutation-ranges.test.ts:461: unit-tests: mutation gate: a changed path holding a line terminator (phase 3 round 8, R8-01) exits 2 naming the path holding \r, before Stryker runs (--plan): AssertionError: expected { code: +0, …(3) } to deeply equal { code: 2, out: [], …(2) }
+gates/test/mutation-ranges.test.ts:461: unit-tests: mutation gate: a changed path holding a line terminator (phase 3 round 8, R8-01) exits 2 naming the path holding \r, before Stryker runs (--files): AssertionError: expected { code: +0, …(3) } to deeply equal { code: 2, out: [], …(2) }
+gates/test/mutation-ranges.test.ts:461: unit-tests: mutation gate: a changed path holding a line terminator (phase 3 round 8, R8-01) exits 2 naming the path holding U+2028, before Stryker runs (a normal run): AssertionError: expected { code: +0, …(3) } to deeply equal { code: 2, out: [], …(2) }
+gates/test/mutation-ranges.test.ts:461: unit-tests: mutation gate: a changed path holding a line terminator (phase 3 round 8, R8-01) exits 2 naming the path holding U+2028, before Stryker runs (--plan): AssertionError: expected { code: +0, …(3) } to deeply equal { code: 2, out: [], …(2) }
+gates/test/mutation-ranges.test.ts:461: unit-tests: mutation gate: a changed path holding a line terminator (phase 3 round 8, R8-01) exits 2 naming the path holding U+2028, before Stryker runs (--files): AssertionError: expected { code: +0, …(3) } to deeply equal { code: 2, out: [], …(2) }
+gates/test/mutation-ranges.test.ts:461: unit-tests: mutation gate: a changed path holding a line terminator (phase 3 round 8, R8-01) exits 2 naming the path holding U+2029, before Stryker runs (a normal run): AssertionError: expected { code: +0, …(3) } to deeply equal { code: 2, out: [], …(2) }
+gates/test/mutation-ranges.test.ts:461: unit-tests: mutation gate: a changed path holding a line terminator (phase 3 round 8, R8-01) exits 2 naming the path holding U+2029, before Stryker runs (--plan): AssertionError: expected { code: +0, …(3) } to deeply equal { code: 2, out: [], …(2) }
+gates/test/mutation-ranges.test.ts:461: unit-tests: mutation gate: a changed path holding a line terminator (phase 3 round 8, R8-01) exits 2 naming the path holding U+2029, before Stryker runs (--files): AssertionError: expected { code: +0, …(3) } to deeply equal { code: 2, out: [], …(2) }
+gates/test/mutation-ranges.test.ts:478: unit-tests: mutation gate: a changed path holding a line terminator (phase 3 round 8, R8-01) names all four paths in one cause line, in diff order: AssertionError: expected { code: +0, …(3) } to deeply equal { code: 2, out: [], mutated: [], …(1) }
+gates/test/mutation-shards.test.ts:38: unit-tests: planShards: the split within files (phase 3 round 9, O9-01) splits a file of 121 changed lines into an entry of 120 lines and one of 1: AssertionError: expected [ { …(2) } ] to deeply equal [ { files: [ …(2) ], lines: 121 } ]
+gates/test/mutation-shards.test.ts:44: unit-tests: planShards: the split within files (phase 3 round 9, O9-01) cuts inside a changed range where the count reaches 120, each entry from its first to its last changed line: AssertionError: expected [ { …(2) } ] to deeply equal [ { files: [ …(2) ], lines: 141 } ]
+gates/test/mutation-shards.test.ts:50: unit-tests: planShards: the split within files (phase 3 round 9, O9-01) starts the next entry at its first changed line when a cut falls at the end of a range: AssertionError: expected [ { …(2) } ] to deeply equal [ { files: [ …(2) ], lines: 131 } ]
+gates/test/mutation-shards.test.ts:56: unit-tests: planShards: the split within files (phase 3 round 9, O9-01) splits a file of 216 changed lines across several ranges into entries of 120 and 96 lines: AssertionError: expected [ { files: [ …(2) ], lines: 250 } ] to deeply equal [ { files: [ …(3) ], lines: 250 } ]
+gates/test/mutation-shards.test.ts:69: unit-tests: planShards: the split within files (phase 3 round 9, O9-01) splits gates/lib/plant-judge.ts as changed at fffb7e7 (216 lines) into entries of 120 and 96 lines: AssertionError: expected [ { …(2) } ] to deeply equal [ { files: [ …(2) ], lines: 216 } ]
+gates/test/mutation-shards.test.ts:75: unit-tests: planShards: the split within files (phase 3 round 9, O9-01) splits a file of 241 changed lines into entries of 120, 120 and 1: AssertionError: expected [ { …(2) } ] to deeply equal [ { files: [ …(3) ], lines: 241 } ]
+gates/test/mutation-shards.test.ts:96: unit-tests: planShards fills shards of up to 250 changed lines, exactly 250 included, splitting files over 120 lines: AssertionError: expected [ { …(2) }, { …(2) }, { …(2) } ] to deeply equal [ …(3) ]
+gates/test/mutation-shards.test.ts:105: unit-tests: planShards fits two files of exactly 250 changed lines together in one shard, as four entries: AssertionError: expected [ { files: [ 'a.ts', 'b.ts' ], …(1) } ] to deeply equal [ { …(2) } ]
+gates/test/mutation-shards.test.ts:111: unit-tests: planShards splits two files of 251 changed lines together into two shards, no entry crossing a shard: AssertionError: expected [ …(2) ] to deeply equal [ …(2) ]
+gates/test/mutation-shards.test.ts:118: unit-tests: planShards splits a file of 251 changed lines across shards by line range (phase 3 round 9, O9-01): AssertionError: expected [ …(3) ] to deeply equal [ …(2) ]
+gates/test/mutation-shards.test.ts:126: unit-tests: planShards splits a file of more than 250 changed lines across shards by line range (phase 3 round 9, O9-01): AssertionError: expected [ …(3) ] to deeply equal [ …(3) ]
+gates/test/mutation-shards.test.ts:135: unit-tests: planShards puts entries of one file in one shard when they fit: AssertionError: expected [ { files: [ 'a.ts' ], lines: 200 } ] to deeply equal [ { …(2) } ]
+gates/test/mutation-shards.test.ts:139: unit-tests: planShards starts a new shard when the next entry would make 11 entries, counting a split file's entries: AssertionError: expected [ { files: [ …(10) ], lines: 139 } ] to deeply equal [ …(2) ]
+gates/test/mutation-shards.test.ts:162: unit-tests: formatPlan prints a shard's line-range entries comma-separated in files: AssertionError: expected '[{"files":"gates/lib/a.ts,gates/lib/b…' to be '[{"files":"gates/lib/a.ts:1-120,gates…' // Object.is equality
+gates/test/mutation-shards.test.ts:189: unit-tests: selectFiles: path:start-end entries (phase 3 round 9, O9-01) cuts the file's changed ranges to the entry's lines: AssertionError: expected { missing: [ 'gates/lib/a.ts:3-8' ] } to deeply equal { files: [ { …(3) } ] }
+gates/test/mutation-shards.test.ts:195: unit-tests: selectFiles: path:start-end entries (phase 3 round 9, O9-01) keeps the changed ranges an entry holds whole, and leaves out those outside it: AssertionError: expected { missing: [ 'gates/lib/a.ts:1-10' ] } to deeply equal { files: [ { …(3) } ] }
+gates/test/mutation-shards.test.ts:201: unit-tests: selectFiles: path:start-end entries (phase 3 round 9, O9-01) joins entries of one file into one selected file, merging adjacent ranges, in diff order: AssertionError: expected { missing: [ …(3) ] } to deeply equal { files: [ { …(3) }, { …(3) } ] }
+gates/test/mutation-shards.test.ts:207: unit-tests: selectFiles: path:start-end entries (phase 3 round 9, O9-01) reads the last :start-end as the range, so a path holding a colon keeps it: AssertionError: expected { missing: [ 'gates/lib/a:b.ts:2-2' ] } to deeply equal { files: [ { …(3) } ] }
+gates/test/mutation-shards.test.ts:214: unit-tests: selectFiles: path:start-end entries (phase 3 round 9, O9-01) names an entry whose path is not a changed file: AssertionError: expected { missing: [ …(2) ] } to deeply equal { missing: [ 'gates/lib/x.ts:1-5' ] }
+gates/test/mutation-shards.test.ts:218: unit-tests: selectFiles: path:start-end entries (phase 3 round 9, O9-01) names every entry whose range holds no changed line: AssertionError: expected { missing: [ …(3) ] } to deeply equal { empty: [ …(2) ] }
+gates/test/mutation-shards.test.ts:224: unit-tests: selectFiles: path:start-end entries (phase 3 round 9, O9-01) names the malformed range :0-3: AssertionError: expected { missing: [ …(2) ] } to deeply equal { malformed: [ 'gates/lib/a.ts:0-3' ] }
+gates/test/mutation-shards.test.ts:224: unit-tests: selectFiles: path:start-end entries (phase 3 round 9, O9-01) names the malformed range :5-3: AssertionError: expected { missing: [ …(2) ] } to deeply equal { malformed: [ 'gates/lib/a.ts:5-3' ] }
+gates/test/mutation-shards.test.ts:224: unit-tests: selectFiles: path:start-end entries (phase 3 round 9, O9-01) names the malformed range :a-b: AssertionError: expected { missing: [ …(2) ] } to deeply equal { malformed: [ 'gates/lib/a.ts:a-b' ] }
+gates/test/mutation-shards.test.ts:224: unit-tests: selectFiles: path:start-end entries (phase 3 round 9, O9-01) names the malformed range :3: AssertionError: expected { missing: [ …(2) ] } to deeply equal { malformed: [ 'gates/lib/a.ts:3' ] }
+gates/test/mutation-shards.test.ts:224: unit-tests: selectFiles: path:start-end entries (phase 3 round 9, O9-01) names the malformed range :1-2-3: AssertionError: expected { missing: [ …(2) ] } to deeply equal { Object (malformed) }
+gates/test/mutation-shards.test.ts:224: unit-tests: selectFiles: path:start-end entries (phase 3 round 9, O9-01) names the malformed range :-1-3: AssertionError: expected { missing: [ …(2) ] } to deeply equal { Object (malformed) }
+gates/test/mutation-shards.test.ts:224: unit-tests: selectFiles: path:start-end entries (phase 3 round 9, O9-01) names the malformed range :: AssertionError: expected { missing: [ …(2) ] } to deeply equal { malformed: [ 'gates/lib/a.ts:' ] }
+gates/test/mutation-shards.test.ts:224: unit-tests: selectFiles: path:start-end entries (phase 3 round 9, O9-01) names the malformed range :1-: AssertionError: expected { missing: [ …(2) ] } to deeply equal { malformed: [ 'gates/lib/a.ts:1-' ] }
+gates/test/mutation-shards.test.ts:224: unit-tests: selectFiles: path:start-end entries (phase 3 round 9, O9-01) names the malformed range : 1-3: AssertionError: expected { missing: [ …(2) ] } to deeply equal { Object (malformed) }
+gates/test/mutation-shards.test.ts:228: unit-tests: selectFiles: path:start-end entries (phase 3 round 9, O9-01) names malformed entries before missing paths, and missing paths before empty ranges: AssertionError: expected { missing: [ …(3) ] } to deeply equal { malformed: [ 'gates/lib/a.ts:0-1' ] }
+gates/test/mutation-shards.test.ts:315: unit-tests: mutation gate: --plan, --files and --base exits 2 when --base is missing: AssertionError: expected { code: 2, out: [], …(1) } to deeply equal { code: 2, out: [], …(1) }
+gates/test/mutation-shards.test.ts:331: unit-tests: mutation gate: --plan, --files and --base exits 2 on --base needs a value: AssertionError: expected { code: 2, out: [], …(1) } to deeply equal { code: 2, out: [], …(1) }
+gates/test/mutation-shards.test.ts:331: unit-tests: mutation gate: --plan, --files and --base exits 2 on --files needs a value: AssertionError: expected { code: 2, out: [], …(1) } to deeply equal { code: 2, out: [], …(1) }
+gates/test/mutation-shards.test.ts:331: unit-tests: mutation gate: --plan, --files and --base exits 2 on --files needs a value: AssertionError: expected { code: 2, out: [], …(1) } to deeply equal { code: 2, out: [], …(1) }
+gates/test/mutation-shards.test.ts:331: unit-tests: mutation gate: --plan, --files and --base exits 2 on unknown argument --verbose: AssertionError: expected { code: 2, out: [], …(1) } to deeply equal { code: 2, out: [], …(1) }
+gates/test/mutation-shards.test.ts:413: unit-tests: mutation gate: --plan and --files with line-range entries (phase 3 round 9, O9-01) --plan splits a file of more than 120 changed lines into path:start-end entries: AssertionError: expected { code: +0, …(3) } to deeply equal { code: +0, …(3) }
+gates/test/mutation-shards.test.ts:422: unit-tests: mutation gate: --plan and --files with line-range entries (phase 3 round 9, O9-01) --files with an entry path:start-end mutates only the changed lines inside it: AssertionError: expected { code: 2, out: [], …(2) } to deeply equal { code: +0, …(3) }
+gates/test/mutation-shards.test.ts:431: unit-tests: mutation gate: --plan and --files with line-range entries (phase 3 round 9, O9-01) --files with one entry of a split file, and with the plan's whole files value, entries of one file joined: AssertionError: expected { code: 2, out: [], …(2) } to deeply equal { code: +0, …(3) }
+gates/test/mutation-shards.test.ts:462: unit-tests: mutation gate: --plan and --files with line-range entries (phase 3 round 9, O9-01) exits 2 naming the entries on a malformed range, before Stryker runs: AssertionError: expected { code: 2, out: [], …(2) } to deeply equal { code: 2, out: [], …(2) }
+gates/test/mutation-shards.test.ts:462: unit-tests: mutation gate: --plan and --files with line-range entries (phase 3 round 9, O9-01) exits 2 naming the entries on a path that is not a changed file, before Stryker runs: AssertionError: expected { code: 2, out: [], …(2) } to deeply equal { code: 2, out: [], …(2) }
+gates/test/mutation-shards.test.ts:462: unit-tests: mutation gate: --plan and --files with line-range entries (phase 3 round 9, O9-01) exits 2 naming the entries on a range with no changed line, before Stryker runs: AssertionError: expected { code: 2, out: [], …(2) } to deeply equal { code: 2, out: [], …(2) }
+unit-tests: 70 of 1229 tests failed
+[ELIFECYCLE] Test failed. See above for more details.

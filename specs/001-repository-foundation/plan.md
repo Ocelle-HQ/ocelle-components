@@ -48,9 +48,11 @@ decision, plan squad round 3). Test inputs live in `gates/test/fixtures/` (R-10)
 
 **Performance Goals**: cold install plus test run under 5 minutes (SC-001); mutation of one shard (up to 10
 entries and 250 changed lines of package and gate source, a file over 120 changed lines split into `path:start-end`
-entries; 250 by operator decision, phase 4 round 3, human:jeroennouwsdev, 2026-11-03: GitHub runner variance took a
-435-line shard past 10 minutes; the split by operator decision, phase 3 round 9, human:jeroennouwsdev, 2026-11-03:
-plant-judge.ts alone took 9:49 of 10 minutes) under 10 minutes,
+entries, no two entries of one file in the same shard; 250 by operator decision, phase 4 round 3,
+human:jeroennouwsdev, 2026-11-03: GitHub runner variance took a 435-line shard past 10 minutes; the split by
+operator decision, phase 3 round 9, human:jeroennouwsdev, 2026-11-03: plant-judge.ts alone took 9:49 of 10 minutes;
+one file's entries in separate shards by operator decision, phase 3 round 10, human:jeroennouwsdev, 2026-11-03)
+under 10 minutes,
 the CI mutation check split into such shards (SC-005, FR-013, R-08)
 
 **Constraints**: offline setup never touches the network (FR-008); no gate reads `gates/plants/` except the plant job,
@@ -165,6 +167,22 @@ on its own is removed. The mutation gate's input guard also covers paths holding
 U+2028, U+2029), which Stryker's range regex cannot take verbatim (phase 3 round 8, R8-01; FR-011). Phase 3 reopens
 for one test-first fix round covering both, T097 (red under `red.sh 3 fix-9`), reviewed as phase 3 round 10. Mutation
 strength is unchanged: every changed line is still mutated, in more, shorter shards. No new exception.
+
+**Re-check after phase 3 round 10** (operator decisions, phase 3 round 10, human:jeroennouwsdev, 2026-11-03:
+"Chunks never share (Recommended)" and "Accept, record it (Recommended)"): the greedy fill of T097 still put a
+file's entries in one shard whenever there was room, so the plant-judge.ts shard kept its 353 mutants
+(reviews/phase-3/round-9-fixes.md). FR-013 and SC-005 are amended so that two entries of the same file never share
+a shard, while an entry may still share a shard with entries of other files; the 10-entry and 250-line bounds and
+the 120-line entry size stay, so no shard holds more than 120 changed lines of one file (R-08 "CI, sharded" step
+1). A mutant whose node spans a cut between two entries of one file is mutated in no shard; this is recorded as an
+accepted limit in FR-013, R-08 and `gates/README.md`, and `--plan` reports the number of cuts on stderr, so the
+plan JSON and ci.yml stay unchanged (R-08, contracts/gate-cli.md, contracts/ci-checks.md). Changed source is still
+mutation-tested (Constitution VIII): every changed line lies in an entry and its mutants inside that entry run;
+only a node spanning a cut is lost, measured on csp.ts as 2 of 281 mutants (block statements across the cut, whose
+inner statements are still mutated). This is the range rule Stryker already applies at the edge of any changed
+range, now at the cuts too, and the operator accepted it, so it is a recorded limit, not an entry in Complexity
+Tracking. Phase 3 reopens for one test-first fix round, T098 (red under `red.sh 3 fix-10`), reviewed with round 9's
+fix as phase 3 round 11.
 
 ## Project Structure
 
@@ -336,7 +354,8 @@ makes every GitHub-side check and records each result, with its evidence (comman
    cancelled at the 10-minute limit is a failure to investigate, not to re-run blindly. When run 41635769914 took
    9:49 for `gates/lib/plant-judge.ts` alone, the split of a file's changed lines into `path:start-end` entries of at
    most 120 changed lines was adopted (FR-013 as amended, R-08, T097; operator decision, phase 3 round 9,
-   human:jeroennouwsdev, 2026-11-03: plant-judge.ts alone took 9:49 of 10 minutes). Operator decision,
+   human:jeroennouwsdev, 2026-11-03: plant-judge.ts alone took 9:49 of 10 minutes), with no two entries of one
+   file in the same shard (T098; operator decision, phase 3 round 10, human:jeroennouwsdev, 2026-11-03). Operator decision,
    phase 4 round 4 note R4-01, feature gate, human:jeroennouwsdev, 2026-11-03: "Accept for now: Record this run as
    the SC-005 measurement, and investigate any cancelled shard if one happens."
 5. Merge method and evidence home (operator decision, PR #18 landing review note L1-08, human:jeroennouwsdev,

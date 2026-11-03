@@ -4,7 +4,7 @@
 // for non-ASCII bytes), or `/dev/null`; any other header makes the parse fail naming it, so no changed file is ever
 // dropped unread (phase 3 round 7, O7-01). A changed path that Stryker cannot take verbatim as a `mutate` input is
 // named by `unusableMutatePaths`, which the gate turns into exit 2 before Stryker runs (O7-02, operator decision,
-// PR #18 landing review: "Guard the input instead (Recommended)").
+// PR #18 landing review: "Guard the input instead (Recommended)"; line terminators: phase 3 round 8, R8-01).
 
 /** Lines `start` to `end` (1-based, inclusive) added or modified relative to the base. */
 export interface LineRange {
@@ -119,9 +119,11 @@ export function mutateSpecs(files: readonly ChangedFile[]): string[] {
 
 /**
  * A path minimatch reads as a pattern, not verbatim (a glob metacharacter `*?[]{}!`, a backslash, an extglob `+(` or
- * `@(`), or one a comma would split in Stryker's `--mutate` list.
+ * `@(`), one a comma would split in Stryker's `--mutate` list, or one holding a line terminator (`\n`, `\r`, U+2028,
+ * U+2029), of which Stryker's `MUTATION_RANGE_REGEX` (no `s` flag, no `^` anchor) keeps only the text after the last
+ * terminator (phase 3 round 8, R8-01).
  */
-const unusable = /[*?[\]{}!,\\]|[+@]\(/;
+const unusable = /[*?[\]{}!,\\\n\r\u2028\u2029]|[+@]\(/;
 
 /** The changed paths Stryker cannot take verbatim as a `mutate` input, in diff order. */
 export function unusableMutatePaths(files: readonly ChangedFile[]): string[] {

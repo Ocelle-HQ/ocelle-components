@@ -29,7 +29,7 @@ the ruleset requires):
 
 | Job id | Runs | Checkout and limits |
 |---|---|---|
-| `mutation-plan` | `pnpm run gate:mutation -- --base ${{ github.event.pull_request.base.sha }} --plan`; outputs the shards | `fetch-depth: 0` |
+| `mutation-plan` | `pnpm run gate:mutation -- --base ${{ github.event.pull_request.base.sha }} --plan`; outputs the shards (the JSON array on stdout, unchanged; the cut count `--plan` writes to stderr only reaches the job log, research.md R-08) | `fetch-depth: 0` |
 | `mutation-shard` | matrix over the plan's shards, skipped when there are none: `pnpm run gate:mutation -- --base ${{ github.event.pull_request.base.sha }} --files <the shard's files>`, the shard's `files` value passed unchanged (its comma-separated entries, `path` or `path:start-end`, research.md R-08) | `fetch-depth: 0`; `timeout-minutes: 10` per shard (FR-013) |
 
 Every job: checkout (`persist-credentials: false`), Node and pnpm from the pins, restore (never save) the pnpm store
