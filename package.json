@@ -14,7 +14,15 @@
     "gate:unit-tests": "node gates/bin/test.ts",
     "gate:config-copies": "node gates/bin/config-copies.ts",
     "gate:test-lint": "node gates/bin/test-lint.ts",
-    "gate:mutation": "node gates/bin/mutation.ts"
+    "gate:mutation": "node gates/bin/mutation.ts",
+    "gate:typecheck": "node gates/bin/typecheck.ts",
+    "gate:lint": "node gates/bin/lint.ts",
+    "gate:style-lint": "node gates/bin/style-lint.ts",
+    "gate:csp": "node gates/bin/csp.ts",
+    "gate:prefix": "node gates/bin/prefix.ts",
+    "gate:signoff": "node gates/bin/signoff.ts",
+    "gate:pins": "node gates/bin/pins.ts",
+    "gate:plants": "node gates/bin/plants.ts"
   },
   "devDependencies": {
     "@eslint/js": "10.0.1",

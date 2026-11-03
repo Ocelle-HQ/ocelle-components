@@ -7,7 +7,7 @@ const excluded = ["**/node_modules/**", "**/dist/**", "gates/plants/**", "gates/
 
 // Optional, environment-only Chromium override (research.md R-03, operator decision 2026-11-02): when
 // OCELLE_CHROMIUM_PATH is set and non-empty, the elements project launches that executable; otherwise Playwright's own.
-const chromiumPath = process.env["OCELLE_CHROMIUM_PATH"];
+const chromiumPath = process.env.OCELLE_CHROMIUM_PATH;
 const launchOptions = chromiumPath ? { executablePath: chromiumPath } : {};
 
 export default defineConfig({

@@ -5,7 +5,7 @@ import { defineConfig } from "vitest/config";
 import base from "./vitest.config.ts";
 
 const projects = (base.test?.projects ?? []).filter(
-  (project) => typeof project !== "object" || !("test" in project) || project.test?.name !== "gates-integration",
+  (project) => typeof project !== "object" || !("test" in project) || project.test.name !== "gates-integration",
 );
 
 export default defineConfig({ test: { projects } });
