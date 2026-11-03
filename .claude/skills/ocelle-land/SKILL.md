@@ -1,6 +1,6 @@
 ---
 name: ocelle-land
-description: Maintainer landing pass on an ocelle-components pull request (a mission or op PR from /ocelle-run, a contributor PR, or a chore). Viability triage scaled to the PR, bring the branch up to date with main without rewriting it, classify every red check, a fresh second-opinion review of the integrated diff, test-first folds through operator rounds, deliverable hygiene, verification.md, then hand off for the operator to merge. Use for "land PR #N", "run the landing pass", or after /ocelle-run marks a mission PR ready.
+description: Maintainer landing pass on an ocelle-components pull request (a mission or op PR from /ocelle-run, a contributor PR, or a chore). Viability triage scaled to the PR, bring the branch up to date by merging main (never a rebase), classify every red check, a fresh second-opinion review of the integrated diff, test-first folds through operator rounds, an evidence-preserving history fold, deliverable hygiene, verification.md, then hand off for the operator to merge. Use for "land PR #N", "run the landing pass", or after /ocelle-run marks a mission PR ready.
 argument-hint: "<PR URL or number>"
 user-invocable: true
 ---
@@ -24,11 +24,11 @@ $ARGUMENTS
 1. **The constitution wins** (`.specify/memory/constitution.md`): no code change without an approved triage record;
    test first (Principle VIII); the operator merges and agents never merge. There is no merge exception, even if
    asked mid-session: say that the constitution forbids it and hand off.
-2. **Never rewrite a mission or op branch.** The red/green evidence names commits by SHA
-   (`reviews/phase-N/red-commits`, `scaffold`, `base.sha`, `tdd-check.json`). A rebase, squash or reword
-   invalidates it. Update a branch by merging `origin/main` into it (`git merge --signoff origin/main`), never by
-   rebasing. The squash at merge time is the operator's, and the PR's `refs/pull/N/head` keeps the evidence SHAs
-   reachable after it.
+2. **Rewrite a mission or op branch only with `fold-history.sh`** (step 2.8). The red/green evidence names commits
+   by SHA (`reviews/phase-N/red-commits`, `scaffold.sha`, `base.sha`, `tdd-check.json`). A rebase, a hand squash or
+   a reword breaks it. The fold script keeps every commit the evidence needs and remaps the records. Update a branch
+   by merging `origin/main` into it (`git merge --signoff origin/main`), never by rebasing, and only after the fold.
+   The squash at merge time is the operator's.
 3. **Every commit is signed off** (`git commit -s`, the Sign-off check, FR-023) and ends with the attribution
    trailers the harness gives you. Commit subjects are conventional (`<type>(landing): …` for landing folds).
 4. **Delegate roles to their agent profiles** (`.claude/agents/`): code to `implementer-ivan`, spec and plan changes
@@ -96,7 +96,10 @@ surface, gate or contract change, as opposed to a mechanical chore: a pin bump, 
 
 1. **Announce.** With the operator's yes (rule 5), post one "maintainer landing" comment: the LAND / RESCOPE /
    CLOSE call with its evidence, and what the pass will do. Assign the PR to the operator if they want that.
-2. **Bring the branch up to date.** `git merge --signoff origin/main` into the PR branch (rule 2). Resolve conflicts
+2. **Bring the branch up to date.** On a mission or op PR the fold (step 8) needs a history without merge commits,
+   so until then only check that `main` merges cleanly (`git merge-tree --write-tree origin/main HEAD`) and run the
+   checks on that result; merge it for real right after step 8. On other PRs merge now. Either way:
+   `git merge --signoff origin/main` into the PR branch (rule 2). Resolve conflicts
    yourself only when they are mechanical; otherwise delegate to `implementer-ivan` with the conflict list. Run
    `pnpm install --frozen-lockfile` if the lockfile changed.
 3. **Classify every red check** on the latest run, by job, into four bins, with the run link:
@@ -140,6 +143,37 @@ surface, gate or contract change, as opposed to a mechanical chore: a pin bump, 
    `contracts/ci-checks.md`. A new test project or fixture must be wired so the normal gates see it or exclude it
    deliberately (research.md R-10). Run `gate:plants` and `gate:config-copies` to prove it. If a check name changed,
    tell the operator that the ruleset on `main` must change with it.
+8. **Fold the history** (mission and op PRs; operator decision 2026-11-03, "Evidence-preserving fold"). Do it once,
+   near the end, after the last fold commit (steps 5 to 7), before bringing the branch up to date with `main` for the last time and before the final push. Never do it on a contributor's
+   commits without their consent; for those, keep their commits and authorship as they are.
+   1. Clean tree; no merge commits since the PR base (the script refuses them; fold before merging `main`).
+   2. `tooling/speckit/bin/fold-history.sh <pr-base-sha> <feature-dir>`. It keeps, per phase:
+      - `base.sha`;
+      - the scaffold and its parent;
+      - each red commit and its parent (phase and every `fix-N`).
+
+      Every other commit folds forward into the next kept commit, and a group never spans two authors. Each new
+      commit takes the exact tree, author and date of its group's last commit. Its message comes from the group's
+      first `feat`/`fix` commit and lists the other subjects. Sign-offs and trailers are kept.
+
+      A final `chore(landing)` commit remaps `base.sha`, `scaffold.sha` and `red-commits` to the new SHAs and writes
+      `reviews/history-map.txt` (old → new). Review files keep the SHAs they were written with, and the map resolves
+      them.
+
+      The script itself verifies:
+      - each new commit's tree is identical to its old commit's tree;
+      - the folded head's tree equals the old head's;
+      - the remap touches only evidence files.
+
+      On failure it leaves HEAD on the old head and exits 1. The old head stays as `refs/ocelle/prefold/<branch>`.
+   3. Prove the fold, then commit the evidence:
+      - `$S/tdd-check.sh N` for every phase (all `pass`, on the new SHAs);
+      - `pnpm run gate:signoff -- --range <pr-base>..HEAD`;
+      - `$S/summary.sh --commit`.
+   4. Ask the operator, multiple choice, before the push: force-push with lease
+      (`git push --force-with-lease=<branch>:<old-head-sha> origin <branch>`), and whether to keep the pre-fold history
+      on the remote as `archive/<branch>-prefold`. After a force-push GitHub stops keeping the old SHAs that the review
+      files name. Never push without that answer.
 
 ## 3. Deliverable hygiene
 
