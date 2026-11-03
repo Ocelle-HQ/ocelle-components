@@ -1,0 +1,11 @@
+{
+  "expect": "fail",
+  "why": "A changed, covered line whose test does not check it: the StringLiteral mutant survives (FR-011).",
+  "findings": [
+    {
+      "location": "packages/tokens/src/x.ts:3",
+      "rule": "StringLiteral",
+      "message": "Survived"
+    }
+  ]
+}

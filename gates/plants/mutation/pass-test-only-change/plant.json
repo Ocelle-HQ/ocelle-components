@@ -1,0 +1,4 @@
+{
+  "expect": "pass",
+  "why": "A change only to a colocated *.test.ts is test code, not mutated (FR-011, FR-028)."
+}

@@ -1,0 +1,11 @@
+{
+  "expect": "fail",
+  "why": "A surviving mutant in changed gate source (gates/lib/) is a finding: gate source is in scope (FR-011, FR-028).",
+  "findings": [
+    {
+      "location": "gates/lib/x.ts:3",
+      "rule": "StringLiteral",
+      "message": "Survived"
+    }
+  ]
+}

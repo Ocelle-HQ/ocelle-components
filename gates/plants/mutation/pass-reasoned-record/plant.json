@@ -1,0 +1,11 @@
+{
+  "expect": "pass",
+  "why": "A survivor with a reasoned next-line record passes, and the run lists the record (FR-012).",
+  "records": [
+    {
+      "location": "packages/tokens/src/x.ts:3",
+      "mutator": "StringLiteral",
+      "reason": "the label is only shown, never compared (plant)"
+    }
+  ]
+}
