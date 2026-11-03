@@ -1,0 +1,130 @@
+schema: review-findings/v1
+complete: true
+phase: plan
+round: 2
+lens: fresh
+findings:
+  - id: PLAN-FRESH-2-001
+    severity: 3
+    title: "The round-1 static Storybook scope still contains Storybook's own runtime: the Vite builder bundles storybook/internal/preview/runtime into the in-scope preview bundle, and the byte-identity fence cannot exclude bundled code"
+    evidence:
+      - artifact: "spec.md FR-023 'Static scope' (line 377): the static gates cover 'the Vite-built stories and preview bundle, the externalised scripts and styles, the HTML entries', and exclude only 'the runtime files Storybook copies verbatim from its package'; research.md R-10 line 373 and contracts/gates.md § csp, prefix say the same; the fence test requires every excluded file to be 'byte-identical to a file of the installed storybook package' (spec.md:381, research.md:375, contracts/gates.md:60)"
+      - code: "Probe: npm pack @storybook/builder-vite@10.6.4, dist/index.js:336 generates the preview entry `import { setup } from 'storybook/internal/preview/runtime'` (and chunk-J7N53RTJ.js:653 lists it in optimizeViteDeps). storybook@10.6.4 package.json:190 maps './internal/preview/runtime' to ./dist/preview/runtime.js. So the preview runtime is compiled by Vite into the preview bundle, not copied verbatim."
+      - code: "Probe: storybook@10.6.4 dist/preview/runtime.js (38457 lines) holds `Function(\"return this\")` (6934, 7538), `Function(\"binder\", ...)` (11783), `$Function('\"use strict\"; return (' ...)` (11876), and string literals `'<span style=\"color: #37D5D3; background: black\"> manager </span>'` (13253) and `<span style=\"color: gray\">` (13262). gates/bin/csp.ts:6 makes `Function()` a finding and scans string literals containing `<` for style attributes (001 research R-11; refute round 1 cites csp.ts:2-6,170 for the same patterns in sb-manager)."
+      - code: "Probe: storybook@10.6.4 _node-chunks/builder-manager-H2GHKW6S.js:1399,1546 builds `sb-addons/` with esbuild from the manager entries (common-preset.js:2254 adds dist/core-server/presets/common-manager.js, which bundles _browser-chunks, one of them chunk-BMXVGY4U.js:454 building `' style=\"'` HTML), plus storybook/.storybook/manager.ts. sb-addons is neither verbatim (fails the byte-identity fence) nor made only from this repository's sources."
+    claim: |
+      The operator's round-1 fork (PLAN-FRESH-1-001 (a)) narrowed the static scope to "files this repository's sources
+      produce" on the premise that Storybook's vendor code lives only in directories it copies verbatim (sb-manager).
+      That premise is false for the preview: the Vite builder imports Storybook's whole preview runtime into the Vite
+      bundle that FR-023 explicitly keeps in scope, and that runtime contains `Function(...)` calls and `<span style=...>`
+      markup strings that the `csp` gate reports. The esbuild-built `sb-addons/` bundle has the same mix and cannot be
+      excluded, because the fence admits only byte-identical copies. So the widened `csp` gate will fail on files in
+      scope that no setting or externalising can clean, the spike will hit FR-023's stop condition, and the operator
+      gets the same question again, after US1 work has started. The question can be put now: no option of round 1
+      gives a passing static gate over a Vite-built Storybook preview.
+    remedies:
+      - "Fork for the operator at the plan gate. (a) Scope the static csp/prefix gates to this repository's Storybook source and generated inputs before bundling (storybook/stories, storybook/.storybook, storybook/scripts, storybook/.generated, the HTML templates after externalise.ts), and leave every bundle in storybook/dist/ to the run-time CSP test; record this as a further narrowing of SPEC-1-05 in FR-023, gates.json and gates/README.md. (b) Keep bundles in scope, but attribute findings through the Vite and esbuild source maps or metafile, and exclude only findings whose source module is under node_modules/storybook (or @storybook/*), with a test that every excluded finding maps to a vendor module. (c) Replace the Storybook runtime in this feature with the generated script-free token reference page (round-1 option (c) of PLAN-FRESH-1-001), leaving Storybook to #10. Under every option, state in R-10 that the spike's first output is the csp gate's findings on the Vite preview bundle and on sb-addons/."
+  - id: PLAN-FRESH-2-002
+    severity: 3
+    title: "Every source.ts mutant and every css() mutant is static, so each one runs the whole mutation suite, now including Chromium browser suites and a Storybook build, inside 10-minute shards"
+    evidence:
+      - artifact: "research.md R-03 lines 77-87: browser suites generate the served stylesheet in their beforeAll so that 'mutants of css() and value mutants of source.ts reach the served stylesheet'; verify-2.md (PLAN-CORRECTNESS-1-002): 'code run in beforeAll counts as static coverage, which Stryker runs against all tests'"
+      - artifact: "contracts/gates.md § Mutation, typecheck and test scope: vitest.config.ts gains a `storybook` project 'with a global setup that builds the Storybook into a per-run temporary directory'; R-10 line 392 the same"
+      - code: "vitest.mutation.config.ts:6-8 takes every project of vitest.config.ts except gates-integration, so the new tokens browser suites and the new storybook project (with its global Storybook build) run under Stryker; stryker.config.json: coverageAnalysis perTest, concurrency 8, no ignoreStatic"
+      - code: ".github/workflows/ci.yml:89 mutation-shard `timeout-minutes: 10`; gates/lib/mutation/shards.ts:6-8 shards hold at most 250 changed lines because '500 lines let a shard run past the limit' (operator decision, 001 phase 4 round 3); gates/test/fixtures/stryker/unexcluded-pattern.output.txt:7-9 is Stryker's own warning that static mutants 'take 100% of the time running the tests'"
+      - code: "gates/lib/mutation/report.ts:41 counts `Ignored` as passing, so turning on ignoreStatic to save time would pass every source.ts mutant unseen"
+    claim: |
+      `source.ts` is a module-level array of about 130 records: every literal mutant in it is a static mutant (the value
+      is fixed at import), and the browser suites call `css()` in `beforeAll`, which verify 2 itself classes as static
+      coverage. Stryker runs a static mutant against every test of every project in vitest.mutation.config.ts: the 455
+      gates unit tests, the elements browser project, the tokens Playwright suites (six theme conditions, motion, font,
+      CSP, each launching Chromium) and the new storybook project, whose global setup builds Storybook with Vite. A
+      120-line entry of source.ts carries well over a hundred such mutants, each a full-suite run. 001 already had to
+      halve the shard size to stay under the 10-minute limit with no browser suite in the per-mutant path. The plan
+      states no mutation-time budget for this, so the required "Mutation testing" check is likely to time out on this
+      feature's own pull request, and the obvious escape (ignoreStatic) silently passes the mutants.
+    remedies:
+      - "Plan the mutation path explicitly: (1) give the tokens browser suites and the build-dependent storybook tests their own Vitest projects (like gates-integration) that vitest.mutation.config.ts excludes, so Stryker never launches Chromium or builds Storybook; (2) kill source.ts value mutants with a node test that compares the generator's output from the real source with the transcribed Appendix A table (token stream for colours, exact text for the others), and css() mutants with the fixture-source generator tests; (3) state in R-03 that the browser suites prove behaviour against current output but are not counted on to kill mutants; (4) state that ignoreStatic stays off, and add a measured per-shard time for a 120-line source.ts entry to the US1 spike or first task, with the stop-and-ask rule if it exceeds the 10-minute limit."
+  - id: PLAN-FRESH-2-003
+    severity: 3
+    title: "The `--ocelle-<element>-<property>` convention collides with elements the library is already set to build (an icon element, a dialog element), and its prefix exemption hides misspelt element properties"
+    evidence:
+      - artifact: "spec.md FR-010 lines 265-270 and Assumptions lines 504-507: 'no token name equals an element name or begins with `<element>-`'; contracts/gates.md:48: the rule's load fails (exit 2) if a token name equals an element name or begins with `<element>-`; research.md R-09 line 317: 'A reference whose name starts with `<element>-` for a listed element is exempt'"
+      - artifact: "spec.md Edge Cases line 213: 'dialogs are an element issue'; triage/002-design-tokens.md line 44 and triage/001 line 38: #7 to #9 and #12 to #17 are 'Element and icon issues'; Appendix A tokens `icon-size`, `dialog-max-inline`, `dialog-max-block`, `footer-h`, `shell-*`, `bar-width`, `bar-block-narrow`, `size-*`"
+      - code: "verify-1.md PLAN-FRESH-1-007 row records only as a note that 'element names such as ocelle-icon, ocelle-dialog and ocelle-footer are unavailable while icon-size, dialog-* and footer-h exist'; no artifact carries the constraint to the element issues"
+    claim: |
+      The round-1 fix makes the token namespace and element names mutually exclusive by prefix. The library's own
+      roadmap has an icon element and a dialog element, the natural names of which are `ocelle-icon` and
+      `ocelle-dialog`. The first such element to land will make the style-lint gate exit 2 for the whole repository,
+      and the fix will be either renaming a public element (constitution VII surface, and kitty-mission-ui's mapping
+      expectations) or renaming tokens this feature is about to publish. The prefix exemption is also loose: once
+      `ocelle-button` exists, `var(--ocelle-button-gpa)` is exempt, so a misspelt element property falls back silently,
+      which is the defect FR-010 exists to stop. Constitution I already requires the manifest to declare every public
+      CSS custom property, so the exact names are available.
+    remedies:
+      - "Exempt exactly the CSS custom property names the custom-elements manifest declares (`cssProperties[].name` of each declaration), not a name prefix; drop the token/element prefix-overlap load failure and keep only an exact-name clash check between tokens and declared element properties; change the pass plant to a fixture manifest declaring `--ocelle-button-gap` and add a fail plant `var(--ocelle-button-gpa)` against the same manifest; amend FR-010, the Assumptions, R-09, data-model § Element name list and contracts/gates.md."
+      - "Or keep the prefix convention but reserve a sub-namespace no token can take (for example `--ocelle-el-<element>-<property>` or a different separator), and record now, in the spec and in the element issues, which element names are excluded by the token set."
+  - id: PLAN-FRESH-2-004
+    severity: 2
+    title: "The style-lint rule reads `packages/elements/custom-elements.json`, a file no feature has decided to commit; the CI style-lint job builds nothing, so a generated manifest would be invisible to it"
+    evidence:
+      - artifact: "research.md R-09 line 316 and data-model.md line 71: the element list comes from `packages/elements/custom-elements.json` under `--root`, 'empty while it does not exist'"
+      - code: "specs/001-repository-foundation/plan.md:394 and gates/README.md 'Deferred gates': the custom-elements manifest and its check are deferred to #7 or #10; packages/elements/package.json has only `build: tsc` and `files: [dist]`"
+      - code: ".github/workflows/ci.yml:45 the style-lint job runs `pnpm run gate:style-lint` with no build; .gitignore ignores packages/*/dist/; gates/lib/plant-repo.ts:38-45 configurationSet does not copy the manifest into plant repositories"
+    claim: |
+      This feature fixes the path and the committed status of an artifact that belongs to a later feature. The usual
+      tooling (the custom-elements manifest analyzer) generates the manifest at build time; if #7 generates it into
+      dist/ or leaves it untracked, CI style-lint sees an empty element list and rejects every element custom property,
+      and if it is committed elsewhere the rule silently reads nothing. Element authors in #7 also cannot reference a
+      new property in CSS until the manifest declaring it exists, an ordering the plan does not state. Because the
+      file is missing in this feature, nothing here can fail on a wrong path.
+    remedies:
+      - "Record in FR-010, R-09 and gates/README.md that the manifest is a committed file at `packages/elements/custom-elements.json` (constitution I treats it as public surface), and add to the deferred custom-elements-manifest gate's row that it must keep that path committed and up to date; or make the path a gates.json setting the element feature fills in, with the style-lint rule exiting 2 when the configured manifest is absent once any element exists under packages/elements/src."
+  - id: PLAN-FRESH-2-005
+    severity: 2
+    title: "validateSource as specified rejects the real source: the derived colour tokens color-focus and color-current have `var()` values, which are neither 6-digit hex nor the overlay's rgb()"
+    evidence:
+      - artifact: "data-model.md § Token, validation (line 22): 'every colour value is a 6-digit hex or, for `color-overlay`, `rgb(… / α)`, except `color-scheme`'; '`contrast` only on opaque colour tokens'; 'grounds are opaque colour tokens'"
+      - artifact: "data-model.md § Token `value` row: 'A reference to another token is written `var(--ocelle-<name>)`'; spec FR-002 and A.1: `color-focus` and `color-current` are derived from `color-accent-strong`; A.8 gives both a contrast kind and grounds (`color-focus` 21 pairs, `color-current` 4)"
+      - artifact: "research.md R-07: gates/lib/wcag.ts converts 'sRGB hex → relative luminance'; FR-017 requires resolving derived tokens, but no artifact says where the resolution happens or that opacity is judged on the resolved value"
+    claim: |
+      Implemented as written, the first validateSource tests (red first) would assert that a non-hex colour value is
+      rejected, and the real source then fails validation, so every gate that loads it (contrast, brand-rules,
+      style-lint) exits 2. The implementer must either loosen a test written in the red step or invent the rule, and
+      the plan gives no basis for deciding whether `contrast` on a derived token is allowed and how its opacity is
+      judged. The same gap decides whether `elevation-*` values, which mix `var()` with literal shadows, are checked.
+    remedies:
+      - "Amend data-model § Token validation: a colour value is a 6-digit hex, the overlay's rgb(... / α), `light`/`dark` for color-scheme, or exactly one `var(--ocelle-<colour token>)` reference; opacity, grounds and `contrast` are judged on the resolved value; name the resolver (gates/lib/token-source.ts or generate.ts) used by both json() and the contrast gate, with a unit test that color-focus resolves per theme and a validation test that a reference to the overlay is not opaque."
+  - id: PLAN-FRESH-2-006
+    severity: 2
+    title: "The `text-below-threshold` plant and US3 scenario 2 cannot give 'one finding': color-inset and color-hover-bg share a light value, color-accent-low also drops below 4.5, and every ink-muted figure mismatches"
+    evidence:
+      - artifact: "spec.md US3 scenario 2 (line 145): '`color-ink-muted` changed so that it is 4.3:1 on `color-inset` ... it fails with one finding'; contracts/gates.md:80 plant `text-below-threshold` (ink-muted at 4.3 on inset, light); SC-004 (line 446): 'caught with exactly its expected finding'"
+      - artifact: "spec.md A.1: light `color-inset` and `color-hover-bg` are both `#E2DDD3`; FR-016/A.8: ink-muted is required on all nine main grounds; R-07 lists figure-mismatch and below-threshold as separate per-entry rules without saying whether one entry can yield both"
+      - code: "Probe (WCAG 2.x formula, scratch script): lightening ink-muted along its HLS lightness to #6B655A gives 4.27 on inset, 4.27 on hover-bg, 4.48 on accent-low (three below-threshold pairs), and changes all nine light ink-muted ratios (canvas 6.08 → 4.99, sheet 6.74 → 5.54, rail 5.60 → 4.60, ...), so each of the nine entries also fails figure-mismatch against its recorded figure (A.7: 6.1, 6.7, 5.6, 5.2)"
+    claim: |
+      A contrast gate checks pairs, but a plant changes a token, and a token sits in many pairs. The acceptance
+      scenario promises one finding, the contract describes one defect, and SC-004 demands the exact finding set, yet
+      the specified plant yields at least three below-threshold findings and nine figure mismatches (the inset entry
+      itself mismatches too). An implementer will either write a 12-line expected list that no longer proves the
+      scenario as worded, or bend the gate (for example by suppressing figure-mismatch on a pair below threshold) to
+      make the scenario true. The same applies to `non-text-below-threshold`, where control-border's change moves its
+      six required and eight excluded light figures.
+    remedies:
+      - "State in R-07 and data-model § Gate findings whether an entry can produce both figure-mismatch and below-threshold (and in which order); reword US3 scenarios 2 and 3 to 'fails with a below-threshold finding for each pair under the threshold, each naming theme, tokens, ratio and threshold'; and make the two plants carry a pair list whose figures match the planted value, with plant.json listing the exact resulting findings (for the text plant: inset, hover-bg and accent-low in light)."
+  - id: PLAN-FRESH-2-007
+    severity: 2
+    title: "Contrast and brand-rules fail plants carry whole copies of source.ts or generate.ts, which go stale against the real pair list and generator at the next token change"
+    evidence:
+      - artifact: "contracts/gates.md § Configuration set: 'a plant carries only the files it changes'; research.md R-08 line 285: brand-rules plants 'change source.ts, generate.ts or pairs.json in the plant's tree; the rest comes from the configuration set'; contracts/gates.md:80-81 lists 8 contrast and 12 brand-rules fail and breaking plants, most of which change source.ts or generate.ts"
+      - code: "gates/lib/plant-repo.ts:166-172 buildRepoTree lays the plant's tree/ over the configuration set file by file, so a plant that changes one value of source.ts carries a full copy of the ~130-record file; gates/README.md:40 the plant job fails when a fail plant is not caught with exactly its expected findings"
+    claim: |
+      Round 1 put the real source, generator and pair list into the configuration set so that plants are not stale
+      copies (PLAN-FRESH-1-002), but that only fixed the pass plants. Each fail plant that changes one token still
+      ships a frozen copy of the whole source (or generator) and is checked against the live pairs.json. The next pull
+      request that adjusts any token value and its recorded figures (or adds a token, or changes the generator's
+      output shape) makes the frozen copies produce extra figure-mismatch, missing-required-pair or exit-2 results,
+      so the plant job fails on unrelated plants; or, for generate.ts copies, the plants keep proving rules (f) and (g)
+      against a generator the repository no longer runs. The maintenance cost lands on #6 and every later token change.
+    remedies:
+      - "Let these plants state their change as a delta over the real file: for example the configuration set also provides the real source at a fixed second path (packages/tokens/src/source.base.ts in plant repositories only) and a plant's source.ts is a few lines that import it and override one record; or add a plant form that applies a patch file (tree.patch) over the configuration set. Record the chosen form in contracts/gates.md and add a plant-job test that every contrast and brand-rules plant still gives its expected outcome after a token value change in the real source."
