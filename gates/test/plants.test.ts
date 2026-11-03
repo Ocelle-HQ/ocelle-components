@@ -17,7 +17,7 @@ const gateIds = (JSON.parse(registryText) as { id: string }[]).map((gate) => gat
 const failPlant = (location: string, rule: string, message?: string): string =>
   JSON.stringify({ expect: "fail", why: "a planted defect", findings: [{ location, rule, ...(message === undefined ? {} : { message }) }] });
 const passPlant = JSON.stringify({ expect: "pass", why: "a near-miss" });
-const errorPlant = JSON.stringify({ expect: "error", why: "a breaking input" });
+const errorPlant = JSON.stringify({ expect: "error", why: "a breaking input", cause: "could not run: broken input" });
 
 /** A repository in memory: every gate with a fail, a pass and a breaking plant, and two registry plants. */
 function world(): Map<string, string> {
@@ -113,6 +113,36 @@ describe("plants (the job)", () => {
     expect((await result(ran)).out[0]).toBe(
       "gates/plants/csp/fail-basic: plants: not-caught: expected exit 1 with the plant's 1 finding, got exit 2 (csp: could not run: boom)",
     );
+  });
+
+  it("fails when a gate breaks on its breaking plant for another cause, naming the expected cause (phase 4 round 5, O5-01)", async () => {
+    const ran = job(world(), { "gates/plants/csp/error-basic": { exit: 2, stdout: [], stderr: ["csp: could not run: spawn node ENOENT"] } });
+    expect(await result(ran)).toEqual({
+      code: 1,
+      out: [
+        'gates/plants/csp/error-basic: plants: not-reported-broken: expected exit 2 (could not run) with the cause "could not run: broken input", ' +
+          "got exit 2 (csp: could not run: spawn node ENOENT)",
+        "plants: 1 problem in 35 plants",
+      ],
+      err: [],
+    });
+  });
+
+  it("rejects a pass plant that sets base and a breaking plant without a cause as invalid plants (phase 4 round 5, O5-01 and O5-02)", async () => {
+    const files = world();
+    files.set("gates/plants/mutation/pass-basic/plant.json", JSON.stringify({ expect: "pass", why: "a near-miss", base: "HEAD" }));
+    files.set("gates/plants/lint/error-basic/plant.json", JSON.stringify({ expect: "error", why: "a breaking input" }));
+    expect(await result(job(files))).toEqual({
+      code: 1,
+      out: [
+        "gates/plants/lint/error-basic/plant.json: plants: invalid-plant: an error plant names its cause, a non-empty string",
+        "gates/plants/lint: plants: missing-plant: gate lint has no error plant",
+        "gates/plants/mutation/pass-basic/plant.json: plants: invalid-plant: a pass plant may not set base",
+        "gates/plants/mutation: plants: missing-plant: gate mutation has no pass plant",
+        "plants: 4 problems in 35 plants",
+      ],
+      err: [],
+    });
   });
 
   it("fails when a gate reports other findings than its fail plant expects", async () => {
@@ -262,7 +292,7 @@ describe("plants (the job)", () => {
 
   it("hands each plant's parsed plant.json to the runner, so a mutation plant's base reaches it (review round 1, R1-11)", async () => {
     const files = world();
-    const spec = { expect: "error", why: "an unresolvable base", base: "refs/heads/no-such-base" };
+    const spec = { expect: "error", why: "an unresolvable base", cause: "could not run: broken input", base: "refs/heads/no-such-base" };
     files.set("gates/plants/mutation/error-basic/plant.json", JSON.stringify(spec));
     const ran = job(files);
     expect((await result(ran)).code).toBe(0);
@@ -368,11 +398,11 @@ describe("parsePlant", () => {
     expect(parsePlant(JSON.stringify(fail))).toEqual(fail);
     const pass = { expect: "pass", why: "w", records: [{ location: "a.ts:1", mutator: "all", reason: "r" }] };
     expect(parsePlant(JSON.stringify(pass))).toEqual(pass);
-    expect(parsePlant(JSON.stringify({ expect: "error", why: "w" }))).toEqual({ expect: "error", why: "w" });
+    expect(parsePlant(JSON.stringify({ expect: "error", why: "w", cause: "c" }))).toEqual({ expect: "error", why: "w", cause: "c" });
   });
 
   it("reads the base a plant presents to its gate instead of the base commit (review round 1, R1-11)", () => {
-    const plant = { expect: "error", why: "w", base: "refs/heads/no-such-base" };
+    const plant = { expect: "error", why: "w", cause: "c", base: "refs/heads/no-such-base" };
     expect(parsePlant(JSON.stringify(plant))).toEqual(plant);
     expect(parsePlant(JSON.stringify({ ...plant, base: "" }))).toBe("base must be a non-empty string");
     expect(parsePlant(JSON.stringify({ ...plant, base: 1 }))).toBe("base must be a non-empty string");
@@ -390,7 +420,7 @@ describe("parsePlant", () => {
     { plant: { expect: "fail", why: "w", findings: [{ location: "a" }] }, problem: /^findings\[0\] needs a location and a rule$/ },
     { plant: { expect: "fail", why: "w", findings: [{ location: "a", rule: "r", message: 1 }] }, problem: /^findings\[0\]\.message must be a string$/ },
     { plant: { expect: "pass", why: "w", findings: [{ location: "a", rule: "r" }] }, problem: /^only a fail plant lists findings$/ },
-    { plant: { expect: "error", why: "w", records: [] }, problem: /^only a pass plant lists records$/ },
+    { plant: { expect: "error", why: "w", cause: "c", records: [] }, problem: /^only a pass plant lists records$/ },
     { plant: { expect: "pass", why: "w", records: {} }, problem: /^records must be a list$/ },
     { plant: { expect: "pass", why: "w", records: [{ location: "a", mutator: "m" }] }, problem: /^records\[0\] needs a location, a mutator and a reason$/ },
     { plant: { expect: "pass", why: "w", extra: 1 }, problem: /^unknown key extra$/ },

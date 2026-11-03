@@ -13,7 +13,7 @@ const workflow = readFileSync(new URL("fixtures/registry/ci.yml", import.meta.ur
 const gateIds = (JSON.parse(registryText) as { id: string }[]).map((gate) => gate.id);
 const fail = (location: string, rule: string): string => JSON.stringify({ expect: "fail", why: "w", findings: [{ location, rule }] });
 const pass = JSON.stringify({ expect: "pass", why: "w" });
-const error = JSON.stringify({ expect: "error", why: "w" });
+const error = JSON.stringify({ expect: "error", why: "w", cause: "could not run: x" });
 
 function world(): Map<string, string> {
   const files = new Map<string, string>([

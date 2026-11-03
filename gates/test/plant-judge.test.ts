@@ -91,3 +91,59 @@ describe("judgePlant: pass plants and records", () => {
     expect(judgePlant("mutation", { expect: "pass", why: "w", records: [] }, run(0, ["a.ts:3: mutation: record: all: r"]))).toBe('records differ: unexpected a.ts:3 all "r"');
   });
 });
+
+// Phase 4 round 5 (operator round from the PR #18 landing review, O5-01 and O5-02; tasks.md T096, contracts/plants.md,
+// data-model.md § Plant): an error plant names the cause it expects, a substring of a line of the gate's error output
+// at exit 2, so a breakage for another reason does not prove the gate's "could not run" path; `cause` belongs to an
+// error plant only; a pass plant may not set `base`, since a base such as the head would make it pass vacuously.
+describe("parsePlant: cause and base (phase 4 round 5, O5-01 and O5-02)", () => {
+  it("reads an error plant's cause, with and without a base", () => {
+    const plant = { expect: "error", why: "w", cause: "does not resolve to a commit" };
+    expect(parsePlant(JSON.stringify(plant))).toEqual(plant);
+    expect(parsePlant(JSON.stringify({ ...plant, base: "refs/heads/no-such-base" }))).toEqual({ ...plant, base: "refs/heads/no-such-base" });
+  });
+
+  it("keeps a base on a fail plant", () => {
+    const plant = { expect: "fail", why: "w", findings: [{ location: "a", rule: "r" }], base: "refs/heads/other" };
+    expect(parsePlant(JSON.stringify(plant))).toEqual(plant);
+  });
+
+  it.each([
+    { plant: { expect: "error", why: "w" }, problem: "an error plant names its cause, a non-empty string" },
+    { plant: { expect: "error", why: "w", cause: "" }, problem: "an error plant names its cause, a non-empty string" },
+    { plant: { expect: "error", why: "w", cause: 2 }, problem: "an error plant names its cause, a non-empty string" },
+    { plant: { expect: "error", why: "w", base: "refs/heads/x" }, problem: "an error plant names its cause, a non-empty string" },
+    { plant: { expect: "fail", why: "w", findings: [{ location: "a", rule: "r" }], cause: "x" }, problem: "only an error plant names a cause" },
+    { plant: { expect: "pass", why: "w", cause: "x" }, problem: "only an error plant names a cause" },
+    { plant: { expect: "pass", why: "w", base: "HEAD" }, problem: "a pass plant may not set base" },
+    { plant: { expect: "pass", why: "w", base: "" }, problem: "a pass plant may not set base" },
+    { plant: { expect: "pass", why: "w", records: [], base: "HEAD" }, problem: "a pass plant may not set base" },
+  ])("rejects $plant", ({ plant, problem }) => {
+    expect(parsePlant(JSON.stringify(plant))).toBe(problem);
+  });
+});
+
+describe("judgePlant: error plants and their cause (phase 4 round 5, O5-01)", () => {
+  const plant: Plant = { expect: "error", why: "w", cause: "does not resolve to a commit" };
+
+  it("accepts exit 2 when a line of the error output contains the cause, not only the first", () => {
+    expect(judgePlant("g", plant, run(2, [], ["g: could not run: --base x does not resolve to a commit; pass one"]))).toBeUndefined();
+    expect(judgePlant("g", plant, run(2, [], ["warning: slow", "g: could not run: --base x does not resolve to a commit"]))).toBeUndefined();
+  });
+
+  it("fails exit 2 for another cause, naming the expected cause and the first error line", () => {
+    expect(judgePlant("g", plant, run(2, [], ["g: could not run: spawn stryker ENOENT", "more"]))).toBe(
+      'expected exit 2 (could not run) with the cause "does not resolve to a commit", got exit 2 (g: could not run: spawn stryker ENOENT)',
+    );
+  });
+
+  it("does not read the cause from standard output, and names no line when the error output is empty", () => {
+    expect(judgePlant("g", plant, run(2, ["g: could not run: does not resolve to a commit"], []))).toBe(
+      'expected exit 2 (could not run) with the cause "does not resolve to a commit", got exit 2',
+    );
+  });
+
+  it("keeps the exit problem for any exit other than 2", () => {
+    expect(judgePlant("g", plant, run(1, [], ["g: could not run: does not resolve to a commit"]))).toBe("expected exit 2 (could not run), got exit 1");
+  });
+});

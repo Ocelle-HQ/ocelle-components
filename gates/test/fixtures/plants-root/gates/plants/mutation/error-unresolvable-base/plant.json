@@ -1,5 +1,6 @@
 {
   "expect": "error",
   "why": "Fixture: a --base that does not resolve in the temporary repository (mutation-repo form, plant.json base).",
+  "cause": "--base refs/heads/no-such-base does not resolve to a commit",
   "base": "refs/heads/no-such-base"
 }
