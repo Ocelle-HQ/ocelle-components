@@ -18,8 +18,8 @@ Status: **open** (write access to confirm).
 
 ## 2. The twelve checks green (US3 scenario 1)
 
-Run https://github.com/Ocelle-HQ/ocelle-components/actions/runs/41619235381 (head `9140fac`): conclusion success.
-These twelve checks of contracts/ci-checks.md are green:
+Run https://github.com/Ocelle-HQ/ocelle-components/actions/runs/41702137380 (head `27e7c22`, the folded history after
+the landing pass): conclusion success, 34 of 34 jobs. These twelve checks of contracts/ci-checks.md are green:
 
 1. Typecheck
 2. Code lint
@@ -34,9 +34,9 @@ These twelve checks of contracts/ci-checks.md are green:
 11. Sign-off
 12. Plants
 
-The helper jobs `Mutation plan` and the 18 `Mutation shard` jobs are green too.
+The helper jobs `Mutation plan` and the 21 `Mutation shard` jobs are green too.
 
-Status: **done** for `9140fac`. Re-confirm on the final head before merge.
+Status: **done** for `27e7c22`. Re-confirm on the final head if anything is pushed after it.
 
 ## 3. Required checks on `main` (operator decision, plan squad round 2)
 
@@ -55,30 +55,56 @@ These runs start cold:
 - `main` (`bdb9b70`) has no `cache.yml` yet, so no cache exists.
 - The job logs show Playwright downloading Chromium.
 
-Unit tests job https://github.com/Ocelle-HQ/ocelle-components/actions/runs/41619235381/job/125860387008:
+Unit tests job https://github.com/Ocelle-HQ/ocelle-components/actions/runs/41702137380/job/126147860082 (head `27e7c22`):
 
 | Step | Time |
 |---|---|
+| Checkout | 12 s |
 | Setup (Node, pnpm, online install, browsers) | 29 s |
-| `pnpm run gate:unit-tests` | 123 s |
-| Whole job | 151 s |
+| `pnpm run gate:unit-tests` | 151 s |
+| Whole job | 197 s |
 
-That is about 2.5 minutes against the 5-minute bound.
+That is about 3.3 minutes against the 5-minute bound. The first measurement (run 41619235381, head `9140fac`) took
+151 s for the whole job; the test count has grown since.
 
 Status: **done**, from CI evidence. Operator: confirm that this measurement stands for SC-001, or time quickstart
 step 11 after the merge.
 
 ### SC-005: every mutation shard under its 10-minute limit
 
-The SC-005 measurement is run https://github.com/Ocelle-HQ/ocelle-components/actions/runs/41613884529 (head
-`e985ed3`). It ran 18 shards, all of which finished. The longest took 8:01: `gates/lib/pins-rules.ts` alone, 137
-changed lines. The operator accepted this at the feature gate (phase 4 round 4 note R4-01).
+The shard plan changed during the landing pass (phase 3 rounds 9 to 12): a file over 120 changed lines is cut into
+chunks, no shard holds two chunks of one file, and shards stay within 10 entries and 250 lines. `--plan` against
+`bdb9b70` gives 21 shards and 14 cuts. Why: under the old whole-file plan the `gates/lib/plant-judge.ts` shard took
+9:49 (run 41635769914) and was cancelled after 10:04 (run 41656706363).
 
-A later run, 41619235381 (head `9140fac`), also passed. Its longest shard was `gates/lib/plant-judge.ts`, 198
-lines, at 8:49. That file did not change between the two runs, so the difference is runner variance. The margin is
-about 1 minute, so a cancelled shard is to be investigated (R-08).
+Slowest shards on the current plan:
 
-Status: **done** (operator decision R4-01).
+| Run (head) | Slowest | Second | Third |
+|---|---|---|---|
+| 41671185705 (`a1c7667`) | 8:30 | 7:47 | 7:31 |
+| 41690538079 (`c949938`) | 8:39 | 7:59 | 7:58 |
+| 41694458359 (`eb2f5dd`) | 8:48 | | |
+| 41702137380 (`27e7c22`) | 7:46 | 7:43 | 6:31 |
+
+Every shard of every run on the current plan finished. The margin is thin, at 72 s to 134 s (phase 3 notes R11-01
+and R13-02). The next lever, if a shard is cancelled again, is a bound on mutants per shard; that needs a spec
+amendment.
+
+A cut can drop a mutant whose node spans it, which is an accepted limit (FR-013, research.md R-08).
+
+Status: **done**, with the thin margin recorded as a follow-up.
+
+## 5. Merge method and evidence home (plan.md § Verification item 5)
+
+Squash-merge this pull request (operator decision, landing round 1 note L1-08). The squash commit carries the final
+tree; the red/green evidence names commits of the branch. Keep both branches on the remote:
+
+- `claude/kitty-ui-speckit-decouple-x3prkx` (folded, head `27e7c22`): the SHAs in `reviews/phase-N/base.sha`,
+  `scaffold.sha` and `red-commits`.
+- `archive/claude/kitty-ui-speckit-decouple-x3prkx-prefold` (head `37bfdb7`): the pre-fold commits that older
+  review files name; `reviews/history-map.txt` maps them to the folded commits.
+
+Status: **open** until the merge. Operator: squash, and do not delete either branch.
 
 ## After the merge
 
