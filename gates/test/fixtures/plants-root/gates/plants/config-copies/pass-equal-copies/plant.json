@@ -1,0 +1,4 @@
+{
+  "expect": "pass",
+  "why": "Fixture: two equal story configuration copies with FR-028's test_pathspec (repo-tree form)."
+}
