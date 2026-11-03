@@ -24,7 +24,7 @@ interface Diagnostic {
 
 const gate = "typecheck";
 /** `path(line,col): error TS1234: message` or `error TS1234: message` (a diagnostic about no file). */
-const diagnosticLine = /^(?:(.+)\((\d+),\d+\): )?error (TS\d+): (.*)$/;
+const diagnosticLine = /^(?:(.+)\((\d+),\d+\): )?error (TS\d+): (.*)/;
 
 /** The diagnostics of tsc's output; an indented line continues the message of the diagnostic before it. */
 function diagnostics(output: string, root: string): Diagnostic[] {
@@ -36,7 +36,7 @@ function diagnostics(output: string, root: string): Diagnostic[] {
       if (last !== undefined && /^\s/.test(line)) found[found.length - 1] = { ...last, message: `${last.message} ${line.trim()}` };
       continue;
     }
-    const [, file, lineNumber, code = "", message = ""] = match;
+    const [, file, lineNumber, code, message] = match as unknown as [string, string | undefined, string | undefined, string, string];
     found.push({
       path: file === undefined ? "tsconfig.json" : relative(root, resolve(root, file)),
       line: lineNumber === undefined ? undefined : Number(lineNumber),
@@ -62,7 +62,7 @@ function detail(output: string): string {
 
 export function classifyTsc(run: TscRun): GateResult {
   const found = diagnostics(run.output, run.root);
-  const configuration = found.find((diagnostic) => /^TS[56]\d{3}$/.test(diagnostic.code));
+  const configuration = found.find((diagnostic) => /TS[56]\d{3}$/.test(diagnostic.code));
   if (configuration !== undefined) {
     const cause = `${configuration.code} at ${where(configuration)}: ${configuration.message}`;
     return { exit: 2, cause: `${gate}: could not run: ${cause}; fix the TypeScript configuration or the file it names` };

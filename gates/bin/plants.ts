@@ -4,210 +4,34 @@
 // from the plant (pins: on a copy of its mini-workspace), and judged against its plant.json; then the registry's own
 // plants under gates/plants/plants/. The job fails when a gate does not do what a plant expects, a gate lacks a
 // fail, pass or breaking plant, a plant.json is missing or invalid, or a plant carries gate configuration.
-// parsePlant, plantArgs, judgePlant and plants() are the decision, tested in process on recorded gate runs;
-// run() gives them the file system and the gate processes (the process boundary).
+// plants() is the decision, tested in process on recorded gate runs (gates/test/plants.test.ts), with the judging of
+// gates/lib/plant-judge.ts and the runner of gates/lib/plant-runner.ts; realTools() only hands it the file system, the
+// plant builders of gates/lib/plant-repo.ts and gate processes (the process boundary, run end to end by
+// gates/test/integration/plants.test.ts).
 import { cp, mkdtemp, readdir, readFile, rm } from "node:fs/promises";
 import { availableParallelism, tmpdir } from "node:os";
 import { join } from "node:path";
 import { main, parseArgs } from "../lib/cli.ts";
 import type { Context, Io } from "../lib/cli.ts";
-import { emit, formatFinding, oneLine, plural } from "../lib/findings.ts";
+import { directoryNames, filePaths } from "../lib/entries.ts";
+import { emit, formatFinding, plural } from "../lib/findings.ts";
+import { judgePlant, parsePlant } from "../lib/plant-judge.ts";
+import type { Plant, PlantRun } from "../lib/plant-judge.ts";
 import { buildCommitRepo, buildMutationRepo, buildRepoTree, carriesConfiguration } from "../lib/plant-repo.ts";
+import { gateRunsAtOnce, limiter, runPlant } from "../lib/plant-runner.ts";
+import type { RunnerTools } from "../lib/plant-runner.ts";
 import { checkRegistry, ciJobs, parseRegistry, plantJob } from "../lib/registry.ts";
 import type { Gate } from "../lib/registry.ts";
 import { runTool } from "../lib/spawn.ts";
 
-/** One expected finding of a fail plant. */
-export interface ExpectedFinding {
-  readonly location: string;
-  readonly rule: string;
-  readonly message?: string;
-}
-
-/** One expected equivalent-mutant record of a mutation pass plant. */
-export interface ExpectedRecord {
-  readonly location: string;
-  readonly mutator: string;
-  readonly reason: string;
-}
-
-/** A plant's plant.json. */
-export interface Plant {
-  readonly expect: "fail" | "pass" | "error";
-  readonly why: string;
-  readonly findings?: readonly ExpectedFinding[];
-  readonly records?: readonly ExpectedRecord[];
-}
+export { judgePlant, parsePlant, plantArgs } from "../lib/plant-judge.ts";
+export type { ExpectedFinding, ExpectedRecord, Plant, PlantRun } from "../lib/plant-judge.ts";
 
 const gateId = "plants";
 const registryPath = "gates/gates.json";
 const workflowPath = ".github/workflows/ci.yml";
 const plantsDir = "gates/plants";
-const keys = new Set(["expect", "why", "findings", "records"]);
 const kinds = ["fail", "pass", "error"] as const;
-
-function isText(value: unknown): value is string {
-  return typeof value === "string" && value !== "";
-}
-
-function readFindings(value: unknown): ExpectedFinding[] | string {
-  if (!Array.isArray(value) || value.length === 0) return "a fail plant lists its findings";
-  const findings: ExpectedFinding[] = [];
-  for (const [index, item] of (value as unknown[]).entries()) {
-    const at = `findings[${String(index)}]`;
-    const fields = (typeof item === "object" && item !== null ? item : {}) as Record<string, unknown>;
-    const { location, rule, message } = fields;
-    if (!isText(location) || !isText(rule)) return `${at} needs a location and a rule`;
-    if (message !== undefined && typeof message !== "string") return `${at}.message must be a string`;
-    findings.push(message === undefined ? { location, rule } : { location, rule, message });
-  }
-  return findings;
-}
-
-function readRecords(value: unknown): ExpectedRecord[] | string {
-  if (!Array.isArray(value)) return "records must be a list";
-  const records: ExpectedRecord[] = [];
-  for (const [index, item] of (value as unknown[]).entries()) {
-    const fields = (typeof item === "object" && item !== null ? item : {}) as Record<string, unknown>;
-    const { location, mutator, reason } = fields;
-    if (!isText(location) || !isText(mutator) || !isText(reason)) {
-      return `records[${String(index)}] needs a location, a mutator and a reason`;
-    }
-    records.push({ location, mutator, reason });
-  }
-  return records;
-}
-
-/** A plant.json text as a plant, or the problem with it. */
-export function parsePlant(text: string): Plant | string {
-  let value: unknown;
-  try {
-    value = JSON.parse(text);
-  } catch (error) {
-    return `plant.json is not valid JSON (${oneLine(error instanceof Error ? error.message : String(error))})`;
-  }
-  if (typeof value !== "object" || value === null || Array.isArray(value)) return "plant.json is not an object";
-  const fields = value as Record<string, unknown>;
-  const unknown = Object.keys(fields).find((key) => !keys.has(key));
-  if (unknown !== undefined) return `unknown key ${unknown}`;
-  const { expect, why } = fields;
-  if (expect !== "fail" && expect !== "pass" && expect !== "error") return "expect must be fail, pass or error";
-  if (typeof why !== "string" || why.trim() === "") return "why must be a non-empty string";
-  let plant: Plant = { expect, why };
-  if (expect === "fail") {
-    const findings = readFindings(fields.findings);
-    if (typeof findings === "string") return findings;
-    plant = { ...plant, findings };
-  } else if (fields.findings !== undefined) {
-    return "only a fail plant lists findings";
-  }
-  if (fields.records !== undefined) {
-    if (expect !== "pass") return "only a pass plant lists records";
-    const records = readRecords(fields.records);
-    if (typeof records === "string") return records;
-    plant = { ...plant, records };
-  }
-  return plant;
-}
-
-/** One gate run on a plant: its exit code and output lines, and for a commit plant the hashes of its records. */
-export interface PlantRun {
-  readonly exit: number | null;
-  readonly stdout: readonly string[];
-  readonly stderr: readonly string[];
-  readonly commits?: readonly string[];
-}
-
-/**
- * The arguments of a registry `plantCommand` with `{root}`, `{plant}` and `{base}` replaced, split at spaces; the
- * leading `node` stays as written (the runner starts it as the current Node).
- */
-export function plantArgs(command: string, values: Readonly<Record<string, string>>): string[] {
-  return command
-    .split(" ")
-    .filter((arg) => arg !== "")
-    .map((arg) =>
-      arg.replace(/\{(\w+)\}/g, (_, name: string) => {
-        const value = values[name];
-        if (value === undefined) throw new Error(`plantCommand uses {${name}}, which this plant does not set`);
-        return value;
-      }),
-    );
-}
-
-/** A finding or a record line of a gate's output, by location and rule (and the text after the rule). */
-interface Reported {
-  readonly location: string;
-  readonly rule: string;
-  readonly rest: string;
-}
-
-/** The lines of `gate` in its output (`<location>: <gate>: <rule>: <message>`); a commit hash becomes `commit:<n>`. */
-function reported(gate: string, run: PlantRun): Reported[] {
-  const marker = `: ${gate}: `;
-  const found: Reported[] = [];
-  for (const line of run.stdout) {
-    const at = line.indexOf(marker);
-    if (at <= 0) continue;
-    const hash = line.slice(0, at);
-    const record = run.commits?.indexOf(hash) ?? -1;
-    const location = record === -1 ? hash : `commit:${String(record + 1)}`;
-    const body = line.slice(at + marker.length);
-    const end = body.indexOf(": ");
-    found.push(end === -1 ? { location, rule: body, rest: "" } : { location, rule: body.slice(0, end), rest: body.slice(end + 2) });
-  }
-  return found;
-}
-
-/** The difference of two lists of keys: what `expected` has and `actual` lacks, and the reverse (each once). */
-function differ(what: string, expected: readonly string[], actual: readonly string[]): string | undefined {
-  const missing = [...new Set(expected.filter((key) => !actual.includes(key)))];
-  const unexpected = [...new Set(actual.filter((key) => !expected.includes(key)))];
-  if (missing.length === 0 && unexpected.length === 0) return undefined;
-  const parts = [
-    ...(missing.length > 0 ? [`missing ${missing.join(", ")}`] : []),
-    ...(unexpected.length > 0 ? [`unexpected ${unexpected.join(", ")}`] : []),
-  ];
-  return `${what} differ: ${parts.join("; ")}`;
-}
-
-/** The detail of an unexpected result: the findings it reported, else the first line of its error output. */
-function detail(findings: readonly Reported[], run: PlantRun): string {
-  if (findings.length > 0) return ` (${findings.map((found) => `${found.location} ${found.rule}`).join(", ")})`;
-  const [cause] = run.stderr;
-  return cause === undefined ? "" : ` (${cause})`;
-}
-
-/** The problem with a gate's run on a plant, or undefined when the gate did what the plant expects. */
-export function judgePlant(gate: string, plant: Plant, run: PlantRun): string | undefined {
-  const exit = String(run.exit);
-  if (plant.expect === "error") return run.exit === 2 ? undefined : `expected exit 2 (could not run), got exit ${exit}`;
-  const lines = reported(gate, run);
-  const isRecord = (found: Reported): boolean => gate === "mutation" && found.rule === "record";
-  const findings = lines.filter((found) => !isRecord(found));
-  if (plant.expect === "pass") {
-    if (run.exit !== 0 || findings.length > 0) return `expected exit 0 with no finding, got exit ${exit}${detail(findings, run)}`;
-    if (plant.records === undefined) return undefined;
-    const records = lines.filter(isRecord).map((found) => {
-      const end = found.rest.indexOf(": ");
-      return `${found.location} ${found.rest.slice(0, end)} "${found.rest.slice(end + 2)}"`;
-    });
-    const expected = plant.records.map((record) => `${record.location} ${record.mutator} "${record.reason}"`);
-    return differ("records", expected, records);
-  }
-  const expected = plant.findings ?? [];
-  if (run.exit !== 1) return `expected exit 1 with the plant's ${plural(expected.length, "finding")}, got exit ${exit}${detail(findings, run)}`;
-  const key = (found: { readonly location: string; readonly rule: string }): string => `${found.location} ${found.rule}`;
-  const differs = differ("findings", expected.map(key), findings.map(key));
-  if (differs !== undefined) return differs;
-  for (const wanted of expected) {
-    if (wanted.message === undefined) continue;
-    const { message } = wanted;
-    const matches = findings.filter((found) => key(found) === key(wanted));
-    if (!matches.some((found) => found.rest.includes(message))) return `finding ${key(wanted)} lacks "${message}"`;
-  }
-  return undefined;
-}
 
 /** The tools the plant job uses, in the repository root. */
 export interface PlantTools {
@@ -217,8 +41,8 @@ export interface PlantTools {
   readonly dirs: (path: string) => Promise<readonly string[]>;
   /** Every file below a directory (path relative to the root), as paths relative to that directory. */
   readonly files: (path: string) => Promise<readonly string[]>;
-  /** Builds the plant's temporary repository and runs the gate's plant command on it. */
-  readonly runPlant: (gate: Gate, plant: string) => Promise<PlantRun>;
+  /** Builds the plant's temporary repository and runs the gate's plant command on it, as its plant.json asks. */
+  readonly runPlant: (gate: Gate, plant: string, spec: Plant) => Promise<PlantRun>;
 }
 
 /** The rule of a plant that did not do what it expects. */
@@ -226,7 +50,12 @@ const missed = { fail: "not-caught", pass: "not-accepted", error: "not-reported-
 
 /** The registry check on a registry plant's gates.json and ci.yml, as a gate run (exit 0, 1 or 2). */
 function registryRun(registryText: string | undefined, workflow: string | undefined): PlantRun {
-  const broken = (cause: string): PlantRun => ({ exit: 2, stdout: [], stderr: [`${gateId}: could not run: ${cause}`] });
+  const broken = (cause: string): PlantRun => ({
+    exit: 2,
+    // Stryker disable next-line ArrayDeclaration: equivalent, the verdict reads a run's stdout only for lines of this gate, and any other text there is ignored
+    stdout: [],
+    stderr: [`${gateId}: could not run: ${cause}`],
+  });
   if (registryText === undefined) return broken("gates.json is missing");
   if (workflow === undefined) return broken("ci.yml is missing");
   let registry: readonly Gate[];
@@ -321,7 +150,7 @@ export async function plants(context: Context, tools: PlantTools, io: Io): Promi
   const gateVerdicts = await Promise.all(
     registry.map((gate) => {
       const set: PlantSet = { dir: `${plantsDir}/${gate.id}`, owner: `gate ${gate.id}`, needed: kinds, everyDir: true };
-      return judgeAll(set, tools, async (plant, path) => judgePlant(gate.id, plant, await tools.runPlant(gate, path)));
+      return judgeAll(set, tools, async (plant, path) => judgePlant(gate.id, plant, await tools.runPlant(gate, path, plant)));
     }),
   );
   for (const judged of gateVerdicts) {
@@ -345,121 +174,60 @@ export async function plants(context: Context, tools: PlantTools, io: Io): Promi
   return 0;
 }
 
-/** Output text as lines, without empty ones. */
-// Stryker disable next-line all: process boundary, covered by the plant job itself: pnpm run gate:plants (CI check Plants) runs every plant through it
-function lines(text: string): string[] {
-  // Stryker disable next-line all: process boundary, covered by the plant job itself: pnpm run gate:plants (CI check Plants) runs every plant through it
-  return text.split("\n").filter((line) => line !== "");
-}
-
-/** What a plant's temporary repository gives its plant command: the placeholder values, and the commit hashes. */
-interface Built {
-  readonly values: Record<string, string>;
-  readonly commits?: readonly string[];
-}
-
-/** Builds the temporary repository of a plant in `into` (the pins plant: a copy of its mini-workspace). */
-// Stryker disable next-line all: process boundary, covered by the plant job itself: pnpm run gate:plants (CI check Plants) runs every plant through it
-async function build(root: string, gate: Gate, plant: string, into: string): Promise<Built> {
-  // Stryker disable next-line all: process boundary, covered by the plant job itself: pnpm run gate:plants (CI check Plants) runs every plant through it
-  if (gate.plantForm === "repo-tree") return buildRepoTree(root, plant, into).then(() => ({ values: { root: into } }));
-  // Stryker disable next-line all: process boundary, covered by the plant job itself: pnpm run gate:plants (CI check Plants) runs every plant through it
-  if (gate.plantForm === "commit-repo") return buildCommitRepo(plant, into).then(({ base, commits }) => ({ values: { root: into, base }, commits }));
-  // Stryker disable next-line all: process boundary, covered by the plant job itself: pnpm run gate:plants (CI check Plants) runs every plant through it
-  if (gate.plantForm === "mutation-repo") return buildMutationRepo(root, plant, into).then(({ base }) => ({ values: { root: into, base } }));
-  // Stryker disable next-line all: process boundary, covered by the plant job itself: pnpm run gate:plants (CI check Plants) runs every plant through it
-  await cp(plant, into, { recursive: true });
-  // Stryker disable next-line all: process boundary, covered by the plant job itself: pnpm run gate:plants (CI check Plants) runs every plant through it
-  await rm(join(into, "plant.json"));
-  // Stryker disable next-line all: process boundary, covered by the plant job itself: pnpm run gate:plants (CI check Plants) runs every plant through it
-  return { values: { plant: into } };
-}
-
-/** A limit on how many tasks run at once: `limit(task)` starts `task` when one of `size` slots is free. */
-// Stryker disable next-line all: process boundary, covered by the plant job itself: pnpm run gate:plants (CI check Plants) runs every plant through it
-function limiter(size: number): <T>(task: () => Promise<T>) => Promise<T> {
-  // Stryker disable next-line all: process boundary, covered by the plant job itself: pnpm run gate:plants (CI check Plants) runs every plant through it
-  let running = 0;
-  // Stryker disable next-line all: process boundary, covered by the plant job itself: pnpm run gate:plants (CI check Plants) runs every plant through it
-  const waiting: (() => void)[] = [];
-  // Stryker disable next-line all: process boundary, covered by the plant job itself: pnpm run gate:plants (CI check Plants) runs every plant through it
-  const release = (): void => {
-    // Stryker disable next-line all: process boundary, covered by the plant job itself: pnpm run gate:plants (CI check Plants) runs every plant through it
-    running -= 1;
-    // Stryker disable next-line all: process boundary, covered by the plant job itself: pnpm run gate:plants (CI check Plants) runs every plant through it
-    waiting.shift()?.();
+/** The builders and gate processes of the repository at `root`. */
+// Stryker disable next-line all: process boundary, covered by gates-integration: gates/test/integration/plants.test.ts "plants --root <tmp> runs each plant form through its gate and judges it"
+function runnerTools(root: string, io: Io): RunnerTools {
+  // Stryker disable next-line all: process boundary, covered by gates-integration: gates/test/integration/plants.test.ts "plants --root <tmp> runs each plant form through its gate and judges it"
+  return {
+    // Stryker disable next-line all: process boundary, covered by gates-integration: gates/test/integration/plants.test.ts "plants --root <tmp> runs each plant form through its gate and judges it"
+    tempDir: (prefix) => mkdtemp(join(tmpdir(), prefix)),
+    // Stryker disable next-line all: process boundary, covered by gates-integration: gates/test/integration/plants.test.ts "plants --root <tmp> runs each plant form through its gate and judges it"
+    removeDir: (dir) => rm(dir, { recursive: true, force: true }),
+    // Stryker disable next-line all: process boundary, covered by gates-integration: gates/test/integration/plants.test.ts "plants --root <tmp> runs each plant form through its gate and judges it"
+    build: {
+      // Stryker disable next-line all: process boundary, covered by gates-integration: gates/test/integration/plants.test.ts "plants --root <tmp> runs each plant form through its gate and judges it"
+      "repo-tree": (plant, into) => buildRepoTree(root, plant, into).then(() => ({})),
+      // Stryker disable next-line all: process boundary, covered by gates-integration: gates/test/integration/plants.test.ts "plants --root <tmp> runs each plant form through its gate and judges it"
+      "commit-repo": (plant, into) => buildCommitRepo(plant, into),
+      // Stryker disable next-line all: process boundary, covered by gates-integration: gates/test/integration/plants.test.ts "plants --root <tmp> runs each plant form through its gate and judges it"
+      "mutation-repo": (plant, into) => buildMutationRepo(root, plant, into),
+      // Stryker disable next-line all: process boundary, covered by gates-integration: gates/test/integration/plants.test.ts "plants --root <tmp> runs each plant form through its gate and judges it"
+      workspace: (plant, into) => cp(plant, into, { recursive: true }).then(() => rm(join(into, "plant.json"))).then(() => ({})),
+    },
+    // Stryker disable next-line all: process boundary, covered by gates-integration: gates/test/integration/plants.test.ts "plants --root <tmp> runs each plant form through its gate and judges it"
+    run: (command, args) => runTool(command, args, root, io.env),
+    // Stryker disable next-line all: process boundary, covered by gates-integration: gates/test/integration/plants.test.ts "plants --root <tmp> runs each plant form through its gate and judges it"
+    node: process.execPath,
   };
-  // Stryker disable next-line all: process boundary, covered by the plant job itself: pnpm run gate:plants (CI check Plants) runs every plant through it
-  return async (task) => {
-    // Stryker disable next-line all: process boundary, covered by the plant job itself: pnpm run gate:plants (CI check Plants) runs every plant through it
-    if (running >= size) await new Promise<void>((resolve) => waiting.push(resolve));
-    // Stryker disable next-line all: process boundary, covered by the plant job itself: pnpm run gate:plants (CI check Plants) runs every plant through it
-    running += 1;
-    // Stryker disable next-line all: process boundary, covered by the plant job itself: pnpm run gate:plants (CI check Plants) runs every plant through it
-    return task().finally(release);
-  };
-}
-
-/** Builds the plant's temporary repository, runs the gate's plant command on it, and removes the repository. */
-// Stryker disable next-line all: process boundary, covered by the plant job itself: pnpm run gate:plants (CI check Plants) runs every plant through it
-async function runPlantIn(root: string, io: Io, gate: Gate, plant: string): Promise<PlantRun> {
-  // Stryker disable next-line all: process boundary, covered by the plant job itself: pnpm run gate:plants (CI check Plants) runs every plant through it
-  const into = await mkdtemp(join(tmpdir(), `ocelle-plant-${gate.id}-`));
-  // Stryker disable next-line all: process boundary, covered by the plant job itself: pnpm run gate:plants (CI check Plants) runs every plant through it
-  const cannotBuild = (error: unknown): never => {
-    // Stryker disable next-line all: process boundary, covered by the plant job itself: pnpm run gate:plants (CI check Plants) runs every plant through it
-    throw new Error(`${plant}: cannot build its temporary repository (${error instanceof Error ? error.message : String(error)})`, { cause: error });
-  };
-  // Stryker disable next-line all: process boundary, covered by the plant job itself: pnpm run gate:plants (CI check Plants) runs every plant through it
-  const run = async (): Promise<PlantRun> => {
-    // Stryker disable next-line all: process boundary, covered by the plant job itself: pnpm run gate:plants (CI check Plants) runs every plant through it
-    const { values, commits } = await build(root, gate, join(root, plant), into).catch(cannotBuild);
-    // Stryker disable next-line all: process boundary, covered by the plant job itself: pnpm run gate:plants (CI check Plants) runs every plant through it
-    const [command = "", ...args] = plantArgs(gate.plantCommand, values);
-    // Stryker disable next-line all: process boundary, covered by the plant job itself: pnpm run gate:plants (CI check Plants) runs every plant through it
-    const ran = await runTool(command === "node" ? process.execPath : command, args, root, io.env);
-    // Stryker disable next-line all: process boundary, covered by the plant job itself: pnpm run gate:plants (CI check Plants) runs every plant through it
-    return { exit: ran.exitCode, stdout: lines(ran.stdout), stderr: lines(ran.stderr), ...(commits === undefined ? {} : { commits }) };
-  };
-  // Stryker disable next-line all: process boundary, covered by the plant job itself: pnpm run gate:plants (CI check Plants) runs every plant through it
-  return run().finally(() => rm(into, { recursive: true, force: true }));
-}
-
-/** Every file below a directory of the repository, as paths relative to that directory. */
-// Stryker disable next-line all: process boundary, covered by the plant job itself: pnpm run gate:plants (CI check Plants) runs every plant through it
-async function filesBelow(root: string, path: string): Promise<string[]> {
-  // Stryker disable next-line all: process boundary, covered by the plant job itself: pnpm run gate:plants (CI check Plants) runs every plant through it
-  const entries = await readdir(join(root, path), { recursive: true, withFileTypes: true }).catch(() => []);
-  // Stryker disable next-line all: process boundary, covered by the plant job itself: pnpm run gate:plants (CI check Plants) runs every plant through it
-  return entries.filter((entry) => entry.isFile()).map((entry) => join(entry.parentPath, entry.name).slice(join(root, path).length + 1));
 }
 
 /** The file system and gate processes of the repository at `root`. */
-// Stryker disable next-line all: process boundary, covered by the plant job itself: pnpm run gate:plants (CI check Plants) runs every plant through it
+// Stryker disable next-line all: process boundary, covered by gates-integration: gates/test/integration/plants.test.ts "plants --root <tmp> runs each plant form through its gate and judges it"
 function realTools(root: string, io: Io): PlantTools {
-  // Gate runs at once: half the processors (at least one), since a gate run starts its own workers.
-  // Stryker disable next-line all: process boundary, covered by the plant job itself: pnpm run gate:plants (CI check Plants) runs every plant through it
-  const limit = limiter(Math.max(1, Math.floor(availableParallelism() / 2)));
-  // Stryker disable next-line all: process boundary, covered by the plant job itself: pnpm run gate:plants (CI check Plants) runs every plant through it
+  // Stryker disable next-line all: process boundary, covered by gates-integration: gates/test/integration/plants.test.ts "plants --root <tmp> runs each plant form through its gate and judges it"
+  const limit = limiter(gateRunsAtOnce(availableParallelism()));
+  // Stryker disable next-line all: process boundary, covered by gates-integration: gates/test/integration/plants.test.ts "plants --root <tmp> runs each plant form through its gate and judges it"
+  const runner = runnerTools(root, io);
+  // Stryker disable next-line all: process boundary, covered by gates-integration: gates/test/integration/plants.test.ts "plants --root <tmp> runs each plant form through its gate and judges it"
   return {
-    // Stryker disable next-line all: process boundary, covered by the plant job itself: pnpm run gate:plants (CI check Plants) runs every plant through it
+    // Stryker disable next-line all: process boundary, covered by gates-integration: gates/test/integration/plants.test.ts "plants --root <tmp> runs each plant form through its gate and judges it"
     read: (path) => readFile(join(root, path), "utf8").catch(() => undefined),
-    // Stryker disable next-line all: process boundary, covered by the plant job itself: pnpm run gate:plants (CI check Plants) runs every plant through it
-    dirs: async (path) => (await readdir(join(root, path), { withFileTypes: true }).catch(() => [])).filter((entry) => entry.isDirectory()).map((entry) => entry.name),
-    // Stryker disable next-line all: process boundary, covered by the plant job itself: pnpm run gate:plants (CI check Plants) runs every plant through it
-    files: (path) => filesBelow(root, path),
-    // Stryker disable next-line all: process boundary, covered by the plant job itself: pnpm run gate:plants (CI check Plants) runs every plant through it
-    runPlant: (gate, plant) => limit(() => runPlantIn(root, io, gate, plant)),
+    // Stryker disable next-line all: process boundary, covered by gates-integration: gates/test/integration/plants.test.ts "plants --root <tmp> runs each plant form through its gate and judges it"
+    dirs: async (path) => directoryNames(await readdir(join(root, path), { withFileTypes: true }).catch(() => [])),
+    // Stryker disable next-line all: process boundary, covered by gates-integration: gates/test/integration/plants.test.ts "plants --root <tmp> runs each plant form through its gate and judges it"
+    files: async (path) => filePaths(await readdir(join(root, path), { recursive: true, withFileTypes: true }).catch(() => []), join(root, path)),
+    // Stryker disable next-line all: process boundary, covered by gates-integration: gates/test/integration/plants.test.ts "plants --root <tmp> runs each plant form through its gate and judges it"
+    runPlant: (gate, plant, spec) => limit(() => runPlant(runner, root, gate, plant, spec)),
   };
 }
 
-// Stryker disable next-line all: process boundary, covered by the plant job itself: pnpm run gate:plants (CI check Plants) runs every plant through it
+// Stryker disable next-line all: process boundary, covered by gates-integration: gates/test/integration/plants.test.ts "plants --root <tmp> runs each plant form through its gate and judges it"
 export async function run(argv: readonly string[], io: Io): Promise<number> {
-  // Stryker disable next-line all: process boundary, covered by the plant job itself: pnpm run gate:plants (CI check Plants) runs every plant through it
+  // Stryker disable next-line all: process boundary, covered by gates-integration: gates/test/integration/plants.test.ts "plants --root <tmp> runs each plant form through its gate and judges it"
   const context = parseArgs(argv, io.cwd);
-  // Stryker disable next-line all: process boundary, covered by the plant job itself: pnpm run gate:plants (CI check Plants) runs every plant through it
+  // Stryker disable next-line all: process boundary, covered by gates-integration: gates/test/integration/plants.test.ts "plants --root <tmp> runs each plant form through its gate and judges it"
   return plants(context, realTools(context.root, io), io);
 }
 
-// Stryker disable next-line all: process boundary, covered by the plant job itself: pnpm run gate:plants (CI check Plants) runs every plant through it
+// Stryker disable next-line all: process boundary, covered by gates-integration: gates/test/integration/plants.test.ts "plants --root <tmp> runs each plant form through its gate and judges it"
 if (import.meta.main) await main(run);

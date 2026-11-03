@@ -83,7 +83,7 @@ export function ciJobs(workflow: string): string[] {
   let inJobs = false;
   for (const line of workflow.split(/\r?\n/)) {
     if (/^\s*(?:#.*)?$/.test(line)) continue;
-    const depth = /^ */.exec(line)?.[0].length ?? 0;
+    const depth = line.search(/\S/);
     if (depth === 0) {
       inJobs = /^jobs:\s*$/.test(line);
       continue;
@@ -107,7 +107,7 @@ export interface RegistryInput {
 /** One finding per gate id missing from the registry, the workflow's gate jobs or the FR-020 list. */
 export function checkRegistry(input: RegistryInput): Finding[] {
   const registered = new Set(input.registry.map((gate) => gate.id));
-  const helpers = new Set(input.registry.flatMap((gate) => gate.helperJobs ?? []));
+  const helpers = new Set(input.registry.flatMap((gate) => gate.helperJobs));
   const gateJobs = new Set(input.jobs.filter((job) => job !== plantJob && !helpers.has(job)));
   const listed = new Set(fr020);
   const finding = (path: string, rule: string, message: string): Finding => ({ location: { path }, gate: "plants", rule, message });

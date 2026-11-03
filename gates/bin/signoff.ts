@@ -33,8 +33,10 @@ const usage = "usage: gate:signoff -- --range <base>..<head>";
 export function parseLog(text: string): CommitRecord[] {
   const records: CommitRecord[] = [];
   for (const chunk of text.split("\x1e")) {
-    const [hash = "", parents = "", author = "", message = ""] = chunk.replace(/^\n/, "").split("\x1f");
+    const fields = chunk.replace(/^\n/, "").split("\x1f");
+    const hash = String(fields[0]);
     if (hash === "") continue;
+    const [, parents = "", author = "", message = ""] = fields;
     records.push({ hash, parents: parents.split(" ").filter((parent) => parent !== ""), author, message });
   }
   return records;
@@ -42,7 +44,7 @@ export function parseLog(text: string): CommitRecord[] {
 
 /** The identities of a message's `Signed-off-by:` lines, in order. */
 function signers(message: string): string[] {
-  return [...message.matchAll(/^signed-off-by:(.*)$/gim)].map((match) => String(match[1]).trim());
+  return [...message.matchAll(/^signed-off-by:(.*)/gim)].map((match) => String(match[1]).trim());
 }
 
 /** One finding per commit that needs a sign-off and has none matching its author. */
