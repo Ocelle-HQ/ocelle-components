@@ -69,22 +69,34 @@ attribute selector without `:not()` (gives the wrong answer for system dark with
 ## R-03 Browser tests: what they serve, what they compare, what they observe
 
 **Decision**: Theme, motion and font behaviour are tested in Chromium driven by Playwright from Node tests in the
-`tokens` Vitest project (`packages/tokens/test/browser/*.test.ts`), using the pinned `playwright` 1.64.1 and the
+`tokens-browser` Vitest project (`packages/tokens/test/browser/*.test.ts`; excluded from mutation runs, *Mutation
+path* below), using the pinned `playwright` 1.64.1 and the
 existing `OCELLE_CHROMIUM_PATH` override.
 
 *What is served* (PLAN-CORRECTNESS-1-002, squad round 1 verify 1): the browser suites never read a pre-existing
 `dist/`, and the served files are generated **inside the test worker**, not in a Vitest `globalSetup`. Each browser
 suite calls a shared helper (`test/browser/serve.ts`) in its `beforeAll`; the helper imports `css()` from
 `src/generate.ts` and the source, writes the stylesheet text and a copy of `fonts/` into a per-suite temporary
-directory, and starts the server on it (`afterAll` stops it and removes the directory). The reason is how the pinned
-`@stryker-mutator/vitest-runner` 10.1.1 activates a mutant: it prepends a setup file to each project's `setupFiles`
-that sets the active mutant in the worker (`dist/src/vitest-test-runner.js`, `dist/src/stryker-setup.js`). A
-`globalSetup` runs once in the main process with no active mutant, so it would serve unmutated output. Setup files run
-before the test file is loaded, so the suite's imports of `generate.ts` and `source.ts` (static mutants included) and
-its `beforeAll` see the active mutant, and mutants of `css()` and value mutants of `source.ts` reach the served
-stylesheet. The `tokens` project therefore has no `globalSetup` for these suites. So `pnpm test`, the `unit-tests` CI
-job, tdd-check's clean worktree and Stryker's mutants all test the current source with no build step; the US1 review
-checks in the Stryker report that mutants of `css()` are killed by browser suites as well as by generator tests.
+directory, and starts the server on it (`afterAll` stops it and removes the directory). These suites have no
+`globalSetup`, so `pnpm test`, the `unit-tests` CI job and tdd-check's clean worktree test the current source with no
+build step. (Round 1 also chose this so that Stryker's active mutant would reach the served stylesheet; since squad
+round 2 Stryker does not run these suites at all, *Mutation path* below.)
+
+*Mutation path* (PLAN-FRESH-2-002, squad round 2): every literal mutant of `source.ts` is static (the records are
+fixed at import), and code run in `beforeAll` counts as static coverage, so Stryker would run each such mutant
+against every test of every project it runs, Chromium suites and a Storybook build included, inside the 10-minute
+`mutation-shard` limit (`ci.yml`) that 001 already had to meet by halving the shard size. The browser suites are
+therefore a project of their own, `tokens-browser`, and the build-dependent Storybook tests a project
+`storybook-integration`; `vitest.mutation.config.ts` excludes both, as it excludes `gates-integration`
+(contracts/gates.md § Mutation). The browser suites prove behaviour against current output and are **not** counted
+on to kill mutants. Value mutants of `source.ts` are killed by a node test that runs the generator on the real
+source and compares its output with the transcribed Appendix A table (data-model.md § Expected tables: the token
+stream for colours, the exact text for the others, and `json()`'s resolved values); mutants of `css()`, `json()` and
+`resolve()` by the generator tests on fixture sources. `ignoreStatic` stays off: `gates/lib/mutation/report.ts`
+counts `Ignored` as passing, so it would pass every `source.ts` mutant unseen. The US1 spike measures the time of one
+mutation shard holding a 120-line `source.ts` entry (the bound of `gates/lib/mutation/shards.ts`); if it exceeds the
+10-minute limit, the phase stops and asks the operator.
+
 One separate node test runs `scripts/build.ts` into a temporary directory and checks it writes exactly the text of
 `css()` and `json()` and the font files. A small static server (Node `http`, no dependency) serves the directory and
 a fixture page with a configurable `Content-Security-Policy` header. `storybook/dist/` is added to `.gitignore`.
@@ -101,8 +113,9 @@ for `figures`, `font-family` resolution for the font tokens. Tests do not resolv
 token is defined *by reference* (FR-002, edge case "Token derived from another") is a generator test on a fixture
 source: each derived token's declaration in the stylesheet is `var(--ocelle-<ref>)` (or contains exactly its refs'
 `var()`s), and changing the source token's value in the fixture changes the derived token's value in both the
-stylesheet (resolved in the browser) and the JSON. Generator unit tests use fixture sources throughout, so value
-mutants of `source.ts` are killed by the table tests above and not by tests that read the source.
+stylesheet (resolved in the browser) and the JSON. Generator unit tests use fixture sources throughout; value
+mutants of `source.ts` are killed by the node table test on the real source (*Mutation path* above), not by the
+browser suites.
 
 *Theme conditions*: each test sets the condition with `page.emulateMedia({ colorScheme, reducedMotion })`. "No
 preference" uses `colorScheme: 'no-preference'`; in addition a node test on the generated stylesheet text asserts
@@ -223,16 +236,21 @@ runtime dependency, and a different provenance than #5 names).
 ## R-07 Contrast gate
 
 **Decision**: `gates/bin/contrast.ts` with `gates/lib/wcag.ts` (sRGB hex → relative luminance → ratio, WCAG 2.x
-formula with the 0.04045 threshold) and `gates/lib/token-source.ts` (loads `packages/tokens/src/source.ts` under
-`--root` by dynamic import and validates it). The pair list is `packages/tokens/contrast/pairs.json`
+formula with the 0.04045 threshold) and `gates/lib/token-source.ts` (loads `packages/tokens/src/source.ts` and
+`src/generate.ts` under `--root` by dynamic import and validates the source). Colour values are resolved with
+`resolve()` of `generate.ts`, the one resolver that `json()` also uses (data-model.md § Token, PLAN-FRESH-2-005):
+`color-focus` and `color-current` are `var(--ocelle-color-accent-strong)` in the source and resolve to its hex per
+theme; opacity (`not-opaque`) is judged on the resolved value. The pair list is `packages/tokens/contrast/pairs.json`
 (data-model.md § Contrast pair), kept outside `src/` so it is neither published nor mutated, and figures are strings
 so that their precision is part of the data (`"5.3"`, `"3.02"`). Rules, in order (contracts/gates.md), with the rule
 ids of data-model.md § Gate findings:
 
 1. list unreadable, not JSON, not the schema, or empty → exit 2;
-2. each entry: unknown token → `unknown-token`; a translucent colour as foreground or ground → `not-opaque`; computed
-   ratio outside the figure's precision interval → `figure-mismatch`; `checked` entry below its threshold (not
-   exempt) → `below-threshold`; `excluded` entry without a non-empty reason → `excluded-without-reason`; `excluded`
+2. each entry: unknown token → `unknown-token`; a translucent colour (resolved) as foreground or ground →
+   `not-opaque`; an entry with either of these has no ratio and gives no other finding. Otherwise each applicable
+   finding is given independently, in this order (PLAN-FRESH-2-006): computed ratio outside the figure's precision
+   interval → `figure-mismatch`; `checked` entry below its threshold (not exempt) → `below-threshold` (so one entry
+   can give both); `excluded` entry without a non-empty reason → `excluded-without-reason`; `excluded`
    entry that is a required pair → `required-pair-excluded` (check 3, SPEC-3-02; FR-016 as amended in squad round 1:
    exclusion is allowed only for pairs outside the required set; to stop requiring a pair, the token source's
    intended grounds must change, which is a visible design change);
@@ -241,6 +259,13 @@ ids of data-model.md § Gate findings:
 
 On success it prints `contrast: <n> pairs checked in light, <m> in dark (<r> required per theme)`; with the
 repository's values 158, 157 and 149.
+
+Because a plant changes a token and a token sits in many pairs, the two threshold plants change the token's value
+and the recorded figures of all its pairs in that theme, so they give only `below-threshold` findings, one per pair
+under the threshold, all listed in `plant.json` (PLAN-FRESH-2-006, contracts/gates.md § Plants). For
+`text-below-threshold` (light `color-ink-muted` = `#6B655A`, computed 2026-11-03 in refute round 2): 4.27 on
+`color-inset`, 4.27 on `color-hover-bg` (same light value), 4.48 on `color-accent-low`, so three findings; its other
+grounds stay above 4.5 (canvas 4.99, sheet 5.54, rail 4.60, …).
 
 The required set is pinned to the spec by a node test (`gates/test/contrast-required.test.ts`,
 PLAN-TESTABILITY-1-002): it derives the required set from the real `source.ts` and asserts it equals A.8 transcribed in
@@ -283,7 +308,10 @@ and fails on any `forced-color-adjust: none` declaration and on any `@media (for
 squad round 1, PLAN-A11Y-SECURITY-1-011 (a)); a pass plant maps a colour token to `CanvasText` there. Rule (f) checks
 that the generated stylesheet has a `prefers-reduced-motion: reduce` block setting exactly `motion-fast` and
 `motion-base` to `0ms`. On success: `brand-rules: 7 rules checked`. Its plants change `source.ts`, `generate.ts` or
-`pairs.json` in the plant's tree; the rest comes from the configuration set (R-09).
+`pairs.json` by a `tree.patch` over the configuration set's real files, never by a copy (PLAN-FRESH-2-007,
+contracts/gates.md § Configuration set), so they keep proving rules (f) and (g) against the generator the repository
+runs and do not go stale when a token value changes; a plant-job test changes a token value no patch touches and
+checks every plant keeps its outcome. The rest comes from the configuration set (R-09).
 
 Rule (g) guards the token output only. How rendered elements behave in forced colours (for example the `elevation-*`
 rings, which vanish there as `box-shadow`) is checked by element tests under Playwright's
@@ -306,25 +334,37 @@ style-lint plants are `repo-tree` plants, `configurationSet` (`gates/lib/plant-r
 `packages/tokens/src/source.ts`, `generate.ts` (with its imports) and `contrast/pairs.json` into every plant
 repository, test first in `gates/test/plant-repo.test.ts` with an integration test; otherwise every style-lint plant
 would exit 2. This also lets the contrast and brand-rules `repository-values` plants use the real files instead of
-stale copies. The rule takes the token list (and the element list) as options, so unit tests pass fixture lists. The
+stale copies. The rule takes the token list (and the element property list) as options, so unit tests pass fixture lists. The
 existing plants and tests that use the made-up `--ocelle-x` (`pass-var-token`, `pass-var-keyword-fallback`,
 `fail-var-fallback`, `gates/test/token-only.test.ts`, `token-only-parts.test.ts`) move to real token names, with the
 reason recorded as constitution VIII requires.
 
-*Element custom properties* (operator decision 2026-11-03, squad round 1, PLAN-FRESH-1-007 (a); FR-010): an element's
-public custom properties are named `--ocelle-<element>-<property>`, `<element>` being its tag name without `ocelle-`.
-The element list is read from the custom-elements manifest of `@ocelle/elements` (`packages/elements/custom-elements.json`
-under `--root`; empty while it does not exist). A reference whose name starts with `<element>-` for a listed element is
-exempt. A token name equal to an element name or beginning with `<element>-` makes the rule's load fail (exit 2), so
-the two namespaces cannot overlap. Restricting the rule to token group prefixes would not work: `gutter`, `figures`
-and `target-min` have none.
+*Element custom properties* (operator decisions 2026-11-03, squad round 1, PLAN-FRESH-1-007 (a), and squad round 2,
+PLAN-FRESH-2-003 (a); FR-010): an element's public custom properties are named by convention
+`--ocelle-<element>-<property>`, but the rule exempts exactly the names the custom-elements manifest declares
+(`cssProperties[].name` of each declaration in `packages/elements/custom-elements.json` under `--root`), not a
+prefix. A prefix exemption would let `var(--ocelle-button-gpa)` fall back silently once `ocelle-button` exists, and
+would forbid element names such as `ocelle-icon`, `ocelle-dialog` and `ocelle-footer` while the tokens `icon-size`,
+`dialog-*` and `footer-h` exist. The only load failure (exit 2) left is an exact-name clash: a declared element
+property whose full name is a token's. Restricting the rule to token group prefixes would not work either: `gutter`,
+`figures` and `target-min` have none.
+
+*Where the manifest lives* (PLAN-FRESH-2-004): the manifest is a committed file at
+`packages/elements/custom-elements.json` (constitution I makes it public surface), introduced and kept current by the
+element feature that lands the deferred custom-elements-manifest gate (#7 or #10); `gates/README.md`'s deferral row
+for that gate records this. The CI style-lint job builds nothing, so a manifest generated only at build time, or into
+`dist/`, would be invisible to it. An element's CSS can use a new element property only after the manifest declares
+it. While the file does not exist (this feature: no element yet) the list is empty; a file that exists but is not
+JSON or not the manifest schema is exit 2.
 
 Plants: `gates/plants/style-lint/fail-unknown-token/` (`var(--ocelle-color-canvs)` in an element style template),
-`pass-known-token/`, and `pass-element-property/` (`var(--ocelle-button-gap)` with a fixture manifest declaring
-`ocelle-button`).
+`fail-element-property-misspelt/` (`var(--ocelle-button-gpa)` against a fixture manifest declaring
+`--ocelle-button-gap`), `pass-known-token/`, `pass-element-property/` (`var(--ocelle-button-gap)` against the same
+fixture manifest), and the breaking plant `element-property-clash/` (a fixture manifest declaring `--ocelle-space-2`).
 
-**Alternatives considered**: exempting names declared in the same stylesheet or style template (fork option (b), not
-chosen).
+**Alternatives considered**: exempting names declared in the same stylesheet or style template (fork option (b) of
+PLAN-FRESH-1-007, not chosen); a reserved sub-namespace such as `--ocelle-el-<element>-<property>` with a prefix
+exemption (PLAN-FRESH-2-003 (b), not chosen).
 
 ## R-10 Storybook under strict CSP (operator decisions SPEC-1-05, SPEC-3-01; squad round 1)
 
@@ -366,50 +406,61 @@ default-src 'none'; script-src 'self'; style-src 'self'; font-src 'self'; connec
 are host additions for the Storybook page only, recorded in the plan's Constitution Check like `font-src`; the
 package output gets none. The run-time test asserts that the response carries exactly this header.
 
-**Static scope** (operator decision 2026-11-03, squad round 1, PLAN-FRESH-1-001 (a)): Storybook copies its prebuilt
-runtimes verbatim into the output (`builder-manager` copies `dist/manager` to `<out>/sb-manager`), and these contain
-`Function("return this")`, `<span style=…>` template strings, `"sk-SK"` and `font-family: Menlo, monospace`, which no
-setting or externalising can remove. The widened static `csp` and `prefix` scope covers only the files this
-repository's sources produce: the Vite-built stories and preview bundle, the externalised scripts and styles, the HTML
-entries. The verbatim-copied directories are listed in `gates/gates.json` as excluded (the exact list recorded from
-the spike), and a node test checks that every file under them is byte-identical to a file of the installed
-`storybook` package. They remain covered by the run-time test. The narrowing is recorded in `gates.json`,
-`gates/README.md`, plan.md and FR-023.
+**Static scope** (operator decisions 2026-11-03, squad round 1, PLAN-FRESH-1-001 (a), and squad round 2,
+PLAN-FRESH-2-001 (a)): Storybook copies its prebuilt manager runtime verbatim into the output (`builder-manager`
+copies `dist/manager` to `<out>/sb-manager`), and it also **bundles** its own code with this repository's:
+`@storybook/builder-vite` 10.6.4 generates the preview entry `import { setup } from
+'storybook/internal/preview/runtime'` (`dist/index.js:336`), so Vite compiles `storybook/dist/preview/runtime.js`,
+with its `Function("return this")`, `Function("binder", …)` and `<span style=…>` strings, into the preview bundle;
+and `builder-manager` builds `sb-addons/` with esbuild from Storybook's manager entries and
+`.storybook/manager.ts`. No setting or externalising removes these, and no byte-identity fence can tell vendor code
+from this repository's code inside a bundle. The static `csp` and `prefix` scope therefore covers this repository's
+Storybook inputs before bundling, `storybook/stories/`, `storybook/.storybook/` (with its HTML head templates),
+`storybook/scripts/`, `storybook/.generated/`, and the HTML entries of the output as `externalise.ts` leaves them
+(`storybook/dist/*.html`); every bundle under `storybook/dist/` is left to the run-time CSP test, which serves the
+whole build under the page's header. There is no exclusion list and no byte-identity test. This is a further
+narrowing of SPEC-1-05, recorded in FR-023, `gates/gates.json`, `gates/README.md` and plan.md.
 
 **Known risk, met by a spike first**: Storybook's manager and preview inject `<style>` elements at run time (Emotion
 CSS-in-JS), and the built HTML has inline scripts and styles. Under `style-src 'self'` with no nonce or hash, injected
 `<style>` elements are blocked. The first task of the Storybook phase is a spike that builds the pinned Storybook,
 post-processes its output (`storybook/scripts/externalise.ts`: inline `<script>` and `<style>` moved to same-origin
-files, hashed names), serves it with the header above, records **every** CSP violation by directive, and runs the
-widened `csp` and `prefix` gates on the output in scope. Techniques it tries against `style-src` violations, in
+files, hashed names), serves it with the header above, and records **every** CSP violation by directive. Its first
+output is the `csp` gate's findings on the Vite preview bundle and on `sb-addons/` (run by hand on those paths,
+recorded in the review, not a gate result; PLAN-FRESH-2-001); it then runs the widened `csp` and `prefix` gates on
+the files in scope. It also measures the mutation shard time of R-03 (*Mutation path*). Techniques it tries against `style-src` violations, in
 order: (1) Emotion's cache configured to insert rules through `CSSStyleSheet.insertRule` into adopted constructable
 stylesheets (not governed by `style-src`); (2) the preview alone (`iframe.html`), without the manager UI, as the token
 reference; (3) any setting of the pinned Storybook that disables run-time style injection. If none gives zero
 violations under the header, or a file in scope keeps an inline script or a monospace declaration, the phase **stops
 and asks the operator** (FR-023, SPEC-3-01); no Complexity Tracking exception is taken without the operator.
 
-**Tests and scopes** (PLAN-FRESH-1-004, PLAN-TESTABILITY-1-005): `vitest.config.ts` gains a `storybook` project
-(node, `storybook/**/*.test.ts`) whose global setup builds the Storybook into a per-run temporary directory (R-03:
-nothing reads a pre-existing `storybook/dist/`). Unlike the tokens browser suites, a global setup is right here: the
-Storybook build runs Vite and the build scripts in their own processes, so no active Stryker mutant could reach it
-from any setup, and building once per run keeps the project's run time bounded. Mutants of `storybook/scripts/**`
-and `storybook/.storybook/**` are killed by the node unit tests named below, which import those modules in the
-worker; the run-time CSP test is not counted on to kill them. The run-time check `storybook/test/csp.test.ts` (Playwright from
-Node, R-03's server and violation collector) opens that build with the header above, visits each group story in
-light and dark, and asserts the header served, zero violations, zero requests outside the origin, and that each story
-lists exactly its group's tokens (FR-023, US1 scenario 11). `externalise.ts` and `swatches.ts` get node unit tests on
-fixture HTML and fixture token data. `storybook/scripts/**` and `storybook/.storybook/**` join the mutation scope
+**Tests and scopes** (PLAN-FRESH-1-004, PLAN-TESTABILITY-1-005, PLAN-FRESH-2-002): `vitest.config.ts` gains two
+projects. `storybook` (node, `storybook/test/unit/**/*.test.ts`, no build) holds the unit tests that kill the mutants
+of `storybook/scripts/**` and `storybook/.storybook/**` by importing those modules in the worker: `externalise.ts` and
+`swatches.ts` on fixture HTML and fixture token data, the telemetry tests, and the static-scope tests.
+`storybook-integration` (node, `storybook/test/integration/**/*.test.ts`) has a global setup that builds the
+Storybook into a per-run temporary directory (R-03: nothing reads a pre-existing `storybook/dist/`); a global setup
+is right here because the build runs Vite and the build scripts in their own processes, and building once per run
+keeps the project's run time bounded. `vitest.mutation.config.ts` excludes `storybook-integration`, so Stryker never
+builds Storybook; the run-time CSP test is not counted on to kill mutants. The run-time check
+`storybook/test/integration/csp.test.ts` (Playwright from Node, R-03's server and violation collector) opens that
+build with the header above, visits each group story in light and dark, and asserts the header served, zero
+violations, zero requests outside the origin, and that each story lists exactly its group's tokens (FR-023, US1
+scenario 11). `storybook/scripts/**` and `storybook/.storybook/**` join the mutation scope
 (`gates/lib/mutation/ranges.ts` `scopePathspecs` and `source` regex, with tests); `tsconfig.json` includes
 `storybook/.storybook/**/*.ts` explicitly (TypeScript's `**/*.ts` skips dot-directories); the prefix gate's source
 scope (`isCovered`) extends to `storybook/**` source. `storybook/dist/` is in `.gitignore`.
 
-The `csp` gate gets a fail plant (inline script in `storybook/dist/index.html`) and a pass plant (external script
-there).
+The `csp` gate gets a fail plant (inline script in `storybook/dist/index.html`, an HTML entry in scope) and a pass
+plant (external script there).
 
 **Alternatives considered**: the spec's option (b) at SPEC-3-01 (static scan only; declined by the operator); a
 generated static token reference page instead of Storybook (fork options (b) of PLAN-A11Y-SECURITY-1-001 and (c) of
 PLAN-FRESH-1-001, not chosen; FR-023's choice of Storybook stands); keeping the full static scope and taking an
-exception (PLAN-FRESH-1-001 (b), not chosen).
+exception (PLAN-FRESH-1-001 (b), not chosen); attributing bundle findings to vendor modules through source maps
+or the build metafile (PLAN-FRESH-2-001 (b), not chosen); replacing Storybook with the static reference page
+(PLAN-FRESH-2-001 (c), not chosen).
 
 ## R-11 Package exports and build
 
@@ -435,7 +486,8 @@ the thin I/O boundary of R-01.
 **Decision**: A derived token's record lists every token its value references in `ref` (per theme where its value is
 per theme: `elevation-raised` references `color-rule-strong` in dark only; data-model.md § Token). The stylesheet
 writes the reference as `var(--ocelle-<ref>)`, alone or inside a larger value (`calc(100vw - 2 *
-var(--ocelle-gutter))`). The JSON export holds resolved values (FR-008) and `ref` in the full-name form of its `name`
+var(--ocelle-gutter))`). The JSON export holds resolved values (FR-008), computed by `resolve()` of `generate.ts`,
+the resolver the contrast gate also uses (data-model.md § Token), and `ref` in the full-name form of its `name`
 field, in the shape of the value: `"ref": ["--ocelle-space-4"]`, or `{ "light": [...], "dark": [...] }`
 (contracts/token-package.md). Tests check the resolved values against the transcribed table and the reference form
 by the generator test on a fixture source (R-03); they do not resolve `var()` themselves.

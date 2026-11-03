@@ -77,10 +77,10 @@ it with the same table and with the stylesheet.
 11. **Given** the token stories (FR-023), **When** Storybook is built and a group's story is rendered in light and in
     dark under the Storybook page's CSP (FR-023), **Then** it lists exactly that group's tokens with their name and
     value for that theme, and the page reports zero CSP violations and makes no request outside its origin.
-12. **Given** the built Storybook output (FR-023), **When** the `csp` gate runs with its widened scope, **Then** it
-    scans the files of that output that this repository's sources produce (not the runtime files Storybook copies
-    verbatim from its package, FR-023) and passes: no inline script, inline style element or style attribute remains
-    in them.
+12. **Given** the built Storybook (FR-023), **When** the `csp` gate runs with its widened scope, **Then** it scans
+    this repository's Storybook inputs and the HTML entries of the output as `externalise.ts` leaves them (not the
+    bundles under `storybook/dist/`, which scenario 11's run-time test covers; FR-023) and passes: no inline script,
+    inline style element or style attribute remains in them.
 
 ---
 
@@ -141,15 +141,19 @@ pairs and rules they checked); run the plant job, whose new plants (FR-020) each
    than zero, equals the number of pairs in the list for that theme (excluded pairs count as checked, FR-016), and is
    at least the number of required pairs (149 per theme with Appendix A, A.8; with the excluded pairs of A.9 the list
    has 158 light and 157 dark entries).
-2. **Given** a text pair whose ratio drops below 4.5:1 in one theme (for example `color-ink-muted` changed so that it
-   is 4.3:1 on `color-inset`), **When** the gate runs, **Then** it fails with one finding naming the theme, the two
-   tokens, the ratio and the threshold.
-3. **Given** a non-text pair whose ratio drops below 3:1 (for example `color-control-border` changed so that it is
-   below 3:1 on `color-rail` in light; it is 3.02 with Appendix A's values), **When** the
-   gate runs, **Then** it fails the same way with the 3:1 threshold.
+2. **Given** a text token changed so that a pair drops below 4.5:1 in one theme, with the recorded figures of its
+   pairs updated to the new value (for example `color-ink-muted` changed so that it is 4.3:1 on `color-inset` in
+   light; it is then also 4.3:1 on `color-hover-bg`, which has the same light value, and below 4.5:1 on
+   `color-accent-low`), **When** the gate runs, **Then** it fails with a `below-threshold` finding for each pair
+   under the threshold (three in the example), each naming the theme, the two tokens, the ratio and the threshold.
+3. **Given** a non-text token changed so that a pair drops below 3:1, with the recorded figures of its pairs updated
+   to the new value (for example `color-control-border` changed so that it is below 3:1 on `color-rail` in light;
+   it is 3.02 with Appendix A's values), **When** the gate runs, **Then** it fails the same way, with a
+   `below-threshold` finding for each required pair under the 3:1 threshold.
 4. **Given** a pair whose computed ratio differs from the figure recorded for it by more than the rounding of that
    figure (FR-017), **When** the gate runs, **Then** it fails and names the recorded and computed figures, even if
-   both are above the threshold.
+   both are above the threshold. A pair that both mismatches its figure and is below its threshold gives both
+   findings, `figure-mismatch` first.
 5. **Given** a pair list, **When** the gate runs, **Then** exactly one of these outcomes follows, and the gate never
    passes for any of them:
    - the list is empty or cannot be parsed: exit 2 (could not run), naming the file and the cause;
@@ -263,11 +267,19 @@ can be built.
   silently. The token definitions themselves stay exempt from the token-only rule. The new rule MUST have a fail
   plant (a reference to a misspelt token, for example `var(--ocelle-color-canvs)`) and a pass plant (a reference to a
   real token) under `gates/plants/style-lint/`. Element custom properties (constitution I: public CSS custom
-  properties of an element, declared in the custom-elements manifest) are named `--ocelle-<element>-<property>`, where
-  `<element>` is the element's tag name without `ocelle-` (`ocelle-button` → `--ocelle-button-gap`); no token name
-  equals an element name or begins with `<element>-`. The rule exempts a reference that follows this convention for
-  an element of the library (operator decision 2026-11-03, squad round 1, PLAN-FRESH-1-007), and MUST have a pass
-  plant with such a reference.
+  properties of an element, declared in the custom-elements manifest) are by convention named
+  `--ocelle-<element>-<property>`, where `<element>` is the element's tag name without `ocelle-` (`ocelle-button` →
+  `--ocelle-button-gap`). The rule exempts exactly the custom property names the manifest declares (the
+  `cssProperties[].name` of each declaration), not a name prefix (operator decisions 2026-11-03, squad round 1,
+  PLAN-FRESH-1-007, and squad round 2, PLAN-FRESH-2-003 (a)): a misspelt element property such as
+  `var(--ocelle-button-gpa)` is an unknown token even when `ocelle-button` exists. Element names are not restricted
+  by the token names (`ocelle-icon` and `ocelle-dialog` remain available); only a declared element property whose
+  full name equals a token's full name is a clash, which makes the rule fail to load (exit 2). The rule MUST have a
+  pass plant referencing a property a fixture manifest declares (`--ocelle-button-gap`) and a fail plant referencing
+  a misspelt one (`var(--ocelle-button-gpa)`) against the same manifest. The manifest is a committed file at
+  `packages/elements/custom-elements.json` (constitution I treats it as public surface), kept current by the element
+  features; an element's CSS can reference a new element property only once the manifest declares it. While the
+  file does not exist (no element yet), the declared list is empty (PLAN-FRESH-2-004).
 
 **Font (User Story 2)**
 
@@ -310,7 +322,9 @@ can be built.
   design change. The pairs that are below threshold with Appendix A's values are listed in A.9. The pair list MAY
   hold pairs beyond the required set.
 - **FR-017**: The contrast gate MUST compute each pair's ratio with the WCAG 2.x relative-luminance formula from the
-  token values (resolving derived tokens), compare the unrounded ratio with the threshold, and compare it with the
+  token values (resolving derived tokens with the same resolver as the JSON export, FR-008; `color-focus` and
+  `color-current` resolve to `color-accent-strong`'s value per theme, and whether a token is opaque is judged on its
+  resolved value), compare the unrounded ratio with the threshold, and compare it with the
   recorded figure at the figure's precision (a figure of `5.3` matches a computed ratio in [5.25, 5.35); `3.02`
   matches [3.015, 3.025)). Disabled ink is exempt from the threshold (WCAG 1.4.3 excludes inactive components) but
   MUST still match its recorded figure. Where #5 gives only a range (the state colours on their own backgrounds,
@@ -373,22 +387,28 @@ can be built.
     Storybook page only, recorded in the plan's Constitution Check like `font-src`. Under exactly that header the
     built Storybook MUST run with zero CSP violations, shown by a browser test that also asserts the header served.
     The package output (`packages/*/dist/`) gets no such addition.
-  - **Static scope** (PLAN-FRESH-1-001): the static `csp` and `prefix` gates cover the files of the Storybook build
-    output that this repository's sources produce (the Vite-built stories and preview bundle, the externalised
-    scripts and styles, the HTML entries), and not the runtime files Storybook copies verbatim from its package
-    (for example `sb-manager/`), which the run-time test covers. This narrows SPEC-1-05's "no style attribute
-    remains in the built output" to the files this repository produces. The excluded paths are listed in
-    `gates/gates.json` and `gates/README.md`, and a test MUST show that each excluded file is byte-identical to a
-    file of the installed `storybook` package, so the exclusion cannot hide this repository's output.
+  - **Static scope** (PLAN-FRESH-1-001, narrowed again by PLAN-FRESH-2-001 (a), operator decision 2026-11-03,
+    squad round 2): the static `csp` and `prefix` gates cover this repository's Storybook inputs before bundling:
+    `storybook/stories/`, `storybook/.storybook/` (including its HTML head templates), `storybook/scripts/`,
+    `storybook/.generated/` (the generated token and swatch stylesheets), and the HTML entries of the build output
+    as `externalise.ts` leaves them (`storybook/dist/*.html`). Every bundle under `storybook/dist/` (the Vite-built
+    preview bundle, which compiles in Storybook's own preview runtime, the esbuild-built `sb-addons/`, the
+    verbatim-copied `sb-manager/`, and the scripts and styles `externalise.ts` moves out of the HTML) is left to the
+    run-time test, because Storybook's runtime code is bundled together with this repository's stories and no
+    static fence can separate the two. This narrows SPEC-1-05's "no style attribute remains in the built output"
+    to this repository's inputs and the HTML entries; the narrowing is recorded in `gates/gates.json` and
+    `gates/README.md`.
 
   In the files in scope, every inline script is stripped or externalised to a same-origin file, and no inline style
   element or style attribute remains. The scope of the `csp` gate MUST be widened from `packages/*/dist/` to the
-  Storybook files in scope, and the scope of the `prefix` gate likewise (built output and the Storybook workspace's
-  own source), in `gates/gates.json` and `gates/README.md`; the `csp` gate MUST gain a fail plant with an inline
-  script in the Storybook output and a pass plant with an external script there. The work starts with a spike that
-  records every CSP violation of the built Storybook by directive under the header above and runs the widened `csp`
-  and `prefix` gates on its output. If Storybook cannot reach zero violations under that header, or its files in
-  scope cannot be freed of inline script, the phase stops and asks the operator; no Complexity Tracking exception is
+  Storybook files in scope, and the scope of the `prefix` gate likewise (the Storybook workspace's own source, its
+  generated stylesheets and the HTML entries), in `gates/gates.json` and `gates/README.md`; the `csp` gate MUST gain
+  a fail plant with an inline script in a Storybook HTML entry and a pass plant with an external script there. The
+  work starts with a spike that records every CSP violation of the built Storybook by directive under the header
+  above; its first output is the `csp` gate's findings on the Vite preview bundle and on `sb-addons/` (recorded
+  for the review, not a gate result), and it then runs the widened `csp` and `prefix` gates on the files in scope.
+  If Storybook cannot reach zero violations under that header, or its files in scope cannot be freed of inline
+  script, the phase stops and asks the operator; no Complexity Tracking exception is
   taken without the operator's approval. Storybook's own UI theme is set so that it uses the token fonts; if a file in
   scope still carries a monospace family in a `font` or `font-family` declaration that the theme cannot remove, so
   that the widened `prefix` gate fails, the phase likewise stops and asks the operator. The Storybook build gate,
@@ -443,14 +463,15 @@ can be built.
 - **SC-004**: The `contrast` gate checks every pair of FR-016 in both themes (the count it reports per theme equals
   the pair list's size for that theme, excluded pairs included, and is at least 149; a test asserts that the
   required set derived from the token source equals A.8), and every fail plant of the
-  `contrast` and `brand-rules` gates is caught with exactly its expected finding by the plant job.
+  `contrast` and `brand-rules` gates is caught with exactly its expected findings (every finding its planted
+  change gives, listed in its `plant.json`) by the plant job.
 - **SC-005**: Changing any one checked token value so that a pair falls below its threshold makes the pull request's
   contrast check fail; restoring it makes it pass.
 - **SC-006**: An element author who writes `var(--ocelle-color-canvs)` (misspelt) gets a style-lint failure naming
   the unknown token.
 - **SC-007**: `gates/README.md` lists no deferred contrast gate, and every gate of the registry has a CI job and plants.
 - **SC-008**: The Storybook files in the `csp` gate's widened scope (FR-023) pass it, the `csp` fail plant with an
-  inline script in that output is caught, and the built Storybook runs with zero CSP violations under the Storybook
+  inline script in a Storybook HTML entry is caught, and the built Storybook (bundles included) runs with zero CSP violations under the Storybook
   page's header of FR-023.
 
 ## Assumptions
@@ -501,10 +522,15 @@ can be built.
   theme) but its value is a keyword, not a colour: tests compare it as the keyword, and the rules for colour values
   (hex or `rgb()` form, parsing as RGBA, contrast grounds, swatches) do not apply to it; the token reference shows its
   value as text (squad round 1, verify 1).
-- **Element custom properties** (operator decision 2026-11-03, squad round 1, PLAN-FRESH-1-007). Constitution I gives
-  elements the `ocelle-` namespace for their own public CSS custom properties. They are named
-  `--ocelle-<element>-<property>` (FR-010), and the element names of the library are chosen so that no token name
-  equals one or begins with `<element>-`.
+- **Element custom properties** (operator decisions 2026-11-03, squad round 1, PLAN-FRESH-1-007, and squad round 2,
+  PLAN-FRESH-2-003 (a) and PLAN-FRESH-2-004). Constitution I gives elements the `ocelle-` namespace for their own
+  public CSS custom properties, named by convention `--ocelle-<element>-<property>` (FR-010). The unknown-token rule
+  exempts exactly the names the custom-elements manifest declares, so element names are not restricted by the
+  token set (`ocelle-icon`, `ocelle-dialog` and `ocelle-footer` stay available beside `icon-size`, `dialog-*` and
+  `footer-h`); an element property may not have the full name of a token (`ocelle-icon` cannot declare
+  `--ocelle-icon-size`, which is the token). The manifest is committed at `packages/elements/custom-elements.json`
+  and kept current by the element features (#7 or #10 adds it); an element's CSS can use a new element property only
+  after the manifest declares it.
 - **Elements read tokens through inheritance.** The host loads the tokens stylesheet once on the document; elements
   do not adopt it per shadow root. How elements and base styles use the tokens is #6 and the element issues.
 - **Rendered brand rules are not checked here.** Dark chrome on the top bar and rails, digests in groups of four, and
