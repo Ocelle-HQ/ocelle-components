@@ -50,6 +50,13 @@ plant job; `cause` on a fail or pass plant, and `base` on a pass plant (which co
 a `--base` that does not resolve in the temporary repository (contracts/plants.md, mutation row). It is an input of
 the gate, like the plant's files, not gate configuration.
 
+The mutation gate exits 2 rather than pass changed code it did not check. That covers a changed path Stryker cannot
+take verbatim as a `mutate` input, checked before Stryker runs, and a `mutate` entry Stryker reports it did not read
+(`Glob pattern "<entry>" did not result in any files.`). Stryker 10.1.1 never reads a file under a folder named
+`node_modules`, `.git`, `.next`, `.nuxt`, `.svelte-kit` or `.stryker-tmp`, in any case. The cause names each such
+path or entry (contracts/gate-cli.md, mutation row; phase 3 round 12, O12-01). A changed file that Stryker read but
+its report does not list has no mutant on its changed lines and passes.
+
 ## Required checks on `main`
 
 The workflow that runs on a pull request is the pull request's own `ci.yml`, so only a list kept outside the branch

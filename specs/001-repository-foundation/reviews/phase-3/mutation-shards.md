@@ -151,3 +151,36 @@ plant-judge.ts now shares its shard with the first entry of plant-repo.ts. Shard
 shard 16 took 256 s against the 301 s of the round 9 plant-judge.ts shard, which matches the research note that
 time follows the mutants per file, not the total. Whether that holds on GitHub's runner is measured only by the CI
 run of the pull request.
+
+## Round 12 fix (T099): unread entries exit 2, the shard entry split without a regex
+
+Measured on 2026-11-03 on the round 12 fix tree: red commit 94d6ef0 plus the fix. The code is the same as in the
+fix commit `fix(001-repository-foundation): phase 3 review round 12`. Same sandbox as above: 4 vCPU, Node 26.13.0,
+pnpm 12.16.1, StrykerJS 10.1.1, `concurrency` 8, cold runs (`incremental` off). Base: bdb9b70. The shards ran one
+after the other, never two at once, and no other mutation run or tdd-check run was going at the same time.
+
+Plan output on stdout (21 shards, 14 cuts, the same stderr line as in round 10):
+
+```json
+[{"files":"gates/bin/config-copies.ts,gates/bin/csp.ts:1-120","lines":204},{"files":"gates/bin/csp.ts:121-240","lines":120},{"files":"gates/bin/csp.ts:241-248,gates/bin/lint.ts,gates/bin/mutation.ts:1-120","lines":152},{"files":"gates/bin/mutation.ts:121-197,gates/bin/pins.ts:1-120","lines":197},{"files":"gates/bin/pins.ts:121-157,gates/bin/plants.ts:1-120","lines":157},{"files":"gates/bin/plants.ts:121-233,gates/bin/prefix.ts","lines":230},{"files":"gates/bin/setup-offline.ts,gates/bin/signoff.ts","lines":221},{"files":"gates/bin/style-lint.ts,gates/bin/test-lint.ts,gates/bin/test.ts:1-120","lines":183},{"files":"gates/bin/test.ts:121-136,gates/bin/typecheck.ts,gates/eslint/no-snapshot-only.ts,gates/eslint/unchecked-expect.ts:1-120","lines":241},{"files":"gates/eslint/unchecked-expect.ts:121-140,gates/lib/cli.ts,gates/lib/entries.ts,gates/lib/eslint-report.ts","lines":211},{"files":"gates/lib/findings.ts,gates/lib/mutation/coverage.ts,gates/lib/mutation/ranges.ts:1-120","lines":195},{"files":"gates/lib/mutation/ranges.ts:121-131,gates/lib/mutation/records.ts,gates/lib/mutation/report.ts","lines":182},{"files":"gates/lib/mutation/shards.ts:1-120","lines":120},{"files":"gates/lib/mutation/shards.ts:121-169,gates/lib/pins-rules.ts:1-120","lines":169},{"files":"gates/lib/pins-rules.ts:121-137,gates/lib/plant-judge.ts:1-120","lines":137},{"files":"gates/lib/plant-judge.ts:121-216,gates/lib/plant-repo.ts:1-120","lines":216},{"files":"gates/lib/plant-repo.ts:121-237,gates/lib/plant-runner.ts","lines":203},{"files":"gates/lib/registry.ts:1-120","lines":120},{"files":"gates/lib/registry.ts:121-121,gates/lib/spawn.ts,gates/lib/stylelint-report.ts,gates/lib/tsc-report.ts","lines":222},{"files":"gates/lib/vitest-report.ts:1-120","lines":120},{"files":"gates/lib/vitest-report.ts:121-123,gates/lib/workspace-yaml.ts,gates/stylelint/token-only.ts,packages/elements/src/index.ts,packages/styles/src/index.ts,packages/tokens/src/index.ts","lines":199}]
+```
+
+Against the round 10 plan, the entries of two shards changed: shard 4 (`gates/bin/mutation.ts:121-195` became
+`:121-197`, the header comment grew by two lines) and shard 14 (`gates/lib/mutation/shards.ts:121-166` became
+`:121-169`). Two more shards have the same entries but changed code, and were timed as well. Shard 12 holds
+`gates/lib/mutation/report.ts`, now 182 lines in the shard against 162. Shard 13, `gates/lib/mutation/shards.ts:1-120`,
+holds the old line 110, the shard that failed on GitHub run 41677290625. Every other shard has the same entries
+and code as in round 10 and was not run again.
+
+| Shard | Entries | Count | Changed lines | Mutants on changed lines | Result | Equivalent records | Duration |
+|---|---|---|---|---|---|---|---|
+| 4 | gates/bin/mutation.ts:121-197, gates/bin/pins.ts:1-120 | 2 | 197 | 192 | exit 0, none survived | 9 | 118 s (1 min 58 s) |
+| 12 | gates/lib/mutation/ranges.ts:121-131, gates/lib/mutation/records.ts, gates/lib/mutation/report.ts | 3 | 182 | 172 | exit 0, none survived | 1 | 123 s (2 min 3 s) |
+| 13 | gates/lib/mutation/shards.ts:1-120 | 1 | 120 | 95 | exit 0, none survived | 0 | 108 s (1 min 48 s) |
+| 14 | gates/lib/mutation/shards.ts:121-169, gates/lib/pins-rules.ts:1-120 | 2 | 169 | 367 | exit 0, none survived | 1 | 217 s (3 min 37 s) |
+
+Shard 13 alone (`pnpm run gate:mutation -- --base bdb9b70 --files gates/lib/mutation/shards.ts:1-120`) exits 0 with
+95 mutants and none surviving (mutation-fix-12-shard-13.log). It had 102 mutants in round 10. The four Regex
+mutants of the old line 110 are gone with the regex. The rest of the difference is code that moved across line 120,
+since the file grew by three lines above it; the split itself (lines 122 to 129) is now in shard 14. No shard came
+near the 10-minute limit.

@@ -1,6 +1,7 @@
 # Spec Kit Flows Diary
 
 ## 2026-11-03
+* **Update**: `/ocelle-land` gets a stop rule: one full landing round; later rounds only verify the earlier blocking findings and check for regressions, and new findings become follow-up issues unless they break a requirement with a reproduction or a red check. Asked for by the operator after the PR #18 landing pass re-opened phase 3 seven times (rounds 7 to 13), almost all for edge cases of one gate (mutation): each fresh review dug deeper into the same component, and nothing ended the loop.
 * **Update**: `/ocelle-land` keeps the folded branch and `archive/<branch>-prefold` after a mission or op PR merges (operator decision L1-08: squash-merge, keep the evidence home); it never offers to delete them.
 * **Finding**: Two review agents ran mutation testing at the same time in one checkout (phase 3 and phase 4 of mission 001). Stryker runs share `reports/mutation/mutation.json`, so one reviewer read the other's report (404 mutants instead of 353). Run mutation-heavy agents one at a time; a worktree per agent would also do.
 * **Finding**: The phase 3 fix-9 round split files into 120-line chunks, but the greedy fill put the chunks of one file back in one shard, so the slow shard stayed as slow; the implementer reported it instead of claiming the aim was met. An operator round (phase 3 round 10) now keeps chunks of one file in separate shards. A cut also drops mutants whose node spans it (2 of 281 on csp.ts), accepted and recorded.

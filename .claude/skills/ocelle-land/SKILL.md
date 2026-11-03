@@ -139,6 +139,12 @@ surface, gate or contract change, as opposed to a mechanical chore: a pin bump, 
    Pass it the CI results and nothing of your own view of the outcome. Fold its blocking findings as in step 5.
    Fold notes too when they are cheap. Put genuine future work in the PR body, and offer the operator an issue for
    it rather than opening one unasked.
+
+   **Stop rule** (operator decision 2026-11-03, after PR #18 re-opened phase 3 seven times): one full landing round.
+   A later landing round only checks that the earlier round's blocking findings are resolved and that the folds
+   regressed nothing; it does not search afresh. A new finding in a later round is a follow-up issue (offered to the
+   operator), unless it breaks a requirement and comes with a reproduction or a red check. Never start a fold for a
+   new edge case on your own; ask first.
 7. **Completeness baselines.** A new gate, check or plant must appear everywhere the registry gate compares:
    `gates/gates.json`, `gates/lib/registry.ts`, `.github/workflows/ci.yml`, the check list in `gates/README.md` and
    `contracts/ci-checks.md`. A new test project or fixture must be wired so the normal gates see it or exclude it
