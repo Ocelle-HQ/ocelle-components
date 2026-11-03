@@ -277,8 +277,16 @@ round 1 re-pinned every registry package published less than 7 days before 2026-
      escapes), so such a file keeps its ranges; any other `+++` header that is not `+++ /dev/null` is exit 2 naming
      the header. `--plan` and `--files` use the same parse, so a CI shard never drops such a file.
   3. Stryker runs with `mutate` set to `file.ts:start-end` ranges, so only changed lines are mutated (FR-011).
-     `--files <path>[,<path>...]` limits the run to those changed files (a CI shard); without it every changed file
-     is mutated (the story review's local run).
+     `--files <entry>[,<entry>...]` limits the run to those entries (a CI shard); without it every changed file
+     is mutated (the story review's local run). An entry is `path` (every changed line of that file) or
+     `path:start-end` (the changed lines of that file from line `start` to line `end`, both included; Stryker's own
+     `mutate` range syntax), as `--plan` prints them (operator decision, phase 3 round 9, human:jeroennouwsdev,
+     2026-11-03: plant-judge.ts alone took 9:49 of 10 minutes). A run with entries mutates only the changed lines
+     inside them: each `mutate` range is a changed range of the file cut to the entry's lines. The range suffix is
+     the last `:<digits>-<digits>` of the entry; an in-scope path ends in `.ts`, so it never ends in such a suffix
+     itself. An entry whose path is not a changed in-scope file, whose range holds no changed line, or whose range
+     is malformed (not `start-end` with 1 <= start <= end) is exit 2 naming the entry, as an unchanged path already
+     is.
   4. The wrapper decides from Stryker's JSON report (`reporters` includes `json`), not from Stryker's exit code or
      `thresholds.break` (a crash and a low score both exit 1): any `Survived` or `NoCoverage` mutant on a changed
      line is a finding (exit 1); `Killed`, `Timeout` and `RuntimeError` are killed and pass, and `CompileError` (a
@@ -287,9 +295,12 @@ round 1 re-pinned every registry package published less than 7 days before 2026-
      report from a failed dry run, is exit 2. Input guard (operator decision, PR #18 landing review,
      human:jeroennouwsdev, 2026-11-03: "Guard the input instead (Recommended)"; landing note L1-02, phase 3 round 7
      O7-02): Stryker 10.1.1 lists only files with mutants, and a `mutate` path holding a glob metacharacter
-     (`*?[]{}!`) or a comma (which splits `--mutate`) is never instrumented, so it would silently pass. Before
+     (`*?[]{}!`) or a comma (which splits `--mutate`) is never instrumented, so it would silently pass; nor is a
+     path holding a line terminator, since Stryker's `MUTATION_RANGE_REGEX` (no `s` flag, no `^` anchor) reads only
+     the text after the last terminator as the pattern (phase 3 round 8, R8-01). Before
      Stryker runs, a changed in-scope path that Stryker cannot take as a `mutate` input (it contains a glob
-     metacharacter `*?[]{}!` or a comma, or otherwise cannot be passed verbatim) is exit 2, naming each such path
+     metacharacter `*?[]{}!`, a comma, or a line terminator `\n`, `\r`, U+2028 or U+2029, or otherwise cannot be
+     passed verbatim) is exit 2, naming each such path
      (a file the gate could not check, contracts/gate-cli.md, not a finding). With every path passed verbatim, a
      changed file absent from Stryker's report counts as zero mutants and passes: its changed lines hold no
      mutable code (a type-only or comment-only change).
@@ -339,22 +350,29 @@ round 1 re-pinned every registry package published less than 7 days before 2026-
   `fetch-depth: 0` and `--base ${{ github.event.pull_request.base.sha }}` (contracts/ci-checks.md). The merge ref
   minus that commit is exactly the pull request's change.
   1. `mutation-plan` runs `pnpm run gate:mutation -- --base <sha> --plan`, which prints the shards as JSON and sets
-     them as the job output (exit 2 on an unresolvable base). Split: the changed files of step 2, sorted by path,
-     are filled greedily into shards; the next file starts a new shard when adding it would exceed 10 files or 250
-     changed lines; a file with more than 250 changed lines is a shard on its own (FR-013 expects such a change to
-     be split). No changed file: zero shards. The bound is 250 lines, down from 500 (operator decision, phase 4
-     round 3, human:jeroennouwsdev, 2026-11-03: GitHub runner variance took a 435-line shard past 10 minutes);
-     the 10-file bound and the 10-minute shard limit are unchanged.
+     them as the job output (exit 2 on an unresolvable base). The JSON is one array; each shard is
+     `{"files": "<entry>,<entry>,...", "lines": <changed lines>}`, its entries comma-separated as `--files` takes
+     them. Split (operator decision, phase 3 round 9, human:jeroennouwsdev, 2026-11-03: plant-judge.ts alone took
+     9:49 of 10 minutes): the changed files of step 2, sorted by path, become entries. A file with at most 120
+     changed lines is one entry, `path`. A file with more is split by line range: its changed lines, in line order,
+     are cut into consecutive chunks of 120 changed lines (the last chunk holds the rest), a cut falling inside a
+     changed range where the count reaches 120; each chunk is one entry `path:start-end` from its first to its last
+     changed line, so a file's entries never overlap. The entries, in that order, are filled greedily into shards;
+     the next entry starts a new shard when adding it would exceed 10 entries or 250 changed lines. Each entry lies
+     whole in one shard (a range never crosses a shard), and since no entry exceeds 120 lines, every shard holds at
+     most 10 entries and 250 changed lines. No changed file: zero shards. The bound is 250 lines, down from 500
+     (operator decision, phase 4 round 3, human:jeroennouwsdev, 2026-11-03: GitHub runner variance took a 435-line
+     shard past 10 minutes); the 10-minute shard limit is unchanged.
   2. `mutation-shard`, a matrix over the shards (skipped when there are none), each shard a job with
-     `timeout-minutes: 10` that runs `pnpm run gate:mutation -- --base <sha> --files <the shard's files>`. A timeout
-     ends the job as a failure.
+     `timeout-minutes: 10` that runs `pnpm run gate:mutation -- --base <sha> --files <the shard's files value>`,
+     passing the plan's entries unchanged. A timeout ends the job as a failure.
   3. `mutation`, the check named **Mutation testing**, `needs` both and runs `if: always()`; it passes only when
      `mutation-plan` succeeded and either `mutation-shard` succeeded or it was skipped because the plan had zero
      shards. A failed, cancelled or timed-out shard, or a failed plan, fails it. This is the check the ruleset
      requires (plan.md § Verification); the helper jobs are not required by name, since the matrix names vary.
   The split (`--plan`) and `--files` are wrapper behaviour: the split is a pure function tested in the `gates`
-  project on recorded diff output, and `--files` end to end by a `gates-integration` test on a fixture repository,
-  both red first in phase 3. The line bound does not by itself bound time; the design rule above does, because each
+  project on recorded diff output, and `--files` end to end by a `gates-integration` test on a fixture repository
+  (including `path:start-end` entries), both red first in phase 3 (the split within files under T097). The line bound does not by itself bound time; the design rule above does, because each
   mutant runs only in-process tests. SC-005 is measured on this feature's real shards (operator decision, plan squad
   round 3): from phase 3 on, the last task of phases 3 and 4 runs `pnpm run gate:mutation -- --base <phase 1
   base.sha> --plan` and then each shard with `--files`, timed, and records the durations in
@@ -366,11 +384,14 @@ round 1 re-pinned every registry package published less than 7 days before 2026-
   happens."): SC-005 is measured on GitHub run
   https://github.com/Ocelle-HQ/ocelle-components/actions/runs/41613884529 (head `e985ed3`): 18 shards, all
   finished, the longest 8:01 (`gates/lib/pins-rules.ts` alone, 137 changed lines). Shard time follows the mutants
-  per file (the TypeScript checker handles one file's mutants in sequence), not the changed lines, so a lower line
-  bound does not shorten a single-file shard. A shard cancelled at the 10-minute limit is a failure to investigate,
-  not to re-run blindly. If it recurs, the known lever is to split a file's changed line ranges across shards
-  (`mutateSpecs` already emits `path:start-end` per range, `gates/lib/mutation/ranges.ts`), which needs a spec
-  change, since FR-013 makes a file over the bound a shard of its own.
+  per file (the TypeScript checker handles one file's mutants in sequence), not the changed lines, so a lower
+  shard bound alone did not shorten a single-file shard. A shard cancelled at the 10-minute limit is a failure to
+  investigate, not to re-run blindly. It recurred: GitHub run
+  https://github.com/Ocelle-HQ/ocelle-components/actions/runs/41635769914 (head `fffb7e7`) took 9:49 for
+  `gates/lib/plant-judge.ts` alone (216 changed lines, 353 mutants). The lever was taken (operator decision, phase
+  3 round 9, human:jeroennouwsdev, 2026-11-03: plant-judge.ts alone took 9:49 of 10 minutes): a file over 120
+  changed lines is split by line range across entries (step 1 of "CI, sharded" above), so no shard holds more than
+  120 changed lines of one file.
 - **Story workflow (FR-007)**: `mutation_command: "pnpm run gate:mutation"`; the story review command is changed to
   read `FEATURE_DIR/reviews/phase-<N>/base.sha` and run `pnpm run gate:mutation -- --base <sha>`, a command the
   `.claude/settings.json` allowlist (`Bash(pnpm run:*)`) covers in unattended runs. No environment variable is used.

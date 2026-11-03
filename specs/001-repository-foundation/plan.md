@@ -46,9 +46,11 @@ decision, plan squad round 3). Test inputs live in `gates/test/fixtures/` (R-10)
 
 **Project Type**: library monorepo (three packages) with repository tooling
 
-**Performance Goals**: cold install plus test run under 5 minutes (SC-001); mutation of one shard (up to 10 changed
-files and 250 changed lines of package and gate source; 250 by operator decision, phase 4 round 3,
-human:jeroennouwsdev, 2026-11-03: GitHub runner variance took a 435-line shard past 10 minutes) under 10 minutes,
+**Performance Goals**: cold install plus test run under 5 minutes (SC-001); mutation of one shard (up to 10
+entries and 250 changed lines of package and gate source, a file over 120 changed lines split into `path:start-end`
+entries; 250 by operator decision, phase 4 round 3, human:jeroennouwsdev, 2026-11-03: GitHub runner variance took a
+435-line shard past 10 minutes; the split by operator decision, phase 3 round 9, human:jeroennouwsdev, 2026-11-03:
+plant-judge.ts alone took 9:49 of 10 minutes) under 10 minutes,
 the CI mutation check split into such shards (SC-005, FR-013, R-08)
 
 **Constraints**: offline setup never touches the network (FR-008); no gate reads `gates/plants/` except the plant job,
@@ -128,7 +130,7 @@ covers it, so the review can check the claim line by line. The test lint ignores
 **Re-check after phase 4 round 3** (operator decision, phase 4 round 3, human:jeroennouwsdev, 2026-11-03: GitHub
 runner variance took a 435-line shard past 10 minutes): the FR-013 shard bound goes from 500 to 250 changed lines
 (spec FR-013/SC-005, R-08); 10 files per shard and the 10-minute shard job limit stay, and a file with more than
-250 changed lines is a shard on its own. More shard jobs run in parallel with the same mutation strength.
+250 changed lines is a shard on its own (superseded by the split within files after phase 3 round 9, below). More shard jobs run in parallel with the same mutation strength.
 `gates/lib/mutation/shards.ts` changes test-first as T093 (red under `red.sh 4 fix-3`). No new exception.
 
 **Re-check after the feature gate** (operator decisions, human:jeroennouwsdev, 2026-11-03): SC-005 is measured on
@@ -152,6 +154,17 @@ set `base` (spec FR-025, data-model.md § Plant, contracts/plants.md, R-10; phas
 phase 4 reopens for T096 (red under `red.sh 4 fix-5`). Mission pull requests are squash-merged and the folded
 branch stays on the remote as the home of the red/green evidence SHAs (§ Verification item 5, landing note L1-08).
 No new exception.
+
+**Re-check after phase 3 round 9** (operator decision, phase 3 round 9, human:jeroennouwsdev, 2026-11-03:
+plant-judge.ts alone took 9:49 of 10 minutes; "Split within files (Recommended)"): FR-013 and SC-005 are amended so
+that a file with more than 120 changed lines is split by line range into several shard entries `path:start-end`
+(Stryker's own `mutate` range syntax); a shard still holds at most 10 entries and 250 changed lines, a range never
+crosses a shard, a run given entries mutates only the changed lines inside them, and the 10-minute shard limit
+stays (R-08, contracts/gate-cli.md, contracts/ci-checks.md). The rule that a file over 250 changed lines is a shard
+on its own is removed. The mutation gate's input guard also covers paths holding a line terminator (`\n`, `\r`,
+U+2028, U+2029), which Stryker's range regex cannot take verbatim (phase 3 round 8, R8-01; FR-011). Phase 3 reopens
+for one test-first fix round covering both, T097 (red under `red.sh 3 fix-9`), reviewed as phase 3 round 10. Mutation
+strength is unchanged: every changed line is still mutated, in more, shorter shards. No new exception.
 
 ## Project Structure
 
@@ -319,9 +332,11 @@ makes every GitHub-side check and records each result, with its evidence (comman
    quickstart step 12; cold, since `cache.yml` first runs when the feature merges). SC-005 is measured on GitHub
    run https://github.com/Ocelle-HQ/ocelle-components/actions/runs/41613884529 (head `e985ed3`): 18 shards, all
    finished, the longest 8:01 (`gates/lib/pins-rules.ts` alone, 137 changed lines). Shard time follows the
-   mutants per file, not the changed lines, so the line bound does not shorten a single-file shard. A shard
-   cancelled at the 10-minute limit is a failure to investigate, not to re-run blindly; if it recurs, splitting a
-   file's changed line ranges across shards is the known lever (R-08; a spec change to FR-013). Operator decision,
+   mutants per file, not the changed lines, so the shard bound alone did not shorten a single-file shard. A shard
+   cancelled at the 10-minute limit is a failure to investigate, not to re-run blindly. When run 41635769914 took
+   9:49 for `gates/lib/plant-judge.ts` alone, the split of a file's changed lines into `path:start-end` entries of at
+   most 120 changed lines was adopted (FR-013 as amended, R-08, T097; operator decision, phase 3 round 9,
+   human:jeroennouwsdev, 2026-11-03: plant-judge.ts alone took 9:49 of 10 minutes). Operator decision,
    phase 4 round 4 note R4-01, feature gate, human:jeroennouwsdev, 2026-11-03: "Accept for now: Record this run as
    the SC-005 measurement, and investigate any cancelled shard if one happens."
 5. Merge method and evidence home (operator decision, PR #18 landing review note L1-08, human:jeroennouwsdev,

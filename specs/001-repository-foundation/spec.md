@@ -269,13 +269,16 @@ in this feature depends on it.
   code. The mutation report MUST list every such record in the changed code, with its location and reason, so the
   review can see and record it.
 - **FR-013**: Mutation testing in CI MUST run in shards, each a separate CI job under a job time limit of 10 minutes
-  (SC-005). A shard holds the changed package source and gate source (FR-028) of up to 10 files and up to 250
+  (SC-005). A shard holds the changed package source and gate source (FR-028) as up to 10 entries and up to 250
   changed lines (operator decision, phase 4 round 3, human:jeroennouwsdev, 2026-11-03: GitHub runner variance took
-  a 435-line shard past 10 minutes); the plan defines how the changed files are split into shards. A shard that
-  exceeds the limit MUST end as a failure, never as a pass, and the mutation testing check MUST fail unless every shard passes. A single
-  file whose change exceeds the shard bound is expected to be split across smaller pull requests; the limit is not
-  raised for it (operator decision, plan squad round 2: the bound covers gate source and applies to a shard, not to
-  the whole pull request).
+  a 435-line shard past 10 minutes). An entry is a changed file, or, for a file with more than 120 changed lines,
+  one line range of it: such a file MUST be split by line range into several entries of at most 120 changed lines
+  each, written `path:start-end` (Stryker's own `mutate` range syntax), and a range never crosses a shard (operator
+  decision, phase 3 round 9, human:jeroennouwsdev, 2026-11-03: plant-judge.ts alone took 9:49 of 10 minutes). A
+  run given entries mutates only the changed lines within those entries. The plan defines how the entries are
+  filled into shards. A shard that exceeds the limit MUST end as a failure, never as a pass, and the mutation
+  testing check MUST fail unless every shard passes; the limit is not raised (operator decision, plan squad round 2:
+  the bound covers gate source and applies to a shard, not to the whole pull request).
 
 **Merge gates (Story 3)**
 
@@ -473,9 +476,11 @@ in this feature depends on it.
   reported as an error in 100% of its plants (FR-025). Each of the three patterns added to FR-010 at the phase 3
   gate is reported as exactly one error by the test-lint gate on its fixture, and its allowed look-alikes are not
   reported by its rule (research.md R-06).
-- **SC-005**: Mutation testing of one shard (FR-013: up to 10 changed files and up to 250 changed lines of package
-  source and gate source together; 250 by operator decision, phase 4 round 3, human:jeroennouwsdev, 2026-11-03:
-  GitHub runner variance took a 435-line shard past 10 minutes) finishes in under 10 minutes on the runner of
+- **SC-005**: Mutation testing of one shard (FR-013: up to 10 entries and up to 250 changed lines of package
+  source and gate source together, no entry over 120 changed lines of one file; 250 by operator decision, phase 4
+  round 3, human:jeroennouwsdev, 2026-11-03: GitHub runner variance took a 435-line shard past 10 minutes; the
+  120-line split within files by operator decision, phase 3 round 9, human:jeroennouwsdev, 2026-11-03:
+  plant-judge.ts alone took 9:49 of 10 minutes) finishes in under 10 minutes on the runner of
   SC-001, with the package store and browser cache restored and no earlier mutation result available. Each shard job's 10-minute limit (FR-013)
   enforces it (operator decision, plan squad round 2).
 - **SC-006**: A script run in a fresh clone confirms that `LICENSE`, `CONTRIBUTING.md`, `SECURITY.md` and
