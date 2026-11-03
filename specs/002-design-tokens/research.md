@@ -6,21 +6,32 @@ contracts and the tasks.
 ## R-01 One token source, three generated outputs
 
 **Decision**: The token source is one typed TypeScript module, `packages/tokens/src/source.ts`: an array of token
-records (data-model.md § Token) holding name, group, light value, dark value or one value, the source token of a
-derived value, use, and for a foreground colour its contrast kind and intended grounds (A.8). A generator,
-`packages/tokens/src/generate.ts` (pure functions, no I/O), turns it into the stylesheet text, the JSON export
-object and the name list. `packages/tokens/scripts/build.ts` (run by the package's `build` script after `tsc`)
+records (data-model.md § Token) holding name, group, light value, dark value or one value, the tokens a derived value
+references, and for a foreground colour its contrast kind and intended grounds (A.8). Each record's use (Appendix A's
+"Use" column) is a comment beside it, not a field (operator decision 2026-11-03, squad round 1,
+PLAN-TESTABILITY-1-003 (a)): nothing reads it, and as data it would only be a set of surviving string mutants. A
+generator, `packages/tokens/src/generate.ts` (pure functions, no I/O), turns it into the stylesheet text, the JSON
+export object and the name list. `packages/tokens/scripts/build.ts` (run by the package's `build` script after `tsc`)
 writes `dist/tokens.css`, `dist/tokens.json` and copies `fonts/` to `dist/fonts/`. `src/index.ts` exports the typed
 name list and the JSON data (FR-009).
+
+`build.ts` is a thin I/O boundary: an exported pure function (`buildPlan(source, fontFiles)` → the list of
+`{ path, content | copyFrom }` to write) holds every decision and is imported by a node test; the few remaining I/O
+lines (reading, `mkdir`, `writeFile`, `copyFile`) carry `// Stryker disable next-line all: covered by
+packages/tokens/test/build.test.ts`, as `gates/bin/*.ts` does, and a process test runs the script once and checks it
+writes the same text as `css()` and `json()` (R-03).
 
 **Rationale**: FR-008 requires one source of truth for the stylesheet and the JSON export, and that the gates derive
 the required pairs from the intended grounds recorded in it. A TypeScript module gives the type checker the token
 name union (`TokenName`) that FR-009 needs, runs directly under the pinned Node (type stripping, as `gates/bin/*.ts`
-already does), and is in reach of mutation testing because the generator is package source.
+already does), and is in reach of mutation testing because the generator is package source. `ref` and `grounds` are
+typed `string` and checked by `validateSource`, because typing them with `TokenName` makes the source's type circular
+(PLAN-FRESH-1-008, data-model.md).
 
 **Alternatives considered**: a JSON or YAML source (no name type without a second generation step; JSON cannot carry
 comments recording the operator decisions); Style Dictionary or another token tool (a new dependency for a
-transformation of about a hundred lines, and its output format is not ours to control under strict CSP).
+transformation of about a hundred lines, and its output format is not ours to control under strict CSP); `use` as a
+field emitted in the JSON and the stories (fork option (b), not chosen: it adds public JSON surface).
 
 ## R-02 Theme selection in CSS
 
@@ -31,45 +42,89 @@ transformation of about a hundred lines, and its output format is not ours to co
 3. `:root[data-theme="dark"] { …dark values… }`;
 4. `@media (prefers-reduced-motion: reduce) { :root { --ocelle-motion-fast: 0ms; --ocelle-motion-base: 0ms; } }`.
 
-Derived tokens are written as `var(--ocelle-<source>)` (FR-002) and appear once, in block 1, except where the source
-is theme-dependent and the derived token is also listed per theme in the source (none today: `color-focus` and
-`color-current` reference `color-accent-strong`, which changes per theme, and `var()` resolves at use, so one
-definition in block 1 follows the theme).
+Derived tokens are written as `var(--ocelle-<source>)` (FR-002), alone or inside a larger value, and appear once, in
+block 1, unless their value differs per theme in the source (`elevation-raised`, `-row`, `-seg`, whose light and dark
+values differ, are in blocks 1 to 3 like any theme-dependent token). `color-focus` and `color-current` reference
+`color-accent-strong`, which changes per theme, and `var()` resolves at use, so one definition in block 1 follows the
+theme.
+
+The theme-dependent token `--ocelle-color-scheme` (`light` in block 1, `dark` in blocks 2 and 3) carries the theme's
+`color-scheme` keyword. The stylesheet sets no `color-scheme` property itself; base styles (#6) apply the token on the
+root (operator decision 2026-11-03, squad round 1, PLAN-A11Y-SECURITY-1-004 (b); spec Assumptions, "`color-scheme`
+hand-off"). The six theme-condition tests read it like any colour-group token.
 
 **Rationale**: Block 1 makes light the value with no preference (FR-005). Block 2 applies dark for a dark system
 unless `data-theme="light"` overrides. Block 3 applies dark whatever the system says. `data-theme` with any other
 value, or on another element, matches neither selector, so the system decides (spec edge case). The selectors have
-equal or higher specificity than block 1 and come later, so no `!important` is needed.
+equal or higher specificity than block 1 and come later, so no `!important` is needed. Without a theme-following
+`color-scheme`, native controls, scrollbars and system colours would not follow `data-theme`, and #6 cannot compute it
+because it does not repeat the selectors; the token hands it over.
 
-**Alternatives considered**: `light-dark()` with `color-scheme` (would make the theme follow `color-scheme`, which
-is set by base styles, #6, and cannot express "light with no preference" independently of the UA); duplicating the
-dark block in the media query and the attribute selector without `:not()` (gives the wrong answer for system dark
-with `data-theme="light"`).
+**Alternatives considered**: `light-dark()` with `color-scheme` (would make the theme follow `color-scheme`, and cannot
+express "light with no preference" independently of the UA); duplicating the dark block in the media query and the
+attribute selector without `:not()` (gives the wrong answer for system dark with `data-theme="light"`); emitting
+`color-scheme` in the tokens stylesheet's theme blocks (fork option (a), not chosen).
 
-## R-03 Testing the six theme conditions
+## R-03 Browser tests: what they serve, what they compare, what they observe
 
 **Decision**: Theme, motion and font behaviour are tested in Chromium driven by Playwright from Node tests in the
 `tokens` Vitest project (`packages/tokens/test/browser/*.test.ts`), using the pinned `playwright` 1.64.1 and the
-existing `OCELLE_CHROMIUM_PATH` override. A small static server (Node `http`, no dependency) serves the built
-`dist/` and a fixture page with a configurable `Content-Security-Policy` header. Each test sets the condition with
-`page.emulateMedia({ colorScheme, reducedMotion })` and reads `getComputedStyle(document.documentElement)
-.getPropertyValue(name)` for every token. "No preference" uses `colorScheme: 'no-preference'`; in addition a node
-test on the generated stylesheet text asserts that the light values are in the unconditioned `:root` block and the
-dark values only under `prefers-color-scheme: dark` or `[data-theme="dark"]`, so the no-preference condition is
-covered even if a Chromium version folds `no-preference` into `light` (FR-006).
+existing `OCELLE_CHROMIUM_PATH` override.
 
-Computed custom-property values are compared after normalisation: whitespace collapsed; colours compared as
-parsed RGBA (the computed value of a custom property is its specified token stream, so `#F1EEE8` stays as written,
-but normalising protects against serialisation differences); `var()` references resolved by reading the source
-token's computed value.
+*What is served* (PLAN-CORRECTNESS-1-002): the browser suites never read a pre-existing `dist/`. A Vitest global
+setup of the `tokens` project imports `css()` from `src/generate.ts` and the source, writes the stylesheet text and a
+copy of `fonts/` into a per-run temporary directory, and the suites serve that directory. So `pnpm test`, the
+`unit-tests` CI job, tdd-check's clean worktree and Stryker's mutants all test the current source with no build step.
+One separate node test runs `scripts/build.ts` into a temporary directory and checks it writes exactly the text of
+`css()` and `json()` and the font files. A small static server (Node `http`, no dependency) serves the directory and
+a fixture page with a configurable `Content-Security-Policy` header. `storybook/dist/` is added to `.gitignore`.
+
+*What is compared* (PLAN-TESTABILITY-1-001, -009): expected names and values come from the token table of
+data-model.md § Expected tables, transcribed from Appendix A in the test code, never from `source.ts`. Tests assert:
+the set of `--ocelle-*` names defined on `:root` (read from the stylesheet's rules through CSSOM) equals the table's
+names, and each A.6 name is undefined; each colour token's computed value, parsed as RGBA, equals the table's value in
+each theme condition; each non-colour token is observed through a probe element that uses it, so the used value is
+compared, not the custom property's token stream: `width`/`max-block-size` for sizes (dialog sizes at a 1280 × 800
+viewport: 1248 px and 768 px), `box-shadow` for elevations, `transition-duration` for motion, `font-variant-numeric`
+for `figures`, `font-family` resolution for the font tokens. Tests do not resolve `var()` themselves. Whether a derived
+token is defined *by reference* (FR-002, edge case "Token derived from another") is a generator test on a fixture
+source: each derived token's declaration in the stylesheet is `var(--ocelle-<ref>)` (or contains exactly its refs'
+`var()`s), and changing the source token's value in the fixture changes the derived token's value in both the
+stylesheet (resolved in the browser) and the JSON. Generator unit tests use fixture sources throughout, so value
+mutants of `source.ts` are killed by the table tests above and not by tests that read the source.
+
+*Theme conditions*: each test sets the condition with `page.emulateMedia({ colorScheme, reducedMotion })`. "No
+preference" uses `colorScheme: 'no-preference'`; in addition a node test on the generated stylesheet text asserts
+that the light values are in the unconditioned `:root` block and the dark values only under
+`prefers-color-scheme: dark` or `[data-theme="dark"]`, so the no-preference condition is covered even if a Chromium
+version folds `no-preference` into `light` (FR-006).
+
+*CSP violations* (PLAN-A11Y-SECURITY-1-009): Playwright has no CSP-violation event, and the page's CSP forbids an
+inline collector. Each suite injects a listener with `page.addInitScript` (not subject to the page's CSP) that records
+every `securitypolicyviolation` event (`violatedDirective`, `blockedURI`) into a page global read after the run, and
+cross-checks it with the console's "Refused to …" messages. Each suite has a control fixture with exactly one known
+violation (an inline `<style>` under `style-src 'self'`) that must be reported once, so a broken collector fails the
+suite rather than passing "zero violations".
+
+*Font observables* (PLAN-TESTABILITY-1-008): `getComputedStyle().fontFamily` returns the declared list whether or not
+the face loaded, so the font tests observe the face actually used: CDP `CSS.getPlatformFontsForNode` on a text node at
+each weight (400, 500, 600, 800) must report `Schibsted Grotesk`; the recorded requests must include exactly one
+same-origin request for `fonts/SchibstedGrotesk-wght.woff2` and none off-origin; `document.fonts` must report the
+face `loaded` (positive control). The `figures` token is tested through the computed `font-variant-numeric` of a probe
+(`tabular-nums`); digit advance widths are compared only if the vendored face's default figures are proportional
+(checked once with the font feature off), since the CI fallbacks already have equal-width digits. For the no-`font-src`
+case (US2 scenario 6), `CSS.getPlatformFontsForNode` must report a fallback family of `--ocelle-font-sans`, and the
+collector must report exactly one violation, `font-src`, whose `blockedURI` is the woff2.
 
 **Rationale**: Vitest browser mode (used by the `elements` project) has no per-test media emulation; Playwright's
-`emulateMedia` covers colour scheme and reduced motion directly, and request recording (FR-015) and CSP violation
-events (`securitypolicyviolation`, and console messages) are first-class in Playwright.
+`emulateMedia` covers colour scheme and reduced motion, and its request events record FR-015. The computed value of an
+unregistered custom property is its token stream with `var()` substituted and `calc()` unevaluated, so only a probe's
+used value can show `calc(100vw - 2 * var(--ocelle-gutter))` as 1248 px, and only the stylesheet text can show a
+reference.
 
 **Alternatives considered**: Vitest browser instances with `context: { colorScheme }` per instance (six instances of
 the whole project, and no reduced-motion or CSP-header control per test); jsdom (does not implement media queries or
-CSS custom-property cascade).
+CSS custom-property cascade); serving the built `dist/` (stale locally, absent in CI, invisible to mutants).
 
 ## R-04 The light `color-chrome-hover` (operator decision SPEC-2-01)
 
@@ -120,8 +175,8 @@ Where the prototype file and Appendix A differ, Appendix A (the operator's decis
 is taken from the file: the prototype's theme rule (light whatever the system), `radius-3`, `color-proto*`, the
 mockup font sizes, and its use of `color-rail` for the top bar are all superseded by #5.
 
-These values are added to the spec's Appendix A (A.1 and A.5) by the squad fix, so that Appendix A stays the single
-reference (SC-001).
+These values, and R-04's `#211D18`, were added to the spec's Appendix A (A.1, A.4, A.5) by the squad fix of round 1,
+so that Appendix A stays the single reference (SC-001).
 
 **Rationale**: the operator's answer to SPEC-2-02; the file gives every value the spec lacked, and the hash fixes the
 version read.
@@ -144,8 +199,9 @@ path of each file and its SHA-256. A node test recomputes both hashes and compar
 }
 ```
 
-`font-display: swap` keeps text visible with a fallback until the font loads, and is what makes the "no `font-src`"
-case (US2 scenario 6) render in a fallback family. If `d485f61f` does not resolve to exactly one commit upstream, or
+`font-display: swap` keeps text visible in a fallback family while the font loads. It is not what makes the
+"no `font-src`" case (US2 scenario 6) render in a fallback: a blocked or failed font load falls back under any
+`font-display` value. If `d485f61f` does not resolve to exactly one commit upstream, or
 the upstream tree has no variable `wght` WOFF2 at that commit, the phase stops and asks the operator (FR-011).
 
 **Rationale**: constitution IV (vendored, no CDN) and the OFL's condition that the licence travel with the font.
@@ -158,57 +214,101 @@ runtime dependency, and a different provenance than #5 names).
 **Decision**: `gates/bin/contrast.ts` with `gates/lib/wcag.ts` (sRGB hex → relative luminance → ratio, WCAG 2.x
 formula with the 0.04045 threshold) and `gates/lib/token-source.ts` (loads `packages/tokens/src/source.ts` under
 `--root` by dynamic import and validates it). The pair list is `packages/tokens/contrast/pairs.json`
-(contracts/contrast-pairs.md), kept outside `src/` so it is neither published nor mutated, and figures are strings
-so that their precision is part of the data (`"5.3"`, `"3.02"`). Rules, in order (contracts/gate-contrast.md):
+(data-model.md § Contrast pair), kept outside `src/` so it is neither published nor mutated, and figures are strings
+so that their precision is part of the data (`"5.3"`, `"3.02"`). Rules, in order (contracts/gates.md), with the rule
+ids of data-model.md § Gate findings:
 
 1. list unreadable, not JSON, not the schema, or empty → exit 2;
-2. each entry: unknown token → `unknown token`; computed ratio outside the figure's precision interval →
-   `figure mismatch`; `checked` entry below its threshold (not exempt) → `below threshold`; `excluded` entry without
-   a non-empty reason → `excluded without reason`; **`excluded` entry that is a required pair →
-   `required pair excluded`** (check 3, SPEC-3-02: exclusion is allowed only for pairs outside the required set;
-   to stop requiring a pair, the token source's intended grounds must change, which is a visible design change);
-3. each required pair (derived from the intended grounds, A.8) absent from the list → `missing required pair`;
+2. each entry: unknown token → `unknown-token`; a translucent colour as foreground or ground → `not-opaque`; computed
+   ratio outside the figure's precision interval → `figure-mismatch`; `checked` entry below its threshold (not
+   exempt) → `below-threshold`; `excluded` entry without a non-empty reason → `excluded-without-reason`; `excluded`
+   entry that is a required pair → `required-pair-excluded` (check 3, SPEC-3-02; FR-016 as amended in squad round 1:
+   exclusion is allowed only for pairs outside the required set; to stop requiring a pair, the token source's
+   intended grounds must change, which is a visible design change);
+3. each required pair (derived from the intended grounds, A.8) absent from the list → `missing-required-pair`;
 4. zero entries checked for a theme → exit 2.
 
-On success it prints `contrast: <n> pairs checked in light, <m> in dark (<r> required per theme)`.
+On success it prints `contrast: <n> pairs checked in light, <m> in dark (<r> required per theme)`; with the
+repository's values 148, 147 and 144.
 
-Translucent values (`color-overlay`) are rejected as a foreground or ground of any pair (`unknown token` is not
-right; the finding is `not an opaque colour`), so they cannot be checked by mistake.
+The required set is pinned to the spec by a node test (`gates/test/contrast-required.test.ts`,
+PLAN-TESTABILITY-1-002): it derives the required set from the real `source.ts` and asserts it equals A.8 transcribed in
+the test (144 `(fg, bg, kind)` triples per theme; data-model.md § Expected tables). So removing a ground from the
+source, or a mutant doing so, fails a test even though the gate would still pass.
+
+A.8 gained 14 rows per theme in squad round 1 (operator decision 2026-11-03, PLAN-A11Y-SECURITY-1-012 (a)):
+`color-current` on `color-chrome`, `color-chrome-hover`, `color-rail`, `color-accent-low` (non-text), and `color-link`
+(text) and `color-focus` (non-text) on the five state `-bg` grounds. All meet their thresholds with Appendix A's
+values (computed 2026-11-03: `color-current` 3.34, 3.01, 4.43, 4.31 light and 8.75, 7.18, 7.78, 6.13 dark;
+`color-link` 4.86 to 5.36 light, 6.74 to 7.56 dark; `color-focus` 4.27 to 4.71 light, 6.74 to 7.56 dark), so the
+pair list has 148 entries in light and 147 in dark. `color-control-border` on the state `-bg` grounds is not
+required; see plan.md, Decisions, open question.
 
 Recorded figures: A.7's figures are entered from Appendix A by hand; figures for other pairs are entered from the
 first computation, which `node gates/bin/contrast.ts --print` lists. Any later change of a figure that came from A.7
 needs the operator's approval in the review (spec edge case).
 
 **Rationale**: the required set comes from the token source, so the pair list cannot shrink it (FR-016); the
-`required pair excluded` rule closes the loophole check 3 found while keeping the A.9 exclusions, none of which is a
-required pair.
-
-**Note for the squad**: SPEC-3-02's suggested fix contradicts the sentence of FR-016 that allows a required pair to
-appear as excluded. Since no pair in A.8 is excluded any more, the plan takes the stricter reading; the squad fix
-amends that sentence of FR-016 accordingly.
+`required-pair-excluded` rule closes the loophole check 3 found while keeping the A.9 exclusions, none of which is a
+required pair; the A.8 test closes the loophole of shrinking the source's grounds.
 
 ## R-08 Brand-rules gate
 
-**Decision**: `gates/bin/brand-rules.ts` checks rules (a) to (g) of FR-019 on the token source and on the stylesheet
-text produced by the root's own generator (`packages/tokens/src/generate.ts`, imported under `--root`), so it needs no
-build. Rule (g) parses that stylesheet with PostCSS and fails on any `forced-color-adjust: none` declaration and any
-`@media (forced-colors: …)` block that sets an `--ocelle-color-*` property. Rule (f) checks that the generated
-stylesheet has a `prefers-reduced-motion: reduce` block setting exactly `motion-fast` and `motion-base` to `0ms`. On
-success: `brand-rules: 7 rules checked`. Its plants change `source.ts` or `generate.ts` in the plant's tree.
+**Decision**: `gates/bin/brand-rules.ts` checks rules (a) to (g) of FR-019 on the token source, on the pair list
+(rule (b): the excluded entry `color-accent` on `color-canvas` in light must be present, PLAN-CORRECTNESS-1-004) and on
+the stylesheet text produced by the root's own generator (`packages/tokens/src/generate.ts`, imported under `--root`),
+so it needs no build. It loads the source and runs `validateSource` first; a source or generator that does not load
+or throws, a source that fails validation (for example an A.6 name such as `radius-3`), or an unreadable pair list is
+exit 2, not a rule finding (contracts/gates.md, PLAN-CORRECTNESS-1-005). Rule (g) parses the stylesheet with PostCSS
+and fails on any `forced-color-adjust: none` declaration and on any `@media (forced-colors: …)` block that sets an
+`--ocelle-color-*` property to anything other than a CSS system colour keyword (FR-018; operator decision 2026-11-03,
+squad round 1, PLAN-A11Y-SECURITY-1-011 (a)); a pass plant maps a colour token to `CanvasText` there. Rule (f) checks
+that the generated stylesheet has a `prefers-reduced-motion: reduce` block setting exactly `motion-fast` and
+`motion-base` to `0ms`. On success: `brand-rules: 7 rules checked`. Its plants change `source.ts`, `generate.ts` or
+`pairs.json` in the plant's tree; the rest comes from the configuration set (R-09).
+
+Rule (g) guards the token output only. How rendered elements behave in forced colours (for example the `elevation-*`
+rings, which vanish there as `box-shadow`) is checked by element tests under Playwright's
+`emulateMedia({ forcedColors: 'active' })` in the element issues; axe-core has no forced-colours rule
+(PLAN-A11Y-SECURITY-1-003, FR-018). The package README states the consequence for elements (R-15).
 
 **Alternatives considered**: checking the built `dist/tokens.css` (needs a build before the gate and a plant could not
-change the generator's output without a build step in the plant runner).
+change the generator's output without a build step in the plant runner); failing on any colour token in a
+forced-colours block (fork option (b), not chosen).
 
 ## R-09 Unknown-token style-lint rule
 
 **Decision**: `gates/stylelint/token-only.ts` gains a check: every `var(--ocelle-<name>)` (also inside `calc()` and as
-a `var()` fallback) whose name is not in the token name list fails with `unknown token --ocelle-<name>`. The list is
-read from the root's `packages/tokens/src/source.ts` at plugin load. Definitions of tokens (`--ocelle-*:` declarations)
-stay outside the rule's scope because `packages/tokens` is not in the style-lint scope at all. Plants:
-`gates/plants/style-lint/fail-unknown-token/` (`var(--ocelle-color-canvs)` in an element style template) and
-`pass-known-token/`.
+a `var()` fallback) whose name is not a token, and is not an element custom property, fails with
+`unknown token --ocelle-<name>`. Definitions of tokens (`--ocelle-*:` declarations) stay outside the rule's scope
+because `packages/tokens` is not in the style-lint scope at all.
 
-## R-10 Storybook under strict CSP (operator decisions SPEC-1-05, SPEC-3-01)
+*Token list* (PLAN-CORRECTNESS-1-001): read from the root's `packages/tokens/src/source.ts` at plugin load. Because
+style-lint plants are `repo-tree` plants, `configurationSet` (`gates/lib/plant-repo.ts`) now copies
+`packages/tokens/src/source.ts`, `generate.ts` (with its imports) and `contrast/pairs.json` into every plant
+repository, test first in `gates/test/plant-repo.test.ts` with an integration test; otherwise every style-lint plant
+would exit 2. This also lets the contrast and brand-rules `repository-values` plants use the real files instead of
+stale copies. The rule takes the token list (and the element list) as options, so unit tests pass fixture lists. The
+existing plants and tests that use the made-up `--ocelle-x` (`pass-var-token`, `pass-var-keyword-fallback`,
+`fail-var-fallback`, `gates/test/token-only.test.ts`, `token-only-parts.test.ts`) move to real token names, with the
+reason recorded as constitution VIII requires.
+
+*Element custom properties* (operator decision 2026-11-03, squad round 1, PLAN-FRESH-1-007 (a); FR-010): an element's
+public custom properties are named `--ocelle-<element>-<property>`, `<element>` being its tag name without `ocelle-`.
+The element list is read from the custom-elements manifest of `@ocelle/elements` (`packages/elements/custom-elements.json`
+under `--root`; empty while it does not exist). A reference whose name starts with `<element>-` for a listed element is
+exempt. A token name equal to an element name or beginning with `<element>-` makes the rule's load fail (exit 2), so
+the two namespaces cannot overlap. Restricting the rule to token group prefixes would not work: `gutter`, `figures`
+and `target-min` have none.
+
+Plants: `gates/plants/style-lint/fail-unknown-token/` (`var(--ocelle-color-canvs)` in an element style template),
+`pass-known-token/`, and `pass-element-property/` (`var(--ocelle-button-gap)` with a fixture manifest declaring
+`ocelle-button`).
+
+**Alternatives considered**: exempting names declared in the same stylesheet or style template (fork option (b), not
+chosen).
+
+## R-10 Storybook under strict CSP (operator decisions SPEC-1-05, SPEC-3-01; squad round 1)
 
 **Decision**: A private workspace package `storybook/` (added to `pnpm-workspace.yaml`) with Storybook **10.6.4**
 (`storybook`, `@storybook/html-vite`; the newest release at least seven days old on the day of install, so it passes
@@ -219,29 +319,64 @@ stay outside the rule's scope because `packages/tokens` is not in the style-lint
 attribute. A Storybook toolbar global sets `data-theme` on the preview's `<html>`. The Storybook UI theme sets
 `fontBase` and `fontCode` to `--ocelle-font-sans`'s family list (no monospace, prefix gate).
 
+**No network at build** (PLAN-A11Y-SECURITY-1-008): Storybook 10.6.4 sends build telemetry to
+`https://storybook.js.org/event-log` by default. `storybook/.storybook/main.ts` sets `core: { disableTelemetry: true }`
+and the build script passes `--disable-telemetry`; a node test imports `main.ts` and fails unless telemetry is
+disabled, and another checks the build script's flag. The build makes no request.
+
+**Run-time CSP of the Storybook page** (operator decision 2026-11-03, squad round 1, PLAN-A11Y-SECURITY-1-001 (a)):
+Storybook loads its story index with `fetch("./index.json")` (governed by `connect-src`) and the manager frames
+`iframe.html` (`frame-src`); under constitution IV's `default-src 'none'` both are blocked, whatever is done about
+styles. The Storybook page is therefore served with:
+
+```text
+default-src 'none'; script-src 'self'; style-src 'self'; font-src 'self'; connect-src 'self'; frame-src 'self'
+```
+
+`frame-src 'self'` only while the manager UI is used; if the spike settles on the preview alone, it is dropped. These
+are host additions for the Storybook page only, recorded in the plan's Constitution Check like `font-src`; the
+package output gets none. The run-time test asserts that the response carries exactly this header.
+
+**Static scope** (operator decision 2026-11-03, squad round 1, PLAN-FRESH-1-001 (a)): Storybook copies its prebuilt
+runtimes verbatim into the output (`builder-manager` copies `dist/manager` to `<out>/sb-manager`), and these contain
+`Function("return this")`, `<span style=…>` template strings, `"sk-SK"` and `font-family: Menlo, monospace`, which no
+setting or externalising can remove. The widened static `csp` and `prefix` scope covers only the files this
+repository's sources produce: the Vite-built stories and preview bundle, the externalised scripts and styles, the HTML
+entries. The verbatim-copied directories are listed in `gates/gates.json` as excluded (the exact list recorded from
+the spike), and a node test checks that every file under them is byte-identical to a file of the installed
+`storybook` package. They remain covered by the run-time test. The narrowing is recorded in `gates.json`,
+`gates/README.md`, plan.md and FR-023.
+
 **Known risk, met by a spike first**: Storybook's manager and preview inject `<style>` elements at run time (Emotion
 CSS-in-JS), and the built HTML has inline scripts and styles. Under `style-src 'self'` with no nonce or hash, injected
-`<style>` elements are blocked. Constitution IV and the operator's answers allow no exception. The first task of the
-Storybook phase is therefore a spike that builds the pinned Storybook, post-processes its output
-(`storybook/scripts/externalise.ts`: inline `<script>` and `<style>` moved to same-origin files, hashed names), serves
-it with the constitution's CSP header plus `font-src 'self'`, and records the CSP violations. Techniques the spike
-tries, in order: (1) Emotion's cache configured to insert rules through `CSSStyleSheet.insertRule` into adopted
-constructable stylesheets (not governed by `style-src`); (2) the preview alone (`iframe.html`), without the manager
-UI, as the token reference; (3) any setting of the pinned Storybook that disables run-time style injection. If none
-gives zero violations, the phase **stops and asks the operator** (FR-023, SPEC-3-01); no Complexity Tracking
-exception is taken without the operator.
+`<style>` elements are blocked. The first task of the Storybook phase is a spike that builds the pinned Storybook,
+post-processes its output (`storybook/scripts/externalise.ts`: inline `<script>` and `<style>` moved to same-origin
+files, hashed names), serves it with the header above, records **every** CSP violation by directive, and runs the
+widened `csp` and `prefix` gates on the output in scope. Techniques it tries against `style-src` violations, in
+order: (1) Emotion's cache configured to insert rules through `CSSStyleSheet.insertRule` into adopted constructable
+stylesheets (not governed by `style-src`); (2) the preview alone (`iframe.html`), without the manager UI, as the token
+reference; (3) any setting of the pinned Storybook that disables run-time style injection. If none gives zero
+violations under the header, or a file in scope keeps an inline script or a monospace declaration, the phase **stops
+and asks the operator** (FR-023, SPEC-3-01); no Complexity Tracking exception is taken without the operator.
 
-The run-time check is a browser test (`storybook/test/csp.test.ts`, Playwright from Node, R-03's server) that opens
-the built Storybook with the CSP header, visits each group story in light and dark, and asserts zero
-`securitypolicyviolation` events, zero requests outside the origin, and that each story lists exactly its group's
-tokens (FR-023, US1 scenario 11).
+**Tests and scopes** (PLAN-FRESH-1-004, PLAN-TESTABILITY-1-005): `vitest.config.ts` gains a `storybook` project
+(node, `storybook/**/*.test.ts`) whose global setup builds the Storybook into a per-run temporary directory (R-03:
+nothing reads a pre-existing `storybook/dist/`). The run-time check `storybook/test/csp.test.ts` (Playwright from
+Node, R-03's server and violation collector) opens that build with the header above, visits each group story in
+light and dark, and asserts the header served, zero violations, zero requests outside the origin, and that each story
+lists exactly its group's tokens (FR-023, US1 scenario 11). `externalise.ts` and `swatches.ts` get node unit tests on
+fixture HTML and fixture token data. `storybook/scripts/**` and `storybook/.storybook/**` join the mutation scope
+(`gates/lib/mutation/ranges.ts` `scopePathspecs` and `source` regex, with tests); `tsconfig.json` includes
+`storybook/.storybook/**/*.ts` explicitly (TypeScript's `**/*.ts` skips dot-directories); the prefix gate's source
+scope (`isCovered`) extends to `storybook/**` source. `storybook/dist/` is in `.gitignore`.
 
-The `csp` and `prefix` gates widen their scope from `packages/*/dist/` to also cover `storybook/dist/` (gates.json
-`scope`, `isBuiltOutput`, gates/README.md), with a `csp` fail plant (inline script in `storybook/dist/index.html`)
-and pass plant (external script there).
+The `csp` gate gets a fail plant (inline script in `storybook/dist/index.html`) and a pass plant (external script
+there).
 
 **Alternatives considered**: the spec's option (b) at SPEC-3-01 (static scan only; declined by the operator); a
-hand-written token reference page instead of Storybook (declined at FR-023 by the operator's choice of Storybook).
+generated static token reference page instead of Storybook (fork options (b) of PLAN-A11Y-SECURITY-1-001 and (c) of
+PLAN-FRESH-1-001, not chosen; FR-023's choice of Storybook stands); keeping the full static scope and taking an
+exception (PLAN-FRESH-1-001 (b), not chosen).
 
 ## R-11 Package exports and build
 
@@ -254,18 +389,23 @@ hand-written token reference page instead of Storybook (declined at FR-023 by th
   "./tokens.json": "./dist/tokens.json",
   "./fonts/*": "./dist/fonts/*"
 },
-"files": ["dist", "CHANGELOG.md"],
+"files": ["dist", "CHANGELOG.md", "README.md"],
 "scripts": { "build": "tsc -p tsconfig.json && node scripts/build.ts" }
 ```
 
 The package stays `private: true` and `0.0.0` until the release (#11); `CHANGELOG.md` gets an "Unreleased — Added"
-section listing every token name (FR-025). `THIRD_PARTY_NOTICES` gains the font entry (FR-014).
+section listing every token name (FR-025). `THIRD_PARTY_NOTICES` gains the font entry (FR-014). `scripts/build.ts` is
+the thin I/O boundary of R-01.
 
-## R-12 Theme-independence and computed values of derived tokens
+## R-12 Derived tokens: definition, JSON and tests
 
-**Decision**: A derived token's expected value in the tests is the resolved value of its source in the same theme
-condition (`--ocelle-gutter` resolves to `1rem`); the JSON export holds resolved values (FR-008) and also the source
-name (`"ref": "space-4"`), so tools can keep the link.
+**Decision**: A derived token's record lists every token its value references in `ref` (per theme where its value is
+per theme: `elevation-raised` references `color-rule-strong` in dark only; data-model.md § Token). The stylesheet
+writes the reference as `var(--ocelle-<ref>)`, alone or inside a larger value (`calc(100vw - 2 *
+var(--ocelle-gutter))`). The JSON export holds resolved values (FR-008) and `ref` in the full-name form of its `name`
+field, in the shape of the value: `"ref": ["--ocelle-space-4"]`, or `{ "light": [...], "dark": [...] }`
+(contracts/token-package.md). Tests check the resolved values against the transcribed table and the reference form
+by the generator test on a fixture source (R-03); they do not resolve `var()` themselves.
 
 ## R-13 kitty-mission-ui `--sk-*` roles
 
@@ -282,3 +422,12 @@ phase stops and asks the operator (FR-024).
 
 **Decision**: 001's plan lists "Contrast gate absent — sunset when #5 merges". This feature's `plan.md` records the
 sunset (Complexity Tracking, "Closed from 001"); 001's plan is not edited (feature directories are the record).
+
+## R-15 Package documentation
+
+**Decision** (PLAN-CORRECTNESS-1-007): `packages/tokens/README.md`, in the published `files` (R-11), holds the host
+contract of contracts/token-package.md: load once, the theme rule, the `color-scheme` hand-off, the CSP allowance
+`font-src 'self'` (FR-012), the forced-colours note (the `elevation-*` rings vanish; elements that use them for a
+state or a boundary also draw a border or outline; FR-018), and the rendered brand rules (spec Assumptions). A node
+test (`packages/tokens/test/readme.test.ts`) fails unless the README states `font-src 'self'` and the package's
+`files` include `README.md`. It is written in US1 (host contract, brand rules) and completed in US2 (font allowance).

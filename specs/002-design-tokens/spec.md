@@ -50,10 +50,10 @@ it with the same table and with the stylesheet.
 
 1. **Given** a page that loads the tokens stylesheet and a system with no colour-scheme preference, **When** the page
    renders, **Then** every colour token of Appendix A has its light value (for example
-   `--ocelle-color-canvas` is `#F1EEE8`).
+   `--ocelle-color-canvas` is `#F1EEE8` and `--ocelle-color-scheme` is `light`).
 2. **Given** a system that prefers dark and no `data-theme` attribute, **When** the page renders, **Then** every
    colour and elevation token has its dark value (for example `--ocelle-color-canvas` is
-   `#15130F` and `--ocelle-elevation-bar` is `none`).
+   `#15130F`, `--ocelle-elevation-bar` is `none` and `--ocelle-color-scheme` is `dark`).
 3. **Given** a system that prefers light, **When** the page renders, **Then** every token has its light value.
 4. **Given** a system that prefers dark and `data-theme="light"` on `<html>`, **When** the page renders, **Then**
    every token has its light value; **and given** a system that prefers light and `data-theme="dark"`, or no
@@ -75,9 +75,12 @@ it with the same table and with the stylesheet.
 10. **Given** the built package, **When** the strict-CSP and prefix gates run on it, **Then** both pass: the tokens
     ship as an external stylesheet with no inline style, and no `sk-` name or monospace family appears in it.
 11. **Given** the token stories (FR-023), **When** Storybook is built and a group's story is rendered in light and in
-    dark, **Then** it lists exactly that group's tokens with their name and value for that theme.
+    dark under the Storybook page's CSP (FR-023), **Then** it lists exactly that group's tokens with their name and
+    value for that theme, and the page reports zero CSP violations and makes no request outside its origin.
 12. **Given** the built Storybook output (FR-023), **When** the `csp` gate runs with its widened scope, **Then** it
-    scans that output and passes: no inline script, inline style element or style attribute remains in it.
+    scans the files of that output that this repository's sources produce (not the runtime files Storybook copies
+    verbatim from its package, FR-023) and passes: no inline script, inline style element or style attribute remains
+    in them.
 
 ---
 
@@ -104,10 +107,12 @@ network beyond the page's own origin, and check that the font is loaded from the
    source repository and commit, and where the file sits in the package, and no longer says that no third-party
    asset ships.
 3. **Given** a page that loads the tokens stylesheet, **When** text styled with `font-family: var(--ocelle-font-sans)`
-   renders at weights 400, 500, 600 and 800, **Then** the browser reports Schibsted Grotesk as the font used and
-   makes no request outside the page's origin.
-4. **Given** text styled with `font-variant-numeric: var(--ocelle-figures)`, **When** it renders, **Then** the digits
-   `0` to `9` all have the same advance width.
+   renders at weights 400, 500, 600 and 800, **Then** the browser reports Schibsted Grotesk as the platform font
+   actually used to render that text (not merely the declared family list), the font file was requested from the
+   page's origin, and no request goes outside the page's origin.
+4. **Given** text styled with `font-variant-numeric: var(--ocelle-figures)`, **When** it renders in Schibsted
+   Grotesk, **Then** its computed `font-variant-numeric` is `tabular-nums` and the digits `0` to `9` all have the
+   same advance width.
 5. **Given** the built stylesheet, **When** any `@font-face` source is read, **Then** it is a relative URL into the
    package; no absolute URL, font service or CDN appears.
 6. **Given** a page that loads the tokens stylesheet under exactly the CSP of constitution IV
@@ -134,8 +139,8 @@ pairs and rules they checked); run the plant job, whose new plants (FR-020) each
 1. **Given** the tokens and the contrast pair list (FR-016), **When** the contrast gate runs, **Then** it computes the
    ratio of every pair in both themes, passes, and reports the number of pairs checked per theme, which is greater
    than zero, equals the number of pairs in the list for that theme (excluded pairs count as checked, FR-016), and is
-   at least the number of required pairs (130 per theme with Appendix A, A.8; with the excluded pairs of A.9 the list
-   has 134 light and 133 dark entries).
+   at least the number of required pairs (144 per theme with Appendix A, A.8; with the excluded pairs of A.9 the list
+   has 148 light and 147 dark entries).
 2. **Given** a text pair whose ratio drops below 4.5:1 in one theme (for example `color-ink-muted` changed so that it
    is 4.3:1 on `color-inset`), **When** the gate runs, **Then** it fails with one finding naming the theme, the two
    tokens, the ratio and the threshold.
@@ -148,13 +153,16 @@ pairs and rules they checked); run the plant job, whose new plants (FR-020) each
 5. **Given** a pair list, **When** the gate runs, **Then** exactly one of these outcomes follows, and the gate never
    passes for any of them:
    - the list is empty or cannot be parsed: exit 2 (could not run), naming the file and the cause;
-   - the list names a token that does not exist: exit 1, one finding `unknown token` naming the pair, the theme and
+   - the list names a token that does not exist: exit 1, one finding `unknown-token` naming the pair, the theme and
      the token;
    - the list lacks a pair that FR-016 requires (derived from the intended grounds recorded in the token source):
-     exit 1, one finding `missing required pair` naming the theme, the foreground and the ground.
+     exit 1, one finding `missing-required-pair` naming the theme, the foreground and the ground;
+   - the list carries a required pair as an excluded pair: exit 1, one finding `required-pair-excluded` naming the
+     theme, the foreground and the ground.
 6. **Given** a token set in which a brand rule of FR-019 is broken (for example `color-link` set equal to
-   `color-accent` in light, a second radius at 4 px, a radius token outside the closed set of FR-019 (c), or a
-   monospace family in `font-sans`), **When** the
+   `color-accent` in light, a second radius at 4 px, a radius token outside the closed set of FR-019 (c), a
+   monospace family in `font-sans`, or the excluded pair `color-accent` on `color-canvas` removed from the pair
+   list), **When** the
    `brand-rules` gate runs, **Then** it fails naming the rule and the token.
 7. **Given** the plant job, **When** it runs, **Then** both new gates (`contrast` and `brand-rules`) have fail, pass
    and breaking plants that behave as `gates/README.md` requires, and the registry, CI jobs and FR-020 list of 001
@@ -195,8 +203,8 @@ can be built.
   re-resolve).
 - **Tokens inside a shadow root**: custom properties inherit through shadow boundaries, so an element reads the
   document's tokens; the stylesheet itself is loaded once by the host, not per element.
-- **Forced-colours mode**: the system replaces the colours; the token values are not used for contrast there. See
-  FR-018.
+- **Forced-colours mode**: the system replaces the colours; the token values are not used for contrast there. A
+  `box-shadow` is not drawn in forced colours, so the rings and shadows of the `elevation-*` tokens vanish there; an element that uses one to mark a state or a boundary also draws a border or outline. See FR-018.
 - **Token derived from another** (`gutter` = `space-4`, `color-focus` = `color-accent-strong`, `measure-sheet` =
   `shell-main-max`): changing the source changes the derived token in both the stylesheet and the JSON export.
 - **Font file unavailable at build time** (the vendored file is missing or altered): the build or the font test
@@ -254,7 +262,12 @@ can be built.
   element and base-style CSS to a name that is not a token of this package, so a misspelt token cannot fall back
   silently. The token definitions themselves stay exempt from the token-only rule. The new rule MUST have a fail
   plant (a reference to a misspelt token, for example `var(--ocelle-color-canvs)`) and a pass plant (a reference to a
-  real token) under `gates/plants/style-lint/`.
+  real token) under `gates/plants/style-lint/`. Element custom properties (constitution I: public CSS custom
+  properties of an element, declared in the custom-elements manifest) are named `--ocelle-<element>-<property>`, where
+  `<element>` is the element's tag name without `ocelle-` (`ocelle-button` → `--ocelle-button-gap`); no token name
+  equals an element name or begins with `<element>-`. The rule exempts a reference that follows this convention for
+  an element of the library (operator decision 2026-11-03, squad round 1, PLAN-FRESH-1-007), and MUST have a pass
+  plant with such a reference.
 
 **Font (User Story 2)**
 
@@ -279,7 +292,7 @@ can be built.
 **Contrast and brand-rule gates (User Story 3)**
 
 - **FR-016**: A contrast pair list in the repository MUST name every pair to check, per theme, with its kind (text,
-  4.5:1; non-text, 3:1) and its recorded figure. The required pairs are those of Appendix A, A.8 (130 per theme with
+  4.5:1; non-text, 3:1) and its recorded figure. The required pairs are those of Appendix A, A.8 (144 per theme with
   the current token set): every foreground token on every ground it is intended for, which includes every pair of
   A.7 that #5 records at or above its threshold. In addition, the pair list MUST carry, in each theme where it
   applies, every excluded pair of A.9 with its reason: `color-control-border` on `color-accent-low` (#5 rule 1);
@@ -289,9 +302,11 @@ can be built.
   the token source (FR-008), and the gate derives the required pair set from them; the pair list cannot shrink it. A
   pair below its threshold that the design does not use MUST be listed as an excluded pair with a non-empty reason,
   not left out; an excluded pair is still computed and must still match its recorded figure, but its threshold is
-  not applied. An excluded pair counts among the pairs checked (FR-021), and a required pair present in the list as
-  an excluded pair with a non-empty reason is not a `missing required pair`. The pairs that are below threshold with
-  Appendix A's values are listed in A.9. The pair list MAY hold pairs beyond the required set.
+  not applied. An excluded pair counts among the pairs checked (FR-021). Only a pair outside the required set may be
+  excluded: a required pair present in the list as an excluded pair is the finding `required-pair-excluded` (check 3,
+  SPEC-3-02); to stop requiring a pair, the intended grounds in the token source must change, which is a visible
+  design change. The pairs that are below threshold with Appendix A's values are listed in A.9. The pair list MAY
+  hold pairs beyond the required set.
 - **FR-017**: The contrast gate MUST compute each pair's ratio with the WCAG 2.x relative-luminance formula from the
   token values (resolving derived tokens), compare the unrounded ratio with the threshold, and compare it with the
   recorded figure at the figure's precision (a figure of `5.3` matches a computed ratio in [5.25, 5.35); `3.02`
@@ -299,10 +314,16 @@ can be built.
   MUST still match its recorded figure. Where #5 gives only a range (the state colours on their own backgrounds,
   5.3 to 9.4 in both themes), each pair's figure is recorded from its first computation and MUST lie in [5.25, 9.45).
 - **FR-018**: Forced-colours mode (operator decision, 2026-11-03): this feature MUST check that the token output does
-  not defeat forced colours: no `forced-color-adjust: none`, and no `@media (forced-colors: active)` rule that sets
-  colour tokens to fixed values. This guard is rule (g) of the `brand-rules` gate (FR-019), and a fail plant with
-  such a rule MUST fail it. Contrast of rendered elements in forced-colours mode is checked by the element issues
-  and by axe in #10; #5's "including forced colours" is met by this guard together with that later check.
+  not defeat forced colours: no `forced-color-adjust: none`, and no `@media (forced-colors: …)` rule that sets a
+  colour token (`--ocelle-color-*`) to anything other than a CSS system colour keyword (`Canvas`, `CanvasText`,
+  `LinkText`, `ButtonBorder`, `Highlight` and the others of CSS Color 4); mapping a colour token to a system colour is
+  allowed (operator decision 2026-11-03, squad round 1, PLAN-A11Y-SECURITY-1-011). This guard is rule (g) of the
+  `brand-rules` gate (FR-019); a fail plant with a fixed value MUST fail it and a pass plant mapping a colour token to
+  a system colour MUST pass. The behaviour of rendered elements in forced-colours mode is checked by the element
+  issues with element tests under forced-colours emulation (axe has no forced-colours rule); #5's "including forced
+  colours" is met by this guard together with those tests. The package documentation states that `box-shadow` is not
+  drawn in forced colours, so the `elevation-*` rings vanish there and an element that uses one for a state or a
+  boundary also draws a border or outline.
 - **FR-019**: A brand-rule check MUST reject a token set that breaks any of these rules, which hold on token values
   alone: (a) no font token names a monospace family; (b) `color-link` differs from `color-accent` and meets 4.5:1 on
   `color-canvas` and `color-sheet` in both themes, and the pair `color-accent` on `color-canvas` in light is listed as
@@ -322,9 +343,10 @@ can be built.
   `pnpm run gate:<id>` with the exit contract of `gates/README.md` (0 checked, 1 findings, 2 could not run), an entry
   in `gates/gates.json`, a CI job, and fail, pass and breaking plants under `gates/plants/<id>/`. The `contrast` fail
   plants MUST include at least: a text pair below 4.5:1, a non-text pair below 3:1, a figure that no longer matches,
-  a pair naming a missing token (`unknown token`), a pair list lacking a required pair (`missing required pair`), and
-  an excluded pair without a reason; its breaking plants MUST include an empty pair list and an unparsable one. The
-  `brand-rules` fail plants MUST include one per rule (a) to (g) of FR-019, (g) being a forced-colours override.
+  a pair naming a missing token (`unknown-token`), a pair list lacking a required pair (`missing-required-pair`), an
+  excluded pair without a reason, and a required pair listed as excluded (`required-pair-excluded`); its breaking
+  plants MUST include an empty pair list and an unparsable one. The `brand-rules` fail plants MUST include one per rule (a) to (g) of FR-019, (g) being a forced-colours override, and
+  one for (b) with the excluded pair `color-accent` on `color-canvas` removed from the pair list.
 - **FR-021**: The `contrast` gate MUST report, on success, the number of pairs checked per theme; a run that checks
   zero pairs MUST exit 2, never 0. The `brand-rules` gate MUST report the number of rules checked.
 - **FR-022**: `gates/README.md` MUST list the `contrast` and `brand-rules` gates in "The gates" and their checks
@@ -339,19 +361,37 @@ can be built.
   the workspace with one story per token group of FR-001's canonical list (colour, type, space, shape, size, shell,
   elevation, motion), each showing every token of its group with its name and value, in light and dark. The stories
   are generated from the token source of FR-008, so a token cannot be missing from them, and a test MUST prove each
-  group's story lists exactly that group's tokens. Storybook MUST build with one command under the pinned versions.
-  Its built output is held to the strict CSP of constitution IV with no exception (operator decision, 2026-11-03,
-  SPEC-1-05): every inline script of the Storybook build is stripped or externalised to a same-origin file, and no
-  inline style element or style attribute remains in the built output. The scope of the `csp` gate MUST be widened
-  from `packages/*/dist/` to also cover the Storybook build output, and the scope of the `prefix` gate likewise, in
-  `gates/gates.json` and `gates/README.md`; the `csp` gate MUST gain a fail plant with an inline script in the
-  Storybook output and a pass plant with an external script there. If Storybook cannot be built without inline script
-  under the pinned versions, the phase stops and asks the operator; no Complexity Tracking exception is taken without
-  the operator's approval. Storybook's own UI theme is set so that it uses the token fonts; if the built output still
-  carries a monospace family in a `font` or `font-family` declaration that the theme cannot remove, so that the
-  widened `prefix` gate fails on Storybook's code, the phase likewise stops and asks the operator. The Storybook
-  build gate, visual regression and axe stay with #10 (still deferred in `gates/README.md`); #10 builds on this
-  Storybook rather than adding a second one.
+  group's story lists exactly that group's tokens. Storybook MUST build with one command under the pinned versions,
+  and the build MUST make no network request (Storybook's telemetry disabled). Storybook is held to the strict CSP of
+  constitution IV (operator decisions 2026-11-03, SPEC-1-05 and SPEC-3-01), with two readings the operator decided in
+  squad round 1:
+  - **Run time** (PLAN-A11Y-SECURITY-1-001): Storybook loads its story index with `fetch` (`connect-src`) and frames
+    its preview (`frame-src`). The Storybook page is served with the CSP of constitution IV plus the host additions
+    `font-src 'self'`, `connect-src 'self'` and, only while the manager UI is used, `frame-src 'self'`, for the
+    Storybook page only, recorded in the plan's Constitution Check like `font-src`. Under exactly that header the
+    built Storybook MUST run with zero CSP violations, shown by a browser test that also asserts the header served.
+    The package output (`packages/*/dist/`) gets no such addition.
+  - **Static scope** (PLAN-FRESH-1-001): the static `csp` and `prefix` gates cover the files of the Storybook build
+    output that this repository's sources produce (the Vite-built stories and preview bundle, the externalised
+    scripts and styles, the HTML entries), and not the runtime files Storybook copies verbatim from its package
+    (for example `sb-manager/`), which the run-time test covers. This narrows SPEC-1-05's "no style attribute
+    remains in the built output" to the files this repository produces. The excluded paths are listed in
+    `gates/gates.json` and `gates/README.md`, and a test MUST show that each excluded file is byte-identical to a
+    file of the installed `storybook` package, so the exclusion cannot hide this repository's output.
+
+  In the files in scope, every inline script is stripped or externalised to a same-origin file, and no inline style
+  element or style attribute remains. The scope of the `csp` gate MUST be widened from `packages/*/dist/` to the
+  Storybook files in scope, and the scope of the `prefix` gate likewise (built output and the Storybook workspace's
+  own source), in `gates/gates.json` and `gates/README.md`; the `csp` gate MUST gain a fail plant with an inline
+  script in the Storybook output and a pass plant with an external script there. The work starts with a spike that
+  records every CSP violation of the built Storybook by directive under the header above and runs the widened `csp`
+  and `prefix` gates on its output. If Storybook cannot reach zero violations under that header, or its files in
+  scope cannot be freed of inline script, the phase stops and asks the operator; no Complexity Tracking exception is
+  taken without the operator's approval. Storybook's own UI theme is set so that it uses the token fonts; if a file in
+  scope still carries a monospace family in a `font` or `font-family` declaration that the theme cannot remove, so
+  that the widened `prefix` gate fails, the phase likewise stops and asks the operator. The Storybook build gate,
+  visual regression and axe stay with #10 (still deferred in `gates/README.md`); #10 builds on this Storybook rather
+  than adding a second one.
 - **FR-024**: A mapping table MUST map each of the 55 `--sk-*` roles kitty-mission-ui uses to its `--ocelle-*`
   token, listing each dropped or merged role with its replacement. It MUST live outside the three packages (for
   example in this feature's directory or the repository's docs) so no `sk-` name enters package source or output
@@ -377,8 +417,9 @@ can be built.
 ### Key Entities
 
 - **Token**: a named design value. Attributes: full name (`--ocelle-…`), group (one of the eight of FR-001), light
-  value, dark value (or one value), source token if derived, description of its use, and for a foreground token its
-  contrast kind and intended grounds (A.8).
+  value, dark value (or one value), source tokens if derived, and for a foreground token its contrast kind and
+  intended grounds (A.8). Its use (Appendix A's "Use" column) is recorded as a comment in the token source, not as
+  data (operator decision 2026-11-03, squad round 1, PLAN-TESTABILITY-1-003).
 - **Theme condition**: one of the six of FR-006; decides which value a theme-dependent token has.
 - **Contrast pair**: foreground token, background token, theme, kind (text or non-text), threshold, recorded figure,
   and either "checked" or "excluded" with a reason.
@@ -391,43 +432,43 @@ can be built.
 ### Measurable Outcomes
 
 - **SC-001**: 100% of the tokens in Appendix A exist with their Appendix A value in each of the six theme conditions,
-  and none of the six excluded tokens exists; checked by browser tests. For the values the plan supplies (the light
-  `color-chrome-hover`, the light shadows and ring width of A.5), the Appendix A value is the one the plan records
-  and adds to Appendix A.
+  and none of the six excluded tokens exists; checked by browser tests against Appendix A transcribed into the
+  tests (not read from the token source). The values the plan supplied (the light `color-chrome-hover`, the light
+  shadows and ring width of A.5, the dialog sizes of A.4) are now in Appendix A.
 - **SC-002**: The stylesheet and the JSON export agree on 100% of tokens and values.
 - **SC-003**: A page under the strict CSP of constitution IV plus `font-src 'self'` renders text in Schibsted Grotesk
   with zero requests outside its own origin and zero CSP violations.
 - **SC-004**: The `contrast` gate checks every pair of FR-016 in both themes (the count it reports per theme equals
-  the pair list's size for that theme, excluded pairs included, and is at least 130), and every fail plant of the
+  the pair list's size for that theme, excluded pairs included, and is at least 144; a test asserts that the
+  required set derived from the token source equals A.8), and every fail plant of the
   `contrast` and `brand-rules` gates is caught with exactly its expected finding by the plant job.
 - **SC-005**: Changing any one checked token value so that a pair falls below its threshold makes the pull request's
   contrast check fail; restoring it makes it pass.
 - **SC-006**: An element author who writes `var(--ocelle-color-canvs)` (misspelt) gets a style-lint failure naming
   the unknown token.
 - **SC-007**: `gates/README.md` lists no deferred contrast gate, and every gate of the registry has a CI job and plants.
-- **SC-008**: The built Storybook output passes the `csp` gate with the widened scope, and the `csp` fail plant with an
-  inline script in that output is caught.
+- **SC-008**: The Storybook files in the `csp` gate's widened scope (FR-023) pass it, the `csp` fail plant with an
+  inline script in that output is caught, and the built Storybook runs with zero CSP violations under the Storybook
+  page's header of FR-023.
 
 ## Assumptions
 
 - **Values are final for now.** Appendix A, copied from #5 as the operator gave it on 2 November 2026, is the source;
   the contrast figures in #5 are the first expected values (FR-017), corrected with a recorded reason and the
   operator's approval if a computation shows one is wrong.
-- **Values #5 describes but does not give.** For five values #5 gives a description, not a value (A.4 and A.5, marked
-  "described"): the light `elevation-raised` ("two soft shadows"), the light shadow of `elevation-row` and
-  `elevation-seg`, and `dialog-max-inline` and `dialog-max-block` ("viewport minus two gutters"); #5 also gives no ring
-  width for `elevation-row` and `elevation-seg`. The tests check the described structure (number of shadows, ring
-  colour, dark values; the dialog sizes at a known viewport).
+- **Values #5 describes but does not give.** For five values #5 gives a description, not a value: the light
+  `elevation-raised` ("two soft shadows"), the light shadow of `elevation-row` and `elevation-seg`, and
+  `dialog-max-inline` and `dialog-max-block` ("viewport minus two gutters"); #5 also gives no ring width for
+  `elevation-row` and `elevation-seg`. The plan supplied them (research R-05) and they are now in A.4 and A.5, each
+  marked with its source. The tests check these exact values; the dialog sizes are also checked as used sizes at a
+  known viewport (1280 × 800: 1248 px and 768 px).
 - **Light shadows and ring width from the prototype file** (operator decision 2026-11-03, SPEC-2-02). The exact light
   shadows of `elevation-raised`, `elevation-row` and `elevation-seg` (offsets, blur, spread, colour) and the ring width
   of `elevation-row` and `elevation-seg` are taken from `prototype/css/tokens.css` of the console prototype v2, which
-  the operator provides; the file is not in the repository yet. Only the values are taken, no code (constitution VI,
-  FR-026). The plan records the values, the file they were read from and its checksum, and they are added to A.5
-  before User Story 1 is implemented. If the file is not provided, or does not contain one of these values, the phase
-  stops and asks the operator.
-- **Dialog size unit.** "The viewport's inline (block) size" in A.4 leaves the viewport unit open (`100vw`, `100dvw`,
-  `100svw` or the containing block). The plan fixes the unit, and the test of the dialog sizes at a known viewport
-  uses it.
+  the operator supplied as a table rendering, kept as `sources/console-v2-tokens.md` (SHA-256 recorded in research
+  R-05). Only the values are taken, no code (constitution VI, FR-026). The values are in A.5.
+- **Dialog size unit.** #5's "the viewport's inline (block) size" left the viewport unit open. The plan fixed it from
+  the prototype file: `100vw` inline and `100dvh` block (A.4).
 - **Pairs below threshold with Appendix A's values** (operator decisions 2026-11-03, SPEC-2-01). A.9 lists the required
   or recorded pairs that fall below their threshold. `color-control-border` on `color-inset` and on `color-hover-bg`
   are handled like #5's rule 1: a control drawn on these grounds uses `color-accent-strong` for its border, so those
@@ -447,12 +488,22 @@ can be built.
   FR-019 (c).
 - **Theme selectors belong here.** #5 states the theme rule as part of the tokens, so the `prefers-color-scheme` and
   `data-theme` selectors ship in the tokens stylesheet; #6 (base styles) builds on them and does not repeat them.
+- **`color-scheme` hand-off** (operator decision 2026-11-03, squad round 1, PLAN-A11Y-SECURITY-1-004). So that native
+  controls, scrollbars and system colours follow the token theme, the tokens provide the theme-dependent token
+  `color-scheme` (`light` in light, `dark` in dark; A.1), and #6 applies it (`color-scheme:
+  var(--ocelle-color-scheme)` on the root). The tokens stylesheet itself sets no `color-scheme` property; until #6
+  lands, native controls follow the user agent's default.
+- **Element custom properties** (operator decision 2026-11-03, squad round 1, PLAN-FRESH-1-007). Constitution I gives
+  elements the `ocelle-` namespace for their own public CSS custom properties. They are named
+  `--ocelle-<element>-<property>` (FR-010), and the element names of the library are chosen so that no token name
+  equals one or begins with `<element>-`.
 - **Elements read tokens through inheritance.** The host loads the tokens stylesheet once on the document; elements
   do not adopt it per shadow root. How elements and base styles use the tokens is #6 and the element issues.
 - **Rendered brand rules are not checked here.** Dark chrome on the top bar and rails, digests in groups of four, and
   "ochre fill never the only mark of state in light mode" depend on how elements use the tokens; the element issues
   and #10 (axe, visual regression) check them. This feature provides the tokens and records those rules in the
-  package documentation.
+  package documentation (`packages/tokens/README.md`), together with the host contract and the forced-colours note
+  of FR-018.
 - **Font fetch.** The implementer downloads the font file once from its upstream repository at the pinned commit;
   after that it is a committed file, checked by checksum, and no build step fetches anything.
 - **CSP font allowance.** Constitution IV's CSP has no `font-src`; under `default-src 'none'` a font file is blocked.
@@ -496,7 +547,7 @@ themes and is written as such.
 | `color-chrome` | `#15130F` | `#0D0C0A` | | top bar, icon rail, personal rail |
 | `color-chrome-ink` | `#EDE9E1` | `#EDE9E1` | | on chrome |
 | `color-chrome-muted` | `#A39D92` | `#A39D92` | | on chrome |
-| `color-chrome-hover` | changed from #5's `#2A261F`: the plan computes it (operator, SPEC-2-01; Assumptions) | `#24211B` | | on chrome |
+| `color-chrome-hover` | `#211D18` (changed from #5's `#2A261F`; computed by the plan, research R-04; operator, SPEC-2-01; Assumptions) | `#24211B` | | on chrome |
 | `color-accent` | `#C68A1E` | `#C68A1E` (same) | | ochre fill |
 | `color-on-accent` | `#15130F` | `#15130F` (same) | | black on the ochre fill |
 | `color-accent-low` | `#F1E1C0` | `#3A2B10` | | selected rows, current nav |
@@ -519,6 +570,7 @@ themes and is written as such.
 | `color-info-bg` | `#E6EDF3` | `#14202E` | | |
 | `color-neutral` | `#5E584F` | `#A39D92` | | |
 | `color-neutral-bg` | `#E6E1D8` | `#2A261F` | | |
+| `color-scheme` | `light` | `dark` | | not a colour: the theme's `color-scheme` keyword, applied by #6 (not in #5; operator decision 2026-11-03, squad round 1; Assumptions, "`color-scheme` hand-off") |
 
 ### A.2 Type (group **type**, theme-independent)
 
@@ -589,32 +641,30 @@ only; `radius-pill` for state pills only. These five are the closed set of FR-01
 | `measure-sheet` | (`48rem`) | `shell-main-max` |
 | `measure-sentence` | (`48rem`) | `shell-main-max` |
 | `measure-page` | `100%` | |
-| `dialog-max-inline` | described: the viewport's inline size minus two `gutter` | `gutter` |
-| `dialog-max-block` | described: the viewport's block size minus two `gutter` | `gutter` |
+| `dialog-max-inline` | `calc(100vw - 2 * var(--ocelle-gutter))` (#5: "the viewport's inline size minus two `gutter`"; unit from the prototype file, research R-05) | `gutter` |
+| `dialog-max-block` | `calc(100dvh - 2 * var(--ocelle-gutter))` (#5: "the viewport's block size minus two `gutter`"; unit from the prototype file, research R-05) | `gutter` |
 | `bar-block-narrow` | `calc(2 * target-min + 3 * space-2)` (decision bar) | `target-min`, `space-2` |
 
-The viewport unit of `dialog-max-inline` and `dialog-max-block` is fixed by the plan (Assumptions, "Dialog size
-unit").
+At a 1280 × 800 viewport these are 1248 px and 768 px (Assumptions, "Dialog size unit").
 
 ### A.5 Elevation and motion (group **elevation**, theme-dependent; group **motion**, theme-independent)
 
 | Token | Group | Light | Dark | Derived from |
 |---|---|---|---|---|
 | `elevation-sheet` | elevation | `0 0 0 1px` `color-rule` | `0 0 0 1px` `color-rule` | `color-rule` |
-| `elevation-raised` | elevation | described: two soft shadows | `0 0 0 1px` `color-rule-strong` | `color-rule-strong` (dark) |
-| `elevation-row` | elevation | `color-control-border` ring plus a light shadow (shadow described) | `color-control-border` ring only | `color-control-border` |
-| `elevation-seg` | elevation | `color-control-border` ring plus a light shadow (shadow described) | `color-control-border` ring only | `color-control-border` |
+| `elevation-raised` | elevation | `0 2px 4px rgb(21 19 15 / 0.10), 0 12px 32px rgb(21 19 15 / 0.16)` (#5: "two soft shadows"; prototype file) | `0 0 0 1px` `color-rule-strong` | `color-rule-strong` (dark only) |
+| `elevation-row` | elevation | `0 0 0 1px` `color-control-border`, `0 2px 8px rgb(21 19 15 / 0.08)` (shadow and ring width: prototype file) | `0 0 0 1px` `color-control-border` | `color-control-border` |
+| `elevation-seg` | elevation | `0 0 0 1px` `color-control-border`, `0 1px 2px rgb(21 19 15 / 0.08)` (shadow and ring width: prototype file) | `0 0 0 1px` `color-control-border` | `color-control-border` |
 | `elevation-bar` | elevation | `0 -6px 16px rgb(21 19 15 / 0.05)` | `none` | |
 | `motion-fast` | motion | `120ms` (`0ms` under reduced motion) | same | |
 | `motion-base` | motion | `200ms` (`0ms` under reduced motion) | same | |
 | `easing-standard` | motion | `cubic-bezier(0.22, 1, 0.36, 1)` | same | |
 
-"Described" values are not given in #5; see Assumptions, "Values #5 describes but does not give". #5 gives no ring
-width for `elevation-row` and `elevation-seg`. The exact light shadows of `elevation-raised`, `elevation-row` and
-`elevation-seg` and the ring width of `elevation-row` and `elevation-seg` are taken, as values only, from the console
-prototype v2's `prototype/css/tokens.css`, which the operator provides (operator decision 2026-11-03, SPEC-2-02); the
-plan records them and they are added to this table (Assumptions, "Light shadows and ring width from the prototype
-file").
+#5 describes the light shadows and gives no ring width for `elevation-row` and `elevation-seg` (Assumptions, "Values
+#5 describes but does not give"). The values marked "prototype file" are taken, as values only, from the console
+prototype v2's `prototype/css/tokens.css` (operator decision 2026-11-03, SPEC-2-02; research R-05; Assumptions, "Light
+shadows and ring width from the prototype file"). A token written with a colour token is defined by reference to it
+(`var(--ocelle-color-control-border)`, FR-002).
 
 ### A.6 Excluded tokens (MUST NOT exist)
 
@@ -672,15 +722,28 @@ token source records these intended grounds per foreground token (FR-008); each 
 | `color-disabled-ink` | text (threshold exempt, FR-017) | `color-disabled-bg` | 1 |
 | `color-chrome-ink`, `color-chrome-muted` | text | `color-chrome`, `color-chrome-hover` | 4 |
 | `color-on-accent` | text | `color-accent` | 1 |
+| `color-link` | text | each state `-bg` (`color-danger-bg`, `color-warning-bg`, `color-success-bg`, `color-info-bg`, `color-neutral-bg`) | 5 |
 | `color-focus` | non-text | every main ground, `color-chrome`, `color-chrome-hover` | 11 |
+| `color-focus` | non-text | each state `-bg` | 5 |
+| `color-current` | non-text | `color-chrome`, `color-chrome-hover`, `color-rail`, `color-accent-low` | 4 |
 | `color-control-border` | non-text | every main ground except `color-accent-low`, `color-inset` and `color-hover-bg` (#5 rule 1, extended by the operator, SPEC-2-01) | 6 |
 | `color-accent-strong` | non-text | `color-accent-low`, `color-inset`, `color-hover-bg` (#5 rule 1, extended by the operator, SPEC-2-01) | 3 |
-| | | **total** | **130** |
+| | | **total** | **144** |
 
 Every pair of A.7 is in this set, except `color-control-border` on `color-accent-low` and `color-accent` on
 `color-canvas` in light, which FR-016 requires the pair list to carry as excluded pairs (FR-019 (b)). The pair list
 also carries `color-control-border` on `color-inset` and on `color-hover-bg` in both themes as excluded pairs (A.9).
-With these excluded pairs the list has 134 entries in light and 133 in dark, all counted as checked (FR-016, FR-021).
+With these excluded pairs the list has 148 entries in light and 147 in dark, all counted as checked (FR-016, FR-021).
+
+The rows for `color-link` and `color-focus` on the state `-bg` grounds and for `color-current` were added by the
+operator's decision of 2026-11-03 (squad round 1, PLAN-A11Y-SECURITY-1-012, option (a)): the current bar is a
+non-text indicator (WCAG 1.4.11) and must not pass only because it derives from `color-accent-strong`, and links and
+focus rings can sit in state banners and pills. With Appendix A's values all 14 added pairs meet their threshold in
+both themes (lowest: `color-current` on `color-chrome-hover` 3.01 light; `color-focus` on `color-neutral-bg` 4.27
+light; `color-link` on `color-neutral-bg` 4.86 light). `color-control-border` on the state `-bg` grounds is not a
+required pair; it is 2.91 on `color-neutral-bg` in light (3.05 to 3.21 on the other state grounds in light, 3.17 to
+3.56 in dark). Whether controls on state grounds are required pairs, and if so whether that pair is excluded under
+#5 rule 1 extended or a value changes, is an **open operator question** (plan, Decisions).
 
 ### A.9 Required or recorded pairs below threshold with Appendix A's values
 
