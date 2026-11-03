@@ -5,3 +5,6 @@ packages:
 minimumReleaseAge: 10080
 minimumReleaseAgeStrict: true
 allowBuilds: {}
+# The plant's dependency resolves to a local directory, so the frozen lockfile check needs no registry metadata.
+overrides:
+  x: "link:vendor/x"

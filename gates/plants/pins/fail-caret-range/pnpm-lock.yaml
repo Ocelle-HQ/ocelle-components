@@ -162,13 +162,16 @@ settings:
   autoInstallPeers: true
   excludeLinksFromLockfile: false
 
+overrides:
+  x: link:vendor/x
+
 importers:
 
   .:
     devDependencies:
-      jiti:
-        specifier: ^2.7.0
-        version: 2.7.0
+      x:
+        specifier: link:vendor/x
+        version: link:vendor/x
 
   packages/elements:
     dependencies:
@@ -177,13 +180,3 @@ importers:
         version: link:../tokens
 
   packages/tokens: {}
-
-packages:
-
-  jiti@2.7.0:
-    resolution: {integrity: sha512-AC/7JofJvZGrrneWNaEnJeOLUx+JlGt7tNa0wZiRPT4MY1wmfKjt2+6O2p2uz2+skll8OZZmJMNqeke7kKbNgQ==}
-    hasBin: true
-
-snapshots:
-
-  jiti@2.7.0: {}
