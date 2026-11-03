@@ -1,5 +1,5 @@
 Scope: all 4 workspace projects
-✓ Lockfile passes supply-chain policies (verified 22m ago)
+✓ Lockfile passes supply-chain policies (verified 22h ago)
 Lockfile is up to date, resolution step is skipped
 Packages are hard linked from the content-addressable store to the virtual store.
   Content-addressable store is at: /root/.local/share/pnpm/store/v11
@@ -29,90 +29,90 @@ devDependencies:
 + vite 8.3.5
 + vitest 5.0.5
 
-Done in 863ms using pnpm v12.16.1
+Done in 461ms using pnpm v12.16.1
 $ pnpm install --frozen-lockfile --offline
 Scope: all 4 workspace projects
-✓ Lockfile passes supply-chain policies (verified 22m ago)
+✓ Lockfile passes supply-chain policies (verified 22h ago)
 Lockfile is up to date, resolution step is skipped
-Done in 23ms using pnpm v12.16.1
+Done in 29ms using pnpm v12.16.1
 $ vitest run
 
- RUN  v5.0.5 /tmp/tmp.syplJTT3aN
+ RUN  v5.0.5 /tmp/tmp.Z1jIjUkEfX
 
- ❯ |gates| gates/test/findings.test.ts (10 tests | 10 failed) 26ms
-   ❯ formatLocation (3)
-     × writes a file location at a line as path:line 9ms
-     × writes a whole-file location as the path alone 1ms
-     × writes a commit location as the full hash 1ms
-   ❯ formatFinding (4)
-     × writes <location>: <gate-id>: <rule>: <message> for a path:line location 1ms
-     × writes <location>: <gate-id>: <rule>: <message> for a path location 1ms
-     × writes <location>: <gate-id>: <rule>: <message> for a commit location 1ms
-     × keeps a finding on one line when its message has line breaks 0ms
-   ❯ emit (3)
-     × prints the one-line summary of a pass on stdout and returns 0 4ms
-     × prints each finding and then the summary on stdout and returns 1 6ms
-     × prints the cause of a run that could not run as one line on stderr and returns 2 1ms
- ❯ |gates| gates/test/test-command.test.ts (16 tests | 16 failed) 75ms
-   ❯ classifyVitest (10)
-     × passes a run whose tests all passed, with a one-line summary of the count 27ms
-     × reports each failed test as one finding at its file and line, rule = the full test name 10ms
-     × reports a failed test without a recorded location at its file 1ms
-     × cannot run when no test file is found (a broken file pattern does not pass) 5ms
-     × cannot run when a test file fails to load, naming the file and the error 5ms
-     × cannot run when a test file does not parse, naming the file without terminal colour codes 1ms
-     × cannot run on errors outside tests even when every test passed, naming the error 3ms
-     × cannot run when a failed test comes with a file that failed to load 4ms
-     × cannot run without a report 1ms
-     × cannot run on a report that is not JSON 1ms
-   ❯ chromiumCheck (6)
-     × checks Playwright's own Chromium when no override is set and finds no problem when it exists 9ms
-     × names pnpm run setup:online when Playwright's Chromium is missing 1ms
-     × names pnpm run setup:online when Playwright cannot name a Chromium executable 1ms
-     × checks the OCELLE_CHROMIUM_PATH override instead of Playwright's Chromium when it is set (R1-03) 1ms
-     × names the override and pnpm run setup:online when the override does not exist 4ms
-     × treats an empty override as unset, like vitest.config.ts does 1ms
- ❯ |gates| gates/test/cli.test.ts (11 tests | 11 failed) 30ms
+ ❯ |gates| gates/test/cli.test.ts (11 tests | 11 failed) 38ms
    ❯ entry (6)
      × returns exit 2, not Node's exit 1, when run() throws, with one line naming the cause 12ms
-     × returns exit 2 with one line when an async run() rejects with a multi-line error 1ms
-     × returns exit 2 with one line naming a thrown value that is not an Error 1ms
-     × returns the code run() returns for 0, 1 and 2 3ms
+     × returns exit 2 with one line when an async run() rejects with a multi-line error 4ms
+     × returns exit 2 with one line naming a thrown value that is not an Error 4ms
+     × returns the code run() returns for 0, 1 and 2 4ms
      × returns exit 2 with one line when run() returns a code outside the contract 1ms
-     × passes argv and io to run() 2ms
+     × passes argv and io to run() 3ms
    ❯ parseArgs (5)
      × defaults the repository root and the tool working directory to the current directory 1ms
      × sets the repository root and the tool working directory from --root <dir> 2ms
      × resolves a relative --root against the current directory 2ms
-     × leaves every other argument unchanged and in order 2ms
+     × leaves every other argument unchanged and in order 1ms
      × rejects --root without a directory 2ms
- ❯ |gates| gates/test/setup-offline.test.ts (7 tests | 7 failed) 22ms
+ ❯ |gates| gates/test/test-command.test.ts (16 tests | 16 failed) 54ms
+   ❯ classifyVitest (10)
+     × passes a run whose tests all passed, with a one-line summary of the count 25ms
+     × reports each failed test as one finding at its file and line, rule = the full test name 5ms
+     × reports a failed test without a recorded location at its file 1ms
+     × cannot run when no test file is found (a broken file pattern does not pass) 8ms
+     × cannot run when a test file fails to load, naming the file and the error 2ms
+     × cannot run when a test file does not parse, naming the file without terminal colour codes 2ms
+     × cannot run on errors outside tests even when every test passed, naming the error 1ms
+     × cannot run when a failed test comes with a file that failed to load 1ms
+     × cannot run without a report 1ms
+     × cannot run on a report that is not JSON 1ms
+   ❯ chromiumCheck (6)
+     × checks Playwright's own Chromium when no override is set and finds no problem when it exists 4ms
+     × names pnpm run setup:online when Playwright's Chromium is missing 0ms
+     × names pnpm run setup:online when Playwright cannot name a Chromium executable 0ms
+     × checks the OCELLE_CHROMIUM_PATH override instead of Playwright's Chromium when it is set (R1-03) 0ms
+     × names the override and pnpm run setup:online when the override does not exist 0ms
+     × treats an empty override as unset, like vitest.config.ts does 1ms
+ ❯ |gates| gates/test/findings.test.ts (10 tests | 10 failed) 43ms
+   ❯ formatLocation (3)
+     × writes a file location at a line as path:line 11ms
+     × writes a whole-file location as the path alone 1ms
+     × writes a commit location as the full hash 1ms
+   ❯ formatFinding (4)
+     × writes <location>: <gate-id>: <rule>: <message> for a path:line location 1ms
+     × writes <location>: <gate-id>: <rule>: <message> for a path location 5ms
+     × writes <location>: <gate-id>: <rule>: <message> for a commit location 3ms
+     × keeps a finding on one line when its message has line breaks 5ms
+   ❯ emit (3)
+     × prints the one-line summary of a pass on stdout and returns 0 8ms
+     × prints each finding and then the summary on stdout and returns 1 2ms
+     × prints the cause of a run that could not run as one line on stderr and returns 2 1ms
+ ❯ |gates| gates/test/setup-offline.test.ts (7 tests | 7 failed) 38ms
    ❯ decideSetup (7)
-     × turns a tarball missing from the store into 'missing: <package>; run pnpm run setup:online', exit 2 11ms
+     × turns a tarball missing from the store into 'missing: <package>; run pnpm run setup:online', exit 2 23ms
      × turns package metadata missing from the cache into 'missing: <package>; run pnpm run setup:online', exit 2 2ms
      × reports any other pnpm failure as exit 2 naming pnpm's error code 2ms
      × reports a pnpm failure without an error record as exit 2 naming its exit code 1ms
-     × names Chromium and pnpm run setup:online when the install succeeds but Chromium is missing, exit 2 1ms
+     × names Chromium and pnpm run setup:online when the install succeeds but Chromium is missing, exit 2 2ms
      × names the missing package first when both the store and Chromium lack something 1ms
-     × passes a successful install with Chromium present, naming the Chromium it found 2ms
- ❯ |gates| gates/test/config-copies.test.ts (4 tests | 4 failed) 22ms
+     × passes a successful install with Chromium present, naming the Chromium it found 1ms
+ ❯ |gates| gates/test/config-copies.test.ts (4 tests | 4 failed) 28ms
    ❯ config-copies gate (4)
-     × passes two byte-identical copies whose test_pathspec is FR-028's test code 13ms
-     × fails when one setting differs, naming both copies and the first differing line 2ms
+     × passes two byte-identical copies whose test_pathspec is FR-028's test code 22ms
+     × fails when one setting differs, naming both copies and the first differing line 3ms
      × fails on equal copies whose test_pathspec is not FR-028's test code, one finding per copy 1ms
      × cannot run when a copy is missing, naming it 1ms
- ❯ |gates-integration| gates/test/integration/setup-offline.test.ts (3 tests | 3 failed) 289ms
+ ❯ |gates-integration| gates/test/integration/setup-offline.test.ts (3 tests | 3 failed) 420ms
    ❯ offline setup (gates/bin/setup-offline.ts) (3)
-     × exits 2 naming the missing package and pnpm run setup:online on an empty store, without the network 112ms
-     × exits 2 naming Chromium and pnpm run setup:online on an empty browser path, without the network 82ms
-     × exits 0 with a lockfile without dependencies and the installed browser, changing no workspace file 93ms
- ❯ |gates-integration| gates/test/integration/test-command.test.ts (5 tests | 5 failed) 414ms
+     × exits 2 naming the missing package and pnpm run setup:online on an empty store, without the network 163ms
+     × exits 2 naming Chromium and pnpm run setup:online on an empty browser path, without the network 118ms
+     × exits 0 with a lockfile without dependencies and the installed browser, changing no workspace file 137ms
+ ❯ |gates-integration| gates/test/integration/test-command.test.ts (5 tests | 5 failed) 522ms
    ❯ test command (gates/bin/test.ts) (5)
-     × exits 2 naming pnpm run setup:online when Chromium is missing, and runs no test (US1 scenario 9) 106ms
-     × exits 2 naming the override when OCELLE_CHROMIUM_PATH points at no executable 72ms
-     × exits 1 naming the failing test as a finding (US1 scenario 5) 79ms
-     × exits 2 when no test file is found (FR-004) 85ms
-     × exits 0 with a one-line summary when every test passes 70ms
+     × exits 2 naming pnpm run setup:online when Chromium is missing, and runs no test (US1 scenario 9) 128ms
+     × exits 2 naming the override when OCELLE_CHROMIUM_PATH points at no executable 108ms
+     × exits 1 naming the failing test as a finding (US1 scenario 5) 94ms
+     × exits 2 when no test file is found (FR-004) 93ms
+     × exits 0 with a one-line summary when every test passes 96ms
 
 ⎯⎯⎯⎯⎯⎯ Failed Tests 56 ⎯⎯⎯⎯⎯⎯⎯
 
@@ -1313,7 +1313,7 @@ AssertionError: expected { executable: undefined, …(1) } to deeply equal { …
 
  Test Files  7 failed | 3 passed (10)
       Tests  56 failed | 3 passed (59)
-   Start at  20:37:44
-   Duration  2.09s (transform 53%, tests 22%, worker 16%, import 9%)
+   Start at  18:42:47
+   Duration  2.74s (transform 59%, tests 21%, worker 15%, import 6%)
 
 [ELIFECYCLE] Test failed. See above for more details.

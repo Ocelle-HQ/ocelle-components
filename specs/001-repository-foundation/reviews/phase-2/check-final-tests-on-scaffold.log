@@ -1,5 +1,5 @@
 Scope: all 4 workspace projects
-✓ Lockfile passes supply-chain policies (verified 22m ago)
+✓ Lockfile passes supply-chain policies (verified 22h ago)
 Lockfile is up to date, resolution step is skipped
 Packages are hard linked from the content-addressable store to the virtual store.
   Content-addressable store is at: /root/.local/share/pnpm/store/v11
@@ -29,92 +29,1434 @@ devDependencies:
 + vite 8.3.5
 + vitest 5.0.5
 
-Done in 782ms using pnpm v12.16.1
+Done in 257ms using pnpm v12.16.1
 $ pnpm install --frozen-lockfile --offline
 Scope: all 4 workspace projects
-✓ Lockfile passes supply-chain policies (verified 22m ago)
+✓ Lockfile passes supply-chain policies (verified 22h ago)
 Lockfile is up to date, resolution step is skipped
-Done in 24ms using pnpm v12.16.1
+Done in 44ms using pnpm v12.16.1
 $ vitest run
 
- RUN  v5.0.5 /tmp/tmp.SqkD8Miubc
+ RUN  v5.0.5 /tmp/tmp.cBRajKIycy
 
- ❯ |gates| gates/test/findings.test.ts (10 tests | 10 failed) 29ms
-   ❯ formatLocation (3)
-     × writes a file location at a line as path:line 10ms
-     × writes a whole-file location as the path alone 1ms
-     × writes a commit location as the full hash 1ms
-   ❯ formatFinding (4)
-     × writes <location>: <gate-id>: <rule>: <message> for a path:line location 6ms
-     × writes <location>: <gate-id>: <rule>: <message> for a path location 0ms
-     × writes <location>: <gate-id>: <rule>: <message> for a commit location 0ms
-     × keeps a finding on one line when its message has line breaks 0ms
-   ❯ emit (3)
-     × prints the one-line summary of a pass on stdout and returns 0 6ms
-     × prints each finding and then the summary on stdout and returns 1 1ms
-     × prints the cause of a run that could not run as one line on stderr and returns 2 1ms
- ❯ |gates| gates/test/cli.test.ts (11 tests | 11 failed) 30ms
-   ❯ entry (6)
-     × returns exit 2, not Node's exit 1, when run() throws, with one line naming the cause 9ms
-     × returns exit 2 with one line when an async run() rejects with a multi-line error 2ms
-     × returns exit 2 with one line naming a thrown value that is not an Error 1ms
-     × returns the code run() returns for 0, 1 and 2 3ms
-     × returns exit 2 with one line when run() returns a code outside the contract 1ms
-     × passes argv and io to run() 2ms
-   ❯ parseArgs (5)
-     × defaults the repository root and the tool working directory to the current directory 1ms
-     × sets the repository root and the tool working directory from --root <dir> 3ms
-     × resolves a relative --root against the current directory 2ms
-     × leaves every other argument unchanged and in order 3ms
-     × rejects --root without a directory 2ms
- ❯ |gates| gates/test/test-command.test.ts (16 tests | 16 failed) 48ms
+ ❯ |gates| gates/test/mutation-ranges.test.ts (0 test)
+ ❯ |gates| gates/test/mutation-shards.test.ts (0 test)
+ ❯ |gates| gates/test/plants.test.ts (0 test)
+ ❯ |gates| gates/test/pins.test.ts (0 test)
+ ❯ |gates| gates/test/mutation-report.test.ts (0 test)
+ ❯ |gates| gates/test/test-command.test.ts (28 tests | 28 failed) 74ms
    ❯ classifyVitest (10)
-     × passes a run whose tests all passed, with a one-line summary of the count 12ms
-     × reports each failed test as one finding at its file and line, rule = the full test name 3ms
-     × reports a failed test without a recorded location at its file 6ms
+     × passes a run whose tests all passed, with a one-line summary of the count 25ms
+     × reports each failed test as one finding at its file and line, rule = the full test name 4ms
+     × reports a failed test without a recorded location at its file 14ms
      × cannot run when no test file is found (a broken file pattern does not pass) 2ms
      × cannot run when a test file fails to load, naming the file and the error 3ms
      × cannot run when a test file does not parse, naming the file without terminal colour codes 2ms
-     × cannot run on errors outside tests even when every test passed, naming the error 1ms
-     × cannot run when a failed test comes with a file that failed to load 1ms
-     × cannot run without a report 3ms
+     × cannot run on errors outside tests even when every test passed, naming the error 2ms
+     × cannot run when a failed test comes with a file that failed to load 6ms
+     × cannot run without a report 1ms
      × cannot run on a report that is not JSON 1ms
    ❯ chromiumCheck (6)
-     × checks Playwright's own Chromium when no override is set and finds no problem when it exists 2ms
-     × names pnpm run setup:online when Playwright's Chromium is missing 1ms
-     × names pnpm run setup:online when Playwright cannot name a Chromium executable 5ms
-     × checks the OCELLE_CHROMIUM_PATH override instead of Playwright's Chromium when it is set (R1-03) 1ms
-     × names the override and pnpm run setup:online when the override does not exist 1ms
-     × treats an empty override as unset, like vitest.config.ts does 1ms
- ❯ |gates| gates/test/config-copies.test.ts (4 tests | 4 failed) 16ms
-   ❯ config-copies gate (4)
-     × passes two byte-identical copies whose test_pathspec is FR-028's test code 9ms
-     × fails when one setting differs, naming both copies and the first differing line 1ms
-     × fails on equal copies whose test_pathspec is not FR-028's test code, one finding per copy 1ms
-     × cannot run when a copy is missing, naming it 2ms
- ❯ |gates| gates/test/setup-offline.test.ts (7 tests | 7 failed) 26ms
+     × checks Playwright's own Chromium when no override is set and finds no problem when it exists 1ms
+     × names pnpm run setup:online when Playwright's Chromium is missing 0ms
+     × names pnpm run setup:online when Playwright cannot name a Chromium executable 0ms
+     × checks the OCELLE_CHROMIUM_PATH override instead of Playwright's Chromium when it is set (R1-03) 0ms
+     × names the override and pnpm run setup:online when the override does not exist 0ms
+     × treats an empty override as unset, like vitest.config.ts does 0ms
+   ❯ classifyVitest (mutation catch-up) (9)
+     × names the first non-blank line of a failure message, without colour codes or indentation 2ms
+     × names a failed test without a failure message 'failed', and an empty message as empty 1ms
+     × keeps the path of a test file outside the repository root as it is 1ms
+     × cannot run on an error outside the tests of a file whose tests all passed 1ms
+     × counts only passed tests in the summary, not skipped ones 1ms
+     × cannot run without a report, naming Vitest's exit code when its output names no error 0ms
+     × cannot run without a report, naming the error line of the output (colour codes and indentation removed) 1ms
+     × cannot run on a report that is null or has no list of test results 1ms
+     × cannot run when Vitest fails with no failed test and no error in its output 1ms
+   ❯ unitTests (mutation catch-up) (3)
+     × runs no test when Chromium is missing, exit 2 naming the problem 1ms
+     × exits 2 naming the setup when Vitest is not installed in the root 0ms
+     × runs Vitest with the JSON report and test locations, passing extra arguments on, and classifies the report 0ms
+ ❯ |gates| gates/test/plant-runner.test.ts (0 test)
+ ❯ |gates| gates/test/pins-rules.test.ts (0 test)
+ ❯ |gates| gates/test/plant-judge.test.ts (0 test)
+ ❯ |gates| gates/test/csp.test.ts (0 test)
+ ❯ |gates| gates/test/signoff.test.ts (0 test)
+ ❯ |gates| gates/test/pins-gate.test.ts (0 test)
+ ❯ |gates| gates/test/mutation-records.test.ts (0 test)
+ ❯ |gates| gates/test/unchecked-expect.test.ts (0 test)
+ ❯ |gates| gates/test/plant-repo-parts.test.ts (0 test)
+ ❯ |gates| gates/test/prefix.test.ts (0 test)
+ ❯ |gates| gates/test/registry.test.ts (0 test)
+ ❯ |gates| gates/test/eslint-report.test.ts (0 test)
+ ❯ |gates| gates/test/setup-offline.test.ts (14 tests | 14 failed) 32ms
    ❯ decideSetup (7)
-     × turns a tarball missing from the store into 'missing: <package>; run pnpm run setup:online', exit 2 12ms
-     × turns package metadata missing from the cache into 'missing: <package>; run pnpm run setup:online', exit 2 2ms
-     × reports any other pnpm failure as exit 2 naming pnpm's error code 2ms
+     × turns a tarball missing from the store into 'missing: <package>; run pnpm run setup:online', exit 2 13ms
+     × turns package metadata missing from the cache into 'missing: <package>; run pnpm run setup:online', exit 2 3ms
+     × reports any other pnpm failure as exit 2 naming pnpm's error code 1ms
      × reports a pnpm failure without an error record as exit 2 naming its exit code 1ms
      × names Chromium and pnpm run setup:online when the install succeeds but Chromium is missing, exit 2 1ms
      × names the missing package first when both the store and Chromium lack something 1ms
-     × passes a successful install with Chromium present, naming the Chromium it found 2ms
- ❯ |gates-integration| gates/test/integration/setup-offline.test.ts (3 tests | 3 failed) 297ms
+     × passes a successful install with Chromium present, naming the Chromium it found 1ms
+   ❯ decideSetup (mutation catch-up) (4)
+     × names pnpm's error code and the first line of its message for any other failure 1ms
+     × skips lines that are not error records: text, null, numbers, lists and other levels 1ms
+     × reads an error record whose code and message are not text as empty 1ms
+     × names an unknown Chromium when the check names no executable 2ms
+   ❯ setupOffline (mutation catch-up) (3)
+     × installs frozen and offline with the ndjson log, then checks Chromium 1ms
+     × reports a missing Chromium after a successful install 0ms
+     × reports a failed install on its own, without checking Chromium 3ms
+ ❯ |gates| gates/test/plants-job.test.ts (0 test)
+ ❯ |gates| gates/test/workspace-yaml.test.ts (0 test)
+ ❯ |gates| gates/test/token-only.test.ts (0 test)
+ ❯ |gates| gates/test/token-only-parts.test.ts (0 test)
+ ❯ |gates| gates/test/no-snapshot-only.test.ts (0 test)
+ ❯ |gates| gates/test/csp-parts.test.ts (0 test)
+ ❯ |gates| gates/test/tsc-report.test.ts (0 test)
+ ❯ |gates| gates/test/plant-repo.test.ts (0 test)
+ ❯ |gates| gates/test/report-parts.test.ts (0 test)
+ ❯ |gates| gates/test/stylelint-report.test.ts (0 test)
+ ❯ |gates| gates/test/config-copies.test.ts (8 tests | 8 failed) 30ms
+   ❯ config-copies gate (4)
+     × passes two byte-identical copies whose test_pathspec is FR-028's test code 14ms
+     × fails when one setting differs, naming both copies and the first differing line 2ms
+     × fails on equal copies whose test_pathspec is not FR-028's test code, one finding per copy 1ms
+     × cannot run when a copy is missing, naming it 1ms
+   ❯ config-copies gate (mutation catch-up) (4)
+     × names the first line one copy has and the other lacks, and counts the findings in the summary 3ms
+     × removes quotes only when they wrap the whole test_pathspec value 1ms
+     × names a copy without test_pathspec as missing 3ms
+     × cannot run when either copy is missing, naming exactly that copy 1ms
+ ❯ |gates| gates/test/cli.test.ts (13 tests | 13 failed) 33ms
+   ❯ entry (6)
+     × returns exit 2, not Node's exit 1, when run() throws, with one line naming the cause 11ms
+     × returns exit 2 with one line when an async run() rejects with a multi-line error 1ms
+     × returns exit 2 with one line naming a thrown value that is not an Error 1ms
+     × returns the code run() returns for 0, 1 and 2 3ms
+     × returns exit 2 with one line when run() returns a code outside the contract 1ms
+     × passes argv and io to run() 3ms
+   ❯ parseArgs (5)
+     × defaults the repository root and the tool working directory to the current directory 1ms
+     × sets the repository root and the tool working directory from --root <dir> 1ms
+     × resolves a relative --root against the current directory 1ms
+     × leaves every other argument unchanged and in order 1ms
+     × rejects --root without a directory 2ms
+   ❯ entry and parseArgs (mutation catch-up) (2)
+     × writes nothing to stderr when run() returns 0, 1 or 2 1ms
+     × rejects --root without a directory and --root with an empty one, naming the option 3ms
+ ❯ |gates| gates/test/findings.test.ts (10 tests | 10 failed) 30ms
+   ❯ formatLocation (3)
+     × writes a file location at a line as path:line 11ms
+     × writes a whole-file location as the path alone 1ms
+     × writes a commit location as the full hash 1ms
+   ❯ formatFinding (4)
+     × writes <location>: <gate-id>: <rule>: <message> for a path:line location 1ms
+     × writes <location>: <gate-id>: <rule>: <message> for a path location 1ms
+     × writes <location>: <gate-id>: <rule>: <message> for a commit location 1ms
+     × keeps a finding on one line when its message has line breaks 1ms
+   ❯ emit (3)
+     × prints the one-line summary of a pass on stdout and returns 0 5ms
+     × prints each finding and then the summary on stdout and returns 1 3ms
+     × prints the cause of a run that could not run as one line on stderr and returns 2 2ms
+ ❯ |gates| gates/test/governance.test.ts (8 tests | 8 failed) 39ms
+   ❯ governance files (SC-006) (8)
+     × has LICENSE, CONTRIBUTING.md, SECURITY.md and THIRD_PARTY_NOTICES at the root under exactly these names 19ms
+     × LICENSE is the unmodified Apache License 2.0 text (FR-030) 9ms
+     × CONTRIBUTING.md states the sign-off rule (FR-031) 2ms
+     × CONTRIBUTING.md states there is no contributor licence agreement and points to Spec Kit and the constitution (FR-031) 1ms
+     × .github/CODEOWNERS names @MOES-Media as the only owner of every path (FR-035) 2ms
+     × SECURITY.md names GitHub private vulnerability reporting and the CODEOWNERS owner @MOES-Media (FR-032) 1ms
+     × SECURITY.md promises an acknowledgement within 3 working days and a status update within 10 (FR-032) 1ms
+     × THIRD_PARTY_NOTICES states that no third-party asset ships yet and when the font entry arrives (FR-033) 1ms
+ ❯ |gates| gates/test/registry-parts.test.ts (0 test)
+ ❯ |gates| gates/test/signoff-parts.test.ts (0 test)
+ ❯ |gates| gates/test/ci-workflow.test.ts (0 test)
+ ❯ |gates| gates/test/mutation-coverage.test.ts (0 test)
+ ❯ |gates| gates/test/prefix-parts.test.ts (0 test)
+ ❯ |gates| gates/test/spawn.test.ts (0 test)
+ ❯ |gates| gates/test/entries.test.ts (0 test)
+ ❯ |gates| gates/test/style-lint.test.ts (0 test)
+ ❯ |gates-integration| gates/test/integration/mutation.test.ts (7 tests | 7 failed) 19ms
+   ❯ mutation gate (gates/bin/mutation.ts) (7)
+     × reports a mutant on a changed line that only a gates-integration test covers as a NoCoverage finding (exit 1) 10ms
+     × reports a change only to source no test imports as a located NoCoverage finding (exit 1), not as could not run (review round 1, R1-10) 1ms
+     × exits 2 naming a changed file under a .next folder, which Stryker does not read (phase 3 round 12, O12-01) 1ms
+     × --files mutates only the listed file 1ms
+     × --files with an entry path:start-end mutates only the changed lines inside it (phase 3 round 9, O9-01) 1ms
+     × deletes an earlier run's report: a Stryker run that writes none exits 2 (review round 1, R1-01) 2ms
+     × exits 2 when --base does not resolve 1ms
+ ❯ |gates-integration| gates/test/integration/test-lint.test.ts (18 tests | 18 failed) 32ms
+   ❯ test lint (gates/bin/test-lint.ts) (10)
+     × exits 1 with exactly the one finding of expect-expect 13ms
+     × exits 1 with exactly the one finding of no-disabled-tests 1ms
+     × exits 1 with exactly the one finding of no-focused-tests 1ms
+     × exits 1 with exactly the one finding of no-conditional-expect 1ms
+     × exits 1 with exactly the one finding of no-standalone-expect 1ms
+     × exits 1 with exactly the one finding of valid-expect 2ms
+     × exits 1 with exactly the one finding of valid-expect-in-promise 1ms
+     × exits 1 with exactly the one finding of no-snapshot-only 1ms
+     × exits 0 on a test with one real assertion 1ms
+     × exits 2 naming the file when a test file does not parse 2ms
+   ❯ test lint, unchecked assertions (gates/bin/test-lint.ts) (7)
+     × exits 1 with exactly the one finding of no-floating-promise-expect 1ms
+     × exits 1 with exactly the one finding of no-timer-expect 0ms
+     × exits 1 with exactly the one finding of no-swallowed-expect 0ms
+     × exits 1 with exactly the one finding of asserting-catch 1ms
+     × exits 0 with no finding on pass-awaited-promise 1ms
+     × exits 0 with no finding on pass-returned-promise 0ms
+     × exits 0 with no finding on pass-rethrowing-catch 0ms
+   ❯ test lint, Stryker sandbox (gates/bin/test-lint.ts) (1)
+     × does not check .stryker-tmp/: exits 0 with the one repository test file checked 0ms
+ ❯ |gates-integration| gates/test/integration/plant-repo.test.ts (0 test)
+ ❯ |gates-integration| gates/test/integration/plants.test.ts (1 test | 1 failed) 20ms
+   ❯ plant job (gates/bin/plants.ts) (1)
+     × plants --root <tmp> runs each plant form through its gate and judges it 18ms
+ ❯ |gates-integration| gates/test/integration/gates-root.test.ts (14 tests | 14 failed) 633ms
+   ❯ typecheck --root <tmp> (2)
+     × exits 1 with exactly the defect's finding at its repository path 68ms
+     × exits 0 on the same tree without the defect 60ms
+   ❯ lint --root <tmp> (2)
+     × exits 1 with exactly the defect's finding at its repository path 2ms
+     × exits 0 on the same tree without the defect 1ms
+   ❯ style-lint --root <tmp> (2)
+     × exits 1 with exactly the defect's finding at its repository path 1ms
+     × exits 0 on the same tree without the defect 1ms
+   ❯ csp --root <tmp> (2)
+     × exits 1 with exactly the defect's finding at its repository path 44ms
+     × exits 0 on the same tree without the defect 42ms
+   ❯ prefix --root <tmp> (2)
+     × exits 1 with exactly the defect's finding at its repository path 43ms
+     × exits 0 on the same tree without the defect 47ms
+   ❯ pins --root <tmp> (2)
+     × exits 1 with exactly the lockfile finding 47ms
+     × exits 0 with a matching lockfile 46ms
+   ❯ signoff --root <tmp> --range <base>..HEAD (2)
+     × exits 1 with exactly the finding of the commit without a sign-off 113ms
+     × exits 0 on the same records without the defect 114ms
+ ❯ |gates-integration| gates/test/integration/setup-offline.test.ts (3 tests | 3 failed) 354ms
    ❯ offline setup (gates/bin/setup-offline.ts) (3)
-     × exits 2 naming the missing package and pnpm run setup:online on an empty store, without the network 127ms
-     × exits 2 naming Chromium and pnpm run setup:online on an empty browser path, without the network 96ms
-     × exits 0 with a lockfile without dependencies and the installed browser, changing no workspace file 73ms
- ❯ |gates-integration| gates/test/integration/test-command.test.ts (5 tests | 5 failed) 464ms
+     × exits 2 naming the missing package and pnpm run setup:online on an empty store, without the network 135ms
+     × exits 2 naming Chromium and pnpm run setup:online on an empty browser path, without the network 122ms
+     × exits 0 with a lockfile without dependencies and the installed browser, changing no workspace file 94ms
+ ❯ |gates-integration| gates/test/integration/pins-plants.test.ts (2 tests | 2 failed) 12ms
+   ❯ pins range plants on an empty pnpm cache (2)
+     × pins --plant gates/plants/pins/fail-caret-range exits 1 with exactly its range finding 8ms
+     × pins --plant gates/plants/pins/fail-tilde-range exits 1 with exactly its range finding 1ms
+ ❯ |gates-integration| gates/test/integration/vitest-mutation-config.test.ts (1 test | 1 failed) 11ms
+   ❯ vitest.mutation.config.ts (1)
+     × holds every project of vitest.config.ts except gates-integration 8ms
+ ❯ |gates-integration| gates/test/integration/test-command.test.ts (5 tests | 5 failed) 536ms
    ❯ test command (gates/bin/test.ts) (5)
-     × exits 2 naming pnpm run setup:online when Chromium is missing, and runs no test (US1 scenario 9) 133ms
-     × exits 2 naming the override when OCELLE_CHROMIUM_PATH points at no executable 101ms
-     × exits 1 naming the failing test as a finding (US1 scenario 5) 73ms
-     × exits 2 when no test file is found (FR-004) 75ms
-     × exits 0 with a one-line summary when every test passes 81ms
+     × exits 2 naming pnpm run setup:online when Chromium is missing, and runs no test (US1 scenario 9) 107ms
+     × exits 2 naming the override when OCELLE_CHROMIUM_PATH points at no executable 113ms
+     × exits 1 naming the failing test as a finding (US1 scenario 5) 99ms
+     × exits 2 when no test file is found (FR-004) 96ms
+     × exits 0 with a one-line summary when every test passes 118ms
+ ❯ |gates-integration| gates/test/integration/config-copies.test.ts (2 tests | 2 failed) 224ms
+   ❯ config copies (gates/bin/config-copies.ts) (2)
+     × exits 0 with a one-line summary on two identical copies 112ms
+     × exits 2 naming the missing tooling copy 110ms
 
-⎯⎯⎯⎯⎯⎯ Failed Tests 56 ⎯⎯⎯⎯⎯⎯⎯
+⎯⎯⎯⎯⎯⎯ Failed Suites 36 ⎯⎯⎯⎯⎯⎯
+
+ FAIL  |gates-integration| gates/test/integration/plant-repo.test.ts [ gates/test/integration/plant-repo.test.ts ]
+Error: Cannot find module '../../lib/plant-repo.ts' imported from /tmp/tmp.cBRajKIycy/gates/test/integration/plant-repo.test.ts
+ ❯ gates/test/integration/plant-repo.test.ts:5:1
+      3| import { join } from "node:path";
+      4| import { afterEach, describe, expect, it } from "vitest";
+      5| import { buildCommitRepo, buildMutationRepo, buildRepoTree } from "../…
+       | ^
+      6| import { baseEnv, cleanUp, repo, tempDir } from "./workspace.ts";
+      7|
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[1/170]⎯
+
+ FAIL  |gates| gates/test/ci-workflow.test.ts [ gates/test/ci-workflow.test.ts ]
+Error: ENOENT: no such file or directory, open '/tmp/tmp.cBRajKIycy/.github/workflows/ci.yml'
+ ❯ gates/test/ci-workflow.test.ts:8:18
+      6| // to `--files` unchanged, so line-range entries `path:start-end` reac…
+      7| // round 9, O9-01). The value reaches the script through the environme…
+      8| const workflow = readFileSync(new URL("../../.github/workflows/ci.yml"…
+       |                  ^
+      9|
+     10| /** The lines of one job of the workflow, from its key to the line bef…
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[2/170]⎯
+
+ FAIL  |gates| gates/test/csp-parts.test.ts [ gates/test/csp-parts.test.ts ]
+Error: Cannot find module '../bin/csp.ts' imported from /tmp/tmp.cBRajKIycy/gates/test/csp-parts.test.ts
+ ❯ gates/test/csp-parts.test.ts:2:1
+      1| import { describe, expect, it } from "vitest";
+      2| import { checkOutput, scanMarkup, scanScript, selectOutput, sourceOffs…
+       | ^
+      3| import type { Finding } from "../lib/findings.ts";
+      4|
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[3/170]⎯
+
+ FAIL  |gates| gates/test/csp.test.ts [ gates/test/csp.test.ts ]
+Error: Cannot find module '../bin/csp.ts' imported from /tmp/tmp.cBRajKIycy/gates/test/csp.test.ts
+ ❯ gates/test/csp.test.ts:2:1
+      1| import { describe, expect, it } from "vitest";
+      2| import { checkOutput, isBuiltOutput, scanMarkup, scanScript } from "..…
+       | ^
+      3| import type { Finding } from "../lib/findings.ts";
+      4|
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[4/170]⎯
+
+ FAIL  |gates| gates/test/entries.test.ts [ gates/test/entries.test.ts ]
+Error: Cannot find module '../lib/entries.ts' imported from /tmp/tmp.cBRajKIycy/gates/test/entries.test.ts
+ ❯ gates/test/entries.test.ts:2:1
+      1| import { describe, expect, it } from "vitest";
+      2| import { directoryNames, filePaths } from "../lib/entries.ts";
+       | ^
+      3| import type { Entry } from "../lib/entries.ts";
+      4|
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[5/170]⎯
+
+ FAIL  |gates| gates/test/eslint-report.test.ts [ gates/test/eslint-report.test.ts ]
+Error: Cannot find module '../lib/eslint-report.ts' imported from /tmp/tmp.cBRajKIycy/gates/test/eslint-report.test.ts
+ ❯ gates/test/eslint-report.test.ts:3:1
+      1| import { readFileSync } from "node:fs";
+      2| import { describe, expect, it } from "vitest";
+      3| import { classifyEslint } from "../lib/eslint-report.ts";
+       | ^
+      4|
+      5| // Recorded ESLint 10 `--format json` output and stderr in gates/test/…
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[6/170]⎯
+
+ FAIL  |gates| gates/test/mutation-coverage.test.ts [ gates/test/mutation-coverage.test.ts ]
+Error: Cannot find module '../lib/mutation/coverage.ts' imported from /tmp/tmp.cBRajKIycy/gates/test/mutation-coverage.test.ts
+ ❯ gates/test/mutation-coverage.test.ts:3:1
+      1| import { runInNewContext } from "node:vm";
+      2| import { describe, expect, it } from "vitest";
+      3| import { coverageRecordModule, strykerEnv } from "../lib/mutation/cove…
+       | ^
+      4|
+      5| // The coverage record of a Stryker run whose tests load no mutated fi…
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[7/170]⎯
+
+ FAIL  |gates| gates/test/mutation-ranges.test.ts [ gates/test/mutation-ranges.test.ts ]
+Error: Cannot find module '../bin/mutation.ts' imported from /tmp/tmp.cBRajKIycy/gates/test/mutation-ranges.test.ts
+ ❯ gates/test/mutation-ranges.test.ts:3:1
+      1| import { readFileSync } from "node:fs";
+      2| import { describe, expect, it } from "vitest";
+      3| import { mutation } from "../bin/mutation.ts";
+       | ^
+      4| import { changedFiles, inScope, mutateSpecs, scopePathspecs, unusableM…
+      5| import { base, capture, context, fakeGit, fakeRepo, fakeStryker, newFi…
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[8/170]⎯
+
+ FAIL  |gates| gates/test/mutation-records.test.ts [ gates/test/mutation-records.test.ts ]
+Error: Cannot find module '../bin/mutation.ts' imported from /tmp/tmp.cBRajKIycy/gates/test/mutation-records.test.ts
+ ❯ gates/test/mutation-records.test.ts:2:1
+      1| import { describe, expect, it } from "vitest";
+      2| import { mutation } from "../bin/mutation.ts";
+       | ^
+      3| import { formatRecord, scanRecords } from "../lib/mutation/records.ts";
+      4| import { base, capture, context, fakeGit, fakeRepo, fakeStryker } from…
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[9/170]⎯
+
+ FAIL  |gates| gates/test/mutation-report.test.ts [ gates/test/mutation-report.test.ts ]
+Error: Cannot find module '../lib/mutation/report.ts' imported from /tmp/tmp.cBRajKIycy/gates/test/mutation-report.test.ts
+ ❯ gates/test/mutation-report.test.ts:3:1
+      1| import { readFileSync } from "node:fs";
+      2| import { describe, expect, it } from "vitest";
+      3| import { classifyMutants } from "../lib/mutation/report.ts";
+       | ^
+      4| import type { ChangedFile, LineRange } from "../lib/mutation/ranges.ts…
+      5|
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[10/170]⎯
+
+ FAIL  |gates| gates/test/mutation-shards.test.ts [ gates/test/mutation-shards.test.ts ]
+Error: Cannot find module '../bin/mutation.ts' imported from /tmp/tmp.cBRajKIycy/gates/test/mutation-shards.test.ts
+ ❯ gates/test/mutation-shards.test.ts:3:1
+      1| import { readFileSync } from "node:fs";
+      2| import { describe, expect, it } from "vitest";
+      3| import { mutation } from "../bin/mutation.ts";
+       | ^
+      4| import type { MutationTools } from "../bin/mutation.ts";
+      5| import { changedFiles } from "../lib/mutation/ranges.ts";
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[11/170]⎯
+
+ FAIL  |gates| gates/test/no-snapshot-only.test.ts [ gates/test/no-snapshot-only.test.ts ]
+Error: Cannot find module '../eslint/no-snapshot-only.ts' imported from /tmp/tmp.cBRajKIycy/gates/test/no-snapshot-only.test.ts
+ ❯ gates/test/no-snapshot-only.test.ts:3:1
+      1| import { Linter, RuleTester } from "eslint";
+      2| import { describe, expect, it } from "vitest";
+      3| import { noSnapshotOnly, plugin } from "../eslint/no-snapshot-only.ts";
+       | ^
+      4|
+      5| // ESLint's RuleTester turns each case into a Vitest test and fails it…
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[12/170]⎯
+
+ FAIL  |gates| gates/test/pins-gate.test.ts [ gates/test/pins-gate.test.ts ]
+Error: Cannot find module '../bin/pins.ts' imported from /tmp/tmp.cBRajKIycy/gates/test/pins-gate.test.ts
+ ❯ gates/test/pins-gate.test.ts:2:1
+      1| import { describe, expect, it } from "vitest";
+      2| import { checkFiles, pins } from "../bin/pins.ts";
+       | ^
+      3| import type { PinsTools } from "../bin/pins.ts";
+      4| import type { Context, Io } from "../lib/cli.ts";
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[13/170]⎯
+
+ FAIL  |gates| gates/test/pins-rules.test.ts [ gates/test/pins-rules.test.ts ]
+Error: Cannot find module '../lib/pins-rules.ts' imported from /tmp/tmp.cBRajKIycy/gates/test/pins-rules.test.ts
+ ❯ gates/test/pins-rules.test.ts:3:1
+      1| import { describe, expect, it } from "vitest";
+      2| import type { Finding } from "../lib/findings.ts";
+      3| import { dependencyFindings, lockfileVerdict, pinFindings, show, works…
+       | ^
+      4|
+      5| // The pins rules one at a time (FR-027, research.md R-14; phase 4 rev…
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[14/170]⎯
+
+ FAIL  |gates| gates/test/pins.test.ts [ gates/test/pins.test.ts ]
+Error: Cannot find module '../bin/pins.ts' imported from /tmp/tmp.cBRajKIycy/gates/test/pins.test.ts
+ ❯ gates/test/pins.test.ts:6:1
+      4| import { fileURLToPath } from "node:url";
+      5| import { describe, expect, it } from "vitest";
+      6| import { checkFiles, lockfileVerdict, pins } from "../bin/pins.ts";
+       | ^
+      7| import type { PinsTools, WorkspaceFiles } from "../bin/pins.ts";
+      8| import type { Context, Io } from "../lib/cli.ts";
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[15/170]⎯
+
+ FAIL  |gates| gates/test/plant-judge.test.ts [ gates/test/plant-judge.test.ts ]
+Error: Cannot find module '../lib/plant-judge.ts' imported from /tmp/tmp.cBRajKIycy/gates/test/plant-judge.test.ts
+ ❯ gates/test/plant-judge.test.ts:2:1
+      1| import { describe, expect, it } from "vitest";
+      2| import { judgePlant, parsePlant } from "../lib/plant-judge.ts";
+       | ^
+      3| import type { Plant, PlantRun } from "../lib/plant-judge.ts";
+      4|
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[16/170]⎯
+
+ FAIL  |gates| gates/test/plant-repo-parts.test.ts [ gates/test/plant-repo-parts.test.ts ]
+Error: Cannot find module '../lib/plant-repo.ts' imported from /tmp/tmp.cBRajKIycy/gates/test/plant-repo-parts.test.ts
+ ❯ gates/test/plant-repo-parts.test.ts:2:1
+      1| import { describe, expect, it } from "vitest";
+      2| import {
+       | ^
+      3|   baseCommit,
+      4|   carriesConfiguration,
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[17/170]⎯
+
+ FAIL  |gates| gates/test/plant-repo.test.ts [ gates/test/plant-repo.test.ts ]
+Error: Cannot find module '../lib/plant-repo.ts' imported from /tmp/tmp.cBRajKIycy/gates/test/plant-repo.test.ts
+ ❯ gates/test/plant-repo.test.ts:2:1
+      1| import { describe, expect, it } from "vitest";
+      2| import { carriesConfiguration, configurationSet, parseCommits } from "…
+       | ^
+      3|
+      4| // The pure parts of gates/lib/plant-repo.ts (research.md R-10, contra…
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[18/170]⎯
+
+ FAIL  |gates| gates/test/plant-runner.test.ts [ gates/test/plant-runner.test.ts ]
+Error: Cannot find module '../lib/plant-runner.ts' imported from /tmp/tmp.cBRajKIycy/gates/test/plant-runner.test.ts
+ ❯ gates/test/plant-runner.test.ts:3:1
+      1| import { describe, expect, it } from "vitest";
+      2| import type { Plant } from "../lib/plant-judge.ts";
+      3| import { errorText, gateRunsAtOnce, limiter, outputLines, plantValues,…
+       | ^
+      4| import type { BuiltRepo, RunnerTools } from "../lib/plant-runner.ts";
+      5| import type { Gate, PlantForm } from "../lib/registry.ts";
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[19/170]⎯
+
+ FAIL  |gates| gates/test/plants-job.test.ts [ gates/test/plants-job.test.ts ]
+Error: Cannot find module '../bin/plants.ts' imported from /tmp/tmp.cBRajKIycy/gates/test/plants-job.test.ts
+ ❯ gates/test/plants-job.test.ts:3:1
+      1| import { readFileSync } from "node:fs";
+      2| import { describe, expect, it } from "vitest";
+      3| import { plants } from "../bin/plants.ts";
+       | ^
+      4| import type { PlantRun, PlantTools } from "../bin/plants.ts";
+      5| import type { Context, Io } from "../lib/cli.ts";
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[20/170]⎯
+
+ FAIL  |gates| gates/test/plants.test.ts [ gates/test/plants.test.ts ]
+Error: Cannot find module '../bin/plants.ts' imported from /tmp/tmp.cBRajKIycy/gates/test/plants.test.ts
+ ❯ gates/test/plants.test.ts:3:1
+      1| import { readFileSync } from "node:fs";
+      2| import { describe, expect, it } from "vitest";
+      3| import { judgePlant, parsePlant, plantArgs, plants } from "../bin/plan…
+       | ^
+      4| import type { Plant, PlantRun, PlantTools } from "../bin/plants.ts";
+      5| import type { Context, Io } from "../lib/cli.ts";
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[21/170]⎯
+
+ FAIL  |gates| gates/test/prefix-parts.test.ts [ gates/test/prefix-parts.test.ts ]
+Error: Cannot find module '../bin/prefix.ts' imported from /tmp/tmp.cBRajKIycy/gates/test/prefix-parts.test.ts
+ ❯ gates/test/prefix-parts.test.ts:2:1
+      1| import { describe, expect, it } from "vitest";
+      2| import { checkPackages, scanText, selectCovered } from "../bin/prefix.…
+       | ^
+      3|
+      4| // The prefix gate at the edges (FR-022, research.md R-12; phase 4 rev…
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[22/170]⎯
+
+ FAIL  |gates| gates/test/prefix.test.ts [ gates/test/prefix.test.ts ]
+Error: Cannot find module '../bin/prefix.ts' imported from /tmp/tmp.cBRajKIycy/gates/test/prefix.test.ts
+ ❯ gates/test/prefix.test.ts:2:1
+      1| import { describe, expect, it } from "vitest";
+      2| import { checkPackages, isCovered, scanText } from "../bin/prefix.ts";
+       | ^
+      3| import type { Finding } from "../lib/findings.ts";
+      4|
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[23/170]⎯
+
+ FAIL  |gates| gates/test/registry-parts.test.ts [ gates/test/registry-parts.test.ts ]
+Error: Cannot find module '../lib/registry.ts' imported from /tmp/tmp.cBRajKIycy/gates/test/registry-parts.test.ts
+ ❯ gates/test/registry-parts.test.ts:2:1
+      1| import { describe, expect, it } from "vitest";
+      2| import { ciJobs, fr020, parseRegistry } from "../lib/registry.ts";
+       | ^
+      3|
+      4| // The registry and the workflow job list at the edges (research.md R-…
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[24/170]⎯
+
+ FAIL  |gates| gates/test/registry.test.ts [ gates/test/registry.test.ts ]
+Error: Cannot find module '../lib/registry.ts' imported from /tmp/tmp.cBRajKIycy/gates/test/registry.test.ts
+ ❯ gates/test/registry.test.ts:4:1
+      2| import { describe, expect, it } from "vitest";
+      3| import type { Finding } from "../lib/findings.ts";
+      4| import { checkRegistry, ciJobs, fr020, parseRegistry, plantJob } from …
+       | ^
+      5| import type { Gate } from "../lib/registry.ts";
+      6|
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[25/170]⎯
+
+ FAIL  |gates| gates/test/report-parts.test.ts [ gates/test/report-parts.test.ts ]
+Error: Cannot find module '../lib/stylelint-report.ts' imported from /tmp/tmp.cBRajKIycy/gates/test/report-parts.test.ts
+ ❯ gates/test/report-parts.test.ts:2:1
+      1| import { describe, expect, it } from "vitest";
+      2| import { classifyStylelint } from "../lib/stylelint-report.ts";
+       | ^
+      3| import { classifyTsc } from "../lib/tsc-report.ts";
+      4|
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[26/170]⎯
+
+ FAIL  |gates| gates/test/signoff-parts.test.ts [ gates/test/signoff-parts.test.ts ]
+Error: Cannot find module '../bin/signoff.ts' imported from /tmp/tmp.cBRajKIycy/gates/test/signoff-parts.test.ts
+ ❯ gates/test/signoff-parts.test.ts:2:1
+      1| import { describe, expect, it } from "vitest";
+      2| import { checkCommits, logFormat, parseLog, signoff } from "../bin/sig…
+       | ^
+      3| import type { Context, Io } from "../lib/cli.ts";
+      4|
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[27/170]⎯
+
+ FAIL  |gates| gates/test/signoff.test.ts [ gates/test/signoff.test.ts ]
+Error: Cannot find module '../bin/signoff.ts' imported from /tmp/tmp.cBRajKIycy/gates/test/signoff.test.ts
+ ❯ gates/test/signoff.test.ts:2:1
+      1| import { describe, expect, it } from "vitest";
+      2| import { checkCommits, logFormat, parseLog, rootCommit, signoff } from…
+       | ^
+      3| import type { CommitRecord, SignoffTools } from "../bin/signoff.ts";
+      4| import type { Context, Io } from "../lib/cli.ts";
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[28/170]⎯
+
+ FAIL  |gates| gates/test/spawn.test.ts [ gates/test/spawn.test.ts ]
+Error: Cannot find module '../bin/signoff.ts' imported from /tmp/tmp.cBRajKIycy/gates/test/spawn.test.ts
+ ❯ gates/test/spawn.test.ts:5:1
+      3| import { join } from "node:path";
+      4| import { afterEach, describe, expect, it } from "vitest";
+      5| import { run as signoff } from "../bin/signoff.ts";
+       | ^
+      6| import { entry } from "../lib/cli.ts";
+      7| import type { Io } from "../lib/cli.ts";
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[29/170]⎯
+
+ FAIL  |gates| gates/test/style-lint.test.ts [ gates/test/style-lint.test.ts ]
+Error: Cannot find module '../bin/style-lint.ts' imported from /tmp/tmp.cBRajKIycy/gates/test/style-lint.test.ts
+ ❯ gates/test/style-lint.test.ts:2:1
+      1| import { describe, expect, it } from "vitest";
+      2| import { styleGlobs } from "../bin/style-lint.ts";
+       | ^
+      3|
+      4| // The style-lint gate's scope (FR-024, FR-028, research.md R-07; phas…
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[30/170]⎯
+
+ FAIL  |gates| gates/test/stylelint-report.test.ts [ gates/test/stylelint-report.test.ts ]
+Error: Cannot find module '../lib/stylelint-report.ts' imported from /tmp/tmp.cBRajKIycy/gates/test/stylelint-report.test.ts
+ ❯ gates/test/stylelint-report.test.ts:3:1
+      1| import { readFileSync } from "node:fs";
+      2| import { describe, expect, it } from "vitest";
+      3| import { classifyStylelint } from "../lib/stylelint-report.ts";
+       | ^
+      4|
+      5| // gates/lib/stylelint-report.ts on recorded Stylelint `--formatter js…
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[31/170]⎯
+
+ FAIL  |gates| gates/test/token-only-parts.test.ts [ gates/test/token-only-parts.test.ts ]
+Error: Cannot find module '../stylelint/token-only.ts' imported from /tmp/tmp.cBRajKIycy/gates/test/token-only-parts.test.ts
+ ❯ gates/test/token-only-parts.test.ts:3:1
+      1| import stylelint from "stylelint";
+      2| import { describe, expect, it } from "vitest";
+      3| import plugin, { rawValues, ruleName } from "../stylelint/token-only.t…
+       | ^
+      4|
+      5| // The token-only rule's lists and edges (FR-024, research.md R-07; ph…
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[32/170]⎯
+
+ FAIL  |gates| gates/test/token-only.test.ts [ gates/test/token-only.test.ts ]
+Error: Cannot find module '../stylelint/token-only.ts' imported from /tmp/tmp.cBRajKIycy/gates/test/token-only.test.ts
+ ❯ gates/test/token-only.test.ts:3:1
+      1| import stylelint from "stylelint";
+      2| import { describe, expect, it } from "vitest";
+      3| import plugin, { rawValues, ruleName } from "../stylelint/token-only.t…
+       | ^
+      4|
+      5| // The FR-024 allow-list of gates/stylelint/token-only.ts on single de…
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[33/170]⎯
+
+ FAIL  |gates| gates/test/tsc-report.test.ts [ gates/test/tsc-report.test.ts ]
+Error: Cannot find module '../lib/tsc-report.ts' imported from /tmp/tmp.cBRajKIycy/gates/test/tsc-report.test.ts
+ ❯ gates/test/tsc-report.test.ts:3:1
+      1| import { readFileSync } from "node:fs";
+      2| import { describe, expect, it } from "vitest";
+      3| import { classifyTsc } from "../lib/tsc-report.ts";
+       | ^
+      4|
+      5| // gates/lib/tsc-report.ts on recorded `tsc --noEmit --pretty false` o…
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[34/170]⎯
+
+ FAIL  |gates| gates/test/unchecked-expect.test.ts [ gates/test/unchecked-expect.test.ts ]
+Error: Cannot find module '../eslint/unchecked-expect.ts' imported from /tmp/tmp.cBRajKIycy/gates/test/unchecked-expect.test.ts
+ ❯ gates/test/unchecked-expect.test.ts:3:1
+      1| import { Linter, RuleTester } from "eslint";
+      2| import { describe, expect, it } from "vitest";
+      3| import { noFloatingPromiseExpect, noSwallowedExpect, noTimerExpect, pl…
+       | ^
+      4|
+      5| // ESLint's RuleTester turns each case into a Vitest test and fails it…
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[35/170]⎯
+
+ FAIL  |gates| gates/test/workspace-yaml.test.ts [ gates/test/workspace-yaml.test.ts ]
+Error: Cannot find module '../lib/workspace-yaml.ts' imported from /tmp/tmp.cBRajKIycy/gates/test/workspace-yaml.test.ts
+ ❯ gates/test/workspace-yaml.test.ts:2:1
+      1| import { describe, expect, it } from "vitest";
+      2| import { parseWorkspaceYaml } from "../lib/workspace-yaml.ts";
+       | ^
+      3|
+      4| // The YAML subset of pnpm-workspace.yaml the pins gate reads (FR-027,…
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[36/170]⎯
+
+
+⎯⎯⎯⎯⎯⎯ Failed Tests 134 ⎯⎯⎯⎯⎯⎯
+
+ FAIL  |gates-integration| gates/test/integration/config-copies.test.ts > config copies (gates/bin/config-copies.ts) > exits 0 with a one-line summary on two identical copies
+AssertionError: expected { code: +0, stdout: [], stderr: [] } to deeply equal { code: +0, …(2) }
+
+- Expected
++ Received
+
+  {
+    "code": 0,
+    "stderr": [],
+-   "stdout": [
+-     "config-copies: .specify/extensions/story/story-config.yml and tooling/speckit/extensions/story/story-config.yml are identical",
+-   ],
++   "stdout": [],
+  }
+
+ ❯ gates/test/integration/config-copies.test.ts:24:74
+     22|     async () => {
+     23|       const ran = await configCopies("equal");
+     24|       expect({ code: ran.code, stdout: ran.stdout, stderr: ran.stderr …
+       |                                                                          ^
+     25|         code: 0,
+     26|         stdout: [`config-copies: ${specify} and ${tooling} are identic…
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[37/170]⎯
+
+ FAIL  |gates-integration| gates/test/integration/config-copies.test.ts > config copies (gates/bin/config-copies.ts) > exits 2 naming the missing tooling copy
+AssertionError: expected { code: +0, stdout: [], stderr: [] } to deeply equal { code: 2, stdout: [], …(1) }
+
+- Expected
++ Received
+
+  {
+-   "code": 2,
+-   "stderr": [
+-     "config-copies: could not run: cannot read tooling/speckit/extensions/story/story-config.yml; restore it from git (both copies must exist)",
+-   ],
++   "code": 0,
++   "stderr": [],
+    "stdout": [],
+  }
+
+ ❯ gates/test/integration/config-copies.test.ts:37:74
+     35|     async () => {
+     36|       const ran = await configCopies("missing");
+     37|       expect({ code: ran.code, stdout: ran.stdout, stderr: ran.stderr …
+       |                                                                          ^
+     38|         code: 2,
+     39|         stdout: [],
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[38/170]⎯
+
+ FAIL  |gates-integration| gates/test/integration/gates-root.test.ts > typecheck --root <tmp> > exits 1 with exactly the defect's finding at its repository path
+AssertionError: expected { code: 1, stdout: [], …(1) } to deeply equal { code: 1, stdout: [ …(2) ], …(1) }
+
+- Expected
++ Received
+
+  {
+    "code": 1,
+-   "stderr": [],
+-   "stdout": [
+-     "packages/tokens/src/defect.ts:1: typecheck: TS7006: Parameter 'a' implicitly has an 'any' type.",
+-     "typecheck: 1 finding in 1 file",
++   "stderr": [
++     "node:internal/modules/cjs/loader:1607",
++     "  throw err;",
++     "  ^",
++     "Error: Cannot find module '/tmp/tmp.cBRajKIycy/gates/bin/typecheck.ts'",
++     "    at Module._resolveFilename (node:internal/modules/cjs/loader:1603:15)",
++     "    at wrapResolveFilename (node:internal/modules/cjs/loader:1145:27)",
++     "    at defaultResolveImplForCJSLoading (node:internal/modules/cjs/loader:1169:10)",
++     "    at resolveForCJSWithHooks (node:internal/modules/cjs/loader:1196:12)",
++     "    at Module._load (node:internal/modules/cjs/loader:1370:5)",
++     "    at wrapModuleLoad (node:internal/modules/cjs/loader:261:19)",
++     "    at Module.executeUserEntryPoint [as runMain] (node:internal/modules/run_main:171:5)",
++     "    at node:internal/main/run_main_module:33:47 {",
++     "  code: 'MODULE_NOT_FOUND',",
++     "  requireStack: []",
++     "}",
++     "Node.js v26.13.0",
+    ],
++   "stdout": [],
+  }
+
+ ❯ gates/test/integration/gates-root.test.ts:102:56
+    100|       expect(configsExist(configs)).toEqual(allExist(configs));
+    101|       const root = workspace(`root/${id}/tree`, configs, true);
+    102|       expect(output(await gate(id, ["--root", root]))).toEqual({ code:…
+       |                                                        ^
+    103|     },
+    104|     timeout,
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[39/170]⎯
+
+ FAIL  |gates-integration| gates/test/integration/gates-root.test.ts > typecheck --root <tmp> > exits 0 on the same tree without the defect
+AssertionError: expected { code: 1, stdout: [], …(1) } to deeply equal { code: +0, …(2) }
+
+- Expected
++ Received
+
+  {
+-   "code": 0,
+-   "stderr": [],
+-   "stdout": [
+-     "typecheck: no type error in the files of tsconfig.json",
++   "code": 1,
++   "stderr": [
++     "node:internal/modules/cjs/loader:1607",
++     "  throw err;",
++     "  ^",
++     "Error: Cannot find module '/tmp/tmp.cBRajKIycy/gates/bin/typecheck.ts'",
++     "    at Module._resolveFilename (node:internal/modules/cjs/loader:1603:15)",
++     "    at wrapResolveFilename (node:internal/modules/cjs/loader:1145:27)",
++     "    at defaultResolveImplForCJSLoading (node:internal/modules/cjs/loader:1169:10)",
++     "    at resolveForCJSWithHooks (node:internal/modules/cjs/loader:1196:12)",
++     "    at Module._load (node:internal/modules/cjs/loader:1370:5)",
++     "    at wrapModuleLoad (node:internal/modules/cjs/loader:261:19)",
++     "    at Module.executeUserEntryPoint [as runMain] (node:internal/modules/run_main:171:5)",
++     "    at node:internal/main/run_main_module:33:47 {",
++     "  code: 'MODULE_NOT_FOUND',",
++     "  requireStack: []",
++     "}",
++     "Node.js v26.13.0",
+    ],
++   "stdout": [],
+  }
+
+ ❯ gates/test/integration/gates-root.test.ts:113:56
+    111|       const root = workspace(`root/${id}/tree`, configs, true);
+    112|       rmSync(join(root, defect));
+    113|       expect(output(await gate(id, ["--root", root]))).toEqual({ code:…
+       |                                                        ^
+    114|     },
+    115|     timeout,
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[40/170]⎯
+
+ FAIL  |gates-integration| gates/test/integration/gates-root.test.ts > lint --root <tmp> > exits 1 with exactly the defect's finding at its repository path
+AssertionError: expected { 'package.json': true, …(9) } to deeply equal { 'package.json': true, …(9) }
+
+- Expected
++ Received
+
+@@ -1,7 +1,7 @@
+  {
+-   "eslint.config.ts": true,
++   "eslint.config.ts": false,
+    "package.json": true,
+    "packages/elements/package.json": true,
+    "packages/elements/tsconfig.json": true,
+    "packages/styles/package.json": true,
+    "packages/styles/tsconfig.json": true,
+
+ ❯ gates/test/integration/gates-root.test.ts:100:37
+     98|     "exits 1 with exactly the defect's finding at its repository path",
+     99|     async () => {
+    100|       expect(configsExist(configs)).toEqual(allExist(configs));
+       |                                     ^
+    101|       const root = workspace(`root/${id}/tree`, configs, true);
+    102|       expect(output(await gate(id, ["--root", root]))).toEqual({ code:…
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[41/170]⎯
+
+ FAIL  |gates-integration| gates/test/integration/gates-root.test.ts > lint --root <tmp> > exits 0 on the same tree without the defect
+AssertionError: expected { 'package.json': true, …(9) } to deeply equal { 'package.json': true, …(9) }
+
+- Expected
++ Received
+
+@@ -1,7 +1,7 @@
+  {
+-   "eslint.config.ts": true,
++   "eslint.config.ts": false,
+    "package.json": true,
+    "packages/elements/package.json": true,
+    "packages/elements/tsconfig.json": true,
+    "packages/styles/package.json": true,
+    "packages/styles/tsconfig.json": true,
+
+ ❯ gates/test/integration/gates-root.test.ts:110:37
+    108|     "exits 0 on the same tree without the defect",
+    109|     async () => {
+    110|       expect(configsExist(configs)).toEqual(allExist(configs));
+       |                                     ^
+    111|       const root = workspace(`root/${id}/tree`, configs, true);
+    112|       rmSync(join(root, defect));
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[42/170]⎯
+
+ FAIL  |gates-integration| gates/test/integration/gates-root.test.ts > style-lint --root <tmp> > exits 1 with exactly the defect's finding at its repository path
+AssertionError: expected { 'package.json': true, …(2) } to deeply equal { 'package.json': true, …(2) }
+
+- Expected
++ Received
+
+  {
+-   "gates/stylelint": true,
++   "gates/stylelint": false,
+    "package.json": true,
+-   "stylelint.config.ts": true,
++   "stylelint.config.ts": false,
+  }
+
+ ❯ gates/test/integration/gates-root.test.ts:100:37
+     98|     "exits 1 with exactly the defect's finding at its repository path",
+     99|     async () => {
+    100|       expect(configsExist(configs)).toEqual(allExist(configs));
+       |                                     ^
+    101|       const root = workspace(`root/${id}/tree`, configs, true);
+    102|       expect(output(await gate(id, ["--root", root]))).toEqual({ code:…
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[43/170]⎯
+
+ FAIL  |gates-integration| gates/test/integration/gates-root.test.ts > style-lint --root <tmp> > exits 0 on the same tree without the defect
+AssertionError: expected { 'package.json': true, …(2) } to deeply equal { 'package.json': true, …(2) }
+
+- Expected
++ Received
+
+  {
+-   "gates/stylelint": true,
++   "gates/stylelint": false,
+    "package.json": true,
+-   "stylelint.config.ts": true,
++   "stylelint.config.ts": false,
+  }
+
+ ❯ gates/test/integration/gates-root.test.ts:110:37
+    108|     "exits 0 on the same tree without the defect",
+    109|     async () => {
+    110|       expect(configsExist(configs)).toEqual(allExist(configs));
+       |                                     ^
+    111|       const root = workspace(`root/${id}/tree`, configs, true);
+    112|       rmSync(join(root, defect));
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[44/170]⎯
+
+ FAIL  |gates-integration| gates/test/integration/gates-root.test.ts > csp --root <tmp> > exits 1 with exactly the defect's finding at its repository path
+AssertionError: expected { code: 1, stdout: [], …(1) } to deeply equal { code: 1, stdout: [ …(2) ], …(1) }
+
+- Expected
++ Received
+
+  {
+    "code": 1,
+-   "stderr": [],
+-   "stdout": [
+-     "packages/elements/dist/defect.js:2: csp: eval: eval() runs a string as code (FR-021)",
+-     "csp: 1 finding in 1 file",
++   "stderr": [
++     "node:internal/modules/cjs/loader:1607",
++     "  throw err;",
++     "  ^",
++     "Error: Cannot find module '/tmp/tmp.cBRajKIycy/gates/bin/csp.ts'",
++     "    at Module._resolveFilename (node:internal/modules/cjs/loader:1603:15)",
++     "    at wrapResolveFilename (node:internal/modules/cjs/loader:1145:27)",
++     "    at defaultResolveImplForCJSLoading (node:internal/modules/cjs/loader:1169:10)",
++     "    at resolveForCJSWithHooks (node:internal/modules/cjs/loader:1196:12)",
++     "    at Module._load (node:internal/modules/cjs/loader:1370:5)",
++     "    at wrapModuleLoad (node:internal/modules/cjs/loader:261:19)",
++     "    at Module.executeUserEntryPoint [as runMain] (node:internal/modules/run_main:171:5)",
++     "    at node:internal/main/run_main_module:33:47 {",
++     "  code: 'MODULE_NOT_FOUND',",
++     "  requireStack: []",
++     "}",
++     "Node.js v26.13.0",
+    ],
++   "stdout": [],
+  }
+
+ ❯ gates/test/integration/gates-root.test.ts:102:56
+    100|       expect(configsExist(configs)).toEqual(allExist(configs));
+    101|       const root = workspace(`root/${id}/tree`, configs, true);
+    102|       expect(output(await gate(id, ["--root", root]))).toEqual({ code:…
+       |                                                        ^
+    103|     },
+    104|     timeout,
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[45/170]⎯
+
+ FAIL  |gates-integration| gates/test/integration/gates-root.test.ts > csp --root <tmp> > exits 0 on the same tree without the defect
+AssertionError: expected { code: 1, stdout: [], …(1) } to deeply equal { code: +0, …(2) }
+
+- Expected
++ Received
+
+  {
+-   "code": 0,
+-   "stderr": [],
+-   "stdout": [
+-     "csp: 1 file checked, no finding",
++   "code": 1,
++   "stderr": [
++     "node:internal/modules/cjs/loader:1607",
++     "  throw err;",
++     "  ^",
++     "Error: Cannot find module '/tmp/tmp.cBRajKIycy/gates/bin/csp.ts'",
++     "    at Module._resolveFilename (node:internal/modules/cjs/loader:1603:15)",
++     "    at wrapResolveFilename (node:internal/modules/cjs/loader:1145:27)",
++     "    at defaultResolveImplForCJSLoading (node:internal/modules/cjs/loader:1169:10)",
++     "    at resolveForCJSWithHooks (node:internal/modules/cjs/loader:1196:12)",
++     "    at Module._load (node:internal/modules/cjs/loader:1370:5)",
++     "    at wrapModuleLoad (node:internal/modules/cjs/loader:261:19)",
++     "    at Module.executeUserEntryPoint [as runMain] (node:internal/modules/run_main:171:5)",
++     "    at node:internal/main/run_main_module:33:47 {",
++     "  code: 'MODULE_NOT_FOUND',",
++     "  requireStack: []",
++     "}",
++     "Node.js v26.13.0",
+    ],
++   "stdout": [],
+  }
+
+ ❯ gates/test/integration/gates-root.test.ts:113:56
+    111|       const root = workspace(`root/${id}/tree`, configs, true);
+    112|       rmSync(join(root, defect));
+    113|       expect(output(await gate(id, ["--root", root]))).toEqual({ code:…
+       |                                                        ^
+    114|     },
+    115|     timeout,
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[46/170]⎯
+
+ FAIL  |gates-integration| gates/test/integration/gates-root.test.ts > prefix --root <tmp> > exits 1 with exactly the defect's finding at its repository path
+AssertionError: expected { code: 1, stdout: [], …(1) } to deeply equal { code: 1, stdout: [ …(2) ], …(1) }
+
+- Expected
++ Received
+
+  {
+    "code": 1,
+-   "stderr": [],
+-   "stdout": [
+-     "packages/elements/src/defect.ts:1: prefix: sk-name: forbidden name sk-button; use the ocelle- prefix (FR-022)",
+-     "prefix: 1 finding in 1 file",
++   "stderr": [
++     "node:internal/modules/cjs/loader:1607",
++     "  throw err;",
++     "  ^",
++     "Error: Cannot find module '/tmp/tmp.cBRajKIycy/gates/bin/prefix.ts'",
++     "    at Module._resolveFilename (node:internal/modules/cjs/loader:1603:15)",
++     "    at wrapResolveFilename (node:internal/modules/cjs/loader:1145:27)",
++     "    at defaultResolveImplForCJSLoading (node:internal/modules/cjs/loader:1169:10)",
++     "    at resolveForCJSWithHooks (node:internal/modules/cjs/loader:1196:12)",
++     "    at Module._load (node:internal/modules/cjs/loader:1370:5)",
++     "    at wrapModuleLoad (node:internal/modules/cjs/loader:261:19)",
++     "    at Module.executeUserEntryPoint [as runMain] (node:internal/modules/run_main:171:5)",
++     "    at node:internal/main/run_main_module:33:47 {",
++     "  code: 'MODULE_NOT_FOUND',",
++     "  requireStack: []",
++     "}",
++     "Node.js v26.13.0",
+    ],
++   "stdout": [],
+  }
+
+ ❯ gates/test/integration/gates-root.test.ts:102:56
+    100|       expect(configsExist(configs)).toEqual(allExist(configs));
+    101|       const root = workspace(`root/${id}/tree`, configs, true);
+    102|       expect(output(await gate(id, ["--root", root]))).toEqual({ code:…
+       |                                                        ^
+    103|     },
+    104|     timeout,
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[47/170]⎯
+
+ FAIL  |gates-integration| gates/test/integration/gates-root.test.ts > prefix --root <tmp> > exits 0 on the same tree without the defect
+AssertionError: expected { code: 1, stdout: [], …(1) } to deeply equal { code: +0, …(2) }
+
+- Expected
++ Received
+
+  {
+-   "code": 0,
+-   "stderr": [],
+-   "stdout": [
+-     "prefix: 1 file checked, no finding",
++   "code": 1,
++   "stderr": [
++     "node:internal/modules/cjs/loader:1607",
++     "  throw err;",
++     "  ^",
++     "Error: Cannot find module '/tmp/tmp.cBRajKIycy/gates/bin/prefix.ts'",
++     "    at Module._resolveFilename (node:internal/modules/cjs/loader:1603:15)",
++     "    at wrapResolveFilename (node:internal/modules/cjs/loader:1145:27)",
++     "    at defaultResolveImplForCJSLoading (node:internal/modules/cjs/loader:1169:10)",
++     "    at resolveForCJSWithHooks (node:internal/modules/cjs/loader:1196:12)",
++     "    at Module._load (node:internal/modules/cjs/loader:1370:5)",
++     "    at wrapModuleLoad (node:internal/modules/cjs/loader:261:19)",
++     "    at Module.executeUserEntryPoint [as runMain] (node:internal/modules/run_main:171:5)",
++     "    at node:internal/main/run_main_module:33:47 {",
++     "  code: 'MODULE_NOT_FOUND',",
++     "  requireStack: []",
++     "}",
++     "Node.js v26.13.0",
+    ],
++   "stdout": [],
+  }
+
+ ❯ gates/test/integration/gates-root.test.ts:113:56
+    111|       const root = workspace(`root/${id}/tree`, configs, true);
+    112|       rmSync(join(root, defect));
+    113|       expect(output(await gate(id, ["--root", root]))).toEqual({ code:…
+       |                                                        ^
+    114|     },
+    115|     timeout,
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[48/170]⎯
+
+ FAIL  |gates-integration| gates/test/integration/gates-root.test.ts > pins --root <tmp> > exits 1 with exactly the lockfile finding
+AssertionError: expected { code: 1, stdout: [], …(1) } to deeply equal { code: 1, stdout: [ …(2) ], …(1) }
+
+- Expected
++ Received
+
+  {
+    "code": 1,
+-   "stderr": [],
+-   "stdout": [
+-     "pnpm-lock.yaml: pins: lockfile: pnpm-lock.yaml is not up to date with the manifests; run pnpm install and commit pnpm-lock.yaml",
+-     "pins: 1 finding in 1 file",
++   "stderr": [
++     "node:internal/modules/cjs/loader:1607",
++     "  throw err;",
++     "  ^",
++     "Error: Cannot find module '/tmp/tmp.cBRajKIycy/gates/bin/pins.ts'",
++     "    at Module._resolveFilename (node:internal/modules/cjs/loader:1603:15)",
++     "    at wrapResolveFilename (node:internal/modules/cjs/loader:1145:27)",
++     "    at defaultResolveImplForCJSLoading (node:internal/modules/cjs/loader:1169:10)",
++     "    at resolveForCJSWithHooks (node:internal/modules/cjs/loader:1196:12)",
++     "    at Module._load (node:internal/modules/cjs/loader:1370:5)",
++     "    at wrapModuleLoad (node:internal/modules/cjs/loader:261:19)",
++     "    at Module.executeUserEntryPoint [as runMain] (node:internal/modules/run_main:171:5)",
++     "    at node:internal/main/run_main_module:33:47 {",
++     "  code: 'MODULE_NOT_FOUND',",
++     "  requireStack: []",
++     "}",
++     "Node.js v26.13.0",
+    ],
++   "stdout": [],
+  }
+
+ ❯ gates/test/integration/gates-root.test.ts:126:60
+    124|     async () => {
+    125|       const root = workspace("root/pins/tree", [], false);
+    126|       expect(output(await gate("pins", ["--root", root]))).toEqual({
+       |                                                            ^
+    127|         code: 1,
+    128|         stdout: [
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[49/170]⎯
+
+ FAIL  |gates-integration| gates/test/integration/gates-root.test.ts > pins --root <tmp> > exits 0 with a matching lockfile
+AssertionError: expected { code: 1, stdout: [], …(1) } to deeply equal { code: +0, …(2) }
+
+- Expected
++ Received
+
+  {
+-   "code": 0,
+-   "stderr": [],
+-   "stdout": [
+-     "pins: 3 manifests checked, no finding",
++   "code": 1,
++   "stderr": [
++     "node:internal/modules/cjs/loader:1607",
++     "  throw err;",
++     "  ^",
++     "Error: Cannot find module '/tmp/tmp.cBRajKIycy/gates/bin/pins.ts'",
++     "    at Module._resolveFilename (node:internal/modules/cjs/loader:1603:15)",
++     "    at wrapResolveFilename (node:internal/modules/cjs/loader:1145:27)",
++     "    at defaultResolveImplForCJSLoading (node:internal/modules/cjs/loader:1169:10)",
++     "    at resolveForCJSWithHooks (node:internal/modules/cjs/loader:1196:12)",
++     "    at Module._load (node:internal/modules/cjs/loader:1370:5)",
++     "    at wrapModuleLoad (node:internal/modules/cjs/loader:261:19)",
++     "    at Module.executeUserEntryPoint [as runMain] (node:internal/modules/run_main:171:5)",
++     "    at node:internal/main/run_main_module:33:47 {",
++     "  code: 'MODULE_NOT_FOUND',",
++     "  requireStack: []",
++     "}",
++     "Node.js v26.13.0",
+    ],
++   "stdout": [],
+  }
+
+ ❯ gates/test/integration/gates-root.test.ts:143:60
+    141|       const root = workspace("root/pins/tree", [], false);
+    142|       cpSync(join(repo, "gates/test/fixtures/root/pins/pnpm-lock.yaml"…
+    143|       expect(output(await gate("pins", ["--root", root]))).toEqual({
+       |                                                            ^
+    144|         code: 0,
+    145|         stdout: ["pins: 3 manifests checked, no finding"],
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[50/170]⎯
+
+ FAIL  |gates-integration| gates/test/integration/gates-root.test.ts > signoff --root <tmp> --range <base>..HEAD > exits 1 with exactly the finding of the commit without a sign-off
+AssertionError: expected { code: 1, stdout: [], …(1) } to deeply equal { code: 1, stdout: [ …(2) ], …(1) }
+
+- Expected
++ Received
+
+  {
+    "code": 1,
+-   "stderr": [],
+-   "stdout": [
+-     "ee4736cfe3ccb94ba719f74616a855bd6bd7b1d2: signoff: no-signoff: no Signed-off-by line for the author Ada Example <ada@example.com>; sign off with git commit -s (FR-023)",
+-     "signoff: 1 finding in 2 commits",
++   "stderr": [
++     "node:internal/modules/cjs/loader:1607",
++     "  throw err;",
++     "  ^",
++     "Error: Cannot find module '/tmp/tmp.cBRajKIycy/gates/bin/signoff.ts'",
++     "    at Module._resolveFilename (node:internal/modules/cjs/loader:1603:15)",
++     "    at wrapResolveFilename (node:internal/modules/cjs/loader:1145:27)",
++     "    at defaultResolveImplForCJSLoading (node:internal/modules/cjs/loader:1169:10)",
++     "    at resolveForCJSWithHooks (node:internal/modules/cjs/loader:1196:12)",
++     "    at Module._load (node:internal/modules/cjs/loader:1370:5)",
++     "    at wrapModuleLoad (node:internal/modules/cjs/loader:261:19)",
++     "    at Module.executeUserEntryPoint [as runMain] (node:internal/modules/run_main:171:5)",
++     "    at node:internal/main/run_main_module:33:47 {",
++     "  code: 'MODULE_NOT_FOUND',",
++     "  requireStack: []",
++     "}",
++     "Node.js v26.13.0",
+    ],
++   "stdout": [],
+  }
+
+ ❯ gates/test/integration/gates-root.test.ts:180:91
+    178|     async () => {
+    179|       const { root, base, head } = commitRepo(2);
+    180|       expect(output(await gate("signoff", ["--root", root, "--range", …
+       |                                                                                           ^
+    181|         code: 1,
+    182|         stdout: [
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[51/170]⎯
+
+ FAIL  |gates-integration| gates/test/integration/gates-root.test.ts > signoff --root <tmp> --range <base>..HEAD > exits 0 on the same records without the defect
+AssertionError: expected { code: 1, stdout: [], …(1) } to deeply equal { code: +0, …(2) }
+
+- Expected
++ Received
+
+  {
+-   "code": 0,
+-   "stderr": [],
+-   "stdout": [
+-     "signoff: 1 commit checked, no finding",
++   "code": 1,
++   "stderr": [
++     "node:internal/modules/cjs/loader:1607",
++     "  throw err;",
++     "  ^",
++     "Error: Cannot find module '/tmp/tmp.cBRajKIycy/gates/bin/signoff.ts'",
++     "    at Module._resolveFilename (node:internal/modules/cjs/loader:1603:15)",
++     "    at wrapResolveFilename (node:internal/modules/cjs/loader:1145:27)",
++     "    at defaultResolveImplForCJSLoading (node:internal/modules/cjs/loader:1169:10)",
++     "    at resolveForCJSWithHooks (node:internal/modules/cjs/loader:1196:12)",
++     "    at Module._load (node:internal/modules/cjs/loader:1370:5)",
++     "    at wrapModuleLoad (node:internal/modules/cjs/loader:261:19)",
++     "    at Module.executeUserEntryPoint [as runMain] (node:internal/modules/run_main:171:5)",
++     "    at node:internal/main/run_main_module:33:47 {",
++     "  code: 'MODULE_NOT_FOUND',",
++     "  requireStack: []",
++     "}",
++     "Node.js v26.13.0",
+    ],
++   "stdout": [],
+  }
+
+ ❯ gates/test/integration/gates-root.test.ts:196:91
+    194|     async () => {
+    195|       const { root, base } = commitRepo(1);
+    196|       expect(output(await gate("signoff", ["--root", root, "--range", …
+       |                                                                                           ^
+    197|         code: 0,
+    198|         stdout: ["signoff: 1 commit checked, no finding"],
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[52/170]⎯
+
+ FAIL  |gates-integration| gates/test/integration/mutation.test.ts > mutation gate (gates/bin/mutation.ts) > reports a mutant on a changed line that only a gates-integration test covers as a NoCoverage finding (exit 1)
+AssertionError: expected [ false, false ] to deeply equal [ true, true ]
+
+- Expected
++ Received
+
+  [
+-   true,
+-   true,
++   false,
++   false,
+  ]
+
+ ❯ gates/test/integration/mutation.test.ts:55:30
+     53|     "reports a mutant on a changed line that only a gates-integration …
+     54|     async () => {
+     55|       expect(configsExist()).toEqual([true, true]);
+       |                              ^
+     56|       const { root, base } = mutationRepo();
+     57|       const ran = await runGate("gates/bin/mutation.ts", ["--root", ro…
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[53/170]⎯
+
+ FAIL  |gates-integration| gates/test/integration/mutation.test.ts > mutation gate (gates/bin/mutation.ts) > reports a change only to source no test imports as a located NoCoverage finding (exit 1), not as could not run (review round 1, R1-10)
+AssertionError: expected [ false, false ] to deeply equal [ true, true ]
+
+- Expected
++ Received
+
+  [
+-   true,
+-   true,
++   false,
++   false,
+  ]
+
+ ❯ gates/test/integration/mutation.test.ts:74:30
+     72|     "reports a change only to source no test imports as a located NoCo…
+     73|     async () => {
+     74|       expect(configsExist()).toEqual([true, true]);
+       |                              ^
+     75|       const { root, base } = mutationRepo("mutation-uncovered");
+     76|       const ran = await runGate("gates/bin/mutation.ts", ["--root", ro…
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[54/170]⎯
+
+ FAIL  |gates-integration| gates/test/integration/mutation.test.ts > mutation gate (gates/bin/mutation.ts) > exits 2 naming a changed file under a .next folder, which Stryker does not read (phase 3 round 12, O12-01)
+AssertionError: expected [ false, false ] to deeply equal [ true, true ]
+
+- Expected
++ Received
+
+  [
+-   true,
+-   true,
++   false,
++   false,
+  ]
+
+ ❯ gates/test/integration/mutation.test.ts:95:30
+     93|     "exits 2 naming a changed file under a .next folder, which Stryker…
+     94|     async () => {
+     95|       expect(configsExist()).toEqual([true, true]);
+       |                              ^
+     96|       const { root, base } = mutationRepo("mutation-unread");
+     97|       const ran = await runGate("gates/bin/mutation.ts", ["--root", ro…
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[55/170]⎯
+
+ FAIL  |gates-integration| gates/test/integration/mutation.test.ts > mutation gate (gates/bin/mutation.ts) > --files mutates only the listed file
+AssertionError: expected [ false, false ] to deeply equal [ true, true ]
+
+- Expected
++ Received
+
+  [
+-   true,
+-   true,
++   false,
++   false,
+  ]
+
+ ❯ gates/test/integration/mutation.test.ts:117:30
+    115|     "--files mutates only the listed file",
+    116|     async () => {
+    117|       expect(configsExist()).toEqual([true, true]);
+       |                              ^
+    118|       const { root, base } = mutationRepo();
+    119|       const ran = await runGate("gates/bin/mutation.ts", ["--root", ro…
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[56/170]⎯
+
+ FAIL  |gates-integration| gates/test/integration/mutation.test.ts > mutation gate (gates/bin/mutation.ts) > --files with an entry path:start-end mutates only the changed lines inside it (phase 3 round 9, O9-01)
+AssertionError: expected [ false, false ] to deeply equal [ true, true ]
+
+- Expected
++ Received
+
+  [
+-   true,
+-   true,
++   false,
++   false,
+  ]
+
+ ❯ gates/test/integration/mutation.test.ts:134:30
+    132|     "--files with an entry path:start-end mutates only the changed lin…
+    133|     async () => {
+    134|       expect(configsExist()).toEqual([true, true]);
+       |                              ^
+    135|       const { root, base } = mutationRepo("mutation-split");
+    136|       const ran = await runGate("gates/bin/mutation.ts", ["--root", ro…
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[57/170]⎯
+
+ FAIL  |gates-integration| gates/test/integration/mutation.test.ts > mutation gate (gates/bin/mutation.ts) > deletes an earlier run's report: a Stryker run that writes none exits 2 (review round 1, R1-01)
+AssertionError: expected [ false, false ] to deeply equal [ true, true ]
+
+- Expected
++ Received
+
+  [
+-   true,
+-   true,
++   false,
++   false,
+  ]
+
+ ❯ gates/test/integration/mutation.test.ts:155:30
+    153|     "deletes an earlier run's report: a Stryker run that writes none e…
+    154|     async () => {
+    155|       expect(configsExist()).toEqual([true, true]);
+       |                              ^
+    156|       const { root, base } = mutationRepo();
+    157|       const reportDir = join(root, "reports", "mutation");
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[58/170]⎯
+
+ FAIL  |gates-integration| gates/test/integration/mutation.test.ts > mutation gate (gates/bin/mutation.ts) > exits 2 when --base does not resolve
+AssertionError: expected [ false, false ] to deeply equal [ true, true ]
+
+- Expected
++ Received
+
+  [
+-   true,
+-   true,
++   false,
++   false,
+  ]
+
+ ❯ gates/test/integration/mutation.test.ts:175:30
+    173|     "exits 2 when --base does not resolve",
+    174|     async () => {
+    175|       expect(configsExist()).toEqual([true, true]);
+       |                              ^
+    176|       const { root } = mutationRepo();
+    177|       const missing = "0123456789abcdef0123456789abcdef01234567";
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[59/170]⎯
+
+ FAIL  |gates-integration| gates/test/integration/pins-plants.test.ts > pins range plants on an empty pnpm cache > pins --plant gates/plants/pins/fail-caret-range exits 1 with exactly its range finding
+Error: ENOENT: no such file or directory, open '/tmp/tmp.cBRajKIycy/gates/plants/pins/fail-caret-range/plant.json'
+ ❯ gates/test/integration/pins-plants.test.ts:26:35
+     24|     async (name) => {
+     25|       const plant = join(repo, "gates/plants/pins", name);
+     26|       const expected = JSON.parse(readFileSync(join(plant, "plant.json…
+       |                                   ^
+     27|       expect({ expect: expected.expect, findings: expected.findings.ma…
+     28|         expect: "fail",
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[60/170]⎯
+
+ FAIL  |gates-integration| gates/test/integration/pins-plants.test.ts > pins range plants on an empty pnpm cache > pins --plant gates/plants/pins/fail-tilde-range exits 1 with exactly its range finding
+Error: ENOENT: no such file or directory, open '/tmp/tmp.cBRajKIycy/gates/plants/pins/fail-tilde-range/plant.json'
+ ❯ gates/test/integration/pins-plants.test.ts:26:35
+     24|     async (name) => {
+     25|       const plant = join(repo, "gates/plants/pins", name);
+     26|       const expected = JSON.parse(readFileSync(join(plant, "plant.json…
+       |                                   ^
+     27|       expect({ expect: expected.expect, findings: expected.findings.ma…
+     28|         expect: "fail",
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[61/170]⎯
+
+ FAIL  |gates-integration| gates/test/integration/plants.test.ts > plant job (gates/bin/plants.ts) > plants --root <tmp> runs each plant form through its gate and judges it
+Error: ENOENT: no such file or directory, lstat '/tmp/tmp.cBRajKIycy/gates/gates.json'
+ ❯ plantsRoot gates/test/integration/plants.test.ts:43:30
+     41|   const root = tempDir("plants-root");
+     42|   cpSync(join(repo, "gates/test/fixtures/plants-root"), root, { recurs…
+     43|   for (const path of copied) cpSync(join(repo, path), join(root, path)…
+       |                              ^
+     44|   symlinkSync(join(repo, "node_modules"), join(root, "node_modules"), …
+     45|   const registryText = readFileSync(join(repo, "gates/gates.json"), "u…
+ ❯ gates/test/integration/plants.test.ts:66:20
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[62/170]⎯
 
  FAIL  |gates-integration| gates/test/integration/setup-offline.test.ts > offline setup (gates/bin/setup-offline.ts) > exits 2 naming the missing package and pnpm run setup:online on an empty store, without the network
 AssertionError: expected +0 to be 2 // Object.is equality
@@ -133,7 +1475,7 @@ AssertionError: expected +0 to be 2 // Object.is equality
      53|       expect(ran.stderr).toHaveLength(1);
      54|       expect(ran.stderr[0]).toContain("missing: is-number");
 
-⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[1/56]⎯
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[63/170]⎯
 
  FAIL  |gates-integration| gates/test/integration/setup-offline.test.ts > offline setup (gates/bin/setup-offline.ts) > exits 2 naming Chromium and pnpm run setup:online on an empty browser path, without the network
 AssertionError: expected +0 to be 2 // Object.is equality
@@ -145,14 +1487,14 @@ AssertionError: expected +0 to be 2 // Object.is equality
 + 0
 
  ❯ gates/test/integration/setup-offline.test.ts:68:24
-     66|       delete env["OCELLE_CHROMIUM_PATH"];
+     66|       delete env.OCELLE_CHROMIUM_PATH;
      67|       const ran = await setupOffline(root, env);
      68|       expect(ran.code).toBe(2);
        |                        ^
      69|       expect(ran.stderr).toHaveLength(1);
      70|       expect(ran.stderr[0]).toContain("Chromium");
 
-⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[2/56]⎯
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[64/170]⎯
 
  FAIL  |gates-integration| gates/test/integration/setup-offline.test.ts > offline setup (gates/bin/setup-offline.ts) > exits 0 with a lockfile without dependencies and the installed browser, changing no workspace file
 AssertionError: expected [] to have a length of 1 but got +0
@@ -171,7 +1513,7 @@ AssertionError: expected [] to have a length of 1 but got +0
      89|       expect(ran.stdout[0]).toContain("installed offline");
      90|       expect({
 
-⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[3/56]⎯
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[65/170]⎯
 
  FAIL  |gates-integration| gates/test/integration/test-command.test.ts > test command (gates/bin/test.ts) > exits 2 naming pnpm run setup:online when Chromium is missing, and runs no test (US1 scenario 9)
 AssertionError: expected +0 to be 2 // Object.is equality
@@ -183,14 +1525,14 @@ AssertionError: expected +0 to be 2 // Object.is equality
 + 0
 
  ❯ gates/test/integration/test-command.test.ts:23:24
-     21|       delete env["OCELLE_CHROMIUM_PATH"];
+     21|       delete env.OCELLE_CHROMIUM_PATH;
      22|       const ran = await testCommand("passing", env);
      23|       expect(ran.code).toBe(2);
        |                        ^
      24|       expect(ran.stderr).toHaveLength(1);
      25|       expect(ran.stderr[0]).toContain("Chromium");
 
-⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[4/56]⎯
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[66/170]⎯
 
  FAIL  |gates-integration| gates/test/integration/test-command.test.ts > test command (gates/bin/test.ts) > exits 2 naming the override when OCELLE_CHROMIUM_PATH points at no executable
 AssertionError: expected +0 to be 2 // Object.is equality
@@ -209,7 +1551,7 @@ AssertionError: expected +0 to be 2 // Object.is equality
      38|       expect(ran.stderr).toHaveLength(1);
      39|       expect(ran.stderr[0]).toContain(missing);
 
-⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[5/56]⎯
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[67/170]⎯
 
  FAIL  |gates-integration| gates/test/integration/test-command.test.ts > test command (gates/bin/test.ts) > exits 1 naming the failing test as a finding (US1 scenario 5)
 AssertionError: expected +0 to be 1 // Object.is equality
@@ -228,7 +1570,7 @@ AssertionError: expected +0 to be 1 // Object.is equality
      50|       expect(ran.stdout).toEqual([
      51|         "packages/tokens/test/sum.test.ts:8: unit-tests: sum adds thre…
 
-⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[6/56]⎯
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[68/170]⎯
 
  FAIL  |gates-integration| gates/test/integration/test-command.test.ts > test command (gates/bin/test.ts) > exits 2 when no test file is found (FR-004)
 AssertionError: expected +0 to be 2 // Object.is equality
@@ -247,7 +1589,7 @@ AssertionError: expected +0 to be 2 // Object.is equality
      64|       expect(ran.stderr).toHaveLength(1);
      65|       expect(ran.stderr[0]).toContain("no test file found");
 
-⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[7/56]⎯
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[69/170]⎯
 
  FAIL  |gates-integration| gates/test/integration/test-command.test.ts > test command (gates/bin/test.ts) > exits 0 with a one-line summary when every test passes
 AssertionError: expected { code: +0, stdout: [] } to deeply equal { code: +0, …(1) }
@@ -271,7 +1613,152 @@ AssertionError: expected { code: +0, stdout: [] } to deeply equal { code: +0, �
      75|         code: 0,
      76|         stdout: ["unit-tests: 2 tests passed in 1 file"],
 
-⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[8/56]⎯
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[70/170]⎯
+
+ FAIL  |gates-integration| gates/test/integration/test-lint.test.ts > test lint (gates/bin/test-lint.ts) > exits 1 with exactly the one finding of expect-expect
+ FAIL  |gates-integration| gates/test/integration/test-lint.test.ts > test lint (gates/bin/test-lint.ts) > exits 1 with exactly the one finding of no-disabled-tests
+ FAIL  |gates-integration| gates/test/integration/test-lint.test.ts > test lint (gates/bin/test-lint.ts) > exits 1 with exactly the one finding of no-focused-tests
+ FAIL  |gates-integration| gates/test/integration/test-lint.test.ts > test lint (gates/bin/test-lint.ts) > exits 1 with exactly the one finding of no-conditional-expect
+ FAIL  |gates-integration| gates/test/integration/test-lint.test.ts > test lint (gates/bin/test-lint.ts) > exits 1 with exactly the one finding of no-standalone-expect
+ FAIL  |gates-integration| gates/test/integration/test-lint.test.ts > test lint (gates/bin/test-lint.ts) > exits 1 with exactly the one finding of valid-expect
+ FAIL  |gates-integration| gates/test/integration/test-lint.test.ts > test lint (gates/bin/test-lint.ts) > exits 1 with exactly the one finding of valid-expect-in-promise
+ FAIL  |gates-integration| gates/test/integration/test-lint.test.ts > test lint (gates/bin/test-lint.ts) > exits 1 with exactly the one finding of no-snapshot-only
+AssertionError: expected false to be true // Object.is equality
+
+- Expected
++ Received
+
+- true
++ false
+
+ ❯ gates/test/integration/test-lint.test.ts:67:46
+     65|     "exits 1 with exactly the one finding of $fixture",
+     66|     async ({ fixture, finding }) => {
+     67|       expect(existsSync(join(repo, config))).toBe(true);
+       |                                              ^
+     68|       const ran = await testLint(fixture);
+     69|       expect({ code: ran.code, stdout: ran.stdout, stderr: ran.stderr …
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[71/170]⎯
+
+ FAIL  |gates-integration| gates/test/integration/test-lint.test.ts > test lint (gates/bin/test-lint.ts) > exits 0 on a test with one real assertion
+AssertionError: expected false to be true // Object.is equality
+
+- Expected
++ Received
+
+- true
++ false
+
+ ❯ gates/test/integration/test-lint.test.ts:81:46
+     79|     "exits 0 on a test with one real assertion",
+     80|     async () => {
+     81|       expect(existsSync(join(repo, config))).toBe(true);
+       |                                              ^
+     82|       const ran = await testLint("pass");
+     83|       expect({ code: ran.code, stdout: ran.stdout, stderr: ran.stderr …
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[72/170]⎯
+
+ FAIL  |gates-integration| gates/test/integration/test-lint.test.ts > test lint (gates/bin/test-lint.ts) > exits 2 naming the file when a test file does not parse
+AssertionError: expected false to be true // Object.is equality
+
+- Expected
++ Received
+
+- true
++ false
+
+ ❯ gates/test/integration/test-lint.test.ts:95:46
+     93|     "exits 2 naming the file when a test file does not parse",
+     94|     async () => {
+     95|       expect(existsSync(join(repo, config))).toBe(true);
+       |                                              ^
+     96|       const ran = await testLint("does-not-parse");
+     97|       expect({ code: ran.code, stdout: ran.stdout, stderr: ran.stderr …
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[73/170]⎯
+
+ FAIL  |gates-integration| gates/test/integration/test-lint.test.ts > test lint, unchecked assertions (gates/bin/test-lint.ts) > exits 1 with exactly the one finding of no-floating-promise-expect
+ FAIL  |gates-integration| gates/test/integration/test-lint.test.ts > test lint, unchecked assertions (gates/bin/test-lint.ts) > exits 1 with exactly the one finding of no-timer-expect
+ FAIL  |gates-integration| gates/test/integration/test-lint.test.ts > test lint, unchecked assertions (gates/bin/test-lint.ts) > exits 1 with exactly the one finding of no-swallowed-expect
+ FAIL  |gates-integration| gates/test/integration/test-lint.test.ts > test lint, unchecked assertions (gates/bin/test-lint.ts) > exits 1 with exactly the one finding of asserting-catch
+AssertionError: expected false to be true // Object.is equality
+
+- Expected
++ Received
+
+- true
++ false
+
+ ❯ gates/test/integration/test-lint.test.ts:139:46
+    137|     "exits 1 with exactly the one finding of $fixture",
+    138|     async ({ fixture, finding }) => {
+    139|       expect(existsSync(join(repo, config))).toBe(true);
+       |                                              ^
+    140|       const ran = await testLint(fixture);
+    141|       expect({ code: ran.code, stdout: ran.stdout, stderr: ran.stderr …
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[74/170]⎯
+
+ FAIL  |gates-integration| gates/test/integration/test-lint.test.ts > test lint, unchecked assertions (gates/bin/test-lint.ts) > exits 0 with no finding on pass-awaited-promise
+ FAIL  |gates-integration| gates/test/integration/test-lint.test.ts > test lint, unchecked assertions (gates/bin/test-lint.ts) > exits 0 with no finding on pass-returned-promise
+ FAIL  |gates-integration| gates/test/integration/test-lint.test.ts > test lint, unchecked assertions (gates/bin/test-lint.ts) > exits 0 with no finding on pass-rethrowing-catch
+AssertionError: expected false to be true // Object.is equality
+
+- Expected
++ Received
+
+- true
++ false
+
+ ❯ gates/test/integration/test-lint.test.ts:153:46
+    151|     "exits 0 with no finding on %s",
+    152|     async (fixture) => {
+    153|       expect(existsSync(join(repo, config))).toBe(true);
+       |                                              ^
+    154|       const ran = await testLint(fixture);
+    155|       expect({ code: ran.code, stdout: ran.stdout, stderr: ran.stderr …
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[75/170]⎯
+
+ FAIL  |gates-integration| gates/test/integration/test-lint.test.ts > test lint, Stryker sandbox (gates/bin/test-lint.ts) > does not check .stryker-tmp/: exits 0 with the one repository test file checked
+AssertionError: expected false to be true // Object.is equality
+
+- Expected
++ Received
+
+- true
++ false
+
+ ❯ gates/test/integration/test-lint.test.ts:173:46
+    171|     "does not check .stryker-tmp/: exits 0 with the one repository tes…
+    172|     async () => {
+    173|       expect(existsSync(join(repo, config))).toBe(true);
+       |                                              ^
+    174|       const ran = await testLint("stryker-sandbox");
+    175|       expect({ code: ran.code, stdout: ran.stdout, stderr: ran.stderr …
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[76/170]⎯
+
+ FAIL  |gates-integration| gates/test/integration/vitest-mutation-config.test.ts > vitest.mutation.config.ts > holds every project of vitest.config.ts except gates-integration
+AssertionError: expected false to be true // Object.is equality
+
+- Expected
++ Received
+
+- true
++ false
+
+ ❯ gates/test/integration/vitest-mutation-config.test.ts:25:65
+     23| describe("vitest.mutation.config.ts", () => {
+     24|   it("holds every project of vitest.config.ts except gates-integration…
+     25|     expect(existsSync(join(repo, "vitest.mutation.config.ts"))).toBe(t…
+       |                                                                 ^
+     26|     const all = await projectsOf("vitest.config.ts");
+     27|     const mutation = await projectsOf("vitest.mutation.config.ts");
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[77/170]⎯
 
  FAIL  |gates| gates/test/cli.test.ts > entry > returns exit 2, not Node's exit 1, when run() throws, with one line naming the cause
 AssertionError: expected +0 to be 2 // Object.is equality
@@ -290,7 +1777,7 @@ AssertionError: expected +0 to be 2 // Object.is equality
      25|     expect(c.out).toEqual([]);
      26|     expect(c.err).toHaveLength(1);
 
-⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[9/56]⎯
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[78/170]⎯
 
  FAIL  |gates| gates/test/cli.test.ts > entry > returns exit 2 with one line when an async run() rejects with a multi-line error
 AssertionError: expected +0 to be 2 // Object.is equality
@@ -309,7 +1796,7 @@ AssertionError: expected +0 to be 2 // Object.is equality
      35|     expect(c.err).toHaveLength(1);
      36|     expect(c.err[0]).toContain("spawn vitest ENOENT");
 
-⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[10/56]⎯
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[79/170]⎯
 
  FAIL  |gates| gates/test/cli.test.ts > entry > returns exit 2 with one line naming a thrown value that is not an Error
 AssertionError: expected +0 to be 2 // Object.is equality
@@ -328,7 +1815,7 @@ AssertionError: expected +0 to be 2 // Object.is equality
      47|     expect(c.err).toHaveLength(1);
      48|     expect(c.err[0]).toContain("plain string failure");
 
-⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[11/56]⎯
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[80/170]⎯
 
  FAIL  |gates| gates/test/cli.test.ts > entry > returns the code run() returns for 0, 1 and 2
 AssertionError: expected [ +0, +0, +0 ] to deeply equal [ +0, 1, 2 ]
@@ -352,7 +1839,7 @@ AssertionError: expected [ +0, +0, +0 ] to deeply equal [ +0, 1, 2 ]
      54|   });
      55|
 
-⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[12/56]⎯
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[81/170]⎯
 
  FAIL  |gates| gates/test/cli.test.ts > entry > returns exit 2 with one line when run() returns a code outside the contract
 AssertionError: expected +0 to be 2 // Object.is equality
@@ -371,7 +1858,7 @@ AssertionError: expected +0 to be 2 // Object.is equality
      60|     expect(c.err).toHaveLength(1);
      61|     expect(c.err[0]).toContain("7");
 
-⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[13/56]⎯
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[82/170]⎯
 
  FAIL  |gates| gates/test/cli.test.ts > entry > passes argv and io to run()
 AssertionError: expected { code: +0, seen: [], out: [] } to deeply equal { code: 1, …(2) }
@@ -402,7 +1889,7 @@ AssertionError: expected { code: +0, seen: [], out: [] } to deeply equal { code:
      77|   });
      78| });
 
-⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[14/56]⎯
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[83/170]⎯
 
  FAIL  |gates| gates/test/cli.test.ts > parseArgs > defaults the repository root and the tool working directory to the current directory
 AssertionError: expected { root: '', toolCwd: '', args: [] } to deeply equal { root: '/work/repo', …(2) }
@@ -430,7 +1917,7 @@ AssertionError: expected { root: '', toolCwd: '', args: [] } to deeply equal { r
      83|       root: "/work/repo",
      84|       toolCwd: "/work/repo",
 
-⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[15/56]⎯
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[84/170]⎯
 
  FAIL  |gates| gates/test/cli.test.ts > parseArgs > sets the repository root and the tool working directory from --root <dir>
 AssertionError: expected { root: '', toolCwd: '', args: [] } to deeply equal { root: '/tmp/plant', …(2) }
@@ -454,7 +1941,7 @@ AssertionError: expected { root: '', toolCwd: '', args: [] } to deeply equal { r
      91|       root: "/tmp/plant",
      92|       toolCwd: "/tmp/plant",
 
-⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[16/56]⎯
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[85/170]⎯
 
  FAIL  |gates| gates/test/cli.test.ts > parseArgs > resolves a relative --root against the current directory
 AssertionError: expected { root: '', toolCwd: '', args: [] } to deeply equal { root: '/work/repo/plant', …(2) }
@@ -478,7 +1965,7 @@ AssertionError: expected { root: '', toolCwd: '', args: [] } to deeply equal { r
      99|       root: "/work/repo/plant",
     100|       toolCwd: "/work/repo/plant",
 
-⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[17/56]⎯
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[86/170]⎯
 
  FAIL  |gates| gates/test/cli.test.ts > parseArgs > leaves every other argument unchanged and in order
 AssertionError: expected [] to deeply equal [ '--range', 'a..b', '--files', …(2) ]
@@ -503,7 +1990,7 @@ AssertionError: expected [] to deeply equal [ '--range', 'a..b', '--files', …(
     107|       "--range",
     108|       "a..b",
 
-⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[18/56]⎯
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[87/170]⎯
 
  FAIL  |gates| gates/test/cli.test.ts > parseArgs > rejects --root without a directory
 AssertionError: expected [Function] to throw an error
@@ -522,7 +2009,59 @@ undefined
     117|   });
     118| });
 
-⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[19/56]⎯
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[88/170]⎯
+
+ FAIL  |gates| gates/test/cli.test.ts > entry and parseArgs (mutation catch-up) > writes nothing to stderr when run() returns 0, 1 or 2
+AssertionError: expected [ { code: +0, err: [] }, …(2) ] to deeply equal [ { code: +0, err: [] }, …(2) ]
+
+- Expected
++ Received
+
+@@ -2,13 +2,13 @@
+    {
+      "code": 0,
+      "err": [],
+    },
+    {
+-     "code": 1,
++     "code": 0,
+      "err": [],
+    },
+    {
+-     "code": 2,
++     "code": 0,
+      "err": [],
+    },
+  ]
+
+ ❯ gates/test/cli.test.ts:127:37
+    125|       return { code: await entry(() => n, [], c.io), err: c.err };
+    126|     });
+    127|     expect(await Promise.all(runs)).toEqual([
+       |                                     ^
+    128|       { code: 0, err: [] },
+    129|       { code: 1, err: [] },
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[89/170]⎯
+
+ FAIL  |gates| gates/test/cli.test.ts > entry and parseArgs (mutation catch-up) > rejects --root without a directory and --root with an empty one, naming the option
+AssertionError: expected [Function] to throw an error
+
+- Expected:
+null
+
++ Received:
+undefined
+
+ ❯ gates/test/cli.test.ts:135:47
+    133|
+    134|   it("rejects --root without a directory and --root with an empty one,…
+    135|     expect(() => parseArgs(["--root"], "/w")).toThrow("--root needs a …
+       |                                               ^
+    136|     expect(() => parseArgs(["--root", ""], "/w")).toThrow("--root need…
+    137|   });
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[90/170]⎯
 
  FAIL  |gates| gates/test/config-copies.test.ts > config-copies gate > passes two byte-identical copies whose test_pathspec is FR-028's test code
 AssertionError: expected { code: +0, out: [], err: [] } to deeply equal { code: +0, …(2) }
@@ -547,7 +2086,7 @@ AssertionError: expected { code: +0, out: [], err: [] } to deeply equal { code: 
      29|       code: 0,
      30|       out: [`config-copies: ${specify} and ${tooling} are identical`],
 
-⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[20/56]⎯
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[91/170]⎯
 
  FAIL  |gates| gates/test/config-copies.test.ts > config-copies gate > fails when one setting differs, naming both copies and the first differing line
 AssertionError: expected +0 to be 1 // Object.is equality
@@ -566,7 +2105,7 @@ AssertionError: expected +0 to be 1 // Object.is equality
      38|     expect(result.err).toEqual([]);
      39|     expect(result.out[0]).toBe(`${tooling}: config-copies: copies-diff…
 
-⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[21/56]⎯
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[92/170]⎯
 
  FAIL  |gates| gates/test/config-copies.test.ts > config-copies gate > fails on equal copies whose test_pathspec is not FR-028's test code, one finding per copy
 AssertionError: expected +0 to be 1 // Object.is equality
@@ -585,7 +2124,7 @@ AssertionError: expected +0 to be 1 // Object.is equality
      46|     expect(result.out.slice(0, 2)).toEqual([
      47|       `${specify}: config-copies: test-pathspec: test_pathspec is ":(g…
 
-⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[22/56]⎯
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[93/170]⎯
 
  FAIL  |gates| gates/test/config-copies.test.ts > config-copies gate > cannot run when a copy is missing, naming it
 AssertionError: expected +0 to be 2 // Object.is equality
@@ -604,7 +2143,117 @@ AssertionError: expected +0 to be 2 // Object.is equality
      57|     expect(result.out).toEqual([]);
      58|     expect(result.err).toHaveLength(1);
 
-⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[23/56]⎯
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[94/170]⎯
+
+ FAIL  |gates| gates/test/config-copies.test.ts > config-copies gate (mutation catch-up) > names the first line one copy has and the other lacks, and counts the findings in the summary
+AssertionError: expected { code: +0, out: [], err: [] } to deeply equal { code: 1, out: [ …(2) ], err: [] }
+
+- Expected
++ Received
+
+  {
+-   "code": 1,
++   "code": 0,
+    "err": [],
+-   "out": [
+-     "tooling/speckit/extensions/story/story-config.yml: config-copies: copies-differ: differs from .specify/extensions/story/story-config.yml at line 16",
+-     "config-copies: 1 finding(s) in the two copies",
+-   ],
++   "out": [],
+  }
+
+ ❯ gates/test/config-copies.test.ts:68:37
+     66|
+     67|   it("names the first line one copy has and the other lacks, and count…
+     68|     expect(await check("appended")).toEqual({
+       |                                     ^
+     69|       code: 1,
+     70|       out: [
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[95/170]⎯
+
+ FAIL  |gates| gates/test/config-copies.test.ts > config-copies gate (mutation catch-up) > removes quotes only when they wrap the whole test_pathspec value
+AssertionError: expected { code: +0, out: [], err: [] } to deeply equal { code: 1, out: [ …(4) ], err: [] }
+
+- Expected
++ Received
+
+  {
+-   "code": 1,
++   "code": 0,
+    "err": [],
+-   "out": [
+-     "tooling/speckit/extensions/story/story-config.yml: config-copies: copies-differ: differs from .specify/extensions/story/story-config.yml at line 13",
+-     ".specify/extensions/story/story-config.yml: config-copies: test-pathspec: test_pathspec is \"prefix \":(glob)**/*.test.ts\"\", expected \":(glob)**/*.test.ts :(glob)**/*.spec.ts :(glob)**/test/** :(glob)**/*.stories.ts\"",
+-     "tooling/speckit/extensions/story/story-config.yml: config-copies: test-pathspec: test_pathspec is \"\":(glob)**/*.test.ts\" suffix\", expected \":(glob)**/*.test.ts :(glob)**/*.spec.ts :(glob)**/test/** :(glob)**/*.stories.ts\"",
+-     "config-copies: 3 finding(s) in the two copies",
+-   ],
++   "out": [],
+  }
+
+ ❯ gates/test/config-copies.test.ts:79:35
+     77|
+     78|   it("removes quotes only when they wrap the whole test_pathspec value…
+     79|     expect(await check("quotes")).toEqual({
+       |                                   ^
+     80|       code: 1,
+     81|       out: [
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[96/170]⎯
+
+ FAIL  |gates| gates/test/config-copies.test.ts > config-copies gate (mutation catch-up) > names a copy without test_pathspec as missing
+AssertionError: expected { code: +0, out: [], err: [] } to deeply equal { code: 1, out: [ …(3) ], err: [] }
+
+- Expected
++ Received
+
+  {
+-   "code": 1,
++   "code": 0,
+    "err": [],
+-   "out": [
+-     "tooling/speckit/extensions/story/story-config.yml: config-copies: copies-differ: differs from .specify/extensions/story/story-config.yml at line 13",
+-     ".specify/extensions/story/story-config.yml: config-copies: test-pathspec: test_pathspec is missing, expected \":(glob)**/*.test.ts :(glob)**/*.spec.ts :(glob)**/test/** :(glob)**/*.stories.ts\"",
+-     "config-copies: 2 finding(s) in the two copies",
+-   ],
++   "out": [],
+  }
+
+ ❯ gates/test/config-copies.test.ts:92:40
+     90|
+     91|   it("names a copy without test_pathspec as missing", async () => {
+     92|     expect(await check("no-pathspec")).toEqual({
+       |                                        ^
+     93|       code: 1,
+     94|       out: [
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[97/170]⎯
+
+ FAIL  |gates| gates/test/config-copies.test.ts > config-copies gate (mutation catch-up) > cannot run when either copy is missing, naming exactly that copy
+AssertionError: expected { code: +0, out: [], err: [] } to deeply equal { code: 2, out: [], …(1) }
+
+- Expected
++ Received
+
+  {
+-   "code": 2,
+-   "err": [
+-     "config-copies: could not run: cannot read .specify/extensions/story/story-config.yml; restore it from git (both copies must exist)",
+-   ],
++   "code": 0,
++   "err": [],
+    "out": [],
+  }
+
+ ❯ gates/test/config-copies.test.ts:104:44
+    102|
+    103|   it("cannot run when either copy is missing, naming exactly that copy…
+    104|     expect(await check("missing-specify")).toEqual({
+       |                                            ^
+    105|       code: 2,
+    106|       out: [],
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[98/170]⎯
 
  FAIL  |gates| gates/test/findings.test.ts > formatLocation > writes a file location at a line as path:line
 AssertionError: expected '' to be 'packages/tokens/src/x.ts:12' // Object.is equality
@@ -622,7 +2271,7 @@ AssertionError: expected '' to be 'packages/tokens/src/x.ts:12' // Object.is equ
      14|   });
      15|
 
-⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[24/56]⎯
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[99/170]⎯
 
  FAIL  |gates| gates/test/findings.test.ts > formatLocation > writes a whole-file location as the path alone
 AssertionError: expected '' to be 'pnpm-lock.yaml' // Object.is equality
@@ -640,7 +2289,7 @@ AssertionError: expected '' to be 'pnpm-lock.yaml' // Object.is equality
      18|   });
      19|
 
-⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[25/56]⎯
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[100/170]⎯
 
  FAIL  |gates| gates/test/findings.test.ts > formatLocation > writes a commit location as the full hash
 AssertionError: expected '' to be '0123456789abcdef0123456789abcdef01234…' // Object.is equality
@@ -658,7 +2307,7 @@ AssertionError: expected '' to be '0123456789abcdef0123456789abcdef01234…' // 
      22|   });
      23| });
 
-⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[26/56]⎯
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[101/170]⎯
 
  FAIL  |gates| gates/test/findings.test.ts > formatFinding > writes <location>: <gate-id>: <rule>: <message> for a path:line location
 AssertionError: expected '' to be 'gates/lib/x.ts:3: lint: no-floating-p…' // Object.is equality
@@ -676,7 +2325,7 @@ AssertionError: expected '' to be 'gates/lib/x.ts:3: lint: no-floating-p…' // 
      34|   });
      35|
 
-⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[27/56]⎯
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[102/170]⎯
 
  FAIL  |gates| gates/test/findings.test.ts > formatFinding > writes <location>: <gate-id>: <rule>: <message> for a path location
 AssertionError: expected '' to be 'pnpm-lock.yaml: pins: lockfile: the l…' // Object.is equality
@@ -694,7 +2343,7 @@ AssertionError: expected '' to be 'pnpm-lock.yaml: pins: lockfile: the l…' // 
      44|   });
      45|
 
-⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[28/56]⎯
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[103/170]⎯
 
  FAIL  |gates| gates/test/findings.test.ts > formatFinding > writes <location>: <gate-id>: <rule>: <message> for a commit location
 AssertionError: expected '' to be '0123456789abcdef0123456789abcdef01234…' // Object.is equality
@@ -712,7 +2361,7 @@ AssertionError: expected '' to be '0123456789abcdef0123456789abcdef01234…' // 
      54|   });
      55|
 
-⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[29/56]⎯
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[104/170]⎯
 
  FAIL  |gates| gates/test/findings.test.ts > formatFinding > keeps a finding on one line when its message has line breaks
 AssertionError: expected '' to be 'a.ts:1: unit-tests: sum adds: Asserti…' // Object.is equality
@@ -730,7 +2379,7 @@ AssertionError: expected '' to be 'a.ts:1: unit-tests: sum adds: Asserti…' // 
      64|   });
      65| });
 
-⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[30/56]⎯
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[105/170]⎯
 
  FAIL  |gates| gates/test/findings.test.ts > emit > prints the one-line summary of a pass on stdout and returns 0
 AssertionError: expected { code: +0, out: [], err: [] } to deeply equal { code: +0, …(2) }
@@ -755,7 +2404,7 @@ AssertionError: expected { code: +0, out: [], err: [] } to deeply equal { code: 
      72|   });
      73|
 
-⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[31/56]⎯
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[106/170]⎯
 
  FAIL  |gates| gates/test/findings.test.ts > emit > prints each finding and then the summary on stdout and returns 1
 AssertionError: expected { code: +0, out: [], err: [] } to deeply equal { code: 1, out: [ …(3) ], err: [] }
@@ -783,7 +2432,7 @@ AssertionError: expected { code: +0, out: [], err: [] } to deeply equal { code: 
      86|       code: 1,
      87|       out: ["a.ts:1: unit-tests: t one: m one", "b.ts: unit-tests: t t…
 
-⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[32/56]⎯
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[107/170]⎯
 
  FAIL  |gates| gates/test/findings.test.ts > emit > prints the cause of a run that could not run as one line on stderr and returns 2
 AssertionError: expected { code: +0, out: [], err: [] } to deeply equal { code: 2, out: [], …(1) }
@@ -809,7 +2458,179 @@ AssertionError: expected { code: +0, out: [], err: [] } to deeply equal { code: 
     100|       code: 2,
     101|       out: [],
 
-⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[33/56]⎯
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[108/170]⎯
+
+ FAIL  |gates| gates/test/governance.test.ts > governance files (SC-006) > has LICENSE, CONTRIBUTING.md, SECURITY.md and THIRD_PARTY_NOTICES at the root under exactly these names
+AssertionError: expected [ '.claude', '.git', …(16) ] to deeply equal ArrayContaining{…}
+
+- Expected
++ Received
+
+- ArrayContaining [
+-   "LICENSE",
+-   "CONTRIBUTING.md",
+-   "SECURITY.md",
+-   "THIRD_PARTY_NOTICES",
++ [
++   ".claude",
++   ".git",
++   ".gitignore",
++   ".node-version",
++   ".specify",
++   "gates",
++   "knowledge",
++   "node_modules",
++   "package.json",
++   "packages",
++   "pnpm-lock.yaml",
++   "pnpm-workspace.yaml",
++   "specs",
++   "tooling",
++   "triage",
++   "tsconfig.base.json",
++   "tsconfig.json",
++   "vitest.config.ts",
+  ]
+
+ ❯ gates/test/governance.test.ts:34:19
+     32|   it("has LICENSE, CONTRIBUTING.md, SECURITY.md and THIRD_PARTY_NOTICE…
+     33|     const names = readdirSync(root);
+     34|     expect(names).toEqual(expect.arrayContaining(["LICENSE", "CONTRIBU…
+       |                   ^
+     35|   });
+     36|
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[109/170]⎯
+
+ FAIL  |gates| gates/test/governance.test.ts > governance files (SC-006) > LICENSE is the unmodified Apache License 2.0 text (FR-030)
+AssertionError: expected 'e3b0c44298fc1c149afbf4c8996fb92427ae4…' to be 'cfc7749b96f63bd31c3c42b5c471bf7568140…' // Object.is equality
+
+Expected: "cfc7749b96f63bd31c3c42b5c471bf756814053e847c10f3eb003417bc523d30"
+Received: "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+
+ ❯ gates/test/governance.test.ts:38:71
+     36|
+     37|   it("LICENSE is the unmodified Apache License 2.0 text (FR-030)", () …
+     38|     expect(createHash("sha256").update(raw("LICENSE")).digest("hex")).…
+       |                                                                       ^
+     39|   });
+     40|
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[110/170]⎯
+
+ FAIL  |gates| gates/test/governance.test.ts > governance files (SC-006) > CONTRIBUTING.md states the sign-off rule (FR-031)
+AssertionError: expected '' to contain 'Signed-off-by'
+
+- Expected
++ Received
+
+- Signed-off-by
+
+ ❯ gates/test/governance.test.ts:43:26
+     41|   it("CONTRIBUTING.md states the sign-off rule (FR-031)", () => {
+     42|     const contributing = text("CONTRIBUTING.md");
+     43|     expect(contributing).toContain("Signed-off-by");
+       |                          ^
+     44|     expect(contributing).toContain("git commit -s");
+     45|   });
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[111/170]⎯
+
+ FAIL  |gates| gates/test/governance.test.ts > governance files (SC-006) > CONTRIBUTING.md states there is no contributor licence agreement and points to Spec Kit and the constitution (FR-031)
+AssertionError: expected '' to contain 'no contributor licence agreement'
+
+- Expected
++ Received
+
+- no contributor licence agreement
+
+ ❯ gates/test/governance.test.ts:49:26
+     47|   it("CONTRIBUTING.md states there is no contributor licence agreement…
+     48|     const contributing = text("CONTRIBUTING.md");
+     49|     expect(contributing).toContain("no contributor licence agreement");
+       |                          ^
+     50|     expect(contributing).toContain("Spec Kit");
+     51|     expect(contributing).toContain(".specify/memory/constitution.md");
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[112/170]⎯
+
+ FAIL  |gates| gates/test/governance.test.ts > governance files (SC-006) > .github/CODEOWNERS names @MOES-Media as the only owner of every path (FR-035)
+AssertionError: expected [] to deeply equal [ [ '*', '@MOES-Media' ] ]
+
+- Expected
++ Received
+
+- [
+-   [
+-     "*",
+-     "@MOES-Media",
+-   ],
+- ]
++ []
+
+ ❯ gates/test/governance.test.ts:55:26
+     53|
+     54|   it(".github/CODEOWNERS names @MOES-Media as the only owner of every …
+     55|     expect(codeowners()).toEqual([["*", "@MOES-Media"]]);
+       |                          ^
+     56|   });
+     57|
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[113/170]⎯
+
+ FAIL  |gates| gates/test/governance.test.ts > governance files (SC-006) > SECURITY.md names GitHub private vulnerability reporting and the CODEOWNERS owner @MOES-Media (FR-032)
+AssertionError: expected '' to contain 'GitHub private vulnerability reporting'
+
+- Expected
++ Received
+
+- GitHub private vulnerability reporting
+
+ ❯ gates/test/governance.test.ts:60:22
+     58|   it("SECURITY.md names GitHub private vulnerability reporting and the…
+     59|     const security = text("SECURITY.md");
+     60|     expect(security).toContain("GitHub private vulnerability reporting…
+       |                      ^
+     61|     expect(security).toContain("@MOES-Media");
+     62|   });
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[114/170]⎯
+
+ FAIL  |gates| gates/test/governance.test.ts > governance files (SC-006) > SECURITY.md promises an acknowledgement within 3 working days and a status update within 10 (FR-032)
+AssertionError: expected '' to contain '3 working days'
+
+- Expected
++ Received
+
+- 3 working days
+
+ ❯ gates/test/governance.test.ts:66:22
+     64|   it("SECURITY.md promises an acknowledgement within 3 working days an…
+     65|     const security = text("SECURITY.md");
+     66|     expect(security).toContain("3 working days");
+       |                      ^
+     67|     expect(security).toContain("10 working days");
+     68|   });
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[115/170]⎯
+
+ FAIL  |gates| gates/test/governance.test.ts > governance files (SC-006) > THIRD_PARTY_NOTICES states that no third-party asset ships yet and when the font entry arrives (FR-033)
+AssertionError: expected '' to contain 'No third-party asset ships'
+
+- Expected
++ Received
+
+- No third-party asset ships
+
+ ❯ gates/test/governance.test.ts:72:21
+     70|   it("THIRD_PARTY_NOTICES states that no third-party asset ships yet a…
+     71|     const notices = text("THIRD_PARTY_NOTICES");
+     72|     expect(notices).toContain("No third-party asset ships");
+       |                     ^
+     73|     expect(notices).toContain("Schibsted Grotesk");
+     74|     expect(notices).toContain("#5");
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[116/170]⎯
 
  FAIL  |gates| gates/test/setup-offline.test.ts > decideSetup > turns a tarball missing from the store into 'missing: <package>; run pnpm run setup:online', exit 2
 AssertionError: expected { exit: +0, summary: '' } to deeply equal { exit: 2, …(1) }
@@ -824,15 +2645,15 @@ AssertionError: expected { exit: +0, summary: '' } to deeply equal { exit: 2, �
 +   "summary": "",
   }
 
- ❯ gates/test/setup-offline.test.ts:20:20
-     18|   it("turns a tarball missing from the store into 'missing: <package>;…
-     19|     const result = decideSetup({ exitCode: 1, output: pnpm("no-offline…
-     20|     expect(result).toEqual({ exit: 2, cause: "setup: missing: is-numbe…
+ ❯ gates/test/setup-offline.test.ts:22:20
+     20|   it("turns a tarball missing from the store into 'missing: <package>;…
+     21|     const result = decideSetup({ exitCode: 1, output: pnpm("no-offline…
+     22|     expect(result).toEqual({ exit: 2, cause: "setup: missing: is-numbe…
        |                    ^
-     21|   });
-     22|
+     23|   });
+     24|
 
-⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[34/56]⎯
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[117/170]⎯
 
  FAIL  |gates| gates/test/setup-offline.test.ts > decideSetup > turns package metadata missing from the cache into 'missing: <package>; run pnpm run setup:online', exit 2
 AssertionError: expected { exit: +0, summary: '' } to deeply equal { exit: 2, …(1) }
@@ -847,15 +2668,15 @@ AssertionError: expected { exit: +0, summary: '' } to deeply equal { exit: 2, �
 +   "summary": "",
   }
 
- ❯ gates/test/setup-offline.test.ts:25:20
-     23|   it("turns package metadata missing from the cache into 'missing: <pa…
-     24|     const result = decideSetup({ exitCode: 1, output: pnpm("no-offline…
-     25|     expect(result).toEqual({ exit: 2, cause: "setup: missing: is-numbe…
+ ❯ gates/test/setup-offline.test.ts:27:20
+     25|   it("turns package metadata missing from the cache into 'missing: <pa…
+     26|     const result = decideSetup({ exitCode: 1, output: pnpm("no-offline…
+     27|     expect(result).toEqual({ exit: 2, cause: "setup: missing: is-numbe…
        |                    ^
-     26|   });
-     27|
+     28|   });
+     29|
 
-⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[35/56]⎯
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[118/170]⎯
 
  FAIL  |gates| gates/test/setup-offline.test.ts > decideSetup > reports any other pnpm failure as exit 2 naming pnpm's error code
 AssertionError: expected +0 to be 2 // Object.is equality
@@ -866,15 +2687,15 @@ AssertionError: expected +0 to be 2 // Object.is equality
 - 2
 + 0
 
- ❯ gates/test/setup-offline.test.ts:30:25
-     28|   it("reports any other pnpm failure as exit 2 naming pnpm's error cod…
-     29|     const result = decideSetup({ exitCode: 1, output: pnpm("outdated-l…
-     30|     expect(result.exit).toBe(2);
+ ❯ gates/test/setup-offline.test.ts:32:25
+     30|   it("reports any other pnpm failure as exit 2 naming pnpm's error cod…
+     31|     const result = decideSetup({ exitCode: 1, output: pnpm("outdated-l…
+     32|     expect(result.exit).toBe(2);
        |                         ^
-     31|     const cause = result.exit === 2 ? result.cause : "";
-     32|     expect(cause).toContain("ERR_PNPM_OUTDATED_LOCKFILE");
+     33|     const cause = result.exit === 2 ? result.cause : "";
+     34|     expect(cause).toContain("ERR_PNPM_OUTDATED_LOCKFILE");
 
-⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[36/56]⎯
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[119/170]⎯
 
  FAIL  |gates| gates/test/setup-offline.test.ts > decideSetup > reports a pnpm failure without an error record as exit 2 naming its exit code
 AssertionError: expected +0 to be 2 // Object.is equality
@@ -885,15 +2706,15 @@ AssertionError: expected +0 to be 2 // Object.is equality
 - 2
 + 0
 
- ❯ gates/test/setup-offline.test.ts:38:25
-     36|   it("reports a pnpm failure without an error record as exit 2 naming …
-     37|     const result = decideSetup({ exitCode: 9, output: "" }, present);
-     38|     expect(result.exit).toBe(2);
+ ❯ gates/test/setup-offline.test.ts:40:25
+     38|   it("reports a pnpm failure without an error record as exit 2 naming …
+     39|     const result = decideSetup({ exitCode: 9, output: "" }, present);
+     40|     expect(result.exit).toBe(2);
        |                         ^
-     39|     expect(result.exit === 2 ? result.cause : "").toContain("exit 9");
-     40|   });
+     41|     expect(result.exit === 2 ? result.cause : "").toContain("exit 9");
+     42|   });
 
-⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[37/56]⎯
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[120/170]⎯
 
  FAIL  |gates| gates/test/setup-offline.test.ts > decideSetup > names Chromium and pnpm run setup:online when the install succeeds but Chromium is missing, exit 2
 AssertionError: expected { exit: +0, summary: '' } to deeply equal { exit: 2, …(1) }
@@ -908,15 +2729,15 @@ AssertionError: expected { exit: +0, summary: '' } to deeply equal { exit: 2, �
 +   "summary": "",
   }
 
- ❯ gates/test/setup-offline.test.ts:44:20
-     42|   it("names Chromium and pnpm run setup:online when the install succee…
-     43|     const result = decideSetup({ exitCode: 0, output: pnpm("success.nd…
-     44|     expect(result).toEqual({ exit: 2, cause: `setup: Chromium not foun…
+ ❯ gates/test/setup-offline.test.ts:46:20
+     44|   it("names Chromium and pnpm run setup:online when the install succee…
+     45|     const result = decideSetup({ exitCode: 0, output: pnpm("success.nd…
+     46|     expect(result).toEqual({ exit: 2, cause: `setup: Chromium not foun…
        |                    ^
-     45|   });
-     46|
+     47|   });
+     48|
 
-⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[38/56]⎯
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[121/170]⎯
 
  FAIL  |gates| gates/test/setup-offline.test.ts > decideSetup > names the missing package first when both the store and Chromium lack something
 AssertionError: expected { exit: +0, summary: '' } to deeply equal { exit: 2, …(1) }
@@ -931,15 +2752,15 @@ AssertionError: expected { exit: +0, summary: '' } to deeply equal { exit: 2, �
 +   "summary": "",
   }
 
- ❯ gates/test/setup-offline.test.ts:49:20
-     47|   it("names the missing package first when both the store and Chromium…
-     48|     const result = decideSetup({ exitCode: 1, output: pnpm("no-offline…
-     49|     expect(result).toEqual({ exit: 2, cause: "setup: missing: is-numbe…
+ ❯ gates/test/setup-offline.test.ts:51:20
+     49|   it("names the missing package first when both the store and Chromium…
+     50|     const result = decideSetup({ exitCode: 1, output: pnpm("no-offline…
+     51|     expect(result).toEqual({ exit: 2, cause: "setup: missing: is-numbe…
        |                    ^
-     50|   });
-     51|
+     52|   });
+     53|
 
-⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[39/56]⎯
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[122/170]⎯
 
  FAIL  |gates| gates/test/setup-offline.test.ts > decideSetup > passes a successful install with Chromium present, naming the Chromium it found
 AssertionError: expected { exit: +0, summary: '' } to deeply equal { exit: +0, …(1) }
@@ -953,15 +2774,142 @@ AssertionError: expected { exit: +0, summary: '' } to deeply equal { exit: +0, �
 +   "summary": "",
   }
 
- ❯ gates/test/setup-offline.test.ts:54:20
-     52|   it("passes a successful install with Chromium present, naming the Ch…
-     53|     const result = decideSetup({ exitCode: 0, output: pnpm("success.nd…
-     54|     expect(result).toEqual({ exit: 0, summary: `setup: installed offli…
+ ❯ gates/test/setup-offline.test.ts:56:20
+     54|   it("passes a successful install with Chromium present, naming the Ch…
+     55|     const result = decideSetup({ exitCode: 0, output: pnpm("success.nd…
+     56|     expect(result).toEqual({ exit: 0, summary: `setup: installed offli…
        |                    ^
-     55|   });
-     56| });
+     57|   });
+     58| });
 
-⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[40/56]⎯
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[123/170]⎯
+
+ FAIL  |gates| gates/test/setup-offline.test.ts > decideSetup (mutation catch-up) > names pnpm's error code and the first line of its message for any other failure
+AssertionError: expected { exit: +0, summary: '' } to deeply equal { exit: 2, …(1) }
+
+- Expected
++ Received
+
+  {
+-   "cause": "setup: pnpm install --offline failed: ERR_PNPM_OUTDATED_LOCKFILE: installing dependencies: Cannot install with \"frozen-lockfile\" because pnpm-lock.yaml is not up to date with package.json.",
+-   "exit": 2,
++   "exit": 0,
++   "summary": "",
+  }
+
+ ❯ gates/test/setup-offline.test.ts:64:20
+     62|   it("names pnpm's error code and the first line of its message for an…
+     63|     const result = decideSetup({ exitCode: 1, output: pnpm("outdated-l…
+     64|     expect(result).toEqual({
+       |                    ^
+     65|       exit: 2,
+     66|       cause:
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[124/170]⎯
+
+ FAIL  |gates| gates/test/setup-offline.test.ts > decideSetup (mutation catch-up) > skips lines that are not error records: text, null, numbers, lists and other levels
+AssertionError: expected { exit: +0, summary: '' } to deeply equal { exit: 2, …(1) }
+
+- Expected
++ Received
+
+  {
+-   "cause": "setup: missing: is-number@7.0.0; run pnpm run setup:online",
+-   "exit": 2,
++   "exit": 0,
++   "summary": "",
+  }
+
+ ❯ gates/test/setup-offline.test.ts:74:59
+     72|   it("skips lines that are not error records: text, null, numbers, lis…
+     73|     const output = `progress text\nnull\n42\n[1]\n{"level":"info","mes…
+     74|     expect(decideSetup({ exitCode: 1, output }, present)).toEqual({
+       |                                                           ^
+     75|       exit: 2,
+     76|       cause: "setup: missing: is-number@7.0.0; run pnpm run setup:onli…
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[125/170]⎯
+
+ FAIL  |gates| gates/test/setup-offline.test.ts > decideSetup (mutation catch-up) > reads an error record whose code and message are not text as empty
+AssertionError: expected { exit: +0, summary: '' } to deeply equal { exit: 2, …(1) }
+
+- Expected
++ Received
+
+  {
+-   "cause": "setup: pnpm install --offline failed: : ",
+-   "exit": 2,
++   "exit": 0,
++   "summary": "",
+  }
+
+ ❯ gates/test/setup-offline.test.ts:82:59
+     80|   it("reads an error record whose code and message are not text as emp…
+     81|     const output = '{"level":"error","code":7,"message":["x"]}\n';
+     82|     expect(decideSetup({ exitCode: 1, output }, present)).toEqual({
+       |                                                           ^
+     83|       exit: 2,
+     84|       cause: "setup: pnpm install --offline failed: : ",
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[126/170]⎯
+
+ FAIL  |gates| gates/test/setup-offline.test.ts > decideSetup (mutation catch-up) > names an unknown Chromium when the check names no executable
+AssertionError: expected { exit: +0, summary: '' } to deeply equal { exit: +0, …(1) }
+
+- Expected
++ Received
+
+  {
+    "exit": 0,
+-   "summary": "setup: installed offline; Chromium at (unknown)",
++   "summary": "",
+  }
+
+ ❯ gates/test/setup-offline.test.ts:89:101
+     87|
+     88|   it("names an unknown Chromium when the check names no executable", (…
+     89|     expect(decideSetup({ exitCode: 0, output: "" }, { executable: unde…
+       |                                                                                                     ^
+     90|       exit: 0,
+     91|       summary: "setup: installed offline; Chromium at (unknown)",
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[127/170]⎯
+
+ FAIL  |gates| gates/test/setup-offline.test.ts > setupOffline (mutation catch-up) > installs frozen and offline with the ndjson log, then checks Chromium
+TypeError: setupOffline is not a function
+ ❯ gates/test/setup-offline.test.ts:118:24
+    116|     const c = capture();
+    117|     const tools = { pnpm: pnpmWith(pnpm("success.ndjson"), 0), chromiu…
+    118|     const code = await setupOffline(tools, c.io);
+       |                        ^
+    119|     expect({ code, out: c.out, err: c.err }).toEqual({
+    120|       code: 0,
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[128/170]⎯
+
+ FAIL  |gates| gates/test/setup-offline.test.ts > setupOffline (mutation catch-up) > reports a missing Chromium after a successful install
+TypeError: setupOffline is not a function
+ ❯ gates/test/setup-offline.test.ts:129:24
+    127|     const c = capture();
+    128|     const tools = { pnpm: pnpmWith(pnpm("success.ndjson"), 0), chromiu…
+    129|     const code = await setupOffline(tools, c.io);
+       |                        ^
+    130|     expect({ code, out: c.out, err: c.err }).toEqual({
+    131|       code: 2,
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[129/170]⎯
+
+ FAIL  |gates| gates/test/setup-offline.test.ts > setupOffline (mutation catch-up) > reports a failed install on its own, without checking Chromium
+TypeError: setupOffline is not a function
+ ❯ gates/test/setup-offline.test.ts:140:24
+    138|     const c = capture();
+    139|     const tools = { pnpm: pnpmWith(pnpm("no-offline-tarball.ndjson"), …
+    140|     const code = await setupOffline(tools, c.io);
+       |                        ^
+    141|     expect({ code, out: c.out, err: c.err }).toEqual({
+    142|       code: 2,
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[130/170]⎯
 
  FAIL  |gates| gates/test/test-command.test.ts > classifyVitest > passes a run whose tests all passed, with a one-line summary of the count
 AssertionError: expected { exit: +0, summary: '' } to deeply equal { exit: +0, …(1) }
@@ -975,15 +2923,15 @@ AssertionError: expected { exit: +0, summary: '' } to deeply equal { exit: +0, �
 +   "summary": "",
   }
 
- ❯ gates/test/test-command.test.ts:15:20
-     13|   it("passes a run whose tests all passed, with a one-line summary of …
-     14|     const result = classifyVitest({ report: fixture("passing.json"), e…
-     15|     expect(result).toEqual({ exit: 0, summary: "unit-tests: 3 tests pa…
+ ❯ gates/test/test-command.test.ts:17:20
+     15|   it("passes a run whose tests all passed, with a one-line summary of …
+     16|     const result = classifyVitest({ report: fixture("passing.json"), e…
+     17|     expect(result).toEqual({ exit: 0, summary: "unit-tests: 3 tests pa…
        |                    ^
-     16|   });
-     17|
+     18|   });
+     19|
 
-⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[41/56]⎯
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[131/170]⎯
 
  FAIL  |gates| gates/test/test-command.test.ts > classifyVitest > reports each failed test as one finding at its file and line, rule = the full test name
 AssertionError: expected { exit: +0, summary: '' } to deeply equal { exit: 1, …(2) }
@@ -1018,15 +2966,15 @@ AssertionError: expected { exit: +0, summary: '' } to deeply equal { exit: 1, �
 +   "summary": "",
   }
 
- ❯ gates/test/test-command.test.ts:20:20
-     18|   it("reports each failed test as one finding at its file and line, ru…
-     19|     const result = classifyVitest({ report: fixture("failing.json"), e…
-     20|     expect(result).toEqual({
+ ❯ gates/test/test-command.test.ts:22:20
+     20|   it("reports each failed test as one finding at its file and line, ru…
+     21|     const result = classifyVitest({ report: fixture("failing.json"), e…
+     22|     expect(result).toEqual({
        |                    ^
-     21|       exit: 1,
-     22|       findings: [
+     23|       exit: 1,
+     24|       findings: [
 
-⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[42/56]⎯
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[132/170]⎯
 
  FAIL  |gates| gates/test/test-command.test.ts > classifyVitest > reports a failed test without a recorded location at its file
 AssertionError: expected +0 to be 1 // Object.is equality
@@ -1037,15 +2985,15 @@ AssertionError: expected +0 to be 1 // Object.is equality
 - 1
 + 0
 
- ❯ gates/test/test-command.test.ts:48:25
-     46|     }
-     47|     const result = classifyVitest({ report: JSON.stringify(report), ex…
-     48|     expect(result.exit).toBe(1);
+ ❯ gates/test/test-command.test.ts:50:25
+     48|     }
+     49|     const result = classifyVitest({ report: JSON.stringify(report), ex…
+     50|     expect(result.exit).toBe(1);
        |                         ^
-     49|     expect(result.exit === 1 ? result.findings.map((f) => f.location) …
-     50|       { path: "packages/tokens/test/sum.test.ts" },
+     51|     expect(result.exit === 1 ? result.findings.map((f) => f.location) …
+     52|       { path: "packages/tokens/test/sum.test.ts" },
 
-⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[43/56]⎯
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[133/170]⎯
 
  FAIL  |gates| gates/test/test-command.test.ts > classifyVitest > cannot run when no test file is found (a broken file pattern does not pass)
 AssertionError: expected +0 to be 2 // Object.is equality
@@ -1056,15 +3004,15 @@ AssertionError: expected +0 to be 2 // Object.is equality
 - 2
 + 0
 
- ❯ gates/test/test-command.test.ts:57:25
-     55|   it("cannot run when no test file is found (a broken file pattern doe…
-     56|     const result = classifyVitest({ report: fixture("no-test-file.json…
-     57|     expect(result.exit).toBe(2);
+ ❯ gates/test/test-command.test.ts:59:25
+     57|   it("cannot run when no test file is found (a broken file pattern doe…
+     58|     const result = classifyVitest({ report: fixture("no-test-file.json…
+     59|     expect(result.exit).toBe(2);
        |                         ^
-     58|     expect(result.exit === 2 ? result.cause : "").toContain("no test f…
-     59|   });
+     60|     expect(result.exit === 2 ? result.cause : "").toContain("no test f…
+     61|   });
 
-⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[44/56]⎯
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[134/170]⎯
 
  FAIL  |gates| gates/test/test-command.test.ts > classifyVitest > cannot run when a test file fails to load, naming the file and the error
 AssertionError: expected { exit: +0, summary: '' } to deeply equal { exit: 2, …(1) }
@@ -1079,15 +3027,15 @@ AssertionError: expected { exit: +0, summary: '' } to deeply equal { exit: 2, �
 +   "summary": "",
   }
 
- ❯ gates/test/test-command.test.ts:63:20
-     61|   it("cannot run when a test file fails to load, naming the file and t…
-     62|     const result = classifyVitest({ report: fixture("load-failure.json…
-     63|     expect(result).toEqual({
+ ❯ gates/test/test-command.test.ts:65:20
+     63|   it("cannot run when a test file fails to load, naming the file and t…
+     64|     const result = classifyVitest({ report: fixture("load-failure.json…
+     65|     expect(result).toEqual({
        |                    ^
-     64|       exit: 2,
-     65|       cause:
+     66|       exit: 2,
+     67|       cause:
 
-⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[45/56]⎯
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[135/170]⎯
 
  FAIL  |gates| gates/test/test-command.test.ts > classifyVitest > cannot run when a test file does not parse, naming the file without terminal colour codes
 AssertionError: expected +0 to be 2 // Object.is equality
@@ -1098,15 +3046,15 @@ AssertionError: expected +0 to be 2 // Object.is equality
 - 2
 + 0
 
- ❯ gates/test/test-command.test.ts:73:25
-     71|   it("cannot run when a test file does not parse, naming the file with…
-     72|     const result = classifyVitest({ report: fixture("syntax-error.json…
-     73|     expect(result.exit).toBe(2);
+ ❯ gates/test/test-command.test.ts:75:25
+     73|   it("cannot run when a test file does not parse, naming the file with…
+     74|     const result = classifyVitest({ report: fixture("syntax-error.json…
+     75|     expect(result.exit).toBe(2);
        |                         ^
-     74|     const cause = result.exit === 2 ? result.cause : "";
-     75|     expect(cause).toContain("packages/tokens/test/a.test.ts failed to …
+     76|     const cause = result.exit === 2 ? result.cause : "";
+     77|     expect(cause).toContain("packages/tokens/test/a.test.ts failed to …
 
-⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[46/56]⎯
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[136/170]⎯
 
  FAIL  |gates| gates/test/test-command.test.ts > classifyVitest > cannot run on errors outside tests even when every test passed, naming the error
 AssertionError: expected { exit: +0, summary: '' } to deeply equal { exit: 2, …(1) }
@@ -1121,15 +3069,15 @@ AssertionError: expected { exit: +0, summary: '' } to deeply equal { exit: 2, �
 +   "summary": "",
   }
 
- ❯ gates/test/test-command.test.ts:86:20
-     84|       root,
-     85|     });
-     86|     expect(result).toEqual({
+ ❯ gates/test/test-command.test.ts:88:20
+     86|       root,
+     87|     });
+     88|     expect(result).toEqual({
        |                    ^
-     87|       exit: 2,
-     88|       cause: "unit-tests: could not run: Vitest reported errors outsid…
+     89|       exit: 2,
+     90|       cause: "unit-tests: could not run: Vitest reported errors outsid…
 
-⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[47/56]⎯
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[137/170]⎯
 
  FAIL  |gates| gates/test/test-command.test.ts > classifyVitest > cannot run when a failed test comes with a file that failed to load
 AssertionError: expected +0 to be 2 // Object.is equality
@@ -1140,15 +3088,15 @@ AssertionError: expected +0 to be 2 // Object.is equality
 - 2
 + 0
 
- ❯ gates/test/test-command.test.ts:97:25
-     95|     failing.testResults.push(...load.testResults);
-     96|     const result = classifyVitest({ report: JSON.stringify(failing), e…
-     97|     expect(result.exit).toBe(2);
+ ❯ gates/test/test-command.test.ts:99:25
+     97|     failing.testResults.push(...load.testResults);
+     98|     const result = classifyVitest({ report: JSON.stringify(failing), e…
+     99|     expect(result.exit).toBe(2);
        |                         ^
-     98|     expect(result.exit === 2 ? result.cause : "").toContain("packages/…
-     99|   });
+    100|     expect(result.exit === 2 ? result.cause : "").toContain("packages/…
+    101|   });
 
-⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[48/56]⎯
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[138/170]⎯
 
  FAIL  |gates| gates/test/test-command.test.ts > classifyVitest > cannot run without a report
 AssertionError: expected +0 to be 2 // Object.is equality
@@ -1159,15 +3107,15 @@ AssertionError: expected +0 to be 2 // Object.is equality
 - 2
 + 0
 
- ❯ gates/test/test-command.test.ts:103:25
-    101|   it("cannot run without a report", () => {
-    102|     const result = classifyVitest({ report: undefined, exitCode: 1, ou…
-    103|     expect(result.exit).toBe(2);
+ ❯ gates/test/test-command.test.ts:105:25
+    103|   it("cannot run without a report", () => {
+    104|     const result = classifyVitest({ report: undefined, exitCode: 1, ou…
+    105|     expect(result.exit).toBe(2);
        |                         ^
-    104|     expect(result.exit === 2 ? result.cause : "").toContain("no Vitest…
-    105|   });
+    106|     expect(result.exit === 2 ? result.cause : "").toContain("no Vitest…
+    107|   });
 
-⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[49/56]⎯
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[139/170]⎯
 
  FAIL  |gates| gates/test/test-command.test.ts > classifyVitest > cannot run on a report that is not JSON
 AssertionError: expected +0 to be 2 // Object.is equality
@@ -1178,15 +3126,15 @@ AssertionError: expected +0 to be 2 // Object.is equality
 - 2
 + 0
 
- ❯ gates/test/test-command.test.ts:109:25
-    107|   it("cannot run on a report that is not JSON", () => {
-    108|     const result = classifyVitest({ report: "{ not json", exitCode: 1,…
-    109|     expect(result.exit).toBe(2);
+ ❯ gates/test/test-command.test.ts:111:25
+    109|   it("cannot run on a report that is not JSON", () => {
+    110|     const result = classifyVitest({ report: "{ not json", exitCode: 1,…
+    111|     expect(result.exit).toBe(2);
        |                         ^
-    110|     expect(result.exit === 2 ? result.cause : "").toContain("no Vitest…
-    111|   });
+    112|     expect(result.exit === 2 ? result.cause : "").toContain("no Vitest…
+    113|   });
 
-⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[50/56]⎯
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[140/170]⎯
 
  FAIL  |gates| gates/test/test-command.test.ts > chromiumCheck > checks Playwright's own Chromium when no override is set and finds no problem when it exists
 AssertionError: expected { executable: undefined, …(1) } to deeply equal { …(2) }
@@ -1200,15 +3148,15 @@ AssertionError: expected { executable: undefined, …(1) } to deeply equal { …
     "problem": undefined,
   }
 
- ❯ gates/test/test-command.test.ts:120:19
-    118|   it("checks Playwright's own Chromium when no override is set and fin…
-    119|     const check = chromiumCheck({ override: undefined, playwrightPath,…
-    120|     expect(check).toEqual({ executable: playwrightPath, problem: undef…
+ ❯ gates/test/test-command.test.ts:122:19
+    120|   it("checks Playwright's own Chromium when no override is set and fin…
+    121|     const check = chromiumCheck({ override: undefined, playwrightPath,…
+    122|     expect(check).toEqual({ executable: playwrightPath, problem: undef…
        |                   ^
-    121|   });
-    122|
+    123|   });
+    124|
 
-⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[51/56]⎯
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[141/170]⎯
 
  FAIL  |gates| gates/test/test-command.test.ts > chromiumCheck > names pnpm run setup:online when Playwright's Chromium is missing
 AssertionError: expected undefined to be '/home/u/.cache/ms-playwright/chromium…' // Object.is equality
@@ -1219,15 +3167,15 @@ AssertionError: expected undefined to be '/home/u/.cache/ms-playwright/chromium�
 + Received:
 undefined
 
- ❯ gates/test/test-command.test.ts:125:30
-    123|   it("names pnpm run setup:online when Playwright's Chromium is missin…
-    124|     const check = chromiumCheck({ override: undefined, playwrightPath,…
-    125|     expect(check.executable).toBe(playwrightPath);
+ ❯ gates/test/test-command.test.ts:127:30
+    125|   it("names pnpm run setup:online when Playwright's Chromium is missin…
+    126|     const check = chromiumCheck({ override: undefined, playwrightPath,…
+    127|     expect(check.executable).toBe(playwrightPath);
        |                              ^
-    126|     expect(check.problem ?? "").toContain("Chromium");
-    127|     expect(check.problem ?? "").toContain(playwrightPath);
+    128|     expect(check.problem ?? "").toContain("Chromium");
+    129|     expect(check.problem ?? "").toContain(playwrightPath);
 
-⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[52/56]⎯
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[142/170]⎯
 
  FAIL  |gates| gates/test/test-command.test.ts > chromiumCheck > names pnpm run setup:online when Playwright cannot name a Chromium executable
 AssertionError: expected '' to contain 'Chromium'
@@ -1237,15 +3185,15 @@ AssertionError: expected '' to contain 'Chromium'
 
 - Chromium
 
- ❯ gates/test/test-command.test.ts:134:33
-    132|     const check = chromiumCheck({ override: undefined, playwrightPath:…
-    133|     expect(check.executable).toBeUndefined();
-    134|     expect(check.problem ?? "").toContain("Chromium");
+ ❯ gates/test/test-command.test.ts:136:33
+    134|     const check = chromiumCheck({ override: undefined, playwrightPath:…
+    135|     expect(check.executable).toBeUndefined();
+    136|     expect(check.problem ?? "").toContain("Chromium");
        |                                 ^
-    135|     expect(check.problem ?? "").toContain("pnpm run setup:online");
-    136|   });
+    137|     expect(check.problem ?? "").toContain("pnpm run setup:online");
+    138|   });
 
-⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[53/56]⎯
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[143/170]⎯
 
  FAIL  |gates| gates/test/test-command.test.ts > chromiumCheck > checks the OCELLE_CHROMIUM_PATH override instead of Playwright's Chromium when it is set (R1-03)
 AssertionError: expected { executable: undefined, …(1) } to deeply equal { …(2) }
@@ -1259,15 +3207,15 @@ AssertionError: expected { executable: undefined, …(1) } to deeply equal { …
     "problem": undefined,
   }
 
- ❯ gates/test/test-command.test.ts:140:19
-    138|   it("checks the OCELLE_CHROMIUM_PATH override instead of Playwright's…
-    139|     const check = chromiumCheck({ override, playwrightPath, exists: (p…
-    140|     expect(check).toEqual({ executable: override, problem: undefined }…
+ ❯ gates/test/test-command.test.ts:142:19
+    140|   it("checks the OCELLE_CHROMIUM_PATH override instead of Playwright's…
+    141|     const check = chromiumCheck({ override, playwrightPath, exists: (p…
+    142|     expect(check).toEqual({ executable: override, problem: undefined }…
        |                   ^
-    141|   });
-    142|
+    143|   });
+    144|
 
-⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[54/56]⎯
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[144/170]⎯
 
  FAIL  |gates| gates/test/test-command.test.ts > chromiumCheck > names the override and pnpm run setup:online when the override does not exist
 AssertionError: expected undefined to be '/opt/pw-browsers/chromium_headless_sh…' // Object.is equality
@@ -1278,15 +3226,15 @@ AssertionError: expected undefined to be '/opt/pw-browsers/chromium_headless_sh�
 + Received:
 undefined
 
- ❯ gates/test/test-command.test.ts:145:30
-    143|   it("names the override and pnpm run setup:online when the override d…
-    144|     const check = chromiumCheck({ override, playwrightPath, exists: (p…
-    145|     expect(check.executable).toBe(override);
+ ❯ gates/test/test-command.test.ts:147:30
+    145|   it("names the override and pnpm run setup:online when the override d…
+    146|     const check = chromiumCheck({ override, playwrightPath, exists: (p…
+    147|     expect(check.executable).toBe(override);
        |                              ^
-    146|     expect(check.problem ?? "").toContain(override);
-    147|     expect(check.problem ?? "").toContain("OCELLE_CHROMIUM_PATH");
+    148|     expect(check.problem ?? "").toContain(override);
+    149|     expect(check.problem ?? "").toContain("OCELLE_CHROMIUM_PATH");
 
-⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[55/56]⎯
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[145/170]⎯
 
  FAIL  |gates| gates/test/test-command.test.ts > chromiumCheck > treats an empty override as unset, like vitest.config.ts does
 AssertionError: expected { executable: undefined, …(1) } to deeply equal { …(2) }
@@ -1300,20 +3248,285 @@ AssertionError: expected { executable: undefined, …(1) } to deeply equal { …
     "problem": undefined,
   }
 
- ❯ gates/test/test-command.test.ts:153:19
-    151|   it("treats an empty override as unset, like vitest.config.ts does", …
-    152|     const check = chromiumCheck({ override: "", playwrightPath, exists…
-    153|     expect(check).toEqual({ executable: playwrightPath, problem: undef…
+ ❯ gates/test/test-command.test.ts:155:19
+    153|   it("treats an empty override as unset, like vitest.config.ts does", …
+    154|     const check = chromiumCheck({ override: "", playwrightPath, exists…
+    155|     expect(check).toEqual({ executable: playwrightPath, problem: undef…
        |                   ^
-    154|   });
-    155| });
+    156|   });
+    157| });
 
-⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[56/56]⎯
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[146/170]⎯
+
+ FAIL  |gates| gates/test/test-command.test.ts > classifyVitest (mutation catch-up) > names the first non-blank line of a failure message, without colour codes or indentation
+AssertionError: expected { exit: +0, summary: '' } to match object { exit: 1, findings: [ { …(1) }, {} ] }
+(1 matching property omitted from actual)
+
+- Expected
++ Received
+
+  {
+-   "exit": 1,
+-   "findings": [
+-     {
+-       "message": "AssertionError: expected 3 to be 4",
+-     },
+-     {},
+-   ],
++   "exit": 0,
+  }
+
+ ❯ gates/test/test-command.test.ts:187:20
+    185|     failed.failureMessages = ["\n   \u001b[31mAssertionError\u001b[39m…
+    186|     const result = classifyVitest({ report: JSON.stringify(failing), e…
+    187|     expect(result).toMatchObject({ exit: 1, findings: [{ message: "Ass…
+       |                    ^
+    188|   });
+    189|
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[147/170]⎯
+
+ FAIL  |gates| gates/test/test-command.test.ts > classifyVitest (mutation catch-up) > names a failed test without a failure message 'failed', and an empty message as empty
+AssertionError: expected { exit: +0, summary: '' } to match object { exit: 1, …(1) }
+(1 matching property omitted from actual)
+
+- Expected
++ Received
+
+  {
+-   "exit": 1,
+-   "findings": [
+-     {
+-       "message": "failed",
+-     },
+-     {
+-       "message": "",
+-     },
+-   ],
++   "exit": 0,
+  }
+
+ ❯ gates/test/test-command.test.ts:200:20
+    198|     other.failureMessages = [""];
+    199|     const result = classifyVitest({ report: JSON.stringify(failing), e…
+    200|     expect(result).toMatchObject({ exit: 1, findings: [{ message: "fai…
+       |                    ^
+    201|   });
+    202|
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[148/170]⎯
+
+ FAIL  |gates| gates/test/test-command.test.ts > classifyVitest (mutation catch-up) > keeps the path of a test file outside the repository root as it is
+AssertionError: expected { exit: +0, summary: '' } to match object { exit: 1, …(1) }
+(1 matching property omitted from actual)
+
+- Expected
++ Received
+
+  {
+-   "exit": 1,
+-   "findings": [
+-     {
+-       "location": {
+-         "path": "/elsewhere/sum.test.ts",
+-       },
+-     },
+-     {
+-       "location": {
+-         "path": "packages/elements/test/title.test.ts",
+-       },
+-     },
+-   ],
++   "exit": 0,
+  }
+
+ ❯ gates/test/test-command.test.ts:207:20
+    205|     first(failing.testResults).name = "/elsewhere/sum.test.ts";
+    206|     const result = classifyVitest({ report: JSON.stringify(failing), e…
+    207|     expect(result).toMatchObject({
+       |                    ^
+    208|       exit: 1,
+    209|       findings: [{ location: { path: "/elsewhere/sum.test.ts" } }, { l…
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[149/170]⎯
+
+ FAIL  |gates| gates/test/test-command.test.ts > classifyVitest (mutation catch-up) > cannot run on an error outside the tests of a file whose tests all passed
+AssertionError: expected { exit: +0, summary: '' } to deeply equal { exit: 2, …(1) }
+
+- Expected
++ Received
+
+  {
+-   "cause": "unit-tests: could not run: packages/tokens/test/sum.test.ts: error outside tests: Error: afterAll hook failed",
+-   "exit": 2,
++   "exit": 0,
++   "summary": "",
+  }
+
+ ❯ gates/test/test-command.test.ts:219:96
+    217|     file.status = "failed";
+    218|     file.message = "Error: afterAll hook failed";
+    219|     expect(classifyVitest({ report: JSON.stringify(passing), exitCode:…
+       |                                                                                                ^
+    220|       exit: 2,
+    221|       cause: "unit-tests: could not run: packages/tokens/test/sum.test…
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[150/170]⎯
+
+ FAIL  |gates| gates/test/test-command.test.ts > classifyVitest (mutation catch-up) > counts only passed tests in the summary, not skipped ones
+AssertionError: expected { exit: +0, summary: '' } to deeply equal { exit: +0, …(1) }
+
+- Expected
++ Received
+
+  {
+    "exit": 0,
+-   "summary": "unit-tests: 2 tests passed in 2 files",
++   "summary": "",
+  }
+
+ ❯ gates/test/test-command.test.ts:230:96
+    228|     if (skipped === undefined) throw new Error("fixture has two tests"…
+    229|     skipped.status = "skipped";
+    230|     expect(classifyVitest({ report: JSON.stringify(passing), exitCode:…
+       |                                                                                                ^
+    231|       exit: 0,
+    232|       summary: "unit-tests: 2 tests passed in 2 files",
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[151/170]⎯
+
+ FAIL  |gates| gates/test/test-command.test.ts > classifyVitest (mutation catch-up) > cannot run without a report, naming Vitest's exit code when its output names no error
+AssertionError: expected { exit: +0, summary: '' } to deeply equal { exit: 2, …(1) }
+
+- Expected
++ Received
+
+  {
+-   "cause": "unit-tests: could not run: no Vitest report (Vitest exited 1); run pnpm run setup:offline and check vitest.config.ts",
+-   "exit": 2,
++   "exit": 0,
++   "summary": "",
+  }
+
+ ❯ gates/test/test-command.test.ts:237:82
+    235|
+    236|   it("cannot run without a report, naming Vitest's exit code when its …
+    237|     expect(classifyVitest({ report: undefined, exitCode: 1, output: ""…
+       |                                                                                  ^
+    238|       exit: 2,
+    239|       cause: "unit-tests: could not run: no Vitest report (Vitest exit…
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[152/170]⎯
+
+ FAIL  |gates| gates/test/test-command.test.ts > classifyVitest (mutation catch-up) > cannot run without a report, naming the error line of the output (colour codes and indentation removed)
+AssertionError: expected { exit: +0, summary: '' } to deeply equal { exit: 2, …(1) }
+
+- Expected
++ Received
+
+  {
+-   "cause": "unit-tests: could not run: no Vitest report (TypeError: late boom); run pnpm run setup:offline and check vitest.config.ts",
+-   "exit": 2,
++   "exit": 0,
++   "summary": "",
+  }
+
+ ❯ gates/test/test-command.test.ts:245:78
+    243|   it("cannot run without a report, naming the error line of the output…
+    244|     const output = "Vitest reports an Error: below\n  \u001b[31mTypeEr…
+    245|     expect(classifyVitest({ report: undefined, exitCode: 1, output, ro…
+       |                                                                              ^
+    246|       exit: 2,
+    247|       cause:
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[153/170]⎯
+
+ FAIL  |gates| gates/test/test-command.test.ts > classifyVitest (mutation catch-up) > cannot run on a report that is null or has no list of test results
+AssertionError: expected { exit: +0, summary: '' } to deeply equal { exit: 2, …(1) }
+
+- Expected
++ Received
+
+  {
+-   "cause": "unit-tests: could not run: no Vitest report (Vitest exited 1); run pnpm run setup:offline and check vitest.config.ts",
+-   "exit": 2,
++   "exit": 0,
++   "summary": "",
+  }
+
+ ❯ gates/test/test-command.test.ts:255:79
+    253|     const cause =
+    254|       "unit-tests: could not run: no Vitest report (Vitest exited 1); …
+    255|     expect(classifyVitest({ report: "null", exitCode: 1, output: "", r…
+       |                                                                               ^
+    256|     expect(classifyVitest({ report: "{}", exitCode: 1, output: "", roo…
+    257|   });
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[154/170]⎯
+
+ FAIL  |gates| gates/test/test-command.test.ts > classifyVitest (mutation catch-up) > cannot run when Vitest fails with no failed test and no error in its output
+AssertionError: expected { exit: +0, summary: '' } to deeply equal { exit: 2, …(1) }
+
+- Expected
++ Received
+
+  {
+-   "cause": "unit-tests: could not run: Vitest reported errors outside tests: Vitest exited 1 with no failed test",
+-   "exit": 2,
++   "exit": 0,
++   "summary": "",
+  }
+
+ ❯ gates/test/test-command.test.ts:260:96
+    258|
+    259|   it("cannot run when Vitest fails with no failed test and no error in…
+    260|     expect(classifyVitest({ report: fixture("passing.json"), exitCode:…
+       |                                                                                                ^
+    261|       exit: 2,
+    262|       cause: "unit-tests: could not run: Vitest reported errors outsid…
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[155/170]⎯
+
+ FAIL  |gates| gates/test/test-command.test.ts > unitTests (mutation catch-up) > runs no test when Chromium is missing, exit 2 naming the problem
+TypeError: unitTests is not a function
+ ❯ gates/test/test-command.test.ts:298:24
+    296|   it("runs no test when Chromium is missing, exit 2 naming the problem…
+    297|     const c = capture();
+    298|     const code = await unitTests({ root, toolCwd: root, args: [] }, { …
+       |                        ^
+    299|     expect({ code, out: c.out, err: c.err }).toEqual({
+    300|       code: 2,
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[156/170]⎯
+
+ FAIL  |gates| gates/test/test-command.test.ts > unitTests (mutation catch-up) > exits 2 naming the setup when Vitest is not installed in the root
+TypeError: unitTests is not a function
+ ❯ gates/test/test-command.test.ts:308:24
+    306|   it("exits 2 naming the setup when Vitest is not installed in the roo…
+    307|     const c = capture();
+    308|     const code = await unitTests({ root, toolCwd: root, args: [] }, { …
+       |                        ^
+    309|     expect({ code, out: c.out, err: c.err }).toEqual({
+    310|       code: 2,
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[157/170]⎯
+
+ FAIL  |gates| gates/test/test-command.test.ts > unitTests (mutation catch-up) > runs Vitest with the JSON report and test locations, passing extra arguments on, and classifies the report
+TypeError: unitTests is not a function
+ ❯ gates/test/test-command.test.ts:319:24
+    317|     const c = capture();
+    318|     const extra = ["--project", "tokens"];
+    319|     const code = await unitTests({ root, toolCwd: root, args: extra },…
+       |                        ^
+    320|     expect({ code, out: c.out, err: c.err }).toEqual({
+    321|       code: 0,
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[158/170]⎯
 
 
- Test Files  7 failed | 4 passed (11)
-      Tests  56 failed | 4 passed (60)
-   Start at  20:37:53
-   Duration  2.25s (transform 45%, worker 29%, tests 17%, import 8%)
+ Test Files  51 failed | 4 passed (55)
+      Tests  134 failed | 4 passed (138)
+   Start at  18:43:02
+   Duration  6.55s (tests 39%, worker 35%, transform 19%, import 7%)
 
 [ELIFECYCLE] Test failed. See above for more details.
