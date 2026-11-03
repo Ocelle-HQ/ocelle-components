@@ -1,7 +1,9 @@
 // Test doubles for the in-process tests of the mutation gate (gates/bin/mutation.ts): a git that answers the gate's
 // two calls the way git does for one known base commit, a repository of files in memory that the gate reads and
 // deletes in, a Stryker that mutates exactly the `mutate` entries it is given and writes its JSON report into that
-// repository, and captured output. The tests assert the gate's exit code and output, never the doubles.
+// repository (or, like Stryker 10.1.1, skips an entry under a folder it always ignores and logs the warning it logs
+// for it), and captured output. The tests assert the gate's exit code and output, never the doubles.
+import { readFileSync } from "node:fs";
 import type { MutationTools, ToolRun } from "../bin/mutation.ts";
 import type { Context, Io } from "../lib/cli.ts";
 
@@ -142,4 +144,39 @@ export function newFilesDiff(files: Readonly<Record<string, number>>): string {
     )
     .join("\n")
     .concat("\n");
+}
+
+/** A fixture of gates/test/fixtures/stryker/ (recorded Stryker output and reports). */
+export function strykerFixture(name: string): string {
+  return readFileSync(new URL(`fixtures/stryker/${name}`, import.meta.url), "utf8");
+}
+
+/**
+ * The warning line of a real Stryker 10.1.1 run (gates/test/fixtures/stryker/unread-pattern.output.txt) for a
+ * `mutate` entry it did not read, with the recorded entry replaced by `entry`.
+ */
+export function unreadWarning(entry: string): string {
+  const recorded = strykerFixture("unread-pattern.output.txt")
+    .split("\n")
+    .find((line) => line.includes("did not result in any files."));
+  if (recorded === undefined) throw new Error("unread-pattern.output.txt holds no unread warning");
+  return recorded.replace("packages/tokens/src/.next/y.ts:1-2", entry);
+}
+
+/** The folders Stryker 10.1.1 never reads a file under (`ALWAYS_IGNORE` and `tempDirName`), in any case. */
+const skippedFolders = ["node_modules", ".git", ".next", ".nuxt", ".svelte-kit", ".stryker-tmp"];
+
+/**
+ * `fakeStryker`, except that, as Stryker 10.1.1 does, an entry whose path has a folder Stryker never reads gets no
+ * mutant and its warning on stdout instead.
+ */
+export function skippingStryker(statusOf: (path: string) => string): FakeStryker {
+  const stryker = fakeStryker(statusOf);
+  return (mutate, files) => {
+    const skipped = (entry: string): boolean =>
+      entry.split("/").slice(0, -1).some((folder) => skippedFolders.includes(folder.toLowerCase()));
+    stryker(mutate.filter((entry) => !skipped(entry)), files);
+    const stdout = mutate.filter(skipped).map((entry) => `${unreadWarning(entry)}\n`).join("");
+    return { exitCode: 0, stdout, stderr: "" };
+  };
 }

@@ -5,7 +5,19 @@ import type { MutationTools } from "../bin/mutation.ts";
 import { changedFiles } from "../lib/mutation/ranges.ts";
 import type { ChangedFile, LineRange } from "../lib/mutation/ranges.ts";
 import { countCuts, formatPlan, planShards, selectFiles } from "../lib/mutation/shards.ts";
-import { base, capture, context, fakeGit, fakeRepo, fakeStryker, mutant, newFilesDiff, reportPath, strykerReport } from "./mutation-fakes.ts";
+import {
+  base,
+  capture,
+  context,
+  fakeGit,
+  fakeRepo,
+  fakeStryker,
+  mutant,
+  newFilesDiff,
+  reportPath,
+  skippingStryker,
+  strykerReport,
+} from "./mutation-fakes.ts";
 
 // CI shards (FR-013, research.md R-08): the changed files, sorted by path, become entries: a file of at most 120
 // changed lines is one entry `path`, a file of more is split by line range into entries `path:start-end` of at most
@@ -634,6 +646,59 @@ describe("mutation gate: the report of this run, never an earlier one (review ro
       code: 0,
       out: ["mutation: 1 mutant on the changed lines of 1 file, none survived; 0 equivalent records"],
       err: [],
+    });
+  });
+});
+
+// Phase 3 round 12 (O12-01; tasks.md T099; research.md R-08 "Unread `mutate` entries"): a changed in-scope file
+// under a folder Stryker never reads (here .next and .NUXT) gets no mutant and only Stryker's warning (the double
+// logs the line of a real run, gates/test/fixtures/stryker/unread-pattern.output.txt); the gate exits 2 naming each
+// such entry as Stryker logged it, in the whole-diff run and in a `--files` run alike, though every read file passes.
+describe("mutation gate: a mutate entry Stryker did not read (phase 3 round 12, O12-01)", () => {
+  const diff = newFilesDiff({ "gates/lib/a.ts": 2, "packages/tokens/src/.NUXT/z.ts": 3, "packages/tokens/src/.next/y.ts": 130 });
+  const sources = {
+    "gates/lib/a.ts": "export const a = 1;\nexport const b = 2;\n",
+    "packages/tokens/src/.NUXT/z.ts": "export const z = 1;\n",
+    "packages/tokens/src/.next/y.ts": "export const y = 1;\n",
+  };
+  const unread = (entries: string): string =>
+    "mutation: could not run: Stryker did not read these mutate entries (it skips every file under a folder named " +
+    `node_modules, .git, .next, .nuxt, .svelte-kit or .stryker-tmp, in any case): ${entries}; ` +
+    "move the files out of such a folder";
+
+  async function gate(args: readonly string[]) {
+    const { io, out, err } = capture();
+    const mutated: string[] = [];
+    const stryker = skippingStryker(() => "Killed");
+    const tools = { git: fakeGit(diff), ...fakeRepo(sources, (mutate, tree) => (mutated.push(...mutate), stryker(mutate, tree))) };
+    const code = await mutation(context(["--base", base, ...args]), tools, io);
+    return { code, out, err, mutated };
+  }
+
+  it("exits 2 in the whole-diff run, naming every unread entry, with nothing on stdout", async () => {
+    expect(await gate([])).toEqual({
+      code: 2,
+      out: [],
+      err: [unread("packages/tokens/src/.NUXT/z.ts:1-3, packages/tokens/src/.next/y.ts:1-130")],
+      mutated: ["gates/lib/a.ts:1-2", "packages/tokens/src/.NUXT/z.ts:1-3", "packages/tokens/src/.next/y.ts:1-130"],
+    });
+  });
+
+  it("exits 2 in a --files run whose entry is path:start-end, naming the entry as Stryker logged it", async () => {
+    expect(await gate(["--files", "gates/lib/a.ts,packages/tokens/src/.next/y.ts:121-130"])).toEqual({
+      code: 2,
+      out: [],
+      err: [unread("packages/tokens/src/.next/y.ts:121-130")],
+      mutated: ["gates/lib/a.ts:1-2", "packages/tokens/src/.next/y.ts:121-130"],
+    });
+  });
+
+  it("passes a --files run of read files only, beside the unread files of the diff", async () => {
+    expect(await gate(["--files", "gates/lib/a.ts"])).toEqual({
+      code: 0,
+      out: ["mutation: 1 mutant on the changed lines of 1 file, none survived; 0 equivalent records"],
+      err: [],
+      mutated: ["gates/lib/a.ts:1-2"],
     });
   });
 });

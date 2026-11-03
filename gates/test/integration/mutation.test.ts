@@ -13,7 +13,9 @@ import { baseEnv, cleanUp, repo, runGate, tempDir } from "./workspace.ts";
 // file no test imports, beside an unchanged, tested x.ts (FR-011: a mutant on a line no test runs survives). The fixture
 // gates/test/fixtures/mutation-split/ adds lines 5 to 12 to gates/lib/split.ts: `untested` (lines 6 to 8), which no
 // test runs, and `tested` (lines 10 to 12), which an in-process test checks (phase 3 round 9, O9-01: an entry
-// `path:start-end` limits the run to the changed lines inside it). Each test first asserts that both configuration files exist: the green commit creates them, so at the
+// `path:start-end` limits the run to the changed lines inside it). The fixture gates/test/fixtures/mutation-unread/ is
+// mutation-uncovered's base with a head that adds packages/tokens/src/.next/y.ts, which Stryker 10.1.1 never reads
+// (phase 3 round 12, O12-01: the gate exits 2 naming the entry, not 0 with "0 mutants"). Each test first asserts that both configuration files exist: the green commit creates them, so at the
 // red commit the test fails on that assertion.
 const timeout = 300_000;
 const configs = ["stryker.config.json", "vitest.mutation.config.ts", "vitest.config.ts", "tsconfig.json", "tsconfig.base.json"];
@@ -82,6 +84,28 @@ describe("mutation gate (gates/bin/mutation.ts)", () => {
           "mutation: 1 finding in 1 changed file (1 mutant on changed lines)",
         ],
         stderr: [],
+      });
+    },
+    timeout,
+  );
+
+  it(
+    "exits 2 naming a changed file under a .next folder, which Stryker does not read (phase 3 round 12, O12-01)",
+    async () => {
+      expect(configsExist()).toEqual([true, true]);
+      const { root, base } = mutationRepo("mutation-unread");
+      const ran = await runGate("gates/bin/mutation.ts", ["--root", root, "--base", base], {
+        cwd: tempDir("cwd"),
+        env: baseEnv(),
+      });
+      expect({ code: ran.code, stdout: ran.stdout, stderr: ran.stderr }).toEqual({
+        code: 2,
+        stdout: [],
+        stderr: [
+          "mutation: could not run: Stryker did not read these mutate entries (it skips every file under a folder " +
+            "named node_modules, .git, .next, .nuxt, .svelte-kit or .stryker-tmp, in any case): " +
+            "packages/tokens/src/.next/y.ts:1-2; move the files out of such a folder",
+        ],
       });
     },
     timeout,

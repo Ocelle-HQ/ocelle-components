@@ -186,3 +186,72 @@ describe("classifyMutants: a changed file absent from the report (phase 3 round 
     });
   });
 });
+
+// Phase 3 round 12 (O12-01, operator decision "Fail on unread files (Recommended)"; tasks.md T099; research.md R-08
+// "Unread `mutate` entries"): Stryker 10.1.1 never reads a file under a folder named node_modules, .git, .next,
+// .nuxt, .svelte-kit or .stryker-tmp (any case, any depth) and only logs `Glob pattern "<entry>" did not result in
+// any files.`, so the file is missing from the report. Recorded outputs of real Stryker runs (machine paths replaced
+// by <repo>): unread-pattern.output.txt, on the one entry packages/tokens/src/.next/y.ts:1-2; unread-patterns.output.txt,
+// on .next/y.ts:1-2, x.ts:2-2 (read) and .Svelte-Kit/z.ts:1-1; unexcluded-pattern.output.txt, on x.ts:2-2 and the
+// exclusion !packages/tokens/src/.next/y.ts, which excludes nothing.
+describe("classifyMutants: a mutate entry Stryker did not read (phase 3 round 12, O12-01)", () => {
+  const unread = (entries: string): string =>
+    "mutation: could not run: Stryker did not read these mutate entries (it skips every file under a folder named " +
+    `node_modules, .git, .next, .nuxt, .svelte-kit or .stryker-tmp, in any case): ${entries}; ` +
+    "move the files out of such a folder";
+  const next = changed("packages/tokens/src/.next/y.ts", [{ start: 1, end: 2 }]);
+  const empty = JSON.stringify({ schemaVersion: "1.0", files: {} });
+
+  it("cannot decide when Stryker logs that an entry did not result in any files, naming the entry as logged", () => {
+    const run = { report: empty, exitCode: 0, output: fixture("unread-pattern.output.txt") };
+    expect(classifyMutants(run, [next])).toEqual({ ok: false, cause: unread("packages/tokens/src/.next/y.ts:1-2") });
+  });
+
+  it("cannot decide on an unread entry even when the report holds survivors of other files", () => {
+    const run = { report, exitCode: 1, output: fixture("unread-pattern.output.txt") };
+    expect(classifyMutants(run, [changed(sample, [{ start: 3, end: 3 }]), next])).toEqual({
+      ok: false,
+      cause: unread("packages/tokens/src/.next/y.ts:1-2"),
+    });
+  });
+
+  it("names every unread entry in Stryker's order, the read entry of the same run not among them", () => {
+    const run = { report: empty, exitCode: 0, output: fixture("unread-patterns.output.txt") };
+    const files = [
+      next,
+      changed("packages/tokens/src/x.ts", [{ start: 2, end: 2 }]),
+      changed("packages/tokens/src/.Svelte-Kit/z.ts", [{ start: 1, end: 1 }]),
+    ];
+    expect(classifyMutants(run, files)).toEqual({
+      ok: false,
+      cause: unread("packages/tokens/src/.next/y.ts:1-2, packages/tokens/src/.Svelte-Kit/z.ts:1-1"),
+    });
+  });
+
+  it("leaves the verdict as before on Stryker's other glob warnings and on an output without the warning", () => {
+    const ranges = [
+      { start: 3, end: 3 },
+      { start: 9, end: 9 },
+    ];
+    const files = [changed(sample, ranges)];
+    const before = classifyMutants({ report, exitCode: 1, output: "" }, files);
+    expect(before).toMatchObject({ ok: true, mutants: 10 });
+    const testFiles = '\u001b[33m17:19:17 (1655) WARN ProjectReader\u001b[39m Glob pattern "test/**/*.ts" did not match any test files.\n';
+    const without = fixture("unread-pattern.output.txt")
+      .split("\n")
+      .filter((line) => !line.includes("did not result in any files."))
+      .join("\n");
+    for (const output of [fixture("unexcluded-pattern.output.txt"), testFiles, without, fixture("dry-run-failed.output.txt")]) {
+      expect(classifyMutants({ report, exitCode: 1, output }, files)).toEqual(before);
+    }
+  });
+});
+
+// research.md R-08 "Unread `mutate` entries": Stryker logs the warning at `warn`, so a console logLevel above it
+// (`error`, `fatal`, `off`) would hide it; Stryker's default is `info`.
+describe("stryker.config.json: the unread-entry warning prints (phase 3 round 12, O12-01)", () => {
+  it("sets no logLevel, or one of trace, debug, info and warn", () => {
+    const config = JSON.parse(readFileSync(new URL("../../stryker.config.json", import.meta.url), "utf8")) as { logLevel?: unknown };
+    expect([undefined, "trace", "debug", "info", "warn"]).toContain(config.logLevel);
+  });
+});
