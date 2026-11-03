@@ -1,0 +1,1 @@
+test_pathspec: ":(glob)**/*.test.ts :(glob)**/*.spec.ts :(glob)**/test/** :(glob)**/*.stories.ts"

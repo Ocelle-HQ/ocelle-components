@@ -57,24 +57,26 @@ function recorded(gate: Gate, plant: string): PlantRun {
 function job(
   files: Map<string, string>,
   runs: Readonly<Record<string, PlantRun>> = {},
-): { done: Promise<number>; out: string[]; err: string[]; ran: string[] } {
+): { done: Promise<number>; out: string[]; err: string[]; ran: string[]; specs: Map<string, Plant> } {
   const out: string[] = [];
   const err: string[] = [];
   const ran: string[] = [];
+  const specs = new Map<string, Plant>();
   const below = (dir: string): string[] =>
     [...files.keys()].filter((path) => path.startsWith(`${dir}/`)).map((path) => path.slice(dir.length + 1));
   const tools: PlantTools = {
     read: (path) => Promise.resolve(files.get(path)),
     dirs: (path) => Promise.resolve([...new Set(below(path).filter((p) => p.includes("/")).map((p) => p.split("/")[0] ?? ""))].sort()),
     files: (path) => Promise.resolve(below(path).sort()),
-    runPlant: (gate, plant) => {
+    runPlant: (gate, plant, spec) => {
       ran.push(`${gate.id} ${plant}`);
+      specs.set(plant, spec);
       return Promise.resolve(runs[plant] ?? recorded(gate, plant));
     },
   };
   const io: Io = { cwd: "/work/repo", env: {}, out: (l) => out.push(l), err: (l) => err.push(l) };
   const context: Context = { root: "/work/repo", toolCwd: "/work/repo", args: [] };
-  return { done: plants(context, tools, io), out, err, ran };
+  return { done: plants(context, tools, io), out, err, ran, specs };
 }
 
 async function result(ran: ReturnType<typeof job>): Promise<{ code: number; out: string[]; err: string[] }> {
@@ -258,6 +260,16 @@ describe("plants (the job)", () => {
     });
   });
 
+  it("hands each plant's parsed plant.json to the runner, so a mutation plant's base reaches it (review round 1, R1-11)", async () => {
+    const files = world();
+    const spec = { expect: "error", why: "an unresolvable base", base: "refs/heads/no-such-base" };
+    files.set("gates/plants/mutation/error-basic/plant.json", JSON.stringify(spec));
+    const ran = job(files);
+    expect((await result(ran)).code).toBe(0);
+    expect(ran.specs.get("gates/plants/mutation/error-basic")).toEqual(spec);
+    expect(ran.specs.get("gates/plants/lint/pass-basic")).toEqual({ expect: "pass", why: "a near-miss" });
+  });
+
   it.each([
     { path: "gates/gates.json", cause: "plants: could not run: gates/gates.json is missing; restore it from git" },
     { path: ".github/workflows/ci.yml", cause: "plants: could not run: .github/workflows/ci.yml is missing; restore it from git" },
@@ -357,6 +369,13 @@ describe("parsePlant", () => {
     const pass = { expect: "pass", why: "w", records: [{ location: "a.ts:1", mutator: "all", reason: "r" }] };
     expect(parsePlant(JSON.stringify(pass))).toEqual(pass);
     expect(parsePlant(JSON.stringify({ expect: "error", why: "w" }))).toEqual({ expect: "error", why: "w" });
+  });
+
+  it("reads the base a plant presents to its gate instead of the base commit (review round 1, R1-11)", () => {
+    const plant = { expect: "error", why: "w", base: "refs/heads/no-such-base" };
+    expect(parsePlant(JSON.stringify(plant))).toEqual(plant);
+    expect(parsePlant(JSON.stringify({ ...plant, base: "" }))).toBe("base must be a non-empty string");
+    expect(parsePlant(JSON.stringify({ ...plant, base: 1 }))).toBe("base must be a non-empty string");
   });
 
   it.each([

@@ -1,0 +1,4 @@
+{
+  "expect": "error",
+  "why": "Fixture: a package.json that is not valid JSON (workspace form)."
+}

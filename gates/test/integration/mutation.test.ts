@@ -9,7 +9,8 @@ import { baseEnv, cleanUp, repo, runGate, tempDir } from "./workspace.ts";
 // vitest.mutation.config.ts, with the configuration they load, a second commit with head/; node_modules linked), run
 // from a different working directory (research.md R-08). The change adds `triple` to gates/lib/sample.ts, which only
 // a test under the fixture's gates/test/integration/ runs, and `decrement` to gates/lib/other.ts, which an in-process
-// test checks. Each test first asserts that both configuration files exist: the green commit creates them, so at the
+// test checks. The fixture gates/test/fixtures/mutation-uncovered/ changes only packages/tokens/src/y.ts, a new
+// file no test imports, beside an unchanged, tested x.ts (FR-011: a mutant on a line no test runs survives). Each test first asserts that both configuration files exist: the green commit creates them, so at the
 // red commit the test fails on that assertion.
 const timeout = 300_000;
 const configs = ["stryker.config.json", "vitest.mutation.config.ts", "vitest.config.ts", "tsconfig.json", "tsconfig.base.json"];
@@ -19,9 +20,9 @@ function git(dir: string, args: readonly string[]): string {
   return execFileSync("git", [...identity, ...args], { cwd: dir, env: baseEnv(), encoding: "utf8" }).trim();
 }
 
-function mutationRepo(): { readonly root: string; readonly base: string } {
+function mutationRepo(name = "mutation-repo"): { readonly root: string; readonly base: string } {
   const root = tempDir("mutation-repo");
-  const fixture = join(repo, "gates/test/fixtures/mutation-repo");
+  const fixture = join(repo, "gates/test/fixtures", name);
   cpSync(join(fixture, "base"), root, { recursive: true });
   for (const file of configs) cpSync(join(repo, file), join(root, file));
   writeFileSync(join(root, ".gitignore"), "node_modules\nreports/\n.stryker-tmp/\n");
@@ -58,6 +59,27 @@ describe("mutation gate (gates/bin/mutation.ts)", () => {
       expect(findings).toContain("gates/lib/sample.ts:7: mutation: ArithmeticOperator: NoCoverage: replaced by value / 3");
       expect(findings.filter((line) => !/^gates\/lib\/sample\.ts:[5-8]: mutation: \w+: NoCoverage: /.test(line))).toEqual([]);
       expect(ran.stdout.at(-1)).toMatch(/^mutation: \d+ findings? in 2 changed files \(\d+ mutants on changed lines\)$/);
+    },
+    timeout,
+  );
+
+  it(
+    "reports a change only to source no test imports as a located NoCoverage finding (exit 1), not as could not run (review round 1, R1-10)",
+    async () => {
+      expect(configsExist()).toEqual([true, true]);
+      const { root, base } = mutationRepo("mutation-uncovered");
+      const ran = await runGate("gates/bin/mutation.ts", ["--root", root, "--base", base], {
+        cwd: tempDir("cwd"),
+        env: baseEnv(),
+      });
+      expect({ code: ran.code, stdout: ran.stdout, stderr: ran.stderr }).toEqual({
+        code: 1,
+        stdout: [
+          'packages/tokens/src/y.ts:2: mutation: StringLiteral: NoCoverage: replaced by ""',
+          "mutation: 1 finding in 1 changed file (1 mutant on changed lines)",
+        ],
+        stderr: [],
+      });
     },
     timeout,
   );

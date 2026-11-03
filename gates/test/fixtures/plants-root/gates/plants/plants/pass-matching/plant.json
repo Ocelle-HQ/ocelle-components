@@ -1,0 +1,4 @@
+{
+  "expect": "pass",
+  "why": "Fixture: the repository's gates.json and ci.yml (written by the test) match."
+}

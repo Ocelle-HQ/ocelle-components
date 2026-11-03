@@ -1,0 +1,5 @@
+{
+  "expect": "fail",
+  "why": "Fixture: a commit with no Signed-off-by line (commit-repo form).",
+  "findings": [{ "location": "commit:1", "rule": "no-signoff", "message": "Ada Example <ada@example.com>" }]
+}
