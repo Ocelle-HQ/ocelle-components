@@ -10,11 +10,11 @@ Pull request: https://github.com/Ocelle-HQ/ocelle-components/pull/18 (base `main
 
 - **GitHub accepts the file:** `gh api "repos/Ocelle-HQ/ocelle-components/codeowners/errors?ref=claude/kitty-ui-speckit-decouple-x3prkx"`
   returned `{"errors":[]}` on 2026-11-03.
-- **`@MOES-Media` has write access:** not checked yet. The agent proxy refuses the collaborator API. CI runs on
-  this pull request list `MOES-Media` as the actor, which suggests write access but does not prove it.
-  Operator: confirm and record it here.
+- **`@MOES-Media` has write access:** `gh api users/MOES-Media` gives `type: User`, and
+  `gh api repos/Ocelle-HQ/ocelle-components/collaborators/MOES-Media/permission` returned `permission: admin` on
+  2026-11-03 (operator's session).
 
-Status: **open** (write access to confirm).
+Status: **done**.
 
 ## 2. The twelve checks green (US3 scenario 1)
 
@@ -36,14 +36,26 @@ the landing pass): conclusion success, 34 of 34 jobs. These twelve checks of con
 
 The helper jobs `Mutation plan` and the 21 `Mutation shard` jobs are green too.
 
-Status: **done** for `27e7c22`. Re-confirm on the final head if anything is pushed after it.
+Re-confirmed on head `d22a647` (the verification commit): run
+https://github.com/Ocelle-HQ/ocelle-components/actions/runs/41703807884, conclusion success, 34 of 34 jobs, all
+twelve checks above present and green.
+
+Status: **done** for `d22a647`. The commit that records this file's results re-runs CI; the ruleset of item 3 makes
+the merge wait for its twelve checks.
 
 ## 3. Required checks on `main` (operator decision, plan squad round 2)
 
 A ruleset (or branch protection) on `main` must require the twelve check names above, matching `gates/README.md`.
-On 2026-11-03, `gh api repos/Ocelle-HQ/ocelle-components/rulesets` returned `[]`: no ruleset exists yet.
+On 2026-11-03, `gh api repos/Ocelle-HQ/ocelle-components/rulesets` returned `[]`: no ruleset existed, and `main` had
+no branch protection.
 
-Status: **open**. Operator: create the ruleset and record its name or link here.
+Created on 2026-11-03: ruleset `main-required-checks` (id 26484239,
+https://github.com/Ocelle-HQ/ocelle-components/rules/26484239). It targets `refs/heads/main`, is active, and has one
+rule, required status checks: the twelve names above, each bound to the GitHub Actions app (integration 15368), not
+strict about the branch being up to date. `gh api repos/Ocelle-HQ/ocelle-components/rules/branches/main` reports the
+twelve checks.
+
+Status: **done**.
 
 ## 4. Timings
 
@@ -85,8 +97,9 @@ Slowest shards on the current plan:
 | 41690538079 (`c949938`) | 8:39 | 7:59 | 7:58 |
 | 41694458359 (`eb2f5dd`) | 8:48 | | |
 | 41702137380 (`27e7c22`) | 7:46 | 7:43 | 6:31 |
+| 41703807884 (`d22a647`) | 8:54 | 7:44 | 7:38 |
 
-Every shard of every run on the current plan finished. The margin is thin, at 72 s to 134 s (phase 3 notes R11-01
+Every shard of every run on the current plan finished. The margin is thin, at 66 s to 134 s (phase 3 notes R11-01
 and R13-02). The next lever, if a shard is cancelled again, is a bound on mutants per shard; that needs a spec
 amendment.
 
