@@ -83,7 +83,7 @@ export function ciJobs(workflow: string): string[] {
   let inJobs = false;
   for (const line of workflow.split(/\r?\n/)) {
     if (/^\s*(?:#.*)?$/.test(line)) continue;
-    const depth = /^ */.exec(line)?.[0].length ?? 0;
+    const depth = line.search(/\S/);
     if (depth === 0) {
       inJobs = /^jobs:\s*$/.test(line);
       continue;
