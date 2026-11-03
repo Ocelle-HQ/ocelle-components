@@ -270,6 +270,12 @@ round 1 re-pinned every registry package published less than 7 days before 2026-
      :(glob)gates/stylelint/**/*.ts` minus `:(exclude,glob)**/*.test.ts :(exclude,glob)**/*.spec.ts
      :(exclude,glob)**/test/** :(exclude,glob)**/*.stories.ts :(exclude,glob)**/*.d.ts
      :(exclude,glob)packages/*/dist/**`. No range: print "nothing to mutate" and exit 0 (US2 scenario 5).
+     Header parsing (operator decision, PR #18 landing review, human:jeroennouwsdev, 2026-11-03; landing note
+     L1-01, phase 3 round 7 O7-01): git writes `+++ b/<path>` followed by a tab for a path with a space, and
+     `+++ "b/<escaped>"` (C-style quoting, octal byte escapes) for a path with a non-ASCII or special character.
+     The parser strips the tab and decodes the quoting (octal escapes as UTF-8 bytes, `\"`, `\\` and the other C
+     escapes), so such a file keeps its ranges; any other `+++` header that is not `+++ /dev/null` is exit 2 naming
+     the header. `--plan` and `--files` use the same parse, so a CI shard never drops such a file.
   3. Stryker runs with `mutate` set to `file.ts:start-end` ranges, so only changed lines are mutated (FR-011).
      `--files <path>[,<path>...]` limits the run to those changed files (a CI shard); without it every changed file
      is mutated (the story review's local run).
@@ -278,7 +284,15 @@ round 1 re-pinned every registry package published less than 7 days before 2026-
      line is a finding (exit 1); `Killed`, `Timeout` and `RuntimeError` are killed and pass, and `CompileError` (a
      mutant the typescript-checker rejects) is invalid, neither killed nor surviving, and passes (FR-011's
      definitions, as amended in plan squad round 3 with the operator's approval, 2026-11-02); no report, or a
-     report from a failed dry run, is exit 2.
+     report from a failed dry run, is exit 2. Input guard (operator decision, PR #18 landing review,
+     human:jeroennouwsdev, 2026-11-03: "Guard the input instead (Recommended)"; landing note L1-02, phase 3 round 7
+     O7-02): Stryker 10.1.1 lists only files with mutants, and a `mutate` path holding a glob metacharacter
+     (`*?[]{}!`) or a comma (which splits `--mutate`) is never instrumented, so it would silently pass. Before
+     Stryker runs, a changed in-scope path that Stryker cannot take as a `mutate` input (it contains a glob
+     metacharacter `*?[]{}!` or a comma, or otherwise cannot be passed verbatim) is exit 2, naming each such path
+     (a file the gate could not check, contracts/gate-cli.md, not a finding). With every path passed verbatim, a
+     changed file absent from Stryker's report counts as zero mutants and passes: its changed lines hold no
+     mutable code (a type-only or comment-only change).
   5. Equivalent mutants: `// Stryker disable next-line <mutator[,mutator]|all>: <reason>` directly above the code;
      Stryker reports them as `Ignored` with the reason, and the wrapper prints each as a record line (path, line,
      mutator, reason) for the review (FR-012). In the changed files the wrapper rejects, as findings, a next-line
@@ -405,8 +419,13 @@ round 1 re-pinned every registry package published less than 7 days before 2026-
   (`gates/bin/plants.ts`) first checks the registry (below), then runs, for every gate in `gates.json`, every case
   against the gate, and fails when: a `fail` case does not exit 1 or its findings differ from the expected list
   (as a set of location and rule, plus any message substring the plant gives); a `pass` case does not exit 0 with
-  no finding (and, where given, exactly the expected records); an `error` case does not exit 2; a gate lacks a
-  `fail`, a `pass` or an `error` case; or a plant has no or an invalid `plant.json`.
+  no finding (and, where given, exactly the expected records); an `error` case does not exit 2, or exits 2 with no
+  error-output line containing its `cause`; a gate lacks a `fail`, a `pass` or an `error` case; or a plant has no
+  or an invalid `plant.json` (an `error` plant without `cause`, or a `pass` plant with `base`, is invalid). Every
+  breaking plant names its expected cause, so a breakage for another reason (Stryker or Vitest missing in the
+  temporary repository, say) does not count as proving the gate's "could not run" path; a pass plant may not set
+  `base`, so it cannot pass vacuously on a base equal to its head (operator decision, PR #18 landing review,
+  human:jeroennouwsdev, 2026-11-03; landing notes L1-04 and L1-05, phase 4 round 5 O5-01 and O5-02).
 - **Same configuration, only the inputs swapped** (FR-025, constitution VIII): plant mode runs the gate with the
   repository's own configuration and swaps only the inputs. No plant carries configuration: the plant job rejects
   (exit 1, "plant X carries gate configuration") a plant that holds, anywhere in its directory (including `tree/`,

@@ -139,6 +139,20 @@ contracts/plants.md (phase 4 round 2 note R2-02). Phase 3 reopens for one test-f
 records of `gates/bin/config-copies.ts` and `gates/bin/test-lint.ts` name their covering `gates-integration` case
 as R-08 requires (phase 3 round 5, O5-01 and O5-02: "Fix in this PR"). No new exception.
 
+**Re-check after the landing review** (operator decisions, PR #18 landing review, human:jeroennouwsdev,
+2026-11-03): VIII is tightened where the gates could pass or prove nothing without saying so. The mutation gate
+reads tab-suffixed and C-quoted `+++` diff headers and exits 2 on any header it cannot parse, and a changed
+in-scope path that Stryker cannot take as a `mutate` input (a glob metacharacter `*?[]{}!` or a comma, or
+otherwise not passable verbatim) is exit 2 before Stryker runs ("could not run", contracts/gate-cli.md), while a
+changed file absent from Stryker's report counts as zero mutants, so a type-only or comment-only change passes
+(spec FR-011, R-08; phase 3 round 7, O7-01 and O7-02; O7-02 as amended: "Guard the input instead
+(Recommended)"): phase 3 reopens for T095 (red under
+`red.sh 3 fix-7`). Every breaking plant names the cause its gate must report with exit 2, and a pass plant may not
+set `base` (spec FR-025, data-model.md § Plant, contracts/plants.md, R-10; phase 4 round 5, O5-01 and O5-02):
+phase 4 reopens for T096 (red under `red.sh 4 fix-5`). Mission pull requests are squash-merged and the folded
+branch stays on the remote as the home of the red/green evidence SHAs (§ Verification item 5, landing note L1-08).
+No new exception.
+
 ## Project Structure
 
 ### Documentation (this feature)
@@ -310,6 +324,14 @@ makes every GitHub-side check and records each result, with its evidence (comman
    file's changed line ranges across shards is the known lever (R-08; a spec change to FR-013). Operator decision,
    phase 4 round 4 note R4-01, feature gate, human:jeroennouwsdev, 2026-11-03: "Accept for now: Record this run as
    the SC-005 measurement, and investigate any cancelled shard if one happens."
+5. Merge method and evidence home (operator decision, PR #18 landing review note L1-08, human:jeroennouwsdev,
+   2026-11-03: "Squash, keep archive branch (Recommended)": "Squash-merge as planned; keep the folded branch (or an
+   archive/ ref) on the remote as the evidence home, and record that."): mission pull requests are squash-merged,
+   so `main` holds one commit per mission and none of the `base.sha`, `scaffold.sha` or `red-commits` SHAs. The
+   folded branch is kept on the remote after the merge (not deleted; or pushed first to an `archive/` ref that is
+   kept), so those SHAs, `tdd-check.sh` and the review files stay resolvable there; it is the home of the red/green
+   evidence. The operator records in `verification.md` the merge method used and the remote branch or ref that
+   holds the evidence, with its head SHA.
 
 ## Complexity Tracking
 

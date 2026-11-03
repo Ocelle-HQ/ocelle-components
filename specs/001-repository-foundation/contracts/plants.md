@@ -1,9 +1,16 @@
 # Contract: plants
 
 Layout: `gates/plants/<gate-id>/<case>/plant.json` plus inputs. `plant.json` (data-model.md § Plant):
-`{"expect": "fail"|"pass"|"error", "why": "...", "findings": [...], "records": [...], "base": "..."}`; `findings` is
-required for a `fail` plant and lists exactly the findings the gate must report (location and rule, optionally a
-message substring). `base` is optional (a non-empty string): the plant runner puts it in place of `{base}` in the
+`{"expect": "fail"|"pass"|"error", "why": "...", "findings": [...], "records": [...], "cause": "...", "base": "..."}`;
+`findings` is required for a `fail` plant and lists exactly the findings the gate must report (location and rule,
+optionally a message substring). `cause` is required for an `error` plant and allowed on no other (a non-empty
+string): a substring of the cause line the gate must print on its error output when it exits 2, so a plant that
+breaks for another reason (a tool missing in the temporary repository, say) fails the plant job instead of proving
+the gate's "could not run" path; every breaking plant names the cause of the breakage it plants (operator decision,
+PR #18 landing review, human:jeroennouwsdev, 2026-11-03; landing note L1-04, phase 4 round 5 O5-01). `base` is
+optional on a `fail` or `error` plant and rejected on a `pass` plant (an invalid `plant.json`), since a pass plant
+with a base such as the temporary repository's head would pass vacuously (operator decision, PR #18 landing review,
+human:jeroennouwsdev, 2026-11-03; landing note L1-05, phase 4 round 5 O5-02). It is a non-empty string: the plant runner puts it in place of `{base}` in the
 gate's plant command instead of the temporary repository's base commit; the mutation breaking plant
 `error-unresolvable-base` sets `refs/heads/no-such-base` to present a `--base` that does not resolve (mutation row
 below). It is an input of the gate, not gate configuration (operator decision, phase 4 round 2 note R2-02, feature
@@ -53,6 +60,8 @@ for example `Ada Example <ada@example.com>`), never a real person's name or addr
 
 The plant job fails when: the registry check fails; a gate has no `fail`, `pass` or `error` plant; a `fail` plant's
 gate does not exit 1 with exactly the expected findings; a `pass` plant's gate does not exit 0 with no finding (and
-the expected records); an `error` plant's gate does not exit 2; a plant has no or an invalid `plant.json`; a plant
+the expected records); an `error` plant's gate does not exit 2, or exits 2 with no error-output line containing the plant's `cause`; a
+plant has no or an invalid `plant.json` (including an `error` plant without `cause`, `cause` on another plant, and
+`base` on a `pass` plant); a plant
 carries gate configuration (a `tsconfig*.json` or any ESLint, Stylelint, Vitest, Vite or Stryker configuration file
 anywhere in its directory).
