@@ -165,3 +165,24 @@ describe("classifyMutants", () => {
     expect(classifyMutants({ report: "null", exitCode: 1, output: "" }, files)).toEqual({ ok: false, cause });
   });
 });
+
+// Phase 3 round 7 (O7-02 as amended by the operator, "Guard the input instead (Recommended)"; tasks.md T095):
+// Stryker 10.1.1 lists only files with mutants, so a changed file the report does not list holds no mutable code on
+// its changed lines (a type-only or comment-only change) and counts as zero mutants; the gate guards the paths it
+// passes to Stryker instead (gates/test/mutation-ranges.test.ts).
+describe("classifyMutants: a changed file absent from the report (phase 3 round 7, O7-02)", () => {
+  const run = { report, exitCode: 0, output: "" };
+  const typesOnly = changed("gates/lib/types-only.ts", [{ start: 1, end: 4 }]);
+
+  it("counts a changed file with changed lines that the recorded report does not list as zero mutants, and passes", () => {
+    expect(classifyMutants(run, [typesOnly])).toEqual({ ok: true, mutants: 0, findings: [] });
+  });
+
+  it("passes a file the report lists with every mutant on its changed lines killed, next to an absent file", () => {
+    expect(classifyMutants(run, [typesOnly, changed(sample, [{ start: 6, end: 7 }])])).toEqual({
+      ok: true,
+      mutants: 1,
+      findings: [],
+    });
+  });
+});
