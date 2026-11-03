@@ -1,5 +1,5 @@
 Scope: all 4 workspace projects
-✓ Lockfile passes supply-chain policies (verified 14h ago)
+✓ Lockfile passes supply-chain policies (verified 16h ago)
 Lockfile is up to date, resolution step is skipped
 Packages are hard linked from the content-addressable store to the virtual store.
   Content-addressable store is at: /root/.local/share/pnpm/store/v11
@@ -29,7 +29,7 @@ devDependencies:
 + vite 8.3.5
 + vitest 5.0.5
 
-Done in 533ms using pnpm v12.16.1
+Done in 337ms using pnpm v12.16.1
 $ node gates/bin/setup-offline.ts
 setup: installed offline; Chromium at /opt/pw-browsers/chromium_headless_shell-1243/chrome-headless-shell-linux64/chrome-headless-shell
 $ node gates/bin/test.ts

@@ -1,4 +1,5 @@
 {
   "expect": "error",
-  "why": "An empty range (no commits.txt, so HEAD is the base commit): the gate could not run (FR-023, contracts/gate-cli.md)."
+  "why": "An empty range (no commits.txt, so HEAD is the base commit): the gate could not run (FR-023, contracts/gate-cli.md).",
+  "cause": "..HEAD holds no commit; pass the pull request's <base>..<head>"
 }
