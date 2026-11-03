@@ -36,5 +36,5 @@ Stated in `packages/tokens/README.md` (a test checks that it states the CSP allo
 
 ## Not public
 
-`src/source.ts`, `src/generate.ts`, `scripts/build.ts`, `contrast/pairs.json`, `fonts/SOURCE.json` are repository
-data, not exports.
+`src/source.ts`, `src/overrides.ts` (empty, data-model § Token overrides), `src/generate.ts`, `scripts/build.ts`,
+`contrast/pairs.json`, `fonts/SOURCE.json` are repository data, not exports.

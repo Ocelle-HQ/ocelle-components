@@ -76,11 +76,16 @@ it with the same table and with the stylesheet.
     ship as an external stylesheet with no inline style, and no `sk-` name or monospace family appears in it.
 11. **Given** the token stories (FR-023), **When** Storybook is built and a group's story is rendered in light and in
     dark under the Storybook page's CSP (FR-023), **Then** it lists exactly that group's tokens with their name and
-    value for that theme, and the page reports zero CSP violations and makes no request outside its origin.
+    value for that theme, and the page reports zero CSP violations, makes no request outside its origin, and has
+    no rendered element in the manager or the preview whose computed `font-family` names a monospace family; a
+    control element styled monospace is reported (FR-023).
 12. **Given** the built Storybook (FR-023), **When** the `csp` gate runs with its widened scope, **Then** it scans
-    this repository's Storybook inputs and the HTML entries of the output as `externalise.ts` leaves them (not the
-    bundles under `storybook/dist/`, which scenario 11's run-time test covers; FR-023) and passes: no inline script,
-    inline style element or style attribute remains in them.
+    this repository's Storybook inputs, parsing the TypeScript ones as TypeScript, and the HTML entries of the
+    output as `externalise.ts` leaves them (not the bundles under `storybook/dist/`, which scenario 11's run-time
+    test covers; FR-023) and passes: no inline script, inline style element or style attribute remains in them, in
+    markup or in a markup string literal (outside `storybook/scripts/`, FR-023), and no `eval` or `new Function`.
+13. **Given** the Storybook UI theme (FR-023), **When** a test imports `.storybook/manager.ts`, **Then** the theme's
+    `fontBase` and `fontCode` are the family list of `--ocelle-font-sans`.
 
 ---
 
@@ -397,21 +402,30 @@ can be built.
     run-time test, because Storybook's runtime code is bundled together with this repository's stories and no
     static fence can separate the two. This narrows SPEC-1-05's "no style attribute remains in the built output"
     to this repository's inputs and the HTML entries; the narrowing is recorded in `gates/gates.json` and
-    `gates/README.md`.
+    `gates/README.md`. In this scope (operator decision 2026-11-03, squad round 3, PLAN-FRESH-3-001 (a)) the `csp`
+    gate parses TypeScript inputs as TypeScript and applies its dynamic-code rules and its markup rules to string
+    and template literals; HTML files get the markup rules; CSS files are counted. Markup literals in
+    `storybook/scripts/` are exempt, because the externaliser names the tags it moves; the dynamic-code rules still
+    apply there. Package source stays outside the `csp` gate.
 
   In the files in scope, every inline script is stripped or externalised to a same-origin file, and no inline style
   element or style attribute remains. The scope of the `csp` gate MUST be widened from `packages/*/dist/` to the
   Storybook files in scope, and the scope of the `prefix` gate likewise (the Storybook workspace's own source, its
   generated stylesheets and the HTML entries), in `gates/gates.json` and `gates/README.md`; the `csp` gate MUST gain
-  a fail plant with an inline script in a Storybook HTML entry and a pass plant with an external script there. The
+  a fail plant with an inline script in a Storybook HTML entry and a pass plant with an external script there, fail
+  plants with a style attribute in a markup string in a story file and with `new Function` in
+  `.storybook/preview.ts`, and a pass plant for the `storybook/scripts/` exception. The
   work starts with a spike that records every CSP violation of the built Storybook by directive under the header
   above; its first output is the `csp` gate's findings on the Vite preview bundle and on `sb-addons/` (recorded
   for the review, not a gate result), and it then runs the widened `csp` and `prefix` gates on the files in scope.
   If Storybook cannot reach zero violations under that header, or its files in scope cannot be freed of inline
   script, the phase stops and asks the operator; no Complexity Tracking exception is
-  taken without the operator's approval. Storybook's own UI theme is set so that it uses the token fonts; if a file in
-  scope still carries a monospace family in a `font` or `font-family` declaration that the theme cannot remove, so
-  that the widened `prefix` gate fails, the phase likewise stops and asks the operator. The Storybook build gate,
+  taken without the operator's approval. Storybook's own UI theme is set so that it uses the token fonts (`fontBase`
+  and `fontCode` set to `--ocelle-font-sans`'s family list, which a unit test MUST check). The run-time test MUST also
+  assert that no rendered element of the manager or the preview, for each story in each theme, has a computed
+  `font-family` naming a family on the `prefix` gate's monospace list, with a control element styled monospace that
+  it MUST report (PLAN-FRESH-3-002). If that run-time check finds a monospace family that the theme cannot remove,
+  or the token stories draw text on a canvas, the phase likewise stops and asks the operator. The Storybook build gate,
   visual regression and axe stay with #10 (still deferred in `gates/README.md`); #10 builds on this Storybook rather
   than adding a second one.
 - **FR-024**: A mapping table MUST map each of the 55 `--sk-*` roles kitty-mission-ui uses to its `--ocelle-*`
@@ -470,9 +484,11 @@ can be built.
 - **SC-006**: An element author who writes `var(--ocelle-color-canvs)` (misspelt) gets a style-lint failure naming
   the unknown token.
 - **SC-007**: `gates/README.md` lists no deferred contrast gate, and every gate of the registry has a CI job and plants.
-- **SC-008**: The Storybook files in the `csp` gate's widened scope (FR-023) pass it, the `csp` fail plant with an
-  inline script in a Storybook HTML entry is caught, and the built Storybook (bundles included) runs with zero CSP violations under the Storybook
-  page's header of FR-023.
+- **SC-008**: The Storybook files in the `csp` gate's widened scope (FR-023) pass it, the `csp` fail plants with an
+  inline script in a Storybook HTML entry, a style attribute in a story file's markup string and `new Function` in
+  `.storybook/preview.ts` are caught, and the built Storybook (bundles included) runs with zero CSP violations
+  under the Storybook page's header of FR-023 and with no monospace computed font on any rendered element of the
+  manager or preview.
 
 ## Assumptions
 

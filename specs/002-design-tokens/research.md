@@ -94,8 +94,9 @@ include `packages/tokens/**/*.test.ts` also matches `test/browser/`, so the `tok
 configuration asserts that no test file belongs both to a mutated project and to an excluded one. The browser suites prove behaviour against current output and are **not** counted
 on to kill mutants. Value mutants of `source.ts` are killed by a node test that runs the generator on the real
 source and compares its output with the transcribed Appendix A table (data-model.md § Expected tables: the token
-stream for colours, the exact text for the others, and `json()`'s resolved values); mutants of `css()`, `json()` and
-`resolve()` by the generator tests on fixture sources. `ignoreStatic` stays off: `gates/lib/mutation/report.ts`
+stream for colours, the exact text for the others, and `json()`'s resolved values), which also kills the mutants of
+the `applyOverrides(records, overrides)` call (the committed `overrides` is empty, data-model § Token overrides);
+mutants of `css()`, `json()`, `resolve()` and `applyOverrides()` by the generator tests on fixture sources. `ignoreStatic` stays off: `gates/lib/mutation/report.ts`
 counts `Ignored` as passing, so it would pass every `source.ts` mutant unseen. The US1 spike measures the time of one
 mutation shard holding a 120-line `source.ts` entry (the bound of `gates/lib/mutation/shards.ts`); if it exceeds the
 10-minute limit, the phase stops and asks the operator.
@@ -310,10 +311,16 @@ and fails on any `forced-color-adjust: none` declaration and on any `@media (for
 `--ocelle-color-*` property to anything other than a CSS system colour keyword (FR-018; operator decision 2026-11-03,
 squad round 1, PLAN-A11Y-SECURITY-1-011 (a)); a pass plant maps a colour token to `CanvasText` there. Rule (f) checks
 that the generated stylesheet has a `prefers-reduced-motion: reduce` block setting exactly `motion-fast` and
-`motion-base` to `0ms`. On success: `brand-rules: 7 rules checked`. Its plants change `source.ts`, `generate.ts` or
-`pairs.json` by a `tree.patch` over the configuration set's real files, never by a copy (PLAN-FRESH-2-007,
-contracts/gates.md § Configuration set), so they keep proving rules (f) and (g) against the generator the repository
-runs and do not go stale when a token value changes; a plant-job test changes a token value no patch touches and
+`motion-base` to `0ms`. On success: `brand-rules: 7 rules checked`. Its plants change the token source, the
+generator or the pair list by a structured `delta.json` over the configuration set's real files, never by a copy or
+a line-based patch (PLAN-FRESH-2-007; operator decision 2026-11-03, squad round 3, PLAN-FRESH-3-003 (a);
+contracts/gates.md § Configuration set): token overrides by name through `overrides.ts` (data-model § Token
+overrides), pair entries by `(theme, fg, bg)`, and, for rules (f) and (g) and `generator-throws`, a wrapper that
+re-exports the real generator and shadows one function, so they keep proving rules (f) and (g) against the generator
+the repository runs. Expected locations are written by key and resolved to lines in the plant's built tree. A
+unified diff would have carried neighbouring entries as context and the expected locations would have been line
+numbers, so a change to a neighbouring token or an inserted token or pair would have broken every plant; the
+plant-job test makes exactly those changes (a neighbour's value, an inserted token and pair, an unrelated value) and
 checks every plant keeps its outcome. The rest comes from the configuration set (R-09).
 
 Rule (g) guards the token output only. How rendered elements behave in forced colours (for example the `elevation-*`
@@ -334,7 +341,7 @@ because `packages/tokens` is not in the style-lint scope at all.
 
 *Token list* (PLAN-CORRECTNESS-1-001): read from the root's `packages/tokens/src/source.ts` at plugin load. Because
 style-lint plants are `repo-tree` plants, `configurationSet` (`gates/lib/plant-repo.ts`) now copies
-`packages/tokens/src/source.ts`, `generate.ts` (with its imports) and `contrast/pairs.json` into every plant
+`packages/tokens/src/source.ts`, `overrides.ts`, `generate.ts` (with its imports) and `contrast/pairs.json` into every plant
 repository, test first in `gates/test/plant-repo.test.ts` with an integration test; otherwise every style-lint plant
 would exit 2. This also lets the contrast and brand-rules `repository-values` plants use the real files instead of
 stale copies. The rule takes the token list (and the element property list) as options, so unit tests pass fixture lists. The
@@ -389,7 +396,13 @@ and `src/generate.ts` by relative path from the workspace. Before `storybook bui
 of `css()` over the source; the swatch stylesheet; and a copy of `packages/tokens/fonts/`. `preview-head.html` links
 both stylesheets as same-origin `<link rel="stylesheet">`. So the Storybook build and its tests need no build of
 `@ocelle/tokens`, and the preview shows the current source. A Storybook toolbar global sets `data-theme` on the preview's `<html>`. The Storybook UI theme sets
-`fontBase` and `fontCode` to `--ocelle-font-sans`'s family list (no monospace, prefix gate).
+`fontBase` and `fontCode` to `--ocelle-font-sans`'s family list (no monospace). The prefix gate cannot enforce this:
+it matches CSS `font` and `font-family` declarations only, not the theme API, and Storybook's own monospace defaults
+(`typography.fonts.mono`, used as `fontCode` and as `fontFamily` in the manager; a monospace canvas font in the
+preview runtime) sit in the bundles outside the static scope (PLAN-FRESH-3-002). So `.storybook/manager.ts` exports
+the theme it sets, a unit test in the `storybook` project asserts its `fontBase` and `fontCode` equal the `font-sans`
+family list transcribed from Appendix A, and the run-time test checks rendered fonts (*Tests and scopes*). A custom
+theme built with `create()` also sets the object inspector's fonts from `fontCode`.
 
 **No network at build** (PLAN-A11Y-SECURITY-1-008): Storybook 10.6.4 sends build telemetry to
 `https://storybook.js.org/event-log` by default. `storybook/.storybook/main.ts` sets `core: { disableTelemetry: true }`
@@ -424,6 +437,18 @@ Storybook inputs before bundling, `storybook/stories/`, `storybook/.storybook/` 
 whole build under the page's header. There is no exclusion list and no byte-identity test. This is a further
 narrowing of SPEC-1-05, recorded in FR-023, `gates/gates.json`, `gates/README.md` and plan.md.
 
+What the `csp` gate checks in the static scope (operator decision 2026-11-03, squad round 3, PLAN-FRESH-3-001 (a);
+contracts/gates.md § `csp`, `prefix`): as written in 001, `checkOutput` scans only `.html` and `.js` files and would
+merely count the `.ts` inputs. It now parses `.ts` files as TypeScript (`ScriptKind.TS`) and applies the
+dynamic-code rules and the markup rules to the static text of string and template literals, as for built JavaScript;
+`.html` files get the markup rules; `.css` files are counted. Exception, stated and planted: in `storybook/scripts/`
+the markup rules do not apply to literals, because `externalise.ts` names the `<script>` and `<style>` tags it moves
+(the dynamic-code rules still apply, and the HTML entries it leaves are checked). This is a deliberate extension of
+the gate to source files, limited to these Storybook inputs; 001's `pass-inline-script-in-source` still holds for
+package source. Inline styles set through the DOM at run time are left to the run-time test. Plants put a defect in a
+story file and in `.storybook/preview.ts` (contracts/gates.md § Plants), so the `.ts` part of the scope is shown able
+to fail (constitution VIII).
+
 **Known risk, met by a spike first**: Storybook's manager and preview inject `<style>` elements at run time (Emotion
 CSS-in-JS), and the built HTML has inline scripts and styles. Under `style-src 'self'` with no nonce or hash, injected
 `<style>` elements are blocked. The first task of the Storybook phase is a spike that builds the pinned Storybook,
@@ -434,14 +459,19 @@ recorded in the review, not a gate result; PLAN-FRESH-2-001); it then runs the w
 the files in scope. It also measures the mutation shard time of R-03 (*Mutation path*). Techniques it tries against `style-src` violations, in
 order: (1) Emotion's cache configured to insert rules through `CSSStyleSheet.insertRule` into adopted constructable
 stylesheets (not governed by `style-src`); (2) the preview alone (`iframe.html`), without the manager UI, as the token
-reference; (3) any setting of the pinned Storybook that disables run-time style injection. If none gives zero
-violations under the header, or a file in scope keeps an inline script or a monospace declaration, the phase **stops
-and asks the operator** (FR-023, SPEC-3-01); no Complexity Tracking exception is taken without the operator.
+reference; (3) any setting of the pinned Storybook that disables run-time style injection. The spike also runs the
+run-time monospace check (*Tests and scopes*) and records whether the token stories draw text on a canvas. If none of
+the techniques gives zero violations under the header, or a file in scope keeps an inline script, or a rendered
+element of the manager or preview keeps a monospace family that the theme cannot remove, or the stories draw canvas
+text, the phase **stops and asks the operator** (FR-023, SPEC-3-01); no Complexity Tracking exception is taken
+without the operator.
 
 **Tests and scopes** (PLAN-FRESH-1-004, PLAN-TESTABILITY-1-005, PLAN-FRESH-2-002): `vitest.config.ts` gains two
 projects. `storybook` (node, `storybook/test/unit/**/*.test.ts`, no build) holds the unit tests that kill the mutants
 of `storybook/scripts/**` and `storybook/.storybook/**` by importing those modules in the worker: `externalise.ts` and
-`swatches.ts` on fixture HTML and fixture token data, the telemetry tests, and the static-scope tests.
+`swatches.ts` on fixture HTML and fixture token data, the telemetry tests, the theme font test (`manager.ts`'s
+exported theme: `fontBase` and `fontCode` equal the transcribed `font-sans` family list; PLAN-FRESH-3-002), and the
+static-scope tests.
 `storybook-integration` (node, `storybook/test/integration/**/*.test.ts`) has a global setup that builds the
 Storybook into a per-run temporary directory (R-03: nothing reads a pre-existing `storybook/dist/`); a global setup
 is right here because the build runs Vite and the build scripts in their own processes, and building once per run
@@ -449,21 +479,31 @@ keeps the project's run time bounded. `vitest.mutation.config.ts` excludes `stor
 builds Storybook; the run-time CSP test is not counted on to kill mutants. The run-time check
 `storybook/test/integration/csp.test.ts` (Playwright from Node, R-03's server and violation collector) opens that
 build with the header above, visits each group story in light and dark, and asserts the header served, zero
-violations, zero requests outside the origin, and that each story lists exactly its group's tokens (FR-023, US1
-scenario 11). `storybook/scripts/**` and `storybook/.storybook/**` join the mutation scope
+violations, zero requests outside the origin, that each story lists exactly its group's tokens, and that no
+rendered element of the manager or the preview (open shadow roots included) has a computed `font-family` naming a
+family on the prefix gate's monospace list (`monospaceFamilies`, exported by `gates/bin/prefix.ts`) (FR-023, US1
+scenario 11; PLAN-FRESH-3-002). The font check has a control: on each page the test adds one element through the
+CSSOM (`element.style.fontFamily = "Menlo, monospace"` in `page.evaluate`; CSP does not govern the CSSOM), asserts
+the check reports exactly that element, removes it, and then asserts nothing is reported, so it cannot pass
+vacuously. `storybook/scripts/**` and `storybook/.storybook/**` join the mutation scope
 (`gates/lib/mutation/ranges.ts` `scopePathspecs` and `source` regex, with tests); `tsconfig.json` includes
 `storybook/.storybook/**/*.ts` explicitly (TypeScript's `**/*.ts` skips dot-directories); the prefix gate's source
 scope (`isCovered`) extends to `storybook/**` source. `storybook/dist/` is in `.gitignore`.
 
-The `csp` gate gets a fail plant (inline script in `storybook/dist/index.html`, an HTML entry in scope) and a pass
-plant (external script there).
+The `csp` gate gets fail plants with an inline script in `storybook/dist/index.html` (an HTML entry in scope), a
+`style` attribute in a markup string in `storybook/stories/x.stories.ts`, `new Function` in
+`storybook/.storybook/preview.ts` and `eval` in `storybook/scripts/x.ts`; pass plants with an external script in the
+HTML entry and with `<script>` and `<style>` literals in `storybook/scripts/externalise.ts` (the exception); and a
+breaking plant with a `.ts` story file that does not parse (contracts/gates.md § Plants). The prefix gate's
+`fail-storybook-monospace` puts `font-family: Menlo, monospace` in `storybook/.generated/swatches.css`.
 
 **Alternatives considered**: the spec's option (b) at SPEC-3-01 (static scan only; declined by the operator); a
 generated static token reference page instead of Storybook (fork options (b) of PLAN-A11Y-SECURITY-1-001 and (c) of
 PLAN-FRESH-1-001, not chosen; FR-023's choice of Storybook stands); keeping the full static scope and taking an
 exception (PLAN-FRESH-1-001 (b), not chosen); attributing bundle findings to vendor modules through source maps
 or the build metafile (PLAN-FRESH-2-001 (b), not chosen); replacing Storybook with the static reference page
-(PLAN-FRESH-2-001 (c), not chosen).
+(PLAN-FRESH-2-001 (c), not chosen); taking `.ts` out of the static `csp` scope and leaving story and configuration
+TypeScript to the run-time test alone (PLAN-FRESH-3-001 (b), not chosen).
 
 ## R-11 Package exports and build
 

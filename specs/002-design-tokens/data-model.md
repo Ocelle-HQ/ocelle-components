@@ -39,9 +39,33 @@ the real source): `color-focus` resolves to `color-accent-strong`'s value in eac
 a colour token referencing `color-overlay` is not opaque, so `contrast` on it and its use as a ground fail
 validation; a reference to `color-scheme` from a colour value fails validation.
 
-Derived: `TokenName` (union of the record names only: `(typeof source)[number]["name"]` over a source declared
+Derived: `TokenName` (union of the record names only: `(typeof records)[number]["name"]` over the records declared
 `as const satisfies readonly TokenRecord[]` with `TokenRecord` using `string`), `tokenNames` (array),
 `cssName(name)` = `--ocelle-${name}`.
+
+`source.ts` exports `records` (the token records above) and `source = applyOverrides(records, overrides)`, the list
+every consumer reads (the generator, the build, the gates, the stories). `applyOverrides` is a pure function of
+`generate.ts`; `overrides` comes from `packages/tokens/src/overrides.ts` (below).
+
+## Token overrides (`packages/tokens/src/overrides.ts`)
+
+The way a plant changes the token source by key, not by line (operator decision 2026-11-03, squad round 3,
+PLAN-FRESH-3-003 (a); contracts/gates.md § Configuration set). The module exports `overrides: readonly
+TokenOverride[]`, and the committed module exports an empty list; a test in the `tokens` project asserts it is empty,
+so the records in `source.ts` are exactly what ships. A `TokenOverride` is one of:
+
+| Form | Effect of `applyOverrides` |
+|---|---|
+| `{ token, light?, dark?, value?, ref?, contrast? }` | on the record with that name, `light` and `dark` set the value of that theme, the others replace the field; an unknown name throws, naming it |
+| `{ add: TokenRecord }` | appends the record; a name already present throws |
+| `{ remove: name }` | drops the record; an unknown name throws |
+
+The result goes through `validateSource` like any source. Unit tests of `applyOverrides` on fixture records cover each
+form and each error.
+
+**Token location**: a gate finding about a token is located at the line of its `name` in `source.ts`, or, for a
+token only an override adds, at the line of its `name` in `overrides.ts`; a token changed by an override keeps its
+location in `source.ts`.
 
 ## JSON export (`dist/tokens.json`, contracts/token-package.md)
 
@@ -61,8 +85,10 @@ derived token, `ref` in the same full-name form and the same shape as the source
 | `reason` | string | non-empty when excluded |
 | `source` | `"#5" \| "computed"` | `#5` for A.7 figures (change needs operator approval), `computed` otherwise |
 
-The list is a JSON array with one entry per line, so a plant's patch (contracts/gates.md § Plants) changes whole
-entries without context from neighbouring entries.
+The list is a JSON array with one entry per line. A plant changes it by key `(theme, fg, bg)` through its
+`delta.json` (contracts/gates.md § Configuration set), never by a line-based patch: a unified diff carries
+neighbouring entries as context and a line number shifts with every insertion above it, so neither may tie a plant
+to its neighbours (PLAN-FRESH-3-003).
 
 Required pair set (derived, not stored): for each token with `contrast`, each ground, each theme (A.8); 149 per theme. With
 the excluded pairs of A.9 the list has 158 entries in light and 157 in dark.
@@ -113,7 +139,10 @@ replacement to use when dropped or merged (column 3), note. 55 rows.
 ## Gate findings (new rules)
 
 Each finding line is `<path>:<line>: <gate-id>: <rule-id>: <message>` (gates/README.md). The rule ids below are the
-one form used in code, plants and documents; plants match the rule id and message exactly.
+one form used in code, plants and documents; plants match the rule id and message exactly. A `contrast` or
+`brand-rules` plant writes the location by key (`pairs.json#<theme>/<fg>/<bg>`, `source.ts#<name>`,
+`overrides.ts#<name>`, `tokens.css#<text>`, each with its repository path), which the plant runner resolves to the
+line in the plant's built tree (contracts/gates.md § Configuration set, *Keyed locations*).
 
 `contrast` per entry (PLAN-FRESH-2-006): an entry with an `unknown-token` or `not-opaque` finding has no ratio and
 gives no other finding. Otherwise the ratio is computed and each applicable finding is given, independently, in
@@ -124,6 +153,6 @@ this order: `figure-mismatch`, then `below-threshold` (checked, non-exempt entri
 
 | Gate | Rule id | Location |
 |---|---|---|
-| `contrast` | `below-threshold`, `figure-mismatch`, `unknown-token`, `not-opaque`, `missing-required-pair`, `required-pair-excluded`, `excluded-without-reason` | `packages/tokens/contrast/pairs.json:<line>` (or `source.ts` for a missing pair) |
-| `brand-rules` | `monospace-font` (a), `link-accent` (b), `radius-set` (c), `rule-boundary` (d), `dark-chrome` (e), `reduced-motion` (f), `forced-colours` (g) | `packages/tokens/src/source.ts:<line>`, `packages/tokens/contrast/pairs.json:<line>` (b, the excluded ochre pair), or the generated stylesheet |
+| `contrast` | `below-threshold`, `figure-mismatch`, `unknown-token`, `not-opaque`, `missing-required-pair`, `required-pair-excluded`, `excluded-without-reason` | `packages/tokens/contrast/pairs.json:<line>` (or the foreground token's location, § Token overrides, for a missing pair) |
+| `brand-rules` | `monospace-font` (a), `link-accent` (b), `radius-set` (c), `rule-boundary` (d), `dark-chrome` (e), `reduced-motion` (f), `forced-colours` (g) | the token's location (§ Token overrides), `packages/tokens/contrast/pairs.json:<line>` (b, the excluded ochre pair), or `packages/tokens/dist/tokens.css:<line>`, the line in the stylesheet text the root's generator produces (f, g; no file is read) |
 | `style-lint` | `ocelle/token-only` with message `unknown token --ocelle-<name>` | the stylesheet line |

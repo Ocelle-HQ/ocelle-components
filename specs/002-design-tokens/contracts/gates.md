@@ -5,21 +5,56 @@ All gates follow `gates/README.md`: `pnpm run gate:<id>`, `--root <dir>`, exit 0
 
 ## Configuration set (changed, `gates/lib/plant-repo.ts`)
 
-`configurationSet` also copies `packages/tokens/src/source.ts`, `packages/tokens/src/generate.ts` (and any module
-they import) and `packages/tokens/contrast/pairs.json` into every temporary repository, so `repo-tree` plants see the
-real token source and pair list, and a plant carries only the files it changes (PLAN-CORRECTNESS-1-001). Unit test
+`configurationSet` also copies `packages/tokens/src/source.ts`, `packages/tokens/src/overrides.ts`,
+`packages/tokens/src/generate.ts` (and any module they import) and `packages/tokens/contrast/pairs.json` into every
+temporary repository, so `repo-tree` plants see the real token source and pair list, and a plant carries only the
+files it changes (PLAN-CORRECTNESS-1-001). Unit test
 first in `gates/test/plant-repo.test.ts`, then an integration test that a `repo-tree` plant root holds these files.
 
-**Plant deltas** (PLAN-FRESH-2-007): a plant that changes `source.ts`, `generate.ts` or `pairs.json` states the change
-as a delta over the real file, never as a copy. The form is a patch file: `gates/plants/<id>/<name>/tree.patch`, a
-unified diff relative to the repository root, which `buildRepoTree` applies (no fuzz) after laying the plant's
-`tree/` over the configuration set. A patch that does not apply is a plant-runner error that fails the plant job,
-naming the plant and the file. A plant's `tree/` must not contain any of these three files (the plant job checks
-this). Tests first in `gates/test/plant-repo.test.ts`: a patch is applied over the set; a patch that does not apply
-fails naming the plant; a `tree/` holding one of the three files is rejected. A plant-job test then changes one
-token value in a copy of the real source that no plant's patch touches (for example the light `color-danger`),
-updates that token's recorded figures in the copy of the pair list, and asserts that every `contrast` and
-`brand-rules` plant still gives its expected outcome.
+**Plant deltas** (PLAN-FRESH-2-007; operator decision 2026-11-03, squad round 3, PLAN-FRESH-3-003 (a)): a plant that
+changes the token source, the generator or the pair list states the change as a **structured delta by key**, never
+as a copy and never as a line-based patch, so that neither patch context nor line numbers tie it to the neighbouring
+entries (data-model § Token overrides). A plant's `gates/plants/<id>/<name>/delta.json` has up to three parts,
+applied by `buildRepoTree` after laying the plant's `tree/` over the configuration set:
+
+- `tokens`: a list of token overrides (data-model § Token overrides), set by name (`{ "token": "color-ink-muted",
+  "light": "#6B655A" }`), added (`{ "add": { …record… } }`) or removed (`{ "remove": "<name>" }`). `buildRepoTree`
+  writes them as the `overrides` list of the tree's `overrides.ts`; `source.ts` applies them to its records through
+  `applyOverrides` (data-model § Token), so the gates see the changed source through the token module's own data.
+- `pairs`: pair-list changes by key `(theme, fg, bg)`: set fields of an entry (`{ "key": ["light", "color-ink-muted",
+  "color-inset"], "set": { "figure": "4.27" } }`), remove an entry, or add one (appended). `buildRepoTree` parses the
+  real `pairs.json`, applies them and writes it back one entry per line. A key that matches no entry, or two, is an
+  error.
+- `generator: "wrapped"`: the plant changes the generator's behaviour (`f-motion-not-zero`,
+  `g-forced-colours-override`, `g-system-colour-mapping`, `generator-throws`). `buildRepoTree` moves the real
+  `generate.ts` to `generate.real.ts` and places the plant's `tree/packages/tokens/src/generate.ts`, which must
+  `export * from "./generate.real.ts"` and may shadow named exports (for example a `css` that appends a
+  forced-colours block to the real output). The wrapper depends on the generator's exported functions only, not on
+  its lines.
+
+Any error applying a delta is a plant-runner error that fails the plant job, naming the plant and the key or file. A
+plant's `tree/` must not contain `source.ts` or `pairs.json`; it contains `generate.ts` only with
+`generator: "wrapped"`, and `overrides.ts` only when its `delta.json` has no `tokens` part (`source-throws` supplies
+an `overrides.ts` that throws on load, so the real `source.ts` throws when it imports it). The plant job checks this.
+
+**Keyed locations**: a `contrast` or `brand-rules` fail plant writes each expected `location` by key, not by line:
+`packages/tokens/contrast/pairs.json#<theme>/<fg>/<bg>` (the line of that entry),
+`packages/tokens/src/source.ts#<name>` (the line of the token's `name` in the records), `packages/tokens/src/overrides.ts#<name>` (a token only an override
+adds), `packages/tokens/dist/tokens.css#<text>` (the first line containing `<text>` of the stylesheet the tree's
+generator produces). The plant runner resolves each key to `<path>:<line>` in the plant's built tree before
+`judgePlant` compares; `gates/lib/plant-judge.ts` keeps comparing exact `<path>:<line>` locations. A key that
+resolves to no line, or a token key that resolves to two, is a plant-runner error naming the plant and the key.
+
+Tests first in `gates/test/plant-repo.test.ts` (and `plant-runner.test.ts` for key resolution): each delta part is
+applied over the set; an unknown token name or pair key fails naming the plant and the key; a wrapper that does not
+re-export `./generate.real.ts` is rejected; a `tree/` holding a forbidden file is rejected; each key form resolves to
+the right line, and an unresolvable key fails naming it. A plant-job test then changes a copy of the real source and
+pair list in three ways and asserts that every `contrast` and `brand-rules` plant still gives its expected outcome:
+(1) the light value of a token next to a planted one in source order (`color-ink-soft`, beside `color-ink-muted`),
+with its recorded figures updated; (2) a colour token without `contrast` inserted before `color-ink-soft` in the
+records, and a checked entry outside the required set, with its computed figure, inserted as the first entry of the
+pair list, so every planted entry and record moves down a line; (3) the light `color-danger` value, with its
+figures.
 
 ## `contrast` (new; check "Contrast"; plant form `repo-tree`)
 
@@ -81,7 +116,25 @@ PLAN-FRESH-2-001 (a)): `isBuiltOutput` (csp) and the prefix gate's scope cover t
 before bundling, `storybook/stories/`, `storybook/.storybook/` (with its HTML head templates), `storybook/scripts/`,
 `storybook/.generated/`, and the HTML entries of the build output as `externalise.ts` leaves them
 (`storybook/dist/*.html`); outside `node_modules`. The csp gate reads the `.ts`, `.js`, `.css` and `.html` files
-there. Every other file under `storybook/dist/` (the Vite preview bundle, `sb-addons/`, `sb-manager/`, the files
+there and checks them as follows (operator decision 2026-11-03, squad round 3, PLAN-FRESH-3-001 (a)):
+
+- `.html` (the head templates and the HTML entries): the markup rules, as for built HTML.
+- `.ts`: parsed with the TypeScript compiler API as TypeScript (`ScriptKind.TS`, chosen by extension in
+  `checkOutput`; `.js` keeps `ScriptKind.JS`); the dynamic-code rules (`eval`, `new Function`, `Function()`, string
+  timers) and the markup rules on the static text of every string and template literal holding a `<`, as for built
+  JavaScript. A `.ts` file that does not parse is exit 2. **Exception**: in `storybook/scripts/` the markup rules do
+  not apply to literals, because the externaliser has to name the `<script>` and `<style>` tags it moves; the
+  dynamic-code rules still apply there, and what the externaliser leaves is checked in the HTML entries.
+- `.css` (`storybook/.generated/`): read and counted, as for built CSS.
+
+Inline styles that a story sets at run time through the DOM (`setAttribute("style", …)`) are not literals of markup
+and are left to the run-time CSP test, which reports them as violations. The 001 plant
+`pass-inline-script-in-source` keeps its meaning: package source (`packages/*/src/`) stays outside the csp gate;
+only the Storybook inputs listed here are source files it reads. Unit tests first in `gates/test/csp.test.ts`:
+`checkOutput` gives a finding for a markup string with a `style` attribute and for `new Function` in a `.ts` file
+in scope; a `.ts` file with type annotations and `as const` parses with no exit 2; a `.ts` file that does not parse
+is exit 2; a `<script>` literal in `storybook/scripts/x.ts` gives no finding and `eval` there gives one. Every other
+file under `storybook/dist/` (the Vite preview bundle, `sb-addons/`, `sb-manager/`, the files
 `externalise.ts` writes out of the HTML) is outside the static scope and covered by the run-time CSP test
 (`storybook/test/csp.test.ts`): Vite compiles Storybook's preview runtime (`storybook/internal/preview/runtime`,
 which holds `Function(…)` calls and `<span style=…>` strings) into the preview bundle and esbuild builds
@@ -89,7 +142,23 @@ which holds `Function(…)` calls and `<span style=…>` strings) into the previ
 repository's code there. No exclusion list and no byte-identity test. The prefix gate's source scope (`isCovered`)
 also covers `storybook/**` source (`.storybook/`, `stories/`, `scripts/`, `test/`), outside `node_modules` and
 `dist`. Unit tests of both gates' scope functions list the files in and out of scope. `gates.json` `scope` texts and
-`gates/README.md` record the narrowing of SPEC-1-05.
+`gates/README.md` record the narrowing of SPEC-1-05 and the rules for `.ts` inputs with the `storybook/scripts/`
+exception.
+
+**Monospace in Storybook** (PLAN-FRESH-3-002): the prefix gate matches only CSS `font` and `font-family`
+declarations, so it cannot see the Storybook theme API, and Storybook's own monospace defaults sit in the bundles
+outside the static scope. Two checks cover this instead. (1) A unit test in the `storybook` project
+(`storybook/test/unit/theme.test.ts`) imports `storybook/.storybook/manager.ts`, which exports the theme it passes
+to `addons.setConfig`, and asserts that its `fontBase` and `fontCode` equal the `font-sans` family list transcribed
+from Appendix A (`"Schibsted Grotesk", "Helvetica Neue", Arial, system-ui, sans-serif`). (2) The run-time test in
+`storybook-integration` asserts that no rendered element of the manager and of the preview (including open shadow
+roots), for each group story in light and dark, has a computed `font-family` naming a family on the prefix gate's
+monospace list, which `gates/bin/prefix.ts` exports as `monospaceFamilies` for this purpose. Its control: the test
+adds one element to each page through the CSSOM (`element.style.fontFamily = "Menlo, monospace"` in
+`page.evaluate`, which CSP does not govern), asserts that the check reports exactly that element, removes it, and
+only then asserts that nothing is reported. Text drawn on a canvas has no element font; the spike records whether the
+pinned Storybook draws text on a canvas in the token stories (`preview/runtime.js` sets a monospace canvas font), and
+if it does, the phase stops and asks the operator (FR-023).
 
 The spike's first output (R-10) is the `csp` gate's findings on the Vite preview bundle and on `sb-addons/`, run by
 hand with those paths and recorded in the review; they are not a gate result.
@@ -105,19 +174,20 @@ hand with those paths and recorded in the review; they are not a gate result.
     the existing `tokens` project, whose include `packages/tokens/**/*.test.ts` also matches these files, adds
     `packages/tokens/test/browser/**` to its exclude, as `gates` excludes `gates/test/integration/**`, so each
     browser suite belongs to `tokens-browser` only;
-  - a `storybook` project (node, `storybook/test/unit/**/*.test.ts`): the externalise, swatches, telemetry and
-    scope unit tests, with no build; these kill the mutants of `storybook/scripts/**` and `storybook/.storybook/**`;
+  - a `storybook` project (node, `storybook/test/unit/**/*.test.ts`): the externalise, swatches, telemetry, theme
+    font (§ `csp`, `prefix`, *Monospace in Storybook*) and scope unit tests, with no build; these kill the mutants of `storybook/scripts/**` and `storybook/.storybook/**`;
   - a `storybook-integration` project (node, `storybook/test/integration/**/*.test.ts`) with a global setup that
-    builds the Storybook into a per-run temporary directory, holding the run-time CSP test (research R-10).
+    builds the Storybook into a per-run temporary directory, holding the run-time CSP test with its monospace
+    assertion (research R-10).
 - `vitest.mutation.config.ts` excludes `tokens-browser` and `storybook-integration` besides `gates-integration`, so
   Stryker never launches Chromium or builds Storybook; a test of the mutation config asserts the excluded project
   list, and a second test resolves every project's `include` and `exclude` against the repository's test files and
   asserts that no test file belongs both to a project `vitest.mutation.config.ts` keeps and to one it excludes (it
   fails if the `tokens` project's browser exclude, or the `gates` project's integration exclude, is removed).
   `pnpm test` and the `unit-tests` CI job still run every project, and each test file in exactly one of them.
-- Mutants of `source.ts` (all static: the module-level records) are killed by the node test that compares the
+- Mutants of `source.ts` (the module-level records, all static, and the `applyOverrides` call over them) are killed by the node test that compares the
   generator output from the real source with the transcribed Appendix A table (data-model § Expected tables);
-  mutants of `css()`, `json()` and `resolve()` by the generator tests on fixture sources. The browser suites prove
+  mutants of `css()`, `json()`, `resolve()` and `applyOverrides()` by the generator tests on fixture sources. The browser suites prove
   behaviour against current output and are not counted on to kill mutants.
 - `stryker.config.json` keeps `ignoreStatic` off (`report.ts` counts `Ignored` as passing, so it would pass the
   `source.ts` mutants unseen).
@@ -132,11 +202,12 @@ hand with those paths and recorded in the review; they are not a gate result.
 | `contrast` | `text-below-threshold` (ink-muted at 4.3 on inset, light), `non-text-below-threshold` (control-border below 3 on rail, light) (both: see below), `figure-mismatch`, `unknown-token`, `missing-required-pair`, `excluded-without-reason`, `required-pair-excluded`, `not-opaque` (overlay as ground) | `repository-values` (no file of its own: the configuration set's real source and list), `exempt-disabled-ink` | `empty-list`, `unparsable-list`, `source-throws` |
 | `brand-rules` | `a-monospace`, `b-link-equals-accent`, `b-ochre-pair-not-excluded` (the excluded entry removed from the pair list), `c-extra-radius` (a `radius-4` at 4px), `c-wrong-value`, `d-rule-as-boundary` (rule at 3:1 on sheet), `e-light-chrome`, `f-motion-not-zero`, `g-forced-colours-override` (a colour token set to a hex value in a forced-colours block) | `repository-values` (no file of its own), `g-system-colour-mapping` (a colour token mapped to `CanvasText` in a forced-colours block) | `source-throws`, `generator-throws`, `source-invalid` (an A.6 name: exit 2) |
 | `style-lint` | `fail-unknown-token`, `fail-element-property-misspelt` (`var(--ocelle-button-gpa)` against the fixture manifest of `pass-element-property`) | `pass-known-token`, `pass-element-property` (`var(--ocelle-button-gap)` with a fixture `packages/elements/custom-elements.json` whose `ocelle-button` declaration lists `cssProperties` `--ocelle-button-gap`) | (existing), `element-property-clash` (a fixture manifest declaring `--ocelle-space-2`: exit 2) |
-| `csp` | `fail-storybook-inline-script` (inline script in `storybook/dist/index.html`) | `pass-storybook-external-script` (external script there) | (existing) |
-| `prefix` | `fail-storybook-monospace` | (existing) | (existing) |
+| `csp` | `fail-storybook-inline-script` (inline script in `storybook/dist/index.html`), `fail-storybook-story-style-attribute` (a markup string with a `style` attribute in `storybook/stories/x.stories.ts`, rule `style-attribute`), `fail-storybook-preview-new-function` (`new Function` in `storybook/.storybook/preview.ts`, rule `new-function`), `fail-storybook-scripts-eval` (`eval` in `storybook/scripts/x.ts`: the exception covers markup only) | `pass-storybook-external-script` (external script there), `pass-storybook-scripts-tag-names` (`"<script>"` and `"<style>"` literals in `storybook/scripts/externalise.ts`, the stated exception) | (existing), `error-storybook-unparsable-ts` (a `.ts` file in `storybook/stories/` that does not parse: exit 2) |
+| `prefix` | `fail-storybook-monospace` (`font-family: Menlo, monospace` in `storybook/.generated/swatches.css`, rule `monospace`) | (existing) | (existing) |
 
-Every `contrast` and `brand-rules` plant that changes `source.ts`, `generate.ts` or `pairs.json` does so by
-`tree.patch` (§ Configuration set). The two threshold plants (PLAN-FRESH-2-006) patch the token's value and also the
+Every `contrast` and `brand-rules` plant that changes the token source, the generator or the pair list does so by
+`delta.json` (§ Configuration set), and writes its expected locations by key. The two threshold plants
+(PLAN-FRESH-2-006) set the token's value by a token override and also, by pair key, the
 recorded figures of every pair of that token in the theme to the planted value, so they give only `below-threshold`
 findings, and their `plant.json` lists every one: `text-below-threshold` sets light `color-ink-muted` to `#6B655A`
 (4.27 on `color-inset`) and expects exactly three findings, on `color-inset`, `color-hover-bg` (same light value)
@@ -148,5 +219,5 @@ Registry: `gates/gates.json`, `fr020` in `gates/lib/registry.ts`, jobs `contrast
 `.github/workflows/ci.yml`, all three changed together (the plant job checks they match). `gates/README.md`: both
 gates in "The gates", "Contrast" and "Brand rules" in "Required checks on `main`" (14 checks), widened and narrowed
 scopes noted (FR-023, with the narrowing of SPEC-1-05 to the Storybook inputs and HTML entries), the configuration
-set change and the `tree.patch` plant form noted, "Contrast check" row removed from "Deferred gates", the
+set change, the `delta.json` plant form and keyed locations noted, "Contrast check" row removed from "Deferred gates", the
 custom-elements-manifest deferral row extended as § `style-lint` states.
