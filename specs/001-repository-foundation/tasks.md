@@ -110,7 +110,7 @@ change, passes with "nothing to mutate" on a change to no source, and lists reas
 - [X] T036 [P] [US2] `gates/test/mutation-ranges.test.ts`: changed ranges from recorded `git diff --unified=0` output over package source and gate source, excluding test code and stories; no range means "nothing to mutate" (US2 scenario 5, FR-011, FR-028)
 - [X] T037 [P] [US2] `gates/test/mutation-report.test.ts`: on recorded Stryker JSON in `gates/test/fixtures/stryker/`: `Survived` or `NoCoverage` on a changed line is a finding; on an unchanged line of a changed file it is not; `Killed`, `Timeout`, `RuntimeError` pass; `CompileError` is invalid and passes (FR-011 as amended, approved 2026-11-02); no report or failed dry run exits 2
 - [X] T038 [P] [US2] `gates/test/mutation-records.test.ts`: a reasoned `// Stryker disable next-line <mutator>: <reason>` is listed with path, line, mutator and reason (FR-012); a record without a reason, `// Stryker disable all` and other disable forms in changed code are findings
-- [X] T039 [P] [US2] `gates/test/mutation-shards.test.ts`: `--plan` splits changed files into shards of at most 10 files and 500 changed lines; `--files` limits a run to one shard; an unresolvable `--base` exits 2 (FR-013, research.md R-08)
+- [X] T039 [P] [US2] `gates/test/mutation-shards.test.ts`: `--plan` splits changed files into shards of at most 10 files and 250 changed lines (500 until T093, operator decision, phase 4 round 3); `--files` limits a run to one shard; an unresolvable `--base` exits 2 (FR-013, research.md R-08)
 - [X] T040 [P] [US2] `gates/test/integration/vitest-mutation-config.test.ts`: `vitest.mutation.config.ts` holds every project of `vitest.config.ts` except `gates-integration` (research.md R-08). The test first asserts that `vitest.mutation.config.ts` exists and only then loads it with a dynamic `import()` inside the test (no static import), so at the red commit it fails on an assertion, not on loading a missing file
 - [X] T041 [P] [US2] `gates/test/integration/mutation.test.ts` (`gates-integration`, research.md R-08): on a temporary git repository built from `gates/test/fixtures/mutation-repo/` (a first commit with `base/` plus the repository's `stryker.config.json` and `vitest.mutation.config.ts`, a second with `head/`, `node_modules` linked), run from a different working directory: `gates/bin/mutation.ts --root <tmp> --base <first commit>` reports a mutant on a changed gate-source line that only a test under the fixture's `gates/test/integration/` covers as a `NoCoverage` finding (exit 1); `--files <path>` mutates only that file; a `--base` that does not resolve exits 2. The test first asserts that both configuration files exist, so at the red commit it fails on an assertion, not on setup
 - [X] T042 [US2] Commit T033 to T041 alone, run `red.sh 3 phase`, confirm assertion failures against the scaffold. Record in the phase 3 review, under constitution VIII, that T035, T040 and T041 fail at the red commit on their existence assertions for `eslint.test.config.ts`, `vitest.mutation.config.ts` and `stryker.config.json`, which only the green commit creates (T043, T045): these configuration files are part of the phase's missing behaviour (FR-010's rule set, research.md R-08's runner split), not a setup error, and the red output showing those assertion failures is kept with the review
@@ -202,6 +202,21 @@ ignore in `eslint.test.config.ts`) is part of this green work.
 - [X] T082 [US3] Run every `pnpm run gate:<id>` (exit 0) and `pnpm run gate:plants` (exit 0), and commit green
 - [X] T083 [US3] Shard timing as in T050, recorded in `specs/001-repository-foundation/reviews/phase-4/mutation-shards.md`; then the SC-001 early timing, since phases 2 to 4 add the real-tool `gates-integration` tests to `pnpm test`: in a fresh clone outside the repository with an empty package store (a new temporary store directory set through `npm_config_store_dir`; before timing, run `pnpm store path` in the clone under the same environment and go on only if it prints that new directory, otherwise set the store directory another way pnpm 12 reads, research.md R-04, and check again) and an empty browser cache (a new temporary `PLAYWRIGHT_BROWSERS_PATH`), limited to 2 CPUs where the machine allows (for example `taskset -c 0,1`), time `pnpm run setup:online` followed by `pnpm test` and record the duration, the CPU count, the commands and the `pnpm store path` output (the store the run actually used) in `specs/001-repository-foundation/reviews/phase-4/sc-001-timing.md`; a total of 5 minutes or more is reported to the operator, as T050 does for shards (SC-001 itself is still measured on the CI runner in the operator's verification)
 
+### Operator addendum (after round 2)
+
+Operator decision after phase 5, 2026-11-03 (human:jeroennouwsdev, recorded as phase 4 round 3, finding O3-01): GitHub
+CI run 7 cancelled the 435-line shard `gates/lib/plant-judge.ts,gates/lib/plant-repo.ts` at its 10-minute limit;
+answer "Smaller shards (Recommended)": "Lower the shard bound (500 → 250 lines, about half the time per shard,
+roughly 18 shards). Planner updates R-08/plan, implementer changes shards.ts test-first. More parallel jobs, same
+mutation strength." Phase 4 was approved in round 2; this task reopens it for one test-first unit, reviewed as
+phase 4's round 4.
+
+- [ ] T093 [US3] Shard bound of 250 changed lines (spec FR-013/SC-005 as amended, research.md R-08 "CI, sharded"; 10 files per shard and the 10-minute shard job limit unchanged), test-first:
+  1. **Stub**: none needed; `gates/lib/mutation/shards.ts` and its test exist since phase 3.
+  2. **Red** (test file only, one commit): update and add cases in `gates/test/mutation-shards.test.ts` (T039's test) on recorded diff output asserting the 250-line split: a file with 251 changed lines is a shard on its own; two files whose changed lines sum to 251 are split into two shards; two files summing to exactly 250 fit in one shard. Cases that assumed 500 are changed to the new bound. Commit alone, run `red.sh 4 fix-3` (round 3 is the operator round that requests this addendum) and confirm every new failure is an assertion failure against the current 500-line code, not a load error
+  3. **Green**: set the bound to 250 in `gates/lib/mutation/shards.ts` (constant and header comment) and update the bound's wording in `gates/README.md`
+  4. **Check**: `pnpm test`, every `pnpm run gate:<id>` (exit 0) and `pnpm run gate:plants` (exit 0); `pnpm run gate:mutation -- --base bdb9b70 --plan` (the pull request base, the CI plan) to show the new shard list, then each shard with `--files`, timed; record the new shard list and timings in `specs/001-repository-foundation/reviews/phase-4/mutation-shards.md`, add the CI run 4, 6 and 7 durations of round 3's evidence, and correct its margin sentence to the measured CI margin (round 2 note R2-01); a shard over 10 minutes is reported to the operator; commit green
+
 **Checkpoint**: all twelve checks run locally and the plant job proves each gate can fail.
 
 ---
@@ -217,16 +232,16 @@ No scaffold: the phase's test reads repository files and imports no new module.
 
 ### Tests (red, one commit)
 
-- [ ] T084 [US4] `gates/test/governance.test.ts`: `LICENSE`, `CONTRIBUTING.md`, `SECURITY.md`, `THIRD_PARTY_NOTICES` exist at the root under exactly these names; `CONTRIBUTING.md` contains `Signed-off-by` and `git commit -s`; `.github/CODEOWNERS` names `@MOES-Media` as the only owner of every path; `SECURITY.md` names GitHub private vulnerability reporting, `@MOES-Media`, 3 working days and 10 working days (SC-006); commit it alone and run `red.sh 5 phase`
+- [X] T084 [US4] `gates/test/governance.test.ts`: `LICENSE`, `CONTRIBUTING.md`, `SECURITY.md`, `THIRD_PARTY_NOTICES` exist at the root under exactly these names; `CONTRIBUTING.md` contains `Signed-off-by` and `git commit -s`; `.github/CODEOWNERS` names `@MOES-Media` as the only owner of every path; `SECURITY.md` names GitHub private vulnerability reporting, `@MOES-Media`, 3 working days and 10 working days (SC-006); commit it alone and run `red.sh 5 phase`
 
 ### Implementation (green)
 
-- [ ] T085 [P] [US4] `LICENSE` with the Apache License 2.0 text (FR-030)
-- [ ] T086 [P] [US4] `CONTRIBUTING.md`: sign-off with `git commit -s`, no contributor licence agreement, the Spec Kit flow and the constitution (FR-031)
-- [ ] T087 [P] [US4] `SECURITY.md`: GitHub private vulnerability reporting once public (1.0.0, #11); until then contact `@MOES-Media` privately, not through an issue; what to include; acknowledgement within 3 working days and a status update within 10 (FR-032, operator decisions 2026-11-02)
-- [ ] T088 [P] [US4] `THIRD_PARTY_NOTICES` stating that no third-party asset ships yet and that the Schibsted Grotesk entry arrives with #5 (FR-033)
-- [ ] T089 [P] [US4] `.github/CODEOWNERS` with `* @MOES-Media` and no other owner (FR-035)
-- [ ] T090 [US4] Run `pnpm test` and every gate, and commit green
+- [X] T085 [P] [US4] `LICENSE` with the Apache License 2.0 text (FR-030)
+- [X] T086 [P] [US4] `CONTRIBUTING.md`: sign-off with `git commit -s`, no contributor licence agreement, the Spec Kit flow and the constitution (FR-031)
+- [X] T087 [P] [US4] `SECURITY.md`: GitHub private vulnerability reporting once public (1.0.0, #11); until then contact `@MOES-Media` privately, not through an issue; what to include; acknowledgement within 3 working days and a status update within 10 (FR-032, operator decisions 2026-11-02)
+- [X] T088 [P] [US4] `THIRD_PARTY_NOTICES` stating that no third-party asset ships yet and that the Schibsted Grotesk entry arrives with #5 (FR-033)
+- [X] T089 [P] [US4] `.github/CODEOWNERS` with `* @MOES-Media` and no other owner (FR-035)
+- [X] T090 [US4] Run `pnpm test` and every gate, and commit green
 
 **Checkpoint**: all four stories complete; the operator's verification can start.
 
@@ -258,6 +273,7 @@ feature's shards are not timed cold (quickstart step 12).
 - Phase 3: T033 to T041 in parallel; T043 and T045 in parallel with T044.
 - Phase 3 addendum: T091 is one unit (stub, red, green, check) after T050; nothing runs in parallel with it.
 - Phase 4: T052 to T062 and T092 in parallel; T064 to T070 in parallel; the plant groups T073 to T078 in parallel; T080 and T081 in parallel with T079.
+- Phase 4 addendum: T093 is one unit (red, green, check) after phase 5's review; nothing runs in parallel with it.
 - Phase 5: T085 to T089 in parallel.
 
 ## Implementation Strategy
