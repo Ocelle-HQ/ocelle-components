@@ -51,7 +51,8 @@ theme.
 The theme-dependent token `--ocelle-color-scheme` (`light` in block 1, `dark` in blocks 2 and 3) carries the theme's
 `color-scheme` keyword. The stylesheet sets no `color-scheme` property itself; base styles (#6) apply the token on the
 root (operator decision 2026-11-03, squad round 1, PLAN-A11Y-SECURITY-1-004 (b); spec Assumptions, "`color-scheme`
-hand-off"). The six theme-condition tests read it like any colour-group token.
+hand-off"). The six theme-condition tests read it like the other theme-dependent tokens, but compare it as a keyword
+(`light` or `dark`), not as a colour (R-03).
 
 **Rationale**: Block 1 makes light the value with no preference (FR-005). Block 2 applies dark for a dark system
 unless `data-theme="light"` overrides. Block 3 applies dark whatever the system says. `data-theme` with any other
@@ -71,10 +72,19 @@ attribute selector without `:not()` (gives the wrong answer for system dark with
 `tokens` Vitest project (`packages/tokens/test/browser/*.test.ts`), using the pinned `playwright` 1.64.1 and the
 existing `OCELLE_CHROMIUM_PATH` override.
 
-*What is served* (PLAN-CORRECTNESS-1-002): the browser suites never read a pre-existing `dist/`. A Vitest global
-setup of the `tokens` project imports `css()` from `src/generate.ts` and the source, writes the stylesheet text and a
-copy of `fonts/` into a per-run temporary directory, and the suites serve that directory. So `pnpm test`, the
-`unit-tests` CI job, tdd-check's clean worktree and Stryker's mutants all test the current source with no build step.
+*What is served* (PLAN-CORRECTNESS-1-002, squad round 1 verify 1): the browser suites never read a pre-existing
+`dist/`, and the served files are generated **inside the test worker**, not in a Vitest `globalSetup`. Each browser
+suite calls a shared helper (`test/browser/serve.ts`) in its `beforeAll`; the helper imports `css()` from
+`src/generate.ts` and the source, writes the stylesheet text and a copy of `fonts/` into a per-suite temporary
+directory, and starts the server on it (`afterAll` stops it and removes the directory). The reason is how the pinned
+`@stryker-mutator/vitest-runner` 10.1.1 activates a mutant: it prepends a setup file to each project's `setupFiles`
+that sets the active mutant in the worker (`dist/src/vitest-test-runner.js`, `dist/src/stryker-setup.js`). A
+`globalSetup` runs once in the main process with no active mutant, so it would serve unmutated output. Setup files run
+before the test file is loaded, so the suite's imports of `generate.ts` and `source.ts` (static mutants included) and
+its `beforeAll` see the active mutant, and mutants of `css()` and value mutants of `source.ts` reach the served
+stylesheet. The `tokens` project therefore has no `globalSetup` for these suites. So `pnpm test`, the `unit-tests` CI
+job, tdd-check's clean worktree and Stryker's mutants all test the current source with no build step; the US1 review
+checks in the Stryker report that mutants of `css()` are killed by browser suites as well as by generator tests.
 One separate node test runs `scripts/build.ts` into a temporary directory and checks it writes exactly the text of
 `css()` and `json()` and the font files. A small static server (Node `http`, no dependency) serves the directory and
 a fixture page with a configurable `Content-Security-Policy` header. `storybook/dist/` is added to `.gitignore`.
@@ -83,7 +93,8 @@ a fixture page with a configurable `Content-Security-Policy` header. `storybook/
 data-model.md § Expected tables, transcribed from Appendix A in the test code, never from `source.ts`. Tests assert:
 the set of `--ocelle-*` names defined on `:root` (read from the stylesheet's rules through CSSOM) equals the table's
 names, and each A.6 name is undefined; each colour token's computed value, parsed as RGBA, equals the table's value in
-each theme condition; each non-colour token is observed through a probe element that uses it, so the used value is
+each theme condition, except `color-scheme`, which is not a colour: its computed value, trimmed, is compared as the
+keyword `light` or `dark` and is never parsed as a colour (squad round 1 verify 1, PLAN-A11Y-SECURITY-1-004); each non-colour token is observed through a probe element that uses it, so the used value is
 compared, not the custom property's token stream: `width`/`max-block-size` for sizes (dialog sizes at a 1280 × 800
 viewport: 1248 px and 768 px), `box-shadow` for elevations, `transition-duration` for motion, `font-variant-numeric`
 for `figures`, `font-family` resolution for the font tokens. Tests do not resolve `var()` themselves. Whether a derived
@@ -229,20 +240,27 @@ ids of data-model.md § Gate findings:
 4. zero entries checked for a theme → exit 2.
 
 On success it prints `contrast: <n> pairs checked in light, <m> in dark (<r> required per theme)`; with the
-repository's values 148, 147 and 144.
+repository's values 158, 157 and 149.
 
 The required set is pinned to the spec by a node test (`gates/test/contrast-required.test.ts`,
 PLAN-TESTABILITY-1-002): it derives the required set from the real `source.ts` and asserts it equals A.8 transcribed in
-the test (144 `(fg, bg, kind)` triples per theme; data-model.md § Expected tables). So removing a ground from the
+the test (149 `(fg, bg, kind)` triples per theme; data-model.md § Expected tables). So removing a ground from the
 source, or a mutant doing so, fails a test even though the gate would still pass.
 
 A.8 gained 14 rows per theme in squad round 1 (operator decision 2026-11-03, PLAN-A11Y-SECURITY-1-012 (a)):
 `color-current` on `color-chrome`, `color-chrome-hover`, `color-rail`, `color-accent-low` (non-text), and `color-link`
 (text) and `color-focus` (non-text) on the five state `-bg` grounds. All meet their thresholds with Appendix A's
 values (computed 2026-11-03: `color-current` 3.34, 3.01, 4.43, 4.31 light and 8.75, 7.18, 7.78, 6.13 dark;
-`color-link` 4.86 to 5.36 light, 6.74 to 7.56 dark; `color-focus` 4.27 to 4.71 light, 6.74 to 7.56 dark), so the
-pair list has 148 entries in light and 147 in dark. `color-control-border` on the state `-bg` grounds is not
-required; see plan.md, Decisions, open question.
+`color-link` 4.86 to 5.36 light, 6.74 to 7.56 dark; `color-focus` 4.27 to 4.71 light, 6.74 to 7.56 dark).
+
+The operator's answer of 2026-11-03 to the question that decision left open (plan.md, Decisions 7: "Rule 1
+extended") adds 5 more rows per theme: `color-accent-strong` (non-text) on the five state `-bg` grounds, 4.47, 4.50,
+4.70, 4.71, 4.27 light and 7.56, 6.83, 7.23, 7.37, 6.74 dark on `color-danger-bg`, `color-warning-bg`,
+`color-success-bg`, `color-info-bg`, `color-neutral-bg` (computed 2026-11-03; all at least 3:1). `color-control-border`
+on those five grounds becomes an excluded pair in both themes (light 3.05, 3.07, 3.21, 3.21, 2.91; dark 3.56, 3.21,
+3.40, 3.46, 3.17), with the reason "#5 rule 1 extended: a control on a state ground is bordered with
+`color-accent-strong`". The required set is 149 pairs per theme; the pair list has 158 entries in light and 157 in
+dark (149 required plus 9 excluded in light, 8 in dark).
 
 Recorded figures: A.7's figures are entered from Appendix A by hand; figures for other pairs are entered from the
 first computation, which `node gates/bin/contrast.ts --print` lists. Any later change of a figure that came from A.7
@@ -316,7 +334,18 @@ chosen).
 (no Lit) in `storybook/stories/tokens.stories.ts`, one story per group, generated from the token data of
 `@ocelle/tokens` (FR-023). Swatches get their colour from a stylesheet generated at build from the same source
 (`.ocelle-swatch[data-token="color-canvas"] { background: var(--ocelle-color-canvas) }`), never from a style
-attribute. A Storybook toolbar global sets `data-theme` on the preview's `<html>`. The Storybook UI theme sets
+attribute. `color-scheme` is not a colour and gets no swatch rule; the colour story shows its value as text, like the
+non-colour groups (squad round 1 verify 1, PLAN-A11Y-SECURITY-1-004).
+
+*Origin of the token data and the preview's token stylesheet* (squad round 1 verify 1, PLAN-CORRECTNESS-1-002): the
+package `exports` of `@ocelle/tokens` point at `dist/`, which nothing builds before the tests. So Storybook never
+imports the package entry: the stories and `storybook/scripts/swatches.ts` import `packages/tokens/src/source.ts`
+and `src/generate.ts` by relative path from the workspace. Before `storybook build`, a pre-build step
+(`storybook/scripts/swatches.ts`, run by the Storybook build script) writes into a git-ignored generated directory
+(`storybook/.generated/`, served as a Storybook static directory): the preview's token stylesheet, which is the text
+of `css()` over the source; the swatch stylesheet; and a copy of `packages/tokens/fonts/`. `preview-head.html` links
+both stylesheets as same-origin `<link rel="stylesheet">`. So the Storybook build and its tests need no build of
+`@ocelle/tokens`, and the preview shows the current source. A Storybook toolbar global sets `data-theme` on the preview's `<html>`. The Storybook UI theme sets
 `fontBase` and `fontCode` to `--ocelle-font-sans`'s family list (no monospace, prefix gate).
 
 **No network at build** (PLAN-A11Y-SECURITY-1-008): Storybook 10.6.4 sends build telemetry to
@@ -361,7 +390,11 @@ and asks the operator** (FR-023, SPEC-3-01); no Complexity Tracking exception is
 
 **Tests and scopes** (PLAN-FRESH-1-004, PLAN-TESTABILITY-1-005): `vitest.config.ts` gains a `storybook` project
 (node, `storybook/**/*.test.ts`) whose global setup builds the Storybook into a per-run temporary directory (R-03:
-nothing reads a pre-existing `storybook/dist/`). The run-time check `storybook/test/csp.test.ts` (Playwright from
+nothing reads a pre-existing `storybook/dist/`). Unlike the tokens browser suites, a global setup is right here: the
+Storybook build runs Vite and the build scripts in their own processes, so no active Stryker mutant could reach it
+from any setup, and building once per run keeps the project's run time bounded. Mutants of `storybook/scripts/**`
+and `storybook/.storybook/**` are killed by the node unit tests named below, which import those modules in the
+worker; the run-time CSP test is not counted on to kill them. The run-time check `storybook/test/csp.test.ts` (Playwright from
 Node, R-03's server and violation collector) opens that build with the header above, visits each group story in
 light and dark, and asserts the header served, zero violations, zero requests outside the origin, and that each story
 lists exactly its group's tokens (FR-023, US1 scenario 11). `externalise.ts` and `swatches.ts` get node unit tests on

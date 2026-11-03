@@ -45,7 +45,8 @@ derived token, `ref` in the same full-name form and the same shape as the source
 | `reason` | string | non-empty when excluded |
 | `source` | `"#5" \| "computed"` | `#5` for A.7 figures (change needs operator approval), `computed` otherwise |
 
-Required pair set (derived, not stored): for each token with `contrast`, each ground, each theme (A.8); 144 per theme.
+Required pair set (derived, not stored): for each token with `contrast`, each ground, each theme (A.8); 149 per theme. With
+the excluded pairs of A.9 the list has 158 entries in light and 157 in dark.
 
 ## Theme condition (tests only)
 
@@ -59,8 +60,10 @@ Transcribed by hand from Appendix A into the test code, never read from `source.
 
 - **Token table**: every token name of Appendix A with its expected value per theme (literal values, including the
   values of A.1, A.4 and A.5 the plan supplied) and, for derived tokens, the expected reference form; and the six A.6
-  names.
-- **Required pair table**: the 144 `(fg, bg, kind)` triples per theme of A.8.
+  names. Each entry has a comparison kind: `colour` (computed value parsed as RGBA), `keyword` (computed value,
+  trimmed, compared as a string; only `color-scheme`, whose expected values are `light` and `dark` and which is never
+  parsed as a colour), or the probe of R-03 for non-colour tokens.
+- **Required pair table**: the 149 `(fg, bg, kind)` triples per theme of A.8.
 
 ## Element name list (style-lint, R-09)
 

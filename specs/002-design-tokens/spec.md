@@ -139,8 +139,8 @@ pairs and rules they checked); run the plant job, whose new plants (FR-020) each
 1. **Given** the tokens and the contrast pair list (FR-016), **When** the contrast gate runs, **Then** it computes the
    ratio of every pair in both themes, passes, and reports the number of pairs checked per theme, which is greater
    than zero, equals the number of pairs in the list for that theme (excluded pairs count as checked, FR-016), and is
-   at least the number of required pairs (144 per theme with Appendix A, A.8; with the excluded pairs of A.9 the list
-   has 148 light and 147 dark entries).
+   at least the number of required pairs (149 per theme with Appendix A, A.8; with the excluded pairs of A.9 the list
+   has 158 light and 157 dark entries).
 2. **Given** a text pair whose ratio drops below 4.5:1 in one theme (for example `color-ink-muted` changed so that it
    is 4.3:1 on `color-inset`), **When** the gate runs, **Then** it fails with one finding naming the theme, the two
    tokens, the ratio and the threshold.
@@ -292,13 +292,15 @@ can be built.
 **Contrast and brand-rule gates (User Story 3)**
 
 - **FR-016**: A contrast pair list in the repository MUST name every pair to check, per theme, with its kind (text,
-  4.5:1; non-text, 3:1) and its recorded figure. The required pairs are those of Appendix A, A.8 (144 per theme with
+  4.5:1; non-text, 3:1) and its recorded figure. The required pairs are those of Appendix A, A.8 (149 per theme with
   the current token set): every foreground token on every ground it is intended for, which includes every pair of
   A.7 that #5 records at or above its threshold. In addition, the pair list MUST carry, in each theme where it
   applies, every excluded pair of A.9 with its reason: `color-control-border` on `color-accent-low` (#5 rule 1);
   `color-control-border` on `color-inset` and on `color-hover-bg` (#5 rule 1 extended to these grounds, operator
-  decision 2026-11-03, SPEC-2-01: a control drawn on them uses `color-accent-strong` for its border); `color-accent`
-  on `color-canvas` in light ("ochre text never on bone"). The intended grounds are recorded per foreground token in
+  decision 2026-11-03, SPEC-2-01: a control drawn on them uses `color-accent-strong` for its border);
+  `color-control-border` on each state `-bg` (`color-danger-bg`, `color-warning-bg`, `color-success-bg`,
+  `color-info-bg`, `color-neutral-bg`; #5 rule 1 extended again, operator decision 2026-11-03, squad round 1, plan
+  Decisions 7); `color-accent` on `color-canvas` in light ("ochre text never on bone"). The intended grounds are recorded per foreground token in
   the token source (FR-008), and the gate derives the required pair set from them; the pair list cannot shrink it. A
   pair below its threshold that the design does not use MUST be listed as an excluded pair with a non-empty reason,
   not left out; an excluded pair is still computed and must still match its recorded figure, but its threshold is
@@ -439,7 +441,7 @@ can be built.
 - **SC-003**: A page under the strict CSP of constitution IV plus `font-src 'self'` renders text in Schibsted Grotesk
   with zero requests outside its own origin and zero CSP violations.
 - **SC-004**: The `contrast` gate checks every pair of FR-016 in both themes (the count it reports per theme equals
-  the pair list's size for that theme, excluded pairs included, and is at least 144; a test asserts that the
+  the pair list's size for that theme, excluded pairs included, and is at least 149; a test asserts that the
   required set derived from the token source equals A.8), and every fail plant of the
   `contrast` and `brand-rules` gates is caught with exactly its expected finding by the plant job.
 - **SC-005**: Changing any one checked token value so that a pair falls below its threshold makes the pull request's
@@ -472,7 +474,10 @@ can be built.
 - **Pairs below threshold with Appendix A's values** (operator decisions 2026-11-03, SPEC-2-01). A.9 lists the required
   or recorded pairs that fall below their threshold. `color-control-border` on `color-inset` and on `color-hover-bg`
   are handled like #5's rule 1: a control drawn on these grounds uses `color-accent-strong` for its border, so those
-  pairs are excluded pairs and `color-accent-strong` on them is required instead (A.8). `color-focus` on
+  pairs are excluded pairs and `color-accent-strong` on them is required instead (A.8). The same holds for a control
+  drawn on any state `-bg` (`color-danger-bg`, `color-warning-bg`, `color-success-bg`, `color-info-bg`,
+  `color-neutral-bg`), in both themes (operator decision 2026-11-03, squad round 1, plan Decisions 7: "Rule 1
+  extended"; `color-control-border` is 2.91 on `color-neutral-bg` in light). `color-focus` on
   `color-chrome-hover` in light is resolved by changing the light `color-chrome-hover` (A.1): the plan computes the
   nearest value to `#2A261F` at which `color-focus` has at least 3:1 (unrounded) on it, and records the new value and
   the reason, which is then added to A.1. The plan states its measure of "nearest" (for example: the same hue and
@@ -492,7 +497,10 @@ can be built.
   controls, scrollbars and system colours follow the token theme, the tokens provide the theme-dependent token
   `color-scheme` (`light` in light, `dark` in dark; A.1), and #6 applies it (`color-scheme:
   var(--ocelle-color-scheme)` on the root). The tokens stylesheet itself sets no `color-scheme` property; until #6
-  lands, native controls follow the user agent's default.
+  lands, native controls follow the user agent's default. The token is in the colour group (it changes with the
+  theme) but its value is a keyword, not a colour: tests compare it as the keyword, and the rules for colour values
+  (hex or `rgb()` form, parsing as RGBA, contrast grounds, swatches) do not apply to it; the token reference shows its
+  value as text (squad round 1, verify 1).
 - **Element custom properties** (operator decision 2026-11-03, squad round 1, PLAN-FRESH-1-007). Constitution I gives
   elements the `ocelle-` namespace for their own public CSS custom properties. They are named
   `--ocelle-<element>-<property>` (FR-010), and the element names of the library are chosen so that no token name
@@ -707,7 +715,9 @@ figure of those pairs is recorded from its first computation (FR-017).
 state on a light ground (2.6 to 3.0:1), pair it with `color-accent-strong` or with text.
 
 Rule 1 extended (operator decision 2026-11-03, SPEC-2-01): a control drawn on `color-inset` or `color-hover-bg` also
-uses `color-accent-strong` for its border, in both themes.
+uses `color-accent-strong` for its border, in both themes. Extended again (operator decision 2026-11-03, squad round
+1, plan Decisions 7): a control drawn on any state `-bg` (`color-danger-bg`, `color-warning-bg`, `color-success-bg`,
+`color-info-bg`, `color-neutral-bg`) uses `color-accent-strong` for its border, in both themes.
 
 ### A.8 Required contrast pairs (intended grounds)
 
@@ -728,22 +738,30 @@ token source records these intended grounds per foreground token (FR-008); each 
 | `color-current` | non-text | `color-chrome`, `color-chrome-hover`, `color-rail`, `color-accent-low` | 4 |
 | `color-control-border` | non-text | every main ground except `color-accent-low`, `color-inset` and `color-hover-bg` (#5 rule 1, extended by the operator, SPEC-2-01) | 6 |
 | `color-accent-strong` | non-text | `color-accent-low`, `color-inset`, `color-hover-bg` (#5 rule 1, extended by the operator, SPEC-2-01) | 3 |
-| | | **total** | **144** |
+| `color-accent-strong` | non-text | each state `-bg` (#5 rule 1, extended by the operator, squad round 1, plan Decisions 7) | 5 |
+| | | **total** | **149** |
 
 Every pair of A.7 is in this set, except `color-control-border` on `color-accent-low` and `color-accent` on
 `color-canvas` in light, which FR-016 requires the pair list to carry as excluded pairs (FR-019 (b)). The pair list
-also carries `color-control-border` on `color-inset` and on `color-hover-bg` in both themes as excluded pairs (A.9).
-With these excluded pairs the list has 148 entries in light and 147 in dark, all counted as checked (FR-016, FR-021).
+also carries `color-control-border` on `color-inset`, on `color-hover-bg` and on each state `-bg` in both themes as
+excluded pairs (A.9). With these excluded pairs the list has 158 entries in light and 157 in dark, all counted as
+checked (FR-016, FR-021).
 
 The rows for `color-link` and `color-focus` on the state `-bg` grounds and for `color-current` were added by the
 operator's decision of 2026-11-03 (squad round 1, PLAN-A11Y-SECURITY-1-012, option (a)): the current bar is a
 non-text indicator (WCAG 1.4.11) and must not pass only because it derives from `color-accent-strong`, and links and
 focus rings can sit in state banners and pills. With Appendix A's values all 14 added pairs meet their threshold in
 both themes (lowest: `color-current` on `color-chrome-hover` 3.01 light; `color-focus` on `color-neutral-bg` 4.27
-light; `color-link` on `color-neutral-bg` 4.86 light). `color-control-border` on the state `-bg` grounds is not a
-required pair; it is 2.91 on `color-neutral-bg` in light (3.05 to 3.21 on the other state grounds in light, 3.17 to
-3.56 in dark). Whether controls on state grounds are required pairs, and if so whether that pair is excluded under
-#5 rule 1 extended or a value changes, is an **open operator question** (plan, Decisions).
+light; `color-link` on `color-neutral-bg` 4.86 light).
+
+The second `color-accent-strong` row was added by the operator's answer of 2026-11-03 to the question left open by
+that decision (plan, Decisions 7: "Rule 1 extended"). `color-control-border` is 2.91 on `color-neutral-bg` in light
+(3.05 to 3.21 on the other state grounds in light, 3.17 to 3.56 in dark), so a control drawn on a state `-bg` uses
+`color-accent-strong` for its border, as on `color-accent-low`, `color-inset` and `color-hover-bg`:
+`color-control-border` on the five state `-bg` grounds is an excluded pair in both themes (A.9), and
+`color-accent-strong` on them is required. With Appendix A's values it is 4.47, 4.50, 4.70, 4.71, 4.27 light and 7.56,
+6.83, 7.23, 7.37, 6.74 dark on `color-danger-bg`, `color-warning-bg`, `color-success-bg`, `color-info-bg`,
+`color-neutral-bg` (the same figures as `color-focus`, which references it).
 
 ### A.9 Required or recorded pairs below threshold with Appendix A's values
 
@@ -755,6 +773,9 @@ Computed for this spec on 2026-11-03 with the WCAG 2.x formula; the gate's own c
 | `color-accent` on `color-canvas` | light | 2.57 | 4.5:1 | excluded, "ochre text never on bone" |
 | `color-control-border` on `color-inset` | light, dark | 2.80, 2.95 | 3:1 | excluded, #5 rule 1 extended (operator, SPEC-2-01; `color-accent-strong` on it: 4.11, 6.28) |
 | `color-control-border` on `color-hover-bg` | light, dark | 2.80, 3.17 | 3:1 | excluded in both themes, #5 rule 1 extended (operator, SPEC-2-01; `color-accent-strong` on it: 4.11, 6.74) |
+| `color-control-border` on `color-neutral-bg` | light, dark | 2.91, 3.17 | 3:1 | excluded in both themes, #5 rule 1 extended (operator, squad round 1, plan Decisions 7; `color-accent-strong` on it: 4.27, 6.74) |
+| `color-control-border` on `color-danger-bg`, `color-warning-bg`, `color-success-bg`, `color-info-bg` | light | 3.05, 3.07, 3.21, 3.21 | 3:1 | at or above threshold; excluded in both themes with `color-neutral-bg`, one rule for all state grounds (operator, squad round 1, plan Decisions 7; `color-accent-strong` on them: 4.47, 4.50, 4.70, 4.71) |
+| `color-control-border` on `color-danger-bg`, `color-warning-bg`, `color-success-bg`, `color-info-bg` | dark | 3.56, 3.21, 3.40, 3.46 | 3:1 | as above (`color-accent-strong` on them: 7.56, 6.83, 7.23, 7.37) |
 | `color-focus` on `color-chrome-hover` | light | 2.71 (with #5's `#2A261F`) | 3:1 | resolved by changing the light `color-chrome-hover` (operator, SPEC-2-01; Assumptions); at least 3:1 with the plan's value |
 | `color-disabled-ink` on `color-rail`, `color-inset`, `color-accent-low`, `color-hover-bg`, `color-disabled-bg` | light | 4.38, 4.07, 4.27, 4.07, 4.23 | none (exempt) | checked against figure only |
 | `color-disabled-ink` on `color-inset`, `color-accent-low`, `color-hover-bg`, `color-disabled-bg` | dark | 3.84, 3.75, 4.12, 4.12 | none (exempt) | checked against figure only |

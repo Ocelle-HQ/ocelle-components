@@ -22,7 +22,7 @@ Stated in `packages/tokens/README.md` (a test checks that it states the CSP allo
   ignored.
 - `color-scheme`: the stylesheet does not set it. `--ocelle-color-scheme` is `light` or `dark` with the theme; base
   styles (#6) apply it with `color-scheme: var(--ocelle-color-scheme)` on the root, and a host without #6 may do the
-  same.
+  same. It is in the colour group of the JSON export but its value is that keyword, not a colour.
 - CSP: the stylesheet needs `style-src 'self'`; the font needs `font-src 'self'` (or the origin that serves the
   package). Without `font-src`, text renders in the fallback families and the only violation is the font file.
 - Forced colours: the tokens never override the system palette (a colour token may only be mapped to a system
@@ -30,7 +30,8 @@ Stated in `packages/tokens/README.md` (a test checks that it states the CSP allo
   there; an element that uses one to mark a state (selected row, pressed segment) or a boundary (sheet edge) must also
   draw a border or outline.
 - Rendered brand rules: chrome tokens on the top bar and rails, digests in groups of four, ochre fill never the only
-  mark of state in light mode, controls on `color-accent-low`, `color-inset` and `color-hover-bg` bordered with
+  mark of state in light mode, controls on `color-accent-low`, `color-inset`, `color-hover-bg` and every state `-bg`
+  (`color-danger-bg`, `color-warning-bg`, `color-success-bg`, `color-info-bg`, `color-neutral-bg`) bordered with
   `color-accent-strong`.
 
 ## Not public

@@ -20,7 +20,7 @@ Inputs under `--root`: `packages/tokens/src/source.ts`, `packages/tokens/contras
 | token source does not load or fails `validateSource` | 2 | `contrast: cannot run: packages/tokens/src/source.ts: <cause>` |
 | a theme with zero entries | 2 | `contrast: cannot run: no pairs for <theme>` |
 | any finding of data-model.md § Gate findings | 1 | one line per finding, then `contrast: <k> findings` |
-| otherwise | 0 | `contrast: <n> pairs checked in light, <m> in dark (<r> required per theme)`; with the repository's values `<n>`, `<m>`, `<r>` are 148, 147, 144 |
+| otherwise | 0 | `contrast: <n> pairs checked in light, <m> in dark (<r> required per theme)`; with the repository's values `<n>`, `<m>`, `<r>` are 158, 157, 149 |
 
 Flag `--print`: lists every required pair with its computed ratio (four decimals), exit 0; for authoring only.
 
@@ -68,7 +68,10 @@ spike). A test checks that every file under an excluded directory is byte-identi
   `storybook/.storybook/**` (tests first in `gates/test/mutation-ranges.test.ts`).
 - `tsconfig.json` includes `storybook/.storybook/**/*.ts` explicitly (`**/*.ts` skips dot-directories).
 - `vitest.config.ts` gains a `storybook` project (node, `storybook/**/*.test.ts`) with a global setup that builds the
-  Storybook into a per-run temporary directory (research R-03, R-10).
+  Storybook into a per-run temporary directory (research R-03, R-10); its mutants are killed by node unit tests in
+  the worker, not by the build. The `tokens` project's browser suites generate what they serve in each suite's
+  `beforeAll` inside the worker and have no `globalSetup`, so Stryker's active mutant reaches the served stylesheet
+  (research R-03).
 
 ## Plants (`gates/plants/<id>/<name>/plant.json`, as `gates/README.md`)
 
