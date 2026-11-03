@@ -1,0 +1,25 @@
+[33m17:19:17 (1655) WARN ProjectReader[39m Glob pattern "!packages/tokens/src/.next/y.ts" did not exclude any files.
+[32m17:19:17 (1655) INFO ProjectReader[39m Found 1 of 9 file(s) to be mutated.
+[32m17:19:17 (1655) INFO Instrumenter[39m Instrumented 1 source file(s) with 1 mutant(s)
+[32m17:19:17 (1655) INFO ConcurrencyTokenProvider[39m Creating 4 checker process(es) and 4 test runner process(es).
+[32m17:19:25 (1655) INFO DryRunExecutor[39m Starting initial test run (vitest test runner with "perTest" coverage analysis). This may take a while.
+[32m17:19:26 (1655) INFO DryRunExecutor[39m Initial test run succeeded. Ran 1 tests in 0 seconds (net 3.057036999999582 ms, overhead 412.9429630000004 ms).
+[33m17:19:26 (1655) WARN MutantTestPlanner[39m Detected 1 static mutants (100% of total) that are estimated to take 100% of the time running the tests!
+  You might want to enable "ignoreStatic" to ignore these static mutants for your next run. 
+  For more information about static mutants visit: https://stryker-mutator.io/docs/mutation-testing-elements/static-mutants
+  (disable "warnings.slow" to ignore this warning)
+
+All tests/x.test.ts
+  ✓ names the base [line 5] (killed 1)
+
+Ran 1.00 tests per mutant on average.
+----------|------------------|----------|-----------|------------|----------|----------|
+          | % Mutation score |          |           |            |          |          |
+File      |  total | covered | # killed | # timeout | # survived | # no cov | # errors |
+----------|--------|---------|----------|-----------|------------|----------|----------|
+All files | 100.00 |  100.00 |        1 |         0 |          0 |        0 |        0 |
+ x.ts     | 100.00 |  100.00 |        1 |         0 |          0 |        0 |        0 |
+----------|--------|---------|----------|-----------|------------|----------|----------|
+[32m17:19:28 (1655) INFO MutationTestReportHelper[39m Final mutation score of 100.00 is greater than or equal to break threshold 100
+[32m17:19:28 (1655) INFO JsonReporter[39m Your report can be found at: file://<repo>/reports/mutation/mutation.json
+[32m17:19:28 (1655) INFO MutationTestExecutor[39m Done in 12 seconds.

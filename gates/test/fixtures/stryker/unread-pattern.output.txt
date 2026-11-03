@@ -1,0 +1,20 @@
+[33m17:18:18 (1258) WARN ProjectReader[39m Glob pattern "packages/tokens/src/.next/y.ts:1-2" did not result in any files.
+[33m17:18:18 (1258) WARN ProjectReader[39m Warning: No files found for mutation with the given glob expressions. As a result, a dry-run will be performed without actually modifying anything. If you intended to mutate files, please check and adjust the configuration. Current glob pattern(s) used: "packages/tokens/src/.next/y.ts:1-2". To enable file mutation, consider configuring the `mutate` property in your configuration file or using the --mutate option via the command line.
+[32m17:18:18 (1258) INFO Instrumenter[39m Instrumented 0 source file(s) with 0 mutant(s)
+[32m17:18:18 (1258) INFO ConcurrencyTokenProvider[39m Creating 4 checker process(es) and 4 test runner process(es).
+[32m17:18:30 (1258) INFO DryRunExecutor[39m Starting initial test run (vitest test runner with "perTest" coverage analysis). This may take a while.
+[32m17:18:30 (1258) INFO DryRunExecutor[39m Initial test run succeeded. Ran 1 tests in 0 seconds (net 8.818953999999849 ms, overhead 387.18104600000015 ms).
+
+All tests/x.test.ts
+  ✘ names the base [line 5] (covered 0)
+
+Ran NaN tests per mutant on average.
+----------|------------------|----------|-----------|------------|----------|----------|
+          | % Mutation score |          |           |            |          |          |
+File      |  total | covered | # killed | # timeout | # survived | # no cov | # errors |
+----------|--------|---------|----------|-----------|------------|----------|----------|
+All files |    n/a |     n/a |        0 |         0 |          0 |        0 |        0 |
+----------|--------|---------|----------|-----------|------------|----------|----------|
+[32m17:18:30 (1258) INFO MutationTestReportHelper[39m Final mutation score of NaN is greater than or equal to break threshold 100
+[32m17:18:30 (1258) INFO JsonReporter[39m Your report can be found at: file://<repo>/reports/mutation/mutation.json
+[32m17:18:30 (1258) INFO MutationTestExecutor[39m Done in 13 seconds.
