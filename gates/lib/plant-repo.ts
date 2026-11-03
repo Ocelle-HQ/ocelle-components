@@ -147,11 +147,20 @@ export async function buildRepoTree(repo: string, plant: string, into: string): 
 
 const base = "Plant Base <base@example.com>";
 
-/** A git repository in `into`: an empty signed-off base commit, then one commit per record of the plant's commits.txt. */
+/**
+ * A git repository in `into`: an empty signed-off base commit, then one commit per record of the plant's commits.txt
+ * (none when the plant has no commits.txt).
+ */
 // Stryker disable next-line all: process boundary, covered by gates-integration: gates/test/integration/plant-repo.test.ts "buildCommitRepo makes an empty base commit signed off by Plant Base, then one commit per record, with real merges"
 export async function buildCommitRepo(plant: string, into: string): Promise<{ readonly base: string; readonly commits: readonly string[] }> {
   // Stryker disable next-line all: process boundary, covered by gates-integration: gates/test/integration/plant-repo.test.ts "buildCommitRepo makes an empty base commit signed off by Plant Base, then one commit per record, with real merges"
-  const records = parseCommits(await readFile(join(plant, "commits.txt"), "utf8"));
+  const text = await readFile(join(plant, "commits.txt"), "utf8").catch((error: unknown) => {
+    // Stryker disable next-line all: process boundary, covered by the plant job: gates/plants/signoff/error-empty-range has no commits.txt
+    if ((error as NodeJS.ErrnoException).code !== "ENOENT") throw error;
+  });
+  // A plant without commits.txt has no record: HEAD is the base commit and the range base..HEAD is empty.
+  // Stryker disable next-line all: process boundary, covered by the plant job: gates/plants/signoff/error-empty-range has no commits.txt
+  const records = text === undefined ? [] : parseCommits(text);
   // Stryker disable next-line all: process boundary, covered by gates-integration: gates/test/integration/plant-repo.test.ts "buildCommitRepo makes an empty base commit signed off by Plant Base, then one commit per record, with real merges"
   await git(into, ["init", "-q", "-b", "main"]);
   // Stryker disable next-line all: process boundary, covered by gates-integration: gates/test/integration/plant-repo.test.ts "buildCommitRepo makes an empty base commit signed off by Plant Base, then one commit per record, with real merges"

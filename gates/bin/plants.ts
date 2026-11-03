@@ -7,7 +7,7 @@
 // parsePlant, plantArgs, judgePlant and plants() are the decision, tested in process on recorded gate runs;
 // run() gives them the file system and the gate processes (the process boundary).
 import { cp, mkdtemp, readdir, readFile, rm } from "node:fs/promises";
-import { tmpdir } from "node:os";
+import { availableParallelism, tmpdir } from "node:os";
 import { join } from "node:path";
 import { main, parseArgs } from "../lib/cli.ts";
 import type { Context, Io } from "../lib/cli.ts";
@@ -280,17 +280,18 @@ async function judgeAll(
   for (const name of [...(await tools.dirs(dir))].sort()) {
     if (set.everyDir || (await tools.read(`${dir}/${name}/plant.json`)) !== undefined) cases.push(name);
   }
-  for (const name of cases) {
-    const path = `${dir}/${name}`;
-    const plant = await loadPlant(path, tools);
-    if (typeof plant === "string") {
-      problems.push(plant);
-      continue;
-    }
-    seen.add(plant.expect);
-    const problem = await judge(plant, path);
-    if (problem !== undefined) problems.push(`${path}: ${gateId}: ${missed[plant.expect]}: ${problem}`);
-  }
+  // Every plant is judged at once (the runner limits how many gate runs start together); the lines keep plant order.
+  const verdicts = await Promise.all(
+    cases.map(async (name) => {
+      const path = `${dir}/${name}`;
+      const plant = await loadPlant(path, tools);
+      if (typeof plant === "string") return plant;
+      seen.add(plant.expect);
+      const problem = await judge(plant, path);
+      return problem === undefined ? undefined : `${path}: ${gateId}: ${missed[plant.expect]}: ${problem}`;
+    }),
+  );
+  for (const verdict of verdicts) if (verdict !== undefined) problems.push(verdict);
   for (const kind of needed) {
     if (!seen.has(kind)) problems.push(`${dir}: ${gateId}: missing-plant: ${owner} has no ${kind} plant`);
   }
@@ -317,9 +318,13 @@ export async function plants(context: Context, tools: PlantTools, io: Io): Promi
     problems.push(`${plantsDir}/${dir}: ${gateId}: unknown-gate: plants of ${dir}, which has no registry entry`);
   }
   let count = 0;
-  for (const gate of registry) {
-    const set: PlantSet = { dir: `${plantsDir}/${gate.id}`, owner: `gate ${gate.id}`, needed: kinds, everyDir: true };
-    const judged = await judgeAll(set, tools, async (plant, path) => judgePlant(gate.id, plant, await tools.runPlant(gate, path)));
+  const gateVerdicts = await Promise.all(
+    registry.map((gate) => {
+      const set: PlantSet = { dir: `${plantsDir}/${gate.id}`, owner: `gate ${gate.id}`, needed: kinds, everyDir: true };
+      return judgeAll(set, tools, async (plant, path) => judgePlant(gate.id, plant, await tools.runPlant(gate, path)));
+    }),
+  );
+  for (const judged of gateVerdicts) {
     count += judged.count;
     problems.push(...judged.problems);
   }
@@ -379,9 +384,38 @@ async function build(root: string, gate: Gate, plant: string, into: string): Pro
   }
 }
 
+/** A limit on how many tasks run at once: `limit(task)` starts `task` when one of `size` slots is free. */
+// Stryker disable next-line all: process boundary, covered by the plant job itself: pnpm run gate:plants (CI check Plants) runs every plant through it
+function limiter(size: number): <T>(task: () => Promise<T>) => Promise<T> {
+  // Stryker disable next-line all: process boundary, covered by the plant job itself: pnpm run gate:plants (CI check Plants) runs every plant through it
+  let running = 0;
+  // Stryker disable next-line all: process boundary, covered by the plant job itself: pnpm run gate:plants (CI check Plants) runs every plant through it
+  const waiting: (() => void)[] = [];
+  // Stryker disable next-line all: process boundary, covered by the plant job itself: pnpm run gate:plants (CI check Plants) runs every plant through it
+  return async (task) => {
+    // Stryker disable next-line all: process boundary, covered by the plant job itself: pnpm run gate:plants (CI check Plants) runs every plant through it
+    if (running >= size) await new Promise<void>((resolve) => waiting.push(resolve));
+    // Stryker disable next-line all: process boundary, covered by the plant job itself: pnpm run gate:plants (CI check Plants) runs every plant through it
+    running += 1;
+    // Stryker disable next-line all: process boundary, covered by the plant job itself: pnpm run gate:plants (CI check Plants) runs every plant through it
+    try {
+      // Stryker disable next-line all: process boundary, covered by the plant job itself: pnpm run gate:plants (CI check Plants) runs every plant through it
+      return await task();
+    } finally {
+      // Stryker disable next-line all: process boundary, covered by the plant job itself: pnpm run gate:plants (CI check Plants) runs every plant through it
+      running -= 1;
+      // Stryker disable next-line all: process boundary, covered by the plant job itself: pnpm run gate:plants (CI check Plants) runs every plant through it
+      waiting.shift()?.();
+    }
+  };
+}
+
 /** The file system and gate processes of the repository at `root`. */
 // Stryker disable next-line all: process boundary, covered by the plant job itself: pnpm run gate:plants (CI check Plants) runs every plant through it
 function realTools(root: string, io: Io): PlantTools {
+  // Gate runs at once: half the processors (at least one), since a gate run starts its own workers.
+  // Stryker disable next-line all: process boundary, covered by the plant job itself: pnpm run gate:plants (CI check Plants) runs every plant through it
+  const limit = limiter(Math.max(1, Math.floor(availableParallelism() / 2)));
   // Stryker disable next-line all: process boundary, covered by the plant job itself: pnpm run gate:plants (CI check Plants) runs every plant through it
   return {
     // Stryker disable next-line all: process boundary, covered by the plant job itself: pnpm run gate:plants (CI check Plants) runs every plant through it
@@ -395,13 +429,16 @@ function realTools(root: string, io: Io): PlantTools {
       // Stryker disable next-line all: process boundary, covered by the plant job itself: pnpm run gate:plants (CI check Plants) runs every plant through it
       .map((entry) => join(entry.parentPath, entry.name).slice(join(root, path).length + 1)),
     // Stryker disable next-line all: process boundary, covered by the plant job itself: pnpm run gate:plants (CI check Plants) runs every plant through it
-    runPlant: async (gate, plant) => {
+    runPlant: (gate, plant) => limit(async () => {
       // Stryker disable next-line all: process boundary, covered by the plant job itself: pnpm run gate:plants (CI check Plants) runs every plant through it
       const into = await mkdtemp(join(tmpdir(), `ocelle-plant-${gate.id}-`));
       // Stryker disable next-line all: process boundary, covered by the plant job itself: pnpm run gate:plants (CI check Plants) runs every plant through it
       try {
         // Stryker disable next-line all: process boundary, covered by the plant job itself: pnpm run gate:plants (CI check Plants) runs every plant through it
-        const { values, commits } = await build(root, gate, join(root, plant), into);
+        const { values, commits } = await build(root, gate, join(root, plant), into).catch((error: unknown) => {
+          // Stryker disable next-line all: process boundary, covered by the plant job itself: pnpm run gate:plants (CI check Plants) runs every plant through it
+          throw new Error(`${plant}: cannot build its temporary repository (${error instanceof Error ? error.message : String(error)})`, { cause: error });
+        });
         // Stryker disable next-line all: process boundary, covered by the plant job itself: pnpm run gate:plants (CI check Plants) runs every plant through it
         const [command = "", ...args] = plantArgs(gate.plantCommand, values);
         // Stryker disable next-line all: process boundary, covered by the plant job itself: pnpm run gate:plants (CI check Plants) runs every plant through it
@@ -412,7 +449,7 @@ function realTools(root: string, io: Io): PlantTools {
         // Stryker disable next-line all: process boundary, covered by the plant job itself: pnpm run gate:plants (CI check Plants) runs every plant through it
         await rm(into, { recursive: true, force: true });
       }
-    },
+    }),
   };
 }
 
