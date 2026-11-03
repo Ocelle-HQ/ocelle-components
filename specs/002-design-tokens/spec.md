@@ -384,12 +384,13 @@ can be built.
   are generated from the token source of FR-008, so a token cannot be missing from them, and a test MUST prove each
   group's story lists exactly that group's tokens. Storybook MUST build with one command under the pinned versions,
   and the build MUST make no network request (Storybook's telemetry disabled). Storybook is held to the strict CSP of
-  constitution IV (operator decisions 2026-11-03, SPEC-1-05 and SPEC-3-01), with two readings the operator decided in
-  squad round 1:
+  constitution IV (operator decisions 2026-11-03, SPEC-1-05 and SPEC-3-01), with two exceptions to constitution IV the
+  operator decided in squad round 1 and ruled exceptions on 2026-11-03 (analysis C1), each recorded in the plan's
+  Complexity Tracking with scope, rationale and the sunset "reviewed when #10 extends this Storybook":
   - **Run time** (PLAN-A11Y-SECURITY-1-001): Storybook loads its story index with `fetch` (`connect-src`) and frames
     its preview (`frame-src`). The Storybook page is served with the CSP of constitution IV plus the host additions
     `font-src 'self'`, `connect-src 'self'` and, only while the manager UI is used, `frame-src 'self'`, for the
-    Storybook page only, recorded in the plan's Constitution Check like `font-src`. Under exactly that header the
+    Storybook page only, recorded in the plan's Complexity Tracking. Under exactly that header the
     built Storybook MUST run with zero CSP violations, shown by a browser test that also asserts the header served.
     The package output (`packages/*/dist/`) gets no such addition.
   - **Static scope** (PLAN-FRESH-1-001, narrowed again by PLAN-FRESH-2-001 (a), operator decision 2026-11-03,
@@ -419,7 +420,7 @@ can be built.
   above; its first output is the `csp` gate's findings on the Vite preview bundle and on `sb-addons/` (recorded
   for the review, not a gate result), and it then runs the widened `csp` and `prefix` gates on the files in scope.
   If Storybook cannot reach zero violations under that header, or its files in scope cannot be freed of inline
-  script, the phase stops and asks the operator; no Complexity Tracking exception is
+  script, the phase stops and asks the operator; no further Complexity Tracking exception is
   taken without the operator's approval. Storybook's own UI theme is set so that it uses the token fonts (`fontBase`
   and `fontCode` set to `--ocelle-font-sans`'s family list, which a unit test MUST check). The run-time test MUST also
   assert that no rendered element of the manager or the preview, for each story in each theme, has a computed
