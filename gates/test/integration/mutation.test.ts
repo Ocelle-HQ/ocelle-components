@@ -10,7 +10,10 @@ import { baseEnv, cleanUp, repo, runGate, tempDir } from "./workspace.ts";
 // from a different working directory (research.md R-08). The change adds `triple` to gates/lib/sample.ts, which only
 // a test under the fixture's gates/test/integration/ runs, and `decrement` to gates/lib/other.ts, which an in-process
 // test checks. The fixture gates/test/fixtures/mutation-uncovered/ changes only packages/tokens/src/y.ts, a new
-// file no test imports, beside an unchanged, tested x.ts (FR-011: a mutant on a line no test runs survives). Each test first asserts that both configuration files exist: the green commit creates them, so at the
+// file no test imports, beside an unchanged, tested x.ts (FR-011: a mutant on a line no test runs survives). The fixture
+// gates/test/fixtures/mutation-split/ adds lines 5 to 12 to gates/lib/split.ts: `untested` (lines 6 to 8), which no
+// test runs, and `tested` (lines 10 to 12), which an in-process test checks (phase 3 round 9, O9-01: an entry
+// `path:start-end` limits the run to the changed lines inside it). Each test first asserts that both configuration files exist: the green commit creates them, so at the
 // red commit the test fails on that assertion.
 const timeout = 300_000;
 const configs = ["stryker.config.json", "vitest.mutation.config.ts", "vitest.config.ts", "tsconfig.json", "tsconfig.base.json"];
@@ -97,6 +100,27 @@ describe("mutation gate (gates/bin/mutation.ts)", () => {
       expect(ran.stdout[0]).toMatch(
         /^mutation: \d+ mutants? on the changed lines of 1 file, none survived; 0 equivalent records$/,
       );
+    },
+    timeout,
+  );
+
+  it(
+    "--files with an entry path:start-end mutates only the changed lines inside it (phase 3 round 9, O9-01)",
+    async () => {
+      expect(configsExist()).toEqual([true, true]);
+      const { root, base } = mutationRepo("mutation-split");
+      const ran = await runGate("gates/bin/mutation.ts", ["--root", root, "--base", base, "--files", "gates/lib/split.ts:10-12"], {
+        cwd: tempDir("cwd"),
+        env: baseEnv(),
+      });
+      expect({ code: ran.code, stderr: ran.stderr, lines: ran.stdout.length }).toEqual({ code: 0, stderr: [], lines: 1 });
+      expect(ran.stdout[0]).toMatch(/^mutation: [2-9] mutants on the changed lines of 1 file, none survived; 0 equivalent records$/);
+      const report = JSON.parse(readFileSync(join(root, "reports/mutation/mutation.json"), "utf8")) as {
+        files: Record<string, { mutants: { location: { start: { line: number }; end: { line: number } } }[] }>;
+      };
+      const lines = (report.files["gates/lib/split.ts"]?.mutants ?? []).map((mutant) => [mutant.location.start.line, mutant.location.end.line]);
+      expect(lines.length).toBeGreaterThan(1);
+      expect(lines.filter(([start = 0, end = 0]) => start < 10 || end > 12)).toEqual([]);
     },
     timeout,
   );
