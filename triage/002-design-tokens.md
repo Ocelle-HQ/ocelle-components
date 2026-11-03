@@ -7,7 +7,9 @@ in_scope: [5]
 out_of_scope: [1, 3, 4, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17]
 semver: minor
 spec_prompt: "Build the @ocelle/tokens package from issue #5 (triage/002-design-tokens.md): every --ocelle-* token for light and dark themes (system preference, light by default, data-theme on <html> overrides) including the dark chrome, link, rule, radius and target-size tokens, the vendored Schibsted Grotesk font with its OFL licence and THIRD_PARTY_NOTICES entry, the brand rules of constitution II enforced as checks, and the automated text and non-text contrast check as a CI gate with a planted defect under gates/plants/ (the gate deferred to #5 in gates/README.md); base styles stay with #6, Storybook and axe with #10."
-status: proposed
+status: approved
+decided_by: "human:jeroennouwsdev"
+decided_at: 2026-11-03T21:43:09Z
 ---
 
 # Triage 002: Design tokens (#5); Spec Kit setup (#3) already done on main
