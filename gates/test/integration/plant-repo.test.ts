@@ -87,6 +87,68 @@ describe("buildRepoTree", () => {
   });
 });
 
+describe("buildRepoTree: plant deltas (002 contracts/gates.md § Configuration set, *Plant deltas*)", () => {
+  const read = (dir: string, path: string): string => readFileSync(join(dir, path), "utf8");
+  const pairsPath = "packages/tokens/contrast/pairs.json";
+
+  it("writes the delta's token overrides as overrides.ts and applies its pair changes by key, one entry per line", async () => {
+    const into = tempDir("repo-tree");
+    await buildRepoTree(repo, join(fixtures, "delta-plant"), into);
+    expect(read(into, "packages/tokens/src/overrides.ts")).toBe(
+      [
+        "// Token overrides written by the plant runner from the plant's delta.json (002 contracts/gates.md § Plant deltas).",
+        'import type { TokenOverride } from "./generate.ts";',
+        "",
+        "export const overrides: readonly TokenOverride[] = [",
+        '  {"token":"color-ink-muted","light":"#6B655A"},',
+        '  {"add":{"name":"radius-4","group":"shape","value":"4px"}},',
+        '  {"remove":"size-dot"},',
+        "];",
+        "",
+      ].join("\n"),
+    );
+    type Entry = Record<string, string>;
+    const real = JSON.parse(read(repo, pairsPath)) as Entry[];
+    const is = (e: Entry, theme: string, fg: string, bg: string): boolean => e.theme === theme && e.fg === fg && e.bg === bg;
+    const expected = [
+      ...real.filter((e) => !is(e, "dark", "color-ink", "color-sheet")).map((e) => (is(e, "light", "color-ink-muted", "color-inset") ? { ...e, figure: "4.27" } : e)),
+      { theme: "light", fg: "color-ink", bg: "color-overlay", kind: "text", figure: "1", status: "checked", source: "computed" },
+    ];
+    expect(real.length).toBeGreaterThan(300);
+    const written = read(into, pairsPath);
+    expect(JSON.parse(written)).toEqual(expected);
+    expect(written.split("\n")).toHaveLength(expected.length + 3);
+    expect(read(into, "packages/tokens/src/source.ts")).toBe(read(repo, "packages/tokens/src/source.ts"));
+  });
+
+  it("moves the real generator to generate.real.ts and places the plant's wrapper for generator wrapped (and not without a delta)", async () => {
+    const into = tempDir("repo-tree");
+    await buildRepoTree(repo, join(fixtures, "wrapped-plant"), into);
+    expect(read(into, "packages/tokens/src/generate.real.ts")).toBe(read(repo, "packages/tokens/src/generate.ts"));
+    expect(read(into, "packages/tokens/src/generate.ts")).toBe(read(fixtures, "wrapped-plant/tree/packages/tokens/src/generate.ts"));
+    const plain = tempDir("repo-tree");
+    await buildRepoTree(repo, join(fixtures, "tree-plant"), plain);
+    expect(existsSync(join(plain, "packages/tokens/src/generate.real.ts"))).toBe(false);
+    expect(read(plain, "packages/tokens/src/overrides.ts")).toBe(read(repo, "packages/tokens/src/overrides.ts"));
+  });
+
+  it("writes pairsText as the pair list's whole text", async () => {
+    const into = tempDir("repo-tree");
+    await buildRepoTree(repo, join(fixtures, "text-plant"), into);
+    expect(read(into, pairsPath)).toBe("[\n");
+  });
+
+  it.each([
+    { plant: "bad-token-plant", problem: "delta.json tokens: token override names an unknown token color-nope" },
+    { plant: "bad-pair-plant", problem: "delta.json pairs: key light/color-nope/color-canvas matches no entry" },
+    { plant: "bad-wrapper-plant", problem: 'packages/tokens/src/generate.ts of a wrapped generator must re-export the real one: export * from "./generate.real.ts"' },
+    { plant: "forbidden-plant", problem: "tree/ holds packages/tokens/contrast/pairs.json; a plant changes the pair list by delta.json pairs" },
+    { plant: "invalid-delta-plant", problem: "delta.json is not valid JSON" },
+  ])("fails to build $plant, naming the key or file", async ({ plant, problem }) => {
+    await expect(buildRepoTree(repo, join(fixtures, plant), tempDir("repo-tree"))).rejects.toThrow(problem);
+  });
+});
+
 describe("buildCommitRepo", () => {
   it(
     "makes an empty base commit signed off by Plant Base, then one commit per record, with real merges",

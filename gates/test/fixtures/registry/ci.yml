@@ -70,6 +70,14 @@ jobs:
     name: Sign-off
     steps:
       - run: pnpm run gate:signoff
+  contrast:
+    name: Contrast
+    steps:
+      - run: pnpm run gate:contrast
+  brand-rules:
+    name: Brand rules
+    steps:
+      - run: pnpm run gate:brand-rules
   plants:
     name: Plants
     steps:

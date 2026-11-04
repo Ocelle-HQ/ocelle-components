@@ -84,7 +84,9 @@ describe("plant job (gates/bin/plants.ts)", () => {
           ...missing("config-copies", ["pass"]),
           ...missing("pins", ["error"]),
           ...missing("signoff", ["fail"]),
-          "plants: 29 problems in 6 plants",
+          ...missing("contrast", []),
+          ...missing("brand-rules", []),
+          "plants: 35 problems in 6 plants",
         ],
         stderr: [],
       });

@@ -36,8 +36,8 @@ describe("parseRegistry: entries", () => {
 });
 
 describe("fr020", () => {
-  it("is the eleven gates of FR-020, in the order of the spec", () => {
-    expect(fr020).toEqual(["typecheck", "lint", "style-lint", "unit-tests", "test-lint", "mutation", "csp", "prefix", "config-copies", "pins", "signoff"]);
+  it("is the thirteen gates of FR-020, in the order of the spec, with 002's contrast and brand-rules last", () => {
+    expect(fr020).toEqual(["typecheck", "lint", "style-lint", "unit-tests", "test-lint", "mutation", "csp", "prefix", "config-copies", "pins", "signoff", "contrast", "brand-rules"]);
   });
 });
 

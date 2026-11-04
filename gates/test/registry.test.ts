@@ -9,14 +9,14 @@ import type { Gate } from "../lib/registry.ts";
 // set; each id missing from one of them is one finding. Inputs: gates/test/fixtures/registry/.
 const registryText = readFileSync(new URL("fixtures/registry/gates.json", import.meta.url), "utf8");
 const workflow = readFileSync(new URL("fixtures/registry/ci.yml", import.meta.url), "utf8");
-const ids = ["typecheck", "lint", "style-lint", "unit-tests", "test-lint", "mutation", "csp", "prefix", "config-copies", "pins", "signoff"];
+const ids = ["typecheck", "lint", "style-lint", "unit-tests", "test-lint", "mutation", "csp", "prefix", "config-copies", "pins", "signoff", "contrast", "brand-rules"];
 
 function finding(path: string, rule: string, message: string): Finding {
   return { location: { path }, gate: "plants", rule, message };
 }
 
 describe("fr020 and plantJob", () => {
-  it("lists the eleven gates of FR-020, and names the plant job plants", () => {
+  it("lists the thirteen gates of FR-020 (002 FR-020: contrast and brand-rules added), and names the plant job plants", () => {
     expect({ fr020, plantJob }).toEqual({ fr020: ids, plantJob: "plants" });
   });
 });
@@ -122,6 +122,53 @@ describe("checkRegistry", () => {
   });
 
   it("reports every gate when the registry and the workflow are empty", () => {
-    expect(checkRegistry({ registry: [], jobs: [], ...paths })).toHaveLength(22);
+    expect(checkRegistry({ registry: [], jobs: [], ...paths })).toHaveLength(26);
+  });
+});
+
+// The repository's own registry, workflow and FR-020 list (002 FR-020, FR-022; contracts/gates.md § Plants,
+// "Registry"): the contrast and brand-rules gates are registered with their checks and repo-tree plant commands, have
+// CI jobs of the same shape as the other gate jobs, and the plant job's registry check finds the three sets equal.
+describe("the repository's registry (002 FR-020)", () => {
+  const real = parseRegistry(readFileSync(new URL("../gates.json", import.meta.url), "utf8"));
+  const realWorkflow = readFileSync(new URL("../../.github/workflows/ci.yml", import.meta.url), "utf8");
+
+  it("registers contrast and brand-rules as repo-tree gates with the checks Contrast and Brand rules", () => {
+    const pick = (id: string): Partial<Gate> | undefined => {
+      const gate = real.find((g) => g.id === id);
+      return gate === undefined ? undefined : { id: gate.id, check: gate.check, command: gate.command, plantCommand: gate.plantCommand, plantForm: gate.plantForm };
+    };
+    expect([pick("contrast"), pick("brand-rules")]).toEqual([
+      { id: "contrast", check: "Contrast", command: "pnpm run gate:contrast", plantCommand: "node gates/bin/contrast.ts --root {root}", plantForm: "repo-tree" },
+      { id: "brand-rules", check: "Brand rules", command: "pnpm run gate:brand-rules", plantCommand: "node gates/bin/brand-rules.ts --root {root}", plantForm: "repo-tree" },
+    ]);
+  });
+
+  it("matches the workflow's gate jobs and the FR-020 list, thirteen gates", () => {
+    expect(checkRegistry({ registry: real, registryPath: "gates/gates.json", jobs: ciJobs(realWorkflow), workflowPath: ".github/workflows/ci.yml" })).toEqual([]);
+    expect(real.map((gate) => gate.id)).toEqual(ids);
+  });
+
+  it("gives each new gate a CI job named after its check that runs its command, like the other gate jobs", () => {
+    const job = (id: string): string[] => {
+      const lines = realWorkflow.split("\n");
+      const start = lines.indexOf(`  ${id}:`);
+      const end = lines.findIndex((line, index) => index > start && /^ {2}[\w-]+:/.test(line));
+      return lines.slice(start, end);
+    };
+    const shape = (id: string, name: string, command: string): string[] => [
+      `  ${id}:`,
+      `    name: ${name}`,
+      "    runs-on: ubuntu-24.04",
+      "    steps:",
+      "      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1",
+      "        with:",
+      "          persist-credentials: false",
+      "      - uses: ./.github/actions/setup",
+      `      - run: ${command}`,
+    ];
+    expect(job("config-copies")).toEqual(shape("config-copies", "Story config copies", "pnpm run gate:config-copies"));
+    expect(job("contrast")).toEqual(shape("contrast", "Contrast", "pnpm run gate:contrast"));
+    expect(job("brand-rules")).toEqual(shape("brand-rules", "Brand rules", "pnpm run gate:brand-rules"));
   });
 });

@@ -88,10 +88,10 @@ describe("plants (the job)", () => {
     const ran = job(world());
     expect(await result(ran)).toEqual({
       code: 0,
-      out: ["plants: 35 plants of 11 gates and the registry judged, every plant as expected"],
+      out: ["plants: 41 plants of 13 gates and the registry judged, every plant as expected"],
       err: [],
     });
-    expect(ran.ran).toHaveLength(33);
+    expect(ran.ran).toHaveLength(39);
     expect(ran.ran).toContain("typecheck gates/plants/typecheck/fail-basic");
     expect(ran.ran).toContain("signoff gates/plants/signoff/error-basic");
   });
@@ -102,7 +102,7 @@ describe("plants (the job)", () => {
       code: 1,
       out: [
         "gates/plants/lint/fail-basic: plants: not-caught: expected exit 1 with the plant's 1 finding, got exit 0",
-        "plants: 1 problem in 35 plants",
+        "plants: 1 problem in 41 plants",
       ],
       err: [],
     });
@@ -122,7 +122,7 @@ describe("plants (the job)", () => {
       out: [
         'gates/plants/csp/error-basic: plants: not-reported-broken: expected exit 2 (could not run) with the cause "could not run: broken input", ' +
           "got exit 2 (csp: could not run: spawn node ENOENT)",
-        "plants: 1 problem in 35 plants",
+        "plants: 1 problem in 41 plants",
       ],
       err: [],
     });
@@ -139,7 +139,7 @@ describe("plants (the job)", () => {
         "gates/plants/lint: plants: missing-plant: gate lint has no error plant",
         "gates/plants/mutation/pass-basic/plant.json: plants: invalid-plant: a pass plant may not set base",
         "gates/plants/mutation: plants: missing-plant: gate mutation has no pass plant",
-        "plants: 4 problems in 35 plants",
+        "plants: 4 problems in 41 plants",
       ],
       err: [],
     });
@@ -157,7 +157,7 @@ describe("plants (the job)", () => {
       out: [
         "gates/plants/prefix/fail-basic: plants: not-caught: findings differ: missing packages/tokens/src/x.ts:1 rule-a; " +
           "unexpected packages/tokens/src/x.ts:2 rule-a, packages/tokens/src/y.ts:1 rule-b",
-        "plants: 1 problem in 35 plants",
+        "plants: 1 problem in 41 plants",
       ],
       err: [],
     });
@@ -178,7 +178,7 @@ describe("plants (the job)", () => {
       code: 1,
       out: [
         "gates/plants/typecheck/pass-basic: plants: not-accepted: expected exit 0 with no finding, got exit 1 (packages/a.ts:3 TS7006)",
-        "plants: 1 problem in 35 plants",
+        "plants: 1 problem in 41 plants",
       ],
       err: [],
     });
@@ -188,7 +188,7 @@ describe("plants (the job)", () => {
     const ran = job(world(), { "gates/plants/signoff/error-basic": { exit: 1, stdout: ["x: signoff: no-signoff: m", "s"], stderr: [] } });
     expect((await result(ran)).out).toEqual([
       "gates/plants/signoff/error-basic: plants: not-reported-broken: expected exit 2 (could not run), got exit 1",
-      "plants: 1 problem in 35 plants",
+      "plants: 1 problem in 41 plants",
     ]);
   });
 
@@ -203,7 +203,7 @@ describe("plants (the job)", () => {
         "gates/plants/style-lint: plants: missing-plant: gate style-lint has no pass plant",
         "gates/plants/style-lint: plants: missing-plant: gate style-lint has no error plant",
         "gates/plants/csp: plants: missing-plant: gate csp has no error plant",
-        "plants: 4 problems in 31 plants",
+        "plants: 4 problems in 43 plants",
       ],
       err: [],
     });
@@ -214,7 +214,7 @@ describe("plants (the job)", () => {
     files.delete("gates/plants/plants/matching/plant.json");
     expect((await result(job(files))).out).toEqual([
       "gates/plants/plants: plants: missing-plant: the registry check has no pass plant",
-      "plants: 1 problem in 34 plants",
+      "plants: 1 problem in 40 plants",
     ]);
   });
 
@@ -228,7 +228,7 @@ describe("plants (the job)", () => {
       out: [
         "gates/plants/lint/fail-none/plant.json: plants: invalid-plant: plant.json is missing",
         "gates/plants/lint/fail-odd/plant.json: plants: invalid-plant: a fail plant lists its findings",
-        "plants: 2 problems in 37 plants",
+        "plants: 2 problems in 43 plants",
       ],
       err: [],
     });
@@ -246,7 +246,7 @@ describe("plants (the job)", () => {
       out: [
         "gates/plants/lint/fail-config: plants: carries-configuration: " +
           "plant carries gate configuration: tree/eslint.config.ts, tree/packages/tokens/tsconfig.json",
-        "plants: 1 problem in 36 plants",
+        "plants: 1 problem in 42 plants",
       ],
       err: [],
     });
@@ -263,7 +263,7 @@ describe("plants (the job)", () => {
         "gates/gates.json: plants: no-registry-entry: gate pins has no registry entry",
         "gates/plants/extra: plants: unknown-gate: plants of extra, which has no registry entry",
         "gates/plants/pins: plants: unknown-gate: plants of pins, which has no registry entry",
-        "plants: 3 problems in 32 plants",
+        "plants: 3 problems in 38 plants",
       ],
       err: [],
     });
@@ -274,7 +274,7 @@ describe("plants (the job)", () => {
     files.set("gates/plants/plants/missing-entry/gates.json", registryText);
     expect((await result(job(files))).out).toEqual([
       "gates/plants/plants/missing-entry: plants: not-caught: expected exit 1 with the plant's 1 finding, got exit 0",
-      "plants: 1 problem in 35 plants",
+      "plants: 1 problem in 41 plants",
     ]);
   });
 
@@ -285,7 +285,7 @@ describe("plants (the job)", () => {
     const run: PlantRun = { exit: 1, stdout: [`${"b".repeat(40)}: signoff: no-signoff: m`, "signoff: 1 finding"], stderr: [], commits: hashes };
     expect(await result(job(files, { "gates/plants/signoff/fail-basic": run }))).toEqual({
       code: 0,
-      out: ["plants: 35 plants of 11 gates and the registry judged, every plant as expected"],
+      out: ["plants: 41 plants of 13 gates and the registry judged, every plant as expected"],
       err: [],
     });
   });
@@ -383,6 +383,15 @@ describe("judgePlant", () => {
     expect(judgePlant("g", plant, { exit: 2, stdout: [], stderr: ["g: could not run"] })).toBeUndefined();
     expect(judgePlant("g", plant, { exit: 0, stdout: [], stderr: [] })).toBe("expected exit 2 (could not run), got exit 0");
     expect(judgePlant("g", plant, { exit: null, stdout: [], stderr: [] })).toBe("expected exit 2 (could not run), got exit null");
+  });
+
+  it("judges a plant whose locations are keyed by the expected findings the runner resolved (002 contracts/gates.md § Keyed locations)", () => {
+    const keyed: Plant = { expect: "fail", why: "x", findings: [{ location: "p.json#light/a/b", rule: "r", message: "needle" }] };
+    const run: PlantRun = { exit: 1, stdout: ["p.json:7: g: r: a needle", "g: 1 finding"], stderr: [], expected: [{ location: "p.json:7", rule: "r", message: "needle" }] };
+    expect(judgePlant("g", keyed, run)).toBeUndefined();
+    expect(judgePlant("g", keyed, { ...run, expected: [{ location: "p.json:8", rule: "r", message: "needle" }] })).toBe("findings differ: missing p.json:8 r; unexpected p.json:7 r");
+    expect(judgePlant("g", keyed, { ...run, expected: [{ location: "p.json:7", rule: "r", message: "haystack" }] })).toBe('finding p.json:7 r lacks "haystack"');
+    expect(judgePlant("g", keyed, { ...run, stdout: ["g: 0 findings"], exit: 0 })).toBe("expected exit 1 with the plant's 1 finding, got exit 0");
   });
 
   it("maps a commit hash to its record number, and keeps a hash of no record", () => {
