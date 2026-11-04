@@ -9,6 +9,7 @@ import { execFile } from "node:child_process";
 import { cp, mkdir, readdir, readFile, rm, symlink, writeFile } from "node:fs/promises";
 import { basename, join } from "node:path";
 import { promisify } from "node:util";
+import type { TokenOverride } from "../../packages/tokens/src/generate.ts";
 import { directoryNames, filePaths } from "./entries.ts";
 
 /** One record of a commit plant's commits.txt. */
@@ -143,6 +144,46 @@ export const mutationAuthor = "Plant Author <plant@example.com>";
 export function ignoreMissing(error: unknown): undefined {
   if ((error as { code?: unknown } | null)?.code !== "ENOENT") throw error;
   return undefined;
+}
+
+/** One pair-list change of a plant's delta.json, by key `(theme, fg, bg)` (002 contracts/gates.md § Plant deltas). */
+export type PairChange =
+  | { readonly key: readonly [string, string, string]; readonly set: Readonly<Record<string, unknown>> }
+  | { readonly key: readonly [string, string, string]; readonly remove: true }
+  | { readonly add: Readonly<Record<string, unknown>> };
+
+/** A plant's delta.json (002 contracts/gates.md § Plant deltas). */
+export interface Delta {
+  readonly tokens?: readonly TokenOverride[];
+  readonly pairs?: readonly PairChange[];
+  /** The pair list's whole text, for a breaking plant whose input is a list that is not one (empty, unparsable). */
+  readonly pairsText?: string;
+  readonly generator?: "wrapped";
+}
+
+/** The delta of a delta.json text; throws naming the problem. */
+export function parseDelta(text: string): Delta {
+  throw new Error(`not implemented: parseDelta(${String(text.length)})`);
+}
+
+/** The problems of a plant's tree/ (paths relative to it) against its delta: files a plant changes only by delta. */
+export function treeProblems(treePaths: readonly string[], delta: Delta | undefined): string[] {
+  throw new Error(`not implemented: treeProblems(${String(treePaths.length)}, ${delta === undefined ? "no delta" : "a delta"})`);
+}
+
+/** Throws unless a plant's generate.ts re-exports the real generator, `./generate.real.ts`. */
+export function checkWrapper(text: string): void {
+  throw new Error(`not implemented: checkWrapper(${String(text.length)})`);
+}
+
+/** The pairs.json text with the changes applied by key, one entry per line; throws naming a key that matches no or two entries. */
+export function applyPairChanges(text: string, changes: readonly PairChange[]): string {
+  throw new Error(`not implemented: applyPairChanges(${String(text.length)}, ${String(changes.length)})`);
+}
+
+/** The text of an overrides.ts that exports the given token overrides, one per line. */
+export function overridesText(tokens: readonly TokenOverride[]): string {
+  throw new Error(`not implemented: overridesText(${String(tokens.length)})`);
 }
 
 // Stryker disable next-line all: process boundary, covered by gates-integration: gates/test/integration/plant-repo.test.ts "buildCommitRepo makes an empty base commit signed off by Plant Base, then one commit per record, with real merges"

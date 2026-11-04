@@ -5,7 +5,7 @@
 // process (gates/test/plant-runner.test.ts) with doubles for the tools; gates/bin/plants.ts gives the real ones.
 import { join } from "node:path";
 import { plantArgs } from "./plant-judge.ts";
-import type { Plant, PlantRun } from "./plant-judge.ts";
+import type { ExpectedFinding, Plant, PlantRun } from "./plant-judge.ts";
 import type { Gate, PlantForm } from "./registry.ts";
 import type { ToolRun } from "./spawn.ts";
 
@@ -27,6 +27,25 @@ export interface RunnerTools {
   readonly run: (command: string, args: readonly string[]) => Promise<ToolRun>;
   /** The executable that runs `node` (the current Node). */
   readonly node: string;
+  /** Reads a file (absolute path); undefined when it does not exist. */
+  readonly read?: (path: string) => Promise<string | undefined>;
+  /** The stylesheet text the generator of the repository at `root` produces from its token source. */
+  readonly stylesheet?: (root: string) => Promise<string>;
+}
+
+/** What key resolution reads of a plant's built tree (paths relative to it). */
+export interface TreeView {
+  readonly read: (path: string) => Promise<string | undefined>;
+  readonly stylesheet: () => Promise<string>;
+}
+
+/**
+ * The expected findings with every keyed location (`<path>#<key>`, 002 contracts/gates.md § Keyed locations)
+ * resolved to `<path>:<line>` in the built tree; throws naming a key that resolves to no line or, for a token or pair
+ * key, to two.
+ */
+export function resolveLocations(findings: readonly ExpectedFinding[], view: TreeView): Promise<ExpectedFinding[]> {
+  return Promise.reject(new Error(`not implemented: resolveLocations(${String(findings.length)}, ${typeof view})`));
 }
 
 /** The message of a thrown value: an Error's message, anything else as text. */
