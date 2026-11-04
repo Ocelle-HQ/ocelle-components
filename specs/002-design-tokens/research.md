@@ -490,10 +490,11 @@ without the operator.
 
 **Tests and scopes** (PLAN-FRESH-1-004, PLAN-TESTABILITY-1-005, PLAN-FRESH-2-002): `vitest.config.ts` gains two
 projects. `storybook` (node, `storybook/test/unit/**/*.test.ts`, no build) holds the unit tests that kill the mutants
-of `storybook/scripts/**` and `storybook/.storybook/**` by importing those modules in the worker: `externalise.ts` and
+of `storybook/scripts/**`, `storybook/.storybook/**` and the story render code under `storybook/stories/` by
+importing those modules in the worker: `externalise.ts` and
 `swatches.ts` on fixture HTML and fixture token data, the telemetry tests, the theme font test (`manager.ts`'s
 exported theme: `fontBase` and `fontCode` equal the transcribed `font-sans` family list; PLAN-FRESH-3-002), and the
-static-scope tests.
+static-scope tests, and `render.test.ts` for the story render code (`storybook/stories/render.ts`; R1-02).
 `storybook-integration` (node, `storybook/test/integration/**/*.test.ts`) has a global setup that builds the
 Storybook into a per-run temporary directory (R-03: nothing reads a pre-existing `storybook/dist/`); a global setup
 is right here because the build runs Vite and the build scripts in their own processes, and building once per run
@@ -509,8 +510,9 @@ family on the prefix gate's monospace list (`monospaceFamilies`, exported by `ga
 scenario 11; PLAN-FRESH-3-002). The font check has a control: on each page the test adds one element through the
 CSSOM (`element.style.fontFamily = "Menlo, monospace"` in `page.evaluate`; CSP does not govern the CSSOM), asserts
 the check reports exactly that element, removes it, and then asserts nothing is reported, so it cannot pass
-vacuously. `storybook/scripts/**` and `storybook/.storybook/**` join the mutation scope
-(`gates/lib/mutation/ranges.ts` `scopePathspecs` and `source` regex, with tests); `tsconfig.json` includes
+vacuously. `storybook/scripts/**`, `storybook/.storybook/**` and `storybook/stories/**/*.ts` join the mutation
+scope (`gates/lib/mutation/ranges.ts` `scopePathspecs` and `source` regex, with tests); story files (`*.stories.ts`),
+tests and `.d.ts` files stay out (phase 3 review round 1, R1-02); `tsconfig.json` includes
 `storybook/.storybook/**/*.ts` explicitly (TypeScript's `**/*.ts` skips dot-directories); the prefix gate's source
 scope (`isCovered`) extends to `storybook/**` source. `storybook/dist/` is in `.gitignore`.
 

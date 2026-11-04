@@ -175,8 +175,10 @@ hand with those paths and recorded in the review; they are not a gate result.
 
 ## Mutation, typecheck and test scope (changed)
 
-- `gates/lib/mutation/ranges.ts` `scopePathspecs` and its `source` regex add `storybook/scripts/**` and
-  `storybook/.storybook/**` (tests first in `gates/test/mutation-ranges.test.ts`).
+- `gates/lib/mutation/ranges.ts` `scopePathspecs` and its `source` regex add `storybook/scripts/**`,
+  `storybook/.storybook/**` and `storybook/stories/**/*.ts` (the story render code such as `render.ts`; phase 3
+  review round 1, R1-02); story files (`*.stories.ts`), tests (`*.test.ts`, `*.spec.ts`, `test/`) and `.d.ts` files
+  stay out (tests first in `gates/test/mutation-ranges.test.ts`).
 - `tsconfig.json` includes `storybook/.storybook/**/*.ts` explicitly (`**/*.ts` skips dot-directories).
 - `vitest.config.ts` gains (PLAN-FRESH-2-002):
   - a `tokens-browser` project (node, `packages/tokens/test/browser/**/*.test.ts`): the Playwright suites, which
@@ -185,7 +187,7 @@ hand with those paths and recorded in the review; they are not a gate result.
     `packages/tokens/test/browser/**` to its exclude, as `gates` excludes `gates/test/integration/**`, so each
     browser suite belongs to `tokens-browser` only;
   - a `storybook` project (node, `storybook/test/unit/**/*.test.ts`): the externalise, swatches, telemetry, theme
-    font (§ `csp`, `prefix`, *Monospace in Storybook*) and scope unit tests, with no build; these kill the mutants of `storybook/scripts/**` and `storybook/.storybook/**`;
+    font (§ `csp`, `prefix`, *Monospace in Storybook*) and scope unit tests, with no build; these kill the mutants of `storybook/scripts/**`, `storybook/.storybook/**` and `storybook/stories/**/*.ts` (story files, tests and `.d.ts` out; `storybook/test/unit/render.test.ts` for the story render code, R1-02);
   - a `storybook-integration` project (node, `storybook/test/integration/**/*.test.ts`) with a global setup that
     builds the Storybook into a per-run temporary directory, holding the run-time CSP test with its monospace
     assertion (research R-10).
