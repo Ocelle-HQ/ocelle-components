@@ -15,3 +15,14 @@ against the amended text.
 Decision: **follow-up op after this run.** Phase 3 is not changed for it. After the mission, open an op to either drop
 `as const` from the records or have the mutation gate flag a changed file that yields zero mutants. Correct the phase 2
 claim that the source-table test kills the value mutants as part of that op.
+
+# Operator decision, phase 3 review round 2
+
+Decided by: human:jeroennouwsdev, 2026-11-04.
+
+## R2-01: commit 569dce4 without a `Signed-off-by` trailer
+
+Decision: **re-sign and force-push.** The orchestrator ran `git rebase --signoff 569dce4^`, which re-signed that commit
+(now 2df63ba) and replayed the two round 2 review commits (now 954d70e and 1a50f59) with the same tree. It then
+force-pushed the feature branch with lease. `gate:signoff --range e05b8c2..HEAD` afterwards: 13 commits checked, no
+finding. No file content changed.
