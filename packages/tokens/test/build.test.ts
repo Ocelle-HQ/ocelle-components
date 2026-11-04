@@ -37,6 +37,15 @@ describe("buildPlan()", () => {
     ]);
   });
 
+  it("does not copy the provenance record fonts/SOURCE.json, which is not public (contracts/token-package.md)", () => {
+    expect(buildPlan(fixture, ["OFL.txt", "SOURCE.json", "SchibstedGrotesk-wght.woff2"]).map((entry) => entry.path)).toEqual([
+      "tokens.css",
+      "tokens.json",
+      "fonts/OFL.txt",
+      "fonts/SchibstedGrotesk-wght.woff2",
+    ]);
+  });
+
   it("copies nothing without font files", () => {
     expect(buildPlan(fixture, []).map((entry) => entry.path)).toEqual(["tokens.css", "tokens.json"]);
   });

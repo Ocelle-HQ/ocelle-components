@@ -249,12 +249,29 @@ function declaration(indent: string, name: string, value: string): string {
   return `${indent}${prefix}${name}: ${value};\n`;
 }
 
-/** The stylesheet text (research.md R-02): light and theme-independent values, dark twice, then reduced motion. */
+/**
+ * The brand font's face (research.md R-06, FR-012): the vendored variable font by a URL relative to the stylesheet,
+ * which the build places beside it in `dist/fonts/` (constitution IV: nothing from a CDN or a font service).
+ */
+const fontFace =
+  "@font-face {\n" +
+  '  font-family: "Schibsted Grotesk";\n' +
+  '  src: url("./fonts/SchibstedGrotesk-wght.woff2") format("woff2");\n' +
+  "  font-weight: 400 900;\n" +
+  "  font-style: normal;\n" +
+  "  font-display: swap;\n" +
+  "}\n\n";
+
+/**
+ * The stylesheet text (research.md R-02, R-06): the font face, light and theme-independent values, dark twice, then
+ * reduced motion.
+ */
 export function css(source: readonly TokenRecord[]): string {
   const dark = source.filter((record) => typeof record.value !== "string" && record.value.light !== record.value.dark);
   const lines = (indent: string, theme: Theme, records: readonly TokenRecord[]): string =>
     records.map((record) => declaration(indent, record.name, valueIn(record, theme))).join("");
   return (
+    fontFace +
     `:root {\n${lines("  ", "light", source)}}\n\n` +
     `@media (prefers-color-scheme: dark) {\n  :root:not([data-theme="light"]) {\n${lines("    ", "dark", dark)}  }\n}\n\n` +
     `:root[data-theme="dark"] {\n${lines("  ", "dark", dark)}}\n\n` +

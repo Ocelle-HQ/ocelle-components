@@ -28,7 +28,18 @@ in the colour group of the JSON export, but its value is that keyword, not a col
 ### Content Security Policy
 
 The stylesheet is a same-origin file with no inline style or script: it needs `style-src 'self'` (or the origin that
-serves the package) and nothing else.
+serves the package). It declares the brand font, Schibsted Grotesk, with `@font-face` from the vendored file
+`fonts/SchibstedGrotesk-wght.woff2` beside it, by a relative URL: the font needs `font-src 'self'` (or the origin that
+serves the package), the one addition to the strict policy `default-src 'none'; script-src 'self'; style-src 'self'`.
+Nothing loads from a CDN or a font service. Without `font-src`, text renders in the fallback families of
+`--ocelle-font-sans` and the only violation is the font file; every token keeps its value.
+
+### Font
+
+`fonts/SchibstedGrotesk-wght.woff2` is the variable Schibsted Grotesk (weights 400 to 900) from
+[schibsted/schibsted-grotesk](https://github.com/schibsted/schibsted-grotesk), unmodified, under the SIL Open Font
+License 1.1, whose text is `fonts/OFL.txt` beside it. `--ocelle-font-sans` and `--ocelle-font-display` name it first;
+`--ocelle-figures` gives the tabular figures that ids, digests and values use.
 
 ### Forced colours
 
