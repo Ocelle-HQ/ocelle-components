@@ -37,10 +37,15 @@
       "Bash(pnpm exec:*)",
       "Bash(pnpm typecheck:*)",
       "Bash(pnpm lint:*)",
-      "Bash(git push -u origin claude/:*)",
-      "Bash(git push --force-with-lease=:*)"
+      "Bash(git push -u origin claude/kitty-ui-speckit-decouple-x3prkx)",
+      "Bash(git push origin claude/kitty-ui-speckit-decouple-x3prkx)"
     ],
     "deny": [
+      "Bash(git push * *:main)",
+      "Bash(git push * *:main *)",
+      "Bash(git push * *:refs/heads/main)",
+      "Bash(git push * *:refs/heads/main *)",
+      "Bash(git push --force-with-lease=main*)",
       "Bash(git push origin main:*)",
       "Bash(git push -u origin main:*)",
       "Bash(git push --force-with-lease origin main:*)",
