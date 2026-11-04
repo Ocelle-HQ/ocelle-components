@@ -156,12 +156,27 @@ export type PairChange =
   | { readonly key: readonly [string, string, string]; readonly remove: true }
   | { readonly add: Readonly<Record<string, unknown>> };
 
+/** The closed `pairsList` part of a delta.json: which fixed text replaces the pair list. */
+export type PairsList = "empty" | "not-json";
+
+/**
+ * The text each `pairsList` value writes as the pair list (002 contracts/gates.md § Configuration set): an empty JSON
+ * list, or an opening `[` and one entry cut off after `"theme":"light",`, which does not parse as JSON.
+ */
+export const pairsListTexts: Readonly<Record<PairsList, string>> = {
+  empty: "[]\n",
+  "not-json": '[\n  {"theme":"light",\n',
+};
+
 /** A plant's delta.json (002 contracts/gates.md § Plant deltas). */
 export interface Delta {
   readonly tokens?: readonly TokenOverride[];
   readonly pairs?: readonly PairChange[];
-  /** The pair list's whole text, for a breaking plant whose input is a list that is not one (empty, unparsable). */
-  readonly pairsText?: string;
+  /**
+   * Replaces the whole pair list with one fixed text, for a breaking plant whose input is a list that cannot be checked
+   * (operator decision R1-01 (c)): closed, so no plant carries a copy of the list or any other free text.
+   */
+  readonly pairsList?: PairsList;
   readonly generator?: "wrapped";
 }
 
@@ -186,7 +201,7 @@ function isPairChange(value: unknown): boolean {
   return "set" in value ? isObject(value.set) && !("remove" in value) : value.remove === true;
 }
 
-const deltaKeys = new Set(["tokens", "pairs", "pairsText", "generator"]);
+const deltaKeys = new Set(["tokens", "pairs", "pairsList", "generator"]);
 
 /** The delta of a delta.json text; throws naming the problem. */
 export function parseDelta(text: string): Delta {
@@ -199,7 +214,7 @@ export function parseDelta(text: string): Delta {
   if (!isObject(value)) throw new Error("delta.json is not an object");
   const unknown = Object.keys(value).find((key) => !deltaKeys.has(key));
   if (unknown !== undefined) throw new Error(`delta.json: unknown key ${unknown}`);
-  const { tokens, pairs, pairsText, generator } = value;
+  const { tokens, pairs, pairsList, generator } = value;
   if (tokens !== undefined) {
     if (!Array.isArray(tokens)) throw new Error("delta.json: tokens must be a list of token overrides");
     const bad = tokens.findIndex((item) => !isTokenOverride(item));
@@ -210,8 +225,10 @@ export function parseDelta(text: string): Delta {
     const bad = pairs.findIndex((item) => !isPairChange(item));
     if (bad !== -1) throw new Error(`delta.json: pairs[${String(bad)}] is not a pair change`);
   }
-  if (pairsText !== undefined && typeof pairsText !== "string") throw new Error("delta.json: pairsText must be a string");
-  if (pairs !== undefined && pairsText !== undefined) throw new Error("delta.json: pairs and pairsText exclude each other");
+  if (pairsList !== undefined && pairsList !== "empty" && pairsList !== "not-json") {
+    throw new Error('delta.json: pairsList must be "empty" or "not-json"');
+  }
+  if (pairs !== undefined && pairsList !== undefined) throw new Error("delta.json: pairs and pairsList exclude each other");
   if (generator !== undefined && generator !== "wrapped") throw new Error('delta.json: generator must be "wrapped"');
   return value;
 }
@@ -333,7 +350,7 @@ async function readDelta(plant: string): Promise<Delta | undefined> {
   return delta;
 }
 
-/** Applies a delta's token overrides, pair changes or pair list text over the tree in `into`, and checks a wrapper. */
+/** Applies a delta's token overrides, pair changes or pair list replacement over the tree in `into`, and checks a wrapper. */
 // Stryker disable next-line all: process boundary, covered by gates-integration: gates/test/integration/plant-repo.test.ts "writes the delta's token overrides as overrides.ts and applies its pair changes by key, one entry per line"
 async function applyDelta(delta: Delta, into: string): Promise<void> {
   // Stryker disable next-line all: process boundary, covered by gates-integration: gates/test/integration/plant-repo.test.ts "moves the real generator to generate.real.ts and places the plant's wrapper for generator wrapped (and not without a delta)"
@@ -350,8 +367,8 @@ async function applyDelta(delta: Delta, into: string): Promise<void> {
   }
   // Stryker disable next-line all: process boundary, covered by gates-integration: gates/test/integration/plant-repo.test.ts "writes the delta's token overrides as overrides.ts and applies its pair changes by key, one entry per line"
   if (delta.pairs !== undefined) await writeFile(join(into, pairsFile), applyPairChanges(await readFile(join(into, pairsFile), "utf8"), delta.pairs));
-  // Stryker disable next-line all: process boundary, covered by gates-integration: gates/test/integration/plant-repo.test.ts "writes pairsText as the pair list's whole text"
-  if (delta.pairsText !== undefined) await writeFile(join(into, pairsFile), delta.pairsText);
+  // Stryker disable next-line all: process boundary, covered by gates-integration: gates/test/integration/plant-repo.test.ts 'writes pairsList "empty" as exactly "[]\\n", an empty JSON list' and 'writes pairsList "not-json" as exactly the fixed cut-off text, which does not parse as JSON'
+  if (delta.pairsList !== undefined) await writeFile(join(into, pairsFile), pairsListTexts[delta.pairsList]);
 }
 
 /**

@@ -50,8 +50,11 @@ list, nor a line-based patch of them: it states its change in `delta.json`, by k
 token or entry cannot break it (002 contracts/gates.md § Configuration set). `tokens` is a list of token overrides
 (`{ "token": "color-ink-muted", "light": "#6B655A" }`, `{ "add": { … } }`, `{ "remove": "<name>" }`), written as the
 `overrides` list of the tree's `packages/tokens/src/overrides.ts`, which `source.ts` applies to its records; `pairs`
-sets fields of, removes or appends pair-list entries by key `(theme, fg, bg)`; `pairsText` replaces the pair list's
-whole text, for a breaking plant whose input is a list that is not one (empty or not JSON); `generator: "wrapped"`
+sets fields of, removes or appends pair-list entries by key `(theme, fg, bg)`; `pairsList` replaces the whole pair
+list with one fixed text, for a breaking plant whose input is a list that cannot be checked: `"empty"` writes the text
+`"[]\n"`, `"not-json"` the fixed text `"[\n  {\"theme\":\"light\",\n"` (both as JSON strings; the second does not
+parse as JSON); any other value, a delta with both `pairs` and `pairsList`, and any part not named here are errors, so no plant
+carries a copy of the list or other free text (operator decision R1-01 (c)); `generator: "wrapped"`
 moves the real `generate.ts` to `generate.real.ts` before the plant's `tree/` places a `generate.ts` that must
 `export * from "./generate.real.ts"` and may shadow one function. A plant's `tree/` must not hold `source.ts` or
 `pairs.json`, holds `generate.ts` only with `generator: "wrapped"`, and holds `overrides.ts` only without `tokens`;
