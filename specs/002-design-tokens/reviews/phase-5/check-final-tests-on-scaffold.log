@@ -1,5 +1,5 @@
 Scope: all 5 workspace projects
-✓ Lockfile passes supply-chain policies (verified 12h ago)
+✓ Lockfile passes supply-chain policies (verified 23h ago)
 Lockfile is up to date, resolution step is skipped
 Packages are hard linked from the content-addressable store to the virtual store.
   Content-addressable store is at: /root/.local/share/pnpm/store/v11
@@ -29,19 +29,19 @@ devDependencies:
 + vite 8.3.5
 + vitest 5.0.5
 
-Done in 528ms using pnpm v12.16.1
+Done in 548ms using pnpm v12.16.1
 $ node gates/bin/setup-offline.ts
 setup: installed offline; Chromium at /tmp/claude-0/-home-user-ocelle-components/181e1231-8fd5-5f31-9d9d-498e593ba7cf/scratchpad/pw/chromium-1248/chrome-linux64/chrome
 $ node gates/bin/test.ts
 gates/test/integration/plant-repo.test.ts:94: unit-tests: buildRepoTree: plant deltas (002 contracts/gates.md § Configuration set, *Plant deltas*) writes the delta's token overrides as overrides.ts and applies its pair changes by key, one entry per line: AssertionError: expected '// Token overrides (data-model.md § T…' to be '// Token overrides written by the pla…' // Object.is equality
-gates/test/integration/plant-repo.test.ts:124: unit-tests: buildRepoTree: plant deltas (002 contracts/gates.md § Configuration set, *Plant deltas*) moves the real generator to generate.real.ts and places the plant's wrapper for generator wrapped (and not without a delta): Error: ENOENT: no such file or directory, open '/tmp/ocelle-repo-tree-Ku4YfF/packages/tokens/src/generate.real.ts'
+gates/test/integration/plant-repo.test.ts:124: unit-tests: buildRepoTree: plant deltas (002 contracts/gates.md § Configuration set, *Plant deltas*) moves the real generator to generate.real.ts and places the plant's wrapper for generator wrapped (and not without a delta): Error: ENOENT: no such file or directory, open '/tmp/ocelle-repo-tree-WTLT1X/packages/tokens/src/generate.real.ts'
 gates/test/integration/plant-repo.test.ts:145: unit-tests: buildRepoTree: plant deltas (002 contracts/gates.md § Configuration set, *Plant deltas*) writes pairsList "not-json" as exactly the fixed cut-off text, which does not parse as JSON: AssertionError: expected '[]\n' to be '[\n  {"theme":"light",\n' // Object.is equality
 gates/test/integration/plant-repo.test.ts:159: unit-tests: buildRepoTree: plant deltas (002 contracts/gates.md § Configuration set, *Plant deltas*) fails to build bad-token-plant, naming the key or file: Error: promise resolved "undefined" instead of rejecting
 gates/test/integration/plant-repo.test.ts:159: unit-tests: buildRepoTree: plant deltas (002 contracts/gates.md § Configuration set, *Plant deltas*) fails to build bad-pair-plant, naming the key or file: Error: promise resolved "undefined" instead of rejecting
 gates/test/integration/plant-repo.test.ts:159: unit-tests: buildRepoTree: plant deltas (002 contracts/gates.md § Configuration set, *Plant deltas*) fails to build bad-wrapper-plant, naming the key or file: Error: promise resolved "undefined" instead of rejecting
 gates/test/integration/plant-repo.test.ts:159: unit-tests: buildRepoTree: plant deltas (002 contracts/gates.md § Configuration set, *Plant deltas*) fails to build forbidden-plant, naming the key or file: Error: promise resolved "undefined" instead of rejecting
 gates/test/integration/plant-repo.test.ts:159: unit-tests: buildRepoTree: plant deltas (002 contracts/gates.md § Configuration set, *Plant deltas*) fails to build invalid-delta-plant, naming the key or file: Error: promise resolved "undefined" instead of rejecting
-gates/test/integration/plants-robustness.test.ts:158: unit-tests: contrast and brand-rules plants under neighbouring changes has the two gates' plants and the registry's: Error: ENOENT: no such file or directory, scandir '/tmp/tmp.V2v458m1C0/gates/plants/contrast'
+gates/test/integration/plants-robustness.test.ts:158: unit-tests: contrast and brand-rules plants under neighbouring changes has the two gates' plants and the registry's: Error: ENOENT: no such file or directory, scandir '/tmp/tmp.Vmok1hlZw7/gates/plants/contrast'
 gates/test/integration/plants-robustness.test.ts:166: unit-tests: contrast and brand-rules plants under neighbouring changes (1) the neighbour color-ink-soft changed in light: the change is consistent, and every plant keeps its outcome: Error: not implemented: contrastRatio(#15130F, #D9D3C7)
 gates/test/integration/plants-robustness.test.ts:166: unit-tests: contrast and brand-rules plants under neighbouring changes (2) a token inserted before color-ink-soft and a pair inserted first: the change is consistent, and every plant keeps its outcome: Error: not implemented: contrastRatio(#15130F, #D9D3C7)
 gates/test/integration/plants-robustness.test.ts:166: unit-tests: contrast and brand-rules plants under neighbouring changes (3) the light color-danger changed: the change is consistent, and every plant keeps its outcome: Error: not implemented: contrastRatio(#15130F, #D9D3C7)
@@ -49,6 +49,15 @@ gates/test/integration/plants.test.ts:68: unit-tests: plant job (gates/bin/plant
 gates/test/integration/token-gates.test.ts:12: unit-tests: contrast and brand-rules on the repository contrast --root <repo> checks 158 pairs in light and 157 in dark, 149 required per theme: AssertionError: expected { code: +0, …(2) } to deeply equal { code: +0, …(2) }
 gates/test/integration/token-gates.test.ts:21: unit-tests: contrast and brand-rules on the repository contrast --print lists every required pair with its ratio: AssertionError: expected { code: +0, lines: 1, …(2) } to deeply equal { code: +0, lines: 298, …(2) }
 gates/test/integration/token-gates.test.ts:35: unit-tests: contrast and brand-rules on the repository brand-rules --root <repo> checks the seven rules: AssertionError: expected { code: +0, …(2) } to deeply equal { code: +0, …(2) }
+packages/tokens/test/sk-mapping.test.ts:42: unit-tests: the role mapping table (FR-024) is one file in the feature directory: AssertionError: expected [] to have a length of 1 but got +0
+packages/tokens/test/sk-mapping.test.ts:46: unit-tests: the role mapping table (FR-024) records the kitty-mission-ui commit it was read from (40 hex): TypeError: .toMatch() expects to receive a string, but got undefined
+packages/tokens/test/sk-mapping.test.ts:50: unit-tests: the role mapping table (FR-024) has exactly 55 rows of four cells: AssertionError: expected [] to deeply equal [ 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, …(45) ]
+packages/tokens/test/sk-mapping.test.ts:54: unit-tests: the role mapping table (FR-024) names 55 distinct roles in column 1, custom properties of one prefix other than ocelle: AssertionError: expected +0 to be 55 // Object.is equality
+packages/tokens/test/sk-mapping.test.ts:62: unit-tests: the role mapping table (FR-024) gives in column 2 a token of the stylesheet and the JSON export, or dropped: AssertionError: expected [] to have a length of 55 but got +0
+packages/tokens/test/sk-mapping.test.ts:68: unit-tests: the role mapping table (FR-024) names the replacement token of every dropped role in column 3: AssertionError: expected [] to not have a length of +0
+packages/tokens/test/sk-mapping.test.ts:75: unit-tests: the role mapping table (FR-024) mentions only tokens wherever it names an --ocelle-* custom property: AssertionError: expected 0 to be greater than or equal to 55
+packages/tokens/test/validate.test.ts:258: unit-tests: validateSource() names the token and the rule for exempt on a colour token other than…: AssertionError: expected function to throw an error, but it didn't
+packages/tokens/test/validate.test.ts:272: unit-tests: validateSource() allows exempt only on color-disabled-ink over the real source, for exempt on color-ink-muted by an override: AssertionError: expected function to throw an error, but it didn't
 gates/test/brand-rules.test.ts:79: unit-tests: brand-rules: success passes the fixture and reports the seven rules checked: AssertionError: expected { code: +0, …(2) } to deeply equal { code: +0, …(2) }
 gates/test/brand-rules.test.ts:83: unit-tests: brand-rules: success passes the repository's values: AssertionError: expected { code: +0, …(2) } to deeply equal { code: +0, …(2) }
 gates/test/brand-rules.test.ts:89: unit-tests: brand-rules (a) monospace-font rejects a monospace family in font-sans at its line, and not the derived font-display: AssertionError: expected { code: +0, …(2) } to deeply equal { code: 1, out: [ …(2) ], err: [] }
@@ -292,5 +301,5 @@ gates/test/wcag.test.ts:49: unit-tests: contrastRatio gives the recorded figures
 gates/test/wcag.test.ts:56: unit-tests: contrastRatio gives #8F5E0F on #211D18 at or above 3 unrounded, 3.012 at three decimals (research.md R-04): Error: not implemented: contrastRatio(#8F5E0F, #211D18)
 gates/test/wcag.test.ts:62: unit-tests: contrastRatio gives the A.9 ratios below threshold: Error: not implemented: contrastRatio(#8A8276, #F1E1C0)
 gates/test/wcag.test.ts:70: unit-tests: contrastRatio throws naming a colour that is not a 6-digit hex: AssertionError: expected [Function] to throw error including 'not a 6-digit hex colour: rgb(0 0 0 /…' but got 'not implemented: contrastRatio(#FFFFF…'
-unit-tests: 259 of 1787 tests failed
+unit-tests: 268 of 1798 tests failed
 [ELIFECYCLE] Test failed. See above for more details.
