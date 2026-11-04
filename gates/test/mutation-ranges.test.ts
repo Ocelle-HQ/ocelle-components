@@ -59,6 +59,35 @@ describe("inScope", () => {
   });
 });
 
+describe("inScope: the Storybook scripts and configuration (002 contracts/gates.md § Mutation)", () => {
+  it("takes storybook/scripts/ and storybook/.storybook/ TypeScript, and no other Storybook file", () => {
+    const paths = [
+      "storybook/scripts/swatches.ts",
+      "storybook/scripts/externalise.ts",
+      "storybook/scripts/sub/a.ts",
+      "storybook/.storybook/main.ts",
+      "storybook/.storybook/manager.ts",
+      "storybook/.storybook/preview.ts",
+      "storybook/stories/render.ts",
+      "storybook/stories/tokens.stories.ts",
+      "storybook/test/unit/swatches.test.ts",
+      "storybook/test/integration/setup.ts",
+      "storybook/scripts/a.test.ts",
+      "storybook/scripts/test/helper.ts",
+      "storybook/.storybook/a.stories.ts",
+      "storybook/.storybook/a.d.ts",
+      "storybook/scripts/a.js",
+      "storybook/.storybook/preview-head.html",
+      "storybook/.generated/a.ts",
+      "storybook/dist/a.ts",
+      "storybook/a.ts",
+      "storybook/scriptsx/a.ts",
+      "xstorybook/scripts/a.ts",
+    ];
+    expect(paths.filter((path) => inScope(path))).toEqual(paths.slice(0, 6));
+  });
+});
+
 describe("changedFiles", () => {
   it("gives the added and modified lines of package and gate source, leaving out test code, stories and the rest", () => {
     expect(changedFiles(mixed)).toEqual([

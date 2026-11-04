@@ -6,10 +6,10 @@ import base from "../../vitest.config.ts";
 import mutation from "../../vitest.mutation.config.ts";
 
 // The Vitest projects and the mutation runs (002 contracts/gates.md § Mutation, research.md R-03 *Mutation path*;
-// PLAN-FRESH-2-002): vitest.mutation.config.ts drops exactly the projects whose tests start tools or a browser, and,
-// resolving every project's include and exclude against the repository's test files, each test file belongs to
-// exactly one project, so none sits both in a project Stryker runs and in one it excludes. The check fails if the
-// tokens project's browser exclude or the gates project's integration exclude is removed.
+// PLAN-FRESH-2-002): vitest.mutation.config.ts drops exactly the projects whose tests start tools, a browser or a
+// Storybook build, and, resolving every project's include and exclude against the repository's test files, each test
+// file belongs to exactly one project, so none sits both in a project Stryker runs and in one it excludes. The check
+// fails if the tokens project's browser exclude or the gates project's integration exclude is removed.
 interface Project {
   readonly name: string;
   readonly include: readonly string[];
@@ -39,9 +39,13 @@ function inProject(project: Project, path: string): boolean {
 }
 
 describe("vitest.mutation.config.ts", () => {
-  it("excludes exactly gates-integration and tokens-browser from the projects of vitest.config.ts", () => {
-    expect(all.map((project) => project.name).filter((name) => !kept.some((project) => project.name === name))).toEqual(["tokens-browser", "gates-integration"]);
-    expect(kept).toEqual(all.filter((project) => project.name !== "gates-integration" && project.name !== "tokens-browser"));
+  it("excludes exactly tokens-browser, storybook-integration and gates-integration from the projects of vitest.config.ts", () => {
+    expect(all.map((project) => project.name).filter((name) => !kept.some((project) => project.name === name))).toEqual([
+      "tokens-browser",
+      "storybook-integration",
+      "gates-integration",
+    ]);
+    expect(kept).toEqual(all.filter((project) => !["gates-integration", "tokens-browser", "storybook-integration"].includes(project.name)));
   });
 });
 
@@ -52,6 +56,8 @@ describe("the Vitest projects", () => {
     expect(notOne).toEqual({});
     expect(testFiles).toContain("packages/tokens/test/browser/themes.test.ts");
     expect(owners["packages/tokens/test/browser/themes.test.ts"]).toEqual(["tokens-browser"]);
+    expect(owners["storybook/test/integration/csp.test.ts"]).toEqual(["storybook-integration"]);
+    expect(owners["storybook/test/unit/swatches.test.ts"]).toEqual(["storybook"]);
   });
 
   it("keep no test file both in a project Stryker runs and in one it excludes", () => {
