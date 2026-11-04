@@ -112,7 +112,7 @@ describe("parseCommits", () => {
 // key, never as a copy or a line-based patch. These are the pure parts; gates/test/integration/plant-repo.test.ts
 // builds plants with them.
 describe("parseDelta", () => {
-  it("reads each part of a delta: token overrides, pair changes by key, the pair list text and the wrapped generator", () => {
+  it("reads each part of a delta: token overrides, pair changes by key, the closed pair list replacement and the wrapped generator", () => {
     const delta = {
       tokens: [{ token: "color-ink-muted", light: "#6B655A" }, { add: { name: "radius-4", group: "shape", value: "4px" } }, { remove: "size-dot" }],
       pairs: [
@@ -123,7 +123,9 @@ describe("parseDelta", () => {
       generator: "wrapped",
     };
     expect(parseDelta(JSON.stringify(delta))).toEqual(delta);
-    expect(parseDelta('{"pairsText":"[]\\n"}')).toEqual({ pairsText: "[]\n" });
+    expect(parseDelta('{"pairsList":"empty"}')).toEqual({ pairsList: "empty" });
+    expect(parseDelta('{"pairsList":"not-json"}')).toEqual({ pairsList: "not-json" });
+    expect(parseDelta('{"tokens":[],"pairsList":"empty","generator":"wrapped"}')).toEqual({ tokens: [], pairsList: "empty", generator: "wrapped" });
     expect(parseDelta("{}")).toEqual({});
   });
 
@@ -146,8 +148,18 @@ describe("parseDelta", () => {
     { text: '{"pairs":[{"key":["light","a","b"],"set":{},"remove":true}]}', problem: /^delta\.json: pairs\[0\] is not a pair change$/ },
     { text: '{"pairs":[{"add":"x"}]}', problem: /^delta\.json: pairs\[0\] is not a pair change$/ },
     { text: '{"pairs":[null]}', problem: /^delta\.json: pairs\[0\] is not a pair change$/ },
-    { text: '{"pairsText":1}', problem: /^delta\.json: pairsText must be a string$/ },
-    { text: '{"pairs":[],"pairsText":"[]"}', problem: /^delta\.json: pairs and pairsText exclude each other$/ },
+    // pairsList is closed (operator decision R1-01 (c)): only "empty" or "not-json", never with pairs, and the free-text
+    // pairsText of round 1 is a part the contract does not name.
+    { text: '{"pairsList":"[]\\n"}', problem: /^delta\.json: pairsList must be "empty" or "not-json"$/ },
+    { text: '{"pairsList":"Empty"}', problem: /^delta\.json: pairsList must be "empty" or "not-json"$/ },
+    { text: '{"pairsList":""}', problem: /^delta\.json: pairsList must be "empty" or "not-json"$/ },
+    { text: '{"pairsList":1}', problem: /^delta\.json: pairsList must be "empty" or "not-json"$/ },
+    { text: '{"pairsList":null}', problem: /^delta\.json: pairsList must be "empty" or "not-json"$/ },
+    { text: '{"pairsList":["empty"]}', problem: /^delta\.json: pairsList must be "empty" or "not-json"$/ },
+    { text: '{"pairs":[],"pairsList":"empty"}', problem: /^delta\.json: pairs and pairsList exclude each other$/ },
+    { text: '{"pairs":[{"key":["light","a","b"],"remove":true}],"pairsList":"not-json"}', problem: /^delta\.json: pairs and pairsList exclude each other$/ },
+    { text: '{"pairsText":"[]\\n"}', problem: /^delta\.json: unknown key pairsText$/ },
+    { text: '{"pairsList":"empty","pairsText":"[]\\n"}', problem: /^delta\.json: unknown key pairsText$/ },
     { text: '{"generator":"real"}', problem: /^delta\.json: generator must be "wrapped"$/ },
   ])("rejects $text", ({ text, problem }) => {
     expect(() => parseDelta(text)).toThrow(problem);

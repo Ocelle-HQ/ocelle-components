@@ -132,10 +132,22 @@ describe("buildRepoTree: plant deltas (002 contracts/gates.md § Configuration s
     expect(read(plain, "packages/tokens/src/overrides.ts")).toBe(read(repo, "packages/tokens/src/overrides.ts"));
   });
 
-  it("writes pairsText as the pair list's whole text", async () => {
+  // pairsList is closed (operator decision R1-01 (c), contracts/gates.md § Configuration set): "empty" and "not-json"
+  // each write one fixed text over the whole pair list.
+  it('writes pairsList "empty" as exactly "[]\\n", an empty JSON list', async () => {
+    const into = tempDir("repo-tree");
+    await buildRepoTree(repo, join(fixtures, "empty-list-plant"), into);
+    const written = read(into, pairsPath);
+    expect(written).toBe("[]\n");
+    expect(JSON.parse(written)).toEqual([]);
+  });
+
+  it('writes pairsList "not-json" as exactly the fixed cut-off text, which does not parse as JSON', async () => {
     const into = tempDir("repo-tree");
     await buildRepoTree(repo, join(fixtures, "text-plant"), into);
-    expect(read(into, pairsPath)).toBe("[\n");
+    const written = read(into, pairsPath);
+    expect(written).toBe('[\n  {"theme":"light",\n');
+    expect(() => JSON.parse(written) as unknown).toThrow(SyntaxError);
   });
 
   it.each([
