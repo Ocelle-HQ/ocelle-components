@@ -1,4 +1,4 @@
-import { readFileSync } from "node:fs";
+import { existsSync, readFileSync } from "node:fs";
 import { createServer } from "node:http";
 import type { Server } from "node:http";
 import type { AddressInfo } from "node:net";
@@ -13,17 +13,20 @@ import type { Group } from "../../../packages/tokens/test/expected.ts";
 // The built Storybook under the Storybook page's CSP (FR-023, US1 scenarios 11 and 13; research.md R-10, R-03;
 // reviews/phase-3/spike.md; T036). The global setup (setup.ts) built it into a temporary directory under the
 // no-network preload: the build made no network access, and the preload's control recorded its one connection. The
-// test serves the whole build with the header and opens the Storybook page, the preview (iframe.html): the spike
-// found that the manager UI cannot run under this CSP (its Emotion and React <style> elements), so the page is the
-// preview alone and the header has no frame-src (R-10). The collector (addInitScript, which the page's CSP does not
-// govern) must report the control page's one violation; then each group story, in light and dark (the theme global
+// build runs the package's own build command (setup.ts reads it from package.json), so it ships the preview only:
+// the spike found that the manager UI cannot run under this CSP (its Emotion and React <style> elements), and the
+// operator decided (R1-01, 2026-11-04) that the preview is the Storybook page and the build ships no manager UI (no
+// index.html, sb-manager/ or sb-addons/; its control: the preview's iframe.html is there). The test serves the whole
+// build with the header, which has no frame-src (R-10), and opens the preview (iframe.html) and nothing else: the
+// server records every HTML document it serves, and the last test asserts that each was iframe.html. The collector
+// (addInitScript, which the page's CSP does not govern) must report nothing on a story, then exactly the one
+// violation of a <style> element the control adds to it; then each group story, in light and dark (the theme global
 // sets data-theme on the preview's <html>), reports zero violations and zero requests outside the origin, and lists
 // exactly its group's tokens with their value in that theme (Appendix A, expected.ts). The monospace check walks
 // every element of the page, open shadow roots included, for a computed font-family naming a family of the prefix
 // gate's list; its control element (styled through the CSSOM, which CSP does not govern) must be reported exactly
 // once, and after it is removed nothing may be.
 const policy = "default-src 'none'; script-src 'self'; style-src 'self'; font-src 'self'; connect-src 'self'";
-const controlPage = "<!doctype html>\n<html lang=\"en\">\n<head>\n<title>control</title>\n<style>body { margin: 0; }</style>\n</head>\n<body></body>\n</html>\n";
 const types: Readonly<Record<string, string>> = {
   ".html": "text/html; charset=utf-8",
   ".js": "text/javascript; charset=utf-8",
@@ -48,6 +51,8 @@ const built = inject("storybook");
 let server: Server | undefined;
 let origin = "";
 let browser: Browser | undefined;
+/** The path of every HTML document the server served, in order. */
+const documents: string[] = [];
 
 beforeAll(async () => {
   server = createServer((request, response) => {
@@ -55,11 +60,12 @@ beforeAll(async () => {
     let body: Buffer | string;
     try {
       if (path.startsWith("..")) throw new Error("outside the served directory");
-      body = path === "control.html" ? controlPage : readFileSync(join(built.out, path === "" ? "iframe.html" : path));
+      body = readFileSync(join(built.out, path));
     } catch {
       response.writeHead(404, { "Content-Security-Policy": policy }).end();
       return;
     }
+    if (extname(path) === ".html") documents.push(path);
     response.writeHead(200, { "Content-Type": types[extname(path)] ?? "application/octet-stream", "Content-Security-Policy": policy }).end(body);
   });
   await new Promise<void>((resolve) => server?.listen(0, "127.0.0.1", resolve));
@@ -84,7 +90,8 @@ interface Visit {
   readonly outside: readonly string[];
 }
 
-async function open(path: string, ready: string | undefined): Promise<Visit> {
+/** Opens the preview, iframe.html, with a query string: the only page the test opens. */
+async function open(query: string): Promise<Visit> {
   if (browser === undefined) throw new Error("the suite did not start");
   const page = await browser.newPage();
   await page.addInitScript(() => {
@@ -98,10 +105,10 @@ async function open(path: string, ready: string | undefined): Promise<Visit> {
   page.on("request", (request) => {
     if (!request.url().startsWith(`${origin}/`)) outside.push(request.url());
   });
-  const response = await page.goto(`${origin}/${path}`, { waitUntil: "load" });
+  const response = await page.goto(`${origin}/iframe.html?${query}`, { waitUntil: "load" });
   // Waits for the story to render, but not past 10 s: a story that never renders is reported by the assertions on
   // the violations and the rows, not by a timeout.
-  if (ready !== undefined) await page.waitForSelector(ready, { state: "attached", timeout: 10_000 }).catch(() => undefined);
+  await page.waitForSelector("#storybook-root dt", { state: "attached", timeout: 10_000 }).catch(() => undefined);
   await page.waitForTimeout(250);
   return { page, header: response?.headers()["content-security-policy"], outside };
 }
@@ -138,12 +145,24 @@ describe("the Storybook build", () => {
     expect(built.control).toEqual([{ kind: "connect", host: "192.0.2.1", port: 443 }]);
     expect(built.build).toEqual([]);
   });
+
+  it("ships the preview only: iframe.html, and no manager entry index.html, no sb-manager/, no sb-addons/", () => {
+    expect(existsSync(join(built.out, "iframe.html"))).toBe(true);
+    expect(["index.html", "sb-manager", "sb-addons"].filter((entry) => existsSync(join(built.out, entry)))).toEqual([]);
+  });
 });
 
 describe("the Storybook page under its CSP", { timeout: 60_000 }, () => {
-  it("serves the header, and the collector reports exactly the control page's one violation", async () => {
-    const control = await open("control.html", undefined);
+  it("serves the header, and the collector reports exactly the one violation of a <style> element added to a story", async () => {
+    const control = await open("id=tokens--colour&viewMode=story&globals=theme:light");
     expect(control.header).toBe(policy);
+    expect(await violations(control.page)).toEqual([]);
+    await control.page.evaluate(() => {
+      const style = document.createElement("style");
+      style.textContent = "body { margin: 0; }";
+      document.head.append(style);
+    });
+    await control.page.waitForTimeout(250);
     expect(await violations(control.page)).toEqual([{ directive: "style-src-elem", blocked: "inline" }]);
     await control.page.close();
   });
@@ -151,7 +170,7 @@ describe("the Storybook page under its CSP", { timeout: 60_000 }, () => {
   for (const [id, group] of groups) {
     for (const theme of ["light", "dark"] as const) {
       it(`tokens--${id} in ${theme}: the header, no violation, no request outside the origin, exactly its tokens, no monospace`, async () => {
-        const { page, header, outside } = await open(`iframe.html?id=tokens--${id}&viewMode=story&globals=theme:${theme}`, "#storybook-root dt");
+        const { page, header, outside } = await open(`id=tokens--${id}&viewMode=story&globals=theme:${theme}`);
         expect(header).toBe(policy);
         expect(await violations(page)).toEqual([]);
         expect(outside).toEqual([]);
@@ -176,4 +195,8 @@ describe("the Storybook page under its CSP", { timeout: 60_000 }, () => {
       });
     }
   }
+
+  it("opened the preview and nothing else: every HTML document served was iframe.html, one per page", () => {
+    expect(documents).toEqual(Array.from({ length: 1 + groups.length * 2 }, () => "iframe.html"));
+  });
 });

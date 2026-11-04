@@ -19,6 +19,7 @@ export const scope = [
   ":(glob)gates/stylelint/**/*.ts",
   ":(glob)storybook/scripts/**/*.ts",
   ":(glob)storybook/.storybook/**/*.ts",
+  ":(glob)storybook/stories/**/*.ts",
   ":(exclude,glob)**/*.test.ts",
   ":(exclude,glob)**/*.spec.ts",
   ":(exclude,glob)**/test/**",
