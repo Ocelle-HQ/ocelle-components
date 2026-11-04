@@ -18,6 +18,16 @@ export default defineConfig({
           name: "tokens",
           environment: "node",
           include: ["packages/tokens/**/*.test.ts"],
+          exclude: [...excluded, "packages/tokens/test/browser/**"],
+        },
+      },
+      {
+        // The token browser suites (research.md R-03): Node tests that drive Chromium through Playwright and serve
+        // what the generator produces in each suite's beforeAll. Not mutated (vitest.mutation.config.ts).
+        test: {
+          name: "tokens-browser",
+          environment: "node",
+          include: ["packages/tokens/test/browser/**/*.test.ts"],
           exclude: excluded,
         },
       },
