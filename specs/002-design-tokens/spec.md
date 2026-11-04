@@ -75,17 +75,21 @@ it with the same table and with the stylesheet.
 10. **Given** the built package, **When** the strict-CSP and prefix gates run on it, **Then** both pass: the tokens
     ship as an external stylesheet with no inline style, and no `sk-` name or monospace family appears in it.
 11. **Given** the token stories (FR-023), **When** Storybook is built and a group's story is rendered in light and in
-    dark under the Storybook page's CSP (FR-023), **Then** it lists exactly that group's tokens with their name and
-    value for that theme, and the page reports zero CSP violations, makes no request outside its origin, and has
-    no rendered element in the manager or the preview whose computed `font-family` names a monospace family; a
-    control element styled monospace is reported (FR-023).
+    dark in the Storybook preview (`iframe.html`), the Storybook page, under the Storybook page's CSP (FR-023),
+    **Then** it lists exactly that group's tokens with their name and value for that theme, and the preview reports
+    zero CSP violations, makes no request outside its origin, and has no rendered element whose computed
+    `font-family` names a monospace family; a control element styled monospace is reported (FR-023). The build
+    output contains no Storybook manager UI (no manager entry `index.html`, no `sb-manager/`, no `sb-addons/`), so
+    the preview is the only Storybook page it ships (operator decision R1-01, 2026-11-04).
 12. **Given** the built Storybook (FR-023), **When** the `csp` gate runs with its widened scope, **Then** it scans
     this repository's Storybook inputs, parsing the TypeScript ones as TypeScript, and the HTML entries of the
     output as `externalise.ts` leaves them (not the bundles under `storybook/dist/`, which scenario 11's run-time
     test covers; FR-023) and passes: no inline script, inline style element or style attribute remains in them, in
     markup or in a markup string literal (outside `storybook/scripts/`, FR-023), and no `eval` or `new Function`.
 13. **Given** the Storybook UI theme (FR-023), **When** a test imports `.storybook/manager.ts`, **Then** the theme's
-    `fontBase` and `fontCode` are the family list of `--ocelle-font-sans`.
+    `fontBase` and `fontCode` are the family list of `--ocelle-font-sans`. (The manager is not shipped by this
+    feature's build, scenario 11; the theme is kept and tested so that #10 brings the manager back with the token
+    fonts.)
 
 ---
 
@@ -387,19 +391,23 @@ can be built.
   constitution IV (operator decisions 2026-11-03, SPEC-1-05 and SPEC-3-01), with two exceptions to constitution IV the
   operator decided in squad round 1 and ruled exceptions on 2026-11-03 (analysis C1), each recorded in the plan's
   Complexity Tracking with scope, rationale and the sunset "reviewed when #10 extends this Storybook":
-  - **Run time** (PLAN-A11Y-SECURITY-1-001): Storybook loads its story index with `fetch` (`connect-src`) and frames
-    its preview (`frame-src`). The Storybook page is served with the CSP of constitution IV plus the host additions
-    `font-src 'self'`, `connect-src 'self'` and, only while the manager UI is used, `frame-src 'self'`, for the
-    Storybook page only, recorded in the plan's Complexity Tracking. Under exactly that header the
-    built Storybook MUST run with zero CSP violations, shown by a browser test that also asserts the header served.
-    The package output (`packages/*/dist/`) gets no such addition.
+  - **Run time** (PLAN-A11Y-SECURITY-1-001; narrowed to the preview by operator decision R1-01, 2026-11-04, phase 3
+    review round 1): the token reference under the strict CSP is the Storybook preview (`iframe.html`) alone, and it
+    is the Storybook page. The preview loads its story index with `fetch` (`connect-src`). The Storybook page is
+    served with the CSP of constitution IV plus the host additions `font-src 'self'` and `connect-src 'self'`, for
+    the Storybook page only, recorded in the plan's Complexity Tracking; `frame-src` is not added, because nothing
+    frames the preview. Under exactly that header the preview MUST run with zero CSP violations, shown by a browser
+    test that also asserts the header served. Storybook's manager UI cannot run under that header (it injects
+    `<style>` elements at run time; reviews/phase-3/spike.md), so the build MUST NOT ship it: the build output MUST
+    contain no manager entry (`index.html`), no `sb-manager/` and no `sb-addons/`, and a test MUST assert their
+    absence. The package output (`packages/*/dist/`) gets no such addition.
   - **Static scope** (PLAN-FRESH-1-001, narrowed again by PLAN-FRESH-2-001 (a), operator decision 2026-11-03,
     squad round 2): the static `csp` and `prefix` gates cover this repository's Storybook inputs before bundling:
     `storybook/stories/`, `storybook/.storybook/` (including its HTML head templates), `storybook/scripts/`,
     `storybook/.generated/` (the generated token and swatch stylesheets), and the HTML entries of the build output
     as `externalise.ts` leaves them (`storybook/dist/*.html`). Every bundle under `storybook/dist/` (the Vite-built
-    preview bundle, which compiles in Storybook's own preview runtime, the esbuild-built `sb-addons/`, the
-    verbatim-copied `sb-manager/`, and the scripts and styles `externalise.ts` moves out of the HTML) is left to the
+    preview bundle, which compiles in Storybook's own preview runtime, and the scripts and styles `externalise.ts`
+    moves out of the HTML; the manager's `sb-addons/` and `sb-manager/` are not shipped, see Run time) is left to the
     run-time test, because Storybook's runtime code is bundled together with this repository's stories and no
     static fence can separate the two. This narrows SPEC-1-05's "no style attribute remains in the built output"
     to this repository's inputs and the HTML entries; the narrowing is recorded in `gates/gates.json` and
@@ -423,7 +431,7 @@ can be built.
   script, the phase stops and asks the operator; no further Complexity Tracking exception is
   taken without the operator's approval. Storybook's own UI theme is set so that it uses the token fonts (`fontBase`
   and `fontCode` set to `--ocelle-font-sans`'s family list, which a unit test MUST check). The run-time test MUST also
-  assert that no rendered element of the manager or the preview, for each story in each theme, has a computed
+  assert that no rendered element of the preview, for each story in each theme, has a computed
   `font-family` naming a family on the `prefix` gate's monospace list, with a control element styled monospace that
   it MUST report (PLAN-FRESH-3-002). If that run-time check finds a monospace family that the theme cannot remove,
   or the token stories draw text on a canvas, the phase likewise stops and asks the operator. The Storybook build gate,
@@ -487,9 +495,10 @@ can be built.
 - **SC-007**: `gates/README.md` lists no deferred contrast gate, and every gate of the registry has a CI job and plants.
 - **SC-008**: The Storybook files in the `csp` gate's widened scope (FR-023) pass it, the `csp` fail plants with an
   inline script in a Storybook HTML entry, a style attribute in a story file's markup string and `new Function` in
-  `.storybook/preview.ts` are caught, and the built Storybook (bundles included) runs with zero CSP violations
-  under the Storybook page's header of FR-023 and with no monospace computed font on any rendered element of the
-  manager or preview.
+  `.storybook/preview.ts` are caught, the built Storybook preview (`iframe.html`, its bundles included) runs with
+  zero CSP violations under the Storybook page's header of FR-023 and with no monospace computed font on any
+  rendered element of the preview, and the build output contains no manager UI (`index.html`, `sb-manager/`,
+  `sb-addons/`; operator decision R1-01, 2026-11-04).
 
 ## Assumptions
 

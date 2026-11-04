@@ -134,8 +134,9 @@ only the Storybook inputs listed here are source files it reads. Unit tests firs
 `checkOutput` gives a finding for a markup string with a `style` attribute and for `new Function` in a `.ts` file
 in scope; a `.ts` file with type annotations and `as const` parses with no exit 2; a `.ts` file that does not parse
 is exit 2; a `<script>` literal in `storybook/scripts/x.ts` gives no finding and `eval` there gives one. Every other
-file under `storybook/dist/` (the Vite preview bundle, `sb-addons/`, `sb-manager/`, the files
-`externalise.ts` writes out of the HTML) is outside the static scope and covered by the run-time CSP test
+file under `storybook/dist/` (the Vite preview bundle, the files `externalise.ts` writes out of the HTML; the
+manager's `sb-addons/` and `sb-manager/` are not shipped, **Preview only** below) is outside the static scope and
+covered by the run-time CSP test
 (`storybook/test/csp.test.ts`): Vite compiles Storybook's preview runtime (`storybook/internal/preview/runtime`,
 which holds `Function(…)` calls and `<span style=…>` strings) into the preview bundle and esbuild builds
 `sb-addons/` from Storybook's manager code, so no byte-identity fence can separate vendor code from this
@@ -151,14 +152,23 @@ outside the static scope. Two checks cover this instead. (1) A unit test in the 
 (`storybook/test/unit/theme.test.ts`) imports `storybook/.storybook/manager.ts`, which exports the theme it passes
 to `addons.setConfig`, and asserts that its `fontBase` and `fontCode` equal the `font-sans` family list transcribed
 from Appendix A (`"Schibsted Grotesk", "Helvetica Neue", Arial, system-ui, sans-serif`). (2) The run-time test in
-`storybook-integration` asserts that no rendered element of the manager and of the preview (including open shadow
-roots), for each group story in light and dark, has a computed `font-family` naming a family on the prefix gate's
+`storybook-integration` asserts that no rendered element of the preview (`iframe.html`, the Storybook page;
+including open shadow roots), for each group story in light and dark, has a computed `font-family` naming a family on the prefix gate's
 monospace list, which `gates/bin/prefix.ts` exports as `monospaceFamilies` for this purpose. Its control: the test
 adds one element to each page through the CSSOM (`element.style.fontFamily = "Menlo, monospace"` in
 `page.evaluate`, which CSP does not govern), asserts that the check reports exactly that element, removes it, and
 only then asserts that nothing is reported. Text drawn on a canvas has no element font; the spike records whether the
 pinned Storybook draws text on a canvas in the token stories (`preview/runtime.js` sets a monospace canvas font), and
 if it does, the phase stops and asks the operator (FR-023).
+
+**Preview only** (operator decision R1-01, 2026-11-04, phase 3 review round 1): the token reference under the strict
+CSP is the Storybook preview (`iframe.html`) alone. The run-time checks of (2) and the CSP test open the preview
+only, under the Storybook page's header without `frame-src`:
+`default-src 'none'; script-src 'self'; style-src 'self'; font-src 'self'; connect-src 'self'`. The manager UI
+cannot run under that header, so the build does not ship it: the Storybook build script passes `--preview-only`
+(pinned Storybook 10.6.5, research R-10 *Preview only*), and `storybook/test/integration/csp.test.ts` asserts that
+the build output holds no `index.html`, no `sb-manager/` and no `sb-addons/`. (1) still tests the theme that
+`manager.ts` exports, kept for #10, which brings the manager back. Required of the phase 3 fix round, test first.
 
 The spike's first output (R-10) is the `csp` gate's findings on the Vite preview bundle and on `sb-addons/`, run by
 hand with those paths and recorded in the review; they are not a gate result.

@@ -422,6 +422,26 @@ default-src 'none'; script-src 'self'; style-src 'self'; font-src 'self'; connec
 are host additions for the Storybook page only, recorded in the plan's Constitution Check like `font-src`; the
 package output gets none. The run-time test asserts that the response carries exactly this header.
 
+**Preview only** (operator decision R1-01, 2026-11-04, phase 3 review round 1; `reviews/phase-3/operator-decisions.md`):
+the spike settled on the preview alone (technique 2 below; the manager's Emotion cache cannot be replaced and its
+React-rendered `<style>` elements are not Emotion's, `reviews/phase-3/spike.md`), and the operator made that the
+reading of FR-023: the token reference under the strict CSP is the preview (`iframe.html`) alone, which is the
+Storybook page. So `frame-src` is dropped and the header is:
+
+```text
+default-src 'none'; script-src 'self'; style-src 'self'; font-src 'self'; connect-src 'self'
+```
+
+The run-time CSP and monospace checks open the preview only. The build stops shipping the manager: the pinned
+Storybook 10.6.5's `storybook build` takes `--preview-only` ("Use the preview without the manager UI"), which skips
+`managerBuilder.build` (the `storybook` package's `dist/core-server/index.js`, `options.previewOnly || await buildOrThrow(...)`). A
+trial build of this repository's Storybook with that option (planner step, scratchpad output, not committed) wrote
+`iframe.html`, `index.json`, `project.json`, the static directory and Storybook's browser assets (favicons, Nunito
+Sans font files, `sb-common-assets/`), and **no** `index.html`, `sb-manager/` or `sb-addons/`. The build script
+passes the option, and a test asserts that the build output holds none of those three, so a manager cannot come
+back unnoticed. `.storybook/manager.ts` and its theme test (US1 scenario 13) stay for #10, which brings the manager
+back; nothing builds `manager.ts` meanwhile. Required of the phase 3 fix round, test-first.
+
 **Static scope** (operator decisions 2026-11-03, squad round 1, PLAN-FRESH-1-001 (a), and squad round 2,
 PLAN-FRESH-2-001 (a)): Storybook copies its prebuilt manager runtime verbatim into the output (`builder-manager`
 copies `dist/manager` to `<out>/sb-manager`), and it also **bundles** its own code with this repository's:
@@ -429,12 +449,14 @@ copies `dist/manager` to `<out>/sb-manager`), and it also **bundles** its own co
 'storybook/internal/preview/runtime'` (`dist/index.js:336`), so Vite compiles `storybook/dist/preview/runtime.js`,
 with its `Function("return this")`, `Function("binder", …)` and `<span style=…>` strings, into the preview bundle;
 and `builder-manager` builds `sb-addons/` with esbuild from Storybook's manager entries and
-`.storybook/manager.ts`. No setting or externalising removes these, and no byte-identity fence can tell vendor code
+`.storybook/manager.ts`. No setting or externalising removes the preview runtime from the preview bundle
+(`sb-manager/` and `sb-addons/` go only with the whole manager, *Preview only* above), and no byte-identity fence can tell vendor code
 from this repository's code inside a bundle. The static `csp` and `prefix` scope therefore covers this repository's
 Storybook inputs before bundling, `storybook/stories/`, `storybook/.storybook/` (with its HTML head templates),
 `storybook/scripts/`, `storybook/.generated/`, and the HTML entries of the output as `externalise.ts` leaves them
 (`storybook/dist/*.html`); every bundle under `storybook/dist/` is left to the run-time CSP test, which serves the
-whole build under the page's header. There is no exclusion list and no byte-identity test. This is a further
+whole build under the page's header. With the manager no longer shipped (*Preview only* above), `sb-manager/` and
+`sb-addons/` are not in the build; the preview bundle remains. There is no exclusion list and no byte-identity test. This is a further
 narrowing of SPEC-1-05, recorded in FR-023, `gates/gates.json`, `gates/README.md` and plan.md.
 
 What the `csp` gate checks in the static scope (operator decision 2026-11-03, squad round 3, PLAN-FRESH-3-001 (a);
@@ -453,7 +475,7 @@ to fail (constitution VIII).
 CSS-in-JS), and the built HTML has inline scripts and styles. Under `style-src 'self'` with no nonce or hash, injected
 `<style>` elements are blocked. The first task of the Storybook phase is a spike that builds the pinned Storybook,
 post-processes its output (`storybook/scripts/externalise.ts`: inline `<script>` and `<style>` moved to same-origin
-files, hashed names), serves it with the header above, and records **every** CSP violation by directive. Its first
+files, hashed names), serves it with the first header above (with `frame-src`, as the spike ran), and records **every** CSP violation by directive. Its first
 output is the `csp` gate's findings on the Vite preview bundle and on `sb-addons/` (run by hand on those paths,
 recorded in the review, not a gate result; PLAN-FRESH-2-001); it then runs the widened `csp` and `prefix` gates on
 the files in scope. It also measures the mutation shard time of R-03 (*Mutation path*). Techniques it tries against `style-src` violations, in
@@ -462,7 +484,7 @@ stylesheets (not governed by `style-src`); (2) the preview alone (`iframe.html`)
 reference; (3) any setting of the pinned Storybook that disables run-time style injection. The spike also runs the
 run-time monospace check (*Tests and scopes*) and records whether the token stories draw text on a canvas. If none of
 the techniques gives zero violations under the header, or a file in scope keeps an inline script, or a rendered
-element of the manager or preview keeps a monospace family that the theme cannot remove, or the stories draw canvas
+element of the preview keeps a monospace family that the theme cannot remove, or the stories draw canvas
 text, the phase **stops and asks the operator** (FR-023, SPEC-3-01); no Complexity Tracking exception is taken
 without the operator.
 
@@ -477,10 +499,12 @@ Storybook into a per-run temporary directory (R-03: nothing reads a pre-existing
 is right here because the build runs Vite and the build scripts in their own processes, and building once per run
 keeps the project's run time bounded. `vitest.mutation.config.ts` excludes `storybook-integration`, so Stryker never
 builds Storybook; the run-time CSP test is not counted on to kill mutants. The run-time check
-`storybook/test/integration/csp.test.ts` (Playwright from Node, R-03's server and violation collector) opens that
-build with the header above, visits each group story in light and dark, and asserts the header served, zero
+`storybook/test/integration/csp.test.ts` (Playwright from Node, R-03's server and violation collector) serves that
+build with the preview-only header above (*Preview only*), asserts the build holds no `index.html`, `sb-manager/`
+or `sb-addons/`, opens the preview (`iframe.html`), visits each group story in light and dark, and asserts the
+header served, zero
 violations, zero requests outside the origin, that each story lists exactly its group's tokens, and that no
-rendered element of the manager or the preview (open shadow roots included) has a computed `font-family` naming a
+rendered element of the preview (open shadow roots included) has a computed `font-family` naming a
 family on the prefix gate's monospace list (`monospaceFamilies`, exported by `gates/bin/prefix.ts`) (FR-023, US1
 scenario 11; PLAN-FRESH-3-002). The font check has a control: on each page the test adds one element through the
 CSSOM (`element.style.fontFamily = "Menlo, monospace"` in `page.evaluate`; CSP does not govern the CSSOM), asserts
