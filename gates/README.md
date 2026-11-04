@@ -26,7 +26,7 @@ and changes nothing else. The registry of gates is `gates/gates.json`; the FR-02
 | `style-lint` | Style lint | `pnpm run gate:style-lint` | the styles of FR-024 (token-only), and since 002 every `var(--ocelle-…)` reference to a name that is neither a token of `packages/tokens/src/source.ts` nor a custom property `packages/elements/custom-elements.json` declares (exact name; 002 FR-010) | a raw value in an element `css` template, in stylesheets of `elements/src`, `styles/src` and `styles/` outside `src/`, one per FR-024 reject class; a misspelt token (`var(--ocelle-color-canvs)`), a misspelt element property (`var(--ocelle-button-gpa)`); pass: the ten allowed values, a story, element test code, token definitions, real tokens, a declared element property; breaking: a stylesheet that does not parse, an element property with a token's full name |
 | `unit-tests` | Unit tests | `pnpm run gate:unit-tests` (`pnpm test`) | every test file | a failing test in `tokens`, `styles`, a colocated test, `gates`, and `elements` in Chromium; pass: a passing test alone in each project, a failing fixture not run; breaking: a file that throws while loading, no test file |
 | `test-lint` | Test lint | `pnpm run gate:test-lint` | all test code (FR-010) | the seven FR-010 patterns of SC-004, an assertion-free colocated element test and gate test; pass: a real assertion, an excluded fixture; breaking: a file that does not parse |
-| `mutation` | Mutation testing | `pnpm run gate:mutation -- --base <sha>` | changed package source and gate source lines, and since 002 `storybook/scripts/` and `storybook/.storybook/` | an unchecked covered line, a line no test runs, a record without a reason, `// Stryker disable all`, a survivor in gate source; pass: a fully checked change, a reasoned record (listed), a test-only change, a `CompileError`-only change; breaking: a `--base` that does not resolve (the plant's `plant.json` `base`), a failed dry run |
+| `mutation` | Mutation testing | `pnpm run gate:mutation -- --base <sha>` | changed package source and gate source lines, and since 002 `storybook/scripts/`, `storybook/.storybook/` and `storybook/stories/` (not `*.stories.ts`) | an unchecked covered line, a line no test runs, a record without a reason, `// Stryker disable all`, a survivor in gate source; pass: a fully checked change, a reasoned record (listed), a test-only change, a `CompileError`-only change; breaking: a `--base` that does not resolve (the plant's `plant.json` `base`), a failed dry run |
 | `csp` | Content security | `pnpm -r build && pnpm run gate:csp` | built output of the three packages; since 002 the Storybook inputs and HTML entries (below) | each FR-021 construct, a `style` attribute after a newline, `<svg/onload=>`, `(0, eval)(s)`, an inline script in `storybook/dist/index.html`, a `style` attribute in a story's markup string, `new Function` in `.storybook/preview.ts`, `eval` in `storybook/scripts/`; pass: `<script src>`, `setTimeout(fn, 0)`, `retrieval(x)`, `isFunction(x)`, an inline script in source, external scripts in a Storybook HTML entry, tag names in `storybook/scripts/externalise.ts`; breaking: a `.js` file that does not parse, a Storybook `.ts` file that does not parse |
 | `prefix` | Prefix | `pnpm -r build && pnpm run gate:prefix` | package source, test code and built output of the three packages; since 002 the Storybook workspace (below) | `<sk-button>`, `<SK-Button>`, `--sk-color` in test code, an `sk-select` event in `dist/`, `monospace`, `Menlo`, `Menlo, monospace` in `storybook/.generated/swatches.css`; pass: `task-list`, `desk-row`, `--risk-level`, a name outside the packages; breaking: invalid UTF-8 |
 | `config-copies` | Story config copies | `pnpm run gate:config-copies` | the two story configuration copies (FR-006) | one setting differs, a narrowed `test_pathspec`; pass: equal copies; breaking: a copy missing |
@@ -68,16 +68,18 @@ exceptions the operator took (002 plan.md, Complexity Tracking; reviewed when #1
   the host additions `font-src 'self'` and `connect-src 'self'` (it fetches `index.json`):
   `default-src 'none'; script-src 'self'; style-src 'self'; font-src 'self'; connect-src 'self'`. The manager UI
   (`index.html`) cannot run under it (its Emotion and React `<style>` elements; 002 reviews/phase-3/spike.md), so it
-  is not the page and `frame-src` is not added. The run-time test `storybook/test/integration/csp.test.ts` serves the
+  is not the page and `frame-src` is not added. The build does not ship it: the build script passes
+  `storybook build --preview-only` (operator decision R1-01, 2026-11-04), so `storybook/dist/` holds no
+  `index.html`, no `sb-manager/` and no `sb-addons/`, and the run-time test asserts their absence and opens
+  `iframe.html` only. The run-time test `storybook/test/integration/csp.test.ts` serves the
   whole build under that header, asserts the header, zero violations (with a control), no request outside the origin,
   each story's tokens, and no monospace element (with a control). The package output gets no addition.
 - **The narrowed static scope.** This narrows SPEC-1-05's "no style attribute remains in the built output": the
   static gates read this repository's Storybook inputs before bundling and the HTML entries of the build output as
   `storybook/scripts/externalise.ts` leaves them, not the bundles. Vite compiles Storybook's own preview runtime
-  into the preview bundle (with `Function(...)` calls and `<span style=...>` strings) and esbuild builds
-  `sb-addons/` from Storybook's manager code, so no static fence separates vendor code from this repository's code
-  there; every bundle under `storybook/dist/` (the preview bundle, `sb-addons/`, `sb-manager/`, the files
-  `externalise.ts` moves out of the HTML) is left to the run-time test.
+  into the preview bundle (with `Function(...)` calls and `<span style=...>` strings), so no static fence separates
+  vendor code from this repository's code there; every bundle under `storybook/dist/` (the preview bundle and the
+  files `externalise.ts` moves out of the HTML) is left to the run-time test.
 
 | Gate | Storybook files in scope (outside `node_modules`) | Rules |
 |---|---|---|

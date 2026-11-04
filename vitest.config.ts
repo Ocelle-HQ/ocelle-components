@@ -54,7 +54,8 @@ export default defineConfig({
       },
       {
         // The Storybook unit tests (002 research.md R-10): the scripts, the configuration and the stories' render code
-        // in node, with no build; these kill the mutants of storybook/scripts/** and storybook/.storybook/**.
+        // in node, with no build; these kill the mutants of storybook/scripts/**, storybook/.storybook/** and
+        // storybook/stories/** (not the story files).
         test: {
           name: "storybook",
           environment: "node",
