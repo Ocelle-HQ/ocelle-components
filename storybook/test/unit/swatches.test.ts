@@ -70,6 +70,12 @@ describe("writeGenerated", () => {
     expect(existsSync(join(out, "fonts"))).toBe(false);
   });
 
+  it("creates the generated directory and its missing parents (added: mutation run)", () => {
+    const out = join(temp(), "a", "b", "generated");
+    writeGenerated(out, join(temp(), "missing"), fixture);
+    expect(readdirSync(out).sort()).toEqual(["swatches.css", "tokens.css"]);
+  });
+
   it("replaces what an earlier run left in the generated directory", () => {
     const out = temp();
     mkdirSync(join(out, "fonts"));

@@ -326,3 +326,9 @@ describe("checkOutput: the Storybook .ts inputs (002 FR-023)", () => {
     });
   });
 });
+
+describe("checkOutput: built JavaScript stays JavaScript (added: mutation run)", () => {
+  it("reads a .js `Function < a > (s)` as two comparisons, not as a TypeScript call with a type argument", () => {
+    expect(checkOutput([{ path: js, text: 'export const r = Function < a > ("return 1");\n' }])).toEqual({ exit: 0, summary: "csp: 1 file checked, no finding" });
+  });
+});

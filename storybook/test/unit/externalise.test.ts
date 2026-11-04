@@ -119,3 +119,26 @@ describe("externaliseDir", () => {
     expect(readdirSync(dir).sort()).toEqual(["d.js", "iframe.html", `inline-${hash("a();")}.js`, `inline-${hash("b{}")}.css`, "index.html", "sub"].sort());
   });
 });
+
+describe("externalise: attributes, text states and the head (added: mutation run)", () => {
+  it("escapes & and \" in the attributes a <link> keeps, and keeps them all in order", () => {
+    const rules = "a{}";
+    const result = externalise(`<style media='screen and (x: "a&b")' id="s">${rules}</style>`);
+    expect(result.html).toBe(`<link rel="stylesheet" href="./inline-${hash(rules)}.css" media="screen and (x: &quot;a&amp;b&quot;)" id="s">`);
+  });
+
+  it("reads markup inside a <style> as its text, not as tags", () => {
+    const rules = 'a::before { content: "<b style=\'x\'>"; }';
+    expect(externalise(`<head><style>${rules}</style></head>`)).toEqual({
+      html: `<head><link rel="stylesheet" href="./inline-${hash(rules)}.css"></head>`,
+      files: [{ name: `inline-${hash(rules)}.css`, text: rules }],
+    });
+  });
+
+  it("links the style-attribute stylesheet before a </head> written with whitespace, and at the start without one", () => {
+    const sheet = `[data-ocelle-style="${hash("a: b")}"] { a: b }\n`;
+    const link = `<link rel="stylesheet" href="./inline-${hash(sheet)}.css">`;
+    expect(externalise('<head></head\n><p style="a: b"></p>').html).toBe(`<head>${link}</head\n><p data-ocelle-style="${hash("a: b")}"></p>`);
+    expect(externalise('<p style="a: b"></p>').html).toBe(`${link}<p data-ocelle-style="${hash("a: b")}"></p>`);
+  });
+});

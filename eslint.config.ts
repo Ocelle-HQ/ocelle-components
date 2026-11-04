@@ -7,7 +7,7 @@ import { defineConfig } from "eslint/config";
 import tseslint from "typescript-eslint";
 
 export default defineConfig([
-  { ignores: ["gates/plants/**", "gates/test/fixtures/**", "packages/*/dist/**", ".stryker-tmp/**", "reports/**"] },
+  { ignores: ["gates/plants/**", "gates/test/fixtures/**", "packages/*/dist/**", "storybook/dist/**", ".stryker-tmp/**", "reports/**"] },
   {
     files: ["**/*.ts"],
     extends: [js.configs.recommended, tseslint.configs.strictTypeChecked, tseslint.configs.stylisticTypeChecked],

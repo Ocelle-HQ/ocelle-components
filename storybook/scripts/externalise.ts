@@ -79,7 +79,9 @@ export function externalise(html: string): Externalised {
       },
       onEndTag: (tag) => {
         const location = tag.location;
-        if (open === undefined || location === null || tag.tagName !== open.tag.tagName) return;
+        // While a script or style is open the tokenizer is in its text state, which ends only at the matching end
+        // tag, so the end tag read here is always that one.
+        if (open === undefined || location === null) return;
         const text = html.slice(open.content, location.startOffset);
         if (open.tag.tagName === "script") {
           const name = fileName(text, "js");
@@ -101,6 +103,7 @@ export function externalise(html: string): Externalised {
       onWhitespaceCharacter: ignore,
     },
   );
+  // Stryker disable next-line BooleanLiteral: equivalent, a tag is emitted at its ">" whether or not the chunk is the last, and a tag left open at the end gives no edit either way
   tokenizer.write(html, true);
   let result = html;
   for (const edit of edits.sort((a, b) => b.start - a.start)) result = result.slice(0, edit.start) + edit.text + result.slice(edit.end);
@@ -109,8 +112,9 @@ export function externalise(html: string): Externalised {
     const name = fileName(sheet, "css");
     files.set(name, sheet);
     const link = `<link rel="stylesheet" href="./${name}">`;
-    const head = result.search(/<\/head\s*>/i);
-    result = head < 0 ? link + result : result.slice(0, head) + link + result.slice(head);
+    // Before </head>, or at the start of a document without one.
+    const at = Math.max(result.search(/<\/head\s*>/i), 0);
+    result = result.slice(0, at) + link + result.slice(at);
   }
   return { html: result, files: [...files].map(([name, text]) => ({ name, text })) };
 }
