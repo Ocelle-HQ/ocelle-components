@@ -1,0 +1,11 @@
+{
+  "expect": "fail",
+  "why": "A light color-chrome in light breaks the dark chrome of FR-019 (e).",
+  "findings": [
+    {
+      "location": "packages/tokens/src/source.ts#color-chrome",
+      "rule": "dark-chrome",
+      "message": "color-chrome has relative luminance"
+    }
+  ]
+}

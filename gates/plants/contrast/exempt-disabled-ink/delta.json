@@ -1,0 +1,17 @@
+{
+  "tokens": [
+    {"token":"color-disabled-ink","light":"#8A8276"}
+  ],
+  "pairs": [
+    {"key":["light","color-disabled-ink","color-canvas"],"set":{"figure":"3.28"}},
+    {"key":["light","color-disabled-ink","color-sheet"],"set":{"figure":"3.63"}},
+    {"key":["light","color-disabled-ink","color-pane"],"set":{"figure":"3.79"}},
+    {"key":["light","color-disabled-ink","color-panel"],"set":{"figure":"3.28"}},
+    {"key":["light","color-disabled-ink","color-inspector"],"set":{"figure":"3.28"}},
+    {"key":["light","color-disabled-ink","color-rail"],"set":{"figure":"3.02"}},
+    {"key":["light","color-disabled-ink","color-inset"],"set":{"figure":"2.80"}},
+    {"key":["light","color-disabled-ink","color-accent-low"],"set":{"figure":"2.94"}},
+    {"key":["light","color-disabled-ink","color-hover-bg"],"set":{"figure":"2.80"}},
+    {"key":["light","color-disabled-ink","color-disabled-bg"],"set":{"figure":"2.91"}}
+  ]
+}

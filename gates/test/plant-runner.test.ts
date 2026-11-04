@@ -40,6 +40,14 @@ function recorder(built: BuiltRepo, ran: ToolRun | Error, buildError?: Error): R
       return ran instanceof Error ? Promise.reject(ran) : Promise.resolve(ran);
     },
     node: "/opt/node/bin/node",
+    read: (path) => {
+      calls.push(`read ${path}`);
+      return Promise.resolve(undefined);
+    },
+    stylesheet: (root) => {
+      calls.push(`stylesheet ${root}`);
+      return Promise.resolve("");
+    },
   };
   return { tools, calls };
 }

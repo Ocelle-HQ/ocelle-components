@@ -1,0 +1,5 @@
+{
+  "expect": "error",
+  "why": "A pair list that is not JSON cannot be checked (US3 scenario 5).",
+  "cause": "contrast: cannot run: packages/tokens/contrast/pairs.json: not JSON"
+}

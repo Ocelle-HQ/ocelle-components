@@ -1,0 +1,5 @@
+{
+  "expect": "error",
+  "why": "A token source that fails validation (radius-3, an A.6 name) is exit 2, not a rule finding (PLAN-CORRECTNESS-1-005).",
+  "cause": "brand-rules: cannot run: packages/tokens/src/source.ts: invalid token source: token radius-3: excluded token"
+}

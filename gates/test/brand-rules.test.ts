@@ -150,9 +150,11 @@ describe("brand-rules (c) radius-set", () => {
     expect(findings(ran)).toEqual([`${sourcePath}:${String(line.radius2)}: brand-rules: radius-set: radius-2 is 5px, expected 4px`]);
   });
 
-  it("rejects a missing radius of the set, at the token source", async () => {
+  it("rejects a missing radius of the set, at its record in source.ts when an override removes it, else at the token source", async () => {
     const ran = await brandRules({ overrides: [{ remove: "radius-pill" }, { remove: "radius-1" }] });
-    expect(findings(ran)).toEqual([`${sourcePath}: brand-rules: radius-set: radius-1 is missing`, `${sourcePath}: brand-rules: radius-set: radius-pill is missing`]);
+    expect(findings(ran)).toEqual([`${sourcePath}:19: brand-rules: radius-set: radius-1 is missing`, `${sourcePath}:23: brand-rules: radius-set: radius-pill is missing`]);
+    const absent = await brandRules({ records: records.filter((record) => record.name !== "radius-row") });
+    expect(findings(absent)).toEqual([`${sourcePath}: brand-rules: radius-set: radius-row is missing`]);
   });
 });
 
@@ -263,10 +265,10 @@ describe("brand-rules: findings of several rules", () => {
     expect(ran.out.map((l) => l.split(": ")[2] ?? l)).toEqual(["monospace-font", "link-accent", "radius-set", "forced-colours", "brand-rules: 4 findings"]);
   });
 
-  it("reports a colour token the rules need that is missing, or not opaque, at the token source", async () => {
+  it("reports a colour token the rules need that is missing, or not opaque, at its record", async () => {
     const ran = await brandRules({ overrides: [{ remove: "color-chrome-muted" }] });
-    expect(findings(ran)).toEqual([`${sourcePath}: brand-rules: dark-chrome: color-chrome-muted is missing`]);
-    const notOpaque = await brandRules({ overrides: [{ add: { name: "color-overlay", group: "colour", value: { light: "rgb(0 0 0 / 0.5)", dark: "#000000" } } }, { token: "color-link", light: "var(--ocelle-color-overlay)" }] });
+    expect(findings(ran)).toEqual([`${sourcePath}:13: brand-rules: dark-chrome: color-chrome-muted is missing`]);
+    const notOpaque = await brandRules({ overrides: [{ add: { name: "color-overlay", group: "colour", value: { light: "rgb(0 0 0 / 0.5)", dark: "#000000" } } }, { token: "color-link", light: "var(--ocelle-color-overlay)", ref: { light: ["color-overlay"], dark: [] } }] });
     expect(findings(notOpaque)).toEqual([`${sourcePath}:${String(line.link)}: brand-rules: link-accent: color-link is not an opaque colour in light`]);
   });
 });

@@ -187,7 +187,9 @@ describe("checkWrapper", () => {
     'export * from "./generate.real.ts";\n',
     "import x from './y.ts';\nexport * from './generate.real.ts'\nexport const a = 1;\n",
   ])("accepts a wrapper that re-exports the real generator: %j", (text) => {
-    expect(checkWrapper(text)).toBeUndefined();
+    expect(() => {
+      checkWrapper(text);
+    }).not.toThrow();
   });
 
   it.each([
@@ -196,7 +198,9 @@ describe("checkWrapper", () => {
     'export { css } from "./generate.real.ts";\n',
     '// export * from "./generate.real.ts";\n',
   ])("rejects a wrapper that does not: %j", (text) => {
-    expect(() => checkWrapper(text)).toThrow('packages/tokens/src/generate.ts of a wrapped generator must re-export the real one: export * from "./generate.real.ts"');
+    expect(() => {
+      checkWrapper(text);
+    }).toThrow('packages/tokens/src/generate.ts of a wrapped generator must re-export the real one: export * from "./generate.real.ts"');
   });
 });
 

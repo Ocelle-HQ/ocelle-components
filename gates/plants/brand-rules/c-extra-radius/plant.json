@@ -1,0 +1,11 @@
+{
+  "expect": "fail",
+  "why": "A second radius at 4px outside the closed set breaks FR-019 (c) and constitution II's one radius (US3 scenario 6).",
+  "findings": [
+    {
+      "location": "packages/tokens/src/overrides.ts#radius-4",
+      "rule": "radius-set",
+      "message": "radius-4 is not in the closed radius set"
+    }
+  ]
+}

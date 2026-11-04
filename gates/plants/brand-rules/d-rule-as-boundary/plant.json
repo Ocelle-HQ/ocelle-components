@@ -1,0 +1,11 @@
+{
+  "expect": "fail",
+  "why": "Light color-rule at #968E82 is 3.10:1 on color-sheet, enough to pass as a control boundary, which FR-019 (d) forbids.",
+  "findings": [
+    {
+      "location": "packages/tokens/src/source.ts#color-rule",
+      "rule": "rule-boundary",
+      "message": "color-rule is 3.1008:1 on color-sheet in light, at or above 3:1"
+    }
+  ]
+}

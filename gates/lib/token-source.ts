@@ -3,6 +3,9 @@
 // source validated by the generator's validateSource(); the pair list packages/tokens/contrast/pairs.json with its
 // schema and the line of each entry; the required pair set derived from the intended grounds; and the line of a
 // token's record (the location of a finding about a token, data-model.md § Token overrides).
+import { readFile } from "node:fs/promises";
+import { join } from "node:path";
+import { pathToFileURL } from "node:url";
 import type { TokenRecord } from "../../packages/tokens/src/generate.ts";
 import type { Location } from "./findings.ts";
 
@@ -39,9 +42,54 @@ export interface Tokens {
   readonly css: () => string;
 }
 
+function describe(error: unknown): string {
+  return error instanceof Error ? error.message : String(error);
+}
+
+/** The generator functions the gates call, in the order they are checked. */
+const generatorFunctions = ["resolve", "validateSource", "css"] as const;
+
+interface Generator {
+  readonly resolve: (source: readonly TokenRecord[], name: string, theme: Theme) => string;
+  readonly validateSource: (source: readonly TokenRecord[]) => void;
+  readonly css: (source: readonly TokenRecord[]) => unknown;
+}
+
+/** Imports a module of the repository at `root`; throws CannotRun naming it. */
+async function load(root: string, path: string): Promise<Record<string, unknown>> {
+  try {
+    return (await import(pathToFileURL(join(root, path)).href)) as Record<string, unknown>;
+  } catch (error) {
+    throw new CannotRun(path, describe(error));
+  }
+}
+
 /** Loads the generator and the token source under `root` and validates the source; throws CannotRun. */
-export function loadTokens(root: string): Promise<Tokens> {
-  return Promise.reject(new Error(`not implemented: loadTokens(${root})`));
+export async function loadTokens(root: string): Promise<Tokens> {
+  const generator = await load(root, tokenPaths.generator);
+  for (const name of generatorFunctions) {
+    if (typeof generator[name] !== "function") throw new CannotRun(tokenPaths.generator, `it exports no ${name} function`);
+  }
+  const { resolve, validateSource, css } = generator as unknown as Generator;
+  const sourceModule = await load(root, tokenPaths.source);
+  if (!Array.isArray(sourceModule.source)) throw new CannotRun(tokenPaths.source, "it exports no source list");
+  const source = sourceModule.source as readonly TokenRecord[];
+  try {
+    validateSource(source);
+  } catch (error) {
+    throw new CannotRun(tokenPaths.source, describe(error));
+  }
+  return {
+    source,
+    resolve: (name, theme) => resolve(source, name, theme),
+    css: () => {
+      try {
+        return String(css(source));
+      } catch (error) {
+        throw new CannotRun(tokenPaths.generator, describe(error));
+      }
+    },
+  };
 }
 
 /** One entry of the pair list (data-model.md § Contrast pair). */
@@ -62,14 +110,61 @@ export interface PairList {
   readonly lines: readonly number[];
 }
 
-/** The pair list of a pairs.json text; throws an Error naming the cause when it is not JSON, not the schema or empty. */
+const fields = new Set(["theme", "fg", "bg", "kind", "figure", "status", "reason", "source"]);
+const decimal = /^\d+(?:\.\d+)?$/;
+
+/** The problem with one parsed entry, or undefined when it is an entry of the schema. */
+function entryProblem(value: unknown): string | undefined {
+  if (typeof value !== "object" || value === null || Array.isArray(value)) return "is not an object";
+  const entry = value as Record<string, unknown>;
+  const name = (field: string): boolean => typeof entry[field] === "string" && entry[field] !== "";
+  if (entry.theme !== "light" && entry.theme !== "dark") return ": theme must be light or dark";
+  if (!name("fg")) return ": fg must be a token name";
+  if (!name("bg")) return ": bg must be a token name";
+  if (entry.kind !== "text" && entry.kind !== "non-text") return ": kind must be text or non-text";
+  if (typeof entry.figure !== "string" || !decimal.test(entry.figure)) return ": figure must be a decimal number written as a string";
+  if (entry.status !== "checked" && entry.status !== "excluded") return ": status must be checked or excluded";
+  if (entry.reason !== undefined && typeof entry.reason !== "string") return ": reason must be a string";
+  if (entry.source !== "#5" && entry.source !== "computed") return ": source must be #5 or computed";
+  const unknown = Object.keys(entry).find((field) => !fields.has(field));
+  return unknown === undefined ? undefined : `: unknown field ${unknown}`;
+}
+
+/**
+ * The pair list of a pairs.json text; throws an Error naming the cause when it is not JSON, not a list of entries of
+ * the schema, or not one entry per line (data-model.md § Contrast pair). An entry's line is the line it starts on.
+ */
 export function parsePairs(text: string): PairList {
-  throw new Error(`not implemented: parsePairs(${String(text.length)})`);
+  let value: unknown;
+  try {
+    value = JSON.parse(text);
+  } catch (error) {
+    throw new Error(`not JSON (${describe(error)})`, { cause: error });
+  }
+  if (!Array.isArray(value)) throw new Error("not a list of pairs");
+  const entries = value as unknown[];
+  entries.forEach((entry, index) => {
+    const problem = entryProblem(entry);
+    if (problem !== undefined) throw new Error(`entry ${String(index + 1)}${problem.startsWith(":") ? "" : " "}${problem}`);
+  });
+  const lines = text.split("\n").flatMap((line, index) => (line.trimStart().startsWith("{") ? [index + 1] : []));
+  if (lines.length !== entries.length) throw new Error("not one entry per line");
+  return { entries: entries as PairEntry[], lines };
 }
 
 /** The pair list under `root`; throws CannotRun naming the pair list. */
-export function readPairs(root: string): Promise<PairList> {
-  return Promise.reject(new Error(`not implemented: readPairs(${root})`));
+export async function readPairs(root: string): Promise<PairList> {
+  let text: string;
+  try {
+    text = await readFile(join(root, tokenPaths.pairs), "utf8");
+  } catch (error) {
+    throw new CannotRun(tokenPaths.pairs, `cannot read it (${describe(error)})`);
+  }
+  try {
+    return parsePairs(text);
+  } catch (error) {
+    throw new CannotRun(tokenPaths.pairs, describe(error));
+  }
 }
 
 /** One required pair (A.8): a foreground on one of its intended grounds in a theme. */
@@ -82,20 +177,50 @@ export interface RequiredPair {
 
 /** The required pairs of a source, in source order: each token with `contrast`, each ground, each theme. */
 export function requiredPairs(source: readonly TokenRecord[]): RequiredPair[] {
-  throw new Error(`not implemented: requiredPairs(${String(source.length)})`);
+  return source.flatMap((record) => {
+    const { contrast } = record;
+    if (contrast === undefined) return [];
+    return contrast.grounds.flatMap((bg) => themes.map((theme) => ({ theme, fg: record.name, bg, kind: contrast.kind })));
+  });
 }
 
-/** The lines (1-based) of a text that hold the record of the token `name` (its `name` field). */
+/**
+ * The lines (1-based) of a text that hold the record of the token `name`: its `name` field as source.ts writes it
+ * (`name: "<name>"`) or as overrides.ts holds it in JSON (`"name":"<name>"`).
+ */
 export function tokenLines(text: string, name: string): number[] {
-  throw new Error(`not implemented: tokenLines(${String(text.length)}, ${name})`);
+  const quoted = JSON.stringify(name);
+  const forms = [`name: ${quoted}`, `"name":${quoted}`];
+  return text.split("\n").flatMap((line, index) => (forms.some((form) => line.includes(form)) ? [index + 1] : []));
+}
+
+/** The entry a line of pairs.json holds, read as JSON without its trailing comma; undefined when it holds none. */
+function lineEntry(line: string): Record<string, unknown> | undefined {
+  try {
+    const value: unknown = JSON.parse(line.trim().replace(/,$/, ""));
+    return typeof value === "object" && value !== null && !Array.isArray(value) ? (value as Record<string, unknown>) : undefined;
+  } catch {
+    return undefined;
+  }
 }
 
 /** The lines (1-based) of a pairs.json text that hold the entry of `(theme, fg, bg)`. */
 export function pairLines(text: string, theme: string, fg: string, bg: string): number[] {
-  throw new Error(`not implemented: pairLines(${String(text.length)}, ${theme}, ${fg}, ${bg})`);
+  return text.split("\n").flatMap((line, index) => {
+    const entry = lineEntry(line);
+    return entry?.theme === theme && entry.fg === fg && entry.bg === bg ? [index + 1] : [];
+  });
 }
 
 /** The location of a finding about a token under `root`: its record in source.ts, or in overrides.ts if only added there. */
-export function tokenLocator(root: string): Promise<(name: string) => Location> {
-  return Promise.reject(new Error(`not implemented: tokenLocator(${root})`));
+export async function tokenLocator(root: string): Promise<(name: string) => Location> {
+  const text = (path: string): Promise<string> => readFile(join(root, path), "utf8").catch(() => "");
+  const sourceText = await text(tokenPaths.source);
+  const overridesText = await text(tokenPaths.overrides);
+  return (name) => {
+    const [inSource] = tokenLines(sourceText, name);
+    if (inSource !== undefined) return { path: tokenPaths.source, line: inSource };
+    const [inOverrides] = tokenLines(overridesText, name);
+    return inOverrides === undefined ? { path: tokenPaths.source } : { path: tokenPaths.overrides, line: inOverrides };
+  };
 }

@@ -1,0 +1,11 @@
+{
+  "expect": "fail",
+  "why": "A pair list without a required pair (color-link on color-info-bg in dark, A.8) is reported at the foreground token (US3 scenario 5).",
+  "findings": [
+    {
+      "location": "packages/tokens/src/source.ts#color-link",
+      "rule": "missing-required-pair",
+      "message": "dark color-link on color-info-bg"
+    }
+  ]
+}

@@ -1,0 +1,10 @@
+{
+  "expect": "fail",
+  "why": "A required pair (color-control-border on color-rail, A.8) listed as excluded is reported, not counted as missing (US3 scenario 5, SPEC-3-02).",
+  "findings": [
+    {
+      "location": "packages/tokens/contrast/pairs.json#light/color-control-border/color-rail",
+      "rule": "required-pair-excluded"
+    }
+  ]
+}

@@ -1,0 +1,10 @@
+{
+  "expect": "fail",
+  "why": "A generator whose reduced-motion block keeps a duration breaks FR-007 and FR-019 (f).",
+  "findings": [
+    {
+      "location": "packages/tokens/dist/tokens.css#--ocelle-motion-fast: 60ms",
+      "rule": "reduced-motion"
+    }
+  ]
+}

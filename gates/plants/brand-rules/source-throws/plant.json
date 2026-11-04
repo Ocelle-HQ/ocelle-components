@@ -1,0 +1,5 @@
+{
+  "expect": "error",
+  "why": "A token source that throws while loading cannot be checked.",
+  "cause": "brand-rules: cannot run: packages/tokens/src/source.ts: planted: the token source throws while loading"
+}

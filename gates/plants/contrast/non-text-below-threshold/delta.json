@@ -1,0 +1,21 @@
+{
+  "tokens": [
+    {"token":"color-control-border","light":"#8C8478"}
+  ],
+  "pairs": [
+    {"key":["light","color-control-border","color-canvas"],"set":{"figure":"3.19"}},
+    {"key":["light","color-control-border","color-sheet"],"set":{"figure":"3.54"}},
+    {"key":["light","color-control-border","color-pane"],"set":{"figure":"3.69"}},
+    {"key":["light","color-control-border","color-panel"],"set":{"figure":"3.19"}},
+    {"key":["light","color-control-border","color-inspector"],"set":{"figure":"3.19"}},
+    {"key":["light","color-control-border","color-rail"],"set":{"figure":"2.94"}},
+    {"key":["light","color-control-border","color-accent-low"],"set":{"figure":"2.86"}},
+    {"key":["light","color-control-border","color-inset"],"set":{"figure":"2.73"}},
+    {"key":["light","color-control-border","color-hover-bg"],"set":{"figure":"2.73"}},
+    {"key":["light","color-control-border","color-danger-bg"],"set":{"figure":"2.97"}},
+    {"key":["light","color-control-border","color-warning-bg"],"set":{"figure":"2.99"}},
+    {"key":["light","color-control-border","color-success-bg"],"set":{"figure":"3.12"}},
+    {"key":["light","color-control-border","color-info-bg"],"set":{"figure":"3.13"}},
+    {"key":["light","color-control-border","color-neutral-bg"],"set":{"figure":"2.84"}}
+  ]
+}

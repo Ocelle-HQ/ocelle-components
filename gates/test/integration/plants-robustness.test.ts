@@ -2,7 +2,6 @@ import { cpSync, readdirSync, readFileSync, symlinkSync, writeFileSync } from "n
 import { join } from "node:path";
 import { afterEach, describe, expect, it } from "vitest";
 import { applyOverrides, resolve } from "../../../packages/tokens/src/generate.ts";
-import type { TokenRecord } from "../../../packages/tokens/src/generate.ts";
 import { records } from "../../../packages/tokens/src/source.ts";
 import { contrastRatio } from "../../lib/wcag.ts";
 import { baseEnv, cleanUp, repo, runGate, tempDir } from "./workspace.ts";
@@ -65,7 +64,7 @@ function pairsText(entries: readonly Entry[]): string {
 
 /** The pair list with every figure of a pair that names `token` recomputed after the light value of `token` changed. */
 function refigured(entries: readonly Entry[], token: string, light: string): Entry[] {
-  const changed = applyOverrides(records as unknown as readonly TokenRecord[], [{ token, light }]);
+  const changed = applyOverrides(records, [{ token, light }]);
   return entries.map((entry) => {
     if (entry.theme !== "light" || (entry.fg !== token && entry.bg !== token)) return entry;
     const ratio = contrastRatio(resolve(changed, entry.fg, "light"), resolve(changed, entry.bg, "light"));
@@ -126,6 +125,13 @@ function variants(): Variant[] {
   ];
 }
 
+/** The variant of that name. */
+function named(name: string): Variant {
+  const found = variants().find((v) => v.name === name);
+  if (found === undefined) throw new Error(`no variant ${name}`);
+  return found;
+}
+
 function changedRoot(variant: Variant): string {
   const root = tempDir("plants-robust");
   for (const path of copied) cpSync(join(repo, path), join(root, path), { recursive: true });
@@ -160,7 +166,7 @@ describe("contrast and brand-rules plants under neighbouring changes", () => {
   ])(
     "%s: the change is consistent, and every plant keeps its outcome",
     async (name) => {
-      const variant = variants().find((v) => v.name === name) as Variant;
+      const variant = named(name);
       const root = changedRoot(variant);
       const gate = await runGate("gates/bin/contrast.ts", ["--root", root], { cwd: root, env: baseEnv() });
       expect({ code: gate.code, stdout: gate.stdout }).toEqual({ code: 0, stdout: [variant.summary] });

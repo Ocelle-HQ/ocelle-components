@@ -1,0 +1,11 @@
+{
+  "expect": "fail",
+  "why": "A radius of the closed set with another value breaks FR-019 (c).",
+  "findings": [
+    {
+      "location": "packages/tokens/src/source.ts#radius-row",
+      "rule": "radius-set",
+      "message": "radius-row is 8px, expected 6px"
+    }
+  ]
+}

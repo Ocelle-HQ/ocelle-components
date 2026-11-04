@@ -1,0 +1,5 @@
+{
+  "expect": "error",
+  "why": "An empty pair list checks nothing and must not pass (FR-021, US3 scenario 5).",
+  "cause": "contrast: cannot run: packages/tokens/contrast/pairs.json: the list is empty"
+}

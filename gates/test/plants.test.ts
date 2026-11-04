@@ -203,7 +203,7 @@ describe("plants (the job)", () => {
         "gates/plants/style-lint: plants: missing-plant: gate style-lint has no pass plant",
         "gates/plants/style-lint: plants: missing-plant: gate style-lint has no error plant",
         "gates/plants/csp: plants: missing-plant: gate csp has no error plant",
-        "plants: 4 problems in 43 plants",
+        "plants: 4 problems in 37 plants",
       ],
       err: [],
     });

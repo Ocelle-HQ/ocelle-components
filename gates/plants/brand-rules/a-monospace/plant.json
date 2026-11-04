@@ -1,0 +1,11 @@
+{
+  "expect": "fail",
+  "why": "A monospace family in font-sans breaks FR-019 (a).",
+  "findings": [
+    {
+      "location": "packages/tokens/src/source.ts#font-sans",
+      "rule": "monospace-font",
+      "message": "font-sans names the monospace family Menlo"
+    }
+  ]
+}

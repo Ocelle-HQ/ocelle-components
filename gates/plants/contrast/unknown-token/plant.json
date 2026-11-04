@@ -1,0 +1,11 @@
+{
+  "expect": "fail",
+  "why": "A pair naming a token that does not exist (a misspelt ground) is reported and gives no other finding (US3 scenario 5).",
+  "findings": [
+    {
+      "location": "packages/tokens/contrast/pairs.json#light/color-ink/color-canvs",
+      "rule": "unknown-token",
+      "message": "unknown token color-canvs"
+    }
+  ]
+}

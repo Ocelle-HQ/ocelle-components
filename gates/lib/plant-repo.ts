@@ -1,13 +1,17 @@
 // Temporary repositories for plants (research.md R-10, contracts/plants.md): `repo-tree` lays a plant's `tree/` over
 // the repository's configuration set (with the token source since 002, contracts/gates.md § Configuration set),
 // `commit-repo` builds a git history from a plant's commits.txt on an empty signed-off base commit, and
-// `mutation-repo` commits the configuration set with the plant's `base/`, then its `head/`. node_modules is linked from the repository in each. The decisions (configurationSet, packagePaths,
-// carriesConfiguration, parseCommits, recordsOf, parentRecords, identityEnv, baseCommit, ignoreMissing) are pure and tested in
-// process (gates/test/plant-repo.test.ts); the builders only copy files and run git with their results (the process
-// boundary, tested by gates/test/integration/plant-repo.test.ts).
+// `mutation-repo` commits the configuration set with the plant's `base/`, then its `head/`. node_modules is linked from
+// the repository in each. A repo-tree plant may state its change of the token source, the pair list or the generator
+// in a delta.json, by key (002 contracts/gates.md § Configuration set, *Plant deltas*). The decisions
+// (configurationSet, packagePaths, carriesConfiguration, parseCommits, recordsOf, parentRecords, identityEnv,
+// baseCommit, ignoreMissing, parseDelta, treeProblems, checkWrapper, applyPairChanges, overridesText) are pure and
+// tested in process (gates/test/plant-repo.test.ts); the builders only copy and write files and run git with their
+// results (the process boundary, tested by gates/test/integration/plant-repo.test.ts).
 import { execFile } from "node:child_process";
-import { cp, mkdir, readdir, readFile, rm, symlink, writeFile } from "node:fs/promises";
+import { cp, mkdir, readdir, readFile, rename, rm, symlink, writeFile } from "node:fs/promises";
 import { basename, join } from "node:path";
+import { pathToFileURL } from "node:url";
 import { promisify } from "node:util";
 import type { TokenOverride } from "../../packages/tokens/src/generate.ts";
 import { directoryNames, filePaths } from "./entries.ts";
@@ -161,29 +165,125 @@ export interface Delta {
   readonly generator?: "wrapped";
 }
 
+function isObject(value: unknown): value is Record<string, unknown> {
+  return typeof value === "object" && value !== null && !Array.isArray(value);
+}
+
+/** Whether a value has the shape of one token override (data-model.md § Token overrides); its names are checked on load. */
+function isTokenOverride(value: unknown): boolean {
+  if (!isObject(value)) return false;
+  if ("add" in value) return isObject(value.add) && typeof value.add.name === "string";
+  if ("remove" in value) return typeof value.remove === "string";
+  return typeof value.token === "string";
+}
+
+/** Whether a value is one pair change: `{ key, set }`, `{ key, remove: true }` or `{ add }`. */
+function isPairChange(value: unknown): boolean {
+  if (!isObject(value)) return false;
+  if ("add" in value) return isObject(value.add);
+  const { key } = value;
+  if (!Array.isArray(key) || key.length !== 3 || !key.every((part) => typeof part === "string")) return false;
+  return "set" in value ? isObject(value.set) && !("remove" in value) : value.remove === true;
+}
+
+const deltaKeys = new Set(["tokens", "pairs", "pairsText", "generator"]);
+
 /** The delta of a delta.json text; throws naming the problem. */
 export function parseDelta(text: string): Delta {
-  throw new Error(`not implemented: parseDelta(${String(text.length)})`);
+  let value: unknown;
+  try {
+    value = JSON.parse(text);
+  } catch (error) {
+    throw new Error(`delta.json is not valid JSON (${error instanceof Error ? error.message : String(error)})`, { cause: error });
+  }
+  if (!isObject(value)) throw new Error("delta.json is not an object");
+  const unknown = Object.keys(value).find((key) => !deltaKeys.has(key));
+  if (unknown !== undefined) throw new Error(`delta.json: unknown key ${unknown}`);
+  const { tokens, pairs, pairsText, generator } = value;
+  if (tokens !== undefined) {
+    if (!Array.isArray(tokens)) throw new Error("delta.json: tokens must be a list of token overrides");
+    const bad = tokens.findIndex((item) => !isTokenOverride(item));
+    if (bad !== -1) throw new Error(`delta.json: tokens[${String(bad)}] is not a token override`);
+  }
+  if (pairs !== undefined) {
+    if (!Array.isArray(pairs)) throw new Error("delta.json: pairs must be a list of pair changes");
+    const bad = pairs.findIndex((item) => !isPairChange(item));
+    if (bad !== -1) throw new Error(`delta.json: pairs[${String(bad)}] is not a pair change`);
+  }
+  if (pairsText !== undefined && typeof pairsText !== "string") throw new Error("delta.json: pairsText must be a string");
+  if (pairs !== undefined && pairsText !== undefined) throw new Error("delta.json: pairs and pairsText exclude each other");
+  if (generator !== undefined && generator !== "wrapped") throw new Error('delta.json: generator must be "wrapped"');
+  return value;
 }
+
+const sourceFile = "packages/tokens/src/source.ts";
+const overridesFile = "packages/tokens/src/overrides.ts";
+const generatorFile = "packages/tokens/src/generate.ts";
+const pairsFile = "packages/tokens/contrast/pairs.json";
 
 /** The problems of a plant's tree/ (paths relative to it) against its delta: files a plant changes only by delta. */
 export function treeProblems(treePaths: readonly string[], delta: Delta | undefined): string[] {
-  throw new Error(`not implemented: treeProblems(${String(treePaths.length)}, ${delta === undefined ? "no delta" : "a delta"})`);
+  const holds = new Set(treePaths);
+  const problems: string[] = [];
+  if (holds.has(sourceFile)) problems.push(`tree/ holds ${sourceFile}; a plant changes the token source by delta.json tokens`);
+  if (holds.has(pairsFile)) problems.push(`tree/ holds ${pairsFile}; a plant changes the pair list by delta.json pairs`);
+  const wrapped = delta?.generator === "wrapped";
+  if (holds.has(generatorFile) && !wrapped) problems.push(`tree/ holds ${generatorFile} without generator "wrapped" in delta.json`);
+  if (!holds.has(generatorFile) && wrapped) problems.push(`delta.json sets generator "wrapped" but tree/ holds no ${generatorFile}`);
+  if (holds.has(overridesFile) && delta?.tokens !== undefined) {
+    problems.push(`tree/ holds ${overridesFile} and delta.json has tokens; one of them sets the overrides`);
+  }
+  return problems;
 }
 
 /** Throws unless a plant's generate.ts re-exports the real generator, `./generate.real.ts`. */
 export function checkWrapper(text: string): void {
-  throw new Error(`not implemented: checkWrapper(${String(text.length)})`);
+  if (/^export \* from (["'])\.\/generate\.real\.ts\1;?$/m.test(text)) return;
+  throw new Error(`${generatorFile} of a wrapped generator must re-export the real one: export * from "./generate.real.ts"`);
+}
+
+/** A pair list's text, one entry per line (data-model.md § Contrast pair). */
+function formatPairs(entries: readonly unknown[]): string {
+  return entries.length === 0 ? "[]\n" : `[\n${entries.map((entry) => `  ${JSON.stringify(entry)}`).join(",\n")}\n]\n`;
 }
 
 /** The pairs.json text with the changes applied by key, one entry per line; throws naming a key that matches no or two entries. */
 export function applyPairChanges(text: string, changes: readonly PairChange[]): string {
-  throw new Error(`not implemented: applyPairChanges(${String(text.length)}, ${String(changes.length)})`);
+  let value: unknown;
+  try {
+    value = JSON.parse(text);
+  } catch (error) {
+    throw new Error(`pairs.json is not valid JSON (${error instanceof Error ? error.message : String(error)})`, { cause: error });
+  }
+  if (!Array.isArray(value)) throw new Error("pairs.json is not a list");
+  let entries = value as Record<string, unknown>[];
+  for (const change of changes) {
+    if ("add" in change) {
+      entries = [...entries, change.add];
+      continue;
+    }
+    const [theme, fg, bg] = change.key;
+    const matches = (entry: Record<string, unknown>): boolean => entry.theme === theme && entry.fg === fg && entry.bg === bg;
+    const count = entries.filter(matches).length;
+    const key = change.key.join("/");
+    if (count === 0) throw new Error(`delta.json pairs: key ${key} matches no entry`);
+    if (count > 1) throw new Error(`delta.json pairs: key ${key} matches ${String(count)} entries`);
+    entries = "set" in change ? entries.map((entry) => (matches(entry) ? { ...entry, ...change.set } : entry)) : entries.filter((entry) => !matches(entry));
+  }
+  return formatPairs(entries);
 }
 
 /** The text of an overrides.ts that exports the given token overrides, one per line. */
 export function overridesText(tokens: readonly TokenOverride[]): string {
-  throw new Error(`not implemented: overridesText(${String(tokens.length)})`);
+  return [
+    "// Token overrides written by the plant runner from the plant's delta.json (002 contracts/gates.md § Plant deltas).",
+    'import type { TokenOverride } from "./generate.ts";',
+    "",
+    "export const overrides: readonly TokenOverride[] = [",
+    ...tokens.map((token) => `  ${JSON.stringify(token)},`),
+    "];",
+    "",
+  ].join("\n");
 }
 
 // Stryker disable next-line all: process boundary, covered by gates-integration: gates/test/integration/plant-repo.test.ts "buildCommitRepo makes an empty base commit signed off by Plant Base, then one commit per record, with real merges"
@@ -216,13 +316,61 @@ async function layOver(plant: string, part: string, into: string): Promise<void>
   await cp(join(plant, part), into, { recursive: true }).catch(ignoreMissing);
 }
 
-/** Lays the configuration set of `repo` and the plant's `tree/` into `into`, and links `repo`'s node_modules. */
-// Stryker disable next-line all: process boundary, covered by gates-integration: gates/test/integration/plant-repo.test.ts "buildRepoTree copies the configuration set unchanged, lays tree/ over it at repository paths, and links node_modules"
+/** The plant's delta.json, if it has one, checked against its tree/ (the plant job's check of the plant's files). */
+// Stryker disable next-line all: process boundary, covered by gates-integration: gates/test/integration/plant-repo.test.ts "copies the configuration set unchanged, lays tree/ over it at repository paths, and links node_modules"
+async function readDelta(plant: string): Promise<Delta | undefined> {
+  // Stryker disable next-line all: process boundary, covered by gates-integration: gates/test/integration/plant-repo.test.ts "copies the configuration set unchanged, lays tree/ over it at repository paths, and links node_modules"
+  const text = await readFile(join(plant, "delta.json"), "utf8").catch(ignoreMissing);
+  // Stryker disable next-line all: process boundary, covered by gates-integration: gates/test/integration/plant-repo.test.ts "fails to build $plant, naming the key or file"
+  const delta = text === undefined ? undefined : parseDelta(text);
+  // Stryker disable next-line all: process boundary, covered by gates-integration: gates/test/integration/plant-repo.test.ts "copies the configuration set unchanged, lays tree/ over it at repository paths, and links node_modules"
+  const tree = join(plant, "tree");
+  // Stryker disable next-line all: process boundary, covered by gates-integration: gates/test/integration/plant-repo.test.ts "copies the configuration set unchanged, lays tree/ over it at repository paths, and links node_modules"
+  const problems = treeProblems(filePaths(await readdir(tree, { recursive: true, withFileTypes: true }).catch(() => []), tree), delta);
+  // Stryker disable next-line all: process boundary, covered by gates-integration: gates/test/integration/plant-repo.test.ts "fails to build $plant, naming the key or file"
+  if (problems.length > 0) throw new Error(problems.join("; "));
+  // Stryker disable next-line all: process boundary, covered by gates-integration: gates/test/integration/plant-repo.test.ts "copies the configuration set unchanged, lays tree/ over it at repository paths, and links node_modules"
+  return delta;
+}
+
+/** Applies a delta's token overrides, pair changes or pair list text over the tree in `into`, and checks a wrapper. */
+// Stryker disable next-line all: process boundary, covered by gates-integration: gates/test/integration/plant-repo.test.ts "writes the delta's token overrides as overrides.ts and applies its pair changes by key, one entry per line"
+async function applyDelta(delta: Delta, into: string): Promise<void> {
+  // Stryker disable next-line all: process boundary, covered by gates-integration: gates/test/integration/plant-repo.test.ts "moves the real generator to generate.real.ts and places the plant's wrapper for generator wrapped (and not without a delta)"
+  if (delta.generator === "wrapped") checkWrapper(await readFile(join(into, generatorFile), "utf8"));
+  // Stryker disable next-line all: process boundary, covered by gates-integration: gates/test/integration/plant-repo.test.ts "writes the delta's token overrides as overrides.ts and applies its pair changes by key, one entry per line"
+  if (delta.tokens !== undefined) {
+    // Stryker disable next-line all: process boundary, covered by gates-integration: gates/test/integration/plant-repo.test.ts "writes the delta's token overrides as overrides.ts and applies its pair changes by key, one entry per line"
+    await writeFile(join(into, overridesFile), overridesText(delta.tokens));
+    // Stryker disable next-line all: process boundary, covered by gates-integration: gates/test/integration/plant-repo.test.ts "fails to build $plant, naming the key or file"
+    await import(pathToFileURL(join(into, sourceFile)).href).catch((error: unknown) => {
+      // Stryker disable next-line all: process boundary, covered by gates-integration: gates/test/integration/plant-repo.test.ts "fails to build $plant, naming the key or file"
+      throw new Error(`delta.json tokens: ${error instanceof Error ? error.message : String(error)}`, { cause: error });
+    });
+  }
+  // Stryker disable next-line all: process boundary, covered by gates-integration: gates/test/integration/plant-repo.test.ts "writes the delta's token overrides as overrides.ts and applies its pair changes by key, one entry per line"
+  if (delta.pairs !== undefined) await writeFile(join(into, pairsFile), applyPairChanges(await readFile(join(into, pairsFile), "utf8"), delta.pairs));
+  // Stryker disable next-line all: process boundary, covered by gates-integration: gates/test/integration/plant-repo.test.ts "writes pairsText as the pair list's whole text"
+  if (delta.pairsText !== undefined) await writeFile(join(into, pairsFile), delta.pairsText);
+}
+
+/**
+ * Lays the configuration set of `repo` and the plant's `tree/` into `into`, links `repo`'s node_modules, and applies
+ * the plant's delta.json (002 contracts/gates.md § Configuration set, *Plant deltas*): for `generator: "wrapped"` the
+ * real generator moves to generate.real.ts before tree/ places the wrapper.
+ */
+// Stryker disable next-line all: process boundary, covered by gates-integration: gates/test/integration/plant-repo.test.ts "copies the configuration set unchanged, lays tree/ over it at repository paths, and links node_modules"
 export async function buildRepoTree(repo: string, plant: string, into: string): Promise<void> {
-  // Stryker disable next-line all: process boundary, covered by gates-integration: gates/test/integration/plant-repo.test.ts "buildRepoTree copies the configuration set unchanged, lays tree/ over it at repository paths, and links node_modules"
+  // Stryker disable next-line all: process boundary, covered by gates-integration: gates/test/integration/plant-repo.test.ts "copies the configuration set unchanged, lays tree/ over it at repository paths, and links node_modules"
   await copyConfiguration(repo, into);
-  // Stryker disable next-line all: process boundary, covered by gates-integration: gates/test/integration/plant-repo.test.ts "buildRepoTree copies the configuration set unchanged, lays tree/ over it at repository paths, and links node_modules"
+  // Stryker disable next-line all: process boundary, covered by gates-integration: gates/test/integration/plant-repo.test.ts "copies the configuration set unchanged, lays tree/ over it at repository paths, and links node_modules"
+  const delta = await readDelta(plant);
+  // Stryker disable next-line all: process boundary, covered by gates-integration: gates/test/integration/plant-repo.test.ts "moves the real generator to generate.real.ts and places the plant's wrapper for generator wrapped (and not without a delta)"
+  if (delta?.generator === "wrapped") await rename(join(into, generatorFile), join(into, "packages/tokens/src/generate.real.ts"));
+  // Stryker disable next-line all: process boundary, covered by gates-integration: gates/test/integration/plant-repo.test.ts "copies the configuration set unchanged, lays tree/ over it at repository paths, and links node_modules"
   await layOver(plant, "tree", into);
+  // Stryker disable next-line all: process boundary, covered by gates-integration: gates/test/integration/plant-repo.test.ts "writes the delta's token overrides as overrides.ts and applies its pair changes by key, one entry per line"
+  if (delta !== undefined) await applyDelta(delta, into);
 }
 
 /**

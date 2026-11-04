@@ -9,7 +9,7 @@ import type { Data, GateRun, TreeSpec } from "./token-tree.ts";
 // the success line and --print. Ratios of the fixture colours (WCAG 2.x, computed for this test by hand):
 // #000000 on #FFFFFF 21; on #F0F0F0 18.4273; #FFFFFF on #000000 21, on #202020 16.2933; #767676 on #FFFFFF 4.5422,
 // on #F0F0F0 3.9858; #8A8A8A on #000000 6.0830, on #202020 4.7196; #AAAAAA on #FFFFFF 2.3231; #555555 on #000000
-// 2.8168. Colours on #FFFFFF at a boundary: #BB7BDF 2.9950004, #E969A1 3.0000002, #A05941 5.2500016, #A91AE8
+// 2.8168; #8A8A8A on #FFFFFF 3.4522. Colours on #FFFFFF at a boundary: #BB7BDF 2.9950004, #E969A1 3.0000002, #A05941 5.2500016, #A91AE8
 // 5.2499999, #7C51CE 5.3499977, #4D57EF 5.3500007, #6995DF 3.0150007, #A79522 3.0149996, #A87BFF 3.0249996,
 // #74A14B 3.0250002, #9A6C5A 4.4999999, #7C7290 4.5000006 (both 3.9487 on #F0F0F0).
 const pairsPath = "packages/tokens/contrast/pairs.json";
@@ -82,7 +82,7 @@ describe("contrast: success", () => {
   });
 
   it("counts a pair outside the required set among the pairs checked", async () => {
-    const extra = entry("dark", "color-ink", "color-ink", "text", "1.0");
+    const extra = entry("dark", "color-border", "color-ink", "non-text", "3.45");
     expect((await contrast({ pairs: [...pairs, extra] })).out).toEqual(["contrast: 6 pairs checked in light, 6 in dark (5 required per theme)"]);
   });
 });
@@ -120,8 +120,8 @@ describe("contrast: figure-mismatch", () => {
   });
 
   it("holds an excluded pair to its figure", async () => {
-    expect((await contrast({ pairs: setPair(pairs, "light", "color-mark", "color-sheet", { figure: "4.0" }) })).out).toEqual([
-      `${at(7)} figure-mismatch: light color-mark on color-sheet: recorded figure 4.0, computed 3.9858`,
+    expect((await contrast({ pairs: setPair(pairs, "light", "color-mark", "color-sheet", { figure: "3.9" }) })).out).toEqual([
+      `${at(7)} figure-mismatch: light color-mark on color-sheet: recorded figure 3.9, computed 3.9858`,
       "contrast: 1 finding",
     ]);
   });
@@ -296,13 +296,13 @@ describe("contrast: missing-required-pair", () => {
 
   it("prints the entry findings in the order of the list's lines, then the missing pairs in the order of the source", async () => {
     let list = withoutPair(withoutPair(pairs, "light", "color-disabled", "color-canvas"), "light", "color-ink", "color-sheet");
-    list = setPair(list, "dark", "color-border", "color-canvas", { figure: "6.1" });
+    list = setPair(list, "dark", "color-border", "color-canvas", { figure: "6.2" });
     list = setPair(list, "light", "color-mark", "color-sheet", { reason: "" });
     list = [...list, entry("light", "color-nope", "color-canvas", "text", "1")];
     const ran = await contrast({ pairs: list });
     expect(ran.out).toEqual([
       `${at(5)} excluded-without-reason: light color-mark on color-sheet: an excluded pair needs a reason`,
-      `${at(8)} figure-mismatch: dark color-border on color-canvas: recorded figure 6.1, computed 6.0830`,
+      `${at(8)} figure-mismatch: dark color-border on color-canvas: recorded figure 6.2, computed 6.0830`,
       `${at(11)} unknown-token: light color-nope on color-canvas: unknown token color-nope`,
       `${sourcePath}:${String(line.ink)}: contrast: missing-required-pair: light color-ink on color-sheet: the required text pair is not in the pair list`,
       `${sourcePath}:${String(line.disabled)}: contrast: missing-required-pair: light color-disabled on color-canvas: the required text pair is not in the pair list`,
@@ -368,7 +368,7 @@ describe("contrast: could not run (exit 2)", () => {
   });
 
   it("names the token source when it fails validation", async () => {
-    const ran = await contrast({ records: [...records, records[0] as Data] });
+    const ran = await contrast({ records: [...records, ...records.slice(0, 1)] });
     expect(ran).toEqual(cannot(`${sourcePath}: invalid token source: token color-canvas: duplicate name`));
   });
 

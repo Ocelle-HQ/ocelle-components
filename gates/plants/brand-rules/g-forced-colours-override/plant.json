@@ -1,0 +1,10 @@
+{
+  "expect": "fail",
+  "why": "A generator that sets a colour token to a fixed value in a forced-colours block defeats forced colours, FR-018 and FR-019 (g).",
+  "findings": [
+    {
+      "location": "packages/tokens/dist/tokens.css#--ocelle-color-canvas: #FFFFFF",
+      "rule": "forced-colours"
+    }
+  ]
+}

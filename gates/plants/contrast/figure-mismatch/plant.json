@@ -1,0 +1,11 @@
+{
+  "expect": "fail",
+  "why": "A recorded figure that no longer matches the computed ratio is reported with both figures, though the pair is far above its threshold (US3 scenario 4).",
+  "findings": [
+    {
+      "location": "packages/tokens/contrast/pairs.json#light/color-ink/color-sheet",
+      "rule": "figure-mismatch",
+      "message": "recorded figure 15.0, computed 17.7742"
+    }
+  ]
+}

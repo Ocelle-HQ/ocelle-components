@@ -1,0 +1,5 @@
+{
+  "pairs": [
+    {"key":["light","color-control-border","color-rail"],"set":{"status":"excluded","reason":"planted: a control on the rail is never bordered"}}
+  ]
+}
