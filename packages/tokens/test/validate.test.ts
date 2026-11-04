@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { validateSource } from "../src/generate.ts";
+import { applyOverrides, validateSource } from "../src/generate.ts";
 import type { TokenRecord } from "../src/generate.ts";
 import { source } from "../src/source.ts";
 import { fixture, withAdded, withRecord } from "./fixture.ts";
@@ -25,6 +25,18 @@ describe("validateSource() accepts", () => {
   it("the real source", () => {
     expect(() => {
       validateSource(source);
+    }).not.toThrow();
+  });
+
+  it("exempt on color-disabled-ink", () => {
+    const disabled: TokenRecord = {
+      name: "color-disabled-ink",
+      group: "colour",
+      value: { light: "#AAAAAA", dark: "#555555" },
+      contrast: { kind: "text", grounds: ["color-ground"], exempt: true },
+    };
+    expect(() => {
+      validateSource(withAdded(disabled));
     }).not.toThrow();
   });
 });
@@ -231,6 +243,11 @@ const cases: readonly { readonly rule: string; readonly records: readonly TokenR
     problems: ["token color-ink: group colour is theme-dependent but the value is not per theme"],
   },
   {
+    rule: "for exempt on a colour token other than color-disabled-ink",
+    records: withRecord("color-ink", ink({ light: "#111111", dark: "#EEEEEE" }, { contrast: { kind: "text", grounds: ["color-ground"], exempt: true } })),
+    problems: ["token color-ink: exempt is allowed only on color-disabled-ink"],
+  },
+  {
     rule: "for several rules at once, in source order",
     records: withAdded(ink({ light: "#111111", dark: "#EEEEEE" }), { name: "radius-3", group: "shape", value: "8px" }),
     problems: ["token color-ink: duplicate name", "token radius-3: excluded token (spec Appendix A.6)"],
@@ -248,5 +265,25 @@ describe("validateSource() names the token and the rule", () => {
     expect(() => {
       validateSource(withAdded({ name, group: "type", value: "1rem" }));
     }).toThrow(new Error(`invalid token source: token ${name}: excluded token (spec Appendix A.6)`));
+  });
+});
+
+describe("validateSource() allows exempt only on color-disabled-ink", () => {
+  it("over the real source, for exempt on color-ink-muted by an override", () => {
+    const muted = source.find((record) => record.name === "color-ink-muted");
+    expect(muted?.contrast?.kind).toBe("text");
+    const grounds = muted?.contrast?.grounds ?? [];
+    expect(grounds).not.toHaveLength(0);
+    const exempted = applyOverrides(source, [{ token: "color-ink-muted", contrast: { kind: "text", grounds, exempt: true } }]);
+    expect(() => {
+      validateSource(exempted);
+    }).toThrow(new Error("invalid token source: token color-ink-muted: exempt is allowed only on color-disabled-ink"));
+  });
+
+  it("keeps the real source's exempt on color-disabled-ink", () => {
+    expect(source.find((record) => record.name === "color-disabled-ink")?.contrast?.exempt).toBe(true);
+    expect(() => {
+      validateSource(source);
+    }).not.toThrow();
   });
 });

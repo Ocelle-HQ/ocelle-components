@@ -29,7 +29,7 @@ const records: readonly Data[] = [
     ref: { light: ["color-mark"], dark: ["color-mark"] },
     contrast: { kind: "non-text", grounds: ["color-sheet"] },
   },
-  { name: "color-disabled", group: "colour", value: { light: "#AAAAAA", dark: "#555555" }, contrast: { kind: "text", grounds: ["color-canvas"], exempt: true } },
+  { name: "color-disabled-ink", group: "colour", value: { light: "#AAAAAA", dark: "#555555" }, contrast: { kind: "text", grounds: ["color-canvas"], exempt: true } },
   { name: "color-overlay", group: "colour", value: { light: "rgb(0 0 0 / 0.5)", dark: "rgb(0 0 0 / 0.65)" } },
   { name: "space-1", group: "space", value: "0.25rem" },
 ];
@@ -45,13 +45,13 @@ const pairs: readonly Data[] = [
   entry("light", "color-ink", "color-sheet", "text", "18.43"),
   entry("light", "color-border", "color-canvas", "non-text", "4.54"),
   entry("light", "color-focus", "color-sheet", "non-text", "3.99"),
-  entry("light", "color-disabled", "color-canvas", "text", "2.32"),
+  entry("light", "color-disabled-ink", "color-canvas", "text", "2.32"),
   entry("light", "color-mark", "color-sheet", "text", "3.99", { status: "excluded", reason: "fixture: no text on this ground" }),
   entry("dark", "color-ink", "color-canvas", "text", "21.0"),
   entry("dark", "color-ink", "color-sheet", "text", "16.29"),
   entry("dark", "color-border", "color-canvas", "non-text", "6.08"),
   entry("dark", "color-focus", "color-sheet", "non-text", "4.72"),
-  entry("dark", "color-disabled", "color-canvas", "text", "2.82"),
+  entry("dark", "color-disabled-ink", "color-canvas", "text", "2.82"),
 ];
 
 /** The pair list with the fields of the entry `(theme, fg, bg)` replaced. */
@@ -121,8 +121,8 @@ describe("contrast: figure-mismatch", () => {
   });
 
   it("holds the exempt disabled ink to its figure", async () => {
-    expect((await contrast({ pairs: setPair(pairs, "dark", "color-disabled", "color-canvas", { figure: "2.9" }) })).out).toEqual([
-      `${at(12)} figure-mismatch: dark color-disabled on color-canvas: recorded figure 2.9, computed 2.8168`,
+    expect((await contrast({ pairs: setPair(pairs, "dark", "color-disabled-ink", "color-canvas", { figure: "2.9" }) })).out).toEqual([
+      `${at(12)} figure-mismatch: dark color-disabled-ink on color-canvas: recorded figure 2.9, computed 2.8168`,
       "contrast: 1 finding",
     ]);
   });
@@ -183,10 +183,10 @@ describe("contrast: below-threshold", () => {
 
   it("exempts the disabled ink from the threshold, and not a token without exempt", async () => {
     expect((await contrast({})).code).toBe(0);
-    const notExempt = await contrast({ overrides: [{ token: "color-disabled", contrast: { kind: "text", grounds: ["color-canvas"] } }] });
+    const notExempt = await contrast({ overrides: [{ token: "color-disabled-ink", contrast: { kind: "text", grounds: ["color-canvas"] } }] });
     expect(notExempt.out).toEqual([
-      `${at(6)} below-threshold: light color-disabled on color-canvas: 2.3231:1 is below the text threshold of 4.5:1`,
-      `${at(12)} below-threshold: dark color-disabled on color-canvas: 2.8168:1 is below the text threshold of 4.5:1`,
+      `${at(6)} below-threshold: light color-disabled-ink on color-canvas: 2.3231:1 is below the text threshold of 4.5:1`,
+      `${at(12)} below-threshold: dark color-disabled-ink on color-canvas: 2.8168:1 is below the text threshold of 4.5:1`,
       "contrast: 2 findings",
     ]);
   });
@@ -303,7 +303,7 @@ describe("contrast: missing-required-pair", () => {
   });
 
   it("prints the entry findings in the order of the list's lines, then the missing pairs in the order of the source", async () => {
-    let list = withoutPair(withoutPair(pairs, "light", "color-disabled", "color-canvas"), "light", "color-ink", "color-sheet");
+    let list = withoutPair(withoutPair(pairs, "light", "color-disabled-ink", "color-canvas"), "light", "color-ink", "color-sheet");
     list = setPair(list, "dark", "color-border", "color-canvas", { figure: "6.2" });
     list = setPair(list, "light", "color-mark", "color-sheet", { reason: "" });
     list = [...list, entry("light", "color-nope", "color-canvas", "text", "1")];
@@ -313,7 +313,7 @@ describe("contrast: missing-required-pair", () => {
       `${at(8)} figure-mismatch: dark color-border on color-canvas: recorded figure 6.2, computed 6.0830`,
       `${at(11)} unknown-token: light color-nope on color-canvas: unknown token color-nope`,
       `${sourcePath}:${String(line.ink)}: contrast: missing-required-pair: light color-ink on color-sheet: the required text pair is not in the pair list`,
-      `${sourcePath}:${String(line.disabled)}: contrast: missing-required-pair: light color-disabled on color-canvas: the required text pair is not in the pair list`,
+      `${sourcePath}:${String(line.disabled)}: contrast: missing-required-pair: light color-disabled-ink on color-canvas: the required text pair is not in the pair list`,
       "contrast: 5 findings",
     ]);
   });
@@ -411,8 +411,8 @@ describe("contrast: --print", () => {
         "dark color-border on color-canvas (non-text): 6.0830",
         "light color-focus on color-sheet (non-text): 3.9858",
         "dark color-focus on color-sheet (non-text): 4.7196",
-        "light color-disabled on color-canvas (text): 2.3231",
-        "dark color-disabled on color-canvas (text): 2.8168",
+        "light color-disabled-ink on color-canvas (text): 2.3231",
+        "dark color-disabled-ink on color-canvas (text): 2.8168",
       ],
       err: [],
     });
