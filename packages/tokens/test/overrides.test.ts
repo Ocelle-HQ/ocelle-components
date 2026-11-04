@@ -45,6 +45,14 @@ describe("applyOverrides()", () => {
     ]);
   });
 
+  it("keeps the ref and the contrast of a record when an override sets only its value", () => {
+    const changed = applyOverrides(fixture, [{ token: "gutter", value: "calc(2 * var(--ocelle-space-4))" }, { token: "color-focus", light: "var(--ocelle-color-ink)" }]);
+    expect([byName(changed, "gutter"), byName(changed, "color-focus")]).toEqual([
+      { name: "gutter", group: "space", value: "calc(2 * var(--ocelle-space-4))", ref: ["space-4"] },
+      byName(fixture, "color-focus"),
+    ]);
+  });
+
   it("appends an added record and drops a removed one", () => {
     const added: TokenRecord = { name: "space-5", group: "space", value: "1.25rem" };
     const changed = applyOverrides(fixture, [{ add: added }, { remove: "color-same" }]);

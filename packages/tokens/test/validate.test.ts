@@ -76,6 +76,26 @@ const cases: readonly { readonly rule: string; readonly records: readonly TokenR
     problems: ["token elevation-raised: light ref [color-ink] is not the set of references in the light value []", "token elevation-raised: dark ref [] is not the set of references in the dark value [color-ink]"],
   },
   {
+    rule: "for a ref that names a reference twice",
+    records: withRecord("gutter", { name: "gutter", group: "space", value: "var(--ocelle-space-4)", ref: ["space-4", "space-4"] }),
+    problems: ["token gutter: ref [space-4, space-4] is not the set of references in the value [space-4]"],
+  },
+  {
+    rule: "for a ref that lacks one of several references of the value, naming them all",
+    records: withAdded({ name: "bar", group: "shell", value: "calc(var(--ocelle-gutter) + var(--ocelle-space-4))", ref: ["gutter"] }),
+    problems: ["token bar: ref [gutter] is not the set of references in the value [gutter, space-4]"],
+  },
+  {
+    rule: "for a per-theme ref naming an unknown token, in either theme",
+    records: withRecord("elevation-raised", {
+        name: "elevation-raised",
+        group: "elevation",
+        value: { light: "0 2px 4px var(--ocelle-color-yy)", dark: "0 0 0 1px var(--ocelle-color-zz)" },
+        ref: { light: ["color-yy"], dark: ["color-zz"] },
+      }),
+    problems: ["token elevation-raised: ref names an unknown token color-yy", "token elevation-raised: ref names an unknown token color-zz"],
+  },
+  {
     rule: "for a ref per theme on a value that is not, and the reverse",
     records: withRecord("gutter", { name: "gutter", group: "space", value: "var(--ocelle-space-4)", ref: { light: ["space-4"], dark: ["space-4"] } }).map((record) =>
         record.name === "elevation-raised" ? { ...record, ref: ["color-ink"] } : record,
@@ -90,6 +110,28 @@ const cases: readonly { readonly rule: string; readonly records: readonly TokenR
         { name: "loop-c", group: "space", value: "var(--ocelle-loop-c)", ref: ["loop-c"] },
       ),
     problems: ["token loop-a: reference cycle loop-a -> loop-b -> loop-a", "token loop-b: reference cycle loop-b -> loop-a -> loop-b", "token loop-c: reference cycle loop-c -> loop-c"],
+  },
+  {
+    rule: "for a cycle that does not pass through the token that reaches it, only on the tokens on it",
+    records: withAdded(
+        { name: "lead-1", group: "space", value: "var(--ocelle-loop-a)", ref: ["loop-a"] },
+        { name: "loop-a", group: "space", value: "var(--ocelle-loop-b)", ref: ["loop-b"] },
+        { name: "loop-b", group: "space", value: "var(--ocelle-loop-a)", ref: ["loop-a"] },
+      ),
+    problems: ["token loop-a: reference cycle loop-a -> loop-b -> loop-a", "token loop-b: reference cycle loop-b -> loop-a -> loop-b"],
+  },
+  {
+    rule: "for a cycle reached through a later reference, after one that ends",
+    records: withAdded(
+        { name: "loop-a", group: "space", value: "calc(var(--ocelle-space-4) + var(--ocelle-loop-b))", ref: ["space-4", "loop-b"] },
+        { name: "loop-b", group: "space", value: "var(--ocelle-loop-a)", ref: ["loop-a"] },
+      ),
+    problems: ["token loop-a: reference cycle loop-a -> loop-b -> loop-a", "token loop-b: reference cycle loop-b -> loop-a -> loop-b"],
+  },
+  {
+    rule: "for a duplicate name, taking the references of the first record of the name (no cycle through the second)",
+    records: withAdded({ name: "loop-a", group: "space", value: "1px" }, { name: "loop-a", group: "space", value: "var(--ocelle-loop-a)", ref: ["loop-a"] }),
+    problems: ["token loop-a: duplicate name"],
   },
   {
     rule: "for a colour value that is not a 6-digit hex",
@@ -123,6 +165,31 @@ const cases: readonly { readonly rule: string; readonly records: readonly TokenR
     rule: "for a color-scheme value other than light and dark",
     records: withRecord("color-scheme", { name: "color-scheme", group: "colour", value: { light: "dark", dark: "dark" } }),
     problems: ["token color-scheme: value must be light in light and dark in dark"],
+  },
+  {
+    rule: "for a color-scheme value that is right in light and wrong in dark",
+    records: withRecord("color-scheme", { name: "color-scheme", group: "colour", value: { light: "light", dark: "light" } }),
+    problems: ["token color-scheme: value must be light in light and dark in dark"],
+  },
+  {
+    rule: "for contrast on a colour, and a ground, that are opaque in one theme only",
+    records: withAdded(
+        {
+          name: "color-veil",
+          group: "colour",
+          value: { light: "#123456", dark: "var(--ocelle-color-overlay)" },
+          ref: { light: [], dark: ["color-overlay"] },
+          contrast: { kind: "text", grounds: ["color-ground"] },
+        },
+        {
+          name: "color-sheet",
+          group: "colour",
+          value: { light: "var(--ocelle-color-overlay)", dark: "#000000" },
+          ref: { light: ["color-overlay"], dark: [] },
+        },
+        { name: "color-mark", group: "colour", value: { light: "#123456", dark: "#654321" }, contrast: { kind: "non-text", grounds: ["color-sheet"] } },
+      ),
+    problems: ["token color-veil: contrast on a colour that is not opaque in both themes", "token color-mark: ground color-sheet is not opaque in both themes"],
   },
   {
     rule: "for contrast on a colour whose resolved value is not opaque",

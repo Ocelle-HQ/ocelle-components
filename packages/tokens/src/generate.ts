@@ -106,9 +106,12 @@ export function resolve(source: readonly TokenRecord[], name: string, theme: The
   return resolveIn(index(source), name, theme, []);
 }
 
-/** The problems of one ref against the references of its value: unknown names first, then a set that differs. */
+/**
+ * The problems of one ref against the references of its value: unknown names first, then a set that differs. `found`
+ * has each name once (references()), so a ref of the same length that holds every found name has no duplicate.
+ */
 function refProblems(at: string, ref: readonly string[], found: readonly string[], label: string, value: string): string[] {
-  const same = ref.length === new Set(ref).size && ref.length === found.length && found.every((name) => ref.includes(name));
+  const same = ref.length === found.length && found.every((name) => ref.includes(name));
   return same ? [] : [`${at}: ${label} [${ref.join(", ")}] is not the set of references in the ${value} [${found.join(", ")}]`];
 }
 
@@ -165,12 +168,13 @@ function recordProblems(record: TokenRecord, byName: ReadonlyMap<string, TokenRe
 function cycleProblems(source: readonly TokenRecord[]): string[] {
   const edges = new Map<string, string[]>();
   for (const record of source) {
-    if (!edges.has(record.name)) edges.set(record.name, references(themes.map((theme) => valueIn(record, theme)).join(" ")));
+    if (!edges.has(record.name)) edges.set(record.name, themes.flatMap((theme) => references(valueIn(record, theme))));
   }
   const found: string[] = [];
   for (const start of edges.keys()) {
     const visited = new Set<string>();
     const walk = (name: string, path: readonly string[]): readonly string[] | undefined => {
+      // Stryker disable next-line ArrayDeclaration: equivalent, walk() only gets a name of edges (a start, or a next that passed edges.has below), so the default never applies
       for (const next of edges.get(name) ?? []) {
         if (next === start) return [...path, next];
         if (visited.has(next) || !edges.has(next)) continue;

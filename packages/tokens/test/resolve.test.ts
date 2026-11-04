@@ -56,6 +56,14 @@ describe("resolve() on fixture sources", () => {
     expect([resolve(changed, "color-focus", "light"), resolve(changed, "color-focus", "dark")]).toEqual(["#222222", "#DDDDDD"]);
   });
 
+  it("throws naming a reference cycle, from the token asked for back to the token that repeats", () => {
+    const looped = withAdded(
+      { name: "loop-a", group: "space", value: "var(--ocelle-loop-b)", ref: ["loop-b"] },
+      { name: "loop-b", group: "space", value: "calc(2 * var(--ocelle-loop-a))", ref: ["loop-a"] },
+    );
+    expect(() => resolve(looped, "loop-a", "light")).toThrow(new Error("reference cycle loop-a -> loop-b -> loop-a"));
+  });
+
   it("throws naming an unknown token", () => {
     expect(() => resolve(fixture, "color-zz", "light")).toThrow(new Error("unknown token color-zz"));
   });

@@ -4,8 +4,8 @@ import { join } from "node:path";
 import { fileURLToPath } from "node:url";
 import stylelint from "stylelint";
 import { afterEach, describe, expect, it } from "vitest";
-import { loadLists } from "../stylelint/token-lists.ts";
-import plugin, { rawValues, ruleName } from "../stylelint/token-only.ts";
+import { loadLists, manifestProperties } from "../stylelint/token-lists.ts";
+import plugin, { rawValues, referencedTokens, ruleName } from "../stylelint/token-only.ts";
 
 const repoRoot = fileURLToPath(new URL("../..", import.meta.url));
 
@@ -83,6 +83,19 @@ describe("rawValues: allowed values", () => {
     { property: "border", value: "var(--ocelle-border-width) solid var(--ocelle-color-rule)" },
   ])("$property: $value is token-only (only the control 4px after it is raw)", ({ property, value }) => {
     expect(rawValues(property, `${value} 4px`)).toEqual(["4px"]);
+  });
+});
+
+describe("referencedTokens()", () => {
+  it.each([
+    { value: "var(--ocelle-a) var", names: ["--ocelle-a"] },
+    { value: "VAR(--ocelle-a)", names: ["--ocelle-a"] },
+    { value: "env(--ocelle-b) attr(--ocelle-c) var(--ocelle-a)", names: ["--ocelle-a"] },
+    { value: "--ocelle-b var(--ocelle-a)", names: ["--ocelle-a"] },
+    { value: "calc(var(--ocelle-a) + var(--ocelle-b, var(--ocelle-a)))", names: ["--ocelle-a", "--ocelle-b"] },
+    { value: "var(--tip) var(--ocelle-a)", names: ["--ocelle-a"] },
+  ])("gives $names for $value, only the first argument of a var() function", ({ value, names }) => {
+    expect(referencedTokens(value)).toEqual(names);
   });
 });
 
@@ -177,6 +190,16 @@ describe("ocelle/token-only: unknown tokens, with fixture lists", () => {
     );
   });
 
+  it("takes an absent list as empty: tokens alone make element properties unknown, element properties alone make tokens unknown", async () => {
+    const code = "a {\n  gap: var(--ocelle-button-gap);\n  padding: var(--ocelle-space-2);\n}\n";
+    expect(await warnings(code, [true, { tokens: ["--ocelle-space-2"] }])).toEqual([{ line: 2, text: "unknown token --ocelle-button-gap (ocelle/token-only)" }]);
+    expect(await warnings(code, [true, { elementProperties: ["--ocelle-button-gap"] }])).toEqual([{ line: 3, text: "unknown token --ocelle-space-2 (ocelle/token-only)" }]);
+  });
+
+  it("takes a bare word var as no reference (only the control)", async () => {
+    expect(await warnings("a {\n  animation-name: var;\n  top: var(--ocelle-nope);\n}\n")).toEqual([{ line: 3, text: "unknown token --ocelle-nope (ocelle/token-only)" }]);
+  });
+
   it.each([[{ tokens: [1] }], [{ tokens: ["--ocelle-a"], elementProperties: [2] }], [{ colours: [] }]])("reports the invalid secondary option %j", async (secondary) => {
     const { results } = await stylelint.lint({ code: "a { color: var(--ocelle-x); }", config: { plugins: [plugin], rules: { [ruleName]: [true, secondary] } } });
     expect(results[0]?.invalidOptionWarnings).toHaveLength(1);
@@ -188,6 +211,12 @@ describe("ocelle/token-only without options reads the lists of the repository it
     const code = "a {\n  color: var(--ocelle-color-canvs);\n  background: var(--ocelle-color-canvas);\n}\n";
     const { results } = await stylelint.lint({ code, config: { plugins: [plugin], rules: { [ruleName]: true } } });
     expect(results[0]?.warnings.map(({ line, text }) => ({ line, text }))).toEqual([{ line: 2, text: "unknown token --ocelle-color-canvs (ocelle/token-only)" }]);
+  });
+
+  it("takes a null secondary option as no options: a real token of the repository is known", async () => {
+    const code = "a {\n  background: var(--ocelle-color-canvas);\n  padding: var(--ocelle-space-2);\n}\n";
+    const { results } = await stylelint.lint({ code, config: { plugins: [plugin], rules: { [ruleName]: [true, null] } } });
+    expect(results[0]?.warnings).toEqual([]);
   });
 });
 
@@ -263,9 +292,88 @@ describe("loadLists()", () => {
     await expect(loadLists(root(validSource, text))).rejects.toThrow("token-only: packages/elements/custom-elements.json is not a custom-elements manifest");
   });
 
+  it("throws naming the file, the reason and the cause when the manifest cannot be read", async () => {
+    const dir = root(validSource);
+    mkdirSync(join(dir, "packages/elements/custom-elements.json"), { recursive: true });
+    const loading = loadLists(dir);
+    await expect(loading).rejects.toThrow(new Error("token-only: cannot read packages/elements/custom-elements.json: EISDIR: illegal operation on a directory, read"));
+    await expect(loading).rejects.toHaveProperty("cause.code", "EISDIR");
+  });
+
+  it("throws with the parse error as the cause when the manifest is not JSON", async () => {
+    const loading = loadLists(root(validSource, "{ not json"));
+    await expect(loading).rejects.toThrow(/^token-only: packages\/elements\/custom-elements\.json is not JSON \(.+\)$/);
+    await expect(loading).rejects.toHaveProperty("cause.name", "SyntaxError");
+  });
+
+  it("throws naming the reason exactly when the manifest is not the schema", async () => {
+    await expect(loadLists(root(validSource, JSON.stringify({ schemaVersion: "2.1.0", modules: [{ declarations: {} }] })))).rejects.toThrow(
+      new Error("token-only: packages/elements/custom-elements.json is not a custom-elements manifest (declarations is not a list)"),
+    );
+  });
+
+  it("throws naming the source and the cause when the source exports no list", async () => {
+    const loading = loadLists(root("export const source = {};\n"));
+    await expect(loading).rejects.toThrow(new Error("token-only: cannot load the token source packages/tokens/src/source.ts: it exports no source list"));
+    await expect(loading).rejects.toHaveProperty("cause.message", "it exports no source list");
+  });
+
+  it("throws naming the generator when it exports no validateSource", async () => {
+    const dir = root(validSource);
+    writeFileSync(join(dir, "packages/tokens/src/generate.ts"), "export const validate = 1;\n");
+    const loading = loadLists(dir);
+    await expect(loading).rejects.toThrow(
+      new Error("token-only: cannot load the token source packages/tokens/src/source.ts: packages/tokens/src/generate.ts exports no validateSource"),
+    );
+    await expect(loading).rejects.toHaveProperty("cause.message", "packages/tokens/src/generate.ts exports no validateSource");
+  });
+
+  it("throws with the validation error as the cause when the source is invalid", async () => {
+    const duplicate = validSource.replace('"space-2"', '"color-canvas", group: "colour", value: { light: "#FFFFFF", dark: "#000000" } }, { name: "space-2"');
+    await expect(loadLists(root(duplicate))).rejects.toHaveProperty("cause.message", "invalid token source: token color-canvas: duplicate name");
+  });
+
   it("throws when a declared element property has the full name of a token", async () => {
     await expect(loadLists(root(validSource, manifest(["--ocelle-button-gap", "--ocelle-space-2"])))).rejects.toThrow(
       "token-only: element property --ocelle-space-2 has the name of a token",
     );
+  });
+});
+
+// manifestProperties() reads the cssProperties names of a parsed custom-elements manifest, or gives the exact reason
+// it is not one; the gate's message carries that reason (contracts/gates.md § `style-lint`).
+describe("manifestProperties()", () => {
+  const module = (declarations: unknown): unknown => ({ schemaVersion: "2.1.0", modules: [{ kind: "javascript-module", declarations }] });
+
+  it.each([
+    ["null", null, "not an object"],
+    ["a list", [], "not an object"],
+    ["a string", "manifest", "not an object"],
+    ["no schemaVersion", { modules: [] }, "no schemaVersion"],
+    ["a schemaVersion that is not text", { schemaVersion: 2, modules: [] }, "no schemaVersion"],
+    ["modules that is not a list", { schemaVersion: "2.1.0", modules: {} }, "modules is not a list"],
+    ["a module that is null", { schemaVersion: "2.1.0", modules: [null] }, "a module is not an object"],
+    ["a module that is a list", { schemaVersion: "2.1.0", modules: [[]] }, "a module is not an object"],
+    ["declarations that is not a list", module({}), "declarations is not a list"],
+    ["a declaration that is null", module([null]), "a declaration is not an object"],
+    ["a declaration that is a list", module([[]]), "a declaration is not an object"],
+    ["cssProperties that is not a list", module([{ cssProperties: "--ocelle-x" }]), "cssProperties is not a list"],
+    ["a cssProperties entry that is null", module([{ cssProperties: [null] }]), "a cssProperties entry has no name"],
+    ["a cssProperties entry without a name", module([{ cssProperties: [{ syntax: "<length>" }] }]), "a cssProperties entry has no name"],
+    ["a cssProperties entry whose name is not text", module([{ cssProperties: [{ name: 1 }] }]), "a cssProperties entry has no name"],
+  ])("gives the reason for %s", (_, manifest, reason) => {
+    expect(manifestProperties(manifest)).toBe(reason);
+  });
+
+  it("gives the names in order, skipping modules without declarations and declarations without cssProperties", () => {
+    const manifest = {
+      schemaVersion: "2.1.0",
+      modules: [
+        { kind: "javascript-module", path: "src/a.ts" },
+        { kind: "javascript-module", declarations: [{ kind: "class" }, { kind: "class", cssProperties: [{ name: "--ocelle-a-gap" }, { name: "--ocelle-a-pad" }] }] },
+        { kind: "javascript-module", declarations: [{ kind: "class", cssProperties: [{ name: "--ocelle-b-gap" }] }] },
+      ],
+    };
+    expect(manifestProperties(manifest)).toEqual(["--ocelle-a-gap", "--ocelle-a-pad", "--ocelle-b-gap"]);
   });
 });

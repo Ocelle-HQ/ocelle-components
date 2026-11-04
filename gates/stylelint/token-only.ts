@@ -115,6 +115,7 @@ function listsUnder(root: string): Promise<TokenLists> {
   const cached = loaded.get(root);
   if (cached !== undefined) return cached;
   const lists = loadLists(root);
+  // Stryker disable next-line CallExpression: equivalent, without the cache each file loads the same lists from the same root again, so the warnings are the same; the cache only saves the reads
   loaded.set(root, lists);
   return lists;
 }
@@ -127,6 +128,7 @@ function isText(value: unknown): boolean {
 function optionLists(secondary: unknown): TokenLists | undefined {
   if (typeof secondary !== "object" || secondary === null) return undefined;
   const options = secondary as { tokens?: readonly string[]; elementProperties?: readonly string[] };
+  // Stryker disable next-line ArrayDeclaration: equivalent, an entry of an absent list is only compared with --ocelle-* var() names and with the other list's custom property names, and the mutant's entry "Stryker was here" is neither
   const lists = { tokens: options.tokens ?? [], elementProperties: options.elementProperties ?? [] };
   checkLists(lists);
   return lists;

@@ -1,0 +1,17 @@
+$ node gates/bin/mutation.ts -- --base 98c1dcd
+gates/stylelint/token-only.ts:118: mutation: record: CallExpression: equivalent, without the cache each file loads the same lists from the same root again, so the warnings are the same; the cache only saves the reads
+gates/stylelint/token-only.ts:131: mutation: record: ArrayDeclaration: equivalent, an entry of an absent list is only compared with --ocelle-* var() names and with the other list's custom property names, and the mutant's entry "Stryker was here" is neither
+packages/tokens/scripts/build.ts:26: mutation: record: all: I/O boundary, covered by packages/tokens/test/build.test.ts "build() skips the copy without error when the package has no fonts/ directory, and writes no fonts/"
+packages/tokens/scripts/build.ts:28: mutation: record: all: I/O boundary, covered by packages/tokens/test/build.test.ts "build() skips the copy without error when the package has no fonts/ directory, and writes no fonts/"
+packages/tokens/scripts/build.ts:30: mutation: record: all: I/O boundary, covered by packages/tokens/test/build.test.ts "build() skips the copy without error when the package has no fonts/ directory, and writes no fonts/"
+packages/tokens/scripts/build.ts:33: mutation: record: all: I/O boundary, covered by packages/tokens/test/build.test.ts "build() writes the stylesheet and the JSON of the real source, and copies a fixture fonts/ into fonts/"
+packages/tokens/scripts/build.ts:39: mutation: record: all: I/O boundary, covered by packages/tokens/test/build.test.ts "build() writes the stylesheet and the JSON of the real source, and copies a fixture fonts/ into fonts/"
+packages/tokens/scripts/build.ts:41: mutation: record: all: I/O boundary, covered by packages/tokens/test/build.test.ts "build() writes the stylesheet and the JSON of the real source, and copies a fixture fonts/ into fonts/"
+packages/tokens/scripts/build.ts:43: mutation: record: all: I/O boundary, covered by packages/tokens/test/build.test.ts "build() writes the stylesheet and the JSON of the real source, and copies a fixture fonts/ into fonts/"
+packages/tokens/scripts/build.ts:45: mutation: record: all: I/O boundary, covered by packages/tokens/test/build.test.ts "build() writes the stylesheet and the JSON of the real source, and copies a fixture fonts/ into fonts/"
+packages/tokens/scripts/build.ts:47: mutation: record: all: I/O boundary, covered by packages/tokens/test/build.test.ts "build() writes the stylesheet and the JSON of the real source, and copies a fixture fonts/ into fonts/"
+packages/tokens/scripts/build.ts:52: mutation: record: all: I/O boundary, covered by packages/tokens/test/build.test.ts "node scripts/build.ts <out> writes exactly css() to tokens.css and JSON.stringify(json()) to tokens.json"
+packages/tokens/scripts/build.ts:55: mutation: record: all: I/O boundary, covered by packages/tokens/test/build.test.ts "node scripts/build.ts <out> writes exactly css() to tokens.css and JSON.stringify(json()) to tokens.json"
+packages/tokens/src/generate.ts:177: mutation: record: ArrayDeclaration: equivalent, walk() only gets a name of edges (a start, or a next that passed edges.has below), so the default never applies
+mutation: 657 mutants on the changed lines of 8 files, none survived; 14 equivalent records
+exit 0
