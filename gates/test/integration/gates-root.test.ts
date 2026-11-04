@@ -51,7 +51,15 @@ const treeCases: readonly TreeCase[] = [
   },
   {
     id: "style-lint",
-    configs: ["package.json", "stylelint.config.ts", "gates/stylelint"],
+    // The token source, its overrides and the generator: the unknown-token check reads the token list under --root.
+    configs: [
+      "package.json",
+      "stylelint.config.ts",
+      "gates/stylelint",
+      "packages/tokens/src/source.ts",
+      "packages/tokens/src/overrides.ts",
+      "packages/tokens/src/generate.ts",
+    ],
     defect: "packages/styles/src/defect.css",
     finding: "packages/styles/src/defect.css:2: style-lint: ocelle/token-only: margin: raw 4px; use a --ocelle-* token (FR-024)",
     summary: "style-lint: 1 finding in 1 file",

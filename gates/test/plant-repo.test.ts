@@ -4,7 +4,7 @@ import { carriesConfiguration, configurationSet, parseCommits } from "../lib/pla
 // The pure parts of gates/lib/plant-repo.ts (research.md R-10, contracts/plants.md): the configuration set copied
 // into every temporary repository, the configuration a plant must not carry, and the records of commits.txt.
 describe("configurationSet", () => {
-  it("lists the root configuration, each package's manifest and tsconfig, and the modules the configurations import", () => {
+  it("lists the root configuration, each package's manifest and tsconfig, the modules the configurations import, and the token source, its overrides, the generator and the pair list (002 contracts/gates.md § Configuration set)", () => {
     expect(configurationSet(["packages/tokens", "packages/elements"])).toEqual([
       "package.json",
       "pnpm-workspace.yaml",
@@ -22,6 +22,10 @@ describe("configurationSet", () => {
       "packages/elements/tsconfig.json",
       "gates/eslint",
       "gates/stylelint",
+      "packages/tokens/src/source.ts",
+      "packages/tokens/src/overrides.ts",
+      "packages/tokens/src/generate.ts",
+      "packages/tokens/contrast/pairs.json",
     ]);
   });
 });

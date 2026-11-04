@@ -29,6 +29,13 @@ const configuration = [
   "gates/eslint/no-snapshot-only.ts",
   "gates/eslint/unchecked-expect.ts",
   "gates/stylelint/token-only.ts",
+  "gates/stylelint/token-lists.ts",
+  // The token source, its overrides, the generator (with the modules they import) and the pair list, so repo-tree
+  // plants see the real token source (002 contracts/gates.md § Configuration set, research.md R-09).
+  "packages/tokens/src/source.ts",
+  "packages/tokens/src/overrides.ts",
+  "packages/tokens/src/generate.ts",
+  "packages/tokens/contrast/pairs.json",
 ];
 
 function git(dir: string, args: readonly string[]): string {
@@ -61,6 +68,15 @@ describe("buildRepoTree", () => {
     expect(readlinkSync(join(into, "node_modules"))).toBe(join(repo, "node_modules"));
     expect(existsSync(join(into, "packages/tokens/src/index.ts"))).toBe(false);
     expect(existsSync(join(into, "tree"))).toBe(false);
+  });
+
+  it("holds the token source, its overrides, the generator and the pair list in a built plant root (002 contracts/gates.md § Configuration set)", async () => {
+    const into = tempDir("repo-tree");
+    await buildRepoTree(repo, join(fixtures, "empty-plant"), into);
+    const files = ["packages/tokens/src/source.ts", "packages/tokens/src/overrides.ts", "packages/tokens/src/generate.ts", "packages/tokens/contrast/pairs.json"];
+    expect(Object.fromEntries(files.map((file) => [file, existsSync(join(into, file)) && readFileSync(join(into, file), "utf8") === readFileSync(join(repo, file), "utf8")]))).toEqual(
+      Object.fromEntries(files.map((file) => [file, true])),
+    );
   });
 
   it("builds the configuration set alone for a plant without tree/", async () => {
