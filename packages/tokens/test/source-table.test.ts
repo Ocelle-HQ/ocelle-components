@@ -3,7 +3,7 @@ import { css, json } from "../src/generate.ts";
 import { source } from "../src/source.ts";
 import { excludedNames, expectedTokens, inTheme, themedGroups } from "./expected.ts";
 import type { ExpectedToken } from "./expected.ts";
-import { blocks, fourBlocks } from "./stylesheet.ts";
+import { blocks, fontFaceOutline, fourBlocks } from "./stylesheet.ts";
 
 // The generator run on the real token source, compared token by token with spec Appendix A as transcribed in
 // expected.ts (data-model.md § Expected tables; PLAN-FRESH-2-002, R-03 *Mutation path*): the stylesheet's declaration
@@ -27,8 +27,8 @@ function comparable(token: ExpectedToken, value: string | undefined): string | u
 }
 
 describe("the stylesheet from the real source", () => {
-  it("has the four blocks of research.md R-02, in order", () => {
-    expect(sheet.outline).toEqual(fourBlocks);
+  it("has the @font-face of research.md R-06, then the four blocks of R-02, in order", () => {
+    expect(sheet.outline).toEqual([fontFaceOutline, ...fourBlocks]);
   });
 
   it("declares exactly the tokens of Appendix A on :root, and none of A.6", () => {

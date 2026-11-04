@@ -4,7 +4,8 @@ import { expectedTokens, excludedNames } from "./expected.ts";
 
 // The package documentation (research.md R-15, contracts/token-package.md § Host contract, FR-025): the README states
 // the host contract (load once, the theme rule, the color-scheme hand-off to #6, forced colours and the box-shadow
-// caveat, the rendered brand rules), and the changelog's "Unreleased" section lists every token under "Added".
+// caveat, the rendered brand rules, and from phase 4 the font's CSP allowance `font-src 'self'`, FR-012), and the
+// changelog's "Unreleased" section lists every token under "Added".
 // Whitespace is normalised, so a fragment may wrap across lines.
 /** A package file's text; empty while it does not exist, so each assertion below reports what is missing. */
 function read(file: string): string {
@@ -28,6 +29,9 @@ const fragments = [
   "base styles (#6) apply it with `color-scheme: var(--ocelle-color-scheme)` on the root",
   // CSP of the stylesheet
   "`style-src 'self'`",
+  // CSP allowance of the font (FR-012, US2 scenario 6)
+  "the font needs `font-src 'self'`",
+  "Without `font-src`, text renders in the fallback families of `--ocelle-font-sans` and the only violation is the font file",
   // forced colours
   "The tokens never override the system palette in forced colours",
   "`box-shadow` is not drawn in forced colours",

@@ -77,6 +77,19 @@ describe("node scripts/build.ts <out>", () => {
   });
 });
 
+describe("node scripts/build.ts <out> on the package with its vendored font (phase 4, US2 scenario 1)", () => {
+  it("copies fonts/SchibstedGrotesk-wght.woff2 and fonts/OFL.txt byte for byte into fonts/ of the published dist", async () => {
+    const out = join(tempDir(), "dist");
+    await run(process.execPath, [join(packageDir, "scripts", "build.ts"), out], { cwd: packageDir });
+    const manifest = JSON.parse(readFileSync(join(packageDir, "package.json"), "utf8")) as { files?: unknown };
+    expect(manifest.files).toContain("dist");
+    expect(existsSync(join(out, "fonts")) ? readdirSync(join(out, "fonts")).sort() : []).toEqual(["OFL.txt", "SchibstedGrotesk-wght.woff2"]);
+    for (const file of ["OFL.txt", "SchibstedGrotesk-wght.woff2"]) {
+      expect(readFileSync(join(out, "fonts", file)).equals(readFileSync(join(packageDir, "fonts", file)))).toBe(true);
+    }
+  });
+});
+
 describe("package.json", () => {
   it("exports the entry, the stylesheet, the JSON and the fonts, publishes dist, the changelog and the README, and builds both (R-11)", () => {
     const manifest = JSON.parse(readFileSync(join(packageDir, "package.json"), "utf8")) as Record<string, unknown>;

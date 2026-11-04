@@ -1,12 +1,23 @@
 import { describe, expect, it } from "vitest";
 import { css, json, names } from "../src/generate.ts";
 import { fixture, withRecord } from "./fixture.ts";
-import { blocks, fourBlocks } from "./stylesheet.ts";
+import { blocks, fontFaceOutline, fourBlocks } from "./stylesheet.ts";
 
 // css() on fixture sources (research.md R-02, R-03, R-12; FR-002, FR-005, FR-006, FR-007): the four blocks in order,
 // light and theme-independent values in the unconditioned :root, dark values only under the two dark selectors,
-// reduced motion setting exactly motion-fast and motion-base to 0ms, derived tokens by reference.
-const expectedCss = `:root {
+// reduced motion setting exactly motion-fast and motion-base to 0ms, derived tokens by reference; and first, the
+// @font-face of research.md R-06 (US2, FR-012), whose one source is a relative URL into the package (US2 scenario 5).
+const fontFace = `@font-face {
+  font-family: "Schibsted Grotesk";
+  src: url("./fonts/SchibstedGrotesk-wght.woff2") format("woff2");
+  font-weight: 400 900;
+  font-style: normal;
+  font-display: swap;
+}
+
+`;
+
+const expectedCss = `${fontFace}:root {
   --ocelle-color-ground: #FFFFFF;
   --ocelle-color-ink: #111111;
   --ocelle-color-same: #777777;
@@ -48,12 +59,31 @@ const expectedCss = `:root {
 `;
 
 describe("css()", () => {
-  it("writes the fixture as the four blocks of research.md R-02, exactly", () => {
+  it("writes the fixture as the @font-face of R-06 and the four blocks of research.md R-02, exactly", () => {
     expect(css(fixture)).toBe(expectedCss);
   });
 
-  it("puts the blocks in the order: :root, system dark unless data-theme=light, data-theme=dark, reduced motion", () => {
-    expect(blocks(css(fixture)).outline).toEqual(fourBlocks);
+  it("puts the blocks in the order: @font-face, :root, system dark unless data-theme=light, data-theme=dark, reduced motion", () => {
+    expect(blocks(css(fixture)).outline).toEqual([fontFaceOutline, ...fourBlocks]);
+  });
+
+  it("starts with exactly the @font-face of research.md R-06 (FR-012)", () => {
+    expect(css(fixture).startsWith(fontFace)).toBe(true);
+    expect(css([]).startsWith(fontFace)).toBe(true);
+    expect([...blocks(css(fixture)).fontFace.entries()]).toEqual([
+      ["font-family", '"Schibsted Grotesk"'],
+      ["src", 'url("./fonts/SchibstedGrotesk-wght.woff2") format("woff2")'],
+      ["font-weight", "400 900"],
+      ["font-style", "normal"],
+      ["font-display", "swap"],
+    ]);
+  });
+
+  it("has exactly one url(), relative into the package's fonts/, and no absolute URL anywhere (US2 scenario 5)", () => {
+    const text = css(fixture);
+    expect([...text.matchAll(/url\(([^)]*)\)/g)].map((match) => match[1])).toEqual(['"./fonts/SchibstedGrotesk-wght.woff2"']);
+    expect(text).not.toMatch(/[a-z][a-z0-9+.-]*:\/\//i);
+    expect(text).not.toMatch(/url\(\s*["']?(?:\/|[a-z][a-z0-9+.-]*:)/i);
   });
 
   it("puts light values only in the unconditioned :root, and dark values only in the two dark blocks (FR-006, no preference)", () => {
@@ -115,9 +145,10 @@ describe("css()", () => {
     });
   });
 
-  it("writes an empty source as empty blocks, with the reduced-motion block", () => {
+  it("writes an empty source as the @font-face and empty blocks, with the reduced-motion block", () => {
     expect(css([])).toBe(
-      ":root {\n}\n\n@media (prefers-color-scheme: dark) {\n  :root:not([data-theme=\"light\"]) {\n  }\n}\n\n:root[data-theme=\"dark\"] {\n}\n\n" +
+      fontFace +
+        ":root {\n}\n\n@media (prefers-color-scheme: dark) {\n  :root:not([data-theme=\"light\"]) {\n  }\n}\n\n:root[data-theme=\"dark\"] {\n}\n\n" +
         "@media (prefers-reduced-motion: reduce) {\n  :root {\n    --ocelle-motion-fast: 0ms;\n    --ocelle-motion-base: 0ms;\n  }\n}\n",
     );
   });
