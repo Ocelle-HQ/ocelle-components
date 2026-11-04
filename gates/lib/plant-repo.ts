@@ -238,7 +238,7 @@ export function treeProblems(treePaths: readonly string[], delta: Delta | undefi
 
 /** Throws unless a plant's generate.ts re-exports the real generator, `./generate.real.ts`. */
 export function checkWrapper(text: string): void {
-  if (/^export \* from (["'])\.\/generate\.real\.ts\1;?$/m.test(text)) return;
+  if (/^export \* from (["'])\.\/generate\.real\.ts\1/m.test(text)) return;
   throw new Error(`${generatorFile} of a wrapped generator must re-export the real one: export * from "./generate.real.ts"`);
 }
 

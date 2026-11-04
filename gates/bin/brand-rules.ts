@@ -5,7 +5,7 @@
 // 2. Rules: (a) monospace-font, (b) link-accent, (c) radius-set, (d) rule-boundary, (e) dark-chrome, (f)
 // reduced-motion, (g) forced-colours; one finding per token, entry or declaration that breaks a rule, in rule order.
 import postcss from "postcss";
-import type { Root } from "postcss";
+import type { AtRule, Root } from "postcss";
 import { main, parseArgs } from "../lib/cli.ts";
 import type { Io } from "../lib/cli.ts";
 import { emit, plural } from "../lib/findings.ts";
@@ -64,8 +64,11 @@ interface Inputs {
 /** A rule's finding at a location. */
 type Found = (location: Location, message: string) => void;
 
+/** A resolved colour, or the problem that the token is missing or not opaque. */
+type Colour = { readonly hex: string } | { readonly problem: string };
+
 /** A token's resolved colour in a theme, or the problem that it is missing or not opaque. */
-function colour(inputs: Inputs, name: string, theme: Theme): { readonly hex: string } | { readonly problem: string } {
+function colour(inputs: Inputs, name: string, theme: Theme): Colour {
   if (!inputs.tokens.source.some((record) => record.name === name)) return { problem: `${name} is missing` };
   const value = inputs.tokens.resolve(name, theme);
   return hex.test(value) ? { hex: value.toUpperCase() } : { problem: `${name} is not an opaque colour in ${theme}` };
@@ -101,8 +104,7 @@ function reportToken(inputs: Inputs, found: Found, name: string, problems: reado
 function monospaceFont(inputs: Inputs, found: Found): void {
   for (const record of inputs.tokens.source) {
     if (record.group !== "type") continue;
-    const values = typeof record.value === "string" ? [record.value] : [record.value.light, record.value.dark];
-    const families = [...new Set(values.flatMap((value) => value.match(monospace) ?? []))];
+    const families = [...new Set(JSON.stringify(record.value).match(monospace))];
     if (families.length > 0) found(inputs.locate(record.name), `${record.name} names the monospace family ${families.join(", ")}`);
   }
 }
@@ -115,6 +117,7 @@ function linkAccent(inputs: Inputs, found: Found): void {
     return "hex" in link && "hex" in accent && link.hex === accent.hex ? [`color-link equals color-accent in ${theme}`] : [];
   });
   const below = ratioProblems(inputs, "color-link", ["color-canvas", "color-sheet"], (ratio, ground, theme) =>
+    // Stryker disable next-line EqualityOperator: equivalent, no two 6-digit hex colours give a ratio of exactly 4.5 (an exhaustive search over all 2^24 relative luminances, by the formula of gates/lib/wcag.ts, found none), so < 4.5 and <= 4.5 agree on every input
     ratio < 4.5 ? `color-link is ${ratio.toFixed(4)}:1 on ${ground} in ${theme}, below 4.5:1` : undefined,
   );
   reportToken(inputs, found, "color-link", [...equal, ...below]);
@@ -146,11 +149,13 @@ function ruleBoundary(inputs: Inputs, found: Found): void {
   const grounds = ["color-canvas", "color-sheet"];
   for (const name of ["color-rule", "color-rule-strong"]) {
     const problems = ratioProblems(inputs, name, grounds, (ratio, ground, theme) =>
+      // Stryker disable next-line EqualityOperator: equivalent, no two 6-digit hex colours give a ratio of exactly 3 (an exhaustive search over all 2^24 relative luminances, by the formula of gates/lib/wcag.ts, found none), so >= 3 and > 3 agree on every input
       ratio >= 3 ? `${name} is ${ratio.toFixed(4)}:1 on ${ground} in ${theme}, at or above 3:1` : undefined,
     );
     reportToken(inputs, found, name, problems);
   }
   const border = ratioProblems(inputs, "color-control-border", grounds, (ratio, ground, theme) =>
+    // Stryker disable next-line EqualityOperator: equivalent, no two 6-digit hex colours give a ratio of exactly 3 (an exhaustive search over all 2^24 relative luminances, by the formula of gates/lib/wcag.ts, found none), so < 3 and <= 3 agree on every input
     ratio < 3 ? `color-control-border is ${ratio.toFixed(4)}:1 on ${ground} in ${theme}, below 3:1` : undefined,
   );
   reportToken(inputs, found, "color-control-border", border);
@@ -163,16 +168,18 @@ function darkChrome(inputs: Inputs, found: Found): void {
       const value = colour(inputs, name, theme);
       if ("problem" in value) return [value.problem];
       const luminance = relativeLuminance(value.hex);
+      // Stryker disable next-line EqualityOperator: equivalent, no 6-digit hex colour has a relative luminance of exactly 0.05 (an exhaustive search over all 2^24 found none), so > and >= agree on every input
       return luminance > 0.05 ? [`${name} has relative luminance ${luminance.toFixed(4)} in ${theme}, above 0.05`] : [];
     });
     reportToken(inputs, found, name, [...new Set(problems)]);
   }
   for (const name of ["color-chrome-ink", "color-chrome-muted"]) {
-    const values = themes.map((theme) => colour(inputs, name, theme));
-    const problems = values.flatMap((value) => ("problem" in value ? [value.problem] : []));
-    const [light, dark] = values.flatMap((value) => ("hex" in value ? [value.hex] : []));
-    if (problems.length === 0 && light !== dark) problems.push(`${name} differs between themes (${String(light)} in light, ${String(dark)} in dark)`);
-    reportToken(inputs, found, name, [...new Set(problems)]);
+    const [light, dark] = themes.map((theme) => colour(inputs, name, theme)) as [Colour, Colour];
+    if ("hex" in light && "hex" in dark) {
+      if (light.hex !== dark.hex) found(inputs.locate(name), `${name} differs between themes (${light.hex} in light, ${dark.hex} in dark)`);
+      continue;
+    }
+    reportToken(inputs, found, name, [...new Set([light, dark].flatMap((value) => ("problem" in value ? [value.problem] : [])))]);
   }
 }
 
@@ -183,7 +190,10 @@ function cssAt(line: number | undefined): Location {
 
 /** (f) A prefers-reduced-motion: reduce block sets exactly motion-fast and motion-base, each to 0ms. */
 function reducedMotionBlock(inputs: Inputs, found: Found): void {
-  const blocks = inputs.stylesheet.nodes.flatMap((node) => (node.type === "atrule" && node.name === "media" && /prefers-reduced-motion\s*:\s*reduce/.test(node.params) ? [node] : []));
+  const blocks: AtRule[] = [];
+  inputs.stylesheet.walkAtRules("media", (block) => {
+    if (/prefers-reduced-motion\s*:\s*reduce/.test(block.params)) blocks.push(block);
+  });
   const [first] = blocks;
   if (first === undefined) {
     found(cssAt(undefined), "no @media (prefers-reduced-motion: reduce) block");
@@ -193,7 +203,7 @@ function reducedMotionBlock(inputs: Inputs, found: Found): void {
   for (const block of blocks) {
     block.walkDecls((declaration) => {
       set.add(declaration.prop);
-      if (reducedMotion.includes(declaration.prop) && declaration.value.trim() === "0ms") return;
+      if (reducedMotion.includes(declaration.prop) && declaration.value === "0ms") return;
       const message = `${declaration.prop}: ${declaration.value} in the reduced-motion block; only --ocelle-motion-fast and --ocelle-motion-base, each 0ms, belong there`;
       found(cssAt(declaration.source?.start?.line), message);
     });
@@ -206,15 +216,15 @@ function reducedMotionBlock(inputs: Inputs, found: Found): void {
 /** (g) Nothing defeats forced colours: no forced-color-adjust: none, colour tokens map only to system colours there. */
 function forcedColours(inputs: Inputs, found: Found): void {
   inputs.stylesheet.walkDecls((declaration) => {
-    if (declaration.prop.toLowerCase() === "forced-color-adjust" && declaration.value.trim().toLowerCase() === "none") {
+    if (declaration.prop.toLowerCase() === "forced-color-adjust" && declaration.value.toLowerCase() === "none") {
       found(cssAt(declaration.source?.start?.line), "forced-color-adjust: none defeats forced colours");
     }
   });
   inputs.stylesheet.walkAtRules("media", (block) => {
     if (!/forced-colors/i.test(block.params)) return;
     block.walkDecls((declaration) => {
-      if (!declaration.prop.startsWith("--ocelle-color-") || systemColourNames.has(declaration.value.trim().toLowerCase())) return;
-      const message = `${declaration.prop}: ${declaration.value.trim()} in a forced-colours block; a colour token may only map to a system colour`;
+      if (!declaration.prop.startsWith("--ocelle-color-") || systemColourNames.has(declaration.value.toLowerCase())) return;
+      const message = `${declaration.prop}: ${declaration.value} in a forced-colours block; a colour token may only map to a system colour`;
       found(cssAt(declaration.source?.start?.line), message);
     });
   });
@@ -234,7 +244,7 @@ const rules: readonly (readonly [string, (inputs: Inputs, found: Found) => void]
 async function brandRules(root: string, io: Io): Promise<number> {
   const tokens = await loadTokens(root);
   const pairs = await readPairs(root);
-  const stylesheet = postcss.parse(tokens.css(), { from: undefined });
+  const stylesheet = postcss.parse(tokens.css());
   const inputs: Inputs = { tokens, pairs, stylesheet, locate: await tokenLocator(root) };
   const findings: Finding[] = [];
   for (const [rule, check] of rules) check(inputs, (location, message) => findings.push({ location, gate, rule, message }));

@@ -112,6 +112,14 @@ describe("contrast: figure-mismatch", () => {
     );
   });
 
+  it("reads a figure without decimals at a precision of one unit: 21 matches [20.5, 21.5)", async () => {
+    expect(await contrast({ pairs: setPair(pairs, "light", "color-ink", "color-canvas", { figure: "21" }) })).toEqual({ code: 0, out: [success], err: [] });
+    expect((await contrast({ pairs: setPair(pairs, "light", "color-ink", "color-canvas", { figure: "20" }) })).out).toEqual([
+      `${at(2)} figure-mismatch: light color-ink on color-canvas: recorded figure 20, computed 21.0000`,
+      "contrast: 1 finding",
+    ]);
+  });
+
   it("holds the exempt disabled ink to its figure", async () => {
     expect((await contrast({ pairs: setPair(pairs, "dark", "color-disabled", "color-canvas", { figure: "2.9" }) })).out).toEqual([
       `${at(12)} figure-mismatch: dark color-disabled on color-canvas: recorded figure 2.9, computed 2.8168`,

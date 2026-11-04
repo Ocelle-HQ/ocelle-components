@@ -186,6 +186,7 @@ describe("checkWrapper", () => {
   it.each([
     'export * from "./generate.real.ts";\n',
     "import x from './y.ts';\nexport * from './generate.real.ts'\nexport const a = 1;\n",
+    'export * from "./generate.real.ts"; // the real generator\n',
   ])("accepts a wrapper that re-exports the real generator: %j", (text) => {
     expect(() => {
       checkWrapper(text);
@@ -243,6 +244,18 @@ describe("applyPairChanges", () => {
 
   it("fails naming a key that matches two entries", () => {
     expect(() => applyPairChanges(list(a, b, a), [{ key: ["light", "color-a", "color-b"], set: {} }])).toThrow("delta.json pairs: key light/color-a/color-b matches 2 entries");
+  });
+
+  it("keeps the JSON errors of delta.json and pairs.json as their causes", () => {
+    const cause = (run: () => unknown): unknown => {
+      try {
+        run();
+        return undefined;
+      } catch (thrown) {
+        return (thrown as Error).cause;
+      }
+    };
+    expect([cause(() => parseDelta("{")), cause(() => applyPairChanges("{", []))].map((c) => c instanceof SyntaxError)).toEqual([true, true]);
   });
 
   it("fails on a pair list that is not a JSON list", () => {

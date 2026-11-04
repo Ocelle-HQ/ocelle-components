@@ -404,5 +404,8 @@ describe("runPlant: keyed locations", () => {
       "gates/plants/contrast/fail-x: keyed location packages/tokens/src/source.ts#color-nope resolves to no line",
     );
     expect(calls.at(-1)).toBe("removeDir /tmp/ocelle-plant-contrast-1");
+    const error = await runPlant(tools, "/repo", contrast, "p", plant).catch((thrown: unknown) => thrown);
+    expect((error as Error).cause).toBeInstanceOf(Error);
+    expect(((error as Error).cause as Error).message).toBe("keyed location packages/tokens/src/source.ts#color-nope resolves to no line");
   });
 });

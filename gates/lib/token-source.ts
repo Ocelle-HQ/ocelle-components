@@ -130,11 +130,8 @@ function entryProblem(value: unknown): string | undefined {
   return unknown === undefined ? undefined : `: unknown field ${unknown}`;
 }
 
-/**
- * The pair list of a pairs.json text; throws an Error naming the cause when it is not JSON, not a list of entries of
- * the schema, or not one entry per line (data-model.md § Contrast pair). An entry's line is the line it starts on.
- */
-export function parsePairs(text: string): PairList {
+/** The entries of a JSON list; throws when the text is not JSON or not a list. */
+function jsonList(text: string): unknown[] {
   let value: unknown;
   try {
     value = JSON.parse(text);
@@ -142,14 +139,27 @@ export function parsePairs(text: string): PairList {
     throw new Error(`not JSON (${describe(error)})`, { cause: error });
   }
   if (!Array.isArray(value)) throw new Error("not a list of pairs");
-  const entries = value as unknown[];
+  return value as unknown[];
+}
+
+/** The line (1-based) each of `count` object entries starts on; throws unless the list holds one entry per line. */
+function startLines(text: string, count: number): number[] {
+  const lines = text.split("\n").flatMap((line, index) => (line.trimStart().startsWith("{") ? [index + 1] : []));
+  if (lines.length !== count) throw new Error("not one entry per line");
+  return lines;
+}
+
+/**
+ * The pair list of a pairs.json text; throws an Error naming the cause when it is not JSON, not a list of entries of
+ * the schema, or not one entry per line (data-model.md § Contrast pair). An entry's line is the line it starts on.
+ */
+export function parsePairs(text: string): PairList {
+  const entries = jsonList(text);
   entries.forEach((entry, index) => {
     const problem = entryProblem(entry);
     if (problem !== undefined) throw new Error(`entry ${String(index + 1)}${problem.startsWith(":") ? "" : " "}${problem}`);
   });
-  const lines = text.split("\n").flatMap((line, index) => (line.trimStart().startsWith("{") ? [index + 1] : []));
-  if (lines.length !== entries.length) throw new Error("not one entry per line");
-  return { entries: entries as PairEntry[], lines };
+  return { entries: entries as PairEntry[], lines: startLines(text, entries.length) };
 }
 
 /** The pair list under `root`; throws CannotRun naming the pair list. */
@@ -194,29 +204,17 @@ export function tokenLines(text: string, name: string): number[] {
   return text.split("\n").flatMap((line, index) => (forms.some((form) => line.includes(form)) ? [index + 1] : []));
 }
 
-/** The entry a line of pairs.json holds, read as JSON without its trailing comma; undefined when it holds none. */
-function lineEntry(line: string): Record<string, unknown> | undefined {
-  try {
-    const value: unknown = JSON.parse(line.trim().replace(/,$/, ""));
-    return typeof value === "object" && value !== null && !Array.isArray(value) ? (value as Record<string, unknown>) : undefined;
-  } catch {
-    return undefined;
-  }
-}
-
-/** The lines (1-based) of a pairs.json text that hold the entry of `(theme, fg, bg)`. */
+/** The lines (1-based) of a pairs.json text that hold the entry of `(theme, fg, bg)`; throws when it is not a JSON list of one object per line. */
 export function pairLines(text: string, theme: string, fg: string, bg: string): number[] {
-  return text.split("\n").flatMap((line, index) => {
-    const entry = lineEntry(line);
-    return entry?.theme === theme && entry.fg === fg && entry.bg === bg ? [index + 1] : [];
-  });
+  const entries = jsonList(text) as Record<string, unknown>[];
+  const lines = startLines(text, entries.length);
+  return entries.flatMap((entry, index) => (entry.theme === theme && entry.fg === fg && entry.bg === bg ? [Number(lines[index])] : []));
 }
 
 /** The location of a finding about a token under `root`: its record in source.ts, or in overrides.ts if only added there. */
 export async function tokenLocator(root: string): Promise<(name: string) => Location> {
-  const text = (path: string): Promise<string> => readFile(join(root, path), "utf8").catch(() => "");
-  const sourceText = await text(tokenPaths.source);
-  const overridesText = await text(tokenPaths.overrides);
+  const sourceText = await readFile(join(root, tokenPaths.source), "utf8");
+  const overridesText = await readFile(join(root, tokenPaths.overrides), "utf8");
   return (name) => {
     const [inSource] = tokenLines(sourceText, name);
     if (inSource !== undefined) return { path: tokenPaths.source, line: inSource };

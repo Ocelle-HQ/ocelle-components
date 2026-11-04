@@ -100,6 +100,13 @@ describe("brand-rules (a) monospace-font", () => {
   });
 });
 
+describe("brand-rules (a) monospace-font: only type tokens", () => {
+  it("does not read a token outside the type group as a font", async () => {
+    const ran = await brandRules({ overrides: [{ add: { name: "size-monospace", group: "size", value: "monospace" } }] });
+    expect(ran).toEqual({ code: 0, out: ["brand-rules: 7 rules checked"], err: [] });
+  });
+});
+
 describe("brand-rules (b) link-accent", () => {
   it("rejects color-link equal to color-accent, which also fails 4.5:1 on canvas and sheet (US3 scenario 6)", async () => {
     const ran = await brandRules({ overrides: [{ token: "color-link", light: "#c68a1e" }] });
@@ -128,6 +135,12 @@ describe("brand-rules (b) link-accent", () => {
   it("rejects a pair list without the ochre pair (only a dark one), at color-accent's line (US3 scenario 6)", async () => {
     const ran = await brandRules({ pairs: [{ ...ochre, theme: "dark" }] });
     expect(findings(ran)).toEqual([`${sourcePath}:${String(line.accent)}: brand-rules: link-accent: the pair color-accent on color-canvas in light is not listed as an excluded text pair`]);
+  });
+
+  it("does not take color-accent on another ground for the ochre pair", async () => {
+    expect(findings(await brandRules({ pairs: [{ ...ochre, bg: "color-sheet" }] }))).toEqual([
+      `${sourcePath}:${String(line.accent)}: brand-rules: link-accent: the pair color-accent on color-canvas in light is not listed as an excluded text pair`,
+    ]);
   });
 
   it("rejects an empty pair list the same way", async () => {
@@ -190,6 +203,17 @@ describe("brand-rules (e) dark-chrome", () => {
     ]);
   });
 
+  it("reports a missing chrome ground or chrome ink once, and a chrome ink that is not opaque in one theme", async () => {
+    const missing = await brandRules({ overrides: [{ remove: "color-chrome-hover" }, { remove: "color-chrome-ink" }] });
+    expect(findings(missing)).toEqual([
+      `${sourcePath}:${String(line.chromeHover)}: brand-rules: dark-chrome: color-chrome-hover is missing`,
+      `${sourcePath}:${String(line.chromeInk)}: brand-rules: dark-chrome: color-chrome-ink is missing`,
+    ]);
+    const overlay = { add: { name: "color-overlay", group: "colour", value: { light: "#000000", dark: "rgb(0 0 0 / 0.5)" } } };
+    const translucent = await brandRules({ overrides: [overlay, { token: "color-chrome-ink", dark: "var(--ocelle-color-overlay)", ref: { light: [], dark: ["color-overlay"] } }] });
+    expect(findings(translucent)).toEqual([`${sourcePath}:${String(line.chromeInk)}: brand-rules: dark-chrome: color-chrome-ink is not an opaque colour in dark`]);
+  });
+
   it("accepts a chrome ground at 0.0497", async () => {
     expect(await brandRules({ overrides: [{ token: "color-chrome-hover", light: "#3F3F3F", dark: "#3F3F3F" }] })).toEqual({ code: 0, out: ["brand-rules: 7 rules checked"], err: [] });
   });
@@ -224,6 +248,13 @@ describe("brand-rules (f) reduced-motion", () => {
     ]);
   });
 
+  it("reads the reduced-motion query with any spacing around its colon, and only in @media", async () => {
+    const spaced = await brandRules({ wrapper: wrapper('text.replace("(prefers-reduced-motion: reduce)", "(prefers-reduced-motion :reduce)")') });
+    expect(spaced).toEqual({ code: 0, out: ["brand-rules: 7 rules checked"], err: [] });
+    const supports = await brandRules({ wrapper: wrapper('text + "@supports (prefers-reduced-motion: reduce) {\\n  :root {\\n    --ocelle-x: 1;\\n  }\\n}\\n"') });
+    expect(supports).toEqual({ code: 0, out: ["brand-rules: 7 rules checked"], err: [] });
+  });
+
   it("rejects a stylesheet without a reduced-motion block", async () => {
     const ran = await brandRules({ wrapper: wrapper('text.slice(0, text.indexOf("@media (prefers-reduced-motion: reduce)"))') });
     expect(findings(ran)).toEqual([`${cssPath}: brand-rules: reduced-motion: no @media (prefers-reduced-motion: reduce) block`]);
@@ -252,6 +283,8 @@ describe("brand-rules (g) forced-colours", () => {
     const none = await brandRules({ wrapper: wrapper('text + ":root {\\n  forced-color-adjust: none;\\n}\\n"') });
     expect(findings(none)).toEqual([`${cssPath}:${String(stylesheet.split("\n").length + 1)}: brand-rules: forced-colours: forced-color-adjust: none defeats forced colours`]);
     expect((await brandRules({ wrapper: wrapper('text + ":root {\\n  forced-color-adjust: auto;\\n}\\n"') })).code).toBe(0);
+    const upper = await brandRules({ wrapper: wrapper('text + ":root {\\n  FORCED-COLOR-ADJUST: NONE;\\n}\\n"') });
+    expect(findings(upper)).toEqual([`${cssPath}:${String(stylesheet.split("\n").length + 1)}: brand-rules: forced-colours: forced-color-adjust: none defeats forced colours`]);
   });
 });
 

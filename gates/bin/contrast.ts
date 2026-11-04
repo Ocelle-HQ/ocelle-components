@@ -26,12 +26,13 @@ function requiredKey(pair: RequiredPair | PairEntry): string {
   return `${label(pair)} ${pair.kind}`;
 }
 
-/** Whether a computed ratio matches a recorded figure at the figure's precision: in [figure - ½ unit, figure + ½ unit). */
-export function matchesFigure(ratio: number, figure: string): boolean {
+/**
+ * Whether a computed ratio matches a recorded figure at the figure's precision: in [figure - ½ unit, figure + ½ unit),
+ * which is the ratio rounded half up to the figure's decimals (`5.3` matches [5.25, 5.35)).
+ */
+function matchesFigure(ratio: number, figure: string): boolean {
   const decimals = figure.split(".")[1]?.length ?? 0;
-  const scaled = ratio * 10 ** decimals;
-  const recorded = Number(figure.replace(".", ""));
-  return scaled >= recorded - 0.5 && scaled < recorded + 0.5;
+  return Math.round(ratio * 10 ** decimals) === Number(figure.replace(".", ""));
 }
 
 /** The findings of one entry of the list, in the order of data-model.md § Gate findings. */
@@ -50,6 +51,7 @@ function entryFindings(tokens: Tokens, entry: PairEntry, required: ReadonlySet<s
   if (!matchesFigure(ratio, entry.figure)) found.push(finding("figure-mismatch", `recorded figure ${entry.figure}, computed ${ratio.toFixed(4)}`));
   const exempt = tokens.source.find((record) => record.name === entry.fg)?.contrast?.exempt === true;
   const threshold = thresholds[entry.kind];
+  // Stryker disable next-line EqualityOperator: equivalent, no two 6-digit hex colours give a ratio of exactly 3 or 4.5 (an exhaustive search over all 2^24 relative luminances, by the formula of gates/lib/wcag.ts, found none), so < threshold and <= threshold agree on every input
   if (entry.status === "checked" && !exempt && ratio < threshold) {
     found.push(finding("below-threshold", `${ratio.toFixed(4)}:1 is below the ${entry.kind} threshold of ${String(threshold)}:1`));
   }
@@ -96,7 +98,7 @@ async function contrast(root: string, printing: boolean, io: Io): Promise<number
   if (empty !== undefined) return emit({ exit: 2, cause: `${gate}: cannot run: no pairs for ${empty}` }, io.out, io.err);
   const findings = check(tokens, list, await tokenLocator(root));
   if (findings.length > 0) return emit({ exit: 1, findings, summary: `${gate}: ${plural(findings.length, "finding")}` }, io.out, io.err);
-  const perTheme = requiredPairs(tokens.source).filter((pair) => pair.theme === "light").length;
+  const perTheme = requiredPairs(tokens.source).length / themes.length;
   const [light, dark] = counts.map(String) as [string, string];
   return emit({ exit: 0, summary: `${gate}: ${light} pairs checked in light, ${dark} in dark (${String(perTheme)} required per theme)` }, io.out, io.err);
 }
