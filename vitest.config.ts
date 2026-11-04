@@ -53,6 +53,28 @@ export default defineConfig({
         },
       },
       {
+        // The Storybook unit tests (002 research.md R-10): the scripts, the configuration and the stories' render code
+        // in node, with no build; these kill the mutants of storybook/scripts/** and storybook/.storybook/**.
+        test: {
+          name: "storybook",
+          environment: "node",
+          include: ["storybook/test/unit/**/*.test.ts"],
+          exclude: excluded,
+        },
+      },
+      {
+        // The Storybook run-time test (002 research.md R-10): its global setup builds the Storybook into a per-run
+        // temporary directory under a no-network preload; the test serves it under the Storybook page's CSP header
+        // and drives Chromium through Playwright. Not mutated (vitest.mutation.config.ts).
+        test: {
+          name: "storybook-integration",
+          environment: "node",
+          include: ["storybook/test/integration/**/*.test.ts"],
+          exclude: excluded,
+          globalSetup: ["storybook/test/integration/setup.ts"],
+        },
+      },
+      {
         test: {
           name: "gates",
           environment: "node",
