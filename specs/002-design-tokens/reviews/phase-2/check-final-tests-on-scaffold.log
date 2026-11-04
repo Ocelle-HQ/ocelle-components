@@ -1,5 +1,5 @@
 Scope: all 5 workspace projects
-✓ Lockfile passes supply-chain policies (verified 55m ago)
+✓ Lockfile passes supply-chain policies (verified 2h ago)
 Lockfile is up to date, resolution step is skipped
 Packages are hard linked from the content-addressable store to the virtual store.
   Content-addressable store is at: /root/.local/share/pnpm/store/v11
@@ -29,7 +29,7 @@ devDependencies:
 + vite 8.3.5
 + vitest 5.0.5
 
-Done in 306ms using pnpm v12.16.1
+Done in 553ms using pnpm v12.16.1
 $ node gates/bin/setup-offline.ts
 setup: installed offline; Chromium at /tmp/claude-0/-home-user-ocelle-components/181e1231-8fd5-5f31-9d9d-498e593ba7cf/scratchpad/pw/chromium-1248/chrome-linux64/chrome
 $ node gates/bin/test.ts
@@ -90,12 +90,13 @@ packages/tokens/test/overrides.test.ts:14: unit-tests: applyOverrides() returns 
 packages/tokens/test/overrides.test.ts:18: unit-tests: applyOverrides() sets the value of one theme by name and keeps the other: AssertionError: expected undefined to deeply equal { name: 'color-ink', …(3) }
 packages/tokens/test/overrides.test.ts:33: unit-tests: applyOverrides() makes a one-value token per theme when a theme is set on it: AssertionError: expected undefined to deeply equal { light: '1rem', dark: '2rem' }
 packages/tokens/test/overrides.test.ts:37: unit-tests: applyOverrides() replaces value, ref and contrast by name: AssertionError: expected [ undefined, undefined ] to deeply equal [ { name: 'gutter', …(3) }, …(1) ]
-packages/tokens/test/overrides.test.ts:48: unit-tests: applyOverrides() appends an added record and drops a removed one: AssertionError: expected [] to deeply equal [ 'color-ground', 'color-ink', …(10) ]
-packages/tokens/test/overrides.test.ts:55: unit-tests: applyOverrides() applies the overrides in order: AssertionError: expected [ undefined, undefined ] to deeply equal [ '3rem', '2px' ]
-packages/tokens/test/overrides.test.ts:70: unit-tests: applyOverrides() throws: token override names an unknown token c…: AssertionError: expected function to throw an error, but it didn't
-packages/tokens/test/overrides.test.ts:70: unit-tests: applyOverrides() throws: token override adds color-ink, which al…: AssertionError: expected function to throw an error, but it didn't
-packages/tokens/test/overrides.test.ts:70: unit-tests: applyOverrides() throws: token override removes an unknown token…: AssertionError: expected function to throw an error, but it didn't
-packages/tokens/test/overrides.test.ts:76: unit-tests: the committed overrides are empty, so the records of source.ts are exactly what ships: AssertionError: expected 0 to be greater than 100
+packages/tokens/test/overrides.test.ts:48: unit-tests: applyOverrides() keeps the ref and the contrast of a record when an override sets only its value: AssertionError: expected [ undefined, undefined ] to deeply equal [ { name: 'gutter', …(3) }, …(1) ]
+packages/tokens/test/overrides.test.ts:56: unit-tests: applyOverrides() appends an added record and drops a removed one: AssertionError: expected [] to deeply equal [ 'color-ground', 'color-ink', …(10) ]
+packages/tokens/test/overrides.test.ts:63: unit-tests: applyOverrides() applies the overrides in order: AssertionError: expected [ undefined, undefined ] to deeply equal [ '3rem', '2px' ]
+packages/tokens/test/overrides.test.ts:78: unit-tests: applyOverrides() throws: token override names an unknown token c…: AssertionError: expected function to throw an error, but it didn't
+packages/tokens/test/overrides.test.ts:78: unit-tests: applyOverrides() throws: token override adds color-ink, which al…: AssertionError: expected function to throw an error, but it didn't
+packages/tokens/test/overrides.test.ts:78: unit-tests: applyOverrides() throws: token override removes an unknown token…: AssertionError: expected function to throw an error, but it didn't
+packages/tokens/test/overrides.test.ts:84: unit-tests: the committed overrides are empty, so the records of source.ts are exactly what ships: AssertionError: expected 0 to be greater than 100
 packages/tokens/test/readme.test.ts:46: unit-tests: packages/tokens/README.md states: Load `tokens.css` once on the document: AssertionError: expected '' to contain 'Load `tokens.css` once on the document'
 packages/tokens/test/readme.test.ts:46: unit-tests: packages/tokens/README.md states: Elements read the tokens by inheritance: AssertionError: expected '' to contain 'Elements read the tokens by inheritan…'
 packages/tokens/test/readme.test.ts:46: unit-tests: packages/tokens/README.md states: follows the system setting (`prefers-color-scheme`): AssertionError: expected '' to contain 'follows the system setting (`prefers-…'
@@ -122,8 +123,9 @@ packages/tokens/test/resolve.test.ts:23: unit-tests: resolve() on fixture source
 packages/tokens/test/resolve.test.ts:37: unit-tests: resolve() on fixture sources resolves a reference in one theme only: AssertionError: expected [ '', '' ] to deeply equal [ '0 2px 4px rgb(0 0 0 / 0.1)', …(1) ]
 packages/tokens/test/resolve.test.ts:44: unit-tests: resolve() on fixture sources resolves every reference in a value with several: AssertionError: expected '' to be 'calc(2 * 1rem + 3 * 1rem)' // Object.is equality
 packages/tokens/test/resolve.test.ts:54: unit-tests: resolve() on fixture sources follows a change of the referenced token: AssertionError: expected [ '', '' ] to deeply equal [ '#222222', '#DDDDDD' ]
-packages/tokens/test/resolve.test.ts:59: unit-tests: resolve() on fixture sources throws naming an unknown token: AssertionError: expected function to throw an error, but it didn't
-packages/tokens/test/resolve.test.ts:65: unit-tests: resolve() on the real source resolves color-focus and color-current to color-accent-strong's value in each theme (A.1): AssertionError: expected [ '', '', '', '' ] to deeply equal [ '#8F5E0F', '#E0A23A', …(2) ]
+packages/tokens/test/resolve.test.ts:59: unit-tests: resolve() on fixture sources throws naming a reference cycle, from the token asked for back to the token that repeats: AssertionError: expected function to throw an error, but it didn't
+packages/tokens/test/resolve.test.ts:67: unit-tests: resolve() on fixture sources throws naming an unknown token: AssertionError: expected function to throw an error, but it didn't
+packages/tokens/test/resolve.test.ts:73: unit-tests: resolve() on the real source resolves color-focus and color-current to color-accent-strong's value in each theme (A.1): AssertionError: expected [ '', '', '', '' ] to deeply equal [ '#8F5E0F', '#E0A23A', …(2) ]
 packages/tokens/test/sample.test.ts:4: unit-tests: @ocelle/tokens skeleton exports nothing yet: AssertionError: expected [ 'tokenNames', 'tokens', 'cssName' ] to deeply equal []
 packages/tokens/test/source-table.test.ts:30: unit-tests: the stylesheet from the real source has the four blocks of research.md R-02, in order: AssertionError: expected [] to deeply equal [ ':root', …(3) ]
 packages/tokens/test/source-table.test.ts:34: unit-tests: the stylesheet from the real source declares exactly the tokens of Appendix A on :root, and none of A.6: AssertionError: expected [] to deeply equal [ '--ocelle-bar-block-narrow', …(108) ]
@@ -132,55 +134,93 @@ packages/tokens/test/source-table.test.ts:45: unit-tests: the stylesheet from th
 packages/tokens/test/source-table.test.ts:61: unit-tests: the stylesheet from the real source sets exactly motion-fast and motion-base to 0ms under reduced motion (FR-007): AssertionError: expected [] to deeply equal [ …(2) ]
 packages/tokens/test/source-table.test.ts:70: unit-tests: the JSON export from the real source has version 1 and exactly the tokens of Appendix A, none of A.6: AssertionError: expected [] to deeply equal [ '--ocelle-bar-block-narrow', …(108) ]
 packages/tokens/test/source-table.test.ts:76: unit-tests: the JSON export from the real source gives each token its group, its resolved value per theme (or its one value) and its references: AssertionError: expected { 'color-canvas': undefined, …(108) } to deeply equal { 'color-canvas': { …(4) }, …(108) }
-packages/tokens/test/validate.test.ts:174: unit-tests: validateSource() names the token and the rule for a name that is not lower-case words…: AssertionError: expected function to throw an error, but it didn't
-packages/tokens/test/validate.test.ts:174: unit-tests: validateSource() names the token and the rule for a duplicate name: AssertionError: expected function to throw an error, but it didn't
-packages/tokens/test/validate.test.ts:174: unit-tests: validateSource() names the token and the rule for a ref naming an unknown token: AssertionError: expected function to throw an error, but it didn't
-packages/tokens/test/validate.test.ts:174: unit-tests: validateSource() names the token and the rule for a ground naming an unknown token: AssertionError: expected function to throw an error, but it didn't
-packages/tokens/test/validate.test.ts:174: unit-tests: validateSource() names the token and the rule for a ref that lacks a reference of the…: AssertionError: expected function to throw an error, but it didn't
-packages/tokens/test/validate.test.ts:174: unit-tests: validateSource() names the token and the rule for a derived token without ref: AssertionError: expected function to throw an error, but it didn't
-packages/tokens/test/validate.test.ts:174: unit-tests: validateSource() names the token and the rule for a ref that names a token the value …: AssertionError: expected function to throw an error, but it didn't
-packages/tokens/test/validate.test.ts:174: unit-tests: validateSource() names the token and the rule for a ref that does not match the value…: AssertionError: expected function to throw an error, but it didn't
-packages/tokens/test/validate.test.ts:174: unit-tests: validateSource() names the token and the rule for a ref per theme on a value that is …: AssertionError: expected function to throw an error, but it didn't
-packages/tokens/test/validate.test.ts:174: unit-tests: validateSource() names the token and the rule for a reference cycle: AssertionError: expected function to throw an error, but it didn't
-packages/tokens/test/validate.test.ts:174: unit-tests: validateSource() names the token and the rule for a colour value that is not a 6-digi…: AssertionError: expected function to throw an error, but it didn't
-packages/tokens/test/validate.test.ts:174: unit-tests: validateSource() names the token and the rule for rgb(… / α) on a colour other than c…: AssertionError: expected function to throw an error, but it didn't
-packages/tokens/test/validate.test.ts:174: unit-tests: validateSource() names the token and the rule for a color-overlay value that is neith…: AssertionError: expected function to throw an error, but it didn't
-packages/tokens/test/validate.test.ts:174: unit-tests: validateSource() names the token and the rule for a colour value with more than one r…: AssertionError: expected function to throw an error, but it didn't
-packages/tokens/test/validate.test.ts:174: unit-tests: validateSource() names the token and the rule for a colour reference to color-scheme …: AssertionError: expected function to throw an error, but it didn't
-packages/tokens/test/validate.test.ts:174: unit-tests: validateSource() names the token and the rule for a color-scheme value other than lig…: AssertionError: expected function to throw an error, but it didn't
-packages/tokens/test/validate.test.ts:174: unit-tests: validateSource() names the token and the rule for contrast on a colour whose resolved…: AssertionError: expected function to throw an error, but it didn't
-packages/tokens/test/validate.test.ts:174: unit-tests: validateSource() names the token and the rule for a ground that is not opaque, direct…: AssertionError: expected function to throw an error, but it didn't
-packages/tokens/test/validate.test.ts:174: unit-tests: validateSource() names the token and the rule for contrast on a token outside the col…: AssertionError: expected function to throw an error, but it didn't
-packages/tokens/test/validate.test.ts:174: unit-tests: validateSource() names the token and the rule for a theme-independent token with a li…: AssertionError: expected function to throw an error, but it didn't
-packages/tokens/test/validate.test.ts:174: unit-tests: validateSource() names the token and the rule for a theme-dependent token with one va…: AssertionError: expected function to throw an error, but it didn't
-packages/tokens/test/validate.test.ts:174: unit-tests: validateSource() names the token and the rule for several rules at once, in source or…: AssertionError: expected function to throw an error, but it didn't
-packages/tokens/test/validate.test.ts:180: unit-tests: validateSource() names the token and the rule for the A.6 name color-proto: AssertionError: expected function to throw an error, but it didn't
-packages/tokens/test/validate.test.ts:180: unit-tests: validateSource() names the token and the rule for the A.6 name color-proto-bg: AssertionError: expected function to throw an error, but it didn't
-packages/tokens/test/validate.test.ts:180: unit-tests: validateSource() names the token and the rule for the A.6 name font-size-ui: AssertionError: expected function to throw an error, but it didn't
-packages/tokens/test/validate.test.ts:180: unit-tests: validateSource() names the token and the rule for the A.6 name font-size-body: AssertionError: expected function to throw an error, but it didn't
-packages/tokens/test/validate.test.ts:180: unit-tests: validateSource() names the token and the rule for the A.6 name font-size-title: AssertionError: expected function to throw an error, but it didn't
-packages/tokens/test/validate.test.ts:180: unit-tests: validateSource() names the token and the rule for the A.6 name radius-3: AssertionError: expected function to throw an error, but it didn't
+packages/tokens/test/validate.test.ts:241: unit-tests: validateSource() names the token and the rule for a name that is not lower-case words…: AssertionError: expected function to throw an error, but it didn't
+packages/tokens/test/validate.test.ts:241: unit-tests: validateSource() names the token and the rule for a duplicate name: AssertionError: expected function to throw an error, but it didn't
+packages/tokens/test/validate.test.ts:241: unit-tests: validateSource() names the token and the rule for a ref naming an unknown token: AssertionError: expected function to throw an error, but it didn't
+packages/tokens/test/validate.test.ts:241: unit-tests: validateSource() names the token and the rule for a ground naming an unknown token: AssertionError: expected function to throw an error, but it didn't
+packages/tokens/test/validate.test.ts:241: unit-tests: validateSource() names the token and the rule for a ref that lacks a reference of the…: AssertionError: expected function to throw an error, but it didn't
+packages/tokens/test/validate.test.ts:241: unit-tests: validateSource() names the token and the rule for a derived token without ref: AssertionError: expected function to throw an error, but it didn't
+packages/tokens/test/validate.test.ts:241: unit-tests: validateSource() names the token and the rule for a ref that names a token the value …: AssertionError: expected function to throw an error, but it didn't
+packages/tokens/test/validate.test.ts:241: unit-tests: validateSource() names the token and the rule for a ref that does not match the value…: AssertionError: expected function to throw an error, but it didn't
+packages/tokens/test/validate.test.ts:241: unit-tests: validateSource() names the token and the rule for a ref that names a reference twice: AssertionError: expected function to throw an error, but it didn't
+packages/tokens/test/validate.test.ts:241: unit-tests: validateSource() names the token and the rule for a ref that lacks one of several ref…: AssertionError: expected function to throw an error, but it didn't
+packages/tokens/test/validate.test.ts:241: unit-tests: validateSource() names the token and the rule for a per-theme ref naming an unknown t…: AssertionError: expected function to throw an error, but it didn't
+packages/tokens/test/validate.test.ts:241: unit-tests: validateSource() names the token and the rule for a ref per theme on a value that is …: AssertionError: expected function to throw an error, but it didn't
+packages/tokens/test/validate.test.ts:241: unit-tests: validateSource() names the token and the rule for a reference cycle: AssertionError: expected function to throw an error, but it didn't
+packages/tokens/test/validate.test.ts:241: unit-tests: validateSource() names the token and the rule for a cycle that does not pass through …: AssertionError: expected function to throw an error, but it didn't
+packages/tokens/test/validate.test.ts:241: unit-tests: validateSource() names the token and the rule for a cycle reached through a later ref…: AssertionError: expected function to throw an error, but it didn't
+packages/tokens/test/validate.test.ts:241: unit-tests: validateSource() names the token and the rule for a duplicate name, taking the refere…: AssertionError: expected function to throw an error, but it didn't
+packages/tokens/test/validate.test.ts:241: unit-tests: validateSource() names the token and the rule for a colour value that is not a 6-digi…: AssertionError: expected function to throw an error, but it didn't
+packages/tokens/test/validate.test.ts:241: unit-tests: validateSource() names the token and the rule for rgb(… / α) on a colour other than c…: AssertionError: expected function to throw an error, but it didn't
+packages/tokens/test/validate.test.ts:241: unit-tests: validateSource() names the token and the rule for a color-overlay value that is neith…: AssertionError: expected function to throw an error, but it didn't
+packages/tokens/test/validate.test.ts:241: unit-tests: validateSource() names the token and the rule for a colour value with more than one r…: AssertionError: expected function to throw an error, but it didn't
+packages/tokens/test/validate.test.ts:241: unit-tests: validateSource() names the token and the rule for a colour reference to color-scheme …: AssertionError: expected function to throw an error, but it didn't
+packages/tokens/test/validate.test.ts:241: unit-tests: validateSource() names the token and the rule for a color-scheme value other than lig…: AssertionError: expected function to throw an error, but it didn't
+packages/tokens/test/validate.test.ts:241: unit-tests: validateSource() names the token and the rule for a color-scheme value that is right …: AssertionError: expected function to throw an error, but it didn't
+packages/tokens/test/validate.test.ts:241: unit-tests: validateSource() names the token and the rule for contrast on a colour, and a ground,…: AssertionError: expected function to throw an error, but it didn't
+packages/tokens/test/validate.test.ts:241: unit-tests: validateSource() names the token and the rule for contrast on a colour whose resolved…: AssertionError: expected function to throw an error, but it didn't
+packages/tokens/test/validate.test.ts:241: unit-tests: validateSource() names the token and the rule for a ground that is not opaque, direct…: AssertionError: expected function to throw an error, but it didn't
+packages/tokens/test/validate.test.ts:241: unit-tests: validateSource() names the token and the rule for contrast on a token outside the col…: AssertionError: expected function to throw an error, but it didn't
+packages/tokens/test/validate.test.ts:241: unit-tests: validateSource() names the token and the rule for a theme-independent token with a li…: AssertionError: expected function to throw an error, but it didn't
+packages/tokens/test/validate.test.ts:241: unit-tests: validateSource() names the token and the rule for a theme-dependent token with one va…: AssertionError: expected function to throw an error, but it didn't
+packages/tokens/test/validate.test.ts:241: unit-tests: validateSource() names the token and the rule for several rules at once, in source or…: AssertionError: expected function to throw an error, but it didn't
+packages/tokens/test/validate.test.ts:247: unit-tests: validateSource() names the token and the rule for the A.6 name color-proto: AssertionError: expected function to throw an error, but it didn't
+packages/tokens/test/validate.test.ts:247: unit-tests: validateSource() names the token and the rule for the A.6 name color-proto-bg: AssertionError: expected function to throw an error, but it didn't
+packages/tokens/test/validate.test.ts:247: unit-tests: validateSource() names the token and the rule for the A.6 name font-size-ui: AssertionError: expected function to throw an error, but it didn't
+packages/tokens/test/validate.test.ts:247: unit-tests: validateSource() names the token and the rule for the A.6 name font-size-body: AssertionError: expected function to throw an error, but it didn't
+packages/tokens/test/validate.test.ts:247: unit-tests: validateSource() names the token and the rule for the A.6 name font-size-title: AssertionError: expected function to throw an error, but it didn't
+packages/tokens/test/validate.test.ts:247: unit-tests: validateSource() names the token and the rule for the A.6 name radius-3: AssertionError: expected function to throw an error, but it didn't
 gates/test/plant-repo.test.ts:7: unit-tests: configurationSet lists the root configuration, each package's manifest and tsconfig, the modules the configurations import, and the token source, its overrides, the generator and the pair list (002 contracts/gates.md § Configuration set): AssertionError: expected [ 'package.json', …(15) ] to deeply equal [ 'package.json', …(19) ]
-gates/test/token-only.test.ts:135: unit-tests: ocelle/token-only: unknown tokens, with fixture lists reports a misspelt token at its line, naming it: AssertionError: expected [] to deeply equal [ { line: 2, …(1) } ]
-gates/test/token-only.test.ts:141: unit-tests: ocelle/token-only: unknown tokens, with fixture lists reports an unknown token inside calc() and as a var() fallback: AssertionError: expected [] to deeply equal [ Array(2) ]
-gates/test/token-only.test.ts:148: unit-tests: ocelle/token-only: unknown tokens, with fixture lists reports each unknown name of a declaration, after its raw values: AssertionError: expected [ { line: 2, …(1) } ] to deeply equal [ { line: 2, …(1) }, …(2) ]
-gates/test/token-only.test.ts:156: unit-tests: ocelle/token-only: unknown tokens, with fixture lists accepts a real token, a declared element property and a custom property outside --ocelle- (only the control): AssertionError: expected [] to deeply equal [ { line: 6, …(1) } ]
-gates/test/token-only.test.ts:161: unit-tests: ocelle/token-only: unknown tokens, with fixture lists exempts element properties by exact name only: a misspelt one is unknown: AssertionError: expected [] to deeply equal [ Array(2) ]
-gates/test/token-only.test.ts:168: unit-tests: ocelle/token-only: unknown tokens, with fixture lists does not treat a token definition as a reference: AssertionError: expected [] to deeply equal [ { line: 3, …(1) } ]
-gates/test/token-only.test.ts:174: unit-tests: ocelle/token-only: unknown tokens, with fixture lists stops (throws) when an element property has the full name of a token: Error: promise resolved "[]" instead of rejecting
-gates/test/token-only.test.ts:180: unit-tests: ocelle/token-only: unknown tokens, with fixture lists reports the invalid secondary option {"tokens":[1]}: AssertionError: expected [] to have a length of 1 but got +0
-gates/test/token-only.test.ts:180: unit-tests: ocelle/token-only: unknown tokens, with fixture lists reports the invalid secondary option {"tokens":["--ocelle-a"],"elementProperties":[2]}: AssertionError: expected [] to have a length of 1 but got +0
-gates/test/token-only.test.ts:180: unit-tests: ocelle/token-only: unknown tokens, with fixture lists reports the invalid secondary option {"colours":[]}: AssertionError: expected [] to have a length of 1 but got +0
-gates/test/token-only.test.ts:187: unit-tests: ocelle/token-only without options reads the lists of the repository it runs in reports a misspelt token of the real source and accepts a real one: AssertionError: expected [] to deeply equal [ { line: 2, …(1) } ]
-gates/test/token-only.test.ts:231: unit-tests: loadLists() reads the full token names of the source and no element property while the manifest is absent: Error: expected { tokens: [], elementProperties: [] } to deeply equal { tokens: [ …(2) ], …(1) }
-gates/test/token-only.test.ts:235: unit-tests: loadLists() reads the cssProperties names the manifest declares: Error: expected { tokens: [], elementProperties: [] } to deeply equal { tokens: [ …(2) ], …(1) }
-gates/test/token-only.test.ts:242: unit-tests: loadLists() throws naming the file when the token source is missing: Error: promise resolved "{ tokens: [], elementProperties: [] }" instead of rejecting
-gates/test/token-only.test.ts:246: unit-tests: loadLists() throws naming the rule when the token source fails validation: Error: promise resolved "{ tokens: [], elementProperties: [] }" instead of rejecting
-gates/test/token-only.test.ts:253: unit-tests: loadLists() throws when the manifest is not JSON: Error: promise resolved "{ tokens: [], elementProperties: [] }" instead of rejecting
-gates/test/token-only.test.ts:262: unit-tests: loadLists() throws when the manifest is not the custom-elements manifest schema: no schemaVersion: Error: promise resolved "{ tokens: [], elementProperties: [] }" instead of rejecting
-gates/test/token-only.test.ts:262: unit-tests: loadLists() throws when the manifest is not the custom-elements manifest schema: modules not a list: Error: promise resolved "{ tokens: [], elementProperties: [] }" instead of rejecting
-gates/test/token-only.test.ts:262: unit-tests: loadLists() throws when the manifest is not the custom-elements manifest schema: a cssProperties entry without a name: Error: promise resolved "{ tokens: [], elementProperties: [] }" instead of rejecting
-gates/test/token-only.test.ts:262: unit-tests: loadLists() throws when the manifest is not the custom-elements manifest schema: a list at the top: Error: promise resolved "{ tokens: [], elementProperties: [] }" instead of rejecting
-gates/test/token-only.test.ts:266: unit-tests: loadLists() throws when a declared element property has the full name of a token: Error: promise resolved "{ tokens: [], elementProperties: [] }" instead of rejecting
-unit-tests: 149 of 1400 tests failed
+gates/test/token-only.test.ts:97: unit-tests: referencedTokens() gives [ '--ocelle-a' ] for var(--ocelle-a) var, only the first argument of a var() function: TypeError: (0 , __vite_ssr_import_7__.referencedTokens) is not a function
+gates/test/token-only.test.ts:97: unit-tests: referencedTokens() gives [ '--ocelle-a' ] for VAR(--ocelle-a), only the first argument of a var() function: TypeError: (0 , __vite_ssr_import_7__.referencedTokens) is not a function
+gates/test/token-only.test.ts:97: unit-tests: referencedTokens() gives [ '--ocelle-a' ] for env(--ocelle-b) attr(--ocelle-c) var(--…, only the first argument of a var() function: TypeError: (0 , __vite_ssr_import_7__.referencedTokens) is not a function
+gates/test/token-only.test.ts:97: unit-tests: referencedTokens() gives [ '--ocelle-a' ] for --ocelle-b var(--ocelle-a), only the first argument of a var() function: TypeError: (0 , __vite_ssr_import_7__.referencedTokens) is not a function
+gates/test/token-only.test.ts:97: unit-tests: referencedTokens() gives [ '--ocelle-a', '--ocelle-b' ] for calc(var(--ocelle-a) + var(--ocelle-b, …, only the first argument of a var() function: TypeError: (0 , __vite_ssr_import_7__.referencedTokens) is not a function
+gates/test/token-only.test.ts:97: unit-tests: referencedTokens() gives [ '--ocelle-a' ] for var(--tip) var(--ocelle-a), only the first argument of a var() function: TypeError: (0 , __vite_ssr_import_7__.referencedTokens) is not a function
+gates/test/token-only.test.ts:148: unit-tests: ocelle/token-only: unknown tokens, with fixture lists reports a misspelt token at its line, naming it: AssertionError: expected [] to deeply equal [ { line: 2, …(1) } ]
+gates/test/token-only.test.ts:154: unit-tests: ocelle/token-only: unknown tokens, with fixture lists reports an unknown token inside calc() and as a var() fallback: AssertionError: expected [] to deeply equal [ Array(2) ]
+gates/test/token-only.test.ts:161: unit-tests: ocelle/token-only: unknown tokens, with fixture lists reports each unknown name of a declaration, after its raw values: AssertionError: expected [ { line: 2, …(1) } ] to deeply equal [ { line: 2, …(1) }, …(2) ]
+gates/test/token-only.test.ts:169: unit-tests: ocelle/token-only: unknown tokens, with fixture lists accepts a real token, a declared element property and a custom property outside --ocelle- (only the control): AssertionError: expected [] to deeply equal [ { line: 6, …(1) } ]
+gates/test/token-only.test.ts:174: unit-tests: ocelle/token-only: unknown tokens, with fixture lists exempts element properties by exact name only: a misspelt one is unknown: AssertionError: expected [] to deeply equal [ Array(2) ]
+gates/test/token-only.test.ts:181: unit-tests: ocelle/token-only: unknown tokens, with fixture lists does not treat a token definition as a reference: AssertionError: expected [] to deeply equal [ { line: 3, …(1) } ]
+gates/test/token-only.test.ts:187: unit-tests: ocelle/token-only: unknown tokens, with fixture lists stops (throws) when an element property has the full name of a token: Error: promise resolved "[]" instead of rejecting
+gates/test/token-only.test.ts:193: unit-tests: ocelle/token-only: unknown tokens, with fixture lists takes an absent list as empty: tokens alone make element properties unknown, element properties alone make tokens unknown: AssertionError: expected [] to deeply equal [ { line: 2, …(1) } ]
+gates/test/token-only.test.ts:199: unit-tests: ocelle/token-only: unknown tokens, with fixture lists takes a bare word var as no reference (only the control): AssertionError: expected [] to deeply equal [ { line: 3, …(1) } ]
+gates/test/token-only.test.ts:203: unit-tests: ocelle/token-only: unknown tokens, with fixture lists reports the invalid secondary option {"tokens":[1]}: AssertionError: expected [] to have a length of 1 but got +0
+gates/test/token-only.test.ts:203: unit-tests: ocelle/token-only: unknown tokens, with fixture lists reports the invalid secondary option {"tokens":["--ocelle-a"],"elementProperties":[2]}: AssertionError: expected [] to have a length of 1 but got +0
+gates/test/token-only.test.ts:203: unit-tests: ocelle/token-only: unknown tokens, with fixture lists reports the invalid secondary option {"colours":[]}: AssertionError: expected [] to have a length of 1 but got +0
+gates/test/token-only.test.ts:210: unit-tests: ocelle/token-only without options reads the lists of the repository it runs in reports a misspelt token of the real source and accepts a real one: AssertionError: expected [] to deeply equal [ { line: 2, …(1) } ]
+gates/test/token-only.test.ts:260: unit-tests: loadLists() reads the full token names of the source and no element property while the manifest is absent: Error: expected { tokens: [], elementProperties: [] } to deeply equal { tokens: [ …(2) ], …(1) }
+gates/test/token-only.test.ts:264: unit-tests: loadLists() reads the cssProperties names the manifest declares: Error: expected { tokens: [], elementProperties: [] } to deeply equal { tokens: [ …(2) ], …(1) }
+gates/test/token-only.test.ts:271: unit-tests: loadLists() throws naming the file when the token source is missing: Error: promise resolved "{ tokens: [], elementProperties: [] }" instead of rejecting
+gates/test/token-only.test.ts:275: unit-tests: loadLists() throws naming the rule when the token source fails validation: Error: promise resolved "{ tokens: [], elementProperties: [] }" instead of rejecting
+gates/test/token-only.test.ts:282: unit-tests: loadLists() throws when the manifest is not JSON: Error: promise resolved "{ tokens: [], elementProperties: [] }" instead of rejecting
+gates/test/token-only.test.ts:291: unit-tests: loadLists() throws when the manifest is not the custom-elements manifest schema: no schemaVersion: Error: promise resolved "{ tokens: [], elementProperties: [] }" instead of rejecting
+gates/test/token-only.test.ts:291: unit-tests: loadLists() throws when the manifest is not the custom-elements manifest schema: modules not a list: Error: promise resolved "{ tokens: [], elementProperties: [] }" instead of rejecting
+gates/test/token-only.test.ts:291: unit-tests: loadLists() throws when the manifest is not the custom-elements manifest schema: a cssProperties entry without a name: Error: promise resolved "{ tokens: [], elementProperties: [] }" instead of rejecting
+gates/test/token-only.test.ts:291: unit-tests: loadLists() throws when the manifest is not the custom-elements manifest schema: a list at the top: Error: promise resolved "{ tokens: [], elementProperties: [] }" instead of rejecting
+gates/test/token-only.test.ts:295: unit-tests: loadLists() throws naming the file, the reason and the cause when the manifest cannot be read: Error: promise resolved "{ tokens: [], elementProperties: [] }" instead of rejecting
+gates/test/token-only.test.ts:303: unit-tests: loadLists() throws with the parse error as the cause when the manifest is not JSON: Error: promise resolved "{ tokens: [], elementProperties: [] }" instead of rejecting
+gates/test/token-only.test.ts:309: unit-tests: loadLists() throws naming the reason exactly when the manifest is not the schema: Error: promise resolved "{ tokens: [], elementProperties: [] }" instead of rejecting
+gates/test/token-only.test.ts:315: unit-tests: loadLists() throws naming the source and the cause when the source exports no list: Error: promise resolved "{ tokens: [], elementProperties: [] }" instead of rejecting
+gates/test/token-only.test.ts:321: unit-tests: loadLists() throws naming the generator when it exports no validateSource: Error: promise resolved "{ tokens: [], elementProperties: [] }" instead of rejecting
+gates/test/token-only.test.ts:331: unit-tests: loadLists() throws with the validation error as the cause when the source is invalid: Error: promise resolved "{ tokens: [], elementProperties: [] }" instead of rejecting
+gates/test/token-only.test.ts:336: unit-tests: loadLists() throws when a declared element property has the full name of a token: Error: promise resolved "{ tokens: [], elementProperties: [] }" instead of rejecting
+gates/test/token-only.test.ts:364: unit-tests: manifestProperties() gives the reason for null: TypeError: (0 , __vite_ssr_import_6__.manifestProperties) is not a function
+gates/test/token-only.test.ts:364: unit-tests: manifestProperties() gives the reason for a list: TypeError: (0 , __vite_ssr_import_6__.manifestProperties) is not a function
+gates/test/token-only.test.ts:364: unit-tests: manifestProperties() gives the reason for a string: TypeError: (0 , __vite_ssr_import_6__.manifestProperties) is not a function
+gates/test/token-only.test.ts:364: unit-tests: manifestProperties() gives the reason for no schemaVersion: TypeError: (0 , __vite_ssr_import_6__.manifestProperties) is not a function
+gates/test/token-only.test.ts:364: unit-tests: manifestProperties() gives the reason for a schemaVersion that is not text: TypeError: (0 , __vite_ssr_import_6__.manifestProperties) is not a function
+gates/test/token-only.test.ts:364: unit-tests: manifestProperties() gives the reason for modules that is not a list: TypeError: (0 , __vite_ssr_import_6__.manifestProperties) is not a function
+gates/test/token-only.test.ts:364: unit-tests: manifestProperties() gives the reason for a module that is null: TypeError: (0 , __vite_ssr_import_6__.manifestProperties) is not a function
+gates/test/token-only.test.ts:364: unit-tests: manifestProperties() gives the reason for a module that is a list: TypeError: (0 , __vite_ssr_import_6__.manifestProperties) is not a function
+gates/test/token-only.test.ts:364: unit-tests: manifestProperties() gives the reason for declarations that is not a list: TypeError: (0 , __vite_ssr_import_6__.manifestProperties) is not a function
+gates/test/token-only.test.ts:364: unit-tests: manifestProperties() gives the reason for a declaration that is null: TypeError: (0 , __vite_ssr_import_6__.manifestProperties) is not a function
+gates/test/token-only.test.ts:364: unit-tests: manifestProperties() gives the reason for a declaration that is a list: TypeError: (0 , __vite_ssr_import_6__.manifestProperties) is not a function
+gates/test/token-only.test.ts:364: unit-tests: manifestProperties() gives the reason for cssProperties that is not a list: TypeError: (0 , __vite_ssr_import_6__.manifestProperties) is not a function
+gates/test/token-only.test.ts:364: unit-tests: manifestProperties() gives the reason for a cssProperties entry that is null: TypeError: (0 , __vite_ssr_import_6__.manifestProperties) is not a function
+gates/test/token-only.test.ts:364: unit-tests: manifestProperties() gives the reason for a cssProperties entry without a name: TypeError: (0 , __vite_ssr_import_6__.manifestProperties) is not a function
+gates/test/token-only.test.ts:364: unit-tests: manifestProperties() gives the reason for a cssProperties entry whose name is not text: TypeError: (0 , __vite_ssr_import_6__.manifestProperties) is not a function
+gates/test/token-only.test.ts:368: unit-tests: manifestProperties() gives the names in order, skipping modules without declarations and declarations without cssProperties: TypeError: (0 , __vite_ssr_import_6__.manifestProperties) is not a function
+unit-tests: 189 of 1441 tests failed
 [ELIFECYCLE] Test failed. See above for more details.
