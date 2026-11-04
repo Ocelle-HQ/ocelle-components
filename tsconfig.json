@@ -3,6 +3,6 @@
   "compilerOptions": {
     "noEmit": true
   },
-  "include": ["**/*.ts"],
+  "include": ["**/*.ts", "storybook/.storybook/**/*.ts"],
   "exclude": ["gates/plants/**", "gates/test/fixtures/**", "node_modules", "**/node_modules", "packages/*/dist"]
 }

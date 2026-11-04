@@ -35,13 +35,13 @@ commit or no variable `wght` WOFF2 at it (FR-011); T066 kitty-mission-ui unreada
 **Purpose**: dependencies, workspace and configuration wiring with no behaviour of its own. No red commit: write
 `specs/002-design-tokens/reviews/phase-1/tdd-exempt.md`.
 
-- [ ] T001 Write `specs/002-design-tokens/reviews/phase-1/tdd-exempt.md` stating why no test can fail for this phase (it adds dependencies, an empty workspace package and ignore entries only) and listing the files of T002 to T007
-- [ ] T002 Add `storybook` to `pnpm-workspace.yaml` `packages` (keep `minimumReleaseAge: 10080`, strict, empty `allowBuilds`)
-- [ ] T003 Create `storybook/package.json`: name `@ocelle/storybook`, `"private": true`, version `0.0.0`, `type: module`, dev dependencies `storybook` and `@storybook/html-vite` pinned exactly at the newest release at least seven days old on the day of install (10.6.4 at plan time, R-10), `@ocelle/tokens` as `workspace:0.0.0`; no scripts yet
-- [ ] T004 [P] Add `storybook/dist/` and `storybook/.generated/` to `.gitignore`
-- [ ] T005 [P] Add `storybook/.storybook/**/*.ts` explicitly to the root `tsconfig.json` include (`**/*.ts` skips dot-directories, contracts/gates.md § Mutation, typecheck and test scope)
-- [ ] T006 Run a non-frozen `pnpm install` to update `pnpm-lock.yaml`, commit it, then `pnpm run setup:online` and `pnpm run gate:pins` (exit 0) and `pnpm test` (exit 0)
-- [ ] T007 [P] Confirm `specs/002-design-tokens/sources/console-v2-tokens.md` has SHA-256 `7b0a5d0c4af7d1c7fa83f2a4af130e76097f6e6283e980da704c424395d9e61a` (R-05) and record the check in the exempt note
+- [X] T001 Write `specs/002-design-tokens/reviews/phase-1/tdd-exempt.md` stating why no test can fail for this phase (it adds dependencies, an empty workspace package and ignore entries only) and listing the files of T002 to T007
+- [X] T002 Add `storybook` to `pnpm-workspace.yaml` `packages` (keep `minimumReleaseAge: 10080`, strict, empty `allowBuilds`)
+- [X] T003 Create `storybook/package.json`: name `@ocelle/storybook`, `"private": true`, version `0.0.0`, `type: module`, dev dependencies `storybook` and `@storybook/html-vite` pinned exactly at the newest release at least seven days old on the day of install (10.6.4 at plan time, R-10), `@ocelle/tokens` as `workspace:0.0.0`; no scripts yet
+- [X] T004 [P] Add `storybook/dist/` and `storybook/.generated/` to `.gitignore`
+- [X] T005 [P] Add `storybook/.storybook/**/*.ts` explicitly to the root `tsconfig.json` include (`**/*.ts` skips dot-directories, contracts/gates.md § Mutation, typecheck and test scope)
+- [X] T006 Run a non-frozen `pnpm install` to update `pnpm-lock.yaml`, commit it, then `pnpm run setup:online` and `pnpm run gate:pins` (exit 0) and `pnpm test` (exit 0)
+- [X] T007 [P] Confirm `specs/002-design-tokens/sources/console-v2-tokens.md` has SHA-256 `7b0a5d0c4af7d1c7fa83f2a4af130e76097f6e6283e980da704c424395d9e61a` (R-05) and record the check in the exempt note
 
 **Checkpoint**: `pnpm test`, `pnpm run gate:pins`, `pnpm run gate:typecheck` exit 0; `tdd-check.sh 1` reports `exempt`.
 

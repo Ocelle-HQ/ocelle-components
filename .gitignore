@@ -5,6 +5,8 @@
 # Dependencies and generated output (root paths only; plants may track dist/)
 node_modules/
 packages/*/dist/
+storybook/dist/
+storybook/.generated/
 .stryker-tmp/
 reports/
 __screenshots__/

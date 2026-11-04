@@ -1,8 +1,12 @@
 packages:
   - "packages/*"
+  - "storybook"
 
 # Supply-chain policy (research.md R-04): registry packages must be at least 7 days old (in minutes),
 # with no exclusion, and no dependency may run an install script.
 minimumReleaseAge: 10080
 minimumReleaseAgeStrict: true
-allowBuilds: {}
+# Explicit denials (false) are allowed by the pins gate; no entry may be true. esbuild (via Storybook) has a
+# postinstall that only checks its platform binary, which pnpm installs as an optional dependency.
+allowBuilds:
+  esbuild: false
