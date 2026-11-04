@@ -1,0 +1,186 @@
+Scope: all 5 workspace projects
+✓ Lockfile passes supply-chain policies (verified 55m ago)
+Lockfile is up to date, resolution step is skipped
+Packages are hard linked from the content-addressable store to the virtual store.
+  Content-addressable store is at: /root/.local/share/pnpm/store/v11
+  Virtual store is at:             node_modules/.pnpm
+Packages: +469
+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+Progress: resolved 469, reused 469, downloaded 0, added 469, done
+
+devDependencies:
++ @eslint/js 10.0.1
++ @stryker-mutator/core 10.1.1
++ @stryker-mutator/typescript-checker 10.1.1
++ @stryker-mutator/vitest-runner 10.1.1
++ @types/node 26.6.5
++ @vitest/browser-playwright 5.0.5
++ @vitest/eslint-plugin 1.6.28
++ eslint 10.13.0
++ jiti 2.7.0
++ parse5 8.0.1
++ playwright 1.64.1
++ postcss 8.5.31
++ postcss-lit 1.4.1
++ postcss-value-parser 4.2.0
++ stylelint 17.16.0
++ typescript 6.0.3
++ typescript-eslint 8.72.0
++ vite 8.3.5
++ vitest 5.0.5
+
+Done in 306ms using pnpm v12.16.1
+$ node gates/bin/setup-offline.ts
+setup: installed offline; Chromium at /tmp/claude-0/-home-user-ocelle-components/181e1231-8fd5-5f31-9d9d-498e593ba7cf/scratchpad/pw/chromium-1248/chrome-linux64/chrome
+$ node gates/bin/test.ts
+packages/tokens/test/browser/csp.test.ts:53: unit-tests: the tokens stylesheet under the strict CSP plus font-src 'self' the collector reports exactly the one violation of the control page (an inline <style>): AssertionError: expected '' to be '#F1EEE8' // Object.is equality
+packages/tokens/test/browser/csp.test.ts:61: unit-tests: the tokens stylesheet under the strict CSP plus font-src 'self' the token page, loading tokens.css by <link>, reports no violation and has its tokens: AssertionError: expected '' to be '#F1EEE8' // Object.is equality
+packages/tokens/test/browser/themes.test.ts:121: unit-tests: the six theme conditions (FR-006) system-light: :root defines exactly the table's names, and every colour has its light value: AssertionError: expected [] to deeply equal [ '--ocelle-bar-block-narrow', …(108) ]
+packages/tokens/test/browser/themes.test.ts:121: unit-tests: the six theme conditions (FR-006) system-dark: :root defines exactly the table's names, and every colour has its dark value: AssertionError: expected [] to deeply equal [ '--ocelle-bar-block-narrow', …(108) ]
+packages/tokens/test/browser/themes.test.ts:121: unit-tests: the six theme conditions (FR-006) no-preference: :root defines exactly the table's names, and every colour has its light value: AssertionError: expected [] to deeply equal [ '--ocelle-bar-block-narrow', …(108) ]
+packages/tokens/test/browser/themes.test.ts:121: unit-tests: the six theme conditions (FR-006) system-dark+data-theme=light: :root defines exactly the table's names, and every colour has its light value: AssertionError: expected [] to deeply equal [ '--ocelle-bar-block-narrow', …(108) ]
+packages/tokens/test/browser/themes.test.ts:121: unit-tests: the six theme conditions (FR-006) system-light+data-theme=dark: :root defines exactly the table's names, and every colour has its dark value: AssertionError: expected [] to deeply equal [ '--ocelle-bar-block-narrow', …(108) ]
+packages/tokens/test/browser/themes.test.ts:121: unit-tests: the six theme conditions (FR-006) no-preference+data-theme=dark: :root defines exactly the table's names, and every colour has its dark value: AssertionError: expected [] to deeply equal [ '--ocelle-bar-block-narrow', …(108) ]
+packages/tokens/test/browser/themes.test.ts:131: unit-tests: data-theme at run time (edge case: theme attribute changed at run time) follows the system again when data-theme is removed (US1 scenario 5): AssertionError: expected [ { …(46) }, { …(46) } ] to deeply equal [ { …(46) }, { …(46) } ]
+packages/tokens/test/browser/themes.test.ts:140: unit-tests: data-theme at run time (edge case: theme attribute changed at run time) follows the system light after data-theme=dark is removed: AssertionError: expected [ { …(46) }, { …(46) } ] to deeply equal [ { …(46) }, { …(46) } ]
+packages/tokens/test/browser/themes.test.ts:149: unit-tests: data-theme at run time (edge case: theme attribute changed at run time) follows a switch from light to dark and back to light without reload: AssertionError: expected [ { …(46) }, { …(46) }, { …(46) } ] to deeply equal [ { …(46) }, { …(46) }, { …(46) } ]
+packages/tokens/test/browser/themes.test.ts:168: unit-tests: a data-theme the rule ignores follows the system (edge case: theme attribute with another value) data-theme="sepia" on <html>, under system dark and system light: AssertionError: expected [ { …(46) }, { …(46) } ] to deeply equal [ { …(46) }, { …(46) } ]
+packages/tokens/test/browser/themes.test.ts:168: unit-tests: a data-theme the rule ignores follows the system (edge case: theme attribute with another value) data-theme="" on <html>, under system dark and system light: AssertionError: expected [ { …(46) }, { …(46) } ] to deeply equal [ { …(46) }, { …(46) } ]
+packages/tokens/test/browser/themes.test.ts:168: unit-tests: a data-theme the rule ignores follows the system (edge case: theme attribute with another value) data-theme="dark" on <body>, under system dark and system light: AssertionError: expected [ { …(46) }, { …(46) } ] to deeply equal [ { …(46) }, { …(46) } ]
+packages/tokens/test/browser/values.test.ts:82: unit-tests: used values under the six theme conditions system-light: every non-colour token has its light used value: AssertionError: expected { …(69) } to deeply equal { …(69) }
+packages/tokens/test/browser/values.test.ts:82: unit-tests: used values under the six theme conditions system-dark: every non-colour token has its dark used value: AssertionError: expected { …(69) } to deeply equal { …(69) }
+packages/tokens/test/browser/values.test.ts:82: unit-tests: used values under the six theme conditions no-preference: every non-colour token has its light used value: AssertionError: expected { …(69) } to deeply equal { …(69) }
+packages/tokens/test/browser/values.test.ts:82: unit-tests: used values under the six theme conditions system-dark+data-theme=light: every non-colour token has its light used value: AssertionError: expected { …(69) } to deeply equal { …(69) }
+packages/tokens/test/browser/values.test.ts:82: unit-tests: used values under the six theme conditions system-light+data-theme=dark: every non-colour token has its dark used value: AssertionError: expected { …(69) } to deeply equal { …(69) }
+packages/tokens/test/browser/values.test.ts:82: unit-tests: used values under the six theme conditions no-preference+data-theme=dark: every non-colour token has its dark used value: AssertionError: expected { …(69) } to deeply equal { …(69) }
+packages/tokens/test/browser/values.test.ts:89: unit-tests: used values under the six theme conditions the theme-independent tokens are the same in all six conditions (US1 scenario 6): AssertionError: expected [ { …(64) }, { …(64) }, …(4) ] to deeply equal [ { …(64) }, { …(64) }, …(4) ]
+packages/tokens/test/browser/values.test.ts:103: unit-tests: used values under the six theme conditions the dialog sizes are 1248px and 768px at 1280 × 800, the target size 44px: AssertionError: expected [ '0px', '0px', '0px' ] to deeply equal [ 1248, 768, 44 ]
+packages/tokens/test/browser/values.test.ts:112: unit-tests: reduced motion (FR-007, US1 scenario 7) motion-fast and motion-base are 0ms under prefers-reduced-motion: reduce in light, easing unchanged: AssertionError: expected { …(69) } to deeply equal { …(69) }
+packages/tokens/test/browser/values.test.ts:112: unit-tests: reduced motion (FR-007, US1 scenario 7) motion-fast and motion-base are 0ms under prefers-reduced-motion: reduce in dark, easing unchanged: AssertionError: expected { …(69) } to deeply equal { …(69) }
+packages/tokens/test/browser/values.test.ts:120: unit-tests: reduced motion (FR-007, US1 scenario 7) they are 120ms and 200ms without that request: AssertionError: expected [ '0s', '0s' ] to deeply equal [ '0.12s', '0.2s' ]
+gates/test/integration/plant-repo.test.ts:61: unit-tests: buildRepoTree copies the configuration set unchanged, lays tree/ over it at repository paths, and links node_modules: AssertionError: expected { 'package.json': true, …(23) } to deeply equal { 'package.json': true, …(23) }
+gates/test/integration/plant-repo.test.ts:73: unit-tests: buildRepoTree holds the token source, its overrides, the generator and the pair list in a built plant root (002 contracts/gates.md § Configuration set): AssertionError: expected { …(4) } to deeply equal { …(4) }
+gates/test/integration/plant-repo.test.ts:82: unit-tests: buildRepoTree builds the configuration set alone for a plant without tree/: AssertionError: expected { 'package.json': true, …(23) } to deeply equal { 'package.json': true, …(23) }
+gates/test/integration/plant-repo.test.ts:124: unit-tests: buildMutationRepo commits the configuration set with base/, then head/ (files only in base/ deleted), node_modules linked and untracked: AssertionError: expected [ 'eslint.config.ts', …(22) ] to deeply equal ArrayContaining{…}
+packages/tokens/test/build.test.ts:31: unit-tests: buildPlan() writes tokens.css and tokens.json from the source and copies each font file: AssertionError: expected [] to deeply equal [ { path: 'tokens.css', …(1) }, …(3) ]
+packages/tokens/test/build.test.ts:40: unit-tests: buildPlan() copies nothing without font files: AssertionError: expected [] to deeply equal [ 'tokens.css', 'tokens.json' ]
+packages/tokens/test/build.test.ts:46: unit-tests: build() writes the stylesheet and the JSON of the real source, and copies a fixture fonts/ into fonts/: AssertionError: expected false to be true // Object.is equality
+packages/tokens/test/build.test.ts:60: unit-tests: build() skips the copy without error when the package has no fonts/ directory, and writes no fonts/: AssertionError: expected false to be true // Object.is equality
+packages/tokens/test/build.test.ts:70: unit-tests: node scripts/build.ts <out> writes exactly css() to tokens.css and JSON.stringify(json()) to tokens.json: AssertionError: expected false to be true // Object.is equality
+packages/tokens/test/build.test.ts:81: unit-tests: package.json exports the entry, the stylesheet, the JSON and the fonts, publishes dist, the changelog and the README, and builds both (R-11): AssertionError: expected { …(3) } to deeply equal { exports: { …(4) }, …(2) }
+packages/tokens/test/generate.test.ts:51: unit-tests: css() writes the fixture as the four blocks of research.md R-02, exactly: AssertionError: expected '' to be ':root {\n  --ocelle-color-ground: #FF…' // Object.is equality
+packages/tokens/test/generate.test.ts:55: unit-tests: css() puts the blocks in the order: :root, system dark unless data-theme=light, data-theme=dark, reduced motion: AssertionError: expected [] to deeply equal [ ':root', …(3) ]
+packages/tokens/test/generate.test.ts:59: unit-tests: css() puts light values only in the unconditioned :root, and dark values only in the two dark blocks (FR-006, no preference): AssertionError: expected undefined to be '#111111' // Object.is equality
+packages/tokens/test/generate.test.ts:68: unit-tests: css() emits color-scheme as the keyword light in :root and dark in both dark blocks: AssertionError: expected [ undefined, undefined, undefined ] to deeply equal [ 'light', 'dark', 'dark' ]
+packages/tokens/test/generate.test.ts:77: unit-tests: css() sets exactly --ocelle-motion-fast and --ocelle-motion-base to 0ms under prefers-reduced-motion: reduce (FR-007): AssertionError: expected [] to deeply equal [ …(2) ]
+packages/tokens/test/generate.test.ts:84: unit-tests: css() declares a derived token as var() of its source, alone or inside a larger value (FR-002): AssertionError: expected { focus: undefined, …(3) } to deeply equal { …(4) }
+packages/tokens/test/generate.test.ts:99: unit-tests: css() keeps the reference in the stylesheet and follows the change in the JSON when the source token changes (edge case: derived token): AssertionError: expected undefined to be 'var(--ocelle-space-4)' // Object.is equality
+packages/tokens/test/generate.test.ts:118: unit-tests: css() writes an empty source as empty blocks, with the reduced-motion block: AssertionError: expected '' to be ':root {\n}\n\n@media (prefers-color-s…' // Object.is equality
+packages/tokens/test/generate.test.ts:127: unit-tests: names() lists the token names without prefix, in source order: AssertionError: expected [] to deeply equal [ 'color-ground', 'color-ink', …(10) ]
+packages/tokens/test/index.test.ts:11: unit-tests: @ocelle/tokens exports tokenNames: exactly the names of Appendix A, none of A.6: AssertionError: expected [] to deeply equal [ 'bar-block-narrow', …(108) ]
+packages/tokens/test/index.test.ts:16: unit-tests: @ocelle/tokens exports tokens: the JSON export of the source: AssertionError: expected [] to have a length of 109 but got +0
+packages/tokens/test/index.test.ts:21: unit-tests: @ocelle/tokens maps a token name to its custom property with cssName(): AssertionError: expected [ '', '', '' ] to deeply equal [ '--ocelle-color-canvas', …(2) ]
+packages/tokens/test/index.test.ts:25: unit-tests: @ocelle/tokens does not accept a misspelt name, in the type checker or at run time: AssertionError: expected function to throw an error, but it didn't
+packages/tokens/test/json.test.ts:12: unit-tests: json() on the fixture source is the JSON export of contracts/token-package.md, exactly: AssertionError: expected { version: 1, tokens: [] } to strictly equal { version: 1, tokens: [ …(12) ] }
+packages/tokens/test/json.test.ts:44: unit-tests: json() on the fixture source orders each entry's fields name, group, values, ref: AssertionError: expected [] to deeply equal [ 'name,group,light,dark', …(11) ]
+packages/tokens/test/json.test.ts:61: unit-tests: json() on the fixture source has no use or contrast field: AssertionError: expected '{"version":1,"tokens":[]}' to contain '--ocelle-color-ink'
+packages/tokens/test/json.test.ts:71: unit-tests: the stylesheet and the JSON export agree (SC-002) on the fixture: every stylesheet token is in the JSON and every JSON token in the stylesheet: AssertionError: expected 0 to be greater than 10
+packages/tokens/test/json.test.ts:71: unit-tests: the stylesheet and the JSON export agree (SC-002) on the real source: every stylesheet token is in the JSON and every JSON token in the stylesheet: AssertionError: expected 0 to be greater than 10
+packages/tokens/test/overrides.test.ts:14: unit-tests: applyOverrides() returns the records unchanged, in order, for no override: AssertionError: expected [] to deeply equal [ …(12) ]
+packages/tokens/test/overrides.test.ts:18: unit-tests: applyOverrides() sets the value of one theme by name and keeps the other: AssertionError: expected undefined to deeply equal { name: 'color-ink', …(3) }
+packages/tokens/test/overrides.test.ts:33: unit-tests: applyOverrides() makes a one-value token per theme when a theme is set on it: AssertionError: expected undefined to deeply equal { light: '1rem', dark: '2rem' }
+packages/tokens/test/overrides.test.ts:37: unit-tests: applyOverrides() replaces value, ref and contrast by name: AssertionError: expected [ undefined, undefined ] to deeply equal [ { name: 'gutter', …(3) }, …(1) ]
+packages/tokens/test/overrides.test.ts:48: unit-tests: applyOverrides() appends an added record and drops a removed one: AssertionError: expected [] to deeply equal [ 'color-ground', 'color-ink', …(10) ]
+packages/tokens/test/overrides.test.ts:55: unit-tests: applyOverrides() applies the overrides in order: AssertionError: expected [ undefined, undefined ] to deeply equal [ '3rem', '2px' ]
+packages/tokens/test/overrides.test.ts:70: unit-tests: applyOverrides() throws: token override names an unknown token c…: AssertionError: expected function to throw an error, but it didn't
+packages/tokens/test/overrides.test.ts:70: unit-tests: applyOverrides() throws: token override adds color-ink, which al…: AssertionError: expected function to throw an error, but it didn't
+packages/tokens/test/overrides.test.ts:70: unit-tests: applyOverrides() throws: token override removes an unknown token…: AssertionError: expected function to throw an error, but it didn't
+packages/tokens/test/overrides.test.ts:76: unit-tests: the committed overrides are empty, so the records of source.ts are exactly what ships: AssertionError: expected 0 to be greater than 100
+packages/tokens/test/readme.test.ts:46: unit-tests: packages/tokens/README.md states: Load `tokens.css` once on the document: AssertionError: expected '' to contain 'Load `tokens.css` once on the document'
+packages/tokens/test/readme.test.ts:46: unit-tests: packages/tokens/README.md states: Elements read the tokens by inheritance: AssertionError: expected '' to contain 'Elements read the tokens by inheritan…'
+packages/tokens/test/readme.test.ts:46: unit-tests: packages/tokens/README.md states: follows the system setting (`prefers-color-scheme`): AssertionError: expected '' to contain 'follows the system setting (`prefers-…'
+packages/tokens/test/readme.test.ts:46: unit-tests: packages/tokens/README.md states: light when the system states no preference: AssertionError: expected '' to contain 'light when the system states no prefe…'
+packages/tokens/test/readme.test.ts:46: unit-tests: packages/tokens/README.md states: `data-theme="light"` or `data-theme="dark"` on `<html>` overrides the system setting: AssertionError: expected '' to contain '`data-theme="light"` or `data-theme="…'
+packages/tokens/test/readme.test.ts:46: unit-tests: packages/tokens/README.md states: Any other value, or the attribute on another element, has no effect: AssertionError: expected '' to contain 'Any other value, or the attribute on …'
+packages/tokens/test/readme.test.ts:46: unit-tests: packages/tokens/README.md states: The stylesheet sets no `color-scheme` property: AssertionError: expected '' to contain 'The stylesheet sets no `color-scheme`…'
+packages/tokens/test/readme.test.ts:46: unit-tests: packages/tokens/README.md states: `--ocelle-color-scheme` is `light` or `dark` with the theme: AssertionError: expected '' to contain '`--ocelle-color-scheme` is `light` or…'
+packages/tokens/test/readme.test.ts:46: unit-tests: packages/tokens/README.md states: base styles (#6) apply it with `color-scheme: var(--ocelle-color-scheme)` on the root: AssertionError: expected '' to contain 'base styles (#6) apply it with `color…'
+packages/tokens/test/readme.test.ts:46: unit-tests: packages/tokens/README.md states: `style-src 'self'`: AssertionError: expected '' to contain '`style-src \'self\'`'
+packages/tokens/test/readme.test.ts:46: unit-tests: packages/tokens/README.md states: The tokens never override the system palette in forced colours: AssertionError: expected '' to contain 'The tokens never override the system …'
+packages/tokens/test/readme.test.ts:46: unit-tests: packages/tokens/README.md states: `box-shadow` is not drawn in forced colours: AssertionError: expected '' to contain '`box-shadow` is not drawn in forced c…'
+packages/tokens/test/readme.test.ts:46: unit-tests: packages/tokens/README.md states: the rings and shadows of the `elevation-*` tokens vanish there: AssertionError: expected '' to contain 'the rings and shadows of the `elevati…'
+packages/tokens/test/readme.test.ts:46: unit-tests: packages/tokens/README.md states: must also draw a border or outline: AssertionError: expected '' to contain 'must also draw a border or outline'
+packages/tokens/test/readme.test.ts:46: unit-tests: packages/tokens/README.md states: The top bar, the icon rail and the personal rail use the chrome tokens in both themes: AssertionError: expected '' to contain 'The top bar, the icon rail and the pe…'
+packages/tokens/test/readme.test.ts:46: unit-tests: packages/tokens/README.md states: Digests are shown in groups of four: AssertionError: expected '' to contain 'Digests are shown in groups of four'
+packages/tokens/test/readme.test.ts:46: unit-tests: packages/tokens/README.md states: In light mode the ochre fill is never the only mark of a state: AssertionError: expected '' to contain 'In light mode the ochre fill is never…'
+packages/tokens/test/readme.test.ts:46: unit-tests: packages/tokens/README.md states: A control drawn on `color-accent-low`, `color-inset`, `color-hover-bg`, `color-danger-bg`, `color-warning-bg`, `color-success-bg`, `color-info-bg` or `color-neutral-bg` is bordered with `color-accent-strong`: AssertionError: expected '' to contain 'A control drawn on `color-accent-low`…'
+packages/tokens/test/readme.test.ts:56: unit-tests: packages/tokens/CHANGELOG.md names every token as added in the Unreleased section (FR-025): AssertionError: expected [] to deeply equal [ '--ocelle-bar-block-narrow', …(108) ]
+packages/tokens/test/readme.test.ts:61: unit-tests: packages/tokens/CHANGELOG.md names no excluded token (A.6): AssertionError: expected '' to contain '## Unreleased'
+packages/tokens/test/resolve.test.ts:10: unit-tests: resolve() on fixture sources gives a token's own value in each theme, and a theme-independent token's one value in both: AssertionError: expected [ '', '', '', '' ] to deeply equal [ Array(4) ]
+packages/tokens/test/resolve.test.ts:19: unit-tests: resolve() on fixture sources resolves a single var() colour reference per theme: AssertionError: expected [ '', '' ] to deeply equal [ '#111111', '#EEEEEE' ]
+packages/tokens/test/resolve.test.ts:23: unit-tests: resolve() on fixture sources resolves nested references, inside a larger value: AssertionError: expected [ '', '', '' ] to deeply equal [ '#111111', '#EEEEEE', …(1) ]
+packages/tokens/test/resolve.test.ts:37: unit-tests: resolve() on fixture sources resolves a reference in one theme only: AssertionError: expected [ '', '' ] to deeply equal [ '0 2px 4px rgb(0 0 0 / 0.1)', …(1) ]
+packages/tokens/test/resolve.test.ts:44: unit-tests: resolve() on fixture sources resolves every reference in a value with several: AssertionError: expected '' to be 'calc(2 * 1rem + 3 * 1rem)' // Object.is equality
+packages/tokens/test/resolve.test.ts:54: unit-tests: resolve() on fixture sources follows a change of the referenced token: AssertionError: expected [ '', '' ] to deeply equal [ '#222222', '#DDDDDD' ]
+packages/tokens/test/resolve.test.ts:59: unit-tests: resolve() on fixture sources throws naming an unknown token: AssertionError: expected function to throw an error, but it didn't
+packages/tokens/test/resolve.test.ts:65: unit-tests: resolve() on the real source resolves color-focus and color-current to color-accent-strong's value in each theme (A.1): AssertionError: expected [ '', '', '', '' ] to deeply equal [ '#8F5E0F', '#E0A23A', …(2) ]
+packages/tokens/test/sample.test.ts:4: unit-tests: @ocelle/tokens skeleton exports nothing yet: AssertionError: expected [ 'tokenNames', 'tokens', 'cssName' ] to deeply equal []
+packages/tokens/test/source-table.test.ts:30: unit-tests: the stylesheet from the real source has the four blocks of research.md R-02, in order: AssertionError: expected [] to deeply equal [ ':root', …(3) ]
+packages/tokens/test/source-table.test.ts:34: unit-tests: the stylesheet from the real source declares exactly the tokens of Appendix A on :root, and none of A.6: AssertionError: expected [] to deeply equal [ '--ocelle-bar-block-narrow', …(108) ]
+packages/tokens/test/source-table.test.ts:39: unit-tests: the stylesheet from the real source declares each token's light value (or its one value) in the unconditioned :root block: AssertionError: expected { 'color-canvas': undefined, …(108) } to deeply equal { 'color-canvas': '#f1eee8', …(108) }
+packages/tokens/test/source-table.test.ts:45: unit-tests: the stylesheet from the real source declares each theme-dependent token's dark value under both dark selectors, where it differs from light: AssertionError: expected { 'color-canvas': undefined, …(44) } to deeply equal { 'color-canvas': '#15130f', …(44) }
+packages/tokens/test/source-table.test.ts:61: unit-tests: the stylesheet from the real source sets exactly motion-fast and motion-base to 0ms under reduced motion (FR-007): AssertionError: expected [] to deeply equal [ …(2) ]
+packages/tokens/test/source-table.test.ts:70: unit-tests: the JSON export from the real source has version 1 and exactly the tokens of Appendix A, none of A.6: AssertionError: expected [] to deeply equal [ '--ocelle-bar-block-narrow', …(108) ]
+packages/tokens/test/source-table.test.ts:76: unit-tests: the JSON export from the real source gives each token its group, its resolved value per theme (or its one value) and its references: AssertionError: expected { 'color-canvas': undefined, …(108) } to deeply equal { 'color-canvas': { …(4) }, …(108) }
+packages/tokens/test/validate.test.ts:174: unit-tests: validateSource() names the token and the rule for a name that is not lower-case words…: AssertionError: expected function to throw an error, but it didn't
+packages/tokens/test/validate.test.ts:174: unit-tests: validateSource() names the token and the rule for a duplicate name: AssertionError: expected function to throw an error, but it didn't
+packages/tokens/test/validate.test.ts:174: unit-tests: validateSource() names the token and the rule for a ref naming an unknown token: AssertionError: expected function to throw an error, but it didn't
+packages/tokens/test/validate.test.ts:174: unit-tests: validateSource() names the token and the rule for a ground naming an unknown token: AssertionError: expected function to throw an error, but it didn't
+packages/tokens/test/validate.test.ts:174: unit-tests: validateSource() names the token and the rule for a ref that lacks a reference of the…: AssertionError: expected function to throw an error, but it didn't
+packages/tokens/test/validate.test.ts:174: unit-tests: validateSource() names the token and the rule for a derived token without ref: AssertionError: expected function to throw an error, but it didn't
+packages/tokens/test/validate.test.ts:174: unit-tests: validateSource() names the token and the rule for a ref that names a token the value …: AssertionError: expected function to throw an error, but it didn't
+packages/tokens/test/validate.test.ts:174: unit-tests: validateSource() names the token and the rule for a ref that does not match the value…: AssertionError: expected function to throw an error, but it didn't
+packages/tokens/test/validate.test.ts:174: unit-tests: validateSource() names the token and the rule for a ref per theme on a value that is …: AssertionError: expected function to throw an error, but it didn't
+packages/tokens/test/validate.test.ts:174: unit-tests: validateSource() names the token and the rule for a reference cycle: AssertionError: expected function to throw an error, but it didn't
+packages/tokens/test/validate.test.ts:174: unit-tests: validateSource() names the token and the rule for a colour value that is not a 6-digi…: AssertionError: expected function to throw an error, but it didn't
+packages/tokens/test/validate.test.ts:174: unit-tests: validateSource() names the token and the rule for rgb(… / α) on a colour other than c…: AssertionError: expected function to throw an error, but it didn't
+packages/tokens/test/validate.test.ts:174: unit-tests: validateSource() names the token and the rule for a color-overlay value that is neith…: AssertionError: expected function to throw an error, but it didn't
+packages/tokens/test/validate.test.ts:174: unit-tests: validateSource() names the token and the rule for a colour value with more than one r…: AssertionError: expected function to throw an error, but it didn't
+packages/tokens/test/validate.test.ts:174: unit-tests: validateSource() names the token and the rule for a colour reference to color-scheme …: AssertionError: expected function to throw an error, but it didn't
+packages/tokens/test/validate.test.ts:174: unit-tests: validateSource() names the token and the rule for a color-scheme value other than lig…: AssertionError: expected function to throw an error, but it didn't
+packages/tokens/test/validate.test.ts:174: unit-tests: validateSource() names the token and the rule for contrast on a colour whose resolved…: AssertionError: expected function to throw an error, but it didn't
+packages/tokens/test/validate.test.ts:174: unit-tests: validateSource() names the token and the rule for a ground that is not opaque, direct…: AssertionError: expected function to throw an error, but it didn't
+packages/tokens/test/validate.test.ts:174: unit-tests: validateSource() names the token and the rule for contrast on a token outside the col…: AssertionError: expected function to throw an error, but it didn't
+packages/tokens/test/validate.test.ts:174: unit-tests: validateSource() names the token and the rule for a theme-independent token with a li…: AssertionError: expected function to throw an error, but it didn't
+packages/tokens/test/validate.test.ts:174: unit-tests: validateSource() names the token and the rule for a theme-dependent token with one va…: AssertionError: expected function to throw an error, but it didn't
+packages/tokens/test/validate.test.ts:174: unit-tests: validateSource() names the token and the rule for several rules at once, in source or…: AssertionError: expected function to throw an error, but it didn't
+packages/tokens/test/validate.test.ts:180: unit-tests: validateSource() names the token and the rule for the A.6 name color-proto: AssertionError: expected function to throw an error, but it didn't
+packages/tokens/test/validate.test.ts:180: unit-tests: validateSource() names the token and the rule for the A.6 name color-proto-bg: AssertionError: expected function to throw an error, but it didn't
+packages/tokens/test/validate.test.ts:180: unit-tests: validateSource() names the token and the rule for the A.6 name font-size-ui: AssertionError: expected function to throw an error, but it didn't
+packages/tokens/test/validate.test.ts:180: unit-tests: validateSource() names the token and the rule for the A.6 name font-size-body: AssertionError: expected function to throw an error, but it didn't
+packages/tokens/test/validate.test.ts:180: unit-tests: validateSource() names the token and the rule for the A.6 name font-size-title: AssertionError: expected function to throw an error, but it didn't
+packages/tokens/test/validate.test.ts:180: unit-tests: validateSource() names the token and the rule for the A.6 name radius-3: AssertionError: expected function to throw an error, but it didn't
+gates/test/plant-repo.test.ts:7: unit-tests: configurationSet lists the root configuration, each package's manifest and tsconfig, the modules the configurations import, and the token source, its overrides, the generator and the pair list (002 contracts/gates.md § Configuration set): AssertionError: expected [ 'package.json', …(15) ] to deeply equal [ 'package.json', …(19) ]
+gates/test/token-only.test.ts:135: unit-tests: ocelle/token-only: unknown tokens, with fixture lists reports a misspelt token at its line, naming it: AssertionError: expected [] to deeply equal [ { line: 2, …(1) } ]
+gates/test/token-only.test.ts:141: unit-tests: ocelle/token-only: unknown tokens, with fixture lists reports an unknown token inside calc() and as a var() fallback: AssertionError: expected [] to deeply equal [ Array(2) ]
+gates/test/token-only.test.ts:148: unit-tests: ocelle/token-only: unknown tokens, with fixture lists reports each unknown name of a declaration, after its raw values: AssertionError: expected [ { line: 2, …(1) } ] to deeply equal [ { line: 2, …(1) }, …(2) ]
+gates/test/token-only.test.ts:156: unit-tests: ocelle/token-only: unknown tokens, with fixture lists accepts a real token, a declared element property and a custom property outside --ocelle- (only the control): AssertionError: expected [] to deeply equal [ { line: 6, …(1) } ]
+gates/test/token-only.test.ts:161: unit-tests: ocelle/token-only: unknown tokens, with fixture lists exempts element properties by exact name only: a misspelt one is unknown: AssertionError: expected [] to deeply equal [ Array(2) ]
+gates/test/token-only.test.ts:168: unit-tests: ocelle/token-only: unknown tokens, with fixture lists does not treat a token definition as a reference: AssertionError: expected [] to deeply equal [ { line: 3, …(1) } ]
+gates/test/token-only.test.ts:174: unit-tests: ocelle/token-only: unknown tokens, with fixture lists stops (throws) when an element property has the full name of a token: Error: promise resolved "[]" instead of rejecting
+gates/test/token-only.test.ts:180: unit-tests: ocelle/token-only: unknown tokens, with fixture lists reports the invalid secondary option {"tokens":[1]}: AssertionError: expected [] to have a length of 1 but got +0
+gates/test/token-only.test.ts:180: unit-tests: ocelle/token-only: unknown tokens, with fixture lists reports the invalid secondary option {"tokens":["--ocelle-a"],"elementProperties":[2]}: AssertionError: expected [] to have a length of 1 but got +0
+gates/test/token-only.test.ts:180: unit-tests: ocelle/token-only: unknown tokens, with fixture lists reports the invalid secondary option {"colours":[]}: AssertionError: expected [] to have a length of 1 but got +0
+gates/test/token-only.test.ts:187: unit-tests: ocelle/token-only without options reads the lists of the repository it runs in reports a misspelt token of the real source and accepts a real one: AssertionError: expected [] to deeply equal [ { line: 2, …(1) } ]
+gates/test/token-only.test.ts:231: unit-tests: loadLists() reads the full token names of the source and no element property while the manifest is absent: Error: expected { tokens: [], elementProperties: [] } to deeply equal { tokens: [ …(2) ], …(1) }
+gates/test/token-only.test.ts:235: unit-tests: loadLists() reads the cssProperties names the manifest declares: Error: expected { tokens: [], elementProperties: [] } to deeply equal { tokens: [ …(2) ], …(1) }
+gates/test/token-only.test.ts:242: unit-tests: loadLists() throws naming the file when the token source is missing: Error: promise resolved "{ tokens: [], elementProperties: [] }" instead of rejecting
+gates/test/token-only.test.ts:246: unit-tests: loadLists() throws naming the rule when the token source fails validation: Error: promise resolved "{ tokens: [], elementProperties: [] }" instead of rejecting
+gates/test/token-only.test.ts:253: unit-tests: loadLists() throws when the manifest is not JSON: Error: promise resolved "{ tokens: [], elementProperties: [] }" instead of rejecting
+gates/test/token-only.test.ts:262: unit-tests: loadLists() throws when the manifest is not the custom-elements manifest schema: no schemaVersion: Error: promise resolved "{ tokens: [], elementProperties: [] }" instead of rejecting
+gates/test/token-only.test.ts:262: unit-tests: loadLists() throws when the manifest is not the custom-elements manifest schema: modules not a list: Error: promise resolved "{ tokens: [], elementProperties: [] }" instead of rejecting
+gates/test/token-only.test.ts:262: unit-tests: loadLists() throws when the manifest is not the custom-elements manifest schema: a cssProperties entry without a name: Error: promise resolved "{ tokens: [], elementProperties: [] }" instead of rejecting
+gates/test/token-only.test.ts:262: unit-tests: loadLists() throws when the manifest is not the custom-elements manifest schema: a list at the top: Error: promise resolved "{ tokens: [], elementProperties: [] }" instead of rejecting
+gates/test/token-only.test.ts:266: unit-tests: loadLists() throws when a declared element property has the full name of a token: Error: promise resolved "{ tokens: [], elementProperties: [] }" instead of rejecting
+unit-tests: 149 of 1400 tests failed
+[ELIFECYCLE] Test failed. See above for more details.
