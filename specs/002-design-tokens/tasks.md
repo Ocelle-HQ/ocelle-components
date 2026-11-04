@@ -212,13 +212,13 @@ passes with every new plant; `tdd-check.sh 5` reports `pass`.
 
 ### Tests (red, one commit)
 
-- [ ] T064 [US4] `packages/tokens/test/sk-mapping.test.ts`: parses `specs/002-design-tokens/sk-mapping.md`; the header records a kitty-mission-ui commit (40 hex); the table has exactly 55 rows; column 2 is an `--ocelle-*` name in `tokenNames` (via `cssName`) or `dropped`, and a `dropped` row names its replacement in column 3; refers to columns by position and holds no `sk-` literal (R-13)
-- [ ] T065 [US4] Commit T064 alone (`test(002-design-tokens): phase 6 red — US4 mapping`), run `red.sh 6 phase`, confirm it fails on the missing table
+- [X] T064 [US4] `packages/tokens/test/sk-mapping.test.ts`: parses `specs/002-design-tokens/sk-mapping.md`; the header records a kitty-mission-ui commit (40 hex); the table has exactly 55 rows; column 2 is an `--ocelle-*` name in `tokenNames` (via `cssName`) or `dropped`, and a `dropped` row names its replacement in column 3; refers to columns by position and holds no `sk-` literal (R-13)
+- [X] T065 [US4] Commit T064 alone (`test(002-design-tokens): phase 6 red — US4 mapping`), run `red.sh 6 phase`, confirm it fails on the missing table
 
 ### Implementation (green)
 
-- [ ] T066 [US4] Read the `--sk-*` role names used by kitty-mission-ui (needs read access; **stop and ask the operator** if the repository cannot be read or the count is not 55, FR-024); write `specs/002-design-tokens/sk-mapping.md` with the commit read, one row per role (role, replacement token or `dropped`, replacement for dropped or merged roles, note); role names only, no code or values (constitution VI)
-- [ ] T067 [US4] Run `pnpm test`, `pnpm run gate:prefix`, then `tdd-check.sh 6` (`pass`), and commit green
+- [X] T066 [US4] Read the `--sk-*` role names used by kitty-mission-ui (needs read access; **stop and ask the operator** if the repository cannot be read or the count is not 55, FR-024); write `specs/002-design-tokens/sk-mapping.md` with the commit read, one row per role (role, replacement token or `dropped`, replacement for dropped or merged roles, note); role names only, no code or values (constitution VI)
+- [X] T067 [US4] Run `pnpm test`, `pnpm run gate:prefix`, then `tdd-check.sh 6` (`pass`), and commit green
 
 **Checkpoint**: kitty-mission-ui can plan its switch.
 
