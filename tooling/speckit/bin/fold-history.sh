@@ -1,23 +1,27 @@
 #!/usr/bin/env bash
-# Evidence-preserving history fold for a mission or op branch (/ocelle-land, operator decision 2026-11-03).
-# Usage: fold-history.sh <pr-base-sha> <feature-dir>   (feature-dir: specs/NNN-x or ops/NNN-x)
+# Evidence-preserving history fold for a mission or op branch (operator decisions 2026-11-03 and 2026-11-04).
+# Usage: fold-history.sh <base-sha> <feature-dir> [label]   (feature-dir: specs/NNN-x or ops/NNN-x)
 #
-# Rewrites <pr-base>..HEAD into a shorter linear history that keeps every commit the red/green evidence needs:
+# /ocelle-run folds each phase right after its approval: base = the phase's base.sha, label = phase-N. /ocelle-land
+# folds only what came after the last phase fold (its own folds), label = landing (the default).
+#
+# Rewrites <base>..HEAD into a shorter linear history that keeps every commit the red/green evidence needs:
 # for each phase, base.sha, scaffold.sha and the scaffold's parent, and each red commit and its parent. Every other
 # commit folds forward into the next kept commit. A group never spans two authors. Each new commit takes the exact
 # tree, author and date of the last commit of its group; its message is the group's first feat/fix commit's message
 # (else the last commit's), with the other subjects listed in its body and the union of the group's trailers (Signed-off-by and the rest).
-# Then one commit remaps base.sha, scaffold.sha and red-commits of every phase to the new SHAs and writes
-# <feature>/reviews/history-map.txt (old -> new for every kept commit).
+# Then one commit remaps base.sha, scaffold.sha and red-commits of every phase to the new SHAs and appends a section
+# to <feature>/reviews/history-map.txt (old -> new for every commit of the range that maps to a new one).
 #
-# Leaves HEAD on the folded history and keeps the old head as refs/ocelle/prefold/<branch>. Never pushes.
+# Leaves HEAD on the folded history and keeps the old head as refs/ocelle/prefold/<label>/<branch>. Never pushes.
 # Prints {"ok":true|false,"old_head":..,"new_head":..,"commits_before":n,"commits_after":n,"problems":[..]}.
 # Exit 0 when ok, 1 when a verification failed (HEAD is reset to the old head), 2 when it could not run.
 set -euo pipefail
-base=${1:-}; feature=${2:-}
+base=${1:-}; feature=${2:-}; label=${3:-landing}
 die() { printf '{"ok":false,"problems":["%s"]}\n' "$1"; exit 2; }
 [[ "$base" =~ ^[0-9a-f]{7,40}$ ]] && git cat-file -e "$base^{commit}" 2>/dev/null || die "pr-base must be a commit sha"
 [[ -n "$feature" && -d "$feature/reviews" ]] || die "feature-dir must hold reviews/"
+[[ "$label" =~ ^[a-z0-9][a-z0-9-]*$ ]] || die "label must be lower-case letters, digits and hyphens"
 cd "$(git rev-parse --show-toplevel)"
 [[ -z "$(git status --porcelain)" ]] || die "working tree not clean"
 branch=$(git symbolic-ref --short HEAD 2>/dev/null) || die "HEAD is detached"
@@ -85,7 +89,7 @@ if (( ${#problems[@]} )); then
   printf '{"ok":false,"old_head":"%s","problems":[%s]}\n' "$old_head" "$(printf '"%s",' "${problems[@]}" | sed 's/,$//')"; exit 1
 fi
 
-git update-ref "refs/ocelle/prefold/$branch" "$old_head"
+git update-ref "refs/ocelle/prefold/$label/$branch" "$old_head"
 git reset -q --hard "$parent"
 
 # Remap the evidence files and write the map.
@@ -98,10 +102,12 @@ for dir in "$feature"/reviews/phase-*; do
     tmp=$(mktemp); while read -r l s; do [[ -n "${s:-}" ]] && echo "$l $(remap "$s")"; done < "$dir/red-commits" > "$tmp"; mv "$tmp" "$dir/red-commits"
   fi
 done
-{ echo "# History fold of $branch: old commit -> new commit (pre-fold head kept as refs/ocelle/prefold/$branch, $old_head)."
-  for c in "${commits[@]}"; do [[ -n "${map[$c]+x}" ]] && echo "$c ${map[$c]}"; done; } > "$feature/reviews/history-map.txt"
+map_file="$feature/reviews/history-map.txt"
+{ [[ -s "$map_file" ]] && echo
+  echo "# History fold $label of $branch: old commit -> new commit (pre-fold head kept as refs/ocelle/prefold/$label/$branch, $old_head)."
+  for c in "${commits[@]}"; do [[ -n "${map[$c]+x}" ]] && echo "$c ${map[$c]}"; done; } >> "$map_file"
 git add "$feature/reviews"
-GIT_EDITOR=true git commit -q -s -m "chore(landing): remap evidence SHAs after the history fold" \
+GIT_EDITOR=true git commit -q -s -m "chore($label): remap evidence SHAs after the history fold" \
   -m "base.sha, scaffold.sha and red-commits of every phase now name the folded commits; reviews/history-map.txt maps old to new. Review files keep the SHAs they were written with; the map resolves them."
 new_head=$(git rev-parse HEAD)
 outside=$(git diff --name-only "$old_head" "$new_head" | grep -v -E "^$feature/reviews/(phase-[^/]+/(base\.sha|scaffold\.sha|red-commits)|history-map\.txt)$" || true)
