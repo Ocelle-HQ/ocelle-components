@@ -1,0 +1,5 @@
+{
+  "expect": "error",
+  "why": "The text-below-threshold change plus contrast.exempt on color-ink-muted: only color-disabled-ink may be exempt from the threshold (FR-017, landing L1-01), so validateSource rejects the source and the gate cannot run instead of passing.",
+  "cause": "contrast: cannot run: packages/tokens/src/source.ts: invalid token source: token color-ink-muted: exempt is allowed only on color-disabled-ink"
+}

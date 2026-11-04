@@ -60,6 +60,8 @@ const themes: readonly Theme[] = ["light", "dark"];
 const themedGroups: ReadonlySet<Group> = new Set(["colour", "elevation"]);
 /** The tokens spec Appendix A.6 excludes (FR-003). */
 const excluded: ReadonlySet<string> = new Set(["color-proto", "color-proto-bg", "font-size-ui", "font-size-body", "font-size-title", "radius-3"]);
+/** The one token that may carry `contrast.exempt` (FR-017; landing L1-01). */
+const exemptToken = "color-disabled-ink";
 const namePattern = /^[a-z][a-z0-9]*(-[a-z0-9]+)*$/;
 /** A token reference inside a value; the name is group 1. */
 const reference = /var\(--ocelle-([a-z0-9]+(?:-[a-z0-9]+)*)\)/g;
@@ -154,6 +156,7 @@ function recordProblems(record: TokenRecord, byName: ReadonlyMap<string, TokenRe
 
   for (const ground of record.contrast?.grounds ?? []) if (!byName.has(ground)) found.push(`${at}: ground names an unknown token ${ground}`);
   if (record.contrast !== undefined && record.group !== "colour") found.push(`${at}: contrast on a token outside the colour group`);
+  if (record.contrast?.exempt !== undefined && record.name !== exemptToken) found.push(`${at}: exempt is allowed only on ${exemptToken}`);
   if (record.group === "colour" && perTheme) {
     if (record.name === "color-scheme") {
       if (valueIn(record, "light") !== "light" || valueIn(record, "dark") !== "dark") found.push(`${at}: value must be light in light and dark in dark`);
