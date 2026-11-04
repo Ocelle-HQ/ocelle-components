@@ -296,8 +296,14 @@ describe("loadLists()", () => {
     const dir = root(validSource);
     mkdirSync(join(dir, "packages/elements/custom-elements.json"), { recursive: true });
     const loading = loadLists(dir);
-    await expect(loading).rejects.toThrow(new Error("token-only: cannot read packages/elements/custom-elements.json: EISDIR: illegal operation on a directory, read"));
     await expect(loading).rejects.toHaveProperty("cause.code", "EISDIR");
+    const error = (await loading.catch((thrown: unknown) => thrown)) as Error & { cause: Error };
+    expect(error).toBeInstanceOf(Error);
+    expect(error.cause).toBeInstanceOf(Error);
+    expect(error.cause.message).not.toBe("");
+    expect(error.message.startsWith("token-only: cannot read packages/elements/custom-elements.json: ")).toBe(true);
+    expect(error.message.endsWith(error.cause.message)).toBe(true);
+    expect(error.message).toBe(`token-only: cannot read packages/elements/custom-elements.json: ${error.cause.message}`);
   });
 
   it("throws with the parse error as the cause when the manifest is not JSON", async () => {
