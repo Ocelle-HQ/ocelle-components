@@ -76,12 +76,17 @@ Findings per entry and their order: data-model § Gate findings (an entry can gi
 | Situation | Exit | Output |
 |---|---|---|
 | pair list missing, not JSON, not the schema, or empty | 2 | `contrast: cannot run: <file>: <cause>` |
-| token source or generator does not load, or the source fails `validateSource` | 2 | `contrast: cannot run: <file>: <cause>` |
+| token source or generator does not load, or the source fails `validateSource` (including `contrast.exempt` on a token other than `color-disabled-ink`: the cause names the token and the rule, `invalid token source: token <name>: exempt is allowed only on color-disabled-ink`) | 2 | `contrast: cannot run: <file>: <cause>` |
 | a theme with zero entries | 2 | `contrast: cannot run: no pairs for <theme>` |
 | any finding of data-model.md § Gate findings | 1 | one line per finding, then `contrast: <k> findings` |
 | otherwise | 0 | `contrast: <n> pairs checked in light, <m> in dark (<r> required per theme)`; with the repository's values `<n>`, `<m>`, `<r>` are 158, 157, 149 |
 
 Flag `--print`: lists every required pair with its computed ratio (four decimals), exit 0; for authoring only.
+
+Threshold exemption (FR-017; landing L1-01, operator round 3 of phase 5, 2026-11-04): the gate skips the threshold
+for an entry whose foreground record has `contrast.exempt: true`, and only `color-disabled-ink` may carry that flag.
+`validateSource` rejects `exempt` on any other token, naming the token and the rule (data-model § Token), so such a
+source is exit 2 here and in `brand-rules`, never a pass; the gate does not honour the flag on another name.
 
 ## `brand-rules` (new; check "Brand rules"; plant form `repo-tree`)
 
@@ -90,8 +95,8 @@ Inputs under `--root`: `packages/tokens/src/source.ts`, `packages/tokens/src/gen
 
 It loads and validates the source first. Exit 2, `brand-rules: cannot run: <file>: <cause>`, when: the source or the
 generator does not load or throws; the source fails `validateSource` (duplicate name, A.6 name, unknown `ref` or
-ground, `ref` not matching the value's references, reference cycle, malformed colour value); the pair list is
-missing, not JSON or not the schema. Otherwise exit 1 with one finding per broken rule (a)–(g) of FR-019, or exit 0:
+ground, `ref` not matching the value's references, reference cycle, malformed colour value, `contrast.exempt` on a
+token other than `color-disabled-ink`); the pair list is missing, not JSON or not the schema. Otherwise exit 1 with one finding per broken rule (a)–(g) of FR-019, or exit 0:
 `brand-rules: 7 rules checked`.
 
 Rule (g) fails on any `forced-color-adjust: none` and on any `@media (forced-colors: …)` block that sets an
@@ -221,7 +226,7 @@ hand with those paths and recorded in the review; they are not a gate result.
 
 | Gate | Fail | Pass | Breaking |
 |---|---|---|---|
-| `contrast` | `text-below-threshold` (ink-muted at 4.3 on inset, light), `non-text-below-threshold` (control-border below 3 on rail, light) (both: see below), `figure-mismatch`, `unknown-token`, `missing-required-pair`, `excluded-without-reason`, `required-pair-excluded`, `not-opaque` (overlay as ground) | `repository-values` (no file of its own: the configuration set's real source and list), `exempt-disabled-ink` | `empty-list` (`delta.json` `{ "pairsList": "empty" }`), `unparsable-list` (`{ "pairsList": "not-json" }`), `source-throws` |
+| `contrast` | `text-below-threshold` (ink-muted at 4.3 on inset, light), `non-text-below-threshold` (control-border below 3 on rail, light) (both: see below), `figure-mismatch`, `unknown-token`, `missing-required-pair`, `excluded-without-reason`, `required-pair-excluded`, `not-opaque` (overlay as ground) | `repository-values` (no file of its own: the configuration set's real source and list), `exempt-disabled-ink` | `empty-list` (`delta.json` `{ "pairsList": "empty" }`), `unparsable-list` (`{ "pairsList": "not-json" }`), `source-throws`, `exempt-not-disabled-ink` (`contrast.exempt` on `color-ink-muted`: exit 2, see below) |
 | `brand-rules` | `a-monospace`, `b-link-equals-accent`, `b-ochre-pair-not-excluded` (the excluded entry removed from the pair list), `c-extra-radius` (a `radius-4` at 4px), `c-wrong-value`, `d-rule-as-boundary` (rule at 3:1 on sheet), `e-light-chrome`, `f-motion-not-zero`, `g-forced-colours-override` (a colour token set to a hex value in a forced-colours block) | `repository-values` (no file of its own), `g-system-colour-mapping` (a colour token mapped to `CanvasText` in a forced-colours block) | `source-throws`, `generator-throws`, `source-invalid` (an A.6 name: exit 2) |
 | `style-lint` | `fail-unknown-token`, `fail-element-property-misspelt` (`var(--ocelle-button-gpa)` against the fixture manifest of `pass-element-property`) | `pass-known-token`, `pass-element-property` (`var(--ocelle-button-gap)` with a fixture `packages/elements/custom-elements.json` whose `ocelle-button` declaration lists `cssProperties` `--ocelle-button-gap`) | (existing), `element-property-clash` (a fixture manifest declaring `--ocelle-space-2`: exit 2) |
 | `csp` | `fail-storybook-inline-script` (inline script in `storybook/dist/index.html`), `fail-storybook-story-style-attribute` (a markup string with a `style` attribute in `storybook/stories/x.stories.ts`, rule `style-attribute`), `fail-storybook-preview-new-function` (`new Function` in `storybook/.storybook/preview.ts`, rule `new-function`), `fail-storybook-scripts-eval` (`eval` in `storybook/scripts/x.ts`: the exception covers markup only) | `pass-storybook-external-script` (external script there), `pass-storybook-scripts-tag-names` (`"<script>"` and `"<style>"` literals in `storybook/scripts/externalise.ts`, the stated exception) | (existing), `error-storybook-unparsable-ts` (a `.ts` file in `storybook/stories/` that does not parse: exit 2) |
@@ -236,6 +241,14 @@ findings, and their `plant.json` lists every one: `text-below-threshold` sets li
 and `color-accent-low` (4.48), light; `non-text-below-threshold` sets light `color-control-border` below 3:1 on
 `color-rail` and lists every required pair of that token that falls under 3:1 (the excluded pairs give no
 `below-threshold`), each figure and finding computed with `--print` when the plant is written.
+
+The breaking plant `exempt-not-disabled-ink` (landing L1-01, operator round 3 of phase 5, 2026-11-04) takes the
+`text-below-threshold` delta (light `color-ink-muted` `#6B655A` and its recorded figures) and adds, by a token
+override, `color-ink-muted`'s own `contrast` (kind and grounds as in `source.ts`) with `exempt: true`. Its
+`plant.json` expects `error` with the cause
+`contrast: cannot run: packages/tokens/src/source.ts: invalid token source: token color-ink-muted: exempt is allowed
+only on color-disabled-ink`. Without the `validateSource` rule the gate exits 0 on it (the reproduction of L1-01),
+so the plant fails.
 
 Registry: `gates/gates.json`, `fr020` in `gates/lib/registry.ts`, jobs `contrast` and `brand-rules` in
 `.github/workflows/ci.yml`, all three changed together (the plant job checks they match). `gates/README.md`: both

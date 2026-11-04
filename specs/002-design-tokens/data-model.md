@@ -8,7 +8,7 @@
 | `group` | `"colour" \| "type" \| "space" \| "shape" \| "size" \| "shell" \| "elevation" \| "motion"` | FR-001; `colour` and `elevation` are theme-dependent, the others are not |
 | `value` | `{ light: string; dark: string }` for theme-dependent groups, `string` otherwise | Appendix A value; a theme-independent token with a `{light, dark}` value is invalid. A reference to another token is written `var(--ocelle-<name>)`, alone or inside a larger value (`calc(100vw - 2 * var(--ocelle-gutter))`, `0 0 0 1px var(--ocelle-color-control-border), 0 2px 8px …`) |
 | `ref` | `readonly string[]`, or `{ light: readonly string[]; dark: readonly string[] }` for theme-dependent groups; optional | derived token (FR-002): every token name the value references, per theme where the value is per theme (`elevation-raised`: `{ light: [], dark: ["color-rule-strong"] }`). It equals exactly the set of `var(--ocelle-…)` names in the value |
-| `contrast` | `{ kind: "text" \| "non-text"; grounds: readonly string[]; exempt?: true }`, colour only, optional | A.8 intended grounds; `exempt` only for `color-disabled-ink` (FR-017) |
+| `contrast` | `{ kind: "text" \| "non-text"; grounds: readonly string[]; exempt?: true }`, colour only, optional | A.8 intended grounds; `exempt` only for `color-disabled-ink` (FR-017), enforced by `validateSource` (below) |
 
 The use of each token (Appendix A's "Use" column, A.3 named uses) is a comment beside its record, not a field
 (operator decision 2026-11-03, squad round 1, PLAN-TESTABILITY-1-003 (a)): nothing reads it, so it is not data.
@@ -26,9 +26,13 @@ value, where `<name>` is a colour token other than `color-scheme` (`color-focus`
 colour token is opaque in a theme when its resolved value is a 6-digit hex. Grounds are colour tokens that are
 opaque in both themes; `contrast` only on colour tokens that are opaque in both themes. So `color-focus` may carry
 `contrast` (it resolves to `#8F5E0F` / `#E0A23A`), and a token whose value references `color-overlay` may neither
-carry `contrast` nor be a ground. The colour-value rules apply to the colour group only: `elevation-*` values, which
-mix `var()` references with literal shadows, are checked only by the `ref` rules. Each failure names the token and
-the rule.
+carry `contrast` nor be a ground. `contrast.exempt` is allowed on `color-disabled-ink` only: on any other token
+`validateSource` fails with the problem `token <name>: exempt is allowed only on color-disabled-ink`, whatever the
+token's values or figures, so a token cannot switch off the contrast threshold for itself, and the build, style-lint,
+`contrast` and `brand-rules` all stop on it (landing L1-01; operator round 3 of phase 5, 2026-11-04). The `contrast`
+gate exempts an entry from the threshold only through this flag, so the exemption follows the name. The colour-value
+rules apply to the colour group only: `elevation-*` values, which mix `var()` references with literal shadows, are
+checked only by the `ref` rules. Each failure names the token and the rule.
 
 Resolution (`resolve(source, name, theme)`, exported from `packages/tokens/src/generate.ts`; PLAN-FRESH-2-005): the
 token's value in that theme with every `var(--ocelle-<ref>)` replaced by the resolved value of `<ref>` in the same
