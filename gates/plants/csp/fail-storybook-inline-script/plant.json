@@ -1,0 +1,10 @@
+{
+  "expect": "fail",
+  "why": "An inline <script> in an HTML entry of the Storybook build output, which externalise.ts must have moved out (002 FR-023).",
+  "findings": [
+    {
+      "location": "storybook/dist/index.html:5",
+      "rule": "inline-script"
+    }
+  ]
+}

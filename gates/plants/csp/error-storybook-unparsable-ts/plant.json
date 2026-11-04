@@ -1,0 +1,5 @@
+{
+  "expect": "error",
+  "why": "A Storybook .ts input that does not parse as TypeScript: the gate could not run (002 FR-023).",
+  "cause": "csp: could not run: storybook/stories/x.stories.ts:2 does not parse"
+}
