@@ -14,8 +14,9 @@ first in `gates/test/plant-repo.test.ts`, then an integration test that a `repo-
 **Plant deltas** (PLAN-FRESH-2-007; operator decision 2026-11-03, squad round 3, PLAN-FRESH-3-003 (a)): a plant that
 changes the token source, the generator or the pair list states the change as a **structured delta by key**, never
 as a copy and never as a line-based patch, so that neither patch context nor line numbers tie it to the neighbouring
-entries (data-model § Token overrides). A plant's `gates/plants/<id>/<name>/delta.json` has up to three parts,
-applied by `buildRepoTree` after laying the plant's `tree/` over the configuration set:
+entries (data-model § Token overrides). A plant's `gates/plants/<id>/<name>/delta.json` has up to four parts,
+applied by `buildRepoTree` after laying the plant's `tree/` over the configuration set (a part not named here is an
+error):
 
 - `tokens`: a list of token overrides (data-model § Token overrides), set by name (`{ "token": "color-ink-muted",
   "light": "#6B655A" }`), added (`{ "add": { …record… } }`) or removed (`{ "remove": "<name>" }`). `buildRepoTree`
@@ -25,6 +26,12 @@ applied by `buildRepoTree` after laying the plant's `tree/` over the configurati
   "color-inset"], "set": { "figure": "4.27" } }`), remove an entry, or add one (appended). `buildRepoTree` parses the
   real `pairs.json`, applies them and writes it back one entry per line. A key that matches no entry, or two, is an
   error.
+- `pairsList`: `"empty"` or `"not-json"`, for a breaking plant whose input is a pair list that cannot be checked
+  (operator decision 2026-11-04, phase 5 review round 1, R1-01 (c)). `buildRepoTree` replaces the whole pair list:
+  `"empty"` writes `[]` and a newline (the text `"[]\n"`); `"not-json"` writes the fixed text `"[\n  {\"theme\":\"light\",\n"`
+  (as a JSON string: an opening `[`, then the start of one entry cut off after `"theme":"light",`), which does not
+  parse as JSON. Any other value is an error. The part is closed on purpose: no plant can carry a copy of the pair
+  list or any other free text in its place. A delta with both `pairs` and `pairsList` is an error.
 - `generator: "wrapped"`: the plant changes the generator's behaviour (`f-motion-not-zero`,
   `g-forced-colours-override`, `g-system-colour-mapping`, `generator-throws`). `buildRepoTree` moves the real
   `generate.ts` to `generate.real.ts` and places the plant's `tree/packages/tokens/src/generate.ts`, which must
@@ -46,7 +53,10 @@ generator produces). The plant runner resolves each key to `<path>:<line>` in th
 resolves to no line, or a token key that resolves to two, is a plant-runner error naming the plant and the key.
 
 Tests first in `gates/test/plant-repo.test.ts` (and `plant-runner.test.ts` for key resolution): each delta part is
-applied over the set; an unknown token name or pair key fails naming the plant and the key; a wrapper that does not
+applied over the set (`pairsList: "empty"` gives a pair list whose text is exactly `"[]\n"`, `"not-json"` one whose
+text is exactly the fixed text above); a `pairsList` value other than `"empty"` or `"not-json"`, a delta with both
+`pairs` and `pairsList`, and a part not named above (for example a free-text `pairsText`) are each rejected; an
+unknown token name or pair key fails naming the plant and the key; a wrapper that does not
 re-export `./generate.real.ts` is rejected; a `tree/` holding a forbidden file is rejected; each key form resolves to
 the right line, and an unresolvable key fails naming it. A plant-job test then changes a copy of the real source and
 pair list in three ways and asserts that every `contrast` and `brand-rules` plant still gives its expected outcome:
@@ -211,7 +221,7 @@ hand with those paths and recorded in the review; they are not a gate result.
 
 | Gate | Fail | Pass | Breaking |
 |---|---|---|---|
-| `contrast` | `text-below-threshold` (ink-muted at 4.3 on inset, light), `non-text-below-threshold` (control-border below 3 on rail, light) (both: see below), `figure-mismatch`, `unknown-token`, `missing-required-pair`, `excluded-without-reason`, `required-pair-excluded`, `not-opaque` (overlay as ground) | `repository-values` (no file of its own: the configuration set's real source and list), `exempt-disabled-ink` | `empty-list`, `unparsable-list`, `source-throws` |
+| `contrast` | `text-below-threshold` (ink-muted at 4.3 on inset, light), `non-text-below-threshold` (control-border below 3 on rail, light) (both: see below), `figure-mismatch`, `unknown-token`, `missing-required-pair`, `excluded-without-reason`, `required-pair-excluded`, `not-opaque` (overlay as ground) | `repository-values` (no file of its own: the configuration set's real source and list), `exempt-disabled-ink` | `empty-list` (`delta.json` `{ "pairsList": "empty" }`), `unparsable-list` (`{ "pairsList": "not-json" }`), `source-throws` |
 | `brand-rules` | `a-monospace`, `b-link-equals-accent`, `b-ochre-pair-not-excluded` (the excluded entry removed from the pair list), `c-extra-radius` (a `radius-4` at 4px), `c-wrong-value`, `d-rule-as-boundary` (rule at 3:1 on sheet), `e-light-chrome`, `f-motion-not-zero`, `g-forced-colours-override` (a colour token set to a hex value in a forced-colours block) | `repository-values` (no file of its own), `g-system-colour-mapping` (a colour token mapped to `CanvasText` in a forced-colours block) | `source-throws`, `generator-throws`, `source-invalid` (an A.6 name: exit 2) |
 | `style-lint` | `fail-unknown-token`, `fail-element-property-misspelt` (`var(--ocelle-button-gpa)` against the fixture manifest of `pass-element-property`) | `pass-known-token`, `pass-element-property` (`var(--ocelle-button-gap)` with a fixture `packages/elements/custom-elements.json` whose `ocelle-button` declaration lists `cssProperties` `--ocelle-button-gap`) | (existing), `element-property-clash` (a fixture manifest declaring `--ocelle-space-2`: exit 2) |
 | `csp` | `fail-storybook-inline-script` (inline script in `storybook/dist/index.html`), `fail-storybook-story-style-attribute` (a markup string with a `style` attribute in `storybook/stories/x.stories.ts`, rule `style-attribute`), `fail-storybook-preview-new-function` (`new Function` in `storybook/.storybook/preview.ts`, rule `new-function`), `fail-storybook-scripts-eval` (`eval` in `storybook/scripts/x.ts`: the exception covers markup only) | `pass-storybook-external-script` (external script there), `pass-storybook-scripts-tag-names` (`"<script>"` and `"<style>"` literals in `storybook/scripts/externalise.ts`, the stated exception) | (existing), `error-storybook-unparsable-ts` (a `.ts` file in `storybook/stories/` that does not parse: exit 2) |

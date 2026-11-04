@@ -141,7 +141,10 @@ analysis C1, "Exceptions + sunset").*
    - PLAN-FRESH-3-003 (a): `contrast` and `brand-rules` plants state their changes as `delta.json` by key (token
      overrides through an empty committed `overrides.ts`, pair entries by `(theme, fg, bg)`, a generator wrapper),
      and their expected locations by key, resolved to lines in the plant's tree; replaces round 2's `tree.patch`
-     (R-08, data-model § Token overrides, contracts/gates.md § Configuration set).
+     (R-08, data-model § Token overrides, contracts/gates.md § Configuration set). Phase 5 review round 1, R1-01 (c)
+     (operator, 2026-11-04): a fourth, closed part `"pairsList": "empty" | "not-json"` replaces the whole pair list
+     with `[]` or a fixed text that is not JSON, for the `empty-list` and `unparsable-list` breaking plants; it
+     excludes `pairs`, and no free-text form of the list exists.
 10. **Analysis ruling C1** (operator, 2026-11-03, "Exceptions + sunset"; `analysis-report.md`): the Storybook page's
     host additions and the narrowed static `csp`/`prefix` scope (items 6 and 8) are constitution IV exceptions, not
     readings. Each is a Complexity Tracking row with scope, rationale, approval and the sunset "reviewed when #10

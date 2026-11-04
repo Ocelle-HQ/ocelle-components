@@ -317,7 +317,9 @@ a line-based patch (PLAN-FRESH-2-007; operator decision 2026-11-03, squad round 
 contracts/gates.md § Configuration set): token overrides by name through `overrides.ts` (data-model § Token
 overrides), pair entries by `(theme, fg, bg)`, and, for rules (f) and (g) and `generator-throws`, a wrapper that
 re-exports the real generator and shadows one function, so they keep proving rules (f) and (g) against the generator
-the repository runs. Expected locations are written by key and resolved to lines in the plant's built tree. A
+the repository runs. The `contrast` breaking plants `empty-list` and `unparsable-list` replace the whole pair list
+through the closed part `"pairsList": "empty" | "not-json"` (`[]`, or a fixed text that is not JSON), not through
+free text, so no plant can carry a copy of the list (operator decision 2026-11-04, phase 5 review round 1, R1-01 (c)). Expected locations are written by key and resolved to lines in the plant's built tree. A
 unified diff would have carried neighbouring entries as context and the expected locations would have been line
 numbers, so a change to a neighbouring token or an inserted token or pair would have broken every plant; the
 plant-job test makes exactly those changes (a neighbour's value, an inserted token and pair, an unrelated value) and

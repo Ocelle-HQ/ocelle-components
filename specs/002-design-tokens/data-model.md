@@ -88,7 +88,11 @@ derived token, `ref` in the same full-name form and the same shape as the source
 The list is a JSON array with one entry per line. A plant changes it by key `(theme, fg, bg)` through its
 `delta.json` (contracts/gates.md § Configuration set), never by a line-based patch: a unified diff carries
 neighbouring entries as context and a line number shifts with every insertion above it, so neither may tie a plant
-to its neighbours (PLAN-FRESH-3-003).
+to its neighbours (PLAN-FRESH-3-003). A breaking plant whose input is a list that cannot be checked replaces the
+whole list through the closed `delta.json` part `"pairsList": "empty" | "not-json"`: `empty` writes `[]`, `not-json`
+writes the fixed text that does not parse as JSON named in contracts/gates.md § Configuration set. No other text can
+be written, so no plant carries a copy of the list, and a delta cannot have both `pairs` and `pairsList` (operator
+decision 2026-11-04, phase 5 review round 1, R1-01 (c)).
 
 Required pair set (derived, not stored): for each token with `contrast`, each ground, each theme (A.8); 149 per theme. With
 the excluded pairs of A.9 the list has 158 entries in light and 157 in dark.
