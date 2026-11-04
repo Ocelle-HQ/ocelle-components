@@ -1,0 +1,6 @@
+/* Plant for the style lint: real tokens, alone, in calc() and as a fallback. */
+:host {
+  background: var(--ocelle-color-canvas);
+  padding: calc(var(--ocelle-space-2) * 2);
+  color: var(--ocelle-color-link, var(--ocelle-color-ink));
+}

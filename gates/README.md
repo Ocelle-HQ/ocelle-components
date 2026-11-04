@@ -23,7 +23,7 @@ and changes nothing else. The registry of gates is `gates/gates.json`; the FR-02
 |---|---|---|---|---|
 | `typecheck` | Typecheck | `pnpm run gate:typecheck` | repository TypeScript, strict mode | implicit `any` in package source, gate source and element test code; pass: a strict file, an excluded fixture; breaking: a missing `/// <reference>` (TS6053) |
 | `lint` | Code lint | `pnpm run gate:lint` | repository TypeScript (ESLint, `strictTypeChecked`) | a floating promise in package source and gate source; pass: a voided promise, an excluded fixture; breaking: a file that does not parse |
-| `style-lint` | Style lint | `pnpm run gate:style-lint` | the styles of FR-024 (token-only) | a raw value in an element `css` template, in stylesheets of `elements/src`, `styles/src` and `styles/` outside `src/`, one per FR-024 reject class; pass: the ten allowed values, a story, element test code, token definitions; breaking: a stylesheet that does not parse |
+| `style-lint` | Style lint | `pnpm run gate:style-lint` | the styles of FR-024 (token-only), and since 002 every `var(--ocelle-…)` reference to a name that is neither a token of `packages/tokens/src/source.ts` nor a custom property `packages/elements/custom-elements.json` declares (exact name; 002 FR-010) | a raw value in an element `css` template, in stylesheets of `elements/src`, `styles/src` and `styles/` outside `src/`, one per FR-024 reject class; a misspelt token (`var(--ocelle-color-canvs)`), a misspelt element property (`var(--ocelle-button-gpa)`); pass: the ten allowed values, a story, element test code, token definitions, real tokens, a declared element property; breaking: a stylesheet that does not parse, an element property with a token's full name |
 | `unit-tests` | Unit tests | `pnpm run gate:unit-tests` (`pnpm test`) | every test file | a failing test in `tokens`, `styles`, a colocated test, `gates`, and `elements` in Chromium; pass: a passing test alone in each project, a failing fixture not run; breaking: a file that throws while loading, no test file |
 | `test-lint` | Test lint | `pnpm run gate:test-lint` | all test code (FR-010) | the seven FR-010 patterns of SC-004, an assertion-free colocated element test and gate test; pass: a real assertion, an excluded fixture; breaking: a file that does not parse |
 | `mutation` | Mutation testing | `pnpm run gate:mutation -- --base <sha>` | changed package source and gate source lines | an unchecked covered line, a line no test runs, a record without a reason, `// Stryker disable all`, a survivor in gate source; pass: a fully checked change, a reasoned record (listed), a test-only change, a `CompileError`-only change; breaking: a `--base` that does not resolve (the plant's `plant.json` `base`), a failed dry run |
@@ -36,8 +36,10 @@ and changes nothing else. The registry of gates is `gates/gates.json`; the FR-02
 
 The plant job (`gates/bin/plants.ts`) first checks that `gates/gates.json`, the gate jobs of
 `.github/workflows/ci.yml` and the FR-020 list are one set, then runs every plant through its gate in normal mode on
-a temporary repository built from the plant and the repository's own configuration (only the inputs are swapped),
-and fails when a fail plant is not caught with exactly its expected findings, a pass plant is not accepted, a
+a temporary repository built from the plant and the repository's own configuration (only the inputs are swapped;
+since 002 the configuration set also holds the token source `packages/tokens/src/source.ts`, its overrides
+`overrides.ts`, the generator `generate.ts` and the pair list `packages/tokens/contrast/pairs.json`, so a plant sees
+the real token source and carries only the files it changes), and fails when a fail plant is not caught with exactly its expected findings, a pass plant is not accepted, a
 breaking plant is not reported as "could not run" for the cause it names, a gate lacks a fail, pass or breaking plant, a `plant.json` is
 missing or invalid, or a plant carries gate configuration.
 
@@ -99,5 +101,5 @@ These gates of the constitution are not delivered by this feature; each is deliv
 | Visual regression | #10 |
 | Accessibility (axe) | #10 |
 | Contrast check | #5 |
-| Custom-elements manifest check | the first element feature (#7) or #10, whichever lands first |
+| Custom-elements manifest check | the first element feature (#7) or #10, whichever lands first; the manifest it introduces is a committed file at `packages/elements/custom-elements.json` (constitution I public surface), kept current by the element features, and style-lint reads its `cssProperties` names: an element's CSS can use a new element property only once the manifest declares it (002 PLAN-FRESH-2-004) |
 | Remote loads in built output (constitution IV, beyond FR-021) | the first element feature |

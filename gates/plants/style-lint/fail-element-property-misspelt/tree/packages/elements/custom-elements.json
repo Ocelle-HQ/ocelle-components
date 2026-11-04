@@ -1,0 +1,18 @@
+{
+  "schemaVersion": "2.1.0",
+  "modules": [
+    {
+      "kind": "javascript-module",
+      "path": "src/button.ts",
+      "declarations": [
+        {
+          "kind": "class",
+          "name": "OcelleButton",
+          "tagName": "ocelle-button",
+          "customElement": true,
+          "cssProperties": [{ "name": "--ocelle-button-gap", "description": "Space between the icon and the label." }]
+        }
+      ]
+    }
+  ]
+}

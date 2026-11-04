@@ -1,4 +1,4 @@
 /* Plant for the style lint. */
 :host {
-  margin: var(--ocelle-x, 4px);
+  margin: var(--ocelle-space-2, 4px);
 }

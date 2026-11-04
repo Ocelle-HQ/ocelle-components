@@ -1,5 +1,5 @@
 Scope: all 5 workspace projects
-✓ Lockfile passes supply-chain policies (verified 28m ago)
+✓ Lockfile passes supply-chain policies (verified 30m ago)
 Lockfile is up to date, resolution step is skipped
 Packages are hard linked from the content-addressable store to the virtual store.
   Content-addressable store is at: /root/.local/share/pnpm/store/v11
@@ -29,7 +29,7 @@ devDependencies:
 + vite 8.3.5
 + vitest 5.0.5
 
-Done in 236ms using pnpm v12.16.1
+Done in 340ms using pnpm v12.16.1
 $ node gates/bin/setup-offline.ts
 setup: installed offline; Chromium at /tmp/claude-0/-home-user-ocelle-components/181e1231-8fd5-5f31-9d9d-498e593ba7cf/scratchpad/pw/chromium-1248/chrome-linux64/chrome
 $ node gates/bin/test.ts
@@ -64,10 +64,10 @@ gates/test/integration/plant-repo.test.ts:82: unit-tests: buildRepoTree builds t
 gates/test/integration/plant-repo.test.ts:124: unit-tests: buildMutationRepo commits the configuration set with base/, then head/ (files only in base/ deleted), node_modules linked and untracked: AssertionError: expected [ 'eslint.config.ts', …(22) ] to deeply equal ArrayContaining{…}
 packages/tokens/test/build.test.ts:31: unit-tests: buildPlan() writes tokens.css and tokens.json from the source and copies each font file: AssertionError: expected [] to deeply equal [ { path: 'tokens.css', …(1) }, …(3) ]
 packages/tokens/test/build.test.ts:40: unit-tests: buildPlan() copies nothing without font files: AssertionError: expected [] to deeply equal [ 'tokens.css', 'tokens.json' ]
-packages/tokens/test/build.test.ts:46: unit-tests: build() writes the stylesheet and the JSON of the real source, and copies a fixture fonts/ into fonts/: Error: ENOENT: no such file or directory, scandir '/tmp/ocelle-tokens-build-4WcZh6/dist'
-packages/tokens/test/build.test.ts:59: unit-tests: build() skips the copy without error when the package has no fonts/ directory, and writes no fonts/: Error: ENOENT: no such file or directory, scandir '/tmp/ocelle-tokens-build-gzIrhx/dist'
-packages/tokens/test/build.test.ts:68: unit-tests: node scripts/build.ts <out> writes exactly css() to tokens.css and JSON.stringify(json()) to tokens.json: Error: ENOENT: no such file or directory, open '/tmp/ocelle-tokens-build-W3Qzez/dist/tokens.css'
-packages/tokens/test/build.test.ts:78: unit-tests: package.json exports the entry, the stylesheet, the JSON and the fonts, publishes dist, the changelog and the README, and builds both (R-11): AssertionError: expected { …(3) } to deeply equal { exports: { …(4) }, …(2) }
+packages/tokens/test/build.test.ts:46: unit-tests: build() writes the stylesheet and the JSON of the real source, and copies a fixture fonts/ into fonts/: AssertionError: expected false to be true // Object.is equality
+packages/tokens/test/build.test.ts:60: unit-tests: build() skips the copy without error when the package has no fonts/ directory, and writes no fonts/: AssertionError: expected false to be true // Object.is equality
+packages/tokens/test/build.test.ts:70: unit-tests: node scripts/build.ts <out> writes exactly css() to tokens.css and JSON.stringify(json()) to tokens.json: AssertionError: expected false to be true // Object.is equality
+packages/tokens/test/build.test.ts:81: unit-tests: package.json exports the entry, the stylesheet, the JSON and the fonts, publishes dist, the changelog and the README, and builds both (R-11): AssertionError: expected { …(3) } to deeply equal { exports: { …(4) }, …(2) }
 packages/tokens/test/generate.test.ts:51: unit-tests: css() writes the fixture as the four blocks of research.md R-02, exactly: AssertionError: expected '' to be ':root {\n  --ocelle-color-ground: #FF…' // Object.is equality
 packages/tokens/test/generate.test.ts:55: unit-tests: css() puts the blocks in the order: :root, system dark unless data-theme=light, data-theme=dark, reduced motion: AssertionError: expected [] to deeply equal [ ':root', …(3) ]
 packages/tokens/test/generate.test.ts:59: unit-tests: css() puts light values only in the unconditioned :root, and dark values only in the two dark blocks (FR-006, no preference): AssertionError: expected undefined to be '#111111' // Object.is equality

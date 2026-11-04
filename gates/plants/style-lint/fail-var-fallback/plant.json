@@ -1,6 +1,6 @@
 {
   "expect": "fail",
-  "why": "A raw var() fallback (margin: var(--ocelle-x, 4px)) is rejected (FR-024).",
+  "why": "A raw var() fallback (margin: var(--ocelle-space-2, 4px)) is rejected (FR-024). Since 002 the name is a real token, so the raw fallback is the only finding: the made-up --ocelle-x would also be an unknown token under FR-010.",
   "findings": [
     {
       "location": "packages/styles/src/x.css:3",

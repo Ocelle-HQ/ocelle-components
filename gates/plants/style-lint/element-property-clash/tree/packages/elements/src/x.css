@@ -1,0 +1,4 @@
+/* Plant for the style lint: the fixture manifest declares an element property with the full name of a token. */
+:host {
+  gap: var(--ocelle-space-2);
+}

@@ -1,7 +1,7 @@
 // Temporary repositories for plants (research.md R-10, contracts/plants.md): `repo-tree` lays a plant's `tree/` over
-// the repository's configuration set, `commit-repo` builds a git history from a plant's commits.txt on an empty
-// signed-off base commit, and `mutation-repo` commits the configuration set with the plant's `base/`, then its
-// `head/`. node_modules is linked from the repository in each. The decisions (configurationSet, packagePaths,
+// the repository's configuration set (with the token source since 002, contracts/gates.md § Configuration set),
+// `commit-repo` builds a git history from a plant's commits.txt on an empty signed-off base commit, and
+// `mutation-repo` commits the configuration set with the plant's `base/`, then its `head/`. node_modules is linked from the repository in each. The decisions (configurationSet, packagePaths,
 // carriesConfiguration, parseCommits, recordsOf, parentRecords, identityEnv, baseCommit, ignoreMissing) are pure and tested in
 // process (gates/test/plant-repo.test.ts); the builders only copy files and run git with their results (the process
 // boundary, tested by gates/test/integration/plant-repo.test.ts).
@@ -35,6 +35,17 @@ const rootConfiguration = [
   "stryker.config.json",
 ];
 
+/**
+ * The token source, its overrides, the generator they import and the contrast pair list: repo-tree plants see the
+ * real token source (002 contracts/gates.md § Configuration set; the unknown-token check of style-lint reads it).
+ */
+const tokenFiles = [
+  "packages/tokens/src/source.ts",
+  "packages/tokens/src/overrides.ts",
+  "packages/tokens/src/generate.ts",
+  "packages/tokens/contrast/pairs.json",
+];
+
 /** The configuration set copied into every temporary repository: these root files, plus per package dir. */
 export function configurationSet(packageDirs: readonly string[]): string[] {
   return [
@@ -42,6 +53,7 @@ export function configurationSet(packageDirs: readonly string[]): string[] {
     ...packageDirs.flatMap((dir) => [`${dir}/package.json`, `${dir}/tsconfig.json`]),
     "gates/eslint",
     "gates/stylelint",
+    ...tokenFiles,
   ];
 }
 

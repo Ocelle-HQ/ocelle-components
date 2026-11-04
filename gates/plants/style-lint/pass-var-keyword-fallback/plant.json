@@ -1,4 +1,4 @@
 {
   "expect": "pass",
-  "why": "A var() whose fallback is a keyword (color: var(--ocelle-x, Canvas)) is allowed (FR-024)."
+  "why": "A var() whose fallback is a keyword (color: var(--ocelle-color-ink, Canvas)) is allowed (FR-024). Since 002 the name is a real token: the made-up --ocelle-x is an unknown token under FR-010."
 }

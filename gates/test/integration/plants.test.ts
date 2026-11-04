@@ -29,6 +29,11 @@ const copied = [
   "vitest.mutation.config.ts",
   "stryker.config.json",
   ...["tokens", "styles", "elements"].flatMap((name) => [`packages/${name}/package.json`, `packages/${name}/tsconfig.json`]),
+  // The token files of the configuration set (002 contracts/gates.md § Configuration set).
+  "packages/tokens/src/source.ts",
+  "packages/tokens/src/overrides.ts",
+  "packages/tokens/src/generate.ts",
+  "packages/tokens/contrast/pairs.json",
 ];
 const kinds = ["fail", "pass", "error"] as const;
 

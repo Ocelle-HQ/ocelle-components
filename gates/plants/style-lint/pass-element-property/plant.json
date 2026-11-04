@@ -1,0 +1,4 @@
+{
+  "expect": "pass",
+  "why": "var(--ocelle-button-gap) is an element custom property that packages/elements/custom-elements.json declares, so it is not an unknown token (FR-010, research.md R-09)."
+}
