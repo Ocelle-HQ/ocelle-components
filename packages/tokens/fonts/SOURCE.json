@@ -1,0 +1,16 @@
+{
+  "repository": "schibsted/schibsted-grotesk",
+  "commit": "d485f61f105e1b3935f4d21dfb4d371359798603",
+  "files": [
+    {
+      "path": "fonts/SchibstedGrotesk-wght.woff2",
+      "upstreamPath": "fonts/variable/SchibstedGrotesk[wght].woff2",
+      "sha256": "8b77a34cdd59455aa3434e949597e99346204d40357905fd918df20ed1139ac1"
+    },
+    {
+      "path": "fonts/OFL.txt",
+      "upstreamPath": "OFL.txt",
+      "sha256": "3b4f3063b6ac7c1e403e2c4a5e8ef3a58190ff83ed7b15af66511858699139ce"
+    }
+  ]
+}
