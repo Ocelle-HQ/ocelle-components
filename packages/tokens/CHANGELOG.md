@@ -5,8 +5,15 @@ All notable changes to `@ocelle/tokens`. The package follows semantic versioning
 
 ## Unreleased
 
+**First release: hosts and Ocelle elements get every design token, both themes and the brand font from one
+package (mission 002; #5).** Before, there was no token package: colours, spacing and type were not available as
+shared `--ocelle-*` names. Now a host links `tokens.css` and serves `fonts/` beside it under `font-src 'self'`,
+nothing loads from a CDN, and two new merge checks (Contrast, Brand rules) keep the token values accessible.
+
 ### Added
 
+- `fonts/`: Schibsted Grotesk, the variable `wght` WOFF2 with its SIL Open Font License 1.1 (`OFL.txt`), declared
+  by `@font-face` in `tokens.css` with a relative URL; see the README for the CSP the host needs.
 - `tokens.css`: every token as an `--ocelle-*` custom property, light by default and with no system preference,
   dark under `prefers-color-scheme: dark` unless `data-theme="light"`, and under `data-theme="dark"` on `<html>`;
   `--ocelle-motion-fast` and `--ocelle-motion-base` at `0ms` under `prefers-reduced-motion: reduce`.
