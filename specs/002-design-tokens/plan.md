@@ -59,7 +59,9 @@ project excluding `test/browser/`, so no test file sits in both a mutated and an
 
 **Performance Goals**: none beyond CI time: each new gate under 10 s; the browser tests under 60 s; a mutation shard
 with a 120-line `source.ts` entry under the 10-minute `mutation-shard` limit, measured by the US1 spike (stop and
-ask above it).
+ask above it); every mutation shard under that limit, its entries at most 60 changed lines since 2026-11-05
+(operator decision, phase 5 round 6 of mission 002: the shard `packages/tokens/src/generate.ts:121-240` held 264
+mutants and took 670 s; 001 research.md R-08).
 
 **Constraints**: strict CSP with no exception for the package output; the Storybook page with the host additions
 taken as a constitution IV exception (Complexity Tracking); no network at build (Storybook telemetry disabled) or run time; no `sk-` names or monospace in

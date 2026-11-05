@@ -131,10 +131,12 @@ makes a gate block the merge. The ruleset (or branch protection) on `main` requi
 
 A change to this set is a change to the ruleset, which the operator makes. The jobs `mutation-plan` and
 `mutation-shard` serve the Mutation testing check and are not required themselves. `mutation-plan` splits the changed
-files into entries, a file of more than 120 changed lines into line-range entries `path:start-end` of at most 120
+files into entries, a file of more than 60 changed lines into line-range entries `path:start-end` of at most 60
 changed lines, and fills them into shards of at most 10 entries and 250 changed lines (FR-013); two entries of one
-file never share a shard, so no shard holds more than 120 changed lines of one file, while an entry may share a shard
-with other files' entries. A cut is the boundary between two consecutive entries of one file. A mutant whose node
+file never share a shard, so no shard holds more than 60 changed lines of one file, while an entry may share a shard
+with other files' entries. The entry bound is 60 changed lines, down from 120 (operator decision, 2026-11-05, phase 5
+round 6 of mission 002: the shard `packages/tokens/src/generate.ts:121-240` held 264 mutants and took 670 s; research.md
+R-08). A cut is the boundary between two consecutive entries of one file. A mutant whose node
 spans a cut (starts in one entry of a file and ends in the next) is mutated in no shard, since Stryker mutates a node
 only when it lies wholly inside one `mutate` range; the smaller mutants inside it, each within one entry, still are.
 This is an accepted limit (operator decision, phase 3 round 10, O10-02; research.md R-08, "Cuts, an accepted limit").

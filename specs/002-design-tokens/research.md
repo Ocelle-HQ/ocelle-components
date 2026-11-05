@@ -98,8 +98,10 @@ stream for colours, the exact text for the others, and `json()`'s resolved value
 the `applyOverrides(records, overrides)` call (the committed `overrides` is empty, data-model § Token overrides);
 mutants of `css()`, `json()`, `resolve()` and `applyOverrides()` by the generator tests on fixture sources. `ignoreStatic` stays off: `gates/lib/mutation/report.ts`
 counts `Ignored` as passing, so it would pass every `source.ts` mutant unseen. The US1 spike measures the time of one
-mutation shard holding a 120-line `source.ts` entry (the bound of `gates/lib/mutation/shards.ts`); if it exceeds the
-10-minute limit, the phase stops and asks the operator.
+mutation shard holding a 120-line `source.ts` entry (the bound of `gates/lib/mutation/shards.ts` at the time); if it
+exceeds the 10-minute limit, the phase stops and asks the operator. The entry bound is 60 changed lines since
+2026-11-05 (operator decision, phase 5 round 6 of mission 002: the shard `packages/tokens/src/generate.ts:121-240`
+held 264 mutants and took 670 s; 001 research.md R-08).
 
 One separate node test runs `scripts/build.ts` into a temporary directory and checks it writes exactly the text of
 `css()` and `json()` and the font files. A small static server (Node `http`, no dependency) serves the directory and

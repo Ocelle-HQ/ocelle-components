@@ -219,7 +219,9 @@ hand with those paths and recorded in the review; they are not a gate result.
 - `stryker.config.json` keeps `ignoreStatic` off (`report.ts` counts `Ignored` as passing, so it would pass the
   `source.ts` mutants unseen).
 - Shard time: the US1 spike measures one mutation shard holding a 120-line `source.ts` entry
-  (the shard bound of `gates/lib/mutation/shards.ts`) against the 10-minute `mutation-shard` limit of `ci.yml`; if
+  (the shard bound of `gates/lib/mutation/shards.ts` at the time; 60 changed lines since 2026-11-05, operator
+  decision, phase 5 round 6 of mission 002: the shard `packages/tokens/src/generate.ts:121-240` at 264 mutants /
+  670 s) against the 10-minute `mutation-shard` limit of `ci.yml`; if
   it exceeds the limit, the phase stops and asks the operator.
 
 ## Plants (`gates/plants/<id>/<name>/plant.json`, as `gates/README.md`)
