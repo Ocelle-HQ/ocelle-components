@@ -24,5 +24,15 @@ The shards holding `packages/tokens/src/generate.ts` entries (shard numbers coun
 
 | Shard | Files | Changed lines | Mutants on changed lines | Result | Equivalent records | Duration |
 |---|---|---|---|---|---|---|
+| 15 | packages/tokens/scripts/build.ts:61-62, packages/tokens/src/generate.ts:1-60 | 62 | 11 | exit 0, none survived | 1 | 78 s (1 min 18 s) |
+| 16 | packages/tokens/src/generate.ts:61-120 | 60 | 87 | exit 0, none survived | 0 | 215 s (3 min 35 s) |
 | 17 | packages/tokens/src/generate.ts:121-180 | 60 | 157 | exit 0, none survived | 1 | 207 s (3 min 27 s) |
 | 18 | packages/tokens/src/generate.ts:181-240 | 60 | 104 | exit 0, none survived | 1 | 155 s (2 min 35 s) |
+| 19 | packages/tokens/src/generate.ts:241-300, packages/tokens/src/index.ts, overrides.ts, source.ts:1-60 | 146 | 79 | exit 0, none survived | 0 | 231 s (3 min 51 s) |
+
+The heaviest by mutants is shard 17 (157 mutants, 207 s); the longest is shard 19 (231 s). Every shard is under 600
+s locally, the longest at 39 % of the limit. Shards 17 and 18 split the old 121-240 shard: 157 + 104 = 261 mutants
+against its 264, in 362 s together against its 670 s; the 3 fewer are most likely mutants spanning the new cut at
+180/181, mutated in no shard (O10-02, an accepted limit, gates/README.md), not checked one by one here. The equivalent
+records: shard 15 prints the one on packages/tokens/scripts/build.ts:61, shards 17 and 18 the one on
+packages/tokens/src/generate.ts:180. Shards 1 to 14 and 20 to 24 were not timed here; they hold no generate.ts line.
