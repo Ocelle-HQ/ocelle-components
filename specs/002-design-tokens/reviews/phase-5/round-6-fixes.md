@@ -15,3 +15,11 @@ On Node 22.23.4, after the green change, no test changed:
 - `pnpm run gate:mutation -- --base eaf16896ec10affdca24296fc9531fcffc46a8be --plan`: 24 shards, 23 cuts within
   files; every `path:start-end` entry holds at most 60 changed lines and every whole entry is a file of at most 60
   (the plan is in `mutation-shards.md`).
+- `pnpm run gate:mutation -- --base eeb95d4`: exit 0, 1193 mutants on the changed lines of 12 files, none survived,
+  31 equivalent records, in 671 s (`round-6-mutation.log`).
+- Timed `--files` runs of every shard holding `packages/tokens/src/generate.ts` entries (`mutation-shards.md`): the
+  heaviest by mutants, `generate.ts:121-180` (157 mutants), took 207 s; the longest, `generate.ts:241-300` with three
+  other files, took 231 s. All are under 600 s; the old `121-240` shard took 670 s.
+- `tdd-check.sh 5`: `pass`, fix-6 red with exit 1, no problems (`tdd-check.json`).
+
+Each mutation run ran alone, and no plants run happened during one.
