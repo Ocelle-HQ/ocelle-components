@@ -1,5 +1,5 @@
 Scope: all 5 workspace projects
-✓ Lockfile passes supply-chain policies (verified 22h ago)
+✓ Lockfile passes supply-chain policies (verified 1d ago)
 Lockfile is up to date, resolution step is skipped
 Packages are hard linked from the content-addressable store to the virtual store.
   Content-addressable store is at: /root/.local/share/pnpm/store/v11
@@ -29,19 +29,19 @@ devDependencies:
 + vite 8.3.5
 + vitest 5.0.5
 
-Done in 460ms using pnpm v12.16.1
+Done in 279ms using pnpm v12.16.1
 $ node gates/bin/setup-offline.ts
 setup: installed offline; Chromium at /tmp/claude-0/-home-user-ocelle-components/181e1231-8fd5-5f31-9d9d-498e593ba7cf/scratchpad/pw/chromium-1248/chrome-linux64/chrome
 $ node gates/bin/test.ts
 gates/test/integration/plant-repo.test.ts:94: unit-tests: buildRepoTree: plant deltas (002 contracts/gates.md § Configuration set, *Plant deltas*) writes the delta's token overrides as overrides.ts and applies its pair changes by key, one entry per line: AssertionError: expected '// Token overrides (data-model.md § T…' to be '// Token overrides written by the pla…' // Object.is equality
-gates/test/integration/plant-repo.test.ts:124: unit-tests: buildRepoTree: plant deltas (002 contracts/gates.md § Configuration set, *Plant deltas*) moves the real generator to generate.real.ts and places the plant's wrapper for generator wrapped (and not without a delta): Error: ENOENT: no such file or directory, open '/tmp/ocelle-repo-tree-sv0am2/packages/tokens/src/generate.real.ts'
+gates/test/integration/plant-repo.test.ts:124: unit-tests: buildRepoTree: plant deltas (002 contracts/gates.md § Configuration set, *Plant deltas*) moves the real generator to generate.real.ts and places the plant's wrapper for generator wrapped (and not without a delta): Error: ENOENT: no such file or directory, open '/tmp/ocelle-repo-tree-E05TGH/packages/tokens/src/generate.real.ts'
 gates/test/integration/plant-repo.test.ts:135: unit-tests: buildRepoTree: plant deltas (002 contracts/gates.md § Configuration set, *Plant deltas*) writes pairsText as the pair list's whole text: AssertionError: expected '[]\n' to be '[\n' // Object.is equality
 gates/test/integration/plant-repo.test.ts:147: unit-tests: buildRepoTree: plant deltas (002 contracts/gates.md § Configuration set, *Plant deltas*) fails to build bad-token-plant, naming the key or file: Error: promise resolved "undefined" instead of rejecting
 gates/test/integration/plant-repo.test.ts:147: unit-tests: buildRepoTree: plant deltas (002 contracts/gates.md § Configuration set, *Plant deltas*) fails to build bad-pair-plant, naming the key or file: Error: promise resolved "undefined" instead of rejecting
 gates/test/integration/plant-repo.test.ts:147: unit-tests: buildRepoTree: plant deltas (002 contracts/gates.md § Configuration set, *Plant deltas*) fails to build bad-wrapper-plant, naming the key or file: Error: promise resolved "undefined" instead of rejecting
 gates/test/integration/plant-repo.test.ts:147: unit-tests: buildRepoTree: plant deltas (002 contracts/gates.md § Configuration set, *Plant deltas*) fails to build forbidden-plant, naming the key or file: Error: promise resolved "undefined" instead of rejecting
 gates/test/integration/plant-repo.test.ts:147: unit-tests: buildRepoTree: plant deltas (002 contracts/gates.md § Configuration set, *Plant deltas*) fails to build invalid-delta-plant, naming the key or file: Error: promise resolved "undefined" instead of rejecting
-gates/test/integration/plants-robustness.test.ts:152: unit-tests: contrast and brand-rules plants under neighbouring changes has the two gates' plants and the registry's: Error: ENOENT: no such file or directory, scandir '/tmp/tmp.Ht0aK03onh/gates/plants/contrast'
+gates/test/integration/plants-robustness.test.ts:152: unit-tests: contrast and brand-rules plants under neighbouring changes has the two gates' plants and the registry's: Error: ENOENT: no such file or directory, scandir '/tmp/tmp.Z7LMhSgoXi/gates/plants/contrast'
 gates/test/integration/plants-robustness.test.ts:160: unit-tests: contrast and brand-rules plants under neighbouring changes (1) the neighbour color-ink-soft changed in light: the change is consistent, and every plant keeps its outcome: Error: not implemented: contrastRatio(#15130F, #D9D3C7)
 gates/test/integration/plants-robustness.test.ts:160: unit-tests: contrast and brand-rules plants under neighbouring changes (2) a token inserted before color-ink-soft and a pair inserted first: the change is consistent, and every plant keeps its outcome: Error: not implemented: contrastRatio(#15130F, #D9D3C7)
 gates/test/integration/plants-robustness.test.ts:160: unit-tests: contrast and brand-rules plants under neighbouring changes (3) the light color-danger changed: the change is consistent, and every plant keeps its outcome: Error: not implemented: contrastRatio(#15130F, #D9D3C7)
