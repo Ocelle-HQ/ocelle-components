@@ -334,7 +334,7 @@ The design sources are research R-06, R-08, R-10 and R-13, data-model § Prose, 
   - the inset ring on `table:focus-visible`;
   - cells and header cells.
 - [X] T042 [US3] README and CHANGELOG of `@ocelle/styles` with the T037 statements. Add `renderFamily("prose")` and the "Prose document" story (text in `base-content.json`)
-- [ ] T043 [US3] Run the checks of T022 for this phase, then `.specify/extensions/story/scripts/tdd-check.sh 4` (`pass`), and commit green (`feat(003-base-styles): phase 4 — US3 prose`)
+- [X] T043 [US3] Run the checks of T022 for this phase, then `.specify/extensions/story/scripts/tdd-check.sh 4` (`pass`), and commit green (`feat(003-base-styles): phase 4 — US3 prose`)
 
 **Checkpoint**: a renderer's plain HTML in a prose container reads at 1.65 with an 18 px `h2`, and wide tables
 scroll in their own box.
