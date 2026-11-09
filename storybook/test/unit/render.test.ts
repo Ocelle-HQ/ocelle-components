@@ -118,6 +118,13 @@ const content: Content = {
     linkedHeading: "Linked <h6>",
     linked: { caption: "", head: ["K & k", "V"], rows: [["k<1>", "v1"], ["k2", "v2"]] },
   },
+  wrap: {
+    heading: "Wrap & <4>",
+    intro: 'Intro "w"',
+    identifier: "id<&>",
+    short: "Short >",
+    note: "Note &",
+  },
 };
 
 describe("renderFamily", () => {
@@ -242,5 +249,40 @@ describe("renderFamily(\"prose\")", () => {
     expect(tables.map((table) => elements(table.childNodes).filter((element) => element.tagName === "a").length)).toEqual([0, 1]);
     expect(all.filter((element) => element.attrs.some((attribute) => attribute.name === "style" || attribute.name === "class"))).toEqual([]);
     expect(all.filter((element) => ["h1", "h2", "h3", "h4", "h5", "h6", "a", "code", "pre", "caption", "th", "td"].includes(element.tagName) && element.childNodes.length === 0)).toEqual([]);
+  });
+});
+
+// The Identifier wrap story (003 FR-023, research.md R-12, phase 5): a 300 px two-column grid (stories-layout.css, on
+// its data-story="wrap-grid" attribute) whose first cell holds a 120-character unbroken identifier with the
+// identifier-wrap hook (data-ocelle-wrap="anywhere") beside a short text, and the same identifier in a paragraph with
+// the hook combined with the value hook (FR-020: the wrap sets no font property).
+describe("renderFamily(\"wrap\")", () => {
+  it("renders the Identifier wrap story from the given text, escaping & < > \" in every text", () => {
+    expect(renderFamily("wrap", content)).toBe(
+      '<article data-story="wrap">' +
+        "<h1>Wrap &amp; &lt;4&gt;</h1>" +
+        "<p>Intro &quot;w&quot;</p>" +
+        '<div data-story="wrap-grid"><div data-ocelle-wrap="anywhere">id&lt;&amp;&gt;</div><div>Short &gt;</div></div>' +
+        '<p>Note &amp; <span data-ocelle-wrap="anywhere" data-ocelle-value="">id&lt;&amp;&gt;</span></p>' +
+        "</article>",
+    );
+  });
+
+  it("renders the Identifier wrap story from base-content.json by default: the hook on the grid cell and on the value span, a 120-character unbroken identifier, no style attribute and no class", () => {
+    const all = elements(parseFragment(renderFamily("wrap")).childNodes);
+    const attribute = (element: Element, name: string): string | undefined => element.attrs.find((each) => each.name === name)?.value;
+    const text = (element: Element): string => element.childNodes.map((node) => ("value" in node ? node.value : "")).join("");
+    const hooked = all.filter((element) => attribute(element, "data-ocelle-wrap") !== undefined);
+    expect(hooked.map((element) => [element.tagName, attribute(element, "data-ocelle-wrap"), attribute(element, "data-ocelle-value")])).toEqual([
+      ["div", "anywhere", undefined],
+      ["span", "anywhere", ""],
+    ]);
+    expect(hooked.map((element) => /^\S{120}$/.test(text(element)))).toEqual([true, true]);
+    const grid = all.filter((element) => attribute(element, "data-story") === "wrap-grid");
+    expect(grid.map((element) => element.childNodes.filter((node) => "tagName" in node).length)).toEqual([2]);
+    expect(grid.map((element) => text(elements(element.childNodes)[1] ?? element).length > 0)).toEqual([true]);
+    expect(all.filter((element) => element.tagName === "article").map((element) => attribute(element, "data-story"))).toEqual(["wrap"]);
+    expect(all.filter((element) => element.attrs.some((each) => each.name === "style" || each.name === "class"))).toEqual([]);
+    expect(["h1", "p"].filter((tag) => !all.some((element) => element.tagName === tag && element.childNodes.length > 0))).toEqual([]);
   });
 });

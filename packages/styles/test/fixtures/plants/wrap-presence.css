@@ -1,0 +1,4 @@
+/* Plant (research.md R-10, FR-005): the presence form of the wrap hook, which an undocumented value matches. */
+[data-ocelle-wrap] {
+  overflow-wrap: anywhere;
+}

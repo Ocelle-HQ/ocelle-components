@@ -1,0 +1,4 @@
+/* Plant (research.md R-10, US4-2): the wrap applied to every element, so the hook is no longer opt-in. */
+* {
+  overflow-wrap: anywhere;
+}

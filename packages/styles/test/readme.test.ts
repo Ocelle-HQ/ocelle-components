@@ -10,7 +10,11 @@ import { describe, expect, it } from "vitest";
 // its tokens, the main-grounds limit) and the CHANGELOG entries naming both attributes; phase 4 adds the prose hook
 // (its value, what the prose family styles and its tokens, prose over compact, the <html> placement, the host-width
 // cause sentence, asserted as the cause and not as the list of examples, the three-column, WebKit and print
-// statements) and the CHANGELOG entry naming it. Whitespace is normalised, so a fragment may wrap across lines.
+// statements) and the CHANGELOG entry naming it; phase 5 adds the identifier-wrap hook (its value, what the family
+// styles and that it uses no token, FR-020's list, the value-hook combination), the SC-006 table mapping
+// kitty-mission-ui's stand-ins E-23, E-37 and E-39 to the hooks and tokens that replace them, the hook table with
+// exactly the four hooks and their values, and the CHANGELOG entry naming data-ocelle-wrap, so all four hooks are
+// documented (US1 scenario 6). Whitespace is normalised, so a fragment may wrap across lines.
 /** A package file's text; empty while it does not exist, so each assertion below reports what is missing. */
 function read(file: string): string {
   const url = new URL(`../${file}`, import.meta.url);
@@ -66,13 +70,52 @@ const fragments = [
   "Tables of three or more columns overflow at 320 px, so they scroll and, with no focusable content, are tab stops",
   "The keyboard model of prose tables is guaranteed only in Chromium hosts. WebKit hosts (Kitty Desktop on macOS and Linux) add `tabindex=\"0\"` to tables in their renderer; this is an open limitation for kitty-mission-ui",
   "Print is out of scope: prose tables are screen scroll boxes, so a printed document shows only the columns that fit the page, and a host that prints adds its own print rule",
+  // phase 5: the identifier-wrap hook (FR-004, FR-005, FR-020; research.md R-02, R-14)
+  "`data-ocelle-wrap` takes `anywhere` only",
+  "`data-ocelle-wrap=\"anywhere\"` sets `overflow-wrap: anywhere` on the element, so a machine identifier (a mission slug, an id, a path) breaks anywhere when it would overflow: it never widens its grid column or row, never overflows at 200% zoom, and is never cut by an ellipsis",
+  "Selecting and copying it gives the full, unchanged identifier",
+  "It sets no `word-break`, no `hyphens: auto`, no `text-overflow: ellipsis` and no `white-space: nowrap`",
+  "It works in any container, inside prose and compact regions included, and keeps the size and line height of the text around it",
+  "It sets no font property, so an identifier that needs tabular figures combines it with `data-ocelle-value`",
+  "The identifier-wrap family uses no token: `overflow-wrap: anywhere` is a keyword",
 ];
+
+/** The hook table of the README (FR-004): each hook's attribute, its values and its family, exactly. */
+const hookRows = [
+  "| `data-ocelle-density` | `compact`, `regular` | compact scale |",
+  "| `data-ocelle-value` | (empty), `ink` | compact scale |",
+  "| `data-ocelle-prose` | (empty) | prose |",
+  "| `data-ocelle-wrap` | `anywhere` | identifier wrap |",
+];
+
+/** SC-006: each of kitty-mission-ui's local stand-ins with the hooks and tokens that replace it. */
+const standInRows = [
+  "| E-23 | `data-ocelle-prose` (`--ocelle-measure-reading`, `--ocelle-line-height-prose`, `--ocelle-measure-cell`) |",
+  "| E-37 | `data-ocelle-density=\"compact\"` and `data-ocelle-value` (`--ocelle-line-height-compact`) |",
+  "| E-39 | `data-ocelle-wrap=\"anywhere\"` |",
+];
+
+/** The table rows of one `##` section of the README, as written, without the header and the separator rows. */
+function tableRows(text: string, heading: string): string[] {
+  const section = new RegExp(`^## ${heading}\\n([\\s\\S]*?)(?=^## |(?![\\s\\S]))`, "m").exec(text)?.[1] ?? "";
+  const rows = section.split("\n").filter((line) => line.startsWith("|"));
+  return rows.slice(2);
+}
 
 describe("packages/styles/README.md", () => {
   const readme = flat(read("README.md"));
 
   it.each(fragments)("states: %s", (fragment) => {
     expect(readme).toContain(fragment);
+  });
+
+  it("US1-6: the hook table lists exactly the four hooks, each with its exact attribute name and values (FR-004)", () => {
+    expect(tableRows(read("README.md"), "Hooks")).toEqual(hookRows);
+  });
+
+  it("SC-006: maps each of kitty-mission-ui's stand-ins E-23, E-37 and E-39 to the hooks and tokens that replace it", () => {
+    expect(readme).toContain("kitty-mission-ui's local stand-ins");
+    expect(tableRows(read("README.md"), "Replacing kitty-mission-ui's stand-ins")).toEqual(standInRows);
   });
 
   it("names the tokens version of package.json's peer dependency", () => {
@@ -99,5 +142,10 @@ describe("packages/styles/CHANGELOG.md", () => {
 
   it("names the data-ocelle-prose hook under Unreleased / Added (constitution VII, FR-004)", () => {
     expect(added).toMatch(/^- `data-ocelle-prose`/m);
+  });
+
+  it("names the data-ocelle-wrap hook under Unreleased / Added, so each of the four hooks is named (constitution VII, FR-004)", () => {
+    expect(added).toMatch(/^- `data-ocelle-wrap`/m);
+    expect([...added.matchAll(/^- `(data-ocelle-[a-z]+)`/gm)].map((match) => match[1])).toEqual(["data-ocelle-density", "data-ocelle-value", "data-ocelle-prose", "data-ocelle-wrap"]);
   });
 });

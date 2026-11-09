@@ -325,7 +325,52 @@ describe("the Storybook page under its CSP", { timeout: 60_000 }, () => {
     });
   }
 
+  // The Identifier wrap story (003 FR-023, research.md R-12, phase 5): the identifier-wrap hook, styled by base.css
+  // alone: in the story's 300 px two-column grid (stories-layout.css) the hooked identifier wraps anywhere over more
+  // than one line and its column is as wide as the short text's (within 1 px); in the paragraph, combined with the
+  // value hook, it is Schibsted Grotesk with tabular figures.
+  for (const theme of ["light", "dark"] as const) {
+    it(`base-styles--identifier-wrap in ${theme}: the header, no violation, no request outside the origin, the identifier-wrap hook applied, no monospace`, async () => {
+      const { page, header, outside } = await open(`id=base-styles--identifier-wrap&viewMode=story&globals=theme:${theme}`, '#storybook-root [data-story="wrap"]');
+      expect(header).toBe(policy);
+      expect(await violations(page)).toEqual([]);
+      expect(outside).toEqual([]);
+      const found = await page.evaluate(() => {
+        const cells = [...document.querySelectorAll('#storybook-root [data-story="wrap-grid"] > *')];
+        const span = document.querySelector('#storybook-root [data-story="wrap"] span[data-ocelle-wrap]') ?? document.body;
+        const lines = (element: Element): number => {
+          const range = document.createRange();
+          range.selectNodeContents(element);
+          return new Set([...range.getClientRects()].filter((rect) => rect.width > 0).map((rect) => Math.round(rect.top))).size;
+        };
+        const widths = cells.map((cell) => cell.getBoundingClientRect().width);
+        return {
+          cells: cells.length,
+          wrap: cells.map((cell) => getComputedStyle(cell).overflowWrap),
+          equal: Math.abs((widths[0] ?? 0) - (widths[1] ?? 0)) <= 1,
+          wrapped: lines(cells[0] ?? document.body) > 1,
+          span: [getComputedStyle(span).overflowWrap, getComputedStyle(span).fontFamily.split(",")[0] ?? "", getComputedStyle(span).fontVariantNumeric],
+        };
+      });
+      expect(found).toEqual({ cells: 2, wrap: ["anywhere", "normal"], equal: true, wrapped: true, span: ["anywhere", '"Schibsted Grotesk"', "tabular-nums"] });
+
+      await page.evaluate(() => {
+        const control = document.createElement("span");
+        control.id = "ocelle-monospace-control";
+        control.style.fontFamily = "Menlo, monospace";
+        document.body.append(control);
+      });
+      expect(await monospace(page)).toEqual(["span#ocelle-monospace-control"]);
+      await page.evaluate(() => {
+        document.getElementById("ocelle-monospace-control")?.remove();
+      });
+      expect(await monospace(page)).toEqual([]);
+      expect(await violations(page)).toEqual([]);
+      await page.close();
+    });
+  }
+
   it("opened the preview and nothing else: every HTML document served was iframe.html, one per page", () => {
-    expect(documents).toEqual(Array.from({ length: 1 + groups.length * 2 + 2 + 2 + 2 }, () => "iframe.html"));
+    expect(documents).toEqual(Array.from({ length: 1 + groups.length * 2 + 2 + 2 + 2 + 2 }, () => "iframe.html"));
   });
 });

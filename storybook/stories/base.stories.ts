@@ -12,3 +12,5 @@ export const BasePage: StoryObj = { name: "Base page", render: () => renderFamil
 export const CompactScreen: StoryObj = { name: "Compact screen", render: () => renderFamily("compact") };
 
 export const ProseDocument: StoryObj = { name: "Prose document", render: () => renderFamily("prose") };
+
+export const IdentifierWrap: StoryObj = { name: "Identifier wrap", render: () => renderFamily("wrap") };

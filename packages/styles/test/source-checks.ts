@@ -157,6 +157,27 @@ export function specificityProblems(root: Root): string[] {
   return found;
 }
 
+/**
+ * FR-020: on a rule whose selector has the `data-ocelle-wrap` attribute, any `word-break`, `hyphens: auto`,
+ * `text-overflow: ellipsis` or `white-space: nowrap`, at any depth.
+ */
+export function wrapProblems(root: Root): string[] {
+  const found: string[] = [];
+  root.walkDecls((declaration) => {
+    const parent = declaration.parent;
+    if (parent?.type !== "rule" || !/\[\s*data-ocelle-wrap\b/i.test(parent.selector)) return;
+    const property = declaration.prop.toLowerCase();
+    const value = space(declaration.value).toLowerCase();
+    const forbidden =
+      property === "word-break" ||
+      (property === "hyphens" && value === "auto") ||
+      (property === "text-overflow" && value === "ellipsis") ||
+      (property === "white-space" && value === "nowrap");
+    if (forbidden) found.push(where(declaration));
+  });
+  return found;
+}
+
 /** Every selector of the sheet, each once, in source order. */
 export function selectors(root: Root): string[] {
   return [...new Set(rules(root).flatMap((rule) => rule.selectors))];

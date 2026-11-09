@@ -115,11 +115,12 @@ describe("tokens.stories.ts", () => {
 
 // The base-style stories (003 FR-023, research.md R-12): the title "Base styles" with one story per family that has
 // landed; phase 2 adds the Base page, which renders renderFamily("base"), phase 3 the Compact screen, which renders
-// renderFamily("compact"), and phase 4 the Prose document, which renders renderFamily("prose").
+// renderFamily("compact"), phase 4 the Prose document, which renders renderFamily("prose"), and phase 5 the
+// Identifier wrap, which renders renderFamily("wrap").
 describe("base.stories.ts", () => {
   it("has the title Base styles and the Base page story, rendering the base family's markup", () => {
     expect(base.default).toEqual({ title: "Base styles" });
-    expect(Object.keys(base).filter((key) => key !== "default")).toEqual(["BasePage", "CompactScreen", "ProseDocument"]);
+    expect(Object.keys(base).filter((key) => key !== "default")).toEqual(["BasePage", "CompactScreen", "ProseDocument", "IdentifierWrap"]);
     expect(base.BasePage.name).toBe("Base page");
     const markup = (base.BasePage as unknown as Story).render({}, { globals: {} });
     expect(markup).toBe(renderFamily("base"));
@@ -142,5 +143,14 @@ describe("base.stories.ts", () => {
     const all = elements(parseFragment(String(markup)).childNodes);
     expect(all.filter((element) => element.tagName === "article").map((element) => [attr(element, "data-story"), attr(element, "data-ocelle-prose")])).toEqual([["prose", ""]]);
     expect(all.filter((element) => element.tagName === "table").length).toBe(2);
+  });
+
+  it("has the Identifier wrap story, rendering the wrap family's markup with the identifier-wrap hook", () => {
+    expect(base.IdentifierWrap.name).toBe("Identifier wrap");
+    const markup = (base.IdentifierWrap as unknown as Story).render({}, { globals: {} });
+    expect(markup).toBe(renderFamily("wrap"));
+    const all = elements(parseFragment(String(markup)).childNodes);
+    expect(all.filter((element) => element.tagName === "article").map((element) => attr(element, "data-story"))).toEqual(["wrap"]);
+    expect(all.filter((element) => attr(element, "data-ocelle-wrap") !== undefined).map((element) => attr(element, "data-ocelle-wrap"))).toEqual(["anywhere", "anywhere"]);
   });
 });
