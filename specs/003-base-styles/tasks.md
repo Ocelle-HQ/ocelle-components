@@ -375,7 +375,7 @@ data-model § Identifier wrap.
 
 - [X] T049 [US4] `packages/styles/src/base.css`: `[data-ocelle-wrap="anywhere"] { overflow-wrap: anywhere }`, last in the file
 - [X] T050 [US4] README and CHANGELOG of `@ocelle/styles` with the T046 statements. Add `renderFamily("wrap")` and the "Identifier wrap" story
-- [ ] T051 [US4] Run the checks of T022 for this phase and the quickstart steps 1 to 4, then `.specify/extensions/story/scripts/tdd-check.sh 5` (`pass`), and commit green (`feat(003-base-styles): phase 5 — US4 identifier wrap`)
+- [X] T051 [US4] Run the checks of T022 for this phase and the quickstart steps 1 to 4, then `.specify/extensions/story/scripts/tdd-check.sh 5` (`pass`), and commit green (`feat(003-base-styles): phase 5 — US4 identifier wrap`)
 
 **Checkpoint**: every family ships, documented, with its story.
 
