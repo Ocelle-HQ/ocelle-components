@@ -17,9 +17,11 @@ thin build script, and every value in it is an `--ocelle-*` token. It has four f
   no motion.
 - **Compact scale**: the `data-ocelle-density` attribute, which never changes the root font size, and the
   `data-ocelle-value` attribute.
-- **Prose**: the `data-ocelle-prose` attribute, on a content container that gets its width from its context. Tables
-  become their own scroll box without a wrapper, contained (`container-type: inline-size`) so that they never widen
-  a grid or flex column, with an inset focus ring and a caption that wraps inside the visible box.
+- **Prose**: the `data-ocelle-prose` attribute, on a content container that gets its width from its context, never
+  from its content. Tables become their own scroll box without a wrapper, contained (`container-type: inline-size`)
+  so that they never widen a grid or flex column, with an inset focus ring and a caption that wraps inside the visible
+  box, starts at its start edge and stays in view while the table scrolls. Print is out of scope: a printed wide
+  table shows only the columns that fit the page.
 - **Identifier wrap**: the `data-ocelle-wrap="anywhere"` attribute.
 
 Base selectors sit entirely in `:where()`, so their specificity is (0,0,0); only the box-sizing rule's two
@@ -84,7 +86,7 @@ cover the new stories, because they live in the same preview.*
 |---|---|
 | I. `ocelle-` names, no `sk-` | Hook attributes are `data-ocelle-*` and tokens `--ocelle-*`. The E-23/E-37/E-39 table in the README names kitty-mission-ui's exceptions by their ids, with no `sk-` names. The Prefix gate scans `packages/styles/**` and `dist/base.css` after the build. |
 | II. Tokens only, brand rules | Every value is a token under `ocelle/token-only`. Line heights must be a single token reference in `packages/styles`: numbers, percentages, `calc()` and `normal` are raw there (R-07, with fail plants, a pass plant and unit tests). There is no monospace anywhere: `code`, `pre`, `kbd` and `samp` are set page-wide (FR-026), checked by the Prefix gate and by computed style. Links use `--ocelle-color-link`. Rules use `color-rule` and `color-rule-strong` only for decorative lines, never a control boundary. The one radius is `radius-2`. |
-| III. Accessible by construction | The token focus ring is on every `:focus-visible` element, survives a missing `tokens.css` (longhands, R-05) and uses `Highlight` in forced colours, tested in a host region with `forced-color-adjust: none` where the rule is observable. A focused prose table shows an inset ring, all four sides visible when flush with the viewport (WCAG 2.4.7). No motion. `--ocelle-target-min` is kept under compact on `<html>`. Prose links are underlined (WCAG 1.4.1). Code, inline code and URLs reflow (1.4.10), and tables are contained so that they do not widen a grid or flex column (1.4.10, tested in grid and flex hosts); the README and spec state that a prose container gets its width from its context, tested in a definite-width modal dialog (operator decision PLAN-FRESH-2-001 (a)). Overflowing tables are keyboard-scrollable (2.1.1) in Chromium hosts; WebKit hosts add `tabindex="0"`, documented as an open limitation (R-06). The caption wraps inside the visible box, every line box asserted (1.4.10). Table semantics, including the cell-to-header association, are tested on the accessibility tree (R-06). Every colour pairing the families create is an existing checked pair, asserted by a test (R-08); the value hook is documented as main grounds only, because `ink` on the chrome is 1.00:1. Axe stays with #10, as in 002. |
+| III. Accessible by construction | The token focus ring is on every `:focus-visible` element, survives a missing `tokens.css` (longhands, R-05) and uses `Highlight` in forced colours, tested in a host region with `forced-color-adjust: none` where the rule is observable. A focused prose table shows an inset ring, all four sides visible when flush with the viewport (WCAG 2.4.7). No motion. `--ocelle-target-min` is kept under compact on `<html>`. Prose links are underlined (WCAG 1.4.1). Code, inline code and URLs reflow (1.4.10), and tables are contained so that they do not widen a grid or flex column (1.4.10, tested in grid and flex hosts); the README and spec state that a prose container gets its width from its context, tested in a definite-width modal dialog (operator decision PLAN-FRESH-2-001 (a)); the README states that rule by its cause, sizing from content, with the shrink-to-fit boxes as examples (PLAN-FRESH-3-003). Overflowing tables are keyboard-scrollable (2.1.1) in Chromium hosts; WebKit hosts add `tabindex="0"`, documented as an open limitation (R-06). The caption wraps inside the visible box, every line box asserted (1.4.10), starts at the start edge and stays inside the visible box when the table is scrolled, under `ltr` and `rtl`, each part with a plant that bites alone (operator decision PLAN-FRESH-3-001 (a)). Print is out of scope and stated in the README (PLAN-FRESH-3-002 (b)). Table semantics, including the cell-to-header association, are tested on the accessibility tree (R-06). Every colour pairing the families create is an existing checked pair, asserted by a test (R-08); the value hook is documented as main grounds only, because `ink` on the chrome is 1.00:1. Axe stays with #10, as in 002. |
 | IV. Strict CSP, offline | An external stylesheet with no `@import`, `url()` or inline style; it needs no `img-src`. The media fixture `page.html` alone adds `img-src 'self'` for its local image, the directive a host needs for its own images, and keeps zero violations (operator decision PLAN-FRESH-2-003 (b), R-09). Fixtures and stories have no style attribute; their layout comes from a served fixture stylesheet and a story-only stylesheet (R-09, R-12). The browser suite asserts zero violations under the strict header, with a control violation. |
 | V. Storybook | One story per family under the 002 Storybook and its CSP test (R-12). `base.css` is linked for the whole preview, so element stories and their baselines always render with it (operator decision PLAN-FRESH-2-004 (a)). Baselines and visual regression stay with #10. |
 | VI. Consumer-driven, own code | #6, spec-kitty-design #519, #531 and #535, and kitty-mission-ui's E-23, E-37 and E-39. The CSS is our own; no reset library is copied. |
@@ -105,8 +107,9 @@ cover the new stories, because they live in the same preview.*
 4. **Heading weights and sizes** (data-model): `h1` 30 px display weight (800); `h2` 18 px strong (600); `h3` 17 px
    strong; `h4` to `h6` 16 px strong.
 5. **Table mechanism to be measured in a spike** (R-06): `display: block; overflow-x: auto; container-type: inline-size`
-   on the table, with cells at a 12ch floor and a sticky caption capped at `--ocelle-measure-container`
-   (PLAN-FRESH-2-002). If Chromium drops table semantics or ignores the floor, the phase stops and the operator decides
+   on the table, with cells at a 12ch floor and a sticky, start-aligned caption capped at
+   `--ocelle-measure-container` (PLAN-FRESH-2-002), each of its three parts tested by an assertion that its own
+   plant fails (PLAN-FRESH-3-001 (a), R-10). If Chromium drops table semantics or ignores the floor, the phase stops and the operator decides
    on the wrapper fork of FR-017.
 6. **New pin** `postcss-selector-parser` for the specificity check (R-11).
 
@@ -130,10 +133,14 @@ Decided by the operator at squad round 1 (2026-11-09, human:jeroennouwsdev):
 
 Decided by the operator at squad round 2 (2026-11-09, human:jeroennouwsdev):
 
-14. **Containment kept, host width documented** (PLAN-FRESH-2-001 (a)): a prose container gets its width from its
-    context, not from its content, and is not placed in a modal dialog, popover, `inline-block`, float or default
-    flex item without a definite width (spec Edge Cases, FR-004, FR-017, README, contract). `prose-hosts.html` gains
-    a definite-width modal dialog host, and the readme test a host-width statement (R-06, R-14).
+14. **Containment kept, host width documented** (PLAN-FRESH-2-001 (a)): a prose container must not be sized from its
+    content (shrink-to-fit or fit-content sizing); it gets its width from its context. The spec, README, contract
+    and research state that cause and give the shrink-to-fit boxes as examples, not as a complete list: a modal or
+    non-modal `<dialog>`, a popover, a fixed or absolutely positioned panel without both inline insets or a width,
+    `inline-block`, a float, a `display: table-cell` box, a default flex item, and a grid or flex item aligned to
+    start; a host gives such a box a definite width or stretches it (spec Edge Cases, FR-004, FR-017, README,
+    contract; PLAN-FRESH-3-003). `prose-hosts.html` gains a definite-width modal dialog host, and the readme test
+    asserts the cause sentence, not the list (R-06, R-14).
 15. **Image CSP for the media fixture** (PLAN-FRESH-2-003 (b)): `page.html` is served under the strict CSP plus
     `img-src 'self'`, its image loads and it reports zero violations; serve.ts serves `.svg` (spec US1-5, US1-10,
     SC-001, R-09).
@@ -142,6 +149,19 @@ Decided by the operator at squad round 2 (2026-11-09, human:jeroennouwsdev):
     #7 to #17: elements put their focusable part inside the shadow root or use `delegatesFocus`, and do not depend
     on their host's `box-sizing`. `base.css` stays linked in the whole Storybook preview, so element stories and
     their baselines always render with it (spec Edge Cases, FR-004, Assumptions; R-12, R-14; contract).
+
+Decided by the operator at squad round 3 (2026-11-09, human:jeroennouwsdev):
+
+17. **Caption in view and at the start edge, tested** (PLAN-FRESH-3-001 (a)): the caption rule keeps
+    `position: sticky; inset-inline-start: 0` and `text-align: start`, and both are required and tested (spec FR-017,
+    US3-3, US3-9): at `scrollLeft` 0 every caption line box starts at the table's visible start edge (within 1 px),
+    and after two ArrowRight presses, and at the most negative `scrollLeft` under `dir="rtl"`, every line box still
+    lies inside the visible box. R-10 has three caption plants that each bite alone: `position: static`,
+    `text-align: center` and `max-inline-size: none`; the spike records all three (R-06 step 5).
+18. **Print out of scope** (PLAN-FRESH-3-002 (b)): `base.css` has no print rule. The spec Assumptions, the README
+    (Markdown renderers) and the contract state that prose tables are screen scroll boxes, so a printed document
+    shows only the columns that fit the page and a host that prints adds its own print rule; the readme test asserts
+    the statement in phase 4 (R-14).
 
 ## Project Structure
 
@@ -204,7 +224,8 @@ package and no new gate.
      `scripts/build.ts` stub.
 2. **US1 Base layer** (P1):
    - **spike**: measure the table mechanism of R-06 (with `container-type: inline-size`, the host layouts, the
-     definite-width dialog host, the caption's line boxes and the AX-tree structure), the CDP accessibility tree access,
+     definite-width dialog host, the caption's line boxes at `scrollLeft` 0 and scrolled, under `ltr` and `rtl`,
+     and the AX-tree structure), the CDP accessibility tree access,
      the forced-colours ring in a `forced-color-adjust: none` region (R-05), the list-semantics plants (R-10), and that
      each plant of R-10 bites; record them;
    - `buildPlan(css)` and build with tests, and the source-level checks, each paired with its positive assertion,
@@ -226,11 +247,12 @@ package and no new gate.
 4. **US3 Prose** (P3): the tokens `line-height-prose`, `font-size-subhead`, `measure-reading`, `measure-cell` and
    `measure-container`, with the `values.test.ts` probe block made a query container first (its `width` 1000 entry
    is red against the unchanged harness, which gives 1280px; R-08); the prose rules; browser tests for US3 scenarios 1 to 12 (the grid and flex hosts, the
-   definite-width dialog host, the inset ring, the long caption's line boxes, the `<a id>` target, the undocumented
+   definite-width dialog host, the inset ring, the long caption's line boxes (inside the box and at its start edge
+   at `scrollLeft` 0, inside it when scrolled, under `ltr` and `rtl`), the `<a id>` target, the undocumented
    value and `prose-root.html` included), the `h1` half of US2 scenario 4 and the nested cases of US2 scenario 5;
    `pairs.test.ts` (R-08); the "Prose document" story; the readme test's prose
-   statements (values, prose over compact, the `<html>` placement, the host-width requirement, tables of three or
-   more columns, the WebKit limitation), red first.
+   statements (values, prose over compact, the `<html>` placement, the host-width cause sentence, tables of three or
+   more columns, the WebKit limitation, print out of scope), red first.
 5. **US4 Identifier wrap** (P4): the wrap rule; browser tests for US4 scenarios 1 to 4 and the FR-020 source check;
    the "Identifier wrap" story; the readme test's wrap statements and the SC-006 stand-in table, red first. US1
    scenario 6's documentation half is complete only here.

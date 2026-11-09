@@ -63,14 +63,24 @@ browser-default monospace (FR-026).
 
 **Operator decisions at squad round 2 of the plan** (2026-11-09, human:jeroennouwsdev; `reviews/plan/round-2/`):
 
-- PLAN-FRESH-2-001 (a): prose tables keep inline-size containment. A prose container gets its width from its
-  context, not from its content: it does not sit in a modal dialog, popover, inline-block, float or default flex item
-  without a definite width (Edge Cases, FR-004, FR-017, User Story 3 scenario 3).
+- PLAN-FRESH-2-001 (a): prose tables keep inline-size containment. A prose container must not be sized from its
+  content (shrink-to-fit or fit-content sizing); it gets its width from its context. The boxes named in Edge Cases
+  (a dialog, a popover, a fixed or absolutely positioned panel, and others) are examples of the rule, not a complete
+  list (Edge Cases, FR-004, FR-017, User Story 3 scenario 3; squad round 3, PLAN-FRESH-3-003).
 - PLAN-FRESH-2-003 (b): the media fixture is served under the strict CSP plus `img-src 'self'`, so its local image
   loads with zero violations (User Story 1 scenarios 5 and 10, SC-001).
 - PLAN-FRESH-2-004 (a): the base stylesheet also styles custom-element hosts, which an element's `:host` rules cannot
   override (Edge Cases, FR-004); base.css stays linked in the whole Storybook preview, so element stories and their
   baselines always render with it (Assumptions, Storybook).
+
+**Operator decisions at squad round 3 of the plan** (2026-11-09, human:jeroennouwsdev; `reviews/plan/round-3/`):
+
+- PLAN-FRESH-3-001 (a): the prose caption stays in view and starts at the table's start edge, and both are tested:
+  after the wide table is scrolled (and at its most negative `scrollLeft` under `dir="rtl"`) every line box of the
+  caption still lies inside the table's visible box, and at `scrollLeft` 0 every line box starts at the box's start
+  edge (FR-017, User Story 3 scenarios 3 and 9).
+- PLAN-FRESH-3-002 (b): print is out of scope. A prose table is a screen scroll box, so a printed document shows only
+  the columns that fit the page; a host that prints adds its own print rule (Assumptions, FR-004).
 
 ## Consumer need
 
@@ -251,8 +261,10 @@ characters long. It holds no task list (FR-014).
    table has focus, the focused node in the accessibility tree has role `table` and an accessible name equal to the
    `caption` text for the table with a caption and no accessible name for the table without one (FR-017); at
    `scrollLeft` 0 every line box of the caption text (at least 80 characters, longer than the visible width) lies
-   inside the table's visible box, so the caption wraps there instead of running past it (WCAG 1.4.10); **and** Tab
-   never moves focus onto the table that fits (it is not a tab stop); **and**, in the same test, with the prose
+   inside the table's visible box and starts at its start edge (the left edge, within 1 px), so the caption wraps
+   there instead of running past it (WCAG 1.4.10), and after the two ArrowRight presses (`scrollLeft` above 0) every
+   line box of the caption still lies inside the visible box, so the caption stays in view while the table scrolls
+   (operator decision PLAN-FRESH-3-001 (a)); **and** Tab never moves focus onto the table that fits (it is not a tab stop); **and**, in the same test, with the prose
    container as the `1fr` item of a grid and as the `flex: 1` item of a flex row beside a fixed rail, and nested one
    level inside such an item, the page does not scroll horizontally while the wide table scrolls inside its own box;
    **and**, in the same test at 1280 px, with the prose container inside a modal `<dialog>` that has a definite width
@@ -280,7 +292,10 @@ characters long. It holds no task list (FR-014).
    does not scroll and the page does not scroll horizontally, and copying the block gives its exact text, line breaks
    and indentation included. The copy half is a guard; its plant is `white-space: normal` on `pre`.
 9. **Given** the fixture inside a prose container under `dir="rtl"`, **When** it renders, **Then** the inline-start
-   indent of lists and block quotes is on the right, mirroring the `dir="ltr"` rendering.
+   indent of lists and block quotes is on the right, mirroring the `dir="ltr"` rendering; **and**, at 320 px, at
+   `scrollLeft` 0 every line box of the wide table's caption lies inside the table's visible box and starts at its
+   start edge (the right edge, within 1 px), and at the table's most negative `scrollLeft` every line box of the
+   caption still lies inside the visible box (FR-017, operator decision PLAN-FRESH-3-001 (a)).
 10. **Given** forced-colours mode, **When** the fixture renders inside a prose container, **Then** table cell borders
     and `hr` are visible (non-zero width, a system colour that differs from the background).
 11. **Given** a prose paragraph with an inline `code` path of 120 characters and no spaces and a link whose text is a
@@ -360,12 +375,15 @@ copied text.
 - **Prose in an app shell**: a prose container that is a grid or flex item (beside a side rail, for example) is not
   widened by a wide table; only the table's own box scrolls (FR-017, User Story 3 scenario 3).
 - **Prose in a shrink-to-fit host**: a prose table is contained in the inline axis, so it adds nothing to the
-  intrinsic width of the boxes around it. A prose container must get its width from its context (block flow, a `1fr`
-  or `flex: 1` item, an element with a definite width), not from its content. In a modal `<dialog>`, a popover, an
-  `inline-block`, a float or a default flex item without a definite width, a table that would fit is cut to the width
-  of the other content (0 px in a table-only document), scrolls and becomes a tab stop. Hosts give such a box a
-  definite width; the README states this (FR-004, FR-017, User Story 3 scenario 3; operator decision
-  PLAN-FRESH-2-001 (a)).
+  intrinsic width of the boxes around it. The rule is the cause, not a list of layouts: a prose container must not be
+  sized from its content (shrink-to-fit or fit-content sizing); it gets its width from its context (block flow, a
+  stretched grid or flex item such as `1fr` or `flex: 1`, an element with a definite width). In a box sized from its
+  content, a table that would fit is cut to the width of the other content (0 px in a table-only document), scrolls
+  and becomes a tab stop. Examples of such boxes: a modal or non-modal `<dialog>`, a popover, a fixed or absolutely
+  positioned panel (a side drawer, for example) without both inline insets or a width, an `inline-block`, a float, a
+  `display: table-cell` box, a default flex item, and a grid or flex item aligned to start. Hosts give such a box a
+  definite width or stretch it; the README states the rule with these examples (FR-004, FR-017, User Story 3
+  scenario 3; operator decision PLAN-FRESH-2-001 (a); PLAN-FRESH-3-003).
 - **Value text on the chrome**: the value hook is for the main grounds; on the dark chrome its colours fail contrast,
   so hosts do not use it there (FR-013).
 - **WebKit hosts**: see Assumptions, Browsers.
@@ -409,9 +427,13 @@ copied text.
   - the `@ocelle/tokens` version `base.css` needs (FR-001);
   - that the value hook is for the main grounds only, not the chrome (FR-013);
   - that the prose hook goes on a content container, not on the root element (FR-015);
-  - that a prose container gets its width from its context, not from its content, and is not placed in a modal
-    dialog, popover, `inline-block`, float or default flex item without a definite width (FR-017, operator decision
-    PLAN-FRESH-2-001 (a));
+  - that a prose container must not be sized from its content (shrink-to-fit or fit-content sizing) and gets its
+    width from its context, stated as that cause, with the boxes of Edge Cases ("Prose in a shrink-to-fit host") as
+    examples, not as a complete list, and that a host gives such a box a definite width or stretches it (FR-017,
+    operator decision PLAN-FRESH-2-001 (a), PLAN-FRESH-3-003);
+  - that a prose table is a screen scroll box and print is not supported: a printed document shows only the columns
+    that fit the page, and a host that prints adds its own print rule (Assumptions, operator decision
+    PLAN-FRESH-3-002 (b));
   - that the base stylesheet also styles custom-element hosts (the `box-sizing` reset, and the focus ring on a
     focusable host), that an element's `:host` rules cannot override this, and that elements therefore put their
     focusable part inside the shadow root or use `delegatesFocus` and do not depend on their host's `box-sizing`
@@ -520,8 +542,13 @@ copied text.
   page MUST NOT scroll horizontally because of it, also when the prose container, or an element above it, is a grid or
   flex item. The table is contained in the inline axis, so the prose container MUST get its width from its context,
   not from its content (Edge Cases, operator decision PLAN-FRESH-2-001 (a)); in such a container a table that fits
-  does not overflow its box (its `clientWidth` equals its `scrollWidth`) and is not a tab stop. A caption MUST wrap inside the table's visible box: at `scrollLeft` 0 every line box of the
-  caption lies inside it, also when the caption is longer than the visible width (WCAG 1.4.10). Keyboard access
+  does not overflow its box (its `clientWidth` equals its `scrollWidth`) and is not a tab stop. A caption MUST wrap
+  inside the table's visible box: at `scrollLeft` 0 every line box of the caption lies inside it, also when the
+  caption is longer than the visible width (WCAG 1.4.10). The caption MUST also stay in view and start at the start
+  edge (operator decision PLAN-FRESH-3-001 (a)): at `scrollLeft` 0 the start edge of every caption line box is the
+  table's visible start edge (left under `ltr`, right under `rtl`, within 1 px), and when the table is scrolled
+  (after two ArrowRight presses on the focused table, and at its most negative `scrollLeft` under `dir="rtl"`) every
+  line box of the caption still lies inside the visible box (User Story 3 scenarios 3 and 9). Keyboard access
   follows the browser's natural focus (operator decision SPEC-3-01), with no wrapper and no `tabindex` from the
   renderer:
   - an overflowing table with no focusable content MUST itself be a tab stop that scrolls with the arrow keys
@@ -674,6 +701,11 @@ copied text.
 - **Elements**: elements (#7 to #17) expose identifier wrapping through their own parts or properties. This feature
   delivers only the shared hook and its semantics.
 - **#20** (drop `as const` in the token source) is independent. If it lands first, the new tokens follow its form.
+- **Print**: out of scope (operator decision PLAN-FRESH-3-002 (b)). A prose table is a screen scroll box; paper does
+  not scroll, so a printed or PDF-exported document shows only the columns of a wide table that fit the page (at A4,
+  about seven columns at the 12ch cell floor) and clips the rest without a sign. The stylesheet adds no print rule.
+  The README (Markdown renderers) and the contract state this, and a host that prints adds its own print rule (for
+  example the prose table laid out as a table with visible overflow and no cell floor under `@media print`) (FR-004).
 - **Browsers**: the tests run in Chromium only (001 FR-005); 002 states no browser assumption. The stylesheet uses only
   features with evergreen support (`overflow-wrap: anywhere`, `:focus-visible`, `:where()`, `:any-link`,
   `container-type: inline-size`, container query units (`cqi`), `position: sticky`, `forced-colors`). The keyboard model

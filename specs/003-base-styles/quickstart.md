@@ -19,4 +19,5 @@ Prerequisites: the 001 setup (`pnpm run setup:online` or `setup:offline`), the p
    - The prose document reads at 1.65 with an 18 px `h2`.
    - At 320 px the wide tables scroll inside their own box.
    - Tab lands on the plain wide table, whose ring shows on all four sides inside its box, and on the link in the
-     linked table. The long caption wraps inside the table's visible box, starting at its left edge.
+     linked table. The long caption wraps inside the table's visible box, starting at its left edge, and stays in view
+     while the table is scrolled with the arrow keys.

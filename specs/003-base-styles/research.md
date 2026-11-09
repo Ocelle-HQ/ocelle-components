@@ -168,17 +168,22 @@ them out inside the block. Cells get `min-inline-size: var(--ocelle-measure-cell
   because it does not cover the nested case. `container-type: inline-size` also applies style containment, which
   scopes counters and quotes to the table; Markdown tables use neither.
 - the host requirement (operator decision PLAN-FRESH-2-001 (a)): containment removes the table from both intrinsic
-  sizes of its ancestors, the max-content size too. So in a shrink-to-fit host, whose width comes from its content (a
-  modal `<dialog>`, which the UA gives `width: fit-content`; a popover; a default flex item; `inline-block`; a float;
-  an absolutely positioned panel), the table adds 0 to that width. Squad round 2 measured, in Chromium 153 at 1280 px
+  sizes of its ancestors, the max-content size too. So in any host sized from its content (shrink-to-fit or
+  fit-content sizing), the table adds 0 to that width. Examples: a modal or non-modal `<dialog>`, which the UA gives
+  `width: fit-content`; a popover; a fixed or absolutely positioned panel without both inline insets or a width (a
+  side drawer); `inline-block`; a float; a `display: table-cell` box; a default flex item; a grid or flex item
+  aligned to start. Squad round 2 measured, in Chromium 153 at 1280 px
   with a 2-column table of short text (natural width 214 px): in a modal `<dialog>` the table's `clientWidth` is 8 px
   with only the table and 79 px after a short paragraph, against a `scrollWidth` of 214, and the first Tab lands on the
   table; as a default flex item beside a 60 px rail it is 0 and 79; with `contain: none` it is 214 in both hosts. No
   table rule tried keeps both the min-content fix and the max-content size (`width: 0; min-inline-size: 100%` behaves
-  like containment, `inline-size: max-content` widens the page to 1341 px in the grid and flex hosts). The operator
-  kept containment: the README, the contract and the spec (Edge Cases, FR-004, FR-017) state that a prose container
-  gets its width from its context, not from its content, and is not placed in a modal dialog, popover,
-  `inline-block`, float or default flex item without a definite width. `prose-hosts.html` has a modal `<dialog>` host
+  like containment, `inline-size: max-content` widens the page to 1341 px in the grid and flex hosts). Squad round 3
+  measured the same at 1280 px in a fixed side drawer (`position: fixed; inset-block: 0; inset-inline-end: 0`), a
+  non-modal `<dialog>` opened with `show()`, a `display: table-cell` box and a grid item with `justify-items: start`:
+  `clientWidth` 78 against `scrollWidth` 214, and the first Tab lands on the table (PLAN-FRESH-3-003). The operator
+  kept containment: the README, the contract and the spec (Edge Cases, FR-004, FR-017) state the rule by its cause,
+  that a prose container must not be sized from its content and gets its width from its context, and give the boxes
+  above as examples, not as a complete list; a host gives such a box a definite width or stretches it. `prose-hosts.html` has a modal `<dialog>` host
   whose width is definite (`inline-size: var(--ocelle-dialog-max-inline)` in `layout.css`), in which the table that
   fits keeps its natural width and is not a tab stop (User Story 3 scenario 3).
 - `[data-ocelle-prose=""] :where(table:focus-visible) { outline-offset: calc(var(--ocelle-focus-width) * -1) }`
@@ -191,12 +196,20 @@ them out inside the block. Cells get `min-inline-size: var(--ocelle-measure-cell
   639 in a 320 px box (squad round 1); with `text-align: start` alone an 88-character caption is one line box from
   x 0 to 630 against a `clientWidth` of 320, so its second half shows only after scrolling (squad round 2). The table
   is the caption's nearest query container, so `--ocelle-measure-container` (`100cqi`, R-08) is the table's visible
-  inline size, and the sticky offset keeps the caption at the scroll box's start edge. Squad round 2 measured the
+  inline size, the sticky offset keeps the caption at the scroll box's start edge while the table scrolls, and
+  `text-align: start` starts each line there (the UA centres captions). Squad round 2 measured the
   caption wrapping to three lines inside x 0 to 293 at 320 px, staying at x 0 to 320 at `scrollLeft` 500, with the page
   at 320 px and the AX tree still holding role `table` named by the caption plus its 26 `row`, `columnheader` and
-  `cell` nodes. `start` and `inset-inline-start` mirror under `dir="rtl"`. The test reads the caption text's line
-  boxes with `Range.getClientRects()` and asserts each lies inside the table's `getBoundingClientRect()` at
-  `scrollLeft` 0.
+  `cell` nodes. `start` and `inset-inline-start` mirror under `dir="rtl"` (squad round 3: lines x 5 to 320 and 40
+  to 320 at `scrollLeft` 0 and -500). Both parts are required and tested (operator decision PLAN-FRESH-3-001 (a),
+  spec FR-017, US3-3, US3-9). The test reads the caption text's line boxes with `Range.getClientRects()` and the
+  table's visible box with `getBoundingClientRect()`, and asserts: at `scrollLeft` 0 each line box lies inside the
+  box and its start edge is the box's start edge within 1 px (left under `ltr`, right under `rtl`); after two
+  ArrowRight presses on the focused table (`scrollLeft` above 0), and at the most negative `scrollLeft` under
+  `dir="rtl"`, each line box still lies inside the box. Squad round 3 measured that each of the rule's parts is
+  reached only by its own assertion: without the sticky offset the caption lines lie inside the box at `scrollLeft`
+  0 but at x -500 to -185 at `scrollLeft` 500; centred, the capped lines lie at x 3 to 317 and 20 to 300, inside the
+  box at every scroll position but not at its start edge; without the cap the caption is one line from x 0 to 599.
 
 **Why**: this is the only no-wrapper mechanism that gives the table its own scroll box. Spec check 3 measured in
 Chromium 153 that such a box is a tab stop when it has no focusable content, and that Tab lands on a link inside it
@@ -223,8 +236,11 @@ otherwise, from which the arrow keys scroll it. That is the behaviour the operat
    at 320 px, while the table's own `scrollWidth` exceeds its `clientWidth`; and in the modal `<dialog>` host of
    definite width, at 1280 px, the table that fits has `clientWidth` equal to `scrollWidth` and is not a tab stop.
 4. The plant for the table that fits (R-10) makes it overflow and a tab stop.
-5. At 320 px every line box of the fixture's caption of at least 80 characters lies inside the table's visible box at
-   `scrollLeft` 0, and the caption plant of R-10 makes one line box run past it.
+5. At 320 px every line box of the fixture's caption of at least 80 characters lies inside the table's visible box
+   and starts at its start edge (within 1 px) at `scrollLeft` 0, and still lies inside it after two ArrowRight
+   presses and, under `dir="rtl"`, at the most negative `scrollLeft`. Each of the three caption plants of R-10 bites
+   alone and is recorded: `position: static` fails the scrolled assertion, `text-align: center` the start-edge
+   assertion, and `max-inline-size: none` the `scrollLeft`-0 containment assertion (PLAN-FRESH-3-001 (a)).
 
 If (1) fails, the spec's fork applies (FR-017): the optional wrapper goes to the operator. If (3), (4) or (5) fails,
 the phase stops and the orchestrator asks the operator.
@@ -427,7 +443,9 @@ spike, which records that it bites (the helper reports the problem); a plant tha
 | prose container rule not on `<html>` (US3-5, `prose-root.html`) | `[data-ocelle-prose] { line-height: var(--ocelle-line-height-prose) }` without `:where(:not(html))` |
 | no page scroll in grid and flex hosts (US3-3, SC-004) | `[data-ocelle-prose=""] :where(table) { container-type: normal }` (`contain: none` does not remove the containment that `container-type` applies) |
 | inset table ring inside the viewport (US3-3) | `[data-ocelle-prose=""] :where(table:focus-visible) { outline-offset: var(--ocelle-focus-offset) }` |
-| caption wraps inside the visible box at `scrollLeft` 0 (US3-3) | `[data-ocelle-prose=""] :where(caption) { position: static; max-inline-size: none }`, the caption rule without its sticky and max-inline-size parts (the long caption runs on one line past the visible box; `text-align: center` no longer bites, since the capped caption box is the visible box) |
+| caption wraps inside the visible box at `scrollLeft` 0 (US3-3, US3-9) | `[data-ocelle-prose=""] :where(caption) { max-inline-size: none }` (the long caption runs on one line past the visible box, x 0 to 599 at 320 px) |
+| caption stays inside the visible box when scrolled (US3-3, US3-9; PLAN-FRESH-3-001 (a)) | `[data-ocelle-prose=""] :where(caption) { position: static }` (the lines pass at `scrollLeft` 0 but lie at x -500 to -185 at `scrollLeft` 500) |
+| caption starts at the start edge (US3-3, US3-9; PLAN-FRESH-3-001 (a)) | `[data-ocelle-prose=""] :where(caption) { text-align: center }` (the capped lines lie at x 3 to 317 and 20 to 300, inside the box but not at its start edge) |
 | table that fits is not a tab stop (US3-3) | `[data-ocelle-prose=""] :where(table) { max-inline-size: var(--ocelle-measure-cell) }`, which makes the fitting table overflow and so a tab stop (PLAN-TESTABILITY-1-005; `overflow-x: scroll` does not bite, Chromium skips a fitting scroller) |
 | link underlined in every state (US3-6) | `[data-ocelle-prose=""] :where(a:any-link:hover, a:any-link:focus-visible) { text-decoration-line: none }` |
 | `<a id>` target is not styled as a link (US3-6) | `[data-ocelle-prose=""] :where(a) { color: var(--ocelle-color-link) }` |
@@ -570,10 +588,14 @@ then styled by `base.css` alone.
   - the rule that prose wins over compact on one element;
   - placement: the value hook is for the main grounds only, not the chrome; the prose hook goes on a content
     container, not on `<html>` (R-02);
-  - the host width of a prose container (operator decision PLAN-FRESH-2-001 (a), R-06): it gets its width from its
-    context (block flow, a `1fr` or `flex: 1` item, a definite width), not from its content, and is not placed in a
-    modal dialog, popover, `inline-block`, float or default flex item without a definite width, where a table that
-    would fit is cut down, scrolls and becomes a tab stop;
+  - the host width of a prose container (operator decision PLAN-FRESH-2-001 (a), PLAN-FRESH-3-003, R-06), stated by
+    its cause in one sentence: a prose container must not be sized from its content (shrink-to-fit or fit-content
+    sizing); it gets its width from its context (block flow, a stretched grid or flex item such as `1fr` or
+    `flex: 1`, a definite width). In a box sized from its content a table that would fit is cut down, scrolls and
+    becomes a tab stop. The examples follow as examples, not as a complete list: a modal or non-modal `<dialog>`, a
+    popover, a fixed or absolutely positioned panel without both inline insets or a width, `inline-block`, a float, a
+    `display: table-cell` box, a default flex item, and a grid or flex item aligned to start; give such a box a
+    definite width or stretch it;
   - custom-element hosts (operator decision PLAN-FRESH-2-004 (a)): `base.css` also styles the host of every element,
     which is in the light DOM: the `box-sizing` reset, and the focus ring on a focusable host. For normal declarations
     the page's rules beat a shadow tree's `:host` rules whatever their specificity, so an element cannot override
@@ -582,14 +604,17 @@ then styled by `base.css` alone.
   - for Markdown renderers: tables of three or more columns overflow at 320 px, so they scroll and, with no
     focusable content, are tab stops (PLAN-FRESH-1-006); the no-wrapper keyboard model is guaranteed only in
     Chromium hosts, WebKit hosts (Kitty Desktop on macOS and Linux) add `tabindex="0"` to tables in their renderer,
-    and this is an open limitation for kitty-mission-ui (R-06);
+    and this is an open limitation for kitty-mission-ui (R-06); print is out of scope: prose tables are screen scroll
+    boxes, so a printed document shows only the columns that fit the page, and a host that prints adds its own print
+    rule (operator decision PLAN-FRESH-3-002 (b));
   - a table mapping kitty-mission-ui's E-23, E-37 and E-39 to the hooks and tokens that replace them (SC-006).
 - `packages/styles/CHANGELOG.md` gets `## Unreleased` / `### Added`, naming `base.css` and the four attributes.
 - `packages/styles/test/readme.test.ts` checks each statement, as the tokens readme test does. It grows red-first with
   the phases (PLAN-CORRECTNESS-1-010): phase 2 asserts the link order, the CSP, the tokens version, the base layer, the
   custom-element host statement and the CHANGELOG `base.css` entry; phase 3 adds the density and value hooks (README
   values, the main-grounds limit, the CHANGELOG attribute names); phase 4 adds the prose hook, prose over compact, the
-  `<html>` placement, the host-width statement, the three-column and WebKit statements; phase 5 adds the wrap hook and
+  `<html>` placement, the host-width cause sentence (asserted as the cause, not as the list of examples), the
+  three-column and WebKit statements, and the print statement; phase 5 adds the wrap hook and
   SC-006. User Story 1 scenario 6's documentation half is complete only after phase 5.
 - The tokens README sentence on `color-scheme` ("the base styles (#6) apply it…") becomes "`@ocelle/styles`
   `base.css` applies it", and its readme test changes with it.

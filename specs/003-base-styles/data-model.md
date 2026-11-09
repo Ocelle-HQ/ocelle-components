@@ -73,13 +73,17 @@ The tests assert these values; the order in the file is the order of the section
 | ` :where(pre code)` | `padding-inline: 0`; `background-color: transparent` |
 | ` :where(table)` | `display: block`; `overflow-x: auto`; `max-inline-size: 100%`; `container-type: inline-size`; `border-collapse: collapse` (the inline-size containment that `container-type` applies stops the table's min-content width from widening a grid or flex column above the prose container, and makes the table the caption's query container; the prose container must get its width from its context, not its content, operator decision PLAN-FRESH-2-001 (a); research R-06) |
 | ` :where(table:focus-visible)` | `outline-offset: calc(var(--ocelle-focus-width) * -1)` (an inset ring, so all four sides show when the table is flush with the viewport; operator decision PLAN-A11Y-SECURITY-1-003 (a)) |
-| ` :where(caption)` | `position: sticky`; `inset-inline-start: 0`; `max-inline-size: var(--ocelle-measure-container)`; `text-align: start` (the caption is capped at the table's visible width and wraps inside the visible part of the scroll box, and mirrors under `dir="rtl"`; PLAN-FRESH-2-002, research R-06) |
+| ` :where(caption)` | `position: sticky`; `inset-inline-start: 0`; `max-inline-size: var(--ocelle-measure-container)`; `text-align: start` (the caption is capped at the table's visible width and wraps inside the visible part of the scroll box; the sticky offset keeps it in view while the table scrolls and `text-align: start` starts each line at the box's start edge; all of it mirrors under `dir="rtl"`. Each part has its own assertion and plant: PLAN-FRESH-2-002, PLAN-FRESH-3-001 (a), research R-06, R-10) |
 | ` :where(th, td)` | `min-inline-size: var(--ocelle-measure-cell)`; `padding: var(--ocelle-space-2) var(--ocelle-space-3)`; `border-block-end: var(--ocelle-border-width) solid var(--ocelle-color-rule)`; `text-align: start` |
 | ` :where(th)` | `font-size: var(--ocelle-font-size-xs)`; `font-variant-numeric: var(--ocelle-figures)`; `font-weight: var(--ocelle-font-weight-strong)`; `border-block-end-color: var(--ocelle-color-rule-strong)` |
 
 A compact region inside prose keeps the compact scale: its own rule sets size and line height on the region, and no
 prose rule sets them on its descendants except headings (FR-024). On one element with both hooks the prose rule comes
 later in the file and wins.
+
+The prose family has no `@media print` rule: print is out of scope, so a printed wide table shows only the columns
+that fit the page, and a host that prints adds its own print rule (operator decision PLAN-FRESH-3-002 (b); spec
+Assumptions, README).
 
 **Identifier wrap**
 

@@ -43,7 +43,7 @@ Stated in `packages/styles/README.md`. Each statement below is checked by `packa
   |---|---|---|
   | `data-ocelle-density` | `compact`, `regular` | `compact`: 14 px, line height 1.5 for the element and its descendants (on `<html>`: the body; the root font size never changes). `regular`: back to 16 px / 1.45. |
   | `data-ocelle-value` | (empty), `ink` | value text: 14 px Schibsted Grotesk, tabular figures, muted ink (`ink`: body ink). On the main grounds only (canvas, sheet, pane, panel, inspector, rail, inset, accent-low, hover-bg), never on the chrome, where `ink` is 1.00:1 and `ink-muted` 2.64:1 in light theme |
-  | `data-ocelle-prose` | (empty) | prose rhythm for rendered Markdown inside the element (data-model § Prose). On a content container, not on `<html>`: the container rule does not match the root. The container gets its width from its context, not from its content: not in a modal dialog, popover, `inline-block`, float or default flex item without a definite width (operator decision PLAN-FRESH-2-001 (a)) |
+  | `data-ocelle-prose` | (empty) | prose rhythm for rendered Markdown inside the element (data-model § Prose). On a content container, not on `<html>`: the container rule does not match the root. The container must not be sized from its content (shrink-to-fit or fit-content sizing); it gets its width from its context. Examples of boxes sized from their content: a modal or non-modal `<dialog>`, a popover, a fixed or absolutely positioned panel without both inline insets or a width, `inline-block`, a float, a `display: table-cell` box, a default flex item, a grid or flex item aligned to start; give such a box a definite width or stretch it (operator decision PLAN-FRESH-2-001 (a), PLAN-FRESH-3-003) |
   | `data-ocelle-wrap` | `anywhere` | the identifier breaks anywhere; it sets no font property, so combine it with `data-ocelle-value` for tabular figures |
 
   Other values have no effect: the selectors match the documented values exactly, so `data-ocelle-prose="true"` and
@@ -54,9 +54,14 @@ Stated in `packages/styles/README.md`. Each statement below is checked by `packa
   it overflows, it scrolls in its own box, and it never widens a grid or flex column around the container. At 320 px
   a table of three or more columns overflows. When an overflowing table has no focusable content, it is a tab stop
   with an inset focus ring. When it has a link, Tab reaches the link and the arrow keys scroll the table. The
-  caption wraps inside the table's visible box, starting at its start edge. Because the table is contained in the
-  inline axis, it adds nothing to the width of a shrink-to-fit box around the container: in such a box without a
-  definite width, a table that would fit is cut down, scrolls and becomes a tab stop.
+  caption wraps inside the table's visible box, starting at its start edge, and stays in view while the table
+  scrolls (operator decision PLAN-FRESH-3-001 (a)). Because the table is contained in the inline axis, it adds
+  nothing to the width of a box sized from its content: a prose container must not be sized from its content
+  (shrink-to-fit or fit-content sizing), or a table that would fit is cut down, scrolls and becomes a tab stop. The
+  examples of the hook row above are examples, not a complete list; give such a box a definite width or stretch it
+  (PLAN-FRESH-3-003). Print is out of scope: a prose table is a screen scroll box, so a printed document shows only
+  the columns that fit the page, and a host that prints adds its own print rule (operator decision
+  PLAN-FRESH-3-002 (b)).
 - **Browsers**: the no-wrapper keyboard model is guaranteed only in Chromium hosts (the only engine measured and
   tested). WebKit hosts (Kitty Desktop's webview on macOS and Linux) add `tabindex="0"` to tables in their renderer.
   This is an open limitation for kitty-mission-ui.
