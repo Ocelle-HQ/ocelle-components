@@ -1,0 +1,3 @@
+# History fold phase-1 of claude/006-base-styles: old commit -> new commit (pre-fold head kept as refs/ocelle/prefold/phase-1/claude/006-base-styles, 367c7c940acadb7f3e42ed7489d45f953f36b28a).
+c7de1848231ad4ff5fec99d3466b89f5901b1e47 ceb97f540ddc51cb1cafe0b28b6aae07d0ca1bd8
+367c7c940acadb7f3e42ed7489d45f953f36b28a 0c5918eedfc35704263d682143a39aedaa8ba1d7
