@@ -3,11 +3,12 @@
 **Input**: design documents in `specs/003-base-styles/`, as approved at the plan gate on 2026-11-09 after three
 plan-squad rounds:
 - spec.md;
-- plan.md, with decisions 1 to 18;
+- plan.md, with decisions 1 to 19 (decision 19 recorded after the analysis);
 - research.md, R-01 to R-14;
 - data-model.md;
 - contracts/styles-package.md and contracts/checks.md;
-- quickstart.md.
+- quickstart.md;
+- analysis-report.md, whose findings are resolved here (F1, E1 to E5, U1 to U3, I1 to I5, A1, C1, C2).
 
 **Tests**: required. Constitution Principle VIII applies to every phase. The phase flow is `base.sh`, an optional
 `scaffold.sh`, one red commit of test files only proven by `red.sh`, then green, `tdd-check.sh` and an independent
@@ -29,7 +30,7 @@ The guard rules:
 
 **Stop-and-ask points**: the implementer stops, records the question in the phase review and does not work around
 it. The points are:
-- **T009 spike outcomes (R-06, R-05, R-10)**, if any of these happens:
+- **T007 spike outcomes (R-06, R-05, R-10)**, if any of these happens:
   - a `display: block; overflow-x: auto; container-type: inline-size` table loses role `table`, its `row`,
     `columnheader` or `cell` nodes, or its caption name in the CDP accessibility tree (this triggers the wrapper fork
     of FR-017);
@@ -104,8 +105,8 @@ layer), and both contracts.
 
 ### Spike (first)
 
-- [ ] T009 [US1] Spike, recorded in `specs/003-base-styles/reviews/phase-2/spike.md` with each measurement and the Chromium build:
-  - Steps 1 to 5 of research R-06 ("Verify in the spike"), with data-model § Prose's table, caption and cell rules copied into a scratch page:
+- [ ] T007 [US1] Spike, recorded in `specs/003-base-styles/reviews/phase-2/spike.md` with each measurement and the Chromium build:
+  - Steps 1 to 5 of research R-06 ("Verify in the spike"), with data-model § Prose's table, caption and cell rules copied into a scratch page. Those rules and the R-10 plants use tokens that only exist from phases 3 and 4, so the scratch page also links a scratch stylesheet, after `tokens.css`, that defines the six R-08 tokens with their data-model § New tokens values (`--ocelle-line-height-compact: 1.5`, `--ocelle-line-height-prose: 1.65`, `--ocelle-font-size-subhead: 1.125rem`, `--ocelle-measure-reading: 68ch`, `--ocelle-measure-cell: 12ch`, `--ocelle-measure-container: 100cqi`); `spike.md` records that choice. The scratch stylesheet is not committed as source:
     - the accessibility tree through CDP `Accessibility.getFullAXTree`;
     - the 12ch cell floor;
     - every host layout of `prose-hosts.html`, the definite-width dialog included;
@@ -114,61 +115,58 @@ layer), and both contracts.
   - The forced-colours ring inside a `forced-color-adjust: none` region (R-05).
   - That each plant of R-10 makes its guard fail, and that list semantics have no CSS plant in Chromium.
 
-  Stop and ask on any stop-and-ask outcome above. The spike changes no source file. Commit the record with `base.sha` (`docs(003-base-styles): phase 2 spike record (T009)`)
+  Stop and ask on any stop-and-ask outcome above. The spike changes no source file. Commit the record with `base.sha` (`docs(003-base-styles): phase 2 spike record (T007)`)
 
 ### Tests (red, one commit)
 
-- [ ] T010 [P] [US1] `packages/styles/test/build.test.ts`: `buildPlan(css)` returns exactly `[{ path: "base.css", content: css }]` for any text. `build(packageDir, outDir)` writes a `dist/base.css` that is byte-identical to `src/base.css` (research R-01, contracts/checks.md)
-- [ ] T011 [P] [US1] `packages/styles/test/source.test.ts` (research R-11) parses `buildPlan(readFileSync("src/base.css"))[0].content` with PostCSS and `postcss-selector-parser`. Positive assertions: the `:where(:focus-visible)` rule exists with `outline-style: solid` and the width, colour and offset longhands; and the base-layer selectors of data-model § Rule table exist. In the same tests, the guards:
+- [ ] T008 [P] [US1] `packages/styles/test/build.test.ts`: `buildPlan(css)` returns exactly `[{ path: "base.css", content: css }]` for any text. `build(packageDir, outDir)` writes a `dist/base.css` that is byte-identical to `src/base.css` (research R-01, contracts/checks.md)
+- [ ] T009 [P] [US1] `packages/styles/test/source.test.ts` (research R-11) parses `buildPlan(readFileSync("src/base.css"))[0].content` with PostCSS and `postcss-selector-parser`. Positive assertions: the `:where(:focus-visible)` rule exists with `outline-style: solid` and the width, colour and offset longhands; and the base-layer selectors of data-model § Rule table exist. In the same tests, the guards:
   - no `transition*`, `animation*` or `scroll-behavior` declaration at any depth;
   - no `forced-color-adjust: none`;
-  - no `outline: none` and no `outline-style: none`;
+  - no `outline: none`, no `outline: 0` and no `outline-style: none`;
   - no `@import` and no `url(`;
   - no class selector;
   - every selector within its bound: (0,1,1) for a selector with a `data-ocelle-*` attribute, (0,0,1) for any other.
 
   Each check is also run on its plant strings, which must report, and its boundary strings, which must pass. Both are listed in R-10 § Source-level guards
-- [ ] T012 [P] [US1] `gates/test/token-only.test.ts` (and `token-only-parts.test.ts` if `rawValues` changes) for the `lineHeight: "token"` option of research R-07:
+- [ ] T010 [P] [US1] `gates/test/token-only.test.ts` (and `token-only-parts.test.ts` if `rawValues` changes) for the `lineHeight: "token"` option of research R-07:
   - with the option, a literal, percentage, `calc()` or `normal` line height is raw, in `line-height` and in the line-height part of `font`;
   - without it they stay allowed;
   - with it, a single `var(--ocelle-*)` or a CSS-wide keyword passes against the repository token lists;
   - an invalid option value is reported;
   - giving the option does not replace the token lists.
-- [ ] T013 [P] [US1] Style-lint plants (contracts/checks.md § Gates changed):
-  - fail plants `gates/plants/style-lint/fail-styles-literal-line-height` (`1.65`), `fail-styles-percent-line-height` (`165%`), `fail-styles-calc-line-height` (`calc(1.65)`) and `fail-styles-normal-line-height` (`normal`), each `tree/packages/styles/src/x.css` expecting one `ocelle/token-only` finding at its line;
-  - pass plant `pass-styles-line-height-token` (`var(--ocelle-line-height-normal)`);
-  - move `pass-line-height` from `tree/packages/styles/src/x.css` to `tree/packages/elements/src/x.css`, with `why` updated.
-- [ ] T014 [P] [US1] `packages/styles/test/browser/serve.ts` (test helper; research R-09). It serves a temporary directory under `default-src 'none'; script-src 'self'; style-src 'self'; font-src 'self'` on `127.0.0.1`. Only `page.html` also gets `img-src 'self'` (plan decision 15). The directory holds:
+- [ ] T011 [P] [US1] `packages/styles/test/browser/serve.ts` (test helper; research R-09). It serves a temporary directory under `default-src 'none'; script-src 'self'; style-src 'self'; font-src 'self'` on `127.0.0.1`. Only `page.html` also gets `img-src 'self'` (plan decision 15). The directory holds:
   - `tokens.css` from the token generator;
   - `base.css` copied from `src`;
-  - the vendored fonts and `test/fixtures/**`, with content types for `.html`, `.css`, `.woff2` and `.svg` (`image/svg+xml`).
+  - the vendored fonts and `test/fixtures/**`, with content types for `.html`, `.css`, `.woff2` and `.svg` (`image/svg+xml`);
+  - `control.html`, written from 002's `controlPage` (one inline `<style>`), the control page whose one `style-src` violation the tests expect (data-model § Test fixtures, SC-001).
 
-  It reuses `launch`, `collectViolations` and `violations` from `packages/tokens/test/browser/serve.ts`. Also write the fixtures (data-model § Test fixtures): `packages/styles/test/fixtures/page.html`, `layout.css`, `media.svg` (natural 2:1) and `plants/*.css` for the US1 guards of R-10
-- [ ] T015 [US1] `packages/styles/test/browser/base.test.ts`, spec US1 scenarios 1, 2, 4, 5, 6 (computed half), 7, 9 and 10 in Chromium. Each guard is paired with its positive assertion and run once more with its plant stylesheet, where the guard's helper must report the expected problem:
+  It reuses `launch`, `collectViolations`, `violations` and `controlPage` from `packages/tokens/test/browser/serve.ts`. Also write the fixtures (data-model § Test fixtures): `packages/styles/test/fixtures/page.html`, `layout.css`, `media.svg` (natural 2:1) and `plants/*.css` for the US1 guards of R-10
+- [ ] T012 [US1] `packages/styles/test/browser/base.test.ts`, spec US1 scenarios 1, 2, 4, 5, 6 (computed half), 7, 9 and 10 in Chromium. Every scenario runs in both themes, under `emulateMedia({ colorScheme })` light and dark (research R-09, FR-022); none is exempt. Each guard is paired with its positive assertion and run once more with its plant stylesheet, where the guard's helper must report the expected problem:
   - the six theme conditions of 002 with root `color-scheme` and body values;
   - keyboard and pointer focus on a link, button, text input and `tabindex="0"`;
   - forced colours: control borders, and the `Highlight` ring inside a `forced-color-adjust: none` region;
-  - zero CSP violations, with the control page's one violation;
+  - zero CSP violations on every fixture page, and exactly one `style-src` violation on `control.html`;
   - without `tokens.css`: `border-box`, body margin 0 and an outline style other than `none`;
   - `base.css` linked first gives the same computed values;
   - `code`, `pre`, `kbd` and `samp` in Schibsted Grotesk with tabular figures, inside and outside prose, plus the host-override case;
   - media no wider than their container, with the 2:1 ratio held within 1 px after `naturalWidth > 0`, and form controls inheriting the font;
   - list semantics (role `list`) next to the `box-sizing` assertion, with its recorded no-plant reason.
-- [ ] T016 [P] [US1] `packages/styles/test/readme.test.ts`, phase 2 statements (research R-14):
-  - the README states the link order, the CSP, the exact tokens version, the base layer and its specificity, and that `base.css` styles custom-element hosts (plan decision 16);
+- [ ] T013 [P] [US1] `packages/styles/test/readme.test.ts`, phase 2 statements (research R-14):
+  - the README states the link order, the CSP, the exact tokens version (and that the `workspace:0.0.0` pin becomes meaningful at the first release, #11, since both packages stay at 0.0.0 until then), the base layer and its specificity, and that `base.css` styles custom-element hosts (plan decision 16);
   - the CHANGELOG has `## Unreleased` / `### Added` naming `base.css`;
   - `packages/tokens/test/readme.test.ts` expects the tokens README sentence naming `@ocelle/styles` `base.css` as the stylesheet that applies `color-scheme`.
-- [ ] T017 [P] [US1] Storybook tests (research R-12):
+- [ ] T014 [P] [US1] Storybook tests (research R-12):
   - `storybook/test/unit/swatches.test.ts`: `writeGenerated` also writes `base.css` (the directory listing gains it);
   - `storybook/test/unit/render.test.ts`: `renderFamily("base")` cases (no `style` attribute or `class`, the elements of the Base page story, escaping of `base-content.json` text);
   - `storybook/test/unit/stories.test.ts`: "Base styles" title with the Base page story;
   - `storybook/test/integration/csp.test.ts`: the Base page story with zero violations and no computed monospace, under the narrowed `preview.css`.
-- [ ] T018 [US1] Commit T010 to T017 alone (`test(003-base-styles): phase 2 red — US1 base layer`) and run `.specify/extensions/story/scripts/red.sh 2 phase`. Confirm every failure is an assertion on missing behaviour, not a load or setup error (the browser path is set with `PLAYWRIGHT_BROWSERS_PATH` or `OCELLE_CHROMIUM_PATH`)
+- [ ] T015 [US1] Commit T008 to T014 alone (`test(003-base-styles): phase 2 red — US1 base layer`) and run `.specify/extensions/story/scripts/red.sh 2 phase`. Confirm every failure is an assertion on missing behaviour, not a load or setup error (the browser path is set with `PLAYWRIGHT_BROWSERS_PATH` or `OCELLE_CHROMIUM_PATH`)
 
 ### Implementation (green)
 
-- [ ] T019 [US1] `packages/styles/scripts/build.ts`: `buildPlan(css)` and `build()` as R-01, with each I/O line carrying the I/O-boundary Stryker record that names `packages/styles/test/build.test.ts`
-- [ ] T020 [US1] `packages/styles/src/base.css`: the base-layer rules of data-model § Rule table, in its order:
+- [ ] T016 [US1] `packages/styles/scripts/build.ts`: `buildPlan(css)` and `build()` as R-01, with each I/O line carrying the I/O-boundary Stryker record that names `packages/styles/test/build.test.ts`
+- [ ] T017 [US1] `packages/styles/src/base.css`: the base-layer rules of data-model § Rule table, in its order:
   - box-sizing as `:where(*), :where(*)::before, :where(*)::after`;
   - `:where(:root)` `color-scheme`;
   - `:where(body)`;
@@ -179,20 +177,25 @@ layer), and both contracts.
   - the `forced-colors` `Highlight` rule.
 
   Every value is a token, every line height a token, and there are no classes, no motion, no `@import` and no `url()`
-- [ ] T021 [US1] `gates/stylelint/token-only.ts` and `stylelint.config.ts`: the `lineHeight: "token"` option (`validateOptions` gains `lineHeight: ["token"]`; `optionLists` uses given lists only when `tokens` or `elementProperties` is present), and the override for `packages/styles/**/*.css` (research R-07)
-- [ ] T022 [US1] `packages/styles/README.md` and `packages/styles/CHANGELOG.md` with the phase 2 statements of T016. In `packages/tokens/README.md`, the `color-scheme` sentence names `@ocelle/styles` `base.css`
-- [ ] T023 [US1] Storybook:
+- [ ] T018 [US1] `gates/stylelint/token-only.ts` and `stylelint.config.ts`: the `lineHeight: "token"` option (`validateOptions` gains `lineHeight: ["token"]`; `optionLists` uses given lists only when `tokens` or `elementProperties` is present), and the override for `packages/styles/**/*.css` (research R-07)
+- [ ] T019 [US1] Style-lint plants for T018's option (contracts/checks.md § Gates changed, research R-07). They are not test files under `test_pathspec`, so they land here in green, not in the red commit; T010's unit tests are the option's red evidence:
+  - fail plants `gates/plants/style-lint/fail-styles-literal-line-height` (`1.65`), `fail-styles-percent-line-height` (`165%`), `fail-styles-calc-line-height` (`calc(1.65)`) and `fail-styles-normal-line-height` (`normal`), each `tree/packages/styles/src/x.css` expecting one `ocelle/token-only` finding at its line;
+  - pass plant `pass-styles-line-height-token` (`var(--ocelle-line-height-normal)`);
+  - move `pass-line-height` from `tree/packages/styles/src/x.css` to `tree/packages/elements/src/x.css`, with `why` updated.
+- [ ] T020 [US1] `packages/styles/README.md` and `packages/styles/CHANGELOG.md` with the phase 2 statements of T013. In `packages/tokens/README.md`, the `color-scheme` sentence names `@ocelle/styles` `base.css`
+- [ ] T021 [US1] Storybook:
   - `storybook/scripts/swatches.ts` `writeGenerated` copies `packages/styles/src/base.css` to `.generated/base.css`;
   - `storybook/.storybook/preview-head.html` links it after `tokens.css`;
   - `storybook/.storybook/preview.css` is narrowed to the error display;
-  - add `storybook/stories/stories-layout.css` and `storybook/stories/base-content.json`, `renderFamily` in `storybook/stories/render.ts`, and `storybook/stories/base.stories.ts` (title "Base styles", story "Base page").
-- [ ] T024 [US1] Run:
+  - add `storybook/.storybook/stories-layout.css` (layout only, `data-story` selectors), imported by `storybook/.storybook/preview.ts` as `preview.css` is (research R-12);
+  - add `storybook/stories/base-content.json`, `renderFamily` in `storybook/stories/render.ts`, and `storybook/stories/base.stories.ts` (title "Base styles", story "Base page").
+- [ ] T022 [US1] Run:
   - `pnpm -r build` and `pnpm test`;
-  - `gate:typecheck`, `gate:lint`, `gate:test-lint`, `gate:style-lint`, `gate:prefix`, `gate:csp`, `gate:config-copies`, `gate:pins`;
+  - `gate:typecheck`, `gate:lint`, `gate:test-lint`, `gate:style-lint`, `gate:prefix`, `gate:csp`, `gate:contrast`, `gate:brand-rules`, `gate:config-copies`, `gate:pins` (SC-003);
   - `gate:plants` alone, not during a mutation run;
   - then `gate:mutation -- --base <phase base>`, one job at a time.
 
-  Then run `.specify/extensions/story/scripts/tdd-check.sh 2` (`pass`) and commit green (`feat(003-base-styles): phase 2 — US1 base layer`)
+  Record the `styles-browser` suite time in the phase review against the plan's 60 s goal. Then run `.specify/extensions/story/scripts/tdd-check.sh 2` (`pass`) and commit green (`feat(003-base-styles): phase 2 — US1 base layer`)
 
 **Checkpoint**: a host page linking `tokens.css` and `base.css` gets the base layer under the strict CSP. This is the
 MVP.
@@ -201,8 +204,9 @@ MVP.
 
 ## Phase 3: User Story 2 - A dense screen opts into the compact scale (Priority: P2)
 
-**Goal**: everything User Story 2 asks for, covering spec scenarios 1 to 4 and scenario 5 for compact alone, FR-012,
-FR-013 and FR-024:
+**Goal**: everything User Story 2 asks for that needs no prose, covering spec scenarios 1 to 4 (scenario 4 without its
+`h1` half), the nested `regular` value of FR-004, FR-012, FR-013 and FR-024's compact nesting. Scenario 5 needs prose
+and is phase 4's (T035):
 - `data-ocelle-density` (`compact`, `regular`) and `data-ocelle-value` (empty, `ink`) work;
 - `--ocelle-line-height-compact` exists;
 - Storybook has the "Compact screen" story.
@@ -210,30 +214,30 @@ FR-013 and FR-024:
 The design sources are research R-02, R-04 and R-08, and data-model § Compact scale.
 
 **Independent Test**:
-- `styles-browser` passes US2 scenarios 1 to 3 (the undocumented value included), scenario 4 without its `h1` half,
-  and scenario 5 for compact alone.
+- `styles-browser` passes US2 scenarios 1 to 3 (the undocumented values included), scenario 4 without its `h1` half,
+  and the nested `regular` regions of FR-004, in both themes.
 - The tokens tests pass with the new token.
 - `tdd-check.sh 3` reports `pass`.
 
 ### Tests (red, one commit)
 
-- [ ] T025 [P] [US2] `packages/tokens/test/expected.ts`: add `line-height-compact`, type group, `1.5`, with its probe (research R-08). The tokens CHANGELOG test expects the new name under Unreleased
-- [ ] T026 [P] [US2] `packages/styles/test/fixtures/compact.html` and `plants/*.css` for the US2 guards of R-10. `packages/styles/test/browser/compact.test.ts`:
-  - scenario 1: 14 px / 21 px, inherited;
+- [ ] T023 [P] [US2] `packages/tokens/test/expected.ts`: add `line-height-compact`, type group, `1.5`, with its probe (research R-08). The tokens CHANGELOG test expects the new name under Unreleased
+- [ ] T024 [P] [US2] `packages/styles/test/fixtures/compact.html` and `plants/*.css` for the US2 guards of R-10 (the density presence-form plant included). `packages/styles/test/browser/compact.test.ts`, every scenario in both themes under `emulateMedia({ colorScheme })` light and dark (research R-09, FR-022); none is exempt:
+  - scenario 1: 14 px / 21 px, inherited, and in the same test a `data-ocelle-density="true"` region with no compact scale (FR-005), with the density presence-form plant;
   - scenario 2: only the region, with the `body` plant;
   - scenario 3: the value style's family, figures, colour and 14 px, the `ink` variant, and `data-ocelle-value="true"` doing nothing, with the presence-form plant;
   - scenario 4 without `h1`: the hook on `<html>` keeps the root at 16 px and `--ocelle-target-min` at 44 px, the body compact and the ring unchanged, with the two US2-4 plants;
-  - scenario 5 for nested compact and regular regions.
-- [ ] T027 [P] [US2] `packages/styles/test/source.test.ts`: the compact and value selectors of data-model § Compact scale exist and are within the (0,1,1) bound. `packages/styles/test/readme.test.ts`: the density and value statements (values, `regular`, the main-grounds-only limit of the value hook) and the CHANGELOG naming `data-ocelle-density` and `data-ocelle-value`
-- [ ] T028 [P] [US2] Storybook tests: `renderFamily("compact")` cases, the "Compact screen" story (compact and value hooks) in `stories.test.ts`, and in `csp.test.ts` with zero violations
-- [ ] T029 [US2] Commit T025 to T028 alone (`test(003-base-styles): phase 3 red — US2 compact`) and run `.specify/extensions/story/scripts/red.sh 3 phase`
+  - FR-004 `regular` value (nested regions): a `regular` region inside a compact one returns to the regular scale (research R-02). US2 scenario 5 is left to T035.
+- [ ] T025 [P] [US2] `packages/styles/test/source.test.ts`: the compact and value selectors of data-model § Compact scale exist and are within the (0,1,1) bound. `packages/styles/test/readme.test.ts`: the density and value statements (values, `regular`, that any other value of a hook attribute, `"true"` among them, has no effect, what the compact-scale family styles and the tokens it uses, the main-grounds-only limit of the value hook) and the CHANGELOG naming `data-ocelle-density` and `data-ocelle-value`
+- [ ] T026 [P] [US2] Storybook tests: `renderFamily("compact")` cases, the "Compact screen" story (compact and value hooks) in `stories.test.ts`, and in `csp.test.ts` with zero violations
+- [ ] T027 [US2] Commit T023 to T026 alone (`test(003-base-styles): phase 3 red — US2 compact`) and run `.specify/extensions/story/scripts/red.sh 3 phase`
 
 ### Implementation (green)
 
-- [ ] T030 [US2] `packages/tokens/src/source.ts`: add the `line-height-compact` record. Add it to `packages/tokens/CHANGELOG.md` (Unreleased, type group) and to `packages/tokens/README.md`
-- [ ] T031 [US2] `packages/styles/src/base.css`: the compact and value rules of data-model § Compact scale, after the base layer (research R-03 order, R-04 root handling)
-- [ ] T032 [US2] README and CHANGELOG of `@ocelle/styles` with the T027 statements. Add `renderFamily("compact")` and the "Compact screen" story
-- [ ] T033 [US2] Run the checks of T024 for this phase, then `.specify/extensions/story/scripts/tdd-check.sh 3` (`pass`), and commit green (`feat(003-base-styles): phase 3 — US2 compact`)
+- [ ] T028 [US2] `packages/tokens/src/source.ts`: add the `line-height-compact` record. Add it to `packages/tokens/CHANGELOG.md` (Unreleased, type group) and to `packages/tokens/README.md`
+- [ ] T029 [US2] `packages/styles/src/base.css`: the compact and value rules of data-model § Compact scale, after the base layer (research R-03 order, R-04 root handling)
+- [ ] T030 [US2] README and CHANGELOG of `@ocelle/styles` with the T025 statements. Add `renderFamily("compact")` and the "Compact screen" story
+- [ ] T031 [US2] Run the checks of T022 for this phase, then `.specify/extensions/story/scripts/tdd-check.sh 3` (`pass`), and commit green (`feat(003-base-styles): phase 3 — US2 compact`)
 
 **Checkpoint**: a dense screen marked compact gets 14 px / 1.5 without changing `rem` tokens.
 
@@ -260,7 +264,7 @@ The design sources are research R-06, R-08, R-10 and R-13, data-model § Prose, 
 
 ### Tests (red, one commit)
 
-- [ ] T034 [P] [US3] `packages/tokens/test/browser/values.test.ts`: give the probe block `container-type: inline-size` (research R-08; red against the unchanged harness, where `measure-container` resolves to 1280px). Add the five tokens of R-08 to `packages/tokens/test/expected.ts`:
+- [ ] T032 [P] [US3] `packages/tokens/test/browser/values.test.ts`: give the probe block `container-type: inline-size` (research R-08; red against the unchanged harness, where `measure-container` resolves to 1280px). Add the five tokens of R-08 to `packages/tokens/test/expected.ts`:
   - `line-height-prose` `1.65`;
   - `font-size-subhead` `1.125rem`;
   - `measure-reading` `68ch`;
@@ -268,13 +272,13 @@ The design sources are research R-06, R-08, R-10 and R-13, data-model § Prose, 
   - `measure-container` `100cqi`, with `{ property: "width", used: 1000 }`.
 
   The tokens CHANGELOG test expects all five
-- [ ] T035 [P] [US3] Fixtures (data-model § Test fixtures):
+- [ ] T033 [P] [US3] Fixtures (data-model § Test fixtures):
   - `packages/styles/test/fixtures/prose.html`: the US3 fixture of the spec, with three wide 12-column tables, one of them with a caption of at least 80 characters ending in a full stop; a two-column table that fits; an `<a id>` target; `h5`, `h6` and a nested list; and the same content outside the container;
   - `prose-hosts.html`: grid, flex, nested, and a definite-width modal dialog opened with `showModal()`, sized by `--ocelle-dialog-max-inline` in `layout.css`;
   - `prose-root.html`;
   - `plants/*.css` for every US3 guard of R-10.
-- [ ] T036 [US3] `packages/styles/test/browser/prose.test.ts`, spec US3 scenarios 1 to 12:
-  - computed sizes, weights and line heights per element, with the heading order;
+- [ ] T034 [US3] `packages/styles/test/browser/prose.test.ts`, spec US3 scenarios 1 to 12:
+  - computed sizes, weights and line heights per element, with the heading order; each non-heading line height is 1.65 times the element's own computed font size (research R-13): `td` and the body elements 26.4 px at 16 px, `th` 19.8 px at its 12 px;
   - measure and full-width `pre` and tables;
   - the scroll boxes at 320 px:
     - the 12ch floor;
@@ -294,10 +298,11 @@ The design sources are research R-06, R-08, R-10 and R-13, data-model § Prose, 
   - the linked table: Tab lands on the link, and ArrowRight scrolls the table.
 
   Each guard is paired with its positive assertion and its plant
-- [ ] T037 [P] [US3] `packages/styles/test/browser/compact.test.ts` additions: the `h1` half of US2 scenario 4 (30 px inside prose under compact on `<html>`), and US2 scenario 5's prose-in-compact, compact-in-prose and both-hooks cases
-- [ ] T038 [P] [US3] `packages/styles/test/pairs.test.ts` (research R-08): each prose and value colour pairing is a `checked` pair in both themes in `packages/tokens/contrast/pairs.json`. Its plant is a fixture list with `color-link` on `color-chrome`. `packages/styles/test/source.test.ts`: the prose selectors exist within the bound
-- [ ] T039 [P] [US3] `packages/styles/test/readme.test.ts` prose statements (research R-14):
+- [ ] T035 [P] [US3] `packages/styles/test/browser/compact.test.ts` additions: the `h1` half of US2 scenario 4 (30 px inside prose under compact on `<html>`), and US2 scenario 5's prose-in-compact, compact-in-prose and both-hooks cases
+- [ ] T036 [P] [US3] `packages/styles/test/pairs.test.ts` (research R-08): each prose and value colour pairing is a `checked` pair in both themes in `packages/tokens/contrast/pairs.json`. Its plant is a fixture list with `color-link` on `color-chrome`. `packages/styles/test/source.test.ts`: the prose selectors exist within the bound
+- [ ] T037 [P] [US3] `packages/styles/test/readme.test.ts` prose statements (research R-14):
   - values and `""` only;
+  - what the prose family styles and the tokens it uses;
   - prose over compact;
   - not on `<html>`;
   - the host-width cause sentence ("must not be sized from its content");
@@ -305,13 +310,13 @@ The design sources are research R-06, R-08, R-10 and R-13, data-model § Prose, 
   - the WebKit `tabindex` limitation;
   - print out of scope;
   - the CHANGELOG naming `data-ocelle-prose`.
-- [ ] T040 [P] [US3] Storybook tests: `renderFamily("prose")` cases, and the "Prose document" story in `stories.test.ts` and `csp.test.ts`
-- [ ] T041 [US3] Commit T034 to T040 alone (`test(003-base-styles): phase 4 red — US3 prose`) and run `.specify/extensions/story/scripts/red.sh 4 phase`
+- [ ] T038 [P] [US3] Storybook tests: `renderFamily("prose")` cases, and the "Prose document" story in `stories.test.ts` and `csp.test.ts`
+- [ ] T039 [US3] Commit T032 to T038 alone (`test(003-base-styles): phase 4 red — US3 prose`) and run `.specify/extensions/story/scripts/red.sh 4 phase`
 
 ### Implementation (green)
 
-- [ ] T042 [US3] `packages/tokens/src/source.ts`: add the five records of R-08. Add them to `packages/tokens/CHANGELOG.md` and `packages/tokens/README.md`. Confirm `validateSource` accepts `100cqi`
-- [ ] T043 [US3] `packages/styles/src/base.css`: the prose rules of data-model § Prose, after the compact and value rules:
+- [ ] T040 [US3] `packages/tokens/src/source.ts`: add the five records of R-08. Add them to `packages/tokens/CHANGELOG.md` and `packages/tokens/README.md`. Confirm `validateSource` accepts `100cqi`
+- [ ] T041 [US3] `packages/styles/src/base.css`: the prose rules of data-model § Prose, after the compact and value rules:
   - the container scoped `[data-ocelle-prose=""]:where(:not(html))`;
   - headings;
   - measure, lists, block quotes and `hr`;
@@ -321,8 +326,8 @@ The design sources are research R-06, R-08, R-10 and R-13, data-model § Prose, 
   - the caption rule: `position: sticky`, `inset-inline-start: 0`, `max-inline-size: var(--ocelle-measure-container)`, `text-align: start`;
   - the inset ring on `table:focus-visible`;
   - cells and header cells.
-- [ ] T044 [US3] README and CHANGELOG of `@ocelle/styles` with the T039 statements. Add `renderFamily("prose")` and the "Prose document" story (text in `base-content.json`)
-- [ ] T045 [US3] Run the checks of T024 for this phase, then `.specify/extensions/story/scripts/tdd-check.sh 4` (`pass`), and commit green (`feat(003-base-styles): phase 4 — US3 prose`)
+- [ ] T042 [US3] README and CHANGELOG of `@ocelle/styles` with the T037 statements. Add `renderFamily("prose")` and the "Prose document" story (text in `base-content.json`)
+- [ ] T043 [US3] Run the checks of T022 for this phase, then `.specify/extensions/story/scripts/tdd-check.sh 4` (`pass`), and commit green (`feat(003-base-styles): phase 4 — US3 prose`)
 
 **Checkpoint**: a renderer's plain HTML in a prose container reads at 1.65 with an 18 px `h2`, and wide tables
 scroll in their own box.
@@ -347,23 +352,23 @@ data-model § Identifier wrap.
 
 ### Tests (red, one commit)
 
-- [ ] T046 [P] [US4] `packages/styles/test/fixtures/wrap.html` (the 300 px two-column `1fr` grid, hooked and unhooked identifiers, an identifier in prose and in a compact `span`) and `plants/*.css` for the US4 guards of R-10. `packages/styles/test/browser/wrap.test.ts`:
+- [ ] T044 [P] [US4] `packages/styles/test/fixtures/wrap.html` (the 300 px two-column `1fr` grid, hooked and unhooked identifiers, a `data-ocelle-wrap="true"` identifier, an identifier in prose and in a compact `span`) and `plants/*.css` for the US4 guards of R-10 (the wrap presence-form plant included). `packages/styles/test/browser/wrap.test.ts`, every scenario in both themes under `emulateMedia({ colorScheme })` light and dark (research R-09, FR-022); none is exempt:
   - scenario 1: the column within 1 px of the short text, with no ellipsis, and the unhooked identifier widening its column in the same test;
-  - scenario 2: opt-in, with the `*` plant;
+  - scenario 2: opt-in, with the `*` plant; in the same test a `data-ocelle-wrap="true"` identifier keeps the initial `overflow-wrap` (FR-005), with the wrap presence-form plant;
   - scenario 3: wraps over more than one line, and the copied text equals the source, with the `text-transform` plant;
   - scenario 4: prose 16/26.4 px and compact 14/21 px.
 
   Also test 320 px and 200% zoom
-- [ ] T047 [P] [US4] `packages/styles/test/source.test.ts`: the wrap rule exists with `overflow-wrap: anywhere`. In the same test, FR-020's list is absent from it (`word-break`, `hyphens: auto`, `text-overflow: ellipsis`, `white-space: nowrap`), with its plant strings
-- [ ] T048 [P] [US4] `packages/styles/test/readme.test.ts`: the wrap statements, the SC-006 table mapping E-23, E-37 and E-39, and the CHANGELOG naming `data-ocelle-wrap`. With this, all four hooks are documented (US1 scenario 6)
-- [ ] T049 [P] [US4] Storybook tests: `renderFamily("wrap")` cases, and the "Identifier wrap" story in `stories.test.ts` and `csp.test.ts`
-- [ ] T050 [US4] Commit T046 to T049 alone (`test(003-base-styles): phase 5 red — US4 identifier wrap`) and run `.specify/extensions/story/scripts/red.sh 5 phase`
+- [ ] T045 [P] [US4] `packages/styles/test/source.test.ts`: the wrap rule exists with `overflow-wrap: anywhere`. In the same test, FR-020's list is absent from it (`word-break`, `hyphens: auto`, `text-overflow: ellipsis`, `white-space: nowrap`), with its plant strings
+- [ ] T046 [P] [US4] `packages/styles/test/readme.test.ts`: the wrap statements, what the identifier-wrap family styles and the tokens it uses, the SC-006 table mapping E-23, E-37 and E-39, and the CHANGELOG naming `data-ocelle-wrap`. With this, all four hooks are documented (US1 scenario 6)
+- [ ] T047 [P] [US4] Storybook tests: `renderFamily("wrap")` cases, and the "Identifier wrap" story in `stories.test.ts` and `csp.test.ts`
+- [ ] T048 [US4] Commit T044 to T047 alone (`test(003-base-styles): phase 5 red — US4 identifier wrap`) and run `.specify/extensions/story/scripts/red.sh 5 phase`
 
 ### Implementation (green)
 
-- [ ] T051 [US4] `packages/styles/src/base.css`: `[data-ocelle-wrap="anywhere"] { overflow-wrap: anywhere }`, last in the file
-- [ ] T052 [US4] README and CHANGELOG of `@ocelle/styles` with the T048 statements. Add `renderFamily("wrap")` and the "Identifier wrap" story
-- [ ] T053 [US4] Run the checks of T024 for this phase and the quickstart steps 1 to 4, then `.specify/extensions/story/scripts/tdd-check.sh 5` (`pass`), and commit green (`feat(003-base-styles): phase 5 — US4 identifier wrap`)
+- [ ] T049 [US4] `packages/styles/src/base.css`: `[data-ocelle-wrap="anywhere"] { overflow-wrap: anywhere }`, last in the file
+- [ ] T050 [US4] README and CHANGELOG of `@ocelle/styles` with the T046 statements. Add `renderFamily("wrap")` and the "Identifier wrap" story
+- [ ] T051 [US4] Run the checks of T022 for this phase and the quickstart steps 1 to 4, then `.specify/extensions/story/scripts/tdd-check.sh 5` (`pass`), and commit green (`feat(003-base-styles): phase 5 — US4 identifier wrap`)
 
 **Checkpoint**: every family ships, documented, with its story.
 
@@ -373,7 +378,7 @@ data-model § Identifier wrap.
 
 - Phase 1, then phase 2 (US1: the build, the harness, the lint option and the base layer that every family builds
   on), then phase 3 (US2), phase 4 (US3) and phase 5 (US4), in that order:
-  - phase 4 extends US2 scenarios 4 and 5, which phase 3 starts;
+  - phase 4 completes US2 scenario 4, which phase 3 starts, and tests US2 scenario 5, which needs the prose hook;
   - phase 5's readme test completes the documentation of the four hooks.
 - Within a phase: base, then the optional scaffold, the red commit, green, `tdd-check.sh` and review. The phase is
   folded after approval.
@@ -382,8 +387,8 @@ data-model § Identifier wrap.
 ## Parallel Opportunities
 
 - Phase 1: T003, T004 and T005.
-- Phase 2, after the spike: T010 to T014, T016 and T017 (T015 needs T014's server).
-- Phase 3: T025 to T028. Phase 4: T034, T035 and T037 to T040 (T036 needs T035). Phase 5: T046 to T049.
+- Phase 2, after the spike: T008 to T011, T013 and T014 (T012 needs T011's server).
+- Phase 3: T023 to T026. Phase 4: T032, T033 and T035 to T038 (T034 needs T033). Phase 5: T044 to T047.
 
 ## Implementation Strategy
 

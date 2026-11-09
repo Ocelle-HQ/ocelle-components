@@ -64,7 +64,7 @@ the font (as in 002).
 
 **Project Type**: library (pnpm workspace) plus repository gates.
 
-**Performance Goals**: none beyond CI time. The `styles-browser` suite should take under 60 s. Every mutation shard
+**Performance Goals**: none beyond CI time. The `styles-browser` suite should take under 60 s; each phase's check task records its time in the phase review. Every mutation shard
 stays within the 60-line entries of the mutation gate.
 
 **Constraints**:
@@ -80,18 +80,19 @@ the guard plants.
 ## Constitution Check
 
 *Pre-design and post-design: PASS. No new exception is taken. The two Storybook exceptions of 002 are unchanged and
-cover the new stories, because they live in the same preview.*
+cover the new stories, because they live in the same preview. Principle VIII's mutation-testing rule is met under a
+reading the operator approved after the analysis (decision 19), not under an exception.*
 
 | Principle | How this plan meets it |
 |---|---|
 | I. `ocelle-` names, no `sk-` | Hook attributes are `data-ocelle-*` and tokens `--ocelle-*`. The E-23/E-37/E-39 table in the README names kitty-mission-ui's exceptions by their ids, with no `sk-` names. The Prefix gate scans `packages/styles/**` and `dist/base.css` after the build. |
 | II. Tokens only, brand rules | Every value is a token under `ocelle/token-only`. Line heights must be a single token reference in `packages/styles`: numbers, percentages, `calc()` and `normal` are raw there (R-07, with fail plants, a pass plant and unit tests). There is no monospace anywhere: `code`, `pre`, `kbd` and `samp` are set page-wide (FR-026), checked by the Prefix gate and by computed style. Links use `--ocelle-color-link`. Rules use `color-rule` and `color-rule-strong` only for decorative lines, never a control boundary. The one radius is `radius-2`. |
-| III. Accessible by construction | The token focus ring is on every `:focus-visible` element, survives a missing `tokens.css` (longhands, R-05) and uses `Highlight` in forced colours, tested in a host region with `forced-color-adjust: none` where the rule is observable. A focused prose table shows an inset ring, all four sides visible when flush with the viewport (WCAG 2.4.7). No motion. `--ocelle-target-min` is kept under compact on `<html>`. Prose links are underlined (WCAG 1.4.1). Code, inline code and URLs reflow (1.4.10), and tables are contained so that they do not widen a grid or flex column (1.4.10, tested in grid and flex hosts); the README and spec state that a prose container gets its width from its context, tested in a definite-width modal dialog (operator decision PLAN-FRESH-2-001 (a)); the README states that rule by its cause, sizing from content, with the shrink-to-fit boxes as examples (PLAN-FRESH-3-003). Overflowing tables are keyboard-scrollable (2.1.1) in Chromium hosts; WebKit hosts add `tabindex="0"`, documented as an open limitation (R-06). The caption wraps inside the visible box, every line box asserted (1.4.10), starts at the start edge and stays inside the visible box when the table is scrolled, under `ltr` and `rtl`, each part with a plant that bites alone (operator decision PLAN-FRESH-3-001 (a)). Print is out of scope and stated in the README (PLAN-FRESH-3-002 (b)). Table semantics, including the cell-to-header association, are tested on the accessibility tree (R-06). Every colour pairing the families create is an existing checked pair, asserted by a test (R-08); the value hook is documented as main grounds only, because `ink` on the chrome is 1.00:1. Axe stays with #10, as in 002. |
+| III. Accessible by construction | The token focus ring is on every `:focus-visible` element, survives a missing `tokens.css` (longhands, R-05) and uses `Highlight` in forced colours, tested in a host region with `forced-color-adjust: none` where the rule is observable. A focused prose table shows an inset ring, all four sides visible when flush with the viewport (WCAG 2.4.7). No motion. `--ocelle-target-min` is kept under compact on `<html>`. Prose links are underlined (WCAG 1.4.1). Code, inline code and URLs reflow (1.4.10), and tables are contained so that they do not widen a grid or flex column (1.4.10, tested in grid and flex hosts); the README and spec state that a prose container gets its width from its context, tested in a definite-width modal dialog (operator decision PLAN-FRESH-2-001 (a)); the README states that rule by its cause, sizing from content, with the shrink-to-fit boxes as examples (PLAN-FRESH-3-003). Overflowing tables are keyboard-scrollable (2.1.1) in Chromium hosts; WebKit hosts add `tabindex="0"`, documented as an open limitation (R-06). The caption wraps inside the visible box, every line box asserted (1.4.10), starts at the start edge and stays inside the visible box when the table is scrolled, under `ltr` and `rtl`, each part with a plant that bites alone (operator decision PLAN-FRESH-3-001 (a)). Print is out of scope and stated in the README (PLAN-FRESH-3-002 (b)). Table semantics, including the cell-to-header association, are tested on the accessibility tree (R-06). Every colour pairing the families create is an existing checked pair, asserted by a test (R-08); the value hook is documented as main grounds only, because `ink` on the chrome is 1.00:1. Axe stays with #10, as in 002: the four new stories have no axe run, under 001's recorded exception "Storybook build, visual regression and axe gates absent" (001 plan, Complexity Tracking), whose sunset is the merge of #10. |
 | IV. Strict CSP, offline | An external stylesheet with no `@import`, `url()` or inline style; it needs no `img-src`. The media fixture `page.html` alone adds `img-src 'self'` for its local image, the directive a host needs for its own images, and keeps zero violations (operator decision PLAN-FRESH-2-003 (b), R-09). Fixtures and stories have no style attribute; their layout comes from a served fixture stylesheet and a story-only stylesheet (R-09, R-12). The browser suite asserts zero violations under the strict header, with a control violation. |
-| V. Storybook | One story per family under the 002 Storybook and its CSP test (R-12). `base.css` is linked for the whole preview, so element stories and their baselines always render with it (operator decision PLAN-FRESH-2-004 (a)). Baselines and visual regression stay with #10. |
+| V. Storybook | One story per family under the 002 Storybook and its CSP test (R-12). `base.css` is linked for the whole preview, so element stories and their baselines always render with it (operator decision PLAN-FRESH-2-004 (a)). Baselines and visual regression stay with #10: the four new stories have no visual baseline, under 001's recorded exception "Storybook build, visual regression and axe gates absent" (001 plan, Complexity Tracking), whose sunset is the merge of #10. |
 | VI. Consumer-driven, own code | #6, spec-kitty-design #519, #531 and #535, and kitty-mission-ui's E-23, E-37 and E-39. The CSS is our own; no reset library is copied. |
 | VII. Semver | `base.css`, the four hook attributes and their exact values, and six new tokens are additions: MINOR. `@ocelle/styles` names the tokens version it needs as an exact `peerDependencies` entry (`workspace:0.0.0`, R-01) and in the README. Both CHANGELOGs get entries, and the README documents the hooks, their values and their placement limits (R-14). |
-| VIII. Test-first, non-vacuous | Each phase starts red, Setup's Vitest config change included (the vitest-config test changes first). The build script, the new token-only branch and `renderFamily` are mutation-tested, with unit tests that kill their mutants (R-07, R-12). CSS has no mutation tool, so the source-level checks and browser tests carry it: each source-level guard shares its test with a positive assertion over the same parse (R-11), and every guard is proven able to fail by a named plant, or has a recorded reason why no CSS plant exists in Chromium (list semantics, R-10). The new style-lint option has fail plants and a pass plant. |
+| VIII. Test-first, non-vacuous | Each phase starts red, Setup's Vitest config change included (the vitest-config test changes first). The build script, the new token-only branch and `renderFamily` are mutation-tested, with unit tests that kill their mutants (R-07, R-12). "Changed source is mutation-tested" is read as the mutation gate's scope, 001 FR-028 (TypeScript), a reading the operator approved (decision 19, analysis finding C1, 2026-11-09, human:jeroennouwsdev: "(b) Approved reading (Recommended)"). It is a reading, not an exception. The CSS of `packages/styles/src/*.css` is outside that scope and is covered instead by the source-level checks, the browser tests and the named plants that prove each guard can fail (R-10, R-11): each source-level guard shares its test with a positive assertion over the same parse (R-11), and every guard is proven able to fail by a named plant, or has a recorded reason why no CSS plant exists in Chromium (list semantics, R-10). The new style-lint option has fail plants and a pass plant. |
 | Workflow gates | No gate added or renamed; the registry is unchanged. |
 
 ## Decisions the operator should see at the plan gate
@@ -164,6 +165,16 @@ Decided by the operator at squad round 3 (2026-11-09, human:jeroennouwsdev):
     (Markdown renderers) and the contract state that prose tables are screen scroll boxes, so a printed document
     shows only the columns that fit the page and a host that prints adds its own print rule; the readme test asserts
     the statement in phase 4 (R-14).
+
+Decided by the operator after the analysis of the tasks (2026-11-09, human:jeroennouwsdev):
+
+19. **Mutation scope of constitution VIII** (analysis finding C1, "(b) Approved reading (Recommended)"): VIII's
+    "changed source is mutation-tested" means the mutation gate's scope, 001 FR-028 (TypeScript;
+    `gates/lib/mutation/ranges.ts` `scopePathspecs`). The CSS of `packages/styles/src/*.css` is not in that scope
+    and has no mutation tool in the pinned stack; it is covered instead by the source-level checks (R-11), the
+    browser tests (R-09) and the named plants that prove each guard can fail (R-10, R-11). This is a reading of the
+    principle, not an exception, so Complexity Tracking gains no row (Constitution Check VIII, contracts/checks.md
+    § Mutation scope).
 
 ## Project Structure
 
@@ -240,10 +251,11 @@ package and no new gate.
    - the README and CHANGELOG of styles with the readme test's phase-2 statements (link order, CSP, tokens version,
      base layer, custom-element hosts, the CHANGELOG `base.css` entry), and the tokens README `color-scheme` sentence;
    - the Storybook "Base page" story, with `writeGenerated`, the preview-head link, the narrowed `preview.css`,
-     `stories-layout.css`, `base-content.json` and the `renderFamily` cases of `render.test.ts`.
+     `storybook/.storybook/stories-layout.css` (imported by `preview.ts`), `base-content.json` and the
+     `renderFamily` cases of `render.test.ts`.
 3. **US2 Compact** (P2): the token `line-height-compact` (source, expected, CHANGELOG, README); the compact and value
    rules; browser tests for US2 scenarios 1 to 3 (the undocumented-value case included), scenario 4 without its `h1`
-   half, and scenario 5 for compact alone (scenario 5 needs prose, so phase 4 extends it); the "Compact screen"
+   half, and the nested `regular` regions of FR-004 (scenario 5 needs prose, so phase 4 tests it); the "Compact screen"
    story; the readme test's density and value statements (values, the main-grounds limit of the value hook, the
    CHANGELOG attribute names), red first.
 4. **US3 Prose** (P3): the tokens `line-height-prose`, `font-size-subhead`, `measure-reading`, `measure-cell` and
@@ -265,3 +277,8 @@ Each phase is folded after its approval (`/ocelle-run` step 4.3).
 
 No new exception. 002's exceptions 1 (Storybook page CSP host additions) and 2 (narrowed static scope of the
 Storybook build) apply unchanged to the four new stories. They are still reviewed when #10 extends this Storybook.
+001's exception "Storybook build, visual regression and axe gates absent" (sunset when #10 merges) covers the
+missing axe runs and visual baselines of the four new stories (Constitution Check III and V).
+
+CSS outside mutation testing has no row here: the operator approved it as a reading of constitution VIII (the
+mutation gate's 001 FR-028 scope), not as an exception (decision 19, Constitution Check VIII).

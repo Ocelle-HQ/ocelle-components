@@ -114,7 +114,8 @@ Assumptions, README).
   scenario 4). It is the one fixture served with `img-src 'self'` added to the strict CSP, so its image loads with zero
   violations (operator decision PLAN-FRESH-2-003 (b), research R-09).
 - `media.svg`: the local 2:1 image of `page.html`, served as `image/svg+xml`.
-- `compact.html`: nested compact and regular regions, the value hook in both variants and with an undocumented value
+- `compact.html`: nested compact and regular regions, a region with an undocumented density value
+  (`data-ocelle-density="true"`), the value hook in both variants and with an undocumented value
   (`data-ocelle-value="true"`), both hooks on one element, prose inside compact and compact inside prose.
 - `prose.html`: the User Story 3 fixture (spec): every listed element plus `h5`, `h6` and a nested list; an `<a id="x">`
   target with no `href`; three wide 12-column tables (a caption of at least 80 characters; no caption; a link in one
@@ -128,10 +129,13 @@ Assumptions, README).
   the test opens with `showModal()` through `page.evaluate` (the host requirement of operator decision
   PLAN-FRESH-2-001 (a)).
 - `prose-root.html`: `data-ocelle-prose` on `<html>` (the documented misuse; the container rule does not match it).
-- `wrap.html`: the 300 px two-column `1fr` grid with hooked and unhooked identifiers, an identifier in prose and in a
-  compact `span`.
+- `wrap.html`: the 300 px two-column `1fr` grid with hooked and unhooked identifiers, an identifier with an
+  undocumented value (`data-ocelle-wrap="true"`), an identifier in prose and in a compact `span`.
 - `layout.css`: the host CSS the fixtures need and `base.css` does not provide: the 300 px two-column grid, the grid and
   flex hosts and the definite-width dialog of `prose-hosts.html`, and the `forced-color-adjust: none` host region. It
   holds host CSS only, no rule of `base.css`, and its selectors are `data-fixture` attributes (no class, no style
   attribute). `serve.ts` serves it, and the fixtures that need it link it after `base.css` (research R-09).
 - `plants/*.css`: one stylesheet per guard plant of research R-10.
+- `control.html`: not a file in `fixtures/`; `serve.ts` writes it from 002's `controlPage`
+  (`packages/tokens/test/browser/serve.ts`), a page with one inline `<style>`. It is the one page that must report a
+  violation, exactly one `style-src` violation, which shows that the collector works (SC-001, research R-09).

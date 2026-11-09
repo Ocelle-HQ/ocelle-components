@@ -289,7 +289,7 @@ every `var(--ocelle-*)` as unknown. So:
 parts change):
 - with the option, `line-height: 1.65`, `165%`, `calc(1.65)` and `normal`, and `font: 16px/1.65 …`, are raw;
 - without it, the same values are allowed as in 002;
-- with `{ lineHeight: "token" }` alone (the repository lists), `line-height: var(--ocelle-line-height-prose)` and
+- with `{ lineHeight: "token" }` alone (the repository lists), `line-height: var(--ocelle-line-height-normal)` and
   `line-height: inherit` pass and an unknown `var(--ocelle-nope)` is still reported;
 - an invalid `lineHeight` value is reported as an invalid option.
 
@@ -301,12 +301,14 @@ must kill its mutants.
   finding;
 - `fail-styles-percent-line-height` (`165%`), `fail-styles-calc-line-height` (`calc(1.65)`) and
   `fail-styles-normal-line-height` (`normal`), each in `tree/packages/styles/src/x.css`, one finding each;
-- `pass-styles-line-height-token`: `line-height: var(--ocelle-line-height-prose)` in
-  `tree/packages/styles/src/x.css`, expect pass, so a rule that loses its lists or rejects its options fails a plant;
+- `pass-styles-line-height-token`: `line-height: var(--ocelle-line-height-normal)` in
+  `tree/packages/styles/src/x.css`, expect pass (a token that exists in phase 2; the prose token comes in phase 4), so a rule that loses its lists or rejects its options fails a plant;
 - the existing `pass-line-height` moves from `tree/packages/styles/src/x.css` to `tree/packages/elements/src/x.css`
   (still in the lint's scope through `packages/elements/**/*.css`), with its `why` changed to "A unitless line-height
   (line-height: 1.5) is allowed in element styles (002 FR-024); packages/styles requires a token (003 FR-002)". Where
   it is now, the override would turn it red (PLAN-CORRECTNESS-1-003). The move is part of the lint change in phase 2.
+The plants are not test files under the story configuration's `test_pathspec`, so they land in phase 2's green half
+with the option; the unit tests above are the option's red evidence (analysis finding F1).
 
 **Why**: FR-002 asks for the line-height tokens to be used, and a browser test cannot tell a token from a literal.
 Scoping the option keeps 002's element contract unchanged.
@@ -394,7 +396,9 @@ violations (US1-5, US1-10, SC-001; operator decision PLAN-FRESH-2-003 (b)). `bas
   hosts of `prose-hosts.html`, the `forced-color-adjust: none` region of User Story 1 scenario 4). It holds no rule of
   `base.css`; its selectors are `data-fixture` attributes. A fixture links it after `base.css` only where it needs
   it, as 002 served `font.css` (`packages/tokens/test/browser/serve.ts:42-47`);
-- the plant stylesheets of R-10, linked only where a guard needs a planted rule.
+- the plant stylesheets of R-10, linked only where a guard needs a planted rule;
+- `control.html`, written by `serve.ts` from 002's `controlPage` (one inline `<style>`), the control page whose one
+`style-src` violation shows that the collector reports (SC-001), as in 002.
 
 It reuses `launch`, `collectViolations` and `violations` from `packages/tokens/test/browser/serve.ts` by relative
 import.
@@ -445,6 +449,7 @@ spike, which records that it bites (the helper reports the problem); a plant tha
 | only the region is compact (US2-2) | `body { font-size: var(--ocelle-font-size-sm) }` |
 | root size and target-min under compact on `<html>` (US2-4) | `[data-ocelle-density="compact"] { font-size: var(--ocelle-font-size-sm) }` without `:not(html)` |
 | focus ring under compact on `<html>` (US2-4) | `[data-ocelle-density="compact"] :where(:focus-visible) { outline-width: var(--ocelle-border-width) }` (the root-size plant above cannot change the ring: `focus-width` 3px and `focus-offset` 2px are px tokens, `packages/tokens/src/source.ts:152-153`, PLAN-CORRECTNESS-1-006) |
+| undocumented value of the density hook (FR-005; `data-ocelle-density="true"`) | `[data-ocelle-density] { font-size: var(--ocelle-font-size-sm); line-height: var(--ocelle-line-height-compact) }` (the presence form) |
 | undocumented value of the value hook (US2-3) | `[data-ocelle-value] { color: var(--ocelle-color-ink-muted) }` (the presence form) |
 | prose outside its container (US3-5) | `p { line-height: var(--ocelle-line-height-prose) }` |
 | undocumented value of the prose hook (US3-5) | `[data-ocelle-prose] :where(p) { line-height: var(--ocelle-line-height-prose) }` (the presence form) |
@@ -462,6 +467,7 @@ spike, which records that it bites (the helper reports the problem); a plant tha
 | wrap is opt-in (US4-2) | `* { overflow-wrap: anywhere }` |
 | no ellipsis (US4-1) | `[data-ocelle-wrap] { text-overflow: ellipsis; overflow: hidden; white-space: nowrap }` |
 | identifier copy (US4-3) | `[data-ocelle-wrap] { text-transform: uppercase }` |
+| undocumented value of the wrap hook (FR-005; `data-ocelle-wrap="true"`) | `[data-ocelle-wrap] { overflow-wrap: anywhere }` (the presence form) |
 
 **List semantics have no CSS plant in Chromium** (PLAN-TESTABILITY-1-005; SC-002 lets the plan record why). Squad
 round 1 measured, in Chromium 153, that `ul { list-style: none; display: contents }` and `ul { display: grid }` keep
@@ -491,7 +497,7 @@ above 0) before it measures the ratio.
 |---|---|---|
 | motion (US1-3) | `transition: color 1s`; `animation-name: x`; `scroll-behavior: smooth`; `transition-duration: 1s` inside `@media (prefers-reduced-motion: no-preference)` | — |
 | `forced-color-adjust` (US1-3) | `forced-color-adjust: none` | — |
-| `outline: none` (FR-009) | `:where(a) { outline: none }`; `:where(a) { outline-style: none }`; the same inside `@media (forced-colors: active)` | — |
+| `outline: none` (FR-009) | `:where(a) { outline: none }`; `:where(a) { outline: 0 }`; `:where(a) { outline-style: none }`; the same inside `@media (forced-colors: active)` | — |
 | `@import`, `url()` (US1-5) | `@import "x.css";`; `background-image: url(x.png)` | — |
 | class selector (US1-8) | `.x {}`; `[data-ocelle-prose] p:not(.x) {}` | — |
 | specificity (US1-8) | `#x p {}`; `:root {}` (0,1,0); `:focus-visible {}` (0,1,0); `[data-ocelle-prose] :where(a):hover {}` (0,2,0); `[data-ocelle-prose] p:not(.x) {}` | `[data-ocelle-prose] p {}` (0,1,1); `:where(:root) {}` (0,0,0); `:where(*)::before {}` (0,0,1) |
@@ -580,7 +586,8 @@ then styled by `base.css` alone.
 ## R-13 Measures in `ch` and the line-height pixel values
 
 **Decision**: the tests compare computed values at the default 16 px root.
-- The prose line height 1.65 × 16 px = 26.4 px, and the compact 1.5 × 14 px = 21 px.
+- The prose line height 1.65 × 16 px = 26.4 px, and the compact 1.5 × 14 px = 21 px. A line height is 1.65 times
+  the element's own computed font size, so a 12 px `th` (FR-018) has 19.8 px, while `td` has 26.4 px.
 - `68ch` and `12ch` are compared against the width of `"0"` in the element's font, measured in the page with a canvas
   `measureText`. The measure is a maximum, so a paragraph's box is at most 68 × that width (±1 px).
 
@@ -590,7 +597,8 @@ then styled by `base.css` alone.
 - `packages/styles/README.md` covers:
   - the link order (`tokens.css`, then `base.css`) and the host CSP;
   - the `@ocelle/tokens` version `base.css` needs (the version that adds the six tokens of R-08), matching the
-    `peerDependencies` entry (R-01);
+    `peerDependencies` entry (R-01); before the first release both packages are at 0.0.0, so the README says the pin
+    becomes meaningful at the first release (#11);
   - the four hooks with their values (R-02), and that any other value, `"true"` among them, does nothing;
   - each family, what it styles and its tokens;
   - the rule that prose wins over compact on one element;
@@ -620,9 +628,11 @@ then styled by `base.css` alone.
 - `packages/styles/test/readme.test.ts` checks each statement, as the tokens readme test does. It grows red-first with
   the phases (PLAN-CORRECTNESS-1-010): phase 2 asserts the link order, the CSP, the tokens version, the base layer, the
   custom-element host statement and the CHANGELOG `base.css` entry; phase 3 adds the density and value hooks (README
-  values, the main-grounds limit, the CHANGELOG attribute names); phase 4 adds the prose hook, prose over compact, the
+  values, that any other value does nothing, what the compact-scale family styles and its tokens, the main-grounds
+  limit, the CHANGELOG attribute names); phase 4 adds the prose hook, what the prose family styles and its tokens,
+  prose over compact, the
   `<html>` placement, the host-width cause sentence (asserted as the cause, not as the list of examples), the
-  three-column and WebKit statements, and the print statement; phase 5 adds the wrap hook and
-  SC-006. User Story 1 scenario 6's documentation half is complete only after phase 5.
+  three-column and WebKit statements, and the print statement; phase 5 adds the wrap hook, what the identifier-wrap
+  family styles and its tokens, and SC-006. User Story 1 scenario 6's documentation half is complete only after phase 5.
 - The tokens README sentence on `color-scheme` ("the base styles (#6) apply it…") becomes "`@ocelle/styles`
   `base.css` applies it", and its readme test changes with it.
