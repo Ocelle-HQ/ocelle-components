@@ -1,0 +1,4 @@
+/* Plant (research.md R-10, US2-4): the compact rule without :where(:not(html)), which rescales every rem token. */
+[data-ocelle-density="compact"] {
+  font-size: var(--ocelle-font-size-sm);
+}

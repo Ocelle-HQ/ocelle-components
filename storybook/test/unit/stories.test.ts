@@ -114,14 +114,24 @@ describe("tokens.stories.ts", () => {
 });
 
 // The base-style stories (003 FR-023, research.md R-12): the title "Base styles" with one story per family that has
-// landed; phase 2 adds the Base page, which renders renderFamily("base").
+// landed; phase 2 adds the Base page, which renders renderFamily("base"), and phase 3 the Compact screen, which
+// renders renderFamily("compact").
 describe("base.stories.ts", () => {
   it("has the title Base styles and the Base page story, rendering the base family's markup", () => {
     expect(base.default).toEqual({ title: "Base styles" });
-    expect(Object.keys(base).filter((key) => key !== "default")).toEqual(["BasePage"]);
+    expect(Object.keys(base).filter((key) => key !== "default")).toEqual(["BasePage", "CompactScreen"]);
     expect(base.BasePage.name).toBe("Base page");
     const markup = (base.BasePage as unknown as Story).render({}, { globals: {} });
     expect(markup).toBe(renderFamily("base"));
     expect(elements(parseFragment(String(markup)).childNodes).filter((element) => element.tagName === "article").map((element) => attr(element, "data-story"))).toEqual(["base"]);
+  });
+
+  it("has the Compact screen story, rendering the compact family's markup with the compact and value hooks", () => {
+    expect(base.CompactScreen.name).toBe("Compact screen");
+    const markup = (base.CompactScreen as unknown as Story).render({}, { globals: {} });
+    expect(markup).toBe(renderFamily("compact"));
+    const all = elements(parseFragment(String(markup)).childNodes);
+    expect(all.filter((element) => element.tagName === "article").map((element) => [attr(element, "data-story"), attr(element, "data-ocelle-density")])).toEqual([["compact", "compact"]]);
+    expect([...new Set(all.map((element) => attr(element, "data-ocelle-value")).filter((value) => value !== undefined))].sort()).toEqual(["", "ink"]);
   });
 });

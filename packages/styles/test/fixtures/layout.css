@@ -21,3 +21,8 @@
 [data-fixture="focus"] {
   color: var(--ocelle-color-focus);
 }
+
+/* A probe whose inline size is --ocelle-target-min, read by the compact-root test (US2-4, FR-012). */
+[data-fixture="target-min"] {
+  inline-size: var(--ocelle-target-min);
+}

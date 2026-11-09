@@ -90,6 +90,16 @@ const content: Content = {
     samp: "exit & 2",
     pre: "line <1>\n  line 2",
   },
+  compact: {
+    heading: "Drift & <2>",
+    paragraph: 'Dense "text"',
+    facts: [
+      { label: "Id <a>", value: "3f2a & 9c1b" },
+      { label: 'At "t"', value: "2026 > 2025" },
+    ],
+    note: "Run & see",
+    command: "pnpm <test>",
+  },
 };
 
 describe("renderFamily", () => {
@@ -108,7 +118,7 @@ describe("renderFamily", () => {
 
   it("renders a list item per entry, and none for an empty list", () => {
     const items = (list: readonly string[]): number =>
-      elements(parseFragment(renderFamily("base", { base: { ...content.base, list } })).childNodes).filter((element) => element.tagName === "li").length;
+      elements(parseFragment(renderFamily("base", { ...content, base: { ...content.base, list } })).childNodes).filter((element) => element.tagName === "li").length;
     expect([items([]), items(["a"]), items(["a", "b", "c"])]).toEqual([0, 1, 3]);
   });
 
@@ -119,5 +129,46 @@ describe("renderFamily", () => {
     expect(all.filter((element) => element.attrs.some((attribute) => attribute.name === "style" || attribute.name === "class"))).toEqual([]);
     expect(all.filter((element) => element.tagName === "li").length).toBeGreaterThanOrEqual(2);
     expect(all.filter((element) => ["h1", "a", "button", "code", "kbd", "samp", "pre"].includes(element.tagName) && element.childNodes.length === 0)).toEqual([]);
+  });
+});
+
+// The Compact screen story (003 FR-023, research.md R-12, phase 3): a region with the compact hook
+// (data-ocelle-density="compact") holding a heading, a paragraph and a list of facts whose values carry the value hook
+// (data-ocelle-value=""), and a command in the hook's ink variant (data-ocelle-value="ink").
+describe("renderFamily(\"compact\")", () => {
+  it("renders the Compact screen from the given text, escaping & < > \" in every text", () => {
+    expect(renderFamily("compact", content)).toBe(
+      '<article data-story="compact" data-ocelle-density="compact">' +
+        "<h1>Drift &amp; &lt;2&gt;</h1>" +
+        "<p>Dense &quot;text&quot;</p>" +
+        '<dl><dt>Id &lt;a&gt;</dt><dd data-ocelle-value="">3f2a &amp; 9c1b</dd><dt>At &quot;t&quot;</dt><dd data-ocelle-value="">2026 &gt; 2025</dd></dl>' +
+        '<p>Run &amp; see <span data-ocelle-value="ink">pnpm &lt;test&gt;</span></p>' +
+        "</article>",
+    );
+  });
+
+  it("renders a term and a value per fact, and none for an empty list", () => {
+    const facts = (list: Content["compact"]["facts"]): number[] => {
+      const all = elements(parseFragment(renderFamily("compact", { ...content, compact: { ...content.compact, facts: list } })).childNodes);
+      return ["dt", "dd"].map((tag) => all.filter((element) => element.tagName === tag).length);
+    };
+    const fact = { label: "a", value: "b" };
+    expect([facts([]), facts([fact]), facts([fact, fact, fact])]).toEqual([
+      [0, 0],
+      [1, 1],
+      [3, 3],
+    ]);
+  });
+
+  it("renders the Compact screen from base-content.json by default: the compact hook, the value hook in both variants, no style attribute and no class", () => {
+    const all = elements(parseFragment(renderFamily("compact")).childNodes);
+    const value = (element: Element): string | undefined => element.attrs.find((attribute) => attribute.name === "data-ocelle-value")?.value;
+    expect(all.filter((element) => element.attrs.some((attribute) => attribute.name === "data-ocelle-density")).map((element) => [element.tagName, element.attrs.find((attribute) => attribute.name === "data-ocelle-density")?.value])).toEqual([["article", "compact"]]);
+    expect(all.filter((element) => value(element) === "").length).toBeGreaterThanOrEqual(3);
+    expect(all.filter((element) => value(element) === "ink").length).toBe(1);
+    expect(all.filter((element) => value(element) !== undefined && value(element) !== "" && value(element) !== "ink")).toEqual([]);
+    expect(all.filter((element) => element.attrs.some((attribute) => attribute.name === "style" || attribute.name === "class"))).toEqual([]);
+    expect(all.filter((element) => value(element) !== undefined && element.childNodes.length === 0)).toEqual([]);
+    expect(["article", "h1", "p", "dl", "dt", "dd", "span"].filter((tag) => !all.some((element) => element.tagName === tag))).toEqual([]);
   });
 });

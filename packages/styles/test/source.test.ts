@@ -50,6 +50,38 @@ const baseLayer: readonly RuleEntry[] = [
 ];
 const baseSelectors = [...new Set(baseLayer.flatMap((rule) => rule.selectors))];
 
+/** data-model.md § Rule table, compact scale, in its order after the base layer (R-03, R-04). */
+const compactScale: readonly RuleEntry[] = [
+  {
+    media: [],
+    selectors: ['[data-ocelle-density="compact"]:where(:not(html))', '[data-ocelle-density="compact"] > :where(body)'],
+    declarations: [
+      ["font-size", "var(--ocelle-font-size-sm)"],
+      ["line-height", "var(--ocelle-line-height-compact)"],
+    ],
+  },
+  {
+    media: [],
+    selectors: ['[data-ocelle-density="regular"]:where(:not(html))', '[data-ocelle-density="regular"] > :where(body)'],
+    declarations: [
+      ["font-size", "var(--ocelle-font-size-md)"],
+      ["line-height", "var(--ocelle-line-height-normal)"],
+    ],
+  },
+  {
+    media: [],
+    selectors: ['[data-ocelle-value=""]', '[data-ocelle-value="ink"]'],
+    declarations: [
+      ["font-family", "var(--ocelle-font-sans)"],
+      ["font-size", "var(--ocelle-font-size-sm)"],
+      ["font-variant-numeric", "var(--ocelle-figures)"],
+      ["color", "var(--ocelle-color-ink-muted)"],
+    ],
+  },
+  { media: [], selectors: ['[data-ocelle-value="ink"]'], declarations: [["color", "var(--ocelle-color-ink)"]] },
+];
+const compactSelectors = [...new Set(compactScale.flatMap((rule) => rule.selectors))];
+
 /** How many problems a check reports on each plant string. */
 function reports(check: (sheet: ReturnType<typeof parse>) => string[], plants: readonly string[]): number[] {
   return plants.map((plant) => check(parse(plant)).length);
@@ -58,6 +90,10 @@ function reports(check: (sheet: ReturnType<typeof parse>) => string[], plants: r
 describe("src/base.css as shipped (buildPlan(text)[0].content)", () => {
   it("opens with the base layer of data-model § Rule table, in its order, with exactly its declarations (R-03)", () => {
     expect(rules(root).slice(0, baseLayer.length)).toEqual(baseLayer);
+  });
+
+  it("follows the base layer with the compact scale of data-model § Rule table, in its order, with exactly its declarations (R-03, R-04)", () => {
+    expect(rules(root).slice(baseLayer.length, baseLayer.length + compactScale.length)).toEqual(compactScale);
   });
 
   it("US1-3: has the focus rule's four longhands and the forced-colours rule, and declares no motion and no forced-color-adjust: none", () => {
@@ -124,5 +160,12 @@ describe("src/base.css as shipped (buildPlan(text)[0].content)", () => {
       [0, 0, 2],
       [1, 0, 1],
     ]);
+  });
+
+  it("US2 (FR-005, FR-025): holds every compact-scale selector, each one hook attribute at (0,1,0), and no selector has a class or exceeds its bound", () => {
+    expect(compactSelectors.filter((selector) => !selectors(root).includes(selector))).toEqual([]);
+    expect(compactSelectors.map(specificity)).toEqual(compactSelectors.map(() => [0, 1, 0]));
+    expect(classProblems(root)).toEqual([]);
+    expect(specificityProblems(root)).toEqual([]);
   });
 });

@@ -1,0 +1,5 @@
+/* Plant (research.md R-10, FR-005): the presence form of the density hook, which an undocumented value matches. */
+[data-ocelle-density] {
+  font-size: var(--ocelle-font-size-sm);
+  line-height: var(--ocelle-line-height-compact);
+}

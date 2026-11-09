@@ -8,3 +8,5 @@ const meta: Meta = { title: "Base styles" };
 export default meta;
 
 export const BasePage: StoryObj = { name: "Base page", render: () => renderFamily("base") };
+
+export const CompactScreen: StoryObj = { name: "Compact screen", render: () => renderFamily("compact") };
