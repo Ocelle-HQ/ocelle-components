@@ -235,8 +235,11 @@ when the change is its own record.
      `summary.sh` writes those.
    - **Recurrence.** Check every open `Candidate:` in `log.md` against this mission. When one happened again, the new
      entry says `Recurred (first: <date>)` instead of repeating the old text.
-   - **Follow-ups.** For each candidate seen in two or more missions, propose a follow-up issue (an op, or a fold
-     into a mission in progress) with its title and the diary dates. File it only on the operator's yes (rule 5).
+   - **Follow-ups.** A candidate about the flow itself (skills, profiles, Spec Kit extensions, `tooling/speckit/`)
+     stays in the diary: when it was seen in two or more missions, its entry says `Follow-up candidate, seen in N
+     missions`, and no GitHub issue is filed (operator decision 2026-11-09). For a candidate about the product or the
+     repository (packages, gates, CI), propose a follow-up issue (an op, or a fold into a mission in progress) with
+     its title and the diary dates, and file it only on the operator's yes (rule 5).
    - **Frontend missions** (styles, elements, Storybook, browser tests): add what would have saved a round to
      `knowledge/speckit-flows/findings/frontend-missions.md`.
 
