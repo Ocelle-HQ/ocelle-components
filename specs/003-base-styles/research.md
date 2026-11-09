@@ -11,8 +11,12 @@ the implementer stops and the orchestrator asks the operator.
 `packages/tokens/scripts/build.ts`, with one model of the plan (PLAN-CORRECTNESS-1-008):
 - a pure `buildPlan(css: string)` returns `[{ path: "base.css", content: css }]`, a content entry of the tokens
   `PlanEntry` shape, not a `copyFrom` entry, so the plan carries the text the tests parse;
-- an I/O `build()` reads `src/base.css`, passes its text to `buildPlan` and writes each entry; its lines carry the
-  I/O-boundary Stryker records naming `packages/styles/test/build.test.ts`;
+- an I/O `build()` reads `src/base.css`, passes its text to `buildPlan` and writes each entry. Its lines carry no
+  Stryker record: `packages/styles/test/build.test.ts` calls `build()` in process with a temporary package, so it
+  kills their mutants. Only the two `import.meta.main` process-boundary lines (the script's package directory and
+  its entry point, run only as `node scripts/build.ts`) keep an I/O-boundary record naming that test. *Amended by
+  the operator round of 2026-11-09 (phase 2 round 2, O2-02; landing review L1-03)*: phase 2 recorded five
+  I/O-boundary records on `build()`'s lines as well;
 - `build.test.ts` asserts that `buildPlan` returns the given text unchanged under `base.css`, and that `build()`
   writes a `dist/base.css` byte-identical to `src/base.css`;
 - the source-level checks (R-11) read `src/base.css` once and parse `buildPlan(text)[0].content`, which is therefore
@@ -266,10 +270,32 @@ added: 001 FR-005 keeps the tests on Chromium.
 ## R-07 Line heights as tokens (FR-002)
 
 **Decision**: the rule `ocelle/token-only` gets a secondary option, `lineHeight: "token"`. With it, a `line-height`
-value, and the line-height part of a `font` shorthand (after the `/`), passes only if it is a single
-`var(--ocelle-*)` token reference or a CSS-wide keyword (`inherit`, `initial`, `unset`, `revert`, `revert-layer`).
-Everything else is raw there: a unitless number (`1.65`), a percentage (`165%`), any `calc()` (`calc(1.65)`), and a
-keyword such as `normal` (PLAN-FRESH-1-003). Today token-only lets `%` through for any property
+value, and the line-height part of a `font` shorthand (the part right after its top-level `/`), passes only if it is
+a single `var(--ocelle-line-height-*)` token reference without a fallback or a CSS-wide keyword (`inherit`,
+`initial`, `unset`, `revert`, `revert-layer`). Everything else is raw there: a unitless number (`1.65`), a percentage
+(`165%`), any `calc()` (`calc(1.65)`), a keyword such as `normal` (PLAN-FRESH-1-003), and a token that is not a line
+height (`var(--ocelle-space-4)`). A `font` shorthand with no line-height part is raw too, because it resets
+`line-height` to `normal`; only a `font` value that is a CSS-wide keyword alone may omit it.
+
+*Scope amended by the operator round of 2026-11-09 (phase 2 round 2, O2-01; landing review L1-01).* The phase 2
+option covered only the part after the `/` and accepted any `var(--ocelle-*)`, so a slash-less `font` and
+`line-height: var(--ocelle-space-4)` passed, short of FR-002's "every `line-height` in `packages/styles`". The rules,
+all under the option only:
+- **Line-height token**: a `var()` (function name in any case) with exactly one argument node, a word that starts
+  with `--ocelle-line-height-` (case-sensitive, as custom property names are). Any fallback makes it raw, as before
+  (`var(--ocelle-line-height-normal, 1.5)` is raw), so a fallback never matters for passing. Whether the name is a
+  real token stays the separate unknown-token check of 002 (`var(--ocelle-line-height-nope)` is reported as unknown,
+  not as raw). The raw value reported is the value trimmed, as for any other raw line height.
+- **CSS-wide keyword**: one of the five keywords above, compared in lower case: in `line-height`, the whole value;
+  for `font`, the value trimmed and lower-cased equals one of them (`font: inherit`, `font: INHERIT`). Nothing else is
+  a CSS-wide keyword: `normal`, system-font keywords (`caption`, `menu`) and `var()` are not.
+- **`font` without a line height**: a `font` value that has no top-level `/` (a `/` inside a function, a `var()`
+  fallback or a string does not count) and is not a CSS-wide keyword is raw as a whole: its raw list is the one entry
+  `value.trim()`, so the declaration gets one finding, `font: raw <value>`. A lone `var()` (`font: var(--x)`) is raw
+  under this rule, since its line height cannot be seen. A `font` value with a `/` keeps the phase 2 check: the part
+  right after the `/` by the line-height rule, every other part by 002's font checks.
+
+Without the option nothing changes: 002's checks apply to `line-height` and `font` in element styles. Today token-only lets `%` through for any property
 (`gates/stylelint/token-only.ts:53`), any number inside `calc()` (:55) and any non-colour identifier (:60), so dropping
 `line-height` from the unitless set alone would leave those three holes. Unitless numbers stay allowed for `flex`,
 `z-index`, `opacity` and `order`. `stylelint.config.ts` gets an override,
@@ -288,6 +314,9 @@ every `var(--ocelle-*)` as unknown. So:
 **Unit tests** in `gates/test/token-only.test.ts` (and `gates/test/token-only-parts.test.ts` if `rawValues` or its
 parts change):
 - with the option, `line-height: 1.65`, `165%`, `calc(1.65)` and `normal`, and `font: 16px/1.65 …`, are raw;
+- with the option (O2-01), `line-height: var(--ocelle-space-4)` and `font: var(--ocelle-font-size-md)/var(--ocelle-space-4) …`
+  have the raw line height `var(--ocelle-space-4)`, and a slash-less `font` that is not a CSS-wide keyword
+  (`font: var(--ocelle-font-size-md) var(--ocelle-font-sans)`) is raw as its trimmed value;
 - without it, the same values are allowed as in 002;
 - with `{ lineHeight: "token" }` alone (the repository lists), `line-height: var(--ocelle-line-height-normal)` and
   `line-height: inherit` pass and an unknown `var(--ocelle-nope)` is still reported;
@@ -301,6 +330,9 @@ must kill its mutants.
   finding;
 - `fail-styles-percent-line-height` (`165%`), `fail-styles-calc-line-height` (`calc(1.65)`) and
   `fail-styles-normal-line-height` (`normal`), each in `tree/packages/styles/src/x.css`, one finding each;
+- `fail-styles-font-without-line-height` (`font: var(--ocelle-font-size-md) var(--ocelle-font-sans)`) and
+  `fail-styles-other-token-line-height` (`line-height: var(--ocelle-space-4)`), each in
+  `tree/packages/styles/src/x.css`, one `ocelle/token-only` finding each (O2-01, added in the phase 2 fix-2 round);
 - `pass-styles-line-height-token`: `line-height: var(--ocelle-line-height-normal)` in
   `tree/packages/styles/src/x.css`, expect pass (a token that exists in phase 2; the prose token comes in phase 4), so a rule that loses its lists or rejects its options fails a plant;
 - the existing `pass-line-height` moves from `tree/packages/styles/src/x.css` to `tree/packages/elements/src/x.css`

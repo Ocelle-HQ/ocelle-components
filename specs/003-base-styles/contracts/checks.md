@@ -4,13 +4,15 @@
 
 | Gate | Change | Plant |
 |---|---|---|
-| `style-lint` | `ocelle/token-only` gets the secondary option `lineHeight: "token"`, set for `packages/styles/**/*.css` through a `stylelint.config.ts` override (research R-07): there a `line-height` value, or the line-height part of `font`, passes only as a single `var(--ocelle-*)` or a CSS-wide keyword. `validateOptions` gains `lineHeight: ["token"]`; `optionLists` uses given lists only when `tokens` or `elementProperties` is present, else the repository lists | fail: `fail-styles-literal-line-height` (`1.65`), `fail-styles-percent-line-height` (`165%`), `fail-styles-calc-line-height` (`calc(1.65)`), `fail-styles-normal-line-height` (`normal`), each `tree/packages/styles/src/x.css` with one `ocelle/token-only` finding; pass: `pass-styles-line-height-token` (`var(--ocelle-line-height-normal)` in `tree/packages/styles/src/x.css`; a token that exists in phase 2, before the prose token); moved: `pass-line-height` from `tree/packages/styles/src/x.css` to `tree/packages/elements/src/x.css`, `why` updated, still a pass |
+| `style-lint` | `ocelle/token-only` gets the secondary option `lineHeight: "token"`, set for `packages/styles/**/*.css` through a `stylelint.config.ts` override (research R-07): there a `line-height` value, or the line-height part of `font` (after its `/`), passes only as a single `var(--ocelle-line-height-*)` without a fallback or a CSS-wide keyword, and a `font` value with no `/` that is not a CSS-wide keyword is raw (scope amended by the operator round of 2026-11-09, phase 2 round 2, O2-01; research R-07). `validateOptions` gains `lineHeight: ["token"]`; `optionLists` uses given lists only when `tokens` or `elementProperties` is present, else the repository lists | fail: `fail-styles-literal-line-height` (`1.65`), `fail-styles-percent-line-height` (`165%`), `fail-styles-calc-line-height` (`calc(1.65)`), `fail-styles-normal-line-height` (`normal`), and since O2-01 `fail-styles-font-without-line-height` (`font: var(--ocelle-font-size-md) var(--ocelle-font-sans)`) and `fail-styles-other-token-line-height` (`line-height: var(--ocelle-space-4)`), each `tree/packages/styles/src/x.css` with one `ocelle/token-only` finding; pass: `pass-styles-line-height-token` (`var(--ocelle-line-height-normal)` in `tree/packages/styles/src/x.css`; a token that exists in phase 2, before the prose token); moved: `pass-line-height` from `tree/packages/styles/src/x.css` to `tree/packages/elements/src/x.css`, `why` updated, still a pass |
 | `prefix` | none: it already scans `packages/styles/**` including `dist/base.css` after the build | the existing `monospace` plants cover it |
 | `csp` | none: `dist/base.css` is counted; CSS cannot hold the constructs it reports | — |
 | `contrast`, `brand-rules` | none: no colour token added (research R-08); the new type and shell tokens pass `validateSource` | — |
 
-The registry (`gates/gates.json`, `gates/lib/registry.ts`, `ci.yml`, `gates/README.md`, 001
-`contracts/ci-checks.md`) is unchanged: no gate is added or renamed.
+The registry (`gates/gates.json`, `gates/lib/registry.ts`, `ci.yml`, 001 `contracts/ci-checks.md`) is unchanged: no
+gate is added or renamed. `gates/README.md` changes only in the plant summary of its `style-lint` row: the
+`packages/styles` line-height clause and the new plants (landing review L1-02, folded by the operator round of
+2026-11-09).
 
 ## Tests added
 
@@ -21,7 +23,7 @@ The registry (`gates/gates.json`, `gates/lib/registry.ts`, `ci.yml`, `gates/READ
 | `styles` | `packages/styles/test/pairs.test.ts` | unit | US3-6's contrast half: each colour pairing of research R-08 is a `checked` pair in both themes in `packages/tokens/contrast/pairs.json`; plant: a list with `color-link` on `color-chrome` |
 | `styles` | `packages/styles/test/readme.test.ts` | documentation | US1-6 README and CHANGELOG statements, SC-006, and the statements of research R-14, growing red-first per phase: phase 2 link order, CSP, tokens version, base layer, custom-element hosts, CHANGELOG `base.css`; phase 3 density and value (values, that any other value of a hook attribute, `"true"` among them, has no effect, what the compact-scale family styles and its tokens, main grounds only, CHANGELOG names); phase 4 prose (values, what the prose family styles and its tokens, prose over compact, not on `<html>`, the host-width cause sentence (sizing from content, asserted as the cause rather than the list of examples; PLAN-FRESH-3-003), three-column tables, the WebKit limitation, print out of scope (PLAN-FRESH-3-002 (b))); phase 5 wrap (what the identifier-wrap family styles and its tokens) and SC-006 |
 | `styles-browser` (node + Playwright, not in mutation runs) | `packages/styles/test/browser/*.test.ts` | browser | every other acceptance scenario of US1 to US4, under the strict CSP; each guard with its plant or its recorded reason (research R-10); table semantics on the AX-tree structure (research R-06) |
-| `gates` | `gates/test/token-only.test.ts` (and `token-only-parts.test.ts` if `rawValues` changes) | unit | the `lineHeight: "token"` option: raw values with it, allowed without it, token and CSS-wide keyword pass with the repository lists, invalid option reported (research R-07) |
+| `gates` | `gates/test/token-only.test.ts` (and `token-only-parts.test.ts` if `rawValues` changes) | unit | the `lineHeight: "token"` option: raw values with it, allowed without it, token and CSS-wide keyword pass with the repository lists, invalid option reported; since O2-01 a non-line-height token as a line height and a slash-less `font` that is not a CSS-wide keyword are raw with it and allowed without it (research R-07) |
 | `gates` | `gates/test/vitest-config.test.ts` | unit | the mutation-excluded list gains `styles-browser`; `packages/styles/test/browser/*.test.ts` belong to `styles-browser` only (phase 1, red first) |
 | `tokens` | the existing token tests | unit | the six new tokens (`expected.ts`, CHANGELOG, README) |
 | `tokens-browser` | `packages/tokens/test/browser/values.test.ts` (changed) | browser | the probe block gets `container-type: inline-size`, so the `measure-container` probe (`width`, 1000) resolves `100cqi` against the 1000px query container, not the 1280px viewport; the other probes' values are unchanged (research R-08, PLAN-FRESH-2-002) |
@@ -35,8 +37,10 @@ exports nothing.
 
 ## Mutation scope
 
-`packages/styles/scripts/build.ts` is in the existing scope (`packages/*/**/*.ts`). The I/O lines carry the
-I/O-boundary record naming `packages/styles/test/build.test.ts`, as in tokens. The new `lineHeight` branch of
+`packages/styles/scripts/build.ts` is in the existing scope (`packages/*/**/*.ts`). `build()`'s lines carry no
+Stryker record: `packages/styles/test/build.test.ts` runs `build()` in process and kills their mutants. Only the two
+`import.meta.main` process-boundary lines keep the I/O-boundary record naming that test (operator round of
+2026-11-09, phase 2 round 2, O2-02; research R-01). The new `lineHeight` branch of
 `gates/stylelint/token-only.ts` is in scope and killed by the unit tests above. `storybook/stories/render.ts`
 (`renderFamily`) is in scope (`storybook/stories/**/*.ts`, story files excluded) and killed by `render.test.ts`; the
 stories' prose text is in `storybook/stories/base-content.json`, outside the scope.
