@@ -1,0 +1,96 @@
+Scope: all 5 workspace projects
+✓ Lockfile passes supply-chain policies (verified 1h ago)
+Lockfile is up to date, resolution step is skipped
+Packages are hard linked from the content-addressable store to the virtual store.
+  Content-addressable store is at: /root/.local/share/pnpm/store/v11
+  Virtual store is at:             node_modules/.pnpm
+Packages: +469
+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+Progress: resolved 469, reused 469, downloaded 0, added 469, done
+
+devDependencies:
++ @eslint/js 10.0.1
++ @stryker-mutator/core 10.1.1
++ @stryker-mutator/typescript-checker 10.1.1
++ @stryker-mutator/vitest-runner 10.1.1
++ @types/node 26.6.5
++ @vitest/browser-playwright 5.0.5
++ @vitest/eslint-plugin 1.6.28
++ eslint 10.13.0
++ jiti 2.7.0
++ parse5 8.0.1
++ playwright 1.64.1
++ postcss 8.5.31
++ postcss-lit 1.4.1
++ postcss-selector-parser 7.1.7
++ postcss-value-parser 4.2.0
++ stylelint 17.16.0
++ typescript 6.0.3
++ typescript-eslint 8.72.0
++ vite 8.3.5
++ vitest 5.0.5
+
+Done in 309ms using pnpm v12.16.1
+$ node gates/bin/setup-offline.ts
+setup: installed offline; Chromium at /tmp/claude-0/-home-user-ocelle-components/181e1231-8fd5-5f31-9d9d-498e593ba7cf/scratchpad/pw/chromium-1248/chrome-linux64/chrome
+$ node gates/bin/test.ts
+packages/tokens/test/browser/font.test.ts:158: unit-tests: the brand font under exactly the constitution IV CSP, no font-src (US2 scenario 6) reports the font file as the only violation, renders in a fallback family of --ocelle-font-sans, and keeps every token's value: AssertionError: expected [ '' ] to deeply equal []
+packages/tokens/test/browser/themes.test.ts:121: unit-tests: the six theme conditions (FR-006) system-light: :root defines exactly the table's names, and every colour has its light value: AssertionError: expected [ '--ocelle-bar-block-narrow', …(108) ] to deeply equal [ '--ocelle-bar-block-narrow', …(109) ]
+packages/tokens/test/browser/themes.test.ts:121: unit-tests: the six theme conditions (FR-006) system-dark: :root defines exactly the table's names, and every colour has its dark value: AssertionError: expected [ '--ocelle-bar-block-narrow', …(108) ] to deeply equal [ '--ocelle-bar-block-narrow', …(109) ]
+packages/tokens/test/browser/themes.test.ts:121: unit-tests: the six theme conditions (FR-006) no-preference: :root defines exactly the table's names, and every colour has its light value: AssertionError: expected [ '--ocelle-bar-block-narrow', …(108) ] to deeply equal [ '--ocelle-bar-block-narrow', …(109) ]
+packages/tokens/test/browser/themes.test.ts:121: unit-tests: the six theme conditions (FR-006) system-dark+data-theme=light: :root defines exactly the table's names, and every colour has its light value: AssertionError: expected [ '--ocelle-bar-block-narrow', …(108) ] to deeply equal [ '--ocelle-bar-block-narrow', …(109) ]
+packages/tokens/test/browser/themes.test.ts:121: unit-tests: the six theme conditions (FR-006) system-light+data-theme=dark: :root defines exactly the table's names, and every colour has its dark value: AssertionError: expected [ '--ocelle-bar-block-narrow', …(108) ] to deeply equal [ '--ocelle-bar-block-narrow', …(109) ]
+packages/tokens/test/browser/themes.test.ts:121: unit-tests: the six theme conditions (FR-006) no-preference+data-theme=dark: :root defines exactly the table's names, and every colour has its dark value: AssertionError: expected [ '--ocelle-bar-block-narrow', …(108) ] to deeply equal [ '--ocelle-bar-block-narrow', …(109) ]
+packages/tokens/test/browser/values.test.ts:82: unit-tests: used values under the six theme conditions system-light: every non-colour token has its light used value: AssertionError: expected { …(70) } to deeply equal { …(70) }
+packages/tokens/test/browser/values.test.ts:82: unit-tests: used values under the six theme conditions system-dark: every non-colour token has its dark used value: AssertionError: expected { …(70) } to deeply equal { …(70) }
+packages/tokens/test/browser/values.test.ts:82: unit-tests: used values under the six theme conditions no-preference: every non-colour token has its light used value: AssertionError: expected { …(70) } to deeply equal { …(70) }
+packages/tokens/test/browser/values.test.ts:82: unit-tests: used values under the six theme conditions system-dark+data-theme=light: every non-colour token has its light used value: AssertionError: expected { …(70) } to deeply equal { …(70) }
+packages/tokens/test/browser/values.test.ts:82: unit-tests: used values under the six theme conditions system-light+data-theme=dark: every non-colour token has its dark used value: AssertionError: expected { …(70) } to deeply equal { …(70) }
+packages/tokens/test/browser/values.test.ts:82: unit-tests: used values under the six theme conditions no-preference+data-theme=dark: every non-colour token has its dark used value: AssertionError: expected { …(70) } to deeply equal { …(70) }
+packages/tokens/test/browser/values.test.ts:89: unit-tests: used values under the six theme conditions the theme-independent tokens are the same in all six conditions (US1 scenario 6): AssertionError: expected [ { …(65) }, { …(65) }, …(4) ] to deeply equal [ { …(65) }, { …(65) }, …(4) ]
+packages/tokens/test/browser/values.test.ts:112: unit-tests: reduced motion (FR-007, US1 scenario 7) motion-fast and motion-base are 0ms under prefers-reduced-motion: reduce in light, easing unchanged: AssertionError: expected { …(70) } to deeply equal { …(70) }
+packages/tokens/test/browser/values.test.ts:112: unit-tests: reduced motion (FR-007, US1 scenario 7) motion-fast and motion-base are 0ms under prefers-reduced-motion: reduce in dark, easing unchanged: AssertionError: expected { …(70) } to deeply equal { …(70) }
+packages/styles/test/browser/compact.test.ts:46: unit-tests: US2-1: the compact hook sets 14 px / 1.5 on the element, and its descendants inherit both (FR-012) in light, and data-ocelle-density="true" sets no compact scale (FR-005): AssertionError: expected { compact: { …(2) }, …(2) } to deeply equal { compact: { …(2) }, …(2) }
+packages/styles/test/browser/compact.test.ts:46: unit-tests: US2-1: the compact hook sets 14 px / 1.5 on the element, and its descendants inherit both (FR-012) in dark, and data-ocelle-density="true" sets no compact scale (FR-005): AssertionError: expected { compact: { …(2) }, …(2) } to deeply equal { compact: { …(2) }, …(2) }
+packages/styles/test/browser/compact.test.ts:68: unit-tests: US2-2: only the compact region and its descendants use the compact scale (FR-012) in light: AssertionError: expected [ 'compact: 16px / 23.2px', …(2) ] to deeply equal []
+packages/styles/test/browser/compact.test.ts:68: unit-tests: US2-2: only the compact region and its descendants use the compact scale (FR-012) in dark: AssertionError: expected [ 'compact: 16px / 23.2px', …(2) ] to deeply equal []
+packages/styles/test/browser/compact.test.ts:134: unit-tests: US2-3: the value hook sets the value text style, and data-ocelle-value="true" sets none of it (FR-013, FR-005) in light, inside and outside a compact region, in both variants: AssertionError: expected { value: { family: true, …(4) }, …(3) } to deeply equal { value: { family: true, …(4) }, …(3) }
+packages/styles/test/browser/compact.test.ts:134: unit-tests: US2-3: the value hook sets the value text style, and data-ocelle-value="true" sets none of it (FR-013, FR-005) in dark, inside and outside a compact region, in both variants: AssertionError: expected { value: { family: true, …(4) }, …(3) } to deeply equal { value: { family: true, …(4) }, …(3) }
+packages/styles/test/browser/compact.test.ts:177: unit-tests: US2-4: the compact hook on <html> makes the body compact and keeps the root size, the rem tokens and the ring (FR-012, R-04) in light: AssertionError: expected [ 'body: 16px / 23.2px', …(3) ] to deeply equal []
+packages/styles/test/browser/compact.test.ts:177: unit-tests: US2-4: the compact hook on <html> makes the body compact and keeps the root size, the rem tokens and the ring (FR-012, R-04) in dark: AssertionError: expected [ 'body: 16px / 23.2px', …(3) ] to deeply equal []
+packages/styles/test/browser/compact.test.ts:202: unit-tests: FR-004: data-ocelle-density="regular" returns a region nested in a compact one to the regular scale (R-02) in light: AssertionError: expected { 'compact-p': { …(2) }, …(3) } to deeply equal { 'compact-p': { …(2) }, …(3) }
+packages/styles/test/browser/compact.test.ts:202: unit-tests: FR-004: data-ocelle-density="regular" returns a region nested in a compact one to the regular scale (R-02) in dark: AssertionError: expected { 'compact-p': { …(2) }, …(3) } to deeply equal { 'compact-p': { …(2) }, …(3) }
+storybook/test/unit/render.test.ts:139: unit-tests: renderFamily("compact") renders the Compact screen from the given text, escaping & < > " in every text: AssertionError: expected '' to be '<article data-story="compact" data-oc…' // Object.is equality
+storybook/test/unit/render.test.ts:150: unit-tests: renderFamily("compact") renders a term and a value per fact, and none for an empty list: AssertionError: expected [ [ +0, +0 ], [ +0, +0 ], [ +0, +0 ] ] to deeply equal [ [ +0, +0 ], [ 1, 1 ], [ 3, 3 ] ]
+storybook/test/unit/render.test.ts:163: unit-tests: renderFamily("compact") renders the Compact screen from base-content.json by default: the compact hook, the value hook in both variants, no style attribute and no class: AssertionError: expected [] to deeply equal [ [ 'article', 'compact' ] ]
+storybook/test/unit/stories.test.ts:78: unit-tests: tokens.stories.ts Type in light lists exactly the type tokens of Appendix A, name and light value, in order: AssertionError: expected [ …(18) ] to deeply equal [ …(19) ]
+storybook/test/unit/stories.test.ts:78: unit-tests: tokens.stories.ts Type in dark lists exactly the type tokens of Appendix A, name and dark value, in order: AssertionError: expected [ …(18) ] to deeply equal [ …(19) ]
+storybook/test/unit/stories.test.ts:85: unit-tests: tokens.stories.ts Type renders the light values when the theme global is missing or unknown: AssertionError: expected [ …(18) ] to deeply equal [ …(19) ]
+storybook/test/unit/stories.test.ts:129: unit-tests: base.stories.ts has the Compact screen story, rendering the compact family's markup with the compact and value hooks: AssertionError: expected [] to deeply equal [ [ 'compact', 'compact' ] ]
+storybook/test/integration/csp.test.ts:172: unit-tests: the Storybook page under its CSP tokens--type in light: the header, no violation, no request outside the origin, exactly its tokens, no monospace: AssertionError: expected [ …(18) ] to deeply equal [ …(19) ]
+storybook/test/integration/csp.test.ts:172: unit-tests: the Storybook page under its CSP tokens--type in dark: the header, no violation, no request outside the origin, exactly its tokens, no monospace: AssertionError: expected [ …(18) ] to deeply equal [ …(19) ]
+storybook/test/integration/csp.test.ts:242: unit-tests: the Storybook page under its CSP base-styles--compact-screen in light: the header, no violation, no request outside the origin, the compact and value hooks applied, no monospace: AssertionError: expected { region: undefined, values: [], …(1) } to deeply equal { Object (region, values, ...) }
+storybook/test/integration/csp.test.ts:242: unit-tests: the Storybook page under its CSP base-styles--compact-screen in dark: the header, no violation, no request outside the origin, the compact and value hooks applied, no monospace: AssertionError: expected { region: undefined, values: [], …(1) } to deeply equal { Object (region, values, ...) }
+packages/tokens/test/index.test.ts:11: unit-tests: @ocelle/tokens exports tokenNames: exactly the names of Appendix A, none of A.6: AssertionError: expected [ 'bar-block-narrow', …(108) ] to deeply equal [ 'bar-block-narrow', …(109) ]
+packages/tokens/test/index.test.ts:16: unit-tests: @ocelle/tokens exports tokens: the JSON export of the source: AssertionError: expected [ Array(109) ] to have a length of 110 but got 109
+packages/tokens/test/readme.test.ts:61: unit-tests: packages/tokens/CHANGELOG.md names every token as added in the Unreleased section (FR-025): AssertionError: expected [ '--ocelle-bar-block-narrow', …(108) ] to deeply equal [ '--ocelle-bar-block-narrow', …(109) ]
+packages/tokens/test/source-table.test.ts:34: unit-tests: the stylesheet from the real source declares exactly the tokens of Appendix A on :root, and none of A.6: AssertionError: expected [ '--ocelle-bar-block-narrow', …(108) ] to deeply equal [ '--ocelle-bar-block-narrow', …(109) ]
+packages/tokens/test/source-table.test.ts:39: unit-tests: the stylesheet from the real source declares each token's light value (or its one value) in the unconditioned :root block: AssertionError: expected { 'color-canvas': '#f1eee8', …(109) } to deeply equal { 'color-canvas': '#f1eee8', …(109) }
+packages/tokens/test/source-table.test.ts:70: unit-tests: the JSON export from the real source has version 1 and exactly the tokens of Appendix A, none of A.6: AssertionError: expected [ '--ocelle-bar-block-narrow', …(108) ] to deeply equal [ '--ocelle-bar-block-narrow', …(109) ]
+packages/tokens/test/source-table.test.ts:76: unit-tests: the JSON export from the real source gives each token its group, its resolved value per theme (or its one value) and its references: AssertionError: expected { 'color-canvas': { …(4) }, …(109) } to deeply equal { 'color-canvas': { …(4) }, …(109) }
+packages/styles/test/readme.test.ts:58: unit-tests: packages/styles/README.md states: Each hook is one `data-ocelle-` attribute and applies only with one of its documented values. Any other value of a hook attribute, `"true"` among them, has no effect: AssertionError: expected '# @ocelle/styles The base styles of t…' to contain 'Each hook is one `data-ocelle-` attri…'
+packages/styles/test/readme.test.ts:58: unit-tests: packages/styles/README.md states: Hook selectors have specificity (0,1,0): AssertionError: expected '# @ocelle/styles The base styles of t…' to contain 'Hook selectors have specificity (0,1,…'
+packages/styles/test/readme.test.ts:58: unit-tests: packages/styles/README.md states: `data-ocelle-density` takes `compact` or `regular`: AssertionError: expected '# @ocelle/styles The base styles of t…' to contain '`data-ocelle-density` takes `compact`…'
+packages/styles/test/readme.test.ts:58: unit-tests: packages/styles/README.md states: `data-ocelle-density="compact"` sets the compact scale on the element, and its descendants inherit it: `--ocelle-font-size-sm` (14 px) with `--ocelle-line-height-compact` (1.5): AssertionError: expected '# @ocelle/styles The base styles of t…' to contain '`data-ocelle-density="compact"` sets …'
+packages/styles/test/readme.test.ts:58: unit-tests: packages/styles/README.md states: On `<html>` the hook sets the compact scale on the body instead, so the root font size never changes and every `rem` token keeps its value (`--ocelle-target-min` stays 44 px): AssertionError: expected '# @ocelle/styles The base styles of t…' to contain 'On `<html>` the hook sets the compact…'
+packages/styles/test/readme.test.ts:58: unit-tests: packages/styles/README.md states: `data-ocelle-density="regular"` returns a region nested in a compact one to the regular scale: `--ocelle-font-size-md` (16 px) with `--ocelle-line-height-normal` (1.45): AssertionError: expected '# @ocelle/styles The base styles of t…' to contain '`data-ocelle-density="regular"` retur…'
+packages/styles/test/readme.test.ts:58: unit-tests: packages/styles/README.md states: `data-ocelle-value` takes the empty value (a bare attribute has it) or `ink`: AssertionError: expected '# @ocelle/styles The base styles of t…' to contain '`data-ocelle-value` takes the empty v…'
+packages/styles/test/readme.test.ts:58: unit-tests: packages/styles/README.md states: `data-ocelle-value=""` sets the value text style: `--ocelle-font-sans` at `--ocelle-font-size-sm` with `font-variant-numeric: var(--ocelle-figures)`, in `--ocelle-color-ink-muted`: AssertionError: expected '# @ocelle/styles The base styles of t…' to contain '`data-ocelle-value=""` sets the value…'
+packages/styles/test/readme.test.ts:58: unit-tests: packages/styles/README.md states: `data-ocelle-value="ink"` sets the same style in `--ocelle-color-ink`: AssertionError: expected '# @ocelle/styles The base styles of t…' to contain '`data-ocelle-value="ink"` sets the sa…'
+packages/styles/test/readme.test.ts:58: unit-tests: packages/styles/README.md states: The value hook is for the main grounds only (canvas, sheet, pane, panel, inspector, rail, inset, accent-low, hover-bg), not the chrome (the top bar, the icon rail and the personal rail), where light `ink` is 1.00:1 and `ink-muted` 2.64:1: AssertionError: expected '# @ocelle/styles The base styles of t…' to contain 'The value hook is for the main ground…'
+packages/styles/test/readme.test.ts:58: unit-tests: packages/styles/README.md states: Tokens the compact scale uses: `--ocelle-font-size-sm`, `--ocelle-line-height-compact`, `--ocelle-font-size-md`, `--ocelle-line-height-normal`, `--ocelle-font-sans`, `--ocelle-figures`, `--ocelle-color-ink-muted` and `--ocelle-color-ink`: AssertionError: expected '# @ocelle/styles The base styles of t…' to contain 'Tokens the compact scale uses: `--oce…'
+packages/styles/test/readme.test.ts:79: unit-tests: packages/styles/CHANGELOG.md names the data-ocelle-density and data-ocelle-value hooks under Unreleased / Added (constitution VII, FR-004): AssertionError: expected '\n- `base.css`: the base layer for ho…' to match /^- `data-ocelle-density`/m
+packages/styles/test/source.test.ts:95: unit-tests: src/base.css as shipped (buildPlan(text)[0].content) follows the base layer with the compact scale of data-model § Rule table, in its order, with exactly its declarations (R-03, R-04): AssertionError: expected [] to deeply equal [ { media: [], …(2) }, …(3) ]
+packages/styles/test/source.test.ts:165: unit-tests: src/base.css as shipped (buildPlan(text)[0].content) US2 (FR-005, FR-025): holds every compact-scale selector, each one hook attribute at (0,1,0), and no selector has a class or exceeds its bound: AssertionError: expected [ …(6) ] to deeply equal []
+unit-tests: 58 of 1917 tests failed
+[ELIFECYCLE] Test failed. See above for more details.

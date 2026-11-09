@@ -74,9 +74,22 @@ export interface Content {
 /** The stories' text of base-content.json. */
 const storyContent: Content = stories;
 
+/** The Compact screen: a compact region with facts in the value style and a command in its ink variant. */
+function renderCompact(text: CompactContent): string {
+  const facts = text.facts.map((fact) => `<dt>${escape(fact.label)}</dt><dd data-ocelle-value="">${escape(fact.value)}</dd>`).join("");
+  return (
+    '<article data-story="compact" data-ocelle-density="compact">' +
+    `<h1>${escape(text.heading)}</h1>` +
+    `<p>${escape(text.paragraph)}</p>` +
+    `<dl>${facts}</dl>` +
+    `<p>${escape(text.note)} <span data-ocelle-value="ink">${escape(text.command)}</span></p>` +
+    "</article>"
+  );
+}
+
 /** The markup of a family's story from the stories' text (base-content.json unless given), every text escaped. */
 export function renderFamily(family: Family, content: Content = storyContent): string {
-  if (family === "compact") return "";
+  if (family === "compact") return renderCompact(content.compact);
   const text = content.base;
   const items = text.list.map((item) => `<li>${escape(item)}</li>`).join("");
   return (

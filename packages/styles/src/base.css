@@ -1,7 +1,8 @@
 /*
- * @ocelle/styles base.css (003): the base layer. Link it after @ocelle/tokens tokens.css. Every value is an
- * --ocelle-* token; every base selector is wrapped in :where(), so any rule of the host page's own stylesheets
- * overrides it. No motion, no @import, no url(), no class. See README.md for the host contract.
+ * @ocelle/styles base.css (003): the base layer, then the hook families in their order (R-03). Link it after
+ * @ocelle/tokens tokens.css. Every value is an --ocelle-* token; every base selector is wrapped in :where(), so any
+ * rule of the host page's own stylesheets overrides it, and every hook selector is one data-ocelle-* attribute with
+ * the rest in :where(), (0,1,0). No motion, no @import, no url(), no class. See README.md for the host contract.
  */
 
 /* Base layer: the reset, the body, the root color-scheme, the focus ring, code elements, forced colours. */
@@ -55,4 +56,33 @@
   :where(:focus-visible) {
     outline-color: Highlight;
   }
+}
+
+/* Compact scale: the density hook (data-ocelle-density) and the value text style (data-ocelle-value). */
+
+/* On <html> the hook sets the body, never the root, so every rem token keeps its value (research.md R-04). */
+[data-ocelle-density="compact"]:where(:not(html)),
+[data-ocelle-density="compact"] > :where(body) {
+  font-size: var(--ocelle-font-size-sm);
+  line-height: var(--ocelle-line-height-compact);
+}
+
+/* Returns a region nested in a compact one to the regular scale. */
+[data-ocelle-density="regular"]:where(:not(html)),
+[data-ocelle-density="regular"] > :where(body) {
+  font-size: var(--ocelle-font-size-md);
+  line-height: var(--ocelle-line-height-normal);
+}
+
+/* The value text style, for the main grounds only (README): ids, timestamps, commands and fact values. */
+[data-ocelle-value=""],
+[data-ocelle-value="ink"] {
+  font-family: var(--ocelle-font-sans);
+  font-size: var(--ocelle-font-size-sm);
+  font-variant-numeric: var(--ocelle-figures);
+  color: var(--ocelle-color-ink-muted);
+}
+
+[data-ocelle-value="ink"] {
+  color: var(--ocelle-color-ink);
 }

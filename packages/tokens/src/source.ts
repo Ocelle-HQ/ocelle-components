@@ -125,6 +125,7 @@ export const records = [
   { name: "line-height-tight", group: "type", value: "1.15" },
   { name: "line-height-normal", group: "type", value: "1.45" },
   { name: "line-height-relaxed", group: "type", value: "1.55" },
+  { name: "line-height-compact", group: "type", value: "1.5" },
   { name: "font-weight-regular", group: "type", value: "400" },
   { name: "font-weight-medium", group: "type", value: "500" },
   { name: "font-weight-strong", group: "type", value: "600" },

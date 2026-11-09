@@ -61,3 +61,38 @@ page's rules beat a shadow tree's `:host` rules whatever their specificity, so a
 override them. Elements put their focusable part inside the shadow root or use `delegatesFocus`, and do not depend
 on their host's `box-sizing`. The Storybook preview links `base.css` for every story, so element stories always
 render with it.
+
+## Hooks
+
+Each hook is one `data-ocelle-` attribute and applies only with one of its documented values. Any other value of a
+hook attribute, `"true"` among them, has no effect: the selectors match the documented values exactly. Hook selectors
+have specificity (0,1,0), one attribute with the rest in `:where()`, so a host rule of the same or higher specificity
+overrides them too.
+
+| Attribute | Values | Family |
+|---|---|---|
+| `data-ocelle-density` | `compact`, `regular` | compact scale |
+| `data-ocelle-value` | (empty), `ink` | compact scale |
+
+## Compact scale
+
+For dense operational screens: lists, facts, ids and timestamps.
+
+- `data-ocelle-density` takes `compact` or `regular`. `data-ocelle-density="compact"` sets the compact scale on the
+  element, and its descendants inherit it: `--ocelle-font-size-sm` (14 px) with `--ocelle-line-height-compact`
+  (1.5). Only the element and its descendants change.
+- On `<html>` the hook sets the compact scale on the body instead, so the root font size never changes and every
+  `rem` token keeps its value (`--ocelle-target-min` stays 44 px). The focus ring is unchanged.
+- `data-ocelle-density="regular"` returns a region nested in a compact one to the regular scale:
+  `--ocelle-font-size-md` (16 px) with `--ocelle-line-height-normal` (1.45).
+- `data-ocelle-value` takes the empty value (a bare attribute has it) or `ink`. `data-ocelle-value=""` sets the value
+  text style: `--ocelle-font-sans` at `--ocelle-font-size-sm` with `font-variant-numeric: var(--ocelle-figures)`, in
+  `--ocelle-color-ink-muted`. `data-ocelle-value="ink"` sets the same style in `--ocelle-color-ink`. It is 14 px
+  inside and outside a compact region, and never monospace.
+- The value hook is for the main grounds only (canvas, sheet, pane, panel, inspector, rail, inset, accent-low,
+  hover-bg), not the chrome (the top bar, the icon rail and the personal rail), where light `ink` is 1.00:1 and
+  `ink-muted` 2.64:1. `ink` and `ink-muted` are contrast-checked on the main grounds only.
+
+Tokens the compact scale uses: `--ocelle-font-size-sm`, `--ocelle-line-height-compact`, `--ocelle-font-size-md`,
+`--ocelle-line-height-normal`, `--ocelle-font-sans`, `--ocelle-figures`, `--ocelle-color-ink-muted` and
+`--ocelle-color-ink`.
