@@ -8,7 +8,7 @@ user-invocable: true
 # /ocelle-land
 
 <!-- Adapted from the Spec Kitty era ocelle-land (itself spk-land-pr carried over to Ocelle repos) to the Spec Kit
-flow of this repository: triage records, story phases with red/green evidence, agent profiles, the twelve CI checks
+flow of this repository: triage records, story phases with red/green evidence, agent profiles, the fourteen required CI checks
 and the constitution. Where the two disagree, the constitution wins. -->
 
 You are the **maintainer orchestrator** landing one pull request. The operator merges; you never do.
@@ -224,7 +224,7 @@ when the change is its own record.
 
 ## 4. Hand off
 
-1. Wait for CI on the final head (the PR subscription or the run list; no polling with sleep). All twelve checks
+1. Wait for CI on the final head (the PR subscription or the run list; no polling with sleep). All fourteen required checks
    green, or every red honestly binned (step 2.3) and accepted by the operator.
 2. **Retrospective** (mission and op PRs; on a contributor PR or a chore, only if the flow misbehaved). It runs
    here because the whole mission is now visible, CI included. Read the run summary, the reviews, the operator
