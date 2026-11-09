@@ -1,0 +1,197 @@
+schema: review-findings/v1
+complete: true
+phase: plan
+round: 1
+lens: fresh
+# Probes: /tmp/claude-0/-home-user/181e1231-8fd5-5f31-9d9d-498e593ba7cf/scratchpad/probe (not part of the repository).
+# A base.css transcribed from data-model § Rule table (line-height tokens inlined as numbers, since they do not exist
+# yet), tokens.css from packages/tokens/src/generate.ts css(source), the vendored font, served under the strict CSP,
+# Chromium 153.0.8010.12 (/opt/pw-browsers/chromium-1243) through Playwright 1.64.1 at a 320 px viewport.
+findings:
+  - id: PLAN-FRESH-1-001
+    severity: 3
+    title: "The existing pass-line-height plant is in packages/styles, not elements; the planned override turns it red"
+    evidence:
+      - artifact: "research.md § R-07: \"The existing `pass-line-height` plant is in `packages/elements` and stays a pass.\"; contracts/checks.md § Gates changed: \"`pass-line-height` (elements) stays a pass\""
+      - code: "gates/plants/style-lint/pass-line-height/tree/packages/styles/src/x.css:3 `line-height: 1.5;` with plant.json `\"expect\": \"pass\"`"
+      - code: "the planned fail plant `fail-styles-literal-line-height` puts `line-height: 1.65` at the same path, packages/styles/src/x.css (research.md R-07)"
+    claim: |
+      The plan's premise about the repository is wrong. The pass plant that proves a unitless line height is allowed
+      sits at packages/styles/src/x.css, exactly the scope the new override `files: ["packages/styles/**/*.css"]`
+      tightens. Once the override lands, `pass-line-height` reports one `ocelle/token-only` finding and gate:plants
+      fails. The new fail plant then contradicts the old pass plant: same path, almost the same declaration, opposite
+      expectation. An implementer who finds this in phase 2 has to change an existing gate plant, which the plan
+      does not list. The plan also says "No gate added or renamed", so nobody would expect that edit, and an
+      unplanned plant edit is exactly what the plant mechanism exists to catch.
+    remedies:
+      - "R-07 and contracts/checks.md: move `pass-line-height` to `tree/packages/elements/src/x.css` (its `why` names the elements scope) as a listed plant change in phase 2, so it still proves the 002 contract where that contract still holds. Keep the new fail plant at packages/styles/src/x.css."
+
+  - id: PLAN-FRESH-1-002
+    severity: 2
+    title: "Any secondary-options object switches ocelle/token-only to empty token lists; the `lineHeight` option would flag every var() in base.css"
+    evidence:
+      - artifact: "research.md § R-07: the override is `\"ocelle/token-only\": [true, { lineHeight: \"token\" }]`"
+      - code: "gates/stylelint/token-only.ts:128-135 `optionLists`: any object secondary returns `{ tokens: options.tokens ?? [], elementProperties: options.elementProperties ?? [] }`; :145 `optionLists(secondary) ?? (await listsUnder(process.cwd()))`, so the repository's lists load only when there is no secondary at all"
+      - code: "gates/stylelint/token-only.ts:142 `possible: { tokens: [isText], elementProperties: [isText] }`: today `lineHeight` is an invalid option, so `validateOptions` fails and the rule returns before it lints anything"
+    claim: |
+      Options were designed for unit tests to inject lists. If `{ lineHeight: "token" }` is only added to `possible`,
+      `optionLists` returns empty lists for packages/styles. Every `var(--ocelle-*)` in base.css is then reported as
+      "unknown token", and the style-lint gate cannot pass on the real stylesheet. If `possible` is not extended, the
+      rule rejects its options and lints nothing in packages/styles. That silently disables the token-only gate for
+      the whole package, which only a plant would catch. The plan names neither failure, and its "Workflow gates:
+      registry unchanged" line hides that the rule's option handling changes.
+    remedies:
+      - "R-07: specify that `optionLists` returns lists only when `tokens` or `elementProperties` is given, so a `lineHeight`-only object still loads the repository lists. Add a unit test and a pass plant: base-style `var(--ocelle-line-height-prose)` under the override reports nothing."
+
+  - id: PLAN-FRESH-1-003
+    severity: 2
+    title: "The tightened lint still lets non-token line heights through (percentages, `normal`, calc())"
+    evidence:
+      - artifact: "spec.md FR-002: \"Every `line-height` in `packages/styles` MUST be a token reference\"; research.md § R-07: \"a `line-height` or `font` declaration whose line height is a unitless number is raw\""
+      - code: "gates/stylelint/token-only.ts:50 `if (unit === \"%\" || unit === \"fr\") return true;` (percentages pass for any property); :54 `return Number(number.number) === 0 || inCalc || unitless.has(property)` (any number inside calc() passes); :58 identifiers pass unless they are named colours, so `normal` passes"
+    claim: |
+      As specified, the option only removes `line-height` from the unitless set. `line-height: 165%`,
+      `line-height: calc(1.65)` and `line-height: normal` still lint clean in packages/styles. FR-002 wants every line
+      height to be a token, and R-07 says why: a browser test cannot tell a token from a literal. So this lint is
+      the only guard, and it has three holes. One plant (`line-height: 1.65`) does not prove the rule FR-002 states.
+    remedies:
+      - "R-07: in `lineHeight: \"token\"` mode, a `line-height` value (and the line-height part of `font`) passes only if it is a single `var(--ocelle-*)` or a CSS-wide keyword. Add fail plants for `165%` and `calc(1.65)` beside the `1.65` plant."
+
+  - id: PLAN-FRESH-1-004
+    severity: 3
+    title: "Keyboard access to wide tables relies on Chromium-only focusable scrollers; Kitty Desktop's Tauri webview is WebKit on macOS and Linux"
+    evidence:
+      - artifact: "spec.md § Assumptions, Table scroll box: \"In the browsers below, an overflowing scroll box with no focusable descendant is keyboard-focusable without a `tabindex`\" with Browsers: \"the same evergreen Chromium-based browsers as 002\"; FR-017 makes that the WCAG 2.1.1 mechanism; research.md R-06"
+      - artifact: "constitution § I: elements work in \"a Tauri webview\"; specs/001-repository-foundation/reviews/spec/check-1.md SPEC-1-07: \"The consumers run in a Tauri webview (WebKit on macOS and Linux, WebView2/Chromium on Windows)\""
+      - artifact: "spec.md § Consumer need: the prose family exists for kitty-mission-ui's Artifact Viewer (E-23), a Kitty Desktop screen"
+      - code: "probe (Chromium 153, 320 px): Tab from a link before the tables went `t3 > t4 > tw > after`, so overflowing blockified tables are tab stops with no tabindex. This is Chromium's keyboard-focusable-scrollers behaviour (shipped in Chrome 130). Not probed: WebKit, which this repository cannot run (001 FR-005: Chromium only). From knowledge, not measured here: WebKit/Safari does not make scroll containers sequentially focusable."
+    claim: |
+      The operator's SPEC-3-01 decision ("natural focus, no tabindex") was measured only in Chromium. The main
+      consumer of the prose hook is Kitty Desktop, and on macOS and Linux its webview is WebKit. If WebKit does not
+      focus scroll containers, a wide table with no links cannot be reached from the keyboard there. Its off-screen
+      columns cannot be scrolled into view without a pointer, so WCAG 2.1.1 fails in the very screen whose exception
+      (E-23) this feature retires. Constitution III requires WCAG 2.2 AA. The Chromium-only test policy explains why
+      CI will not see this; it does not make the hosts Chromium. The plan should not let this pass silently.
+    remedies:
+      - "Fork for the operator, option A: keep no-wrapper natural focus, and record in spec Assumptions and the README that keyboard scrolling of plain-text wide tables is guaranteed only in Chromium-based hosts. The README tells WebKit hosts (Kitty Desktop on macOS and Linux) that their renderer must add `tabindex=\"0\"` to tables, with `role` and name kept (an allowed renderer change, not a wrapper)."
+      - "Fork for the operator, option B: before the plan gate, confirm the WebKit behaviour (a manual check in the Kitty Desktop webview or Safari) and record the result in research.md R-06. If WebKit does not focus the scroller, revisit FR-017 (for example, require the renderer to emit `tabindex=\"0\"` on tables everywhere, and test that Chromium shows the ring and does not create a second tab stop)."
+
+  - id: PLAN-FRESH-1-005
+    severity: 2
+    title: "\"Any other value has no effect\" is false for the presence hooks: `data-ocelle-prose=\"false\"` turns prose on"
+    evidence:
+      - artifact: "research.md § R-02: \"Any other value of an attribute has no effect. The README lists exactly these.\"; data-model.md § Hook: \"An attribute with any other value has no effect\"; contracts/styles-package.md § Hooks: \"Other values have no effect.\""
+      - artifact: "data-model.md § Rule table: selectors `[data-ocelle-prose]` and `[data-ocelle-value]` match on presence, whatever the value"
+      - code: "probe (Chromium 153): `<p data-ocelle-value=\"muted\">` computed font-size 14px (value style applied); `<p data-ocelle-prose=\"false\">` inside the page computed line-height 26.4px (prose applied)"
+    claim: |
+      The public contract (README, constitution VII surface) would promise something the selectors do not do.
+      Frameworks emit values for boolean data attributes: React and Svelte write `"true"` or `"false"`, Thymeleaf
+      writes whatever the expression gives. A host that writes `data-ocelle-prose="false"` to turn prose off gets
+      prose. R-02 claims later values are MINOR additions, but for presence hooks that also breaks: a later
+      `data-ocelle-value="strong"` restyles hosts that already wrote that value and got the muted style.
+    remedies:
+      - "Fork for the operator, option A (presence semantics): R-02, data-model and the contract say that `data-ocelle-prose` and `data-ocelle-value` apply whenever the attribute is present, whatever its value, except `value=\"ink\"`. Hosts remove the attribute to opt out. Add a browser test that `data-ocelle-prose=\"false\"` still applies, so the README statement is tested."
+      - "Fork for the operator, option B (exact values): use `[data-ocelle-prose=\"\"]` and `[data-ocelle-value=\"\"]`/`[data-ocelle-value=\"ink\"]` so other values really do nothing, with a browser guard and a plant. Note in the README that `\"true\"` does not work."
+
+  - id: PLAN-FRESH-1-006
+    severity: 2
+    title: "At 320 px a three-column table already overflows; the \"table that fits\" of US3 scenario 3 is not pinned down"
+    evidence:
+      - artifact: "spec.md US3 scenario 3: at 320 px \"Tab never moves focus onto the table that fits (it is not a tab stop)\"; data-model.md § Test fixtures: \"a table that fits\", with no column count"
+      - artifact: "data-model.md § Prose: `th, td` get `min-inline-size: var(--ocelle-measure-cell)` (12ch) and `padding: var(--ocelle-space-2) var(--ocelle-space-3)` (12 px inline each side)"
+      - code: "probe (Chromium 153, 320 px, one-digit cells): every cell 117.375 px wide; 2-column table client 320 / scroll 320 (not a tab stop); 3-column table client 320 / scroll 352 and 4-column 320 / 470 (both tab stops: Tab order `t3 > t4 > tw`)"
+    claim: |
+      With the 12ch floor plus padding, a cell cannot be narrower than about 117 px. At the 320 px width where the
+      scenario runs, only a table of at most two columns fits. An implementer who writes a natural "small" fixture
+      table of three or four short columns gets a red test that the CSS cannot turn green. The tempting fix (drop
+      the floor, test the fit table at 1280 px instead) quietly changes the scenario. Consumers should also know
+      that at 320 px or 200% zoom almost every Markdown table becomes its own tab stop. That is correct behaviour,
+      but a host reviewer will not expect it.
+    remedies:
+      - "data-model § Test fixtures: fix the table that fits as two columns of short text (at most 2 × (12ch + 2 × space-3) ≤ 320 px). README § Markdown renderers: state that tables of three or more columns scroll, and are tab stops, at 320 px."
+
+  - id: PLAN-FRESH-1-007
+    severity: 2
+    title: "A wide table's caption is centred across the whole scroll width and is off-screen at 320 px"
+    evidence:
+      - artifact: "data-model.md § Prose: no rule for `caption`; spec.md FR-014 element list has no `caption`; US3 fixture has a wide table with a `caption`"
+      - code: "probe (Chromium 153, 320 px, 12-column table with display:block per R-06): caption box left 0, width 1408.5 px, computed text-align `-webkit-center`; caption text spans x 685.3 to 723.2, so it is entirely outside the 320 px viewport at scrollLeft 0"
+    claim: |
+      The anonymous table box inside the blockified table holds the caption too. The UA's centred caption sits in the
+      middle of the full table width. At 320 px or 200% zoom, a sighted reader sees an untitled table until they
+      scroll halfway across, even though the caption is plain text, not two-dimensional content. This is a state no
+      scenario covers. US3 scenario 3 checks only that the caption is the accessible name.
+    remedies:
+      - "FR-014 and data-model: add `[data-ocelle-prose] :where(caption) { text-align: start }` (a keyword, allowed by the lint). Add a US3 scenario-3 assertion that at 320 px and scrollLeft 0 the caption text's start lies inside the viewport."
+
+  - id: PLAN-FRESH-1-008
+    severity: 2
+    title: "The existing `styles` Vitest project would also pick up the new browser tests and run them in mutation runs"
+    evidence:
+      - artifact: "research.md § R-09 and contracts/checks.md: `styles-browser` runs `packages/styles/test/browser/**/*.test.ts` and is excluded from mutation; `styles` is \"node; in mutation runs\""
+      - code: "vitest.config.ts:36-39 `name: \"styles\", include: [\"packages/styles/**/*.test.ts\"], exclude: excluded` (no browser exclusion), against vitest.config.ts:22 for tokens: `exclude: [...excluded, \"packages/tokens/test/browser/**\"]`"
+      - code: "vitest.mutation.config.ts:9 excludes projects by name only (`gates-integration`, `tokens-browser`, `storybook-integration`)"
+    claim: |
+      The plan lists the vitest.config.ts change as "gains the styles-browser project" and nothing else. The `styles`
+      glob already matches packages/styles/test/browser/*.test.ts. Every browser suite would therefore run twice, and
+      also inside every Stryker mutant run, because `styles` is not excluded. Chromium would launch per mutant,
+      breaking the 60 s and shard time goals. It would also break the "excluded from mutation" claim that R-09 uses
+      to justify not mutating CSS behaviour through those tests.
+    remedies:
+      - "research.md R-09 and contracts/checks.md: also add `packages/styles/test/browser/**` to the `styles` project's exclude, as tokens does, and list the edit in phase 1 Setup."
+
+  - id: PLAN-FRESH-1-009
+    severity: 2
+    title: "US1 scenario 6's documentation check needs all four hooks in phase 2, but the hooks land in phases 3 to 5"
+    evidence:
+      - artifact: "spec.md US1 scenario 6: the documentation check finds, \"for each hook (compact, value, prose, identifier wrap), its exact attribute name and allowed values\" and a CHANGELOG entry naming \"each of the four hook attributes\""
+      - artifact: "plan.md § Phases: phase 2 (US1) has \"the README and CHANGELOG of styles, with the readme test\"; phase 3 \"the README hooks\"; phase 4 \"the README\"; phase 5 \"the README, including the SC-006 stand-in table\""
+    claim: |
+      Both readings fail. If the phase 2 readme test asserts all four hooks, phase 2's fold publishes README and
+      CHANGELOG entries for hooks that do nothing yet, and phases 3 to 5 have no red step for their documentation.
+      If it asserts only the base layer, the test that names US1 scenario 6 does not cover that scenario, and the
+      later phases change a test from an earlier phase. Principle VIII forbids loosening a red test and says nothing
+      to guide growing one. The reviewer of each phase cannot tell which is meant.
+    remedies:
+      - "plan.md § Phases: say that each phase adds, red first, the readme and CHANGELOG assertions for its own hook (phase 3 density and value, phase 4 prose and the prose-over-compact statement, phase 5 wrap and SC-006), and that US1 scenario 6 is complete only after phase 5. tasks.md then traces it that way."
+
+  - id: PLAN-FRESH-1-010
+    severity: 1
+    title: "Both hooks on `<html>`: the body gets the compact scale, so \"prose wins on one element\" does not hold there, and prose sets the root font size"
+    evidence:
+      - artifact: "data-model.md § Compact: `[data-ocelle-density=\"compact\"] > :where(body)` sets 14 px / 1.5 on the body; § Prose: `[data-ocelle-prose]` sets `font-size: var(--ocelle-font-size-md)` on the element itself"
+      - artifact: "plan.md § Constraints: \"The root font size is never set.\"; spec.md FR-024: on an element with both hooks the paragraphs are 16 px / 26.4 px"
+    claim: |
+      With `data-ocelle-prose` and `data-ocelle-density="compact"` both on `<html>`, the compact rule's body child
+      wins by inheritance, and paragraphs are 14 / 21 px, not the 16 / 26.4 FR-024 promises. Prose alone on `<html>`
+      also sets the root's font size, which breaks the plan's own constraint, though it is harmless at `1rem`. No
+      scenario covers the hooks on the root except compact alone.
+    remedies:
+      - "Either add `[data-ocelle-prose] > :where(body)` (size and prose line height) after the compact rules, with a US2 scenario 5 case on `<html>`, or document in the README that `data-ocelle-prose` goes on a content container, not on `<html>`, and use `:where(:not(html))` on the prose container rule."
+
+  - id: PLAN-FRESH-1-011
+    severity: 1
+    title: "The prose link rule styles every `a`, including anchors without href, as links"
+    evidence:
+      - artifact: "data-model.md § Prose: ` :where(a)` sets `color: var(--ocelle-color-link)` and `text-decoration-line: underline`"
+      - artifact: "spec.md FR-019 is about links (\"so a link never differs from the running text by colour alone\")"
+    claim: |
+      Markdown renderers and hand-written HTML in rendered documents emit `<a id>` / `<a name>` targets (footnote
+      back-references, legacy anchors) that are not links. Under ` :where(a)` their text is ochre and underlined, so
+      it looks like a link to sighted users while assistive technology reports none. That is a mismatch between what
+      a sighted user and an AT user perceive, and it costs nothing to avoid.
+    remedies:
+      - "data-model: use ` :where(a:any-link)` and ` :where(a:any-link:hover)`, add a fixture `<a id=\"x\">target</a>` that keeps the running-text colour, and a plant `[data-ocelle-prose] :where(a)` for that guard."
+
+  - id: PLAN-FRESH-1-012
+    severity: 1
+    title: "In Storybook, preview.css overrides base.css's code-family rule, so the stories cannot show FR-026"
+    evidence:
+      - artifact: "research.md § R-12: \"`storybook/.storybook/preview.css` keeps its own `pre, code, kbd, samp` rule\""
+      - code: "storybook/.storybook/preview.css:5-11 `pre, code, kbd, samp, ... { font-family: var(--ocelle-font-sans); }`, specificity (0,0,1), against base.css `:where(code, pre, kbd, samp)` at (0,0,0) (data-model § Base layer)"
+    claim: |
+      Every code element in the four new stories takes its family from preview.css, whatever base.css says. If
+      base.css lost the FR-026 rule, the Storybook csp test's no-monospace check would still pass. Storybook is the
+      visual source of truth (constitution V), so its "Base page" story would not show what base.css does there.
+    remedies:
+      - "R-12: narrow preview.css to `.sb-errordisplay_main :where(pre, code, kbd, samp), .sb-errordisplay_main .sb-errordisplay_code` (the preview's own markup it exists for), so story content is styled by base.css alone."

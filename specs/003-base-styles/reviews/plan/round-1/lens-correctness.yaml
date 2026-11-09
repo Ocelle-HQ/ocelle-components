@@ -1,0 +1,181 @@
+schema: review-findings/v1
+complete: true
+phase: plan
+round: 1
+lens: correctness
+# Checked: spec.md, plan.md, research.md, data-model.md, contracts/styles-package.md, contracts/checks.md,
+# quickstart.md, sources/spec-kitty-design-issues.md and the constitution against the repository at a4548d6
+# (packages/tokens/src/source.ts, packages/styles/*, stylelint.config.ts, gates/stylelint/token-only.ts,
+# gates/plants/style-lint/*, gates/bin/{style-lint,prefix,csp}.ts, gates/lib/mutation/ranges.ts, vitest.config.ts,
+# vitest.mutation.config.ts, packages/tokens/test/browser/serve.ts, packages/tokens/README.md and its readme test,
+# storybook/{scripts/swatches.ts,.storybook/*,test/integration/csp.test.ts}, packages/tokens/contrast/pairs.json,
+# pnpm-lock.yaml). Browser claims were probed in Chromium 153.0.8010.12 (/opt/pw-browsers/chromium-1243) through the
+# repository's Playwright 1.64.1, with scripts in the session scratchpad.
+# Confirmed and not reported: all 23 existing tokens the rule table names exist with the values the plan states;
+# 109 tokens today; `measure-*` already lives in the shell group; every colour pairing of the prose family (also
+# ink-soft, link and link-hover on inset) is already a required pair, because inset is one of the main grounds;
+# `Highlight`, `transparent`, `auto` and `inherit` pass ocelle/token-only; tokens.css sets no color-scheme;
+# postcss-selector-parser 7.1.7 is in the lockfile and hoisting is off; launch/collectViolations/violations are
+# exported by the tokens serve.ts; a `display: block; overflow-x: auto` table keeps role table, its caption as name,
+# its columnheader and cell nodes, and `min-inline-size: 12ch` on th/td holds (96 px = 12 x the "0" advance at 12 px);
+# the `text-transform: uppercase` and `pre { white-space: normal }` copy plants do change getSelection().toString().
+findings:
+  - id: PLAN-CORRECTNESS-1-001
+    severity: 3
+    title: "`:where(*, *::before, *::after)` drops the pseudo-elements, so ::before and ::after stay content-box (FR-007)"
+    evidence:
+      - artifact: "data-model.md § Rule table, Base layer: `:where(*, *::before, *::after)` | `box-sizing: border-box`; research.md R-03 'Every base-layer rule wraps its whole selector in :where(), so it has specificity (0,0,0)'; contracts/styles-package.md § Host contract 'Every base selector has specificity (0,0,0)'"
+      - artifact: "spec.md FR-007 '`box-sizing: border-box` for every element and pseudo-element'"
+      - code: "Selectors 4: pseudo-elements are not valid inside :is()/:where(), and the forgiving selector list drops them silently. Probe in Chromium 153: with `:where(*, *::before, *::after) { box-sizing: border-box }`, getComputedStyle(div).boxSizing = 'border-box' but getComputedStyle(div, '::before').boxSizing = 'content-box'."
+    claim: |
+      The planned reset does not meet FR-007 for pseudo-elements, and it fails silently: the selector parses, the
+      elements get border-box, and US1 scenario 6 ("every element is box-sizing: border-box") can pass without
+      reading a pseudo-element. Every element's ::before/::after (badges, markers that hosts and elements add) keeps
+      content-box. The "(0,0,0) for every base selector" statement in the contract and README cannot hold for this
+      rule, because a pseudo-element outside :where() adds (0,0,1).
+    remedies:
+      - "Change the rule to `:where(*), :where(*)::before, :where(*)::after` (specificities (0,0,0), (0,0,1), (0,0,1), inside FR-025's (0,0,1) bound for non-hook selectors); correct R-03, the contract and the README to 'every base selector is (0,0,0) except the two pseudo-element selectors at (0,0,1)'; and make US1 scenario 6's test read getComputedStyle(el, '::before') and '::after' too."
+  - id: PLAN-CORRECTNESS-1-002
+    severity: 2
+    title: "Presence selectors `[data-ocelle-value]` and `[data-ocelle-prose]` match every value, contradicting 'any other value has no effect'"
+    evidence:
+      - artifact: "research.md R-02 'Any other value of an attribute has no effect. The README lists exactly these.'; data-model.md § Hook 'An attribute with any other value has no effect.'; contracts/styles-package.md § Hooks 'Other values have no effect.'"
+      - artifact: "data-model.md § Rule table: selectors `[data-ocelle-value]` and every prose selector starting `[data-ocelle-prose]`"
+      - code: "Probe in Chromium 153: `<span data-ocelle-value=\"foo\">` with `[data-ocelle-value] { color: rgb(1, 2, 3) }` computes color rgb(1, 2, 3)."
+    claim: |
+      The documented public surface (constitution VII) and the rule table disagree. `data-ocelle-value="anything"`
+      gets the muted value style and `data-ocelle-prose="anything"` gets the whole prose family. That breaks the
+      plan's own semver argument in R-02: a later value such as `data-ocelle-value="accent"` cannot be added as a
+      MINOR change, because it already has an effect today (muted ink), and hosts may already rely on it.
+    remedies:
+      - "Restrict the selectors to the documented values: `[data-ocelle-value=\"\"]`, `[data-ocelle-value=\"ink\"]` and `[data-ocelle-prose=\"\"]` (still one attribute, (0,1,0)). Add a negative case with an undocumented value to US2 scenario 3 and US3 scenario 5."
+      - "Keep the presence selectors and change R-02, the data model, the contract and the README to say that any value of `data-ocelle-value` other than `ink` means muted ink, and any value of `data-ocelle-prose` turns prose on."
+  - id: PLAN-CORRECTNESS-1-003
+    severity: 2
+    title: "The existing `pass-line-height` plant is in packages/styles, not packages/elements; the new lint option turns it red"
+    evidence:
+      - artifact: "research.md R-07 'The existing `pass-line-height` plant is in `packages/elements` and stays a pass.'; contracts/checks.md § Gates changed '`pass-line-height` (elements) stays a pass'"
+      - code: "gates/plants/style-lint/pass-line-height/tree/packages/styles/src/x.css: `:host { line-height: 1.5; }`; plant.json: expect pass"
+    claim: |
+      The plan states a repository fact that is false. With `lineHeight: "token"` set for `packages/styles/**/*.css`,
+      this plant reports a finding, so `gate:plants` fails at the first phase that adds the option, and the plan
+      gives no instruction to move or rewrite it. FR-002 also still needs a pass plant showing that unitless line
+      heights stay allowed outside packages/styles, and today there is none in elements.
+    remedies:
+      - "In R-07 and contracts/checks.md, move `pass-line-height` to `tree/packages/elements/src/x.css` (still in the lint's scope through `packages/elements/**/*.css`) with its `why` updated, and state that the move is part of the lint change, together with the new fail plant."
+  - id: PLAN-CORRECTNESS-1-004
+    severity: 2
+    title: "Adding `lineHeight` as a secondary option conflicts with how ocelle/token-only reads its secondary options"
+    evidence:
+      - artifact: "research.md R-07 'the rule `ocelle/token-only` gets a secondary option, `lineHeight: \"token\"` ... `{ files: [\"packages/styles/**/*.css\"], rules: { \"ocelle/token-only\": [true, { lineHeight: \"token\" }] } }`'"
+      - code: "gates/stylelint/token-only.ts:121-131 `optionLists(secondary)` returns `{ tokens: options.tokens ?? [], ... }` for any object, so any secondary object replaces the repository token lists with empty ones; :135-140 `validateOptions` allows only `tokens` and `elementProperties` and returns early (`if (!valid) return;`) on an unknown option name."
+    claim: |
+      Today a secondary object means "use these token lists" (the rule's unit tests). Following R-07 as written, the
+      override either fails validation, so the rule does not check packages/styles at all and only an invalid-option
+      warning remains, or, once validation accepts the key, it reports every `var(--ocelle-*)` in base.css as
+      `unknown token`, because the lists are now empty. The plan does not say that the option model has to change,
+      so the "one new option with a plant" estimate misses work, and the gate's behaviour on packages/styles is
+      undefined.
+    remedies:
+      - "State in R-07 and contracts/checks.md that `validateOptions` gains `lineHeight: [\"token\"]`, that `optionLists` uses the given lists only when `tokens` or `elementProperties` is present (else the repository lists), and that a unit test checks a `{ lineHeight: \"token\" }`-only option against the repository lists (known token passes, literal 1.65 fails)."
+  - id: PLAN-CORRECTNESS-1-005
+    severity: 2
+    title: "The plant for 'the table that fits is not a tab stop' (`overflow-x: scroll`) does not make the guard fail"
+    evidence:
+      - artifact: "research.md R-10 table: 'table that fits is not a tab stop (US3-3)' | `[data-ocelle-prose] :where(table) { overflow-x: scroll }`"
+      - code: "Probe in Chromium 153 at 320 px: a two-cell table with `display: block; overflow-x: scroll; max-inline-size: 100%` between two buttons (scrollWidth 304 = clientWidth 304): Tab from the first button lands on the second button, not on the table."
+    claim: |
+      Chromium makes a scroller keyboard-focusable only when it has scrollable overflow, not because of its overflow
+      value. The planned plant leaves the guard passing, so SC-002's requirement that the guard be shown able to fail
+      is not met, and the plan gives the plant as proof that it can fail.
+    remedies:
+      - "Replace the plant with one that makes the fitting table overflow, for example `[data-ocelle-prose] :where(table) { max-inline-size: var(--ocelle-measure-cell) }`, so it becomes a tab stop and the guard reports it. Check in the spike that the plant fails the guard."
+  - id: PLAN-CORRECTNESS-1-006
+    severity: 2
+    title: "The compact-on-html plant cannot fail the 'focus ring unchanged' guard of US2 scenario 4: focus tokens are px"
+    evidence:
+      - artifact: "research.md R-10 table: 'root size, target-min, focus ring under compact on `<html>` (US2-4)' | `[data-ocelle-density=\"compact\"] { font-size: var(--ocelle-font-size-sm) }` without `:not(html)`"
+      - code: "packages/tokens/src/source.ts: `focus-width` 3px, `focus-offset` 2px (px, not rem); only `target-min` (2.75rem) rescales with the root font size"
+    claim: |
+      A root font size of 14 px changes the root size and `--ocelle-target-min` (38.5 px), but the focus ring keeps
+      3 px / 2 px, so this plant does not make the focus-ring half fail. SC-002 requires a named plant for this guard,
+      or a recorded reason why no CSS plant can make it fail. The plan claims the plant covers the guard, but it does not.
+    remedies:
+      - "Give the focus-ring half its own plant (for example `[data-ocelle-density=\"compact\"] :where(:focus-visible) { outline-style: none }`, or a compact rule that sets an outline longhand), or record in R-10 that the ring is in px tokens, so compact on `<html>` cannot change it, and that this guard therefore has no CSS plant."
+  - id: PLAN-CORRECTNESS-1-007
+    severity: 2
+    title: "The existing `styles` Vitest project already includes packages/styles/test/browser/**, so browser tests also run in it and in mutation runs"
+    evidence:
+      - artifact: "plan.md § Testing '`styles` (node; in mutation runs): build, source-level and readme tests. `styles-browser` (... excluded from mutation)'; contracts/checks.md 'vitest.config.ts gains the styles-browser project. vitest.mutation.config.ts adds styles-browser to its excluded projects.'; plan.md § Phases 1 lists only 'the styles-browser Vitest project and its mutation exclusion'"
+      - code: "vitest.config.ts: project `styles` has include `packages/styles/**/*.test.ts` and exclude `excluded` only, unlike `tokens`, which excludes `packages/tokens/test/browser/**`"
+    claim: |
+      Without a change to the `styles` project, every browser test runs twice, once as `styles`, and is not excluded
+      from Stryker. Each mutant run then starts Chromium, which goes against the mutation exclusion R-09 relies on and
+      the 60 s / shard-time goals. The plan's setup phase misses this edit.
+    remedies:
+      - "Add to plan § Phases 1, R-09 and contracts/checks.md: the `styles` project excludes `packages/styles/test/browser/**`, as `tokens` excludes its browser directory."
+  - id: PLAN-CORRECTNESS-1-008
+    severity: 2
+    title: "R-11's 'dist/base.css built in a beforeAll with buildPlan, no I/O' cannot work with a copy plan"
+    evidence:
+      - artifact: "research.md R-11 'unit tests in the `styles` project parse `dist/base.css` (built in a `beforeAll` with `buildPlan`, no I/O)'; R-01 'a pure `buildPlan(sourceDir)` returning the entries ... copies it unchanged'; contracts/checks.md build.test 'buildPlan copies src/base.css to base.css, byte-identical'"
+      - code: "packages/tokens/scripts/build.ts: a copied file is a `{ path, copyFrom }` PlanEntry with no content; only `build()` does the I/O. `buildPlan(sourceDir)` given a directory can produce content only by reading the file, which is I/O."
+    claim: |
+      The three statements cannot all hold. Either buildPlan returns a `copyFrom` entry (pure, but then the source
+      tests have no text to parse without reading a file), or it reads base.css (then it is not pure, and the
+      Stryker I/O-boundary records belong in it). As written, an implementer can end up parsing `src/base.css` while
+      the tests claim "the built stylesheet", or reading a stale `dist/` that `pnpm test` does not build. This decides
+      what US1 scenarios 3, 5 and 8 prove about the shipped file.
+    remedies:
+      - "Fix one model in R-01/R-11/checks.md: buildPlan(css: string) returns `[{ path: \"base.css\", content: css }]` (pure; build() reads src/base.css and writes it), and source.test reads src/base.css once and parses `buildPlan(text)[0].content`. build.test proves that build() writes it byte-identical."
+  - id: PLAN-CORRECTNESS-1-009
+    severity: 2
+    title: "The media reset caps the inline size but not the block size, so sized images are distorted"
+    evidence:
+      - artifact: "data-model.md § Base layer: `:where(img, picture, video, canvas, svg)` | `max-inline-size: 100%` only; spec.md US1 scenario 10 checks only that the box is no wider than its container"
+      - code: "Probe in Chromium 153 at 320 px: `<img width=2000 height=1000>` and `<svg width=2000 height=1000>` with that rule render 304 x 1000 (aspect ratio lost)."
+    claim: |
+      Markdown renderers and hosts commonly emit `width`/`height` attributes on images (to avoid layout shift). With
+      this reset, every such image in the Artifact Viewer or the console is squeezed horizontally and keeps its full
+      height. US1 scenario 10's assertion passes on the distorted image, so the tests will not catch it. FR-007 asks for
+      "no wider than their container", and a reset that breaks the aspect ratio does not serve the consumer need.
+    remedies:
+      - "Add `block-size: auto` to the media rule for `img`, `video`, `canvas` and `svg` (a keyword, allowed by the lint), and extend US1 scenario 10's test to assert that a media element with width and height attributes keeps its aspect ratio (within 1 px)."
+  - id: PLAN-CORRECTNESS-1-010
+    severity: 1
+    title: "Phase order: US1's readme test and US2 scenario 4 need content from later phases"
+    evidence:
+      - artifact: "plan.md § Phases 2 (US1) 'the README and CHANGELOG of styles, with the readme test'; spec.md US1 scenario 6 requires the README to document 'for each hook (compact, value, prose, identifier wrap), its exact attribute name and allowed values' and the CHANGELOG to name 'each of the four hook attributes'"
+      - artifact: "plan.md § Phases 3 'browser tests for US2 scenarios 1 to 5 (scenario 5 needs prose, so phase 4 extends it)'; spec.md US2 scenario 4 '... an `h1` inside a prose container is 30 px'"
+    claim: |
+      In phase 2, US1 scenario 6's test either documents and announces the three hooks that do not exist yet (the
+      README would describe surface that is not shipped until phases 3 to 5), or it covers only part of the scenario.
+      The plan does not say which. US2 scenario 4 also needs the prose rules (phase 4), not only scenario 5, so a
+      phase-3 red test for it cannot turn green in phase 3.
+    remedies:
+      - "State in the plan that US1 scenario 6's hook and CHANGELOG assertions are added per phase, as each hook lands (phase 2 checks link order, CSP and base.css; phases 3 to 5 add their hooks), and move the `h1` half of US2 scenario 4 to phase 4, beside scenario 5."
+  - id: PLAN-CORRECTNESS-1-011
+    severity: 1
+    title: "The line-height lint option still lets keyword line heights through, short of FR-002's 'every line-height MUST be a token reference'"
+    evidence:
+      - artifact: "spec.md FR-002 'Every `line-height` in `packages/styles` MUST be a token reference'; research.md R-07 'a `line-height` or `font` declaration whose line height is a unitless number is raw'"
+      - code: "gates/stylelint/token-only.ts:56-66 `wordAllowed`: an identifier that is not a named colour is allowed for non-font properties, so `line-height: normal` passes"
+    claim: |
+      With the option as planned, `line-height: normal` (or `revert`) in base.css passes the lint, although FR-002
+      requires a token reference. The planned plant (`1.65`) cannot catch this.
+    remedies:
+      - "Define the option as 'in `line-height`, only `var(--ocelle-*)` or a CSS-wide keyword is allowed', and add a second fail plant, `line-height: normal`."
+      - "Narrow FR-002 to 'no numeric or length line height', and record that keywords are allowed."
+  - id: PLAN-CORRECTNESS-1-012
+    severity: 1
+    title: "@ocelle/styles needs the five new tokens but declares no relation to an @ocelle/tokens version"
+    evidence:
+      - artifact: "contracts/styles-package.md § Host contract 'Link order: tokens.css first, then base.css'; plan.md § Constitution Check VII 'additions: MINOR'; R-01 lists the package.json changes (build, exports, files) and no dependency"
+      - code: "packages/styles/package.json has no dependencies or peerDependencies; base.css will reference `--ocelle-line-height-compact`, `-prose`, `--ocelle-font-size-subhead`, `--ocelle-measure-reading` and `--ocelle-measure-cell`, which exist only in the new tokens version"
+    claim: |
+      The three consumers pin these packages (constitution VII). Nothing in the manifest or README tells a host that
+      base.css needs a tokens version with the five new tokens. Paired with an older tokens.css, the prose and compact
+      families silently lose their line heights, the h2 size and the measures. Pre-1.0 this is not yet a release
+      defect, but the plan fixes the package's surface now and is silent on it.
+    remedies:
+      - "Add `\"peerDependencies\": { \"@ocelle/tokens\": \"workspace:0.0.0\" }` to packages/styles/package.json in R-01 (exact, as the pins gate requires), and add a README statement naming the minimum tokens version, checked by the readme test."

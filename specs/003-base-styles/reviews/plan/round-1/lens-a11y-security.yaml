@@ -1,0 +1,112 @@
+schema: review-findings/v1
+complete: true
+phase: plan
+round: 1
+lens: a11y-security
+# Checked and found sound (no finding): every colour pairing the prose and value families use on the main grounds is a
+# required, checked pair in packages/tokens/contrast/pairs.json (link, link-hover, ink, ink-soft, ink-muted on canvas
+# and inset; focus on inset 4.11:1); the focus ring longhands (R-05); no motion, no url()/@import; the strict-CSP harness
+# reuses packages/tokens/test/browser/serve.ts (binds 127.0.0.1, rejects ".." paths); postcss-selector-parser has one
+# version in pnpm-lock.yaml (7.1.7, line 2472/4998), so the new pin adds no package; packages/styles/test/** is in
+# stylelint ignoreFiles, so the plant stylesheets do not trip the style lint; in Chrome for Testing 153
+# (/opt/pw-browsers/chromium-1243) a display:block prose table keeps roles table, caption, row, columnheader, cell in
+# Accessibility.getFullAXTree, a link in an overflowing table is scrolled into view with its full ring, and under
+# emulated forced colours td and hr borders compute to a system colour.
+findings:
+  - id: PLAN-A11Y-SECURITY-1-001
+    severity: 3
+    title: "A wide prose table scrolls the whole page when the prose container sits in a grid or flex column (WCAG 1.4.10)"
+    evidence:
+      - artifact: "data-model.md § Prose: ` :where(table)` gets only `display: block; overflow-x: auto; max-inline-size: 100%; border-collapse: collapse`; spec FR-017 \"The page MUST NOT scroll horizontally because of it\"; data-model § Test fixtures: prose.html is plain block flow"
+      - code: "probe (scratchpad grid.mjs, Chrome for Testing 153.0.8010.12, viewport 320 px, the plan's table and cell rules, a 12-column table): prose container in normal flow -> documentElement.scrollWidth 320, table 320 px wide; prose container as the item of `grid-template-columns: 1fr` -> scrollWidth 1595, table 1595 px; as the `1fr` item beside a 60 px rail -> 1655; as `flex: 1` beside a 60 px rail -> 1655"
+      - code: "same probe with `contain: inline-size` added to the table rule -> scrollWidth 320 in all four layouts (table 320 or 260 px, scrollWidth of the table 1595, so it scrolls in its own box); with `min-inline-size: 0` on `[data-ocelle-prose]` instead -> also 320 in all four, but only because the prose container is itself the grid/flex item"
+    claim: |
+      A block scroll container still contributes its content's min-content width to its ancestors. A grid or flex
+      item's automatic minimum size is that min-content width, so when the prose container (or any wrapper above it)
+      is the `1fr` column of an app shell (the Artifact Viewer in Kitty Desktop's layout, a console page with a side
+      rail), the 12-column table widens the column to about 1600 px and the page scrolls horizontally at 320 px.
+      This is the exact reflow failure FR-017 and SC-004 forbid, yet every planned fixture puts the prose container in
+      normal block flow, where the problem cannot appear, so the browser tests would pass and the consumers would ship
+      a 1.4.10 failure. Inline code and URLs do not have this problem because `overflow-wrap: anywhere` lowers their
+      min-content width; the table is the one prose element whose intrinsic width escapes.
+    remedies:
+      - "Add `contain: inline-size` to `[data-ocelle-prose] :where(table)` in data-model § Prose (a keyword, allowed by the token-only lint), have the R-06 spike confirm the accessibility tree is unchanged with it, and extend US3 scenarios 3 and SC-004 and prose.html with the same wide table inside a prose container that is the `1fr` item of a grid beside a fixed rail and the `flex: 1` item of a flex row, asserting documentElement.scrollWidth equals the viewport width; the guard's plant is the table rule without `contain`."
+
+  - id: PLAN-A11Y-SECURITY-1-002
+    severity: 3
+    title: "Keyboard access to overflowing tables and their table semantics rest on Chromium behaviour, but Kitty Desktop's webview is WebKit on macOS and Linux"
+    evidence:
+      - artifact: "spec.md § Assumptions \"Browsers: the same evergreen Chromium-based browsers as 002\" and \"Table scroll box without a wrapper ... In the browsers below, an overflowing scroll box with no focusable descendant is keyboard-focusable without a tabindex\"; research.md R-06 \"Spec check 3 measured in Chromium 153\""
+      - artifact: "specs/001-repository-foundation/reviews/spec/check-1.md SPEC-1-07: \"The consumers run in a Tauri webview (WebKit on macOS and Linux, WebView2/Chromium on Windows)\"; 001 spec FR-005 decides only which engine tests run in (\"Chromium, and only Chromium\")"
+      - code: "grep -n -i 'evergreen|chromium-based|browsers' specs/002-design-tokens/spec.md -> no browser-support assumption in 002 (only line 259 on 'no preference'), so the 003 assumption has no 002 decision behind it"
+      - code: "not probed: no WebKit build is installed (/opt/pw-browsers holds Chromium only) and the proxy refused outbound HTTPS (403), so WebKit's behaviour could not be measured here"
+    claim: |
+      FR-017's keyboard model (an overflowing table with no focusable content is itself a tab stop) is a Chromium
+      feature (keyboard-focusable scrollers); WebKit, to my knowledge, does not make scroll containers focusable, and
+      WebKit has a history of dropping table semantics for tables whose display is changed. Kitty Desktop, one of the
+      named consumers, runs in WebKit on macOS and Linux. If either holds there, a wide table in the Artifact Viewer is
+      unreachable by keyboard (WCAG 2.1.1) or loses its table role, and nothing in this plan would notice, because the
+      tests run only in Chromium and the spec's assumption that hosts are Chromium-based rests on a 002 statement
+      that does not exist. This is an accessibility claim about the consumers' runtime, not about the test engine
+      (which 001 FR-005 settled), so it needs the operator.
+    remedies:
+      - "Fork for the operator: (a) state in the spec Assumptions and the styles README that the no-wrapper keyboard model of FR-017 is verified in Chromium only and that WebKit hosts (Kitty Desktop on macOS and Linux) must add `tabindex=\"0\"` to overflowing tables, and record this as an open limitation for kitty-mission-ui; or (b) have the R-06 spike also measure WebKit by hand (Playwright WebKit or Safari) for focusability and the accessibility tree, and if it fails, take FR-017's wrapper fork now rather than after release; or (c) correct the Browsers assumption to cite 001 FR-005 and the operator's acceptance that WebKit consumers are out of scope for 1.0.0."
+
+  - id: PLAN-A11Y-SECURITY-1-003
+    severity: 2
+    title: "A focused wide table shows only the top and bottom of its ring at 320 px, which reads as two table rules, and the test only checks computed style"
+    evidence:
+      - artifact: "data-model.md § Base layer: `:where(body)` `margin: 0`; ` :where(table)` `max-inline-size: 100%`; `:where(:focus-visible)` `outline-offset: var(--ocelle-focus-offset)` (2px, packages/tokens/src/source.ts:153) and `outline-width` 3px (source.ts:152); spec US3 scenario 3 \"Tab moves focus onto each wide table itself, which then shows the focus ring of User Story 1\""
+      - code: "probe (scratchpad probe.mjs, Chrome 153, 320 px, prose container flush with the body): Tab onto the wide table -> its rect is [0, 21, 320, 144]; the ring is drawn from x=-5 to x=325, so its left and right sides are outside the viewport; screenshot t1.png shows only two full-width horizontal lines above and below the table, indistinguishable from the table's own rule lines"
+    claim: |
+      The table fills the container and the base layer itself removes the body margin, so in any host whose prose
+      container touches the viewport edge (narrow screens, 200% zoom, a full-bleed viewer pane) a focused table's ring
+      with a positive offset is clipped on both inline sides. What remains looks like the table's `rule` and
+      `rule-strong` borders, so a keyboard user cannot tell that the table has focus (WCAG 2.4.7; 1.4.11 for the
+      indicator). The planned test reads the computed outline, which is correct while the ring is mostly invisible,
+      so it cannot catch this.
+    remedies:
+      - "Add `[data-ocelle-prose] :where(table:focus-visible) { outline-offset: calc(var(--ocelle-focus-width) * -1) }` (an inset ring inside the table's own box; calc over a token passes token-only), keep (0,1,0) specificity, and extend US3 scenario 3 to assert, with the prose container flush at 320 px, that the focused table's border box minus the outline offset and width lies inside the viewport on all four sides; plant: the rule removed."
+
+  - id: PLAN-A11Y-SECURITY-1-004
+    severity: 2
+    title: "The value hook sets ink or ink-muted unconditionally, which fails contrast on the dark chrome in light theme (1.0:1 and 2.64:1)"
+    evidence:
+      - artifact: "data-model.md § Compact scale: `[data-ocelle-value]` `color: var(--ocelle-color-ink-muted)`; `[data-ocelle-value=\"ink\"]` `color: var(--ocelle-color-ink)`; contracts/styles-package.md hooks table offers the hook for any value text; constitution II \"The top bar, icon rail and personal rail use the dark chrome tokens in both themes\""
+      - code: "packages/tokens/src/source.ts:36,40,50: light ink #15130F, ink-muted #5E584F, chrome #15130F; computed WCAG ratios: ink on chrome 1.00:1, ink on chrome-hover 1.11:1, ink-muted on chrome 2.64:1, ink-muted on chrome-hover 2.38:1; pairs.json has no ink/ink-muted on chrome pair (ink and ink-muted are declared only for `main` grounds, source.ts:36-40)"
+    claim: |
+      Identifiers, timestamps and ids are what the value hook is for, and the chrome (top bar, rails) is where an app
+      shell shows the current mission slug or a timestamp. The hook overrides the inherited `chrome-ink` colour with a
+      colour that is only contrast-checked on the main grounds, so a value in the chrome is invisible (ink variant) or
+      below 4.5:1 (muted) in light theme. The README offers the hook with no ground restriction, so a consumer has no
+      way to know; it is a WCAG 1.4.3 failure built into a public hook.
+    remedies:
+      - "State in FR-013, the README and contracts/styles-package.md that the value hook is for the main grounds only, and add `[data-ocelle-value]` inside the chrome to the readme test's statements."
+      - "Make the hook ground-aware: add a documented value `data-ocelle-value=\"chrome\"` using `--ocelle-color-chrome-muted` (a checked pair, 6.89:1 on chrome), or let the `ink` variant use `color: inherit` so it takes the surrounding chrome ink; fixture compact.html gains a value on a chrome ground with a contrast assertion."
+
+  - id: PLAN-A11Y-SECURITY-1-005
+    severity: 1
+    title: "A wide table's caption is centred across the scrolled width and is off-screen when the table is first shown"
+    evidence:
+      - artifact: "data-model.md § Prose: no rule for `caption`; research R-06 makes the table `display: block` so the anonymous table box, caption included, is the scrolled content"
+      - code: "probe (scratchpad cap.mjs, Chrome 153, 320 px, 12-column table with caption \"Deployment targets\"): caption box [0, 1595] at viewport width 320; Chromium centres caption text, so at scrollLeft 0 the caption text sits near x=797, outside the visible box (t1.png shows blank space where the caption is)"
+    claim: |
+      The caption is the table's visible name and the accessible name FR-017 relies on for the focused table. A sighted
+      keyboard or magnifier user who tabs onto the table at 320 px or 200% zoom sees the ring but not the caption, and
+      has to scroll half the table to find it.
+    remedies:
+      - "Add `[data-ocelle-prose] :where(caption) { text-align: start }` (logical, mirrors under rtl) to data-model § Prose and assert in US3 scenario 3 that the caption's text starts inside the visible box at scrollLeft 0."
+
+  - id: PLAN-A11Y-SECURITY-1-006
+    severity: 1
+    title: "The fixtures and the Identifier wrap story need layout CSS (a 300 px two-column grid) that the plan gives no CSP-safe place"
+    evidence:
+      - artifact: "research.md R-09 \"These have no inline style or script; an extra stylesheet is linked only where a guard needs a planted rule\"; spec US4 scenario 1 \"a 300 px grid with two 1fr tracks\"; research.md R-12 the four stories return markup \"with no style attributes\"; data-model § Test fixtures lists only page.html, compact.html, prose.html, wrap.html and plants/*.css"
+      - code: "packages/tokens/test/browser/serve.ts:42-47 solved the same need in 002 with a served `font.css` written from serve.ts; no equivalent is planned for styles, and base.css itself sets no grid"
+    claim: |
+      The grid (and, under finding 001, the grid and flex host layouts) cannot be built without some stylesheet. As
+      planned, the only places are an inline `style` attribute (a CSP violation the zero-violation assertion would
+      then report, or worse, a temptation to relax the harness) or an unplanned file. The story has the same gap in
+      Storybook's strict-CSP preview.
+    remedies:
+      - "Add a fixture layout stylesheet (`packages/styles/test/fixtures/layout.css`, linked by wrap.html and prose.html, served by serve.ts) and a Storybook equivalent (a story-only stylesheet linked from preview-head.html or the 002 preview.css) to the plan, data-model § Test fixtures and R-12, stating that it holds layout only and no rule of base.css."
