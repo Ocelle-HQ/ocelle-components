@@ -110,13 +110,18 @@ Assumptions, README).
 - `page.html`: base layer controls (link, button, text input, `tabindex="0"` element), media wider than the page
   (an `img`, `video`, `canvas` and `svg` with `width="2000" height="1000"`, the `img` source the local file
   `media.svg` of the same 2:1 natural ratio, and a `picture`), a list,
-  `code`/`pre`/`kbd`/`samp`, and a host region with `forced-color-adjust: none` holding a button (User Story 1
-  scenario 4). It is the one fixture served with `img-src 'self'` added to the strict CSP, so its image loads with zero
+  `code`/`pre`/`kbd`/`samp` outside and again inside a prose container (`data-ocelle-prose=""`, User Story 1
+  scenario 9: the page-wide code font holds inside prose too), and a host region with `forced-color-adjust: none`
+  holding a button (User Story 1 scenario 4). It is the one fixture served with `img-src 'self'` added to the strict CSP, so its image loads with zero
   violations (operator decision PLAN-FRESH-2-003 (b), research R-09).
 - `media.svg`: the local 2:1 image of `page.html`, served as `image/svg+xml`.
 - `compact.html`: nested compact and regular regions, a region with an undocumented density value
   (`data-ocelle-density="true"`), the value hook in both variants and with an undocumented value
-  (`data-ocelle-value="true"`), both hooks on one element, prose inside compact and compact inside prose.
+  (`data-ocelle-value="true"`), and, added in phase 4 (tasks T035) since they need the prose rules, both hooks on one
+  element, prose inside compact and compact inside prose (User Story 2 scenario 5, FR-024).
+- `compact-root.html`: the compact hook on `<html>` (`<html data-ocelle-density="compact">`, User Story 2 scenario 4),
+  with body text and a focusable control for the ring; phase 4 (tasks T035) adds a prose container holding an `h1`.
+  It is a page of its own, since the hook on `<html>` would make the regular page of `compact.html` compact.
 - `prose.html`: the User Story 3 fixture (spec): every listed element plus `h5`, `h6` and a nested list; an `<a id="x">`
   target with no `href`; three wide 12-column tables (a caption of at least 80 characters; no caption; a link in one
   cell); a table that fits, which is two columns of short text (at most 2 × (12ch + 2 × space-3), under 320 px); a

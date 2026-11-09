@@ -434,6 +434,11 @@ specificity as the base rule wins by order. A plant test loads the page with tha
 helper reports the expected problem. This is how a browser test is shown able to fail without a gate. The
 source-level checks (R-11) are unit tests whose plants are fixture strings. Every plant below is run once in the
 spike, which records that it bites (the helper reports the problem); a plant that does not bite stops the phase.
+A plant can only bite against the rule it undoes, and the spike runs in phase 2, before most rules and fixtures exist.
+So the spike links a scratch stylesheet that defines the six tokens of R-08 and then holds the whole data-model § Rule
+table (all four families, in order), and it measures on scratch copies of the fixture layouts of data-model § Test
+fixtures (the media page and the `prose-hosts.html` hosts among them); neither is committed, and `spike.md` records
+both (tasks T007).
 
 **Browser guards**
 

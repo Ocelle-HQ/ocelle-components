@@ -8,7 +8,8 @@ plan-squad rounds:
 - data-model.md;
 - contracts/styles-package.md and contracts/checks.md;
 - quickstart.md;
-- analysis-report.md, whose findings are resolved here (F1, E1 to E5, U1 to U3, I1 to I5, A1, C1, C2).
+- analysis-report.md: the findings of the first analysis (at `db9078a`: F1, E1 to E5, U1 to U3, I1 to I5, A1, C1,
+  C2) and of its re-run (at `bfdbfd4`: M1, L1 to L5) are resolved here.
 
 **Tests**: required. Constitution Principle VIII applies to every phase. The phase flow is `base.sh`, an optional
 `scaffold.sh`, one red commit of test files only proven by `red.sh`, then green, `tdd-check.sh` and an independent
@@ -36,7 +37,7 @@ it. The points are:
     of FR-017);
   - a cell at `min-inline-size: var(--ocelle-measure-cell)` is narrower than 12ch and the content-floor alternative
     of R-06 also fails;
-  - a host layout of `prose-hosts.html` scrolls the page sideways;
+  - a host layout of `prose-hosts.html` (its scratch copy, T007) scrolls the page sideways;
   - the merged caption line boxes leave the visible box under `ltr` or `rtl`;
   - the forced-colours ring cannot be observed in a `forced-color-adjust: none` region;
   - any R-10 plant does not make its guard fail.
@@ -74,10 +75,10 @@ it. The points are:
 ### Implementation
 
 - [ ] T002 `vitest.config.ts`: add the project `styles-browser` (node environment, include `packages/styles/test/browser/**/*.test.ts`, the shared excludes), and add `packages/styles/test/browser/**` to the `styles` project's exclude. In `vitest.mutation.config.ts`, add `styles-browser` to the excluded projects. T001 now passes
-- [ ] T003 [P] Root `package.json`: add `postcss-selector-parser` as an exact devDependency at the lockfile's version (7.1.7, research R-11). Run a non-frozen `pnpm install`, then commit `pnpm-lock.yaml`
-- [ ] T004 [P] `packages/styles/package.json` (research R-01, contracts/styles-package.md § Files): `"build": "tsc -p tsconfig.json && node scripts/build.ts"`, `"exports": { ".": "./dist/index.js", "./base.css": "./dist/base.css" }`, `"files": ["dist", "CHANGELOG.md", "README.md"]` and `"peerDependencies": { "@ocelle/tokens": "workspace:0.0.0" }` (plan decision 11)
+- [ ] T003 [P] `packages/styles/package.json` (research R-01, contracts/styles-package.md § Files): `"build": "tsc -p tsconfig.json && node scripts/build.ts"`, `"exports": { ".": "./dist/index.js", "./base.css": "./dist/base.css" }`, `"files": ["dist", "CHANGELOG.md", "README.md"]` and `"peerDependencies": { "@ocelle/tokens": "workspace:0.0.0" }` (plan decision 11). Run no install here; T004's install records this peer dependency in the lockfile
+- [ ] T004 Root `package.json`, after T003: add `postcss-selector-parser` as an exact devDependency at the lockfile's version (7.1.7, research R-11). Run a non-frozen `pnpm install`, which also records T003's peer dependency in the lockfile importer `packages/styles` (pnpm checks peers against the lockfile), then commit `pnpm-lock.yaml`
 - [ ] T005 [P] Create an empty `packages/styles/src/base.css` and a stub `packages/styles/scripts/build.ts` that exports `buildPlan(css: string)` returning `[]` and a `build()` that writes nothing
-- [ ] T006 Write `specs/003-base-styles/reviews/phase-1/tdd-exempt.md`. It names T003 to T005 as having no behaviour (a pin, a manifest and empty stubs) and T001 as the red commit for T002. Then run `pnpm run gate:pins`, `pnpm run gate:typecheck` and `pnpm test` (each exit 0), and `.specify/extensions/story/scripts/tdd-check.sh 1`
+- [ ] T006 Write `specs/003-base-styles/reviews/phase-1/tdd-exempt.md`. It names T003 to T005 as having no behaviour (a manifest, a pin and empty stubs) and T001 as the red commit for T002. Then run `pnpm install --frozen-lockfile` (the install of `setup_command` and CI, which fails on a stale lockfile), `pnpm run gate:pins`, `pnpm run gate:typecheck` and `pnpm test` (each exit 0), and `.specify/extensions/story/scripts/tdd-check.sh 1`
 
 **Checkpoint**: `tdd-check.sh 1` reports `pass`.
 
@@ -105,15 +106,20 @@ layer), and both contracts.
 
 ### Spike (first)
 
-- [ ] T007 [US1] Spike, recorded in `specs/003-base-styles/reviews/phase-2/spike.md` with each measurement and the Chromium build:
-  - Steps 1 to 5 of research R-06 ("Verify in the spike"), with data-model § Prose's table, caption and cell rules copied into a scratch page. Those rules and the R-10 plants use tokens that only exist from phases 3 and 4, so the scratch page also links a scratch stylesheet, after `tokens.css`, that defines the six R-08 tokens with their data-model § New tokens values (`--ocelle-line-height-compact: 1.5`, `--ocelle-line-height-prose: 1.65`, `--ocelle-font-size-subhead: 1.125rem`, `--ocelle-measure-reading: 68ch`, `--ocelle-measure-cell: 12ch`, `--ocelle-measure-container: 100cqi`); `spike.md` records that choice. The scratch stylesheet is not committed as source:
+- [ ] T007 [US1] Spike, recorded in `specs/003-base-styles/reviews/phase-2/spike.md` with each measurement and the Chromium build. A plant can only be shown to bite against the rule it undoes, and in phase 2 most of those rules (the base media rule of T017, the compact and value rules of phase 3, the prose rules of phase 4, the wrap rule of phase 5) and most fixtures (`prose-hosts.html` is written in T033) do not exist yet. So the spike works on scratch files only:
+  - **Scratch stylesheet**: one stylesheet, linked after `tokens.css`, that first defines the six R-08 tokens with their data-model § New tokens values (`--ocelle-line-height-compact: 1.5`, `--ocelle-line-height-prose: 1.65`, `--ocelle-font-size-subhead: 1.125rem`, `--ocelle-measure-reading: 68ch`, `--ocelle-measure-cell: 12ch`, `--ocelle-measure-container: 100cqi`) and then holds the whole data-model § Rule table, all four families (base layer, compact scale, prose, identifier wrap) in the table's order, as unlayered author rules with the table's selectors. Each R-10 plant stylesheet is linked after it, as R-10 links plants after `base.css`. The US1-6 plant ("without `tokens.css`") drops only the `tokens.css` link; the six scratch tokens are none of the focus tokens.
+  - **Scratch fixture pages**: scratch copies of every fixture layout of data-model § Test fixtures that a measurement or a plant needs, built from that section and the host CSS it gives `layout.css`: the media page (`img`, `video`, `canvas` and `svg` at `width="2000" height="1000"`, the `img` source a 2:1 `media.svg`, served with `img-src 'self'`), the controls and the `forced-color-adjust: none` region of `page.html`, the hosts of `prose-hosts.html` (grid `1fr` beside a 60 px rail, `flex: 1` beside a 60 px rail, nested in the grid item, and the definite-width modal dialog), and the pages of `compact.html` (with its prose cases), `compact-root.html`, `prose.html`, `prose-root.html` and `wrap.html` that the other plants run on. All of them are served under the strict CSP of R-09.
+  - `spike.md` records both choices (the scratch stylesheet's contents and order, and which scratch page each measurement and plant used). Neither the scratch stylesheet nor the scratch pages are committed: the shipped rules land in T017, T029, T041 and T049, and the fixtures are written in T011, T024, T033 and T044 from data-model § Test fixtures.
+
+  On those scratch files, measure:
+  - Steps 1 to 5 of research R-06 ("Verify in the spike"):
     - the accessibility tree through CDP `Accessibility.getFullAXTree`;
     - the 12ch cell floor;
-    - every host layout of `prose-hosts.html`, the definite-width dialog included;
+    - every host layout of the scratch copy of `prose-hosts.html`, the definite-width dialog included;
     - the fitting-table plant;
     - the merged caption line boxes at `scrollLeft` 0 and scrolled, under `ltr` and `rtl`, with a caption ending in a full stop.
   - The forced-colours ring inside a `forced-color-adjust: none` region (R-05).
-  - That each plant of R-10 makes its guard fail, and that list semantics have no CSS plant in Chromium.
+  - That each plant of R-10 makes its guard fail against the scratch stylesheet's rule it undoes (for each plant, the guard passes without it and its helper reports the expected problem with it), and that list semantics have no CSS plant in Chromium.
 
   Stop and ask on any stop-and-ask outcome above. The spike changes no source file. Commit the record with `base.sha` (`docs(003-base-styles): phase 2 spike record (T007)`)
 
@@ -141,7 +147,7 @@ layer), and both contracts.
   - the vendored fonts and `test/fixtures/**`, with content types for `.html`, `.css`, `.woff2` and `.svg` (`image/svg+xml`);
   - `control.html`, written from 002's `controlPage` (one inline `<style>`), the control page whose one `style-src` violation the tests expect (data-model § Test fixtures, SC-001).
 
-  It reuses `launch`, `collectViolations`, `violations` and `controlPage` from `packages/tokens/test/browser/serve.ts`. Also write the fixtures (data-model § Test fixtures): `packages/styles/test/fixtures/page.html`, `layout.css`, `media.svg` (natural 2:1) and `plants/*.css` for the US1 guards of R-10
+  It reuses `launch`, `collectViolations`, `violations` and `controlPage` from `packages/tokens/test/browser/serve.ts`. Also write the fixtures (data-model § Test fixtures): `packages/styles/test/fixtures/page.html` (with its prose container for US1 scenario 9), `layout.css`, `media.svg` (natural 2:1) and `plants/*.css` for the US1 guards of R-10
 - [ ] T012 [US1] `packages/styles/test/browser/base.test.ts`, spec US1 scenarios 1, 2, 4, 5, 6 (computed half), 7, 9 and 10 in Chromium. Every scenario runs in both themes, under `emulateMedia({ colorScheme })` light and dark (research R-09, FR-022); none is exempt. Each guard is paired with its positive assertion and run once more with its plant stylesheet, where the guard's helper must report the expected problem:
   - the six theme conditions of 002 with root `color-scheme` and body values;
   - keyboard and pointer focus on a link, button, text input and `tabindex="0"`;
@@ -149,7 +155,7 @@ layer), and both contracts.
   - zero CSP violations on every fixture page, and exactly one `style-src` violation on `control.html`;
   - without `tokens.css`: `border-box`, body margin 0 and an outline style other than `none`;
   - `base.css` linked first gives the same computed values;
-  - `code`, `pre`, `kbd` and `samp` in Schibsted Grotesk with tabular figures, inside and outside prose, plus the host-override case;
+  - `code`, `pre`, `kbd` and `samp` in Schibsted Grotesk with tabular figures, inside and outside `page.html`'s prose container, plus the host-override case;
   - media no wider than their container, with the 2:1 ratio held within 1 px after `naturalWidth > 0`, and form controls inheriting the font;
   - list semantics (role `list`) next to the `box-sizing` assertion, with its recorded no-plant reason.
 - [ ] T013 [P] [US1] `packages/styles/test/readme.test.ts`, phase 2 statements (research R-14):
@@ -205,8 +211,8 @@ MVP.
 ## Phase 3: User Story 2 - A dense screen opts into the compact scale (Priority: P2)
 
 **Goal**: everything User Story 2 asks for that needs no prose, covering spec scenarios 1 to 4 (scenario 4 without its
-`h1` half), the nested `regular` value of FR-004, FR-012, FR-013 and FR-024's compact nesting. Scenario 5 needs prose
-and is phase 4's (T035):
+`h1` half), the nested `regular` value of FR-004, FR-012 and FR-013. Scenario 5 and FR-024's nesting of the compact
+and prose hooks need prose and are phase 4's (T035):
 - `data-ocelle-density` (`compact`, `regular`) and `data-ocelle-value` (empty, `ink`) work;
 - `--ocelle-line-height-compact` exists;
 - Storybook has the "Compact screen" story.
@@ -222,11 +228,11 @@ The design sources are research R-02, R-04 and R-08, and data-model § Compact s
 ### Tests (red, one commit)
 
 - [ ] T023 [P] [US2] `packages/tokens/test/expected.ts`: add `line-height-compact`, type group, `1.5`, with its probe (research R-08). The tokens CHANGELOG test expects the new name under Unreleased
-- [ ] T024 [P] [US2] `packages/styles/test/fixtures/compact.html` and `plants/*.css` for the US2 guards of R-10 (the density presence-form plant included). `packages/styles/test/browser/compact.test.ts`, every scenario in both themes under `emulateMedia({ colorScheme })` light and dark (research R-09, FR-022); none is exempt:
+- [ ] T024 [P] [US2] `packages/styles/test/fixtures/compact.html` (without the prose cases, which T035 adds), `compact-root.html` (the compact hook on `<html>`) and `plants/*.css` for the US2 guards of R-10 (the density presence-form plant included). `packages/styles/test/browser/compact.test.ts`, every scenario in both themes under `emulateMedia({ colorScheme })` light and dark (research R-09, FR-022); none is exempt:
   - scenario 1: 14 px / 21 px, inherited, and in the same test a `data-ocelle-density="true"` region with no compact scale (FR-005), with the density presence-form plant;
   - scenario 2: only the region, with the `body` plant;
   - scenario 3: the value style's family, figures, colour and 14 px, the `ink` variant, and `data-ocelle-value="true"` doing nothing, with the presence-form plant;
-  - scenario 4 without `h1`: the hook on `<html>` keeps the root at 16 px and `--ocelle-target-min` at 44 px, the body compact and the ring unchanged, with the two US2-4 plants;
+  - scenario 4 without `h1`, on `compact-root.html`: the hook on `<html>` keeps the root at 16 px and `--ocelle-target-min` at 44 px, the body compact and the ring unchanged, with the two US2-4 plants;
   - FR-004 `regular` value (nested regions): a `regular` region inside a compact one returns to the regular scale (research R-02). US2 scenario 5 is left to T035.
 - [ ] T025 [P] [US2] `packages/styles/test/source.test.ts`: the compact and value selectors of data-model § Compact scale exist and are within the (0,1,1) bound. `packages/styles/test/readme.test.ts`: the density and value statements (values, `regular`, that any other value of a hook attribute, `"true"` among them, has no effect, what the compact-scale family styles and the tokens it uses, the main-grounds-only limit of the value hook) and the CHANGELOG naming `data-ocelle-density` and `data-ocelle-value`
 - [ ] T026 [P] [US2] Storybook tests: `renderFamily("compact")` cases, the "Compact screen" story (compact and value hooks) in `stories.test.ts`, and in `csp.test.ts` with zero violations
@@ -246,7 +252,8 @@ The design sources are research R-02, R-04 and R-08, and data-model § Compact s
 ## Phase 4: User Story 3 - A rendered Markdown document reads at the prototype's rhythm (Priority: P3)
 
 **Goal**: everything User Story 3 asks for, covering spec scenarios 1 to 12, the `h1` half of US2 scenario 4, the
-nested cases of US2 scenario 5, and FR-014 to FR-019:
+nested cases of US2 scenario 5, FR-014 to FR-019 and FR-024 (the compact and prose hooks nested and on one
+element):
 - the prose family works under `data-ocelle-prose=""`, with plain-`<table>` scroll boxes, the 12ch floor, the inset
   ring, the capped sticky caption, underlined links, wrapped code and the measure;
 - the tokens `line-height-prose`, `font-size-subhead`, `measure-reading`, `measure-cell` and `measure-container`
@@ -297,8 +304,8 @@ The design sources are research R-06, R-08, R-10 and R-13, data-model § Prose, 
   - long inline code and URL at 320 px and 200% zoom;
   - the linked table: Tab lands on the link, and ArrowRight scrolls the table.
 
-  Each guard is paired with its positive assertion and its plant
-- [ ] T035 [P] [US3] `packages/styles/test/browser/compact.test.ts` additions: the `h1` half of US2 scenario 4 (30 px inside prose under compact on `<html>`), and US2 scenario 5's prose-in-compact, compact-in-prose and both-hooks cases
+  Every scenario runs in both themes, under `emulateMedia({ colorScheme })` light and dark (research R-09, FR-022); none is exempt. Each guard is paired with its positive assertion and its plant
+- [ ] T035 [P] [US3] Fixture additions (data-model § Test fixtures): a prose container holding an `h1` in `packages/styles/test/fixtures/compact-root.html`, and the prose-in-compact, compact-in-prose and both-hooks cases in `compact.html`. `packages/styles/test/browser/compact.test.ts` additions: the `h1` half of US2 scenario 4 (30 px inside prose under compact on `<html>`, on `compact-root.html`), and US2 scenario 5's prose-in-compact, compact-in-prose and both-hooks cases (FR-024). Every scenario runs in both themes, under `emulateMedia({ colorScheme })` light and dark (research R-09, FR-022); none is exempt
 - [ ] T036 [P] [US3] `packages/styles/test/pairs.test.ts` (research R-08): each prose and value colour pairing is a `checked` pair in both themes in `packages/tokens/contrast/pairs.json`. Its plant is a fixture list with `color-link` on `color-chrome`. `packages/styles/test/source.test.ts`: the prose selectors exist within the bound
 - [ ] T037 [P] [US3] `packages/styles/test/readme.test.ts` prose statements (research R-14):
   - values and `""` only;
@@ -386,7 +393,7 @@ data-model § Identifier wrap.
 
 ## Parallel Opportunities
 
-- Phase 1: T003, T004 and T005.
+- Phase 1: T003 and T005 (T004's install runs after T003, so the committed lockfile holds the peer dependency).
 - Phase 2, after the spike: T008 to T011, T013 and T014 (T012 needs T011's server).
 - Phase 3: T023 to T026. Phase 4: T032, T033 and T035 to T038 (T034 needs T033). Phase 5: T044 to T047.
 

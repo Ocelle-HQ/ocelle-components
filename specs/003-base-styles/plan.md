@@ -6,6 +6,9 @@
 three checks and a final fix (`8905627`). Squad round 1 of the plan (`reviews/plan/round-1/`) changed this plan and
 the spec; its fixes and the operator's seven fork decisions of 2026-11-09 are listed in `fixes-1.md` there. Squad
 round 2 (`reviews/plan/round-2/`) changed them again: one fix and three fork decisions, listed in `fixes-1.md` there.
+Squad round 3 (`reviews/plan/round-3/`) changed them a third time: one fix and two fork decisions (decisions 17 and
+18), listed in `fixes-1.md` and `fixes-2.md` there. The analysis of the tasks (`analysis-report.md`) added the
+operator's ruling on the mutation scope of constitution VIII (decision 19).
 
 ## Summary
 
@@ -240,7 +243,9 @@ package and no new gate.
      definite-width dialog host, the caption's line boxes at `scrollLeft` 0 and scrolled, under `ltr` and `rtl`,
      and the AX-tree structure), the CDP accessibility tree access,
      the forced-colours ring in a `forced-color-adjust: none` region (R-05), the list-semantics plants (R-10), and that
-     each plant of R-10 bites; record them;
+     each plant of R-10 bites against the rule it undoes; all of it on a scratch stylesheet holding the six
+     R-08 tokens and then the whole data-model § Rule table, and on scratch copies of the fixture layouts (R-10);
+     record them;
    - `buildPlan(css)` and build with tests, and the source-level checks, each paired with its positive assertion,
      with their plants and boundary strings (R-11);
    - the line-height lint option with its unit tests, its fail plants and pass plant, and the move of
