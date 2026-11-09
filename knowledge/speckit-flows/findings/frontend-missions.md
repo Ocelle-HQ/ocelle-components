@@ -79,6 +79,9 @@ pitfalls up front. Each entry names where it was found. New entries are added as
   whole declaration becomes `outline-style: none`. Use longhands. (003 SPEC-2-12)
 - `<canvas>` `width`/`height` attributes set its natural size, not a presentational hint, so `block-size` tricks do
   not change its ratio. (003 CORRECTNESS-1-009)
+- A `font` shorthand resets every longhand it does not name, so `font: <size> <family>` without `/` sets
+  `line-height: normal`. A token-only lint rule for line heights must check the shorthand too, and accept only
+  line-height tokens, not any `--ocelle-*` name. (003 landing L1-01, phase 2 round 2)
 
 ## Layout
 
