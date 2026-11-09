@@ -82,6 +82,10 @@ browser-default monospace (FR-026).
 - PLAN-FRESH-3-002 (b): print is out of scope. A prose table is a screen scroll box, so a printed document shows only
   the columns that fit the page; a host that prints adds its own print rule (Assumptions, FR-004).
 
+**Operator decision at phase 4 review** (2026-11-09, human:jeroennouwsdev, R1-04, "Fix the spec (Recommended)";
+`reviews/phase-4/round-1.md`): `thead` is removed from the elements the prose family styles. Header cells are styled
+through the `th` rules, and `thead` needs no rule of its own (FR-014).
+
 ## Consumer need
 
 Hosts that load `@ocelle/tokens` still style the page itself: margins, the body font, focus, rendered
@@ -512,7 +516,8 @@ copied text.
 
 - **FR-014**: the prose family MUST apply only inside an element with the prose hook. It MUST style these by element
   selector, with no class: `h1` to `h6`, `p`, `ul`, `ol`, `li`, `blockquote`, `code`, `pre`, `hr`, `a` (links only: an
-  `a` with an `href`), `table`, `caption`, `thead`, `th`, `td`. Nested lists get the same list rules. The prose family
+  `a` with an `href`), `table`, `caption`, `th`, `td`. Nested lists get the same list rules. Header cells are styled
+  through the `th` rules; `thead` needs no rule of its own (operator decision R1-04, phase 4). The prose family
   sets no rule of its own for `img`, `strong`, `em`, `del` or the checkbox of a Markdown task list: they inherit the
   prose size and line height and keep the base layer's rules (media and form controls, FR-007). The fixture of User
   Story 3 holds no task list.
