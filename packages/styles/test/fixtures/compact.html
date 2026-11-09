@@ -20,6 +20,20 @@
 <section id="density-true" data-ocelle-density="true">
 <p id="density-true-p">A region with an undocumented density value.</p>
 </section>
+<section id="prose-in-compact-region" data-ocelle-density="compact">
+<div id="prose-in-compact" data-ocelle-prose="">
+<p id="prose-in-compact-p">A prose container inside a compact region.</p>
+</div>
+</section>
+<div id="compact-in-prose" data-ocelle-prose="">
+<section id="compact-in-prose-region" data-ocelle-density="compact">
+<p id="compact-in-prose-p">A compact region inside a prose container, with <code id="compact-in-prose-code">inline code</code>.</p>
+<table><thead><tr><th>Key</th></tr></thead><tbody><tr><td id="compact-in-prose-td">Value</td></tr></tbody></table>
+</section>
+</div>
+<div id="both" data-ocelle-prose="" data-ocelle-density="compact">
+<p id="both-p">One element that carries both the prose hook and the compact hook.</p>
+</div>
 <p id="values"><span id="value" data-ocelle-value="">0123 4567 89ab cdef</span> <span id="value-ink" data-ocelle-value="ink">003-base-styles</span> <span id="value-true" data-ocelle-value="true">0011 2233</span></p>
 </main>
 </body>

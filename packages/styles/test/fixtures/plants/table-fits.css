@@ -1,0 +1,4 @@
+/* Plant (research.md R-10, US3-3): a table capped at one cell, so the table that fits overflows and is a tab stop. */
+[data-ocelle-prose=""] :where(table) {
+  max-inline-size: var(--ocelle-measure-cell);
+}

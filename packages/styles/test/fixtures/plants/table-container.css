@@ -1,0 +1,4 @@
+/* Plant (research.md R-10, US3-3, SC-004): the table without its inline-size containment (contain: none does not bite). */
+[data-ocelle-prose=""] :where(table) {
+  container-type: normal;
+}

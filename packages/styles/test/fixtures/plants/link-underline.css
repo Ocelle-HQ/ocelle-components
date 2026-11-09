@@ -1,0 +1,4 @@
+/* Plant (research.md R-10, US3-6): a link that loses its underline on hover and on keyboard focus. */
+[data-ocelle-prose=""] :where(a:any-link:hover, a:any-link:focus-visible) {
+  text-decoration-line: none;
+}

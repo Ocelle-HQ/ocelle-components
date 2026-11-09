@@ -9,7 +9,9 @@ import type { Served } from "./serve.ts";
 // "Dialog size unit"): each token is applied to a probe element through the property of its probe in expected.ts
 // (width for sizes, box-shadow for elevations, transition-duration for motion, ...) and the probe's computed value is
 // compared with the used value transcribed from Appendix A, at a 1280 × 800 viewport, a 16px root font size and a
-// 1000px wide containing block: the dialog sizes are 1248px and 768px. Theme-dependent tokens per theme, the
+// 1000px wide containing block that is also a query container (`container-type: inline-size`, 003 research.md R-08),
+// so `--ocelle-measure-container` (100cqi) resolves against its 1000px and not the viewport: the dialog sizes are
+// 1248px and 768px. Theme-dependent tokens per theme, the
 // theme-independent ones equal in all six conditions; motion is 0ms under reduced motion, easing unchanged.
 type Theme = "light" | "dark";
 
@@ -39,6 +41,7 @@ async function read(page: Page, theme: Theme): Promise<Record<string, number | s
     block.style.position = "relative";
     block.style.width = "1000px";
     block.style.fontSize = "16px";
+    block.style.containerType = "inline-size";
     document.body.append(block);
     const values: Record<string, string> = {};
     for (const { name, property } of probes) {

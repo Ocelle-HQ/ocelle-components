@@ -1,0 +1,46 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Prose</title>
+<link rel="stylesheet" href="tokens.css">
+<link rel="stylesheet" href="base.css">
+<link rel="stylesheet" href="layout.css">
+</head>
+<body>
+<main id="main">
+<article id="prose" data-ocelle-prose="">
+<h1 id="h1">A rendered Markdown document</h1>
+<p id="p">Running text in a prose container reads at a line height of 1.65 and keeps to a reading measure of about sixty-eight characters, however wide the container is, so a reader's eye finds the start of the next line. It has <a id="link" href="#target">a link</a>, a link target <a id="anchor">with no href</a> and <code id="code">inline code</code>.</p>
+<h2 id="h2">Lists</h2>
+<ul id="ul"><li id="li">A list item is held to the reading measure too, like the paragraphs around it, so a long item wraps where the running text does.</li><li>A list item with a nested list:<ol id="ol"><li id="nested-li">a nested item</li><li>and another</li></ol></li></ul>
+<h3 id="h3">A block quote</h3>
+<blockquote id="blockquote"><p id="quote-p">Tables and code blocks may use the full width of the container; running text keeps to about sixty-eight characters.</p></blockquote>
+<h4 id="h4">A code block</h4>
+<pre id="pre"><code id="pre-code">sha256-0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef0
+  indented    with runs of spaces</code></pre>
+<h5 id="h5">A rule</h5>
+<hr id="hr">
+<h6 id="h6">Tables</h6>
+<table id="wide"><caption id="caption">Quarterly figures for each of the twelve regions, in thousands, for the first two quarters of the year.</caption><thead><tr><th id="wide-th">North</th><th>South</th><th>East</th><th>West</th><th>Coast</th><th>Hills</th><th>Lakes</th><th>Delta</th><th>Plain</th><th>Ridge</th><th>Bay</th><th>Isles</th></tr></thead><tbody><tr><td id="wide-td">1204</td><td>986</td><td>1432</td><td>877</td><td>1120</td><td>654</td><td>712</td><td>1301</td><td>998</td><td>1045</td><td>833</td><td>1267</td></tr><tr><td>1310</td><td>1002</td><td>1398</td><td>902</td><td>1175</td><td>699</td><td>745</td><td>1288</td><td>1012</td><td>1099</td><td>861</td><td>1302</td></tr></tbody></table>
+<table id="wide-plain"><thead><tr><th id="wide-plain-th">North</th><th>South</th><th>East</th><th>West</th><th>Coast</th><th>Hills</th><th>Lakes</th><th>Delta</th><th>Plain</th><th>Ridge</th><th>Bay</th><th>Isles</th></tr></thead><tbody><tr><td id="wide-plain-td">1204</td><td>986</td><td>1432</td><td>877</td><td>1120</td><td>654</td><td>712</td><td>1301</td><td>998</td><td>1045</td><td>833</td><td>1267</td></tr><tr><td>1310</td><td>1002</td><td>1398</td><td>902</td><td>1175</td><td>699</td><td>745</td><td>1288</td><td>1012</td><td>1099</td><td>861</td><td>1302</td></tr></tbody></table>
+<table id="wide-link"><thead><tr><th id="wide-link-th">North</th><th>South</th><th>East</th><th>West</th><th>Coast</th><th>Hills</th><th>Lakes</th><th>Delta</th><th>Plain</th><th>Ridge</th><th>Bay</th><th>Isles</th></tr></thead><tbody><tr><td><a id="cell-link" href="#target">1204</a></td><td>986</td><td>1432</td><td>877</td><td>1120</td><td>654</td><td>712</td><td>1301</td><td>998</td><td>1045</td><td>833</td><td>1267</td></tr><tr><td>1310</td><td>1002</td><td>1398</td><td>902</td><td>1175</td><td>699</td><td>745</td><td>1288</td><td>1012</td><td>1099</td><td>861</td><td>1302</td></tr></tbody></table>
+<table id="fits"><thead><tr><th id="fits-th">Key</th><th>Value</th></tr></thead><tbody><tr><td id="fits-td">Mission</td><td>003</td></tr><tr><td>Phase</td><td>4</td></tr></tbody></table>
+<p id="long"><code id="long-code">packages/styles/test/fixtures/deeply-nested-directory/deeply-nested-directory/deeply-nested-directory/deeply-nestedx.css</code> <a id="long-url" href="#target">https://example.org/ocelle/mission-003-base-styles-mission-003-base-styles-mission-003-base-styles-mission-003-base-styl</a></p>
+</article>
+<div id="outside">
+<h1 id="out-h1">A heading</h1>
+<h2 id="out-h2">A subheading</h2>
+<p id="out-p">A paragraph of the same document.</p>
+<table id="out-table"><thead><tr><th id="out-th">Key</th><th>Value</th></tr></thead><tbody><tr><td>Mission</td><td>003</td></tr></tbody></table>
+</div>
+<div id="undocumented" data-ocelle-prose="true">
+<h1 id="true-h1">A heading</h1>
+<h2 id="true-h2">A subheading</h2>
+<p id="true-p">A paragraph of the same document.</p>
+<table id="true-table"><thead><tr><th id="true-th">Key</th><th>Value</th></tr></thead><tbody><tr><td>Mission</td><td>003</td></tr></tbody></table>
+</div>
+<p id="target">The links' target.</p>
+</main>
+</body>
+</html>

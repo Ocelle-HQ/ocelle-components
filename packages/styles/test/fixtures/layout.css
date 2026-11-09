@@ -26,3 +26,29 @@
 [data-fixture="target-min"] {
   inline-size: var(--ocelle-target-min);
 }
+
+/*
+ * The hosts of prose-hosts.html (US3-3, research.md R-06): a grid whose 1fr item sits beside a 60 px rail, a flex
+ * row whose flex: 1 item sits beside one, and a modal dialog with a definite width, so that a prose container gets
+ * its width from its context, never from its content.
+ */
+[data-fixture="grid"] {
+  display: grid;
+  grid-template-columns: 60px 1fr;
+}
+
+[data-fixture="flex"] {
+  display: flex;
+}
+
+[data-fixture="rail"] {
+  flex: 0 0 60px;
+}
+
+[data-fixture="flex-item"] {
+  flex: 1;
+}
+
+[data-fixture="dialog"] {
+  inline-size: var(--ocelle-dialog-max-inline);
+}
