@@ -170,7 +170,21 @@ plant (it passes); "with" is the problem the guard's helper reports.
 
 ## Source-level plants (R-10 § Source-level guards)
 
-These plants can only bite against the checks written later in this phase, so the spike does not run them. They run
-as T009's tests in `packages/styles/test/source.test.ts`: each plant string of R-10 § Source-level guards goes through
-the check's helper, which must report it, and each boundary string must pass. Their result is recorded below once the
-phase is green.
+These plants can only bite against the checks written later in this phase, so the spike did not run them. They run
+as T009's tests in `packages/styles/test/source.test.ts`, each in the same test as its positive assertion: every
+plant string of R-10 § Source-level guards goes through the check's helper (`packages/styles/test/source-checks.ts`),
+which must report it, and each boundary string must not.
+
+**Result** (green, `src/base.css` with the base layer): every plant bites and every boundary passes.
+
+| Guard | Plants (each reported once) | Boundaries (none reported) |
+|---|---|---|
+| motion (US1-3) | `transition: color 1s`; `animation-name: x`; `scroll-behavior: smooth`; `transition-duration: 1s` inside `@media (prefers-reduced-motion: no-preference)` | — |
+| `forced-color-adjust` (US1-3) | `forced-color-adjust: none` | — |
+| `outline: none` (FR-009) | `outline: none`; `outline: 0`; `outline-style: none`; the same three inside `@media (forced-colors: active)` | — |
+| `@import`, `url()` (US1-5) | `@import "x.css";`; `background-image: url(x.png)` | — |
+| class selector (US1-8) | `.x {}`; `[data-ocelle-prose] p:not(.x) {}` | — |
+| specificity (US1-8) | `#x p {}` (1,0,1); `:root {}` (0,1,0); `:focus-visible {}` (0,1,0); `[data-ocelle-prose] :where(a):hover {}` (0,2,0); `[data-ocelle-prose] p:not(.x) {}` (0,2,1) | `[data-ocelle-prose] p {}` (0,1,1); `:where(:root) {}` (0,0,0); `:where(*)::before {}` (0,0,1) |
+
+FR-020's list (the wrap rule) is phase 5's (T045). At red (empty `src/base.css`, `buildPlan()` planning nothing) the
+five source tests failed on their positive assertions (`red-phase.log`).

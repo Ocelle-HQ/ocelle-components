@@ -1,0 +1,58 @@
+/*
+ * @ocelle/styles base.css (003): the base layer. Link it after @ocelle/tokens tokens.css. Every value is an
+ * --ocelle-* token; every base selector is wrapped in :where(), so any rule of the host page's own stylesheets
+ * overrides it. No motion, no @import, no url(), no class. See README.md for the host contract.
+ */
+
+/* Base layer: the reset, the body, the root color-scheme, the focus ring, code elements, forced colours. */
+
+/* Pseudo-elements are invalid inside :where(), so they follow it: (0,0,0), (0,0,1), (0,0,1). */
+:where(*),
+:where(*)::before,
+:where(*)::after {
+  box-sizing: border-box;
+}
+
+:where(:root) {
+  color-scheme: var(--ocelle-color-scheme);
+}
+
+:where(body) {
+  margin: 0;
+  font-family: var(--ocelle-font-sans);
+  font-size: var(--ocelle-font-size-md);
+  line-height: var(--ocelle-line-height-normal);
+  color: var(--ocelle-color-ink);
+  background-color: var(--ocelle-color-canvas);
+}
+
+/* No wider than the container; block-size: auto keeps the aspect ratio when the width is capped. */
+:where(img, picture, video, canvas, svg) {
+  max-inline-size: 100%;
+  block-size: auto;
+}
+
+:where(button, input, select, textarea) {
+  font: inherit;
+}
+
+/* No browser-default monospace anywhere on the page (constitution II). */
+:where(code, pre, kbd, samp) {
+  font-family: var(--ocelle-font-sans);
+  font-variant-numeric: var(--ocelle-figures);
+}
+
+/* Longhands, so outline-style stays solid when a token is missing (research.md R-05). */
+:where(:focus-visible) {
+  outline-style: solid;
+  outline-width: var(--ocelle-focus-width);
+  outline-color: var(--ocelle-color-focus);
+  outline-offset: var(--ocelle-focus-offset);
+}
+
+/* Observable inside a host region with forced-color-adjust: none, where the browser does not force the colour. */
+@media (forced-colors: active) {
+  :where(:focus-visible) {
+    outline-color: Highlight;
+  }
+}

@@ -1,0 +1,11 @@
+{
+  "expect": "fail",
+  "why": "A percentage line height (line-height: 165%) in packages/styles is rejected: line heights there are tokens (003 FR-002, research.md R-07).",
+  "findings": [
+    {
+      "location": "packages/styles/src/x.css:3",
+      "rule": "ocelle/token-only",
+      "message": "165%"
+    }
+  ]
+}

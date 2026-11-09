@@ -2,8 +2,11 @@
 // per token for a theme. Kept out of tokens.stories.ts so that the story file only binds the groups. The markup is a
 // <dl> of <dt> name and <dd> value; an opaque colour token's <dt> starts with an empty swatch <span> whose colour
 // comes from the generated swatch stylesheet by class and data-token (scripts/swatches.ts), never from a style
-// attribute. Every text and attribute value is escaped.
+// attribute. Every text and attribute value is escaped. Since 003 (FR-023, research.md R-12) it also renders the
+// base-style stories, one family each, from their text in base-content.json (kept out of the mutation scope), with
+// no style attribute and no class.
 import { resolve } from "../../packages/tokens/src/generate.ts";
+import stories from "./base-content.json" with { type: "json" };
 import type { Group, Theme, TokenRecord } from "../../packages/tokens/src/generate.ts";
 
 const hex = /^#[0-9A-Fa-f]{6}$/;
@@ -52,5 +55,21 @@ export interface Content {
   readonly base: BaseContent;
 }
 
-/** The markup of a family's story from the stories' text. Scaffold (003 phase 2): renders nothing yet. */
-export const renderFamily: (family: Family, content?: Content) => string = () => "";
+/** The stories' text of base-content.json. */
+const storyContent: Content = stories;
+
+/** The markup of a family's story from the stories' text (base-content.json unless given), every text escaped. */
+export function renderFamily(family: Family, content: Content = storyContent): string {
+  const text = content[family];
+  const items = text.list.map((item) => `<li>${escape(item)}</li>`).join("");
+  return (
+    `<article data-story="${family}">` +
+    `<h1>${escape(text.heading)}</h1>` +
+    `<p>${escape(text.paragraph)} <a href="#base-page">${escape(text.link)}</a></p>` +
+    `<p><button type="button">${escape(text.button)}</button> <input type="text" aria-label="${escape(text.input)}"></p>` +
+    `<ul>${items}</ul>` +
+    `<p><code>${escape(text.code)}</code> <kbd>${escape(text.kbd)}</kbd> <samp>${escape(text.samp)}</samp></p>` +
+    `<pre>${escape(text.pre)}</pre>` +
+    "</article>"
+  );
+}

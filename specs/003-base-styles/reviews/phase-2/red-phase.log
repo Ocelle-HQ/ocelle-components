@@ -1,5 +1,5 @@
 Scope: all 5 workspace projects
-✓ Lockfile passes supply-chain policies (verified 53m ago)
+✓ Lockfile passes supply-chain policies (verified 55m ago)
 Lockfile is up to date, resolution step is skipped
 Packages are hard linked from the content-addressable store to the virtual store.
   Content-addressable store is at: /root/.local/share/pnpm/store/v11
@@ -30,7 +30,7 @@ devDependencies:
 + vite 8.3.5
 + vitest 5.0.5
 
-Done in 304ms using pnpm v12.16.1
+Done in 340ms using pnpm v12.16.1
 $ node gates/bin/setup-offline.ts
 setup: installed offline; Chromium at /tmp/claude-0/-home-user-ocelle-components/181e1231-8fd5-5f31-9d9d-498e593ba7cf/scratchpad/pw/chromium-1248/chrome-linux64/chrome
 $ node gates/bin/test.ts
@@ -118,8 +118,8 @@ packages/styles/test/readme.test.ts:48: unit-tests: packages/styles/README.md na
 packages/styles/test/readme.test.ts:61: unit-tests: packages/styles/CHANGELOG.md names the base.css export under Unreleased / Added (constitution VII, FR-004): AssertionError: expected '' to match /^- `base\.css`/m
 packages/styles/test/source.test.ts:59: unit-tests: src/base.css as shipped (buildPlan(text)[0].content) opens with the base layer of data-model § Rule table, in its order, with exactly its declarations (R-03): AssertionError: expected [] to deeply equal [ { media: [], …(2) }, …(7) ]
 packages/styles/test/source.test.ts:63: unit-tests: src/base.css as shipped (buildPlan(text)[0].content) US1-3: has the focus rule's four longhands and the forced-colours rule, and declares no motion and no forced-color-adjust: none: AssertionError: expected [] to deeply equal [ { media: [], …(2) }, { …(3) } ]
-packages/styles/test/source.test.ts:80: unit-tests: src/base.css as shipped (buildPlan(text)[0].content) FR-009: the focus rule declares outline-style: solid, and no rule sets outline: none, outline: 0 or outline-style: none: TypeError: undefined is not iterable (cannot read property Symbol(Symbol.iterator))
-packages/styles/test/source.test.ts:95: unit-tests: src/base.css as shipped (buildPlan(text)[0].content) US1-5: holds the base layer's body rule, and has no @import and no url(): AssertionError: expected false to be true // Object.is equality
-packages/styles/test/source.test.ts:101: unit-tests: src/base.css as shipped (buildPlan(text)[0].content) US1-8: holds every base-layer selector, and no selector has a class or exceeds its specificity bound: AssertionError: expected [ ':where(*)', …(8) ] to deeply equal []
+packages/styles/test/source.test.ts:80: unit-tests: src/base.css as shipped (buildPlan(text)[0].content) FR-009: the focus rule declares outline-style: solid, and no rule sets outline: none, outline: 0 or outline-style: none: AssertionError: expected [] to deep equally contain [ 'outline-style', 'solid' ]
+packages/styles/test/source.test.ts:96: unit-tests: src/base.css as shipped (buildPlan(text)[0].content) US1-5: holds the base layer's body rule, and has no @import and no url(): AssertionError: expected false to be true // Object.is equality
+packages/styles/test/source.test.ts:102: unit-tests: src/base.css as shipped (buildPlan(text)[0].content) US1-8: holds every base-layer selector, and no selector has a class or exceeds its specificity bound: AssertionError: expected [ ':where(*)', …(8) ] to deeply equal []
 unit-tests: 87 of 1881 tests failed
 [ELIFECYCLE] Test failed. See above for more details.

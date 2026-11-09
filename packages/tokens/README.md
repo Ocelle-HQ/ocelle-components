@@ -20,9 +20,9 @@ attribute on another element, has no effect. Changing or removing the attribute 
 
 ### `color-scheme`
 
-The stylesheet sets no `color-scheme` property. `--ocelle-color-scheme` is `light` or `dark` with the theme; the
-base styles (#6) apply it with `color-scheme: var(--ocelle-color-scheme)` on the root, so native controls,
-scrollbars and system colours follow the token theme. A host without the base styles may do the same. The token is
+The stylesheet sets no `color-scheme` property. `--ocelle-color-scheme` is `light` or `dark` with the theme;
+`@ocelle/styles` `base.css` applies it with `color-scheme: var(--ocelle-color-scheme)` on the root, so native
+controls, scrollbars and system colours follow the token theme. A host without the base styles may do the same. The token is
 in the colour group of the JSON export, but its value is that keyword, not a colour.
 
 ### Content Security Policy

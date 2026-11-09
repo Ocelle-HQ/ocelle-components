@@ -1,0 +1,11 @@
+{
+  "expect": "fail",
+  "why": "A literal line height (line-height: 1.65) in packages/styles is rejected: line heights there are tokens (003 FR-002, research.md R-07).",
+  "findings": [
+    {
+      "location": "packages/styles/src/x.css:3",
+      "rule": "ocelle/token-only",
+      "message": "1.65"
+    }
+  ]
+}
