@@ -66,6 +66,17 @@ describe("writeGenerated", () => {
     }).toThrow(missing);
   });
 
+  it("fails before it writes anything: an earlier run's generated directory stays as it was (added: mutation run)", () => {
+    const out = temp();
+    writeFileSync(join(out, "tokens.css"), "old");
+    const missing = join(temp(), "missing", "base.css");
+    expect(() => {
+      writeGenerated(out, join(temp(), "missing"), fixture, missing);
+    }).toThrow(`writeGenerated: no base stylesheet at ${missing}`);
+    expect(readdirSync(out)).toEqual(["tokens.css"]);
+    expect(readFileSync(join(out, "tokens.css"), "utf8")).toBe("old");
+  });
+
   it("writes tokens.css as css() of the source and swatches.css as swatchRules(), copies the base stylesheet, and copies the fonts directory", () => {
     const fonts = temp();
     writeFileSync(join(fonts, "Face.woff2"), Buffer.from([0, 1, 2, 255]));

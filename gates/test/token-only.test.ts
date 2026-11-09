@@ -455,6 +455,41 @@ describe("rawValues with the lineHeight: \"token\" option", () => {
   });
 });
 
+// Added after the phase 2 mutation run (surviving mutants of tokenLineHeight(), fontRaw() and rawValues()): a
+// string or another function is not a token, the line height of `font` is the part right after the slash (not after
+// a comma or a string "/"), a `font` without a slash keeps its 002 checks, every other part of a `font` value is
+// checked outside calc(), and the raw line height is reported trimmed.
+describe("rawValues with the lineHeight: \"token\" option: edges", () => {
+  const token = { lineHeight: "token" } as const;
+
+  it("reports a string, another function naming a token and a function with no argument as a raw line height", () => {
+    expect([
+      rawValues("line-height", '"var"', token),
+      rawValues("line-height", "env(--ocelle-line-height-normal)", token),
+      rawValues("line-height", "var()", token),
+    ]).toEqual([['"var"'], ["env(--ocelle-line-height-normal)"], ["var()"]]);
+  });
+
+  it("takes the part right after the slash as the line height of font, not the part after a comma or a string \"/\"", () => {
+    expect([
+      rawValues("font", "var(--ocelle-font-sans), var(--ocelle-font-size-md)/165%", token),
+      rawValues("font", '"/" var(--ocelle-font-size-md)/165%', token),
+    ]).toEqual([["165%"], ['"/"', "165%"]]);
+  });
+
+  it("checks a font value without a slash as 002 does, so a percentage or calc() there is allowed", () => {
+    expect([rawValues("font", "165% var(--ocelle-font-sans)", token), rawValues("font", "calc(var(--a) * 2) var(--ocelle-font-sans)", token)]).toEqual([[], []]);
+  });
+
+  it("checks the other parts of a font value outside calc(): a bare number is raw", () => {
+    expect(rawValues("font", "600 var(--ocelle-font-size-md)/var(--ocelle-line-height-normal) var(--ocelle-font-sans)", token)).toEqual(["600"]);
+  });
+
+  it("reports a raw line height without the surrounding white space", () => {
+    expect(rawValues("line-height", "  1.65 ", token)).toEqual(["1.65"]);
+  });
+});
+
 describe("the ocelle/token-only plugin with the lineHeight: \"token\" option", () => {
   async function lint(code: string, options: unknown): Promise<{ readonly warnings: { line: number; text: string }[]; readonly invalid: number }> {
     const { results } = await stylelint.lint({ code, config: { plugins: [plugin], rules: { [ruleName]: options } } });
