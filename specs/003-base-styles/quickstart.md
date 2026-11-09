@@ -9,11 +9,14 @@ Prerequisites: the 001 setup (`pnpm run setup:online` or `setup:offline`), the p
    The browser suite serves the fixtures under `default-src 'none'; script-src 'self'; style-src 'self'; font-src
    'self'` and reports zero violations.
 3. **Gates**: `pnpm run gate:style-lint`, `gate:prefix`, `gate:csp`, `gate:contrast`, `gate:brand-rules` and
-   `gate:plants` each report no finding. `gate:plants` includes `style-lint/fail-styles-literal-line-height`.
-4. **Mutation**: `pnpm run gate:mutation -- --base <base>` has no survivor in `packages/styles/scripts/build.ts` or in
-   the changed token files.
+   `gate:plants` each report no finding. `gate:plants` includes the `style-lint/fail-styles-*-line-height` plants,
+   `pass-styles-line-height-token` and the moved `pass-line-height`. `gate:pins` accepts the `@ocelle/tokens` peer
+   dependency of `packages/styles/package.json`.
+4. **Mutation**: `pnpm run gate:mutation -- --base <base>` has no survivor in `packages/styles/scripts/build.ts`,
+   `gates/stylelint/token-only.ts`, `storybook/stories/render.ts` or the changed token files.
 5. **By hand**, optional:
    - `pnpm --filter storybook build`, then open `storybook/dist/iframe.html?id=base-styles--prose-document&viewMode=story`.
    - The prose document reads at 1.65 with an 18 px `h2`.
    - At 320 px the wide tables scroll inside their own box.
-   - Tab lands on the plain wide table, and on the link in the linked table.
+   - Tab lands on the plain wide table, whose ring shows on all four sides inside its box, and on the link in the
+     linked table. The caption starts at the table's left edge.

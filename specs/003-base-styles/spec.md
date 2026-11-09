@@ -45,6 +45,22 @@ browser-default monospace (FR-026).
   keys scroll the box from it. The test fixtures cover both cases. No wrapper is needed, and no `tabindex` is
   expected from the renderer (FR-017, User Story 3 scenarios 3 and 12).
 
+**Operator decisions at squad round 1 of the plan** (2026-11-09, human:jeroennouwsdev; `reviews/plan/round-1/`):
+
+- PLAN-A11Y-SECURITY-1-002 (a): the no-wrapper keyboard model of FR-017 is guaranteed only in Chromium hosts; WebKit
+  hosts (Kitty Desktop on macOS and Linux) add `tabindex="0"` to tables in their renderer, an open limitation for
+  kitty-mission-ui (Assumptions, FR-004).
+- PLAN-A11Y-SECURITY-1-003 (a): a focused prose table shows the focus ring of FR-009 inset, inside its own box
+  (FR-017, User Story 3 scenario 3).
+- PLAN-A11Y-SECURITY-1-004 (a): the value hook is documented as for the main grounds only (FR-013).
+- PLAN-CORRECTNESS-1-002 (a): hook selectors match the documented values exactly; any other value does nothing
+  (FR-005, User Story 2 scenario 3, User Story 3 scenario 5).
+- PLAN-CORRECTNESS-1-012 (a): `@ocelle/styles` declares an exact peer dependency on the `@ocelle/tokens` version it
+  needs (FR-001, FR-004).
+- PLAN-FRESH-1-010 (b): the prose hook goes on a content container, not on the root element (FR-004, FR-015).
+- PLAN-TESTABILITY-1-006 (b): the forced-colours `Highlight` rule of the focus ring is kept as defence for host regions
+  that set `forced-color-adjust: none`, and tested there (FR-011, User Story 1 scenario 4).
+
 ## Consumer need
 
 Hosts that load `@ocelle/tokens` still style the page itself: margins, the body font, focus, rendered
@@ -103,15 +119,17 @@ forced colours, and read computed styles, the accessibility tree and CSP violati
    `animation-name` longhand and a planted `forced-color-adjust: none`.
 4. **Given** forced-colours mode, **When** a button and a text input are keyboard-focused, **Then** the focus outline
    is solid, `--ocelle-focus-width` wide and in a system colour; **and**, in the same test, each control keeps a
-   visible border of non-zero width (FR-011, FR-007).
+   visible border of non-zero width (FR-011, FR-007); **and**, in the same test, a button inside a host region that
+   sets `forced-color-adjust: none` has, when keyboard-focused, an outline colour equal to the resolved `Highlight`
+   and not the resolved `--ocelle-color-focus` (operator decision PLAN-TESTABILITY-1-006 (b)).
 5. **Given** the strict CSP above, **When** the page loads both stylesheets and renders, **Then** the browser reports
    no CSP violation, and the built base stylesheet contains no `@import` and no `url()` (FR-001).
-6. **Given** the base stylesheet, **When** it is linked without `tokens.css`, **Then** every element is
-   `box-sizing: border-box`, the body margin is `0`, and a keyboard-focused button has an outline style other than
-   `none` (the ring stays visible even though the token values are missing); **and** a documentation check finds
-   the README statement that the tokens stylesheet must be linked first, and, for each hook (compact, value, prose,
-   identifier wrap), its exact attribute name and allowed values as the plan fixes them, and finds a `@ocelle/styles`
-   CHANGELOG entry that names `base.css` and each of the four hook attributes (FR-004).
+6. **Given** the base stylesheet, **When** it is linked without `tokens.css`, **Then** every element and its
+   `::before` and `::after` are `box-sizing: border-box`, the body margin is `0`, and a keyboard-focused button has
+   an outline style other than `none` (the ring stays visible even though the token values are missing); **and** a
+   documentation check finds the README statement that the tokens stylesheet must be linked first, and, for each hook
+   (compact, value, prose, identifier wrap), its exact attribute name and allowed values as the plan fixes them, and
+   finds a `@ocelle/styles` CHANGELOG entry that names `base.css` and each of the four hook attributes (FR-004).
 7. **Given** a page that links the base stylesheet before `tokens.css`, **When** both have loaded, **Then** the body's
    computed font size, line height, colour and background and the root's `color-scheme` equal those of scenario 1.
 8. **Given** the built base stylesheet, **When** a source-level check computes the specificity of every selector,
@@ -125,8 +143,8 @@ forced colours, and read computed styles, the accessibility tree and CSP violati
    stylesheet sets `normal` on a `code` outside prose (the rule is easy to override).
 10. **Given** a page that links both stylesheets, **When** an `img`, `picture`, `video`, `canvas` and `svg` wider
     than their container and a `button`, `input`, `select` and `textarea` render, **Then** each media element's box
-    is no wider than its container and each form control's computed font family and size equal those of its parent
-    (FR-007).
+    is no wider than its container, each media element with `width` and `height` attributes keeps their aspect ratio
+    (within 1 px), and each form control's computed font family and size equal those of its parent (FR-007).
 
 ---
 
@@ -155,7 +173,9 @@ check its family, `font-variant-numeric` and colour.
 3. **Given** text with the value style, **When** it renders, **Then** its font family begins with Schibsted Grotesk,
    its `font-variant-numeric` includes tabular figures, its colour is `--ocelle-color-ink-muted` (or
    `--ocelle-color-ink` in the documented variant), and no rule of the base stylesheet sets a monospace family.
-   The value style's computed font size is `--ocelle-font-size-sm` (14 px), inside and outside a compact region.
+   The value style's computed font size is `--ocelle-font-size-sm` (14 px), inside and outside a compact region;
+   **and**, in the same test, text with an undocumented value of the hook (`data-ocelle-value="true"`) gets none of
+   the value style (FR-005).
 4. **Given** the compact hook is set on the root element, **When** the page renders at the default root size,
    **Then** the root's computed font size is unchanged (16 px), the body and its descendants are compact (14 px,
    line height 1.5), `--ocelle-target-min` resolves to 44 px, an `h1` inside a prose container is 30 px, and the
@@ -185,8 +205,9 @@ at 1280 px and 320 px viewport widths and at 200% zoom, in both themes, with and
 `dir="rtl"`, and read computed styles, box sizes, focus order and the accessibility tree. The fixture holds every
 element above plus `h5`, `h6` and a nested list; three wide 12-column tables (one with plain text cells and a
 `caption`, one with plain text cells and no `caption`, one with plain text cells and a link in one cell); a table
-that fits; a long code block; and a paragraph with a long inline code path and a link whose text is a bare URL. It
-holds no task list (FR-014).
+that fits (two columns of short text); a long code block; a paragraph with a long inline code path and a link whose
+text is a bare URL; and an `<a id>` link target with no `href`. The wide table is also rendered in a prose container
+that is a `1fr` grid item and a `flex: 1` item beside a fixed rail. It holds no task list (FR-014).
 
 **Acceptance Scenarios**:
 
@@ -206,21 +227,28 @@ holds no task list (FR-014).
 3. **Given** the two wide tables with plain text cells (one with a `caption`, one without) and the table that fits,
    **When** they render at 320 px, **Then** each wide table scrolls horizontally inside its own scroll box, the page
    does not scroll horizontally, and every cell is at least the cell-floor token wide (about 12ch); **and**, in the
-   same test, Tab moves focus onto each wide `table` itself, which then shows the focus ring of User Story 1, and two
-   ArrowRight presses increase its `scrollLeft` above 0; while a wide table has focus, the focused node in the
-   accessibility tree has role `table` and an accessible name equal to the `caption` text for the table with a
-   caption and no accessible name for the table without one (FR-017); **and** Tab never moves focus onto the table
-   that fits (it is not a tab stop).
+   same test, Tab moves focus onto each wide `table` itself, which then shows the focus ring of User Story 1 inset
+   (outline offset minus `--ocelle-focus-width`), so that, with the container flush with the viewport, the ring lies
+   inside the viewport on all four sides, and two ArrowRight presses increase its `scrollLeft` above 0; while a wide
+   table has focus, the focused node in the accessibility tree has role `table` and an accessible name equal to the
+   `caption` text for the table with a caption and no accessible name for the table without one (FR-017); at
+   `scrollLeft` 0 the caption text starts inside the table's visible box; **and** Tab never moves focus onto the
+   table that fits (it is not a tab stop); **and**, in the same test, with the prose container as the `1fr` item of a
+   grid and as the `flex: 1` item of a flex row beside a fixed rail, and nested one level inside such an item, the
+   page does not scroll horizontally while the wide table scrolls inside its own box.
 4. **Given** table header cells, **When** they render, **Then** they are `--ocelle-font-size-xs` (12 px) Schibsted
    Grotesk with tabular figures, not monospace.
 5. **Given** the fixture inside a prose container and the same fixture outside it on one page, **When** it renders,
    **Then**, in the same test, the `p`, `h1`, `h2`, `table` and `th` inside the container have the prose values of
    scenarios 1 to 4 and the same elements outside it have none of them (the host's own headings and tables are not
-   restyled). The guard half is also proven by a planted prose rule leaked to page level.
+   restyled), and the same elements inside a container with an undocumented value of the hook
+   (`data-ocelle-prose="true"`) have none of them either (FR-005). The guard half is also proven by a planted prose
+   rule leaked to page level.
 6. **Given** a link in prose, **When** it renders at rest, on hover and on keyboard focus, **Then** its colour is
    `--ocelle-color-link` at rest and `--ocelle-color-link-hover` on hover (brand rule: ochre text is never on bone),
    it is underlined (`text-decoration-line: underline`) in every state, and the contrast gate covers every new colour
-   pairing the prose family introduces.
+   pairing the prose family introduces (a test checks each pairing against the contrast pairs); an `<a id>` target
+   with no `href` keeps the running text's colour and is not underlined by the prose family.
 7. **Given** a prose table with a header row, **When** its accessibility tree is read, in both themes and whether or
    not it overflows, **Then** it has role `table` with its rows, column headers and cells, and each cell is
    associated with its column header.
@@ -304,6 +332,13 @@ copied text.
 - **Forced colours inside prose**: table borders and rules stay visible as system colours (User Story 3 scenario 10).
 - **Right-to-left text**: the base stylesheet uses logical properties, so it mirrors under `dir="rtl"` (User Story 3
   scenario 9, FR-025).
+- **Prose hook on the root element**: the prose hook goes on a content container. On `<html>` the container rule
+  does not apply, so the root font size and line height are not set; the README states this (FR-004, FR-015).
+- **Prose in an app shell**: a prose container that is a grid or flex item (beside a side rail, for example) is not
+  widened by a wide table; only the table's own box scrolls (FR-017, User Story 3 scenario 3).
+- **Value text on the chrome**: the value hook is for the main grounds; on the dark chrome its colours fail contrast,
+  so hosts do not use it there (FR-013).
+- **WebKit hosts**: see Assumptions, Browsers.
 - **Shadow DOM**: the base stylesheet styles the light DOM of the host page; it does not reach into elements' shadow
   roots. Elements adopt their own stylesheets (constitution IV).
 
@@ -315,7 +350,9 @@ copied text.
 
 - **FR-001**: `@ocelle/styles` MUST ship one external stylesheet, `base.css`, exported by the package and built from
   source in the repository. It MUST contain no `@import` and no `url()`. A host loads it with a `<link>` after
-  `@ocelle/tokens/tokens.css`. The stories and test fixtures of this feature use no inline style (constitution IV).
+  `@ocelle/tokens/tokens.css`. The package MUST name the `@ocelle/tokens` version `base.css` needs as an exact
+  peer dependency (operator decision PLAN-CORRECTNESS-1-012 (a)). The stories and test fixtures of this feature use
+  no inline style (constitution IV).
 - **FR-002**: every value in the stylesheet MUST be a `--ocelle-*` token reference. Only keywords, `0`, unitless
   numbers that are not lengths and not line heights, percentages, `fr` values and selectors are exempt (percentages
   and `fr` as the 002 lint already allows, for example `max-width: 100%` on media in FR-007), under the same
@@ -331,15 +368,23 @@ copied text.
   - each hook (compact, value, prose and identifier-wrap) with its exact attribute name and allowed values (fixed in
     the plan, including whether a value such as `data-ocelle-density="regular"` returns a nested region to the
     regular scale);
+  - that any other value of a hook attribute, `"true"` among them, has no effect (FR-005);
   - what each family styles and the tokens it uses;
-  - that the prose hook wins over the compact hook on an element that carries both (FR-024).
+  - that the prose hook wins over the compact hook on an element that carries both (FR-024);
+  - the `@ocelle/tokens` version `base.css` needs (FR-001);
+  - that the value hook is for the main grounds only, not the chrome (FR-013);
+  - that the prose hook goes on a content container, not on the root element (FR-015);
+  - that the keyboard model of prose tables (FR-017) is guaranteed only in Chromium hosts, that WebKit hosts add
+    `tabindex="0"` to tables in their renderer, and that this is an open limitation for kitty-mission-ui
+    (Assumptions, Browsers).
 
   The `@ocelle/styles` CHANGELOG MUST get an entry that names the `base.css` export and each of the four hooks by
   its attribute name (constitution VII), checked by the documentation check of User Story 1 scenario 6.
 - **FR-005**: the hooks MUST be attributes in the `data-ocelle-` namespace, one attribute per hook (compact, value,
   prose, identifier wrap; the families they belong to are defined under Key Entities), not classes; the library
   ships no utility classes (#6 "Out of scope"). Their names are part of the public surface and change only under
-  semver. Classes instead of attributes need the operator's approval at a plan fork.
+  semver. Classes instead of attributes need the operator's approval at a plan fork. A hook applies only with one of
+  its documented values; any other value has no effect (operator decision PLAN-CORRECTNESS-1-002 (a)).
 
 **Base layer (User Story 1)**
 
@@ -347,24 +392,27 @@ copied text.
   theme of 002 in every theme condition (system light, system dark, no preference, `data-theme` overrides).
 - **FR-007**: the reset MUST be minimal and low-specificity: `box-sizing: border-box` for every element and
   pseudo-element; no default body margin; media elements (`img`, `picture`, `video`, `canvas`, `svg`) no wider than
-  their container; form controls (`button`, `input`, `select`, `textarea`) inherit the font (User Story 1
-  scenario 10). It MUST NOT remove list semantics, focus outlines or form control borders. Each of these guards is tested
-  together with a positive reset assertion in the same test (lists keep role `list` in the accessibility tree next
-  to the `box-sizing` assertion; borders in User Story 1 scenario 4) and is proven by a planted rule that removes it.
+  their container, keeping their aspect ratio; form controls (`button`, `input`, `select`, `textarea`) inherit the
+  font (User Story 1 scenario 10). It MUST NOT remove list semantics, focus outlines or form control borders. Each of
+  these guards is tested together with a positive reset assertion in the same test (lists keep role `list` in the
+  accessibility tree next to the `box-sizing` assertion; borders in User Story 1 scenario 4) and is proven by a
+  planted rule that removes it, or, where no CSS rule removes it in the test browser (list semantics in Chromium),
+  the plan records why (SC-002).
 - **FR-008**: the body MUST use `--ocelle-font-sans` and `--ocelle-color-ink` on `--ocelle-color-canvas`, and the
   regular scale (`--ocelle-font-size-md` and `--ocelle-line-height-normal`) unless the body or an ancestor carries
   the compact hook, in which case FR-012 applies.
 - **FR-009**: every element that matches `:focus-visible` MUST show an outline of `--ocelle-focus-width` solid
-  `--ocelle-color-focus` at `--ocelle-focus-offset`. The base stylesheet MUST NOT set `outline: none` on any
-  element. Without `tokens.css` the outline style MUST still be other than `none` (User Story 1 scenario 6).
+  `--ocelle-color-focus` at `--ocelle-focus-offset`, except a table inside prose, whose ring is drawn inset
+  (FR-017). The base stylesheet MUST NOT set `outline: none` on any element. Without `tokens.css` the outline style
+  MUST still be other than `none` (User Story 1 scenario 6).
 - **FR-010**: the base stylesheet MUST NOT declare any property whose name is or starts with `transition` or
   `animation` (shorthands and longhands), nor `scroll-behavior`: the base layer adds no motion, so it is motionless
   with and without `prefers-reduced-motion` (constitution III). Motion stays with the elements, which use the motion
   tokens. A source-level check over the built stylesheet enforces this and is proven by a planted `transition` rule
   and a planted longhand (User Story 1 scenario 3).
 - **FR-011**: under `forced-colors: active`, the focus outline MUST use a system colour (`Highlight` or
-  `CanvasText`), and no rule of the stylesheet may set `forced-color-adjust: none` (source-level check of User Story
-  1 scenario 3).
+  `CanvasText`), also inside a host region that sets `forced-color-adjust: none` (User Story 1 scenario 4), and no
+  rule of the stylesheet may set `forced-color-adjust: none` (source-level check of User Story 1 scenario 3).
 - **FR-026**: the base layer MUST set `code`, `pre`, `kbd` and `samp` everywhere on the page, not only inside the
   prose hook, to `--ocelle-font-sans` with `font-variant-numeric: var(--ocelle-figures)`, so a page that loads
   `base.css` shows no browser-default monospace (constitution II, operator decision at spec check 2). These rules are
@@ -382,7 +430,9 @@ copied text.
   scenario 4).
 - **FR-013**: the value hook MUST set the font to `--ocelle-font-sans`, the size to `--ocelle-font-size-sm`,
   `font-variant-numeric: var(--ocelle-figures)` and the colour to `--ocelle-color-ink-muted`. A documented variant
-  value of the same hook uses `--ocelle-color-ink`.
+  value of the same hook uses `--ocelle-color-ink`. The hook is for the main grounds only (the grounds on which
+  `ink` and `ink-muted` are contrast-checked); the README MUST say so and that it is not for the chrome, where light
+  `ink` is 1.00:1 and `ink-muted` 2.64:1 (operator decision PLAN-A11Y-SECURITY-1-004 (a)).
 - **FR-024**: when the compact and prose hooks are nested, the nearest hooked ancestor decides the size and line
   height of the text inside it. A prose container inside a compact region sets its size to `--ocelle-font-size-md`
   and the prose line height (FR-015), so its paragraphs are 16 px / 26.4 px at the default root size. A compact
@@ -397,13 +447,15 @@ copied text.
 **Prose (User Story 3)**
 
 - **FR-014**: the prose family MUST apply only inside an element with the prose hook. It MUST style these by element
-  selector, with no class: `h1` to `h6`, `p`, `ul`, `ol`, `li`, `blockquote`, `code`, `pre`, `hr`, `a`, `table`,
-  `thead`, `th`, `td`. Nested lists get the same list rules. The prose family sets no rule of its own for `img`,
-  `strong`, `em`, `del` or the checkbox of a Markdown task list: they inherit the prose size and line height and keep
-  the base layer's rules (media and form controls, FR-007). The fixture of User Story 3 holds no task list.
+  selector, with no class: `h1` to `h6`, `p`, `ul`, `ol`, `li`, `blockquote`, `code`, `pre`, `hr`, `a` (links only: an
+  `a` with an `href`), `table`, `caption`, `thead`, `th`, `td`. Nested lists get the same list rules. The prose family
+  sets no rule of its own for `img`, `strong`, `em`, `del` or the checkbox of a Markdown task list: they inherit the
+  prose size and line height and keep the base layer's rules (media and form controls, FR-007). The fixture of User
+  Story 3 holds no task list.
 - **FR-015**: inside prose:
   - the prose container MUST set its font size to `--ocelle-font-size-md` (16 px, as #519's 26.4 px line height
-    implies);
+    implies). The prose container is a content element, not the root element: on `<html>` the container rule does
+    not apply, so the root font size is never set (operator decision PLAN-FRESH-1-010 (b));
   - every element in prose other than `h1` to `h6` (paragraphs, list items, block quotes and their paragraphs, code,
     code blocks, table cells) MUST have a new prose line-height token of 1.65, except inside a nested compact region
     (FR-024);
@@ -423,10 +475,14 @@ copied text.
   inside its line box and never scrolls the page (WCAG 1.4.10, User Story 3 scenario 11).
 - **FR-017**: a table inside prose MUST sit in a scroll box that scrolls horizontally when the table is wider than the
   container. The box needs no wrapper element from the renderer, so a renderer that emits only `<table>` works. The
-  page MUST NOT scroll horizontally because of it. Keyboard access follows the browser's natural focus (operator
-  decision SPEC-3-01), with no wrapper and no `tabindex` from the renderer:
+  page MUST NOT scroll horizontally because of it, also when the prose container, or an element above it, is a grid or
+  flex item. A caption MUST start at the table's start edge, so it is visible at `scrollLeft` 0. Keyboard access
+  follows the browser's natural focus (operator decision SPEC-3-01), with no wrapper and no `tabindex` from the
+  renderer:
   - an overflowing table with no focusable content MUST itself be a tab stop that scrolls with the arrow keys
-    (WCAG 2.1.1) and shows the focus ring of FR-009 (User Story 3 scenario 3);
+    (WCAG 2.1.1) and shows the focus ring of FR-009 drawn inset, at an offset of minus `--ocelle-focus-width`, so
+    all four sides show inside the table's box when it is flush with the viewport (WCAG 2.4.7; operator decision
+    PLAN-A11Y-SECURITY-1-003 (a); User Story 3 scenario 3);
   - in an overflowing table with focusable content (for example a link in a cell), Tab MUST reach that content, and
     the arrow keys MUST scroll the box while that content has focus; the table itself is then not required to be a
     tab stop (User Story 3 scenario 12);
@@ -514,21 +570,21 @@ copied text.
   style-src 'self'; font-src 'self'` renders with 0 CSP violations in both themes.
 - **SC-002**: every acceptance scenario of User Stories 1 to 4 has a test (FR-022), and each test was shown failing
   before its implementation. A guard assertion (a "does not" that already held before this feature) never stands
-  alone: it shares its test with the positive assertion it guards, so the test fails at red, and it is also shown
-  able to fail by its named planted defect: a rule that removes control borders or list semantics (FR-007,
-  User Story 1 scenario 4), a planted `transition`, `animation-name` longhand and `forced-color-adjust: none` (User
-  Story 1 scenario 3), a selector of too high specificity and a class selector (scenario 8), a prose rule leaked to
-  page level (User Story 3 scenario 5), `white-space: normal` on `pre` (the copy half of User Story 3 scenario 8), a
-  wrap rule on every element (User Story 4 scenario 2), and a literal line height (FR-002). Every other guard
-  assertion (among them the pointer half of User Story 1 scenario 2, the root size, `--ocelle-target-min` and focus
-  ring of User Story 2 scenario 4, the table that fits in User Story 3 scenario 3, the absent ellipsis of User Story
-  4 scenario 1, the copy half of User Story 4 scenario 3 and the MUST NOT list of FR-020) gets a plant named in the
-  plan; where no CSS plant can make a guard fail, the plan records why.
+  alone: it shares its test with the positive assertion it guards, so the test fails at red, and it is also shown able
+  to fail by its named planted defect: a rule that removes control borders (FR-007, User Story 1 scenario 4), a
+  planted `transition`, `animation-name` longhand and `forced-color-adjust: none` (User Story 1 scenario 3), a
+  selector of too high specificity and a class selector (scenario 8), a prose rule leaked to page level (User Story 3
+  scenario 5), `white-space: normal` on `pre` (the copy half of User Story 3 scenario 8), a wrap rule on every element
+  (User Story 4 scenario 2), and a literal line height (FR-002). Every other guard assertion (among them the pointer
+  half of User Story 1 scenario 2, the root size, `--ocelle-target-min` and focus ring of User Story 2 scenario 4, the
+  table that fits in User Story 3 scenario 3, the absent ellipsis of User Story 4 scenario 1, the copy half of User
+  Story 4 scenario 3, the list semantics of FR-007 and the MUST NOT list of FR-020) gets a plant named in the plan;
+  where no CSS plant can make a guard fail, the plan records why.
 - **SC-003**: the token-only style lint, the Prefix gate, the Contrast gate and the Brand rules gate report 0
   findings on the merged result, and each new token appears in the JSON export and the typed names.
 - **SC-004**: a rendered Markdown fixture with a 12-column table, a 120-character inline code path and a
-  120-character bare URL link shows no horizontal page scroll at 320 px width and at 200% zoom, while the table
-  scrolls inside its own box.
+  120-character bare URL link shows no horizontal page scroll at 320 px width and at 200% zoom, in normal flow and
+  with the prose container as a grid or flex item, while the table scrolls inside its own box.
 - **SC-005**: in a grid of two `1fr` tracks (`minmax(auto, 1fr)`), a 120-character unbroken identifier with the hook
   leaves its column as wide as the sibling column with a short text (within 1 px), while the same identifier
   without the hook widens its column; its copied text is identical to the source text.
@@ -545,7 +601,7 @@ copied text.
   costs a host nothing it does not mark. A split into several files can come later without breaking the hooks.
 - **Table scroll box without a wrapper**: a renderer that emits only `<table>` cannot add a wrapper, so the scroll box
   is the table itself (for example `display: block; overflow-x: auto` with a nested table layout) or an equivalent the
-  plan picks, subject to the semantics requirement of FR-017. In the browsers below, an overflowing scroll box with
+  plan picks, subject to the semantics requirement of FR-017. In Chromium, an overflowing scroll box with
   no focusable descendant is keyboard-focusable without a `tabindex`; one with a focusable descendant is not, and Tab
   lands on the descendant, from which the arrow keys scroll the box. Spec check 3 measured both in Chrome for
   Testing 153 at 320 px (a 12-column table with `display: block; overflow-x: auto`, `scrollLeft` 80 after two
@@ -565,5 +621,11 @@ copied text.
 - **Elements**: elements (#7 to #17) expose identifier wrapping through their own parts or properties. This feature
   delivers only the shared hook and its semantics.
 - **#20** (drop `as const` in the token source) is independent. If it lands first, the new tokens follow its form.
-- **Browsers**: the same evergreen Chromium-based browsers as 002, with `overflow-wrap: anywhere`, `:focus-visible`,
-  `:where()` and `forced-colors` support.
+- **Browsers**: the tests run in Chromium only (001 FR-005); 002 states no browser assumption. The stylesheet uses
+  only features with evergreen support (`overflow-wrap: anywhere`, `:focus-visible`, `:where()`, `:any-link`,
+  `contain: inline-size`, `forced-colors`). The keyboard model of FR-017 (an overflowing table with no focusable
+  content is a tab stop without a `tabindex`) is Chromium's and is guaranteed only in Chromium hosts (Chromium
+  browsers, WebView2 on Windows). WebKit hosts (Kitty Desktop's webview on macOS and Linux) are not measured: their
+  Markdown renderer adds `tabindex="0"` to tables, and the README records this as an open limitation for
+  kitty-mission-ui (operator decision PLAN-A11Y-SECURITY-1-002 (a)). Constitution I names a Tauri webview as a host,
+  so this limitation is stated rather than assumed away.
