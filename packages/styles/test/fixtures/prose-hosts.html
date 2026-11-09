@@ -1,0 +1,42 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Prose hosts</title>
+<link rel="stylesheet" href="tokens.css">
+<link rel="stylesheet" href="base.css">
+<link rel="stylesheet" href="layout.css">
+</head>
+<body>
+<div id="grid" data-fixture="grid">
+<nav data-fixture="rail" aria-label="Grid rail"></nav>
+<article id="grid-prose" data-ocelle-prose="">
+<p>A prose container that is the 1fr item of a grid beside a 60 px rail.</p>
+<table id="grid-wide"><caption id="grid-wide-caption">Quarterly figures for each of the twelve regions, in thousands, for the first two quarters of the year.</caption><thead><tr><th id="grid-wide-th">North</th><th>South</th><th>East</th><th>West</th><th>Coast</th><th>Hills</th><th>Lakes</th><th>Delta</th><th>Plain</th><th>Ridge</th><th>Bay</th><th>Isles</th></tr></thead><tbody><tr><td id="grid-wide-td">1204</td><td>986</td><td>1432</td><td>877</td><td>1120</td><td>654</td><td>712</td><td>1301</td><td>998</td><td>1045</td><td>833</td><td>1267</td></tr><tr><td>1310</td><td>1002</td><td>1398</td><td>902</td><td>1175</td><td>699</td><td>745</td><td>1288</td><td>1012</td><td>1099</td><td>861</td><td>1302</td></tr></tbody></table>
+</article>
+</div>
+<div id="flex" data-fixture="flex">
+<nav data-fixture="rail" aria-label="Flex rail"></nav>
+<article id="flex-prose" data-fixture="flex-item" data-ocelle-prose="">
+<p>A prose container that is the flex: 1 item of a flex row beside a 60 px rail.</p>
+<table id="flex-wide"><caption id="flex-wide-caption">Quarterly figures for each of the twelve regions, in thousands, for the first two quarters of the year.</caption><thead><tr><th id="flex-wide-th">North</th><th>South</th><th>East</th><th>West</th><th>Coast</th><th>Hills</th><th>Lakes</th><th>Delta</th><th>Plain</th><th>Ridge</th><th>Bay</th><th>Isles</th></tr></thead><tbody><tr><td id="flex-wide-td">1204</td><td>986</td><td>1432</td><td>877</td><td>1120</td><td>654</td><td>712</td><td>1301</td><td>998</td><td>1045</td><td>833</td><td>1267</td></tr><tr><td>1310</td><td>1002</td><td>1398</td><td>902</td><td>1175</td><td>699</td><td>745</td><td>1288</td><td>1012</td><td>1099</td><td>861</td><td>1302</td></tr></tbody></table>
+</article>
+</div>
+<div id="nested" data-fixture="grid">
+<nav data-fixture="rail" aria-label="Nested rail"></nav>
+<section id="nested-item">
+<article id="nested-prose" data-ocelle-prose="">
+<p>A prose container nested one level inside the 1fr item of a grid.</p>
+<table id="nested-wide"><caption id="nested-wide-caption">Quarterly figures for each of the twelve regions, in thousands, for the first two quarters of the year.</caption><thead><tr><th id="nested-wide-th">North</th><th>South</th><th>East</th><th>West</th><th>Coast</th><th>Hills</th><th>Lakes</th><th>Delta</th><th>Plain</th><th>Ridge</th><th>Bay</th><th>Isles</th></tr></thead><tbody><tr><td id="nested-wide-td">1204</td><td>986</td><td>1432</td><td>877</td><td>1120</td><td>654</td><td>712</td><td>1301</td><td>998</td><td>1045</td><td>833</td><td>1267</td></tr><tr><td>1310</td><td>1002</td><td>1398</td><td>902</td><td>1175</td><td>699</td><td>745</td><td>1288</td><td>1012</td><td>1099</td><td>861</td><td>1302</td></tr></tbody></table>
+</article>
+</section>
+</div>
+<dialog id="dialog" data-fixture="dialog" aria-label="Prose in a dialog">
+<article id="dialog-prose" data-ocelle-prose="">
+<p>A prose container inside a modal dialog of definite width.</p>
+<table id="dialog-wide"><caption id="dialog-wide-caption">Quarterly figures for each of the twelve regions, in thousands, for the first two quarters of the year.</caption><thead><tr><th id="dialog-wide-th">North</th><th>South</th><th>East</th><th>West</th><th>Coast</th><th>Hills</th><th>Lakes</th><th>Delta</th><th>Plain</th><th>Ridge</th><th>Bay</th><th>Isles</th></tr></thead><tbody><tr><td id="dialog-wide-td">1204</td><td>986</td><td>1432</td><td>877</td><td>1120</td><td>654</td><td>712</td><td>1301</td><td>998</td><td>1045</td><td>833</td><td>1267</td></tr><tr><td>1310</td><td>1002</td><td>1398</td><td>902</td><td>1175</td><td>699</td><td>745</td><td>1288</td><td>1012</td><td>1099</td><td>861</td><td>1302</td></tr></tbody></table>
+<table id="fits-dialog"><thead><tr><th id="fits-dialog-th">Key</th><th>Value</th></tr></thead><tbody><tr><td id="fits-dialog-td">Mission</td><td>003</td></tr><tr><td>Phase</td><td>4</td></tr></tbody></table>
+</article>
+</dialog>
+</body>
+</html>

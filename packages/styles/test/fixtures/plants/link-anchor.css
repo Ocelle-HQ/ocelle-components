@@ -1,0 +1,4 @@
+/* Plant (research.md R-10, US3-6): the link colour on every a, an <a id> target with no href included. */
+[data-ocelle-prose=""] :where(a) {
+  color: var(--ocelle-color-link);
+}

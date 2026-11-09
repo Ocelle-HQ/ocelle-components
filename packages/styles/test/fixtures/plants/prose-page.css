@@ -1,0 +1,4 @@
+/* Plant (research.md R-10, US3-5): a prose rule leaked to page level. */
+p {
+  line-height: var(--ocelle-line-height-prose);
+}

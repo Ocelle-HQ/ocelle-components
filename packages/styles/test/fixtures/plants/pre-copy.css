@@ -1,0 +1,4 @@
+/* Plant (research.md R-10, US3-8): a code block that collapses its spaces and line breaks (a bare pre rule loses). */
+[data-ocelle-prose=""] :where(pre) {
+  white-space: normal;
+}

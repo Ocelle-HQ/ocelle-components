@@ -100,6 +100,24 @@ const content: Content = {
     note: "Run & see",
     command: "pnpm <test>",
   },
+  prose: {
+    title: "Prose & <3>",
+    intro: 'Intro "q"',
+    link: "Link <b>",
+    code: "a<b",
+    listHeading: "Lists & more",
+    list: ["One <li>", "Two"],
+    nestedLabel: "Nested &",
+    nested: ["n1 <x>", "n2"],
+    quoteHeading: "Quote <h3>",
+    quote: "Quote > all",
+    codeHeading: "Code <h4>",
+    pre: "line <1>\n  line 2",
+    tableHeading: "Table <h5>",
+    table: { caption: "Cap & <c>", head: ["H1 <", 'H2 "'], rows: [["a&", "b"], ["c", "d>"]] },
+    linkedHeading: "Linked <h6>",
+    linked: { caption: "", head: ["K & k", "V"], rows: [["k<1>", "v1"], ["k2", "v2"]] },
+  },
 };
 
 describe("renderFamily", () => {
@@ -170,5 +188,59 @@ describe("renderFamily(\"compact\")", () => {
     expect(all.filter((element) => element.attrs.some((attribute) => attribute.name === "style" || attribute.name === "class"))).toEqual([]);
     expect(all.filter((element) => value(element) !== undefined && element.childNodes.length === 0)).toEqual([]);
     expect(["article", "h1", "p", "dl", "dt", "dd", "span"].filter((tag) => !all.some((element) => element.tagName === tag))).toEqual([]);
+  });
+});
+
+// The Prose document story (003 FR-023, research.md R-12, phase 4): a container with the prose hook
+// (data-ocelle-prose="") holding a rendered Markdown document: every element of the prose family (FR-014), h1 to h6,
+// a nested list, a block quote, a code block, a rule, a wide table with a caption and a table whose first body cell is
+// a link.
+describe("renderFamily(\"prose\")", () => {
+  it("renders the Prose document from the given text, escaping & < > \" in every text", () => {
+    expect(renderFamily("prose", content)).toBe(
+      '<article data-story="prose" data-ocelle-prose="">' +
+        "<h1>Prose &amp; &lt;3&gt;</h1>" +
+        "<p>Intro &quot;q&quot; <code>a&lt;b</code></p>" +
+        '<p><a href="#prose-document">Link &lt;b&gt;</a></p>' +
+        "<h2>Lists &amp; more</h2>" +
+        "<ul><li>One &lt;li&gt;</li><li>Two</li><li>Nested &amp;<ol><li>n1 &lt;x&gt;</li><li>n2</li></ol></li></ul>" +
+        "<h3>Quote &lt;h3&gt;</h3>" +
+        "<blockquote><p>Quote &gt; all</p></blockquote>" +
+        "<h4>Code &lt;h4&gt;</h4>" +
+        "<pre><code>line &lt;1&gt;\n  line 2</code></pre>" +
+        "<hr>" +
+        "<h5>Table &lt;h5&gt;</h5>" +
+        "<table><caption>Cap &amp; &lt;c&gt;</caption><thead><tr><th>H1 &lt;</th><th>H2 &quot;</th></tr></thead>" +
+        "<tbody><tr><td>a&amp;</td><td>b</td></tr><tr><td>c</td><td>d&gt;</td></tr></tbody></table>" +
+        "<h6>Linked &lt;h6&gt;</h6>" +
+        "<table><thead><tr><th>K &amp; k</th><th>V</th></tr></thead>" +
+        '<tbody><tr><td><a href="#prose-document">k&lt;1&gt;</a></td><td>v1</td></tr><tr><td>k2</td><td>v2</td></tr></tbody></table>' +
+        "</article>",
+    );
+  });
+
+  it("renders an item per list entry and per nested entry, and a row per table row, none for empty lists", () => {
+    const count = (prose: Content["prose"], tag: string): number => elements(parseFragment(renderFamily("prose", { ...content, prose })).childNodes).filter((element) => element.tagName === tag).length;
+    const lists = (list: readonly string[], nested: readonly string[]): number => count({ ...content.prose, list, nested }, "li");
+    expect([lists([], []), lists(["a"], []), lists([], ["a", "b"]), lists(["a", "b"], ["c"])]).toEqual([1, 2, 3, 4]);
+    const rows = (table: Content["prose"]["table"]): number => count({ ...content.prose, table }, "tr");
+    expect([rows({ caption: "", head: ["h"], rows: [] }), rows({ caption: "", head: ["h"], rows: [["a"], ["b"], ["c"]] })]).toEqual([1 + 3, 4 + 3]);
+    expect(count({ ...content.prose, table: { ...content.prose.table, caption: "" } }, "caption")).toBe(0);
+    expect(count({ ...content.prose, linked: { ...content.prose.linked, caption: "C" } }, "caption")).toBe(2);
+    expect(count({ ...content.prose, linked: { ...content.prose.linked, rows: [] } }, "a")).toBe(1);
+  });
+
+  it("renders the Prose document from base-content.json by default: the prose hook, every element of the family, a wide table, a table with a link, no style attribute and no class", () => {
+    const all = elements(parseFragment(renderFamily("prose")).childNodes);
+    const tags = new Set(all.map((element) => element.tagName));
+    const hooked = all.filter((element) => element.attrs.some((attribute) => attribute.name === "data-ocelle-prose"));
+    expect(hooked.map((element) => [element.tagName, element.attrs.find((attribute) => attribute.name === "data-ocelle-prose")?.value])).toEqual([["article", ""]]);
+    expect(["h1", "h2", "h3", "h4", "h5", "h6", "p", "ul", "ol", "li", "blockquote", "code", "pre", "hr", "a", "table", "caption", "thead", "th", "td"].filter((tag) => !tags.has(tag))).toEqual([]);
+    const tables = all.filter((element) => element.tagName === "table");
+    const columns = tables.map((table) => elements(table.childNodes).filter((element) => element.tagName === "th").length);
+    expect(columns).toEqual([12, 12]);
+    expect(tables.map((table) => elements(table.childNodes).filter((element) => element.tagName === "a").length)).toEqual([0, 1]);
+    expect(all.filter((element) => element.attrs.some((attribute) => attribute.name === "style" || attribute.name === "class"))).toEqual([]);
+    expect(all.filter((element) => ["h1", "h2", "h3", "h4", "h5", "h6", "a", "code", "pre", "caption", "th", "td"].includes(element.tagName) && element.childNodes.length === 0)).toEqual([]);
   });
 });

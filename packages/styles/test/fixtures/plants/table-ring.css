@@ -1,0 +1,4 @@
+/* Plant (research.md R-10, US3-3): the table ring drawn outside the box, at the base ring offset. */
+[data-ocelle-prose=""] :where(table:focus-visible) {
+  outline-offset: var(--ocelle-focus-offset);
+}

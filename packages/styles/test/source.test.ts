@@ -9,7 +9,8 @@ import type { RuleEntry } from "./source-checks.ts";
 // build writes to dist/base.css (build.test.ts), is parsed with PostCSS. Each guard shares its test with a positive
 // assertion over the same parse, so none passes on an empty file (SC-002), and each check is also run on the plant
 // strings of R-10 § Source-level guards (it must report each) and on its boundary strings (it must not). The
-// expected rules are transcribed by hand from data-model.md § Rule table (base layer), never read from the source.
+// expected rules are transcribed by hand from data-model.md § Rule table (base layer, compact scale, prose), never read
+// from the source.
 const text = readFileSync(new URL("../src/base.css", import.meta.url), "utf8");
 // An absent plan entry parses as the empty sheet, so the assertions below report what is missing.
 const root = parse(buildPlan(text)[0]?.content ?? "");
@@ -82,6 +83,99 @@ const compactScale: readonly RuleEntry[] = [
 ];
 const compactSelectors = [...new Set(compactScale.flatMap((rule) => rule.selectors))];
 
+/** data-model.md § Rule table, prose, in its order after the compact scale (R-03, R-06); every selector starts with the hook. */
+const hook = '[data-ocelle-prose=""]';
+const proseRule = (rest: string, declarations: RuleEntry["declarations"]): RuleEntry => ({ media: [], selectors: [`${hook}${rest}`], declarations });
+const prose: readonly RuleEntry[] = [
+  proseRule(":where(:not(html))", [
+    ["font-size", "var(--ocelle-font-size-md)"],
+    ["line-height", "var(--ocelle-line-height-prose)"],
+  ]),
+  proseRule(" :where(h1, h2, h3, h4, h5, h6)", [
+    ["line-height", "var(--ocelle-line-height-tight)"],
+    ["margin-block", "var(--ocelle-space-6) var(--ocelle-space-3)"],
+  ]),
+  proseRule(" :where(h1)", [
+    ["font-size", "var(--ocelle-font-size-2xl)"],
+    ["font-weight", "var(--ocelle-font-weight-display)"],
+  ]),
+  proseRule(" :where(h2)", [
+    ["font-size", "var(--ocelle-font-size-subhead)"],
+    ["font-weight", "var(--ocelle-font-weight-strong)"],
+  ]),
+  proseRule(" :where(h3)", [
+    ["font-size", "var(--ocelle-font-size-fact)"],
+    ["font-weight", "var(--ocelle-font-weight-strong)"],
+  ]),
+  proseRule(" :where(h4, h5, h6)", [
+    ["font-size", "var(--ocelle-font-size-md)"],
+    ["font-weight", "var(--ocelle-font-weight-strong)"],
+  ]),
+  proseRule(" :where(p, ul, ol, blockquote, pre, table, hr)", [["margin-block", "0 var(--ocelle-space-4)"]]),
+  proseRule(" :where(p, li, blockquote)", [["max-inline-size", "var(--ocelle-measure-reading)"]]),
+  proseRule(" :where(ul, ol)", [["padding-inline-start", "var(--ocelle-space-6)"]]),
+  proseRule(" :where(blockquote)", [
+    ["margin-inline", "0"],
+    ["padding-inline-start", "var(--ocelle-space-4)"],
+    ["border-inline-start", "var(--ocelle-bar-width) solid var(--ocelle-color-rule-strong)"],
+    ["color", "var(--ocelle-color-ink-soft)"],
+  ]),
+  proseRule(" :where(hr)", [
+    ["border", "0"],
+    ["border-block-start", "var(--ocelle-border-width) solid var(--ocelle-color-rule)"],
+  ]),
+  proseRule(" :where(a:any-link)", [
+    ["color", "var(--ocelle-color-link)"],
+    ["text-decoration-line", "underline"],
+    ["overflow-wrap", "anywhere"],
+  ]),
+  proseRule(" :where(a:any-link:hover)", [["color", "var(--ocelle-color-link-hover)"]]),
+  proseRule(" :where(code)", [
+    ["background-color", "var(--ocelle-color-inset)"],
+    ["padding-inline", "var(--ocelle-space-1)"],
+    ["border-radius", "var(--ocelle-radius-2)"],
+    ["overflow-wrap", "anywhere"],
+  ]),
+  proseRule(" :where(pre)", [
+    ["background-color", "var(--ocelle-color-inset)"],
+    ["padding", "var(--ocelle-space-3)"],
+    ["border-radius", "var(--ocelle-radius-2)"],
+    ["white-space", "pre-wrap"],
+    ["overflow-wrap", "anywhere"],
+  ]),
+  proseRule(" :where(pre code)", [
+    ["padding-inline", "0"],
+    ["background-color", "transparent"],
+  ]),
+  proseRule(" :where(table)", [
+    ["display", "block"],
+    ["overflow-x", "auto"],
+    ["max-inline-size", "100%"],
+    ["container-type", "inline-size"],
+    ["border-collapse", "collapse"],
+  ]),
+  proseRule(" :where(table:focus-visible)", [["outline-offset", "calc(var(--ocelle-focus-width) * -1)"]]),
+  proseRule(" :where(caption)", [
+    ["position", "sticky"],
+    ["inset-inline-start", "0"],
+    ["max-inline-size", "var(--ocelle-measure-container)"],
+    ["text-align", "start"],
+  ]),
+  proseRule(" :where(th, td)", [
+    ["min-inline-size", "var(--ocelle-measure-cell)"],
+    ["padding", "var(--ocelle-space-2) var(--ocelle-space-3)"],
+    ["border-block-end", "var(--ocelle-border-width) solid var(--ocelle-color-rule)"],
+    ["text-align", "start"],
+  ]),
+  proseRule(" :where(th)", [
+    ["font-size", "var(--ocelle-font-size-xs)"],
+    ["font-variant-numeric", "var(--ocelle-figures)"],
+    ["font-weight", "var(--ocelle-font-weight-strong)"],
+    ["border-block-end-color", "var(--ocelle-color-rule-strong)"],
+  ]),
+];
+const proseSelectors = prose.flatMap((rule) => rule.selectors);
+
 /** How many problems a check reports on each plant string. */
 function reports(check: (sheet: ReturnType<typeof parse>) => string[], plants: readonly string[]): number[] {
   return plants.map((plant) => check(parse(plant)).length);
@@ -94,6 +188,11 @@ describe("src/base.css as shipped (buildPlan(text)[0].content)", () => {
 
   it("follows the base layer with the compact scale of data-model § Rule table, in its order, with exactly its declarations (R-03, R-04)", () => {
     expect(rules(root).slice(baseLayer.length, baseLayer.length + compactScale.length)).toEqual(compactScale);
+  });
+
+  it("follows the compact scale with the prose rules of data-model § Rule table, in its order, with exactly their declarations (R-03, R-06)", () => {
+    const start = baseLayer.length + compactScale.length;
+    expect(rules(root).slice(start, start + prose.length)).toEqual(prose);
   });
 
   it("US1-3: has the focus rule's four longhands and the forced-colours rule, and declares no motion and no forced-color-adjust: none", () => {
@@ -165,6 +264,13 @@ describe("src/base.css as shipped (buildPlan(text)[0].content)", () => {
   it("US2 (FR-005, FR-025): holds every compact-scale selector, each one hook attribute at (0,1,0), and no selector has a class or exceeds its bound", () => {
     expect(compactSelectors.filter((selector) => !selectors(root).includes(selector))).toEqual([]);
     expect(compactSelectors.map(specificity)).toEqual(compactSelectors.map(() => [0, 1, 0]));
+    expect(classProblems(root)).toEqual([]);
+    expect(specificityProblems(root)).toEqual([]);
+  });
+
+  it("US3 (FR-005, FR-014, FR-025): holds every prose selector, each one hook attribute at (0,1,0), and no selector has a class or exceeds its bound", () => {
+    expect(proseSelectors.filter((selector) => !selectors(root).includes(selector))).toEqual([]);
+    expect(proseSelectors.map(specificity)).toEqual(proseSelectors.map(() => [0, 1, 0]));
     expect(classProblems(root)).toEqual([]);
     expect(specificityProblems(root)).toEqual([]);
   });

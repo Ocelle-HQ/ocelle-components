@@ -1,0 +1,4 @@
+/* Plant (research.md R-10, US3-5): the prose container rule without :where(:not(html)), which matches the root. */
+[data-ocelle-prose] {
+  line-height: var(--ocelle-line-height-prose);
+}

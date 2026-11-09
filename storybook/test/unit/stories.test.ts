@@ -114,12 +114,12 @@ describe("tokens.stories.ts", () => {
 });
 
 // The base-style stories (003 FR-023, research.md R-12): the title "Base styles" with one story per family that has
-// landed; phase 2 adds the Base page, which renders renderFamily("base"), and phase 3 the Compact screen, which
-// renders renderFamily("compact").
+// landed; phase 2 adds the Base page, which renders renderFamily("base"), phase 3 the Compact screen, which renders
+// renderFamily("compact"), and phase 4 the Prose document, which renders renderFamily("prose").
 describe("base.stories.ts", () => {
   it("has the title Base styles and the Base page story, rendering the base family's markup", () => {
     expect(base.default).toEqual({ title: "Base styles" });
-    expect(Object.keys(base).filter((key) => key !== "default")).toEqual(["BasePage", "CompactScreen"]);
+    expect(Object.keys(base).filter((key) => key !== "default")).toEqual(["BasePage", "CompactScreen", "ProseDocument"]);
     expect(base.BasePage.name).toBe("Base page");
     const markup = (base.BasePage as unknown as Story).render({}, { globals: {} });
     expect(markup).toBe(renderFamily("base"));
@@ -133,5 +133,14 @@ describe("base.stories.ts", () => {
     const all = elements(parseFragment(String(markup)).childNodes);
     expect(all.filter((element) => element.tagName === "article").map((element) => [attr(element, "data-story"), attr(element, "data-ocelle-density")])).toEqual([["compact", "compact"]]);
     expect([...new Set(all.map((element) => attr(element, "data-ocelle-value")).filter((value) => value !== undefined))].sort()).toEqual(["", "ink"]);
+  });
+
+  it("has the Prose document story, rendering the prose family's markup in a container with the prose hook", () => {
+    expect(base.ProseDocument.name).toBe("Prose document");
+    const markup = (base.ProseDocument as unknown as Story).render({}, { globals: {} });
+    expect(markup).toBe(renderFamily("prose"));
+    const all = elements(parseFragment(String(markup)).childNodes);
+    expect(all.filter((element) => element.tagName === "article").map((element) => [attr(element, "data-story"), attr(element, "data-ocelle-prose")])).toEqual([["prose", ""]]);
+    expect(all.filter((element) => element.tagName === "table").length).toBe(2);
   });
 });

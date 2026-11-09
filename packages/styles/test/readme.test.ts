@@ -7,8 +7,10 @@ import { describe, expect, it } from "vitest";
 // version (and that the workspace:0.0.0 pin becomes meaningful at the first release, #11), the base layer and its
 // specificity, the custom-element hosts (plan decision 16) and the CHANGELOG entry naming base.css; phase 3 adds the
 // density and value hooks (their values, that any other value does nothing, what the compact-scale family styles and
-// its tokens, the main-grounds limit) and the CHANGELOG entries naming both attributes. Whitespace is normalised, so a
-// fragment may wrap across lines.
+// its tokens, the main-grounds limit) and the CHANGELOG entries naming both attributes; phase 4 adds the prose hook
+// (its value, what the prose family styles and its tokens, prose over compact, the <html> placement, the host-width
+// cause sentence, asserted as the cause and not as the list of examples, the three-column, WebKit and print
+// statements) and the CHANGELOG entry naming it. Whitespace is normalised, so a fragment may wrap across lines.
 /** A package file's text; empty while it does not exist, so each assertion below reports what is missing. */
 function read(file: string): string {
   const url = new URL(`../${file}`, import.meta.url);
@@ -50,6 +52,20 @@ const fragments = [
   "`data-ocelle-value=\"ink\"` sets the same style in `--ocelle-color-ink`",
   "The value hook is for the main grounds only (canvas, sheet, pane, panel, inspector, rail, inset, accent-low, hover-bg), not the chrome (the top bar, the icon rail and the personal rail), where light `ink` is 1.00:1 and `ink-muted` 2.64:1",
   "Tokens the compact scale uses: `--ocelle-font-size-sm`, `--ocelle-line-height-compact`, `--ocelle-font-size-md`, `--ocelle-line-height-normal`, `--ocelle-font-sans`, `--ocelle-figures`, `--ocelle-color-ink-muted` and `--ocelle-color-ink`",
+  // phase 4: the prose hook (FR-004, FR-005, FR-014 to FR-019, FR-024; research.md R-02, R-06, R-14)
+  "| `data-ocelle-prose` | (empty) | prose |",
+  "`data-ocelle-prose` takes the empty value only (a bare attribute has it)",
+  "The prose family styles a rendered Markdown document by element, with no class: `h1` to `h6`, `p`, `ul`, `ol`, `li`, `blockquote`, `code`, `pre`, `hr`, links (an `a` with an `href`), `table`, `caption`, `th` and `td`",
+  "It sets no rule of its own for `img`, `strong`, `em`, `del` or a task list's checkbox",
+  "Tokens the prose family uses: `--ocelle-font-size-md`, `--ocelle-line-height-prose`, `--ocelle-line-height-tight`, `--ocelle-space-6`, `--ocelle-space-3`, `--ocelle-font-size-2xl`, `--ocelle-font-weight-display`, `--ocelle-font-size-subhead`, `--ocelle-font-weight-strong`, `--ocelle-font-size-fact`, `--ocelle-space-4`, `--ocelle-measure-reading`, `--ocelle-bar-width`, `--ocelle-color-rule-strong`, `--ocelle-color-ink-soft`, `--ocelle-border-width`, `--ocelle-color-rule`, `--ocelle-color-link`, `--ocelle-color-link-hover`, `--ocelle-color-inset`, `--ocelle-space-1`, `--ocelle-radius-2`, `--ocelle-focus-width`, `--ocelle-measure-container`, `--ocelle-measure-cell`, `--ocelle-space-2`, `--ocelle-font-size-xs` and `--ocelle-figures`",
+  "When the compact and prose hooks are nested, the nearest hook decides the size and line height of the text inside it",
+  "On an element that carries both the prose hook and the compact hook, the prose hook wins: the element is a prose container at 16 px with a line height of 1.65",
+  "The prose hook goes on a content container, not on `<html>`: on `<html>` its container rule does not apply, so it sets neither the root font size nor the root line height",
+  "A prose container must not be sized from its content (shrink-to-fit or fit-content sizing); it gets its width from its context",
+  "In a box sized from its content, a table that would fit is cut down, scrolls and becomes a tab stop",
+  "Tables of three or more columns overflow at 320 px, so they scroll and, with no focusable content, are tab stops",
+  "The keyboard model of prose tables is guaranteed only in Chromium hosts. WebKit hosts (Kitty Desktop on macOS and Linux) add `tabindex=\"0\"` to tables in their renderer; this is an open limitation for kitty-mission-ui",
+  "Print is out of scope: prose tables are screen scroll boxes, so a printed document shows only the columns that fit the page, and a host that prints adds its own print rule",
 ];
 
 describe("packages/styles/README.md", () => {
@@ -79,5 +95,9 @@ describe("packages/styles/CHANGELOG.md", () => {
   it("names the data-ocelle-density and data-ocelle-value hooks under Unreleased / Added (constitution VII, FR-004)", () => {
     expect(added).toMatch(/^- `data-ocelle-density`/m);
     expect(added).toMatch(/^- `data-ocelle-value`/m);
+  });
+
+  it("names the data-ocelle-prose hook under Unreleased / Added (constitution VII, FR-004)", () => {
+    expect(added).toMatch(/^- `data-ocelle-prose`/m);
   });
 });

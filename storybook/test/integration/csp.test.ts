@@ -279,7 +279,53 @@ describe("the Storybook page under its CSP", { timeout: 60_000 }, () => {
     });
   }
 
+  // The Prose document story (003 FR-023, research.md R-12, phase 4): the prose hook, styled by base.css alone: the
+  // container at 16 px with the prose line height (26.4 px), the h2 at 18 px, the tables as their own scroll boxes, the
+  // header cells at 12 px in Schibsted Grotesk with tabular figures, and the link underlined in the link colour.
+  const proseLinks = { light: "rgb(132, 86, 13)", dark: "rgb(224, 162, 58)" } as const;
+  for (const theme of ["light", "dark"] as const) {
+    it(`base-styles--prose-document in ${theme}: the header, no violation, no request outside the origin, the prose hook applied, no monospace`, async () => {
+      const { page, header, outside } = await open(`id=base-styles--prose-document&viewMode=story&globals=theme:${theme}`, '#storybook-root [data-story="prose"]');
+      expect(header).toBe(policy);
+      expect(await violations(page)).toEqual([]);
+      expect(outside).toEqual([]);
+      expect(
+        await page.evaluate(() => {
+          const one = (selector: string): CSSStyleDeclaration => getComputedStyle(document.querySelector(`#storybook-root [data-story="prose"] ${selector}`) ?? document.body);
+          const container = getComputedStyle(document.querySelector('#storybook-root [data-story="prose"]') ?? document.body);
+          return {
+            container: [container.fontSize, container.lineHeight],
+            h2: one("h2").fontSize,
+            tables: [...document.querySelectorAll('#storybook-root [data-story="prose"] table')].map((table) => getComputedStyle(table).display),
+            th: [one("th").fontSize, one("th").fontFamily.split(",")[0] ?? "", one("th").fontVariantNumeric],
+            link: [one("a").color, one("a").textDecorationLine],
+          };
+        }),
+      ).toEqual({
+        container: ["16px", "26.4px"],
+        h2: "18px",
+        tables: ["block", "block"],
+        th: ["12px", '"Schibsted Grotesk"', "tabular-nums"],
+        link: [proseLinks[theme], "underline"],
+      });
+
+      await page.evaluate(() => {
+        const control = document.createElement("span");
+        control.id = "ocelle-monospace-control";
+        control.style.fontFamily = "Menlo, monospace";
+        document.body.append(control);
+      });
+      expect(await monospace(page)).toEqual(["span#ocelle-monospace-control"]);
+      await page.evaluate(() => {
+        document.getElementById("ocelle-monospace-control")?.remove();
+      });
+      expect(await monospace(page)).toEqual([]);
+      expect(await violations(page)).toEqual([]);
+      await page.close();
+    });
+  }
+
   it("opened the preview and nothing else: every HTML document served was iframe.html, one per page", () => {
-    expect(documents).toEqual(Array.from({ length: 1 + groups.length * 2 + 2 + 2 }, () => "iframe.html"));
+    expect(documents).toEqual(Array.from({ length: 1 + groups.length * 2 + 2 + 2 + 2 }, () => "iframe.html"));
   });
 });

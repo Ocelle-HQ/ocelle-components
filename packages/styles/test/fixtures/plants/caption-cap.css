@@ -1,0 +1,4 @@
+/* Plant (research.md R-10, US3-3, US3-9): the caption without its cap, so it runs on one line past the visible box. */
+[data-ocelle-prose=""] :where(caption) {
+  max-inline-size: none;
+}

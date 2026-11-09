@@ -13,7 +13,9 @@ import { violations } from "./serve.ts";
 // base.css on request (`after=plants/<name>`). Every scenario runs in both themes, under emulateMedia({ colorScheme })
 // light and dark (FR-022). Each guard (a "does not") shares its test with the positive assertion it guards and runs
 // once more with its plant, where its helper must report the problem (SC-002, R-10). Scenario 5 and the h1 half of
-// scenario 4 need the prose rules and are phase 4's (tasks T035). Expected values are transcribed by hand from the
+// scenario 4 need the prose rules and came with them in phase 4 (tasks T035): compact.html holds a prose container
+// inside a compact region, a compact region inside a prose container and one element with both hooks (FR-024), and
+// compact-root.html a prose container with an h1. Expected values are transcribed by hand from the
 // spec and 002's Appendix A, never read from the token source or base.css.
 
 /** `--ocelle-font-size-sm` (0.875rem) with `--ocelle-line-height-compact` (1.5) at the default 16px root. */
@@ -204,5 +206,38 @@ describe("FR-004: data-ocelle-density=\"regular\" returns a region nested in a c
     const found = await scales(page, ["compact-p", "regular", "regular-p", "regular-span"]);
     await close(page);
     expect(found).toEqual({ "compact-p": compactScale, regular: regularScale, "regular-p": regularScale, "regular-span": regularScale });
+  });
+});
+
+/** `--ocelle-font-size-md` with `--ocelle-line-height-prose` (1.65): the prose scale at the default 16px root. */
+const proseScale = { fontSize: "16px", lineHeight: "26.4px" };
+
+describe("US2-4: with the compact hook on <html>, an h1 inside a prose container is 30 px (FR-012, FR-015)", { timeout: 60_000 }, () => {
+  it.each(themes)("in %s", async (theme) => {
+    const page = await open("compact-root.html", { colorScheme: theme });
+    const found = await scales(page, ["body", "h1", "prose-p"]);
+    const root = await rootProblems(page);
+    await close(page);
+    expect(found).toEqual({ body: compactScale, h1: { fontSize: "30px", lineHeight: "34.5px" }, "prose-p": proseScale });
+    expect(root).toEqual([]);
+  });
+});
+
+describe("US2-5: the nearest hook decides size and line height, and on one element prose wins over compact (FR-024)", { timeout: 60_000 }, () => {
+  it.each(themes)("in %s: prose in compact, compact in prose (cells and code included), and both hooks on one element", async (theme) => {
+    const page = await open("compact.html", { colorScheme: theme });
+    const found = await scales(page, ["prose-in-compact-region", "prose-in-compact-p", "compact-in-prose-p", "compact-in-prose-code", "compact-in-prose-td", "both", "both-p"]);
+    const reported = await violations(page);
+    await close(page);
+    expect(found).toEqual({
+      "prose-in-compact-region": compactScale,
+      "prose-in-compact-p": proseScale,
+      "compact-in-prose-p": compactScale,
+      "compact-in-prose-code": compactScale,
+      "compact-in-prose-td": compactScale,
+      both: proseScale,
+      "both-p": proseScale,
+    });
+    expect(reported).toEqual([]);
   });
 });

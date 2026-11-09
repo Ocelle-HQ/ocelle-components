@@ -10,3 +10,5 @@ export default meta;
 export const BasePage: StoryObj = { name: "Base page", render: () => renderFamily("base") };
 
 export const CompactScreen: StoryObj = { name: "Compact screen", render: () => renderFamily("compact") };
+
+export const ProseDocument: StoryObj = { name: "Prose document", render: () => renderFamily("prose") };
