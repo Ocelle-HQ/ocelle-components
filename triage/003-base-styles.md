@@ -7,7 +7,9 @@ in_scope: [6]
 out_of_scope: [1, 5, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 20]
 semver: minor
 spec_prompt: "Build the @ocelle/styles base stylesheet from issue #6 (triage/003-base-styles.md): an external, CSP-safe stylesheet built only on --ocelle-* tokens with reset (applying color-scheme: var(--ocelle-color-scheme) on the root, the 002 hand-off), the regular and compact type scales (spec-kitty-design#531), the token focus ring, reduced motion and forced colours; classless prose for rendered Markdown keyed on element selectors (spec-kitty-design#519: line height 1.65, h1 30 px, h2 18 px, a reading measure token of about 68ch, tables with 12 px tabular-figure Schibsted Grotesk headers in a scroll box, no monospace per constitution II); and one documented identifier-wrap hook with overflow-wrap: anywhere semantics (spec-kitty-design#535); any new token goes into @ocelle/tokens under the 002 contrast and brand-rule gates; element parts or properties for identifier wrapping stay with the element issues, stories beyond the minimal Storybook and axe with #10, no utility classes."
-status: proposed
+status: approved
+decided_by: "human:jeroennouwsdev"
+decided_at: 2026-11-09T10:59:01Z
 ---
 
 # Triage 003: Base styles package (#6)
