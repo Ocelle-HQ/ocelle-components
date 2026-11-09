@@ -1,0 +1,4 @@
+{
+  "expect": "pass",
+  "why": "A line-height token (line-height: var(--ocelle-line-height-normal)) passes in packages/styles under the lineHeight option, which keeps the repository token lists (003 FR-002, research.md R-07)."
+}

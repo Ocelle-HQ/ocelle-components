@@ -1,11 +1,9 @@
 /*
  * The preview's own markup (iframe.html) has a hidden error display whose code elements use a monospace stack; the
  * brand has none (constitution II, FR-023; reviews/phase-3/spike.md step 4). They take the token font instead.
+ * Narrowed to that error display (003 research.md R-12, PLAN-FRESH-1-012): story content is styled by base.css alone.
  */
-pre,
-code,
-kbd,
-samp,
+.sb-errordisplay_main :where(pre, code, kbd, samp),
 .sb-errordisplay_main .sb-errordisplay_code {
   font-family: var(--ocelle-font-sans);
 }

@@ -1,0 +1,7 @@
+/*
+ * Layout of the base-style stories (003 research.md R-12, PLAN-A11Y-SECURITY-1-006): layout only, no rule of
+ * base.css, selectors on data-story attributes only (no class, no style attribute).
+ */
+[data-story] {
+  padding: var(--ocelle-space-4);
+}

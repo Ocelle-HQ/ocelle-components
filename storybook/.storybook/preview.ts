@@ -2,9 +2,11 @@
 // offered in the toolbar and settable by URL (`globals=theme:dark`); a decorator sets data-theme on the preview's
 // <html> from it (light unless it is "dark") before the story renders, so the token stylesheet that
 // preview-head.html links shows that theme. preview.css gives the preview's own code elements the token font, so no
-// element of the Storybook page has a monospace family (constitution II; spike step 4).
+// element of the Storybook page has a monospace family (constitution II; spike step 4). stories-layout.css holds the
+// base-style stories' layout (003 research.md R-12); base.css itself is linked by preview-head.html.
 /// <reference types="vite/client" />
 import "./preview.css";
+import "./stories-layout.css";
 import type { Preview } from "@storybook/html-vite";
 
 const preview: Preview = {

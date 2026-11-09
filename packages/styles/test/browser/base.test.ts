@@ -42,7 +42,7 @@ afterAll(async () => {
 
 interface Options {
   readonly colorScheme: Theme | "no-preference";
-  readonly dataTheme?: string;
+  readonly dataTheme?: string | undefined;
   readonly width?: number;
   readonly forced?: boolean;
 }

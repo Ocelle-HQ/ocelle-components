@@ -1,0 +1,14 @@
+{
+  "base": {
+    "heading": "Mission 003: base styles",
+    "paragraph": "A host page links tokens.css and then base.css, and its text is set in Schibsted Grotesk at the regular scale, in ink on canvas. Tab to the link, the button or the field to see the focus ring.",
+    "link": "Read the host contract",
+    "button": "Save draft",
+    "input": "Mission name",
+    "list": ["The reset keeps list semantics.", "Media stay inside their container.", "Form controls inherit the page font."],
+    "code": "packages/styles/src/base.css",
+    "kbd": "Ctrl + S",
+    "samp": "Build finished in 1.24 s",
+    "pre": "pnpm -r build\n  dist/base.css  2048 bytes"
+  }
+}

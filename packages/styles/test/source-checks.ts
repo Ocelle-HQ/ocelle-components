@@ -4,7 +4,7 @@
 // with postcss-selector-parser: ids (a), classes, attributes and pseudo-classes (b), types and pseudo-elements (c);
 // `:where()` adds nothing, `:is()`, `:not()` and `:has()` add their most specific argument.
 import postcss from "postcss";
-import type { AtRule, ChildNode, Declaration, Root, Rule } from "postcss";
+import type { AtRule, ChildNode, Declaration, Node, Root, Rule } from "postcss";
 import selectorParser from "postcss-selector-parser";
 
 /** Specificity as (a, b, c). */
@@ -25,8 +25,13 @@ export function parse(css: string): Root {
 
 function context(node: ChildNode): string[] {
   const media: string[] = [];
-  for (let parent = node.parent; parent !== undefined && parent.type !== "root"; parent = parent.parent) {
-    if (parent.type === "atrule") media.unshift(space(`@${(parent as AtRule).name} ${(parent as AtRule).params}`));
+  let parent: Node["parent"] = node.parent;
+  while (parent !== undefined) {
+    if (parent.type === "atrule") {
+      const rule = parent as AtRule;
+      media.unshift(space(`@${rule.name} ${rule.params}`));
+    }
+    parent = parent.parent;
   }
   return media;
 }

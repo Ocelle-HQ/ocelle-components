@@ -106,7 +106,7 @@ layer), and both contracts.
 
 ### Spike (first)
 
-- [ ] T007 [US1] Spike, recorded in `specs/003-base-styles/reviews/phase-2/spike.md` with each measurement and the Chromium build. A plant can only be shown to bite against the rule it undoes, and in phase 2 most of those rules (the base media rule of T017, the compact and value rules of phase 3, the prose rules of phase 4, the wrap rule of phase 5) and most fixtures (`prose-hosts.html` is written in T033) do not exist yet. So the spike works on scratch files only:
+- [X] T007 [US1] Spike, recorded in `specs/003-base-styles/reviews/phase-2/spike.md` with each measurement and the Chromium build. A plant can only be shown to bite against the rule it undoes, and in phase 2 most of those rules (the base media rule of T017, the compact and value rules of phase 3, the prose rules of phase 4, the wrap rule of phase 5) and most fixtures (`prose-hosts.html` is written in T033) do not exist yet. So the spike works on scratch files only:
   - **Scratch stylesheet**: one stylesheet, linked after `tokens.css`, that first defines the six R-08 tokens with their data-model § New tokens values (`--ocelle-line-height-compact: 1.5`, `--ocelle-line-height-prose: 1.65`, `--ocelle-font-size-subhead: 1.125rem`, `--ocelle-measure-reading: 68ch`, `--ocelle-measure-cell: 12ch`, `--ocelle-measure-container: 100cqi`) and then holds the whole data-model § Rule table, all four families (base layer, compact scale, prose, identifier wrap) in the table's order, as unlayered author rules with the table's selectors. Each R-10 plant stylesheet is linked after it, as R-10 links plants after `base.css`. The US1-6 plant ("without `tokens.css`") drops only the `tokens.css` link; the six scratch tokens are none of the focus tokens.
   - **Scratch fixture pages**: scratch copies of every fixture layout of data-model § Test fixtures that a measurement or a plant needs, built from that section and the host CSS it gives `layout.css`: the media page (`img`, `video`, `canvas` and `svg` at `width="2000" height="1000"`, the `img` source a 2:1 `media.svg`, served with `img-src 'self'`), the controls and the `forced-color-adjust: none` region of `page.html`, the hosts of `prose-hosts.html` (grid `1fr` beside a 60 px rail, `flex: 1` beside a 60 px rail, nested in the grid item, and the definite-width modal dialog), and the pages of `compact.html` (with its prose cases), `compact-root.html`, `prose.html`, `prose-root.html` and `wrap.html` that the other plants run on. All of them are served under the strict CSP of R-09.
   - `spike.md` records both choices (the scratch stylesheet's contents and order, and which scratch page each measurement and plant used). Neither the scratch stylesheet nor the scratch pages are committed: the shipped rules land in T017, T029, T041 and T049, and the fixtures are written in T011, T024, T033 and T044 from data-model § Test fixtures.
@@ -125,8 +125,8 @@ layer), and both contracts.
 
 ### Tests (red, one commit)
 
-- [ ] T008 [P] [US1] `packages/styles/test/build.test.ts`: `buildPlan(css)` returns exactly `[{ path: "base.css", content: css }]` for any text. `build(packageDir, outDir)` writes a `dist/base.css` that is byte-identical to `src/base.css` (research R-01, contracts/checks.md)
-- [ ] T009 [P] [US1] `packages/styles/test/source.test.ts` (research R-11) parses `buildPlan(readFileSync("src/base.css"))[0].content` with PostCSS and `postcss-selector-parser`. Positive assertions: the `:where(:focus-visible)` rule exists with `outline-style: solid` and the width, colour and offset longhands; and the base-layer selectors of data-model § Rule table exist. In the same tests, the guards:
+- [X] T008 [P] [US1] `packages/styles/test/build.test.ts`: `buildPlan(css)` returns exactly `[{ path: "base.css", content: css }]` for any text. `build(packageDir, outDir)` writes a `dist/base.css` that is byte-identical to `src/base.css` (research R-01, contracts/checks.md)
+- [X] T009 [P] [US1] `packages/styles/test/source.test.ts` (research R-11) parses `buildPlan(readFileSync("src/base.css"))[0].content` with PostCSS and `postcss-selector-parser`. Positive assertions: the `:where(:focus-visible)` rule exists with `outline-style: solid` and the width, colour and offset longhands; and the base-layer selectors of data-model § Rule table exist. In the same tests, the guards:
   - no `transition*`, `animation*` or `scroll-behavior` declaration at any depth;
   - no `forced-color-adjust: none`;
   - no `outline: none`, no `outline: 0` and no `outline-style: none`;
@@ -135,20 +135,20 @@ layer), and both contracts.
   - every selector within its bound: (0,1,1) for a selector with a `data-ocelle-*` attribute, (0,0,1) for any other.
 
   Each check is also run on its plant strings, which must report, and its boundary strings, which must pass. Both are listed in R-10 § Source-level guards
-- [ ] T010 [P] [US1] `gates/test/token-only.test.ts` (and `token-only-parts.test.ts` if `rawValues` changes) for the `lineHeight: "token"` option of research R-07:
+- [X] T010 [P] [US1] `gates/test/token-only.test.ts` (and `token-only-parts.test.ts` if `rawValues` changes) for the `lineHeight: "token"` option of research R-07:
   - with the option, a literal, percentage, `calc()` or `normal` line height is raw, in `line-height` and in the line-height part of `font`;
   - without it they stay allowed;
   - with it, a single `var(--ocelle-*)` or a CSS-wide keyword passes against the repository token lists;
   - an invalid option value is reported;
   - giving the option does not replace the token lists.
-- [ ] T011 [P] [US1] `packages/styles/test/browser/serve.ts` (test helper; research R-09). It serves a temporary directory under `default-src 'none'; script-src 'self'; style-src 'self'; font-src 'self'` on `127.0.0.1`. Only `page.html` also gets `img-src 'self'` (plan decision 15). The directory holds:
+- [X] T011 [P] [US1] `packages/styles/test/browser/serve.ts` (test helper; research R-09). It serves a temporary directory under `default-src 'none'; script-src 'self'; style-src 'self'; font-src 'self'` on `127.0.0.1`. Only `page.html` also gets `img-src 'self'` (plan decision 15). The directory holds:
   - `tokens.css` from the token generator;
   - `base.css` copied from `src`;
   - the vendored fonts and `test/fixtures/**`, with content types for `.html`, `.css`, `.woff2` and `.svg` (`image/svg+xml`);
   - `control.html`, written from 002's `controlPage` (one inline `<style>`), the control page whose one `style-src` violation the tests expect (data-model § Test fixtures, SC-001).
 
   It reuses `launch`, `collectViolations`, `violations` and `controlPage` from `packages/tokens/test/browser/serve.ts`. Also write the fixtures (data-model § Test fixtures): `packages/styles/test/fixtures/page.html` (with its prose container for US1 scenario 9), `layout.css`, `media.svg` (natural 2:1) and `plants/*.css` for the US1 guards of R-10
-- [ ] T012 [US1] `packages/styles/test/browser/base.test.ts`, spec US1 scenarios 1, 2, 4, 5, 6 (computed half), 7, 9 and 10 in Chromium. Every scenario runs in both themes, under `emulateMedia({ colorScheme })` light and dark (research R-09, FR-022); none is exempt. Each guard is paired with its positive assertion and run once more with its plant stylesheet, where the guard's helper must report the expected problem:
+- [X] T012 [US1] `packages/styles/test/browser/base.test.ts`, spec US1 scenarios 1, 2, 4, 5, 6 (computed half), 7, 9 and 10 in Chromium. Every scenario runs in both themes, under `emulateMedia({ colorScheme })` light and dark (research R-09, FR-022); none is exempt. Each guard is paired with its positive assertion and run once more with its plant stylesheet, where the guard's helper must report the expected problem:
   - the six theme conditions of 002 with root `color-scheme` and body values;
   - keyboard and pointer focus on a link, button, text input and `tabindex="0"`;
   - forced colours: control borders, and the `Highlight` ring inside a `forced-color-adjust: none` region;
@@ -158,21 +158,21 @@ layer), and both contracts.
   - `code`, `pre`, `kbd` and `samp` in Schibsted Grotesk with tabular figures, inside and outside `page.html`'s prose container, plus the host-override case;
   - media no wider than their container, with the 2:1 ratio held within 1 px after `naturalWidth > 0`, and form controls inheriting the font;
   - list semantics (role `list`) next to the `box-sizing` assertion, with its recorded no-plant reason.
-- [ ] T013 [P] [US1] `packages/styles/test/readme.test.ts`, phase 2 statements (research R-14):
+- [X] T013 [P] [US1] `packages/styles/test/readme.test.ts`, phase 2 statements (research R-14):
   - the README states the link order, the CSP, the exact tokens version (and that the `workspace:0.0.0` pin becomes meaningful at the first release, #11, since both packages stay at 0.0.0 until then), the base layer and its specificity, and that `base.css` styles custom-element hosts (plan decision 16);
   - the CHANGELOG has `## Unreleased` / `### Added` naming `base.css`;
   - `packages/tokens/test/readme.test.ts` expects the tokens README sentence naming `@ocelle/styles` `base.css` as the stylesheet that applies `color-scheme`.
-- [ ] T014 [P] [US1] Storybook tests (research R-12):
+- [X] T014 [P] [US1] Storybook tests (research R-12):
   - `storybook/test/unit/swatches.test.ts`: `writeGenerated` also writes `base.css` (the directory listing gains it);
   - `storybook/test/unit/render.test.ts`: `renderFamily("base")` cases (no `style` attribute or `class`, the elements of the Base page story, escaping of `base-content.json` text);
   - `storybook/test/unit/stories.test.ts`: "Base styles" title with the Base page story;
   - `storybook/test/integration/csp.test.ts`: the Base page story with zero violations and no computed monospace, under the narrowed `preview.css`.
-- [ ] T015 [US1] Commit T008 to T014 alone (`test(003-base-styles): phase 2 red — US1 base layer`) and run `.specify/extensions/story/scripts/red.sh 2 phase`. Confirm every failure is an assertion on missing behaviour, not a load or setup error (the browser path is set with `PLAYWRIGHT_BROWSERS_PATH` or `OCELLE_CHROMIUM_PATH`)
+- [X] T015 [US1] Commit T008 to T014 alone (`test(003-base-styles): phase 2 red — US1 base layer`) and run `.specify/extensions/story/scripts/red.sh 2 phase`. Confirm every failure is an assertion on missing behaviour, not a load or setup error (the browser path is set with `PLAYWRIGHT_BROWSERS_PATH` or `OCELLE_CHROMIUM_PATH`)
 
 ### Implementation (green)
 
-- [ ] T016 [US1] `packages/styles/scripts/build.ts`: `buildPlan(css)` and `build()` as R-01, with each I/O line carrying the I/O-boundary Stryker record that names `packages/styles/test/build.test.ts`
-- [ ] T017 [US1] `packages/styles/src/base.css`: the base-layer rules of data-model § Rule table, in its order:
+- [X] T016 [US1] `packages/styles/scripts/build.ts`: `buildPlan(css)` and `build()` as R-01, with each I/O line carrying the I/O-boundary Stryker record that names `packages/styles/test/build.test.ts`
+- [X] T017 [US1] `packages/styles/src/base.css`: the base-layer rules of data-model § Rule table, in its order:
   - box-sizing as `:where(*), :where(*)::before, :where(*)::after`;
   - `:where(:root)` `color-scheme`;
   - `:where(body)`;
@@ -183,19 +183,19 @@ layer), and both contracts.
   - the `forced-colors` `Highlight` rule.
 
   Every value is a token, every line height a token, and there are no classes, no motion, no `@import` and no `url()`
-- [ ] T018 [US1] `gates/stylelint/token-only.ts` and `stylelint.config.ts`: the `lineHeight: "token"` option (`validateOptions` gains `lineHeight: ["token"]`; `optionLists` uses given lists only when `tokens` or `elementProperties` is present), and the override for `packages/styles/**/*.css` (research R-07)
-- [ ] T019 [US1] Style-lint plants for T018's option (contracts/checks.md § Gates changed, research R-07). They are not test files under `test_pathspec`, so they land here in green, not in the red commit; T010's unit tests are the option's red evidence:
+- [X] T018 [US1] `gates/stylelint/token-only.ts` and `stylelint.config.ts`: the `lineHeight: "token"` option (`validateOptions` gains `lineHeight: ["token"]`; `optionLists` uses given lists only when `tokens` or `elementProperties` is present), and the override for `packages/styles/**/*.css` (research R-07)
+- [X] T019 [US1] Style-lint plants for T018's option (contracts/checks.md § Gates changed, research R-07). They are not test files under `test_pathspec`, so they land here in green, not in the red commit; T010's unit tests are the option's red evidence:
   - fail plants `gates/plants/style-lint/fail-styles-literal-line-height` (`1.65`), `fail-styles-percent-line-height` (`165%`), `fail-styles-calc-line-height` (`calc(1.65)`) and `fail-styles-normal-line-height` (`normal`), each `tree/packages/styles/src/x.css` expecting one `ocelle/token-only` finding at its line;
   - pass plant `pass-styles-line-height-token` (`var(--ocelle-line-height-normal)`);
   - move `pass-line-height` from `tree/packages/styles/src/x.css` to `tree/packages/elements/src/x.css`, with `why` updated.
-- [ ] T020 [US1] `packages/styles/README.md` and `packages/styles/CHANGELOG.md` with the phase 2 statements of T013. In `packages/tokens/README.md`, the `color-scheme` sentence names `@ocelle/styles` `base.css`
-- [ ] T021 [US1] Storybook:
+- [X] T020 [US1] `packages/styles/README.md` and `packages/styles/CHANGELOG.md` with the phase 2 statements of T013. In `packages/tokens/README.md`, the `color-scheme` sentence names `@ocelle/styles` `base.css`
+- [X] T021 [US1] Storybook:
   - `storybook/scripts/swatches.ts` `writeGenerated` copies `packages/styles/src/base.css` to `.generated/base.css`;
   - `storybook/.storybook/preview-head.html` links it after `tokens.css`;
   - `storybook/.storybook/preview.css` is narrowed to the error display;
   - add `storybook/.storybook/stories-layout.css` (layout only, `data-story` selectors), imported by `storybook/.storybook/preview.ts` as `preview.css` is (research R-12);
   - add `storybook/stories/base-content.json`, `renderFamily` in `storybook/stories/render.ts`, and `storybook/stories/base.stories.ts` (title "Base styles", story "Base page").
-- [ ] T022 [US1] Run:
+- [X] T022 [US1] Run:
   - `pnpm -r build` and `pnpm test`;
   - `gate:typecheck`, `gate:lint`, `gate:test-lint`, `gate:style-lint`, `gate:prefix`, `gate:csp`, `gate:contrast`, `gate:brand-rules`, `gate:config-copies`, `gate:pins` (SC-003);
   - `gate:plants` alone, not during a mutation run;
