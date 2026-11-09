@@ -14,4 +14,5 @@ export const buildPlan: (css: string) => PlanEntry[] = () => [];
 /** Writes the output of the package. Stub: writes nothing yet. */
 export const build: () => Promise<void> = () => Promise.resolve();
 
+// Stryker disable next-line all: equivalent while build() is the phase-1 stub that resolves without doing anything; calling it on import or not calling it from the CLI changes nothing observable. Phase 2 replaces this with the R-01 I/O-boundary record naming packages/styles/test/build.test.ts
 if (import.meta.main) await build();
