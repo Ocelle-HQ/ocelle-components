@@ -39,13 +39,16 @@ function inProject(project: Project, path: string): boolean {
 }
 
 describe("vitest.mutation.config.ts", () => {
-  it("excludes exactly tokens-browser, storybook-integration and gates-integration from the projects of vitest.config.ts", () => {
+  it("excludes exactly tokens-browser, styles-browser, storybook-integration and gates-integration from the projects of vitest.config.ts", () => {
     expect(all.map((project) => project.name).filter((name) => !kept.some((project) => project.name === name))).toEqual([
       "tokens-browser",
+      "styles-browser",
       "storybook-integration",
       "gates-integration",
     ]);
-    expect(kept).toEqual(all.filter((project) => !["gates-integration", "tokens-browser", "storybook-integration"].includes(project.name)));
+    expect(kept).toEqual(
+      all.filter((project) => !["gates-integration", "tokens-browser", "storybook-integration", "styles-browser"].includes(project.name)),
+    );
   });
 });
 
@@ -58,6 +61,14 @@ describe("the Vitest projects", () => {
     expect(owners["packages/tokens/test/browser/themes.test.ts"]).toEqual(["tokens-browser"]);
     expect(owners["storybook/test/integration/csp.test.ts"]).toEqual(["storybook-integration"]);
     expect(owners["storybook/test/unit/swatches.test.ts"]).toEqual(["storybook"]);
+  });
+
+  // 003 research.md R-09, contracts/checks.md § Tests added: the styles browser tests run in their own project, which
+  // Stryker does not run, and the styles project keeps every other styles test.
+  it("put a styles browser test in styles-browser only, and any other styles test in styles only", () => {
+    const ownersOf = (path: string) => all.filter((project) => inProject(project, path)).map((project) => project.name);
+    expect(ownersOf("packages/styles/test/browser/x.test.ts")).toEqual(["styles-browser"]);
+    expect(ownersOf("packages/styles/test/x.test.ts")).toEqual(["styles"]);
   });
 
   it("keep no test file both in a project Stryker runs and in one it excludes", () => {
