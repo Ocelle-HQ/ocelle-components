@@ -381,7 +381,7 @@ copied text.
   content, a table that would fit is cut to the width of the other content (0 px in a table-only document), scrolls
   and becomes a tab stop. Examples of such boxes: a modal or non-modal `<dialog>`, a popover, a fixed or absolutely
   positioned panel (a side drawer, for example) without both inline insets or a width, an `inline-block`, a float, a
-  `display: table-cell` box, a default flex item, and a grid or flex item aligned to start. Hosts give such a box a
+  `display: table-cell` box, a default item of a row flex container, and a grid or flex item aligned to start. Hosts give such a box a
   definite width or stretch it; the README states the rule with these examples (FR-004, FR-017, User Story 3
   scenario 3; operator decision PLAN-FRESH-2-001 (a); PLAN-FRESH-3-003).
 - **Value text on the chrome**: the value hook is for the main grounds; on the dark chrome its colours fail contrast,
@@ -703,7 +703,7 @@ copied text.
 - **#20** (drop `as const` in the token source) is independent. If it lands first, the new tokens follow its form.
 - **Print**: out of scope (operator decision PLAN-FRESH-3-002 (b)). A prose table is a screen scroll box; paper does
   not scroll, so a printed or PDF-exported document shows only the columns of a wide table that fit the page (at A4,
-  about seven columns at the 12ch cell floor) and clips the rest without a sign. The stylesheet adds no print rule.
+  about eight columns at the 12ch cell floor) and clips the rest without a sign. The stylesheet adds no print rule.
   The README (Markdown renderers) and the contract state this, and a host that prints adds its own print rule (for
   example the prose table laid out as a table with visible overflow and no cell floor under `@media print`) (FR-004).
 - **Browsers**: the tests run in Chromium only (001 FR-005); 002 states no browser assumption. The stylesheet uses only

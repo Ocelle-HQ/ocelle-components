@@ -137,7 +137,7 @@ Decided by the operator at squad round 2 (2026-11-09, human:jeroennouwsdev):
     content (shrink-to-fit or fit-content sizing); it gets its width from its context. The spec, README, contract
     and research state that cause and give the shrink-to-fit boxes as examples, not as a complete list: a modal or
     non-modal `<dialog>`, a popover, a fixed or absolutely positioned panel without both inline insets or a width,
-    `inline-block`, a float, a `display: table-cell` box, a default flex item, and a grid or flex item aligned to
+    `inline-block`, a float, a `display: table-cell` box, a default item of a row flex container, and a grid or flex item aligned to
     start; a host gives such a box a definite width or stretches it (spec Edge Cases, FR-004, FR-017, README,
     contract; PLAN-FRESH-3-003). `prose-hosts.html` gains a definite-width modal dialog host, and the readme test
     asserts the cause sentence, not the list (R-06, R-14).
@@ -156,7 +156,9 @@ Decided by the operator at squad round 3 (2026-11-09, human:jeroennouwsdev):
     `position: sticky; inset-inline-start: 0` and `text-align: start`, and both are required and tested (spec FR-017,
     US3-3, US3-9): at `scrollLeft` 0 every caption line box starts at the table's visible start edge (within 1 px),
     and after two ArrowRight presses, and at the most negative `scrollLeft` under `dir="rtl"`, every line box still
-    lies inside the visible box. R-10 has three caption plants that each bite alone: `position: static`,
+    lies inside the visible box. A line box is the `Range.getClientRects()` rects merged per line (same `top`;
+    smallest left, largest right), since the browser gives one rect per text-direction run and a trailing full stop
+    under `rtl` is a rect of its own (R-06). R-10 has three caption plants that each bite alone: `position: static`,
     `text-align: center` and `max-inline-size: none`; the spike records all three (R-06 step 5).
 18. **Print out of scope** (PLAN-FRESH-3-002 (b)): `base.css` has no print rule. The spec Assumptions, the README
     (Markdown renderers) and the contract state that prose tables are screen scroll boxes, so a printed document

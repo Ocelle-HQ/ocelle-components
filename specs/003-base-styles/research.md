@@ -171,7 +171,7 @@ them out inside the block. Cells get `min-inline-size: var(--ocelle-measure-cell
   sizes of its ancestors, the max-content size too. So in any host sized from its content (shrink-to-fit or
   fit-content sizing), the table adds 0 to that width. Examples: a modal or non-modal `<dialog>`, which the UA gives
   `width: fit-content`; a popover; a fixed or absolutely positioned panel without both inline insets or a width (a
-  side drawer); `inline-block`; a float; a `display: table-cell` box; a default flex item; a grid or flex item
+  side drawer); `inline-block`; a float; a `display: table-cell` box; a default item of a row flex container; a grid or flex item
   aligned to start. Squad round 2 measured, in Chromium 153 at 1280 px
   with a 2-column table of short text (natural width 214 px): in a modal `<dialog>` the table's `clientWidth` is 8 px
   with only the table and 79 px after a short paragraph, against a `scrollWidth` of 214, and the first Tab lands on the
@@ -202,11 +202,18 @@ them out inside the block. Cells get `min-inline-size: var(--ocelle-measure-cell
   at 320 px and the AX tree still holding role `table` named by the caption plus its 26 `row`, `columnheader` and
   `cell` nodes. `start` and `inset-inline-start` mirror under `dir="rtl"` (squad round 3: lines x 5 to 320 and 40
   to 320 at `scrollLeft` 0 and -500). Both parts are required and tested (operator decision PLAN-FRESH-3-001 (a),
-  spec FR-017, US3-3, US3-9). The test reads the caption text's line boxes with `Range.getClientRects()` and the
-  table's visible box with `getBoundingClientRect()`, and asserts: at `scrollLeft` 0 each line box lies inside the
-  box and its start edge is the box's start edge within 1 px (left under `ltr`, right under `rtl`); after two
+  spec FR-017, US3-3, US3-9). The test reads the caption text's rects with `Range.getClientRects()` and the
+  table's visible box with `getBoundingClientRect()`. `getClientRects()` gives one rect per text-direction run, not
+  one per line: squad round 3 (verify 1) measured, under `dir="rtl"` with the planned rule, three rects for a
+  two-line Latin caption that ends in a full stop, x 3.2 to 320 (top 4), 42.3 to 46.3 (top 30.4, the full stop,
+  which takes the paragraph's RTL direction and sits at the line's left end) and 46.3 to 320 (top 30.4); without
+  the full stop the same caption gives one rect per line. So the test first merges the rects into line boxes: rects
+  whose `top` agrees within 1 px form one line, whose left edge is the smallest `left` and whose right edge the
+  largest `right` of its rects. It then asserts on the merged line boxes: at `scrollLeft` 0 each line box lies inside
+  the box and its start edge is the box's start edge within 1 px (left under `ltr`, right under `rtl`); after two
   ArrowRight presses on the focused table (`scrollLeft` above 0), and at the most negative `scrollLeft` under
-  `dir="rtl"`, each line box still lies inside the box. Squad round 3 measured that each of the rule's parts is
+  `dir="rtl"`, each line box still lies inside the box. The fixture caption ends in a full stop, so the merge is
+  exercised (merged, the rtl lines above are x 3.2 to 320 and 42.3 to 320, both ending at the start edge). Squad round 3 measured that each of the rule's parts is
   reached only by its own assertion: without the sticky offset the caption lines lie inside the box at `scrollLeft`
   0 but at x -500 to -185 at `scrollLeft` 500; centred, the capped lines lie at x 3 to 317 and 20 to 300, inside the
   box at every scroll position but not at its start edge; without the cap the caption is one line from x 0 to 599.
@@ -236,9 +243,10 @@ otherwise, from which the arrow keys scroll it. That is the behaviour the operat
    at 320 px, while the table's own `scrollWidth` exceeds its `clientWidth`; and in the modal `<dialog>` host of
    definite width, at 1280 px, the table that fits has `clientWidth` equal to `scrollWidth` and is not a tab stop.
 4. The plant for the table that fits (R-10) makes it overflow and a tab stop.
-5. At 320 px every line box of the fixture's caption of at least 80 characters lies inside the table's visible box
-   and starts at its start edge (within 1 px) at `scrollLeft` 0, and still lies inside it after two ArrowRight
-   presses and, under `dir="rtl"`, at the most negative `scrollLeft`. Each of the three caption plants of R-10 bites
+5. At 320 px, with the `Range.getClientRects()` rects merged per line first (same `top` within 1 px; smallest
+   `left`, largest `right`), every line box of the fixture's caption of at least 80 characters, ending in a full
+   stop, lies inside the table's visible box and starts at its start edge (within 1 px) at `scrollLeft` 0, and still
+   lies inside it after two ArrowRight presses and, under `dir="rtl"`, at the most negative `scrollLeft`. Each of the three caption plants of R-10 bites
    alone and is recorded: `position: static` fails the scrolled assertion, `text-align: center` the start-edge
    assertion, and `max-inline-size: none` the `scrollLeft`-0 containment assertion (PLAN-FRESH-3-001 (a)).
 
@@ -594,7 +602,7 @@ then styled by `base.css` alone.
     `flex: 1`, a definite width). In a box sized from its content a table that would fit is cut down, scrolls and
     becomes a tab stop. The examples follow as examples, not as a complete list: a modal or non-modal `<dialog>`, a
     popover, a fixed or absolutely positioned panel without both inline insets or a width, `inline-block`, a float, a
-    `display: table-cell` box, a default flex item, and a grid or flex item aligned to start; give such a box a
+    `display: table-cell` box, a default item of a row flex container, and a grid or flex item aligned to start; give such a box a
     definite width or stretch it;
   - custom-element hosts (operator decision PLAN-FRESH-2-004 (a)): `base.css` also styles the host of every element,
     which is in the light DOM: the `box-sizing` reset, and the focus ring on a focusable host. For normal declarations
