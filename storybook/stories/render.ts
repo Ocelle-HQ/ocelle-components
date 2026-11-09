@@ -34,7 +34,7 @@ export function renderGroup(source: readonly TokenRecord[], group: Group, theme:
 }
 
 /** A family of the base styles that has a story (003 FR-023, research.md R-12). */
-export type Family = "base" | "compact";
+export type Family = "base" | "compact" | "prose";
 
 /** The text of the Base page story (storybook/stories/base-content.json). */
 export interface BaseContent {
@@ -65,10 +65,39 @@ export interface CompactContent {
   readonly command: string;
 }
 
+/** A table of the Prose document story: an optional caption (none when empty), a header row and body rows. */
+export interface ProseTable {
+  readonly caption: string;
+  readonly head: readonly string[];
+  readonly rows: readonly (readonly string[])[];
+}
+
+/** The text of the Prose document story (storybook/stories/base-content.json): a rendered Markdown document. */
+export interface ProseContent {
+  readonly title: string;
+  readonly intro: string;
+  readonly link: string;
+  readonly code: string;
+  readonly listHeading: string;
+  readonly list: readonly string[];
+  readonly nestedLabel: string;
+  readonly nested: readonly string[];
+  readonly quoteHeading: string;
+  readonly quote: string;
+  readonly codeHeading: string;
+  readonly pre: string;
+  readonly tableHeading: string;
+  readonly table: ProseTable;
+  readonly linkedHeading: string;
+  /** A table whose first body cell is a link. */
+  readonly linked: ProseTable;
+}
+
 /** The stories' text, one entry per family. */
 export interface Content {
   readonly base: BaseContent;
   readonly compact: CompactContent;
+  readonly prose: ProseContent;
 }
 
 /** The stories' text of base-content.json. */
@@ -90,6 +119,7 @@ function renderCompact(text: CompactContent): string {
 /** The markup of a family's story from the stories' text (base-content.json unless given), every text escaped. */
 export function renderFamily(family: Family, content: Content = storyContent): string {
   if (family === "compact") return renderCompact(content.compact);
+  if (family === "prose") return "";
   const text = content.base;
   const items = text.list.map((item) => `<li>${escape(item)}</li>`).join("");
   return (

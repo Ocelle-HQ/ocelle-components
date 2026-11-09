@@ -22,5 +22,36 @@
     ],
     "note": "Run it again with",
     "command": "pnpm --filter @ocelle/styles test"
+  },
+  "prose": {
+    "title": "Mission 003: the prose family",
+    "intro": "A host's Markdown renderer emits plain HTML into a container with the prose hook, and the document reads at a line height of 1.65 with paragraphs held to a reading measure. Read the",
+    "link": "host contract",
+    "code": "packages/styles/src/base.css",
+    "listHeading": "What the prose family styles",
+    "list": ["Headings from h1 to h6, paragraphs and block quotes.", "Inline code and code blocks, which wrap inside their own width."],
+    "nestedLabel": "Tables, in their own scroll box:",
+    "nested": ["header cells at 12 px with tabular figures;", "every cell at least 12ch wide."],
+    "quoteHeading": "A block quote",
+    "quote": "Tables and code blocks may use the full width of the container; running text keeps to about 68 characters.",
+    "codeHeading": "A code block",
+    "pre": "pnpm --filter @ocelle/styles test\n  styles-browser  prose.test.ts  passed",
+    "tableHeading": "A wide table",
+    "table": {
+      "caption": "Quarterly figures for each of the twelve regions, in thousands, for the first two quarters of the year.",
+      "head": ["North", "South", "East", "West", "Coast", "Hills", "Lakes", "Delta", "Plain", "Ridge", "Bay", "Isles"],
+      "rows": [
+        ["1204", "986", "1432", "877", "1120", "654", "712", "1301", "998", "1045", "833", "1267"],
+        ["1310", "1002", "1398", "902", "1175", "699", "745", "1288", "1012", "1099", "861", "1302"]
+      ]
+    },
+    "linkedHeading": "A wide table with a link",
+    "linked": {
+      "caption": "",
+      "head": ["Mission", "South", "East", "West", "Coast", "Hills", "Lakes", "Delta", "Plain", "Ridge", "Bay", "Isles"],
+      "rows": [
+        ["003-base-styles", "986", "1432", "877", "1120", "654", "712", "1301", "998", "1045", "833", "1267"]
+      ]
+    }
   }
 }
