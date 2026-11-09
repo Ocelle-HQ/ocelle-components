@@ -91,7 +91,8 @@ at one attribute.
 - Order in the file decides between equal hook rules: base layer, then compact, then value, then prose, then wrap.
   That order makes the prose hook win over the compact hook on one element (FR-024).
 
-**Why**: (0,0,0) (and (0,0,1) for the two pseudo-element selectors) means any host rule wins, which the spec's
+**Why**: (0,0,0) (and (0,0,1) for the two pseudo-element selectors) means any rule of the host page's own stylesheets wins (a custom
+element's `:host` rules do not, R-12), which the spec's
 "easy to override" asks for; one attribute per hook rule
 keeps the hooks predictable. The "same element" rule needs no extra selector because both rules have equal
 specificity and prose comes later.
@@ -302,8 +303,17 @@ Scoping the option keeps 002's element contract unchanged.
 `--ocelle-measure-container` is the sixth token (FR-021). FR-002 admits no literal length in `base.css`, so `100cqi`
 is a token rather than a token-only lint exemption: the lint stays unchanged for container units. An unregistered
 custom property substitutes its value where it is used, so `100cqi` resolves at the caption against its nearest
-query container, the table, not at `:root`. Its `expected.ts` probe sets it as the width of an element inside a
-query container of known inline size (without one, `cqi` falls back to the small viewport size). Like
+query container, the table, not at `:root`. Without a query container, `cqi` falls back to the small viewport size.
+Its `expected.ts` entry is `{ property: "width", used: 1000 }`, and the token browser test proves the container
+resolution only with a change to its harness (PLAN-FRESH-2-002, squad round 2 verify 1). Today
+`packages/tokens/test/browser/values.test.ts` appends the probes to a 1000px `position: relative` block that is not a
+query container, so `width: var(--ocelle-measure-container)` measures 1280px, the viewport fallback, and a
+`width(1280)` entry would pass while showing nothing about the container. The harness change gives that block
+`container-type: inline-size`, so the same probe measures 1000px, the block's inline size, and the 1000 entry fails
+if the token resolves against the viewport (1280px) or if the block stops being a query container. The block keeps
+its explicit 1000px width, stays the probes' containing block and still establishes no layout containment, so the
+transcribed values of the other probed tokens do not change; the existing suite run on the changed harness confirms
+it. The header comment of `values.test.ts` names the query container with the 1000px containing block. Like
 `measure-page` (`100%`), it is a relative measure in the shell group.
 
 The token count goes from 109 to 115. No colour token is added. The colour pairings the prose and value families
@@ -330,6 +340,8 @@ groups are a closed set tested by `validateSource`.
 **Where a token is added**, per the 002 test layout:
 - `packages/tokens/src/source.ts` (record);
 - `packages/tokens/test/expected.ts` (transcribed value and probe, by hand);
+- for `measure-container` only, `packages/tokens/test/browser/values.test.ts`: the probe block becomes a query
+  container (`container-type: inline-size`), so the probe resolves `100cqi` against its 1000px, not the viewport;
 - `packages/tokens/CHANGELOG.md` (the Unreleased list is checked against `expectedTokens`);
 - the tokens README table where it lists groups;
 - the Storybook story of its group, which is checked by the Storybook csp test.

@@ -100,8 +100,8 @@ cover the new stories, because they live in the same preview.*
    so elements can use it), `measure-reading`, `measure-cell` and `measure-container` (`100cqi`) in the shell group.
    The caption's `100cqi` is a token, not a lint exemption: FR-002 admits no literal length, so the token-only lint is
    not changed for container units (PLAN-FRESH-2-002).
-3. **Specificity by `:where()` rather than `@layer`** (R-03), so any host rule wins whether or not the host uses
-   layers.
+3. **Specificity by `:where()` rather than `@layer`** (R-03), so any rule of the host page's own stylesheets wins
+   whether or not the host uses layers (a custom element's `:host` rules do not; decision 16, R-12).
 4. **Heading weights and sizes** (data-model): `h1` 30 px display weight (800); `h2` 18 px strong (600); `h3` 17 px
    strong; `h4` to `h6` 16 px strong.
 5. **Table mechanism to be measured in a spike** (R-06): `display: block; overflow-x: auto; container-type: inline-size`
@@ -172,7 +172,8 @@ packages/styles/
     └── fixtures/*.html, fixtures/layout.css, fixtures/media.svg, fixtures/plants/*.css     # new
 packages/tokens/
 ├── src/source.ts                # six new records
-├── test/expected.ts             # six transcribed entries
+├── test/expected.ts             # six transcribed entries (measure-container: width 1000)
+├── test/browser/values.test.ts  # probe block gains container-type: inline-size (R-08), so 100cqi is 1000px, not 1280px
 └── README.md, CHANGELOG.md      # new tokens; color-scheme sentence names base.css
 gates/stylelint/token-only.ts    # lineHeight: "token" option (validateOptions, optionLists, value check)
 gates/test/token-only.test.ts    # unit tests for the option (token-only-parts.test.ts if rawValues changes)
@@ -223,7 +224,8 @@ package and no new gate.
    story; the readme test's density and value statements (values, the main-grounds limit of the value hook, the
    CHANGELOG attribute names), red first.
 4. **US3 Prose** (P3): the tokens `line-height-prose`, `font-size-subhead`, `measure-reading`, `measure-cell` and
-   `measure-container`; the prose rules; browser tests for US3 scenarios 1 to 12 (the grid and flex hosts, the
+   `measure-container`, with the `values.test.ts` probe block made a query container first (its `width` 1000 entry
+   is red against the unchanged harness, which gives 1280px; R-08); the prose rules; browser tests for US3 scenarios 1 to 12 (the grid and flex hosts, the
    definite-width dialog host, the inset ring, the long caption's line boxes, the `<a id>` target, the undocumented
    value and `prose-root.html` included), the `h1` half of US2 scenario 4 and the nested cases of US2 scenario 5;
    `pairs.test.ts` (R-08); the "Prose document" story; the readme test's prose

@@ -24,6 +24,7 @@ The registry (`gates/gates.json`, `gates/lib/registry.ts`, `ci.yml`, `gates/READ
 | `gates` | `gates/test/token-only.test.ts` (and `token-only-parts.test.ts` if `rawValues` changes) | unit | the `lineHeight: "token"` option: raw values with it, allowed without it, token and CSS-wide keyword pass with the repository lists, invalid option reported (research R-07) |
 | `gates` | `gates/test/vitest-config.test.ts` | unit | the mutation-excluded list gains `styles-browser`; `packages/styles/test/browser/*.test.ts` belong to `styles-browser` only (phase 1, red first) |
 | `tokens` | the existing token tests | unit | the six new tokens (`expected.ts`, CHANGELOG, README) |
+| `tokens-browser` | `packages/tokens/test/browser/values.test.ts` (changed) | browser | the probe block gets `container-type: inline-size`, so the `measure-container` probe (`width`, 1000) resolves `100cqi` against the 1000px query container, not the 1280px viewport; the other probes' values are unchanged (research R-08, PLAN-FRESH-2-002) |
 | `storybook` (in mutation runs) | `storybook/test/unit/render.test.ts` | unit | `renderFamily`: hook attributes and values, the elements each story must show, no `style` attribute or `class`, escaping of the data-file text (research R-12) |
 | `storybook`, `storybook-integration` | the other Storybook tests | unit, integration | the four new stories: zero violations, no monospace (with `preview.css` narrowed to the error display, so the check sees `base.css`), `.generated/base.css` |
 

@@ -256,8 +256,8 @@ characters long. It holds no task list (FR-014).
    container as the `1fr` item of a grid and as the `flex: 1` item of a flex row beside a fixed rail, and nested one
    level inside such an item, the page does not scroll horizontally while the wide table scrolls inside its own box;
    **and**, in the same test at 1280 px, with the prose container inside a modal `<dialog>` that has a definite width
-   (the host requirement of FR-017; operator decision PLAN-FRESH-2-001 (a)), the table that fits is as wide as its
-   content (its `clientWidth` equals its `scrollWidth`) and is not a tab stop, and the wide table scrolls inside its
+   (the host requirement of FR-017; operator decision PLAN-FRESH-2-001 (a)), the table that fits does not overflow
+   its box (its `clientWidth` equals its `scrollWidth`) and is not a tab stop, and the wide table scrolls inside its
    own box.
 4. **Given** table header cells, **When** they render, **Then** they are `--ocelle-font-size-xs` (12 px) Schibsted
    Grotesk with tabular figures, not monospace.
@@ -519,8 +519,8 @@ copied text.
   container. The box needs no wrapper element from the renderer, so a renderer that emits only `<table>` works. The
   page MUST NOT scroll horizontally because of it, also when the prose container, or an element above it, is a grid or
   flex item. The table is contained in the inline axis, so the prose container MUST get its width from its context,
-  not from its content (Edge Cases, operator decision PLAN-FRESH-2-001 (a)); in such a container a table that fits is
-  as wide as its content. A caption MUST wrap inside the table's visible box: at `scrollLeft` 0 every line box of the
+  not from its content (Edge Cases, operator decision PLAN-FRESH-2-001 (a)); in such a container a table that fits
+  does not overflow its box (its `clientWidth` equals its `scrollWidth`) and is not a tab stop. A caption MUST wrap inside the table's visible box: at `scrollLeft` 0 every line box of the
   caption lies inside it, also when the caption is longer than the visible width (WCAG 1.4.10). Keyboard access
   follows the browser's natural focus (operator decision SPEC-3-01), with no wrapper and no `tabindex` from the
   renderer:
