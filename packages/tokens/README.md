@@ -41,6 +41,12 @@ Nothing loads from a CDN or a font service. Without `font-src`, text renders in 
 License 1.1, whose text is `fonts/OFL.txt` beside it. `--ocelle-font-sans` and `--ocelle-font-display` name it first;
 `--ocelle-figures` gives the tabular figures that ids, digests and values use.
 
+### Tokens for the base styles
+
+Some tokens exist for the base styles of `@ocelle/styles` (`base.css`, mission 003). In the type group,
+`--ocelle-line-height-compact` (1.5) is the line height of its compact scale (`data-ocelle-density="compact"`), with
+`--ocelle-font-size-sm`.
+
 ### Forced colours
 
 The tokens never override the system palette in forced colours: the stylesheet has no `forced-color-adjust: none`,

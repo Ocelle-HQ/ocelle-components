@@ -34,8 +34,9 @@ nothing loads from a CDN, and two new merge checks (Contrast, Brand rules) keep 
   - type: `--ocelle-font-sans`, `--ocelle-font-display`, `--ocelle-figures`, `--ocelle-font-size-xs`,
     `--ocelle-font-size-sm`, `--ocelle-font-size-md`, `--ocelle-font-size-fact`, `--ocelle-font-size-lg`,
     `--ocelle-font-size-xl`, `--ocelle-font-size-2xl`, `--ocelle-line-height-tight`, `--ocelle-line-height-normal`,
-    `--ocelle-line-height-relaxed`, `--ocelle-font-weight-regular`, `--ocelle-font-weight-medium`,
-    `--ocelle-font-weight-strong`, `--ocelle-font-weight-display`, `--ocelle-tracking-display`
+    `--ocelle-line-height-relaxed`, `--ocelle-line-height-compact` (the compact scale of `@ocelle/styles`, 003),
+    `--ocelle-font-weight-regular`, `--ocelle-font-weight-medium`, `--ocelle-font-weight-strong`,
+    `--ocelle-font-weight-display`, `--ocelle-tracking-display`
   - space: `--ocelle-space-1`, `--ocelle-space-2`, `--ocelle-space-3`, `--ocelle-space-4`, `--ocelle-space-5`,
     `--ocelle-space-6`, `--ocelle-space-7`, `--ocelle-space-8`, `--ocelle-space-9`, `--ocelle-space-10`,
     `--ocelle-gutter`

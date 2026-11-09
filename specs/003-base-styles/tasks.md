@@ -227,22 +227,22 @@ The design sources are research R-02, R-04 and R-08, and data-model § Compact s
 
 ### Tests (red, one commit)
 
-- [ ] T023 [P] [US2] `packages/tokens/test/expected.ts`: add `line-height-compact`, type group, `1.5`, with its probe (research R-08). The tokens CHANGELOG test expects the new name under Unreleased
-- [ ] T024 [P] [US2] `packages/styles/test/fixtures/compact.html` (without the prose cases, which T035 adds), `compact-root.html` (the compact hook on `<html>`) and `plants/*.css` for the US2 guards of R-10 (the density presence-form plant included). `packages/styles/test/browser/compact.test.ts`, every scenario in both themes under `emulateMedia({ colorScheme })` light and dark (research R-09, FR-022); none is exempt:
+- [X] T023 [P] [US2] `packages/tokens/test/expected.ts`: add `line-height-compact`, type group, `1.5`, with its probe (research R-08). The tokens CHANGELOG test expects the new name under Unreleased
+- [X] T024 [P] [US2] `packages/styles/test/fixtures/compact.html` (without the prose cases, which T035 adds), `compact-root.html` (the compact hook on `<html>`) and `plants/*.css` for the US2 guards of R-10 (the density presence-form plant included). `packages/styles/test/browser/compact.test.ts`, every scenario in both themes under `emulateMedia({ colorScheme })` light and dark (research R-09, FR-022); none is exempt:
   - scenario 1: 14 px / 21 px, inherited, and in the same test a `data-ocelle-density="true"` region with no compact scale (FR-005), with the density presence-form plant;
   - scenario 2: only the region, with the `body` plant;
   - scenario 3: the value style's family, figures, colour and 14 px, the `ink` variant, and `data-ocelle-value="true"` doing nothing, with the presence-form plant;
   - scenario 4 without `h1`, on `compact-root.html`: the hook on `<html>` keeps the root at 16 px and `--ocelle-target-min` at 44 px, the body compact and the ring unchanged, with the two US2-4 plants;
   - FR-004 `regular` value (nested regions): a `regular` region inside a compact one returns to the regular scale (research R-02). US2 scenario 5 is left to T035.
-- [ ] T025 [P] [US2] `packages/styles/test/source.test.ts`: the compact and value selectors of data-model § Compact scale exist and are within the (0,1,1) bound. `packages/styles/test/readme.test.ts`: the density and value statements (values, `regular`, that any other value of a hook attribute, `"true"` among them, has no effect, what the compact-scale family styles and the tokens it uses, the main-grounds-only limit of the value hook) and the CHANGELOG naming `data-ocelle-density` and `data-ocelle-value`
-- [ ] T026 [P] [US2] Storybook tests: `renderFamily("compact")` cases, the "Compact screen" story (compact and value hooks) in `stories.test.ts`, and in `csp.test.ts` with zero violations
-- [ ] T027 [US2] Commit T023 to T026 alone (`test(003-base-styles): phase 3 red — US2 compact`) and run `.specify/extensions/story/scripts/red.sh 3 phase`
+- [X] T025 [P] [US2] `packages/styles/test/source.test.ts`: the compact and value selectors of data-model § Compact scale exist and are within the (0,1,1) bound. `packages/styles/test/readme.test.ts`: the density and value statements (values, `regular`, that any other value of a hook attribute, `"true"` among them, has no effect, what the compact-scale family styles and the tokens it uses, the main-grounds-only limit of the value hook) and the CHANGELOG naming `data-ocelle-density` and `data-ocelle-value`
+- [X] T026 [P] [US2] Storybook tests: `renderFamily("compact")` cases, the "Compact screen" story (compact and value hooks) in `stories.test.ts`, and in `csp.test.ts` with zero violations
+- [X] T027 [US2] Commit T023 to T026 alone (`test(003-base-styles): phase 3 red — US2 compact`) and run `.specify/extensions/story/scripts/red.sh 3 phase`
 
 ### Implementation (green)
 
-- [ ] T028 [US2] `packages/tokens/src/source.ts`: add the `line-height-compact` record. Add it to `packages/tokens/CHANGELOG.md` (Unreleased, type group) and to `packages/tokens/README.md`
-- [ ] T029 [US2] `packages/styles/src/base.css`: the compact and value rules of data-model § Compact scale, after the base layer (research R-03 order, R-04 root handling)
-- [ ] T030 [US2] README and CHANGELOG of `@ocelle/styles` with the T025 statements. Add `renderFamily("compact")` and the "Compact screen" story
+- [X] T028 [US2] `packages/tokens/src/source.ts`: add the `line-height-compact` record. Add it to `packages/tokens/CHANGELOG.md` (Unreleased, type group) and to `packages/tokens/README.md`
+- [X] T029 [US2] `packages/styles/src/base.css`: the compact and value rules of data-model § Compact scale, after the base layer (research R-03 order, R-04 root handling)
+- [X] T030 [US2] README and CHANGELOG of `@ocelle/styles` with the T025 statements. Add `renderFamily("compact")` and the "Compact screen" story
 - [ ] T031 [US2] Run the checks of T022 for this phase, then `.specify/extensions/story/scripts/tdd-check.sh 3` (`pass`), and commit green (`feat(003-base-styles): phase 3 — US2 compact`)
 
 **Checkpoint**: a dense screen marked compact gets 14 px / 1.5 without changing `rem` tokens.
