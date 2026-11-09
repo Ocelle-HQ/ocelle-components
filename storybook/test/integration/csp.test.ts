@@ -234,7 +234,52 @@ describe("the Storybook page under its CSP", { timeout: 60_000 }, () => {
     });
   }
 
+  // The Compact screen story (003 FR-023, research.md R-12, phase 3): the compact hook and the value hook in both
+  // variants, styled by base.css alone: the region at 14 px / 21 px, the values in Schibsted Grotesk with tabular
+  // figures at 14 px in ink-muted, and the ink variant in ink (002 Appendix A).
+  const compactInks = { light: { ink: "rgb(21, 19, 15)", muted: "rgb(94, 88, 79)" }, dark: { ink: "rgb(237, 233, 225)", muted: "rgb(163, 157, 146)" } } as const;
+  for (const theme of ["light", "dark"] as const) {
+    it(`base-styles--compact-screen in ${theme}: the header, no violation, no request outside the origin, the compact and value hooks applied, no monospace`, async () => {
+      const { page, header, outside } = await open(`id=base-styles--compact-screen&viewMode=story&globals=theme:${theme}`, '#storybook-root [data-story="compact"]');
+      expect(header).toBe(policy);
+      expect(await violations(page)).toEqual([]);
+      expect(outside).toEqual([]);
+      expect(
+        await page.evaluate(() => {
+          const region = document.querySelector('#storybook-root [data-story="compact"]');
+          const read = (element: Element): Record<string, string> => {
+            const style = getComputedStyle(element);
+            return { family: style.fontFamily.split(",")[0] ?? "", size: style.fontSize, lineHeight: style.lineHeight, figures: style.fontVariantNumeric, color: style.color };
+          };
+          return {
+            region: region === null ? undefined : { size: read(region).size, lineHeight: read(region).lineHeight },
+            values: [...document.querySelectorAll('#storybook-root [data-ocelle-value=""]')].map(read),
+            ink: [...document.querySelectorAll('#storybook-root [data-ocelle-value="ink"]')].map(read),
+          };
+        }),
+      ).toEqual({
+        region: { size: "14px", lineHeight: "21px" },
+        values: [0, 1, 2, 3].map(() => ({ family: '"Schibsted Grotesk"', size: "14px", lineHeight: "21px", figures: "tabular-nums", color: compactInks[theme].muted })),
+        ink: [{ family: '"Schibsted Grotesk"', size: "14px", lineHeight: "21px", figures: "tabular-nums", color: compactInks[theme].ink }],
+      });
+
+      await page.evaluate(() => {
+        const control = document.createElement("span");
+        control.id = "ocelle-monospace-control";
+        control.style.fontFamily = "Menlo, monospace";
+        document.body.append(control);
+      });
+      expect(await monospace(page)).toEqual(["span#ocelle-monospace-control"]);
+      await page.evaluate(() => {
+        document.getElementById("ocelle-monospace-control")?.remove();
+      });
+      expect(await monospace(page)).toEqual([]);
+      expect(await violations(page)).toEqual([]);
+      await page.close();
+    });
+  }
+
   it("opened the preview and nothing else: every HTML document served was iframe.html, one per page", () => {
-    expect(documents).toEqual(Array.from({ length: 1 + groups.length * 2 + 2 }, () => "iframe.html"));
+    expect(documents).toEqual(Array.from({ length: 1 + groups.length * 2 + 2 + 2 }, () => "iframe.html"));
   });
 });

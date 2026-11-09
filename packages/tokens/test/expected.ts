@@ -120,6 +120,8 @@ export const expectedTokens: readonly ExpectedToken[] = [
   plain("line-height-tight", "type", "1.15", { property: "line-height", used: 18.4 }),
   plain("line-height-normal", "type", "1.45", { property: "line-height", used: 23.2 }),
   plain("line-height-relaxed", "type", "1.55", { property: "line-height", used: 24.8 }),
+  // 003 (research.md R-08, data-model.md § New tokens): the compact scale's line height (User Story 2, FR-012).
+  plain("line-height-compact", "type", "1.5", { property: "line-height", used: 24 }),
   plain("font-weight-regular", "type", "400", { property: "font-weight", used: "400" }),
   plain("font-weight-medium", "type", "500", { property: "font-weight", used: "500" }),
   plain("font-weight-strong", "type", "600", { property: "font-weight", used: "600" }),

@@ -5,8 +5,10 @@ import { describe, expect, it } from "vitest";
 // scenario 6's documentation half): the README states the host contract and the CHANGELOG's Unreleased section names
 // what is added. The statements grow red first with the phases; phase 2 checks the link order, the CSP, the tokens
 // version (and that the workspace:0.0.0 pin becomes meaningful at the first release, #11), the base layer and its
-// specificity, the custom-element hosts (plan decision 16) and the CHANGELOG entry naming base.css. Whitespace is
-// normalised, so a fragment may wrap across lines.
+// specificity, the custom-element hosts (plan decision 16) and the CHANGELOG entry naming base.css; phase 3 adds the
+// density and value hooks (their values, that any other value does nothing, what the compact-scale family styles and
+// its tokens, the main-grounds limit) and the CHANGELOG entries naming both attributes. Whitespace is normalised, so a
+// fragment may wrap across lines.
 /** A package file's text; empty while it does not exist, so each assertion below reports what is missing. */
 function read(file: string): string {
   const url = new URL(`../${file}`, import.meta.url);
@@ -36,6 +38,18 @@ const fragments = [
   "The base layer does not reach into shadow roots, but it styles each element's host, which is in the light DOM: the `box-sizing` reset on every host, and the focus ring on a host that is itself focusable",
   "For normal declarations the page's rules beat a shadow tree's `:host` rules whatever their specificity, so an element's own stylesheet cannot override them",
   "Elements put their focusable part inside the shadow root or use `delegatesFocus`, and do not depend on their host's `box-sizing`",
+  // phase 3: the density and value hooks (FR-004, FR-005, FR-012, FR-013; research.md R-02, R-04, R-14)
+  "Each hook is one `data-ocelle-` attribute and applies only with one of its documented values. Any other value of a hook attribute, `\"true\"` among them, has no effect",
+  "Hook selectors have specificity (0,1,0)",
+  "`data-ocelle-density` takes `compact` or `regular`",
+  "`data-ocelle-density=\"compact\"` sets the compact scale on the element, and its descendants inherit it: `--ocelle-font-size-sm` (14 px) with `--ocelle-line-height-compact` (1.5)",
+  "On `<html>` the hook sets the compact scale on the body instead, so the root font size never changes and every `rem` token keeps its value (`--ocelle-target-min` stays 44 px)",
+  "`data-ocelle-density=\"regular\"` returns a region nested in a compact one to the regular scale: `--ocelle-font-size-md` (16 px) with `--ocelle-line-height-normal` (1.45)",
+  "`data-ocelle-value` takes the empty value (a bare attribute has it) or `ink`",
+  "`data-ocelle-value=\"\"` sets the value text style: `--ocelle-font-sans` at `--ocelle-font-size-sm` with `font-variant-numeric: var(--ocelle-figures)`, in `--ocelle-color-ink-muted`",
+  "`data-ocelle-value=\"ink\"` sets the same style in `--ocelle-color-ink`",
+  "The value hook is for the main grounds only (canvas, sheet, pane, panel, inspector, rail, inset, accent-low, hover-bg), not the chrome (the top bar, the icon rail and the personal rail), where light `ink` is 1.00:1 and `ink-muted` 2.64:1",
+  "Tokens the compact scale uses: `--ocelle-font-size-sm`, `--ocelle-line-height-compact`, `--ocelle-font-size-md`, `--ocelle-line-height-normal`, `--ocelle-font-sans`, `--ocelle-figures`, `--ocelle-color-ink-muted` and `--ocelle-color-ink`",
 ];
 
 describe("packages/styles/README.md", () => {
@@ -60,5 +74,10 @@ describe("packages/styles/CHANGELOG.md", () => {
 
   it("names the base.css export under Unreleased / Added (constitution VII, FR-004)", () => {
     expect(added).toMatch(/^- `base\.css`/m);
+  });
+
+  it("names the data-ocelle-density and data-ocelle-value hooks under Unreleased / Added (constitution VII, FR-004)", () => {
+    expect(added).toMatch(/^- `data-ocelle-density`/m);
+    expect(added).toMatch(/^- `data-ocelle-value`/m);
   });
 });
