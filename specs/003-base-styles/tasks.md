@@ -195,7 +195,7 @@ layer), and both contracts.
   - `storybook/.storybook/preview.css` is narrowed to the error display;
   - add `storybook/.storybook/stories-layout.css` (layout only, `data-story` selectors), imported by `storybook/.storybook/preview.ts` as `preview.css` is (research R-12);
   - add `storybook/stories/base-content.json`, `renderFamily` in `storybook/stories/render.ts`, and `storybook/stories/base.stories.ts` (title "Base styles", story "Base page").
-- [ ] T022 [US1] Run:
+- [X] T022 [US1] Run:
   - `pnpm -r build` and `pnpm test`;
   - `gate:typecheck`, `gate:lint`, `gate:test-lint`, `gate:style-lint`, `gate:prefix`, `gate:csp`, `gate:contrast`, `gate:brand-rules`, `gate:config-copies`, `gate:pins` (SC-003);
   - `gate:plants` alone, not during a mutation run;
