@@ -1,0 +1,11 @@
+{
+  "expect": "fail",
+  "why": "A token that is not a line height (line-height: var(--ocelle-space-4)) in packages/styles is rejected: a line height there is an --ocelle-line-height-* token (003 FR-002, research.md R-07, phase 2 round 2 O2-01).",
+  "findings": [
+    {
+      "location": "packages/styles/src/x.css:3",
+      "rule": "ocelle/token-only",
+      "message": "var(--ocelle-space-4)"
+    }
+  ]
+}

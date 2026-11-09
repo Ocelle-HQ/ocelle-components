@@ -1,7 +1,8 @@
 // The package build's output step (003 research.md R-01): after `tsc`, writes `dist/base.css`, byte-identical to
 // `src/base.css`. buildPlan() holds the decision (one content entry carrying the text, the tokens package's
 // PlanEntry shape), and the source-level checks parse its content; build() only reads src/base.css and writes the
-// plan (the I/O boundary, covered by packages/styles/test/build.test.ts).
+// plan, and packages/styles/test/build.test.ts runs it in process, so its mutants are killed, not recorded. Only the
+// two `import.meta.main` lines below, run as `node scripts/build.ts`, are the I/O boundary that keeps a record.
 import { mkdir, readFile, writeFile } from "node:fs/promises";
 import { dirname, join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
@@ -19,15 +20,10 @@ export function buildPlan(css: string): PlanEntry[] {
 
 /** Writes the output of the package in `packageDir` into `outDir`. */
 export async function build(packageDir: string, outDir: string): Promise<void> {
-  // Stryker disable next-line all: I/O boundary, covered by packages/styles/test/build.test.ts "build() writes dist/base.css byte-identical to src/base.css of the package it is given, and nothing else" and "build() fails when the package has no src/base.css"
   const css = await readFile(join(packageDir, "src", "base.css"), "utf8");
-  // Stryker disable next-line all: I/O boundary, covered by packages/styles/test/build.test.ts "build() writes dist/base.css byte-identical to src/base.css of the package it is given, and nothing else"
   for (const entry of buildPlan(css)) {
-    // Stryker disable next-line all: I/O boundary, covered by packages/styles/test/build.test.ts "build() writes dist/base.css byte-identical to src/base.css of the package it is given, and nothing else"
     const target = join(outDir, entry.path);
-    // Stryker disable next-line all: I/O boundary, covered by packages/styles/test/build.test.ts "build() writes dist/base.css byte-identical to src/base.css of the package it is given, and nothing else"
     await mkdir(dirname(target), { recursive: true });
-    // Stryker disable next-line all: I/O boundary, covered by packages/styles/test/build.test.ts "build() writes dist/base.css byte-identical to src/base.css of the package it is given, and nothing else"
     await writeFile(target, entry.content);
   }
 }
