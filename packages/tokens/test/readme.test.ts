@@ -26,7 +26,8 @@ const fragments = [
   // the color-scheme hand-off
   "The stylesheet sets no `color-scheme` property",
   "`--ocelle-color-scheme` is `light` or `dark` with the theme",
-  "base styles (#6) apply it with `color-scheme: var(--ocelle-color-scheme)` on the root",
+  // 003 (research.md R-14, contracts/styles-package.md § `@ocelle/tokens` additions): the hand-off names its stylesheet
+  "`@ocelle/styles` `base.css` applies it with `color-scheme: var(--ocelle-color-scheme)` on the root",
   // CSP of the stylesheet
   "`style-src 'self'`",
   // CSP allowance of the font (FR-012, US2 scenario 6)

@@ -1,6 +1,9 @@
+import { parseFragment } from "parse5";
+import type { DefaultTreeAdapterMap } from "parse5";
 import { describe, expect, it } from "vitest";
 import type { TokenRecord } from "../../../packages/tokens/src/generate.ts";
-import { hasSwatch, renderGroup } from "../../stories/render.ts";
+import { hasSwatch, renderFamily, renderGroup } from "../../stories/render.ts";
+import type { Content } from "../../stories/render.ts";
 
 // The token stories' render code (FR-023, research.md R-10; phase 3 review round 1, R1-02): the exact markup of a
 // group on fixture tokens, so the separator between rows, the escaping of `&`, `<`, `>` and `"` in names, attribute
@@ -61,5 +64,60 @@ describe("hasSwatch", () => {
       ["space-1", false],
       ["space-2", false],
     ]);
+  });
+});
+
+// The base-style stories' render code (003 FR-023, research.md R-12): renderFamily(family, content) returns a family's
+// story markup from the stories' text (storybook/stories/base-content.json by default), escaped, with no style
+// attribute and no class. The Base page story shows what the base layer styles: body text with a link, a button and a
+// text input, a list, code, kbd and samp, and a pre.
+type Element = DefaultTreeAdapterMap["element"];
+
+function elements(nodes: readonly DefaultTreeAdapterMap["childNode"][]): Element[] {
+  return nodes.flatMap((node) => ("tagName" in node ? [node, ...elements(node.childNodes)] : []));
+}
+
+const content: Content = {
+  base: {
+    heading: "H & <1>",
+    paragraph: 'Text "quoted"',
+    link: "Link <a>",
+    button: "Save & go",
+    input: 'Name "x"',
+    list: ["One <li>", "Two & three"],
+    code: "a<b",
+    kbd: "Ctrl > 1",
+    samp: "exit & 2",
+    pre: "line <1>\n  line 2",
+  },
+};
+
+describe("renderFamily", () => {
+  it("renders the Base page from the given text, escaping & < > \" in every text and attribute value", () => {
+    expect(renderFamily("base", content)).toBe(
+      '<article data-story="base">' +
+        "<h1>H &amp; &lt;1&gt;</h1>" +
+        '<p>Text &quot;quoted&quot; <a href="#base-page">Link &lt;a&gt;</a></p>' +
+        '<p><button type="button">Save &amp; go</button> <input type="text" aria-label="Name &quot;x&quot;"></p>' +
+        "<ul><li>One &lt;li&gt;</li><li>Two &amp; three</li></ul>" +
+        "<p><code>a&lt;b</code> <kbd>Ctrl &gt; 1</kbd> <samp>exit &amp; 2</samp></p>" +
+        "<pre>line &lt;1&gt;\n  line 2</pre>" +
+        "</article>",
+    );
+  });
+
+  it("renders a list item per entry, and none for an empty list", () => {
+    const items = (list: readonly string[]): number =>
+      elements(parseFragment(renderFamily("base", { base: { ...content.base, list } })).childNodes).filter((element) => element.tagName === "li").length;
+    expect([items([]), items(["a"]), items(["a", "b", "c"])]).toEqual([0, 1, 3]);
+  });
+
+  it("renders the Base page from base-content.json by default: the elements the base layer styles, no style attribute and no class", () => {
+    const all = elements(parseFragment(renderFamily("base")).childNodes);
+    const tags = new Set(all.map((element) => element.tagName));
+    expect(["article", "h1", "p", "a", "button", "input", "ul", "li", "code", "kbd", "samp", "pre"].filter((tag) => !tags.has(tag))).toEqual([]);
+    expect(all.filter((element) => element.attrs.some((attribute) => attribute.name === "style" || attribute.name === "class"))).toEqual([]);
+    expect(all.filter((element) => element.tagName === "li").length).toBeGreaterThanOrEqual(2);
+    expect(all.filter((element) => ["h1", "a", "button", "code", "kbd", "samp", "pre"].includes(element.tagName) && element.childNodes.length === 0)).toEqual([]);
   });
 });

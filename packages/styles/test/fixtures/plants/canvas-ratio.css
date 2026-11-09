@@ -1,0 +1,4 @@
+/* Plant (research.md R-10, US1-10): a canvas that loses its 2:1 ratio; no removal of block-size: auto bites for it. */
+:where(canvas) {
+  aspect-ratio: 1 / 1;
+}

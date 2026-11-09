@@ -91,7 +91,7 @@ interface Visit {
 }
 
 /** Opens the preview, iframe.html, with a query string: the only page the test opens. */
-async function open(query: string): Promise<Visit> {
+async function open(query: string, rendered = "#storybook-root dt"): Promise<Visit> {
   if (browser === undefined) throw new Error("the suite did not start");
   const page = await browser.newPage();
   await page.addInitScript(() => {
@@ -108,7 +108,7 @@ async function open(query: string): Promise<Visit> {
   const response = await page.goto(`${origin}/iframe.html?${query}`, { waitUntil: "load" });
   // Waits for the story to render, but not past 10 s: a story that never renders is reported by the assertions on
   // the violations and the rows, not by a timeout.
-  await page.waitForSelector("#storybook-root dt", { state: "attached", timeout: 10_000 }).catch(() => undefined);
+  await page.waitForSelector(rendered, { state: "attached", timeout: 10_000 }).catch(() => undefined);
   await page.waitForTimeout(250);
   return { page, header: response?.headers()["content-security-policy"], outside };
 }
@@ -196,7 +196,45 @@ describe("the Storybook page under its CSP", { timeout: 60_000 }, () => {
     }
   }
 
+  // The base-style stories (003 FR-023, research.md R-12, plan decision 16): preview-head.html links base.css after
+  // tokens.css and preview.css is narrowed to the preview's error display (PLAN-FRESH-1-012), so the story's code is
+  // styled by base.css alone: Schibsted Grotesk with tabular figures, and no element of the page is monospace. The
+  // root's color-scheme follows the theme global, which only base.css applies.
+  for (const theme of ["light", "dark"] as const) {
+    it(`base-styles--base-page in ${theme}: the header, no violation, no request outside the origin, base.css applied, no monospace`, async () => {
+      const { page, header, outside } = await open(`id=base-styles--base-page&viewMode=story&globals=theme:${theme}`, '#storybook-root [data-story="base"]');
+      expect(header).toBe(policy);
+      expect(await violations(page)).toEqual([]);
+      expect(outside).toEqual([]);
+      expect(await page.evaluate(() => document.querySelectorAll('#storybook-root [data-story="base"] code').length)).toBe(1);
+      expect(
+        await page.evaluate(() => {
+          const code = document.querySelector("#storybook-root code") ?? document.body;
+          return {
+            scheme: getComputedStyle(document.documentElement).colorScheme,
+            family: getComputedStyle(code).fontFamily.split(",")[0],
+            figures: getComputedStyle(code).fontVariantNumeric,
+          };
+        }),
+      ).toEqual({ scheme: theme, family: '"Schibsted Grotesk"', figures: "tabular-nums" });
+
+      await page.evaluate(() => {
+        const control = document.createElement("span");
+        control.id = "ocelle-monospace-control";
+        control.style.fontFamily = "Menlo, monospace";
+        document.body.append(control);
+      });
+      expect(await monospace(page)).toEqual(["span#ocelle-monospace-control"]);
+      await page.evaluate(() => {
+        document.getElementById("ocelle-monospace-control")?.remove();
+      });
+      expect(await monospace(page)).toEqual([]);
+      expect(await violations(page)).toEqual([]);
+      await page.close();
+    });
+  }
+
   it("opened the preview and nothing else: every HTML document served was iframe.html, one per page", () => {
-    expect(documents).toEqual(Array.from({ length: 1 + groups.length * 2 }, () => "iframe.html"));
+    expect(documents).toEqual(Array.from({ length: 1 + groups.length * 2 + 2 }, () => "iframe.html"));
   });
 });
