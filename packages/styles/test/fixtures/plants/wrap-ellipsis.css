@@ -1,0 +1,6 @@
+/* Plant (research.md R-10, US4-1): the identifier cut by an ellipsis on one line instead of wrapping. */
+[data-ocelle-wrap] {
+  text-overflow: ellipsis;
+  overflow: hidden;
+  white-space: nowrap;
+}

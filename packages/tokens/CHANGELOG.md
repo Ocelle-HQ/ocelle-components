@@ -32,10 +32,12 @@ nothing loads from a CDN, and two new merge checks (Contrast, Brand rules) keep 
     `--ocelle-color-info`, `--ocelle-color-info-bg`, `--ocelle-color-neutral`, `--ocelle-color-neutral-bg`,
     `--ocelle-color-scheme`
   - type: `--ocelle-font-sans`, `--ocelle-font-display`, `--ocelle-figures`, `--ocelle-font-size-xs`,
-    `--ocelle-font-size-sm`, `--ocelle-font-size-md`, `--ocelle-font-size-fact`, `--ocelle-font-size-lg`,
-    `--ocelle-font-size-xl`, `--ocelle-font-size-2xl`, `--ocelle-line-height-tight`, `--ocelle-line-height-normal`,
-    `--ocelle-line-height-relaxed`, `--ocelle-font-weight-regular`, `--ocelle-font-weight-medium`,
-    `--ocelle-font-weight-strong`, `--ocelle-font-weight-display`, `--ocelle-tracking-display`
+    `--ocelle-font-size-sm`, `--ocelle-font-size-md`, `--ocelle-font-size-fact`, `--ocelle-font-size-subhead` (the
+    prose `h2` of `@ocelle/styles`, 003), `--ocelle-font-size-lg`, `--ocelle-font-size-xl`, `--ocelle-font-size-2xl`,
+    `--ocelle-line-height-tight`, `--ocelle-line-height-normal`, `--ocelle-line-height-relaxed`,
+    `--ocelle-line-height-compact` (the compact scale of `@ocelle/styles`, 003), `--ocelle-line-height-prose` (the
+    prose running text of `@ocelle/styles`, 003), `--ocelle-font-weight-regular`, `--ocelle-font-weight-medium`, `--ocelle-font-weight-strong`,
+    `--ocelle-font-weight-display`, `--ocelle-tracking-display`
   - space: `--ocelle-space-1`, `--ocelle-space-2`, `--ocelle-space-3`, `--ocelle-space-4`, `--ocelle-space-5`,
     `--ocelle-space-6`, `--ocelle-space-7`, `--ocelle-space-8`, `--ocelle-space-9`, `--ocelle-space-10`,
     `--ocelle-gutter`
@@ -47,8 +49,9 @@ nothing loads from a CDN, and two new merge checks (Contrast, Brand rules) keep 
   - shell: `--ocelle-shell-topbar-height`, `--ocelle-shell-rail-width`, `--ocelle-shell-sidebar-width`,
     `--ocelle-shell-inspector-width`, `--ocelle-shell-main-max`, `--ocelle-shell-collapse-inspector`,
     `--ocelle-shell-collapse-sidebar`, `--ocelle-shell-height`, `--ocelle-footer-h`, `--ocelle-measure-sheet`,
-    `--ocelle-measure-sentence`, `--ocelle-measure-page`, `--ocelle-dialog-max-inline`, `--ocelle-dialog-max-block`,
-    `--ocelle-bar-block-narrow`
+    `--ocelle-measure-sentence`, `--ocelle-measure-page`, `--ocelle-measure-reading`, `--ocelle-measure-cell` and
+    `--ocelle-measure-container` (the prose measure, table cell floor and caption cap of `@ocelle/styles`, 003),
+    `--ocelle-dialog-max-inline`, `--ocelle-dialog-max-block`, `--ocelle-bar-block-narrow`
   - elevation: `--ocelle-elevation-sheet`, `--ocelle-elevation-raised`, `--ocelle-elevation-row`,
     `--ocelle-elevation-seg`, `--ocelle-elevation-bar`
   - motion: `--ocelle-motion-fast`, `--ocelle-motion-base`, `--ocelle-easing-standard`

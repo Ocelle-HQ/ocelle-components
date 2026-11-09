@@ -1,0 +1,4 @@
+/* Plant (research.md R-10, US2-3): the presence form of the value hook, which an undocumented value matches. */
+[data-ocelle-value] {
+  color: var(--ocelle-color-ink-muted);
+}

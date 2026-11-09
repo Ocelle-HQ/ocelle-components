@@ -39,7 +39,11 @@ Status: **done**. Re-confirm on the final head before the merge.
 The ruleset `main-required-checks` (id 26484239) requires the twelve checks of mission 001. **Contrast** and **Brand
 rules** are new and must be added to it; until then neither blocks a merge.
 
-Status: **open** (operator).
+Done on 2026-11-09 by the operator (`gh api -X PUT …/rulesets/26484239`). `gh api
+repos/Ocelle-HQ/ocelle-components/rules/branches/main` then listed the rules `required_status_checks`, `pull_request`
+and `non_fast_forward`, and the required checks were the fourteen above.
+
+Status: **done**.
 
 ## 3. Direct pushes to `main`
 
@@ -47,7 +51,10 @@ Landing round 2 note L2-01: the agent allow rules in `.claude/settings.json` pro
 this branch, but a local `remote.origin.push` mapping could still send that push to `main`. Confirm that the ruleset
 on `main` blocks direct pushes and force-pushes (or add that rule).
 
-Status: **open** (operator).
+Done on 2026-11-09: the same ruleset now has a `pull_request` rule (direct pushes to `main` are refused) and a
+`non_fast_forward` rule (force-pushes are refused), with no bypass actors.
+
+Status: **done**.
 
 ## 4. Merge method and evidence home
 
@@ -57,7 +64,11 @@ decision, `reviews/landing/operator-decisions.md`), so every SHA that `reviews/p
 is the only home of those commits: keep it, and keep `archive/claude/kitty-ui-speckit-decouple-x3prkx-prefold` from
 mission 001.
 
-Status: **open** until the merge. Operator: squash, and do not delete the branch.
+Squash-merged on 2026-11-09 as `ec0f533` ("Mission 002: design tokens (#5) (#19)"). Its tree is identical to the PR head
+`4845030`, and both `claude/kitty-ui-speckit-decouple-x3prkx` (`4845030`) and
+`archive/claude/kitty-ui-speckit-decouple-x3prkx-prefold` (`37bfdb7`) are still on the remote.
+
+Status: **done**. Keep both branches.
 
 ## Sign-off
 

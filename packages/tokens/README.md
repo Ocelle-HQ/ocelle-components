@@ -20,9 +20,9 @@ attribute on another element, has no effect. Changing or removing the attribute 
 
 ### `color-scheme`
 
-The stylesheet sets no `color-scheme` property. `--ocelle-color-scheme` is `light` or `dark` with the theme; the
-base styles (#6) apply it with `color-scheme: var(--ocelle-color-scheme)` on the root, so native controls,
-scrollbars and system colours follow the token theme. A host without the base styles may do the same. The token is
+The stylesheet sets no `color-scheme` property. `--ocelle-color-scheme` is `light` or `dark` with the theme;
+`@ocelle/styles` `base.css` applies it with `color-scheme: var(--ocelle-color-scheme)` on the root, so native
+controls, scrollbars and system colours follow the token theme. A host without the base styles may do the same. The token is
 in the colour group of the JSON export, but its value is that keyword, not a colour.
 
 ### Content Security Policy
@@ -40,6 +40,17 @@ Nothing loads from a CDN or a font service. Without `font-src`, text renders in 
 [schibsted/schibsted-grotesk](https://github.com/schibsted/schibsted-grotesk), unmodified, under the SIL Open Font
 License 1.1, whose text is `fonts/OFL.txt` beside it. `--ocelle-font-sans` and `--ocelle-font-display` name it first;
 `--ocelle-figures` gives the tabular figures that ids, digests and values use.
+
+### Tokens for the base styles
+
+Some tokens exist for the base styles of `@ocelle/styles` (`base.css`, mission 003). In the type group,
+`--ocelle-line-height-compact` (1.5) is the line height of its compact scale (`data-ocelle-density="compact"`), with
+`--ocelle-font-size-sm`; `--ocelle-line-height-prose` (1.65) is the line height of its prose running text
+(`data-ocelle-prose`), and `--ocelle-font-size-subhead` (`1.125rem`, 18 px) the size of a prose `h2`. In the shell
+group, `--ocelle-measure-reading` (`68ch`) holds prose paragraphs, list items and block quotes to a reading measure,
+`--ocelle-measure-cell` (`12ch`) is the floor of a prose table cell, and `--ocelle-measure-container` (`100cqi`) is
+the inline size of the nearest query container: a prose table is one, so it caps the table's caption at the table's
+visible width. Without a query container, `100cqi` falls back to the small viewport's inline size.
 
 ### Forced colours
 

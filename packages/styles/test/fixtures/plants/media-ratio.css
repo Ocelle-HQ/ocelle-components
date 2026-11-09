@@ -1,0 +1,4 @@
+/* Plant (research.md R-10, US1-10): rolls block-size back to the height attribute's presentational hint. */
+:where(img, video, svg) {
+  block-size: revert-layer;
+}

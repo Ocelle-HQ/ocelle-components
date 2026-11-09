@@ -1,0 +1,232 @@
+/*
+ * @ocelle/styles base.css (003): the base layer, then the hook families in their order (R-03). Link it after
+ * @ocelle/tokens tokens.css. Every value is an --ocelle-* token; every base selector is wrapped in :where(), so any
+ * rule of the host page's own stylesheets overrides it, and every hook selector is one data-ocelle-* attribute with
+ * the rest in :where(), (0,1,0). No motion, no @import, no url(), no class. See README.md for the host contract.
+ */
+
+/* Base layer: the reset, the body, the root color-scheme, the focus ring, code elements, forced colours. */
+
+/* Pseudo-elements are invalid inside :where(), so they follow it: (0,0,0), (0,0,1), (0,0,1). */
+:where(*),
+:where(*)::before,
+:where(*)::after {
+  box-sizing: border-box;
+}
+
+:where(:root) {
+  color-scheme: var(--ocelle-color-scheme);
+}
+
+:where(body) {
+  margin: 0;
+  font-family: var(--ocelle-font-sans);
+  font-size: var(--ocelle-font-size-md);
+  line-height: var(--ocelle-line-height-normal);
+  color: var(--ocelle-color-ink);
+  background-color: var(--ocelle-color-canvas);
+}
+
+/* No wider than the container; block-size: auto keeps the aspect ratio when the width is capped. */
+:where(img, picture, video, canvas, svg) {
+  max-inline-size: 100%;
+  block-size: auto;
+}
+
+:where(button, input, select, textarea) {
+  font: inherit;
+}
+
+/* No browser-default monospace anywhere on the page (constitution II). */
+:where(code, pre, kbd, samp) {
+  font-family: var(--ocelle-font-sans);
+  font-variant-numeric: var(--ocelle-figures);
+}
+
+/* Longhands, so outline-style stays solid when a token is missing (research.md R-05). */
+:where(:focus-visible) {
+  outline-style: solid;
+  outline-width: var(--ocelle-focus-width);
+  outline-color: var(--ocelle-color-focus);
+  outline-offset: var(--ocelle-focus-offset);
+}
+
+/* Observable inside a host region with forced-color-adjust: none, where the browser does not force the colour. */
+@media (forced-colors: active) {
+  :where(:focus-visible) {
+    outline-color: Highlight;
+  }
+}
+
+/* Compact scale: the density hook (data-ocelle-density) and the value text style (data-ocelle-value). */
+
+/* On <html> the hook sets the body, never the root, so every rem token keeps its value (research.md R-04). */
+[data-ocelle-density="compact"]:where(:not(html)),
+[data-ocelle-density="compact"] > :where(body) {
+  font-size: var(--ocelle-font-size-sm);
+  line-height: var(--ocelle-line-height-compact);
+}
+
+/* Returns a region nested in a compact one to the regular scale. */
+[data-ocelle-density="regular"]:where(:not(html)),
+[data-ocelle-density="regular"] > :where(body) {
+  font-size: var(--ocelle-font-size-md);
+  line-height: var(--ocelle-line-height-normal);
+}
+
+/* The value text style, for the main grounds only (README): ids, timestamps, commands and fact values. */
+[data-ocelle-value=""],
+[data-ocelle-value="ink"] {
+  font-family: var(--ocelle-font-sans);
+  font-size: var(--ocelle-font-size-sm);
+  font-variant-numeric: var(--ocelle-figures);
+  color: var(--ocelle-color-ink-muted);
+}
+
+[data-ocelle-value="ink"] {
+  color: var(--ocelle-color-ink);
+}
+
+/*
+ * Prose: a rendered Markdown document inside [data-ocelle-prose=""], styled by element selector. The container rule
+ * is scoped :where(:not(html)), so on <html> it sets neither the root font size nor the root line height (README).
+ * No rule below sets a size or line height on a descendant except headings and header cells, so a compact region
+ * inside prose keeps the compact scale (FR-024).
+ */
+
+[data-ocelle-prose=""]:where(:not(html)) {
+  font-size: var(--ocelle-font-size-md);
+  line-height: var(--ocelle-line-height-prose);
+}
+
+[data-ocelle-prose=""] :where(h1, h2, h3, h4, h5, h6) {
+  line-height: var(--ocelle-line-height-tight);
+  margin-block: var(--ocelle-space-6) var(--ocelle-space-3);
+}
+
+[data-ocelle-prose=""] :where(h1) {
+  font-size: var(--ocelle-font-size-2xl);
+  font-weight: var(--ocelle-font-weight-display);
+}
+
+[data-ocelle-prose=""] :where(h2) {
+  font-size: var(--ocelle-font-size-subhead);
+  font-weight: var(--ocelle-font-weight-strong);
+}
+
+[data-ocelle-prose=""] :where(h3) {
+  font-size: var(--ocelle-font-size-fact);
+  font-weight: var(--ocelle-font-weight-strong);
+}
+
+[data-ocelle-prose=""] :where(h4, h5, h6) {
+  font-size: var(--ocelle-font-size-md);
+  font-weight: var(--ocelle-font-weight-strong);
+}
+
+[data-ocelle-prose=""] :where(p, ul, ol, blockquote, pre, table, hr) {
+  margin-block: 0 var(--ocelle-space-4);
+}
+
+/* Running text keeps to the reading measure; tables and code blocks may use the container's full width. */
+[data-ocelle-prose=""] :where(p, li, blockquote) {
+  max-inline-size: var(--ocelle-measure-reading);
+}
+
+[data-ocelle-prose=""] :where(ul, ol) {
+  padding-inline-start: var(--ocelle-space-6);
+}
+
+[data-ocelle-prose=""] :where(blockquote) {
+  margin-inline: 0;
+  padding-inline-start: var(--ocelle-space-4);
+  border-inline-start: var(--ocelle-bar-width) solid var(--ocelle-color-rule-strong);
+  color: var(--ocelle-color-ink-soft);
+}
+
+[data-ocelle-prose=""] :where(hr) {
+  border: 0;
+  border-block-start: var(--ocelle-border-width) solid var(--ocelle-color-rule);
+}
+
+/* Links only (an <a> with an href): an <a id> target keeps the running text's colour. Underlined in every state. */
+[data-ocelle-prose=""] :where(a:any-link) {
+  color: var(--ocelle-color-link);
+  text-decoration-line: underline;
+  overflow-wrap: anywhere;
+}
+
+[data-ocelle-prose=""] :where(a:any-link:hover) {
+  color: var(--ocelle-color-link-hover);
+}
+
+[data-ocelle-prose=""] :where(code) {
+  background-color: var(--ocelle-color-inset);
+  padding-inline: var(--ocelle-space-1);
+  border-radius: var(--ocelle-radius-2);
+  overflow-wrap: anywhere;
+}
+
+/* A code block wraps its long lines inside its own width and does not scroll; its copied text is unchanged. */
+[data-ocelle-prose=""] :where(pre) {
+  background-color: var(--ocelle-color-inset);
+  padding: var(--ocelle-space-3);
+  border-radius: var(--ocelle-radius-2);
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+
+[data-ocelle-prose=""] :where(pre code) {
+  padding-inline: 0;
+  background-color: transparent;
+}
+
+/*
+ * A table is its own scroll box, with no wrapper (research.md R-06). Its rows and cells keep their table display, so
+ * it keeps its table semantics. container-type: inline-size contains it in the inline axis, so its width never
+ * widens a grid or flex column above the prose container (the container must get its width from its context, not
+ * its content: README), and makes it the caption's query container.
+ */
+[data-ocelle-prose=""] :where(table) {
+  display: block;
+  overflow-x: auto;
+  max-inline-size: 100%;
+  container-type: inline-size;
+  border-collapse: collapse;
+}
+
+/* An inset ring, so all four sides show when the table is flush with the viewport. */
+[data-ocelle-prose=""] :where(table:focus-visible) {
+  outline-offset: calc(var(--ocelle-focus-width) * -1);
+}
+
+/* The caption wraps inside the table's visible width and stays at its start edge while the table scrolls. */
+[data-ocelle-prose=""] :where(caption) {
+  position: sticky;
+  inset-inline-start: 0;
+  max-inline-size: var(--ocelle-measure-container);
+  text-align: start;
+}
+
+[data-ocelle-prose=""] :where(th, td) {
+  min-inline-size: var(--ocelle-measure-cell);
+  padding: var(--ocelle-space-2) var(--ocelle-space-3);
+  border-block-end: var(--ocelle-border-width) solid var(--ocelle-color-rule);
+  text-align: start;
+}
+
+[data-ocelle-prose=""] :where(th) {
+  font-size: var(--ocelle-font-size-xs);
+  font-variant-numeric: var(--ocelle-figures);
+  font-weight: var(--ocelle-font-weight-strong);
+  border-block-end-color: var(--ocelle-color-rule-strong);
+}
+
+/*
+ * Identifier wrap: a machine identifier (a mission slug, an id, a path) breaks anywhere when it would overflow, so it
+ * never widens its grid column or row and is never cut. It sets no font property and nothing else (FR-020): the
+ * copied text is the identifier unchanged; combine it with data-ocelle-value for tabular figures.
+ */
+[data-ocelle-wrap="anywhere"] {
+  overflow-wrap: anywhere;
+}

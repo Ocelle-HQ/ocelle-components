@@ -1,0 +1,64 @@
+/*
+ * Host CSS of the fixture pages (003 data-model.md § Test fixtures, research.md R-09): what the fixtures need and
+ * base.css does not provide. No rule of base.css; selectors are data-fixture attributes only, no class, and the pages
+ * have no style attribute. Linked after base.css by the pages that need it.
+ */
+
+/* A host region that opts out of forced colours (US1-4, research.md R-05). */
+[data-fixture="forced-region"] {
+  forced-color-adjust: none;
+}
+
+/* Probes inside that region: the resolved system colours and the resolved focus token, read by the tests. */
+[data-fixture="highlight"] {
+  color: Highlight;
+}
+
+[data-fixture="canvas-text"] {
+  color: CanvasText;
+}
+
+[data-fixture="focus"] {
+  color: var(--ocelle-color-focus);
+}
+
+/* A probe whose inline size is --ocelle-target-min, read by the compact-root test (US2-4, FR-012). */
+[data-fixture="target-min"] {
+  inline-size: var(--ocelle-target-min);
+}
+
+/*
+ * The hosts of prose-hosts.html (US3-3, research.md R-06): a grid whose 1fr item sits beside a 60 px rail, a flex
+ * row whose flex: 1 item sits beside one, and a modal dialog with a definite width, so that a prose container gets
+ * its width from its context, never from its content.
+ */
+[data-fixture="grid"] {
+  display: grid;
+  grid-template-columns: 60px 1fr;
+}
+
+[data-fixture="flex"] {
+  display: flex;
+}
+
+[data-fixture="rail"] {
+  flex: 0 0 60px;
+}
+
+[data-fixture="flex-item"] {
+  flex: 1;
+}
+
+[data-fixture="dialog"] {
+  inline-size: var(--ocelle-dialog-max-inline);
+}
+
+/*
+ * The grid of wrap.html (US4-1, SC-005): 300 px wide with two 1fr tracks, minmax(auto, 1fr), so a cell's content
+ * sets the floor of its column.
+ */
+[data-fixture="wrap-grid"] {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  inline-size: 300px;
+}

@@ -1,0 +1,64 @@
+{
+  "base": {
+    "heading": "Mission 003: base styles",
+    "paragraph": "A host page links tokens.css and then base.css, and its text is set in Schibsted Grotesk at the regular scale, in ink on canvas. Tab to the link, the button or the field to see the focus ring.",
+    "link": "Read the host contract",
+    "button": "Save draft",
+    "input": "Mission name",
+    "list": ["The reset keeps list semantics.", "Media stay inside their container.", "Form controls inherit the page font."],
+    "code": "packages/styles/src/base.css",
+    "kbd": "Ctrl + S",
+    "samp": "Build finished in 1.24 s",
+    "pre": "pnpm -r build\n  dist/base.css  2048 bytes"
+  },
+  "compact": {
+    "heading": "Drift: 003-base-styles",
+    "paragraph": "A dense screen marks its root with the compact hook, so every part inside it is set at 14 px with a line height of 1.5, while the rem tokens keep their values.",
+    "facts": [
+      { "label": "Mission", "value": "003-base-styles" },
+      { "label": "Digest", "value": "3f2a 9c1b 07d4 e5a8" },
+      { "label": "Updated", "value": "2026-11-09 15:24:02" },
+      { "label": "Tests", "value": "1881 passed in 92 files" }
+    ],
+    "note": "Run it again with",
+    "command": "pnpm --filter @ocelle/styles test"
+  },
+  "prose": {
+    "title": "Mission 003: the prose family",
+    "intro": "A host's Markdown renderer emits plain HTML into a container with the prose hook, and the document reads at a line height of 1.65, with paragraphs held to a reading measure. The rules are in",
+    "link": "Read the host contract",
+    "code": "packages/styles/src/base.css",
+    "listHeading": "What the prose family styles",
+    "list": ["Headings from h1 to h6, paragraphs and block quotes.", "Inline code and code blocks, which wrap inside their own width."],
+    "nestedLabel": "Tables, in their own scroll box:",
+    "nested": ["header cells at 12 px with tabular figures;", "every cell at least 12ch wide."],
+    "quoteHeading": "A block quote",
+    "quote": "Tables and code blocks may use the full width of the container; running text keeps to about 68 characters.",
+    "codeHeading": "A code block",
+    "pre": "pnpm --filter @ocelle/styles test\n  styles-browser  prose.test.ts  passed",
+    "tableHeading": "A wide table",
+    "table": {
+      "caption": "Quarterly figures for each of the twelve regions, in thousands, for the first two quarters of the year.",
+      "head": ["North", "South", "East", "West", "Coast", "Hills", "Lakes", "Delta", "Plain", "Ridge", "Bay", "Isles"],
+      "rows": [
+        ["1204", "986", "1432", "877", "1120", "654", "712", "1301", "998", "1045", "833", "1267"],
+        ["1310", "1002", "1398", "902", "1175", "699", "745", "1288", "1012", "1099", "861", "1302"]
+      ]
+    },
+    "linkedHeading": "A wide table with a link",
+    "linked": {
+      "caption": "",
+      "head": ["Mission", "South", "East", "West", "Coast", "Hills", "Lakes", "Delta", "Plain", "Ridge", "Bay", "Isles"],
+      "rows": [
+        ["003-base-styles", "986", "1432", "877", "1120", "654", "712", "1301", "998", "1045", "833", "1267"]
+      ]
+    }
+  },
+  "wrap": {
+    "heading": "Identifier wrap",
+    "intro": "A machine identifier marked with the identifier-wrap hook breaks anywhere when it would overflow, so it never widens its grid column, and it copies unchanged.",
+    "identifier": "43c5f6d836a73b5e05c4365c8c0aa95608680b8a4c259be79ab4be0ffe21dc0588a6d51b159288da679bc61ac5ad989cde682c52925da0a0a0ec9a33",
+    "short": "Run id",
+    "note": "Combined with the value hook it keeps tabular figures:"
+  }
+}

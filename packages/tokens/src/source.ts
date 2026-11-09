@@ -119,12 +119,15 @@ export const records = [
   { name: "font-size-sm", group: "type", value: "0.875rem" },
   { name: "font-size-md", group: "type", value: "1rem" },
   { name: "font-size-fact", group: "type", value: "1.0625rem" }, // facts sheet values
+  { name: "font-size-subhead", group: "type", value: "1.125rem" }, // prose h2, 18 px (003)
   { name: "font-size-lg", group: "type", value: "1.25rem" },
   { name: "font-size-xl", group: "type", value: "1.5rem" },
   { name: "font-size-2xl", group: "type", value: "1.875rem" },
   { name: "line-height-tight", group: "type", value: "1.15" },
   { name: "line-height-normal", group: "type", value: "1.45" },
   { name: "line-height-relaxed", group: "type", value: "1.55" },
+  { name: "line-height-compact", group: "type", value: "1.5" },
+  { name: "line-height-prose", group: "type", value: "1.65" }, // prose running text (003)
   { name: "font-weight-regular", group: "type", value: "400" },
   { name: "font-weight-medium", group: "type", value: "500" },
   { name: "font-weight-strong", group: "type", value: "600" },
@@ -174,6 +177,10 @@ export const records = [
   { name: "measure-sheet", group: "shell", value: "var(--ocelle-shell-main-max)", ref: ["shell-main-max"] },
   { name: "measure-sentence", group: "shell", value: "var(--ocelle-shell-main-max)", ref: ["shell-main-max"] },
   { name: "measure-page", group: "shell", value: "100%" },
+  { name: "measure-reading", group: "shell", value: "68ch" }, // prose paragraph measure (003)
+  { name: "measure-cell", group: "shell", value: "12ch" }, // prose table cell floor (003)
+  // the inline size of the nearest query container: caps a prose caption at its table's visible width (003)
+  { name: "measure-container", group: "shell", value: "100cqi" },
   // the viewport's inline size minus two gutters (unit from the console prototype, research.md R-05)
   { name: "dialog-max-inline", group: "shell", value: "calc(100vw - 2 * var(--ocelle-gutter))", ref: ["gutter"] },
   // the viewport's block size minus two gutters (unit from the console prototype, research.md R-05)

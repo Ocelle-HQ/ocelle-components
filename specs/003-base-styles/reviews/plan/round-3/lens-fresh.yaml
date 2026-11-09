@@ -1,0 +1,84 @@
+schema: review-findings/v1
+complete: true
+phase: plan
+round: 3
+lens: fresh
+# Read at b6d1f3a (round 3 base): spec.md, plan.md, research.md, data-model.md, contracts/, quickstart.md, the
+# constitution, and round 2's lens-fresh.yaml, refute.md, fixes-1/2.md and verify-2.md (round 1 through the round-2
+# record). Settled findings and the operator's fork decisions (PLAN-FRESH-2-001 (a), 2-003 (b), 2-004 (a)) are not
+# raised again. This round attacks the round-2 fixes: the `container-type: inline-size` table, the sticky capped
+# caption, the `measure-container` token, and the wording of the host-width requirement.
+# Probes: Chromium 153 (/opt/pw-browsers/chromium-1243/chrome-linux64/chrome) through the repository's Playwright
+# 1.64.1, with pdftotext for printed output. Scripts are in
+# /tmp/claude-0/-home-user/181e1231-8fd5-5f31-9d9d-498e593ba7cf/scratchpad/fresh3/ (p1 to p6), not in the repository.
+# base.css there is round 2's transcription of data-model § Rule table with the round-2 changes applied
+# (`container-type: inline-size` on the table; the caption rule `position: sticky; inset-inline-start: 0;
+# max-inline-size: var(--ocelle-measure-container); text-align: start`; `--ocelle-measure-container: 100cqi`).
+# Checked and not raised: the caption wraps inside the visible box under dir="rtl" too (p1: lines x 5-320 and 40-320
+# at scrollLeft 0 and -500); `container-type: inline-size` does apply style containment in Chromium 153 as R-06 says
+# (p4: a counter incremented in cells reads 0 after the table, 2 with `contain: inline-size`); token validation and the
+# Storybook swatches do not constrain a `100cqi` shell token (packages/tokens/src/generate.ts, storybook/scripts/swatches.ts).
+findings:
+  - id: PLAN-FRESH-3-001
+    severity: 2
+    title: "Two of the caption rule's three new parts can be deleted with every planned test green: `position: sticky; inset-inline-start: 0` and `text-align: start` reach no assertion and no plant, and the contract's \"starting at its start edge\" is untested"
+    evidence:
+      - artifact: "data-model.md § Prose, ` :where(caption)`: `position: sticky`; `inset-inline-start: 0`; `max-inline-size: var(--ocelle-measure-container)`; `text-align: start`. research.md R-06: \"the sticky offset keeps the caption at the scroll box's start edge\"; \"The test reads the caption text's line boxes ... at `scrollLeft` 0\""
+      - artifact: "spec.md FR-017 and US3-3: \"at `scrollLeft` 0 every line box of the caption ... lies inside the table's visible box\" (no assertion after scrolling, no start-edge assertion). research.md R-10 caption row: the plant is `position: static; max-inline-size: none` together, and \"`text-align: center` no longer bites\". contracts/styles-package.md § Markdown renderers: \"The caption wraps inside the table's visible box, starting at its start edge.\""
+      - code: "probe p2 (320 px, the 12-column table, an 87-character caption, the planned rules): planned: lines x 0-315 and 0-280 at scrollLeft 0 and the same at scrollLeft 500. Plant `position: static` alone: lines 0-315 and 0-280 at scrollLeft 0 (the US3-3 assertion passes), -500 to -185 and -500 to -220 at scrollLeft 500 (the caption has scrolled out of view). Only `max-inline-size: none` makes the scrollLeft-0 assertion fail (one line 0-599)."
+      - code: "probe p5: `text-align: center` or `text-align: revert` (the UA centring) on the caption: lines 3-317 and 20-300, every line inside the box at scrollLeft 0 and 500, so US3-3 passes while the caption no longer starts at the start edge."
+    claim: |
+      Round 2 added `position: sticky; inset-inline-start: 0` so that the caption stays in view while the table is
+      scrolled, and kept `text-align: start` so that it starts at the start edge. Neither is required by the spec or
+      reached by a test. The only caption assertion is at `scrollLeft` 0, where a static caption already lies inside
+      the box, and the only plant removes the sticky part together with the cap, so its bite comes from the cap
+      alone. The UA centres captions, and once the caption is capped to the visible width, centred lines also lie
+      inside the box, which R-10 itself records. So an implementer can drop either declaration, or a refactor can
+      lose it, and the suite stays green. That breaks Principle VIII (every behaviour proven by a test that can
+      fail) for two of the four declarations of a rule this round created, and the contract publishes a promise
+      ("starting at its start edge") that nothing checks. The sticky part is also the user-visible half of the
+      round-2 fix: without it a keyboard or zoom user who has scrolled the table loses its title, which round 2's
+      refute measured as fixed but the spec never asked for.
+    remedies:
+      - "Fork for the operator, (a): require and test both parts. FR-017 and US3-3 add: after two ArrowRight presses on the focused wide table (scrollLeft above 0), and at the most negative scrollLeft under dir=\"rtl\", every line box of the caption still lies inside the table's visible box; and at scrollLeft 0 the start edge of every caption line box is the box's start edge (left under ltr, right under rtl, within 1 px). R-10 replaces the caption plant with two plants that each bite alone: `[data-ocelle-prose=\"\"] :where(caption) { position: static }` (fails the scrolled assertion, p2) and `[data-ocelle-prose=\"\"] :where(caption) { text-align: center }` (fails the start-edge assertion, p5), keeping `max-inline-size: none` as a third. The R-06 spike step 5 records all three biting."
+      - "Fork for the operator, (b): drop what is not required. Remove `position: sticky`, `inset-inline-start: 0` and `text-align: start` from the caption rule (data-model, R-06, plan decision 5, spec Browsers list), so the caption is centred in the visible box and scrolls with the table, and change the contract's \"starting at its start edge\" to \"wraps inside the table's visible box\". R-10 keeps the `max-inline-size: none` plant."
+
+  - id: PLAN-FRESH-3-002
+    severity: 2
+    title: "Printing or saving a rendered document as PDF silently drops the columns of every wide prose table: the scroll box clips them and no requirement, statement or test covers print"
+    evidence:
+      - artifact: "data-model.md § Prose ` :where(table)`: `display: block; overflow-x: auto; max-inline-size: 100%; container-type: inline-size`; ` :where(th, td)`: `min-inline-size: var(--ocelle-measure-cell)`. spec.md, research.md, plan.md, data-model.md, contracts/: no mention of print (grep -i print: no match)."
+      - artifact: "spec.md § User Story 3: \"A host's Markdown renderer emits plain HTML ... into a container marked with the documented prose hook\" for the Artifact Viewer (sources/spec-kitty-design-issues.md #519: \"rendered markdown documents\")."
+      - code: "probe p1/p3 (1280 px page, the 12-column table in a prose container, `page.pdf({ format: \"A4\" })`, then pdftotext): the planned rules print H0 to H7 and 8 of 12 body cells; H8 to H11 and their cells are not in the PDF. With `@media print { [data-ocelle-prose=\"\"] :where(table) { display: table; overflow: visible; container-type: normal } }` added: H0 to H10, and H11 cut at the page edge (\"H\"). With the cell floor also set to 0 in print: all 12 headers and 12 cells."
+    claim: |
+      A scroll box has no scrolling on paper: Chromium prints the table at its scroll position and clips the rest.
+      The prose family is for rendered documents (specs, reviews, artifacts in the Artifact Viewer and the console),
+      which readers print or export to PDF, and Electron or Chromium hosts expose "Print" and "Save as PDF". With
+      this plan every table wider than the page, which at A4 is any table of more than about seven columns with the
+      12ch floor, loses its later columns with no sign that anything is missing. That is silent data loss, worse than
+      the browser default (an unstyled table squeezes to the page). Nobody decided it: the spec neither requires
+      print to work nor records it as out of scope, so the operator never saw the trade-off and the README will not
+      warn hosts.
+    remedies:
+      - "Fork for the operator, (a): support print. Add an FR-017 sentence and a US3 scenario: under print media, a prose table is laid out as a table, not a scroll box, and every column of the wide table is in the printed output. Add to data-model § Prose `@media print { [data-ocelle-prose=\"\"] :where(table) { display: table; overflow: visible; container-type: normal } [data-ocelle-prose=\"\"] :where(caption) { position: static } [data-ocelle-prose=\"\"] :where(th, td) { min-inline-size: 0 } }` (p3: without the floor reset the last column is still cut). Test with `page.pdf()` and its text (or `emulateMedia({ media: \"print\" })` and the last header cell's box inside the page width), with the plant being the print rule removed. The spike (R-06) measures it and that table semantics hold under print."
+      - "Fork for the operator, (b): leave print out. State in spec Assumptions, the README (Markdown renderers) and the contract that prose tables are screen scroll boxes and a printed document shows only the columns that fit the page, so a host that prints adds its own print rule; add the statement to the readme test's phase-4 list."
+
+  - id: PLAN-FRESH-3-003
+    severity: 2
+    title: "The round-2 host-width statement is a closed list that omits common shrink-to-fit hosts (a fixed or absolute side drawer, a non-modal dialog, a start-aligned grid or flex item, a table-cell layout), and the spec, README and contract disagree with research R-06 about it"
+    evidence:
+      - artifact: "spec.md § Edge Cases \"Prose in a shrink-to-fit host\" and FR-004; contracts/styles-package.md prose hook row; research.md R-14: \"is not placed in a modal dialog, popover, `inline-block`, float or default flex item without a definite width\". research.md R-06 lists also \"an absolutely positioned panel\"; plan.md decision 14 repeats the five-item list."
+      - artifact: "research.md R-14 and contracts/checks.md: the readme test checks this host-width statement (phase 4), so the five-item list becomes the tested public text."
+      - code: "probe p6 (1280 px, a short paragraph then a 2-column table of natural width 214 px, the planned rules, a button before it): prose container in `position: fixed; inset-block: 0; inset-inline-end: 0` (a side drawer), in `<dialog>` opened with show() (non-modal), in a `display: table-cell` box, and as the item of a grid with `justify-items: start`: in all four the table's clientWidth is 78 against scrollWidth 214, and the first Tab lands on the TABLE. In block flow: 1280/1280 and Tab skips it."
+    claim: |
+      The operator's decision PLAN-FRESH-2-001 (a) is a rule about how the container's width is computed
+      (shrink-to-fit, from content), but the spec, README, contract and plan publish it as a list of five layouts.
+      A host reads the list as complete. A side drawer or inspector panel that is fixed or absolutely positioned
+      without a width, the shape in which a desktop app most often shows a rendered artifact next to a list, is not
+      on it, nor is a non-modal dialog, a column flex or grid with start alignment, or a table-cell layout; in each the
+      table that fits is cut down, scrolls and becomes an extra tab stop, which is exactly the FR-017 failure the
+      decision was meant to warn about. Research R-06 already names the absolutely positioned panel, so the artifacts
+      also disagree with each other. Because the readme test will assert the closed list, the incomplete text is
+      locked in.
+    remedies:
+      - "State the rule by its cause and give the list as examples: \"a prose container must not be sized from its content (shrink-to-fit or fit-content sizing); for example a modal or non-modal `<dialog>`, a popover, a fixed or absolutely positioned panel without both inline insets or a width, `inline-block`, a float, a `display: table-cell` box, a default flex item, or a grid or flex item aligned to start. Give such a box a definite width or stretch it.\" Apply it to spec Edge Cases and FR-004, the README statement of R-14, the contract's prose hook row and Markdown renderers entry, plan decision 14 and R-06, and make the readme test assert the cause sentence rather than the list."

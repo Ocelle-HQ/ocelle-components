@@ -1,0 +1,4 @@
+/* Plant (research.md R-10, US2-4): a thinner focus ring under the compact hook. */
+[data-ocelle-density="compact"] :where(:focus-visible) {
+  outline-width: var(--ocelle-border-width);
+}

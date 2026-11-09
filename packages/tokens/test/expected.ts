@@ -114,12 +114,18 @@ export const expectedTokens: readonly ExpectedToken[] = [
   plain("font-size-sm", "type", "0.875rem", { property: "font-size", used: "14px" }),
   plain("font-size-md", "type", "1rem", { property: "font-size", used: "16px" }),
   plain("font-size-fact", "type", "1.0625rem", { property: "font-size", used: "17px" }),
+  // 003 (research.md R-08, data-model.md § New tokens): the prose h2, 18 px (User Story 3, FR-015).
+  plain("font-size-subhead", "type", "1.125rem", { property: "font-size", used: "18px" }),
   plain("font-size-lg", "type", "1.25rem", { property: "font-size", used: "20px" }),
   plain("font-size-xl", "type", "1.5rem", { property: "font-size", used: "24px" }),
   plain("font-size-2xl", "type", "1.875rem", { property: "font-size", used: "30px" }),
   plain("line-height-tight", "type", "1.15", { property: "line-height", used: 18.4 }),
   plain("line-height-normal", "type", "1.45", { property: "line-height", used: 23.2 }),
   plain("line-height-relaxed", "type", "1.55", { property: "line-height", used: 24.8 }),
+  // 003 (research.md R-08, data-model.md § New tokens): the compact scale's line height (User Story 2, FR-012).
+  plain("line-height-compact", "type", "1.5", { property: "line-height", used: 24 }),
+  // 003 (research.md R-08, data-model.md § New tokens): the prose running text's line height (User Story 3, FR-015).
+  plain("line-height-prose", "type", "1.65", { property: "line-height", used: 26.4 }),
   plain("font-weight-regular", "type", "400", { property: "font-weight", used: "400" }),
   plain("font-weight-medium", "type", "500", { property: "font-weight", used: "500" }),
   plain("font-weight-strong", "type", "600", { property: "font-weight", used: "600" }),
@@ -169,6 +175,16 @@ export const expectedTokens: readonly ExpectedToken[] = [
   derived("measure-sheet", "shell", "var(--ocelle-shell-main-max)", "48rem", ["shell-main-max"], width(768)),
   derived("measure-sentence", "shell", "var(--ocelle-shell-main-max)", "48rem", ["shell-main-max"], width(768)),
   plain("measure-page", "shell", "100%", width(1000)),
+  // 003 (research.md R-08, R-13, data-model.md § New tokens): the prose reading measure and table cell floor (User
+  // Story 3, FR-016, FR-017). A `ch` length is the width of "0" in the probe's font, which the token page leaves to
+  // the browser's default font, so its pixel value would depend on the machine: these two are read as the value a
+  // custom property substitutes, and the styles browser tests measure them against the zero of Schibsted Grotesk.
+  plain("measure-reading", "shell", "68ch", { property: "--probe", used: "68ch" }),
+  plain("measure-cell", "shell", "12ch", { property: "--probe", used: "12ch" }),
+  // 003 (research.md R-08): the inline size of the nearest query container, which caps a prose caption at its table's
+  // visible width (FR-017). The probes' 1000px block is a query container, so it resolves to 1000px, not to the
+  // 1280px viewport that `cqi` falls back to without one.
+  plain("measure-container", "shell", "100cqi", width(1000)),
   derived("dialog-max-inline", "shell", "calc(100vw - 2 * var(--ocelle-gutter))", "calc(100vw - 2 * 1rem)", ["gutter"], width(1248)),
   derived("dialog-max-block", "shell", "calc(100dvh - 2 * var(--ocelle-gutter))", "calc(100dvh - 2 * 1rem)", ["gutter"], width(768)),
   derived(

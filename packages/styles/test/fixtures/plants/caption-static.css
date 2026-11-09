@@ -1,0 +1,4 @@
+/* Plant (research.md R-10, US3-3, US3-9): the caption without its sticky offset, so it scrolls out of view. */
+[data-ocelle-prose=""] :where(caption) {
+  position: static;
+}

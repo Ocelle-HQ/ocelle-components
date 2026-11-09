@@ -5,6 +5,11 @@
 // that is neither a token nor an element custom property the custom-elements manifest declares (exact name) is
 // reported too, once per name and declaration, also inside calc() and as a fallback. The lists are the rule's
 // secondary options when given (unit tests), else read once per run under the working directory, the gate's --root.
+// Since 003 (FR-002, research.md R-07) the secondary option `lineHeight: "token"`, set for packages/styles/**/*.css
+// in stylelint.config.ts, makes a line height (in `line-height`, or after the `/` of `font`) pass only as one
+// var(--ocelle-line-height-*) reference without a fallback or as a CSS-wide keyword, and a `font` value with no
+// top-level `/` raw unless it is a CSS-wide keyword alone (it resets line-height to normal; scope amended by the
+// operator round of 2026-11-09, phase 2 round 2, O2-01); it is read apart from the token lists.
 import stylelint from "stylelint";
 import type { Rule } from "stylelint";
 import valueParser from "postcss-value-parser";
@@ -87,9 +92,46 @@ function classify(nodes: readonly Node[], property: string, inCalc: boolean): st
   return raw;
 }
 
+/** The value check's options: with `lineHeight: "token"`, a line height must be a token or a CSS-wide keyword. */
+export interface RawOptions {
+  readonly lineHeight?: "token";
+}
+
+/**
+ * Whether one node is a line height the `lineHeight: "token"` option allows: a CSS-wide keyword, or a var() whose one
+ * argument is a name starting with `--ocelle-line-height-` (case-sensitive); another token is not a line height.
+ */
+function tokenLineHeight(node: Node): boolean {
+  if (node.type === "word") return cssWide.has(node.value.toLowerCase());
+  if (node.type !== "function" || node.value.toLowerCase() !== "var" || node.nodes.length !== 1) return false;
+  const [name] = node.nodes;
+  return name?.type === "word" && name.value.startsWith("--ocelle-line-height-");
+}
+
+/**
+ * The raw values of a `font` value under the option: with a top-level `/`, its line height (the part after it) by
+ * tokenLineHeight() and every other part by 002's checks; without one, the trimmed value as one entry (it resets
+ * line-height to normal), unless the value is a CSS-wide keyword alone.
+ */
+function fontRaw(value: string, nodes: readonly Node[]): string[] {
+  const at = nodes.findIndex((node) => node.type === "div" && node.value === "/") + 1;
+  if (at === 0) return cssWide.has(value.trim().toLowerCase()) ? [] : [value.trim()];
+  return nodes.flatMap((node, index) => {
+    if (index !== at) return classify([node], "font", false);
+    return tokenLineHeight(node) ? [] : [valueParser.stringify(node)];
+  });
+}
+
 /** The raw values (FR-024) in one declaration's value, in source order; empty when the value is token-only. */
-export function rawValues(property: string, value: string): string[] {
-  return classify(valueParser(value).nodes, property.toLowerCase(), false);
+export function rawValues(property: string, value: string, options: RawOptions = {}): string[] {
+  const name = property.toLowerCase();
+  const nodes = valueParser(value).nodes;
+  if (options.lineHeight === "token" && name === "line-height") {
+    const [only] = nodes;
+    return nodes.length === 1 && only !== undefined && tokenLineHeight(only) ? [] : [value.trim()];
+  }
+  if (options.lineHeight === "token" && name === "font") return fontRaw(value, nodes);
+  return classify(nodes, name, false);
 }
 
 /** The --ocelle-* names a value references with var(), each once, in order; nested ones and fallbacks included. */
@@ -124,10 +166,11 @@ function isText(value: unknown): boolean {
   return typeof value === "string";
 }
 
-/** The lists the secondary options give, checked for a clash; undefined without options. */
+/** The lists the secondary options give, checked for a clash; undefined when they give neither list. */
 function optionLists(secondary: unknown): TokenLists | undefined {
   if (typeof secondary !== "object" || secondary === null) return undefined;
   const options = secondary as { tokens?: readonly string[]; elementProperties?: readonly string[] };
+  if (options.tokens === undefined && options.elementProperties === undefined) return undefined;
   // Stryker disable next-line ArrayDeclaration: equivalent, an entry of an absent list is only compared with --ocelle-* var() names and with the other list's custom property names, and the mutant's entry "Stryker was here" is neither
   const lists = { tokens: options.tokens ?? [], elementProperties: options.elementProperties ?? [] };
   checkLists(lists);
@@ -139,13 +182,14 @@ const rule: Rule = (primary, secondary) => async (root, result) => {
     result,
     ruleName,
     { actual: primary, possible: [true] },
-    { actual: secondary, possible: { tokens: [isText], elementProperties: [isText] }, optional: true },
+    { actual: secondary, possible: { tokens: [isText], elementProperties: [isText], lineHeight: ["token"] }, optional: true },
   );
   if (!valid) return;
   const lists = optionLists(secondary) ?? (await listsUnder(process.cwd()));
   const known = new Set([...lists.tokens, ...lists.elementProperties]);
+  const options: RawOptions = (secondary as { lineHeight?: unknown } | null | undefined)?.lineHeight === "token" ? { lineHeight: "token" } : {};
   root.walkDecls((declaration) => {
-    const raw = rawValues(declaration.prop, declaration.value);
+    const raw = rawValues(declaration.prop, declaration.value, options);
     if (raw.length > 0) stylelint.utils.report({ ruleName, result, node: declaration, message: messages.raw(declaration.prop, raw.join(", ")) });
     for (const name of referencedTokens(declaration.value)) {
       if (!known.has(name)) stylelint.utils.report({ ruleName, result, node: declaration, message: messages.unknown(name) });

@@ -1,0 +1,24 @@
+# History fold phase-1 of claude/006-base-styles: old commit -> new commit (pre-fold head kept as refs/ocelle/prefold/phase-1/claude/006-base-styles, 367c7c940acadb7f3e42ed7489d45f953f36b28a).
+c7de1848231ad4ff5fec99d3466b89f5901b1e47 ceb97f540ddc51cb1cafe0b28b6aae07d0ca1bd8
+367c7c940acadb7f3e42ed7489d45f953f36b28a 0c5918eedfc35704263d682143a39aedaa8ba1d7
+
+# History fold phase-2 of claude/006-base-styles: old commit -> new commit (pre-fold head kept as refs/ocelle/prefold/phase-2/claude/006-base-styles, 37e1d4c83f379b9275d51cbdadfed0673752d0fa).
+67650ca38c8a820255b1916e354dd4eda9ee6a61 65ceb2a35e63637cd4f17835f30d08f410701b9a
+a90b8510844a004a55c02e440421e6cba629ba81 3cbf91beea4fcfc0b9a8f6e5469a3e0fe64582a9
+af6f391b77e667241df1b9a0aaef5ce9b4ed7628 8398339f9e046f41dd5a4eba68685ab2fcf00395
+37e1d4c83f379b9275d51cbdadfed0673752d0fa cde28fafa2036bbec2170ea4d6253718d34fd406
+
+# History fold phase-3 of claude/006-base-styles: old commit -> new commit (pre-fold head kept as refs/ocelle/prefold/phase-3/claude/006-base-styles, 1eda3f2ad1c7ba0f840423101f7ce12e1120330e).
+d54f5b0b6921b025be6061ba9c5acf2806d28216 71376d7fd409ee3bcc6366a88794acdd3968dbe4
+1194e1a95b307754e76042ece53c11090959e66c 3f3046ef57841a1965d208b382c6b88ad58b4a3f
+1eda3f2ad1c7ba0f840423101f7ce12e1120330e 3df03cf03fa764c572f74b1cc0a998fbbf174377
+
+# History fold phase-4 of claude/006-base-styles: old commit -> new commit (pre-fold head kept as refs/ocelle/prefold/phase-4/claude/006-base-styles, 65dba9f44c1eb13c7e21cce93825b8403fb4e28f).
+dd136cfedf8a0fa580a40e0158a633038c72b016 d2e4b8680f981cc5fced4b74f9fb9a66074fd1bc
+e88228bad2f1857f80aa626c0bf6817f6f4f6f07 2581435bbc95bf8818730f49fca2117a431b0f34
+65dba9f44c1eb13c7e21cce93825b8403fb4e28f 025a969b36f0548c2e2c18eb2bc577d406774e38
+
+# History fold phase-5 of claude/006-base-styles: old commit -> new commit (pre-fold head kept as refs/ocelle/prefold/phase-5/claude/006-base-styles, 66a3744737717e2255117e2609973ea0f19cfbb8).
+bb47742c64453a12b0cc1fe4ca3373d4fcbb50f5 c527e1a57afa25f9055b3b25a21924e607de3e7c
+f6434c2fc296511bc6204017765517027ca1a954 d169575e249710a5727cf628e5eeb8b81004c96a
+66a3744737717e2255117e2609973ea0f19cfbb8 eaf6e9e81416a1e44f721f018b6f9b8fdc2485c4

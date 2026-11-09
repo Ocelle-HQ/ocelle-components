@@ -36,6 +36,16 @@ export default defineConfig({
           name: "styles",
           environment: "node",
           include: ["packages/styles/**/*.test.ts"],
+          exclude: [...excluded, "packages/styles/test/browser/**"],
+        },
+      },
+      {
+        // The base-style browser suites (003 research.md R-09): Node tests that drive Chromium through Playwright and
+        // serve base.css, tokens.css and the fixture pages under the strict CSP. Not mutated (vitest.mutation.config.ts).
+        test: {
+          name: "styles-browser",
+          environment: "node",
+          include: ["packages/styles/test/browser/**/*.test.ts"],
           exclude: excluded,
         },
       },

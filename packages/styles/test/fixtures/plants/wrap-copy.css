@@ -1,0 +1,4 @@
+/* Plant (research.md R-10, US4-3): a rule that changes the rendered, and so the copied, text of the identifier. */
+[data-ocelle-wrap] {
+  text-transform: uppercase;
+}

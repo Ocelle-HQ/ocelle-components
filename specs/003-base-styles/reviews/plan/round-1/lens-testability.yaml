@@ -1,0 +1,209 @@
+schema: review-findings/v1
+complete: true
+phase: plan
+round: 1
+lens: testability
+# Probes: Chrome 153.0.8010.12 (/usr/bin/google-chrome) driven by the repository's Playwright 1.64.1 from a scratch
+# script outside the repository; each page built with setContent, CDP Accessibility.getFullAXTree for the tree.
+findings:
+  - id: PLAN-TESTABILITY-1-001
+    severity: 3
+    title: "The source-level checks are pure guards and pass at red against the empty base.css the Setup phase creates"
+    evidence:
+      - artifact: "plan.md § Phases 1 Setup: \"empty `src/base.css`\"; phase 2: \"the source-level checks with their plants\""
+      - artifact: "research.md § R-11: the checks report transition/animation, forced-color-adjust, @import/url(, class selectors, over-bound selectors, FR-020's forbidden properties; every item is a \"does not\""
+      - artifact: "contracts/checks.md § Tests added: source.test.ts covers US1-3, US1-5 (no @import/url()), US1-8, FR-020's forbidden list; \"each check also run on its plant fixture string\""
+      - artifact: "spec.md § SC-002: \"A guard assertion ... never stands alone: it shares its test with the positive assertion it guards, so the test fails at red\""
+      - code: ".specify/extensions/story/scripts/red.sh:21 red is the exit code of the whole suite, so one passing vacuous test inside a red run is not detected"
+    claim: |
+      Every assertion in source.test.ts is a "does not". Against the empty src/base.css from Setup there is no
+      transition, no class and no over-bound selector, so each check passes. The plant runs check the checker, and
+      the checker is test code, so they pass at red too. Constitution VIII requires each test to fail against the
+      old code. red.sh and tdd-check.sh look only at the suite's exit code, so they cannot catch this: other tests
+      in the same red commit make the run red. The same applies to the FR-020 check in phase 5 against a base.css
+      that has no wrap rule yet. That check passes vacuously because no `data-ocelle-wrap` rule exists for it to
+      read.
+    remedies:
+      - "Pair every source-level guard with a positive assertion over the same parse, in the same test: for example, US1-3 also asserts the rules the plan lists (the `:where(:focus-visible)` rule with its four outline longhands); US1-8 asserts that the file contains the selectors of data-model § Rule table, so at least one hook selector and one base selector were measured; FR-020 asserts that the `[data-ocelle-wrap=\"anywhere\"]` rule exists and declares `overflow-wrap: anywhere`. Record this pairing in R-11 and contracts/checks.md."
+
+  - id: PLAN-TESTABILITY-1-002
+    severity: 3
+    title: "The existing pass-line-height plant is in packages/styles, not elements, so the new override turns it into a fail"
+    evidence:
+      - artifact: "research.md § R-07: \"The existing `pass-line-height` plant is in `packages/elements` and stays a pass.\" contracts/checks.md § Gates changed: \"`pass-line-height` (elements) stays a pass\""
+      - code: "gates/plants/style-lint/pass-line-height/tree/packages/styles/src/x.css: `:host { line-height: 1.5; }`, plant.json expect \"pass\""
+      - code: "gates/lib/plant-repo.ts:37 stylelint.config.ts is in the configuration set copied into every plant repository, so the new `packages/styles/**/*.css` override applies to this plant"
+    claim: |
+      With `lineHeight: "token"` on `packages/styles/**/*.css`, the plant pass-line-height reports
+      `line-height: raw 1.5`. The plants gate then fails. The implementer either finds this late or "fixes" it by
+      changing the plant's expectation, which weakens a gate. The plan also leaves the element half of the claim
+      unproven: no plant shows that a unitless line height stays allowed in `packages/elements`, although R-07 says
+      it does.
+    remedies:
+      - "Move `pass-line-height` to `tree/packages/elements/src/x.css` (keeping expect pass), so it proves the element contract is unchanged, and state in R-07 and contracts/checks.md that the move is part of the phase. The new fail plant stays at `packages/styles/src/x.css`."
+
+  - id: PLAN-TESTABILITY-1-003
+    severity: 3
+    title: "The lineHeight secondary option collides with the rule's option handling, and no unit test or pass plant would show it"
+    evidence:
+      - code: "gates/stylelint/token-only.ts:142 validateOptions accepts only `{ tokens, elementProperties }`; an unknown `lineHeight` key makes the options invalid and the rule returns at line 144 without linting"
+      - code: "gates/stylelint/token-only.ts:128-134,145 any secondary object is taken as the token lists (`options.tokens ?? []`), so `{ lineHeight: \"token\" }` would make every `--ocelle-*` reference an \"unknown token\""
+      - code: "gates/test/fixtures/stylelint/invalid-option.json exists: an invalid option is classified as a gate error, not a finding"
+      - artifact: "contracts/checks.md § Tests added lists no gates test; plan.md phase 2: \"the line-height lint option and its plant\" (one fail plant only)"
+    claim: |
+      As written, the option either disables the rule (invalid option) or empties the token lists for all of
+      `packages/styles`. Then every `var(--ocelle-line-height-prose)` in base.css is reported. The single planned
+      plant (`line-height: 1.65`, no var()) cannot tell the correct implementation from either broken one. Because
+      that plant holds no token reference, it may even still "pass as fail". `gates/stylelint/token-only.ts` is
+      changed source in mutation scope. Its new branch would be covered only by the plant run in gates-integration,
+      which Stryker excludes, so the new mutants would show as NoCoverage.
+    remedies:
+      - "Add to the plan and contracts/checks.md: unit tests in `gates/test/token-only.test.ts` (and token-only-parts if `rawValues` changes) for the option. A literal line height and a `font` shorthand line height are raw with the option; the same values are allowed without it; `var(--ocelle-line-height-prose)` passes with the option and the default (file-loaded) lists. Also add a pass plant `pass-styles-line-height-token` with `line-height: var(--ocelle-line-height-prose)` under `packages/styles/src/`, so a rule that loses its lists or rejects its options fails a plant. State how optionLists and validateOptions separate the lineHeight flag from the token lists."
+
+  - id: PLAN-TESTABILITY-1-004
+    severity: 2
+    title: "The styles project already includes packages/styles/test/browser/**, so browser tests would run in mutation; the gate test that pins the exclusions is not in the plan"
+    evidence:
+      - code: "vitest.config.ts:39-45 the `styles` project includes `packages/styles/**/*.test.ts` with only the shared exclusions (the tokens project, by contrast, excludes `packages/tokens/test/browser/**`)"
+      - code: "gates/test/vitest-config.test.ts:41-48 asserts the excluded projects are exactly tokens-browser, storybook-integration, gates-integration; :52-61 asserts every test file belongs to exactly one project"
+      - artifact: "plan.md § Phases 1 Setup (exempt, no behaviour): \"the `styles-browser` Vitest project and its mutation exclusion\"; contracts/checks.md: \"`styles` (node, in mutation runs)\""
+    claim: |
+      The plan adds `styles-browser` but does not exclude `packages/styles/test/browser/**` from `styles`. Every
+      browser test would then sit in two projects, one that Stryker runs and one it excludes. Chromium would start
+      inside mutation runs, and the one-project-per-file check would fail. Setup is also declared exempt, yet it
+      must change `gates/test/vitest-config.test.ts`, a test that asserts the excluded list exactly. The plan does
+      not name that test change.
+    remedies:
+      - "In plan § Phases 1 and contracts/checks.md: exclude `packages/styles/test/browser/**` from the `styles` project, and update `gates/test/vitest-config.test.ts` (the excluded list gains `styles-browser`; an owner assertion that `packages/styles/test/browser/*.test.ts` is only in `styles-browser`). Either drop the exemption for that change or state why the config test, and no new behaviour, carries it."
+
+  - id: PLAN-TESTABILITY-1-005
+    severity: 2
+    title: "Three planned plants cannot make their guard fail in Chromium (pre copy, list semantics, table that fits)"
+    evidence:
+      - artifact: "research.md § R-10: `pre { white-space: normal }`; `ul { list-style: none }` with `ul { display: contents }`; `[data-ocelle-prose] :where(table) { overflow-x: scroll }`"
+      - artifact: "data-model.md § Prose: ` :where(pre)` under `[data-ocelle-prose]`, specificity (0,1,0)"
+      - code: "probe, Chrome 153: `[data-p] :where(pre){white-space:pre-wrap} pre{white-space:normal}` gives computed `pre-wrap` on the pre inside [data-p]: the (0,0,1) plant loses to the (0,1,0) hook rule"
+      - code: "probe, Chrome 153: the AX tree keeps role `list` with two `listitem`s for `ul{list-style:none}`, `ul{list-style:none;display:contents}`, `ul{display:block} li{display:block}` and `ul{display:grid}`"
+      - code: "probe, Chrome 153: a fitting `table{display:block;overflow-x:scroll}` between two links is skipped by Tab (focus goes from the first link to the second), the same as with `overflow-x:auto`"
+    claim: |
+      SC-002 requires each named guard to be shown able to fail by its plant. All three plants leave the observed
+      value unchanged in Chromium 153, so each plant test would fail. The implementer would then have to invent a
+      plant mid-phase, or quietly weaken the plant test. No CSS rule may be able to remove list semantics in
+      Chromium at all, and the spec allows that case only if the plan records why.
+    remedies:
+      - "Change the plants in R-10: for `pre`, `[data-ocelle-prose] pre { white-space: normal }` (0,1,1) or the same `[data-ocelle-prose] :where(pre)` form, which is later in the file; for the table that fits, a plant that makes it overflow (for example `[data-ocelle-prose] :where(td) { min-inline-size: 100vw }`), measured in the spike; for list semantics, record in R-10 that Chromium keeps role `list` under every display and list-style value tried (the probe above), so no CSS plant exists, and add the spike measurement to the phase record."
+
+  - id: PLAN-TESTABILITY-1-006
+    severity: 2
+    title: "The forced-colours `outline-color: Highlight` rule cannot be detected by any test: Chromium forces outline-color either way"
+    evidence:
+      - artifact: "data-model.md § Base layer: `@media (forced-colors: active) :where(:focus-visible)` → `outline-color: Highlight`; research.md § R-05; spec.md US1-4 and FR-011"
+      - code: "probe, Chrome 153, forced colours emulated, keyboard-focused button: with `outline-color: rgb(200,0,0)` only, and with the extra forced-colors `outline-color: Highlight` rule, the computed outline-color is `rgba(5, 0, 73, 0.8)` in both; only an explicit `CanvasText` rule changes it (rgb(0, 0, 0))"
+      - artifact: "CSS Color Adjustment 1 § 3.1: outline-color is among the properties forced to system colours unless the author value is a system colour"
+    claim: |
+      US1-4's assertion "outline in a system colour" holds with or without the rule, so the rule is untested code.
+      Removing it changes no observable value, and no plant can make the assertion fail. This is the vacuous test
+      that Principle VIII and SC-002 forbid. Either the plan has nothing to show at red for this half, or the
+      test asserts something the browser guarantees anyway.
+    remedies:
+      - "Drop the forced-colours outline rule from data-model and R-05, because Chromium already forces a system colour. Keep US1-4's assertion as a guard paired with the solid/width positive. In R-10, record that no CSS plant can make it fail, with the probe as evidence."
+      - "Keep the rule, but name in R-10 the exact computed value the test asserts (Highlight's resolved colour as against the forced default). Have the spike show that the value differs without the rule, and stop for the operator if it does not."
+
+  - id: PLAN-TESTABILITY-1-007
+    severity: 2
+    title: "Guard assertions with no named plant, and an FR-009 \"MUST NOT\" with no check over the whole file"
+    evidence:
+      - artifact: "spec.md § SC-002: \"Every other guard assertion ... gets a plant named in the plan; where no CSS plant can make a guard fail, the plan records why\""
+      - artifact: "research.md § R-10 table: no row for US1-6 (outline style other than none without tokens), US2-2 (only the region and its descendants are compact), US3-6 (underlined on hover and focus: browsers underline links by default), US3-7 (table semantics in the AX tree: held before this feature), FR-007 \"MUST NOT remove ... focus outlines\", and FR-020's `text-overflow: ellipsis` and `white-space: nowrap` in the source check (only `word-break` and `hyphens` are planted)"
+      - artifact: "spec.md FR-009: \"The base stylesheet MUST NOT set `outline: none` on any element\"; research.md § R-11 lists no outline check"
+    claim: |
+      Each item above already holds at red under the UA stylesheet. Two examples are the UA `:focus-visible` ring
+      (outline-style `auto`) and the UA link underline. They are therefore guards, and the plan names no defect that
+      proves them able to fail. The FR-009 prohibition covers every element, but only four focused controls are
+      observed. An `outline: none` on, for example, `summary` or `[tabindex]` would go unseen.
+    remedies:
+      - "Add rows to R-10: US1-6, the 002 shorthand `:where(:focus-visible) { outline: var(--ocelle-focus-width) solid var(--ocelle-color-focus) }` linked without tokens (SPEC-2-12 says it computes to none); US2-2, `[data-ocelle-density=\"compact\"] ~ *, body { font-size: var(--ocelle-font-size-sm) }` or similar; US3-6, `[data-ocelle-prose] :where(a:hover, a:focus-visible) { text-decoration-line: none }`; US3-7, a measured plant (for example `display: grid` on the table) or the recorded reason none exists. Add to R-11 a check for `outline: none` / `outline-style: none` on any selector, with a plant, and plants for `text-overflow: ellipsis` and `white-space: nowrap` on the wrap rule."
+
+  - id: PLAN-TESTABILITY-1-008
+    severity: 2
+    title: "The specificity and motion checkers are planted only far from the boundaries the spec defines"
+    evidence:
+      - artifact: "research.md § R-10: specificity plants `#x p {}` and `.x {}`; motion plants `transition: color 1s`, `animation-name: x`, `forced-color-adjust: none`"
+      - artifact: "spec.md FR-025: \"Pseudo-classes such as `:root`, `:focus-visible`, `:hover` and `:not()` count toward the bound unless they are inside `:where()`\"; hook bound (0,1,1), other (0,0,1); US1-3 and FR-010 also forbid `scroll-behavior`"
+    claim: |
+      A checker that counts only ids and classes passes both specificity plants, because `#x p` is caught for its
+      id. It would still miss the defects most likely in this file: a bare `:root` or `:focus-visible` (0,1,0) in
+      the base layer, or `[data-ocelle-prose] :where(a):hover` (0,2,0) in a hook rule. The checker is test code,
+      and mutation does not reach it, so its plants are its only proof. No plant covers `scroll-behavior`, and none
+      sits inside an at-rule, which is where a motion rule would naturally go (`@media (prefers-reduced-motion:
+      no-preference)`).
+    remedies:
+      - "Extend R-10 with boundary plants for the specificity check: fail `:root {}`, `:focus-visible {}`, `[data-ocelle-prose] :where(a):hover {}`, `[data-ocelle-prose] p:not(.x) {}`; pass `[data-ocelle-prose] p {}` (0,1,1) and `:where(:root) {}`. For the motion check add `scroll-behavior: smooth` and a `transition-duration` inside `@media (prefers-reduced-motion: no-preference)`."
+
+  - id: PLAN-TESTABILITY-1-009
+    severity: 2
+    title: "\"Each cell is associated with its column header\" has no observable in the CDP accessibility tree the plan reads"
+    evidence:
+      - artifact: "spec.md US3-7 and FR-017: \"each cell is associated with its column header\"; research.md § R-06 spike item 1 measures role, rows, columnheader, cell and caption name only"
+      - code: "probe, Chrome 153, `table{display:block;overflow-x:auto}` with caption and thead: getFullAXTree gives table (name \"Cap\", property labelledby), rowgroup, rows, cells and columnheaders. No node carries a header, row or column index property; the properties listed are `labelledby` on the table and `readonly|required` on columnheaders"
+    claim: |
+      The plan does not say what observation proves the association. The CDP tree offers none directly, so an
+      implementer may read DOM `cellIndex`/`headers` instead. CSS does not change those, so that assertion cannot
+      fail when `display: block` breaks the table's structure in the accessibility tree.
+    remedies:
+      - "Fix in R-06 and R-09 that the association is asserted on the AX tree structure: walking childIds, the table's first row holds `columnheader` nodes and each `cell` in body rows sits at the same child index as a columnheader in its column. If the spike finds a better observable (for example `Accessibility.queryAXTree` or the platform `aria-colindex`-like properties), record it."
+
+  - id: PLAN-TESTABILITY-1-010
+    severity: 2
+    title: "US1-6's documentation check requires all four hooks in phase 2, before three of them exist"
+    evidence:
+      - artifact: "spec.md US1-6: the documentation check finds \"for each hook (compact, value, prose, identifier wrap), its exact attribute name and allowed values\" and a CHANGELOG entry naming \"each of the four hook attributes\""
+      - artifact: "plan.md § Phases: phase 2 (US1) \"the README and CHANGELOG of styles, with the readme test\"; phase 3 \"the README hooks\"; phases 4 and 5 \"the README\""
+    claim: |
+      Phase 2 must end green. Its readme test must then either assert all four hooks, which would mean documenting
+      surface that does not exist until phases 3 to 5, or assert only the base parts. In the second case phases 3
+      to 5 extend a test written in phase 2, and the plan does not say they do so red-first or that the extension
+      is a stricter replacement (Principle VIII, "Green, without touching the tests' meaning"). Each later phase
+      also needs its own red assertion so that tdd-check's "final tests against base" holds per phase.
+    remedies:
+      - "State in plan § Phases that the readme test grows with each phase: phase 2 asserts link order, CSP, base layer and the CHANGELOG `base.css` entry; phases 3, 4 and 5 each add, red-first, the assertions for their hooks (README values and the CHANGELOG attribute name); phase 5 adds SC-006. Map US1-6's doc half to those phases in contracts/checks.md."
+
+  - id: PLAN-TESTABILITY-1-011
+    severity: 2
+    title: "renderFamily is mutated story markup with no planned unit test; killing its string mutants invites a snapshot-like test"
+    evidence:
+      - artifact: "research.md § R-12: \"Each returns escaped markup from `storybook/stories/render.ts`'s new `renderFamily(name)`\"; \"The tests to update are `swatches.test.ts` (the directory listing), `stories.test.ts` and the integration `csp.test.ts`\""
+      - code: "vitest.config.ts:58-66 the storybook project's tests \"kill the mutants of storybook/scripts/**, storybook/.storybook/** and storybook/stories/** (not the story files)\"; storybook/test/unit/render.test.ts exists for renderGroup"
+    claim: |
+      `renderFamily` is changed source in mutation scope, and `render.test.ts` is not among the planned tests. The
+      integration csp test is excluded from Stryker, so it cannot kill these mutants. The function is mostly long
+      string literals. A test that kills every StringLiteral mutant by comparing the whole markup is a snapshot as
+      the only assertion, which Principle VIII forbids. A test that does not compare the markup leaves mutants alive.
+    remedies:
+      - "Plan a `render.test.ts` for `renderFamily` that asserts its behaviour: each family's markup carries its hook attribute and values, holds the elements its story must show (for prose: the US3 element list, a wide table, a table with a link), has no `style` attribute and no class, and escapes text. For mutants that remain in the prose text, record them as equivalent with a reason, or move the fixture text into a data file outside the mutation scope that both the stories and `packages/styles/test/fixtures` read."
+
+  - id: PLAN-TESTABILITY-1-012
+    severity: 2
+    title: "US3-6's \"the contrast gate covers every new colour pairing\" has no test"
+    evidence:
+      - artifact: "spec.md US3-6: \"the contrast gate covers every new colour pairing the prose family introduces\"; FR-022: every acceptance scenario has a test"
+      - artifact: "research.md § R-08: \"The phase that adds a token checks this against `packages/tokens/contrast/pairs.json`\" (a manual check); the pairs list omits link on inset (a link inside inline code, or code inside a link) and ink-soft on inset (code in a block quote)"
+      - code: "packages/tokens/contrast/pairs.json does hold color-link/color-link-hover on color-inset in both themes, status checked: the omission is in the plan's list and its check, not the gate"
+    claim: |
+      The contrast gate checks pairs.json. It does not know which pairings base.css creates, so nothing fails if a
+      later prose rule puts a colour on a ground that is not a checked pair. The plan replaces the scenario's test
+      with a manual check over an incomplete list.
+    remedies:
+      - "Add a styles test: a list of (foreground token, ground token) pairings the prose and value families create, nesting included (link on canvas and inset, ink and ink-soft on inset, ink-muted on canvas). Assert that each is a `checked` pair in both themes in pairs.json, and plant it with a pairing that is not in the file. Alternatively, derive the pairings in the browser from the computed colours of the fixture's text nodes and their nearest ground, and match them to resolved token values."
+
+  - id: PLAN-TESTABILITY-1-013
+    severity: 1
+    title: "R-11 says the source checks parse dist/base.css built with buildPlan and no I/O, but buildPlan only returns a copy entry"
+    evidence:
+      - artifact: "research.md § R-11: \"parse `dist/base.css` (built in a `beforeAll` with `buildPlan`, no I/O)\"; § R-01: buildPlan returns entries and the stylesheet is \"copied ... unchanged\""
+      - code: "packages/tokens/scripts/build.ts:13 PlanEntry is `{ path, content }` or `{ path, copyFrom }`; a copy has no content in the plan"
+    claim: |
+      A copy entry holds no text, so the checks must read `src/base.css` from disk, or `dist/` from a real build.
+      The plan does not say which file is checked. If the check reads `dist/`, the result depends on a stale build.
+    remedies:
+      - "State in R-11 that the source checks read `packages/styles/src/base.css`, and that build.test.ts proves dist/base.css is byte-identical to it, so together they cover the shipped file."

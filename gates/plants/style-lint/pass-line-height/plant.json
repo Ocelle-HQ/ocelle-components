@@ -1,4 +1,4 @@
 {
   "expect": "pass",
-  "why": "A unitless line-height (line-height: 1.5) is allowed (FR-024)."
+  "why": "A unitless line-height (line-height: 1.5) is allowed in element styles (002 FR-024); packages/styles requires a token (003 FR-002)"
 }

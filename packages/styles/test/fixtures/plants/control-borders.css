@@ -1,0 +1,4 @@
+/* Plant (research.md R-10, US1-4, FR-007): removes control borders. */
+button {
+  border: 0;
+}

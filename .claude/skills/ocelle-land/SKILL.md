@@ -8,7 +8,7 @@ user-invocable: true
 # /ocelle-land
 
 <!-- Adapted from the Spec Kitty era ocelle-land (itself spk-land-pr carried over to Ocelle repos) to the Spec Kit
-flow of this repository: triage records, story phases with red/green evidence, agent profiles, the twelve CI checks
+flow of this repository: triage records, story phases with red/green evidence, agent profiles, the fourteen required CI checks
 and the constitution. Where the two disagree, the constitution wins. -->
 
 You are the **maintainer orchestrator** landing one pull request. The operator merges; you never do.
@@ -205,7 +205,7 @@ Do it as part of every landing. Each item is its own `docs(landing):` commit, si
   - Mission or op PRs: `verification.md` lists every GitHub-side check of the plan's § Verification. Fill in what
     CI proves, with run links. Leave the operator's items (rulesets, permissions, sign-off) open and say so.
   - Regenerate the run summary: `$S/summary.sh --commit`.
-  - If the flow misbehaved, propose a diary entry for `knowledge/speckit-flows/log.md`.
+  - Diary entries come from the retrospective (step 4.2), not from here.
 - **Docs.** Update the affected docs when behaviour, a gate, a command or an extension seam changes: `gates/README.md`
   for gates and plants, `CONTRIBUTING.md` for contributor flow, `tooling/speckit/README.md` for the flow. When a
   design decision changed, the ADR in the Ocelle-HQ docs repository needs updating (ADR-0079, ADR-0071). Offer the
@@ -224,15 +224,34 @@ when the change is its own record.
 
 ## 4. Hand off
 
-1. Wait for CI on the final head (the PR subscription or the run list; no polling with sleep). All twelve checks
+1. Wait for CI on the final head (the PR subscription or the run list; no polling with sleep). All fourteen required checks
    green, or every red honestly binned (step 2.3) and accepted by the operator.
-2. Post a remediation summary on the PR (with the operator's yes):
+2. **Retrospective** (mission and op PRs; on a contributor PR or a chore, only if the flow misbehaved). It runs
+   here because the whole mission is now visible, CI included. Read the run summary, the reviews, the operator
+   decisions, this landing pass and the notes `/ocelle-run` left for it, then:
+   - **Diary entries** for `knowledge/speckit-flows/log.md`, under today's date, newest date first. Record what
+     worked and should stay or become the default, not only what failed. One fact per entry, with the evidence
+     (phase, round, commit, run link) and a `Candidate:` when there is a fix to make. No run metrics by hand:
+     `summary.sh` writes those.
+   - **Recurrence.** Check every open `Candidate:` in `log.md` against this mission. When one happened again, the new
+     entry says `Recurred (first: <date>)` instead of repeating the old text.
+   - **Follow-ups.** A candidate about the flow itself (skills, profiles, Spec Kit extensions, `tooling/speckit/`)
+     stays in the diary: when it was seen in two or more missions, its entry says `Follow-up candidate, seen in N
+     missions`, and no GitHub issue is filed (operator decision 2026-11-09). For a candidate about the product or the
+     repository (packages, gates, CI), propose a follow-up issue (an op, or a fold into a mission in progress) with
+     its title and the diary dates, and file it only on the operator's yes (rule 5).
+   - **Frontend missions** (styles, elements, Storybook, browser tests): add what would have saved a round to
+     `knowledge/speckit-flows/findings/frontend-missions.md`.
+
+   Show the entries and proposals in one multiple-choice question: write all; write them with the edits the
+   operator gives; or skip. Commit what is written alone as `docs(retro): <mission> retrospective`, signed off.
+3. Post a remediation summary on the PR (with the operator's yes):
    - the triage call;
    - each red and its bin;
    - each fold, with its commit and review round;
    - the second-opinion verdict and its open notes;
    - the operator's open items from `verification.md`.
-3. Ask the operator, multiple choice: mark the PR ready for review (if it is a draft), request a reviewer, or leave
+4. Ask the operator, multiple choice: mark the PR ready for review (if it is a draft), request a reviewer, or leave
    it as it is. **Stop there. The operator merges.**
 
 ## 5. After the operator merges

@@ -1,0 +1,11 @@
+{
+  "expect": "fail",
+  "why": "A font shorthand without a line height in packages/styles is rejected: it resets line-height to normal, and line heights there are tokens (003 FR-002, research.md R-07, phase 2 round 2 O2-01).",
+  "findings": [
+    {
+      "location": "packages/styles/src/x.css:3",
+      "rule": "ocelle/token-only",
+      "message": "var(--ocelle-font-size-md) var(--ocelle-font-sans)"
+    }
+  ]
+}

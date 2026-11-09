@@ -383,3 +383,240 @@ describe("manifestProperties()", () => {
     expect(manifestProperties(manifest)).toEqual(["--ocelle-a-gap", "--ocelle-a-pad", "--ocelle-b-gap"]);
   });
 });
+
+// The secondary option `lineHeight: "token"` (003 FR-002, research.md R-07, contracts/checks.md § Gates changed):
+// with it, a line height, in `line-height` or after the `/` of `font`, passes only as one var(--ocelle-*) reference
+// (no fallback) or a CSS-wide keyword; a number, a percentage, any calc() and `normal` are raw there. Without it they
+// stay as 002 allows them. The option is read apart from the token lists: an object with only `lineHeight` keeps the
+// repository lists, and lists given with it are used. Any other value of the option is an invalid option.
+describe("rawValues with the lineHeight: \"token\" option", () => {
+  const token = { lineHeight: "token" } as const;
+
+  it.each([
+    { property: "line-height", value: "1.65" },
+    { property: "line-height", value: "165%" },
+    { property: "line-height", value: "calc(1.65)" },
+    { property: "line-height", value: "normal" },
+    { property: "line-height", value: "calc(var(--ocelle-line-height-normal) * 1)" },
+    { property: "LINE-HEIGHT", value: "1.65" },
+  ])("$property: $value is raw with the option and allowed without it", ({ property, value }) => {
+    expect([rawValues(property, value, token), rawValues(property, value)]).toEqual([[value], []]);
+  });
+
+  it.each([
+    { value: "var(--ocelle-font-size-md)/165% var(--ocelle-font-sans)", raw: "165%" },
+    { value: "var(--ocelle-font-size-md) / calc(1.65) var(--ocelle-font-sans)", raw: "calc(1.65)" },
+  ])("font: $value has the raw line height $raw with the option and none without it", ({ value, raw }) => {
+    expect([rawValues("font", value, token), rawValues("font", value)]).toEqual([[raw], []]);
+  });
+
+  it("font: a number or normal after the slash stays raw with and without the option, reported once", () => {
+    expect([
+      rawValues("font", "var(--ocelle-font-size-md)/1.65 var(--ocelle-font-sans)", token),
+      rawValues("font", "var(--ocelle-font-size-md)/1.65 var(--ocelle-font-sans)"),
+      rawValues("font", "var(--ocelle-font-size-md)/normal var(--ocelle-font-sans)", token),
+      rawValues("font", "var(--ocelle-font-size-md)/165% var(--ocelle-font-sans)", token),
+    ]).toEqual([["1.65"], ["1.65"], ["normal"], ["165%"]]);
+  });
+
+  it.each(["var(--ocelle-line-height-normal)", "VAR(--ocelle-line-height-prose)", "inherit", "initial", "unset", "revert", "revert-layer", "INHERIT"])(
+    "line-height: %s passes with the option, and a fallback or a second part beside it is raw",
+    (value) => {
+      expect([
+        rawValues("line-height", value, token),
+        rawValues("line-height", `${value} 1`, token),
+        rawValues("line-height", "var(--ocelle-line-height-normal, 1.5)", token),
+        rawValues("line-height", "var(--tip)", token),
+      ]).toEqual([[], [`${value} 1`], ["var(--ocelle-line-height-normal, 1.5)"], ["var(--tip)"]]);
+    },
+  );
+
+  it("font: a token or a CSS-wide keyword after the slash passes with the option; other parts keep their 002 checks", () => {
+    expect([
+      rawValues("font", "var(--ocelle-font-size-md)/var(--ocelle-line-height-normal) var(--ocelle-font-sans)", token),
+      rawValues("font", "var(--ocelle-font-size-md) / inherit var(--ocelle-font-sans)", token),
+      rawValues("font", "16px/var(--ocelle-line-height-normal) Inter", token),
+      rawValues("font", "var(--ocelle-font-size-md)/165%", token),
+      rawValues("font", "inherit", token),
+    ]).toEqual([[], [], ["16px", "Inter"], ["165%"], []]);
+  });
+
+  it("leaves every other property as 002 checks it: unitless numbers stay allowed for flex, z-index, opacity and order", () => {
+    expect([
+      rawValues("flex", "1 1 0%", token),
+      rawValues("z-index", "10", token),
+      rawValues("opacity", "0.5", token),
+      rawValues("order", "-1", token),
+      rawValues("width", "165%", token),
+      rawValues("width", "calc(1.65)", token),
+      rawValues("margin", "2rem", token),
+      rawValues("line-height", "1.65", token),
+    ]).toEqual([[], [], [], [], [], [], ["2rem"], ["1.65"]]);
+  });
+});
+
+// Added after the phase 2 mutation run (surviving mutants of tokenLineHeight(), fontRaw() and rawValues()): a
+// string or another function is not a token, the line height of `font` is the part right after the slash (not after
+// a comma or a string "/"), a `font` without a slash keeps its 002 checks, every other part of a `font` value is
+// checked outside calc(), and the raw line height is reported trimmed.
+describe("rawValues with the lineHeight: \"token\" option: edges", () => {
+  const token = { lineHeight: "token" } as const;
+
+  it("reports a string, another function naming a token and a function with no argument as a raw line height", () => {
+    expect([
+      rawValues("line-height", '"var"', token),
+      rawValues("line-height", "env(--ocelle-line-height-normal)", token),
+      rawValues("line-height", "var()", token),
+    ]).toEqual([['"var"'], ["env(--ocelle-line-height-normal)"], ["var()"]]);
+  });
+
+  it("takes the part right after the slash as the line height of font, not the part after a comma or a string \"/\"", () => {
+    expect([
+      rawValues("font", "var(--ocelle-font-sans), var(--ocelle-font-size-md)/165%", token),
+      rawValues("font", '"/" var(--ocelle-font-size-md)/165%', token),
+    ]).toEqual([["165%"], ['"/"', "165%"]]);
+  });
+
+  it("reports a font value without a slash as raw with the option (it resets line-height to normal), and checks it as 002 does without it, so a percentage or calc() there is allowed", () => {
+    expect([
+      rawValues("font", "165% var(--ocelle-font-sans)", token),
+      rawValues("font", "calc(var(--a) * 2) var(--ocelle-font-sans)", token),
+      rawValues("font", "165% var(--ocelle-font-sans)"),
+      rawValues("font", "calc(var(--a) * 2) var(--ocelle-font-sans)"),
+    ]).toEqual([["165% var(--ocelle-font-sans)"], ["calc(var(--a) * 2) var(--ocelle-font-sans)"], [], []]);
+  });
+
+  it("checks the other parts of a font value outside calc(): a bare number is raw", () => {
+    expect(rawValues("font", "600 var(--ocelle-font-size-md)/var(--ocelle-line-height-normal) var(--ocelle-font-sans)", token)).toEqual(["600"]);
+  });
+
+  it("reports a raw line height without the surrounding white space", () => {
+    expect(rawValues("line-height", "  1.65 ", token)).toEqual(["1.65"]);
+  });
+});
+
+describe("the ocelle/token-only plugin with the lineHeight: \"token\" option", () => {
+  async function lint(code: string, options: unknown): Promise<{ readonly warnings: { line: number; text: string }[]; readonly invalid: number }> {
+    const { results } = await stylelint.lint({ code, config: { plugins: [plugin], rules: { [ruleName]: options } } });
+    return {
+      warnings: (results[0]?.warnings ?? []).map(({ line, text }) => ({ line, text })),
+      invalid: (results[0]?.invalidOptionWarnings ?? []).length,
+    };
+  }
+
+  const code =
+    "a {\n  line-height: var(--ocelle-line-height-normal);\n  line-height: inherit;\n  line-height: 1.65;\n  font: var(--ocelle-font-size-md)/165% var(--ocelle-font-sans);\n  line-height: var(--ocelle-nope);\n}\n";
+
+  it("keeps the repository token lists when lineHeight is the only option (a real token and a keyword pass, a literal and an unknown token are reported); without the option only the unknown token is", async () => {
+    expect([await lint(code, [true, { lineHeight: "token" }]), await lint(code, true)]).toEqual([
+      {
+        warnings: [
+          { line: 4, text: "line-height: raw 1.65; use a --ocelle-* token (FR-024) (ocelle/token-only)" },
+          { line: 5, text: "font: raw 165%; use a --ocelle-* token (FR-024) (ocelle/token-only)" },
+          { line: 6, text: "line-height: raw var(--ocelle-nope); use a --ocelle-* token (FR-024) (ocelle/token-only)" },
+          { line: 6, text: "unknown token --ocelle-nope (ocelle/token-only)" },
+        ],
+        invalid: 0,
+      },
+      { warnings: [{ line: 6, text: "unknown token --ocelle-nope (ocelle/token-only)" }], invalid: 0 },
+    ]);
+  });
+
+  it("uses the lists given beside the option instead of the repository's", async () => {
+    const lists = { tokens: ["--ocelle-line-height-normal", "--ocelle-font-size-md", "--ocelle-font-sans"], lineHeight: "token" };
+    const listed = "a {\n  line-height: var(--ocelle-line-height-normal);\n  line-height: var(--ocelle-line-height-tight);\n  line-height: 1.5;\n}\n";
+    expect(await lint(listed, [true, lists])).toEqual({
+      warnings: [
+        { line: 3, text: "unknown token --ocelle-line-height-tight (ocelle/token-only)" },
+        { line: 4, text: "line-height: raw 1.5; use a --ocelle-* token (FR-024) (ocelle/token-only)" },
+      ],
+      invalid: 0,
+    });
+  });
+
+  it.each([[{ lineHeight: "number" }], [{ lineHeight: true }], [{ lineHeight: "token", tokens: [1] }]])(
+    "reports the invalid secondary option %j and checks nothing with it, while lineHeight: \"token\" is valid",
+    async (secondary) => {
+      expect([await lint("a { line-height: 1.65; }", [true, secondary]), (await lint("a { line-height: 1.65; }", [true, { lineHeight: "token" }])).invalid]).toEqual([
+        { warnings: [], invalid: 1 },
+        0,
+      ]);
+    },
+  );
+});
+
+// Scope amended by the operator round of 2026-11-09 (003 phase 2 round 2, O2-01; landing review L1-01; research.md
+// R-07): under the option a line height passes only as var(--ocelle-line-height-*) (one argument, case-sensitive
+// name) or a CSS-wide keyword, so another token is raw there; and a font value with no top-level `/` (one inside a
+// function or a string does not count) is raw as a whole, its trimmed value, unless it is a CSS-wide keyword alone.
+// Without the option each value gives what 002 gives.
+describe("rawValues with the lineHeight: \"token\" option: only a line-height token is a line height (O2-01)", () => {
+  const token = { lineHeight: "token" } as const;
+
+  it.each([
+    { property: "line-height", value: "var(--ocelle-space-4)", raw: ["var(--ocelle-space-4)"] },
+    { property: "line-height", value: "var(--ocelle-line-height)", raw: ["var(--ocelle-line-height)"] },
+    { property: "line-height", value: "var(--OCELLE-line-height-normal)", raw: ["var(--OCELLE-line-height-normal)"] },
+    { property: "line-height", value: "var(--ocelle-font-size-md)", raw: ["var(--ocelle-font-size-md)"] },
+    { property: "line-height", value: "var(--ocelle-line-height-normal, 1.5)", raw: ["var(--ocelle-line-height-normal, 1.5)"] },
+    { property: "font", value: "var(--ocelle-font-size-md)/var(--ocelle-space-4) var(--ocelle-font-sans)", raw: ["var(--ocelle-space-4)"] },
+    { property: "font", value: "var(--ocelle-font-size-md)/var(--ocelle-line-height) var(--ocelle-font-sans)", raw: ["var(--ocelle-line-height)"] },
+  ])("$property: $value has the raw line height $raw with the option and none without it", ({ property, value, raw }) => {
+    expect([rawValues(property, value, token), rawValues(property, value)]).toEqual([raw, []]);
+  });
+
+  it.each(["var(--ocelle-line-height-normal)", "VAR(--ocelle-line-height-prose)", "var(--ocelle-line-height-nope)", "inherit", "INHERIT", "revert-layer"])(
+    "%s passes as a line height with the option, in line-height and after the slash of font",
+    (value) => {
+      expect([rawValues("line-height", value, token), rawValues("font", `var(--ocelle-font-size-md)/${value} var(--ocelle-font-sans)`, token)]).toEqual([[], []]);
+    },
+  );
+});
+
+describe("rawValues with the lineHeight: \"token\" option: a font value must state its line height (O2-01)", () => {
+  const token = { lineHeight: "token" } as const;
+
+  it.each([
+    { value: "var(--ocelle-font-size-md) var(--ocelle-font-sans)", without: [] },
+    { value: "165% var(--ocelle-font-sans)", without: [] },
+    { value: "var(--ocelle-font-sans)", without: [] },
+    { value: "normal", without: ["normal"] },
+    { value: "caption", without: ["caption"] },
+    { value: "var(--ocelle-font-sans, 16px/1.5 Inter)", without: ["16px", "1.5", "Inter"] },
+    { value: '"/" var(--ocelle-font-sans)', without: ['"/"'] },
+  ])("font: $value without a top-level slash is raw as one entry with the option, and gives $without without it", ({ value, without }) => {
+    expect([rawValues("font", value, token), rawValues("font", value)]).toEqual([[value], without]);
+  });
+
+  it("reports a slash-less font value trimmed", () => {
+    expect([rawValues("font", "  var(--ocelle-font-size-md) var(--ocelle-font-sans) ", token), rawValues("font", "  var(--ocelle-font-size-md) var(--ocelle-font-sans) ")]).toEqual([
+      ["var(--ocelle-font-size-md) var(--ocelle-font-sans)"],
+      [],
+    ]);
+  });
+
+  it.each(["inherit", "INHERIT", "initial", "unset", "revert", "revert-layer", "  inherit "])("font: %j, a CSS-wide keyword alone, passes with and without the option", (value) => {
+    expect([rawValues("font", value, token), rawValues("font", value)]).toEqual([[], []]);
+  });
+});
+
+describe("the ocelle/token-only plugin with the lineHeight: \"token\" option: O2-01", () => {
+  async function lint(code: string, options: unknown): Promise<{ line: number; text: string }[]> {
+    const { results } = await stylelint.lint({ code, config: { plugins: [plugin], rules: { [ruleName]: options } } });
+    return (results[0]?.warnings ?? []).map(({ line, text }) => ({ line, text }));
+  }
+
+  const code =
+    "a {\n  line-height: var(--ocelle-space-4);\n  font: var(--ocelle-font-size-md) var(--ocelle-font-sans);\n  font: inherit;\n  line-height: var(--ocelle-line-height-nope);\n}\n";
+
+  it("reports another token as a line height and a font without a line height, once each, with the repository lists; nothing for font: inherit; and without the option only the unknown token", async () => {
+    expect([await lint(code, [true, { lineHeight: "token" }]), await lint(code, true)]).toEqual([
+      [
+        { line: 2, text: "line-height: raw var(--ocelle-space-4); use a --ocelle-* token (FR-024) (ocelle/token-only)" },
+        { line: 3, text: "font: raw var(--ocelle-font-size-md) var(--ocelle-font-sans); use a --ocelle-* token (FR-024) (ocelle/token-only)" },
+        { line: 5, text: "unknown token --ocelle-line-height-nope (ocelle/token-only)" },
+      ],
+      [{ line: 5, text: "unknown token --ocelle-line-height-nope (ocelle/token-only)" }],
+    ]);
+  });
+});

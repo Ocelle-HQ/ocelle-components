@@ -1,0 +1,38 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Base page</title>
+<link rel="stylesheet" href="tokens.css">
+<link rel="stylesheet" href="base.css">
+<link rel="stylesheet" href="layout.css">
+</head>
+<body>
+<main id="main">
+<p id="text">Body text with <a id="link" href="#target">a link</a> in it.</p>
+<p id="controls"><button id="button" type="button">Save</button> <input id="input" type="text" aria-label="Name"> <span id="tabstop" tabindex="0">Focusable text</span></p>
+<p id="fields"><select id="select" aria-label="Choice"><option>One</option><option>Two</option></select> <textarea id="textarea" aria-label="Notes"></textarea></p>
+<ul id="list"><li>First item</li><li>Second item</li></ul>
+<p><code id="code">packages/styles/src/base.css 0123</code> <kbd id="kbd">Ctrl 1</kbd> <samp id="samp">exit 2</samp></p>
+<pre id="pre">pnpm run build 3456</pre>
+<div id="prose" data-ocelle-prose="">
+<p><code id="prose-code">packages/styles/src/base.css 0123</code> <kbd id="prose-kbd">Ctrl 1</kbd> <samp id="prose-samp">exit 2</samp></p>
+<pre id="prose-pre">pnpm run build 3456</pre>
+</div>
+<div id="media">
+<img id="img" src="media.svg" width="2000" height="1000" alt="A grey rectangle">
+<picture id="picture"><img id="picture-img" src="media.svg" width="2000" height="1000" alt="A grey rectangle in a picture"></picture>
+<video id="video" width="2000" height="1000"></video>
+<canvas id="canvas" width="2000" height="1000"></canvas>
+<svg id="svg" width="2000" height="1000" viewBox="0 0 2000 1000" role="img" aria-label="A rectangle"><rect width="2000" height="1000"></rect></svg>
+</div>
+<div id="region" data-fixture="forced-region">
+<button id="region-button" type="button">In the region</button>
+<span id="highlight" data-fixture="highlight">Highlight</span>
+<span id="canvas-text" data-fixture="canvas-text">CanvasText</span>
+<span id="focus" data-fixture="focus">Focus</span>
+</div>
+<p id="target">The link's target.</p>
+</main>
+</body>
+</html>

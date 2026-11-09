@@ -3,6 +3,8 @@ import type { DefaultTreeAdapterMap } from "parse5";
 import { describe, expect, it } from "vitest";
 import { expectedTokens, inTheme } from "../../../packages/tokens/test/expected.ts";
 import type { Group } from "../../../packages/tokens/test/expected.ts";
+import * as base from "../../stories/base.stories.ts";
+import { renderFamily } from "../../stories/render.ts";
 import * as stories from "../../stories/tokens.stories.ts";
 
 // The token stories (FR-023, US1 scenario 11; research.md R-10; T035): one story per token group of FR-001's
@@ -108,5 +110,47 @@ describe("tokens.stories.ts", () => {
       expect(all.filter((element) => element.tagName === "dt").length).toBeGreaterThan(0);
       expect(all.filter((element) => attr(element, "class") === "ocelle-swatch")).toEqual([]);
     }
+  });
+});
+
+// The base-style stories (003 FR-023, research.md R-12): the title "Base styles" with one story per family that has
+// landed; phase 2 adds the Base page, which renders renderFamily("base"), phase 3 the Compact screen, which renders
+// renderFamily("compact"), phase 4 the Prose document, which renders renderFamily("prose"), and phase 5 the
+// Identifier wrap, which renders renderFamily("wrap").
+describe("base.stories.ts", () => {
+  it("has the title Base styles and the Base page story, rendering the base family's markup", () => {
+    expect(base.default).toEqual({ title: "Base styles" });
+    expect(Object.keys(base).filter((key) => key !== "default")).toEqual(["BasePage", "CompactScreen", "ProseDocument", "IdentifierWrap"]);
+    expect(base.BasePage.name).toBe("Base page");
+    const markup = (base.BasePage as unknown as Story).render({}, { globals: {} });
+    expect(markup).toBe(renderFamily("base"));
+    expect(elements(parseFragment(String(markup)).childNodes).filter((element) => element.tagName === "article").map((element) => attr(element, "data-story"))).toEqual(["base"]);
+  });
+
+  it("has the Compact screen story, rendering the compact family's markup with the compact and value hooks", () => {
+    expect(base.CompactScreen.name).toBe("Compact screen");
+    const markup = (base.CompactScreen as unknown as Story).render({}, { globals: {} });
+    expect(markup).toBe(renderFamily("compact"));
+    const all = elements(parseFragment(String(markup)).childNodes);
+    expect(all.filter((element) => element.tagName === "article").map((element) => [attr(element, "data-story"), attr(element, "data-ocelle-density")])).toEqual([["compact", "compact"]]);
+    expect([...new Set(all.map((element) => attr(element, "data-ocelle-value")).filter((value) => value !== undefined))].sort()).toEqual(["", "ink"]);
+  });
+
+  it("has the Prose document story, rendering the prose family's markup in a container with the prose hook", () => {
+    expect(base.ProseDocument.name).toBe("Prose document");
+    const markup = (base.ProseDocument as unknown as Story).render({}, { globals: {} });
+    expect(markup).toBe(renderFamily("prose"));
+    const all = elements(parseFragment(String(markup)).childNodes);
+    expect(all.filter((element) => element.tagName === "article").map((element) => [attr(element, "data-story"), attr(element, "data-ocelle-prose")])).toEqual([["prose", ""]]);
+    expect(all.filter((element) => element.tagName === "table").length).toBe(2);
+  });
+
+  it("has the Identifier wrap story, rendering the wrap family's markup with the identifier-wrap hook", () => {
+    expect(base.IdentifierWrap.name).toBe("Identifier wrap");
+    const markup = (base.IdentifierWrap as unknown as Story).render({}, { globals: {} });
+    expect(markup).toBe(renderFamily("wrap"));
+    const all = elements(parseFragment(String(markup)).childNodes);
+    expect(all.filter((element) => element.tagName === "article").map((element) => attr(element, "data-story"))).toEqual(["wrap"]);
+    expect(all.filter((element) => attr(element, "data-ocelle-wrap") !== undefined).map((element) => attr(element, "data-ocelle-wrap"))).toEqual(["anywhere", "anywhere"]);
   });
 });

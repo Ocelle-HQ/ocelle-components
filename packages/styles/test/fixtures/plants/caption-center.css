@@ -1,0 +1,4 @@
+/* Plant (research.md R-10, US3-3, US3-9): a centred caption, inside the box but not at its start edge. */
+[data-ocelle-prose=""] :where(caption) {
+  text-align: center;
+}

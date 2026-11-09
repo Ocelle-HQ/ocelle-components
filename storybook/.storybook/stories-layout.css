@@ -1,0 +1,14 @@
+/*
+ * Layout of the base-style stories (003 research.md R-12, PLAN-A11Y-SECURITY-1-006): layout only, no rule of
+ * base.css, selectors on data-story attributes only (no class, no style attribute).
+ */
+[data-story] {
+  padding: var(--ocelle-space-4);
+}
+
+/* The Identifier wrap story's grid (003 User Story 4): 300 px wide with two 1fr tracks, minmax(auto, 1fr). */
+[data-story="wrap-grid"] {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  inline-size: 300px;
+}

@@ -1,0 +1,6 @@
+/* Plant (research.md R-10, R-05, US1-4): the forced-colours Highlight rule removed, the token focus colour restored. */
+@media (forced-colors: active) {
+  :where(:focus-visible) {
+    outline-color: var(--ocelle-color-focus);
+  }
+}
