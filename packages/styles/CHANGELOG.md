@@ -22,3 +22,6 @@ All notable changes to `@ocelle/styles`. The package follows semantic versioning
   links, code on the inset ground that wraps, and tables that scroll in their own box with a 12ch cell floor, an
   inset focus ring and a caption that stays in view. On one element with the compact hook it wins. Any other value
   has no effect.
+- `data-ocelle-wrap`: the identifier wrap with `anywhere`: `overflow-wrap: anywhere` on the element, so a long
+  identifier breaks anywhere instead of widening its grid column, and copies unchanged. It sets no font property.
+  Any other value has no effect.

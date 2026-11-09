@@ -164,11 +164,28 @@ function renderProse(text: ProseContent): string {
   );
 }
 
+/**
+ * The Identifier wrap story: a two-column grid (stories-layout.css) whose first cell holds the identifier with the
+ * identifier-wrap hook beside a short text, and the identifier again in a paragraph, with the value hook for tabular
+ * figures (the wrap sets no font property).
+ */
+function renderWrap(text: WrapContent): string {
+  const identifier = escape(text.identifier);
+  return (
+    '<article data-story="wrap">' +
+    `<h1>${escape(text.heading)}</h1>` +
+    `<p>${escape(text.intro)}</p>` +
+    `<div data-story="wrap-grid"><div data-ocelle-wrap="anywhere">${identifier}</div><div>${escape(text.short)}</div></div>` +
+    `<p>${escape(text.note)} <span data-ocelle-wrap="anywhere" data-ocelle-value="">${identifier}</span></p>` +
+    "</article>"
+  );
+}
+
 /** The markup of a family's story from the stories' text (base-content.json unless given), every text escaped. */
 export function renderFamily(family: Family, content: Content = storyContent): string {
   if (family === "compact") return renderCompact(content.compact);
   if (family === "prose") return renderProse(content.prose);
-  if (family === "wrap") return "";
+  if (family === "wrap") return renderWrap(content.wrap);
   const text = content.base;
   const items = text.list.map((item) => `<li>${escape(item)}</li>`).join("");
   return (

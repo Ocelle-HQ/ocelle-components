@@ -221,3 +221,12 @@
   font-weight: var(--ocelle-font-weight-strong);
   border-block-end-color: var(--ocelle-color-rule-strong);
 }
+
+/*
+ * Identifier wrap: a machine identifier (a mission slug, an id, a path) breaks anywhere when it would overflow, so it
+ * never widens its grid column or row and is never cut. It sets no font property and nothing else (FR-020): the
+ * copied text is the identifier unchanged; combine it with data-ocelle-value for tabular figures.
+ */
+[data-ocelle-wrap="anywhere"] {
+  overflow-wrap: anywhere;
+}

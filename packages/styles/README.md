@@ -74,6 +74,7 @@ overrides them too.
 | `data-ocelle-density` | `compact`, `regular` | compact scale |
 | `data-ocelle-value` | (empty), `ink` | compact scale |
 | `data-ocelle-prose` | (empty) | prose |
+| `data-ocelle-wrap` | `anywhere` | identifier wrap |
 
 ## Compact scale
 
@@ -179,3 +180,30 @@ such a box a definite width or stretch it.
   Linux) add `tabindex="0"` to tables in their renderer; this is an open limitation for kitty-mission-ui.
 - Print is out of scope: prose tables are screen scroll boxes, so a printed document shows only the columns that fit
   the page, and a host that prints adds its own print rule.
+
+## Identifier wrap
+
+For machine identifiers in dense layouts: mission slugs, ids, digests and paths in list rows, headers and fact values.
+
+- `data-ocelle-wrap` takes `anywhere` only. `data-ocelle-wrap="anywhere"` sets `overflow-wrap: anywhere` on the
+  element, so a machine identifier (a mission slug, an id, a path) breaks anywhere when it would overflow: it never
+  widens its grid column or row, never overflows at 200% zoom, and is never cut by an ellipsis. Selecting and copying
+  it gives the full, unchanged identifier.
+- It sets no `word-break`, no `hyphens: auto`, no `text-overflow: ellipsis` and no `white-space: nowrap`.
+- It works in any container, inside prose and compact regions included, and keeps the size and line height of the
+  text around it.
+- It sets no font property, so an identifier that needs tabular figures combines it with `data-ocelle-value`:
+  `<span data-ocelle-wrap="anywhere" data-ocelle-value="">…</span>`.
+
+The identifier-wrap family uses no token: `overflow-wrap: anywhere` is a keyword.
+
+## Replacing kitty-mission-ui's stand-ins
+
+kitty-mission-ui's local stand-ins for these families are replaced by the hooks and tokens below; each stand-in is
+removed when the screen adopts its hook.
+
+| Stand-in | Replaced by |
+|---|---|
+| E-23 | `data-ocelle-prose` (`--ocelle-measure-reading`, `--ocelle-line-height-prose`, `--ocelle-measure-cell`) |
+| E-37 | `data-ocelle-density="compact"` and `data-ocelle-value` (`--ocelle-line-height-compact`) |
+| E-39 | `data-ocelle-wrap="anywhere"` |
