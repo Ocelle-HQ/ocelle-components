@@ -53,5 +53,12 @@
         ["003-base-styles", "986", "1432", "877", "1120", "654", "712", "1301", "998", "1045", "833", "1267"]
       ]
     }
+  },
+  "wrap": {
+    "heading": "Identifier wrap",
+    "intro": "A machine identifier marked with the identifier-wrap hook breaks anywhere when it would overflow, so it never widens its grid column, and it copies unchanged.",
+    "identifier": "43c5f6d836a73b5e05c4365c8c0aa95608680b8a4c259be79ab4be0ffe21dc0588a6d51b159288da679bc61ac5ad989cde682c52925da0a0a0ec9a33",
+    "short": "Digest",
+    "note": "Combined with the value hook it keeps tabular figures:"
   }
 }
