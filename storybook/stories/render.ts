@@ -34,7 +34,7 @@ export function renderGroup(source: readonly TokenRecord[], group: Group, theme:
 }
 
 /** A family of the base styles that has a story (003 FR-023, research.md R-12). */
-export type Family = "base";
+export type Family = "base" | "compact";
 
 /** The text of the Base page story (storybook/stories/base-content.json). */
 export interface BaseContent {
@@ -50,9 +50,25 @@ export interface BaseContent {
   readonly pre: string;
 }
 
+/** One fact of the Compact screen story: a label and its value, shown in the value text style. */
+export interface Fact {
+  readonly label: string;
+  readonly value: string;
+}
+
+/** The text of the Compact screen story (storybook/stories/base-content.json). */
+export interface CompactContent {
+  readonly heading: string;
+  readonly paragraph: string;
+  readonly facts: readonly Fact[];
+  readonly note: string;
+  readonly command: string;
+}
+
 /** The stories' text, one entry per family. */
 export interface Content {
   readonly base: BaseContent;
+  readonly compact: CompactContent;
 }
 
 /** The stories' text of base-content.json. */
@@ -60,7 +76,8 @@ const storyContent: Content = stories;
 
 /** The markup of a family's story from the stories' text (base-content.json unless given), every text escaped. */
 export function renderFamily(family: Family, content: Content = storyContent): string {
-  const text = content[family];
+  if (family === "compact") return "";
+  const text = content.base;
   const items = text.list.map((item) => `<li>${escape(item)}</li>`).join("");
   return (
     `<article data-story="${family}">` +
