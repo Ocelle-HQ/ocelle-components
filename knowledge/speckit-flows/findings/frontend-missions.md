@@ -26,6 +26,8 @@ pitfalls up front. Each entry names where it was found. New entries are added as
   anything once measured.
 - **003 squad round 2**: 4 findings, all caused by round-1 fixes that had not been measured in hosts beyond the
   fixtures (shrink-to-fit containers, CSP of a new fixture, shadow DOM).
+- **003 squad rounds 2 and 3**: 7 more findings, each from measuring a round's own fixes in new contexts (dialog,
+  print, right-to-left text). The browser facts behind them are now in the list below.
 - **002 phases 3 to 5 and the landing pass**: repeated failed runs and extra rounds. The causes were a missing browser
   path, Node 22 against 26, and parallel heavy jobs.
 
@@ -104,6 +106,15 @@ pitfalls up front. Each entry names where it was found. New entries are added as
 - Link colour against body text is below 3:1 here, so links need an underline (WCAG 1.4.1). (003 SPEC-1-08)
 - Browsers render `code`, `pre`, `kbd` and `samp` in monospace by default, which breaks the no-monospace brand rule
   page-wide. (003 SPEC-2-03)
+
+- `Range.getClientRects()` returns one rectangle per text-direction run, not per line: under `dir="rtl"` a closing
+  full stop gets its own rectangle. Merge rectangles with the same `top` into line boxes before any edge check. (003
+  FRESH-3-001)
+- A caption capped with `max-inline-size` still passes "inside the box" when it is centred or not sticky; each
+  declaration needs its own check and plant. (003 FRESH-3-001)
+- Wide tables in a screen scroll box lose columns when printed (8 of 12 on A4). Decide print up front. (003 FRESH-3-002)
+- State layout constraints by their cause ("not sized from its content"), not as a closed list of layouts: every
+  list the squad wrote missed cases (drawers, non-modal dialogs, table cells, start-aligned items). (003 FRESH-3-003)
 
 ## CSP
 
