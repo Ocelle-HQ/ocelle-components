@@ -359,7 +359,8 @@ spike, which records that it bites (the helper reports the problem); a plant tha
 | pointer click shows no ring (US1-2) | `:focus { outline-style: solid }` |
 | outline style without tokens (US1-6) | the 002 shorthand `:where(:focus-visible) { outline: var(--ocelle-focus-width) solid var(--ocelle-color-focus) }`, linked without `tokens.css` (it computes to `none`, SPEC-2-12) |
 | forced-colours ring in a `forced-color-adjust: none` host region (US1-4) | `@media (forced-colors: active) { :where(:focus-visible) { outline-color: var(--ocelle-color-focus) } }`, the removal of the `Highlight` rule (R-05) |
-| media aspect ratio (US1-10) | `:where(img, video, canvas, svg) { block-size: revert }` |
+| media aspect ratio of `img`, `video`, `svg` (US1-10) | `:where(img, video, svg) { block-size: revert-layer }` (`revert` does not bite; see below) |
+| media aspect ratio of `canvas` (US1-10) | `:where(canvas) { aspect-ratio: 1 / 1 }`; no form of undoing `block-size: auto` bites for `canvas` (see below) |
 | only the region is compact (US2-2) | `body { font-size: var(--ocelle-font-size-sm) }` |
 | root size and target-min under compact on `<html>` (US2-4) | `[data-ocelle-density="compact"] { font-size: var(--ocelle-font-size-sm) }` without `:not(html)` |
 | focus ring under compact on `<html>` (US2-4) | `[data-ocelle-density="compact"] :where(:focus-visible) { outline-width: var(--ocelle-border-width) }` (the root-size plant above cannot change the ring: `focus-width` 3px and `focus-offset` 2px are px tokens, `packages/tokens/src/source.ts:152-153`, PLAN-CORRECTNESS-1-006) |
@@ -385,6 +386,19 @@ the `list` node and both `listitem` nodes in `getFullAXTree`. The spike repeats 
 `display: contents`, `display: grid`, `display: flex` and `display: block` and records the result. The test still
 asserts role `list` next to the `box-sizing` positive, so it fails at red; if the spike finds a value that does drop
 the role, that value becomes the plant.
+
+**The media aspect-ratio plants** (PLAN-CORRECTNESS-1-009). Squad round 1 measured, in Chrome for Testing 153.0.8010.12
+at 320 px, with `img`, `svg`, `canvas` and `video` at `width="2000" height="1000"` under the media rule of data-model
+§ Base layer: a plant `block-size: revert` leaves all four at 320 x 160, because `revert` rolls back the whole author
+origin, the `height` presentational hint included, to the UA's `auto`; it cannot fail the test. `block-size: unset`
+gives the same. `block-size: revert-layer` rolls back only to the presentational hint, which sits below the unlayered
+author rules: `img`, `svg` and `video` render 320 x 1000, the state of a `base.css` without `block-size: auto`, so it
+is their plant. `canvas` stays 320 x 160 under every one of these, since its `width` and `height` attributes set its
+bitmap size, which is its natural size and ratio, not a presentational hint: without `block-size: auto` its height is
+already `auto`, so the canvas half of the assertion is a guard no removal of the rule can break. Its plant is a defect
+of the same outcome, `:where(canvas) { aspect-ratio: 1 / 1 }`, which renders 320 x 320, so the canvas assertion is shown
+able to fail. The fixture `img` source is a local file (CSP) whose natural ratio is the attributes' 2:1, since a
+loaded image's natural ratio replaces the attribute ratio.
 
 **Source-level guards** (R-11; plants are fixture strings)
 

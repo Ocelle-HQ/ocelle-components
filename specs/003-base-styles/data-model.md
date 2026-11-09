@@ -103,7 +103,8 @@ later in the file and wins.
 ## Test fixtures (`packages/styles/test/fixtures/`)
 
 - `page.html`: base layer controls (link, button, text input, `tabindex="0"` element), media wider than the page
-  (an `img`, `video`, `canvas` and `svg` with `width` and `height` attributes, and a `picture`), a list,
+  (an `img`, `video`, `canvas` and `svg` with `width="2000" height="1000"`, the `img` source a local file of the same
+  2:1 natural ratio, and a `picture`), a list,
   `code`/`pre`/`kbd`/`samp`, and a host region with `forced-color-adjust: none` holding a button (User Story 1
   scenario 4).
 - `compact.html`: nested compact and regular regions, the value hook in both variants and with an undocumented value

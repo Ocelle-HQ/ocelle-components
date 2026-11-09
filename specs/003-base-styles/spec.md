@@ -577,7 +577,8 @@ copied text.
   scenario 5), `white-space: normal` on `pre` (the copy half of User Story 3 scenario 8), a wrap rule on every element
   (User Story 4 scenario 2), and a literal line height (FR-002). Every other guard assertion (among them the pointer
   half of User Story 1 scenario 2, the root size, `--ocelle-target-min` and focus ring of User Story 2 scenario 4, the
-  table that fits in User Story 3 scenario 3, the absent ellipsis of User Story 4 scenario 1, the copy half of User
+  media aspect ratio of User Story 1 scenario 10, the table that fits in User Story 3 scenario 3, the absent ellipsis
+  of User Story 4 scenario 1, the copy half of User
   Story 4 scenario 3, the list semantics of FR-007 and the MUST NOT list of FR-020) gets a plant named in the plan;
   where no CSS plant can make a guard fail, the plan records why.
 - **SC-003**: the token-only style lint, the Prefix gate, the Contrast gate and the Brand rules gate report 0
