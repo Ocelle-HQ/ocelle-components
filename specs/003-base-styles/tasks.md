@@ -243,7 +243,7 @@ The design sources are research R-02, R-04 and R-08, and data-model § Compact s
 - [X] T028 [US2] `packages/tokens/src/source.ts`: add the `line-height-compact` record. Add it to `packages/tokens/CHANGELOG.md` (Unreleased, type group) and to `packages/tokens/README.md`
 - [X] T029 [US2] `packages/styles/src/base.css`: the compact and value rules of data-model § Compact scale, after the base layer (research R-03 order, R-04 root handling)
 - [X] T030 [US2] README and CHANGELOG of `@ocelle/styles` with the T025 statements. Add `renderFamily("compact")` and the "Compact screen" story
-- [ ] T031 [US2] Run the checks of T022 for this phase, then `.specify/extensions/story/scripts/tdd-check.sh 3` (`pass`), and commit green (`feat(003-base-styles): phase 3 — US2 compact`)
+- [X] T031 [US2] Run the checks of T022 for this phase, then `.specify/extensions/story/scripts/tdd-check.sh 3` (`pass`), and commit green (`feat(003-base-styles): phase 3 — US2 compact`)
 
 **Checkpoint**: a dense screen marked compact gets 14 px / 1.5 without changing `rem` tokens.
 
