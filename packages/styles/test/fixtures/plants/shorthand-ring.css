@@ -1,0 +1,4 @@
+/* Plant (research.md R-10, US1-6): 002's shorthand ring, which computes to outline-style: none without tokens.css. */
+:where(:focus-visible) {
+  outline: var(--ocelle-focus-width) solid var(--ocelle-color-focus);
+}

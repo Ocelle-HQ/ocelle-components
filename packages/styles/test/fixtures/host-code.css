@@ -1,0 +1,4 @@
+/* A host rule linked after base.css (US1-9): an element rule overrides the base layer's code figures. */
+code {
+  font-variant-numeric: normal;
+}

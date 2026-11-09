@@ -1,0 +1,4 @@
+/* Plant (research.md R-10, US1-2): a ring on every focus, a pointer click included. */
+:focus {
+  outline-style: solid;
+}

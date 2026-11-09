@@ -1,0 +1,23 @@
+/*
+ * Host CSS of the fixture pages (003 data-model.md § Test fixtures, research.md R-09): what the fixtures need and
+ * base.css does not provide. No rule of base.css; selectors are data-fixture attributes only, no class, and the pages
+ * have no style attribute. Linked after base.css by the pages that need it.
+ */
+
+/* A host region that opts out of forced colours (US1-4, research.md R-05). */
+[data-fixture="forced-region"] {
+  forced-color-adjust: none;
+}
+
+/* Probes inside that region: the resolved system colours and the resolved focus token, read by the tests. */
+[data-fixture="highlight"] {
+  color: Highlight;
+}
+
+[data-fixture="canvas-text"] {
+  color: CanvasText;
+}
+
+[data-fixture="focus"] {
+  color: var(--ocelle-color-focus);
+}

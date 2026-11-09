@@ -3,6 +3,8 @@ import type { DefaultTreeAdapterMap } from "parse5";
 import { describe, expect, it } from "vitest";
 import { expectedTokens, inTheme } from "../../../packages/tokens/test/expected.ts";
 import type { Group } from "../../../packages/tokens/test/expected.ts";
+import * as base from "../../stories/base.stories.ts";
+import { renderFamily } from "../../stories/render.ts";
 import * as stories from "../../stories/tokens.stories.ts";
 
 // The token stories (FR-023, US1 scenario 11; research.md R-10; T035): one story per token group of FR-001's
@@ -108,5 +110,18 @@ describe("tokens.stories.ts", () => {
       expect(all.filter((element) => element.tagName === "dt").length).toBeGreaterThan(0);
       expect(all.filter((element) => attr(element, "class") === "ocelle-swatch")).toEqual([]);
     }
+  });
+});
+
+// The base-style stories (003 FR-023, research.md R-12): the title "Base styles" with one story per family that has
+// landed; phase 2 adds the Base page, which renders renderFamily("base").
+describe("base.stories.ts", () => {
+  it("has the title Base styles and the Base page story, rendering the base family's markup", () => {
+    expect(base.default).toEqual({ title: "Base styles" });
+    expect(Object.keys(base).filter((key) => key !== "default")).toEqual(["BasePage"]);
+    expect(base.BasePage.name).toBe("Base page");
+    const markup = (base.BasePage as unknown as Story).render({}, { globals: {} });
+    expect(markup).toBe(renderFamily("base"));
+    expect(elements(parseFragment(String(markup)).childNodes).filter((element) => element.tagName === "article").map((element) => attr(element, "data-story"))).toEqual(["base"]);
   });
 });
