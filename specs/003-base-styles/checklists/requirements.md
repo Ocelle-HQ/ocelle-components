@@ -46,3 +46,12 @@
   (FR-026, US1 scenario 9). Issue #6 has no comments (GitHub API, 2026-11-09); its labels and timeline were not
   read. Plants for the remaining guards and the focused table's exposed name are left to the plan, as the spec
   states.
+- Spec check 3 (2026-11-09): the blocking finding is resolved in the spec. The operator approved the spec at the gate
+  "after a final fix" and answered SPEC-3-01 with "Natural focus": an overflowing table with no focusable content is
+  itself a tab stop, and in one with focusable content Tab reaches that content and the arrow keys scroll the box
+  from it, with no wrapper and no `tabindex` (FR-017, US3 scenarios 3 and 12, fixture with three wide tables). The
+  focused table's role and name are now tested (US3 scenario 3). The notes are fixed: one attribute per hook and
+  families defined under Key Entities (FR-005), the prose hook wins on an element with both hooks (FR-024, US2
+  scenario 5), `h5` and `h6` take the `h4` rule and the fixture holds no task list (FR-014, FR-015), percentages and
+  `fr` are exempt as the lint allows (FR-002), a `@ocelle/styles` CHANGELOG entry (FR-004), plain markup and asserted
+  values in US4, and "code blocks in prose" in the reflow edge case. No further spec check follows.

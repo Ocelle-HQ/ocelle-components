@@ -1,0 +1,13 @@
+# Spec check 3: fixes
+
+| ID | Resolution | Where |
+|----|------------|-------|
+| SPEC-3-01 | answered | Operator, 2026-11-09, human:jeroennouwsdev, "Natural focus (Recommended)": new paragraph "Operator decisions at the spec gate" under Issues (also records the gate answer "Approve after a final fix (Recommended)"); FR-017 (overflowing table with no focusable content is itself a tab stop with the focus ring; with focusable content, Tab reaches that content and the arrow keys scroll the box from it; no wrapper, no `tabindex`; a table that fits is not a tab stop); US3 scenario 3 (two wide plain-text tables, Tab lands on each `table`, ArrowRight raises `scrollLeft`); new US3 scenario 12 (wide table with a link in a cell: Tab lands on the link, ArrowRight from it raises `scrollLeft`); US3 Independent Test fixture (three wide tables, one with a link); Assumptions "Table scroll box without a wrapper" corrected with the check-3 measurement |
+| SPEC-3-02 | fixed | FR-005 ("one attribute per hook"); Key Entities (new "Family" entry mapping the four families to the four hooks; "Hook" entry); FR-023 (the compact screen story shows the compact and value hooks) |
+| SPEC-3-03 | fixed | FR-024 (on an element with both hooks the prose hook decides, 16 px / 26.4 px); US2 scenario 5 (element with both hooks asserted); FR-004 (README states it); Edge case "Nested hooks" |
+| SPEC-3-04 | fixed | US3 scenario 3 (focused node has role `table` and the `caption` text as name, or no name without a caption; fixture has a wide table with and one without a caption); FR-017 last sentence points to it |
+| SPEC-3-05 | fixed | FR-014 (`h1` to `h6`, nested lists get the list rules; no prose rule of its own for `img`, `strong`, `em`, `del` or task-list checkboxes; the fixture holds no task list); FR-015 (`h5` and `h6` get the `h4` rule; size order `h4` = `h5` = `h6`; line-height exclusion `h1` to `h6`); US3 scenario 1 and Independent Test fixture (`h5`, `h6`, nested list) |
+| SPEC-3-06 | fixed | FR-002 (percentages and `fr` exempt, as the 002 lint already allows, for example `max-width: 100%` on media) |
+| SPEC-3-07 | fixed | FR-004 (`@ocelle/styles` CHANGELOG entry names the `base.css` export and each hook attribute); US1 scenario 6 documentation check |
+| SPEC-3-08 | fixed | US4 Independent Test (header subtitle and fact value replaced by a paragraph in a prose container and a `span` in a compact region, plain markup); US4 scenario 4 (computed `overflow-wrap: anywhere`, 16 px / 26.4 px in prose, 14 px / 21 px in the compact region) |
+| SPEC-3-09 | fixed | Edge case "Zoom to 200% and 320 px width" ("code blocks in prose"; a `pre` outside prose is not covered, FR-026) |
