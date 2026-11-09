@@ -45,7 +45,12 @@ License 1.1, whose text is `fonts/OFL.txt` beside it. `--ocelle-font-sans` and `
 
 Some tokens exist for the base styles of `@ocelle/styles` (`base.css`, mission 003). In the type group,
 `--ocelle-line-height-compact` (1.5) is the line height of its compact scale (`data-ocelle-density="compact"`), with
-`--ocelle-font-size-sm`.
+`--ocelle-font-size-sm`; `--ocelle-line-height-prose` (1.65) is the line height of its prose running text
+(`data-ocelle-prose`), and `--ocelle-font-size-subhead` (`1.125rem`, 18 px) the size of a prose `h2`. In the shell
+group, `--ocelle-measure-reading` (`68ch`) holds prose paragraphs, list items and block quotes to a reading measure,
+`--ocelle-measure-cell` (`12ch`) is the floor of a prose table cell, and `--ocelle-measure-container` (`100cqi`) is
+the inline size of the nearest query container: a prose table is one, so it caps the table's caption at the table's
+visible width. Without a query container, `100cqi` falls back to the small viewport's inline size.
 
 ### Forced colours
 

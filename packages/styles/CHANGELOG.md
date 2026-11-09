@@ -17,3 +17,8 @@ All notable changes to `@ocelle/styles`. The package follows semantic versioning
   with `regular`. Any other value has no effect.
 - `data-ocelle-value`: the value text style, Schibsted Grotesk at 14 px with tabular figures in muted ink (the empty
   value) or body ink (`ink`), for the main grounds only. Any other value has no effect.
+- `data-ocelle-prose`: the prose family for a rendered Markdown document in a content container (the empty value
+  only): text at 16 px with a line height of 1.65, an 18 px `h2`, paragraphs held to a 68ch measure, underlined
+  links, code on the inset ground that wraps, and tables that scroll in their own box with a 12ch cell floor, an
+  inset focus ring and a caption that stays in view. On one element with the compact hook it wins. Any other value
+  has no effect.
