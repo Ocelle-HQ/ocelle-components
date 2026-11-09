@@ -29,3 +29,28 @@ export function renderGroup(source: readonly TokenRecord[], group: Group, theme:
     });
   return `<dl class="ocelle-tokens" data-group="${group}">${rows.join("")}</dl>`;
 }
+
+/** A family of the base styles that has a story (003 FR-023, research.md R-12). */
+export type Family = "base";
+
+/** The text of the Base page story (storybook/stories/base-content.json). */
+export interface BaseContent {
+  readonly heading: string;
+  readonly paragraph: string;
+  readonly link: string;
+  readonly button: string;
+  readonly input: string;
+  readonly list: readonly string[];
+  readonly code: string;
+  readonly kbd: string;
+  readonly samp: string;
+  readonly pre: string;
+}
+
+/** The stories' text, one entry per family. */
+export interface Content {
+  readonly base: BaseContent;
+}
+
+/** The markup of a family's story from the stories' text. Scaffold (003 phase 2): renders nothing yet. */
+export const renderFamily: (family: Family, content?: Content) => string = () => "";
