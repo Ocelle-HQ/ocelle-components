@@ -1,0 +1,29 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Identifier wrap</title>
+<link rel="stylesheet" href="tokens.css">
+<link rel="stylesheet" href="base.css">
+<link rel="stylesheet" href="layout.css">
+</head>
+<body>
+<main id="main">
+<div id="grid-hooked" data-fixture="wrap-grid">
+<div id="hooked" data-ocelle-wrap="anywhere">43c5f6d836a73b5e05c4365c8c0aa95608680b8a4c259be79ab4be0ffe21dc0588a6d51b159288da679bc61ac5ad989cde682c52925da0a0a0ec9a33</div>
+<div id="hooked-short">Digest</div>
+</div>
+<div id="grid-unhooked" data-fixture="wrap-grid">
+<div id="unhooked">43c5f6d836a73b5e05c4365c8c0aa95608680b8a4c259be79ab4be0ffe21dc0588a6d51b159288da679bc61ac5ad989cde682c52925da0a0a0ec9a33</div>
+<div id="unhooked-short">Digest</div>
+</div>
+<p><span id="wrap-true" data-ocelle-wrap="true">43c5f6d836a73b5e05c4365c8c0aa95608680b8a4c259be79ab4be0ffe21dc0588a6d51b159288da679bc61ac5ad989cde682c52925da0a0a0ec9a33</span></p>
+<article id="prose" data-ocelle-prose="">
+<p id="prose-p">The digest of the run is <span id="prose-id" data-ocelle-wrap="anywhere">43c5f6d836a73b5e05c4365c8c0aa95608680b8a4c259be79ab4be0ffe21dc0588a6d51b159288da679bc61ac5ad989cde682c52925da0a0a0ec9a33</span> in full.</p>
+</article>
+<section id="compact" data-ocelle-density="compact">
+<p id="compact-p">The digest of the run is <span id="compact-id" data-ocelle-wrap="anywhere">43c5f6d836a73b5e05c4365c8c0aa95608680b8a4c259be79ab4be0ffe21dc0588a6d51b159288da679bc61ac5ad989cde682c52925da0a0a0ec9a33</span> in full.</p>
+</section>
+</main>
+</body>
+</html>

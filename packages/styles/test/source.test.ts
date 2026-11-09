@@ -1,7 +1,7 @@
 import { readFileSync } from "node:fs";
 import { describe, expect, it } from "vitest";
 import { buildPlan } from "../scripts/build.ts";
-import { classProblems, forcedColorAdjustProblems, importUrlProblems, motionProblems, outlineProblems, parse, rules, selectors, specificity, specificityProblems } from "./source-checks.ts";
+import { classProblems, forcedColorAdjustProblems, importUrlProblems, motionProblems, outlineProblems, parse, rules, selectors, specificity, specificityProblems, wrapProblems } from "./source-checks.ts";
 import type { RuleEntry } from "./source-checks.ts";
 
 // The source-level checks of the shipped stylesheet (003 research.md R-11; spec US1 scenarios 3, 5 and 8, FR-001,
@@ -9,8 +9,8 @@ import type { RuleEntry } from "./source-checks.ts";
 // build writes to dist/base.css (build.test.ts), is parsed with PostCSS. Each guard shares its test with a positive
 // assertion over the same parse, so none passes on an empty file (SC-002), and each check is also run on the plant
 // strings of R-10 § Source-level guards (it must report each) and on its boundary strings (it must not). The
-// expected rules are transcribed by hand from data-model.md § Rule table (base layer, compact scale, prose), never read
-// from the source.
+// expected rules are transcribed by hand from data-model.md § Rule table (base layer, compact scale, prose,
+// identifier wrap), never read from the source.
 const text = readFileSync(new URL("../src/base.css", import.meta.url), "utf8");
 // An absent plan entry parses as the empty sheet, so the assertions below report what is missing.
 const root = parse(buildPlan(text)[0]?.content ?? "");
@@ -176,6 +176,9 @@ const prose: readonly RuleEntry[] = [
 ];
 const proseSelectors = prose.flatMap((rule) => rule.selectors);
 
+/** data-model.md § Rule table, identifier wrap: one rule, last in the file (R-03). */
+const wrap: RuleEntry = { media: [], selectors: ['[data-ocelle-wrap="anywhere"]'], declarations: [["overflow-wrap", "anywhere"]] };
+
 /** How many problems a check reports on each plant string. */
 function reports(check: (sheet: ReturnType<typeof parse>) => string[], plants: readonly string[]): number[] {
   return plants.map((plant) => check(parse(plant)).length);
@@ -193,6 +196,11 @@ describe("src/base.css as shipped (buildPlan(text)[0].content)", () => {
   it("follows the compact scale with the prose rules of data-model § Rule table, in its order, with exactly their declarations (R-03, R-06)", () => {
     const start = baseLayer.length + compactScale.length;
     expect(rules(root).slice(start, start + prose.length)).toEqual(prose);
+  });
+
+  it("ends with the identifier-wrap rule of data-model § Rule table, right after the prose rules, with exactly its declaration (R-03)", () => {
+    const start = baseLayer.length + compactScale.length + prose.length;
+    expect(rules(root).slice(start)).toEqual([wrap]);
   });
 
   it("US1-3: has the focus rule's four longhands and the forced-colours rule, and declares no motion and no forced-color-adjust: none", () => {
@@ -273,5 +281,21 @@ describe("src/base.css as shipped (buildPlan(text)[0].content)", () => {
     expect(proseSelectors.map(specificity)).toEqual(proseSelectors.map(() => [0, 1, 0]));
     expect(classProblems(root)).toEqual([]);
     expect(specificityProblems(root)).toEqual([]);
+  });
+
+  it("FR-020: the wrap rule declares overflow-wrap: anywhere at (0,1,0), and no data-ocelle-wrap rule sets word-break, hyphens: auto, text-overflow: ellipsis or white-space: nowrap", () => {
+    expect(rules(root).filter((rule) => rule.selectors.some((selector) => selector.includes("data-ocelle-wrap")))).toEqual([wrap]);
+    expect(wrap.selectors.map(specificity)).toEqual([[0, 1, 0]]);
+    expect(wrapProblems(root)).toEqual([]);
+    // R-10 plants: each must be reported; the boundaries (the wrap rule itself, the list on a rule without the hook) must not.
+    expect(
+      reports(wrapProblems, [
+        '[data-ocelle-wrap="anywhere"] { word-break: break-all; }',
+        '[data-ocelle-wrap="anywhere"] { hyphens: auto; }',
+        '[data-ocelle-wrap="anywhere"] { text-overflow: ellipsis; }',
+        '[data-ocelle-wrap="anywhere"] { white-space: nowrap; }',
+      ]),
+    ).toEqual([1, 1, 1, 1]);
+    expect(reports(wrapProblems, ['[data-ocelle-wrap="anywhere"] { overflow-wrap: anywhere; }', ":where(td) { white-space: nowrap; text-overflow: ellipsis; }"])).toEqual([0, 0]);
   });
 });

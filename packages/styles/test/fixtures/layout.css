@@ -52,3 +52,13 @@
 [data-fixture="dialog"] {
   inline-size: var(--ocelle-dialog-max-inline);
 }
+
+/*
+ * The grid of wrap.html (US4-1, SC-005): 300 px wide with two 1fr tracks, minmax(auto, 1fr), so a cell's content
+ * sets the floor of its column.
+ */
+[data-fixture="wrap-grid"] {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  inline-size: 300px;
+}
