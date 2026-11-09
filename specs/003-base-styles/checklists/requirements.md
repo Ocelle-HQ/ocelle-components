@@ -34,3 +34,8 @@
 - As in 002, the requirements name CSS properties and tokens: for a stylesheet package these are the public
   contract (constitution II and VII), not implementation choices. The CSS mechanism of the table scroll box and the
   final hook and token names are left to the plan (Assumptions).
+- Spec check 1 (2026-11-09): the blocking findings are resolved in the spec. Guard assertions share a test with the
+  positive assertion they guard and are proven by named plants (SC-002); the no-motion and specificity rules and the
+  README statements are source-level or documentation checks (FR-022); the five new tokens are approved by the
+  operator (SPEC-1-11). Hook values, the heading weight per level, the `h3`/`h4` sizes and the comments of #6 are
+  left to the plan, as the spec states.
