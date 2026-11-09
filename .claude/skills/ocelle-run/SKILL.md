@@ -156,6 +156,8 @@ step that is not complete.
 
 ## After a run
 
-Tell the operator the outcome and where the records are. If the flow itself misbehaved (a profile strayed, a script
-gave something unexpected, a gate was unclear), propose a diary entry for `knowledge/speckit-flows/log.md` and a
-finding; do not write run metrics by hand, `summary.sh` does that.
+Tell the operator the outcome and where the records are. List what the run taught: what misbehaved (a profile
+strayed, a script gave something unexpected, a gate was unclear) and what worked. These are notes for the
+retrospective, which `/ocelle-land` runs before the hand-off (its step 4.2), once CI has had its say. When the
+operator asks for the diary entries at once, write them as that step describes and the landing pass only adds what
+landing found. Do not write run metrics by hand; `summary.sh` does that.
