@@ -39,3 +39,10 @@
   README statements are source-level or documentation checks (FR-022); the five new tokens are approved by the
   operator (SPEC-1-11). Hook values, the heading weight per level, the `h3`/`h4` sizes and the comments of #6 are
   left to the plan, as the spec states.
+- Spec check 2 (2026-11-09): the blocking findings are resolved in the spec. The identifier-wrap width test uses
+  `1fr` tracks with the unhooked identifier in the same test (US4 scenario 1, SC-005); long inline code and URL links
+  in prose wrap with `overflow-wrap: anywhere` and are in the reflow fixture (FR-016, US3 scenario 11, SC-004). The
+  operator answered SPEC-2-03: `code`, `pre`, `kbd` and `samp` use Schibsted Grotesk with tabular figures page-wide
+  (FR-026, US1 scenario 9). Issue #6 has no comments (GitHub API, 2026-11-09); its labels and timeline were not
+  read. Plants for the remaining guards and the focused table's exposed name are left to the plan, as the spec
+  states.
