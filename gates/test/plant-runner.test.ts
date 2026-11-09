@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 import type { Plant } from "../lib/plant-judge.ts";
-import { errorText, gateRunsAtOnce, limiter, outputLines, plantValues, runPlant } from "../lib/plant-runner.ts";
-import type { BuiltRepo, RunnerTools } from "../lib/plant-runner.ts";
+import { errorText, gateRunsAtOnce, limiter, outputLines, plantValues, resolveLocations, runPlant } from "../lib/plant-runner.ts";
+import type { BuiltRepo, RunnerTools, TreeView } from "../lib/plant-runner.ts";
 import type { Gate, PlantForm } from "../lib/registry.ts";
 import type { ToolRun } from "../lib/spawn.ts";
 
@@ -40,6 +40,14 @@ function recorder(built: BuiltRepo, ran: ToolRun | Error, buildError?: Error): R
       return ran instanceof Error ? Promise.reject(ran) : Promise.resolve(ran);
     },
     node: "/opt/node/bin/node",
+    read: (path) => {
+      calls.push(`read ${path}`);
+      return Promise.resolve(undefined);
+    },
+    stylesheet: (root) => {
+      calls.push(`stylesheet ${root}`);
+      return Promise.resolve("");
+    },
   };
   return { tools, calls };
 }
@@ -225,5 +233,179 @@ describe("limiter", () => {
 describe("gateRunsAtOnce", () => {
   it("is half the processors, at least one", () => {
     expect([0, 1, 2, 3, 4, 5, 8].map(gateRunsAtOnce)).toEqual([1, 1, 1, 1, 2, 2, 4]);
+  });
+});
+
+// Keyed locations (002 contracts/gates.md § Configuration set, *Keyed locations*): a contrast or brand-rules fail plant
+// writes each expected location by key; the runner resolves it to `<path>:<line>` in the plant's built tree before the
+// plant is judged, and a key that resolves to no line (or a token or pair key to two) is a runner error naming it.
+const files: Readonly<Record<string, string>> = {
+  "packages/tokens/contrast/pairs.json": [
+    "[",
+    '  {"theme":"light","fg":"color-ink","bg":"color-canvas","kind":"text","figure":"16.0","status":"checked","source":"#5"},',
+    '  {"theme":"dark","fg":"color-ink","bg":"color-canvas","kind":"text","figure":"15.3","status":"checked","source":"computed"},',
+    '  {"theme":"light","fg":"color-ink-soft","bg":"color-canvas","kind":"text","figure":"9.7","status":"checked","source":"#5"}',
+    "]",
+    "",
+  ].join("\n"),
+  "packages/tokens/src/source.ts": [
+    'import { applyOverrides } from "./generate.ts";',
+    "export const records = [",
+    '  { name: "color-canvas", group: "colour", value: { light: "#F1EEE8", dark: "#15130F" } }, // bone',
+    "  {",
+    '    name: "color-ink",',
+    '    group: "colour",',
+    "  },",
+    '  { name: "color-ink-soft", group: "colour" },',
+    '  { name: "color-twice", group: "colour" },',
+    '  { name: "color-twice", group: "colour" },',
+    "];",
+    "",
+  ].join("\n"),
+  "packages/tokens/src/overrides.ts": ["// x", "export const overrides = [", '  {"token":"color-ink","light":"#000000"},', '  {"add":{"name":"radius-4","group":"shape","value":"4px"}},', "];", ""].join("\n"),
+};
+const sheet = ["@font-face {}", ":root {", "  --ocelle-motion-fast: 120ms;", "}", "@media (prefers-reduced-motion: reduce) {", "  --ocelle-motion-fast: 0ms;", "  --ocelle-motion-fast: 0ms;", "}", ""].join("\n");
+
+function view(log: string[] = []): TreeView {
+  return {
+    read: (path) => {
+      log.push(`read ${path}`);
+      return Promise.resolve(files[path]);
+    },
+    stylesheet: () => {
+      log.push("stylesheet");
+      return Promise.resolve(sheet);
+    },
+  };
+}
+
+describe("resolveLocations", () => {
+  it("resolves each key form to its line, and keeps plain locations, rules and messages", async () => {
+    const findings = [
+      { location: "packages/tokens/contrast/pairs.json#dark/color-ink/color-canvas", rule: "figure-mismatch", message: "15.3" },
+      { location: "packages/tokens/contrast/pairs.json#light/color-ink-soft/color-canvas", rule: "below-threshold" },
+      { location: "packages/tokens/src/source.ts#color-ink", rule: "missing-required-pair" },
+      { location: "packages/tokens/src/source.ts#color-canvas", rule: "dark-chrome" },
+      { location: "packages/tokens/src/overrides.ts#radius-4", rule: "radius-set" },
+      { location: "packages/tokens/dist/tokens.css#--ocelle-motion-fast: 0ms", rule: "reduced-motion" },
+      { location: "packages/tokens/src/source.ts", rule: "radius-set" },
+      { location: "a.ts:3", rule: "r", message: "m" },
+    ];
+    expect(await resolveLocations(findings, view())).toEqual([
+      { location: "packages/tokens/contrast/pairs.json:3", rule: "figure-mismatch", message: "15.3" },
+      { location: "packages/tokens/contrast/pairs.json:4", rule: "below-threshold" },
+      { location: "packages/tokens/src/source.ts:5", rule: "missing-required-pair" },
+      { location: "packages/tokens/src/source.ts:3", rule: "dark-chrome" },
+      { location: "packages/tokens/src/overrides.ts:4", rule: "radius-set" },
+      { location: "packages/tokens/dist/tokens.css:6", rule: "reduced-motion" },
+      { location: "packages/tokens/src/source.ts", rule: "radius-set" },
+      { location: "a.ts:3", rule: "r", message: "m" },
+    ]);
+  });
+
+  it("reads each file it needs, and makes the stylesheet only for a tokens.css key", async () => {
+    const log: string[] = [];
+    await resolveLocations([{ location: "packages/tokens/src/source.ts#color-ink", rule: "r" }, { location: "x.ts:1", rule: "r" }], view(log));
+    expect(log).toEqual(["read packages/tokens/src/source.ts"]);
+    const withCss: string[] = [];
+    await resolveLocations([{ location: "packages/tokens/dist/tokens.css#:root {", rule: "r" }], view(withCss));
+    expect(withCss).toEqual(["stylesheet"]);
+  });
+
+  it("resolves a tokens.css key at the first line holding the text, which may itself hold #", async () => {
+    const found = await resolveLocations([{ location: "packages/tokens/dist/tokens.css#--ocelle-motion-fast", rule: "r" }, { location: "packages/tokens/dist/tokens.css#@font-face {}", rule: "r" }], view());
+    expect(found.map((f) => f.location)).toEqual(["packages/tokens/dist/tokens.css:3", "packages/tokens/dist/tokens.css:1"]);
+  });
+
+  it.each([
+    { location: "packages/tokens/contrast/pairs.json#light/color-ink/color-sheet", problem: "resolves to no line" },
+    { location: "packages/tokens/contrast/pairs.json#light/color-ink", problem: "is not <theme>/<fg>/<bg>" },
+    { location: "packages/tokens/src/source.ts#color-nope", problem: "resolves to no line" },
+    { location: "packages/tokens/src/source.ts#color", problem: "resolves to no line" },
+    { location: "packages/tokens/src/source.ts#color-twice", problem: "resolves to 2 lines" },
+    { location: "packages/tokens/src/overrides.ts#color-ink", problem: "resolves to no line" },
+    { location: "packages/tokens/dist/tokens.css#--ocelle-color-canvas", problem: "resolves to no line" },
+    { location: "packages/tokens/src/generate.ts#css", problem: "is not a keyed location (pairs.json, source.ts, overrides.ts or dist/tokens.css)" },
+  ])("fails naming the key $location", async ({ location, problem }) => {
+    await expect(resolveLocations([{ location, rule: "r" }], view())).rejects.toThrow(`keyed location ${location} ${problem}`);
+  });
+
+  it("fails naming the key when the file is not in the tree", async () => {
+    const empty: TreeView = { read: () => Promise.resolve(undefined), stylesheet: () => Promise.resolve("") };
+    await expect(resolveLocations([{ location: "packages/tokens/src/source.ts#color-ink", rule: "r" }], empty)).rejects.toThrow(
+      "keyed location packages/tokens/src/source.ts#color-ink: packages/tokens/src/source.ts is not in the plant's tree",
+    );
+  });
+
+  it("fails naming the key when a pairs.json line holds two keyed entries", async () => {
+    const twice: TreeView = {
+      read: () => Promise.resolve('[\n  {"theme":"light","fg":"a","bg":"b"},\n  {"theme":"light","fg":"a","bg":"b"}\n]\n'),
+      stylesheet: () => Promise.resolve(""),
+    };
+    await expect(resolveLocations([{ location: "packages/tokens/contrast/pairs.json#light/a/b", rule: "r" }], twice)).rejects.toThrow(
+      "keyed location packages/tokens/contrast/pairs.json#light/a/b resolves to 2 lines",
+    );
+  });
+});
+
+describe("runPlant: keyed locations", () => {
+  function keyed(): { tools: RunnerTools; calls: string[] } {
+    const { tools, calls } = recorder({}, output);
+    const tree: Readonly<Record<string, string>> = { "/tmp/ocelle-plant-contrast-1/packages/tokens/src/source.ts": files["packages/tokens/src/source.ts"] ?? "" };
+    return {
+      calls,
+      tools: {
+        ...tools,
+        read: (path) => {
+          calls.push(`read ${path}`);
+          return Promise.resolve(tree[path]);
+        },
+        stylesheet: (root) => {
+          calls.push(`stylesheet ${root}`);
+          return Promise.resolve(sheet);
+        },
+      },
+    };
+  }
+  const contrast = gate("contrast", "repo-tree", "node gates/bin/contrast.ts --root {root}");
+
+  it("resolves the plant's keyed locations in its built tree before the directory is removed, and hands them on", async () => {
+    const { tools, calls } = keyed();
+    const plant: Plant = { expect: "fail", why: "w", findings: [{ location: "packages/tokens/src/source.ts#color-ink", rule: "missing-required-pair" }, { location: "packages/tokens/dist/tokens.css#: 0ms", rule: "r" }] };
+    const run = await runPlant(tools, "/repo", contrast, "gates/plants/contrast/fail-x", plant);
+    expect(run.expected).toEqual([
+      { location: "packages/tokens/src/source.ts:5", rule: "missing-required-pair" },
+      { location: "packages/tokens/dist/tokens.css:6", rule: "r" },
+    ]);
+    expect(calls.slice(2)).toEqual([
+      "run /opt/node/bin/node gates/bin/contrast.ts --root /tmp/ocelle-plant-contrast-1",
+      "read /tmp/ocelle-plant-contrast-1/packages/tokens/src/source.ts",
+      "stylesheet /tmp/ocelle-plant-contrast-1",
+      "removeDir /tmp/ocelle-plant-contrast-1",
+    ]);
+  });
+
+  it("hands on no expected findings for a plant without keyed locations, and reads nothing; a keyed plant reads its tree", async () => {
+    const { tools, calls } = keyed();
+    const run = await runPlant(tools, "/repo", contrast, "gates/plants/contrast/fail-x", fail);
+    expect({ expected: "expected" in run, calls: calls.filter((call) => call.startsWith("read") || call.startsWith("stylesheet")) }).toEqual({ expected: false, calls: [] });
+    const plant: Plant = { expect: "fail", why: "w", findings: [{ location: "packages/tokens/src/source.ts#color-ink", rule: "r" }, { location: "a.ts:1", rule: "r" }] };
+    const keyedRun = await runPlant(tools, "/repo", contrast, "gates/plants/contrast/fail-x", plant);
+    expect({ expected: keyedRun.expected, reads: calls.filter((call) => call.startsWith("read") || call.startsWith("stylesheet")) }).toEqual({
+      expected: [{ location: "packages/tokens/src/source.ts:5", rule: "r" }, { location: "a.ts:1", rule: "r" }],
+      reads: ["read /tmp/ocelle-plant-contrast-1/packages/tokens/src/source.ts"],
+    });
+  });
+
+  it("names the plant and the key when a key does not resolve, and removes the directory", async () => {
+    const { tools, calls } = keyed();
+    const plant: Plant = { expect: "fail", why: "w", findings: [{ location: "packages/tokens/src/source.ts#color-nope", rule: "r" }] };
+    await expect(runPlant(tools, "/repo", contrast, "gates/plants/contrast/fail-x", plant)).rejects.toThrow(
+      "gates/plants/contrast/fail-x: keyed location packages/tokens/src/source.ts#color-nope resolves to no line",
+    );
+    expect(calls.at(-1)).toBe("removeDir /tmp/ocelle-plant-contrast-1");
+    const error = await runPlant(tools, "/repo", contrast, "p", plant).catch((thrown: unknown) => thrown);
+    expect((error as Error).cause).toBeInstanceOf(Error);
+    expect(((error as Error).cause as Error).message).toBe("keyed location packages/tokens/src/source.ts#color-nope resolves to no line");
   });
 });

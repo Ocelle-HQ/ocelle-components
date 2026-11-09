@@ -1,0 +1,42 @@
+# Squad round 1: verify 2
+
+Checked against the artifacts at `17c2441` (fixes 2). Fork rows are judged against the operator's chosen option in
+`refute.md`. The whole fixes-2 diff (`3d08647..17c2441`) was read for regressions in rows that verify 1 found resolved.
+The figures added for plan Decisions 7 were recomputed with the WCAG 2.x formula from A.1's values, and they match.
+`color-accent-strong` on `color-danger-bg`, `-warning-bg`, `-success-bg`, `-info-bg` and `-neutral-bg` is 4.47, 4.50,
+4.70, 4.71 and 4.27 in light, and 7.56, 6.83, 7.23, 7.37 and 6.74 in dark. `color-control-border` on the same grounds
+is 3.05, 3.07, 3.21, 3.21 and 2.91 in light, and 3.56, 3.21, 3.40, 3.46 and 3.17 in dark. The counts also add up.
+144 + 5 = 149 required pairs. The light list has 149 + 9 excluded = 158 entries, and the dark list has 149 + 8 = 157.
+No artifact still uses 144, 148 or 147, and no artifact still calls the question open. The Stryker claim was checked
+against the pinned `@stryker-mutator/vitest-runner@10.1.1` tarball. In `dist/src/stryker-setup.js`, a static mutant
+is set at the top level of the setup file, before the test file loads. A runtime mutant is set in a `beforeAll` that
+the setup file registers. In `dist/src/vitest-test-runner.js` `init()`, that setup file is prepended to each
+project's `setupFiles`. So its `beforeAll` runs before a suite's own `beforeAll`.
+
+| ID | Status | Reason |
+|----|--------|--------|
+| PLAN-A11Y-SECURITY-1-001 | resolved | Unchanged since verify 1. The Storybook page header, with `connect-src 'self'` and `frame-src 'self'`, is consistent across FR-023, R-10, the Constitution Check, Complexity Tracking and the quickstart. The run-time test asserts it. |
+| PLAN-A11Y-SECURITY-1-003 | resolved | Unchanged. FR-018 says element tests check forced-colours behaviour under emulation. R-08, R-15 and the host contract say the `elevation-*` rings vanish in forced colours. |
+| PLAN-A11Y-SECURITY-1-004 | resolved | Option (b) holds, and the contradiction verify 1 found is gone. R-02 now says the theme tests compare the token as a keyword. R-03 exempts `color-scheme` from RGBA parsing and compares the trimmed keyword `light`/`dark`. data-model § Expected tables gives the entry the comparison kind `keyword`. data-model § validation already excepts it from the hex/`rgb()` rule, and it can be neither a ground nor a contrast token, because both must be opaque colour tokens. R-10 gives it no swatch rule and shows its value as text. The spec Assumptions say the colour-value rules (form, RGBA parsing, contrast grounds, swatches) do not apply to it. contracts/token-package.md says the JSON colour group holds a keyword for it. US1 scenarios 1 and 2 (`light`/`dark`) agree. |
+| PLAN-A11Y-SECURITY-1-008 | resolved | Unchanged. Telemetry is disabled in `main.ts` and in the build script, both are tested, and the build makes no request. |
+| PLAN-A11Y-SECURITY-1-009 | resolved | Unchanged. The `addInitScript` collector, the console cross-check and the per-suite control fixture remain in R-03. |
+| PLAN-A11Y-SECURITY-1-011 | resolved | Unchanged. FR-018, R-08 and contracts/gates.md give rule (g) the same definition, and the system-colour pass plant and the fixed-value fail plant are listed. |
+| PLAN-A11Y-SECURITY-1-012 | resolved | Option (a) is complete. The question verify 1 recorded as open is now decided ("Rule 1 extended", plan Decisions 7). A.8 adds `color-accent-strong` on the five state `-bg` grounds (total 149). A.9 and FR-016 list `color-control-border` on those grounds as excluded in both themes. None of these is a required pair (the A.8 `color-control-border` row never had state grounds), so `required-pair-excluded` does not fire. A.7, the Assumptions, R-07, data-model, contracts/gates.md (158/157/149), contracts/token-package.md (rendered brand rules), the plan Summary, Scale/Scope, Constitution Check III and quickstart 3 all agree. All the figures reproduce. One minor wording point, not a contradiction: A.9's heading says "below threshold", but four of the new rows are at or above 3:1. Each row says so, and A.9 already held the exempt disabled-ink rows, which have no threshold. |
+| PLAN-CORRECTNESS-1-001 | resolved | Unchanged. The configuration set copies `source.ts`, `generate.ts` and `pairs.json`. The rule takes injectable lists, and the `--ocelle-x` plants and tests move to real names. |
+| PLAN-CORRECTNESS-1-002 | resolved | The served files are now generated inside the worker. R-03 has each browser suite call `test/browser/serve.ts` from its `beforeAll`, with no `globalSetup` in the `tokens` project. That matches the runner: a static mutant (for example the literal values of `source.ts`) is active before the test file imports the source, and a runtime mutant of `css()` is active before the suite's `beforeAll` calls it. So the served stylesheet reflects the mutant, as R-03 now claims. Under `perTest` coverage, code run in `beforeAll` counts as static coverage, which Stryker runs against all tests, so these mutants are not reported as NoCoverage. The plan (Testing, structure, US1 phase), contracts/gates.md (test scope) and quickstart 2 say the same. The related point from verify 1 is also answered in R-10. The stories and `swatches.ts` import `src/source.ts` and `src/generate.ts` by relative path, not through the package `exports`. A pre-build step writes the preview's token stylesheet (the text of `css()`), the swatch stylesheet and the fonts into a git-ignored `storybook/.generated/`, which `preview-head.html` links. R-10 also states why the `storybook` project keeps a global setup (the build runs in other processes) and which node unit tests kill its mutants. The dist/ and `.gitignore` parts from verify 1 still hold. |
+| PLAN-CORRECTNESS-1-004 | resolved | Unchanged. `pairs.json` is a brand-rules input, and the `b-ochre-pair-not-excluded` plant exists. |
+| PLAN-CORRECTNESS-1-005 | resolved | Unchanged. The `radius-4` plant, the validate-first rule, the exit-2 causes and the `source-invalid` plant are all present. |
+| PLAN-CORRECTNESS-1-006 | resolved | Unchanged. The spec amendments (A.1, A.4, A.5, the Assumptions sentence, FR-016 `required-pair-excluded`, FR-020) remain. |
+| PLAN-CORRECTNESS-1-007 | resolved | Unchanged. `packages/tokens/README.md` appears in the structure, the phases, `files` and R-15, and has its test. The rendered brand rules now name the state grounds. |
+| PLAN-CORRECTNESS-1-009 | resolved | Unchanged. `ref` uses the full-name list form, R-06 has the correct fallback statement, rule ids have one stated form, and contracts/gates.md prints `<r>` (now 149). |
+| PLAN-FRESH-1-001 | resolved | Unchanged. Option (a) narrows the static scope to the files this repository produces. `storybook/.generated/` is produced by this repository's script, so it falls within that scope. |
+| PLAN-FRESH-1-004 | resolved | Unchanged, and now spelled out. The `storybook` Vitest project, the mutation, typecheck and prefix scopes, and the node unit tests of `externalise.ts` and `swatches.ts` are all in place. R-10 states that these unit tests, not the build, kill the mutants. |
+| PLAN-FRESH-1-007 | resolved | Unchanged. The `--ocelle-<element>-<property>` convention, its exemption, the overlap check and `pass-element-property` remain. |
+| PLAN-FRESH-1-008 | resolved | Unchanged. `ref` and `grounds` are typed `string` and checked by `validateSource`. `TokenName` comes from the record names only. |
+| PLAN-TESTABILITY-1-001 | resolved | The transcribed table is unchanged and now has comparison kinds. The dependency verify 1 noted, on the setup fix under PLAN-CORRECTNESS-1-002, is now met: the table tests run against a stylesheet generated in the worker, so value mutants of `source.ts` reach them. |
+| PLAN-TESTABILITY-1-002 | resolved | `contrast-required.test.ts` now pins the derived set to A.8's 149 triples per theme. The count matches A.8 and every other artifact. |
+| PLAN-TESTABILITY-1-003 | resolved | Unchanged. `use` is dropped and kept as comments, and `build.ts` is a thin boundary over `buildPlan` with named `Stryker disable` lines. |
+| PLAN-TESTABILITY-1-008 | resolved | Unchanged. The font observables in R-03 (CDP platform fonts, the same-origin request, the `document.fonts` control, `font-variant-numeric`, the no-`font-src` case) remain. |
+| PLAN-TESTABILITY-1-009 | resolved | Unchanged. The probe-element used values, the absence of test-side `var()` resolution, and the fixture-source test of the reference form remain. |
+
+0 unresolved.

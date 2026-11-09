@@ -275,13 +275,16 @@ in this feature depends on it.
 - **FR-013**: Mutation testing in CI MUST run in shards, each a separate CI job under a job time limit of 10 minutes
   (SC-005). A shard holds the changed package source and gate source (FR-028) as up to 10 entries and up to 250
   changed lines (operator decision, phase 4 round 3, human:jeroennouwsdev, 2026-11-03: GitHub runner variance took
-  a 435-line shard past 10 minutes). An entry is a changed file, or, for a file with more than 120 changed lines,
-  one line range of it: such a file MUST be split by line range into several entries of at most 120 changed lines
+  a 435-line shard past 10 minutes). An entry is a changed file, or, for a file with more than 60 changed lines,
+  one line range of it: such a file MUST be split by line range into several entries of at most 60 changed lines
   each, written `path:start-end` (Stryker's own `mutate` range syntax), and a range never crosses a shard (operator
-  decision, phase 3 round 9, human:jeroennouwsdev, 2026-11-03: plant-judge.ts alone took 9:49 of 10 minutes). Two
-  entries of the same file MUST NOT share a shard; an entry MAY share a shard with entries of other files, so no
-  shard holds more than 120 changed lines of one file (operator decision, phase 3 round 10, human:jeroennouwsdev,
-  2026-11-03: "Chunks never share (Recommended)"). A run given entries mutates only the changed lines within those
+  decision, phase 3 round 9, human:jeroennouwsdev, 2026-11-03: plant-judge.ts alone took 9:49 of 10 minutes; the
+  entry bound lowered from 120 to 60 changed lines by operator decision, 2026-11-05, phase 5 round 6 of mission
+  002, O6-01, human:jeroennouwsdev: "Smaller chunks (Recommended)": the shard
+  `packages/tokens/src/generate.ts:121-240` alone held 264 mutants, took 670 s locally and was cancelled at the
+  10-minute limit in CI). Two entries of the same file MUST NOT share a shard; an entry MAY share a shard with
+  entries of other files, so no shard holds more than 60 changed lines of one file (operator decision, phase 3
+  round 10, human:jeroennouwsdev, 2026-11-03: "Chunks never share (Recommended)"). A run given entries mutates only the changed lines within those
   entries. The plan defines how the entries are filled into shards. Accepted limit (operator decision, phase 3
   round 10, human:jeroennouwsdev, 2026-11-03: "Accept, record it (Recommended)"): a mutant whose code spans the
   boundary between two entries of one file (a cut) lies wholly in neither entry and is mutated in no shard; the
@@ -488,10 +491,12 @@ in this feature depends on it.
   gate is reported as exactly one error by the test-lint gate on its fixture, and its allowed look-alikes are not
   reported by its rule (research.md R-06).
 - **SC-005**: Mutation testing of one shard (FR-013: up to 10 entries and up to 250 changed lines of package
-  source and gate source together, no entry over 120 changed lines of one file, no two entries of one file in
+  source and gate source together, no entry over 60 changed lines of one file, no two entries of one file in
   the same shard; 250 by operator decision, phase 4 round 3, human:jeroennouwsdev, 2026-11-03: GitHub runner
-  variance took a 435-line shard past 10 minutes; the 120-line split within files by operator decision, phase 3
-  round 9, human:jeroennouwsdev, 2026-11-03: plant-judge.ts alone took 9:49 of 10 minutes; one file's entries in
+  variance took a 435-line shard past 10 minutes; the split within files by operator decision, phase 3 round 9,
+  human:jeroennouwsdev, 2026-11-03: plant-judge.ts alone took 9:49 of 10 minutes; its entry bound lowered from 120
+  to 60 changed lines by operator decision, 2026-11-05, phase 5 round 6 of mission 002, O6-01,
+  human:jeroennouwsdev: the 120-line shard `packages/tokens/src/generate.ts:121-240` took 670 s; one file's entries in
   separate shards by operator decision, phase 3 round 10, human:jeroennouwsdev, 2026-11-03) finishes in under 10 minutes on the runner of
   SC-001, with the package store and browser cache restored and no earlier mutation result available. Each shard job's 10-minute limit (FR-013)
   enforces it (operator decision, plan squad round 2).

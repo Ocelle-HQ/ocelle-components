@@ -29,6 +29,13 @@ const configuration = [
   "gates/eslint/no-snapshot-only.ts",
   "gates/eslint/unchecked-expect.ts",
   "gates/stylelint/token-only.ts",
+  "gates/stylelint/token-lists.ts",
+  // The token source, its overrides, the generator (with the modules they import) and the pair list, so repo-tree
+  // plants see the real token source (002 contracts/gates.md § Configuration set, research.md R-09).
+  "packages/tokens/src/source.ts",
+  "packages/tokens/src/overrides.ts",
+  "packages/tokens/src/generate.ts",
+  "packages/tokens/contrast/pairs.json",
 ];
 
 function git(dir: string, args: readonly string[]): string {
@@ -63,11 +70,94 @@ describe("buildRepoTree", () => {
     expect(existsSync(join(into, "tree"))).toBe(false);
   });
 
+  it("holds the token source, its overrides, the generator and the pair list in a built plant root (002 contracts/gates.md § Configuration set)", async () => {
+    const into = tempDir("repo-tree");
+    await buildRepoTree(repo, join(fixtures, "empty-plant"), into);
+    const files = ["packages/tokens/src/source.ts", "packages/tokens/src/overrides.ts", "packages/tokens/src/generate.ts", "packages/tokens/contrast/pairs.json"];
+    expect(Object.fromEntries(files.map((file) => [file, existsSync(join(into, file)) && readFileSync(join(into, file), "utf8") === readFileSync(join(repo, file), "utf8")]))).toEqual(
+      Object.fromEntries(files.map((file) => [file, true])),
+    );
+  });
+
   it("builds the configuration set alone for a plant without tree/", async () => {
     const into = tempDir("repo-tree");
     await buildRepoTree(repo, join(fixtures, "empty-plant"), into);
     expect(copiedUnchanged(into)).toEqual(allTrue);
     expect(existsSync(join(into, "plant.json"))).toBe(false);
+  });
+});
+
+describe("buildRepoTree: plant deltas (002 contracts/gates.md § Configuration set, *Plant deltas*)", () => {
+  const read = (dir: string, path: string): string => readFileSync(join(dir, path), "utf8");
+  const pairsPath = "packages/tokens/contrast/pairs.json";
+
+  it("writes the delta's token overrides as overrides.ts and applies its pair changes by key, one entry per line", async () => {
+    const into = tempDir("repo-tree");
+    await buildRepoTree(repo, join(fixtures, "delta-plant"), into);
+    expect(read(into, "packages/tokens/src/overrides.ts")).toBe(
+      [
+        "// Token overrides written by the plant runner from the plant's delta.json (002 contracts/gates.md § Plant deltas).",
+        'import type { TokenOverride } from "./generate.ts";',
+        "",
+        "export const overrides: readonly TokenOverride[] = [",
+        '  {"token":"color-ink-muted","light":"#6B655A"},',
+        '  {"add":{"name":"radius-4","group":"shape","value":"4px"}},',
+        '  {"remove":"size-dot"},',
+        "];",
+        "",
+      ].join("\n"),
+    );
+    type Entry = Record<string, string>;
+    const real = JSON.parse(read(repo, pairsPath)) as Entry[];
+    const is = (e: Entry, theme: string, fg: string, bg: string): boolean => e.theme === theme && e.fg === fg && e.bg === bg;
+    const expected = [
+      ...real.filter((e) => !is(e, "dark", "color-ink", "color-sheet")).map((e) => (is(e, "light", "color-ink-muted", "color-inset") ? { ...e, figure: "4.27" } : e)),
+      { theme: "light", fg: "color-ink", bg: "color-overlay", kind: "text", figure: "1", status: "checked", source: "computed" },
+    ];
+    expect(real.length).toBeGreaterThan(300);
+    const written = read(into, pairsPath);
+    expect(JSON.parse(written)).toEqual(expected);
+    expect(written.split("\n")).toHaveLength(expected.length + 3);
+    expect(read(into, "packages/tokens/src/source.ts")).toBe(read(repo, "packages/tokens/src/source.ts"));
+  });
+
+  it("moves the real generator to generate.real.ts and places the plant's wrapper for generator wrapped (and not without a delta)", async () => {
+    const into = tempDir("repo-tree");
+    await buildRepoTree(repo, join(fixtures, "wrapped-plant"), into);
+    expect(read(into, "packages/tokens/src/generate.real.ts")).toBe(read(repo, "packages/tokens/src/generate.ts"));
+    expect(read(into, "packages/tokens/src/generate.ts")).toBe(read(fixtures, "wrapped-plant/tree/packages/tokens/src/generate.ts"));
+    const plain = tempDir("repo-tree");
+    await buildRepoTree(repo, join(fixtures, "tree-plant"), plain);
+    expect(existsSync(join(plain, "packages/tokens/src/generate.real.ts"))).toBe(false);
+    expect(read(plain, "packages/tokens/src/overrides.ts")).toBe(read(repo, "packages/tokens/src/overrides.ts"));
+  });
+
+  // pairsList is closed (operator decision R1-01 (c), contracts/gates.md § Configuration set): "empty" and "not-json"
+  // each write one fixed text over the whole pair list.
+  it('writes pairsList "empty" as exactly "[]\\n", an empty JSON list', async () => {
+    const into = tempDir("repo-tree");
+    await buildRepoTree(repo, join(fixtures, "empty-list-plant"), into);
+    const written = read(into, pairsPath);
+    expect(written).toBe("[]\n");
+    expect(JSON.parse(written)).toEqual([]);
+  });
+
+  it('writes pairsList "not-json" as exactly the fixed cut-off text, which does not parse as JSON', async () => {
+    const into = tempDir("repo-tree");
+    await buildRepoTree(repo, join(fixtures, "text-plant"), into);
+    const written = read(into, pairsPath);
+    expect(written).toBe('[\n  {"theme":"light",\n');
+    expect(() => JSON.parse(written) as unknown).toThrow(SyntaxError);
+  });
+
+  it.each([
+    { plant: "bad-token-plant", problem: "delta.json tokens: token override names an unknown token color-nope" },
+    { plant: "bad-pair-plant", problem: "delta.json pairs: key light/color-nope/color-canvas matches no entry" },
+    { plant: "bad-wrapper-plant", problem: 'packages/tokens/src/generate.ts of a wrapped generator must re-export the real one: export * from "./generate.real.ts"' },
+    { plant: "forbidden-plant", problem: "tree/ holds packages/tokens/contrast/pairs.json; a plant changes the pair list by delta.json pairs" },
+    { plant: "invalid-delta-plant", problem: "delta.json is not valid JSON" },
+  ])("fails to build $plant, naming the key or file", async ({ plant, problem }) => {
+    await expect(buildRepoTree(repo, join(fixtures, plant), tempDir("repo-tree"))).rejects.toThrow(problem);
   });
 });
 

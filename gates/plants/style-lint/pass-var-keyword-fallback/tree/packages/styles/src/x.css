@@ -1,4 +1,4 @@
 /* Plant for the style lint. */
 :host {
-  color: var(--ocelle-x, Canvas);
+  color: var(--ocelle-color-ink, Canvas);
 }

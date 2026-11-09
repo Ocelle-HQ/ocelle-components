@@ -52,8 +52,13 @@ Issue numbers start new work at step 1. `resume` continues existing work (see "R
    stands on its own, and the record path. Every question to the operator is multiple choice (AskUserQuestion
    always offers "Other" for a free answer): turn an open question from a profile into 2-4 concrete options. Never answer a gate yourself, never skip one, never treat silence as
    approval.
-6. Never push, never touch GitHub, never edit a review, verdict or check file a profile wrote. The only records you
-   write yourself are the operator's decisions (named below), each committed alone.
+6. **Push the feature branch after each step**, so no work is lost: when a step's commits are in (a profile's,
+   yours or a script's) and `git status --porcelain` is empty, run `git push -u origin <feature branch>`. Never push
+   to `main`, never force-push without the operator's explicit approval, and never push with uncommitted or
+   in-progress work from a running profile. Pull-request CI runs only on `pull_request`, so a branch push starts no
+   CI. Profiles do not push; only you do. Beyond pushing, never touch GitHub (no comments, labels, state changes or
+   pull requests). Never edit a review, verdict or check file a profile wrote. The only records you write yourself
+   are the operator's decisions (named below), each committed alone.
 
 Script locations: `S=.specify/extensions/story/scripts`, `Q=.specify/extensions/squad/scripts`,
 `T=.specify/extensions/triage/scripts`.
@@ -119,10 +124,26 @@ Run `$S/units.sh`. For each unit, in order:
    - `$S/tdd-check.sh N` (it writes `tdd-check.json`; do not interpret it beyond reporting it);
    - delegate "review phase N" to `reviewer-renata`; scope `review`; run `$S/verdict.sh N`;
    - `changes_requested`: delegate "fix phase N" to `implementer-ivan` (scope `implement`) and start the next round;
-     `approved`: next unit.
+     `approved`: fold the phase (step 3), then the next unit.
    - After a batch without approval: **gate "phase N"**, options `more-rounds`, `accept`, `reject`; accept runs
-     `$S/accept.sh N`; after five batches only `accept`, `reject`.
-3. When every unit is done: `$S/summary.sh --commit`. **Gate "feature"**: show the summary path and its totals.
+     `$S/accept.sh N` and folds the phase (step 3); after five batches only `accept`, `reject`.
+3. **Fold the phase** once it is approved or accepted (operator decision 2026-11-04: fold during development, not at
+   landing), so the branch carries a few commits per phase rather than every step:
+   1. Clean tree; no merge commits on the branch (never merge `main` during a run; `/ocelle-land` does that).
+   2. `FB` = the latest fold's remap commit (`git log -1 --format=%H --grep='remap evidence SHAs after the history
+      fold'`), or the phase's `reviews/phase-N/base.sha` when there is none. Note `OLD=$(git rev-parse HEAD)`.
+   3. `tooling/speckit/bin/fold-history.sh $FB <feature-dir> phase-N`. It keeps the base, the scaffold and its
+      parent, each red commit and its parent, folds every other commit forward, verifies every tree, remaps
+      `base.sha`, `scaffold.sha` and `red-commits`, appends to `reviews/history-map.txt` and commits
+      `chore(phase-N)`. Not ok: report its problems and stop; HEAD is back on `OLD`.
+   4. `$S/tdd-check.sh N` must report `pass` on the new SHAs; commit its outputs alone
+      (`chore(phase-N): red/green check after the fold`).
+   5. **Gate "fold phase N"**: show the commit counts (before → after) and ask, multiple choice, for the force-push:
+      `git push origin $OLD:refs/heads/archive/<branch>-prefold-phase-N`, then
+      `git push --force-with-lease=<branch>:$OLD origin <branch>`; or keep the history unfolded (`git reset --hard
+      $OLD`, recorded as the operator's decision). Never force-push without that answer. The archive branch keeps the
+      SHAs the review files name; never delete it.
+4. When every unit is done: `$S/summary.sh --commit`. **Gate "feature"**: show the summary path and its totals.
    Options: `approve`, `reject`.
 
 ## Resume

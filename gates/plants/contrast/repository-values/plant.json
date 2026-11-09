@@ -1,0 +1,4 @@
+{
+  "expect": "pass",
+  "why": "The configuration set's real token source and pair list pass (US3 scenario 1)."
+}

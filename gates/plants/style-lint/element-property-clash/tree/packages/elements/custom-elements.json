@@ -1,0 +1,18 @@
+{
+  "schemaVersion": "2.1.0",
+  "modules": [
+    {
+      "kind": "javascript-module",
+      "path": "src/button.ts",
+      "declarations": [
+        {
+          "kind": "class",
+          "name": "OcelleButton",
+          "tagName": "ocelle-button",
+          "customElement": true,
+          "cssProperties": [{ "name": "--ocelle-space-2", "description": "A declared element property with the full name of a token." }]
+        }
+      ]
+    }
+  ]
+}

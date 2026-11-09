@@ -59,6 +59,42 @@ describe("inScope", () => {
   });
 });
 
+describe("inScope: the Storybook scripts, configuration and story render code (002 contracts/gates.md § Mutation)", () => {
+  // storybook/stories/ joined in phase 3 review round 1 (R1-02): render.ts holds the stories' render code, which
+  // scripts/swatches.ts imports too; the story files themselves stay out (*.stories.ts).
+  it("takes storybook/scripts/, storybook/.storybook/ and storybook/stories/ TypeScript but not story files, and no other Storybook file", () => {
+    const paths = [
+      "storybook/scripts/swatches.ts",
+      "storybook/scripts/externalise.ts",
+      "storybook/scripts/sub/a.ts",
+      "storybook/.storybook/main.ts",
+      "storybook/.storybook/manager.ts",
+      "storybook/.storybook/preview.ts",
+      "storybook/stories/render.ts",
+      "storybook/stories/sub/a.ts",
+      "storybook/stories/tokens.stories.ts",
+      "storybook/stories/a.test.ts",
+      "storybook/stories/a.d.ts",
+      "storybook/stories/a.js",
+      "storybook/storiesx/a.ts",
+      "storybook/test/unit/swatches.test.ts",
+      "storybook/test/integration/setup.ts",
+      "storybook/scripts/a.test.ts",
+      "storybook/scripts/test/helper.ts",
+      "storybook/.storybook/a.stories.ts",
+      "storybook/.storybook/a.d.ts",
+      "storybook/scripts/a.js",
+      "storybook/.storybook/preview-head.html",
+      "storybook/.generated/a.ts",
+      "storybook/dist/a.ts",
+      "storybook/a.ts",
+      "storybook/scriptsx/a.ts",
+      "xstorybook/scripts/a.ts",
+    ];
+    expect(paths.filter((path) => inScope(path))).toEqual(paths.slice(0, 8));
+  });
+});
+
 describe("changedFiles", () => {
   it("gives the added and modified lines of package and gate source, leaving out test code, stories and the rest", () => {
     expect(changedFiles(mixed)).toEqual([

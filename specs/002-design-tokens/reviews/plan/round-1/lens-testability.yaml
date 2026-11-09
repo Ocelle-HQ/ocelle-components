@@ -1,0 +1,159 @@
+schema: review-findings/v1
+complete: true
+phase: plan
+round: 1
+lens: testability
+findings:
+  - id: PLAN-TESTABILITY-1-001
+    severity: 3
+    title: "The token-value tests have no oracle independent of source.ts, so they cannot fail on a wrong or missing token"
+    evidence:
+      - artifact: "research.md § R-03: 'reads getComputedStyle(document.documentElement).getPropertyValue(name) for every token'; § R-12: 'A derived token's expected value in the tests is the resolved value of its source'; plan.md § Phases US1 lists 'source, generator, build, exports, JSON, theme and motion tests' but no artifact says where the expected values come from"
+      - artifact: "spec.md SC-001: '100% of the tokens in Appendix A exist with their Appendix A value in each of the six theme conditions, and none of the six excluded tokens exists'"
+      - code: "stryker.config.json + gates/lib/mutation/ranges.ts:23-35: scope ':(glob)packages/*/**/*.ts' puts packages/tokens/src/source.ts under mutation testing with thresholds break 100"
+    claim: |
+      'For every token' iterates naturally over tokenNames from source.ts, and the expected value of a token is
+      naturally its value in source.ts. A test built that way compares the generator's output with its own input:
+      a token missing from source.ts is never visited, a wrong value (a typo in a hex) passes in both the stylesheet
+      and the JSON, and a StringLiteral mutant of a value in source.ts changes the expectation and the result alike,
+      so it survives (blocking under Principle VIII) or the test is vacuous. The JSON-agreement test (FR-008) has the
+      same shape by design; only a test with an independent expected table can prove SC-001 and FR-002/FR-003. The
+      plan never states that oracle, so the planned tests invite exactly the self-referential form Principle VIII
+      forbids ('assertions on the mock instead of the unit' in spirit).
+    remedies:
+      - "State in research.md R-03 (and the tasks) that the browser and node value tests take their expected names and values from an expected table transcribed from spec Appendix A (A.1-A.5, with the R-04/R-05 values) inside the test code, never from source.ts, tokenNames or tokens.json; that the test asserts the set of defined --ocelle-* names on :root equals that table's set (so a missing or extra token fails) and that each A.6 name is undefined; and that the generator tests use small fixture sources, so mutants of source.ts values are killed by the Appendix A table test."
+
+  - id: PLAN-TESTABILITY-1-002
+    severity: 3
+    title: "Nothing pins the derived required-pair set to A.8: removing an intended ground from source.ts shrinks the 130 silently"
+    evidence:
+      - artifact: "research.md § R-07 rule 3: 'each required pair (derived from the intended grounds, A.8) absent from the list → missing required pair'; data-model.md § Contrast pair: 'Required pair set (derived, not stored) ... 130 per theme'"
+      - artifact: "contracts/gates.md § contrast: success line '(130 required per theme)' is only printed output; spec.md SC-004: 'is at least 130'; FR-016: 'the pair list cannot shrink it'"
+      - artifact: "contracts/gates.md § Plants, contrast: no plant or test changes the grounds in source.ts"
+    claim: |
+      The pair list cannot shrink the required set, but source.ts can: deleting 'color-inset' from a foreground's
+      grounds (or a whole contrast entry) lowers the derived set, the pair-list entries for it become extra pairs
+      the list MAY hold, and the gate still exits 0, printing a smaller 'required' count that nothing asserts.
+      SC-004's 'at least 130' and FR-016's 'cannot shrink' therefore have no test that can fail. For the same reason
+      a mutant that deletes a ground in source.ts survives unless some test pins the derived set (only gate tests on
+      fixtures exist in the plan).
+    remedies:
+      - "Add a node test in packages/tokens/test/ that computes the required pair set from the real source.ts and asserts it equals A.8 transcribed in the test (the 130 (fg, ground, kind) triples per theme, including the exempt disabled-ink pair), and name it in R-07 and quickstart; optionally make the contrast gate exit 1 when the derived count per theme differs from a count recorded in pairs.json, with a fail plant that removes a ground."
+
+  - id: PLAN-TESTABILITY-1-003
+    severity: 3
+    title: "Mutation testing will reach code no planned test can kill: the 'use' strings of source.ts and scripts/build.ts"
+    evidence:
+      - code: "gates/lib/mutation/ranges.ts:23-35: mutation scope is every packages/*/**/*.ts outside test/, which includes packages/tokens/src/source.ts and packages/tokens/scripts/build.ts"
+      - code: "vitest.mutation.config.ts: Stryker runs only in-process Vitest tests; coverageAnalysis 'perTest' (stryker.config.json)"
+      - artifact: "data-model.md § Token: 'use | string, optional | #5's Use column'; contracts/token-package.md § Files: the tokens.json example carries name, group, light, dark, value, ref but no use"
+      - artifact: "research.md § R-01: 'scripts/build.ts (run by the package's build script after tsc) writes dist/tokens.css, dist/tokens.json and copies fonts/'; § R-03: browser tests read the built dist/ through a static server"
+    claim: |
+      Every 'use' string in source.ts is a StringLiteral mutant, and no output (CSS, JSON per the contract, the
+      typed exports) carries it, so all of them survive: dozens of blocking survivors, or a pile of equivalent-mutant
+      records. scripts/build.ts is only executed as a script before the browser tests, which run Chromium against
+      files on disk, so no in-process test covers it; its mutants are NoCoverage, which the mutation gate reports as
+      findings (README § mutation: 'a line no test runs' is a fail plant).
+    remedies:
+      - "Either drop 'use' from source.ts (keep it as comments) or emit it in tokens.json and the stories and assert it against the Appendix A table of PLAN-TESTABILITY-1-001; and make build.ts a thin process boundary over a pure, exported function (paths in, file contents out) that a node test imports, recording the remaining I/O lines as 'Stryker disable ... covered by <test>' the way gates/bin/mutation.ts does."
+
+  - id: PLAN-TESTABILITY-1-004
+    severity: 3
+    title: "Browser and Storybook tests need built output, but neither pnpm test, the CI unit-tests job nor tdd-check builds anything"
+    evidence:
+      - artifact: "research.md § R-03: 'A small static server ... serves the built dist/'; § R-10: storybook/test/csp.test.ts 'opens the built Storybook'"
+      - code: "tooling/speckit/extensions/story/story-config.yml:11: test_command: \"pnpm test\"; package.json: \"test\": \"node gates/bin/test.ts\" (no build)"
+      - code: ".github/workflows/ci.yml unit-tests job: only 'pnpm run gate:unit-tests'; only csp and prefix jobs run 'pnpm -r build'"
+      - code: "tooling/speckit/extensions/story/scripts/tdd-check.sh: every check runs the tests 'in a clean worktree'; .gitignore ignores packages/*/dist/"
+    claim: |
+      In a clean worktree there is no dist/ and no storybook/dist/, so the browser tests fail at HEAD (check 4 of
+      tdd-check) and in CI, and their red run fails for a setup reason (file not found / 404), which Principle VIII
+      rejects as a red. In a developer tree the opposite happens: a stale dist/ from an earlier build lets the tests
+      pass or fail on artifacts that do not match the source under test, including in the 'final tests against the
+      old code' check if it is ever run in place. The plan does not say who builds, so the tests are not reliably
+      able to fail for the behaviour they name.
+    remedies:
+      - "Specify in R-03/R-10 that the browser test suites build what they serve in a Vitest globalSetup (run the package's build function, or the generator, into a temporary directory per run, never reading a pre-existing dist/), so pnpm test, CI and tdd-check all test the current source; add this to quickstart step 2."
+
+  - id: PLAN-TESTABILITY-1-005
+    severity: 3
+    title: "storybook/test/csp.test.ts is in no Vitest project, and storybook/scripts/externalise.ts is outside mutation testing"
+    evidence:
+      - code: "vitest.config.ts: the projects include only packages/tokens/**, packages/styles/**, packages/elements/**, gates/** test files; nothing matches storybook/**"
+      - code: "gates/lib/mutation/ranges.ts:23-35: mutation scope covers packages/*/** and gates/{bin,lib,eslint,stylelint}/** only"
+      - code: "pnpm-workspace.yaml: packages: [\"packages/*\"] (storybook/ is new)"
+      - artifact: "plan.md § Source Code: 'storybook/ ├── scripts/externalise.ts   scripts/swatches.ts └── test/csp.test.ts'; quickstart.md step 2: 'the Storybook CSP test runs the built Storybook'"
+    claim: |
+      As planned, the run-time CSP test (FR-023, US1 scenarios 11-12, SC-008's run-time half) would never be run by
+      pnpm test or the unit-tests gate, so it cannot fail in CI, and the red/green check would not see it.
+      externalise.ts is the code that moves inline scripts and styles out of the Storybook build, the security
+      behaviour the operator insisted on (SPEC-1-05, SPEC-3-01), yet it has no planned unit test and is not in the
+      mutation scope, so a weakened transform is caught only if the end-to-end test happens to cover the construct.
+    remedies:
+      - "Add a 'storybook' Vitest project (and its exclusion handling in vitest.mutation.config.ts if it starts real tools), extend the mutation scopePathspecs (and its tests/plants) to storybook/scripts/**/*.ts, and plan node unit tests for externalise.ts and swatches.ts on fixture HTML (inline script, inline style element, style attribute, already-external script) asserting the output files and rewritten HTML."
+
+  - id: PLAN-TESTABILITY-1-006
+    severity: 3
+    title: "The unknown-token rule breaks the existing style-lint plants and cannot find source.ts in a plant's temporary repository"
+    evidence:
+      - code: "gates/plants/style-lint/pass-var-token/tree/packages/styles/src/x.css, pass-var-keyword-fallback, fail-var-fallback: all use var(--ocelle-x), not a token of Appendix A"
+      - code: "gates/test/token-only.test.ts:18-111 and gates/test/token-only-parts.test.ts:90 use --ocelle-x, --ocelle-y, --ocelle-font, --ocelle-w, --ocelle-c"
+      - code: "gates/lib/plant-repo.ts:24-45 configurationSet: root config files, packages/*/package.json and tsconfig.json, gates/eslint, gates/stylelint; packages/tokens/src/source.ts is not copied into a repo-tree plant's repository"
+      - artifact: "research.md § R-09: 'The list is read from the root's packages/tokens/src/source.ts at plugin load'; contracts/gates.md § style-lint: 'Exit 2 if the token source does not load'"
+    claim: |
+      Once the rule exists, every style-lint plant (repo-tree form) runs in a temporary repository without
+      source.ts, so the gate exits 2 for all of them, including the new pass-known-token plant, unless each plant
+      carries a copy of the token source; and the three plants above would in any case gain an 'unknown token
+      --ocelle-x' finding (pass plants fail, the fail plant's exact findings no longer match). The existing
+      token-only unit tests would fail the same way. Reading the list at plugin load from a fixed path also leaves
+      no seam for a unit test to pass a fixture name list, so the rule's mutants can only be killed through the real
+      source. The plan names none of this, so the unit of work is not testable red-first as described.
+    remedies:
+      - "Make the name list a rule option or an injectable loader (stylelint.config.ts passes the list read from --root), test the rule with a fixture list; state in R-09 and the tasks that the existing plants and token-only tests are moved to real token names (or given a fixture list), and how a style-lint plant's repository gets the token list (add packages/tokens/src/source.ts to the configuration set, or have each plant carry it), with the plant-repo tests updated."
+
+  - id: PLAN-TESTABILITY-1-007
+    severity: 2
+    title: "Two brand-rules plants cannot give their planned outcome: c-extra-radius is rejected by validation, and rule (b)'s excluded-pair clause is unreachable"
+    evidence:
+      - artifact: "contracts/gates.md § Plants, brand-rules: 'c-extra-radius (a radius-3 at 4px)'"
+      - artifact: "data-model.md § Token, Validation (validateSource, used by ... the gates): 'no A.6 name'; research.md § R-07: token-source.ts 'loads ... and validates it'; contracts/gates.md § contrast: 'token source does not load or fails validation → 2'"
+      - artifact: "spec.md FR-019 (b): '... and the pair color-accent on color-canvas in light is listed as an excluded text pair'; contracts/gates.md § brand-rules: 'Inputs under --root: packages/tokens/src/source.ts, packages/tokens/src/generate.ts' (not pairs.json)"
+    claim: |
+      radius-3 is an A.6 excluded name, so the shared validator rejects the plant's source before rule (c) runs:
+      the gate exits 2, not 1 with a 'radius-set' finding, and the plant job fails (or the implementer weakens
+      validation to make the plant pass). Separately, the second clause of rule (b) is about pairs.json, which the
+      brand-rules gate does not read, and no plant breaks it, so that clause has no test that can fail.
+    remedies:
+      - "Use a name outside A.6 for the extra-radius plant (for example radius-4 at 4px) and keep the A.6 check as a separate breaking or fail case; either add pairs.json to the brand-rules inputs with a fail plant that drops the color-accent on color-canvas exclusion, or move that clause to the contrast gate (a required excluded pair rule) with its own fail plant, and amend FR-019 (b) to match."
+
+  - id: PLAN-TESTABILITY-1-008
+    severity: 3
+    title: "The font tests (US2 scenarios 3, 4, 6; FR-015; SC-003) have no observable that fails without the font or the figures token"
+    evidence:
+      - artifact: "spec.md US2 scenario 3: 'the browser reports Schibsted Grotesk as the font used'; scenario 4: 'the digits 0 to 9 all have the same advance width'; research.md § R-03 and plan.md § Phases US2 name 'font-use, tabular-figure, request' tests without saying what they measure"
+      - artifact: "spec.md FR-013: fallbacks 'Helvetica Neue', Arial, system-ui, sans-serif"
+      - code: "probe of reasoning, not run (no node_modules in this checkout): getComputedStyle(el).fontFamily returns the declared family list whether or not the font loaded; the common Linux fallbacks behind sans-serif in CI Chromium (DejaVu Sans, Liberation Sans) have equal-width digits by default"
+    claim: |
+      The natural implementations are vacuous. Reading the computed font-family passes with no font file at all.
+      Measuring digit widths passes before the feature exists (fallback faces already have tabular digits, and an
+      undefined var() leaves font-variant-numeric at normal), so the final tests would pass against the old code
+      and tdd-check fails, or the implementer loosens the test. 'Zero requests outside the origin' passes trivially
+      when the font is never requested. Without stated observables these tests cannot be shown to fail for the
+      behaviour they name.
+    remedies:
+      - "Specify in R-03: the used font is read through a CDP session (CSS.getPlatformFontsForNode) and must be 'Schibsted Grotesk' with the font request to the page origin recorded and document.fonts status 'loaded' (positive control); the tabular test first asserts the vendored face is in use and that without font-variant-numeric the digit widths of Schibsted Grotesk differ (control, if its default figures are proportional; if they are tabular by default, test the token through the computed font-variant-numeric of a probe instead and record why); the no-font-src test asserts the fallback face via the same CDP call and exactly one violation whose blockedURI is the woff2."
+
+  - id: PLAN-TESTABILITY-1-009
+    severity: 2
+    title: "getPropertyValue cannot give the planned expectations for calc, shadow and derived tokens; FR-002's 'by reference' has no test"
+    evidence:
+      - artifact: "research.md § R-05: 'a test at a 1280 × 800 viewport expects 1248 px and 768 px'; § R-03: 'Computed custom-property values are compared after normalisation: whitespace collapsed; colours compared as parsed RGBA ...; var() references resolved by reading the source token's computed value'"
+      - artifact: "spec.md FR-002: derived tokens 'MUST be defined by reference to their source token, so they cannot drift apart'; Edge Cases: 'changing the source changes the derived token in both the stylesheet and the JSON export'"
+      - code: "CSS Custom Properties Level 1 § 2: the computed value of an unregistered custom property is its specified value with var() substituted; calc() is not evaluated, so --ocelle-dialog-max-inline reads 'calc(100vw - 2 * 1rem)', never '1248px'"
+    claim: |
+      The dialog sizes, bar-block-narrow and the elevation shadows cannot be compared as numbers by reading the
+      custom property; the plan's normalisation also re-implements var() resolution in the test, which would make
+      a literal copy of the source value (no reference) indistinguishable from a reference, so FR-002's 'by
+      reference' and the drift edge case have no test that fails when the generator inlines values.
+    remedies:
+      - "Plan probe assertions for non-colour tokens (apply the token to width/max-block-size/box-shadow/transition-duration of a probe element and compare its computed value, e.g. 1248px at 1280×800), drop the test-side var() resolution, and add a generator test on a fixture source asserting that each derived token's declaration text is var(--ocelle-<ref>) (or calc over refs) and that changing the ref's value changes the derived token in both the stylesheet and the JSON."

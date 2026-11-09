@@ -1,0 +1,5 @@
+{
+  "expect": "error",
+  "why": "packages/elements/custom-elements.json declares --ocelle-space-2, the full name of a token: the unknown-token check cannot tell the two apart and stops (exit 2; FR-010, research.md R-09).",
+  "cause": "element property --ocelle-space-2 has the name of a token"
+}

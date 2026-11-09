@@ -47,10 +47,12 @@ decision, plan squad round 3). Test inputs live in `gates/test/fixtures/` (R-10)
 **Project Type**: library monorepo (three packages) with repository tooling
 
 **Performance Goals**: cold install plus test run under 5 minutes (SC-001); mutation of one shard (up to 10
-entries and 250 changed lines of package and gate source, a file over 120 changed lines split into `path:start-end`
-entries, no two entries of one file in the same shard; 250 by operator decision, phase 4 round 3,
-human:jeroennouwsdev, 2026-11-03: GitHub runner variance took a 435-line shard past 10 minutes; the split by
-operator decision, phase 3 round 9, human:jeroennouwsdev, 2026-11-03: plant-judge.ts alone took 9:49 of 10 minutes;
+entries and 250 changed lines of package and gate source, a file over 60 changed lines split into `path:start-end`
+entries of at most 60 changed lines, no two entries of one file in the same shard; 250 by operator decision, phase 4
+round 3, human:jeroennouwsdev, 2026-11-03: GitHub runner variance took a 435-line shard past 10 minutes; the split
+by operator decision, phase 3 round 9, human:jeroennouwsdev, 2026-11-03: plant-judge.ts alone took 9:49 of 10
+minutes; its entry bound lowered from 120 to 60 by operator decision, 2026-11-05, phase 5 round 6 of mission 002,
+O6-01, human:jeroennouwsdev: the 120-line shard `packages/tokens/src/generate.ts:121-240` took 670 s;
 one file's entries in separate shards by operator decision, phase 3 round 10, human:jeroennouwsdev, 2026-11-03)
 under 10 minutes,
 the CI mutation check split into such shards (SC-005, FR-013, R-08)
@@ -200,6 +202,17 @@ file Stryker read but its report does not list still counts as zero mutants. The
 mutants that failed a CI shard are gone, and every regex under `gates/` is surveyed for anchors whose removal is
 equivalent (O12-02; no requirement changes). Phase 3 reopens for one test-first fix round covering both, T099 (red
 under `red.sh 3 fix-12`), reviewed as phase 3 round 13. No new exception.
+
+**Re-check after phase 5 round 6 of mission 002** (operator decision, 2026-11-05, phase 5 round 6 of mission 002,
+O6-01, human:jeroennouwsdev: "Smaller chunks (Recommended)"): the shard `packages/tokens/src/generate.ts:121-240`
+alone held 264 mutants and took 670 s locally, and was cancelled at the 10-minute limit in CI. FR-013 and SC-005
+are amended so that a file with more than 60 changed lines (down from 120) is split into entries of at most 60
+changed lines, so no shard holds more than 60 changed lines of one file (R-08 "CI, sharded" step 1,
+contracts/gate-cli.md, `gates/README.md`). The 10-entry and 250-line bounds, the rule that two entries of one file
+never share a shard, the 10-minute shard limit and the accepted cut limit stay; measurements recorded above under
+the 120-line bound stay as recorded. `gates/lib/mutation/shards.ts` changed test-first in mission 002 as T071 (red
+under `red.sh 5 fix-6`, reviewed as 002 phase 5 round 7). Mutation strength is unchanged: every changed line is
+still mutated, in more, shorter shards. No new exception.
 
 ## Project Structure
 
@@ -372,7 +385,9 @@ makes every GitHub-side check and records each result, with its evidence (comman
    9:49 for `gates/lib/plant-judge.ts` alone, the split of a file's changed lines into `path:start-end` entries of at
    most 120 changed lines was adopted (FR-013 as amended, R-08, T097; operator decision, phase 3 round 9,
    human:jeroennouwsdev, 2026-11-03: plant-judge.ts alone took 9:49 of 10 minutes), with no two entries of one
-   file in the same shard (T098; operator decision, phase 3 round 10, human:jeroennouwsdev, 2026-11-03). Operator decision,
+   file in the same shard (T098; operator decision, phase 3 round 10, human:jeroennouwsdev, 2026-11-03); the entry
+   bound was later lowered to 60 changed lines (operator decision, 2026-11-05, phase 5 round 6 of mission 002,
+   O6-01). Operator decision,
    phase 4 round 4 note R4-01, feature gate, human:jeroennouwsdev, 2026-11-03: "Accept for now: Record this run as
    the SC-005 measurement, and investigate any cancelled shard if one happens."
 5. Merge method and evidence home (operator decision, PR #18 landing review note L1-08, human:jeroennouwsdev,

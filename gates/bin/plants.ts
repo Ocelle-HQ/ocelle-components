@@ -23,6 +23,7 @@ import type { RunnerTools } from "../lib/plant-runner.ts";
 import { checkRegistry, ciJobs, parseRegistry, plantJob } from "../lib/registry.ts";
 import type { Gate } from "../lib/registry.ts";
 import { runTool } from "../lib/spawn.ts";
+import { loadTokens } from "../lib/token-source.ts";
 
 export { judgePlant, parsePlant, plantArgs } from "../lib/plant-judge.ts";
 export type { ExpectedFinding, ExpectedRecord, Plant, PlantRun } from "../lib/plant-judge.ts";
@@ -198,6 +199,10 @@ function runnerTools(root: string, io: Io): RunnerTools {
     run: (command, args) => runTool(command, args, root, io.env),
     // Stryker disable next-line all: process boundary, covered by gates-integration: gates/test/integration/plants.test.ts "plants --root <tmp> runs each plant form through its gate and judges it"
     node: process.execPath,
+    // Stryker disable next-line all: process boundary, covered by gates-integration: gates/test/integration/plants-robustness.test.ts "%s: the change is consistent, and every plant keeps its outcome"
+    read: (path) => readFile(path, "utf8").catch(() => undefined),
+    // Stryker disable next-line all: process boundary, covered by gates-integration: gates/test/integration/plants-robustness.test.ts "%s: the change is consistent, and every plant keeps its outcome"
+    stylesheet: async (dir) => (await loadTokens(dir)).css(),
   };
 }
 

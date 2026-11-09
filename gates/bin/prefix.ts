@@ -2,7 +2,11 @@
 // (every text file below `packages/<name>/`, without installed dependencies, Markdown, source maps and binaries), a
 // name that starts with `sk-` or `--sk-` at a name boundary (case-insensitive) and a monospace font family in a font
 // declaration (`font`, `font-family`, including the `@font-face` descriptor) are findings, one per line and rule.
-// A covered file that is not valid UTF-8 is exit 2.
+// A covered file that is not valid UTF-8 is exit 2. Since 002 (FR-023, research.md R-10) the scope also holds the
+// Storybook workspace: its source (`.storybook/`, `stories/`, `scripts/`, `test/` and its other text files), its
+// generated stylesheets (`.generated/`) and the top-level HTML entries of its build output (`dist/*.html`), not
+// installed packages and not the bundles under `storybook/dist/`, which the run-time test of the Storybook covers.
+// `monospaceFamilies` is exported for that test's monospace check (contracts/gates.md § Monospace in Storybook).
 import { readdir, readFile } from "node:fs/promises";
 import { join } from "node:path";
 import { main, parseArgs } from "../lib/cli.ts";
@@ -25,7 +29,7 @@ const names = /(?<![A-Za-z0-9_-])sk-[A-Za-z0-9_-]*|(?<![A-Za-z0-9_])--sk-[A-Za-z
 /** A font declaration and its value, up to the end of the declaration or the line. */
 const fontDeclarations = /(?<![\w-])font(?:-family)?\s*:([^;{}]*)/gi;
 /** FR-022's monospace families, longest first, so `Courier New` is one match and not `Courier`. */
-const families = [
+export const monospaceFamilies: readonly string[] = [
   "DejaVu Sans Mono",
   "Liberation Mono",
   "Source Code Pro",
@@ -46,11 +50,17 @@ const families = [
   "Monaco",
   "Menlo",
 ];
-const monospace = new RegExp(`(?<![\\w-])(?:${families.map((family) => family.replace(/ /g, "\\s+")).join("|")})(?![\\w-])`, "gi");
+const monospace = new RegExp(`(?<![\\w-])(?:${monospaceFamilies.map((family) => family.replace(/ /g, "\\s+")).join("|")})(?![\\w-])`, "gi");
 
-/** Whether a repository path is a file the prefix check reads (package source, test code, built output). */
+/** The Storybook workspace's files outside its build output, and the top-level HTML entries of that output. */
+const storybook = /^storybook\/(?!dist\/).|^storybook\/dist\/[^/]+\.html$/;
+
+/**
+ * Whether a repository path is a file the prefix check reads: package source, test code and built output, and the
+ * Storybook workspace's source, generated stylesheets and HTML entries (002 FR-023).
+ */
 export function isCovered(path: string): boolean {
-  return /^packages\/[^/]+\/./.test(path) && !path.split("/").includes("node_modules") && covered.test(path);
+  return (/^packages\/[^/]+\/./.test(path) || storybook.test(path)) && !path.split("/").includes("node_modules") && covered.test(path);
 }
 
 /** The `sk-` name and monospace findings in one file's text. */
@@ -106,8 +116,10 @@ export async function run(argv: readonly string[], io: Io): Promise<number> {
   const context = parseArgs(argv, io.cwd);
   // Stryker disable next-line all: process boundary, covered by gates-integration: gates/test/integration/gates-root.test.ts "prefix --root <tmp> exits 1 with exactly the defect's finding at its repository path"
   const entries = await readdir(join(context.root, "packages"), { recursive: true, withFileTypes: true }).catch(() => []);
+  // Stryker disable next-line all: process boundary, covered by gate:plants: gates/plants/prefix/fail-storybook-monospace (a finding in storybook/.generated/ under --root)
+  const storybookEntries = await readdir(join(context.root, "storybook"), { recursive: true, withFileTypes: true }).catch(() => []);
   // Stryker disable next-line all: process boundary, covered by gates-integration: gates/test/integration/gates-root.test.ts "prefix --root <tmp> exits 1 with exactly the defect's finding at its repository path"
-  const selected = selectCovered(filePaths(entries, context.root));
+  const selected = selectCovered(filePaths([...entries, ...storybookEntries], context.root));
   // Stryker disable next-line all: process boundary, covered by gates-integration: gates/test/integration/gates-root.test.ts "prefix --root <tmp> exits 1 with exactly the defect's finding at its repository path"
   const files = await Promise.all(selected.map(async (path) => ({ path, bytes: await readFile(join(context.root, path)) })));
   return emit(checkPackages(files), io.out, io.err);

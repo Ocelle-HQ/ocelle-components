@@ -22,6 +22,8 @@
     "gate:prefix": "node gates/bin/prefix.ts",
     "gate:signoff": "node gates/bin/signoff.ts",
     "gate:pins": "node gates/bin/pins.ts",
+    "gate:contrast": "node gates/bin/contrast.ts",
+    "gate:brand-rules": "node gates/bin/brand-rules.ts",
     "gate:plants": "node gates/bin/plants.ts"
   },
   "devDependencies": {

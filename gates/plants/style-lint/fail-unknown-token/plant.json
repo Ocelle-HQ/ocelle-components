@@ -1,0 +1,11 @@
+{
+  "expect": "fail",
+  "why": "A reference to a misspelt token (var(--ocelle-color-canvs)) in an element style template is an unknown token (FR-010, SC-006).",
+  "findings": [
+    {
+      "location": "packages/elements/src/x.ts:6",
+      "rule": "ocelle/token-only",
+      "message": "unknown token --ocelle-color-canvs"
+    }
+  ]
+}

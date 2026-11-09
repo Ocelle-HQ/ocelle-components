@@ -1,7 +1,7 @@
 // The gate registry (gates/gates.json, data-model.md § Gate) and its check against ci.yml and the FR-020 list
 // (research.md R-10): the gate ids of the registry, the gate jobs of the workflow (every job but the plant job and
 // the registry's helper jobs) and the FR-020 list below must be one set. The check compares files one pull request
-// can change together; the ruleset on main that requires the twelve checks guards a coordinated removal.
+// can change together; the ruleset on main that requires the fourteen checks guards a coordinated removal.
 import type { Finding } from "./findings.ts";
 
 /** How a gate's plants are presented to it (contracts/plants.md). */
@@ -31,6 +31,9 @@ export const fr020: readonly string[] = [
   "config-copies",
   "pins",
   "signoff",
+  // 002 FR-020: the contrast and brand-rules gates of the design tokens.
+  "contrast",
+  "brand-rules",
 ];
 
 /** The id of the plant job in ci.yml; it is not a gate. */

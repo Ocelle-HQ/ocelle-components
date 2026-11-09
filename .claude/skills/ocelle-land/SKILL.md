@@ -150,11 +150,15 @@ surface, gate or contract change, as opposed to a mechanical chore: a pin bump, 
    `contracts/ci-checks.md`. A new test project or fixture must be wired so the normal gates see it or exclude it
    deliberately (research.md R-10). Run `gate:plants` and `gate:config-copies` to prove it. If a check name changed,
    tell the operator that the ruleset on `main` must change with it.
-8. **Fold the history** (mission and op PRs; operator decision 2026-11-03, "Evidence-preserving fold"). Do it once,
+8. **Fold the history** (mission and op PRs; operator decisions 2026-11-03, "Evidence-preserving fold", and
+   2026-11-04, "fold during development"). `/ocelle-run` folds each phase right after its approval, so here fold only
+   the commits since the latest fold's remap commit (`git log -1 --format=%H --grep='remap evidence SHAs after the
+   history fold'`): the landing folds of steps 5 to 7, and any phase folded again by them. When nothing but a handful
+   of landing commits remains, ask the operator whether to fold at all; skipping is fine. Do it once,
    near the end, after the last fold commit (steps 5 to 7), before bringing the branch up to date with `main` for the last time and before the final push. Never do it on a contributor's
    commits without their consent; for those, keep their commits and authorship as they are.
    1. Clean tree; no merge commits since the PR base (the script refuses them; fold before merging `main`).
-   2. `tooling/speckit/bin/fold-history.sh <pr-base-sha> <feature-dir>`. It keeps, per phase:
+   2. `tooling/speckit/bin/fold-history.sh <latest-fold-or-pr-base-sha> <feature-dir> landing`. It keeps, per phase:
       - `base.sha`;
       - the scaffold and its parent;
       - each red commit and its parent (phase and every `fix-N`).
@@ -172,7 +176,7 @@ surface, gate or contract change, as opposed to a mechanical chore: a pin bump, 
       - the folded head's tree equals the old head's;
       - the remap touches only evidence files.
 
-      On failure it leaves HEAD on the old head and exits 1. The old head stays as `refs/ocelle/prefold/<branch>`.
+      On failure it leaves HEAD on the old head and exits 1. The old head stays as `refs/ocelle/prefold/landing/<branch>`.
    3. Prove the fold, then commit the evidence:
       - `$S/tdd-check.sh N` for every phase (all `pass`, on the new SHAs);
       - `pnpm run gate:signoff -- --range <pr-base>..HEAD`;

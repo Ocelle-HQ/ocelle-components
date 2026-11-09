@@ -1,0 +1,4 @@
+{
+  "expect": "pass",
+  "why": "The configuration set's real token source, generator and pair list pass the seven rules."
+}

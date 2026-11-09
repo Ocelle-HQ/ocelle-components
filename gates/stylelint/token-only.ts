@@ -1,10 +1,16 @@
 // Stylelint plugin ocelle/token-only (FR-024, research.md R-07): every declaration value in the covered styles is
 // parsed with postcss-value-parser, and each word, string, number, function and var() fallback is classified against
 // FR-024's allow-list. A value with no raw part is token-only; each declaration with raw parts is reported once.
+// Since 002 (FR-010, research.md R-09, contracts/gates.md § `style-lint`) every var() reference to an --ocelle-* name
+// that is neither a token nor an element custom property the custom-elements manifest declares (exact name) is
+// reported too, once per name and declaration, also inside calc() and as a fallback. The lists are the rule's
+// secondary options when given (unit tests), else read once per run under the working directory, the gate's --root.
 import stylelint from "stylelint";
 import type { Rule } from "stylelint";
 import valueParser from "postcss-value-parser";
 import type { Node } from "postcss-value-parser";
+import { checkLists, loadLists } from "./token-lists.ts";
+import type { TokenLists } from "./token-lists.ts";
 
 export const ruleName = "ocelle/token-only";
 
@@ -86,16 +92,64 @@ export function rawValues(property: string, value: string): string[] {
   return classify(valueParser(value).nodes, property.toLowerCase(), false);
 }
 
+/** The --ocelle-* names a value references with var(), each once, in order; nested ones and fallbacks included. */
+export function referencedTokens(value: string): string[] {
+  const found: string[] = [];
+  valueParser(value).walk((node) => {
+    if (node.type !== "function" || node.value.toLowerCase() !== "var") return;
+    const [first] = node.nodes;
+    if (first?.type === "word" && first.value.startsWith("--ocelle-") && !found.includes(first.value)) found.push(first.value);
+  });
+  return found;
+}
+
 const messages = stylelint.utils.ruleMessages(ruleName, {
   raw: (property: string, values: string) => `${property}: raw ${values}; use a --ocelle-* token (FR-024)`,
+  unknown: (name: string) => `unknown token ${name}`,
 });
 
-const rule: Rule = (primary) => (root, result) => {
-  if (!stylelint.utils.validateOptions(result, ruleName, { actual: primary, possible: [true] })) return;
+/** The lists read under each root, once per run. */
+const loaded = new Map<string, Promise<TokenLists>>();
+
+function listsUnder(root: string): Promise<TokenLists> {
+  const cached = loaded.get(root);
+  if (cached !== undefined) return cached;
+  const lists = loadLists(root);
+  // Stryker disable next-line CallExpression: equivalent, without the cache each file loads the same lists from the same root again, so the warnings are the same; the cache only saves the reads
+  loaded.set(root, lists);
+  return lists;
+}
+
+function isText(value: unknown): boolean {
+  return typeof value === "string";
+}
+
+/** The lists the secondary options give, checked for a clash; undefined without options. */
+function optionLists(secondary: unknown): TokenLists | undefined {
+  if (typeof secondary !== "object" || secondary === null) return undefined;
+  const options = secondary as { tokens?: readonly string[]; elementProperties?: readonly string[] };
+  // Stryker disable next-line ArrayDeclaration: equivalent, an entry of an absent list is only compared with --ocelle-* var() names and with the other list's custom property names, and the mutant's entry "Stryker was here" is neither
+  const lists = { tokens: options.tokens ?? [], elementProperties: options.elementProperties ?? [] };
+  checkLists(lists);
+  return lists;
+}
+
+const rule: Rule = (primary, secondary) => async (root, result) => {
+  const valid = stylelint.utils.validateOptions(
+    result,
+    ruleName,
+    { actual: primary, possible: [true] },
+    { actual: secondary, possible: { tokens: [isText], elementProperties: [isText] }, optional: true },
+  );
+  if (!valid) return;
+  const lists = optionLists(secondary) ?? (await listsUnder(process.cwd()));
+  const known = new Set([...lists.tokens, ...lists.elementProperties]);
   root.walkDecls((declaration) => {
     const raw = rawValues(declaration.prop, declaration.value);
-    if (raw.length === 0) return;
-    stylelint.utils.report({ ruleName, result, node: declaration, message: messages.raw(declaration.prop, raw.join(", ")) });
+    if (raw.length > 0) stylelint.utils.report({ ruleName, result, node: declaration, message: messages.raw(declaration.prop, raw.join(", ")) });
+    for (const name of referencedTokens(declaration.value)) {
+      if (!known.has(name)) stylelint.utils.report({ ruleName, result, node: declaration, message: messages.unknown(name) });
+    }
   });
 };
 rule.ruleName = ruleName;

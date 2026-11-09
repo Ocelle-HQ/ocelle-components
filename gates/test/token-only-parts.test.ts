@@ -87,7 +87,7 @@ describe("rawValues: functions", () => {
 
 describe("the rule in Stylelint", () => {
   async function lint(option: unknown): Promise<{ readonly warnings: string[]; readonly invalid: string[] }> {
-    const result = await stylelint.lint({ code: "a { color: red; margin: var(--ocelle-x); }", config: { plugins: [plugin], rules: { [ruleName]: option } } });
+    const result = await stylelint.lint({ code: "a { color: red; margin: var(--ocelle-space-2); }", config: { plugins: [plugin], rules: { [ruleName]: option } } });
     const [file] = result.results;
     return { warnings: (file?.warnings ?? []).map((warning) => warning.text), invalid: (file?.invalidOptionWarnings ?? []).map((warning) => warning.text) };
   }

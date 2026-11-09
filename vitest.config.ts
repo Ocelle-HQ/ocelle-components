@@ -18,6 +18,16 @@ export default defineConfig({
           name: "tokens",
           environment: "node",
           include: ["packages/tokens/**/*.test.ts"],
+          exclude: [...excluded, "packages/tokens/test/browser/**"],
+        },
+      },
+      {
+        // The token browser suites (research.md R-03): Node tests that drive Chromium through Playwright and serve
+        // what the generator produces in each suite's beforeAll. Not mutated (vitest.mutation.config.ts).
+        test: {
+          name: "tokens-browser",
+          environment: "node",
+          include: ["packages/tokens/test/browser/**/*.test.ts"],
           exclude: excluded,
         },
       },
@@ -40,6 +50,29 @@ export default defineConfig({
             headless: true,
             instances: [{ browser: "chromium" }],
           },
+        },
+      },
+      {
+        // The Storybook unit tests (002 research.md R-10): the scripts, the configuration and the stories' render code
+        // in node, with no build; these kill the mutants of storybook/scripts/**, storybook/.storybook/** and
+        // storybook/stories/** (not the story files).
+        test: {
+          name: "storybook",
+          environment: "node",
+          include: ["storybook/test/unit/**/*.test.ts"],
+          exclude: excluded,
+        },
+      },
+      {
+        // The Storybook run-time test (002 research.md R-10): its global setup builds the Storybook into a per-run
+        // temporary directory under a no-network preload; the test serves it under the Storybook page's CSP header
+        // and drives Chromium through Playwright. Not mutated (vitest.mutation.config.ts).
+        test: {
+          name: "storybook-integration",
+          environment: "node",
+          include: ["storybook/test/integration/**/*.test.ts"],
+          exclude: excluded,
+          globalSetup: ["storybook/test/integration/setup.ts"],
         },
       },
       {

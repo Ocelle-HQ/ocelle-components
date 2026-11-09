@@ -1,4 +1,4 @@
 {
   "expect": "pass",
-  "why": "A var() token (margin: var(--ocelle-x)) is allowed (FR-024)."
+  "why": "A var() token (margin: var(--ocelle-space-2)) is allowed (FR-024). Since 002 the name is a real token: the made-up --ocelle-x is an unknown token under FR-010."
 }

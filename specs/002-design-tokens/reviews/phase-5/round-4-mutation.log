@@ -1,0 +1,2 @@
+$ node gates/bin/mutation.ts -- --base eeb95d4 --files packages/tokens/src/generate.ts
+mutation: 10 mutants on the changed lines of 1 file, none survived; 0 equivalent records

@@ -214,3 +214,121 @@ describe("checkOutput", () => {
     });
   });
 });
+
+// The widened static scope (002 FR-023, US1 scenario 12; contracts/gates.md § `csp`, `prefix`; research.md R-10;
+// operator decisions PLAN-FRESH-1-001 (a), PLAN-FRESH-2-001 (a), PLAN-FRESH-3-001 (a)): this repository's Storybook
+// inputs before bundling and the HTML entries of the build output as externalise.ts leaves them; never a bundle.
+// The `.ts` inputs are parsed as TypeScript and get the dynamic-code rules and the markup rules on their string and
+// template literals; in storybook/scripts/ the markup rules do not apply to literals (the externaliser names the
+// tags it moves), the dynamic-code rules do.
+describe("isBuiltOutput: the Storybook inputs and HTML entries (002 FR-023)", () => {
+  it("selects the Storybook inputs before bundling and the top-level HTML entries of storybook/dist/, not the bundles, moved files, installed packages or tests", () => {
+    const inScope = [
+      "storybook/stories/tokens.stories.ts",
+      "storybook/stories/render.ts",
+      "storybook/.storybook/main.ts",
+      "storybook/.storybook/preview.ts",
+      "storybook/.storybook/preview-head.html",
+      "storybook/.storybook/preview.css",
+      "storybook/scripts/externalise.ts",
+      "storybook/scripts/sub/x.js",
+      "storybook/.generated/tokens.css",
+      "storybook/.generated/swatches.css",
+      "storybook/dist/index.html",
+      "storybook/dist/iframe.html",
+    ];
+    const outOfScope = [
+      "storybook/dist/assets/iframe-BZdWAMwh.js",
+      "storybook/dist/assets/iframe-DMn9nMwa.css",
+      "storybook/dist/sb-addons/storybook-1/manager-bundle.js",
+      "storybook/dist/sb-manager/runtime.js",
+      "storybook/dist/inline-0123456789abcdef.js",
+      "storybook/dist/inline-0123456789abcdef.css",
+      "storybook/dist/vite-inject-mocker-entry.js",
+      "storybook/dist/tokens.css",
+      "storybook/dist/sub/x.html",
+      "storybook/dist/index.json",
+      "storybook/node_modules/storybook/dist/x.js",
+      "storybook/stories/node_modules/x/index.js",
+      "storybook/.storybook/node_modules/x.html",
+      "storybook/test/unit/x.test.ts",
+      "storybook/package.json",
+      "storybook/.generated/fonts/SchibstedGrotesk-wght.woff2",
+      "storybook/stories/notes.md",
+      "storybook/x.ts",
+      "gates/plants/csp/x/tree/storybook/stories/x.ts",
+      "xstorybook/stories/x.ts",
+      "packages/storybook/stories/x.ts",
+    ];
+    expect([...inScope, ...outOfScope].filter((path) => isBuiltOutput(path))).toEqual(inScope);
+  });
+});
+
+describe("checkOutput: the Storybook .ts inputs (002 FR-023)", () => {
+  const story = "storybook/stories/x.stories.ts";
+
+  it("gives style-attribute for a markup string with a style attribute in a story", () => {
+    expect(checkOutput([{ path: story, text: 'export const a: string = \'<p style="color: red">x</p>\';\n' }])).toEqual({
+      exit: 1,
+      findings: [at(story, 1, "style-attribute", styleAttribute("p"))],
+      summary: "csp: 1 finding in 1 file",
+    });
+  });
+
+  it("gives new-function for new Function in .storybook/preview.ts", () => {
+    const preview = "storybook/.storybook/preview.ts";
+    expect(checkOutput([{ path: preview, text: 'import type { Preview } from "x";\nconst f = new Function("return 1");\nexport default f;\n' }])).toEqual({
+      exit: 1,
+      findings: [at(preview, 2, "new-function", newFunction)],
+      summary: "csp: 1 finding in 1 file",
+    });
+  });
+
+  it("parses type annotations, as const, satisfies, generics and angle-bracket assertions as TypeScript", () => {
+    const text = [
+      "interface A { readonly b: number }",
+      'const list = ["a"] as const satisfies readonly string[];',
+      "export const html = `<i style=\"x\"></i>` as string;",
+      "function g<T>(x: T): T { return x; }",
+      'const n = <string>(<unknown>eval("1"));',
+      "",
+    ].join("\n");
+    expect(checkOutput([{ path: story, text }])).toEqual({
+      exit: 1,
+      findings: [at(story, 3, "style-attribute", styleAttribute("i")), at(story, 5, "eval", evalCall)],
+      summary: "csp: 2 findings in 1 file",
+    });
+  });
+
+  it("exits 2 naming a Storybook .ts file that does not parse", () => {
+    expect(checkOutput([{ path: story, text: "const a: number = ;\n" }])).toEqual({
+      exit: 2,
+      cause: `csp: could not run: ${story}:1 does not parse (Expression expected.); fix the file`,
+    });
+  });
+
+  it("does not apply the markup rules to literals in storybook/scripts/, but the dynamic-code rules", () => {
+    const script = "storybook/scripts/x.ts";
+    const text = 'const tags: string[] = ["<script>", "<style>", `<p style="a">`];\neval(tags.join(""));\n';
+    expect(checkOutput([{ path: script, text }])).toEqual({
+      exit: 1,
+      findings: [at(script, 2, "eval", evalCall)],
+      summary: "csp: 1 finding in 1 file",
+    });
+  });
+
+  it("applies the markup rules to literals outside storybook/scripts/, also in a directory named scripts below it", () => {
+    const nested = "storybook/stories/scripts/x.ts";
+    expect(checkOutput([{ path: nested, text: 'export const s = "<script>a()</script>";\n' }])).toEqual({
+      exit: 1,
+      findings: [at(nested, 1, "inline-script", inlineScript)],
+      summary: "csp: 1 finding in 1 file",
+    });
+  });
+});
+
+describe("checkOutput: built JavaScript stays JavaScript (added: mutation run)", () => {
+  it("reads a .js `Function < a > (s)` as two comparisons, not as a TypeScript call with a type argument", () => {
+    expect(checkOutput([{ path: js, text: 'export const r = Function < a > ("return 1");\n' }])).toEqual({ exit: 0, summary: "csp: 1 file checked, no finding" });
+  });
+});

@@ -369,18 +369,22 @@ round 1 re-pinned every registry package published less than 7 days before 2026-
      them as the job output (exit 2 on an unresolvable base). The JSON is one array; each shard is
      `{"files": "<entry>,<entry>,...", "lines": <changed lines>}`, its entries comma-separated as `--files` takes
      them. Split (operator decision, phase 3 round 9, human:jeroennouwsdev, 2026-11-03: plant-judge.ts alone took
-     9:49 of 10 minutes): the changed files of step 2, sorted by path, become entries. A file with at most 120
+     9:49 of 10 minutes): the changed files of step 2, sorted by path, become entries. A file with at most 60
      changed lines is one entry, `path`. A file with more is split by line range: its changed lines, in line order,
-     are cut into consecutive chunks of 120 changed lines (the last chunk holds the rest), a cut falling inside a
-     changed range where the count reaches 120; each chunk is one entry `path:start-end` from its first to its last
+     are cut into consecutive chunks of 60 changed lines (the last chunk holds the rest), a cut falling inside a
+     changed range where the count reaches 60; each chunk is one entry `path:start-end` from its first to its last
      changed line, so a file's entries never overlap. The entries, in that order, are filled greedily into shards;
      the next entry starts a new shard when adding it would exceed 10 entries or 250 changed lines, or when the
      current shard already holds an entry of the same file (operator decision, phase 3 round 10,
      human:jeroennouwsdev, 2026-11-03: "Chunks never share (Recommended)": "Two chunks of one file never go in the
      same shard; a chunk can still share a shard with other files."). Each entry lies whole in one shard (a range
-     never crosses a shard), and since no entry exceeds 120 lines, every shard holds at most 10 entries and 250
-     changed lines, and no two entries of one file, so at most 120 changed lines of one file. A file's last entry
-     may still share its shard with the entries of the next files. No changed file: zero shards. Besides the JSON
+     never crosses a shard), and since no entry exceeds 60 lines, every shard holds at most 10 entries and 250
+     changed lines, and no two entries of one file, so at most 60 changed lines of one file. A file's last entry
+     may still share its shard with the entries of the next files. The chunk is 60 changed lines, down from 120
+     (operator decision, 2026-11-05, phase 5 round 6 of mission 002, human:jeroennouwsdev: "Smaller chunks
+     (Recommended)"; the shard `packages/tokens/src/generate.ts:121-240` alone held 264 mutants and took 670 s
+     locally, and was cancelled at the 10-minute limit in CI); the bounds of 10 entries and 250 changed lines per
+     shard, and two entries of one file never sharing a shard, are unchanged. No changed file: zero shards. Besides the JSON
      on stdout, `--plan` writes one line to stderr with the number of shards and the number of cuts:
      `mutation: plan: <s> shards, <c> cuts within files (a mutant spanning a cut is mutated in no shard, see
      gates/README.md)`, with `1 shard` and `1 cut` in the singular, printed also when both are 0. A cut is the
@@ -421,7 +425,9 @@ round 1 re-pinned every registry package published less than 7 days before 2026-
   the greedy fill still put a file's entries together whenever the shard had room, so the shard of
   `gates/lib/plant-judge.ts:1-120,gates/lib/plant-judge.ts:121-216` held the same 353 mutants as before
   (reviews/phase-3/round-9-fixes.md); since phase 3 round 10 (T098) two entries of one file never share a shard,
-  so no shard holds more than 120 changed lines of one file.
+  so no shard held more than 120 changed lines of one file. Since 2026-11-05 (operator decision, phase 5 round 6 of
+  mission 002: the shard `packages/tokens/src/generate.ts:121-240`, 264 mutants, took 670 s locally) the chunk is
+  60 changed lines, so no shard holds more than 60 changed lines of one file (step 1 of "CI, sharded").
 - **Cuts, an accepted limit** (operator decision, phase 3 round 10, human:jeroennouwsdev, 2026-11-03: "Accept,
   record it (Recommended)": "The lost mutants are only large blocks across a cut; the statements inside them are
   still mutated. Record the limit in research R-08 and gates/README.md, and have the plan print how many cuts it

@@ -116,6 +116,8 @@ export interface PlantRun {
   readonly stdout: readonly string[];
   readonly stderr: readonly string[];
   readonly commits?: readonly string[];
+  /** The plant's expected findings with keyed locations resolved in its built tree (002 contracts/gates.md § Keyed locations). */
+  readonly expected?: readonly ExpectedFinding[];
 }
 
 /**
@@ -201,7 +203,7 @@ export function judgePlant(gate: string, plant: Plant, run: PlantRun): string | 
     const expected = plant.records.map((record) => `${record.location} ${record.mutator} "${record.reason}"`);
     return differ("records", expected, records);
   }
-  const expected = plant.findings ?? [];
+  const expected = run.expected ?? plant.findings ?? [];
   if (run.exit !== 1) return `expected exit 1 with the plant's ${plural(expected.length, "finding")}, got exit ${exit}${detail(findings, run)}`;
   const key = (found: { readonly location: string; readonly rule: string }): string => `${found.location} ${found.rule}`;
   const differs = differ("findings", expected.map(key), findings.map(key));

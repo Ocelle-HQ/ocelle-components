@@ -1,0 +1,74 @@
+schema: review-findings/v1
+complete: true
+phase: plan
+round: 3
+lens: fresh
+findings:
+  - id: PLAN-FRESH-3-001
+    severity: 3
+    title: "The widened static `csp` scope is mostly `.ts` inputs, which the csp gate counts but does not scan, and no plant puts a defect in one, so the static half of FR-023 can pass without reading anything"
+    evidence:
+      - artifact: "contracts/gates.md § `csp`, `prefix` (scope widened): \"cover this repository's Storybook inputs before bundling, `storybook/stories/`, `storybook/.storybook/` (with its HTML head templates), `storybook/scripts/`, `storybook/.generated/` ... The csp gate reads the `.ts`, `.js`, `.css` and `.html` files there.\" It says \"reads\", not what the gate checks in a `.ts` file."
+      - artifact: "contracts/gates.md § Plants, `csp` row: the only new plants are `fail-storybook-inline-script` and `pass-storybook-external-script`, both in `storybook/dist/index.html`. No plant has a defect in `storybook/stories/*.ts`, `.storybook/*.ts` or `scripts/*.ts`. spec.md US1 scenario 12 and SC-008 say the gate \"scans this repository's Storybook inputs\"."
+      - code: "gates/bin/csp.ts:224-230 `checkOutput`: only `.html` (scanMarkup) and `.js` (scanScript) get a branch. Any other extension is counted in `files.length` and never scanned. The header comment (line 7) says this for CSS (\"CSS files are read and counted\"). A `.ts` file added to the scope is counted the same way. `scanScript` (line 199) also parses with `ts.ScriptKind.JS`, which is not a TypeScript parse."
+      - code: "gates/plants/csp/pass-inline-script-in-source/plant.json: \"An inline script in package source is not built output, so this gate does not read it (FR-021, FR-028).\" 001 chose on purpose not to scan markup strings in source, so the plan widens the gate to source files without saying which rules apply to source."
+    claim: |
+      Round 2's fix (PLAN-FRESH-2-001 (a)) moved the static `csp` scope from built bundles to this repository's
+      inputs before bundling. Apart from the HTML entries, those inputs are TypeScript (stories, `.storybook/main.ts`,
+      `preview.ts`, `manager.ts`, the scripts) and generated CSS. As the gate is written, adding `.ts` paths to the
+      scope function makes those files count toward "N files checked, no finding" and nothing more. If an
+      implementer does exactly what the contract says, a story that renders `el.innerHTML = '<div style="…">'` or
+      calls `setAttribute('style', …)` passes the static gate. The planned scope tests only list paths, and the only
+      fail plant is in an HTML entry, so nothing would show that the `.ts` part of the scope is vacuous.
+      Principle VIII says every gate must be shown able to fail, and the operator accepted the narrowing on the
+      premise that this static half still works.
+      The rules are also undefined. Scanning source for markup strings is what 001 declared out of scope
+      (`pass-inline-script-in-source`), so it is undecided whether a `"<script>"` literal in `externalise.ts`, which
+      manipulates exactly those tags, is a finding. Either answer is defensible, but whichever is chosen has to be
+      written down and planted.
+    remedies:
+      - "contracts/gates.md § `csp`, research.md R-10 and FR-023: state which rules apply to `.ts` inputs in scope (parsed with `ScriptKind.TS`; dynamic-code rules and markup in string and template literals, with a stated exception for `storybook/scripts/` if the externaliser must name tags). Add fail plants with a defect in `storybook/stories/x.stories.ts` (a `style` attribute in a markup string) and in `storybook/.storybook/preview.ts` (`new Function`), and a pass plant for whatever exception is chosen. Add a unit test that `checkOutput` gives a finding for a `.ts` file in scope."
+  - id: PLAN-FRESH-3-002
+    severity: 2
+    title: "Nothing checks for monospace in the Storybook any more: the prefix gate cannot see the manager theme's `fontCode`, and the bundles holding Storybook's monospace defaults left the static scope with no run-time check replacing it"
+    evidence:
+      - artifact: "research.md R-10: \"The Storybook UI theme sets `fontBase` and `fontCode` to `--ocelle-font-sans`'s family list (no monospace, prefix gate).\" FR-023: \"if a file in scope still carries a monospace family in a `font` or `font-family` declaration that the theme cannot remove, so that the widened `prefix` gate fails, the phase likewise stops\". contracts/gates.md § Plants: `fail-storybook-monospace`, file not named."
+      - code: "gates/bin/prefix.ts:25 `fontDeclarations = /(?<![\\w-])font(?:-family)?\\s*:([^;{}]*)/gi`: only `font:` and `font-family:` match. A theme object property `fontCode: \"Menlo, monospace\"` in `.storybook/manager.ts` does not match, and an omitted `fontCode` leaves nothing to match."
+      - code: "npm pack storybook@10.6.4, unpacked in the scratchpad: dist/manager/globals-runtime.js:7551-7562 default `typography.fonts.mono` = `ui-monospace, Menlo, Monaco, \"Roboto Mono\", … \"Courier New\", monospace`, used as `fontCode` (7950, 7992) and as `fontFamily: typography.fonts.mono` (7856, 7866, 14558); 8772/8799 object-inspector themes hard-code `\"Menlo, monospace\"`, which `fontCode` does not override; dist/preview/runtime.js:31609 `context.font = \"600 12px monospace\"`. These files reach `sb-manager/`, `sb-addons/` and the preview bundle, all outside the static scope since PLAN-FRESH-2-001 (a)."
+      - artifact: "research.md R-10 *Tests and scopes*: the run-time test asserts the header, zero CSP violations, no off-origin request and each story's token list. It has no font assertion. Constitution II: \"No monospace anywhere\"."
+    claim: |
+      In round 1 the bundles were in the prefix gate's static scope, so Storybook's monospace defaults would at least
+      have been found, and the spike would have stopped (CORRECTNESS-1-008). Round 2 moved every bundle to the
+      run-time test because CSP could only be checked there. Monospace went along with it, and the run-time test
+      only checks CSP, so the monospace check was dropped rather than moved.
+      What is left is the prefix gate on `.storybook/manager.ts`. Its regex matches only CSS declarations, so it
+      cannot see the Storybook theme API (`fontBase`, `fontCode`). A theme that omits `fontCode` or sets it to Menlo
+      passes, and so does the object-inspector font that `fontCode` cannot override. R-10 cites the prefix gate as
+      what enforces the font theme, but the gate cannot enforce it. FR-023 also has a stop condition for this, and
+      that condition can no longer fire.
+    remedies:
+      - "R-10, FR-023, contracts/gates.md: the `storybook` unit project gets a test that imports `.storybook/manager.ts` and asserts `fontBase` and `fontCode` equal the `font-sans` family list. The run-time test (`storybook-integration`) gets an assertion that no rendered element in the manager and the preview, for each story in each theme, has a computed `font-family` containing a family on the prefix gate's monospace list (or a used platform font that is monospace, via `CSS.getPlatformFontsForNode`). Add a control element styled monospace that must be reported, so the assertion cannot pass vacuously. The FR-023 stop condition is reworded to that run-time observation, and `fail-storybook-monospace` names its file."
+  - id: PLAN-FRESH-3-003
+    severity: 2
+    title: "The `tree.patch` fix of PLAN-FRESH-2-007 still goes stale: unified-diff context and the line numbers in each plant's expected findings break on ordinary token changes, and the robustness test only tries a same-length value change far from any patch"
+    evidence:
+      - artifact: "data-model.md § Contrast pair: \"The list is a JSON array with one entry per line, so a plant's patch ... changes whole entries without context from neighbouring entries.\" contracts/gates.md § Configuration set: \"a unified diff ... which `buildRepoTree` applies (no fuzz)\"; the robustness test \"changes one token value ... (for example the light `color-danger`) ... and asserts that every `contrast` and `brand-rules` plant still gives its expected outcome\"."
+      - code: "A unified diff carries context lines (3 by default for `git diff`/`diff -u`) taken from the neighbouring lines, and applying with no fuzz requires them to match. In pairs.json the context of a patched entry is the neighbouring entries. In source.ts the context of `text-below-threshold`'s change to `color-ink-muted` is the records of `color-ink-soft` and `color-rule` (spec.md A.1 order, lines 576-578). Adding an entry after the last one also has to rewrite the old last line to add a `,`."
+      - code: "gates/lib/plant-judge.ts:11-15 and 145-157: a fail plant's expected `location` is the gate's `<path>:<line>` and is compared exactly. Every planned contrast and brand-rules finding is located at `packages/tokens/contrast/pairs.json:<line>` or `packages/tokens/src/source.ts:<line>` (data-model.md § Gate findings)."
+    claim: |
+      Round 2 replaced full-file copies with patches so that plants do not go stale against the real source and
+      pair list. Two things still go stale.
+      (1) Patch context. A value change to `color-ink-soft` or `color-rule`, or a figure change in a neighbouring
+      pairs.json entry, makes `text-below-threshold`'s patch fail to apply. Neither touches the plant's token. The
+      data model's claim that one-entry-per-line removes context is false.
+      (2) Line numbers. Every expected finding of these plants is a line number in the real files. Adding or
+      removing a token, a ground or a pair above the planted entry shifts every expected location and fails the
+      whole contrast and brand-rules plant set. That is the change most likely to come next, from #6, the element
+      issues, or an A.8 amendment like the 14 + 5 rows of round 1.
+      The planned robustness test changes the light `color-danger`. That is a same-length value change far from
+      every planted token, so it shows neither problem. Both failures are loud, so nothing is passed wrongly, but
+      each routine token PR has to regenerate patches and renumber plant.json files. That is the maintenance cost
+      PLAN-FRESH-2-007 was meant to remove, and the plan says it is removed.
+    remedies:
+      - "(a) Structured deltas instead of patches: a plant's `delta.json` sets token fields by name (`{\"token\": \"color-ink-muted\", \"light\": \"#6B655A\"}`) and pair entries by key (theme, fg, bg). `buildRepoTree` applies it through the token module's own data (for example a `source.ts` that spreads an optional `overrides` module the configuration set provides empty). Expected locations are written by key (`pairs.json#light/color-ink-muted/color-inset`, `source.ts#color-ink-muted`) and the judge resolves them to lines in the built tree. The robustness test adds a token and a pair above the planted entries as well as changing a value."
+      - "(b) Keep `tree.patch`, but generate with `--unified=1` and say so; correct data-model.md's claim; record in gates/README.md that adding tokens or pairs requires regenerating contrast and brand-rules plant locations, with a script that recomputes them and a test that the script is idempotent. Extend the robustness test to change a token next to each patched hunk and to insert a token before them, expecting the documented failure mode (patch error naming the plant), not silent passing."

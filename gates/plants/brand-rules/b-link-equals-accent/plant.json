@@ -1,0 +1,11 @@
+{
+  "expect": "fail",
+  "why": "color-link equal to color-accent in light breaks FR-019 (b) (US3 scenario 6).",
+  "findings": [
+    {
+      "location": "packages/tokens/src/source.ts#color-link",
+      "rule": "link-accent",
+      "message": "color-link equals color-accent in light"
+    }
+  ]
+}

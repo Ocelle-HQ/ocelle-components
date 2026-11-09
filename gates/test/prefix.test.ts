@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { checkPackages, isCovered, scanText } from "../bin/prefix.ts";
+import { checkPackages, isCovered, monospaceFamilies, scanText } from "../bin/prefix.ts";
 import type { Finding } from "../lib/findings.ts";
 
 // The prefix gate's decision (FR-022, research.md R-12): `sk-` and `--sk-` names at a name boundary,
@@ -168,5 +168,78 @@ describe("checkPackages", () => {
   it("does not read an uncovered file that is not valid UTF-8", () => {
     const files = [{ path: "packages/tokens/src/font.woff2", bytes: new Uint8Array([0xff, 0xfe]) }];
     expect(checkPackages(files)).toEqual({ exit: 0, summary: "prefix: 0 files checked, no finding" });
+  });
+});
+
+// The widened scope (002 FR-023; contracts/gates.md § `csp`, `prefix`): the Storybook workspace's own source
+// (`.storybook/`, `stories/`, `scripts/`, `test/` and its other files), its generated stylesheets and the top-level
+// HTML entries of its build output; not installed packages and not the bundles under storybook/dist/.
+describe("isCovered: the Storybook workspace (002 FR-023)", () => {
+  it("selects the Storybook source, tests, generated stylesheets and top-level HTML entries, not installed packages, bundles, binaries or Markdown", () => {
+    const inScope = [
+      "storybook/.storybook/main.ts",
+      "storybook/.storybook/preview-head.html",
+      "storybook/.storybook/preview.css",
+      "storybook/stories/tokens.stories.ts",
+      "storybook/stories/render.ts",
+      "storybook/scripts/swatches.ts",
+      "storybook/test/unit/theme.test.ts",
+      "storybook/test/integration/csp.test.ts",
+      "storybook/package.json",
+      "storybook/.generated/swatches.css",
+      "storybook/.generated/tokens.css",
+      "storybook/dist/index.html",
+      "storybook/dist/iframe.html",
+    ];
+    const outOfScope = [
+      "storybook/node_modules/storybook/dist/x.js",
+      "storybook/stories/node_modules/x.js",
+      "storybook/dist/assets/iframe-BZdWAMwh.js",
+      "storybook/dist/assets/iframe-DMn9nMwa.css",
+      "storybook/dist/sb-manager/runtime.js",
+      "storybook/dist/sb-addons/storybook-1/manager-bundle.js",
+      "storybook/dist/inline-0123456789abcdef.css",
+      "storybook/dist/index.json",
+      "storybook/dist/sub/x.html",
+      "storybook/.generated/fonts/SchibstedGrotesk-wght.woff2",
+      "storybook/README.md",
+      "xstorybook/stories/x.ts",
+      "gates/plants/prefix/a/tree/storybook/stories/x.ts",
+    ];
+    expect([...inScope, ...outOfScope].filter((file) => isCovered(file))).toEqual(inScope);
+  });
+});
+
+describe("monospaceFamilies", () => {
+  it("lists FR-022's monospace families, which the Storybook run-time check also uses", () => {
+    expect([...monospaceFamilies].sort()).toEqual(
+      [
+        "monospace",
+        "ui-monospace",
+        "Menlo",
+        "Monaco",
+        "Consolas",
+        "Courier",
+        "Courier New",
+        "SF Mono",
+        "SFMono-Regular",
+        "Liberation Mono",
+        "DejaVu Sans Mono",
+        "Lucida Console",
+        "Roboto Mono",
+        "Source Code Pro",
+        "Fira Code",
+        "Fira Mono",
+        "JetBrains Mono",
+        "Cascadia Code",
+        "Cascadia Mono",
+      ].sort(),
+    );
+  });
+
+  it("are the families scanText reports in a font declaration", () => {
+    for (const family of monospaceFamilies) {
+      expect(scanText(path, `a { font-family: ${family}; }`)).toEqual([at(1, "monospace", mono(family))]);
+    }
   });
 });

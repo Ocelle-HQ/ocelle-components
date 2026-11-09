@@ -1,0 +1,11 @@
+{
+  "expect": "fail",
+  "why": "A pair with the translucent color-overlay as its ground has no ratio and is reported (spec edge case, FR-017).",
+  "findings": [
+    {
+      "location": "packages/tokens/contrast/pairs.json#light/color-ink/color-overlay",
+      "rule": "not-opaque",
+      "message": "color-overlay (rgb(21 19 15 / 0.5))"
+    }
+  ]
+}

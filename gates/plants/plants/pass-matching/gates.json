@@ -90,5 +90,21 @@
     "plantCommand": "node gates/bin/signoff.ts --root {root} --range {base}..HEAD",
     "plantForm": "commit-repo",
     "scope": "the commits of the pull request (base to head), except merges and the root commit d08d4133bf0034e3d1ff29cddf2b0f13ca63290a"
+  },
+  {
+    "id": "contrast",
+    "check": "Contrast",
+    "command": "pnpm run gate:contrast",
+    "plantCommand": "node gates/bin/contrast.ts --root {root}",
+    "plantForm": "repo-tree",
+    "scope": "002 FR-016, FR-017, FR-021: every pair of packages/tokens/contrast/pairs.json in both themes, from the token values of packages/tokens/src/source.ts resolved by the root's generator, and the required pairs derived from the source's intended grounds"
+  },
+  {
+    "id": "brand-rules",
+    "check": "Brand rules",
+    "command": "pnpm run gate:brand-rules",
+    "plantCommand": "node gates/bin/brand-rules.ts --root {root}",
+    "plantForm": "repo-tree",
+    "scope": "002 FR-018, FR-019: rules (a) to (g) on the token source, the stylesheet the root's generator makes from it, and the excluded ochre pair of packages/tokens/contrast/pairs.json"
   }
 ]

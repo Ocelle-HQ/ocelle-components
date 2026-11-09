@@ -1,0 +1,44 @@
+Scope: all 5 workspace projects
+✓ Lockfile passes supply-chain policies (verified 12h ago)
+Lockfile is up to date, resolution step is skipped
+Packages are hard linked from the content-addressable store to the virtual store.
+  Content-addressable store is at: /root/.local/share/pnpm/store/v11
+  Virtual store is at:             node_modules/.pnpm
+Packages: +469
+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+Progress: resolved 469, reused 469, downloaded 0, added 469, done
+
+devDependencies:
++ @eslint/js 10.0.1
++ @stryker-mutator/core 10.1.1
++ @stryker-mutator/typescript-checker 10.1.1
++ @stryker-mutator/vitest-runner 10.1.1
++ @types/node 26.6.5
++ @vitest/browser-playwright 5.0.5
++ @vitest/eslint-plugin 1.6.28
++ eslint 10.13.0
++ jiti 2.7.0
++ parse5 8.0.1
++ playwright 1.64.1
++ postcss 8.5.31
++ postcss-lit 1.4.1
++ postcss-value-parser 4.2.0
++ stylelint 17.16.0
++ typescript 6.0.3
++ typescript-eslint 8.72.0
++ vite 8.3.5
++ vitest 5.0.5
+
+Done in 671ms using pnpm v12.16.1
+$ node gates/bin/setup-offline.ts
+setup: installed offline; Chromium at /tmp/claude-0/-home-user-ocelle-components/181e1231-8fd5-5f31-9d9d-498e593ba7cf/scratchpad/pw/chromium-1248/chrome-linux64/chrome
+$ node gates/bin/test.ts
+packages/tokens/test/sk-mapping.test.ts:42: unit-tests: the role mapping table (FR-024) is one file in the feature directory: AssertionError: expected [] to have a length of 1 but got +0
+packages/tokens/test/sk-mapping.test.ts:46: unit-tests: the role mapping table (FR-024) records the kitty-mission-ui commit it was read from (40 hex): TypeError: .toMatch() expects to receive a string, but got undefined
+packages/tokens/test/sk-mapping.test.ts:50: unit-tests: the role mapping table (FR-024) has exactly 55 rows of four cells: AssertionError: expected [] to deeply equal [ 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, …(45) ]
+packages/tokens/test/sk-mapping.test.ts:54: unit-tests: the role mapping table (FR-024) names 55 distinct roles in column 1, custom properties of one prefix other than ocelle: AssertionError: expected +0 to be 55 // Object.is equality
+packages/tokens/test/sk-mapping.test.ts:62: unit-tests: the role mapping table (FR-024) gives in column 2 a token of the stylesheet and the JSON export, or dropped: AssertionError: expected [] to have a length of 55 but got +0
+packages/tokens/test/sk-mapping.test.ts:68: unit-tests: the role mapping table (FR-024) names the replacement token of every dropped role in column 3: AssertionError: expected [] to not have a length of +0
+packages/tokens/test/sk-mapping.test.ts:75: unit-tests: the role mapping table (FR-024) mentions only tokens wherever it names an --ocelle-* custom property: AssertionError: expected 0 to be greater than or equal to 55
+unit-tests: 7 of 1794 tests failed
+[ELIFECYCLE] Test failed. See above for more details.

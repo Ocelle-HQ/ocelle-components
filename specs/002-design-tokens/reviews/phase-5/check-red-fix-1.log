@@ -1,0 +1,50 @@
+Scope: all 5 workspace projects
+✓ Lockfile passes supply-chain policies (verified 1d ago)
+Lockfile is up to date, resolution step is skipped
+Packages are hard linked from the content-addressable store to the virtual store.
+  Content-addressable store is at: /root/.local/share/pnpm/store/v11
+  Virtual store is at:             node_modules/.pnpm
+Packages: +469
+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+Progress: resolved 469, reused 469, downloaded 0, added 469, done
+
+devDependencies:
++ @eslint/js 10.0.1
++ @stryker-mutator/core 10.1.1
++ @stryker-mutator/typescript-checker 10.1.1
++ @stryker-mutator/vitest-runner 10.1.1
++ @types/node 26.6.5
++ @vitest/browser-playwright 5.0.5
++ @vitest/eslint-plugin 1.6.28
++ eslint 10.13.0
++ jiti 2.7.0
++ parse5 8.0.1
++ playwright 1.64.1
++ postcss 8.5.31
++ postcss-lit 1.4.1
++ postcss-value-parser 4.2.0
++ stylelint 17.16.0
++ typescript 6.0.3
++ typescript-eslint 8.72.0
++ vite 8.3.5
++ vitest 5.0.5
+
+Done in 219ms using pnpm v12.16.1
+$ node gates/bin/setup-offline.ts
+setup: installed offline; Chromium at /tmp/claude-0/-home-user-ocelle-components/181e1231-8fd5-5f31-9d9d-498e593ba7cf/scratchpad/pw/chromium-1248/chrome-linux64/chrome
+$ node gates/bin/test.ts
+gates/test/integration/plant-repo.test.ts:137: unit-tests: buildRepoTree: plant deltas (002 contracts/gates.md § Configuration set, *Plant deltas*) writes pairsList "empty" as exactly "[]\n", an empty JSON list: Error: delta.json: unknown key pairsList
+gates/test/integration/plant-repo.test.ts:145: unit-tests: buildRepoTree: plant deltas (002 contracts/gates.md § Configuration set, *Plant deltas*) writes pairsList "not-json" as exactly the fixed cut-off text, which does not parse as JSON: Error: delta.json: unknown key pairsList
+gates/test/plant-repo.test.ts:115: unit-tests: parseDelta reads each part of a delta: token overrides, pair changes by key, the closed pair list replacement and the wrapped generator: Error: delta.json: unknown key pairsList
+gates/test/plant-repo.test.ts:164: unit-tests: parseDelta rejects {"pairsList":"[]\n"}: AssertionError: expected [Function] to throw error matching /^delta\.json: pairsList must be "empt…/ but got 'delta.json: unknown key pairsList'
+gates/test/plant-repo.test.ts:164: unit-tests: parseDelta rejects {"pairsList":"Empty"}: AssertionError: expected [Function] to throw error matching /^delta\.json: pairsList must be "empt…/ but got 'delta.json: unknown key pairsList'
+gates/test/plant-repo.test.ts:164: unit-tests: parseDelta rejects {"pairsList":""}: AssertionError: expected [Function] to throw error matching /^delta\.json: pairsList must be "empt…/ but got 'delta.json: unknown key pairsList'
+gates/test/plant-repo.test.ts:164: unit-tests: parseDelta rejects {"pairsList":1}: AssertionError: expected [Function] to throw error matching /^delta\.json: pairsList must be "empt…/ but got 'delta.json: unknown key pairsList'
+gates/test/plant-repo.test.ts:164: unit-tests: parseDelta rejects {"pairsList":null}: AssertionError: expected [Function] to throw error matching /^delta\.json: pairsList must be "empt…/ but got 'delta.json: unknown key pairsList'
+gates/test/plant-repo.test.ts:164: unit-tests: parseDelta rejects {"pairsList":["empty"]}: AssertionError: expected [Function] to throw error matching /^delta\.json: pairsList must be "empt…/ but got 'delta.json: unknown key pairsList'
+gates/test/plant-repo.test.ts:164: unit-tests: parseDelta rejects {"pairs":[],"pairsList":"empty"}: AssertionError: expected [Function] to throw error matching /^delta\.json: pairs and pairsList exc…/ but got 'delta.json: unknown key pairsList'
+gates/test/plant-repo.test.ts:164: unit-tests: parseDelta rejects {"pairs":[{"key":["light","a","b"],"rem…: AssertionError: expected [Function] to throw error matching /^delta\.json: pairs and pairsList exc…/ but got 'delta.json: unknown key pairsList'
+gates/test/plant-repo.test.ts:164: unit-tests: parseDelta rejects {"pairsText":"[]\n"}: AssertionError: expected [Function] to throw an error
+gates/test/plant-repo.test.ts:164: unit-tests: parseDelta rejects {"pairsList":"empty","pairsText":"[]\n"}: AssertionError: expected [Function] to throw error matching /^delta\.json: unknown key pairsText$/ but got 'delta.json: unknown key pairsList'
+unit-tests: 13 of 1787 tests failed
+[ELIFECYCLE] Test failed. See above for more details.

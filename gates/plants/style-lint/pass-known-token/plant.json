@@ -1,0 +1,4 @@
+{
+  "expect": "pass",
+  "why": "References to real tokens of packages/tokens/src/source.ts, alone, inside calc() and as a var() fallback, are allowed (FR-010)."
+}

@@ -1,0 +1,12 @@
+{
+  "tokens": [
+    { "token": "color-ink-muted", "light": "#6B655A" },
+    { "add": { "name": "radius-4", "group": "shape", "value": "4px" } },
+    { "remove": "size-dot" }
+  ],
+  "pairs": [
+    { "key": ["light", "color-ink-muted", "color-inset"], "set": { "figure": "4.27" } },
+    { "key": ["dark", "color-ink", "color-sheet"], "remove": true },
+    { "add": { "theme": "light", "fg": "color-ink", "bg": "color-overlay", "kind": "text", "figure": "1", "status": "checked", "source": "computed" } }
+  ]
+}

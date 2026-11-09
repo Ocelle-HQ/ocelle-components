@@ -1,0 +1,154 @@
+schema: review-findings/v1
+complete: true
+phase: plan
+round: 1
+lens: fresh
+findings:
+  - id: PLAN-FRESH-1-001
+    severity: 3
+    title: "Widening the static csp and prefix gates to storybook/dist/ fails on Storybook's own prebuilt runtime, which no externalising can fix"
+    evidence:
+      - artifact: "research.md § R-10: 'The `csp` and `prefix` gates widen their scope from `packages/*/dist/` to also cover `storybook/dist/`'; the spike only 'records the CSP violations' at run time, and its stop condition is about run-time violations; spec FR-023 stops only for 'inline script' or a monospace family"
+      - artifact: "contracts/gates.md § csp, prefix: '`isBuiltOutput` (csp) and the prefix gate's output scope cover `storybook/dist/**` (`.js`, `.css`, `.html`)'"
+      - code: "gates/bin/csp.ts:2-6: built JS is parsed and `Function()` calls are findings, and every string literal with a `<` goes through parse5, where a `style` attribute is a finding"
+      - code: "gates/bin/prefix.ts:23 `names` regex flags `sk-` after a non-word character, case-insensitive; prefix.ts:26-48 flags `Menlo`/`monospace` in a `font-family` declaration"
+      - code: "probe: npm pack storybook@10.6.4; dist/_node-chunks/builder-manager-H2GHKW6S.js:1445,1611-1616 copies `dist/manager/*.js` verbatim to `<out>/sb-manager/`"
+      - code: "probe: storybook@10.6.4 dist/manager/globals-runtime.js:30269 and dist/preview/runtime.js:12216 `root = freeGlobal_default || freeSelf || Function(\"return this\")()` (csp `Function()` finding); globals-runtime.js:30964,30973 and preview/runtime.js:13253,13262 template strings `<span style=\"color: #FF4785\">` (csp style-attribute finding)"
+      - code: "probe: storybook@10.6.4 dist/manager/runtime.js:9655 and globals-runtime.js:70878,74824 `\"sk-SK\": ...` (react-aria Slovak locale keys) match the prefix gate's `sk-` rule; dist/core-server/presets/common-manager.css:4,75 `font-family: Menlo, monospace` (@devtools-ds)"
+    claim: |
+      The plan treats Storybook's CSP problem as inline <script>/<style> in the built HTML plus run-time
+      style injection, and plans an externalise step and a run-time spike for it. But the widened csp and prefix
+      gates are static scans of every .js/.css/.html file under storybook/dist/, and Storybook copies its
+      prebuilt manager and preview runtimes into that output unchanged. Those vendor files contain a
+      `Function("return this")()` call, HTML strings with `style="..."` attributes, the locale key "sk-SK", and
+      `font-family: Menlo, monospace`. Each is a finding of the widened gates. Externalising inline scripts does
+      not remove them, and the run-time test cannot see them: `Function("return this")` never runs in a browser,
+      because `self` exists. The spike as planned can therefore report success while SC-008 and US1 scenario 12
+      still cannot pass. The `sk-` case is not a Spec Kitty name, and FR-023 has no stop-and-ask for it, so the
+      implementer would be pushed to patch vendor output or weaken a gate.
+    remedies:
+      - "Narrow the widened static scope to the files this repository produces in the Storybook build (the stories and preview bundles Vite emits from our sources, the externalised inline files, and the HTML entry files), leave the copied sb-manager/ and sb-preview/ vendor runtimes to the run-time CSP test, and record the narrowing in gates.json, gates/README.md, the plan and FR-023"
+      - "Keep the full widened scope, extend the spike to run the widened csp and prefix gates on the built output, and widen FR-023's stop-and-ask to any static finding in Storybook's own code (dynamic-code calls, style-attribute strings, `sk-` locale codes, monospace), so the operator decides on an allow-list or exception in Complexity Tracking before the phase builds on it"
+  - id: PLAN-FRESH-1-002
+    severity: 3
+    title: "The unknown-token style-lint rule breaks the existing style-lint plants and cannot load the token source in plant repositories"
+    evidence:
+      - artifact: "research.md § R-09: 'The list is read from the root's `packages/tokens/src/source.ts` at plugin load'; contracts/gates.md § style-lint: 'Exit 2 if the token source does not load'; § Plants: style-lint breaking '(existing)', no change to the existing plants"
+      - code: "gates/lib/plant-repo.ts:25-46 + :154: a repo-tree plant repository is the plant's tree plus `configurationSet` (root config files, each package's package.json and tsconfig.json, gates/eslint, gates/stylelint). packages/tokens/src/source.ts is not in it"
+      - code: "gates/plants/style-lint/pass-var-token/tree/packages/styles/src/x.css:3 `margin: var(--ocelle-x);` (expect pass); pass-var-keyword-fallback and fail-var-fallback also use `var(--ocelle-x)`, and fail-var-fallback/plant.json expects exactly one finding (`4px`)"
+      - artifact: "contracts/gates.md § Plants: contrast pass plant `repository-values` is 'a copy of the real source and list'; R-08: brand-rules plants 'change `source.ts` or `generate.ts` in the plant's tree'"
+    claim: |
+      None of the 28 existing style-lint plants carries packages/tokens/src/source.ts, and the plant runner does not
+      copy it. Once the rule needs the token source, every style-lint plant (fail, pass and breaking alike) runs
+      the gate in a repository without it and gets exit 2, so the plant job fails. Even if the source were
+      present, `--ocelle-x` is not a token. pass-var-token and pass-var-keyword-fallback would then fail, and
+      fail-var-fallback would report two findings where its plant.json lists one. The plan's plants table leaves
+      these plants "(existing)". The same gap affects the new gates. Every contrast and brand-rules plant has to
+      carry a full copy of source.ts (and generate.ts, with everything they import), so the `repository-values`
+      pass plants are stale copies the moment a token changes, and a brand-rules plant that edits generate.ts
+      tests a frozen fork of the generator.
+    remedies:
+      - "Add packages/tokens/src/source.ts and packages/tokens/src/generate.ts (and their imports) to the plant-repo configuration set, so a repo-tree plant gets the repository's real token source unless its tree overrides it; rename `--ocelle-x` in pass-var-token, pass-var-keyword-fallback and fail-var-fallback to real tokens; list these plant changes and the plant-repo.ts change (with its test-first unit) in contracts/gates.md and the US1/US3 phases"
+  - id: PLAN-FRESH-1-003
+    severity: 3
+    title: "The browser tests serve the built dist/, but no test path builds it: CI fails for setup reasons, local runs test stale output, mutants in the generator go unseen"
+    evidence:
+      - artifact: "research.md § R-03: 'A small static server ... serves the built `dist/` and a fixture page'; quickstart.md step 1 builds before step 2 by hand"
+      - code: ".github/workflows/ci.yml:54 unit-tests job runs `pnpm run gate:unit-tests` with no build (only csp/prefix at :132,:141 run `pnpm -r build`)"
+      - code: ".specify/extensions/story/story-config.yml test_command \"pnpm test\" = `node gates/bin/test.ts`, which runs Vitest only (gates/bin/test.ts:1-2, no build step)"
+      - code: "vitest.config.ts:6 excludes `**/dist/**` from tests; gates/lib/mutation/ranges.ts:23-35 mutates packages/*/src; vitest.mutation.config.ts runs the same projects with no build"
+    claim: |
+      The theme, motion, font, request and CSP tests (FR-006, FR-007, FR-015, US2) read packages/tokens/dist/
+      through a server. In the Unit tests job, in the automatic red/green check and in the "proven against the
+      old code" check, nothing builds dist/ first. In CI the tests therefore fail on a missing file, which
+      Principle VIII forbids as a red reason ("not a syntax, import or setup error"). Locally they run against
+      whatever dist/ was built last, so a test can pass or fail regardless of the src/ under test. Stryker mutates
+      src/generate.ts and src/source.ts, but the browser tests never see a mutant because dist/ is not rebuilt.
+      The theme-selection CSS of R-02 is then guarded only by whatever node test exists, so mutation testing
+      cannot reach the code that matters most in US1.
+    remedies:
+      - "Have the browser tests produce the stylesheet in-process from src/generate.ts (write `css()` output and the copied font into a per-run temporary directory that the test server serves), so tests, red/green runs and Stryker always exercise the current source; keep one separate check that `scripts/build.ts` writes exactly that text to dist/"
+      - "Alternatively make the unit-tests gate, the story test_command and the Stryker run build @ocelle/tokens first, and record that in gates/README.md and the 001 contracts"
+  - id: PLAN-FRESH-1-004
+    severity: 3
+    title: "The new storybook/ workspace is outside the scope of the test, typecheck and mutation gates, so its CSP test never runs and its post-processor is unchecked"
+    evidence:
+      - artifact: "plan.md § Source Code: `storybook/ … scripts/externalise.ts  scripts/swatches.ts … test/csp.test.ts`; research.md § R-10: the run-time check is `storybook/test/csp.test.ts`"
+      - code: "vitest.config.ts:15-62: the projects include only packages/tokens/**, packages/styles/**, packages/elements/**, gates/** and gates/test/integration/**; no project includes storybook/**, so `pnpm test` and the Unit tests job never run storybook/test/csp.test.ts"
+      - code: "gates/lib/mutation/ranges.ts:23-28: mutation pathspecs are packages/*/**, gates/bin, gates/lib, gates/eslint, gates/stylelint; storybook/scripts/externalise.ts and swatches.ts are never mutated"
+      - code: "probe: tsc 6.0.2 --listFilesOnly with include [\"**/*.ts\"] (as tsconfig.json) over sb/.storybook/main.ts and sb/stories/x.ts lists only sb/stories/x.ts; TypeScript wildcards skip dot-directories, so storybook/.storybook/{main,preview,manager}.ts are not typechecked"
+      - code: "gates/bin/prefix.ts:51-53 `isCovered` reads only `packages/<name>/` (source scope); the plan widens only the built-output scope"
+    claim: |
+      SC-008, US1 scenarios 11 and 12, and the operator's run-time CSP decision (SPEC-3-01) rest on
+      storybook/test/csp.test.ts. As planned, that file is in no Vitest project, so it never runs in CI or in the
+      red/green check. It would pass vacuously by never being executed. externalise.ts is the code that makes the
+      Storybook output CSP-clean, and swatches.ts generates the swatch stylesheet. Neither is in mutation scope
+      (constitution VIII: "Changed source is mutation-tested"). The .storybook/ configuration, which holds the
+      UI-theme font lists that the prefix rule depends on, is not typechecked.
+    remedies:
+      - "Add a `storybook` Vitest project (node, include storybook/**/*.test.ts, with the needed build step), add storybook/scripts/** and storybook/.storybook/** to the mutation pathspecs (or state why each file is behaviour-free), include `storybook/.storybook/**/*.ts` explicitly in tsconfig.json, extend the prefix gate's source scope to storybook/ sources, and list these scope changes in contracts/gates.md, gates.json scope texts and gates/README.md"
+  - id: PLAN-FRESH-1-005
+    severity: 2
+    title: "`storybook build` sends telemetry to storybook.js.org by default; the plan never disables it"
+    evidence:
+      - artifact: "plan.md:43 Constraints: 'no network at build or run time'; research.md § R-10 configures main.ts/manager.ts but says nothing about telemetry"
+      - code: "probe: storybook@10.6.4 dist/core-server/index.js:7620-7627 after a build: `await telemetry2(\"build\", payload, { configDir })`, payload including `summarizeIndex(storyIndex)`; dist/_node-chunks/chunk-OHHOJXSR.js posts to `https://storybook.js.org/event-log`"
+      - code: "probe: storybook@10.6.4 dist/_node-chunks/chunk-IO25TNQP.js:49-57 and dist/core-server/presets/common-preset.js:2204: disabled only by `--disable-telemetry`, `core.disableTelemetry` in main config, or STORYBOOK_DISABLE_TELEMETRY"
+    claim: |
+      Every `pnpm -r build` (the csp and prefix CI jobs, quickstart step 1, local runs) would make an outbound
+      request to Storybook's telemetry endpoint with a summary of the story index. This contradicts the plan's own
+      "no network at build" constraint and the offline setup (`setup:offline`). It also sends data about an
+      internal repository to a third party. The run-time request test in R-10 only watches the browser, so
+      nothing in the plan would catch it.
+    remedies:
+      - "Set `core: { disableTelemetry: true }` in storybook/.storybook/main.ts and pass `--disable-telemetry` in the storybook package's build script; add a test that fails when the main config does not disable telemetry, and state in R-10 that the Storybook build makes no network request"
+  - id: PLAN-FRESH-1-006
+    severity: 2
+    title: "Nothing sets `color-scheme` for the dark theme, and #6 is told not to repeat the theme selectors it would need to do so"
+    evidence:
+      - artifact: "research.md § R-02: the stylesheet blocks set only `--ocelle-*` properties; § R-02 Alternatives: 'color-scheme, which is set by base styles, #6'"
+      - artifact: "spec.md § Assumptions 'Theme selectors belong here': '#6 (base styles) builds on them and does not repeat them'"
+      - code: "grep -rn 'color-scheme' over specs/ and the repository: no requirement, task or plan text sets the `color-scheme` property anywhere"
+    claim: |
+      Without `color-scheme: dark`, the browser draws its own parts of the page in light mode even when the
+      tokens are dark: scrollbars, native form controls, the date and select pickers, the default Canvas and
+      CanvasText system colours, and autofill. This holds under system-dark and under `data-theme="dark"`. The
+      dark condition is "system dark and not data-theme=light, or data-theme=dark". Only the tokens stylesheet
+      expresses it, yet R-02 hands `color-scheme` to #6, and the spec forbids #6 from repeating the selectors. #6
+      therefore cannot set it correctly without either breaking that assumption or using a token the tokens
+      package does not provide. Every host (console, Kitty Desktop, Dashboard) and the token stories would show
+      light scrollbars and controls on a dark page.
+    remedies:
+      - "Set `color-scheme: light` in the `:root` block and `color-scheme: dark` in both dark blocks of R-02's stylesheet, add it to the six-condition browser test and the brand-rules/forced-colours reasoning, and state it in the host contract (contracts/token-package.md)"
+      - "Or add a theme-dependent token (for example `--ocelle-color-scheme: light | dark`) that #6 applies as `color-scheme: var(--ocelle-color-scheme)`, and record that hand-off in the spec's Assumptions"
+  - id: PLAN-FRESH-1-007
+    severity: 2
+    title: "The unknown-token rule forbids every element-defined `--ocelle-*` custom property, including the public CSS custom properties constitution I requires elements to declare"
+    evidence:
+      - artifact: "research.md § R-09: 'every `var(--ocelle-<name>)` ... whose name is not in the token name list fails'; spec FR-010"
+      - code: "specs/001-repository-foundation/spec.md:353-355 (FR-024): 'the value given to a custom property is checked where it is declared in covered styles', so 001 expects element and base styles to declare their own custom properties"
+      - code: ".specify/memory/constitution.md:18-19 (I): 'the custom-elements manifest declares every public property, attribute, event, slot, part and CSS custom property'; :10 tokens and elements both use the `ocelle-` prefix"
+    claim: |
+      Elements are expected to expose CSS custom properties as public hooks. A host theming one
+      instance would set something like `--ocelle-button-gap`, and the element would read
+      `var(--ocelle-button-gap, var(--ocelle-space-2))`. Elements also use private custom properties to share
+      a computed value between rules. Under the new rule every such reference is "unknown token" unless the name
+      is a design token, so the first element issue (#7) cannot have a CSS custom property hook in the library's
+      own namespace. It would have to invent another prefix, which constitution I does not provide, or ask for a
+      rule change. Neither the spec nor the plan says what an element's own custom properties are called or how
+      the rule tells them apart from misspelt tokens.
+    remedies:
+      - "Restrict the rule to references in the token namespaces (the group prefixes of FR-001: `--ocelle-color-`, `--ocelle-font-`, `--ocelle-space-`, …) or allow names declared in the same stylesheet or element, and record the naming convention for element custom properties (for example `--ocelle-<element>-*`) in the spec, with a pass plant for an element-declared property"
+  - id: PLAN-FRESH-1-008
+    severity: 1
+    title: "Typing `grounds` as `TokenName[]` inside the source that defines `TokenName` is a circular type the strict typecheck rejects"
+    evidence:
+      - artifact: "data-model.md § Token: `contrast` is `{ kind; grounds: readonly TokenName[]; exempt?: true }`; Derived: '`TokenName` (union type of names)' from the same source"
+      - code: "probe: tsc 6.0.2 --strict on `export type TokenName = (typeof source)[number][\"name\"]; ... grounds: readonly TokenName[] ... export const source = [...] as const satisfies readonly Token[]` → TS2456 'Type alias TokenName circularly references itself', TS2502, TS7022"
+    claim: |
+      The data model as written does not compile. The implementer will have to loosen `grounds` to `string`, and
+      then nothing at compile time checks that a ground exists, or split the name list from the records. Either
+      choice changes the data model in the middle of the red step. FR-009's typed names are also derived from the
+      same source.
+    remedies:
+      - "State in data-model.md that `grounds` (and `ref`) are typed `string` in the source and checked by `validateSource` (with a test and a plant-backed gate finding), and that `TokenName` is derived from the record names only"

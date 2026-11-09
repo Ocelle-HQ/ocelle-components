@@ -1,0 +1,10 @@
+{
+  "expect": "fail",
+  "why": "An excluded pair needs a non-empty reason (FR-016).",
+  "findings": [
+    {
+      "location": "packages/tokens/contrast/pairs.json#light/color-control-border/color-accent-low",
+      "rule": "excluded-without-reason"
+    }
+  ]
+}

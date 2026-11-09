@@ -15,7 +15,7 @@ import { plugin as uncheckedExpect } from "./gates/eslint/unchecked-expect.ts";
 const ocelle = { rules: { ...snapshotOnly.rules, ...uncheckedExpect.rules } };
 
 export default defineConfig([
-  { ignores: ["gates/plants/**", "gates/test/fixtures/**", "packages/*/dist/**", ".stryker-tmp/**"] },
+  { ignores: ["gates/plants/**", "gates/test/fixtures/**", "packages/*/dist/**", "storybook/dist/**", ".stryker-tmp/**"] },
   {
     files: ["**/*.test.ts", "**/*.spec.ts", "**/test/**/*.ts", "**/*.stories.ts"],
     languageOptions: { parser: tseslint.parser },

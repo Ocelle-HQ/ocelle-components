@@ -1,0 +1,4 @@
+/* Plant for the style lint: an element custom property the fixture manifest declares. */
+:host {
+  gap: var(--ocelle-button-gap);
+}

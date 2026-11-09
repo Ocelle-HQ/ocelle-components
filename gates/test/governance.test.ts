@@ -67,10 +67,14 @@ describe("governance files (SC-006)", () => {
     expect(security).toContain("10 working days");
   });
 
-  it("THIRD_PARTY_NOTICES states that no third-party asset ships yet and when the font entry arrives (FR-033)", () => {
+  // Since #5 vendored the font (002 FR-014), the notice lists it with its licence beside the file instead of saying
+  // that no third-party asset ships; packages/tokens/test/font.test.ts checks the entry against fonts/SOURCE.json.
+  it("THIRD_PARTY_NOTICES lists the Schibsted Grotesk font with its SIL OFL 1.1 licence beside the file (FR-033, 002 FR-014)", () => {
     const notices = text("THIRD_PARTY_NOTICES");
-    expect(notices).toContain("No third-party asset ships");
+    expect(notices).not.toContain("No third-party asset ships");
     expect(notices).toContain("Schibsted Grotesk");
-    expect(notices).toContain("#5");
+    expect(notices).toContain("SIL Open Font License 1.1");
+    expect(notices).toContain("packages/tokens/fonts/SchibstedGrotesk-wght.woff2");
+    expect(notices).toContain("packages/tokens/fonts/OFL.txt");
   });
 });

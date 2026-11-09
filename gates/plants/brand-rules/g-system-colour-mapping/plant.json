@@ -1,0 +1,4 @@
+{
+  "expect": "pass",
+  "why": "Mapping colour tokens to CSS system colours in a forced-colours block is allowed (FR-018, PLAN-A11Y-SECURITY-1-011)."
+}

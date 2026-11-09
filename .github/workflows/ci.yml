@@ -1,7 +1,7 @@
 # Pull-request CI (FR-020, contracts/ci-checks.md, research.md R-16): one job per gate, each a separately named check,
 # plus the plant job (FR-025). The gate job ids are the gate ids of gates/gates.json and the FR-020 list of
 # gates/lib/registry.ts; the plant job checks that the three sets match (research.md R-10). The ruleset on main
-# requires the twelve check names (gates/README.md).
+# requires the fourteen check names (gates/README.md).
 #
 # Security (research.md R-16): a read-only token at the top level and no other permission anywhere, every checkout
 # with persist-credentials: false, no secret, every action pinned by commit SHA. Every job runs the shared setup of
@@ -170,6 +170,24 @@ jobs:
           BASE: ${{ github.event.pull_request.base.sha }}
           HEAD: ${{ github.event.pull_request.head.sha }}
         run: pnpm run gate:signoff -- --range "$BASE..$HEAD"
+  contrast:
+    name: Contrast
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: ./.github/actions/setup
+      - run: pnpm run gate:contrast
+  brand-rules:
+    name: Brand rules
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: ./.github/actions/setup
+      - run: pnpm run gate:brand-rules
   plants:
     name: Plants
     runs-on: ubuntu-24.04

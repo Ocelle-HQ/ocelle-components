@@ -1,0 +1,11 @@
+{
+  "expect": "fail",
+  "why": "The manifest declares --ocelle-button-gap; the misspelt var(--ocelle-button-gpa) is an unknown token, since the exemption is by exact name, not by prefix (FR-010, research.md R-09).",
+  "findings": [
+    {
+      "location": "packages/elements/src/x.css:3",
+      "rule": "ocelle/token-only",
+      "message": "unknown token --ocelle-button-gpa"
+    }
+  ]
+}

@@ -90,5 +90,21 @@
     "plantCommand": "node gates/bin/signoff.ts --root {root}",
     "plantForm": "commit-repo",
     "scope": "files"
+  },
+  {
+    "id": "contrast",
+    "check": "Contrast",
+    "command": "pnpm run gate:contrast",
+    "plantCommand": "node gates/bin/contrast.ts --root {root}",
+    "plantForm": "repo-tree",
+    "scope": "files"
+  },
+  {
+    "id": "brand-rules",
+    "check": "Brand rules",
+    "command": "pnpm run gate:brand-rules",
+    "plantCommand": "node gates/bin/brand-rules.ts --root {root}",
+    "plantForm": "repo-tree",
+    "scope": "files"
   }
 ]

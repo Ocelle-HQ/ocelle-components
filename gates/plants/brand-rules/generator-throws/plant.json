@@ -1,0 +1,5 @@
+{
+  "expect": "error",
+  "why": "A generator whose stylesheet throws cannot be checked.",
+  "cause": "brand-rules: cannot run: packages/tokens/src/generate.ts: planted: the generator throws"
+}

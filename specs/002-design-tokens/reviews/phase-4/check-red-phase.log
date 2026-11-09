@@ -1,0 +1,59 @@
+Scope: all 5 workspace projects
+✓ Lockfile passes supply-chain policies (verified 9h ago)
+Lockfile is up to date, resolution step is skipped
+Packages are hard linked from the content-addressable store to the virtual store.
+  Content-addressable store is at: /root/.local/share/pnpm/store/v11
+  Virtual store is at:             node_modules/.pnpm
+Packages: +469
+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+Progress: resolved 469, reused 469, downloaded 0, added 469, done
+
+devDependencies:
++ @eslint/js 10.0.1
++ @stryker-mutator/core 10.1.1
++ @stryker-mutator/typescript-checker 10.1.1
++ @stryker-mutator/vitest-runner 10.1.1
++ @types/node 26.6.5
++ @vitest/browser-playwright 5.0.5
++ @vitest/eslint-plugin 1.6.28
++ eslint 10.13.0
++ jiti 2.7.0
++ parse5 8.0.1
++ playwright 1.64.1
++ postcss 8.5.31
++ postcss-lit 1.4.1
++ postcss-value-parser 4.2.0
++ stylelint 17.16.0
++ typescript 6.0.3
++ typescript-eslint 8.72.0
++ vite 8.3.5
++ vitest 5.0.5
+
+Done in 682ms using pnpm v12.16.1
+$ node gates/bin/setup-offline.ts
+setup: installed offline; Chromium at /tmp/claude-0/-home-user-ocelle-components/181e1231-8fd5-5f31-9d9d-498e593ba7cf/scratchpad/pw/chromium-1248/chrome-linux64/chrome
+$ node gates/bin/test.ts
+packages/tokens/test/browser/font.test.ts:116: unit-tests: the brand font under the constitution IV CSP plus font-src 'self' (US2 scenarios 3 and 4) renders the text at weights 400, 500, 600 and 800 in Schibsted Grotesk, loaded, and in a fallback with the font file removed (positive control): AssertionError: expected { '400': [ { …(2) } ], …(3) } to deeply equal { '400': [ { …(2) } ], …(3) }
+packages/tokens/test/browser/font.test.ts:128: unit-tests: the brand font under the constitution IV CSP plus font-src 'self' (US2 scenarios 3 and 4) requests the font file once from the page's origin, and nothing from any other origin (FR-015): AssertionError: expected [] to deeply equal [ Array(1) ]
+packages/tokens/test/browser/font.test.ts:136: unit-tests: the brand font under the constitution IV CSP plus font-src 'self' (US2 scenarios 3 and 4) reports no CSP violation while the font loads, after the collector reports the control page's one violation: AssertionError: expected [ 'Inter' ] to deeply equal [ 'Schibsted Grotesk' ]
+packages/tokens/test/browser/font.test.ts:146: unit-tests: the brand font under the constitution IV CSP plus font-src 'self' (US2 scenarios 3 and 4) gives the digits 0 to 9 equal advance widths with --ocelle-figures, in Schibsted Grotesk, and unequal ones without it (R-03): AssertionError: expected [ 'Inter' ] to deeply equal [ 'Schibsted Grotesk' ]
+packages/tokens/test/browser/font.test.ts:158: unit-tests: the brand font under exactly the constitution IV CSP, no font-src (US2 scenario 6) reports the font file as the only violation, renders in a fallback family of --ocelle-font-sans, and keeps every token's value: AssertionError: expected [] to deeply equal [ { directive: 'font-src', …(1) } ]
+packages/tokens/test/build.test.ts:81: unit-tests: node scripts/build.ts <out> on the package with its vendored font (phase 4, US2 scenario 1) copies fonts/SchibstedGrotesk-wght.woff2 and fonts/OFL.txt byte for byte into fonts/ of the published dist: AssertionError: expected [] to deeply equal [ 'OFL.txt', …(1) ]
+packages/tokens/test/font.test.ts:55: unit-tests: fonts/SOURCE.json names the upstream repository and the full 40-hex commit starting d485f61f: AssertionError: expected undefined to be 'schibsted/schibsted-grotesk' // Object.is equality
+packages/tokens/test/font.test.ts:61: unit-tests: fonts/SOURCE.json records the font file and the licence with their package path, upstream path and SHA-256: AssertionError: expected undefined to deeply equal [ { …(3) }, …(1) ]
+packages/tokens/test/font.test.ts:65: unit-tests: fonts/SOURCE.json fonts/SchibstedGrotesk-wght.woff2 exists and hashes to its recorded SHA-256: AssertionError: expected 0 to be greater than 0
+packages/tokens/test/font.test.ts:65: unit-tests: fonts/SOURCE.json fonts/OFL.txt exists and hashes to its recorded SHA-256: AssertionError: expected 0 to be greater than 0
+packages/tokens/test/font.test.ts:73: unit-tests: the vendored files fonts/OFL.txt is the SIL Open Font License 1.1 of Schibsted Grotesk: AssertionError: expected '' to contain 'SIL OPEN FONT LICENSE Version 1.1'
+packages/tokens/test/font.test.ts:79: unit-tests: the vendored files fonts/SchibstedGrotesk-wght.woff2 is a WOFF2 file: AssertionError: expected '' to be 'wOF2' // Object.is equality
+packages/tokens/test/font.test.ts:88: unit-tests: THIRD_PARTY_NOTICES no longer says that no third-party asset ships (FR-014): AssertionError: expected 'Third-party notices for ocelle-compon…' not to contain 'No third-party asset ships yet.'
+packages/tokens/test/font.test.ts:93: unit-tests: THIRD_PARTY_NOTICES lists the font with its licence, the repository, the full commit and the package paths of SOURCE.json: AssertionError: expected { licence: true, …(3) } to deeply equal { licence: true, …(3) }
+packages/tokens/test/generate.test.ts:62: unit-tests: css() writes the fixture as the @font-face of R-06 and the four blocks of research.md R-02, exactly: AssertionError: expected ':root {\n  --ocelle-color-ground: #FF…' to be '@font-face {\n  font-family: "Schibst…' // Object.is equality
+packages/tokens/test/generate.test.ts:66: unit-tests: css() puts the blocks in the order: @font-face, :root, system dark unless data-theme=light, data-theme=dark, reduced motion: AssertionError: expected [ ':root', …(3) ] to deeply equal [ …(5) ]
+packages/tokens/test/generate.test.ts:70: unit-tests: css() starts with exactly the @font-face of research.md R-06 (FR-012): AssertionError: expected false to be true // Object.is equality
+packages/tokens/test/generate.test.ts:82: unit-tests: css() has exactly one url(), relative into the package's fonts/, and no absolute URL anywhere (US2 scenario 5): AssertionError: expected [] to deeply equal [ Array(1) ]
+packages/tokens/test/generate.test.ts:148: unit-tests: css() writes an empty source as the @font-face and empty blocks, with the reduced-motion block: AssertionError: expected ':root {\n}\n\n@media (prefers-color-s…' to be '@font-face {\n  font-family: "Schibst…' // Object.is equality
+packages/tokens/test/readme.test.ts:50: unit-tests: packages/tokens/README.md states: the font needs `font-src 'self'`: AssertionError: expected '# @ocelle/tokens The design tokens of…' to contain 'the font needs `font-src \'self\'`'
+packages/tokens/test/readme.test.ts:50: unit-tests: packages/tokens/README.md states: Without `font-src`, text renders in the fallback families of `--ocelle-font-sans` and the only violation is the font file: AssertionError: expected '# @ocelle/tokens The design tokens of…' to contain 'Without `font-src`, text renders in t…'
+packages/tokens/test/source-table.test.ts:30: unit-tests: the stylesheet from the real source has the @font-face of research.md R-06, then the four blocks of R-02, in order: AssertionError: expected [ ':root', …(3) ] to deeply equal [ …(5) ]
+unit-tests: 22 of 1558 tests failed
+[ELIFECYCLE] Test failed. See above for more details.
