@@ -71,9 +71,9 @@ The tests assert these values; the order in the file is the order of the section
 | ` :where(code)` | `background-color: var(--ocelle-color-inset)`; `padding-inline: var(--ocelle-space-1)`; `border-radius: var(--ocelle-radius-2)`; `overflow-wrap: anywhere` |
 | ` :where(pre)` | `background-color: var(--ocelle-color-inset)`; `padding: var(--ocelle-space-3)`; `border-radius: var(--ocelle-radius-2)`; `white-space: pre-wrap`; `overflow-wrap: anywhere` |
 | ` :where(pre code)` | `padding-inline: 0`; `background-color: transparent` |
-| ` :where(table)` | `display: block`; `overflow-x: auto`; `max-inline-size: 100%`; `contain: inline-size`; `border-collapse: collapse` (`contain: inline-size` stops the table's min-content width from widening a grid or flex column above the prose container; research R-06) |
+| ` :where(table)` | `display: block`; `overflow-x: auto`; `max-inline-size: 100%`; `container-type: inline-size`; `border-collapse: collapse` (the inline-size containment that `container-type` applies stops the table's min-content width from widening a grid or flex column above the prose container, and makes the table the caption's query container; the prose container must get its width from its context, not its content, operator decision PLAN-FRESH-2-001 (a); research R-06) |
 | ` :where(table:focus-visible)` | `outline-offset: calc(var(--ocelle-focus-width) * -1)` (an inset ring, so all four sides show when the table is flush with the viewport; operator decision PLAN-A11Y-SECURITY-1-003 (a)) |
-| ` :where(caption)` | `text-align: start` (the caption starts in the visible part of the scroll box, and mirrors under `dir="rtl"`) |
+| ` :where(caption)` | `position: sticky`; `inset-inline-start: 0`; `max-inline-size: var(--ocelle-measure-container)`; `text-align: start` (the caption is capped at the table's visible width and wraps inside the visible part of the scroll box, and mirrors under `dir="rtl"`; PLAN-FRESH-2-002, research R-06) |
 | ` :where(th, td)` | `min-inline-size: var(--ocelle-measure-cell)`; `padding: var(--ocelle-space-2) var(--ocelle-space-3)`; `border-block-end: var(--ocelle-border-width) solid var(--ocelle-color-rule)`; `text-align: start` |
 | ` :where(th)` | `font-size: var(--ocelle-font-size-xs)`; `font-variant-numeric: var(--ocelle-figures)`; `font-weight: var(--ocelle-font-weight-strong)`; `border-block-end-color: var(--ocelle-color-rule-strong)` |
 
@@ -96,32 +96,38 @@ later in the file and wins.
 | `font-size-subhead` | type | `1.125rem` |
 | `measure-reading` | shell | `68ch` |
 | `measure-cell` | shell | `12ch` |
+| `measure-container` | shell | `100cqi` |
 
-114 tokens after this feature (109 + 5). Each passes `validateSource`, appears in `tokens.css`, `tokens.json` and
+115 tokens after this feature (109 + 6). Each passes `validateSource`, appears in `tokens.css`, `tokens.json` and
 `TokenName`, and is transcribed by hand into `packages/tokens/test/expected.ts`.
 
 ## Test fixtures (`packages/styles/test/fixtures/`)
 
 - `page.html`: base layer controls (link, button, text input, `tabindex="0"` element), media wider than the page
-  (an `img`, `video`, `canvas` and `svg` with `width="2000" height="1000"`, the `img` source a local file of the same
-  2:1 natural ratio, and a `picture`), a list,
+  (an `img`, `video`, `canvas` and `svg` with `width="2000" height="1000"`, the `img` source the local file
+  `media.svg` of the same 2:1 natural ratio, and a `picture`), a list,
   `code`/`pre`/`kbd`/`samp`, and a host region with `forced-color-adjust: none` holding a button (User Story 1
-  scenario 4).
+  scenario 4). It is the one fixture served with `img-src 'self'` added to the strict CSP, so its image loads with zero
+  violations (operator decision PLAN-FRESH-2-003 (b), research R-09).
+- `media.svg`: the local 2:1 image of `page.html`, served as `image/svg+xml`.
 - `compact.html`: nested compact and regular regions, the value hook in both variants and with an undocumented value
   (`data-ocelle-value="true"`), both hooks on one element, prose inside compact and compact inside prose.
-- `prose.html`: the User Story 3 fixture (spec): every listed element plus `h5`, `h6` and a nested list; an
-  `<a id="x">` target with no `href`; three wide 12-column tables (caption; no caption; a link in one cell); a table
-  that fits, which is two columns of short text (at most 2 × (12ch + 2 × space-3), under 320 px); a 200-character
-  code line; a 120-character inline code path and bare URL link; the same content again outside the container; and a
-  container with the undocumented value `data-ocelle-prose="true"`.
+- `prose.html`: the User Story 3 fixture (spec): every listed element plus `h5`, `h6` and a nested list; an `<a id="x">`
+  target with no `href`; three wide 12-column tables (a caption of at least 80 characters; no caption; a link in one
+  cell); a table that fits, which is two columns of short text (at most 2 × (12ch + 2 × space-3), under 320 px); a
+  200-character code line; a 120-character inline code path and bare URL link; the same content again outside the
+  container; and a container with the undocumented value `data-ocelle-prose="true"`.
 - `prose-hosts.html`: the wide 12-column table in a prose container that is (1) the `1fr` item of a grid beside a
   60 px rail, (2) the `flex: 1` item of a flex row beside a 60 px rail, and (3) nested one level inside the `1fr` grid
-  item (research R-06, PLAN-A11Y-SECURITY-1-001).
+  item (research R-06, PLAN-A11Y-SECURITY-1-001); and (4) the wide table and the table that fits in a prose container
+  inside a `<dialog>` with a definite width (`inline-size: var(--ocelle-dialog-max-inline)` in `layout.css`), which
+  the test opens with `showModal()` through `page.evaluate` (the host requirement of operator decision
+  PLAN-FRESH-2-001 (a)).
 - `prose-root.html`: `data-ocelle-prose` on `<html>` (the documented misuse; the container rule does not match it).
 - `wrap.html`: the 300 px two-column `1fr` grid with hooked and unhooked identifiers, an identifier in prose and in a
   compact `span`.
-- `layout.css`: the host CSS the fixtures need and `base.css` does not provide: the 300 px two-column grid, the grid
-  and flex hosts of `prose-hosts.html`, and the `forced-color-adjust: none` host region. It holds host CSS only, no
-  rule of `base.css`, and its selectors are `data-fixture` attributes (no class, no style attribute). `serve.ts` serves it,
-  and the fixtures that need it link it after `base.css` (research R-09).
+- `layout.css`: the host CSS the fixtures need and `base.css` does not provide: the 300 px two-column grid, the grid and
+  flex hosts and the definite-width dialog of `prose-hosts.html`, and the `forced-color-adjust: none` host region. It
+  holds host CSS only, no rule of `base.css`, and its selectors are `data-fixture` attributes (no class, no style
+  attribute). `serve.ts` serves it, and the fixtures that need it link it after `base.css` (research R-09).
 - `plants/*.css`: one stylesheet per guard plant of research R-10.

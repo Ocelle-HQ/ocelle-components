@@ -61,6 +61,17 @@ browser-default monospace (FR-026).
 - PLAN-TESTABILITY-1-006 (b): the forced-colours `Highlight` rule of the focus ring is kept as defence for host regions
   that set `forced-color-adjust: none`, and tested there (FR-011, User Story 1 scenario 4).
 
+**Operator decisions at squad round 2 of the plan** (2026-11-09, human:jeroennouwsdev; `reviews/plan/round-2/`):
+
+- PLAN-FRESH-2-001 (a): prose tables keep inline-size containment. A prose container gets its width from its
+  context, not from its content: it does not sit in a modal dialog, popover, inline-block, float or default flex item
+  without a definite width (Edge Cases, FR-004, FR-017, User Story 3 scenario 3).
+- PLAN-FRESH-2-003 (b): the media fixture is served under the strict CSP plus `img-src 'self'`, so its local image
+  loads with zero violations (User Story 1 scenarios 5 and 10, SC-001).
+- PLAN-FRESH-2-004 (a): the base stylesheet also styles custom-element hosts, which an element's `:host` rules cannot
+  override (Edge Cases, FR-004); base.css stays linked in the whole Storybook preview, so element stories and their
+  baselines always render with it (Assumptions, Storybook).
+
 ## Consumer need
 
 Hosts that load `@ocelle/tokens` still style the page itself: margins, the body font, focus, rendered
@@ -123,7 +134,10 @@ forced colours, and read computed styles, the accessibility tree and CSP violati
    sets `forced-color-adjust: none` has, when keyboard-focused, an outline colour equal to the resolved `Highlight`
    and not the resolved `--ocelle-color-focus` (operator decision PLAN-TESTABILITY-1-006 (b)).
 5. **Given** the strict CSP above, **When** the page loads both stylesheets and renders, **Then** the browser reports
-   no CSP violation, and the built base stylesheet contains no `@import` and no `url()` (FR-001).
+   no CSP violation, and the built base stylesheet contains no `@import` and no `url()` (FR-001). The page that holds
+   the media of scenario 10 loads its own local image, so it is served under the strict CSP plus `img-src 'self'`,
+   the directive a host needs for its own images, and also reports no violation; the base stylesheet itself needs no
+   `img-src` (operator decision PLAN-FRESH-2-003 (b)).
 6. **Given** the base stylesheet, **When** it is linked without `tokens.css`, **Then** every element and its
    `::before` and `::after` are `box-sizing: border-box`, the body margin is `0`, and a keyboard-focused button has
    an outline style other than `none` (the ring stays visible even though the token values are missing); **and** a
@@ -142,9 +156,11 @@ forced colours, and read computed styles, the accessibility tree and CSP violati
    (FR-026); **and**, in the same test, a host rule `code { font-variant-numeric: normal }` linked after the base
    stylesheet sets `normal` on a `code` outside prose (the rule is easy to override).
 10. **Given** a page that links both stylesheets, **When** an `img`, `picture`, `video`, `canvas` and `svg` wider
-    than their container and a `button`, `input`, `select` and `textarea` render, **Then** each media element's box
-    is no wider than its container, each media element with `width` and `height` attributes keeps their aspect ratio
-    (within 1 px), and each form control's computed font family and size equal those of its parent (FR-007).
+    than their container and a `button`, `input`, `select` and `textarea` render, under the strict CSP plus
+    `img-src 'self'` (scenario 5), **Then** the `img`, whose source is a local image, has loaded (its natural width is
+    above 0), each media element's box is no wider than its container, each media element with `width` and `height`
+    attributes keeps their aspect ratio (within 1 px), and each form control's computed font family and size equal
+    those of its parent (FR-007).
 
 ---
 
@@ -207,7 +223,9 @@ element above plus `h5`, `h6` and a nested list; three wide 12-column tables (on
 `caption`, one with plain text cells and no `caption`, one with plain text cells and a link in one cell); a table
 that fits (two columns of short text); a long code block; a paragraph with a long inline code path and a link whose
 text is a bare URL; and an `<a id>` link target with no `href`. The wide table is also rendered in a prose container
-that is a `1fr` grid item and a `flex: 1` item beside a fixed rail. It holds no task list (FR-014).
+that is a `1fr` grid item and a `flex: 1` item beside a fixed rail, and, with the table that fits, in a prose
+container inside a modal `<dialog>` with a definite width. The caption of the wide table that has one is at least 80
+characters long. It holds no task list (FR-014).
 
 **Acceptance Scenarios**:
 
@@ -232,10 +250,15 @@ that is a `1fr` grid item and a `flex: 1` item beside a fixed rail. It holds no 
    inside the viewport on all four sides, and two ArrowRight presses increase its `scrollLeft` above 0; while a wide
    table has focus, the focused node in the accessibility tree has role `table` and an accessible name equal to the
    `caption` text for the table with a caption and no accessible name for the table without one (FR-017); at
-   `scrollLeft` 0 the caption text starts inside the table's visible box; **and** Tab never moves focus onto the
-   table that fits (it is not a tab stop); **and**, in the same test, with the prose container as the `1fr` item of a
-   grid and as the `flex: 1` item of a flex row beside a fixed rail, and nested one level inside such an item, the
-   page does not scroll horizontally while the wide table scrolls inside its own box.
+   `scrollLeft` 0 every line box of the caption text (at least 80 characters, longer than the visible width) lies
+   inside the table's visible box, so the caption wraps there instead of running past it (WCAG 1.4.10); **and** Tab
+   never moves focus onto the table that fits (it is not a tab stop); **and**, in the same test, with the prose
+   container as the `1fr` item of a grid and as the `flex: 1` item of a flex row beside a fixed rail, and nested one
+   level inside such an item, the page does not scroll horizontally while the wide table scrolls inside its own box;
+   **and**, in the same test at 1280 px, with the prose container inside a modal `<dialog>` that has a definite width
+   (the host requirement of FR-017; operator decision PLAN-FRESH-2-001 (a)), the table that fits is as wide as its
+   content (its `clientWidth` equals its `scrollWidth`) and is not a tab stop, and the wide table scrolls inside its
+   own box.
 4. **Given** table header cells, **When** they render, **Then** they are `--ocelle-font-size-xs` (12 px) Schibsted
    Grotesk with tabular figures, not monospace.
 5. **Given** the fixture inside a prose container and the same fixture outside it on one page, **When** it renders,
@@ -336,11 +359,23 @@ copied text.
   does not apply, so the root font size and line height are not set; the README states this (FR-004, FR-015).
 - **Prose in an app shell**: a prose container that is a grid or flex item (beside a side rail, for example) is not
   widened by a wide table; only the table's own box scrolls (FR-017, User Story 3 scenario 3).
+- **Prose in a shrink-to-fit host**: a prose table is contained in the inline axis, so it adds nothing to the
+  intrinsic width of the boxes around it. A prose container must get its width from its context (block flow, a `1fr`
+  or `flex: 1` item, an element with a definite width), not from its content. In a modal `<dialog>`, a popover, an
+  `inline-block`, a float or a default flex item without a definite width, a table that would fit is cut to the width
+  of the other content (0 px in a table-only document), scrolls and becomes a tab stop. Hosts give such a box a
+  definite width; the README states this (FR-004, FR-017, User Story 3 scenario 3; operator decision
+  PLAN-FRESH-2-001 (a)).
 - **Value text on the chrome**: the value hook is for the main grounds; on the dark chrome its colours fail contrast,
   so hosts do not use it there (FR-013).
 - **WebKit hosts**: see Assumptions, Browsers.
-- **Shadow DOM**: the base stylesheet styles the light DOM of the host page; it does not reach into elements' shadow
-  roots. Elements adopt their own stylesheets (constitution IV).
+- **Shadow DOM and custom-element hosts**: the base stylesheet does not reach into elements' shadow roots; elements
+  adopt their own stylesheets (constitution IV). It does style each element's host, which is in the light DOM: the
+  `box-sizing` reset applies to every host, and the focus ring of FR-009 applies to a host that is itself focusable.
+  For normal declarations the page's rules win over a shadow tree's `:host` rules whatever their specificity, so an
+  element cannot override these from its own stylesheet. Elements (#7 to #17) therefore put their focusable part
+  inside the shadow root or use `delegatesFocus`, and do not depend on their host's `box-sizing`. The README states
+  this (FR-004; operator decision PLAN-FRESH-2-004 (a)).
 
 ## Requirements *(mandatory)*
 
@@ -374,6 +409,13 @@ copied text.
   - the `@ocelle/tokens` version `base.css` needs (FR-001);
   - that the value hook is for the main grounds only, not the chrome (FR-013);
   - that the prose hook goes on a content container, not on the root element (FR-015);
+  - that a prose container gets its width from its context, not from its content, and is not placed in a modal
+    dialog, popover, `inline-block`, float or default flex item without a definite width (FR-017, operator decision
+    PLAN-FRESH-2-001 (a));
+  - that the base stylesheet also styles custom-element hosts (the `box-sizing` reset, and the focus ring on a
+    focusable host), that an element's `:host` rules cannot override this, and that elements therefore put their
+    focusable part inside the shadow root or use `delegatesFocus` and do not depend on their host's `box-sizing`
+    (Edge Cases, operator decision PLAN-FRESH-2-004 (a));
   - that the keyboard model of prose tables (FR-017) is guaranteed only in Chromium hosts, that WebKit hosts add
     `tabindex="0"` to tables in their renderer, and that this is an open limitation for kitty-mission-ui
     (Assumptions, Browsers).
@@ -476,7 +518,10 @@ copied text.
 - **FR-017**: a table inside prose MUST sit in a scroll box that scrolls horizontally when the table is wider than the
   container. The box needs no wrapper element from the renderer, so a renderer that emits only `<table>` works. The
   page MUST NOT scroll horizontally because of it, also when the prose container, or an element above it, is a grid or
-  flex item. A caption MUST start at the table's start edge, so it is visible at `scrollLeft` 0. Keyboard access
+  flex item. The table is contained in the inline axis, so the prose container MUST get its width from its context,
+  not from its content (Edge Cases, operator decision PLAN-FRESH-2-001 (a)); in such a container a table that fits is
+  as wide as its content. A caption MUST wrap inside the table's visible box: at `scrollLeft` 0 every line box of the
+  caption lies inside it, also when the caption is longer than the visible width (WCAG 1.4.10). Keyboard access
   follows the browser's natural focus (operator decision SPEC-3-01), with no wrapper and no `tabindex` from the
   renderer:
   - an overflowing table with no focusable content MUST itself be a tab stop that scrolls with the arrow keys
@@ -528,13 +573,16 @@ copied text.
 **New tokens**
 
 - **FR-021**: the new tokens are added to `@ocelle/tokens` (source, generator, JSON export, typed names, CHANGELOG)
-  and validated by its 002 gates; none of the five values snaps to an existing token (operator decision at the spec
-  check, SPEC-1-11):
+  and validated by its 002 gates; none of the first five values snaps to an existing token (operator decision at the
+  spec check, SPEC-1-11):
   - the compact line height (1.5);
   - the prose line height (1.65);
   - the 18 px size (`1.125rem`);
   - the reading measure (`68ch`);
   - the cell floor (`12ch`);
+  - the inline size of the query container (`100cqi`), which caps a prose caption at the table's visible width
+    (FR-017). FR-002 admits no literal length, and `--ocelle-measure-page` (`100%`) resolves against the full table
+    grid, not the visible box (squad round 2, PLAN-FRESH-2-002);
   - any colour pairing the prose family introduces, as contrast pairs.
 
   Token names follow the 002 naming rules and are fixed in the plan. No new colour token is expected. If one is
@@ -567,7 +615,9 @@ copied text.
 ### Measurable Outcomes
 
 - **SC-001**: a host page that links `tokens.css` and `base.css` under `default-src 'none'; script-src 'self';
-  style-src 'self'; font-src 'self'` renders with 0 CSP violations in both themes.
+  style-src 'self'; font-src 'self'` renders with 0 CSP violations in both themes. A host page that also shows its own
+  local images adds `img-src 'self'` and still renders with 0 violations, as the media fixture of User Story 1
+  scenario 10 does (operator decision PLAN-FRESH-2-003 (b)).
 - **SC-002**: every acceptance scenario of User Stories 1 to 4 has a test (FR-022), and each test was shown failing
   before its implementation. A guard assertion (a "does not" that already held before this feature) never stands
   alone: it shares its test with the positive assertion it guards, so the test fails at red, and it is also shown able
@@ -618,15 +668,17 @@ copied text.
   for code; #519 does not ask for a monospace code face. The family and figures come from the page-wide base rule
   of FR-026; the prose family adds the ground.
 - **Storybook**: the stories of FR-023 use the 002 Storybook under its strict CSP and preview-only build. Anything
-  beyond one story per family is #10's.
+  beyond one story per family is #10's. `base.css` is linked for the whole preview, so every story, the element
+  stories of #7 to #17 and their baselines included, renders with it; no story shows an element on a page without
+  `base.css` (operator decision PLAN-FRESH-2-004 (a)).
 - **Elements**: elements (#7 to #17) expose identifier wrapping through their own parts or properties. This feature
   delivers only the shared hook and its semantics.
 - **#20** (drop `as const` in the token source) is independent. If it lands first, the new tokens follow its form.
-- **Browsers**: the tests run in Chromium only (001 FR-005); 002 states no browser assumption. The stylesheet uses
-  only features with evergreen support (`overflow-wrap: anywhere`, `:focus-visible`, `:where()`, `:any-link`,
-  `contain: inline-size`, `forced-colors`). The keyboard model of FR-017 (an overflowing table with no focusable
-  content is a tab stop without a `tabindex`) is Chromium's and is guaranteed only in Chromium hosts (Chromium
-  browsers, WebView2 on Windows). WebKit hosts (Kitty Desktop's webview on macOS and Linux) are not measured: their
-  Markdown renderer adds `tabindex="0"` to tables, and the README records this as an open limitation for
-  kitty-mission-ui (operator decision PLAN-A11Y-SECURITY-1-002 (a)). Constitution I names a Tauri webview as a host,
-  so this limitation is stated rather than assumed away.
+- **Browsers**: the tests run in Chromium only (001 FR-005); 002 states no browser assumption. The stylesheet uses only
+  features with evergreen support (`overflow-wrap: anywhere`, `:focus-visible`, `:where()`, `:any-link`,
+  `container-type: inline-size`, container query units (`cqi`), `position: sticky`, `forced-colors`). The keyboard model
+  of FR-017 (an overflowing table with no focusable content is a tab stop without a `tabindex`) is Chromium's and is
+  guaranteed only in Chromium hosts (Chromium browsers, WebView2 on Windows). WebKit hosts (Kitty Desktop's webview on
+  macOS and Linux) are not measured: their Markdown renderer adds `tabindex="0"` to tables, and the README records this
+  as an open limitation for kitty-mission-ui (operator decision PLAN-A11Y-SECURITY-1-002 (a)). Constitution I names a
+  Tauri webview as a host, so this limitation is stated rather than assumed away.

@@ -23,7 +23,7 @@ the implementer stops and the orchestrator asks the operator.
 - `"exports": { ".": "./dist/index.js", "./base.css": "./dist/base.css" }`;
 - `"files": ["dist", "CHANGELOG.md", "README.md"]`;
 - `"peerDependencies": { "@ocelle/tokens": "workspace:0.0.0" }`, an exact workspace version as the pins gate requires
-  (`gates/lib/pins-rules.ts` checks `peerDependencies` too). `base.css` references the five tokens of R-08, which
+  (`gates/lib/pins-rules.ts` checks `peerDependencies` too). `base.css` references the six tokens of R-08, which
   exist only from this tokens version on, so the manifest names the tokens version `base.css` needs (operator decision
   PLAN-CORRECTNESS-1-012 (a)). The README states the same (R-14). The pins gate's `workspace:<its version>` rule
   keeps the peer range in step with the tokens version at release.
@@ -155,21 +155,47 @@ token-only lint allows.
 ## R-06 The table scroll box without a wrapper (FR-017, operator decision SPEC-3-01)
 
 **Decision**: `[data-ocelle-prose=""] :where(table) { display: block; overflow-x: auto; max-inline-size: 100%;
-contain: inline-size }`. The rows, header and cells keep their table display, so an anonymous table box lays them out
-inside the block. Cells get `min-inline-size: var(--ocelle-measure-cell)`. Three additions complete it:
-- `contain: inline-size` (PLAN-A11Y-SECURITY-1-001): a block scroll container still gives its content's min-content
-  width to its ancestors, so when the prose container, or a wrapper above it, is a `1fr` grid item or a `flex: 1`
-  item, the 12-column table widens that column and the page scrolls (squad round 1, Chromium 153 at 320 px: 1212 px
-  as the `1fr` item beside a 60 px rail, 1152 px as `flex: 1`, 1500 px nested one level inside the grid item).
-  With inline-size containment the table's own min-content width no longer escapes, and the page stays at 320 px in
-  all three. `min-inline-size: 0` on the container is not enough, because it does not cover the nested case.
+container-type: inline-size }`. The rows, header and cells keep their table display, so an anonymous table box lays
+them out inside the block. Cells get `min-inline-size: var(--ocelle-measure-cell)`. Three additions complete it:
+- inline-size containment (PLAN-A11Y-SECURITY-1-001), applied by `container-type: inline-size` (PLAN-FRESH-2-002,
+  which replaces round 1's `contain: inline-size` so that the caption can size against the table): a block scroll
+  container still gives its content's min-content width to its ancestors, so when the prose container, or a wrapper
+  above it, is a `1fr` grid item or a `flex: 1` item, the 12-column table widens that column and the page scrolls
+  (squad round 1, Chromium 153 at 320 px: 1212 px as the `1fr` item beside a 60 px rail, 1152 px as `flex: 1`,
+  1500 px nested one level inside the grid item). With inline-size containment the table's own min-content width no
+  longer escapes, and the page stays at 320 px in all three. `min-inline-size: 0` on the container is not enough,
+  because it does not cover the nested case. `container-type: inline-size` also applies style containment, which
+  scopes counters and quotes to the table; Markdown tables use neither.
+- the host requirement (operator decision PLAN-FRESH-2-001 (a)): containment removes the table from both intrinsic
+  sizes of its ancestors, the max-content size too. So in a shrink-to-fit host, whose width comes from its content (a
+  modal `<dialog>`, which the UA gives `width: fit-content`; a popover; a default flex item; `inline-block`; a float;
+  an absolutely positioned panel), the table adds 0 to that width. Squad round 2 measured, in Chromium 153 at 1280 px
+  with a 2-column table of short text (natural width 214 px): in a modal `<dialog>` the table's `clientWidth` is 8 px
+  with only the table and 79 px after a short paragraph, against a `scrollWidth` of 214, and the first Tab lands on the
+  table; as a default flex item beside a 60 px rail it is 0 and 79; with `contain: none` it is 214 in both hosts. No
+  table rule tried keeps both the min-content fix and the max-content size (`width: 0; min-inline-size: 100%` behaves
+  like containment, `inline-size: max-content` widens the page to 1341 px in the grid and flex hosts). The operator
+  kept containment: the README, the contract and the spec (Edge Cases, FR-004, FR-017) state that a prose container
+  gets its width from its context, not from its content, and is not placed in a modal dialog, popover,
+  `inline-block`, float or default flex item without a definite width. `prose-hosts.html` has a modal `<dialog>` host
+  whose width is definite (`inline-size: var(--ocelle-dialog-max-inline)` in `layout.css`), in which the table that
+  fits keeps its natural width and is not a tab stop (User Story 3 scenario 3).
 - `[data-ocelle-prose=""] :where(table:focus-visible) { outline-offset: calc(var(--ocelle-focus-width) * -1) }`
   (operator decision PLAN-A11Y-SECURITY-1-003 (a)): a table flush with the viewport (the body margin is 0) would
   otherwise show only the block sides of its ring, which look like the table's own rules. The inset ring keeps all
   four sides inside the table's box. The other longhands of the ring (style, width, colour) are those of R-05.
-- `[data-ocelle-prose=""] :where(caption) { text-align: start }` (PLAN-A11Y-SECURITY-1-005): Chromium centres the
-  caption across the whole scrolled width (a 12-column table's caption text sits at x 513 to 639 in a 320 px box), so
-  at `scrollLeft` 0 the visible name of the table is off-screen. `start` mirrors under `dir="rtl"`.
+- `[data-ocelle-prose=""] :where(caption) { position: sticky; inset-inline-start: 0; max-inline-size:
+  var(--ocelle-measure-container); text-align: start }` (PLAN-A11Y-SECURITY-1-005, PLAN-FRESH-2-002): Chromium lays
+  the caption out across the whole width of the table grid inside the scroll box. Centred, its text sits at x 513 to
+  639 in a 320 px box (squad round 1); with `text-align: start` alone an 88-character caption is one line box from
+  x 0 to 630 against a `clientWidth` of 320, so its second half shows only after scrolling (squad round 2). The table
+  is the caption's nearest query container, so `--ocelle-measure-container` (`100cqi`, R-08) is the table's visible
+  inline size, and the sticky offset keeps the caption at the scroll box's start edge. Squad round 2 measured the
+  caption wrapping to three lines inside x 0 to 293 at 320 px, staying at x 0 to 320 at `scrollLeft` 500, with the page
+  at 320 px and the AX tree still holding role `table` named by the caption plus its 26 `row`, `columnheader` and
+  `cell` nodes. `start` and `inset-inline-start` mirror under `dir="rtl"`. The test reads the caption text's line
+  boxes with `Range.getClientRects()` and asserts each lies inside the table's `getBoundingClientRect()` at
+  `scrollLeft` 0.
 
 **Why**: this is the only no-wrapper mechanism that gives the table its own scroll box. Spec check 3 measured in
 Chromium 153 that such a box is a tab stop when it has no focusable content, and that Tab lands on a link inside it
@@ -177,26 +203,30 @@ otherwise, from which the arrow keys scroll it. That is the behaviour the operat
 
 **Verify in the spike**:
 1. In the accessibility tree (CDP `Accessibility.getFullAXTree`), the table with `display: block` and
-   `contain: inline-size` keeps role `table`, its `row`, `columnheader` and `cell` nodes, and its `caption` as the
-   accessible name. Chromium has kept table semantics for `display: block` since it built the tree from the DOM table,
-   but this is measured, not assumed, with the containment on. The AX tree gives no row, column or header-index
-   property for these nodes (squad round 1: `columnheader` has only `readonly` and `required`), so the association of
-   each cell with its column header is asserted on the tree's structure (PLAN-TESTABILITY-1-009): walking `childIds`
-   from the table, the header row holds `columnheader` nodes, and each `cell` of a body row sits at the same child
-   index in its row as the `columnheader` of its column, whose name is that header's text. If the spike finds a
-   better observable (for example `Accessibility.queryAXTree`, or a column index property), it records it and the
-   test uses it.
+   `container-type: inline-size`, and its sticky caption, keeps role `table`, its `row`, `columnheader` and `cell`
+   nodes, and its `caption` as the accessible name. Chromium has kept table semantics for `display: block` since it
+   built the tree from the DOM table, but this is measured, not assumed, with the containment and the caption rule
+   on. The AX tree gives no
+   row, column or header-index property for these nodes (squad round 1: `columnheader` has only `readonly` and
+   `required`), so the association of each cell with its column header is asserted on the tree's structure
+   (PLAN-TESTABILITY-1-009): walking `childIds` from the table, the header row holds `columnheader` nodes, and each
+   `cell` of a body row sits at the same child index in its row as the `columnheader` of its column, whose name is that
+   header's text. If the spike finds a better observable (for example `Accessibility.queryAXTree`, or a column index
+   property), it records it and the test uses it.
 2. A cell with `min-inline-size: 12ch` is at least 12ch wide in the anonymous table layout. If Chromium ignores
    `min-inline-size` on cells, the alternative is `min-inline-size` on the cell's content, through
    `[data-ocelle-prose=""] :where(th, td)`, with `inline-size` left to the table algorithm; the spike records which one
    works.
-3. With `contain: inline-size`, the wide table in each host layout of `prose-hosts.html` (grid `1fr` beside a rail,
-   `flex: 1` beside a rail, nested in the grid item) leaves `documentElement.scrollWidth` at the viewport width at
-   320 px, while the table's own `scrollWidth` exceeds its `clientWidth`.
+3. With `container-type: inline-size`, the wide table in each host layout of `prose-hosts.html` (grid `1fr` beside a
+   rail, `flex: 1` beside a rail, nested in the grid item) leaves `documentElement.scrollWidth` at the viewport width
+   at 320 px, while the table's own `scrollWidth` exceeds its `clientWidth`; and in the modal `<dialog>` host of
+   definite width, at 1280 px, the table that fits has `clientWidth` equal to `scrollWidth` and is not a tab stop.
 4. The plant for the table that fits (R-10) makes it overflow and a tab stop.
+5. At 320 px every line box of the fixture's caption of at least 80 characters lies inside the table's visible box at
+   `scrollLeft` 0, and the caption plant of R-10 makes one line box run past it.
 
-If (1) fails, the spec's fork applies (FR-017): the optional wrapper goes to the operator. If (3) or (4) fails, the
-phase stops and the orchestrator asks the operator.
+If (1) fails, the spec's fork applies (FR-017): the optional wrapper goes to the operator. If (3), (4) or (5) fails,
+the phase stops and the orchestrator asks the operator.
 
 **Browsers** (operator decision PLAN-A11Y-SECURITY-1-002 (a)): the keyboard model of FR-017 (a scroll box with no
 focusable content is itself a tab stop) is Chromium's keyboard-focusable scrollers, measured only in Chromium (spec
@@ -267,8 +297,16 @@ Scoping the option keeps 002's element contract unchanged.
 | `--ocelle-font-size-subhead` | type | `1.125rem` | prose `h2`, 18 px (#519) |
 | `--ocelle-measure-reading` | shell | `68ch` | prose paragraph measure (#519) |
 | `--ocelle-measure-cell` | shell | `12ch` | prose table cell floor (#519) |
+| `--ocelle-measure-container` | shell | `100cqi` | the inline size of the nearest query container: caps a prose caption at the table's visible width (R-06, PLAN-FRESH-2-002) |
 
-The token count goes from 109 to 114. No colour token is added. The colour pairings the prose and value families
+`--ocelle-measure-container` is the sixth token (FR-021). FR-002 admits no literal length in `base.css`, so `100cqi`
+is a token rather than a token-only lint exemption: the lint stays unchanged for container units. An unregistered
+custom property substitutes its value where it is used, so `100cqi` resolves at the caption against its nearest
+query container, the table, not at `:root`. Its `expected.ts` probe sets it as the width of an element inside a
+query container of known inline size (without one, `cqi` falls back to the small viewport size). Like
+`measure-page` (`100%`), it is a relative measure in the shell group.
+
+The token count goes from 109 to 115. No colour token is added. The colour pairings the prose and value families
 create, nesting included, are:
 - link and link-hover on canvas, and on inset (a link around or inside code);
 - ink on inset (code), ink-soft on canvas (block quotes) and ink-soft on inset (code in a block quote);
@@ -303,11 +341,18 @@ groups are a closed set tested by `validateSource`.
 `tokens-browser`.
 
 `packages/styles/test/browser/serve.ts` writes a temporary directory and serves it with the CSP header
-`default-src 'none'; script-src 'self'; style-src 'self'; font-src 'self'`. The directory holds:
+`default-src 'none'; script-src 'self'; style-src 'self'; font-src 'self'`. `page.html`, the one fixture with an
+image request (the local `img` source of User Story 1 scenario 10), is served with the same header plus
+`img-src 'self'`, the directive a host needs for its own images; `default-src 'none'` would otherwise block the image
+(squad round 2: one `img-src` violation and `naturalWidth` 0). Every page, `page.html` included, must report zero
+violations (US1-5, US1-10, SC-001; operator decision PLAN-FRESH-2-003 (b)). `base.css` needs no `img-src`: it has no
+`url()`. serve.ts's content types gain `.svg` as `image/svg+xml` (002's serve.ts served only html, css and woff2,
+`packages/tokens/test/browser/serve.ts:56-60`). The directory holds:
 - `tokens.css`, from the token generator;
 - `base.css`, copied from `src`;
 - the vendored fonts;
 - the fixture pages from `packages/styles/test/fixtures/*.html`. These have no inline style or script;
+- `media.svg` from `packages/styles/test/fixtures/`, the local `img` source of `page.html`, with a 2:1 natural size;
 - `layout.css` from `packages/styles/test/fixtures/` (PLAN-A11Y-SECURITY-1-006): the host CSS the fixtures need and
   `base.css` does not provide (the 300 px two-column grid of User Story 4 scenario 1 and SC-005, the grid and flex
   hosts of `prose-hosts.html`, the `forced-color-adjust: none` region of User Story 1 scenario 4). It holds no rule of
@@ -368,9 +413,9 @@ spike, which records that it bites (the helper reports the problem); a plant tha
 | prose outside its container (US3-5) | `p { line-height: var(--ocelle-line-height-prose) }` |
 | undocumented value of the prose hook (US3-5) | `[data-ocelle-prose] :where(p) { line-height: var(--ocelle-line-height-prose) }` (the presence form) |
 | prose container rule not on `<html>` (US3-5, `prose-root.html`) | `[data-ocelle-prose] { line-height: var(--ocelle-line-height-prose) }` without `:where(:not(html))` |
-| no page scroll in grid and flex hosts (US3-3, SC-004) | `[data-ocelle-prose=""] :where(table) { contain: none }` |
+| no page scroll in grid and flex hosts (US3-3, SC-004) | `[data-ocelle-prose=""] :where(table) { container-type: normal }` (`contain: none` does not remove the containment that `container-type` applies) |
 | inset table ring inside the viewport (US3-3) | `[data-ocelle-prose=""] :where(table:focus-visible) { outline-offset: var(--ocelle-focus-offset) }` |
-| caption visible at `scrollLeft` 0 (US3-3) | `[data-ocelle-prose=""] :where(caption) { text-align: center }` |
+| caption wraps inside the visible box at `scrollLeft` 0 (US3-3) | `[data-ocelle-prose=""] :where(caption) { position: static; max-inline-size: none }`, the caption rule without its sticky and max-inline-size parts (the long caption runs on one line past the visible box; `text-align: center` no longer bites, since the capped caption box is the visible box) |
 | table that fits is not a tab stop (US3-3) | `[data-ocelle-prose=""] :where(table) { max-inline-size: var(--ocelle-measure-cell) }`, which makes the fitting table overflow and so a tab stop (PLAN-TESTABILITY-1-005; `overflow-x: scroll` does not bite, Chromium skips a fitting scroller) |
 | link underlined in every state (US3-6) | `[data-ocelle-prose=""] :where(a:any-link:hover, a:any-link:focus-visible) { text-decoration-line: none }` |
 | `<a id>` target is not styled as a link (US3-6) | `[data-ocelle-prose=""] :where(a) { color: var(--ocelle-color-link) }` |
@@ -397,8 +442,10 @@ is their plant. `canvas` stays 320 x 160 under every one of these, since its `wi
 bitmap size, which is its natural size and ratio, not a presentational hint: without `block-size: auto` its height is
 already `auto`, so the canvas half of the assertion is a guard no removal of the rule can break. Its plant is a defect
 of the same outcome, `:where(canvas) { aspect-ratio: 1 / 1 }`, which renders 320 x 320, so the canvas assertion is shown
-able to fail. The fixture `img` source is a local file (CSP) whose natural ratio is the attributes' 2:1, since a
-loaded image's natural ratio replaces the attribute ratio.
+able to fail. The fixture `img` source is a local file, `media.svg`, whose natural ratio is the attributes' 2:1, since
+a loaded image's natural ratio replaces the attribute ratio. It loads because `page.html` is served with
+`img-src 'self'` (R-09, operator decision PLAN-FRESH-2-003 (b)), and the test asserts that it loaded (`naturalWidth`
+above 0) before it measures the ratio.
 
 **Source-level guards** (R-11; plants are fixture strings)
 
@@ -458,7 +505,10 @@ pseudo-classes as (0,1,0) except `:where()` (0) and `:not()`/`:is()` (their argu
 **Decision**:
 - `storybook/scripts/swatches.ts` `writeGenerated` also copies `packages/styles/src/base.css` to
   `.generated/base.css`.
-- `.storybook/preview-head.html` links it after `tokens.css`.
+- `.storybook/preview-head.html` links it after `tokens.css`, for the whole preview. Every story, the element stories
+  of #7 to #17 and their future baselines (#10) included, renders with `base.css`, so no story shows an element on a
+  page without it (operator decision PLAN-FRESH-2-004 (a)). Because `base.css` styles custom-element hosts (R-14),
+  an element story shows the host with the base `box-sizing` and, on a focusable host, the base ring.
 - A new `storybook/stories/base.stories.ts` (title "Base styles") has four stories: Base page, Compact screen (compact
   and value hooks), Prose document and Identifier wrap. Each returns escaped markup from
   `storybook/stories/render.ts`'s new `renderFamily(name)` with no style attributes and no class.
@@ -501,24 +551,33 @@ then styled by `base.css` alone.
 **Decision**:
 - `packages/styles/README.md` covers:
   - the link order (`tokens.css`, then `base.css`) and the host CSP;
-  - the `@ocelle/tokens` version `base.css` needs (the version that adds the five tokens of R-08), matching the
+  - the `@ocelle/tokens` version `base.css` needs (the version that adds the six tokens of R-08), matching the
     `peerDependencies` entry (R-01);
   - the four hooks with their values (R-02), and that any other value, `"true"` among them, does nothing;
   - each family, what it styles and its tokens;
   - the rule that prose wins over compact on one element;
   - placement: the value hook is for the main grounds only, not the chrome; the prose hook goes on a content
     container, not on `<html>` (R-02);
+  - the host width of a prose container (operator decision PLAN-FRESH-2-001 (a), R-06): it gets its width from its
+    context (block flow, a `1fr` or `flex: 1` item, a definite width), not from its content, and is not placed in a
+    modal dialog, popover, `inline-block`, float or default flex item without a definite width, where a table that
+    would fit is cut down, scrolls and becomes a tab stop;
+  - custom-element hosts (operator decision PLAN-FRESH-2-004 (a)): `base.css` also styles the host of every element,
+    which is in the light DOM: the `box-sizing` reset, and the focus ring on a focusable host. For normal declarations
+    the page's rules beat a shadow tree's `:host` rules whatever their specificity, so an element cannot override
+    them from its own stylesheet. Elements put their focusable part inside the shadow root or use `delegatesFocus`,
+    and do not depend on their host's `box-sizing`; the Storybook preview renders every story with `base.css` (R-12);
   - for Markdown renderers: tables of three or more columns overflow at 320 px, so they scroll and, with no
     focusable content, are tab stops (PLAN-FRESH-1-006); the no-wrapper keyboard model is guaranteed only in
     Chromium hosts, WebKit hosts (Kitty Desktop on macOS and Linux) add `tabindex="0"` to tables in their renderer,
     and this is an open limitation for kitty-mission-ui (R-06);
   - a table mapping kitty-mission-ui's E-23, E-37 and E-39 to the hooks and tokens that replace them (SC-006).
 - `packages/styles/CHANGELOG.md` gets `## Unreleased` / `### Added`, naming `base.css` and the four attributes.
-- `packages/styles/test/readme.test.ts` checks each statement, as the tokens readme test does. It grows red-first
-  with the phases (PLAN-CORRECTNESS-1-010): phase 2 asserts the link order, the CSP, the tokens version, the base
-  layer and the CHANGELOG `base.css` entry; phase 3 adds the density and value hooks (README values, the main-grounds
-  limit, the CHANGELOG attribute names); phase 4 adds the prose hook, prose over compact, the `<html>` placement, the
-  three-column and WebKit statements; phase 5 adds the wrap hook and SC-006. User Story 1 scenario 6's documentation
-  half is complete only after phase 5.
+- `packages/styles/test/readme.test.ts` checks each statement, as the tokens readme test does. It grows red-first with
+  the phases (PLAN-CORRECTNESS-1-010): phase 2 asserts the link order, the CSP, the tokens version, the base layer, the
+  custom-element host statement and the CHANGELOG `base.css` entry; phase 3 adds the density and value hooks (README
+  values, the main-grounds limit, the CHANGELOG attribute names); phase 4 adds the prose hook, prose over compact, the
+  `<html>` placement, the host-width statement, the three-column and WebKit statements; phase 5 adds the wrap hook and
+  SC-006. User Story 1 scenario 6's documentation half is complete only after phase 5.
 - The tokens README sentence on `color-scheme` ("the base styles (#6) apply it…") becomes "`@ocelle/styles`
   `base.css` applies it", and its readme test changes with it.
