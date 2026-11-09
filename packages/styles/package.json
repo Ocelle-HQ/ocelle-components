@@ -4,10 +4,18 @@
   "private": true,
   "type": "module",
   "exports": {
-    ".": "./dist/index.js"
+    ".": "./dist/index.js",
+    "./base.css": "./dist/base.css"
   },
-  "files": ["dist"],
+  "files": [
+    "dist",
+    "CHANGELOG.md",
+    "README.md"
+  ],
   "scripts": {
-    "build": "tsc -p tsconfig.json"
+    "build": "tsc -p tsconfig.json && node scripts/build.ts"
+  },
+  "peerDependencies": {
+    "@ocelle/tokens": "workspace:0.0.0"
   }
 }
