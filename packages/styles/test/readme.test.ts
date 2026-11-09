@@ -14,7 +14,8 @@ import { describe, expect, it } from "vitest";
 // styles and that it uses no token, FR-020's list, the value-hook combination), the SC-006 table mapping
 // kitty-mission-ui's stand-ins E-23, E-37 and E-39 to the hooks and tokens that replace them, the hook table with
 // exactly the four hooks and their values, and the CHANGELOG entry naming data-ocelle-wrap, so all four hooks are
-// documented (US1 scenario 6). Whitespace is normalised, so a fragment may wrap across lines.
+// documented (US1 scenario 6); its first review adds the base layer's token list and the host-width remedy with its
+// "not a complete list" qualifier, the list of examples itself still unasserted (plan decision 14). Whitespace is normalised, so a fragment may wrap across lines.
 /** A package file's text; empty while it does not exist, so each assertion below reports what is missing. */
 function read(file: string): string {
   const url = new URL(`../${file}`, import.meta.url);
@@ -39,6 +40,7 @@ const fragments = [
   // base layer (FR-006 to FR-011, FR-026, FR-025)
   "The base layer applies with no hook: the reset, the body, the root `color-scheme`, the focus ring, code elements in Schibsted Grotesk with tabular figures, and forced colours",
   "It adds no motion",
+  "Tokens it uses: `--ocelle-color-scheme`, `--ocelle-font-sans`, `--ocelle-font-size-md`, `--ocelle-line-height-normal`, `--ocelle-color-ink`, `--ocelle-color-canvas`, `--ocelle-figures`, `--ocelle-focus-width`, `--ocelle-color-focus` and `--ocelle-focus-offset`",
   "Every base selector has specificity (0,0,0), except the box-sizing rule's `:where(*)::before` and `:where(*)::after` at (0,0,1), so any rule of the host page's own stylesheets overrides it",
   // custom-element hosts (plan decision 16)
   "The base layer does not reach into shadow roots, but it styles each element's host, which is in the light DOM: the `box-sizing` reset on every host, and the focus ring on a host that is itself focusable",
@@ -67,6 +69,10 @@ const fragments = [
   "The prose hook goes on a content container, not on `<html>`: on `<html>` its container rule does not apply, so it sets neither the root font size nor the root line height",
   "A prose container must not be sized from its content (shrink-to-fit or fit-content sizing); it gets its width from its context",
   "In a box sized from its content, a table that would fit is cut down, scrolls and becomes a tab stop",
+  // the remedy and the qualifier, asserted on their own so that the list of examples between them stays unasserted
+  // (plan decision 14)
+  "Examples of such boxes, not a complete list:",
+  "Give such a box a definite width or stretch it",
   "Tables of three or more columns overflow at 320 px, so they scroll and, with no focusable content, are tab stops",
   "The keyboard model of prose tables is guaranteed only in Chromium hosts. WebKit hosts (Kitty Desktop on macOS and Linux) add `tabindex=\"0\"` to tables in their renderer; this is an open limitation for kitty-mission-ui",
   "Print is out of scope: prose tables are screen scroll boxes, so a printed document shows only the columns that fit the page, and a host that prints adds its own print rule",

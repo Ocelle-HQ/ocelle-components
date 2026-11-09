@@ -183,7 +183,7 @@ such a box a definite width or stretch it.
 
 ## Identifier wrap
 
-For machine identifiers in dense layouts: mission slugs, ids, digests and paths in list rows, headers and fact values.
+For machine identifiers in dense layouts: mission slugs, ids and paths in list rows, headers and fact values.
 
 - `data-ocelle-wrap` takes `anywhere` only. `data-ocelle-wrap="anywhere"` sets `overflow-wrap: anywhere` on the
   element, so a machine identifier (a mission slug, an id, a path) breaks anywhere when it would overflow: it never

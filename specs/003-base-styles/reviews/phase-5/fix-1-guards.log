@@ -1,0 +1,52 @@
+R1-01 guards (fix round 1): the new readme.test.ts fragments, run on today's README and on a working copy of the README with each statement removed (restored with git checkout after each run)
+=== today's README: all three pass
+      Tests  3 passed | 54 skipped (57)
+=== base layer token list removed
+     × states: Tokens it uses: `--ocelle-color-scheme`, `--ocelle-font-sans`, `--ocelle-font-size-md`, `--ocelle-line-height-normal`, `--ocelle-color-ink`, `--ocelle-color-canvas`, `--ocelle-figures`, `--ocelle-focus-width`, `--ocelle-color-focus` and `--ocelle-focus-offset` 40ms
+⎯⎯⎯⎯⎯⎯⎯ Failed Tests 1 ⎯⎯⎯⎯⎯⎯⎯
+ FAIL  |styles| packages/styles/test/readme.test.ts > packages/styles/README.md > states: Tokens it uses: `--ocelle-color-scheme`, `--ocelle-font-sans`, `--ocelle-font-size-md`, `--ocelle-line-height-normal`, `--ocelle-color-ink`, `--ocelle-color-canvas`, `--ocelle-figures`, `--ocelle-focus-width`, `--ocelle-color-focus` and `--ocelle-focus-offset`
+AssertionError: expected '# @ocelle/styles The base styles of t…' to contain 'Tokens it uses: `--ocelle-color-schem…'
+      Tests  1 failed | 56 skipped (57)
+=== 'not a complete list' qualifier removed
+     × states: Examples of such boxes, not a complete list: 18ms
+⎯⎯⎯⎯⎯⎯⎯ Failed Tests 1 ⎯⎯⎯⎯⎯⎯⎯
+ FAIL  |styles| packages/styles/test/readme.test.ts > packages/styles/README.md > states: Examples of such boxes, not a complete list:
+AssertionError: expected '# @ocelle/styles The base styles of t…' to contain 'Examples of such boxes, not a complet…'
+      Tests  1 failed | 56 skipped (57)
+=== remedy sentence removed
+     × states: Give such a box a definite width or stretch it 17ms
+⎯⎯⎯⎯⎯⎯⎯ Failed Tests 1 ⎯⎯⎯⎯⎯⎯⎯
+ FAIL  |styles| packages/styles/test/readme.test.ts > packages/styles/README.md > states: Give such a box a definite width or stretch it
+AssertionError: expected '# @ocelle/styles The base styles of t…' to contain 'Give such a box a definite width or s…'
+      Tests  1 failed | 56 skipped (57)
+
+R1-06 (fix round 1): the clipped check, now measured on the box, run on a working copy of base.css without the wrap rule and a working copy of wrap.test.ts with US4-4's narrow assertion moved first (otherwise its overflow-wrap assertion stops the test before it); both restored after the run. Before this fix prose-id and compact-id could never report clipped (an inline span's scrollWidth and clientWidth are 0); now each reports it:
+     × in light, and it wraps inside its paragraph at 320 px and 200% zoom 270ms
+     × in dark, and it wraps inside its paragraph at 320 px and 200% zoom 226ms
+⎯⎯⎯⎯⎯⎯⎯ Failed Tests 2 ⎯⎯⎯⎯⎯⎯⎯
+AssertionError: expected { Object (320 px, 200%) } to deeply equal { '320 px': [], '200%': [] }
+-   "200%": [],
+-   "320 px": [],
++   "200%": [
++     "prose-id: clipped",
++     "prose-id: on one line",
++     "prose-id: a line outside #prose-p",
++     "prose-id: a line outside the viewport",
++     "compact-id: clipped",
++     "compact-id: on one line",
++     "compact-id: a line outside #compact-p",
++     "compact-id: a line outside the viewport",
++   ],
++   "320 px": [
++     "prose-id: clipped",
++     "prose-id: on one line",
++     "prose-id: a line outside #prose-p",
++     "prose-id: a line outside the viewport",
++     "compact-id: clipped",
++     "compact-id: on one line",
++     "compact-id: a line outside #compact-p",
++     "compact-id: a line outside the viewport",
++   ],
+    180|     expect(narrow).toEqual({ "320 px": [], "200%": [] });
+    181|     expect(wraps).toEqual({ prose: { "overflow-wrap": "anywhere" }, co…
+      Tests  2 failed | 6 skipped (8)

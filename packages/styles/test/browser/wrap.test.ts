@@ -43,21 +43,24 @@ function columns(page: Page, id: string, short: string): Promise<{ readonly id: 
 
 /**
  * The problems of a hooked identifier that must wrap inside its box: an ellipsis, clipped text, a single line, a line
- * outside its box (its cell or paragraph) or outside the viewport. `box` is the id of the box it must stay in.
+ * outside its box (its cell or paragraph) or outside the viewport. `box` is the id of the box it must stay in, and
+ * clipping is measured on that box (the hooked cell is its own box).
  */
 function wrapProblems(page: Page, id: string, box: string): Promise<string[]> {
   return page.evaluate(
     ({ id, box }) => {
       const element = document.getElementById(id);
-      const container = document.getElementById(box)?.getBoundingClientRect();
-      if (element === null || container === undefined) throw new Error(`no #${id} or no #${box}`);
+      const boxElement = document.getElementById(box);
+      if (element === null || boxElement === null) throw new Error(`no #${id} or no #${box}`);
+      const container = boxElement.getBoundingClientRect();
       const range = document.createRange();
       range.selectNodeContents(element);
       const rects = [...range.getClientRects()].filter((rect) => rect.width > 0);
       const style = getComputedStyle(element);
       const found: string[] = [];
       if (style.textOverflow !== "clip") found.push(`${id}: text-overflow ${style.textOverflow}`);
-      if (element.scrollWidth > element.clientWidth + 1) found.push(`${id}: clipped`);
+      // Measured on the box, not on the identifier: an inline span's scrollWidth and clientWidth are both 0.
+      if (boxElement.scrollWidth > boxElement.clientWidth + 1) found.push(`${id}: clipped`);
       if (new Set(rects.map((rect) => Math.round(rect.top))).size < 2) found.push(`${id}: on one line`);
       if (rects.some((rect) => rect.left < container.left - 1 || rect.right > container.right + 1)) found.push(`${id}: a line outside #${box}`);
       if (rects.some((rect) => rect.left < -1 || rect.right > window.innerWidth + 1)) found.push(`${id}: a line outside the viewport`);
