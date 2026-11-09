@@ -25,8 +25,8 @@
   },
   "prose": {
     "title": "Mission 003: the prose family",
-    "intro": "A host's Markdown renderer emits plain HTML into a container with the prose hook, and the document reads at a line height of 1.65 with paragraphs held to a reading measure. Read the",
-    "link": "host contract",
+    "intro": "A host's Markdown renderer emits plain HTML into a container with the prose hook, and the document reads at a line height of 1.65, with paragraphs held to a reading measure. The rules are in",
+    "link": "Read the host contract",
     "code": "packages/styles/src/base.css",
     "listHeading": "What the prose family styles",
     "list": ["Headings from h1 to h6, paragraphs and block quotes.", "Inline code and code blocks, which wrap inside their own width."],

@@ -116,10 +116,46 @@ function renderCompact(text: CompactContent): string {
   );
 }
 
+/** A prose table: its caption when it has one, the header row, then the body rows; `linked` makes the first body cell a link. */
+function renderTable(table: ProseTable, linked: boolean): string {
+  const caption = table.caption === "" ? "" : `<caption>${escape(table.caption)}</caption>`;
+  const head = table.head.map((cell) => `<th>${escape(cell)}</th>`).join("");
+  const rows = table.rows
+    .map((row, index) => {
+      const cells = row.map((cell, column) => (linked && index === 0 && column === 0 ? `<td><a href="#prose-document">${escape(cell)}</a></td>` : `<td>${escape(cell)}</td>`));
+      return `<tr>${cells.join("")}</tr>`;
+    })
+    .join("");
+  return `<table>${caption}<thead><tr>${head}</tr></thead><tbody>${rows}</tbody></table>`;
+}
+
+/** The Prose document: a rendered Markdown document, plain elements with no class, in a container with the prose hook. */
+function renderProse(text: ProseContent): string {
+  const item = (entry: string): string => `<li>${escape(entry)}</li>`;
+  return (
+    '<article data-story="prose" data-ocelle-prose="">' +
+    `<h1>${escape(text.title)}</h1>` +
+    `<p>${escape(text.intro)} <code>${escape(text.code)}</code></p>` +
+    `<p><a href="#prose-document">${escape(text.link)}</a></p>` +
+    `<h2>${escape(text.listHeading)}</h2>` +
+    `<ul>${text.list.map(item).join("")}<li>${escape(text.nestedLabel)}<ol>${text.nested.map(item).join("")}</ol></li></ul>` +
+    `<h3>${escape(text.quoteHeading)}</h3>` +
+    `<blockquote><p>${escape(text.quote)}</p></blockquote>` +
+    `<h4>${escape(text.codeHeading)}</h4>` +
+    `<pre><code>${escape(text.pre)}</code></pre>` +
+    "<hr>" +
+    `<h5>${escape(text.tableHeading)}</h5>` +
+    renderTable(text.table, false) +
+    `<h6>${escape(text.linkedHeading)}</h6>` +
+    renderTable(text.linked, true) +
+    "</article>"
+  );
+}
+
 /** The markup of a family's story from the stories' text (base-content.json unless given), every text escaped. */
 export function renderFamily(family: Family, content: Content = storyContent): string {
   if (family === "compact") return renderCompact(content.compact);
-  if (family === "prose") return "";
+  if (family === "prose") return renderProse(content.prose);
   const text = content.base;
   const items = text.list.map((item) => `<li>${escape(item)}</li>`).join("");
   return (

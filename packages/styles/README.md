@@ -73,6 +73,7 @@ overrides them too.
 |---|---|---|
 | `data-ocelle-density` | `compact`, `regular` | compact scale |
 | `data-ocelle-value` | (empty), `ink` | compact scale |
+| `data-ocelle-prose` | (empty) | prose |
 
 ## Compact scale
 
@@ -96,3 +97,85 @@ For dense operational screens: lists, facts, ids and timestamps.
 Tokens the compact scale uses: `--ocelle-font-size-sm`, `--ocelle-line-height-compact`, `--ocelle-font-size-md`,
 `--ocelle-line-height-normal`, `--ocelle-font-sans`, `--ocelle-figures`, `--ocelle-color-ink-muted` and
 `--ocelle-color-ink`.
+
+## Prose
+
+For a host's Markdown renderer: it emits plain HTML, with no class, into a content container marked
+`data-ocelle-prose`, and the document reads at the rhythm of the Kitty Desktop prototype.
+
+- `data-ocelle-prose` takes the empty value only (a bare attribute has it). The container is set at
+  `--ocelle-font-size-md` (16 px) with `--ocelle-line-height-prose` (1.65), which every element in it except the
+  headings inherits.
+- The prose family styles a rendered Markdown document by element, with no class: `h1` to `h6`, `p`, `ul`, `ol`,
+  `li`, `blockquote`, `code`, `pre`, `hr`, links (an `a` with an `href`), `table`, `caption`, `th` and `td`. It sets
+  no rule of its own for `img`, `strong`, `em`, `del` or a task list's checkbox: they inherit the prose size and line
+  height and keep the base layer's rules. An `<a id>` target with no `href` is not a link and keeps the running
+  text's colour.
+- **Headings**: `--ocelle-line-height-tight`, with `--ocelle-space-6` above and `--ocelle-space-3` below. `h1` is
+  `--ocelle-font-size-2xl` (30 px) at `--ocelle-font-weight-display`; `h2` is `--ocelle-font-size-subhead` (18 px),
+  `h3` `--ocelle-font-size-fact` (17 px) and `h4` to `h6` `--ocelle-font-size-md` (16 px), all at
+  `--ocelle-font-weight-strong`.
+- **Running text**: `p`, `ul`, `ol`, `blockquote`, `pre`, `table` and `hr` have `--ocelle-space-4` below them.
+  Paragraphs, list items and block quotes keep to `--ocelle-measure-reading` (68ch); code blocks and tables use the
+  container's full width. Lists, nested lists included, are indented by `--ocelle-space-6` at their inline start. A
+  block quote has a `--ocelle-bar-width` bar in `--ocelle-color-rule-strong` and `--ocelle-space-4` of padding at its
+  inline start, in `--ocelle-color-ink-soft`. A rule (`hr`) is a `--ocelle-border-width` line in
+  `--ocelle-color-rule`. Every inline-direction margin, padding and border is a logical property, so the family
+  mirrors under `dir="rtl"`.
+- **Links**: `--ocelle-color-link`, `--ocelle-color-link-hover` on hover, underlined in every state, so a link never
+  differs from the running text by colour alone. A long bare URL wraps anywhere.
+- **Code**: inline `code` sits on `--ocelle-color-inset` with `--ocelle-space-1` of inline padding and
+  `--ocelle-radius-2`, and wraps anywhere, so a long path never widens the page. A code block (`pre`) sits on
+  `--ocelle-color-inset` with `--ocelle-space-3` of padding and `--ocelle-radius-2`, and wraps its long lines inside
+  its own width (`white-space: pre-wrap`, `overflow-wrap: anywhere`): it does not scroll, and its copied text keeps
+  its line breaks and indentation. Both keep the base layer's Schibsted Grotesk with tabular figures.
+- **Tables**: a `table` is its own scroll box, with no wrapper element: it scrolls sideways when it is wider than the
+  container, and the page does not. Each cell is at least `--ocelle-measure-cell` (12ch) wide, with
+  `--ocelle-space-2` and `--ocelle-space-3` of padding and a `--ocelle-border-width` rule below in
+  `--ocelle-color-rule` (`--ocelle-color-rule-strong` under the header cells). Header cells are
+  `--ocelle-font-size-xs` (12 px) at `--ocelle-font-weight-strong`, with tabular figures. The caption is capped at
+  the table's visible width (`--ocelle-measure-container`), wraps there, starts at its start edge and stays in view
+  while the table scrolls. The table keeps its table semantics: role `table` with its rows, column headers and
+  cells, named by its caption. An overflowing table with no focusable content is a tab stop that scrolls with the
+  arrow keys and shows the focus ring inset (at minus `--ocelle-focus-width`), so all four sides show when it is
+  flush with the viewport; in an overflowing table with a link, Tab reaches the link, and the arrow keys scroll the
+  table while it has focus. A table that fits is not a tab stop.
+
+Tokens the prose family uses: `--ocelle-font-size-md`, `--ocelle-line-height-prose`, `--ocelle-line-height-tight`,
+`--ocelle-space-6`, `--ocelle-space-3`, `--ocelle-font-size-2xl`, `--ocelle-font-weight-display`,
+`--ocelle-font-size-subhead`, `--ocelle-font-weight-strong`, `--ocelle-font-size-fact`, `--ocelle-space-4`,
+`--ocelle-measure-reading`, `--ocelle-bar-width`, `--ocelle-color-rule-strong`, `--ocelle-color-ink-soft`,
+`--ocelle-border-width`, `--ocelle-color-rule`, `--ocelle-color-link`, `--ocelle-color-link-hover`,
+`--ocelle-color-inset`, `--ocelle-space-1`, `--ocelle-radius-2`, `--ocelle-focus-width`,
+`--ocelle-measure-container`, `--ocelle-measure-cell`, `--ocelle-space-2`, `--ocelle-font-size-xs` and
+`--ocelle-figures`. Every colour pairing it creates is a checked contrast pair of `@ocelle/tokens` in both themes.
+
+### Prose and the compact scale
+
+When the compact and prose hooks are nested, the nearest hook decides the size and line height of the text inside
+it: a prose container inside a compact region is 16 px with a line height of 1.65, and a compact region inside a
+prose container keeps the compact scale (14 px, 1.5), table cells and code included; prose headings keep their
+sizes, and every other prose rule still applies there. On an element that carries both the prose hook and the
+compact hook, the prose hook wins: the element is a prose container at 16 px with a line height of 1.65.
+
+### Where the prose hook goes
+
+The prose hook goes on a content container, not on `<html>`: on `<html>` its container rule does not apply, so it
+sets neither the root font size nor the root line height.
+
+A prose container must not be sized from its content (shrink-to-fit or fit-content sizing); it gets its width from
+its context: block flow, a stretched grid or flex item such as `1fr` or `flex: 1`, or a definite width. A prose table
+is contained in the inline axis, so it adds nothing to the intrinsic width of the boxes around it and never widens a
+grid or flex column. In a box sized from its content, a table that would fit is cut down, scrolls and becomes a tab
+stop. Examples of such boxes, not a complete list: a modal or non-modal `<dialog>`, a popover, a fixed or absolutely
+positioned panel without both inline insets or a width (a side drawer), an `inline-block`, a float, a
+`display: table-cell` box, a default item of a row flex container, and a grid or flex item aligned to start. Give
+such a box a definite width or stretch it.
+
+### For Markdown renderers
+
+- Tables of three or more columns overflow at 320 px, so they scroll and, with no focusable content, are tab stops.
+- The keyboard model of prose tables is guaranteed only in Chromium hosts. WebKit hosts (Kitty Desktop on macOS and
+  Linux) add `tabindex="0"` to tables in their renderer; this is an open limitation for kitty-mission-ui.
+- Print is out of scope: prose tables are screen scroll boxes, so a printed document shows only the columns that fit
+  the page, and a host that prints adds its own print rule.

@@ -271,7 +271,7 @@ The design sources are research R-06, R-08, R-10 and R-13, data-model § Prose, 
 
 ### Tests (red, one commit)
 
-- [ ] T032 [P] [US3] `packages/tokens/test/browser/values.test.ts`: give the probe block `container-type: inline-size` (research R-08; red against the unchanged harness, where `measure-container` resolves to 1280px). Add the five tokens of R-08 to `packages/tokens/test/expected.ts`:
+- [X] T032 [P] [US3] `packages/tokens/test/browser/values.test.ts`: give the probe block `container-type: inline-size` (research R-08; red against the unchanged harness, where `measure-container` resolves to 1280px). Add the five tokens of R-08 to `packages/tokens/test/expected.ts`:
   - `line-height-prose` `1.65`;
   - `font-size-subhead` `1.125rem`;
   - `measure-reading` `68ch`;
@@ -279,12 +279,12 @@ The design sources are research R-06, R-08, R-10 and R-13, data-model § Prose, 
   - `measure-container` `100cqi`, with `{ property: "width", used: 1000 }`.
 
   The tokens CHANGELOG test expects all five
-- [ ] T033 [P] [US3] Fixtures (data-model § Test fixtures):
+- [X] T033 [P] [US3] Fixtures (data-model § Test fixtures):
   - `packages/styles/test/fixtures/prose.html`: the US3 fixture of the spec, with three wide 12-column tables, one of them with a caption of at least 80 characters ending in a full stop; a two-column table that fits; an `<a id>` target; `h5`, `h6` and a nested list; and the same content outside the container;
   - `prose-hosts.html`: grid, flex, nested, and a definite-width modal dialog opened with `showModal()`, sized by `--ocelle-dialog-max-inline` in `layout.css`;
   - `prose-root.html`;
   - `plants/*.css` for every US3 guard of R-10.
-- [ ] T034 [US3] `packages/styles/test/browser/prose.test.ts`, spec US3 scenarios 1 to 12:
+- [X] T034 [US3] `packages/styles/test/browser/prose.test.ts`, spec US3 scenarios 1 to 12:
   - computed sizes, weights and line heights per element, with the heading order; each non-heading line height is 1.65 times the element's own computed font size (research R-13): `td` and the body elements 26.4 px at 16 px, `th` 19.8 px at its 12 px;
   - measure and full-width `pre` and tables;
   - the scroll boxes at 320 px:
@@ -305,9 +305,9 @@ The design sources are research R-06, R-08, R-10 and R-13, data-model § Prose, 
   - the linked table: Tab lands on the link, and ArrowRight scrolls the table.
 
   Every scenario runs in both themes, under `emulateMedia({ colorScheme })` light and dark (research R-09, FR-022); none is exempt. Each guard is paired with its positive assertion and its plant
-- [ ] T035 [P] [US3] Fixture additions (data-model § Test fixtures): a prose container holding an `h1` in `packages/styles/test/fixtures/compact-root.html`, and the prose-in-compact, compact-in-prose and both-hooks cases in `compact.html`. `packages/styles/test/browser/compact.test.ts` additions: the `h1` half of US2 scenario 4 (30 px inside prose under compact on `<html>`, on `compact-root.html`), and US2 scenario 5's prose-in-compact, compact-in-prose and both-hooks cases (FR-024). Every scenario runs in both themes, under `emulateMedia({ colorScheme })` light and dark (research R-09, FR-022); none is exempt
-- [ ] T036 [P] [US3] `packages/styles/test/pairs.test.ts` (research R-08): each prose and value colour pairing is a `checked` pair in both themes in `packages/tokens/contrast/pairs.json`. Its plant is a fixture list with `color-link` on `color-chrome`. `packages/styles/test/source.test.ts`: the prose selectors exist within the bound
-- [ ] T037 [P] [US3] `packages/styles/test/readme.test.ts` prose statements (research R-14):
+- [X] T035 [P] [US3] Fixture additions (data-model § Test fixtures): a prose container holding an `h1` in `packages/styles/test/fixtures/compact-root.html`, and the prose-in-compact, compact-in-prose and both-hooks cases in `compact.html`. `packages/styles/test/browser/compact.test.ts` additions: the `h1` half of US2 scenario 4 (30 px inside prose under compact on `<html>`, on `compact-root.html`), and US2 scenario 5's prose-in-compact, compact-in-prose and both-hooks cases (FR-024). Every scenario runs in both themes, under `emulateMedia({ colorScheme })` light and dark (research R-09, FR-022); none is exempt
+- [X] T036 [P] [US3] `packages/styles/test/pairs.test.ts` (research R-08): each prose and value colour pairing is a `checked` pair in both themes in `packages/tokens/contrast/pairs.json`. Its plant is a fixture list with `color-link` on `color-chrome`. `packages/styles/test/source.test.ts`: the prose selectors exist within the bound
+- [X] T037 [P] [US3] `packages/styles/test/readme.test.ts` prose statements (research R-14):
   - values and `""` only;
   - what the prose family styles and the tokens it uses;
   - prose over compact;
@@ -317,13 +317,13 @@ The design sources are research R-06, R-08, R-10 and R-13, data-model § Prose, 
   - the WebKit `tabindex` limitation;
   - print out of scope;
   - the CHANGELOG naming `data-ocelle-prose`.
-- [ ] T038 [P] [US3] Storybook tests: `renderFamily("prose")` cases, and the "Prose document" story in `stories.test.ts` and `csp.test.ts`
-- [ ] T039 [US3] Commit T032 to T038 alone (`test(003-base-styles): phase 4 red — US3 prose`) and run `.specify/extensions/story/scripts/red.sh 4 phase`
+- [X] T038 [P] [US3] Storybook tests: `renderFamily("prose")` cases, and the "Prose document" story in `stories.test.ts` and `csp.test.ts`
+- [X] T039 [US3] Commit T032 to T038 alone (`test(003-base-styles): phase 4 red — US3 prose`) and run `.specify/extensions/story/scripts/red.sh 4 phase`
 
 ### Implementation (green)
 
-- [ ] T040 [US3] `packages/tokens/src/source.ts`: add the five records of R-08. Add them to `packages/tokens/CHANGELOG.md` and `packages/tokens/README.md`. Confirm `validateSource` accepts `100cqi`
-- [ ] T041 [US3] `packages/styles/src/base.css`: the prose rules of data-model § Prose, after the compact and value rules:
+- [X] T040 [US3] `packages/tokens/src/source.ts`: add the five records of R-08. Add them to `packages/tokens/CHANGELOG.md` and `packages/tokens/README.md`. Confirm `validateSource` accepts `100cqi`
+- [X] T041 [US3] `packages/styles/src/base.css`: the prose rules of data-model § Prose, after the compact and value rules:
   - the container scoped `[data-ocelle-prose=""]:where(:not(html))`;
   - headings;
   - measure, lists, block quotes and `hr`;
@@ -333,7 +333,7 @@ The design sources are research R-06, R-08, R-10 and R-13, data-model § Prose, 
   - the caption rule: `position: sticky`, `inset-inline-start: 0`, `max-inline-size: var(--ocelle-measure-container)`, `text-align: start`;
   - the inset ring on `table:focus-visible`;
   - cells and header cells.
-- [ ] T042 [US3] README and CHANGELOG of `@ocelle/styles` with the T037 statements. Add `renderFamily("prose")` and the "Prose document" story (text in `base-content.json`)
+- [X] T042 [US3] README and CHANGELOG of `@ocelle/styles` with the T037 statements. Add `renderFamily("prose")` and the "Prose document" story (text in `base-content.json`)
 - [ ] T043 [US3] Run the checks of T022 for this phase, then `.specify/extensions/story/scripts/tdd-check.sh 4` (`pass`), and commit green (`feat(003-base-styles): phase 4 — US3 prose`)
 
 **Checkpoint**: a renderer's plain HTML in a prose container reads at 1.65 with an 18 px `h2`, and wide tables
