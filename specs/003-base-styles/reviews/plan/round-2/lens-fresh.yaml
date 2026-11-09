@@ -1,0 +1,92 @@
+schema: review-findings/v1
+complete: true
+phase: plan
+round: 2
+lens: fresh
+# Read at e2add75 (round 2 base e88f84b): spec.md, plan.md, research.md, data-model.md, contracts/, quickstart.md,
+# the constitution, and round 1's lens files, refute.md, fixes-1/2.md and verify-1/2.md. Settled findings and the
+# operator's fork decisions are not raised again. This round attacks the round-1 fixes.
+# Probes: Chromium 153 (/opt/pw-browsers/chromium-1243/chrome-linux64/chrome) through the repository's Playwright
+# 1.64.1. Scripts are in /tmp/claude-0/-home-user/181e1231-8fd5-5f31-9d9d-498e593ba7cf/scratchpad/fresh2/ (p1 to p9),
+# not in the repository. base.css there is transcribed from data-model § Rule table (base layer, focus ring, the prose
+# container, table, caption and cell rules), with token values inlined.
+findings:
+  - id: PLAN-FRESH-2-001
+    severity: 3
+    title: "The round-1 `contain: inline-size` fix collapses prose tables in shrink-to-fit hosts (modal dialog, popover, default flex item, inline-block, float): a table that fits becomes a scroll box and a tab stop, and a table-only document is 0 px wide"
+    evidence:
+      - artifact: "data-model.md § Prose: ` :where(table)` `display: block; overflow-x: auto; max-inline-size: 100%; contain: inline-size`; research.md R-06: \"With inline-size containment the table's own min-content width no longer escapes\""
+      - artifact: "data-model.md § Test fixtures, prose-hosts.html: only a `1fr` grid item, a `flex: 1` item and a nested grid item. Spec US3-3: \"Tab never moves focus onto the table that fits\""
+      - code: "probe p1 (1280 px viewport, a 2-column table of short text, natural width 214 px). Prose container inside display:inline-block, width:fit-content, a default flex item (flex: 0 1 auto) beside a rail, position:absolute or float. Table only: container 0 px, table clientWidth 0 against scrollWidth 214, and the first Tab lands on the table. With a short paragraph first: clientWidth 132 against 214, and Tab lands on the table. Normal flow and a grid `auto` track: 1280/1280 and 1220/1220, not a tab stop."
+      - code: "probe p9 (1280 px): the same table in a prose container inside `<dialog>` opened with showModal(). Planned rules: table only 0/214, after a paragraph 78/214. With `contain: none`: 214/214 in both cases."
+      - code: "probe p2 (320 px): `width: 0; min-inline-size: 100%` instead of containment behaves like the planned rule (132/214 in the default flex item). `inline-size: max-content` widens the page to 1341 px in the grid and flex hosts. So no single table rule tried here keeps both the min-content fix and the max-content size."
+    claim: |
+      Inline-size containment removes the table from both intrinsic sizes of its ancestors, not only from the
+      min-content size that widened round 1's grid and flex columns. Any ancestor whose width comes from its
+      max-content size is shrink-to-fit: a modal `<dialog>` (the UA gives it `width: fit-content`), a popover, a
+      default flex item, `inline-block`, a float, an absolutely positioned panel. There the table adds 0 to that width.
+      A rendered document that is only a table shows nothing. With a short paragraph above, a two-column table that
+      fits easily at 1280 px is cut to the paragraph's width, scrolls, and becomes an extra tab stop. That breaks
+      FR-017 ("a table that fits is not a tab stop") and #519's readable cell floor in a layout the console and Kitty
+      Desktop are likely to use, such as a help or detail dialog. No fixture covers a shrink-to-fit host, so the suite
+      would pass while the defect ships. The round-1 refuter checked only the three layouts in which the column was
+      too wide.
+    remedies:
+      - "Fork for the operator, (a): keep `contain: inline-size`. Add to the spec's Edge Cases, FR-004, the README and contracts/styles-package.md that a prose container must get its width from its context (block flow, a `1fr` or `flex: 1` item), not from its content, and must not sit in a modal dialog, popover, inline-block, float or default flex item without a definite width. Add a `prose-hosts.html` case that gives a dialog host a definite width, and a README test statement for it."
+      - "Fork for the operator, (b): drop `contain: inline-size`. Document that the host gives the grid or flex ancestors of a prose container `min-inline-size: 0` (or `minmax(0, 1fr)` tracks), and give the grid, flex and nested host fixtures that host CSS in layout.css. Add shrink-to-fit host cases (a modal `<dialog>`, a default flex item) to `prose-hosts.html` and US3-3, in which the table that fits keeps its natural width and is not a tab stop. Change R-06 spike step 3 and its `contain: none` plant to match."
+
+  - id: PLAN-FRESH-2-002
+    severity: 2
+    title: "The caption fix moves only the caption's first character into view: a caption longer than the visible box still runs past it and needs horizontal scrolling (WCAG 1.4.10)"
+    evidence:
+      - artifact: "data-model.md § Prose: ` :where(caption)` `text-align: start`; spec US3-3: \"at `scrollLeft` 0 the caption text starts inside the table's visible box\"; FR-017: \"A caption MUST start at the table's start edge\""
+      - code: "probe p3 (320 px, a 12-column prose table with an 87-character caption, the planned rules): caption box x 0 to 1281, the caption text on one line from x 0 to 599, page scrollWidth 320. The caption's second half shows only after the table is scrolled."
+      - code: "probe p4 (320 px, the nested-grid host): with `container-type: inline-size` on the table instead of `contain: inline-size`, and the caption `position: sticky; inset-inline-start: 0; max-inline-size: 100cqi`, the caption wraps to three lines inside the visible box (x 60 to 320). It stays in view at scrollLeft 500, the page stays 320, and the AX tree still has role `table` named by the caption, plus 26 row, columnheader and cell nodes."
+    claim: |
+      The caption is laid out across the full width of the table grid inside the scroll box. `text-align: start` puts
+      its first word at the visible edge, but any caption longer than the visible width (a sentence at 320 px or
+      200% zoom) stays on one line that runs off-screen. A sighted keyboard or zoom user reads the table's title only
+      by scrolling the data sideways. The caption is plain text, not two-dimensional content, so WCAG 1.4.10 does not
+      exempt it. The US3-3 assertion ("starts inside") and the R-10 plant (`text-align: center`) check only the
+      start, so this state passes every planned test. Round 1's fixture caption was short, which hid the problem.
+    remedies:
+      - "Make the caption wrap inside the visible box. One measured mechanism: `container-type: inline-size` on the prose table (it implies the inline-size containment of R-06) and `position: sticky; inset-inline-start: 0; max-inline-size: 100cqi` on the caption. The `100cqi` needs a token or a recorded lint decision under FR-002. Verify it in the R-06 spike against the AX tree. Change FR-017 and US3-3 to require that every line box of a caption longer than the visible width lies inside the table's visible box at scrollLeft 0, give the fixture a caption of at least 80 characters, and name a plant (the caption rule without the sticky or max-inline-size part)."
+
+  - id: PLAN-FRESH-2-003
+    severity: 2
+    title: "The round-2 media fixture's local `img` source is blocked by the fixture CSP, so page.html reports an img-src violation against SC-001 and US1-5, and the image never loads"
+    evidence:
+      - artifact: "data-model.md § Test fixtures, page.html: \"the `img` source a local file of the same 2:1 natural ratio\" (fixes-2); research.md R-10: \"The fixture `img` source is a local file (CSP)\""
+      - artifact: "research.md R-09: serve.ts serves with `default-src 'none'; script-src 'self'; style-src 'self'; font-src 'self'`, with no img-src. Spec US1-5 and SC-001: zero CSP violations. US1 Independent Test: page.html is loaded under the strict CSP."
+      - code: "probe p8: a page served with exactly that header and `<img width=2000 height=1000 src=\"x.svg\">` from the same origin. A securitypolicyviolation fires for `img-src http://127.0.0.1:<port>/x.svg`, `naturalWidth` is 0, and the box comes only from the attributes."
+      - code: "packages/tokens/test/browser/serve.ts:56-60: the served content types are html, css and woff2 only; 002 never served an image under this CSP"
+    claim: |
+      `default-src 'none'` covers `img-src`, and the CSP lists `'self'` only for scripts, styles and fonts. So the
+      local image that fixes-2 added for the aspect-ratio guard is blocked. Every page.html test that also asserts
+      zero violations (US1-5, SC-001, the CSP control) fails for a reason unrelated to base.css. The aspect-ratio
+      half then measures a broken image, not the 2:1 natural ratio that R-10's plant reasoning depends on. The
+      implementer meets a red test that the CSS cannot turn green, and the easy ways out (widen the CSP, or drop the
+      violation assertion on that page) change approved spec text without an operator decision.
+    remedies:
+      - "Fork for the operator, (a): give page.html no image request. Use an `img` without `src` or with a `data:` source (data: is also blocked, so no `src`), and measure the attribute ratio only. Record in R-10 that the natural-ratio case is not covered and why."
+      - "Fork for the operator, (b): serve page.html under the strict CSP plus `img-src 'self'`, the directive a real host needs for its own images. State that in spec US1-5 and US1-10, SC-001 and R-09. Keep zero violations on that page, and add `image/*` to serve.ts's content types."
+
+  - id: PLAN-FRESH-2-004
+    severity: 2
+    title: "base.css overrides the `:host` rules of future elements (box-sizing on every host, and the focus ring on focusable hosts), and Storybook will load it under every element story"
+    evidence:
+      - artifact: "spec.md § Edge Cases, Shadow DOM: \"the base stylesheet styles the light DOM of the host page; it does not reach into elements' shadow roots. Elements adopt their own stylesheets (constitution IV).\" Contract § Base layer: \"any host rule overrides it\". research.md R-12: `.storybook/preview-head.html` links base.css for the whole preview."
+      - code: "probe p7: a custom element with `tabindex=0` and adopted `:host { box-sizing: content-box; width: 40px; padding: 4px } :host(:focus-visible) { outline-offset: -3px }`, Tab-focused. With base.css: box-sizing border-box, width 40, outline-offset 2px (base wins). Without base.css: content-box, width 48, offset -3px."
+      - code: "probe p6: with `delegatesFocus: true` the host does not match `:focus-visible` (no page ring). With a focusable host, the page ring applies, and `:host(:focus-visible) { outline: none }` leaves outline-style solid."
+    claim: |
+      The "(0,0,0), so anything overrides it" argument holds only within the document's cascade context. For normal
+      declarations, the outer context wins over a shadow tree's `:host` rules whatever the specificity. So
+      `:where(*)` box-sizing and the `:where(:focus-visible)` ring apply to every `ocelle-*` host, and the element
+      cannot change them from its own stylesheet except with `!important`. An element whose host is focusable (a
+      roving-tabindex host, a form-associated control) gets the page's ring geometry instead of its own, and host
+      sizing differs between pages with and without base.css. Because R-12 links base.css into the whole Storybook
+      preview, the element stories of #7 to #17 and their future baselines will always render with it, and nothing
+      would show how an element looks on a page without base.css. This is an interface the element issues inherit
+      from this feature, and the spec's Shadow DOM edge case says the opposite.
+    remedies:
+      - "Correct spec § Edge Cases (Shadow DOM), the contract § Base layer and the README. base.css also styles custom-element hosts (box-sizing, and the focus ring on a focusable host), and an element's `:host` rules cannot override that. Elements put their focusable part inside the shadow root or use `delegatesFocus`, and do not depend on their host's box-sizing. Record this for #7 to #17 in the plan's decisions for the operator. Either scope base.css in the Storybook preview to the four base-styles stories, or record that element stories run with base.css."
