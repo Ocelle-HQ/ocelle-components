@@ -359,23 +359,23 @@ data-model § Identifier wrap.
 
 ### Tests (red, one commit)
 
-- [ ] T044 [P] [US4] `packages/styles/test/fixtures/wrap.html` (the 300 px two-column `1fr` grid, hooked and unhooked identifiers, a `data-ocelle-wrap="true"` identifier, an identifier in prose and in a compact `span`) and `plants/*.css` for the US4 guards of R-10 (the wrap presence-form plant included). `packages/styles/test/browser/wrap.test.ts`, every scenario in both themes under `emulateMedia({ colorScheme })` light and dark (research R-09, FR-022); none is exempt:
+- [X] T044 [P] [US4] `packages/styles/test/fixtures/wrap.html` (the 300 px two-column `1fr` grid, hooked and unhooked identifiers, a `data-ocelle-wrap="true"` identifier, an identifier in prose and in a compact `span`) and `plants/*.css` for the US4 guards of R-10 (the wrap presence-form plant included). `packages/styles/test/browser/wrap.test.ts`, every scenario in both themes under `emulateMedia({ colorScheme })` light and dark (research R-09, FR-022); none is exempt:
   - scenario 1: the column within 1 px of the short text, with no ellipsis, and the unhooked identifier widening its column in the same test;
   - scenario 2: opt-in, with the `*` plant; in the same test a `data-ocelle-wrap="true"` identifier keeps the initial `overflow-wrap` (FR-005), with the wrap presence-form plant;
   - scenario 3: wraps over more than one line, and the copied text equals the source, with the `text-transform` plant;
   - scenario 4: prose 16/26.4 px and compact 14/21 px.
 
   Also test 320 px and 200% zoom
-- [ ] T045 [P] [US4] `packages/styles/test/source.test.ts`: the wrap rule exists with `overflow-wrap: anywhere`. In the same test, FR-020's list is absent from it (`word-break`, `hyphens: auto`, `text-overflow: ellipsis`, `white-space: nowrap`), with its plant strings
-- [ ] T046 [P] [US4] `packages/styles/test/readme.test.ts`: the wrap statements, what the identifier-wrap family styles and the tokens it uses, the SC-006 table mapping E-23, E-37 and E-39, and the CHANGELOG naming `data-ocelle-wrap`. With this, all four hooks are documented (US1 scenario 6)
-- [ ] T047 [P] [US4] Storybook tests: `renderFamily("wrap")` cases, and the "Identifier wrap" story in `stories.test.ts` and `csp.test.ts`
-- [ ] T048 [US4] Commit T044 to T047 alone (`test(003-base-styles): phase 5 red — US4 identifier wrap`) and run `.specify/extensions/story/scripts/red.sh 5 phase`
+- [X] T045 [P] [US4] `packages/styles/test/source.test.ts`: the wrap rule exists with `overflow-wrap: anywhere`. In the same test, FR-020's list is absent from it (`word-break`, `hyphens: auto`, `text-overflow: ellipsis`, `white-space: nowrap`), with its plant strings
+- [X] T046 [P] [US4] `packages/styles/test/readme.test.ts`: the wrap statements, what the identifier-wrap family styles and the tokens it uses, the SC-006 table mapping E-23, E-37 and E-39, and the CHANGELOG naming `data-ocelle-wrap`. With this, all four hooks are documented (US1 scenario 6)
+- [X] T047 [P] [US4] Storybook tests: `renderFamily("wrap")` cases, and the "Identifier wrap" story in `stories.test.ts` and `csp.test.ts`
+- [X] T048 [US4] Commit T044 to T047 alone (`test(003-base-styles): phase 5 red — US4 identifier wrap`) and run `.specify/extensions/story/scripts/red.sh 5 phase`
 
 ### Implementation (green)
 
-- [ ] T049 [US4] `packages/styles/src/base.css`: `[data-ocelle-wrap="anywhere"] { overflow-wrap: anywhere }`, last in the file
-- [ ] T050 [US4] README and CHANGELOG of `@ocelle/styles` with the T046 statements. Add `renderFamily("wrap")` and the "Identifier wrap" story
-- [ ] T051 [US4] Run the checks of T022 for this phase and the quickstart steps 1 to 4, then `.specify/extensions/story/scripts/tdd-check.sh 5` (`pass`), and commit green (`feat(003-base-styles): phase 5 — US4 identifier wrap`)
+- [X] T049 [US4] `packages/styles/src/base.css`: `[data-ocelle-wrap="anywhere"] { overflow-wrap: anywhere }`, last in the file
+- [X] T050 [US4] README and CHANGELOG of `@ocelle/styles` with the T046 statements. Add `renderFamily("wrap")` and the "Identifier wrap" story
+- [X] T051 [US4] Run the checks of T022 for this phase and the quickstart steps 1 to 4, then `.specify/extensions/story/scripts/tdd-check.sh 5` (`pass`), and commit green (`feat(003-base-styles): phase 5 — US4 identifier wrap`)
 
 **Checkpoint**: every family ships, documented, with its story.
 
