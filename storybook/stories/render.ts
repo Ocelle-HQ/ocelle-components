@@ -34,7 +34,7 @@ export function renderGroup(source: readonly TokenRecord[], group: Group, theme:
 }
 
 /** A family of the base styles that has a story (003 FR-023, research.md R-12). */
-export type Family = "base" | "compact" | "prose";
+export type Family = "base" | "compact" | "prose" | "wrap";
 
 /** The text of the Base page story (storybook/stories/base-content.json). */
 export interface BaseContent {
@@ -93,11 +93,23 @@ export interface ProseContent {
   readonly linked: ProseTable;
 }
 
+/** The text of the Identifier wrap story (storybook/stories/base-content.json). */
+export interface WrapContent {
+  readonly heading: string;
+  readonly intro: string;
+  /** An unbroken machine identifier of 120 characters, shown with the identifier-wrap hook. */
+  readonly identifier: string;
+  /** The short text in the grid column beside the identifier. */
+  readonly short: string;
+  readonly note: string;
+}
+
 /** The stories' text, one entry per family. */
 export interface Content {
   readonly base: BaseContent;
   readonly compact: CompactContent;
   readonly prose: ProseContent;
+  readonly wrap: WrapContent;
 }
 
 /** The stories' text of base-content.json. */
@@ -156,6 +168,7 @@ function renderProse(text: ProseContent): string {
 export function renderFamily(family: Family, content: Content = storyContent): string {
   if (family === "compact") return renderCompact(content.compact);
   if (family === "prose") return renderProse(content.prose);
+  if (family === "wrap") return "";
   const text = content.base;
   const items = text.list.map((item) => `<li>${escape(item)}</li>`).join("");
   return (
