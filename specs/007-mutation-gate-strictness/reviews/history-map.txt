@@ -1,0 +1,2 @@
+# History fold phase-1 of claude/023-mutation-gate-strictness: old commit -> new commit (pre-fold head kept as refs/ocelle/prefold/phase-1/claude/023-mutation-gate-strictness, 575c367d7921d0af8455d287a0fa03599f00db22).
+575c367d7921d0af8455d287a0fa03599f00db22 4917a22512facd2115824a120f0f8af807085a80
