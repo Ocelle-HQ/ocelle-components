@@ -3,7 +3,7 @@ type: Run Summary
 title: op-004-token-source-mutation
 description: Review rounds, findings and TDD checks per phase of op-004-token-source-mutation, generated from its review files
 tags: [run, op-004-token-source-mutation]
-generated: { by: process:story-summary, at: 2026-11-10T07:58:53Z }
+generated: { by: process:story-summary, at: 2026-11-10T09:04:35Z }
 sources:
   - id: p1-r1
     resource: ../../../ops/004-token-source-mutation/reviews/phase-1/round-1.md
