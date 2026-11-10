@@ -7,4 +7,5 @@ export function run(): number {
   throw new Error("not implemented (visual:update, phase 3)");
 }
 
+// Stryker disable next-line all: process boundary, covered by gates-integration: gates/test/integration/entry-stubs.test.ts "visual:update exits 2 with exactly could not run: not implemented (visual:update, phase 3)"
 if (import.meta.main) await main(run);

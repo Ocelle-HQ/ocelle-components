@@ -7,4 +7,5 @@ export function run(): number {
   throw new Error("not implemented (axe, phase 4)");
 }
 
+// Stryker disable next-line all: process boundary, covered by gates-integration: gates/test/integration/entry-stubs.test.ts "axe exits 2 with exactly could not run: not implemented (axe, phase 4)"
 if (import.meta.main) await main(run);

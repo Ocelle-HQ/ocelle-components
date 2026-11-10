@@ -17,27 +17,40 @@ T002 (`storybook/visual/container.json`) is checked by a test: the pin must move
   changed, not on a separate fixture file: it is then red until the pin exists, and it shows the other checks passing
   on the real values while exactly the two changed fields are reported.
 
-## Exempt: T003 and T004
+## Exempt: T003 (except the entry stubs) and T004
 
-No test could fail for these, because neither changes what any code does:
+No test could fail for these, because none changes what any code does. The four entry stubs of T003 are the
+exception: they have behaviour (exit 2 with one stderr line) and are tested (§ The entry stubs below).
 
 - **T003**, root `package.json`, `pnpm-lock.yaml`, `.gitignore` and four entry stubs:
   - the exact devDependencies `axe-core` `4.14.0` and `pngjs` `7.0.0` are package metadata; nothing imports either
     yet (phases 3 and 4 do). `pngjs` 7.0.0 was already in the lockfile as a transitive dependency. The existing pins
     gate checks both pins (`pnpm run gate:pins`: `pins: 5 manifests checked, no finding`);
   - the scripts `gate:storybook-build`, `gate:visual`, `gate:axe` and `visual:update` point at
-    `gates/bin/storybook-build.ts`, `visual.ts`, `axe.ts` and `baselines.ts`. Each is a stub whose `run()` throws
-    `not implemented (<gate>, phase <n>)`, which the shared entry wrapper (`gates/lib/cli.ts` `entry`) turns into
-    exit 2 with one stderr line. The stubs are replaced, red first, in phases 2 (storybook-build), 3 (visual,
-    baselines) and 4 (axe). They are not in `gates/gates.json` yet, so no registry or CI check runs them;
+    `gates/bin/storybook-build.ts`, `visual.ts`, `axe.ts` and `baselines.ts`, the entry stubs, which are not exempt
+    (§ The entry stubs). They are not in `gates/gates.json` yet, so no registry or CI check runs them;
   - `.gitignore` gains `storybook/.visual/` and `storybook/.cache/`, ignore entries for output the later phases write.
 - **T004**, the spike: scratch scripts in the scratchpad only, and a record (`spike.md`) with the fixtures it kept for
   phases 2 and 3 (`gates/test/fixtures/storybook-build/`, `gates/test/fixtures/container/`). Recorded outputs are
   inputs of later red tests, not behaviour of this phase.
 
+## The entry stubs: tested (review round 1, R1-01)
+
+Each stub's `run()` throws `not implemented (<gate>, phase <n>)`, which the shared entry wrapper (`gates/lib/cli.ts`
+`entry`) turns into exit 2 with one stderr line `could not run: not implemented (<gate>, phase <n>)`. That is
+behaviour, and a stub that exited 0 would be a fail-open entry. It is tested:
+
+- `gates/test/entry-stubs.test.ts` (unit, in Stryker's scope): each `run()` throws exactly its message;
+- `gates/test/integration/entry-stubs.test.ts` (gates-integration): `node gates/bin/<name>.ts` exits 2 with exactly
+  that one stderr line and no stdout.
+
+The tests came with the round-1 fix, not before the stubs, so they have no red commit of their own; they fail on the
+phase's base, where the stubs do not exist, and they fail on the reviewer's mutants (see round-1-fixes.md). The stubs
+are replaced, red first, in phases 2 (storybook-build), 3 (visual, baselines) and 4 (axe).
+
 ## Mutation note
 
-The four entry stubs are inside the mutation scope (`gates/bin/**/*.ts`). Their only mutable code is the thrown
-message and the `import.meta.main` guard; no test exercises a stub, since its phase replaces it red first. A mutation
-run of this phase would therefore report survivors on stub lines that the next phases delete; they are recorded here
-rather than covered by tests of a stub.
+The four entry stubs are inside the mutation scope (`gates/bin/**/*.ts`). The thrown message is killed by the unit
+test. The `import.meta.main` guard is a process boundary that Stryker's in-process run cannot reach; each carries a
+`// Stryker disable next-line all: process boundary, covered by gates-integration:` record naming its case in
+`gates/test/integration/entry-stubs.test.ts`, as `gates/bin/prefix.ts` does.

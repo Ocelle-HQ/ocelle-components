@@ -7,4 +7,5 @@ export function run(): number {
   throw new Error("not implemented (storybook-build, phase 2)");
 }
 
+// Stryker disable next-line all: process boundary, covered by gates-integration: gates/test/integration/entry-stubs.test.ts "storybook-build exits 2 with exactly could not run: not implemented (storybook-build, phase 2)"
 if (import.meta.main) await main(run);
