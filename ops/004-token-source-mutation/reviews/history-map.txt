@@ -1,0 +1,3 @@
+# History fold phase-1 of claude/020-token-value-mutation: old commit -> new commit (pre-fold head kept as refs/ocelle/prefold/phase-1/claude/020-token-value-mutation, 6793c9c7b44983c5d39c766d6f1cbe6ba3a5f844).
+b5059d2d699a11357afb23fc637f68e584d2ca68 4e2ce98d04b823a5b3cd45ae500e8d28c9f00281
+6793c9c7b44983c5d39c766d6f1cbe6ba3a5f844 731ce4bb5fe43d99f546bf8057a49fc94ca01515
