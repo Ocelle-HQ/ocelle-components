@@ -111,6 +111,12 @@ describe("normalise(raw, names)", () => {
     expect(orders[0]).toEqual(["modules", "readme", "schemaVersion"]);
   });
 
+  it("orders the modules by path, whatever order the analyzer read them in", () => {
+    const module = (path: string): Json => ({ kind: "javascript-module", path, declarations: [], exports: [] });
+    const out = normalise({ ...raw, modules: [module("src/ocelle-zeta.ts"), module("src/ocelle-alpha.ts"), module("src/ocelle-mid.ts")] }, []);
+    expect((out.modules as Json[]).map((each) => each.path)).toEqual(["src/ocelle-alpha.ts", "src/ocelle-mid.ts", "src/ocelle-zeta.ts"]);
+  });
+
   it("keeps lists that the analyzer stated, and leaves raw untouched", () => {
     const stated = structuredClone(raw);
     declaration(stated).slots = [{ name: "icon", description: "The icon." }];
@@ -179,7 +185,7 @@ const element = (tag: string): string =>
   `import { LitElement } from "lit";\n\n/**\n * An element.\n *\n * @tagname ${tag}\n */\nexport class E extends LitElement {\n  static override properties = { name: {} };\n\n  /**\n   * A name.\n   *\n   * @default undefined\n   */\n  declare name: IconName | undefined;\n}\n`;
 
 describe("generate(root) on other element sources", () => {
-  it("reads every src/ocelle-*.ts in name order, and nothing else of src/", async () => {
+  it("reads every src/ocelle-*.ts, its modules in path order, and nothing else of src/", async () => {
     const dir = root({
       "packages/elements/src/ocelle-zeta.ts": element("ocelle-zeta"),
       "packages/elements/src/ocelle-alpha.ts": element("ocelle-alpha"),

@@ -206,7 +206,7 @@ describe("manifestFindings(committed, generated)", () => {
 
   it("reads only custom-element declarations of object entries: other entries and declarations are not elements", () => {
     const generated = manifest(described);
-    element(generated).members = [{ kind: "field", privacy: "public", name: "tone", description: "The tone." }, { kind: "field", privacy: "protected", name: "cache" }];
+    element(generated).members = ["tone", 3, [], null, { kind: "field", privacy: "public", name: "tone", description: "The tone." }, { kind: "field", privacy: "protected", name: "cache" }];
     (generated.modules as unknown[]).unshift(null, "module", [], { path: "src/helper.ts", declarations: [null, 3, [], { kind: "function", name: "helper", members: [{ kind: "field", name: "x" }] }] });
     expect(manifestFindings(generated, generated)).toEqual([]);
   });

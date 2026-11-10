@@ -81,7 +81,9 @@ function normaliseDeclaration(declaration: Json, union: string | undefined): Jso
 
 export function normalise(raw: Manifest, names: readonly string[]): Manifest {
   const union = names.length === 0 ? undefined : names.map((name) => JSON.stringify(name)).join(" | ");
-  const modules = list(raw.modules).map((module) => ({ ...module, declarations: list(module.declarations).map((declaration) => normaliseDeclaration(declaration, union)) }));
+  const modules = list(raw.modules)
+    .map((module): Json => ({ ...module, declarations: list(module.declarations).map((declaration) => normaliseDeclaration(declaration, union)) }))
+    .sort((a, b) => String(a.path).localeCompare(String(b.path)));
   return sorted({ ...raw, modules }) as Manifest;
 }
 
@@ -101,7 +103,7 @@ export function iconNames(text: string): string[] {
 
 export function generate(root: string): Promise<Manifest> {
   const dir = join(root, sourceDir);
-  const files = existsSync(dir) ? readdirSync(dir).filter((name) => element.test(name)).sort() : [];
+  const files = existsSync(dir) ? readdirSync(dir).filter((name) => element.test(name)) : [];
   if (files.length === 0) return Promise.reject(new Error(`no element module ${sourceDir}/ocelle-*.ts under ${root}`));
   const modules = files.map((name) => ts.createSourceFile(`src/${name}`, readFileSync(join(dir, name), "utf8"), ts.ScriptTarget.ES2015, true));
   const raw = create({ modules, plugins: litPlugin() });
