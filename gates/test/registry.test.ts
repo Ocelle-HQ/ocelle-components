@@ -9,14 +9,14 @@ import type { Gate } from "../lib/registry.ts";
 // set; each id missing from one of them is one finding. Inputs: gates/test/fixtures/registry/.
 const registryText = readFileSync(new URL("fixtures/registry/gates.json", import.meta.url), "utf8");
 const workflow = readFileSync(new URL("fixtures/registry/ci.yml", import.meta.url), "utf8");
-const ids = ["typecheck", "lint", "style-lint", "unit-tests", "test-lint", "mutation", "csp", "prefix", "config-copies", "pins", "signoff", "contrast", "brand-rules"];
+const ids = ["typecheck", "lint", "style-lint", "unit-tests", "test-lint", "mutation", "csp", "prefix", "config-copies", "pins", "signoff", "contrast", "brand-rules", "manifest"];
 
 function finding(path: string, rule: string, message: string): Finding {
   return { location: { path }, gate: "plants", rule, message };
 }
 
 describe("fr020 and plantJob", () => {
-  it("lists the thirteen gates of FR-020 (002 FR-020: contrast and brand-rules added), and names the plant job plants", () => {
+  it("lists the fourteen gates of FR-020 (002 FR-020: contrast and brand-rules added; 005 FR-009: manifest), and names the plant job plants", () => {
     expect({ fr020, plantJob }).toEqual({ fr020: ids, plantJob: "plants" });
   });
 });
@@ -122,29 +122,31 @@ describe("checkRegistry", () => {
   });
 
   it("reports every gate when the registry and the workflow are empty", () => {
-    expect(checkRegistry({ registry: [], jobs: [], ...paths })).toHaveLength(26);
+    expect(checkRegistry({ registry: [], jobs: [], ...paths })).toHaveLength(28);
   });
 });
 
 // The repository's own registry, workflow and FR-020 list (002 FR-020, FR-022; contracts/gates.md § Plants,
-// "Registry"): the contrast and brand-rules gates are registered with their checks and repo-tree plant commands, have
-// CI jobs of the same shape as the other gate jobs, and the plant job's registry check finds the three sets equal.
+// "Registry"): the contrast and brand-rules gates, and 005's manifest gate (FR-009, research.md R-06), are registered
+// with their checks and repo-tree plant commands, have CI jobs of the same shape as the other gate jobs, and the plant
+// job's registry check finds the three sets equal.
 describe("the repository's registry (002 FR-020)", () => {
   const real = parseRegistry(readFileSync(new URL("../gates.json", import.meta.url), "utf8"));
   const realWorkflow = readFileSync(new URL("../../.github/workflows/ci.yml", import.meta.url), "utf8");
 
-  it("registers contrast and brand-rules as repo-tree gates with the checks Contrast and Brand rules", () => {
+  it("registers contrast, brand-rules and manifest as repo-tree gates with the checks Contrast, Brand rules and Custom-elements manifest", () => {
     const pick = (id: string): Partial<Gate> | undefined => {
       const gate = real.find((g) => g.id === id);
       return gate === undefined ? undefined : { id: gate.id, check: gate.check, command: gate.command, plantCommand: gate.plantCommand, plantForm: gate.plantForm };
     };
-    expect([pick("contrast"), pick("brand-rules")]).toEqual([
+    expect([pick("contrast"), pick("brand-rules"), pick("manifest")]).toEqual([
       { id: "contrast", check: "Contrast", command: "pnpm run gate:contrast", plantCommand: "node gates/bin/contrast.ts --root {root}", plantForm: "repo-tree" },
       { id: "brand-rules", check: "Brand rules", command: "pnpm run gate:brand-rules", plantCommand: "node gates/bin/brand-rules.ts --root {root}", plantForm: "repo-tree" },
+      { id: "manifest", check: "Custom-elements manifest", command: "pnpm run gate:manifest", plantCommand: "node gates/bin/manifest.ts --root {root}", plantForm: "repo-tree" },
     ]);
   });
 
-  it("matches the workflow's gate jobs and the FR-020 list, thirteen gates", () => {
+  it("matches the workflow's gate jobs and the FR-020 list, fourteen gates", () => {
     expect(checkRegistry({ registry: real, registryPath: "gates/gates.json", jobs: ciJobs(realWorkflow), workflowPath: ".github/workflows/ci.yml" })).toEqual([]);
     expect(real.map((gate) => gate.id)).toEqual(ids);
   });
@@ -170,5 +172,6 @@ describe("the repository's registry (002 FR-020)", () => {
     expect(job("config-copies")).toEqual(shape("config-copies", "Story config copies", "pnpm run gate:config-copies"));
     expect(job("contrast")).toEqual(shape("contrast", "Contrast", "pnpm run gate:contrast"));
     expect(job("brand-rules")).toEqual(shape("brand-rules", "Brand rules", "pnpm run gate:brand-rules"));
+    expect(job("manifest")).toEqual(shape("manifest", "Custom-elements manifest", "pnpm run gate:manifest"));
   });
 });
