@@ -21,12 +21,15 @@ alias of `knowledge/speckit-flows/findings/frontend-missions.md` § Browser path
 1. `B=$(git rev-parse ec0f533~1)`; `pnpm --silent run gate:mutation -- --base "$B" --plan` lists the `source.ts`
    entries and writes the cut count to stderr.
 2. For each `source.ts` entry, the measurement run of research.md R-06, timed. Expected: 0 `timeout` lines, exit 0,
-   at most 176 s (spec FR-009, FR-010); compare with `evidence/red/`, taken before any mission code.
+   at most 176 s (spec FR-009, FR-010); compare per mutant with `evidence/red/`, taken before any mission code, by the
+   key of step 3; a mutant Killed red and Timeout green is listed as lever 1's, with its re-run (R-06).
 3. The same for the FR-013 reference entries; compare per mutant with `evidence/red/`, each mutant keyed by start and
    end (line, column), mutator and replacement; a repeated or unmatched key fails the comparison loudly (R-06, with its
    re-run rule).
-4. `pnpm exec vitest run --project gates-integration gates/test/integration/vitest-mutation-config.test.ts`: the token
-   modules start first under Stryker's options.
+4. `pnpm exec vitest run --project gates-integration gates/test/integration/vitest-mutation-config.test.ts`: under
+   Stryker's options `packages/tokens/test/source-table.test.ts` starts before every other module, then the other token
+   modules before any other project; the mutation projects are the stated split of `tokens` and collect every test
+   module once (R-05).
 5. `pnpm --filter @ocelle/tokens build` and `cmp` `dist/tokens.css`, `dist/tokens.json`, `dist/index.d.ts` with the
    base's build (spec SC-005).
 6. At landing: the CI measurement of research.md R-07 (the measurement commit on the mission's pull request, its

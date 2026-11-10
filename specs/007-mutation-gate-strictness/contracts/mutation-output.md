@@ -52,11 +52,18 @@ gate-cli.md's mutation row gains it in the dated 007 amendment (research.md R-08
 
 - The plant judge reads `record`, `timeout`, `compile-error` and `zero-mutants` of gate `mutation` as report lines,
   never as findings (spec FR-005). A plant may assert them with `reports` (data-model.md § Plant).
-- The story review command, `.specify/extensions/story/commands/speckit.story.review.md:41-45` and its copy
-  `tooling/speckit/extensions/story/commands/speckit.story.review.md`: the phase reviewer runs
-  `pnpm run gate:mutation -- --base <sha>`, reads its lines and treats a surviving mutant as blocking. Both copies gain
-  one sentence: `timeout`, `compile-error` and `zero-mutants` lines are reports to read, not blocking findings
-  (spec FR-005).
+- The story review command, one text in three tracked copies: the source
+  `tooling/speckit/extensions/story/commands/speckit.story.review.md`, the installed
+  `.specify/extensions/story/commands/speckit.story.review.md:41-45`, and the generated skill
+  `.specify/extensions/story/.specify-dev/agent-commands/claude/speckit-story-review/SKILL.md:46-50`, reached through
+  the tracked symlink `.claude/skills/speckit-story-review/SKILL.md`, which the phase reviewer loads
+  (`.claude/agents/reviewer-renata.md:11`). The phase reviewer runs `pnpm run gate:mutation -- --base <sha>`, reads
+  its lines and treats a surviving mutant as blocking. All three copies gain one sentence: `timeout`,
+  `compile-error` and `zero-mutants` lines are reports to read, not blocking findings (spec FR-005); research.md R-08
+  says how the installed copies follow the source.
+- The landing skill, `.claude/skills/ocelle-land/SKILL.md:117-120`: the landing pass runs `gate:mutation -- --base
+  <merge-base> --files <changed source>` and reads its output. It gains one sentence: the report lines are not
+  findings, and `--files` names each changed file once (a file named twice ends exit 2, § New exit-2 cause).
 - No other reader of gate output exists in the repository (`.github/workflows/ci.yml` uses only exit codes and the
   `--plan` JSON).
 

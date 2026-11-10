@@ -3,7 +3,8 @@
 Read on 2026-11-10 from the repository at `9954fbb`, with `node_modules` installed (`pnpm install --frozen-lockfile`):
 Stryker 10.1.1 (`@stryker-mutator/core`, `@stryker-mutator/vitest-runner`), Vitest 5.0.5. Each item gives the decision,
 the reason and what else was weighed. Amended on 2026-11-10 by plan squad round 1 (`reviews/plan/round-1/refute.md`,
-`fixes-1.md`), rechecked against the same installed sources.
+`fixes-1.md`), rechecked against the same installed sources. Amended again by plan squad rounds 2 and 3 (`reviews/plan/round-2/`,
+`reviews/plan/round-3/`, `fixes-1.md` of each).
 
 ## R-01 Report line format
 
@@ -200,6 +201,27 @@ So a static mutant that only a token test kills waits behind every other project
 that: its `""` mutants pass `contrast.test.ts` and the long files, and `source-table.test.ts` and the story list tests
 come after the limit.
 
+**One token test kills by how Stryker activates mutants, not by the value** (plan squad round 3, PLAN-FRESH-3-001).
+A static mutant is switched on only inside the Vitest worker: `@stryker-mutator/vitest-runner` 10.1.1
+`dist/src/stryker-setup.js:17-21` sets `ns.activeMutant = inject('activeMutant')`. The instrumenter's header
+(`@stryker-mutator/instrumenter` `dist/src/util/syntax-helpers.js:17-18`) falls back to the environment variable
+`__STRYKER_ACTIVE_MUTANT__`, but in the installed packages only core's `command-test-runner.js:62` sets it; the Vitest
+runner sets only `NODE_ENV` and `VITEST` (`vitest-test-runner.js:260-264`), and `gates/lib/mutation/coverage.ts`
+`strykerEnv` adds only the coverage preload. `packages/tokens/test/build.test.ts:78-87` ("node scripts/build.ts
+<out>" / "writes exactly css() to tokens.css and JSON.stringify(json()) to tokens.json") spawns `node
+scripts/build.ts` as a child process, which imports the sandbox's instrumented `../src/source.ts` with no active
+mutant, and then asserts `tokens.css` `toBe(css(source))` with `css(source)` computed in the worker, where the mutant
+is active. So every static `source.ts` mutant that changes the stylesheet fails that test by an `expect` mismatch,
+equivalent or not: the child's output is the unmutated one. Op 004 never saw it kill because the tokens project ran
+last, and its by-hand runs edited the file on disk, so the child was mutated too. The same holds, for the same reason,
+for any token test whose expectation is not computed from `expected.ts`: a kill by `build.test.ts`, or by a test that
+runs before `source-table.test.ts` only by chance, says nothing about the record's value or group (spec FR-011). And
+within one project and one `groupOrder` the default sequencer orders by recorded failure and duration, or, with no
+result yet, larger files first (`BaseSequencer.sort`, :7796-7803): `validate.test.ts` (15 117 bytes),
+`generate.test.ts` (7 447) and `build.test.ts` (5 709) all come before `source-table.test.ts` (5 457), and a file that
+failed once goes first again. So moving the whole `tokens` project first does not decide which token test names the
+kill.
+
 **The checker's share** (spec FR-009 runs the checker on). 001 measured the TypeScript checker as the dominant shard
 cost: on 206 mutants of one file (`gates/bin/pins.ts`), 197 s with it against 15 s without at concurrency 4, and
 197 s → 140 s going from concurrency 4 to 8 (001 `reviews/phase-4/mutation-shards.md:59-63`, `round-1-fixes.md` R1-02).
@@ -210,17 +232,44 @@ whatever the test order. Core 10.1.1 pipelines checking and test runs (`executeC
 so log timestamps do not separate the two. The checker split of R-06 is recorded beside each entry as a diagnostic
 only: it does not measure the checker's share (PLAN-FRESH-2-002), and no lever is chosen or skipped on it.
 
-**Decision: lever 1, run the token tests first in Stryker's runs.** `vitest.mutation.config.ts` gives the `tokens`
-project `sequence.groupOrder: 1` and every other project `2`; no project is left at `0`, which under Stryker's
-`maxWorkers: 1` would join the trailing sequential group. Only Stryker's configuration changes; `pnpm test` keeps its
-order. Within a group the default sequencer still applies. Every op 004 Timeout's killer
-(`packages/tokens/test/source-table.test.ts`, op 004 `mutation/README.md` § Timeouts) is in the `tokens` project, so
-with bail each such mutant stops after the token tests instead of after the slow files. The token project's tests are
-unit tests on the generator's outputs (`expected.ts`), which is what FR-011 asks the kill to assert.
+**Decision: lever 1, run `source-table.test.ts` first, then the other token tests, in Stryker's runs** (operator
+decision, human:jeroennouwsdev, 2026-11-10, plan squad round 3, PLAN-FRESH-3-001 (a) "source-table first"). In
+`vitest.mutation.config.ts` only, the `tokens` project of `vitest.config.ts` is split in two:
+
+- `tokens-source-table`: the `tokens` project's settings with `name: "tokens-source-table"`, `include:
+  ["packages/tokens/test/source-table.test.ts"]` and `sequence: { groupOrder: 1 }`;
+- `tokens`: the `tokens` project's settings with `packages/tokens/test/source-table.test.ts` added to its `exclude`
+  and `sequence: { groupOrder: 2 }`;
+- every other mutation project: `sequence: { groupOrder: 3 }`.
+
+No project is left at `0`, which under Stryker's `maxWorkers: 1` would join the trailing sequential group; every
+project has `maxWorkers: 1` under Stryker, so `groupSpecs` accepts several projects at one order (:6281-6286). Only
+Stryker's configuration changes; `pnpm test` keeps its projects and order. `tokens-source-table` is alone at order 1
+and holds one file, so `source-table.test.ts` runs first in every Stryker run whatever the result cache, the file
+sizes or an earlier failure say; within `tokens` and within order 3 the default sequencer still applies. Every op 004
+Timeout's killer (`packages/tokens/test/source-table.test.ts`, op 004 `mutation/README.md` § Timeouts) is now the
+first file, so with bail each such mutant stops after that one file, and its kill is by a test that compares every
+record's value or group with `expected.ts` (R-06 criterion 3), never by `build.test.ts`'s unmutated child process.
+The rest of `tokens` still runs before the other projects, as the round 2 design had it, so a static `source.ts` mutant
+that only another token test kills does not wait behind them either. The split adds no file and no module:
+`gates/lib/plant-repo.ts:39` copies `vitest.mutation.config.ts` into each mutation plant's temporary repository, where
+`tokens-source-table` matches no file and runs nothing, as every project without a test file there already does.
 
 Cost for other files: a static mutant of another file now runs the token tests first (seconds); a non-static mutant
 runs only the tests that cover it (`testFilter`), whose order the group setting changes only between projects. FR-013's
 before/after runs measure it.
+
+Cost for `source.ts` itself (plan squad round 3, PLAN-FRESH-3-004): op 004's kept reports
+(`ops/004-token-source-mutation/mutation/entry-1_60.json`, `entry-61_120.json`) show 135 and 202 `source.ts` mutants,
+all Killed and every one by `gates/test/contrast.test.ts`; 55 + 96 of them sit on a line holding `contrast` or
+`grounds`, and 19 on the ground arrays (`source.ts:13-27`). No token test is expected to kill those: the JSON export
+has no contrast field (`json.test.ts` "has no use or contrast field"), `source-table.test.ts` asserts values, groups
+and references only, contrast fields do not reach the stylesheet (so `build.test.ts` does not kill them either), and
+only `validate.test.ts` "accepts the real source" may kill some. Under lever 1 they die only after every token file,
+`build.test.ts`'s two child Node processes included, instead of at the fourth file the run reaches today, within the
+same ≈32 s limit. Entries `1-60` and `61-120` had no Timeout in op 004 (58 s and 65 s); a Timeout that lever 1 causes
+there is caught by FR-009's zero-Timeout rule and named as lever 1's by R-06's per-mutant comparison of the `source.ts`
+entries, before lever 2 is tried.
 
 **Lever 2, only if lever 1 misses FR-010 on the sandbox: concurrency, a measured choice in either direction.**
 `stryker.config.json` sets `concurrency: 8` (four checkers and four test runners with the checker on) on a 4-core
@@ -250,9 +299,19 @@ disable comments; dropping projects from `vitest.mutation.config.ts`; changing `
 
 **Alternatives.**
 
-- A custom sequencer, shortest file first: generic, but it needs gate-tested code and its order depends on a duration
-  cache the Stryker sandbox may not keep; `groupOrder` is a documented Vitest setting and deterministic. Kept as the
-  fallback inside lever 1 if `groupOrder` does not reorder within Stryker's runner (the red-to-green run shows it).
+- The `tokens` project at `groupOrder: 1`, unsplit (the round 2 design): the order within `tokens` is the default
+  sequencer's, which puts `validate.test.ts`, `generate.test.ts` and `build.test.ts` before `source-table.test.ts`
+  (above), so `killedBy` would often name `build.test.ts` and fail R-06 criterion 3 for a reason no time lever can
+  change (PLAN-FRESH-3-001). Rejected.
+- A custom sequencer that puts `source-table.test.ts` first (the other form operator decision PLAN-FRESH-3-001 (a)
+  allowed): it is a new module, so it needs its own red test and mutation testing, and since `vitest.mutation.config.ts`
+  would import it, it would join the configuration set every mutation plant copies (`gates/lib/plant-repo.ts:39`, and
+  the lists of `gates/test/integration/mutation.test.ts:21`, `plant-repo.test.ts:21`, `plants-robustness.test.ts:38`,
+  `plants.test.ts:29`). Vitest resolves `sequence.sequencer` from the root configuration for every project (vitest
+  `index.1TqnEahn.js:4092-4094`), so it would also order every other project's files. The split is configuration
+  only and uses the documented `groupOrder`. Kept as the fallback inside lever 1 if `groupOrder` does not reorder
+  within Stryker's runner (the red-to-green run shows it); then it is written test first, gate-tested, and added to the
+  configuration set and those lists.
 - A higher `timeoutFactor`: turns the late kills into kills but keeps the whole-suite wait per mutant, so the entry
   time stays far above 176 s. Rejected as a lever for FR-010 (it may still be measured, not chosen).
 - `vitest.related: true`: Stryker would pick related test files, but `source.ts`'s killers import the generator, not
@@ -263,18 +322,27 @@ disable comments; dropping projects from `vitest.mutation.config.ts`; changing `
 - A behavioural red test in `gates/test/integration/vitest-mutation-config.test.ts` (the `gates-integration` project,
   which Stryker does not run): it creates Vitest through `createVitest` of `vitest/node` with Stryker's options
   (`vitest.mutation.config.ts`, `maxWorkers: 1`, `maxConcurrency: 1`, `bail: 1`, as `vitest-test-runner.js:105-140`
-  passes them), records each test module's start with a reporter, stops the run once a module of a second project
-  starts, and asserts that every `tokens` module started before any module of another project. It is red today (tokens
-  runs last by name) and red for the `0`/`1` design (tokens in the trailing sequential group), and green only for an
-  order that really runs the token tests first.
+  passes them), records each test module's start with a reporter, stops the run once a module of a project other
+  than `tokens-source-table` and `tokens` starts, and asserts two things: `packages/tokens/test/source-table.test.ts`
+  started before every other module, `build.test.ts`, `validate.test.ts` and `generate.test.ts` included; and every
+  module under `packages/tokens/test/` (outside `browser/`) started before any module of another project. It is red
+  today (tokens runs last by name), red for the `0`/`1` design (tokens in the trailing sequential group) and red for
+  the unsplit `tokens`-at-`1` design (larger token files first, above), and green only for an order that runs
+  `source-table.test.ts` first and the other token tests next.
 - The existing assertion `expect(mutation).toEqual(all.filter(...))` (:40) deep-compares the mutation projects with
-  `vitest.config.ts`'s and breaks as soon as only the mutation config adds `sequence`. It is replaced by a stricter one:
-  each mutation project, with its whole `test.sequence` key removed, deep-equals its `vitest.config.ts` counterpart (so
-  no other setting may differ; no project of `vitest.config.ts` has a `sequence` key, and removing only `groupOrder`
-  would leave `sequence: {}`, which `toEqual` does not ignore), and each mutation project's `test.sequence` deep-equals
-  exactly `{ groupOrder: 1 }` for `tokens` and `{ groupOrder: 2 }` for every other project, so no other `sequence`
-  setting can hide behind the removal. The
-  replacement and its reason are stated in the phase review (Principle VIII).
+  `vitest.config.ts`'s and breaks as soon as the mutation config adds `sequence` or splits `tokens`. It is replaced by
+  a stricter one. The mutation project names are exactly `["tokens-source-table", "tokens", "styles", "elements",
+  "storybook", "gates"]`. Each mutation project, with its whole `test.sequence` key removed, deep-equals its
+  `vitest.config.ts` counterpart (so no other setting may differ; no project of `vitest.config.ts` has a `sequence`
+  key, and removing only `groupOrder` would leave `sequence: {}`, which `toEqual` does not ignore), with two stated
+  exceptions: `tokens-source-table`'s counterpart is `tokens` with `name: "tokens-source-table"` and `include:
+  ["packages/tokens/test/source-table.test.ts"]`, and the mutation `tokens` is its counterpart with that one path
+  appended to `exclude`. Each mutation project's `test.sequence` deep-equals exactly `{ groupOrder: 1 }` for
+  `tokens-source-table`, `{ groupOrder: 2 }` for `tokens` and `{ groupOrder: 3 }` for every other project, so no other
+  `sequence` setting can hide behind the removal. And the test modules the mutation configuration collects (through
+  `createVitest`, as above) are exactly those `vitest.config.ts` collects for its projects outside the excluded four,
+  each once, so the split neither drops nor doubles a file (FR-012: no project's tests are dropped). The replacement
+  and its reason are stated in the phase review (Principle VIII).
 
 The FR-011a measurement runs before and after carry the timing (Principle VIII exemption for configuration, spec
 FR-011a). Lever 2 is configuration with no assertable behaviour beyond the measurement; its review states that.
@@ -325,6 +393,16 @@ Timeout counts vary with load (op 004: `121-180` gave 105 and 97 Timeouts on two
 triggers one re-run of both the before and the after run of that entry, one at a time, before it is called a
 regression; both pairs of runs are recorded, and the move counts as a regression only if the re-run shows it again.
 
+**The `source.ts` entries, per mutant too** (plan squad round 3, PLAN-FRESH-3-004). Each of the four `source.ts`
+entries' red and green runs is compared by the same key (start and end line and column, mutator, replacement), with the
+same loud failure on a repeated or unmatched key. Besides FR-011's Timeout → Killed record below, every mutant Killed in
+the red run and Timeout in the green run is listed in the evidence README with its key, its red `killedBy` and, where the
+report gives it, its green `testsCompleted`, and gets the same one re-run of both the red and the green run of that entry, one at a time; it is
+called a Timeout that lever 1 caused only if the re-run shows it again, and both pairs are recorded. Op 004's
+contrast-killed mutants of entries `1-60` and `61-120` (R-05, cost for `source.ts` itself) are where such a move is
+expected if any. Lever 2 is tried only after this comparison is in the README, so a new Timeout is named as lever 1's
+and not read as "lever 1 missed".
+
 **Where it is kept:** `specs/007-mutation-gate-strictness/evidence/` (`red/`, `green/`, one folder per entry, and a
 `README.md` table like op 004's: mutants, Killed, Timeout, Survived, NoCoverage, CompileError, time, checker split
 (diagnostic), within 176 s).
@@ -337,7 +415,8 @@ before the kill, which shows the token tests ran first) (spec check 3, SPEC-3-03
 result.failureMessage` for every Killed mutant (`mutation-test-report-helper.js:78-86`). A former Timeout that ends
 Killed meets FR-011 only when all three hold, each checked and noted in the README row:
 
-1. every test named in `killedBy` is in the `tokens` project (`packages/tokens/test/`);
+1. every test named in `killedBy` is a token test (`packages/tokens/test/`, the `tokens-source-table` or `tokens`
+   project of the mutation configuration);
 2. `statusReason` is an assertion failure (an `expect` mismatch), not an error thrown at module load or in setup;
 3. `killedBy` is one of the named value/group tests of `packages/tokens/test/source-table.test.ts`, each of which
    compares every record's value or group with `expected.ts` per token:
@@ -348,6 +427,9 @@ Killed meets FR-011 only when all three hold, each checked and noted in the READ
      export's groups and values, `:76`).
 
    The list is fixed here, before any green run is read; a kill by any other test does not meet criterion 3.
+   Under lever 1 `source-table.test.ts` is the first file of every run (R-05), so a kill by another test means that
+   every one of these tests passed on that mutant; `build.test.ts` in particular kills through its unmutated child
+   process (R-05) and is never by itself a kill on the record's value or group.
 
 `statusReason` is recorded as given and is not judged for what it names; criterion 2 reads only its kind (an `expect`
 mismatch or a thrown error). Stryker passes on only the first error's `message` (`vitest-helpers.js:37`), and for
@@ -407,11 +489,36 @@ hash, while a zero-mutant line's location is the entry, `path:start-end` in a ra
 general location rule and in the mutation row, that the mutation gate's report lines (rules `timeout`,
 `compile-error`, `zero-mutants`), which are not findings, may carry `path:start-end`.
 
-The story review command reads the gate's lines (`.specify/extensions/story/commands/speckit.story.review.md:41-45` and
-its copy `tooling/speckit/extensions/story/commands/speckit.story.review.md`: the phase reviewer runs `pnpm run
-gate:mutation -- --base <sha>` and treats a surviving mutant as blocking). Both copies gain one sentence: the `timeout`,
-`compile-error` and `zero-mutants` lines are reports to read, not blocking findings (spec FR-005; the edge case leaves a
-`source.ts` Timeout to the reviewer). `gates/test/gates-readme.test.ts` checks the README against the plants, so the
+001's plant contract gains the same dated 007 amendment (plan squad round 3, PLAN-FRESH-3-003), since R-02 changes
+what it fixes. `specs/001-repository-foundation/contracts/plants.md`: the `plant.json` shape (:4) gains the optional
+`reports` key (mutation `pass` and `fail` plants only; on a plant of another gate an invalid `plant.json`); the
+mutation row (:49) gains the pass plant `pass-zero-mutant`, the `reports` of `pass-compile-error` and
+`pass-fully-checked`, and the breaking plant `error-zero-mutant-failing-test`; the plant-job failure rule (:61-65)
+gains that a `pass` or `fail` plant with `reports` fails the job when the run's `timeout`, `compile-error` and
+`zero-mutants` lines do not equal `reports` as a multiset, that `records` compares only `record` lines, and that
+`reports` on a non-mutation plant is an invalid `plant.json`. `specs/001-repository-foundation/data-model.md` § Plant
+(:20-35): a `reports` row (`plant.json`, mutation `pass` and `fail` only: `location`, `rule` one of the three report
+rules, optional `message` substring; compared as a multiset), the `records` row's comparison limited to `record`
+lines, and the **caught** and **accepted** state rules extended with "and, where given, exactly the expected
+`reports`", the report lines never counted as findings.
+
+Besides the plant judge, two texts read the gate's lines (contracts/mutation-output.md § Readers).
+The story review command is one text in three tracked copies: its source
+`tooling/speckit/extensions/story/commands/speckit.story.review.md`, the installed
+`.specify/extensions/story/commands/speckit.story.review.md:41-45`, and the generated skill
+`.specify/extensions/story/.specify-dev/agent-commands/claude/speckit-story-review/SKILL.md:46-50`, which the
+tracked symlink `.claude/skills/speckit-story-review/SKILL.md` points to and which the phase reviewer loads
+(`.claude/agents/reviewer-renata.md:11`). In each, the phase reviewer runs `pnpm run gate:mutation -- --base <sha>`
+and treats a surviving mutant as blocking. All three gain one sentence: the `timeout`, `compile-error` and
+`zero-mutants` lines are reports to read, not blocking findings (spec FR-005; the edge case leaves a `source.ts`
+Timeout to the reviewer). The source is edited and the extension reinstalled as `tooling/speckit/README.md:9-14`
+says (`specify extension remove story && specify extension add --dev tooling/speckit/extensions/story`), which
+regenerates both installed copies; where `specify` is not on the `PATH` (the sandbox has none), the same sentence is
+written by hand into both installed copies, with the SKILL.md front matter unchanged. Either way, `diff` of each
+installed copy against the source then shows only what it shows today (the SKILL.md front matter and final newline).
+The landing skill `.claude/skills/ocelle-land/SKILL.md:117-120` runs `gate:mutation -- --base <merge-base> --files
+<changed source>` and reads its output; it gains one sentence too: the report lines are not findings, and `--files`
+names each changed file once (a file named twice ends exit 2, R-03). `gates/test/gates-readme.test.ts` checks the README against the plants, so the
 README row and the plant list change together. `knowledge/speckit-flows/log.md` (zero-mutant candidate) and
 `findings/frontend-missions.md` § Mutation shard time are closed with how they were resolved. FR-013 and SC-005 of 001
 change only under lever 3.

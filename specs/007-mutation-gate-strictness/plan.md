@@ -15,10 +15,13 @@ every entry with no mutant on its changed lines, is printed as a located line wi
 `reports` key so plants can assert the lines (R-02). A `--files` list that names one file more than once ends as
 could-not-run, so every entry of a run has one name (R-03, operator decision PLAN-CORRECTNESS-1-005 (a)).
 
-For `packages/tokens/src/source.ts`, Stryker's runs order the `tokens` test project first (`sequence.groupOrder` 1 for
-`tokens` and 2 for every other project, in `vitest.mutation.config.ts` only; no project at 0, which under Stryker's
-`maxWorkers: 1` runs last), so the static `""` mutants whose killers are token tests stop at the first failing token
-test instead of waiting behind the other projects until the ≈32 s limit (R-05, lever 1). A measured concurrency
+For `packages/tokens/src/source.ts`, Stryker's runs start with `packages/tokens/test/source-table.test.ts`, then the
+other token tests, then every other project: in `vitest.mutation.config.ts` only, the `tokens` project is split into
+`tokens-source-table` (that one file, `sequence.groupOrder` 1) and `tokens` (the rest, 2), every other project at 3; no
+project at 0, which under Stryker's `maxWorkers: 1` runs last (R-05, lever 1, operator decision PLAN-FRESH-3-001 (a)).
+So the static `""` mutants whose killers are token tests stop at the first failing token test instead of waiting
+behind the other projects until the ≈32 s limit, and that first test is a value/group test of `source-table.test.ts`,
+never `build.test.ts`, whose child build process never sees Stryker's active mutant. A measured concurrency
 (lever 2, either direction, chosen for the CI runner's core count) and an FR-014 amendment (lever 3) follow only if the
 measurement says so, decided on the measured entry time alone, lever 2 always tried before lever 3; the checker split
 of each entry is recorded as a diagnostic only. The red and green evidence is the gate itself, `--files` per
@@ -52,9 +55,13 @@ the repository is internal, recorded by the CI measurement, R-05) and the sandbo
 **Scale/Scope**: `gates/bin/mutation.ts`, `gates/lib/mutation/report.ts`, `gates/lib/mutation/shards.ts`,
 `gates/lib/plant-judge.ts`, `gates/lib/findings.ts` (`plural`), their tests, two new plants and two edited ones,
 `vitest.mutation.config.ts` (and `stryker.config.json` only under lever 2), records in
-`specs/001-repository-foundation/` (`spec.md`, `contracts/gate-cli.md`, `data-model.md`), `gates/README.md`,
-`knowledge/speckit-flows/`, and one sentence in both copies of the story review command
-(`.specify/extensions/story/commands/` and `tooling/speckit/extensions/story/commands/` `speckit.story.review.md`).
+`specs/001-repository-foundation/` (`spec.md`, `contracts/gate-cli.md`, `contracts/plants.md`, `data-model.md`
+§ Finding and § Plant), `gates/README.md`, `knowledge/speckit-flows/`, one sentence in all three tracked copies of the
+story review command (the source `tooling/speckit/extensions/story/commands/speckit.story.review.md`, the installed
+`.specify/extensions/story/commands/speckit.story.review.md` and the generated
+`.specify/extensions/story/.specify-dev/agent-commands/claude/speckit-story-review/SKILL.md`, which the phase reviewer
+loads through the `.claude/skills/speckit-story-review/SKILL.md` symlink; R-08), and one in
+`.claude/skills/ocelle-land/SKILL.md`.
 
 ## Constitution Check
 
@@ -65,7 +72,7 @@ the repository is internal, recorded by the CI measurement, R-05) and the sandbo
 | I, II, III, IV, V | Not touched: no element, token value, style, CSP surface or story changes. `source.ts` text is not edited (FR-012; dist identical). |
 | VI Consumer needs | The consumer is the repository's review process (spec header). No new dependency. |
 | VII Semver | `none`: no published surface changes. |
-| VIII Test-first | US1: every behaviour (classification and its order, lines, summaries and their exact nouns, `plural`'s irregular form, `selectFiles` entry names and the new repeated-file cause, the zero-mutant handling of R-03, judge `reports` and `records`) gets a red test first in `gates/test/`; the judge support goes first, then the `plant.json` edits and new plants run red against the old gate, then the gate code (R-02). Existing exact-summary assertions are extended, and the "entries of one file joined" assertion is replaced by the exit-2 case the operator decided, each named in R-03/R-04. US2: lever 1 has a behavioural red test (module start order under Stryker's options) in `gates/test/integration/vitest-mutation-config.test.ts`, and the config deep-equal assertion is replaced by a stricter one with the reason stated; its timing evidence is the FR-011a red runs, taken before any mission code, and the green runs (exemption for configuration, stated in the review). The gate's own new code is mutation-tested by the gate. Plants prove the gate change (`pass-zero-mutant`, `pass-compile-error` with `reports`, `error-zero-mutant-failing-test`). |
+| VIII Test-first | US1: every behaviour (classification and its order, lines, summaries and their exact nouns, `plural`'s irregular form, `selectFiles` entry names and the new repeated-file cause, the zero-mutant handling of R-03, judge `reports` and `records`) gets a red test first in `gates/test/`; the judge support goes first, then the `plant.json` edits and new plants run red against the old gate, then the gate code (R-02). Existing exact-summary assertions are extended, and the "entries of one file joined" assertion is replaced by the exit-2 case the operator decided, each named in R-03/R-04. US2: lever 1 has a behavioural red test (module start order under Stryker's options: `source-table.test.ts` before every other module, then the other token modules before any other project) in `gates/test/integration/vitest-mutation-config.test.ts`, and the config deep-equal assertion is replaced by a stricter one (project names, the two stated split exceptions, each `sequence`, every test module collected once) with the reason stated; its timing evidence is the FR-011a red runs, taken before any mission code, and the green runs (exemption for configuration, stated in the review). The gate's own new code is mutation-tested by the gate. Plants prove the gate change (`pass-zero-mutant`, `pass-compile-error` with `reports`, `error-zero-mutant-failing-test`). |
 | Quality gates | The mutation gate's verdicts are unchanged; it prints more. The parallel branches for #17 and #10 see the new lines once they merge `main`, and no new failure (spec *Assumptions*, Policy). |
 
 No violation; Complexity Tracking is empty.
@@ -100,11 +107,13 @@ gates/
 │   findings.test.ts, plant-judge.test.ts, plants.test.ts
 ├── test/integration/vitest-mutation-config.test.ts
 └── README.md                        # mutation row
-vitest.mutation.config.ts            # groupOrder: tokens 1, every other project 2 (lever 1)
+vitest.mutation.config.ts            # tokens split: tokens-source-table 1, tokens 2, every other project 3 (lever 1)
 stryker.config.json                  # concurrency, only under lever 2
-specs/001-repository-foundation/spec.md, contracts/gate-cli.md, data-model.md   # dated amendments
-.specify/extensions/story/commands/speckit.story.review.md          # report lines are not blocking findings
-tooling/speckit/extensions/story/commands/speckit.story.review.md   # the same sentence
+specs/001-repository-foundation/spec.md, contracts/gate-cli.md, contracts/plants.md, data-model.md   # dated amendments
+tooling/speckit/extensions/story/commands/speckit.story.review.md   # source: report lines are not blocking findings
+.specify/extensions/story/commands/speckit.story.review.md          # installed copy, the same sentence
+.specify/extensions/story/.specify-dev/agent-commands/claude/speckit-story-review/SKILL.md   # generated skill, the same sentence
+.claude/skills/ocelle-land/SKILL.md  # report lines are not findings; one --files entry per file
 knowledge/speckit-flows/log.md, findings/frontend-missions.md    # closed entries
 ```
 
@@ -122,10 +131,14 @@ knowledge/speckit-flows/log.md, findings/frontend-missions.md    # closed entrie
   gate tests for `classifyMutants` and its order, `selectFiles` entry names and the repeated-file cause, the output and
   summary lines of the contract, `plural`'s irregular form, and the R-03 fallback only if the probe shows no report;
   the extended exact-summary tests (R-04); then the gate code. Records: 001 FR-011 amendment, the gate-cli mutation row
-  (report lines, the new exit-2 cause, the location rule) and 001 data-model § Finding, `gates/README.md`, the story
-  review sentence in both copies, the `log.md` zero-mutant candidate.
-- **Phase US2 (P2), the token source.** The behavioural red test and the stricter config assertion on
-  `vitest-mutation-config.test.ts` (R-05), lever 1, the green runs; lever 2 (measured in either direction, for the CI
+  (report lines, the new exit-2 cause, the location rule), 001 `contracts/plants.md` (the `plant.json` shape, the
+  mutation row, the plant-job failure rule) and 001 data-model § Finding and § Plant, `gates/README.md`, the story
+  review sentence in all three copies and the landing skill's sentence (R-08), the `log.md` zero-mutant candidate.
+- **Phase US2 (P2), the token source.** The behavioural red test (`source-table.test.ts` first, then the other token
+  modules) and the stricter config assertion on `vitest-mutation-config.test.ts` (R-05), lever 1 (the mutation-only
+  split of `tokens`; `gate:plants` shows every mutation plant keeps its verdict with it), the green runs; the per-mutant
+  comparison of each `source.ts` entry's red and green runs (R-06: a Killed → Timeout move, with its re-run rule, is
+  named as lever 1's in the README before lever 2 is tried); lever 2 (measured in either direction, for the CI
   core count) only if an entry misses 176 s or keeps a Timeout, always before lever 3, whatever the checker split shows;
   if lever 2 also misses, stop and bring FR-014 to the operator (a gate question in this run, not a follow-up). FR-013's
   per-mutant comparison, keyed by start and end, mutator and replacement, with its re-run rule. The FR-011 per-mutant
