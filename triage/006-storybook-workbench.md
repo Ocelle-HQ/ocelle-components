@@ -7,7 +7,9 @@ in_scope: [10]
 out_of_scope: [1, 6, 7, 8, 9, 11, 12, 13, 14, 15, 16, 17, 20]
 semver: none
 spec_prompt: "Build the Storybook workbench from issue #10 (triage/006-storybook-workbench.md): Storybook as the visual source of truth as in kitty-mission-ui, with a Storybook build gate, visual regression in which every story is captured in light and dark against baselines produced in a pinned container that runs under podman or docker and gives byte-identical images on any machine (exact comparison, no tolerance), and axe on every story failing on any serious or critical finding, each gate proven by a plant under gates/plants/ and added to the required checks; cover the existing token (002) and base-style (003) stories and give element issues a harness they add their own stories to; settle first with the operator how #10's 'the built Storybook is not the CSP check target; the CSP check runs on the packages' built output' meets 002's Storybook CSP work (record, Risks, question Q1), then close or keep 002's two Storybook exceptions accordingly and close 001's 'Storybook build, visual regression and axe gates absent' exception; the custom-elements manifest check stays with the first element feature (#17 or #7), publishing the Storybook is out of scope, and elements, icons and their stories stay with their own issues."
-status: proposed
+status: approved
+decided_by: "human:jeroennouwsdev"
+decided_at: 2026-11-10T00:10:59Z
 ---
 
 # Triage 006: Storybook workbench and visual regression baselines (#10)
