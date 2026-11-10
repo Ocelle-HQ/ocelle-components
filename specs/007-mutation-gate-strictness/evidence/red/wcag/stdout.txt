@@ -1,0 +1,2 @@
+gates/lib/wcag.ts:9: mutation: record: EqualityOperator: equivalent, no 8-bit channel is exactly 0.04045 (10/255 = 0.0392, 11/255 = 0.0431), so <= and < agree on every input
+mutation: 33 mutants on the changed lines of 1 file, none survived; 1 equivalent record
