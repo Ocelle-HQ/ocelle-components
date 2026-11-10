@@ -40,3 +40,11 @@
   run under the same command (FR-011a); the CI bound is on the `gate:mutation` step of every `source.ts` shard
   (FR-010). The operator chose a measurement commit on the mission's pull request for the CI run (Assumptions) and
   dropped a bound for mixed shards (Dropped). Fix note: `reviews/spec/check-1-fixes.md`.
+- Spec check 2 (2026-11-10): under the measurement run (checker on), a former op 004 Timeout mutant may end as Killed
+  with a killing test on its record, or as CompileError where the red run already has it so (expected for group A);
+  the by-hand check is for Killed mutants only; `Group`, `TokenRecord` and `tokenRecords` are neither loosened nor
+  tightened (FR-011, FR-012, US2 AS4, SC-003). An entry whose red run already meets the bounds needs no change, and a
+  configuration-only lever uses the Principle VIII exemption (FR-011a). FR-001 names the mutant's start line, FR-005
+  names the existing finding readers, FR-008 asks for a real zero-mutant run, FR-013 drops the plant-job time clause,
+  and the CI measurement records shard contents and re-measures a mixed shard that misses 480 s. Fix note:
+  `reviews/spec/check-2-fixes.md`.

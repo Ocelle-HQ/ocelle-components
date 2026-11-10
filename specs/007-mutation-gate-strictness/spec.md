@@ -1,6 +1,6 @@
 # Feature Specification: Mutation gate strictness
 
-**Feature Branch**: `claude/023-mutation-gate-strictness`
+**Feature Branch**: `claude/023-mutation-gate-strictness` (feature directory `specs/007-mutation-gate-strictness`)
 
 **Created**: 2026-11-10
 
@@ -68,8 +68,8 @@ changed line.
 **Acceptance Scenarios**:
 
 1. **Given** a change whose only undecided mutant on a changed line ends as Timeout, **When** the gate runs, **Then**
-   it exits 0, and its output has one line naming that mutant's path and line, its mutator, its replacement and the
-   status `Timeout`, and the summary line counts one timeout.
+   it exits 0, and its output has one line naming that mutant's path and start line (the line its findings would
+   use), its mutator, its replacement and the status `Timeout`, and the summary line counts one timeout.
 2. **Given** a change whose only unkilled mutant on a changed line ends as CompileError (today's `pass-compile-error`
    plant), **When** the gate runs, **Then** it exits 0, its output names that mutant the same way with the status
    `CompileError`, and the summary line counts one compile error.
@@ -93,11 +93,14 @@ changed line.
 
 An author changes most of the dense record lines of `packages/tokens/src/source.ts` in one pull request, for example a
 rewrite of the type or space scale. Today a whole-file run of that file takes 578 s for the entry `121-180` alone on
-the sandbox, and 121 of its 681 mutants end as Timeout: every one of them is a `""` string mutant that a test does
-catch (op 004 applied all 121 by hand), but only after Stryker's limit of about 32 s. CI runners are 1.5 to 3.4 times
+the sandbox, and 121 of its 681 mutants end as Timeout (op 004's runs, TypeScript checker off): every one of them is a
+`""` string mutant that a test does catch (op 004 applied one per group by hand), but only after Stryker's limit of
+about 32 s. CI runners are 1.5 to 3.4 times
 slower, so that shard would be cancelled at CI's 10-minute limit and the pull request could not pass. After this story,
-those mutants are killed by a failing test within Stryker's limit, and each 60-line entry of the file finishes with a
-margin that holds on CI.
+each of those mutants, under the gate's own run with the type checker on, is either killed by a failing test within
+Stryker's limit or rejected by the type checker (CompileError), and each 60-line entry of the file finishes with a
+margin that holds on CI. If the red run of FR-011a already meets these bounds, the story delivers the evidence and no
+change (FR-011a).
 
 **Why this priority**: It removes a known future blocker on the one file op 004 made mutable, and it makes User Story
 1's Timeout report meaningful for that file (a Timeout there then means something new). It needs heavy runs and a CI
@@ -118,10 +121,12 @@ read the `gate:mutation` step time of every `source.ts` shard on CI from the mea
    entry as a `mutation-shard` job, **Then** each such job's `gate:mutation` step takes at most 480 s as GitHub reports
    it, no such job is cancelled at its 10-minute limit, and each time is recorded with the run's link.
 4. **Given** any mutant of the same record value (record name, field and theme) and mutator as one that op 004
-   recorded as Timeout, **When** the measurement run of FR-009 runs, **Then** Stryker records it as Killed and the
-   test it names as the killer fails on an assertion about that record's value or group; for at least one such mutant
-   of each op 004 Timeout group (A, B and C) this is also shown by applying the mutant by hand and running the tests
-   (not failing because an unrelated check or the setup breaks).
+   recorded as Timeout, **When** the measurement run of FR-009 runs, **Then** Stryker records it either as Killed,
+   with a killing test that fails on an assertion about that record's value or group, or as CompileError where the
+   red run of FR-011a already records it as CompileError (expected for group A, whose `""` is not a token group).
+   For at least one Killed mutant of each group that has one (B and C, and A if any of its mutants ends Killed),
+   this is also shown by applying the mutant by hand and running the tests (not failing because an unrelated check or
+   the setup breaks).
 5. **Given** the mission's final repository, **When** the token package is built, **Then** its outputs (`dist/tokens.css`,
    `dist/tokens.json`, `dist/index.d.ts`) are byte-identical to those of the base commit.
 
@@ -147,6 +152,9 @@ read the `gate:mutation` step time of every `source.ts` shard on CI from the mea
   undecided mutant.
 - A change that makes a Timeout appear in `source.ts` after this mission: reported by User Story 1, and still passes.
   The reviewer decides whether it matters.
+- A run in which no entry has any mutant at all (for example a type-only change to one file): every entry is a
+  zero-mutant entry and the run passes (AS3). This holds on a real Stryker run, not only on a recorded report
+  (FR-008).
 - The speed-up of User Story 2 must not come from fewer mutants (excluded mutators, an ignore list, disable comments in
   `source.ts`), from skipping tests, or from turning late kills into Timeouts by a shorter limit.
 
@@ -157,7 +165,9 @@ read the `gate:mutation` step time of every `source.ts` shard on CI from the mea
 #### The report (User Story 1)
 
 - **FR-001**: The mutation gate MUST list, in a passing and in a failing run, every mutant on a changed line whose
-  status is Timeout, one line per mutant, naming its path, line, mutator, replacement and status.
+  status is Timeout, one line per mutant, naming its path, line, mutator, replacement and status. "On a changed line"
+  is as for findings (the mutant's range overlaps a changed range), and the line named is the one findings name: the
+  mutant's start line, even where that line is itself unchanged.
 - **FR-002**: The mutation gate MUST list every mutant on a changed line whose status is CompileError the same way.
 - **FR-003**: The mutation gate MUST list every zero-mutant entry of the run, one line per entry, naming the entry as
   the run holds it: in a whole-diff run each changed file in mutation scope is one entry, named by its `path`; in a
@@ -169,8 +179,9 @@ read the `gate:mutation` step time of every `source.ts` shard on CI from the mea
   number of CompileError mutants and the number of zero-mutant entries, each also when it is zero. The plan fixes the
   exact wording in the gate contract.
 - **FR-005**: The report lines of FR-001 to FR-003 MUST be told apart from findings: they are not findings, they do not
-  change the exit code, and a tool that reads the gate's findings (the CI annotation, the plant judge) MUST NOT read
-  them as findings.
+  change the exit code, and a tool that reads the gate's findings MUST NOT read them as findings: the plant judge,
+  and any reader that parses the finding format `path:line: gate: rule: message` of
+  `specs/001-repository-foundation/contracts/gate-cli.md`.
 - **FR-006**: FR-001 to FR-004 MUST hold for a whole-diff run and for a `--files` shard run alike; a shard run reports
   only its own entries. `--plan` is unchanged.
 - **FR-007**: The verdicts MUST stay as they are: Survived and NoCoverage on a changed line fail (exit 1); Killed,
@@ -179,7 +190,9 @@ read the `gate:mutation` step time of every `source.ts` shard on CI from the mea
 - **FR-008**: Each new behaviour MUST be proven by a plant or a gate test that fails without it. At least:
   the `pass-compile-error` plant (or a test on it) checks the CompileError report line; a plant or test with a
   Timeout on a changed line checks its report line; a plant or test with a type-only or comment-only change checks the
-  zero-mutant line. Every existing mutation plant keeps its verdict.
+  zero-mutant line. The zero-mutant case is also proven on a real Stryker run in which no entry has any mutant (a
+  plant or an integration test), so that AS3 holds on the real gate and not only on a recorded report. Every existing
+  mutation plant keeps its verdict.
 
 #### The token source (User Story 2)
 
@@ -195,22 +208,39 @@ read the `gate:mutation` step time of every `source.ts` shard on CI from the mea
   it, and no such job may be cancelled at its 10-minute limit. Every time and the run's link are recorded in the
   feature's evidence. The sandbox bound is a proxy with no margin for job setup; the CI figures decide, and both
   must hold.
-- **FR-011**: Every kill that replaces an op 004 Timeout MUST come from a test that fails on an assertion about the
-  mutated record value or group (`knowledge/speckit-flows/guards/vacuous-tests.md`): for every such mutant, Stryker's
-  report names a killing test whose assertion is on the record's value or group, and for at least one mutant of each
-  op 004 Timeout group (A, B and C) this is also shown by applying the mutant by hand. Mutants are identified by
-  record name, field, theme and mutator, not by op 004's mutant ids or line numbers, which move if the mission edits
-  the text of `source.ts`.
+- **FR-011**: In the measurement runs of FR-009 after the change, every mutant that op 004 recorded as Timeout MUST
+  end as one of two statuses:
+  - **Killed**, by a test that fails on an assertion about the mutated record value or group
+    (`knowledge/speckit-flows/guards/vacuous-tests.md`): Stryker's report names a killing test whose assertion is on
+    the record's value or group. This is expected for groups B and C, and for group A where the checker accepts the
+    mutant.
+  - **CompileError**, only where the red run of FR-011a already records that mutant as CompileError. This is
+    expected for group A: its `""` is not a member of `Group`, and `tokenRecords` checks every record against
+    `TokenRecord`. Stryker runs no test on such a mutant, so no killing test is asked for.
+
+  The status of each such mutant in the red run and after the change is recorded with the evidence. For at least one
+  Killed mutant of each op 004 Timeout group that has one (B and C, and A if any of its mutants ends Killed), the kill
+  is also shown by applying the mutant by hand and running the tests. A group A mutant that ends as CompileError is
+  not applied by hand: a hand run has no type check and says nothing about Stryker's status. Mutants are identified
+  by record name, field, theme and mutator, not by op 004's mutant ids or line numbers, which move if the mission
+  edits the text of `source.ts`.
 - **FR-011a**: The red evidence for FR-009 and FR-010 MUST come from the same measurement run on the code before the
   mission's change, for every `source.ts` entry. Op 004's reports are context only: they were made with raw Stryker,
   a scratch configuration and the TypeScript checker off (`ops/004-token-source-mutation/mutation/README.md` § How the
-  whole-file runs were made), so their statuses and times are not comparable with the gate's.
+  whole-file runs were made), so their statuses and times are not comparable with the gate's. An entry whose red
+  run already meets FR-009, FR-010 and FR-011 needs no change: its green evidence is that same run plus the CI
+  measurement of FR-010. If every entry meets them, User Story 2 delivers the red runs, the FR-011 record and the CI
+  measurement as its evidence, and changes no code. A lever that is configuration only (test order, a Stryker or
+  Vitest setting) and changes no test takes its red evidence from these runs under the exemption of constitution
+  Principle VIII, and its review states why no test could fail for it; any test change still goes red first.
 - **FR-012**: The change MUST NOT reach FR-009 and FR-010 by removing mutants (excluding mutators, ignoring
   `source.ts` or parts of it, disable comments), by skipping or deleting tests, by weakening an assertion, or by
-  shortening Stryker's time limit so that late kills become Timeouts. It MUST NOT change the token package's built
-  outputs.
+  shortening Stryker's time limit so that late kills become Timeouts. It MUST NOT change the types that decide which
+  `source.ts` mutants the checker rejects (`Group` and `TokenRecord` in `packages/tokens/src/generate.ts`, the
+  `tokenRecords` signature in `source.ts`): not loosened to turn CompileErrors into kills, and not tightened to turn
+  Timeouts into CompileErrors. It MUST NOT change the token package's built outputs.
 - **FR-013**: The change MUST NOT make mutation runs of other files fail, lose kills or turn kills into Timeouts: every
-  mutation plant keeps its verdict, the plant job still finishes within its CI time limit, and a before/after
+  mutation plant keeps its verdict, and a before/after
   measurement run (the same command as FR-009, same base) of one entry of `packages/tokens/src/generate.ts` and one
   entry of a gate source file (the plan names both) shows no fewer Killed, no more Timeout and no more Survived or
   NoCoverage mutants after the change than before.
@@ -248,7 +278,9 @@ read the `gate:mutation` step time of every `source.ts` shard on CI from the mea
   (Killed, Timeout, RuntimeError, CompileError, Ignored, Survived, NoCoverage, and an unknown status) with the report
   lines present, so the report lines change no exit code.
 - **SC-003**: The measurement runs of every `source.ts` entry (FR-009) have 0 Timeouts, 0 survivors and 0 uncovered
-  mutants (the red run of FR-011a gives the figure before; op 004 recorded 121 Timeouts with the checker off).
+  mutants, and every mutant op 004 recorded as Timeout ends as Killed with a killing test on its record, or as
+  CompileError where the red run already had it so (FR-011). The red run of FR-011a gives the figures before; op 004
+  recorded 121 Timeouts with the checker off.
 - **SC-004**: Every such run takes at most 176 s on the sandbox (op 004: 578 s for `121-180`, checker off), and every
   `source.ts` shard's `gate:mutation` step on CI takes at most 480 s.
 - **SC-005**: The token package's built outputs are byte-identical before and after the mission.
@@ -269,7 +301,9 @@ read the `gate:mutation` step time of every `source.ts` shard on CI from the mea
   `mutation-plan` shards every `source.ts` entry. The `gate:mutation` step time of each `source.ts` shard is recorded
   with the run's link, and the commit is then reverted on the pull request before merge. Until then FR-010's CI half is
   open, and the landing pass checks it. Where that plan puts a `source.ts` entry in one shard with other files'
-  entries, the shard's step time stands for the entry's (an upper bound); it still has to meet 480 s.
+  entries, the shard's step time stands for the entry's (an upper bound); it still has to meet 480 s. The evidence
+  records which entries each `source.ts` shard held. If a mixed shard misses 480 s, the `source.ts` entry is measured
+  again on CI in a shard that holds it alone (the plan says how that run is made), and that time decides.
 - **480 s.** The CI bound is on the `gate:mutation` step; it leaves 2 minutes of the 10-minute job limit for the job's
   checkout and setup steps and for runner variance. The plan may propose another figure to the operator.
 - **Where the time goes.** Op 004 found that each static `source.ts` mutant runs the whole in-process suite, that
