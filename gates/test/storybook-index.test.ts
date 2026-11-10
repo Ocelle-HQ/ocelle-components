@@ -85,6 +85,14 @@ describe("parseIndex", () => {
   });
 
   it("keeps the JSON error as the cause", () => {
-    expect(() => parseIndex("{")).toThrow(expect.objectContaining({ cause: expect.any(SyntaxError) }) as Error);
+    const error = (() => {
+      try {
+        parseIndex("{");
+        return undefined;
+      } catch (thrown) {
+        return thrown as Error;
+      }
+    })();
+    expect(error?.cause).toBeInstanceOf(SyntaxError);
   });
 });

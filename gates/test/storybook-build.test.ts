@@ -74,9 +74,32 @@ describe("buildFindings (spike § 1)", () => {
       stdout: `${recorded("not-csf").stdout}\n${recorded("unresolved-import").stdout}`,
       stderr: "",
     };
-    expect(buildFindings(run).map((finding) => `${formatFinding(finding).split(": ").slice(0, 3).join(": ")}`)).toEqual([
+    expect(buildFindings(run).map((finding) => formatFinding(finding).split(": ").slice(0, 3).join(": "))).toEqual([
       "storybook/stories/not-csf.stories.ts: storybook-build: index-error",
       "storybook/stories/base.stories.ts: storybook-build: build-error",
+    ]);
+  });
+
+  it("trims each line, joins a Vite message's lines without its blank lines, and names an indexer error the output does not hold", () => {
+    const run: BuildRun = {
+      exitCode: 1,
+      stdout: [
+        "!  Unable to index ./stories/a.stories.ts:",
+        "|  NoMetaError: CSF: missing default export   ",
+        "x  Build failed with 1 error:",
+        "|   [PARSE_ERROR] Expected a semicolon  ",
+        "|",
+        "|  after the name",
+        "|  ╭─[ stories/b.ts:2:1 ]",
+        "!  Unable to index ./stories/c.stories.ts:",
+        "",
+      ].join("\n"),
+      stderr: "",
+    };
+    expect(buildFindings(run).map(formatFinding)).toEqual([
+      "storybook/stories/a.stories.ts: storybook-build: index-error: NoMetaError: CSF: missing default export",
+      "storybook/stories/b.ts: storybook-build: build-error: [PARSE_ERROR] Expected a semicolon after the name",
+      "storybook/stories/c.stories.ts: storybook-build: index-error: the indexer named no error",
     ]);
   });
 

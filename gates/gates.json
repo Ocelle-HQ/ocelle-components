@@ -103,5 +103,13 @@
     "plantCommand": "node gates/bin/brand-rules.ts --root {root}",
     "plantForm": "repo-tree",
     "scope": "002 FR-018, FR-019: rules (a) to (g) on the token source, the stylesheet the root's generator makes from it, and the excluded ochre pair of packages/tokens/contrast/pairs.json"
+  },
+  {
+    "id": "storybook-build",
+    "check": "Storybook build",
+    "command": "pnpm run gate:storybook-build",
+    "plantCommand": "node gates/bin/storybook-build.ts --root {root}",
+    "plantForm": "repo-tree",
+    "scope": "006 FR-001, FR-002: the Storybook workspace's build (storybook/), through its own build script, run as pnpm --config.verify-deps-before-run=false --dir storybook run build with CACHE_DIR=<root>/storybook/.cache; findings at the file the build names, the story file the indexer cannot read, or storybook/dist/index.json when the built index holds no story"
   }
 ]

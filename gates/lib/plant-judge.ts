@@ -31,9 +31,18 @@ export interface Plant {
   readonly cause?: string;
   /** The base the plant presents to its gate (`{base}`) instead of its temporary repository's base commit. */
   readonly base?: string;
+  /**
+   * The links its plant root goes without: only `storybook/node_modules`, for a Storybook plant whose input is the
+   * Storybook dependencies not installed (006 research.md R-16).
+   */
+  readonly unlinked?: readonly string[];
 }
 
-const keys = new Set(["expect", "why", "findings", "records", "cause", "base"]);
+/** The gates that build the Storybook in their plant roots (006 research.md R-07, R-16). */
+export const storybookGates: readonly string[] = ["storybook-build", "visual", "axe"];
+
+const keys = new Set(["expect", "why", "findings", "records", "cause", "base", "unlinked"]);
+const unlinkable = "storybook/node_modules";
 
 function isText(value: unknown): value is string {
   return typeof value === "string" && value !== "";
@@ -107,12 +116,18 @@ export function parsePlant(text: string): Plant | string {
     if (!isText(fields.base)) return "base must be a non-empty string";
     plant = { ...plant, base: fields.base };
   }
+  if (fields.unlinked !== undefined) {
+    const { unlinked } = fields;
+    if (!Array.isArray(unlinked) || unlinked.length !== 1 || unlinked[0] !== unlinkable) return `unlinked must be ["${unlinkable}"]`;
+    plant = { ...plant, unlinked: [unlinkable] };
+  }
   return plant;
 }
 
 /** The problem with a plant's keys for the gate whose plant it is, or undefined when its keys are valid for that gate. */
 export function gateKeysProblem(gate: string, plant: Plant): string | undefined {
-  throw new Error(`not implemented (plant-judge gateKeysProblem, phase 2): ${gate} ${plant.expect}`);
+  if (plant.unlinked !== undefined && !storybookGates.includes(gate)) return "unlinked is only for plants of storybook-build, visual and axe";
+  return undefined;
 }
 
 /** One gate run on a plant: its exit code and output lines, and for a commit plant the hashes of its records. */

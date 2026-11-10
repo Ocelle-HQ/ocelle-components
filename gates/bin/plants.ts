@@ -15,7 +15,7 @@ import { main, parseArgs } from "../lib/cli.ts";
 import type { Context, Io } from "../lib/cli.ts";
 import { directoryNames, filePaths } from "../lib/entries.ts";
 import { emit, formatFinding, plural } from "../lib/findings.ts";
-import { judgePlant, parsePlant } from "../lib/plant-judge.ts";
+import { gateKeysProblem, judgePlant, parsePlant, storybookGates } from "../lib/plant-judge.ts";
 import type { Plant, PlantRun } from "../lib/plant-judge.ts";
 import { buildCommitRepo, buildMutationRepo, buildRepoTree, carriesConfiguration } from "../lib/plant-repo.ts";
 import { gateRunsAtOnce, limiter, runPlant } from "../lib/plant-runner.ts";
@@ -69,13 +69,15 @@ function registryRun(registryText: string | undefined, workflow: string | undefi
   return { exit: findings.length > 0 ? 1 : 0, stdout: findings.map(formatFinding), stderr: [] };
 }
 
-/** One plant directory's plant.json, or the problem line that rejects it before it runs. */
-async function loadPlant(dir: string, tools: PlantTools): Promise<Plant | string> {
+/** One plant directory's plant.json, or the problem line that rejects it before it runs; `gate` is whose plant it is. */
+async function loadPlant(dir: string, gate: string, tools: PlantTools): Promise<Plant | string> {
   const line = (path: string, rule: string, message: string): string => `${path}: ${gateId}: ${rule}: ${message}`;
   const text = await tools.read(`${dir}/plant.json`);
   if (text === undefined) return line(`${dir}/plant.json`, "invalid-plant", "plant.json is missing");
   const plant = parsePlant(text);
   if (typeof plant === "string") return line(`${dir}/plant.json`, "invalid-plant", plant);
+  const keys = gateKeysProblem(gate, plant);
+  if (keys !== undefined) return line(`${dir}/plant.json`, "invalid-plant", keys);
   const configuration = carriesConfiguration(await tools.files(dir));
   if (configuration.length > 0) {
     return line(dir, "carries-configuration", `plant carries gate configuration: ${configuration.join(", ")}`);
@@ -86,6 +88,8 @@ async function loadPlant(dir: string, tools: PlantTools): Promise<Plant | string
 /** How the plants of one directory are found and which kinds it needs. */
 interface PlantSet {
   readonly dir: string;
+  /** Whose plants they are: the gate id, or the plant job's own id for the registry's plants. */
+  readonly gate: string;
   /** Who needs the plants, in the missing-plant message: `gate <id>` or `the registry check`. */
   readonly owner: string;
   readonly needed: readonly (typeof kinds)[number][];
@@ -95,6 +99,8 @@ interface PlantSet {
    * that its plant.json makes a plant.
    */
   readonly everyDir: boolean;
+  /** Whether its plants run one at a time (the Storybook gates' plants, 006 research.md R-07); else all at once. */
+  readonly serial?: boolean;
 }
 
 /** Judges every plant of a set with `judge`; returns the number of plants and the problem lines. */
@@ -110,18 +116,20 @@ async function judgeAll(
   for (const name of [...(await tools.dirs(dir))].sort()) {
     if (set.everyDir || (await tools.read(`${dir}/${name}/plant.json`)) !== undefined) cases.push(name);
   }
-  // Every plant is judged at once (the runner limits how many gate runs start together); the lines keep plant order.
-  const verdicts = await Promise.all(
-    cases.map(async (name) => {
-      const path = `${dir}/${name}`;
-      const plant = await loadPlant(path, tools);
-      if (typeof plant === "string") return plant;
-      seen.add(plant.expect);
-      const problem = await judge(plant, path);
-      return problem === undefined ? undefined : `${path}: ${gateId}: ${missed[plant.expect]}: ${problem}`;
-    }),
-  );
-  for (const verdict of verdicts) if (verdict !== undefined) problems.push(verdict);
+  const verdict = async (name: string): Promise<string | undefined> => {
+    const path = `${dir}/${name}`;
+    const plant = await loadPlant(path, set.gate, tools);
+    if (typeof plant === "string") return plant;
+    seen.add(plant.expect);
+    const problem = await judge(plant, path);
+    return problem === undefined ? undefined : `${path}: ${gateId}: ${missed[plant.expect]}: ${problem}`;
+  };
+  // Every plant is judged at once (the runner limits how many gate runs start together), or one after another for a
+  // serial set; the lines keep plant order.
+  const verdicts: (string | undefined)[] = [];
+  if (set.serial === true) for (const name of cases) verdicts.push(await verdict(name));
+  else verdicts.push(...(await Promise.all(cases.map(verdict))));
+  for (const line of verdicts) if (line !== undefined) problems.push(line);
   for (const kind of needed) {
     if (!seen.has(kind)) problems.push(`${dir}: ${gateId}: missing-plant: ${owner} has no ${kind} plant`);
   }
@@ -148,17 +156,21 @@ export async function plants(context: Context, tools: PlantTools, io: Io): Promi
     problems.push(`${plantsDir}/${dir}: ${gateId}: unknown-gate: plants of ${dir}, which has no registry entry`);
   }
   let count = 0;
-  const gateVerdicts = await Promise.all(
-    registry.map((gate) => {
-      const set: PlantSet = { dir: `${plantsDir}/${gate.id}`, owner: `gate ${gate.id}`, needed: kinds, everyDir: true };
-      return judgeAll(set, tools, async (plant, path) => judgePlant(gate.id, plant, await tools.runPlant(gate, path, plant)));
-    }),
-  );
+  const judgeGate = (gate: Gate, serial: boolean): ReturnType<typeof judgeAll> => {
+    const set: PlantSet = { dir: `${plantsDir}/${gate.id}`, gate: gate.id, owner: `gate ${gate.id}`, needed: kinds, everyDir: true, serial };
+    return judgeAll(set, tools, async (plant, path) => judgePlant(gate.id, plant, await tools.runPlant(gate, path, plant)));
+  };
+  // Every other gate's plants are judged at once; the Storybook gates' plants then one at a time, in registry order
+  // (006 research.md R-07). The lines keep registry order.
+  const together = new Map(registry.filter((gate) => !storybookGates.includes(gate.id)).map((gate) => [gate.id, judgeGate(gate, false)]));
+  await Promise.all(together.values());
+  const gateVerdicts: Awaited<ReturnType<typeof judgeAll>>[] = [];
+  for (const gate of registry) gateVerdicts.push(await (together.get(gate.id) ?? judgeGate(gate, true)));
   for (const judged of gateVerdicts) {
     count += judged.count;
     problems.push(...judged.problems);
   }
-  const registrySet: PlantSet = { dir: `${plantsDir}/${plantJob}`, owner: "the registry check", needed: ["fail", "pass"], everyDir: false };
+  const registrySet: PlantSet = { dir: `${plantsDir}/${plantJob}`, gate: gateId, owner: "the registry check", needed: ["fail", "pass"], everyDir: false };
   const registryPlants = await judgeAll(registrySet, tools, async (plant, path) =>
     judgePlant(gateId, plant, registryRun(await tools.read(`${path}/gates.json`), await tools.read(`${path}/ci.yml`))),
   );
@@ -187,7 +199,7 @@ function runnerTools(root: string, io: Io): RunnerTools {
     // Stryker disable next-line all: process boundary, covered by gates-integration: gates/test/integration/plants.test.ts "plants --root <tmp> runs each plant form through its gate and judges it"
     build: {
       // Stryker disable next-line all: process boundary, covered by gates-integration: gates/test/integration/plants.test.ts "plants --root <tmp> runs each plant form through its gate and judges it"
-      "repo-tree": (plant, into) => buildRepoTree(root, plant, into).then(() => ({})),
+      "repo-tree": (plant, into, spec) => buildRepoTree(root, plant, into, spec).then(() => ({})),
       // Stryker disable next-line all: process boundary, covered by gates-integration: gates/test/integration/plants.test.ts "plants --root <tmp> runs each plant form through its gate and judges it"
       "commit-repo": (plant, into) => buildCommitRepo(plant, into),
       // Stryker disable next-line all: process boundary, covered by gates-integration: gates/test/integration/plants.test.ts "plants --root <tmp> runs each plant form through its gate and judges it"
