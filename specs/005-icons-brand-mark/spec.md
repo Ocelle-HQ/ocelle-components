@@ -46,6 +46,21 @@ sources of the requirements below; what was read, and from where, is in `sources
   spec check 3 (`reviews/spec/check-3.md`) are fixed, as `reviews/spec/check-3-fixes.md` records. No further spec
   check follows; the plan squad reads the spec next. Check 3 had no operator questions.
 
+**Operator decisions at plan squad round 1** (2026-11-10, `reviews/plan/round-1/refute.md`; the spec changes they
+make are below, the plan changes in `plan.md`):
+
+- PLAN-A11Y-SECURITY-1-002 (a): a host `aria-label` that is present decides naming alone; a blank one leaves the
+  element unlabelled and hidden even with a `label` (FR-034, User Story 1 scenario 18, User Story 4 scenario 14).
+- PLAN-A11Y-SECURITY-1-003 (a): Chromium uses a host `aria-label` as written, spaces included, and an element cannot
+  change it, so hosts pass a trimmed `aria-label`; the scenarios use `"Close"` and `"Ocelle"`, the README says so, and
+  the whitespace-only case stays (FR-034).
+- PLAN-A11Y-SECURITY-1-008 (a): the browser build carries a licence banner (FR-029).
+- PLAN-CORRECTNESS-1-004 (a): the icon wrapper is one line box tall (User Story 3 scenario 1 is measured at the
+  tightest token pairs and at a larger icon size too).
+- PLAN-FRESH-1-006 (a): the mark's width follows its height (User Story 4 scenario 7).
+- The other forks of that round (PLAN-A11Y-SECURITY-1-005, PLAN-CORRECTNESS-1-002, PLAN-CORRECTNESS-1-011,
+  PLAN-TESTABILITY-1-005, PLAN-TESTABILITY-1-011) change the plan only.
+
 ## Consumer need
 
 - kitty-mission-ui puts local `inline-size` and `block-size` rules on every SVG it slots into a button, because the
@@ -132,8 +147,10 @@ it. Every snippet in the scenarios below that reads the tree is read with that `
 shows it.
 
 **Host ARIA.** A host may put ARIA on the element itself, as server-rendered and hand-written pages do. A host
-`aria-label` is a label: it names the icon or mark as `label` does (FR-034, User Story 1 scenario 18, User Story 4
-scenario 14). A host `aria-hidden="true"` hides the element, labelled or not. A host `role` or
+`aria-label` is a label: it names the icon or mark as `label` does, and when present it decides the naming alone, so
+a blank host `aria-label` leaves the element unlabelled even with a `label` (FR-034, User Story 1 scenario 18, User
+Story 4 scenario 14). Chromium uses a host `aria-label` as written, surrounding spaces included, so a host passes it
+trimmed. A host `aria-hidden="true"` hides the element, labelled or not. A host `role` or
 `aria-hidden="false"` on these elements is not supported; the README says to use `label` or `aria-label` instead.
 
 **"Does not" outcomes are paired.** An outcome that says something does not happen (no request, no violation, no
@@ -151,9 +168,10 @@ its plan names a planted defect that makes it fail:
 | Unknown names draw nothing and add nothing to the tree (US1-8) | A known name on the same element then draws, and a labelled known name exposes one image node | Drawing a fallback glyph for an unknown name |
 | `label` is not reflected (US1-16, US4-13, FR-014, FR-028) | In the same test, setting `name` (and `ground` and `tone`) reflects to the attribute, and the label set by property is the accessible name | Reflecting `label` |
 | A host size rule does not change a slotted icon's box (US3-9) | A standalone icon on the same page follows the same host rule, and overriding `--ocelle-icon-size` on the control resizes the slotted icon | A slot convention whose size rule loses to a page rule |
-| A host `aria-label` that is empty or whitespace-only adds no node (US1-18, US4-14, FR-034) | A twin with a non-empty host `aria-label` on the same page exposes exactly one image node with that name | An element that stays hidden when its host has an `aria-label` (the named twin then has no node) |
+| A host `aria-label` that is empty or whitespace-only adds no node, with or without a `label` (US1-18, US4-14, FR-034) | A twin with a non-empty host `aria-label` on the same page exposes exactly one image node with that name | An element that stays hidden when its host has an `aria-label` (the named twin then has no node), and an element that falls back to `label` when the host `aria-label` is blank (Chromium then exposes an unnamed image) |
 | A labelled icon or mark whose host has `aria-hidden="true"` contributes no node and no name (US1-18, US4-14, FR-034) | Its twin without `aria-hidden` on the same page exposes exactly one image node with the label | An element that removes or overrides a host `aria-hidden` when it is labelled |
 | An empty `trailing` slot adds no gap or box (US3-10) | A filled `trailing` slot on the same page adds the gap of FR-021 after the label | The gap applied whether or not the `trailing` slot holds an icon |
+| The slot convention adds nothing to the name a control takes from its visible label (US3-11) | In the same test both slotted icons are drawn at the icon size, and the control's name is exactly its label | A wrapper with a zero-width-space `::before` strut without empty alt text |
 | The mark's colour pairs leave no pair unchecked (US4-4, SC-005, FR-026) | The colour tokens the mark's stylesheet paints are read from the stylesheet as shipped and are exactly those FR-026 names | A copy of `pairs.json` with one `color-accent` row of FR-026 removed |
 
 The README, `NOTICE` and `THIRD_PARTY_NOTICES` statements (FR-008, FR-018, FR-020, FR-023, FR-029, FR-030, FR-033, FR-034,
@@ -204,9 +222,11 @@ the allowed list and of CSP violations; run the manifest gate and its plants.
    **Given** `label=" Search "`, **Then** the name is "Search"; **Given** `label=""` or `label="  "`, **Then** the icon
    is treated as unlabelled (FR-014).
 7. **Given** forced-colours mode is emulated with a dark and with a light system palette, **When** the icon is
-   rendered in body text, inside a link (`<a href>`) and inside a native button, **Then** its strokes take the system
-   colour of the surrounding text (`CanvasText` in text, `LinkText` in the link, `ButtonText` in the button) and stay
-   visible against `Canvas` and `ButtonFace` (FR-015).
+   rendered in body text, inside a link (`<a href>`), inside a native button and inside a disabled native button,
+   **Then** its strokes take the system colour of the surrounding text (`CanvasText` in text, `LinkText` in the link,
+   `ButtonText` in the button, `GrayText` in the disabled button) and stay visible against `Canvas` and `ButtonFace`
+   (FR-015). In Chromium's emulated palettes `ButtonText` equals `CanvasText`, so the link and the disabled button are
+   the contexts that tell `currentColor` from a fixed system colour.
 8. **Given** a name that is not in the set, an empty name or no name, each on an `ocelle-icon` with an `id`, **When**
    the element renders, **Then** it draws nothing, keeps its icon-size box so the layout does not shift, adds nothing
    to the accessibility tree even with a `label`, throws no error, writes no console message (none at all on the
@@ -248,15 +268,18 @@ the allowed list and of CSP violations; run the manifest gate and its plants.
     `ocelle-brand-mark` is not; **When** it imports the package root, **Then** both are defined; and the module build
     imports no module other than its own files and `lit` ("`lit`" here means the `lit` package and its subpaths, such
     as `lit/decorators.js`, not `lit-html`, `lit-element` or `@lit/reactive-element` directly) (FR-002, FR-033).
-18. **Given**, on one page, `<ocelle-icon id="aria-named" name="close" aria-label=" Close ">`,
+18. **Given**, on one page, `<ocelle-icon id="aria-named" name="close" aria-label="Close">`,
     `<ocelle-icon id="aria-empty" name="close" aria-label="  ">`,
+    `<ocelle-icon id="blank-labelled" name="close" label="Shut" aria-label="  ">`,
     `<ocelle-icon id="both" name="close" label="Shut" aria-label="Close">`,
     `<ocelle-icon id="hidden-labelled" name="close" label="Close" aria-hidden="true">` and its twin
     `<ocelle-icon id="shown-labelled" name="close" label="Close">`, **When** the accessibility tree is read, **Then**,
-    in the same test, `aria-named` exposes exactly one image node named "Close", `aria-empty` contributes no node and
-    no name, `both` exposes exactly one image node named "Close" (the host's `aria-label` wins over `label`),
-    `hidden-labelled` contributes no node and no name, and `shown-labelled` exposes exactly one image node named
-    "Close"; **When** the `aria-label` of `aria-named` is removed, **Then** its node is gone (FR-034).
+    in the same test, `aria-named` exposes exactly one image node named "Close", `aria-empty` and `blank-labelled`
+    contribute no node and no name (a present host `aria-label` decides alone, so a blank one leaves the icon
+    unlabelled even with a `label`), `both` exposes exactly one image node named "Close" (the host's `aria-label` wins
+    over `label`), `hidden-labelled` contributes no node and no name, and `shown-labelled` exposes exactly one image
+    node named "Close"; **When** the `aria-label` of `aria-named` is removed, **Then** its node is gone, and **When**
+    the `aria-label` of `blank-labelled` is removed, **Then** it exposes exactly one image node named "Shut" (FR-034).
 
 ---
 
@@ -323,7 +346,11 @@ and without the base stylesheet; sizes, alignment, colour and the accessibility 
    shrink when the host is narrow; **Given** the same under `dir="rtl"`, **Then** the icon sits before the label in
    the inline direction, which is to its right (FR-020, FR-021). "Centred" means that the block-axis centre of the
    icon box and the block-axis centre of the label's first line box differ by at most 0.5 px; the label is also
-   measured wrapped onto two lines, where the icon stays centred on the first.
+   measured wrapped onto two lines, where the icon stays centred on the first. Centring is measured with the test
+   host's text in body type (`--ocelle-font-size-md`, `--ocelle-line-height-normal`), at the smallest size
+   (`--ocelle-font-size-xs`), at the tightest leading (`--ocelle-font-size-sm` with `--ocelle-line-height-tight`, a
+   line box shorter than the icon) and with `--ocelle-icon-size: 2rem` set on the test host, where the icon is taller
+   than the line box and overflows it evenly above and below.
 2. **Given** a bare `<svg slot="icon" viewBox="0 0 24 24">` with no `width` or `height`, and another
    `<svg slot="icon" viewBox="0 0 24 24" width="100" height="100">`, **When** they are measured with and without
    `base.css` linked, **Then** both boxes are `--ocelle-icon-size` square, not 0 px, 100 px or the 300 × 150 default,
@@ -349,8 +376,9 @@ and without the base stylesheet; sizes, alignment, colour and the accessibility 
    (`icon`, and `trailing` for an end icon such as the action-row arrow), the size, alignment, gap and colour rules,
    the base-stylesheet interaction and the naming rule, so #7 and #12 can implement and test it without further
    design (FR-020, FR-023).
-8. **Given** forced colours are emulated, **When** the test host shows a slotted icon, **Then** the icon is painted
-   in the same system colour as the label (FR-015, FR-021).
+8. **Given** forced colours are emulated, **When** the test host shows a slotted icon, enabled and with its inner
+   button disabled, **Then** the icon is painted in the same system colour as the label (`ButtonText`, and `GrayText`
+   when disabled) (FR-015, FR-021).
 9. **Given** a page with the host rules `ocelle-icon { inline-size: 32px }` and `svg { inline-size: 32px }`, the
    test host with a slotted `<ocelle-icon slot="icon" name="folder">` and with a slotted
    `<svg slot="icon" viewBox="0 0 24 24">`, and on the same page a standalone `ocelle-icon` and a standalone bare
@@ -366,6 +394,11 @@ and without the base stylesheet; sizes, alignment, colour and the accessibility 
     box after it; **Given** the same under `dir="rtl"`, **Then** the trailing icon sits after the label in the inline
     direction, which is to its left; **Given** a bare `<svg slot="trailing" viewBox="0 0 24 24" width="100"
     height="100">`, **Then** its box is `--ocelle-icon-size` square too (FR-020, FR-021, FR-022).
+11. **Given** the test host with no `label`, named by its visible label "Open project", with
+    `<ocelle-icon id="lead" slot="icon" name="folder">` and `<ocelle-icon id="trail" slot="trailing" name="arrow-end">`,
+    **When** the accessibility tree is read, **Then**, in the same test, both slotted icons draw at the icon size, the
+    control's name is exactly "Open project" (no added character, not even a zero-width one), and the control holds
+    no text node other than its label's (FR-021, FR-023).
 
 ---
 
@@ -398,9 +431,10 @@ tree and the absence of requests outside the allowed list and of CSP violations;
    with one `color-accent` row of FR-026 removed, **Then**, in the same test, the test reports that pair and theme as
    missing; **When** the contrast gate runs, **Then** every one of those rows meets its threshold (FR-026).
 5. **Given** forced colours are emulated with a dark and a light system palette, **When** the mark renders in each
-   variant in body text, inside a link and inside a native button, **Then** ring and spot are both painted in the
-   context's system colour (`CanvasText` in text, `LinkText` in the link, `ButtonText` in the button), and the spot
-   stays visible as a filled shape inside the ring (FR-027).
+   variant (default, `ground="chrome"`, `tone="mono"`) in body text, inside a link, inside a native button and inside
+   a disabled native button, **Then** ring and spot are both painted in the context's system colour (`CanvasText` in
+   text, `LinkText` in the link, `ButtonText` in the button, `GrayText` in the disabled button), and the spot stays
+   visible as a filled shape inside the ring (FR-027).
 6. **Given** a mark with an `id` and no `label` and, on the same page, a twin with an `id` and `label="Ocelle"`,
    **When** the accessibility tree is read, **Then** the unlabelled mark contributes no unignored node (its host
    included) and no name (the top bar's product name
@@ -408,9 +442,10 @@ tree and the absence of requests outside the allowed list and of CSP violations;
    `label=" Ocelle "`, **Then** the name is "Ocelle"; **Given** `label=""` or `label="  "`, **Then** the mark is
    treated as unlabelled (FR-028).
 7. **Given** no size set by the host, **When** the mark is measured, **Then** it is `--ocelle-icon-size` high and its
-   width follows the drawing's square aspect; the host can set any other size on the element, and the drawing
-   scales with it; in a non-square host box the drawing is scaled to the smaller side and centred, aspect kept
-   (FR-024).
+   width follows the drawing's square aspect; **Given** the host sets only `block-size: 32px`, **Then** the box is
+   32 × 32 px (the width follows the height); the host can set any other size on the element, and the drawing
+   scales with it; in a non-square host box (for example a host that sets only `inline-size: 32px`, giving 32 × 20 px)
+   the drawing is scaled to the smaller side and centred, aspect kept (FR-024).
 8. **Given** an unknown `ground` or `tone` value, **When** the mark renders, **Then** it renders as the default
    main-ground variant (FR-025).
 9. **Given** the mark's drawing, **When** its source is compared with `sources/ocelle-docs-logo.reference.svg`,
@@ -433,12 +468,13 @@ tree and the absence of requests outside the allowed list and of CSP violations;
     on `color-chrome` in a text colour other than `--ocelle-color-chrome-ink`, ring and spot are both painted in the
     inherited text colour (`currentColor`), because `tone="mono"` takes precedence over `ground="chrome"` (FR-025,
     FR-028).
-14. **Given**, on one page, `<ocelle-brand-mark id="aria-mark" aria-label=" Ocelle ">`,
+14. **Given**, on one page, `<ocelle-brand-mark id="aria-mark" aria-label="Ocelle">`,
     `<ocelle-brand-mark id="aria-empty-mark" aria-label="">`,
+    `<ocelle-brand-mark id="blank-labelled-mark" label="Ocelle" aria-label=" ">`,
     `<ocelle-brand-mark id="hidden-mark" label="Ocelle" aria-hidden="true">` and its twin
     `<ocelle-brand-mark id="shown-mark" label="Ocelle">`, **When** the accessibility tree is read, **Then**, in the
-    same test, `aria-mark` and `shown-mark` each expose exactly one image node named "Ocelle", and `aria-empty-mark`
-    and `hidden-mark` contribute no node and no name (FR-034).
+    same test, `aria-mark` and `shown-mark` each expose exactly one image node named "Ocelle", and `aria-empty-mark`,
+    `blank-labelled-mark` and `hidden-mark` contribute no node and no name (FR-034).
 
 ---
 
@@ -450,9 +486,11 @@ tree and the absence of requests outside the allowed list and of CSP violations;
   cannot undo (User Story 3 scenarios 2 and 3). An `ocelle-icon`'s own drawing is inside its shadow root and is not
   touched.
 - **Host page styles the element.** For a standalone icon or mark, a host rule such as
-  `ocelle-icon { inline-size: 32px }` is allowed and wins; the drawing follows the host box. A host rule that sets
-  only one dimension leaves the other at the icon size; in such a non-square box the drawing is scaled to the smaller
-  side and centred, aspect kept (User Story 1 scenario 3). For an icon slotted into a control that follows the slot
+  `ocelle-icon { inline-size: 32px }` is allowed and wins; the drawing follows the host box. For an icon, a host rule
+  that sets only one dimension leaves the other at the icon size; in such a non-square box the drawing is scaled to
+  the smaller side and centred, aspect kept (User Story 1 scenario 3). The mark's width follows its height, so a host
+  that sets only the mark's `block-size` gets a square box; one that sets only its `inline-size` gets a non-square box
+  as for the icon (User Story 4 scenario 7). For an icon slotted into a control that follows the slot
   convention, the convention's size wins over every normal host rule, `base.css` and size attributes; the way to
   resize icons in a control is overriding `--ocelle-icon-size` on the control or an ancestor (FR-022, User Story 3
   scenario 9).
@@ -602,7 +640,8 @@ tree and the absence of requests outside the allowed list and of CSP violations;
 
 - **FR-024**: `ocelle-brand-mark` renders the Ocelle rosette (four open arcs of unequal weight with round caps around
   an elliptical spot), redrawn from the geometry of the reference in `sources/`, as inline SVG in its shadow root,
-  `--ocelle-icon-size` high by default with its square aspect, scaling to any size the host sets.
+  `--ocelle-icon-size` high by default with its square aspect, its width following its height (a host that sets only
+  the height gets a square box), scaling to any size the host sets.
 - **FR-025**: Its variants: the default for the main grounds (ring `--ocelle-color-ink`, spot
   `--ocelle-color-accent`); `ground="chrome"` for the chrome, `color-chrome` and `color-chrome-hover` (ring
   `--ocelle-color-chrome-ink`, spot `--ocelle-color-accent`); and `tone="mono"` (ring and spot `currentColor`), which
@@ -624,7 +663,7 @@ tree and the absence of requests outside the allowed list and of CSP violations;
   `color-accent` row removed.
 - **FR-027**: In forced-colours mode both parts of the mark, in every variant, are painted in `currentColor`, so in
   the system colour of their context as for icons (`CanvasText` in text, `LinkText` in a link, `ButtonText` in a
-  button), and the spot stays a filled shape inside the ring.
+  button, `GrayText` in a disabled button), and the spot stays a filled shape inside the ring.
 - **FR-028**: Without `label` the mark is hidden from the accessibility tree and contributes no name to an ancestor;
   with a non-empty `label` (property and attribute, not reflected) it is one image with that name. As for the icon,
   an empty or whitespace-only `label` counts as none, and the name is the label with surrounding whitespace
@@ -634,10 +673,15 @@ tree and the absence of requests outside the allowed list and of CSP violations;
 **Host ARIA (both elements)**
 
 - **FR-034**: Host ARIA on `ocelle-icon` and `ocelle-brand-mark` (constitution III: an accessible name set on a host
-  reaches the element's exposed node). A host `aria-label` counts as a label: with surrounding whitespace removed and
-  non-empty, the element is exposed as one image with that name, as for `label`, and an empty or whitespace-only
-  `aria-label` counts as none. When both are non-empty, the host's `aria-label` is the name, as ARIA gives an author's
-  `aria-label` precedence; removing it falls back to `label`. An unknown icon name still exposes nothing (FR-016). A
+  reaches the element's exposed node). A host `aria-label` counts as a label, and when the attribute is present it
+  decides the naming alone (operator decisions, PLAN-A11Y-SECURITY-1-002 and 1-003): when it holds a non-whitespace
+  character the element is exposed as one image named by it, as for `label`; when it is empty or whitespace-only the
+  element is unlabelled (it contributes no node and no name), even with a non-empty `label`, because Chromium names
+  the host from a present `aria-label` attribute whatever the element sets. The name is the host's value as the
+  browser computes it, which keeps surrounding spaces, so a host passes a trimmed `aria-label`; the README says so,
+  and the element does not rewrite the host's attribute. When both are non-empty, the host's `aria-label` is the
+  name, as ARIA gives an author's `aria-label` precedence; removing it falls back to `label`. An unknown icon name
+  still exposes nothing (FR-016). A
   host `aria-hidden="true"` hides the element, labelled or not: it contributes no node and no name. A host `role`,
   and a host `aria-hidden="false"`, are not supported: they would replace the element's own role or hiding rather
   than reach it, so they are not ARIA state of the kind constitution III forwards; the README says not to set them
@@ -653,7 +697,10 @@ tree and the absence of requests outside the allowed list and of CSP violations;
   brings, such as `lit-html`, `lit-element` and `@lit/reactive-element`), each with its version as the lockfile
   resolves it, its licence (BSD-3-Clause), its copyright notice and licence text and its repository, and names the
   published file that holds them. This is the third-party asset the operator approved
-  (SPEC-2-02).
+  (SPEC-2-02). The browser build's file itself starts with a licence banner, kept by the minifier, that names
+  `@ocelle/elements`' licence (Apache-2.0), Lit's copyright and BSD-3-Clause licence, and `THIRD_PARTY_NOTICES` for the
+  full notices, so a host that copies the file out of the package keeps the notice with it (operator decision,
+  PLAN-A11Y-SECURITY-1-008); a build test fails while the banner is missing.
 - **FR-030**: The README and a new repository `NOTICE` file (none exists yet; Apache-2.0 section 4(d) carries it to
   redistributors) state that "Ocelle" and the rosette mark are trademarks of their
   owner, that Apache-2.0 grants no right to use them (section 6), and that they may be used only to refer to Ocelle.
@@ -662,7 +709,8 @@ tree and the absence of requests outside the allowed list and of CSP violations;
   packed file list fails while one of them is missing.
 - **FR-031**: The `@ocelle/elements` changelog names the surface this feature adds: `ocelle-icon`, its icon names,
   `ocelle-brand-mark`, the slot convention, the manifest, and the package's entry points (the package root, each
-  element's entry point and the browser build's entry point).
+  element's entry point and the browser build's entry point), and the browser build's file path in the package, which
+  a host without a bundler copies and serves by path and which is therefore public surface too.
 - **FR-032**: The skeleton test that asserts the package "exports nothing yet" is replaced by tests of what it now
   exports.
 
@@ -693,9 +741,11 @@ tree and the absence of requests outside the allowed list and of CSP violations;
 - **SC-003**: In the accessibility tree (read as User Scenarios define, with an `id` on every element read), an
   unlabelled icon or mark contributes zero unignored nodes, its host included, and no name; a labelled one, by `label`
   or by a host `aria-label`, contributes exactly one image node with its label; one whose host has
-  `aria-hidden="true"` contributes nothing; an icon-only control's name is exactly the control's own.
+  `aria-hidden="true"`, or a blank host `aria-label`, contributes nothing; an icon-only control's name is exactly the
+  control's own, and a control named by its visible label keeps exactly that label as its name with icons slotted.
 - **SC-004**: In forced colours, 100% of the painted parts of every icon and mark variant use the system colour of
-  their context (`CanvasText` in text, `LinkText` in a link, `ButtonText` in a button).
+  their context (`CanvasText` in text, `LinkText` in a link, `ButtonText` in a button, `GrayText` in a disabled
+  button).
 - **SC-005**: Every brand-mark pair of FR-026 is a `checked` row of `pairs.json` in each theme FR-026 names and meets
   3:1 there: the mark's pairing test fails when a pair's row is missing (and on its planted removed row), and the
   contrast gate fails when a row misses its threshold.

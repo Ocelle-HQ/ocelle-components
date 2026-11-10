@@ -15,8 +15,10 @@
 area (geometry bounds grown by 1 unit, half the stroke) lies within 0 to 24 (US2-2). No two icons have equal `shapes`.
 
 `IconName` = `"chevron-start" | "chevron-end" | "chevron-up" | "chevron-down" | "arrow-start" | "arrow-end" | "menu"
-| "close" | "folder" | "file" | "search" | "table" | "copy"`. The package exports the type (with the classes) but no
-runtime list of names (FR-018).
+| "close" | "folder" | "file" | "search" | "table" | "copy"`, declared as this explicit union. The table is typed
+`Readonly<Record<IconName, Icon>>`, so the type checker rejects a missing or extra name, and is not written `as const`
+(Stryker does not mutate inside `as const`, R-07). The package exports the type (with the classes) but no runtime list
+of names (FR-018). The tests hold an independent expected table of the same shape (`test/icons-expected.ts`).
 
 ## `ocelle-icon` (`OcelleIcon`)
 
@@ -28,8 +30,10 @@ runtime list of names (FR-018).
 No slot, event, CSS part or CSS custom property. Reads the token `--ocelle-icon-size`. Observes the host attribute
 `aria-label` (not a property; R-13).
 
-**State** (derived on every update): `drawable` = `name` is a key of the icon table (exact). `accessibleName` =
-trimmed host `aria-label` if non-empty, else trimmed `label` if non-empty, else none.
+**State** (derived on every update): `drawable` = `name` is a key of the icon table (exact). `accessibleName`
+(FR-034): if the host has an `aria-label` attribute, it decides alone: its value if it holds a non-whitespace
+character (as the host wrote it; Chromium keeps surrounding spaces, so hosts pass it trimmed), else none, even with a
+`label`; if the host has no `aria-label`, the trimmed `label` if non-empty, else none.
 
 | `drawable` | `accessibleName` | Shadow root | Internals |
 |---|---|---|---|
@@ -37,7 +41,9 @@ trimmed host `aria-label` if non-empty, else trimmed `label` if non-empty, else 
 | yes | none | the icon's `svg` (`aria-hidden="true"`) | `ariaHidden "true"`, no role, no label |
 | yes | a name | the icon's `svg` (`aria-hidden="true"`) | `role "img"`, `ariaLabel` = name, `ariaHidden` null |
 
-A host `aria-hidden="true"` hides the element in every row (ARIA precedence over internals).
+A host `aria-hidden="true"` hides the element in every row (ARIA precedence over internals). When a host `aria-label`
+names the element, Chromium takes the name from the host attribute; the internals' `ariaLabel` matters only for the
+`label` case. The element never writes the host's `aria-label`.
 
 ## `ocelle-brand-mark` (`OcelleBrandMark`)
 
@@ -50,29 +56,41 @@ A host `aria-hidden="true"` hides the element in every row (ARIA precedence over
 No slot, event, CSS part or CSS custom property. Reads `--ocelle-icon-size`, `--ocelle-color-ink`,
 `--ocelle-color-chrome-ink`, `--ocelle-color-accent`. Naming as for `ocelle-icon` with `drawable` always true.
 
-**Variants** (CSS on exact attribute values; any other value is the default):
+**Box**: `block-size: var(--ocelle-icon-size)`, `inline-size: auto`, `aspect-ratio: 1` (R-09): 20 × 20 px by default;
+a host `block-size` alone gives a square of that size; a host `inline-size` alone gives a non-square box with the
+drawing scaled to the smaller side and centred.
+
+**Variants** (CSS on exact attribute values; any other value is the default). The variant rules are inside
+`@media not (forced-colors: active)`, so none of them applies in forced colours and the forced-colours rules need not
+outrank any variant selector (R-09):
 
 | Variant | Selector | Ring stroke | Spot fill |
 |---|---|---|---|
-| default (main grounds) | none | `--ocelle-color-ink` | `--ocelle-color-accent` |
-| chrome | `:host([ground="chrome"])` | `--ocelle-color-chrome-ink` | `--ocelle-color-accent` |
-| mono (wins over chrome) | `:host([tone="mono"])` | `currentColor` | `currentColor` |
-| forced colours (all) | `@media (forced-colors: active)` | `currentColor` | `currentColor` |
+| default (main grounds) | `.ring`, `.spot` inside `@media not (forced-colors: active)` | `--ocelle-color-ink` | `--ocelle-color-accent` |
+| chrome | `:host([ground="chrome"]) .ring` inside `@media not (forced-colors: active)` | `--ocelle-color-chrome-ink` | `--ocelle-color-accent` |
+| mono (wins over chrome) | `:host([tone="mono"])` inside `@media not (forced-colors: active)` | `currentColor` | `currentColor` |
+| forced colours (every variant) | `.ring`, `.spot` inside `@media (forced-colors: active)` | `currentColor` | `currentColor` |
 
-**Drawing** (`rosette.ts`): `viewBox="0 0 100 100"`; four `path` arcs with class `ring`, each with its own
-`stroke-width`, `fill="none"`, `stroke-linecap="round"`; one `ellipse` with class `spot` and a `transform` attribute
-for its rotation. Geometry is the reference's rosette group under its `translate(14 14) scale(0.72)` (R-09).
+Measured with this structure: in forced colours every variant's ring and spot are the context's system colour in
+both palettes (R-09).
+
+**Drawing** (`rosette.ts`): `viewBox="4 4 92 92"`, chosen from the rosette's painted extent (7.5 to 93.9 about the
+ring's centre (50, 50)); four `path` arcs with class `ring`, each with its own `stroke-width` (15, 12, 16, 11),
+`fill="none"`, `stroke-linecap="round"`; one `ellipse` with class `spot` and a `transform` attribute for its rotation.
+Geometry is the reference's rosette group in the group's own coordinates, with no transform (R-09); against the
+reference group the fit of US4-9 is scale 1, translation 0.
 
 ## Slot convention (`packages/elements/src/icon-slot.ts`)
 
 | Part | Markup in the control's shadow root | Rule |
 |---|---|---|
-| icon wrapper | `<span class="icon-slot"><slot name="icon"></slot></span>` | `inline-flex`, centred, `flex: none`, a zero-width-space `::before` strut |
+| icon wrapper | `<span class="icon-slot"><slot name="icon"></slot></span>` | `inline-flex`, `block-size: 1lh` (one line box of the row), icon centred in it, `flex: none`; no generated content |
 | label | the control's own label element | between the two wrappers |
 | trailing wrapper | `<span class="icon-slot trailing"><slot name="trailing"></slot></span>` | as the icon wrapper |
 | slotted icon | any element in either slot | `--ocelle-icon-size` square, `!important`; gap `--ocelle-space-2` by inline margin toward the label, `!important` |
 
-The control's row is `display: inline-flex; align-items: flex-start`.
+The control's row is `display: inline-flex; align-items: flex-start`, and sets the type (font size, line height) that
+the wrappers and the label inherit.
 
 ## Contrast rows (`packages/tokens/contrast/pairs.json`, new)
 
@@ -82,15 +100,16 @@ The control's row is `display: inline-flex; align-items: flex-start`.
 | dark | `color-accent` | the nine main grounds | non-text | checked |
 
 `figure` is computed by `gates/lib/wcag.ts` at the file's precision; `source` is `"computed"`. Counts: 160 light,
-168 dark.
+168 dark, 328 entries (from 158, 157 and 315; every test that pins them changes first, R-09).
 
 ## Manifest (`packages/elements/custom-elements.json`)
 
-Schema 2.1.0 (the analyzer's). One module per element file; each element declaration has `tagName`, `name` (class),
-`customElement: true`, `members` (the public properties, each with `type.text`, `default`, `description`,
-`attribute`, `reflects`), `attributes` (each with `type`, `description`, `fieldName`), and `slots`, `events`,
-`cssParts`, `cssProperties` (empty arrays here). `name`'s `type.text` is the expanded union of the thirteen names
-plus `undefined`.
+`"schemaVersion": "1.0.0"`, as analyzer 0.11.0 writes it (measured, R-06). One module per element file; each element
+declaration has `tagName` (from the class's `@tagname` JSDoc tag), `name` (class), `customElement: true`, `members`
+(the public properties, each with `type.text`, `default` (`"undefined"`, from `@default undefined`), `description`,
+`attribute`, `reflects`), `attributes` (each with `type`, `description`, `fieldName`; the observed `aria-label` is
+dropped by the normaliser), and `slots`, `events`, `cssParts`, `cssProperties` (empty arrays here). `name`'s
+`type.text` is the expanded union of the thirteen names plus `undefined`.
 
 ## Gate finding (`manifest`)
 
