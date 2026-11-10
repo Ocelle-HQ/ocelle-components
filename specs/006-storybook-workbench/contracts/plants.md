@@ -56,7 +56,7 @@ repository's entries and copies the plan files they name (research.md R-16).
 | `pass-repository` | pass | the repository's stories and baselines (Storybook's own unused Nunito Sans faces declared, not findings) |
 | `pass-unused-face` | pass | a story that declares a second `@font-face` it does not use, with its baselines |
 | `pass-animation-and-caret` | pass | a story with a running CSS animation and a focused text field, with its baselines (control: research.md R-04) |
-| `pass-second-render` | pass | a story that shows a coloured block on any render after the first in a page, with baselines made by single-story-theme requests (`--plant visual/pass-second-render --story <id>`, research.md R-11) |
+| `pass-second-render` | pass | `captureAlone: true`; a story that shows a coloured block on any render after the first in a page, with baselines made only by single-story-theme requests (`--plant visual/pass-second-render --story <id>`; in CI's artifact, captures made alone, never the full run's; research.md R-11) |
 | `pass-below-fold` | pass | a story whose root is 2000 px tall, with its baselines (the full-page height, FR-012) |
 | `pass-focus-below-fold` | pass | a 2000 px tall story that focuses a text field at y = 1500 and holds a `position: fixed; top: 0` element, with baselines showing that element at the top of the page (the scroll reset, research.md R-04) |
 | `pass-overflow-and-popover` | pass | a story with an absolutely positioned child overflowing its root and an open top-layer `popover`, with its baselines |
@@ -121,6 +121,9 @@ Added: `fail-skip-container-in-ci` (a `ci.yml` whose `plants` job passes `--skip
   (research.md R-16). Any other value or gate makes the plant invalid.
 - `plant.json` gains the optional key `baselinesOf`, the name of a `visual` pass plant holding baselines, valid only
   for `visual` fail plants whose own `tree/` holds no file under `storybook/baselines/` (research.md R-16).
+- `plant.json` gains the optional key `captureAlone` (only `true`), valid only for `visual` pass plants with stories of
+  their own and no `baselinesOf`: the plant's baselines come only from single-story-theme requests (research.md R-11,
+  R-16). Any other value or plant makes the plant invalid.
 - `delta.json` gains the optional keys `baselines` (a list of `{ "file", "edit" }`, edits `one-pixel`, `reencode`,
   `remove`, applied to the current repository baseline; research.md R-11) and `exceptions` (only `"repository"`;
   research.md R-16). An `axe` plant without `exceptions: "repository"` is invalid. `treeProblems` refuses a tree file
@@ -128,6 +131,10 @@ Added: `fail-skip-container-in-ci` (a `ci.yml` whose `plants` job passes `--skip
 - The plants of `storybook-build`, `visual` and `axe` run one at a time, after the other plants (research.md R-07).
 - When a `visual` pass plant fails with `differs` or `missing-baseline` on story-themes of its own stories, the runner
   copies run 1's captures of those to `storybook/.visual/plants/gates/plants/visual/<name>/tree/storybook/baselines/`;
+  for a `captureAlone` plant it copies none of run 1's captures but makes single-story-theme requests for those
+  story-themes in the same root and engine (two runs) and copies those captures, except one equal to the committed
+  baseline, for which it prints `plants: visual/<name>: <story-id>/<theme>: captured alone matches the baseline; the
+  full run differs (freshness)`; CI's captures made alone are the record for that plant (research.md R-11);
   the `plants` job uploads `storybook/.visual/plants/` on failure (research.md R-11).
 - `--skip-container`, and the engine probe with `plants: not run (no container engine): <plant>` and exit 2
   (research.md R-07).

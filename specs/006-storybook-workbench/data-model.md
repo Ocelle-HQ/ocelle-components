@@ -117,6 +117,7 @@ viewport`). The screenshot is taken at scroll position (0, 0) as well (research.
 | `engine` | `both`, `host`, `missing` | `visual` plants |
 | `unlinked` | `["storybook/node_modules"]` | `storybook-build`, `visual` and `axe` plants |
 | `baselinesOf` | the name of a `visual` pass plant holding baselines | `visual` fail plants with no `storybook/baselines/` file in their `tree/` |
+| `captureAlone` | `true`: baselines only from single-story-theme requests (plant mode requires `--story`; the runner's CI artifact holds captures made alone, never the full run's; research.md R-11) | `visual` pass plants with stories of their own and no `baselinesOf` (`pass-second-render`) |
 
 ## Plant delta keys (new, `delta.json`)
 

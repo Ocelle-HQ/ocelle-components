@@ -514,12 +514,14 @@ by the baseline command's **plant mode**, `pnpm run visual:update -- --plant vis
   `importPath` is a story file of the plant's `tree/` (the repository's stories in the root are not captured);
 - with `--story <id>` (one of the plant's own stories) it makes one single-story-theme request per theme, holding
   only that story and that theme, and writes only that story's two baselines; `pass-second-render`'s baselines are
-  made this way (Freshness, below);
+  made this way (Freshness, below). Its `plant.json` carries the key `captureAlone: true` (R-16), and for a plant with
+  that key the plant mode requires `--story`: without it the command exits 2 (`<plant> is captured alone: give --story
+  <id>`), since a request holding a story in both themes, or after other stories, is not a single-story-theme request;
 - it applies `updatePlan` to those story-themes and writes into `gates/plants/visual/<name>/tree/storybook/baselines/`
   (and removes the stray files there); nothing is written when any of them has a refusing status;
 - it exits 2 naming the cause for a gate other than `visual`, a plant that does not exist, a plant with no story of
-  its own, a plant with the key `baselinesOf` ("its baselines are those of <plant>"), and a `--story` that is not one
-  of the plant's own stories.
+  its own, a plant with the key `baselinesOf` ("its baselines are those of <plant>"), a `--story` that is not one
+  of the plant's own stories, and a `captureAlone` plant without `--story`.
 The fail plants that compare a changed story with the baselines of the unchanged one hold no PNG of their own: the
 plant key `baselinesOf` (R-16) names the pass plant whose baselines their root receives (`fail-below-fold` ←
 `pass-below-fold`, `fail-overflow-changed` ← `pass-overflow-and-popover`, `fail-hover-style-changed` ←
@@ -530,10 +532,25 @@ its own stories, the plant runner copies run 1's captures of those story-themes 
 repository (ignored), and the `plants` job uploads `storybook/.visual/plants/` with `actions/upload-artifact` (pinned by
 SHA) when it fails, beside the Visual regression job's artifact. The artifact is in tree layout, so its files are
 committed at the same paths; the contributor note says so, and says that a change that moves a plant story's pixels (a
-token value, `base.css`, a pin move) regenerates the affected plants with the plant mode or commits CI's files. The
-argument parsing, the own-story selection (from `importPath`), the request plan (`--story` included) and the
-destination paths are pure functions in `gates/lib/visual-verdict.ts`; the plant runner's copy decision (which files,
-to where) is a pure function in `gates/lib/plant-runner.ts`; both are unit-tested. An integration test runs
+token value, `base.css`, a pin move) regenerates the affected plants with the plant mode or commits CI's files.
+**A `captureAlone` plant is never given full-run captures (PLAN-FRESH-2-002, verify 1).** In the plant job
+`pass-second-render`'s root holds every repository story (R-16), so run 1's captures of its story come from exactly the
+full run its reference must be independent of; copying them would let a broken freshness pass once committed. So for a
+`captureAlone` plant the runner copies nothing from run 1. Instead, in the same plant root, with the same build and
+the same engine as run 1, it makes the plant mode's single-story-theme requests (one request per failing story-theme
+of the plant's own stories, holding only that story and that theme, two runs) and copies those captures to the same
+tree-layout path, for each story-theme whose two runs agree and carry no refusing status. A story-theme whose capture
+made alone equals the committed baseline is not copied; the runner prints `plants: visual/<name>: <story-id>/<theme>:
+captured alone matches the baseline; the full run differs (freshness)` and the plant keeps failing, which is the
+freshness failure FR-028 asks for. **Which record governs:** when local and CI bytes differ, CI's artifact governs for
+every `visual` pass plant (decision 7); for a `captureAlone` plant that record is CI's single-story-theme captures, and
+no full-run capture, local or CI, is ever a baseline of it. The contributor note says so. The
+argument parsing (the `captureAlone` refusal included), the own-story selection (from `importPath`), the request plan
+(`--story` included) and the destination paths are pure functions in `gates/lib/visual-verdict.ts`; the plant
+runner's copy decision (which files, from run 1 or from captures made alone, to where, and the not-copied case of a
+capture made alone that equals the baseline) is a pure function in `gates/lib/plant-runner.ts`; both are unit-tested,
+the `captureAlone` cases red first: run 1's captures of a `captureAlone` plant are never chosen, an equal capture made
+alone is not copied and yields the freshness line, a differing one is copied. An integration test runs
 `--plant visual/pass-unused-face` with one of the plant's baselines deleted and asserts that it is written back with
 the bytes it had (`1 changed`) and the plant's other files are untouched.
 
@@ -561,7 +578,8 @@ leaves no file; each refusal of the parser and of `treeProblems`.
 **Freshness has an independent reference (FR-028, PLAN-TESTABILITY-1-007).** The `pass-second-render` story shows a
 visibly different state (a coloured block) on any render after the first in a page. Its committed baselines are made
 by single-story-theme requests (a capture request holding only that story and one theme; the plant mode's `--story`,
-above), not by a full run. In
+above), not by a full run: its `captureAlone` key makes the plant mode refuse it without `--story`, and the plant
+runner's CI artifact for it holds captures made alone, never run 1's (Plant baselines, above). In
 addition, an integration test captures that story alone in each theme and asserts byte equality with its captures
 from a full request in which it comes after other stories. The axe counterpart is the pass plant `pass-second-render`
 of the axe gate, whose story loses a button's label on any render after the first.
@@ -576,8 +594,8 @@ of the axe gate, whose story loses a button's label on any render after the firs
   precedence), the build environment (`CACHE_DIR`), the plant mode's arguments, own-story selection and request plan,
   the story checks (empty, fonts, closed shadow roots, outside-root), axe rule selection, result mapping and the
   printed selector, exception parsing, matching and plan pairing (escaped `|` included), the plant-root changes
-  (`baselines` edits, `baselinesOf`, the exceptions file and its plan files, `treeProblems`), and the plant runner's
-  not-run, serial and capture-copy decisions. These kill the mutants of the new source.
+  (`baselines` edits, `baselinesOf`, `captureAlone`, the exceptions file and its plan files, `treeProblems`), and the plant runner's
+  not-run, serial and capture-copy decisions (the `captureAlone` source included). These kill the mutants of the new source.
 - `gates-integration` (node, real processes): the `storybook-build` gate on fixture trees; the `axe` gate on fixture
   Storybooks with the host browser; the `visual` gate and the baseline command against the real container; the
   freshness and animation-control tests (R-04, R-11); the PNG height of a capture of a story taller than the viewport
@@ -679,6 +697,10 @@ it. `gates/lib/plant-repo.ts` changes, test-first in `gates/test/plant-repo.test
   the plant's own `tree/` is laid over it. The plant is invalid when the named plant does not exist, is not a `visual`
   pass plant, holds no baselines, itself has `baselinesOf`, or when the plant's own `tree/` holds a file under
   `storybook/baselines/`.
+- **`captureAlone` (PLAN-FRESH-2-002, verify 1).** `plant.json` gains the optional key `captureAlone`, whose only
+  value is `true`, valid only for `visual` `pass` plants with stories of their own and without `baselinesOf`
+  (`pass-second-render`): its baselines are made only by single-story-theme requests, in the plant mode (`--story`
+  required) and in the plant runner's CI artifact (R-11). Any other value or plant makes the plant invalid.
 - **The exceptions file of a plant root (operator decision on PLAN-FRESH-2-004, option (b)).** The repository's
   exception entries name plan files under `specs/` that a plant root does not hold, so copying the file alone would
   turn every entry into `unrecorded-exception` and its node into a finding in every axe plant. So a plant root's

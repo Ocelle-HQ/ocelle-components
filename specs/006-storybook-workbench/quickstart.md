@@ -62,8 +62,10 @@ own baselines:
 
 ```sh
 pnpm run visual:update -- --plant visual/pass-unused-face                    # writes tree/storybook/baselines/ of that plant
-pnpm run visual:update -- --plant visual/pass-second-render --story <id>     # single-story-theme requests
+pnpm run visual:update -- --plant visual/pass-second-render --story <id>     # single-story-theme requests (required: captureAlone)
 ```
 
 When CI's Plants job fails on such a plant, its artifact holds the captures at
-`gates/plants/visual/<name>/tree/storybook/baselines/`; commit them at those paths.
+`gates/plants/visual/<name>/tree/storybook/baselines/`; commit them at those paths. For `pass-second-render` the artifact
+holds captures made alone (never the full run's); when the job prints `captured alone matches the baseline; the full
+run differs (freshness)`, there is nothing to commit: freshness is broken and the capture code needs fixing.

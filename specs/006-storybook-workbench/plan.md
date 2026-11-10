@@ -103,7 +103,7 @@ decision on PLAN-FRESH-2-007 (b)). Updated after the plan squad's rounds 1 and 2
 | II. Tokens, brand rules | The `font` rule makes "no face but Schibsted Grotesk" a merge gate for every story (research R-05). The monospace walk stays in the render test. |
 | III. Accessible | axe runs on every story in both themes, on the whole document minus Storybook's harness, so surfaces anywhere are audited, and a surface outside the story root, or a closed shadow root axe cannot enter, fails. Serious and critical violations and serious and critical incomplete results fail the gate, so rendered contrast that axe cannot decide is not passed silently; empty stories are not passes. The rule set and the harness-document rules not run are named in FR-016 and checked against axe-core's own metadata (R-08). An exception covers one node and is honoured only with its Complexity Tracking row (FR-029). Pointer states can be stories and are audited (R-15). Forced colours stay with the element tests (spec Edge Cases). |
 | IV. Strict CSP | `csp` covers the packages' built output "with no exception" again: the Storybook is not built output of a package (operator Q1 (a)), so 002's exceptions 1 and 2 close. Elements remain bound to IV through their package output; their run-time strict-CSP browser test is recorded in `gates/README.md`'s deferred table as the first element feature's (#17 or #7), and the contributor note says element packages prove it in their own browser tests (R-10). |
-| V. Storybook, baselines | Every story has two committed baselines made in a pinned container, covering the full page at scroll position (0, 0). The gate fails on a missing or stray baseline. CI's captures are the record when local and CI disagree (R-02), for the plants' baselines too: the baseline command's plant mode regenerates them and the Plants job uploads its captures in tree layout (R-11). A story per state includes pointer states, whose target must lie inside the initial viewport so a state is never silently not applied (R-15). Baselines change only in a pull request whose description says why; the contributor note says so and landing checks it. |
+| V. Storybook, baselines | Every story has two committed baselines made in a pinned container, covering the full page at scroll position (0, 0). The gate fails on a missing or stray baseline. CI's captures are the record when local and CI disagree (R-02), for the plants' baselines too: the baseline command's plant mode regenerates them and the Plants job uploads its captures in tree layout, for `pass-second-render` (`captureAlone`) captures made alone by single-story-theme requests so its freshness reference never comes from a full run (R-11). A story per state includes pointer states, whose target must lie inside the initial viewport so a state is never silently not applied (R-15). Baselines change only in a pull request whose description says why; the contributor note says so and landing checks it. |
 | VI. Own code | The gates and the capture are this repository's code. The container image and axe-core are third-party tools used in CI and development only, not shipped (plan-gate decision 1). |
 | VII. Semver | No published surface changes. |
 | VIII. Test-first, proven | Every phase starts red, each red an assertion of the missing behaviour (the pin test asserts the file exists first; the render test's red is taken from the build output). Every decision, the capture's and the in-page checks' included, is a pure module, mutation-tested; only collection and process wiring carry `Stryker disable` comments naming their integration test, and `gates/visual/` is in the mutation scope (R-12). Every gate has fail, pass and breaking plants, with controls where a pass plant alone could not fail (R-04, R-11); the plant job cannot skip or silently drop the container plants (R-07). Plants stay meaningful as the repository changes: edited repository baselines are generated from the current files, never stored, fail plants take the baselines of their pass plant, and plant roots carry the repository's exceptions with their plan files (R-11, R-16). Each capture has one status by a tested order, so a plant's exact expectation does not rest on an unwritten choice (R-05); axe is shown to audit inside open shadow roots (R-08). Each capture refusal check has its own unit test and cause (R-06). The podman behaviours are proven in a CI run of the branch before phase 3 is approved (R-02). |
@@ -183,7 +183,7 @@ gates/
 │                                                                #   engine probe and not-run, serial Storybook plants
 ├── lib/plant-repo.ts                                            # configuration set with the Storybook workspace,
 │                                                                #   storybook/node_modules link, delta `baselines`
-│                                                                #   and `exceptions`, `baselinesOf` (R-11, R-16)
+│                                                                #   and `exceptions`, `baselinesOf`, `captureAlone` (R-11, R-16)
 ├── lib/storybook-index.ts, storybook-build.ts, storybook-serve.ts   # index, build parser and CLI check, local server
 ├── lib/container.ts                                             # engine resolution (CI rule), pin and inspect parsers, run args
 ├── lib/capture-plan.ts                                          # refusal predicate, context and screenshot options,
@@ -259,7 +259,8 @@ data the gates read (baselines, pin, exceptions).
      per check, options, readiness, request and I/O classification, pointer parameter and `targetInViewport`,
      `scrollAction`, `captureStatus`), `story-checks.ts` (fonts and closed shadow roots), `storybook-serve.ts`;
    - `plant-repo.ts`: the `delta.json` `baselines` edits and the `treeProblems` refusal of tree copies of repository
-     baselines, red first; the `baselinesOf` key; the plant runner's copy of failing pass plants' captures;
+     baselines, red first; the `baselinesOf` and `captureAlone` keys; the plant runner's copy of failing pass plants' captures (captures
+     made alone for a `captureAlone` plant, never run 1's);
    - `story-page.ts` and `capture.ts` (wiring), the gate, `baselines.ts` with its plant mode (`--plant`, `--story`)
      and the integration test that regenerates one plant's baseline;
    - the `engine` plant key, `--skip-container` with the registry guard and its plant, and the engine probe with its
@@ -290,7 +291,8 @@ data the gates read (baselines, pin, exceptions).
    - the exception rows in 001's and 002's plans (FR-024);
    - `storybook/README.md` with its readme test, red first (FR-025, every item including open shadow roots, surfaces
      inside the host, pointer states and their viewport rule, element run-time CSP, CI's captures, and plant
-     baselines: the plant mode and the Plants job's artifact).
+     baselines: the plant mode and the Plants job's artifact, and that `pass-second-render`'s record is CI's captures
+     made alone).
 
 Each phase is folded after its approval (`/ocelle-run` step 4.3).
 

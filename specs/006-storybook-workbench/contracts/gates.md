@@ -76,10 +76,11 @@ and prints `baselines: wrote <n> files (<changed> changed, <removed> removed), <
 [--engine <…>]`. Materialises the plant's root with `gates/lib/plant-repo.ts` as the plant job does, then the same
 engine resolution, pin check, build and two runs, with requests holding only the plant's own stories (index entries
 whose `importPath` is a story file of the plant's `tree/`); `--story <id>` makes one single-story-theme request per
-theme for that story only. `updatePlan` over those story-themes; writes into
+theme for that story only, and is required for a plant with `captureAlone` (`pass-second-render`). `updatePlan` over those story-themes; writes into
 `gates/plants/visual/<name>/tree/storybook/baselines/` and removes stray files there; same output line. Exit 2, besides
 the gate's causes: a gate other than `visual`, no such plant, a plant with no story of its own, a plant with
-`baselinesOf` (`its baselines are those of <plant>`), a `--story` that is not one of the plant's own stories.
+`baselinesOf` (`its baselines are those of <plant>`), a `--story` that is not one of the plant's own stories, a
+`captureAlone` plant without `--story` (`<plant> is captured alone: give --story <id>`).
 
 ## `axe` (check "Accessibility")
 
@@ -115,7 +116,8 @@ Storybook build failed.
 gains the jobs `storybook-build` ("Storybook build"), `visual` ("Visual regression") and `axe` ("Accessibility"). The
 `visual` job uploads `storybook/.visual/` with `actions/upload-artifact` (pinned by SHA) when it fails. The `plants`
 job runs `pnpm run gate:plants` with `OCELLE_VISUAL_ENGINE=both`, and uploads `storybook/.visual/plants/` (the failing
-`visual` pass plants' captures in tree layout, research.md R-11) the same way when it fails; the registry check fails when that job's steps
+`visual` pass plants' captures in tree layout; for a `captureAlone` plant, captures made alone by single-story-theme
+requests, never the full run's, research.md R-11) the same way when it fails; the registry check fails when that job's steps
 contain `--skip-container` (research.md R-07). That CI compares docker with podman does not rest on the workflow text:
 the gate requires both engines whenever `CI` or `GITHUB_ACTIONS` is `true` (research.md R-06). Root `package.json`
 gains the scripts `gate:storybook-build`, `gate:visual`, `gate:axe` and `visual:update`.
