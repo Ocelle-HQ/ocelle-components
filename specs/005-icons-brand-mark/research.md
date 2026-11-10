@@ -122,7 +122,9 @@ carry those results and decisions, each marked with the finding it answers.
     imports are only its own relative files and `lit` or `lit/…`, and `dist/ocelle-icon.js` and
     `dist/ocelle-brand-mark.js` import neither `./index.js` nor each other (US1-17, FR-001, FR-002, FR-016,
     PLAN-TESTABILITY-1-008). The runtime half of US1-17 (which element an entry point defines) is tested in-process
-    (R-02) and on the fixture (R-11).
+    only (R-02): the module build is not loaded on the fixture (spec § The strict-CSP fixture), whose only test-only
+    scripts are the test host's file and US1-10's two bundles, and a page loading the browser build defines both
+    elements anyway (R-11).
   - The build configuration is covered for mutation by `test/node/vite-config.test.ts` (`elements-node`), which
     imports `vite.browser.config.ts` and asserts its library entry, format, output file name, `emptyOutDir`, the
     absence of externals and of the `development` condition, and the banner text, as
@@ -193,7 +195,8 @@ carry those results and decisions, each marked with the finding it answers.
   TypeScript (5.4.5, which the analyzer parses with), `rs-module-lexer` 2.9.0 (through
   `@custom-elements-manifest/find-dependencies` 0.0.7) with a native binding per platform as optional dependencies
   (`@xn-sakina/rml-*` 2.9.0) and a `postinstall` script, and `fsevents` 2.3.3 (optional, macOS only) with an install
-  script. Both run in the manifest gate on every CI run. The install-script policy change this needs is R-16.
+  script. The analyzer runs in the manifest gate on every CI run (`fsevents` is not installed on Linux). The
+  install-script policy change this needs is R-16 (both scripts approved by exact version).
 - **Risk**: the analyzer parses with its own TypeScript ~5.4. Nothing in the element modules needs TypeScript 6
   syntax; the phase 2 spike runs it on a scratch element written exactly as the elements will be (the real
   `define` helper, `static properties`, `declare` fields, `observedAttributes` with `aria-label`, the JSDoc tags of
@@ -398,10 +401,10 @@ carry those results and decisions, each marked with the finding it answers.
   - **Fixture suites** (`packages/elements/test/browser/*.test.ts`, a new `elements-browser` project, Node tests that
     drive Chromium through Playwright like `styles-browser`): every shared scenario body again, on strict-CSP fixture
     pages that load the built browser build, with the recorders below added to each, plus the fixture-only scenarios
-    (US1-10, US1-15, US1-17's runtime half, and the fixture halves of US1-8 and US1-14 below).
+    (US1-10, US1-15, and the fixture halves of US1-8 and US1-14 below).
     A `globalSetup` builds into a per-run temporary directory (`mkdtemp`) the browser build, the test-host bundle
-    (Vite, entry `test/fixtures/test-host.ts`, Lit bundled), the two module-build bundles for US1-10 and, for US1-17,
-    one bundle of `ocelle-icon.js` only and one of the package root, each made as a bundler host makes it. Nothing is
+    (Vite, entry `test/fixtures/test-host.ts`, Lit bundled) and the two module-build bundles for US1-10, each made as
+    a bundler host makes it; these are the only test-only scripts the spec's fixture admits. Nothing is
     built into a package's `dist/` from test setup (PLAN-FRESH-1-007): as `packages/styles/test/browser/serve.ts` does
     for 003, the setup writes into the same temporary directory `tokens.css` from the token generator's `css(source)`
     (the current source), the vendored font files from `packages/tokens`, and `base.css` copied from
@@ -419,9 +422,11 @@ carry those results and decisions, each marked with the finding it answers.
   - **Fixture-only cases**: US1-8 on the built file (`nonexistent`, `""`, `Close`, ` close`, no `name`, then a known
     name that draws, in one test, with zero console messages on the page, Lit's development-mode warning included);
     US1-14's 500-icon page with the request recorder (one shared stylesheet object and no request outside the
-    allowed list, in the same test); US1-17's runtime half (the `ocelle-icon.js` bundle page defines `ocelle-icon` and
-    not `ocelle-brand-mark`, the root bundle page defines both; these are the test-only bundles of the setup, on
-    pages of the US1-10 kind).
+    allowed list, in the same test). US1-17 has no fixture case (squad round 1 verify 1, PLAN-TESTABILITY-1-008):
+    the spec's fixture admits no bundle of a single entry point, and every fixture page loads the browser build,
+    which defines both elements, so "`ocelle-icon` defined and `ocelle-brand-mark` not" cannot be observed there. Its
+    runtime half is `entry-icon.test.ts` and `entry-root.test.ts` (in-process, R-02) and its import half the build
+    test (R-05).
   - **Fixture AX and forced colours**: the fixture harness reads the AX tree through a Playwright CDP session
     (`Accessibility.getFullAXTree`, the same filter as `axTree`) and emulates forced colours with `page.emulateMedia`.
   - The `elements` project's include gains `exclude: packages/elements/test/{node,build,browser}/**`.
@@ -556,49 +561,67 @@ carry those results and decisions, each marked with the finding it answers.
   - `readme.test.ts` checks the statements listed in the spec's documentation-test paragraph, one assertion per
     statement, on the model of 003's readme test.
 
-## R-16 Install scripts: approving `rs-module-lexer` (operator decision)
+## R-16 Install scripts: approving `rs-module-lexer` and `fsevents` (operator decision)
 
 - **Decision** (operator decision on PLAN-A11Y-SECURITY-1-005, 2026-11-10: option (c), a new option): the analyzer of
-  R-06 is kept, and the install script of `rs-module-lexer` is **approved** rather than denied. This changes the
-  repository's supply-chain policy, scoped to exactly one package at one version:
-  - `pnpm-workspace.yaml`: `allowBuilds` gains `"rs-module-lexer@2.9.0": true` beside `esbuild: false`; the policy
-    comment states the one approval and why. The version is in the key, so pnpm 12.16.1 runs the script only for
-    that exact version (its `allowBuilds` entries become `onlyBuiltDependencies` specs, and a `name@version` spec
-    matches only that version; read in pnpm 12.16.1's `createAllowBuildFunction`). A bare `rs-module-lexer: true`
-    would approve every later version.
+  R-06 is kept, and the install scripts of the two packages in its tree that have one, `rs-module-lexer` 2.9.0 and
+  `fsevents` 2.3.3, are **approved** rather than denied. The operator confirmed the scope after verify 1
+  (refute.md, Decision column): both packages, each at its one version. This changes the repository's supply-chain
+  policy, scoped to exactly those two packages at those two versions:
+  - `pnpm-workspace.yaml`: `allowBuilds` gains `"rs-module-lexer@2.9.0": true` and `"fsevents@2.3.3": true` beside
+    `esbuild: false`; the policy comment states the two approvals and why. The version is in each key, so pnpm
+    12.16.1 runs a script only for that exact version (its `allowBuilds` entries become `onlyBuiltDependencies`
+    specs, and a `name@version` spec matches only that version; read in pnpm 12.16.1's `createAllowBuildFunction`).
+    A bare `rs-module-lexer: true` or `fsevents: true` would approve every later version.
   - The `pins` gate rule (`gates/lib/pins-rules.ts` `workspaceFindings`, rule `allow-builds`): an entry set to `true`
-    is a finding unless its key is in the gate's approved list, which holds exactly `rs-module-lexer@2.9.0`. Every
-    other `true` entry (another package, `rs-module-lexer` without a version, or another version of it), a list form
+    is a finding unless its key is in the gate's approved list, which holds exactly `rs-module-lexer@2.9.0` and
+    `fsevents@2.3.3`. Every other `true` entry (another package, either package without a version, or another
+    version of either), a list form
     and `dangerouslyAllowAllBuilds` stay findings as today; `false` entries stay allowed. The list is a constant in
     gate source, so widening it is a reviewed gate change (001 R-04: "Adding an entry to `allowBuilds` needs a change
     to the pins gate, so it is reviewed as a gate change"). Tests first: `gates/test/pins-rules.test.ts` and
-    `gates/test/pins.test.ts` gain the approved entry passing and the unpinned and other-version entries failing.
+    `gates/test/pins.test.ts` gain both approved entries passing and the unpinned entry of each package and an
+    other-version entry failing.
   - Plants (`gates/plants/pins/`, `workspace` form): pass `pass-approved-build` (a matching workspace whose
-    `allowBuilds` holds `"rs-module-lexer@2.9.0": true`); fail `fail-allow-builds-unpinned-approval`
-    (`rs-module-lexer: true`; finding `allow-builds` naming `rs-module-lexer`) and `fail-allow-builds-other-version`
+    `allowBuilds` holds `"rs-module-lexer@2.9.0": true` and `"fsevents@2.3.3": true`); fail
+    `fail-allow-builds-unpinned-approval` (`rs-module-lexer: true`; finding `allow-builds` naming `rs-module-lexer`),
+    `fail-allow-builds-unpinned-fsevents` (`fsevents: true`; finding `allow-builds` naming `fsevents`, so a gate that
+    matched the second key by name alone fails a plant) and `fail-allow-builds-other-version`
     (`"rs-module-lexer@2.9.1": true`); the existing `fail-allow-builds-entry` (`esbuild: true`) stays. The `pins` row of
-    `gates/README.md` names the approval.
+    `gates/README.md` names both approvals and their residual risks.
   - The 001 record: an amendment note is added to `specs/001-repository-foundation/research.md` R-04 (dated, citing
     this entry and the operator decision), stating that the allow-list is no longer empty but holds exactly
-    `rs-module-lexer@2.9.0`, which supersedes R-04's "no dependency runs one" and FR-027's "empty allow-list" for that
-    one entry; the rest of the policy (release age, no other install script, the gate change rule) is unchanged.
-  - `fsevents` 2.3.3 is **not** approved and gets no entry: it is already in the lockfile today through the existing
-    tooling, has `os: ["darwin"]` so pnpm never installs it on Linux (this container, CI), the analyzer does not need
-    it (it serves file watching, which the gate does not use), and the operator approved it only "if needed".
-- **What the approved script does** (read from the published `rs-module-lexer@2.9.0` `postinstall.js`): it loads the
+    `rs-module-lexer@2.9.0` and `fsevents@2.3.3`, which supersedes R-04's "no dependency runs one" and FR-027's "empty
+    allow-list" for those two entries; the rest of the policy (release age, no other install script, the gate change
+    rule) is unchanged.
+- **What the `rs-module-lexer` script does** (read from the published `rs-module-lexer@2.9.0` `postinstall.js`): it loads the
   native binding of the platform (`@xn-sakina/rml-<platform>` 2.9.0, an optional dependency that pnpm installs from the
   lockfile) and, if that loads, exits doing nothing. Only when no binding loads and no wasm package is present does
   it run `npm install --no-save … @xn-sakina/rml-wasm@2.9.0` from the network, outside the lockfile and the
   release-age policy. Linux x64 and arm64 (glibc and musl), macOS and Windows have bindings, so the fallback is
   unreachable on the platforms this repository runs on. Residual risk, recorded in the README's `pins` row: on a
   platform without a binding the script would fetch outside the lockfile.
+- **What the `fsevents` script does** (`npm view fsevents@2.3.3 scripts gypfile os`: `install: node-gyp rebuild`,
+  `gypfile: true`, `os: darwin`): it compiles fsevents' native macOS file-watching addon with node-gyp. The package is
+  already in the lockfile today, as an optional dependency of Vite 8.3.5 (`vite@8.3.5` `optionalDependencies`), and
+  is in the analyzer's tree as well; its `os: ["darwin"]` means pnpm installs it, and so runs the script, only on
+  macOS. On Linux (this container and CI) it is never installed and the script never runs. The approval therefore
+  also changes existing macOS installs: today pnpm skips fsevents' build there; with the approval it compiles it,
+  which needs a C/C++ toolchain, and node-gyp fetches Node's headers from nodejs.org unless they are cached, a
+  download outside the lockfile and the release-age policy. Residual risk, recorded in the README's `pins` row
+  beside the `rs-module-lexer` one: on macOS an install runs a native compile and may fetch Node headers.
 - **Verification** (phase 1 setup and the phase 2 spike): after `pnpm install` with the approval, the binding loads
   and the script made no `npm install` (no `npm-install` directory left and no `@xn-sakina/rml-wasm` in
-  `node_modules`), in this container (Node 22.23.4) and on CI's Node 26.13.0; `pnpm run setup:offline` still succeeds
-  with no network; `gate:pins` passes on the repository.
+  `node_modules`), in this container (Node 22.23.4) and on CI's Node 26.13.0; `fsevents` is absent from
+  `node_modules` there (Linux, so its script cannot run); `pnpm run setup:offline` still succeeds with no network;
+  `gate:pins` passes on the repository. The `fsevents` script itself runs only on macOS, where this repository has no
+  runner, so its run is not verified by these checks; the approval rests on the published script read above and is
+  recorded as unverified in the README's `pins` row.
 - **Constitution**: no principle or constitution rule is touched. The constitution requires exact pins and a committed
-  lockfile, which hold (the approval is version-exact); the empty install-script allow-list is 001's policy (FR-027,
-  R-04, an operator decision at 001's plan squad), which the operator now amends for one entry.
+  lockfile, which hold (each approval is version-exact); the empty install-script allow-list is 001's policy (FR-027,
+  R-04, an operator decision at 001's plan squad), which the operator now amends for two entries.
 - **Alternatives**: (a) deny the scripts (`rs-module-lexer: false`, `fsevents: false`) and require the analyzer to
   work without them; (b) our own generator on the TypeScript 6 compiler API (no new tree, more code to
-  mutation-test); an unversioned approval. Not chosen by the operator / rejected (unversioned).
+  mutation-test); an unversioned approval; approving `rs-module-lexer` alone and leaving `fsevents` without an entry
+  (the verify-1 state, which rested on an "if needed" scope no record holds). Not chosen by the operator / rejected
+  (unversioned; the operator's confirmed scope names both).

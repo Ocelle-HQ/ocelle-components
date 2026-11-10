@@ -17,7 +17,7 @@ bundler). On those conventions it ships `ocelle-icon` with thirteen own-drawn ic
 proven on a test host (sizes enforced by `!important` `::slotted()` rules, which the page cannot undo), and
 `ocelle-brand-mark`, the rosette on main grounds, on the chrome and in one colour. The new `manifest` gate, three
 exact-value `token-only` allowances (`scale: -1`/`1`, `aspect-ratio: 1`, `1lh`), element-only Stryker routing, thirteen
-contrast rows, a version-exact install-script approval for the analyzer's `rs-module-lexer` and the records (README,
+contrast rows, version-exact install-script approvals for `rs-module-lexer` and `fsevents` and the records (README,
 CHANGELOG, NOTICE, Lit notice and banner) complete it. Plan squad round 1 changed the design in the places its
 findings named (`reviews/plan/round-1/fixes-1.md`). Every decision is in [research.md](research.md); the surface is in
 [contracts/elements-package.md](contracts/elements-package.md) and the checks in [contracts/checks.md](contracts/checks.md).
@@ -27,8 +27,8 @@ findings named (`reviews/plan/round-1/fixes-1.md`). Every decision is in [resear
 **Language/Version**: TypeScript 6.0.3 (strict, `erasableSyntaxOnly`), Node 26.13.0 in CI (22.23.4 in this container).
 
 **Primary Dependencies**: `lit` 3.3.3 (runtime, exact; R-01). Dev: `@custom-elements-manifest/analyzer` 0.11.0, a
-root devDependency like every gate tool (R-06; its tree brings `rs-module-lexer` 2.9.0, whose install script is
-approved by exact version, R-16); already pinned: Vite 8.3.5 (browser build, test bundles; R-05), Vitest 5.0.5 with `@vitest/browser-playwright`,
+root devDependency like every gate tool (R-06; its tree brings `rs-module-lexer` 2.9.0 and `fsevents` 2.3.3, whose
+install scripts are approved by exact version, R-16); already pinned: Vite 8.3.5 (browser build, test bundles; R-05), Vitest 5.0.5 with `@vitest/browser-playwright`,
 Playwright 1.64.1, Stryker 10.1.1, Stylelint 17.16.0 with `postcss-lit`, Storybook 10.6.5 (`@storybook/html-vite`).
 
 **Storage**: N/A.
@@ -69,7 +69,7 @@ exceptions in Complexity Tracking.*
 | VI. Consumer-driven, own code | Needs from spec-kitty-design #496 and #504, kitty-mission-ui's Projects and Artifact Viewer screens, #7, #12 to #16. Drawings are our own (operator decision); the mark is Ocelle's own reference, redrawn onto tokens. Nothing copied from Spec Kitty. |
 | VII. Semver | All additions (MINOR): two elements, thirteen icon names, entry points, the browser build's file path in the tarball (`dist/browser/ocelle-elements.js`, which hosts without a bundler serve by path), the manifest. The `@ocelle/elements` CHANGELOG names them (FR-031). |
 | VIII. Test-first, non-vacuous | Each phase starts red; "does not" outcomes are paired with positive ones and each pairing has a named plant (spec table). Element source is mutation-tested under the elements-only Stryker config (measured working, R-12); Stryker runs the in-process tests only, so every scenario body is shared by the in-process and the fixture harness (R-11). The drawing data is plain data checked against an independent expected table, never `as const` (R-07); `define`'s guard and each entry point's registrations have in-process tests (R-02); the Vite config and the manifest script have in-process node tests (R-05, R-12). The mirroring "equal" rule is a count rule measured before the red step (R-08). New gate code (`manifest.ts`, the mutation split, the lint changes, the pins rule, the plant-repo set) is mutation-tested with its unit tests, and the gates have fail, pass and breaking plants, including element-source survivor, NoCoverage and mixed plants for the split (R-12). Documentation-only items take the exemption with the reason stated. |
-| Licence and supply chain | Lit (BSD-3-Clause) is bundled into the browser build: entry in `THIRD_PARTY_NOTICES` with the licence text beside it (operator decision SPEC-2-02), and a licence banner at the top of the file that the build test asserts (operator decision, PLAN-A11Y-SECURITY-1-008, R-05). New pins exact, release age respected. **Install scripts** (operator decision, PLAN-A11Y-SECURITY-1-005 (c), R-16): the analyzer's tree holds `rs-module-lexer` 2.9.0 with a `postinstall`; it is approved by exact version (`allowBuilds: "rs-module-lexer@2.9.0": true`), the `pins` gate admits exactly that entry and still rejects any other `true` entry, with plants, and 001's R-04 record gets an amendment note; `fsevents` is not approved (macOS only, not needed). This touches no constitution rule: the constitution requires exact pins and a committed lockfile, which still hold; the empty allow-list was 001's policy (FR-027, R-04), which the operator amends for this one entry. So it needs no Complexity Tracking row. `NOTICE` added with the trademark note. |
+| Licence and supply chain | Lit (BSD-3-Clause) is bundled into the browser build: entry in `THIRD_PARTY_NOTICES` with the licence text beside it (operator decision SPEC-2-02), and a licence banner at the top of the file that the build test asserts (operator decision, PLAN-A11Y-SECURITY-1-008, R-05). New pins exact, release age respected. **Install scripts** (operator decision, PLAN-A11Y-SECURITY-1-005 (c), scope confirmed after verify 1, R-16): the analyzer's tree holds `rs-module-lexer` 2.9.0 with a `postinstall` and `fsevents` 2.3.3 (macOS only, also Vite's optional dependency) with `install: node-gyp rebuild`; both are approved by exact version (`allowBuilds: "rs-module-lexer@2.9.0": true, "fsevents@2.3.3": true`), the `pins` gate admits exactly those two entries and still rejects any other `true` entry, with plants, and 001's R-04 record gets an amendment note; the residual risks (a fetch outside the lockfile on a platform without a lexer binding; a native compile that may fetch Node headers on macOS, unverified here for lack of a macOS runner) are in the README's `pins` row. This touches no constitution rule: the constitution requires exact pins and a committed lockfile, which still hold; the empty allow-list was 001's policy (FR-027, R-04), which the operator amends for these two entries. So it needs no Complexity Tracking row. `NOTICE` added with the trademark note. |
 | Workflow gates | One gate added (`manifest`), which the constitution already lists; registry, CI job, README row and plants follow 001's contract. The "Custom-elements manifest" check blocks merges only once the operator adds it to the ruleset on `main` (operator ruleset change, as 002's contrast and brand-rules checks); `gates/README.md` § Required checks and the `gates/lib/registry.ts` comment go from fourteen to fifteen checks (R-06). |
 
 ## Decisions the operator should see at the plan gate
@@ -84,12 +84,13 @@ Items marked "decided" were operator fork decisions at plan squad round 1 (`revi
    and each property `@default` JSDoc tags, which the manifest needs (R-02, R-06).
 3. **Manifest generator** (R-06): `@custom-elements-manifest/analyzer` 0.11.0, a root devDependency, plus our
    normalising script; the gate compares against a regeneration. The analyzer parses with its own TypeScript 5.4.5
-   and brings 82 packages, a native `rs-module-lexer` among them.
-4. **Install-script approval** (decided, PLAN-A11Y-SECURITY-1-005 (c); R-16): `rs-module-lexer@2.9.0` may run its
-   `postinstall` (which only checks its native binding on the platforms this repository runs on). This changes the
-   supply-chain policy for exactly that package and version: `pnpm-workspace.yaml` `allowBuilds`, the `pins` gate's
-   `allow-builds` rule (an approved list of one), its plants, and an amendment note in 001's R-04. `fsevents` is not
-   approved. No constitution rule is touched.
+   and brings 82 packages, a native `rs-module-lexer` and `fsevents` among them.
+4. **Install-script approval** (decided, PLAN-A11Y-SECURITY-1-005 (c), scope confirmed after verify 1 as both
+   packages; R-16): `rs-module-lexer@2.9.0` may run its `postinstall` (which only checks its native binding on the
+   platforms this repository runs on) and `fsevents@2.3.3` its `install` (`node-gyp rebuild`, run only on macOS,
+   where pnpm installs it). This changes the supply-chain policy for exactly those packages and versions:
+   `pnpm-workspace.yaml` `allowBuilds`, the `pins` gate's `allow-builds` rule (an approved list of two), its plants,
+   and an amendment note in 001's R-04. No constitution rule is touched.
 5. **Slot convention mechanism** (decided, PLAN-CORRECTNESS-1-004 (a); R-10): `!important` in the control's
    `::slotted()` rules, so a slotted icon's size cannot be changed by the page except through `--ocelle-icon-size`
    (measured); first-line centring by a wrapper of `block-size: 1lh` with the icon centred in it (no strut, so no
@@ -190,15 +191,16 @@ changes in `gates/` and the root configs, as 001 to 003 did.
      `test/browser/**`, and `elements`, `elements-build` and `elements-browser` in the default mutation config's
      exclusions; then `vitest.config.ts` and `vitest.mutation.config.ts` (R-11, R-12);
    - not exempt: the install-script approval (R-16), tests first: `gates/test/pins-rules.test.ts` and
-     `gates/test/pins.test.ts` (the approved entry passes; `rs-module-lexer: true`, another version and other `true`
-     entries fail), then `gates/lib/pins-rules.ts`, the three pins plants, `pnpm-workspace.yaml`'s entry and comment,
-     the `gates/README.md` pins row, and the amendment note in `specs/001-repository-foundation/research.md` R-04;
+     `gates/test/pins.test.ts` (the two approved entries pass; `rs-module-lexer: true`, `fsevents: true`, another
+     version and other `true` entries fail), then `gates/lib/pins-rules.ts`, the four pins plants,
+     `pnpm-workspace.yaml`'s entries and comment, the `gates/README.md` pins row, and the amendment note in
+     `specs/001-repository-foundation/research.md` R-04;
    - not exempt: the plant-repository change (R-12), tests first: `gates/test/plant-repo.test.ts` and the
      gates-integration plant-repo test (the two elements configs in the set and in `configurationName`, the element
      files in the set, each package's `node_modules` linked), then `gates/lib/plant-repo.ts`;
    - exempt: the `lit` pin in `packages/elements/package.json`, the analyzer pin in the root `package.json`, and the
      lockfile, checked by `gate:pins`; then the verification of R-16 (binding loads, no `npm install` by the script,
-     `setup:offline` succeeds) in this container, recorded in `reviews/phase-1/`; `.gitignore` for packed copies.
+     `fsevents` absent, `setup:offline` succeeds) in this container, recorded in `reviews/phase-1/`; `.gitignore` for packed copies.
 2. **US1 Conventions and `ocelle-icon`** (P1):
    - **spike** (recorded in `reviews/phase-2/spike.md`): the analyzer on a scratch element written exactly as the
      elements will be (the real `define` helper, `static properties`, `declare` fields, `observedAttributes` with
@@ -216,8 +218,8 @@ changes in `gates/` and the root configs, as 001 to 003 did.
    - the module and browser builds (`vite.browser.config.ts` with the banner, `build` script),
      `test/node/vite-config.test.ts`, and `test/build/build.test.ts` (US1-17's import rules, FR-001, FR-002, FR-016,
      FR-029's banner);
-   - fixture-only tests for US1 scenarios 10 and 15, US1-17's runtime half, US1-8's console check on the built file
-     and US1-14's request half, with their pairing plants;
+   - fixture-only tests for US1 scenarios 10 and 15, US1-8's console check on the built file and US1-14's request
+     half, with their pairing plants (US1-17 has no fixture case: its runtime half is the in-process entry tests, R-11);
    - the manifest: `scripts/manifest.ts` with `test/node/manifest.test.ts`, the committed manifest, and the
      `manifest` gate with unit tests, its plants, the gates-integration expectation that `pass-repository` exits 0 in
      a built plant tree, registry, CI job, README row and the fourteen-to-fifteen change (US1-11, US1-12);
