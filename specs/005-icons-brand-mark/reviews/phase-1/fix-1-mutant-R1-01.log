@@ -1,0 +1,39 @@
+
+ RUN  v5.0.5 /home/user/ocelle-components
+
+ ❯ |gates-integration| gates/test/integration/plant-repo.test.ts (20 tests | 1 failed) 639ms
+   ❯ the configuration set of a repository root without some node_modules or entries (005 research.md R-12) (6)
+     × links the node_modules of a package that has its own, and none for a package without 39ms
+
+⎯⎯⎯⎯⎯⎯⎯ Failed Tests 1 ⎯⎯⎯⎯⎯⎯⎯
+
+ FAIL  |gates-integration| gates/test/integration/plant-repo.test.ts > the configuration set of a repository root without some node_modules or entries (005 research.md R-12) > links the node_modules of a package that has its own, and none for a package without
+AssertionError: expected { …(3) } to deeply equal { …(3) }
+
+- Expected
++ Received
+
+  {
+-   "packages/elements/node_modules": false,
++   "packages/elements/node_modules": "/tmp/ocelle-source-root-nPRspu/packages/elements/node_modules",
+    "packages/styles/node_modules": "/tmp/ocelle-source-root-nPRspu/packages/styles/node_modules",
+-   "packages/tokens/node_modules": false,
++   "packages/tokens/node_modules": "/tmp/ocelle-source-root-nPRspu/packages/tokens/node_modules",
+  }
+
+ ❯ gates/test/integration/plant-repo.test.ts:288:32
+    286|     const tree = tempDir("repo-tree");
+    287|     await buildRepoTree(root, join(fixtures, "empty-plant"), tree);
+    288|     expect(packageLinks(tree)).toEqual(expected);
+       |                                ^
+    289|     expect(readlinkSync(join(tree, "node_modules"))).toBe(join(root, "…
+    290|     const mutation = tempDir("mutation-repo");
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[1/1]⎯
+
+
+ Test Files  1 failed (1)
+      Tests  1 failed | 19 passed (20)
+   Start at  11:26:13
+   Duration  867ms (tests 85%, transform 11%, import 3%)
+

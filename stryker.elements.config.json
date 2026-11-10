@@ -1,7 +1,7 @@
 {
   "$schema": "./node_modules/@stryker-mutator/core/schema/stryker-schema.json",
   "testRunner": "vitest",
-  "vitest": { "configFile": "vitest.mutation.config.ts", "related": false },
+  "vitest": { "configFile": "vitest.mutation.elements.config.ts", "related": false },
   "checkers": ["typescript"],
   "tsconfigFile": "tsconfig.json",
   "coverageAnalysis": "perTest",
@@ -9,7 +9,7 @@
   "incremental": false,
   "mutate": [],
   "reporters": ["json", "clear-text"],
-  "jsonReporter": { "fileName": "reports/mutation/mutation.json" },
+  "jsonReporter": { "fileName": "reports/mutation/mutation-elements.json" },
   "thresholds": { "high": 100, "low": 100, "break": 100 },
   "plugins": ["@stryker-mutator/vitest-runner", "@stryker-mutator/typescript-checker"]
 }

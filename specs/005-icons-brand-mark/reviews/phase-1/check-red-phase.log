@@ -1,0 +1,64 @@
+Scope: all 5 workspace projects
+✓ Lockfile passes supply-chain policies (verified 3h ago)
+Lockfile is up to date, resolution step is skipped
+Packages are hard linked from the content-addressable store to the virtual store.
+  Content-addressable store is at: /root/.local/share/pnpm/store/v11
+  Virtual store is at:             node_modules/.pnpm
+Packages: +469
+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+Progress: resolved 469, reused 469, downloaded 0, added 469, done
+
+devDependencies:
++ @eslint/js 10.0.1
++ @stryker-mutator/core 10.1.1
++ @stryker-mutator/typescript-checker 10.1.1
++ @stryker-mutator/vitest-runner 10.1.1
++ @types/node 26.6.5
++ @vitest/browser-playwright 5.0.5
++ @vitest/eslint-plugin 1.6.28
++ eslint 10.13.0
++ jiti 2.7.0
++ parse5 8.0.1
++ playwright 1.64.1
++ postcss 8.5.31
++ postcss-lit 1.4.1
++ postcss-selector-parser 7.1.7
++ postcss-value-parser 4.2.0
++ stylelint 17.16.0
++ typescript 6.0.3
++ typescript-eslint 8.72.0
++ vite 8.3.5
++ vitest 5.0.5
+
+Done in 170ms using pnpm v12.16.1
+$ node gates/bin/setup-offline.ts
+setup: installed offline; Chromium at /opt/pw-browsers/chromium-1243/chrome-linux64/chrome
+$ node gates/bin/test.ts
+gates/test/integration/plant-repo.test.ts:90: unit-tests: buildRepoTree copies the configuration set unchanged, lays tree/ over it at repository paths, and links node_modules: AssertionError: expected { 'package.json': true, …(26) } to deeply equal { 'package.json': true, …(26) }
+gates/test/integration/plant-repo.test.ts:114: unit-tests: buildRepoTree builds the configuration set alone for a plant without tree/: AssertionError: expected { 'package.json': true, …(26) } to deeply equal { 'package.json': true, …(26) }
+gates/test/integration/plant-repo.test.ts:230: unit-tests: buildMutationRepo commits the configuration set with base/, then head/ (files only in base/ deleted), node_modules linked and untracked: AssertionError: expected [ 'eslint.config.ts', …(26) ] to deeply equal ArrayContaining{…}
+gates/test/integration/vitest-mutation-config.test.ts:27: unit-tests: vitest.mutation.config.ts holds every project of vitest.config.ts except gates-integration, tokens-browser, styles-browser, storybook-integration, elements, elements-build and elements-browser: AssertionError: expected [ 'tokens', 'tokens-browser', …(7) ] to deeply equal [ 'tokens', 'tokens-browser', …(10) ]
+gates/test/pins-rules.test.ts:131: unit-tests: workspaceFindings accepts exactly the approved builds rs-module-lexer@2.9.0 and fsevents@2.3.3 set to true, beside false entries: AssertionError: expected [ { …(4) }, { …(4) } ] to deeply equal []
+gates/test/pins-rules.test.ts:138: unit-tests: workspaceFindings names the allowBuilds entry "rs-module-lexer" set to true beside the approved ones: AssertionError: expected [ { …(4) }, { …(4) }, { …(4) } ] to deeply equal [ { …(4) } ]
+gates/test/pins-rules.test.ts:138: unit-tests: workspaceFindings names the allowBuilds entry "fsevents" set to true beside the approved ones: AssertionError: expected [ { …(4) }, { …(4) }, { …(4) } ] to deeply equal [ { …(4) } ]
+gates/test/pins-rules.test.ts:138: unit-tests: workspaceFindings names the allowBuilds entry "rs-module-lexer@2.9.1" set to true beside the approved ones: AssertionError: expected [ { …(4) }, { …(4) }, { …(4) } ] to deeply equal [ { …(4) } ]
+gates/test/pins-rules.test.ts:138: unit-tests: workspaceFindings names the allowBuilds entry "fsevents@2.3.2" set to true beside the approved ones: AssertionError: expected [ { …(4) }, { …(4) }, { …(4) } ] to deeply equal [ { …(4) } ]
+gates/test/pins-rules.test.ts:138: unit-tests: workspaceFindings names the allowBuilds entry "rs-module-lexer@2.9.0 " set to true beside the approved ones: AssertionError: expected [ { …(4) }, { …(4) }, { …(4) } ] to deeply equal [ { …(4) } ]
+gates/test/pins-rules.test.ts:138: unit-tests: workspaceFindings names the allowBuilds entry "@xn-sakina/rml-wasm@2.9.0" set to true beside the approved ones: AssertionError: expected [ { …(4) }, { …(4) }, { …(4) } ] to deeply equal [ { …(4) } ]
+gates/test/pins-rules.test.ts:138: unit-tests: workspaceFindings names the allowBuilds entry "rs-module-lexer@2.9" set to true beside the approved ones: AssertionError: expected [ { …(4) }, { …(4) }, { …(4) } ] to deeply equal [ { …(4) } ]
+gates/test/pins-rules.test.ts:138: unit-tests: workspaceFindings names the allowBuilds entry "fsevents@2.3.3.0" set to true beside the approved ones: AssertionError: expected [ { …(4) }, { …(4) }, { …(4) } ] to deeply equal [ { …(4) } ]
+gates/test/pins.test.ts:105: unit-tests: checkFiles reports rs-module-lexer without its version (00…: AssertionError: expected { findings: [ { …(4) }, { …(4) } ] } to deeply equal { findings: [ { …(4) } ] }
+gates/test/pins.test.ts:105: unit-tests: checkFiles reports fsevents without its version (005 R-16): AssertionError: expected { findings: [ { …(4) }, { …(4) } ] } to deeply equal { findings: [ { …(4) } ] }
+gates/test/pins.test.ts:105: unit-tests: checkFiles reports rs-module-lexer at another version (005…: AssertionError: expected { findings: [ { …(4) }, { …(4) } ] } to deeply equal { findings: [ { …(4) } ] }
+gates/test/pins.test.ts:119: unit-tests: checkFiles accepts the approved builds rs-module-lexer@2.9… (only the control manifest's range): AssertionError: expected { findings: [ { …(4) }, …(2) ] } to deeply equal { findings: [ { …(4) } ] }
+gates/test/plant-repo.test.ts:7: unit-tests: configurationSet lists the root configuration, each package's manifest and tsconfig, the modules the configurations import, and the token source, its overrides, the generator and the pair list (002 contracts/gates.md § Configuration set): AssertionError: expected [ 'package.json', …(19) ] to deeply equal [ 'package.json', …(25) ]
+gates/test/plant-repo.test.ts:40: unit-tests: configurationSet lets only the manifest script, its configuration and the manifest be absent from the repository: AssertionError: expected [] to deeply equal [ …(3) ]
+gates/test/plant-repo.test.ts:54: unit-tests: nodeModulesLinks links the root node_modules and each package's own: AssertionError: expected [] to deeply equal [ 'node_modules', …(2) ]
+gates/test/plant-repo.test.ts:61: unit-tests: carriesConfiguration names every gate configuration file a plant holds, anywhere in it: AssertionError: expected [ 'base/.stylelintrc', …(12) ] to deeply equal [ 'base/.stylelintrc', …(14) ]
+gates/test/vitest-config.test.ts:49: unit-tests: vitest.mutation.config.ts excludes exactly tokens-browser, styles-browser, elements, elements-build, elements-browser, storybook-integration and gates-integration from the projects of vitest.config.ts: AssertionError: expected [ 'tokens-browser', …(3) ] to deeply equal [ 'tokens-browser', …(6) ]
+gates/test/vitest-config.test.ts:57: unit-tests: vitest.mutation.elements.config.ts and stryker.elements.config.json (005 research.md R-12) holds exactly the elements project of vitest.config.ts: AssertionError: expected [] to deeply equal [ { name: 'elements', …(3) } ]
+gates/test/vitest-config.test.ts:62: unit-tests: vitest.mutation.elements.config.ts and stryker.elements.config.json (005 research.md R-12) is stryker.config.json with its own Vitest config and its own report file: AssertionError: expected { …(13) } to deeply equal { …(13) }
+gates/test/vitest-config.test.ts:95: unit-tests: the Vitest projects put an element node, build or fixture test in its own node project only, and any other element test in elements only: AssertionError: expected [ 'elements' ] to deeply equal [ 'elements-node' ]
+gates/test/vitest-config.test.ts:105: unit-tests: the Vitest projects run elements-node, elements-build and elements-browser in node, on exactly their own directory: AssertionError: expected [ undefined, undefined, undefined ] to deeply equal [ …(3) ]
+unit-tests: 26 of 2057 tests failed
+[ELIFECYCLE] Test failed. See above for more details.

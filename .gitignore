@@ -5,6 +5,10 @@
 # Dependencies and generated output (root paths only; plants may track dist/)
 node_modules/
 packages/*/dist/
+# The elements package's packed copies of the root LICENSE, NOTICE and THIRD_PARTY_NOTICES (005 research.md R-15)
+packages/elements/LICENSE
+packages/elements/NOTICE
+packages/elements/THIRD_PARTY_NOTICES
 storybook/dist/
 storybook/.generated/
 .stryker-tmp/

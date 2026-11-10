@@ -1,5 +1,5 @@
 import { execFileSync } from "node:child_process";
-import { existsSync, lstatSync, readFileSync, readlinkSync } from "node:fs";
+import { cpSync, existsSync, lstatSync, mkdirSync, readFileSync, readlinkSync, rmSync, symlinkSync } from "node:fs";
 import { join } from "node:path";
 import { afterEach, describe, expect, it } from "vitest";
 import { buildCommitRepo, buildMutationRepo, buildRepoTree } from "../../lib/plant-repo.ts";
@@ -82,6 +82,34 @@ function copiedUnchanged(dir: string): Record<string, boolean> {
 }
 
 const allTrue = Object.fromEntries(configuration.map((file) => [file, true]));
+
+/**
+ * A repository root built from this repository's configuration set, independent of its install state (005 research.md
+ * R-12): the root node_modules linked, packages/styles with a node_modules directory of its own, packages/tokens and
+ * packages/elements with none, and the named configuration-set entries left out.
+ */
+function sourceRoot(without: readonly string[] = []): string {
+  const root = tempDir("source-root");
+  const entries = [...configuration.filter((file) => file !== "packages/elements/src/index.ts"), "packages/elements/src", "gates/eslint", "gates/stylelint"];
+  for (const entry of entries.filter((path) => !without.includes(path))) cpSync(join(repo, entry), join(root, entry), { recursive: true });
+  for (const file of mayBeAbsent.filter((path) => existsSync(join(repo, path)))) cpSync(join(repo, file), join(root, file));
+  symlinkSync(join(repo, "node_modules"), join(root, "node_modules"), "dir");
+  mkdirSync(join(root, "packages/styles/node_modules"));
+  return root;
+}
+
+/** For each package directory of sourceRoot(): its node_modules link in the temporary repository, or false for none. */
+function packageLinks(dir: string): Record<string, string | false> {
+  return Object.fromEntries(
+    ["packages/tokens", "packages/styles", "packages/elements"].map((pkg) => {
+      const path = `${pkg}/node_modules`;
+      return [path, lstatSync(join(dir, path), { throwIfNoEntry: false }) === undefined ? false : readlinkSync(join(dir, path))];
+    }),
+  );
+}
+
+/** The configuration-set entries none of the builders may skip when a repository lacks them (005 research.md R-12). */
+const required = ["stryker.elements.config.json", "vitest.mutation.elements.config.ts", "packages/elements/src", "packages/tokens/src/source.ts"];
 const timeout = 60_000;
 
 afterEach(cleanUp);
@@ -249,4 +277,33 @@ describe("buildMutationRepo", () => {
     },
     timeout,
   );
+});
+
+describe("the configuration set of a repository root without some node_modules or entries (005 research.md R-12)", () => {
+  it("links the node_modules of a package that has its own, and none for a package without", async () => {
+    const root = sourceRoot();
+    const expected = { "packages/tokens/node_modules": false, "packages/styles/node_modules": join(root, "packages/styles/node_modules"), "packages/elements/node_modules": false };
+    const tree = tempDir("repo-tree");
+    await buildRepoTree(root, join(fixtures, "empty-plant"), tree);
+    expect(packageLinks(tree)).toEqual(expected);
+    expect(readlinkSync(join(tree, "node_modules"))).toBe(join(root, "node_modules"));
+    const mutation = tempDir("mutation-repo");
+    await buildMutationRepo(root, join(fixtures, "mutation-plant"), mutation);
+    expect(packageLinks(mutation)).toEqual(expected);
+  }, timeout);
+
+  it.each(required)("rejects building from a repository root without %s, naming it", async (entry) => {
+    const root = sourceRoot([entry]);
+    await expect(buildRepoTree(root, join(fixtures, "empty-plant"), tempDir("repo-tree"))).rejects.toThrow(join(root, entry));
+    await expect(buildMutationRepo(root, join(fixtures, "mutation-plant"), tempDir("mutation-repo"))).rejects.toThrow(join(root, entry));
+  }, timeout);
+
+  it("builds from a repository root without the element files that may be absent, leaving them out", async () => {
+    const root = sourceRoot();
+    for (const file of mayBeAbsent) rmSync(join(root, file), { force: true });
+    const tree = tempDir("repo-tree");
+    await buildRepoTree(root, join(fixtures, "empty-plant"), tree);
+    expect(Object.fromEntries(mayBeAbsent.map((file) => [file, existsSync(join(tree, file))]))).toEqual(Object.fromEntries(mayBeAbsent.map((file) => [file, false])));
+    expect(existsSync(join(tree, "stryker.elements.config.json"))).toBe(true);
+  }, timeout);
 });
