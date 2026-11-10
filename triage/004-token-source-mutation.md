@@ -7,7 +7,9 @@ in_scope: [20]
 out_of_scope: [1, 5, 6, 10, 11]
 semver: none
 spec_prompt: "Op 004 for #20 (triage/004-token-source-mutation.md): drop `as const` from the token records and ground lists in packages/tokens/src/source.ts so Stryker generates their value mutants, keep `TokenName` a literal union with no hand-kept duplicate name list (the index.test.ts @ts-expect-error and the built .d.ts must still hold), run the mutation gate over the whole of source.ts (not only the changed lines) in 60-line entries within the 10-minute shard limit with every mutant killed or recorded as equivalent and every timeout explained, keep the stylesheet, JSON export and token names byte-identical, and correct the phase 2 claim (specs/002-design-tokens/reviews/phase-2/round-1.md:39, data-model.md:125) as operator decision R1-03 requires; no new token, no gate change."
-status: proposed
+status: approved
+decided_by: "human:jeroennouwsdev"
+decided_at: 2026-11-10T00:11:28Z
 ---
 
 # Triage 004: Make the token source mutation-testable (#20)
