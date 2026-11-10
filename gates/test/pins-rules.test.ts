@@ -126,6 +126,31 @@ describe("workspaceFindings", () => {
     expect([workspaceFindings({ ...policy, allowBuilds: null }), workspaceFindings({ ...policy, allowBuilds: "esbuild" })]).toEqual([[], []]);
   });
 
+  // 005 research.md R-16 (operator decision 2026-11-10): exactly rs-module-lexer@2.9.0 and fsevents@2.3.3 may be true;
+  // either package without its version, at another version, any other package, and a list entry stay findings.
+  it("accepts exactly the approved builds rs-module-lexer@2.9.0 and fsevents@2.3.3 set to true, beside false entries", () => {
+    expect(workspaceFindings({ ...policy, allowBuilds: { "rs-module-lexer@2.9.0": true, "fsevents@2.3.3": true, esbuild: false } })).toEqual([]);
+    expect(workspaceFindings({ ...policy, allowBuilds: { "rs-module-lexer@2.9.0": true, esbuild: true } })).toEqual([
+      at("allow-builds", "allowBuilds lets esbuild run install scripts; remove the entry"),
+    ]);
+  });
+
+  it.each(["rs-module-lexer", "fsevents", "rs-module-lexer@2.9.1", "fsevents@2.3.2", "rs-module-lexer@2.9.0 ", "@xn-sakina/rml-wasm@2.9.0", "rs-module-lexer@2.9", "fsevents@2.3.3.0"])(
+    "names the allowBuilds entry %j set to true beside the approved ones",
+    (name) => {
+      expect(workspaceFindings({ ...policy, allowBuilds: { "rs-module-lexer@2.9.0": true, [name]: true, "fsevents@2.3.3": true } })).toEqual([
+        at("allow-builds", `allowBuilds lets ${name} run install scripts; remove the entry`),
+      ]);
+    },
+  );
+
+  it("names an approved build in the list form, which approves no build", () => {
+    expect(workspaceFindings({ ...policy, allowBuilds: ["rs-module-lexer@2.9.0", "fsevents@2.3.3"] })).toEqual([
+      at("allow-builds", "allowBuilds lets rs-module-lexer@2.9.0 run install scripts; remove the entry"),
+      at("allow-builds", "allowBuilds lets fsevents@2.3.3 run install scripts; remove the entry"),
+    ]);
+  });
+
   it("reports dangerouslyAllowAllBuilds set to anything", () => {
     expect(workspaceFindings({ ...policy, dangerouslyAllowAllBuilds: false })).toEqual([at("allow-builds", "dangerouslyAllowAllBuilds is set; remove it")]);
   });

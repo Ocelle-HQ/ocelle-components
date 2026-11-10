@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { applyPairChanges, carriesConfiguration, checkWrapper, configurationSet, overridesText, parseCommits, parseDelta, treeProblems } from "../lib/plant-repo.ts";
+import { applyPairChanges, carriesConfiguration, checkWrapper, configurationSet, mayBeAbsent, nodeModulesLinks, overridesText, parseCommits, parseDelta, treeProblems } from "../lib/plant-repo.ts";
 
 // The pure parts of gates/lib/plant-repo.ts (research.md R-10, contracts/plants.md): the configuration set copied
 // into every temporary repository, the configuration a plant must not carry, and the records of commits.txt.
@@ -16,6 +16,8 @@ describe("configurationSet", () => {
       "vitest.config.ts",
       "vitest.mutation.config.ts",
       "stryker.config.json",
+      "stryker.elements.config.json",
+      "vitest.mutation.elements.config.ts",
       "packages/tokens/package.json",
       "packages/tokens/tsconfig.json",
       "packages/elements/package.json",
@@ -26,7 +28,32 @@ describe("configurationSet", () => {
       "packages/tokens/src/overrides.ts",
       "packages/tokens/src/generate.ts",
       "packages/tokens/contrast/pairs.json",
+      "packages/elements/src",
+      "packages/elements/scripts/manifest.ts",
+      "packages/elements/custom-elements-manifest.config.mjs",
+      "packages/elements/custom-elements.json",
     ]);
+  });
+
+  // 005 research.md R-12: the element files the manifest gate and the element plants read; until the manifest
+  // generator lands (phase 2), its script, configuration and manifest may be absent and are then not copied.
+  it("lets only the manifest script, its configuration and the manifest be absent from the repository", () => {
+    const set = configurationSet(["packages/tokens", "packages/elements"]);
+    expect(set.filter((path) => mayBeAbsent(path))).toEqual([
+      "packages/elements/scripts/manifest.ts",
+      "packages/elements/custom-elements-manifest.config.mjs",
+      "packages/elements/custom-elements.json",
+    ]);
+    expect([mayBeAbsent("packages/elements/src"), mayBeAbsent("packages/elements/package.json"), mayBeAbsent("custom-elements.json")]).toEqual([false, false, false]);
+  });
+});
+
+describe("nodeModulesLinks", () => {
+  // 005 research.md R-12: lit is a dependency of @ocelle/elements only, so each package's own node_modules is linked
+  // beside the root's.
+  it("links the root node_modules and each package's own", () => {
+    expect(nodeModulesLinks(["packages/tokens", "packages/elements"])).toEqual(["node_modules", "packages/tokens/node_modules", "packages/elements/node_modules"]);
+    expect(nodeModulesLinks([])).toEqual(["node_modules"]);
   });
 });
 
@@ -43,9 +70,11 @@ describe("carriesConfiguration", () => {
       "base/.stylelintrc",
       "tree/vitest.config.ts",
       "tree/vitest.mutation.config.ts",
+      "tree/vitest.mutation.elements.config.ts",
       "tree/vite.config.mts",
       "tree/packages/elements/vitest.workspace.ts",
       "base/stryker.config.json",
+      "base/stryker.elements.config.json",
       "base/stryker.conf.js",
       "tree/packages/tokens/src/x.ts",
       "tree/packages/tokens/package.json",
@@ -57,6 +86,7 @@ describe("carriesConfiguration", () => {
       "base/.stylelintrc",
       "base/stryker.conf.js",
       "base/stryker.config.json",
+      "base/stryker.elements.config.json",
       "head/stylelint.config.js",
       "tree/.eslintrc.json",
       "tree/eslint.config.ts",
@@ -67,6 +97,7 @@ describe("carriesConfiguration", () => {
       "tree/vite.config.mts",
       "tree/vitest.config.ts",
       "tree/vitest.mutation.config.ts",
+      "tree/vitest.mutation.elements.config.ts",
     ]);
   });
 
