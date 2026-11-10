@@ -33,6 +33,13 @@ assumptions that follow from them.
 taken at scroll position 0, 0) and FR-031 (a pointer target must lie inside the initial viewport; operator decision
 on PLAN-FRESH-2-001, option (a)), and US2 scenarios 8 and 14 with them.
 
+**Plan squad round 3 (2026-11-10)**: the confirmed findings of the plan squad's round 3
+(`reviews/plan/round-3/refute.md`, fixes note `reviews/plan/round-3/fixes-1.md`) changed FR-027 (form-control text
+is rendered text, and a closed shadow root fails because axe cannot audit it; PLAN-FRESH-3-001), FR-025 (the
+contributor note says an element's shadow styles set its form controls' font) and FR-030 (storage names Web Storage
+by named property, cookies, IndexedDB and the Cache API; PLAN-FRESH-3-002), and US2 scenarios 9 and 13, US4
+scenario 6 and the closed-shadow-root edge case with them.
+
 **Operator decision SPEC-1-06 (2026-11-10)**: "Yes, amd64 everywhere". Every capture, on every host, runs the
 linux/amd64 pinned image, identified by that platform's image digest; on arm64 hosts (for example Apple Silicon) it
 runs under emulation and is slower, so a baseline produced on any machine is byte-identical to CI's. "Any machine"
@@ -145,11 +152,12 @@ renders makes it fail.
    for example by emulating reduced motion, and by taking every capture at scroll position 0, 0 even when the story
    focuses or scrolls to an element below the fold); a story whose pixels vary by an input the capture does not fix makes
    the gate exit 1 (FR-026).
-9. **Given** a story whose rendered text uses any font face other than the vendored Schibsted Grotesk (a system
+9. **Given** a story whose rendered text, the text of its form controls (values, placeholders, button labels)
+   included, uses any font face other than the vendored Schibsted Grotesk (a system
    font, a fallback in the token stack, a per-glyph fallback), or whose font has not loaded when the capture is
    taken, **When** the gate or the baseline command runs, **Then** it exits 1 naming the story, the theme and the
    face, and writes or compares no capture for it (FR-027). A face the page declares but no text uses is not a
-   finding. A story whose element attaches a closed shadow root, whose text the check cannot read, fails the same
+   finding. A story whose element attaches a closed shadow root, which axe cannot audit, fails the same
    way, naming the element.
 10. **Given** a story that renders differently the second time it is rendered in the same page (for example it keeps
     state in storage or in a module variable), **When** the gate runs, **Then** each theme's capture equals the
@@ -160,7 +168,8 @@ renders makes it fail.
     result: the job calls the gate's host entry point, which starts the same pinned image the baseline command
     uses.
 13. **Given** a story that, while it renders, makes a same-origin fetch, XHR, WebSocket, EventSource or ping request
-    other than the Storybook's own, or reads or writes storage, writes the clipboard or sends a beacon, **When** the
+    other than the Storybook's own, or reads or writes storage (local or session storage, a cookie, IndexedDB or the
+    Cache API), writes the clipboard or sends a beacon, **When** the
     gate or the baseline command runs, **Then** it exits 1 naming the story, the theme and the call (FR-030).
 14. **Given** a story that declares a hover or press state on one of its elements, **When** the gate runs, **Then**
     the capture shows that state; a declared state whose target matches no element, or more than one, or whose
@@ -256,8 +265,8 @@ script no longer fails the `csp` gate; the packages' plants still fail it; the R
    captured by the harness (a story is not written twice), how to produce and commit baselines (including that on an
    arm64 host the capture runs the linux/amd64 image under emulation and is slower, and that CI's captures are
    committed when a local run and CI disagree), that a baseline change needs a pull request description saying why,
-   that elements use open shadow roots and render every surface inside their own host, and that element packages
-   prove run-time strict CSP in their own browser tests, not in the Storybook.
+   that elements use open shadow roots and render every surface inside their own host, that an element's shadow
+   styles set the font of its form controls, and that element packages prove run-time strict CSP in their own browser tests, not in the Storybook.
 
 ---
 
@@ -271,8 +280,7 @@ script no longer fails the `csp` gate; the packages' plants still fail it; the R
   compared too (FR-012).
 - A story renders a surface outside its root (a portal to the document body): axe audits it and the gate fails the
   story, since elements render every surface inside their own host (FR-014).
-- An element attaches a closed shadow root: neither axe nor the font check can see inside, so both gates fail the
-  story (FR-014, FR-027).
+- An element attaches a closed shadow root: axe cannot see inside, so both gates fail the story (FR-014, FR-027).
 - Fonts: the only font face a capture may render is the vendored Schibsted Grotesk of `@ocelle/tokens`
   (constitution II, one type family). The pinned container may hold system fonts the browser needs, but text
   rendered with any of them, including a per-glyph fallback for a character Schibsted Grotesk lacks, fails the story
@@ -365,18 +373,19 @@ script no longer fails the `csp` gate; the packages' plants still fail it; the R
   summary says the cross-engine comparison was not made. The
   baseline command makes the same two captures and writes nothing when they differ.
 - **FR-027**: The `visual` gate and the baseline command MUST fail (exit 1) a story-theme in which any rendered text
-  is drawn with a font face other than the vendored Schibsted Grotesk (the only allowed face; constitution II), or
-  in which a font face the story's text uses has not finished loading when the capture is taken (or any face is
-  still loading or failed to load), one finding per story-theme naming the face(s) found; no capture of it is
+  (the text of form controls, such as an input's value or placeholder, included) is drawn with a font face other
+  than the vendored Schibsted Grotesk (the only allowed face; constitution II), or in which a font face the story's
+  text uses has not finished loading when the capture is taken (or any face is still loading or failed to load), one finding per story-theme naming the face(s) found; no capture of it is
   compared or written. A face the page declares but no text uses is not a finding. A story-theme in which an element
-  attaches a closed shadow root fails the same way (finding `closed-shadow-root`, naming the element), since its
-  text cannot be checked.
+  attaches a closed shadow root fails the same way (finding `closed-shadow-root`, naming the element), since axe
+  cannot audit its text (FR-014).
 - **FR-028**: Every story-theme MUST be captured, and checked by axe (FR-013), in a fresh page whose theme is set
   before the story renders, with no storage, script state or theme state from an earlier render.
 - **FR-030**: The `visual` gate and the baseline command MUST fail (exit 1) a story-theme that, while it renders,
   makes run-time I/O (constitution I): a same-origin fetch, XHR, WebSocket, EventSource or ping request other than
-  the Storybook's own, a request for a file the build does not hold, a storage read or write, a clipboard write or a
-  beacon, one finding (`io`) per story-theme naming each call; no capture of it is compared or written. A request
+  the Storybook's own, a request for a file the build does not hold, a storage read or write (Web Storage by method
+  or by named property, cookies, IndexedDB and the Cache API, and any of them left behind when the render ends), a
+  clipboard write or a beacon, one finding (`io`) per story-theme naming each call; no capture of it is compared or written. A request
   outside the origin is the finding `network` (FR-007).
 - **FR-031**: A story MAY declare one pointer state, hover or press, on one element it renders. The `visual` gate,
   the baseline command and the `axe` gate MUST apply it after the story renders and before the capture or the axe
@@ -466,7 +475,9 @@ script no longer fails the `csp` gate; the packages' plants still fail it; the R
   pull request description that says why (constitution V), and that on an arm64 host the capture runs the
   linux/amd64 image under emulation and is slower. It MUST also say: how to declare a hover or press state (FR-031);
   that when a local capture and CI's disagree, CI's captures from its job artifact are committed (FR-005); that
-  elements use open shadow roots and render every surface inside their own host (FR-014, FR-027); and that each
+  elements use open shadow roots and render every surface inside their own host (FR-014, FR-027); that an element's
+  shadow styles set the font of its form controls (`font: inherit`), since the document's base rule does not reach
+  them (FR-027); and that each
   element package proves run-time strict CSP in its own browser tests, not in the Storybook (FR-023). A
   documentation test MUST check that the note holds each of these items.
 

@@ -90,7 +90,7 @@ The argument builder's unit tests cover root equal to the repository and root di
  { "story": "x--q", "theme": "light", "status": "pointer-target", "message": "hover: target outside the viewport: .menu-item" },
  { "story": "x--z", "theme": "light", "status": "font", "families": ["DejaVu Sans"] },
  { "story": "x--w", "theme": "light", "status": "network", "urls": ["https://example.com/a.png"] },
- { "story": "x--v", "theme": "light", "status": "io", "calls": ["fetch /api/items", "localStorage.setItem"] }]
+ { "story": "x--v", "theme": "light", "status": "io", "calls": ["fetch /api/items", "localStorage.setItem", "localStorage set k", "cookie set", "indexedDB.open d"] }]
 ```
 
 Each entry has exactly one `status`. When a story-theme meets several conditions (a face whose source is a path not in
@@ -116,17 +116,27 @@ pure predicate over injected facts, one unit test per check.
 
 ## Per story-theme (FR-006, FR-012, FR-026 to FR-028, FR-030, FR-031)
 
-New context (viewport 1280 × 800, scale 1, `colorScheme` = theme, `reducedMotion: "reduce"`, `forcedColors: "none"`,
-locale `en-GB`, timezone `UTC`) → init scripts (readiness recorder, closed `attachShadow` recorder, storage, clipboard
-and beacon recorder) → route every request: `127.0.0.1` served from `dist` (same-origin fetch, xhr, websocket,
+New context with `contextOptions(theme)` of `gates/lib/capture-plan.ts` (viewport 1280 × 800, scale 1, `colorScheme`
+= theme, `reducedMotion: "reduce"`, `forcedColors: "none"`, locale `en-GB`, timezone `UTC`; the axe gate opens its
+context with the same function, research.md R-08) → init scripts (readiness recorder, closed `attachShadow` recorder,
+and the I/O recorder: `Storage.prototype` methods, `localStorage` and `sessionStorage` returned as recording `Proxy`
+objects for named-property gets, sets and deletes, the `document.cookie` accessor, `indexedDB.open` and
+`deleteDatabase`, `caches` calls, clipboard writes including `execCommand("copy"|"cut")`, and `sendBeacon`, research.md
+R-14) → route every request: `127.0.0.1` served from `dist` (same-origin fetch, xhr, websocket,
 eventsource and ping other than Storybook's own files, and paths not in `dist`, recorded as `io`), anything else aborted
 and recorded as `network` → open `iframe.html?id=<story>&viewMode=story&globals=theme:<theme>` → wait for the first
 render signal (`STORY_RENDERED`, `STORY_THREW_EXCEPTION`, `STORY_ERRORED`, `STORY_MISSING`, `body.sb-show-errordisplay`)
 up to 15 s: failure signal → `render-failed`, none → `render-timeout` → scroll check: `scrollX` and `scrollY` read,
 `window.scrollTo(0, 0)` when either is not 0 (research.md R-04) → the story's pointer state, if declared, by
 `page.mouse` only (`pointer-target` when its parameter is malformed, its selector matches no element or several, or
-its target's box is not wholly inside the 1280 × 800 viewport: `target outside the viewport`, research.md R-15) →
-`document.fonts.ready`, two frames → closed shadow root check → font check (research.md R-05) → scroll check again →
+its target's box is not wholly inside `contextOptions(theme).viewport`, 1280 × 800: `target outside the viewport`,
+research.md R-15) → `document.fonts.ready`, two frames → closed shadow root check → font check (research.md R-05):
+every non-whitespace text node of the story area found by CDP `DOM.getDocument({ depth: -1, pierce: true })`, open
+and user-agent shadow roots included, so form-control text (an input's value and placeholder, a button-type input's
+label) is checked, each user-agent shadow text node attributed to its host control and given the host's computed
+family, and its platform fonts read by `CSS.getPlatformFontsForNode` → storage left behind: `context.storageState({
+indexedDB: true })` and the page's `sessionStorage` keys, any cookie, storage key or IndexedDB database not on
+Storybook's allow-list recorded as `io` (research.md R-14) → scroll check again →
 full-page screenshot (`fullPage: true`, no clip), `animations: "disabled"`, `caret: "hide"`
 → decode and re-encode with `pngjs` (fixed options, no ancillary chunks) → write `<story>.<theme>.png` → close the
 context. A story-theme with any status other than `captured` writes no PNG. Every capture is therefore taken at

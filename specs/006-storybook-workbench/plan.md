@@ -9,6 +9,8 @@ operator's fork decisions of 2026-11-10 changed this plan and, as spec deltas, F
 FR-023, FR-025, FR-026, FR-027 and FR-029, and added FR-030 and FR-031 (fixes note `reviews/plan/round-1/fixes-1.md`).
 The plan squad's round 2 (`reviews/plan/round-2/`) and the operator's fork decisions of 2026-11-10 changed this plan
 and, as spec deltas, FR-006 and FR-031 (fixes note `reviews/plan/round-2/fixes-1.md`).
+The plan squad's round 3 (`reviews/plan/round-3/`, no forks) changed this plan and, as spec deltas, FR-025, FR-027
+and FR-030 (fixes note `reviews/plan/round-3/fixes-1.md`).
 
 ## Summary
 
@@ -99,9 +101,9 @@ decision on PLAN-FRESH-2-007 (b)). Updated after the plan squad's rounds 1 and 2
 
 | Principle | How this plan meets it |
 |---|---|
-| I. Names, no I/O | No element is added. The gates' names carry no `sk-`. The prefix gate's Storybook scope does not change (FR-022); it now matches declarations across lines. Run-time I/O of a story (same-origin fetch, XHR, WebSocket, EventSource, ping, storage, clipboard, beacon) fails the visual gate as `io` (FR-030, R-14), so the no-I/O rule has a check from the first element on. |
-| II. Tokens, brand rules | The `font` rule makes "no face but Schibsted Grotesk" a merge gate for every story (research R-05). The monospace walk stays in the render test. |
-| III. Accessible | axe runs on every story in both themes, on the whole document minus Storybook's harness, so surfaces anywhere are audited, and a surface outside the story root, or a closed shadow root axe cannot enter, fails. Serious and critical violations and serious and critical incomplete results fail the gate, so rendered contrast that axe cannot decide is not passed silently; empty stories are not passes. The rule set and the harness-document rules not run are named in FR-016 and checked against axe-core's own metadata (R-08). An exception covers one node and is honoured only with its Complexity Tracking row (FR-029). Pointer states can be stories and are audited (R-15). Forced colours stay with the element tests (spec Edge Cases). |
+| I. Names, no I/O | No element is added. The gates' names carry no `sk-`. The prefix gate's Storybook scope does not change (FR-022); it now matches declarations across lines. Run-time I/O of a story (same-origin fetch, XHR, WebSocket, EventSource, ping, storage by method or named property, cookies, IndexedDB, the Cache API, clipboard, beacon, and storage left when the render ends) fails the visual gate as `io` (FR-030, R-14), so the no-I/O rule has a check from the first element on. |
+| II. Tokens, brand rules | The `font` rule makes "no face but Schibsted Grotesk" a merge gate for every story (research R-05), the text of form controls (values, placeholders, button-type input labels, in user-agent shadow roots) included, and the contributor note says an element's shadow styles set its form controls' font. The monospace walk stays in the render test. |
+| III. Accessible | axe runs on every story in both themes, on the whole document minus Storybook's harness, so surfaces anywhere are audited, and a surface outside the story root, or a closed shadow root axe cannot enter, fails. Serious and critical violations and serious and critical incomplete results fail the gate, so rendered contrast that axe cannot decide is not passed silently; empty stories are not passes. The rule set and the harness-document rules not run are named in FR-016 and checked against axe-core's own metadata (R-08). An exception covers one node and is honoured only with its Complexity Tracking row (FR-029). Pointer states can be stories and are audited (R-15), in a browser context with the capture's options (1280 × 800, reduced motion), so axe audits the page the capture shows (R-08). Forced colours stay with the element tests (spec Edge Cases). |
 | IV. Strict CSP | `csp` covers the packages' built output "with no exception" again: the Storybook is not built output of a package (operator Q1 (a)), so 002's exceptions 1 and 2 close. Elements remain bound to IV through their package output; their run-time strict-CSP browser test is recorded in `gates/README.md`'s deferred table as the first element feature's (#17 or #7), and the contributor note says element packages prove it in their own browser tests (R-10). |
 | V. Storybook, baselines | Every story has two committed baselines made in a pinned container, covering the full page at scroll position (0, 0). The gate fails on a missing or stray baseline. CI's captures are the record when local and CI disagree (R-02), for the plants' baselines too: the baseline command's plant mode regenerates them and the Plants job uploads its captures in tree layout, for `pass-second-render` (`captureAlone`) captures made alone by single-story-theme requests so its freshness reference never comes from a full run (R-11). A story per state includes pointer states, whose target must lie inside the initial viewport so a state is never silently not applied (R-15). Baselines change only in a pull request whose description says why; the contributor note says so and landing checks it. |
 | VI. Own code | The gates and the capture are this repository's code. The container image and axe-core are third-party tools used in CI and development only, not shipped (plan-gate decision 1). |
@@ -159,6 +161,14 @@ Updated after the plan squad's round 1; the operator's fork decisions of 2026-11
 15. **Plant roots keep every repository story**; phase 3 measures the Plants job's time per story-theme in CI and sets
     the story count at which the job is split, recorded with the operator's approval in Complexity Tracking
     (PLAN-FRESH-2-007 (b)) (R-07).
+16. **The font check reads form-control text**: text nodes are collected through CDP with `pierce: true`, user-agent
+    shadow roots included and attributed to their host control (spec delta to FR-027 and FR-025, PLAN-FRESH-3-001)
+    (R-05).
+17. **Storage I/O is recorded in every form**: named-property Web Storage through a recording `Proxy`, cookies,
+    IndexedDB, the Cache API and `execCommand` copy and cut, with the storage left after the render read as a
+    backstop for writes (spec delta to FR-030, PLAN-FRESH-3-002) (R-14).
+18. **The axe gate opens its context with the capture's options**, from one function that also gives the pointer
+    rule its viewport (PLAN-FRESH-3-003) (R-08, R-15).
 
 ## Project Structure
 
@@ -189,9 +199,11 @@ gates/
 ├── lib/capture-plan.ts                                          # refusal predicate, context and screenshot options,
 │                                                                #   readiness classification, request and I/O
 │                                                                #   classification, pointer parameter and viewport
-│                                                                #   rule, scroll decision, capture status order
+│                                                                #   rule, scroll decision, capture status order,
+│                                                                #   storage-state classification (both gates'
+│                                                                #   context options: contextOptions)
 ├── lib/story-checks.ts                                          # empty, fonts, closed shadow roots, outside-root
-├── lib/story-page.ts                                            # in-page collection and init scripts (wiring)
+├── lib/story-page.ts                                            # in-page and CDP collection, init scripts (wiring)
 ├── lib/visual-verdict.ts, png.ts                                # verdicts, updatePlan, plant mode plan, normalise and diff
 ├── lib/axe-rules.ts, axe-verdict.ts, a11y-exceptions.ts         # rule selection, result mapping, printed selector,
 │                                                                #   exceptions and plan pairing
@@ -234,7 +246,8 @@ data the gates read (baselines, pin, exceptions).
    - **the spike, the only one of this feature**, recorded in `reviews/phase-1/spike.md`:
      - Storybook 10.6.5's output for a syntax error, an unresolved import, a non-CSF file and missing dependencies;
      - the render signals and the error display for a module that throws, a render that throws and a missing id;
-     - Storybook's harness nodes in the preview, its own fetch, xhr and storage use (the I/O allow-list), and the
+     - Storybook's harness nodes in the preview, its own fetch, xhr and storage use, cookies, IndexedDB and caches included, and the storage state it leaves
+       (the I/O allow-list), whether the `execCommand` wrap records copy and cut, and the
        access path to the current story's parameters;
      - that a build writes nothing under `storybook/node_modules` with Vite's `cacheDir` and Storybook's `CACHE_DIR`
        moved;
@@ -256,12 +269,15 @@ data the gates read (baselines, pin, exceptions).
    - `png.ts` (normalise, diff image, the one-pixel unit test), `visual-verdict.ts` (verdicts, `updatePlan`),
      `container.ts` (engine resolution with the CI rule, pin and inspect parsers on the recorded and written fixtures,
      run args for root equal to and different from the repository), `capture-plan.ts` (refusal predicate with one test
-     per check, options, readiness, request and I/O classification, pointer parameter and `targetInViewport`,
-     `scrollAction`, `captureStatus`), `story-checks.ts` (fonts and closed shadow roots), `storybook-serve.ts`;
+     per check, `contextOptions`, screenshot options, readiness, request, recorded-call and storage-state
+     classification, pointer parameter and `targetInViewport` with the viewport of `contextOptions`,
+     `scrollAction`, `captureStatus`), `story-checks.ts` (fonts, user-agent shadow text of form controls included, and closed shadow roots),
+     `storybook-serve.ts`;
    - `plant-repo.ts`: the `delta.json` `baselines` edits and the `treeProblems` refusal of tree copies of repository
      baselines, red first; the `baselinesOf` and `captureAlone` keys; the plant runner's copy of failing pass plants' captures (captures
      made alone for a `captureAlone` plant, never run 1's);
-   - `story-page.ts` and `capture.ts` (wiring), the gate, `baselines.ts` with its plant mode (`--plant`, `--story`)
+   - `story-page.ts` and `capture.ts` (wiring: the CDP text collection with `pierce: true`, the I/O recorder with the
+     storage `Proxy`, cookie, IndexedDB, Cache API and clipboard wraps, the storage-state read), the gate, `baselines.ts` with its plant mode (`--plant`, `--story`)
      and the integration test that regenerates one plant's baseline;
    - the `engine` plant key, `--skip-container` with the registry guard and its plant, and the engine probe with its
      not-run lines;
@@ -277,7 +293,8 @@ data the gates read (baselines, pin, exceptions).
    - `axe-rules.ts` (selection on fixture metadata, and the test that derives the 4.14.0 lists from axe-core's own
      metadata), `axe-verdict.ts` (incomplete findings, outside-root, `printSelector`), `story-checks.ts` (empty,
      outside-root), `a11y-exceptions.ts` (per-node entries, plan pairing with ` >>> ` and escaped `|` selectors);
-   - the gate, its plants and `storybook/a11y-exceptions.json`;
+   - the gate, its context from `contextOptions(theme)` with the unit test that its options equal the capture's for
+     each theme (R-08), its plants (`fail-hover-near-fold` included) and `storybook/a11y-exceptions.json`;
    - the `axe` CI job;
    - story fixes for any existing finding (FR-029).
 5. **US4 CSP retarget and documentation** (P4):
@@ -290,7 +307,7 @@ data the gates read (baselines, pin, exceptions).
    - `gates.json` scope texts, `gates/README.md` (FR-023, the deferred row for the `@ocelle/elements` run-time CSP test);
    - the exception rows in 001's and 002's plans (FR-024);
    - `storybook/README.md` with its readme test, red first (FR-025, every item including open shadow roots, surfaces
-     inside the host, pointer states and their viewport rule, element run-time CSP, CI's captures, and plant
+     inside the host, the font of form controls set in an element's shadow styles, pointer states and their viewport rule, element run-time CSP, CI's captures, and plant
      baselines: the plant mode and the Plants job's artifact, and that `pass-second-render`'s record is CI's captures
      made alone).
 

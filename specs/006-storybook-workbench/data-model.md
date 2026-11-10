@@ -28,6 +28,26 @@ exactly two.
 | status | `captured`, `render-failed`, `render-timeout`, `closed-shadow-root`, `pointer-target`, `font`, `network`, `io` (contracts/container.md) |
 | bytes | the normalised PNG, present only when `captured` |
 
+## Text node (font check input, research.md R-05)
+
+| Field | Rule |
+|---|---|
+| families | the platform families `CSS.getPlatformFontsForNode` reports; `[]` for text not rendered (not a finding) |
+| user-agent shadow | `true` when the node lies in a form control's user-agent shadow root (an input's value or placeholder, a button-type input's label) |
+| computed family | the computed `font-family` of the node's parent element, or of its host control when user-agent shadow |
+
+Every non-whitespace text node of the story area, found by CDP `DOM.getDocument({ depth: -1, pierce: true })`, open
+and user-agent shadow roots included; a user-agent shadow node belongs to the story area when its host control does.
+
+## I/O record (research.md R-14)
+
+One entry per recorded operation or left-behind item, with its kind and name: a same-origin request (resource type
+and path), a Web Storage method call or named-property get, set or delete (`localStorage` or `sessionStorage`, key),
+a `document.cookie` get or set, an IndexedDB `open` or `deleteDatabase` (database), a Cache API call (cache), a
+clipboard write (`write`, `writeText`, `execCommand` copy or cut), a beacon, and from `context.storageState({
+indexedDB: true })` and the page's `sessionStorage` after the render each cookie, storage key and IndexedDB database
+left. An entry not on Storybook's allow-list (kind and exact name) makes the capture's condition `io`.
+
 ## Baseline
 
 `storybook/baselines/<story-id>.<theme>.png`. A file name that does not parse as `<id>.<light|dark>.png`, or whose
@@ -78,6 +98,8 @@ platform `linux/amd64`, `node` = `.node-version`, `browser` = `chromium_headless
 | no render signal within 15 s | finding `render-timeout` (axe not run) |
 
 The context is the whole document minus Storybook's harness nodes; the harness-document rules (FR-016) are not run.
+The browser context of each axe run has the capture's options, `contextOptions(theme)` (viewport 1280 × 800, scale
+1, colour scheme, reduced motion, forced colours, locale, timezone; research.md R-08).
 
 ## Exception (`storybook/a11y-exceptions.json`)
 
@@ -104,7 +126,8 @@ repository-relative file path, or `storybook/a11y-exceptions.json#<index>`.
 
 `parameters.ocelle.pointer`: `{ "hover": "<selector>" }` or `{ "press": "<selector>" }`, exactly one key, the selector
 matching exactly one element of the story area (the whole document minus Storybook's harness nodes, research.md R-08
-Terms; not only the story root), whose bounding box lies wholly inside the initial 1280 × 800 viewport at scroll
+Terms; not only the story root), whose bounding box lies wholly inside the initial 1280 × 800 viewport (`contextOptions(theme).viewport`, the
+same for the capture and the axe gate) at scroll
 position (0, 0) (operator decision on PLAN-FRESH-2-001, option (a)). Applied after `STORY_RENDERED` and the scroll
 check (the page scrolled back to (0, 0) when a story moved it), before fonts settle, by the capture and the axe gate,
 with `page.mouse` only; anything else is `pointer-target` (a target outside the viewport: `target outside the

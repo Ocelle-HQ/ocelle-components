@@ -138,7 +138,8 @@ differ, the gate reports one `nondeterministic` finding for that story-theme and
 baseline (one finding, not two); otherwise run 1's bytes are compared with the baseline. The baseline command
 writes nothing at all when any story-theme is nondeterministic.
 
-**Where the decisions live (PLAN-TESTABILITY-1-001, -003, -014).** The context options, the screenshot options, the
+**Where the decisions live (PLAN-TESTABILITY-1-001, -003, -014).** The context options (`contextOptions(theme)`,
+which the axe gate uses too, R-08), the screenshot options, the
 readiness classification, the request classification, the scroll decision (`scrollAction(scrollX, scrollY)`: none at
 (0, 0), reset otherwise; unit cases (0, 0), (0, 1125) and (40, 0)) and the capture status (R-05, PLAN-FRESH-2-006) are
 pure functions in `gates/lib/capture-plan.ts`, unit-tested in node: one test per determinism option (viewport, scale, colour scheme, reduced motion, forced colours, locale,
@@ -158,9 +159,22 @@ taken at the scroll offset differs from them).
 
 ## R-05 Fonts and closed shadow roots (FR-027)
 
-**Decision.** After readiness, the capture collects, for every text node in the document's story area (the whole
-document minus Storybook's harness nodes, R-08 Terms; not only the story root), open shadow roots included, the platform
-fonts the DevTools protocol (`CSS.getPlatformFontsForNode`) reports for it. Every family must be `Schibsted Grotesk`
+**Decision.** After readiness, the capture collects, for every non-whitespace text node in the document's story area
+(the whole document minus Storybook's harness nodes, R-08 Terms; not only the story root), open shadow roots and
+user-agent shadow roots included, the platform fonts the DevTools protocol (`CSS.getPlatformFontsForNode`) reports for
+it. The text nodes are found through the DevTools protocol, not by a walk in the page: `DOM.getDocument({ depth: -1,
+pierce: true })` over a CDP session of the page (`context.newCDPSession(page)`). **Form-control text
+(PLAN-FRESH-3-001).** An `<input>`'s value, its placeholder and the label of an `<input type=button|submit|reset>`
+are text nodes of the control's user-agent shadow root, which a page-side walk does not reach (**measured** by the
+plan squad's round 3 on host Chromium 1243: a `TreeWalker` over `<body>` saw none of them, CDP with `pierce: true`
+reached each, and `CSS.getPlatformFontsForNode` reported `Liberation Sans` for each under a page whose body font was
+set, since a control does not inherit the page font without a rule). base.css's `:where(button, input, select,
+textarea) { font: inherit }` is a document rule and does not reach a control inside an element's open shadow root
+(FR-025), so such text is exactly what an element can draw in a system face. A text node in a user-agent shadow root
+is attributed to its **host control** (the `<input>`, `<textarea>` or `<select>` whose shadow root holds it): the
+host decides whether the text lies in the story area, and its computed family, for the faces-not-loaded rule below,
+is the host element's. The finding names the families found, as for any text. Text that is not rendered (an `<option>` of a closed `<select>`) gets `[]` from CDP and is not a finding.
+Every family must be `Schibsted Grotesk`
 exactly (the face `@ocelle/tokens` vendors as `SchibstedGrotesk-wght.woff2` and declares as `font-family: "Schibsted
 Grotesk"`); any other family, including a per-glyph fallback, gives one `font` finding per story-theme naming the
 families found, and no capture of that story-theme is compared or written.
@@ -171,18 +185,29 @@ Nunito Sans faces that stay `unloaded` on every story). So a face is a `font` fi
 status is `loading` or `error`, or it is a face of a family the story's text uses (the families of the computed
 `font-family` of the collected text nodes) and its status is not `loaded`. Declared but unused faces are not findings.
 
-**Closed shadow roots (PLAN-A11Y-SECURITY-1-002).** The walk, like axe, cannot enter a closed shadow root. An init
+**Closed shadow roots (PLAN-A11Y-SECURITY-1-002).** axe cannot enter a closed shadow root. The font collection's CDP
+traversal does reach one (checked while applying round 3's fixes, host Chromium 1243), but the rule stays one rule for
+both gates, since axe cannot audit the text there (FR-014, FR-027). An init
 script wraps `Element.prototype.attachShadow` before navigation and records every call with `mode: "closed"` on an
 element of the story area. Any such call gives the finding `closed-shadow-root` (naming the host element's tag) in
 the visual gate and in the axe gate (R-08), and no capture of that story-theme is compared or written. The contributor
 note says elements use open shadow roots (FR-025).
 
-**Where the decisions live (PLAN-TESTABILITY-1-003).** The page only collects plain data (per text node: the families
-CDP returned and its computed family; the `FontFace` list with family and status; the recorded `attachShadow` calls).
-The decisions are pure functions in `gates/lib/story-checks.ts`, unit-tested in node with: shadow-root text, a
-per-glyph fallback family, a family that only starts with `Schibsted` (`Schibsted Grotesk Fallback`), an unused
+**Where the decisions live (PLAN-TESTABILITY-1-003).** The collection gathers only plain data (per text node, from
+CDP: the families CDP returned, whether it lies in a user-agent shadow root, and the computed family of the node's
+parent element or, for user-agent shadow text, of its host control; from the page: the `FontFace` list with family and
+status and the recorded `attachShadow` calls). The decisions are pure functions in `gates/lib/story-checks.ts`,
+unit-tested in node with: shadow-root text, a per-glyph fallback family, a family that only starts with `Schibsted`
+(`Schibsted Grotesk Fallback`), a user-agent shadow text node with a system family (a finding naming the family), a
+user-agent shadow text node with `Schibsted Grotesk` (none), an unrendered option text with `[]` (none), an unused
 `unloaded` face (not a finding), a used face still `loading`, a face in `error`, and a closed and an open
 `attachShadow` call. The collection code carries `Stryker disable` comments naming its integration test.
+
+**Plants (PLAN-FRESH-3-001).** `visual/fail-input-system-font`: a custom element whose open shadow root holds an
+`<input value="…">` and an `<input placeholder="…">` with no font rule: `font` on both themes. `visual/pass-input-font`:
+the same element setting `font: inherit` on its inputs in its shadow styles, with its baselines. The contributor note
+(FR-025) says an element's shadow styles must set the font of its form controls (`font: inherit`), since the document's
+base.css rule does not reach them.
 
 **One status per capture (PLAN-FRESH-2-006).** A capture writes one `status` per story-theme (contracts/container.md),
 yet one story-theme can meet several: a face whose source is a path not in `dist` is both `io` (R-14, FR-030) and, its
@@ -314,14 +339,21 @@ then fails loudly with the unexpected `differs` until it does, and never passes 
 - `axe-core` 4.14.0 is pinned exactly as a root devDependency (released 2026-10-05, older than the 7-day release
   age; no dependencies). It is injected with `page.addScriptTag({ path })`; with the Storybook no longer under a CSP
   (FR-020, FR-021) nothing blocks it.
-- Each story-theme gets a new context and page (FR-028) in the theme the visual gate uses (`colorScheme` and
-  `globals=theme:`), with the same init scripts and readiness as the capture (R-04: `render-failed`,
-  `render-timeout`), and the story's pointer state applied before axe runs (R-15).
+- Each story-theme gets a new context and page (FR-028) in the theme the visual gate uses (`globals=theme:`), with
+  the same init scripts and readiness as the capture (R-04: `render-failed`, `render-timeout`), and the story's
+  pointer state applied before axe runs (R-15). **The context options are the capture's (PLAN-FRESH-3-003)**: both
+  gates take them from one pure function of the theme in `gates/lib/capture-plan.ts`, `contextOptions(theme)`
+  (viewport 1280 × 800, device scale factor 1, `colorScheme` = theme, `reducedMotion: "reduce"`, `forcedColors:
+  "none"`, locale `en-GB`, timezone `UTC`, R-04), so the axe run sees the page the capture sees. Without it the
+  context would be Playwright's default 1280 × 720 (**measured** by the plan squad's round 3: a `:hover` target at
+  y = 740 to 780, inside the 800 px rule, was not hovered after `page.mouse.move`, with no error, and was hovered with
+  `viewport: 1280 × 800`), and a transition could be audited mid-way. A unit test asserts that the options the axe gate
+  passes to `browser.newContext` equal the capture's for each theme.
 - **Context (operator decision on PLAN-A11Y-SECURITY-1-003, option (a)).** axe runs on the **whole document**, with an
   `exclude` list of Storybook's own harness nodes (the error display, the "preparing" and "no preview" placeholders,
   `#storybook-docs`; the phase 1 spike records the exact list from Storybook 10.6.5's preview), so any node a story adds
   anywhere is audited. **Terms (PLAN-A11Y-SECURITY-1-003).** The *story area* is the whole document minus those harness
-  nodes (open shadow roots included); it is what axe audits, what the font walk (R-05) collects, where the
+  nodes (open shadow roots included); it is what axe audits, what the font collection (R-05, user-agent shadow roots of form controls included) collects, where the
   closed-shadow-root recorder (R-05) counts calls and where a pointer selector (R-15) resolves, so a surface appended to
   `<body>` is inside the story area. The *story root* is `#storybook-root` and its descendants (open shadow roots
   included); only the empty check below and the `outside-root` check use it. After readiness, every element child of
@@ -627,13 +659,39 @@ recorded), the visual gate records **run-time I/O** as the finding `io`, one per
 - every same-origin request whose Playwright `resourceType()` is `fetch`, `xhr`, `websocket`, `eventsource` or `ping`,
   other than Storybook's own requests (the allow-list holds `index.json` and `project.json` as the phase 1 spike finds
   them, and nothing else), and every same-origin request for a path that is not a file of `dist`;
-- every call, after navigation starts, of `Storage.prototype` `getItem`, `setItem`, `removeItem`, `clear` or `key`,
-  `navigator.clipboard.write` or `writeText`, and `navigator.sendBeacon`, recorded by an init script; Storybook's own
-  storage use, if the spike finds any, is allowed by its exact key in the same allow-list.
-The request classification and the allow-list are pure functions in `gates/lib/capture-plan.ts`, unit-tested (each
-resource type, Storybook's own files, a missing path, an allowed and a disallowed storage key). Fail plants: a story
-that fetches a same-origin path (`fail-same-origin-fetch`) and a story that writes `localStorage`
-(`fail-local-storage`). When a story-theme is also `font` or `network`, the capture's one status follows the order of
+- every storage, clipboard or beacon operation after navigation starts, recorded by an init script
+  (PLAN-FRESH-3-002):
+  - Web Storage **by method**: `Storage.prototype` `getItem`, `setItem`, `removeItem`, `clear` and `key`;
+  - Web Storage **by named property** (`localStorage.k = "v"`, `localStorage.k`, `delete localStorage.k`), which goes
+    through the Storage interface's named property handlers and never calls a prototype method (**measured** by the
+    plan squad's round 3: the method wrap recorded nothing for these): the `localStorage` and `sessionStorage`
+    getters on `window` are redefined to return a `Proxy` of the real object whose `get`, `set`, `has` and
+    `deleteProperty` traps record each access to a key that is not a `Storage.prototype` member (re-probed in round 3:
+    it records `set:k` and `get:k`), and whose `get` of a method returns the recorded method bound to the real
+    object;
+  - cookies: the `document.cookie` accessor on `Document.prototype`, get and set;
+  - IndexedDB: `IDBFactory.prototype` `open` and `deleteDatabase`; the Cache API: `CacheStorage.prototype` `open`,
+    `has`, `delete`, `keys` and `match`;
+  - the clipboard: `navigator.clipboard.write` and `writeText`, and `document.execCommand` with `"copy"` or `"cut"`
+    (not probed; the spike confirms the wrap records it);
+  - `navigator.sendBeacon`.
+  Storybook's own storage use, if the spike finds any, is allowed by its exact kind and key (or database or cache
+  name) in the same allow-list.
+- **storage left behind (a backstop for writes)**: after the render steps and the font check, before the screenshot
+  and while the context is open, the capture reads `context.storageState({ indexedDB: true })` and, in the page,
+  `sessionStorage.length` and its keys (session storage is not in `storageState`); every cookie, `localStorage` or
+  `sessionStorage` key and IndexedDB database not on the allow-list is `io` naming its kind and name. Each story-theme
+  has a fresh context (FR-028), so anything there is the story's. A write the recorder missed is still caught; a read
+  of nothing leaves no state, which is why the recorder covers reads.
+The request classification, the recorded-call classification, the storage-state classification and the allow-list
+are pure functions in `gates/lib/capture-plan.ts`, unit-tested (each resource type, Storybook's own files, a missing
+path; for each kind (method call, named-property get, set and delete, cookie get and set, IndexedDB open and delete,
+Cache API call, `execCommand` copy and cut, clipboard and beacon) an allowed and a disallowed case; a storage state
+with a cookie, a `localStorage` key, a `sessionStorage` key and an IndexedDB database, each a finding, and the
+allow-listed entries and an empty state, none). Fail plants: a story that fetches a same-origin path
+(`fail-same-origin-fetch`), a story that calls `localStorage.setItem` (`fail-local-storage`), a story that writes
+`localStorage.k = "v"` (`fail-storage-property`), a story that sets `document.cookie` (`fail-cookie`) and a story
+that opens an IndexedDB database (`fail-indexeddb`), each `io` on both themes. When a story-theme is also `font` or `network`, the capture's one status follows the order of
 R-05's `captureStatus` (`font`, then `network`, then `io`). The baseline command refuses on `io`. The axe gate does not repeat the check: a story with I/O
 fails the required "Visual regression" check.
 
@@ -653,13 +711,16 @@ to a point outside the 1280 × 800 viewport hovers nothing and raises nothing (*
 a `:hover` target at y = 1500 stayed in its resting colour, scrollY 0, no error), so FR-031 would fail silently. A
 target whose box is not wholly inside (0, 0)-(1280, 800) at scroll (0, 0), or has no box, gives `pointer-target` with
 the message `<hover|press>: target outside the viewport: <selector>`. The parameter parsing and the target decisions
-(matches, and `targetInViewport(box, viewport)`) are pure functions in `gates/lib/capture-plan.ts` with unit tests:
-a box inside, a box touching the edges, a box partly outside on the right, a box below the fold, and no box. Plants: `pass-hover-and-press` (two stories, one hovered, one pressed, with their baselines),
+(matches, and `targetInViewport(box, viewport)`, its `viewport` taken from `contextOptions(theme).viewport`, never a
+constant, so the rule and the context the capture and the axe gate open cannot drift, R-08) are pure functions in
+`gates/lib/capture-plan.ts` with unit tests: a box inside, a box touching the edges, a box partly outside on the right, a box below the fold, and no box. Plants: `pass-hover-and-press` (two stories, one hovered, one pressed, with their baselines),
 `fail-hover-style-changed` (the tree changes only the `:hover` rule: `differs` on both themes, which a capture without
 the hover could not show), `fail-pointer-target-missing` (`pointer-target` on both themes),
 `fail-pointer-target-below-fold` (a `pointer.hover` target at y = 1500 of a 2000 px story: `pointer-target` on both
 themes), and in the axe gate `fail-hover-reveals-unlabelled` (an unlabelled button shown only on hover: `button-name` on
-both themes) and `fail-pointer-target-below-fold` (the same story: `pointer-target` on both themes, axe not run). The
+both themes) and `fail-pointer-target-below-fold` (the same story: `pointer-target` on both themes, axe not run), and
+`fail-hover-near-fold` (a `pointer.hover` target at y = 740 to 780 whose hover shows an unlabelled button:
+`button-name` on both themes; it would pass wrongly against a 720 px context, PLAN-FRESH-3-003). The
 scroll reset has its own pass plant, `pass-focus-below-fold` (R-04). The
 contributor note documents the parameter (FR-025).
 

@@ -46,9 +46,9 @@ Order of a run: engine resolution → pin check → build (R-03) → run 1 → r
 | `render-timeout` | `<story-id>/<theme>` | no render signal within 15 s |
 | `closed-shadow-root` | `<story-id>/<theme>` | an element of the story attaches a closed shadow root (message names the host tag) |
 | `pointer-target` | `<story-id>/<theme>` | the story's pointer parameter is malformed, its selector matches no element or more than one, or its target's box is not wholly inside the 1280 × 800 viewport at scroll (0, 0) (`target outside the viewport`) |
-| `font` | `<story-id>/<theme>` | text drawn by a face other than Schibsted Grotesk, or a face that is `loading` or `error`, or a used face not `loaded` (message lists the families) |
+| `font` | `<story-id>/<theme>` | text, form-control text (an input's value or placeholder, a button-type input's label) included, drawn by a face other than Schibsted Grotesk, or a face that is `loading` or `error`, or a used face not `loaded` (message lists the families) |
 | `network` | `<story-id>/<theme>` | the story requested anything outside `127.0.0.1` (message names the URL) |
-| `io` | `<story-id>/<theme>` | same-origin fetch, xhr, websocket, eventsource or ping other than Storybook's own files, a request for a path not in `dist`, or a storage, clipboard or beacon call (message names each) |
+| `io` | `<story-id>/<theme>` | same-origin fetch, xhr, websocket, eventsource or ping other than Storybook's own files, a request for a path not in `dist`, a storage operation (Web Storage by method or named property, `document.cookie`, IndexedDB, the Cache API), a clipboard write or a beacon, or a cookie, storage key or IndexedDB database left when the render ends (message names each; research.md R-14) |
 | `nondeterministic` | `<story-id>/<theme>` | run 1 and run 2 differ in any byte; no baseline comparison for it |
 | `missing-baseline` | `<story-id>/<theme>` | no baseline file for a story-theme |
 | `differs` | `<story-id>/<theme>` | run 1 differs in any byte from `storybook/baselines/<story-id>.<theme>.png` |
@@ -88,7 +88,7 @@ the gate's causes: a gate other than `visual`, no such plant, a plant with no st
 |---|---|
 | Command | `pnpm run gate:axe` |
 | Plant command | `node gates/bin/axe.ts --root {root}` (form `repo-tree`) |
-| Scope | every story of the built index, in `light` and `dark`; context the whole document minus Storybook's harness nodes; axe-core 4.14.0 with the FR-016 rule set (harness-document rules not run) |
+| Scope | every story of the built index, in `light` and `dark`, each in a browser context with the capture's options (`contextOptions(theme)`: 1280 × 800, scale 1, reduced motion, research.md R-08); context the whole document minus Storybook's harness nodes; axe-core 4.14.0 with the FR-016 rule set (harness-document rules not run) |
 | Exit 0 | `axe: <runs> story-theme runs, 0 serious or critical; <notes> notes (<incomplete> incomplete, <excepted> excepted)` where `<runs>` = 2 × stories |
 
 | Rule | Location | When |
@@ -97,7 +97,7 @@ the gate's causes: a gate other than `visual`, no such plant, a plant with no st
 | `<axe rule id>-incomplete` | `<story-id>/<theme>` | a node of an `incomplete` result of impact `serious` or `critical` not excepted; message `<impact>: <selector>` |
 | `outside-root` | `<story-id>/<theme>` | an element child of `<body>` that is neither `#storybook-root`, a harness node nor a non-rendered element (message names its tag) |
 | `closed-shadow-root` | `<story-id>/<theme>` | an element of the story attaches a closed shadow root (axe not run) |
-| `pointer-target` | `<story-id>/<theme>` | as for `visual`, the target's viewport rule included (axe not run) |
+| `pointer-target` | `<story-id>/<theme>` | as for `visual`, the target's viewport rule included, against the viewport of the context both gates open (axe not run) |
 | `empty` | `<story-id>/<theme>` | the story root renders no content (research.md R-08; axe not run) |
 | `render-failed` | `<story-id>/<theme>` | the story module throws, its render throws, or its id is missing (axe not run) |
 | `render-timeout` | `<story-id>/<theme>` | no render signal within 15 s (axe not run) |

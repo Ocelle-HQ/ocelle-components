@@ -42,11 +42,15 @@ repository's entries and copies the plan files they name (research.md R-16).
 | `fail-overflow-changed` | fail | `baselinesOf: "pass-overflow-and-popover"`; the tree changes only the overflowing child of that story: `differs` on both themes (FR-012) |
 | `fail-random` | fail | a story with `Math.random()` in its markup: `nondeterministic` on both themes |
 | `fail-other-font` | fail | a story whose text uses `font-family: serif`: `font` on both themes |
+| `fail-input-system-font` | fail | a custom element whose open shadow root holds an `<input value="…">` and an `<input placeholder="…">` with no font rule (their text in user-agent shadow roots, drawn in a system face): `font` on both themes (research.md R-05) |
 | `fail-font-not-loaded` | fail | a story whose text uses an `@font-face` whose source is a file in `dist` holding bytes that are not font data, so the face ends in `error` with no `io`: `font` on both themes |
 | `fail-font-file-missing` | fail | a story whose text uses an `@font-face` whose source is a path not in `dist` (both `io` and `font` hold): `font` on both themes, the winner by data-model.md's order (research.md R-05) |
 | `fail-network` | fail | a story with an `<img>` from `https://example.com/`: `network` on both themes |
 | `fail-same-origin-fetch` | fail | a story that calls `fetch("/api/items")`: `io` on both themes |
 | `fail-local-storage` | fail | a story that calls `localStorage.setItem`: `io` on both themes |
+| `fail-storage-property` | fail | a story that writes `localStorage.k = "v"` (a named property, no method call): `io` on both themes (research.md R-14) |
+| `fail-cookie` | fail | a story that sets `document.cookie`: `io` on both themes |
+| `fail-indexeddb` | fail | a story that opens an IndexedDB database with `indexedDB.open`: `io` on both themes |
 | `fail-closed-shadow-root` | fail | a story whose element attaches a closed shadow root: `closed-shadow-root` on both themes |
 | `fail-throws-on-load` | fail | a story module that throws when loaded: `render-failed` on both themes |
 | `fail-render-throws` | fail | a story whose render function throws: `render-failed` on both themes |
@@ -54,6 +58,7 @@ repository's entries and copies the plan files they name (research.md R-16).
 | `fail-pointer-target-missing` | fail | a story whose `pointer.hover` selector matches no element: `pointer-target` on both themes |
 | `fail-pointer-target-below-fold` | fail | a 2000 px tall story whose `pointer.hover` target lies at y = 1500: `pointer-target` (`target outside the viewport`) on both themes |
 | `pass-repository` | pass | the repository's stories and baselines (Storybook's own unused Nunito Sans faces declared, not findings) |
+| `pass-input-font` | pass | the `fail-input-system-font` element with `font: inherit` on its inputs in its shadow styles, with its baselines |
 | `pass-unused-face` | pass | a story that declares a second `@font-face` it does not use, with its baselines |
 | `pass-animation-and-caret` | pass | a story with a running CSS animation and a focused text field, with its baselines (control: research.md R-04) |
 | `pass-second-render` | pass | `captureAlone: true`; a story that shows a coloured block on any render after the first in a page, with baselines made only by single-story-theme requests (`--plant visual/pass-second-render --story <id>`; in CI's artifact, captures made alone, never the full run's; research.md R-11) |
@@ -80,6 +85,7 @@ repository's entries and copies the plan files they name (research.md R-16).
 | `fail-closed-shadow-root` | fail | a story whose element attaches a closed shadow root holding an unlabelled button: `closed-shadow-root` on both themes |
 | `fail-hover-reveals-unlabelled` | fail | a story with `pointer.hover` whose hover shows an unlabelled button: `button-name` on both themes |
 | `fail-pointer-target-below-fold` | fail | the story of the `visual` plant of that name: `pointer-target` (`target outside the viewport`) on both themes (axe not run) |
+| `fail-hover-near-fold` | fail | a story whose `pointer.hover` target lies at y = 740 to 780 (inside the 1280 × 800 viewport, outside Playwright's default 720 px one) and whose hover shows an unlabelled button: `button-name` on both themes (research.md R-08, R-15) |
 | `fail-open-shadow-unlabelled` | fail | a custom element whose open shadow root holds an unlabelled `<button>`: `button-name` (critical) on both themes, selector `<host tag> >>> button` (research.md R-08) |
 | `fail-throws-on-load` | fail | `render-failed` on both themes |
 | `fail-render-throws` | fail | a story whose render function throws: `render-failed` on both themes |
