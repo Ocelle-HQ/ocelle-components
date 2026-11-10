@@ -51,3 +51,14 @@
   missing `pairs.json` row fail (FR-026, SC-005); and on the `id` on every element whose accessibility tree is read.
   The operator's answer to SPEC-2-02 (also ship a browser build with Lit inside; Lit's notice in
   `THIRD_PARTY_NOTICES`) is recorded at the top of the spec.
+- Spec check 3 (`reviews/spec/check-3.md`, fixes in `reviews/spec/check-3-fixes.md`): items re-checked after the
+  fixes, "Requirements are testable and unambiguous" included (SPEC-3-10). It now also rests on how test-only code
+  reaches the strict-CSP fixture (the test host's self-contained file with its own Lit on User Story 3 pages, two
+  module-build bundles on the page of User Story 1 scenario 10, both in the allowed request list, with the browser
+  build still the file under test); on host ARIA (FR-034: a host `aria-label` is a label, a host
+  `aria-hidden="true"` hides, a host `role` or `aria-hidden="false"` is unsupported and documented); on scenarios
+  for the `trailing` slot (User Story 3 scenario 10) and for icons in a link in forced colours; on the declared types
+  and defaults of every property; on the pixel measure of mirroring; on Lit's production build in the browser build
+  and the meaning of "built output"; and on the Lit packages `THIRD_PARTY_NOTICES` names. The operator approved the
+  spec at the gate after check 3, once these fixes are made, with no further spec check; that is recorded at the top
+  of the spec.
