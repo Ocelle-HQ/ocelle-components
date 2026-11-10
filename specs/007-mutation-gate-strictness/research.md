@@ -165,8 +165,10 @@ The nouns, singular / plural: `mutant` / `mutants`, `file` / `files`, `changed f
 entries")`) with its own red test in `gates/test/findings.test.ts` (1 → singular, 0 and 2 → the given plural, and the
 two-argument form unchanged). The existing exact-summary assertions are extended with the three counts (they fail until
 the gate prints them): `gates/test/mutation-ranges.test.ts:356,374,441`, `gates/test/mutation-records.test.ts:148`,
-`gates/test/mutation-shards.test.ts:574,583,589,665,717`, and every other exact `mutation:` summary the US1 task finds
-with `grep -rn '"mutation: ' gates/test`. The "nothing to mutate" line (no changed in-scope file) is unchanged: it has
+`gates/test/mutation-shards.test.ts:574,583,665,717`, and every other exact `mutation:` summary the US1 task finds
+with `grep -rn '"mutation: ' gates/test`. The summary at `mutation-shards.test.ts:589` (the second half of "entries of
+one file joined") is not extended: R-03 replaces that half with the repeated-file exit-2 case, which prints the
+`mutation: could not run:` cause, not a summary with counts. The "nothing to mutate" line (no changed in-scope file) is unchanged: it has
 no entries, so all three counts would be zero, and it names the base, which the reviewer needs (spec check 3,
 SPEC-3-01).
 
