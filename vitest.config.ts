@@ -1,6 +1,20 @@
 import { playwright } from "@vitest/browser-playwright";
 import { defineConfig } from "vitest/config";
-import { axTree, emulateForcedColors } from "./packages/elements/test/commands.ts";
+import type { BrowserCommand, BrowserCommandContext } from "vitest/node";
+
+// The element tests' browser commands (005 research.md R-11; packages/elements/test/commands.ts), loaded when a command
+// runs: the plant trees of the gates copy this file without the element test code (research.md R-10), so neither
+// loading nor type-checking the configuration may depend on it.
+interface ElementCommands {
+  readonly axTree: (context: BrowserCommandContext, id: string) => Promise<unknown>;
+  readonly emulateForcedColors: (context: BrowserCommandContext, mode: "active" | "none", palette?: "light" | "dark") => Promise<void>;
+}
+const elementCommandsUrl = new URL("./packages/elements/test/commands.ts", import.meta.url).href;
+const elementCommands = async (): Promise<ElementCommands> => (await import(elementCommandsUrl)) as ElementCommands;
+const axTree: BrowserCommand<[id: string]> = async (context, id) => (await elementCommands()).axTree(context, id);
+const emulateForcedColors: BrowserCommand<[mode: "active" | "none", palette?: "light" | "dark"]> = async (context, mode, palette) => {
+  await (await elementCommands()).emulateForcedColors(context, mode, palette);
+};
 
 // Plants and gate-test fixtures are inputs of the gates and their tests, never tests of this repository
 // (FR-028, research.md R-10): every project excludes them.

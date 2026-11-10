@@ -5,7 +5,7 @@
 // `axTree` and `emulateForcedColors` below (registered in vitest.config.ts), the fixture suites through a Playwright
 // CDP session on their page.
 import type { CDPSession, Page } from "playwright";
-import type { BrowserCommand } from "vitest/node";
+import type { BrowserCommandContext } from "vitest/node";
 
 /** One unignored accessibility node: its role and its computed name. */
 export interface AxNode {
@@ -108,8 +108,8 @@ export async function emulate(page: Page, mode: ForcedColors, palette?: Palette)
   await page.emulateMedia(palette === undefined ? { forcedColors: mode } : { forcedColors: mode, colorScheme: palette });
 }
 
-/** The `axTree(id)` browser command: `axNodes` in the frame of the calling test file. */
-export const axTree: BrowserCommand<[id: string]> = async (context, id) => {
+/** The `axTree(id)` browser command (registered in vitest.config.ts): `axNodes` in the frame of the calling test file. */
+export async function axTree(context: BrowserCommandContext, id: string): Promise<AxNode[]> {
   const session = await context.page.context().newCDPSession(context.page);
   try {
     const frame = await context.frame();
@@ -119,12 +119,12 @@ export const axTree: BrowserCommand<[id: string]> = async (context, id) => {
   } finally {
     await session.detach();
   }
-};
+}
 
-/** The `emulateForcedColors(mode, palette)` browser command. */
-export const emulateForcedColors: BrowserCommand<[mode: ForcedColors, palette?: Palette]> = async (context, mode, palette) => {
+/** The `emulateForcedColors(mode, palette)` browser command (registered in vitest.config.ts). */
+export async function emulateForcedColors(context: BrowserCommandContext, mode: ForcedColors, palette?: Palette): Promise<void> {
   await emulate(context.page, mode, palette);
-};
+}
 
 declare module "vitest/browser" {
   interface BrowserCommands {

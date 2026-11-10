@@ -1,0 +1,4 @@
+{
+  "expect": "pass",
+  "why": "A change to element source (packages/elements/src/) whose elements test checks it: it runs under stryker.elements.config.json and every mutant is killed (005 research.md R-12)."
+}

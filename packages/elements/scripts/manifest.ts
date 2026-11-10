@@ -10,8 +10,22 @@
 import { existsSync, readFileSync, readdirSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 import { fileURLToPath } from "node:url";
-import { create, ts } from "@custom-elements-manifest/analyzer";
-import { litPlugin } from "@custom-elements-manifest/analyzer/src/features/framework-plugins/lit/lit.js";
+import * as analyzer from "@custom-elements-manifest/analyzer";
+import type { Context, Plugin } from "@custom-elements-manifest/analyzer";
+import type TypeScript from "typescript";
+
+/**
+ * The parts of the analyzer this script uses. Its index.d.ts declares the plugin types but not its `create` and `ts`
+ * exports, and its Lit plugin module has no types; `ts` is the analyzer's own TypeScript (5.4.5), typed by the
+ * repository's, whose `createSourceFile`, `ScriptTarget` and node guards it shares.
+ */
+interface Analyzer {
+  readonly create: (options: { readonly modules: readonly TypeScript.SourceFile[]; readonly plugins: readonly Plugin[]; readonly context: Context }) => Manifest;
+  readonly ts: typeof TypeScript;
+}
+const { create, ts } = analyzer as unknown as Analyzer;
+const litPluginModule = "@custom-elements-manifest/analyzer/src/features/framework-plugins/lit/lit.js";
+const { litPlugin } = (await import(litPluginModule)) as { readonly litPlugin: () => Plugin[] };
 
 /** A custom-elements manifest (schema 1.0.0), as JSON. */
 export type Manifest = Record<string, unknown>;

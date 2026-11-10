@@ -1,0 +1,11 @@
+{
+  "expect": "fail",
+  "why": "A new element module that no elements test imports is a finding, not \"nothing to mutate\" (005 research.md R-12). Under stryker.elements.config.json (browser mode) Stryker has no coverage data for a module that was never loaded, runs every test for its mutant and reports it Survived, where the node projects report NoCoverage (fail-no-test-runs); both are findings.",
+  "findings": [
+    {
+      "location": "packages/elements/src/y.ts:2",
+      "rule": "StringLiteral",
+      "message": "Survived"
+    }
+  ]
+}
