@@ -232,6 +232,9 @@ importers:
 
   packages/elements:
     dependencies:
+      '@ocelle/tokens':
+        specifier: workspace:0.0.0
+        version: link:../tokens
       lit:
         specifier: 3.3.3
         version: 3.3.3
@@ -246,6 +249,9 @@ importers:
 
   storybook:
     devDependencies:
+      '@ocelle/elements':
+        specifier: workspace:0.0.0
+        version: link:../packages/elements
       '@ocelle/tokens':
         specifier: workspace:0.0.0
         version: link:../packages/tokens

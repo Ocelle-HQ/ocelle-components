@@ -1,0 +1,11 @@
+{
+  "expect": "fail",
+  "why": "An element whose css-property has no description (FR-009): the committed manifest matches the source, so the one finding is no-description for that css-property.",
+  "findings": [
+    {
+      "location": "packages/elements/src/ocelle-plant.ts",
+      "rule": "no-description",
+      "message": "ocelle-plant.css-property.--ocelle-plant-gap has no description"
+    }
+  ]
+}

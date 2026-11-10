@@ -51,6 +51,8 @@ async function moduleBundles(dir: string): Promise<void> {
       configFile: false,
       root: host,
       logLevel: "error",
+      // A host's production bundle: Lit's production build, whatever NODE_ENV the test runner set.
+      resolve: { conditions: ["module", "browser", "production"] },
       build: { outDir: join(dir, "bundles"), emptyOutDir: false, minify: false, lib: { entry, formats: ["es"], fileName: () => `bundle-${name}.js` } },
     });
   }

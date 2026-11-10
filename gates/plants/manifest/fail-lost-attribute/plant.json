@@ -1,0 +1,11 @@
+{
+  "expect": "fail",
+  "why": "The committed manifest's ocelle-icon entry has lost its label attribute (US1 scenario 12): one stale finding naming the element and the attribute.",
+  "findings": [
+    {
+      "location": "packages/elements/custom-elements.json",
+      "rule": "stale",
+      "message": "ocelle-icon.attribute.label differs from the generated manifest"
+    }
+  ]
+}

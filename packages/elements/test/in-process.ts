@@ -87,7 +87,7 @@ export function inProcessDriver(): Driver {
     drawing: (id) => {
       const root = element(id).shadowRoot;
       if (root === null) return Promise.resolve<Drawing>({ children: ["#no-shadow-root"], svg: null });
-      const svg = root.querySelector(":scope > svg");
+      const svg = [...root.children].find((child) => child.localName === "svg") ?? null;
       return Promise.resolve<Drawing>({
         children: [...root.children].map((child) => child.localName),
         svg: svg === null ? null : { attributes: attributes(svg), parts: [...svg.children].map((part) => ({ name: part.localName, attributes: attributes(part) })) },

@@ -209,6 +209,11 @@ export interface Delta {
    */
   readonly pairsList?: PairsList;
   readonly generator?: "wrapped";
+  /**
+   * Removes the committed custom-elements manifest, which the configuration set copies, for the manifest gate's
+   * breaking plant break-missing (005 research.md R-06, R-12): closed, its one value is "absent".
+   */
+  readonly manifest?: "absent";
 }
 
 function isObject(value: unknown): value is Record<string, unknown> {
@@ -232,7 +237,7 @@ function isPairChange(value: unknown): boolean {
   return "set" in value ? isObject(value.set) && !("remove" in value) : value.remove === true;
 }
 
-const deltaKeys = new Set(["tokens", "pairs", "pairsList", "generator"]);
+const deltaKeys = new Set(["tokens", "pairs", "pairsList", "generator", "manifest"]);
 
 /** The delta of a delta.json text; throws naming the problem. */
 export function parseDelta(text: string): Delta {
@@ -245,7 +250,7 @@ export function parseDelta(text: string): Delta {
   if (!isObject(value)) throw new Error("delta.json is not an object");
   const unknown = Object.keys(value).find((key) => !deltaKeys.has(key));
   if (unknown !== undefined) throw new Error(`delta.json: unknown key ${unknown}`);
-  const { tokens, pairs, pairsList, generator } = value;
+  const { tokens, pairs, pairsList, generator, manifest } = value;
   if (tokens !== undefined) {
     if (!Array.isArray(tokens)) throw new Error("delta.json: tokens must be a list of token overrides");
     const bad = tokens.findIndex((item) => !isTokenOverride(item));
@@ -261,6 +266,7 @@ export function parseDelta(text: string): Delta {
   }
   if (pairs !== undefined && pairsList !== undefined) throw new Error("delta.json: pairs and pairsList exclude each other");
   if (generator !== undefined && generator !== "wrapped") throw new Error('delta.json: generator must be "wrapped"');
+  if (manifest !== undefined && manifest !== "absent") throw new Error('delta.json: manifest must be "absent"');
   return value;
 }
 
@@ -268,6 +274,7 @@ const sourceFile = "packages/tokens/src/source.ts";
 const overridesFile = "packages/tokens/src/overrides.ts";
 const generatorFile = "packages/tokens/src/generate.ts";
 const pairsFile = "packages/tokens/contrast/pairs.json";
+const manifestFile = "packages/elements/custom-elements.json";
 
 /** The problems of a plant's tree/ (paths relative to it) against its delta: files a plant changes only by delta. */
 export function treeProblems(treePaths: readonly string[], delta: Delta | undefined): string[] {
@@ -281,6 +288,7 @@ export function treeProblems(treePaths: readonly string[], delta: Delta | undefi
   if (holds.has(overridesFile) && delta?.tokens !== undefined) {
     problems.push(`tree/ holds ${overridesFile} and delta.json has tokens; one of them sets the overrides`);
   }
+  if (holds.has(manifestFile) && delta?.manifest === "absent") problems.push(`tree/ holds ${manifestFile} and delta.json removes it with manifest "absent"`);
   return problems;
 }
 
@@ -394,9 +402,14 @@ async function readDelta(plant: string): Promise<Delta | undefined> {
   return delta;
 }
 
-/** Applies a delta's token overrides, pair changes or pair list replacement over the tree in `into`, and checks a wrapper. */
+/**
+ * Applies a delta's token overrides, pair changes or pair list replacement over the tree in `into`, removes the
+ * committed manifest for `manifest: "absent"`, and checks a wrapper.
+ */
 // Stryker disable next-line all: process boundary, covered by gates-integration: gates/test/integration/plant-repo.test.ts "writes the delta's token overrides as overrides.ts and applies its pair changes by key, one entry per line"
 async function applyDelta(delta: Delta, into: string): Promise<void> {
+  // Stryker disable next-line all: process boundary, covered by gates-integration: gates/test/integration/plant-repo.test.ts 'removes the committed manifest for manifest "absent", and keeps it without the part'
+  if (delta.manifest === "absent") await rm(join(into, manifestFile), { force: true });
   // Stryker disable next-line all: process boundary, covered by gates-integration: gates/test/integration/plant-repo.test.ts "moves the real generator to generate.real.ts and places the plant's wrapper for generator wrapped (and not without a delta)"
   if (delta.generator === "wrapped") checkWrapper(await readFile(join(into, generatorFile), "utf8"));
   // Stryker disable next-line all: process boundary, covered by gates-integration: gates/test/integration/plant-repo.test.ts "writes the delta's token overrides as overrides.ts and applies its pair changes by key, one entry per line"

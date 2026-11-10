@@ -40,8 +40,8 @@ export interface MutationTools {
   readonly read: (path: string) => Promise<string | undefined>;
   /** Deletes a repository file (path relative to the root), if it exists. */
   readonly remove: (path: string) => Promise<void>;
-  /** Runs Stryker on these `mutate` entries and returns its exit code and output. */
-  readonly stryker: (mutate: readonly string[]) => Promise<ToolRun>;
+  /** Runs Stryker with this configuration file on these `mutate` entries and returns its exit code and output. */
+  readonly stryker: (mutate: readonly string[], config: string) => Promise<ToolRun>;
 }
 
 interface Options {
@@ -50,8 +50,22 @@ interface Options {
   readonly files: string | undefined;
 }
 
-/** Stryker's JSON report, as stryker.config.json names it (`jsonReporter.fileName`). */
-const reportFile = "reports/mutation/mutation.json";
+/**
+ * The Stryker configurations and the JSON report each names (`jsonReporter.fileName`), with the changed files each
+ * mutates (005 research.md R-12): element source runs under stryker.elements.config.json, whose Vitest config holds
+ * only the in-process elements project, so per-test coverage reaches Stryker; every other file under
+ * stryker.config.json, whose Vitest config leaves that project out. In this order, so the default run's findings come
+ * first.
+ */
+const configurations = [
+  { file: "stryker.config.json", report: "reports/mutation/mutation.json", elements: false },
+  { file: "stryker.elements.config.json", report: "reports/mutation/mutation-elements.json", elements: true },
+] as const;
+
+/** Whether a changed path is element source, which stryker.elements.config.json mutates. */
+function elementSource(path: string): boolean {
+  return path.startsWith("packages/elements/src/");
+}
 
 /** What the gate reads as a `+++` header of `git diff` (ranges.ts), for the cause of a header it cannot read. */
 const headerHint = 'the gate reads +++ b/<path>, a C-quoted "b/<path>" or /dev/null (check diff.noprefix and diff.mnemonicPrefix)';
@@ -152,21 +166,29 @@ export async function mutation(context: Context, tools: MutationTools, io: Io): 
     records.push(...scan.records);
     findings.push(...scan.findings);
   }
-  await tools.remove(reportFile);
-  const ran = await tools.stryker(mutateSpecs(selected));
-  const report = await tools.read(reportFile);
-  const stryker: StrykerRun = { report, exitCode: ran.exitCode, output: `${ran.stdout}${ran.stderr}` };
-  const verdict = classifyMutants(stryker, selected);
-  if (!verdict.ok) return emit({ exit: 2, cause: verdict.cause }, io.out, io.err);
+  // One Stryker run per configuration that has changed files, each after deleting its own earlier report, and their
+  // classified mutants merged (005 research.md R-12).
+  let mutants = 0;
+  for (const configuration of configurations) {
+    const group = selected.filter((file) => elementSource(file.path) === configuration.elements);
+    if (group.length === 0) continue;
+    await tools.remove(configuration.report);
+    const ran = await tools.stryker(mutateSpecs(group), configuration.file);
+    const report = await tools.read(configuration.report);
+    const stryker: StrykerRun = { report, exitCode: ran.exitCode, output: `${ran.stdout}${ran.stderr}` };
+    const verdict = classifyMutants(stryker, group);
+    if (!verdict.ok) return emit({ exit: 2, cause: verdict.cause }, io.out, io.err);
+    findings.push(...verdict.findings);
+    mutants += verdict.mutants;
+  }
 
   for (const record of records) io.out(formatRecord(record));
-  findings.push(...verdict.findings);
   const files = selected.length;
   if (findings.length > 0) {
-    const summary = `mutation: ${plural(findings.length, "finding")} in ${plural(files, "changed file")} (${plural(verdict.mutants, "mutant")} on changed lines)`;
+    const summary = `mutation: ${plural(findings.length, "finding")} in ${plural(files, "changed file")} (${plural(mutants, "mutant")} on changed lines)`;
     return emit({ exit: 1, findings, summary }, io.out, io.err);
   }
-  const summary = `mutation: ${plural(verdict.mutants, "mutant")} on the changed lines of ${plural(files, "file")}, none survived; ${plural(records.length, "equivalent record")}`;
+  const summary = `mutation: ${plural(mutants, "mutant")} on the changed lines of ${plural(files, "file")}, none survived; ${plural(records.length, "equivalent record")}`;
   return emit({ exit: 0, summary }, io.out, io.err);
 }
 
@@ -183,7 +205,7 @@ function realTools(root: string, env: Io["env"]): MutationTools {
     // Stryker disable next-line all: process boundary, covered by gates-integration: gates/test/integration/mutation.test.ts "deletes an earlier run's report: a Stryker run that writes none exits 2 (review round 1, R1-01)"
     remove: (path) => rm(join(root, path), { force: true }),
     // Stryker disable next-line all: process boundary, covered by gates-integration: gates/test/integration/mutation.test.ts "reports a change only to source no test imports as a located NoCoverage finding (exit 1), not as could not run (review round 1, R1-10)"
-    stryker: (mutate) => runTool(process.execPath, [stryker, "run", "--mutate", mutate.join(",")], root, strykerEnv(env)),
+    stryker: (mutate, config) => runTool(process.execPath, [stryker, "run", config, "--mutate", mutate.join(",")], root, strykerEnv(env)),
   };
 }
 

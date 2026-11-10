@@ -72,7 +72,7 @@ export function fixtureDriver(page: Page, log: readonly string[], withBase = fal
         const root = host.shadowRoot;
         if (root === null) return { children: ["#no-shadow-root"], svg: null };
         const attributes = (of: Element): Record<string, string> => Object.fromEntries([...of.attributes].map((attribute) => [attribute.name, attribute.value]));
-        const svg = root.querySelector(":scope > svg");
+        const svg = [...root.children].find((child) => child.localName === "svg") ?? null;
         return {
           children: [...root.children].map((child) => child.localName),
           svg: svg === null ? null : { attributes: attributes(svg), parts: [...svg.children].map((part) => ({ name: part.localName, attributes: attributes(part) })) },

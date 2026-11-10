@@ -1,0 +1,11 @@
+{
+  "expect": "fail",
+  "why": "An element whose attribute has no description (FR-009): the committed manifest matches the source, so the one finding is no-description for that attribute.",
+  "findings": [
+    {
+      "location": "packages/elements/src/ocelle-plant.ts",
+      "rule": "no-description",
+      "message": "ocelle-plant.attribute.tone has no description"
+    }
+  ]
+}

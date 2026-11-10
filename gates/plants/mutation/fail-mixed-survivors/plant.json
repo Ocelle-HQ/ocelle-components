@@ -1,0 +1,16 @@
+{
+  "expect": "fail",
+  "why": "One gate-source and one element-source change, each with a survivor: the two Stryker runs of the split are merged, so both findings are reported (005 research.md R-12).",
+  "findings": [
+    {
+      "location": "gates/lib/x.ts:3",
+      "rule": "StringLiteral",
+      "message": "Survived"
+    },
+    {
+      "location": "packages/elements/src/x.ts:3",
+      "rule": "StringLiteral",
+      "message": "Survived"
+    }
+  ]
+}

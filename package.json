@@ -24,6 +24,7 @@
     "gate:pins": "node gates/bin/pins.ts",
     "gate:contrast": "node gates/bin/contrast.ts",
     "gate:brand-rules": "node gates/bin/brand-rules.ts",
+    "gate:manifest": "node gates/bin/manifest.ts",
     "gate:plants": "node gates/bin/plants.ts"
   },
   "devDependencies": {

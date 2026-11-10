@@ -1,0 +1,11 @@
+{
+  "expect": "fail",
+  "why": "An element whose slot has no description (FR-009): the committed manifest matches the source, so the one finding is no-description for that slot.",
+  "findings": [
+    {
+      "location": "packages/elements/src/ocelle-plant.ts",
+      "rule": "no-description",
+      "message": "ocelle-plant.slot.icon has no description"
+    }
+  ]
+}

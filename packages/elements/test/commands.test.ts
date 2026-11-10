@@ -41,11 +41,12 @@ describe("axTree(id)", () => {
     expect(await commands.axTree("go")).toEqual([{ role: "button", name: "Go" }]);
   });
 
-  it("gives the element's own node and the nodes of its shadow subtree, in tree order", async () => {
+  it("gives the element's own node and the nodes of its shadow subtree, the shadow button's text among them, in tree order", async () => {
     document.body.innerHTML = '<ocelle-commands-named id="named"></ocelle-commands-named>';
     expect(await commands.axTree("named")).toEqual([
       { role: "image", name: "Named" },
       { role: "button", name: "Inside" },
+      { role: "StaticText", name: "Inside" },
     ]);
   });
 
