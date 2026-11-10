@@ -40,6 +40,11 @@ function ranged(path: string, ...ranges: LineRange[]): ChangedFile {
   return { path, ranges, lines: ranges.reduce((sum, range) => sum + range.end - range.start + 1, 0) };
 }
 
+/** A selected file: the changed file and its `--files` entry as given (007 data-model § Entry). */
+function entry(changed: ChangedFile, name: string): ChangedFile & { readonly entry: string } {
+  return { ...changed, entry: name };
+}
+
 // `git diff --unified=0 --no-color --no-ext-diff bdb9b70 fffb7e7 -- gates/lib/plant-judge.ts`: the file whose shard
 // took 9:49 on GitHub run 41635769914 (216 changed lines, a new file, so one range).
 const plantJudge = readFileSync(new URL("fixtures/git-diff/plant-judge.diff", import.meta.url), "utf8");
@@ -280,7 +285,7 @@ describe("selectFiles", () => {
 
   it("selects the listed changed files, ignoring spaces and empty entries", () => {
     expect(selectFiles(changed, " gates/lib/c.ts,,gates/lib/a.ts ")).toEqual({
-      files: [file("gates/lib/a.ts", 2), file("gates/lib/c.ts", 4)],
+      files: [entry(file("gates/lib/a.ts", 2), "gates/lib/a.ts"), entry(file("gates/lib/c.ts", 4), "gates/lib/c.ts")],
     });
   });
 
@@ -297,41 +302,46 @@ describe("selectFiles: path:start-end entries (phase 3 round 9, O9-01)", () => {
 
   it("cuts the file's changed ranges to the entry's lines", () => {
     expect(selectFiles(changed, "gates/lib/a.ts:3-8")).toEqual({
-      files: [ranged("gates/lib/a.ts", { start: 3, end: 4 }, { start: 8, end: 8 })],
+      files: [entry(ranged("gates/lib/a.ts", { start: 3, end: 4 }, { start: 8, end: 8 }), "gates/lib/a.ts:3-8")],
     });
   });
 
   it("keeps the changed ranges an entry holds whole, and leaves out those outside it", () => {
     expect(selectFiles(changed, "gates/lib/a.ts:1-10")).toEqual({
-      files: [ranged("gates/lib/a.ts", { start: 2, end: 4 }, { start: 8, end: 9 })],
+      files: [entry(ranged("gates/lib/a.ts", { start: 2, end: 4 }, { start: 8, end: 9 }), "gates/lib/a.ts:1-10")],
     });
   });
 
-  it("joins entries of one file into one selected file, merging adjacent ranges, in diff order", () => {
-    expect(selectFiles(changed, "gates/lib/b.ts,gates/lib/a.ts:21-25,gates/lib/a.ts:2-3,gates/lib/a.ts:26-40")).toEqual({
-      files: [ranged("gates/lib/a.ts", { start: 2, end: 3 }, { start: 21, end: 30 }), file("gates/lib/b.ts", 3)],
+  // 007 (operator decision PLAN-CORRECTNESS-1-005 (a)): this test replaces "joins entries of one file into one
+  // selected file, merging adjacent ranges, in diff order", whose list named gates/lib/a.ts three times; such a list
+  // is now exit 2 (below). The diff order of the selected files stays.
+  it("selects the files of the list in diff order, each with its entry as given", () => {
+    expect(selectFiles(changed, "gates/lib/b.ts, gates/lib/a.ts:21-40 ")).toEqual({
+      files: [entry(ranged("gates/lib/a.ts", { start: 21, end: 30 }), "gates/lib/a.ts:21-40"), entry(file("gates/lib/b.ts", 3), "gates/lib/b.ts")],
     });
   });
 
+  // 007: this test named gates/lib/a:b.ts twice in one list, now exit 2; each entry is read on its own instead.
   it("reads the last :start-end as the range, so a path holding a colon keeps it", () => {
-    expect(selectFiles(changed, "gates/lib/a:b.ts:2-2,gates/lib/a:b.ts")).toEqual({
-      files: [file("gates/lib/a:b.ts", 2)],
+    expect(selectFiles(changed, "gates/lib/a:b.ts")).toEqual({ files: [entry(file("gates/lib/a:b.ts", 2), "gates/lib/a:b.ts")] });
+    expect(selectFiles(changed, "gates/lib/a:b.ts:2-2")).toEqual({
+      files: [entry(ranged("gates/lib/a:b.ts", { start: 2, end: 2 }), "gates/lib/a:b.ts:2-2")],
     });
-    expect(selectFiles(changed, "gates/lib/a:b.ts:2-2")).toEqual({ files: [ranged("gates/lib/a:b.ts", { start: 2, end: 2 })] });
   });
 
   it("takes a changed path holding .ts: whole, before reading a range suffix", () => {
     const odd = file("gates/lib/a.ts:b.ts", 2);
-    expect(selectFiles([odd], "gates/lib/a.ts:b.ts")).toEqual({ files: [odd] });
+    expect(selectFiles([odd], "gates/lib/a.ts:b.ts")).toEqual({ files: [entry(odd, "gates/lib/a.ts:b.ts")] });
   });
 
   it("names an entry whose path is not a changed file", () => {
     expect(selectFiles(changed, "gates/lib/a.ts:2-3,gates/lib/x.ts:1-5")).toEqual({ missing: ["gates/lib/x.ts:1-5"] });
   });
 
+  // 007: this list named gates/lib/a.ts three times, now exit 2; the empty ranges are of different files instead.
   it("names every entry whose range holds no changed line", () => {
-    expect(selectFiles(changed, "gates/lib/a.ts:5-7,gates/lib/a.ts:2-2,gates/lib/a.ts:31-99")).toEqual({
-      empty: ["gates/lib/a.ts:5-7", "gates/lib/a.ts:31-99"],
+    expect(selectFiles(changed, "gates/lib/a.ts:5-7,gates/lib/b.ts:2-2,gates/lib/a:b.ts:3-99")).toEqual({
+      empty: ["gates/lib/a.ts:5-7", "gates/lib/a:b.ts:3-99"],
     });
   });
 
@@ -342,6 +352,47 @@ describe("selectFiles: path:start-end entries (phase 3 round 9, O9-01)", () => {
   it("names malformed entries before missing paths, and missing paths before empty ranges", () => {
     expect(selectFiles(changed, "gates/lib/a.ts:5-7,gates/lib/x.ts,gates/lib/a.ts:0-1")).toEqual({ malformed: ["gates/lib/a.ts:0-1"] });
     expect(selectFiles(changed, "gates/lib/a.ts:5-7,gates/lib/x.ts")).toEqual({ missing: ["gates/lib/x.ts"] });
+  });
+});
+
+// 007 research R-03 (operator decision, human:jeroennouwsdev, 2026-11-10, PLAN-CORRECTNESS-1-005 (a) "Reject as exit
+// 2"): one selected file is one entry, so a `--files` list that names one file more than once (two entries of one
+// file, a whole entry and a range of it, or one entry repeated) selects nothing; every entry of each such file is
+// named as given, in list order. The check runs after the malformed check and before the missing and empty checks.
+describe("selectFiles: one file named more than once (007, PLAN-CORRECTNESS-1-005 (a))", () => {
+  const split = ranged("gates/lib/a.ts", { start: 2, end: 4 }, { start: 8, end: 9 }, { start: 20, end: 30 });
+  const changed = [split, file("gates/lib/b.ts", 3), file("gates/lib/a:b.ts", 2)];
+
+  it.each([
+    { list: "gates/lib/a.ts:2-4,gates/lib/a.ts:20-30", repeated: ["gates/lib/a.ts:2-4", "gates/lib/a.ts:20-30"] },
+    { list: "gates/lib/a.ts,gates/lib/a.ts:2-4", repeated: ["gates/lib/a.ts", "gates/lib/a.ts:2-4"] },
+    { list: "gates/lib/b.ts, gates/lib/b.ts ", repeated: ["gates/lib/b.ts", "gates/lib/b.ts"] },
+    { list: "gates/lib/a:b.ts:2-2,gates/lib/a:b.ts", repeated: ["gates/lib/a:b.ts:2-2", "gates/lib/a:b.ts"] },
+    {
+      list: "gates/lib/a.ts:2-4,gates/lib/b.ts,gates/lib/a:b.ts,gates/lib/a.ts:8-9,gates/lib/b.ts",
+      repeated: ["gates/lib/a.ts:2-4", "gates/lib/b.ts", "gates/lib/a.ts:8-9", "gates/lib/b.ts"],
+    },
+  ])("names every entry of each file named more than once, in list order: $list", ({ list, repeated }) => {
+    expect(selectFiles(changed, list)).toEqual({ repeated });
+  });
+
+  it("names malformed entries first, then repeated files, before missing paths and empty ranges", () => {
+    expect(selectFiles(changed, "gates/lib/a.ts:2-4,gates/lib/a.ts:8-9,gates/lib/b.ts:0-1")).toEqual({ malformed: ["gates/lib/b.ts:0-1"] });
+    expect(selectFiles(changed, "gates/lib/a.ts:2-4,gates/lib/x.ts,gates/lib/a.ts:8-9")).toEqual({
+      repeated: ["gates/lib/a.ts:2-4", "gates/lib/a.ts:8-9"],
+    });
+    expect(selectFiles(changed, "gates/lib/x.ts,gates/lib/x.ts:1-5")).toEqual({ repeated: ["gates/lib/x.ts", "gates/lib/x.ts:1-5"] });
+    expect(selectFiles(changed, "gates/lib/a.ts:5-7,gates/lib/a.ts:5-7")).toEqual({ repeated: ["gates/lib/a.ts:5-7", "gates/lib/a.ts:5-7"] });
+  });
+
+  it("selects a list that names each file once, whole or by range", () => {
+    expect(selectFiles(changed, "gates/lib/a:b.ts:2-2,gates/lib/a.ts:8-9,gates/lib/b.ts")).toEqual({
+      files: [
+        entry(ranged("gates/lib/a.ts", { start: 8, end: 9 }), "gates/lib/a.ts:8-9"),
+        entry(file("gates/lib/b.ts", 3), "gates/lib/b.ts"),
+        entry(ranged("gates/lib/a:b.ts", { start: 2, end: 2 }), "gates/lib/a:b.ts:2-2"),
+      ],
+    });
   });
 });
 
@@ -407,7 +458,7 @@ describe("mutation gate: --plan, --files and --base", () => {
       out: [
         "gates/lib/b.ts:1: mutation: ConditionalExpression: Survived: replaced by true",
         "gates/lib/a.ts:1: mutation: ConditionalExpression: Survived: replaced by true",
-        "mutation: 2 findings in 2 changed files (2 mutants on changed lines)",
+        "mutation: 2 findings in 2 changed files (2 mutants on changed lines; 0 timeouts, 0 compile errors, 0 zero-mutant entries)",
       ],
       err: [],
     });
@@ -422,7 +473,7 @@ describe("mutation gate: --plan, --files and --base", () => {
       code: 1,
       out: [
         "gates/lib/a.ts:1: mutation: ConditionalExpression: Survived: replaced by true",
-        "mutation: 1 finding in 1 changed file (1 mutant on changed lines)",
+        "mutation: 1 finding in 1 changed file (1 mutant on changed lines; 0 timeouts, 0 compile errors, 0 zero-mutant entries)",
       ],
       err: [],
     });
@@ -571,24 +622,30 @@ describe("mutation gate: --plan and --files with line-range entries (phase 3 rou
   it("--files with an entry path:start-end mutates only the changed lines inside it", async () => {
     expect(await gate(["--base", base, "--files", "gates/lib/a.ts:3-25"])).toEqual({
       code: 0,
-      out: ["mutation: 3 mutants on the changed lines of 1 file, none survived; 0 equivalent records"],
+      out: ["mutation: 3 mutants on the changed lines of 1 file, none survived; 0 timeouts, 0 compile errors, 0 zero-mutant entries; 0 equivalent records"],
       err: [],
       mutated: ["gates/lib/a.ts:3-4", "gates/lib/a.ts:8-9", "gates/lib/a.ts:20-25"],
     });
   });
 
-  it("--files with one entry of a split file, and with the plan's whole files value, entries of one file joined", async () => {
+  // 007 (operator decision PLAN-CORRECTNESS-1-005 (a)): the second half of this test, the plan's joined value of every
+  // shard (a.ts,b.ts:1-60,b.ts:61-120,b.ts:121-130) passing, is replaced by its exit 2: two entries of one file never
+  // share a shard, and one selected file is one entry, named in its report lines as given.
+  it("--files with one entry of a split file, and the plan's joined value of every shard exits 2 before Stryker runs", async () => {
     expect(await gate(["--base", base, "--files", "gates/lib/b.ts:121-130"])).toEqual({
       code: 0,
-      out: ["mutation: 1 mutant on the changed lines of 1 file, none survived; 0 equivalent records"],
+      out: ["mutation: 1 mutant on the changed lines of 1 file, none survived; 0 timeouts, 0 compile errors, 0 zero-mutant entries; 0 equivalent records"],
       err: [],
       mutated: ["gates/lib/b.ts:121-130"],
     });
     expect(await gate(["--base", base, "--files", "gates/lib/a.ts,gates/lib/b.ts:1-60,gates/lib/b.ts:61-120,gates/lib/b.ts:121-130"])).toEqual({
-      code: 0,
-      out: ["mutation: 4 mutants on the changed lines of 2 files, none survived; 0 equivalent records"],
-      err: [],
-      mutated: ["gates/lib/a.ts:2-4", "gates/lib/a.ts:8-9", "gates/lib/a.ts:20-30", "gates/lib/b.ts:1-130"],
+      code: 2,
+      out: [],
+      err: [
+        "mutation: could not run: --files names one file more than once (two entries of one file never share a shard): " +
+          "gates/lib/b.ts:1-60, gates/lib/b.ts:61-120, gates/lib/b.ts:121-130; run --plan for the shards",
+      ],
+      mutated: [],
     });
   });
 
@@ -607,6 +664,26 @@ describe("mutation gate: --plan and --files with line-range entries (phase 3 rou
       problem: "a range with no changed line",
       files: "gates/lib/a.ts:5-7,gates/lib/b.ts:131-140",
       cause: "--files names a range with no changed line: gates/lib/a.ts:5-7, gates/lib/b.ts:131-140",
+    },
+    {
+      problem: "two entries of one file (007)",
+      files: "gates/lib/b.ts:1-60,gates/lib/a.ts,gates/lib/b.ts:61-120",
+      cause: "--files names one file more than once (two entries of one file never share a shard): gates/lib/b.ts:1-60, gates/lib/b.ts:61-120",
+    },
+    {
+      problem: "a whole entry and a range of one file (007)",
+      files: "gates/lib/a.ts,gates/lib/a.ts:2-4",
+      cause: "--files names one file more than once (two entries of one file never share a shard): gates/lib/a.ts, gates/lib/a.ts:2-4",
+    },
+    {
+      problem: "a repeated entry (007)",
+      files: "gates/lib/b.ts:121-130,gates/lib/b.ts:121-130",
+      cause: "--files names one file more than once (two entries of one file never share a shard): gates/lib/b.ts:121-130, gates/lib/b.ts:121-130",
+    },
+    {
+      problem: "a repeated file and a path that is not a changed file, the repeated file first (007)",
+      files: "gates/lib/x.ts,gates/lib/a.ts:2-4,gates/lib/a.ts:8-9",
+      cause: "--files names one file more than once (two entries of one file never share a shard): gates/lib/a.ts:2-4, gates/lib/a.ts:8-9",
     },
   ])("exits 2 naming the entries on $problem, before Stryker runs", async ({ files, cause }) => {
     expect(await gate(["--base", base, "--files", files])).toEqual({
@@ -662,7 +739,7 @@ describe("mutation gate: the report of this run, never an earlier one (review ro
     const tools = { git: fakeGit(diff), ...fakeRepo({ ...files, [reportPath]: survivedEarlier }, fakeStryker(() => "Killed")) };
     expect(await gate(tools)).toEqual({
       code: 0,
-      out: ["mutation: 1 mutant on the changed lines of 1 file, none survived; 0 equivalent records"],
+      out: ["mutation: 1 mutant on the changed lines of 1 file, none survived; 0 timeouts, 0 compile errors, 0 zero-mutant entries; 0 equivalent records"],
       err: [],
     });
   });
@@ -714,9 +791,191 @@ describe("mutation gate: a mutate entry Stryker did not read (phase 3 round 12, 
   it("passes a --files run of read files only, beside the unread files of the diff", async () => {
     expect(await gate(["--files", "gates/lib/a.ts"])).toEqual({
       code: 0,
-      out: ["mutation: 1 mutant on the changed lines of 1 file, none survived; 0 equivalent records"],
+      out: ["mutation: 1 mutant on the changed lines of 1 file, none survived; 0 timeouts, 0 compile errors, 0 zero-mutant entries; 0 equivalent records"],
       err: [],
       mutated: ["gates/lib/a.ts:1-2"],
     });
+  });
+});
+
+// 007 User Story 1 (contracts/mutation-output.md; spec FR-001 to FR-006, US1 AS1 to AS6 and the edge cases): after the
+// equivalent records, the gate prints the Timeout lines, then the CompileError lines, then the zero-mutant entries,
+// then the findings (exit 1) and the summary, which counts all three kinds, also when zero. A zero-mutant entry is
+// named by its path in a whole-diff run and by its `--files` entry as given in a shard run. Exit 2 prints none of them.
+describe("mutation gate: the report of undecided mutants and zero-mutant entries (007)", () => {
+  /** A Stryker double that writes this report, whatever it is asked to mutate, and records what it was asked. */
+  function writing(files: Readonly<Record<string, readonly object[]>>, mutated: string[]) {
+    return (mutate: readonly string[], tree: Map<string, string>) => {
+      mutated.push(...mutate);
+      tree.set(reportPath, strykerReport(files));
+      return { exitCode: 0, stdout: "", stderr: "" };
+    };
+  }
+
+  function at(id: string, line: number, status: string, mutatorName: string, replacement: string): object {
+    return { id, mutatorName, replacement, status, location: { start: { line, column: 1 }, end: { line, column: 5 } } };
+  }
+
+  async function gate(args: readonly string[], diff: string, sources: Readonly<Record<string, string>>, report: Readonly<Record<string, readonly object[]>>) {
+    const { io, out, err } = capture();
+    const mutated: string[] = [];
+    const code = await mutation(context(["--base", base, ...args]), { git: fakeGit(diff), ...fakeRepo(sources, writing(report, mutated)) }, io);
+    return { code, out, err, mutated };
+  }
+
+  const a = "gates/lib/a.ts";
+  const b = "gates/lib/b.ts";
+  const c = "packages/tokens/src/c.ts";
+  const recordedA = '// Stryker disable next-line StringLiteral: only logged\nlog("x");\nexport const a = 1;\nexport const b = 2;\n';
+  const sources = { [a]: recordedA, [b]: "export type B = 1;\nexport type C = 2;\n", [c]: "export const c = {\n  a: 1,\n};\n" };
+
+  it("prints records, timeouts, compile errors and zero-mutant entries in that order, in changed-file order, and passes (AS1 to AS3)", async () => {
+    // The diff lists c.ts first, then a.ts, then b.ts; the report lists a.ts first.
+    const diff = newFilesDiff({ [c]: 3, [a]: 4, [b]: 2 });
+    const report = {
+      [a]: [at("0", 3, "Timeout", "ConditionalExpression", "true"), at("1", 4, "CompileError", "ArrayDeclaration", "[]"), at("2", 2, "Killed", "StringLiteral", '""'), at("3", 2, "Ignored", "StringLiteral", '""')],
+      [c]: [at("4", 1, "Timeout", "ObjectLiteral", "{\n  a\n}")],
+    };
+    expect(await gate([], diff, sources, report)).toEqual({
+      code: 0,
+      out: [
+        "gates/lib/a.ts:1: mutation: record: StringLiteral: only logged",
+        "packages/tokens/src/c.ts:1: mutation: timeout: ObjectLiteral: replaced by { a }",
+        "gates/lib/a.ts:3: mutation: timeout: ConditionalExpression: replaced by true",
+        "gates/lib/a.ts:4: mutation: compile-error: ArrayDeclaration: replaced by []",
+        "gates/lib/b.ts: mutation: zero-mutants: no mutant on the changed lines",
+        "mutation: 5 mutants on the changed lines of 3 files, none survived; 2 timeouts, 1 compile error, 1 zero-mutant entry; 1 equivalent record",
+      ],
+      err: [],
+      mutated: ["packages/tokens/src/c.ts:1-3", "gates/lib/a.ts:1-4", "gates/lib/b.ts:1-2"],
+    });
+  });
+
+  it("prints no report line when every mutant was killed, and counts zero of each (AS4)", async () => {
+    const report = { [a]: [at("0", 3, "Killed", "ConditionalExpression", "true"), at("1", 4, "RuntimeError", "ArrayDeclaration", "[]")] };
+    expect(await gate([], newFilesDiff({ [a]: 4 }), sources, report)).toMatchObject({
+      code: 0,
+      out: [
+        "gates/lib/a.ts:1: mutation: record: StringLiteral: only logged",
+        "mutation: 2 mutants on the changed lines of 1 file, none survived; 0 timeouts, 0 compile errors, 0 zero-mutant entries; 1 equivalent record",
+      ],
+    });
+  });
+
+  it("exits 1 on a survivor beside a Timeout, the Timeout a report line apart from the finding (AS5)", async () => {
+    const report = { [c]: [at("0", 1, "Survived", "ObjectLiteral", "{}"), at("1", 2, "Timeout", "BooleanLiteral", "false")] };
+    expect(await gate([], newFilesDiff({ [c]: 3 }), sources, report)).toEqual({
+      code: 1,
+      out: [
+        "packages/tokens/src/c.ts:2: mutation: timeout: BooleanLiteral: replaced by false",
+        "packages/tokens/src/c.ts:1: mutation: ObjectLiteral: Survived: replaced by {}",
+        "mutation: 1 finding in 1 changed file (2 mutants on changed lines; 1 timeout, 0 compile errors, 0 zero-mutant entries)",
+      ],
+      err: [],
+      mutated: ["packages/tokens/src/c.ts:1-3"],
+    });
+  });
+
+  it("exits 1 with every group in order: records, timeouts, compile errors, zero-mutant entries, findings, summary", async () => {
+    const report = {
+      [a]: [at("0", 4, "NoCoverage", "StringLiteral", '""'), at("1", 3, "CompileError", "ArrayDeclaration", "[]"), at("2", 2, "Timeout", "StringLiteral", '""')],
+      [c]: [at("3", 1, "Timeout", "ObjectLiteral", "{}"), at("4", 2, "CompileError", "BooleanLiteral", "false")],
+    };
+    expect(await gate([], newFilesDiff({ [a]: 4, [b]: 2, [c]: 3 }), sources, report)).toEqual({
+      code: 1,
+      out: [
+        "gates/lib/a.ts:1: mutation: record: StringLiteral: only logged",
+        'gates/lib/a.ts:2: mutation: timeout: StringLiteral: replaced by ""',
+        "packages/tokens/src/c.ts:1: mutation: timeout: ObjectLiteral: replaced by {}",
+        "gates/lib/a.ts:3: mutation: compile-error: ArrayDeclaration: replaced by []",
+        "packages/tokens/src/c.ts:2: mutation: compile-error: BooleanLiteral: replaced by false",
+        "gates/lib/b.ts: mutation: zero-mutants: no mutant on the changed lines",
+        'gates/lib/a.ts:4: mutation: StringLiteral: NoCoverage: replaced by ""',
+        "mutation: 1 finding in 3 changed files (5 mutants on changed lines; 2 timeouts, 2 compile errors, 1 zero-mutant entry)",
+      ],
+      err: [],
+      mutated: ["gates/lib/a.ts:1-4", "gates/lib/b.ts:1-2", "packages/tokens/src/c.ts:1-3"],
+    });
+  });
+
+  it("names a shard's zero-mutant range entry exactly as given to --files, whatever other entries of the file hold (AS6)", async () => {
+    const source = "packages/tokens/src/source.ts";
+    const diff = newFilesDiff({ [source]: 130 });
+    const report = { [source]: [at("0", 5, "Killed", "StringLiteral", '""'), at("1", 125, "Timeout", "StringLiteral", '""')] };
+    expect(await gate(["--files", `${source}:61-120`], diff, { [source]: "export const s = 1;\n" }, report)).toEqual({
+      code: 0,
+      out: [
+        "packages/tokens/src/source.ts:61-120: mutation: zero-mutants: no mutant on the changed lines",
+        "mutation: 0 mutants on the changed lines of 1 file, none survived; 0 timeouts, 0 compile errors, 1 zero-mutant entry; 0 equivalent records",
+      ],
+      err: [],
+      mutated: ["packages/tokens/src/source.ts:61-120"],
+    });
+  });
+
+  it("reports a shard's undecided mutants on its own entries only, and names a whole entry by its path (AS6)", async () => {
+    const source = "packages/tokens/src/source.ts";
+    const diff = newFilesDiff({ [a]: 4, [source]: 130 });
+    const report = {
+      [source]: [at("0", 5, "Timeout", "StringLiteral", '""'), at("1", 70, "Timeout", "StringLiteral", '""'), at("2", 60, "CompileError", "StringLiteral", '""'), at("3", 61, "CompileError", "StringLiteral", '""')],
+    };
+    expect(await gate(["--files", ` ${source}:1-60 ,${a}`], diff, { [a]: "export const a = 1;\n", [source]: "export const s = 1;\n" }, report)).toEqual({
+      code: 0,
+      out: [
+        'packages/tokens/src/source.ts:5: mutation: timeout: StringLiteral: replaced by ""',
+        'packages/tokens/src/source.ts:60: mutation: compile-error: StringLiteral: replaced by ""',
+        "gates/lib/a.ts: mutation: zero-mutants: no mutant on the changed lines",
+        "mutation: 2 mutants on the changed lines of 2 files, none survived; 1 timeout, 1 compile error, 1 zero-mutant entry; 0 equivalent records",
+      ],
+      err: [],
+      mutated: ["gates/lib/a.ts:1-4", "packages/tokens/src/source.ts:1-60"],
+    });
+  });
+
+  it("makes every entry a zero-mutant entry when Stryker found no mutant at all, and passes (spec edge case)", async () => {
+    expect(await gate([], newFilesDiff({ [b]: 2, [c]: 3 }), sources, {})).toEqual({
+      code: 0,
+      out: [
+        "gates/lib/b.ts: mutation: zero-mutants: no mutant on the changed lines",
+        "packages/tokens/src/c.ts: mutation: zero-mutants: no mutant on the changed lines",
+        "mutation: 0 mutants on the changed lines of 2 files, none survived; 0 timeouts, 0 compile errors, 2 zero-mutant entries; 0 equivalent records",
+      ],
+      err: [],
+      mutated: ["gates/lib/b.ts:1-2", "packages/tokens/src/c.ts:1-3"],
+    });
+  });
+
+  it("never makes a changed test file a zero-mutant entry, only the source entry beside it (spec edge case)", async () => {
+    const diff = newFilesDiff({ "packages/tokens/test/c.test.ts": 3, [c]: 3, "gates/test/c.test.ts": 2 });
+    expect(await gate([], diff, sources, {})).toEqual({
+      code: 0,
+      out: [
+        "packages/tokens/src/c.ts: mutation: zero-mutants: no mutant on the changed lines",
+        "mutation: 0 mutants on the changed lines of 1 file, none survived; 0 timeouts, 0 compile errors, 1 zero-mutant entry; 0 equivalent records",
+      ],
+      err: [],
+      mutated: ["packages/tokens/src/c.ts:1-3"],
+    });
+  });
+
+  it("prints no record or report line when the run could not decide (exit 2)", async () => {
+    const report = { [a]: [at("0", 3, "Timeout", "ConditionalExpression", "true"), at("1", 4, "Pending", "ArrayDeclaration", "[]")] };
+    expect(await gate([], newFilesDiff({ [a]: 4, [b]: 2 }), sources, report)).toEqual({
+      code: 2,
+      out: [],
+      err: ["mutation: could not run: mutant 1 at gates/lib/a.ts:4 has status Pending; re-run the mutation gate"],
+      mutated: ["gates/lib/a.ts:1-4", "gates/lib/b.ts:1-2"],
+    });
+  });
+
+  it("lists every Timeout, 121 of them, without truncation", async () => {
+    const source = "packages/tokens/src/source.ts";
+    const report = { [source]: Array.from({ length: 121 }, (_, i) => at(String(i), i + 1, "Timeout", "StringLiteral", '""')) };
+    const ran = await gate([], newFilesDiff({ [source]: 130 }), { [source]: "export const s = 1;\n" }, report);
+    expect(ran.code).toBe(0);
+    expect(ran.out).toEqual([
+      ...Array.from({ length: 121 }, (_, i) => `packages/tokens/src/source.ts:${String(i + 1)}: mutation: timeout: StringLiteral: replaced by ""`),
+      "mutation: 121 mutants on the changed lines of 1 file, none survived; 121 timeouts, 0 compile errors, 0 zero-mutant entries; 0 equivalent records",
+    ]);
   });
 });
