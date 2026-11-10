@@ -4,13 +4,15 @@ Decisions behind `plan.md`. Each entry: decision, rationale, alternatives, and w
 made on 2026-11-10 in this container (Node 22.23.4, Chromium 1243 at
 `/opt/pw-browsers/chromium-1243/chrome-linux64/chrome`, the repository's pinned Vite 8.3.5, Vitest 5.0.5, Stryker
 10.1.1 and Playwright 1.64.1), with probe scripts in the session scratchpad; nothing of them is committed. Plan squad round 1
-(`reviews/plan/round-1/refute.md`) re-measured several of them and the operator decided its forks; the entries below
-carry those results and decisions, each marked with the finding it answers.
+(`reviews/plan/round-1/refute.md`) re-measured several of them and the operator decided its forks; plan squad round 2
+(`reviews/plan/round-2/refute.md`) did the same for five more. The entries below carry those results and decisions,
+each marked with the finding it answers.
 
 ## R-01 Lit version and how elements declare properties
 
-- **Decision**: `lit` **3.3.3**, exact, as the only runtime dependency of `@ocelle/elements` (released 2026-05-14,
-  past the 7-day `minimumReleaseAge`). It resolves `lit-html` 3.3.3, `lit-element` 4.2.2, `@lit/reactive-element`
+- **Decision**: `lit` **3.3.3**, exact, as the only runtime dependency (`dependencies` entry) of `@ocelle/elements`
+  (released 2026-05-14, past the 7-day `minimumReleaseAge`); `@ocelle/tokens` is a peer dependency, not bundled
+  (R-15, PLAN-FRESH-2-004). It resolves `lit-html` 3.3.3, `lit-element` 4.2.2, `@lit/reactive-element`
   2.1.2 and `@lit-labs/ssr-dom-shim` (Node-only export condition, not bundled in the browser build; checked in the
   build test, R-05). Elements declare reactive properties with `static override properties = { … }` and `declare`
   fields, not decorators.
@@ -78,11 +80,17 @@ carry those results and decisions, each marked with the finding it answers.
   - `aspect-ratio` takes only the number `1` (PLAN-FRESH-1-006 (a), the mark's sizing, R-09). Pass plant
     `pass-aspect-square` (`aspect-ratio: 1`); fail plant `fail-aspect-ratio-other` (`aspect-ratio: 2`).
   - The unit `lh` is allowed only as `1lh`, one line box of the element's own line height (PLAN-CORRECTNESS-1-004 (a),
-    the slot wrapper, R-10). Pass plant `pass-one-line` (`block-size: 1lh`); fail plant `fail-lh-multiple`
-    (`block-size: 2lh`).
+    the slot wrapper, R-10), as a value on its own and as an operand inside `calc()` (PLAN-FRESH-2-002 (a), the row's
+    block padding, R-10). Pass plants `pass-one-line` (`block-size: 1lh`) and `pass-one-line-calc` (`padding-block:
+    calc((var(--ocelle-icon-size) - 1lh) / 2)`); fail plants `fail-lh-multiple` (`block-size: 2lh`) and
+    `fail-lh-multiple-calc` (`padding-block: calc(var(--ocelle-icon-size) - 2lh)`, so admitting `lh` inside `calc()`
+    does not admit other multiples). The lint's `calc()` rule is otherwise unchanged: it already admits unitless
+    factors beside a token (`calc(var(--ocelle-space-1) * 2)`), and `/ 2` in the padding rule is such a factor.
   - Why these are not raw literals under constitution II: `-1`/`1` flip or keep a drawing and change no size, `1` as
     an aspect ratio says "as wide as high" and takes the size from the token, and `1lh` is the line height the element
-    already inherits from the type tokens. Any other value of these properties stays a finding.
+    already inherits from the type tokens (in the padding rule it is subtracted from the icon-size token, so the
+    padding is derived from tokens and holds no length of its own). Any other value of these properties stays a
+    finding.
 - **Rationale**: adopted stylesheets are the constitution IV mechanism; `static styles` is Lit's shared form.
 - **Alternatives** for mirroring: `transform: scaleX(-1)` (a raw function under `token-only`), `scale: calc(-1) 1`
   (passes the lint by an accident of the `calc()` rule; obscure), an SVG `transform` attribute chosen in `render()`
@@ -92,12 +100,23 @@ carry those results and decisions, each marked with the finding it answers.
 ## R-04 `ocelle-icon` rendering and sizing
 
 - **Decision**: `:host { display: inline-block; inline-size: var(--ocelle-icon-size); block-size:
-  var(--ocelle-icon-size); vertical-align: middle; flex: none; }`; the drawing is
+  var(--ocelle-icon-size); vertical-align: middle; flex: none; }` and `:host([hidden]) { display: none; }`; the drawing is
   `<svg viewBox="0 0 24 24" aria-hidden="true" focusable="false">` with `display: block; inline-size: 100%;
   block-size: 100%` and the default `preserveAspectRatio` (`xMidYMid meet`), which scales to the smaller side and
   centres (FR-011, US1-3). Strokes `stroke: currentColor; fill: none` set by attributes in the drawing
   (presentation attributes, not `style`), FR-012. An unknown, empty or absent `name` renders nothing (`nothing`), so the
   box stays and the shadow root holds no `svg` (FR-016). `name` matching is exact (a `Map` lookup).
+- **`hidden`** (PLAN-FRESH-2-001): a shadow `:host` rule is author origin and outranks the user-agent rule
+  `[hidden] { display: none }`, so without `:host([hidden])` a `hidden` icon keeps its 20 × 20 px box and its drawing,
+  and a labelled one stays in the accessibility tree (measured by the round-2 squad: CDP `getFullAXTree` still holds
+  `image "X"`). `:host([hidden])` (specificity 0,2,0) beats `:host` (0,1,0). The same rule is in the mark's styles
+  (R-09) and is a README convention for every element (R-15). Re-measured in this pass (Chromium 1243, R-09's sheet on
+  a plain custom element): `hidden` gives a 0 × 0 px box with the rule and 20 × 20 px without it. Tests: US1-19 and
+  US4-15, with the plant "the `:host([hidden])` rule removed".
+- **Without `tokens.css`** (PLAN-FRESH-2-004): with `--ocelle-icon-size` undefined the `var()` is invalid at computed
+  time, `inline-size` and `block-size` fall back to `auto`, and the `svg` takes its default width, so an icon is
+  300 × 300 px (measured by the round-2 squad). The README says to link `tokens.css` first and what happens without it
+  (R-15).
 - **Rationale**: inline SVG in the shadow root needs no request and no `<use href>` (FR-005, FR-010); presentation
   attributes are not `style` attributes, so the `csp` gate's `style-attribute` rule does not apply.
 - **Alternatives**: `<svg><use href="#sprite">`: an `href` and an id that cannot cross the shadow root. CSS
@@ -130,12 +149,27 @@ carry those results and decisions, each marked with the finding it answers.
     absence of externals and of the `development` condition, and the banner text, as
     `storybook/test/unit/main.test.ts` covers `.storybook/main.ts` (PLAN-TESTABILITY-1-009). The spawned build in
     `build.test.ts` does not see Stryker's active mutant, so this import is what kills the configuration's mutants.
-  - Engine floor (PLAN-A11Y-SECURITY-1-007): the elements require constructable stylesheets (`adoptedStyleSheets`;
-    Chromium 73+, WebKit 16.4+) and a page without a `window.ShadyCSS` polyfill. Lit's fallback, which creates a
-    `<style>` element per stylesheet (`@lit/reactive-element` `css-tag.js`: `supportsAdoptingStyleSheets` false →
-    `document.createElement('style')`), is unreachable in those engines, so FR-004's "no `<style>` element" holds
-    there; in an older engine the strict CSP would block those elements and the icons would render unsized. The README
-    states the floor (R-15).
+  - Engine floor (PLAN-A11Y-SECURITY-1-007, PLAN-FRESH-2-005): **Chromium 120+ and WebKit 16.4+**, set by the newest
+    feature the elements use, and a page without a `window.ShadyCSS` polyfill. The features and their first versions
+    (Chromium, WebKit; from caniuse-lite 1.0.30001819 where it has the feature, from MDN otherwise):
+    - `:dir()` in `:host(:dir(rtl)) .mirror` (R-08): Chromium 120, WebKit 16.4 (caniuse `css-dir-pseudo`). This sets
+      the Chromium figure. Below it the selector is invalid, the rule is dropped and the four directional icons never
+      mirror;
+    - `@media not (forced-colors: active)` (R-09), Media Queries 4's `not (<feature>)` without a media type: Chromium
+      104, WebKit 16.4 (caniuse `css-media-range-syntax`). Below it the variant block never applies and the mark's ring
+      has no stroke;
+    - the `lh` unit (R-10): Chromium 109 (MDN; not in the installed caniuse data, not probed);
+    - the `scale` property (R-08): Chromium 104 (MDN; not probed);
+    - constructable stylesheets (`adoptedStyleSheets`): Chromium 73, WebKit 16.4. Lit's fallback, which creates a
+      `<style>` element per stylesheet (`@lit/reactive-element` `css-tag.js`: `supportsAdoptingStyleSheets` false →
+      `document.createElement('style')`), is unreachable above the floor, so FR-004's "no `<style>` element" holds
+      there; below it the strict CSP would block those elements and the icons would render unsized.
+
+    The WebKit figure is set by `:dir()`, Media Queries 4 and constructable stylesheets alike. The README states the
+    floor with the feature behind each figure, and its conventions say that an element using a newer feature raises
+    the floor in the README and in this list (R-15). The round-2 lens's optional hardening (`stroke="currentColor"` and
+    `fill="currentColor"` presentation attributes on the rosette, so a dropped rule degrades to the mono mark) is not
+    adopted: nothing is promised below the stated floor.
 - **Measured**: a probe element built with the repository's Vite 8.3.5 in library mode gave a 20 kB unminified ES
   module with no `import`; `gate:csp --root <probe>` and `gate:prefix --root <probe>` over it: "1 file checked, no
   finding". The only `innerHTML` in Lit's production code assigns a `<template>`'s content, which the `csp` gate does
@@ -293,11 +327,20 @@ carry those results and decisions, each marked with the finding it answers.
   text in both palettes, `LinkText` in a link and `GrayText` in a disabled button. The README's conventions state the
   rule for later elements: variant rules go inside `@media not (forced-colors: active)`, so a forced-colours rule
   never has to outrank a variant selector.
-- **Sizing** (operator decision, PLAN-FRESH-1-006 (a)): `:host { display: inline-block; block-size:
-  var(--ocelle-icon-size); inline-size: auto; aspect-ratio: 1; vertical-align: middle; flex: none; }` and the `svg`
-  as in R-04 (`inline-size: 100%; block-size: 100%`, `xMidYMid meet`). Measured in this session: no host size gives
-  20 × 20 px, a host `block-size: 32px` gives 32 × 32 px, a host `inline-size: 32px` gives 32 × 20 px with the drawing
-  at the smaller side, centred (US4-7). `aspect-ratio: 1` needs the `token-only` change of R-03.
+- **Sizing** (operator decision, PLAN-FRESH-1-006 (a); PLAN-FRESH-2-003): `:host { display: inline-block; block-size:
+  var(--ocelle-icon-size); inline-size: max-content; aspect-ratio: 1; vertical-align: middle; flex: none; }`,
+  `:host([hidden]) { display: none; }` (as in R-04, PLAN-FRESH-2-001) and the `svg` as in R-04 (`inline-size: 100%;
+  block-size: 100%`, `xMidYMid meet`). `inline-size: max-content`, not `auto`: in a column flex container
+  (`align-items: normal`) an item whose cross size is `auto` is stretched, and the stretch wins over `aspect-ratio`, so
+  with `auto` the mark is as wide as its parent (300 × 20 px in a 300 px column, measured by the round-2 squad);
+  `max-content` takes the width from the aspect ratio. Measured in this pass with `max-content` (Chromium 1243, 300 px
+  parents): no host size gives 20 × 20 px in a paragraph, a flex row and a flex column; a host `block-size: 32px` gives
+  32 × 32 px; a host `inline-size: 32px` gives 32 × 20 px with the drawing at the smaller side, centred; `hidden` gives
+  0 × 0 px (US4-7, US4-15). With `auto` the column case is 300 × 20 px, which is US4-7's plant. `max-content` is a
+  keyword (no lint change); `aspect-ratio: 1` needs the `token-only` change of R-03.
+- **Without `tokens.css`** (PLAN-FRESH-2-004): `.ring { stroke: var(--ocelle-color-ink) }` resolves to the inherited
+  `stroke`, `none` by default, so the ring is not painted (the arcs carry no `stroke` attribute), and the mark is sized
+  as an icon without tokens is (R-04). The README says so (R-15).
 - **Forced-colours tests and plants** (US4-5, PLAN-TESTABILITY-1-006): every variant (default, chrome, mono) is read
   in four contexts: body text, a link, a native button and a disabled native button. In Chromium's emulated palettes
   `ButtonText` equals `CanvasText` (measured: rgb(0,0,0) light, rgb(255,255,255) dark), while `LinkText` (rgb(0,0,159),
@@ -333,7 +376,7 @@ carry those results and decisions, each marked with the finding it answers.
 - **Decision**: `icon-slot.ts` exports `iconSlotStyles`, a `css` template a control adds to its `static styles`, and
   documents the markup a control renders: `<span class="icon-slot"><slot name="icon"></slot></span><span
   class="label">…</span><span class="icon-slot trailing"><slot name="trailing"></slot></span>` inside an
-  `inline-flex` row with `align-items: flex-start`. Rules:
+  `inline-flex` row with `align-items: flex-start` that carries the class `icon-row`. Rules:
   - `.icon-slot { display: inline-flex; align-items: center; justify-content: center; flex: none; block-size: 1lh; }`:
     the wrapper is exactly one line box of the row's line height, and the icon is centred in it, overflowing it
     evenly above and below when the icon is taller than the line box. So the icon is centred on the label's first line
@@ -341,6 +384,24 @@ carry those results and decisions, each marked with the finding it answers.
     decision, PLAN-CORRECTNESS-1-004 (a); FR-021, US3-1). The wrappers and the label inherit the row's font and line
     height; the README says a control sets type on the row, not on the label alone. `1lh` needs the `token-only`
     change of R-03.
+  - `.icon-row { padding-block: calc((var(--ocelle-icon-size) - 1lh) / 2); }` (operator decision, PLAN-FRESH-2-002
+    (a)): the row reserves, above and below, half the amount by which the icon is taller than the line box, so the
+    icon's overflow of its wrapper stays inside the row and so inside the control's box. Without it, with
+    `align-items: flex-start` the row is only as tall as the label, and the icon leaves the control's border box
+    whenever it is taller than a line, which happens at the default icon size with `--ocelle-font-size-xs`
+    (12 px × 1.45 = 17.4 px) and with `--ocelle-font-size-sm` and `--ocelle-line-height-tight` (16.1 px), and with
+    `--ocelle-icon-size: 2rem`; a control that clips (`overflow: hidden`) then cuts the icon (measured by the round-2
+    squad). When the line box is at least the icon size the `calc()` is negative, and a negative `calc()` result for
+    `padding` is clamped to 0 at computed value (CSS Values 4), so no `max()` and no `0px` literal are needed, and the
+    rule passes the lint with R-03's `1lh` admission inside `calc()`. Measured in this pass (Chromium 1243, a shadow
+    `<button>` as the row, 1 px border, R-10's wrapper and `::slotted` rules, single-line and wrapped): computed padding
+    0 px at `md`/`normal` (23.2 px line), 1.30 px at `xs`/`normal`, 1.95 px at `sm`/`tight` and 4.41 px at `md`/`normal`
+    with a 32 px icon (the first case is the clamp); the slotted icon's box lies inside the
+    button's border box in all four cases, single-line and wrapped, against outside it at the last three without the
+    rule; the centre difference is the same with and without the rule, and the lens's `max(0px, …)` form gave the same
+    boxes. The padding is the row's: a control that wants more block padding puts it on an element around the row (or
+    sets the row's `padding-block` to a value at least this one), which the README says. An empty slot leaves the
+    padding in place, so a control's height is the same with and without icons.
   - No strut. The zero-width-space `::before` strut of the first draft centred only when the line box was at least the
     icon size (measured centre differences: 16px/1.45 −0.01 px, but 14px/1.15 1.95 px, 12px/1.45 1.30 px and a 32 px
     icon 4.40 px, against US3-1's 0.5 px; with `block-size: 1lh` and no strut, at most 0.01 px in all four), and its
@@ -360,7 +421,9 @@ carry those results and decisions, each marked with the finding it answers.
 - **Centring tests** (US3-1, US3-10): the test host is measured with its row in body type (`--ocelle-font-size-md`,
   `--ocelle-line-height-normal`), at `--ocelle-font-size-xs`, at `--ocelle-font-size-sm` with
   `--ocelle-line-height-tight` (a line box under 20 px), and with `--ocelle-icon-size: 2rem` on the host, single-line
-  and wrapped; each case asserts the 0.5 px bound.
+  and wrapped; each case asserts the 0.5 px bound and that the slotted icon's box lies inside the inner button's
+  border box (to one layout unit, 1/64 px), PLAN-FRESH-2-002 (a). Plants: the strut (centring) and the `.icon-row`
+  padding rule removed (containment, which fails at the `xs`, `sm`/`tight` and 2rem cases).
 - **Name from the visible label** (US3-11, PLAN-A11Y-SECURITY-1-004): the test host without `label`, labelled
   "Open project" by its visible text, with an icon in each slot; the test reads the inner button's name ("Open
   project" exactly) and its children (no text node besides the label's) from the AX tree.
@@ -370,7 +433,8 @@ carry those results and decisions, each marked with the finding it answers.
   max-inline-size: none !important }` with `--s: 20px`: both measured 20 × 20 px.
 - **Test host**: `packages/elements/test/fixtures/test-host.ts`, a Lit element `ocelle-test-host` (named in the
   `ocelle-` space so the prefix gate is happy; never exported or built into a package) with a `label` property
-  passed to an inner `<button>` as `aria-label` when set, rendering the markup above with `iconSlotStyles`. The
+  passed to an inner `<button>` as `aria-label` when set, rendering the markup above with `iconSlotStyles`; the inner
+  `<button>` is the row (`class="icon-row"`), with a 1 px border and no padding of its own. The
   in-process tests import it from source; the fixture suites load its bundle (R-11).
 - **Alternatives**: `:has-slotted` for empty slots (Chromium 134+, not in WebKit as far as known; unmeasured here);
   `gap` with a `slotchange` handler toggling a host state (script in every control). `align-items: center` on the
@@ -383,7 +447,7 @@ carry those results and decisions, each marked with the finding it answers.
 - **Decision** (operator decision on PLAN-CORRECTNESS-1-002: option (a), every browser scenario of the spec on the
   strict-CSP fixture with the browser build, and in-process for mutation):
   - **Shared scenario bodies** (`packages/elements/test/scenarios/*.ts`, test code, not test files): each browser
-    scenario of the spec that does not depend on the page's scripts (US1 1 to 9, 14, 16 and 18, US2 2 to 4, US3 1 to 6 and 8 to 11, US4 1 to 3, 5 to 9, 13 and 14,
+    scenario of the spec that does not depend on the page's scripts (US1 1 to 9, 14, 16, 18 and 19, US2 2 to 4, US3 1 to 6 and 8 to 11, US4 1 to 3, 5 to 9 and 13 to 15,
     the US4 Independent Test and SC-001) is written once as a function of a driver, with its assertions and its
     pairing. The driver interface holds what the scenarios need: mount markup (with or without `base.css`), measure a
     box, read a computed style, read the AX nodes of an element by `id`, emulate forced colours with a palette,
@@ -540,15 +604,28 @@ carry those results and decisions, each marked with the finding it answers.
 
 - **Decision**:
   - `packages/elements/README.md`: element conventions (R-02 with the `@tagname` and `@default` JSDoc tags, R-03,
-    R-06, R-11, R-14, the token rule of FR-007, and the forced-colours rule of R-09: variant rules inside
-    `@media not (forced-colors: active)`), builds and which host uses which (FR-033) with the browser build's file
-    path to copy (`dist/browser/ocelle-elements.js`, R-02), `ocelle-icon` (attributes, tokens read, names table with
-    consumer needs), slot convention (R-10, including that the row sets the type), `ocelle-brand-mark` (variants,
-    grounds, tokens read, width following height), naming and host ARIA rules (FR-023, FR-034: a present host
-    `aria-label` decides alone, a blank one leaves the element unlabelled, and hosts pass it trimmed), licence and
-    trademark note (FR-029, FR-030) and the browser build's banner, engines (constructable stylesheets required,
-    Chromium 73+ and WebKit 16.4+, R-05; WebKit unmeasured), two copies on a page.
-  - `packages/elements/CHANGELOG.md` (new): the surface of FR-031.
+    R-06, R-11, R-14, the token rule of FR-007, the forced-colours rule of R-09: variant rules inside
+    `@media not (forced-colors: active)`, the `hidden` rule of R-04: every element's styles hold
+    `:host([hidden]) { display: none; }` beside its `:host` display rule (PLAN-FRESH-2-001), the token rule of
+    PLAN-FRESH-2-004: an element reads tokens only from `@ocelle/tokens`, which the package declares as a peer
+    dependency, and the README states for each element what it does without `tokens.css`, and the engine rule of
+    PLAN-FRESH-2-005: an element that uses a feature newer than the stated floor raises the floor in the README's
+    engines section and in R-05's list), builds and which host uses which (FR-033) with the browser build's file
+    path to copy (`dist/browser/ocelle-elements.js`, R-02), tokens: "Link `tokens.css` of `@ocelle/tokens` first";
+    linked without it, `--ocelle-icon-size` is undefined, so an icon or mark is drawn at the SVG default size
+    (300 × 300 px in a paragraph) and the mark's ring is not painted (PLAN-FRESH-2-004, R-04, R-09), `ocelle-icon`
+    (attributes, tokens read, names table with consumer needs), slot convention (R-10, including that the row sets the
+    type and carries `icon-row`, whose block padding keeps a taller icon inside the control, and that a control adds
+    block padding around the row, not below it), `ocelle-brand-mark` (variants, grounds, tokens read, width following
+    height), naming and host ARIA rules (FR-023, FR-034: a present host `aria-label` decides alone, a blank one leaves
+    the element unlabelled, hosts pass it trimmed, and a host `hidden` removes the element's box and node), licence
+    and trademark note (FR-029, FR-030) and the browser build's banner, engines (Chromium 120+ for `:dir()` and
+    WebKit 16.4+ for `:dir()`, Media Queries 4 and constructable stylesheets, with the other features of R-05 and their
+    versions; WebKit unmeasured), two copies on a page.
+  - `packages/elements/package.json`: `"peerDependencies": { "@ocelle/tokens": "workspace:0.0.0" }`, as
+    `packages/styles/package.json` declares it (003; PLAN-FRESH-2-004). The readme test asserts the README's
+    tokens sentence and that the README names the peer dependency.
+  - `packages/elements/CHANGELOG.md` (new): the surface of FR-031, the peer dependency on `@ocelle/tokens` included.
   - `NOTICE` (new, repository root): the Apache-2.0 NOTICE with the trademark note.
   - `THIRD_PARTY_NOTICES`: a Lit entry (`lit` 3.3.3, `lit-html` 3.3.3, `lit-element` 4.2.2,
     `@lit/reactive-element` 2.1.2, BSD-3-Clause, copyright "Google LLC", repository, published file

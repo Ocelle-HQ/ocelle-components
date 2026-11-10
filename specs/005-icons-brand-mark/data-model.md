@@ -27,8 +27,13 @@ of names (FR-018). The tests hold an independent expected table of the same shap
 | `name` | property | `IconName \| undefined` | `undefined` (no drawing) | `name` | yes |
 | `label` | property | `string \| undefined` | `undefined` (unlabelled) | `label` | no |
 
-No slot, event, CSS part or CSS custom property. Reads the token `--ocelle-icon-size`. Observes the host attribute
+No slot, event, CSS part or CSS custom property. Reads the token `--ocelle-icon-size` (from `@ocelle/tokens`, a peer
+dependency; without `tokens.css` the box falls back to the SVG default size, R-04). Observes the host attribute
 `aria-label` (not a property; R-13).
+
+**Box**: `:host` `inline-block`, `--ocelle-icon-size` square (R-04); `:host([hidden]) { display: none; }`, so a host
+`hidden` removes the box and, with it, every node (PLAN-FRESH-2-001; a shadow `:host` display rule would otherwise
+beat the user-agent `[hidden]` rule).
 
 **State** (derived on every update): `drawable` = `name` is a key of the icon table (exact). `accessibleName`
 (FR-034): if the host has an `aria-label` attribute, it decides alone: its value if it holds a non-whitespace
@@ -54,11 +59,14 @@ names the element, Chromium takes the name from the host attribute; the internal
 | `label` | property | `string \| undefined` | `undefined` | `label` | no |
 
 No slot, event, CSS part or CSS custom property. Reads `--ocelle-icon-size`, `--ocelle-color-ink`,
-`--ocelle-color-chrome-ink`, `--ocelle-color-accent`. Naming as for `ocelle-icon` with `drawable` always true.
+`--ocelle-color-chrome-ink`, `--ocelle-color-accent` (from `@ocelle/tokens`, a peer dependency; without `tokens.css`
+the ring is not painted, R-09). Naming as for `ocelle-icon` with `drawable` always true.
 
-**Box**: `block-size: var(--ocelle-icon-size)`, `inline-size: auto`, `aspect-ratio: 1` (R-09): 20 × 20 px by default;
-a host `block-size` alone gives a square of that size; a host `inline-size` alone gives a non-square box with the
-drawing scaled to the smaller side and centred.
+**Box**: `block-size: var(--ocelle-icon-size)`, `inline-size: max-content`, `aspect-ratio: 1` (R-09,
+PLAN-FRESH-2-003): 20 × 20 px by default, in flow and in a row or column flex container alike (with `inline-size:
+auto` a column flex container stretches it to its width); a host `block-size` alone gives a square of that size; a
+host `inline-size` alone gives a non-square box with the drawing scaled to the smaller side and centred.
+`:host([hidden]) { display: none; }` as for the icon (PLAN-FRESH-2-001).
 
 **Variants** (CSS on exact attribute values; any other value is the default). The variant rules are inside
 `@media not (forced-colors: active)`, so none of them applies in forced colours and the forced-colours rules need not
@@ -89,8 +97,11 @@ reference group the fit of US4-9 is scale 1, translation 0.
 | trailing wrapper | `<span class="icon-slot trailing"><slot name="trailing"></slot></span>` | as the icon wrapper |
 | slotted icon | any element in either slot | `--ocelle-icon-size` square, `!important`; gap `--ocelle-space-2` by inline margin toward the label, `!important` |
 
-The control's row is `display: inline-flex; align-items: flex-start`, and sets the type (font size, line height) that
-the wrappers and the label inherit.
+The control's row carries the class `icon-row`, is `display: inline-flex; align-items: flex-start`, and sets the type
+(font size, line height) that the wrappers and the label inherit. `iconSlotStyles` gives it `padding-block:
+calc((var(--ocelle-icon-size) - 1lh) / 2)` (0 when the line box is at least the icon size, since a negative `calc()`
+padding is clamped to 0), so a slotted icon taller than the line box stays inside the control's box
+(PLAN-FRESH-2-002 (a), R-10). A control adds any further block padding on an element around the row.
 
 ## Contrast rows (`packages/tokens/contrast/pairs.json`, new)
 

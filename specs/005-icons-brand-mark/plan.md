@@ -19,14 +19,17 @@ proven on a test host (sizes enforced by `!important` `::slotted()` rules, which
 exact-value `token-only` allowances (`scale: -1`/`1`, `aspect-ratio: 1`, `1lh`), element-only Stryker routing, thirteen
 contrast rows, version-exact install-script approvals for `rs-module-lexer` and `fsevents` and the records (README,
 CHANGELOG, NOTICE, Lit notice and banner) complete it. Plan squad round 1 changed the design in the places its
-findings named (`reviews/plan/round-1/fixes-1.md`). Every decision is in [research.md](research.md); the surface is in
+findings named (`reviews/plan/round-1/fixes-1.md`), and round 2 likewise (`reviews/plan/round-2/fixes-1.md`: the
+`hidden` attribute, the slot row's block padding, the mark's `max-content` width, the `@ocelle/tokens` peer
+dependency and the engine floor). Every decision is in [research.md](research.md); the surface is in
 [contracts/elements-package.md](contracts/elements-package.md) and the checks in [contracts/checks.md](contracts/checks.md).
 
 ## Technical Context
 
 **Language/Version**: TypeScript 6.0.3 (strict, `erasableSyntaxOnly`), Node 26.13.0 in CI (22.23.4 in this container).
 
-**Primary Dependencies**: `lit` 3.3.3 (runtime, exact; R-01). Dev: `@custom-elements-manifest/analyzer` 0.11.0, a
+**Primary Dependencies**: `lit` 3.3.3 (runtime, exact; R-01); `@ocelle/tokens` `workspace:0.0.0` as a peer
+dependency, as `@ocelle/styles` declares it (R-15). Dev: `@custom-elements-manifest/analyzer` 0.11.0, a
 root devDependency like every gate tool (R-06; its tree brings `rs-module-lexer` 2.9.0 and `fsevents` 2.3.3, whose
 install scripts are approved by exact version, R-16); already pinned: Vite 8.3.5 (browser build, test bundles; R-05), Vitest 5.0.5 with `@vitest/browser-playwright`,
 Playwright 1.64.1, Stryker 10.1.1, Stylelint 17.16.0 with `postcss-lit`, Storybook 10.6.5 (`@storybook/html-vite`).
@@ -41,7 +44,8 @@ mutated under the default configuration) and `elements-build` (build and pack te
 Mutation of element source under an elements-only Stryker configuration (R-12).
 
 **Target Platform**: evergreen Chromium measured; WebKit (Kitty Desktop) unmeasured, an open limitation in the README.
-Engine floor: constructable stylesheets (Chromium 73+, WebKit 16.4+), stated in the README (R-05).
+Engine floor: Chromium 120+ (`:dir()`) and WebKit 16.4+ (`:dir()`, Media Queries 4 `not (…)`, constructable
+stylesheets), the newest feature the elements use, stated in the README with the feature behind each figure (R-05).
 
 **Project Type**: library (web components) in a pnpm workspace.
 
@@ -56,15 +60,15 @@ script.
 
 ## Constitution Check
 
-*Gate: passes before Phase 0; re-checked after Phase 1 design and again after plan squad round 1 — passes, with the
-exceptions in Complexity Tracking.*
+*Gate: passes before Phase 0; re-checked after Phase 1 design and again after plan squad rounds 1 and 2 — passes,
+with the exceptions in Complexity Tracking.*
 
 | Principle | How this plan meets it |
 |---|---|
 | I. `ocelle-` names, no I/O, small interface, manifest | Tags `ocelle-icon`, `ocelle-brand-mark`; the test host is `ocelle-test-host` and ships nowhere. No events (nothing to emit). No I/O: drawings are inline templates, no `fetch`, no `<use href>`, no `<image>` (R-04). Interface: `name`, `label`; `ground`, `tone`, `label`. The manifest declares every property and attribute with its tag name (JSDoc `@tagname`) and default (`@default`), drops the observed `aria-label`, and states empty slots, events, parts and CSS properties; tokens read are documented, not declared (FR-007, R-02, R-06). The new `manifest` gate enforces it (R-06). |
-| II. Tokens only, brand rules | All element CSS is in `css` templates linted by `ocelle/token-only`. Three exact-value allowances, each with unit tests and pass and fail plants (R-03): `scale` only `-1` and `1` (mirroring, R-08), `aspect-ratio` only `1` (the mark's square box, R-09) and the unit `lh` only as `1lh` (the slot wrapper's one line box, R-10); none is a size literal (a flip, "as wide as high", the inherited line height), and every other value stays a finding. Colours: `currentColor`, `color-ink`, `color-chrome-ink`, `color-accent`; no new token. The mark's light-ground ochre spot is not text and not a state, so "ochre text never on bone" and "ochre fill never the only state mark" do not apply (spec Assumptions); `tone="mono"` exists for hosts that need every part at 3:1. No monospace. |
-| III. Accessible by construction | Decorative by default with the host itself hidden through `ElementInternals` (a host with an `id` is otherwise an empty `generic` node, spec check 2); labelled elements are one `img` node; a present host `aria-label` decides naming alone (a blank one leaves the element unlabelled), hosts pass it trimmed because Chromium keeps its spaces (measured), and host `aria-hidden="true"` hides (FR-034, R-13). No ID reference crosses a shadow root (none used). Forced colours: `currentColor` everywhere; the mark's variant rules sit inside `@media not (forced-colors: active)`, so its forced-colours rules reach every variant (measured on all variants, both palettes, R-09); tested in text, a link, a button and a disabled button, since `ButtonText` equals `CanvasText` in Chromium (R-09). The slot convention adds nothing to a control's name (no generated content; US3-11). Contrast: 13 new non-text rows plus a pairing test tied to the shipped stylesheet (R-09). The accessibility tree is read from Chromium's full AX tree in both harnesses (R-11). Axe is not run on the new stories: see Complexity Tracking. |
-| IV. Strict CSP, offline | Adopted stylesheets only; no `style` attribute or `<style>` in templates (presentation attributes on SVG shapes are not `style`). The engine floor is constructable stylesheets (Chromium 73+, WebKit 16.4+), where Lit's `<style>` fallback is unreachable (R-05, README). The browser build passes the `csp` gate with Lit inside (measured, R-05) and loads with one `<script type="module" src>` and no import map. Every browser scenario of the spec also runs on fixture pages served under the strict header plus `font-src 'self'` for `tokens.css`'s font, with a violation collector installed by `addInitScript` (no page script, no request), a request recorder and a console recorder, asserting zero violations, only the allowed requests and no console message together with the positive outcome (R-11). |
+| II. Tokens only, brand rules | All element CSS is in `css` templates linted by `ocelle/token-only`. Three exact-value allowances, each with unit tests and pass and fail plants (R-03): `scale` only `-1` and `1` (mirroring, R-08), `aspect-ratio` only `1` (the mark's square box, R-09) and the unit `lh` only as `1lh`, on its own and inside `calc()` (the slot wrapper's one line box and the row's block padding, `calc((var(--ocelle-icon-size) - 1lh) / 2)`, R-10); none is a size literal (a flip, "as wide as high", the inherited line height), and every other value stays a finding. Colours: `currentColor`, `color-ink`, `color-chrome-ink`, `color-accent`; no new token. The mark's light-ground ochre spot is not text and not a state, so "ochre text never on bone" and "ochre fill never the only state mark" do not apply (spec Assumptions); `tone="mono"` exists for hosts that need every part at 3:1. No monospace. |
+| III. Accessible by construction | Decorative by default with the host itself hidden through `ElementInternals` (a host with an `id` is otherwise an empty `generic` node, spec check 2); labelled elements are one `img` node; a present host `aria-label` decides naming alone (a blank one leaves the element unlabelled), hosts pass it trimmed because Chromium keeps its spaces (measured), and host `aria-hidden="true"` hides (FR-034, R-13); a host `hidden` removes the box and every node, because each element's styles hold `:host([hidden]) { display: none; }` (its `:host` display rule would otherwise beat the user-agent rule; US1-19, US4-15, R-04). No ID reference crosses a shadow root (none used). Forced colours: `currentColor` everywhere; the mark's variant rules sit inside `@media not (forced-colors: active)`, so its forced-colours rules reach every variant (measured on all variants, both palettes, R-09); tested in text, a link, a button and a disabled button, since `ButtonText` equals `CanvasText` in Chromium (R-09). The slot convention adds nothing to a control's name (no generated content; US3-11). Contrast: 13 new non-text rows plus a pairing test tied to the shipped stylesheet (R-09). The accessibility tree is read from Chromium's full AX tree in both harnesses (R-11). Axe is not run on the new stories: see Complexity Tracking. |
+| IV. Strict CSP, offline | Adopted stylesheets only; no `style` attribute or `<style>` in templates (presentation attributes on SVG shapes are not `style`). The engine floor is Chromium 120+ and WebKit 16.4+, the newest feature used (`:dir()`; constructable stylesheets need only Chromium 73), where Lit's `<style>` fallback is unreachable (R-05, README). The browser build passes the `csp` gate with Lit inside (measured, R-05) and loads with one `<script type="module" src>` and no import map. Every browser scenario of the spec also runs on fixture pages served under the strict header plus `font-src 'self'` for `tokens.css`'s font, with a violation collector installed by `addInitScript` (no page script, no request), a request recorder and a console recorder, asserting zero violations, only the allowed requests and no console message together with the positive outcome (R-11). |
 | V. Storybook, behaviour tests | One story per icon and per mark variant and state, light and dark (R-14). No events exist, so no event assertions; no keyboard model (neither element is focusable). Baselines: see Complexity Tracking. |
 | VI. Consumer-driven, own code | Needs from spec-kitty-design #496 and #504, kitty-mission-ui's Projects and Artifact Viewer screens, #7, #12 to #16. Drawings are our own (operator decision); the mark is Ocelle's own reference, redrawn onto tokens. Nothing copied from Spec Kitty. |
 | VII. Semver | All additions (MINOR): two elements, thirteen icon names, entry points, the browser build's file path in the tarball (`dist/browser/ocelle-elements.js`, which hosts without a bundler serve by path), the manifest. The `@ocelle/elements` CHANGELOG names them (FR-031). |
@@ -94,10 +98,13 @@ Items marked "decided" were operator fork decisions at plan squad round 1 (`revi
 5. **Slot convention mechanism** (decided, PLAN-CORRECTNESS-1-004 (a); R-10): `!important` in the control's
    `::slotted()` rules, so a slotted icon's size cannot be changed by the page except through `--ocelle-icon-size`
    (measured); first-line centring by a wrapper of `block-size: 1lh` with the icon centred in it (no strut, so no
-   character in the control's name), empty slots by margins rather than `gap`. The shared rules are an internal
+   character in the control's name), empty slots by margins rather than `gap`; the row (`icon-row`) has block
+   padding `calc((var(--ocelle-icon-size) - 1lh) / 2)`, clamped to 0, so an icon taller than the line stays inside
+   the control's box (decided, PLAN-FRESH-2-002 (a), measured). The shared rules are an internal
    module that #7 and #12 import; it is not an entry point.
 6. **`token-only` allowances** (R-03): `scale` only `-1`/`1` (decided, PLAN-TESTABILITY-1-011 (a)), `aspect-ratio`
-   only `1` (from PLAN-FRESH-1-006 (a)) and `1lh` (from PLAN-CORRECTNESS-1-004 (a)), each with plants.
+   only `1` (from PLAN-FRESH-1-006 (a)) and `1lh`, on its own and inside `calc()` (from PLAN-CORRECTNESS-1-004 (a)
+   and PLAN-FRESH-2-002 (a)), each with plants.
 7. **Host `aria-label`** (decided, PLAN-A11Y-SECURITY-1-002 (a) and 1-003 (a); FR-034, R-13): a present host
    `aria-label` decides naming alone, a blank one leaves the element unlabelled even with `label`, and hosts pass it
    trimmed because Chromium keeps its spaces (measured); the element never rewrites it. The spike no longer decides
@@ -116,9 +123,13 @@ Items marked "decided" were operator fork decisions at plan squad round 1 (`revi
 12. **Brand mark** (R-09): the spot stays `--ocelle-color-accent` (#C68A1E) on the chrome (FR-025), as the spec
     records; the drawing uses the rosette's own coordinates in `viewBox="4 4 92 92"`, chosen from its painted extent so
     it fills its box as the icons do (decided, PLAN-CORRECTNESS-1-011 (a)); its width follows its height (decided,
-    PLAN-FRESH-1-006 (a)); variant rules inside `@media not (forced-colors: active)`.
+    PLAN-FRESH-1-006 (a)), through `inline-size: max-content` so a column flex container does not stretch it
+    (PLAN-FRESH-2-003); variant rules inside `@media not (forced-colors: active)`.
 13. **Licence banner** on the browser build (decided, PLAN-A11Y-SECURITY-1-008 (a); R-05).
 14. **Required check**: the operator adds "Custom-elements manifest" to the ruleset on `main` (R-06).
+15. **Tokens and engines** (PLAN-FRESH-2-004, 2-005; R-05, R-15): `@ocelle/elements` declares `@ocelle/tokens` as a
+    peer dependency and its README says to link `tokens.css` first; the stated engine floor is Chromium 120+ and
+    WebKit 16.4+.
 
 ## Project Structure
 
@@ -137,7 +148,7 @@ specs/005-icons-brand-mark/
 
 ```text
 packages/elements/
-├── package.json            # lit 3.3.3; exports; files; customElements; build, manifest scripts
+├── package.json            # lit 3.3.3; @ocelle/tokens peer; exports; files; customElements; build, manifest scripts
 ├── vite.browser.config.ts  # browser build with licence banner (R-05)
 ├── custom-elements-manifest.config.mjs
 ├── custom-elements.json    # generated, committed
@@ -164,10 +175,11 @@ packages/elements/
     └── browser/            # elements-browser: global-setup.ts, serve.ts, fixtures/*.html, *.test.ts
 gates/
 ├── bin/manifest.ts, bin/mutation.ts (split by config)
-├── stylelint/token-only.ts (scale -1/1, aspect-ratio 1, 1lh)
+├── stylelint/token-only.ts (scale -1/1, aspect-ratio 1, 1lh alone and in calc())
 ├── lib/pins-rules.ts (approved build list), lib/plant-repo.ts (configuration set, package node_modules)
 ├── plants/manifest/**, plants/style-lint/{pass-scale-mirror,fail-scale-factor,fail-scale-length,pass-aspect-square,
-│   fail-aspect-ratio-other,pass-one-line,fail-lh-multiple}, plants/mutation/{pass-element-source,
+│   fail-aspect-ratio-other,pass-one-line,pass-one-line-calc,fail-lh-multiple,fail-lh-multiple-calc},
+│   plants/mutation/{pass-element-source,
 │   fail-element-source-survivor,fail-element-source-no-coverage,fail-mixed-survivors},
 │   plants/pins/{pass-approved-build,fail-allow-builds-unpinned-approval,fail-allow-builds-other-version}
 ├── gates.json, lib/registry.ts (comment: fifteen checks), README.md (manifest row, fifteen required checks, pins row)
@@ -213,7 +225,8 @@ changes in `gates/` and the root configs, as 001 to 003 did.
      `serve.ts`, the `addInitScript` violation collector, the request and console recorders, the control page)
      (R-11);
    - `define.ts`, `naming.ts`, `ocelle-icon.ts` with one icon (`close`) and the `icons.ts` structure, tests first:
-     US1 scenarios 1 to 9, 14, 16 and 18 as shared scenario bodies run by both harnesses, `define.test.ts`,
+     US1 scenarios 1 to 9, 14, 16, 18 and 19 as shared scenario bodies run by both harnesses (US1-19 with the plant
+     "`:host([hidden])` rule removed"), `define.test.ts`,
      `entry-icon.test.ts` and `entry-root.test.ts` in-process (R-02); `index.ts`, `browser.ts`;
    - the module and browser builds (`vite.browser.config.ts` with the banner, `build` script),
      `test/node/vite-config.test.ts`, and `test/build/build.test.ts` (US1-17's import rules, FR-001, FR-002, FR-016,
@@ -225,8 +238,11 @@ changes in `gates/` and the root configs, as 001 to 003 did.
      a built plant tree, registry, CI job, README row and the fourteen-to-fifteen change (US1-11, US1-12);
    - the mutation split (R-12) with its unit tests and plants (`pass-element-source`, `fail-element-source-survivor`,
      `fail-element-source-no-coverage`, `fail-mixed-survivors`), red first;
-   - the `ocelle-icon` story (close, labelled, unknown name) and the README's conventions section, the CHANGELOG
-     entry, and the readme test's US1 statements (SC-008), red first;
+   - the `ocelle-icon` story (close, labelled, unknown name) and the README's conventions section (with the `hidden`
+     rule, the token rule and the engine-floor rule), its tokens section (link `tokens.css` first, and what an icon
+     does without it) and engines section (Chromium 120+, WebKit 16.4+, the feature behind each figure), the
+     `@ocelle/tokens` peer dependency in `package.json`, the CHANGELOG entry, and the readme test's US1 statements
+     (SC-008), red first;
    - `test/sample.test.ts` replaced (FR-032).
 3. **US2 Icon set** (P2): first, the measurement of R-08's "equal" rule on all thirteen drawings, recorded in
    `reviews/phase-3/spike.md` before the red commit; the other twelve drawings in `icons.ts`; tests first for US2
@@ -236,23 +252,24 @@ changes in `gates/` and the root configs, as 001 to 003 did.
    (`pass-scale-mirror`, `fail-scale-factor`, `fail-scale-length`; R-03), before the mirroring rule; the story grid of
    all thirteen; the README icon table with consumer needs and the licence sentence (US2-5, exempt part stated);
    manifest regenerated.
-4. **US3 Slot convention** (P3): the `token-only` `1lh` change with its unit test and plants (`pass-one-line`,
-   `fail-lh-multiple`; R-03) first; `icon-slot.ts` and `test/fixtures/test-host.ts`; tests first for US3 scenarios 1
+4. **US3 Slot convention** (P3): the `token-only` `1lh` change, on its own and inside `calc()`, with its unit test
+   and plants (`pass-one-line`, `pass-one-line-calc`, `fail-lh-multiple`, `fail-lh-multiple-calc`; R-03) first; `icon-slot.ts` and `test/fixtures/test-host.ts`; tests first for US3 scenarios 1
    to 6 and 8 to 11 as shared bodies with and without `base.css` (adopted from `packages/styles/src/base.css`
-   in-process, linked on the fixture), US3-1 and US3-10 at the four type and size cases of R-10, each "does not" with
-   its pair and plant (empty slot gap, host rule loses, the strut for centring, the strut without alt text for
-   US3-11's name), the forced-colours case enabled and disabled (US3-8); the README slot-convention and naming
+   in-process, linked on the fixture), US3-1 and US3-10 at the four type and size cases of R-10, centring and the
+   icon inside the control's border box (plant: the `.icon-row` padding rule removed), each "does not" with its pair
+   and plant (empty slot gap, host rule loses, the strut for centring, the strut without alt text for US3-11's name), the forced-colours case enabled and disabled (US3-8); the README slot-convention and naming
    sections (SC-007), red first.
 5. **US4 Brand mark** (P4): the `token-only` `aspect-ratio: 1` change with its unit test and plants
    (`pass-aspect-square`, `fail-aspect-ratio-other`; R-03) first; `rosette.ts` and `ocelle-brand-mark.ts`; tests first
-   for US4 scenarios 1 to 3, 5 to 9, 13 and 14 as shared bodies, the Independent Test and SC-001 on the fixture, with
+   for US4 scenarios 1 to 3, 5 to 9 and 13 to 15 as shared bodies, the Independent Test and SC-001 on the fixture, with
    US4-5's four contexts on all three variants and its two plants (the pre-round-1 sheet, `fill: CanvasText`) and
-   US4-7's height-only host; the 13 contrast rows in `pairs.json` with every pinned count changed first
+   US4-7's height-only host and column flex case (plant: `inline-size: auto`), US4-15 (plant: `:host([hidden])`
+   removed); the 13 contrast rows in `pairs.json` with every pinned count changed first
    (`gates/test/contrast-pairs.test.ts`, `gates/test/contrast.test.ts`,
    `gates/test/integration/plants-robustness.test.ts`, `gates/test/integration/token-gates.test.ts` and the comment
    in `gates/bin/contrast.ts`: 160 light, 168 dark, 328 entries; R-09), and `test/node/brand-pairs.test.ts` with its
    plant (US4-4); manifest regenerated (US4-12); the brand-mark stories (US4-11); `NOTICE`, the README mark and
-   trademark sections, the Lit entry in `THIRD_PARTY_NOTICES` with `licenses/lit-BSD-3-Clause.txt`, `files` and
+   trademark sections (with the mark's behaviour without `tokens.css`), the Lit entry in `THIRD_PARTY_NOTICES` with `licenses/lit-BSD-3-Clause.txt`, `files` and
    `test/build/pack.test.ts` (FR-029, FR-030), and the CHANGELOG's final surface list with the browser build's path
    (FR-031).
 
