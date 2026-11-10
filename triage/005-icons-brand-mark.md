@@ -7,7 +7,9 @@ in_scope: [17]
 out_of_scope: [1, 2, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 20]
 semver: minor
 spec_prompt: "Build the first @ocelle/elements feature from issue #17 (triage/005-icons-brand-mark.md): the element conventions later element missions follow (Lit 3 pinned, registration, token-only static styles, a generated custom-elements manifest at packages/elements/custom-elements.json checked by a new manifest gate with plants, element stories in the existing Storybook, CSP-safe built output); ocelle-icon rendering a shared SVG icon set for navigation and actions (spec-kitty-design#496: back chevron, menu, close, folder, arrow and the icons #7, #12 to #16 name) inline in its shadow root with no network request, sized by --ocelle-icon-size, painted with currentColor, decorative by default (aria-hidden) and visible in forced colours; a documented slot convention that ocelle-button, ocelle-nav-item and ocelle-action-row follow to size slotted icons, proven on a test host; the Ocelle rosette brand mark (Ocelle-HQ/docs src/theme/assets/logo.svg) as SVG for ocelle-top-bar with variants for the dark chrome and light grounds, from tokens only (spec-kitty-design#504); the icon licence recorded (own drawings, or a permissively licensed set in THIRD_PARTY_NOTICES with the operator's approval); the controls themselves, their accessible names and visual baselines and axe stay with #7, #12 and #10."
-status: proposed
+status: approved
+decided_by: "human:jeroennouwsdev"
+decided_at: 2026-11-10T00:11:08Z
 ---
 
 # Triage 005: Icons and brand mark (#17), and the first element conventions
