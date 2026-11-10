@@ -1,6 +1,6 @@
 # Contract: the pinned container and the capture
 
-Sources: research.md R-01 to R-06.
+Sources: research.md R-01 to R-06, R-14, R-15.
 
 ## `storybook/visual/container.json`
 
@@ -11,33 +11,64 @@ Sources: research.md R-01 to R-06.
   "platform": "linux/amd64",
   "tag": "v1.64.1-noble",
   "node": "26.13.0",
-  "browser": "chromium-1248"
+  "browser": "chromium_headless_shell-1248"
 }
 ```
 
-- `digest` is the linux/amd64 **image manifest** digest, never an index digest. The entry point pulls
-  `<image>@<digest>` with `--platform linux/amd64` and compares the image the engine reports with it.
+- `digest` is the linux/amd64 **image manifest** digest, never an index digest. The entry point pulls and runs only
+  `<image>@<digest>` with `--platform linux/amd64`.
 - `tag` is for people; it is never used to pull.
-- `node` must equal `.node-version`; `browser` must equal the Chromium build the repository's pinned Playwright
-  expects (from `playwright-core/browsers.json`). A unit test checks both, so a Playwright or Node upgrade fails until
-  the pin is moved with it.
+- `browser` names the build the capture launches: a headless launch without a channel runs
+  `chromium-headless-shell` (research.md R-04), so the directory is `chromium_headless_shell-<revision>`.
+- **The pin test** (`gates/test/container-pin.test.ts`): its first assertion is that `container.json` exists (so the
+  red, while the file is absent, is an assertion failure, not a read error); then that `node` equals `.node-version`
+  and that `browser` equals `chromium_headless_shell-<revision>` with the revision of the `chromium-headless-shell`
+  entry of the repository's `playwright-core/browsers.json`. A second case runs the same checks on a fixture copy with
+  a wrong `node` and a wrong `browser` and asserts each is reported, so both assertions are shown able to fail. A
+  Playwright or Node upgrade fails the test until the pin is moved with it.
 - Moving the pin is a baseline change: the same pull request regenerates every baseline and says why.
 
+## The pin check on the host (research.md R-06)
+
+| Step | docker | podman | Exit 2 cause |
+|---|---|---|---|
+| reference form | `<image>@sha256:<64 hex>` | same | `not pinned by digest` |
+| media type of the reference (from the registry) | `docker buildx imagetools inspect --raw <image>@<digest>` → `mediaType` | `podman manifest inspect <image>@<digest>` → `mediaType` | `the pin names an index, not the linux/amd64 manifest` (`application/vnd.oci.image.index.v1+json`, `application/vnd.docker.distribution.manifest.list.v2+json`) |
+| pull | `docker pull --platform linux/amd64 <image>@<digest>` | `podman pull --platform linux/amd64 <image>@<digest>` | `the image cannot be obtained: …` |
+| identity after the pull | `docker image inspect <image>@<digest>`: `RepoDigests` contains `<image>@<digest>`, `Os` `linux`, `Architecture` `amd64` | `podman image inspect <image>@<digest>`: `RepoDigests` contains `<image>@<digest>` (and `.Digest` equals `<digest>`), `Os` `linux`, `Architecture` `amd64` | `the pulled image does not match the pin: <field>` |
+
+`.Id` is never compared: it is the manifest digest on docker's containerd image store and the config digest on
+docker's classic store and on podman. The parsers are pure functions, unit-tested on recorded inspect outputs of docker
+with the containerd store, docker with the classic overlay2 store and podman (fixtures; podman's real output is recorded
+by phase 3's CI run), each with a match, a mismatching digest, an arm64 image and an index media type.
+
+## Engine resolution (research.md R-06)
+
+`resolveEngine(choice, env, available)`: `auto` → docker if available, else podman, else exit 2; `both` → docker for
+run 1, podman for run 2, exit 2 naming a missing one; a name → looked up on `PATH`; `host` → the capture on the host,
+and an exit 0 of it becomes exit 2 `the host engine never produces a capture`. When `CI` or `GITHUB_ACTIONS` is `true`:
+`auto` → `both`, and `docker`, `podman` or another name found on `PATH` → exit 2 `in CI the visual gate runs under both
+docker and podman`; `both`, `host` and a name not found are unchanged.
+
 ## Run arguments (built by `gates/lib/container.ts`, unit-tested)
+
+`<repo>` is the gate's own repository (the directory holding the running `gates/`), `<root>` the root under test.
 
 ```text
 <engine> run --rm --platform linux/amd64 --network none
   docker:  --user <uid>:<gid>
   podman:  --userns=keep-id
-  -v <root>:<root>:ro
-  -v <real node_modules>:<real node_modules>:ro
+  -v <repo>:<repo>:ro
+  -v <root>:<root>:ro                                   (only when <root> is not <repo>)
   -v <root>/storybook/.visual/run-<n>:<root>/storybook/.visual/run-<n>
   -e HOME=<root>/storybook/.visual/run-<n>/home
   -e OCELLE_VISUAL_PIN=<digest>
-  -w <root>
+  -w <repo>
   <image>@<digest>
-  node gates/visual/capture.ts <root>/storybook/.visual/run-<n>/request.json
+  node <repo>/gates/visual/capture.ts <root>/storybook/.visual/run-<n>/request.json
 ```
+
+The argument builder's unit tests cover root equal to the repository and root different from it.
 
 ## Capture request and result
 
@@ -52,26 +83,36 @@ Sources: research.md R-01 to R-06.
 
 ```json
 [{ "story": "tokens--colour", "theme": "dark", "status": "captured", "file": "tokens--colour.dark.png" },
- { "story": "x--y", "theme": "light", "status": "render-failed", "message": "…" },
+ { "story": "x--y", "theme": "light", "status": "render-failed", "message": "STORY_THREW_EXCEPTION: …" },
+ { "story": "x--t", "theme": "light", "status": "render-timeout", "message": "no render signal within 15 s" },
+ { "story": "x--s", "theme": "light", "status": "closed-shadow-root", "hosts": ["ocelle-x"] },
+ { "story": "x--p", "theme": "light", "status": "pointer-target", "message": "hover: no element matches .trigger" },
  { "story": "x--z", "theme": "light", "status": "font", "families": ["DejaVu Sans"] },
- { "story": "x--w", "theme": "light", "status": "network", "urls": ["https://example.com/a.png"] }]
+ { "story": "x--w", "theme": "light", "status": "network", "urls": ["https://example.com/a.png"] },
+ { "story": "x--v", "theme": "light", "status": "io", "calls": ["fetch /api/items", "localStorage.setItem"] }]
 ```
 
 The capture exits 0 when it wrote `result.json` (whatever the statuses), 2 with one stderr line when it cannot run:
-`not the pinned container: <which check failed>`, browser launch failure, unreadable request. The host maps statuses
+`not the pinned container: <check>: <detail>`, browser launch failure, unreadable request. The host maps statuses
 to findings (contracts/gates.md) in a pure function.
 
 ## The capture's checks before any page (FR-009, second layer)
 
-All must hold, else exit 2 `not the pinned container: …`: `process.platform === "linux"`, `process.arch === "x64"`,
-`process.version === "v" + node`, `OCELLE_VISUAL_PIN === digest`, `/ms-playwright/<browser>` exists and is the
-directory of the executable Playwright resolves.
+Each must hold, else exit 2 with its own cause (research.md R-06): `platform` (`process.platform === "linux"`),
+`arch` (`process.arch === "x64"`), `node` (`process.version === "v" + node`), `pin` (`OCELLE_VISUAL_PIN === digest`),
+`browser` (`/ms-playwright/<browser>` exists and holds the executable Playwright resolves for the headless launch). A
+pure predicate over injected facts, one unit test per check.
 
-## Per story-theme (FR-006, FR-012, FR-026 to FR-028)
+## Per story-theme (FR-006, FR-012, FR-026 to FR-028, FR-030, FR-031)
 
-New context (viewport 1280 × 800, scale 1, `colorScheme` = theme, `reducedMotion: "reduce"`, locale `en-GB`,
-timezone `UTC`) → route every request: `127.0.0.1` served from `dist`, anything else aborted and recorded → open
-`iframe.html?id=<story>&viewMode=story&globals=theme:<theme>` → wait for `storyRendered`, `document.fonts.ready`, two
-frames → render-failure check (`body.sb-show-errordisplay`) → font check (research.md R-05) → screenshot of the root's
-full bounding box, `animations: "disabled"`, `caret: "hide"` → decode and re-encode with `pngjs` (fixed options, no
-ancillary chunks) → write `<story>.<theme>.png` → close the context.
+New context (viewport 1280 × 800, scale 1, `colorScheme` = theme, `reducedMotion: "reduce"`, `forcedColors: "none"`,
+locale `en-GB`, timezone `UTC`) → init scripts (readiness recorder, closed `attachShadow` recorder, storage, clipboard
+and beacon recorder) → route every request: `127.0.0.1` served from `dist` (same-origin fetch, xhr, websocket,
+eventsource and ping other than Storybook's own files, and paths not in `dist`, recorded as `io`), anything else aborted
+and recorded as `network` → open `iframe.html?id=<story>&viewMode=story&globals=theme:<theme>` → wait for the first
+render signal (`STORY_RENDERED`, `STORY_THREW_EXCEPTION`, `STORY_ERRORED`, `STORY_MISSING`, `body.sb-show-errordisplay`)
+up to 15 s: failure signal → `render-failed`, none → `render-timeout` → the story's pointer state, if declared
+(`pointer-target` when its target is wrong) → `document.fonts.ready`, two frames → closed shadow root check → font
+check (research.md R-05) → full-page screenshot (`fullPage: true`, no clip), `animations: "disabled"`, `caret: "hide"`
+→ decode and re-encode with `pngjs` (fixed options, no ancillary chunks) → write `<story>.<theme>.png` → close the
+context. A story-theme with any status other than `captured` writes no PNG.
