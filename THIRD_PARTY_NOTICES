@@ -14,3 +14,15 @@ Schibsted Grotesk (variable font, weights 400 to 900)
               packages/tokens/fonts/OFL.txt (upstream OFL.txt)
   Published:  @ocelle/tokens dist/fonts/SchibstedGrotesk-wght.woff2 and dist/fonts/OFL.txt
               (exports @ocelle/tokens/fonts/*); unmodified, SHA-256 recorded in packages/tokens/fonts/SOURCE.json
+
+Lit (lit, lit-html, lit-element, @lit/reactive-element), bundled into the @ocelle/elements browser build
+
+  Packages:   lit 3.3.3, lit-html 3.3.3, lit-element 4.2.2, @lit/reactive-element 2.1.2 (the versions pnpm-lock.yaml
+              resolves for the exact lit pin of packages/elements/package.json)
+  Licence:    BSD-3-Clause; the licence text ships beside the build as packages/elements/licenses/lit-BSD-3-Clause.txt
+              (copied unchanged from the lit package's LICENSE)
+  Copyright:  Copyright (c) 2017 Google LLC. All rights reserved.
+  Repository: https://github.com/lit/lit
+  Published:  @ocelle/elements dist/browser/ocelle-elements.js (exports @ocelle/elements/browser.js), with
+              licenses/lit-BSD-3-Clause.txt; the file starts with a licence banner that names this file. The module
+              build (dist/*.js) does not bundle Lit: it imports lit as a dependency.
