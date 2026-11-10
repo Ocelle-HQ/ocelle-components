@@ -4,9 +4,10 @@ Prerequisites: `pnpm install --frozen-lockfile`; `export OCELLE_CHROMIUM_PATH=/o
 in this container (CI uses Playwright's own Chromium). Run one heavy job at a time.
 
 1. Build: `pnpm -r build` → `packages/elements/dist/{index,ocelle-icon,ocelle-brand-mark}.js` and
-   `dist/browser/ocelle-elements.js`.
+   `dist/browser/ocelle-elements.js` (`ocelle-brand-mark.js` from phase 5 on; phases 2 to 4 ship `ocelle-icon` only).
 2. Element tests: `pnpm exec vitest run --project elements --project elements-node --project elements-build
-   --project elements-browser` — all pass (contracts/checks.md § Package tests).
+   --project elements-browser` — all pass (contracts/checks.md § Package tests); then
+   `pnpm exec vitest run --project storybook-integration` — the story test passes (contracts/checks.md § Story test).
 3. Manifest: `pnpm --filter @ocelle/elements run manifest && git diff --exit-code packages/elements/custom-elements.json`,
    then `pnpm run gate:manifest` → exit 0.
 4. Gates touched: `pnpm run gate:style-lint`, `gate:contrast`, `gate:csp`, `gate:prefix`, `gate:pins` → exit 0

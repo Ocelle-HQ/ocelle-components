@@ -56,7 +56,13 @@ each marked with the finding it answers.
     throw and that `customElements.get("ocelle-icon")` is still `OcelleIcon`, and that `define` for a fresh tag defines
     it; `entry-icon.test.ts` imports only `src/ocelle-icon.ts` and asserts `ocelle-icon` defined and
     `ocelle-brand-mark` undefined in one test; `entry-root.test.ts` imports only `src/index.ts` and asserts both
-    defined. Each is its own file because Vitest browser mode runs each test file in its own iframe with a fresh
+    defined.
+  - **By phase** (analysis F1 (a)): phase 2 ships no `ocelle-brand-mark`, not even a stub. Until phase 5, `index.ts`
+    (and so the browser build) defines `ocelle-icon` only, `exports` lacks `./ocelle-brand-mark.js`, the manifest
+    gate reads one element module, `entry-root.test.ts` asserts `ocelle-icon` and the export `OcelleIcon`, and
+    US1-10's fixture test asserts `customElements.get("ocelle-icon")` only. Phase 5 adds the module, its `exports`
+    entry and `entry-brand-mark.test.ts`, and extends `entry-root.test.ts` and US1-10's fixture test to
+    `ocelle-brand-mark`. Each is its own file because Vitest browser mode runs each test file in its own iframe with a fresh
     registry (`isolate` stays on, its default, in the `elements` project; the test files state it).
 - **Rationale**: one module per element keeps tree shaking and the "imports only `ocelle-icon`" scenario true; the
   `.js` suffix in export paths matches what bundlers and the browser build resolve without a map. Keeping the
@@ -307,6 +313,7 @@ each marked with the finding it answers.
     before its red commit and records the figures in `reviews/phase-3/spike.md`; if a correct drawing exceeds it, the
     rule is changed and recorded there before the red step, never after.
   - **"Differs"** is unchanged: more than 5 % of pixels differ by more than 64/255 (measured 10.9 % to 26.3 %).
+  - These two rules are the oracle of spec US2-4, whose wording names "the pixel rules the plan names" (analysis I1).
 - **Rationale**: `:dir()` reacts to direction changes without script; `scale` is a single property the lint can allow
   (R-03).
 
@@ -404,7 +411,11 @@ each marked with the finding it answers.
   `packages/styles/test/pairs.test.ts`: it reads
   `ocelle-brand-mark.ts`'s style template as text, collects the `var(--ocelle-color-*)` tokens per variant selector,
   and checks them against FR-026's list and against the `checked` rows of `pairs.json`; its plant is a fixture copy
-  of `pairs.json` with the dark `color-accent` on `color-chrome` row removed.
+  of `pairs.json` (`test/node/fixtures/pairs-missing-row.json`) with the dark `color-accent` on `color-chrome` row
+  removed. The spec ties the test to the stylesheet as shipped (US4-4), so the collection and the check are one
+  function in `test/node/brand-pairs-check.ts` over a stylesheet text: `brand-pairs.test.ts` runs it on the source
+  template (in-process, mutated), and `test/build/build.test.ts` runs it, after the build, on the `css` template of
+  the built `dist/ocelle-brand-mark.js` (analysis L5).
 
 ## R-10 The slot convention
 
@@ -615,6 +626,10 @@ each marked with the finding it answers.
   table of R-07.
 - **Alternatives**: one config with `related: true` (Vitest's related-file lookup does not see browser-mode imports);
   marking element source as not mutated (constitution VIII). Rejected.
+- **Mutation scope** (operator decision after the analysis of the tasks, finding C1 (b), plan decision 16): VIII's
+  "changed source" is, for the elements, `packages/elements/src/**`, mutated in-process as above. The fixture suites
+  (`test/browser/**`), the tool-run build and pack tests (`test/build/**`) and other test code are not source and are
+  not mutated. It is a reading of the principle, not an exception.
 
 ## R-13 Accessibility naming mechanism
 
@@ -644,6 +659,10 @@ each marked with the finding it answers.
   - a host `aria-hidden="true"` hides an element whose internals set `role "img"`.
 - **To verify in the phase 2 spike**: that a host with an `id`, hidden through internals, gives no node, and that a
   host `aria-label` with internals `role = "img"` gives one image node, with the `axTree` command as built.
+- **Tested, not measured** (analysis G2): an unknown icon name with a non-empty host `aria-label` stays hidden
+  (internals `ariaHidden "true"`, no role) and gives no node, beside a known-name twin with the same `aria-label`
+  that gives one image node (US1-8, FR-034); its plant is an element that ignores `drawable` when the host
+  `aria-label` names it.
 
 ## R-14 Stories
 
@@ -652,6 +671,12 @@ each marked with the finding it answers.
   ground, chrome, mono, labelled). The Storybook workspace gains `@ocelle/elements: workspace:0.0.0`; stories import
   the element modules from the package source through Vite. The stories' markup strings pass the `csp` gate's
   Storybook checks (no `style` attribute).
+- **Story test** (analysis G4): `storybook/test/integration/elements-stories.test.ts`, in the existing
+  `storybook-integration` project (which builds the Storybook in its global setup), opens each new story in the
+  built preview in light and dark, as 002's `csp.test.ts` does, and asserts that it renders its elements: in phase 2
+  `close`, the labelled and the unknown-name stories; in phase 3 one `ocelle-icon` per name of the set; in phase 5
+  the main-ground, chrome, mono and labelled marks (US1-13, US4-11, FR-019). A missing story fails it, so it goes red
+  first in each phase's red commit. It is test code, not mutated.
 - **Note**: #10 runs in parallel and may change `storybook/.storybook/`; this feature changes no Storybook
   configuration file, only adds stories and the dependency, to keep the merge small.
 
@@ -691,6 +716,10 @@ each marked with the finding it answers.
     `@lit/reactive-element` 2.1.2, BSD-3-Clause, copyright "Google LLC", repository, published file
     `@ocelle/elements dist/browser/ocelle-elements.js`), with the licence text beside it as
     `packages/elements/licenses/lit-BSD-3-Clause.txt` (copied unchanged from `node_modules/lit/LICENSE`).
+  - **By phase** (analysis L9): the Lit entry in `THIRD_PARTY_NOTICES`, `licenses/lit-BSD-3-Clause.txt`, the build's
+    copies of `LICENSE` and `THIRD_PARTY_NOTICES`, `files` and `pack.test.ts` for those paths land in phase 2 with the
+    browser build that bundles Lit and whose banner points to them; `NOTICE` (with the trademark note), its copy and
+    its `pack.test.ts` path land in phase 5 with the mark.
   - Packed files: the elements build copies the root `LICENSE`, `NOTICE` and `THIRD_PARTY_NOTICES` into the package
     directory (ignored by git); `files` lists `dist`, `custom-elements.json`, `licenses`, `README.md`, `CHANGELOG.md`,
     `LICENSE`, `NOTICE`, `THIRD_PARTY_NOTICES`. `pack.test.ts` runs `pnpm pack --dry-run --json` after a build and

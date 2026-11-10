@@ -12,6 +12,10 @@
 
 The module build imports only its own files and `lit` / `lit/*`; `lit` 3.3.3 is a `dependencies` entry (exact).
 
+This is the surface at the end of the feature. Phases 2 to 4 ship `ocelle-icon` only: `./ocelle-brand-mark.js` and
+the mark's definition in `dist/index.js` and the browser build arrive in phase 5 (analysis F1 (a)). Nothing is
+published before the feature merges.
+
 **Tokens.** `@ocelle/tokens` is a `peerDependencies` entry (`workspace:0.0.0`), as for `@ocelle/styles`: the elements
 read its custom properties by inheritance and bundle none of them. A host links `tokens.css` first; without it
 `--ocelle-icon-size` is undefined, so an icon or mark takes the SVG default size (300 × 300 px in a paragraph) and the

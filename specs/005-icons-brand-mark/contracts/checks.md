@@ -32,11 +32,25 @@
 | File | Project | Proves |
 |---|---|---|
 | `test/scenarios/*.ts` | (imported by both harnesses) | the shared scenario bodies and the driver interface: every browser scenario of the spec once |
-| `test/*.test.ts` | `elements` (browser mode, mutated) | the scenario bodies on source: drawing, size, colour, naming via `axTree`, forced colours via `emulateForcedColors` (text, link, button, disabled button), mirroring pixels, slot convention on `ocelle-test-host`; `define.test.ts` (FR-006), `entry-icon.test.ts` and `entry-root.test.ts` (FR-002, US1-17), the expected-table test per icon (R-07) |
-| `test/browser/*.test.ts` | `elements-browser` (Node + Playwright) | the same scenario bodies on the built browser build on strict-CSP fixture pages, each with zero violations (`addInitScript` collector), allowed requests only and no console message; plus upgrade after server HTML (US1-15), double definition (US1-10), US1-8's console check, US1-14's 500-icon request check, the slot convention with the test-host bundle, and a control page for the collector |
+| `test/*.test.ts` | `elements` (browser mode, mutated) | the scenario bodies on source: drawing, size, colour, naming via `axTree`, forced colours via `emulateForcedColors` (text, link, button, disabled button), mirroring pixels, box and forced colours per icon name (SC-002, SC-004), slot convention on `ocelle-test-host`; `define.test.ts` (FR-006), `entry-icon.test.ts` and `entry-root.test.ts` (FR-002, US1-17; `ocelle-icon` only until phase 5), `entry-brand-mark.test.ts` (phase 5), the expected-table test per icon (R-07) |
+| `test/browser/*.test.ts` | `elements-browser` (Node + Playwright) | the same scenario bodies on the built browser build on strict-CSP fixture pages, each with zero violations (`addInitScript` collector), allowed requests only and no console message; plus upgrade after server HTML (US1-15), double definition (US1-10; `ocelle-icon` in phase 2, `ocelle-brand-mark` added in phase 5), US1-8's console check, US1-14's 500-icon request check, the slot convention with the test-host bundle, and a control page for the collector |
 | `test/node/manifest.test.ts` | `elements-node` (mutated) | the generator's normalisation (empty lists, `IconName` union, `aria-label` dropped) and the generated manifest's `tagName`, defaults and schema version |
-| `test/node/brand-pairs.test.ts` | `elements-node` (mutated) | FR-026 pairing, with its removed-row plant |
+| `test/node/brand-pairs.test.ts` | `elements-node` (mutated) | FR-026 pairing on the source template, through the shared check `test/node/brand-pairs-check.ts`, with its removed-row plant `test/node/fixtures/pairs-missing-row.json` |
 | `test/node/readme.test.ts` | `elements-node` (mutated) | the documentation statements of the spec |
 | `test/node/vite-config.test.ts` | `elements-node` (mutated) | the browser build's configuration: entry, format, file name, `emptyOutDir`, no externals, no `development` condition, the banner |
-| `test/build/build.test.ts` | `elements-build` (not mutated) | module build imports only own files and `lit`, and an element's module imports neither the root nor the other element; browser build self-contained, production Lit, no console call, starts with the licence banner |
-| `test/build/pack.test.ts` | `elements-build` (not mutated) | packed file list holds `LICENSE`, `NOTICE`, `THIRD_PARTY_NOTICES` and the browser build's file |
+| `test/build/build.test.ts` | `elements-build` (not mutated) | module build imports only own files and `lit`, and an element's module imports neither the root nor the other element; browser build self-contained, production Lit, no console call, starts with the licence banner; from phase 5, the FR-026 pairing check of `brand-pairs-check.ts` on the built `dist/ocelle-brand-mark.js`, the stylesheet as shipped (US4-4) |
+| `test/build/pack.test.ts` | `elements-build` (not mutated) | packed file list holds `LICENSE`, `THIRD_PARTY_NOTICES`, `licenses/lit-BSD-3-Clause.txt`, `custom-elements.json` and the browser build's file (phase 2), and `NOTICE` (phase 5) |
+
+## Story test
+
+| File | Project | Proves |
+|---|---|---|
+| `storybook/test/integration/elements-stories.test.ts` | `storybook-integration` (builds the Storybook; not mutated) | each new story is in the built Storybook and renders its elements in light and dark: `ocelle-icon` close, labelled and unknown name (phase 2), one story per icon name (phase 3), the mark's main-ground, chrome, mono and labelled stories (phase 5) (US1-13, US4-11, FR-019) |
+
+## Mutation scope
+
+Operator decision after the analysis of the tasks (finding C1 (b), plan decision 16): constitution VIII's "changed
+source" is, for the elements, `packages/elements/src/**`, mutated in-process under `stryker.elements.config.json`.
+Test code, the fixture suites (`packages/elements/test/browser/**`), the tool-run build and pack tests
+(`packages/elements/test/build/**`) and the story test are not source and are not mutated. A reading of the
+principle, not an exception.

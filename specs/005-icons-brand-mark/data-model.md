@@ -38,7 +38,8 @@ beat the user-agent `[hidden]` rule).
 **State** (derived on every update): `drawable` = `name` is a key of the icon table (exact). `accessibleName`
 (FR-034): if the host has an `aria-label` attribute, it decides alone: its value if it holds a non-whitespace
 character (as the host wrote it; Chromium keeps surrounding spaces, so hosts pass it trimmed), else none, even with a
-`label`; if the host has no `aria-label`, the trimmed `label` if non-empty, else none.
+`label`; if the host has no `aria-label`, the trimmed `label` if non-empty, else none. A non-empty host `aria-label`
+never makes an undrawable icon exposed (first row below; US1-8, analysis G2).
 
 | `drawable` | `accessibleName` | Shadow root | Internals |
 |---|---|---|---|
@@ -89,7 +90,9 @@ both palettes (R-09).
 ring's centre (50, 50)); four `path` arcs with class `ring`, each with its own `stroke-width` (15, 12, 16, 11),
 `fill="none"`, `stroke-linecap="round"`; one `ellipse` with class `spot` and a `transform` attribute for its rotation.
 Geometry is the reference's rosette group in the group's own coordinates, with no transform (R-09); against the
-reference group the fit of US4-9 is scale 1, translation 0.
+reference group the fit of US4-9 is scale 1, translation 0. The rendered drawing has none of the reference's literal
+colours, no rounded square, and no `style`, `id`, `href`, `xlink:href`, `<use>`, `<image>`, `<foreignObject>`,
+`<script>` or event-handler attribute (US4-9, FR-010; tested with the geometry, analysis G3).
 
 ## Slot convention (`packages/elements/src/icon-slot.ts`)
 

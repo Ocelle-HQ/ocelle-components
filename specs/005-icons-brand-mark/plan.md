@@ -23,6 +23,9 @@ findings named (`reviews/plan/round-1/fixes-1.md`), and round 2 likewise (`revie
 `hidden` attribute, the slot row's block padding, the mark's `max-content` width, the `@ocelle/tokens` peer
 dependency and the engine floor), and round 3 (`reviews/plan/round-3/fixes-1.md`: the slotted icons' token pin,
 the mark's percentage sizes, `calc()` no longer reopening the lint allowances, the README as the one engine list).
+The analysis of the tasks (`analysis-report.md`) is resolved in `reviews/analysis/fixes-1.md`: the mutation scope
+of VIII as a reading (decision 16), the brand mark absent from phase 2, the Lit records with the browser build in
+phase 2, per-name size and forced-colour checks, a story test, and phase 4's dependency on phase 3.
 Every decision is in [research.md](research.md); the surface is in
 [contracts/elements-package.md](contracts/elements-package.md) and the checks in [contracts/checks.md](contracts/checks.md).
 
@@ -43,7 +46,8 @@ from source, mutated under its own Stryker configuration; two browser commands, 
 and `elements-browser` (Node + Playwright on strict-CSP fixture pages serving the built browser build, with CSP,
 request and console recorders; not mutated). Node projects `elements-node` (manifest, pairing, README, Vite config;
 mutated under the default configuration) and `elements-build` (build and pack tests that start tools; not mutated).
-Mutation of element source under an elements-only Stryker configuration (R-12).
+Mutation of element source under an elements-only Stryker configuration (R-12). The new stories are checked by a story test in the existing
+`storybook-integration` project (R-14).
 
 **Target Platform**: evergreen Chromium measured; WebKit (Kitty Desktop) unmeasured, an open limitation in the README.
 Engine floor: Chromium 120+ (`:dir()`) and WebKit 16.4+ (`:dir()`, Media Queries 4 `not (…)`, constructable
@@ -57,13 +61,13 @@ stylesheets), the newest feature the elements use, stated in the README with the
 elements; fixture pages add only `font-src 'self'` for the tokens' vendored font, as the spec's fixture defines; no
 network request; token-only styles; no `sk-` names or monospace; one heavy job at a time in this container.
 
-**Scale/Scope**: 2 elements, 13 icons, 1 internal slot stylesheet, 1 new gate, 13 contrast rows, 1 approved install
-script.
+**Scale/Scope**: 2 elements, 13 icons, 1 internal slot stylesheet, 1 new gate, 13 contrast rows, 2 approved install
+scripts.
 
 ## Constitution Check
 
-*Gate: passes before Phase 0; re-checked after Phase 1 design and again after plan squad rounds 1 and 2 — passes,
-with the exceptions in Complexity Tracking.*
+*Gate: passes before Phase 0; re-checked after Phase 1 design, again after plan squad rounds 1 to 3 and after the
+analysis of the tasks — passes, with the exception in Complexity Tracking.*
 
 | Principle | How this plan meets it |
 |---|---|
@@ -74,7 +78,7 @@ with the exceptions in Complexity Tracking.*
 | V. Storybook, behaviour tests | One story per icon and per mark variant and state, light and dark (R-14). No events exist, so no event assertions; no keyboard model (neither element is focusable). Baselines: see Complexity Tracking. |
 | VI. Consumer-driven, own code | Needs from spec-kitty-design #496 and #504, kitty-mission-ui's Projects and Artifact Viewer screens, #7, #12 to #16. Drawings are our own (operator decision); the mark is Ocelle's own reference, redrawn onto tokens. Nothing copied from Spec Kitty. |
 | VII. Semver | All additions (MINOR): two elements, thirteen icon names, entry points, the browser build's file path in the tarball (`dist/browser/ocelle-elements.js`, which hosts without a bundler serve by path), the manifest. The `@ocelle/elements` CHANGELOG names them (FR-031). |
-| VIII. Test-first, non-vacuous | Each phase starts red; "does not" outcomes are paired with positive ones and each pairing has a named plant (spec table). Element source is mutation-tested under the elements-only Stryker config (measured working, R-12); Stryker runs the in-process tests only, so every scenario body is shared by the in-process and the fixture harness (R-11). The drawing data is plain data checked against an independent expected table, never `as const` (R-07); `define`'s guard and each entry point's registrations have in-process tests (R-02); the Vite config and the manifest script have in-process node tests (R-05, R-12). The mirroring "equal" rule is a count rule measured before the red step (R-08). New gate code (`manifest.ts`, the mutation split, the lint changes, the pins rule, the plant-repo set) is mutation-tested with its unit tests, and the gates have fail, pass and breaking plants, including element-source survivor, NoCoverage and mixed plants for the split (R-12). Documentation-only items take the exemption with the reason stated. |
+| VIII. Test-first, non-vacuous | Each phase starts red; "does not" outcomes are paired with positive ones and each pairing has a named plant (spec table). Element source is mutation-tested under the elements-only Stryker config (measured working, R-12); Stryker runs the in-process tests only, so every scenario body is shared by the in-process and the fixture harness (R-11). "Changed source is mutation-tested" is read as: the changed source of this feature is `packages/elements/src/**` (and the gate and configuration TypeScript of R-12), which is mutated in-process; test code, the fixture suites on the built files (`test/browser/**`) and the tool-run build and pack tests (`test/build/**`) are not source and are not mutated, a reading the operator approved (decision 16, analysis finding C1, 2026-11-10, human:jeroennouwsdev: "(b) A reading of VIII"), as 003 did (003 decision 19). It is a reading, not an exception, so Complexity Tracking has no row for it. The drawing data is plain data checked against an independent expected table, never `as const` (R-07); `define`'s guard and each entry point's registrations have in-process tests (R-02); the Vite config and the manifest script have in-process node tests (R-05, R-12). The mirroring "equal" rule is a count rule measured before the red step (R-08), the oracle spec US2-4 names. The stories have a test of their own in the built Storybook (`storybook/test/integration/elements-stories.test.ts`, red first in phases 2, 3 and 5). New gate code (`manifest.ts`, the mutation split, the lint changes, the pins rule, the plant-repo set) is mutation-tested with its unit tests, and the gates have fail, pass and breaking plants, including element-source survivor, NoCoverage and mixed plants for the split (R-12). Documentation-only items take the exemption with the reason stated. |
 | Licence and supply chain | Lit (BSD-3-Clause) is bundled into the browser build: entry in `THIRD_PARTY_NOTICES` with the licence text beside it (operator decision SPEC-2-02), and a licence banner at the top of the file that the build test asserts (operator decision, PLAN-A11Y-SECURITY-1-008, R-05). New pins exact, release age respected. **Install scripts** (operator decision, PLAN-A11Y-SECURITY-1-005 (c), scope confirmed after verify 1, R-16): the analyzer's tree holds `rs-module-lexer` 2.9.0 with a `postinstall` and `fsevents` 2.3.3 (macOS only, also Vite's optional dependency) with `install: node-gyp rebuild`; both are approved by exact version (`allowBuilds: "rs-module-lexer@2.9.0": true, "fsevents@2.3.3": true`), the `pins` gate admits exactly those two entries and still rejects any other `true` entry, with plants, and 001's R-04 record gets an amendment note; the residual risks (a fetch outside the lockfile on a platform without a lexer binding; a native compile that may fetch Node headers on macOS, unverified here for lack of a macOS runner) are in the README's `pins` row. This touches no constitution rule: the constitution requires exact pins and a committed lockfile, which still hold; the empty allow-list was 001's policy (FR-027, R-04), which the operator amends for these two entries. So it needs no Complexity Tracking row. `NOTICE` added with the trademark note. |
 | Workflow gates | One gate added (`manifest`), which the constitution already lists; registry, CI job, README row and plants follow 001's contract. The "Custom-elements manifest" check blocks merges only once the operator adds it to the ruleset on `main` (operator ruleset change, as 002's contrast and brand-rules checks); `gates/README.md` § Required checks and the `gates/lib/registry.ts` comment go from fourteen to fifteen checks (R-06). |
 
@@ -136,6 +140,16 @@ Items marked "decided" were operator fork decisions at plan squad round 1 (`revi
     peer dependency and its README says to link `tokens.css` first; the stated engine floor is Chromium 120+ and
     WebKit 16.4+; the README's engines section is the one list of the floor features (PLAN-FRESH-3-004).
 
+Decided by the operator after the analysis of the tasks (2026-11-10, human:jeroennouwsdev):
+
+16. **Mutation scope of constitution VIII** (analysis finding C1, "(b) A reading of VIII"): for the elements, VIII's
+    "changed source" means `packages/elements/src/**`, which is mutated in-process under
+    `stryker.elements.config.json` (gate and configuration TypeScript stays mutated under the default configuration,
+    R-12). Test code, the fixture suites
+    on the built files (`packages/elements/test/browser/**`) and the tool-run build and pack tests
+    (`packages/elements/test/build/**`) are not source. This is a reading of the principle, not an exception, so
+    Complexity Tracking has no row for it (Constitution Check VIII, contracts/checks.md § Mutation scope).
+
 ## Project Structure
 
 ### Documentation (this feature)
@@ -171,12 +185,15 @@ packages/elements/
 │   ├── ocelle-icon.ts
 │   └── ocelle-brand-mark.ts
 └── test/
-    ├── *.test.ts           # elements project (browser mode, mutated): scenario runs, define, entry-icon, entry-root
+    ├── *.test.ts           # elements project (browser mode, mutated): scenario runs, define, entry-icon, entry-root,
+    │                       #   entry-brand-mark (phase 5)
     ├── scenarios/*.ts      # shared scenario bodies and the driver interface (R-11)
     ├── icons-expected.ts   # the independent expected drawing table (R-07)
     ├── fixtures/test-host.ts
     ├── node/*.test.ts      # elements-node: manifest, brand-pairs, readme, vite-config (mutated)
-    ├── build/*.test.ts     # elements-build: build, pack (start tools; not mutated)
+    ├── node/brand-pairs-check.ts  # the pairing check over a stylesheet text, shared with build.test.ts (L5)
+    ├── node/fixtures/pairs-missing-row.json  # pairs.json without the dark color-accent on color-chrome row
+    ├── build/*.test.ts     # elements-build: build (and the pairing check on the built mark), pack (start tools; not mutated)
     └── browser/            # elements-browser: global-setup.ts, serve.ts, fixtures/*.html, *.test.ts
 gates/
 ├── bin/manifest.ts, bin/mutation.ts (split by config)
@@ -187,13 +204,15 @@ gates/
 │   fail-lh-multiple-calc,fail-lh-calc-factor,fail-lh-calc-twice},
 │   plants/mutation/{pass-element-source,
 │   fail-element-source-survivor,fail-element-source-no-coverage,fail-mixed-survivors},
-│   plants/pins/{pass-approved-build,fail-allow-builds-unpinned-approval,fail-allow-builds-other-version}
+│   plants/pins/{pass-approved-build,fail-allow-builds-unpinned-approval,fail-allow-builds-unpinned-fsevents,
+│   fail-allow-builds-other-version}
 ├── gates.json, lib/registry.ts (comment: fifteen checks), README.md (manifest row, fifteen required checks, pins row)
 └── test/ (manifest, mutation split, token-only, pins, plant-repo, vitest-config, the five pinned contrast counts)
 package.json (+ analyzer devDependency), pnpm-workspace.yaml (allowBuilds approval), pnpm-lock.yaml
 stryker.elements.config.json, vitest.mutation.elements.config.ts, vitest.config.ts (projects, commands), vitest.mutation.config.ts
 packages/tokens/contrast/pairs.json (13 rows)
-storybook/package.json (+ @ocelle/elements), storybook/stories/{icon,brand-mark}.stories.ts
+storybook/package.json (+ @ocelle/elements), storybook/stories/{icon,brand-mark}.stories.ts,
+storybook/test/integration/elements-stories.test.ts (story inventory in the built Storybook, light and dark)
 NOTICE (new), THIRD_PARTY_NOTICES (Lit), .github/workflows/ci.yml (manifest job), .gitignore (packed copies)
 specs/001-repository-foundation/research.md (R-04 amendment note citing 005 R-16)
 ```
@@ -233,10 +252,18 @@ changes in `gates/` and the root configs, as 001 to 003 did.
    - `define.ts`, `naming.ts`, `ocelle-icon.ts` with one icon (`close`) and the `icons.ts` structure, tests first:
      US1 scenarios 1 to 9, 14, 16, 18 and 19 as shared scenario bodies run by both harnesses (US1-19 with the plant
      "`:host([hidden])` rule removed"), `define.test.ts`,
-     `entry-icon.test.ts` and `entry-root.test.ts` in-process (R-02); `index.ts`, `browser.ts`;
+     `entry-icon.test.ts` and `entry-root.test.ts` in-process (R-02); `index.ts`, `browser.ts`. Phase 2 has no
+     `ocelle-brand-mark` (analysis F1 (a)): `index.ts` and so the browser build define `ocelle-icon` only, `exports`
+     lists `.`, `./ocelle-icon.js`, `./browser.js` and `./custom-elements.json`, the manifest gate sees one element
+     module, and US1-10 and `entry-root.test.ts` assert `ocelle-icon` only; phase 5 adds `./ocelle-brand-mark.js` and
+     extends both to the mark. US1-8 includes an unknown name with a host `aria-label` beside a known-name twin
+     (plant: `drawable` ignored when the host `aria-label` names it; analysis G2);
    - the module and browser builds (`vite.browser.config.ts` with the banner, `build` script),
      `test/node/vite-config.test.ts`, and `test/build/build.test.ts` (US1-17's import rules, FR-001, FR-002, FR-016,
-     FR-029's banner);
+     FR-029's banner); with the browser build that bundles Lit, the Lit records it points to (analysis L9): the Lit
+     entry in `THIRD_PARTY_NOTICES` with `licenses/lit-BSD-3-Clause.txt`, the build's copies of `LICENSE` and
+     `THIRD_PARTY_NOTICES` into the package, `files`, and `test/build/pack.test.ts` for those paths (FR-029, FR-030),
+     red first in the readme and pack tests;
    - fixture-only tests for US1 scenarios 10 and 15, US1-8's console check on the built file and US1-14's request
      half, with their pairing plants (US1-17 has no fixture case: its runtime half is the in-process entry tests, R-11);
    - the manifest: `scripts/manifest.ts` with `test/node/manifest.test.ts`, the committed manifest, and the
@@ -244,41 +271,52 @@ changes in `gates/` and the root configs, as 001 to 003 did.
      a built plant tree, registry, CI job, README row and the fourteen-to-fifteen change (US1-11, US1-12);
    - the mutation split (R-12) with its unit tests and plants (`pass-element-source`, `fail-element-source-survivor`,
      `fail-element-source-no-coverage`, `fail-mixed-survivors`), red first;
-   - the `ocelle-icon` story (close, labelled, unknown name) and the README's conventions section (with the `hidden`
+   - the `ocelle-icon` story (close, labelled, unknown name) with `storybook/test/integration/elements-stories.test.ts`
+     red first (each story present in the built Storybook and rendering its elements in light and dark; analysis
+     G4), and the README's conventions section (with the `hidden`
      rule, the token rule and the engine-floor rule), its tokens section (link `tokens.css` first, and what an icon
-     does without it) and engines section (Chromium 120+, WebKit 16.4+, the feature behind each figure), the
+     does without it) and engines section (Chromium 120+, WebKit 16.4+, the feature behind each figure, WebKit
+     unmeasured as an open limitation), the list of entry points (FR-002), the
      `@ocelle/tokens` peer dependency in `package.json`, the CHANGELOG entry, and the readme test's US1 statements
      (SC-008), red first;
    - `test/sample.test.ts` replaced (FR-032).
 3. **US2 Icon set** (P2): first, the measurement of R-08's "equal" rule on all thirteen drawings, recorded in
    `reviews/phase-3/spike.md` before the red commit; the other twelve drawings in `icons.ts`; tests first for US2
    scenarios 1 to 4 as shared bodies (data rules, painted area, distinct drawings, the expected-table test per icon,
-   mirroring by pixels in whole-pixel 80 × 80 boxes with the "mirror every icon" plant) and the manifest union
+   mirroring by pixels in whole-pixel 80 × 80 boxes with the "mirror every icon" plant, and per name US1-2's box and
+   US1-7's forced-colour contexts, SC-002 and SC-004 for every icon, analysis G1) and the manifest union
    (US2-1); the `token-only` `scale` change (`-1` and `1` only) with its unit test and plants
    (`pass-scale-mirror`, `fail-scale-factor`, `fail-scale-length`, `fail-scale-calc`; R-03), before the mirroring rule; the story grid of
-   all thirteen; the README icon table with consumer needs and the licence sentence (US2-5, exempt part stated);
-   manifest regenerated.
-4. **US3 Slot convention** (P3): the `token-only` `1lh` change, on its own and inside `calc()`, with its unit test
+   all thirteen, with the story test extended to it first; the README icon table with consumer needs and the licence sentence (US2-5, exempt part stated);
+   manifest regenerated; the gate run includes `gate:csp` and `gate:prefix` (the stories changed, analysis L6).
+4. **US3 Slot convention** (P3), after phase 3, whose `folder` and `arrow-end` drawings its scenarios slot
+   (analysis F2): the `token-only` `1lh` change, on its own and inside `calc()`, with its unit test
    and plants (`pass-one-line`, `pass-one-line-calc`, `fail-lh-multiple`, `fail-lh-multiple-calc`,
    `fail-lh-calc-factor`, `fail-lh-calc-twice`; R-03) first; `icon-slot.ts` and `test/fixtures/test-host.ts`; tests first for US3 scenarios 1
    to 6 and 8 to 11 as shared bodies with and without `base.css` (adopted from `packages/styles/src/base.css`
    in-process, linked on the fixture), US3-1 and US3-10 at the four type and size cases of R-10, centring and the
    icon inside the control's border box (plant: the `.icon-row` padding rule removed), each "does not" with its pair
    and plant (empty slot gap, host rule loses, the token pin removed for US3-9's token-on-the-slotted-icon case, the strut for centring, the strut without alt text for US3-11's name), the forced-colours case enabled and disabled (US3-8); the README slot-convention and naming
-   sections (SC-007), red first.
+   sections (SC-007), red first; the gate run includes `gate:csp` and `gate:prefix` (`icon-slot.ts` joins the built
+   output, analysis L6).
 5. **US4 Brand mark** (P4): the `token-only` `aspect-ratio: 1` change with its unit test and plants
    (`pass-aspect-square`, `fail-aspect-ratio-other`, `fail-aspect-calc`; R-03) first; `rosette.ts` and `ocelle-brand-mark.ts`; tests first
    for US4 scenarios 1 to 3, 5 to 9 and 13 to 15 as shared bodies, the Independent Test and SC-001 on the fixture, with
    US4-5's four contexts on all three variants and its two plants (the pre-round-1 sheet, `fill: CanvasText`) and
-   US4-7's height-only host, column flex case (plant: `inline-size: auto`) and 48 px bar with `block-size: 100%`, US4-15 (plant: `:host([hidden])`
+   US4-7's height-only host, column flex and flex-row cases (plant: `inline-size: auto`) and 48 px bar with `block-size: 100%`, US4-15 (plant: `:host([hidden])`
    removed); the 13 contrast rows in `pairs.json` with every pinned count changed first
    (`gates/test/contrast-pairs.test.ts`, `gates/test/contrast.test.ts`,
    `gates/test/integration/plants-robustness.test.ts`, `gates/test/integration/token-gates.test.ts` and the comment
    in `gates/bin/contrast.ts`: 160 light, 168 dark, 328 entries; R-09), and `test/node/brand-pairs.test.ts` with its
-   plant (US4-4); manifest regenerated (US4-12); the brand-mark stories (US4-11); `NOTICE`, the README mark and
-   trademark sections (with the mark's behaviour without `tokens.css`), the Lit entry in `THIRD_PARTY_NOTICES` with `licenses/lit-BSD-3-Clause.txt`, `files` and
-   `test/build/pack.test.ts` (FR-029, FR-030), and the CHANGELOG's final surface list with the browser build's path
-   (FR-031).
+   plant (US4-4), its check shared with `test/build/build.test.ts`, which runs it on the built
+   `dist/ocelle-brand-mark.js`, the stylesheet as shipped (analysis L5); US4-9's forbidden content and FR-010's full
+   list on the rosette's rendered drawing, paired with the geometry assertion (analysis G3); US1-10 and
+   `entry-root.test.ts` extended to `ocelle-brand-mark`, `entry-brand-mark.test.ts`, and `./ocelle-brand-mark.js`
+   in `exports` (analysis F1 (a)); manifest regenerated (US4-12); the brand-mark stories (US4-11) with the story test
+   extended first; `NOTICE`, its copy into the package and `pack.test.ts`'s `NOTICE` path, the README mark and
+   trademark sections (with the mark's behaviour without `tokens.css`), the README's entry point
+   `@ocelle/elements/ocelle-brand-mark.js` (FR-002, FR-030), and the CHANGELOG's final surface list with the browser
+   build's path (FR-031). The Lit records came with the browser build in phase 2.
 
 Each phase is folded after its approval (`/ocelle-run` step 4.3). Element source changes of each phase are
 mutation-tested by the gate with the phase base.
@@ -288,7 +326,9 @@ mutation-tested by the gate with the phase base.
 | Exception | Scope | Rationale | Sunset |
 |---|---|---|---|
 | No visual baselines and no axe run for the new `ocelle-icon` and `ocelle-brand-mark` stories (constitution III, V) | the stories of this feature | 001's recorded exception "Storybook build, visual regression and axe gates absent" applies; #10 adds both (spec FR-019) | the merge of #10 |
-| Mutation of element behaviour proven only through in-process tests; the fixture suites on the built files and the build and pack tests are not mutated | `packages/elements/test/browser/**`, `packages/elements/test/build/**` | Stryker instruments only modules a test imports in-process; every fixture scenario shares its body with an in-process run of the same source, and the build configuration is covered by an in-process import (R-05, R-11, R-12) | none (structural, as `styles-browser` in 003) |
 
-002's Storybook exceptions 1 and 2 apply unchanged to the new stories. The install-script approval of R-16 is not an
+002's Storybook exceptions 1 and 2 apply unchanged to the new stories. The fixture suites on the built files and the
+build and pack tests are not mutated; the operator approved that as a reading of constitution VIII (`changed source`
+is `packages/elements/src/**`, which is mutated in-process), not as an exception (decision 16, Constitution Check
+VIII), so it has no row here. The install-script approval of R-16 is not an
 exception to a constitution principle (see Constitution Check, Licence and supply chain) and so has no row here.

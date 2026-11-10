@@ -181,7 +181,7 @@ its plan names a planted defect that makes it fail:
 | An icon-only control's name is exactly the control's own, and the slotted icon adds nothing (US3-6, SC-003) | The slotted icon's shadow root holds the drawing at the icon size, and a labelled standalone twin on the same page exposes one image node | An icon that exposes `role="img"` named from its `name` when unlabelled (an image node then appears under the control) |
 | The non-directional icons are not mirrored (US2-4) | The four inline-direction icons do mirror on the same page | Mirroring applied to every icon |
 | An empty slot adds no gap or box (US3-5) | A filled slot on the same page adds the gap of FR-021 | The gap applied whether or not the slot holds an icon |
-| Unknown names draw nothing and add nothing to the tree (US1-8) | A known name on the same element then draws, and a labelled known name exposes one image node | Drawing a fallback glyph for an unknown name |
+| Unknown names draw nothing and add nothing to the tree, with a `label` or a host `aria-label` (US1-8, FR-034) | A known name on the same element then draws, and a labelled known name, and a known-name twin with the same host `aria-label`, each expose one image node | Drawing a fallback glyph for an unknown name, and an element that ignores `drawable` when the host `aria-label` names it |
 | `label` is not reflected (US1-16, US4-13, FR-014, FR-028) | In the same test, setting `name` (and `ground` and `tone`) reflects to the attribute, and the label set by property is the accessible name | Reflecting `label` |
 | A host size rule does not change a slotted icon's box (US3-9) | A standalone icon on the same page follows the same host rule, and overriding `--ocelle-icon-size` on the control resizes the slotted icon | A slot convention whose size rule loses to a page rule |
 | `--ocelle-icon-size` set by a page rule on a slotted icon itself does not change its box (US3-9) | A standalone icon on the same page under the same page rule is 32 × 32 px, and the token set on the control resizes the slotted icon | The slot convention's `--ocelle-icon-size: inherit !important` pin removed |
@@ -247,7 +247,9 @@ the allowed list and of CSP violations; run the manifest gate and its plants.
    the contexts that tell `currentColor` from a fixed system colour.
 8. **Given** a name that is not in the set, an empty name or no name, each on an `ocelle-icon` with an `id`, **When**
    the element renders, **Then** it draws nothing, keeps its icon-size box so the layout does not shift, adds nothing
-   to the accessibility tree even with a `label`, throws no error, writes no console message (none at all on the
+   to the accessibility tree even with a `label` or a non-empty host `aria-label` (an unknown name with
+   `aria-label="Close"` adds no node while a known-name twin with the same `aria-label` on the page exposes one image
+   node named "Close", FR-034), throws no error, writes no console message (none at all on the
    page, Lit's development-mode warning included) and makes no request; **When** the name is then changed to a known
    icon, **Then** that icon is drawn, and with a `label` it exposes one image node (FR-016). The same holds for
    `Close` and ` close` (exact names only).
@@ -339,8 +341,9 @@ grid and stroke rules, and that the direction-dependent icons mirror under `dir=
    `table` and `copy` render identically to their left-to-right rendering (FR-017). The measure is the rendered
    pixels of each icon's box, captured at the same size under `ltr` and under `rtl`: for the four inline-direction
    icons the `rtl` capture equals the `ltr` capture flipped horizontally and differs from the unflipped `ltr`
-   capture; for the other nine the `rtl` capture equals the `ltr` capture. "Equals" allows the per-channel tolerance
-   for anti-aliasing the plan names, and no more. The plant "mirroring applied to every icon" fails on the
+   capture; for the other nine the `rtl` capture equals the `ltr` capture. "Equals" and "differs" are the pixel rules
+   the plan names (a share of pixels over a per-channel threshold, and for "equals" a per-channel cap no pixel may
+   exceed), which allow for anti-aliasing and no more. The plant "mirroring applied to every icon" fails on the
    non-directional icons whose drawing is not left-right symmetric (at least `folder`, `file`, `search` and `copy`).
 5. **Given** the README, **When** the licence section is read, **Then** it states that every icon is the project's
    own drawing under Apache-2.0, and `THIRD_PARTY_NOTICES` lists no icon set (FR-029).
