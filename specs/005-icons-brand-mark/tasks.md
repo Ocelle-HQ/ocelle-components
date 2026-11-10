@@ -3,7 +3,7 @@
 **Input**: design documents in `specs/005-icons-brand-mark/`, as approved at the plan gate on 2026-11-10 after three
 plan-squad rounds (`reviews/plan/round-1..3/`):
 - spec.md (FR-001 to FR-034, SC-001 to SC-008, the pairing table of "does not" outcomes);
-- plan.md, with decisions 1 to 15 and the phase list;
+- plan.md, with decisions 1 to 16 and the phase list;
 - research.md, R-01 to R-16;
 - data-model.md;
 - contracts/elements-package.md and contracts/checks.md;
@@ -94,7 +94,8 @@ pins.
 
 ## Phase 2: User Story 1 - The element conventions and `ocelle-icon` (Priority: P1) 🎯 MVP
 
-**Goal**: US1 scenarios 1 to 19; FR-001 to FR-016, FR-032, FR-033, FR-034 for `ocelle-icon`; the manifest gate;
+**Goal**: US1 scenarios 1 to 19 for `ocelle-icon` (US1-13's full grid comes in phase 3, and the `ocelle-brand-mark`
+halves of US1-10 and US1-17 in phase 5); FR-001 to FR-016, FR-032, FR-033, FR-034 for `ocelle-icon`; the manifest gate;
 the mutation split; the README conventions; the Lit records the browser build points to. One icon (`close`) is
 drawn; the other twelve come in phase 3. There is no `ocelle-brand-mark` module before phase 5.
 
@@ -104,7 +105,7 @@ requests and no console message; `pnpm run gate:manifest` passes and its plants 
 
 ### Spike (first)
 
-- [ ] T011 [US1] Spike, scratch files only, recorded in `specs/005-icons-brand-mark/reviews/phase-2/spike.md`: run the analyzer (API and CLI) on a scratch element written as R-06 says (the real `define` helper, `static override properties`, `declare` fields, `observedAttributes` with `aria-label`, `@tagname` and `@default` JSDoc), with builds denied and on Node 26 (`npx -p node@26.13.0` or CI) and in this container; record its schema version and output; `axTree` over CDP reading an element with an `id` hidden through `ElementInternals.ariaHidden` and one named as `img` (R-13); a scratch browser build under the strict CSP with zero violations (R-05)
+- [X] T011 [US1] Spike, scratch files only, recorded in `specs/005-icons-brand-mark/reviews/phase-2/spike.md`: run the analyzer (API and CLI) on a scratch element written as R-06 says (the real `define` helper, `static override properties`, `declare` fields, `observedAttributes` with `aria-label`, `@tagname` and `@default` JSDoc), with builds denied and on Node 26 (`npx -p node@26.13.0` or CI) and in this container; record its schema version and output; `axTree` over CDP reading an element with an `id` hidden through `ElementInternals.ariaHidden` and one named as `img` (R-13); a scratch browser build under the strict CSP with zero violations (R-05)
 
 ### Tests (red, one commit)
 
