@@ -30,11 +30,9 @@ devDependencies:
 + vite 8.3.5
 + vitest 5.0.5
 
-Done in 301ms using pnpm v12.16.1
+Done in 337ms using pnpm v12.16.1
 $ node gates/bin/setup-offline.ts
 setup: installed offline; Chromium at /opt/pw-browsers/chromium-1243/chrome-linux64/chrome
 $ node gates/bin/test.ts
-gates/test/container-pin.test.ts:50: unit-tests: the container pin exists, and names the repository's Node, linux/amd64, a manifest digest and the headless shell build: AssertionError: storybook/visual/container.json exists: expected false to be true // Object.is equality
-gates/test/container-pin.test.ts:60: unit-tests: the container pin reports a wrong node and a wrong browser on a copy of the pin, each on its own line, and nothing else: AssertionError: storybook/visual/container.json exists: expected false to be true // Object.is equality
-unit-tests: 2 of 2040 tests failed
+unit-tests: could not run: gates/test/entry-stubs.test.ts failed to load: Cannot find module '../bin/axe.ts' imported from /tmp/tmp.hbrBqIUWvl/gates/test/entry-stubs.test.ts
 [ELIFECYCLE] Test failed. See above for more details.
