@@ -62,6 +62,16 @@ export function configurationSet(packageDirs: readonly string[]): string[] {
   ];
 }
 
+/** Whether a configuration-set entry may be absent from the repository (005 research.md R-12). Scaffold. */
+export function mayBeAbsent(path: string): boolean {
+  return path === "";
+}
+
+/** The node_modules directories linked into a temporary repository (005 research.md R-12). Scaffold. */
+export function nodeModulesLinks(packageDirs: readonly string[]): string[] {
+  return packageDirs.slice(0, 0);
+}
+
 /** File names that are gate configuration: tsconfig, ESLint, Stylelint, Vitest, Vite and Stryker files. */
 const configurationName =
   /^(?:tsconfig.*\.json|eslint(?:\.[\w-]+)?\.config\.\w+|\.eslintrc.*|stylelint\.config\.\w+|\.stylelintrc.*|vitest(?:\.[\w-]+)?\.(?:config|workspace)\.\w+|vite(?:\.[\w-]+)?\.config\.\w+|stryker\.conf(?:ig)?\.\w+)$/;
