@@ -12,7 +12,7 @@ fail for it.
   lockfile matching the manifests; `pnpm run gate:pins` exits 0) and the verification of T009
   (`install-scripts.md`). No new test could fail for them that is not one of those.
 - **Not exempt: T004 to T007.** Their tests are the phase's red commit (T001 to T003), recorded in `red-commits` and
-  `red-phase.log`: 25 tests failed on assertions, for the missing projects and exclusions (T001), the approved builds
+  `red-phase.log`: 26 tests failed on assertions, for the missing projects and exclusions (T001), the approved builds
   (T002) and the configuration set and `node_modules` links (T003). T006's `pnpm-workspace.yaml` entries are checked
   by the pins gate tests of T002 and `gate:pins` on the repository; its README row and 001 amendment are records.
 - **T009 and T010** are records (`install-scripts.md`, this file).
