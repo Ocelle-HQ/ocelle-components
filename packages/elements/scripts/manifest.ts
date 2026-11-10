@@ -11,7 +11,7 @@ import { existsSync, readFileSync, readdirSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 import { fileURLToPath } from "node:url";
 import * as analyzer from "@custom-elements-manifest/analyzer";
-import type { Context, Plugin } from "@custom-elements-manifest/analyzer";
+import type { Plugin } from "@custom-elements-manifest/analyzer";
 import type TypeScript from "typescript";
 
 /**
@@ -20,7 +20,7 @@ import type TypeScript from "typescript";
  * repository's, whose `createSourceFile`, `ScriptTarget` and node guards it shares.
  */
 interface Analyzer {
-  readonly create: (options: { readonly modules: readonly TypeScript.SourceFile[]; readonly plugins: readonly Plugin[]; readonly context: Context }) => Manifest;
+  readonly create: (options: { readonly modules: readonly TypeScript.SourceFile[]; readonly plugins: readonly Plugin[] }) => Manifest;
   readonly ts: typeof TypeScript;
 }
 const { create, ts } = analyzer as unknown as Analyzer;
@@ -37,6 +37,8 @@ const element = /^ocelle-[\w-]+\.ts$/;
 /** Attributes every element may observe that are standard attributes, not its members (FR-034). */
 const standardAttributes = new Set(["aria-label"]);
 const memberLists = ["slots", "events", "cssParts", "cssProperties"] as const;
+const iconsFile = "icons.ts";
+const manifestFile = "packages/elements/custom-elements.json";
 
 function isObject(value: unknown): value is Json {
   return typeof value === "object" && value !== null && !Array.isArray(value);
@@ -60,8 +62,9 @@ function expanded(entry: Json, union: string | undefined): Json {
   return { ...entry, type: { ...type, text: type.text.replace(/\bIconName\b/g, union) } };
 }
 
+/** A member the analyzer does not mark private or protected (it marks `#` fields private). */
 function isPublic(member: Json): boolean {
-  return member.privacy !== "private" && member.privacy !== "protected" && !String(member.name).startsWith("#");
+  return member.privacy !== "private" && member.privacy !== "protected";
 }
 
 function normaliseDeclaration(declaration: Json, union: string | undefined): Json {
@@ -82,12 +85,16 @@ export function normalise(raw: Manifest, names: readonly string[]): Manifest {
   return sorted({ ...raw, modules }) as Manifest;
 }
 
-/** The string literals of the `IconName` type alias of `text` (src/icons.ts), in order; none without the alias. */
-function iconNames(text: string): string[] {
-  const file = ts.createSourceFile("icons.ts", text, ts.ScriptTarget.ES2015, true);
+/**
+ * The string literals of the `IconName` type alias in the text of src/icons.ts, in order (a union of them, or one);
+ * none without the alias.
+ */
+export function iconNames(text: string): string[] {
+  const file = ts.createSourceFile(iconsFile, text, ts.ScriptTarget.ES2015);
   for (const statement of file.statements) {
-    if (!ts.isTypeAliasDeclaration(statement) || statement.name.text !== "IconName" || !ts.isUnionTypeNode(statement.type)) continue;
-    return statement.type.types.flatMap((member) => (ts.isLiteralTypeNode(member) && ts.isStringLiteral(member.literal) ? [member.literal.text] : []));
+    if (!ts.isTypeAliasDeclaration(statement) || statement.name.text !== "IconName") continue;
+    const members = ts.isUnionTypeNode(statement.type) ? statement.type.types : [statement.type];
+    return members.flatMap((member) => (ts.isLiteralTypeNode(member) && ts.isStringLiteral(member.literal) ? [member.literal.text] : []));
   }
   return [];
 }
@@ -97,8 +104,8 @@ export function generate(root: string): Promise<Manifest> {
   const files = existsSync(dir) ? readdirSync(dir).filter((name) => element.test(name)).sort() : [];
   if (files.length === 0) return Promise.reject(new Error(`no element module ${sourceDir}/ocelle-*.ts under ${root}`));
   const modules = files.map((name) => ts.createSourceFile(`src/${name}`, readFileSync(join(dir, name), "utf8"), ts.ScriptTarget.ES2015, true));
-  const raw = create({ modules, plugins: litPlugin(), context: { dev: false } });
-  const icons = join(dir, "icons.ts");
+  const raw = create({ modules, plugins: litPlugin() });
+  const icons = join(dir, iconsFile);
   return Promise.resolve(normalise(raw, existsSync(icons) ? iconNames(readFileSync(icons, "utf8")) : []));
 }
 
@@ -106,8 +113,10 @@ export function serialise(manifest: Manifest): string {
   return `${JSON.stringify(manifest, null, 2)}\n`;
 }
 
-// Stryker disable next-line all: process boundary, covered by the manifest gate (gates/test/manifest.test.ts "exits 0 on the repository"), which compares the file this writes with a regeneration
-if (import.meta.main) {
-  const root = fileURLToPath(new URL("../../..", import.meta.url));
-  writeFileSync(join(root, "packages/elements/custom-elements.json"), serialise(await generate(root)));
+/** Writes packages/elements/custom-elements.json under `root` (the repository root) from its element source. */
+export async function writeManifest(root: string): Promise<void> {
+  writeFileSync(join(root, manifestFile), serialise(await generate(root)));
 }
+
+// Stryker disable next-line all: process boundary, the package's manifest script; writeManifest is tested in test/node/manifest.test.ts and the manifest gate compares the file it writes with a regeneration
+if (import.meta.main) await writeManifest(fileURLToPath(new URL("../../..", import.meta.url)));

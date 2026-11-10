@@ -204,6 +204,31 @@ describe("manifestFindings(committed, generated)", () => {
     ]);
   });
 
+  it("reads only custom-element declarations of object entries: other entries and declarations are not elements", () => {
+    const generated = manifest(described);
+    element(generated).members = [{ kind: "field", privacy: "public", name: "tone", description: "The tone." }, { kind: "field", privacy: "protected", name: "cache" }];
+    (generated.modules as unknown[]).unshift(null, "module", [], { path: "src/helper.ts", declarations: [null, 3, [], { kind: "function", name: "helper", members: [{ kind: "field", name: "x" }] }] });
+    expect(manifestFindings(generated, generated)).toEqual([]);
+  });
+
+  it("names an element that only the committed manifest declares", () => {
+    const old = manifest(described);
+    const extra = structuredClone(element(old));
+    extra.tagName = "ocelle-gone";
+    ((old.modules as Json[])[0]?.declarations as Json[]).push(extra);
+    expect(manifestFindings(old, manifest(described))).toEqual([stale("ocelle-gone is not in the generated manifest")]);
+  });
+
+  it("names an element without a tag name by its class name", () => {
+    const generated = manifest(undescribed);
+    const plant = element(generated);
+    delete plant.tagName;
+    for (const key of ["members", "attributes", "events", "cssParts", "cssProperties"]) plant[key] = [];
+    expect(manifestFindings(generated, generated)).toEqual([
+      { location: { path: "packages/elements/src/ocelle-plant.ts" }, gate: "manifest", rule: "no-description", message: "OcellePlant.slot.icon has no description" },
+    ]);
+  });
+
   it("finds nothing when the two manifests are equal but for key order", () => {
     const generated = manifest(described);
     expect([manifestFindings(reversed(generated), generated), manifestFindings(manifest(described), { ...generated, readme: "x" }).length]).toEqual([[], 1]);

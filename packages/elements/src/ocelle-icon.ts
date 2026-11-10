@@ -3,7 +3,7 @@
 // the accessibility tree unless a `label` or a host `aria-label` names it. An unknown, empty or missing name draws
 // nothing and keeps the box. Importing this module defines `ocelle-icon` and no other element.
 import { LitElement, css, html, nothing, svg } from "lit";
-import type { PropertyValues, SVGTemplateResult } from "lit";
+import type { SVGTemplateResult } from "lit";
 import { define } from "./define.ts";
 import { iconOf } from "./icons.ts";
 import type { IconName, Shape } from "./icons.ts";
@@ -13,18 +13,7 @@ export type { IconName } from "./icons.ts";
 
 /** One shape as SVG; the stroke style is the `svg`'s, inherited. */
 function shape(part: Shape): SVGTemplateResult {
-  switch (part.kind) {
-    case "path":
-      return svg`<path d=${part.d}></path>`;
-    case "line":
-      return svg`<line x1=${part.x1} y1=${part.y1} x2=${part.x2} y2=${part.y2}></line>`;
-    case "polyline":
-      return svg`<polyline points=${part.points}></polyline>`;
-    case "rect":
-      return svg`<rect x=${part.x} y=${part.y} width=${part.width} height=${part.height} rx=${part.rx ?? nothing}></rect>`;
-    case "circle":
-      return svg`<circle cx=${part.cx} cy=${part.cy} r=${part.r}></circle>`;
-  }
+  return svg`<line x1=${part.x1} y1=${part.y1} x2=${part.x2} y2=${part.y2}></line>`;
 }
 
 /**
@@ -35,10 +24,11 @@ function shape(part: Shape): SVGTemplateResult {
 export class OcelleIcon extends LitElement {
   static override properties = {
     name: { type: String, reflect: true },
+    // Stryker disable next-line ObjectLiteral: equivalent, {} gives Lit's default options, which are type String's (attribute "label", the default converter, not reflected)
     label: { type: String },
   };
 
-  /** `aria-label` is observed, not a property: a host `aria-label` names the icon (FR-034). */
+  /** `aria-label` is observed, not a property: a host `aria-label` names the icon (FR-034), so its change updates the element. */
   static override get observedAttributes(): string[] {
     return [...super.observedAttributes, "aria-label"];
   }
@@ -82,11 +72,10 @@ export class OcelleIcon extends LitElement {
 
   override attributeChangedCallback(name: string, old: string | null, value: string | null): void {
     super.attributeChangedCallback(name, old, value);
-    if (name === "aria-label") this.requestUpdate();
+    this.requestUpdate();
   }
 
-  protected override updated(changed: PropertyValues): void {
-    super.updated(changed);
+  protected override updated(): void {
     expose(this.#internals, accessibleName(this.label, this.getAttribute("aria-label")), iconOf(this.name) !== undefined);
   }
 

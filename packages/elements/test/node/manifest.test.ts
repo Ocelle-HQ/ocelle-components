@@ -1,6 +1,9 @@
+import { cpSync, mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
+import { tmpdir } from "node:os";
+import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
-import { describe, expect, it } from "vitest";
-import { generate, normalise, serialise } from "../../scripts/manifest.ts";
+import { afterEach, describe, expect, it } from "vitest";
+import { generate, iconNames, normalise, serialise, writeManifest } from "../../scripts/manifest.ts";
 import type { Manifest } from "../../scripts/manifest.ts";
 
 // The custom-elements manifest generator (005 FR-007, US1 scenario 11; research.md R-06; reviews/phase-2/spike.md § 2;
@@ -120,6 +123,86 @@ describe("normalise(raw, names)", () => {
     const named = structuredClone(raw);
     nth(declaration(named).members, 1, "member").type = { text: "IconNames | MyIconName" };
     expect(nth(declaration(normalise(named, ["close"])).members, 1, "member").type).toEqual({ text: "IconNames | MyIconName" });
+  });
+});
+
+describe("normalise(raw, names): what is not an element, and members that are not public", () => {
+  it("drops entries that are not objects and leaves declarations that are not custom elements as they are", () => {
+    const helper = { kind: "function", name: "helper", members: [{ kind: "field", name: "x" }] };
+    const junk: Manifest = { ...raw, modules: [null, "module", [], { path: "src/helper.ts", declarations: [null, 3, [], helper] }, ...(raw.modules as unknown[])] };
+    const out = normalise(junk, []);
+    expect((out.modules as Json[]).map((module) => module.path)).toEqual(["src/helper.ts", "src/ocelle-x.ts"]);
+    expect(nth(out.modules, 0, "module").declarations).toEqual([helper]);
+  });
+
+  it("drops protected members with the attributes of dropped members, and keeps an observed attribute that is not a member's", () => {
+    const changed = structuredClone(raw);
+    const element = declaration(changed);
+    (element.members as Json[]).push({ kind: "field", name: "cache", privacy: "protected", description: "A cache." });
+    (element.attributes as Json[]).push({ name: "cache", fieldName: "cache", description: "A cache." }, { name: "tone", description: "An observed attribute." });
+    const out = declaration(normalise(changed, []));
+    expect({ members: (out.members as Json[]).map((member) => member.name), attributes: (out.attributes as Json[]).map((attribute) => attribute.name) }).toEqual({
+      members: ["name", "label"],
+      attributes: ["name", "label", "tone"],
+    });
+  });
+});
+
+describe("iconNames(text of src/icons.ts)", () => {
+  it.each([
+    { label: "a union, after other statements", text: 'export type Other = "x" | "y";\nexport type IconName = "close" | "menu";\n', names: ["close", "menu"] },
+    { label: "one name", text: 'export type IconName = "close";\n', names: ["close"] },
+    { label: "a member that is not a string literal, skipped", text: 'export type IconName = "close" | Other | 3 | "menu";\n', names: ["close", "menu"] },
+    { label: "no IconName alias", text: 'export type Other = "close";\nexport const icons = {};\n', names: [] },
+  ])("reads $label", ({ text, names }) => {
+    expect(iconNames(text)).toEqual(names);
+  });
+});
+
+const made: string[] = [];
+afterEach(() => {
+  for (const dir of made.splice(0)) rmSync(dir, { recursive: true, force: true });
+});
+
+/** A temporary repository root with `files` at their paths. */
+function root(files: Readonly<Record<string, string>>): string {
+  const dir = mkdtempSync(join(tmpdir(), "ocelle-manifest-"));
+  made.push(dir);
+  for (const [path, text] of Object.entries(files)) {
+    mkdirSync(dirname(join(dir, path)), { recursive: true });
+    writeFileSync(join(dir, path), text);
+  }
+  return dir;
+}
+
+const element = (tag: string): string =>
+  `import { LitElement } from "lit";\n\n/**\n * An element.\n *\n * @tagname ${tag}\n */\nexport class E extends LitElement {\n  static override properties = { name: {} };\n\n  /**\n   * A name.\n   *\n   * @default undefined\n   */\n  declare name: IconName | undefined;\n}\n`;
+
+describe("generate(root) on other element sources", () => {
+  it("reads every src/ocelle-*.ts in name order, and nothing else of src/", async () => {
+    const dir = root({
+      "packages/elements/src/ocelle-zeta.ts": element("ocelle-zeta"),
+      "packages/elements/src/ocelle-alpha.ts": element("ocelle-alpha"),
+      "packages/elements/src/helper.ts": element("ocelle-helper"),
+      "packages/elements/src/ocelle-alpha.test.js": element("ocelle-test"),
+    });
+    const modules = (await generate(dir)).modules as Json[];
+    expect(modules.map((module) => module.path)).toEqual(["src/ocelle-alpha.ts", "src/ocelle-zeta.ts"]);
+  });
+
+  it("leaves IconName unexpanded without src/icons.ts", async () => {
+    const dir = root({ "packages/elements/src/ocelle-alpha.ts": element("ocelle-alpha") });
+    expect(nth(declaration(await generate(dir)).members, 0, "member").type).toEqual({ text: "IconName | undefined" });
+  });
+});
+
+describe("writeManifest(root)", () => {
+  it("writes packages/elements/custom-elements.json from the root's element source, as serialise(generate(root))", async () => {
+    const dir = root({});
+    cpSync(join(repo, "packages/elements/src"), join(dir, "packages/elements/src"), { recursive: true });
+    await writeManifest(dir);
+    expect(readFileSync(join(dir, "packages/elements/custom-elements.json"), "utf8")).toBe(serialise(await generate(dir)));
+    expect(readFileSync(join(dir, "packages/elements/custom-elements.json"), "utf8")).toContain('"tagName": "ocelle-icon"');
   });
 });
 

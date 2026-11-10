@@ -74,7 +74,7 @@ function staleFindings(committed: unknown, generated: unknown): Finding[] {
   const old = elementsOf(committed);
   const now = elementsOf(generated);
   const messages: string[] = [];
-  for (const name of [...new Set([...old.keys(), ...now.keys()])].sort()) {
+  for (const name of new Set([...old.keys(), ...now.keys()])) {
     const before = old.get(name);
     const after = now.get(name);
     if (before === undefined || after === undefined) {

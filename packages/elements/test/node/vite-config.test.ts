@@ -15,7 +15,7 @@ const banner =
   "/*! @ocelle/elements, Apache-2.0. Includes Lit (lit, lit-html, lit-element, @lit/reactive-element), Copyright Google LLC, BSD-3-Clause. Full notices: THIRD_PARTY_NOTICES in the @ocelle/elements package. */";
 
 describe("vite.browser.config.ts", () => {
-  it("builds src/browser.ts in library mode as one ES module, dist/browser/ocelle-elements.js, keeping the module build's dist/", () => {
+  it("builds src/browser.ts in library mode as one minified ES module, dist/browser/ocelle-elements.js, keeping the module build's dist/", () => {
     const lib = built.build?.lib;
     const fileName = lib === false || lib === undefined ? undefined : lib.fileName;
     expect({
@@ -25,6 +25,7 @@ describe("vite.browser.config.ts", () => {
       file: typeof fileName === "function" ? fileName("es", "browser") : fileName,
       outDir: built.build?.outDir,
       emptyOutDir: built.build?.emptyOutDir,
+      minify: built.build?.minify,
     }).toEqual({
       root: elements.replace(/\/$/, ""),
       entry: resolve(elements, "src/browser.ts"),
@@ -32,6 +33,7 @@ describe("vite.browser.config.ts", () => {
       file: "browser/ocelle-elements.js",
       outDir: "dist",
       emptyOutDir: false,
+      minify: true,
     });
   });
 
