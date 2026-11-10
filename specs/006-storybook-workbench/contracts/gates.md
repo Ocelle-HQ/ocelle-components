@@ -1,0 +1,92 @@
+# Contract: the three new gates and the baseline command
+
+All three gates follow `gates/README.md` § How a gate runs and `specs/001-repository-foundation/contracts/gate-cli.md`:
+`--root <dir>`; exit 0 with one stdout summary line; exit 1 with one stdout line per finding
+`<location>: <gate-id>: <rule>: <message>` then the summary; exit 2 with one stderr line naming the cause and the fix.
+Notes, where a gate has them, go to stderr and start with `note: `. Sources: research.md R-03 to R-11.
+
+## `storybook-build` (check "Storybook build")
+
+| | |
+|---|---|
+| Command | `pnpm --filter "./packages/*" -r build && pnpm run gate:storybook-build` |
+| Plant command | `node gates/bin/storybook-build.ts --root {root}` (form `repo-tree`) |
+| Scope | the Storybook workspace's build (`storybook/`), through its own `build` script |
+| Exit 0 | `storybook-build: built <n> stories` |
+
+| Rule | Location | When |
+|---|---|---|
+| `build-error` | the file the build names, else `storybook/package.json` | the build fails (syntax error, import that does not resolve, any other build error) |
+| `index-error` | the story file | the indexer cannot read a story file (not valid CSF) |
+| `empty-index` | `storybook/dist/index.json` | the build succeeds and the index holds no entry of type `story` |
+
+Exit 2: `storybook/package.json` missing or without a `build` script; `pnpm` not found; `dist/index.json` missing or
+not JSON after a successful build.
+
+## `visual` (check "Visual regression")
+
+| | |
+|---|---|
+| Command | `pnpm --filter "./packages/*" -r build && pnpm run gate:visual -- --engine both` (CI) |
+| Plant command | `node gates/bin/visual.ts --root {root} --engine {engine}` (form `repo-tree`; `{engine}`: research.md R-06) |
+| Scope | every story of the built index, in `light` and `dark`, against `storybook/baselines/` |
+| Options | `--engine <docker\|podman\|both\|auto\|host\|<name>>`, default `auto` (research.md R-06) |
+| Exit 0 | `visual: <n> captures match their baselines (<engines>)`, where `<engines>` is `docker+podman`, or `docker only: no cross-engine comparison` |
+
+Order of a run: pin check → build (R-03) → run 1 → run 2 → per story-theme: render, font, determinism, then
+baseline comparison → stray baselines.
+
+| Rule | Location | When |
+|---|---|---|
+| `render-failed` | `<story-id>/<theme>` | the story module throws or its render throws |
+| `font` | `<story-id>/<theme>` | text drawn by a face other than Schibsted Grotesk, or a face not loaded (message lists the families) |
+| `network` | `<story-id>/<theme>` | the story requested anything outside `127.0.0.1` (message names the URL) |
+| `nondeterministic` | `<story-id>/<theme>` | run 1 and run 2 differ in any byte; no baseline comparison for it |
+| `differs` | `<story-id>/<theme>` | run 1 differs in any byte from `storybook/baselines/<story-id>.<theme>.png` |
+| `missing-baseline` | `<story-id>/<theme>` | no baseline file for a story-theme |
+| `stray-baseline` | `storybook/baselines/<file>` | a baseline file names no story-theme of the index, or its name does not parse |
+
+For each `differs`, `storybook/.visual/<story-id>.<theme>.actual.png` and `.diff.png` (differing pixels in magenta,
+the rest dimmed) are written; for `nondeterministic`, `.run-1.png` and `.run-2.png`.
+
+Exit 2: no engine, a missing engine under `both`, a named engine not found; a pin that is a tag, an index, not
+`linux/amd64`, or whose pulled image id differs; the image cannot be obtained; the capture's refusal "not the pinned
+container"; the Storybook build failed ("the Storybook build failed; run pnpm run gate:storybook-build").
+
+## `visual:update` (the baseline command, not a gate)
+
+`pnpm run visual:update [-- --engine <…>]` (`gates/bin/baselines.ts`). Same pin check, build and two runs as `visual`.
+Writes nothing and exits 1 when any `render-failed`, `font`, `network` or `nondeterministic` result exists (printed
+as by the gate); exit 2 as the gate. Otherwise writes every baseline whose bytes changed, deletes stray ones, and
+prints `baselines: wrote <n> files (<changed> changed, <removed> removed), <bytes> bytes in total`.
+
+## `axe` (check "Accessibility")
+
+| | |
+|---|---|
+| Command | `pnpm --filter "./packages/*" -r build && pnpm run gate:axe` |
+| Plant command | `node gates/bin/axe.ts --root {root}` (form `repo-tree`) |
+| Scope | every story of the built index, in `light` and `dark`, context `#storybook-root`, axe-core 4.14.0 |
+| Exit 0 | `axe: <runs> story-theme runs, 0 serious or critical; <notes> notes (<incomplete> incomplete, <excepted> excepted)` where `<runs>` = 2 × stories |
+
+| Rule | Location | When |
+|---|---|---|
+| `<axe rule id>` | `<story-id>/<theme>` | a node of a violation of impact `serious` or `critical` not excepted; message `<impact>: <selector>` (one finding per node) |
+| `empty` | `<story-id>/<theme>` | the story root renders no content (research.md R-08) |
+| `render-failed` | `<story-id>/<theme>` | the story module throws or its render throws |
+| `stale-exception` | `storybook/a11y-exceptions.json#<index>` | an exception entry matches no violating node |
+
+Notes (stderr): `note: <story-id>/<theme>: <rule-id>: <impact>: <selector>` for moderate and minor violations;
+`… incomplete …` for every incomplete result; `… excepted (<reason>)` for an honoured exception.
+
+Exit 2: no browser; `axe-core` not found; `storybook/a11y-exceptions.json` not a list of complete entries; the
+Storybook build failed.
+
+## The registry
+
+`gates/gates.json` and the FR-020 list of `gates/lib/registry.ts` gain `storybook-build`, `visual` and `axe`; `ci.yml`
+gains the jobs `storybook-build` ("Storybook build"), `visual` ("Visual regression") and `axe` ("Accessibility"). The
+`visual` job uploads `storybook/.visual/` with `actions/upload-artifact` (pinned by SHA) when it fails. The `plants`
+job runs `pnpm run gate:plants` with `OCELLE_VISUAL_ENGINE=both`; the registry check fails when that job's steps
+contain `--skip-container` (research.md R-07). Root `package.json` gains the scripts `gate:storybook-build`,
+`gate:visual`, `gate:axe` and `visual:update`.
