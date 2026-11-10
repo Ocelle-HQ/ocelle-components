@@ -9,7 +9,8 @@ repository's, as `plant-repo.ts` will do (R-16), and the case's change applied.
 
 **Two stop-and-ask outcomes** (tasks.md § Stop-and-ask points): § 4 (a build in another root writes under
 `storybook/node_modules` with both caches moved) and § 7 (serious axe results on an existing story, FR-029). Both are
-stated as questions at the end. Every other item came out as the plan expects.
+stated as questions at the end of their sections, each followed by the operator's decision (2026-11-10). Every other
+item came out as the plan expects.
 
 ## 1. Build output for each failure kind (fixtures for T009 and T010)
 
@@ -144,6 +145,11 @@ the repository's shims (also under the root `node_modules`). Should the build fu
 T010 integration test then also checks the root `node_modules` shims), or another way (for example running the
 Storybook CLI without pnpm's `run`)?
 
+**Operator decision (2026-11-10, human:jeroennouwsdev)**: "Flag in the build fn". The gates' build function runs
+`pnpm --config.verify-deps-before-run=false --dir storybook run build`; the repository's pnpm configuration is not
+changed (research R-09, R-16; plan decision 19; contracts/gates.md § `storybook-build`). Carried by T009, T010, T015
+and T016.
+
 ## 5. The 12 stories captured twice in the container (R-03, R-04, R-05)
 
 Command, per run `n` (two separate containers):
@@ -269,6 +275,13 @@ column's `elmPartiallyObscured` stays as long as the table overflows), or make t
 (clears all six, but the story then no longer shows a wide table). Otherwise these are exceptions under FR-029 (a
 Complexity Tracking row each, with the operator's approval and the op that fixes the base style as sunset): 2 × 6 = 12
 entries. Which does the operator choose?
+
+**Operator decision (2026-11-10, human:jeroennouwsdev)**: "tabindex + exceptions". The story's wide tables get
+`tabindex="0"` in `storybook/stories/render.ts`, clearing `scrollable-region-focusable`; the ten serious
+`color-contrast` incomplete results (five nodes × two themes) become per-node exceptions, one plan.md Complexity
+Tracking row each, with the sunset "the op that fixes the color-contrast incomplete results of base.css's prose table
+scroll box (003 surface), to be opened by the operator" (research R-08; plan decision 20). Carried by T052, T053a, T057
+and T060.
 
 ## 8. Plant candidates for the axe gate (T058)
 
