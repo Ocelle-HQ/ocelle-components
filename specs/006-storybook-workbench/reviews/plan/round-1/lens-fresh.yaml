@@ -1,0 +1,174 @@
+schema: review-findings/v1
+complete: true
+phase: plan
+round: 1
+lens: fresh
+findings:
+  - id: PLAN-FRESH-1-001
+    severity: 3
+    title: "Plant roots hold no Storybook: the configuration set has no storybook/, fonts, base.css or capture script, and no storybook/node_modules"
+    evidence:
+      - artifact: "contracts/plants.md intro: 'Story files in a plant's tree/ replace or add to storybook/stories/; a plant that needs fewer stories replaces the story files it keeps and removes none of the configuration set.' This assumes storybook/ is in the configuration set. plan.md § Source Code lists plant-runner.ts and plant-judge.ts but not gates/lib/plant-repo.ts, so the plan changes no configuration set."
+      - artifact: "contracts/container.md § Run arguments: '-v <root>:<root>:ro … -w <root> … node gates/visual/capture.ts'. This runs the capture script of the root under test, and the repository is not mounted when the root is a plant tree."
+      - code: "gates/lib/plant-repo.ts:29-63: the configuration set is the root config files, packages/*/package.json and tsconfig.json, gates/eslint, gates/stylelint and four token files. It has no storybook/** (package.json, .storybook/, stories/, scripts/, baselines/, visual/container.json, a11y-exceptions.json), no packages/tokens/fonts/, no packages/styles/src/base.css and no gates/visual/. Line 326 links only the root node_modules."
+      - code: "storybook/node_modules is a separate per-workspace directory holding .bin/storybook and the @storybook and @ocelle links (ls -la storybook/node_modules). A plant root has none, so `pnpm --dir storybook run build` cannot find `storybook`."
+      - code: "storybook/scripts/swatches.ts:30 throws when base.css is missing. It copies the fonts only `if (existsSync(fonts))`, so in a plant root the font is silently absent and every story falls back to another face."
+      - code: "the existing csp Storybook plants (gates/plants/csp/pass-storybook-external-script/tree/storybook/dist) carry their own files because csp only reads static files. Nothing so far builds the Storybook inside a plant root."
+    claim: |
+      Every storybook-build, visual and axe plant (about 34) builds the Storybook in a repo-tree plant root.
+      Such a root has no Storybook workspace, no workspace node_modules, no base stylesheet and no font. The
+      plant `pass-repository` is described as "the repository's stories and baselines", but those are not in
+      the root. In the visual plants the container also runs `<root>/gates/visual/capture.ts`, which does not
+      exist there. As planned, every plant exits 2 (the build fails) or reports `font` on every story, so
+      SC-003 cannot hold. The design gap is in the plant builder, which the plan does not touch. Tasks
+      written from this plan would discover it only in phase 2.
+    remedies:
+      - "Extend configurationSet (plant-repo.ts, with its unit test) to cover storybook/package.json, storybook/.storybook/, storybook/stories/, storybook/scripts/, storybook/baselines/, storybook/visual/container.json, storybook/a11y-exceptions.json, packages/tokens/fonts/ and packages/styles/src/base.css. Have it link storybook/node_modules beside the root node_modules. Add plant-repo.ts to plan § Source Code. In container.md, mount the repository's gates/ (the gate's own code), read-only, apart from the root under test, and run the capture from there, never from <root>. Say how concurrent plant builds avoid sharing storybook/node_modules/.cache."
+  - id: PLAN-FRESH-1-002
+    severity: 3
+    title: "The font rule's 'face in document.fonts not loaded' check fails every story: Storybook's preview declares four Nunito Sans faces that never load"
+    evidence:
+      - artifact: "research.md R-05: 'A face listed in document.fonts for the page whose status is not loaded when the capture is taken gives the same finding.' contracts/gates.md `font`: 'or a face not loaded'."
+      - code: "storybook/dist/inline-e1b9d593f682e853.css:1 (Storybook's preview head, linked from iframe.html:9) declares four @font-face rules for Nunito Sans (regular, italic, bold, bold italic) from ./sb-common-assets/. The preview-only build has no sb-common-assets/."
+      - code: "probe (scratchpad probe1.mjs, host Chromium 1243, the built Storybook served on 127.0.0.1): after document.fonts.ready, tokens--type/dark and base-styles--base-page/light both list document.fonts = ['Nunito Sans:unloaded' x4, 'Schibsted Grotesk:loaded']."
+    claim: |
+      `document.fonts` holds every face the page declares, and an unused face stays `unloaded` forever. As
+      written, the rule gives a `font` finding on all 24 story-themes of an unchanged tree. Then
+      `visual:update` writes nothing and `pass-repository` fails. The same would happen for any face an
+      element issue declares and a story does not use, such as an italic or a second weight.
+    remedies:
+      - "Restate the loading half of FR-027 in R-05 and container.md: a finding when a face that a text node of the story root uses has a status other than `loaded` (or any face is still `loading`, or is `error`, when the capture is taken). Faces that are declared but unused and stay `unloaded` are not findings. The CSS.getPlatformFontsForNode walk already catches text drawn in a fallback face while the font loads. Add a pass plant: a story that does not use a declared second face."
+  - id: PLAN-FRESH-1-003
+    severity: 3
+    title: "Pin check compares the committed manifest digest with `image inspect {{.Id}}`, which is the config digest under podman and under docker's classic store"
+    evidence:
+      - artifact: "research.md R-06: 'a digest the local engine reports differently after the pull (`docker image inspect --format {{.Id}}`/`podman image inspect`) exits 2 naming the cause'. contracts/gates.md exit 2: 'whose pulled image id differs'."
+      - code: "probe: in this sandbox, `docker image inspect --format '{{.Id}}'` gives sha256:ee15712…b1d0, the manifest digest. That is only because this daemon uses the containerd snapshotter (`docker info`: driver-type io.containerd.snapshotter.v1, Docker 29.9.2)."
+      - code: "probe: `docker buildx imagetools inspect --raw mcr.microsoft.com/playwright@sha256:ee15712…b1d0` gives config.digest sha256:a0d7b2b49ffa0e99787a00b7ec2af46eca58020082713f002ca9f0f1cfd1a017. Podman and docker's classic overlay2 image store report this config digest as `.Id`."
+    claim: |
+      The check passes here only because of this daemon's storage backend. Under podman, which CI uses for
+      run 2 of every visual run, `.Id` is always the config digest, so `--engine both` exits 2 on every
+      CI run. Docker on the runner exits 2 too if it uses the classic store. The plan defers confirming
+      this to "the first CI run at landing" (decision 7), which is after every phase has been approved.
+    remedies:
+      - "Verify by the manifest digest the engine records: `RepoDigests` contains `<image>@<digest>` (docker and podman), or podman's `{{.Digest}}`. Always run by the `<image>@<digest>` reference. Unit-test the parser on the inspect output of both engines and both docker stores. Record podman's output form in the spike, or state it as a phase 3 risk."
+  - id: PLAN-FRESH-1-004
+    severity: 2
+    title: "Headless Playwright launches chromium_headless_shell-1248, not the chromium-1248 the pin names and the capture checks"
+    evidence:
+      - artifact: "contracts/container.md: '/ms-playwright/<browser> exists and is the directory of the executable Playwright resolves', with \"browser\": \"chromium-1248\". R-01 lists both chromium-1248 and chromium_headless_shell-1248 in the image."
+      - code: "node_modules/.pnpm/playwright@1.64.1/…/playwright-core/lib/coreBundle.js:44791-44797 getExecutableName: `return options.headless ? \"chromium-headless-shell\" : \"chromium\"` unless a channel is given. playwright-core/browsers.json lists `chromium` and `chromium-headless-shell` 1248 separately."
+    claim: |
+      A capture that launches headless without `channel: "chromium"` resolves the headless shell, and its
+      own pin check then refuses with "not the pinned container" on every run. If the check is loosened
+      instead, the pin no longer names the binary that renders. The shell and new headless are different
+      renderers, so the choice is a baseline input and must be fixed and named. The host axe gate has the
+      same ambiguity: OCELLE_CHROMIUM_PATH is full Chrome locally, while CI gets the default.
+    remedies:
+      - "Name the renderer in container.json and container.md: either `browser: chromium_headless_shell-1248` with a default headless launch, or `chromium-1248` with `channel: \"chromium\"`. Make the pin test read the matching browsers.json entry."
+  - id: PLAN-FRESH-1-005
+    severity: 2
+    title: "Readiness waits for STORY_RENDERED, which Storybook never emits for a story that fails, so render-failed becomes a timeout"
+    evidence:
+      - artifact: "contracts/container.md § Per story-theme: 'wait for `storyRendered`, `document.fonts.ready`, two frames → render-failure check (`body.sb-show-errordisplay`)'. R-04 has the same order. No timeout or failure exit is defined."
+      - code: "storybook/node_modules/storybook/dist (10.6.5): the error path emits `STORY_THREW_EXCEPTION` / `STORY_ERRORED` and STORY_RENDER_PHASE_CHANGED, and `STORY_RENDERED` only on success (grep of emit(STORY_…) in the dist chunks). Storybook's own waiter uses `channel.on(STORY_RENDERED…)` with a 3 s timeout fallback."
+    claim: |
+      The plants fail-throws-on-load (visual and axe) and the render-throws case of FR-004 and FR-014 would
+      hang until an unstated timeout, and could then be mapped to exit 2 or a wrong rule. A listener
+      attached after `page.goto` can also miss an event that fired early. This decides whether
+      `render-failed` is reachable at all, so the contract needs to specify it.
+    remedies:
+      - "Specify the readiness as the first of STORY_RENDERED, STORY_THREW_EXCEPTION, STORY_ERRORED, STORY_MISSING or `body.sb-show-errordisplay`. Use a listener installed with addInitScript before navigation and a stated per-story timeout, whose expiry is a named finding (for example `render-timeout`), never exit 2. Apply the same to the axe gate."
+  - id: PLAN-FRESH-1-006
+    severity: 2
+    title: "Cross-host byte identity rests on the platform alone, but Chromium's CPU raster dispatch also varies by CPU features, and no CI run can see it"
+    evidence:
+      - artifact: "research.md R-02: 'Emulated arm64 hosts are not available here or in CI; their equality rests on the platform being forced (FR-007) and is stated, not measured.' FR-006 lists 'CPU architecture and platform' as fixed inputs. FR-026's docker/podman pair runs on one runner and one CPU."
+      - code: "not probed (no second CPU here; skia.googlesource.com and GitHub API are blocked from this sandbox). Basis: Skia, Chromium's rasteriser, chooses SIMD code paths at run time by CPU feature level (SkCpu: SSE4.1, AVX, HSW/AVX2+FMA, SKX/AVX-512). FMA paths round differently. Rosetta 2 and qemu-user expose fewer x86 features than CI's Azure CPUs. The elevation story (box-shadow blur) and anti-aliased text are typical places where this shows."
+    claim: |
+      The contributor workflow the spec promises (US2 scenario 6: any machine, emulated arm64 included,
+      same bytes) could produce baselines that CI rejects as `differs`, and the contributor could not fix
+      that locally. Runner CPU generations also vary between CI runs, which could make `differs` flaky on
+      `main`. FR-026 cannot detect this, because both of its captures run on the same CPU. Nothing in the
+      plan measures it, and the contributor note would document a flow that may not work for Apple
+      Silicon users.
+    remedies:
+      - "Make CI the producer of record. On `missing-baseline` and `differs`, the visual job uploads the captures in baseline layout (storybook/baselines/<id>.<theme>.png) as an artifact, and the contributor note says to commit those when a local run disagrees with CI. Keep `visual:update` for local iteration."
+      - "Keep local production authoritative, but add a measured check before phase 3 approval: capture on two differing x86 CPU feature levels (for example by running the container under qemu with `-cpu` limited to SSE4.2), record the result in the spike, and launch Chromium with flags fixing the raster path if they differ."
+  - id: PLAN-FRESH-1-007
+    severity: 2
+    title: "Nothing enforces `--engine both` in CI: the registry guard only looks for `--skip-container`"
+    evidence:
+      - artifact: "research.md R-07: 'The registry check fails when any step of the `plants` job … contains `--skip-container`'. contracts/plants.md: `{engine}` is the plant's key, else `$OCELLE_VISUAL_ENGINE`, else `both`. The default engine of the gate is `auto` (R-06)."
+      - code: "gates/lib/registry.ts:111-123 checkRegistry compares job ids only. Nothing compares a job's command with gates.json's `command`, so a `visual` job running `pnpm run gate:visual` (auto) passes the registry check."
+    claim: |
+      SC-002 says every CI "Visual regression" run compares docker with podman. A ci.yml that drops
+      `-- --engine both`, or sets `OCELLE_VISUAL_ENGINE=auto` in the plants job, falls back silently to
+      docker against docker. The run still passes, and its summary line changes in a way no gate reads.
+      The plan guards one way of weakening CI and leaves the main one open.
+    remedies:
+      - "Have the gate require both engines whenever `GITHUB_ACTIONS=true` (or `CI`), whatever `--engine` says, with a unit test. Alternatively extend the registry check to fail when the `visual` job's run step lacks `--engine both` or the `plants` job sets OCELLE_VISUAL_ENGINE to anything but `both`, with a registry plant for each."
+  - id: PLAN-FRESH-1-008
+    severity: 2
+    title: "Capturing only the story root's bounding box misses overflowing, fixed and top-layer content, so tooltip, popover and dialog states go unbaselined"
+    evidence:
+      - artifact: "research.md R-04 and container.md: 'screenshot of the root's full bounding box' (`#storybook-root`). spec FR-012: 'cover the whole rendered story root, including content outside the initial viewport'."
+      - code: ".specify/memory/constitution.md:57 'tooltips meet WCAG 1.4.13'; :79 'a story per variant and per state'. A tooltip or popover open state is positioned outside its trigger's box, and a modal <dialog> or [popover] sits in the top layer, laid out against the viewport, not inside #storybook-root's rect."
+    claim: |
+      A story whose content overflows the root (an absolutely positioned tooltip above its trigger, a
+      shadow outside the box) or renders in the top layer is captured only in part. The open-state pixels
+      that the element issues most need baselines for would be outside every capture, and the visual gate
+      would pass a broken tooltip. The existing 12 stories do not show this, but the harness is built for
+      the element issues.
+    remedies:
+      - "Capture the full page (document scroll size at the fixed 1280 viewport width) instead of the root clip. Alternatively clip to the union of the root's rect and the rects of every descendant (shadow roots included) and every top-layer element. Add a pass plant with an overflowing absolutely positioned child and a top-layer popover, and a fail plant changing only that overflow."
+  - id: PLAN-FRESH-1-009
+    severity: 2
+    title: "Removing the externaliser puts Storybook's monospace stack into storybook/dist/iframe.html, and prefix passes it only because it scans line by line"
+    evidence:
+      - artifact: "plan.md decision 5: 'The Storybook HTML now carries Storybook's inline scripts. Prefix still reads it (R-10).' spec US4 scenario 3: HTML entries 'are still checked for … monospace families'."
+      - code: "storybook/node_modules/storybook/assets/server/base-preview-head.html:219-221 (inlined into iframe.html): `font-family:` / `'Operator Mono', … 'Lucida Console', Consolas, Monaco, monospace;`, spread over three lines. Today it moves to storybook/dist/inline-1847ef560f040914.css:217-219, which prefix does not read (gates/bin/prefix.ts:56)."
+      - code: "probe (scratchpad probe2.ts, prefix.ts scanText): the same declaration on one line gives 1 finding, and in Storybook's three-line form gives 0. scanText splits on newlines before matching `font(-family)?:` (gates/bin/prefix.ts:30, 69-75)."
+    claim: |
+      After this feature, a file the prefix gate claims to cover holds a monospace font declaration, and
+      the gate passes only through a blind spot. Fixing prefix's multi-line handling later would turn
+      `main` red. The plan presents this scope as coverage (Complexity Tracking row 2: "coverage, not an
+      exception") without deciding how Storybook's own error-overlay CSS is treated.
+    remedies:
+      - "Decide it in R-10. Either keep a cut-down externaliser for <style> only, so Storybook's vendor CSS stays out of the scanned HTML; or scope prefix's Storybook HTML check to the preview-head.html part the repository authors, with the reason recorded; or fix prefix to match declarations across lines and record Storybook's vendor stack as a scoped exception. Add a prefix plant showing the multi-line case."
+  - id: PLAN-FRESH-1-010
+    severity: 2
+    title: "Hover and active states cannot be stories: the capture has no pointer step, yet the contributor note will say each state is one story"
+    evidence:
+      - artifact: "spec FR-025 and US4 scenario 6: 'each variant and state is one story'. research.md R-04 defines no interaction before capture beyond readiness. storybook/.storybook/main.ts:21 `interactions: false`."
+      - code: ".specify/memory/constitution.md:79 'a story per variant and per state'. :hover and :active match only on real pointer input, which neither markup nor a story render can set. Constitution :57 (tooltips, WCAG 1.4.13) is a hover state."
+    claim: |
+      The element issues (#7 to #9, #12 to #17) will need hover, pressed and hover-revealed tooltip states
+      in baselines. The harness offers no way to make one, so authors will skip those states or fake them
+      with classes that test nothing real. The note promises coverage the capture cannot give.
+    remedies:
+      - "Add a capture step to the contract: a story parameter (for example `parameters.ocelle.pointer: { hover: '<selector>' }` or `{ press: … }`) that the capture and the axe gate apply with page.hover or mouse down before readiness, with a pass plant and a fail plant. The contributor note documents it."
+      - "State in the spec and the contributor note that pointer states are out of the harness and are covered by element interaction tests, so the note does not promise them."
+  - id: PLAN-FRESH-1-011
+    severity: 1
+    title: "Gate commands build the packages first, but the Storybook reads only the packages' source"
+    evidence:
+      - artifact: "research.md R-09: 'The packages the Storybook reads (@ocelle/tokens, @ocelle/styles) are built by the job beforehand'. contracts/gates.md commands: `pnpm --filter \"./packages/*\" -r build && …` for all three gates."
+      - code: "storybook/stories/render.ts:8 and tokens.stories.ts:7 import packages/tokens/src/*.ts. storybook/scripts/swatches.ts:42 reads packages/tokens/fonts and packages/styles/src/base.css. No story or config imports a packages/*/dist file."
+    claim: |
+      The build step adds time to three jobs and gives no input. It also suggests that a stale or missing
+      package dist affects the gates, which is false, and the build is not in the plant command anyway.
+    remedies:
+      - "Drop the packages build from the three gate commands and from the quickstart prerequisites, or name what in the Storybook reads a package's dist."
+  - id: PLAN-FRESH-1-012
+    severity: 1
+    title: "Image size is under-estimated: the pinned image is 3.61 GB, not 'about 2 GB'"
+    evidence:
+      - artifact: "plan.md decision 2 and research.md R-07: 'Two pulls of a 2 GB image', 'about 2 GB each'."
+      - code: "probe: `docker images --digests` shows mcr.microsoft.com/playwright@sha256:ee15712…b1d0 at SIZE 3.61GB."
+    claim: |
+      The Plants and Visual regression jobs each hold the image twice (docker and podman stores) beside the
+      checkout and the pnpm store. That puts runner disk use and pull time above the plan's estimate. The
+      R-07 move to a matrix job is triggered only by time, not by disk space.
+    remedies:
+      - "Correct the figure in decision 2 and R-07. Record the free disk space of the runner after both pulls in phase 3's review, and state the action if it runs short, for example pruning the docker image before the podman pull."
