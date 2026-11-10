@@ -3,7 +3,8 @@
 **Input**: design documents in `specs/006-storybook-workbench/`, as approved at the plan gate on 2026-11-10 after three
 plan-squad rounds:
 - spec.md (FR-001 to FR-031, US1 to US4);
-- plan.md, decisions 1 to 18, § Phases, Complexity Tracking;
+- plan.md, decisions 1 to 18, § Phases, Complexity Tracking (decisions 19 and 20 and the FR-029 exception rows added
+  by the operator's decisions on the phase 1 spike, 2026-11-10);
 - research.md R-01 to R-16;
 - data-model.md;
 - contracts/gates.md, contracts/container.md, contracts/plants.md;
@@ -37,6 +38,18 @@ unit each, folded after approval (`/ocelle-run` step 4.3). There is no polish ph
   container; an existing story draws a glyph Schibsted Grotesk lacks and cannot be fixed in its story file; an
   existing story has a serious or critical axe result whose fix needs a token or base-style change (FR-029: a
   Complexity Tracking row needs the operator); a planned plant candidate does not produce its finding.
+  **Raised by the spike and decided by the operator (2026-11-10, human:jeroennouwsdev)**:
+  - spike § 4 (a plant-root build rewrites the repository's `node_modules` through pnpm's `verify-deps-before-run`):
+    **"Flag in the build fn"**. The gates' build function runs
+    `pnpm --config.verify-deps-before-run=false --dir storybook run build`; the repository's pnpm configuration is not
+    changed (research R-09, R-16; plan decision 19; contracts/gates.md § `storybook-build`). Carried by T009, T010,
+    T015 and T016.
+  - spike § 7 (FR-029, `base-styles--prose-document`): **"tabindex + exceptions"**. The story's wide tables get
+    `tabindex="0"` in `storybook/stories/render.ts`, clearing `scrollable-region-focusable`; the ten serious
+    `color-contrast` incomplete results (five nodes × two themes) are per-node exceptions, one plan.md Complexity
+    Tracking row each, with the sunset "the op that fixes the color-contrast incomplete results of base.css's prose
+    table scroll box (003 surface), to be opened by the operator" (research R-08; plan decision 20). Carried by
+    T052, T053a, T057 and T060.
 - **T044** (phase 3's CI run of the branch): it needs the operator to push and start CI (pull request or dispatch).
 - **Any mutation shard over 10 minutes**; **the Plants job near 30 minutes** (research R-07).
 - **A pins-gate refusal** of `axe-core` 4.14.0 or `pngjs` 7.0.0.
@@ -60,13 +73,13 @@ first); the pins, scripts, ignores and the spike record have no behaviour and ar
 
 ### Tests (red, one commit)
 
-- [ ] T001 `gates/test/container-pin.test.ts` (contracts/container.md § The pin test): first assertion that `storybook/visual/container.json` exists (so the red is an assertion failure, not a read error); then `node` equals `.node-version`, `platform` is `"linux/amd64"`, `digest` matches `^sha256:[0-9a-f]{64}$`, and `browser` equals `chromium_headless_shell-<revision>` with the revision of the `chromium-headless-shell` entry of `playwright-core/browsers.json`; a second case runs the same check function on a fixture copy with a wrong `node` and a wrong `browser` and asserts each is reported. Commit it alone (`test(006-storybook-workbench): phase 1 red — container pin`) and run `.specify/extensions/story/scripts/red.sh 1 phase`; confirm it fails on the existence assertion
+- [X] T001 `gates/test/container-pin.test.ts` (contracts/container.md § The pin test): first assertion that `storybook/visual/container.json` exists (so the red is an assertion failure, not a read error); then `node` equals `.node-version`, `platform` is `"linux/amd64"`, `digest` matches `^sha256:[0-9a-f]{64}$`, and `browser` equals `chromium_headless_shell-<revision>` with the revision of the `chromium-headless-shell` entry of `playwright-core/browsers.json`; a second case runs the same check function on a fixture copy with a wrong `node` and a wrong `browser` and asserts each is reported. Commit it alone (`test(006-storybook-workbench): phase 1 red — container pin`) and run `.specify/extensions/story/scripts/red.sh 1 phase`; confirm it fails on the existence assertion
 
 ### Implementation
 
-- [ ] T002 `storybook/visual/container.json` exactly as contracts/container.md § `storybook/visual/container.json` (image `mcr.microsoft.com/playwright`, digest `sha256:ee15712262f017b8157421b212b12099146645f44b1bc5c0514cbbe6a229b1d0`, platform `linux/amd64`, tag `v1.64.1-noble`, node `26.13.0`, browser `chromium_headless_shell-1248`); T001 passes
-- [ ] T003 [P] Root `package.json`: devDependencies `axe-core` `4.14.0` and `pngjs` `7.0.0` (exact); scripts `gate:storybook-build`, `gate:visual`, `gate:axe` and `visual:update` pointing at `gates/bin/storybook-build.ts`, `visual.ts`, `axe.ts`, `baselines.ts` (entry stubs that exit 2 "not implemented" until their phase); `.gitignore` gains `storybook/.visual/` and `storybook/.cache/`; run a non-frozen `pnpm install` and commit `pnpm-lock.yaml`; `pnpm run gate:pins` passes
-- [ ] T004 The spike (plan.md § Phases 1; scratch scripts in the scratchpad only), recorded in `specs/006-storybook-workbench/reviews/phase-1/spike.md` with commands and outputs:
+- [X] T002 `storybook/visual/container.json` exactly as contracts/container.md § `storybook/visual/container.json` (image `mcr.microsoft.com/playwright`, digest `sha256:ee15712262f017b8157421b212b12099146645f44b1bc5c0514cbbe6a229b1d0`, platform `linux/amd64`, tag `v1.64.1-noble`, node `26.13.0`, browser `chromium_headless_shell-1248`); T001 passes
+- [X] T003 [P] Root `package.json`: devDependencies `axe-core` `4.14.0` and `pngjs` `7.0.0` (exact); scripts `gate:storybook-build`, `gate:visual`, `gate:axe` and `visual:update` pointing at `gates/bin/storybook-build.ts`, `visual.ts`, `axe.ts`, `baselines.ts` (entry stubs that exit 2 "not implemented" until their phase); `.gitignore` gains `storybook/.visual/` and `storybook/.cache/`; run a non-frozen `pnpm install` and commit `pnpm-lock.yaml`; `pnpm run gate:pins` passes
+- [X] T004 The spike (plan.md § Phases 1; scratch scripts in the scratchpad only), recorded in `specs/006-storybook-workbench/reviews/phase-1/spike.md` with commands and outputs:
   - Storybook 10.6.5's build output (stdout, stderr, exit) for a syntax error, an unresolved import, a non-CSF file and missing `storybook/node_modules`; kept as fixtures under `gates/test/fixtures/storybook-build/` for T010;
   - the render signals (`STORY_RENDERED`, `STORY_THREW_EXCEPTION`, `STORY_ERRORED`, `STORY_MISSING`) and `body.sb-show-errordisplay` for a module that throws, a render that throws and a missing id;
   - Storybook's harness nodes in the preview, its own fetch, xhr, Web Storage, cookies, IndexedDB and Cache API use and the storage state it leaves (the I/O allow-list of R-14), whether the `execCommand` wrap records copy and cut, and the access path to the current story's `parameters`;
@@ -75,7 +88,9 @@ first); the pins, scripts, ignores and the spike record have no behaviour and ar
   - `docker image inspect` and `docker buildx imagetools inspect --raw` outputs of the pin (fixtures under `gates/test/fixtures/container/`) and the tag's index digest (for `error-index-pin`);
   - axe-core 4.14.0 on the 12 stories in both themes with R-08's context and rules (any serious or critical result: stop-and-ask per FR-029);
   - measured candidates for `fail-two-low-contrast` and `fail-incomplete`.
-- [ ] T005 [P] `specs/006-storybook-workbench/reviews/phase-1/tdd-exempt.md`: T003 and T004 have no behaviour (pins, scripts, ignores, a record); T001 is the phase's red
+  - The spike is done and its two stop-and-ask questions (§§ 4 and 7) are decided (§ Stop-and-ask points above); T004
+    is closed by recording both decisions, with their date and the operator, under each question in `spike.md`.
+- [X] T005 [P] `specs/006-storybook-workbench/reviews/phase-1/tdd-exempt.md`: T003 and T004 have no behaviour (pins, scripts, ignores, a record); T001 is the phase's red
 
 ---
 
@@ -94,8 +109,8 @@ with the new job; `tdd-check.sh 2` reports `pass`.
 - [ ] T006 [P] [US1] `gates/test/plant-repo.test.ts` and `gates/test/integration/plant-repo.test.ts`: the configuration set holds the Storybook workspace inputs of R-16 (`storybook/package.json`, `.storybook/`, `stories/`, `scripts/`, `visual/container.json`, `baselines/`, `.node-version`, `packages/tokens/fonts/`, `packages/styles/src/base.css`), `storybook/node_modules` is linked, `unlinked: ["storybook/node_modules"]` removes only that link, any other `unlinked` value or gate is invalid; the root's `storybook/a11y-exceptions.json` is `[]` unless the tree supplies one, and `exceptions: "repository"` appends the repository's entries after the plant's own and copies the plan files they name (data-model § Plant keys)
 - [ ] T007 [P] [US1] `gates/test/plants.test.ts`: plants of `storybook-build`, `visual` and `axe` run one at a time after the others (contracts/plants.md § Plant runner changes)
 - [ ] T008 [P] [US1] `gates/test/storybook-index.test.ts`: entries of type `story` in index order, `docs` ignored; a missing `entries`, or an entry without `id` or `type`, is "could not run" (data-model § Story)
-- [ ] T009 [P] [US1] `gates/test/storybook-build.test.ts` on T004's fixtures: `build-error` at the named file, else at `storybook/package.json`; `index-error` at the story file; `empty-index` at `storybook/dist/index.json`; the CLI check: no `storybook/package.json`, no `build` script (`storybook/package.json has no build script`), Storybook not resolvable (`storybook is not installed; run pnpm install`) each "could not run"; the build environment sets `CACHE_DIR=<root>/storybook/.cache`
-- [ ] T010 [P] [US1] `gates/test/integration/storybook-build.test.ts`: the gate on fixture trees: the repository (exit 0, `storybook-build: built 12 stories`), a syntax error (exit 1, one finding), no `storybook/node_modules` (exit 2 with the cause); a build in a plant root leaves `storybook/node_modules` byte-for-byte unchanged (R-16)
+- [ ] T009 [P] [US1] `gates/test/storybook-build.test.ts` on T004's fixtures: `build-error` at the named file, else at `storybook/package.json`; `index-error` at the story file; `empty-index` at `storybook/dist/index.json`; the CLI check: no `storybook/package.json`, no `build` script (`storybook/package.json has no build script`), Storybook not resolvable (`storybook is not installed; run pnpm install`) each "could not run"; the build environment sets `CACHE_DIR=<root>/storybook/.cache` and keeps the rest; the build command is exactly `pnpm` with `--config.verify-deps-before-run=false`, `--dir`, `storybook`, `run`, `build` (research R-09); the `missing-deps-no-verify` fixture (exit 127 `storybook: not found`, no file named) parses as `build-error` at `storybook/package.json`, which is why the CLI check comes first
+- [ ] T010 [P] [US1] `gates/test/integration/storybook-build.test.ts`: the gate on fixture trees: the repository (exit 0, `storybook-build: built 12 stories`), a syntax error (exit 1, one finding), no `storybook/node_modules` (exit 2 with the cause `storybook is not installed; run pnpm install`, from the CLI check: pnpm would otherwise reinstall the dependencies and the build pass, spike § 1); a build in a plant root leaves the repository's `storybook/node_modules` **and its root `node_modules`** unchanged: no entry added, removed or changed (path, size and modification time listed before and after, as spike § 4 did; R-16)
 - [ ] T011 [P] [US1] `gates/test/registry.test.ts` and `gates/test/ci-workflow.test.ts`: `storybook-build` is in `gates.json`, the FR-020 list and `ci.yml` (job `storybook-build`, name "Storybook build", step `pnpm run gate:storybook-build`)
 - [ ] T012 [US1] Commit T006 to T011 alone (`test(006-storybook-workbench): phase 2 red — storybook build gate`) and run `.specify/extensions/story/scripts/red.sh 2 phase`; confirm each fails on its missing behaviour
 
@@ -103,8 +118,8 @@ with the new job; `tdd-check.sh 2` reports `pass`.
 
 - [ ] T013 [US1] `gates/lib/plant-repo.ts`: the extended configuration set, the `storybook/node_modules` link, `unlinked`, the exceptions file rule and `exceptions: "repository"` with its plan files (R-16); `gates/lib/plant-judge.ts` the new keys' validity; `gates/lib/plant-runner.ts` serial Storybook plants
 - [ ] T014 [P] [US1] `gates/lib/storybook-index.ts`
-- [ ] T015 [US1] `gates/lib/storybook-build.ts` (parser, CLI check, build environment) and `gates/bin/storybook-build.ts` (gate CLI contract); `storybook/.storybook/main.ts` sets Vite's `cacheDir` inside `storybook/.cache/`
-- [ ] T016 [US1] Plants under `gates/plants/storybook-build/`: every row of contracts/plants.md § `storybook-build` (`fail-syntax-error`, `fail-unresolved-import`, `fail-not-csf`, `fail-empty-index`, `pass-repository`, `pass-type-error-only`, `error-missing-dependencies`, `error-no-build-script`), each `plant.json` with exact findings or cause
+- [ ] T015 [US1] `gates/lib/storybook-build.ts` (parser, CLI check, build environment, build command with `--config.verify-deps-before-run=false`) and `gates/bin/storybook-build.ts` (gate CLI contract); `storybook/.storybook/main.ts` sets Vite's `cacheDir` inside `storybook/.cache/`; the repository's pnpm configuration (`pnpm-workspace.yaml`, `.npmrc`) is not changed (operator decision on spike § 4)
+- [ ] T016 [US1] Plants under `gates/plants/storybook-build/`: every row of contracts/plants.md § `storybook-build` (`fail-syntax-error`, `fail-unresolved-import`, `fail-not-csf`, `fail-empty-index`, `pass-repository`, `pass-type-error-only`, `error-missing-dependencies`, `error-no-build-script`), each `plant.json` with exact findings or cause (`error-missing-dependencies`'s cause comes from the CLI check, R-09)
 - [ ] T017 [US1] `gates/gates.json` entry (contracts/gates.md § `storybook-build`), `gates/lib/registry.ts` FR-020 list, `.github/workflows/ci.yml` job `storybook-build` ("Storybook build": checkout, setup, `pnpm run gate:storybook-build`)
 - [ ] T018 [US1] Run the phase's checks one at a time: `pnpm test`, `pnpm run gate:typecheck`, `gate:lint`, `gate:test-lint`, `gate:storybook-build`, `gate:plants` (with `--skip-container` if the visual gate is still a stub, recording that), `gate:mutation -- --base <phase base>`; record times in the review
 
@@ -171,18 +186,19 @@ plant is judged correctly; `tdd-check.sh 4` reports `pass`.
 - [ ] T049 [P] [US3] `gates/test/story-checks.test.ts` (additions): `empty` (no descendant of the story root with a non-zero box and no non-whitespace text), `outside-root`
 - [ ] T050 [P] [US3] `gates/test/a11y-exceptions.test.ts`: entries `{ story, theme, rule, selector, reason, sunset, plan }`, "Every field a non-empty string"; honoured only when `plan` exists and its `## Complexity Tracking` holds a row naming story, theme, rule and selector in backticks (escaped `\|`) and the sunset, else `unrecorded-exception`; per-node match; `stale-exception`; malformed file "could not run"
 - [ ] T051 [P] [US3] `gates/test/axe-context.test.ts`: the axe gate's context options equal `contextOptions(theme)` for each theme
-- [ ] T052 [P] [US3] `gates/test/integration/axe.test.ts`: the gate on the repository (exit 0, 24 runs) and on a fixture with an unlabelled button (exit 1, two findings)
+- [ ] T052 [P] [US3] `gates/test/integration/axe.test.ts`: the gate on the repository (exit 0, 24 runs, 10 excepted: the Prose document's `color-contrast-incomplete` entries of plan.md § Complexity Tracking, and no `scrollable-region-focusable`) and on a fixture with an unlabelled button (exit 1, two findings)
+- [ ] T053a [P] [US3] `storybook/test/unit/render.test.ts` (FR-029, operator decision on spike § 7): every table of the Prose document is rendered `<table tabindex="0">` (update the exact-markup expectations of the prose tests to it); red against today's render code as an assertion failure
 - [ ] T053 [P] [US3] `gates/test/registry.test.ts` and `gates/test/ci-workflow.test.ts`: `axe` in `gates.json`, the FR-020 list and `ci.yml` (job `axe`, "Accessibility")
-- [ ] T054 [US3] Commit T047 to T053 alone (`test(006-storybook-workbench): phase 4 red — accessibility`) and run `.specify/extensions/story/scripts/red.sh 4 phase`; confirm each fails on its missing behaviour
+- [ ] T054 [US3] Commit T047 to T053a alone (`test(006-storybook-workbench): phase 4 red — accessibility`) and run `.specify/extensions/story/scripts/red.sh 4 phase`; confirm each fails on its missing behaviour
 
 ### Implementation (green)
 
 - [ ] T055 [P] [US3] `gates/lib/axe-rules.ts`, `gates/lib/axe-verdict.ts`, `gates/lib/a11y-exceptions.ts`; `gates/lib/story-checks.ts` empty and outside-root
 - [ ] T056 [US3] `gates/bin/axe.ts`: build, serve, a fresh context per story-theme from `contextOptions(theme)`, pointer state, axe injected by `page.addScriptTag({ path })` on the story area, findings and notes per contracts/gates.md
-- [ ] T057 [US3] `storybook/a11y-exceptions.json` as `[]`; story fixes for any existing finding (FR-029, T004)
+- [ ] T057 [US3] Story fix and exceptions for the existing findings (FR-029, T004, operator decision on spike § 7): `storybook/stories/render.ts` renders the Prose document's wide tables with `tabindex="0"` (T053a passes; this clears `scrollable-region-focusable` at `table:nth-child(12)`); `storybook/a11y-exceptions.json` holds ten entries, one per row of plan.md § Complexity Tracking (axe exceptions under FR-029), in that order: `story` `base-styles--prose-document`, `theme`, `rule` `color-contrast-incomplete`, `selector`, `reason` and `sunset` exactly as the row, `plan` `specs/006-storybook-workbench/plan.md`. Before writing them, re-measure the story's axe results after the `tabindex` fix with the gate (`gate:axe`, file still `[]`): exactly the ten rows' nodes as `color-contrast-incomplete` findings and nothing else; any other result (a moved selector, a vanished or new one) is a stop-and-ask, since the rows approve those exact nodes. Then `gate:axe` exits 0 with 10 excepted
 - [ ] T058 [US3] Plants under `gates/plants/axe/`: every row of contracts/plants.md § `axe`, each with `delta.json` `exceptions: "repository"`, `fail-two-low-contrast` and `fail-incomplete` from T004's measured candidates
 - [ ] T059 [US3] `gates/gates.json` entry (contracts/gates.md § `axe`), `gates/lib/registry.ts` FR-020 list, `.github/workflows/ci.yml` job `axe` ("Accessibility")
-- [ ] T060 [US3] Run the phase's checks one at a time: `pnpm test`, typecheck, lint, test-lint, `gate:axe`, `OCELLE_VISUAL_ENGINE=auto pnpm run gate:plants`, `gate:mutation -- --base <phase base>`; record times
+- [ ] T060 [US3] Run the phase's checks one at a time: `pnpm test`, typecheck, lint, test-lint, `gate:axe`, `gate:visual` (T057's `tabindex` must leave the 24 baselines matching; a `differs` is a stop-and-ask), `OCELLE_VISUAL_ENGINE=auto pnpm run gate:plants`, `gate:mutation -- --base <phase base>`; record times
 
 ---
 
@@ -230,7 +246,7 @@ lists seventeen required checks; `tdd-check.sh 5` reports `pass`.
 
 - Phase 2: T006 to T011 (tests) are independent; T014 alongside T013.
 - Phase 3: T019 to T027 (tests) are independent; T029 to T034 (pure modules) are independent.
-- Phase 4: T047 to T053; T055's modules.
+- Phase 4: T047 to T053a; T055's modules.
 - Phase 5: T061 to T066; T068, T069, T070, T072, T073.
 - Heavy runs (browser suites, the container, plants, mutation) are never parallel.
 

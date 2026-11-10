@@ -36,6 +36,9 @@ run passes, take the files of the job artifact's `baselines/` folder and commit 
 pnpm run gate:axe                    # exit 0: "axe: 24 story-theme runs, 0 serious or critical; …"
 ```
 
+The summary counts 10 excepted: the Prose document's `color-contrast-incomplete` nodes recorded in
+`storybook/a11y-exceptions.json` and plan.md § Complexity Tracking (stderr `note: … excepted (…)` for each).
+
 Add a story with `<button></button>`: exit 1 with `button-name` findings for both themes. Remove it.
 
 ## 4. CSP retarget and documentation (US4)

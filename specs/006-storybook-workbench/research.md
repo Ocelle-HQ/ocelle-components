@@ -402,7 +402,8 @@ then fails loudly with the unexpected `differs` until it does, and never passes 
   Such a finding is cleared only by an exception (below). Incomplete results of impact `moderate` or `minor` are
   notes, `note: … incomplete …`. Plan gate decision 4 changes accordingly.
 - **Exceptions (SPEC-2-04, FR-029; operator decisions on PLAN-A11Y-SECURITY-1-006 and PLAN-CORRECTNESS-1-009,
-  option (a) each).** `storybook/a11y-exceptions.json`, committed as `[]`. Each entry is `{ "story", "theme", "rule",
+  option (a) each).** `storybook/a11y-exceptions.json`, committed in phase 4 with the ten entries of the Prose
+  document story (below; `[]` otherwise). Each entry is `{ "story", "theme", "rule",
   "selector", "reason", "sunset", "plan" }`, all non-empty strings, `theme` `light` or `dark`, `rule` an axe rule id
   or `<axe rule id>-incomplete`, `selector` the node's selector exactly as the gate prints it (`printSelector`, above), `plan` the
   repository-relative path of the plan whose Complexity Tracking records the exception. An entry matches only the one
@@ -420,6 +421,20 @@ then fails loudly with the unexpected `differs` until it does, and never passes 
   Plants: an honoured exception, an honoured incomplete exception and an honoured exception of a node inside an open
   shadow root (pass), a stale exception, an unrecorded exception and an excepted story with a second node of the same
   rule (fail), a malformed file (breaking). How plant roots get the repository's entries: R-16.
+- **The existing stories' results (phase 1 spike § 7; operator decision 2026-11-10, "tabindex + exceptions").** 22 of
+  the 24 story-themes have no serious or critical result. `base-styles--prose-document`, in each theme, has one
+  serious violation, `scrollable-region-focusable` at `table:nth-child(12)` (base.css makes a prose table its own
+  horizontal scroll box, `display: block; overflow-x: auto`, and that wide table holds nothing focusable), and five
+  serious `color-contrast` incomplete results, reason `elmPartiallyObscured`, on the twelfth column of both wide
+  tables, clipped by the scroll box. The violation is fixed in the story's render code: `storybook/stories/render.ts`
+  gives the story's wide tables `tabindex="0"`, as `packages/styles/README.md` § For Markdown renderers tells WebKit
+  hosts to do; this makes the scroll box focusable and draws nothing until it is focused, so the captures are
+  expected not to change (phase 4 runs `gate:visual` after the fix to show it). The incomplete results stay as long as a table overflows, and their fix is a change to base.css's table
+  scroll box (003 surface), so they are ten per-node exceptions (5 selectors × 2 themes), each a Complexity Tracking
+  row in plan.md and an entry of `storybook/a11y-exceptions.json` naming that plan. Their selectors are the spike's,
+  measured on host Chromium 1243 before the `tabindex` fix; phase 4 re-measures them after it, and a selector that
+  moves, a result that disappears or a new one is a stop-and-ask (the rows are the operator's approval of those
+  exact nodes).
 - **Inside open shadow roots (PLAN-FRESH-2-005).** FR-025 sends every element into open shadow roots, so the consumers'
   findings are shadow-DOM nodes. The fail plant `fail-open-shadow-unlabelled` holds a custom element whose open shadow
   root holds an unlabelled `<button>`: `button-name` (critical) on both themes, at the ` >>> ` selector. It fails if the
@@ -436,14 +451,28 @@ then fails loudly with the unexpected `differs` until it does, and never passes 
 
 ## R-09 The Storybook build gate (FR-001, FR-002)
 
-**Decision.** `gates/bin/storybook-build.ts` runs the workspace's own build, `pnpm --dir storybook run build`, in the
-root under test. Before building, it checks, in this order, each an exit 2 with its cause:
+**Decision.** `gates/bin/storybook-build.ts` runs the workspace's own build,
+`pnpm --config.verify-deps-before-run=false --dir storybook run build`, in the root under test (operator decision on
+the phase 1 spike § 4, 2026-11-10, "flag in the build fn"). The flag is passed by the build function only; the
+repository's pnpm configuration (`pnpm-workspace.yaml`, `.npmrc`) is not changed, so `pnpm run` elsewhere keeps pnpm's
+default. **Why (measured, spike § 4):** pnpm 12.16.1 checks the install before `run` (`verify-deps-before-run`, unset
+in this repository) and, in a root other than the repository, re-links the workspace through the plant root's
+`node_modules` links: it rewrites the `.bin` shims of the repository's `node_modules/.bin`, `storybook/node_modules/.bin`
+and `node_modules/.pnpm/*/node_modules/*/node_modules/.bin`, and `node_modules/.pnpm-workspace-state-v1.json`, with
+the plant root's path in them, with or without the caches moved. With the flag the build writes nothing under the
+repository's `node_modules` or `storybook/node_modules`, and its output is unchanged. Before building, it checks, in
+this order, each an exit 2 with its cause:
 1. `storybook/package.json` exists and has a `build` script ("storybook/package.json has no build script");
 2. the Storybook CLI resolves from the Storybook workspace (`storybook/node_modules/storybook/package.json` and
    `storybook/node_modules/.bin/storybook`, PLAN-CORRECTNESS-1-007): "storybook is not installed; run pnpm install".
-   Without this check, missing dependencies would surface as the script's shell failing "storybook: not found", which
-   names no file and would be parsed as a `build-error` (exit 1), contrary to US1 scenario 5;
+   **This check is the only signal of missing dependencies** (measured, spike § 1): without the flag, pnpm reinstalls
+   a missing `storybook/node_modules` before the script runs and the build passes (exit 0, no failure at all, and the
+   repository's `node_modules` rewritten); with the flag, the script's shell fails `storybook: not found` (exit 127),
+   which names no file and would be parsed as a `build-error` (exit 1), contrary to US1 scenario 5. So
+   `error-missing-dependencies` is judged by this check, never by the build's output;
 3. `pnpm` is found (a spawn error).
+The command's arguments (the flag, `--dir storybook`, `run build`) are a pure function of the build function,
+unit-tested with the environment below.
 The build function runs the script with `CACHE_DIR=<root>/storybook/.cache` added to its environment
 (PLAN-FRESH-2-008): Storybook 10.6.5's own file cache (`resolvePathInStorybookCache`, `cache("storybook")` in
 `storybook/dist/_node-chunks/chunk-VR6EPSNI.js`) reads `CACHE_DIR` and otherwise writes below
@@ -632,7 +661,8 @@ of the axe gate, whose story loses a button's label on any render after the firs
   Storybooks with the host browser; the `visual` gate and the baseline command against the real container; the
   freshness and animation-control tests (R-04, R-11); the PNG height of a capture of a story taller than the viewport
   equals the document's scroll height; `gate:plants` with no engine on `PATH` (R-07); the plant mode regenerating one
-  plant's baseline (R-11); a plant-root build that leaves `storybook/node_modules` unchanged (R-16). The container tests need docker:
+  plant's baseline (R-11); a plant-root build that leaves the repository's `storybook/node_modules` and root
+  `node_modules` unchanged (R-16). The container tests need docker:
   in CI the `Unit tests` job's runner has it; locally the daemon is started first. They never skip (constitution
   VIII): with no engine they fail with the gate's exit 2 cause.
 - **The capture script is wiring only (PLAN-TESTABILITY-1-001).** Every decision of the capture lives in
@@ -740,13 +770,17 @@ it. `gates/lib/plant-repo.ts` changes, test-first in `gates/test/plant-repo.test
   `engine`, `unlinked` presents an input (dependencies not installed), not gate configuration.
 - Workspace links inside `storybook/node_modules` (`@ocelle/tokens`) resolve to the repository's packages, not the
   plant's; the stories read the plant's packages through relative paths (as today), so a plant's token change is seen.
-- **Caches.** So that builds in different roots never write into the shared `storybook/node_modules`, the Storybook
-  configuration sets Vite's `cacheDir` to `storybook/.cache/vite` of the root being built, and the build function sets
-  `CACHE_DIR=<root>/storybook/.cache` for Storybook's own file cache (R-09, PLAN-FRESH-2-008); both are below the
-  ignored `storybook/.cache/`. The phase 1 spike checks that a build writes nothing under `storybook/node_modules`
-  with both moved (recorded), and an integration test builds a plant root and asserts that no file below the
-  repository's `storybook/node_modules` was added or changed (path, size and modification time listed before and
-  after). With the Storybook plants run one at a time (R-07), no two builds run at once.
+- **Caches and pnpm's dependency check.** So that builds in different roots never write into the shared
+  `storybook/node_modules` or the root `node_modules`, the Storybook configuration sets Vite's `cacheDir` to
+  `storybook/.cache/vite` of the root being built, the build function sets `CACHE_DIR=<root>/storybook/.cache` for
+  Storybook's own file cache (R-09, PLAN-FRESH-2-008), both below the ignored `storybook/.cache/`, and the build
+  function runs pnpm with `--config.verify-deps-before-run=false` (R-09; operator decision on the phase 1 spike § 4,
+  2026-11-10). The spike measured that moving both caches is not enough: pnpm's check before `run` rewrote 256 entries
+  of the repository's `node_modules` (shims under `storybook/node_modules/.bin` among them) through the plant root's
+  links, and with the flag a build wrote nothing there (spike § 4). An integration test builds a plant root and
+  asserts that no file below the repository's `storybook/node_modules` **or its root `node_modules`** was added,
+  removed or changed (path, size and modification time listed before and after, as the spike did). With the
+  Storybook plants run one at a time (R-07), no two builds run at once.
 - A plant's `tree/` story files replace or add to `storybook/stories/`; a plant that needs fewer stories replaces the
   story files it keeps and removes none of the configuration set, so every plant root holds every repository story
   (operator decision on PLAN-FRESH-2-007, option (b); the cost and its sunset: R-07). The one removal is a `delta.json`
