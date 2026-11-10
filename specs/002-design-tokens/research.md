@@ -103,6 +103,13 @@ exceeds the 10-minute limit, the phase stops and asks the operator. The entry bo
 2026-11-05 (operator decision, phase 5 round 6 of mission 002: the shard `packages/tokens/src/generate.ts:121-240`
 held 264 mutants and took 670 s; 001 research.md R-08).
 
+> **Addendum (2026-11, op 004).** The value mutants of `source.ts` that this path counts on the node table test to
+> kill were never generated: Stryker skips `TSAsExpression`, and every record and ground list was inside `as const`
+> (`reviews/phase-3/spike.md` § 5, operator decision R1-03). Op 004 removed the assertions. A whole-file run with the
+> checker off now generates the mutants, and none survives; the run also measured the CI risk of a dense non-colour
+> entry, whose mutants run the whole in-process suite and partly end as Timeouts
+> (`ops/004-token-source-mutation/mutation/README.md`).
+
 One separate node test runs `scripts/build.ts` into a temporary directory and checks it writes exactly the text of
 `css()` and `json()` and the font files. A small static server (Node `http`, no dependency) serves the directory and
 a fixture page with a configurable `Content-Security-Policy` header. `storybook/dist/` is added to `.gitignore`.
