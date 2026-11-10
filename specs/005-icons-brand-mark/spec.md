@@ -35,6 +35,13 @@ sources of the requirements below; what was read, and from where, is in `sources
 - File glyph (spec check 1, SPEC-1-05), "Add a `file` glyph (Recommended)": the first icon set has thirteen icons.
   A generic `file` (document) glyph for the Artifact Viewer's file tree is added beside the twelve listed before
   (FR-017). Further per-kind icons are left to a later mission, once kitty-mission-ui names them.
+- Hosts without a bundler (spec check 2, SPEC-2-02), "Also ship a browser build (Recommended)": the element modules
+  that import `lit` by a bare specifier stay, for hosts with a bundler (Kitty Desktop). `@ocelle/elements` also
+  ships a self-contained ES-module build with Lit inside, under its own export path, for plain-HTML and strict-CSP
+  hosts without a bundler (the Ocelle console). The strict-CSP fixture's CSP, request and size checks test that
+  build. Lit's BSD-3-Clause notice goes into `THIRD_PARTY_NOTICES`, and the browser build's entry point is public
+  surface (FR-029, FR-031, FR-033). This is the only change to `THIRD_PARTY_NOTICES`; the icon-source decision above
+  still holds, and no icon set is listed.
 
 ## Consumer need
 
@@ -61,9 +68,9 @@ sources of the requirements below; what was read, and from where, is in `sources
 ## User Scenarios & Testing *(mandatory)*
 
 The users of this feature are host pages that place icons and the brand mark (Kitty Desktop's webview, Kitty
-Dashboard, the Ocelle console's server-rendered pages under the strict CSP), the authors of later elements of this
-library (people and agents) who slot icons into their controls and follow the element conventions, assistive
-technology users of those hosts, and the operator who reviews pull requests.
+Dashboard, the Ocelle console's server-rendered pages under the strict CSP, which load the browser build), the
+authors of later elements of this library (people and agents) who slot icons into their controls and follow the
+element conventions, assistive technology users of those hosts, and the operator who reviews pull requests.
 
 **Engines.** Behaviour is measured in Chromium, the only engine available to this repository's test runs. WebKit
 (Kitty Desktop on macOS and Linux) is not measured; the README names that as an open limitation.
@@ -75,15 +82,20 @@ one kind of fixture page, served from one origin together with everything it loa
   tokens the elements read by inheritance and loads the vendored Schibsted Grotesk font by a relative URL. It links
   the `@ocelle/styles` base stylesheet (`base.css`) only where a scenario says "with `base.css`"; scenarios that say
   "with and without `base.css`" run on both pages.
-- It loads the built element modules as same-origin scripts and nothing else: no inline script or style.
+- It loads the browser build of `@ocelle/elements` (FR-033) with one same-origin `<script type="module" src>` and
+  nothing else: no inline script or style and no import map. The browser build holds Lit and imports nothing outside
+  itself, so no bare specifier has to be resolved on the page. The element modules of the module build import `lit`
+  by a bare specifier, which a page under this policy cannot map (an inline import map is an inline script, and an
+  external import map is not supported), so they are not loaded on the fixture; they are covered by the `csp` gate's
+  scan of built output and by User Story 1 scenario 17.
 - It is served with the header `Content-Security-Policy: default-src 'none'; script-src 'self'; style-src 'self';
   font-src 'self'`. That is the library's strict policy (constitution IV) plus the `font-src 'self'` the tokens'
   vendored font needs (`packages/tokens/README.md`); the elements themselves need nothing beyond the strict policy.
-- The allowed requests are the page, its scripts, its stylesheets and the vendored font, all same-origin. "No other
-  request" in a scenario means none outside that list.
+- The allowed requests are the page, its scripts (the browser build's file), its stylesheets and the vendored font,
+  all same-origin. "No other request" in a scenario means none outside that list.
 
 The CSP and request checks and the size, colour and accessibility measurements of a scenario run on the same page, so
-a page that passes the CSP check is the page whose sizes were measured.
+a page that passes the CSP check is the page whose sizes were measured, and all of them test the browser build.
 
 **Main grounds.** "Main grounds" are the nine grounds of the token source's `main` list: `color-canvas`,
 `color-sheet`, `color-pane`, `color-panel`, `color-inspector`, `color-rail`, `color-inset`, `color-accent-low` and
@@ -91,9 +103,14 @@ a page that passes the CSP check is the page whose sizes were measured.
 link).
 
 **Reading the accessibility tree.** Every accessibility-tree outcome is read from Chromium's full accessibility tree
-with ignored nodes filtered out. "Contributes no node" means no unignored node for the element or anything in its
-shadow root and no name contributed to an ancestor; an ignored generic node for the custom-element host is allowed.
-Each such outcome is read in the same way, in the same test, as the labelled case that pairs with it.
+with ignored nodes filtered out. Every `ocelle-icon` and `ocelle-brand-mark` whose tree is read, labelled or not,
+standalone or slotted, carries an `id`, as tests and server-rendered pages commonly do: Chromium exposes a
+custom-element host with an `id` as an unignored, unnamed `generic` node even when its drawing is hidden, so this is
+the case the outcomes must hold in. "Contributes no node" means no unignored node at all for the element, its host
+included, or for anything in its shadow root, and no name contributed to an ancestor. "Exactly one image node" means
+one unignored node with the role image and the stated name for the element, and no other unignored node for its host
+or its shadow root. Each such outcome is read in the same way, in the same test, as the labelled case that pairs with
+it.
 
 **"Does not" outcomes are paired.** An outcome that says something does not happen (no request, no violation, no
 node, no name, no mirroring, no gap) already holds when no element is defined, so a test of it alone passes at red
@@ -103,20 +120,25 @@ its plan names a planted defect that makes it fail:
 | "Does not" outcome | Paired positive outcome in the same test | Planted defect that makes it fail |
 |--------------------|------------------------------------------|-----------------------------------|
 | No CSP violation and no request outside the allowed list (US1-1, US4 Independent Test, SC-001, FR-005) | The shadow root holds the drawing and the box is `--ocelle-icon-size` | A drawing that loads `<image href>` from the server, and a template with a `style` attribute |
-| No node and no name for an unlabelled icon or mark (US1-5, US4-6, SC-003, FR-013, FR-028) | A labelled twin on the same page exposes exactly one image node with its label | An unlabelled icon with `role="img"` and an `aria-label` from its name, and one without `aria-hidden` on the drawing |
+| No node and no name for an unlabelled icon or mark (US1-5, US4-6, SC-003, FR-013, FR-028) | A labelled twin on the same page exposes exactly one image node with its label | An unlabelled icon with `role="img"` and an `aria-label` from its name, one without `aria-hidden` on the drawing, and one whose host (with its `id`) is not hidden |
 | An icon-only control's name is exactly the control's own, and the slotted icon adds nothing (US3-6, SC-003) | The slotted icon's shadow root holds the drawing at the icon size, and a labelled standalone twin on the same page exposes one image node | An icon that exposes `role="img"` named from its `name` when unlabelled (an image node then appears under the control) |
 | The non-directional icons are not mirrored (US2-4) | The four inline-direction icons do mirror on the same page | Mirroring applied to every icon |
 | An empty slot adds no gap or box (US3-5) | A filled slot on the same page adds the gap of FR-021 | The gap applied whether or not the slot holds an icon |
 | Unknown names draw nothing and add nothing to the tree (US1-8) | A known name on the same element then draws, and a labelled known name exposes one image node | Drawing a fallback glyph for an unknown name |
+| `label` is not reflected (US1-16, US4-13, FR-014, FR-028) | In the same test, setting `name` (and `ground` and `tone`) reflects to the attribute, and the label set by property is the accessible name | Reflecting `label` |
+| A host size rule does not change a slotted icon's box (US3-9) | A standalone icon on the same page follows the same host rule, and overriding `--ocelle-icon-size` on the control resizes the slotted icon | A slot convention whose size rule loses to a page rule |
+| The mark's colour pairs leave no pair unchecked (US4-4, SC-005, FR-026) | The colour tokens the mark's stylesheet paints are read from the stylesheet as shipped and are exactly those FR-026 names | A copy of `pairs.json` with one `color-accent` row of FR-026 removed |
 
-The README and `NOTICE` statements (FR-008, FR-018, FR-020, FR-023, FR-029, FR-030, SC-007, SC-008) are checked by a
-documentation test that reads the files; it fails while a statement is missing. "`THIRD_PARTY_NOTICES` lists no icon
+The README, `NOTICE` and `THIRD_PARTY_NOTICES` statements (FR-008, FR-018, FR-020, FR-023, FR-029, FR-030, FR-033,
+SC-007, SC-008) are checked by a documentation test that reads the files; it fails while a statement is missing (for
+`THIRD_PARTY_NOTICES`, while Lit's entry is missing). "`THIRD_PARTY_NOTICES` lists no icon
 set" (US2-5, FR-029) is documentation that already holds and cannot go red: it falls under the constitution VIII
 exemption, and the review states why no test could fail for it.
 
 ### User Story 1 - The element conventions and `ocelle-icon` (Priority: P1)
 
-A host page imports `@ocelle/elements` (or only the `ocelle-icon` module), writes `<ocelle-icon name="close">`, and
+A host page imports `@ocelle/elements` through its bundler (or only the `ocelle-icon` module), or, without a
+bundler, loads the browser build with one script tag, writes `<ocelle-icon name="close">`, and
 sees the close glyph at the library's icon size in the colour of the surrounding text, in both themes and in forced
 colours, under the strict CSP, without any network request. Assistive technology ignores the icon unless the host
 gives it a label. A later element author finds, in the package README, the one way elements in this library are
@@ -126,16 +148,16 @@ committed manifest does not match the source.
 **Why this priority**: Every other story, and every later element mission, depends on an element existing and on
 the conventions it proves. `ocelle-icon` is the smallest element that exercises all of them.
 
-**Independent Test**: Load the built package in the strict-CSP fixture, place `ocelle-icon` with one icon name, and
+**Independent Test**: Load the browser build in the strict-CSP fixture, place `ocelle-icon` with one icon name, and
 check, on that one page, its rendered drawing, size, colour, accessibility tree and the absence of requests outside
 the allowed list and of CSP violations; run the manifest gate and its plants.
 
 **Acceptance Scenarios**:
 
-1. **Given** the strict-CSP fixture (with `tokens.css`, without `base.css`) loading the built `ocelle-icon` module,
-   **When** it renders `<ocelle-icon name="close">`, **Then**, in the same test, the element's shadow root holds one
+1. **Given** the strict-CSP fixture (with `tokens.css`, without `base.css`) loading the browser build, **When** it
+   renders `<ocelle-icon name="close">`, **Then**, in the same test, the element's shadow root holds one
    SVG drawing of the close glyph, its box is `--ocelle-icon-size` square, the page records zero CSP violations and
-   it makes no request outside the fixture's allowed list (FR-004, FR-005, FR-010).
+   it makes no request outside the fixture's allowed list (FR-004, FR-005, FR-010, FR-033).
 2. **Given** the same element on the same page with no size set by the host, **When** it is measured, **Then** its
    box is `--ocelle-icon-size` wide and high (20 px at the default root font size), and the drawing fills it
    (FR-011).
@@ -146,10 +168,10 @@ the allowed list and of CSP violations; run the manifest gate and its plants.
 4. **Given** the element inside text whose colour is `--ocelle-color-ink`, **When** the host changes the text colour
    (for example to `--ocelle-color-chrome-ink` on the chrome), **Then** every stroke and fill of the drawing takes the
    inherited text colour; the drawing contains no colour of its own (FR-012).
-5. **Given** `<ocelle-icon name="close">` with no `label` in a sentence, and on the same page a labelled twin
-   `<ocelle-icon name="close" label="Close">`, **When** the accessibility tree is read in Chromium, **Then** the
-   unlabelled icon contributes no unignored node and no name, and the text around it reads unchanged, while the twin
-   contributes exactly one image node named "Close" (FR-013, FR-014).
+5. **Given** `<ocelle-icon id="plain" name="close">` with no `label` in a sentence, and on the same page a labelled
+   twin `<ocelle-icon id="named" name="close" label="Close">`, **When** the accessibility tree is read in Chromium,
+   **Then** the unlabelled icon contributes no unignored node (its host included) and no name, and the text around it
+   reads unchanged, while the twin contributes exactly one image node named "Close" (FR-013, FR-014).
 6. **Given** `<ocelle-icon name="search" label="Search">`, **When** the accessibility tree is read, **Then** it holds
    exactly one image node named "Search" for the icon; **When** `label` is removed again, **Then** the node is gone;
    **Given** `label=" Search "`, **Then** the name is "Search"; **Given** `label=""` or `label="  "`, **Then** the icon
@@ -165,9 +187,9 @@ the allowed list and of CSP violations; run the manifest gate and its plants.
    same holds for `Close` and ` close` (exact names only).
 9. **Given** `name` is changed from `close` to `menu` on a rendered element, **When** it updates, **Then** the
    drawing is the menu glyph and nothing of the close glyph remains (FR-016).
-10. **Given** the `ocelle-icon` module is imported twice (two bundles of the same version, or the module evaluated
-    again), **When** the second import runs, **Then** no error is thrown and the first definition stays in place
-    (FR-006).
+10. **Given** the `ocelle-icon` module is imported twice (two bundles of the same version, the module evaluated
+    again, or the browser build loaded on a page whose bundle already defined the elements), **When** the second
+    import runs, **Then** no error is thrown and the first definition stays in place (FR-006).
 11. **Given** the committed `packages/elements/custom-elements.json`, **When** the manifest gate runs, **Then** it
     passes, and the manifest declares `ocelle-icon` with its tag name, its `name` and `label` properties and their
     attributes, the type of `name` as the union of the thirteen icon names, and states that it has no slot, no event,
@@ -183,9 +205,16 @@ the allowed list and of CSP violations; run the manifest gate and its plants.
 14. **Given** 500 `ocelle-icon` elements on one page, **When** they render, **Then** every instance's shadow root
     adopts the same stylesheet object (one shared stylesheet, not one per instance), and no request outside the
     allowed list is made (FR-003).
-15. **Given** a page whose HTML holds `<ocelle-icon name="close">` before the element module loads, **When** the
-    module then loads, **Then** the existing element upgrades and draws the close glyph at the icon size, with no
-    inline script or style on the page (FR-002, FR-004).
+15. **Given** a strict-CSP fixture page whose HTML holds `<ocelle-icon name="close">` before the browser build
+    loads, **When** the browser build then loads, **Then** the existing element upgrades and draws the close glyph at
+    the icon size, with no inline script or style and no import map on the page (FR-002, FR-004, FR-033).
+16. **Given** a rendered `ocelle-icon`, **When** its `name` property is set to `menu` and its `label` property to
+    `Menu`, **Then**, in the same test, the `name` attribute reads `menu`, no `label` attribute is present, and the
+    icon exposes one image node named "Menu" (FR-014, FR-016).
+17. **Given** a host that bundles the module build the way a bundler host does (resolving `lit` from the package's
+    own dependency), **When** it imports only the `ocelle-icon` entry point, **Then** `ocelle-icon` is defined and
+    `ocelle-brand-mark` is not; **When** it imports the package root, **Then** both are defined; and the module build
+    imports no module other than its own files and `lit` (FR-002, FR-033).
 
 ---
 
@@ -208,7 +237,10 @@ grid and stroke rules, and that the direction-dependent icons mirror under `dir=
    `arrow-end`, `menu`, `close`, `folder`, `file`, `search`, `table`, `copy` (thirteen), the manifest type of `name` is
    the union of exactly these names, and the README names the consumer need each one meets (FR-017, FR-018).
 2. **Given** each name, **When** `<ocelle-icon name="…">` renders, **Then** a non-empty drawing appears whose painted
-   area stays inside the icon box, and no two names produce the same drawing (FR-017).
+   area stays inside the icon box, and no two names produce the same drawing (FR-017). The painted area is measured
+   as the geometry bounding box of each stroked shape grown by half the stroke width on every side (a round cap
+   paints up to that far beyond the geometry), together with the geometry bounding box of each filled shape, in the
+   drawing's 24-unit coordinates; it must lie within 0 to 24 on both axes.
 3. **Given** each drawing, **When** its source is read, **Then** it uses the shared 24-unit grid, one stroke width,
    round caps and joins, `currentColor` only, and no `style` attribute, `id`, `href`, `<use>`, `<image>`,
    `<foreignObject>`, `<script>` or event-handler attribute (FR-018, FR-010).
@@ -241,7 +273,9 @@ stylesheet; sizes, alignment, colour and the accessibility tree are measured.
    is measured, **Then** the icon box is `--ocelle-icon-size` square, sits before the label in the inline direction,
    is centred on the label's first line, is separated from the label by the gap the convention names, and does not
    shrink when the host is narrow; **Given** the same under `dir="rtl"`, **Then** the icon sits before the label in
-   the inline direction, which is to its right (FR-020, FR-021).
+   the inline direction, which is to its right (FR-020, FR-021). "Centred" means that the block-axis centre of the
+   icon box and the block-axis centre of the label's first line box differ by at most 0.5 px; the label is also
+   measured wrapped onto two lines, where the icon stays centred on the first.
 2. **Given** a bare `<svg slot="icon" viewBox="0 0 24 24">` with no `width` or `height`, and another
    `<svg slot="icon" viewBox="0 0 24 24" width="100" height="100">`, **When** they are measured with and without
    `base.css` linked, **Then** both boxes are `--ocelle-icon-size` square, not 0 px, 100 px or the 300 × 150 default,
@@ -258,7 +292,8 @@ stylesheet; sizes, alignment, colour and the accessibility tree are measured.
    empty box before it, while in the filled host the label starts one icon size plus the convention's gap from that
    edge (FR-021).
 6. **Given** an icon-only test host named "Close" through the control's own label (for example `aria-label` on its
-   inner control) with `<ocelle-icon slot="icon" name="close">`, **When** the accessibility tree is read, **Then** the
+   inner control) with `<ocelle-icon id="close-icon" slot="icon" name="close">`, **When** the accessibility tree is
+   read, **Then** the
    control's name is exactly "Close" and the icon contributes no unignored node and no name to it (FR-013, FR-023).
    That a slotted icon is never given a `label` is a README rule (FR-023), checked as documentation, not a behaviour
    of this feature.
@@ -268,6 +303,13 @@ stylesheet; sizes, alignment, colour and the accessibility tree are measured.
    design (FR-020, FR-023).
 8. **Given** forced colours are emulated, **When** the test host shows a slotted icon, **Then** the icon is painted
    in the same system colour as the label (FR-015, FR-021).
+9. **Given** a page with the host rules `ocelle-icon { inline-size: 32px }` and `svg { inline-size: 32px }`, the
+   test host with a slotted `<ocelle-icon slot="icon" name="folder">` and with a slotted
+   `<svg slot="icon" viewBox="0 0 24 24">`, and on the same page a standalone `ocelle-icon` and a standalone bare
+   `<svg viewBox="0 0 24 24">`, **When** they are measured with and without `base.css` linked, **Then** both slotted
+   boxes are `--ocelle-icon-size` square (20 × 20 px) while the standalone icon follows the host rule (32 × 20 px,
+   FR-011) and the standalone SVG is 32 px wide; **Given** the same page with `--ocelle-icon-size: 2rem` set on the
+   test host, **Then** both slotted boxes are 32 × 32 px (FR-021, FR-022).
 
 ---
 
@@ -293,14 +335,19 @@ tree and the absence of requests outside the allowed list and of CSP violations;
    `--ocelle-color-accent`, the same in both themes (FR-025).
 3. **Given** `<ocelle-brand-mark tone="mono">`, **When** it renders, **Then** ring and spot are both painted in the
    inherited text colour (`currentColor`), whatever the ground (FR-025; spec-kitty-design#504).
-4. **Given** the contrast gate, **When** it runs, **Then** it verifies the pairs of FR-026 in
-   `packages/tokens/contrast/pairs.json` (FR-026).
+4. **Given** the mark's stylesheet as shipped and `packages/tokens/contrast/pairs.json`, **When** the mark's pairing
+   test runs, **Then** the colour tokens the stylesheet paints for each variant are exactly those FR-026 names for it
+   (`color-ink` and `color-accent` for the default, `color-chrome-ink` and `color-accent` for the chrome variant), and
+   every pair of FR-026 is a `checked` row of `pairs.json` in each theme FR-026 names; **Given** a copy of `pairs.json`
+   with one `color-accent` row of FR-026 removed, **Then**, in the same test, the test reports that pair and theme as
+   missing; **When** the contrast gate runs, **Then** every one of those rows meets its threshold (FR-026).
 5. **Given** forced colours are emulated with a dark and a light system palette, **When** the mark renders in each
    variant in body text, inside a link and inside a native button, **Then** ring and spot are both painted in the
    context's system colour (`CanvasText` in text, `LinkText` in the link, `ButtonText` in the button), and the spot
    stays visible as a filled shape inside the ring (FR-027).
-6. **Given** a mark with no `label` and, on the same page, a twin with `label="Ocelle"`, **When** the accessibility
-   tree is read, **Then** the unlabelled mark contributes no unignored node and no name (the top bar's product name
+6. **Given** a mark with an `id` and no `label` and, on the same page, a twin with an `id` and `label="Ocelle"`,
+   **When** the accessibility tree is read, **Then** the unlabelled mark contributes no unignored node (its host
+   included) and no name (the top bar's product name
    beside it carries the name), and the twin contributes exactly one image node named "Ocelle"; **Given**
    `label=" Ocelle "`, **Then** the name is "Ocelle"; **Given** `label=""` or `label="  "`, **Then** the mark is
    treated as unlabelled (FR-028).
@@ -317,12 +364,18 @@ tree and the absence of requests outside the allowed list and of CSP violations;
    none of the reference's literal colours, its rounded square, a `style` attribute or an `id` (FR-024, FR-010).
 10. **Given** the README and `NOTICE`, **When** they are read, **Then** they carry the trademark note of FR-030.
 11. **Given** the Storybook, **When** it is built, **Then** it holds brand-mark stories for the main-ground, chrome and
-    mono variants in light and dark (FR-019).
+    mono variants and for the labelled state, in light and dark (FR-019).
 12. **Given** the committed manifest, **When** the manifest gate runs, **Then** it passes, and the manifest declares
     `ocelle-brand-mark` with its tag name, its `ground`, `tone` and `label` properties and their attributes (the types
     of `ground` and `tone` as the unions of their known values), and states that it has no slot, no event, no CSS
     part and no CSS custom property; the README names the tokens the mark reads (`--ocelle-icon-size`,
     `--ocelle-color-ink`, `--ocelle-color-chrome-ink`, `--ocelle-color-accent`) (FR-007, FR-008).
+13. **Given** a rendered mark, **When** its `ground` property is set to `chrome`, its `tone` property to `mono` and
+    its `label` property to `Ocelle`, **Then**, in the same test, the `ground` attribute reads `chrome`, the `tone`
+    attribute reads `mono`, no `label` attribute is present, the mark exposes one image node named "Ocelle", and,
+    on `color-chrome` in a text colour other than `--ocelle-color-chrome-ink`, ring and spot are both painted in the
+    inherited text colour (`currentColor`), because `tone="mono"` takes precedence over `ground="chrome"` (FR-025,
+    FR-028).
 
 ---
 
@@ -333,9 +386,13 @@ tree and the absence of requests outside the allowed list and of CSP violations;
   A bare `<svg>` slotted into a control is in the light DOM, so the slot convention must size it in a way those rules
   cannot undo (User Story 3 scenarios 2 and 3). An `ocelle-icon`'s own drawing is inside its shadow root and is not
   touched.
-- **Host page styles the element.** A host rule such as `ocelle-icon { inline-size: 32px }` is allowed and wins; the
-  drawing follows the host box. A host rule that sets only one dimension leaves the other at the icon size; in such a
-  non-square box the drawing is scaled to the smaller side and centred, aspect kept (User Story 1 scenario 3).
+- **Host page styles the element.** For a standalone icon or mark, a host rule such as
+  `ocelle-icon { inline-size: 32px }` is allowed and wins; the drawing follows the host box. A host rule that sets
+  only one dimension leaves the other at the icon size; in such a non-square box the drawing is scaled to the smaller
+  side and centred, aspect kept (User Story 1 scenario 3). For an icon slotted into a control that follows the slot
+  convention, the convention's size wins over every normal host rule, `base.css` and size attributes; the way to
+  resize icons in a control is overriding `--ocelle-icon-size` on the control or an ancestor (FR-022, User Story 3
+  scenario 9).
 - **Compact root.** The icon size is a `rem` token, so a host that changes the root font size rescales icons with
   the rest of the library; nothing in this feature sets a root font size. A host that wants another icon size in one
   subtree overrides the `--ocelle-icon-size` token there; that token is the sizing hook, not a custom property of the
@@ -351,11 +408,15 @@ tree and the absence of requests outside the allowed list and of CSP violations;
 - **Right-to-left.** Mirroring follows the element's computed direction, so `dir` on any ancestor, or on the element,
   takes effect. A control's `icon` slot sits before the label in the inline direction, so to its right under
   `dir="rtl"` (User Story 3 scenario 1).
-- **Two copies of the package.** Two different versions of `@ocelle/elements` on one page cannot both define
-  `ocelle-icon`; the first wins and the second import does not throw. The README says so.
-- **Server-rendered pages.** A Thymeleaf page writes `<ocelle-icon name="close">` in its HTML before the script
-  loads; until the element is defined the box is empty and has no size guarantee, and once defined it renders. No
-  inline script or style is needed to place it (User Story 1 scenario 15).
+- **Two copies of the package.** Two different versions of `@ocelle/elements` on one page, or the browser build and a
+  bundle of the module build on one page (each with its own copy of Lit), cannot both define `ocelle-icon`; the
+  first wins and the second import does not throw. The README says so.
+- **Server-rendered pages.** A Thymeleaf page, which has no bundler, loads the browser build with one
+  `<script type="module" src>` and writes `<ocelle-icon name="close">` in its HTML before the script loads; until the
+  element is defined the box is empty and has no size guarantee, and once defined it renders. No inline script or
+  style and no import map is needed to place it (User Story 1 scenario 15). The module build cannot be loaded
+  directly by such a page under the strict CSP, because nothing can map its bare `lit` import; the README says that
+  the module build needs a bundler and the browser build does not.
 - **The mark on an unsupported ground.** The main-ground variant on the chrome, or the chrome variant on bone, is a
   host mistake; it is documented, not detected.
 - **Light-mode spot.** The ochre spot on bone measures 2.6:1. The mark is a logo: its ring (16:1) carries
@@ -368,13 +429,17 @@ tree and the absence of requests outside the allowed list and of CSP violations;
 
 **Element conventions (for every element of this library)**
 
-- **FR-001**: `@ocelle/elements` depends on Lit 3, pinned to one exact version under the `pins` gate's rules.
+- **FR-001**: `@ocelle/elements` depends on Lit 3, pinned to one exact version under the `pins` gate's rules. The
+  browser build (FR-033) holds that same version.
 - **FR-002**: Each element lives in its own module, exported from the package under its own entry point and from the
-  package root; importing an element's module defines it. Importing the package root defines every element.
+  package root; importing an element's module defines that element and no other. Importing the package root defines
+  every element. The form of the entry-point paths is the plan's to choose; the README lists every entry point, and
+  they are public surface (FR-031).
 - **FR-003**: An element's styles are a static, shared stylesheet built only from `--ocelle-*` tokens and the
   allowed values of the `style-lint` gate; they reach the page as adopted stylesheets.
-- **FR-004**: Built output contains no inline script, no `<style>` element, no `style` attribute in any rendered
-  template, no `eval` or `new Function`, and passes the `csp` gate.
+- **FR-004**: Built output, the module build and the browser build alike (the browser build including the Lit code
+  it holds), contains no inline script, no `<style>` element, no `style` attribute in any rendered template, no
+  `eval` or `new Function`, and passes the `csp` gate.
 - **FR-005**: Elements perform no I/O and make no network request; no drawing references an external resource. On
   the strict-CSP fixture (User Scenarios), a page with the elements makes no request outside the fixture's allowed
   list (the page, its scripts, its stylesheets and the vendored font, all same-origin).
@@ -389,8 +454,8 @@ tree and the absence of requests outside the allowed list and of CSP violations;
   overriding a token is the documented way to change what the element takes from it. An element that offers its own
   hook declares it as a CSS custom property in the `--ocelle-<element>-<property>` form that matches no token name.
   Both elements of this feature declare no CSS custom property.
-- **FR-008**: The README of `@ocelle/elements` documents the conventions of FR-001 to FR-007, FR-019 and the file
-  and test layout an element follows, so later element missions apply them without redesign.
+- **FR-008**: The README of `@ocelle/elements` documents the conventions of FR-001 to FR-007, FR-019, FR-033 and the
+  file and test layout an element follows, so later element missions apply them without redesign.
 - **FR-009**: A new `manifest` merge gate fails when the committed manifest differs from one generated from the
   current source, or when a public member of an element lacks a description; the public members are properties,
   attributes, events, slots, CSS parts and CSS custom properties. It reports "could not run" when the manifest or the
@@ -399,12 +464,21 @@ tree and the absence of requests outside the allowed list and of CSP violations;
   `gates/gates.json`, runs as its own CI check, and is listed in `gates/README.md`.
 - **FR-010**: No rendered drawing contains a `style` attribute, an `id`, an `href` or `xlink:href`, `<use>`,
   `<image>`, `<foreignObject>`, `<script>` or an event-handler attribute.
+- **FR-033**: `@ocelle/elements` ships two builds of the same element source (operator answer to SPEC-2-02). The
+  module build is the per-element modules and the package root of FR-002; they import `lit` by a bare specifier and
+  are for hosts with a bundler (Kitty Desktop). The browser build is one self-contained ES module, under its own
+  export path, that holds Lit, imports nothing and defines every element when loaded; it is for plain-HTML and
+  strict-CSP hosts without a bundler (the Ocelle console), which load it with one same-origin
+  `<script type="module" src>` and no import map. The strict-CSP fixture's CSP, request, size, colour and
+  accessibility checks test the browser build. Its entry point is public surface (FR-031). The README says which
+  build a host uses and that the module build needs a bundler.
 
 **`ocelle-icon`**
 
 - **FR-011**: `ocelle-icon` renders one square box sized `--ocelle-icon-size` unless the host sizes the element, and
   its drawing scales to the box. A host may size one or both sides; in a non-square box the drawing is scaled to the
-  smaller side and centred, aspect kept.
+  smaller side and centred, aspect kept. This holds for a standalone icon; a slotted icon is sized by FR-021 and
+  FR-022.
 - **FR-012**: Every drawing is painted only with `currentColor`.
 - **FR-013**: Without `label`, the icon is hidden from the accessibility tree and contributes no name to an ancestor.
 - **FR-014**: With a non-empty `label` (property and attribute), the icon is exposed as one image with that name; an
@@ -444,9 +518,11 @@ tree and the absence of requests outside the allowed list and of CSP violations;
   `--ocelle-icon-size` square, not shrinking, centred on the label's first line, separated from the label by
   `--ocelle-space-2`, in the control's text colour; an empty slot takes no space and adds no gap.
 - **FR-022**: The sizing of FR-021 holds for a bare `<svg>` with or without `width` and `height` attributes, with a
-  square or non-square `viewBox` or none, on pages with and without the base stylesheet: the box is always
-  `--ocelle-icon-size` square. A drawing with a `viewBox` is scaled into the box, centred, aspect kept. An SVG without
-  a `viewBox` gets the box only; the README says a slotted SVG needs a `viewBox` to scale.
+  square or non-square `viewBox` or none, on pages with and without the base stylesheet, and whatever size a normal
+  (not `!important`) host rule sets on a slotted `ocelle-icon` or `svg`: the box is always `--ocelle-icon-size`
+  square. A slotted icon is resized only by overriding `--ocelle-icon-size` on the control or an ancestor, which the
+  README documents. A drawing with a `viewBox` is scaled into the box, centred, aspect kept. An SVG without a
+  `viewBox` gets the box only; the README says a slotted SVG needs a `viewBox` to scale.
 - **FR-023**: An icon-only control takes its accessible name from the control itself; a slotted icon stays decorative
   and is not given a `label`. The convention is proven by a test-only host element that ships in no package.
 
@@ -463,12 +539,16 @@ tree and the absence of requests outside the allowed list and of CSP violations;
   needed. The spot follows the reference app icon's ochre (`#C68A1E`, `--ocelle-color-accent` in both themes), not
   the brand doc's "light ochre `#E0A23A` (accent on black)": no token has that value in both themes, it would need a
   new token, and the app icon's ochre already meets 3:1 on the chrome.
-- **FR-026**: The contrast gate verifies, at 3:1 non-text: `color-ink` on each main ground and `color-chrome-ink` on
+- **FR-026**: The mark's colour pairs meet 3:1 non-text: `color-ink` on each main ground and `color-chrome-ink` on
   each chrome ground, in both themes; `color-accent` on each chrome ground in both themes; and `color-accent` on each
   main ground in the dark theme. The ink and chrome-ink pairs are already rows of `packages/tokens/contrast/pairs.json`
   as text pairs at 4.5:1, which implies 3:1, so they need no new row. The `color-accent` pairs are added as non-text
-  rows to `pairs.json`; the gate checks every listed row. Making their absence fail the gate needs `contrast` grounds
-  on `color-accent` in `packages/tokens/src/source.ts`, which this feature does not touch (Assumptions "Tokens").
+  rows to `pairs.json`, and the contrast gate checks every listed row. A package test of `@ocelle/elements`, of the
+  same kind as 003's pairing test of `base.css`, ties the pairs to the mark as shipped: it reads the colour tokens
+  the mark's stylesheet paints for each variant, requires them to be exactly the foregrounds above, and fails when any
+  pair above is not a `checked` row of `pairs.json` in each theme named for it, so a deleted or missing row fails
+  without a change to `packages/tokens/src/source.ts`. Its planted defect is a copy of `pairs.json` with one
+  `color-accent` row removed.
 - **FR-027**: In forced-colours mode both parts of the mark, in every variant, are painted in `currentColor`, so in
   the system colour of their context as for icons (`CanvasText` in text, `LinkText` in a link, `ButtonText` in a
   button), and the spot stays a filled shape inside the ring.
@@ -479,15 +559,21 @@ tree and the absence of requests outside the allowed list and of CSP violations;
 
 **Licence and records**
 
-- **FR-029**: The README states that the icons and the mark are the project's own drawings under Apache-2.0;
-  `THIRD_PARTY_NOTICES` is unchanged. Lit stays a runtime dependency of `@ocelle/elements` and is not bundled into
-  `packages/elements/dist/`, so no Lit notice is reproduced; if a later change bundles it, its BSD-3-Clause notice is
-  added to `THIRD_PARTY_NOTICES`.
+- **FR-029**: The README states that the icons and the mark are the project's own drawings under Apache-2.0, and no
+  icon set is added to `THIRD_PARTY_NOTICES`. Lit is a runtime dependency of the module build and is not bundled into
+  it. The browser build holds Lit (FR-033), so `THIRD_PARTY_NOTICES` gains an entry for Lit in the form of the
+  existing font entry: its licence (BSD-3-Clause) with its copyright notice and licence text, its repository, its
+  pinned version, and the published file that holds it. This is the third-party asset the operator approved
+  (SPEC-2-02).
 - **FR-030**: The README and a new repository `NOTICE` file (none exists yet; Apache-2.0 section 4(d) carries it to
   redistributors) state that "Ocelle" and the rosette mark are trademarks of their
   owner, that Apache-2.0 grants no right to use them (section 6), and that they may be used only to refer to Ocelle.
+  The published `@ocelle/elements` package (its packed tarball) contains `LICENSE`, `NOTICE` and
+  `THIRD_PARTY_NOTICES`, so the trademark note and Lit's notice reach npm users with the browser build; a test of the
+  packed file list fails while one of them is missing.
 - **FR-031**: The `@ocelle/elements` changelog names the surface this feature adds: `ocelle-icon`, its icon names,
-  `ocelle-brand-mark`, the slot convention and the manifest.
+  `ocelle-brand-mark`, the slot convention, the manifest, and the package's entry points (the package root, each
+  element's entry point and the browser build's entry point).
 - **FR-032**: The skeleton test that asserts the package "exports nothing yet" is replaced by tests of what it now
   exports.
 
@@ -500,22 +586,29 @@ tree and the absence of requests outside the allowed list and of CSP violations;
 - **Custom-elements manifest**: the generated, committed declaration of each element's public surface, checked by the
   manifest gate.
 - **Brand mark variant**: a ground or tone with the token (or `currentColor`) used for the ring and for the spot.
+- **Build**: the module build (per-element modules and the package root, importing `lit`, for bundler hosts) or the
+  browser build (one self-contained module with Lit inside, for hosts without a bundler), each with its entry points.
 
 ## Success Criteria *(mandatory)*
 
 ### Measurable Outcomes
 
-- **SC-001**: Each of the thirteen icons and the three brand-mark variants renders in the strict-CSP fixture with
-  zero CSP violations and zero requests outside the fixture's allowed list (the page, its scripts, its stylesheets
-  and the vendored font, all same-origin), on the same page where its drawing is present and measured.
+- **SC-001**: Each of the thirteen icons and the three brand-mark variants renders from the browser build in the
+  strict-CSP fixture with zero CSP violations and zero requests outside the fixture's allowed list (the page, the
+  browser build's file, its stylesheets and the vendored font, all same-origin), on the same page where its drawing
+  is present and measured.
 - **SC-002**: Every icon, standalone and slotted (as `ocelle-icon` and as a bare SVG, with and without the base
-  stylesheet), measures exactly the icon size (20 × 20 px at the default root font size) unless the host sets a size.
-- **SC-003**: In the accessibility tree (read as User Scenarios define), an unlabelled icon or mark contributes zero
-  unignored nodes and no name; a labelled one contributes exactly one image node with its label; an icon-only
-  control's name is exactly the control's own.
+  stylesheet), measures exactly the icon size (20 × 20 px at the default root font size). A standalone icon differs
+  only where the host sets its size; a slotted icon keeps the icon size whatever normal host rule or size attribute
+  applies, and changes only with `--ocelle-icon-size`.
+- **SC-003**: In the accessibility tree (read as User Scenarios define, with an `id` on every element read), an
+  unlabelled icon or mark contributes zero unignored nodes, its host included, and no name; a labelled one
+  contributes exactly one image node with its label; an icon-only control's name is exactly the control's own.
 - **SC-004**: In forced colours, 100% of the painted parts of every icon and mark variant use the system colour of
   their context (`CanvasText` in text, `LinkText` in a link, `ButtonText` in a button).
-- **SC-005**: Every brand-mark pair of FR-026 meets 3:1 in both themes, verified by the contrast gate.
+- **SC-005**: Every brand-mark pair of FR-026 is a `checked` row of `pairs.json` in each theme FR-026 names and meets
+  3:1 there: the mark's pairing test fails when a pair's row is missing (and on its planted removed row), and the
+  contrast gate fails when a row misses its threshold.
 - **SC-006**: The manifest gate fails on each of its fail plants, accepts its pass plants and reports "could not run"
   on its breaking plants, and the plants job checks that.
 - **SC-007**: The README's slot convention names the slots (`icon`, `trailing`), the size, gap, alignment and colour
@@ -541,9 +634,12 @@ tree and the absence of requests outside the allowed list and of CSP violations;
   visual baselines in a pinned container and axe on every story, and may change the Storybook configuration;
   whichever lands second merges the other.
 - **Tokens.** No token is added, so `packages/tokens/src/source.ts` (changed by #20) is not touched. The new contrast
-  pairs of FR-026 are rows in `packages/tokens/contrast/pairs.json`, which the gate checks. Declaring `contrast`
-  grounds on `color-accent` in the token source, so that a missing row fails the gate, is left until after #20 lands;
-  until then, deleting an accent row is not caught by the gate.
+  pairs of FR-026 are rows in `packages/tokens/contrast/pairs.json`, which the gate checks; a missing row is caught by
+  the mark's pairing test (FR-026), not by the gate. Note for the plan: the token gates' integration test pins the
+  row counts of `pairs.json` (158 light, 157 dark), and the new rows change them.
+- **Browser build.** The `csp` and `prefix` gates scan built output, so the Lit code inside the browser build is
+  scanned too; whatever it trips is resolved in the plan without an exception to constitution IV. The browser build
+  is not a second copy of the element source: it is built from the same modules as the module build.
 - **Spot colour.** The chrome variant follows the reference app icon's spot (`#C68A1E` on `#15130F`), which is
   `--ocelle-color-accent`, not the brand doc's "light ochre `#E0A23A` (accent on black)" (FR-025).
 - **Engines.** Only Chromium is measured. WebKit (Kitty Desktop) behaviour of the accessibility tree, forced colours

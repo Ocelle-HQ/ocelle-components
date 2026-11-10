@@ -43,3 +43,11 @@
   icon-only naming outcome (User Story 3 scenario 6). The operator's answer to SPEC-1-05 (a thirteenth icon, `file`)
   is recorded at the top of the spec. SC-007 and SC-008 are now documentation checks in this repository; their
   outcomes elsewhere are listed under Consumer need.
+- Spec check 2 (`reviews/spec/check-2.md`, fixes in `reviews/spec/check-2-fixes.md`): items re-checked after the
+  fixes. "Requirements are testable and unambiguous" now also rests on the browser build (FR-033), which the
+  strict-CSP fixture loads with one same-origin module script and no import map, so its CSP, request, size, colour
+  and accessibility checks can run and test a named artefact; on the slot rule that the convention's size wins over
+  host rules for slotted icons (FR-022, User Story 3 scenario 9, SC-002); on the mark's pairing test, which makes a
+  missing `pairs.json` row fail (FR-026, SC-005); and on the `id` on every element whose accessibility tree is read.
+  The operator's answer to SPEC-2-02 (also ship a browser build with Lit inside; Lit's notice in
+  `THIRD_PARTY_NOTICES`) is recorded at the top of the spec.
