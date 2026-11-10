@@ -160,6 +160,13 @@ describe("parseDelta", () => {
     expect(parseDelta("{}")).toEqual({});
   });
 
+  // 005 research.md R-06, R-12: the committed custom-elements manifest is in the configuration set, so the manifest
+  // gate's breaking plant break-missing removes it by the closed delta part `manifest: "absent"`.
+  it('reads manifest "absent", the one value of the manifest part, beside the other parts', () => {
+    expect(parseDelta('{"manifest":"absent"}')).toEqual({ manifest: "absent" });
+    expect(parseDelta('{"tokens":[],"manifest":"absent"}')).toEqual({ tokens: [], manifest: "absent" });
+  });
+
   it.each([
     { text: "{", problem: /^delta\.json is not valid JSON/ },
     { text: "[]", problem: /^delta\.json is not an object$/ },
@@ -192,6 +199,9 @@ describe("parseDelta", () => {
     { text: '{"pairsText":"[]\\n"}', problem: /^delta\.json: unknown key pairsText$/ },
     { text: '{"pairsList":"empty","pairsText":"[]\\n"}', problem: /^delta\.json: unknown key pairsText$/ },
     { text: '{"generator":"real"}', problem: /^delta\.json: generator must be "wrapped"$/ },
+    { text: '{"manifest":"missing"}', problem: /^delta\.json: manifest must be "absent"$/ },
+    { text: '{"manifest":true}', problem: /^delta\.json: manifest must be "absent"$/ },
+    { text: '{"manifest":null}', problem: /^delta\.json: manifest must be "absent"$/ },
   ])("rejects $text", ({ text, problem }) => {
     expect(() => parseDelta(text)).toThrow(problem);
   });
@@ -217,6 +227,12 @@ describe("treeProblems", () => {
     expect(treeProblems([`${src}/generate.ts`], {})).toEqual(['tree/ holds packages/tokens/src/generate.ts without generator "wrapped" in delta.json']);
     expect(treeProblems([`${src}/generate.ts`], { generator: "wrapped" })).toEqual([]);
     expect(treeProblems([], { generator: "wrapped" })).toEqual(['delta.json sets generator "wrapped" but tree/ holds no packages/tokens/src/generate.ts']);
+  });
+
+  it('rejects the committed manifest in tree/ when the delta removes it, and accepts it otherwise (005 R-06)', () => {
+    const manifest = "packages/elements/custom-elements.json";
+    expect([treeProblems([manifest], undefined), treeProblems([manifest], {}), treeProblems(["packages/elements/src/x.ts"], { manifest: "absent" })]).toEqual([[], [], []]);
+    expect(treeProblems([manifest], { manifest: "absent" })).toEqual([`tree/ holds ${manifest} and delta.json removes it with manifest "absent"`]);
   });
 
   it("accepts overrides.ts only when the delta has no tokens part", () => {

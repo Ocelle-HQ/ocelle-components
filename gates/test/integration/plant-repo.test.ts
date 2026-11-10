@@ -210,6 +210,20 @@ describe("buildRepoTree: plant deltas (002 contracts/gates.md § Configuration s
     expect(() => JSON.parse(written) as unknown).toThrow(SyntaxError);
   });
 
+  // 005 research.md R-06, R-12: manifest "absent" removes the committed custom-elements manifest, which the
+  // configuration set otherwise copies, so the manifest gate's break-missing plant presents a repository without it.
+  it('removes the committed manifest for manifest "absent", and keeps it without the part', async () => {
+    const into = tempDir("repo-tree");
+    await buildRepoTree(repo, join(fixtures, "manifest-absent-plant"), into);
+    const plain = tempDir("repo-tree");
+    await buildRepoTree(repo, join(fixtures, "tree-plant"), plain);
+    expect({ removed: existsSync(join(into, "packages/elements/custom-elements.json")), kept: existsSync(join(plain, "packages/elements/custom-elements.json")), source: existsSync(join(into, "packages/elements/src/ocelle-icon.ts")) }).toEqual({
+      removed: false,
+      kept: true,
+      source: true,
+    });
+  });
+
   it.each([
     { plant: "bad-token-plant", problem: "delta.json tokens: token override names an unknown token color-nope" },
     { plant: "bad-pair-plant", problem: "delta.json pairs: key light/color-nope/color-canvas matches no entry" },
