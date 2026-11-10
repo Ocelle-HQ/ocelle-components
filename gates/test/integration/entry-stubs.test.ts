@@ -2,7 +2,7 @@ import { afterEach, describe, expect, it } from "vitest";
 import { baseEnv, cleanUp, runGate, tempDir } from "./workspace.ts";
 import type { Ran } from "./workspace.ts";
 
-// The four entry stubs of specs/006-storybook-workbench tasks.md T003 (phase 1 review round 1, R1-01), run as
+// The entry stubs of specs/006-storybook-workbench tasks.md T003 (phase 1 review round 1, R1-01), run as
 // `pnpm run gate:<name>` runs them: `node gates/bin/<name>.ts`. Each exits 2 with exactly one stderr line naming
 // what is not implemented and the phase that implements it, and writes nothing to stdout; none may exit 0.
 const timeout = 60_000;
@@ -20,15 +20,8 @@ function notImplemented(line: string): Ran {
   return { code: 2, stdout: [], stderr: [line] };
 }
 
-describe("entry stubs (gates/bin/storybook-build.ts, visual.ts, baselines.ts, axe.ts)", () => {
-  it(
-    "storybook-build exits 2 with exactly could not run: not implemented (storybook-build, phase 2)",
-    async () => {
-      expect(await runStub("gates/bin/storybook-build.ts")).toEqual(notImplemented("could not run: not implemented (storybook-build, phase 2)"));
-    },
-    timeout,
-  );
-
+// Phase 2 replaced the storybook-build stub with the gate (gates/test/integration/storybook-build.test.ts).
+describe("entry stubs (gates/bin/visual.ts, baselines.ts, axe.ts)", () => {
   it(
     "visual exits 2 with exactly could not run: not implemented (visual, phase 3)",
     async () => {

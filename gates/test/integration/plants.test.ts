@@ -1,7 +1,7 @@
-import { cpSync, mkdirSync, readFileSync, symlinkSync, writeFileSync } from "node:fs";
+import { cpSync, mkdirSync, readFileSync, realpathSync, symlinkSync, writeFileSync } from "node:fs";
 import { dirname, join } from "node:path";
 import { afterEach, describe, expect, it } from "vitest";
-import { baseEnv, cleanUp, repo, runGate, tempDir } from "./workspace.ts";
+import { baseEnv, cleanUp, repo, runGate, storybookInputs, tempDir } from "./workspace.ts";
 
 // The plant job end to end (research.md R-08 kind 3, R-10; phase 4 review round 1, R1-09 and R1-11):
 // `gates/bin/plants.ts --root <tmp>` from a different working directory, on a temporary repository that holds the
@@ -34,6 +34,8 @@ const copied = [
   "packages/tokens/src/overrides.ts",
   "packages/tokens/src/generate.ts",
   "packages/tokens/contrast/pairs.json",
+  // The Storybook workspace inputs of the configuration set (006 research.md R-16).
+  ...storybookInputs,
 ];
 const kinds = ["fail", "pass", "error"] as const;
 
@@ -47,6 +49,7 @@ function plantsRoot(): string {
   cpSync(join(repo, "gates/test/fixtures/plants-root"), root, { recursive: true });
   for (const path of copied) cpSync(join(repo, path), join(root, path), { recursive: true });
   symlinkSync(join(repo, "node_modules"), join(root, "node_modules"), "dir");
+  symlinkSync(realpathSync(join(repo, "storybook/node_modules")), join(root, "storybook/node_modules"), "dir");
   const registryText = readFileSync(join(repo, "gates/gates.json"), "utf8");
   const workflow = readFileSync(join(repo, ".github/workflows/ci.yml"), "utf8");
   const withoutCsp = (JSON.parse(registryText) as { id: string }[]).filter((gate) => gate.id !== "csp");
@@ -86,7 +89,8 @@ describe("plant job (gates/bin/plants.ts)", () => {
           ...missing("signoff", ["fail"]),
           ...missing("contrast", []),
           ...missing("brand-rules", []),
-          "plants: 35 problems in 6 plants",
+          ...missing("storybook-build", []),
+          "plants: 38 problems in 6 plants",
         ],
         stderr: [],
       });

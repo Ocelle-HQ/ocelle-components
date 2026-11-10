@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { judgePlant, parsePlant } from "../lib/plant-judge.ts";
+import { gateKeysProblem, judgePlant, parsePlant } from "../lib/plant-judge.ts";
 import type { Plant, PlantRun } from "../lib/plant-judge.ts";
 
 // The plant verdict at the edges (FR-025, research.md R-10, data-model.md § Plant; phase 4 review round 1, R1-06):
@@ -145,5 +145,43 @@ describe("judgePlant: error plants and their cause (phase 4 round 5, O5-01)", ()
 
   it("keeps the exit problem for any exit other than 2", () => {
     expect(judgePlant("g", plant, run(1, [], ["g: could not run: does not resolve to a commit"]))).toBe("expected exit 2 (could not run), got exit 1");
+  });
+});
+
+// plant.json `unlinked` (specs/006-storybook-workbench contracts/plants.md § Plant runner changes, data-model.md § Plant
+// keys, research.md R-16): a list whose only value is "storybook/node_modules", for plants of storybook-build, visual
+// and axe only; the plant root then has no storybook/node_modules link. Like `engine` it presents an input, not gate
+// configuration.
+describe("parsePlant: unlinked (006 research.md R-16)", () => {
+  const error = { expect: "error", why: "w", cause: "storybook is not installed; run pnpm install" };
+
+  it('reads unlinked ["storybook/node_modules"] on any kind of plant', () => {
+    expect(parsePlant(JSON.stringify({ ...error, unlinked: ["storybook/node_modules"] }))).toEqual({ ...error, unlinked: ["storybook/node_modules"] });
+    expect(parsePlant(JSON.stringify({ expect: "pass", why: "w", unlinked: ["storybook/node_modules"] }))).toEqual({ expect: "pass", why: "w", unlinked: ["storybook/node_modules"] });
+  });
+
+  it.each([
+    { unlinked: ["node_modules"] },
+    { unlinked: ["storybook/node_modules", "node_modules"] },
+    { unlinked: ["storybook/node_modules", "storybook/node_modules"] },
+    { unlinked: [] },
+    { unlinked: "storybook/node_modules" },
+    { unlinked: null },
+    { unlinked: [1] },
+  ])("rejects unlinked $unlinked", ({ unlinked }) => {
+    expect(parsePlant(JSON.stringify({ ...error, unlinked }))).toBe('unlinked must be ["storybook/node_modules"]');
+  });
+});
+
+describe("gateKeysProblem (006 contracts/plants.md § Plant runner changes)", () => {
+  const unlinked: Plant = { expect: "error", why: "w", cause: "c", unlinked: ["storybook/node_modules"] };
+  const plain: Plant = { expect: "error", why: "w", cause: "c" };
+
+  it.each(["storybook-build", "visual", "axe"])("accepts unlinked on a plant of %s", (gate) => {
+    expect(gateKeysProblem(gate, unlinked)).toBeUndefined();
+  });
+
+  it.each(["typecheck", "lint", "csp", "mutation", "plants", "storybook"])("rejects unlinked on a plant of %s, and accepts the plant without it", (gate) => {
+    expect([gateKeysProblem(gate, unlinked), gateKeysProblem(gate, plain)]).toEqual(["unlinked is only for plants of storybook-build, visual and axe", undefined]);
   });
 });

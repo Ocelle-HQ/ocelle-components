@@ -106,5 +106,13 @@
     "plantCommand": "node gates/bin/brand-rules.ts --root {root}",
     "plantForm": "repo-tree",
     "scope": "files"
+  },
+  {
+    "id": "storybook-build",
+    "check": "Storybook build",
+    "command": "pnpm run gate:storybook-build",
+    "plantCommand": "node gates/bin/storybook-build.ts --root {root}",
+    "plantForm": "repo-tree",
+    "scope": "files"
   }
 ]

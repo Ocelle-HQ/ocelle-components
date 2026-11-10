@@ -78,6 +78,10 @@ jobs:
     name: Brand rules
     steps:
       - run: pnpm run gate:brand-rules
+  storybook-build:
+    name: Storybook build
+    steps:
+      - run: pnpm run gate:storybook-build
   plants:
     name: Plants
     steps:

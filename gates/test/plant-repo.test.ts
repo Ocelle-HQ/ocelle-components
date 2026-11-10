@@ -1,5 +1,17 @@
 import { describe, expect, it } from "vitest";
-import { applyPairChanges, carriesConfiguration, checkWrapper, configurationSet, overridesText, parseCommits, parseDelta, treeProblems } from "../lib/plant-repo.ts";
+import {
+  applyPairChanges,
+  carriesConfiguration,
+  checkWrapper,
+  configurationSet,
+  exceptionPlans,
+  moduleLinks,
+  overridesText,
+  parseCommits,
+  parseDelta,
+  rootExceptions,
+  treeProblems,
+} from "../lib/plant-repo.ts";
 
 // The pure parts of gates/lib/plant-repo.ts (research.md R-10, contracts/plants.md): the configuration set copied
 // into every temporary repository, the configuration a plant must not carry, and the records of commits.txt.
@@ -26,7 +38,118 @@ describe("configurationSet", () => {
       "packages/tokens/src/overrides.ts",
       "packages/tokens/src/generate.ts",
       "packages/tokens/contrast/pairs.json",
+      // The Storybook workspace inputs a plant root holds since 006 (research.md R-16): the Node pin, the base
+      // stylesheet and the fonts the stories read, and the workspace's manifest, configuration, scripts, stories,
+      // baselines and container pin; never dist/, .generated/, .visual/, .cache/, test/ or node_modules/.
+      ".node-version",
+      "packages/styles/src/base.css",
+      "packages/tokens/fonts",
+      "storybook/package.json",
+      "storybook/.storybook",
+      "storybook/scripts",
+      "storybook/stories",
+      "storybook/baselines",
+      "storybook/visual/container.json",
     ]);
+  });
+
+  it("holds no built, generated, cached or installed Storybook directory, and not the exceptions file (made per root)", () => {
+    const set = configurationSet([]);
+    const outside = ["storybook/dist", "storybook/.generated", "storybook/.visual", "storybook/.cache", "storybook/node_modules", "storybook/test", "storybook/a11y-exceptions.json", "storybook"];
+    expect(outside.filter((path) => set.includes(path))).toEqual([]);
+    expect(set.filter((path) => path.startsWith("storybook/"))).toHaveLength(6);
+  });
+});
+
+// The node_modules links of a plant root (research.md R-16): the root's node_modules and storybook/node_modules, the
+// latter left out when the plant lists it in plant.json `unlinked` (the error-missing-dependencies plant).
+describe("moduleLinks", () => {
+  it("links node_modules and storybook/node_modules by default", () => {
+    expect([moduleLinks(undefined), moduleLinks([])]).toEqual([
+      ["node_modules", "storybook/node_modules"],
+      ["node_modules", "storybook/node_modules"],
+    ]);
+  });
+
+  it('leaves out only storybook/node_modules for unlinked ["storybook/node_modules"]', () => {
+    expect(moduleLinks(["storybook/node_modules"])).toEqual(["node_modules"]);
+  });
+});
+
+// The plan files the repository's exception entries name (research.md R-16, data-model.md § Exception): copied into an
+// axe plant root with `exceptions: "repository"`, so the entries stay honoured there.
+describe("exceptionPlans", () => {
+  const entry = (plan: unknown, story = "a--b"): Record<string, unknown> => ({
+    story,
+    theme: "light",
+    rule: "color-contrast-incomplete",
+    selector: "td",
+    reason: "r",
+    sunset: "s",
+    plan,
+  });
+
+  it("names no plan for no entries", () => {
+    expect(exceptionPlans("[]")).toEqual([]);
+  });
+
+  it("names a plan once for two entries that name it, and each plan in the order of first naming", () => {
+    const text = JSON.stringify([entry("specs/006-x/plan.md"), entry("specs/006-x/plan.md", "c--d"), entry("specs/001-y/plan.md")]);
+    expect(exceptionPlans(text)).toEqual(["specs/006-x/plan.md", "specs/001-y/plan.md"]);
+  });
+
+  it.each([
+    { name: "an absolute plan path", text: JSON.stringify([entry("/etc/plan.md")]), problem: /^a11y-exceptions\.json#0: plan \/etc\/plan\.md is not a path inside the root$/ },
+    { name: "a plan path leaving the root", text: JSON.stringify([entry("specs/../../plan.md")]), problem: /^a11y-exceptions\.json#0: plan specs\/\.\.\/\.\.\/plan\.md is not a path inside the root$/ },
+    { name: "a plan path that is the parent", text: JSON.stringify([entry("specs/x/plan.md"), entry("..")]), problem: /^a11y-exceptions\.json#1: plan \.\. is not a path inside the root$/ },
+    { name: "text that is not JSON", text: "[", problem: /^a11y-exceptions\.json is not valid JSON/ },
+    { name: "a file that is not a list", text: "{}", problem: /^a11y-exceptions\.json is not a list of exception entries$/ },
+    { name: "an entry that is not an object", text: "[1]", problem: /^a11y-exceptions\.json#0 names no plan$/ },
+    { name: "an entry without plan", text: JSON.stringify([{ story: "a--b" }]), problem: /^a11y-exceptions\.json#0 names no plan$/ },
+    { name: "an entry with an empty plan", text: JSON.stringify([entry("specs/x/plan.md"), entry("")]), problem: /^a11y-exceptions\.json#1 names no plan$/ },
+    { name: "an entry whose plan is not text", text: JSON.stringify([entry(3)]), problem: /^a11y-exceptions\.json#0 names no plan$/ },
+  ])("fails the plant run on $name", ({ text, problem }) => {
+    expect(() => exceptionPlans(text)).toThrow(problem);
+  });
+
+  it("accepts a plan path that only starts with two dots", () => {
+    expect(exceptionPlans(JSON.stringify([entry("..plans/plan.md")]))).toEqual(["..plans/plan.md"]);
+  });
+});
+
+// A plant root's storybook/a11y-exceptions.json (research.md R-16, data-model.md § Plant delta keys): [] unless the
+// tree supplies one; with `exceptions: "repository"` the tree's entries, then the repository's, so a plant's own
+// `#<index>` locations do not move.
+describe("rootExceptions", () => {
+  const own = { story: "p--own", theme: "dark", rule: "button-name", selector: "button", reason: "r", sunset: "s", plan: "specs/p/plan.md" };
+  const repoEntry = { story: "base-styles--prose-document", theme: "light", rule: "color-contrast-incomplete", selector: "td", reason: "q", sunset: "t", plan: "specs/006/plan.md" };
+
+  it("is an empty list when neither the tree nor the key supplies entries", () => {
+    expect(rootExceptions(undefined, undefined)).toBe("[]\n");
+  });
+
+  it("keeps the tree's file byte for byte without the key", () => {
+    const tree = '[ {"story":"x"} ]';
+    expect(rootExceptions(tree, undefined)).toBe(tree);
+  });
+
+  it("appends the repository's entries after the tree's own, two-space JSON with a final newline", () => {
+    const merged = rootExceptions(JSON.stringify([own]), JSON.stringify([repoEntry]));
+    expect(merged).toBe(`${JSON.stringify([own, repoEntry], null, 2)}\n`);
+  });
+
+  it("holds the repository's entries alone when the tree supplies none", () => {
+    expect(rootExceptions(undefined, JSON.stringify([repoEntry]))).toBe(`${JSON.stringify([repoEntry], null, 2)}\n`);
+    expect(rootExceptions(undefined, "[]")).toBe("[]\n");
+  });
+
+  it.each([
+    { name: "a tree file that is not JSON", tree: "[", repository: "[]", problem: /^the plant's storybook\/a11y-exceptions\.json is not a JSON list$/ },
+    { name: "a tree file that is not a list", tree: "{}", repository: "[]", problem: /^the plant's storybook\/a11y-exceptions\.json is not a JSON list$/ },
+    { name: "a repository file that is not JSON", tree: undefined, repository: "[", problem: /^the repository's storybook\/a11y-exceptions\.json is not a JSON list$/ },
+    { name: "a repository file that is not a list", tree: "[]", repository: "null", problem: /^the repository's storybook\/a11y-exceptions\.json is not a JSON list$/ },
+  ])("fails the plant run on $name with the key", ({ tree, repository, problem }) => {
+    expect(() => rootExceptions(tree, repository)).toThrow(problem);
   });
 });
 
@@ -127,6 +250,7 @@ describe("parseDelta", () => {
     expect(parseDelta('{"pairsList":"not-json"}')).toEqual({ pairsList: "not-json" });
     expect(parseDelta('{"tokens":[],"pairsList":"empty","generator":"wrapped"}')).toEqual({ tokens: [], pairsList: "empty", generator: "wrapped" });
     expect(parseDelta("{}")).toEqual({});
+    expect(parseDelta('{"exceptions":"repository"}')).toEqual({ exceptions: "repository" });
   });
 
   it.each([
@@ -161,6 +285,10 @@ describe("parseDelta", () => {
     { text: '{"pairsText":"[]\\n"}', problem: /^delta\.json: unknown key pairsText$/ },
     { text: '{"pairsList":"empty","pairsText":"[]\\n"}', problem: /^delta\.json: unknown key pairsText$/ },
     { text: '{"generator":"real"}', problem: /^delta\.json: generator must be "wrapped"$/ },
+    // exceptions is closed (research.md R-16): only "repository".
+    { text: '{"exceptions":"plant"}', problem: /^delta\.json: exceptions must be "repository"$/ },
+    { text: '{"exceptions":true}', problem: /^delta\.json: exceptions must be "repository"$/ },
+    { text: '{"exceptions":["repository"]}', problem: /^delta\.json: exceptions must be "repository"$/ },
   ])("rejects $text", ({ text, problem }) => {
     expect(() => parseDelta(text)).toThrow(problem);
   });

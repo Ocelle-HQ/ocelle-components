@@ -1,10 +1,10 @@
-import { cpSync, readdirSync, readFileSync, symlinkSync, writeFileSync } from "node:fs";
+import { cpSync, readdirSync, readFileSync, realpathSync, symlinkSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 import { afterEach, describe, expect, it } from "vitest";
 import { applyOverrides, resolve } from "../../../packages/tokens/src/generate.ts";
 import { records } from "../../../packages/tokens/src/source.ts";
 import { contrastRatio } from "../../lib/wcag.ts";
-import { baseEnv, cleanUp, repo, runGate, tempDir } from "./workspace.ts";
+import { baseEnv, cleanUp, repo, runGate, storybookInputs, tempDir } from "./workspace.ts";
 
 // The contrast and brand-rules plants are robust to neighbouring changes (002 contracts/gates.md § Configuration set,
 // *Plant deltas* and *Keyed locations*; PLAN-FRESH-3-003): a copy of the repository's token source and pair list is
@@ -42,6 +42,8 @@ const copied = [
   "packages/tokens/src/overrides.ts",
   "packages/tokens/src/generate.ts",
   pairsPath,
+  // The Storybook workspace inputs of the configuration set (006 research.md R-16).
+  ...storybookInputs,
 ];
 
 interface Entry {
@@ -136,6 +138,7 @@ function changedRoot(variant: Variant): string {
   const root = tempDir("plants-robust");
   for (const path of copied) cpSync(join(repo, path), join(root, path), { recursive: true });
   symlinkSync(join(repo, "node_modules"), join(root, "node_modules"), "dir");
+  symlinkSync(realpathSync(join(repo, "storybook/node_modules")), join(root, "storybook/node_modules"), "dir");
   writeFileSync(join(root, sourcePath), variant.source);
   writeFileSync(join(root, pairsPath), pairsText(variant.pairs));
   return root;
@@ -156,7 +159,7 @@ afterEach(cleanUp);
 
 describe("contrast and brand-rules plants under neighbouring changes", () => {
   it("has the two gates' plants and the registry's", () => {
-    expect({ others: otherGates.length, plants: plantCount() }).toEqual({ others: 11, plants: 31 });
+    expect({ others: otherGates.length, plants: plantCount() }).toEqual({ others: 12, plants: 31 });
   });
 
   it.each([

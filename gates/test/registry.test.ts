@@ -9,14 +9,14 @@ import type { Gate } from "../lib/registry.ts";
 // set; each id missing from one of them is one finding. Inputs: gates/test/fixtures/registry/.
 const registryText = readFileSync(new URL("fixtures/registry/gates.json", import.meta.url), "utf8");
 const workflow = readFileSync(new URL("fixtures/registry/ci.yml", import.meta.url), "utf8");
-const ids = ["typecheck", "lint", "style-lint", "unit-tests", "test-lint", "mutation", "csp", "prefix", "config-copies", "pins", "signoff", "contrast", "brand-rules"];
+const ids = ["typecheck", "lint", "style-lint", "unit-tests", "test-lint", "mutation", "csp", "prefix", "config-copies", "pins", "signoff", "contrast", "brand-rules", "storybook-build"];
 
 function finding(path: string, rule: string, message: string): Finding {
   return { location: { path }, gate: "plants", rule, message };
 }
 
 describe("fr020 and plantJob", () => {
-  it("lists the thirteen gates of FR-020 (002 FR-020: contrast and brand-rules added), and names the plant job plants", () => {
+  it("lists the fourteen gates of FR-020 (002 FR-020: contrast and brand-rules added; 006 FR-017: storybook-build), and names the plant job plants", () => {
     expect({ fr020, plantJob }).toEqual({ fr020: ids, plantJob: "plants" });
   });
 });
@@ -122,7 +122,7 @@ describe("checkRegistry", () => {
   });
 
   it("reports every gate when the registry and the workflow are empty", () => {
-    expect(checkRegistry({ registry: [], jobs: [], ...paths })).toHaveLength(26);
+    expect(checkRegistry({ registry: [], jobs: [], ...paths })).toHaveLength(28);
   });
 });
 
@@ -144,9 +144,22 @@ describe("the repository's registry (002 FR-020)", () => {
     ]);
   });
 
-  it("matches the workflow's gate jobs and the FR-020 list, thirteen gates", () => {
+  it("matches the workflow's gate jobs and the FR-020 list, fourteen gates", () => {
     expect(checkRegistry({ registry: real, registryPath: "gates/gates.json", jobs: ciJobs(realWorkflow), workflowPath: ".github/workflows/ci.yml" })).toEqual([]);
     expect(real.map((gate) => gate.id)).toEqual(ids);
+  });
+
+  // 006 FR-017 (contracts/gates.md § `storybook-build`): the Storybook build gate is a repo-tree gate with the check
+  // "Storybook build", its plant command running the gate on the plant root.
+  it("registers storybook-build as a repo-tree gate with the check Storybook build", () => {
+    const gate = real.find((g) => g.id === "storybook-build");
+    expect(gate === undefined ? undefined : { id: gate.id, check: gate.check, command: gate.command, plantCommand: gate.plantCommand, plantForm: gate.plantForm }).toEqual({
+      id: "storybook-build",
+      check: "Storybook build",
+      command: "pnpm run gate:storybook-build",
+      plantCommand: "node gates/bin/storybook-build.ts --root {root}",
+      plantForm: "repo-tree",
+    });
   });
 
   it("gives each new gate a CI job named after its check that runs its command, like the other gate jobs", () => {
@@ -170,5 +183,6 @@ describe("the repository's registry (002 FR-020)", () => {
     expect(job("config-copies")).toEqual(shape("config-copies", "Story config copies", "pnpm run gate:config-copies"));
     expect(job("contrast")).toEqual(shape("contrast", "Contrast", "pnpm run gate:contrast"));
     expect(job("brand-rules")).toEqual(shape("brand-rules", "Brand rules", "pnpm run gate:brand-rules"));
+    expect(job("storybook-build")).toEqual(shape("storybook-build", "Storybook build", "pnpm run gate:storybook-build"));
   });
 });

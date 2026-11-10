@@ -49,3 +49,22 @@ describe("ci.yml mutation jobs (phase 3 round 9, O9-01)", () => {
     ]);
   });
 });
+
+// 006 FR-017 and US1 scenario 6 (contracts/gates.md § `storybook-build`): the job `storybook-build`, named "Storybook
+// build", checks out, sets up and runs the gate, nothing else (the gate builds the Storybook itself; the packages need
+// no build first, research.md R-09).
+describe("ci.yml storybook-build job (006 FR-017)", () => {
+  it("is named Storybook build and runs pnpm run gate:storybook-build after checkout and setup", () => {
+    expect(job("storybook-build")).toEqual([
+      "  storybook-build:",
+      "    name: Storybook build",
+      "    runs-on: ubuntu-24.04",
+      "    steps:",
+      "      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1",
+      "        with:",
+      "          persist-credentials: false",
+      "      - uses: ./.github/actions/setup",
+      "      - run: pnpm run gate:storybook-build",
+    ]);
+  });
+});

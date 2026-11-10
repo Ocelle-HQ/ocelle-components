@@ -147,6 +147,20 @@ describe("runPlant", () => {
     expect([(error as Error).message, (error as Error).cause]).toEqual(["p: cannot build its temporary repository (x)", cause]);
   });
 
+  // 006 research.md R-16: the builder reads the plant's plant.json keys that shape its root (`unlinked`).
+  it("hands the plant's parsed plant.json to the builder, so its unlinked key reaches the plant root", async () => {
+    const { tools } = recorder({}, { exitCode: 2, stdout: "", stderr: "storybook-build: could not run: x\n" });
+    const specs: unknown[] = [];
+    const repoTree = tools.build["repo-tree"];
+    const spy: RunnerTools = {
+      ...tools,
+      build: { ...tools.build, "repo-tree": (plant, into, spec) => (specs.push(spec), repoTree(plant, into, spec)) },
+    };
+    const plant: Plant = { expect: "error", why: "w", cause: "x", unlinked: ["storybook/node_modules"] };
+    await runPlant(spy, "/repo", gate("storybook-build", "repo-tree", "node gates/bin/storybook-build.ts --root {root}"), "gates/plants/storybook-build/error-x", plant);
+    expect(specs).toEqual([plant]);
+  });
+
   it("removes the directory when the gate process cannot start", async () => {
     const { tools, calls } = recorder({}, new Error("spawn ENOENT"));
     const done = runPlant(tools, "/repo", gate("lint", "repo-tree", "node x.ts --root {root}"), "p", fail);
