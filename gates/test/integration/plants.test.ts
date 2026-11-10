@@ -28,12 +28,17 @@ const copied = [
   "vitest.config.ts",
   "vitest.mutation.config.ts",
   "stryker.config.json",
+  // The element mutation configuration of the configuration set (005 research.md R-12).
+  "stryker.elements.config.json",
+  "vitest.mutation.elements.config.ts",
   ...["tokens", "styles", "elements"].flatMap((name) => [`packages/${name}/package.json`, `packages/${name}/tsconfig.json`]),
   // The token files of the configuration set (002 contracts/gates.md § Configuration set).
   "packages/tokens/src/source.ts",
   "packages/tokens/src/overrides.ts",
   "packages/tokens/src/generate.ts",
   "packages/tokens/contrast/pairs.json",
+  // The element source of the configuration set (005 research.md R-12).
+  "packages/elements/src",
 ];
 const kinds = ["fail", "pass", "error"] as const;
 

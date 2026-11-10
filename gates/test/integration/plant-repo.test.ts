@@ -20,6 +20,9 @@ const configuration = [
   "vitest.config.ts",
   "vitest.mutation.config.ts",
   "stryker.config.json",
+  // The element mutation configuration (005 research.md R-12).
+  "stryker.elements.config.json",
+  "vitest.mutation.elements.config.ts",
   "packages/tokens/package.json",
   "packages/tokens/tsconfig.json",
   "packages/styles/package.json",
@@ -36,7 +39,33 @@ const configuration = [
   "packages/tokens/src/overrides.ts",
   "packages/tokens/src/generate.ts",
   "packages/tokens/contrast/pairs.json",
+  // The element source the manifest gate and the element plants read (005 research.md R-12).
+  "packages/elements/src/index.ts",
 ];
+
+/**
+ * The element files of the configuration set that may be absent until the manifest generator lands (005 research.md
+ * R-12): each is in the temporary repository unchanged when the repository has it, and absent when it does not.
+ */
+const mayBeAbsent = ["packages/elements/scripts/manifest.ts", "packages/elements/custom-elements-manifest.config.mjs", "packages/elements/custom-elements.json"];
+
+function copiedOrAbsent(dir: string): Record<string, boolean> {
+  return Object.fromEntries(
+    mayBeAbsent.map((file) => [
+      file,
+      existsSync(join(repo, file)) ? existsSync(join(dir, file)) && readFileSync(join(dir, file), "utf8") === readFileSync(join(repo, file), "utf8") : !existsSync(join(dir, file)),
+    ]),
+  );
+}
+
+/** Each package's own node_modules in the repository, which the temporary repository links (005 research.md R-12). */
+const packageModules = ["packages/tokens", "packages/styles", "packages/elements"].map((dir) => `${dir}/node_modules`).filter((path) => existsSync(join(repo, path)));
+
+function linkedModules(dir: string): Record<string, string | false> {
+  return Object.fromEntries(packageModules.map((path) => [path, lstatSync(join(dir, path), { throwIfNoEntry: false })?.isSymbolicLink() === true && readlinkSync(join(dir, path))]));
+}
+
+const allLinked = Object.fromEntries(packageModules.map((path) => [path, join(repo, path)]));
 
 function git(dir: string, args: readonly string[]): string {
   return execFileSync("git", args, { cwd: dir, env: baseEnv(), encoding: "utf8" }).trim();
@@ -66,6 +95,9 @@ describe("buildRepoTree", () => {
     expect(readFileSync(join(into, "gates/lib/y.ts"), "utf8")).toBe("export const y = 2;\n");
     expect(lstatSync(join(into, "node_modules")).isSymbolicLink()).toBe(true);
     expect(readlinkSync(join(into, "node_modules"))).toBe(join(repo, "node_modules"));
+    expect(packageModules).toContain("packages/styles/node_modules");
+    expect(linkedModules(into)).toEqual(allLinked);
+    expect(copiedOrAbsent(into)).toEqual(Object.fromEntries(mayBeAbsent.map((file) => [file, true])));
     expect(existsSync(join(into, "packages/tokens/src/index.ts"))).toBe(false);
     expect(existsSync(join(into, "tree"))).toBe(false);
   });
@@ -211,6 +243,8 @@ describe("buildMutationRepo", () => {
       );
       expect(git(into, ["status", "--porcelain"])).toBe("");
       expect(lstatSync(join(into, "node_modules")).isSymbolicLink()).toBe(true);
+      expect(linkedModules(into)).toEqual(allLinked);
+      expect(baseFiles.filter((path) => path.split("/").includes("node_modules"))).toEqual([]);
       expect(copiedUnchanged(into)).toEqual(allTrue);
     },
     timeout,
