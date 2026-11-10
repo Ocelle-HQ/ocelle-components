@@ -5,7 +5,8 @@ made on 2026-11-10 in this container (Node 22.23.4, Chromium 1243 at
 `/opt/pw-browsers/chromium-1243/chrome-linux64/chrome`, the repository's pinned Vite 8.3.5, Vitest 5.0.5, Stryker
 10.1.1 and Playwright 1.64.1), with probe scripts in the session scratchpad; nothing of them is committed. Plan squad round 1
 (`reviews/plan/round-1/refute.md`) re-measured several of them and the operator decided its forks; plan squad round 2
-(`reviews/plan/round-2/refute.md`) did the same for five more. The entries below carry those results and decisions,
+(`reviews/plan/round-2/refute.md`) did the same for five more, and plan squad round 3
+(`reviews/plan/round-3/refute.md`) for four more. The entries below carry those results and decisions,
 each marked with the finding it answers.
 
 ## R-01 Lit version and how elements declare properties
@@ -73,27 +74,48 @@ each marked with the finding it answers.
   convention's `::slotted()` rules (R-10).
 - **`token-only` changes** (each with unit tests in `gates/test/` and plants under `gates/plants/style-lint/`, red
   first): exact values, not open classes, so no raw size factor gets through (constitution II).
+  - **`calc()` does not reopen them** (operator decision, PLAN-FRESH-3-002 (a)). Today the lint admits any unitless
+    number inside `calc()` for any property and asks no token of a `calc()` (`gates/stylelint/token-only.ts:56-78`):
+    the round-3 squad measured `rawValues` giving `["2"]` for `scale: 2` but `[]` for `scale: calc(2)`, `scale:
+    calc(3) calc(3)` and `aspect-ratio: calc(2)` (re-measured in this pass for `scale: calc(2)` and `aspect-ratio:
+    calc(2)`: `[]`), and the `1lh` admission below would let `block-size: calc(1lh * 2)` through the same way. 003 closed
+    this escape for line heights only (`fail-styles-calc-line-height`). So, in the same red-first change:
+    - for `scale` and `aspect-ratio` the exact-value check covers the whole value: each part is one of the allowed
+      numbers as a bare word, and any function there (`calc()`, `var()` or another) is raw;
+    - `1lh` inside `calc()` is admitted only as an operand of `+` or `-` (never of `*` or `/`), at most once per
+      `calc()` expression, in a `calc()` that also references an `--ocelle-*` token.
   - `scale` takes only the numbers `-1` and `1` (operator decision, PLAN-TESTABILITY-1-011 (a)), so the mirroring
     rule can be `scale: -1 1` (R-08). Pass plant `pass-scale-mirror` (`scale: -1 1`); fail plants `fail-scale-factor`
-    (`scale: 2`, which a change admitting every unitless factor would accept) and `fail-scale-length` (`scale: 2px 1`,
-    raw with or without the change; kept as the length case).
+    (`scale: 2`, which a change admitting every unitless factor would accept), `fail-scale-length` (`scale: 2px 1`,
+    raw with or without the change; kept as the length case) and `fail-scale-calc` (`scale: calc(2)`, PLAN-FRESH-3-002).
   - `aspect-ratio` takes only the number `1` (PLAN-FRESH-1-006 (a), the mark's sizing, R-09). Pass plant
-    `pass-aspect-square` (`aspect-ratio: 1`); fail plant `fail-aspect-ratio-other` (`aspect-ratio: 2`).
+    `pass-aspect-square` (`aspect-ratio: 1`); fail plants `fail-aspect-ratio-other` (`aspect-ratio: 2`) and
+    `fail-aspect-calc` (`aspect-ratio: calc(2)`, PLAN-FRESH-3-002).
   - The unit `lh` is allowed only as `1lh`, one line box of the element's own line height (PLAN-CORRECTNESS-1-004 (a),
-    the slot wrapper, R-10), as a value on its own and as an operand inside `calc()` (PLAN-FRESH-2-002 (a), the row's
-    block padding, R-10). Pass plants `pass-one-line` (`block-size: 1lh`) and `pass-one-line-calc` (`padding-block:
-    calc((var(--ocelle-icon-size) - 1lh) / 2)`); fail plants `fail-lh-multiple` (`block-size: 2lh`) and
-    `fail-lh-multiple-calc` (`padding-block: calc(var(--ocelle-icon-size) - 2lh)`, so admitting `lh` inside `calc()`
-    does not admit other multiples). The lint's `calc()` rule is otherwise unchanged: it already admits unitless
-    factors beside a token (`calc(var(--ocelle-space-1) * 2)`), and `/ 2` in the padding rule is such a factor.
+    the slot wrapper, R-10), as a value on its own and, under the rule above, as an operand inside `calc()`
+    (PLAN-FRESH-2-002 (a), the row's block padding, R-10). Pass plants `pass-one-line` (`block-size: 1lh`) and
+    `pass-one-line-calc` (`padding-block: calc((var(--ocelle-icon-size) - 1lh) / 2)`); fail plants `fail-lh-multiple`
+    (`block-size: 2lh`), `fail-lh-multiple-calc` (`padding-block: calc(var(--ocelle-icon-size) - 2lh)`),
+    `fail-lh-calc-factor` (`block-size: calc(1lh * 2)`, a factor on `1lh` and no token; PLAN-FRESH-3-002) and
+    `fail-lh-calc-twice` (`padding-block: calc(var(--ocelle-icon-size) - 1lh - 1lh)`, two line boxes in one
+    expression; the case the round-3 refute named as still open under the bare (a) rule). Unit tests cover each rule
+    part apart: `calc(1lh * 2)` beside a token, `calc(1lh + 1lh)` without one, and `calc(1lh)` alone are raw. The lint's
+    `calc()` rule is otherwise unchanged for other properties: it already admits unitless factors beside a token
+    (`calc(var(--ocelle-space-1) * 2)`), and `/ 2` in the padding rule is such a factor.
+  - **What this closes and what it does not**: closed are every `calc()` (or other function) spelling of `scale` and
+    `aspect-ratio`, a factor written directly on `1lh`, `1lh` in a `calc()` without a token, and more than one `1lh`
+    in one expression. Not closed: a factor applied to a parenthesised group that holds `1lh` beside a token, which
+    the padding rule itself needs (`(… - 1lh) / 2`); so `calc((var(--ocelle-space-1) + 1lh) * 2)` passes the lint and
+    is left to review, which the README's conventions name (R-15). Outside `calc()` no other multiple of `lh` passes.
   - Why these are not raw literals under constitution II: `-1`/`1` flip or keep a drawing and change no size, `1` as
     an aspect ratio says "as wide as high" and takes the size from the token, and `1lh` is the line height the element
     already inherits from the type tokens (in the padding rule it is subtracted from the icon-size token, so the
-    padding is derived from tokens and holds no length of its own). Any other value of these properties stays a
-    finding.
+    padding is derived from tokens and holds no length of its own). Any other value of `scale` and `aspect-ratio`, in
+    `calc()` or not, stays a finding; for `lh`, every value but `1lh` alone or `1lh` under the `calc()` rule above
+    stays a finding.
 - **Rationale**: adopted stylesheets are the constitution IV mechanism; `static styles` is Lit's shared form.
 - **Alternatives** for mirroring: `transform: scaleX(-1)` (a raw function under `token-only`), `scale: calc(-1) 1`
-  (passes the lint by an accident of the `calc()` rule; obscure), an SVG `transform` attribute chosen in `render()`
+  (passed today's lint by an accident of the `calc()` rule, which the change above closes, PLAN-FRESH-3-002), an SVG `transform` attribute chosen in `render()`
   (needs the computed direction in script, which a `dir` change on an ancestor does not re-trigger). Rejected. Adding
   `scale` to the unitless set (any factor): rejected by the operator (PLAN-TESTABILITY-1-011).
 
@@ -167,7 +189,9 @@ each marked with the finding it answers.
 
     The WebKit figure is set by `:dir()`, Media Queries 4 and constructable stylesheets alike. The README states the
     floor with the feature behind each figure, and its conventions say that an element using a newer feature raises
-    the floor in the README and in this list (R-15). The round-2 lens's optional hardening (`stroke="currentColor"` and
+    the floor in the README's engines section, the one list of the floor features (R-15); this list is 005's record
+    of how the figures were set, and a later feature records the feature that raises the floor in its own research
+    (PLAN-FRESH-3-004). The round-2 lens's optional hardening (`stroke="currentColor"` and
     `fill="currentColor"` presentation attributes on the rosette, so a dropped rule degrades to the mono mark) is not
     adopted: nothing is promised below the stated floor.
 - **Measured**: a probe element built with the repository's Vite 8.3.5 in library mode gave a 20 kB unminified ES
@@ -338,6 +362,17 @@ each marked with the finding it answers.
   32 × 32 px; a host `inline-size: 32px` gives 32 × 20 px with the drawing at the smaller side, centred; `hidden` gives
   0 × 0 px (US4-7, US4-15). With `auto` the column case is 300 × 20 px, which is US4-7's plant. `max-content` is a
   keyword (no lint change); `aspect-ratio: 1` needs the `token-only` change of R-03.
+- **Percentage heights** (PLAN-FRESH-3-003): a host size scales the mark only when it is definite. A host
+  `block-size: 100%` resolves against the container's height; when that height is indefinite (a flex bar with only
+  `min-block-size: 48px`, or a paragraph) the percentage behaves as `auto`, the width comes from the `svg`'s default
+  size, and the mark is 300 × 300 px (measured by the round-3 squad, `max-content` and `auto` alike, and re-measured in
+  this pass in the `min-block-size` bar). In a bar of definite height (`display: flex; align-items: center;
+  block-size: 48px`) the same host rule gives 48 × 48 px (re-measured in this pass). No keyword alternative falls
+  back to the token there (the squad measured `inline-size: min-content` and an absolutely positioned `svg`: 0 × 0 px
+  in the indefinite bar), so the behaviour is documented, not changed: FR-024 and the README say that a host sizing
+  the mark by percentage needs a container of definite height, and that otherwise the mark falls back to the SVG
+  default size (300 px) (R-15). US4-7 gains the 48 px `block-size` bar case with `block-size: 100%` (48 × 48 px). The
+  icon is not affected: R-04 fixes its `inline-size`, so the same host rule leaves it 20 px wide.
 - **Without `tokens.css`** (PLAN-FRESH-2-004): `.ring { stroke: var(--ocelle-color-ink) }` resolves to the inherited
   `stroke`, `none` by default, so the ring is not painted (the arcs carry no `stroke` attribute), and the mark is sized
   as an icon without tokens is (R-04). The README says so (R-15).
@@ -410,11 +445,29 @@ each marked with the finding it answers.
     generated U+200B entered the control's accessible name (U+200B, a space and "Open project", plus a StaticText node holding only
     U+200B; PLAN-A11Y-SECURITY-1-004). Both are now plants: the strut as the centring plant of US3-1 and US3-10, and
     the strut without empty alt text (`content: "\200b"`) as the naming plant of US3-11.
-  - `::slotted(*) { inline-size: var(--ocelle-icon-size) !important; block-size: var(--ocelle-icon-size) !important;
-    max-inline-size: none !important; flex: none !important; color: inherit; }`: in the cascade, important
-    declarations of an inner (shadow) context beat the outer page's, so neither `base.css` (`:where(svg) {
-    max-inline-size: 100%; block-size: auto }`) nor a normal host rule nor `width`/`height` attributes can change the
-    box (FR-022, US3-2, US3-9). `--ocelle-icon-size` set on the control or an ancestor still resizes it.
+  - `::slotted(*) { --ocelle-icon-size: inherit !important; inline-size: var(--ocelle-icon-size) !important;
+    block-size: var(--ocelle-icon-size) !important; max-inline-size: none !important; flex: none !important; color:
+    inherit; }`: in the cascade, important declarations of an inner (shadow) context beat the outer page's, so neither
+    `base.css` (`:where(svg) { max-inline-size: 100%; block-size: auto }`) nor a normal host rule nor
+    `width`/`height` attributes can change the box (FR-022, US3-2, US3-9). `--ocelle-icon-size` set on the control or
+    an ancestor still resizes it.
+  - **The token pin** (PLAN-FRESH-3-001): the slotted element's `inline-size` and `block-size` read
+    `--ocelle-icon-size` on the slotted light-DOM element, while the row's padding reads it on the row in the shadow
+    root. A slotted element inherits from its slot, but a page rule that sets the property on the element itself
+    (`.toolbar ocelle-icon { --ocelle-icon-size: 2rem }`, or a class on a slotted `<svg>`) overrides the inherited
+    value; then the icon is 32 px while the row pads for 20 px, and the icon leaves the control's border box (or, with
+    a smaller value, is smaller than the control asks), against FR-022's "resized only by overriding
+    `--ocelle-icon-size` on the control or an ancestor". `--ocelle-icon-size: inherit !important` in the `::slotted(*)`
+    rule, an inner-context important declaration that no outer rule beats, makes the slotted element always take the
+    control's value, the one the row's padding uses. Measured by the round-3 squad and re-measured in this pass
+    (Chromium 1243, R-10's row as a shadow `<button>` with a 1 px border, md / 1.45 type, a 20 px token on `:root`,
+    a page rule setting the token to 2rem on the slotted element): without the pin the slotted icon is 32 × 32 px and
+    lies 5 px outside the button's border box at both block edges; with it the slotted custom element and the
+    slotted `<svg class="big">` are 20 × 20 px and inside, while a standalone icon under the same page rule stays
+    32 × 32 px, and the token set to 2rem on the host still gives 32 × 32 px inside the box. `rawValues("--ocelle-icon-size",
+    "inherit")` is `[]`, so the pin needs no lint change. Tests: US3-9's cases with the token set on the slotted
+    element; plant: the pin removed. The README says that `--ocelle-icon-size` set on a slotted icon itself has no
+    effect (R-15).
   - Gap by margin, not `gap`: `slot[name="icon"]::slotted(*) { margin-inline-end: var(--ocelle-space-2) !important }`
     and `slot[name="trailing"]::slotted(*) { margin-inline-start: var(--ocelle-space-2) !important }`; an empty slot
     has no slotted element, so no margin and a zero-width wrapper (US3-5, US3-10). Logical properties put the icon
@@ -612,14 +665,19 @@ each marked with the finding it answers.
     PLAN-FRESH-2-004: an element reads tokens only from `@ocelle/tokens`, which the package declares as a peer
     dependency, and the README states for each element what it does without `tokens.css`, and the engine rule of
     PLAN-FRESH-2-005: an element that uses a feature newer than the stated floor raises the floor in the README's
-    engines section and in R-05's list), builds and which host uses which (FR-033) with the browser build's file
+    engines section, the one list of the floor features, and records that feature in its own feature's research
+    (PLAN-FRESH-3-004), and the lint limit of R-03: a factor on a parenthesised `calc()` group that holds `1lh` passes
+    `token-only` and is checked in review (PLAN-FRESH-3-002)), builds and which host uses which (FR-033) with the browser build's file
     path to copy (`dist/browser/ocelle-elements.js`, R-02), tokens: "Link `tokens.css` of `@ocelle/tokens` first";
     linked without it, `--ocelle-icon-size` is undefined, so an icon or mark is drawn at the SVG default size
     (300 × 300 px in a paragraph) and the mark's ring is not painted (PLAN-FRESH-2-004, R-04, R-09), `ocelle-icon`
     (attributes, tokens read, names table with consumer needs), slot convention (R-10, including that the row sets the
     type and carries `icon-row`, whose block padding keeps a taller icon inside the control, and that a control never
-    sets block padding on the row and puts any further block padding on an element around the row), `ocelle-brand-mark` (variants, grounds, tokens read, width following
-    height), naming and host ARIA rules (FR-023, FR-034: a present host `aria-label` decides alone, a blank one leaves
+    sets block padding on the row and puts any further block padding on an element around the row, and that
+    `--ocelle-icon-size` set on a slotted icon itself has no effect, since the convention pins it to the control's
+    value, PLAN-FRESH-3-001), `ocelle-brand-mark` (variants, grounds, tokens read, width following
+    height, and that a host sizing the mark by percentage needs a container of definite height, else the mark falls
+    back to the SVG default size, 300 px, PLAN-FRESH-3-003), naming and host ARIA rules (FR-023, FR-034: a present host `aria-label` decides alone, a blank one leaves
     the element unlabelled, hosts pass it trimmed, and a host `hidden` removes the element's box and node), licence
     and trademark note (FR-029, FR-030) and the browser build's banner, engines (Chromium 120+ for `:dir()` and
     WebKit 16.4+ for `:dir()`, Media Queries 4 and constructable stylesheets, with the other features of R-05 and their

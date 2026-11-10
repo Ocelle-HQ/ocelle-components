@@ -69,6 +69,13 @@ make are below, the plan changes in `plan.md`):
   scenario 15), a column flex case to User Story 4 scenario 7, the `@ocelle/tokens` peer dependency and the README's
   tokens and engine-floor statements (FR-008, FR-031).
 
+**Operator decision at plan squad round 3** (2026-11-10, `reviews/plan/round-3/refute.md`):
+
+- PLAN-FRESH-3-002 (a): the lint's exact-value allowances are not reopened by `calc()`; this changes the plan only.
+  The round's confirmed fixes pin `--ocelle-icon-size` on slotted icons, so the token set on a slotted icon itself
+  has no effect (FR-022, User Story 3 scenario 9, Edge Cases), and state that the mark's percentage sizes need a
+  container of definite height, with a 48 px bar case (FR-024, User Story 4 scenario 7, Edge Cases).
+
 ## Consumer need
 
 - kitty-mission-ui puts local `inline-size` and `block-size` rules on every SVG it slots into a button, because the
@@ -177,6 +184,7 @@ its plan names a planted defect that makes it fail:
 | Unknown names draw nothing and add nothing to the tree (US1-8) | A known name on the same element then draws, and a labelled known name exposes one image node | Drawing a fallback glyph for an unknown name |
 | `label` is not reflected (US1-16, US4-13, FR-014, FR-028) | In the same test, setting `name` (and `ground` and `tone`) reflects to the attribute, and the label set by property is the accessible name | Reflecting `label` |
 | A host size rule does not change a slotted icon's box (US3-9) | A standalone icon on the same page follows the same host rule, and overriding `--ocelle-icon-size` on the control resizes the slotted icon | A slot convention whose size rule loses to a page rule |
+| `--ocelle-icon-size` set by a page rule on a slotted icon itself does not change its box (US3-9) | A standalone icon on the same page under the same page rule is 32 × 32 px, and the token set on the control resizes the slotted icon | The slot convention's `--ocelle-icon-size: inherit !important` pin removed |
 | A host `aria-label` that is empty or whitespace-only adds no node, with or without a `label` (US1-18, US4-14, FR-034) | A twin with a non-empty host `aria-label` on the same page exposes exactly one image node with that name | An element that stays hidden when its host has an `aria-label` (the named twin then has no node), and an element that falls back to `label` when the host `aria-label` is blank (Chromium then exposes an unnamed image) |
 | A labelled icon or mark whose host has `aria-hidden="true"` contributes no node and no name (US1-18, US4-14, FR-034) | Its twin without `aria-hidden` on the same page exposes exactly one image node with the label | An element that removes or overrides a host `aria-hidden` when it is labelled |
 | A labelled icon or mark whose host has `hidden` has no box and contributes no node and no name (US1-19, US4-15, FR-034) | Its visible labelled twin on the same page has the icon-size box and exposes exactly one image node with the label | The element's `:host([hidden]) { display: none; }` rule removed (its `:host` display rule then beats the user-agent `[hidden]` rule) |
@@ -184,7 +192,7 @@ its plan names a planted defect that makes it fail:
 | The slot convention adds nothing to the name a control takes from its visible label (US3-11) | In the same test both slotted icons are drawn at the icon size, and the control's name is exactly its label | A wrapper with a zero-width-space `::before` strut without empty alt text |
 | The mark's colour pairs leave no pair unchecked (US4-4, SC-005, FR-026) | The colour tokens the mark's stylesheet paints are read from the stylesheet as shipped and are exactly those FR-026 names | A copy of `pairs.json` with one `color-accent` row of FR-026 removed |
 
-The README, `NOTICE` and `THIRD_PARTY_NOTICES` statements (FR-008, FR-018, FR-020, FR-023, FR-029, FR-030, FR-033, FR-034,
+The README, `NOTICE` and `THIRD_PARTY_NOTICES` statements (FR-008, FR-018, FR-020, FR-022, FR-023, FR-024, FR-029, FR-030, FR-033, FR-034,
 SC-007, SC-008) are checked by a documentation test that reads the files; it fails while a statement is missing (for
 `THIRD_PARTY_NOTICES`, while Lit's entry is missing). "`THIRD_PARTY_NOTICES` lists no icon
 set" (US2-5, FR-029) is documentation that already holds and cannot go red: it falls under the constitution VIII
@@ -405,7 +413,10 @@ and without the base stylesheet; sizes, alignment, colour and the accessibility 
    `<svg viewBox="0 0 24 24">`, **When** they are measured with and without `base.css` linked, **Then** both slotted
    boxes are `--ocelle-icon-size` square (20 × 20 px) while the standalone icon follows the host rule (32 × 20 px,
    FR-011) and the standalone SVG is 32 px wide; **Given** the same page with `--ocelle-icon-size: 2rem` set on the
-   test host, **Then** both slotted boxes are 32 × 32 px (FR-021, FR-022).
+   test host, **Then** both slotted boxes are 32 × 32 px; **Given** the page rule `ocelle-icon { --ocelle-icon-size:
+   2rem }` and a slotted `<svg slot="icon" class="big" viewBox="0 0 24 24">` with `.big { --ocelle-icon-size: 2rem }`,
+   and no token set on the test host, **Then** both slotted boxes are 20 × 20 px and lie inside the inner button's
+   border box, while the standalone `ocelle-icon` on the same page is 32 × 32 px (FR-021, FR-022).
 10. **Given** the test host with the label "Open project" and `<ocelle-icon slot="trailing" name="arrow-end">`, and on
     the same page the same host with nothing in its `trailing` slot, **When** both are measured, with and without
     `base.css` linked, **Then** the trailing icon box is `--ocelle-icon-size` square, sits after the label in the
@@ -464,11 +475,12 @@ tree and the absence of requests outside the allowed list and of CSP violations;
    treated as unlabelled (FR-028).
 7. **Given** no size set by the host, **When** the mark is measured, **Then** it is `--ocelle-icon-size` high and its
    width follows the drawing's square aspect; **Given** the host sets only `block-size: 32px`, **Then** the box is
-   32 × 32 px (the width follows the height); the host can set any other size on the element, and the drawing
+   32 × 32 px (the width follows the height); the host can set any other definite size on the element, and the drawing
    scales with it; in a non-square host box (for example a host that sets only `inline-size: 32px`, giving 32 × 20 px)
    the drawing is scaled to the smaller side and centred, aspect kept; **Given** the mark with no size set by the host
    in a 300 px wide flex container with `flex-direction: column` (and in a flex row beside it), **Then** its box is
-   20 × 20 px, not stretched to the container's width (FR-024).
+   20 × 20 px, not stretched to the container's width; **Given** the mark with the host rule `block-size: 100%` in a
+   flex bar with `align-items: center` and `block-size: 48px`, **Then** its box is 48 × 48 px (FR-024).
 8. **Given** an unknown `ground` or `tone` value, **When** the mark renders, **Then** it renders as the default
    main-ground variant (FR-025).
 9. **Given** the mark's drawing, **When** its source is compared with `sources/ocelle-docs-logo.reference.svg`,
@@ -519,12 +531,15 @@ tree and the absence of requests outside the allowed list and of CSP violations;
   that sets only the mark's `block-size` gets a square box; one that sets only its `inline-size` gets a non-square box
   as for the icon (User Story 4 scenario 7). For an icon slotted into a control that follows the slot
   convention, the convention's size wins over every normal host rule, `base.css` and size attributes; the way to
-  resize icons in a control is overriding `--ocelle-icon-size` on the control or an ancestor (FR-022, User Story 3
-  scenario 9).
+  resize icons in a control is overriding `--ocelle-icon-size` on the control or an ancestor, and the token set on
+  the slotted icon itself has no effect (FR-022, User Story 3 scenario 9). A host that sizes the mark by percentage
+  needs a container of definite height; in a bar with only a minimum height the mark falls back to the SVG default
+  size (FR-024, User Story 4 scenario 7).
 - **Compact root.** The icon size is a `rem` token, so a host that changes the root font size rescales icons with
   the rest of the library; nothing in this feature sets a root font size. A host that wants another icon size in one
   subtree overrides the `--ocelle-icon-size` token there; that token is the sizing hook, not a custom property of the
-  elements (FR-007).
+  elements (FR-007). For icons slotted into a control the override goes on the control or an ancestor; set on the
+  slotted icon itself it has no effect (FR-022).
 - **Unknown name, empty name, name with surrounding spaces or different case.** Only exact names from the set draw
   (`Close` and ` close` draw nothing). No message is written to the console in the built output, as FR-016 defines it
   (User Story 1 scenario 8).
@@ -669,7 +684,8 @@ tree and the absence of requests outside the allowed list and of CSP violations;
   square or non-square `viewBox` or none, on pages with and without the base stylesheet, and whatever size a normal
   (not `!important`) host rule sets on a slotted `ocelle-icon` or `svg`: the box is always `--ocelle-icon-size`
   square. A slotted icon is resized only by overriding `--ocelle-icon-size` on the control or an ancestor, which the
-  README documents. A drawing with a `viewBox` is scaled into the box, centred, aspect kept. An SVG without a
+  README documents; the token set on the slotted element itself has no effect (the convention pins it to the
+  control's value, so the icon and the row's block padding of FR-021 read the same size). A drawing with a `viewBox` is scaled into the box, centred, aspect kept. An SVG without a
   `viewBox` gets the box only; the README says a slotted SVG needs a `viewBox` to scale.
 - **FR-023**: An icon-only control takes its accessible name from the control itself; a slotted icon stays decorative
   and is not given a `label`. The convention is proven by a test-only host element that ships in no package: a Lit
@@ -681,7 +697,9 @@ tree and the absence of requests outside the allowed list and of CSP violations;
 - **FR-024**: `ocelle-brand-mark` renders the Ocelle rosette (four open arcs of unequal weight with round caps around
   an elliptical spot), redrawn from the geometry of the reference in `sources/`, as inline SVG in its shadow root,
   `--ocelle-icon-size` high by default with its square aspect, its width following its height (a host that sets only
-  the height gets a square box), scaling to any size the host sets.
+  the height gets a square box), scaling to any definite size the host sets. A host percentage height needs a
+  container of definite height; against an indefinite one (a container with only a minimum height, or none) the
+  percentage acts as `auto` and the mark falls back to the SVG default size (300 px); the README says so.
 - **FR-025**: Its variants: the default for the main grounds (ring `--ocelle-color-ink`, spot
   `--ocelle-color-accent`); `ground="chrome"` for the chrome, `color-chrome` and `color-chrome-hover` (ring
   `--ocelle-color-chrome-ink`, spot `--ocelle-color-accent`); and `tone="mono"` (ring and spot `currentColor`), which

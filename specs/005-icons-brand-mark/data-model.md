@@ -65,7 +65,10 @@ the ring is not painted, R-09). Naming as for `ocelle-icon` with `drawable` alwa
 **Box**: `block-size: var(--ocelle-icon-size)`, `inline-size: max-content`, `aspect-ratio: 1` (R-09,
 PLAN-FRESH-2-003): 20 × 20 px by default, in flow and in a row or column flex container alike (with `inline-size:
 auto` a column flex container stretches it to its width); a host `block-size` alone gives a square of that size; a
-host `inline-size` alone gives a non-square box with the drawing scaled to the smaller side and centred.
+host `inline-size` alone gives a non-square box with the drawing scaled to the smaller side and centred. A host
+percentage height scales the mark only in a container of definite height (`block-size: 100%` in a 48 px
+`block-size` flex bar gives 48 × 48 px); against an indefinite height (a `min-block-size` bar, a paragraph) it acts
+as `auto` and the mark falls back to the SVG default size, 300 × 300 px (PLAN-FRESH-3-003, R-09).
 `:host([hidden]) { display: none; }` as for the icon (PLAN-FRESH-2-001).
 
 **Variants** (CSS on exact attribute values; any other value is the default). The variant rules are inside
@@ -95,7 +98,7 @@ reference group the fit of US4-9 is scale 1, translation 0.
 | icon wrapper | `<span class="icon-slot"><slot name="icon"></slot></span>` | `inline-flex`, `block-size: 1lh` (one line box of the row), icon centred in it, `flex: none`; no generated content |
 | label | the control's own label element | between the two wrappers |
 | trailing wrapper | `<span class="icon-slot trailing"><slot name="trailing"></slot></span>` | as the icon wrapper |
-| slotted icon | any element in either slot | `--ocelle-icon-size` square, `!important`; gap `--ocelle-space-2` by inline margin toward the label, `!important` |
+| slotted icon | any element in either slot | `--ocelle-icon-size` square, `!important`; `--ocelle-icon-size: inherit !important` on the slotted element, so a page rule setting the token on the element itself has no effect and the icon always takes the control's value, the one the row's padding uses (PLAN-FRESH-3-001, R-10); gap `--ocelle-space-2` by inline margin toward the label, `!important` |
 
 The control's row carries the class `icon-row`, is `display: inline-flex; align-items: flex-start`, and sets the type
 (font size, line height) that the wrappers and the label inherit. `iconSlotStyles` gives it `padding-block:

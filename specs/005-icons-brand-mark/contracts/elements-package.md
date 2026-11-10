@@ -27,7 +27,8 @@ BSD-3-Clause licence, and `THIRD_PARTY_NOTICES` (FR-029).
 16.4; the icons' mirroring), Media Queries 4 `not (forced-colors: active)` (Chromium 104, WebKit 16.4; the mark's
 variants and ring), the `lh` unit (Chromium 109; the slot convention), `scale` (Chromium 104) and constructable
 stylesheets (`adoptedStyleSheets`: Chromium 73, WebKit 16.4), with no `window.ShadyCSS` polyfill on the page; Lit's
-`<style>` fallback is then unreachable. An element that uses a newer feature raises this floor (README convention).
+`<style>` fallback is then unreachable. An element that uses a newer feature raises this floor in the README's
+engines section, the one list (README convention), and records the feature in its own feature's research.
 Only Chromium is measured.
 
 ## Elements
@@ -52,7 +53,9 @@ Only Chromium is measured.
 - `label`, host `aria-label`, host `aria-hidden`, host `hidden` as for `ocelle-icon`.
 - Box: `--ocelle-icon-size` high, width following height (`inline-size: max-content; aspect-ratio: 1`), so a host
   that sets only the height gets a square, in a column flex container too; a host that sets only the width gets a
-  non-square box with the drawing scaled to the smaller side.
+  non-square box with the drawing scaled to the smaller side. A percentage host size needs a container of definite
+  height: in one with only a minimum height (or none) the percentage acts as `auto` and the mark is drawn at the SVG
+  default size, 300 × 300 px.
 - Forced colours: ring and spot `currentColor` in every variant.
 - No slots, events, parts or CSS custom properties.
 
@@ -69,7 +72,8 @@ from the label, in the control's text colour; empty slots take no space. The row
 `calc((var(--ocelle-icon-size) - 1lh) / 2)` from `iconSlotStyles` (0 when the line box is at least the icon size),
 keeps that overflow inside the control's box; a control never sets block padding on the row; it puts any further block padding on an element around the row. The convention adds no generated content, so
 a control named by its visible label keeps exactly that name. A host resizes slotted icons only through
-`--ocelle-icon-size`. An icon-only control names its own inner control; slotted icons get no `label`.
+`--ocelle-icon-size` on the control or an ancestor: `iconSlotStyles` sets `--ocelle-icon-size: inherit !important`
+on every slotted element, so the token set on a slotted icon itself has no effect. An icon-only control names its own inner control; slotted icons get no `label`.
 
 ## Records
 
