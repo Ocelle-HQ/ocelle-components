@@ -1,0 +1,127 @@
+{
+  "modules": [
+    {
+      "declarations": [
+        {
+          "attributes": [
+            {
+              "default": "undefined",
+              "description": "The icon's name, one of the set; any other value draws nothing and keeps the box. Reflected.",
+              "fieldName": "name",
+              "name": "name",
+              "type": {
+                "text": "\"close\" | \"menu\" | undefined"
+              }
+            },
+            {
+              "default": "undefined",
+              "description": "The accessible name of a standalone meaningful icon, trimmed; empty or whitespace-only counts as none, and\nwithout one the icon is hidden from the accessibility tree. Not reflected.",
+              "fieldName": "label",
+              "name": "label",
+              "type": {
+                "text": "string | undefined"
+              }
+            }
+          ],
+          "cssParts": [],
+          "cssProperties": [],
+          "customElement": true,
+          "description": "An icon of the set, inline SVG in `currentColor` at the `--ocelle-icon-size` token, decorative unless labelled.",
+          "events": [],
+          "kind": "class",
+          "members": [
+            {
+              "attribute": "name",
+              "default": "undefined",
+              "description": "The icon's name, one of the set; any other value draws nothing and keeps the box. Reflected.",
+              "kind": "field",
+              "name": "name",
+              "privacy": "public",
+              "reflects": true,
+              "type": {
+                "text": "\"close\" | \"menu\" | undefined"
+              }
+            },
+            {
+              "attribute": "label",
+              "default": "undefined",
+              "description": "The accessible name of a standalone meaningful icon, trimmed; empty or whitespace-only counts as none, and\nwithout one the icon is hidden from the accessibility tree. Not reflected.",
+              "kind": "field",
+              "name": "label",
+              "privacy": "public",
+              "type": {
+                "text": "string | undefined"
+              }
+            }
+          ],
+          "name": "OcelleIcon",
+          "slots": [],
+          "superclass": {
+            "name": "LitElement",
+            "package": "lit"
+          },
+          "tagName": "ocelle-icon"
+        }
+      ],
+      "exports": [
+        {
+          "declaration": {
+            "module": "./icons.ts",
+            "name": "IconName"
+          },
+          "kind": "js",
+          "name": "IconName"
+        },
+        {
+          "declaration": {
+            "module": "src/ocelle-icon.ts",
+            "name": "OcelleIcon"
+          },
+          "kind": "js",
+          "name": "OcelleIcon"
+        }
+      ],
+      "kind": "javascript-module",
+      "path": "src/ocelle-icon.ts"
+    },
+    {
+      "declarations": [
+        {
+          "attributes": [
+            {
+              "name": "tone"
+            }
+          ],
+          "cssParts": [],
+          "cssProperties": [],
+          "customElement": true,
+          "description": "A plant element with one public member that has no description (005 FR-009).",
+          "events": [],
+          "kind": "class",
+          "members": [],
+          "name": "OcellePlant",
+          "slots": [],
+          "superclass": {
+            "name": "LitElement",
+            "package": "lit"
+          },
+          "tagName": "ocelle-plant"
+        }
+      ],
+      "exports": [
+        {
+          "declaration": {
+            "module": "src/ocelle-plant.ts",
+            "name": "OcellePlant"
+          },
+          "kind": "js",
+          "name": "OcellePlant"
+        }
+      ],
+      "kind": "javascript-module",
+      "path": "src/ocelle-plant.ts"
+    }
+  ],
+  "readme": "",
+  "schemaVersion": "1.0.0"
+}

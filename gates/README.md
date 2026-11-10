@@ -34,6 +34,7 @@ and changes nothing else. The registry of gates is `gates/gates.json`; the FR-02
 | `signoff` | Sign-off | `pnpm run gate:signoff -- --range <base>..<head>` | the commits of the pull request (FR-023) | no trailer, a mismatched trailer; pass: an agent signing off itself, an unsigned merge; breaking: an empty range |
 | `contrast` | Contrast | `pnpm run gate:contrast` | since 002: every pair of `packages/tokens/contrast/pairs.json` in both themes (WCAG 2.x, from the token values the root's generator resolves): its recorded figure at the figure's precision, its threshold (text 4.5:1, non-text 3:1, unrounded; disabled ink exempt), and the required pairs derived from the intended grounds of `packages/tokens/src/source.ts` (002 FR-016, FR-017, FR-021); `--print` lists the required pairs with their ratios | `text-below-threshold`, `non-text-below-threshold`, `figure-mismatch`, `unknown-token`, `missing-required-pair`, `excluded-without-reason`, `required-pair-excluded`, `not-opaque`; pass: `repository-values`, `exempt-disabled-ink`; breaking: `empty-list`, `unparsable-list`, `source-throws`, `exempt-not-disabled-ink` |
 | `brand-rules` | Brand rules | `pnpm run gate:brand-rules` | since 002: rules (a) to (g) of 002 FR-019 on the token source, the stylesheet the root's generator makes from it and the excluded ochre pair of the pair list: no monospace font token, `color-link` apart from `color-accent` and at 4.5:1 on canvas and sheet, the closed radius set, decorative rules below 3:1, dark chrome, reduced motion at 0ms, nothing that defeats forced colours | `a-monospace`, `b-link-equals-accent`, `b-ochre-pair-not-excluded`, `c-extra-radius`, `c-wrong-value`, `d-rule-as-boundary`, `e-light-chrome`, `f-motion-not-zero`, `g-forced-colours-override`; pass: `repository-values`, `g-system-colour-mapping`; breaking: `source-throws`, `generator-throws`, `source-invalid` |
+| `manifest` | Custom-elements manifest | `pnpm run gate:manifest` | since 005 (FR-009): the committed `packages/elements/custom-elements.json` against the manifest `packages/elements/scripts/manifest.ts` generates from `packages/elements/src/ocelle-*.ts` (the analyzer `@custom-elements-manifest/analyzer` 0.11.0 in process, then normalised), key order aside: a `stale` finding per differing element member (`<element>.<kind>.<name>`), per element in one manifest only, or one for the whole file; a `no-description` finding at the element's module per public property, attribute, event, slot, CSS part or CSS custom property without a description; exit 2 when the manifest is missing or not JSON, or no element module can be analysed | `fail-stale-property`, `fail-lost-attribute`, `fail-undescribed-property`, `fail-undescribed-attribute`, `fail-undescribed-event`, `fail-undescribed-slot`, `fail-undescribed-css-part`, `fail-undescribed-css-property`; pass: `pass-repository`, `pass-reordered`; breaking: `break-not-json`, `break-missing` |
 | `plants` | Plants | `pnpm run gate:plants` | `gates/plants/` only, and the registry check | registry plants in `gates/plants/plants/`: a gate without an entry, a gate without a CI job; pass: a matching pair |
 
 The plant job (`gates/bin/plants.ts`) first checks that `gates/gates.json`, the gate jobs of
@@ -54,7 +55,9 @@ sets fields of, removes or appends pair-list entries by key `(theme, fg, bg)`; `
 list with one fixed text, for a breaking plant whose input is a list that cannot be checked: `"empty"` writes the text
 `"[]\n"`, `"not-json"` the fixed text `"[\n  {\"theme\":\"light\",\n"` (both as JSON strings; the second does not
 parse as JSON); any other value, a delta with both `pairs` and `pairsList`, and any part not named here are errors, so no plant
-carries a copy of the list or other free text (operator decision R1-01 (c)); `generator: "wrapped"`
+carries a copy of the list or other free text (operator decision R1-01 (c)); since 005, `manifest: "absent"` (its one
+value) removes the committed `packages/elements/custom-elements.json`, which the configuration set holds, for the
+manifest gate's breaking plant `break-missing` (a tree then must not hold the manifest); `generator: "wrapped"`
 moves the real `generate.ts` to `generate.real.ts` before the plant's `tree/` places a `generate.ts` that must
 `export * from "./generate.real.ts"` and may shadow one function. A plant's `tree/` must not hold `source.ts` or
 `pairs.json`, holds `generate.ts` only with `generator: "wrapped"`, and holds `overrides.ts` only without `tokens`;
@@ -112,7 +115,7 @@ exceptions the operator took (002 plan.md, Complexity Tracking; reviewed when #1
 ## Required checks on `main`
 
 The workflow that runs on a pull request is the pull request's own `ci.yml`, so only a list kept outside the branch
-makes a gate block the merge. The ruleset (or branch protection) on `main` requires exactly these fourteen checks:
+makes a gate block the merge. The ruleset (or branch protection) on `main` requires exactly these fifteen checks:
 
 1. Typecheck
 2. Code lint
@@ -127,7 +130,8 @@ makes a gate block the merge. The ruleset (or branch protection) on `main` requi
 11. Sign-off
 12. Contrast
 13. Brand rules
-14. Plants
+14. Custom-elements manifest
+15. Plants
 
 A change to this set is a change to the ruleset, which the operator makes. The jobs `mutation-plan` and
 `mutation-shard` serve the Mutation testing check and are not required themselves. `mutation-plan` splits the changed
@@ -154,5 +158,4 @@ These gates of the constitution are not delivered by this feature; each is deliv
 | Storybook build | #10 |
 | Visual regression | #10 |
 | Accessibility (axe) | #10 |
-| Custom-elements manifest check | the first element feature (#7) or #10, whichever lands first; the manifest it introduces is a committed file at `packages/elements/custom-elements.json` (constitution I public surface), kept current by the element features, and style-lint reads its `cssProperties` names: an element's CSS can use a new element property only once the manifest declares it (002 PLAN-FRESH-2-004) |
 | Remote loads in built output (constitution IV, beyond FR-021) | the first element feature |

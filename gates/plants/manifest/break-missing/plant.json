@@ -1,0 +1,5 @@
+{
+  "expect": "error",
+  "why": "No committed manifest (delta.json manifest \"absent\" removes it from the configuration set): the gate cannot compare (exit 2).",
+  "cause": "manifest: could not run: packages/elements/custom-elements.json is missing"
+}

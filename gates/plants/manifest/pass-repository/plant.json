@@ -1,0 +1,4 @@
+{
+  "expect": "pass",
+  "why": "The configuration set alone, which holds the element source, the generator and the committed manifest (005 research.md R-06, R-12): the committed manifest matches a regeneration and every member is described."
+}
