@@ -1,0 +1,84 @@
+schema: review-findings/v1
+complete: true
+phase: plan
+round: 3
+lens: fresh
+# Round 3 attacks the round-2 fixes (row padding, `hidden`, `max-content`, tokens peer, engine floor) and what they
+# rest on. Probes: Chromium 1243 through the pinned Playwright 1.64.1; scratchpad scripts only, nothing committed. Each
+# probe rebuilt the planned CSS from research.md and data-model.md by hand on plain custom elements (adopted sheets, no
+# Lit), which cascades the same way Lit's `static styles` does. Lint probes import `rawValues` from
+# gates/stylelint/token-only.ts as it is today. Engine data: @mdn/browser-compat-data 8.1.8 (forced-colors: Chrome 89,
+# Safari 16; `lh`: Chrome 109, Safari 16.4; ElementInternals role: Chrome 103, Safari 16.4), so the stated floor
+# (Chromium 120, WebKit 16.4) holds and is not a finding. Checked and not findings: Vite 8.3.5 keeps
+# `rollupOptions.output.banner` / `rolldownOptions.output.banner` at the top of a minified ES library build (probe
+# vb-build.mjs). The production files of lit 3.3.3, lit-html 3.3.3, lit-element 4.2.2 and @lit/reactive-element 2.1.2
+# contain no `console.` (npm pack, grep), so the build test's rule can pass. Storybook already depends on
+# @ocelle/tokens, so the new peer dependency is satisfied there.
+findings:
+  - id: PLAN-FRESH-3-001
+    severity: 2
+    title: "A page rule that sets `--ocelle-icon-size` on the slotted icon itself resizes it past the row's block padding, so the round-2 containment fix fails, and FR-022 / SC-002's 'whatever normal host rule' does not hold"
+    evidence:
+      - artifact: "research.md § R-10: \"`::slotted(*) { inline-size: var(--ocelle-icon-size) !important; block-size: var(--ocelle-icon-size) !important; … }`\" and \"`.icon-row { padding-block: calc((var(--ocelle-icon-size) - 1lh) / 2); }`\". The two `var()` resolve on different elements: the first on the slotted light-DOM element, the second on the row in the shadow root."
+      - artifact: "spec.md FR-022: \"whatever size a normal (not `!important`) host rule sets on a slotted `ocelle-icon` or `svg`: the box is always `--ocelle-icon-size` square. A slotted icon is resized only by overriding `--ocelle-icon-size` on the control or an ancestor\". SC-002: \"a slotted icon keeps the icon size whatever normal host rule or size attribute applies\". US1-11 and the Edge Cases (\"Compact root\") tell hosts to override the token to resize icons. US3-9 tests only `inline-size` host rules and the token set on the test host, never on the slotted element."
+      - code: "probe slotvar.mjs (R-10's row as a shadow `<button>` with a 1 px border, wrapper and `::slotted` rules, md / 1.45 type, a 20 px token on :root): page rule `.big { --ocelle-icon-size: 2rem }` on the slotted element gives a 32 x 32 box for a slotted custom element and for a bare `<svg>`. The row's padding stays 0 px, the button spans 73.56 to 98.75 and the icon 70.16 to 102.16, so the icon is outside the border box by 3.4 px at both edges. `.small { --ocelle-icon-size: 1rem }` gives 16 x 16 px. With the token on the test host instead (probe slotvar2.mjs), padding is 4.41 px and the icon is inside."
+      - code: "probe slotvar.mjs, with `--ocelle-icon-size: inherit !important` added to the `::slotted(*)` rule: the slotted element and the slotted svg are 20 x 20 px and inside the border box under `.big` and `.small`. slotvar2.mjs: with the token set to 2rem on the host they are still 32 x 32 px, inside, with padding 4.41 px. So the documented resize path keeps working. gates/stylelint/token-only.ts `rawValues(\"--ocelle-icon-size\", \"inherit\")` returns [] (passes the lint)."
+    claim: |
+      A slotted element inherits from its slot in the flat tree, but a page rule that sets a custom property on the
+      element itself overrides the inherited value. So `.toolbar ocelle-icon { --ocelle-icon-size: 1rem }` or a class on
+      a slotted `<svg>`, which is how a host that reads the README resizes standalone icons in a subtree, also resizes
+      icons inside controls. Meanwhile the row computes its padding from the control's own value. A larger value puts
+      the icon outside the control's box, the state round 2 decision PLAN-FRESH-2-002 (a) exists to prevent: the icon
+      overlaps neighbouring rows and is clipped by an `overflow: hidden` control. A smaller value breaks FR-022 /
+      SC-002's promise that only the control or an ancestor resizes a slotted icon. Nothing in US3 sets the token on
+      the slotted element, so every planned assertion passes in this state, and #7 and #12 would inherit the gap.
+    remedies:
+      - "(a) Pin the value in the convention: `iconSlotStyles`' `::slotted(*)` rule also sets `--ocelle-icon-size: inherit !important` (an inner-context important declaration, so no outer rule beats it). The slotted icon then always takes the control's value, the one the row's padding uses. Record the measurement in R-10, data-model.md § Slot convention and the contract. Add to US3-9 a case with the page rule `ocelle-icon { --ocelle-icon-size: 2rem }` and a slotted `<svg class=\"big\">` with `.big { --ocelle-icon-size: 2rem }`: both slotted boxes are 20 x 20 px and inside the inner button's border box, while the standalone icon on the same page is 32 x 32 px. The plant is the pin removed. The README states that a token set on a slotted icon has no effect."
+      - "(b) Narrow the promise: FR-022, SC-002, the Edge Cases and the README say that setting `--ocelle-icon-size` on a slotted element itself is unsupported and lets the icon leave the control's box, and the rule is only documented. This leaves the overflow possible for every later control."
+
+  - id: PLAN-FRESH-3-002
+    severity: 2
+    title: "The exact-value allowances leak through calc(): `scale: calc(2)` and `aspect-ratio: calc(2)` pass the lint today, and with `1lh` admitted inside calc() so will `block-size: calc(1lh * 2)`, against R-03's 'does not admit other multiples' and 'any other value stays a finding'"
+    evidence:
+      - artifact: "research.md § R-03: \"exact values, not open classes, so no raw size factor gets through (constitution II)\". On `lh`, \"`fail-lh-multiple-calc` (`padding-block: calc(var(--ocelle-icon-size) - 2lh)`, so admitting `lh` inside `calc()` does not admit other multiples)\". On all three, \"Any other value of these properties stays a finding\". Its Alternatives already name `scale: calc(-1) 1` as passing \"by an accident of the `calc()` rule\", but the decision leaves that hole open."
+      - code: "gates/stylelint/token-only.ts:56-66 (`wordAllowed`): inside calc() any unitless number is allowed (`inCalc` returns true). :70-78 (`functionRaw`): calc() operands are classified with `inCalc` true, and no rule requires a token operand."
+      - code: "probe lint.ts (today's `rawValues`): `scale: 2` gives [\"2\"], but `scale: calc(2)` gives [] and `scale: calc(3) calc(3)` gives []. `aspect-ratio: 2` gives [\"2\"], but `aspect-ratio: calc(2)` gives []. The planned `1lh` operand admission plus the same rule lets `calc(1lh * 2)` through, which `fail-lh-multiple` (`2lh`) and `fail-lh-multiple-calc` (`- 2lh`) do not exercise."
+      - code: "gates/plants/style-lint/fail-styles-calc-line-height (`line-height: calc(1.65)`): 003 found the same calc() escape for line heights and closed it there only. The 005 allowances repeat it for `scale`, `aspect-ratio` and `lh`."
+    claim: |
+      The operator chose option (a) of PLAN-TESTABILITY-1-011 so that `scale` cannot carry a size factor. The plan applies the
+      same exact-value reasoning to `aspect-ratio: 1` and `1lh`. Each is defeated by wrapping the forbidden value in
+      calc(), which is as short as the allowed spelling. The planned plants test only the bare spellings, so the
+      gate would pass a later element that writes `scale: calc(1.5)` or `block-size: calc(1lh * 3)`, and the plan's
+      record says this cannot happen. The repository has met and fixed this escape once already (003's line-height
+      plant), so it is a known pattern, not a hypothetical.
+    remedies:
+      - "(a) Close it in the planned `token-only` change, tests and plants first: for `scale` and `aspect-ratio` the exact-value check applies to the whole value, so any function there is raw. `1lh` inside calc() is admitted only as an operand of `+` or `-` in a calc() that also references an `--ocelle-*` token, so R-10's `calc((var(--ocelle-icon-size) - 1lh) / 2)` passes and `calc(1lh * 2)` does not. Add fail plants `fail-scale-calc` (`scale: calc(2)`), `fail-aspect-calc` (`aspect-ratio: calc(2)`) and `fail-lh-calc-factor` (`block-size: calc(1lh * 2)`), and correct R-03's sentences."
+      - "(b) Keep the lint as planned and record the limit: R-03 says that calc() admits any unitless factor, so the three allowances are exact only outside calc(). Remove \"does not admit other multiples\" and \"any other value stays a finding\", and leave the calc() spellings to review."
+
+  - id: PLAN-FRESH-3-003
+    severity: 1
+    title: "A mark given a percentage height in a container of indefinite height (a `min-block-size` top bar) is drawn 300 x 300 px, while an icon in the same place stays 20 x 20; nothing documents or tests it"
+    evidence:
+      - artifact: "research.md § R-09 Sizing and data-model.md § `ocelle-brand-mark` Box: `block-size: var(--ocelle-icon-size); inline-size: max-content; aspect-ratio: 1`, svg `inline-size: 100%; block-size: 100%`. spec.md FR-024: \"scaling to any size the host sets\". US4-7: \"the host can set any other size on the element, and the drawing scales with it\". It measures only px sizes and no size at all."
+      - code: "probe mark.mjs (300 px svg default, viewBox 4 4 92 92): a host rule `block-size: 100%` on the mark in `display:flex; align-items:center; min-block-size:48px` gives 300 x 300 px with `inline-size: max-content` and also with round 1's `auto`. In a paragraph it is also 300 x 300. In a bar with `block-size: 48px` it is 48 x 48. The percentage resolves to `auto`, so the width comes from the svg's default size. For the icon the same host rule leaves it 20 x 20, because R-04 fixes its `inline-size`."
+      - code: "probe mark2.mjs: no keyword alternative falls back to the token. `inline-size: min-content` and an absolutely positioned svg both keep US4-7's cases (20 x 20, column 20 x 20, block 32 gives 32 x 32, inline 32 gives 32 x 20), but give 0 x 0 px in the indefinite-percentage bar."
+    claim: |
+      A top bar with only a minimum height is the usual way to build one, and `block-size: 100%` is the obvious way for
+      a host to make the mark fill it. In that case the mark becomes a 300 px drawing that blows up the bar, while
+      every planned US4-7 case passes. Because CSS has no clean fix, the behaviour should at least be documented and
+      the working path pinned, so #12 and Kitty Desktop do not find it in production.
+    remedies:
+      - "State in FR-024, R-09 and the README that a host sizing the mark by percentage needs a container of definite height, and that otherwise the mark falls back to the SVG default size (300 px). Add a US4-7 case: in a 48 px `block-size` flex bar, a mark with `block-size: 100%` is 48 x 48 px."
+
+  - id: PLAN-FRESH-3-004
+    severity: 1
+    title: "The round-2 engine-floor convention tells later elements to update 'R-05's list', a section of this feature's research.md that later missions do not own"
+    evidence:
+      - artifact: "research.md § R-05 Engine floor: \"its conventions say that an element using a newer feature raises the floor in the README and in this list (R-15)\". § R-15: \"an element that uses a feature newer than the stated floor raises the floor in the README's engines section and in R-05's list\". spec.md FR-008 names only the README."
+    claim: |
+      The README convention is copied by every later element mission (FR-008), and it points them at
+      specs/005-icons-brand-mark/research.md, a closed feature's decision record. A later mission either edits another
+      feature's history or skips half the rule. The spec asks only for the README, so the extra place adds a second
+      list that will drift from it.
+    remedies:
+      - "Make the README's engines section the one list: drop \"and in this list\" from R-05 and \"and in R-05's list\" from R-15, and have a later feature record its new floor feature in its own research."
