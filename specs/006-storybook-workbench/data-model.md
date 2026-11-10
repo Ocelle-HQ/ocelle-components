@@ -94,7 +94,8 @@ repository-relative file path, or `storybook/a11y-exceptions.json#<index>`.
 ## Pointer state (story parameter)
 
 `parameters.ocelle.pointer`: `{ "hover": "<selector>" }` or `{ "press": "<selector>" }`, exactly one key, the selector
-matching exactly one element of the story area. Applied after `STORY_RENDERED`, before fonts settle, by the capture and
+matching exactly one element of the story area (the whole document minus Storybook's harness nodes, research.md R-08
+Terms; not only the story root). Applied after `STORY_RENDERED`, before fonts settle, by the capture and
 the axe gate; anything else is `pointer-target`.
 
 ## Plant keys (new)

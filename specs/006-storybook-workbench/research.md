@@ -143,12 +143,12 @@ a story with an overflowing child and a top-layer popover passes, and fails when
 
 ## R-05 Fonts and closed shadow roots (FR-027)
 
-**Decision.** After readiness, the capture collects, for every text node in the document's story area (every node
-that is not one of Storybook's harness nodes, R-08), open shadow roots included, the platform fonts the DevTools
-protocol (`CSS.getPlatformFontsForNode`) reports for it. Every family must be `Schibsted Grotesk` exactly (the face
-`@ocelle/tokens` vendors as `SchibstedGrotesk-wght.woff2` and declares as `font-family: "Schibsted Grotesk"`); any
-other family, including a per-glyph fallback, gives one `font` finding per story-theme naming the families found, and
-no capture of that story-theme is compared or written.
+**Decision.** After readiness, the capture collects, for every text node in the document's story area (the whole
+document minus Storybook's harness nodes, R-08 Terms; not only the story root), open shadow roots included, the platform
+fonts the DevTools protocol (`CSS.getPlatformFontsForNode`) reports for it. Every family must be `Schibsted Grotesk`
+exactly (the face `@ocelle/tokens` vendors as `SchibstedGrotesk-wght.woff2` and declares as `font-family: "Schibsted
+Grotesk"`); any other family, including a per-glyph fallback, gives one `font` finding per story-theme naming the
+families found, and no capture of that story-theme is compared or written.
 
 **Faces not loaded (PLAN-CORRECTNESS-1-005).** `document.fonts` holds every face the page declares, and a declared
 face no text uses stays `unloaded` after `document.fonts.ready` (measured: Storybook's preview head declares four
@@ -278,30 +278,36 @@ pull, and the `Plants` job first removes the runner's unused preinstalled toolse
   `render-timeout`), and the story's pointer state applied before axe runs (R-15).
 - **Context (operator decision on PLAN-A11Y-SECURITY-1-003, option (a)).** axe runs on the **whole document**, with an
   `exclude` list of Storybook's own harness nodes (the error display, the "preparing" and "no preview" placeholders,
-  `#storybook-docs`; the phase 1 spike records the exact list from Storybook 10.6.5's preview), so any node a story
-  adds anywhere is audited. After readiness, every element child of `<body>` that is neither `#storybook-root`, nor a
-  harness node, nor a non-rendered element (`script`, `style`, `link`, `template`, `noscript`) is a finding
-  `outside-root` (one per element, naming its tag), so a story that renders a surface outside its root (a portal to
-  `document.body`) fails even though axe audits it. Top-layer elements inside the root (`<dialog>`, `popover`) are
-  inside the root. The decision is a pure function over the collected list of body children. The contributor note
-  says elements render every surface inside their own host (FR-025).
+  `#storybook-docs`; the phase 1 spike records the exact list from Storybook 10.6.5's preview), so any node a story adds
+  anywhere is audited. **Terms (PLAN-A11Y-SECURITY-1-003).** The *story area* is the whole document minus those harness
+  nodes (open shadow roots included); it is what axe audits, what the font walk (R-05) collects, where the
+  closed-shadow-root recorder (R-05) counts calls and where a pointer selector (R-15) resolves, so a surface appended to
+  `<body>` is inside the story area. The *story root* is `#storybook-root` and its descendants (open shadow roots
+  included); only the empty check below and the `outside-root` check use it. After readiness, every element child of
+  `<body>` that is neither `#storybook-root`, nor a harness node, nor a non-rendered element (`script`, `style`, `link`,
+  `template`, `noscript`) is a finding `outside-root` (one per element, naming its tag), so a story that renders a
+  surface outside its root (a portal to `document.body`) fails even though axe audits it. Top-layer elements inside the
+  root (`<dialog>`, `popover`) are inside the root. The decision is a pure function over the collected list of body
+  children. The contributor note says elements render every surface inside their own host (FR-025).
 - **Rules (FR-016; operator decision on PLAN-CORRECTNESS-1-010, option (a)).** `axe.getRules()` lists every rule; the
   run enables every rule axe enables by default and every rule tagged `wcag2a`, `wcag2aa`, `wcag21a`, `wcag21aa` or
   `wcag22aa`, and disables every rule tagged `experimental`, except the **harness-document rules**, which judge the
   preview document Storybook supplies rather than the story, and are not run: for axe-core 4.14.0 `bypass`,
   `document-title`, `html-has-lang`, `html-lang-valid`, `html-xml-lang-mismatch`, `landmark-one-main`,
   `page-has-heading-one` (rules whose selector is the document element, `html…:not(html *)`) and `region` (all page
-  content inside landmarks; a component story is not a page). The other rules whose selector is the document element
-  (`css-orientation-lock`, `frame-focusable-content`, `frame-tested`) judge content a story brings and stay. The spec
-  names this list in FR-016 (spec delta of this round).
-- **Rule tests (PLAN-TESTABILITY-1-012).** The selection is a pure function over rule metadata (`id`, `tags`,
-  `enabled`, `selector`), tested on fixture metadata: a default-enabled best-practice rule kept; a rule not enabled by
-  default and tagged `wcag22aa` enabled; a rule not enabled by default with none of the listed tags left off; a rule
-  tagged both `experimental` and `wcag2a` disabled; a harness-document rule left off. A second test reads axe-core
-  4.14.0's own rule metadata from `node_modules/axe-core` (not the module's output) and derives from it, independently,
-  the expected enabled list and the list of rules whose selector is the document element; it asserts the module's
-  enabled list equals the derived one, and that every document-element rule is either a harness-document rule or in the
-  named list of rules that stay, so an axe upgrade that adds a rule of either kind fails the test until it is sorted.
+  content inside landmarks; a component story is not a page). Of the other rules whose selector is the document
+  element, `css-orientation-lock` is tagged `experimental` in axe-core 4.14.0 and so is left off by the experimental
+  rule above (PLAN-CORRECTNESS-1-010, verify 1), not kept; `frame-focusable-content` and `frame-tested` judge content
+  a story brings and stay. The spec names this list in FR-016 (spec delta of this round).
+- **Rule tests (PLAN-TESTABILITY-1-012).** The selection is a pure function over rule metadata (`id`, `tags`, `enabled`,
+  `selector`), tested on fixture metadata: a default-enabled best-practice rule kept; a rule not enabled by default and
+  tagged `wcag22aa` enabled; a rule not enabled by default with none of the listed tags left off; a rule tagged both
+  `experimental` and `wcag2a` disabled; a harness-document rule left off. A second test reads axe-core 4.14.0's own rule
+  metadata from `node_modules/axe-core` (not the module's output) and derives from it, independently, the expected
+  enabled list and the list of rules whose selector is the document element; it asserts the module's enabled list equals
+  the derived one, and that every document-element rule is either a harness-document rule, tagged `experimental` (for
+  4.14.0 `css-orientation-lock`), or in the named list of rules that stay (`frame-focusable-content`, `frame-tested`),
+  so an axe upgrade that adds a rule of either kind fails the test until it is sorted.
 - **Output (SPEC-2-02)**: findings on stdout in the gate format, one per node:
   `<story-id>/<theme>: axe: <rule>: <impact>: <selector>`; the stdout summary is one line on exit 0 and exit 1, as
   every gate. Notes go to **stderr**, one per node, `note: <story-id>/<theme>: <rule-id>: <impact>: <selector>`, so
@@ -329,11 +335,11 @@ pull, and the `Plants` job first removes the runner's unused preinstalled toolse
   the Complexity Tracking section). Plants: an honoured exception and an honoured incomplete exception (pass), a stale
   exception, an unrecorded exception and an excepted story with a second node of the same rule (fail), a malformed
   file (breaking).
-- **Empty story (FR-014)**: no element of the story area (`#storybook-root` and its descendants, open shadow roots
-  included) other than the root itself has a client rect of non-zero width and height, and no non-whitespace text node
-  exists there → finding `empty`, and axe is not run. The page collects the boxes and texts; the decision is a pure
-  function in `gates/lib/story-checks.ts` with unit cases for whitespace-only text, a zero-width but tall box, a
-  zero-height but wide box, text only inside an open shadow root, and an empty root.
+- **Empty story (FR-014)**: no element of the story root (`#storybook-root` and its descendants, open shadow roots
+  included; not the story area) other than the root itself has a client rect of non-zero width and height, and no
+  non-whitespace text node exists there → finding `empty`, and axe is not run. The page collects the boxes and texts;
+  the decision is a pure function in `gates/lib/story-checks.ts` with unit cases for whitespace-only text, a zero-width
+  but tall box, a zero-height but wide box, text only inside an open shadow root, and an empty root.
 - **Closed shadow roots**: `closed-shadow-root` as in R-05; axe is not run on that story-theme, since it cannot see
   inside.
 - **Render failure**: as in R-04's readiness (`render-failed` or `render-timeout`); the gate runs no axe on it.
