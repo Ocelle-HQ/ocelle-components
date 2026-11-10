@@ -7,7 +7,9 @@ in_scope: [23]
 out_of_scope: [1, 5, 6, 10, 11, 17, 20]
 semver: none
 spec_prompt: "Mission for #23 (triage/007-mutation-gate-strictness.md): the mutation gate stops hiding mutants that did not decide on changed lines (Timeout and CompileError reported by location and mutator, and a changed file Stryker read but yields zero mutants reported, with the fail-or-report policy for each settled as an amendment to 001 FR-011 at clarify), the dense token records of packages/tokens/src/source.ts are killed within Stryker's limit so a whole-file run in 60-line entries has zero Timeouts and every entry fits the 10-minute CI shard limit with CI-measured margin (amending 001 FR-013's bound only if that lever alone does not), gate plants updated for every changed verdict; no follow-up issues: anything not done is listed as dropped for the operator."
-status: proposed
+status: approved
+decided_by: "human:jeroennouwsdev"
+decided_at: 2026-11-10T09:58:03Z
 ---
 
 # Triage 007: Mutation gate hides Timeout and CompileError, and source.ts entries risk the CI shard limit (#23)
