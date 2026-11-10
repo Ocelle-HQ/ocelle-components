@@ -4,8 +4,17 @@ Every plant is a `repo-tree` plant under `gates/plants/<gate-id>/<name>/` (`plan
 `specs/001-repository-foundation/contracts/plants.md`. Expected findings are exact. A plant root holds the extended
 configuration set, the Storybook workspace included, and the `storybook/node_modules` link (research.md R-16). Story
 files in a plant's `tree/` replace or add to `storybook/stories/`; a plant that needs fewer stories replaces the story
-files it keeps and removes none of the configuration set. Where a plant's exact findings depend on the existing stories
-(`fail-token-changed`), the phase 1 spike lists them.
+files it keeps and removes none of the configuration set, so every plant root holds every repository story (operator
+decision on PLAN-FRESH-2-007, option (b); its cost and sunset: research.md R-07, plan Complexity Tracking). Where a
+plant's exact findings depend on the existing stories (`fail-token-changed`), the phase 1 spike lists them, and a pull
+request that adds a story changing them updates the list in the same change.
+
+No plant `tree/` holds a copy of a repository baseline: a plant edits or removes one by its `delta.json` `baselines`
+key, applied to the current file (research.md R-11). Pass plants with stories of their own hold those stories'
+baselines, produced by `pnpm run visual:update -- --plant visual/<name>` (contracts/gates.md); fail plants that
+compare against them name the pass plant in `baselinesOf`. A plant root's `storybook/a11y-exceptions.json` is `[]`
+unless its `tree/` supplies one; every `axe` plant sets `delta.json` `exceptions: "repository"`, which appends the
+repository's entries and copies the plan files they name (research.md R-16).
 
 ## `storybook-build`
 
@@ -25,27 +34,31 @@ files it keeps and removes none of the configuration set. Where a plant's exact 
 | Plant | Expect | Findings or cause |
 |---|---|---|
 | `fail-token-changed` | fail | a `delta.json` token change of `color-ink` (light): `differs` on every story-theme that shows it (listed exactly by the phase 1 spike) |
-| `fail-one-pixel` | fail | one baseline of one story-theme with one pixel changed (a valid normalised PNG): exactly one `differs` at that story-theme (SC-006) |
-| `fail-missing-baseline` | fail | one baseline removed: `missing-baseline` |
+| `fail-one-pixel` | fail | `delta.json` `baselines: [{ "file": "tokens--colour.light.png", "edit": "one-pixel" }]`, applied to the current repository baseline: exactly one `differs` at `tokens--colour/light` (SC-006) |
+| `fail-missing-baseline` | fail | `delta.json` `baselines: [{ "file": "tokens--colour.light.png", "edit": "remove" }]`: `missing-baseline` at `tokens--colour/light` |
 | `fail-stray-baseline` | fail | `storybook/baselines/gone--story.light.png`: `stray-baseline` |
-| `fail-same-pixels-other-bytes` | fail | one baseline re-encoded at another deflate level: `differs` |
-| `fail-below-fold` | fail | a story whose root is 2000 px tall, with its baselines; the tree changes only an element below y = 800: `differs` on both themes (FR-012) |
-| `fail-overflow-changed` | fail | the story of `pass-overflow-and-popover` with its baselines; the tree changes only the overflowing child: `differs` on both themes (FR-012) |
+| `fail-same-pixels-other-bytes` | fail | `delta.json` `baselines: [{ "file": "tokens--colour.dark.png", "edit": "reencode" }]` (same pixels, deflate level 1): exactly one `differs` at `tokens--colour/dark` |
+| `fail-below-fold` | fail | `baselinesOf: "pass-below-fold"`; the tree changes only an element below y = 800 of that story: `differs` on both themes (FR-012) |
+| `fail-overflow-changed` | fail | `baselinesOf: "pass-overflow-and-popover"`; the tree changes only the overflowing child of that story: `differs` on both themes (FR-012) |
 | `fail-random` | fail | a story with `Math.random()` in its markup: `nondeterministic` on both themes |
 | `fail-other-font` | fail | a story whose text uses `font-family: serif`: `font` on both themes |
-| `fail-font-not-loaded` | fail | a story whose text uses an `@font-face` whose source is a path not in `dist`, so the face ends in `error`: `font` on both themes |
+| `fail-font-not-loaded` | fail | a story whose text uses an `@font-face` whose source is a file in `dist` holding bytes that are not font data, so the face ends in `error` with no `io`: `font` on both themes |
+| `fail-font-file-missing` | fail | a story whose text uses an `@font-face` whose source is a path not in `dist` (both `io` and `font` hold): `font` on both themes, the winner by data-model.md's order (research.md R-05) |
 | `fail-network` | fail | a story with an `<img>` from `https://example.com/`: `network` on both themes |
 | `fail-same-origin-fetch` | fail | a story that calls `fetch("/api/items")`: `io` on both themes |
 | `fail-local-storage` | fail | a story that calls `localStorage.setItem`: `io` on both themes |
 | `fail-closed-shadow-root` | fail | a story whose element attaches a closed shadow root: `closed-shadow-root` on both themes |
 | `fail-throws-on-load` | fail | a story module that throws when loaded: `render-failed` on both themes |
 | `fail-render-throws` | fail | a story whose render function throws: `render-failed` on both themes |
-| `fail-hover-style-changed` | fail | the `pass-hover-and-press` stories with their baselines; the tree changes only the `:hover` rule: `differs` on both themes of the hovered story |
+| `fail-hover-style-changed` | fail | `baselinesOf: "pass-hover-and-press"`; the `pass-hover-and-press` stories, the tree changing only the `:hover` rule: `differs` on both themes of the hovered story |
 | `fail-pointer-target-missing` | fail | a story whose `pointer.hover` selector matches no element: `pointer-target` on both themes |
+| `fail-pointer-target-below-fold` | fail | a 2000 px tall story whose `pointer.hover` target lies at y = 1500: `pointer-target` (`target outside the viewport`) on both themes |
 | `pass-repository` | pass | the repository's stories and baselines (Storybook's own unused Nunito Sans faces declared, not findings) |
 | `pass-unused-face` | pass | a story that declares a second `@font-face` it does not use, with its baselines |
 | `pass-animation-and-caret` | pass | a story with a running CSS animation and a focused text field, with its baselines (control: research.md R-04) |
-| `pass-second-render` | pass | a story that shows a coloured block on any render after the first in a page, with baselines made by single-story-theme requests (research.md R-11) |
+| `pass-second-render` | pass | a story that shows a coloured block on any render after the first in a page, with baselines made by single-story-theme requests (`--plant visual/pass-second-render --story <id>`, research.md R-11) |
+| `pass-below-fold` | pass | a story whose root is 2000 px tall, with its baselines (the full-page height, FR-012) |
+| `pass-focus-below-fold` | pass | a 2000 px tall story that focuses a text field at y = 1500 and holds a `position: fixed; top: 0` element, with baselines showing that element at the top of the page (the scroll reset, research.md R-04) |
 | `pass-overflow-and-popover` | pass | a story with an absolutely positioned child overflowing its root and an open top-layer `popover`, with its baselines |
 | `pass-hover-and-press` | pass | two stories, one with `pointer.hover`, one with `pointer.press`, with their baselines |
 | `error-host` | error | `engine: "host"`; cause `not the pinned container` |
@@ -66,15 +79,18 @@ files it keeps and removes none of the configuration set. Where a plant's exact 
 | `fail-outside-root` | fail | a story that appends an unlabelled `<button>` to `document.body`: `outside-root` and `button-name` on both themes |
 | `fail-closed-shadow-root` | fail | a story whose element attaches a closed shadow root holding an unlabelled button: `closed-shadow-root` on both themes |
 | `fail-hover-reveals-unlabelled` | fail | a story with `pointer.hover` whose hover shows an unlabelled button: `button-name` on both themes |
+| `fail-pointer-target-below-fold` | fail | the story of the `visual` plant of that name: `pointer-target` (`target outside the viewport`) on both themes (axe not run) |
+| `fail-open-shadow-unlabelled` | fail | a custom element whose open shadow root holds an unlabelled `<button>`: `button-name` (critical) on both themes, selector `<host tag> >>> button` (research.md R-08) |
 | `fail-throws-on-load` | fail | `render-failed` on both themes |
 | `fail-render-throws` | fail | a story whose render function throws: `render-failed` on both themes |
 | `fail-stale-exception` | fail | `storybook/a11y-exceptions.json#0`: `stale-exception` (entry and plan row present, no matching node) |
 | `fail-unrecorded-exception` | fail | an entry whose `plan` file holds no matching Complexity Tracking row: `storybook/a11y-exceptions.json#0`: `unrecorded-exception`, and the node's own finding |
 | `fail-excepted-second-node` | fail | the `pass-excepted` story with a second node of the excepted rule: one finding for the second node only |
-| `pass-repository` | pass | the repository's stories (the harness-document rules not run) |
+| `pass-repository` | pass | the repository's stories, with the repository's exception entries and the plan files they name (`exceptions: "repository"`, as every axe plant); the harness-document rules not run |
 | `pass-minor-only` | pass | a story whose only violation is of minor or moderate impact |
 | `pass-excepted` | pass | a story with a serious violation, its exception entry (with `selector`) and a plan file in `tree/` whose Complexity Tracking holds the row |
 | `pass-excepted-incomplete` | pass | the `fail-incomplete` story with an exception entry for `color-contrast-incomplete` and its plan row |
+| `pass-excepted-shadow` | pass | the `fail-open-shadow-unlabelled` story with an exception entry per theme whose `selector` is `<host tag> >>> button`, and its plan rows |
 | `pass-second-render` | pass | a story whose button loses its label on any render after the first in a page |
 | `error-build-fails` | error | cause `the Storybook build failed` |
 | `error-bad-exceptions` | error | an exception entry without a `reason`; cause `a11y-exceptions.json` |
@@ -103,6 +119,15 @@ Added: `fail-skip-container-in-ci` (a `ci.yml` whose `plants` job passes `--skip
 - `plant.json` gains the optional key `unlinked`, a list whose only allowed value is `"storybook/node_modules"`, valid
   only for plants of `storybook-build`, `visual` and `axe`: the plant root then has no `storybook/node_modules` link
   (research.md R-16). Any other value or gate makes the plant invalid.
+- `plant.json` gains the optional key `baselinesOf`, the name of a `visual` pass plant holding baselines, valid only
+  for `visual` fail plants whose own `tree/` holds no file under `storybook/baselines/` (research.md R-16).
+- `delta.json` gains the optional keys `baselines` (a list of `{ "file", "edit" }`, edits `one-pixel`, `reencode`,
+  `remove`, applied to the current repository baseline; research.md R-11) and `exceptions` (only `"repository"`;
+  research.md R-16). An `axe` plant without `exceptions: "repository"` is invalid. `treeProblems` refuses a tree file
+  under `storybook/baselines/` whose name the repository's `storybook/baselines/` holds.
 - The plants of `storybook-build`, `visual` and `axe` run one at a time, after the other plants (research.md R-07).
+- When a `visual` pass plant fails with `differs` or `missing-baseline` on story-themes of its own stories, the runner
+  copies run 1's captures of those to `storybook/.visual/plants/gates/plants/visual/<name>/tree/storybook/baselines/`;
+  the `plants` job uploads `storybook/.visual/plants/` on failure (research.md R-11).
 - `--skip-container`, and the engine probe with `plants: not run (no container engine): <plant>` and exit 2
   (research.md R-07).

@@ -28,6 +28,11 @@ removed. Restoring the Storybook manager UI is a separate operator choice and no
 FR-029, added FR-030 (run-time I/O) and FR-031 (pointer states), and updated the acceptance scenarios, edge cases and
 assumptions that follow from them.
 
+**Plan squad round 2 (2026-11-10)**: the confirmed findings of the plan squad's round 2
+(`reviews/plan/round-2/refute.md`, fixes note `reviews/plan/round-2/fixes-1.md`) changed FR-006 (every capture is
+taken at scroll position 0, 0) and FR-031 (a pointer target must lie inside the initial viewport; operator decision
+on PLAN-FRESH-2-001, option (a)), and US2 scenarios 8 and 14 with them.
+
 **Operator decision SPEC-1-06 (2026-11-10)**: "Yes, amd64 everywhere". Every capture, on every host, runs the
 linux/amd64 pinned image, identified by that platform's image digest; on arm64 hosts (for example Apple Silicon) it
 runs under emulation and is slower, so a baseline produced on any machine is byte-identical to CI's. "Any machine"
@@ -137,7 +142,8 @@ renders makes it fail.
    layer ever compares or writes a capture made in an unpinned browser (FR-009).
 8. **Given** a story with motion, a caret, a scroll position or anything else that varies between renders, **When**
    it is captured twice, **Then** the two captures are byte-identical (the capture settles or fixes what varies,
-   for example by emulating reduced motion); a story whose pixels vary by an input the capture does not fix makes
+   for example by emulating reduced motion, and by taking every capture at scroll position 0, 0 even when the story
+   focuses or scrolls to an element below the fold); a story whose pixels vary by an input the capture does not fix makes
    the gate exit 1 (FR-026).
 9. **Given** a story whose rendered text uses any font face other than the vendored Schibsted Grotesk (a system
    font, a fallback in the token stack, a per-glyph fallback), or whose font has not loaded when the capture is
@@ -157,8 +163,9 @@ renders makes it fail.
     other than the Storybook's own, or reads or writes storage, writes the clipboard or sends a beacon, **When** the
     gate or the baseline command runs, **Then** it exits 1 naming the story, the theme and the call (FR-030).
 14. **Given** a story that declares a hover or press state on one of its elements, **When** the gate runs, **Then**
-    the capture shows that state; a declared state whose target matches no element, or more than one, makes the gate
-    exit 1 naming the story (FR-031).
+    the capture shows that state; a declared state whose target matches no element, or more than one, or whose
+    target does not lie wholly inside the initial 1280 × 800 viewport, makes the gate exit 1 naming the story
+    (FR-031).
 15. **Given** a story whose content overflows its root or opens a top-layer surface (a popover, a dialog), **When**
     the gate runs, **Then** that content is inside the capture (FR-012).
 
@@ -320,8 +327,9 @@ script no longer fails the `csp` gate; the packages' plants still fail it; the R
 - **FR-006**: Captures MUST be deterministic: the same tree captured twice, and under podman and under docker, on
   any host, gives byte-identical files. The capture MUST fix every input that can vary (CPU architecture and
   platform, browser build, fonts and font rendering, viewport size and device scale factor, colour scheme, reduced
-  motion, carets and other time- or state-dependent rendering, image encoding without timestamps or other
-  metadata). FR-026 is the check that proves it.
+  motion, carets and other time- or state-dependent rendering, scroll position (every capture, and every pointer
+  state, is taken at scroll position 0, 0; a page a story has scrolled is scrolled back first), image encoding
+  without timestamps or other metadata). FR-026 is the check that proves it.
 - **FR-007**: The pinned container MUST be the linux/amd64 image identified by that platform's immutable image
   digest, committed in the repository (not a multi-platform index that resolves per host), run as linux/amd64 on
   every host, under emulation on other architectures (operator decision SPEC-1-06). It MUST hold the browser build
@@ -372,8 +380,9 @@ script no longer fails the `csp` gate; the packages' plants still fail it; the R
   outside the origin is the finding `network` (FR-007).
 - **FR-031**: A story MAY declare one pointer state, hover or press, on one element it renders. The `visual` gate,
   the baseline command and the `axe` gate MUST apply it after the story renders and before the capture or the axe
-  run, and MUST fail (exit 1) a story-theme whose declared state is malformed or whose target matches no element or
-  more than one (finding `pointer-target`).
+  run, and MUST fail (exit 1) a story-theme whose declared state is malformed, whose target matches no element or
+  more than one, or whose target's box does not lie wholly inside the initial 1280 × 800 viewport at scroll position
+  0, 0 (finding `pointer-target`), so a state is never silently not applied.
 
 **Accessibility (US3)**
 

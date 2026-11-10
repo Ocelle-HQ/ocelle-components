@@ -14,7 +14,7 @@ never a package's `dist/` (research.md R-09).
 |---|---|
 | Command | `pnpm run gate:storybook-build` |
 | Plant command | `node gates/bin/storybook-build.ts --root {root}` (form `repo-tree`) |
-| Scope | the Storybook workspace's build (`storybook/`), through its own `build` script |
+| Scope | the Storybook workspace's build (`storybook/`), through its own `build` script, run with `CACHE_DIR=<root>/storybook/.cache` (research.md R-09) |
 | Exit 0 | `storybook-build: built <n> stories` |
 
 | Rule | Location | When |
@@ -45,7 +45,7 @@ Order of a run: engine resolution → pin check → build (R-03) → run 1 → r
 | `render-failed` | `<story-id>/<theme>` | the story module throws, its render throws, or its id is missing (message names the signal) |
 | `render-timeout` | `<story-id>/<theme>` | no render signal within 15 s |
 | `closed-shadow-root` | `<story-id>/<theme>` | an element of the story attaches a closed shadow root (message names the host tag) |
-| `pointer-target` | `<story-id>/<theme>` | the story's pointer parameter is malformed or its selector matches no element or more than one |
+| `pointer-target` | `<story-id>/<theme>` | the story's pointer parameter is malformed, its selector matches no element or more than one, or its target's box is not wholly inside the 1280 × 800 viewport at scroll (0, 0) (`target outside the viewport`) |
 | `font` | `<story-id>/<theme>` | text drawn by a face other than Schibsted Grotesk, or a face that is `loading` or `error`, or a used face not `loaded` (message lists the families) |
 | `network` | `<story-id>/<theme>` | the story requested anything outside `127.0.0.1` (message names the URL) |
 | `io` | `<story-id>/<theme>` | same-origin fetch, xhr, websocket, eventsource or ping other than Storybook's own files, a request for a path not in `dist`, or a storage, clipboard or beacon call (message names each) |
@@ -72,6 +72,15 @@ runs as `visual`. Applies `updatePlan` (research.md R-11): writes nothing and ex
 (printed as by the gate); exit 2 as the gate. Otherwise writes every baseline whose bytes changed, deletes stray ones,
 and prints `baselines: wrote <n> files (<changed> changed, <removed> removed), <bytes> bytes in total`.
 
+**Plant mode (research.md R-11, PLAN-FRESH-2-002):** `pnpm run visual:update -- --plant visual/<name> [--story <id>]
+[--engine <…>]`. Materialises the plant's root with `gates/lib/plant-repo.ts` as the plant job does, then the same
+engine resolution, pin check, build and two runs, with requests holding only the plant's own stories (index entries
+whose `importPath` is a story file of the plant's `tree/`); `--story <id>` makes one single-story-theme request per
+theme for that story only. `updatePlan` over those story-themes; writes into
+`gates/plants/visual/<name>/tree/storybook/baselines/` and removes stray files there; same output line. Exit 2, besides
+the gate's causes: a gate other than `visual`, no such plant, a plant with no story of its own, a plant with
+`baselinesOf` (`its baselines are those of <plant>`), a `--story` that is not one of the plant's own stories.
+
 ## `axe` (check "Accessibility")
 
 | | |
@@ -83,11 +92,11 @@ and prints `baselines: wrote <n> files (<changed> changed, <removed> removed), <
 
 | Rule | Location | When |
 |---|---|---|
-| `<axe rule id>` | `<story-id>/<theme>` | a node of a violation of impact `serious` or `critical` not excepted; message `<impact>: <selector>` (one finding per node) |
+| `<axe rule id>` | `<story-id>/<theme>` | a node of a violation of impact `serious` or `critical` not excepted; message `<impact>: <selector>` (one finding per node; `<selector>` printed by `printSelector`, shadow levels joined by ` >>> `, research.md R-08) |
 | `<axe rule id>-incomplete` | `<story-id>/<theme>` | a node of an `incomplete` result of impact `serious` or `critical` not excepted; message `<impact>: <selector>` |
 | `outside-root` | `<story-id>/<theme>` | an element child of `<body>` that is neither `#storybook-root`, a harness node nor a non-rendered element (message names its tag) |
 | `closed-shadow-root` | `<story-id>/<theme>` | an element of the story attaches a closed shadow root (axe not run) |
-| `pointer-target` | `<story-id>/<theme>` | as for `visual` (axe not run) |
+| `pointer-target` | `<story-id>/<theme>` | as for `visual`, the target's viewport rule included (axe not run) |
 | `empty` | `<story-id>/<theme>` | the story root renders no content (research.md R-08; axe not run) |
 | `render-failed` | `<story-id>/<theme>` | the story module throws, its render throws, or its id is missing (axe not run) |
 | `render-timeout` | `<story-id>/<theme>` | no render signal within 15 s (axe not run) |
@@ -105,7 +114,8 @@ Storybook build failed.
 `gates/gates.json` and the FR-020 list of `gates/lib/registry.ts` gain `storybook-build`, `visual` and `axe`; `ci.yml`
 gains the jobs `storybook-build` ("Storybook build"), `visual` ("Visual regression") and `axe` ("Accessibility"). The
 `visual` job uploads `storybook/.visual/` with `actions/upload-artifact` (pinned by SHA) when it fails. The `plants`
-job runs `pnpm run gate:plants` with `OCELLE_VISUAL_ENGINE=both`; the registry check fails when that job's steps
+job runs `pnpm run gate:plants` with `OCELLE_VISUAL_ENGINE=both`, and uploads `storybook/.visual/plants/` (the failing
+`visual` pass plants' captures in tree layout, research.md R-11) the same way when it fails; the registry check fails when that job's steps
 contain `--skip-container` (research.md R-07). That CI compares docker with podman does not rest on the workflow text:
 the gate requires both engines whenever `CI` or `GITHUB_ACTIONS` is `true` (research.md R-06). Root `package.json`
 gains the scripts `gate:storybook-build`, `gate:visual`, `gate:axe` and `visual:update`.

@@ -87,10 +87,21 @@ The argument builder's unit tests cover root equal to the repository and root di
  { "story": "x--t", "theme": "light", "status": "render-timeout", "message": "no render signal within 15 s" },
  { "story": "x--s", "theme": "light", "status": "closed-shadow-root", "hosts": ["ocelle-x"] },
  { "story": "x--p", "theme": "light", "status": "pointer-target", "message": "hover: no element matches .trigger" },
+ { "story": "x--q", "theme": "light", "status": "pointer-target", "message": "hover: target outside the viewport: .menu-item" },
  { "story": "x--z", "theme": "light", "status": "font", "families": ["DejaVu Sans"] },
  { "story": "x--w", "theme": "light", "status": "network", "urls": ["https://example.com/a.png"] },
  { "story": "x--v", "theme": "light", "status": "io", "calls": ["fetch /api/items", "localStorage.setItem"] }]
 ```
+
+Each entry has exactly one `status`. When a story-theme meets several conditions (a face whose source is a path not in
+`dist` is both `io` and `font`; a face from another origin both `network` and `font`), the capture records them all
+and writes the first in the order of data-model.md § Verdict per story-theme, steps 1 to 7: `render-failed`,
+`render-timeout`, `closed-shadow-root`, `pointer-target`, `font`, `network`, `io` (`captureStatus` in
+`gates/lib/capture-plan.ts`, research.md R-05). The entry's details (`families`, `urls`, `calls`, `message`) are the
+chosen status's.
+
+`request.json` may hold one story and one theme only (a single-story-theme request, made by `visual:update -- --plant
+… --story <id>`, research.md R-11); the capture treats it as any other request.
 
 The capture exits 0 when it wrote `result.json` (whatever the statuses), 2 with one stderr line when it cannot run:
 `not the pinned container: <check>: <detail>`, browser launch failure, unreadable request. The host maps statuses
@@ -111,8 +122,12 @@ and beacon recorder) → route every request: `127.0.0.1` served from `dist` (sa
 eventsource and ping other than Storybook's own files, and paths not in `dist`, recorded as `io`), anything else aborted
 and recorded as `network` → open `iframe.html?id=<story>&viewMode=story&globals=theme:<theme>` → wait for the first
 render signal (`STORY_RENDERED`, `STORY_THREW_EXCEPTION`, `STORY_ERRORED`, `STORY_MISSING`, `body.sb-show-errordisplay`)
-up to 15 s: failure signal → `render-failed`, none → `render-timeout` → the story's pointer state, if declared
-(`pointer-target` when its target is wrong) → `document.fonts.ready`, two frames → closed shadow root check → font
-check (research.md R-05) → full-page screenshot (`fullPage: true`, no clip), `animations: "disabled"`, `caret: "hide"`
+up to 15 s: failure signal → `render-failed`, none → `render-timeout` → scroll check: `scrollX` and `scrollY` read,
+`window.scrollTo(0, 0)` when either is not 0 (research.md R-04) → the story's pointer state, if declared, by
+`page.mouse` only (`pointer-target` when its parameter is malformed, its selector matches no element or several, or
+its target's box is not wholly inside the 1280 × 800 viewport: `target outside the viewport`, research.md R-15) →
+`document.fonts.ready`, two frames → closed shadow root check → font check (research.md R-05) → scroll check again →
+full-page screenshot (`fullPage: true`, no clip), `animations: "disabled"`, `caret: "hide"`
 → decode and re-encode with `pngjs` (fixed options, no ancillary chunks) → write `<story>.<theme>.png` → close the
-context. A story-theme with any status other than `captured` writes no PNG.
+context. A story-theme with any status other than `captured` writes no PNG. Every capture is therefore taken at
+scroll position (0, 0) (FR-006).

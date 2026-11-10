@@ -56,3 +56,14 @@ pnpm run gate:plants -- --skip-container                      # without an engin
 Without an engine and without `--skip-container`, the plant job runs no `visual` plant that needs one, prints
 `plants: not run (no container engine): <plant>` for each and exits 2. In CI the Plants job runs every plant with
 `OCELLE_VISUAL_ENGINE=both`.
+
+A change that moves a plant story's pixels (a token value, `base.css`, the pin) regenerates the `visual` pass plants'
+own baselines:
+
+```sh
+pnpm run visual:update -- --plant visual/pass-unused-face                    # writes tree/storybook/baselines/ of that plant
+pnpm run visual:update -- --plant visual/pass-second-render --story <id>     # single-story-theme requests
+```
+
+When CI's Plants job fails on such a plant, its artifact holds the captures at
+`gates/plants/visual/<name>/tree/storybook/baselines/`; commit them at those paths.

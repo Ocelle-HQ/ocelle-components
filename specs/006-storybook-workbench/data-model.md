@@ -35,7 +35,9 @@ story-theme is not in the index, is stray. Its bytes are compared exactly with r
 
 ## Verdict per story-theme (visual)
 
-Decided in this order, first match wins, one finding at most per story-theme:
+Decided in this order, first match wins, one finding at most per story-theme. Steps 1 to 7 are also the order in
+which one capture chooses its single status when several conditions hold in it (`captureStatus`, research.md R-05;
+for example `font` over `io`):
 
 1. either run `render-failed` → `render-failed`
 2. either run `render-timeout` → `render-timeout`
@@ -86,6 +88,13 @@ holds a table row naming the same story, theme, rule and selector (each in backt
 `unrecorded-exception` and excepts nothing. An honoured entry matches only the one serious or critical node of that
 rule with that selector in that story-theme. An honoured entry that matched no node in a run is `stale-exception`.
 
+`<selector>` is the node's axe target as the gate prints it (`printSelector`, research.md R-08): the shadow levels of
+a target joined by ` >>> ` (`ocelle-button >>> button`), frame levels by ` >>frame>> `, each level's selector as axe
+gives it. In the plan's Complexity Tracking row the selector is in backticks with each `|` written `\|`.
+
+In a plant root the file is `[]` unless the plant's `tree/` supplies one; `delta.json` `exceptions: "repository"`,
+which every `axe` plant sets, appends the repository's entries and copies the plan files they name (research.md R-16).
+
 ## Gate finding
 
 `<location>: <gate-id>: <rule>: <message>`, per `gates/lib/findings.ts`. Locations: `<story-id>/<theme>`, a
@@ -95,8 +104,11 @@ repository-relative file path, or `storybook/a11y-exceptions.json#<index>`.
 
 `parameters.ocelle.pointer`: `{ "hover": "<selector>" }` or `{ "press": "<selector>" }`, exactly one key, the selector
 matching exactly one element of the story area (the whole document minus Storybook's harness nodes, research.md R-08
-Terms; not only the story root). Applied after `STORY_RENDERED`, before fonts settle, by the capture and
-the axe gate; anything else is `pointer-target`.
+Terms; not only the story root), whose bounding box lies wholly inside the initial 1280 × 800 viewport at scroll
+position (0, 0) (operator decision on PLAN-FRESH-2-001, option (a)). Applied after `STORY_RENDERED` and the scroll
+check (the page scrolled back to (0, 0) when a story moved it), before fonts settle, by the capture and the axe gate,
+with `page.mouse` only; anything else is `pointer-target` (a target outside the viewport: `target outside the
+viewport`). The screenshot is taken at scroll position (0, 0) as well (research.md R-04).
 
 ## Plant keys (new)
 
@@ -104,3 +116,11 @@ the axe gate; anything else is `pointer-target`.
 |---|---|---|
 | `engine` | `both`, `host`, `missing` | `visual` plants |
 | `unlinked` | `["storybook/node_modules"]` | `storybook-build`, `visual` and `axe` plants |
+| `baselinesOf` | the name of a `visual` pass plant holding baselines | `visual` fail plants with no `storybook/baselines/` file in their `tree/` |
+
+## Plant delta keys (new, `delta.json`)
+
+| Key | Values | Effect |
+|---|---|---|
+| `baselines` | `[{ "file": "<story-id>.<theme>.png", "edit": "one-pixel" \| "reencode" \| "remove" }]` | applied to the current repository baseline when the root is materialised (research.md R-11) |
+| `exceptions` | `"repository"` | the root's exceptions file gets the repository's entries after the tree's own, and the plan files they name; required on every `axe` plant (research.md R-16) |
