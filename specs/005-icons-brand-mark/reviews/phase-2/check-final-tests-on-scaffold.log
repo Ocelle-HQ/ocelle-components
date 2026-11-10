@@ -1,5 +1,5 @@
 Scope: all 5 workspace projects
-✓ Lockfile passes supply-chain policies (verified 2h ago)
+✓ Lockfile passes supply-chain policies (verified 3h ago)
 Lockfile is up to date, resolution step is skipped
 Packages are hard linked from the content-addressable store to the virtual store.
   Content-addressable store is at: /root/.local/share/pnpm/store/v11
@@ -33,7 +33,7 @@ devDependencies:
 + vite 8.3.5
 + vitest 5.0.5
 
-Done in 436ms using pnpm v12.16.1
+Done in 474ms using pnpm v12.16.1
 $ node gates/bin/setup-offline.ts
 setup: installed offline; Chromium at /opt/pw-browsers/chromium-1243/chrome-linux64/chrome
 $ node gates/bin/test.ts
@@ -48,12 +48,12 @@ packages/elements/test/node/manifest.test.ts:163: unit-tests: iconNames(text of 
 packages/elements/test/node/manifest.test.ts:163: unit-tests: iconNames(text of src/icons.ts) reads one name: TypeError: (0 , __vite_ssr_import_5__.iconNames) is not a function
 packages/elements/test/node/manifest.test.ts:163: unit-tests: iconNames(text of src/icons.ts) reads a member that is not a string literal, …: TypeError: (0 , __vite_ssr_import_5__.iconNames) is not a function
 packages/elements/test/node/manifest.test.ts:163: unit-tests: iconNames(text of src/icons.ts) reads no IconName alias: TypeError: (0 , __vite_ssr_import_5__.iconNames) is not a function
-packages/elements/test/node/manifest.test.ts:188: unit-tests: generate(root) on other element sources reads every src/ocelle-*.ts, its modules in path order, and nothing else of src/: Error: not implemented: generate(/tmp/ocelle-manifest-WGCTxz)
-packages/elements/test/node/manifest.test.ts:199: unit-tests: generate(root) on other element sources leaves IconName unexpanded without src/icons.ts: Error: not implemented: generate(/tmp/ocelle-manifest-4HEx3Z)
+packages/elements/test/node/manifest.test.ts:188: unit-tests: generate(root) on other element sources reads every src/ocelle-*.ts, its modules in path order, and nothing else of src/: Error: not implemented: generate(/tmp/ocelle-manifest-scPrjc)
+packages/elements/test/node/manifest.test.ts:199: unit-tests: generate(root) on other element sources leaves IconName unexpanded without src/icons.ts: Error: not implemented: generate(/tmp/ocelle-manifest-TaQgoj)
 packages/elements/test/node/manifest.test.ts:206: unit-tests: writeManifest(root) writes packages/elements/custom-elements.json from the root's element source, as serialise(generate(root)): TypeError: (0 , __vite_ssr_import_5__.writeManifest) is not a function
 packages/elements/test/node/manifest.test.ts:216: unit-tests: serialise(manifest) writes JSON with two-space indentation and one trailing newline: Error: not implemented: serialise(2)
-packages/elements/test/node/manifest.test.ts:222: unit-tests: generate(root) on the repository's element source declares ocelle-icon with its tag name, class, name and label with types, defaults and attributes, name reflected and label not, and no slot, event, part or CSS property (US1 scenario 11): Error: not implemented: generate(/tmp/tmp.tq7l0r3wKN/)
-packages/elements/test/node/manifest.test.ts:250: unit-tests: generate(root) on the repository's element source rejects a root without an element module, naming the directory: Error: expected [Function] to throw error matching /packages\/elements\/src/elements\ but got 'not implemented: generate(/tmp/tmp.tq…'
+packages/elements/test/node/manifest.test.ts:222: unit-tests: generate(root) on the repository's element source declares ocelle-icon with its tag name, class, name and label with types, defaults and attributes, name reflected and label not, and no slot, event, part or CSS property (US1 scenario 11): Error: not implemented: generate(/tmp/tmp.cfSZgpa3Tw/)
+packages/elements/test/node/manifest.test.ts:250: unit-tests: generate(root) on the repository's element source rejects a root without an element module, naming the directory: Error: expected [Function] to throw error matching /packages\/elements\/src/elements\ but got 'not implemented: generate(/tmp/tmp.cf…'
 packages/elements/test/node/readme.test.ts:97: unit-tests: packages/elements/README.md states: Each element lives in its own module, `src/<tag>.ts`, which ends with one `define("<tag>", <Class>)` call: importing the module defines that element and no other, and importing the package root defines every element: AssertionError: expected '' to contain 'Each element lives in its own module,…'
 packages/elements/test/node/readme.test.ts:97: unit-tests: packages/elements/README.md states: `define` (`src/define.ts`, internal) defines a tag only while it is free: a second definition of the same tag does nothing and throws nothing (FR-006): AssertionError: expected '' to contain '`define` (`src/define.ts`, internal) …'
 packages/elements/test/node/readme.test.ts:97: unit-tests: packages/elements/README.md states: Elements declare their reactive properties with `static override properties = { … }` and `declare` fields, not decorators: AssertionError: expected '' to contain 'Elements declare their reactive prope…'
@@ -151,14 +151,14 @@ packages/elements/test/browser/icon.test.ts:80: unit-tests: ocelle-icon on the s
 gates/test/gates-readme.test.ts:36: unit-tests: gates/README.md (002 FR-022) lists manifest in The gates, with its check, command and plants (005 FR-009, research.md R-06): AssertionError: expected undefined to deeply equal [ '`manifest`', …(2) ]
 gates/test/gates-readme.test.ts:57: unit-tests: gates/README.md (002 FR-022) requires fifteen checks on main, Contrast, Brand rules and Custom-elements manifest among them (005 research.md R-06): AssertionError: expected '\n## Required checks on `main`\n\nThe…' to contain 'requires exactly these fifteen checks'
 gates/test/gates-readme.test.ts:80: unit-tests: gates/README.md (002 FR-022) has no Contrast check row and, since 005, no Custom-elements manifest check row in Deferred gates, and keeps the others: AssertionError: expected [ 'Gate', 'Storybook build', …(4) ] to deeply equal [ 'Gate', 'Storybook build', …(3) ]
-gates/test/manifest.test.ts:78: unit-tests: manifest gate on a root exits 0 on the repository: the committed manifest matches the source and every member is described: Error: not implemented: manifest --root /tmp/tmp.tq7l0r3wKN/ in /tmp/tmp.tq7l0r3wKN/
-gates/test/manifest.test.ts:82: unit-tests: manifest gate on a root exits 0 when the committed manifest only orders its keys differently (pass-reordered): Error: not implemented: manifest --root /tmp/ocelle-manifest-gate-UURTn2 in /tmp/tmp.tq7l0r3wKN/
+gates/test/manifest.test.ts:78: unit-tests: manifest gate on a root exits 0 on the repository: the committed manifest matches the source and every member is described: Error: not implemented: manifest --root /tmp/tmp.cfSZgpa3Tw/ in /tmp/tmp.cfSZgpa3Tw/
+gates/test/manifest.test.ts:82: unit-tests: manifest gate on a root exits 0 when the committed manifest only orders its keys differently (pass-reordered): Error: not implemented: manifest --root /tmp/ocelle-manifest-gate-wR1Z3w in /tmp/tmp.cfSZgpa3Tw/
 gates/test/manifest.test.ts:87: unit-tests: manifest gate on a root reports the label attribute lost from the committed manifest as one stale finding naming ocelle-icon and the attribute (fail-lost-attribute): TypeError: Cannot read properties of undefined (reading 'filter')
-gates/test/manifest.test.ts:99: unit-tests: manifest gate on a root reports a property added in source without regenerating as stale findings for the property and its attribute (fail-stale-property): Error: not implemented: manifest --root /tmp/ocelle-manifest-gate-QvCAUe in /tmp/tmp.tq7l0r3wKN/
-gates/test/manifest.test.ts:116: unit-tests: manifest gate on a root reports a difference outside every element as one whole-file stale finding: Error: not implemented: manifest --root /tmp/ocelle-manifest-gate-QzL1iM in /tmp/tmp.tq7l0r3wKN/
-gates/test/manifest.test.ts:129: unit-tests: manifest gate on a root exits 2 when the committed manifest is missing (brea…: Error: not implemented: manifest --root /tmp/ocelle-manifest-gate-VjYIFd in /tmp/tmp.tq7l0r3wKN/
-gates/test/manifest.test.ts:129: unit-tests: manifest gate on a root exits 2 when the committed manifest is not JSON (bre…: Error: not implemented: manifest --root /tmp/ocelle-manifest-gate-a3m7QR in /tmp/tmp.tq7l0r3wKN/
-gates/test/manifest.test.ts:129: unit-tests: manifest gate on a root exits 2 when there is no element source to analyse: Error: not implemented: manifest --root /tmp/ocelle-manifest-gate-fzpr1r in /tmp/tmp.tq7l0r3wKN/
+gates/test/manifest.test.ts:99: unit-tests: manifest gate on a root reports a property added in source without regenerating as stale findings for the property and its attribute (fail-stale-property): Error: not implemented: manifest --root /tmp/ocelle-manifest-gate-DzxiBQ in /tmp/tmp.cfSZgpa3Tw/
+gates/test/manifest.test.ts:116: unit-tests: manifest gate on a root reports a difference outside every element as one whole-file stale finding: Error: not implemented: manifest --root /tmp/ocelle-manifest-gate-CIXbbR in /tmp/tmp.cfSZgpa3Tw/
+gates/test/manifest.test.ts:129: unit-tests: manifest gate on a root exits 2 when the committed manifest is missing (brea…: Error: not implemented: manifest --root /tmp/ocelle-manifest-gate-Y3FqpG in /tmp/tmp.cfSZgpa3Tw/
+gates/test/manifest.test.ts:129: unit-tests: manifest gate on a root exits 2 when the committed manifest is not JSON (bre…: Error: not implemented: manifest --root /tmp/ocelle-manifest-gate-YvdNjH in /tmp/tmp.cfSZgpa3Tw/
+gates/test/manifest.test.ts:129: unit-tests: manifest gate on a root exits 2 when there is no element source to analyse: Error: not implemented: manifest --root /tmp/ocelle-manifest-gate-6UsKt6 in /tmp/tmp.cfSZgpa3Tw/
 gates/test/manifest.test.ts:166: unit-tests: manifestFindings(committed, generated) reports one no-description finding at the element's module per undescribed public member of each of the six kinds, and none when each is described: Error: not implemented: manifestFindings(object, object)
 gates/test/manifest.test.ts:181: unit-tests: manifestFindings(committed, generated) counts a blank description as none, and a private member not at all: Error: not implemented: manifestFindings(object, object)
 gates/test/manifest.test.ts:191: unit-tests: manifestFindings(committed, generated) names each differing member of each kind, and an element that only one manifest declares: Error: not implemented: manifestFindings(object, object)
