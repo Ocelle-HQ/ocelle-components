@@ -23,6 +23,11 @@ constitution IV (the Storybook page's header with `font-src 'self'` and `connect
 and `prefix` scope widened to the Storybook inputs and HTML entries) are closed, and the Storybook's CSP scope is
 removed. Restoring the Storybook manager UI is a separate operator choice and not part of this feature.
 
+**Plan squad round 1 (2026-11-10)**: the operator's fork decisions on the plan squad's round 1
+(`reviews/plan/round-1/refute.md`) changed FR-005, FR-012, FR-013, FR-014, FR-016, FR-023, FR-025, FR-026, FR-027 and
+FR-029, added FR-030 (run-time I/O) and FR-031 (pointer states), and updated the acceptance scenarios, edge cases and
+assumptions that follow from them.
+
 **Operator decision SPEC-1-06 (2026-11-10)**: "Yes, amd64 everywhere". Every capture, on every host, runs the
 linux/amd64 pinned image, identified by that platform's image digest; on arm64 hosts (for example Apple Silicon) it
 runs under emulation and is slower, so a baseline produced on any machine is byte-identical to CI's. "Any machine"
@@ -113,7 +118,7 @@ renders makes it fail.
 2. **Given** a change that alters any pixel of one story in one theme (for example a token value), **When** the
    gate runs, **Then** it exits 1 with one finding per differing capture naming the story id and the theme, and
    keeps the capture and an image marking the differing pixels for the contributor to inspect (in CI as a job
-   artifact).
+   artifact, which also holds the new captures laid out as baseline files).
 3. **Given** a capture whose pixels equal the baseline's but whose file bytes differ, **When** the gate runs,
    **Then** it exits 1: the comparison is on bytes, with no tolerance (#10: byte-stable baselines).
 4. **Given** a story that has no baseline in one theme, **When** the gate runs, **Then** it exits 1 naming the story
@@ -123,7 +128,8 @@ renders makes it fail.
 6. **Given** a contributor on any machine with podman or docker (an arm64 host emulating linux/amd64 included),
    **When** they run the documented baseline command, **Then** it writes one baseline per story per theme from the
    pinned container, and running it again, or under the other engine, writes byte-identical files (proven in every
-   CI run by FR-026).
+   CI run by FR-026). When a capture made on their machine and CI's disagree (byte identity across CPUs is not
+   measured), CI's captures, kept in its job artifact as baseline files (FR-005), are the ones committed.
 7. **Given** the host entry point of the gate or of the baseline command, **When** no container engine is
    available, or the image it would start is not the pinned linux/amd64 image by its digest, **Then** it exits 2
    naming the cause. **Given** the capture that runs inside the container, **When** it runs anywhere other than the
@@ -136,7 +142,9 @@ renders makes it fail.
 9. **Given** a story whose rendered text uses any font face other than the vendored Schibsted Grotesk (a system
    font, a fallback in the token stack, a per-glyph fallback), or whose font has not loaded when the capture is
    taken, **When** the gate or the baseline command runs, **Then** it exits 1 naming the story, the theme and the
-   face, and writes or compares no capture for it (FR-027).
+   face, and writes or compares no capture for it (FR-027). A face the page declares but no text uses is not a
+   finding. A story whose element attaches a closed shadow root, whose text the check cannot read, fails the same
+   way, naming the element.
 10. **Given** a story that renders differently the second time it is rendered in the same page (for example it keeps
     state in storage or in a module variable), **When** the gate runs, **Then** each theme's capture equals the
     capture of that story rendered fresh in that theme: no state of an earlier capture reaches a later one (FR-028).
@@ -145,6 +153,14 @@ renders makes it fail.
 12. **Given** a pull request, **When** CI runs, **Then** a check named "Visual regression" reports this gate's
     result: the job calls the gate's host entry point, which starts the same pinned image the baseline command
     uses.
+13. **Given** a story that, while it renders, makes a same-origin fetch, XHR, WebSocket, EventSource or ping request
+    other than the Storybook's own, or reads or writes storage, writes the clipboard or sends a beacon, **When** the
+    gate or the baseline command runs, **Then** it exits 1 naming the story, the theme and the call (FR-030).
+14. **Given** a story that declares a hover or press state on one of its elements, **When** the gate runs, **Then**
+    the capture shows that state; a declared state whose target matches no element, or more than one, makes the gate
+    exit 1 naming the story (FR-031).
+15. **Given** a story whose content overflows its root or opens a top-layer surface (a popover, a dialog), **When**
+    the gate runs, **Then** that content is inside the capture (FR-012).
 
 ---
 
@@ -169,7 +185,8 @@ render.
 2. **Given** a story with a serious or critical finding in one theme, **When** the gate runs, **Then** it exits 1
    with one finding per violating node: a violation that lists several nodes (for example `color-contrast` on three
    text nodes) gives one finding per node, each naming the story id, the theme, the axe rule id, its impact and that
-   node's selector.
+   node's selector. A serious or critical result axe cannot decide (`incomplete`, for example contrast over a
+   pseudo-element background) is a finding in the same way, named as incomplete.
 3. **Given** a story whose only findings are of moderate or minor impact, **When** the gate runs, **Then** it exits
    0 and lists them as notes, not findings.
 4. **Given** a story that renders no content, **When** the gate runs, **Then** it exits 1 naming the story: axe on
@@ -181,6 +198,13 @@ render.
 6. **Given** a story module that throws when it is loaded, or a story whose render throws, **When** the gate runs,
    **Then** it exits 1 naming the story as failed to render.
 7. **Given** a pull request, **When** CI runs, **Then** a check named "Accessibility" reports this gate's result.
+8. **Given** a story that renders a surface outside its story root (for example a tooltip appended to the document
+   body), **When** the gate runs, **Then** axe audits that surface and the gate exits 1 naming the story and the
+   element outside the root; **given** a story whose element attaches a closed shadow root, **Then** it exits 1
+   naming the story, since axe cannot see inside (FR-014).
+9. **Given** an exception entry for one node of a story-theme, recorded in a plan's Complexity Tracking, **When** the
+   gate runs, **Then** that node is a note, another node of the same rule in that story-theme is still a finding, and
+   an entry with no matching Complexity Tracking row excepts nothing and is itself a finding (FR-029).
 
 ---
 
@@ -214,15 +238,19 @@ script no longer fails the `csp` gate; the packages' plants still fail it; the R
 4. **Given** `gates/README.md`, **When** the maintainer reads it, **Then** the Storybook build, visual regression and
    accessibility gates are in the gates table with their plants, the Storybook scope section no longer lists a CSP
    scope or the two exceptions, the deferred-gates table no longer lists the three gates, the custom-elements
-   manifest row names the first element feature (#17 or #7) alone, and the required checks on `main` list
-   seventeen checks.
+   manifest row names the first element feature (#17 or #7) alone, a row names the first element feature (#17 or
+   #7) as the deliverer of the `@ocelle/elements` run-time strict-CSP browser test, and the required checks on `main`
+   list seventeen checks.
 5. **Given** mission 001's and 002's plans, **When** the maintainer reads their Complexity Tracking, **Then** the
    "Storybook build, visual regression and axe gates absent" row and 002's two Storybook exception rows are marked
    closed by this feature with its number.
 6. **Given** an element issue's author, **When** they read the contributor note, **Then** it says where stories go,
-   that each variant and state is one story, that themes are captured by the harness (a story is not written twice),
-   how to produce and commit baselines (including that on an arm64 host the capture runs the linux/amd64 image
-   under emulation and is slower), and that a baseline change needs a pull request description saying why.
+   that each variant and state is one story (a hover or press state through the pointer parameter), that themes are
+   captured by the harness (a story is not written twice), how to produce and commit baselines (including that on an
+   arm64 host the capture runs the linux/amd64 image under emulation and is slower, and that CI's captures are
+   committed when a local run and CI disagree), that a baseline change needs a pull request description saying why,
+   that elements use open shadow roots and render every surface inside their own host, and that element packages
+   prove run-time strict CSP in their own browser tests, not in the Storybook.
 
 ---
 
@@ -231,8 +259,13 @@ script no longer fails the `csp` gate; the packages' plants still fail it; the R
 - A story id changes (rename of a title or a story name): its old baselines become stray and its new id has none,
   so the gate reports both; the contributor regenerates and commits.
 - Two stories render identically: each has its own baseline; equality between baselines is not a finding.
-- A story is larger than the capture viewport: the capture covers the whole rendered story root, not only the
-  viewport, so content below the fold is compared too.
+- A story is larger than the capture viewport, overflows its root or opens a top-layer surface: the capture is the
+  whole page at the fixed viewport width, so content below the fold, outside the root's box and in the top layer is
+  compared too (FR-012).
+- A story renders a surface outside its root (a portal to the document body): axe audits it and the gate fails the
+  story, since elements render every surface inside their own host (FR-014).
+- An element attaches a closed shadow root: neither axe nor the font check can see inside, so both gates fail the
+  story (FR-014, FR-027).
 - Fonts: the only font face a capture may render is the vendored Schibsted Grotesk of `@ocelle/tokens`
   (constitution II, one type family). The pinned container may hold system fonts the browser needs, but text
   rendered with any of them, including a per-glyph fallback for a character Schibsted Grotesk lacks, fails the story
@@ -280,7 +313,10 @@ script no longer fails the `csp` gate; the packages' plants still fail it; the R
   a story-theme with no baseline; a baseline with no story-theme in the index; a story that fails to render (its
   module throws when loaded, or its render throws), named as such and not as a pixel difference.
 - **FR-005**: For each differing capture the gate MUST keep the capture and an image marking the differing pixels
-  where the contributor can inspect them (locally in an ignored directory; in CI as a job artifact).
+  where the contributor can inspect them (locally in an ignored directory; in CI as a job artifact). For each
+  differing capture and each story-theme with no baseline it MUST also keep the capture laid out as a baseline file
+  (same directory layout and name), so the files CI produced can be committed as they are; CI is the producer of
+  record when a local capture and CI's disagree.
 - **FR-006**: Captures MUST be deterministic: the same tree captured twice, and under podman and under docker, on
   any host, gives byte-identical files. The capture MUST fix every input that can vary (CPU architecture and
   platform, browser build, fonts and font rendering, viewport size and device scale factor, colour scheme, reduced
@@ -309,42 +345,65 @@ script no longer fails the `csp` gate; the packages' plants still fail it; the R
   theme, named so the story id and the theme can be read from the file name.
 - **FR-011**: The baselines of the 12 existing stories (8 token, 4 base-style) in light and dark MUST be committed
   by this feature.
-- **FR-012**: The capture of a story MUST cover the whole rendered story root, including content outside the
-  initial viewport.
+- **FR-012**: The capture of a story MUST be the whole page the story renders at the fixed viewport width: content
+  outside the initial viewport, content outside the story root's box (overflow, outer shadows) and top-layer content
+  (dialogs, popovers) included.
 - **FR-026**: The `visual` gate MUST prove FR-006 on every run: it captures every story-theme of the built index
   twice and exits 1 with one finding per story-theme whose two captures differ in any byte (finding
   `nondeterministic`, naming the story id and theme), before and independently of the baseline comparison. In CI
-  the two captures run one under docker and one under podman (both available on the runner): the CI jobs tell the
-  gate to require both engines, and it then exits 2 naming the missing one; elsewhere both captures run under the
-  engine available and the summary says the cross-engine comparison was not made. The
+  the two captures run one under docker and one under podman (both available on the runner): whenever the gate runs
+  in CI (`CI` or `GITHUB_ACTIONS` is `true`) it requires both engines, whatever engine it was asked for, and exits 2
+  naming a missing one or refusing a single engine; elsewhere both captures run under the engine available and the
+  summary says the cross-engine comparison was not made. The
   baseline command makes the same two captures and writes nothing when they differ.
 - **FR-027**: The `visual` gate and the baseline command MUST fail (exit 1) a story-theme in which any rendered text
   is drawn with a font face other than the vendored Schibsted Grotesk (the only allowed face; constitution II), or
-  in which a font face has not finished loading when the capture is taken, one finding per story-theme naming the
-  face(s) found; no capture of it is compared or written.
+  in which a font face the story's text uses has not finished loading when the capture is taken (or any face is
+  still loading or failed to load), one finding per story-theme naming the face(s) found; no capture of it is
+  compared or written. A face the page declares but no text uses is not a finding. A story-theme in which an element
+  attaches a closed shadow root fails the same way (finding `closed-shadow-root`, naming the element), since its
+  text cannot be checked.
 - **FR-028**: Every story-theme MUST be captured, and checked by axe (FR-013), in a fresh page whose theme is set
   before the story renders, with no storage, script state or theme state from an earlier render.
+- **FR-030**: The `visual` gate and the baseline command MUST fail (exit 1) a story-theme that, while it renders,
+  makes run-time I/O (constitution I): a same-origin fetch, XHR, WebSocket, EventSource or ping request other than
+  the Storybook's own, a request for a file the build does not hold, a storage read or write, a clipboard write or a
+  beacon, one finding (`io`) per story-theme naming each call; no capture of it is compared or written. A request
+  outside the origin is the finding `network` (FR-007).
+- **FR-031**: A story MAY declare one pointer state, hover or press, on one element it renders. The `visual` gate,
+  the baseline command and the `axe` gate MUST apply it after the story renders and before the capture or the axe
+  run, and MUST fail (exit 1) a story-theme whose declared state is malformed or whose target matches no element or
+  more than one (finding `pointer-target`).
 
 **Accessibility (US3)**
 
 - **FR-013**: A gate `axe` MUST run axe on every story of the built index in light and in dark and fail on each
   violating node of a serious or critical violation: one finding per node, with story id, theme, rule id, impact
-  and that node's selector (a violation listing three nodes is three findings); moderate and minor results MUST be
-  printed as notes and MUST NOT fail the gate.
+  and that node's selector (a violation listing three nodes is three findings). Each node of an `incomplete` (needs
+  review) result of serious or critical impact MUST be a finding in the same way, its rule named `<rule id>-incomplete`;
+  moderate and minor results, violations and incomplete alike, MUST be printed as notes and MUST NOT fail the gate.
 - **FR-014**: The `axe` gate MUST fail a story whose story root renders no content (no descendant element with a
   rendered box of non-zero width and height, and no non-whitespace text), and a story that fails to render (its
-  module throws when loaded, or its render throws), naming it.
+  module throws when loaded, or its render throws), naming it. axe MUST run on the whole document except
+  Storybook's own harness nodes, so content a story renders anywhere is audited, and the gate MUST fail a story that
+  renders an element outside its story root (finding `outside-root`, naming the element) and a story whose element
+  attaches a closed shadow root (finding `closed-shadow-root`).
 - **FR-015**: The `axe` gate MUST take its stories from the built index and report the number of story-theme runs,
   which MUST equal twice the index's story count.
 - **FR-016**: The axe rule set MUST be every rule the pinned axe-core enables by default (its best-practice rules
   included), plus every rule tagged `wcag2a`, `wcag2aa`, `wcag21a`, `wcag21aa` or `wcag22aa` that it does
-  not enable by default; experimental rules are not run. No rule may be disabled except by a recorded exception in
-  the plan's Complexity Tracking.
+  not enable by default; experimental rules are not run. The rules that judge the preview document Storybook supplies
+  rather than the story are not run: for axe-core 4.14.0 `bypass`, `document-title`, `html-has-lang`,
+  `html-lang-valid`, `html-xml-lang-mismatch`, `landmark-one-main`, `page-has-heading-one` and `region`; a test
+  derives the list from axe-core's own rule metadata, so an upgrade that adds such a rule fails until it is sorted. No
+  other rule may be disabled except by a recorded exception in the plan's Complexity Tracking.
 - **FR-029**: A serious or critical finding in one of the 12 existing stories when the `axe` gate first runs MUST be
   fixed in the story file in this feature. A finding whose fix needs a token or base-style change (a 002 or 003
   surface) is not fixed here: it is recorded in the plan's Complexity Tracking as an exception scoped to that story,
-  theme and rule, with the operator's approval and the op that fixes it as its sunset, and the gate honours only
-  exceptions so recorded.
+  theme, rule and node (its selector), with the operator's approval and the op that fixes it as its sunset, and the
+  gate honours only exceptions so recorded: each entry of the exception file names the plan holding its row, the gate
+  checks that the row exists, and an entry without it excepts nothing and is a finding. An exception covers only its
+  node; another node of the same rule in that story-theme stays a finding.
 
 **Gates, plants and CI (US1 to US3)**
 
@@ -388,15 +447,19 @@ script no longer fails the `csp` gate; the packages' plants still fail it; the R
   generated stylesheets (`storybook/.generated/`) and HTML entries `storybook/dist/*.html`, not the bundles.
 - **FR-023**: `gates/README.md` MUST list the three new gates with their plants, drop the Storybook CSP scope and
   002's two exceptions, drop the three gates from the deferred list, name the first element feature (#17 or #7) as
-  the deliverer of the custom-elements manifest check, and list seventeen required checks on `main` (the fourteen
-  plus "Storybook build", "Visual regression", "Accessibility").
+  the deliverer of the custom-elements manifest check, name the first element feature (#17 or #7) as the deliverer of
+  the `@ocelle/elements` run-time strict-CSP browser test (the Storybook no longer observes CSP), and list seventeen
+  required checks on `main` (the fourteen plus "Storybook build", "Visual regression", "Accessibility").
 - **FR-024**: 001's "Storybook build, visual regression and axe gates absent" row and 002's two Storybook exception
   rows MUST be marked closed by feature 006 in their plans' Complexity Tracking.
 - **FR-025**: A contributor note MUST explain how an element issue adds a story per variant and state, that the
   harness captures both themes, how to produce, inspect and commit baselines, and that a baseline change needs a
   pull request description that says why (constitution V), and that on an arm64 host the capture runs the
-  linux/amd64 image under emulation and is slower. A documentation test MUST check that the note holds each of
-  these items.
+  linux/amd64 image under emulation and is slower. It MUST also say: how to declare a hover or press state (FR-031);
+  that when a local capture and CI's disagree, CI's captures from its job artifact are committed (FR-005); that
+  elements use open shadow roots and render every surface inside their own host (FR-014, FR-027); and that each
+  element package proves run-time strict CSP in its own browser tests, not in the Storybook (FR-023). A
+  documentation test MUST check that the note holds each of these items.
 
 ### Key Entities
 
@@ -427,17 +490,18 @@ script no longer fails the `csp` gate; the packages' plants still fail it; the R
 
 ## Assumptions
 
-- **Container in this environment.** The development sandbox has the docker client but no container engine running,
-  and may not pull images; GitHub's runners do. Baselines for this feature are therefore produced and checked in
-  CI; tests of the gates' own logic (comparison, missing and stray baselines, index enumeration, finding format)
-  run without a container on fixture images and fixture indexes, so test-first work does not need the container.
-  How the plan proves a red-first visual change in this environment is the plan's to state.
+- **Container in this environment.** The development sandbox runs docker once its daemon is started as root and
+  pulls the pinned image (measured by the plan); podman is not available. Baselines for this feature are produced
+  locally under docker and confirmed by a CI run of the branch under docker and podman, held by the visual phase's
+  review before it is approved; tests of the gates' own logic (comparison, missing and stray baselines, index
+  enumeration, finding format) run without a container on fixture images and fixture indexes.
 - **Browser in the container.** The pinned container carries the Chromium build that the repository's pinned
   Playwright (1.64.1) expects; the sandbox's installed Chromium (1243) is used only for the non-container tests,
   via `OCELLE_CHROMIUM_PATH`.
 - **Platform.** Every capture runs the linux/amd64 image (operator decision SPEC-1-06). GitHub's ubuntu-24.04
   runners are amd64 and run it natively, with docker and podman both installed; arm64 hosts emulate it and are
-  slower, which the contributor note says.
+  slower, which the contributor note says. Byte identity across CPU generations (the browser's rasteriser picks code
+  paths by CPU features) is not measured; CI is the producer of record when a local capture disagrees (FR-005).
 - **Build in other jobs.** After FR-020 the `csp` and `prefix` jobs' `pnpm -r build` still builds the Storybook,
   which the `csp` gate no longer reads (the `prefix` gate still reads its HTML entries). Whether those jobs build
   only what they read, leaving the "Storybook build" job as the one place the build is checked, is the plan's.
