@@ -101,7 +101,7 @@ The control's row carries the class `icon-row`, is `display: inline-flex; align-
 (font size, line height) that the wrappers and the label inherit. `iconSlotStyles` gives it `padding-block:
 calc((var(--ocelle-icon-size) - 1lh) / 2)` (0 when the line box is at least the icon size, since a negative `calc()`
 padding is clamped to 0), so a slotted icon taller than the line box stays inside the control's box
-(PLAN-FRESH-2-002 (a), R-10). A control adds any further block padding on an element around the row.
+(PLAN-FRESH-2-002 (a), R-10). A control never sets block padding on the row; it puts any further block padding on an element around the row.
 
 ## Contrast rows (`packages/tokens/contrast/pairs.json`, new)
 

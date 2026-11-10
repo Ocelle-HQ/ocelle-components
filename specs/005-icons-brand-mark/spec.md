@@ -393,7 +393,8 @@ and without the base stylesheet; sizes, alignment, colour and the accessibility 
    of this feature.
 7. **Given** the README, **When** a later element author reads the slot convention, **Then** it names the slot
    (`icon`, and `trailing` for an end icon such as the action-row arrow), the size, alignment, gap and colour rules,
-   the base-stylesheet interaction and the naming rule, so #7 and #12 can implement and test it without further
+   the row-padding rule (the row's block padding is the convention's; further padding goes on an element around
+   the row), the base-stylesheet interaction and the naming rule, so #7 and #12 can implement and test it without further
    design (FR-020, FR-023).
 8. **Given** forced colours are emulated, **When** the test host shows a slotted icon, enabled and with its inner
    button disabled, **Then** the icon is painted in the same system colour as the label (`ButtonText`, and `GrayText`
@@ -661,7 +662,8 @@ tree and the absence of requests outside the allowed list and of CSP violations;
   `--ocelle-icon-size` square, not shrinking, centred on the label's first line, separated from the label by
   `--ocelle-space-2`, in the control's text colour, and inside the control's box: when the icon is taller than the
   line box, the convention's block padding on the control's row holds the part that overflows the line (operator
-  decision, PLAN-FRESH-2-002 (a)); an empty slot takes no space and adds no gap. These rules hold for the `icon` slot
+  decision, PLAN-FRESH-2-002 (a)), and a control never sets block padding on the row but puts any further block
+  padding on an element around the row; an empty slot takes no space and adds no gap. These rules hold for the `icon` slot
   (before the label) and the `trailing` slot (after it) alike.
 - **FR-022**: The sizing of FR-021 holds for a bare `<svg>` with or without `width` and `height` attributes, with a
   square or non-square `viewBox` or none, on pages with and without the base stylesheet, and whatever size a normal

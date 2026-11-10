@@ -399,8 +399,10 @@ each marked with the finding it answers.
     with a 32 px icon (the first case is the clamp); the slotted icon's box lies inside the
     button's border box in all four cases, single-line and wrapped, against outside it at the last three without the
     rule; the centre difference is the same with and without the rule, and the lens's `max(0px, …)` form gave the same
-    boxes. The padding is the row's: a control that wants more block padding puts it on an element around the row (or
-    sets the row's `padding-block` to a value at least this one), which the README says. An empty slot leaves the
+    boxes. The padding is the row's and only `iconSlotStyles` sets it: a control never sets `padding-block` (or
+    `padding-top`/`padding-bottom`) on the row, and puts any further block padding on an element around the row,
+    which the README states in those words (one rule, so a later control cannot lower the row's padding below what
+    holds the icon; round-2 verify 1). An empty slot leaves the
     padding in place, so a control's height is the same with and without icons.
   - No strut. The zero-width-space `::before` strut of the first draft centred only when the line box was at least the
     icon size (measured centre differences: 16px/1.45 −0.01 px, but 14px/1.15 1.95 px, 12px/1.45 1.30 px and a 32 px
@@ -615,8 +617,8 @@ each marked with the finding it answers.
     linked without it, `--ocelle-icon-size` is undefined, so an icon or mark is drawn at the SVG default size
     (300 × 300 px in a paragraph) and the mark's ring is not painted (PLAN-FRESH-2-004, R-04, R-09), `ocelle-icon`
     (attributes, tokens read, names table with consumer needs), slot convention (R-10, including that the row sets the
-    type and carries `icon-row`, whose block padding keeps a taller icon inside the control, and that a control adds
-    block padding around the row, not below it), `ocelle-brand-mark` (variants, grounds, tokens read, width following
+    type and carries `icon-row`, whose block padding keeps a taller icon inside the control, and that a control never
+    sets block padding on the row and puts any further block padding on an element around the row), `ocelle-brand-mark` (variants, grounds, tokens read, width following
     height), naming and host ARIA rules (FR-023, FR-034: a present host `aria-label` decides alone, a blank one leaves
     the element unlabelled, hosts pass it trimmed, and a host `hidden` removes the element's box and node), licence
     and trademark note (FR-029, FR-030) and the browser build's banner, engines (Chromium 120+ for `:dir()` and

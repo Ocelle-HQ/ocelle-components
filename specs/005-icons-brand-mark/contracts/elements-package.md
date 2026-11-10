@@ -67,7 +67,7 @@ or an `<svg>` with a `viewBox`) are then `--ocelle-icon-size` square whatever th
 first line at any type size and leading (overflowing the line box evenly when taller than it), `--ocelle-space-2`
 from the label, in the control's text colour; empty slots take no space. The row's block padding,
 `calc((var(--ocelle-icon-size) - 1lh) / 2)` from `iconSlotStyles` (0 when the line box is at least the icon size),
-keeps that overflow inside the control's box; a control adds any further block padding around the row, not on it. The convention adds no generated content, so
+keeps that overflow inside the control's box; a control never sets block padding on the row; it puts any further block padding on an element around the row. The convention adds no generated content, so
 a control named by its visible label keeps exactly that name. A host resizes slotted icons only through
 `--ocelle-icon-size`. An icon-only control names its own inner control; slotted icons get no `label`.
 
