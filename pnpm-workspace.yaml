@@ -2,11 +2,18 @@ packages:
   - "packages/*"
   - "storybook"
 
-# Supply-chain policy (research.md R-04): registry packages must be at least 7 days old (in minutes),
-# with no exclusion, and no dependency may run an install script.
+# Supply-chain policy (001 research.md R-04, amended by 005 research.md R-16): registry packages must be at least
+# 7 days old (in minutes), with no exclusion, and no dependency may run an install script except the two approved
+# below.
 minimumReleaseAge: 10080
 minimumReleaseAgeStrict: true
-# Explicit denials (false) are allowed by the pins gate; no entry may be true. esbuild (via Storybook) has a
-# postinstall that only checks its platform binary, which pnpm installs as an optional dependency.
+# Explicit denials (false) are allowed by the pins gate. esbuild (via Storybook) has a postinstall that only checks its
+# platform binary, which pnpm installs as an optional dependency.
+# Approved (005 research.md R-16, operator decision 2026-11-10), each at its one version, which the pins gate checks:
+# rs-module-lexer@2.9.0 (in the custom-elements-manifest analyzer's tree) loads its platform's native binding, and
+# runs `npm install` of a wasm fallback only on a platform without one; fsevents@2.3.3 (via Vite and the analyzer)
+# compiles its macOS addon with node-gyp and is installed on macOS only.
 allowBuilds:
   esbuild: false
+  "rs-module-lexer@2.9.0": true
+  "fsevents@2.3.3": true

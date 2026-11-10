@@ -69,11 +69,19 @@ export function pinFindings(root: Record<string, unknown>, nodeVersion: string |
   return found;
 }
 
-/** The names of the entries of a map setting that are `true`; a list's entries all count. */
+/**
+ * The install scripts the operator approved (005 research.md R-16, 2026-11-10), each at one exact version, so pnpm runs
+ * a script only for that version. Widening this list is a reviewed gate change (001 research.md R-04).
+ */
+const approvedBuilds: ReadonlySet<string> = new Set(["rs-module-lexer@2.9.0", "fsevents@2.3.3"]);
+
+/** The names of the entries of a map setting that are `true`, except the approved builds; a list's entries all count. */
 function allowed(value: unknown): string[] {
   if (Array.isArray(value)) return value.map(String);
   if (typeof value !== "object" || value === null) return [];
-  return Object.entries(value).filter(([, allow]) => allow === true).map(([name]) => name);
+  return Object.entries(value)
+    .filter(([name, allow]) => allow === true && !approvedBuilds.has(name))
+    .map(([name]) => name);
 }
 
 export function workspaceFindings(settings: Settings): Finding[] {

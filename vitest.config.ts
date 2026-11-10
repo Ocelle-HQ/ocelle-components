@@ -50,16 +50,48 @@ export default defineConfig({
         },
       },
       {
+        // The in-process element tests (005 research.md R-11): browser mode, element source; mutated by
+        // stryker.elements.config.json (R-12). The node, build and fixture tests run in their own projects below.
         test: {
           name: "elements",
           include: ["packages/elements/**/*.test.ts"],
-          exclude: excluded,
+          exclude: [...excluded, "packages/elements/test/node/**", "packages/elements/test/build/**", "packages/elements/test/browser/**"],
           browser: {
             enabled: true,
             provider: playwright({ launchOptions }),
             headless: true,
             instances: [{ browser: "chromium" }],
           },
+        },
+      },
+      {
+        // The element node unit tests (005 research.md R-11): the manifest generator and normaliser, the brand pairs,
+        // the readme and the browser-build Vite config, in process. Mutated with the default configuration (R-12).
+        test: {
+          name: "elements-node",
+          environment: "node",
+          include: ["packages/elements/test/node/**/*.test.ts"],
+          exclude: excluded,
+        },
+      },
+      {
+        // The element tests that start real tools (005 research.md R-11): tsc, vite build and pnpm pack. Not mutated
+        // (vitest.mutation.config.ts).
+        test: {
+          name: "elements-build",
+          environment: "node",
+          include: ["packages/elements/test/build/**/*.test.ts"],
+          exclude: excluded,
+        },
+      },
+      {
+        // The element fixture suites (005 research.md R-11): Node tests that drive Chromium through Playwright on the
+        // strict-CSP fixture pages with the built browser build. Not mutated (vitest.mutation.config.ts).
+        test: {
+          name: "elements-browser",
+          environment: "node",
+          include: ["packages/elements/test/browser/**/*.test.ts"],
+          exclude: excluded,
         },
       },
       {

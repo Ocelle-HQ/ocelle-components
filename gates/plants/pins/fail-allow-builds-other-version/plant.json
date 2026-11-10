@@ -1,0 +1,11 @@
+{
+  "expect": "fail",
+  "why": "An approved package at another version is not approved: only rs-module-lexer@2.9.0 may run its install script (005 research.md R-16).",
+  "findings": [
+    {
+      "location": "pnpm-workspace.yaml",
+      "rule": "allow-builds",
+      "message": "allowBuilds lets rs-module-lexer@2.9.1 run install scripts"
+    }
+  ]
+}

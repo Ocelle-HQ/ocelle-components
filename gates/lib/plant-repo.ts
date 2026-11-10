@@ -9,6 +9,7 @@
 // tested in process (gates/test/plant-repo.test.ts); the builders only copy and write files and run git with their
 // results (the process boundary, tested by gates/test/integration/plant-repo.test.ts).
 import { execFile } from "node:child_process";
+import { existsSync } from "node:fs";
 import { cp, mkdir, readdir, readFile, rename, rm, symlink, writeFile } from "node:fs/promises";
 import { basename, join } from "node:path";
 import { pathToFileURL } from "node:url";
@@ -38,6 +39,9 @@ const rootConfiguration = [
   "vitest.config.ts",
   "vitest.mutation.config.ts",
   "stryker.config.json",
+  // The element mutation configuration (005 research.md R-12).
+  "stryker.elements.config.json",
+  "vitest.mutation.elements.config.ts",
 ];
 
 /**
@@ -51,6 +55,18 @@ const tokenFiles = [
   "packages/tokens/contrast/pairs.json",
 ];
 
+/**
+ * The element files the manifest gate and the element plants read (005 research.md R-12): the element source, the
+ * manifest script, its analyzer configuration and the committed manifest. The last three land with the manifest
+ * generator (005 phase 2) and may be absent until then.
+ */
+const elementFiles = ["packages/elements/src"];
+const optionalElementFiles = [
+  "packages/elements/scripts/manifest.ts",
+  "packages/elements/custom-elements-manifest.config.mjs",
+  "packages/elements/custom-elements.json",
+];
+
 /** The configuration set copied into every temporary repository: these root files, plus per package dir. */
 export function configurationSet(packageDirs: readonly string[]): string[] {
   return [
@@ -59,22 +75,27 @@ export function configurationSet(packageDirs: readonly string[]): string[] {
     "gates/eslint",
     "gates/stylelint",
     ...tokenFiles,
+    ...elementFiles,
+    ...optionalElementFiles,
   ];
 }
 
-/** Whether a configuration-set entry may be absent from the repository (005 research.md R-12). Scaffold. */
+/** Whether a configuration-set entry may be absent from the repository, and is then not copied (005 research.md R-12). */
 export function mayBeAbsent(path: string): boolean {
-  return path === "";
+  return optionalElementFiles.includes(path);
 }
 
-/** The node_modules directories linked into a temporary repository (005 research.md R-12). Scaffold. */
+/**
+ * The node_modules directories linked into a temporary repository: the root's and each package's own, so a dependency
+ * of one package only (lit, of @ocelle/elements) resolves for its source (005 research.md R-12).
+ */
 export function nodeModulesLinks(packageDirs: readonly string[]): string[] {
-  return packageDirs.slice(0, 0);
+  return ["node_modules", ...packageDirs.map((dir) => `${dir}/node_modules`)];
 }
 
 /** File names that are gate configuration: tsconfig, ESLint, Stylelint, Vitest, Vite and Stryker files. */
 const configurationName =
-  /^(?:tsconfig.*\.json|eslint(?:\.[\w-]+)?\.config\.\w+|\.eslintrc.*|stylelint\.config\.\w+|\.stylelintrc.*|vitest(?:\.[\w-]+)?\.(?:config|workspace)\.\w+|vite(?:\.[\w-]+)?\.config\.\w+|stryker\.conf(?:ig)?\.\w+)$/;
+  /^(?:tsconfig.*\.json|eslint(?:\.[\w-]+)?\.config\.\w+|\.eslintrc.*|stylelint\.config\.\w+|\.stylelintrc.*|vitest(?:\.[\w-]+)*\.(?:config|workspace)\.\w+|vite(?:\.[\w-]+)?\.config\.\w+|stryker(?:\.[\w-]+)?\.conf(?:ig)?\.\w+)$/;
 
 /** The paths (relative to the plant) of the gate configuration files a plant carries. */
 export function carriesConfiguration(paths: readonly string[]): string[] {
@@ -325,15 +346,28 @@ async function git(dir: string, args: readonly string[], env: Record<string, str
   return stdout.trim();
 }
 
-/** Copies the configuration set of `repo` into `into` and links `repo`'s node_modules there. */
+/**
+ * Copies the configuration set of `repo` into `into` (an entry that may be absent is skipped when it is) and links
+ * `repo`'s node_modules there: the root's and each package's own that exists.
+ */
 // Stryker disable next-line all: process boundary, covered by gates-integration: gates/test/integration/plant-repo.test.ts "buildRepoTree copies the configuration set unchanged, lays tree/ over it at repository paths, and links node_modules"
 async function copyConfiguration(repo: string, into: string): Promise<void> {
   // Stryker disable next-line all: process boundary, covered by gates-integration: gates/test/integration/plant-repo.test.ts "buildRepoTree copies the configuration set unchanged, lays tree/ over it at repository paths, and links node_modules"
   const packages = packagePaths(directoryNames(await readdir(join(repo, "packages"), { withFileTypes: true })));
   // Stryker disable next-line all: process boundary, covered by gates-integration: gates/test/integration/plant-repo.test.ts "buildRepoTree copies the configuration set unchanged, lays tree/ over it at repository paths, and links node_modules"
-  for (const path of configurationSet(packages)) await cp(join(repo, path), join(into, path), { recursive: true });
+  for (const path of configurationSet(packages)) {
+    // Stryker disable next-line all: process boundary, covered by gates-integration: gates/test/integration/plant-repo.test.ts "buildRepoTree copies the configuration set unchanged, lays tree/ over it at repository paths, and links node_modules"
+    const copied = cp(join(repo, path), join(into, path), { recursive: true });
+    // Stryker disable next-line all: process boundary, covered by gates-integration: gates/test/integration/plant-repo.test.ts "buildRepoTree copies the configuration set unchanged, lays tree/ over it at repository paths, and links node_modules"
+    await (mayBeAbsent(path) ? copied.catch(ignoreMissing) : copied);
+  }
   // Stryker disable next-line all: process boundary, covered by gates-integration: gates/test/integration/plant-repo.test.ts "buildRepoTree copies the configuration set unchanged, lays tree/ over it at repository paths, and links node_modules"
-  await symlink(join(repo, "node_modules"), join(into, "node_modules"), "dir");
+  for (const path of nodeModulesLinks(packages)) {
+    // Stryker disable next-line all: process boundary, covered by gates-integration: gates/test/integration/plant-repo.test.ts "buildRepoTree copies the configuration set unchanged, lays tree/ over it at repository paths, and links node_modules"
+    if (path !== "node_modules" && !existsSync(join(repo, path))) continue;
+    // Stryker disable next-line all: process boundary, covered by gates-integration: gates/test/integration/plant-repo.test.ts "buildRepoTree copies the configuration set unchanged, lays tree/ over it at repository paths, and links node_modules"
+    await symlink(join(repo, path), join(into, path), "dir");
+  }
 }
 
 /** Copies a plant's subdirectory (tree/, base/ or head/) over `into`, if the plant has one. */
