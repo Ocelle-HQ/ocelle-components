@@ -36,3 +36,10 @@
   (constitution VII). That is a deliberate exception to "no implementation details", not a leak.
 - The two open choices (brand-mark terms, icon source) were put to the operator while specifying and are recorded
   at the top of the spec.
+- Spec check 1 (`reviews/spec/check-1.md`, fixes in `reviews/spec/check-1-fixes.md`): items re-checked after the
+  fixes. "Requirements are testable and unambiguous" now rests on the strict-CSP fixture definition (one page, full
+  CSP header with `font-src 'self'`, allowed request list), the token rule for the manifest's CSS custom properties
+  (FR-007), the pairing of every "does not" outcome with a positive outcome and a planted defect, and the observable
+  icon-only naming outcome (User Story 3 scenario 6). The operator's answer to SPEC-1-05 (a thirteenth icon, `file`)
+  is recorded at the top of the spec. SC-007 and SC-008 are now documentation checks in this repository; their
+  outcomes elsewhere are listed under Consumer need.
