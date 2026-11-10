@@ -253,6 +253,24 @@ export function treeProblems(treePaths: readonly string[], delta: Delta | undefi
   return problems;
 }
 
+/** The node_modules links of a plant root (paths relative to it), without the ones the plant lists as unlinked. */
+export function moduleLinks(unlinked: readonly string[] | undefined): string[] {
+  throw new Error(`not implemented (plant-repo moduleLinks, phase 2): ${String(unlinked?.length)}`);
+}
+
+/** The plan files the entries of an a11y-exceptions.json text name, each once, in order; throws naming the problem. */
+export function exceptionPlans(text: string): string[] {
+  throw new Error(`not implemented (plant-repo exceptionPlans, phase 2): ${String(text.length)}`);
+}
+
+/**
+ * The text of a plant root's storybook/a11y-exceptions.json from the tree's file (undefined: none) and, for
+ * `exceptions: "repository"`, the repository's file (undefined: the key is not set).
+ */
+export function rootExceptions(tree: string | undefined, repository: string | undefined): string {
+  throw new Error(`not implemented (plant-repo rootExceptions, phase 2): ${String(tree?.length)} ${String(repository?.length)}`);
+}
+
 /** Throws unless a plant's generate.ts re-exports the real generator, `./generate.real.ts`. */
 export function checkWrapper(text: string): void {
   if (/^export \* from (["'])\.\/generate\.real\.ts\1/m.test(text)) return;

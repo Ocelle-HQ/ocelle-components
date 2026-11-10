@@ -110,6 +110,11 @@ export function parsePlant(text: string): Plant | string {
   return plant;
 }
 
+/** The problem with a plant's keys for the gate whose plant it is, or undefined when its keys are valid for that gate. */
+export function gateKeysProblem(gate: string, plant: Plant): string | undefined {
+  throw new Error(`not implemented (plant-judge gateKeysProblem, phase 2): ${gate} ${plant.expect}`);
+}
+
 /** One gate run on a plant: its exit code and output lines, and for a commit plant the hashes of its records. */
 export interface PlantRun {
   readonly exit: number | null;
