@@ -88,10 +88,10 @@ describe("plants (the job)", () => {
     const ran = job(world());
     expect(await result(ran)).toEqual({
       code: 0,
-      out: ["plants: 41 plants of 13 gates and the registry judged, every plant as expected"],
+      out: ["plants: 44 plants of 14 gates and the registry judged, every plant as expected"],
       err: [],
     });
-    expect(ran.ran).toHaveLength(39);
+    expect(ran.ran).toHaveLength(42);
     expect(ran.ran).toContain("typecheck gates/plants/typecheck/fail-basic");
     expect(ran.ran).toContain("signoff gates/plants/signoff/error-basic");
   });
@@ -102,7 +102,7 @@ describe("plants (the job)", () => {
       code: 1,
       out: [
         "gates/plants/lint/fail-basic: plants: not-caught: expected exit 1 with the plant's 1 finding, got exit 0",
-        "plants: 1 problem in 41 plants",
+        "plants: 1 problem in 44 plants",
       ],
       err: [],
     });
@@ -122,7 +122,7 @@ describe("plants (the job)", () => {
       out: [
         'gates/plants/csp/error-basic: plants: not-reported-broken: expected exit 2 (could not run) with the cause "could not run: broken input", ' +
           "got exit 2 (csp: could not run: spawn node ENOENT)",
-        "plants: 1 problem in 41 plants",
+        "plants: 1 problem in 44 plants",
       ],
       err: [],
     });
@@ -139,7 +139,7 @@ describe("plants (the job)", () => {
         "gates/plants/lint: plants: missing-plant: gate lint has no error plant",
         "gates/plants/mutation/pass-basic/plant.json: plants: invalid-plant: a pass plant may not set base",
         "gates/plants/mutation: plants: missing-plant: gate mutation has no pass plant",
-        "plants: 4 problems in 41 plants",
+        "plants: 4 problems in 44 plants",
       ],
       err: [],
     });
@@ -157,7 +157,7 @@ describe("plants (the job)", () => {
       out: [
         "gates/plants/prefix/fail-basic: plants: not-caught: findings differ: missing packages/tokens/src/x.ts:1 rule-a; " +
           "unexpected packages/tokens/src/x.ts:2 rule-a, packages/tokens/src/y.ts:1 rule-b",
-        "plants: 1 problem in 41 plants",
+        "plants: 1 problem in 44 plants",
       ],
       err: [],
     });
@@ -178,7 +178,7 @@ describe("plants (the job)", () => {
       code: 1,
       out: [
         "gates/plants/typecheck/pass-basic: plants: not-accepted: expected exit 0 with no finding, got exit 1 (packages/a.ts:3 TS7006)",
-        "plants: 1 problem in 41 plants",
+        "plants: 1 problem in 44 plants",
       ],
       err: [],
     });
@@ -188,7 +188,7 @@ describe("plants (the job)", () => {
     const ran = job(world(), { "gates/plants/signoff/error-basic": { exit: 1, stdout: ["x: signoff: no-signoff: m", "s"], stderr: [] } });
     expect((await result(ran)).out).toEqual([
       "gates/plants/signoff/error-basic: plants: not-reported-broken: expected exit 2 (could not run), got exit 1",
-      "plants: 1 problem in 41 plants",
+      "plants: 1 problem in 44 plants",
     ]);
   });
 
@@ -203,7 +203,7 @@ describe("plants (the job)", () => {
         "gates/plants/style-lint: plants: missing-plant: gate style-lint has no pass plant",
         "gates/plants/style-lint: plants: missing-plant: gate style-lint has no error plant",
         "gates/plants/csp: plants: missing-plant: gate csp has no error plant",
-        "plants: 4 problems in 37 plants",
+        "plants: 4 problems in 40 plants",
       ],
       err: [],
     });
@@ -214,7 +214,7 @@ describe("plants (the job)", () => {
     files.delete("gates/plants/plants/matching/plant.json");
     expect((await result(job(files))).out).toEqual([
       "gates/plants/plants: plants: missing-plant: the registry check has no pass plant",
-      "plants: 1 problem in 40 plants",
+      "plants: 1 problem in 43 plants",
     ]);
   });
 
@@ -228,7 +228,7 @@ describe("plants (the job)", () => {
       out: [
         "gates/plants/lint/fail-none/plant.json: plants: invalid-plant: plant.json is missing",
         "gates/plants/lint/fail-odd/plant.json: plants: invalid-plant: a fail plant lists its findings",
-        "plants: 2 problems in 43 plants",
+        "plants: 2 problems in 46 plants",
       ],
       err: [],
     });
@@ -246,7 +246,7 @@ describe("plants (the job)", () => {
       out: [
         "gates/plants/lint/fail-config: plants: carries-configuration: " +
           "plant carries gate configuration: tree/eslint.config.ts, tree/packages/tokens/tsconfig.json",
-        "plants: 1 problem in 42 plants",
+        "plants: 1 problem in 45 plants",
       ],
       err: [],
     });
@@ -263,7 +263,7 @@ describe("plants (the job)", () => {
         "gates/gates.json: plants: no-registry-entry: gate pins has no registry entry",
         "gates/plants/extra: plants: unknown-gate: plants of extra, which has no registry entry",
         "gates/plants/pins: plants: unknown-gate: plants of pins, which has no registry entry",
-        "plants: 3 problems in 38 plants",
+        "plants: 3 problems in 41 plants",
       ],
       err: [],
     });
@@ -274,7 +274,7 @@ describe("plants (the job)", () => {
     files.set("gates/plants/plants/missing-entry/gates.json", registryText);
     expect((await result(job(files))).out).toEqual([
       "gates/plants/plants/missing-entry: plants: not-caught: expected exit 1 with the plant's 1 finding, got exit 0",
-      "plants: 1 problem in 41 plants",
+      "plants: 1 problem in 44 plants",
     ]);
   });
 
@@ -285,7 +285,7 @@ describe("plants (the job)", () => {
     const run: PlantRun = { exit: 1, stdout: [`${"b".repeat(40)}: signoff: no-signoff: m`, "signoff: 1 finding"], stderr: [], commits: hashes };
     expect(await result(job(files, { "gates/plants/signoff/fail-basic": run }))).toEqual({
       code: 0,
-      out: ["plants: 41 plants of 13 gates and the registry judged, every plant as expected"],
+      out: ["plants: 44 plants of 14 gates and the registry judged, every plant as expected"],
       err: [],
     });
   });
@@ -317,6 +317,112 @@ describe("plants (the job)", () => {
       out: [],
       err: ["plants: could not run: gates.json is not a list of gates; fix gates/gates.json"],
     });
+  });
+});
+
+// 006 contracts/plants.md § Plant runner changes (research.md R-07, R-16): the plants of storybook-build, visual and
+// axe each build the Storybook (through the storybook/node_modules every plant root shares), so they run one at a
+// time, after every other plant; the other gates' plants still run together.
+describe("plants: Storybook plants run one at a time, after the others (006 research.md R-07)", () => {
+  const storybookGates = ["storybook-build", "visual", "axe"];
+
+  /** The job on `files` with gate runs that last a few ticks, logging when each starts and ends. */
+  async function timed(files: Map<string, string>): Promise<{ code: number; log: string[]; out: string[] }> {
+    const log: string[] = [];
+    const out: string[] = [];
+    const below = (dir: string): string[] => [...files.keys()].filter((path) => path.startsWith(`${dir}/`)).map((path) => path.slice(dir.length + 1));
+    const tools: PlantTools = {
+      read: (path) => Promise.resolve(files.get(path)),
+      dirs: (path) => Promise.resolve([...new Set(below(path).filter((p) => p.includes("/")).map((p) => p.split("/")[0] ?? ""))].sort()),
+      files: (path) => Promise.resolve(below(path).sort()),
+      runPlant: async (gate, plant) => {
+        log.push(`start ${plant}`);
+        for (let tick = 0; tick < 3; tick += 1) await new Promise((resolve) => setTimeout(resolve, 0));
+        log.push(`end ${plant}`);
+        return recorded(gate, plant);
+      },
+    };
+    const io: Io = { cwd: "/work/repo", env: {}, out: (l) => out.push(l), err: (l) => out.push(l) };
+    const context: Context = { root: "/work/repo", toolCwd: "/work/repo", args: [] };
+    return { code: await plants(context, tools, io), log, out };
+  }
+
+  /** The repository in memory with visual and axe registered beside storybook-build, each with three plants. */
+  function storybookWorld(): Map<string, string> {
+    const files = world();
+    const registry = JSON.parse(registryText) as Record<string, string>[];
+    const base = registry.find((gate) => gate.id === "storybook-build") ?? {};
+    const extra = ["visual", "axe"].map((id) => ({ ...base, id, check: id, command: `pnpm run gate:${id}`, plantCommand: `node gates/bin/${id}.ts --root {root}` }));
+    files.set("gates/gates.json", JSON.stringify([...registry, ...extra]));
+    files.set(".github/workflows/ci.yml", workflow.replace("  plants:\n", "  visual:\n    steps: []\n  axe:\n    steps: []\n  plants:\n"));
+    for (const id of ["visual", "axe"]) {
+      files.set(`gates/plants/${id}/fail-basic/plant.json`, failPlant("packages/tokens/src/x.ts:1", "rule-a", "planted"));
+      files.set(`gates/plants/${id}/pass-basic/plant.json`, passPlant);
+      files.set(`gates/plants/${id}/error-basic/plant.json`, errorPlant);
+    }
+    return files;
+  }
+
+  it("starts no Storybook plant before every other plant has ended, runs them in registry and name order, never two at once", async () => {
+    const { log } = await timed(storybookWorld());
+    const isStorybook = (line: string): boolean => storybookGates.some((id) => line.includes(`gates/plants/${id}/`));
+    const others = log.filter((line) => !isStorybook(line));
+    expect(others).toHaveLength(2 * 39);
+    expect(log.slice(0, others.length)).toEqual(others);
+    expect(log.slice(others.length)).toEqual(
+      storybookGates.flatMap((id) => ["error-basic", "fail-basic", "pass-basic"].flatMap((name) => [`start gates/plants/${id}/${name}`, `end gates/plants/${id}/${name}`])),
+    );
+  });
+
+  it("still runs the other gates' plants together", async () => {
+    const { log } = await timed(storybookWorld());
+    expect(log.slice(0, 2).map((line) => line.split(" ")[0])).toEqual(["start", "start"]);
+  });
+
+  it("keeps the problem lines in registry order, a Storybook gate's among the others", async () => {
+    const files = world();
+    files.set("gates/plants/storybook-build/fail-basic/plant.json", "{");
+    files.set("gates/plants/lint/fail-basic/plant.json", "{");
+    files.set("gates/plants/brand-rules/fail-basic/plant.json", "{");
+    const { out } = await timed(files);
+    expect(out.map((line) => line.split(":")[0])).toEqual([
+      "gates/plants/lint/fail-basic/plant.json",
+      "gates/plants/lint",
+      "gates/plants/brand-rules/fail-basic/plant.json",
+      "gates/plants/brand-rules",
+      "gates/plants/storybook-build/fail-basic/plant.json",
+      "gates/plants/storybook-build",
+      "plants",
+    ]);
+  });
+});
+
+// plant.json `unlinked` is valid only for plants of storybook-build, visual and axe (006 contracts/plants.md § Plant
+// runner changes): on another gate's plant the plant is invalid and does not run.
+describe("plants: the unlinked key (006 research.md R-16)", () => {
+  it("runs a storybook-build plant with unlinked, and rejects a lint plant with it without running it", async () => {
+    const files = world();
+    const spec = { expect: "error", why: "a breaking input", cause: "could not run: broken input", unlinked: ["storybook/node_modules"] };
+    files.set("gates/plants/storybook-build/error-basic/plant.json", JSON.stringify(spec));
+    files.set("gates/plants/lint/error-basic/plant.json", JSON.stringify(spec));
+    const ran = job(files);
+    expect(await result(ran)).toEqual({
+      code: 1,
+      out: [
+        "gates/plants/lint/error-basic/plant.json: plants: invalid-plant: unlinked is only for plants of storybook-build, visual and axe",
+        "gates/plants/lint: plants: missing-plant: gate lint has no error plant",
+        "plants: 2 problems in 44 plants",
+      ],
+      err: [],
+    });
+    expect(ran.specs.get("gates/plants/storybook-build/error-basic")).toEqual(spec);
+    expect(ran.ran).not.toContain("lint gates/plants/lint/error-basic");
+  });
+
+  it("rejects an unlinked value other than storybook/node_modules", async () => {
+    const files = world();
+    files.set("gates/plants/storybook-build/error-basic/plant.json", JSON.stringify({ expect: "error", why: "w", cause: "c", unlinked: ["node_modules"] }));
+    expect((await result(job(files))).out[0]).toBe('gates/plants/storybook-build/error-basic/plant.json: plants: invalid-plant: unlinked must be ["storybook/node_modules"]');
   });
 });
 
