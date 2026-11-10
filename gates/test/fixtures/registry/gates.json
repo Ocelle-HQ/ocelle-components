@@ -106,5 +106,13 @@
     "plantCommand": "node gates/bin/brand-rules.ts --root {root}",
     "plantForm": "repo-tree",
     "scope": "files"
+  },
+  {
+    "id": "manifest",
+    "check": "Custom-elements manifest",
+    "command": "pnpm run gate:manifest",
+    "plantCommand": "node gates/bin/manifest.ts --root {root}",
+    "plantForm": "repo-tree",
+    "scope": "files"
   }
 ]
