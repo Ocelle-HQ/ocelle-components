@@ -232,6 +232,9 @@ importers:
 
   packages/elements:
     dependencies:
+      '@ocelle/tokens':
+        specifier: workspace:0.0.0
+        version: link:../tokens
       lit:
         specifier: 3.3.3
         version: 3.3.3

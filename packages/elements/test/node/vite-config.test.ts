@@ -6,8 +6,8 @@ import config from "../../vite.browser.config.ts";
 // The browser build's configuration (005 research.md R-05, FR-029, FR-033, T016), imported in process so its mutants
 // are killed here (the spawned build of test/build/ does not see Stryker's active mutant): library mode on
 // src/browser.ts, ES format, one file dist/browser/ocelle-elements.js (the public file path a host copies), the
-// module build's dist/ kept (emptyOutDir false), nothing external (Lit is bundled), no `development` condition (Lit's
-// production build), and the licence banner, an output banner, so the minifier keeps it (PLAN-A11Y-SECURITY-1-008).
+// module build's dist/ kept (emptyOutDir false), nothing external (Lit is bundled), the production export conditions
+// stated (Lit's production build whatever NODE_ENV the build runs under), and the licence banner, an output banner, so the minifier keeps it (PLAN-A11Y-SECURITY-1-008).
 const elements = fileURLToPath(new URL("../..", import.meta.url));
 const built = config;
 
@@ -35,11 +35,11 @@ describe("vite.browser.config.ts", () => {
     });
   });
 
-  it("bundles everything, with no external and no development condition", () => {
+  it("bundles everything, with no external, and states the production conditions, so no NODE_ENV selects Lit's development build", () => {
     expect({
       external: built.build?.rolldownOptions?.external,
-      conditions: built.resolve?.conditions ?? [],
-    }).toEqual({ external: undefined, conditions: expect.not.arrayContaining(["development"]) as unknown });
+      conditions: built.resolve?.conditions,
+    }).toEqual({ external: undefined, conditions: ["module", "browser", "production"] });
     expect(built.build?.rolldownOptions).toBeDefined();
   });
 
