@@ -42,5 +42,15 @@ and the gate in normal mode with `--root`:
 
 ## Gate runs
 
-See the phase report for the runs of `gate:manifest`, `gate:style-lint`, `gate:csp`, `gate:prefix`, `gate:pins`,
-`gate:plants` and `gate:mutation -- --base af90e30` (the phase base).
+One at a time, Node 22.23.4, `OCELLE_CHROMIUM_PATH` set (and `PLAYWRIGHT_BROWSERS_PATH` aliased for the plants and
+mutation runs).
+
+| Gate | Result |
+|---|---|
+| `gate:manifest` | exit 0: `manifest: 1 element checked, no finding` |
+| `gate:style-lint` | exit 0: 9 files checked, no finding |
+| `pnpm -r build && gate:csp` | exit 0: 30 files checked, no finding (the module build, the browser build with Lit inside, and the Storybook inputs with the new story) |
+| `gate:prefix` | exit 0: 178 files checked, no finding |
+| `gate:pins` | exit 0: 5 manifests checked, no finding |
+| `gate:plants` | exit 0: 204 plants of 14 gates and the registry judged, every plant as expected |
+| `gate:mutation -- --base af90e30`, run as CI runs it: `--plan`, then each shard with `--files` | first run: survivors in the new code (gate, generator, element); each killed by a test, removed as redundant or recorded as equivalent (`f1676c5`, `4b277e2`). Final run: 6 shards, every one "none survived", 7 records (4 process boundaries; `mirror` in `icons.ts` twice, unread until phase 3; `label`'s options, equal to Lit's defaults). The longest shard took 130 s, so none came near the 10-minute stop point |

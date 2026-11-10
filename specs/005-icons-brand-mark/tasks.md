@@ -133,7 +133,7 @@ requests and no console message; `pnpm run gate:manifest` passes and its plants 
 - [X] T027 [US1] `gates/bin/mutation.ts` split by configuration and the plants of T019
 - [X] T028 [US1] `storybook/package.json` devDependency `@ocelle/elements: workspace:0.0.0`; `storybook/stories/icon.stories.ts` (close, labelled, unknown name; light and dark) passing the `csp` and `prefix` gates' Storybook checks and T020a (R-14)
 - [X] T029 [US1] `packages/elements/README.md` and `packages/elements/CHANGELOG.md` with the statements of T020
-- [ ] T030 [US1] Run each pairing plant of T013 to T016a once (spec pairing table rows for US1), record in `specs/005-icons-brand-mark/reviews/phase-2/plants.md`; run `pnpm run gate:manifest`, `gate:style-lint`, `gate:csp`, `gate:prefix`, `gate:pins`, then `gate:plants` and `gate:mutation -- --base <phase base>` (one at a time)
+- [X] T030 [US1] Run each pairing plant of T013 to T016a once (spec pairing table rows for US1), record in `specs/005-icons-brand-mark/reviews/phase-2/plants.md`; run `pnpm run gate:manifest`, `gate:style-lint`, `gate:csp`, `gate:prefix`, `gate:pins`, then `gate:plants` and `gate:mutation -- --base <phase base>` (one at a time)
 
 **Checkpoint**: `tdd-check.sh 2` reports `pass`; quickstart steps 1 to 5 pass for `ocelle-icon`.
 

@@ -29,6 +29,13 @@ T030 are in `plants.md`, the spike of T011 in `spike.md`.
 - **US1-6 reads its label on `close`, not `search`** (the spec's snippet uses `search`, drawn in phase 3). The scenario
   is about the label; with an undrawn name the icon would expose nothing, so the scenario would test FR-016 instead.
   Phase 3 may switch the body to `search` once it is drawn.
+- **`Shape` is a line only in phase 2** (data-model.md § Icon lists path, line, polyline, rect and circle). Both
+  phase 2 drawings are lines, and the other four kinds had no drawing to test them, so their render branches were
+  `NoCoverage` mutants; phase 3 adds each kind with the drawings that use it (`f1676c5`).
+- **Mutation records** (constitution VIII): besides four process-boundary records, three equivalences are recorded:
+  `mirror: false` twice in `icons.ts` (nothing reads the flag before phase 3's mirroring rule), and `label`'s property
+  options in `ocelle-icon.ts` (`{}` gives Lit's defaults, which are type `String`'s). `plants.md` § Gate runs has the
+  final run.
 - **The driver has no `pixels` or `dir` method yet** (T013 lists both). No phase 2 scenario captures pixels or sets a
   direction; phase 3 (mirroring, T032) adds them with the bodies that use them, so no untested harness code lands now.
 - **A closed plant-delta part `manifest: "absent"`** (not in the tasks). R-06 names a `repo-tree` breaking plant
@@ -60,6 +67,12 @@ T030 are in `plants.md`, the spike of T011 in `spike.md`.
   drawing was ever seen; they now take the shadow root's `svg` child. `d5535ac`.
 - `vite-config.test.ts`: from "no `development` condition" (which the default also meets) to the exact production
   conditions, so a mutant that drops `production` is killed in process. `7b194c2`.
+
+Existing tests whose pinned counts follow the registry, updated with the gate (`bb37052`), counts only: the red
+commit extended the registry fixture with `manifest` but left the counts these tests derive from it, so
+`gates/test/plants.test.ts` and `plants-job.test.ts` (three more plants in the fake repository, fourteen gates, 42
+runs) and `gates/test/integration/plants-robustness.test.ts` (twelve other gates) failed until then. The registry plants
+of `gates/plants/plants/` gained the gate's entry and CI job in the same commit.
 
 ## Red evidence to read with care
 
