@@ -1,0 +1,57 @@
+[
+    {
+        "Id": "sha256:ee15712262f017b8157421b212b12099146645f44b1bc5c0514cbbe6a229b1d0",
+        "RepoTags": [
+            "mcr.microsoft.com/playwright@sha256:ee15712262f017b8157421b212b12099146645f44b1bc5c0514cbbe6a229b1d0"
+        ],
+        "RepoDigests": [
+            "mcr.microsoft.com/playwright@sha256:ee15712262f017b8157421b212b12099146645f44b1bc5c0514cbbe6a229b1d0"
+        ],
+        "Comment": "buildkit.dockerfile.v0",
+        "Created": "2026-11-01T17:56:25.121997414Z",
+        "Config": {
+            "Env": [
+                "PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin",
+                "LANG=C.UTF-8",
+                "LC_ALL=C.UTF-8",
+                "PLAYWRIGHT_BROWSERS_PATH=/ms-playwright"
+            ],
+            "Cmd": [
+                "/bin/bash"
+            ],
+            "Labels": {
+                "org.opencontainers.image.version": "24.04"
+            }
+        },
+        "Architecture": "amd64",
+        "Os": "linux",
+        "Size": 3613299179,
+        "RootFS": {
+            "Type": "layers",
+            "Layers": [
+                "sha256:bec87777bc2fb2edcdf9af11df1531469e7df911309c1413082b18fcb8610278",
+                "sha256:1590c449306a9032a32c49afeac5e4c7cae86197c4a7dd95c095c3ae220a7f07",
+                "sha256:c8a795d9cdbc02d20daf1ecac5377667d61d63392fbe5bdbba94cc79a4cf3fe9",
+                "sha256:89e210c351d8ddaa3c7a6132e19a5aaf27ec837371dd94f0698dfa4c1e5aef3d",
+                "sha256:ea03ac3d8e487159afdc9d45b9a8d3f4035418655881b896cc34fa2e464c27fc",
+                "sha256:16f77d0178dafdf603cd05f8464e39df636665b2b028e18e0b95bfbee5ecacd5",
+                "sha256:d8597d6a5431eca9c1082ade19c2b7cdef69fbaaae43f0b67fbbd25f3a35c2bb"
+            ]
+        },
+        "Metadata": {
+            "LastTagTime": "2026-11-10T08:01:38.455551697Z"
+        },
+        "Descriptor": {
+            "mediaType": "application/vnd.oci.image.manifest.v1+json",
+            "digest": "sha256:ee15712262f017b8157421b212b12099146645f44b1bc5c0514cbbe6a229b1d0",
+            "size": 1644
+        },
+        "Identity": {
+            "Pull": [
+                {
+                    "Repository": "mcr.microsoft.com/playwright"
+                }
+            ]
+        }
+    }
+]
