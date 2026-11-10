@@ -1,0 +1,148 @@
+schema: review-findings/v1
+complete: true
+phase: plan
+round: 1
+lens: fresh
+findings:
+  - id: PLAN-FRESH-1-001
+    severity: 3
+    title: "The mark's forced-colours rule loses to the chrome rule on specificity, so the chrome ring keeps chrome-ink in forced colours"
+    evidence:
+      - artifact: "research.md § R-09: \"`:host([ground=\"chrome\"]) .ring { stroke: var(--ocelle-color-chrome-ink) }` ... `@media (forced-colors: active) { .ring { stroke: currentColor } .spot { fill: currentColor } }`\"; data-model.md § Variants row \"forced colours (all) | `@media (forced-colors: active)` | `currentColor`\""
+      - artifact: "spec.md FR-027 and US4-5: in forced colours both parts of the mark, in every variant, are painted in `currentColor`"
+      - code: "Probe (scratchpad probe1.mjs, Chromium 1243, plain custom element with exactly R-09's rules in an adopted sheet, Playwright emulateMedia forcedColors active): default mark ring `rgb(0,0,0)` = CanvasText, mono ring `rgb(0,0,0)`, chrome mark (`ground=\"chrome\"`) ring stays `rgb(200,200,200)` (the stand-in chrome-ink value) while the host colour is `rgb(0,0,0)`. A media query adds no specificity: `:host([ground=\"chrome\"]) .ring` is (0,3,0) against `.ring` (0,1,0), and Chromium does not force SVG stroke (spec check 2 measured the same for fill)."
+    claim: |
+      As written, R-09's stylesheet paints the chrome variant's ring with `--ocelle-color-chrome-ink` in forced colours,
+      which is a fixed author colour, not the system colour of its context. That breaks FR-027 and SC-004 for the
+      variant the top bar (#12) uses, and the ring is the part that carries recognition. The US4-5 test would catch
+      it at red, but then the design in research.md and data-model.md, which later element missions copy, is wrong.
+      The default variant only works because its rule happens to come earlier with the same specificity. Any later
+      variant rule written as `:host([x]) .part` will break it again.
+    remedies:
+      - "R-09 and data-model.md: write the forced-colours rules with at least the specificity of every variant rule, for example `@media (forced-colors: active) { :host .ring, :host([ground]) .ring, :host([tone]) .ring { stroke: currentColor } ... }`, or put the variant rules in an `@layer` beneath an unlayered forced-colours block. Record in the README's element conventions that forced-colours overrides of token paints must outrank every variant selector. Name a plant for US4-5 (the forced-colours rule written as bare `.ring`) that fails on the chrome variant."
+
+  - id: PLAN-FRESH-1-002
+    severity: 2
+    title: "The zero-width-space strut centres the icon only when the label's line height is at least the icon size; a resized icon or a tight line height misaligns it"
+    evidence:
+      - artifact: "research.md § R-10: \"`.icon-slot { display: inline-flex; align-items: center; flex: none; }` and `.icon-slot::before { content: \"\\200b\"; }`: the zero-width space gives the wrapper the label's line-box height, so the icon is centred on the label's first line whether the label wraps or not\""
+      - artifact: "spec.md FR-021 \"centred on the label's first line\" (US3-1: within 0.5 px); FR-022 and US3-9: a slotted icon is resized only by overriding `--ocelle-icon-size` on the control, for example to 2rem"
+      - code: "Probe (scratchpad probe1.mjs, Chromium 1243, R-10's markup and rules, row `inline-flex; align-items: flex-start`): difference between the icon centre and the first line box centre is 0.006 px at 16px/1.45 with a 20 px icon (the only case the plan's test host exercises). It is 1.95 px at 14px/1.15 (font-size-sm with line-height-tight), 0.80 px at 16px/1.15, 1.30 px at 12px/1.45 (font-size-xs, normal) and 4.40 px at 16px/1.45 with `--ocelle-icon-size: 2rem` (US3-9's resize). Once the icon is taller than the strut's line box, the wrapper grows to the icon and is top-aligned with the label."
+      - code: "Probe (scratchpad probe2.mjs): with `.icon-slot { block-size: 1lh }` instead of the strut, the same five cases differ by 0.003 to 0.006 px. The icon overflows the one-line wrapper evenly on both sides."
+    claim: |
+      The slot convention is meant to settle centring for #7, #12, #13, #14 and #16 without further design. The
+      mechanism only meets the 0.5 px rule while line-height × font-size ≥ `--ocelle-icon-size`. It fails for compact
+      controls (tight line heights, `font-size-xs` and `font-size-sm` labels) and for every host that uses the documented
+      resize hook. US3-1 is measured only at the default size with body text, so the test passes and the defect
+      reaches the first real control. US3-9 checks size but not centring at 2rem, so the plan's tests do not reveal it.
+    remedies:
+      - "R-10 and data-model.md: give the wrapper `block-size: 1lh` (with `align-items: center`, overflow visible) instead of the strut. Add `lh` to what `ocelle/token-only` accepts, with a unit test, a pass plant and a fail plant, as for `scale`. Measure US3-1 and US3-10 centring also at `--ocelle-icon-size: 2rem` and at a `line-height-tight` label, and name the strut as the plant. Note in the README that an icon taller than the line overflows the line box, so the control's padding must allow for it."
+      - "Keep the strut, and narrow FR-021 and the README: centring holds only while the label's line height is at least the icon size. Controls must use a line height and icon size that satisfy this, and a test at the boundary pins it."
+
+  - id: PLAN-FRESH-1-003
+    severity: 2
+    title: "Chromium does not trim a host aria-label: the spike's operator fork is already decided by measurement and should be put to the operator at the plan gate"
+    evidence:
+      - artifact: "plan.md § Decisions 6: \"R-13's spike also checks whether Chromium trims a host `aria-label`; if it does not, phase 2 stops for an operator fork on US1-18\"; research.md § R-13 \"To verify in the phase 1 spike\""
+      - artifact: "spec.md US1-18: `aria-named` with `aria-label=\" Close \"` \"exposes exactly one image node named \\\"Close\\\"\"; US4-14 `aria-label=\" Ocelle \"`"
+      - code: "Probe (scratchpad probe3.mjs, Chromium 1243, CDP Accessibility.getFullAXTree, unignored nodes): a custom element with internals `role='img'`, `ariaLabel='Close'` (trimmed) and host `aria-label=\" Close \"` is exposed as `image \" Close \"`. The host attribute wins and is not trimmed. In the same probe: host `aria-label=\"Close\"` plus a data label \"Shut\" gives `image \"Close\"`, host `aria-hidden=\"true\"` on a labelled element gives no node, and an element with an `id` and internals `ariaHidden='true'` gives no node. Those parts of R-13 hold."
+    claim: |
+      The spike's outcome is known now. US1-18 and US4-14, as specified, cannot pass, because the element cannot
+      change the name a host attribute supplies and must not rewrite the host's attribute. Left as planned, phase 2
+      stops mid-way for a fork, after the naming code and tests have been written against the wrong expectation. The
+      plan gate is the cheaper place to ask.
+    remedies:
+      - "Put the fork in plan.md's operator decisions now, with the measurement: (a) amend US1-18 and US4-14 so that the host passes a trimmed `aria-label` (the README says so), with ` Close ` exposed as given, and keep the trimming rule for `label` only; or (b) keep the spec by reading the AX name with whitespace trimmed in the test helper, recording that this tests the screen reader's reading, not Chromium's raw name. Remove the conditional stop from phase 2."
+
+  - id: PLAN-FRESH-1-004
+    severity: 2
+    title: "In-process tests run Lit's development build, which warns on the console, so US1-8's \"no console message at all\" cannot be asserted where the plan puts it"
+    evidence:
+      - artifact: "plan.md § Phases 2: \"US1 scenarios 2 to 9, 11, 14, 16, 18 in-process\"; fixture tests only for \"US1 scenarios 1, 10 and 15\""
+      - artifact: "spec.md US1-8: \"writes no console message (none at all on the page, Lit's development-mode warning included)\"; FR-016 \"built output\""
+      - code: "vitest.config.ts:52-63: the `elements` project sets no `resolve.conditions`. node_modules/vite/dist/node/chunks/node.js:29613 maps `development|production` to `development` unless `NODE_ENV === \"production\"` (line 37798), and Vitest runs under `test`. lit-element 4.2.2's package.json maps the `development` condition to `./development/*.js`, and @lit/reactive-element development/reactive-element.js:55 queues `console.warn(\"Lit is in dev mode. Not recommended for production! ...\")` on load (read from the Lit 3.3.3 tree in the scratchpad's plan-probe)."
+    claim: |
+      If US1-8's console clause is written as an in-process test, it fails for a reason unrelated to the element,
+      or gets weakened to filter Lit's warning, which hides real messages. If the in-process elements project is
+      switched to Lit's production build, the mutation tests lose Lit's dev-mode checks, and that is a decision to
+      record. Either way the plan's phase list puts the console assertion of a built-output requirement on source
+      run under Lit's development build. The build test's static \"no `console.` call\" (R-05) does not cover runtime
+      messages, for example a warning raised by Lit's production code.
+    remedies:
+      - "Plan and contracts/checks.md: assert US1-8's console clause (and US1-1's \"writes no console message\" if any) on the strict-CSP fixture page, which loads the browser build, together with the positive outcome of US1-8. In-process, assert only that the element writes nothing itself, by spying on `console` methods after Lit's one-time dev-mode warning has been issued, or by filtering that exact `dev-mode` code, and say why."
+
+  - id: PLAN-FRESH-1-005
+    severity: 2
+    title: "The default mutation config keeps the browser-mode `elements` project and gains `elements-node` with build and pack tests, so every non-element mutant would run builds and the whole browser suite"
+    evidence:
+      - artifact: "research.md § R-12 Measured: \"Per-test coverage does not reach Stryker when browser-mode and Node projects share a run, so every mutant falls back to the whole suite.\" Decision: only changed `packages/elements/src/**` is routed to the elements-only config; \"other changed files keep `stryker.config.json`\""
+      - artifact: "research.md § R-11 and plan.md § Phases 1: `vitest.mutation.config.ts` excludes `elements-browser` only. `elements-node` holds `build.test.ts` (runs both builds) and `pack.test.ts` (`pnpm pack` after a build)"
+      - code: "vitest.mutation.config.ts:9 excludes `gates-integration`, `tokens-browser`, `styles-browser` and `storybook-integration`, the first because \"its tests start real tools\". The `elements` (browser-mode) project stays in the default Stryker run. stryker.config.json: `coverageAnalysis: perTest`, `related: false`"
+    claim: |
+      By R-12's own measurement, the default config mixes browser-mode and Node projects, so per-test coverage is
+      lost and each mutant runs the whole suite. This already holds today, with two element tests. After 005 that
+      suite has hundreds of in-process element tests, including 4x screenshots, plus `elements-node`'s tests, which
+      spawn Vite builds and `pnpm pack`. Every mutant of this feature's other changed code (`gates/bin/manifest.ts`,
+      `gates/bin/mutation.ts`, `token-only.ts`, `packages/elements/scripts/manifest.ts`, which is outside `src/**`)
+      would then run all of it. The shard time limit (10 minutes in CI, frontend-missions.md) and the memory limit
+      make that impractical, and it repeats the fallback the split was meant to remove.
+    remedies:
+      - "R-11 and R-12: remove the `elements` project from `vitest.mutation.config.ts` (element source is mutated only under the elements config), and split `elements-node` into a mutated project (manifest normaliser, pairing, readme tests) and a non-mutated one for tests that start tools (`build.test.ts`, `pack.test.ts`), as with gates-integration. Route `packages/elements/scripts/**` explicitly. Make `gates/test/vitest-config.test.ts` assert both, red first, and re-measure tests per mutant for a gate-code mutant after the change."
+
+  - id: PLAN-FRESH-1-006
+    severity: 2
+    title: "The mark's sizing copies the icon's fixed inline-size, so a top bar that sets only a height gets a narrow box with a small mark"
+    evidence:
+      - artifact: "spec.md US4-7: \"it is `--ocelle-icon-size` high and its width follows the drawing's square aspect; the host can set any other size on the element, and the drawing scales with it\"; FR-024 \"scaling to any size the host sets\""
+      - artifact: "research.md § R-09 \"Sizing as R-04\"; R-04: `:host { ... inline-size: var(--ocelle-icon-size); block-size: var(--ocelle-icon-size) }`"
+      - code: "Reasoning on R-04's rules (CSS sizing): a host rule `ocelle-brand-mark { block-size: 32px }` gives a 20 × 32 px box, and `xMidYMid meet` draws the rosette at 20 px. The width does not follow the aspect. With `aspect-ratio: 1` and `inline-size: auto` (block-size from the token), the same host rule gives 32 × 32."
+    claim: |
+      `ocelle-top-bar` (#12), the mark's only named consumer, is a horizontal bar sized by height. Under R-04 the
+      host has to set both dimensions to grow the mark, and setting only the height leaves a small mark in a narrow
+      box. That is what US1-3 specifies for icons, but not what US4-7's \"width follows the drawing's square aspect\"
+      says. No planned test separates the two readings, so the difference reaches #12 unseen.
+    remedies:
+      - "R-09 and data-model.md: size the mark with `block-size: var(--ocelle-icon-size); inline-size: auto; aspect-ratio: 1` (the `1` needs `aspect-ratio` in token-only's unitless list, with a plant), and add to US4-7's test a host that sets only `block-size: 32px` and expects 32 × 32."
+      - "Keep R-04's sizing and amend US4-7 and the README: the mark behaves like the icon, and a host sets both dimensions to resize it."
+
+  - id: PLAN-FRESH-1-007
+    severity: 1
+    title: "Fixture pages serve tokens.css from a pre-built packages/tokens/dist, against 003's rule of generating it from the current source"
+    evidence:
+      - artifact: "research.md § R-11: \"`serve.ts` serves ... `tokens.css` and its font from `packages/tokens/dist` (built in setup), and `base.css` from `packages/styles/dist`\""
+      - code: "packages/styles/test/browser/serve.ts:2-3 and 68-71: \"tokens.css from the token generator (the current source, never a pre-built dist/), base.css copied from src/\", written into a mkdtemp directory"
+    claim: |
+      When a global setup builds into the shared `packages/tokens/dist`, it writes the same files as a concurrent
+      `pnpm -r build` or another project, and the csp and prefix gates scan that directory. Serving from `dist/`
+      also risks a stale stylesheet. The plan's in-process tests already use `css(source)`, so the two kinds of
+      tests would read the token stylesheet from different sources. 003 settled this, and the plan departs from it
+      without giving a reason.
+    remedies:
+      - "R-11: reuse `packages/styles/test/browser/serve.ts`'s approach: write `css(source)`, `base.css` from `packages/styles/src` and the vendored fonts into the per-run temporary directory, next to the built browser build and test bundles. Never build into a package's `dist/` from a test setup."
+
+  - id: PLAN-FRESH-1-008
+    severity: 1
+    title: "The no-bundler host loads the browser build by file path, but only the package specifier is named as public surface"
+    evidence:
+      - artifact: "contracts/elements-package.md § Entry points: `@ocelle/elements/browser.js` → `dist/browser/ocelle-elements.js`; spec.md FR-033: the console loads it \"with one same-origin `<script type=\\\"module\\\" src>`\""
+    claim: |
+      The Ocelle console is a server-rendered Thymeleaf host without a bundler. It does not resolve the
+      `@ocelle/elements/browser.js` specifier. It copies a file out of the tarball and serves it, so the path it
+      depends on is `dist/browser/ocelle-elements.js`, which the contract treats as an implementation detail. The
+      specifier and the file name also differ (`browser.js` against `ocelle-elements.js`). A later rename of the file
+      would break the console without any semver signal.
+    remedies:
+      - "contracts/elements-package.md and FR-031's changelog entry: name the tarball path of the browser build as public surface, or make the path match the specifier (`dist/browser.js`), and have the README give the path to copy."
+
+  - id: PLAN-FRESH-1-009
+    severity: 1
+    title: "Writing the icon data `as const` to derive `IconName` would leave every drawing unmutated"
+    evidence:
+      - artifact: "research.md § R-07: drawings \"written as data (`{ name, mirror, shapes }`) ... and `IconName` is the union type of the names\"; R-06: the manifest script reads the union \"from `icons.ts`\""
+      - code: "knowledge/speckit-flows/findings/frontend-missions.md § Testing pitfalls: \"Stryker does not mutate inside `[…] as const`, so source data written that way is never mutation-tested. (002 phase 3, #20)\""
+    claim: |
+      Deriving a union type from a data table is usually done with `as const`. That would silently remove the
+      thirteen drawings and their `mirror` flags from mutation testing (constitution VIII). The plan does not say how
+      `IconName` and the data are tied together.
+    remedies:
+      - "R-07 and data-model.md: declare `IconName` as an explicit union and type the table as `Readonly<Record<IconName, Icon>>` (or `satisfies`) without `as const`, and state it so the implementer does not reach for `as const`."

@@ -1,0 +1,133 @@
+schema: review-findings/v1
+complete: true
+phase: plan
+round: 1
+lens: a11y-security
+# What was checked, besides reading spec, plan, research, data model, contracts, quickstart and the constitution:
+# Chromium 1243 probes (scratchpad, not committed) of the planned mark stylesheet under emulated forced colours,
+# of ElementInternals naming against host aria-label / aria-hidden, of the slot convention's zero-width-space strut
+# in the accessibility tree, and of CSP plants inside a shadow root; the npm metadata and a lockfile-only resolve of
+# @custom-elements-manifest/analyzer 0.11.0; the source of @lit/reactive-element 2.1.2 (css-tag.js); a Vite 8.3.5
+# library build of a module with an @license banner. Checked and found sound: no ID reference crosses a shadow root;
+# a host aria-hidden="true" hides an element whose internals set role img (no node); a labelled icon inside <a href>
+# names the link ("Home") and inside <button> names the button; :host(:dir(rtl)) applies `scale: -1 1`; a template
+# `style` attribute and an `<image href>` inside a shadow root each raise a securitypolicyviolation and the image
+# request is visible to Playwright, so the US1-1 plants can fail the guard; neither element is focusable, so no
+# keyboard model, focus ring, target size or motion applies; the ring and ink pairs FR-026 relies on are checked rows.
+findings:
+  - id: PLAN-A11Y-SECURITY-1-001
+    severity: 3
+    title: "In forced colours the chrome variant's ring keeps --ocelle-color-chrome-ink, invisible on a light system palette"
+    evidence:
+      - artifact: "research.md § R-09: `:host([ground=\"chrome\"]) .ring { stroke: var(--ocelle-color-chrome-ink) }` ... `@media (forced-colors: active) { .ring { stroke: currentColor } .spot { fill: currentColor } }`; data-model.md § Variants row 'forced colours (all) | @media (forced-colors: active) | currentColor | currentColor'"
+      - code: "Probe (scratchpad probe/el.js, probe.mjs): shadow stylesheet exactly as R-09, page.emulateMedia({forcedColors:'active'}). Light palette: chrome ring rgb(237, 233, 225) while default and mono rings are rgb(0, 0, 0) and the surrounding text colour is rgb(0, 0, 0); dark palette: chrome ring still rgb(237, 233, 225). Chromium does not force SVG stroke, and the forced-colours `.ring` (specificity 0,1,0) loses to `:host([ground=\"chrome\"]) .ring` (0,3,0: :host() counts as a pseudo-class plus its argument)."
+      - code: "packages/tokens/src/source.ts:51 color-chrome-ink is #EDE9E1 in both themes"
+    claim: |
+      The plan's forced-colours rule does not reach the chrome variant. In forced colours the chrome ground itself is
+      forced to Canvas (white in a light palette), so the ring is #EDE9E1 on white (about 1.2:1) and only the spot,
+      which does take currentColor, remains: the mark is not recognisable, against FR-027, SC-004 and constitution III
+      ("WCAG 2.2 AA ... in forced-colours mode"). ocelle-top-bar (#12) uses exactly this variant. US4-5 would catch it
+      at implementation, but the design the plan hands to the tasks is wrong and the README/data model state it works.
+    remedies:
+      - "Make the forced-colours rules at least as specific as every variant rule and place them last, e.g. `@media (forced-colors: active) { :host .ring, :host([ground]) .ring { stroke: currentColor } :host .spot, :host([ground]) .spot { fill: currentColor } }`, or express the variants through one internal custom property set per variant (`.ring { stroke: var(--_ring) }`) that the forced-colours block resets on `:host`; record in R-09 and the data model that the forced-colours rule is measured on all three variants in both palettes, and name a plant (forced-colours rule removed for the chrome selector only)."
+
+  - id: PLAN-A11Y-SECURITY-1-002
+    severity: 3
+    title: "A blank host aria-label next to a non-empty label exposes an unnamed image, not the label (FR-034)"
+    evidence:
+      - artifact: "data-model.md § ocelle-icon State: '`accessibleName` = trimmed host `aria-label` if non-empty, else trimmed `label` if non-empty' and the row 'yes | a name | ... | `role \"img\"`, `ariaLabel` = name'; research.md § R-13 sets `ElementInternals.ariaLabel = name`; spec FR-034 'an empty or whitespace-only `aria-label` counts as none'"
+      - code: "Probe (scratchpad probe/page.html): an element that sets internals role 'img' and ariaLabel 'Shut' when the host has `aria-label=\"  \" label=\"Shut\"` -> CDP getPartialAXTree gives `image:\"\"`; the same with `aria-label=\"\" label=\"Shut\"` -> `image:\"\"`; `label=\"Shut\"` alone -> `image:\"Shut\"`. Chromium uses the host attribute whenever it is present, so the internals ariaLabel never applies."
+    claim: |
+      The plan's mechanism yields an image node with an empty name for a case FR-034 defines as named by `label`
+      (blank host aria-label "counts as none"). An unnamed image is a WCAG 1.1.1 / 4.1.2 failure, and it is the state a
+      server-rendered template produces when it always writes `aria-label="${x}"` with an empty x. No scenario covers
+      the combination (US1-18 pairs a blank aria-label only with no label), so the defect would ship unnoticed.
+    remedies:
+      - "Amend FR-034 and the data model: a host `aria-label` attribute that is present decides naming alone; when it is blank the element is unlabelled (internals ariaHidden \"true\", no node) even with a `label`; the README says so. Add the case `<ocelle-icon id=\"blank-labelled\" name=\"close\" label=\"Shut\" aria-label=\"  \">` (and the mark's twin) to US1-18 / US4-14 with its paired named twin."
+      - "Keep FR-034 as written and move the exposed image off the host when the host aria-label is blank (host internals role 'none'/hidden-from-name, inner svg role img with aria-label), after measuring in the R-13 spike that a host with an id then adds no generic node; record the measurement in research.md."
+
+  - id: PLAN-A11Y-SECURITY-1-003
+    severity: 2
+    title: "Chromium does not trim a host aria-label; the R-13 'if not, stop at phase 2' fork is already decided and belongs at the plan gate"
+    evidence:
+      - artifact: "plan.md § Decisions 6: 'R-13's spike also checks whether Chromium trims a host aria-label; if it does not, phase 2 stops for an operator fork on US1-18'; spec US1-18 `aria-label=\" Close \"` -> 'exactly one image node named \"Close\"'; US4-14 `aria-label=\" Ocelle \"` -> named \"Ocelle\""
+      - code: "Probe: host `aria-label=\" Close \"` with internals role img and ariaLabel 'Close' -> CDP name `\" Close \"` (leading and trailing space kept), both in getPartialAXTree and getFullAXTree."
+    claim: |
+      The condition the plan defers to a phase-2 spike is measured now: Chromium keeps the spaces, and the element
+      cannot change a host attribute, so US1-18 and US4-14 as written cannot pass with the R-13 design. Deferring the
+      fork means phase 2 is planned, tasked and started on a scenario known to be unmeetable.
+    remedies:
+      - "Put the fork to the operator at the plan gate with the measurement: (a) change US1-18 / US4-14 to expect the host value as Chromium computes it and have tests compare names after whitespace trimming, the README telling hosts to pass trimmed values; or (b) keep the expectation and drop the host aria-label route in favour of `label` only (host aria-label then unsupported, like role). Record the measurement in R-13 and remove the conditional stop from plan decision 6."
+
+  - id: PLAN-A11Y-SECURITY-1-004
+    severity: 2
+    title: "The slot convention's zero-width-space ::before strut puts U+200B into every control's accessible name"
+    evidence:
+      - artifact: "research.md § R-10: '`.icon-slot::before { content: \"\\200b\"; }`: the zero-width space gives the wrapper the label's line-box height'; contracts/elements-package.md § Slot convention (later controls follow it)"
+      - code: "Probe (scratchpad probe/host.js, probe3.mjs): a shadow `<button>` with the R-10 markup, an icon slotted and the label 'Open project' -> CDP button name `\"\\u200b Open project \\u200b\"` (two U+200B) plus two StaticText nodes holding only U+200B. With `content: \"\\200b\" / \"\"` (alt text) the name is exactly 'Open project'; a strut `<span aria-hidden=\"true\">\\u200b</span>` in the wrapper also gives exactly 'Open project'."
+    claim: |
+      Generated content is part of name-from-content, so the strut changes the accessible name of every #7 and #12
+      control that takes its name from its label, and adds stray text nodes for assistive technology. The convention is
+      what later missions copy without redesign (FR-008, FR-020), and their exact-name tests (constitution III, SC-003
+      'exactly the control's own') would fail or have to loosen. The plan's tests only read an aria-label-named
+      icon-only control (US3-6), so nothing here catches it.
+    remedies:
+      - "Specify the strut as `content: \"\\200b\" / \"\"` (measured clean in Chromium) or as an aria-hidden span in the documented markup, and add to US3 a scenario reading the test host's name from its visible label ('Open project', exactly) with an icon in each slot, its plant being the strut without alt text."
+
+  - id: PLAN-A11Y-SECURITY-1-005
+    severity: 2
+    title: "The analyzer brings an install script (rs-module-lexer postinstall runs `npm install`) and native code; the plan assumes none"
+    evidence:
+      - artifact: "plan.md § Constitution Check, Licence and supply chain: 'no install script (to be confirmed by `gate:pins` for the analyzer's dependency tree in phase 1)'; research.md § R-06 Risk"
+      - code: "Lockfile-only resolve of @custom-elements-manifest/analyzer@0.11.0 (scratchpad cem/package-lock.json): 82 packages; hasInstallScript: rs-module-lexer@2.9.0 (via @custom-elements-manifest/find-dependencies ^2.5.1) and fsevents@2.3.3 (optional). `npm view rs-module-lexer@2.9.0 scripts` -> `{ postinstall: 'node postinstall.js' }`; postinstall.js calls `execSync(\"npm install --no-save ...\")` to fetch a platform binding, and index.js loads a native napi binding or a -wasm package."
+      - code: "pnpm-workspace.yaml: 'no dependency may run an install script'; `allowBuilds:` lists only `esbuild: false`"
+    claim: |
+      The plan's supply-chain line is wrong as stated, and the confirmation it defers will fail: pnpm will report an
+      unapproved build for rs-module-lexer, and the policy needs an explicit denial entry plus evidence that the
+      analyzer works without the script (with only the optional platform package). It also adds a native binary and
+      a second TypeScript (5.4.5) that run in the manifest gate on every CI run. That is a supply-chain decision the
+      operator should see at the plan gate, not discover in phase 1.
+    remedies:
+      - "Record in R-06 the measured tree (82 packages, two install scripts, native rs-module-lexer), add `rs-module-lexer: false` and `fsevents: false` to `allowBuilds` in setup, and require the phase-1 spike to run the analyzer with those builds denied in this container and in CI's Node; list the choice among the plan-gate decisions."
+      - "Choose the rejected alternative instead: a generator on the repository's TypeScript 6 compiler API (no new dependency tree), accepting the extra code to mutation-test."
+
+  - id: PLAN-A11Y-SECURITY-1-006
+    severity: 2
+    title: "The planned CSP recorder is an extra page script outside the fixture's allowed list; the repository's collector needs none"
+    evidence:
+      - artifact: "research.md § R-11: 'Each test records CSP violations (`securitypolicyviolation` listener in an external fixture script)'; spec § The strict-CSP fixture: the browser build 'with one same-origin `<script type=\"module\" src>` and nothing else (save the test-only scripts of the next item)' and 'No other request ... means none outside that list'"
+      - code: "packages/tokens/test/browser/serve.ts:116-129 `collectViolations` installs the listener with `page.addInitScript` (no page script, no request, active before any script runs) and is reused by packages/styles/test/browser/serve.ts:22"
+    claim: |
+      An external recorder script is a fourth test-only script the spec does not allow, and its own request falls
+      outside the allowed list, so either the request check must exempt it (weakening SC-001's 'zero requests outside
+      the list') or the page contradicts the fixture definition. A page script also only sees violations raised after
+      it runs. The existing addInitScript collector has neither problem, and 002 proved it with a control page.
+    remedies:
+      - "Replace the external recorder in R-11 with the existing `collectViolations`/`violations` of packages/tokens/test/browser/serve.ts, and add a control page (one inline style, as 002/003) to the elements-browser suite so the collector is shown to record a violation."
+
+  - id: PLAN-A11Y-SECURITY-1-007
+    severity: 1
+    title: "Lit's fallback path in the browser build creates <style> elements; FR-004's 'no <style> element' and the engine floor are unstated"
+    evidence:
+      - artifact: "spec FR-004 'Built output ... (the browser build including the Lit code it holds), contains no inline script, no `<style>` element'; research.md § R-05 'Measured: ... gate:csp ... no finding'"
+      - code: "@lit/reactive-element 2.1.2 development/css-tag.js:12-15 `supportsAdoptingStyleSheets` requires `adoptedStyleSheets` and no non-native ShadyCSS; css-tag.js:104-121 otherwise `document.createElement('style')` with `textContent` per stylesheet, appended to the shadow root"
+    claim: |
+      The csp gate passes because the fallback builds the element by DOM call, not from a literal, but the shipped
+      file does create `<style>` elements in an engine without constructable stylesheets or on a page that defines a
+      `window.ShadyCSS` shim. Under the strict CSP those are blocked and the elements render unstyled (no icon-size
+      box). Kitty Desktop's WebKit is unmeasured; the floor (adoptedStyleSheets, WebKit 16.4) is nowhere recorded.
+    remedies:
+      - "State in R-05 and the README that the elements require constructable stylesheets (Chromium 73+, WebKit 16.4+) and that the Lit fallback is unreachable there, so FR-004 holds for supported engines; or qualify FR-004's wording to 'no <style> element in any supported engine'."
+
+  - id: PLAN-A11Y-SECURITY-1-008
+    severity: 1
+    title: "The browser build drops Lit's @license banners; the shipped file carries no notice of the code inside it"
+    evidence:
+      - artifact: "research.md § R-15: THIRD_PARTY_NOTICES names 'published file `@ocelle/elements dist/browser/ocelle-elements.js`'; R-05 browser build 'minified'"
+      - code: "Probe (scratchpad vlic/): Vite 8.3.5 library build (format es, minify true) of a module with a `/** @license ... SPDX-License-Identifier: BSD-3-Clause */` banner -> dist/out.js contains no licence comment."
+    claim: |
+      The Ocelle console serves the browser build as a single file; once copied out of the tarball it carries Lit
+      without any copyright line. The tarball's THIRD_PARTY_NOTICES satisfies BSD-3-Clause for npm redistribution, but
+      the plan should decide whether the file itself keeps a banner, and the build test cannot check what is not stated.
+    remedies:
+      - "Add a short banner to the browser build (Rolldown `output.banner` or keeping legal comments) naming @ocelle/elements' licence and Lit's BSD-3-Clause notice with a pointer to THIRD_PARTY_NOTICES, and assert it in test/node/build.test.ts; or record in R-15 that the file carries no banner and why that suffices."
