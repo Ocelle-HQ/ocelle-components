@@ -1,0 +1,3 @@
+# History fold phase-1 of claude/010-storybook-workbench: old commit -> new commit (pre-fold head kept as refs/ocelle/prefold/phase-1/claude/010-storybook-workbench, d74d95729fd4bfc6361525ef95438f26ed8930fb).
+cfc043d93a2d57c78379e3e304e5d7126c20850f d19eac73aeb097db46ebef7b25326c07bc771f9b
+d74d95729fd4bfc6361525ef95438f26ed8930fb d208876fa25deb8699c5d08d85ea0a93aa2f3fd5
