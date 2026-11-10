@@ -1,0 +1,3 @@
+$ node gates/bin/mutation.ts -- --base 7cb34304e8d4e096fbdcd869367b7906c7e971c1
+mutation: 10 mutants on the changed lines of 1 file, none survived; 0 equivalent records
+exit=0 seconds=69
