@@ -207,7 +207,8 @@ cost: on 206 mutants of one file (`gates/bin/pins.ts`), 197 s with it against 15
 per mutant at concurrency 4 and 0.6 s at 8. One `source.ts` entry holds up to 224 mutants (op 004, `121-180`), so the
 checker alone is expected at about 135 s at concurrency 8 and about 200 s at 4, close to or above the 176 s bound
 whatever the test order. Core 10.1.1 pipelines checking and test runs (`executeCheck` feeds `executeRunInTestRunner`),
-so log timestamps do not separate the two; the split is measured by 001's method (R-06).
+so log timestamps do not separate the two. The checker split of R-06 is recorded beside each entry as a diagnostic
+only: it does not measure the checker's share (PLAN-FRESH-2-002), and no lever is chosen or skipped on it.
 
 **Decision: lever 1, run the token tests first in Stryker's runs.** `vitest.mutation.config.ts` gives the `tokens`
 project `sequence.groupOrder: 1` and every other project `2`; no project is left at `0`, which under Stryker's
@@ -226,9 +227,9 @@ before/after runs measure it.
 sandbox. A lower value gives the test runs more of the cores, which the limit was set under; a higher one helps the
 checker, which 001 measured (197 s at 4 → 140 s at 8). So the candidates are measured, not assumed: today's 8, one lower
 (4) and one higher (12), each on the slowest `source.ts` entry with the checker split of R-06, and the value kept is the
-one that brings the slowest entry within 176 s without making FR-013's reference entries slower. If the checker's share
-alone (R-06) exceeds 176 s for an entry, no concurrency on four cores can fix that entry, and the plan goes straight to
-lever 3.
+one that brings the slowest entry within 176 s without making FR-013's reference entries slower. Lever 2 is decided on
+the measured entry time alone (FR-010) and is always tried before lever 3; the checker split (R-06) is a diagnostic and
+never skips it (operator decision PLAN-FRESH-2-002 (a)).
 
 **The CI runner's core count is not settled.** The constitution (§ Technology) keeps the repository internal until
 1.0.0. 001's records conflict: `reviews/spec/check-1-fixes.md` SPEC-1-11 records the CI runner as "`ubuntu-latest`,
@@ -240,7 +241,7 @@ such). Lever 2's candidate is chosen for both cases: on a 4-vCPU runner the sand
 2-vCPU runner the candidates are also measured on the sandbox with the gate pinned to two cores (`taskset -c 0,1`, which
 `os.availableParallelism()` follows), and that ranking chooses the value. Either way the CI figures of FR-010 decide.
 
-**Lever 3, only if levers 1 and 2 miss FR-010, or the checker's share alone exceeds 176 s: FR-014.** The operator
+**Lever 3, only if levers 1 and 2 both miss FR-010 on the measured entry time: FR-014.** The operator
 decides an amendment of 001 FR-013 (for example a bound on mutants per entry), recorded with its date; the plan gains
 its design then.
 
@@ -268,8 +269,11 @@ disable comments; dropping projects from `vitest.mutation.config.ts`; changing `
   order that really runs the token tests first.
 - The existing assertion `expect(mutation).toEqual(all.filter(...))` (:40) deep-compares the mutation projects with
   `vitest.config.ts`'s and breaks as soon as only the mutation config adds `sequence`. It is replaced by a stricter one:
-  each mutation project, with `test.sequence.groupOrder` removed, deep-equals its `vitest.config.ts` counterpart (so no
-  other setting may differ), and the `groupOrder` values are asserted exactly (`tokens` 1, every other project 2). The
+  each mutation project, with its whole `test.sequence` key removed, deep-equals its `vitest.config.ts` counterpart (so
+  no other setting may differ; no project of `vitest.config.ts` has a `sequence` key, and removing only `groupOrder`
+  would leave `sequence: {}`, which `toEqual` does not ignore), and each mutation project's `test.sequence` deep-equals
+  exactly `{ groupOrder: 1 }` for `tokens` and `{ groupOrder: 2 }` for every other project, so no other `sequence`
+  setting can hide behind the removal. The
   replacement and its reason are stated in the phase review (Principle VIII).
 
 The FR-011a measurement runs before and after carry the timing (Principle VIII exemption for configuration, spec
@@ -298,22 +302,32 @@ with `OCELLE_CHROMIUM_PATH` set and `PLAYWRIGHT_BROWSERS_PATH` pointing at the a
 (`source.ts:1-60`, `61-120`, `121-180`, `181-230`); the cut count it writes to stderr is recorded. Each run keeps its
 stdout, its stderr, its time and a copy of `reports/mutation/mutation.json`.
 
-**The checker split** (001's method, PLAN-CORRECTNESS-1-002): for each `source.ts` entry in the red pass, and for any
-green entry over 176 s, the same entry is run once more with `"checkers": []` in `stryker.config.json` (a scratch edit
-in the working tree for that run only, restored with `git checkout -- stryker.config.json`, never `git stash`). The
-difference of the two wall times is the checker's share, recorded beside each entry; the expected share from 001's
-figures (R-05) is recorded with it.
+**The checker split, a diagnostic** (001's method, PLAN-CORRECTNESS-1-002): for each `source.ts` entry in the red pass,
+and for any green entry over 176 s, the same entry is run once more with `"checkers": []` in `stryker.config.json` (a
+scratch edit in the working tree for that run only, restored with `git checkout -- stryker.config.json`, never
+`git stash`). Both wall times and their difference are recorded beside each entry, with the expected figure from 001
+(R-05), under the label "checker split (diagnostic, not the checker's share)". The difference is not the checker's
+share: the two runs differ in test-runner count (`ceil(c/2)` checkers and `floor(c/2)` runners with the checker, `c`
+runners without, `concurrency-token-provider.js:19-30`), in the mutants that reach the tests (with the checker off,
+group A's CompileErrors run the suite), and in how much checking overlaps the tests
+(`4-mutation-test-executor.js:55-61`). No lever is chosen or skipped on it (operator decision PLAN-FRESH-2-002 (a)):
+levers 2 and 3 are decided on the measured entry time alone (FR-010), lever 2 always before lever 3.
 
 **FR-013 reference entries:** `packages/tokens/src/generate.ts`'s first `--plan` entry and `gates/lib/wcag.ts`, same
-command, before and after. They are compared **per mutant**, by location (start line and column) and mutator, not only
-by counts: no mutant Killed before may be Timeout, Survived or NoCoverage after, and no count may move the wrong way.
+command, before and after. They are compared **per mutant**, not only by counts. Each mutant is keyed by its start
+(line, column), its end (line, column), its mutator and its replacement, read from `mutation.json`; one start can
+carry several mutants (the `Regex` mutants of `gates/lib/wcag.ts:4`, the ConditionalExpression `true`/`false` pairs at
+`:10` and `:16`), so start and mutator alone do not identify one. The comparison fails loudly, and decides nothing, if
+a key repeats within one run's file or a key of the before run is missing after (or the reverse); it is then stated in
+the README and the cause found before the entry is judged. Compared by that key: no mutant Killed before may be
+Timeout, Survived or NoCoverage after, and no count may move the wrong way.
 Timeout counts vary with load (op 004: `121-180` gave 105 and 97 Timeouts on two runs), so a Killed → Timeout move
 triggers one re-run of both the before and the after run of that entry, one at a time, before it is called a
 regression; both pairs of runs are recorded, and the move counts as a regression only if the re-run shows it again.
 
 **Where it is kept:** `specs/007-mutation-gate-strictness/evidence/` (`red/`, `green/`, one folder per entry, and a
-`README.md` table like op 004's: mutants, Killed, Timeout, Survived, NoCoverage, CompileError, time, checker share,
-within 176 s).
+`README.md` table like op 004's: mutants, Killed, Timeout, Survived, NoCoverage, CompileError, time, checker split
+(diagnostic), within 176 s).
 
 **FR-011's per-mutant record.** A script in the evidence folder is not needed: the README lists every former Timeout
 mutant by record name, field, theme and mutator, with its red and green status and, for Killed, the report's `killedBy`
@@ -325,12 +339,28 @@ Killed meets FR-011 only when all three hold, each checked and noted in the READ
 
 1. every test named in `killedBy` is in the `tokens` project (`packages/tokens/test/`);
 2. `statusReason` is an assertion failure (an `expect` mismatch), not an error thrown at module load or in setup;
-3. the `statusReason` message or the killing test's name names the mutated record (its name, field or value) or its
-   group.
+3. `killedBy` is one of the named value/group tests of `packages/tokens/test/source-table.test.ts`, each of which
+   compares every record's value or group with `expected.ts` per token:
+   - "declares each token's light value (or its one value) in the unconditioned :root block" (light values, `:39`);
+   - "declares each theme-dependent token's dark value under both dark selectors, where it differs from light" (dark
+     values, `:45`);
+   - "gives each token its group, its resolved value per theme (or its one value) and its references" (the JSON
+     export's groups and values, `:76`).
 
-A mutant that fails any of them does not meet FR-011 and is handled like a remaining Timeout (the next lever). One
-Killed mutant per group (B, C, and A if any) is applied by hand to a scratch copy and the token tests run, as op 004
-did; the working tree is restored from git afterwards, never with `git stash`.
+   The list is fixed here, before any green run is read; a kill by any other test does not meet criterion 3.
+
+`statusReason` is recorded as given and is not judged for what it names; criterion 2 reads only its kind (an `expect`
+mismatch or a thrown error). Stryker passes on only the first error's `message` (`vitest-helpers.js:37`), and for
+these tests, which compare one object keyed by every token, Vitest truncates it to the first key
+(`expected { 'space-0': '0.25rem', …(119) } to deeply equal …`), so it names no mutated record (PLAN-FRESH-2-001).
+The tie of a kill to its record is shown by the by-hand application below, whose Vitest diff names the mutated key
+(operator decision PLAN-FRESH-2-001 (a)); no test is changed for it.
+
+A mutant that fails criterion 1, 2 or 3 does not meet FR-011 and is handled like a remaining Timeout (the next lever).
+Message text alone (which record, field or value `statusReason` or a test name names) is never a criterion failure
+and never triggers lever 2 or 3. One Killed mutant per group (B, C, and A if any) is applied by hand to a scratch copy
+and the token tests run, as op 004 did; the Vitest diff of that run, which names the mutated key, is kept with the
+evidence. The working tree is restored from git afterwards, never with `git stash`.
 
 ## R-07 The CI measurement (spec FR-010, *Assumptions* "CI measurement")
 

@@ -20,11 +20,11 @@ For `packages/tokens/src/source.ts`, Stryker's runs order the `tokens` test proj
 `maxWorkers: 1` runs last), so the static `""` mutants whose killers are token tests stop at the first failing token
 test instead of waiting behind the other projects until the ≈32 s limit (R-05, lever 1). A measured concurrency
 (lever 2, either direction, chosen for the CI runner's core count) and an FR-014 amendment (lever 3) follow only if the
-measurement says so; the checker's share of each entry is measured, and if it alone exceeds the bound the plan goes
-straight to lever 3. The red and green evidence is the gate itself, `--files` per `source.ts` entry against
-`ec0f533~1`, checker on (R-06), the red runs taken at the phase base before any User Story 1 code; the CI half is a
-measurement commit on the mission's pull request at landing, with a source.ts-only draft run only if a mixed shard
-misses 480 s (R-07).
+measurement says so, decided on the measured entry time alone, lever 2 always tried before lever 3; the checker split
+of each entry is recorded as a diagnostic only. The red and green evidence is the gate itself, `--files` per
+`source.ts` entry against `ec0f533~1`, checker on (R-06), the red runs taken at the phase base before any User Story 1
+code; the CI half is a measurement commit on the mission's pull request at landing, with a source.ts-only draft run
+only if a mixed shard misses 480 s (R-07).
 
 ## Technical Context
 
@@ -112,8 +112,8 @@ knowledge/speckit-flows/log.md, findings/frontend-missions.md    # closed entrie
 
 - **First, before any US1 code: the red measurement (spec FR-011a).** At the phase base, with the gate and configuration
   of `main`: the measurement runs of R-06 for the four `source.ts` entries and the two FR-013 reference entries, and the
-  checker split of each `source.ts` entry, kept in `evidence/red/` with each run's `mutation.json`, from which the
-  Timeouts and CompileErrors are read (the old gate prints none). Heavy; one at a time.
+  checker split of each `source.ts` entry (a diagnostic, R-06), kept in `evidence/red/` with each run's
+  `mutation.json`, from which the Timeouts and CompileErrors are read (the old gate prints none). Heavy; one at a time.
 - **Phase US1 (P1), the report.** In this order (R-02): the judge's red tests (`records` against `record` lines only,
   `reports` as a multiset, `reports` rejected on non-mutation plants, `parsePlant` accepting `reports`), then the judge;
   the zero-mutant probe of R-03 (`pass-zero-mutant` on the real, unchanged gate), which confirms the report Stryker
@@ -126,11 +126,12 @@ knowledge/speckit-flows/log.md, findings/frontend-missions.md    # closed entrie
   review sentence in both copies, the `log.md` zero-mutant candidate.
 - **Phase US2 (P2), the token source.** The behavioural red test and the stricter config assertion on
   `vitest-mutation-config.test.ts` (R-05), lever 1, the green runs; lever 2 (measured in either direction, for the CI
-  core count) only if an entry misses 176 s or keeps a Timeout; straight to lever 3 if an entry's checker share alone
-  exceeds 176 s; if lever 2 also misses, stop and bring FR-014 to the operator (a gate question in this run, not a
-  follow-up). FR-013's per-mutant comparison with its re-run rule. The FR-011 per-mutant record with its three criteria
-  and the by-hand kills. `dist` comparison. Records: `findings/frontend-missions.md` § Mutation shard time; 001 FR-013
-  and SC-005 only under lever 3. The CI half of FR-010 stays open for landing (R-07).
+  core count) only if an entry misses 176 s or keeps a Timeout, always before lever 3, whatever the checker split shows;
+  if lever 2 also misses, stop and bring FR-014 to the operator (a gate question in this run, not a follow-up). FR-013's
+  per-mutant comparison, keyed by start and end, mutator and replacement, with its re-run rule. The FR-011 per-mutant
+  record with its three criteria (the third: `killedBy` is one of the named value/group tests of `source-table.test.ts`)
+  and the by-hand kills, which show the tie to the record. `dist` comparison. Records: `findings/frontend-missions.md`
+  § Mutation shard time; 001 FR-013 and SC-005 only under lever 3. The CI half of FR-010 stays open for landing (R-07).
 
 US1 lands before US2's green runs so that they print their Timeouts as report lines, which makes the green evidence
 readable from the gate's output; the red evidence is read from the kept reports.

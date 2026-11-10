@@ -22,7 +22,9 @@ alias of `knowledge/speckit-flows/findings/frontend-missions.md` § Browser path
    entries and writes the cut count to stderr.
 2. For each `source.ts` entry, the measurement run of research.md R-06, timed. Expected: 0 `timeout` lines, exit 0,
    at most 176 s (spec FR-009, FR-010); compare with `evidence/red/`, taken before any mission code.
-3. The same for the FR-013 reference entries; compare per mutant with `evidence/red/` (R-06, with its re-run rule).
+3. The same for the FR-013 reference entries; compare per mutant with `evidence/red/`, each mutant keyed by start and
+   end (line, column), mutator and replacement; a repeated or unmatched key fails the comparison loudly (R-06, with its
+   re-run rule).
 4. `pnpm exec vitest run --project gates-integration gates/test/integration/vitest-mutation-config.test.ts`: the token
    modules start first under Stryker's options.
 5. `pnpm --filter @ocelle/tokens build` and `cmp` `dist/tokens.css`, `dist/tokens.json`, `dist/index.d.ts` with the
