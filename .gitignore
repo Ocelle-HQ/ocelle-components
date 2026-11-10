@@ -11,3 +11,5 @@ storybook/.generated/
 reports/
 __screenshots__/
 *.tsbuildinfo
+storybook/.visual/
+storybook/.cache/

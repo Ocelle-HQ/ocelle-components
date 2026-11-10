@@ -60,12 +60,12 @@ first); the pins, scripts, ignores and the spike record have no behaviour and ar
 
 ### Tests (red, one commit)
 
-- [ ] T001 `gates/test/container-pin.test.ts` (contracts/container.md § The pin test): first assertion that `storybook/visual/container.json` exists (so the red is an assertion failure, not a read error); then `node` equals `.node-version`, `platform` is `"linux/amd64"`, `digest` matches `^sha256:[0-9a-f]{64}$`, and `browser` equals `chromium_headless_shell-<revision>` with the revision of the `chromium-headless-shell` entry of `playwright-core/browsers.json`; a second case runs the same check function on a fixture copy with a wrong `node` and a wrong `browser` and asserts each is reported. Commit it alone (`test(006-storybook-workbench): phase 1 red — container pin`) and run `.specify/extensions/story/scripts/red.sh 1 phase`; confirm it fails on the existence assertion
+- [X] T001 `gates/test/container-pin.test.ts` (contracts/container.md § The pin test): first assertion that `storybook/visual/container.json` exists (so the red is an assertion failure, not a read error); then `node` equals `.node-version`, `platform` is `"linux/amd64"`, `digest` matches `^sha256:[0-9a-f]{64}$`, and `browser` equals `chromium_headless_shell-<revision>` with the revision of the `chromium-headless-shell` entry of `playwright-core/browsers.json`; a second case runs the same check function on a fixture copy with a wrong `node` and a wrong `browser` and asserts each is reported. Commit it alone (`test(006-storybook-workbench): phase 1 red — container pin`) and run `.specify/extensions/story/scripts/red.sh 1 phase`; confirm it fails on the existence assertion
 
 ### Implementation
 
-- [ ] T002 `storybook/visual/container.json` exactly as contracts/container.md § `storybook/visual/container.json` (image `mcr.microsoft.com/playwright`, digest `sha256:ee15712262f017b8157421b212b12099146645f44b1bc5c0514cbbe6a229b1d0`, platform `linux/amd64`, tag `v1.64.1-noble`, node `26.13.0`, browser `chromium_headless_shell-1248`); T001 passes
-- [ ] T003 [P] Root `package.json`: devDependencies `axe-core` `4.14.0` and `pngjs` `7.0.0` (exact); scripts `gate:storybook-build`, `gate:visual`, `gate:axe` and `visual:update` pointing at `gates/bin/storybook-build.ts`, `visual.ts`, `axe.ts`, `baselines.ts` (entry stubs that exit 2 "not implemented" until their phase); `.gitignore` gains `storybook/.visual/` and `storybook/.cache/`; run a non-frozen `pnpm install` and commit `pnpm-lock.yaml`; `pnpm run gate:pins` passes
+- [X] T002 `storybook/visual/container.json` exactly as contracts/container.md § `storybook/visual/container.json` (image `mcr.microsoft.com/playwright`, digest `sha256:ee15712262f017b8157421b212b12099146645f44b1bc5c0514cbbe6a229b1d0`, platform `linux/amd64`, tag `v1.64.1-noble`, node `26.13.0`, browser `chromium_headless_shell-1248`); T001 passes
+- [X] T003 [P] Root `package.json`: devDependencies `axe-core` `4.14.0` and `pngjs` `7.0.0` (exact); scripts `gate:storybook-build`, `gate:visual`, `gate:axe` and `visual:update` pointing at `gates/bin/storybook-build.ts`, `visual.ts`, `axe.ts`, `baselines.ts` (entry stubs that exit 2 "not implemented" until their phase); `.gitignore` gains `storybook/.visual/` and `storybook/.cache/`; run a non-frozen `pnpm install` and commit `pnpm-lock.yaml`; `pnpm run gate:pins` passes
 - [ ] T004 The spike (plan.md § Phases 1; scratch scripts in the scratchpad only), recorded in `specs/006-storybook-workbench/reviews/phase-1/spike.md` with commands and outputs:
   - Storybook 10.6.5's build output (stdout, stderr, exit) for a syntax error, an unresolved import, a non-CSF file and missing `storybook/node_modules`; kept as fixtures under `gates/test/fixtures/storybook-build/` for T010;
   - the render signals (`STORY_RENDERED`, `STORY_THREW_EXCEPTION`, `STORY_ERRORED`, `STORY_MISSING`) and `body.sb-show-errordisplay` for a module that throws, a render that throws and a missing id;
@@ -75,7 +75,7 @@ first); the pins, scripts, ignores and the spike record have no behaviour and ar
   - `docker image inspect` and `docker buildx imagetools inspect --raw` outputs of the pin (fixtures under `gates/test/fixtures/container/`) and the tag's index digest (for `error-index-pin`);
   - axe-core 4.14.0 on the 12 stories in both themes with R-08's context and rules (any serious or critical result: stop-and-ask per FR-029);
   - measured candidates for `fail-two-low-contrast` and `fail-incomplete`.
-- [ ] T005 [P] `specs/006-storybook-workbench/reviews/phase-1/tdd-exempt.md`: T003 and T004 have no behaviour (pins, scripts, ignores, a record); T001 is the phase's red
+- [X] T005 [P] `specs/006-storybook-workbench/reviews/phase-1/tdd-exempt.md`: T003 and T004 have no behaviour (pins, scripts, ignores, a record); T001 is the phase's red
 
 ---
 
