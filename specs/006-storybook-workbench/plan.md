@@ -95,15 +95,19 @@ about 14 new source modules.
 
 ## Constitution Check
 
-*Pre-design and post-design: PASS. No new exception to a principle. Three exceptions are closed, and one accepted cost
-with a sunset is recorded, the plant job's growth with the repository's stories (Complexity Tracking, operator
-decision on PLAN-FRESH-2-007 (b)). Updated after the plan squad's rounds 1 and 2.*
+*Pre-design and post-design: PASS. Three exceptions are closed, one accepted cost with a sunset is recorded, the
+plant job's growth with the repository's stories (Complexity Tracking, operator decision on PLAN-FRESH-2-007 (b)),
+and ten per-node exceptions to III are recorded under FR-029 with scope, rationale, the operator's approval and a
+sunset: the Prose document's serious `color-contrast` incomplete results, which the axe gate counts as findings and
+whose cause is base.css's prose table scroll box (003 surface; operator decision on the phase 1 spike § 7,
+2026-11-10). No other new exception to a principle. Updated after the plan squad's
+rounds 1 and 2 and the phase 1 spike.*
 
 | Principle | How this plan meets it |
 |---|---|
 | I. Names, no I/O | No element is added. The gates' names carry no `sk-`. The prefix gate's Storybook scope does not change (FR-022); it now matches declarations across lines. Run-time I/O of a story (same-origin fetch, XHR, WebSocket, EventSource, ping, storage by method or named property, cookies, IndexedDB, the Cache API, clipboard, beacon, and storage left when the render ends) fails the visual gate as `io` (FR-030, R-14), so the no-I/O rule has a check from the first element on. |
 | II. Tokens, brand rules | The `font` rule makes "no face but Schibsted Grotesk" a merge gate for every story (research R-05), the text of form controls (values, placeholders, button-type input labels, in user-agent shadow roots) included, and the contributor note says an element's shadow styles set its form controls' font. The monospace walk stays in the render test. |
-| III. Accessible | axe runs on every story in both themes, on the whole document minus Storybook's harness, so surfaces anywhere are audited, and a surface outside the story root, or a closed shadow root axe cannot enter, fails. Serious and critical violations and serious and critical incomplete results fail the gate, so rendered contrast that axe cannot decide is not passed silently; empty stories are not passes. The rule set and the harness-document rules not run are named in FR-016 and checked against axe-core's own metadata (R-08). An exception covers one node and is honoured only with its Complexity Tracking row (FR-029). Pointer states can be stories and are audited (R-15), in a browser context with the capture's options (1280 × 800, reduced motion), so axe audits the page the capture shows (R-08). Forced colours stay with the element tests (spec Edge Cases). |
+| III. Accessible | axe runs on every story in both themes, on the whole document minus Storybook's harness, so surfaces anywhere are audited, and a surface outside the story root, or a closed shadow root axe cannot enter, fails. Serious and critical violations and serious and critical incomplete results fail the gate, so rendered contrast that axe cannot decide is not passed silently; empty stories are not passes. The rule set and the harness-document rules not run are named in FR-016 and checked against axe-core's own metadata (R-08). An exception covers one node and is honoured only with its Complexity Tracking row (FR-029); the spike's one existing violation is fixed in the story's render code (`tabindex="0"` on its wide tables), and only the incomplete results whose fix is a 003 change are excepted, node by node. Pointer states can be stories and are audited (R-15), in a browser context with the capture's options (1280 × 800, reduced motion), so axe audits the page the capture shows (R-08). Forced colours stay with the element tests (spec Edge Cases). |
 | IV. Strict CSP | `csp` covers the packages' built output "with no exception" again: the Storybook is not built output of a package (operator Q1 (a)), so 002's exceptions 1 and 2 close. Elements remain bound to IV through their package output; their run-time strict-CSP browser test is recorded in `gates/README.md`'s deferred table as the first element feature's (#17 or #7), and the contributor note says element packages prove it in their own browser tests (R-10). |
 | V. Storybook, baselines | Every story has two committed baselines made in a pinned container, covering the full page at scroll position (0, 0). The gate fails on a missing or stray baseline. CI's captures are the record when local and CI disagree (R-02), for the plants' baselines too: the baseline command's plant mode regenerates them and the Plants job uploads its captures in tree layout, for `pass-second-render` (`captureAlone`) captures made alone by single-story-theme requests so its freshness reference never comes from a full run (R-11). A story per state includes pointer states, whose target must lie inside the initial viewport so a state is never silently not applied (R-15). Baselines change only in a pull request whose description says why; the contributor note says so and landing checks it. |
 | VI. Own code | The gates and the capture are this repository's code. The container image and axe-core are third-party tools used in CI and development only, not shipped (plan-gate decision 1). |
@@ -136,8 +140,8 @@ Updated after the plan squad's round 1; the operator's fork decisions of 2026-11
    the CSP header test is removed and Storybook's inline scripts stay in the HTML (R-10).
 6. **FR-017's "missing dependencies" breaking plant stays** (PLAN-CORRECTNESS-1-007 (a)): plant roots now hold the
    Storybook workspace and its `node_modules` link, a plant can omit the link, and the gate resolves the Storybook CLI
-   before building (exit 2 "storybook is not installed; run pnpm install"). The earlier decision 6 is dropped (R-09,
-   R-16).
+   before building (exit 2 "storybook is not installed; run pnpm install"), the only signal of that case, since the
+   build itself does not fail on it (spike § 1). The earlier decision 6 is dropped (R-09, R-16).
 7. **Baselines are produced locally in this run** (docker here), confirmed by phase 3's CI run of the branch; **CI is
    the producer of record** when a local run and CI disagree: the Visual regression job uploads its captures in
    baseline layout, and the contributor note says to commit those (PLAN-FRESH-1-006 (a)) (R-02, R-11).
@@ -169,6 +173,15 @@ Updated after the plan squad's round 1; the operator's fork decisions of 2026-11
     backstop for writes (spec delta to FR-030, PLAN-FRESH-3-002) (R-14).
 18. **The axe gate opens its context with the capture's options**, from one function that also gives the pointer
     rule its viewport (PLAN-FRESH-3-003) (R-08, R-15).
+19. **The build function turns off pnpm's dependency check before `run`**: it runs
+    `pnpm --config.verify-deps-before-run=false --dir storybook run build`, because the check re-links the
+    repository's `node_modules` from a plant root (measured, spike § 4); the repository's pnpm configuration is not
+    changed, and the gate's CLI check is the only signal of missing Storybook dependencies (operator decision on the
+    phase 1 spike § 4, "flag in the build fn", 2026-11-10) (R-09, R-16).
+20. **The Prose document story's tables get `tabindex="0"`** in the story's render code, clearing its
+    `scrollable-region-focusable` violation, and its ten serious `color-contrast` incomplete results (five nodes, two
+    themes) are per-node exceptions in Complexity Tracking with a 003 sunset (operator decision on the phase 1 spike
+    § 7, "tabindex + exceptions", 2026-11-10) (R-08).
 
 ## Project Structure
 
@@ -217,7 +230,7 @@ gates/
 storybook/
 ├── baselines/*.png                                              # 24 baselines
 ├── visual/container.json
-├── a11y-exceptions.json                                         # []
+├── a11y-exceptions.json                                         # the 10 Complexity Tracking entries (phase 4)
 ├── README.md                                                    # contributor note (FR-025)
 ├── .storybook/main.ts                                           # Vite cacheDir inside the workspace root
 │                                                                #   (Storybook's CACHE_DIR set by the build function)
@@ -262,8 +275,10 @@ data the gates read (baselines, pin, exceptions).
      `gates/test/plant-repo.test.ts` and its integration test; the plant runner's serial Storybook plants;
    - `storybook-index.ts`, `storybook-build.ts` (parser, from the spike's fixtures, and the CLI check), the gate, its
      plants (`error-missing-dependencies` included), the registry entries, the `storybook-build` CI job;
-   - the Vite cache directory in `.storybook/main.ts` and `CACHE_DIR` in the build function's environment, with the
-     integration test that a plant-root build leaves `storybook/node_modules` unchanged (R-09, R-16).
+   - the Vite cache directory in `.storybook/main.ts`, `CACHE_DIR` in the build function's environment and
+     `--config.verify-deps-before-run=false` on its pnpm call (the repository's pnpm configuration unchanged;
+     operator decision on the phase 1 spike § 4), with the integration test that a plant-root build leaves the
+     repository's `storybook/node_modules` and root `node_modules` unchanged (R-09, R-16).
 3. **US2 Visual regression** (P2):
    - `ranges.ts`: `gates/visual/` in the mutation scope, red first in `gates/test/mutation-ranges.test.ts`;
    - `png.ts` (normalise, diff image, the one-pixel unit test), `visual-verdict.ts` (verdicts, `updatePlan`),
@@ -296,7 +311,10 @@ data the gates read (baselines, pin, exceptions).
    - the gate, its context from `contextOptions(theme)` with the unit test that its options equal the capture's for
      each theme (R-08), its plants (`fail-hover-near-fold` included) and `storybook/a11y-exceptions.json`;
    - the `axe` CI job;
-   - story fixes for any existing finding (FR-029).
+   - story fixes for any existing finding (FR-029): `tabindex="0"` on the Prose document's wide tables in
+     `storybook/stories/render.ts`, red first in `storybook/test/unit/render.test.ts`, which clears
+     `scrollable-region-focusable` (spike § 7); the ten `color-contrast-incomplete` entries of Complexity Tracking in
+     `storybook/a11y-exceptions.json`, the gate on the repository then exiting 0 with them excepted.
 5. **US4 CSP retarget and documentation** (P4):
    - `csp.ts` scope and its plants, and the `csp` job's packages-only build;
    - `prefix.ts` matching declarations across lines, red first with `fail-storybook-html-multiline-monospace` and a
@@ -315,7 +333,7 @@ Each phase is folded after its approval (`/ocelle-run` step 4.3).
 
 ## Complexity Tracking
 
-No new exception. Closed by this feature:
+Closed by this feature:
 
 | Exception | Where | Closed because |
 |---|---|---|
@@ -334,6 +352,28 @@ rows, with the operator's approval, before phase 4 records them in `storybook/a1
 the story, theme, rule and selector in backticks and the sunset (the op that fixes it), and the file's entry names this
 plan (`specs/006-storybook-workbench/plan.md`) as its `plan`, since the gate honours an entry only with its row
 (FR-029, research R-08).
+
+Opened by this feature, axe exceptions under FR-029 (operator decision on the phase 1 spike § 7, "tabindex +
+exceptions", 2026-11-10, human:jeroennouwsdev). The spike found, in `base-styles--prose-document` in both themes,
+five serious `color-contrast` incomplete results, reason `elmPartiallyObscured`: the twelfth column of both wide
+tables is clipped by base.css's prose table scroll box (`display: block; overflow-x: auto`, 003 surface), so axe
+cannot decide its contrast. The story's `scrollable-region-focusable` violation is fixed in the story instead
+(`tabindex="0"`, phase 4) and has no row. Each row below is one entry of `storybook/a11y-exceptions.json` (same story,
+theme, rule, selector and sunset; `plan` `specs/006-storybook-workbench/plan.md`). Selectors are the spike's (host
+Chromium 1243); phase 4 re-measures them after the `tabindex` fix, and any difference goes back to the operator.
+
+| Story | Theme | Rule | Selector | Reason | Approval | Sunset |
+|---|---|---|---|---|---|---|
+| `base-styles--prose-document` | `light` | `color-contrast-incomplete` | `table:nth-child(12) > thead > tr > th:nth-child(12)` | clipped column of the wide table's scroll box (`elmPartiallyObscured`) | operator, 2026-11-10 | the op that fixes the color-contrast incomplete results of base.css's prose table scroll box (003 surface), to be opened by the operator |
+| `base-styles--prose-document` | `light` | `color-contrast-incomplete` | `table:nth-child(12) > tbody > tr:nth-child(1) > td:nth-child(12)` | clipped column of the wide table's scroll box (`elmPartiallyObscured`) | operator, 2026-11-10 | the op that fixes the color-contrast incomplete results of base.css's prose table scroll box (003 surface), to be opened by the operator |
+| `base-styles--prose-document` | `light` | `color-contrast-incomplete` | `tr:nth-child(2) > td:nth-child(12)` | clipped column of the wide table's scroll box (`elmPartiallyObscured`) | operator, 2026-11-10 | the op that fixes the color-contrast incomplete results of base.css's prose table scroll box (003 surface), to be opened by the operator |
+| `base-styles--prose-document` | `light` | `color-contrast-incomplete` | `table:nth-child(14) > thead > tr > th:nth-child(12)` | clipped column of the linked wide table's scroll box (`elmPartiallyObscured`) | operator, 2026-11-10 | the op that fixes the color-contrast incomplete results of base.css's prose table scroll box (003 surface), to be opened by the operator |
+| `base-styles--prose-document` | `light` | `color-contrast-incomplete` | `table:nth-child(14) > tbody > tr > td:nth-child(12)` | clipped column of the linked wide table's scroll box (`elmPartiallyObscured`) | operator, 2026-11-10 | the op that fixes the color-contrast incomplete results of base.css's prose table scroll box (003 surface), to be opened by the operator |
+| `base-styles--prose-document` | `dark` | `color-contrast-incomplete` | `table:nth-child(12) > thead > tr > th:nth-child(12)` | clipped column of the wide table's scroll box (`elmPartiallyObscured`) | operator, 2026-11-10 | the op that fixes the color-contrast incomplete results of base.css's prose table scroll box (003 surface), to be opened by the operator |
+| `base-styles--prose-document` | `dark` | `color-contrast-incomplete` | `table:nth-child(12) > tbody > tr:nth-child(1) > td:nth-child(12)` | clipped column of the wide table's scroll box (`elmPartiallyObscured`) | operator, 2026-11-10 | the op that fixes the color-contrast incomplete results of base.css's prose table scroll box (003 surface), to be opened by the operator |
+| `base-styles--prose-document` | `dark` | `color-contrast-incomplete` | `tr:nth-child(2) > td:nth-child(12)` | clipped column of the wide table's scroll box (`elmPartiallyObscured`) | operator, 2026-11-10 | the op that fixes the color-contrast incomplete results of base.css's prose table scroll box (003 surface), to be opened by the operator |
+| `base-styles--prose-document` | `dark` | `color-contrast-incomplete` | `table:nth-child(14) > thead > tr > th:nth-child(12)` | clipped column of the linked wide table's scroll box (`elmPartiallyObscured`) | operator, 2026-11-10 | the op that fixes the color-contrast incomplete results of base.css's prose table scroll box (003 surface), to be opened by the operator |
+| `base-styles--prose-document` | `dark` | `color-contrast-incomplete` | `table:nth-child(14) > tbody > tr > td:nth-child(12)` | clipped column of the linked wide table's scroll box (`elmPartiallyObscured`) | operator, 2026-11-10 | the op that fixes the color-contrast incomplete results of base.css's prose table scroll box (003 surface), to be opened by the operator |
 
 The page-level axe rules that are not run (decision 3) are not an exception: FR-016 names them as rules that judge the
 Storybook harness document, not a story (spec delta of the plan squad's round 1).

@@ -26,7 +26,7 @@ repository's entries and copies the plan files they name (research.md R-16).
 | `fail-empty-index` | fail | `storybook/dist/index.json`: `empty-index` (a stories glob that matches files with no story export) |
 | `pass-repository` | pass | the repository's stories |
 | `pass-type-error-only` | pass | a story with a type error that is valid syntax (the `typecheck` gate's) |
-| `error-missing-dependencies` | error | `unlinked: ["storybook/node_modules"]`; cause `storybook is not installed; run pnpm install` (FR-017's missing dependencies) |
+| `error-missing-dependencies` | error | `unlinked: ["storybook/node_modules"]`; cause `storybook is not installed; run pnpm install` (FR-017's missing dependencies), given only by the gate's CLI check: the build, run with `--config.verify-deps-before-run=false`, neither reinstalls nor names them (research.md R-09) |
 | `error-no-build-script` | error | cause `storybook/package.json has no build script` |
 
 ## `visual`
@@ -92,7 +92,7 @@ repository's entries and copies the plan files they name (research.md R-16).
 | `fail-stale-exception` | fail | `storybook/a11y-exceptions.json#0`: `stale-exception` (entry and plan row present, no matching node) |
 | `fail-unrecorded-exception` | fail | an entry whose `plan` file holds no matching Complexity Tracking row: `storybook/a11y-exceptions.json#0`: `unrecorded-exception`, and the node's own finding |
 | `fail-excepted-second-node` | fail | the `pass-excepted` story with a second node of the excepted rule: one finding for the second node only |
-| `pass-repository` | pass | the repository's stories, with the repository's exception entries and the plan files they name (`exceptions: "repository"`, as every axe plant); the harness-document rules not run |
+| `pass-repository` | pass | the repository's stories, with the repository's exception entries and the plan files they name (`exceptions: "repository"`, as every axe plant: today the ten `base-styles--prose-document` `color-contrast-incomplete` entries and `specs/006-storybook-workbench/plan.md`); the harness-document rules not run |
 | `pass-minor-only` | pass | a story whose only violation is of minor or moderate impact |
 | `pass-excepted` | pass | a story with a serious violation, its exception entry (with `selector`) and a plan file in `tree/` whose Complexity Tracking holds the row |
 | `pass-excepted-incomplete` | pass | the `fail-incomplete` story with an exception entry for `color-contrast-incomplete` and its plan row |

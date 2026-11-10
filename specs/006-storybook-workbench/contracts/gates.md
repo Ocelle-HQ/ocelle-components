@@ -14,7 +14,7 @@ never a package's `dist/` (research.md R-09).
 |---|---|
 | Command | `pnpm run gate:storybook-build` |
 | Plant command | `node gates/bin/storybook-build.ts --root {root}` (form `repo-tree`) |
-| Scope | the Storybook workspace's build (`storybook/`), through its own `build` script, run with `CACHE_DIR=<root>/storybook/.cache` (research.md R-09) |
+| Scope | the Storybook workspace's build (`storybook/`), through its own `build` script: `pnpm --config.verify-deps-before-run=false --dir storybook run build` in the root, with `CACHE_DIR=<root>/storybook/.cache` (research.md R-09; the flag keeps pnpm from re-linking the repository's `node_modules` from a plant root, operator decision on the phase 1 spike § 4) |
 | Exit 0 | `storybook-build: built <n> stories` |
 
 | Rule | Location | When |
@@ -25,7 +25,11 @@ never a package's `dist/` (research.md R-09).
 
 Exit 2, checked before the build in this order: `storybook/package.json` missing or without a `build` script; the
 Storybook CLI not resolvable from `storybook/node_modules` ("storybook is not installed; run pnpm install"); `pnpm` not
-found. After a successful build: `dist/index.json` missing or not JSON.
+found. After a successful build: `dist/index.json` missing or not JSON. The CLI check is the only signal of missing
+dependencies: the build itself gives none that names them (without the flag pnpm reinstalls them and the build passes;
+with it the script fails `storybook: not found`, exit 127; research.md R-09, spike § 1).
+
+The `visual` and `axe` gates build through the same build function, so the same command and environment.
 
 ## `visual` (check "Visual regression")
 
