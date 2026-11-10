@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { emit, formatFinding, formatLocation } from "../lib/findings.ts";
+import { emit, formatFinding, formatLocation, plural } from "../lib/findings.ts";
 import type { GateResult } from "../lib/findings.ts";
 
 const sha = "0123456789abcdef0123456789abcdef01234567";
@@ -101,5 +101,25 @@ describe("emit", () => {
       out: [],
       err: ["unit-tests: could not run: no test file found second line"],
     });
+  });
+});
+
+// 007 research R-04: the mutation gate's summary counts zero-mutant entries, whose plural is not the noun with an `s`,
+// so plural() takes an optional irregular plural; the two-argument form appends `s` as before.
+describe("plural", () => {
+  it("gives the singular for 1 and the given plural for 0 and 2", () => {
+    expect(plural(1, "zero-mutant entry", "zero-mutant entries")).toBe("1 zero-mutant entry");
+    expect(plural(0, "zero-mutant entry", "zero-mutant entries")).toBe("0 zero-mutant entries");
+    expect(plural(2, "zero-mutant entry", "zero-mutant entries")).toBe("2 zero-mutant entries");
+  });
+
+  it("appends s to the noun for any count but 1 when no plural is given", () => {
+    expect([plural(0, "file"), plural(1, "file"), plural(2, "file"), plural(1, "compile error"), plural(3, "compile error")]).toEqual([
+      "0 files",
+      "1 file",
+      "2 files",
+      "1 compile error",
+      "3 compile errors",
+    ]);
   });
 });

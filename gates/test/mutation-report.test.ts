@@ -1,6 +1,7 @@
 import { readFileSync } from "node:fs";
 import { describe, expect, it } from "vitest";
 import { classifyMutants } from "../lib/mutation/report.ts";
+import type { MutantVerdict } from "../lib/mutation/report.ts";
 import type { ChangedFile, LineRange } from "../lib/mutation/ranges.ts";
 
 // A recorded Stryker 10 JSON report (gates/test/fixtures/stryker/report.json: gates/lib/sample.ts mutated on lines
@@ -31,6 +32,9 @@ describe("classifyMutants", () => {
     expect(classifyMutants(run, [changed(sample, ranges)])).toEqual({
       ok: true,
       mutants: 10,
+      timeouts: [{ path: sample, line: 3, mutator: "ConditionalExpression", replacement: "true" }],
+      compileErrors: [{ path: sample, line: 2, mutator: "BlockStatement", replacement: "{}" }],
+      zeroEntries: [],
       findings: [
         survivor(3, "EqualityOperator", "Survived: replaced by value <= low"),
         survivor(9, "ConditionalExpression", "Survived: replaced by true"),
@@ -46,18 +50,35 @@ describe("classifyMutants", () => {
     expect(classifyMutants(run, [changed(sample, [{ start: 4, end: 4 }])])).toEqual({
       ok: true,
       mutants: 5,
+      timeouts: [],
+      compileErrors: [{ path: sample, line: 2, mutator: "BlockStatement", replacement: "{}" }],
+      zeroEntries: [],
       findings: [
         survivor(4, "ConditionalExpression", "Survived: replaced by true"),
         survivor(4, "EqualityOperator", "Survived: replaced by value >= high"),
       ],
     });
-    expect(classifyMutants(run, [changed(sample, [{ start: 6, end: 7 }])])).toEqual({ ok: true, mutants: 1, findings: [] });
+    expect(classifyMutants(run, [changed(sample, [{ start: 6, end: 7 }])])).toEqual({
+      ok: true,
+      mutants: 1,
+      findings: [],
+      timeouts: [],
+      compileErrors: [{ path: sample, line: 2, mutator: "BlockStatement", replacement: "{}" }],
+      zeroEntries: [],
+    });
   });
 
   it("leaves out mutants of a file that did not change", () => {
     const run = { report, exitCode: 1, output: "" };
     const files = [changed("gates/lib/other.ts", [{ start: 3, end: 3 }]), changed(sample, [{ start: 5, end: 5 }])];
-    expect(classifyMutants(run, files)).toEqual({ ok: true, mutants: 1, findings: [] });
+    expect(classifyMutants(run, files)).toEqual({
+      ok: true,
+      mutants: 1,
+      findings: [],
+      timeouts: [],
+      compileErrors: [{ path: sample, line: 2, mutator: "BlockStatement", replacement: "{}" }],
+      zeroEntries: ["gates/lib/other.ts"],
+    });
   });
 
   it("counts a mutant whose lines overlap a changed range, at the range's first and last line too", () => {
@@ -73,6 +94,9 @@ describe("classifyMutants", () => {
     expect(classifyMutants(run, [changed(sample, [{ start: 5, end: 7 }])])).toEqual({
       ok: true,
       mutants: 4,
+      timeouts: [],
+      compileErrors: [],
+      zeroEntries: [],
       findings: [
         survivor(1, "Mb", "Survived: replaced by b"),
         survivor(7, "Mc", "Survived: replaced by c"),
@@ -94,6 +118,9 @@ describe("classifyMutants", () => {
     expect(classifyMutants(run, [changed(sample, [{ start: 3, end: 3 }])])).toEqual({
       ok: true,
       mutants: 1,
+      timeouts: [],
+      compileErrors: [],
+      zeroEntries: [],
       findings: [survivor(2, "ObjectLiteral", "NoCoverage: replaced by { a: 1 }")],
     });
   });
@@ -142,6 +169,9 @@ describe("classifyMutants", () => {
     expect(classifyMutants(run, [changed(sample, [{ start: 3, end: 3 }])])).toEqual({
       ok: true,
       mutants: 1,
+      timeouts: [],
+      compileErrors: [],
+      zeroEntries: [],
       findings: [survivor(3, "BlockStatement", "Survived: replaced by")],
     });
   });
@@ -175,7 +205,14 @@ describe("classifyMutants: a changed file absent from the report (phase 3 round 
   const typesOnly = changed("gates/lib/types-only.ts", [{ start: 1, end: 4 }]);
 
   it("counts a changed file with changed lines that the recorded report does not list as zero mutants, and passes", () => {
-    expect(classifyMutants(run, [typesOnly])).toEqual({ ok: true, mutants: 0, findings: [] });
+    expect(classifyMutants(run, [typesOnly])).toEqual({
+      ok: true,
+      mutants: 0,
+      findings: [],
+      timeouts: [],
+      compileErrors: [],
+      zeroEntries: ["gates/lib/types-only.ts"],
+    });
   });
 
   it("passes a file the report lists with every mutant on its changed lines killed, next to an absent file", () => {
@@ -183,6 +220,9 @@ describe("classifyMutants: a changed file absent from the report (phase 3 round 
       ok: true,
       mutants: 1,
       findings: [],
+      timeouts: [],
+      compileErrors: [{ path: sample, line: 2, mutator: "BlockStatement", replacement: "{}" }],
+      zeroEntries: ["gates/lib/types-only.ts"],
     });
   });
 });
@@ -253,5 +293,198 @@ describe("stryker.config.json: the unread-entry warning prints (phase 3 round 12
   it("sets no logLevel, or one of trace, debug, info and warn", () => {
     const config = JSON.parse(readFileSync(new URL("../../stryker.config.json", import.meta.url), "utf8")) as { logLevel?: unknown };
     expect([undefined, "trace", "debug", "info", "warn"]).toContain(config.logLevel);
+  });
+});
+
+// 007 User Story 1 (spec FR-001 to FR-003, FR-007; data-model § Mutant verdict; research R-01, R-03): besides the
+// findings and the mutant count, the verdict holds the Timeout and the CompileError mutants on changed lines (path,
+// start line, mutator, replacement through oneLine), in changed-file order, then start line, then start column, then
+// mutant id compared as a number (a non-decimal id after every numeric one, by string), and the entries with no
+// mutant on their changed lines (named by `entry`, else by path), in changed-file order. The verdicts are unchanged.
+describe("classifyMutants: the report of undecided mutants and zero-mutant entries (007)", () => {
+  function at(id: string, line: number, column: number, status: string, mutatorName = `M${id}`, replacement = `r${id}`): object {
+    return { id, mutatorName, replacement, status, location: { start: { line, column }, end: { line, column: column + 4 } } };
+  }
+  const reportOf = (files: Readonly<Record<string, readonly object[]>>): string =>
+    JSON.stringify({ files: Object.fromEntries(Object.entries(files).map(([path, mutants]) => [path, { mutants }])) });
+  const other = "packages/tokens/src/other.ts";
+
+  it("holds every status of the status table with its verdict unchanged: only Timeout and CompileError are reported", () => {
+    const statuses = ["Killed", "RuntimeError", "Timeout", "CompileError", "Ignored", "Survived", "NoCoverage"];
+    const mutants = statuses.map((status, index) => at(String(index), index + 1, 1, status, status));
+    const run = { report: reportOf({ [sample]: mutants }), exitCode: 0, output: "" };
+    expect(classifyMutants(run, [changed(sample, [{ start: 1, end: 7 }])])).toEqual({
+      ok: true,
+      mutants: 7,
+      findings: [survivor(6, "Survived", "Survived: replaced by r5"), survivor(7, "NoCoverage", "NoCoverage: replaced by r6")],
+      timeouts: [{ path: sample, line: 3, mutator: "Timeout", replacement: "r2" }],
+      compileErrors: [{ path: sample, line: 4, mutator: "CompileError", replacement: "r3" }],
+      zeroEntries: [],
+    });
+  });
+
+  it("cannot decide on an unknown status beside a Timeout and a CompileError, with today's cause", () => {
+    const mutants = [at("0", 1, 1, "Timeout"), at("1", 2, 1, "CompileError"), at("2", 3, 1, "Pending")];
+    const run = { report: reportOf({ [sample]: mutants }), exitCode: 0, output: "" };
+    expect(classifyMutants(run, [changed(sample, [{ start: 1, end: 3 }])])).toEqual({
+      ok: false,
+      cause: `mutation: could not run: mutant 2 at ${sample}:3 has status Pending; re-run the mutation gate`,
+    });
+  });
+
+  it("neither reports nor counts a Timeout or a CompileError on an unchanged line", () => {
+    const mutants = [at("0", 2, 1, "Timeout"), at("1", 4, 1, "CompileError"), at("2", 3, 1, "Killed")];
+    const run = { report: reportOf({ [sample]: mutants }), exitCode: 0, output: "" };
+    expect(classifyMutants(run, [changed(sample, [{ start: 3, end: 3 }])])).toEqual({
+      ok: true,
+      mutants: 1,
+      findings: [],
+      timeouts: [],
+      compileErrors: [],
+      zeroEntries: [],
+    });
+  });
+
+  it("reports an undecided mutant at its start line when only a later line of its range changed", () => {
+    const spanning = (id: string, status: string): object => ({
+      id,
+      mutatorName: "BlockStatement",
+      replacement: "{}",
+      status,
+      location: { start: { line: 2, column: 5 }, end: { line: 6, column: 1 } },
+    });
+    const run = { report: reportOf({ [sample]: [spanning("0", "Timeout"), spanning("1", "CompileError")] }), exitCode: 0, output: "" };
+    expect(classifyMutants(run, [changed(sample, [{ start: 6, end: 6 }])])).toEqual({
+      ok: true,
+      mutants: 2,
+      findings: [],
+      timeouts: [{ path: sample, line: 2, mutator: "BlockStatement", replacement: "{}" }],
+      compileErrors: [{ path: sample, line: 2, mutator: "BlockStatement", replacement: "{}" }],
+      zeroEntries: [],
+    });
+  });
+
+  it("joins a replacement over several lines into one line, and gives a mutant without a replacement an empty one", () => {
+    const withoutReplacement = { id: "1", mutatorName: "BlockStatement", status: "CompileError", location: { start: { line: 2, column: 1 }, end: { line: 2, column: 5 } } };
+    const mutants = [at("0", 1, 1, "Timeout", "ObjectLiteral", "{\n  a: 1\n}"), withoutReplacement];
+    const run = { report: reportOf({ [sample]: mutants }), exitCode: 0, output: "" };
+    expect(classifyMutants(run, [changed(sample, [{ start: 1, end: 2 }])])).toMatchObject({
+      timeouts: [{ path: sample, line: 1, mutator: "ObjectLiteral", replacement: "{ a: 1 }" }],
+      compileErrors: [{ path: sample, line: 2, mutator: "BlockStatement", replacement: "" }],
+    });
+  });
+
+  it("orders by changed-file order, then start line, then start column, then id as a number, non-decimal ids last by string", () => {
+    const sampleMutants = [
+      at("b", 5, 3, "Timeout"),
+      at("1e1", 5, 3, "Timeout"),
+      at("10", 5, 3, "Timeout"),
+      at("a", 5, 3, "Timeout"),
+      at("9", 5, 3, "Timeout"),
+      at("2", 5, 3, "Timeout"),
+      at("3", 5, 2, "Timeout"),
+      at("4", 4, 9, "Timeout"),
+      at("30", 7, 1, "CompileError"),
+      at("31", 6, 8, "CompileError"),
+      at("32", 6, 10, "CompileError"),
+      at("100", 6, 10, "CompileError"),
+      at("99", 6, 10, "CompileError"),
+    ];
+    const otherMutants = [at("50", 9, 1, "Timeout"), at("51", 1, 1, "CompileError"), at("52", 3, 1, "Timeout")];
+    // The report lists sample.ts first; the changed files list other.ts first.
+    const run = { report: reportOf({ [sample]: sampleMutants, [other]: otherMutants }), exitCode: 0, output: "" };
+    const verdict = classifyMutants(run, [changed(other, [{ start: 1, end: 9 }]), changed(sample, [{ start: 1, end: 9 }])]);
+    const key = (mutant: { readonly path: string; readonly mutator: string }): string => `${mutant.path === other ? "other" : "sample"} ${mutant.mutator}`;
+    expect(verdict).toMatchObject({ ok: true });
+    expect(verdict).toHaveProperty("timeouts");
+    expect(verdict).toHaveProperty("compileErrors");
+    const { timeouts, compileErrors } = verdict as Extract<MutantVerdict, { ok: true }>;
+    expect(timeouts.map(key)).toEqual([
+      "other M52",
+      "other M50",
+      "sample M4",
+      "sample M3",
+      "sample M2",
+      "sample M9",
+      "sample M10",
+      "sample M1e1",
+      "sample Ma",
+      "sample Mb",
+    ]);
+    expect(compileErrors.map(key)).toEqual([
+      "other M51",
+      "sample M31",
+      "sample M32",
+      "sample M99",
+      "sample M100",
+      "sample M30",
+    ]);
+  });
+
+  it("orders mutants of equal position and equal numeric value as Stryker listed them", () => {
+    const mutants = [at("07", 1, 1, "Timeout"), at("7", 1, 1, "Timeout"), at("007", 1, 1, "Timeout")];
+    const run = { report: reportOf({ [sample]: mutants }), exitCode: 0, output: "" };
+    const verdict = classifyMutants(run, [changed(sample, [{ start: 1, end: 1 }])]);
+    expect(verdict).toMatchObject({ ok: true });
+    expect(verdict).toHaveProperty("timeouts");
+    expect((verdict as Extract<MutantVerdict, { ok: true }>).timeouts.map((mutant) => mutant.mutator)).toEqual(["M07", "M7", "M007"]);
+  });
+
+  it("makes an entry with no mutant on its changed lines a zero-mutant entry, also when its file has mutants elsewhere", () => {
+    const run = { report: reportOf({ [sample]: [at("0", 2, 1, "Killed"), at("1", 70, 1, "Timeout")] }), exitCode: 0, output: "" };
+    const files = [
+      { ...changed("packages/tokens/src/types.ts", [{ start: 1, end: 3 }]), entry: "packages/tokens/src/types.ts" },
+      { ...changed(sample, [{ start: 61, end: 69 }]), entry: `${sample}:61-69` },
+      { ...changed(other, [{ start: 1, end: 1 }]), entry: other },
+    ];
+    expect(classifyMutants(run, files)).toEqual({
+      ok: true,
+      mutants: 0,
+      findings: [],
+      timeouts: [],
+      compileErrors: [],
+      zeroEntries: ["packages/tokens/src/types.ts", `${sample}:61-69`, other],
+    });
+  });
+
+  it("names a zero-mutant entry by its entry when given and by its path otherwise, in changed-file order", () => {
+    const run = { report: reportOf({ [sample]: [at("0", 2, 1, "Killed")] }), exitCode: 0, output: "" };
+    const files = [
+      changed(other, [{ start: 1, end: 1 }]),
+      changed(sample, [{ start: 2, end: 2 }]),
+      { ...changed("gates/lib/z.ts", [{ start: 121, end: 130 }]), entry: "gates/lib/z.ts:121-130" },
+      changed("gates/lib/a.ts", [{ start: 1, end: 1 }]),
+    ];
+    expect(classifyMutants(run, files)).toMatchObject({ ok: true, mutants: 1, zeroEntries: [other, "gates/lib/z.ts:121-130", "gates/lib/a.ts"] });
+  });
+
+  it("makes every entry a zero-mutant entry when the report has no mutant at all, and keeps an entry with only undecided mutants out", () => {
+    const empty = { report: reportOf({}), exitCode: 0, output: "" };
+    expect(classifyMutants(empty, [changed(sample, [{ start: 1, end: 2 }]), changed(other, [{ start: 3, end: 3 }])])).toEqual({
+      ok: true,
+      mutants: 0,
+      findings: [],
+      timeouts: [],
+      compileErrors: [],
+      zeroEntries: [sample, other],
+    });
+    const undecided = { report: reportOf({ [sample]: [at("0", 1, 1, "Timeout")], [other]: [at("1", 3, 1, "CompileError")] }), exitCode: 0, output: "" };
+    expect(classifyMutants(undecided, [changed(sample, [{ start: 1, end: 2 }]), changed(other, [{ start: 3, end: 3 }])])).toMatchObject({
+      ok: true,
+      mutants: 2,
+      zeroEntries: [],
+    });
+  });
+
+  it("reports a Timeout beside a survivor, apart from the findings", () => {
+    const run = { report: reportOf({ [sample]: [at("0", 1, 1, "Survived", "StringLiteral", '""'), at("1", 2, 1, "Timeout", "StringLiteral", '""')] }), exitCode: 0, output: "" };
+    expect(classifyMutants(run, [changed(sample, [{ start: 1, end: 2 }])])).toEqual({
+      ok: true,
+      mutants: 2,
+      findings: [survivor(1, "StringLiteral", 'Survived: replaced by ""')],
+      timeouts: [{ path: sample, line: 2, mutator: "StringLiteral", replacement: '""' }],
+      compileErrors: [],
+      zeroEntries: [],
+    });
   });
 });
