@@ -38,3 +38,7 @@ calc(var(--ocelle-icon-size) - 1lh - 1lh)`) each fail with one `ocelle/token-onl
 | `gate:prefix` | exit 0, 191 files, no finding |
 | `pnpm test` | exit 0, 2429 tests in 115 files |
 | `gate:plants` | exit 0: 214 plants of 14 gates and the registry judged, every plant as expected (the six `lh` plants included) |
+| `gate:mutation -- --base aea13f4` (first run) | exit 1: 3 survivors in `token-only.ts`'s `admittedLine()` (a comment reading `1lh` counted as a length, a comment beside `1lh` taken as its operand, a non-`var()` function with an `--ocelle-*` first argument taken as a token); tests added in `3f58087`, no source change |
+| `gate:mutation -- --base aea13f4` (final) | exit 0: 150 mutants on the changed lines of 2 files, none survived; 0 equivalent records |
+
+No mutation shard came near 10 minutes.

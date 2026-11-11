@@ -193,7 +193,7 @@ from the label, empty slots take no space, and an icon-only host's name is exact
 - [X] T046 [US3] `gates/stylelint/token-only.ts`: `1lh` alone and once as a `+`/`-` operand beside an `--ocelle-*` token inside `calc()`; the plants of T041
 - [X] T047 [US3] `packages/elements/src/icon-slot.ts`: `iconSlotStyles` per R-10 and data-model § Slot convention (`.icon-row` inline-flex, `align-items: flex-start`, `padding-block: calc((var(--ocelle-icon-size) - 1lh) / 2)`; `.icon-slot` `block-size: 1lh`, centred, `flex: none`; `::slotted(*)` size, `max-inline-size: none`, `flex: none`, `--ocelle-icon-size: inherit` all `!important`, `color: inherit`; margins toward the label)
 - [X] T048 [US3] README slot-convention and naming sections (T045)
-- [ ] T049 [US3] Run each US3 plant once, record in `reviews/phase-4/plants.md`; then `gate:style-lint`, `gate:csp`, `gate:prefix`, `gate:plants`, `gate:mutation -- --base <phase base>` (one at a time; csp and prefix because `icon-slot.ts` joins the built output, analysis L6)
+- [X] T049 [US3] Run each US3 plant once, record in `reviews/phase-4/plants.md`; then `gate:style-lint`, `gate:csp`, `gate:prefix`, `gate:plants`, `gate:mutation -- --base <phase base>` (one at a time; csp and prefix because `icon-slot.ts` joins the built output, analysis L6)
 
 **Checkpoint**: `tdd-check.sh 4` reports `pass`.
 
