@@ -1,5 +1,5 @@
 Scope: all 5 workspace projects
-✓ Lockfile passes supply-chain policies (verified 3h ago)
+✓ Lockfile passes supply-chain policies (verified 1d ago)
 Lockfile is up to date, resolution step is skipped
 Packages are hard linked from the content-addressable store to the virtual store.
   Content-addressable store is at: /root/.local/share/pnpm/store/v11
@@ -32,19 +32,19 @@ devDependencies:
 + vite 8.3.5
 + vitest 5.0.5
 
-Done in 491ms using pnpm v12.16.1
+Done in 499ms using pnpm v12.16.1
 $ node gates/bin/setup-offline.ts
 setup: installed offline; Chromium at /opt/pw-browsers/chromium-1243/chrome-linux64/chrome
 $ node gates/bin/test.ts
 storybook/test/unit/main.test.ts:30: unit-tests: main.ts sets Vite's cacheDir to storybook/.cache/vite beside this configuration, and keeps the rest of the Vite configuration: AssertionError: expected 'undefined' to be 'function' // Object.is equality
 gates/test/integration/plant-repo.test.ts:112: unit-tests: buildRepoTree: the Storybook workspace (006 research.md R-16) copies the Storybook workspace inputs unchanged, and nothing built, generated, cached or tested: AssertionError: expected [ '.node-version', …(18) ] to deeply equal []
-gates/test/integration/plant-repo.test.ts:121: unit-tests: buildRepoTree: the Storybook workspace (006 research.md R-16) copies nothing built, generated, cached, captured or tested of the repository's Storybook: AssertionError: storybook/package.json in /tmp/ocelle-repo-tree-ZpFEjh: expected false to be true // Object.is equality
+gates/test/integration/plant-repo.test.ts:121: unit-tests: buildRepoTree: the Storybook workspace (006 research.md R-16) copies nothing built, generated, cached, captured or tested of the repository's Storybook: AssertionError: storybook/package.json in /tmp/ocelle-repo-tree-ScN49R: expected false to be true // Object.is equality
 gates/test/integration/plant-repo.test.ts:137: unit-tests: buildRepoTree: the Storybook workspace (006 research.md R-16) links storybook/node_modules to the real path of the repository's, beside node_modules: AssertionError: expected false to be true // Object.is equality
-gates/test/integration/plant-repo.test.ts:146: unit-tests: buildRepoTree: the Storybook workspace (006 research.md R-16) removes only the storybook/node_modules link for unlinked ["storybook/node_modules"]: AssertionError: storybook/package.json in /tmp/ocelle-repo-tree-khuYwT: expected false to be true // Object.is equality
-gates/test/integration/plant-repo.test.ts:156: unit-tests: buildRepoTree: the Storybook workspace (006 research.md R-16) copies storybook/baselines when the repository holds it: AssertionError: storybook/baselines/fixture--story.light.png in /tmp/ocelle-repo-tree-jDKXNN: expected false to be true // Object.is equality
-gates/test/integration/plant-repo.test.ts:165: unit-tests: buildRepoTree: the Storybook workspace (006 research.md R-16) writes storybook/a11y-exceptions.json as [] when the tree supplies none, and keeps the tree's own: AssertionError: storybook/a11y-exceptions.json in /tmp/ocelle-repo-tree-rnfKTK: expected false to be true // Object.is equality
+gates/test/integration/plant-repo.test.ts:146: unit-tests: buildRepoTree: the Storybook workspace (006 research.md R-16) removes only the storybook/node_modules link for unlinked ["storybook/node_modules"]: AssertionError: storybook/package.json in /tmp/ocelle-repo-tree-ChAhVr: expected false to be true // Object.is equality
+gates/test/integration/plant-repo.test.ts:156: unit-tests: buildRepoTree: the Storybook workspace (006 research.md R-16) copies storybook/baselines when the repository holds it: AssertionError: storybook/baselines/fixture--story.light.png in /tmp/ocelle-repo-tree-ml3EIJ: expected false to be true // Object.is equality
+gates/test/integration/plant-repo.test.ts:165: unit-tests: buildRepoTree: the Storybook workspace (006 research.md R-16) writes storybook/a11y-exceptions.json as [] when the tree supplies none, and keeps the tree's own: AssertionError: storybook/a11y-exceptions.json in /tmp/ocelle-repo-tree-W6eAIj: expected false to be true // Object.is equality
 gates/test/integration/plant-repo.test.ts:174: unit-tests: buildRepoTree: the Storybook workspace (006 research.md R-16) appends the repository's entries after the tree's own for exceptions: "repository", and copies the plan files they name: Error: delta.json: unknown key exceptions
-gates/test/integration/plant-repo.test.ts:190: unit-tests: buildRepoTree: the Storybook workspace (006 research.md R-16) does not copy the repository's entries or plan files without the key: AssertionError: storybook/a11y-exceptions.json in /tmp/ocelle-repo-tree-0Exv0a: expected false to be true // Object.is equality
+gates/test/integration/plant-repo.test.ts:190: unit-tests: buildRepoTree: the Storybook workspace (006 research.md R-16) does not copy the repository's entries or plan files without the key: AssertionError: storybook/a11y-exceptions.json in /tmp/ocelle-repo-tree-6Q0JIL: expected false to be true // Object.is equality
 gates/test/integration/plant-repo.test.ts:198: unit-tests: buildRepoTree: the Storybook workspace (006 research.md R-16) fails to build a root whose repository's exception entries name a plan file the repository does not hold: Error: expected [Function] to throw error including 'a11y-exceptions.json names specs/no-s…' but got 'delta.json: unknown key exceptions'
 gates/test/integration/plant-repo.test.ts:315: unit-tests: buildMutationRepo commits the configuration set with base/, then head/ (files only in base/ deleted), node_modules linked and untracked: AssertionError: expected [ 'eslint.config.ts', …(26) ] to deeply equal ArrayContaining{…}
 gates/test/integration/plants-robustness.test.ts:161: unit-tests: contrast and brand-rules plants under neighbouring changes has the two gates' plants and the registry's: AssertionError: expected { others: 11, plants: 31 } to deeply equal { others: 12, plants: 31 }
