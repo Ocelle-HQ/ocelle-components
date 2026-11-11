@@ -168,7 +168,8 @@ async function judgeAll(
   const inOrder = (paths: ReadonlySet<string>): string[] => cases.map((name) => `${dir}/${name}`).filter((path) => paths.has(path));
   const skipped = inOrder(left.skip);
   const notRun = inOrder(left["not-run"]);
-  return { count: cases.length - skipped.length - notRun.length, problems, skipped, notRun };
+  // The count is printed only when every plant that needs an engine ran, so it leaves out the skipped plants alone.
+  return { count: cases.length - skipped.length, problems, skipped, notRun };
 }
 
 export async function plants(context: Context, tools: PlantTools, io: Io): Promise<number> {

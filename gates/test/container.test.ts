@@ -234,3 +234,29 @@ describe("runArgs (contracts/container.md § Run arguments)", () => {
     ]);
   });
 });
+
+// Edges the mutation run found unexamined (phase 3): pins that are no objects or have empty fields, the JSON error kept
+// as the cause, an empty media type, and inspect outputs that are not one image or have no list of RepoDigests.
+describe("container: edges", () => {
+  it("refuses a pin that is null, a number, or has an empty field, and keeps the JSON error", () => {
+    expect(() => parsePin("null")).toThrow("storybook/visual/container.json is not a JSON object");
+    expect(() => parsePin("1")).toThrow("storybook/visual/container.json is not a JSON object");
+    expect(() => parsePin(JSON.stringify({ ...pin, node: "" }))).toThrow("storybook/visual/container.json: node must be a non-empty string");
+    const error = ((): unknown => {
+      try {
+        return parsePin("{");
+      } catch (thrown) {
+        return thrown;
+      }
+    })();
+    expect((error as Error).cause).toBeInstanceOf(SyntaxError);
+  });
+
+  it("refuses an empty media type, an inspect output of no single object, and RepoDigests that are no list", () => {
+    expect(mediaTypeProblem(JSON.stringify({ mediaType: "" }))).toBe("the registry's manifest of the pin has no media type");
+    for (const output of ["[null]", "[1]", "[{},{}]", "[[]]"]) expect(inspectProblem("docker", output, pin)).toBe("the image inspect output of docker is not readable");
+    const [image] = JSON.parse(fixture("docker-containerd-inspect.json")) as Record<string, unknown>[];
+    expect(inspectProblem("docker", JSON.stringify([{ ...image, RepoDigests: undefined }]), pin)).toBe("the pulled image does not match the pin: RepoDigests");
+    expect(inspectProblem("docker", JSON.stringify([{ ...image, RepoDigests: reference }]), pin)).toBe("the pulled image does not match the pin: RepoDigests");
+  });
+});

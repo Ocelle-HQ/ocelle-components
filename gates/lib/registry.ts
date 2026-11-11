@@ -128,11 +128,12 @@ export function checkRegistry(input: RegistryInput): Finding[] {
 
 /** A finding when a step of the plants job of the workflow passes `--skip-container` (006 research.md R-07). */
 export function skipContainerFindings(workflow: string, workflowPath: string): Finding[] {
-  const lines = workflow.split(/\r?\n/);
-  const start = lines.findIndex((line) => /^ {2}(['"]?)plants\1:\s*$/.test(line));
-  if (start === -1) return [];
-  const end = lines.findIndex((line, index) => index > start && /^ {0,2}\S/.test(line));
-  const job = lines.slice(start, end === -1 ? undefined : end);
-  if (!job.some((line) => line.includes("--skip-container"))) return [];
-  return [{ location: { path: workflowPath }, gate: "plants", rule: "skip-container-in-ci", message: "the plants job passes --skip-container, so CI would not run the visual plants" }];
+  // A line at indent 0 to 2 starts a top-level key or a job; the lines below the plants job's key are its own.
+  let inPlants = false;
+  let found = false;
+  for (const line of workflow.split(/\r?\n/)) {
+    if (/^ {0,2}\S/.test(line)) inPlants = line.startsWith("  ") && /^(['"]?)plants\1:/.test(line.slice(2));
+    else if (inPlants && line.includes("--skip-container")) found = true;
+  }
+  return found ? [{ location: { path: workflowPath }, gate: "plants", rule: "skip-container-in-ci", message: "the plants job passes --skip-container, so CI would not run the visual plants" }] : [];
 }

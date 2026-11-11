@@ -42,8 +42,11 @@ const skipped = new Set(["HEAD", "SCRIPT", "STYLE", "TEMPLATE", "NOSCRIPT"]);
 
 /** An attribute of a DevTools element node (its attributes are a flat name, value list), empty when absent. */
 function attribute(node: CdpNode, name: string): string {
+  // Stryker disable next-line ArrayDeclaration: equivalent, an element without attributes and one whose list holds a lone item have neither an id nor a class
   const list = node.attributes ?? [];
+  // Stryker disable next-line EqualityOperator,ArithmeticOperator: equivalent, the DevTools protocol lists attributes as name, value pairs, so the list's length is even and its last item is never a name
   for (let at = 0; at + 1 < list.length; at += 2) if (list[at] === name) return String(list[at + 1]);
+  // Stryker disable next-line StringLiteral: equivalent, the value is read only as an id and as classes, and no other text is a harness id or class
   return "";
 }
 
@@ -59,7 +62,7 @@ export function storyTextNodes(document: CdpNode): StoryText[] {
     }
     let element = styled;
     if (node.nodeType === 1) {
-      if (skipped.has(node.nodeName) || isHarness(attribute(node, "id"), attribute(node, "class").split(/\s+/))) return;
+      if (skipped.has(node.nodeName) || isHarness(attribute(node, "id"), attribute(node, "class").split(/\s/))) return;
       if (!userAgent) element = node.nodeId;
     }
     for (const root of node.shadowRoots ?? []) walk(root, element, userAgent || root.shadowRootType === "user-agent");

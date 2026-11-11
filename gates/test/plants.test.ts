@@ -568,6 +568,40 @@ describe("plants: the visual plants (006 FR-018)", () => {
     expect(visualRan(run)).toEqual(["gates/plants/visual/error-basic", "gates/plants/visual/fail-basic", "gates/plants/visual/pass-bare", "gates/plants/visual/pass-basic"]);
   });
 
+  it("reads only tree/ of a baselinesOf plant and of the plant it names, and reads no other plant for a plant without the key", async () => {
+    const files = world();
+    files.set("gates/plants/visual/pass-basic/tree/storybook/baselines/own--a.light.png", "png");
+    files.set("gates/plants/visual/fail-basic/plant.json", JSON.stringify({ ...(JSON.parse(failPlant("own--a/light", "differs")) as object), baselinesOf: "pass-basic" }));
+    files.set("gates/plants/visual/fail-basic/base/storybook/baselines/own--a.dark.png", "not the plant's tree");
+    const reads: string[] = [];
+    const read = (path: string): Promise<string | undefined> => {
+      reads.push(path);
+      return Promise.resolve(files.get(path));
+    };
+    const below = (dir: string): string[] => [...files.keys()].filter((path) => path.startsWith(`${dir}/`)).map((path) => path.slice(dir.length + 1));
+    const tools: PlantTools = {
+      read,
+      dirs: (path) => Promise.resolve([...new Set(below(path).filter((p) => p.includes("/")).map((p) => p.split("/")[0] ?? ""))].sort()),
+      files: (path) => Promise.resolve(below(path).sort()),
+      runPlant: (gate, plant) => Promise.resolve(plant.endsWith("/fail-basic") && gate.id === "visual" ? { exit: 1, stdout: ["own--a/light: visual: differs: m"], stderr: [] } : recorded(gate, plant)),
+    };
+    const out: string[] = [];
+    const io: Io = { cwd: "/work/repo", env: {}, out: (l) => out.push(l), err: (l) => out.push(l) };
+    const code = await plants({ root: "/work/repo", toolCwd: "/work/repo", args: [] }, tools, io);
+    expect({ code, out }).toEqual({ code: 0, out: ["plants: 47 plants of 15 gates and the registry judged, every plant as expected"] });
+    expect(reads.filter((path) => path.includes("/undefined/"))).toEqual([]);
+    expect(reads).toContain("gates/plants/visual/pass-basic/plant.json");
+  });
+
+  it("judges a registry plant whose ci.yml passes --skip-container in its plants job by the finding at ci.yml", async () => {
+    const files = world();
+    files.set("gates/plants/plants/skip/plant.json", failPlant("ci.yml", "skip-container-in-ci"));
+    files.set("gates/plants/plants/skip/gates.json", registryText);
+    files.set("gates/plants/plants/skip/ci.yml", workflow.replace("      - run: pnpm run gate:plants\n", "      - run: pnpm run gate:plants -- --skip-container\n"));
+    const run = await visualJob(files);
+    expect({ code: run.code, out: run.out }).toEqual({ code: 0, out: ["plants: 48 plants of 15 gates and the registry judged, every plant as expected"] });
+  });
+
   it("accepts captureAlone (true) on a visual pass plant with stories of its own only", async () => {
     const files = world();
     files.set("gates/plants/visual/pass-basic/plant.json", JSON.stringify({ expect: "pass", why: "w", captureAlone: true }));

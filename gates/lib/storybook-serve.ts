@@ -8,7 +8,7 @@ import { extname, join, posix } from "node:path";
 
 /** The file of `dist` a request path names (query and fragment dropped, `/` the preview), or undefined outside it. */
 export function servedFile(dist: string, urlPath: string): string | undefined {
-  const path = urlPath.split(/[?#]/)[0] ?? "";
+  const path = urlPath.replace(/[?#].*/s, "");
   let decoded: string;
   try {
     decoded = decodeURIComponent(path);
@@ -68,10 +68,13 @@ export async function serve(dist: string): Promise<Server> {
   // Stryker disable next-line all: process boundary, covered by gates-integration: gates/test/integration/visual.test.ts "captures the repository's 24 story-themes twice under docker and exits 0 naming them and the engine (US2 scenario 1)"
   const { port } = server.address() as AddressInfo;
   // Stryker disable next-line all: process boundary, covered by gates-integration: gates/test/integration/visual.test.ts "captures the repository's 24 story-themes twice under docker and exits 0 naming them and the engine (US2 scenario 1)"
+  // Stryker disable next-line all: process boundary, covered by gates-integration: gates/test/integration/visual.test.ts "captures the repository's 24 story-themes twice under docker and exits 0 naming them and the engine (US2 scenario 1)"
   return {
+    // Stryker disable next-line all: process boundary, covered by gates-integration: gates/test/integration/visual.test.ts "captures the repository's 24 story-themes twice under docker and exits 0 naming them and the engine (US2 scenario 1)"
     origin: `http://127.0.0.1:${String(port)}`,
     // Stryker disable next-line all: process boundary, covered by gates-integration: gates/test/integration/visual.test.ts "captures the repository's 24 story-themes twice under docker and exits 0 naming them and the engine (US2 scenario 1)"
     close: () =>
+      // Stryker disable next-line all: process boundary, covered by gates-integration: gates/test/integration/visual.test.ts "captures the repository's 24 story-themes twice under docker and exits 0 naming them and the engine (US2 scenario 1)"
       new Promise((resolve) => {
         // Stryker disable next-line all: process boundary, covered by gates-integration: gates/test/integration/visual.test.ts "captures the repository's 24 story-themes twice under docker and exits 0 naming them and the engine (US2 scenario 1)"
         server.close(() => {

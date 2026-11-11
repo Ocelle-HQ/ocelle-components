@@ -146,3 +146,23 @@ describe("closedShadowHosts (research.md R-05)", () => {
     expect(closedShadowHosts([{ mode: "open", host: "ocelle-a" }])).toEqual([]);
   });
 });
+
+// Edges of the collection and the font rule the mutation run found unexamined (phase 3): a text node with no value,
+// an element whose id follows its class, classes split by any white space, a used family that is not first in the
+// computed list, and quotes that do not enclose a whole family name.
+describe("storyTextNodes and fontProblems: edges", () => {
+  it("skips a text node with no value, and an element whose harness id follows another attribute", () => {
+    const kept = text("kept");
+    const valueless: CdpNode = { nodeId: 9001, nodeType: 3, nodeName: "#text" };
+    const body = element("body", {}, [valueless, element("div", { class: "portal", id: "scripts-root" }, [text("scripts")]), element("div", { class: "x\tsb-errordisplay" }, [text("error")]), element("p", {}, [kept])]);
+    const document: CdpNode = { nodeId: 9000, nodeType: 9, nodeName: "#document", children: [element("html", {}, [body])] };
+    expect(storyTextNodes(document).map((found) => found.nodeId)).toEqual([kept.nodeId]);
+  });
+
+  it("finds a used face anywhere in the computed list, and unquotes only a name wholly in quotes", () => {
+    const used = (computedFamily: string, family: string): string[] => fontProblems([{ families: ["Schibsted Grotesk"], userAgentShadow: false, computedFamily }], [{ family, status: "unloaded" }]);
+    expect(used('"Schibsted Grotesk",   "Plant Face", serif', "Plant Face")).toEqual(["Plant Face (unloaded)"]);
+    expect(used('"Plant" x, serif', "Plant x")).toEqual([]);
+    expect(used('x"Plant", serif', "xPlant")).toEqual([]);
+  });
+});

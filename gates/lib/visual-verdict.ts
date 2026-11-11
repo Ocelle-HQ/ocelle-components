@@ -82,10 +82,6 @@ export function storyThemes(request: CaptureRequest): StoryTheme[] {
   return request.stories.flatMap((story) => request.themes.map((theme) => ({ story, theme })));
 }
 
-function isObject(value: unknown): value is Record<string, unknown> {
-  return typeof value === "object" && value !== null && !Array.isArray(value);
-}
-
 /** The entries of a capture's result.json text; throws naming the problem when it is not a list of valid entries. */
 export function parseResult(text: string): CaptureEntry[] {
   let value: unknown;
@@ -97,7 +93,7 @@ export function parseResult(text: string): CaptureEntry[] {
   if (!Array.isArray(value)) throw new Error("result.json is not a list");
   return (value as unknown[]).map((item, index) => {
     const at = `result.json#${String(index)}`;
-    const entry = isObject(item) ? item : {};
+    const entry = Object(item) as Record<string, unknown>;
     if (typeof entry.story !== "string" || entry.story === "") throw new Error(`${at} has no story`);
     if (entry.theme !== "light" && entry.theme !== "dark") throw new Error(`${at} has no theme light or dark`);
     const status = statuses.find((known) => known === entry.status);
@@ -284,7 +280,8 @@ export function plantModeProblem(plant: string, spec: Plant | undefined, story: 
 /** The ids of the index's stories whose story file is a file of the plant's tree/ (paths relative to tree/). */
 export function ownStories(index: readonly IndexStory[], treeFiles: readonly string[]): string[] {
   const files = new Set(treeFiles);
-  return index.filter((story) => files.has(`storybook/${story.importPath.replace(/^\.\//, "")}`)).map((story) => story.id);
+  const file = (importPath: string): string => `storybook/${importPath.startsWith("./") ? importPath.slice(2) : importPath}`;
+  return index.filter((story) => files.has(file(story.importPath))).map((story) => story.id);
 }
 
 /**

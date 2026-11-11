@@ -16,6 +16,10 @@ describe("servedFile", () => {
     expect(servedFile("/r/storybook/dist", "/assets/%2e%2e/%2e%2e/x")).toBeUndefined();
     expect(servedFile("/r/storybook/dist", "/%E0%A4%A")).toBeUndefined();
     expect(servedFile("/r/storybook/dist", "/a/../b.js")).toBe("/r/storybook/dist/b.js");
+    expect(servedFile("/r/storybook/dist", "/..")).toBeUndefined();
+    expect(servedFile("/r/storybook/dist", "/a/../..?x=1")).toBeUndefined();
+    expect(servedFile("/r/storybook/dist", "iframe.html")).toBeUndefined();
+    expect(servedFile("/r/storybook/dist", "/index.json?a=1#b?c")).toBe("/r/storybook/dist/index.json");
   });
 });
 

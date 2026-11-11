@@ -163,8 +163,9 @@ describe("classifyRequest (research.md R-14)", () => {
     }
   });
 
-  it("lets a data URL through: it is no request", () => {
+  it("lets a data URL and a blob URL through: they are no requests", () => {
     expect(classifyRequest({ url: "data:image/png;base64,AAAA", resourceType: "image" }, origin, false)).toEqual({ action: "continue" });
+    expect(classifyRequest({ url: "blob:http://127.0.0.1:4321/0b5e6c1a-1111-2222-3333-444455556666", resourceType: "script" }, origin, false)).toEqual({ action: "continue" });
   });
 });
 

@@ -218,6 +218,16 @@ describe("skipContainerFindings (006 FR-018)", () => {
     ]);
   });
 
+  it("reads the plants job by its key at the job indent, quoted or not, wherever it stands", () => {
+    const deeper = "jobs:\n  lint:\n    plants:\n      - run: pnpm run gate:plants -- --skip-container\n  plants:\n    steps:\n      - run: pnpm run gate:plants\n";
+    expect(skipContainerFindings(deeper, "ci.yml")).toEqual([]);
+    expect(skipContainerFindings("jobs:\n  'plants':\n    steps:\n      - run: pnpm run gate:plants -- --skip-container\n", "ci.yml")).toEqual([found("ci.yml")]);
+    expect(skipContainerFindings("jobs:\n  plants:\n    steps:\n      - run: pnpm run gate:plants -- --skip-container\nenv:\n  X: --skip-container\n", "ci.yml")).toEqual([found("ci.yml")]);
+    expect(skipContainerFindings("jobs:\n  plants:\n    steps:\n      - run: pnpm run gate:plants\nenv:\n  X: --skip-container\n", "ci.yml")).toEqual([]);
+    expect(skipContainerFindings("xxplants:\n    run: pnpm run gate:plants -- --skip-container\njobs:\n  xplants:\n    steps:\n      - run: pnpm run gate:plants -- --skip-container\n", "ci.yml")).toEqual([]);
+    expect(skipContainerFindings("    run: pnpm run gate:plants -- --skip-container\njobs:\n  plants:\n    steps: []\n", "ci.yml")).toEqual([]);
+  });
+
   it("finds nothing in a plants job without it, or when only another job passes it", () => {
     expect(skipContainerFindings(plantsJob("      - run: pnpm run gate:plants"), "ci.yml")).toEqual([]);
     expect(skipContainerFindings(plantsJob("      - run: pnpm run gate:plants").replace("echo done", "pnpm run gate:plants -- --skip-container"), "ci.yml")).toEqual([]);

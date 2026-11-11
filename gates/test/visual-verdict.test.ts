@@ -329,3 +329,37 @@ describe("the plant mode (research.md R-11, contracts/gates.md § `visual:update
     expect(plantBaselinesDir("visual/pass-unused-face")).toBe("gates/plants/visual/pass-unused-face/tree/storybook/baselines");
   });
 });
+
+// Edges the mutation run found unexamined (phase 3): result entries that are no objects or have empty texts, the JSON
+// error kept as the cause, a refusing status without its details, the stray finding's directory in the gate's result,
+// an import path without "./", and the own stories listed in the --story cause.
+describe("visual-verdict: edges", () => {
+  it("refuses result entries that are no objects, an empty story and a captured entry with an empty file, and keeps the JSON error", () => {
+    for (const item of [null, "x", [], 1]) expect(() => parseResult(JSON.stringify([item]))).toThrow("result.json#0 has no story");
+    expect(() => parseResult(JSON.stringify([{ story: "", theme: "light", status: "io" }]))).toThrow("result.json#0 has no story");
+    expect(() => parseResult(JSON.stringify([{ story: "a--b", theme: "light", status: "captured", file: "" }]))).toThrow("result.json#0 is captured and names no file");
+    const error = ((): unknown => {
+      try {
+        return parseResult("{");
+      } catch (thrown) {
+        return thrown;
+      }
+    })();
+    expect((error as Error).cause).toBeInstanceOf(SyntaxError);
+  });
+
+  it("names a refusing status without its details with an empty list or message", () => {
+    expect(verdictOf(cap("x--y", "light", "io"), cap("x--y", "light"), A)).toEqual({ rule: "io", message: "run-time I/O: " });
+    expect(verdictOf(cap("x--y", "light", "render-failed"), cap("x--y", "light"), A)).toEqual({ rule: "render-failed", message: "" });
+  });
+
+  it("locates the gate's stray baseline findings in storybook/baselines/", () => {
+    const result = visualResult([verdict("a--b", "light", "match")], ["x.png"], "docker+podman");
+    expect(result.exit === 1 ? result.findings.map((finding) => finding.location) : result).toEqual([{ path: "storybook/baselines/x.png" }]);
+  });
+
+  it("matches an import path without the leading ./ too, and lists every own story in the --story cause", () => {
+    expect(ownStories([{ id: "b--c", title: "B", name: "C", importPath: "stories/b.stories.ts" }], ["storybook/stories/b.stories.ts"])).toEqual(["b--c"]);
+    expect(plantRequests("visual/pass-x", ["x--a", "x--b"], "x--c")).toEqual({ cause: "--story x--c is not one of the own stories of visual/pass-x (x--a, x--b)" });
+  });
+});

@@ -3,7 +3,7 @@
 // filled in, run with the current Node for `node`, the plant's keyed locations resolved in the built tree (002
 // contracts/gates.md § Keyed locations), and the directory removed again; plus the limit on gate runs at once. The decisions (which builder, which placeholder values, the output lines, the limit) are here and tested in
 // process (gates/test/plant-runner.test.ts) with doubles for the tools; gates/bin/plants.ts gives the real ones.
-import { join } from "node:path";
+import { join, posix } from "node:path";
 import { plantArgs } from "./plant-judge.ts";
 import type { ExpectedFinding, Plant, PlantRun } from "./plant-judge.ts";
 import { baselineName } from "./visual-verdict.ts";
@@ -163,8 +163,8 @@ export async function runPlant(tools: RunnerTools, root: string, gate: Gate, pat
     const built = await tools.build[gate.plantForm](join(root, path), into, plant).catch((error: unknown) => {
       throw new Error(`${path}: cannot build its temporary repository (${errorText(error)})`, { cause: error });
     });
-    const engine = gate.plantCommand.includes("{engine}") ? { engine: engineValue(plant, tools.env ?? {}) } : {};
-    const [command, ...args] = plantArgs(gate.plantCommand, { ...plantValues(gate.plantForm, into, built, plant), ...engine });
+    const engine = engineValue(plant, tools.env ?? {});
+    const [command, ...args] = plantArgs(gate.plantCommand, { ...plantValues(gate.plantForm, into, built, plant), engine });
     const ran = await tools.run(command === "node" ? tools.node : String(command), args);
     const commits = built.commits === undefined ? {} : { commits: built.commits };
     const findings = plant.findings ?? [];
@@ -247,7 +247,7 @@ export function keptPlantDir(plantPath: string): string {
  */
 export function aloneDecision(plantPath: string, storyTheme: StoryTheme, alone: Uint8Array, committed: Uint8Array | undefined): { readonly copy: true } | { readonly line: string } {
   if (committed !== undefined && Buffer.from(alone).equals(Buffer.from(committed))) {
-    const plant = plantPath.replace(/^gates\/plants\//, "");
+    const plant = posix.relative("gates/plants", plantPath);
     return { line: `plants: ${plant}: ${storyTheme.story}/${storyTheme.theme}: captured alone matches the baseline; the full run differs (freshness)` };
   }
   return { copy: true };

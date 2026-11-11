@@ -327,11 +327,11 @@ describe("treeProblems", () => {
   const src = "packages/tokens/src";
 
   it("accepts a tree of other files, and none", () => {
-    expect([treeProblems(["packages/elements/src/x.ts"], undefined), treeProblems([], { tokens: [] })]).toEqual([[], []]);
+    expect([treeProblems(["packages/elements/src/x.ts"], undefined, []), treeProblems([], { tokens: [] }, [])]).toEqual([[], []]);
   });
 
   it("rejects the token source and the pair list in tree/, whatever the delta", () => {
-    expect(treeProblems([`${src}/source.ts`, "packages/tokens/contrast/pairs.json"], { generator: "wrapped" })).toEqual([
+    expect(treeProblems([`${src}/source.ts`, "packages/tokens/contrast/pairs.json"], { generator: "wrapped" }, [])).toEqual([
       "tree/ holds packages/tokens/src/source.ts; a plant changes the token source by delta.json tokens",
       "tree/ holds packages/tokens/contrast/pairs.json; a plant changes the pair list by delta.json pairs",
       'delta.json sets generator "wrapped" but tree/ holds no packages/tokens/src/generate.ts',
@@ -339,15 +339,15 @@ describe("treeProblems", () => {
   });
 
   it("accepts generate.ts only with a wrapped generator, and needs it then", () => {
-    expect(treeProblems([`${src}/generate.ts`], undefined)).toEqual(['tree/ holds packages/tokens/src/generate.ts without generator "wrapped" in delta.json']);
-    expect(treeProblems([`${src}/generate.ts`], {})).toEqual(['tree/ holds packages/tokens/src/generate.ts without generator "wrapped" in delta.json']);
-    expect(treeProblems([`${src}/generate.ts`], { generator: "wrapped" })).toEqual([]);
-    expect(treeProblems([], { generator: "wrapped" })).toEqual(['delta.json sets generator "wrapped" but tree/ holds no packages/tokens/src/generate.ts']);
+    expect(treeProblems([`${src}/generate.ts`], undefined, [])).toEqual(['tree/ holds packages/tokens/src/generate.ts without generator "wrapped" in delta.json']);
+    expect(treeProblems([`${src}/generate.ts`], {}, [])).toEqual(['tree/ holds packages/tokens/src/generate.ts without generator "wrapped" in delta.json']);
+    expect(treeProblems([`${src}/generate.ts`], { generator: "wrapped" }, [])).toEqual([]);
+    expect(treeProblems([], { generator: "wrapped" }, [])).toEqual(['delta.json sets generator "wrapped" but tree/ holds no packages/tokens/src/generate.ts']);
   });
 
   it("accepts overrides.ts only when the delta has no tokens part", () => {
-    expect([treeProblems([`${src}/overrides.ts`], undefined), treeProblems([`${src}/overrides.ts`], { pairs: [] })]).toEqual([[], []]);
-    expect(treeProblems([`${src}/overrides.ts`], { tokens: [] })).toEqual(["tree/ holds packages/tokens/src/overrides.ts and delta.json has tokens; one of them sets the overrides"]);
+    expect([treeProblems([`${src}/overrides.ts`], undefined, []), treeProblems([`${src}/overrides.ts`], { pairs: [] }, [])]).toEqual([[], []]);
+    expect(treeProblems([`${src}/overrides.ts`], { tokens: [] }, [])).toEqual(["tree/ holds packages/tokens/src/overrides.ts and delta.json has tokens; one of them sets the overrides"]);
   });
 });
 
@@ -369,6 +369,7 @@ describe("parseDelta: baselines (006 research.md R-11)", () => {
     { text: '{"baselines":[{"file":"a--b.light.png","edit":"blur"}]}', problem: /^delta\.json: baselines\[0\] is not a baseline edit \(a file and one-pixel, reencode or remove\)$/ },
     { text: '{"baselines":[{"file":"a--b.light.png","edit":"remove"},{"edit":"remove"}]}', problem: /^delta\.json: baselines\[1\] is not a baseline edit/ },
     { text: '{"baselines":[{"file":"","edit":"remove"}]}', problem: /^delta\.json: baselines\[0\] is not a baseline edit/ },
+    { text: '{"baselines":[{"file":1,"edit":"remove"}]}', problem: /^delta\.json: baselines\[0\] is not a baseline edit/ },
     { text: '{"baselines":[{"file":"a--b.light.png","edit":"remove","extra":1}]}', problem: /^delta\.json: baselines\[0\] is not a baseline edit/ },
     { text: '{"baselines":["a--b.light.png"]}', problem: /^delta\.json: baselines\[0\] is not a baseline edit/ },
     { text: '{"baselines":[{"file":"a--b.light.png","edit":"remove"},{"file":"a--b.light.png","edit":"one-pixel"}]}', problem: /^delta\.json: baselines lists a--b\.light\.png twice$/ },
@@ -391,7 +392,7 @@ describe("treeProblems: repository baselines (006 research.md R-11)", () => {
     expect(treeProblems([], { baselines: [{ file: "tokens--colour.light.png", edit: "one-pixel" }, { file: "gone--story.light.png", edit: "remove" }] }, repository)).toEqual([
       "delta.json baselines: gone--story.light.png is not a repository baseline",
     ]);
-    expect(treeProblems([], { baselines: [{ file: "tokens--colour.light.png", edit: "remove" }] })).toEqual(["delta.json baselines: tokens--colour.light.png is not a repository baseline"]);
+    expect(treeProblems([], { baselines: [{ file: "tokens--colour.light.png", edit: "remove" }] }, [])).toEqual(["delta.json baselines: tokens--colour.light.png is not a repository baseline"]);
   });
 });
 

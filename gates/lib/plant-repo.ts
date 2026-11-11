@@ -288,7 +288,7 @@ const exceptionsFile = "storybook/a11y-exceptions.json";
 const baselinesDir = "storybook/baselines";
 
 /** The problems of a plant's tree/ (paths relative to it) against its delta: files a plant changes only by delta. */
-export function treeProblems(treePaths: readonly string[], delta: Delta | undefined, repositoryBaselines: readonly string[] = []): string[] {
+export function treeProblems(treePaths: readonly string[], delta: Delta | undefined, repositoryBaselines: readonly string[]): string[] {
   const holds = new Set(treePaths);
   const problems: string[] = [];
   if (holds.has(sourceFile)) problems.push(`tree/ holds ${sourceFile}; a plant changes the token source by delta.json tokens`);

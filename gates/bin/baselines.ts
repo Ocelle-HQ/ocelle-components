@@ -95,7 +95,7 @@ async function plantMode(repo: string, args: UpdateArgs & { readonly plant: stri
   // Stryker disable next-line all: process boundary, covered by gates-integration: gates/test/integration/visual.test.ts "the plant mode writes a deleted baseline of a plant back with the bytes it had, and touches no other file (research.md R-11)"
   const into = await mkdtemp(join(tmpdir(), "ocelle-plant-visual-"));
   // Stryker disable next-line all: process boundary, covered by gates-integration: gates/test/integration/visual.test.ts "the plant mode writes a deleted baseline of a plant back with the bytes it had, and touches no other file (research.md R-11)"
-  try {
+  const work = async (): Promise<number> => {
     // Stryker disable next-line all: process boundary, covered by gates-integration: gates/test/integration/visual.test.ts "the plant mode writes a deleted baseline of a plant back with the bytes it had, and touches no other file (research.md R-11)"
     await buildRepoTree(repo, dir, into, spec);
     // Stryker disable next-line all: process boundary, covered by gates-integration: gates/test/integration/visual.test.ts "the plant mode writes a deleted baseline of a plant back with the bytes it had, and touches no other file (research.md R-11)"
@@ -112,10 +112,9 @@ async function plantMode(repo: string, args: UpdateArgs & { readonly plant: stri
     if ("cause" in requests) return fail(requests.cause);
     // Stryker disable next-line all: process boundary, covered by gates-integration: gates/test/integration/visual.test.ts "the plant mode writes a deleted baseline of a plant back with the bytes it had, and touches no other file (research.md R-11)"
     return await update({ root: into, requests, dir: join(repo, plantBaselinesDir(args.plant)), known: own }, args.engine, io, fail);
-  } finally {
-    // Stryker disable next-line all: process boundary, covered by gates-integration: gates/test/integration/visual.test.ts "the plant mode writes a deleted baseline of a plant back with the bytes it had, and touches no other file (research.md R-11)"
-    await rm(into, { recursive: true, force: true });
-  }
+  };
+  // Stryker disable next-line all: process boundary, covered by gates-integration: gates/test/integration/visual.test.ts "the plant mode writes a deleted baseline of a plant back with the bytes it had, and touches no other file (research.md R-11)"
+  return work().finally(() => rm(into, { recursive: true, force: true }));
 }
 
 // Stryker disable next-line all: process boundary, covered by gates-integration: gates/test/integration/visual.test.ts "writes nothing on an unchanged tree and says so (FR-008, analysis G1)"

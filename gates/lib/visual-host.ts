@@ -132,11 +132,12 @@ async function captureRequest(root: string, run: number, engine: string, pin: Pi
   await writeFile(requestFile, `${JSON.stringify({ dist: join(root, "storybook/dist"), out, stories: request.stories, themes: request.themes })}\n`);
   // Stryker disable next-line all: process boundary, covered by gates-integration: gates/test/integration/visual.test.ts "exits 2 for the host engine, naming the capture's refusal (FR-009, US2 scenario 7)"
   const hostEnv = Object.fromEntries(Object.entries(env).filter(([name]) => name !== "OCELLE_VISUAL_PIN"));
+  // Stryker disable next-line all: process boundary, covered by gates-integration: gates/test/integration/visual.test.ts "exits 2 for the host engine, naming the capture's refusal (FR-009, US2 scenario 7)"
+  const hostRun = (): ReturnType<typeof runTool> => runTool(process.execPath, [join(gateRepository, "gates/visual/capture.ts"), requestFile], gateRepository, hostEnv);
   // Stryker disable next-line all: process boundary, covered by gates-integration: gates/test/integration/visual.test.ts "captures the repository's 24 story-themes twice under docker and exits 0 naming them and the engine (US2 scenario 1)"
-  const ran =
-    engine === "host"
-      ? await runTool(process.execPath, [join(gateRepository, "gates/visual/capture.ts"), requestFile], gateRepository, hostEnv)
-      : await runTool(engine, runArgs({ engine, repo: gateRepository, root, run, uid: process.getuid?.() ?? 0, gid: process.getgid?.() ?? 0, pin }), gateRepository, env);
+  const engineRun = (): ReturnType<typeof runTool> => runTool(engine, runArgs({ engine, repo: gateRepository, root, run, uid: process.getuid?.() ?? 0, gid: process.getgid?.() ?? 0, pin }), gateRepository, env);
+  // Stryker disable next-line all: process boundary, covered by gates-integration: gates/test/integration/visual.test.ts "exits 2 for the host engine, naming the capture's refusal (FR-009, US2 scenario 7)"
+  const ran = await (engine === "host" ? hostRun() : engineRun());
   // Stryker disable next-line all: process boundary, covered by gates-integration: gates/test/integration/visual.test.ts "exits 2 for the host engine, naming the capture's refusal (FR-009, US2 scenario 7)"
   if (engine === "host" && ran.exitCode === 0) return { cause: "the host engine never produces a capture" };
   // Stryker disable next-line all: process boundary, covered by gates-integration: gates/test/integration/visual.test.ts "exits 2 for the host engine, naming the capture's refusal (FR-009, US2 scenario 7)"
@@ -162,7 +163,7 @@ export async function captureRuns(root: string, resolved: Resolved, pin: Pin, re
   // Stryker disable next-line all: process boundary, covered by gates-integration: gates/test/integration/visual.test.ts "captures the repository's 24 story-themes twice under docker and exits 0 naming them and the engine (US2 scenario 1)"
   const runs: Capture[][] = [];
   // Stryker disable next-line all: process boundary, covered by gates-integration: gates/test/integration/visual.test.ts "captures the repository's 24 story-themes twice under docker and exits 0 naming them and the engine (US2 scenario 1)"
-  try {
+  const work = async (): Promise<{ readonly cause: string } | undefined> => {
     // Stryker disable next-line all: process boundary, covered by gates-integration: gates/test/integration/visual.test.ts "captures the repository's 24 story-themes twice under docker and exits 0 naming them and the engine (US2 scenario 1)"
     for (const run of [1, 2]) {
       // Stryker disable next-line all: process boundary, covered by gates-integration: gates/test/integration/visual.test.ts "captures the repository's 24 story-themes twice under docker and exits 0 naming them and the engine (US2 scenario 1)"
@@ -181,10 +182,13 @@ export async function captureRuns(root: string, resolved: Resolved, pin: Pin, re
       // Stryker disable next-line all: process boundary, covered by gates-integration: gates/test/integration/visual.test.ts "captures the repository's 24 story-themes twice under docker and exits 0 naming them and the engine (US2 scenario 1)"
       runs.push(captures);
     }
-  } finally {
     // Stryker disable next-line all: process boundary, covered by gates-integration: gates/test/integration/visual.test.ts "captures the repository's 24 story-themes twice under docker and exits 0 naming them and the engine (US2 scenario 1)"
-    for (const run of [1, 2]) await rm(runDir(root, run), { recursive: true, force: true });
-  }
+    return undefined;
+  };
+  // Stryker disable next-line all: process boundary, covered by gates-integration: gates/test/integration/visual.test.ts "captures the repository's 24 story-themes twice under docker and exits 0 naming them and the engine (US2 scenario 1)"
+  const failed = await work().finally(() => Promise.all([1, 2].map((run) => rm(runDir(root, run), { recursive: true, force: true }))));
+  // Stryker disable next-line all: process boundary, covered by gates-integration: gates/test/integration/visual.test.ts "exits 2 for the host engine, naming the capture's refusal (FR-009, US2 scenario 7)"
+  if (failed !== undefined) return failed;
   // Stryker disable next-line all: process boundary, covered by gates-integration: gates/test/integration/visual.test.ts "captures the repository's 24 story-themes twice under docker and exits 0 naming them and the engine (US2 scenario 1)"
   return { value: [runs[0] ?? [], runs[1] ?? []] };
 }

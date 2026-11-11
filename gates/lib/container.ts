@@ -97,17 +97,17 @@ export function pinCommands(engine: string, pin: Pin): { readonly mediaType: rea
   };
 }
 
+/** A JSON text's value, or undefined when it is not JSON. */
+// Stryker disable next-line BlockStatement: equivalent, an empty catch block returns undefined as the catch's own return does
+const json = (text: string): unknown => { try { return JSON.parse(text) as unknown; } catch { return undefined; } };
+
 /** The media types of an image index or a manifest list: a pin must never name one (FR-007). */
 const indexTypes = ["application/vnd.oci.image.index.v1+json", "application/vnd.docker.distribution.manifest.list.v2+json"];
 
 /** The problem of the reference's raw manifest (an index or manifest list, or no media type), or undefined. */
 export function mediaTypeProblem(raw: string): string | undefined {
-  let value: unknown;
-  try {
-    value = JSON.parse(raw);
-  } catch {
-    return "the registry's manifest of the pin is not JSON";
-  }
+  const value = json(raw);
+  if (value === undefined) return "the registry's manifest of the pin is not JSON";
   const mediaType = isObject(value) ? value.mediaType : undefined;
   if (typeof mediaType !== "string" || mediaType === "") return "the registry's manifest of the pin has no media type";
   return indexTypes.includes(mediaType) ? "the pin names an index, not the linux/amd64 manifest" : undefined;
@@ -116,17 +116,12 @@ export function mediaTypeProblem(raw: string): string | undefined {
 /** The problem of the pulled image's `image inspect` output under an engine against the pin, or undefined. */
 export function inspectProblem(engine: string, inspect: string, pin: Pin): string | undefined {
   const unreadable = `the image inspect output of ${engine} is not readable`;
-  let value: unknown;
-  try {
-    value = JSON.parse(inspect);
-  } catch {
-    return unreadable;
-  }
+  const value = json(inspect);
   const image = Array.isArray(value) && value.length === 1 && isObject(value[0]) ? value[0] : undefined;
   if (image === undefined) return unreadable;
   const mismatch = (field: string): string => `the pulled image does not match the pin: ${field}`;
-  const digests = Array.isArray(image.RepoDigests) ? (image.RepoDigests as unknown[]) : [];
-  if (!digests.includes(pinReference(pin))) return mismatch("RepoDigests");
+  const digests: unknown = image.RepoDigests;
+  if (!Array.isArray(digests) || !digests.includes(pinReference(pin))) return mismatch("RepoDigests");
   if (engineFamily(engine) === "podman" && image.Digest !== pin.digest) return mismatch("Digest");
   if (image.Os !== "linux") return mismatch("Os");
   if (image.Architecture !== "amd64") return mismatch("Architecture");

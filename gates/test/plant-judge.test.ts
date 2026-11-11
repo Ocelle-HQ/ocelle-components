@@ -259,6 +259,7 @@ describe("plantFilesProblem (006 research.md R-16)", () => {
     expect(plantFilesProblem(alone, ["storybook/stories/second.stories.ts"])).toBeUndefined();
     expect(plantFilesProblem(alone, [])).toBe(problem);
     expect(plantFilesProblem(alone, ["storybook/stories/render.ts", "stories/second.stories.ts", "storybook/baselines/a--b.light.png"])).toBe(problem);
+    expect(plantFilesProblem(alone, ["x/storybook/stories/second.stories.ts", "storybook/stories/second.stories.ts.bak", "storybook/stories/sub/second.stories.ts"])).toBe(problem);
   });
 
   it("names nothing for a plant without either key", () => {

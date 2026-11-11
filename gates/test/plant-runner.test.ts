@@ -502,6 +502,7 @@ describe("failedOwn, keptPlantDir and aloneDecision (006 research.md R-11)", () 
       { story: "second--a", theme: "dark" },
     ]);
     expect(failedOwn(stdout, ["second"])).toEqual([]);
+    expect(failedOwn(["note second--ab/light: visual: differs: m", "second--ab/dark: visual: differs: m"], ["second--ab"])).toEqual([{ story: "second--ab", theme: "dark" }]);
   });
 
   it("keeps a plant's captures at storybook/.visual/plants/<plant path>/tree/storybook/baselines/", () => {
