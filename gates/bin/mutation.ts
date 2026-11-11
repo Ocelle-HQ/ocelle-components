@@ -6,8 +6,8 @@
 // Stryker's output reports it did not read (a file under a folder such as `.next`) is exit 2 naming each such entry,
 // in the whole-diff and `--files` runs alike (phase 3 round 12, O12-01); a changed file Stryker read that is absent
 // from its report has no mutant on its changed lines and passes (report.ts). `--plan` prints the CI shards, splitting a file of more than
-// 60 changed lines into `path:start-end` entries (002 phase 5 round 6, O6-01), two entries of one file never in one
-// shard, and writes the number of shards and of cuts within files to stderr, the JSON on stdout staying one array for
+// 30 changed lines into `path:start-end` entries (002 phase 5 round 6, O6-01: 60; 007 spec FR-014, 2026-11-11: 30),
+// two entries of one file never in one shard, and writes the number of shards and of cuts within files to stderr, the JSON on stdout staying one array for
 // ci.yml (phase 3 round 10, O10-01 and O10-02); `--files <entry>[,<entry>...]` limits a run to one shard's entries and mutates only the
 // changed lines inside them (shards.ts; phase 3 round 9, O9-01). `mutation()` is
 // the decision, tested in-process with doubles for git, the file system and Stryker: it deletes an earlier run's

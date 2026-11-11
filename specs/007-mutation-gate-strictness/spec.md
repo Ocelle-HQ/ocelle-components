@@ -46,6 +46,18 @@ no Kitty Desktop, Kitty Dashboard or Ocelle console screen is concerned.
 - Q: Is a shard that holds a `source.ts` entry together with entries of other files in scope? → A: No, dropped
   (operator, human:jeroennouwsdev, 2026-11-10, "Drop it (Recommended)", spec check 1, SPEC-1-05). See *Dropped*.
 
+### Session 2026-11-11
+
+- Q: Lever 1 removed every `source.ts` Timeout, but with the TypeScript checker on three of the four 60-line entries
+  still miss 176 s (188 s, 251 s, 283 s) and lever 2 (`concurrency` 4, 8, 12) brought none within it. Which
+  amendment of 001 FR-013 (FR-014), if any? → A: "30-line entries, all files" (operator, human:jeroennouwsdev,
+  2026-11-11, phase 3 stop-and-ask, `reviews/phase-3/operator-decision-fr014.md`): a file with more than 30 changed
+  lines is split into entries of at most 30 changed lines (was 60), for every file; the other shard bounds (10
+  entries, 250 changed lines; entries of one file never share a shard) are unchanged. **Amendment, 2026-11-11:**
+  where this spec says "60-line entries" or "at most 60 changed lines" for the gate's entries (the Input quote aside,
+  which is kept as given), read 30; the measurement runs of FR-009 and FR-010 are those of the 30-line entries the
+  gate's `--plan` makes for the base. The earlier text is kept.
+
 ## User Scenarios & Testing *(mandatory)*
 
 ### User Story 1 - The gate shows every changed-line mutant that no test was seen killing (Priority: P1)
@@ -98,7 +110,7 @@ the sandbox, and 121 of its 681 mutants end as Timeout (op 004's runs, TypeScrip
 about 32 s. CI runners are 1.5 to 3.4 times
 slower, so that shard would be cancelled at CI's 10-minute limit and the pull request could not pass. After this story,
 each of those mutants, under the gate's own run with the type checker on, is either killed by a failing test within
-Stryker's limit or rejected by the type checker (CompileError), and each 60-line entry of the file finishes with a
+Stryker's limit or rejected by the type checker (CompileError), and each 60-line entry (30-line since 2026-11-11, FR-014) of the file finishes with a
 margin that holds on CI. If the red run of FR-011a already meets these bounds, the story delivers the evidence and no
 change (FR-011a).
 
@@ -113,7 +125,7 @@ read the `gate:mutation` step time of every `source.ts` shard on CI from the mea
 **Acceptance Scenarios**:
 
 1. **Given** the mission's final repository, **When** the measurement run of FR-009 runs for each of the gate's
-   60-line entries of `source.ts`, **Then** every entry's report has zero Timeout, zero Survived and zero NoCoverage
+   60-line entries (30-line since 2026-11-11, FR-014) of `source.ts`, **Then** every entry's report has zero Timeout, zero Survived and zero NoCoverage
    mutants, and no mutant in it has a status the gate does not know.
 2. **Given** the same runs, **When** each entry's wall time is read, **Then** every entry finishes within 176 s on the
    sandbox (600 s divided by 3.4, the slowest CI factor measured so far).
@@ -138,7 +150,7 @@ read the `gate:mutation` step time of every `source.ts` shard on CI from the mea
   changed lines decide, and only changed lines are reported (001 FR-011).
 - A changed file whose report lists mutants, but none on the changed lines of an entry: that entry counts as a
   zero-mutant entry and is reported like an entry of a file the report does not list.
-- A file of more than 60 changed lines is split into range entries that never share a shard (001 FR-013). Each shard
+- A file of more than 60 changed lines (30 since 2026-11-11, FR-014) is split into range entries that never share a shard (001 FR-013). Each shard
   judges only its own entries: a range entry with no mutant on its changed lines is a zero-mutant entry even when
   another entry of the same file has mutants.
 - A test-only change, or a changed file outside mutation scope: not reported as a zero-mutant entry. Only entries of
@@ -247,6 +259,7 @@ read the `gate:mutation` step time of every `source.ts` shard on CI from the mea
 - **FR-014**: If FR-009 and FR-010 cannot be met by making the kills faster, the mission MUST amend 001 FR-013's entry
   or shard bound (for example a bound on mutants per entry or shard) so that they are met. The amendment is the
   operator's decision, recorded with its date, and it is part of this mission, not a follow-up.
+  **Decided, 2026-11-11:** "30-line entries, all files" (*Clarifications*, session 2026-11-11).
 
 #### Records
 
@@ -264,7 +277,8 @@ read the `gate:mutation` step time of every `source.ts` shard on CI from the mea
   status Timeout or CompileError. It has a path, a line, a mutator, a replacement and a status.
 - **Zero-mutant entry**: an entry of the run, of a changed file in mutation scope, with no mutant on its changed lines,
   in a run that did not end as "could not run" (FR-003). It is named as the run holds it: `path`, or `path:start-end`.
-- **Entry**: as 001 FR-013 defines it, a changed file or a `path:start-end` range of at most 60 changed lines of it. In
+- **Entry**: as 001 FR-013 defines it, a changed file or a `path:start-end` range of at most 60 changed lines of it
+  (30 since 2026-11-11, the operator's FR-014 decision). In
   a whole-diff run every changed file is one entry.
 
 ## Success Criteria *(mandatory)*

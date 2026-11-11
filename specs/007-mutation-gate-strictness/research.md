@@ -368,7 +368,10 @@ runs, made with the User Story 1 gate, print the report lines.
 with `OCELLE_CHROMIUM_PATH` set and `PLAYWRIGHT_BROWSERS_PATH` pointing at the alias of
 `knowledge/speckit-flows/findings/frontend-missions.md` § Browser path. The entries are those `--plan` prints for `B`
 (`source.ts:1-60`, `61-120`, `121-180`, `181-230`); the cut count it writes to stderr is recorded. Each run keeps its
-stdout, its stderr, its time and a copy of `reports/mutation/mutation.json`.
+stdout, its stderr, its time and a copy of `reports/mutation/mutation.json`. *Amendment, 2026-11-11 (lever 3, spec
+FR-014, "30-line entries, all files"):* after the bound change the measurement runs are those of the 30-line entries
+`--plan` prints for `B` (`evidence/README.md` § Lever 3); the red runs above stay the 60-line runs, and the per-mutant
+comparison matches each red entry against the 30-line entries that cover it.
 
 **The checker split, a diagnostic** (001's method, PLAN-CORRECTNESS-1-002): for each `source.ts` entry in the red pass,
 and for any green entry over 176 s, the same entry is run once more with `"checkers": []` in `stryker.config.json` (a
@@ -456,7 +459,11 @@ checks that `source.ts` has none; it has no template literals today). Before it 
 request's base is run locally and must list exactly the four sandbox entries `source.ts:1-60`, `61-120`, `121-180`,
 `181-230`; that plan output (stdout and the cut line) is recorded with the evidence. CI's `mutation-plan` then makes the
 four `source.ts` entries; the evidence records which entries each shard held, each `gate:mutation` step time as GitHub
-reports it, the runner's core count (R-05) and the run link. A `git revert` commit follows before merge. A job other
+reports it, the runner's core count (R-05) and the run link. A `git revert` commit follows before merge.
+*Amendment, 2026-11-11 (lever 3, spec FR-014):* `splitFile` now cuts after every 30 changed lines, so the local
+`--plan` check expects the 30-line `source.ts` entries of `evidence/README.md` § Lever 3 (eight entries, `1-30` to
+`211-230`), not the four 60-line entries named above; CI's `mutation-plan` then makes those eight entries, one shard
+each or beside other files' entries. A job other
 than the mutation jobs that fails on that commit only because of the trailing spaces (a format or lint check) does not
 count for or against FR-010, and the revert restores it; the evidence says so if it happens.
 
