@@ -9,9 +9,10 @@ import { baseEnv, cleanUp, repo, runGate } from "./workspace.ts";
 // so a mutant that only a tool-, browser- or build-starting test covers is reported as NoCoverage (research.md R-08). The test first asserts that the file exists and only then loads it,
 // so at the red commit it fails on that assertion.
 //
-// 007 (research.md R-05, lever 1): the mutation configuration splits the tokens project in two and orders the
-// projects with sequence.groupOrder, so under Stryker's options source-table.test.ts starts first, then the other
-// token tests, then every other project. The deep-equal of the earlier version (every mutation project equal to its
+// 007 (research.md R-05, lever 1, narrowed 2026-11-11 after landing L1-01, FR-013): the mutation configuration splits
+// the tokens project in two and orders the projects with sequence.groupOrder, so under Stryker's options
+// source-table.test.ts starts first, then every other project, the rest of tokens included, in one group in Vitest's
+// default order (project name). The deep-equal of the earlier version (every mutation project equal to its
 // vitest.config.ts counterpart) is replaced by the stricter comparison below: exact names, each project equal to its
 // counterpart once its whole test.sequence is removed (with the two stated split exceptions), each test.sequence
 // exactly as R-05 assigns it, and the collected test modules exactly those of vitest.config.ts outside the four
@@ -31,7 +32,6 @@ interface ModuleOf {
 
 const sourceTable = "packages/tokens/test/source-table.test.ts";
 const excluded = ["gates-integration", "tokens-browser", "styles-browser", "storybook-integration"];
-const tokenProjects = ["tokens-source-table", "tokens"];
 const helper = "gates/test/integration/vitest-order.ts";
 const timeout = 180_000;
 
@@ -101,10 +101,10 @@ describe("vitest.mutation.config.ts", () => {
     expect(mutation.map((project) => project.test?.sequence)).toEqual([
       { groupOrder: 1 },
       { groupOrder: 2 },
-      { groupOrder: 3 },
-      { groupOrder: 3 },
-      { groupOrder: 3 },
-      { groupOrder: 3 },
+      { groupOrder: 2 },
+      { groupOrder: 2 },
+      { groupOrder: 2 },
+      { groupOrder: 2 },
     ]);
   });
 
@@ -127,7 +127,7 @@ describe("vitest.mutation.config.ts", () => {
   );
 
   it(
-    "under Stryker's runner options starts source-table.test.ts first, then every other token test, then the other projects",
+    "under Stryker's runner options starts source-table.test.ts first, then every other project in one group in Vitest's default order",
     async () => {
       const tokenModules = (await collected("vitest.config.ts"))
         .filter((entry) => entry.project === "tokens")
@@ -140,13 +140,14 @@ describe("vitest.mutation.config.ts", () => {
           "packages/tokens/test/generate.test.ts",
         ]),
       );
-      const ran = await helperRun(["order", "vitest.mutation.config.ts", tokenProjects.join(",")]);
+      // The run stops as soon as a module outside tokens-source-table starts. With every other project at one
+      // groupOrder, Vitest 5.0.5's BaseSequencer.sort orders by groupOrder, then by project name, so the second
+      // module belongs to elements, the first by name of the projects at order 2, and not to tokens.
+      const ran = await helperRun(["order", "vitest.mutation.config.ts", "tokens-source-table"]);
       expect(ran.code).toBe(0);
       const started = (ran.json as { readonly started: readonly ModuleOf[] }).started;
       expect(started[0]).toEqual({ project: "tokens-source-table", module: sourceTable });
-      const firstOther = started.findIndex((entry) => !tokenProjects.includes(entry.project));
-      expect(firstOther).toBe(tokenModules.length);
-      expect(sorted(started.slice(0, firstOther).map((entry) => entry.module))).toEqual(sorted(tokenModules));
+      expect(started[1]?.project).toBe("elements");
     },
     timeout,
   );
