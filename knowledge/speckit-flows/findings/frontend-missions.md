@@ -61,6 +61,12 @@ pitfalls up front. Each entry names where it was found. New entries are added as
       `vitest.mutation.config.ts` only. Every Timeout is now Killed, by `source-table.test.ts` after 4 to 10 tests.
       `121-180` went from 537.27 s (46 Timeout) to 283.22 s. The 60-line entries still took 170.54 s to 283.22 s,
       and three were over the 176 s bound.
+      *Narrowed 2026-11-11 (landing L1-01):* running the rest of `tokens` before every other project made static
+      mutants of gate source wait behind `build.test.ts`'s child processes, so kills there became Timeouts
+      (`report.ts:106`, `plant-judge.ts:51`), which FR-013 forbids. Now only `source-table.test.ts` runs first, and
+      every other project is one group in name order. Gate source: 0 Timeouts with the narrowed order, as with
+      `main`'s, against 2 with the earlier split. The eight 30-line entries took 72.49 s to 173.46 s, with 0
+      Timeout, no status change against lever 3, and FR-011 still met for all 122 former Timeouts.
     - **Lever 2** (concurrency) did not help. On `121-180`: 4 gave 358.77 s, 8 gave 283.22 s, 12 gave 316.27 s.
     - **Lever 3** (operator, FR-014): 001 FR-013's entry bound went from 60 to 30 changed lines for every file,
       with a dated amendment of 001 FR-013 and SC-005. The eight 30-line entries took 73.96 s to 182.52 s, with 0

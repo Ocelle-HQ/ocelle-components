@@ -1,0 +1,5 @@
+packages/tokens/src/generate.ts:58: mutation: compile-error: StringLiteral: replaced by ""
+packages/tokens/src/generate.ts:58: mutation: compile-error: StringLiteral: replaced by ""
+packages/tokens/src/generate.ts:60: mutation: compile-error: StringLiteral: replaced by ""
+packages/tokens/src/generate.ts:60: mutation: compile-error: StringLiteral: replaced by ""
+mutation: 7 mutants on the changed lines of 1 file, none survived; 0 timeouts, 4 compile errors, 0 zero-mutant entries; 0 equivalent records

@@ -376,7 +376,10 @@ disable comments; dropping projects from `vitest.mutation.config.ts`; changing `
 - *Amendment, 2026-11-11 (lever 1 narrowed, phase 3 O2-01):* both proofs follow the narrowed order above.
   - Behavioural test: its second assertion (every module under `packages/tokens/test/` before any module of another
     project) is replaced. Under Stryker's options `source-table.test.ts` still starts first. The next module to start
-    is now one of `elements`, the first by name of the projects at order 2, not one of `tokens`.
+    is now one of `elements`, the first by name of the projects at order 2, not one of `tokens`. *Note, 2026-11-11
+    (fix round 2, as measured):* `elements` runs in the browser and starts once Chromium is up, so a `gates` module
+    often starts first; the test asserts that each module after `source-table.test.ts` belongs to a project at
+    order 2 other than `tokens`.
   - Config assertion: `test.sequence` is exactly `{ groupOrder: 1 }` for `tokens-source-table` and
     `{ groupOrder: 2 }` for every other mutation project.
   - Unchanged: the project names, the split exceptions and the collected modules.

@@ -221,18 +221,18 @@ Stop-and-ask points of this round:
 
 **Red (one commit)**
 
-- [ ] T043 [US2] O2-01, `gates/test/integration/vitest-mutation-config.test.ts` (research R-05, *Red-first* and its amendment of 2026-11-11):
+- [X] T043 [US2] O2-01, `gates/test/integration/vitest-mutation-config.test.ts` (research R-05, *Red-first* and its amendment of 2026-11-11):
   - **config test** (`:69`): the `test.sequence` list becomes exactly `[{ groupOrder: 1 }, { groupOrder: 2 }, { groupOrder: 2 }, { groupOrder: 2 }, { groupOrder: 2 }, { groupOrder: 2 }]`, for `tokens-source-table`, `tokens`, `styles`, `elements`, `storybook` and `gates`. The names, the two split exceptions and the comparison with `withoutSequence` are unchanged;
   - **order test** (`:129`): replace "starts source-table.test.ts first, then every other token test, then the other projects" with "starts source-table.test.ts first, then every other project in one group in Vitest's default order". Run the helper as `order vitest.mutation.config.ts tokens-source-table`, so the run stops as soon as a module outside `tokens-source-table` starts. Assert that `started[0]` is `{ project: "tokens-source-table", module: "packages/tokens/test/source-table.test.ts" }` and that `started[1].project` is `elements`, the first by name of the projects at order 2 (Vitest 5.0.5 `BaseSequencer.sort`: `groupOrder`, then project name). So the next module is not a `tokens` one;
   - keep the check that `build.test.ts`, `validate.test.ts` and `generate.test.ts` are `tokens` modules collected by `vitest.config.ts`. Keep the collect test (`:111`) unchanged;
   - update the file's header comment (`:12-18`) to the narrowed order.
 
   State the replacement and its reason (landing L1-01, FR-013) in the commit body and in the phase review.
-- [ ] T044 [US2] Commit T043 alone (`test(007-mutation-gate-strictness): phase 3 fix-2 red — O2-01 narrowed lever 1`), signed off. Then run `.specify/extensions/story/scripts/red.sh 3 fix-2`. Confirm the commit is red because of the current split: the sequence values are 1, 2, 3, 3, 3, 3, and the second module to start is a `tokens` one. The failures must be assertion mismatches, not load or setup errors.
+- [X] T044 [US2] Commit T043 alone (`test(007-mutation-gate-strictness): phase 3 fix-2 red — O2-01 narrowed lever 1`), signed off. Then run `.specify/extensions/story/scripts/red.sh 3 fix-2`. Confirm the commit is red because of the current split: the sequence values are 1, 2, 3, 3, 3, 3, and the second module to start is a `tokens` one. The failures must be assertion mismatches, not load or setup errors.
 
 **Before the fix: gate-source runs (evidence)**
 
-- [ ] T045 [US2] Before the green change, take two runs of the gate-source files, one at a time, each `pnpm --silent run gate:mutation -- --base 3a247ef5f684a102f95e433e7cf41550839c79e4 --files gates/lib/mutation/report.ts,gates/lib/plant-judge.ts`. This reproduces landing L1-01:
+- [X] T045 [US2] Before the green change, take two runs of the gate-source files, one at a time, each `pnpm --silent run gate:mutation -- --base 3a247ef5f684a102f95e433e7cf41550839c79e4 --files gates/lib/mutation/report.ts,gates/lib/plant-judge.ts`. This reproduces landing L1-01:
   - **(a) current lever 1**, at the T044 commit. Save under `evidence/fix-2/gate-source/lever1/`;
   - **(b) `main`'s mutation configuration**, in a scratch worktree of the T044 commit (`git worktree add` under the scratchpad, `pnpm run setup:offline` in it). In the worktree, check out only `vitest.mutation.config.ts` and `gates/test/vitest-config.test.ts` from `3a247ef` (`git checkout 3a247ef -- <both paths>`). Run there, save under `evidence/fix-2/gate-source/main-config/`, then remove the worktree.
 
@@ -240,19 +240,19 @@ Stop-and-ask points of this round:
 
 **Green**
 
-- [ ] T046 [US2] O2-01, `vitest.mutation.config.ts` only:
+- [X] T046 [US2] O2-01, `vitest.mutation.config.ts` only:
   - `tokens-source-table` stays at `sequence: { groupOrder: 1 }`;
   - every other mutation project, the rest of `tokens` included, gets `sequence: { groupOrder: 2 }`. No project is at 0, and the split of `tokens` and its `exclude` are unchanged;
   - update the header comment: the narrowed order and why (landing L1-01, FR-013, the operator's decision of 2026-11-11). Keep the reason `source-table.test.ts` comes first (`build.test.ts`'s child process). Replace the sentence that ordered the rest of `tokens` before every other project.
 
   `vitest.config.ts` and `pnpm test` are unchanged. T043 now passes, and `gates/test/vitest-config.test.ts` still passes. Run `pnpm test`, `pnpm run gate:typecheck`, `gate:lint` and `gate:test-lint`. Commit green (`fix(007-mutation-gate-strictness): phase 3 fix-2 — O2-01 lever 1 narrowed to source-table first`), signed off.
-- [ ] T047 [US2] Run `pnpm run gate:plants`, alone: every mutation plant keeps its verdict with the narrowed order. Save the output to `evidence/fix-2/plants.txt`.
-- [ ] T048 [US2] FR-013 on gate source (landing L1-01). Take the T045 command again with the narrowed configuration at the T046 commit and save it under `evidence/fix-2/gate-source/narrowed/`. Then compare per mutant with `evidence/compare.mjs`, once per path (`gates/lib/mutation/report.ts`, then `gates/lib/plant-judge.ts`):
+- [X] T047 [US2] Run `pnpm run gate:plants`, alone: every mutation plant keeps its verdict with the narrowed order. Save the output to `evidence/fix-2/plants.txt`.
+- [X] T048 [US2] FR-013 on gate source (landing L1-01). Take the T045 command again with the narrowed configuration at the T046 commit and save it under `evidence/fix-2/gate-source/narrowed/`. Then compare per mutant with `evidence/compare.mjs`, once per path (`gates/lib/mutation/report.ts`, then `gates/lib/plant-judge.ts`):
   - **main-config → narrowed**: the FR-013 check. There must be no Killed → Timeout, Survived or NoCoverage move, and no count may move the wrong way. A Timeout that is already a Timeout in `main-config` is allowed and is listed;
   - **lever1 → narrowed**: names each Timeout of run (a) and its status now.
 
   A Killed → Timeout move against `main-config` triggers T024's re-run rule: one re-run of both the `main-config` and the `narrowed` run, one at a time (the first again in a scratch worktree as in T045 (b)). The move counts only if the re-run shows it again, and both pairs are recorded under `rerun/`. If it holds, stop and ask. Keep the command lines and their output verbatim for T051. Commit the evidence as soon as it is written.
-- [ ] T049 [US2] Run the eight 30-line `source.ts` entries again (FR-009, FR-010 sandbox half, FR-011), one at a time, with the narrowed configuration:
+- [X] T049 [US2] Run the eight 30-line `source.ts` entries again (FR-009, FR-010 sandbox half, FR-011), one at a time, with the narrowed configuration:
   - the entries are those of T035: `packages/tokens/src/source.ts:1-30`, `:31-60`, `:61-90`, `:91-120`, `:121-150`, `:151-180`, `:181-210` and `:211-230`;
   - use the T036 command with base `B`, and save each under `evidence/fix-2/source-<start>-<end>/` (stdout with the report lines, stderr, time, `mutation.json`). Commit each run's evidence as soon as it is written;
   - for any entry over 176 s, also take the checker split of T003 under `no-checker/`, as a diagnostic;
@@ -261,7 +261,7 @@ Stop-and-ask points of this round:
   - check FR-011 again for the 122 former Timeouts of T025: match each by key in the eight new reports and apply the three criteria, as in § FR-011 with lever 3.
 
   Every entry must have 0 Timeout, 0 Survived and 0 NoCoverage, finish within 176 s and meet FR-011; otherwise stop and ask.
-- [ ] T050 [US2] Run the FR-013 reference entries again, one at a time, with the T036 command and base `B`:
+- [X] T050 [US2] Run the FR-013 reference entries again, one at a time, with the T036 command and base `B`:
   - `--files packages/tokens/src/generate.ts:1-60` (the red entry, given as is) under `evidence/fix-2/generate-1-60/`;
   - `--files gates/lib/wcag.ts` under `evidence/fix-2/wcag/`.
 
@@ -269,12 +269,12 @@ Stop-and-ask points of this round:
 
 **Records**
 
-- [ ] T051 [P] [US2] Records:
+- [X] T051 [P] [US2] Records:
   - **O2-01 evidence**: a section "Fix round 2: lever 1 narrowed (operator round from the landing review, 2026-11-11)" in `evidence/README.md`. It holds the configuration, the T045 and T048 gate-source table (mutants, Killed, Timeout, Survived, NoCoverage, CompileError and time per run), the static mutants, the comparison commands and their output verbatim, the T049 table with its comparison against lever 3, Killed-by counts and FR-011 check, the T050 reference table and comparisons, and the decision from these figures alone;
   - **O2-01 dated notes** that keep the earlier text, in `evidence/README.md`: at the FR-013 reference rows of § Green table (`:710-711`) and at § FR-013 reference entries with lever 3 (both now point to the new section); at the lever 1 configuration statements (§ Green measurement, § Lever 3 *Configuration*); and in § Open for landing, where the CI measurement (landing L1-02) is taken after this fold with the narrowed order, and the sandbox table is updated with the T049 times;
   - `knowledge/speckit-flows/findings/frontend-missions.md:60-61` (Lever 1): a dated note on the narrowed order and its reason (landing L1-01), with the T048 and T049 figures;
   - **O2-02**: one dated 2026-11-11 sentence each in `specs/001-repository-foundation/research.md` R-08 "CI, sharded" (`:372-383`, and the 60-line statement at `:430`) and in `specs/001-repository-foundation/plan.md` (`:50-51`, `:209-210`). Each points to the FR-013 amendment of 001 spec.md: 30-line entries, operator decision of mission 007 (FR-014). The earlier text is kept.
-- [ ] T052 [US2] Run the checks:
+- [X] T052 [US2] Run the checks:
   - `pnpm test`, `gate:typecheck`, `gate:lint` and `gate:test-lint`;
   - `pnpm run gate:mutation -- --base 3a247ef5f684a102f95e433e7cf41550839c79e4`, alone: the whole-diff run of landing L1-01. Save it to `evidence/fix-2/whole-diff.log`, record its exit, its time and every `timeout` line in the T051 section, and name each `timeout` line of `report.ts` or `plant-judge.ts` against T048;
   - the FR-012 check of T031 again: `git diff --stat <phase-1 base> -- packages/tokens/src stryker.config.json` shows no change, and `grep -rn "Stryker disable" packages/tokens/src` shows nothing new.
