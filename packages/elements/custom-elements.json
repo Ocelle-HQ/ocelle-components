@@ -10,7 +10,7 @@
               "fieldName": "name",
               "name": "name",
               "type": {
-                "text": "\"close\" | \"menu\" | undefined"
+                "text": "\"chevron-start\" | \"chevron-end\" | \"chevron-up\" | \"chevron-down\" | \"arrow-start\" | \"arrow-end\" | \"menu\" | \"close\" | \"folder\" | \"file\" | \"search\" | \"table\" | \"copy\" | undefined"
               }
             },
             {
@@ -39,7 +39,7 @@
               "privacy": "public",
               "reflects": true,
               "type": {
-                "text": "\"close\" | \"menu\" | undefined"
+                "text": "\"chevron-start\" | \"chevron-end\" | \"chevron-up\" | \"chevron-down\" | \"arrow-start\" | \"arrow-end\" | \"menu\" | \"close\" | \"folder\" | \"file\" | \"search\" | \"table\" | \"copy\" | undefined"
               }
             },
             {

@@ -75,11 +75,14 @@ export const expectedIcons: Readonly<Record<string, ExpectedIcon>> = {
 /** The thirteen names of the set, in the spec's order. */
 export const iconNames: readonly string[] = Object.keys(expectedIcons);
 
-/** The drawing an `ocelle-icon` of `name` holds in its shadow root: one `svg` with the icon's shapes. */
+/**
+ * The drawing an `ocelle-icon` of `name` holds in its shadow root: one `svg` with the icon's shapes; the `svg` of an
+ * inline-direction icon carries the class `mirror`, which the element's right-to-left rule flips (R-08).
+ */
 export function expectedDrawing(name: string): { readonly children: readonly string[]; readonly svg: { readonly attributes: Readonly<Record<string, string>>; readonly parts: readonly Part[] } } {
   const icon = expectedIcons[name];
   if (icon === undefined) throw new Error(`no expected drawing for ${name}`);
-  return { children: ["svg"], svg: { attributes: svgAttributes, parts: icon.shapes } };
+  return { children: ["svg"], svg: { attributes: icon.mirror ? { ...svgAttributes, class: "mirror" } : svgAttributes, parts: icon.shapes } };
 }
 
 /** The shadow root of an `ocelle-icon` that draws nothing (an unknown, empty or missing name). */

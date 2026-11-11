@@ -1,7 +1,8 @@
 // `ocelle-icon` (005 FR-011 to FR-016, FR-034; research.md R-04, R-13; data-model.md § `ocelle-icon`): one icon of the
 // set drawn inline in its shadow root, sized by the `--ocelle-icon-size` token, painted in `currentColor`, hidden from
 // the accessibility tree unless a `label` or a host `aria-label` names it. An unknown, empty or missing name draws
-// nothing and keeps the box. Importing this module defines `ocelle-icon` and no other element.
+// nothing and keeps the box. The four inline-direction icons carry the class `mirror` and are mirrored under
+// right-to-left text (R-08). Importing this module defines `ocelle-icon` and no other element.
 import { LitElement, css, html, nothing, svg } from "lit";
 import type { SVGTemplateResult } from "lit";
 import { define } from "./define.ts";
@@ -13,7 +14,18 @@ export type { IconName } from "./icons.ts";
 
 /** One shape as SVG; the stroke style is the `svg`'s, inherited. */
 function shape(part: Shape): SVGTemplateResult {
-  return svg`<line x1=${part.x1} y1=${part.y1} x2=${part.x2} y2=${part.y2}></line>`;
+  switch (part.kind) {
+    case "line":
+      return svg`<line x1=${part.x1} y1=${part.y1} x2=${part.x2} y2=${part.y2}></line>`;
+    case "polyline":
+      return svg`<polyline points=${part.points}></polyline>`;
+    case "path":
+      return svg`<path d=${part.d}></path>`;
+    case "rect":
+      return svg`<rect x=${part.x} y=${part.y} width=${part.width} height=${part.height} rx=${part.rx}></rect>`;
+    case "circle":
+      return svg`<circle cx=${part.cx} cy=${part.cy} r=${part.r}></circle>`;
+  }
 }
 
 /**
@@ -51,6 +63,10 @@ export class OcelleIcon extends LitElement {
       inline-size: 100%;
       block-size: 100%;
     }
+
+    :host(:dir(rtl)) .mirror {
+      scale: -1 1;
+    }
   `;
 
   /**
@@ -83,6 +99,7 @@ export class OcelleIcon extends LitElement {
     const icon = iconOf(this.name);
     if (icon === undefined) return nothing;
     return html`<svg
+      class=${icon.mirror ? "mirror" : nothing}
       viewBox="0 0 24 24"
       aria-hidden="true"
       focusable="false"

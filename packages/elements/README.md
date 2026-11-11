@@ -2,7 +2,7 @@
 
 The Ocelle web components: standards-based custom elements (Lit 3) that work in any page, a server-rendered page
 under a strict Content Security Policy, a Svelte shell or a desktop webview. This release has one element,
-`ocelle-icon`; the icon set grows with the next features.
+`ocelle-icon`, with a set of thirteen icons.
 
 ## Entry points
 
@@ -56,9 +56,8 @@ paragraph).
 <ocelle-icon name="close" label="Close"></ocelle-icon>
 ```
 
-- `name` (attribute and property, reflected): the icon's name, exactly as listed; this release draws `close` and
-  `menu`. Any other value, an empty name or no name draws nothing and keeps the box, without an error or a console
-  message.
+- `name` (attribute and property, reflected): the icon's name, exactly as listed in Icons. Any other value, an empty
+  name or no name draws nothing and keeps the box, without an error or a console message.
 - `label` (attribute and property, not reflected): the accessible name of a standalone meaningful icon, trimmed. Empty
   or whitespace-only counts as none. Without a label the icon is decorative: hidden from the accessibility tree, and it
   adds nothing to the name of the control or text around it.
@@ -68,6 +67,30 @@ forced colours the system colour of its context. `ocelle-icon` reads the token `
 an ancestor resizes every icon in that subtree. A host rule that sets the icon's `inline-size` or `block-size` wins; in
 a box that is not square the drawing is scaled to the smaller side and centred. `ocelle-icon` has no slot, event, CSS
 part or CSS custom property.
+
+## Icons
+
+| Name | Mirrors | Consumer need |
+|---|---|---|
+| `chevron-start` | yes | back navigation; the start direction of scrollers and breadcrumbs |
+| `chevron-end` | yes | the disclosure (#13); the end direction of scrollers and breadcrumbs |
+| `chevron-up` | no | collapsing a disclosure (#13) and scrolling up |
+| `chevron-down` | no | expanding a disclosure (#13), menus and selects |
+| `arrow-start` | yes | going back to the previous screen |
+| `arrow-end` | yes | the action row's trailing arrow (#7) |
+| `menu` | no | the top bar's menu button (#12) |
+| `close` | no | closing a dialog or drawer and dismissing (#16) |
+| `folder` | no | kitty-mission-ui's Projects screen ("Open project") and the folders of the Artifact Viewer's file tree, replacing its dropped folder icon (spec-kitty-design#496) |
+| `file` | no | the files of kitty-mission-ui's Artifact Viewer file tree (spec-kitty-design#496) |
+| `search` | no | kitty-mission-ui's Artifact Viewer, replacing its own magnifier glyph (spec-kitty-design#496) |
+| `table` | no | kitty-mission-ui's Artifact Viewer, replacing its own table glyph (spec-kitty-design#496) |
+| `copy` | no | the copy field's control (#14) |
+
+Every drawing is the project's own, on a 24-unit grid with one stroke width, round caps and joins, painted only in
+`currentColor`. `chevron-start`, `chevron-end`, `arrow-start` and `arrow-end` follow the inline direction: under
+right-to-left text (`dir="rtl"` on the icon or an ancestor) they are mirrored, so start points right and end points
+left; the other icons are never mirrored. The package exports no list of the names; the manifest's type of `name` is
+their union. The names are public surface: renaming or removing one is a major change, adding one a minor change.
 
 ## Host ARIA
 
@@ -149,4 +172,5 @@ README are in `test/node/`; tests that run the build or `pnpm pack` are in `test
 
 ## Licence
 
-Apache-2.0, see `LICENSE`. The browser build bundles Lit (BSD-3-Clause), listed in `THIRD_PARTY_NOTICES`.
+Apache-2.0, see `LICENSE`. Every icon is the project's own drawing, under Apache-2.0; no third-party icon set is used,
+so `THIRD_PARTY_NOTICES` lists none. The browser build bundles Lit (BSD-3-Clause), listed in `THIRD_PARTY_NOTICES`.

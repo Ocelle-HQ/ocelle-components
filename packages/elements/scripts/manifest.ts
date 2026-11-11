@@ -3,9 +3,9 @@
 // Lit plugin over packages/elements/src/ocelle-*.ts, as its CLI does with custom-elements-manifest.config.mjs, and the
 // output is normalised: every element declaration states its slots, events, CSS parts and CSS custom properties, empty
 // when it has none (FR-007); `IconName` in a type is expanded to the union of the icon names, read from the
-// `IconName` type of src/icons.ts (US1-11); members and attributes that are not public are dropped, and so is the
-// observed `aria-label` attribute, a standard attribute and not a member (FR-034); every object's keys are sorted, so
-// the file is stable. `node scripts/manifest.ts` (the package's `manifest` script) writes custom-elements.json; the
+// `IconName` type of src/icons.ts (US1-11); modules are ordered by path, by code point; members and attributes that
+// are not public are dropped, and so is the observed `aria-label` attribute, a standard attribute and not a member
+// (FR-034); every object's keys are sorted, so the file is stable. `node scripts/manifest.ts` (the package's `manifest` script) writes custom-elements.json; the
 // manifest gate (gates/bin/manifest.ts) generates the same into memory and compares.
 import { existsSync, readFileSync, readdirSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
@@ -79,11 +79,17 @@ function normaliseDeclaration(declaration: Json, union: string | undefined): Jso
   return out;
 }
 
+/** Orders two strings by UTF-16 code unit, whatever the process's locale (phase 2 review R1-06). */
+function byCodePoint(a: string, b: string): number {
+  if (a === b) return 0;
+  return a < b ? -1 : 1;
+}
+
 export function normalise(raw: Manifest, names: readonly string[]): Manifest {
   const union = names.length === 0 ? undefined : names.map((name) => JSON.stringify(name)).join(" | ");
   const modules = list(raw.modules)
     .map((module): Json => ({ ...module, declarations: list(module.declarations).map((declaration) => normaliseDeclaration(declaration, union)) }))
-    .sort((a, b) => String(a.path).localeCompare(String(b.path)));
+    .sort((a, b) => byCodePoint(String(a.path), String(b.path)));
   return sorted({ ...raw, modules }) as Manifest;
 }
 

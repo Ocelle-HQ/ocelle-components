@@ -1,0 +1,11 @@
+{
+  "expect": "fail",
+  "why": "A scale factor (scale: 2) is raw: scale takes only -1 and 1, so a change admitting every unitless factor is caught (005 research.md R-03, PLAN-TESTABILITY-1-011 (a)).",
+  "findings": [
+    {
+      "location": "packages/elements/src/x.ts:6",
+      "rule": "ocelle/token-only",
+      "message": "2"
+    }
+  ]
+}
