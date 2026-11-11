@@ -83,4 +83,16 @@ describe("emulateForcedColors(mode, palette)", () => {
       after: false,
     });
   });
+
+  it('"none" after a dark palette leaves the page in the light colour scheme the fixture contexts start in', async () => {
+    await commands.emulateForcedColors("active", "dark");
+    const during = matchMedia("(prefers-color-scheme: dark)").matches;
+    await commands.emulateForcedColors("none");
+    expect({
+      during,
+      forced: matchMedia("(forced-colors: active)").matches,
+      dark: matchMedia("(prefers-color-scheme: dark)").matches,
+      light: matchMedia("(prefers-color-scheme: light)").matches,
+    }).toEqual({ during: true, forced: false, dark: false, light: true });
+  });
 });
