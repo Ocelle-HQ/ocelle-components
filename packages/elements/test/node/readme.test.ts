@@ -9,7 +9,10 @@ import { describe, expect, it } from "vitest";
 // `tokens.css` first; an icon without it), `ocelle-icon`'s token, the engines, host ARIA and two copies on a page; the
 // CHANGELOG names `ocelle-icon` and the entry points under Unreleased; THIRD_PARTY_NOTICES holds the Lit entry for the
 // browser build, with the licence text beside it. One assertion per statement; whitespace is normalised, so a fragment
-// may wrap across lines. Phases 3 to 5 add the icon table, the slot convention and the mark.
+// may wrap across lines. Phase 3 adds the icon set: its table of names with their consumer needs, the drawing and
+// mirroring rules and the licence sentence (US2-5's "`THIRD_PARTY_NOTICES` lists no icon set" is exempt from red,
+// reviews/phase-3/tdd-exempt.md), and the thirteen names in the CHANGELOG; phases 4 and 5 add the slot convention and
+// the mark.
 /** A file's text, relative to the package; empty while it does not exist, so each assertion reports what is missing. */
 function read(file: string): string {
   const url = new URL(`../../${file}`, import.meta.url);
@@ -70,6 +73,12 @@ const fragments = [
   "A host `aria-hidden=\"true\"` hides the element, labelled or not",
   "A host `hidden` attribute removes the element: no box and no node, labelled or not",
   "A host `role` or `aria-hidden=\"false\"` is not supported: name the element with `label` or `aria-label` instead",
+  // the icon set (FR-017, FR-018, FR-029, US2 scenarios 1 and 5)
+  "`name` (attribute and property, reflected): the icon's name, exactly as listed in Icons",
+  "Every drawing is the project's own, on a 24-unit grid with one stroke width, round caps and joins, painted only in `currentColor`",
+  "`chevron-start`, `chevron-end`, `arrow-start` and `arrow-end` follow the inline direction: under right-to-left text (`dir=\"rtl\"` on the icon or an ancestor) they are mirrored, so start points right and end points left; the other icons are never mirrored",
+  "The names are public surface: renaming or removing one is a major change, adding one a minor change",
+  "Every icon is the project's own drawing, under Apache-2.0; no third-party icon set is used, so `THIRD_PARTY_NOTICES` lists none",
   // two copies on a page (FR-006, Edge Cases)
   "Two copies of the package on one page, two versions or the browser build beside a bundle of the module build, cannot both define an element: the first definition wins and the second import throws nothing",
 ];
@@ -80,6 +89,27 @@ const entryRows = [
   "| `@ocelle/elements/ocelle-icon.js` | `dist/ocelle-icon.js` | `ocelle-icon` only; for hosts with a bundler |",
   "| `@ocelle/elements/browser.js` | `dist/browser/ocelle-elements.js` | every element, Lit inside; for hosts without a bundler |",
   "| `@ocelle/elements/custom-elements.json` | `custom-elements.json` | the manifest, also named by the `customElements` field |",
+];
+
+/**
+ * The icon set (FR-017, FR-018, SC-007; research.md R-07): every name with whether it mirrors and the consumer need it
+ * meets, exactly, in the README's Icons table, in the spec's order; `folder`, `file`, `search` and `table` name the
+ * kitty-mission-ui needs they replace.
+ */
+const iconRows = [
+  "| `chevron-start` | yes | back navigation; the start direction of scrollers and breadcrumbs |",
+  "| `chevron-end` | yes | the disclosure (#13); the end direction of scrollers and breadcrumbs |",
+  "| `chevron-up` | no | collapsing a disclosure (#13) and scrolling up |",
+  "| `chevron-down` | no | expanding a disclosure (#13), menus and selects |",
+  "| `arrow-start` | yes | going back to the previous screen |",
+  "| `arrow-end` | yes | the action row's trailing arrow (#7) |",
+  "| `menu` | no | the top bar's menu button (#12) |",
+  "| `close` | no | closing a dialog or drawer and dismissing (#16) |",
+  "| `folder` | no | kitty-mission-ui's Projects screen (\"Open project\") and the folders of the Artifact Viewer's file tree, replacing its dropped folder icon (spec-kitty-design#496) |",
+  "| `file` | no | the files of kitty-mission-ui's Artifact Viewer file tree (spec-kitty-design#496) |",
+  "| `search` | no | kitty-mission-ui's Artifact Viewer, replacing its own magnifier glyph (spec-kitty-design#496) |",
+  "| `table` | no | kitty-mission-ui's Artifact Viewer, replacing its own table glyph (spec-kitty-design#496) |",
+  "| `copy` | no | the copy field's control (#14) |",
 ];
 
 /** The table rows of one `##` section of the README, as written, without the header and the separator rows. */
@@ -104,6 +134,10 @@ describe("packages/elements/README.md", () => {
     expect(Object.keys(manifest.exports ?? {})).toEqual([".", "./ocelle-icon.js", "./browser.js", "./custom-elements.json"]);
   });
 
+  it("lists the thirteen names of the set, whether each mirrors and the consumer need it meets, in its Icons table (US2-1, FR-018, SC-007)", () => {
+    expect(tableRows(read("README.md"), "Icons")).toEqual(iconRows);
+  });
+
   it("names the @ocelle/tokens peer dependency of package.json", () => {
     const manifest = JSON.parse(read("package.json")) as { peerDependencies?: Record<string, string> };
     const pin = manifest.peerDependencies?.["@ocelle/tokens"];
@@ -125,6 +159,7 @@ describe("packages/elements/CHANGELOG.md", () => {
     "`@ocelle/elements/custom-elements.json`",
     "`dist/browser/ocelle-elements.js`",
     "`@ocelle/tokens` as a peer dependency",
+    ...["chevron-start", "chevron-end", "chevron-up", "chevron-down", "arrow-start", "arrow-end", "menu", "close", "folder", "file", "search", "table", "copy"].map((name) => `\`${name}\``),
   ])("names %s under Unreleased / Added (constitution VII, FR-031, SC-008)", (surface) => {
     expect(added).toContain(surface);
   });

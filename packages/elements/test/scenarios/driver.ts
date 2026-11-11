@@ -5,8 +5,10 @@
 // nothing in a body depends on which harness runs it. Elements inside a shadow root are reached by a selector in the
 // element's shadow root.
 import type { AxNode, ForcedColors, Palette } from "../commands.ts";
+import type { Pixels } from "../pixels.ts";
 
 export type { AxNode, ForcedColors, Palette } from "../commands.ts";
+export type { Pixels } from "../pixels.ts";
 
 /** An element's border box, relative to the viewport, and its computed `display`. */
 export interface Box {
@@ -46,6 +48,17 @@ export interface Placement {
   readonly offsetY: number;
 }
 
+/** A shape's geometry bounding box (SVG `getBBox()`) in the drawing's user units, rounded to 1/1000. */
+export interface Bounds {
+  readonly x: number;
+  readonly y: number;
+  readonly width: number;
+  readonly height: number;
+}
+
+/** The text direction an element sets for its subtree. */
+export type Direction = "ltr" | "rtl";
+
 /** How the shadow roots of a set of elements hold their adopted stylesheets. */
 export interface Sheets {
   /** The number of elements matched. */
@@ -81,6 +94,20 @@ export interface Driver {
   box(id: string, inner?: string): Promise<Box>;
   /** What the shadow root of the element with `id` holds. */
   drawing(id: string): Promise<Drawing>;
+  /**
+   * Every element in the shadow root of the element with `id`, depth first in tree order, with its local name and
+   * every attribute by its qualified name (so `xlink:href` is reported as written).
+   */
+  elements(id: string): Promise<Part[]>;
+  /** The geometry bounding box of each element child of the `svg` of the element with `id`, in order. */
+  geometry(id: string): Promise<Bounds[]>;
+  /** Sets the `dir` attribute of the element with `id` and waits for every element to render. */
+  dir(id: string, direction: Direction): Promise<void>;
+  /**
+   * The rendered pixels of the border box of the element with `id`, as a screenshot of that box, decoded to RGBA
+   * (test/pixels.ts).
+   */
+  pixels(id: string): Promise<Pixels>;
   /** The computed stroke and fill of the `svg` of the element with `id` and of each element inside that `svg`. */
   paints(id: string): Promise<Paint[]>;
   /** The placement of the `svg` drawing of the element with `id` in the element's box. */

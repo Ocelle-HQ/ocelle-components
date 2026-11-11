@@ -117,6 +117,13 @@ describe("normalise(raw, names)", () => {
     expect((out.modules as Json[]).map((each) => each.path)).toEqual(["src/ocelle-alpha.ts", "src/ocelle-mid.ts", "src/ocelle-zeta.ts"]);
   });
 
+  it("orders the modules by code point, not by locale: upper case before lower case, '-' before '.' (phase 2 review R1-06)", () => {
+    const module = (path: string): Json => ({ kind: "javascript-module", path, declarations: [], exports: [] });
+    const paths = ["src/ocelle-b.ts", "src/ocelle-icon.ts", "src/ocelle-B.ts", "src/ocelle-icon-row.ts", "src/ocelle-a.ts"];
+    const out = normalise({ ...raw, modules: paths.map(module) }, []);
+    expect((out.modules as Json[]).map((each) => each.path)).toEqual(["src/ocelle-B.ts", "src/ocelle-a.ts", "src/ocelle-b.ts", "src/ocelle-icon-row.ts", "src/ocelle-icon.ts"]);
+  });
+
   it("keeps lists that the analyzer stated, and leaves raw untouched", () => {
     const stated = structuredClone(raw);
     declaration(stated).slots = [{ name: "icon", description: "The icon." }];
@@ -218,8 +225,15 @@ describe("serialise(manifest)", () => {
   });
 });
 
+/**
+ * The type of `name`: the union of exactly the thirteen names of the set, in the order of spec US2 scenario 1, or
+ * undefined (US2-1, FR-018).
+ */
+const unionOfTheSet =
+  '"chevron-start" | "chevron-end" | "chevron-up" | "chevron-down" | "arrow-start" | "arrow-end" | "menu" | "close" | "folder" | "file" | "search" | "table" | "copy" | undefined';
+
 describe("generate(root) on the repository's element source", () => {
-  it("declares ocelle-icon with its tag name, class, name and label with types, defaults and attributes, name reflected and label not, and no slot, event, part or CSS property (US1 scenario 11)", async () => {
+  it("declares ocelle-icon with its tag name, class, name (the union of the thirteen names) and label with types, defaults and attributes, name reflected and label not, and no slot, event, part or CSS property (US1 scenario 11, US2 scenario 1)", async () => {
     const manifest = await generate(repo);
     const modules = manifest.modules as { path: string; declarations: Record<string, unknown>[] }[];
     expect(manifest.schemaVersion).toBe("1.0.0");
@@ -237,12 +251,12 @@ describe("generate(root) on the repository's element source", () => {
     });
     const members = (icon?.members as Record<string, unknown>[]).map(({ description, ...rest }) => ({ ...rest, described: typeof description === "string" && description !== "" }));
     expect(members).toEqual([
-      { kind: "field", name: "name", privacy: "public", type: { text: '"close" | "menu" | undefined' }, default: "undefined", attribute: "name", reflects: true, described: true },
+      { kind: "field", name: "name", privacy: "public", type: { text: unionOfTheSet }, default: "undefined", attribute: "name", reflects: true, described: true },
       { kind: "field", name: "label", privacy: "public", type: { text: "string | undefined" }, default: "undefined", attribute: "label", described: true },
     ]);
     const attributes = (icon?.attributes as Record<string, unknown>[]).map(({ description, ...rest }) => ({ ...rest, described: typeof description === "string" && description !== "" }));
     expect(attributes).toEqual([
-      { name: "name", fieldName: "name", type: { text: '"close" | "menu" | undefined' }, default: "undefined", described: true },
+      { name: "name", fieldName: "name", type: { text: unionOfTheSet }, default: "undefined", described: true },
       { name: "label", fieldName: "label", type: { text: "string | undefined" }, default: "undefined", described: true },
     ]);
   });

@@ -86,6 +86,56 @@ describe("rawValues: allowed values", () => {
   });
 });
 
+// The `scale` allowance (005 research.md R-03, R-08; operator decisions PLAN-TESTABILITY-1-011 (a) and PLAN-FRESH-3-002
+// (a); T034): `scale` takes only the numbers -1 and 1, as bare words, so the mirroring rule `scale: -1 1` passes. The
+// whole value is checked: any other number, a length or a percentage is raw, and so is any function (calc(), var() or
+// another), so calc() does not reopen the allowance. Keywords stay allowed as for every property.
+describe("rawValues: scale takes only -1 and 1", () => {
+  it.each([
+    { value: "-1 1" },
+    { value: "1 -1" },
+    { value: "-1" },
+    { value: "1" },
+    { value: "1 1 -1" },
+  ])("scale: $value is token-only (only the control 4px after it is raw)", ({ value }) => {
+    expect(rawValues("scale", `${value} 4px`)).toEqual(["4px"]);
+    expect(rawValues("SCALE", value)).toEqual([]);
+  });
+
+  // Each guard below shares its test with the mirroring value it guards (it holds before the allowance too).
+  it("keeps keywords allowed: scale: none and inherit pass, beside -1 1", () => {
+    expect({ none: rawValues("scale", "none"), inherit: rawValues("scale", "inherit"), mirror: rawValues("scale", "-1 1") }).toEqual({ none: [], inherit: [], mirror: [] });
+  });
+
+  it.each([
+    { value: "2", raw: ["2"] },
+    { value: "2px 1", raw: ["2px"] },
+    { value: "calc(2)", raw: ["calc(2)"] },
+    { value: "calc(-1) 1", raw: ["calc(-1)"] },
+    { value: "calc(3) calc(3)", raw: ["calc(3)", "calc(3)"] },
+    { value: "var(--ocelle-icon-size)", raw: ["var(--ocelle-icon-size)"] },
+    { value: "-1 0.5", raw: ["0.5"] },
+    { value: "0", raw: ["0"] },
+    { value: "-2 1", raw: ["-2"] },
+    { value: "50% 1", raw: ["50%"] },
+    { value: "1.5", raw: ["1.5"] },
+  ])("scale: $value is raw: $raw, while -1 1 passes", ({ value, raw }) => {
+    expect({ value: rawValues("scale", value), mirror: rawValues("scale", "-1 1") }).toEqual({ value: raw, mirror: [] });
+  });
+
+  it("leaves other properties as before: a bare -1 or 1 is still raw for width, and calc(2) still passes there, while scale: -1 1 passes", () => {
+    expect({ width: rawValues("width", "-1 1"), calc: rawValues("width", "calc(2)"), order: rawValues("order", "-1"), mirror: rawValues("scale", "-1 1") }).toEqual({ width: ["-1", "1"], calc: [], order: [], mirror: [] });
+  });
+
+  it("reports the mirroring rule of an element template not at all, and a scale factor at its line", async () => {
+    const code = "const css = String.raw;\nexport const styles = css`\n  :host(:dir(rtl)) .mirror {\n    scale: -1 1;\n  }\n  .big {\n    scale: calc(2);\n  }\n`;\n";
+    const { results } = await stylelint.lint({ code, codeFilename: "x.ts", config: { plugins: [plugin], rules: { [ruleName]: true }, customSyntax: "postcss-lit" } });
+    expect(results[0]?.warnings.map(({ line, text }) => ({ line, text }))).toEqual([
+      { line: 7, text: "scale: raw calc(2); use a --ocelle-* token (FR-024) (ocelle/token-only)" },
+    ]);
+  });
+});
+
 describe("referencedTokens()", () => {
   it.each([
     { value: "var(--ocelle-a) var", names: ["--ocelle-a"] },
