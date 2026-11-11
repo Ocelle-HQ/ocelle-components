@@ -4,7 +4,10 @@
 // An error plant names the cause it expects: a gate's exit 2 proves the plant only when a line of its error output
 // contains that cause, and a pass plant may not set `base` (phase 4 round 5, O5-01 and O5-02, operator decision,
 // PR #18 landing review: "Breaking plants check the cause of exit 2, not just the code; pass plants may not set
-// 'base'").
+// 'base'"). The mutation gate's report lines (007 research R-02: rules `timeout`, `compile-error` and `zero-mutants`,
+// beside the equivalent records' `record`) are never findings of a mutation run; a mutation pass or fail plant may list
+// the report lines it expects in `reports`, compared with the run's report lines as a multiset, by location and rule
+// (and a message substring where given), and `records` compares the run's `record` lines only.
 import { oneLine, plural } from "./findings.ts";
 
 /** One expected finding of a fail plant. */
@@ -21,19 +24,31 @@ export interface ExpectedRecord {
   readonly reason: string;
 }
 
+/** The rules of the mutation gate's report lines (007 contracts/mutation-output.md), which a plant may list. */
+const reportRules = ["timeout", "compile-error", "zero-mutants"] as const;
+
+/** One expected report line of a mutation plant: a Timeout, a CompileError or a zero-mutant entry. */
+export interface ExpectedReport {
+  readonly location: string;
+  readonly rule: (typeof reportRules)[number];
+  readonly message?: string;
+}
+
 /** A plant's plant.json. */
 export interface Plant {
   readonly expect: "fail" | "pass" | "error";
   readonly why: string;
   readonly findings?: readonly ExpectedFinding[];
   readonly records?: readonly ExpectedRecord[];
+  /** A mutation plant's expected report lines; when absent, report lines are not checked. */
+  readonly reports?: readonly ExpectedReport[];
   /** An error plant's expected cause: a substring of a line of the gate's error output at exit 2. */
   readonly cause?: string;
   /** The base the plant presents to its gate (`{base}`) instead of its temporary repository's base commit. */
   readonly base?: string;
 }
 
-const keys = new Set(["expect", "why", "findings", "records", "cause", "base"]);
+const keys = new Set(["expect", "why", "findings", "records", "reports", "cause", "base"]);
 
 function isText(value: unknown): value is string {
   return typeof value === "string" && value !== "";
@@ -67,6 +82,24 @@ function readRecords(value: unknown): ExpectedRecord[] | string {
   return records;
 }
 
+function isReportRule(value: unknown): value is ExpectedReport["rule"] {
+  return reportRules.some((rule) => rule === value);
+}
+
+function readReports(value: unknown): ExpectedReport[] | string {
+  if (!Array.isArray(value)) return "reports must be a list";
+  const reports: ExpectedReport[] = [];
+  for (const [index, item] of (value as unknown[]).entries()) {
+    const at = `reports[${String(index)}]`;
+    const fields = (typeof item === "object" && item !== null ? item : {}) as Record<string, unknown>;
+    const { location, rule, message } = fields;
+    if (!isText(location) || !isReportRule(rule)) return `${at} needs a location and a rule: timeout, compile-error or zero-mutants`;
+    if (message !== undefined && typeof message !== "string") return `${at}.message must be a string`;
+    reports.push(message === undefined ? { location, rule } : { location, rule, message });
+  }
+  return reports;
+}
+
 /** A plant.json text as a plant, or the problem with it. */
 export function parsePlant(text: string): Plant | string {
   let value: unknown;
@@ -95,6 +128,12 @@ export function parsePlant(text: string): Plant | string {
     const records = readRecords(fields.records);
     if (typeof records === "string") return records;
     plant = { ...plant, records };
+  }
+  if (fields.reports !== undefined) {
+    if (expect === "error") return "only a pass or fail plant lists reports";
+    const reports = readReports(fields.reports);
+    if (typeof reports === "string") return reports;
+    plant = { ...plant, reports };
   }
   if (expect === "error") {
     if (!isText(fields.cause)) return "an error plant names its cause, a non-empty string";
@@ -173,6 +212,50 @@ function differ(what: string, expected: readonly string[], actual: readonly stri
   return `${what} differ: ${parts.join("; ")}`;
 }
 
+/**
+ * The multiset difference of two lists of keys: each key `expected` has more often than `actual` is missing as often
+ * as it is short, and the reverse is unexpected, in the order of each list.
+ */
+function differCounted(what: string, expected: readonly string[], actual: readonly string[]): string | undefined {
+  const rest = (from: readonly string[], take: readonly string[]): string[] => {
+    const left = [...take];
+    return from.filter((key) => {
+      const at = left.indexOf(key);
+      if (at === -1) return true;
+      left.splice(at, 1);
+      return false;
+    });
+  };
+  const missing = rest(expected, actual);
+  const unexpected = rest(actual, expected);
+  if (missing.length === 0 && unexpected.length === 0) return undefined;
+  const parts = [
+    ...(missing.length > 0 ? [`missing ${missing.join(", ")}`] : []),
+    ...(unexpected.length > 0 ? [`unexpected ${unexpected.join(", ")}`] : []),
+  ];
+  return `${what} differ: ${parts.join("; ")}`;
+}
+
+const key = (found: { readonly location: string; readonly rule: string }): string => `${found.location} ${found.rule}`;
+
+/**
+ * The problem with a run's report lines against a plant's `reports`: a multiset by location and rule, then each
+ * expected message in a line of its own, the entries with a message taking their lines first.
+ */
+function judgeReports(expected: readonly ExpectedReport[], lines: readonly Reported[]): string | undefined {
+  const differs = differCounted("reports", expected.map(key), lines.map(key));
+  if (differs !== undefined) return differs;
+  const left = [...lines];
+  for (const wanted of expected) {
+    const { message } = wanted;
+    if (message === undefined) continue;
+    const at = left.findIndex((found) => key(found) === key(wanted) && found.rest.includes(message));
+    if (at === -1) return `report ${key(wanted)} lacks "${message}"`;
+    left.splice(at, 1);
+  }
+  return undefined;
+}
+
 /** The detail of an unexpected result: the findings it reported, else the first line of its error output. */
 function detail(findings: readonly Reported[], run: PlantRun): string {
   if (findings.length > 0) return ` (${findings.map((found) => `${found.location} ${found.rule}`).join(", ")})`;
@@ -183,6 +266,7 @@ function detail(findings: readonly Reported[], run: PlantRun): string {
 /** The problem with a gate's run on a plant, or undefined when the gate did what the plant expects. */
 export function judgePlant(gate: string, plant: Plant, run: PlantRun): string | undefined {
   const exit = String(run.exit);
+  if (plant.reports !== undefined && gate !== "mutation") return "reports are only for plants of the mutation gate";
   if (plant.expect === "error") {
     if (run.exit !== 2) return `expected exit 2 (could not run), got exit ${exit}`;
     const cause = plant.cause ?? "";
@@ -190,22 +274,26 @@ export function judgePlant(gate: string, plant: Plant, run: PlantRun): string | 
     return `expected exit 2 (could not run) with the cause "${cause}", got exit 2${detail([], run)}`;
   }
   const lines = reported(gate, run);
-  const isRecord = (found: Reported): boolean => gate === "mutation" && found.rule === "record";
-  const findings = lines.filter((found) => !isRecord(found));
+  const ruled = (rules: readonly string[]) => (found: Reported): boolean => gate === "mutation" && rules.includes(found.rule);
+  const isRecord = ruled(["record"]);
+  const isReport = ruled(reportRules);
+  const findings = lines.filter((found) => !isRecord(found) && !isReport(found));
+  const reports = (): string | undefined => (plant.reports === undefined ? undefined : judgeReports(plant.reports, lines.filter(isReport)));
   if (plant.expect === "pass") {
     if (run.exit !== 0 || findings.length > 0) return `expected exit 0 with no finding, got exit ${exit}${detail(findings, run)}`;
-    if (plant.records === undefined) return undefined;
-    // Here every line is a record: a pass plant with any other finding line was rejected above.
-    const records = lines.map((found) => {
-      const end = found.rest.indexOf(": ");
-      return `${found.location} ${found.rest.slice(0, end)} "${found.rest.slice(end + 2)}"`;
-    });
-    const expected = plant.records.map((record) => `${record.location} ${record.mutator} "${record.reason}"`);
-    return differ("records", expected, records);
+    if (plant.records !== undefined) {
+      const records = lines.filter(isRecord).map((found) => {
+        const end = found.rest.indexOf(": ");
+        return `${found.location} ${found.rest.slice(0, end)} "${found.rest.slice(end + 2)}"`;
+      });
+      const expected = plant.records.map((record) => `${record.location} ${record.mutator} "${record.reason}"`);
+      const differs = differ("records", expected, records);
+      if (differs !== undefined) return differs;
+    }
+    return reports();
   }
   const expected = run.expected ?? plant.findings ?? [];
   if (run.exit !== 1) return `expected exit 1 with the plant's ${plural(expected.length, "finding")}, got exit ${exit}${detail(findings, run)}`;
-  const key = (found: { readonly location: string; readonly rule: string }): string => `${found.location} ${found.rule}`;
   const differs = differ("findings", expected.map(key), findings.map(key));
   if (differs !== undefined) return differs;
   for (const wanted of expected) {
@@ -214,5 +302,5 @@ export function judgePlant(gate: string, plant: Plant, run: PlantRun): string | 
     const matches = findings.filter((found) => key(found) === key(wanted));
     if (!matches.some((found) => found.rest.includes(message))) return `finding ${key(wanted)} lacks "${message}"`;
   }
-  return undefined;
+  return reports();
 }

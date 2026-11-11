@@ -269,6 +269,18 @@ in this feature depends on it.
     A changed file the tool read but its report does not list counts as zero mutants, so a change with no mutable
     code (type-only or comment-only) passes (operator decision, PR #18 landing review, human:jeroennouwsdev,
     2026-11-03: "Guard the input instead (Recommended)").
+  - **Amendment, 2026-11-10 (mission 007, `specs/007-mutation-gate-strictness/` FR-001 to FR-008, FR-015):** the
+    text above stands, verdicts included; mutation testing additionally MUST report, in a passing and in a failing
+    run, what no test was seen killing on changed lines: every Timeout mutant and every CompileError mutant on a
+    changed line, one line each naming its path, start line, mutator and replacement, and every zero-mutant entry
+    (an entry of the run with no mutant on its changed lines, named as the run holds it: its path in a whole-diff
+    run, its `--files` entry as given in a shard run), and its summary counts the three, also when zero. These
+    report lines are not findings and change no exit code. The operator's three answers (human:jeroennouwsdev,
+    2026-11-10): a Timeout on a changed line is reported and still passes ("Report, still pass (Recommended)"; a
+    timeout stays a kill); a CompileError on a changed line is reported and still passes ("Report, still pass
+    (Recommended)"; the 2026-11-02 amendment stands); a changed file with no mutant on its changed lines is reported
+    and still passes (triage gate, approved by the operator). A `--files` list that names one file more than once
+    ends the run as "could not run" (operator decision, plan squad round 1, PLAN-CORRECTNESS-1-005 (a)).
 - **FR-012**: A surviving mutant MAY be recorded as equivalent only with a written reason, kept next to the mutated
   code. The mutation report MUST list every such record in the changed code, with its location and reason, so the
   review can see and record it.

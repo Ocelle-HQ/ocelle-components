@@ -117,7 +117,9 @@ surface, gate or contract change, as opposed to a mechanical chore: a pin bump, 
 4. **Targeted local checks only.** CI runs everything. Locally run the gates for the surfaces the PR changed
    (`pnpm run gate:typecheck`, `gate:lint`, `gate:style-lint`, `gate:test-lint`, `gate:unit-tests` on changed
    tests, `gate:mutation -- --base <merge-base> --files <changed source>`, `gate:plants` when a gate or plant
-   changed). On a machine with the `heavy` wrapper, run anything heavy under it, once, never nested.
+   changed). On a machine with the `heavy` wrapper, run anything heavy under it, once, never nested. The mutation
+   gate's `timeout`, `compile-error` and `zero-mutants` lines are reports to read, not findings, and `--files` names
+   each changed file once (a file named twice ends exit 2).
 5. **Folds, test first.**
    - **Mission or op PR**: a finding to fix becomes an operator round on the phase it belongs to (rule 9). Then the
      planner adds the task, and `implementer-ivan` follows `speckit-story-fix` (red under `red.sh N fix-M`, then

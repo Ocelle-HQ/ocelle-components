@@ -259,6 +259,18 @@ describe("judgePlant: report lines of a mutation run (007 research R-02)", () =>
     expect(judgePlant("mutation", mixed, run(0, [other, timeout, summary]))).toBeUndefined();
   });
 
+  it("needs the message in a line of the expected location and rule, not in another report line", () => {
+    const plant: Plant = { expect: "pass", why: "w", reports: [{ location: "a.ts:3", rule: "timeout", message: "ArrayDeclaration" }, { location: "a.ts:5", rule: "compile-error" }] };
+    expect(judgePlant("mutation", plant, run(0, [timeout, compile, summary]))).toBe('report a.ts:3 timeout lacks "ArrayDeclaration"');
+  });
+
+  it("checks reports after matching records on a pass plant with both", () => {
+    const plant: Plant = { expect: "pass", why: "w", records: [{ location: "a.ts:7", mutator: "all", reason: "equivalent" }], reports: [] };
+    expect(judgePlant("mutation", plant, run(0, [record, summary]))).toBeUndefined();
+    expect(judgePlant("mutation", plant, run(0, [record, timeout, summary]))).toBe("reports differ: unexpected a.ts:3 timeout");
+    expect(judgePlant("mutation", plant, run(0, [timeout, summary]))).toBe('records differ: missing a.ts:7 all "equivalent"');
+  });
+
   it("judges a fail plant's findings and its report lines, the report lines never findings", () => {
     const survivor = "a.ts:4: mutation: StringLiteral: Survived: replaced by \"\"";
     const failSummary = "mutation: 1 finding in 1 changed file (2 mutants on changed lines; 1 timeout, 0 compile errors, 0 zero-mutant entries)";
