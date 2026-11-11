@@ -686,7 +686,9 @@ command, `time.txt`: seconds, then the gate's exit code). The configuration is l
 `vitest.mutation.config.ts` splits `tokens` into `tokens-source-table` (`source-table.test.ts`, `groupOrder: 1`) and
 `tokens` (`groupOrder: 2`), every other mutation project at `groupOrder: 3`; `stryker.config.json` is unchanged
 (`concurrency: 8`, the TypeScript checker on). The gate is the User Story 1 gate, so each run prints its report lines.
-One run at a time, nothing else heavy beside it.
+One run at a time, nothing else heavy beside it. *Note, 2026-11-11 (fix round 2, landing L1-01):* this order was
+narrowed afterwards: only `tokens-source-table` stays at 1, every other project, the rest of `tokens` included, is at
+2; see § Fix round 2 below. The runs of this section were taken with the order stated here.
 
 **A discarded first attempt.** The first green run of `source.ts:1-60` ended exit 2 after 30.57 s: `mutation: could
 not run: Stryker wrote no report (There were failed tests in the initial test run.)`. Stryker's dry run failed on
@@ -717,6 +719,11 @@ mutants …; 2 timeouts, 3 compile errors, 0 zero-mutant entries; 1 equivalent r
 (`gates/lib/wcag.ts:4`) and three `compile-error` lines. The `wcag.ts` time equals the red run's to the hundredth
 (90.92 s); it is a new run (its `mutation.json` differs from the red copy in timings and test ids), the equality is a
 coincidence of the two decimals.
+
+*Note, 2026-11-11 (fix round 2, landing L1-01):* the two FR-013 reference rows above measure only `generate.ts:1-60`
+and `wcag.ts`, so they could not show the Killed → Timeout moves of gate-source static mutants that landing L1-01
+found with this order. The FR-013 check on gate source and the reference entries with the narrowed order are in
+§ Fix round 2 below.
 
 The checker-off runs of lever 1: 135, 202 and 224 Killed, 0 Timeout, 0 CompileError each.
 
@@ -1059,7 +1066,9 @@ assertion mismatches, `reviews/phase-3/red-lever-3.log`), green commit `3222ec2`
 `stryker.config.json` unchanged (`concurrency: 8`, the TypeScript checker on). Same sandbox (4 cores, Node 22.23.4,
 Stryker 10.1.1), same environment, base `B = eaf16896ec10affdca24296fc9531fcffc46a8be` and command as the red runs; wall
 time by `date +%s.%N` around the command (`time.txt`: seconds, then the gate's exit code). One run at a time, nothing
-else heavy beside it. Taken 2026-11-11.
+else heavy beside it. Taken 2026-11-11. *Note, 2026-11-11 (fix round 2, landing L1-01):* lever 1 was narrowed after
+these runs (only `tokens-source-table` at 1, every other project at 2); the eight entries were run again with the
+narrowed order in § Fix round 2 below.
 
 ### Plan (T035)
 
@@ -1272,6 +1281,9 @@ Not re-run. The lever changes only how `--plan` cuts entries; Stryker's and Vite
 lever 1 green runs, whose reference runs (`generate.ts:1-60`, `wcag.ts`) are above. `gates/lib/wcag.ts` stays one
 whole entry; `generate.ts:1-60` is no longer an entry of the plan (now `generate.ts:1-30` and `31-60`).
 
+*Note, 2026-11-11 (fix round 2, landing L1-01):* with lever 1 narrowed, both reference entries were run again, and
+the static mutants of gate source were compared against `main`'s mutation configuration; see § Fix round 2 below.
+
 ### Decision (T037)
 
 From the figures above alone (FR-009, FR-010, FR-011): every `source.ts` entry has 0 Timeout, 0 Survived and 0
@@ -1314,21 +1326,288 @@ ArrayDeclaration: equivalent, …`), which is already at the phase-1 base (`git 
 packages/tokens/src` prints the same line): nothing new. FR-009 and FR-010 were reached by faster kills (lever 1) and
 smaller entries (lever 3), not by removing mutants.
 
+## Fix round 2: lever 1 narrowed (operator round from the landing review, 2026-11-11)
+
+Landing review L1-01 (`reviews/landing/round-1.md`), decided by the operator as "Only source-table first
+(Recommended)" (human:jeroennouwsdev, 2026-11-11, `reviews/phase-3/round-2.md` O2-01; research R-05, amendment
+2026-11-11). Tasks T043 to T052. Taken 2026-11-11 on the same sandbox (4 cores, Node 22.23.4, Stryker 10.1.1), with the
+same environment; wall time by `date +%s.%N` around the command (`time.txt`: seconds, then the gate's exit code). One
+run at a time, nothing else heavy beside it.
+
+**Configuration.** `vitest.mutation.config.ts` (green commit `1a269c5`): `tokens-source-table`
+(`source-table.test.ts`) alone at `sequence: { groupOrder: 1 }`; every other mutation project, the rest of `tokens`
+included (`tokens`, `styles`, `elements`, `storybook`, `gates`), at `sequence: { groupOrder: 2 }`, so after
+`source-table.test.ts` the files run in Vitest's default order (project name: `elements`, `gates`, `storybook`,
+`styles`, `tokens`). The split of `tokens` and its `exclude` are unchanged; no project is at 0. `stryker.config.json`
+is unchanged (`concurrency: 8`, the TypeScript checker on); `vitest.config.ts` and `pnpm test` are unchanged.
+
+**Red** (`907039f`, `red.sh 3 fix-2`, `reviews/phase-3/red-fix-2.log`): two assertion mismatches of
+`gates/test/integration/vitest-mutation-config.test.ts` against the earlier split, the sequence list (1, 2, 3, 3, 3, 3
+against 1, 2, 2, 2, 2, 2) and the order test (the second module to start was a `tokens` one). The order test expected
+the project name `elements`; Vitest names that browser project `elements (chromium)` at run time (one chromium
+instance), so the green commit set the expected value to that exact name. The checks of T052 then showed that the
+second project is not fixed: `elements` starts once Chromium is up, so a `gates` module often starts first (5 of 6
+helper runs; one `pnpm test` run failed on it). Commit `de22a4a` therefore asserts that every module after
+`source-table.test.ts` that starts before the cancel belongs to `elements (chromium)`, `gates`, `storybook` or
+`styles`, so not to `tokens`; with the configuration of `907039f` set in the working tree it fails (`expected [
+Array(4) ] to include 'tokens'`), and it was restored afterwards.
+
+**Plants** (T047, `fix-2/plants.txt`): `gate:plants` alone, 152 s, exit 0, `plants: 186 plants of 13 gates and the
+registry judged, every plant as expected`.
+
+### Gate source, FR-013 (T045, T048)
+
+`pnpm --silent run gate:mutation -- --base 3a247ef5f684a102f95e433e7cf41550839c79e4 --files
+gates/lib/mutation/report.ts,gates/lib/plant-judge.ts`, three runs, one at a time:
+
+- `fix-2/gate-source/lever1/`: the earlier split, at the red commit `907039f` (T045 (a), before the fix);
+- `fix-2/gate-source/main-config/`: a scratch worktree of `907039f` with only `vitest.mutation.config.ts` and
+  `gates/test/vitest-config.test.ts` checked out from `3a247ef` (`main`), `pnpm run setup:offline` in it, removed
+  afterwards (T045 (b));
+- `fix-2/gate-source/narrowed/`: the narrowed order, at the green commit `1a269c5` (T048).
+
+| Run | Mutants | Killed | Timeout | Survived | NoCoverage | CompileError | Ignored | Time |
+|---|---|---|---|---|---|---|---|---|
+| lever1 (earlier split) | 235 | 161 | 2 | 0 | 0 | 68 | 4 | 182.72 s, exit 0 |
+| main-config (`main`'s order) | 235 | 163 | 0 | 0 | 0 | 68 | 4 | 170.45 s, exit 0 |
+| narrowed | 235 | 163 | 0 | 0 | 0 | 68 | 4 | 179.90 s, exit 0 |
+
+(`report.ts` 69 mutants, `plant-judge.ts` 166.) Every run printed `mutation: 235 mutants on the changed lines of 2
+files, none survived; <t> timeouts, 68 compile errors, 0 zero-mutant entries; 1 equivalent record`, with `<t>` 2, 0
+and 0, and an empty stderr.
+
+**The static mutants** (`static: true` in the kept reports): 13, as landing L1-01 counted. Status in lever1 /
+main-config / narrowed, with the killing test file:
+
+| Mutant | lever1 | main-config | narrowed |
+|---|---|---|---|
+| `report.ts` `106:17` Regex → `/\d+$/` | **Timeout** | Killed (`mutation-report.test.ts`) | Killed (`mutation-report.test.ts`) |
+| `report.ts` `106:17` Regex → `/^\d+/`, `/^\d$/`, `/^\D+$/` (3) | Killed | Killed | Killed |
+| `plant-judge.ts` `51:63` StringLiteral → `""` | **Timeout** | Killed (`plant-judge.test.ts`) | Killed (`plant-judge.test.ts`) |
+| `plant-judge.ts` `51:23`, `51:33`, `51:40`, `51:52`, `51:74`, `51:83` StringLiteral → `""` (6) | Killed (`plants.test.ts`) | Killed (`plants.test.ts`) | Killed (`plants.test.ts`) |
+| `plant-judge.ts` `51:22` ArrayDeclaration → `[]` | CompileError | CompileError | CompileError |
+| `plant-judge.ts` `239:13` ArrowFunction → `() => undefined` | CompileError | CompileError | CompileError |
+
+Run (a) is the red evidence: 2 Timeouts, both static, both Killed with `main`'s order (landing L1-01 saw 2 at HEAD in
+its `--files` run and 8 in its whole-diff run; which mutants move varies with load).
+
+**Per-mutant comparisons** (`fix-2/gate-source/compare.txt`), run from the repository root; the commands and their
+output verbatim:
+
+```text
+$ node specs/007-mutation-gate-strictness/evidence/compare.mjs specs/007-mutation-gate-strictness/evidence/fix-2/gate-source/main-config/mutation.json specs/007-mutation-gate-strictness/evidence/fix-2/gate-source/narrowed/mutation.json gates/lib/mutation/report.ts
+gates/lib/mutation/report.ts: 69 mutants in both runs, every key once
+move CompileError -> CompileError: 16
+move Ignored -> Ignored: 4
+move Killed -> Killed: 49
+(exit 0)
+
+$ node specs/007-mutation-gate-strictness/evidence/compare.mjs specs/007-mutation-gate-strictness/evidence/fix-2/gate-source/main-config/mutation.json specs/007-mutation-gate-strictness/evidence/fix-2/gate-source/narrowed/mutation.json gates/lib/plant-judge.ts
+gates/lib/plant-judge.ts: 166 mutants in both runs, every key once
+move CompileError -> CompileError: 52
+move Killed -> Killed: 114
+(exit 0)
+
+$ node specs/007-mutation-gate-strictness/evidence/compare.mjs specs/007-mutation-gate-strictness/evidence/fix-2/gate-source/lever1/mutation.json specs/007-mutation-gate-strictness/evidence/fix-2/gate-source/narrowed/mutation.json gates/lib/mutation/report.ts
+gates/lib/mutation/report.ts: 69 mutants in both runs, every key once
+move CompileError -> CompileError: 16
+move Ignored -> Ignored: 4
+move Killed -> Killed: 48
+move Timeout -> Killed: 1
+changed 106:17-106:24 Regex "/\\d+$/": Timeout -> Killed
+(exit 0)
+
+$ node specs/007-mutation-gate-strictness/evidence/compare.mjs specs/007-mutation-gate-strictness/evidence/fix-2/gate-source/lever1/mutation.json specs/007-mutation-gate-strictness/evidence/fix-2/gate-source/narrowed/mutation.json gates/lib/plant-judge.ts
+gates/lib/plant-judge.ts: 166 mutants in both runs, every key once
+move CompileError -> CompileError: 52
+move Killed -> Killed: 113
+move Timeout -> Killed: 1
+changed 51:63-51:72 StringLiteral "\"\"": Timeout -> Killed
+(exit 0)
+```
+
+**main-config → narrowed** (the FR-013 check): no status move in either file; no Killed → Timeout, Survived or
+NoCoverage, and no count moves (Killed 49 and 114, Timeout 0, in both runs). No Timeout of `main-config` to list: it has
+none. No re-run was due (T024's rule applies only to a Killed → Timeout move). **lever1 → narrowed**: the two
+Timeouts of run (a), `report.ts:106:17` Regex `/\d+$/` and `plant-judge.ts:51:63` StringLiteral `""`, are both Killed
+now.
+
+### `source.ts` entries with the narrowed order (T049)
+
+The T036 command with base `B = eaf16896ec10affdca24296fc9531fcffc46a8be`, `--files packages/tokens/src/source.ts:<start>-<end>`, at the
+green configuration; folders `fix-2/source-<start>-<end>/`, each committed as soon as it was written.
+
+| Entry | Mutants | Killed | Timeout | Survived | NoCoverage | CompileError | Ignored | Time (lever 3, first run) | Time (narrowed) | Within 176 s |
+|---|---|---|---|---|---|---|---|---|---|---|
+| `source.ts:1-30` | 19 | 16 | 0 | 0 | 0 | 3 | 0 | 73.96 s | 72.49 s | yes |
+| `source.ts:31-60` | 115 | 54 | 0 | 0 | 0 | 61 | 0 | 166.19 s | 163.14 s | yes |
+| `source.ts:61-90` | 79 | 43 | 0 | 0 | 0 | 36 | 0 | 131.38 s | 123.93 s | yes |
+| `source.ts:91-120` | 123 | 60 | 0 | 0 | 0 | 63 | 0 | 177.68 s (re-run 171.53 s) | 173.46 s | yes |
+| `source.ts:121-150` | 110 | 56 | 0 | 0 | 0 | 54 | 0 | 171.98 s | 168.86 s | yes |
+| `source.ts:151-180` | 114 | 57 | 0 | 0 | 0 | 57 | 0 | 182.52 s (re-run 170.49 s) | 168.05 s | yes |
+| `source.ts:181-210` | 79 | 48 | 0 | 0 | 0 | 31 | 0 | 128.99 s | 131.29 s | yes |
+| `source.ts:211-230` | 40 | 22 | 0 | 0 | 0 | 18 | 0 | 91.36 s | 87.51 s | yes |
+
+Every run ended exit 0 with an empty stderr and the summary `mutation: <n> mutants on the changed lines of 1 file, none
+survived; 0 timeouts, <c> compile errors, 0 zero-mutant entries; 0 equivalent records`. No entry was over 176 s, so no
+checker split was taken. The slowest is `91-120`, 173.46 s, 2.54 s under the bound.
+
+**Per-mutant comparison against lever 3** (`fix-2/compare-source-lever3.txt`; the first lever 3 run for `91-120` and
+`151-180`), verbatim:
+
+```text
+$ node specs/007-mutation-gate-strictness/evidence/compare.mjs specs/007-mutation-gate-strictness/evidence/lever3/source-1-30/mutation.json specs/007-mutation-gate-strictness/evidence/fix-2/source-1-30/mutation.json packages/tokens/src/source.ts
+packages/tokens/src/source.ts: 19 mutants in both runs, every key once
+move CompileError -> CompileError: 3
+move Killed -> Killed: 16
+(exit 0)
+
+$ node specs/007-mutation-gate-strictness/evidence/compare.mjs specs/007-mutation-gate-strictness/evidence/lever3/source-31-60/mutation.json specs/007-mutation-gate-strictness/evidence/fix-2/source-31-60/mutation.json packages/tokens/src/source.ts
+packages/tokens/src/source.ts: 115 mutants in both runs, every key once
+move CompileError -> CompileError: 61
+move Killed -> Killed: 54
+(exit 0)
+
+$ node specs/007-mutation-gate-strictness/evidence/compare.mjs specs/007-mutation-gate-strictness/evidence/lever3/source-61-90/mutation.json specs/007-mutation-gate-strictness/evidence/fix-2/source-61-90/mutation.json packages/tokens/src/source.ts
+packages/tokens/src/source.ts: 79 mutants in both runs, every key once
+move CompileError -> CompileError: 36
+move Killed -> Killed: 43
+(exit 0)
+
+$ node specs/007-mutation-gate-strictness/evidence/compare.mjs specs/007-mutation-gate-strictness/evidence/lever3/source-91-120/mutation.json specs/007-mutation-gate-strictness/evidence/fix-2/source-91-120/mutation.json packages/tokens/src/source.ts
+packages/tokens/src/source.ts: 123 mutants in both runs, every key once
+move CompileError -> CompileError: 63
+move Killed -> Killed: 60
+(exit 0)
+
+$ node specs/007-mutation-gate-strictness/evidence/compare.mjs specs/007-mutation-gate-strictness/evidence/lever3/source-121-150/mutation.json specs/007-mutation-gate-strictness/evidence/fix-2/source-121-150/mutation.json packages/tokens/src/source.ts
+packages/tokens/src/source.ts: 110 mutants in both runs, every key once
+move CompileError -> CompileError: 54
+move Killed -> Killed: 56
+(exit 0)
+
+$ node specs/007-mutation-gate-strictness/evidence/compare.mjs specs/007-mutation-gate-strictness/evidence/lever3/source-151-180/mutation.json specs/007-mutation-gate-strictness/evidence/fix-2/source-151-180/mutation.json packages/tokens/src/source.ts
+packages/tokens/src/source.ts: 114 mutants in both runs, every key once
+move CompileError -> CompileError: 57
+move Killed -> Killed: 57
+(exit 0)
+
+$ node specs/007-mutation-gate-strictness/evidence/compare.mjs specs/007-mutation-gate-strictness/evidence/lever3/source-181-210/mutation.json specs/007-mutation-gate-strictness/evidence/fix-2/source-181-210/mutation.json packages/tokens/src/source.ts
+packages/tokens/src/source.ts: 79 mutants in both runs, every key once
+move CompileError -> CompileError: 31
+move Killed -> Killed: 48
+(exit 0)
+
+$ node specs/007-mutation-gate-strictness/evidence/compare.mjs specs/007-mutation-gate-strictness/evidence/lever3/source-211-230/mutation.json specs/007-mutation-gate-strictness/evidence/fix-2/source-211-230/mutation.json packages/tokens/src/source.ts
+packages/tokens/src/source.ts: 40 mutants in both runs, every key once
+move CompileError -> CompileError: 18
+move Killed -> Killed: 22
+(exit 0)
+```
+
+No mutant changed status: the narrowing moves none in `source.ts`.
+
+**Killed by** (test file of each `killedBy` id, checker on): `1-30`: 16 `contrast.test.ts` (lever 3: 16
+`validate.test.ts`); `31-60`: 44 `source-table.test.ts`, 10 `contrast.test.ts` (lever 3: 44, 6 `validate.test.ts`, 3
+`build.test.ts`, 1 `contrast.test.ts`); `61-90`: 31 `source-table.test.ts`, 12 `contrast.test.ts` (lever 3: 31, 7
+`validate.test.ts`, 5 `contrast.test.ts`); `91-120`: 48 `source-table.test.ts`, 6 `brand-rules.test.ts`, 6
+`contrast.test.ts` (lever 3: 48, 6 `validate.test.ts`, 6 `contrast.test.ts`); `121-150`: 53 `source-table.test.ts`, 3
+`brand-rules.test.ts` (lever 3: 53, 3 `validate.test.ts`); `151-180`: 55 `source-table.test.ts`, 2 `contrast.test.ts`
+(lever 3: 55, 2 `build.test.ts`); `181-210`: 48 and `211-230`: 22 `source-table.test.ts` (as lever 3). As expected,
+the kills that `validate.test.ts` and `build.test.ts` made with the earlier split now come from the gate tests
+(`gates/test/contrast.test.ts`, `gates/test/brand-rules.test.ts`), which run before the rest of `tokens`; no kill comes
+from `build.test.ts` now. `source-table.test.ts`'s kills are unchanged in every entry. `testsCompleted` of the Killed
+mutants: 12 to 151 in `1-30`, 4 to 12 in `31-60` and `61-90`, 4 to 47 in `91-120`, 4 to 10 in `121-150` to `211-230`.
+
+**FR-011.** The 122 mutants of the FR-011 record (T025), matched by key in the eight new reports: all 122 are in a run.
+65 (group A) end CompileError, each a CompileError in the red run as configured; 57 end Killed, each by a named test of
+`source-table.test.ts` (56 by "declares each token's light value (or its one value) in the unconditioned :root block",
+1 by "declares each theme-dependent token's dark value under both dark selectors, where it differs from light"), each
+`statusReason` an `expect` mismatch (`expected … to deeply equal …`), after 5 or 6 completed tests. **122 of 122 meet
+FR-011**, with the same statuses and killing tests as with lever 3. (Checked with a scratch script over the kept
+reports, as in phase 1; the same script gives 122 of 122 on the lever 3 reports.)
+
+### FR-013 reference entries with the narrowed order (T050)
+
+The T036 command with base `B`; folders `fix-2/generate-1-60/` (`--files packages/tokens/src/generate.ts:1-60`, the
+red entry as is) and `fix-2/wcag/` (`--files gates/lib/wcag.ts`).
+
+| Entry | Mutants | Killed | Timeout | Survived | NoCoverage | CompileError | Ignored | Time (red) | Time (narrowed) |
+|---|---|---|---|---|---|---|---|---|---|
+| `generate.ts:1-60` | 7 | 3 | 0 | 0 | 0 | 4 | 0 | 78.11 s | 71.35 s, exit 0 |
+| `gates/lib/wcag.ts` | 33 | 26 | 2 | 0 | 0 | 3 | 2 | 90.92 s | 82.39 s, exit 0 |
+
+Comparisons against `red/generate-1-60/` and `red/wcag/` (`fix-2/compare-reference.txt`), verbatim:
+
+```text
+$ node specs/007-mutation-gate-strictness/evidence/compare.mjs specs/007-mutation-gate-strictness/evidence/red/generate-1-60/mutation.json specs/007-mutation-gate-strictness/evidence/fix-2/generate-1-60/mutation.json packages/tokens/src/generate.ts
+packages/tokens/src/generate.ts: 7 mutants in both runs, every key once
+move CompileError -> CompileError: 4
+move Killed -> Killed: 3
+(exit 0)
+
+$ node specs/007-mutation-gate-strictness/evidence/compare.mjs specs/007-mutation-gate-strictness/evidence/red/wcag/mutation.json specs/007-mutation-gate-strictness/evidence/fix-2/wcag/mutation.json gates/lib/wcag.ts
+gates/lib/wcag.ts: 33 mutants in both runs, every key once
+move CompileError -> CompileError: 3
+move Ignored -> Ignored: 2
+move Killed -> Killed: 26
+move Timeout -> Timeout: 2
+(exit 0)
+```
+
+No Killed → Timeout, Survived or NoCoverage move and no count the wrong way. `wcag.ts`'s 2 Timeouts (`:4`, Regex) were
+Timeouts in the red run (Timeout → Timeout). No re-run was due.
+
+### Whole-diff run (T052)
+
+`pnpm run gate:mutation -- --base 3a247ef5f684a102f95e433e7cf41550839c79e4`, alone, at `4c78197`: exit 0 after
+211.45 s, saved to `fix-2/whole-diff.log`. Summary: `mutation: 305 mutants on the changed lines of 5 files, none
+survived; 0 timeouts, 82 compile errors, 0 zero-mutant entries; 1 equivalent record`. **No `timeout` line**, so none
+of `report.ts` or `plant-judge.ts` (landing L1-01: 8, `report.ts:106` ×4 and `plant-judge.ts:51` ×4). Per file, from
+its report: `report.ts` 49 Killed, 16 CompileError, 4 Ignored; `plant-judge.ts` 114 Killed, 52 CompileError, the
+same as the T048 `narrowed` and `main-config` runs; `gates/bin/mutation.ts` 18 Killed, 1 CompileError;
+`gates/lib/mutation/shards.ts` 33 Killed, 13 CompileError; `gates/lib/findings.ts` 5 Killed.
+
+### Decision (fix round 2)
+
+From the figures above alone: with the narrowed order, the 13 static mutants of gate source have the same status as
+with `main`'s mutation configuration (FR-013 holds for gate source; the two Timeouts of the earlier split are Killed);
+every `source.ts` entry has 0 Timeout, 0 Survived and 0 NoCoverage and finishes within 176 s on its one run (72.49 s
+to 173.46 s; FR-009, FR-010 sandbox half); FR-011 holds for all 122 former Timeouts; the reference entries move no
+mutant (FR-013). No stop-and-ask point of the round was reached. The CI half of FR-010 is measured at landing with
+the narrowed order (§ Open for landing).
+
+**Checks** (T052), at `de22a4a` with the records in the working tree, one at a time: `pnpm test` exit 0,
+`unit-tests: 2102 tests passed in 97 files` (two earlier attempts failed one test each: a browser test of `prose.test.ts`
+that passed three times alone, nothing in `packages/styles` changed, and the order test's race fixed in `de22a4a`);
+`gate:typecheck` exit 0, `typecheck: no type error in the files of tsconfig.json`; `gate:lint` exit 0, `lint: 173
+files checked, no finding`; `gate:test-lint` exit 0, `test-lint: 114 files checked, no finding`. **FR-012** again: `git diff --stat
+bfd31fec6c61ffc8f2dcdb1616fc3b7b82e14917 -- packages/tokens/src stryker.config.json` prints nothing; `grep -rn
+"Stryker disable" packages/tokens/src` prints only `packages/tokens/src/generate.ts:180`, already at the phase-1 base:
+nothing new.
+
 ## Open for landing (spec FR-010, CI half; research R-07)
 
 FR-010's CI half is **not done**: it is measured at landing, and the landing pass reads this section. The sandbox half
 is recorded above (§ Lever 3 and § Re-run).
 
+*Note, 2026-11-11 (fix round 2, landing L1-01, L1-02):* the CI measurement (landing L1-02) is taken after the fold of
+fix round 2, with the narrowed lever 1 order (only `tokens-source-table` first). With that order the eight entries
+were measured again on the sandbox (§ Fix round 2): every one within 176 s on its one run, the slowest `91-120`
+(173.46 s); the table below gains that column, and the earlier text is kept.
+
 **The sandbox bound (176 s), as measured.** With lever 1 and lever 3, every `source.ts` entry has a run within 176 s,
 but two entries missed it on their first run:
 
-| Entry | First run | Re-run | Missed 176 s by |
-|---|---|---|---|
-| `source.ts:91-120` | 177.68 s | 171.53 s | 1.68 s on the first run; the re-run is 4.47 s under |
-| `source.ts:151-180` | 182.52 s | 170.49 s | 6.52 s on the first run; the re-run is 5.51 s under |
+| Entry | First run | Re-run | Missed 176 s by | Narrowed order (fix round 2, one run) |
+|---|---|---|---|---|
+| `source.ts:91-120` | 177.68 s | 171.53 s | 1.68 s on the first run; the re-run is 4.47 s under | 173.46 s (2.54 s under) |
+| `source.ts:151-180` | 182.52 s | 170.49 s | 6.52 s on the first run; the re-run is 5.51 s under | 168.05 s (7.95 s under) |
 
 The other six entries were measured once, each within 176 s (`1-30` 73.96 s, `31-60` 166.19 s, `61-90` 131.38 s,
-`121-150` 171.98 s, `181-210` 128.99 s, `211-230` 91.36 s); `31-60` and `121-150` are within 10 s of the bound. By the
+`121-150` 171.98 s, `181-210` 128.99 s, `211-230` 91.36 s); `31-60` and `121-150` are within 10 s of the bound. With the
+narrowed order (fix round 2): `1-30` 72.49 s, `31-60` 163.14 s, `61-90` 123.93 s, `121-150` 168.86 s, `181-210`
+131.29 s, `211-230` 87.51 s; `31-60`, `91-120`, `121-150` and `151-180` are within 10 s of the bound. By the
 operator's decision after lever 3 (`reviews/phase-3/operator-decision-lever-3-rerun.md`) no further change was made:
 the CI measurement below (480 s per `gate:mutation` step) decides.
 

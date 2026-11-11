@@ -384,7 +384,10 @@ round 1 re-pinned every registry package published less than 7 days before 2026-
      (operator decision, 2026-11-05, phase 5 round 6 of mission 002, human:jeroennouwsdev: "Smaller chunks
      (Recommended)"; the shard `packages/tokens/src/generate.ts:121-240` alone held 264 mutants and took 670 s
      locally, and was cancelled at the 10-minute limit in CI); the bounds of 10 entries and 250 changed lines per
-     shard, and two entries of one file never sharing a shard, are unchanged. No changed file: zero shards. Besides the JSON
+     shard, and two entries of one file never sharing a shard, are unchanged. *Note, 2026-11-11:* the entry bound is
+     now 30 changed lines for every file, by the FR-013 amendment of `spec.md` (operator decision of mission 007,
+     human:jeroennouwsdev, "30-line entries, all files", `specs/007-mutation-gate-strictness/` FR-014); the 60-line
+     text here is kept as it was decided. No changed file: zero shards. Besides the JSON
      on stdout, `--plan` writes one line to stderr with the number of shards and the number of cuts:
      `mutation: plan: <s> shards, <c> cuts within files (a mutant spanning a cut is mutated in no shard, see
      gates/README.md)`, with `1 shard` and `1 cut` in the singular, printed also when both are 0. A cut is the
@@ -427,7 +430,10 @@ round 1 re-pinned every registry package published less than 7 days before 2026-
   (reviews/phase-3/round-9-fixes.md); since phase 3 round 10 (T098) two entries of one file never share a shard,
   so no shard held more than 120 changed lines of one file. Since 2026-11-05 (operator decision, phase 5 round 6 of
   mission 002: the shard `packages/tokens/src/generate.ts:121-240`, 264 mutants, took 670 s locally) the chunk is
-  60 changed lines, so no shard holds more than 60 changed lines of one file (step 1 of "CI, sharded").
+  60 changed lines, so no shard holds more than 60 changed lines of one file (step 1 of "CI, sharded"). *Note,
+  2026-11-11:* the entry bound is now 30 changed lines for every file, by the FR-013 amendment of `spec.md` (operator
+  decision of mission 007, human:jeroennouwsdev, "30-line entries, all files", `specs/007-mutation-gate-strictness/`
+  FR-014); the 60-line text here is kept as it was decided.
 - **Cuts, an accepted limit** (operator decision, phase 3 round 10, human:jeroennouwsdev, 2026-11-03: "Accept,
   record it (Recommended)": "The lost mutants are only large blocks across a cut; the statements inside them are
   still mutated. Record the limit in research R-08 and gates/README.md, and have the plan print how many cuts it
