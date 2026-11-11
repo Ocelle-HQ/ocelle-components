@@ -171,6 +171,8 @@ describe("rawValues: aspect-ratio takes only 1, as the whole value", () => {
     { value: "-1", raw: ["-1"] },
     { value: "1px", raw: ["1px"] },
     { value: "100%", raw: ["100%"] },
+    { value: "red", raw: ["red"] },
+    { value: "#000 / 1", raw: ["#000", "1"] },
   ])("aspect-ratio: $value is raw: $raw, while aspect-ratio: 1 passes", ({ value, raw }) => {
     expect({ value: rawValues("aspect-ratio", value), square: rawValues("aspect-ratio", "1") }).toEqual({ value: raw, square: [] });
   });

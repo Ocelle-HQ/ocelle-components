@@ -352,7 +352,7 @@ export const brandMarkScenarios: readonly Scenario[] = [
     name: "US4-6: an unlabelled mark contributes no node and no name to its home link while its labelled twin is one image named Ocelle; a label is trimmed, and an empty or whitespace-only label leaves it unlabelled (FR-028)",
     run: async (driver) => {
       await driver.mount(
-        '<p><a id="home" href="#home"><ocelle-brand-mark id="plain"></ocelle-brand-mark> Ocelle</a></p>' +
+        '<p><a id="home" href="#home"><ocelle-brand-mark id="plain"></ocelle-brand-mark>Ocelle</a></p>' +
           '<p><ocelle-brand-mark id="named" label="Ocelle"></ocelle-brand-mark>' +
           '<ocelle-brand-mark id="spaced" label=" Ocelle "></ocelle-brand-mark>' +
           '<ocelle-brand-mark id="empty" label=""></ocelle-brand-mark>' +

@@ -12,7 +12,8 @@
 // operator round of 2026-11-09, phase 2 round 2, O2-01); it is read apart from the token lists. Since 005 (research.md
 // R-03, R-08) `scale` takes only the bare numbers -1 and 1, and any function in its value is raw; and (R-03, R-10) the
 // unit `lh` passes only as `1lh`, as the whole value or, inside `calc()`, once per expression as an operand of `+` or
-// `-` in an expression that references an `--ocelle-*` token.
+// `-` in an expression that references an `--ocelle-*` token; and (R-03, R-09) `aspect-ratio` takes only the bare
+// number 1 as its whole value.
 import stylelint from "stylelint";
 import type { Rule } from "stylelint";
 import valueParser from "postcss-value-parser";
@@ -188,11 +189,31 @@ function scaleRaw(nodes: readonly Node[]): string[] {
   });
 }
 
+/**
+ * The raw values of an `aspect-ratio` value (005 research.md R-03, R-09; PLAN-FRESH-1-006 (a), PLAN-FRESH-3-002 (a)):
+ * the whole value is checked, so it passes as the bare number 1 alone ("as wide as high"); any other number, a number
+ * beside another part (`1 / 1`, `auto 1`) and any function (calc(), var() or another) are raw. Keywords stay allowed.
+ */
+function aspectRatioRaw(nodes: readonly Node[]): string[] {
+  const parts = nodes.filter((node) => node.type !== "space");
+  const [only] = parts;
+  if (parts.length === 1 && only?.type === "word" && only.value === "1") return [];
+  return parts.flatMap((node) => {
+    if (node.type === "function") return [valueParser.stringify(node)];
+    // Any number (in a word, or a string that reads as one) beside or instead of the bare 1.
+    if (valueParser.unit(node.value) !== false) return [node.value];
+    // A `/` divider, a keyword, a colour, a string or a comment: classified as for any property.
+    // Stryker disable next-line StringLiteral,BooleanLiteral: equivalent, what reaches here is no number, and classify() reads the property only for font values and unitless numbers and inCalc only for numbers and the operator words, which it allows outside calc() too as identifiers
+    return classify([node], "aspect-ratio", false);
+  });
+}
+
 /** The raw values (FR-024) in one declaration's value, in source order; empty when the value is token-only. */
 export function rawValues(property: string, value: string, options: RawOptions = {}): string[] {
   const name = property.toLowerCase();
   const nodes = valueParser(value).nodes;
   if (name === "scale") return scaleRaw(nodes);
+  if (name === "aspect-ratio") return aspectRatioRaw(nodes);
   if (options.lineHeight === "token" && name === "line-height") {
     const [only] = nodes;
     return nodes.length === 1 && only !== undefined && tokenLineHeight(only) ? [] : [value.trim()];

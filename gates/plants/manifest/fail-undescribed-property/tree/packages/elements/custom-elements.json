@@ -6,6 +6,103 @@
           "attributes": [
             {
               "default": "undefined",
+              "description": "The ground the mark sits on: `chrome` for the dark chrome grounds (`color-chrome`, `color-chrome-hover`); absent or\nany other value for the main grounds. Reflected.",
+              "fieldName": "ground",
+              "name": "ground",
+              "type": {
+                "text": "\"chrome\" | undefined"
+              }
+            },
+            {
+              "default": "undefined",
+              "description": "`mono` paints ring and spot in `currentColor`, the colour of the surrounding text, and wins over `ground`; absent\nor any other value paints the variant of `ground`. Reflected.",
+              "fieldName": "tone",
+              "name": "tone",
+              "type": {
+                "text": "\"mono\" | undefined"
+              }
+            },
+            {
+              "default": "undefined",
+              "description": "The accessible name of the mark, trimmed; empty or whitespace-only counts as none, and without one the mark is\nhidden from the accessibility tree. Not reflected.",
+              "fieldName": "label",
+              "name": "label",
+              "type": {
+                "text": "string | undefined"
+              }
+            }
+          ],
+          "cssParts": [],
+          "cssProperties": [],
+          "customElement": true,
+          "description": "The Ocelle rosette, inline SVG painted from tokens at the `--ocelle-icon-size` token, decorative unless labelled.",
+          "events": [],
+          "kind": "class",
+          "members": [
+            {
+              "attribute": "ground",
+              "default": "undefined",
+              "description": "The ground the mark sits on: `chrome` for the dark chrome grounds (`color-chrome`, `color-chrome-hover`); absent or\nany other value for the main grounds. Reflected.",
+              "kind": "field",
+              "name": "ground",
+              "privacy": "public",
+              "reflects": true,
+              "type": {
+                "text": "\"chrome\" | undefined"
+              }
+            },
+            {
+              "attribute": "tone",
+              "default": "undefined",
+              "description": "`mono` paints ring and spot in `currentColor`, the colour of the surrounding text, and wins over `ground`; absent\nor any other value paints the variant of `ground`. Reflected.",
+              "kind": "field",
+              "name": "tone",
+              "privacy": "public",
+              "reflects": true,
+              "type": {
+                "text": "\"mono\" | undefined"
+              }
+            },
+            {
+              "attribute": "label",
+              "default": "undefined",
+              "description": "The accessible name of the mark, trimmed; empty or whitespace-only counts as none, and without one the mark is\nhidden from the accessibility tree. Not reflected.",
+              "kind": "field",
+              "name": "label",
+              "privacy": "public",
+              "type": {
+                "text": "string | undefined"
+              }
+            }
+          ],
+          "name": "OcelleBrandMark",
+          "slots": [],
+          "superclass": {
+            "name": "LitElement",
+            "package": "lit"
+          },
+          "tagName": "ocelle-brand-mark"
+        }
+      ],
+      "exports": [
+        {
+          "declaration": {
+            "module": "src/ocelle-brand-mark.ts",
+            "name": "OcelleBrandMark"
+          },
+          "kind": "js",
+          "name": "OcelleBrandMark"
+        }
+      ],
+      "kind": "javascript-module",
+      "path": "src/ocelle-brand-mark.ts"
+    },
+    {
+      "declarations": [
+        {
+          "attributes": [
+            {
+              "default": "undefined",
               "description": "The icon's name, one of the set; any other value draws nothing and keeps the box. Reflected.",
               "fieldName": "name",
               "name": "name",

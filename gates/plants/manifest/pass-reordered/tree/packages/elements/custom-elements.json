@@ -3,6 +3,103 @@
   "readme": "",
   "modules": [
     {
+      "path": "src/ocelle-brand-mark.ts",
+      "kind": "javascript-module",
+      "exports": [
+        {
+          "name": "OcelleBrandMark",
+          "kind": "js",
+          "declaration": {
+            "name": "OcelleBrandMark",
+            "module": "src/ocelle-brand-mark.ts"
+          }
+        }
+      ],
+      "declarations": [
+        {
+          "tagName": "ocelle-brand-mark",
+          "superclass": {
+            "package": "lit",
+            "name": "LitElement"
+          },
+          "slots": [],
+          "name": "OcelleBrandMark",
+          "members": [
+            {
+              "type": {
+                "text": "\"chrome\" | undefined"
+              },
+              "reflects": true,
+              "privacy": "public",
+              "name": "ground",
+              "kind": "field",
+              "description": "The ground the mark sits on: `chrome` for the dark chrome grounds (`color-chrome`, `color-chrome-hover`); absent or\nany other value for the main grounds. Reflected.",
+              "default": "undefined",
+              "attribute": "ground"
+            },
+            {
+              "type": {
+                "text": "\"mono\" | undefined"
+              },
+              "reflects": true,
+              "privacy": "public",
+              "name": "tone",
+              "kind": "field",
+              "description": "`mono` paints ring and spot in `currentColor`, the colour of the surrounding text, and wins over `ground`; absent\nor any other value paints the variant of `ground`. Reflected.",
+              "default": "undefined",
+              "attribute": "tone"
+            },
+            {
+              "type": {
+                "text": "string | undefined"
+              },
+              "privacy": "public",
+              "name": "label",
+              "kind": "field",
+              "description": "The accessible name of the mark, trimmed; empty or whitespace-only counts as none, and without one the mark is\nhidden from the accessibility tree. Not reflected.",
+              "default": "undefined",
+              "attribute": "label"
+            }
+          ],
+          "kind": "class",
+          "events": [],
+          "description": "The Ocelle rosette, inline SVG painted from tokens at the `--ocelle-icon-size` token, decorative unless labelled.",
+          "customElement": true,
+          "cssProperties": [],
+          "cssParts": [],
+          "attributes": [
+            {
+              "type": {
+                "text": "\"chrome\" | undefined"
+              },
+              "name": "ground",
+              "fieldName": "ground",
+              "description": "The ground the mark sits on: `chrome` for the dark chrome grounds (`color-chrome`, `color-chrome-hover`); absent or\nany other value for the main grounds. Reflected.",
+              "default": "undefined"
+            },
+            {
+              "type": {
+                "text": "\"mono\" | undefined"
+              },
+              "name": "tone",
+              "fieldName": "tone",
+              "description": "`mono` paints ring and spot in `currentColor`, the colour of the surrounding text, and wins over `ground`; absent\nor any other value paints the variant of `ground`. Reflected.",
+              "default": "undefined"
+            },
+            {
+              "type": {
+                "text": "string | undefined"
+              },
+              "name": "label",
+              "fieldName": "label",
+              "description": "The accessible name of the mark, trimmed; empty or whitespace-only counts as none, and without one the mark is\nhidden from the accessibility tree. Not reflected.",
+              "default": "undefined"
+            }
+          ]
+        }
+      ]
+    },
+    {
       "path": "src/ocelle-icon.ts",
       "kind": "javascript-module",
       "exports": [
