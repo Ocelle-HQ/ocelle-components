@@ -252,8 +252,12 @@ export interface UpdateArgs {
 
 const updateOptions = new Set(["--engine", "--plant", "--story"]);
 
-/** The baseline command's arguments (`--engine`, `--plant`, `--story`), or the cause that stops it. */
-export function parseUpdateArgs(args: readonly string[]): UpdateArgs | { readonly cause: string } {
+/**
+ * The baseline command's arguments (`--engine`, `--plant`, `--story`), or the cause that stops it; a leading `--`,
+ * which `pnpm run <script> -- <options>` passes on, is skipped.
+ */
+export function parseUpdateArgs(argv: readonly string[]): UpdateArgs | { readonly cause: string } {
+  const args = argv[0] === "--" ? argv.slice(1) : argv;
   const values = new Map<string, string>();
   for (let i = 0; i < args.length; i += 2) {
     const option = String(args[i]);

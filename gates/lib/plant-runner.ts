@@ -177,7 +177,8 @@ export async function runPlant(tools: RunnerTools, root: string, gate: Gate, pat
         }
       : {};
     const run: PlantRun = { exit: ran.exitCode, stdout: outputLines(ran.stdout), stderr: outputLines(ran.stderr), ...commits, ...expected };
-    if (tools.visual !== undefined && gate.id === "visual" && plant.expect === "pass" && run.exit !== 0) await keepCaptures(tools.visual, root, path, plant, into, run);
+    // Only a gate run that reported findings (exit 1) built the Storybook and captured; exit 2 leaves nothing to keep.
+    if (tools.visual !== undefined && gate.id === "visual" && plant.expect === "pass" && run.exit === 1) await keepCaptures(tools.visual, root, path, plant, into, run);
     return run;
   } finally {
     await tools.removeDir(into);

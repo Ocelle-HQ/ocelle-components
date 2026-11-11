@@ -166,7 +166,7 @@ plant is judged correctly; the CI run of T045 passes Visual regression and Plant
 - [X] T041 [US2] Plant `gates/plants/plants/fail-skip-container-in-ci/`
 - [X] T042 [US2] `gates/gates.json` entry (contracts/gates.md § `visual`), `gates/lib/registry.ts` FR-020 list, `.github/workflows/ci.yml`: job `visual` ("Visual regression": `pnpm run gate:visual -- --engine both`, `actions/upload-artifact` pinned by SHA for `storybook/.visual/` on failure), the Plants job's `OCELLE_VISUAL_ENGINE=both` and artifact upload of `storybook/.visual/plants/`
 - [X] T043 [US2] Run the phase's checks one at a time: `pnpm test`, typecheck, lint, test-lint, `gate:visual`, `visual:update` (no diff), `OCELLE_VISUAL_ENGINE=auto pnpm run gate:plants`, `gate:mutation -- --base <phase base>`; record times
-- [ ] T044 [US2] Ask the operator (stop-and-ask) to push the branch and start CI (pull request or dispatch) for T045
+- [X] T044 [US2] Ask the operator (stop-and-ask) to push the branch and start CI (pull request or dispatch) for T045
 - [ ] T045 [US2] Record the CI run in the phase review (FR-026, plan decision 7): Visual regression and Plants under docker and podman, podman's inspect outputs (replace the written fixtures of T022 with them, test-first if they differ), job times, the time per story-theme of `visual` and `axe` plants and the split count derived from it, the runner's free disk after both pulls; propose the split count's Complexity Tracking row for the operator's approval
 - [ ] T046 [US2] If CI's captures differ from the local baselines, commit CI's artifact files (CI is the producer of record, plan decision 7) with the reason in the commit message
 

@@ -72,7 +72,9 @@ describe("storybook-build gate (gates/bin/storybook-build.ts)", () => {
       await buildRepoTree(repo, join(roots, "syntax-error"), root);
       const ran = await gate(root);
       expect({ code: ran.code, findings: ran.stdout.length, stderr: ran.stderr }).toEqual({ code: 1, findings: 2, stderr: [] });
-      expect(ran.stdout[0]).toMatch(/^storybook\/stories\/broken\.stories\.ts: storybook-build: build-error: SyntaxError: /);
+      // Storybook indexes the stories and runs Vite at once, and the first to fail ends the build: the indexer's error,
+      // or on a slower machine (CI run 43056264356) Vite's. Either is the build's error at the file, given exactly.
+      expect(ran.stdout[0]).toMatch(/^storybook\/stories\/broken\.stories\.ts: storybook-build: build-error: (?:SyntaxError: Unexpected token \(4:49\)|\[builtin:vite-transform\] Unexpected token)$/);
       expect(ran.stdout[1]).toBe("storybook-build: 1 finding in 1 file");
     },
     timeout,

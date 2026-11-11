@@ -284,6 +284,7 @@ const sourceFile = "packages/tokens/src/source.ts";
 const overridesFile = "packages/tokens/src/overrides.ts";
 const generatorFile = "packages/tokens/src/generate.ts";
 const pairsFile = "packages/tokens/contrast/pairs.json";
+// Stryker disable next-line StringLiteral: process boundary, read only by the builders; covered by gates-integration: gates/test/integration/plant-repo.test.ts "buildRepoTree: the Storybook workspace (006 research.md R-16) writes storybook/a11y-exceptions.json as [] when the tree supplies none, and keeps the tree's own"
 const exceptionsFile = "storybook/a11y-exceptions.json";
 const baselinesDir = "storybook/baselines";
 
