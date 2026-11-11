@@ -205,6 +205,8 @@ export interface Delta {
   readonly generator?: "wrapped";
   /** The repository's exception entries and the plan files they name, added to the root's (006 research.md R-16). */
   readonly exceptions?: "repository";
+  /** Edits of repository baselines, applied to the current files when the root is made (006 research.md R-11). */
+  readonly baselines?: readonly BaselineEdit[];
 }
 
 function isObject(value: unknown): value is Record<string, unknown> {
@@ -268,7 +270,8 @@ const pairsFile = "packages/tokens/contrast/pairs.json";
 const exceptionsFile = "storybook/a11y-exceptions.json";
 
 /** The problems of a plant's tree/ (paths relative to it) against its delta: files a plant changes only by delta. */
-export function treeProblems(treePaths: readonly string[], delta: Delta | undefined): string[] {
+export function treeProblems(treePaths: readonly string[], delta: Delta | undefined, repositoryBaselines: readonly string[] = []): string[] {
+  if (repositoryBaselines.length < 0) throw new Error("not implemented (plant-repo, phase 3)");
   const holds = new Set(treePaths);
   const problems: string[] = [];
   if (holds.has(sourceFile)) problems.push(`tree/ holds ${sourceFile}; a plant changes the token source by delta.json tokens`);
@@ -331,6 +334,20 @@ export function rootExceptions(tree: string | undefined, repository: string | un
   if (repository === undefined) return tree ?? "[]\n";
   const own = tree === undefined ? [] : exceptionEntries(tree, "the plant's");
   return `${JSON.stringify([...own, ...exceptionEntries(repository, "the repository's")], null, 2)}\n`;
+}
+
+/** An edit of a repository baseline by a plant's delta.json `baselines` (006 research.md R-11). */
+export interface BaselineEdit {
+  readonly file: string;
+  readonly edit: "one-pixel" | "reencode" | "remove";
+}
+
+/**
+ * A repository baseline's bytes after a `one-pixel` edit (the RGB channels of the pixel at (0, 0) inverted, written
+ * normalised) or a `reencode` (the same pixels at deflate level 1; throws when the bytes come out equal).
+ */
+export function editBaseline(bytes: Uint8Array, edit: "one-pixel" | "reencode"): Buffer {
+  throw new Error(`not implemented (plant-repo, phase 3): ${String(bytes.length)} ${edit}`);
 }
 
 /** Throws unless a plant's generate.ts re-exports the real generator, `./generate.real.ts`. */

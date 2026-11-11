@@ -124,3 +124,8 @@ export function checkRegistry(input: RegistryInput): Finding[] {
   }
   return findings;
 }
+
+/** A finding when a step of the plants job of the workflow passes `--skip-container` (006 research.md R-07). */
+export function skipContainerFindings(workflow: string, workflowPath: string): Finding[] {
+  throw new Error(`not implemented (registry, phase 3): ${String(workflow.length)} ${workflowPath}`);
+}

@@ -44,6 +44,8 @@ export interface PlantTools {
   readonly files: (path: string) => Promise<readonly string[]>;
   /** Builds the plant's temporary repository and runs the gate's plant command on it, as its plant.json asks. */
   readonly runPlant: (gate: Gate, plant: string, spec: Plant) => Promise<PlantRun>;
+  /** Whether the container engine the visual plants are given is available (006 research.md R-07); absent: not probed. */
+  readonly probe?: () => Promise<boolean>;
 }
 
 /** The rule of a plant that did not do what it expects. */

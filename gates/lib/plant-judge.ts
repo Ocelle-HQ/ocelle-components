@@ -36,6 +36,12 @@ export interface Plant {
    * Storybook dependencies not installed (006 research.md R-16).
    */
   readonly unlinked?: readonly string[];
+  /** The engine a visual plant presents as `{engine}`: both engines, the host, or a missing engine (006 research.md R-06). */
+  readonly engine?: "both" | "host" | "missing";
+  /** The visual pass plant whose baselines a visual fail plant's root receives (006 research.md R-16). */
+  readonly baselinesOf?: string;
+  /** A visual pass plant whose baselines come only from single-story-theme requests (006 research.md R-11). */
+  readonly captureAlone?: true;
 }
 
 /** The gates that build the Storybook in their plant roots (006 research.md R-07, R-16). */
@@ -128,6 +134,15 @@ export function parsePlant(text: string): Plant | string {
 export function gateKeysProblem(gate: string, plant: Plant): string | undefined {
   if (plant.unlinked !== undefined && !storybookGates.includes(gate)) return "unlinked is only for plants of storybook-build, visual and axe";
   return undefined;
+}
+
+/**
+ * The problem of a plant's files for its keys (006 contracts/plants.md § Plant runner changes): `baselinesOf` needs no
+ * baseline in the plant's own tree/ and a visual pass plant holding baselines without baselinesOf itself (`named`,
+ * undefined when no such plant exists); `captureAlone` needs stories of the plant's own. Paths are relative to tree/.
+ */
+export function plantFilesProblem(plant: Plant, tree: readonly string[], named?: { readonly plant: Plant | undefined; readonly tree: readonly string[] }): string | undefined {
+  throw new Error(`not implemented (plant-judge, phase 3): ${plant.expect} ${String(tree.length)} ${String(named?.tree.length)}`);
 }
 
 /** One gate run on a plant: its exit code and output lines, and for a commit plant the hashes of its records. */

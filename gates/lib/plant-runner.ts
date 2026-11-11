@@ -6,6 +6,7 @@
 import { join } from "node:path";
 import { plantArgs } from "./plant-judge.ts";
 import type { ExpectedFinding, Plant, PlantRun } from "./plant-judge.ts";
+import type { StoryTheme } from "./visual-verdict.ts";
 import type { Gate, PlantForm } from "./registry.ts";
 import type { ToolRun } from "./spawn.ts";
 import { pairLines, tokenLines } from "./token-source.ts";
@@ -32,6 +33,10 @@ export interface RunnerTools {
   readonly read: (path: string) => Promise<string | undefined>;
   /** The stylesheet text the generator of the repository at `root` produces from its token source. */
   readonly stylesheet: (root: string) => Promise<string>;
+  /** The plant job's environment, for a visual plant's `{engine}` (006 research.md R-06). */
+  readonly env?: Readonly<Record<string, string | undefined>>;
+  /** Run on a plant's root after its gate run and before the root is removed (006 research.md R-11: the captures copy). */
+  readonly afterRun?: (gate: Gate, path: string, plant: Plant, into: string, run: PlantRun) => Promise<void>;
 }
 
 /** What key resolution reads of a plant's built tree (paths relative to it). */
@@ -155,4 +160,40 @@ export function limiter(size: number): <T>(task: () => Promise<T>) => Promise<T>
 /** How many gate runs start at once: half the processors (at least one), since a gate run starts its own workers. */
 export function gateRunsAtOnce(processors: number): number {
   return Math.max(1, Math.floor(processors / 2));
+}
+
+/**
+ * The `{engine}` value of a visual plant (006 research.md R-06): its plant.json `engine`, else
+ * `$OCELLE_VISUAL_ENGINE`, else `both`; `missing` is the engine name `ocelle-no-such-engine`.
+ */
+export function engineValue(plant: Plant, env: Readonly<Record<string, string | undefined>>): string {
+  throw new Error(`not implemented (plant-runner, phase 3): ${plant.expect} ${String(Object.keys(env).length)}`);
+}
+
+/** Whether a plant needs a container engine: a visual plant whose engine is not host or missing (006 research.md R-07). */
+export function needsEngine(gate: string, plant: Plant): boolean {
+  throw new Error(`not implemented (plant-runner, phase 3): ${gate} ${plant.expect}`);
+}
+
+/** What the plant job does with a plant: run it, skip it (`--skip-container`), or not run it (no container engine). */
+export function containerDecision(gate: string, plant: Plant, options: { readonly skipContainer: boolean; readonly engines: boolean }): "run" | "skip" | "not-run" {
+  throw new Error(`not implemented (plant-runner, phase 3): ${gate} ${plant.expect} ${String(options.engines)}`);
+}
+
+/** The story-themes of a failing visual pass plant's own stories that its gate run reported differs or missing-baseline. */
+export function failedOwn(stdout: readonly string[], own: readonly string[]): StoryTheme[] {
+  throw new Error(`not implemented (plant-runner, phase 3): ${String(stdout.length)} ${String(own.length)}`);
+}
+
+/** Where the plant job keeps a pass plant's captures, in tree layout below the repository (006 research.md R-11). */
+export function keptPlantDir(plantPath: string): string {
+  throw new Error(`not implemented (plant-runner, phase 3): ${plantPath}`);
+}
+
+/**
+ * A capture made alone of a captureAlone plant's story-theme: copied, unless it equals the committed baseline, which
+ * gives the freshness line instead (006 research.md R-11).
+ */
+export function aloneDecision(plantPath: string, storyTheme: StoryTheme, alone: Uint8Array, committed: Uint8Array | undefined): { readonly copy: true } | { readonly line: string } {
+  throw new Error(`not implemented (plant-runner, phase 3): ${plantPath} ${storyTheme.story} ${String(alone.length)} ${String(committed?.length)}`);
 }
