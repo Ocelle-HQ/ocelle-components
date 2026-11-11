@@ -40,8 +40,10 @@ in `plants.md`.
   (measured: a 14 px text box 1 px below the top of a 17.4 px line box, 2.39 px above its bottom), so the text rect's
   centre is not the line box's. Centring is then checked to 0.5 px against the line box as US3-1 defines it.
 - **US3-4's colours.** Two plain colours set on the test host, not tokens: on the page with `base.css` the root's
-  `color-scheme` comes from the tokens and follows the system scheme, which differs between the harnesses (in process
-  the ink token resolved to its dark value). The scenario is about following the control's colour, whatever it is.
+  `color-scheme` comes from the tokens and follows the system scheme. (In process the ink token resolved to its dark
+  value; review R1-01 found that was not a harness difference but a leak: ending forced colours left the page in the
+  dark scheme of US3-8. `emulate(page, "none")` now resets the scheme to light.) The scenario is about following the
+  control's colour, whatever it is.
 - **US3-4 and US3-8 slot a bare `svg` beside the `ocelle-icon`** (in the `trailing` slot), with its box asserted at the
   icon size. FR-021 covers both kinds, and colour alone is inherited without the convention, so the box is what makes
   those tests able to fail.
