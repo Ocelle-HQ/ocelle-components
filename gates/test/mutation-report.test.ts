@@ -430,6 +430,15 @@ describe("classifyMutants: the report of undecided mutants and zero-mutant entri
     expect((verdict as Extract<MutantVerdict, { ok: true }>).timeouts.map((mutant) => mutant.mutator)).toEqual(["M07", "M7", "M007"]);
   });
 
+  it("keeps mutants of equal position and an equal non-decimal id as Stryker listed them, and orders other ids by string", () => {
+    const mutants = [at("x", 1, 1, "Timeout", "first"), at("x", 1, 1, "Timeout", "second"), at("w", 1, 1, "Timeout", "third")];
+    const run = { report: reportOf({ [sample]: mutants }), exitCode: 0, output: "" };
+    const verdict = classifyMutants(run, [changed(sample, [{ start: 1, end: 1 }])]);
+    expect(verdict).toMatchObject({ ok: true });
+    expect(verdict).toHaveProperty("timeouts");
+    expect((verdict as Extract<MutantVerdict, { ok: true }>).timeouts.map((mutant) => mutant.mutator)).toEqual(["third", "first", "second"]);
+  });
+
   it("makes an entry with no mutant on its changed lines a zero-mutant entry, also when its file has mutants elsewhere", () => {
     const run = { report: reportOf({ [sample]: [at("0", 2, 1, "Killed"), at("1", 70, 1, "Timeout")] }), exitCode: 0, output: "" };
     const files = [

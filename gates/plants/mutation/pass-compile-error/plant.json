@@ -1,4 +1,11 @@
 {
   "expect": "pass",
-  "why": "The only unkilled mutant of the change is rejected by the type checker (CompileError), which is invalid and passes (FR-011)."
+  "why": "The only unkilled mutant of the change is rejected by the type checker (CompileError), which is invalid and passes (FR-011). The gate reports it as a compile-error line (007 FR-002, US1 scenario 2).",
+  "reports": [
+    {
+      "location": "packages/tokens/src/x.ts:3",
+      "rule": "compile-error",
+      "message": "StringLiteral: replaced by \"\""
+    }
+  ]
 }

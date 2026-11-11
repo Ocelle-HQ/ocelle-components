@@ -1,4 +1,5 @@
 {
   "expect": "pass",
-  "why": "A changed line whose test checks it: every mutant is killed (FR-011)."
+  "why": "A changed line whose test checks it: every mutant is killed (FR-011). No timeout, compile-error or zero-mutants line is reported (007 US1 scenario 4).",
+  "reports": []
 }

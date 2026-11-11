@@ -12,7 +12,12 @@
 // changed lines inside them (shards.ts; phase 3 round 9, O9-01). `mutation()` is
 // the decision, tested in-process with doubles for git, the file system and Stryker: it deletes an earlier run's
 // report, runs Stryker and reads the report that run wrote. `run()` gives it the real tools of the `--root`
-// repository (the process boundary, tested by gates/test/integration/mutation.test.ts).
+// repository (the process boundary, tested by gates/test/integration/mutation.test.ts). Mission 007
+// (contracts/mutation-output.md): after the equivalent records, a run that reached the classification prints a
+// `timeout` line per Timeout mutant and a `compile-error` line per CompileError mutant on a changed line, then a
+// `zero-mutants` line per entry with no mutant on its changed lines (named by its path, or its `--files` entry as
+// given), all before the findings; both summaries count the three kinds, also when zero. These report lines are not
+// findings and change no exit code. A `--files` list naming one file more than once is exit 2 before Stryker runs.
 import { readFile, rm } from "node:fs/promises";
 import { join } from "node:path";
 import { main, parseArgs } from "../lib/cli.ts";
@@ -25,7 +30,7 @@ import type { ChangedFile } from "../lib/mutation/ranges.ts";
 import { formatRecord, scanRecords } from "../lib/mutation/records.ts";
 import type { EquivalentRecord } from "../lib/mutation/records.ts";
 import { classifyMutants } from "../lib/mutation/report.ts";
-import type { StrykerRun } from "../lib/mutation/report.ts";
+import type { RunEntry, StrykerRun, UndecidedMutant } from "../lib/mutation/report.ts";
 import { countCuts, formatPlan, planShards, selectFiles } from "../lib/mutation/shards.ts";
 import { runTool } from "../lib/spawn.ts";
 import type { ToolRun } from "../lib/spawn.ts";
@@ -70,6 +75,7 @@ function quote(path: string): string {
 /** The cause of a `--files` list that selects nothing, by what is wrong with its entries (shards.ts `selectFiles`). */
 const selectionProblems = {
   malformed: "--files names a malformed range (path:start-end, 1 <= start <= end)",
+  repeated: "--files names one file more than once (two entries of one file never share a shard)",
   missing: "--files names a file with no changed package or gate source line",
   empty: "--files names a range with no changed line",
 } as const;
@@ -129,14 +135,14 @@ export async function mutation(context: Context, tools: MutationTools, io: Io): 
     return 0;
   }
 
-  let selected = changed;
+  let selected: readonly RunEntry[] = changed;
   if (options.files !== undefined) {
     const selection = selectFiles(changed, options.files);
     if (!("files" in selection)) {
       const [problem, entries] = Object.entries(selection)[0] as [keyof typeof selectionProblems, readonly string[]];
       return fail(`${selectionProblems[problem]}: ${entries.join(", ")}; run --plan for the shards`);
     }
-    selected = [...selection.files];
+    selected = selection.files;
   }
   if (selected.length === 0) {
     io.out(`mutation: nothing to mutate: no package or gate source line changed since ${base}`);
@@ -160,13 +166,23 @@ export async function mutation(context: Context, tools: MutationTools, io: Io): 
   if (!verdict.ok) return emit({ exit: 2, cause: verdict.cause }, io.out, io.err);
 
   for (const record of records) io.out(formatRecord(record));
+  const undecided = (rule: string, mutant: UndecidedMutant): string =>
+    `${mutant.path}:${String(mutant.line)}: mutation: ${rule}: ${mutant.mutator}: replaced by ${mutant.replacement}`;
+  for (const mutant of verdict.timeouts) io.out(undecided("timeout", mutant));
+  for (const mutant of verdict.compileErrors) io.out(undecided("compile-error", mutant));
+  for (const entry of verdict.zeroEntries) io.out(`${entry}: mutation: zero-mutants: no mutant on the changed lines`);
+  const counts = [
+    plural(verdict.timeouts.length, "timeout"),
+    plural(verdict.compileErrors.length, "compile error"),
+    plural(verdict.zeroEntries.length, "zero-mutant entry", "zero-mutant entries"),
+  ].join(", ");
   findings.push(...verdict.findings);
   const files = selected.length;
   if (findings.length > 0) {
-    const summary = `mutation: ${plural(findings.length, "finding")} in ${plural(files, "changed file")} (${plural(verdict.mutants, "mutant")} on changed lines)`;
+    const summary = `mutation: ${plural(findings.length, "finding")} in ${plural(files, "changed file")} (${plural(verdict.mutants, "mutant")} on changed lines; ${counts})`;
     return emit({ exit: 1, findings, summary }, io.out, io.err);
   }
-  const summary = `mutation: ${plural(verdict.mutants, "mutant")} on the changed lines of ${plural(files, "file")}, none survived; ${plural(records.length, "equivalent record")}`;
+  const summary = `mutation: ${plural(verdict.mutants, "mutant")} on the changed lines of ${plural(files, "file")}, none survived; ${counts}; ${plural(records.length, "equivalent record")}`;
   return emit({ exit: 0, summary }, io.out, io.err);
 }
 
