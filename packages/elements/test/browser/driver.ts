@@ -33,6 +33,7 @@ export function fixtureDriver(page: Page, log: readonly string[], withBase = fal
       since = log.length;
       await page.evaluate((html) => {
         document.adoptedStyleSheets = [];
+        document.documentElement.removeAttribute("data-theme");
         document.body.innerHTML = html;
       }, markup);
       await settle(page);
@@ -178,6 +179,13 @@ export function fixtureDriver(page: Page, log: readonly string[], withBase = fal
       } finally {
         await session.detach();
       }
+    },
+    theme: async (theme) => {
+      await page.evaluate((theme) => {
+        if (theme === null) document.documentElement.removeAttribute("data-theme");
+        else document.documentElement.dataset.theme = theme;
+      }, theme);
+      await settle(page);
     },
     forcedColors: async (mode, palette) => {
       await emulate(page, mode, palette);

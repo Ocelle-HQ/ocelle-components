@@ -55,24 +55,34 @@ describe("ocelle-icon on the strict-CSP fixture with the browser build (US1)", {
     expect({ observed, recorded: await page.finish() }).toEqual({ observed: expected, recorded: clean });
   });
 
-  it("US1-10: after two module-build bundles and the browser build, the first bundle's class is kept, nothing throws, and close is drawn at the icon size (FR-006)", async () => {
+  it("US1-10: after two module-build bundles and the browser build, the first bundle's classes of ocelle-icon and ocelle-brand-mark are kept, nothing throws, and close and the mark are drawn at the icon size (FR-006; analysis F1 (a))", async () => {
     const { browser, origin } = started();
     const page = await visit(browser, origin, "define-twice.html", ["bundle-a.js", "bundle-b.js", "ocelle-elements.js"]);
     const driver = fixtureDriver(page.page, page.log);
     const registry = await page.page.evaluate(() => {
-      const bundles = (globalThis as { ocelleBundles?: unknown[] }).ocelleBundles ?? [];
-      return {
-        bundles: bundles.length,
-        classes: bundles.every((each) => typeof each === "function"),
-        distinct: new Set(bundles).size,
-        firstKept: bundles.length > 0 && customElements.get("ocelle-icon") === bundles[0],
-      };
+      const kept = (tag: string, list: readonly unknown[]): unknown => ({
+        bundles: list.length,
+        classes: list.every((each) => typeof each === "function"),
+        distinct: new Set(list).size,
+        firstKept: list.length > 0 && customElements.get(tag) === list[0],
+      });
+      const recorded = globalThis as { ocelleBundles?: unknown[]; ocelleMarks?: unknown[] };
+      return { icon: kept("ocelle-icon", recorded.ocelleBundles ?? []), mark: kept("ocelle-brand-mark", recorded.ocelleMarks ?? []) };
     });
     const icon = { drawing: await driver.drawing("icon"), box: await driver.box("icon") };
-    expect({ registry, drawing: icon.drawing, size: [icon.box.width, icon.box.height], recorded: await page.finish() }).toEqual({
-      registry: { bundles: 2, classes: true, distinct: 2, firstKept: true },
+    const mark = await driver.drawing("mark");
+    const markBox = await driver.box("mark");
+    expect({
+      registry,
+      drawing: icon.drawing,
+      size: [icon.box.width, icon.box.height],
+      mark: { children: mark.children, parts: mark.svg?.parts.map((part) => part.name), size: [markBox.width, markBox.height] },
+      recorded: await page.finish(),
+    }).toEqual({
+      registry: { icon: { bundles: 2, classes: true, distinct: 2, firstKept: true }, mark: { bundles: 2, classes: true, distinct: 2, firstKept: true } },
       drawing: expectedDrawing("close"),
       size: [iconSize, iconSize],
+      mark: { children: ["svg"], parts: ["path", "path", "path", "path", "ellipse"], size: [iconSize, iconSize] },
       recorded: clean,
     });
   });
