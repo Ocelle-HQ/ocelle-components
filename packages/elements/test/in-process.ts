@@ -9,11 +9,12 @@
 /// <reference types="vite/client" />
 import type { LitElement } from "lit";
 import { vi } from "vitest";
-import { commands } from "vitest/browser";
+import { commands, page } from "vitest/browser";
 import baseText from "../../styles/src/base.css?raw";
 import { css } from "../../tokens/src/generate.ts";
 import { source } from "../../tokens/src/source.ts";
-import type { Box, Driver, Drawing, Paint, Placement, Sheets } from "./scenarios/driver.ts";
+import { decodePng } from "./pixels.ts";
+import type { Box, Driver, Drawing, Paint, Part, Placement, Sheets } from "./scenarios/driver.ts";
 
 function sheet(text: string): CSSStyleSheet {
   const made = new CSSStyleSheet();
@@ -43,6 +44,12 @@ const absent: Box = { x: 0, y: 0, width: 0, height: 0, display: "absent" };
 
 function attributes(of: Element): Record<string, string> {
   return Object.fromEntries([...of.attributes].map((attribute) => [attribute.name, attribute.value]));
+}
+
+/** Inflates zlib data with the browser's DecompressionStream (a PNG's IDAT stream is zlib, "deflate" here). */
+async function inflate(data: Uint8Array): Promise<Uint8Array> {
+  const stream = new Blob([data as Uint8Array<ArrayBuffer>]).stream().pipeThrough(new DecompressionStream("deflate"));
+  return new Uint8Array(await new Response(stream).arrayBuffer());
 }
 
 const messages: string[] = [];
@@ -92,6 +99,28 @@ export function inProcessDriver(): Driver {
         children: [...root.children].map((child) => child.localName),
         svg: svg === null ? null : { attributes: attributes(svg), parts: [...svg.children].map((part) => ({ name: part.localName, attributes: attributes(part) })) },
       });
+    },
+    elements: (id) => {
+      const root = element(id).shadowRoot;
+      return Promise.resolve<Part[]>(root === null ? [] : [...root.querySelectorAll("*")].map((part) => ({ name: part.localName, attributes: attributes(part) })));
+    },
+    geometry: (id) => {
+      const svg = element(id).shadowRoot?.querySelector("svg");
+      const shapes = svg === null || svg === undefined ? [] : [...svg.children];
+      return Promise.resolve(
+        shapes.map((shape) => {
+          const box = (shape as SVGGraphicsElement).getBBox();
+          return { x: round(box.x), y: round(box.y), width: round(box.width), height: round(box.height) };
+        }),
+      );
+    },
+    dir: async (id, direction) => {
+      element(id).setAttribute("dir", direction);
+      await settle();
+    },
+    pixels: async (id) => {
+      const base64 = await page.screenshot({ element: element(id), save: false });
+      return decodePng(Uint8Array.from(atob(base64), (char) => char.charCodeAt(0)), inflate);
     },
     paints: (id) => {
       const svg = element(id).shadowRoot?.querySelector("svg");

@@ -14,8 +14,9 @@
 // - a host `aria-hidden="true"` hides a labelled icon (US1-18) beside its shown twin;
 // - a host `hidden` removes the box and the node (US1-19) beside its visible twin (plant: `:host([hidden])` removed).
 // Host `aria-label` values are passed trimmed (operator decision PLAN-A11Y-SECURITY-1-003 (a)). Every element read
-// carries an `id` (spec § Reading the accessibility tree). In phase 2 only `close` and `menu` are drawn, so US1-6 reads
-// its label on `close` (the spec writes `search`, drawn from phase 3).
+// carries an `id` (spec § Reading the accessibility tree). US1-6 reads its label on `search`, as the spec writes it
+// (on `close` in phase 2, before `search` was drawn; phase 2 review R1-03). The size and forced-colour helpers are
+// exported for User Story 2's per-name checks (scenarios/icon-set.ts).
 import { expectedTokens, inTheme } from "../../../tokens/test/expected.ts";
 import { emptyDrawing, expectedDrawing } from "../icons-expected.ts";
 import type { Box, Driver, Palette } from "./driver.ts";
@@ -39,19 +40,19 @@ export function tokenColour(token: string, theme: Palette): string {
 /** The icon size at the default root font size: `--ocelle-icon-size` is 1.25rem (002 Appendix A). */
 export const iconSize = 20;
 
-function size(box: Box): { readonly width: number; readonly height: number; readonly display: string } {
+export function size(box: Box): { readonly width: number; readonly height: number; readonly display: string } {
   return { width: box.width, height: box.height, display: box.display };
 }
 
 /** The svg's box relative to the host's box. */
-async function svgInHost(driver: Driver, id: string): Promise<{ readonly width: number; readonly height: number; readonly dx: number; readonly dy: number }> {
+export async function svgInHost(driver: Driver, id: string): Promise<{ readonly width: number; readonly height: number; readonly dx: number; readonly dy: number }> {
   const host = await driver.box(id);
   const svg = await driver.box(id, "svg");
   return { width: svg.width, height: svg.height, dx: svg.x - host.x, dy: svg.y - host.y };
 }
 
-const shown = { width: iconSize, height: iconSize, display: "inline-block" };
-const image = (name: string): unknown => [{ role: "image", name }];
+export const shown = { width: iconSize, height: iconSize, display: "inline-block" };
+export const image = (name: string): unknown => [{ role: "image", name }];
 
 /** The forced-colours contexts of US1-7 and the system colour each must give the icon's strokes (research R-09). */
 const contexts = [
@@ -67,13 +68,18 @@ const systemColours: Readonly<Record<Palette, Readonly<Record<string, string>>>>
   dark: { CanvasText: "rgb(255, 255, 255)", LinkText: "rgb(255, 255, 0)", ButtonText: "rgb(255, 255, 255)", GrayText: "rgb(63, 242, 63)" },
 };
 
-const forcedMarkup =
-  '<p id="ctx-text">Text <ocelle-icon id="in-text" name="close"></ocelle-icon></p>' +
-  '<p><a id="ctx-link" href="#here">Link <ocelle-icon id="in-link" name="close"></ocelle-icon></a></p>' +
-  '<p><button id="ctx-button" type="button">Button <ocelle-icon id="in-button" name="close"></ocelle-icon></button></p>' +
-  '<p><button id="ctx-disabled" type="button" disabled>Disabled <ocelle-icon id="in-disabled" name="close"></ocelle-icon></button></p>';
+/** US1-7's four contexts, each holding one icon of `name`. */
+export function forcedMarkup(name: string): string {
+  return (
+    `<p id="ctx-text">Text <ocelle-icon id="in-text" name="${name}"></ocelle-icon></p>` +
+    `<p><a id="ctx-link" href="#here">Link <ocelle-icon id="in-link" name="${name}"></ocelle-icon></a></p>` +
+    `<p><button id="ctx-button" type="button">Button <ocelle-icon id="in-button" name="${name}"></ocelle-icon></button></p>` +
+    `<p><button id="ctx-disabled" type="button" disabled>Disabled <ocelle-icon id="in-disabled" name="${name}"></ocelle-icon></button></p>`
+  );
+}
 
-async function forcedObservation(driver: Driver, palette: Palette): Promise<unknown> {
+/** Emulates forced colours with `palette` on the page of forcedMarkup() and observes each context's icon. */
+export async function forcedObservation(driver: Driver, palette: Palette): Promise<unknown> {
   await driver.forcedColors("active", palette);
   const canvas = await driver.resolveColour("Canvas");
   const buttonFace = await driver.resolveColour("ButtonFace");
@@ -95,11 +101,11 @@ async function forcedObservation(driver: Driver, palette: Palette): Promise<unkn
   return observed;
 }
 
-function forcedExpected(palette: Palette): unknown {
+/** What forcedObservation() must give: `painted` is the number of painted elements, the svg and its shapes. */
+export function forcedExpected(palette: Palette, painted: number): unknown {
   return contexts.map(({ context, system }) => ({
     context,
-    // The svg and the close glyph's two lines.
-    painted: 3,
+    painted,
     strokes: [systemColours[palette][system]],
     fills: ["none"],
     system: systemColours[palette][system],
@@ -197,7 +203,8 @@ export const iconScenarios: readonly Scenario[] = [
   {
     name: "US1-6: a label names the icon as one image node, trimmed; removed, empty or whitespace-only it leaves the icon unlabelled (FR-014)",
     run: async (driver) => {
-      await driver.mount('<p><ocelle-icon id="search" name="close" label="Search"></ocelle-icon></p>');
+      await driver.mount('<p><ocelle-icon id="search" name="search" label="Search"></ocelle-icon></p>');
+      const drawn = await driver.drawing("search");
       const steps: unknown[] = [await driver.ax("search")];
       await driver.setAttribute("search", "label", null);
       steps.push(await driver.ax("search"));
@@ -209,18 +216,19 @@ export const iconScenarios: readonly Scenario[] = [
       steps.push(await driver.ax("search"));
       await driver.setProperty("search", "label", "  ");
       steps.push(await driver.ax("search"));
-      return steps;
+      return { drawn, steps };
     },
-    expected: [image("Search"), [], image("Search"), [], image("Search"), []],
+    expected: { drawn: expectedDrawing("search"), steps: [image("Search"), [], image("Search"), [], image("Search"), []] },
   },
   ...(["dark", "light"] as const).map(
     (palette): Scenario => ({
       name: `US1-7: in forced colours with the ${palette} palette the strokes take the system colour of text, link, button and disabled button, visible against Canvas and ButtonFace (FR-015)`,
       run: async (driver) => {
-        await driver.mount(forcedMarkup);
+        await driver.mount(forcedMarkup("close"));
         return forcedObservation(driver, palette);
       },
-      expected: forcedExpected(palette),
+      // The svg and the close glyph's two lines.
+      expected: forcedExpected(palette, 3),
     }),
   ),
   {

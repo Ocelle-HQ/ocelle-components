@@ -5,9 +5,11 @@
 // The accessibility tree is read through a CDP session with the same reader as the `axTree` command
 // (test/commands.ts); forced colours through `page.emulateMedia`. A page that links `base.css` is a page of its own
 // (`<page>-base.html`), so `mount` with `base` must be called on such a page.
+import { inflateSync } from "node:zlib";
 import type { Page } from "playwright";
 import { axNodes, emulate } from "../commands.ts";
-import type { Box, Driver, Drawing, Paint, Placement, Sheets } from "../scenarios/driver.ts";
+import { decodePng } from "../pixels.ts";
+import type { Bounds, Box, Driver, Drawing, Paint, Part, Placement, Sheets } from "../scenarios/driver.ts";
 
 /** Waits in the page until every `ocelle-*` element has rendered, then for a frame. */
 function settle(page: Page): Promise<void> {
@@ -78,6 +80,31 @@ export function fixtureDriver(page: Page, log: readonly string[], withBase = fal
           svg: svg === null ? null : { attributes: attributes(svg), parts: [...svg.children].map((part) => ({ name: part.localName, attributes: attributes(part) })) },
         };
       }, id),
+    elements: (id) =>
+      page.evaluate((id): Part[] => {
+        const root = document.getElementById(id)?.shadowRoot;
+        if (root === null || root === undefined) return [];
+        return [...root.querySelectorAll("*")].map((part) => ({ name: part.localName, attributes: Object.fromEntries([...part.attributes].map((attribute) => [attribute.name, attribute.value])) }));
+      }, id),
+    geometry: (id) =>
+      page.evaluate((id): Bounds[] => {
+        const svg = document.getElementById(id)?.shadowRoot?.querySelector("svg");
+        const round = (value: number): number => Math.round(value * 1000) / 1000;
+        return (svg === null || svg === undefined ? [] : [...svg.children]).map((shape) => {
+          const box = (shape as SVGGraphicsElement).getBBox();
+          return { x: round(box.x), y: round(box.y), width: round(box.width), height: round(box.height) };
+        });
+      }, id),
+    dir: async (id, direction) => {
+      await page.evaluate(({ id, direction }) => {
+        const element = document.getElementById(id);
+        if (element === null) throw new Error(`no #${id} on the page`);
+        element.setAttribute("dir", direction);
+      }, { id, direction });
+      await settle(page);
+    },
+    // The screenshot leaves the caret and animations alone, so Playwright adds no style to the strict-CSP page.
+    pixels: async (id) => decodePng(await page.locator(`#${id}`).screenshot({ caret: "initial", animations: "allow" }), (data) => Promise.resolve(inflateSync(data))),
     paints: (id) =>
       page.evaluate((id): Paint[] => {
         const svg = document.getElementById(id)?.shadowRoot?.querySelector("svg");

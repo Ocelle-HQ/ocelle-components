@@ -14,7 +14,8 @@ import { afterAll, beforeAll, describe, expect, inject, it } from "vitest";
 // is defined and draws for a known name and not for the unknown one, the page records zero CSP violations and no
 // request outside the origin, and the story renders with the base stylesheet as every story does: preview-head.html
 // links base.css, and the root's `color-scheme` follows the theme global, which only base.css applies (US1-13's base
-// stylesheet clause, analysis L14). Phase 3 adds one story per icon name (T035a), phase 5 the mark's stories (T056a).
+// stylesheet clause, analysis L14). Phase 3 adds the grid of the thirteen names, left to right and right to left
+// (T035a; US1-13's "every icon in the set"), phase 5 the mark's stories (T056a).
 const policy = "default-src 'none'; script-src 'self'; style-src 'self'; font-src 'self'; connect-src 'self'";
 const types: Readonly<Record<string, string>> = {
   ".html": "text/html; charset=utf-8",
@@ -101,10 +102,16 @@ function observe(page: Page): Promise<unknown> {
   }));
 }
 
+/** The thirteen names of the set (spec US2 scenario 1), each drawn, unlabelled. */
+const theSet = ["chevron-start", "chevron-end", "chevron-up", "chevron-down", "arrow-start", "arrow-end", "menu", "close", "folder", "file", "search", "table", "copy"].map((name) => ({ name, label: null, drawn: true }));
+
 const stories = [
   { id: "elements-ocelle-icon--close", icons: [{ name: "close", label: null, drawn: true }] },
   { id: "elements-ocelle-icon--labelled", icons: [{ name: "close", label: "Close", drawn: true }] },
   { id: "elements-ocelle-icon--unknown-name", icons: [{ name: "nonexistent", label: null, drawn: false }] },
+  // The grid of the set (T035a): one icon per name of the thirteen, each drawn, left to right and right to left.
+  { id: "elements-ocelle-icon--set", icons: theSet },
+  { id: "elements-ocelle-icon--set-right-to-left", icons: theSet },
 ] as const;
 
 describe("the ocelle-icon stories in the built Storybook (US1-13, FR-019)", { timeout: 60_000 }, () => {
