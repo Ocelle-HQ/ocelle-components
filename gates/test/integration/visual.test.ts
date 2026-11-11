@@ -170,6 +170,31 @@ describe("visual gate (gates/bin/visual.ts)", () => {
   );
 });
 
+// CI run 43056264356 (PR #24): the CI step runs `pnpm run gate:visual -- --engine both`, and pnpm passes the "--" on
+// to the script. The gate and the baseline command run through pnpm take their options after it.
+describe("visual gate and baseline command through pnpm run", () => {
+  /** `pnpm run <script> -- <args>` in the repository. */
+  function pnpmRun(script: string, args: readonly string[]): Promise<{ code: number | null; stdout: string; stderr: string }> {
+    return run("pnpm", ["--silent", "run", script, "--", ...args], repo, env());
+  }
+
+  it(
+    "reads the options after the -- that pnpm run passes on",
+    async () => {
+      const at = await root();
+      const gateRun = await pnpmRun("gate:visual", ["--root", at, "--engine", "ocelle-no-such-engine"]);
+      expect({ code: gateRun.code, stdout: gateRun.stdout, cause: gateRun.stderr.split("\n")[0] }).toEqual({
+        code: 2,
+        stdout: "",
+        cause: "visual: could not run: no container engine: ocelle-no-such-engine not found",
+      });
+      const updateRun = await pnpmRun("visual:update", ["--root", at, "--engine", "ocelle-no-such-engine"]);
+      expect({ code: updateRun.code, cause: updateRun.stderr.split("\n")[0] }).toEqual({ code: 2, cause: "baselines: could not run: no container engine: ocelle-no-such-engine not found" });
+    },
+    timeout,
+  );
+});
+
 describe("baseline command (gates/bin/baselines.ts)", () => {
   it(
     "writes nothing on an unchanged tree and says so (FR-008, analysis G1)",

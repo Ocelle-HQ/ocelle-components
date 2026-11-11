@@ -601,6 +601,9 @@ describe("runPlant: the captures of a failing visual pass plant (006 research.md
       [{ exitCode: 0, stdout: "visual: 26 captures match their baselines (docker+podman)", stderr: "" }, pass, visualGate],
       [failing, { expect: "fail", why: "w", findings: [{ location: "own--a/light", rule: "differs" }] }, visualGate],
       [failing, pass, gate("axe", "repo-tree", "node gates/bin/axe.ts --root {root}")],
+      // CI run 43056264356 (PR #24): a pass plant whose gate could not run (exit 2) built no Storybook, so there are no
+      // captures to keep; reading its index stopped the whole plant job.
+      [{ exitCode: 2, stdout: "", stderr: "visual: could not run: the image cannot be obtained: x\n" }, pass, visualGate],
     ] as const) {
       const { tools, calls } = withVisual(run);
       await runPlant(tools, "/repo", on, "gates/plants/visual/pass-x", plant);

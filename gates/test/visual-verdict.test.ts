@@ -275,6 +275,14 @@ describe("parseUpdateArgs", () => {
     expect(parseUpdateArgs(["--engine", "docker", "--plant", "visual/pass-x", "--story", "x--y"])).toEqual({ engine: "docker", plant: "visual/pass-x", story: "x--y" });
   });
 
+  // CI run 43056264356 (PR #24): `pnpm run gate:visual -- --engine both` hands the script a leading "--", which pnpm
+  // passes on; the gate stopped with "unknown argument --" before any engine ran.
+  it("skips the -- that pnpm run passes on before the options", () => {
+    expect(parseUpdateArgs(["--", "--engine", "both"])).toEqual({ engine: "both" });
+    expect(parseUpdateArgs(["--", "--plant", "visual/pass-x", "--story", "x--y"])).toEqual({ engine: "auto", plant: "visual/pass-x", story: "x--y" });
+    expect(parseUpdateArgs(["--"])).toEqual({ engine: "auto" });
+  });
+
   it("stops on an unknown argument, a missing value and --story without --plant", () => {
     expect(parseUpdateArgs(["--fast"])).toEqual({ cause: "unknown argument --fast" });
     expect(parseUpdateArgs(["--engine"])).toEqual({ cause: "--engine needs a value" });
