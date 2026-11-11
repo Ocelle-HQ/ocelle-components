@@ -1037,3 +1037,202 @@ FR-014, an amendment of 001 FR-013) is the operator's decision; the phase stops 
 `pnpm run setup:offline` first, removed afterwards with `git worktree remove`) and at `ac27681`; `cmp` of
 `packages/tokens/dist/tokens.css`, `tokens.json` and `index.d.ts`: identical (sha256 `c0ad9501…5e5e`, `c2c0e2e2…dae1`,
 `53919512…0980`).
+
+## Lever 3: 30-line entries (phase 3, spec FR-014, T032 to T037)
+
+**The decision.** After the stop-and-ask of T028 (`reviews/phase-3/stop-and-ask.md`), the operator decided lever 3,
+"30-line entries, all files" (human:jeroennouwsdev, 2026-11-11, `reviews/phase-3/operator-decision-fr014.md`): 001
+FR-013's entry bound for a split file goes from 60 to 30 changed lines, for every file; the 10-entry and 250-line shard
+bounds and the rule that entries of one file never share a shard are unchanged. Red commit `4b3279a` (T032, the
+`mutation-shards.test.ts` cases of the 60-line split rewritten for 30; 23 tests failed against the 60-line plan, all
+assertion mismatches, `reviews/phase-3/red-lever-3.log`), green commit `3222ec2` (T033 `maxEntryLines = 30` in
+`gates/lib/mutation/shards.ts`; T034 the records).
+
+**Configuration.** As the lever 1 green runs: `vitest.mutation.config.ts` of lever 1 (commit `3986b74`),
+`stryker.config.json` unchanged (`concurrency: 8`, the TypeScript checker on). Same sandbox (4 cores, Node 22.23.4,
+Stryker 10.1.1), same environment, base `B = eaf16896ec10affdca24296fc9531fcffc46a8be` and command as the red runs; wall
+time by `date +%s.%N` around the command (`time.txt`: seconds, then the gate's exit code). One run at a time, nothing
+else heavy beside it. Taken 2026-11-11.
+
+### Plan (T035)
+
+`lever3/plan.txt`: `pnpm --silent run gate:mutation -- --base "$B" --plan`, exit 0, **71 shards**. Its stderr:
+`mutation: plan: 71 shards, 70 cuts within files (a mutant spanning a cut is mutated in no shard, see
+gates/README.md)`, so the cut count is **70** (27 with 60-line entries, T001). The `source.ts` entries are
+`packages/tokens/src/source.ts:1-30`, `:31-60`, `:61-90`, `:91-120`, `:121-150`, `:151-180`, `:181-210` and
+`:211-230` (eight; every line of the 230 is changed against `B`). In the plan `source.ts:1-30` shares its shard with
+`generate.ts:271-300`, `index.ts` and `overrides.ts`, and `source.ts:211-230` shares its shard with four Storybook
+files; the six others are alone in their shards. The first `generate.ts` entry is now `packages/tokens/src/generate.ts:1-30`
+(beside `packages/tokens/scripts/build.ts:61-62`); `gates/lib/wcag.ts` is still one whole entry.
+
+### Lever 3 table (T036)
+
+Folders `lever3/source-<start>-<end>/`; the checker split of each entry over 176 s under `no-checker/` (a scratch edit
+of `stryker.config.json`, `"checkers": []`, restored with `git checkout -- stryker.config.json`).
+
+| Entry | Mutants | Killed | Timeout | Survived | NoCoverage | CompileError | Ignored | Time | Checker split (diagnostic, not the checker's share): checker off / difference | Within 176 s |
+|---|---|---|---|---|---|---|---|---|---|---|
+| `source.ts:1-30` | 19 | 16 | 0 | 0 | 0 | 3 | 0 | 73.96 s | - | yes |
+| `source.ts:31-60` | 115 | 54 | 0 | 0 | 0 | 61 | 0 | 166.19 s | - | yes |
+| `source.ts:61-90` | 79 | 43 | 0 | 0 | 0 | 36 | 0 | 131.38 s | - | yes |
+| `source.ts:91-120` | 123 | 60 | 0 | 0 | 0 | 63 | 0 | 177.68 s | 65.83 s / 111.85 s | **no** (1.68 s over) |
+| `source.ts:121-150` | 110 | 56 | 0 | 0 | 0 | 54 | 0 | 171.98 s | - | yes |
+| `source.ts:151-180` | 114 | 57 | 0 | 0 | 0 | 57 | 0 | 182.52 s | 53.75 s / 128.77 s | **no** (6.52 s over) |
+| `source.ts:181-210` | 79 | 48 | 0 | 0 | 0 | 31 | 0 | 128.99 s | - | yes |
+| `source.ts:211-230` | 40 | 22 | 0 | 0 | 0 | 18 | 0 | 91.36 s | - | yes |
+
+Every run ended exit 0 with an empty stderr; each summary reads `mutation: <n> mutants on the changed lines of 1 file,
+none survived; 0 timeouts, <c> compile errors, 0 zero-mutant entries; 0 equivalent records`. The checker-off runs:
+123 and 114 Killed, 0 Timeout, 0 CompileError. Every entry has 0 Timeout, 0 Survived and 0 NoCoverage; six are within
+176 s, two are not.
+
+**Killed by** (test file of each `killedBy` id, checker on): `1-30`: 16 `validate.test.ts`; `31-60`: 44
+`source-table.test.ts`, 6 `validate.test.ts`, 3 `build.test.ts`, 1 `contrast.test.ts`; `61-90`: 31
+`source-table.test.ts`, 7 `validate.test.ts`, 5 `contrast.test.ts`; `91-120`: 48 `source-table.test.ts`, 6
+`validate.test.ts`, 6 `contrast.test.ts`; `121-150`: 53 `source-table.test.ts`, 3 `validate.test.ts`; `151-180`: 55
+`source-table.test.ts`, 2 `build.test.ts`; `181-210`: 48 and `211-230`: 22 `source-table.test.ts`. `testsCompleted` of
+the Killed mutants: 12 to 38 in `1-30`, 4 to 141 in `31-60` and `61-90`, 4 to 176 in `91-120` (the contrast-killed
+mutants run every token test first), 4 to 10 in `121-150` to `211-230`.
+
+The mutant count does not set the time alone: `151-180` (114 mutants, 57 CompileError) is the slowest, slower than
+`91-120` (123 mutants, 63 CompileError), and its checker-off run is the fastest of the two. With the checker on, half
+the processes check types (R-06), so the time is mostly the checker's queue and the fixed start of the run.
+
+### Per-mutant comparison, red against lever 3 (T036)
+
+Each red 60-line entry against the two 30-line entries that cover it, with `evidence/compare.mjs` extended for lever 3
+(the green argument names both reports, comma-separated; `--cuts L` names the new cut between line L and L + 1; a key
+only in the red run is accepted, and listed as "cut limit", only if its mutant starts on or before L and ends after
+L; every other unmatched key, and any key only in the lever 3 runs, still fails). Run from the repository root; the
+commands and their output verbatim:
+
+```text
+$ node specs/007-mutation-gate-strictness/evidence/compare.mjs specs/007-mutation-gate-strictness/evidence/red/source-1-60/mutation.json specs/007-mutation-gate-strictness/evidence/lever3/source-1-30/mutation.json,specs/007-mutation-gate-strictness/evidence/lever3/source-31-60/mutation.json packages/tokens/src/source.ts --cuts 30
+packages/tokens/src/source.ts: 134 mutants in both runs, every key once
+cut limit 30:151-32:2 BlockStatement "{}": CompileError in the red run, in no 30-line entry
+move CompileError -> CompileError: 64
+move Killed -> Killed: 70
+(exit 0)
+
+$ node specs/007-mutation-gate-strictness/evidence/compare.mjs specs/007-mutation-gate-strictness/evidence/red/source-61-120/mutation.json specs/007-mutation-gate-strictness/evidence/lever3/source-61-90/mutation.json,specs/007-mutation-gate-strictness/evidence/lever3/source-91-120/mutation.json packages/tokens/src/source.ts --cuts 90
+packages/tokens/src/source.ts: 202 mutants in both runs, every key once
+move CompileError -> CompileError: 99
+move Killed -> Killed: 103
+(exit 0)
+
+$ node specs/007-mutation-gate-strictness/evidence/compare.mjs specs/007-mutation-gate-strictness/evidence/red/source-121-180/mutation.json specs/007-mutation-gate-strictness/evidence/lever3/source-121-150/mutation.json,specs/007-mutation-gate-strictness/evidence/lever3/source-151-180/mutation.json packages/tokens/src/source.ts --cuts 150
+packages/tokens/src/source.ts: 224 mutants in both runs, every key once
+move CompileError -> CompileError: 111
+move Killed -> Killed: 67
+move Timeout -> Killed: 46
+changed 122:46-122:115 StringLiteral "\"\"": Timeout -> Killed
+changed 124:44-124:58 StringLiteral "\"\"": Timeout -> Killed
+changed 125:49-125:58 StringLiteral "\"\"": Timeout -> Killed
+changed 126:49-126:59 StringLiteral "\"\"": Timeout -> Killed
+changed 127:49-127:55 StringLiteral "\"\"": Timeout -> Killed
+changed 128:51-128:62 StringLiteral "\"\"": Timeout -> Killed
+changed 129:54-129:64 StringLiteral "\"\"": Timeout -> Killed
+changed 130:49-130:58 StringLiteral "\"\"": Timeout -> Killed
+changed 131:49-131:57 StringLiteral "\"\"": Timeout -> Killed
+changed 132:50-132:60 StringLiteral "\"\"": Timeout -> Killed
+changed 133:54-133:60 StringLiteral "\"\"": Timeout -> Killed
+changed 134:55-134:61 StringLiteral "\"\"": Timeout -> Killed
+changed 135:56-135:62 StringLiteral "\"\"": Timeout -> Killed
+changed 136:56-136:61 StringLiteral "\"\"": Timeout -> Killed
+changed 137:54-137:60 StringLiteral "\"\"": Timeout -> Killed
+changed 138:56-138:61 StringLiteral "\"\"": Timeout -> Killed
+changed 139:55-139:60 StringLiteral "\"\"": Timeout -> Killed
+changed 140:55-140:60 StringLiteral "\"\"": Timeout -> Killed
+changed 141:56-141:61 StringLiteral "\"\"": Timeout -> Killed
+changed 142:53-142:62 StringLiteral "\"\"": Timeout -> Killed
+changed 145:45-145:54 StringLiteral "\"\"": Timeout -> Killed
+changed 146:45-146:53 StringLiteral "\"\"": Timeout -> Killed
+changed 147:45-147:54 StringLiteral "\"\"": Timeout -> Killed
+changed 148:45-148:51 StringLiteral "\"\"": Timeout -> Killed
+changed 149:45-149:54 StringLiteral "\"\"": Timeout -> Killed
+changed 150:45-150:53 StringLiteral "\"\"": Timeout -> Killed
+changed 151:45-151:51 StringLiteral "\"\"": Timeout -> Killed
+changed 152:45-152:53 StringLiteral "\"\"": Timeout -> Killed
+changed 153:45-153:51 StringLiteral "\"\"": Timeout -> Killed
+changed 154:46-154:52 StringLiteral "\"\"": Timeout -> Killed
+changed 161:50-161:55 StringLiteral "\"\"": Timeout -> Killed
+changed 162:49-162:54 StringLiteral "\"\"": Timeout -> Killed
+changed 163:50-163:55 StringLiteral "\"\"": Timeout -> Killed
+changed 164:47-164:52 StringLiteral "\"\"": Timeout -> Killed
+changed 165:47-165:54 StringLiteral "\"\"": Timeout -> Killed
+changed 166:47-166:56 StringLiteral "\"\"": Timeout -> Killed
+changed 167:46-167:55 StringLiteral "\"\"": Timeout -> Killed
+changed 168:45-168:54 StringLiteral "\"\"": Timeout -> Killed
+changed 169:46-169:54 StringLiteral "\"\"": Timeout -> Killed
+changed 170:48-170:56 StringLiteral "\"\"": Timeout -> Killed
+changed 171:51-171:59 StringLiteral "\"\"": Timeout -> Killed
+changed 172:57-172:62 StringLiteral "\"\"": Timeout -> Killed
+changed 175:57-175:66 StringLiteral "\"\"": Timeout -> Killed
+changed 176:54-176:63 StringLiteral "\"\"": Timeout -> Killed
+changed 177:57-177:64 StringLiteral "\"\"": Timeout -> Killed
+changed 178:59-178:66 StringLiteral "\"\"": Timeout -> Killed
+(exit 0)
+
+$ node specs/007-mutation-gate-strictness/evidence/compare.mjs specs/007-mutation-gate-strictness/evidence/red/source-181-230/mutation.json specs/007-mutation-gate-strictness/evidence/lever3/source-181-210/mutation.json,specs/007-mutation-gate-strictness/evidence/lever3/source-211-230/mutation.json packages/tokens/src/source.ts --cuts 210
+packages/tokens/src/source.ts: 119 mutants in both runs, every key once
+cut limit 206:3-211:4 ObjectLiteral "{}": CompileError in the red run, in no 30-line entry
+move CompileError -> CompileError: 49
+move Killed -> Killed: 59
+move Timeout -> Killed: 11
+changed 181:60-181:67 StringLiteral "\"\"": Timeout -> Killed
+changed 182:50-182:58 StringLiteral "\"\"": Timeout -> Killed
+changed 183:46-183:54 StringLiteral "\"\"": Timeout -> Killed
+changed 186:50-186:56 StringLiteral "\"\"": Timeout -> Killed
+changed 187:53-187:59 StringLiteral "\"\"": Timeout -> Killed
+changed 188:50-188:56 StringLiteral "\"\"": Timeout -> Killed
+changed 190:55-190:63 StringLiteral "\"\"": Timeout -> Killed
+changed 209:21-209:87 StringLiteral "\"\"": Timeout -> Killed
+changed 224:64-224:98 StringLiteral "\"\"": Timeout -> Killed
+changed 224:106-224:112 StringLiteral "\"\"": Timeout -> Killed
+changed 225:50-225:57 StringLiteral "\"\"": Timeout -> Killed
+(exit 0)
+
+```
+
+Without `--cuts`, the same script fails loudly as before: `node … compare.mjs red/source-1-60/mutation.json
+lever3/source-1-30/mutation.json packages/tokens/src/source.ts` ends exit 1, naming `30:151-32:2 BlockStatement "{}"`
+and every key of `31-60` as "key only in the red run".
+
+So: no key repeats and no key is only in the lever 3 runs; every red key is in a lever 3 run except the **cut limit**,
+two mutants that span the new cuts and are mutated in no 30-line entry (001 FR-013, accepted limit):
+
+| Mutant | Spans the cut | Red (checker on) | Red (checker off) | Lever 1 green |
+|---|---|---|---|---|
+| `30:151-32:2` BlockStatement → `{}` (the body of `function tokenRecords`) | 30 / 31 | CompileError | Killed | CompileError |
+| `206:3-211:4` ObjectLiteral → `{}` (the whole `elevation-raised` record) | 210 / 211 | CompileError | Killed | CompileError |
+
+Both were CompileError in the red run and in the lever 1 runs, and neither is one of the 122 former Timeouts. The cuts
+at 60 / 61, 120 / 121 and 180 / 181 were already cuts of the red plan, so the mutants spanning them were in no red run
+either. No mutant moved Killed → Timeout, Survived or NoCoverage, so no re-run was due (R-06). The only moves are the 57
+Timeouts of the red run, all to Killed, as with lever 1.
+
+### FR-011 with lever 3 (T036)
+
+The 122 mutants of the FR-011 record (T025), matched by key in the eight lever 3 reports: all 122 are in a lever 3
+run. 65 (group A) end CompileError, each a CompileError in the red run as configured; 57 end Killed, each by a named
+test of `source-table.test.ts` (56 by "declares each token's light value (or its one value) in the unconditioned :root
+block", 1, the dark value of `elevation-bar` `224:106-224:112`, by "declares each theme-dependent token's dark value
+under both dark selectors, where it differs from light"), each `statusReason` an `expect` mismatch (`expected … to
+deeply equal …`), after 5 or 6 completed tests. 122 of 122 meet FR-011, with the same statuses and killing tests as in
+the lever 1 record above. (Checked with a scratch script over the kept reports, as in phase 1.)
+
+### FR-013 reference entries with lever 3
+
+Not re-run. The lever changes only how `--plan` cuts entries; Stryker's and Vitest's configuration are those of the
+lever 1 green runs, whose reference runs (`generate.ts:1-60`, `wcag.ts`) are above. `gates/lib/wcag.ts` stays one
+whole entry; `generate.ts:1-60` is no longer an entry of the plan (now `generate.ts:1-30` and `31-60`).
+
+### Decision (T037)
+
+From the figures above alone (FR-009, FR-010, FR-011): every `source.ts` entry has 0 Timeout, 0 Survived and 0
+NoCoverage, and FR-011 holds for all 122 former Timeouts, but **two entries miss 176 s**: `source.ts:91-120`
+(177.68 s) and `source.ts:151-180` (182.52 s). Each was measured once and is recorded as measured; neither was re-run.
+
+**Stop-and-ask point reached** (the operator's decision, "If any entry still misses 176 s or keeps a Timeout, the
+question goes back to the operator"). T029 (rerun), T030 and T031 stay open; the phase stops here
+(`reviews/phase-3/stop-and-ask-lever-3.md`).
