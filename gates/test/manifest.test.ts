@@ -54,12 +54,19 @@ function root(changes: Readonly<Record<string, string | null>> = {}): string {
 }
 
 type Json = Record<string, unknown>;
-const committed = (): Json => (existsSync(join(repo, manifestPath)) ? (JSON.parse(readFileSync(join(repo, manifestPath), "utf8")) as Json) : { modules: [{ declarations: [{}] }] });
+const committed = (): Json => (existsSync(join(repo, manifestPath)) ? (JSON.parse(readFileSync(join(repo, manifestPath), "utf8")) as Json) : { modules: [{ path: "src/ocelle-icon.ts", declarations: [{}] }] });
 
 /** The first element declaration of a manifest. */
 function element(manifest: Json): Json {
   const found = ((manifest.modules as Json[] | undefined)?.[0]?.declarations as Json[] | undefined)?.[0];
   if (found === undefined) throw new Error("the manifest has no element declaration");
+  return found;
+}
+
+/** The `ocelle-icon` declaration of a manifest (since 005 phase 5 the manifest declares `ocelle-brand-mark` first). */
+function iconOf(manifest: Json): Json {
+  const found = ((manifest.modules as Json[] | undefined)?.find((module) => module.path === "src/ocelle-icon.ts")?.declarations as Json[] | undefined)?.[0];
+  if (found === undefined) throw new Error("the manifest has no ocelle-icon declaration");
   return found;
 }
 
@@ -76,17 +83,17 @@ function stale(message: string): Finding {
 
 describe("manifest gate on a root", () => {
   it("exits 0 on the repository: the committed manifest matches the source and every member is described", async () => {
-    expect(await gate(repo)).toEqual({ code: 0, out: ["manifest: 1 element checked, no finding"], err: [] });
+    expect(await gate(repo)).toEqual({ code: 0, out: ["manifest: 2 elements checked, no finding"], err: [] });
   });
 
   it("exits 0 when the committed manifest only orders its keys differently (pass-reordered)", async () => {
     const dir = root({ [manifestPath]: `${JSON.stringify(reversed(committed()), null, 2)}\n` });
-    expect(await gate(dir)).toEqual({ code: 0, out: ["manifest: 1 element checked, no finding"], err: [] });
+    expect(await gate(dir)).toEqual({ code: 0, out: ["manifest: 2 elements checked, no finding"], err: [] });
   });
 
   it("reports the label attribute lost from the committed manifest as one stale finding naming ocelle-icon and the attribute (fail-lost-attribute)", async () => {
     const manifest = committed();
-    const icon = element(manifest);
+    const icon = iconOf(manifest);
     icon.attributes = (icon.attributes as Json[]).filter((attribute) => attribute.name !== "label");
     const dir = root({ [manifestPath]: `${JSON.stringify(manifest, null, 2)}\n` });
     expect(await gate(dir)).toEqual({

@@ -6,6 +6,7 @@
   "exports": {
     ".": "./dist/index.js",
     "./ocelle-icon.js": "./dist/ocelle-icon.js",
+    "./ocelle-brand-mark.js": "./dist/ocelle-brand-mark.js",
     "./browser.js": "./dist/browser/ocelle-elements.js",
     "./custom-elements.json": "./custom-elements.json"
   },
