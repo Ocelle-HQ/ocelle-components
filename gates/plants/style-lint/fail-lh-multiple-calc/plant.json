@@ -1,0 +1,11 @@
+{
+  "expect": "fail",
+  "why": "A multiple of a line box inside calc() beside a token (2lh) is raw: calc() admits only 1lh (005 research.md R-03).",
+  "findings": [
+    {
+      "location": "packages/elements/src/x.ts:6",
+      "rule": "ocelle/token-only",
+      "message": "2lh"
+    }
+  ]
+}

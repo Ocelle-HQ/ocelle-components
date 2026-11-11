@@ -1,0 +1,4 @@
+{
+  "expect": "pass",
+  "why": "One line box as the whole value (block-size: 1lh, the slot wrapper) passes: lh is allowed as 1lh (005 research.md R-03, R-10; PLAN-CORRECTNESS-1-004 (a))."
+}
