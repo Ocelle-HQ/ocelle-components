@@ -10,7 +10,9 @@
 // var(--ocelle-line-height-*) reference without a fallback or as a CSS-wide keyword, and a `font` value with no
 // top-level `/` raw unless it is a CSS-wide keyword alone (it resets line-height to normal; scope amended by the
 // operator round of 2026-11-09, phase 2 round 2, O2-01); it is read apart from the token lists. Since 005 (research.md
-// R-03, R-08) `scale` takes only the bare numbers -1 and 1, and any function in its value is raw.
+// R-03, R-08) `scale` takes only the bare numbers -1 and 1, and any function in its value is raw; and (R-03, R-10) the
+// unit `lh` passes only as `1lh`, as the whole value or, inside `calc()`, once per expression as an operand of `+` or
+// `-` in an expression that references an `--ocelle-*` token.
 import stylelint from "stylelint";
 import type { Rule } from "stylelint";
 import valueParser from "postcss-value-parser";
@@ -66,26 +68,71 @@ function wordAllowed(word: string, property: string, inCalc: boolean): boolean {
   return !namedColours.has(identifier);
 }
 
-/** The raw parts of a function: a var() fallback and calc() operands are checked; any other function is raw. */
-function functionRaw(node: valueParser.FunctionNode, property: string, inCalc: boolean): string[] {
+/** Whether a word is a length in the unit `lh`, whatever its number. */
+function isLh(word: string): boolean {
+  const number = valueParser.unit(word);
+  return number !== false && number.unit.toLowerCase() === "lh";
+}
+
+/** Whether a word is exactly one line box, `1lh` (005 research.md R-03). */
+function isOneLine(word: string): boolean {
+  const number = valueParser.unit(word);
+  return number !== false && number.unit.toLowerCase() === "lh" && Number(number.number) === 1;
+}
+
+/** Whether a node is a calc() operator that adds or subtracts. */
+function isSum(node: Node | undefined): boolean {
+  return node?.type === "word" && (node.value === "+" || node.value === "-");
+}
+
+/**
+ * The `1lh` a calc() expression admits (005 research.md R-03; PLAN-FRESH-3-002 (a)): its one `lh` length, when the
+ * expression holds exactly one (nested groups and calc() included), that length is `1lh`, each operator beside it in
+ * its group adds or subtracts, and the expression references an `--ocelle-*` token; none otherwise.
+ */
+function admittedLine(calc: valueParser.FunctionNode): Node | undefined {
+  const lengths: { readonly node: Node; readonly group: readonly Node[] }[] = [];
+  const tokens: Node[] = [];
+  const walk = (group: readonly Node[]): void => {
+    for (const node of group) {
+      if (node.type === "word" && isLh(node.value)) lengths.push({ node, group });
+      if (node.type !== "function") continue;
+      if (node.value.toLowerCase() === "var" && node.nodes[0]?.value.startsWith("--ocelle-") === true) tokens.push(node);
+      walk(node.nodes);
+    }
+  };
+  walk(calc.nodes);
+  const [only] = lengths;
+  if (lengths.length !== 1 || only === undefined || tokens.length === 0 || !isOneLine(only.node.value)) return undefined;
+  const operands = only.group.filter((node) => node.type !== "space" && node.type !== "comment");
+  const at = operands.findIndex((node) => node === only.node);
+  const [before, after] = [operands[at - 1], operands[at + 1]];
+  return (before === undefined || isSum(before)) && (after === undefined || isSum(after)) ? only.node : undefined;
+}
+
+/**
+ * The raw parts of a function: a var() fallback and calc() operands are checked; any other function is raw. `line`
+ * is the `1lh` the enclosing calc() expression admits; an outermost calc() works out its own.
+ */
+function functionRaw(node: valueParser.FunctionNode, property: string, inCalc: boolean, line: Node | undefined): string[] {
   const name = node.value.toLowerCase();
   if (name === "var") {
     const comma = node.nodes.findIndex((child) => child.type === "div" && child.value === ",");
     return comma === -1 ? [] : classify(node.nodes.slice(comma + 1), property, inCalc);
   }
-  if (name === "calc" || (name === "" && inCalc)) return classify(node.nodes, property, true);
+  if (name === "calc" || (name === "" && inCalc)) return classify(node.nodes, property, true, inCalc ? line : admittedLine(node));
   return [valueParser.stringify(node)];
 }
 
-function classify(nodes: readonly Node[], property: string, inCalc: boolean): string[] {
+function classify(nodes: readonly Node[], property: string, inCalc: boolean, line?: Node): string[] {
   const raw: string[] = [];
   for (const node of nodes) {
     if (node.type === "word") {
-      if (!wordAllowed(node.value, property, inCalc)) raw.push(node.value);
+      if (node !== line && !wordAllowed(node.value, property, inCalc)) raw.push(node.value);
     } else if (node.type === "string") {
       if (isFont(property)) raw.push(valueParser.stringify(node));
     } else if (node.type === "function") {
-      raw.push(...functionRaw(node, property, inCalc));
+      raw.push(...functionRaw(node, property, inCalc, line));
     } else if (node.type === "unicode-range") {
       raw.push(node.value);
     }
@@ -151,7 +198,9 @@ export function rawValues(property: string, value: string, options: RawOptions =
     return nodes.length === 1 && only !== undefined && tokenLineHeight(only) ? [] : [value.trim()];
   }
   if (options.lineHeight === "token" && name === "font") return fontRaw(value, nodes);
-  return classify(nodes, name, false);
+  // One line box as the whole value (the slot wrapper's `block-size: 1lh`, 005 research.md R-10).
+  const [only] = nodes;
+  return classify(nodes, name, false, nodes.length === 1 && only?.type === "word" && isOneLine(only.value) ? only : undefined);
 }
 
 /** The --ocelle-* names a value references with var(), each once, in order; nested ones and fallbacks included. */

@@ -163,6 +163,8 @@ describe("rawValues: 1lh alone, and once beside a token in calc()", () => {
     { property: "margin-block", value: "calc(var(--ocelle-space-1) + 1lh)" },
     { property: "margin-block", value: "calc(var(--ocelle-space-1) + (1lh - var(--ocelle-space-1)))" },
     { property: "margin-block", value: "calc(var(--ocelle-space-1) * 2 + 1lh)" },
+    // A comment is no length and no operand, even one that reads 1lh.
+    { property: "padding-block", value: "calc(var(--ocelle-icon-size) - /*1lh*/ 1lh)" },
     { property: "inset-block-start", value: "calc((var(--ocelle-icon-size) - 1lh) / 2) var(--ocelle-space-1)" },
   ])("$property: $value is token-only", ({ property, value }) => {
     expect(rawValues(property, value)).toEqual([]);
@@ -184,6 +186,8 @@ describe("rawValues: 1lh alone, and once beside a token in calc()", () => {
     { property: "block-size", value: "calc(1lh + 1lh)", raw: ["1lh", "1lh"] },
     { property: "block-size", value: "calc(1lh + 1px)", raw: ["1lh", "1px"] },
     { property: "block-size", value: "calc(1lh + var(--other))", raw: ["1lh"] },
+    { property: "block-size", value: "calc((1lh) + 0)", raw: ["1lh"] },
+    { property: "block-size", value: "calc(1lh + env(--ocelle-icon-size))", raw: ["1lh", "env(--ocelle-icon-size)"] },
     { property: "padding-block", value: "calc(var(--ocelle-icon-size) - 2lh)", raw: ["2lh"] },
     { property: "padding-block", value: "calc(var(--ocelle-icon-size) - 1lh - 1lh)", raw: ["1lh", "1lh"] },
     { property: "padding-block", value: "calc(var(--ocelle-icon-size) - 1lh) calc(var(--ocelle-icon-size) - 1lh - 1lh)", raw: ["1lh", "1lh"] },

@@ -1,0 +1,11 @@
+{
+  "expect": "fail",
+  "why": "A factor on 1lh inside calc() (calc(1lh * 2), and no token) is raw: 1lh is admitted only as an operand of + or - in a calc() that references a token (005 research.md R-03, PLAN-FRESH-3-002 (a)).",
+  "findings": [
+    {
+      "location": "packages/elements/src/x.ts:6",
+      "rule": "ocelle/token-only",
+      "message": "1lh"
+    }
+  ]
+}

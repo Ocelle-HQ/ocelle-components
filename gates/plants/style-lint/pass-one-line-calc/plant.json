@@ -1,0 +1,4 @@
+{
+  "expect": "pass",
+  "why": "The row's block padding passes: 1lh once, as an operand of - beside the --ocelle-icon-size token inside calc(); the / 2 factor on the group is a unitless factor beside a token (005 research.md R-03, R-10; PLAN-FRESH-2-002 (a))."
+}
