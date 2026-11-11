@@ -1,0 +1,5 @@
+{
+  "expect": "fail",
+  "why": "A story file with a syntax error fails the build: the story indexer cannot parse it, and the finding names the file (FR-001, US1 scenario 2).",
+  "findings": [{ "location": "storybook/stories/broken.stories.ts", "rule": "build-error", "message": "SyntaxError: Unexpected token" }]
+}

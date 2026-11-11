@@ -34,6 +34,8 @@ export const fr020: readonly string[] = [
   // 002 FR-020: the contrast and brand-rules gates of the design tokens.
   "contrast",
   "brand-rules",
+  // 006 FR-017: the Storybook build gate.
+  "storybook-build",
 ];
 
 /** The id of the plant job in ci.yml; it is not a gate. */

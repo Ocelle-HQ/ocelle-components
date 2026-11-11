@@ -1,4 +1,4 @@
-import { lstatSync, readdirSync } from "node:fs";
+import { lstatSync, readdirSync, readFileSync } from "node:fs";
 import { join, relative } from "node:path";
 import { afterEach, describe, expect, it } from "vitest";
 import { buildRepoTree } from "../../lib/plant-repo.ts";
@@ -19,11 +19,20 @@ const roots = join(repo, "gates/test/fixtures/storybook-build-roots");
 
 afterEach(cleanUp);
 
-/** Every entry below `dir` (symbolic links not followed) as `path size mtime`, sorted. */
+/**
+ * The caches the test run's own Vitest and Vite processes write below the repository's root node_modules while this
+ * test runs (other test files start them in workspaces that link it): never the build's, whose Vite cache is the root's
+ * storybook/.cache/vite (main.ts) and whose default would be below storybook/node_modules, listed in full.
+ */
+const testRunCaches = [".vitest-cache", ".vite", ".vite-temp"].map((name) => join(repo, "node_modules", name));
+
+/** Every entry below `dir` (symbolic links not followed) as `path size mtime`, sorted; but the test run's caches. */
 function listing(dir: string): string[] {
+  const inCache = (path: string): boolean => testRunCaches.some((cache) => path === cache || path.startsWith(`${cache}/`));
   return readdirSync(dir, { recursive: true, withFileTypes: true })
-    .map((entry) => {
-      const path = join(entry.parentPath, entry.name);
+    .map((entry) => join(entry.parentPath, entry.name))
+    .filter((path) => !inCache(path))
+    .map((path) => {
       const stat = lstatSync(path);
       return `${relative(repo, path)} ${String(stat.size)} ${String(stat.mtimeMs)}`;
     })
@@ -48,6 +57,10 @@ describe("storybook-build gate (gates/bin/storybook-build.ts)", () => {
       const after = { root: listing(join(repo, "node_modules")), storybook: listing(join(repo, "storybook/node_modules")) };
       expect(after.storybook).toEqual(before.storybook);
       expect(after.root).toEqual(before.root);
+      // The rewrite the spike saw (§ 4) put the plant root's path into the repository's .bin shims.
+      const shims = [join(repo, "node_modules/.bin"), join(repo, "storybook/node_modules/.bin")].flatMap((dir) => readdirSync(dir).map((name) => join(dir, name)));
+      expect(shims.length).toBeGreaterThan(10);
+      expect(shims.filter((shim) => readFileSync(shim, "utf8").includes(root))).toEqual([]);
     },
     timeout,
   );

@@ -347,13 +347,16 @@ describe("plants: Storybook plants run one at a time, after the others (006 rese
     return { code: await plants(context, tools, io), log, out };
   }
 
-  /** The repository in memory with visual and axe registered beside storybook-build, each with three plants. */
+  /**
+   * The repository in memory with visual and axe registered beside storybook-build, each with three plants; visual and
+   * axe come right after lint in the registry, before gates whose plants run together, storybook-build last.
+   */
   function storybookWorld(): Map<string, string> {
     const files = world();
     const registry = JSON.parse(registryText) as Record<string, string>[];
     const base = registry.find((gate) => gate.id === "storybook-build") ?? {};
     const extra = ["visual", "axe"].map((id) => ({ ...base, id, check: id, command: `pnpm run gate:${id}`, plantCommand: `node gates/bin/${id}.ts --root {root}` }));
-    files.set("gates/gates.json", JSON.stringify([...registry, ...extra]));
+    files.set("gates/gates.json", JSON.stringify([...registry.slice(0, 2), ...extra, ...registry.slice(2)]));
     files.set(".github/workflows/ci.yml", workflow.replace("  plants:\n", "  visual:\n    steps: []\n  axe:\n    steps: []\n  plants:\n"));
     for (const id of ["visual", "axe"]) {
       files.set(`gates/plants/${id}/fail-basic/plant.json`, failPlant("packages/tokens/src/x.ts:1", "rule-a", "planted"));
@@ -370,13 +373,16 @@ describe("plants: Storybook plants run one at a time, after the others (006 rese
     expect(others).toHaveLength(2 * 39);
     expect(log.slice(0, others.length)).toEqual(others);
     expect(log.slice(others.length)).toEqual(
-      storybookGates.flatMap((id) => ["error-basic", "fail-basic", "pass-basic"].flatMap((name) => [`start gates/plants/${id}/${name}`, `end gates/plants/${id}/${name}`])),
+      ["visual", "axe", "storybook-build"].flatMap((id) => ["error-basic", "fail-basic", "pass-basic"].flatMap((name) => [`start gates/plants/${id}/${name}`, `end gates/plants/${id}/${name}`])),
     );
   });
 
-  it("still runs the other gates' plants together", async () => {
+  it("still runs the other gates' plants together, a gate's own plants among them", async () => {
     const { log } = await timed(storybookWorld());
     expect(log.slice(0, 2).map((line) => line.split(" ")[0])).toEqual(["start", "start"]);
+    const at = (line: string): number => log.indexOf(line);
+    expect(at("start gates/plants/csp/fail-basic")).toBeLessThan(at("end gates/plants/csp/error-basic"));
+    expect(at("start gates/plants/csp/error-basic")).toBeGreaterThanOrEqual(0);
   });
 
   it("keeps the problem lines in registry order, a Storybook gate's among the others", async () => {

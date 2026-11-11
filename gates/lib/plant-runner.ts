@@ -22,8 +22,8 @@ export interface RunnerTools {
   readonly tempDir: (prefix: string) => Promise<string>;
   /** Removes a directory and everything in it. */
   readonly removeDir: (dir: string) => Promise<void>;
-  /** Builds a plant (absolute path) into a directory, by plant form. */
-  readonly build: Readonly<Record<PlantForm, (plant: string, into: string) => Promise<BuiltRepo>>>;
+  /** Builds a plant (absolute path) into a directory, by plant form, as its parsed plant.json asks. */
+  readonly build: Readonly<Record<PlantForm, (plant: string, into: string, spec: Plant) => Promise<BuiltRepo>>>;
   /** Runs a command in the repository root. */
   readonly run: (command: string, args: readonly string[]) => Promise<ToolRun>;
   /** The executable that runs `node` (the current Node). */
@@ -116,7 +116,7 @@ export function plantValues(form: PlantForm, into: string, built: BuiltRepo, pla
 export async function runPlant(tools: RunnerTools, root: string, gate: Gate, path: string, plant: Plant): Promise<PlantRun> {
   const into = await tools.tempDir(`ocelle-plant-${gate.id}-`);
   try {
-    const built = await tools.build[gate.plantForm](join(root, path), into).catch((error: unknown) => {
+    const built = await tools.build[gate.plantForm](join(root, path), into, plant).catch((error: unknown) => {
       throw new Error(`${path}: cannot build its temporary repository (${errorText(error)})`, { cause: error });
     });
     const [command, ...args] = plantArgs(gate.plantCommand, plantValues(gate.plantForm, into, built, plant));

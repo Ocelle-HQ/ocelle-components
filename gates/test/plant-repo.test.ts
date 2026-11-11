@@ -112,6 +112,18 @@ describe("exceptionPlans", () => {
     expect(() => exceptionPlans(text)).toThrow(problem);
   });
 
+  it("keeps the JSON error of a file that is not JSON as the cause", () => {
+    const error = (() => {
+      try {
+        exceptionPlans("[");
+        return undefined;
+      } catch (thrown) {
+        return thrown as Error;
+      }
+    })();
+    expect(error?.cause).toBeInstanceOf(SyntaxError);
+  });
+
   it("accepts a plan path that only starts with two dots", () => {
     expect(exceptionPlans(JSON.stringify([entry("..plans/plan.md")]))).toEqual(["..plans/plan.md"]);
   });
@@ -150,6 +162,21 @@ describe("rootExceptions", () => {
     { name: "a repository file that is not a list", tree: "[]", repository: "null", problem: /^the repository's storybook\/a11y-exceptions\.json is not a JSON list$/ },
   ])("fails the plant run on $name with the key", ({ tree, repository, problem }) => {
     expect(() => rootExceptions(tree, repository)).toThrow(problem);
+  });
+
+  it("keeps the JSON error of a file that is not JSON as the cause", () => {
+    const causes = [
+      ["[", "[]"],
+      [undefined, "["],
+    ].map(([tree, repository]) => {
+      try {
+        rootExceptions(tree, String(repository));
+        return undefined;
+      } catch (thrown) {
+        return (thrown as Error).cause;
+      }
+    });
+    expect(causes.map((cause) => cause instanceof SyntaxError)).toEqual([true, true]);
   });
 });
 
