@@ -67,8 +67,12 @@ const escape = String.fromCharCode(27);
 const bell = String.fromCharCode(7);
 /** OSC 8 hyperlinks (`ESC]8;;<url>BEL`) and colour codes (`ESC[…m`): Rolldown writes them even to a pipe (spike § 1). */
 const controls = new RegExp(`${escape}\\]8;;[^${bell}]*${bell}|${escape}\\[[0-9;]*[A-Za-z]`, "g");
-/** The Storybook CLI's line marks (spike § 1): `|`, `!`, `x`, `o`, `T`, `•` and `—`, then two spaces or the line end. */
-const mark = /^[|!xoT•—](?: {2}|$)/;
+/**
+ * The Storybook CLI's line marks, then two spaces or the line end: the ASCII ones it draws under TERM=linux (spike § 1:
+ * `|`, `!`, `x`, `o`, `T`, `•`, `—`) and the Unicode ones it draws otherwise, TERM unset on the CI runner included
+ * (`│`, `┌`, `└`, `◇`, `●`, `■`, `▲`; fixtures `<case>-unicode/`).
+ */
+const mark = /^[|!xoT•—│┌└◇●■▲](?: {2}|$)/;
 /** The indexer's `Unable to index ./stories/<file>:` (its error on the next line), relative to storybook/. */
 const indexLine = /Unable to index \.\/(\S+):$/;
 /** A Vite error's first line, `[<code>] <message>`. */

@@ -25,30 +25,36 @@ export const gateRepository = resolve(dirname(fileURLToPath(import.meta.url)), "
 /** A cause that stops a run (exit 2), or a value. */
 export type Outcome<T> = { readonly value: T } | { readonly cause: string };
 
-/** Whether an engine can run: an executable on PATH (or the path named) whose `info` command succeeds. */
+/**
+ * Whether a tool is an executable on PATH (or at the path named), and, when `info` is set, whether its `info` command
+ * succeeds (auto's test of a running engine, research.md R-06). No other command of an engine runs before the pin check.
+ */
 // Stryker disable next-line all: process boundary, covered by gates-integration: gates/test/integration/visual.test.ts "exits 2 naming a missing engine, and in CI refuses a single engine (research.md R-06)" and gates/test/integration/plants.test.ts "exits 2 naming each visual plant it could not run when PATH holds neither docker nor podman"
-async function available(name: string, env: Io["env"]): Promise<boolean> {
+async function available(name: string, env: Io["env"], info: boolean): Promise<boolean> {
   // Stryker disable next-line all: process boundary, covered by gates-integration: gates/test/integration/plants.test.ts "exits 2 naming each visual plant it could not run when PATH holds neither docker nor podman"
   const candidates = name.includes("/") ? [name] : (env.PATH ?? "").split(":").filter((dir) => dir !== "").map((dir) => join(dir, name));
   // Stryker disable next-line all: process boundary, covered by gates-integration: gates/test/integration/plants.test.ts "exits 2 naming each visual plant it could not run when PATH holds neither docker nor podman"
   let found = false;
   // Stryker disable next-line all: process boundary, covered by gates-integration: gates/test/integration/plants.test.ts "exits 2 naming each visual plant it could not run when PATH holds neither docker nor podman"
   for (const path of candidates) found ||= await access(path, constants.X_OK).then(() => true, () => false);
-  // Stryker disable next-line all: process boundary, covered by gates-integration: gates/test/integration/visual.test.ts "exits 2 naming a missing engine, and in CI refuses a single engine (research.md R-06)"
-  if (!found) return false;
+  // Stryker disable next-line all: process boundary, covered by gates-integration: gates/test/integration/visual.test.ts "exits 2 naming skopeo when PATH holds podman but no skopeo, and runs no podman command"
+  if (!found || !info) return found;
   // Stryker disable next-line all: process boundary, covered by gates-integration: gates/test/integration/visual.test.ts "captures the repository's 24 story-themes twice under docker and exits 0 naming them and the engine (US2 scenario 1)"
   return (await runTool(name, ["info"], gateRepository, env).catch(() => ({ exitCode: 1 }))).exitCode === 0;
 }
 
-/** The engines of an `--engine` choice in an environment (contracts/container.md § Engine resolution). */
+/**
+ * The engines of an `--engine` choice in an environment (contracts/container.md § Engine resolution), with skopeo for a
+ * run under podman (plan decision 21): looked up once, before the pin check of the first engine.
+ */
 // Stryker disable next-line all: process boundary, covered by gates-integration: gates/test/integration/visual.test.ts "exits 2 naming a missing engine, and in CI refuses a single engine (research.md R-06)"
 export async function engines(choice: string, env: Io["env"]): Promise<Resolved> {
   // Stryker disable next-line all: process boundary, covered by gates-integration: gates/test/integration/visual.test.ts "exits 2 naming a missing engine, and in CI refuses a single engine (research.md R-06)"
-  const names = [...new Set(["docker", "podman", choice])].filter((name) => !["auto", "both", "host"].includes(name));
+  const names = [...new Set(["docker", "podman", "skopeo", choice])].filter((name) => !["auto", "both", "host"].includes(name));
   // Stryker disable next-line all: process boundary, covered by gates-integration: gates/test/integration/visual.test.ts "exits 2 naming a missing engine, and in CI refuses a single engine (research.md R-06)"
   const found = new Set<string>();
   // Stryker disable next-line all: process boundary, covered by gates-integration: gates/test/integration/visual.test.ts "exits 2 naming a missing engine, and in CI refuses a single engine (research.md R-06)"
-  for (const name of names) if (await available(name, env)) found.add(name);
+  for (const name of names) if (await available(name, env, choice === "auto" && name !== "skopeo")) found.add(name);
   // Stryker disable next-line all: process boundary, covered by gates-integration: gates/test/integration/visual.test.ts "exits 2 naming a missing engine, and in CI refuses a single engine (research.md R-06)"
   return resolveEngine(choice, env, (name) => found.has(name));
 }

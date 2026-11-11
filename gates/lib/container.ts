@@ -48,6 +48,14 @@ const missing = (name: string): Resolved => ({ kind: "error", cause: `no contain
 
 /** The engines a `--engine` choice runs under in an environment, given which engine names are available. */
 export function resolveEngine(choice: string, env: Readonly<Record<string, string | undefined>>, available: (name: string) => boolean): Resolved {
+  const resolved = resolveEngines(choice, env, available);
+  // Plan decision 21: the pin check under podman reads the media type with skopeo, so a run under podman needs it.
+  const podman = resolved.kind === "engines" && resolved.engines.some((engine) => engineFamily(engine) === "podman");
+  return podman && !available("skopeo") ? { kind: "error", cause: "the pin check under podman needs skopeo: skopeo not found" } : resolved;
+}
+
+/** The engines of a choice before the skopeo check. */
+function resolveEngines(choice: string, env: Readonly<Record<string, string | undefined>>, available: (name: string) => boolean): Resolved {
   if (choice === "host") return { kind: "host" };
   const ci = env.CI === "true" || env.GITHUB_ACTIONS === "true";
   if (choice === "both" || (ci && choice === "auto")) {
@@ -89,9 +97,10 @@ export function engineFamily(engine: string): "docker" | "podman" {
 /** The commands of the pin check under an engine, each with the engine as its first word. */
 export function pinCommands(engine: string, pin: Pin): { readonly mediaType: readonly string[]; readonly pull: readonly string[]; readonly inspect: readonly string[] } {
   const reference = pinReference(pin);
-  const mediaType = engineFamily(engine) === "podman" ? ["manifest", "inspect", reference] : ["buildx", "imagetools", "inspect", "--raw", reference];
+  // Plan decision 21: podman cannot read a single image manifest with `podman manifest inspect`; skopeo reads it raw.
+  const mediaType = engineFamily(engine) === "podman" ? ["skopeo", "inspect", "--raw", `docker://${reference}`] : [engine, "buildx", "imagetools", "inspect", "--raw", reference];
   return {
-    mediaType: [engine, ...mediaType],
+    mediaType,
     pull: [engine, "pull", "--platform", "linux/amd64", reference],
     inspect: [engine, "image", "inspect", reference],
   };
