@@ -72,7 +72,10 @@ for example `font` over `io`):
 11. otherwise: match
 
 Then one `stray-baseline` finding per stray file. The baseline command's `updatePlan` refuses (writes nothing) when
-any story-theme ends at steps 1 to 8; otherwise it writes the changed baselines and removes the stray ones.
+any story-theme ends at steps 1 to 8; otherwise it writes the baselines of the story-themes that end at step 9
+(`missing-baseline`, counted as **added**) and at step 10 (`differs`, counted as **changed**) and removes the stray
+ones. Its summary line (contracts/gates.md § `visual:update`) reports `<n>` = added + changed files written, the added,
+changed and removed counts, and the bytes written.
 
 ## Pin (`storybook/visual/container.json`)
 

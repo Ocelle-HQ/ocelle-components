@@ -73,8 +73,12 @@ build failed ("the Storybook build failed; run pnpm run gate:storybook-build").
 `pnpm run visual:update [-- --engine <…>]` (`gates/bin/baselines.ts`). Same engine resolution, pin check, build and two
 runs as `visual`. Applies `updatePlan` (research.md R-11): writes nothing and exits 1 when any `render-failed`,
 `render-timeout`, `closed-shadow-root`, `pointer-target`, `font`, `network`, `io` or `nondeterministic` result exists
-(printed as by the gate); exit 2 as the gate. Otherwise writes every baseline whose bytes changed, deletes stray ones,
-and prints `baselines: wrote <n> files (<changed> changed, <removed> removed), <bytes> bytes in total`.
+(printed as by the gate); exit 2 as the gate. Otherwise writes every baseline that is new or whose bytes changed,
+deletes stray ones, and prints `baselines: wrote <n> files (<added> added, <changed> changed, <removed> removed),
+<bytes> bytes in total`, where `<added>` counts the baselines written for a story-theme that had none before
+(`missing-baseline`), `<changed>` those written over an existing baseline whose bytes differ, `<n>` = `<added>` +
+`<changed>`, `<removed>` the stray files deleted and `<bytes>` the total size of the `<n>` files written (operator
+decision 2026-11-11).
 
 **Plant mode (research.md R-11, PLAN-FRESH-2-002):** `pnpm run visual:update -- --plant visual/<name> [--story <id>]
 [--engine <…>]`. Materialises the plant's root with `gates/lib/plant-repo.ts` as the plant job does, then the same

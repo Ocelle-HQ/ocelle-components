@@ -547,14 +547,17 @@ run-time strict CSP in its own browser tests, not in the Storybook. The Storyboo
 **Decision.** `storybook/baselines/<story-id>.<theme>.png`, for example `storybook/baselines/tokens--colour.dark.png`.
 Story ids are Storybook's (`[a-z0-9-]` and `--`), so the name is unambiguous. `pnpm run visual:update` runs
 `gates/bin/baselines.ts`: the same two runs as the gate, then it applies an **update plan**: when no story-theme has a
-refusing status, it writes every baseline whose bytes changed, removes stray ones, and prints `baselines: wrote <n>
-files (<changed> changed, <removed> removed), <bytes> bytes in total`; otherwise it writes nothing and exits 1.
+refusing status, it writes every baseline that is new or whose bytes changed, removes stray ones, and prints
+`baselines: wrote <n> files (<added> added, <changed> changed, <removed> removed), <bytes> bytes in total`, where a
+baseline written for a story-theme that had none before is `added`, one written over an existing baseline is
+`changed`, and `<n>` = `<added>` + `<changed>` (operator decision 2026-11-11; contracts/gates.md § `visual:update`);
+otherwise it writes nothing and exits 1.
 
 **The update plan (PLAN-TESTABILITY-1-013)** is a pure function `updatePlan(results, baselines)` in
 `gates/lib/visual-verdict.ts` returning either `{ write, remove }` or `{ refuse: findings }`, unit-tested for each
 refusing status (`render-failed`, `render-timeout`, `closed-shadow-root`, `pointer-target`, `font`, `network`, `io`,
 `nondeterministic`), for one refusing story-theme among many good ones (nothing written), for unchanged bytes (not
-rewritten) and for stray deletion. `baselines.ts` only applies the plan.
+rewritten), for a story-theme with no baseline (written, counted as added) and for stray deletion. `baselines.ts` only applies the plan.
 
 **Local output and the CI artifact.** Differing captures, diff images (differing pixels in magenta, the rest dimmed)
 and the captures of nondeterministic story-themes go to `storybook/.visual/` (ignored). In addition, for every
