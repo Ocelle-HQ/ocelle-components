@@ -35,19 +35,19 @@ describe("resolveEngine (contracts/container.md § Engine resolution)", () => {
 
   it("auto: docker if available, else podman, else exit 2", () => {
     expect(resolveEngine("auto", {}, has("docker", "podman"))).toEqual({ kind: "engines", engines: ["docker", "docker"] });
-    expect(resolveEngine("auto", {}, has("podman"))).toEqual({ kind: "engines", engines: ["podman", "podman"] });
+    expect(resolveEngine("auto", {}, has("podman", "skopeo"))).toEqual({ kind: "engines", engines: ["podman", "podman"] });
     expect(resolveEngine("auto", {}, has())).toEqual({ kind: "error", cause: "no container engine (docker or podman) is available" });
   });
 
   it("both: docker for run 1, podman for run 2, naming a missing one", () => {
-    expect(resolveEngine("both", {}, has("docker", "podman"))).toEqual({ kind: "engines", engines: ["docker", "podman"] });
+    expect(resolveEngine("both", {}, has("docker", "podman", "skopeo"))).toEqual({ kind: "engines", engines: ["docker", "podman"] });
     expect(resolveEngine("both", {}, has("docker"))).toEqual({ kind: "error", cause: "no container engine: podman not found" });
     expect(resolveEngine("both", {}, has("podman"))).toEqual({ kind: "error", cause: "no container engine: docker not found" });
   });
 
   it("a name: both runs under it when found, else exit 2 naming it; host: the capture on the host", () => {
     expect(resolveEngine("docker", {}, has("docker"))).toEqual({ kind: "engines", engines: ["docker", "docker"] });
-    expect(resolveEngine("podman", {}, has("podman", "docker"))).toEqual({ kind: "engines", engines: ["podman", "podman"] });
+    expect(resolveEngine("podman", {}, has("podman", "docker", "skopeo"))).toEqual({ kind: "engines", engines: ["podman", "podman"] });
     expect(resolveEngine("/opt/bin/nerdctl", {}, has("/opt/bin/nerdctl"))).toEqual({ kind: "engines", engines: ["/opt/bin/nerdctl", "/opt/bin/nerdctl"] });
     expect(resolveEngine("ocelle-no-such-engine", {}, has("docker"))).toEqual({ kind: "error", cause: "no container engine: ocelle-no-such-engine not found" });
     expect(resolveEngine("host", {}, has())).toEqual({ kind: "host" });
@@ -55,12 +55,12 @@ describe("resolveEngine (contracts/container.md § Engine resolution)", () => {
 
   it.each(["CI", "GITHUB_ACTIONS"])("with %s=true: auto becomes both, a single engine found is refused, both, host and a name not found unchanged", (variable) => {
     const env = { [variable]: "true" };
-    expect(resolveEngine("auto", env, has("docker", "podman"))).toEqual({ kind: "engines", engines: ["docker", "podman"] });
+    expect(resolveEngine("auto", env, has("docker", "podman", "skopeo"))).toEqual({ kind: "engines", engines: ["docker", "podman"] });
     expect(resolveEngine("auto", env, has("docker"))).toEqual({ kind: "error", cause: "no container engine: podman not found" });
     expect(resolveEngine("docker", env, has("docker", "podman"))).toEqual({ kind: "error", cause: ci });
     expect(resolveEngine("podman", env, has("docker", "podman"))).toEqual({ kind: "error", cause: ci });
     expect(resolveEngine("/opt/bin/nerdctl", env, has("/opt/bin/nerdctl"))).toEqual({ kind: "error", cause: ci });
-    expect(resolveEngine("both", env, has("docker", "podman"))).toEqual({ kind: "engines", engines: ["docker", "podman"] });
+    expect(resolveEngine("both", env, has("docker", "podman", "skopeo"))).toEqual({ kind: "engines", engines: ["docker", "podman"] });
     expect(resolveEngine("host", env, has("docker", "podman"))).toEqual({ kind: "host" });
     expect(resolveEngine("ocelle-no-such-engine", env, has("docker", "podman"))).toEqual({ kind: "error", cause: "no container engine: ocelle-no-such-engine not found" });
   });
@@ -69,6 +69,39 @@ describe("resolveEngine (contracts/container.md § Engine resolution)", () => {
     for (const value of ["false", "1", ""]) {
       expect(resolveEngine("docker", { CI: value, GITHUB_ACTIONS: value }, has("docker", "podman"))).toEqual({ kind: "engines", engines: ["docker", "docker"] });
     }
+  });
+});
+
+// Plan decision 21 (operator decision 2026-11-11, on CI run 43064614842): podman refuses to read the pin's single
+// image manifest with `podman manifest inspect`, so under podman the pin check reads the media type with skopeo. A
+// resolution that runs any capture under podman needs skopeo on PATH, checked here, before any engine command; the
+// expectations above that resolve to podman now list skopeo among the tools found (they stood for podman's reader).
+describe("resolveEngine: skopeo for podman's pin check (plan decision 21)", () => {
+  const has =
+    (...names: string[]) =>
+    (name: string): boolean =>
+      names.includes(name);
+  const skopeo = { kind: "error", cause: "the pin check under podman needs skopeo: skopeo not found" };
+
+  it("refuses podman, both and auto falling back to podman without skopeo", () => {
+    expect(resolveEngine("podman", {}, has("podman", "docker"))).toEqual(skopeo);
+    expect(resolveEngine("/usr/bin/podman", {}, has("/usr/bin/podman"))).toEqual(skopeo);
+    expect(resolveEngine("both", {}, has("docker", "podman"))).toEqual(skopeo);
+    expect(resolveEngine("auto", {}, has("podman"))).toEqual(skopeo);
+    expect(resolveEngine("auto", { CI: "true" }, has("docker", "podman"))).toEqual(skopeo);
+  });
+
+  it("lets docker alone and the host run without skopeo, and podman or both with it", () => {
+    expect(resolveEngine("docker", {}, has("docker"))).toEqual({ kind: "engines", engines: ["docker", "docker"] });
+    expect(resolveEngine("auto", {}, has("docker", "podman"))).toEqual({ kind: "engines", engines: ["docker", "docker"] });
+    expect(resolveEngine("host", {}, has())).toEqual({ kind: "host" });
+    expect(resolveEngine("podman", {}, has("podman", "skopeo"))).toEqual({ kind: "engines", engines: ["podman", "podman"] });
+    expect(resolveEngine("both", {}, has("docker", "podman", "skopeo"))).toEqual({ kind: "engines", engines: ["docker", "podman"] });
+  });
+
+  it("names a missing engine and the CI rule before skopeo", () => {
+    expect(resolveEngine("both", {}, has("docker"))).toEqual({ kind: "error", cause: "no container engine: podman not found" });
+    expect(resolveEngine("podman", { CI: "true" }, has("podman"))).toEqual({ kind: "error", cause: "in CI the visual gate runs under both docker and podman" });
   });
 });
 
@@ -104,7 +137,7 @@ describe("pinCommands and engineFamily", () => {
       inspect: ["docker", "image", "inspect", reference],
     });
     expect(pinCommands("/usr/bin/podman", pin)).toEqual({
-      mediaType: ["/usr/bin/podman", "manifest", "inspect", reference],
+      mediaType: ["skopeo", "inspect", "--raw", `docker://${reference}`],
       pull: ["/usr/bin/podman", "pull", "--platform", "linux/amd64", reference],
       inspect: ["/usr/bin/podman", "image", "inspect", reference],
     });
@@ -118,16 +151,15 @@ describe("pinCommands and engineFamily", () => {
 describe("mediaTypeProblem (the reference's media type, from the registry)", () => {
   const index = "the pin names an index, not the linux/amd64 manifest";
 
-  it("accepts an image manifest: docker's imagetools output and podman's manifest inspect", () => {
+  it("accepts an image manifest: docker's imagetools output and skopeo's raw manifest (podman's reader)", () => {
     expect(mediaTypeProblem(fixture("docker-imagetools-manifest.json"))).toBeUndefined();
-    expect(mediaTypeProblem(fixture("podman-manifest-inspect.json"))).toBeUndefined();
+    expect(mediaTypeProblem(fixture("skopeo-inspect-raw-manifest.json"))).toBeUndefined();
     expect(mediaTypeProblem(JSON.stringify({ mediaType: "application/vnd.docker.distribution.manifest.v2+json" }))).toBeUndefined();
   });
 
   it("refuses an OCI index (the tag's, recorded) and a docker manifest list, for each engine's output", () => {
     expect(mediaTypeProblem(fixture("docker-imagetools-tag-index.json"))).toBe(index);
-    const podmanIndex = { ...(JSON.parse(fixture("podman-manifest-inspect.json")) as object), mediaType: "application/vnd.oci.image.index.v1+json" };
-    expect(mediaTypeProblem(JSON.stringify(podmanIndex))).toBe(index);
+    expect(mediaTypeProblem(fixture("skopeo-inspect-raw-index.json"))).toBe(index);
     expect(mediaTypeProblem(JSON.stringify({ mediaType: "application/vnd.docker.distribution.manifest.list.v2+json", manifests: [] }))).toBe(index);
   });
 

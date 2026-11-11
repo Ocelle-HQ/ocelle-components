@@ -195,6 +195,26 @@ describe("visual gate and baseline command through pnpm run", () => {
   );
 });
 
+// Plan decision 21 (operator decision 2026-11-11, on CI run 43064614842): the pin check under podman reads the media
+// type with skopeo, and a run under podman without skopeo exits 2 before any engine command runs. PATH holds only a
+// stub podman that leaves a marker file when it is run.
+describe("visual gate: skopeo for podman (plan decision 21)", () => {
+  it(
+    "exits 2 naming skopeo when PATH holds podman but no skopeo, and runs no podman command",
+    async () => {
+      const bin = tempDir("bin");
+      const marker = join(tempDir("marker"), "podman-ran");
+      writeFileSync(join(bin, "podman"), `#!/bin/sh\ntouch '${marker}'\n`, { mode: 0o755 });
+      const ran = await runGate("gates/bin/visual.ts", ["--root", await root(), "--engine", "podman"], { cwd: tempDir("cwd"), env: { ...env(), PATH: bin } });
+      expect({ ran, marker: existsSync(marker) }).toEqual({
+        ran: { code: 2, stdout: [], stderr: ["visual: could not run: the pin check under podman needs skopeo: skopeo not found"] },
+        marker: false,
+      });
+    },
+    timeout,
+  );
+});
+
 describe("baseline command (gates/bin/baselines.ts)", () => {
   it(
     "writes nothing on an unchanged tree and says so (FR-008, analysis G1)",
