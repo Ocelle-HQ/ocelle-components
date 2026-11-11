@@ -1038,6 +1038,13 @@ FR-014, an amendment of 001 FR-013) is the operator's decision; the phase stops 
 `packages/tokens/dist/tokens.css`, `tokens.json` and `index.d.ts`: identical (sha256 `c0ad9501…5e5e`, `c2c0e2e2…dae1`,
 `53919512…0980`).
 
+**Rerun at the final HEAD (after lever 3, 2026-11-11).** The same comparison again, at the phase base
+`6906cebc6eb785e909011695f06aa198386582c3` (a fresh scratch worktree, `pnpm run setup:offline` with the environment
+above, removed afterwards with `git worktree remove --force`, the worktree holding only the untracked `node_modules`
+and `dist`) and at `f0efd4e` (the last commit before the phase's green commit; the green commit changes only
+`specs/` and `knowledge/`). `cmp` of `tokens.css`, `tokens.json` and `index.d.ts`: identical, with the same sha256 as
+above (`c0ad9501…5e5e`, `c2c0e2e2…dae1`, `53919512…0980`). `git diff --stat 6906ceb f0efd4e -- packages/` is empty.
+
 ## Lever 3: 30-line entries (phase 3, spec FR-014, T032 to T037)
 
 **The decision.** After the stop-and-ask of T028 (`reviews/phase-3/stop-and-ask.md`), the operator decided lever 3,
@@ -1075,9 +1082,9 @@ of `stryker.config.json`, `"checkers": []`, restored with `git checkout -- stryk
 | `source.ts:1-30` | 19 | 16 | 0 | 0 | 0 | 3 | 0 | 73.96 s | - | yes |
 | `source.ts:31-60` | 115 | 54 | 0 | 0 | 0 | 61 | 0 | 166.19 s | - | yes |
 | `source.ts:61-90` | 79 | 43 | 0 | 0 | 0 | 36 | 0 | 131.38 s | - | yes |
-| `source.ts:91-120` | 123 | 60 | 0 | 0 | 0 | 63 | 0 | 177.68 s | 65.83 s / 111.85 s | **no** (1.68 s over) |
+| `source.ts:91-120` | 123 | 60 | 0 | 0 | 0 | 63 | 0 | 177.68 s; re-run 171.53 s | 65.83 s / 111.85 s | first run no (1.68 s over); re-run yes |
 | `source.ts:121-150` | 110 | 56 | 0 | 0 | 0 | 54 | 0 | 171.98 s | - | yes |
-| `source.ts:151-180` | 114 | 57 | 0 | 0 | 0 | 57 | 0 | 182.52 s | 53.75 s / 128.77 s | **no** (6.52 s over) |
+| `source.ts:151-180` | 114 | 57 | 0 | 0 | 0 | 57 | 0 | 182.52 s; re-run 170.49 s | 53.75 s / 128.77 s | first run no (6.52 s over); re-run yes |
 | `source.ts:181-210` | 79 | 48 | 0 | 0 | 0 | 31 | 0 | 128.99 s | - | yes |
 | `source.ts:211-230` | 40 | 22 | 0 | 0 | 0 | 18 | 0 | 91.36 s | - | yes |
 
@@ -1211,6 +1218,44 @@ at 60 / 61, 120 / 121 and 180 / 181 were already cuts of the red plan, so the mu
 either. No mutant moved Killed → Timeout, Survived or NoCoverage, so no re-run was due (R-06). The only moves are the 57
 Timeouts of the red run, all to Killed, as with lever 1.
 
+### Re-run of the two entries over 176 s (operator decision after lever 3)
+
+The operator answered the stop-and-ask after lever 3 with "Re-run the two once" (human:jeroennouwsdev, 2026-11-11,
+`reviews/phase-3/operator-decision-lever-3-rerun.md`): `source.ts:91-120` and `source.ts:151-180` re-measured once
+each, alone, with the same command, base `B = eaf16896ec10affdca24296fc9531fcffc46a8be`, environment and
+configuration (lever 1 and lever 3 in place, `stryker.config.json` unchanged, the checker on). Folders
+`lever3/source-91-120/rerun/` and `lever3/source-151-180/rerun/`, each committed as soon as it was written (`0866a74`,
+`f0efd4e`). Taken 2026-11-11.
+
+| Entry | First run (T036) | Re-run | Re-run mutants | Killed | Timeout | Survived | NoCoverage | CompileError | Within 176 s |
+|---|---|---|---|---|---|---|---|---|---|
+| `source.ts:91-120` | 177.68 s, exit 0 | 171.53 s, exit 0 | 123 | 60 | 0 | 0 | 0 | 63 | first run no (1.68 s over), re-run yes (4.47 s under) |
+| `source.ts:151-180` | 182.52 s, exit 0 | 170.49 s, exit 0 | 114 | 57 | 0 | 0 | 0 | 57 | first run no (6.52 s over), re-run yes (5.51 s under) |
+
+**Both re-runs are within 176 s.** Both ended exit 0 with an empty stderr and the summary `mutation: 123 mutants on the
+changed lines of 1 file, none survived; 0 timeouts, 63 compile errors, 0 zero-mutant entries; 0 equivalent records`
+(`91-120`) and `mutation: 114 mutants …; 0 timeouts, 57 compile errors, …` (`151-180`). The spread between the two runs
+of one entry (6.15 s and 12.03 s) is the sandbox's variance on the same work: the per-mutant comparison of each first
+run against its re-run moves no mutant.
+
+```text
+$ node evidence/compare.mjs evidence/lever3/source-91-120/mutation.json evidence/lever3/source-91-120/rerun/mutation.json packages/tokens/src/source.ts
+packages/tokens/src/source.ts: 123 mutants in both runs, every key once
+move CompileError -> CompileError: 63
+move Killed -> Killed: 60
+exit 0
+$ node evidence/compare.mjs evidence/lever3/source-151-180/mutation.json evidence/lever3/source-151-180/rerun/mutation.json packages/tokens/src/source.ts
+packages/tokens/src/source.ts: 114 mutants in both runs, every key once
+move CompileError -> CompileError: 57
+move Killed -> Killed: 57
+exit 0
+```
+
+Both runs of each entry are kept and recorded; neither first run is discarded. The first runs missed the sandbox bound
+by 1.68 s and 6.52 s, the re-runs are within it, so the margin of these two entries on the sandbox is a few seconds
+either way. The CI measurement at landing (480 s per `gate:mutation` step, spec FR-010) decides; see "Open for
+landing" below.
+
 ### FR-011 with lever 3 (T036)
 
 The 122 mutants of the FR-011 record (T025), matched by key in the eight lever 3 reports: all 122 are in a lever 3
@@ -1236,3 +1281,85 @@ NoCoverage, and FR-011 holds for all 122 former Timeouts, but **two entries miss
 **Stop-and-ask point reached** (the operator's decision, "If any entry still misses 176 s or keeps a Timeout, the
 question goes back to the operator"). T029 (rerun), T030 and T031 stay open; the phase stops here
 (`reviews/phase-3/stop-and-ask-lever-3.md`).
+
+**After the operator's decision (2026-11-11).** The operator decided "Re-run the two once"
+(`reviews/phase-3/operator-decision-lever-3-rerun.md`). Both re-runs are within 176 s (`91-120`: 171.53 s,
+`151-180`: 170.49 s; § Re-run above), with 0 Timeout, 0 Survived, 0 NoCoverage and the same status for every mutant as
+in the first runs, so FR-011 holds as recorded. Per the decision ("If both are within 176 s, record both runs and go
+on"), both runs of each entry are recorded and T029 to T031 follow. Every `source.ts` entry now has a run within
+176 s; the first runs of `91-120` and `151-180` did not, and "Open for landing" names them with their margins. The CI
+measurement at landing decides (FR-010).
+
+## Checks and FR-012 (T031)
+
+Run on 2026-11-11 at `f0efd4e` with the knowledge and evidence edits of the green commit in the working tree, one at a
+time, with the environment above:
+
+- `pnpm test`: exit 0, `unit-tests: 2099 tests passed in 97 files`.
+- `pnpm run gate:typecheck`: exit 0, `typecheck: no type error in the files of tsconfig.json`.
+- `pnpm run gate:lint`: exit 0, `lint: 173 files checked, no finding`.
+- `pnpm run gate:test-lint`: exit 0, `test-lint: 114 files checked, no finding`.
+- `pnpm run gate:mutation -- --base 6906cebc6eb785e909011695f06aa198386582c3` (the phase 3 base), alone: exit 0 after
+  43.60 s, saved to `us2-gate.log`. The phase's diff to mutate is `gates/bin/mutation.ts` and
+  `gates/lib/mutation/shards.ts` (11 changed lines, one shard, 0 cuts): comments and `maxEntryLines = 30`. Both report
+  `zero-mutants: no mutant on the changed lines` (Stryker has no mutator for a number literal), and the summary is
+  `0 mutants on the changed lines of 2 files, none survived; 0 timeouts, 0 compile errors, 2 zero-mutant entries; 0
+  equivalent records`. The 30-line bound itself is held by the `mutation-shards.test.ts` cases of T032 (red
+  `4b3279a`).
+
+**FR-012.** `git diff --stat bfd31fec6c61ffc8f2dcdb1616fc3b7b82e14917 -- packages/tokens/src stryker.config.json`
+(the phase-1 base) prints nothing: no change, and lever 2 kept no `concurrency` value. `grep -rn "Stryker disable"
+packages/tokens/src` prints one line, `packages/tokens/src/generate.ts:180` (`Stryker disable next-line
+ArrayDeclaration: equivalent, …`), which is already at the phase-1 base (`git grep -n "Stryker disable" bfd31fec --
+packages/tokens/src` prints the same line): nothing new. FR-009 and FR-010 were reached by faster kills (lever 1) and
+smaller entries (lever 3), not by removing mutants.
+
+## Open for landing (spec FR-010, CI half; research R-07)
+
+FR-010's CI half is **not done**: it is measured at landing, and the landing pass reads this section. The sandbox half
+is recorded above (§ Lever 3 and § Re-run).
+
+**The sandbox bound (176 s), as measured.** With lever 1 and lever 3, every `source.ts` entry has a run within 176 s,
+but two entries missed it on their first run:
+
+| Entry | First run | Re-run | Missed 176 s by |
+|---|---|---|---|
+| `source.ts:91-120` | 177.68 s | 171.53 s | 1.68 s on the first run; the re-run is 4.47 s under |
+| `source.ts:151-180` | 182.52 s | 170.49 s | 6.52 s on the first run; the re-run is 5.51 s under |
+
+The other six entries were measured once, each within 176 s (`1-30` 73.96 s, `31-60` 166.19 s, `61-90` 131.38 s,
+`121-150` 171.98 s, `181-210` 128.99 s, `211-230` 91.36 s); `31-60` and `121-150` are within 10 s of the bound. By the
+operator's decision after lever 3 (`reviews/phase-3/operator-decision-lever-3-rerun.md`) no further change was made:
+the CI measurement below (480 s per `gate:mutation` step) decides.
+
+**The procedure** (research R-07, with its 2026-11-11 lever 3 amendment):
+
+1. **The measurement commit**, on the mission's pull request, at landing (`/ocelle-land`): a trailing space on
+   **every** line of `packages/tokens/src/source.ts`, the 8 blank lines included (230 lines). First check that
+   `source.ts` has no template literal a trailing space would change; then build the tokens before and after and
+   compare `dist/` byte for byte (`tokens.css`, `tokens.json`, `index.d.ts`): identical.
+2. **The local `--plan` check**, before the commit is pushed: `pnpm --silent run gate:mutation -- --base <the pull
+   request's base> --plan`. It must list exactly the **eight 30-line `source.ts` entries** `source.ts:1-30`, `31-60`,
+   `61-90`, `91-120`, `121-150`, `151-180`, `181-210` and `211-230` (not the four 60-line entries R-07 first named),
+   each in a shard alone or beside other files' entries (entries of one file never share a shard). Record that plan
+   output (stdout and the cut line) with the evidence. If it lists other `source.ts` entries, stop: the commit is not
+   the measured one.
+3. **Record from CI** (`mutation-plan` and the `mutation-shard` jobs): which entries each shard holding a `source.ts`
+   entry held, each such shard's `gate:mutation` step time as GitHub reports it, the runner's core count (R-05)
+   and the run link. Each step must be within 480 s.
+4. **The revert:** a `git revert` of the measurement commit on the pull request before merge. A job other than the
+   mutation jobs that fails on the measurement commit only because of the trailing spaces (a format or lint check) does
+   not count for or against FR-010; the revert restores it, and the evidence says so if it happens.
+
+**Decision rules:**
+
+- Every `source.ts` shard within 480 s: FR-010's CI half holds; record the figures.
+- **A mixed shard over 480 s** (a `source.ts` entry beside entries of the mission's other changes): the entry is
+  measured again on CI in a shard that holds it alone, and that time decides. The landing pass prepares a branch
+  whose base is the mission's head (before the measurement commit) and whose only commit is the measurement commit;
+  its diff is `source.ts` alone, so its plan is eight `source.ts`-only shards. No workflow change is needed. The
+  orchestrator does not push it or open the pull request: the **operator pushes it and opens it as a draft pull
+  request**. Its times, core count and run link are recorded, and it is closed unmerged. It is made only for this case.
+- **An alone shard over 480 s** does not meet FR-010; a time over 480 s is never accepted as measured. The landing
+  pass brings it to the operator as a decision at the landing gate, with two options: apply lever 2 (R-05) and measure
+  again, or amend 001 FR-013 again under FR-014. Neither is a follow-up.
