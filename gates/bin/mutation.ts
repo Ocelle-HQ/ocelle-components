@@ -16,13 +16,14 @@
 // (contracts/mutation-output.md): after the equivalent records, a run that reached the classification prints a
 // `timeout` line per Timeout mutant and a `compile-error` line per CompileError mutant on a changed line, then a
 // `zero-mutants` line per entry with no mutant on its changed lines (named by its path, or its `--files` entry as
-// given), all before the findings; both summaries count the three kinds, also when zero. These report lines are not
+// given), all before the findings; a report line goes through `oneLine` as a finding does, so a mutant with no
+// replacement ends its line at `replaced by` (phase 2 round 2, O2-01); both summaries count the three kinds, also when zero. These report lines are not
 // findings and change no exit code. A `--files` list naming one file more than once is exit 2 before Stryker runs.
 import { readFile, rm } from "node:fs/promises";
 import { join } from "node:path";
 import { main, parseArgs } from "../lib/cli.ts";
 import type { Context, Io } from "../lib/cli.ts";
-import { emit, plural } from "../lib/findings.ts";
+import { emit, oneLine, plural } from "../lib/findings.ts";
 import type { Finding } from "../lib/findings.ts";
 import { strykerEnv } from "../lib/mutation/coverage.ts";
 import { changedFiles, mutateSpecs, scopePathspecs, unusableMutatePaths } from "../lib/mutation/ranges.ts";
@@ -167,7 +168,7 @@ export async function mutation(context: Context, tools: MutationTools, io: Io): 
 
   for (const record of records) io.out(formatRecord(record));
   const undecided = (rule: string, mutant: UndecidedMutant): string =>
-    `${mutant.path}:${String(mutant.line)}: mutation: ${rule}: ${mutant.mutator}: replaced by ${mutant.replacement}`;
+    oneLine(`${mutant.path}:${String(mutant.line)}: mutation: ${rule}: ${mutant.mutator}: replaced by ${mutant.replacement}`);
   for (const mutant of verdict.timeouts) io.out(undecided("timeout", mutant));
   for (const mutant of verdict.compileErrors) io.out(undecided("compile-error", mutant));
   for (const entry of verdict.zeroEntries) io.out(`${entry}: mutation: zero-mutants: no mutant on the changed lines`);
