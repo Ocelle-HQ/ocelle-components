@@ -14,6 +14,11 @@ allows for these lines (research.md R-08).
 
    The rule is the status spec FR-001 and FR-002 name: `timeout` is the status `Timeout`, `compile-error` the status
    `CompileError`. No separate status word is printed.
+
+   *Amendment, 2026-11-11 (operator round from the landing review, phase 2 O2-01, landing L1-03):* a mutant for which
+   Stryker gives no replacement ends its line at `replaced by`, with no trailing space
+   (`<path>:<start line>: mutation: timeout: <mutator>: replaced by`), as a finding's message does after `oneLine`.
+   Every line of this contract ends without trailing whitespace.
 4. Zero-mutant entries: `<entry>: mutation: zero-mutants: no mutant on the changed lines`, where `<entry>` is the path
    (whole-diff run) or the `--files` item as given (`path` or `path:start-end`).
 5. Exit 1 only: the findings, as today: `<path>:<line>: mutation: <mutator>: <Survived|NoCoverage>: replaced by …`.
