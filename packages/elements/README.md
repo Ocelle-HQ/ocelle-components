@@ -1,8 +1,8 @@
 # @ocelle/elements
 
 The Ocelle web components: standards-based custom elements (Lit 3) that work in any page, a server-rendered page
-under a strict Content Security Policy, a Svelte shell or a desktop webview. This release has one element,
-`ocelle-icon`, with a set of thirteen icons.
+under a strict Content Security Policy, a Svelte shell or a desktop webview. This release has two elements:
+`ocelle-icon`, with a set of thirteen icons, and `ocelle-brand-mark`, the Ocelle rosette.
 
 ## Entry points
 
@@ -10,6 +10,7 @@ under a strict Content Security Policy, a Svelte shell or a desktop webview. Thi
 |---|---|---|
 | `@ocelle/elements` | `dist/index.js` | every element; for hosts with a bundler |
 | `@ocelle/elements/ocelle-icon.js` | `dist/ocelle-icon.js` | `ocelle-icon` only; for hosts with a bundler |
+| `@ocelle/elements/ocelle-brand-mark.js` | `dist/ocelle-brand-mark.js` | `ocelle-brand-mark` only; for hosts with a bundler |
 | `@ocelle/elements/browser.js` | `dist/browser/ocelle-elements.js` | every element, Lit inside; for hosts without a bundler |
 | `@ocelle/elements/custom-elements.json` | `custom-elements.json` | the manifest, also named by the `customElements` field |
 
@@ -47,7 +48,8 @@ The browser build starts with a licence banner naming Apache-2.0, Lit's copyrigh
 Link `tokens.css` of `@ocelle/tokens` first. The elements read their sizes and colours from its custom properties by
 inheritance and bundle none of them. The package declares it as a peer dependency, `"@ocelle/tokens": "workspace:0.0.0"`.
 Linked without it, `--ocelle-icon-size` is undefined, so an icon is drawn at the SVG default size (300 × 300 px in a
-paragraph).
+paragraph). Linked without it, an `ocelle-brand-mark` is drawn at the SVG default size too, and its ring is not
+painted.
 
 ## `ocelle-icon`
 
@@ -91,6 +93,43 @@ Every drawing is the project's own, on a 24-unit grid with one stroke width, rou
 right-to-left text (`dir="rtl"` on the icon or an ancestor) they are mirrored, so start points right and end points
 left; the other icons are never mirrored. The package exports no list of the names; the manifest's type of `name` is
 their union. The names are public surface: renaming or removing one is a major change, adding one a minor change.
+
+## `ocelle-brand-mark`
+
+```html
+<ocelle-brand-mark></ocelle-brand-mark>
+<ocelle-brand-mark ground="chrome"></ocelle-brand-mark>
+<ocelle-brand-mark tone="mono"></ocelle-brand-mark>
+<ocelle-brand-mark label="Ocelle"></ocelle-brand-mark>
+```
+
+`ocelle-brand-mark` draws the Ocelle rosette, a broken ring around an ochre spot, inline in its shadow root from tokens
+only. By default it is for the main grounds (`color-canvas`, `color-sheet`, `color-pane`, `color-panel`,
+`color-inspector`, `color-rail`, `color-inset`, `color-accent-low` and `color-hover-bg`): ring `--ocelle-color-ink`,
+spot `--ocelle-color-accent`.
+
+- `ground` (attribute and property, reflected): `chrome` for the dark chrome grounds `color-chrome` and
+  `color-chrome-hover` (the top bar and the rails, in both themes): ring `--ocelle-color-chrome-ink`, spot
+  `--ocelle-color-accent`.
+- `tone` (attribute and property, reflected): `mono` paints ring and spot in `currentColor`, the colour of the text
+  around the mark, on any ground; it wins over `ground`.
+- `label` (attribute and property, not reflected): the accessible name of the mark, trimmed; empty or whitespace-only
+  counts as none. Without a label the mark is decorative: hidden from the accessibility tree, as beside the product
+  name in a top bar, which carries the name.
+
+Any other value of `ground` or `tone` gives the default. The main-ground variant on the chrome, or the chrome variant on
+a main ground, is a host mistake: it is documented, not detected. `ocelle-brand-mark` reads the tokens
+`--ocelle-icon-size`, `--ocelle-color-ink`, `--ocelle-color-chrome-ink` and `--ocelle-color-accent`.
+
+The mark is `--ocelle-icon-size` high and as wide as high: a host that sets only its `block-size` gets a square, in a
+flex column too, and one that sets only its `inline-size` gets a box that is not square, with the drawing scaled to
+the smaller side and centred. A host that sizes the mark by percentage needs a container of definite height: against
+an indefinite one (a bar with only a minimum height, or a paragraph) the percentage acts as `auto` and the mark falls
+back to the SVG default size, 300 × 300 px.
+
+In forced colours the ring and the spot are painted in `currentColor` in every variant, the system colour of their
+context. On the light main grounds the ochre spot measures 2.6:1: the ring carries the mark, and a host that needs
+every part at 3:1 uses `tone="mono"`. `ocelle-brand-mark` has no slot, event, CSS part or CSS custom property.
 
 ## Slot convention
 
@@ -226,4 +265,10 @@ README are in `test/node/`; tests that run the build or `pnpm pack` are in `test
 ## Licence
 
 Apache-2.0, see `LICENSE`. Every icon is the project's own drawing, under Apache-2.0; no third-party icon set is used,
-so `THIRD_PARTY_NOTICES` lists none. The browser build bundles Lit (BSD-3-Clause), listed in `THIRD_PARTY_NOTICES`.
+so `THIRD_PARTY_NOTICES` lists none. The mark is the project's own drawing of the Ocelle rosette, redrawn from the
+geometry of Ocelle's app icon, under Apache-2.0. The browser build bundles Lit (BSD-3-Clause), listed in
+`THIRD_PARTY_NOTICES`.
+
+"Ocelle" and the rosette mark are trademarks of their owner. The Apache-2.0 licence grants no right to use them
+(section 6 of the licence); they may be used only to refer to Ocelle. The package carries the same note in `NOTICE`,
+beside `LICENSE` and `THIRD_PARTY_NOTICES`.
