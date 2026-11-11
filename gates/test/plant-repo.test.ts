@@ -1,9 +1,11 @@
+import { PNG } from "pngjs";
 import { describe, expect, it } from "vitest";
 import {
   applyPairChanges,
   carriesConfiguration,
   checkWrapper,
   configurationSet,
+  editBaseline,
   exceptionPlans,
   moduleLinks,
   overridesText,
@@ -346,6 +348,90 @@ describe("treeProblems", () => {
   it("accepts overrides.ts only when the delta has no tokens part", () => {
     expect([treeProblems([`${src}/overrides.ts`], undefined), treeProblems([`${src}/overrides.ts`], { pairs: [] })]).toEqual([[], []]);
     expect(treeProblems([`${src}/overrides.ts`], { tokens: [] })).toEqual(["tree/ holds packages/tokens/src/overrides.ts and delta.json has tokens; one of them sets the overrides"]);
+  });
+});
+
+// 006 research.md R-11 (PLAN-FRESH-2-003): a plant edits or removes a repository baseline by delta.json `baselines`,
+// applied to the current file, and never holds a copy of one in its tree/.
+describe("parseDelta: baselines (006 research.md R-11)", () => {
+  it("reads a list of baseline edits, one-pixel, reencode and remove", () => {
+    const baselines = [
+      { file: "tokens--colour.light.png", edit: "one-pixel" },
+      { file: "tokens--colour.dark.png", edit: "reencode" },
+      { file: "tokens--type.light.png", edit: "remove" },
+    ];
+    expect(parseDelta(JSON.stringify({ baselines }))).toEqual({ baselines });
+    expect(parseDelta('{"baselines":[]}')).toEqual({ baselines: [] });
+  });
+
+  it.each([
+    { text: '{"baselines":{}}', problem: /^delta\.json: baselines must be a list of baseline edits$/ },
+    { text: '{"baselines":[{"file":"a--b.light.png","edit":"blur"}]}', problem: /^delta\.json: baselines\[0\] is not a baseline edit \(a file and one-pixel, reencode or remove\)$/ },
+    { text: '{"baselines":[{"file":"a--b.light.png","edit":"remove"},{"edit":"remove"}]}', problem: /^delta\.json: baselines\[1\] is not a baseline edit/ },
+    { text: '{"baselines":[{"file":"","edit":"remove"}]}', problem: /^delta\.json: baselines\[0\] is not a baseline edit/ },
+    { text: '{"baselines":[{"file":"a--b.light.png","edit":"remove","extra":1}]}', problem: /^delta\.json: baselines\[0\] is not a baseline edit/ },
+    { text: '{"baselines":["a--b.light.png"]}', problem: /^delta\.json: baselines\[0\] is not a baseline edit/ },
+    { text: '{"baselines":[{"file":"a--b.light.png","edit":"remove"},{"file":"a--b.light.png","edit":"one-pixel"}]}', problem: /^delta\.json: baselines lists a--b\.light\.png twice$/ },
+  ])("rejects $text", ({ text, problem }) => {
+    expect(() => parseDelta(text)).toThrow(problem);
+  });
+});
+
+describe("treeProblems: repository baselines (006 research.md R-11)", () => {
+  const repository = ["tokens--colour.light.png", "tokens--colour.dark.png"];
+
+  it("refuses a tree/ file under storybook/baselines/ whose name the repository's storybook/baselines/ holds", () => {
+    expect(treeProblems(["storybook/baselines/tokens--colour.dark.png", "storybook/baselines/own--a.light.png", "storybook/stories/own.stories.ts"], undefined, repository)).toEqual([
+      "tree/ holds storybook/baselines/tokens--colour.dark.png; a plant changes a repository baseline by delta.json baselines",
+    ]);
+    expect(treeProblems(["storybook/baselines/own--a.light.png", "x/storybook/baselines/tokens--colour.dark.png"], undefined, repository)).toEqual([]);
+  });
+
+  it("refuses a delta.json baseline edit of a file the repository does not hold", () => {
+    expect(treeProblems([], { baselines: [{ file: "tokens--colour.light.png", edit: "one-pixel" }, { file: "gone--story.light.png", edit: "remove" }] }, repository)).toEqual([
+      "delta.json baselines: gone--story.light.png is not a repository baseline",
+    ]);
+    expect(treeProblems([], { baselines: [{ file: "tokens--colour.light.png", edit: "remove" }] })).toEqual(["delta.json baselines: tokens--colour.light.png is not a repository baseline"]);
+  });
+});
+
+describe("editBaseline (006 research.md R-11)", () => {
+  /** A PNG file of a 3 × 2 image with distinct pixels, written by pngjs with the given options. */
+  function source(options: Record<string, number>): Buffer {
+    const png = new PNG({ width: 3, height: 2 });
+    for (let at = 0; at < 6; at += 1) png.data.set([at * 40, 200 - at * 30, (at * 77) % 256, 255], at * 4);
+    return PNG.sync.write(png, options);
+  }
+  const pixels = (file: Uint8Array): number[][] => {
+    const data = PNG.sync.read(Buffer.from(file)).data;
+    return Array.from({ length: data.length / 4 }, (_, at) => [...data.subarray(at * 4, at * 4 + 4)]);
+  };
+
+  it("one-pixel: inverts the RGB channels of the pixel at (0, 0) only, alpha kept", () => {
+    const before = pixels(source({ deflateLevel: 6 }));
+    const after = pixels(editBaseline(source({ deflateLevel: 6 }), "one-pixel"));
+    expect(after[0]).toEqual([255, 55, 255, 255]);
+    expect(before[0]).toEqual([0, 200, 0, 255]);
+    expect(after.slice(1)).toEqual(before.slice(1));
+  });
+
+  it("one-pixel: writes the normalised encoding (RGBA, deflate level 9, filter 4)", () => {
+    const edited = editBaseline(source({ deflateLevel: 1 }), "one-pixel");
+    const png = PNG.sync.read(edited);
+    expect(edited.equals(PNG.sync.write(png, { colorType: 6, inputColorType: 6, bitDepth: 8, deflateLevel: 9, filterType: 4 }))).toBe(true);
+  });
+
+  it("reencode: the same pixels in other bytes (deflate level 1, zlib's default strategy)", () => {
+    const normalised = source({ colorType: 6, inputColorType: 6, bitDepth: 8, deflateLevel: 9, filterType: 4 });
+    const edited = editBaseline(normalised, "reencode");
+    expect(pixels(edited)).toEqual(pixels(normalised));
+    expect(edited.equals(normalised)).toBe(false);
+    expect(edited.equals(PNG.sync.write(PNG.sync.read(normalised), { colorType: 6, inputColorType: 6, bitDepth: 8, deflateLevel: 1, deflateStrategy: 0, filterType: 4 }))).toBe(true);
+  });
+
+  it("reencode: refuses a baseline it would write with the same bytes", () => {
+    const levelOne = source({ colorType: 6, inputColorType: 6, bitDepth: 8, deflateLevel: 1, deflateStrategy: 0, filterType: 4 });
+    expect(() => editBaseline(levelOne, "reencode")).toThrow("delta.json baselines: reencode gives the baseline's own bytes");
   });
 });
 

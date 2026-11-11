@@ -1,6 +1,7 @@
 import { execFileSync } from "node:child_process";
 import { existsSync, lstatSync, mkdirSync, readdirSync, readFileSync, readlinkSync, realpathSync, writeFileSync } from "node:fs";
 import { join, relative } from "node:path";
+import { PNG } from "pngjs";
 import { afterEach, describe, expect, it } from "vitest";
 import { buildCommitRepo, buildMutationRepo, buildRepoTree } from "../../lib/plant-repo.ts";
 import { baseEnv, cleanUp, repo, storybookInputs, tempDir } from "./workspace.ts";
@@ -201,6 +202,66 @@ describe("buildRepoTree: the Storybook workspace (006 research.md R-16)", () => 
     await expect(buildRepoTree(fake, join(fixtures, "exceptions-only-plant"), tempDir("repo-tree"))).rejects.toThrow(
       "a11y-exceptions.json names specs/no-such-feature/plan.md, which the repository does not hold",
     );
+  });
+});
+
+// 006 research.md R-11 and R-16: delta.json `baselines` edits the current repository baselines when the root is made
+// (one-pixel, reencode, remove), a tree copy of a repository baseline or an edit of one the repository does not hold
+// fails the build, and `baselinesOf` gives a visual fail plant's root the baselines of the pass plant it names. The
+// repository here is a root built from this one with four small PNG baselines written into it.
+describe("buildRepoTree: baselines (006 research.md R-11, R-16)", () => {
+  /** A PNG file of a 4 × 3 image with distinct pixels, at deflate level 9. */
+  function png(seed: number): Buffer {
+    const image = new PNG({ width: 4, height: 3 });
+    for (let at = 0; at < 12; at += 1) image.data.set([(seed + at * 20) % 256, (seed * 3 + at * 9) % 256, (at * 41) % 256, 255], at * 4);
+    return PNG.sync.write(image, { colorType: 6, inputColorType: 6, bitDepth: 8, deflateLevel: 9, filterType: 4 });
+  }
+  const names = ["fixture--a.light.png", "fixture--a.dark.png", "fixture--b.light.png", "fixture--b.dark.png"];
+
+  /** A repository built from this one whose storybook/baselines/ holds the four fixture baselines besides its own. */
+  async function fakeRepository(): Promise<string> {
+    const fake = tempDir("repo-tree");
+    await buildRepoTree(repo, join(fixtures, "empty-plant"), fake);
+    mkdirSync(join(fake, "storybook/baselines"), { recursive: true });
+    names.forEach((name, at) => {
+      writeFileSync(join(fake, "storybook/baselines", name), png(at * 50 + 7));
+    });
+    return fake;
+  }
+  const pixels = (file: string): number[] => [...PNG.sync.read(readFileSync(file)).data];
+
+  it("applies one-pixel, reencode and remove to the repository's current baselines, and leaves the others as they are", async () => {
+    const fake = await fakeRepository();
+    const into = tempDir("repo-tree");
+    await buildRepoTree(fake, join(fixtures, "baselines-edit-plant"), into);
+    const at = (dir: string, name: string): string => join(dir, "storybook/baselines", name);
+    const light = { before: pixels(at(fake, names[0] ?? "")), after: pixels(at(into, names[0] ?? "")) };
+    expect(light.after.slice(0, 3)).toEqual(light.before.slice(0, 3).map((value) => 255 - value));
+    expect(light.after.slice(3)).toEqual(light.before.slice(3));
+    expect(pixels(at(into, "fixture--a.dark.png"))).toEqual(pixels(at(fake, "fixture--a.dark.png")));
+    expect(readFileSync(at(into, "fixture--a.dark.png")).equals(readFileSync(at(fake, "fixture--a.dark.png")))).toBe(false);
+    expect(existsSync(at(into, "fixture--b.light.png"))).toBe(false);
+    expect(readFileSync(at(into, "fixture--b.dark.png")).equals(readFileSync(at(fake, "fixture--b.dark.png")))).toBe(true);
+    expect(readdirSync(join(fake, "storybook/baselines")).filter((name) => !existsSync(at(into, name)))).toEqual(["fixture--b.light.png"]);
+  });
+
+  it("fails to build a plant whose tree/ holds a repository baseline, or whose edit names a file the repository does not hold", async () => {
+    const fake = await fakeRepository();
+    await expect(buildRepoTree(fake, join(fixtures, "baselines-copy-plant"), tempDir("repo-tree"))).rejects.toThrow(
+      "tree/ holds storybook/baselines/fixture--a.light.png; a plant changes a repository baseline by delta.json baselines",
+    );
+    await expect(buildRepoTree(fake, join(fixtures, "baselines-missing-plant"), tempDir("repo-tree"))).rejects.toThrow("delta.json baselines: fixture--z.light.png is not a repository baseline");
+  });
+
+  it("gives a baselinesOf plant's root the named pass plant's baselines, under its own tree/ and none of the pass plant's other files", async () => {
+    const into = tempDir("repo-tree");
+    const plant = JSON.parse(readFileSync(join(fixtures, "visual-plants/fail-of/plant.json"), "utf8")) as Parameters<typeof buildRepoTree>[3];
+    await buildRepoTree(repo, join(fixtures, "visual-plants/fail-of"), into, plant);
+    expect(readFileSync(join(into, "storybook/baselines/own--x.light.png"), "utf8")).toBe(readFileSync(join(fixtures, "visual-plants/pass-own/tree/storybook/baselines/own--x.light.png"), "utf8"));
+    expect(readFileSync(join(into, "storybook/stories/own.stories.ts"), "utf8")).toContain("<p>fail</p>");
+    const without = tempDir("repo-tree");
+    await buildRepoTree(repo, join(fixtures, "visual-plants/fail-of"), without);
+    expect(existsSync(join(without, "storybook/baselines/own--x.light.png"))).toBe(false);
   });
 });
 

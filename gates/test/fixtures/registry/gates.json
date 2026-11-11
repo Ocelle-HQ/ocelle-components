@@ -114,5 +114,13 @@
     "plantCommand": "node gates/bin/storybook-build.ts --root {root}",
     "plantForm": "repo-tree",
     "scope": "files"
+  },
+  {
+    "id": "visual",
+    "check": "Visual regression",
+    "command": "pnpm run gate:visual -- --engine both",
+    "plantCommand": "node gates/bin/visual.ts --root {root} --engine {engine}",
+    "plantForm": "repo-tree",
+    "scope": "files"
   }
 ]

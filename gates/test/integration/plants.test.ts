@@ -1,3 +1,4 @@
+import { execFileSync } from "node:child_process";
 import { cpSync, mkdirSync, readFileSync, realpathSync, symlinkSync, writeFileSync } from "node:fs";
 import { dirname, join } from "node:path";
 import { afterEach, describe, expect, it } from "vitest";
@@ -90,9 +91,36 @@ describe("plant job (gates/bin/plants.ts)", () => {
           ...missing("contrast", []),
           ...missing("brand-rules", []),
           ...missing("storybook-build", []),
-          "plants: 38 problems in 6 plants",
+          ...missing("visual", []),
+          "plants: 41 problems in 6 plants",
         ],
         stderr: [],
+      });
+    },
+    timeout,
+  );
+
+  // 006 FR-018 and research.md R-07: with no container engine on PATH and no --skip-container, the job runs no visual
+  // plant that needs one, names each on stderr, and exits 2 after the other plants, whatever their result.
+  it(
+    "exits 2 naming each visual plant it could not run when PATH holds neither docker nor podman",
+    async () => {
+      const root = plantsRoot();
+      write(join(root, "gates/plants/visual/fail-needs-engine/plant.json"), JSON.stringify({ expect: "fail", why: "w", findings: [{ location: "a--b/light", rule: "differs" }] }));
+      write(join(root, "gates/plants/visual/pass-needs-engine/plant.json"), JSON.stringify({ expect: "pass", why: "w" }));
+      const bin = tempDir("bin");
+      symlinkSync(execFileSync("sh", ["-c", "command -v git"], { encoding: "utf8" }).trim(), join(bin, "git"));
+      symlinkSync(process.execPath, join(bin, "node"));
+      const env = { ...baseEnv(), PATH: bin };
+      delete env.OCELLE_VISUAL_ENGINE;
+      const ran = await runGate("gates/bin/plants.ts", ["--root", root], { cwd: tempDir("cwd"), env });
+      expect({ code: ran.code, stderr: ran.stderr }).toEqual({
+        code: 2,
+        stderr: [
+          "plants: not run (no container engine): gates/plants/visual/fail-needs-engine",
+          "plants: not run (no container engine): gates/plants/visual/pass-needs-engine",
+          "plants: could not run: no container engine for 2 visual plants; start docker or podman, or run a partial job with --skip-container",
+        ],
       });
     },
     timeout,

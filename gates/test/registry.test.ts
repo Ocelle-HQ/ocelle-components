@@ -1,7 +1,7 @@
 import { readFileSync } from "node:fs";
 import { describe, expect, it } from "vitest";
 import type { Finding } from "../lib/findings.ts";
-import { checkRegistry, ciJobs, fr020, parseRegistry, plantJob } from "../lib/registry.ts";
+import { checkRegistry, ciJobs, fr020, parseRegistry, plantJob, skipContainerFindings } from "../lib/registry.ts";
 import type { Gate } from "../lib/registry.ts";
 
 // The registry check of the plant job (research.md R-10, data-model.md § Gate): the gate ids of gates.json, the gate
@@ -9,14 +9,14 @@ import type { Gate } from "../lib/registry.ts";
 // set; each id missing from one of them is one finding. Inputs: gates/test/fixtures/registry/.
 const registryText = readFileSync(new URL("fixtures/registry/gates.json", import.meta.url), "utf8");
 const workflow = readFileSync(new URL("fixtures/registry/ci.yml", import.meta.url), "utf8");
-const ids = ["typecheck", "lint", "style-lint", "unit-tests", "test-lint", "mutation", "csp", "prefix", "config-copies", "pins", "signoff", "contrast", "brand-rules", "storybook-build"];
+const ids = ["typecheck", "lint", "style-lint", "unit-tests", "test-lint", "mutation", "csp", "prefix", "config-copies", "pins", "signoff", "contrast", "brand-rules", "storybook-build", "visual"];
 
 function finding(path: string, rule: string, message: string): Finding {
   return { location: { path }, gate: "plants", rule, message };
 }
 
 describe("fr020 and plantJob", () => {
-  it("lists the fourteen gates of FR-020 (002 FR-020: contrast and brand-rules added; 006 FR-017: storybook-build), and names the plant job plants", () => {
+  it("lists the fifteen gates of FR-020 (002 FR-020: contrast and brand-rules added; 006 FR-017: storybook-build and visual), and names the plant job plants", () => {
     expect({ fr020, plantJob }).toEqual({ fr020: ids, plantJob: "plants" });
   });
 });
@@ -144,7 +144,7 @@ describe("the repository's registry (002 FR-020)", () => {
     ]);
   });
 
-  it("matches the workflow's gate jobs and the FR-020 list, fourteen gates", () => {
+  it("matches the workflow's gate jobs and the FR-020 list, fifteen gates", () => {
     expect(checkRegistry({ registry: real, registryPath: "gates/gates.json", jobs: ciJobs(realWorkflow), workflowPath: ".github/workflows/ci.yml" })).toEqual([]);
     expect(real.map((gate) => gate.id)).toEqual(ids);
   });
@@ -158,6 +158,19 @@ describe("the repository's registry (002 FR-020)", () => {
       check: "Storybook build",
       command: "pnpm run gate:storybook-build",
       plantCommand: "node gates/bin/storybook-build.ts --root {root}",
+      plantForm: "repo-tree",
+    });
+  });
+
+  // 006 FR-017 (contracts/gates.md § `visual`): the visual gate is a repo-tree gate with the check "Visual regression",
+  // run in CI under both engines; its plant command passes the plant's engine (research.md R-06).
+  it("registers visual as a repo-tree gate with the check Visual regression, its plant command taking {engine}", () => {
+    const gate = real.find((g) => g.id === "visual");
+    expect(gate === undefined ? undefined : { id: gate.id, check: gate.check, command: gate.command, plantCommand: gate.plantCommand, plantForm: gate.plantForm }).toEqual({
+      id: "visual",
+      check: "Visual regression",
+      command: "pnpm run gate:visual -- --engine both",
+      plantCommand: "node gates/bin/visual.ts --root {root} --engine {engine}",
       plantForm: "repo-tree",
     });
   });
@@ -184,5 +197,30 @@ describe("the repository's registry (002 FR-020)", () => {
     expect(job("contrast")).toEqual(shape("contrast", "Contrast", "pnpm run gate:contrast"));
     expect(job("brand-rules")).toEqual(shape("brand-rules", "Brand rules", "pnpm run gate:brand-rules"));
     expect(job("storybook-build")).toEqual(shape("storybook-build", "Storybook build", "pnpm run gate:storybook-build"));
+  });
+});
+
+// 006 FR-018 and research.md R-07: the plant job's `--skip-container` runs a partial job without the visual plants, so
+// the registry check fails when the Plants job of ci.yml passes it; any other job may.
+describe("skipContainerFindings (006 FR-018)", () => {
+  const plantsJob = (run: string): string => `jobs:\n  lint:\n    steps:\n      - run: pnpm run gate:lint\n  plants:\n    name: Plants\n    steps:\n      - uses: ./.github/actions/setup\n${run}\n  after:\n    steps:\n      - run: echo done\n`;
+  const found = (path: string): Finding => ({
+    location: { path },
+    gate: "plants",
+    rule: "skip-container-in-ci",
+    message: "the plants job passes --skip-container, so CI would not run the visual plants",
+  });
+
+  it("finds --skip-container in any step of the plants job, a block or a later line included", () => {
+    expect(skipContainerFindings(plantsJob("      - run: pnpm run gate:plants -- --skip-container"), "ci.yml")).toEqual([found("ci.yml")]);
+    expect(skipContainerFindings(plantsJob("      - env:\n          X: 1\n        run: |\n          echo start\n          pnpm run gate:plants -- --skip-container"), ".github/workflows/ci.yml")).toEqual([
+      found(".github/workflows/ci.yml"),
+    ]);
+  });
+
+  it("finds nothing in a plants job without it, or when only another job passes it", () => {
+    expect(skipContainerFindings(plantsJob("      - run: pnpm run gate:plants"), "ci.yml")).toEqual([]);
+    expect(skipContainerFindings(plantsJob("      - run: pnpm run gate:plants").replace("echo done", "pnpm run gate:plants -- --skip-container"), "ci.yml")).toEqual([]);
+    expect(skipContainerFindings(readFileSync(new URL("../../.github/workflows/ci.yml", import.meta.url), "utf8"), ".github/workflows/ci.yml")).toEqual([]);
   });
 });

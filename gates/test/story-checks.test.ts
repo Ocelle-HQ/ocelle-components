@@ -1,0 +1,148 @@
+import { describe, expect, it } from "vitest";
+import { allowedFamily, closedShadowHosts, fontProblems, harness, isHarness, storyTextNodes } from "../lib/story-checks.ts";
+import type { CdpNode, TextNode } from "../lib/story-checks.ts";
+
+// The in-page checks of a story-theme (FR-014, FR-027; research.md R-05, R-08): the harness nodes the phase 1 spike
+// recorded in Storybook 10.6.5's preview (spike § 3), the text nodes of a pierced DevTools document (user-agent shadow
+// text attributed to its host control), the font rule and closed shadow roots. Inputs are written by hand in the
+// DevTools protocol's node format.
+
+describe("harness and isHarness (spike § 3)", () => {
+  it("are the preview's placeholders, error display, docs root and the HTML renderer's scripts root", () => {
+    expect(harness).toEqual({ ids: ["storybook-docs", "scripts-root"], classes: ["sb-preparing-story", "sb-preparing-docs", "sb-nopreview", "sb-errordisplay"] });
+    expect(isHarness("", ["sb-preparing-story", "sb-wrapper"])).toBe(true);
+    expect(isHarness("", ["sb-errordisplay"])).toBe(true);
+    expect(isHarness("scripts-root", [])).toBe(true);
+    expect(isHarness("storybook-docs", ["x"])).toBe(true);
+  });
+
+  it("is not the story root or any other element", () => {
+    expect(isHarness("storybook-root", [])).toBe(false);
+    expect(isHarness("", ["sb-wrapper"])).toBe(false);
+    expect(isHarness("portal", ["sb-show-main"])).toBe(false);
+    expect(isHarness("", [])).toBe(false);
+  });
+});
+
+let next = 0;
+/** A DevTools element node with attributes, children and shadow roots. */
+function element(name: string, attributes: Record<string, string> = {}, children: CdpNode[] = [], shadowRoots: CdpNode[] = []): CdpNode {
+  next += 1;
+  return { nodeId: next, nodeType: 1, nodeName: name.toUpperCase(), attributes: Object.entries(attributes).flat(), children, ...(shadowRoots.length > 0 ? { shadowRoots } : {}) };
+}
+function text(value: string): CdpNode {
+  next += 1;
+  return { nodeId: next, nodeType: 3, nodeName: "#text", nodeValue: value };
+}
+function shadow(type: string, children: CdpNode[]): CdpNode {
+  next += 1;
+  return { nodeId: next, nodeType: 11, nodeName: "#document-fragment", shadowRootType: type, children };
+}
+
+describe("storyTextNodes (research.md R-05)", () => {
+  const hello = text("Hello");
+  const paragraph = element("p", {}, [hello, text("  \n\t ")]);
+  const typed = text("typed value");
+  const input = element("input", { value: "typed value" }, [], [shadow("user-agent", [element("div", { id: "inner-editor" }, [typed])])]);
+  const direct = text("in shadow");
+  const deep = text("deep");
+  const span = element("span", {}, [deep]);
+  const host = element("ocelle-x", {}, [], [shadow("open", [direct, span])]);
+  const portalText = text("portal text");
+  const portal = element("div", { class: "portal" }, [portalText]);
+  const document: CdpNode = {
+    nodeId: 1000,
+    nodeType: 9,
+    nodeName: "#document",
+    children: [
+      { nodeId: 1001, nodeType: 10, nodeName: "html" },
+      element("html", { lang: "en", "data-theme": "dark" }, [
+        element("head", {}, [element("title", {}, [text("Storybook")]), element("style", {}, [text("p {}")])]),
+        element("body", { class: "sb-main-padded sb-show-main" }, [
+          element("div", { class: "sb-preparing-story sb-wrapper" }, [text("Loading")]),
+          element("div", { class: "sb-errordisplay sb-wrapper" }, [element("pre", { id: "error-stack" }, [text("stack")])]),
+          element("div", { id: "storybook-root" }, [paragraph, input, host]),
+          element("div", { id: "storybook-docs" }, [text("docs")]),
+          element("script", {}, [text("var a = 1;")]),
+          element("div", { id: "scripts-root" }, [text("x")]),
+          portal,
+          element("style", {}, [text("p {}")]),
+          element("template", {}, [text("template text")]),
+          element("noscript", {}, [text("no script")]),
+        ]),
+      ]),
+    ],
+  };
+
+  it("collects the non-whitespace text of the story area, light DOM, open and user-agent shadow roots and body-level surfaces, in document order", () => {
+    expect(storyTextNodes(document)).toEqual([
+      { nodeId: hello.nodeId, styleNodeId: paragraph.nodeId, userAgentShadow: false },
+      { nodeId: typed.nodeId, styleNodeId: input.nodeId, userAgentShadow: true },
+      { nodeId: direct.nodeId, styleNodeId: host.nodeId, userAgentShadow: false },
+      { nodeId: deep.nodeId, styleNodeId: span.nodeId, userAgentShadow: false },
+      { nodeId: portalText.nodeId, styleNodeId: portal.nodeId, userAgentShadow: false },
+    ]);
+  });
+
+  it("collects nothing from a document of harness nodes, head, script, style, template and noscript only", () => {
+    const harnessOnly: CdpNode = {
+      nodeId: 2000,
+      nodeType: 9,
+      nodeName: "#document",
+      children: [element("html", {}, [element("head", {}, [element("title", {}, [text("t")])]), element("body", {}, [element("div", { id: "storybook-docs" }, [text("d")]), element("noscript", {}, [text("n")])])])],
+    };
+    expect(storyTextNodes(harnessOnly)).toEqual([]);
+  });
+});
+
+describe("fontProblems (FR-027, research.md R-05)", () => {
+  const schibsted = '"Schibsted Grotesk", system-ui, sans-serif';
+  const node = (families: string[], computedFamily = schibsted, userAgentShadow = false): TextNode => ({ families, computedFamily, userAgentShadow });
+  const loaded = { family: "Schibsted Grotesk", status: "loaded" };
+
+  it("allows Schibsted Grotesk only, exactly", () => {
+    expect(allowedFamily).toBe("Schibsted Grotesk");
+    expect(fontProblems([node(["Schibsted Grotesk"]), node(["Schibsted Grotesk"], schibsted, true)], [loaded])).toEqual([]);
+  });
+
+  it("names every other family once, in order: shadow-root text, a per-glyph fallback, a family that only starts with Schibsted", () => {
+    expect(fontProblems([node(["DejaVu Sans"]), node(["Schibsted Grotesk", "Noto Color Emoji"]), node(["DejaVu Sans"]), node(["Schibsted Grotesk Fallback"])], [loaded])).toEqual([
+      "DejaVu Sans",
+      "Noto Color Emoji",
+      "Schibsted Grotesk Fallback",
+    ]);
+  });
+
+  it("names the system family of user-agent shadow text of a form control, and not text that is not rendered", () => {
+    expect(fontProblems([node(["Liberation Sans"], "Arial", true)], [loaded])).toEqual(["Liberation Sans"]);
+    expect(fontProblems([node([]), node([], "serif", true)], [loaded])).toEqual([]);
+  });
+
+  it("does not name a declared face no text uses, unloaded (Storybook's Nunito Sans)", () => {
+    expect(fontProblems([node(["Schibsted Grotesk"])], [loaded, { family: "Nunito Sans", status: "unloaded" }, { family: '"Nunito Sans"', status: "unloaded" }])).toEqual([]);
+  });
+
+  it("names a used face that is loading or unloaded, and any face in error or loading, with its status", () => {
+    expect(fontProblems([node(["Schibsted Grotesk"])], [{ family: "Schibsted Grotesk", status: "loading" }])).toEqual(["Schibsted Grotesk (loading)"]);
+    expect(fontProblems([node(["Schibsted Grotesk"], '"Plant Face", serif')], [loaded, { family: '"Plant Face"', status: "unloaded" }])).toEqual(["Plant Face (unloaded)"]);
+    expect(fontProblems([node(["Schibsted Grotesk"])], [loaded, { family: "Broken", status: "error" }, { family: "Pending", status: "loading" }])).toEqual(["Broken (error)", "Pending (loading)"]);
+    expect(fontProblems([node(["Times"], "'Plant Face', serif")], [{ family: "Plant Face", status: "error" }])).toEqual(["Times", "Plant Face (error)"]);
+  });
+
+  it("takes a user-agent shadow node's family from its host control's computed family", () => {
+    expect(fontProblems([node(["Schibsted Grotesk"], "Hosted, sans-serif", true)], [loaded, { family: "Hosted", status: "unloaded" }])).toEqual(["Hosted (unloaded)"]);
+  });
+});
+
+describe("closedShadowHosts (research.md R-05)", () => {
+  it("names the host of each closed shadow root once, in order, and no open one", () => {
+    const calls = [
+      { mode: "open", host: "ocelle-a" },
+      { mode: "closed", host: "ocelle-b" },
+      { mode: "closed", host: "ocelle-b" },
+      { mode: "closed", host: "ocelle-c" },
+    ];
+    expect(closedShadowHosts(calls)).toEqual(["ocelle-b", "ocelle-c"]);
+    expect(closedShadowHosts([{ mode: "open", host: "ocelle-a" }])).toEqual([]);
+  });
+});

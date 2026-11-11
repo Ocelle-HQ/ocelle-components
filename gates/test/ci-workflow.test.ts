@@ -68,3 +68,56 @@ describe("ci.yml storybook-build job (006 FR-017)", () => {
     ]);
   });
 });
+
+// 006 FR-017, FR-018, FR-026 and US2 scenario 12 (contracts/gates.md § `visual`, § The registry; research.md R-07, R-11):
+// the job `visual`, named "Visual regression", runs the gate under both engines, records the runner's free disk after
+// both pulls, and uploads storybook/.visual/ (the captures in baseline layout among it) when it fails; the Plants job
+// gives every visual plant both engines and uploads the failing pass plants' captures, storybook/.visual/plants/. The
+// upload action is pinned by commit SHA and includes the hidden .visual directory.
+const upload = "actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2";
+const setup = [
+  "    runs-on: ubuntu-24.04",
+  "    steps:",
+  "      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1",
+  "        with:",
+  "          persist-credentials: false",
+  "      - uses: ./.github/actions/setup",
+];
+
+describe("ci.yml visual and plants jobs (006 FR-017, FR-018)", () => {
+  it("visual is named Visual regression, runs the gate with --engine both, and uploads storybook/.visual/ on failure", () => {
+    expect(job("visual")).toEqual([
+      "  visual:",
+      "    name: Visual regression",
+      ...setup,
+      "      - run: pnpm run gate:visual -- --engine both",
+      "      - if: always()",
+      "        run: df -h /",
+      "      - if: failure()",
+      `        uses: ${upload}`,
+      "        with:",
+      "          name: visual",
+      "          path: storybook/.visual/",
+      "          include-hidden-files: true",
+    ]);
+  });
+
+  it("plants runs the job with OCELLE_VISUAL_ENGINE=both and uploads storybook/.visual/plants/ on failure", () => {
+    expect(job("plants")).toEqual([
+      "  plants:",
+      "    name: Plants",
+      ...setup,
+      "      - env:",
+      "          OCELLE_VISUAL_ENGINE: both",
+      "        run: pnpm run gate:plants",
+      "      - if: always()",
+      "        run: df -h /",
+      "      - if: failure()",
+      `        uses: ${upload}`,
+      "        with:",
+      "          name: plants",
+      "          path: storybook/.visual/plants/",
+      "          include-hidden-files: true",
+    ]);
+  });
+});

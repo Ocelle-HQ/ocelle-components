@@ -20,24 +20,9 @@ function notImplemented(line: string): Ran {
   return { code: 2, stdout: [], stderr: [line] };
 }
 
-// Phase 2 replaced the storybook-build stub with the gate (gates/test/integration/storybook-build.test.ts).
-describe("entry stubs (gates/bin/visual.ts, baselines.ts, axe.ts)", () => {
-  it(
-    "visual exits 2 with exactly could not run: not implemented (visual, phase 3)",
-    async () => {
-      expect(await runStub("gates/bin/visual.ts")).toEqual(notImplemented("could not run: not implemented (visual, phase 3)"));
-    },
-    timeout,
-  );
-
-  it(
-    "visual:update exits 2 with exactly could not run: not implemented (visual:update, phase 3)",
-    async () => {
-      expect(await runStub("gates/bin/baselines.ts")).toEqual(notImplemented("could not run: not implemented (visual:update, phase 3)"));
-    },
-    timeout,
-  );
-
+// Phase 2 replaced the storybook-build stub with the gate (gates/test/integration/storybook-build.test.ts), phase 3 the
+// visual and visual:update stubs with the gate and the baseline command (gates/test/integration/visual.test.ts).
+describe("entry stubs (gates/bin/axe.ts)", () => {
   it(
     "axe exits 2 with exactly could not run: not implemented (axe, phase 4)",
     async () => {

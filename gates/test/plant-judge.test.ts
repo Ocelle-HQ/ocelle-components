@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { gateKeysProblem, judgePlant, parsePlant } from "../lib/plant-judge.ts";
+import { gateKeysProblem, judgePlant, parsePlant, plantFilesProblem } from "../lib/plant-judge.ts";
 import type { Plant, PlantRun } from "../lib/plant-judge.ts";
 
 // The plant verdict at the edges (FR-025, research.md R-10, data-model.md § Plant; phase 4 review round 1, R1-06):
@@ -183,5 +183,86 @@ describe("gateKeysProblem (006 contracts/plants.md § Plant runner changes)", ()
 
   it.each(["typecheck", "lint", "csp", "mutation", "plants", "storybook"])("rejects unlinked on a plant of %s, and accepts the plant without it", (gate) => {
     expect([gateKeysProblem(gate, unlinked), gateKeysProblem(gate, plain)]).toEqual(["unlinked is only for plants of storybook-build, visual and axe", undefined]);
+  });
+});
+
+// 006 contracts/plants.md § Plant runner changes, data-model.md § Plant keys: `engine` (both, host, missing; visual
+// plants), `baselinesOf` (visual fail plants whose tree/ holds no baseline, naming a visual pass plant holding
+// baselines) and `captureAlone` (only true; visual pass plants with stories of their own).
+describe("parsePlant: engine, baselinesOf and captureAlone (006 research.md R-06, R-11, R-16)", () => {
+  const error = { expect: "error", why: "w", cause: "not the pinned container" };
+  const fail = { expect: "fail", why: "w", findings: [{ location: "a--b/light", rule: "differs" }] };
+
+  it("reads each key's allowed values", () => {
+    for (const engine of ["both", "host", "missing"]) expect(parsePlant(JSON.stringify({ ...error, engine }))).toEqual({ ...error, engine });
+    expect(parsePlant(JSON.stringify({ ...fail, baselinesOf: "pass-below-fold" }))).toEqual({ ...fail, baselinesOf: "pass-below-fold" });
+    expect(parsePlant(JSON.stringify({ expect: "pass", why: "w", captureAlone: true }))).toEqual({ expect: "pass", why: "w", captureAlone: true });
+  });
+
+  it.each([
+    [{ ...error, engine: "docker" }, "engine must be both, host or missing"],
+    [{ ...error, engine: "" }, "engine must be both, host or missing"],
+    [{ ...fail, baselinesOf: "" }, "baselinesOf must be the name of a visual pass plant"],
+    [{ ...fail, baselinesOf: "../pass-x" }, "baselinesOf must be the name of a visual pass plant"],
+    [{ ...fail, baselinesOf: "visual/pass-x" }, "baselinesOf must be the name of a visual pass plant"],
+    [{ ...fail, baselinesOf: 1 }, "baselinesOf must be the name of a visual pass plant"],
+    [{ expect: "pass", why: "w", captureAlone: false }, "captureAlone must be true"],
+    [{ expect: "pass", why: "w", captureAlone: "true" }, "captureAlone must be true"],
+  ])("rejects %j", (value, problem) => {
+    expect(parsePlant(JSON.stringify(value))).toBe(problem);
+  });
+});
+
+describe("gateKeysProblem: the visual keys", () => {
+  const fail: Plant = { expect: "fail", why: "w", findings: [{ location: "a", rule: "b" }] };
+  const pass: Plant = { expect: "pass", why: "w" };
+
+  it("accepts engine on visual plants only", () => {
+    expect(gateKeysProblem("visual", { ...pass, engine: "host" })).toBeUndefined();
+    for (const gate of ["axe", "storybook-build", "lint"]) expect(gateKeysProblem(gate, { ...pass, engine: "host" })).toBe("engine is only for plants of visual");
+  });
+
+  it("accepts baselinesOf on visual fail plants only", () => {
+    expect(gateKeysProblem("visual", { ...fail, baselinesOf: "pass-x" })).toBeUndefined();
+    expect(gateKeysProblem("visual", { ...pass, baselinesOf: "pass-x" })).toBe("baselinesOf is only for visual fail plants");
+    expect(gateKeysProblem("axe", { ...fail, baselinesOf: "pass-x" })).toBe("baselinesOf is only for visual fail plants");
+  });
+
+  it("accepts captureAlone on visual pass plants only", () => {
+    expect(gateKeysProblem("visual", { ...pass, captureAlone: true })).toBeUndefined();
+    expect(gateKeysProblem("visual", { ...fail, captureAlone: true })).toBe("captureAlone is only for visual pass plants");
+    expect(gateKeysProblem("axe", { ...pass, captureAlone: true })).toBe("captureAlone is only for visual pass plants");
+  });
+});
+
+describe("plantFilesProblem (006 research.md R-16)", () => {
+  const fail: Plant = { expect: "fail", why: "w", findings: [{ location: "a", rule: "b" }], baselinesOf: "pass-x" };
+  const pass: Plant = { expect: "pass", why: "w" };
+  const holding = { plant: pass, tree: ["storybook/stories/x.stories.ts", "storybook/baselines/x--a.light.png"] };
+
+  it("accepts a baselinesOf plant without baselines of its own, naming a visual pass plant that holds some", () => {
+    expect(plantFilesProblem(fail, ["storybook/stories/x.stories.ts"], holding)).toBeUndefined();
+    expect(plantFilesProblem(fail, [], holding)).toBeUndefined();
+  });
+
+  it("names a baseline in the plant's own tree/, a named plant that is missing, not a pass plant or holds no baselines", () => {
+    expect(plantFilesProblem(fail, ["storybook/baselines/x--a.dark.png"], holding)).toBe("a plant with baselinesOf holds no file under storybook/baselines/ in its tree/");
+    expect(plantFilesProblem(fail, [], undefined)).toBe("baselinesOf names pass-x, which is not a visual pass plant");
+    expect(plantFilesProblem(fail, [], { plant: undefined, tree: [] })).toBe("baselinesOf names pass-x, which is not a visual pass plant");
+    expect(plantFilesProblem(fail, [], { plant: fail, tree: holding.tree })).toBe("baselinesOf names pass-x, which is not a visual pass plant");
+    expect(plantFilesProblem(fail, [], { plant: pass, tree: ["storybook/stories/x.stories.ts", "storybook/baselines"] })).toBe("baselinesOf names pass-x, which holds no baselines");
+  });
+
+  it("needs a story file of a captureAlone plant's own in tree/storybook/stories/", () => {
+    const alone: Plant = { ...pass, captureAlone: true };
+    const problem = "a captureAlone plant has stories of its own in tree/storybook/stories/";
+    expect(plantFilesProblem(alone, ["storybook/stories/second.stories.ts"])).toBeUndefined();
+    expect(plantFilesProblem(alone, [])).toBe(problem);
+    expect(plantFilesProblem(alone, ["storybook/stories/render.ts", "stories/second.stories.ts", "storybook/baselines/a--b.light.png"])).toBe(problem);
+  });
+
+  it("names nothing for a plant without either key", () => {
+    expect(plantFilesProblem(pass, ["storybook/baselines/a--b.light.png"])).toBeUndefined();
+    expect(plantFilesProblem({ ...fail, baselinesOf: undefined } as Plant, ["storybook/baselines/a--b.light.png"])).toBeUndefined();
   });
 });

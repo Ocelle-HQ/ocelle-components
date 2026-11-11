@@ -82,6 +82,10 @@ jobs:
     name: Storybook build
     steps:
       - run: pnpm run gate:storybook-build
+  visual:
+    name: Visual regression
+    steps:
+      - run: pnpm run gate:visual -- --engine both
   plants:
     name: Plants
     steps:
