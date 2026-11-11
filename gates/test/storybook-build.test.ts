@@ -52,6 +52,21 @@ describe("buildFindings (spike § 1)", () => {
     expect(buildFindings(recorded(name)).map(formatFinding)).toEqual([line]);
   });
 
+  // CI runs 43056264356 and 43064614842 (PR #24): with TERM unset, as on the GitHub runner, or any TERM but "linux",
+  // Storybook's logger draws Unicode line marks (│, ┌, └, ◇, ●, ■, ▲) instead of the ASCII ones of the spike's
+  // fixtures (recorded with TERM=linux). Fixtures `<case>-unicode/`: the same failure kinds built with TERM unset.
+  it.each([
+    { name: "syntax-error-unicode", line: "storybook/stories/broken.stories.ts: storybook-build: build-error: SyntaxError: Unexpected token (4:49)" },
+    { name: "syntax-error-imported-unicode", line: "storybook/stories/helper.ts: storybook-build: build-error: [builtin:vite-transform] Unexpected token" },
+    {
+      name: "unresolved-import-unicode",
+      line: "storybook/stories/missing.stories.ts: storybook-build: build-error: [UNRESOLVED_IMPORT] Could not resolve './no-such-module.ts' in stories/missing.stories.ts",
+    },
+    { name: "not-csf-unicode", line: "storybook/stories/nodefault.stories.ts: storybook-build: index-error: NoMetaError: CSF: missing default export" },
+  ])("finds the same finding in the $name output, whose line marks are Unicode", ({ name, line }) => {
+    expect(buildFindings(recorded(name)).map(formatFinding)).toEqual([line]);
+  });
+
   it("parses missing-deps-no-verify (exit 127, storybook: not found, no file named) as build-error at storybook/package.json, which is why the CLI check comes first", () => {
     expect(buildFindings(recorded("missing-deps-no-verify")).map(formatFinding)).toEqual([
       "storybook/package.json: storybook-build: build-error: the build failed with exit code 127 and named no file",

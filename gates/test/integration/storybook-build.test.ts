@@ -65,17 +65,25 @@ describe("storybook-build gate (gates/bin/storybook-build.ts)", () => {
     timeout,
   );
 
-  it(
-    "exits 1 with one finding at a story file with a syntax error",
-    async () => {
+  // CI runs 43056264356 and 43064614842 (PR #24): Storybook's logger draws ASCII line marks under TERM=linux and
+  // Unicode ones otherwise (TERM unset on the GitHub runner); the gate gives the same finding under both.
+  it.each([
+    ["TERM=linux", { TERM: "linux" }],
+    ["TERM unset", { TERM: undefined }],
+  ] as const)(
+    "exits 1 with one finding at a story file with a syntax error (%s)",
+    async (_, term) => {
       const root = tempDir("storybook-build");
       await buildRepoTree(repo, join(roots, "syntax-error"), root);
-      const ran = await gate(root);
-      expect({ code: ran.code, findings: ran.stdout.length, stderr: ran.stderr }).toEqual({ code: 1, findings: 2, stderr: [] });
-      // Storybook indexes the stories and runs Vite at once, and the first to fail ends the build: the indexer's error,
-      // or on a slower machine (CI run 43056264356) Vite's. Either is the build's error at the file, given exactly.
-      expect(ran.stdout[0]).toMatch(/^storybook\/stories\/broken\.stories\.ts: storybook-build: build-error: (?:SyntaxError: Unexpected token \(4:49\)|\[builtin:vite-transform\] Unexpected token)$/);
-      expect(ran.stdout[1]).toBe("storybook-build: 1 finding in 1 file");
+      const merged: Record<string, string | undefined> = { ...baseEnv(), ...term };
+      const env: Record<string, string> = {};
+      for (const [key, value] of Object.entries(merged)) if (value !== undefined) env[key] = value;
+      const ran = await runGate("gates/bin/storybook-build.ts", ["--root", root], { cwd: tempDir("cwd"), env });
+      expect({ code: ran.code, stdout: ran.stdout, stderr: ran.stderr }).toEqual({
+        code: 1,
+        stdout: ["storybook/stories/broken.stories.ts: storybook-build: build-error: SyntaxError: Unexpected token (4:49)", "storybook-build: 1 finding in 1 file"],
+        stderr: [],
+      });
     },
     timeout,
   );
