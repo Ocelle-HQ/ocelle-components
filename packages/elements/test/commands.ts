@@ -27,7 +27,9 @@ interface DomNode {
 }
 
 interface RawAxNode {
+  readonly nodeId: string;
   readonly ignored: boolean;
+  readonly childIds?: readonly string[];
   readonly backendDOMNodeId?: number;
   readonly role?: { readonly value?: unknown };
   readonly name?: { readonly value?: unknown };
@@ -91,6 +93,34 @@ export async function axNodes(session: CDPSession, id: string, frameId?: string)
     .map((node) => ({ role: text(node.role?.value), name: text(node.name?.value) }));
 }
 
+/**
+ * The unignored accessibility nodes of the accessibility subtree of the element with `id`, in tree order: its own node
+ * and every descendant in the accessibility tree, through ignored nodes, so slotted content and generated content
+ * (which has no DOM node of its own, such as a `::before` strut's text) are included; inline text boxes are left out.
+ * This is how a control's name and text nodes are read with its slotted icons (005 US3 scenarios 6 and 11).
+ */
+export async function axSubtree(session: CDPSession, id: string, frameId?: string): Promise<AxNode[]> {
+  const { root } = (await session.send("DOM.getDocument", { depth: -1, pierce: true })) as { root: DomNode };
+  const document = documentOf(root, frameId);
+  const element = document === undefined ? undefined : byId(document, id);
+  if (element === undefined) return [];
+  const params = frameId === undefined ? {} : { frameId };
+  const { nodes } = (await session.send("Accessibility.getFullAXTree", params)) as { nodes: readonly RawAxNode[] };
+  const byNodeId = new Map(nodes.map((node) => [node.nodeId, node]));
+  const start = nodes.find((node) => node.backendDOMNodeId === element.backendNodeId);
+  const found: AxNode[] = [];
+  const walk = (node: RawAxNode): void => {
+    const role = text(node.role?.value);
+    if (!node.ignored && role !== "InlineTextBox") found.push({ role, name: text(node.name?.value) });
+    for (const child of node.childIds ?? []) {
+      const next = byNodeId.get(child);
+      if (next !== undefined) walk(next);
+    }
+  };
+  if (start !== undefined) walk(start);
+  return found;
+}
+
 /** The CDP frame id of the frame whose URL is `url`. */
 async function frameIdOf(session: CDPSession, url: string): Promise<string | undefined> {
   const { frameTree } = (await session.send("Page.getFrameTree")) as { frameTree: FrameTree };
@@ -108,14 +138,20 @@ export async function emulate(page: Page, mode: ForcedColors, palette?: Palette)
   await page.emulateMedia(palette === undefined ? { forcedColors: mode } : { forcedColors: mode, colorScheme: palette });
 }
 
-/** The `axTree(id)` browser command (registered in vitest.config.ts): `axNodes` in the frame of the calling test file. */
-export async function axTree(context: BrowserCommandContext, id: string): Promise<AxNode[]> {
+/** Which nodes `axTree` reads: the element's own and its shadow subtree's (`axNodes`), or its accessibility subtree (`axSubtree`). */
+export type AxScope = "element" | "subtree";
+
+/**
+ * The `axTree(id, scope)` browser command (registered in vitest.config.ts): `axNodes`, or with `"subtree"` `axSubtree`,
+ * in the frame of the calling test file.
+ */
+export async function axTree(context: BrowserCommandContext, id: string, scope: AxScope = "element"): Promise<AxNode[]> {
   const session = await context.page.context().newCDPSession(context.page);
   try {
     const frame = await context.frame();
     const frameId = await frameIdOf(session, frame.url());
     if (frameId === undefined) throw new Error(`axTree: no frame has the test's URL ${frame.url()}`);
-    return await axNodes(session, id, frameId);
+    return await (scope === "subtree" ? axSubtree : axNodes)(session, id, frameId);
   } finally {
     await session.detach();
   }
@@ -128,8 +164,11 @@ export async function emulateForcedColors(context: BrowserCommandContext, mode: 
 
 declare module "vitest/browser" {
   interface BrowserCommands {
-    /** The unignored accessibility nodes of the element with `id` and of its shadow subtree. */
-    axTree: (id: string) => Promise<AxNode[]>;
+    /**
+     * The unignored accessibility nodes of the element with `id` and of its shadow subtree, or with `"subtree"` of its
+     * accessibility subtree.
+     */
+    axTree: (id: string, scope?: AxScope) => Promise<AxNode[]>;
     /** Emulates forced colours with a system palette, or ends the emulation with `"none"`. */
     emulateForcedColors: (mode: ForcedColors, palette?: Palette) => Promise<void>;
   }

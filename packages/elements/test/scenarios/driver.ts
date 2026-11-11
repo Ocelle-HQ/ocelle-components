@@ -90,8 +90,15 @@ export interface Driver {
   attribute(id: string, name: string): Promise<string | null>;
   /** Sets a CSS property on the element with `id` through the CSSOM (not governed by the CSP), as a host rule does. */
   style(id: string, property: string, value: string): Promise<void>;
+  /**
+   * Adds `rules` to the page as a stylesheet of the host page (a constructed sheet adopted by the document, which the
+   * CSP does not govern), after the page's own; the next `mount` removes it.
+   */
+  rules(rules: string): Promise<void>;
   /** The border box of the element with `id`, or of the first element matching `inner` in its shadow root. */
   box(id: string, inner?: string): Promise<Box>;
+  /** The client rects of the element with `id` (`getClientRects()`): for an inline element, one per line it is on. */
+  lines(id: string): Promise<Bounds[]>;
   /** What the shadow root of the element with `id` holds. */
   drawing(id: string): Promise<Drawing>;
   /**
@@ -112,12 +119,19 @@ export interface Driver {
   paints(id: string): Promise<Paint[]>;
   /** The placement of the `svg` drawing of the element with `id` in the element's box. */
   placement(id: string): Promise<Placement>;
+  /** The placement of the drawing of the light-DOM `svg` with `id` (its own screen CTM) in that `svg`'s own box. */
+  ownPlacement(id: string): Promise<Placement>;
   /** The computed value of a CSS property of the element with `id`. */
   computed(id: string, property: string): Promise<string>;
   /** The computed `color` a probe element takes from the CSS colour `value` (a system colour, say). */
   resolveColour(value: string): Promise<string>;
   /** The unignored accessibility nodes of the element with `id` and of its shadow subtree. */
   ax(id: string): Promise<AxNode[]>;
+  /**
+   * The unignored accessibility nodes of the accessibility subtree of the element with `id`, slotted and generated
+   * content included, inline text boxes left out (test/commands.ts `axSubtree`).
+   */
+  axSubtree(id: string): Promise<AxNode[]>;
   /** Emulates forced colours with a system palette, or ends it with `"none"`. */
   forcedColors(mode: ForcedColors, palette?: Palette): Promise<void>;
   /** How the shadow roots of the elements matching `selector` hold their adopted stylesheets. */

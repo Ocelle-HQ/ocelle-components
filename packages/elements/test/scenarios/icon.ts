@@ -63,7 +63,7 @@ const contexts = [
 ] as const;
 
 /** The system colours of Chromium's emulated forced-colours palettes, as measured (research R-09). */
-const systemColours: Readonly<Record<Palette, Readonly<Record<string, string>>>> = {
+export const systemColours: Readonly<Record<Palette, Readonly<Record<string, string>>>> = {
   light: { CanvasText: "rgb(0, 0, 0)", LinkText: "rgb(0, 0, 159)", ButtonText: "rgb(0, 0, 0)", GrayText: "rgb(96, 0, 0)" },
   dark: { CanvasText: "rgb(255, 255, 255)", LinkText: "rgb(255, 255, 0)", ButtonText: "rgb(255, 255, 255)", GrayText: "rgb(63, 242, 63)" },
 };

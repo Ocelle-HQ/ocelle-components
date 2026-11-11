@@ -84,6 +84,10 @@ export function inProcessDriver(): Driver {
       element(id).style.setProperty(property, value);
       await settle();
     },
+    rules: async (rules) => {
+      document.adoptedStyleSheets = [...document.adoptedStyleSheets, sheet(rules)];
+      await settle();
+    },
     box: (id, inner) => {
       const host = element(id);
       const target = inner === undefined ? host : host.shadowRoot?.querySelector(inner);
@@ -91,6 +95,7 @@ export function inProcessDriver(): Driver {
       const rect = target.getBoundingClientRect();
       return Promise.resolve({ x: rect.x, y: rect.y, width: rect.width, height: rect.height, display: getComputedStyle(target).display });
     },
+    lines: (id) => Promise.resolve([...element(id).getClientRects()].map((rect) => ({ x: rect.x, y: rect.y, width: rect.width, height: rect.height }))),
     drawing: (id) => {
       const root = element(id).shadowRoot;
       if (root === null) return Promise.resolve<Drawing>({ children: ["#no-shadow-root"], svg: null });
@@ -135,6 +140,13 @@ export function inProcessDriver(): Driver {
       const rect = host.getBoundingClientRect();
       return Promise.resolve({ scaleX: round(matrix.a), scaleY: round(matrix.d), offsetX: round(matrix.e - rect.x), offsetY: round(matrix.f - rect.y) });
     },
+    ownPlacement: (id) => {
+      const svg = element(id) as unknown as SVGSVGElement;
+      const matrix = svg.getScreenCTM();
+      if (matrix === null) return Promise.resolve<Placement>({ scaleX: 0, scaleY: 0, offsetX: 0, offsetY: 0 });
+      const rect = svg.getBoundingClientRect();
+      return Promise.resolve({ scaleX: round(matrix.a), scaleY: round(matrix.d), offsetX: round(matrix.e - rect.x), offsetY: round(matrix.f - rect.y) });
+    },
     computed: (id, property) => Promise.resolve(getComputedStyle(element(id)).getPropertyValue(property)),
     resolveColour: (value) => {
       const probe = document.createElement("span");
@@ -145,6 +157,7 @@ export function inProcessDriver(): Driver {
       return Promise.resolve(colour);
     },
     ax: (id) => commands.axTree(id),
+    axSubtree: (id) => commands.axTree(id, "subtree"),
     forcedColors: async (mode, palette) => {
       await commands.emulateForcedColors(mode, palette);
       await settle();
