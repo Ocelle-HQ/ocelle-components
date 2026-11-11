@@ -1,0 +1,7 @@
+gates/lib/wcag.ts:9: mutation: record: EqualityOperator: equivalent, no 8-bit channel is exactly 0.04045 (10/255 = 0.0392, 11/255 = 0.0431), so <= and < agree on every input
+gates/lib/wcag.ts:4: mutation: timeout: Regex: replaced by /#([0-9A-Fa-f]{2})([0-9A-Fa-f]{2})([0-9A-Fa-f]{2})$/
+gates/lib/wcag.ts:4: mutation: timeout: Regex: replaced by /^#([0-9A-Fa-f]{2})([0-9A-Fa-f]{2})([0-9A-Fa-f]{2})/
+gates/lib/wcag.ts:7: mutation: compile-error: BlockStatement: replaced by {}
+gates/lib/wcag.ts:14: mutation: compile-error: BlockStatement: replaced by {}
+gates/lib/wcag.ts:22: mutation: compile-error: BlockStatement: replaced by {}
+mutation: 33 mutants on the changed lines of 1 file, none survived; 2 timeouts, 3 compile errors, 0 zero-mutant entries; 1 equivalent record

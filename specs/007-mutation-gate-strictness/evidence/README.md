@@ -676,3 +676,364 @@ The checker-off runs are the configuration op 004 measured, so these 121 are the
 | CompileError | `-` | function linear | - | BlockStatement | 7:42-11:2 | `{}` |
 | CompileError | `-` | function relativeLuminance | - | BlockStatement | 14:59-19:2 | `{}` |
 | CompileError | `-` | function contrastRatio | - | BlockStatement | 22:79-26:2 | `{}` |
+
+
+## Green measurement with lever 1 (phase 3, spec FR-009 to FR-013, research R-05, R-06)
+
+Taken on 2026-11-11 on the same sandbox (4 cores, Node 22.23.4, Stryker 10.1.1), with the same environment, base
+`B = eaf16896ec10affdca24296fc9531fcffc46a8be` and command as the red runs (wall time by `date +%s.%N` around the
+command, `time.txt`: seconds, then the gate's exit code). The configuration is lever 1 (T021, commit `3986b74`):
+`vitest.mutation.config.ts` splits `tokens` into `tokens-source-table` (`source-table.test.ts`, `groupOrder: 1`) and
+`tokens` (`groupOrder: 2`), every other mutation project at `groupOrder: 3`; `stryker.config.json` is unchanged
+(`concurrency: 8`, the TypeScript checker on). The gate is the User Story 1 gate, so each run prints its report lines.
+One run at a time, nothing else heavy beside it.
+
+**A discarded first attempt.** The first green run of `source.ts:1-60` ended exit 2 after 30.57 s: `mutation: could
+not run: Stryker wrote no report (There were failed tests in the initial test run.)`. Stryker's dry run failed on
+`gates/test/vitest-config.test.ts` "excludes exactly tokens-browser, …", a unit test of the `gates` project that held
+the same deep-equal of the mutation projects as the integration test T019 replaced (tasks.md names only the latter).
+It was updated to the split (commit `9f56827`, the reason in its body), `pnpm test` passed, and the run was taken
+again; the failed attempt's files were not kept.
+
+**Folders.** `green/source-1-60`, `green/source-61-120`, `green/source-121-180`, `green/source-181-230`,
+`green/generate-1-60`, `green/wcag`; the checker split of each entry over 176 s under `green/<entry-slug>/no-checker/`
+(T023); lever 2 under `lever2/` (T028).
+
+### Green table (T023)
+
+| Entry | Mutants | Killed | Timeout | Survived | NoCoverage | CompileError | Ignored | Time (red) | Time (green) | Checker split (diagnostic, not the checker's share): checker off / difference | Within 176 s |
+|---|---|---|---|---|---|---|---|---|---|---|---|
+| `source.ts:1-60` | 135 | 70 | 0 | 0 | 0 | 65 | 0 | 227.08 s | 188.37 s | 72.24 s / 116.13 s | **no** |
+| `source.ts:61-120` | 202 | 103 | 0 | 0 | 0 | 99 | 0 | 285.43 s | 251.13 s | 94.81 s / 156.32 s | **no** |
+| `source.ts:121-180` | 224 | 113 | 0 | 0 | 0 | 111 | 0 | 537.27 s | 283.22 s | 76.87 s / 206.35 s | **no** |
+| `source.ts:181-230` | 120 | 70 | 0 | 0 | 0 | 50 | 0 | 259.26 s | 170.54 s | - (within 176 s) | yes |
+| `generate.ts:1-60` (FR-013 reference) | 7 | 3 | 0 | 0 | 0 | 4 | 0 | 78.11 s | 59.51 s | - | yes |
+| `gates/lib/wcag.ts` (FR-013 reference) | 33 | 26 | 2 | 0 | 0 | 3 | 2 | 90.92 s | 90.92 s | - | yes |
+
+Every green run ended exit 0. The gate's summaries: `source.ts` entries `mutation: 135` / `202` / `224` / `120 mutants
+on the changed lines of 1 file, none survived; 0 timeouts, 65` / `99` / `111` / `50 compile errors, 0 zero-mutant
+entries; 0 equivalent records`; `generate.ts:1-60` `7 mutants …; 0 timeouts, 4 compile errors, …`; `wcag.ts` `33
+mutants …; 2 timeouts, 3 compile errors, 0 zero-mutant entries; 1 equivalent record`, with its two `timeout` lines
+(`gates/lib/wcag.ts:4`) and three `compile-error` lines. The `wcag.ts` time equals the red run's to the hundredth
+(90.92 s); it is a new run (its `mutation.json` differs from the red copy in timings and test ids), the equality is a
+coincidence of the two decimals.
+
+The checker-off runs of lever 1: 135, 202 and 224 Killed, 0 Timeout, 0 CompileError each.
+
+**Killed by** (test file of each `killedBy` id, green, checker on): `1-60`: 44 `packages/tokens/test/source-table.test.ts`,
+25 `packages/tokens/test/validate.test.ts`, 1 `gates/test/contrast.test.ts`; `61-120`: 79 `source-table.test.ts`, 13
+`validate.test.ts`, 11 `contrast.test.ts`; `121-180`: 108 `source-table.test.ts`, 5 `validate.test.ts`; `181-230`: 70
+`source-table.test.ts`. `testsCompleted` of the Killed mutants: 4 to 141 in `1-60` and `61-120` (the contrast-killed
+mutants run every token test first, research R-05 *Cost for `source.ts` itself*), 4 to 10 in `121-180` and `181-230`.
+
+### Per-mutant comparisons, red against green (T024)
+
+The script is `evidence/compare.mjs` (`node evidence/compare.mjs <red mutation.json> <green mutation.json> <path>`):
+it keys each mutant of `<path>` by start and end (line:column), mutator and replacement, exits 1 naming the key on a
+key repeated within one run's file or present in only one run, and otherwise prints every status move with its count,
+then each mutant whose status changed (for a Killed → Timeout move with its red `killedBy` and green
+`testsCompleted`). Run from the repository root; the commands and their output verbatim:
+
+```text
+$ node specs/007-mutation-gate-strictness/evidence/compare.mjs specs/007-mutation-gate-strictness/evidence/red/source-1-60/mutation.json specs/007-mutation-gate-strictness/evidence/green/source-1-60/mutation.json packages/tokens/src/source.ts
+packages/tokens/src/source.ts: 135 mutants in both runs, every key once
+move CompileError -> CompileError: 65
+move Killed -> Killed: 70
+(exit 0)
+
+$ node specs/007-mutation-gate-strictness/evidence/compare.mjs specs/007-mutation-gate-strictness/evidence/red/source-61-120/mutation.json specs/007-mutation-gate-strictness/evidence/green/source-61-120/mutation.json packages/tokens/src/source.ts
+packages/tokens/src/source.ts: 202 mutants in both runs, every key once
+move CompileError -> CompileError: 99
+move Killed -> Killed: 103
+(exit 0)
+
+$ node specs/007-mutation-gate-strictness/evidence/compare.mjs specs/007-mutation-gate-strictness/evidence/red/source-121-180/mutation.json specs/007-mutation-gate-strictness/evidence/green/source-121-180/mutation.json packages/tokens/src/source.ts
+packages/tokens/src/source.ts: 224 mutants in both runs, every key once
+move CompileError -> CompileError: 111
+move Killed -> Killed: 67
+move Timeout -> Killed: 46
+changed 122:46-122:115 StringLiteral "\"\"": Timeout -> Killed
+changed 124:44-124:58 StringLiteral "\"\"": Timeout -> Killed
+changed 125:49-125:58 StringLiteral "\"\"": Timeout -> Killed
+changed 126:49-126:59 StringLiteral "\"\"": Timeout -> Killed
+changed 127:49-127:55 StringLiteral "\"\"": Timeout -> Killed
+changed 128:51-128:62 StringLiteral "\"\"": Timeout -> Killed
+changed 129:54-129:64 StringLiteral "\"\"": Timeout -> Killed
+changed 130:49-130:58 StringLiteral "\"\"": Timeout -> Killed
+changed 131:49-131:57 StringLiteral "\"\"": Timeout -> Killed
+changed 132:50-132:60 StringLiteral "\"\"": Timeout -> Killed
+changed 133:54-133:60 StringLiteral "\"\"": Timeout -> Killed
+changed 134:55-134:61 StringLiteral "\"\"": Timeout -> Killed
+changed 135:56-135:62 StringLiteral "\"\"": Timeout -> Killed
+changed 136:56-136:61 StringLiteral "\"\"": Timeout -> Killed
+changed 137:54-137:60 StringLiteral "\"\"": Timeout -> Killed
+changed 138:56-138:61 StringLiteral "\"\"": Timeout -> Killed
+changed 139:55-139:60 StringLiteral "\"\"": Timeout -> Killed
+changed 140:55-140:60 StringLiteral "\"\"": Timeout -> Killed
+changed 141:56-141:61 StringLiteral "\"\"": Timeout -> Killed
+changed 142:53-142:62 StringLiteral "\"\"": Timeout -> Killed
+changed 145:45-145:54 StringLiteral "\"\"": Timeout -> Killed
+changed 146:45-146:53 StringLiteral "\"\"": Timeout -> Killed
+changed 147:45-147:54 StringLiteral "\"\"": Timeout -> Killed
+changed 148:45-148:51 StringLiteral "\"\"": Timeout -> Killed
+changed 149:45-149:54 StringLiteral "\"\"": Timeout -> Killed
+changed 150:45-150:53 StringLiteral "\"\"": Timeout -> Killed
+changed 151:45-151:51 StringLiteral "\"\"": Timeout -> Killed
+changed 152:45-152:53 StringLiteral "\"\"": Timeout -> Killed
+changed 153:45-153:51 StringLiteral "\"\"": Timeout -> Killed
+changed 154:46-154:52 StringLiteral "\"\"": Timeout -> Killed
+changed 161:50-161:55 StringLiteral "\"\"": Timeout -> Killed
+changed 162:49-162:54 StringLiteral "\"\"": Timeout -> Killed
+changed 163:50-163:55 StringLiteral "\"\"": Timeout -> Killed
+changed 164:47-164:52 StringLiteral "\"\"": Timeout -> Killed
+changed 165:47-165:54 StringLiteral "\"\"": Timeout -> Killed
+changed 166:47-166:56 StringLiteral "\"\"": Timeout -> Killed
+changed 167:46-167:55 StringLiteral "\"\"": Timeout -> Killed
+changed 168:45-168:54 StringLiteral "\"\"": Timeout -> Killed
+changed 169:46-169:54 StringLiteral "\"\"": Timeout -> Killed
+changed 170:48-170:56 StringLiteral "\"\"": Timeout -> Killed
+changed 171:51-171:59 StringLiteral "\"\"": Timeout -> Killed
+changed 172:57-172:62 StringLiteral "\"\"": Timeout -> Killed
+changed 175:57-175:66 StringLiteral "\"\"": Timeout -> Killed
+changed 176:54-176:63 StringLiteral "\"\"": Timeout -> Killed
+changed 177:57-177:64 StringLiteral "\"\"": Timeout -> Killed
+changed 178:59-178:66 StringLiteral "\"\"": Timeout -> Killed
+(exit 0)
+
+$ node specs/007-mutation-gate-strictness/evidence/compare.mjs specs/007-mutation-gate-strictness/evidence/red/source-181-230/mutation.json specs/007-mutation-gate-strictness/evidence/green/source-181-230/mutation.json packages/tokens/src/source.ts
+packages/tokens/src/source.ts: 120 mutants in both runs, every key once
+move CompileError -> CompileError: 50
+move Killed -> Killed: 59
+move Timeout -> Killed: 11
+changed 181:60-181:67 StringLiteral "\"\"": Timeout -> Killed
+changed 182:50-182:58 StringLiteral "\"\"": Timeout -> Killed
+changed 183:46-183:54 StringLiteral "\"\"": Timeout -> Killed
+changed 186:50-186:56 StringLiteral "\"\"": Timeout -> Killed
+changed 187:53-187:59 StringLiteral "\"\"": Timeout -> Killed
+changed 188:50-188:56 StringLiteral "\"\"": Timeout -> Killed
+changed 190:55-190:63 StringLiteral "\"\"": Timeout -> Killed
+changed 209:21-209:87 StringLiteral "\"\"": Timeout -> Killed
+changed 224:64-224:98 StringLiteral "\"\"": Timeout -> Killed
+changed 224:106-224:112 StringLiteral "\"\"": Timeout -> Killed
+changed 225:50-225:57 StringLiteral "\"\"": Timeout -> Killed
+(exit 0)
+
+$ node specs/007-mutation-gate-strictness/evidence/compare.mjs specs/007-mutation-gate-strictness/evidence/red/generate-1-60/mutation.json specs/007-mutation-gate-strictness/evidence/green/generate-1-60/mutation.json packages/tokens/src/generate.ts
+packages/tokens/src/generate.ts: 7 mutants in both runs, every key once
+move CompileError -> CompileError: 4
+move Killed -> Killed: 3
+(exit 0)
+
+$ node specs/007-mutation-gate-strictness/evidence/compare.mjs specs/007-mutation-gate-strictness/evidence/red/wcag/mutation.json specs/007-mutation-gate-strictness/evidence/green/wcag/mutation.json gates/lib/wcag.ts
+gates/lib/wcag.ts: 33 mutants in both runs, every key once
+move CompileError -> CompileError: 3
+move Ignored -> Ignored: 2
+move Killed -> Killed: 26
+move Timeout -> Timeout: 2
+(exit 0)
+```
+
+So: no key repeats and every key is in both runs, in all six comparisons. No mutant moved Killed → Timeout, Survived
+or NoCoverage in any entry, so no re-run was due (research R-06). The reference entries keep every status and every
+count (`generate.ts:1-60`: 3 Killed, 4 CompileError; `wcag.ts`: 26 Killed, 2 Timeout, 3 CompileError, 2 Ignored) and
+neither is slower (78.11 s → 59.51 s; 90.92 s → 90.92 s). The `source.ts` entries' only moves are the 57 Timeouts of
+the red run, all to Killed.
+
+### FR-011 record (T025)
+
+Every mutant the phase-1 runs (T003) recorded as Timeout: the 121 of the checker-off runs (op 004's Timeouts, research
+R-06 *Every Timeout of the checker-off runs*) and the 57 of the red run as configured, 122 mutants in all
+(`shell-inspector-width`'s value, `178:59-178:66`, is a Timeout only of the run as configured). Record, field, theme
+and mutator as read in phase 1 (*How the record, field and theme were read*), matched to the green report by start and
+end, mutator and replacement. For each Killed mutant the three criteria of research R-06 were checked and are noted
+per row: (1) every `killedBy` test is under `packages/tokens/test/` (the `tokens-source-table` or `tokens` project);
+(2) `statusReason` is an `expect` mismatch, read only for its kind: Vitest's assertion message `expected … to deeply
+equal …`, not an error at load or setup; (3) every `killedBy` test is one of the three named tests of
+`source-table.test.ts` (light values `:39`, dark values `:45`, JSON groups and values `:76`). `statusReason` is
+recorded as given; Vitest truncates it to the first key, so it names no record (research R-06), and message text is
+never a criterion. A CompileError is allowed only where the red run as configured already recorded that mutant as
+CompileError.
+
+Result: 122 of 122 meet FR-011. 57 end Killed, each by `source-table.test.ts` (56 by the light-value test, 1, the
+dark value of `elevation-bar`, by the dark-value test), each with an `expect` mismatch, after 5 or 6 completed tests;
+65 (op 004 group A, `group` → `""`) end CompileError, as in the red run as configured. No group A mutant ends Killed.
+#### `packages/tokens/src/source.ts:121-180` (98 mutants: 97 op 004 Timeouts (red, checker off), 46 Timeouts of the red run as configured)
+
+| Record | Field | Theme | Mutator | Start-end | Replacement | Red, checker off (op 004) | Red | Green | killedBy (green) | statusReason (green, as given) | testsCompleted (green) | (1) token test | (2) `expect` mismatch | (3) named test | FR-011 |
+|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|
+| `font-sans` | group | - | StringLiteral | 122:31-122:37 | `""` | Timeout | CompileError | CompileError | - | - | - | - | - | - | met (CompileError, red CompileError) |
+| `font-sans` | value | - | StringLiteral | 122:46-122:115 | `""` | Timeout | Timeout | Killed | `source-table.test.ts` "declares each token's light value (or its one value) in the unconditioned :root block" | `expected { 'color-canvas': '#f1eee8', …(114) } to deeply equal { 'color-canvas': '#f1eee8', …(114) }` | 5 | yes | yes | yes | met (Killed) |
+| `font-display` | group | - | StringLiteral | 123:34-123:40 | `""` | Timeout | CompileError | CompileError | - | - | - | - | - | - | met (CompileError, red CompileError) |
+| `figures` | group | - | StringLiteral | 124:29-124:35 | `""` | Timeout | CompileError | CompileError | - | - | - | - | - | - | met (CompileError, red CompileError) |
+| `figures` | value | - | StringLiteral | 124:44-124:58 | `""` | Timeout | Timeout | Killed | `source-table.test.ts` "declares each token's light value (or its one value) in the unconditioned :root block" | `expected { 'color-canvas': '#f1eee8', …(114) } to deeply equal { 'color-canvas': '#f1eee8', …(114) }` | 5 | yes | yes | yes | met (Killed) |
+| `font-size-xs` | group | - | StringLiteral | 125:34-125:40 | `""` | Timeout | CompileError | CompileError | - | - | - | - | - | - | met (CompileError, red CompileError) |
+| `font-size-xs` | value | - | StringLiteral | 125:49-125:58 | `""` | Timeout | Timeout | Killed | `source-table.test.ts` "declares each token's light value (or its one value) in the unconditioned :root block" | `expected { 'color-canvas': '#f1eee8', …(114) } to deeply equal { 'color-canvas': '#f1eee8', …(114) }` | 5 | yes | yes | yes | met (Killed) |
+| `font-size-sm` | group | - | StringLiteral | 126:34-126:40 | `""` | Timeout | CompileError | CompileError | - | - | - | - | - | - | met (CompileError, red CompileError) |
+| `font-size-sm` | value | - | StringLiteral | 126:49-126:59 | `""` | Timeout | Timeout | Killed | `source-table.test.ts` "declares each token's light value (or its one value) in the unconditioned :root block" | `expected { 'color-canvas': '#f1eee8', …(114) } to deeply equal { 'color-canvas': '#f1eee8', …(114) }` | 5 | yes | yes | yes | met (Killed) |
+| `font-size-md` | group | - | StringLiteral | 127:34-127:40 | `""` | Timeout | CompileError | CompileError | - | - | - | - | - | - | met (CompileError, red CompileError) |
+| `font-size-md` | value | - | StringLiteral | 127:49-127:55 | `""` | Timeout | Timeout | Killed | `source-table.test.ts` "declares each token's light value (or its one value) in the unconditioned :root block" | `expected { 'color-canvas': '#f1eee8', …(114) } to deeply equal { 'color-canvas': '#f1eee8', …(114) }` | 5 | yes | yes | yes | met (Killed) |
+| `font-size-fact` | group | - | StringLiteral | 128:36-128:42 | `""` | Timeout | CompileError | CompileError | - | - | - | - | - | - | met (CompileError, red CompileError) |
+| `font-size-fact` | value | - | StringLiteral | 128:51-128:62 | `""` | Timeout | Timeout | Killed | `source-table.test.ts` "declares each token's light value (or its one value) in the unconditioned :root block" | `expected { 'color-canvas': '#f1eee8', …(114) } to deeply equal { 'color-canvas': '#f1eee8', …(114) }` | 5 | yes | yes | yes | met (Killed) |
+| `font-size-subhead` | group | - | StringLiteral | 129:39-129:45 | `""` | Timeout | CompileError | CompileError | - | - | - | - | - | - | met (CompileError, red CompileError) |
+| `font-size-subhead` | value | - | StringLiteral | 129:54-129:64 | `""` | Timeout | Timeout | Killed | `source-table.test.ts` "declares each token's light value (or its one value) in the unconditioned :root block" | `expected { 'color-canvas': '#f1eee8', …(114) } to deeply equal { 'color-canvas': '#f1eee8', …(114) }` | 5 | yes | yes | yes | met (Killed) |
+| `font-size-lg` | group | - | StringLiteral | 130:34-130:40 | `""` | Timeout | CompileError | CompileError | - | - | - | - | - | - | met (CompileError, red CompileError) |
+| `font-size-lg` | value | - | StringLiteral | 130:49-130:58 | `""` | Timeout | Timeout | Killed | `source-table.test.ts` "declares each token's light value (or its one value) in the unconditioned :root block" | `expected { 'color-canvas': '#f1eee8', …(114) } to deeply equal { 'color-canvas': '#f1eee8', …(114) }` | 5 | yes | yes | yes | met (Killed) |
+| `font-size-xl` | group | - | StringLiteral | 131:34-131:40 | `""` | Timeout | CompileError | CompileError | - | - | - | - | - | - | met (CompileError, red CompileError) |
+| `font-size-xl` | value | - | StringLiteral | 131:49-131:57 | `""` | Timeout | Timeout | Killed | `source-table.test.ts` "declares each token's light value (or its one value) in the unconditioned :root block" | `expected { 'color-canvas': '#f1eee8', …(114) } to deeply equal { 'color-canvas': '#f1eee8', …(114) }` | 5 | yes | yes | yes | met (Killed) |
+| `font-size-2xl` | group | - | StringLiteral | 132:35-132:41 | `""` | Timeout | CompileError | CompileError | - | - | - | - | - | - | met (CompileError, red CompileError) |
+| `font-size-2xl` | value | - | StringLiteral | 132:50-132:60 | `""` | Timeout | Timeout | Killed | `source-table.test.ts` "declares each token's light value (or its one value) in the unconditioned :root block" | `expected { 'color-canvas': '#f1eee8', …(114) } to deeply equal { 'color-canvas': '#f1eee8', …(114) }` | 5 | yes | yes | yes | met (Killed) |
+| `line-height-tight` | group | - | StringLiteral | 133:39-133:45 | `""` | Timeout | CompileError | CompileError | - | - | - | - | - | - | met (CompileError, red CompileError) |
+| `line-height-tight` | value | - | StringLiteral | 133:54-133:60 | `""` | Timeout | Timeout | Killed | `source-table.test.ts` "declares each token's light value (or its one value) in the unconditioned :root block" | `expected { 'color-canvas': '#f1eee8', …(114) } to deeply equal { 'color-canvas': '#f1eee8', …(114) }` | 5 | yes | yes | yes | met (Killed) |
+| `line-height-normal` | group | - | StringLiteral | 134:40-134:46 | `""` | Timeout | CompileError | CompileError | - | - | - | - | - | - | met (CompileError, red CompileError) |
+| `line-height-normal` | value | - | StringLiteral | 134:55-134:61 | `""` | Timeout | Timeout | Killed | `source-table.test.ts` "declares each token's light value (or its one value) in the unconditioned :root block" | `expected { 'color-canvas': '#f1eee8', …(114) } to deeply equal { 'color-canvas': '#f1eee8', …(114) }` | 5 | yes | yes | yes | met (Killed) |
+| `line-height-relaxed` | group | - | StringLiteral | 135:41-135:47 | `""` | Timeout | CompileError | CompileError | - | - | - | - | - | - | met (CompileError, red CompileError) |
+| `line-height-relaxed` | value | - | StringLiteral | 135:56-135:62 | `""` | Timeout | Timeout | Killed | `source-table.test.ts` "declares each token's light value (or its one value) in the unconditioned :root block" | `expected { 'color-canvas': '#f1eee8', …(114) } to deeply equal { 'color-canvas': '#f1eee8', …(114) }` | 5 | yes | yes | yes | met (Killed) |
+| `line-height-compact` | group | - | StringLiteral | 136:41-136:47 | `""` | Timeout | CompileError | CompileError | - | - | - | - | - | - | met (CompileError, red CompileError) |
+| `line-height-compact` | value | - | StringLiteral | 136:56-136:61 | `""` | Timeout | Timeout | Killed | `source-table.test.ts` "declares each token's light value (or its one value) in the unconditioned :root block" | `expected { 'color-canvas': '#f1eee8', …(114) } to deeply equal { 'color-canvas': '#f1eee8', …(114) }` | 5 | yes | yes | yes | met (Killed) |
+| `line-height-prose` | group | - | StringLiteral | 137:39-137:45 | `""` | Timeout | CompileError | CompileError | - | - | - | - | - | - | met (CompileError, red CompileError) |
+| `line-height-prose` | value | - | StringLiteral | 137:54-137:60 | `""` | Timeout | Timeout | Killed | `source-table.test.ts` "declares each token's light value (or its one value) in the unconditioned :root block" | `expected { 'color-canvas': '#f1eee8', …(114) } to deeply equal { 'color-canvas': '#f1eee8', …(114) }` | 5 | yes | yes | yes | met (Killed) |
+| `font-weight-regular` | group | - | StringLiteral | 138:41-138:47 | `""` | Timeout | CompileError | CompileError | - | - | - | - | - | - | met (CompileError, red CompileError) |
+| `font-weight-regular` | value | - | StringLiteral | 138:56-138:61 | `""` | Timeout | Timeout | Killed | `source-table.test.ts` "declares each token's light value (or its one value) in the unconditioned :root block" | `expected { 'color-canvas': '#f1eee8', …(114) } to deeply equal { 'color-canvas': '#f1eee8', …(114) }` | 5 | yes | yes | yes | met (Killed) |
+| `font-weight-medium` | group | - | StringLiteral | 139:40-139:46 | `""` | Timeout | CompileError | CompileError | - | - | - | - | - | - | met (CompileError, red CompileError) |
+| `font-weight-medium` | value | - | StringLiteral | 139:55-139:60 | `""` | Timeout | Timeout | Killed | `source-table.test.ts` "declares each token's light value (or its one value) in the unconditioned :root block" | `expected { 'color-canvas': '#f1eee8', …(114) } to deeply equal { 'color-canvas': '#f1eee8', …(114) }` | 5 | yes | yes | yes | met (Killed) |
+| `font-weight-strong` | group | - | StringLiteral | 140:40-140:46 | `""` | Timeout | CompileError | CompileError | - | - | - | - | - | - | met (CompileError, red CompileError) |
+| `font-weight-strong` | value | - | StringLiteral | 140:55-140:60 | `""` | Timeout | Timeout | Killed | `source-table.test.ts` "declares each token's light value (or its one value) in the unconditioned :root block" | `expected { 'color-canvas': '#f1eee8', …(114) } to deeply equal { 'color-canvas': '#f1eee8', …(114) }` | 5 | yes | yes | yes | met (Killed) |
+| `font-weight-display` | group | - | StringLiteral | 141:41-141:47 | `""` | Timeout | CompileError | CompileError | - | - | - | - | - | - | met (CompileError, red CompileError) |
+| `font-weight-display` | value | - | StringLiteral | 141:56-141:61 | `""` | Timeout | Timeout | Killed | `source-table.test.ts` "declares each token's light value (or its one value) in the unconditioned :root block" | `expected { 'color-canvas': '#f1eee8', …(114) } to deeply equal { 'color-canvas': '#f1eee8', …(114) }` | 5 | yes | yes | yes | met (Killed) |
+| `tracking-display` | group | - | StringLiteral | 142:38-142:44 | `""` | Timeout | CompileError | CompileError | - | - | - | - | - | - | met (CompileError, red CompileError) |
+| `tracking-display` | value | - | StringLiteral | 142:53-142:62 | `""` | Timeout | Timeout | Killed | `source-table.test.ts` "declares each token's light value (or its one value) in the unconditioned :root block" | `expected { 'color-canvas': '#f1eee8', …(114) } to deeply equal { 'color-canvas': '#f1eee8', …(114) }` | 5 | yes | yes | yes | met (Killed) |
+| `space-1` | group | - | StringLiteral | 145:29-145:36 | `""` | Timeout | CompileError | CompileError | - | - | - | - | - | - | met (CompileError, red CompileError) |
+| `space-1` | value | - | StringLiteral | 145:45-145:54 | `""` | Timeout | Timeout | Killed | `source-table.test.ts` "declares each token's light value (or its one value) in the unconditioned :root block" | `expected { 'color-canvas': '#f1eee8', …(114) } to deeply equal { 'color-canvas': '#f1eee8', …(114) }` | 5 | yes | yes | yes | met (Killed) |
+| `space-2` | group | - | StringLiteral | 146:29-146:36 | `""` | Timeout | CompileError | CompileError | - | - | - | - | - | - | met (CompileError, red CompileError) |
+| `space-2` | value | - | StringLiteral | 146:45-146:53 | `""` | Timeout | Timeout | Killed | `source-table.test.ts` "declares each token's light value (or its one value) in the unconditioned :root block" | `expected { 'color-canvas': '#f1eee8', …(114) } to deeply equal { 'color-canvas': '#f1eee8', …(114) }` | 5 | yes | yes | yes | met (Killed) |
+| `space-3` | group | - | StringLiteral | 147:29-147:36 | `""` | Timeout | CompileError | CompileError | - | - | - | - | - | - | met (CompileError, red CompileError) |
+| `space-3` | value | - | StringLiteral | 147:45-147:54 | `""` | Timeout | Timeout | Killed | `source-table.test.ts` "declares each token's light value (or its one value) in the unconditioned :root block" | `expected { 'color-canvas': '#f1eee8', …(114) } to deeply equal { 'color-canvas': '#f1eee8', …(114) }` | 5 | yes | yes | yes | met (Killed) |
+| `space-4` | group | - | StringLiteral | 148:29-148:36 | `""` | Timeout | CompileError | CompileError | - | - | - | - | - | - | met (CompileError, red CompileError) |
+| `space-4` | value | - | StringLiteral | 148:45-148:51 | `""` | Timeout | Timeout | Killed | `source-table.test.ts` "declares each token's light value (or its one value) in the unconditioned :root block" | `expected { 'color-canvas': '#f1eee8', …(114) } to deeply equal { 'color-canvas': '#f1eee8', …(114) }` | 5 | yes | yes | yes | met (Killed) |
+| `space-5` | group | - | StringLiteral | 149:29-149:36 | `""` | Timeout | CompileError | CompileError | - | - | - | - | - | - | met (CompileError, red CompileError) |
+| `space-5` | value | - | StringLiteral | 149:45-149:54 | `""` | Timeout | Timeout | Killed | `source-table.test.ts` "declares each token's light value (or its one value) in the unconditioned :root block" | `expected { 'color-canvas': '#f1eee8', …(114) } to deeply equal { 'color-canvas': '#f1eee8', …(114) }` | 5 | yes | yes | yes | met (Killed) |
+| `space-6` | group | - | StringLiteral | 150:29-150:36 | `""` | Timeout | CompileError | CompileError | - | - | - | - | - | - | met (CompileError, red CompileError) |
+| `space-6` | value | - | StringLiteral | 150:45-150:53 | `""` | Timeout | Timeout | Killed | `source-table.test.ts` "declares each token's light value (or its one value) in the unconditioned :root block" | `expected { 'color-canvas': '#f1eee8', …(114) } to deeply equal { 'color-canvas': '#f1eee8', …(114) }` | 5 | yes | yes | yes | met (Killed) |
+| `space-7` | group | - | StringLiteral | 151:29-151:36 | `""` | Timeout | CompileError | CompileError | - | - | - | - | - | - | met (CompileError, red CompileError) |
+| `space-7` | value | - | StringLiteral | 151:45-151:51 | `""` | Timeout | Timeout | Killed | `source-table.test.ts` "declares each token's light value (or its one value) in the unconditioned :root block" | `expected { 'color-canvas': '#f1eee8', …(114) } to deeply equal { 'color-canvas': '#f1eee8', …(114) }` | 5 | yes | yes | yes | met (Killed) |
+| `space-8` | group | - | StringLiteral | 152:29-152:36 | `""` | Timeout | CompileError | CompileError | - | - | - | - | - | - | met (CompileError, red CompileError) |
+| `space-8` | value | - | StringLiteral | 152:45-152:53 | `""` | Timeout | Timeout | Killed | `source-table.test.ts` "declares each token's light value (or its one value) in the unconditioned :root block" | `expected { 'color-canvas': '#f1eee8', …(114) } to deeply equal { 'color-canvas': '#f1eee8', …(114) }` | 5 | yes | yes | yes | met (Killed) |
+| `space-9` | group | - | StringLiteral | 153:29-153:36 | `""` | Timeout | CompileError | CompileError | - | - | - | - | - | - | met (CompileError, red CompileError) |
+| `space-9` | value | - | StringLiteral | 153:45-153:51 | `""` | Timeout | Timeout | Killed | `source-table.test.ts` "declares each token's light value (or its one value) in the unconditioned :root block" | `expected { 'color-canvas': '#f1eee8', …(114) } to deeply equal { 'color-canvas': '#f1eee8', …(114) }` | 5 | yes | yes | yes | met (Killed) |
+| `space-10` | group | - | StringLiteral | 154:30-154:37 | `""` | Timeout | CompileError | CompileError | - | - | - | - | - | - | met (CompileError, red CompileError) |
+| `space-10` | value | - | StringLiteral | 154:46-154:52 | `""` | Timeout | Timeout | Killed | `source-table.test.ts` "declares each token's light value (or its one value) in the unconditioned :root block" | `expected { 'color-canvas': '#f1eee8', …(114) } to deeply equal { 'color-canvas': '#f1eee8', …(114) }` | 5 | yes | yes | yes | met (Killed) |
+| `gutter` | group | - | StringLiteral | 155:28-155:35 | `""` | Timeout | CompileError | CompileError | - | - | - | - | - | - | met (CompileError, red CompileError) |
+| `radius-1` | group | - | StringLiteral | 156:30-156:37 | `""` | Timeout | CompileError | CompileError | - | - | - | - | - | - | met (CompileError, red CompileError) |
+| `radius-2` | group | - | StringLiteral | 157:30-157:37 | `""` | Timeout | CompileError | CompileError | - | - | - | - | - | - | met (CompileError, red CompileError) |
+| `radius-row` | group | - | StringLiteral | 158:32-158:39 | `""` | Timeout | CompileError | CompileError | - | - | - | - | - | - | met (CompileError, red CompileError) |
+| `radius-shell` | group | - | StringLiteral | 159:34-159:41 | `""` | Timeout | CompileError | CompileError | - | - | - | - | - | - | met (CompileError, red CompileError) |
+| `radius-pill` | group | - | StringLiteral | 160:33-160:40 | `""` | Timeout | CompileError | CompileError | - | - | - | - | - | - | met (CompileError, red CompileError) |
+| `border-width` | group | - | StringLiteral | 161:34-161:41 | `""` | Timeout | CompileError | CompileError | - | - | - | - | - | - | met (CompileError, red CompileError) |
+| `border-width` | value | - | StringLiteral | 161:50-161:55 | `""` | Timeout | Timeout | Killed | `source-table.test.ts` "declares each token's light value (or its one value) in the unconditioned :root block" | `expected { 'color-canvas': '#f1eee8', …(114) } to deeply equal { 'color-canvas': '#f1eee8', …(114) }` | 5 | yes | yes | yes | met (Killed) |
+| `focus-width` | group | - | StringLiteral | 162:33-162:40 | `""` | Timeout | CompileError | CompileError | - | - | - | - | - | - | met (CompileError, red CompileError) |
+| `focus-width` | value | - | StringLiteral | 162:49-162:54 | `""` | Timeout | Timeout | Killed | `source-table.test.ts` "declares each token's light value (or its one value) in the unconditioned :root block" | `expected { 'color-canvas': '#f1eee8', …(114) } to deeply equal { 'color-canvas': '#f1eee8', …(114) }` | 5 | yes | yes | yes | met (Killed) |
+| `focus-offset` | group | - | StringLiteral | 163:34-163:41 | `""` | Timeout | CompileError | CompileError | - | - | - | - | - | - | met (CompileError, red CompileError) |
+| `focus-offset` | value | - | StringLiteral | 163:50-163:55 | `""` | Timeout | Timeout | Killed | `source-table.test.ts` "declares each token's light value (or its one value) in the unconditioned :root block" | `expected { 'color-canvas': '#f1eee8', …(114) } to deeply equal { 'color-canvas': '#f1eee8', …(114) }` | 5 | yes | yes | yes | met (Killed) |
+| `bar-width` | group | - | StringLiteral | 164:31-164:38 | `""` | Timeout | CompileError | CompileError | - | - | - | - | - | - | met (CompileError, red CompileError) |
+| `bar-width` | value | - | StringLiteral | 164:47-164:52 | `""` | Timeout | Timeout | Killed | `source-table.test.ts` "declares each token's light value (or its one value) in the unconditioned :root block" | `expected { 'color-canvas': '#f1eee8', …(114) } to deeply equal { 'color-canvas': '#f1eee8', …(114) }` | 5 | yes | yes | yes | met (Killed) |
+| `ring-step` | group | - | StringLiteral | 165:31-165:38 | `""` | Timeout | CompileError | CompileError | - | - | - | - | - | - | met (CompileError, red CompileError) |
+| `ring-step` | value | - | StringLiteral | 165:47-165:54 | `""` | Timeout | Timeout | Killed | `source-table.test.ts` "declares each token's light value (or its one value) in the unconditioned :root block" | `expected { 'color-canvas': '#f1eee8', …(114) } to deeply equal { 'color-canvas': '#f1eee8', …(114) }` | 5 | yes | yes | yes | met (Killed) |
+| `target-min` | group | - | StringLiteral | 166:32-166:38 | `""` | Timeout | CompileError | CompileError | - | - | - | - | - | - | met (CompileError, red CompileError) |
+| `target-min` | value | - | StringLiteral | 166:47-166:56 | `""` | Timeout | Timeout | Killed | `source-table.test.ts` "declares each token's light value (or its one value) in the unconditioned :root block" | `expected { 'color-canvas': '#f1eee8', …(114) } to deeply equal { 'color-canvas': '#f1eee8', …(114) }` | 5 | yes | yes | yes | met (Killed) |
+| `icon-size` | group | - | StringLiteral | 167:31-167:37 | `""` | Timeout | CompileError | CompileError | - | - | - | - | - | - | met (CompileError, red CompileError) |
+| `icon-size` | value | - | StringLiteral | 167:46-167:55 | `""` | Timeout | Timeout | Killed | `source-table.test.ts` "declares each token's light value (or its one value) in the unconditioned :root block" | `expected { 'color-canvas': '#f1eee8', …(114) } to deeply equal { 'color-canvas': '#f1eee8', …(114) }` | 5 | yes | yes | yes | met (Killed) |
+| `size-dot` | group | - | StringLiteral | 168:30-168:36 | `""` | Timeout | CompileError | CompileError | - | - | - | - | - | - | met (CompileError, red CompileError) |
+| `size-dot` | value | - | StringLiteral | 168:45-168:54 | `""` | Timeout | Timeout | Killed | `source-table.test.ts` "declares each token's light value (or its one value) in the unconditioned :root block" | `expected { 'color-canvas': '#f1eee8', …(114) } to deeply equal { 'color-canvas': '#f1eee8', …(114) }` | 5 | yes | yes | yes | met (Killed) |
+| `size-step` | group | - | StringLiteral | 169:31-169:37 | `""` | Timeout | CompileError | CompileError | - | - | - | - | - | - | met (CompileError, red CompileError) |
+| `size-step` | value | - | StringLiteral | 169:46-169:54 | `""` | Timeout | Timeout | Killed | `source-table.test.ts` "declares each token's light value (or its one value) in the unconditioned :root block" | `expected { 'color-canvas': '#f1eee8', …(114) } to deeply equal { 'color-canvas': '#f1eee8', …(114) }` | 5 | yes | yes | yes | met (Killed) |
+| `size-avatar` | group | - | StringLiteral | 170:33-170:39 | `""` | Timeout | CompileError | CompileError | - | - | - | - | - | - | met (CompileError, red CompileError) |
+| `size-avatar` | value | - | StringLiteral | 170:48-170:56 | `""` | Timeout | Timeout | Killed | `source-table.test.ts` "declares each token's light value (or its one value) in the unconditioned :root block" | `expected { 'color-canvas': '#f1eee8', …(114) } to deeply equal { 'color-canvas': '#f1eee8', …(114) }` | 5 | yes | yes | yes | met (Killed) |
+| `size-rail-item` | group | - | StringLiteral | 171:36-171:42 | `""` | Timeout | CompileError | CompileError | - | - | - | - | - | - | met (CompileError, red CompileError) |
+| `size-rail-item` | value | - | StringLiteral | 171:51-171:59 | `""` | Timeout | Timeout | Killed | `source-table.test.ts` "declares each token's light value (or its one value) in the unconditioned :root block" | `expected { 'color-canvas': '#f1eee8', …(114) } to deeply equal { 'color-canvas': '#f1eee8', …(114) }` | 5 | yes | yes | yes | met (Killed) |
+| `size-visually-hidden` | group | - | StringLiteral | 172:42-172:48 | `""` | Timeout | CompileError | CompileError | - | - | - | - | - | - | met (CompileError, red CompileError) |
+| `size-visually-hidden` | value | - | StringLiteral | 172:57-172:62 | `""` | Timeout | Timeout | Killed | `source-table.test.ts` "declares each token's light value (or its one value) in the unconditioned :root block" | `expected { 'color-canvas': '#f1eee8', …(114) } to deeply equal { 'color-canvas': '#f1eee8', …(114) }` | 5 | yes | yes | yes | met (Killed) |
+| `shell-topbar-height` | group | - | StringLiteral | 175:41-175:48 | `""` | Timeout | CompileError | CompileError | - | - | - | - | - | - | met (CompileError, red CompileError) |
+| `shell-topbar-height` | value | - | StringLiteral | 175:57-175:66 | `""` | Timeout | Timeout | Killed | `source-table.test.ts` "declares each token's light value (or its one value) in the unconditioned :root block" | `expected { 'color-canvas': '#f1eee8', …(114) } to deeply equal { 'color-canvas': '#f1eee8', …(114) }` | 5 | yes | yes | yes | met (Killed) |
+| `shell-rail-width` | group | - | StringLiteral | 176:38-176:45 | `""` | Timeout | CompileError | CompileError | - | - | - | - | - | - | met (CompileError, red CompileError) |
+| `shell-rail-width` | value | - | StringLiteral | 176:54-176:63 | `""` | Timeout | Timeout | Killed | `source-table.test.ts` "declares each token's light value (or its one value) in the unconditioned :root block" | `expected { 'color-canvas': '#f1eee8', …(114) } to deeply equal { 'color-canvas': '#f1eee8', …(114) }` | 5 | yes | yes | yes | met (Killed) |
+| `shell-sidebar-width` | group | - | StringLiteral | 177:41-177:48 | `""` | Timeout | CompileError | CompileError | - | - | - | - | - | - | met (CompileError, red CompileError) |
+| `shell-sidebar-width` | value | - | StringLiteral | 177:57-177:64 | `""` | Timeout | Timeout | Killed | `source-table.test.ts` "declares each token's light value (or its one value) in the unconditioned :root block" | `expected { 'color-canvas': '#f1eee8', …(114) } to deeply equal { 'color-canvas': '#f1eee8', …(114) }` | 5 | yes | yes | yes | met (Killed) |
+| `shell-inspector-width` | value | - | StringLiteral | 178:59-178:66 | `""` | Killed | Timeout | Killed | `source-table.test.ts` "declares each token's light value (or its one value) in the unconditioned :root block" | `expected { 'color-canvas': '#f1eee8', …(114) } to deeply equal { 'color-canvas': '#f1eee8', …(114) }` | 5 | yes | yes | yes | met (Killed) |
+
+#### `packages/tokens/src/source.ts:181-230` (24 mutants: 24 op 004 Timeouts (red, checker off), 11 Timeouts of the red run as configured)
+
+| Record | Field | Theme | Mutator | Start-end | Replacement | Red, checker off (op 004) | Red | Green | killedBy (green) | statusReason (green, as given) | testsCompleted (green) | (1) token test | (2) `expect` mismatch | (3) named test | FR-011 |
+|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|
+| `shell-collapse-sidebar` | group | - | StringLiteral | 181:44-181:51 | `""` | Timeout | CompileError | CompileError | - | - | - | - | - | - | met (CompileError, red CompileError) |
+| `shell-collapse-sidebar` | value | - | StringLiteral | 181:60-181:67 | `""` | Timeout | Timeout | Killed | `source-table.test.ts` "declares each token's light value (or its one value) in the unconditioned :root block" | `expected { 'color-canvas': '#f1eee8', …(114) } to deeply equal { 'color-canvas': '#f1eee8', …(114) }` | 5 | yes | yes | yes | met (Killed) |
+| `shell-height` | group | - | StringLiteral | 182:34-182:41 | `""` | Timeout | CompileError | CompileError | - | - | - | - | - | - | met (CompileError, red CompileError) |
+| `shell-height` | value | - | StringLiteral | 182:50-182:58 | `""` | Timeout | Timeout | Killed | `source-table.test.ts` "declares each token's light value (or its one value) in the unconditioned :root block" | `expected { 'color-canvas': '#f1eee8', …(114) } to deeply equal { 'color-canvas': '#f1eee8', …(114) }` | 5 | yes | yes | yes | met (Killed) |
+| `footer-h` | group | - | StringLiteral | 183:30-183:37 | `""` | Timeout | CompileError | CompileError | - | - | - | - | - | - | met (CompileError, red CompileError) |
+| `footer-h` | value | - | StringLiteral | 183:46-183:54 | `""` | Timeout | Timeout | Killed | `source-table.test.ts` "declares each token's light value (or its one value) in the unconditioned :root block" | `expected { 'color-canvas': '#f1eee8', …(114) } to deeply equal { 'color-canvas': '#f1eee8', …(114) }` | 5 | yes | yes | yes | met (Killed) |
+| `measure-sheet` | group | - | StringLiteral | 184:35-184:42 | `""` | Timeout | CompileError | CompileError | - | - | - | - | - | - | met (CompileError, red CompileError) |
+| `measure-sentence` | group | - | StringLiteral | 185:38-185:45 | `""` | Timeout | CompileError | CompileError | - | - | - | - | - | - | met (CompileError, red CompileError) |
+| `measure-page` | group | - | StringLiteral | 186:34-186:41 | `""` | Timeout | CompileError | CompileError | - | - | - | - | - | - | met (CompileError, red CompileError) |
+| `measure-page` | value | - | StringLiteral | 186:50-186:56 | `""` | Timeout | Timeout | Killed | `source-table.test.ts` "declares each token's light value (or its one value) in the unconditioned :root block" | `expected { 'color-canvas': '#f1eee8', …(114) } to deeply equal { 'color-canvas': '#f1eee8', …(114) }` | 5 | yes | yes | yes | met (Killed) |
+| `measure-reading` | group | - | StringLiteral | 187:37-187:44 | `""` | Timeout | CompileError | CompileError | - | - | - | - | - | - | met (CompileError, red CompileError) |
+| `measure-reading` | value | - | StringLiteral | 187:53-187:59 | `""` | Timeout | Timeout | Killed | `source-table.test.ts` "declares each token's light value (or its one value) in the unconditioned :root block" | `expected { 'color-canvas': '#f1eee8', …(114) } to deeply equal { 'color-canvas': '#f1eee8', …(114) }` | 5 | yes | yes | yes | met (Killed) |
+| `measure-cell` | group | - | StringLiteral | 188:34-188:41 | `""` | Timeout | CompileError | CompileError | - | - | - | - | - | - | met (CompileError, red CompileError) |
+| `measure-cell` | value | - | StringLiteral | 188:50-188:56 | `""` | Timeout | Timeout | Killed | `source-table.test.ts` "declares each token's light value (or its one value) in the unconditioned :root block" | `expected { 'color-canvas': '#f1eee8', …(114) } to deeply equal { 'color-canvas': '#f1eee8', …(114) }` | 5 | yes | yes | yes | met (Killed) |
+| `measure-container` | group | - | StringLiteral | 190:39-190:46 | `""` | Timeout | CompileError | CompileError | - | - | - | - | - | - | met (CompileError, red CompileError) |
+| `measure-container` | value | - | StringLiteral | 190:55-190:63 | `""` | Timeout | Timeout | Killed | `source-table.test.ts` "declares each token's light value (or its one value) in the unconditioned :root block" | `expected { 'color-canvas': '#f1eee8', …(114) } to deeply equal { 'color-canvas': '#f1eee8', …(114) }` | 5 | yes | yes | yes | met (Killed) |
+| `dialog-max-inline` | group | - | StringLiteral | 192:39-192:46 | `""` | Timeout | CompileError | CompileError | - | - | - | - | - | - | met (CompileError, red CompileError) |
+| `dialog-max-block` | group | - | StringLiteral | 194:38-194:45 | `""` | Timeout | CompileError | CompileError | - | - | - | - | - | - | met (CompileError, red CompileError) |
+| `bar-block-narrow` | group | - | StringLiteral | 196:38-196:45 | `""` | Timeout | CompileError | CompileError | - | - | - | - | - | - | met (CompileError, red CompileError) |
+| `elevation-raised` | value | light | StringLiteral | 209:21-209:87 | `""` | Timeout | Timeout | Killed | `source-table.test.ts` "declares each token's light value (or its one value) in the unconditioned :root block" | `expected { 'color-canvas': '#f1eee8', …(114) } to deeply equal { 'color-canvas': '#f1eee8', …(114) }` | 5 | yes | yes | yes | met (Killed) |
+| `elevation-bar` | value | light | StringLiteral | 224:64-224:98 | `""` | Timeout | Timeout | Killed | `source-table.test.ts` "declares each token's light value (or its one value) in the unconditioned :root block" | `expected { 'color-canvas': '#f1eee8', …(114) } to deeply equal { 'color-canvas': '#f1eee8', …(114) }` | 5 | yes | yes | yes | met (Killed) |
+| `elevation-bar` | value | dark | StringLiteral | 224:106-224:112 | `""` | Timeout | Timeout | Killed | `source-table.test.ts` "declares each theme-dependent token's dark value under both dark selectors, where it differs from light" | `expected { 'color-canvas': '#15130f', …(44) } to deeply equal { 'color-canvas': '#15130f', …(44) }` | 6 | yes | yes | yes | met (Killed) |
+| `motion-fast` | group | - | StringLiteral | 225:33-225:41 | `""` | Timeout | CompileError | CompileError | - | - | - | - | - | - | met (CompileError, red CompileError) |
+| `motion-fast` | value | - | StringLiteral | 225:50-225:57 | `""` | Timeout | Timeout | Killed | `source-table.test.ts` "declares each token's light value (or its one value) in the unconditioned :root block" | `expected { 'color-canvas': '#f1eee8', …(114) } to deeply equal { 'color-canvas': '#f1eee8', …(114) }` | 5 | yes | yes | yes | met (Killed) |
+
+### By hand (T026, spec US2 AS4)
+
+One Killed mutant of each group that has one, applied to `packages/tokens/src/source.ts` in the working tree, the
+token tests run with `pnpm exec vitest run --config vitest.mutation.config.ts --project tokens-source-table --project
+tokens`, the output kept, and the file restored with `git checkout -- packages/tokens/src/source.ts`:
+
+- `by-hand/group-B.txt`: `font-sans` value, StringLiteral `122:46-122:115` → `""`. Exit 1, 2 failed of 137; the
+  light-value test's diff names the key: `- "font-sans": "\"Schibsted Grotesk\", …"` / `+ "font-sans": " "`.
+- `by-hand/group-C.txt`: `elevation-bar` dark value, StringLiteral `224:106-224:112` → `""`. Exit 1, 2 failed of 137;
+  the dark-value test's diff names the key: `- "elevation-bar": "none"` / `+ "elevation-bar": " "`.
+- Group A: no mutant ends Killed (all 65 CompileError), so none is applied by hand (spec FR-011).
+
+### Decision on lever 2 (T027)
+
+From the figures above alone (FR-010): every `source.ts` entry has 0 Timeout, 0 Survived and 0 NoCoverage, every
+former Timeout meets FR-011, and the reference entries pass T024. But three entries miss 176 s: `1-60` (188.37 s),
+`61-120` (251.13 s) and `121-180` (283.22 s). So lever 2 applies (T028).
+
+### Lever 2: concurrency (T028)
+
+`concurrency` in `stryker.config.json` as a scratch edit for each run (restored with `git checkout --
+stryker.config.json`), on the slowest entry, `source.ts:121-180`, with the checker split as a diagnostic. Folders
+`lever2/source-121-180-c4`, `lever2/source-121-180-c12` (each with `no-checker/`); concurrency 8 is the green run
+above.
+
+| `concurrency` | Processes with the checker (checkers / test runners) | Time, checker on | Checker off (diagnostic) | Statuses (checker on) | Within 176 s |
+|---|---|---|---|---|---|
+| 4 | 2 / 2 | 358.77 s | 66.23 s | 113 Killed, 111 CompileError, 0 Timeout | **no** |
+| 8 (today) | 4 / 4 | 283.22 s | 76.87 s | 113 Killed, 111 CompileError, 0 Timeout | **no** |
+| 12 | 6 / 6 | 316.27 s | 76.13 s | 113 Killed, 111 CompileError, 0 Timeout | **no** |
+
+Every run ended exit 0. No candidate brings the slowest entry within 176 s on the 4-core sandbox; today's 8 is the
+fastest of the three. The two-core runs (`taskset -c 0,1`) were not taken: they serve only to rank the candidates for a
+2-vCPU CI runner, and with no candidate within 176 s on four cores none can be kept for two either; each would also
+risk the 10-minute stop point (the four-core runs already take 283 s to 359 s). They are left for the operator's
+decision below.
+
+**Stop-and-ask point reached (tasks.md "after lever 2 (T028), any `source.ts` entry still misses 176 s").** After
+levers 1 and 2, `source.ts:1-60`, `61-120` and `121-180` still miss 176 s with the checker on as configured, with 0
+Timeout, 0 Survived and 0 NoCoverage. The checker-off figures (66 s to 95 s) are a diagnostic only. Lever 3 (spec
+FR-014, an amendment of 001 FR-013) is the operator's decision; the phase stops here and does not work around it.
+
+### Token build unchanged (T029, spec SC-005)
+
+`pnpm --filter @ocelle/tokens build` at the phase base `6906cebc6eb785e909011695f06aa198386582c3` (a scratch worktree,
+`pnpm run setup:offline` first, removed afterwards with `git worktree remove`) and at `ac27681`; `cmp` of
+`packages/tokens/dist/tokens.css`, `tokens.json` and `index.d.ts`: identical (sha256 `c0ad9501…5e5e`, `c2c0e2e2…dae1`,
+`53919512…0980`).
