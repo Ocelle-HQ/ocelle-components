@@ -18,7 +18,7 @@ import {
   storyPath,
   targetInViewport,
 } from "../lib/capture-plan.ts";
-import type { Facts, RecordedCall, Signal } from "../lib/capture-plan.ts";
+import type { Conditions, Facts, RecordedCall, Signal } from "../lib/capture-plan.ts";
 import type { Pin } from "../lib/container.ts";
 
 // The capture's decisions (FR-006, FR-009, FR-012, FR-026 to FR-028, FR-030, FR-031; contracts/container.md; research.md
@@ -294,9 +294,11 @@ describe("captureStatus (data-model.md § Verdict per story-theme, steps 1 to 7)
 
   it("chooses the first condition in the order, with that condition's details only", () => {
     expect(captureStatus(all)).toEqual({ status: "render-failed", message: "STORY_MISSING: x--y" });
-    expect(captureStatus({ ...all, renderFailed: undefined })).toEqual({ status: "render-timeout", message: "no render signal within 15 s" });
-    expect(captureStatus({ ...all, renderFailed: undefined, renderTimeout: undefined })).toEqual({ status: "closed-shadow-root", hosts: ["ocelle-x"] });
-    expect(captureStatus({ ...all, renderFailed: undefined, renderTimeout: undefined, closedShadowRoot: undefined })).toEqual({ status: "pointer-target", message: "hover: no element matches .t" });
+    /** The conditions without the named ones. */
+    const without = (...names: string[]): Conditions => Object.fromEntries(Object.entries(all).filter(([name]) => !names.includes(name)));
+    expect(captureStatus(without("renderFailed"))).toEqual({ status: "render-timeout", message: "no render signal within 15 s" });
+    expect(captureStatus(without("renderFailed", "renderTimeout"))).toEqual({ status: "closed-shadow-root", hosts: ["ocelle-x"] });
+    expect(captureStatus(without("renderFailed", "renderTimeout", "closedShadowRoot"))).toEqual({ status: "pointer-target", message: "hover: no element matches .t" });
   });
 
   it("font over io and over network, network over io, each alone", () => {

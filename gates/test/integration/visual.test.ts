@@ -244,7 +244,7 @@ describe("animation control (research.md R-04)", () => {
           const context = await browser.newContext(fixed ? contextOptions("light") : { ...contextOptions("light"), reducedMotion: "no-preference" });
           const page = await context.newPage();
           await page.goto(`${server.origin}${storyPath(String(story), "light")}`);
-          await page.waitForSelector("#storybook-root *");
+          await page.waitForSelector(".plant-spinner");
           const options = fixed ? screenshotOptions() : { fullPage: true };
           const first = await page.screenshot(options);
           await page.waitForTimeout(400);

@@ -159,7 +159,7 @@ afterEach(cleanUp);
 
 describe("contrast and brand-rules plants under neighbouring changes", () => {
   it("has the two gates' plants and the registry's", () => {
-    expect({ others: otherGates.length, plants: plantCount() }).toEqual({ others: 12, plants: 31 });
+    expect({ others: otherGates.length, plants: plantCount() }).toEqual({ others: 13, plants: 32 });
   });
 
   it.each([

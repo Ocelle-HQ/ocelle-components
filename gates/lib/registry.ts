@@ -34,8 +34,9 @@ export const fr020: readonly string[] = [
   // 002 FR-020: the contrast and brand-rules gates of the design tokens.
   "contrast",
   "brand-rules",
-  // 006 FR-017: the Storybook build gate.
+  // 006 FR-017: the Storybook build gate and the visual regression gate.
   "storybook-build",
+  "visual",
 ];
 
 /** The id of the plant job in ci.yml; it is not a gate. */
@@ -127,5 +128,11 @@ export function checkRegistry(input: RegistryInput): Finding[] {
 
 /** A finding when a step of the plants job of the workflow passes `--skip-container` (006 research.md R-07). */
 export function skipContainerFindings(workflow: string, workflowPath: string): Finding[] {
-  throw new Error(`not implemented (registry, phase 3): ${String(workflow.length)} ${workflowPath}`);
+  const lines = workflow.split(/\r?\n/);
+  const start = lines.findIndex((line) => /^ {2}(['"]?)plants\1:\s*$/.test(line));
+  if (start === -1) return [];
+  const end = lines.findIndex((line, index) => index > start && /^ {0,2}\S/.test(line));
+  const job = lines.slice(start, end === -1 ? undefined : end);
+  if (!job.some((line) => line.includes("--skip-container"))) return [];
+  return [{ location: { path: workflowPath }, gate: "plants", rule: "skip-container-in-ci", message: "the plants job passes --skip-container, so CI would not run the visual plants" }];
 }

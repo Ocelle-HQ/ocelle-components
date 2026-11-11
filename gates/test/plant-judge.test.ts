@@ -263,6 +263,6 @@ describe("plantFilesProblem (006 research.md R-16)", () => {
 
   it("names nothing for a plant without either key", () => {
     expect(plantFilesProblem(pass, ["storybook/baselines/a--b.light.png"])).toBeUndefined();
-    expect(plantFilesProblem({ ...fail, baselinesOf: undefined } as Plant, ["storybook/baselines/a--b.light.png"])).toBeUndefined();
+    expect(plantFilesProblem({ expect: "fail", why: "w", findings: [{ location: "a", rule: "b" }] }, ["storybook/baselines/a--b.light.png"])).toBeUndefined();
   });
 });

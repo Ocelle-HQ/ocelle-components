@@ -152,15 +152,18 @@ describe("buildRepoTree: the Storybook workspace (006 research.md R-16)", () => 
     expect(readlinkSync(join(into, "node_modules"))).toBe(join(repo, "node_modules"));
   });
 
-  // Every other root of this file is built from a repository without storybook/baselines (until 006 phase 3 adds the
-  // baselines), so a root builds without it as well.
+  // Since 006 phase 3 the repository holds storybook/baselines/; a root built from a repository with one more baseline
+  // holds exactly the repository's files and that one.
   it("copies storybook/baselines when the repository holds it", async () => {
     const fake = tempDir("repo-tree");
     await buildRepoTree(repo, join(fixtures, "exceptions-repo-plant"), fake);
     const into = tempDir("repo-tree");
     await buildRepoTree(fake, join(fixtures, "empty-plant"), into);
     expect(read(into, "storybook/baselines/fixture--story.light.png")).toBe("not a png, a fixture baseline\n");
-    expect(readdirSync(join(into, "storybook/baselines"))).toEqual(["fixture--story.light.png"]);
+    const repository = readdirSync(join(repo, "storybook/baselines"));
+    expect(repository).toHaveLength(24);
+    expect(readdirSync(join(into, "storybook/baselines")).sort()).toEqual([...repository, "fixture--story.light.png"].sort());
+    expect(repository.filter((name) => !readFileSync(join(into, "storybook/baselines", name)).equals(readFileSync(join(repo, "storybook/baselines", name))))).toEqual([]);
   });
 
   it("writes storybook/a11y-exceptions.json as [] when the tree supplies none, and keeps the tree's own", async () => {

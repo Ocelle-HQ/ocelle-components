@@ -1,0 +1,54 @@
+{
+  "expect": "fail",
+  "why": "A changed token value (color-ink, light) changes every story-theme that shows it: differs on the twelve light story-themes the phase 1 spike listed (FR-004, US2 scenario 2), and none in dark. A story added later that shows color-ink in light adds its line here (research.md R-07).",
+  "findings": [
+    {
+      "location": "base-styles--base-page/light",
+      "rule": "differs"
+    },
+    {
+      "location": "base-styles--compact-screen/light",
+      "rule": "differs"
+    },
+    {
+      "location": "base-styles--prose-document/light",
+      "rule": "differs"
+    },
+    {
+      "location": "base-styles--identifier-wrap/light",
+      "rule": "differs"
+    },
+    {
+      "location": "tokens--colour/light",
+      "rule": "differs"
+    },
+    {
+      "location": "tokens--type/light",
+      "rule": "differs"
+    },
+    {
+      "location": "tokens--space/light",
+      "rule": "differs"
+    },
+    {
+      "location": "tokens--shape/light",
+      "rule": "differs"
+    },
+    {
+      "location": "tokens--size/light",
+      "rule": "differs"
+    },
+    {
+      "location": "tokens--shell/light",
+      "rule": "differs"
+    },
+    {
+      "location": "tokens--elevation/light",
+      "rule": "differs"
+    },
+    {
+      "location": "tokens--motion/light",
+      "rule": "differs"
+    }
+  ]
+}

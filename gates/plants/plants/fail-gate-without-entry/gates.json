@@ -106,5 +106,13 @@
     "plantCommand": "node gates/bin/storybook-build.ts --root {root}",
     "plantForm": "repo-tree",
     "scope": "006 FR-001, FR-002: the Storybook workspace's build (storybook/), through its own build script, run as pnpm --config.verify-deps-before-run=false --dir storybook run build with CACHE_DIR=<root>/storybook/.cache; findings at the file the build names, the story file the indexer cannot read, or storybook/dist/index.json when the built index holds no story"
+  },
+  {
+    "id": "visual",
+    "check": "Visual regression",
+    "command": "pnpm run gate:visual -- --engine both",
+    "plantCommand": "node gates/bin/visual.ts --root {root} --engine {engine}",
+    "plantForm": "repo-tree",
+    "scope": "every story of the built Storybook index in light and dark, captured twice in the pinned linux/amd64 container (docker and podman in CI) and compared byte for byte with storybook/baselines/ (006 FR-003 to FR-012, FR-026 to FR-028, FR-030, FR-031)"
   }
 ]

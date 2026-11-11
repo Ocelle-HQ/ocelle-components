@@ -1,0 +1,126 @@
+[
+  {
+    "id": "typecheck",
+    "check": "Typecheck",
+    "command": "pnpm run gate:typecheck",
+    "plantCommand": "node gates/bin/typecheck.ts --root {root}",
+    "plantForm": "repo-tree",
+    "scope": "repository TypeScript (FR-028), through the root tsconfig.json include and exclude"
+  },
+  {
+    "id": "lint",
+    "check": "Code lint",
+    "command": "pnpm run gate:lint",
+    "plantCommand": "node gates/bin/lint.ts --root {root}",
+    "plantForm": "repo-tree",
+    "scope": "repository TypeScript (FR-028), through the files and ignores of eslint.config.ts"
+  },
+  {
+    "id": "style-lint",
+    "check": "Style lint",
+    "command": "pnpm run gate:style-lint",
+    "plantCommand": "node gates/bin/style-lint.ts --root {root}",
+    "plantForm": "repo-tree",
+    "scope": "the styles of FR-024: style templates in @ocelle/elements TypeScript and the stylesheets of @ocelle/elements and @ocelle/styles that are package source"
+  },
+  {
+    "id": "unit-tests",
+    "check": "Unit tests",
+    "command": "pnpm run gate:unit-tests",
+    "plantCommand": "node gates/bin/test.ts --root {root}",
+    "plantForm": "repo-tree",
+    "scope": "every test file in the repository (FR-028), through the projects of vitest.config.ts"
+  },
+  {
+    "id": "test-lint",
+    "check": "Test lint",
+    "command": "pnpm run gate:test-lint",
+    "plantCommand": "node gates/bin/test-lint.ts --root {root}",
+    "plantForm": "repo-tree",
+    "scope": "all test code in the repository (FR-028), through the files and ignores of eslint.test.config.ts"
+  },
+  {
+    "id": "mutation",
+    "check": "Mutation testing",
+    "command": "pnpm run gate:mutation -- --base <sha>",
+    "plantCommand": "node gates/bin/mutation.ts --root {root} --base {base}",
+    "plantForm": "mutation-repo",
+    "scope": "package source TypeScript and gate source changed since the base commit; only mutants on changed lines decide",
+    "helperJobs": [
+      "mutation-plan",
+      "mutation-shard"
+    ]
+  },
+  {
+    "id": "csp",
+    "check": "Content security",
+    "command": "pnpm run gate:csp",
+    "plantCommand": "node gates/bin/csp.ts --root {root}",
+    "plantForm": "repo-tree",
+    "scope": "built output of the three packages (packages/*/dist/)"
+  },
+  {
+    "id": "prefix",
+    "check": "Prefix",
+    "command": "pnpm run gate:prefix",
+    "plantCommand": "node gates/bin/prefix.ts --root {root}",
+    "plantForm": "repo-tree",
+    "scope": "package source, test code and built output of the three packages"
+  },
+  {
+    "id": "config-copies",
+    "check": "Story config copies",
+    "command": "pnpm run gate:config-copies",
+    "plantCommand": "node gates/bin/config-copies.ts --root {root}",
+    "plantForm": "repo-tree",
+    "scope": "the two story configuration copies of FR-006"
+  },
+  {
+    "id": "pins",
+    "check": "Install and pins",
+    "command": "pnpm run gate:pins",
+    "plantCommand": "node gates/bin/pins.ts --plant {plant}",
+    "plantForm": "workspace",
+    "scope": "the workspace and package manifests, the lockfile, the version pin files and pnpm-workspace.yaml"
+  },
+  {
+    "id": "signoff",
+    "check": "Sign-off",
+    "command": "pnpm run gate:signoff -- --range <base>..<head>",
+    "plantCommand": "node gates/bin/signoff.ts --root {root} --range {base}..HEAD",
+    "plantForm": "commit-repo",
+    "scope": "the commits of the pull request (base to head), except merges and the root commit d08d4133bf0034e3d1ff29cddf2b0f13ca63290a"
+  },
+  {
+    "id": "contrast",
+    "check": "Contrast",
+    "command": "pnpm run gate:contrast",
+    "plantCommand": "node gates/bin/contrast.ts --root {root}",
+    "plantForm": "repo-tree",
+    "scope": "002 FR-016, FR-017, FR-021: every pair of packages/tokens/contrast/pairs.json in both themes, from the token values of packages/tokens/src/source.ts resolved by the root's generator, and the required pairs derived from the source's intended grounds"
+  },
+  {
+    "id": "brand-rules",
+    "check": "Brand rules",
+    "command": "pnpm run gate:brand-rules",
+    "plantCommand": "node gates/bin/brand-rules.ts --root {root}",
+    "plantForm": "repo-tree",
+    "scope": "002 FR-018, FR-019: rules (a) to (g) on the token source, the stylesheet the root's generator makes from it, and the excluded ochre pair of packages/tokens/contrast/pairs.json"
+  },
+  {
+    "id": "storybook-build",
+    "check": "Storybook build",
+    "command": "pnpm run gate:storybook-build",
+    "plantCommand": "node gates/bin/storybook-build.ts --root {root}",
+    "plantForm": "repo-tree",
+    "scope": "006 FR-001, FR-002: the Storybook workspace's build (storybook/), through its own build script, run as pnpm --config.verify-deps-before-run=false --dir storybook run build with CACHE_DIR=<root>/storybook/.cache; findings at the file the build names, the story file the indexer cannot read, or storybook/dist/index.json when the built index holds no story"
+  },
+  {
+    "id": "visual",
+    "check": "Visual regression",
+    "command": "pnpm run gate:visual -- --engine both",
+    "plantCommand": "node gates/bin/visual.ts --root {root} --engine {engine}",
+    "plantForm": "repo-tree",
+    "scope": "every story of the built Storybook index in light and dark, captured twice in the pinned linux/amd64 container (docker and podman in CI) and compared byte for byte with storybook/baselines/ (006 FR-003 to FR-012, FR-026 to FR-028, FR-030, FR-031)"
+  }
+]

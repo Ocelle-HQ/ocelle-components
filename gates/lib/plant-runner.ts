@@ -6,6 +6,7 @@
 import { join } from "node:path";
 import { plantArgs } from "./plant-judge.ts";
 import type { ExpectedFinding, Plant, PlantRun } from "./plant-judge.ts";
+import { baselineName } from "./visual-verdict.ts";
 import type { StoryTheme } from "./visual-verdict.ts";
 import type { Gate, PlantForm } from "./registry.ts";
 import type { ToolRun } from "./spawn.ts";
@@ -35,8 +36,24 @@ export interface RunnerTools {
   readonly stylesheet: (root: string) => Promise<string>;
   /** The plant job's environment, for a visual plant's `{engine}` (006 research.md R-06). */
   readonly env?: Readonly<Record<string, string | undefined>>;
-  /** Run on a plant's root after its gate run and before the root is removed (006 research.md R-11: the captures copy). */
-  readonly afterRun?: (gate: Gate, path: string, plant: Plant, into: string, run: PlantRun) => Promise<void>;
+  /** The tools of the captures copy of a failing visual pass plant (006 research.md R-11); absent: no copy. */
+  readonly visual?: VisualCopyTools;
+}
+
+/** What the captures copy of a failing visual pass plant uses (006 research.md R-11). */
+export interface VisualCopyTools {
+  /** The plant's own story ids in its built root `into` (the plant at its absolute path). */
+  readonly own: (into: string, plant: string) => Promise<readonly string[]>;
+  /** Copies a file (absolute paths), making the directories it needs. */
+  readonly copy: (from: string, to: string) => Promise<void>;
+  /** The capture of one story-theme made alone in the root (two runs that agree), or undefined when none was made. */
+  readonly captureAlone: (into: string, storyTheme: StoryTheme) => Promise<Uint8Array | undefined>;
+  /** Reads a file's bytes (absolute path); undefined when it does not exist. */
+  readonly readBytes: (path: string) => Promise<Uint8Array | undefined>;
+  /** Writes a file (absolute path), making the directories it needs. */
+  readonly write: (path: string, bytes: Uint8Array) => Promise<void>;
+  /** Prints one line on the job's error output. */
+  readonly note: (line: string) => void;
 }
 
 /** What key resolution reads of a plant's built tree (paths relative to it). */
@@ -117,6 +134,28 @@ export function plantValues(form: PlantForm, into: string, built: BuiltRepo, pla
   return base === undefined ? { root: into } : { root: into, base };
 }
 
+/**
+ * Keeps a failing visual pass plant's captures of its own differs and missing-baseline story-themes in tree layout below
+ * the repository: run 1's captures, or for a captureAlone plant captures made alone, each copied unless it equals the
+ * committed baseline, which gives the freshness line instead (006 research.md R-11).
+ */
+async function keepCaptures(tools: VisualCopyTools, root: string, path: string, plant: Plant, into: string, run: PlantRun): Promise<void> {
+  const failed = failedOwn(run.stdout, await tools.own(into, join(root, path)));
+  const kept = join(root, keptPlantDir(path));
+  for (const at of failed) {
+    const file = baselineName(at.story, at.theme);
+    if (plant.captureAlone !== true) {
+      await tools.copy(join(into, "storybook/.visual/baselines", file), join(kept, file));
+      continue;
+    }
+    const alone = await tools.captureAlone(into, at);
+    if (alone === undefined) continue;
+    const decision = aloneDecision(path, at, alone, await tools.readBytes(join(root, path, "tree/storybook/baselines", file)));
+    if ("line" in decision) tools.note(decision.line);
+    else await tools.write(join(kept, file), alone);
+  }
+}
+
 /** Builds the plant's temporary repository, runs the gate's plant command on it, and removes the repository. */
 export async function runPlant(tools: RunnerTools, root: string, gate: Gate, path: string, plant: Plant): Promise<PlantRun> {
   const into = await tools.tempDir(`ocelle-plant-${gate.id}-`);
@@ -124,7 +163,8 @@ export async function runPlant(tools: RunnerTools, root: string, gate: Gate, pat
     const built = await tools.build[gate.plantForm](join(root, path), into, plant).catch((error: unknown) => {
       throw new Error(`${path}: cannot build its temporary repository (${errorText(error)})`, { cause: error });
     });
-    const [command, ...args] = plantArgs(gate.plantCommand, plantValues(gate.plantForm, into, built, plant));
+    const engine = gate.plantCommand.includes("{engine}") ? { engine: engineValue(plant, tools.env ?? {}) } : {};
+    const [command, ...args] = plantArgs(gate.plantCommand, { ...plantValues(gate.plantForm, into, built, plant), ...engine });
     const ran = await tools.run(command === "node" ? tools.node : String(command), args);
     const commits = built.commits === undefined ? {} : { commits: built.commits };
     const findings = plant.findings ?? [];
@@ -136,7 +176,9 @@ export async function runPlant(tools: RunnerTools, root: string, gate: Gate, pat
           }),
         }
       : {};
-    return { exit: ran.exitCode, stdout: outputLines(ran.stdout), stderr: outputLines(ran.stderr), ...commits, ...expected };
+    const run: PlantRun = { exit: ran.exitCode, stdout: outputLines(ran.stdout), stderr: outputLines(ran.stderr), ...commits, ...expected };
+    if (tools.visual !== undefined && gate.id === "visual" && plant.expect === "pass" && run.exit !== 0) await keepCaptures(tools.visual, root, path, plant, into, run);
+    return run;
   } finally {
     await tools.removeDir(into);
   }
@@ -167,27 +209,36 @@ export function gateRunsAtOnce(processors: number): number {
  * `$OCELLE_VISUAL_ENGINE`, else `both`; `missing` is the engine name `ocelle-no-such-engine`.
  */
 export function engineValue(plant: Plant, env: Readonly<Record<string, string | undefined>>): string {
-  throw new Error(`not implemented (plant-runner, phase 3): ${plant.expect} ${String(Object.keys(env).length)}`);
+  if (plant.engine === "missing") return "ocelle-no-such-engine";
+  const fromEnv = env.OCELLE_VISUAL_ENGINE;
+  return plant.engine ?? (fromEnv === undefined || fromEnv === "" ? "both" : fromEnv);
 }
 
 /** Whether a plant needs a container engine: a visual plant whose engine is not host or missing (006 research.md R-07). */
 export function needsEngine(gate: string, plant: Plant): boolean {
-  throw new Error(`not implemented (plant-runner, phase 3): ${gate} ${plant.expect}`);
+  return gate === "visual" && plant.engine !== "host" && plant.engine !== "missing";
 }
 
 /** What the plant job does with a plant: run it, skip it (`--skip-container`), or not run it (no container engine). */
 export function containerDecision(gate: string, plant: Plant, options: { readonly skipContainer: boolean; readonly engines: boolean }): "run" | "skip" | "not-run" {
-  throw new Error(`not implemented (plant-runner, phase 3): ${gate} ${plant.expect} ${String(options.engines)}`);
+  if (gate !== "visual") return "run";
+  if (options.skipContainer) return "skip";
+  return needsEngine(gate, plant) && !options.engines ? "not-run" : "run";
 }
 
 /** The story-themes of a failing visual pass plant's own stories that its gate run reported differs or missing-baseline. */
 export function failedOwn(stdout: readonly string[], own: readonly string[]): StoryTheme[] {
-  throw new Error(`not implemented (plant-runner, phase 3): ${String(stdout.length)} ${String(own.length)}`);
+  const failed: StoryTheme[] = [];
+  for (const line of stdout) {
+    const match = /^([a-z0-9-]+--[a-z0-9-]+)\/(light|dark): visual: (?:differs|missing-baseline): /.exec(line);
+    if (match !== null && own.includes(String(match[1]))) failed.push({ story: String(match[1]), theme: match[2] === "dark" ? "dark" : "light" });
+  }
+  return failed;
 }
 
 /** Where the plant job keeps a pass plant's captures, in tree layout below the repository (006 research.md R-11). */
 export function keptPlantDir(plantPath: string): string {
-  throw new Error(`not implemented (plant-runner, phase 3): ${plantPath}`);
+  return `storybook/.visual/plants/${plantPath}/tree/storybook/baselines`;
 }
 
 /**
@@ -195,5 +246,9 @@ export function keptPlantDir(plantPath: string): string {
  * gives the freshness line instead (006 research.md R-11).
  */
 export function aloneDecision(plantPath: string, storyTheme: StoryTheme, alone: Uint8Array, committed: Uint8Array | undefined): { readonly copy: true } | { readonly line: string } {
-  throw new Error(`not implemented (plant-runner, phase 3): ${plantPath} ${storyTheme.story} ${String(alone.length)} ${String(committed?.length)}`);
+  if (committed !== undefined && Buffer.from(alone).equals(Buffer.from(committed))) {
+    const plant = plantPath.replace(/^gates\/plants\//, "");
+    return { line: `plants: ${plant}: ${storyTheme.story}/${storyTheme.theme}: captured alone matches the baseline; the full run differs (freshness)` };
+  }
+  return { copy: true };
 }

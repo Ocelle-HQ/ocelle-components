@@ -111,7 +111,7 @@ describe("plant job (gates/bin/plants.ts)", () => {
       const bin = tempDir("bin");
       symlinkSync(execFileSync("sh", ["-c", "command -v git"], { encoding: "utf8" }).trim(), join(bin, "git"));
       symlinkSync(process.execPath, join(bin, "node"));
-      const env = { ...baseEnv(), PATH: bin };
+      const env: Record<string, string> = { ...baseEnv(), PATH: bin };
       delete env.OCELLE_VISUAL_ENGINE;
       const ran = await runGate("gates/bin/plants.ts", ["--root", root], { cwd: tempDir("cwd"), env });
       expect({ code: ran.code, stderr: ran.stderr }).toEqual({

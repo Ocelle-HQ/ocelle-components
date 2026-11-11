@@ -1,0 +1,4 @@
+{
+  "expect": "pass",
+  "why": "A story with a running CSS animation and a focused text field passes with its baselines: reduced motion, disabled animations and the hidden caret fix them (US2 scenario 8; its control is research.md R-04's animation control)."
+}

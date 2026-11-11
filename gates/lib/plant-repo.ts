@@ -13,12 +13,13 @@
 // files and run git with their results (the process boundary, tested by gates/test/integration/plant-repo.test.ts).
 import { execFile } from "node:child_process";
 import { cp, mkdir, readdir, readFile, realpath, rename, rm, symlink, writeFile } from "node:fs/promises";
-import { basename, join, posix } from "node:path";
+import { basename, dirname, join, posix } from "node:path";
 import { pathToFileURL } from "node:url";
 import { promisify } from "node:util";
 import type { TokenOverride } from "../../packages/tokens/src/generate.ts";
 import { directoryNames, filePaths } from "./entries.ts";
 import type { Plant } from "./plant-judge.ts";
+import { decode, encode } from "./png.ts";
 
 /** One record of a commit plant's commits.txt. */
 export interface CommitSpec {
@@ -230,7 +231,14 @@ function isPairChange(value: unknown): boolean {
   return "set" in value ? isObject(value.set) && !("remove" in value) : value.remove === true;
 }
 
-const deltaKeys = new Set(["tokens", "pairs", "pairsList", "generator", "exceptions"]);
+const deltaKeys = new Set(["tokens", "pairs", "pairsList", "generator", "exceptions", "baselines"]);
+const baselineEdits = ["one-pixel", "reencode", "remove"];
+
+/** Whether a value is one baseline edit: exactly a non-empty `file` and a known `edit`. */
+function isBaselineEdit(value: unknown): boolean {
+  if (!isObject(value) || Object.keys(value).length !== 2) return false;
+  return typeof value.file === "string" && value.file !== "" && baselineEdits.includes(String(value.edit));
+}
 
 /** The delta of a delta.json text; throws naming the problem. */
 export function parseDelta(text: string): Delta {
@@ -260,6 +268,15 @@ export function parseDelta(text: string): Delta {
   if (pairs !== undefined && pairsList !== undefined) throw new Error("delta.json: pairs and pairsList exclude each other");
   if (generator !== undefined && generator !== "wrapped") throw new Error('delta.json: generator must be "wrapped"');
   if (value.exceptions !== undefined && value.exceptions !== "repository") throw new Error('delta.json: exceptions must be "repository"');
+  const { baselines } = value;
+  if (baselines !== undefined) {
+    if (!Array.isArray(baselines)) throw new Error("delta.json: baselines must be a list of baseline edits");
+    const bad = baselines.findIndex((item) => !isBaselineEdit(item));
+    if (bad !== -1) throw new Error(`delta.json: baselines[${String(bad)}] is not a baseline edit (a file and one-pixel, reencode or remove)`);
+    const files = (baselines as BaselineEdit[]).map((item) => item.file);
+    const twice = files.find((file, index) => files.indexOf(file) !== index);
+    if (twice !== undefined) throw new Error(`delta.json: baselines lists ${twice} twice`);
+  }
   return value;
 }
 
@@ -268,10 +285,10 @@ const overridesFile = "packages/tokens/src/overrides.ts";
 const generatorFile = "packages/tokens/src/generate.ts";
 const pairsFile = "packages/tokens/contrast/pairs.json";
 const exceptionsFile = "storybook/a11y-exceptions.json";
+const baselinesDir = "storybook/baselines";
 
 /** The problems of a plant's tree/ (paths relative to it) against its delta: files a plant changes only by delta. */
 export function treeProblems(treePaths: readonly string[], delta: Delta | undefined, repositoryBaselines: readonly string[] = []): string[] {
-  if (repositoryBaselines.length < 0) throw new Error("not implemented (plant-repo, phase 3)");
   const holds = new Set(treePaths);
   const problems: string[] = [];
   if (holds.has(sourceFile)) problems.push(`tree/ holds ${sourceFile}; a plant changes the token source by delta.json tokens`);
@@ -281,6 +298,13 @@ export function treeProblems(treePaths: readonly string[], delta: Delta | undefi
   if (!holds.has(generatorFile) && wrapped) problems.push(`delta.json sets generator "wrapped" but tree/ holds no ${generatorFile}`);
   if (holds.has(overridesFile) && delta?.tokens !== undefined) {
     problems.push(`tree/ holds ${overridesFile} and delta.json has tokens; one of them sets the overrides`);
+  }
+  for (const name of repositoryBaselines) {
+    const path = `${baselinesDir}/${name}`;
+    if (holds.has(path)) problems.push(`tree/ holds ${path}; a plant changes a repository baseline by delta.json baselines`);
+  }
+  for (const { file } of delta?.baselines ?? []) {
+    if (!repositoryBaselines.includes(file)) problems.push(`delta.json baselines: ${file} is not a repository baseline`);
   }
   return problems;
 }
@@ -347,7 +371,15 @@ export interface BaselineEdit {
  * normalised) or a `reencode` (the same pixels at deflate level 1; throws when the bytes come out equal).
  */
 export function editBaseline(bytes: Uint8Array, edit: "one-pixel" | "reencode"): Buffer {
-  throw new Error(`not implemented (plant-repo, phase 3): ${String(bytes.length)} ${edit}`);
+  const image = decode(bytes);
+  if (edit === "reencode") {
+    const reencoded = encode(image, 1);
+    if (reencoded.equals(Buffer.from(bytes))) throw new Error("delta.json baselines: reencode gives the baseline's own bytes");
+    return reencoded;
+  }
+  const data = Uint8Array.from(image.data);
+  for (let channel = 0; channel < 3; channel += 1) data[channel] = 255 - Number(data[channel]);
+  return encode({ ...image, data });
 }
 
 /** Throws unless a plant's generate.ts re-exports the real generator, `./generate.real.ts`. */
@@ -443,9 +475,9 @@ async function layOver(plant: string, part: string, into: string): Promise<void>
   await cp(join(plant, part), into, { recursive: true }).catch(ignoreMissing);
 }
 
-/** The plant's delta.json, if it has one, checked against its tree/ (the plant job's check of the plant's files). */
+/** The plant's delta.json, if it has one, checked against its tree/ and the repository's baselines (the plant job's check of the plant's files). */
 // Stryker disable next-line all: process boundary, covered by gates-integration: gates/test/integration/plant-repo.test.ts "copies the configuration set unchanged, lays tree/ over it at repository paths, and links node_modules"
-async function readDelta(plant: string): Promise<Delta | undefined> {
+async function readDelta(plant: string, repositoryBaselines: readonly string[]): Promise<Delta | undefined> {
   // Stryker disable next-line all: process boundary, covered by gates-integration: gates/test/integration/plant-repo.test.ts "copies the configuration set unchanged, lays tree/ over it at repository paths, and links node_modules"
   const text = await readFile(join(plant, "delta.json"), "utf8").catch(ignoreMissing);
   // Stryker disable next-line all: process boundary, covered by gates-integration: gates/test/integration/plant-repo.test.ts "fails to build $plant, naming the key or file"
@@ -453,7 +485,7 @@ async function readDelta(plant: string): Promise<Delta | undefined> {
   // Stryker disable next-line all: process boundary, covered by gates-integration: gates/test/integration/plant-repo.test.ts "copies the configuration set unchanged, lays tree/ over it at repository paths, and links node_modules"
   const tree = join(plant, "tree");
   // Stryker disable next-line all: process boundary, covered by gates-integration: gates/test/integration/plant-repo.test.ts "copies the configuration set unchanged, lays tree/ over it at repository paths, and links node_modules"
-  const problems = treeProblems(filePaths(await readdir(tree, { recursive: true, withFileTypes: true }).catch(() => []), tree), delta);
+  const problems = treeProblems(filePaths(await readdir(tree, { recursive: true, withFileTypes: true }).catch(() => []), tree), delta, repositoryBaselines);
   // Stryker disable next-line all: process boundary, covered by gates-integration: gates/test/integration/plant-repo.test.ts "fails to build $plant, naming the key or file"
   if (problems.length > 0) throw new Error(problems.join("; "));
   // Stryker disable next-line all: process boundary, covered by gates-integration: gates/test/integration/plant-repo.test.ts "copies the configuration set unchanged, lays tree/ over it at repository paths, and links node_modules"
@@ -479,6 +511,15 @@ async function applyDelta(delta: Delta, into: string): Promise<void> {
   if (delta.pairs !== undefined) await writeFile(join(into, pairsFile), applyPairChanges(await readFile(join(into, pairsFile), "utf8"), delta.pairs));
   // Stryker disable next-line all: process boundary, covered by gates-integration: gates/test/integration/plant-repo.test.ts 'writes pairsList "empty" as exactly "[]\\n", an empty JSON list' and 'writes pairsList "not-json" as exactly the fixed cut-off text, which does not parse as JSON'
   if (delta.pairsList !== undefined) await writeFile(join(into, pairsFile), pairsListTexts[delta.pairsList]);
+}
+
+/** Applies one delta.json `baselines` edit to a baseline file of the root: rewritten edited, or removed. */
+// Stryker disable next-line all: process boundary, covered by gates-integration: gates/test/integration/plant-repo.test.ts "buildRepoTree: baselines (006 research.md R-11, R-16) applies one-pixel, reencode and remove to the repository's current baselines, and leaves the others as they are"
+async function applyBaselineEdit(file: string, edit: BaselineEdit["edit"]): Promise<void> {
+  // Stryker disable next-line all: process boundary, covered by gates-integration: gates/test/integration/plant-repo.test.ts "buildRepoTree: baselines (006 research.md R-11, R-16) applies one-pixel, reencode and remove to the repository's current baselines, and leaves the others as they are"
+  if (edit === "remove") return rm(file);
+  // Stryker disable next-line all: process boundary, covered by gates-integration: gates/test/integration/plant-repo.test.ts "buildRepoTree: baselines (006 research.md R-11, R-16) applies one-pixel, reencode and remove to the repository's current baselines, and leaves the others as they are"
+  await writeFile(file, editBaseline(await readFile(file), edit));
 }
 
 /** The repository's exception entries, for `exceptions: "repository"`, with the plan files they name copied into `into`. */
@@ -512,8 +553,14 @@ async function repositoryExceptions(repo: string, into: string): Promise<string>
 export async function buildRepoTree(repo: string, plant: string, into: string, spec?: Plant): Promise<void> {
   // Stryker disable next-line all: process boundary, covered by gates-integration: gates/test/integration/plant-repo.test.ts "copies the configuration set unchanged, lays tree/ over it at repository paths, and links node_modules"
   await copyConfiguration(repo, into, spec?.unlinked);
+  // Stryker disable next-line all: process boundary, covered by gates-integration: gates/test/integration/plant-repo.test.ts "buildRepoTree: baselines (006 research.md R-11, R-16) applies one-pixel, reencode and remove to the repository's current baselines, and leaves the others as they are"
+  const repositoryBaselines = await readdir(join(repo, baselinesDir)).catch(() => []);
   // Stryker disable next-line all: process boundary, covered by gates-integration: gates/test/integration/plant-repo.test.ts "copies the configuration set unchanged, lays tree/ over it at repository paths, and links node_modules"
-  const delta = await readDelta(plant);
+  const delta = await readDelta(plant, repositoryBaselines);
+  // Stryker disable next-line all: process boundary, covered by gates-integration: gates/test/integration/plant-repo.test.ts "buildRepoTree: baselines (006 research.md R-11, R-16) applies one-pixel, reencode and remove to the repository's current baselines, and leaves the others as they are"
+  for (const edit of delta?.baselines ?? []) await applyBaselineEdit(join(into, baselinesDir, edit.file), edit.edit);
+  // Stryker disable next-line all: process boundary, covered by gates-integration: gates/test/integration/plant-repo.test.ts "buildRepoTree: baselines (006 research.md R-11, R-16) gives a baselinesOf plant's root the named pass plant's baselines, under its own tree/ and none of the pass plant's other files"
+  if (spec?.baselinesOf !== undefined) await cp(join(dirname(plant), spec.baselinesOf, "tree", baselinesDir), join(into, baselinesDir), { recursive: true });
   // Stryker disable next-line all: process boundary, covered by gates-integration: gates/test/integration/plant-repo.test.ts "buildRepoTree: the Storybook workspace (006 research.md R-16) appends the repository's entries after the tree's own for exceptions: "repository", and copies the plan files they name"
   const repository = delta?.exceptions === "repository" ? await repositoryExceptions(repo, into) : undefined;
   // Stryker disable next-line all: process boundary, covered by gates-integration: gates/test/integration/plant-repo.test.ts "moves the real generator to generate.real.ts and places the plant's wrapper for generator wrapped (and not without a delta)"

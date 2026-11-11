@@ -555,7 +555,8 @@ describe("runPlant: the captures of a failing visual pass plant (006 research.md
         calls.push(`note ${line}`);
       },
     };
-    return { tools: { ...tools, visual } as RunnerTools, calls };
+    const withCopy: RunnerTools = { ...tools, visual };
+    return { tools: withCopy, calls };
   }
 
   it("copies run 1's captures of the failing own story-themes in tree layout, before the root is removed", async () => {

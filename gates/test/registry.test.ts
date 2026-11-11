@@ -122,7 +122,7 @@ describe("checkRegistry", () => {
   });
 
   it("reports every gate when the registry and the workflow are empty", () => {
-    expect(checkRegistry({ registry: [], jobs: [], ...paths })).toHaveLength(28);
+    expect(checkRegistry({ registry: [], jobs: [], ...paths })).toHaveLength(30);
   });
 });
 

@@ -1,0 +1,15 @@
+{
+  "expect": "fail",
+  "why": "Only the content below y = 800 of the pass-below-fold story changes, against that plant's baselines: differs on both themes, so content below the fold is compared (FR-012).",
+  "findings": [
+    {
+      "location": "below-fold--tall/light",
+      "rule": "differs"
+    },
+    {
+      "location": "below-fold--tall/dark",
+      "rule": "differs"
+    }
+  ],
+  "baselinesOf": "pass-below-fold"
+}

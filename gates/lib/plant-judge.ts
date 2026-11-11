@@ -47,7 +47,8 @@ export interface Plant {
 /** The gates that build the Storybook in their plant roots (006 research.md R-07, R-16). */
 export const storybookGates: readonly string[] = ["storybook-build", "visual", "axe"];
 
-const keys = new Set(["expect", "why", "findings", "records", "cause", "base", "unlinked"]);
+const keys = new Set(["expect", "why", "findings", "records", "cause", "base", "unlinked", "engine", "baselinesOf", "captureAlone"]);
+const engines = ["both", "host", "missing"] as const;
 const unlinkable = "storybook/node_modules";
 
 function isText(value: unknown): value is string {
@@ -127,12 +128,29 @@ export function parsePlant(text: string): Plant | string {
     if (!Array.isArray(unlinked) || unlinked.length !== 1 || unlinked[0] !== unlinkable) return `unlinked must be ["${unlinkable}"]`;
     plant = { ...plant, unlinked: [unlinkable] };
   }
+  if (fields.engine !== undefined) {
+    const engine = engines.find((value) => value === fields.engine);
+    if (engine === undefined) return "engine must be both, host or missing";
+    plant = { ...plant, engine };
+  }
+  if (fields.baselinesOf !== undefined) {
+    const { baselinesOf } = fields;
+    if (typeof baselinesOf !== "string" || !/^[a-z0-9][a-z0-9-]*$/.test(baselinesOf)) return "baselinesOf must be the name of a visual pass plant";
+    plant = { ...plant, baselinesOf };
+  }
+  if (fields.captureAlone !== undefined) {
+    if (fields.captureAlone !== true) return "captureAlone must be true";
+    plant = { ...plant, captureAlone: true };
+  }
   return plant;
 }
 
 /** The problem with a plant's keys for the gate whose plant it is, or undefined when its keys are valid for that gate. */
 export function gateKeysProblem(gate: string, plant: Plant): string | undefined {
   if (plant.unlinked !== undefined && !storybookGates.includes(gate)) return "unlinked is only for plants of storybook-build, visual and axe";
+  if (plant.engine !== undefined && gate !== "visual") return "engine is only for plants of visual";
+  if (plant.baselinesOf !== undefined && (gate !== "visual" || plant.expect !== "fail")) return "baselinesOf is only for visual fail plants";
+  if (plant.captureAlone !== undefined && (gate !== "visual" || plant.expect !== "pass")) return "captureAlone is only for visual pass plants";
   return undefined;
 }
 
@@ -142,7 +160,15 @@ export function gateKeysProblem(gate: string, plant: Plant): string | undefined 
  * undefined when no such plant exists); `captureAlone` needs stories of the plant's own. Paths are relative to tree/.
  */
 export function plantFilesProblem(plant: Plant, tree: readonly string[], named?: { readonly plant: Plant | undefined; readonly tree: readonly string[] }): string | undefined {
-  throw new Error(`not implemented (plant-judge, phase 3): ${plant.expect} ${String(tree.length)} ${String(named?.tree.length)}`);
+  const baselines = (tree: readonly string[]): boolean => tree.some((path) => path.startsWith("storybook/baselines/"));
+  if (plant.baselinesOf !== undefined) {
+    if (baselines(tree)) return "a plant with baselinesOf holds no file under storybook/baselines/ in its tree/";
+    if (named?.plant?.expect !== "pass") return `baselinesOf names ${plant.baselinesOf}, which is not a visual pass plant`;
+    if (!baselines(named.tree)) return `baselinesOf names ${plant.baselinesOf}, which holds no baselines`;
+  }
+  const ownStory = tree.some((path) => /^storybook\/stories\/[^/]+\.stories\.ts$/.test(path));
+  if (plant.captureAlone === true && !ownStory) return "a captureAlone plant has stories of its own in tree/storybook/stories/";
+  return undefined;
 }
 
 /** One gate run on a plant: its exit code and output lines, and for a commit plant the hashes of its records. */
