@@ -30,11 +30,10 @@ devDependencies:
 + vite 8.3.5
 + vitest 5.0.5
 
-Done in 585ms using pnpm v12.16.1
+Done in 399ms using pnpm v12.16.1
 $ node gates/bin/setup-offline.ts
 setup: installed offline; Chromium at /opt/pw-browsers/chromium-1243/chrome-linux64/chrome
 $ node gates/bin/test.ts
-packages/styles/test/browser/prose.test.ts:471: unit-tests: US3-3: the caption wraps inside the wide table's visible box at its start edge, and stays in it while the table scrolls (FR-017) in light at 320 px under ltr: AssertionError: expected { 'caption-cap': [ …(2) ], …(2) } to deeply equal { 'caption-cap': [ …(2) ], …(2) }
 gates/test/mutation-shards.test.ts:55: unit-tests: planShards: the split within files (phase 3 round 9, O9-01; 002 phase 5 round 6, O6-01; 007 FR-014) keeps a file of exactly 30 changed lines as one entry, its path, beside a file of 31 that is split: AssertionError: expected [ { files: [ …(2) ], lines: 61 } ] to deeply equal [ Array(2) ]
 gates/test/mutation-shards.test.ts:62: unit-tests: planShards: the split within files (phase 3 round 9, O9-01; 002 phase 5 round 6, O6-01; 007 FR-014) splits a file of 31 changed lines into an entry of 30 lines and one of 1, in two shards: AssertionError: expected [ { …(2) } ] to deeply equal [ { …(2) }, { …(2) } ]
 gates/test/mutation-shards.test.ts:69: unit-tests: planShards: the split within files (phase 3 round 9, O9-01; 002 phase 5 round 6, O6-01; 007 FR-014) cuts inside a changed range where the count reaches 30, each entry from its first to its last changed line: AssertionError: expected [ { …(2) }, { …(2) } ] to deeply equal [ { …(2) }, { …(2) }, { …(2) } ]
@@ -58,5 +57,5 @@ gates/test/mutation-shards.test.ts:295: unit-tests: formatPlan prints a shard's 
 gates/test/mutation-shards.test.ts:447: unit-tests: mutation gate: --plan, --files and --base --plan writes 1 cut in the singular, for a file split into two entries (phase 3 round 10, O10-02): AssertionError: expected { code: +0, …(2) } to deeply equal { code: +0, …(2) }
 gates/test/mutation-shards.test.ts:456: unit-tests: mutation gate: --plan, --files and --base --plan writes the cuts of several split files summed, n - 1 for a file of n entries (phase 3 round 10, O10-02): AssertionError: expected { code: +0, …(2) } to deeply equal { code: +0, …(2) }
 gates/test/mutation-shards.test.ts:626: unit-tests: mutation gate: --plan and --files with line-range entries (phase 3 round 9, O9-01) --plan splits a file of more than 30 changed lines into path:start-end entries: AssertionError: expected { code: +0, …(3) } to deeply equal { code: +0, …(3) }
-unit-tests: 24 of 2099 tests failed
+unit-tests: 23 of 2099 tests failed
 [ELIFECYCLE] Test failed. See above for more details.
