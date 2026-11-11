@@ -585,8 +585,8 @@ by the baseline command's **plant mode**, `pnpm run visual:update -- --plant vis
   of the plant's own stories, and a `captureAlone` plant without `--story`.
 The fail plants that compare a changed story with the baselines of the unchanged one hold no PNG of their own: the
 plant key `baselinesOf` (R-16) names the pass plant whose baselines their root receives (`fail-below-fold` ←
-`pass-below-fold`, `fail-overflow-changed` ← `pass-overflow-and-popover`, `fail-hover-style-changed` ←
-`pass-hover-and-press`), so regenerating the pass plant keeps them current. **CI is the producer of record for plant
+`pass-below-fold`, `fail-overflow-changed` and `fail-popover-changed` ← `pass-overflow-and-popover`,
+`fail-hover-style-changed` and `fail-press-style-changed` ← `pass-hover-and-press`), so regenerating the pass plant keeps them current. **CI is the producer of record for plant
 baselines too** (decision 7): when a `visual` pass plant fails with `differs` or `missing-baseline` on story-themes of
 its own stories, the plant runner copies run 1's captures of those story-themes from the plant root's
 `storybook/.visual/baselines/` to `storybook/.visual/plants/gates/plants/visual/<name>/tree/storybook/baselines/` of the
@@ -721,7 +721,7 @@ with a cookie, a `localStorage` key, a `sessionStorage` key and an IndexedDB dat
 allow-listed entries and an empty state, none). Fail plants: a story that fetches a same-origin path
 (`fail-same-origin-fetch`), a story that calls `localStorage.setItem` (`fail-local-storage`), a story that writes
 `localStorage.k = "v"` (`fail-storage-property`), a story that sets `document.cookie` (`fail-cookie`) and a story
-that opens an IndexedDB database (`fail-indexeddb`), each `io` on both themes. When a story-theme is also `font` or `network`, the capture's one status follows the order of
+that opens an IndexedDB database (`fail-indexeddb`), and, for the kinds that otherwise had only unit tests (analysis C1, operator decision 2026-11-10/11), `fail-xhr`, `fail-websocket`, `fail-session-storage`, `fail-cache-api`, `fail-clipboard-write`, `fail-exec-copy`, `fail-beacon` and `fail-storage-left-by-worker` (a worker's IndexedDB write that the recorder cannot see and only the storage-state read catches; contracts/plants.md § `visual`), each `io` on both themes. When a story-theme is also `font` or `network`, the capture's one status follows the order of
 R-05's `captureStatus` (`font`, then `network`, then `io`). The baseline command refuses on `io`. The axe gate does not repeat the check: a story with I/O
 fails the required "Visual regression" check.
 
@@ -745,7 +745,8 @@ the message `<hover|press>: target outside the viewport: <selector>`. The parame
 constant, so the rule and the context the capture and the axe gate open cannot drift, R-08) are pure functions in
 `gates/lib/capture-plan.ts` with unit tests: a box inside, a box touching the edges, a box partly outside on the right, a box below the fold, and no box. Plants: `pass-hover-and-press` (two stories, one hovered, one pressed, with their baselines),
 `fail-hover-style-changed` (the tree changes only the `:hover` rule: `differs` on both themes, which a capture without
-the hover could not show), `fail-pointer-target-missing` (`pointer-target` on both themes),
+the hover could not show), `fail-press-style-changed` (the tree changes only the press story's `:active` rule: `differs`
+on both themes; analysis G4), `fail-pointer-target-missing` (`pointer-target` on both themes),
 `fail-pointer-target-below-fold` (a `pointer.hover` target at y = 1500 of a 2000 px story: `pointer-target` on both
 themes), and in the axe gate `fail-hover-reveals-unlabelled` (an unlabelled button shown only on hover: `button-name` on
 both themes) and `fail-pointer-target-below-fold` (the same story: `pointer-target` on both themes, axe not run), and

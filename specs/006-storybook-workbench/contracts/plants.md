@@ -40,6 +40,7 @@ repository's entries and copies the plan files they name (research.md R-16).
 | `fail-same-pixels-other-bytes` | fail | `delta.json` `baselines: [{ "file": "tokens--colour.dark.png", "edit": "reencode" }]` (same pixels, deflate level 1): exactly one `differs` at `tokens--colour/dark` |
 | `fail-below-fold` | fail | `baselinesOf: "pass-below-fold"`; the tree changes only an element below y = 800 of that story: `differs` on both themes (FR-012) |
 | `fail-overflow-changed` | fail | `baselinesOf: "pass-overflow-and-popover"`; the tree changes only the overflowing child of that story: `differs` on both themes (FR-012) |
+| `fail-popover-changed` | fail | `baselinesOf: "pass-overflow-and-popover"`; the tree changes only the content of that story's open top-layer `popover` (its text), nothing else: `differs` on both themes (FR-012's top layer; analysis G3) |
 | `fail-random` | fail | a story with `Math.random()` in its markup: `nondeterministic` on both themes |
 | `fail-other-font` | fail | a story whose text uses `font-family: serif`: `font` on both themes |
 | `fail-input-system-font` | fail | a custom element whose open shadow root holds an `<input value="…">` and an `<input placeholder="…">` with no font rule (their text in user-agent shadow roots, drawn in a system face): `font` on both themes (research.md R-05) |
@@ -51,10 +52,19 @@ repository's entries and copies the plan files they name (research.md R-16).
 | `fail-storage-property` | fail | a story that writes `localStorage.k = "v"` (a named property, no method call): `io` on both themes (research.md R-14) |
 | `fail-cookie` | fail | a story that sets `document.cookie`: `io` on both themes |
 | `fail-indexeddb` | fail | a story that opens an IndexedDB database with `indexedDB.open`: `io` on both themes |
+| `fail-xhr` | fail | a story that sends an `XMLHttpRequest` for `/api/items`: `io` on both themes (analysis C1) |
+| `fail-websocket` | fail | a story that opens ``new WebSocket(`ws://${location.host}/socket`)``: `io` on both themes (analysis C1) |
+| `fail-session-storage` | fail | a story that calls `sessionStorage.setItem`: `io` on both themes (analysis C1) |
+| `fail-cache-api` | fail | a story that calls `caches.open("ocelle-plant")`: `io` on both themes (analysis C1) |
+| `fail-clipboard-write` | fail | a story that calls `navigator.clipboard.writeText("ocelle")` (recorded whether the promise resolves or rejects): `io` on both themes (analysis C1) |
+| `fail-exec-copy` | fail | a story that calls `document.execCommand("copy")`: `io` on both themes (analysis C1) |
+| `fail-beacon` | fail | a story that calls `navigator.sendBeacon("/api/beacon")`: `io` on both themes (analysis C1) |
+| `fail-storage-left-by-worker` | fail | a story whose render starts a dedicated worker from a `Blob` URL that opens the IndexedDB database `ocelle-left`, and resolves only after the worker reports it open; init scripts do not run in workers, so the recorder sees no call and only the storage-state read finds the database: `io` on both themes, its message naming `ocelle-left` as left when the render ends (R-14's backstop; analysis C1). If T040 finds the recorder records the worker's call, or the database is not in the storage state, stop and ask: the plant would not prove the backstop |
 | `fail-closed-shadow-root` | fail | a story whose element attaches a closed shadow root: `closed-shadow-root` on both themes |
 | `fail-throws-on-load` | fail | a story module that throws when loaded: `render-failed` on both themes |
 | `fail-render-throws` | fail | a story whose render function throws: `render-failed` on both themes |
 | `fail-hover-style-changed` | fail | `baselinesOf: "pass-hover-and-press"`; the `pass-hover-and-press` stories, the tree changing only the `:hover` rule: `differs` on both themes of the hovered story |
+| `fail-press-style-changed` | fail | `baselinesOf: "pass-hover-and-press"`; the `pass-hover-and-press` stories, the tree changing only the `:active` rule of the pressed story: `differs` on both themes of the pressed story (FR-031; analysis G4) |
 | `fail-pointer-target-missing` | fail | a story whose `pointer.hover` selector matches no element: `pointer-target` on both themes |
 | `fail-pointer-target-below-fold` | fail | a 2000 px tall story whose `pointer.hover` target lies at y = 1500: `pointer-target` (`target outside the viewport`) on both themes |
 | `pass-repository` | pass | the repository's stories and baselines (Storybook's own unused Nunito Sans faces declared, not findings) |
