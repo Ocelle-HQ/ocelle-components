@@ -108,6 +108,35 @@ FR-016 for the zero-mutant candidate).
 - [X] T017 [P] [US1] `knowledge/speckit-flows/log.md`: an Update under 2026-11-10 closing the zero-mutant gate-flag candidate (2026-11-04 and the 2026-11-10 Update): resolved by mission 007 as a report line, not a failure (operator decision, triage 007).
 - [X] T018 [US1] Run `pnpm test`, `pnpm run gate:typecheck`, `gate:lint`, `gate:test-lint`, then `pnpm run gate:plants` (alone; save to `evidence/us1-plants-green.txt`: every plant passes) and `pnpm run gate:mutation -- --base <phase base>` (alone; save to `evidence/us1-gate.log`: exit 0, the new code fully killed, its own report lines read). Commit green (`feat(007-mutation-gate-strictness): phase 2 — US1 report`), signed off, then `.specify/extensions/story/scripts/tdd-check.sh 2` (`pass`).
 
+### Fix round 2 (operator round from the landing review: O2-01, O2-02)
+
+On 2026-11-11 the operator folded landing notes L1-03 and L1-05 into phase 2: "L1-03 to L1-05 (Recommended)"
+(`reviews/phase-2/round-2.md`, O2-01 and O2-02; landing review `reviews/landing/round-1.md`). O2-01 is test-first.
+The form of a line with no replacement is now stated in `contracts/mutation-output.md` and research R-01 (amendment
+2026-11-11): the line ends at `replaced by`, with no trailing space, as a finding's message does. O2-02 is a dated
+record note and needs no test (Principle VIII: no behaviour). L1-04 belongs to phase 3, fix round 2.
+
+**Red (one commit)**
+
+- [ ] T038 [US1] O2-01, in `gates/test/mutation-shards.test.ts`, beside T009's gate output tests, with the Stryker doubles of `gates/test/mutation-fakes.ts`. A report mutant with no `replacement` key is covered in three runs:
+  - a `Timeout` prints exactly `<path>:<start line>: mutation: timeout: <mutator>: replaced by`, and a `CompileError` prints exactly `<path>:<start line>: mutation: compile-error: <mutator>: replaced by`. Each is checked by exact string equality, at exit 0;
+  - the same two lines at exit 1, beside a `Survived` finding;
+  - a `Survived` mutant with no replacement keeps today's finding form (`…: mutation: <mutator>: Survived: replaced by`), in the same assertion.
+
+  Each case also asserts that no stdout line of the run ends in whitespace. The existing cases with a replacement are unchanged (contracts/mutation-output.md, amendment 2026-11-11).
+- [ ] T039 [US1] Commit T038 alone (`test(007-mutation-gate-strictness): phase 2 fix-2 red — O2-01`), signed off. Then run `.specify/extensions/story/scripts/red.sh 2 fix-2`. Confirm the commit is red only because the expected lines lack the trailing space the gate prints today: the failures are T038's assertion mismatches, not load or setup errors.
+
+**Green**
+
+- [ ] T040 [US1] O2-01, `gates/bin/mutation.ts` (the `undecided` line, `:168-170`): print the `timeout` and `compile-error` lines the way findings are printed, through `oneLine` of `gates/lib/findings.ts`, so a line with no replacement ends at `replaced by`. No other line changes. Update the header comment if it describes the line. T038 now passes.
+- [ ] T041 [P] [US1] O2-02, `specs/001-repository-foundation/contracts/gate-cli.md:7`, the general exit-0 row. Keep "a one-line summary" and add one dated note: "amendment 2026-11-11, mission 007: the mutation gate also prints record and report lines at exit 0, see its row".
+- [ ] T042 [US1] Run the checks:
+  - `pnpm test`, `pnpm run gate:typecheck`, `gate:lint` and `gate:test-lint`;
+  - `pnpm run gate:plants`, alone; every plant passes. Save the output to `evidence/us1-fix-2-plants.txt`;
+  - `pnpm run gate:mutation -- --base <T039 red commit>`, alone, before the commit (the gate diffs the base against the working tree). It must report no survivor on the changed lines of `gates/bin/mutation.ts`. Save the output to `evidence/us1-fix-2-gate.log`.
+
+  Commit green (`fix(007-mutation-gate-strictness): phase 2 fix-2 — O2-01, O2-02`), signed off. Then run `.specify/extensions/story/scripts/tdd-check.sh 2` (`pass`).
+
 **Checkpoint**: a reviewer sees every Timeout, CompileError and zero-mutant entry on the changed lines from the gate's
 output alone (SC-001), and no verdict changed (SC-002).
 
@@ -159,6 +188,99 @@ entries are not worse; `dist` is identical (spec FR-009 to FR-013, SC-003 to SC-
 - [X] T030 [P] [US2] `knowledge/speckit-flows/findings/frontend-missions.md` § Mutation shard time: close "the next lever is a bound on mutants per shard" with how it was resolved (lever 1, and lever 2 if used, with the figures), or with the operator's FR-014 decision. Only under lever 3: the dated amendment of 001 FR-013 and SC-005 the operator decided (spec FR-014, FR-015).
 - [X] T031 [US2] Run `pnpm test`, `gate:typecheck`, `gate:lint`, `gate:test-lint`, and `pnpm run gate:mutation -- --base <phase base>` alone (save to `evidence/us2-gate.log`). FR-012 check, recorded in `evidence/README.md`: `git diff --stat <phase-1 base> -- packages/tokens/src stryker.config.json` shows no change (or only lever 2's `concurrency` line), and `grep -rn "Stryker disable" packages/tokens/src` shows nothing new. Landing hand-off (spec FR-010, CI half): an "Open for landing" section in `evidence/README.md` with research R-07's procedure and decision rules (the measurement commit, the local `--plan` check, the times, core count and run link to record, the revert, the draft-pull-request case pushed and opened by the operator, and the operator decision for an alone shard over 480 s), so the landing pass reads it. Commit green (`feat(007-mutation-gate-strictness): phase 3 — US2 token source`), signed off, then `.specify/extensions/story/scripts/tdd-check.sh 3` (`pass`).
 
+### Fix round 2 (operator round from the landing review: O2-01, O2-02)
+
+On 2026-11-11 the operator decided both landing items for phase 3 (`reviews/phase-3/round-2.md`; landing review
+`reviews/landing/round-1.md`).
+
+- L1-01 (O2-01): "Only source-table first (Recommended)". Lever 1 is narrowed: `tokens-source-table` stays alone at
+  `groupOrder` 1, and every other mutation project, the rest of `tokens` included, is one group at 2 in Vitest's default
+  order (research R-05, amendment 2026-11-11).
+- L1-04 (O2-02): folded as a dated record note, with "L1-03 to L1-05 (Recommended)".
+
+O2-01 is test-first. The red commit holds `gates/test/integration/vitest-mutation-config.test.ts` only, and
+`gates/test/vitest-config.test.ts` stays unchanged: it compares names, `include` and `exclude`, which the narrowing
+keeps. The timing proof is evidence, as for T023 to T025: the FR-013 per-mutant comparison on the static mutants of
+gate source against `main`'s mutation configuration, the eight 30-line `source.ts` entries run again and the reference
+entries run again. O2-02 is a record note and needs no test.
+
+Environment, base and method:
+- the environment above; one heavy job at a time, and never `gate:plants` during a mutation run;
+- `B = eaf16896ec10affdca24296fc9531fcffc46a8be` (T001) for the `source.ts` and reference entries;
+- `3a247ef5f684a102f95e433e7cf41550839c79e4` (`main`, the landing base) for the gate-source runs;
+- wall time by `date +%s.%N` around the command, with `time.txt` holding the seconds and then the gate's exit code, as
+  in T036.
+
+Stop-and-ask points of this round:
+- after its one re-run (T046), a Killed → Timeout, Survived or NoCoverage move of a gate-source mutant against
+  `main`'s configuration still holds;
+- a `source.ts` entry has a Timeout, a Survived or a NoCoverage, misses 176 s or fails FR-011 (T049). The operator's
+  "Re-run the two once" was for the lever 3 runs only, so do not re-run on your own;
+- a reference entry fails FR-013 (T050);
+- the order test stays red after T045.
+
+**Red (one commit)**
+
+- [ ] T043 [US2] O2-01, `gates/test/integration/vitest-mutation-config.test.ts` (research R-05, *Red-first* and its amendment of 2026-11-11):
+  - **config test** (`:69`): the `test.sequence` list becomes exactly `[{ groupOrder: 1 }, { groupOrder: 2 }, { groupOrder: 2 }, { groupOrder: 2 }, { groupOrder: 2 }, { groupOrder: 2 }]`, for `tokens-source-table`, `tokens`, `styles`, `elements`, `storybook` and `gates`. The names, the two split exceptions and the comparison with `withoutSequence` are unchanged;
+  - **order test** (`:129`): replace "starts source-table.test.ts first, then every other token test, then the other projects" with "starts source-table.test.ts first, then every other project in one group in Vitest's default order". Run the helper as `order vitest.mutation.config.ts tokens-source-table`, so the run stops as soon as a module outside `tokens-source-table` starts. Assert that `started[0]` is `{ project: "tokens-source-table", module: "packages/tokens/test/source-table.test.ts" }` and that `started[1].project` is `elements`, the first by name of the projects at order 2 (Vitest 5.0.5 `BaseSequencer.sort`: `groupOrder`, then project name). So the next module is not a `tokens` one;
+  - keep the check that `build.test.ts`, `validate.test.ts` and `generate.test.ts` are `tokens` modules collected by `vitest.config.ts`. Keep the collect test (`:111`) unchanged;
+  - update the file's header comment (`:12-18`) to the narrowed order.
+
+  State the replacement and its reason (landing L1-01, FR-013) in the commit body and in the phase review.
+- [ ] T044 [US2] Commit T043 alone (`test(007-mutation-gate-strictness): phase 3 fix-2 red — O2-01 narrowed lever 1`), signed off. Then run `.specify/extensions/story/scripts/red.sh 3 fix-2`. Confirm the commit is red because of the current split: the sequence values are 1, 2, 3, 3, 3, 3, and the second module to start is a `tokens` one. The failures must be assertion mismatches, not load or setup errors.
+
+**Before the fix: gate-source runs (evidence)**
+
+- [ ] T045 [US2] Before the green change, take two runs of the gate-source files, one at a time, each `pnpm --silent run gate:mutation -- --base 3a247ef5f684a102f95e433e7cf41550839c79e4 --files gates/lib/mutation/report.ts,gates/lib/plant-judge.ts`. This reproduces landing L1-01:
+  - **(a) current lever 1**, at the T044 commit. Save under `evidence/fix-2/gate-source/lever1/`;
+  - **(b) `main`'s mutation configuration**, in a scratch worktree of the T044 commit (`git worktree add` under the scratchpad, `pnpm run setup:offline` in it). In the worktree, check out only `vitest.mutation.config.ts` and `gates/test/vitest-config.test.ts` from `3a247ef` (`git checkout 3a247ef -- <both paths>`). Run there, save under `evidence/fix-2/gate-source/main-config/`, then remove the worktree.
+
+  Each folder gets `stdout.txt`, `stderr.txt`, `time.txt` and a copy of `reports/mutation/mutation.json`. Record which mutants of the two files are static, read from the kept reports (`static: true`); landing L1-01 counted 13. Run (a) is the red evidence. If it shows no Timeout this time (landing L1-01: which mutants move varies with load), record that as measured; it is not a stop. Commit both folders alone (`docs(007): phase 3 fix-2 gate-source runs before the fix`), signed off.
+
+**Green**
+
+- [ ] T046 [US2] O2-01, `vitest.mutation.config.ts` only:
+  - `tokens-source-table` stays at `sequence: { groupOrder: 1 }`;
+  - every other mutation project, the rest of `tokens` included, gets `sequence: { groupOrder: 2 }`. No project is at 0, and the split of `tokens` and its `exclude` are unchanged;
+  - update the header comment: the narrowed order and why (landing L1-01, FR-013, the operator's decision of 2026-11-11). Keep the reason `source-table.test.ts` comes first (`build.test.ts`'s child process). Replace the sentence that ordered the rest of `tokens` before every other project.
+
+  `vitest.config.ts` and `pnpm test` are unchanged. T043 now passes, and `gates/test/vitest-config.test.ts` still passes. Run `pnpm test`, `pnpm run gate:typecheck`, `gate:lint` and `gate:test-lint`. Commit green (`fix(007-mutation-gate-strictness): phase 3 fix-2 — O2-01 lever 1 narrowed to source-table first`), signed off.
+- [ ] T047 [US2] Run `pnpm run gate:plants`, alone: every mutation plant keeps its verdict with the narrowed order. Save the output to `evidence/fix-2/plants.txt`.
+- [ ] T048 [US2] FR-013 on gate source (landing L1-01). Take the T045 command again with the narrowed configuration at the T046 commit and save it under `evidence/fix-2/gate-source/narrowed/`. Then compare per mutant with `evidence/compare.mjs`, once per path (`gates/lib/mutation/report.ts`, then `gates/lib/plant-judge.ts`):
+  - **main-config → narrowed**: the FR-013 check. There must be no Killed → Timeout, Survived or NoCoverage move, and no count may move the wrong way. A Timeout that is already a Timeout in `main-config` is allowed and is listed;
+  - **lever1 → narrowed**: names each Timeout of run (a) and its status now.
+
+  A Killed → Timeout move against `main-config` triggers T024's re-run rule: one re-run of both the `main-config` and the `narrowed` run, one at a time (the first again in a scratch worktree as in T045 (b)). The move counts only if the re-run shows it again, and both pairs are recorded under `rerun/`. If it holds, stop and ask. Keep the command lines and their output verbatim for T051. Commit the evidence as soon as it is written.
+- [ ] T049 [US2] Run the eight 30-line `source.ts` entries again (FR-009, FR-010 sandbox half, FR-011), one at a time, with the narrowed configuration:
+  - the entries are those of T035: `packages/tokens/src/source.ts:1-30`, `:31-60`, `:61-90`, `:91-120`, `:121-150`, `:151-180`, `:181-210` and `:211-230`;
+  - use the T036 command with base `B`, and save each under `evidence/fix-2/source-<start>-<end>/` (stdout with the report lines, stderr, time, `mutation.json`). Commit each run's evidence as soon as it is written;
+  - for any entry over 176 s, also take the checker split of T003 under `no-checker/`, as a diagnostic;
+  - compare each entry with `evidence/compare.mjs` against the lever 3 run of the same entry (`evidence/lever3/source-<start>-<end>/mutation.json`; the first run for `91-120` and `151-180`), so every status move is named as the narrowing's;
+  - record the test file of each `killedBy` and the range of `testsCompleted`, as in § Lever 3 table. Kills by `validate.test.ts`, `build.test.ts` or `contrast.test.ts` may change, because the rest of `tokens` now runs after the other projects;
+  - check FR-011 again for the 122 former Timeouts of T025: match each by key in the eight new reports and apply the three criteria, as in § FR-011 with lever 3.
+
+  Every entry must have 0 Timeout, 0 Survived and 0 NoCoverage, finish within 176 s and meet FR-011; otherwise stop and ask.
+- [ ] T050 [US2] Run the FR-013 reference entries again, one at a time, with the T036 command and base `B`:
+  - `--files packages/tokens/src/generate.ts:1-60` (the red entry, given as is) under `evidence/fix-2/generate-1-60/`;
+  - `--files gates/lib/wcag.ts` under `evidence/fix-2/wcag/`.
+
+  Compare each with `evidence/compare.mjs` against `evidence/red/generate-1-60/` and `evidence/red/wcag/`. There must be no Killed → Timeout, Survived or NoCoverage move and no count the wrong way; `wcag.ts`'s 2 Timeouts at `:4` were Timeouts in the red run. T024's re-run rule applies, as in T048.
+
+**Records**
+
+- [ ] T051 [P] [US2] Records:
+  - **O2-01 evidence**: a section "Fix round 2: lever 1 narrowed (operator round from the landing review, 2026-11-11)" in `evidence/README.md`. It holds the configuration, the T045 and T048 gate-source table (mutants, Killed, Timeout, Survived, NoCoverage, CompileError and time per run), the static mutants, the comparison commands and their output verbatim, the T049 table with its comparison against lever 3, Killed-by counts and FR-011 check, the T050 reference table and comparisons, and the decision from these figures alone;
+  - **O2-01 dated notes** that keep the earlier text, in `evidence/README.md`: at the FR-013 reference rows of § Green table (`:710-711`) and at § FR-013 reference entries with lever 3 (both now point to the new section); at the lever 1 configuration statements (§ Green measurement, § Lever 3 *Configuration*); and in § Open for landing, where the CI measurement (landing L1-02) is taken after this fold with the narrowed order, and the sandbox table is updated with the T049 times;
+  - `knowledge/speckit-flows/findings/frontend-missions.md:60-61` (Lever 1): a dated note on the narrowed order and its reason (landing L1-01), with the T048 and T049 figures;
+  - **O2-02**: one dated 2026-11-11 sentence each in `specs/001-repository-foundation/research.md` R-08 "CI, sharded" (`:372-383`, and the 60-line statement at `:430`) and in `specs/001-repository-foundation/plan.md` (`:50-51`, `:209-210`). Each points to the FR-013 amendment of 001 spec.md: 30-line entries, operator decision of mission 007 (FR-014). The earlier text is kept.
+- [ ] T052 [US2] Run the checks:
+  - `pnpm test`, `gate:typecheck`, `gate:lint` and `gate:test-lint`;
+  - `pnpm run gate:mutation -- --base 3a247ef5f684a102f95e433e7cf41550839c79e4`, alone: the whole-diff run of landing L1-01. Save it to `evidence/fix-2/whole-diff.log`, record its exit, its time and every `timeout` line in the T051 section, and name each `timeout` line of `report.ts` or `plant-judge.ts` against T048;
+  - the FR-012 check of T031 again: `git diff --stat <phase-1 base> -- packages/tokens/src stryker.config.json` shows no change, and `grep -rn "Stryker disable" packages/tokens/src` shows nothing new.
+
+  Commit the records and evidence (`docs(007-mutation-gate-strictness): phase 3 fix-2 — O2-01 evidence, O2-02 records`), signed off. Then run `.specify/extensions/story/scripts/tdd-check.sh 3` (`pass`).
+
 **Checkpoint**: a broad edit of `source.ts` gets real kills within Stryker's limit and every entry fits 176 s on the
 sandbox; the CI measurement waits for landing.
 
@@ -172,6 +294,11 @@ sandbox; the CI measurement waits for landing.
 - Within phase 2: T004 (probe) before T009 (it decides the fallback cases); T011 (judge) before T012 (plants), and T012's
   red plant run before T013 and T014.
 - Within phase 3: T021 before T022 and T023; T023 before T024 to T027; T028 only if T027 says so; T032 to T037 (lever 3) after T028's stop-and-ask and the operator's FR-014 decision, T032 before T033, T033 before T035 and T036; T029 (rerun at the final HEAD), T030 and T031 after T037.
+- Fix rounds 2 (operator rounds from the landing review, 2026-11-11):
+  - phase 2's round (T038 to T042) comes before phase 3's (T043 to T052), so phase 3's runs print the fixed lines;
+  - within phase 2: T038 and T039 (red) before T040; T041 any time before T042's commit;
+  - within phase 3: T043 and T044 (red), then T045 (the runs before the fix), then T046 (green), then T047 to T050 one at a time, then T051 and T052;
+  - the CI measurement of landing L1-02 comes after both rounds are folded.
 - **Landing (not a task of this run; research R-07):** the measurement commit on the mission's pull request (a trailing
   space on every line of `source.ts`, `--plan` checked locally first), the `gate:mutation` step time of every
   `source.ts` shard and the runner's core count recorded with the run link, then a revert before merge; a draft pull
@@ -182,7 +309,7 @@ sandbox; the CI measurement waits for landing.
 
 - Phase 2: T005 to T009 (different test files; T009 waits for T004's outcome); T015, T016 and T017 after T014.
 - Phase 3: T030 beside T029.
-- Every heavy run (T002, T003, T004, T012's and T018's plant and gate runs, T022, T023, T024's re-runs, T028) runs alone.
+- Every heavy run (T002, T003, T004, T012's and T018's plant and gate runs, T022, T023, T024's re-runs, T028, T036, T042, T045, T047 to T050, T052) runs alone.
 
 ## Implementation Strategy
 

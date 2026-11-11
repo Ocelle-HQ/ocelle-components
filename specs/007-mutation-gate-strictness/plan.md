@@ -29,6 +29,12 @@ of each entry is recorded as a diagnostic only. The red and green evidence is th
 code; the CI half is a measurement commit on the mission's pull request at landing, with a source.ts-only draft run
 only if a mixed shard misses 480 s (R-07).
 
+*Amendment, 2026-11-11 (operator round from the landing review, phase 3 O2-01, landing L1-01):* lever 1 is narrowed.
+`tokens-source-table` stays alone at `groupOrder` 1, and every other mutation project, the rest of `tokens` included,
+is one group at 2 in Vitest's default order. The earlier split delayed the static mutants of gate source behind every
+token file and turned some of their kills into Timeouts, which FR-013 forbids. The eight 30-line `source.ts` entries,
+the FR-013 reference entries and a gate-source before/after comparison are measured again (R-05 amendment).
+
 ## Technical Context
 
 **Language/Version**: TypeScript (strict), run by Node: CI pins 26.13.0; the sandbox runs Node 22 (spec *Assumptions*).
@@ -72,7 +78,7 @@ loads through the `.claude/skills/speckit-story-review/SKILL.md` symlink; R-08),
 | I, II, III, IV, V | Not touched: no element, token value, style, CSP surface or story changes. `source.ts` text is not edited (FR-012; dist identical). |
 | VI Consumer needs | The consumer is the repository's review process (spec header). No new dependency. |
 | VII Semver | `none`: no published surface changes. |
-| VIII Test-first | US1: every behaviour (classification and its order, lines, summaries and their exact nouns, `plural`'s irregular form, `selectFiles` entry names and the new repeated-file cause, the zero-mutant handling of R-03, judge `reports` and `records`) gets a red test first in `gates/test/`; the judge support goes first, then the `plant.json` edits and new plants run red against the old gate, then the gate code (R-02). Existing exact-summary assertions are extended, and the "entries of one file joined" assertion is replaced by the exit-2 case the operator decided, each named in R-03/R-04. US2: lever 1 has a behavioural red test (module start order under Stryker's options: `source-table.test.ts` before every other module, then the other token modules before any other project) in `gates/test/integration/vitest-mutation-config.test.ts`, and the config deep-equal assertion is replaced by a stricter one (project names, the two stated split exceptions, each `sequence`, every test module collected once) with the reason stated; its timing evidence is the FR-011a red runs, taken before any mission code, and the green runs (exemption for configuration, stated in the review). The gate's own new code is mutation-tested by the gate. Plants prove the gate change (`pass-zero-mutant`, `pass-compile-error` with `reports`, `error-zero-mutant-failing-test`). |
+| VIII Test-first | US1: every behaviour (classification and its order, lines, summaries and their exact nouns, `plural`'s irregular form, `selectFiles` entry names and the new repeated-file cause, the zero-mutant handling of R-03, judge `reports` and `records`) gets a red test first in `gates/test/`; the judge support goes first, then the `plant.json` edits and new plants run red against the old gate, then the gate code (R-02). Existing exact-summary assertions are extended, and the "entries of one file joined" assertion is replaced by the exit-2 case the operator decided, each named in R-03/R-04. US2: lever 1 has a behavioural red test (module start order under Stryker's options: `source-table.test.ts` before every other module, then the other token modules before any other project) in `gates/test/integration/vitest-mutation-config.test.ts`, and the config deep-equal assertion is replaced by a stricter one (project names, the two stated split exceptions, each `sequence`, every test module collected once) with the reason stated; its timing evidence is the FR-011a red runs, taken before any mission code, and the green runs (exemption for configuration, stated in the review). The gate's own new code is mutation-tested by the gate. Plants prove the gate change (`pass-zero-mutant`, `pass-compile-error` with `reports`, `error-zero-mutant-failing-test`). *Amendment, 2026-11-11 (operator round from the landing review):* phase 2 O2-01 gets a red test of the report line with no replacement. For phase 3 O2-01 (lever 1 narrowed), the red test asserts `source-table.test.ts` first, the next module from `elements` and the sequence values 1 and 2 (R-05). Its timing evidence is the FR-013 gate-source comparison and the eight `source.ts` entries run again. |
 | Quality gates | The mutation gate's verdicts are unchanged; it prints more. The parallel branches for #17 and #10 see the new lines once they merge `main`, and no new failure (spec *Assumptions*, Policy). |
 
 No violation; Complexity Tracking is empty.
@@ -145,6 +151,10 @@ knowledge/speckit-flows/log.md, findings/frontend-missions.md    # closed entrie
   record with its three criteria (the third: `killedBy` is one of the named value/group tests of `source-table.test.ts`)
   and the by-hand kills, which show the tie to the record. `dist` comparison. Records: `findings/frontend-missions.md`
   § Mutation shard time; 001 FR-013 and SC-005 only under lever 3. The CI half of FR-010 stays open for landing (R-07).
+  *Amendment, 2026-11-11 (phase 3 O2-01):* lever 1 is narrowed (above, R-05). The order test now expects
+  `source-table.test.ts` first and the next module from `elements`. Its evidence is the FR-013 per-mutant comparison on
+  the gate-source static mutants against `main`'s mutation configuration, and the eight `source.ts` entries and the
+  reference entries run again.
 
 US1 lands before US2's green runs so that they print their Timeouts as report lines, which makes the green evidence
 readable from the gate's output; the red evidence is read from the kept reports.

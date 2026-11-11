@@ -30,6 +30,8 @@ alias of `knowledge/speckit-flows/findings/frontend-missions.md` § Browser path
    Stryker's options `packages/tokens/test/source-table.test.ts` starts before every other module, then the other token
    modules before any other project; the mutation projects are the stated split of `tokens` and collect every test
    module once (R-05).
+   *Amendment, 2026-11-11 (lever 1 narrowed, phase 3 O2-01):* `source-table.test.ts` starts first, and the next module
+   is one of `elements`, not of `tokens`: every other project is one group at order 2 in Vitest's default order.
 5. `pnpm --filter @ocelle/tokens build` and `cmp` `dist/tokens.css`, `dist/tokens.json`, `dist/index.d.ts` with the
    base's build (spec SC-005).
 6. At landing: the CI measurement of research.md R-07 (the measurement commit on the mission's pull request, its

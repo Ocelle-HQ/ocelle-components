@@ -23,7 +23,8 @@ summary (exit 0), Timeouts first, then CompileErrors, then zero-mutant entries. 
 the order of the changed files, then start line, then start column, then Stryker's mutant id compared as a number (ids
 are strings in the report, `report.ts` `readonly id: string`; an id that is not a decimal integer sorts after every
 numeric one, by string). Zero-mutant entries are in the order of the changed files. `<replacement>` goes through
-`oneLine` as findings do.
+`oneLine` as findings do. *Amendment, 2026-11-11 (phase 2 O2-01, landing L1-03):* the whole line ends as a finding's
+does: with no replacement it ends at `replaced by`, with no trailing space (`contracts/mutation-output.md`).
 
 **The rule is the status** (spec FR-001, FR-002, US1 AS1/AS2): `timeout` names the status `Timeout` and
 `compile-error` the status `CompileError`. The line prints no separate status word; tests and plants are written against
@@ -259,6 +260,35 @@ Cost for other files: a static mutant of another file now runs the token tests f
 runs only the tests that cover it (`testFilter`), whose order the group setting changes only between projects. FR-013's
 before/after runs measure it.
 
+*Amendment, 2026-11-11: lever 1 narrowed to `source-table.test.ts` alone first* (operator round from the landing
+review, `reviews/phase-3/round-2.md` O2-01, landing L1-01; operator decision human:jeroennouwsdev, "Only source-table
+first"). The landing review measured the cost for other files as more than seconds. With the rest of `tokens` at order
+2, ahead of every other project, a static mutant of gate source runs every token file before the gate test that kills
+it, including `build.test.ts`'s two child Node processes. So `gates/lib/mutation/report.ts:106` and
+`gates/lib/plant-judge.ts:51` went Killed → Timeout: 8 Timeouts in the whole-diff run against base `3a247ef`, and 0
+with `main`'s mutation configuration. FR-013 forbids that. The order is now:
+
+- `tokens-source-table`: alone at `sequence: { groupOrder: 1 }`, unchanged;
+- every other mutation project, the rest of `tokens` included: one group at `sequence: { groupOrder: 2 }`.
+
+So after `source-table.test.ts` the files run in Vitest's default order (`BaseSequencer.sort`: project name first, so
+`elements`, `gates`, `storybook`, `styles`, `tokens`, as on `main`). No project is at 0.
+
+What is kept: `source-table.test.ts` starts every Stryker run. Every former Timeout's killer still runs first, and no
+kill of such a mutant comes from `build.test.ts`'s child process (R-06 criterion 3).
+
+What is given up is the sentence above, "the rest of `tokens` still runs before the other projects". A static
+`source.ts` mutant that only another token test kills (`validate.test.ts`, `build.test.ts`, …) waits behind the other
+projects again, as on `main`. One that `gates/test/contrast.test.ts` kills reaches that test sooner than with the earlier
+split. The cost for other files is now one file, `source-table.test.ts`, ahead of `main`'s order.
+
+Whether the narrowing brings back a `source.ts` Timeout, a survivor or a miss of 176 s is measured, not assumed
+(tasks.md, phase 3 fix round 2):
+- the eight 30-line `source.ts` entries are run again (FR-009, FR-010 sandbox half, FR-011);
+- the FR-013 reference entries are run again;
+- the static mutants of gate source (`report.ts` and `plant-judge.ts` against base `3a247ef`, as L1-01 reproduced it)
+  get a per-mutant comparison against `main`'s mutation configuration.
+
 Cost for `source.ts` itself (plan squad round 3, PLAN-FRESH-3-004): op 004's kept reports
 (`ops/004-token-source-mutation/mutation/entry-1_60.json`, `entry-61_120.json`) show 135 and 202 `source.ts` mutants,
 all Killed and every one by `gates/test/contrast.test.ts`; 55 + 96 of them sit on a line holding `contrast` or
@@ -343,6 +373,17 @@ disable comments; dropping projects from `vitest.mutation.config.ts`; changing `
   `createVitest`, as above) are exactly those `vitest.config.ts` collects for its projects outside the excluded four,
   each once, so the split neither drops nor doubles a file (FR-012: no project's tests are dropped). The replacement
   and its reason are stated in the phase review (Principle VIII).
+- *Amendment, 2026-11-11 (lever 1 narrowed, phase 3 O2-01):* both proofs follow the narrowed order above.
+  - Behavioural test: its second assertion (every module under `packages/tokens/test/` before any module of another
+    project) is replaced. Under Stryker's options `source-table.test.ts` still starts first. The next module to start
+    is now one of `elements`, the first by name of the projects at order 2, not one of `tokens`.
+  - Config assertion: `test.sequence` is exactly `{ groupOrder: 1 }` for `tokens-source-table` and
+    `{ groupOrder: 2 }` for every other mutation project.
+  - Unchanged: the project names, the split exceptions and the collected modules.
+  - Red and green: both are red against the earlier split (its second module is a `tokens` one; its values are 1, 2 and
+    3), and green only for the narrowed order.
+  - `gates/test/vitest-config.test.ts` compares names, `include` and `exclude` only, so it is unchanged.
+  - Separate evidence: the timing proof is the FR-013 comparison on gate source and the re-run `source.ts` entries.
 
 The FR-011a measurement runs before and after carry the timing (Principle VIII exemption for configuration, spec
 FR-011a). Lever 2 is configuration with no assertable behaviour beyond the measurement; its review states that.
