@@ -47,9 +47,12 @@ export const fr026Foregrounds: Readonly<Record<Variant, readonly string[]>> = {
   mono: [],
 };
 
-/** The text of the first `css` tagged template of a module's text, source or built; empty when it has none. */
+/**
+ * The text of the first `css` tagged template of a module's text, source or built (tsc writes the tag with a space,
+ * "css `…`"); empty when it has none.
+ */
 export function styleTemplate(moduleText: string): string {
-  return /\bcss`([^`]*)`/.exec(moduleText)?.[1] ?? "";
+  return /\bcss\s*`([^`]*)`/.exec(moduleText)?.[1] ?? "";
 }
 
 /** Whether a rule sits inside `@media (forced-colors: active)` (not inside its negation). */
