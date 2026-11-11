@@ -200,8 +200,10 @@ function aspectRatioRaw(nodes: readonly Node[]): string[] {
   if (parts.length === 1 && only?.type === "word" && only.value === "1") return [];
   return parts.flatMap((node) => {
     if (node.type === "function") return [valueParser.stringify(node)];
-    if (node.type === "word" && valueParser.unit(node.value) !== false) return [node.value];
-    // A `/` divider, a keyword, a string or a comment: classified as for any property.
+    // Any number (in a word, or a string that reads as one) beside or instead of the bare 1.
+    if (valueParser.unit(node.value) !== false) return [node.value];
+    // A `/` divider, a keyword, a colour, a string or a comment: classified as for any property.
+    // Stryker disable next-line StringLiteral,BooleanLiteral: equivalent, what reaches here is no number, and classify() reads the property only for font values and unitless numbers and inCalc only for numbers and the operator words, which it allows outside calc() too as identifiers
     return classify([node], "aspect-ratio", false);
   });
 }
