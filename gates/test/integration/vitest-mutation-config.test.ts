@@ -142,12 +142,13 @@ describe("vitest.mutation.config.ts", () => {
       );
       // The run stops as soon as a module outside tokens-source-table starts. With every other project at one
       // groupOrder, Vitest 5.0.5's BaseSequencer.sort orders by groupOrder, then by project name, so the second
-      // module belongs to elements, the first by name of the projects at order 2, and not to tokens.
+      // module belongs to elements, the first by name of the projects at order 2, and not to tokens. elements runs
+      // its tests in the browser with one chromium instance, so Vitest names that project "elements (chromium)".
       const ran = await helperRun(["order", "vitest.mutation.config.ts", "tokens-source-table"]);
       expect(ran.code).toBe(0);
       const started = (ran.json as { readonly started: readonly ModuleOf[] }).started;
       expect(started[0]).toEqual({ project: "tokens-source-table", module: sourceTable });
-      expect(started[1]?.project).toBe("elements");
+      expect(started[1]?.project).toBe("elements (chromium)");
     },
     timeout,
   );
