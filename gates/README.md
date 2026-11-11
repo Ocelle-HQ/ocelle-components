@@ -150,6 +150,12 @@ R-08). A cut is the boundary between two consecutive entries of one file. A muta
 spans a cut (starts in one entry of a file and ends in the next) is mutated in no shard, since Stryker mutates a node
 only when it lies wholly inside one `mutate` range; the smaller mutants inside it, each within one entry, still are.
 This is an accepted limit (operator decision, phase 3 round 10, O10-02; research.md R-08, "Cuts, an accepted limit").
+Amendment 2026-11-11 (mission 007, spec FR-014): the entry bound is now 30 changed lines, for every file. A file of
+more than 30 changed lines is split into entries of at most 30 changed lines, so no shard holds more than 30 changed
+lines of one file; the 10-entry and 250-line shard bounds and the rule that two entries of one file never share a
+shard stand (operator decision, 2026-11-11, "30-line entries, all files": with the TypeScript checker on, three of
+the four 60-line entries of `packages/tokens/src/source.ts` took 188 s, 251 s and 283 s on the sandbox against
+mission 007's bound of 176 s; `specs/007-mutation-gate-strictness/evidence/README.md`).
 `--plan` reports the number of shards and of cuts it made on stderr, in one line,
 `mutation: plan: <s> shards, <c> cuts within files (...)`, and the JSON on stdout stays the one array the job
 reads. Each `mutation-shard` job passes its shard's entries unchanged to `--files` and runs under a 10-minute limit. `.github/workflows/cache.yml`

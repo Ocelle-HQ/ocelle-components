@@ -34,5 +34,7 @@ alias of `knowledge/speckit-flows/findings/frontend-missions.md` § Browser path
    base's build (spec SC-005).
 6. At landing: the CI measurement of research.md R-07 (the measurement commit on the mission's pull request, its
    `--plan` checked for the four sandbox entries first; a source.ts-only draft run only if a mixed shard misses 480 s).
+   *Amendment, 2026-11-11 (lever 3, spec FR-014):* the `--plan` check expects the eight 30-line `source.ts` entries
+   of `evidence/README.md` § Lever 3, not four.
 
 The evidence README in `evidence/` holds every figure and the per-mutant record of spec FR-011.
