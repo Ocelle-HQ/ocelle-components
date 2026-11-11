@@ -92,6 +92,59 @@ right-to-left text (`dir="rtl"` on the icon or an ancestor) they are mirrored, s
 left; the other icons are never mirrored. The package exports no list of the names; the manifest's type of `name` is
 their union. The names are public surface: renaming or removing one is a major change, adding one a minor change.
 
+## Slot convention
+
+A control that shows icons follows one slot convention: an `icon` slot before its label and, where it has an end icon
+such as the action row's arrow, a `trailing` slot after it. The control renders, in its shadow root, a row with the
+class `icon-row` holding `<span class="icon-slot"><slot name="icon"></slot></span>`, its label, and
+`<span class="icon-slot trailing"><slot name="trailing"></slot></span>`, and adds `iconSlotStyles`
+(`src/icon-slot.ts`, internal) to its `static styles`:
+
+```ts
+static override styles = [css`…the control's own rules…`, iconSlotStyles];
+
+protected override render(): unknown {
+  return html`<button class="icon-row"><span class="icon-slot"><slot name="icon"></slot></span><span class="label"><slot></slot></span><span class="icon-slot trailing"><slot name="trailing"></slot></span></button>`;
+}
+```
+
+A host then slots its icons with no size of its own (here into `ocelle-button`, which #7 will add):
+
+```html
+<ocelle-button><ocelle-icon slot="icon" name="folder"></ocelle-icon>Open project</ocelle-button>
+```
+
+- **Size.** A slotted icon, an `ocelle-icon` or a bare `<svg>`, is `--ocelle-icon-size` square and does not shrink,
+  whatever a normal page rule, `base.css` or its `width` and `height` attributes set. A slotted SVG needs a `viewBox`
+  to scale: with one, the drawing is scaled into the box, centred, aspect kept; without one it gets the box only.
+- **Alignment.** The row sets the type (font size and line height) that the wrappers and the label inherit; each
+  wrapper is one line box tall (`1lh`) with the icon centred in it, so the icon is centred on the label's first line
+  at any type size and leading, overflowing the line box evenly when it is taller. Set the type on the row, not on the
+  label alone.
+- **Row padding.** The row's block padding, `calc((var(--ocelle-icon-size) - 1lh) / 2)` from `iconSlotStyles` (0 when
+  the line box is at least the icon size), keeps that overflow inside the control's box. A control never sets block
+  padding on the row; it puts any further block padding on an element around the row.
+- **Gap.** A slotted icon is separated from the label by `--ocelle-space-2`; an empty slot takes no space and adds no
+  gap. The `icon` slot is on the label's left in left-to-right text and on its right under `dir="rtl"`; the `trailing`
+  slot the other way round.
+- **Colour.** A slotted icon takes the control's text colour: `ocelle-icon` draws in `currentColor`, and a bare
+  `<svg>` does so when its drawing uses `currentColor`. In forced colours it takes the control's system colour.
+- **Base stylesheet.** `base.css` gives every light-DOM `svg` `max-inline-size: 100%` and `block-size: auto`, and page
+  rules beat a shadow root's normal rules; the convention's size rules on slotted elements are `!important`, so
+  neither `base.css` nor a host rule changes a slotted icon's box.
+- **Resizing.** Resize slotted icons only by overriding `--ocelle-icon-size` on the control or an ancestor: the
+  convention pins the token on every slotted element to the control's value, so `--ocelle-icon-size` set on a slotted
+  icon itself has no effect.
+- **Naming.** An icon-only control names its own inner control (for example with `aria-label` on its inner
+  `<button>`), never its icon: a slotted icon stays decorative and is never given a `label`. The convention adds no
+  generated content, so a control named by its visible label keeps exactly that name.
+- **Lint.** The `style-lint` gate allows the unit `lh` only as `1lh`, alone or once as an operand of `+` or `-` beside
+  an `--ocelle-*` token inside `calc()`; a factor on a parenthesised `calc()` group that holds `1lh`, such as
+  `calc((var(--ocelle-space-1) + 1lh) * 2)`, passes the gate and is checked in review.
+
+The convention is proven on a test-only host, `ocelle-test-host` (`test/fixtures/test-host.ts`), which ships in no
+package; the controls of later features follow it.
+
 ## Host ARIA
 
 A host `aria-label` names the element as `label` does, and when present it decides alone: a blank host `aria-label`
