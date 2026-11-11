@@ -2,7 +2,9 @@
 
 Prerequisites: `pnpm install --frozen-lockfile` (the Storybook gates need no package build); a browser for axe
 (`pnpm exec playwright install chromium`, or `OCELLE_CHROMIUM_PATH` pointing at a Chromium); docker or podman for the
-visual gate, with about 1 GB to pull and 3.6 GB of disk per engine for the pinned image. In this sandbox: start the
+visual gate (with podman, also skopeo: the pin check reads the pin's raw manifest with `skopeo inspect --raw`, operator
+decision 2026-11-11; without it the gate exits 2 "the pin check under podman needs skopeo: skopeo not found"), with
+about 1 GB to pull and 3.6 GB of disk per engine for the pinned image. In this sandbox: start the
 docker daemon first (`dockerd > "$SCRATCH/dockerd.log" 2>&1 &`, then wait until `docker info` succeeds), set
 `OCELLE_CHROMIUM_PATH=/opt/pw-browsers/chromium-1243/chrome-linux64/chrome` for the host-browser tests, and leave `CI`
 and `GITHUB_ACTIONS` unset (with either set to `true`, the visual gate requires both docker and podman).

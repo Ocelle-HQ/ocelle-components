@@ -47,11 +47,13 @@ itself requires both engines (R-06, "CI requires both engines"); the CI jobs als
 feature cannot fail in this sandbox, since podman is absent:
 - podman's run arguments (`--userns=keep-id`) and its rootless writes into the bind-mounted
   `storybook/.visual/run-<n>/`;
-- the parsing of podman's `image inspect` and `manifest inspect` output (R-06), whose unit tests use fixtures until a
-  real output is recorded;
+- the parsing of podman's `image inspect` output and of the raw manifest skopeo reads for podman's pin check (R-06;
+  `manifest inspect` until the operator decision of 2026-11-11), whose unit tests use fixtures until a real output is
+  recorded, and the presence of skopeo on the runner;
 - byte equality between a docker capture and a podman capture (FR-026, SC-002).
 Phase 3's review therefore holds a **CI run of the branch** in which the "Visual regression" and "Plants" jobs ran
-under both engines, with their logs and the podman inspect outputs (which then replace any written fixture). The
+under both engines, with their logs, the podman inspect outputs and skopeo's raw manifest output (which then replace
+any written fixture). The
 operator pushes the branch for it (agents never push); phase 3 is not approved without that run. Landing confirms it
 again but is no longer the first evidence.
 
@@ -249,9 +251,12 @@ the font rule is not relaxed.
   (`container.json`, contracts/container.md) and the image the engine holds:
   1. the reference is `<image>@<digest>` with a digest of the form `sha256:<64 hex>`; a tag is exit 2 "not pinned by
      digest";
-  2. the pinned reference's media type, read from the registry by the engine (`docker buildx imagetools inspect
-     --raw <image>@<digest>`; `podman manifest inspect <image>@<digest>`), is an image manifest; an image index or
-     manifest list is exit 2 "the pin names an index, not the linux/amd64 manifest";
+  2. the pinned reference's media type, read from the registry (`docker buildx imagetools inspect --raw
+     <image>@<digest>` under docker; `skopeo inspect --raw docker://<image>@<digest>` under podman), is an image
+     manifest; an image index or manifest list is exit 2 "the pin names an index, not the linux/amd64 manifest". When
+     a resolved engine is podman and `skopeo` is not found on `PATH`, the gate exits 2 "the pin check under podman
+     needs skopeo: skopeo not found" before the pin check of any engine (so `both` pulls nothing first); the check is
+     a pure function of the resolved engines and the tools found, unit-tested;
   3. the image is pulled and run only by `<image>@<digest>` with `--platform linux/amd64` (the engine verifies the
      content against the digest on pull);
   4. after the pull, the engine's `image inspect` must list `<image>@<digest>` in `RepoDigests` (docker, both image
@@ -261,7 +266,18 @@ the font rule is not relaxed.
   The inspect outputs are parsed by pure functions unit-tested on recorded outputs of docker with the containerd
   store (recorded here), docker with the classic overlay2 store and podman (fixtures written from the engines'
   documented formats until phase 3's CI run records real ones, R-02), each with a matching case, a mismatching
-  digest, an arm64 image and an index media type.
+  digest, an arm64 image and an index media type. Skopeo's raw manifests are, until that run records them, copies of
+  the raw manifests docker recorded here (the registry's bytes, whichever tool reads them).
+- **The media type under podman (operator decision 2026-11-11, "skopeo inspect --raw").** CI run 43064614842 (head
+  `056a6bb`, job "Visual regression", `--engine both`) exited 2 at step 2 under podman: `podman manifest inspect`
+  refuses a single image manifest ("Treating single images as manifest lists is not implemented"), and the pin is one
+  by design (step 2 itself rejects an index). Options weighed: skopeo, which reads any manifest raw; or pulling first
+  and reading the media type from podman's store, which would need step 3 before step 2 and does not read the
+  registry. The operator chose skopeo for podman. Docker keeps `buildx imagetools inspect --raw`: in the same run its
+  three steps passed before podman's, and the spike recorded its raw output for this pin. The cost is a host tool:
+  skopeo must be installed wherever the gate runs under podman. GitHub's `ubuntu-24.04` runner image is expected to
+  carry it beside podman; phase 3's CI run confirms that (`skopeo --version` in its log), and a runner without it is
+  a stop-and-ask, since installing it in the workflow is a CI change the operator decides.
 - The run arguments (contracts/container.md): `run --rm --platform linux/amd64 --network none --user <uid>:<gid>`
   (docker) or `--userns=keep-id` (podman), the mounts of R-03, `-e OCELLE_VISUAL_PIN=<digest>`, the image by digest,
   and `node <repo>/gates/visual/capture.ts <request.json>`. The argument builder is unit-tested with root equal to the

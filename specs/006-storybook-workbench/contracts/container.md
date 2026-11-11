@@ -33,14 +33,32 @@ Sources: research.md R-01 to R-06, R-14, R-15.
 | Step | docker | podman | Exit 2 cause |
 |---|---|---|---|
 | reference form | `<image>@sha256:<64 hex>` | same | `not pinned by digest` |
-| media type of the reference (from the registry) | `docker buildx imagetools inspect --raw <image>@<digest>` → `mediaType` | `podman manifest inspect <image>@<digest>` → `mediaType` | `the pin names an index, not the linux/amd64 manifest` (`application/vnd.oci.image.index.v1+json`, `application/vnd.docker.distribution.manifest.list.v2+json`) |
+| the media type reader is present | `docker buildx` (part of docker; no separate check) | `skopeo` found on `PATH`, checked for every podman engine the run resolved, before any step below runs under any engine | `the pin check under podman needs skopeo: skopeo not found` |
+| media type of the reference (from the registry) | `docker buildx imagetools inspect --raw <image>@<digest>` → `mediaType` | `skopeo inspect --raw docker://<image>@<digest>` → `mediaType` | `the pin names an index, not the linux/amd64 manifest` (`application/vnd.oci.image.index.v1+json`, `application/vnd.docker.distribution.manifest.list.v2+json`) |
 | pull | `docker pull --platform linux/amd64 <image>@<digest>` | `podman pull --platform linux/amd64 <image>@<digest>` | `the image cannot be obtained: …` |
 | identity after the pull | `docker image inspect <image>@<digest>`: `RepoDigests` contains `<image>@<digest>`, `Os` `linux`, `Architecture` `amd64` | `podman image inspect <image>@<digest>`: `RepoDigests` contains `<image>@<digest>` (and `.Digest` equals `<digest>`), `Os` `linux`, `Architecture` `amd64` | `the pulled image does not match the pin: <field>` |
+
+**The media type under podman (operator decision 2026-11-11, on CI run 43064614842).** The pin is a single linux/amd64
+image manifest, and podman refuses to read one with `podman manifest inspect` ("Treating single images as manifest
+lists is not implemented"), so the check could never pass under podman. Under podman the gate reads the registry's raw
+manifest with `skopeo inspect --raw docker://<image>@<digest>` (the `docker://` transport is skopeo's name for a
+registry reference) and takes its `mediaType` as on docker; a non-zero exit of skopeo is `the image cannot be obtained:
+<last stderr line>`, as a failed read is on docker. This adds skopeo to the host tools wherever the gate runs under
+podman: on the CI runner and on a contributor's machine that uses podman. Docker's reader is unchanged: in that run,
+under `--engine both`, docker's three steps (media type, pull, identity) passed before podman's media type read
+failed, and `docker buildx imagetools inspect --raw` prints the raw manifest of a single image as of an index (the
+phase 1 spike recorded it on this pin). `pull` and the identity check under podman still use podman. The skopeo check
+is a pure function of the resolved engines and the tools found on `PATH`, unit-tested; it runs once, before the pin
+check of the first engine, so `both` without skopeo exits 2 before docker pulls anything.
 
 `.Id` is never compared: it is the manifest digest on docker's containerd image store and the config digest on
 docker's classic store and on podman. The parsers are pure functions, unit-tested on recorded inspect outputs of docker
 with the containerd store, docker with the classic overlay2 store and podman (fixtures; podman's real output is recorded
-by phase 3's CI run), each with a match, a mismatching digest, an arm64 image and an index media type.
+by phase 3's CI run), each with a match, a mismatching digest, an arm64 image and an index media type. The raw
+manifests read under podman are skopeo's (`gates/test/fixtures/container/skopeo-inspect-raw-manifest.json` and
+`skopeo-inspect-raw-index.json`): until the CI run records skopeo's real output they are copies of the spike's recorded
+`docker buildx imagetools inspect --raw` outputs of the pin and of the tag's index, since a raw manifest is the
+registry's bytes whichever tool fetches it. `podman-manifest-inspect.json` is removed with the command it stood for.
 
 ## Engine resolution (research.md R-06)
 

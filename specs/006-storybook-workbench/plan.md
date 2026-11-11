@@ -52,7 +52,9 @@ directly (type stripping), inside the container too.
   lockfile, now an explicit root devDependency);
 - new: `axe-core` 4.14.0 (exact pin, no dependencies, released 2026-10-05);
 - container: `mcr.microsoft.com/playwright@sha256:ee15712262f017b8157421b212b12099146645f44b1bc5c0514cbbe6a229b1d0`
-  (linux/amd64 manifest of `v1.64.1-noble`), run by docker or podman.
+  (linux/amd64 manifest of `v1.64.1-noble`), run by docker or podman;
+- host tools: docker (with buildx) or podman; under podman also skopeo, which reads the pin's raw manifest for the
+  pin check's media type (operator decision 2026-11-11, decision 21; research R-06).
 
 **Storage**: files: `storybook/baselines/*.png` (24 at first), `storybook/visual/container.json`,
 `storybook/a11y-exceptions.json`; ignored output in `storybook/.visual/`.
@@ -64,7 +66,7 @@ render test, as before). The mutation scope gains `gates/visual/`. Research R-12
 
 **Target Platform**: captures on linux/amd64 in the pinned image, on every host (operator SPEC-1-06), with
 `chromium_headless_shell-1248`; axe on the host Chromium (1248 in CI). CI on `ubuntu-24.04` runners, which have docker
-and podman.
+and podman, and are expected to have skopeo (confirmed by phase 3's CI run, research R-06).
 
 **Project Type**: repository gates and the private Storybook workspace; nothing published changes (semver none).
 
@@ -81,7 +83,7 @@ about 14 new source modules.
 ## Environment (for every role in this feature)
 
 - Start the docker daemon before any container work: `pgrep dockerd || (dockerd > "$SCRATCH/dockerd.log" 2>&1 &)`,
-  then wait until `docker info` succeeds. Podman is not available here, so local runs use `--engine auto`
+  then wait until `docker info` succeeds. Podman and skopeo are not available here, so local runs use `--engine auto`
   (docker), and plants run with `OCELLE_VISUAL_ENGINE=auto`.
 - `OCELLE_CHROMIUM_PATH=/opt/pw-browsers/chromium-1243/chrome-linux64/chrome` for host-browser tests (the axe
   gate's tests, the render test). The container brings its own Chromium 1248.
@@ -89,8 +91,8 @@ about 14 new source modules.
   Node error texts (frontend findings).
 - Leave `CI` and `GITHUB_ACTIONS` unset locally: with either `true`, the visual gate requires docker and podman
   (research R-06). Integration tests not about that rule remove both from the gate's environment.
-- Podman behaviours (run arguments, rootless writes, inspect output, cross-engine bytes) are proven by the CI run of
-  the branch that phase 3's review holds (research R-02); the operator pushes the branch for it.
+- Podman behaviours (run arguments, rootless writes, inspect output, skopeo's raw manifest, cross-engine bytes) are
+  proven by the CI run of the branch that phase 3's review holds (research R-02); the operator pushes the branch for it.
 - One heavy job at a time: browser suites, the container, mutation and plants never run in parallel.
 
 ## Constitution Check
@@ -110,7 +112,7 @@ rounds 1 and 2 and the phase 1 spike.*
 | III. Accessible | axe runs on every story in both themes, on the whole document minus Storybook's harness, so surfaces anywhere are audited, and a surface outside the story root, or a closed shadow root axe cannot enter, fails. Serious and critical violations and serious and critical incomplete results fail the gate, so rendered contrast that axe cannot decide is not passed silently; empty stories are not passes. The rule set and the harness-document rules not run are named in FR-016 and checked against axe-core's own metadata (R-08). An exception covers one node and is honoured only with its Complexity Tracking row (FR-029); the spike's one existing violation is fixed in the story's render code (`tabindex="0"` on its wide tables), and only the incomplete results whose fix is a 003 change are excepted, node by node. Pointer states can be stories and are audited (R-15), in a browser context with the capture's options (1280 × 800, reduced motion), so axe audits the page the capture shows (R-08). Forced colours stay with the element tests (spec Edge Cases). |
 | IV. Strict CSP | `csp` covers the packages' built output "with no exception" again: the Storybook is not built output of a package (operator Q1 (a)), so 002's exceptions 1 and 2 close. Elements remain bound to IV through their package output; their run-time strict-CSP browser test is recorded in `gates/README.md`'s deferred table as the first element feature's (#17 or #7), and the contributor note says element packages prove it in their own browser tests (R-10). |
 | V. Storybook, baselines | Every story has two committed baselines made in a pinned container, covering the full page at scroll position (0, 0). The gate fails on a missing or stray baseline. CI's captures are the record when local and CI disagree (R-02), for the plants' baselines too: the baseline command's plant mode regenerates them and the Plants job uploads its captures in tree layout, for `pass-second-render` (`captureAlone`) captures made alone by single-story-theme requests so its freshness reference never comes from a full run (R-11). A story per state includes pointer states, whose target must lie inside the initial viewport so a state is never silently not applied (R-15). Baselines change only in a pull request whose description says why; the contributor note says so and landing checks it. |
-| VI. Own code | The gates and the capture are this repository's code. The container image and axe-core are third-party tools used in CI and development only, not shipped (plan-gate decision 1). |
+| VI. Own code | The gates and the capture are this repository's code. The container image and axe-core are third-party tools used in CI and development only, not shipped (plan-gate decision 1); so are the host tools the gate calls (docker, podman, and skopeo under podman, decision 21). |
 | VII. Semver | No published surface changes. |
 | VIII. Test-first, proven | Every phase starts red, each red an assertion of the missing behaviour (the pin test asserts the file exists first; the render test's red is taken from the build output). Every decision, the capture's and the in-page checks' included, is a pure module, mutation-tested; only collection and process wiring carry `Stryker disable` comments naming their integration test, and `gates/visual/` is in the mutation scope (R-12). Every gate has fail, pass and breaking plants, with controls where a pass plant alone could not fail (R-04, R-11); the plant job cannot skip or silently drop the container plants (R-07). Plants stay meaningful as the repository changes: edited repository baselines are generated from the current files, never stored, fail plants take the baselines of their pass plant, and plant roots carry the repository's exceptions with their plan files (R-11, R-16). Each capture has one status by a tested order, so a plant's exact expectation does not rest on an unwritten choice (R-05); axe is shown to audit inside open shadow roots (R-08). Each capture refusal check has its own unit test and cause (R-06). The podman behaviours are proven in a CI run of the branch before phase 3 is approved (R-02). |
 | Supply chain | `axe-core` and `pngjs` are pinned exactly and pass the release-age rule. The image is pinned by its manifest digest, pulled and run only by digest, checked by media type and `RepoDigests` on every engine (R-06). A test ties `container.json` to `.node-version` and to Playwright's expected headless-shell build (contracts/container.md). |
@@ -182,6 +184,11 @@ Updated after the plan squad's round 1; the operator's fork decisions of 2026-11
     `scrollable-region-focusable` violation, and its ten serious `color-contrast` incomplete results (five nodes, two
     themes) are per-node exceptions in Complexity Tracking with a 003 sunset (operator decision on the phase 1 spike
     § 7, "tabindex + exceptions", 2026-11-10) (R-08).
+21. **Under podman, the pin check reads the media type with skopeo**: `skopeo inspect --raw
+    docker://<image>@<digest>`, because `podman manifest inspect` refuses the single image manifest the pin is (CI run
+    43064614842). Docker's reader is unchanged. Skopeo is required wherever the gate runs under podman, and its
+    absence is exit 2 "the pin check under podman needs skopeo: skopeo not found", checked before any engine's pin
+    check (operator decision 2026-11-11, "skopeo inspect --raw") (R-06, contracts/container.md § The pin check).
 
 ## Project Structure
 
@@ -283,7 +290,8 @@ data the gates read (baselines, pin, exceptions).
    - `ranges.ts`: `gates/visual/` in the mutation scope, red first in `gates/test/mutation-ranges.test.ts`;
    - `png.ts` (normalise, diff image, the one-pixel unit test), `visual-verdict.ts` (verdicts, `updatePlan`),
      `container.ts` (engine resolution with the CI rule, pin and inspect parsers on the recorded and written fixtures,
-     run args for root equal to and different from the repository), `capture-plan.ts` (refusal predicate with one test
+     the media type read with skopeo under podman and the skopeo check (decision 21), run args for root equal to and
+     different from the repository), `capture-plan.ts` (refusal predicate with one test
      per check, `contextOptions`, screenshot options, readiness, request, recorded-call and storage-state
      classification, pointer parameter and `targetInViewport` with the viewport of `contextOptions`,
      `scrollAction`, `captureStatus`), `story-checks.ts` (fonts, user-agent shadow text of form controls included, and closed shadow roots),
@@ -301,7 +309,7 @@ data the gates read (baselines, pin, exceptions).
      environment and artifact upload (plant captures in tree layout);
    - any story fix the font rule needs;
    - **the review holds a CI run of the branch** (Visual regression and Plants under docker and podman, the podman
-     inspect outputs, the job time, the time per story-theme of `visual` and `axe` plants with the split count derived
+     inspect outputs and skopeo's raw manifest output with `skopeo --version`, the job time, the time per story-theme of `visual` and `axe` plants with the split count derived
      from it, and the runner's free disk after both pulls), the operator pushing the branch; the split count goes into
      Complexity Tracking with the operator's approval.
 4. **US3 Accessibility** (P3):

@@ -4,7 +4,8 @@
 plan-squad rounds:
 - spec.md (FR-001 to FR-031, US1 to US4);
 - plan.md, decisions 1 to 18, § Phases, Complexity Tracking (decisions 19 and 20 and the FR-029 exception rows added
-  by the operator's decisions on the phase 1 spike, 2026-11-10);
+  by the operator's decisions on the phase 1 spike, 2026-11-10; decision 21 added by the operator's decision on CI run
+  43064614842, 2026-11-11);
 - research.md R-01 to R-16;
 - data-model.md;
 - contracts/gates.md, contracts/container.md, contracts/plants.md;
@@ -51,6 +52,12 @@ unit each, folded after approval (`/ocelle-run` step 4.3). There is no polish ph
     table scroll box (003 surface), to be opened by the operator" (research R-08; plan decision 20). Carried by
     T052, T053a, T057 and T060.
 - **T044** (phase 3's CI run of the branch): it needs the operator to push and start CI (pull request or dispatch).
+  **Raised by CI run 43064614842 and decided by the operator (2026-11-11, human:jeroennouwsdev)**: under podman the
+  pin check exited 2, `podman manifest inspect` refusing the pin's single image manifest. **"skopeo inspect --raw"**:
+  under podman the pin check reads the media type with `skopeo inspect --raw docker://<image>@<digest>`; docker's
+  reader is unchanged; a podman run without skopeo exits 2 (research R-06; plan decision 21; contracts/container.md
+  § The pin check). Carried by T044a, T044b and T045.
+- **A CI runner without skopeo** (T045): installing it in the workflow is a CI change; the operator decides.
 - **Any mutation shard over 10 minutes**; **the Plants job near 30 minutes** (research R-07).
 - **A pins-gate refusal** of `axe-core` 4.14.0 or `pngjs` 7.0.0.
 
@@ -167,7 +174,9 @@ plant is judged correctly; the CI run of T045 passes Visual regression and Plant
 - [X] T042 [US2] `gates/gates.json` entry (contracts/gates.md § `visual`), `gates/lib/registry.ts` FR-020 list, `.github/workflows/ci.yml`: job `visual` ("Visual regression": `pnpm run gate:visual -- --engine both`, `actions/upload-artifact` pinned by SHA for `storybook/.visual/` on failure), the Plants job's `OCELLE_VISUAL_ENGINE=both` and artifact upload of `storybook/.visual/plants/`
 - [X] T043 [US2] Run the phase's checks one at a time: `pnpm test`, typecheck, lint, test-lint, `gate:visual`, `visual:update` (no diff), `OCELLE_VISUAL_ENGINE=auto pnpm run gate:plants`, `gate:mutation -- --base <phase base>`; record times
 - [X] T044 [US2] Ask the operator (stop-and-ask) to push the branch and start CI (pull request or dispatch) for T045
-- [ ] T045 [US2] Record the CI run in the phase review (FR-026, plan decision 7): Visual regression and Plants under docker and podman, podman's inspect outputs (replace the written fixtures of T022 with them, test-first if they differ), job times, the time per story-theme of `visual` and `axe` plants and the split count derived from it, the runner's free disk after both pulls; propose the split count's Complexity Tracking row for the operator's approval
+- [ ] T044a [US2] Red for plan decision 21 (operator decision 2026-11-11, "skopeo inspect --raw"; contracts/container.md § The pin check), test files and fixtures only: in `gates/test/container.test.ts`, T022's expectations of `podman manifest inspect` and of `podman-manifest-inspect.json` are replaced (not loosened; the reason, this decision, in the commit message), and the pin commands under podman read the media type with `skopeo inspect --raw docker://<image>@<digest>` (pull and identity still `podman pull` and `podman image inspect`), docker's three commands unchanged, an engine path whose base name holds `podman` counted as podman; the skopeo check as a pure function of the resolved engines and the tools found: `podman` without skopeo, and `both` without skopeo, exit 2 `the pin check under podman needs skopeo: skopeo not found`, `docker` alone without skopeo and `podman` or `both` with it pass; `mediaTypeProblem` on `skopeo-inspect-raw-manifest.json` (no problem) and `skopeo-inspect-raw-index.json` (`the pin names an index, not the linux/amd64 manifest`). Under `gates/test/fixtures/container/`: add those two fixtures as byte copies of T004's recorded `docker-imagetools-manifest.json` and `docker-imagetools-tag-index.json` (the registry's raw bytes, whichever tool reads them) until T045 records skopeo's own output; remove `podman-manifest-inspect.json` and every test use of it; update the fixtures' `README.md` (what each skopeo fixture is a copy of, and that T045 replaces them). In `gates/test/integration/visual.test.ts`: with `PATH` holding only a directory with a stub `podman` executable that writes a marker file when run, the gate spawned by `process.execPath` with `--engine podman` and `CI` and `GITHUB_ACTIONS` stripped exits 2 with `visual: could not run: the pin check under podman needs skopeo: skopeo not found` and the marker file does not exist (the check runs before any engine command). Commit alone (`test(006-storybook-workbench): phase 3 CI red — podman's pin check reads with skopeo`) and record the red run: each new test fails on the missing behaviour
+- [ ] T044b [US2] Green for T044a: `gates/lib/container.ts` (`pinCommands` under podman with skopeo's media type command, the skopeo check), `gates/lib/visual-host.ts` (the lookup of `skopeo` on `PATH` and the check once, before the pin check of the first engine), each process-boundary `Stryker disable` comment naming T044a's integration test; the phase's checks of T043 that the change touches, one at a time; then ask the operator (stop-and-ask, as T044) to push the branch for T045's run
+- [ ] T045 [US2] Record the CI run in the phase review (FR-026, plan decision 7), on a head that holds T044b: Visual regression and Plants under docker and podman, podman's inspect outputs and skopeo's raw manifest output with `skopeo --version` (replace the written fixtures of T022 and the skopeo fixtures of T044a with them, test-first if they differ; a runner without skopeo is a stop-and-ask), job times, the time per story-theme of `visual` and `axe` plants and the split count derived from it, the runner's free disk after both pulls; propose the split count's Complexity Tracking row for the operator's approval
 - [ ] T046 [US2] If CI's captures differ from the local baselines, commit CI's artifact files (CI is the producer of record, plan decision 7) with the reason in the commit message
 
 ---
@@ -253,7 +262,8 @@ lists seventeen required checks; `tdd-check.sh 5` reports `pass`.
 ## Implementation Strategy
 
 - **MVP**: Phases 1 and 2: the Storybook build is a merge gate and plant roots hold the Storybook workspace.
-- **Increment 2**: Phase 3: baselines and the visual gate, confirmed in CI under both engines (T044 to T046).
+- **Increment 2**: Phase 3: baselines and the visual gate, confirmed in CI under both engines (T044 to T046, with
+  T044a and T044b for plan decision 21).
 - **Increment 3**: Phase 4: axe.
 - **Increment 4**: Phase 5: CSP retarget, the closed exceptions and the contributor note.
 - Each phase is reviewed and folded before the next starts.
