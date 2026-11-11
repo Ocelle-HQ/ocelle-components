@@ -1,0 +1,4 @@
+{
+  "expect": "pass",
+  "why": "The mirroring rule scale: -1 1 in an element's css template passes: scale takes the bare numbers -1 and 1 (005 research.md R-03, R-08; PLAN-TESTABILITY-1-011 (a))."
+}

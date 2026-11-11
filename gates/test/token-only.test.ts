@@ -119,6 +119,9 @@ describe("rawValues: scale takes only -1 and 1", () => {
     { value: "-2 1", raw: ["-2"] },
     { value: "50% 1", raw: ["50%"] },
     { value: "1.5", raw: ["1.5"] },
+    { value: "1px -1", raw: ["1px"] },
+    { value: "red 1", raw: ["red"] },
+    { value: "#000", raw: ["#000"] },
   ])("scale: $value is raw: $raw, while -1 1 passes", ({ value, raw }) => {
     expect({ value: rawValues("scale", value), mirror: rawValues("scale", "-1 1") }).toEqual({ value: raw, mirror: [] });
   });

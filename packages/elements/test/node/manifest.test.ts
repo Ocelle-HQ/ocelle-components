@@ -124,6 +124,16 @@ describe("normalise(raw, names)", () => {
     expect((out.modules as Json[]).map((each) => each.path)).toEqual(["src/ocelle-B.ts", "src/ocelle-a.ts", "src/ocelle-b.ts", "src/ocelle-icon-row.ts", "src/ocelle-icon.ts"]);
   });
 
+  it("keeps two modules with the same path in the order the analyzer gave them", () => {
+    const module = (path: string, name: string): Json => ({ kind: "javascript-module", path, declarations: [{ kind: "function", name }], exports: [] });
+    const out = normalise({ ...raw, modules: [module("src/ocelle-x.ts", "first"), module("src/ocelle-a.ts", "other"), module("src/ocelle-x.ts", "second")] }, []);
+    expect((out.modules as Json[]).map((each) => [each.path, (each.declarations as Json[])[0]?.name])).toEqual([
+      ["src/ocelle-a.ts", "other"],
+      ["src/ocelle-x.ts", "first"],
+      ["src/ocelle-x.ts", "second"],
+    ]);
+  });
+
   it("keeps lists that the analyzer stated, and leaves raw untouched", () => {
     const stated = structuredClone(raw);
     declaration(stated).slots = [{ name: "icon", description: "The icon." }];

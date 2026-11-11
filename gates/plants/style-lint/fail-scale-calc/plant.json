@@ -1,0 +1,11 @@
+{
+  "expect": "fail",
+  "why": "A function in scale (scale: calc(2)) is raw: the whole value of scale is checked, so calc() does not reopen the allowance (005 research.md R-03, PLAN-FRESH-3-002 (a)).",
+  "findings": [
+    {
+      "location": "packages/elements/src/x.ts:6",
+      "rule": "ocelle/token-only",
+      "message": "calc(2)"
+    }
+  ]
+}

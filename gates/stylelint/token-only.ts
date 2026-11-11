@@ -9,7 +9,8 @@
 // in stylelint.config.ts, makes a line height (in `line-height`, or after the `/` of `font`) pass only as one
 // var(--ocelle-line-height-*) reference without a fallback or as a CSS-wide keyword, and a `font` value with no
 // top-level `/` raw unless it is a CSS-wide keyword alone (it resets line-height to normal; scope amended by the
-// operator round of 2026-11-09, phase 2 round 2, O2-01); it is read apart from the token lists.
+// operator round of 2026-11-09, phase 2 round 2, O2-01); it is read apart from the token lists. Since 005 (research.md
+// R-03, R-08) `scale` takes only the bare numbers -1 and 1, and any function in its value is raw.
 import stylelint from "stylelint";
 import type { Rule } from "stylelint";
 import valueParser from "postcss-value-parser";
@@ -122,10 +123,29 @@ function fontRaw(value: string, nodes: readonly Node[]): string[] {
   });
 }
 
+/** The numbers `scale` takes (005 research.md R-03, PLAN-TESTABILITY-1-011 (a)): a flip or no flip, never a factor. */
+const scaleNumbers = new Set([-1, 1]);
+
+/**
+ * The raw values of a `scale` value (005 research.md R-03, R-08; PLAN-FRESH-3-002 (a)): the whole value is checked, so
+ * each word is a keyword or the bare number -1 or 1, and any function (calc(), var() or another) is raw.
+ */
+function scaleRaw(nodes: readonly Node[]): string[] {
+  return nodes.flatMap((node) => {
+    if (node.type === "function") return [valueParser.stringify(node)];
+    // A space, a string or a comment is no number, so it is classified as for any property.
+    const number = valueParser.unit(node.value);
+    // Stryker disable next-line StringLiteral,BooleanLiteral: equivalent, what reaches here is no number, and classify() reads the property only for font values and unitless numbers and inCalc only for numbers and the operator words, which it allows outside calc() too as identifiers
+    if (number === false) return classify([node], "scale", false);
+    return number.unit === "" && scaleNumbers.has(Number(number.number)) ? [] : [node.value];
+  });
+}
+
 /** The raw values (FR-024) in one declaration's value, in source order; empty when the value is token-only. */
 export function rawValues(property: string, value: string, options: RawOptions = {}): string[] {
   const name = property.toLowerCase();
   const nodes = valueParser(value).nodes;
+  if (name === "scale") return scaleRaw(nodes);
   if (options.lineHeight === "token" && name === "line-height") {
     const [only] = nodes;
     return nodes.length === 1 && only !== undefined && tokenLineHeight(only) ? [] : [value.trim()];

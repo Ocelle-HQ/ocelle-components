@@ -9,6 +9,9 @@ entry points and the browser build's file path (constitution VII).
 
 - `ocelle-icon`, an icon of the set drawn inline in `currentColor` at the `--ocelle-icon-size` token, decorative
   unless a `label` or a host `aria-label` names it; its properties `name` (reflected) and `label`.
+- The icon set, thirteen names: `chevron-start`, `chevron-end`, `chevron-up`, `chevron-down`, `arrow-start`,
+  `arrow-end`, `menu`, `close`, `folder`, `file`, `search`, `table` and `copy`; `chevron-start`, `chevron-end`,
+  `arrow-start` and `arrow-end` are mirrored under right-to-left text.
 - Entry points: `@ocelle/elements` (the package root, defines every element), `@ocelle/elements/ocelle-icon.js`
   (defines `ocelle-icon` only), `@ocelle/elements/browser.js` (the browser build) and
   `@ocelle/elements/custom-elements.json` (the manifest, also named by the `customElements` field).
