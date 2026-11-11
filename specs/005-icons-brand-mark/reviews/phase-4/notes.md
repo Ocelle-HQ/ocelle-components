@@ -63,5 +63,5 @@ in `plants.md`.
   without the convention too. The convention's part is that it adds nothing, which its plants prove: the strut without
   alt text and the icon named from its name both make it fail (`plants.md`).
 - In process at red, US3-11's `control` held only the button: `vitest.config.ts` did not yet forward the reader's
-  `scope`, so the in-process harness read the DOM-based nodes. The test also failed on its gaps (20 px without the
-  convention's margin), and the fixture harness, which calls the reader directly, failed it as well.
+  `scope`, so the in-process harness read the DOM-based nodes. The test also failed on its gaps (no margin without the
+  convention), and the fixture harness, which calls the reader directly, failed it as well.
