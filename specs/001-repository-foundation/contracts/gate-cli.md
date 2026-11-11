@@ -4,7 +4,7 @@ Every gate runs as `pnpm run gate:<id>` from the repository root and follows one
 
 | Exit | Meaning | Output |
 |---|---|---|
-| 0 | the gate checked its files and found nothing | a one-line summary (files checked) |
+| 0 | the gate checked its files and found nothing | a one-line summary (files checked); amendment 2026-11-11, mission 007: the mutation gate also prints record and report lines at exit 0, see its row |
 | 1 | the gate found defects | one finding per line in the format of data-model.md § Finding (`<location>: <gate-id>: <rule>: <message>`, where `location` is `path:line`, `path` or a commit hash; amendment 2026-11-10, mission 007: the mutation gate's report lines, rules `timeout`, `compile-error` and `zero-mutants`, which are not findings, may also carry `path:start-end`, a `--files` range entry), then a summary |
 | 2 | the gate could not run (missing tool, browser, base commit or range, unreadable or unparsable input, invalid configuration, any uncaught error) | one line naming the cause and the command that fixes it |
 
