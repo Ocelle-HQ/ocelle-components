@@ -1002,4 +1002,67 @@ describe("mutation gate: the report of undecided mutants and zero-mutant entries
       "mutation: 121 mutants on the changed lines of 1 file, none survived; 121 timeouts, 0 compile errors, 0 zero-mutant entries; 0 equivalent records",
     ]);
   });
+
+  // Phase 2 fix round 2, O2-01 (landing L1-03; contracts/mutation-output.md, amendment 2026-11-11): a mutant for
+  // which Stryker gives no replacement ends its line at `replaced by`, with no trailing space, as a finding does.
+  describe("a mutant with no replacement (phase 2 round 2, O2-01)", () => {
+    function bare(id: string, line: number, status: string, mutatorName: string): object {
+      return { id, mutatorName, status, location: { start: { line, column: 1 }, end: { line, column: 5 } } };
+    }
+    const endsInWhitespace = (out: readonly string[]): readonly string[] => out.filter((line) => /\s$/.test(line));
+
+    it("ends a timeout and a compile-error line at `replaced by`, at exit 0", async () => {
+      const report = { [c]: [bare("0", 1, "Timeout", "ObjectLiteral"), bare("1", 2, "CompileError", "BooleanLiteral")] };
+      const ran = await gate([], newFilesDiff({ [c]: 3 }), sources, report);
+      expect(ran).toEqual({
+        code: 0,
+        out: [
+          "packages/tokens/src/c.ts:1: mutation: timeout: ObjectLiteral: replaced by",
+          "packages/tokens/src/c.ts:2: mutation: compile-error: BooleanLiteral: replaced by",
+          "mutation: 2 mutants on the changed lines of 1 file, none survived; 1 timeout, 1 compile error, 0 zero-mutant entries; 0 equivalent records",
+        ],
+        err: [],
+        mutated: ["packages/tokens/src/c.ts:1-3"],
+      });
+      expect(endsInWhitespace(ran.out)).toEqual([]);
+    });
+
+    it("ends the same two lines at `replaced by` at exit 1, beside a Survived finding", async () => {
+      const report = {
+        [c]: [bare("0", 1, "Timeout", "ObjectLiteral"), bare("1", 2, "CompileError", "BooleanLiteral"), at("2", 3, "Survived", "StringLiteral", '""')],
+      };
+      const ran = await gate([], newFilesDiff({ [c]: 3 }), sources, report);
+      expect(ran).toEqual({
+        code: 1,
+        out: [
+          "packages/tokens/src/c.ts:1: mutation: timeout: ObjectLiteral: replaced by",
+          "packages/tokens/src/c.ts:2: mutation: compile-error: BooleanLiteral: replaced by",
+          'packages/tokens/src/c.ts:3: mutation: StringLiteral: Survived: replaced by ""',
+          "mutation: 1 finding in 1 changed file (3 mutants on changed lines; 1 timeout, 1 compile error, 0 zero-mutant entries)",
+        ],
+        err: [],
+        mutated: ["packages/tokens/src/c.ts:1-3"],
+      });
+      expect(endsInWhitespace(ran.out)).toEqual([]);
+    });
+
+    it("keeps a Survived finding with no replacement in its form, beside a timeout and a compile-error line", async () => {
+      const report = {
+        [c]: [bare("0", 1, "Timeout", "ObjectLiteral"), bare("1", 2, "CompileError", "BooleanLiteral"), bare("2", 3, "Survived", "StringLiteral")],
+      };
+      const ran = await gate([], newFilesDiff({ [c]: 3 }), sources, report);
+      expect(ran).toEqual({
+        code: 1,
+        out: [
+          "packages/tokens/src/c.ts:1: mutation: timeout: ObjectLiteral: replaced by",
+          "packages/tokens/src/c.ts:2: mutation: compile-error: BooleanLiteral: replaced by",
+          "packages/tokens/src/c.ts:3: mutation: StringLiteral: Survived: replaced by",
+          "mutation: 1 finding in 1 changed file (3 mutants on changed lines; 1 timeout, 1 compile error, 0 zero-mutant entries)",
+        ],
+        err: [],
+        mutated: ["packages/tokens/src/c.ts:1-3"],
+      });
+      expect(endsInWhitespace(ran.out)).toEqual([]);
+    });
+  });
 });
