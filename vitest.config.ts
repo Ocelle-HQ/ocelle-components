@@ -6,12 +6,12 @@ import type { BrowserCommand, BrowserCommandContext } from "vitest/node";
 // runs: the plant trees of the gates copy this file without the element test code (research.md R-10), so neither
 // loading nor type-checking the configuration may depend on it.
 interface ElementCommands {
-  readonly axTree: (context: BrowserCommandContext, id: string) => Promise<unknown>;
+  readonly axTree: (context: BrowserCommandContext, id: string, scope?: "element" | "subtree") => Promise<unknown>;
   readonly emulateForcedColors: (context: BrowserCommandContext, mode: "active" | "none", palette?: "light" | "dark") => Promise<void>;
 }
 const elementCommandsUrl = new URL("./packages/elements/test/commands.ts", import.meta.url).href;
 const elementCommands = async (): Promise<ElementCommands> => (await import(elementCommandsUrl)) as ElementCommands;
-const axTree: BrowserCommand<[id: string]> = async (context, id) => (await elementCommands()).axTree(context, id);
+const axTree: BrowserCommand<[id: string, scope?: "element" | "subtree"]> = async (context, id, scope) => (await elementCommands()).axTree(context, id, scope);
 const emulateForcedColors: BrowserCommand<[mode: "active" | "none", palette?: "light" | "dark"]> = async (context, mode, palette) => {
   await (await elementCommands()).emulateForcedColors(context, mode, palette);
 };
