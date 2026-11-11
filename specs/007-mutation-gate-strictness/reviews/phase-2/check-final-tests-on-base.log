@@ -30,7 +30,7 @@ devDependencies:
 + vite 8.3.5
 + vitest 5.0.5
 
-Done in 380ms using pnpm v12.16.1
+Done in 333ms using pnpm v12.16.1
 $ node gates/bin/setup-offline.ts
 setup: installed offline; Chromium at /opt/pw-browsers/chromium-1243/chrome-linux64/chrome
 $ node gates/bin/test.ts
@@ -40,7 +40,7 @@ gates/test/integration/mutation.test.ts:121: unit-tests: mutation gate (gates/bi
 gates/test/integration/mutation.test.ts:140: unit-tests: mutation gate (gates/bin/mutation.ts) --files with an entry path:start-end mutates only the changed lines inside it (phase 3 round 9, O9-01): AssertionError: expected { code: +0, stderr: [], lines: 1 } to deeply equal { code: +0, stderr: [], lines: 2 }
 gates/test/integration/vitest-mutation-config.test.ts:69: unit-tests: vitest.mutation.config.ts holds every project of vitest.config.ts except gates-integration, tokens-browser, styles-browser and storybook-integration, with tokens split for the start order: AssertionError: expected [ Array(5) ] to deeply equal [ 'tokens-source-table', …(5) ]
 gates/test/integration/vitest-mutation-config.test.ts:111: unit-tests: vitest.mutation.config.ts collects exactly the test modules of vitest.config.ts outside the four excluded projects, each once: AssertionError: expected [] to deeply equal [ Array(1) ]
-gates/test/integration/vitest-mutation-config.test.ts:129: unit-tests: vitest.mutation.config.ts under Stryker's runner options starts source-table.test.ts first, then every other token test, then the other projects: AssertionError: expected { Object (project, module) } to deeply equal { Object (project, module) }
+gates/test/integration/vitest-mutation-config.test.ts:129: unit-tests: vitest.mutation.config.ts under Stryker's runner options starts source-table.test.ts first, then every other project in one group in Vitest's default order: AssertionError: expected { Object (project, module) } to deeply equal { Object (project, module) }
 gates/test/findings.test.ts:110: unit-tests: plural gives the singular for 1 and the given plural for 0 and 2: AssertionError: expected '0 zero-mutant entrys' to be '0 zero-mutant entries' // Object.is equality
 gates/test/mutation-ranges.test.ts:353: unit-tests: mutation gate: diff headers and mutate inputs (phase 3 round 7, O7-01 and O7-02) mutates the files of tab-suffixed and quoted headers in a normal run: AssertionError: expected { code: +0, …(3) } to deeply equal { code: +0, …(3) }
 gates/test/mutation-ranges.test.ts:371: unit-tests: mutation gate: diff headers and mutate inputs (phase 3 round 7, O7-01 and O7-02) --files selects the file of a quoted header: AssertionError: expected { code: +0, …(3) } to deeply equal { code: +0, …(3) }
