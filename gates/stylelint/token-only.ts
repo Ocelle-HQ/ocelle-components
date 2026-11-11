@@ -133,8 +133,9 @@ const scaleNumbers = new Set([-1, 1]);
 function scaleRaw(nodes: readonly Node[]): string[] {
   return nodes.flatMap((node) => {
     if (node.type === "function") return [valueParser.stringify(node)];
-    if (node.type !== "word") return classify([node], "scale", false);
+    // A space, a string or a comment is no number, so it is classified as for any property.
     const number = valueParser.unit(node.value);
+    // Stryker disable next-line StringLiteral,BooleanLiteral: equivalent, what reaches here is no number, and classify() reads the property only for font values and unitless numbers and inCalc only for numbers and the operator words, which it allows outside calc() too as identifiers
     if (number === false) return classify([node], "scale", false);
     return number.unit === "" && scaleNumbers.has(Number(number.number)) ? [] : [node.value];
   });

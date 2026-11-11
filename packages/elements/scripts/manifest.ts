@@ -81,8 +81,9 @@ function normaliseDeclaration(declaration: Json, union: string | undefined): Jso
 
 /** Orders two strings by UTF-16 code unit, whatever the process's locale (phase 2 review R1-06). */
 function byCodePoint(a: string, b: string): number {
-  if (a === b) return 0;
-  return a < b ? -1 : 1;
+  if (a < b) return -1;
+  // Stryker disable next-line EqualityOperator: equivalent, a >= b differs only for equal paths, where 1 and 0 both keep the two modules in their order in V8's stable sort (test/node/manifest.test.ts, same path)
+  return a > b ? 1 : 0;
 }
 
 export function normalise(raw: Manifest, names: readonly string[]): Manifest {
