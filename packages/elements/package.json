@@ -18,10 +18,11 @@
     "README.md",
     "CHANGELOG.md",
     "LICENSE",
+    "NOTICE",
     "THIRD_PARTY_NOTICES"
   ],
   "scripts": {
-    "build": "tsc -p tsconfig.json && vite build -c vite.browser.config.ts && cp ../../LICENSE ../../THIRD_PARTY_NOTICES .",
+    "build": "tsc -p tsconfig.json && vite build -c vite.browser.config.ts && cp ../../LICENSE ../../NOTICE ../../THIRD_PARTY_NOTICES .",
     "manifest": "node scripts/manifest.ts"
   },
   "dependencies": {
