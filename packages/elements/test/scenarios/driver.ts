@@ -132,6 +132,12 @@ export interface Driver {
    * content included, inline text boxes left out (test/commands.ts `axSubtree`).
    */
   axSubtree(id: string): Promise<AxNode[]>;
+  /**
+   * Sets the theme of the page: `data-theme` on its root element, `"light"` or `"dark"`, or null to remove it (the
+   * system setting then decides, light in these harnesses), and waits for every element to render. The next `mount`
+   * removes it.
+   */
+  theme(theme: Palette | null): Promise<void>;
   /** Emulates forced colours with a system palette, or ends it with `"none"`. */
   forcedColors(mode: ForcedColors, palette?: Palette): Promise<void>;
   /** How the shadow roots of the elements matching `selector` hold their adopted stylesheets. */

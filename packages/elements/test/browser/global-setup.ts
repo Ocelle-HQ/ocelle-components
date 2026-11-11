@@ -7,7 +7,8 @@
 //   node_modules links `lit` to the package's dependency, bundled by Vite twice from two entries into
 //   `<dir>/bundles/bundle-a.js` and `bundle-b.js`, each with its own copy of Lit (production build, the default
 //   conditions). Each entry records the `OcelleIcon` class its copy of the module build exported on
-//   `globalThis.ocelleBundles`, in load order, so the test can tell which class the registry kept;
+//   `globalThis.ocelleBundles` and its `OcelleBrandMark` class on `globalThis.ocelleMarks`, in load order, so the test
+//   can tell which class the registry kept for each element;
 // - for User Story 3, the test host's file: test/fixtures/test-host.ts bundled by Vite with its own copy of Lit (the
 //   package's pinned dependency, production build) into `<dir>/test-host/ocelle-test-host.js`, one self-contained
 //   module that imports nothing and does not import the browser build (spec § The strict-CSP fixture, FR-023).
@@ -49,7 +50,10 @@ async function moduleBundles(dir: string): Promise<void> {
   symlinkSync(realpathSync(join(elements, "node_modules", "lit")), join(host, "node_modules", "lit"), "dir");
   for (const name of ["a", "b"]) {
     const entry = join(host, `entry-${name}.js`);
-    writeFileSync(entry, 'import { OcelleIcon } from "./module/index.js";\n(globalThis.ocelleBundles ??= []).push(OcelleIcon);\n');
+    writeFileSync(
+      entry,
+      'import * as elements from "./module/index.js";\n(globalThis.ocelleBundles ??= []).push(elements.OcelleIcon);\n(globalThis.ocelleMarks ??= []).push(elements.OcelleBrandMark);\n',
+    );
     await build({
       configFile: false,
       root: host,

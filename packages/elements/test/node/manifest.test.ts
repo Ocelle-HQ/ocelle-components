@@ -7,7 +7,7 @@ import { generate, iconNames, normalise, serialise, writeManifest } from "../../
 import type { Manifest } from "../../scripts/manifest.ts";
 
 // The custom-elements manifest generator (005 FR-007, US1 scenario 11; research.md R-06; reviews/phase-2/spike.md § 2;
-// T017), in process: the analyzer's `create` API with its Lit plugin over packages/elements/src/ocelle-*.ts, then the
+// T017, T054), in process: the analyzer's `create` API with its Lit plugin over packages/elements/src/ocelle-*.ts, then the
 // normaliser, which states the four empty member lists, expands the `IconName` type to the union of the icon names,
 // drops the observed `aria-label` attribute (FR-034: a standard attribute, not a member) and members and attributes
 // that are not public, and sorts keys. The raw input below is the shape the spike recorded for analyzer 0.11.0.
@@ -247,8 +247,8 @@ describe("generate(root) on the repository's element source", () => {
     const manifest = await generate(repo);
     const modules = manifest.modules as { path: string; declarations: Record<string, unknown>[] }[];
     expect(manifest.schemaVersion).toBe("1.0.0");
-    expect(modules.map((module) => module.path)).toEqual(["src/ocelle-icon.ts"]);
-    const [icon] = modules[0]?.declarations ?? [];
+    expect(modules.map((module) => module.path)).toEqual(["src/ocelle-brand-mark.ts", "src/ocelle-icon.ts"]);
+    const [icon] = modules.find((module) => module.path === "src/ocelle-icon.ts")?.declarations ?? [];
     expect(icon).toMatchObject({
       kind: "class",
       name: "OcelleIcon",
@@ -267,6 +267,34 @@ describe("generate(root) on the repository's element source", () => {
     const attributes = (icon?.attributes as Record<string, unknown>[]).map(({ description, ...rest }) => ({ ...rest, described: typeof description === "string" && description !== "" }));
     expect(attributes).toEqual([
       { name: "name", fieldName: "name", type: { text: unionOfTheSet }, default: "undefined", described: true },
+      { name: "label", fieldName: "label", type: { text: "string | undefined" }, default: "undefined", described: true },
+    ]);
+  });
+
+  it('declares ocelle-brand-mark with its tag name, class, ground ("chrome" | undefined) and tone ("mono" | undefined), reflected, and label (string | undefined), not reflected, each with the default undefined, and no slot, event, part or CSS property (US4 scenario 12)', async () => {
+    const manifest = await generate(repo);
+    const modules = manifest.modules as { path: string; declarations: Record<string, unknown>[] }[];
+    const [mark] = modules.find((module) => module.path === "src/ocelle-brand-mark.ts")?.declarations ?? [];
+    expect(mark).toMatchObject({
+      kind: "class",
+      name: "OcelleBrandMark",
+      tagName: "ocelle-brand-mark",
+      customElement: true,
+      slots: [],
+      events: [],
+      cssParts: [],
+      cssProperties: [],
+    });
+    const described = (list: unknown): Record<string, unknown>[] =>
+      ((list ?? []) as Record<string, unknown>[]).map(({ description, ...rest }) => ({ ...rest, described: typeof description === "string" && description !== "" }));
+    expect(described(mark?.members)).toEqual([
+      { kind: "field", name: "ground", privacy: "public", type: { text: '"chrome" | undefined' }, default: "undefined", attribute: "ground", reflects: true, described: true },
+      { kind: "field", name: "tone", privacy: "public", type: { text: '"mono" | undefined' }, default: "undefined", attribute: "tone", reflects: true, described: true },
+      { kind: "field", name: "label", privacy: "public", type: { text: "string | undefined" }, default: "undefined", attribute: "label", described: true },
+    ]);
+    expect(described(mark?.attributes)).toEqual([
+      { name: "ground", fieldName: "ground", type: { text: '"chrome" | undefined' }, default: "undefined", described: true },
+      { name: "tone", fieldName: "tone", type: { text: '"mono" | undefined' }, default: "undefined", described: true },
       { name: "label", fieldName: "label", type: { text: "string | undefined" }, default: "undefined", described: true },
     ]);
   });

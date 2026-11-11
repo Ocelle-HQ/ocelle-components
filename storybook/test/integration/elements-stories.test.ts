@@ -15,7 +15,9 @@ import { afterAll, beforeAll, describe, expect, inject, it } from "vitest";
 // request outside the origin, and the story renders with the base stylesheet as every story does: preview-head.html
 // links base.css, and the root's `color-scheme` follows the theme global, which only base.css applies (US1-13's base
 // stylesheet clause, analysis L14). Phase 3 adds the grid of the thirteen names, left to right and right to left
-// (T035a; US1-13's "every icon in the set"), phase 5 the mark's stories (T056a).
+// (T035a; US1-13's "every icon in the set"), phase 5 the mark's stories (T056a; US4 scenario 11): main ground, chrome,
+// mono and labelled, each rendering its `ocelle-brand-mark` with the story's `ground`, `tone` and `label`, drawn, in
+// light and dark, with no violation and no request outside the origin.
 const policy = "default-src 'none'; script-src 'self'; style-src 'self'; font-src 'self'; connect-src 'self'";
 const types: Readonly<Record<string, string>> = {
   ".html": "text/html; charset=utf-8",
@@ -61,7 +63,7 @@ afterAll(async () => {
 });
 
 /** Opens a story in the preview with the violation collector and the outside-request recorder installed. */
-async function open(id: string, theme: "light" | "dark"): Promise<{ readonly page: Page; readonly outside: readonly string[] }> {
+async function open(id: string, theme: "light" | "dark", element = "ocelle-icon"): Promise<{ readonly page: Page; readonly outside: readonly string[] }> {
   if (browser === undefined) throw new Error("the suite did not start");
   const page = await browser.newPage();
   await page.addInitScript(() => {
@@ -76,11 +78,11 @@ async function open(id: string, theme: "light" | "dark"): Promise<{ readonly pag
     if (!request.url().startsWith(`${origin}/`)) outside.push(request.url());
   });
   await page.goto(`${origin}/iframe.html?id=${id}&viewMode=story&globals=theme:${theme}`, { waitUntil: "load" });
-  // Waits for the story's icon, but not past 10 s: a story that never renders is reported by the assertions below.
-  await page.waitForSelector("#storybook-root ocelle-icon", { state: "attached", timeout: 10_000 }).catch(() => undefined);
-  await page.evaluate(async () => {
-    await Promise.all([...document.querySelectorAll("#storybook-root ocelle-icon")].map((icon) => (icon as unknown as { updateComplete?: Promise<unknown> }).updateComplete ?? Promise.resolve()));
-  });
+  // Waits for the story's element, but not past 10 s: a story that never renders is reported by the assertions below.
+  await page.waitForSelector(`#storybook-root ${element}`, { state: "attached", timeout: 10_000 }).catch(() => undefined);
+  await page.evaluate(async (element) => {
+    await Promise.all([...document.querySelectorAll(`#storybook-root ${element}`)].map((each) => (each as unknown as { updateComplete?: Promise<unknown> }).updateComplete ?? Promise.resolve()));
+  }, element);
   return { page, outside };
 }
 
@@ -124,6 +126,54 @@ describe("the ocelle-icon stories in the built Storybook (US1-13, FR-019)", { ti
           base: { linked: true, scheme: theme },
           defined: true,
           icons,
+          violations: [],
+          outside: [],
+        });
+        await page.close();
+      });
+    }
+  }
+});
+
+/** What a mark story's page shows: its theme, the base stylesheet, its marks and the collector's violations. */
+function observeMarks(page: Page): Promise<unknown> {
+  return page.evaluate(() => ({
+    theme: document.documentElement.dataset.theme,
+    base: {
+      linked: [...document.querySelectorAll<HTMLLinkElement>('link[rel="stylesheet"]')].some((link) => link.href.endsWith("/base.css") && link.sheet !== null),
+      scheme: getComputedStyle(document.documentElement).colorScheme,
+    },
+    defined: customElements.get("ocelle-brand-mark") !== undefined,
+    marks: [...document.querySelectorAll("#storybook-root ocelle-brand-mark")].map((mark) => ({
+      ground: mark.getAttribute("ground"),
+      tone: mark.getAttribute("tone"),
+      label: mark.getAttribute("label"),
+      drawn: [...(mark.shadowRoot?.querySelectorAll("svg path, svg ellipse") ?? [])].map((part) => part.localName),
+    })),
+    violations: (window as unknown as { __ocelleViolations?: unknown[] }).__ocelleViolations ?? [],
+  }));
+}
+
+/** The rosette's drawing: four arcs and the spot. */
+const rosette = ["path", "path", "path", "path", "ellipse"];
+
+const markStories = [
+  { id: "elements-ocelle-brand-mark--main-ground", marks: [{ ground: null, tone: null, label: null, drawn: rosette }] },
+  { id: "elements-ocelle-brand-mark--chrome", marks: [{ ground: "chrome", tone: null, label: null, drawn: rosette }] },
+  { id: "elements-ocelle-brand-mark--mono", marks: [{ ground: null, tone: "mono", label: null, drawn: rosette }] },
+  { id: "elements-ocelle-brand-mark--labelled", marks: [{ ground: null, tone: null, label: "Ocelle", drawn: rosette }] },
+] as const;
+
+describe("the ocelle-brand-mark stories in the built Storybook (US4-11, FR-019)", { timeout: 60_000 }, () => {
+  for (const { id, marks } of markStories) {
+    for (const theme of ["light", "dark"] as const) {
+      it(`${id} in ${theme}: renders its ocelle-brand-mark with the story's ground, tone and label, drawn, with base.css applied, no violation and no request outside the origin`, async () => {
+        const { page, outside } = await open(id, theme, "ocelle-brand-mark");
+        expect({ ...((await observeMarks(page)) as object), outside }).toEqual({
+          theme,
+          base: { linked: true, scheme: theme },
+          defined: true,
+          marks,
           violations: [],
           outside: [],
         });

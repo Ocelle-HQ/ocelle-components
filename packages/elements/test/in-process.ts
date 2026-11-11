@@ -67,6 +67,7 @@ export function inProcessDriver(): Driver {
     mount: async (markup, options = {}) => {
       document.adoptedStyleSheets = options.base === true ? [tokens, base] : [tokens];
       messages.length = 0;
+      document.documentElement.removeAttribute("data-theme");
       document.body.innerHTML = markup;
       await settle();
     },
@@ -158,6 +159,11 @@ export function inProcessDriver(): Driver {
     },
     ax: (id) => commands.axTree(id),
     axSubtree: (id) => commands.axTree(id, "subtree"),
+    theme: async (theme) => {
+      if (theme === null) document.documentElement.removeAttribute("data-theme");
+      else document.documentElement.dataset.theme = theme;
+      await settle();
+    },
     forcedColors: async (mode, palette) => {
       await commands.emulateForcedColors(mode, palette);
       await settle();

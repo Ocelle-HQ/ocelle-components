@@ -139,6 +139,55 @@ describe("rawValues: scale takes only -1 and 1", () => {
   });
 });
 
+// The `aspect-ratio` allowance (005 research.md R-03, R-09; operator decisions PLAN-FRESH-1-006 (a) and PLAN-FRESH-3-002
+// (a); T050): `aspect-ratio` takes only the number 1, as the whole value, so the mark's `aspect-ratio: 1` passes and
+// takes its size from the token. Any other number, a ratio with `/` (`1 / 1` included), a length and any function
+// (calc(), var() or another) are raw, so calc() does not reopen the allowance. Keywords stay allowed as for every
+// property. Each guard shares its test with the square value it guards.
+describe("rawValues: aspect-ratio takes only 1, as the whole value", () => {
+  it("aspect-ratio: 1 is token-only, in any case of the property name, while 16 / 9 stays raw", () => {
+    expect({ square: rawValues("aspect-ratio", "1"), upper: rawValues("ASPECT-RATIO", "1"), spaced: rawValues("aspect-ratio", " 1 "), ratio: rawValues("aspect-ratio", "16 / 9") }).toEqual({
+      square: [],
+      upper: [],
+      spaced: [],
+      ratio: ["16", "9"],
+    });
+  });
+
+  it("keeps keywords allowed: aspect-ratio: auto and inherit pass, beside 1", () => {
+    expect({ auto: rawValues("aspect-ratio", "auto"), inherit: rawValues("aspect-ratio", "inherit"), square: rawValues("aspect-ratio", "1") }).toEqual({ auto: [], inherit: [], square: [] });
+  });
+
+  it.each([
+    { value: "2", raw: ["2"] },
+    { value: "1 / 1", raw: ["1", "1"] },
+    { value: "1/1", raw: ["1", "1"] },
+    { value: "calc(2)", raw: ["calc(2)"] },
+    { value: "calc(1)", raw: ["calc(1)"] },
+    { value: "var(--ocelle-icon-size)", raw: ["var(--ocelle-icon-size)"] },
+    { value: "auto 1", raw: ["1"] },
+    { value: "0", raw: ["0"] },
+    { value: "1.5", raw: ["1.5"] },
+    { value: "-1", raw: ["-1"] },
+    { value: "1px", raw: ["1px"] },
+    { value: "100%", raw: ["100%"] },
+  ])("aspect-ratio: $value is raw: $raw, while aspect-ratio: 1 passes", ({ value, raw }) => {
+    expect({ value: rawValues("aspect-ratio", value), square: rawValues("aspect-ratio", "1") }).toEqual({ value: raw, square: [] });
+  });
+
+  it("leaves other properties as before: a bare 1 is still raw for width and calc(2) still passes there, while aspect-ratio: 1 passes", () => {
+    expect({ width: rawValues("width", "1"), calc: rawValues("width", "calc(2)"), square: rawValues("aspect-ratio", "1") }).toEqual({ width: ["1"], calc: [], square: [] });
+  });
+
+  it("reports the mark's aspect-ratio: 1 in an element template not at all, and aspect-ratio: calc(2) at its line", async () => {
+    const code = "const css = String.raw;\nexport const styles = css`\n  :host {\n    aspect-ratio: 1;\n  }\n  .wide {\n    aspect-ratio: calc(2);\n  }\n`;\n";
+    const { results } = await stylelint.lint({ code, codeFilename: "x.ts", config: { plugins: [plugin], rules: { [ruleName]: true }, customSyntax: "postcss-lit" } });
+    expect(results[0]?.warnings.map(({ line, text }) => ({ line, text }))).toEqual([
+      { line: 7, text: "aspect-ratio: raw calc(2); use a --ocelle-* token (FR-024) (ocelle/token-only)" },
+    ]);
+  });
+});
+
 // The `1lh` allowance (005 research.md R-03, R-10; operator decisions PLAN-CORRECTNESS-1-004 (a), PLAN-FRESH-2-002 (a)
 // and PLAN-FRESH-3-002 (a); T041): the unit `lh` is allowed only as `1lh`, one line box of the element's own line
 // height, as a value on its own (the slot wrapper's `block-size: 1lh`) and inside `calc()` only as an operand of `+` or
