@@ -139,6 +139,92 @@ describe("rawValues: scale takes only -1 and 1", () => {
   });
 });
 
+// The `1lh` allowance (005 research.md R-03, R-10; operator decisions PLAN-CORRECTNESS-1-004 (a), PLAN-FRESH-2-002 (a)
+// and PLAN-FRESH-3-002 (a); T041): the unit `lh` is allowed only as `1lh`, one line box of the element's own line
+// height, as a value on its own (the slot wrapper's `block-size: 1lh`) and inside `calc()` only as an operand of `+` or
+// `-` (never of `*` or `/`), at most once per `calc()` expression, in a `calc()` that also references an `--ocelle-*`
+// token (the row's `padding-block: calc((var(--ocelle-icon-size) - 1lh) / 2)`). Every other use of `lh` is raw. Each
+// guard shares its test with the allowed value it guards, since `2lh` and the rest were raw before the allowance too.
+describe("rawValues: 1lh alone, and once beside a token in calc()", () => {
+  const row = "calc((var(--ocelle-icon-size) - 1lh) / 2)";
+
+  it.each([
+    { property: "block-size", value: "1lh" },
+    { property: "BLOCK-SIZE", value: "1LH" },
+    { property: "min-block-size", value: "1lh" },
+  ])("$property: $value is token-only", ({ property, value }) => {
+    expect(rawValues(property, value)).toEqual([]);
+  });
+
+  it.each([
+    { property: "padding-block", value: row },
+    { property: "padding-block", value: "calc(var(--ocelle-icon-size) - 1lh)" },
+    { property: "padding-block", value: "calc(1lh - var(--ocelle-icon-size))" },
+    { property: "margin-block", value: "calc(var(--ocelle-space-1) + 1lh)" },
+    { property: "margin-block", value: "calc(var(--ocelle-space-1) + (1lh - var(--ocelle-space-1)))" },
+    { property: "margin-block", value: "calc(var(--ocelle-space-1) * 2 + 1lh)" },
+    { property: "inset-block-start", value: "calc((var(--ocelle-icon-size) - 1lh) / 2) var(--ocelle-space-1)" },
+  ])("$property: $value is token-only", ({ property, value }) => {
+    expect(rawValues(property, value)).toEqual([]);
+  });
+
+  it.each([
+    { property: "block-size", value: "2lh", raw: ["2lh"] },
+    { property: "block-size", value: "0.5lh", raw: ["0.5lh"] },
+    { property: "block-size", value: "-1lh", raw: ["-1lh"] },
+    { property: "block-size", value: "1rlh", raw: ["1rlh"] },
+    { property: "block-size", value: "calc(2lh)", raw: ["2lh"] },
+    { property: "block-size", value: "calc(1lh)", raw: ["1lh"] },
+    { property: "block-size", value: "calc(1lh * 2)", raw: ["1lh"] },
+    { property: "block-size", value: "calc(2 * 1lh)", raw: ["1lh"] },
+    { property: "block-size", value: "calc(1lh / 2)", raw: ["1lh"] },
+    { property: "block-size", value: "calc(var(--ocelle-space-1) + 1lh * 2)", raw: ["1lh"] },
+    { property: "block-size", value: "calc(var(--ocelle-space-1) / 1lh)", raw: ["1lh"] },
+    { property: "block-size", value: "calc(var(--ocelle-space-1) + 1lh + 1lh)", raw: ["1lh", "1lh"] },
+    { property: "block-size", value: "calc(1lh + 1lh)", raw: ["1lh", "1lh"] },
+    { property: "block-size", value: "calc(1lh + 1px)", raw: ["1lh", "1px"] },
+    { property: "block-size", value: "calc(1lh + var(--other))", raw: ["1lh"] },
+    { property: "padding-block", value: "calc(var(--ocelle-icon-size) - 2lh)", raw: ["2lh"] },
+    { property: "padding-block", value: "calc(var(--ocelle-icon-size) - 1lh - 1lh)", raw: ["1lh", "1lh"] },
+    { property: "padding-block", value: "calc(var(--ocelle-icon-size) - 1lh) calc(var(--ocelle-icon-size) - 1lh - 1lh)", raw: ["1lh", "1lh"] },
+    { property: "padding-block", value: "calc((var(--ocelle-icon-size) - 1lh) / 2) 1lh", raw: ["1lh"] },
+    { property: "padding-block", value: "1lh 1lh", raw: ["1lh", "1lh"] },
+    { property: "padding-block", value: "1lh var(--ocelle-space-1)", raw: ["1lh"] },
+    { property: "block-size", value: "var(--ocelle-icon-size, 1lh)", raw: ["1lh"] },
+    { property: "block-size", value: "max(1lh, var(--ocelle-icon-size))", raw: ["max(1lh, var(--ocelle-icon-size))"] },
+  ])("$property: $value is raw: $raw, while block-size: 1lh and the row's padding pass", ({ property, value, raw }) => {
+    expect({ value: rawValues(property, value), alone: rawValues("block-size", "1lh"), row: rawValues("padding-block", row) }).toEqual({ value: raw, alone: [], row: [] });
+  });
+
+  it("counts 1lh once per calc() expression, nested groups and calc() included, while each of two calc() expressions may hold one", () => {
+    expect({
+      nested: rawValues("padding-block", "calc(var(--ocelle-icon-size) - (1lh + calc(1lh)))"),
+      two: rawValues("padding-block", "calc(var(--ocelle-icon-size) - 1lh) calc(var(--ocelle-space-1) + 1lh)"),
+    }).toEqual({ nested: ["1lh", "1lh"], two: [] });
+  });
+
+  it("asks the token of the calc() expression that holds 1lh, wherever it is in that expression", () => {
+    expect({
+      nested: rawValues("padding-block", "calc((1lh - var(--ocelle-icon-size)) / 2)"),
+      other: rawValues("padding-block", "calc(1lh + 0) var(--ocelle-space-1)"),
+    }).toEqual({ nested: [], other: ["1lh"] });
+  });
+
+  it("reports the slot convention's rules of an element template not at all, and a multiple of a line box at its line", async () => {
+    const code =
+      "const css = String.raw;\nexport const styles = css`\n  .icon-row {\n    padding-block: calc((var(--ocelle-icon-size) - 1lh) / 2);\n  }\n" +
+      "  .icon-slot {\n    block-size: 1lh;\n  }\n  .big {\n    block-size: calc(1lh * 2);\n  }\n`;\n";
+    const { results } = await stylelint.lint({
+      code,
+      codeFilename: "x.ts",
+      config: { plugins: [plugin], rules: { [ruleName]: true }, customSyntax: "postcss-lit" },
+    });
+    expect(results[0]?.warnings.map(({ line, text }) => ({ line, text }))).toEqual([
+      { line: 10, text: "block-size: raw 1lh; use a --ocelle-* token (FR-024) (ocelle/token-only)" },
+    ]);
+  });
+});
+
 describe("referencedTokens()", () => {
   it.each([
     { value: "var(--ocelle-a) var", names: ["--ocelle-a"] },

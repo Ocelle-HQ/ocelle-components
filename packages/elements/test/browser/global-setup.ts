@@ -7,7 +7,10 @@
 //   node_modules links `lit` to the package's dependency, bundled by Vite twice from two entries into
 //   `<dir>/bundles/bundle-a.js` and `bundle-b.js`, each with its own copy of Lit (production build, the default
 //   conditions). Each entry records the `OcelleIcon` class its copy of the module build exported on
-//   `globalThis.ocelleBundles`, in load order, so the test can tell which class the registry kept.
+//   `globalThis.ocelleBundles`, in load order, so the test can tell which class the registry kept;
+// - for User Story 3, the test host's file: test/fixtures/test-host.ts bundled by Vite with its own copy of Lit (the
+//   package's pinned dependency, production build) into `<dir>/test-host/ocelle-test-host.js`, one self-contained
+//   module that imports nothing and does not import the browser build (spec § The strict-CSP fixture, FR-023).
 // The directory, or the reason the builds failed, is provided to the tests, which report it: a failed build is a
 // failing test of its own, and every page then lacks the scripts it loads.
 import { spawnSync } from "node:child_process";
@@ -58,11 +61,28 @@ async function moduleBundles(dir: string): Promise<void> {
   }
 }
 
+/** The test host's file into `<dir>/test-host`, Lit bundled. */
+async function testHost(dir: string): Promise<void> {
+  await build({
+    configFile: false,
+    root: elements,
+    logLevel: "error",
+    resolve: { conditions: ["module", "browser", "production"] },
+    build: {
+      outDir: join(dir, "test-host"),
+      emptyOutDir: false,
+      minify: false,
+      lib: { entry: join(elements, "test", "fixtures", "test-host.ts"), formats: ["es"], fileName: () => "ocelle-test-host.js" },
+    },
+  });
+}
+
 export default async function setup(project: TestProject): Promise<() => void> {
   const dir = mkdtempSync(join(tmpdir(), "ocelle-elements-fixture-"));
   try {
     await browserBuild(dir);
     await moduleBundles(dir);
+    await testHost(dir);
     project.provide("elementsFixture", { dir });
   } catch (error) {
     project.provide("elementsFixture", { problem: error instanceof Error ? error.message : String(error) });

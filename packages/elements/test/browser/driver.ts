@@ -7,15 +7,19 @@
 // (`<page>-base.html`), so `mount` with `base` must be called on such a page.
 import { inflateSync } from "node:zlib";
 import type { Page } from "playwright";
-import { axNodes, emulate } from "../commands.ts";
+import { axNodes, axSubtree, emulate } from "../commands.ts";
 import { decodePng } from "../pixels.ts";
 import type { Bounds, Box, Driver, Drawing, Paint, Part, Placement, Sheets } from "../scenarios/driver.ts";
 
-/** Waits in the page until every `ocelle-*` element has rendered, then for a frame. */
+/**
+ * Waits in the page until every `ocelle-*` element has rendered and the fonts the page uses have loaded (a font that
+ * arrives later would move the text a scenario measures), then for a frame.
+ */
 function settle(page: Page): Promise<void> {
   return page.evaluate(async () => {
     const elements = [...document.querySelectorAll("*")].filter((each) => each.localName.startsWith("ocelle-"));
     await Promise.all(elements.map((each) => (each as unknown as { updateComplete?: Promise<unknown> }).updateComplete ?? Promise.resolve()));
+    await document.fonts.ready;
     await new Promise((resolve) => requestAnimationFrame(resolve));
   });
 }
@@ -28,6 +32,7 @@ export function fixtureDriver(page: Page, log: readonly string[], withBase = fal
       if ((options.base === true) !== withBase) throw new Error(`mount ${options.base === true ? "with" : "without"} base.css on a page ${withBase ? "with" : "without"} it`);
       since = log.length;
       await page.evaluate((html) => {
+        document.adoptedStyleSheets = [];
         document.body.innerHTML = html;
       }, markup);
       await settle(page);
@@ -58,6 +63,20 @@ export function fixtureDriver(page: Page, log: readonly string[], withBase = fal
       }, { id, property, value });
       await settle(page);
     },
+    rules: async (rules) => {
+      await page.evaluate((rules) => {
+        const sheet = new CSSStyleSheet();
+        sheet.replaceSync(rules);
+        document.adoptedStyleSheets = [...document.adoptedStyleSheets, sheet];
+      }, rules);
+      await settle(page);
+    },
+    lines: (id) =>
+      page.evaluate((id): Bounds[] => {
+        const element = document.getElementById(id);
+        if (element === null) throw new Error(`no #${id} on the page`);
+        return [...element.getClientRects()].map((rect) => ({ x: rect.x, y: rect.y, width: rect.width, height: rect.height }));
+      }, id),
     box: (id, inner) =>
       page.evaluate(({ id, inner }): Box => {
         const host = document.getElementById(id);
@@ -120,6 +139,15 @@ export function fixtureDriver(page: Page, log: readonly string[], withBase = fal
         const round = (value: number): number => Math.round(value * 1000) / 1000;
         return { scaleX: round(matrix.a), scaleY: round(matrix.d), offsetX: round(matrix.e - rect.x), offsetY: round(matrix.f - rect.y) };
       }, id),
+    ownPlacement: (id) =>
+      page.evaluate((id): Placement => {
+        const svg = document.getElementById(id) as unknown as SVGSVGElement | null;
+        const matrix = svg?.getScreenCTM();
+        if (svg === null || matrix === null || matrix === undefined) return { scaleX: 0, scaleY: 0, offsetX: 0, offsetY: 0 };
+        const rect = svg.getBoundingClientRect();
+        const round = (value: number): number => Math.round(value * 1000) / 1000;
+        return { scaleX: round(matrix.a), scaleY: round(matrix.d), offsetX: round(matrix.e - rect.x), offsetY: round(matrix.f - rect.y) };
+      }, id),
     computed: (id, property) =>
       page.evaluate(({ id, property }) => {
         const element = document.getElementById(id);
@@ -139,6 +167,14 @@ export function fixtureDriver(page: Page, log: readonly string[], withBase = fal
       const session = await page.context().newCDPSession(page);
       try {
         return await axNodes(session, id);
+      } finally {
+        await session.detach();
+      }
+    },
+    axSubtree: async (id) => {
+      const session = await page.context().newCDPSession(page);
+      try {
+        return await axSubtree(session, id);
       } finally {
         await session.detach();
       }
