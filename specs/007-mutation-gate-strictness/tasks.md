@@ -118,19 +118,19 @@ record note and needs no test (Principle VIII: no behaviour). L1-04 belongs to p
 
 **Red (one commit)**
 
-- [ ] T038 [US1] O2-01, in `gates/test/mutation-shards.test.ts`, beside T009's gate output tests, with the Stryker doubles of `gates/test/mutation-fakes.ts`. A report mutant with no `replacement` key is covered in three runs:
+- [X] T038 [US1] O2-01, in `gates/test/mutation-shards.test.ts`, beside T009's gate output tests, with the Stryker doubles of `gates/test/mutation-fakes.ts`. A report mutant with no `replacement` key is covered in three runs:
   - a `Timeout` prints exactly `<path>:<start line>: mutation: timeout: <mutator>: replaced by`, and a `CompileError` prints exactly `<path>:<start line>: mutation: compile-error: <mutator>: replaced by`. Each is checked by exact string equality, at exit 0;
   - the same two lines at exit 1, beside a `Survived` finding;
   - a `Survived` mutant with no replacement keeps today's finding form (`…: mutation: <mutator>: Survived: replaced by`), in the same assertion.
 
   Each case also asserts that no stdout line of the run ends in whitespace. The existing cases with a replacement are unchanged (contracts/mutation-output.md, amendment 2026-11-11).
-- [ ] T039 [US1] Commit T038 alone (`test(007-mutation-gate-strictness): phase 2 fix-2 red — O2-01`), signed off. Then run `.specify/extensions/story/scripts/red.sh 2 fix-2`. Confirm the commit is red only because the expected lines lack the trailing space the gate prints today: the failures are T038's assertion mismatches, not load or setup errors.
+- [X] T039 [US1] Commit T038 alone (`test(007-mutation-gate-strictness): phase 2 fix-2 red — O2-01`), signed off. Then run `.specify/extensions/story/scripts/red.sh 2 fix-2`. Confirm the commit is red only because the expected lines lack the trailing space the gate prints today: the failures are T038's assertion mismatches, not load or setup errors.
 
 **Green**
 
-- [ ] T040 [US1] O2-01, `gates/bin/mutation.ts` (the `undecided` line, `:168-170`): print the `timeout` and `compile-error` lines the way findings are printed, through `oneLine` of `gates/lib/findings.ts`, so a line with no replacement ends at `replaced by`. No other line changes. Update the header comment if it describes the line. T038 now passes.
-- [ ] T041 [P] [US1] O2-02, `specs/001-repository-foundation/contracts/gate-cli.md:7`, the general exit-0 row. Keep "a one-line summary" and add one dated note: "amendment 2026-11-11, mission 007: the mutation gate also prints record and report lines at exit 0, see its row".
-- [ ] T042 [US1] Run the checks:
+- [X] T040 [US1] O2-01, `gates/bin/mutation.ts` (the `undecided` line, `:168-170`): print the `timeout` and `compile-error` lines the way findings are printed, through `oneLine` of `gates/lib/findings.ts`, so a line with no replacement ends at `replaced by`. No other line changes. Update the header comment if it describes the line. T038 now passes.
+- [X] T041 [P] [US1] O2-02, `specs/001-repository-foundation/contracts/gate-cli.md:7`, the general exit-0 row. Keep "a one-line summary" and add one dated note: "amendment 2026-11-11, mission 007: the mutation gate also prints record and report lines at exit 0, see its row".
+- [X] T042 [US1] Run the checks:
   - `pnpm test`, `pnpm run gate:typecheck`, `gate:lint` and `gate:test-lint`;
   - `pnpm run gate:plants`, alone; every plant passes. Save the output to `evidence/us1-fix-2-plants.txt`;
   - `pnpm run gate:mutation -- --base <T039 red commit>`, alone, before the commit (the gate diffs the base against the working tree). It must report no survivor on the changed lines of `gates/bin/mutation.ts`. Save the output to `evidence/us1-fix-2-gate.log`.
