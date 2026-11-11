@@ -31,8 +31,13 @@ plant runs and gate runs of T040 in `plants.md`, the exemption of US2-5's notice
   `c7cdc00`).
 - **Stories.** Besides the grid of T038 (`Set`), a second grid `Set, right to left` shows the mirroring state; both are
   in T035a's story test.
-- **`.vitest/`** (Vitest's failure-screenshot attachments, written by in-process runs with failing tests) is removed
-  after each run and is not committed.
+- **`.vitest/`** (Vitest browser mode's failure-screenshot attachments, written by in-process runs with failing tests)
+  is added to `.gitignore` beside `__screenshots__/`.
+- **The manifest plants' copies.** Seven plants under `gates/plants/manifest/` commit their own `custom-elements.json`;
+  the union change made them stale, so they were regenerated (`7a725e2`). Any later change to the manifest's
+  surface needs the same.
+- **Mutation fixes after green.** `251cb05` and `c228503` (tests added, then the source simplified; `plants.md`
+  § Gate runs). One equivalent record remains, in `token-only.ts`.
 
 ## Red evidence to read with care
 
