@@ -1,0 +1,14 @@
+$ node specs/007-mutation-gate-strictness/evidence/compare.mjs specs/007-mutation-gate-strictness/evidence/red/generate-1-60/mutation.json specs/007-mutation-gate-strictness/evidence/fix-2/generate-1-60/mutation.json packages/tokens/src/generate.ts
+packages/tokens/src/generate.ts: 7 mutants in both runs, every key once
+move CompileError -> CompileError: 4
+move Killed -> Killed: 3
+(exit 0)
+
+$ node specs/007-mutation-gate-strictness/evidence/compare.mjs specs/007-mutation-gate-strictness/evidence/red/wcag/mutation.json specs/007-mutation-gate-strictness/evidence/fix-2/wcag/mutation.json gates/lib/wcag.ts
+gates/lib/wcag.ts: 33 mutants in both runs, every key once
+move CompileError -> CompileError: 3
+move Ignored -> Ignored: 2
+move Killed -> Killed: 26
+move Timeout -> Timeout: 2
+(exit 0)
+
