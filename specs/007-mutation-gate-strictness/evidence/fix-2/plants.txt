@@ -1,0 +1,3 @@
+# pnpm run gate:plants, 2026-11-11, with lever 1 narrowed (T046, commit 1a269c5), alone (152 s, exit 0)
+# stdout and stderr:
+plants: 186 plants of 13 gates and the registry judged, every plant as expected
