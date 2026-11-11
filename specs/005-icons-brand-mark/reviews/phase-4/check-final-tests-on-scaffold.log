@@ -33,7 +33,7 @@ devDependencies:
 + vite 8.3.5
 + vitest 5.0.5
 
-Done in 511ms using pnpm v12.16.1
+Done in 363ms using pnpm v12.16.1
 $ node gates/bin/setup-offline.ts
 setup: installed offline; Chromium at /opt/pw-browsers/chromium-1243/chrome-linux64/chrome
 $ node gates/bin/test.ts
@@ -166,5 +166,5 @@ packages/elements/test/slot.test.ts:20: unit-tests: the slot convention on ocell
 packages/elements/test/slot.test.ts:20: unit-tests: the slot convention on ocelle-test-host, in process (US3) US3-10, with base.css, --ocelle-icon-si…: AssertionError: expected { …(2) } to deeply equal { …(2) }
 packages/elements/test/slot.test.ts:20: unit-tests: the slot convention on ocelle-test-host, in process (US3) US3-10, with base.css: with nothing in …: AssertionError: expected { empty: +0, filled: 20, …(2) } to deeply equal { empty: +0, filled: 28, …(2) }
 packages/elements/test/slot.test.ts:20: unit-tests: the slot convention on ocelle-test-host, in process (US3) US3-11, with base.css: a control named …: AssertionError: expected { control: [ { …(2) } ], …(3) } to deeply equal { …(4) }
-unit-tests: 129 of 2432 tests failed
+unit-tests: 129 of 2433 tests failed
 [ELIFECYCLE] Test failed. See above for more details.

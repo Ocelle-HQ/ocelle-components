@@ -133,9 +133,14 @@ async function frameIdOf(session: CDPSession, url: string): Promise<string | und
   return frames.find((frame) => frame.url === url)?.id;
 }
 
-/** Emulates forced colours (`active` with a light or dark system palette) or ends the emulation (`none`). */
+/**
+ * Emulates forced colours (`active` with a light or dark system palette) or ends the emulation (`none`). Ending it also
+ * puts the page back in the light colour scheme the fixture contexts start in (browser/serve.ts), so a dark palette
+ * never leaks into later tests on the same page (005 phase 4 review R1-01).
+ */
 export async function emulate(page: Page, mode: ForcedColors, palette?: Palette): Promise<void> {
-  await page.emulateMedia(palette === undefined ? { forcedColors: mode } : { forcedColors: mode, colorScheme: palette });
+  const scheme = mode === "none" ? "light" : palette;
+  await page.emulateMedia(scheme === undefined ? { forcedColors: mode } : { forcedColors: mode, colorScheme: scheme });
 }
 
 /** Which nodes `axTree` reads: the element's own and its shadow subtree's (`axNodes`), or its accessibility subtree (`axSubtree`). */
