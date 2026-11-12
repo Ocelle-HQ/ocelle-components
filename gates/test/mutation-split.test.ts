@@ -18,9 +18,9 @@ function source(lines: number): string {
   return Array.from({ length: lines }, (_, i) => `export const v${String(i)} = ${String(i)};`).join("\n");
 }
 
-async function gate(tools: MutationTools): Promise<{ readonly code: number; readonly out: readonly string[]; readonly err: readonly string[] }> {
+async function gate(tools: MutationTools, args: readonly string[] = []): Promise<{ readonly code: number; readonly out: readonly string[]; readonly err: readonly string[] }> {
   const { io, out, err } = capture();
-  const code = await mutation(context(["--base", base]), tools, io);
+  const code = await mutation(context(["--base", base, ...args]), tools, io);
   return { code, out, err };
 }
 
@@ -30,6 +30,29 @@ function tools(changed: Readonly<Record<string, number>>, stryker: FakeStryker, 
 }
 
 const killed = configuredStryker(() => "Killed");
+
+/** The third changed file of the 007 cases: package source outside elements, so it runs under stryker.config.json. */
+const tokenFile = "packages/tokens/src/x.ts";
+
+/**
+ * A Stryker that, under either configuration, gives each `mutate` entry a Timeout mutant at its first line and a
+ * CompileError mutant at the line after it, and writes the report its configuration names (007 FR-001, FR-002).
+ */
+const undecidedStryker: FakeStryker = (mutate, files, config) => {
+  const mutants: Record<string, object[]> = {};
+  mutate.forEach((entry, index) => {
+    const [, path = "", start = "0"] = /^(.*):(\d+)-(\d+)$/s.exec(entry) ?? [];
+    (mutants[path] ??= []).push(mutant(`${String(index)}t`, Number(start), "Timeout"), mutant(`${String(index)}c`, Number(start) + 1, "CompileError"));
+  });
+  files.set(config === "stryker.elements.config.json" ? elementsReportPath : "reports/mutation/mutation.json", strykerReport(mutants));
+  return { exitCode: 0, stdout: "", stderr: "" };
+};
+
+/** A Stryker that finds no mutant on any entry, under either configuration (007 FR-003). */
+const zeroStryker: FakeStryker = (_mutate, files, config) => {
+  files.set(config === "stryker.elements.config.json" ? elementsReportPath : "reports/mutation/mutation.json", strykerReport({}));
+  return { exitCode: 0, stdout: "", stderr: "" };
+};
 const survives = configuredStryker(() => "Survived");
 
 describe("the split of the mutation gate (005 research.md R-12)", () => {
@@ -86,6 +109,74 @@ describe("the split of the mutation gate (005 research.md R-12)", () => {
       code: 2,
       out: [],
       err: ["mutation: could not run: Stryker wrote no report"],
+    });
+  });
+
+  // 007 (contracts/mutation-output.md) on the split: the timeout, compile-error and zero-mutants lines of both runs are
+  // reported and counted, in the changed files' order (gates/lib, then packages/elements, then packages/tokens), not
+  // in the order of the runs, which puts the token file of the default run before the element file.
+  it("reports the timeout and compile-error lines of both runs in the changed files' order, and counts them (007)", async () => {
+    expect(await gate(tools({ [gateFile]: 2, [elementFile]: 2, [tokenFile]: 2 }, undecidedStryker))).toEqual({
+      code: 0,
+      out: [
+        `${gateFile}:1: mutation: timeout: ConditionalExpression: replaced by true`,
+        `${elementFile}:1: mutation: timeout: ConditionalExpression: replaced by true`,
+        `${tokenFile}:1: mutation: timeout: ConditionalExpression: replaced by true`,
+        `${gateFile}:2: mutation: compile-error: ConditionalExpression: replaced by true`,
+        `${elementFile}:2: mutation: compile-error: ConditionalExpression: replaced by true`,
+        `${tokenFile}:2: mutation: compile-error: ConditionalExpression: replaced by true`,
+        "mutation: 6 mutants on the changed lines of 3 files, none survived; 3 timeouts, 3 compile errors, 0 zero-mutant entries; 0 equivalent records",
+      ],
+      err: [],
+    });
+  });
+
+  it("reports the zero-mutant entries of both runs in the changed files' order, and counts them (007)", async () => {
+    expect(await gate(tools({ [gateFile]: 2, [elementFile]: 2, [tokenFile]: 2 }, zeroStryker))).toEqual({
+      code: 0,
+      out: [
+        `${gateFile}: mutation: zero-mutants: no mutant on the changed lines`,
+        `${elementFile}: mutation: zero-mutants: no mutant on the changed lines`,
+        `${tokenFile}: mutation: zero-mutants: no mutant on the changed lines`,
+        "mutation: 0 mutants on the changed lines of 3 files, none survived; 0 timeouts, 0 compile errors, 3 zero-mutant entries; 0 equivalent records",
+      ],
+      err: [],
+    });
+  });
+
+  it("names the zero-mutant entries of a --files run of both configurations as given, in the changed files' order (007)", async () => {
+    const ran = await gate(tools({ [elementFile]: 4, [tokenFile]: 4 }, zeroStryker), ["--files", `${tokenFile}:2-3,${elementFile}`]);
+    expect(ran).toEqual({
+      code: 0,
+      out: [
+        `${elementFile}: mutation: zero-mutants: no mutant on the changed lines`,
+        `${tokenFile}:2-3: mutation: zero-mutants: no mutant on the changed lines`,
+        "mutation: 0 mutants on the changed lines of 2 files, none survived; 0 timeouts, 0 compile errors, 2 zero-mutant entries; 0 equivalent records",
+      ],
+      err: [],
+    });
+  });
+
+  it("reports the findings of both runs with the timeout lines of both, the summary counting each (007)", async () => {
+    const mixed: FakeStryker = (mutate, files, config) => {
+      undecidedStryker(mutate, files, config);
+      const path = config === "stryker.elements.config.json" ? elementsReportPath : "reports/mutation/mutation.json";
+      const report = JSON.parse(files.get(path) ?? "{}") as { files: Record<string, { mutants: object[] }> };
+      for (const [file, entry] of Object.entries(report.files)) entry.mutants.push(mutant("s", 1, file === tokenFile ? "Killed" : "Survived"));
+      files.set(path, JSON.stringify(report));
+      return { exitCode: 0, stdout: "", stderr: "" };
+    };
+    expect(await gate(tools({ [elementFile]: 2, [tokenFile]: 2 }, mixed))).toEqual({
+      code: 1,
+      out: [
+        `${elementFile}:1: mutation: timeout: ConditionalExpression: replaced by true`,
+        `${tokenFile}:1: mutation: timeout: ConditionalExpression: replaced by true`,
+        `${elementFile}:2: mutation: compile-error: ConditionalExpression: replaced by true`,
+        `${tokenFile}:2: mutation: compile-error: ConditionalExpression: replaced by true`,
+        `${elementFile}:1: mutation: ConditionalExpression: Survived: replaced by true`,
+        "mutation: 1 finding in 2 changed files (6 mutants on changed lines; 2 timeouts, 2 compile errors, 0 zero-mutant entries)",
+      ],
+      err: [],
     });
   });
 });
