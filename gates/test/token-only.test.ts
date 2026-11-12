@@ -258,6 +258,31 @@ describe("rawValues: 1lh alone, and once beside a token in calc()", () => {
     }).toEqual({ nested: ["1lh", "1lh"], two: [] });
   });
 
+  // OP4-01 (landing round 1 L1-02, T067): a group that holds only 1lh, parentheses or a nested calc(), any depth, is
+  // that 1lh, so a factor on the group is a factor on 1lh and is raw; a sum beside the group stays admitted.
+  it.each([
+    { value: "calc((1lh) * 3 + var(--ocelle-space-1))", raw: ["1lh"] },
+    { value: "calc(calc(1lh) * 3 + var(--ocelle-space-1))", raw: ["1lh"] },
+    { value: "calc(3 * (1lh) + var(--ocelle-space-1))", raw: ["1lh"] },
+    { value: "calc(((1lh)) * 3 + var(--ocelle-space-1))", raw: ["1lh"] },
+    { value: "calc((1lh) / 2 + var(--ocelle-space-1))", raw: ["1lh"] },
+    { value: "calc(var(--ocelle-space-1) * (1lh))", raw: ["1lh"] },
+    { value: "calc(var(--ocelle-space-1) - calc((1lh)) / 2)", raw: ["1lh"] },
+    // Two line boxes in one expression, each alone in its group (reported before OP4-01 too).
+    { value: "calc((1lh) + (1lh) + var(--ocelle-space-1))", raw: ["1lh", "1lh"] },
+  ])("padding-block: a factor on a group that holds only 1lh, $value, is raw: $raw", ({ value, raw }) => {
+    expect(rawValues("padding-block", value)).toEqual(raw);
+  });
+
+  it.each([
+    "calc((1lh) + var(--ocelle-space-1))",
+    "calc(var(--ocelle-space-1) - calc(1lh))",
+    "calc(var(--ocelle-space-1) + ((1lh)))",
+    "calc((var(--ocelle-icon-size) - 1lh) / 2)",
+  ])("padding-block: %s, 1lh alone in a group that is an operand of + or -, or beside a sum in its group, is token-only", (value) => {
+    expect(rawValues("padding-block", value)).toEqual([]);
+  });
+
   it("asks the token of the calc() expression that holds 1lh, wherever it is in that expression", () => {
     expect({
       nested: rawValues("padding-block", "calc((1lh - var(--ocelle-icon-size)) / 2)"),
