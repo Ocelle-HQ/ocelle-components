@@ -220,7 +220,8 @@ reviews/phase-3/ci-run.md: Visual regression 24/24 under docker+podman, the Plan
     which removes docker's copy after run 1 and before podman's pull, each engine's pin check now running just before
     that engine's first run so no capture comes from an unchecked image; each Plants shard first removes the runner's
     unused toolsets. Neither the docker-podman comparison nor the pin checks are weakened (R-07; contracts/gates.md §
-    `visual`; contracts/container.md § The pin check).
+    `visual`; contracts/container.md § The pin check). Whether the Plants shards keep the toolset removal is open
+    again by decision 28: it stays until the operator decides after the disk measurement.
 
 Decisions 26 and 27 are the operator's of 2026-11-12 (human:jeroennouwsdev), on the design of decisions 22 to 25.
 
@@ -232,6 +233,42 @@ Decisions 26 and 27 are the operator's of 2026-11-12 (human:jeroennouwsdev), on 
     `skopeo inspect --raw docker://<image>:<tag>`, the tag from `container.json`, and saves it in the `pin-record`
     artifact as `skopeo-inspect-raw-index.json`; T046f replaces that fixture too, test-first (R-02;
     contracts/container.md § The pin record).
+
+Decision 28 is the operator's of 2026-11-12, on CI run 43211645709 (head `1b6ddd5`,
+reviews/phase-3/ci-run-43211645709.md): Plants shard (7) took 11 min 5 s, over the 10-minute goal, with a 151 s
+toolset removal and a 200.6 s first plant that pulls both images; the record's T046h proposal gives options A, A', B
+and B'. The question was "Which plant shard setup do you choose?".
+
+28. **Measure disk, then B'** ("Measure disk, then B'"). In this order:
+    1. `plants-shard` gains a `df -h /` step before the toolset removal, so each shard prints its free disk before
+       the removal, after it (the existing step) and at the end (the existing `if: always()` step). The step is red
+       first in `gates/test/ci-workflow.test.ts`, which pins the job's lines, and the plant copies of `ci.yml`
+       (`fail-skip-container-in-shard`, `pass-split-plant-jobs`, `fail-shard-in-plant-check`) gain it with
+       `ci.yml` (tasks.md T046i, T046j). Shard `size` stays 8 for that run.
+    2. A CI run holding that step, recorded in the phase review (T046k).
+    3. A stop-and-ask brings the measured free disk to the operator (T046l). The operator then chooses the branch
+       and approves its split count; until then no split count is approved and the Complexity Tracking row
+       "Plant roots hold every repository story" keeps its current text.
+    4. Then one branch:
+       - **B'** if the disk allows: `plants-shard` drops the toolset removal (decision 25's toolset part ends), and
+         `size` becomes 6: 9 shards with the 12 repository stories, split count 21 stories (record's estimate,
+         about 210 s fixed part per shard) (T046m, T046n);
+       - **A'** otherwise: the removal stays, and `size` becomes 4: 13 shards, split count 19 stories (about 360 s
+         fixed part per shard) (T046o, T046p).
+
+    **The disk condition.** For each shard k of the measuring run:
+    - `A_k`, the free disk before the removal (the new first `df -h /`);
+    - `B_k`, the free disk after the removal;
+    - `E_k`, the free disk at the end of the shard;
+    - `U_k = B_k − E_k`, the disk the shard used. The records measure the end of the shard only, not a peak inside
+      the gate step. Run 43211645709 gives 35G − 34G = 1G for shard 1 and 35G − 26G = 9G for shards 2 to 7, all at
+      `size` 8, which holds more `visual` plants per shard than 6.
+
+    Without the removal, shard k would end with `A_k − U_k` free, since the shard does not use the removed toolsets
+    (decision 25). The disk allows B' when, for every shard, `A_k − U_k` is at least the free disk `M` that a shard must
+    keep. The records give no value for `M`, and none for the gap between the end-of-shard use and the peak, so
+    T046l asks the operator for both. The branch is the operator's answer to T046l; this plan does not choose it
+    from the numbers alone.
 
 ## Project Structure
 
@@ -365,7 +402,13 @@ data the gates read (baselines, pin, exceptions).
      integration test, with the registry rule `shard-in-plant-check` and its plants; the three plant jobs with the
      toolset removal; then a CI run holding them (T045), the fixtures replaced from its `pin-record` artifact (the
      index fixture among them, decision 27), and the
-     split count and shard size derived from its plant times for the operator's approval.
+     split count and shard size derived from its plant times for the operator's approval;
+   - after CI run 43211645709 (decision 28, operator decision 2026-11-12, "Measure disk, then B'"): the `df -h /`
+     step before the toolset removal in `plants-shard`, red first in `ci-workflow.test.ts`, with the plant copies of
+     `ci.yml`; a CI run that measures the free disk; the operator's choice between B' (no toolset removal, `size` 6)
+     and A' (the removal kept, `size` 4) on the disk condition of decision 28, with the split count approved then;
+     the chosen branch red first in `ci-workflow.test.ts` (B' only) and in `plantShards`' test of the repository's
+     `size`, then a CI run of it.
 4. **US3 Accessibility** (P3):
    - `axe-rules.ts` (selection on fixture metadata, and the test that derives the 4.14.0 lists from axe-core's own
      metadata), `axe-verdict.ts` (incomplete findings, outside-root, `printSelector`), `story-checks.ts` (empty,
