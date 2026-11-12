@@ -7,7 +7,9 @@ in_scope: [9]
 out_of_scope: [1, 7, 8, 10, 11, 12, 13, 14, 15, 16, 27, 28, 29, 30]
 semver: minor
 spec_prompt: "Build issue #9 (triage/010-feedback-forms.md) in @ocelle/elements on the conventions of mission 005: ocelle-notice (tone, role override, no heading wrapper or gap when no heading is slotted per spec-kitty-design#513, size=\"compact\" per #509, and with announce a polite or assertive live region chosen by tone that announces each change once); ocelle-form-input (label, type, placeholder, .value, input event) and ocelle-form-select (native-select-based, for closed choices such as lane and log filters), both taking part in forms through ElementInternals or a light-DOM control, chosen once as the form-control convention later form elements (#14) follow, with label, description and error message announced and no ID reference crossing a shadow root; for each element the #7 'Done when' checklist (stories per variant and state in light and dark, interaction tests for every event and payload, keyboard and screen-reader behaviour, axe with no serious or critical finding, manifest entries, strict-CSP built output) plus form-submission tests of value and validity and announcement tests for the notice; visual baselines and axe run on the #10 harness (specs/006-storybook-workbench) once it lands; ocelle-button, compact sizing of #7's metric, and the selection elements of #14 stay out."
-status: proposed
+status: approved
+decided_by: "human:jeroennouwsdev"
+decided_at: 2026-11-12T22:29:23Z
 ---
 
 # Triage 010: Feedback and forms (#9): ocelle-notice, ocelle-form-input, ocelle-form-select
