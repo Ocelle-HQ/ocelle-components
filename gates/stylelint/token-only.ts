@@ -12,8 +12,8 @@
 // operator round of 2026-11-09, phase 2 round 2, O2-01); it is read apart from the token lists. Since 005 (research.md
 // R-03, R-08) `scale` takes only the bare numbers -1 and 1, and any function in its value is raw; and (R-03, R-10) the
 // unit `lh` passes only as `1lh`, as the whole value or, inside `calc()`, once per expression as an operand of `+` or
-// `-` in an expression that references an `--ocelle-*` token; and (R-03, R-09) `aspect-ratio` takes only the bare
-// number 1 as its whole value.
+// `-` in an expression that references an `--ocelle-*` token, a group that holds only `1lh` counting as that `1lh`
+// (OP4-01); and (R-03, R-09) `aspect-ratio` takes only the bare number 1 as its whole value.
 import stylelint from "stylelint";
 import type { Rule } from "stylelint";
 import valueParser from "postcss-value-parser";
@@ -86,27 +86,43 @@ function isSum(node: Node | undefined): boolean {
   return node?.type === "word" && (node.value === "+" || node.value === "-");
 }
 
+/** The operands of a group: its nodes but spaces and comments. */
+function operandsOf(group: readonly Node[]): Node[] {
+  return group.filter((node) => node.type !== "space" && node.type !== "comment");
+}
+
 /**
  * The `1lh` a calc() expression admits (005 research.md R-03; PLAN-FRESH-3-002 (a)): its one `lh` length, when the
  * expression holds exactly one (nested groups and calc() included), that length is `1lh`, each operator beside it in
- * its group adds or subtracts, and the expression references an `--ocelle-*` token; none otherwise.
+ * its group adds or subtracts, and the expression references an `--ocelle-*` token; none otherwise. A group that holds
+ * nothing but that `1lh` (`(1lh)`, `calc(1lh)`, at any depth) is that `1lh`, so its neighbours are read in the
+ * enclosing group instead, outward while the group holds the one operand (OP4-01, landing round 1 L1-02). Any function
+ * is climbed, not only a group or calc(): a `1lh` inside another function is never classified on its own (var() keeps
+ * no fallback there, any other function is raw whole), so what it admits makes no difference.
  */
 function admittedLine(calc: valueParser.FunctionNode): Node | undefined {
   const lengths: { readonly node: Node; readonly group: readonly Node[] }[] = [];
   const tokens: Node[] = [];
+  // Each nested function's nodes, with that function and the group it sits in; the expression's own nodes have none.
+  const holders = new Map<readonly Node[], { readonly node: Node; readonly group: readonly Node[] }>();
   const walk = (group: readonly Node[]): void => {
     for (const node of group) {
       if (node.type === "word" && isLh(node.value)) lengths.push({ node, group });
       if (node.type !== "function") continue;
       if (node.value.toLowerCase() === "var" && node.nodes[0]?.value.startsWith("--ocelle-") === true) tokens.push(node);
+      holders.set(node.nodes, { node, group });
       walk(node.nodes);
     }
   };
   walk(calc.nodes);
   const [only] = lengths;
   if (lengths.length !== 1 || only === undefined || tokens.length === 0 || !isOneLine(only.node.value)) return undefined;
-  const operands = only.group.filter((node) => node.type !== "space" && node.type !== "comment");
-  const at = operands.findIndex((node) => node === only.node);
+  let { node: subject, group } = only;
+  for (let up = holders.get(group); up !== undefined && operandsOf(group).length === 1; up = holders.get(group)) {
+    ({ node: subject, group } = up);
+  }
+  const operands = operandsOf(group);
+  const at = operands.findIndex((node) => node === subject);
   const [before, after] = [operands[at - 1], operands[at + 1]];
   return (before === undefined || isSum(before)) && (after === undefined || isSum(after)) ? only.node : undefined;
 }
