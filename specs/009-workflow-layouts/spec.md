@@ -134,15 +134,18 @@ test, and its plan names a planted defect that makes it fail:
 | No fade on a side with no content off-screen (US1-6, FR-007) | The other side, with content off-screen, shows its fade in the same test | Both fades always shown |
 | No forced-colours line on a side with nothing off-screen (US1-8, FR-008) | The other side shows its line | Both lines always shown |
 | A focused slotted control's focus ring is not clipped by the scroll box, at the inline start, the inline end and both block edges, in a fitting and in an overflowing scroller (US1-13, FR-001) | The scroller still does not scroll in the block direction, and its block size is its content's plus the ring room on each side | A scroll box with no room for the ring: no padding, so the ring is cut at its edges |
+| A focused slotted control is not left under a fade (US1-13, FR-001) | At every step of the tab walk, each edge with content off-screen still shows its fade | A control scrolled into view with no clearance for the fade |
 | Arrow keys on a focused descendant are not taken by the scroller (US1-10, FR-006) | With focus on the scroller itself, the same key scrolls it | A key handler on the host that calls `preventDefault` and scrolls for every arrow key |
 | A board that fits Frame W does not scroll, is not a tab stop and has no region (US2-1, FR-016) | The same board in Frame N overflows, is a tab stop and is a named region | A board that always applies the scroller's region and tab stop |
 | A lane's visible title and count add no second text to the tree (US2-5, FR-019) | The lane's group is named "<title>, <count>" | The visible title not hidden from the tree, so "Ready 3" is read again inside the group |
 | A lane without `count` shows no count and has no comma in its name (US2-6, FR-018) | A twin with `count="0"` shows "0" and is named "<title>, 0" | The count rendered as "0" when absent |
 | An untitled lane without a count has no group role and no name, and an untitled lane with a count has no comma in its name (US2-6, FR-019) | A titled twin is a group named "<title>, <count>"; the untitled twin with `count="3"` is a group named "3" | The group role and the ", " separator always applied |
 | A lane does not widen for content wider than its share (US2-14, FR-013) | In the same board, the nested overflowing scroller in that lane is a tab stop, and all lanes are equal within 1 px | A lane whose minimum inline size is its content's min-content (the flex default) |
+| A focused card in a `flat` lane at the board's edges is not clipped by the board's scroll box (US2-15, FR-014) | The board does not scroll in the block direction, and in Frame W it still does not overflow | A board scroll box with no room for the ring |
 | In two columns, `detail-open` hides nothing (US3-4, FR-027) | In one column, the same attribute shows the detail and hides the list | `detail-open` applied in every layout |
 | An empty `inspector` slot adds no track, no border and no space (US3-8, FR-024) | A filled slot adds a track `--ocelle-shell-inspector-width` wide with its border | The inspector track always rendered |
-| A rejected `collapse-below` value (`50%`, `60vw`, `40cqi`, `calc(40rem + 1px)`, `var(--x)`, `40`) does not move the threshold (US3-10, FR-025) | An accepted value (`800px`, `50em`, `56rem`, `0`) on a twin moves it | Any value the browser can resolve to a length accepted |
+| In Frame W, a rejected `collapse-below` value that would give one column if accepted (`120%`, `80vw`, `110cqi`, `700pt`, `900`, `calc(56rem)`, `var(--x)` with `--x: 56rem`), or a token override of `120%`, does not move the threshold: two columns (US3-10, FR-025) | On a twin, an accepted value moves it: in Frame W `56rem`, `55.5rem`, `880px`, `55em` and `" 56rem "` give one column; in Frame N `0` and `39rem` give two | Any value the browser can resolve to a length accepted |
+| In Frame W, a rejected `inspector-below` value that would give three columns if accepted (`50%`, `40vw`, `50cqi`, `50pt`, `50`, `calc(50rem)`, `var(--y)` with `--y: 50rem`), or a token override of `50%`, keeps the inspector stacked (US3-10, FR-025) | On a twin in Frame W, `50rem` and `0` give three columns | Any value the browser can resolve to a length accepted |
 | In a shrink-to-fit host the layout does not alternate between frames (US3-12, FR-025) | It shows the expected column count for its stated content and room | An intrinsic inline size that follows the layout shown |
 | Focus is not moved when it was not in the pane that is hidden (US3-6, FR-028) | When focus was in that pane, it moves to the start of the shown pane | Focus moved on every switch |
 | The page has no horizontal scroll at 320 px (US2-7, US3-9, SC-006) | Inside the same page, the overflowing board scrolls by itself | A board without its own overflow: the page then scrolls |
@@ -197,7 +200,8 @@ content fits. Then:
    the inline direction: at the start the fade is on the left.
 7. **Given** the fade, **When** its geometry is measured, **Then** it covers `--ocelle-scroller-fade-size` (FR-007)
    at that edge. It fades the content itself toward transparency rather than painting a colour, so it is correct on
-   every main ground and in both themes. It does not cover the focus ring (FR-005).
+   every main ground and in both themes. It does not cover the scroll box's focus ring (FR-005), nor the ring of a
+   slotted control that has just taken focus (FR-001, US1-13).
 8. **Given** forced-colours mode and an overflowing scroller in the middle, **When** it is drawn, **Then** each side
    with content off-screen shows a 1 px line in `CanvasText` along that edge. A side with nothing off-screen shows no
    line. The content is not faded.
@@ -214,7 +218,9 @@ content fits. Then:
 12. **Given** an overflowing scroller with no `label`, or a blank one, **When** the tree and the tab order are read,
     **Then** it is still one tab stop, so its hidden content stays reachable by keyboard (WCAG 2.1.1). It has no
     region role (an unnamed region is not a landmark), and it is named by nothing. The README says to always give a
-    `label`. A host `aria-label` on the element counts as its label, as in 005's Host ARIA rules (FR-010).
+    `label`. A host `aria-label` on the element counts as its label, as in 005's Host ARIA rules (FR-010). A host
+    `aria-label=" "` counts as absent: with `label="Filters"` the region is named "Filters", and without a `label`
+    there is no region role.
 13. **Given** a scroller whose content is taller than one line, **When** it is drawn, **Then** it scrolls in the
     inline direction only: its block size is its content's block size plus the ring room of FR-001 on each block
     side, and nothing is scrollable in the block direction. **Given** a slotted link and a slotted button, in a
@@ -222,7 +228,17 @@ content fits. Then:
     at its inline end (reached with Tab, so the strip scrolls to it) and in the middle, **Then** the control's whole
     token focus ring is visible on all four sides: `--ocelle-focus-width` of ring at `--ocelle-focus-offset` from the
     control, nothing of it cut off by the scroll box, at the inline edges or at the block edges. A control that takes
-    focus while partly off-screen is scrolled fully into view, ring included.
+    focus while partly off-screen is scrolled fully into view, ring included. **Given** an overflowing scroller
+    holding twelve links, each narrower than the box less two fade depths and the ring room, in `dir="ltr"` and in
+    `dir="rtl"`, **When** the user tabs through it link by link from the first to the last, and then back with
+    Shift+Tab, **Then** at every step, after the focused link has been scrolled into view:
+    - the link's ring box (FR-001) lies inside the scroll box and does not intersect the region
+      `--ocelle-scroller-fade-size` deep along any inline edge that shows a fade;
+    - each edge with content off-screen still shows its fade (US1-6), so no fade is hidden to clear the link.
+
+    **Given** a slotted button whose ring box is wider than the box less two fade depths, in an overflowing scroller
+    scrolled to the middle, **When** it takes keyboard focus, **Then** no fade is drawn over its ring box, and the
+    fade returns when focus leaves it.
 14. **Given** a scroller with the `hidden` attribute, **When** the page is drawn, **Then** it has no box, no node and
     no tab stop, whether its content overflows or not.
 15. **Given** the browser build on the strict-CSP fixture with every scroller of these scenarios, **When** the page
@@ -255,8 +271,9 @@ and the board's overflow state, read the lane names in the tree, and draw both l
 2. **Given** the same board in Frame N (636 px), **When** it is drawn, **Then** each lane keeps
    `--ocelle-lane-min-width`. The board overflows and behaves as User Story 1's overflowing scroller: one tab stop, a
    region named by the board's `label`, arrow-key scrolling and the edge fades. The page has no horizontal scroll.
-3. **Given** a board of three lanes in Frame W, **When** it is drawn, **Then** the lanes share the board's inline size
-   equally (within 1 px), the gaps between them are `--ocelle-space-3`, and the board does not overflow.
+3. **Given** a board of three lanes in Frame W, **When** it is drawn, **Then** the lanes share the board's inline size,
+   less its ring room on each inline side (FR-014), equally (within 1 px), the gaps between them are `--ocelle-space-3`,
+   and the board does not overflow.
 4. **Given** a lane in its default variant, **When** it is drawn, **Then** it has the lane chrome: a
    `--ocelle-color-panel` ground, `--ocelle-radius-row` corners and `--ocelle-space-3` padding. Its title is in
    `--ocelle-font-size-sm` at `--ocelle-font-weight-strong` in `--ocelle-color-ink`, and its count follows the title
@@ -277,7 +294,9 @@ and the board's overflow state, read the lane names in the tree, and draw both l
    **Given** `label=" Ready "` and `count="3"`, **Then** the title shows "Ready" and the group is named "Ready, 3".
    **Given** a host `aria-label="Ready column"` on a lane with `label="Ready"` and `count="3"`, and on an untitled lane
    without a count, **Then** each is one node of role group named exactly "Ready column": the host `aria-label`
-   decides naming alone, as for the scroller (FR-010). The visible title and count still show.
+   decides naming alone, as for the scroller (FR-010). The visible title and count still show. **Given** a host
+   `aria-label=" "` on a lane with `label="Ready"` and `count="3"`, and on an untitled lane without a count, **Then**
+   it counts as absent: the first is a group named "Ready, 3", and the second has no role and no name.
 7. **Given** a lane with `variant="flat"`, **When** it is drawn, **Then**:
    - it has no ground, no corners and no padding of its own, and its cards sit directly on the board's ground;
    - its title is in uppercase (`text-transform: uppercase`, so the accessible name keeps the host's case), in
@@ -302,11 +321,20 @@ and the board's overflow state, read the lane names in the tree, and draw both l
 13. **Given** the browser build on the strict-CSP fixture with every board and lane of these scenarios, **When** the
     page loads, **Then** there are no CSP violations and no requests outside the allowed list.
 14. **Given** a board of five lanes in Frame W where one lane holds a card with a 60-character unbroken identifier and
-    an `<img>` 400 px wide, and another holds an `ocelle-scroller` whose chip row is 400 px wide, **When** it is drawn,
-    **Then** the five lanes are equal in inline size within 1 px (as without that content) and the board does not
-    overflow. The identifier breaks inside the lane, the image is no wider than the lane's content box, and the nested
-    scroller takes the lane's content width, overflows, and is a tab stop and a named region of its own (Edge Cases,
-    "Nested scrollers").
+    an `<img>` 400 px wide, and another holds an `<ocelle-scroller label="Tags">` whose chip row is 400 px wide,
+    **When** it is drawn, **Then** the five lanes are equal in inline size within 1 px (as without that content) and
+    the board does not overflow. The identifier breaks inside the lane, the image is no wider than the lane's content
+    box, and the nested scroller takes the lane's content width, overflows, and is a tab stop and a region named
+    "Tags" of its own (Edge Cases, "Nested scrollers").
+15. **Given** a board of five `flat` lanes, in Frame W and in Frame N, each lane holding three cards that are each a
+    focusable link block as wide as the lane, **When** each of these cards is focused by keyboard (Tab and
+    Shift+Tab): the first card of the first lane, the last card of the last lane, and the first and the last card of
+    the middle lane, **Then**:
+    - the card's whole token focus ring shows on all four sides, nothing of it cut off by the board's scroll box at
+      the inline start of the first lane, the inline end of the last lane, or the block start and block end of a lane;
+    - in Frame N, where the board overflows, a card in a lane partly off-screen is scrolled into view with its ring
+      box clear of the fades (FR-001, US1-13);
+    - the board does not scroll in the block direction, and in Frame W it still does not overflow.
 
 ---
 
@@ -360,17 +388,31 @@ goes.
    1).
 9. **Given** the element in Frame S (288 px), **When** the page is drawn, **Then** one pane at a time shows at full
    width and the page has no horizontal scroll.
-10. **Given** `collapse-below="50rem"` on the element in Frame W (54.75rem, 876 px), **When** it is drawn, **Then** two
-    columns show. **Given** `collapse-below="56rem"`, **Then** one column shows. The accepted forms (FR-025) each
-    move the threshold: `880px` and `55em` (at a 16 px computed font size) give one column, `0` gives two. Every
-    other value behaves as if absent, so the default threshold applies and two columns show: `50%`, `60vw`, `40cqi`,
-    `calc(56rem)`, `var(--x)`, `56` (a unitless number other than 0), `56pt`, `wide`, `-1rem`, `" "` and an empty
-    string. **Given** an element exactly as wide as its threshold, **Then** it shows the wider layout: the bound is
-    exclusive (#8's "exclusive bound"). **Given** no `collapse-below` and a host rule that sets
-    `--ocelle-list-detail-collapse: 56rem` on the element, and in a second case on an ancestor, **Then** one column
-    shows: the default is the token's value as computed on the element. **Given** that token set to a value that is
-    not an accepted form (`50%`), **Then** the published default (40rem) applies and two columns show. The same rules
-    hold for `inspector-below` and `--ocelle-list-detail-inspector-collapse` against the inspector threshold.
+10. **Given** the element with all three slots filled, **When** it is drawn with each `collapse-below` value below,
+    **Then** it shows the stated layout. Without the attribute it shows two columns in Frame W (876 px, 54.75rem) and
+    one column in Frame N (636 px), against the default 40rem (640 px). Each value is chosen so that its outcome
+    differs from the default's:
+    - **Accepted forms move the threshold** (FR-025). In Frame W, `56rem` (896 px), `55.5rem`, `880px`, `55em` (at
+      the root's 16 px), and `" 56rem "` (trimmed) give one column. With the element's own font size set to 20 px,
+      `45em` (900 px at the element's font size, 720 px if read at the root's) gives one column. In Frame N, `0` and
+      `39rem` (624 px) give two columns.
+    - **Rejected values do not.** In Frame W each of these would give one column if it were accepted, and each gives
+      two, as without the attribute: `120%` (1051 px of the element), `80vw` (1024 px of the 1280 px viewport),
+      `110cqi` with the frame set as an inline-size query container (964 px), `700pt` (933 px), `900` (a unitless
+      number other than 0), `calc(56rem)` (896 px) and `var(--x)` with `--x: 56rem` set on the element.
+    - **Parsing cases.** `-1rem`, `wide`, `" "` and the empty string count as absent: two columns in Frame W.
+    - **Exclusive bound.** `collapse-below="876px"` in Frame W, where the element is exactly as wide as its
+      threshold, gives two columns: the wider layout applies (#8's "exclusive bound").
+    - **Token default.** With no `collapse-below` and a host rule that sets `--ocelle-list-detail-collapse: 56rem` on
+      the element, and in a second case on an ancestor, one column shows in Frame W: the default is the token's value
+      as computed on the element. With that token set to `120%`, which would give one column if it were accepted,
+      the published default (40rem) applies and two columns show.
+    - **`inspector-below`.** The same rules hold against the inspector threshold, whose default 60rem (960 px) stacks
+      the inspector in Frame W. In Frame W, `50rem` (800 px) and `0` give three columns. Each of `50%` (438 px), `40vw`
+      (512 px), `50cqi` with the frame as container (438 px), `50pt`, `50`, `calc(50rem)` and `var(--y)` with `--y:
+      50rem` would give three columns if accepted, and each keeps the inspector stacked.
+      `--ocelle-list-detail-inspector-collapse: 50rem` on the element gives three columns, and set to `50%` it keeps the
+      inspector stacked.
 11. **Given** a detail pane that holds an unbroken long identifier or a wide table, **When** it is drawn in two
     columns, **Then** the list track keeps its width and the detail column does not widen past the remaining space.
     The long content wraps or scrolls inside the detail (003's base styles), and the page has no horizontal scroll.
@@ -437,11 +479,16 @@ goes.
   scrolls in the inline direction only. Nothing scrolls in the block direction. The box keeps room for the token
   focus ring of its slotted controls on all four sides: its block size is its content's block size plus that room on
   each block side, and its scrollable content has that room before the first and after the last item in the inline
-  direction. The ring room is `--ocelle-focus-offset` plus `--ocelle-focus-width` (5 px today). A slotted control
-  that takes focus is scrolled fully into view, ring included, so no part of a focused control's ring is cut off by
-  the scroll box at any edge, whether the box overflows or not (US1-13). For the Overflow rule of User Scenarios
-  the inline ring room counts as part of the content, so content fits when it and the room on both inline sides fit.
-  It has one default slot.
+  direction. The ring room is `--ocelle-focus-offset` plus `--ocelle-focus-width` (5 px today). The control's "ring
+  box" is its border box grown by the ring room on each side. A slotted control that takes focus is scrolled fully
+  into view, ring included, so no part of a focused control's ring is cut off by the scroll box at any edge, whether
+  the box overflows or not. It is also never left under a fade (FR-007): once it has been scrolled into view, its ring
+  box is at least `--ocelle-scroller-fade-size` from each inline edge that still shows a fade. When the box is too
+  narrow for that (the ring box is wider than the box less a fade's depth on each side that fades), the fade is not
+  drawn on a side where it would cover the focused control, until focus leaves the control or the user scrolls the
+  box. A user's own scrolling may move the focused control under a fade or off-screen, as it may without the element
+  (US1-13). For the Overflow rule of User Scenarios the inline ring room counts as part of the content, so content
+  fits when it and the room on both inline sides fit. It has one default slot.
 - **FR-002**: While the scroll box overflows (User Scenarios, "Overflow"), it is a tab stop (`tabindex="0"`). With a
   non-empty label (FR-010) it is one node of role region with that name. While the box does not overflow, it is not
   focusable, has no role and no name, and its content is exposed as it would be without the element. The state
@@ -460,16 +507,18 @@ goes.
   by the scroller (US1-5, US1-10).
 - **FR-007**: Each inline edge with content off-screen on its side shows a fade `--ocelle-scroller-fade-size` deep
   (new token, `var(--ocelle-space-7)`, 2rem) that fades the content toward transparency. An edge with nothing
-  off-screen shows none. The fades follow the inline direction (US1-6, US1-7). They are styled from tokens, add no
-  node and no name, and never take pointer events from the content under them.
+  off-screen shows none, and a fade that would cover a focused slotted control is not drawn as FR-001 says. The fades
+  follow the inline direction (US1-6, US1-7). They are styled from tokens, add no node and no name, and never take
+  pointer events from the content under them.
 - **FR-008**: In forced colours the fades are not drawn. Each edge with content off-screen shows a 1 px line in
   `CanvasText`, and an edge with nothing off-screen shows none (operator decision; US1-8).
 - **FR-009**: Under `prefers-reduced-motion: reduce` nothing of the scroller animates, and the element never sets
   smooth scrolling. Otherwise a fade may transition over at most `--ocelle-motion-fast` (US1-11).
 - **FR-010**: `label` (attribute and property, not reflected, `string | undefined`, default absent) names the region.
   It is trimmed, and empty or whitespace-only counts as none. A host `aria-label` on the element counts as a label and,
-  when present, decides naming alone, as in 005's FR-034. Without a label an overflowing scroller is still a tab stop,
-  but it has no region role (US1-12). No ID reference crosses the shadow root.
+  when present, decides naming alone, as in 005's FR-034; an empty or whitespace-only host `aria-label` counts as
+  absent, as a blank `label` does. Without a label an overflowing scroller is still a tab stop, but it has no region
+  role (US1-12). No ID reference crosses the shadow root.
 
 **The overflow-region module (internal, for reuse)**
 
@@ -504,14 +553,19 @@ goes.
     wide content in an `ocelle-scroller`.
 
   The lanes' shares stay equal within 1 px whatever their content (US2-14).
-- **FR-014**: The board scrolls inside itself through the overflow-region module (FR-011), with FR-002 to FR-010
-  applied to it. `label` (attribute and property, not reflected, `string | undefined`, default absent) names the
-  board's region while it overflows. In a block container of definite inline size, such as the frames of User
-  Scenarios, the board takes that container's inline size and never makes the page scroll in the inline direction
-  (US2-2, US2-9, SC-006). In a shrink-to-fit host it takes its lanes' size, as the scroller does (Edge Cases,
+- **FR-014**: The board scrolls inside itself through the overflow-region module (FR-011), with FR-002 to FR-010 applied
+  to it. FR-001 applies to its scroll box as well, for every focusable descendant, whether slotted directly or inside a
+  lane: the box scrolls in the inline direction only, it keeps the ring room on all four sides whether it overflows or
+  not, that inline room counts as content for the Overflow rule, and a descendant that takes focus is scrolled into view
+  with its whole ring and clear of the fades. So a focused card in a `flat` lane, which has no padding of its own, keeps
+  its whole ring at the board's edges (US2-15). `label` (attribute and property, not reflected, `string | undefined`,
+  default absent) names the board's region while it overflows. In a block container of definite inline size, such as the
+  frames of User Scenarios, the board takes that container's inline size and never makes the page scroll in the inline
+  direction (US2-2, US2-9, SC-006). In a shrink-to-fit host it takes its lanes' size, as the scroller does (Edge Cases,
   "Scroller or board inside a shrink-to-fit host").
 - **FR-015**: A new token `--ocelle-lane-min-width` is `10rem` (operator decision). Five lanes at that width with four
-  `--ocelle-space-3` gaps need 848 px, which fits Frame W's 876 px (SC-003).
+  `--ocelle-space-3` gaps need 848 px, and 858 px with the board's inline ring room (FR-014, 5 px on each side),
+  which fits Frame W's 876 px (SC-003).
 - **FR-016**: In Frame W a board of five lanes does not overflow, and in Frame N it does. Both are tested (US2-1,
   US2-2).
 - **FR-017**: `variant` (attribute and property, reflected, `"flat" | undefined`, default absent) selects the lane's
@@ -527,7 +581,8 @@ goes.
   ", " and then `count-label` if non-empty, or the count otherwise. Without a title, the name is `count-label` or the
   count alone, with no separator; without a title and without a shown count, the lane has no role and no name and
   its content is exposed as it would be without the element. A host `aria-label` on the lane counts as its name and,
-  when present, decides naming alone (the lane is then a group with that name), as for the scroller (FR-010). `count-label` is an attribute and property, not
+  when present, decides naming alone (the lane is then a group with that name), as for the scroller (FR-010). An
+  empty or whitespace-only host `aria-label` counts as absent. `count-label` is an attribute and property, not
   reflected, `string | undefined`, default absent, and trimmed. The visible title and count add no further node or
   text to the tree. No built-in word is added to the name in any language (operator decision; US2-5).
 - **FR-020**: A lane's title wraps inside the lane between words, and breaks inside a word only when the word alone is
@@ -632,8 +687,8 @@ goes.
   end, both or neither. Its tab stop, role and name follow that state.
 - **Overflow-region module**: the internal unit that turns a scroll box's measured state into that tab stop, role,
   name and edge state for any host element (FR-011).
-- **Lane**: a titled column of content with an optional count and a variant (default or `flat`). It is exposed as one
-  group named by its title and count.
+- **Lane**: a column of content with an optional title, an optional count and a variant (default or `flat`). A lane
+  with a title or a shown count is exposed as one group named as FR-019 says; one with neither adds no role.
 - **Board**: a row of lanes that scrolls inside itself when the lanes' minimum widths exceed its size.
 - **Pane**: the list, the detail or the inspector of a list-detail.
 - **Container tier**: a layout chosen from the element's own inline size against an exclusive, host-settable
@@ -645,13 +700,13 @@ goes.
 
 - **SC-001**: In 100% of the measured states of User Story 1 (fits, overflowing at start, middle and end, resized
   across the threshold both ways, content changed both ways, in both writing directions), the scroller is a tab stop
-  exactly when it overflows, and a named region exactly when it overflows and is labelled. Its fades or forced-colours lines are on exactly the sides with content
-  off-screen.
+  exactly when it overflows, and a named region exactly when it overflows and is labelled. Its fades or
+  forced-colours lines are on exactly the sides with content off-screen.
 - **SC-002**: A keyboard user reaches the hidden end of an overflowing scroller, and of an overflowing board, from the
   element's tab stop using only the arrow keys, in both writing directions.
-- **SC-003**: Five lanes fit Frame W (876 px) with no board overflow and no page scroll. In Frame N and Frame S the
-  board overflows inside itself and the page has no horizontal scroll.
-- **SC-004**: Every lane is announced as one group whose name is its title plus its count, or its `count-label`
+- **SC-003**: Five lanes, with the board's ring room (858 px), fit Frame W (876 px) with no board overflow and no page
+  scroll. In Frame N and Frame S the board overflows inside itself and the page has no horizontal scroll.
+- **SC-004**: Every titled lane is announced as one group whose name is its title plus its count, or its `count-label`
   (exactly "Ready, 3" or "Ready, 3 work packages" in the scenarios), with no built-in word and no repeated text.
 - **SC-005**: list-detail shows three columns in Frame R, two in Frame W and one in Frame N and with `narrow`. In one
   column, focus never stays in a hidden pane in any of the switches of US3-6 and US3-7.

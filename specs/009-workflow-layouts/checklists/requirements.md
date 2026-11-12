@@ -45,3 +45,12 @@
   (FR-025, US3-12); the board's "no page scroll" is bounded to a definite-size container (FR-014, Edge Cases). The
   paired "does not" table carries the new pairs. Items above re-checked and still hold; the 14 notes of check 1 are
   left to the plan except SPEC-1-13 and SPEC-1-18, which are fixed.
+- Check 2 fixes (`reviews/spec/check-2-fixes.md`): a slotted control that takes focus is scrolled clear of the fades,
+  with a fallback that drops a fade only while it would cover a control too wide for that clearance (FR-001, FR-007,
+  US1-7, US1-13); the board's scroll box takes FR-001 in full, ring room and focus scrolling included, and five
+  lanes with that room need 858 px of Frame W's 876 px (FR-014, FR-015, SC-003, new US2-15); US3-10 now uses values
+  whose wrongly-accepted outcome differs from the default's, for both `*-below` attributes and the token overrides,
+  and the paired rows name Frame W and the same values. The paired "does not" table carries the new pairs. Notes
+  SPEC-2-05, SPEC-2-07, SPEC-2-08 and SPEC-2-10 are fixed; SPEC-2-04 is fixed in part (the board never scrolls in
+  the block direction, FR-014; lane block sizes are left to the plan); SPEC-2-06, SPEC-2-09 and SPEC-2-11 are left
+  to the plan. Items above re-checked and still hold.
