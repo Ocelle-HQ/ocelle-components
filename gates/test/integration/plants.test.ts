@@ -146,13 +146,14 @@ describe("plant job (gates/bin/plants.ts)", () => {
     timeout,
   );
   // Plan decision 23 (contracts/plants.md § Shards): the Plants check recomputes the partition, so an empty report
-  // directory names every shard of the plan. Nine visual plant directories (no plant.json, so none runs) give the plan
-  // of plantsRoot() three shards: shard 1 its other plants, shards 2 and 3 eight and one visual plant.
+  // directory names every shard of the plan. Five visual plant directories (no plant.json, so none runs) give the plan
+  // of plantsRoot() three shards at the repository's size 4 (plan decision 29): shard 1 its other plants, shards 2 and
+  // 3 four and one visual plant.
   it(
     "--verdict on an empty directory exits 2 naming every shard of the repository's plan",
     async () => {
       const root = plantsRoot();
-      for (let index = 1; index <= 9; index += 1) write(join(root, `gates/plants/visual/case-${String(index)}/tree/x.txt`), "x");
+      for (let index = 1; index <= 5; index += 1) write(join(root, `gates/plants/visual/case-${String(index)}/tree/x.txt`), "x");
       const ran = await runGate("gates/bin/plants.ts", ["--root", root, "--verdict", tempDir("reports")], { cwd: tempDir("cwd"), env: baseEnv() });
       expect({ code: ran.code, stderr: ran.stderr }).toEqual({
         code: 2,

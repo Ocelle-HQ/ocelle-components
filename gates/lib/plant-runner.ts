@@ -254,8 +254,11 @@ export function aloneDecision(plantPath: string, storyTheme: StoryTheme, alone: 
   return { copy: true };
 }
 
-/** The most `visual` (or `axe`) plants in one shard (plan decision 23): 8, provisional until tasks.md T046h. */
-export const shardSize = 8;
+/**
+ * The most `visual` (or `axe`) plants in one shard (plan decisions 23 and 29): 4, the measuring run's size, provisional
+ * until the operator approves one (tasks.md T046l).
+ */
+export const shardSize = 4;
 
 /**
  * The partition of the plant job into shards (plan decision 23; contracts/plants.md § Shards), plants written

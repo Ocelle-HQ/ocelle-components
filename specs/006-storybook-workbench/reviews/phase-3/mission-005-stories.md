@@ -76,3 +76,24 @@ The plant run with `OCELLE_VISUAL_ENGINE=auto` at `size` 8:
 | `--verdict` | 280 | 1 s | `plants: 280 plants of 16 gates and the registry judged, every plant as expected` |
 
 At 21 stories the 8-plant shards take 447 to 480 s here, against 304 to 320 s at 12 stories.
+
+## T046t and T046u: size 4 for the measuring run (plan decision 29)
+
+`shardSize` is now 4 (red `T046t`, then green). The plants tests whose world was built for size 8 hold 9 visual
+plants instead of 17, so the plan still has 4 shards: shard 2 is error-basic, fail-basic, pass-basic and pass-v01,
+shard 3 is pass-v02 to pass-v05, and shard 4 is pass-v06. Every expected value there is written for size 4 (56
+plants). The integration verdict test now uses 5 visual plant directories, so plantsRoot()'s plan still has 3 shards.
+
+The plant run, with `OCELLE_VISUAL_ENGINE=auto` and size 4, took 3013 s in all:
+
+| Step | Plants | Time |
+|---|---|---|
+| `--plan` | | under 1 s: `[1,2,3,4,5,6,7,8,9,10,11,12,13]`, which is shard 1 plus the 48 `visual` plants in 12 shards of 4 |
+| shard 1 | 232 | 280 s |
+| shard 2 (error-build-fails, error-host, error-index-pin, error-no-engine) | 4 | 6 s |
+| shard 3 (error-tag-pin and the first three capturing plants) | 4 | 188 s |
+| shards 4 to 13 | 4 each | 222 to 250 s each |
+| `--verdict` | 280 | under 1 s: `plants: 280 plants of 16 gates and the registry judged, every plant as expected` |
+
+At about 59 s per capturing `visual` plant, that is about 240 s of plants per shard here, before CI's fixed part (job
+setup, toolset removal, both pulls).
