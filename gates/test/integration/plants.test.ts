@@ -111,7 +111,8 @@ describe("plant job (gates/bin/plants.ts)", () => {
           ...missing("manifest", []),
           ...missing("storybook-build", []),
           ...missing("visual", []),
-          "plants: 44 problems in 6 plants",
+          ...missing("axe", []),
+          "plants: 47 problems in 6 plants",
         ],
         stderr: rootPlants.map((plant) => `note: plant time: ${plant}: <s> s`),
       });

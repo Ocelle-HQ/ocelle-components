@@ -130,5 +130,13 @@
     "plantCommand": "node gates/bin/visual.ts --root {root} --engine {engine}",
     "plantForm": "repo-tree",
     "scope": "files"
+  },
+  {
+    "id": "axe",
+    "check": "Accessibility",
+    "command": "pnpm run gate:axe",
+    "plantCommand": "node gates/bin/axe.ts --root {root}",
+    "plantForm": "repo-tree",
+    "scope": "files"
   }
 ]

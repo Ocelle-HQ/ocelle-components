@@ -344,6 +344,21 @@ describe("resolveLocations", () => {
     await expect(resolveLocations([{ location, rule: "r" }], view())).rejects.toThrow(`keyed location ${location} ${problem}`);
   });
 
+  // 006 contracts/gates.md § `axe`: the axe gate locates an exception entry's finding at
+  // storybook/a11y-exceptions.json#<index>, a location of its own, not a key to resolve.
+  it("hands on storybook/a11y-exceptions.json#<index> unchanged, reading nothing", async () => {
+    const reads: string[] = [];
+    const recording: TreeView = {
+      read: (path) => {
+        reads.push(path);
+        return Promise.resolve(undefined);
+      },
+      stylesheet: () => Promise.resolve(""),
+    };
+    const found = await resolveLocations([{ location: "storybook/a11y-exceptions.json#0", rule: "stale-exception" }, { location: "storybook/a11y-exceptions.json#12", rule: "r" }], recording);
+    expect({ found, reads }).toEqual({ found: [{ location: "storybook/a11y-exceptions.json#0", rule: "stale-exception" }, { location: "storybook/a11y-exceptions.json#12", rule: "r" }], reads: [] });
+  });
+
   it("fails naming the key when the file is not in the tree", async () => {
     const empty: TreeView = { read: () => Promise.resolve(undefined), stylesheet: () => Promise.resolve("") };
     await expect(resolveLocations([{ location: "packages/tokens/src/source.ts#color-ink", rule: "r" }], empty)).rejects.toThrow(
@@ -409,6 +424,14 @@ describe("runPlant: keyed locations", () => {
       expected: [{ location: "packages/tokens/src/source.ts:5", rule: "r" }, { location: "a.ts:1", rule: "r" }],
       reads: ["read /tmp/ocelle-plant-contrast-1/packages/tokens/src/source.ts"],
     });
+  });
+
+  it("hands on no expected findings and reads nothing for an axe plant whose findings are at storybook/a11y-exceptions.json#<index>", async () => {
+    const { tools, calls } = keyed();
+    const axe = gate("axe", "repo-tree", "node gates/bin/axe.ts --root {root}");
+    const plant: Plant = { expect: "fail", why: "w", findings: [{ location: "storybook/a11y-exceptions.json#0", rule: "stale-exception" }] };
+    const run = await runPlant(tools, "/repo", axe, "gates/plants/axe/fail-x", plant);
+    expect({ expected: "expected" in run, calls: calls.filter((call) => call.startsWith("read") || call.startsWith("stylesheet")) }).toEqual({ expected: false, calls: [] });
   });
 
   it("names the plant and the key when a key does not resolve, and removes the directory", async () => {
