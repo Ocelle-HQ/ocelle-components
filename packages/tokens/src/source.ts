@@ -3,6 +3,8 @@
 // (PLAN-TESTABILITY-1-003 (a)). A derived token (FR-002) writes its source as var(--ocelle-<name>) and lists it in
 // `ref`; a foreground colour carries its contrast kind and intended grounds (A.8: 149 required pairs per theme).
 // `source` is the records with the overrides of overrides.ts applied; the generator, the build and the gates read it.
+// No type assertion wraps the records or the ground lists (`as const`, `satisfies`): Stryker does not mutate inside
+// one, so the values would go untested (op 004). `tokenRecords` keeps the names literal and checks each record instead.
 import { applyOverrides } from "./generate.ts";
 import type { TokenRecord } from "./generate.ts";
 import { overrides } from "./overrides.ts";
@@ -18,13 +20,18 @@ const main = [
   "color-inset",
   "color-accent-low",
   "color-hover-bg",
-] as const;
+];
 /** The five state grounds. */
-const stateGrounds = ["color-danger-bg", "color-warning-bg", "color-success-bg", "color-info-bg", "color-neutral-bg"] as const;
+const stateGrounds = ["color-danger-bg", "color-warning-bg", "color-success-bg", "color-info-bg", "color-neutral-bg"];
 /** The chrome grounds. */
-const chrome = ["color-chrome", "color-chrome-hover"] as const;
+const chrome = ["color-chrome", "color-chrome-hover"];
 
-export const records = [
+/** The records as given; N keeps each name literal, so TokenName (index.ts) is their union without `as const`. */
+function tokenRecords<const N extends string>(list: readonly (TokenRecord & { readonly name: N })[]): readonly (TokenRecord & { readonly name: N })[] {
+  return list;
+}
+
+export const records = tokenRecords([
   // A.1 Colour (theme-dependent)
   { name: "color-canvas", group: "colour", value: { light: "#F1EEE8", dark: "#15130F" } }, // bone, the page ground
   { name: "color-sheet", group: "colour", value: { light: "#FBFAF7", dark: "#211E18" } }, // facts sheet, cards, inputs
@@ -218,6 +225,6 @@ export const records = [
   { name: "motion-fast", group: "motion", value: "120ms" }, // 0ms under reduced motion
   { name: "motion-base", group: "motion", value: "200ms" }, // 0ms under reduced motion
   { name: "easing-standard", group: "motion", value: "cubic-bezier(0.22, 1, 0.36, 1)" },
-] as const satisfies readonly TokenRecord[];
+]);
 
 export const source: readonly TokenRecord[] = applyOverrides(records, overrides);

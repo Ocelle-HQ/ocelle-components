@@ -47,6 +47,13 @@ Derived: `TokenName` (union of the record names only: `(typeof records)[number][
 `as const satisfies readonly TokenRecord[]` with `TokenRecord` using `string`), `tokenNames` (array),
 `cssName(name)` = `--ocelle-${name}`.
 
+> **Addendum (2026-11, op 004).** The `as const satisfies readonly TokenRecord[]` form above kept every record out of
+> mutation testing: Stryker does not descend into a type assertion, so it generated no mutant in `source.ts`. Since op
+> 004 the records are passed through an unexported identity function with a `const` type parameter,
+> `tokenRecords<const N extends string>(list: readonly (TokenRecord & { readonly name: N })[])`, and the ground lists
+> are plain arrays. `TokenName = (typeof records)[number]["name"]` is unchanged and still the literal union of the
+> record names, and each record is still checked against `TokenRecord` (`ops/004-token-source-mutation/`).
+
 `source.ts` exports `records` (the token records above) and `source = applyOverrides(records, overrides)`, the list
 every consumer reads (the generator, the build, the gates, the stories). `applyOverrides` is a pure function of
 `generate.ts`; `overrides` comes from `packages/tokens/src/overrides.ts` (below).
@@ -123,6 +130,12 @@ generator on the **real** source and compares its output with the table (PLAN-FR
 stylesheet declaration's value per theme (for colours the token stream, hex compared case-insensitively; for the
 others the exact text, derived tokens in their expected reference form) and the resolved value of `json()`. This
 node test, not the browser suites, is what kills the value mutants of `source.ts` (R-03).
+
+> **Addendum (2026-11, op 004).** Until op 004 this was not shown: `source.ts` had no mutants (the records were inside
+> `as const`, above), so no run tested whether this node test kills a value mutant. Op 004's whole-file Stryker run
+> (checker off, 60-line entries) now mutates the records and ground lists, and no mutant survives. The node table
+> test is among the tests that kill the value mutants; mutants that break validation are killed already at import.
+> Evidence: `ops/004-token-source-mutation/mutation/README.md`.
 
 ## Element property list (style-lint, R-09)
 
