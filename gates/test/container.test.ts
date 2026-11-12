@@ -1,6 +1,6 @@
 import { readFileSync } from "node:fs";
 import { describe, expect, it } from "vitest";
-import { engineFamily, enginesText, inspectProblem, mediaTypeProblem, parsePin, pinCommands, pinReference, referenceProblem, resolveEngine, runArgs, runDir } from "../lib/container.ts";
+import { engineFamily, enginesText, inspectProblem, mediaTypeProblem, parsePin, pinCommands, pinReference, referenceProblem, removeCommand, removeDockerImageProblem, resolveEngine, runArgs, runDir, runSteps } from "../lib/container.ts";
 import type { Pin, RunInput } from "../lib/container.ts";
 
 // The pinned container on the host (FR-007, FR-009, FR-026; contracts/container.md; research.md R-06): engine
@@ -110,6 +110,67 @@ describe("enginesText", () => {
     expect(enginesText(["docker", "podman"])).toBe("docker+podman");
     expect(enginesText(["docker", "docker"])).toBe("docker only: no cross-engine comparison");
     expect(enginesText(["podman", "podman"])).toBe("podman only: no cross-engine comparison");
+  });
+});
+
+// Plan decision 25 (operator decision 2026-11-11, "Apply now"; contracts/container.md § When each engine's steps run;
+// contracts/gates.md § `visual`): each engine's pin check runs just before that engine's first run, and with
+// `--remove-docker-image` docker's copy of the pin is removed after run 1 and before podman's pin check.
+describe("runSteps, removeCommand and the --remove-docker-image check (plan decision 25)", () => {
+  // What resolveEngine gives (its own tests above): both; auto, and docker, resolving to docker; podman; the host.
+  const both = { kind: "engines", engines: ["docker", "podman"] } as const;
+  const docker = { kind: "engines", engines: ["docker", "docker"] } as const;
+  const podman = { kind: "engines", engines: ["podman", "podman"] } as const;
+  const host = { kind: "host" } as const;
+  const refused = "--remove-docker-image needs both engines (docker for run 1, podman for run 2)";
+
+  it("both with the option: docker's pin check, the build, run 1, the removal, podman's pin check, run 2", () => {
+    expect(runSteps(both, true)).toEqual([
+      { step: "pin", engine: "docker" },
+      { step: "build" },
+      { step: "run", run: 1, engine: "docker" },
+      { step: "remove" },
+      { step: "pin", engine: "podman" },
+      { step: "run", run: 2, engine: "podman" },
+    ]);
+  });
+
+  it("both without the option: the same order without the removal", () => {
+    expect(runSteps(both, false)).toEqual([
+      { step: "pin", engine: "docker" },
+      { step: "build" },
+      { step: "run", run: 1, engine: "docker" },
+      { step: "pin", engine: "podman" },
+      { step: "run", run: 2, engine: "podman" },
+    ]);
+  });
+
+  it("one engine: one pin check before the build and both runs under it; the host: no pin check", () => {
+    const one = (engine: string): unknown[] => [
+      { step: "pin", engine },
+      { step: "build" },
+      { step: "run", run: 1, engine },
+      { step: "run", run: 2, engine },
+    ];
+    expect(runSteps(resolveEngine("auto", {}, (name) => name === "docker"), false)).toEqual(one("docker"));
+    expect(runSteps(docker, false)).toEqual(one("docker"));
+    expect(runSteps(podman, false)).toEqual(one("podman"));
+    expect(runSteps(host, false)).toEqual([{ step: "build" }, { step: "run", run: 1, engine: "host" }, { step: "run", run: 2, engine: "host" }]);
+    expect(runSteps({ kind: "error", cause: "no container engine: docker not found" }, true)).toEqual([]);
+  });
+
+  it("removes docker's copy of the pin by its full reference", () => {
+    expect(removeCommand(pin)).toEqual(["docker", "image", "rm", "mcr.microsoft.com/playwright@sha256:ee15712262f017b8157421b212b12099146645f44b1bc5c0514cbbe6a229b1d0"]);
+  });
+
+  it("lets the option run only when the engines are docker then podman", () => {
+    expect(removeDockerImageProblem(both)).toBeUndefined();
+    expect(removeDockerImageProblem({ kind: "engines", engines: ["/usr/bin/docker", "/usr/bin/podman"] })).toBeUndefined();
+    expect([docker, podman, host].map((resolved) => removeDockerImageProblem(resolved))).toEqual([refused, refused, refused]);
+    expect(removeDockerImageProblem(resolveEngine("auto", {}, (name) => name === "docker"))).toBe(refused);
+    expect(removeDockerImageProblem({ kind: "engines", engines: ["podman", "docker"] })).toBe(refused);
+    expect(removeDockerImageProblem({ kind: "engines", engines: ["podman", "podman-remote"] })).toBe(refused);
+    expect(removeDockerImageProblem({ kind: "engines", engines: ["docker", "nerdctl"] })).toBe(refused);
   });
 });
 

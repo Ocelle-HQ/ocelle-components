@@ -84,13 +84,35 @@ const setup = [
   "      - uses: ./.github/actions/setup",
 ];
 
+// Plan decisions 22, 25 and 27 (operator decisions 2026-11-11, "Add the CI step" and "Apply now", and 2026-11-12, "Add
+// the tag read"; contracts/gates.md § The registry; contracts/container.md § The pin record): the gate removes docker's
+// copy after run 1; after the gate passes, the job records skopeo's version, skopeo's raw manifest of the pin, podman's
+// inspect output of the pin and skopeo's raw index of the tag, the image, digest and tag read from container.json, and
+// uploads them as the artifact pin-record.
+const pinRecord = [
+  "      - run: |",
+  '          reference="$(node -p \'const pin = require("./storybook/visual/container.json"); `${pin.image}@${pin.digest}`\')"',
+  '          tag="$(node -p \'const pin = require("./storybook/visual/container.json"); `${pin.image}:${pin.tag}`\')"',
+  '          record="$RUNNER_TEMP/pin-record"',
+  '          mkdir -p "$record"',
+  '          skopeo --version > "$record/skopeo-version.txt"',
+  '          skopeo inspect --raw "docker://$reference" > "$record/skopeo-inspect-raw-manifest.json"',
+  '          podman image inspect "$reference" > "$record/podman-inspect.json"',
+  '          skopeo inspect --raw "docker://$tag" > "$record/skopeo-inspect-raw-index.json"',
+  `      - uses: ${upload}`,
+  "        with:",
+  "          name: pin-record",
+  "          path: ${{ runner.temp }}/pin-record/",
+];
+
 describe("ci.yml visual and plants jobs (006 FR-017, FR-018)", () => {
   it("visual is named Visual regression, runs the gate with --engine both, and uploads storybook/.visual/ on failure", () => {
     expect(job("visual")).toEqual([
       "  visual:",
       "    name: Visual regression",
       ...setup,
-      "      - run: pnpm run gate:visual -- --engine both",
+      "      - run: pnpm run gate:visual -- --engine both --remove-docker-image",
+      ...pinRecord,
       "      - if: always()",
       "        run: df -h /",
       "      - if: failure()",

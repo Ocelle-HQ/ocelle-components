@@ -215,6 +215,26 @@ describe("visual gate: skopeo for podman (plan decision 21)", () => {
   );
 });
 
+// Plan decision 25 (operator decision 2026-11-11, "Apply now"; contracts/gates.md § `visual`): `--remove-docker-image`
+// needs docker for run 1 and podman for run 2, and is refused before any engine command. PATH holds only a stub docker
+// that leaves a marker file when it is run.
+describe("visual gate: --remove-docker-image (plan decision 25)", () => {
+  it(
+    "exits 2 naming both engines when --remove-docker-image comes with docker alone, and runs no docker command",
+    async () => {
+      const bin = tempDir("bin");
+      const marker = join(tempDir("marker"), "docker-ran");
+      writeFileSync(join(bin, "docker"), `#!/bin/sh\ntouch '${marker}'\n`, { mode: 0o755 });
+      const ran = await runGate("gates/bin/visual.ts", ["--root", await root(), "--engine", "docker", "--remove-docker-image"], { cwd: tempDir("cwd"), env: { ...env(), PATH: bin } });
+      expect({ ran, marker: existsSync(marker) }).toEqual({
+        ran: { code: 2, stdout: [], stderr: ["visual: could not run: --remove-docker-image needs both engines (docker for run 1, podman for run 2)"] },
+        marker: false,
+      });
+    },
+    timeout,
+  );
+});
+
 describe("baseline command (gates/bin/baselines.ts)", () => {
   it(
     "writes nothing on an unchanged tree and says so (FR-008, analysis G1)",
