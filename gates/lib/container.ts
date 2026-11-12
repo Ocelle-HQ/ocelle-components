@@ -106,6 +106,43 @@ export function pinCommands(engine: string, pin: Pin): { readonly mediaType: rea
   };
 }
 
+/**
+ * One step of a run of the gate (contracts/gates.md § `visual`; contracts/container.md § When each engine's steps run):
+ * an engine's pin check, the Storybook build, a capture run under an engine, or the removal of docker's copy.
+ */
+export type RunStep =
+  | { readonly step: "pin"; readonly engine: string }
+  | { readonly step: "build" }
+  | { readonly step: "run"; readonly run: 1 | 2; readonly engine: string }
+  | { readonly step: "remove" };
+
+/**
+ * The order of a run (plan decision 25): each engine's pin check just before that engine's first run, the build after
+ * run 1's pin check, and with `--remove-docker-image` the removal of docker's copy between run 1 and run 2's pin check.
+ * The host has no pin check; an unresolved choice has no step.
+ */
+export function runSteps(resolved: Resolved, removeDockerImage: boolean): RunStep[] {
+  if (resolved.kind === "error") return [];
+  if (resolved.kind === "host") return [{ step: "build" }, { step: "run", run: 1, engine: "host" }, { step: "run", run: 2, engine: "host" }];
+  const [first, second] = resolved.engines;
+  const removal: RunStep[] = removeDockerImage ? [{ step: "remove" }] : [];
+  const secondPin: RunStep[] = second === first ? [] : [{ step: "pin", engine: second }];
+  return [{ step: "pin", engine: first }, { step: "build" }, { step: "run", run: 1, engine: first }, ...removal, ...secondPin, { step: "run", run: 2, engine: second }];
+}
+
+/** The command that removes docker's copy of the pin (`--remove-docker-image`, plan decision 25). */
+export function removeCommand(pin: Pin): string[] {
+  return ["docker", "image", "rm", pinReference(pin)];
+}
+
+/** The cause that refuses `--remove-docker-image`: unless run 1 is docker's and run 2 podman's (plan decision 25). */
+export function removeDockerImageProblem(resolved: Resolved): string | undefined {
+  const refused = "--remove-docker-image needs both engines (docker for run 1, podman for run 2)";
+  if (resolved.kind !== "engines") return refused;
+  const [first, second] = resolved.engines;
+  return engineFamily(first) === "docker" && engineFamily(second) === "podman" ? undefined : refused;
+}
+
 /** A JSON text's value, or undefined when it is not JSON. */
 // Stryker disable next-line BlockStatement: equivalent, an empty catch block returns undefined as the catch's own return does
 const json = (text: string): unknown => { try { return JSON.parse(text) as unknown; } catch { return undefined; } };
