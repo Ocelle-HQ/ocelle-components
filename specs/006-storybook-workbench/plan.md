@@ -378,8 +378,11 @@ shard (1) took 12 min 34 s and Plants shard (8) 10 min 29 s. Shard 1 holds the 2
        - the verdict `plants: 280 plants of 16 gates and the registry judged, every plant as expected`;
        - `E_k` ≥ 4G (`M`) at the end of every Plants shard.
 
-       If any of these fails, that is a stop-and-ask. So is a shard closer to 10 minutes than the 568 s modelled
-       for the worst `visual` shard, which the operator accepted with `size` 3.
+       If any of these fails, that is a stop-and-ask.
+    7. **"Near 10 minutes" means above 570 s** (operator decision 2026-11-12, "Above 570 s (Recommended)"). The
+       stop-and-ask fires when any Plants shard job takes more than 570 s, non-visual shards included. The worst
+       `visual` shard's modelled 568 s passes. This defines tasks.md's stop-and-ask "any Plants shard near
+       10 minutes".
 
     What it settles:
     - **Decision 25.** The toolset part is settled: each Plants shard keeps the removal.
