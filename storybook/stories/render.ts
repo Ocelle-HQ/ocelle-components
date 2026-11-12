@@ -128,7 +128,12 @@ function renderCompact(text: CompactContent): string {
   );
 }
 
-/** A prose table: its caption when it has one, the header row, then the body rows; `linked` makes the first body cell a link. */
+/**
+ * A prose table: its caption when it has one, the header row, then the body rows; `linked` makes the first body cell a
+ * link. base.css makes a prose table its own horizontal scroll box, so the table is focusable (`tabindex="0"`, as
+ * packages/styles/README.md § For Markdown renderers tells WebKit hosts to do; 006 FR-029, operator decision on the
+ * phase 1 spike § 7): a keyboard user can scroll it, and axe's scrollable-region-focusable holds.
+ */
 function renderTable(table: ProseTable, linked: boolean): string {
   const caption = table.caption === "" ? "" : `<caption>${escape(table.caption)}</caption>`;
   const head = table.head.map((cell) => `<th>${escape(cell)}</th>`).join("");
@@ -138,7 +143,7 @@ function renderTable(table: ProseTable, linked: boolean): string {
       return `<tr>${cells.join("")}</tr>`;
     })
     .join("");
-  return `<table>${caption}<thead><tr>${head}</tr></thead><tbody>${rows}</tbody></table>`;
+  return `<table tabindex="0">${caption}<thead><tr>${head}</tr></thead><tbody>${rows}</tbody></table>`;
 }
 
 /** The Prose document: a rendered Markdown document, plain elements with no class, in a container with the prose hook. */

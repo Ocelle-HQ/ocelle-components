@@ -1,0 +1,5 @@
+{
+  "expect": "error",
+  "why": "An exception entry without a reason: the exceptions file is malformed and the gate cannot run (data-model.md § Exception).",
+  "cause": "a11y-exceptions.json#0: reason must be a non-empty string"
+}

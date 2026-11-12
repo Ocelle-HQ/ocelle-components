@@ -133,7 +133,12 @@ export type RootNode = { readonly text: string; readonly rects: readonly Size[] 
 
 /** Whether a story root whose child nodes these are renders no content (no box of non-zero size, no drawn non-whitespace text). */
 export function emptyRoot(children: readonly RootNode[]): boolean {
-  throw new Error(`not implemented (story-checks, phase 4): ${String(children.length)}`);
+  const drawn = (rects: readonly Size[]): boolean => rects.some((rect) => rect.width > 0 && rect.height > 0);
+  const content = (node: RootNode): boolean => {
+    if ("text" in node) return node.text.trim() !== "" && drawn(node.rects);
+    return drawn(node.rects) || [...node.children, ...(node.shadow ?? [])].some(content);
+  };
+  return !children.some(content);
 }
 
 /** An element child of `<body>`: its tag (local name), id and classes. */
@@ -144,9 +149,9 @@ export interface BodyChild {
 }
 
 /** The elements that render nothing, never outside the root (research.md R-08). */
-export const nonRendered: readonly string[] = [];
+export const nonRendered: readonly string[] = ["script", "style", "link", "template", "noscript"];
 
 /** The tags of the body's element children outside the story root: not the root, not a harness node, not a non-rendered element. */
 export function outsideRoot(children: readonly BodyChild[]): string[] {
-  throw new Error(`not implemented (story-checks, phase 4): ${String(children.length)}`);
+  return children.filter((child) => child.id !== "storybook-root" && !isHarness(child.id, child.classes) && !nonRendered.includes(child.tag)).map((child) => child.tag);
 }

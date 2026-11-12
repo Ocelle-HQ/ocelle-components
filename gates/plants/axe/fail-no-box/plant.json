@@ -1,0 +1,14 @@
+{
+  "expect": "fail",
+  "why": "A story root that holds only elements with no box (display: none): empty on both themes (FR-014, US3 scenario 4).",
+  "findings": [
+    {
+      "location": "no-box--hidden/light",
+      "rule": "empty"
+    },
+    {
+      "location": "no-box--hidden/dark",
+      "rule": "empty"
+    }
+  ]
+}

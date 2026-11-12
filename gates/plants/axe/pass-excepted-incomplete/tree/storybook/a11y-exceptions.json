@@ -1,0 +1,20 @@
+[
+  {
+    "story": "incomplete--over-image",
+    "theme": "light",
+    "rule": "color-contrast-incomplete",
+    "selector": "div[data-candidate=\"image\"]",
+    "reason": "a planted exception",
+    "sunset": "the plant's sunset",
+    "plan": "specs/plant/plan.md"
+  },
+  {
+    "story": "incomplete--over-image",
+    "theme": "dark",
+    "rule": "color-contrast-incomplete",
+    "selector": "div[data-candidate=\"image\"]",
+    "reason": "a planted exception",
+    "sunset": "the plant's sunset",
+    "plan": "specs/plant/plan.md"
+  }
+]

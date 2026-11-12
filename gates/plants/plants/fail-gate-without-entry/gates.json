@@ -119,5 +119,13 @@
     "plantCommand": "node gates/bin/visual.ts --root {root} --engine {engine}",
     "plantForm": "repo-tree",
     "scope": "every story of the built Storybook index in light and dark, captured twice in the pinned linux/amd64 container (docker and podman in CI) and compared byte for byte with storybook/baselines/ (006 FR-003 to FR-012, FR-026 to FR-028, FR-030, FR-031)"
+  },
+  {
+    "id": "axe",
+    "check": "Accessibility",
+    "command": "pnpm run gate:axe",
+    "plantCommand": "node gates/bin/axe.ts --root {root}",
+    "plantForm": "repo-tree",
+    "scope": "every story of the built Storybook index in light and dark, in the host browser with the capture's context options: axe-core 4.14.0 with the FR-016 rule set on the whole document less Storybook's harness nodes, one finding per serious or critical node of a violation or an incomplete result, the empty, outside-root, closed-shadow-root, pointer-target and render checks, and the exceptions of storybook/a11y-exceptions.json honoured only with their plan's Complexity Tracking row (006 FR-013 to FR-016, FR-029)"
   }
 ]
