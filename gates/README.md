@@ -34,7 +34,7 @@ and changes nothing else. The registry of gates is `gates/gates.json`; the FR-02
 | `signoff` | Sign-off | `pnpm run gate:signoff -- --range <base>..<head>` | the commits of the pull request (FR-023) | no trailer, a mismatched trailer; pass: an agent signing off itself, an unsigned merge; breaking: an empty range |
 | `contrast` | Contrast | `pnpm run gate:contrast` | since 002: every pair of `packages/tokens/contrast/pairs.json` in both themes (WCAG 2.x, from the token values the root's generator resolves): its recorded figure at the figure's precision, its threshold (text 4.5:1, non-text 3:1, unrounded; disabled ink exempt), and the required pairs derived from the intended grounds of `packages/tokens/src/source.ts` (002 FR-016, FR-017, FR-021); `--print` lists the required pairs with their ratios | `text-below-threshold`, `non-text-below-threshold`, `figure-mismatch`, `unknown-token`, `missing-required-pair`, `excluded-without-reason`, `required-pair-excluded`, `not-opaque`; pass: `repository-values`, `exempt-disabled-ink`; breaking: `empty-list`, `unparsable-list`, `source-throws`, `exempt-not-disabled-ink` |
 | `brand-rules` | Brand rules | `pnpm run gate:brand-rules` | since 002: rules (a) to (g) of 002 FR-019 on the token source, the stylesheet the root's generator makes from it and the excluded ochre pair of the pair list: no monospace font token, `color-link` apart from `color-accent` and at 4.5:1 on canvas and sheet, the closed radius set, decorative rules below 3:1, dark chrome, reduced motion at 0ms, nothing that defeats forced colours | `a-monospace`, `b-link-equals-accent`, `b-ochre-pair-not-excluded`, `c-extra-radius`, `c-wrong-value`, `d-rule-as-boundary`, `e-light-chrome`, `f-motion-not-zero`, `g-forced-colours-override`; pass: `repository-values`, `g-system-colour-mapping`; breaking: `source-throws`, `generator-throws`, `source-invalid` |
-| `plants` | Plants | `pnpm run gate:plants` | `gates/plants/` only, and the registry check | registry plants in `gates/plants/plants/`: a gate without an entry, a gate without a CI job; pass: a matching pair |
+| `plants` | Plants | `pnpm run gate:plants` (CI: `pnpm run gate:plants -- --verdict storybook/.visual/plant-shards` after the helper jobs `plants-plan` and `plants-shard`) | `gates/plants/` only, and the registry check | registry plants in `gates/plants/plants/`: a gate without an entry, a gate without a CI job, `--skip-container` in the plants job (`fail-skip-container-in-ci`) or in plants-shard (`fail-skip-container-in-shard`), `--shard` in the plants job (`fail-shard-in-plant-check`); pass: a matching pair, the three plant jobs (`pass-split-plant-jobs`) |
 
 The plant job (`gates/bin/plants.ts`) first checks that `gates/gates.json`, the gate jobs of
 `.github/workflows/ci.yml` and the FR-020 list are one set, then runs every plant through its gate in normal mode on
@@ -44,6 +44,28 @@ since 002 the configuration set also holds the token source `packages/tokens/src
 the real token source and carries only the files it changes), and fails when a fail plant is not caught with exactly its expected findings, a pass plant is not accepted, a
 breaking plant is not reported as "could not run" for the cause it names, a gate lacks a fail, pass or breaking plant, a `plant.json` is
 missing or invalid, or a plant carries gate configuration.
+
+**The split plant job (006 plan decisions 23 and 24).** `gate:plants` has three modes besides the single run (every
+plant in one process, the registry check first), which stays what runs locally:
+- `--plan` prints the shard numbers as one JSON line, `[1,2,…,n]`. Shard 1 holds every plant of the gates other than
+  `visual` and `axe`, and the registry's plants; then come the `visual` plants by name in groups of at most 8, then
+  the `axe` plants the same way (`plantShards` and `shardSize` in `gates/lib/plant-runner.ts`; 8 is provisional).
+- `--shard <k>` judges only shard `k`'s plants as the single run would, with no registry or structural check, prints
+  `plants: shard <k> of <n>: <m> plants judged, every plant as expected`, and writes the report
+  `storybook/.visual/plant-shards/<k>.json` whatever its exit.
+- `--verdict <dir>` runs the registry check and the structural checks of the whole set, recomputes the partition, and
+  exits 2 for a shard with no report, a report that is not one or names another plan, a report whose plants are not
+  exactly its shard's, and a skipped or not-run plant. Otherwise it prints the reports' problem lines, or the single
+  run's summary line.
+
+In CI the job `plants-plan` ("Plants plan") prints the plan. The matrix job `plants-shard` ("Plants shard") first
+removes the runner's unused toolsets, then judges one shard each under both engines and uploads its report
+(`plant-shard-<k>`), and on failure its captures (`plants-<k>`). The job `plants` ("Plants", the required check) runs
+after them, always: it downloads every report and gives the verdict. `plants-plan` and `plants-shard` are the plant
+job's helper jobs, not gates. The registry check fails (`skip-container-in-ci`) when a step of any of the three jobs
+passes `--skip-container`, and (`shard-in-plant-check`) when a step of `plants` passes `--shard` or `--plan`, since
+the required check would then judge one shard or none. Every mode prints each plant's time on stderr,
+`note: plant time: <gate>/<case>: <seconds> s`, and the summary line is unchanged.
 
 **Plant deltas and keyed locations (002).** A `repo-tree` plant never carries a copy of the token source or the pair
 list, nor a line-based patch of them: it states its change in `delta.json`, by key, so a change to a neighbouring

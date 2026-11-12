@@ -1,0 +1,293 @@
+# Pull-request CI (FR-020, contracts/ci-checks.md, research.md R-16): one job per gate, each a separately named check,
+# plus the plant job (FR-025). The gate job ids are the gate ids of gates/gates.json and the FR-020 list of
+# gates/lib/registry.ts; the plant job checks that the three sets match (research.md R-10). The ruleset on main
+# requires the fourteen check names (gates/README.md).
+#
+# Security (research.md R-16): a read-only token at the top level and no other permission anywhere, every checkout
+# with persist-credentials: false, no secret, every action pinned by commit SHA. Every job runs the shared setup of
+# .github/actions/setup: Node and pnpm from the pins, the pnpm store and the Playwright cache restored (never saved;
+# .github/workflows/cache.yml saves them on main), then pnpm run setup:online.
+name: CI
+
+on:
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  typecheck:
+    name: Typecheck
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: ./.github/actions/setup
+      - run: pnpm run gate:typecheck
+  lint:
+    name: Code lint
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: ./.github/actions/setup
+      - run: pnpm run gate:lint
+  style-lint:
+    name: Style lint
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: ./.github/actions/setup
+      - run: pnpm run gate:style-lint
+  unit-tests:
+    name: Unit tests
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: ./.github/actions/setup
+      - run: pnpm run gate:unit-tests
+  test-lint:
+    name: Test lint
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: ./.github/actions/setup
+      - run: pnpm run gate:test-lint
+  # Mutation testing (research.md R-08): the plan job prints the shards of the changed lines as JSON, one shard job
+  # runs per entry (at most 10 minutes each, FR-013), and the verdict job is the check the ruleset requires.
+  mutation-plan:
+    name: Mutation plan
+    runs-on: ubuntu-24.04
+    outputs:
+      shards: ${{ steps.plan.outputs.shards }}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+          fetch-depth: 0
+      - uses: ./.github/actions/setup
+      - id: plan
+        env:
+          BASE: ${{ github.event.pull_request.base.sha }}
+        run: |
+          shards="$(pnpm --silent run gate:mutation -- --base "$BASE" --plan)"
+          echo "$shards"
+          echo "shards=$shards" >> "$GITHUB_OUTPUT"
+  mutation-shard:
+    name: Mutation shard
+    needs: mutation-plan
+    if: needs.mutation-plan.outputs.shards != '[]'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    strategy:
+      fail-fast: false
+      matrix:
+        shard: ${{ fromJSON(needs.mutation-plan.outputs.shards) }}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+          fetch-depth: 0
+      - uses: ./.github/actions/setup
+      # Values reach the script through the environment, never pasted into it (a shard's file list comes from the pull request).
+      - env:
+          BASE: ${{ github.event.pull_request.base.sha }}
+          FILES: ${{ matrix.shard.files }}
+        run: pnpm run gate:mutation -- --base "$BASE" --files "$FILES"
+  mutation:
+    name: Mutation testing
+    needs: [mutation-plan, mutation-shard]
+    if: always()
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: ./.github/actions/setup
+      # Passes only when the plan succeeded and the shards succeeded, or were skipped because the plan had none.
+      - env:
+          PLAN: ${{ needs.mutation-plan.result }}
+          SHARDS: ${{ needs.mutation-shard.result }}
+          PLANNED: ${{ needs.mutation-plan.outputs.shards }}
+        run: |
+          echo "mutation-plan: $PLAN; mutation-shard: $SHARDS; shards: $PLANNED"
+          test "$PLAN" = success
+          test "$SHARDS" = success || { test "$SHARDS" = skipped && test "$PLANNED" = "[]"; }
+  csp:
+    name: Content security
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: ./.github/actions/setup
+      - run: pnpm -r build && pnpm run gate:csp
+  prefix:
+    name: Prefix
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: ./.github/actions/setup
+      - run: pnpm -r build && pnpm run gate:prefix
+  config-copies:
+    name: Story config copies
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: ./.github/actions/setup
+      - run: pnpm run gate:config-copies
+  pins:
+    name: Install and pins
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: ./.github/actions/setup
+      - run: pnpm run gate:pins
+  signoff:
+    name: Sign-off
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+          fetch-depth: 0
+      - uses: ./.github/actions/setup
+      - env:
+          BASE: ${{ github.event.pull_request.base.sha }}
+          HEAD: ${{ github.event.pull_request.head.sha }}
+        run: pnpm run gate:signoff -- --range "$BASE..$HEAD"
+  contrast:
+    name: Contrast
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: ./.github/actions/setup
+      - run: pnpm run gate:contrast
+  brand-rules:
+    name: Brand rules
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: ./.github/actions/setup
+      - run: pnpm run gate:brand-rules
+  storybook-build:
+    name: Storybook build
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: ./.github/actions/setup
+      - run: pnpm run gate:storybook-build
+  visual:
+    name: Visual regression
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: ./.github/actions/setup
+      - run: pnpm run gate:visual -- --engine both --remove-docker-image
+      - run: |
+          reference="$(node -p 'const pin = require("./storybook/visual/container.json"); `${pin.image}@${pin.digest}`')"
+          tag="$(node -p 'const pin = require("./storybook/visual/container.json"); `${pin.image}:${pin.tag}`')"
+          record="$RUNNER_TEMP/pin-record"
+          mkdir -p "$record"
+          skopeo --version > "$record/skopeo-version.txt"
+          skopeo inspect --raw "docker://$reference" > "$record/skopeo-inspect-raw-manifest.json"
+          podman image inspect "$reference" > "$record/podman-inspect.json"
+          skopeo inspect --raw "docker://$tag" > "$record/skopeo-inspect-raw-index.json"
+      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: pin-record
+          path: ${{ runner.temp }}/pin-record/
+      - if: always()
+        run: df -h /
+      - if: failure()
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: visual
+          path: storybook/.visual/
+          include-hidden-files: true
+  plants-plan:
+    name: Plants plan
+    runs-on: ubuntu-24.04
+    outputs:
+      shards: ${{ steps.plan.outputs.shards }}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: ./.github/actions/setup
+      - id: plan
+        run: |
+          shards="$(pnpm --silent run gate:plants -- --plan)"
+          echo "$shards"
+          echo "shards=$shards" >> "$GITHUB_OUTPUT"
+  plants-shard:
+    name: Plants shard
+    needs: plants-plan
+    runs-on: ubuntu-24.04
+    strategy:
+      fail-fast: false
+      matrix:
+        shard: ${{ fromJSON(needs.plants-plan.outputs.shards) }}
+    steps:
+      - run: sudo rm -rf /usr/local/lib/android /usr/share/dotnet /opt/ghc /usr/local/.ghcup /opt/hostedtoolcache/CodeQL
+      - run: df -h /
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: ./.github/actions/setup
+      - env:
+          OCELLE_VISUAL_ENGINE: both
+          SHARD: ${{ matrix.shard }}
+        run: pnpm run gate:plants -- --shard "$SHARD" --skip-container
+      - if: always()
+        run: df -h /
+      - if: always()
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: plant-shard-${{ matrix.shard }}
+          path: storybook/.visual/plant-shards/
+          include-hidden-files: true
+      - if: failure()
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: plants-${{ matrix.shard }}
+          path: storybook/.visual/plants/
+          include-hidden-files: true
+  plants:
+    name: Plants
+    needs: [plants-plan, plants-shard]
+    if: always()
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: ./.github/actions/setup
+      - uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
+        with:
+          pattern: plant-shard-*
+          path: storybook/.visual/plant-shards/
+          merge-multiple: true
+      - run: pnpm run gate:plants -- --verdict storybook/.visual/plant-shards
