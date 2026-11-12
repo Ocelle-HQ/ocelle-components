@@ -7,7 +7,9 @@ in_scope: [8]
 out_of_scope: [1, 7, 9, 10, 11, 12, 13, 14, 15, 16, 17, 23, 27, 28, 29, 30]
 semver: minor
 spec_prompt: "Build the layout and header elements of issue #8 (triage/011-layout-headers.md) in @ocelle/elements, following the element conventions of mission 005: ocelle-card (inset, slotted content, a compact density with a 1 px border, md radius, smaller padding and a tighter section header, spec-kitty-design#516), ocelle-section-header (with an eyebrow-only mode on eyebrow tokens, #497), ocelle-context-sidebar (label names the landmark; dividers between sections and a footer area, no padding or gap for empty parts, #497), ocelle-page-header (a compact size with a 24 px display title and a 12 px uppercase tracked subtle eyebrow in Schibsted Grotesk, since constitution II forbids monospace, #529; the consumer's heading level kept, no fixed h1), and ocelle-personal-rail (label names the landmark; no hard-coded 720 px flip: the consumer sets the tier through an orientation property or a consumer-set threshold with an exclusive bound, #492, an interface #12's personal drawer can drive later); add the eyebrow tokens to @ocelle/tokens if none fit; each element with stories per variant and state in light and dark, interaction, keyboard and accessibility-tree tests, manifest entries, the strict-CSP check, and a 320 px reflow test with no horizontal scroll; baselines and axe through #10's gates when they are on main; the app shell, its tiers and the personal drawer itself stay with #12 and #16."
-status: proposed
+status: approved
+decided_by: "human:jeroennouwsdev"
+decided_at: 2026-11-12T22:29:35Z
 ---
 
 # Triage 011: Layout and headers (#8): card, section header, page header, context sidebar, personal rail
