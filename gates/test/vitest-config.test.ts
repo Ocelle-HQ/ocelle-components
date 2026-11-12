@@ -46,9 +46,19 @@ describe("vitest.mutation.config.ts", () => {
   // start tools or Chromium; elements-node stays.
   const notMutated = ["tokens-browser", "styles-browser", "elements", "elements-build", "elements-browser", "storybook-integration", "gates-integration"];
 
-  it("excludes exactly tokens-browser, styles-browser, elements, elements-build, elements-browser, storybook-integration and gates-integration from the projects of vitest.config.ts", () => {
+  it("excludes exactly tokens-browser, styles-browser, elements, elements-build, elements-browser, storybook-integration and gates-integration from the projects of vitest.config.ts, and splits tokens", () => {
     expect(all.map((project) => project.name).filter((name) => !kept.some((project) => project.name === name))).toEqual(notMutated);
-    expect(kept).toEqual(all.filter((project) => !notMutated.includes(project.name)));
+    // 007 research.md R-05 (lever 1): the mutation configuration splits tokens in two, source-table.test.ts alone in
+    // tokens-source-table and the rest in tokens; every other kept project is unchanged. This replaces the plain
+    // equality with the filtered list, which the split breaks; vitest-mutation-config.test.ts compares every setting.
+    const sourceTable = "packages/tokens/test/source-table.test.ts";
+    const [tokens, ...others] = all.filter((project) => !notMutated.includes(project.name));
+    expect(tokens?.name).toBe("tokens");
+    expect(kept).toEqual([
+      { name: "tokens-source-table", environment: tokens?.environment, include: [sourceTable], exclude: tokens?.exclude },
+      { name: "tokens", environment: tokens?.environment, include: tokens?.include, exclude: [...(tokens?.exclude ?? []), sourceTable] },
+      ...others,
+    ]);
     expect(kept.map((project) => project.name)).toContain("elements-node");
   });
 });

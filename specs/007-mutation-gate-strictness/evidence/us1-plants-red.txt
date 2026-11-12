@@ -1,0 +1,6 @@
+# pnpm run gate:plants, 2026-11-10, on the phase 2 red tests (b1d7499, amended as 8b3a311 with test-only fixes) with the T011 judge and the T012 plants, before the gate code of T013/T014 (179 s, exit 1)
+# stdout:
+gates/plants/mutation/pass-compile-error: plants: not-accepted: reports differ: missing packages/tokens/src/x.ts:3 compile-error
+gates/plants/mutation/pass-zero-mutant: plants: not-accepted: reports differ: missing packages/tokens/src/x.ts zero-mutants
+plants: 2 problems in 186 plants
+# stderr:

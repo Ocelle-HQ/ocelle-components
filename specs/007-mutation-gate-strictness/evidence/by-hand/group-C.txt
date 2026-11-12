@@ -1,0 +1,94 @@
+# Group C: elevation-bar dark value, StringLiteral 224:106-224:112 replaced by "" (Killed in green/source-181-230)
+# git diff:
+diff --git a/packages/tokens/src/source.ts b/packages/tokens/src/source.ts
+index 51726de..3a453b6 100644
+--- a/packages/tokens/src/source.ts
++++ b/packages/tokens/src/source.ts
+@@ -221,7 +221,7 @@ export const records = tokenRecords([
+     value: { light: "0 0 0 1px var(--ocelle-color-control-border), 0 1px 2px rgb(21 19 15 / 0.08)", dark: "0 0 0 1px var(--ocelle-color-control-border)" },
+     ref: { light: ["color-control-border"], dark: ["color-control-border"] },
+   },
+-  { name: "elevation-bar", group: "elevation", value: { light: "0 -6px 16px rgb(21 19 15 / 0.05)", dark: "none" } }, // bottom bars
++  { name: "elevation-bar", group: "elevation", value: { light: "0 -6px 16px rgb(21 19 15 / 0.05)", dark: "" } }, // bottom bars
+   { name: "motion-fast", group: "motion", value: "120ms" }, // 0ms under reduced motion
+   { name: "motion-base", group: "motion", value: "200ms" }, // 0ms under reduced motion
+   { name: "easing-standard", group: "motion", value: "cubic-bezier(0.22, 1, 0.36, 1)" },
+# pnpm exec vitest run --config vitest.mutation.config.ts --project tokens-source-table --project tokens
+
+ RUN  v5.0.5 /home/user/ocelle-components
+
+ ❯ |tokens-source-table| packages/tokens/test/source-table.test.ts (8 tests | 2 failed) 35ms
+   ❯ the stylesheet from the real source (6)
+     × declares each theme-dependent token's dark value under both dark selectors, where it differs from light 12ms
+   ❯ the JSON export from the real source (2)
+     × gives each token its group, its resolved value per theme (or its one value) and its references 13ms
+
+⎯⎯⎯⎯⎯⎯⎯ Failed Tests 2 ⎯⎯⎯⎯⎯⎯⎯
+
+ FAIL  |tokens-source-table| packages/tokens/test/source-table.test.ts > the stylesheet from the real source > declares each theme-dependent token's dark value under both dark selectors, where it differs from light
+AssertionError: expected { 'color-canvas': '#15130f', …(44) } to deeply equal { 'color-canvas': '#15130f', …(44) }
+
+- Expected
++ Received
+
+@@ -37,11 +37,11 @@
+    "color-sheet": "#211e18",
+    "color-success": "#8fcb8f",
+    "color-success-bg": "#15241a",
+    "color-warning": "#e0a23a",
+    "color-warning-bg": "#2e2410",
+-   "elevation-bar": "none",
++   "elevation-bar": " ",
+    "elevation-raised": "0 0 0 1px var(--ocelle-color-rule-strong)",
+    "elevation-row": "0 0 0 1px var(--ocelle-color-control-border)",
+    "elevation-seg": "0 0 0 1px var(--ocelle-color-control-border)",
+    "elevation-sheet": "0 0 0 1px var(--ocelle-color-rule)",
+  }
+
+ ❯ packages/tokens/test/source-table.test.ts:50:36
+     48|       Object.fromEntries(themed.map((token) => [token.name, comparable…
+     49|     const expected = Object.fromEntries(themed.map((token) => [token.n…
+     50|     expect(dark(sheet.darkSystem)).toEqual(expected);
+       |                                    ^
+     51|     expect(dark(sheet.darkAttribute)).toEqual(expected);
+     52|     expect([...sheet.darkSystem.entries()]).toEqual([...sheet.darkAttr…
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[1/2]⎯
+
+ FAIL  |tokens-source-table| packages/tokens/test/source-table.test.ts > the JSON export from the real source > gives each token its group, its resolved value per theme (or its one value) and its references
+AssertionError: expected { 'color-canvas': { …(4) }, …(114) } to deeply equal { 'color-canvas': { …(4) }, …(114) }
+
+- Expected
++ Received
+
+@@ -289,11 +289,11 @@
+      "group": "motion",
+      "ref": undefined,
+      "value": "cubic-bezier(0.22, 1, 0.36, 1)",
+    },
+    "elevation-bar": {
+-     "dark": "none",
++     "dark": "",
+      "group": "elevation",
+      "light": "0 -6px 16px rgb(21 19 15 / 0.05)",
+      "ref": undefined,
+    },
+    "elevation-raised": {
+
+ ❯ packages/tokens/test/source-table.test.ts:95:20
+     93|       }),
+     94|     );
+     95|     expect(actual).toEqual(expected);
+       |                    ^
+     96|   });
+     97| });
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[2/2]⎯
+
+
+ Test Files  1 failed | 11 passed (12)
+      Tests  2 failed | 135 passed (137)
+   Start at  13:46:48
+   Duration  1.37s (import 48%, tests 28%, transform 21%, worker 4%)
+
+# exit 1

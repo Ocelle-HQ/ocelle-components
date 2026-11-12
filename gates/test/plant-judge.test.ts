@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { judgePlant, parsePlant } from "../lib/plant-judge.ts";
-import type { Plant, PlantRun } from "../lib/plant-judge.ts";
+import type { ExpectedReport, Plant, PlantRun } from "../lib/plant-judge.ts";
 
 // The plant verdict at the edges (FR-025, research.md R-10, data-model.md § Plant; phase 4 review round 1, R1-06):
 // plant.json values that are empty or of the wrong type, output lines that are not findings of the gate, findings
@@ -145,5 +145,151 @@ describe("judgePlant: error plants and their cause (phase 4 round 5, O5-01)", ()
 
   it("keeps the exit problem for any exit other than 2", () => {
     expect(judgePlant("g", plant, run(1, [], ["g: could not run: does not resolve to a commit"]))).toBe("expected exit 2 (could not run), got exit 1");
+  });
+});
+
+// 007 User Story 1 (spec FR-005, FR-008; research R-02; data-model § Plant): the mutation gate's report lines (rules
+// `timeout`, `compile-error` and `zero-mutants`, beside `record`) are never findings of a mutation run. A mutation
+// pass or fail plant may list the report lines it expects in `reports`, compared with the run's report lines as a
+// multiset, by location and rule (and the message substring when given); `records` compares only `record` lines; and
+// `reports` on a plant of another gate is a problem.
+describe("parsePlant: reports (007 research R-02)", () => {
+  it("reads reports of a pass plant and of a fail plant, with and without a message", () => {
+    const reports = [
+      { location: "a.ts:3", rule: "timeout", message: "StringLiteral" },
+      { location: "a.ts:61-120", rule: "zero-mutants" },
+      { location: "b.ts:2", rule: "compile-error" },
+    ];
+    expect(parsePlant(JSON.stringify({ expect: "pass", why: "w", reports }))).toEqual({ expect: "pass", why: "w", reports });
+    expect(parsePlant(JSON.stringify({ expect: "pass", why: "w", reports: [] }))).toEqual({ expect: "pass", why: "w", reports: [] });
+    const fail = { expect: "fail", why: "w", findings: [{ location: "a", rule: "r" }], reports };
+    expect(parsePlant(JSON.stringify(fail))).toEqual(fail);
+  });
+
+  it.each([
+    { plant: { expect: "pass", why: "w", reports: {} }, problem: "reports must be a list" },
+    { plant: { expect: "pass", why: "w", reports: [{ location: "a", rule: "record" }] }, problem: "reports[0] needs a location and a rule: timeout, compile-error or zero-mutants" },
+    { plant: { expect: "pass", why: "w", reports: [{ location: "a", rule: "timeout" }, { location: "", rule: "timeout" }] }, problem: "reports[1] needs a location and a rule: timeout, compile-error or zero-mutants" },
+    { plant: { expect: "pass", why: "w", reports: [{ location: "a", rule: "Timeout" }] }, problem: "reports[0] needs a location and a rule: timeout, compile-error or zero-mutants" },
+    { plant: { expect: "pass", why: "w", reports: [null] }, problem: "reports[0] needs a location and a rule: timeout, compile-error or zero-mutants" },
+    { plant: { expect: "pass", why: "w", reports: [{ location: "a", rule: "timeout", message: 3 }] }, problem: "reports[0].message must be a string" },
+    { plant: { expect: "error", why: "w", cause: "c", reports: [] }, problem: "only a pass or fail plant lists reports" },
+    { plant: { expect: "pass", why: "w", reportz: [] }, problem: "unknown key reportz" },
+  ])("rejects $plant", ({ plant, problem }) => {
+    expect(parsePlant(JSON.stringify(plant))).toBe(problem);
+  });
+});
+
+describe("judgePlant: report lines of a mutation run (007 research R-02)", () => {
+  const timeout = "a.ts:3: mutation: timeout: StringLiteral: replaced by \"\"";
+  const compile = "a.ts:5: mutation: compile-error: ArrayDeclaration: replaced by []";
+  const zero = "b.ts:61-120: mutation: zero-mutants: no mutant on the changed lines";
+  const record = "a.ts:7: mutation: record: all: equivalent";
+  const summary = "mutation: 2 mutants on the changed lines of 2 files, none survived; 1 timeout, 1 compile error, 1 zero-mutant entry; 1 equivalent record";
+  const reports: readonly ExpectedReport[] = [
+    { location: "a.ts:3", rule: "timeout" },
+    { location: "a.ts:5", rule: "compile-error", message: "ArrayDeclaration" },
+    { location: "b.ts:61-120", rule: "zero-mutants" },
+  ];
+
+  it("passes a pass plant without reports or records on a run with report lines: they are not findings", () => {
+    expect(judgePlant("mutation", { expect: "pass", why: "w" }, run(0, [timeout, compile, zero, summary]))).toBeUndefined();
+  });
+
+  it("passes a pass plant with records on a run that also has report lines: records compares record lines only", () => {
+    const plant: Plant = { expect: "pass", why: "w", records: [{ location: "a.ts:7", mutator: "all", reason: "equivalent" }] };
+    expect(judgePlant("mutation", plant, run(0, [record, timeout, compile, zero, summary]))).toBeUndefined();
+  });
+
+  it("passes a pass plant with reports and no records on the matching run, in any line order", () => {
+    expect(judgePlant("mutation", { expect: "pass", why: "w", reports }, run(0, [zero, timeout, record, compile, summary]))).toBeUndefined();
+  });
+
+  it("checks an empty reports list: any report line is unexpected", () => {
+    expect(judgePlant("mutation", { expect: "pass", why: "w", reports: [] }, run(0, [summary]))).toBeUndefined();
+    expect(judgePlant("mutation", { expect: "pass", why: "w", reports: [] }, run(0, [zero, summary]))).toBe("reports differ: unexpected b.ts:61-120 zero-mutants");
+  });
+
+  it("fails on a missing report line", () => {
+    expect(judgePlant("mutation", { expect: "pass", why: "w", reports }, run(0, [timeout, zero, summary]))).toBe("reports differ: missing a.ts:5 compile-error");
+  });
+
+  it("fails on an unexpected report line", () => {
+    const extra = "c.ts:9: mutation: timeout: BooleanLiteral: replaced by false";
+    expect(judgePlant("mutation", { expect: "pass", why: "w", reports }, run(0, [timeout, extra, compile, zero, summary]))).toBe(
+      "reports differ: unexpected c.ts:9 timeout",
+    );
+  });
+
+  it("counts report lines as a multiset: a duplicated line needs two entries, and two entries need two lines", () => {
+    const plant: Plant = { expect: "pass", why: "w", reports };
+    expect(judgePlant("mutation", plant, run(0, [timeout, timeout, compile, zero, summary]))).toBe("reports differ: unexpected a.ts:3 timeout");
+    const twice: Plant = { expect: "pass", why: "w", reports: [...reports, { location: "a.ts:3", rule: "timeout" }] };
+    expect(judgePlant("mutation", twice, run(0, [timeout, compile, zero, summary]))).toBe("reports differ: missing a.ts:3 timeout");
+    expect(judgePlant("mutation", twice, run(0, [timeout, compile, timeout, zero, summary]))).toBeUndefined();
+  });
+
+  it("names every missing and unexpected report line, each as often as it is off", () => {
+    const plant: Plant = { expect: "pass", why: "w", reports: [{ location: "a.ts:3", rule: "timeout" }, { location: "a.ts:3", rule: "timeout" }, { location: "a.ts:5", rule: "compile-error" }] };
+    expect(judgePlant("mutation", plant, run(0, [zero, zero, summary]))).toBe(
+      "reports differ: missing a.ts:3 timeout, a.ts:3 timeout, a.ts:5 compile-error; unexpected b.ts:61-120 zero-mutants, b.ts:61-120 zero-mutants",
+    );
+  });
+
+  it("fails when no report line with the location and rule holds the expected message", () => {
+    const plant: Plant = { expect: "pass", why: "w", reports: [{ location: "a.ts:5", rule: "compile-error", message: "ObjectLiteral" }] };
+    expect(judgePlant("mutation", plant, run(0, [compile, summary]))).toBe('report a.ts:5 compile-error lacks "ObjectLiteral"');
+    const located: Plant = { expect: "pass", why: "w", reports: [{ location: "a.ts:3", rule: "timeout", message: "ArrayDeclaration" }] };
+    expect(judgePlant("mutation", located, run(0, [timeout, summary]))).toBe('report a.ts:3 timeout lacks "ArrayDeclaration"');
+  });
+
+  it("needs one line per expected message, a line holding the message counted once", () => {
+    const other = "a.ts:3: mutation: timeout: BooleanLiteral: replaced by false";
+    const plant: Plant = {
+      expect: "pass",
+      why: "w",
+      reports: [
+        { location: "a.ts:3", rule: "timeout", message: "StringLiteral" },
+        { location: "a.ts:3", rule: "timeout", message: "StringLiteral" },
+      ],
+    };
+    expect(judgePlant("mutation", plant, run(0, [timeout, other, summary]))).toBe('report a.ts:3 timeout lacks "StringLiteral"');
+    expect(judgePlant("mutation", plant, run(0, [timeout, timeout, summary]))).toBeUndefined();
+    const mixed: Plant = { expect: "pass", why: "w", reports: [{ location: "a.ts:3", rule: "timeout" }, { location: "a.ts:3", rule: "timeout", message: "BooleanLiteral" }] };
+    expect(judgePlant("mutation", mixed, run(0, [other, timeout, summary]))).toBeUndefined();
+  });
+
+  it("needs the message in a line of the expected location and rule, not in another report line", () => {
+    const plant: Plant = { expect: "pass", why: "w", reports: [{ location: "a.ts:3", rule: "timeout", message: "ArrayDeclaration" }, { location: "a.ts:5", rule: "compile-error" }] };
+    expect(judgePlant("mutation", plant, run(0, [timeout, compile, summary]))).toBe('report a.ts:3 timeout lacks "ArrayDeclaration"');
+  });
+
+  it("checks reports after matching records on a pass plant with both", () => {
+    const plant: Plant = { expect: "pass", why: "w", records: [{ location: "a.ts:7", mutator: "all", reason: "equivalent" }], reports: [] };
+    expect(judgePlant("mutation", plant, run(0, [record, summary]))).toBeUndefined();
+    expect(judgePlant("mutation", plant, run(0, [record, timeout, summary]))).toBe("reports differ: unexpected a.ts:3 timeout");
+    expect(judgePlant("mutation", plant, run(0, [timeout, summary]))).toBe('records differ: missing a.ts:7 all "equivalent"');
+  });
+
+  it("judges a fail plant's findings and its report lines, the report lines never findings", () => {
+    const survivor = "a.ts:4: mutation: StringLiteral: Survived: replaced by \"\"";
+    const failSummary = "mutation: 1 finding in 1 changed file (2 mutants on changed lines; 1 timeout, 0 compile errors, 0 zero-mutant entries)";
+    const findings = [{ location: "a.ts:4", rule: "StringLiteral", message: "Survived" }];
+    const plant: Plant = { expect: "fail", why: "w", findings, reports: [{ location: "a.ts:3", rule: "timeout" }] };
+    expect(judgePlant("mutation", plant, run(1, [timeout, survivor, failSummary]))).toBeUndefined();
+    expect(judgePlant("mutation", plant, run(1, [survivor, failSummary]))).toBe("reports differ: missing a.ts:3 timeout");
+    expect(judgePlant("mutation", plant, run(1, [timeout, failSummary]))).toBe("findings differ: missing a.ts:4 StringLiteral");
+    expect(judgePlant("mutation", { expect: "fail", why: "w", findings }, run(1, [timeout, compile, zero, record, survivor, failSummary]))).toBeUndefined();
+  });
+
+  it("does not count report lines as findings of a mutation run on an unexpected exit", () => {
+    expect(judgePlant("mutation", { expect: "pass", why: "w" }, run(1, [timeout, zero, summary]))).toBe("expected exit 0 with no finding, got exit 1");
+  });
+
+  it("rejects reports on a plant of another gate, and counts that gate's report-rule lines as findings", () => {
+    expect(judgePlant("lint", { expect: "pass", why: "w", reports: [] }, run(0, ["x: lint: ok"]))).toBe("reports are only for plants of the mutation gate");
+    const fail: Plant = { expect: "fail", why: "w", findings: [{ location: "a.ts:3", rule: "timeout" }], reports: [] };
+    expect(judgePlant("g", fail, run(1, ["a.ts:3: g: timeout: m"]))).toBe("reports are only for plants of the mutation gate");
+    expect(judgePlant("g", { expect: "pass", why: "w" }, run(0, ["a.ts:3: g: zero-mutants: m"]))).toBe("expected exit 0 with no finding, got exit 0 (a.ts:3 zero-mutants)");
   });
 });

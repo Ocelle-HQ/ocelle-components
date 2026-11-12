@@ -1,0 +1,21 @@
+# History fold phase-1 of claude/023-mutation-gate-strictness: old commit -> new commit (pre-fold head kept as refs/ocelle/prefold/phase-1/claude/023-mutation-gate-strictness, 575c367d7921d0af8455d287a0fa03599f00db22).
+575c367d7921d0af8455d287a0fa03599f00db22 4917a22512facd2115824a120f0f8af807085a80
+
+# History fold phase-2 of claude/023-mutation-gate-strictness: old commit -> new commit (pre-fold head kept as refs/ocelle/prefold/phase-2/claude/023-mutation-gate-strictness, 40805b91e551cd9a87f303054b84a6bb0006ebda).
+aafeb283818b7f81633f443b744fc02993fc994a a4b3222c73d7e0e17194bca1077ae9f2965d91d9
+8b3a31135b5d7d4685488916d5112522c85c506d 6351832504da2f4ce375e3831da64ba7b5532753
+40805b91e551cd9a87f303054b84a6bb0006ebda 7ac1840c2d2051a8479581be44b8708e86c0299a
+
+# History fold phase-3 of claude/023-mutation-gate-strictness: old commit -> new commit (pre-fold head kept as refs/ocelle/prefold/phase-3/claude/023-mutation-gate-strictness, 0faa0077e23a86baeebdf92838e18628568c533a).
+6906cebc6eb785e909011695f06aa198386582c3 4100cdcf42433c4ed73aa2b5f155f120d326bf96
+b693daf7a87687db2e200b772f3cbad9e924ebfd 3894d2b671f3da987f493786dc4d297699a54deb
+75e6f441d737db437e07f98fe7b8b9fb3c93e9de 6ae71546ae2a443f1cb09aedc21f249b8f540b48
+4b3279a77492fafb6e78c8737ec6f6be940f3e9d 849b5a0ef8d30d552649500710d57a8d08542918
+0faa0077e23a86baeebdf92838e18628568c533a 04ed8e3a821cd1ffdb192f1a5af11de4add26341
+
+# History fold landing of claude/023-mutation-gate-strictness: old commit -> new commit (pre-fold head kept as refs/ocelle/prefold/landing/claude/023-mutation-gate-strictness, a6c770adf5270728a8363f121e32843dd0522789).
+38f830510076156d516ccae9a14fd14e951758a6 48c7941963c774ca49debbc5d778101a4c75b833
+e17d9ed8969ed9ac94943f84cc50eed906083ca8 20a5bd15f4e06f232a986d9ac32afcd04a43604b
+7686530fa844fd71095fce758f89674b729ca126 e90a690fd85ef15baf4e7ff5963e31b0ce21021e
+907039ff9886121b742b677c6cc67ddcd527da75 6c24892fb0c305091a6a81ffba630503d2dcfead
+a6c770adf5270728a8363f121e32843dd0522789 52d24d9254d1176dda3bb0b83d6b6bbb1d1b8efe

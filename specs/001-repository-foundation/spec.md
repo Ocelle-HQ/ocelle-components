@@ -269,6 +269,18 @@ in this feature depends on it.
     A changed file the tool read but its report does not list counts as zero mutants, so a change with no mutable
     code (type-only or comment-only) passes (operator decision, PR #18 landing review, human:jeroennouwsdev,
     2026-11-03: "Guard the input instead (Recommended)").
+  - **Amendment, 2026-11-10 (mission 007, `specs/007-mutation-gate-strictness/` FR-001 to FR-008, FR-015):** the
+    text above stands, verdicts included; mutation testing additionally MUST report, in a passing and in a failing
+    run, what no test was seen killing on changed lines: every Timeout mutant and every CompileError mutant on a
+    changed line, one line each naming its path, start line, mutator and replacement, and every zero-mutant entry
+    (an entry of the run with no mutant on its changed lines, named as the run holds it: its path in a whole-diff
+    run, its `--files` entry as given in a shard run), and its summary counts the three, also when zero. These
+    report lines are not findings and change no exit code. The operator's three answers (human:jeroennouwsdev,
+    2026-11-10): a Timeout on a changed line is reported and still passes ("Report, still pass (Recommended)"; a
+    timeout stays a kill); a CompileError on a changed line is reported and still passes ("Report, still pass
+    (Recommended)"; the 2026-11-02 amendment stands); a changed file with no mutant on its changed lines is reported
+    and still passes (triage gate, approved by the operator). A `--files` list that names one file more than once
+    ends the run as "could not run" (operator decision, plan squad round 1, PLAN-CORRECTNESS-1-005 (a)).
 - **FR-012**: A surviving mutant MAY be recorded as equivalent only with a written reason, kept next to the mutated
   code. The mutation report MUST list every such record in the changed code, with its location and reason, so the
   review can see and record it.
@@ -293,6 +305,16 @@ in this feature depends on it.
   pass, and the mutation testing check MUST fail unless every shard passes; the 10-minute limit is not raised
   (operator decision, plan squad round 2: the bound covers gate source and applies to a shard, not to the whole
   pull request).
+  - **Amendment, 2026-11-11 (mission 007, `specs/007-mutation-gate-strictness/` FR-014, FR-015):** the text above
+    stands except for the entry bound, which is now 30 changed lines, for every file: a file with more than 30
+    changed lines MUST be split by line range into entries of at most 30 changed lines each, so no shard holds more
+    than 30 changed lines of one file. The other bounds are unchanged (at most 10 entries and 250 changed lines per
+    shard; two entries of one file never share a shard; the cut limit and its count). Operator decision,
+    human:jeroennouwsdev, 2026-11-11, "30-line entries, all files"
+    (`specs/007-mutation-gate-strictness/reviews/phase-3/operator-decision-fr014.md`): with the TypeScript checker
+    on, three of the four 60-line entries of `packages/tokens/src/source.ts` took 188 s, 251 s and 283 s on the
+    sandbox against mission 007's bound of 176 s, after the token tests were moved first and no `concurrency` value
+    helped.
 
 **Merge gates (Story 3)**
 
@@ -500,6 +522,9 @@ in this feature depends on it.
   separate shards by operator decision, phase 3 round 10, human:jeroennouwsdev, 2026-11-03) finishes in under 10 minutes on the runner of
   SC-001, with the package store and browser cache restored and no earlier mutation result available. Each shard job's 10-minute limit (FR-013)
   enforces it (operator decision, plan squad round 2).
+  - **Amendment, 2026-11-11 (mission 007, FR-014, FR-015):** "no entry over 60 changed lines of one file" above
+    reads "no entry over 30 changed lines of one file" (operator decision, human:jeroennouwsdev, 2026-11-11,
+    "30-line entries, all files"; FR-013's amendment of the same date gives the reason); the rest stands.
 - **SC-006**: A script run in a fresh clone confirms that `LICENSE`, `CONTRIBUTING.md`, `SECURITY.md` and
   `THIRD_PARTY_NOTICES` exist at the repository root under exactly these names, that `CONTRIBUTING.md` contains the
   sign-off rule (`Signed-off-by`, `git commit -s`), that `CODEOWNERS` exists and names `@MOES-Media` as the only

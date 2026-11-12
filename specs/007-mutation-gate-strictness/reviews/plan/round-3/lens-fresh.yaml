@@ -1,0 +1,78 @@
+schema: review-findings/v1
+complete: true
+phase: plan
+round: 3
+lens: fresh
+findings:
+  - id: PLAN-FRESH-3-001
+    severity: 3
+    title: "Under lever 1 the first failing token test is likely build.test.ts's child-process build, which fails for every static source.ts mutant, so FR-011 criterion 3 (killedBy is a source-table test) fails and escalates to levers 2 and 3"
+    evidence:
+      - artifact: "research.md § R-06 FR-011's per-mutant record, criterion 3: \"`killedBy` is one of the named value/group tests of `packages/tokens/test/source-table.test.ts` ... a kill by any other test does not meet criterion 3\"; and \"A mutant that fails criterion 1, 2 or 3 does not meet FR-011 and is handled like a remaining Timeout (the next lever).\" § R-05: \"Within a group the default sequencer still applies.\" § R-06 also says `killedBy` names only the first failing test (bail 1)."
+      - code: "packages/tokens/test/build.test.ts:78-87, \"node scripts/build.ts <out>\" / \"writes exactly css() to tokens.css and JSON.stringify(json()) to tokens.json\": it spawns `node scripts/build.ts` as a child process (`execFile`), then asserts `readFileSync(out/tokens.css) toBe css(source)` with `css(source)` computed in the test worker."
+      - code: "@stryker-mutator/vitest-runner 10.1.1 dist/src/stryker-setup.js: a static mutant is activated only through `globalThis[globalNamespace].activeMutant = inject('activeMutant')` inside the Vitest worker. The instrumenter header (`@stryker-mutator/instrumenter` dist/src/util/syntax-helpers.js:17-18) falls back to `process.env.__STRYKER_ACTIVE_MUTANT__`, but grep finds that variable set only in core's `command-test-runner.js`, not by the Vitest runner. gates/lib/mutation/coverage.ts `strykerEnv` adds only the coverage-record preload. So the child build runs the instrumented source.ts with no active mutant, and its output is the unmutated one."
+      - code: "Consequence, read from the two facts above: for every static source.ts mutant that changes css(source) (every group B and C value mutant), the in-process css(source) is mutated and the child's tokens.css is not, so this test fails with an expect mismatch. The test does not compare with expected.ts. It would fail just as well for an equivalent mutant. Op 004 never saw it kill because the tokens project ran last (its kills: 545 contrast.test.ts, 10 stories.test.ts, 5 brand-rules.test.ts, op 004 mutation/README.md § Final source). Op 004's by-hand runs edited the file on disk, so the child was mutated too and the test passed (§ Timeouts table: only source-table and story tests failed)."
+      - code: "vitest 5.0.5 dist/chunks/index.1TqnEahn.js BaseSequencer.sort (:7787-7791): inside one groupOrder and one project, files that failed before come first, then the longest recorded duration. build.test.ts starts two Node child processes (:81, :92), so it is a likely longest token file. Once it has failed on one mutant, it is a 'failed' file and goes first again. No Vitest results cache exists in the checkout (`find node_modules/.vite* -name results.json`: none), so the order is not known before the green runs."
+    claim: |
+      Lever 1 moves the whole tokens project ahead of the other projects. It does not decide which token file runs
+      first, and one token file, build.test.ts, fails under Stryker for every static source.ts mutant that changes the
+      stylesheet. The reason is how Stryker activates mutants: the build child process never sees the active mutant.
+      With bail 1, `killedBy` for the former group B and C Timeouts then names "node scripts/build.ts <out> writes
+      exactly css() ..." whenever that file runs before source-table.test.ts, which is likely and not controlled.
+      Criterion 3 fails for those mutants. R-06 then treats them as remaining Timeouts, and the plan escalates to
+      lever 2 (concurrency) and lever 3 (an FR-014 amendment of 001 FR-013). Neither lever can change which token test
+      runs first, so the mission either gets stuck or amends 001 for no time reason. This is the same dead end as
+      PLAN-FRESH-2-001, from a new cause. Accepting the build.test kill instead would not meet spec FR-011 (an
+      assertion about the record's value or group, `vacuous-tests.md`). That test kills by an artefact of mutant
+      activation and would kill an equivalent mutant too.
+    remedies:
+      - "(a) Make source-table.test.ts the first token file in Stryker's runs, in vitest.mutation.config.ts only. Use the custom-sequencer fallback that R-05 already names inside lever 1 (gate-tested), or a mutation-only split of the tokens project that puts source-table.test.ts at groupOrder 1 and the rest of tokens at 2, with the config assertion of R-05 restated. Extend the behavioural red test so that it asserts source-table.test.ts starts before any other module, build.test.ts included. Also state the child-process mechanism in R-05."
+      - "(b) Keep lever 1 as designed. Restate criterion 3 so that a kill by build.test.ts's 'node scripts/build.ts <out>' test is accepted only for a mutant whose by-hand application (FR-011) makes the named source-table test fail, applied per mutant and not one per group. State in R-06 why that test is not by itself a kill on the record's value (the unmutated child process). A failure caused only by test order never triggers lever 2 or 3."
+
+  - id: PLAN-FRESH-3-002
+    severity: 2
+    title: "The reviewer sentence goes into two command copies, but the phase reviewer runs a third tracked copy, the generated SKILL.md, which keeps the old text; the lander is another reader"
+    evidence:
+      - artifact: "plan.md § Technical Context, Scale/Scope: \"one sentence in both copies of the story review command (`.specify/extensions/story/commands/` and `tooling/speckit/extensions/story/commands/` `speckit.story.review.md`)\"; research.md § R-08; contracts/mutation-output.md § Readers: \"No other reader of gate output exists in the repository\""
+      - code: "`git ls-files` lists `.specify/extensions/story/.specify-dev/agent-commands/claude/speckit-story-review/SKILL.md` and `.claude/skills/speckit-story-review/SKILL.md`. The second is a tracked symlink to the first (`ls -la`). Its front matter says `source: story:commands/speckit.story.review.md`. `diff` against the command shows only the front matter and the final newline differ, and :46-50 holds the same `gate:mutation` paragraph (\"A surviving mutant in new or changed code is blocking ...\")."
+      - code: ".claude/skills/ocelle-land/SKILL.md:117-120: the landing pass runs `gate:mutation -- --base <merge-base> --files <changed source>` locally and reads its output. contracts/mutation-output.md § Readers does not list it."
+    claim: |
+      The phase reviewer agent loads `.claude/skills/speckit-story-review/SKILL.md`, a generated copy that editing the
+      command files does not regenerate. So the planned FR-005 sentence ("timeout, compile-error and zero-mutants lines
+      are reports to read, not blocking findings") never reaches the reader that it is meant for. The three tracked
+      texts would also drift apart. The § Readers claim "no other reader exists" is false for the landing skill too. That skill
+      runs the gate with `--files` by hand, and the new exit-2 cause for a file named twice (R-03) applies to that run.
+      This does not build the wrong gate, but it leaves the round 1 fix (PLAN-CORRECTNESS-1-012) incomplete.
+    remedies:
+      - "plan.md Scale/Scope, the Structure tree, research.md R-08 and contracts § Readers: add `.specify/extensions/story/.specify-dev/agent-commands/claude/speckit-story-review/SKILL.md` (reached through the `.claude/skills/speckit-story-review/SKILL.md` symlink) as the third copy that gets the same sentence, or name the command that regenerates it and run it. List `.claude/skills/ocelle-land/SKILL.md` as a reader, saying whether it needs a sentence (report lines are not findings; one `--files` entry per file)."
+
+  - id: PLAN-FRESH-3-003
+    severity: 2
+    title: "The new plant.json key `reports` and the new judge rules change 001's plant contract, but neither 001 contracts/plants.md nor 001 data-model.md § Plant is in the records"
+    evidence:
+      - artifact: "research.md § R-08 and plan.md Scale/Scope amend 001 `spec.md`, `contracts/gate-cli.md`, `data-model.md` § Finding and `gates/README.md`. spec FR-015 lists 001 FR-011, FR-013/SC-005 and the gate-cli and README mutation rows. research.md § R-02 adds the optional key `reports`, changes what `records` compares, rejects `reports` on non-mutation plants, and adds the plants `pass-zero-mutant` and `error-zero-mutant-failing-test`."
+      - code: "specs/001-repository-foundation/contracts/plants.md:4 fixes the plant.json shape `{\"expect\", \"why\", \"findings\", \"records\", \"cause\", \"base\"}`. :49 has the mutation row: pass and breaking plants, the breaking ones only 'a `--base` that does not resolve'. :62-63: the plant job fails when 'a `pass` plant's gate does not exit 0 with no finding (and the expected records)'."
+      - code: "specs/001-repository-foundation/data-model.md:20-35 § Plant: a field table with `records` 'mutation `pass` only' and no `reports`. The state rule 'accepted when the gate exits 0 on a `pass` plant with no finding (and, where given, exactly the expected `records`)'. Neither knows a fail plant's report lines. gates/lib/plant-judge.ts:36 `const keys = new Set([\"expect\", \"why\", \"findings\", \"records\", \"cause\", \"base\"])` implements that contract."
+    claim: |
+      After this mission the judge accepts a key, and judges pass and fail plants by a rule, that 001's plant
+      contract and data model do not describe. The mutation row of plants.md would also list neither the new
+      zero-mutant pass plant nor the second breaking plant. 001's spec-kit artifacts are the contract that later
+      missions read, and FR-015's purpose is that the 001 records stay true after 007. These two are left stale.
+    remedies:
+      - "research.md R-08 and plan.md Scale/Scope (and the Structure tree): add a dated 007 amendment to 001 `contracts/plants.md` (the plant.json shape with `reports`; the mutation row's new pass and breaking plants; the plant-job failure rule for `reports` on pass and fail plants) and to 001 `data-model.md` § Plant (a `reports` field row, mutation `pass` and `fail` only; the caught and accepted state rules)."
+
+  - id: PLAN-FRESH-3-004
+    severity: 1
+    title: "Lever 1's cost is analysed only for other files; about 170 of source.ts's own current kills (contrast fields and ground lists) are made only by gates/contrast.test.ts and now wait behind the whole tokens project"
+    evidence:
+      - artifact: "research.md § R-05: \"Cost for other files: a static mutant of another file now runs the token tests first (seconds) ...\"; FR-013's per-mutant guard applies only to the generate.ts and wcag.ts reference entries (R-06)."
+      - code: "Probe: python over ops/004-token-source-mutation/mutation/entry-*.json. Every source.ts kill in entries 1-60 and 61-120 is by `gates/test/contrast.test.ts`. Of these, 55 + 96 are on a line holding `contrast` or `grounds` and 19 on the ground arrays (source.ts:13-27). The JSON export has no contrast field (packages/tokens/test/json.test.ts 'has no use or contrast field'), and source-table.test.ts asserts values, groups and refs only (:39, :45, :76). So no token test is expected to kill these mutants, though validate.test.ts 'accepts the real source' may kill some."
+      - code: "op 004 README: today `contrast.test.ts` is 'the fourth test the run reaches'. Under lever 1 it comes after every tokens file, build.test.ts's two child Node processes included, within the same ≈32 s limit."
+    claim: |
+      Entries 1-60 and 61-120 have no Timeouts today (58 s and 65 s, op 004) because their mutants die at the fourth
+      file. Lever 1 puts the whole tokens project in front of them. The plan does not say so, and it has no per-mutant
+      Killed-before / Timeout-after check for source.ts itself. FR-009's 'zero Timeouts' still catches the outcome, so
+      the gap is in the analysis and in diagnosis: a new Timeout in 1-60 would show only as 'lever 1 missed', with no
+      record that lever 1 caused it, and the plan would move to lever 2.
+    remedies:
+      - "R-05: state the cost for source.ts's own contrast-killed mutants. R-06: give the source.ts entries the same per-mutant red/green comparison as the FR-013 reference entries (key, Killed → Timeout move, re-run rule), recorded in the evidence README, so a Timeout that lever 1 causes is named as such before lever 2 is tried."

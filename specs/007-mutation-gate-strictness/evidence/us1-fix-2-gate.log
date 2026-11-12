@@ -1,0 +1,2 @@
+$ node gates/bin/mutation.ts -- --base e17d9ed8969ed9ac94943f84cc50eed906083ca8
+mutation: 1 mutant on the changed lines of 1 file, none survived; 0 timeouts, 0 compile errors, 0 zero-mutant entries; 0 equivalent records

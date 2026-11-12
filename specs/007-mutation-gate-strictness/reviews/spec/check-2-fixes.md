@@ -1,0 +1,13 @@
+# Spec check 2 — fixes
+
+| ID | Resolution | Where |
+|----|------------|-------|
+| SPEC-2-01 | fixed | spec.md FR-011 (rewritten: after the change every former op 004 Timeout mutant ends as Killed, with a killing test asserting on the record's value or group, or as CompileError only where the red run of FR-011a already has it so, expected for group A; statuses before and after are recorded; the by-hand check is for one Killed mutant per group that has one, and not for a CompileError group A mutant), US2 intro and AS4, SC-003, FR-012 (`Group`, `TokenRecord` and the `tokenRecords` signature are neither loosened to turn CompileErrors into kills nor tightened to turn Timeouts into CompileErrors). The tightening clause goes beyond the Fix column: without it, a narrower type could reach zero Timeouts by stopping tests from running on group B or C mutants. |
+| SPEC-2-02 | fixed | spec.md FR-011a, US2 intro: an entry whose red run already meets FR-009 to FR-011 needs no change, its green evidence is that run plus the CI measurement; if every entry does, US2 delivers evidence only and changes no code. |
+| SPEC-2-03 | fixed | spec.md FR-005: "the CI annotation" dropped; the readers named are the plant judge and any reader parsing the `path:line: gate: rule: message` format of 001 contracts/gate-cli.md. |
+| SPEC-2-04 | fixed | spec.md FR-001, US1 AS1: "on a changed line" is the findings' overlap rule, and the line named is the mutant's start line, as in findings. |
+| SPEC-2-05 | fixed | spec.md FR-013: the plant-job time clause is dropped; FR-013 relies on the plant verdicts and the before/after measurement runs. |
+| SPEC-2-06 | fixed | spec.md FR-008, Edge Cases: the zero-mutant case is also proven on a real Stryker run in which no entry has any mutant (plant or integration test), and such a run passes with every entry a zero-mutant entry. The spec now requires AS3 on the real gate instead of leaving it to the plan. |
+| SPEC-2-07 | fixed | spec.md Assumptions "CI measurement": the evidence records which entries each `source.ts` shard held; a mixed shard that misses 480 s is re-measured on CI with the `source.ts` entry alone (the plan says how), and that time decides. |
+| SPEC-2-08 | disputed: the feature's git branch is `claude/023-mutation-gate-strictness` (`git branch --show-current`); only the directory is `007-mutation-gate-strictness`. The header keeps the branch and now also names the feature directory. | spec.md header "Feature Branch" |
+| SPEC-2-09 | fixed | spec.md FR-011a: a configuration-only lever takes its red evidence from the FR-011a runs under the Principle VIII exemption, its review stating why no test could fail; any test change still goes red first. |

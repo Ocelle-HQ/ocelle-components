@@ -25,13 +25,16 @@ plant.
 | `expect` | `plant.json` | `fail` (a planted defect), `pass` (a near-miss or clean input the gate must accept) or `error` (a breaking plant: an input the gate cannot process) |
 | `why` | `plant.json` | the defect, near-miss or breakage, in one sentence, naming the FR |
 | `findings` | `plant.json`, `fail` only | the exact list of expected findings: `location` and `rule` (as in § Finding, `location` relative to the plant; for a `repo-tree` or `mutation-repo` plant relative to the temporary repository, that is the repository path below `tree/` or `head/`; for a `commit-repo` plant `commit:<n>`, the n-th record of `commits.txt`), and optionally `message`, a substring the finding's message must contain |
-| `records` | `plant.json`, mutation `pass` only | the expected equivalent-mutant records: `location`, `mutator`, `reason` |
+| `records` | `plant.json`, mutation `pass` only | the expected equivalent-mutant records: `location`, `mutator`, `reason`; compared with the run's `record` lines only (amendment 2026-11-10, mission 007) |
+| `reports` | `plant.json`, optional, mutation `pass` and `fail` only (amendment 2026-11-10, mission 007, research R-02) | the expected report lines: `location`, `rule` (`timeout`, `compile-error` or `zero-mutants`) and optionally `message`, a substring the line's message must contain; compared with the run's report lines as a multiset (missing, unexpected and duplicated lines all fail); when absent, report lines are not checked; on an `error` plant or a plant of another gate an invalid `plant.json` |
 | `cause` | `plant.json`, `error` only, required | a non-empty string: a substring of the cause line the gate must print on its error output (stderr) when it exits 2 on this plant, for example a part of the unresolvable-base message for `mutation/error-unresolvable-base`; an `error` plant without it, or `cause` on a `fail` or `pass` plant, is an invalid `plant.json` (operator decision, PR #18 landing review, human:jeroennouwsdev, 2026-11-03: "Breaking plants check the cause of exit 2, not just the code"; landing note L1-04, phase 4 round 5 O5-01) |
 | `base` | `plant.json`, optional, `fail` or `error` only (a `pass` plant with `base` is an invalid `plant.json`, since a base such as the temporary repository's head would make it pass vacuously; operator decision, PR #18 landing review, human:jeroennouwsdev, 2026-11-03: "pass plants may not set 'base'"; landing note L1-05, phase 4 round 5 O5-02) | a non-empty string: the base the plant presents to its gate, which the plant runner puts in place of `{base}` in the gate's plant command instead of the temporary repository's base commit (`gates/lib/plant-runner.ts` `plantValues`); a `workspace` plant has no `{base}`, so it has no effect there. Used by the mutation breaking plant `gates/plants/mutation/error-unresolvable-base/` (`refs/heads/no-such-base`, a `--base` that does not resolve). An input of the gate, like the plant's files, not gate configuration (operator decision, phase 4 round 2 note R2-02, feature gate, human:jeroennouwsdev, 2026-11-03: "Planner adds it now") |
 
 State: a plant is **caught** when the gate exits 1 on a `fail` plant and its findings, compared as a set of
-(`location`, `rule`) with each given `message` substring present, equal `findings`; **accepted** when the gate exits
-0 on a `pass` plant with no finding (and, where given, exactly the expected `records`); **reported broken** when the
+(`location`, `rule`) with each given `message` substring present, equal `findings` (and, where given, exactly the
+expected `reports`; amendment 2026-11-10, mission 007); **accepted** when the gate exits
+0 on a `pass` plant with no finding (and, where given, exactly the expected `records` and `reports`; the mutation
+gate's `record`, `timeout`, `compile-error` and `zero-mutants` lines are never counted as findings); **reported broken** when the
 gate exits 2 on an `error` plant and a line of its error output contains the plant's `cause`. Anything else makes the plant job fail.
 
 Configuration rule: plant mode runs the repository's own gate configuration and swaps only the inputs. A plant
@@ -52,13 +55,16 @@ The one definition of a gate's finding line (contracts/gate-cli.md and research.
 
 | Part | Rule |
 |---|---|
-| `location` | `<path>:<line>` for a finding in a file at a line; `<path>` for a finding about a whole file (a lockfile that does not match, a missing or loose pin, a workspace setting, two configuration copies that differ, a plant that carries configuration); `<sha>`, the full 40-character commit hash, for a finding about a commit (sign-off). `path` is relative to the repository root (or to the plant directory or temporary repository in plant mode). |
+| `location` | `<path>:<line>` for a finding in a file at a line; `<path>` for a finding about a whole file (a lockfile that does not match, a missing or loose pin, a workspace setting, two configuration copies that differ, a plant that carries configuration); `<sha>`, the full 40-character commit hash, for a finding about a commit (sign-off). `path` is relative to the repository root (or to the plant directory or temporary repository in plant mode). Amendment 2026-11-10, mission 007: the mutation gate's report lines (below), which are not findings, may also carry `<path>:<start>-<end>`, a `--files` range entry. |
 | `gate-id` | the registry id |
 | `rule` | the tool's rule or diagnostic id (ESLint or Stylelint rule, `TS<code>` for tsc, the test's full name for unit tests, the mutator for a surviving mutant), or the gate's own rule id (for example `inline-script`, `style-attribute`, `event-handler`, `eval`, `sk-name`, `monospace`, `no-signoff`, `signoff-mismatch`, `range`, `lockfile`, `release-age`, `allow-builds`, `copies-differ`, `disable-form`) |
 | `message` | one line, naming the defect |
 
 Equivalent-mutant records (FR-012) are printed as separate lines `<path>:<line>: mutation: record: <mutator>:
-<reason>`; they are not findings.
+<reason>`; they are not findings. Amendment 2026-11-10, mission 007 (`specs/007-mutation-gate-strictness/contracts/mutation-output.md`):
+so are the mutation gate's report lines, `<path>:<start line>: mutation: timeout: <mutator>: replaced by <replacement>`,
+`<path>:<start line>: mutation: compile-error: <mutator>: replaced by <replacement>` and `<entry>: mutation: zero-mutants:
+no mutant on the changed lines`.
 
 ## Story configuration (two copies, FR-006)
 

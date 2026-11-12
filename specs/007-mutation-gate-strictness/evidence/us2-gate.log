@@ -1,0 +1,6 @@
+# pnpm run gate:mutation -- --base 6906cebc6eb785e909011695f06aa198386582c3 (the phase 3 base), 2026-11-11, at f0efd4e with lever 1 and lever 3 in place, alone (43.60 s, exit 0). Its plan (--plan, same base): 1 shard, 0 cuts, files gates/bin/mutation.ts,gates/lib/mutation/shards.ts, 11 changed lines.
+# stdout:
+gates/bin/mutation.ts: mutation: zero-mutants: no mutant on the changed lines
+gates/lib/mutation/shards.ts: mutation: zero-mutants: no mutant on the changed lines
+mutation: 0 mutants on the changed lines of 2 files, none survived; 0 timeouts, 0 compile errors, 2 zero-mutant entries; 0 equivalent records
+# stderr:

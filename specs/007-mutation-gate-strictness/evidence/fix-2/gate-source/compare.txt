@@ -1,0 +1,30 @@
+$ node specs/007-mutation-gate-strictness/evidence/compare.mjs specs/007-mutation-gate-strictness/evidence/fix-2/gate-source/main-config/mutation.json specs/007-mutation-gate-strictness/evidence/fix-2/gate-source/narrowed/mutation.json gates/lib/mutation/report.ts
+gates/lib/mutation/report.ts: 69 mutants in both runs, every key once
+move CompileError -> CompileError: 16
+move Ignored -> Ignored: 4
+move Killed -> Killed: 49
+(exit 0)
+
+$ node specs/007-mutation-gate-strictness/evidence/compare.mjs specs/007-mutation-gate-strictness/evidence/fix-2/gate-source/main-config/mutation.json specs/007-mutation-gate-strictness/evidence/fix-2/gate-source/narrowed/mutation.json gates/lib/plant-judge.ts
+gates/lib/plant-judge.ts: 166 mutants in both runs, every key once
+move CompileError -> CompileError: 52
+move Killed -> Killed: 114
+(exit 0)
+
+$ node specs/007-mutation-gate-strictness/evidence/compare.mjs specs/007-mutation-gate-strictness/evidence/fix-2/gate-source/lever1/mutation.json specs/007-mutation-gate-strictness/evidence/fix-2/gate-source/narrowed/mutation.json gates/lib/mutation/report.ts
+gates/lib/mutation/report.ts: 69 mutants in both runs, every key once
+move CompileError -> CompileError: 16
+move Ignored -> Ignored: 4
+move Killed -> Killed: 48
+move Timeout -> Killed: 1
+changed 106:17-106:24 Regex "/\\d+$/": Timeout -> Killed
+(exit 0)
+
+$ node specs/007-mutation-gate-strictness/evidence/compare.mjs specs/007-mutation-gate-strictness/evidence/fix-2/gate-source/lever1/mutation.json specs/007-mutation-gate-strictness/evidence/fix-2/gate-source/narrowed/mutation.json gates/lib/plant-judge.ts
+gates/lib/plant-judge.ts: 166 mutants in both runs, every key once
+move CompileError -> CompileError: 52
+move Killed -> Killed: 113
+move Timeout -> Killed: 1
+changed 51:63-51:72 StringLiteral "\"\"": Timeout -> Killed
+(exit 0)
+

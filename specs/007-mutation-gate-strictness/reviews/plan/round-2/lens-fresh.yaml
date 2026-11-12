@@ -1,0 +1,73 @@
+schema: review-findings/v1
+complete: true
+phase: plan
+round: 2
+lens: fresh
+findings:
+  - id: PLAN-FRESH-2-001
+    severity: 3
+    title: "FR-011 criterion 3 (the statusReason message or test name names the mutated record) cannot be met by a source-table kill, or is met by every kill"
+    evidence:
+      - artifact: "research.md § R-06 FR-011's per-mutant record, criterion 3: \"the `statusReason` message or the killing test's name names the mutated record (its name, field or value) or its group\"; and: \"A mutant that fails any of them does not meet FR-011 and is handled like a remaining Timeout (the next lever).\""
+      - code: "@stryker-mutator/vitest-runner 10.1.1 dist/src/vitest-helpers.js:37: `failureMessage: test.result?.errors?.[0]?.message ?? ...`. Stryker's statusReason is only the first error's `message`. Vitest keeps the diff in a separate `diff` property, which Stryker drops."
+      - code: "packages/tokens/test/source-table.test.ts:39-43 and :77-93: the killers op 004 names (ops/004-token-source-mutation/mutation/README.md § Timeouts) compare one object keyed by every token name, `expect(declared).toEqual(expected)`. expected.ts:66-68 puts `color-canvas` first."
+      - code: "Probe (Vitest 5.0.5, a 120-key object with key `space-77` changed to \"\", run from the scratchpad and then deleted): e.message = \"expected { 'space-0': '0.25rem', …(119) } to deeply equal { 'space-0': '0.25rem', …(119) }\". The message names only the first key, not the mutated one. For a real `space-1` kill it would name `color-canvas`."
+      - code: "Test names (source-table.test.ts:39, :45, :77): \"declares each token's light value (or its one value) …\", \"… dark value under both dark selectors …\", \"gives each token its group, its resolved value per theme …\". They name a field word (value, group) for every record and no record name."
+    claim: |
+      For a group B or C mutant killed by source-table.test.ts, the planned check reads a message that names the first
+      token of the table and a test name that names no record. Read strictly ("the mutated record"), criterion 3 fails
+      for nearly every Killed former Timeout. R-06 then treats each one as a remaining Timeout, and the plan escalates
+      to lever 2 and to an FR-014 amendment of 001 FR-013. Neither lever can change the text of an assertion message,
+      so the mission gets stuck, or it amends 001 for no time reason. Read loosely ("field" is enough), every
+      source-table test name passes for every mutant, so the criterion checks nothing. Either way it does not test
+      what spec FR-011 asks for: a killing test whose assertion is on the record's value or group. With lever 1 and
+      bail 1, `killedBy` is also just the first failing token test. Which test that is depends on the order inside the
+      tokens project (failed first, then duration).
+    remedies:
+      - "R-06: replace criterion 3 with a check that can be decided. The `killedBy` test is one of a named list of token tests whose assertion compares each record's value, or each record's group, with expected.ts per token (source-table.test.ts's light, dark and JSON tests, named in the plan). The record is tied to the kill by the by-hand application of FR-011, whose Vitest diff (not Stryker's truncated statusReason) names the mutated key. Record statusReason as given, without judging it. State that a criterion failure caused only by message text never triggers lever 2 or 3."
+
+  - id: PLAN-FRESH-2-002
+    severity: 3
+    title: "The checker split (`checkers: []` run, difference of wall times) does not measure the checker's share, yet it decides 'straight to lever 3'"
+    evidence:
+      - artifact: "research.md § R-06 The checker split: \"the same entry is run once more with `\"checkers\": []` … The difference of the two wall times is the checker's share\"; § R-05 Lever 2: \"If the checker's share alone (R-06) exceeds 176 s for an entry, no concurrency on four cores can fix that entry, and the plan goes straight to lever 3\"; plan.md § Summary: \"if it alone exceeds the bound the plan goes straight to lever 3\""
+      - code: "@stryker-mutator/core 10.1.1 dist/src/concurrent/concurrency-token-provider.js:19-30: with checkers, ceil(c/2) checkers and floor(c/2) test runners (4 + 4 at concurrency 8). With `checkers: []`, all c = 8 processes are test runners. So the test half of the two runs is not the same."
+      - code: "dist/src/process/4-mutation-test-executor.js:58-61: executeCheck feeds executeRunInTestRunner, so checking overlaps test runs and the wall time is not their sum (R-05 says so itself)"
+      - artifact: "spec.md FR-011 and research.md § R-05: with the checker on, group A (op 004: 65 of the 121 Timeouts) is expected to end as CompileError and never reach a test runner. With `checkers: []` those mutants run the whole suite. The no-checker run therefore does more test work than the checker run."
+    claim: |
+      The two runs differ in three ways at once: how many test runners there are, which mutants reach the tests, and
+      how much checking overlaps the tests. Their difference can be near zero or even negative while the checker is the
+      bottleneck. It can also be large when the checker is cheap. In the plan this number decides whether lever 2 is
+      skipped and an amendment of 001 FR-013 goes to the operator (FR-014). That is a cross-feature contract change made
+      on a quantity the method cannot measure. 001's method held the mutant set constant (pins.ts has no CompileError
+      split like source.ts group A), so its figures do not carry over.
+    remedies:
+      - "R-05/R-06: drop the 'checker share alone > 176 s → straight to lever 3' shortcut. Decide the levers only on the measured entry time (FR-010), trying lever 2 before lever 3 in every case. Keep the split as a diagnostic, labelled as such."
+      - "Or measure a quantity that is defined: the no-checker run at `concurrency` equal to the checker run's test-runner count (4), with the CompileError count of the checker run recorded next to it, and the share stated as a bound with its direction. Only a bound that holds in the right direction may skip lever 2."
+
+  - id: PLAN-FRESH-2-003
+    severity: 2
+    title: "FR-013's per-mutant comparison keys mutants by start line, column and mutator, which is not unique"
+    evidence:
+      - artifact: "research.md § R-06 FR-013 reference entries: \"They are compared **per mutant**, by location (start line and column) and mutator\"; quickstart.md US2 3"
+      - code: "gates/lib/wcag.ts:4 `const hex = /^#([0-9A-Fa-f]{2})…$/`: Stryker's Regex mutator produces several mutants of one regex literal, all with the same start and mutator `Regex`. :10 `c <= 0.04045 ? …` and :16 `match === null`: ConditionalExpression gives a `true` and a `false` mutant at the same start."
+    claim: |
+      Under that key several mutants of the chosen reference file share one identity. 'No mutant Killed before may be
+      Timeout, Survived or NoCoverage after' cannot then be decided per mutant: two Regex mutants that swap statuses
+      look unchanged, and one that regresses can be matched to a different one that did not. The re-run rule depends on
+      the same matching. The FR-013 evidence would be unsound for the very file the plan picked.
+    remedies:
+      - "R-06 and quickstart: key each mutant by start line and column, end line and column, mutator and replacement (unique within a file in a Stryker report). The comparison fails loudly if a key still repeats."
+
+  - id: PLAN-FRESH-2-004
+    severity: 1
+    title: "The 'stricter' config assertion removes `groupOrder` but leaves `sequence: {}`, so it cannot pass as described"
+    evidence:
+      - artifact: "research.md § R-05 Red-first: \"each mutation project, with `test.sequence.groupOrder` removed, deep-equals its `vitest.config.ts` counterpart\""
+      - code: "vitest.config.ts:15-100: no project has a `test.sequence` key. Lever 1 adds `test.sequence: { groupOrder }`. With only `groupOrder` deleted, the project still holds `sequence: {}`, and Vitest's toEqual ignores undefined-valued keys but not an empty object."
+    claim: |
+      Implemented literally, the replacement assertion stays red even with the correct configuration. The implementer
+      then either strips the whole `sequence` key, which hides any other `sequence` setting the mutation config might
+      add, or loosens the assertion. Both weaken the 'no other setting may differ' guarantee the plan claims for it.
+    remedies:
+      - "R-05: state that the mutation project with `test.sequence` removed deep-equals its counterpart, and that `test.sequence` deep-equals exactly `{ groupOrder: 1 }` for tokens and `{ groupOrder: 2 }` for the others."

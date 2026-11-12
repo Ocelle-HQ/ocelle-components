@@ -36,7 +36,7 @@ describe("the split of the mutation gate (005 research.md R-12)", () => {
   it("runs an element-only change under the elements configuration: its mutant is killed and the gate passes, not 'nothing to mutate' (pass-element-source)", async () => {
     expect(await gate(tools({ [elementFile]: 2 }, killed))).toEqual({
       code: 0,
-      out: ["mutation: 1 mutant on the changed lines of 1 file, none survived; 0 equivalent records"],
+      out: ["mutation: 1 mutant on the changed lines of 1 file, none survived; 0 timeouts, 0 compile errors, 0 zero-mutant entries; 0 equivalent records"],
       err: [],
     });
   });
@@ -44,7 +44,7 @@ describe("the split of the mutation gate (005 research.md R-12)", () => {
   it("reports an element-source survivor as Survived at its line (fail-element-source-survivor)", async () => {
     expect(await gate(tools({ [elementFile]: 2 }, survives))).toEqual({
       code: 1,
-      out: [`${elementFile}:1: mutation: ConditionalExpression: Survived: replaced by true`, "mutation: 1 finding in 1 changed file (1 mutant on changed lines)"],
+      out: [`${elementFile}:1: mutation: ConditionalExpression: Survived: replaced by true`, "mutation: 1 finding in 1 changed file (1 mutant on changed lines; 0 timeouts, 0 compile errors, 0 zero-mutant entries)"],
       err: [],
     });
   });
@@ -53,7 +53,7 @@ describe("the split of the mutation gate (005 research.md R-12)", () => {
     const uncovered = configuredStryker((path) => (path === elementFile ? "NoCoverage" : "Killed"));
     expect(await gate(tools({ [elementFile]: 2 }, uncovered))).toEqual({
       code: 1,
-      out: [`${elementFile}:1: mutation: ConditionalExpression: NoCoverage: replaced by true`, "mutation: 1 finding in 1 changed file (1 mutant on changed lines)"],
+      out: [`${elementFile}:1: mutation: ConditionalExpression: NoCoverage: replaced by true`, "mutation: 1 finding in 1 changed file (1 mutant on changed lines; 0 timeouts, 0 compile errors, 0 zero-mutant entries)"],
       err: [],
     });
   });
@@ -61,7 +61,7 @@ describe("the split of the mutation gate (005 research.md R-12)", () => {
   it("runs a mixed change as two runs, one per configuration, and merges their counts when both are killed", async () => {
     expect(await gate(tools({ [gateFile]: 3, [elementFile]: 2 }, killed))).toEqual({
       code: 0,
-      out: ["mutation: 2 mutants on the changed lines of 2 files, none survived; 0 equivalent records"],
+      out: ["mutation: 2 mutants on the changed lines of 2 files, none survived; 0 timeouts, 0 compile errors, 0 zero-mutant entries; 0 equivalent records"],
       err: [],
     });
   });
@@ -72,7 +72,7 @@ describe("the split of the mutation gate (005 research.md R-12)", () => {
       out: [
         `${gateFile}:1: mutation: ConditionalExpression: Survived: replaced by true`,
         `${elementFile}:1: mutation: ConditionalExpression: Survived: replaced by true`,
-        "mutation: 2 findings in 2 changed files (2 mutants on changed lines)",
+        "mutation: 2 findings in 2 changed files (2 mutants on changed lines; 0 timeouts, 0 compile errors, 0 zero-mutant entries)",
       ],
       err: [],
     });

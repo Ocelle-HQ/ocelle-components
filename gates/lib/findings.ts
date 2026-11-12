@@ -19,9 +19,9 @@ export type GateResult =
 /** Writes one line of output. */
 export type Write = (line: string) => void;
 
-/** A count and its noun: `1 file`, `2 files`. */
-export function plural(count: number, noun: string): string {
-  return `${String(count)} ${noun}${count === 1 ? "" : "s"}`;
+/** A count and its noun: `1 file`, `2 files`; or with an irregular plural, `1 entry`, `2 entries` (007 research R-04). */
+export function plural(count: number, noun: string, pluralNoun = `${noun}s`): string {
+  return `${String(count)} ${count === 1 ? noun : pluralNoun}`;
 }
 
 /** Joins the lines of a text into one line, so every finding and every cause stays one output line. */
