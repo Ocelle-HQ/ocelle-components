@@ -261,18 +261,27 @@ export function aloneDecision(plantPath: string, storyTheme: StoryTheme, alone: 
 export const shardSize = 3;
 
 /**
- * The partition of the plant job into shards (plan decision 23; contracts/plants.md § Shards), plants written
- * `<gate>/<case>`: shard 1 every plant of a gate other than `visual` and `axe` and the registry's plants, in their
- * order; then the `visual` plants sorted by name in consecutive groups of at most `size`; then the `axe` plants the
- * same way. Every plant is in exactly one shard.
+ * The most other plants (of the gates other than `visual` and `axe`, and the registry's) in one shard (plan decision
+ * 30, operator decision 2026-11-12, "Split its plants"): 80, which deals the repository's 232 into 3 shards.
  */
-export function plantShards(plants: readonly string[], size: number): string[][] {
+export const otherShardSize = 80;
+
+/**
+ * The partition of the plant job into shards (plan decisions 23 and 30; contracts/plants.md § Shards), plants written
+ * `<gate>/<case>`: first the other plants (every plant of a gate other than `visual` and `axe`, and the registry's),
+ * sorted and dealt in turn over max(1, ⌈n / `otherSize`⌉) shards, each keeping the sorted order; then the `visual`
+ * plants sorted by name in consecutive groups of at most `size`; then the `axe` plants the same way. Every plant is in
+ * exactly one shard, and the partition depends only on the set of plants.
+ */
+export function plantShards(plants: readonly string[], size: number, otherSize: number): string[][] {
   const grouped = (gate: string): string[][] => {
     const own = plants.filter((plant) => plant.startsWith(`${gate}/`)).sort();
     return Array.from({ length: Math.ceil(own.length / size) }, (_, index) => own.slice(index * size, (index + 1) * size));
   };
-  const first = plants.filter((plant) => !plant.startsWith("visual/") && !plant.startsWith("axe/"));
-  return [first, ...grouped("visual"), ...grouped("axe")];
+  const others = plants.filter((plant) => !plant.startsWith("visual/") && !plant.startsWith("axe/")).sort();
+  const k = Math.max(1, Math.ceil(others.length / otherSize));
+  const dealt = Array.from({ length: k }, (_, shard) => others.filter((_, index) => index % k === shard));
+  return [...dealt, ...grouped("visual"), ...grouped("axe")];
 }
 
 /** A plant's time in seconds with one decimal (plan decision 24). */

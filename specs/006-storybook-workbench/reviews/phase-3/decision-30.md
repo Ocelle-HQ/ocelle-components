@@ -46,3 +46,51 @@ The plant run used `OCELLE_VISUAL_ENGINE=auto` (docker) at `size` 3. The shards 
 | `--verdict` | 280 | 1 s: `plants: 280 plants of 16 gates and the registry judged, every plant as expected` |
 
 Every shard printed `plants: shard <k> of 17: <m> plants judged, every plant as expected`.
+
+## T046w and T046x: shard 1's plants split, `otherShardSize` 80
+
+Red `88aa460` (T046w). It failed 8 of 2993 tests (`red.sh 3 phase`, 295 s), each on the missing behaviour:
+- T046c's two partition cases and the 10-or-more case got the other plants in input order, not sorted;
+- the otherSize 4 and otherSize 5 cases got one shard for every other plant;
+- the reversed-or-shuffled case got one shard, not the 3 it deals;
+- the at-most-one case found visual plants among the first ⌈10 / otherSize⌉ shards;
+- `otherShardSize` was `undefined`, not 80.
+
+There was no syntax, import or setup error.
+
+Green (T046x):
+- `plantShards(plants, size, otherSize)`: `otherSize` is required. The other plants are sorted and dealt in turn over
+  max(1, ⌈n / `otherSize`⌉) shards.
+- `otherShardSize` is 80, and its comment names plan decision 30.
+- `gates/bin/plants.ts` passes `otherShardSize` to the one `plantShards` call, which serves `--plan`, `--shard` and
+  `--verdict`.
+- gates/README.md § the split plant job now describes the dealing.
+- `.github/workflows/ci.yml` and its plant copies are unchanged.
+
+The tests of `gates/test/plants.test.ts` pass unchanged (47 other plants, fewer than 81, so one shard).
+
+### Checks (T046x), one at a time
+
+| Check | Result | Time |
+|---|---|---|
+| `pnpm test` | 2993 tests passed in 133 files | 299 s |
+| `gate:typecheck` | no type error | 7 s |
+| `gate:lint` | 255 files, no finding | 19 s |
+| `gate:test-lint` | 168 files, no finding | 4 s |
+
+The plant run used `OCELLE_VISUAL_ENGINE=auto` (docker). The shards took 2832 s in all:
+
+| Step | Plants | Time |
+|---|---|---|
+| `--plan` | | under 1 s: `[1,2,…,19]`, which is 3 shards of other plants plus the 48 `visual` plants in 16 shards of 3 |
+| shard 1 | 78 | 92 s |
+| shard 2 | 77 | 85 s |
+| shard 3 | 77 | 103 s |
+| shard 4 (error-build-fails, error-host, error-index-pin) | 3 | 7 s |
+| shard 5 (error-no-engine, error-tag-pin, fail-beacon) | 3 | 58 s |
+| shards 6 to 19 | 3 each | 168 to 193 s each |
+| `--verdict` | 280 | under 1 s: `plants: 280 plants of 16 gates and the registry judged, every plant as expected` |
+
+`gate:mutation -- --base f6474bd`: exit 0 in 1702 s. Chromium 1248 was aliased to the installed 1243, and
+`OCELLE_CHROMIUM_PATH` was unset. It printed: `mutation: 4339 mutants on the changed lines of 37 files, none survived;
+35 timeouts, 1226 compile errors, 3 zero-mutant entries; 488 equivalent records`.

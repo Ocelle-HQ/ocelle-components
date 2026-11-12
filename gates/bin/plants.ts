@@ -18,7 +18,7 @@ import { emit, formatFinding, plural } from "../lib/findings.ts";
 import { gateKeysProblem, judgePlant, parsePlant, plantFilesProblem, storybookGates } from "../lib/plant-judge.ts";
 import type { Plant, PlantRun } from "../lib/plant-judge.ts";
 import { buildCommitRepo, buildMutationRepo, buildRepoTree, carriesConfiguration } from "../lib/plant-repo.ts";
-import { containerDecision, gateRunsAtOnce, limiter, needsEngine, plantSeconds, plantShards, plantTimeNote, runPlant, shardSize } from "../lib/plant-runner.ts";
+import { containerDecision, gateRunsAtOnce, limiter, needsEngine, otherShardSize, plantSeconds, plantShards, plantTimeNote, runPlant, shardSize } from "../lib/plant-runner.ts";
 import type { RunnerTools, VisualCopyTools } from "../lib/plant-runner.ts";
 import { checkRegistry, ciJobs, parseRegistry, plantJob, shardInPlantCheckFindings, skipContainerFindings } from "../lib/registry.ts";
 import type { Gate } from "../lib/registry.ts";
@@ -332,7 +332,7 @@ export async function plants(context: Context, tools: PlantTools, io: Io): Promi
 
   // Plan decision 23: the plan, one shard, or the verdict on the shards' reports; without a mode, every plant.
   const mode = modeOf(context.args);
-  const shards = plantShards(await listPlants(registry, tools), shardSize);
+  const shards = plantShards(await listPlants(registry, tools), shardSize, otherShardSize);
   const n = shards.length;
   if (mode.kind === "plan") {
     io.out(JSON.stringify(shards.map((_, index) => index + 1)));
