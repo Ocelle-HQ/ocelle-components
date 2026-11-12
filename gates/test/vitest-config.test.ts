@@ -39,16 +39,26 @@ function inProject(project: Project, path: string): boolean {
 }
 
 describe("vitest.mutation.config.ts", () => {
-  it("excludes exactly tokens-browser, styles-browser, storybook-integration and gates-integration from the projects of vitest.config.ts", () => {
+  it("excludes exactly tokens-browser, styles-browser, storybook-integration and gates-integration from the projects of vitest.config.ts, and splits tokens", () => {
     expect(all.map((project) => project.name).filter((name) => !kept.some((project) => project.name === name))).toEqual([
       "tokens-browser",
       "styles-browser",
       "storybook-integration",
       "gates-integration",
     ]);
-    expect(kept).toEqual(
-      all.filter((project) => !["gates-integration", "tokens-browser", "storybook-integration", "styles-browser"].includes(project.name)),
+    // 007 research.md R-05 (lever 1): the mutation configuration splits tokens in two, source-table.test.ts alone in
+    // tokens-source-table and the rest in tokens; every other kept project is unchanged. This replaces the plain
+    // equality with the filtered list, which the split breaks; vitest-mutation-config.test.ts compares every setting.
+    const sourceTable = "packages/tokens/test/source-table.test.ts";
+    const [tokens, ...others] = all.filter(
+      (project) => !["gates-integration", "tokens-browser", "storybook-integration", "styles-browser"].includes(project.name),
     );
+    expect(tokens?.name).toBe("tokens");
+    expect(kept).toEqual([
+      { name: "tokens-source-table", include: [sourceTable], exclude: tokens?.exclude },
+      { name: "tokens", include: tokens?.include, exclude: [...(tokens?.exclude ?? []), sourceTable] },
+      ...others,
+    ]);
   });
 });
 

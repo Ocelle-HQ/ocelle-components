@@ -42,7 +42,8 @@ The input names the phase: `phase=<N>` or a bare number. If it names none, stop 
      source, passing the phase base: `<mutation_command> -- --base $(cat FEATURE_DIR/reviews/phase-<N>/base.sha)`
      (here `pnpm run gate:mutation -- --base <sha>`). A surviving mutant in new or changed code is blocking unless
      you record it as an equivalent mutant with the reason; the command lists the equivalent-mutant records it found
-     in the changed code, so read each one and its reason.
+     in the changed code, so read each one and its reason. Its `timeout`, `compile-error` and `zero-mutants` lines
+     are reports to read, not blocking findings.
 5. Check the rest, citing file and line for every finding:
    - **Tasks:** every task of `## Phase <N>:` is ticked and its work is actually present; nothing outside this
      phase was changed without a reason.

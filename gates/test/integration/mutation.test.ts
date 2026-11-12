@@ -60,10 +60,17 @@ describe("mutation gate (gates/bin/mutation.ts)", () => {
       });
       expect(ran.code).toBe(1);
       expect(ran.stderr).toEqual([]);
-      const findings = ran.stdout.slice(0, -1);
+      // 007: the type checker rejects the BlockStatement mutant of each changed function, so each is a compile-error
+      // report line, printed before the findings and not one of them.
+      const reports = [
+        "gates/lib/other.ts:6: mutation: compile-error: BlockStatement: replaced by {}",
+        "gates/lib/sample.ts:6: mutation: compile-error: BlockStatement: replaced by {}",
+      ];
+      expect(ran.stdout.slice(0, reports.length)).toEqual(reports);
+      const findings = ran.stdout.slice(reports.length, -1);
       expect(findings).toContain("gates/lib/sample.ts:7: mutation: ArithmeticOperator: NoCoverage: replaced by value / 3");
       expect(findings.filter((line) => !/^gates\/lib\/sample\.ts:[5-8]: mutation: \w+: NoCoverage: /.test(line))).toEqual([]);
-      expect(ran.stdout.at(-1)).toMatch(/^mutation: \d+ findings? in 2 changed files \(\d+ mutants on changed lines\)$/);
+      expect(ran.stdout.at(-1)).toMatch(/^mutation: \d+ findings? in 2 changed files \(\d+ mutants on changed lines; 0 timeouts, 2 compile errors, 0 zero-mutant entries\)$/);
     },
     timeout,
   );
@@ -81,7 +88,7 @@ describe("mutation gate (gates/bin/mutation.ts)", () => {
         code: 1,
         stdout: [
           'packages/tokens/src/y.ts:2: mutation: StringLiteral: NoCoverage: replaced by ""',
-          "mutation: 1 finding in 1 changed file (1 mutant on changed lines)",
+          "mutation: 1 finding in 1 changed file (1 mutant on changed lines; 0 timeouts, 0 compile errors, 0 zero-mutant entries)",
         ],
         stderr: [],
       });
@@ -120,9 +127,11 @@ describe("mutation gate (gates/bin/mutation.ts)", () => {
         cwd: tempDir("cwd"),
         env: baseEnv(),
       });
-      expect({ code: ran.code, stderr: ran.stderr, lines: ran.stdout.length }).toEqual({ code: 0, stderr: [], lines: 1 });
-      expect(ran.stdout[0]).toMatch(
-        /^mutation: \d+ mutants? on the changed lines of 1 file, none survived; 0 equivalent records$/,
+      expect({ code: ran.code, stderr: ran.stderr, lines: ran.stdout.length }).toEqual({ code: 0, stderr: [], lines: 2 });
+      // 007: the type checker rejects the BlockStatement mutant of the changed function, a compile-error report line.
+      expect(ran.stdout[0]).toBe("gates/lib/other.ts:6: mutation: compile-error: BlockStatement: replaced by {}");
+      expect(ran.stdout[1]).toMatch(
+        /^mutation: \d+ mutants? on the changed lines of 1 file, none survived; 0 timeouts, 1 compile error, 0 zero-mutant entries; 0 equivalent records$/,
       );
     },
     timeout,
@@ -137,8 +146,12 @@ describe("mutation gate (gates/bin/mutation.ts)", () => {
         cwd: tempDir("cwd"),
         env: baseEnv(),
       });
-      expect({ code: ran.code, stderr: ran.stderr, lines: ran.stdout.length }).toEqual({ code: 0, stderr: [], lines: 1 });
-      expect(ran.stdout[0]).toMatch(/^mutation: [2-9] mutants on the changed lines of 1 file, none survived; 0 equivalent records$/);
+      expect({ code: ran.code, stderr: ran.stderr, lines: ran.stdout.length }).toEqual({ code: 0, stderr: [], lines: 2 });
+      // 007: the type checker rejects the BlockStatement mutant of `tested`, a compile-error report line.
+      expect(ran.stdout[0]).toBe("gates/lib/split.ts:10: mutation: compile-error: BlockStatement: replaced by {}");
+      expect(ran.stdout[1]).toMatch(
+        /^mutation: [2-9] mutants on the changed lines of 1 file, none survived; 0 timeouts, 1 compile error, 0 zero-mutant entries; 0 equivalent records$/,
+      );
       const report = JSON.parse(readFileSync(join(root, "reports/mutation/mutation.json"), "utf8")) as {
         files: Record<string, { mutants: { location: { start: { line: number }; end: { line: number } } }[] }>;
       };

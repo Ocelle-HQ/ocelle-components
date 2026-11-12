@@ -1,0 +1,4 @@
+# pnpm run gate:plants, 2026-11-11, with the final phase 2 gate code (T011 to T014), before the green commit (160 s, exit 0)
+# stdout:
+plants: 186 plants of 13 gates and the registry judged, every plant as expected
+# stderr:

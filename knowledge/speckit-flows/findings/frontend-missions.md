@@ -55,6 +55,26 @@ pitfalls up front. Each entry names where it was found. New entries are added as
 - **Mutation shard time.** One dense 120-line entry of `generate.ts` held 264 mutants and took 670 s, over the
   10-minute CI limit. Entries are now 60 lines. CI runners are 1.5 to 3.4 times slower than this sandbox. Fix: the
   next lever is a bound on mutants per shard.
+  - *Resolved in 007 (2026-11-11), sandbox half.* Not by a mutant bound. Measured on `source.ts` (every line
+    changed), concurrency 8 with the checker on:
+    - **Lever 1:** the token tests now run first (`tokens-source-table`, then `tokens`, then the rest) in
+      `vitest.mutation.config.ts` only. Every Timeout is now Killed, by `source-table.test.ts` after 4 to 10 tests.
+      `121-180` went from 537.27 s (46 Timeout) to 283.22 s. The 60-line entries still took 170.54 s to 283.22 s,
+      and three were over the 176 s bound.
+      *Narrowed 2026-11-11 (landing L1-01):* running the rest of `tokens` before every other project made static
+      mutants of gate source wait behind `build.test.ts`'s child processes, so kills there became Timeouts
+      (`report.ts:106`, `plant-judge.ts:51`), which FR-013 forbids. Now only `source-table.test.ts` runs first, and
+      every other project is one group in name order. Gate source: 0 Timeouts with the narrowed order, as with
+      `main`'s, against 2 with the earlier split. The eight 30-line entries took 72.49 s to 173.46 s, with 0
+      Timeout, no status change against lever 3, and FR-011 still met for all 122 former Timeouts.
+    - **Lever 2** (concurrency) did not help. On `121-180`: 4 gave 358.77 s, 8 gave 283.22 s, 12 gave 316.27 s.
+    - **Lever 3** (operator, FR-014): 001 FR-013's entry bound went from 60 to 30 changed lines for every file,
+      with a dated amendment of 001 FR-013 and SC-005. The eight 30-line entries took 73.96 s to 182.52 s, with 0
+      Timeout and 0 Survived. `91-120` (177.68 s) and `151-180` (182.52 s) missed 176 s once. Their one re-run
+      was within it (171.53 s, 170.49 s), with no mutant changing status.
+    - **Cost:** 70 cuts within files instead of 27.
+    - The time is mostly the TypeScript checker's queue: with the checker off, the entries take 54 s to 66 s.
+    - The CI half (480 s per `gate:mutation` step) is measured at landing.
 - **`scope-check.sh` exits 0 on `ok: false`.** `scope-check.sh … && git push` does not stop a push. Fix: exit 1 on
   `ok: false`.
 

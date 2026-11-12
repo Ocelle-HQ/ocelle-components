@@ -1,0 +1,100 @@
+# Group B: font-sans value, StringLiteral 122:46-122:115 replaced by "" (Killed in green/source-121-180)
+# git diff:
+diff --git a/packages/tokens/src/source.ts b/packages/tokens/src/source.ts
+index 51726de..b95d36a 100644
+--- a/packages/tokens/src/source.ts
++++ b/packages/tokens/src/source.ts
+@@ -119,7 +119,7 @@ export const records = tokenRecords([
+   { name: "color-scheme", group: "colour", value: { light: "light", dark: "dark" } },
+ 
+   // A.2 Type (theme-independent)
+-  { name: "font-sans", group: "type", value: '"Schibsted Grotesk", "Helvetica Neue", Arial, system-ui, sans-serif' }, // all text
++  { name: "font-sans", group: "type", value: "" }, // all text
+   { name: "font-display", group: "type", value: "var(--ocelle-font-sans)", ref: ["font-sans"] }, // display text
+   { name: "figures", group: "type", value: "tabular-nums" }, // ids, digests, values
+   { name: "font-size-xs", group: "type", value: "0.75rem" },
+# pnpm exec vitest run --config vitest.mutation.config.ts --project tokens-source-table --project tokens
+
+ RUN  v5.0.5 /home/user/ocelle-components
+
+ ❯ |tokens-source-table| packages/tokens/test/source-table.test.ts (8 tests | 2 failed) 32ms
+   ❯ the stylesheet from the real source (6)
+     × declares each token's light value (or its one value) in the unconditioned :root block 9ms
+   ❯ the JSON export from the real source (2)
+     × gives each token its group, its resolved value per theme (or its one value) and its references 16ms
+
+⎯⎯⎯⎯⎯⎯⎯ Failed Tests 2 ⎯⎯⎯⎯⎯⎯⎯
+
+ FAIL  |tokens-source-table| packages/tokens/test/source-table.test.ts > the stylesheet from the real source > declares each token's light value (or its one value) in the unconditioned :root block
+AssertionError: expected { 'color-canvas': '#f1eee8', …(114) } to deeply equal { 'color-canvas': '#f1eee8', …(114) }
+
+- Expected
++ Received
+
+@@ -52,11 +52,11 @@
+    "elevation-sheet": "0 0 0 1px var(--ocelle-color-rule)",
+    "figures": "tabular-nums",
+    "focus-offset": "2px",
+    "focus-width": "3px",
+    "font-display": "var(--ocelle-font-sans)",
+-   "font-sans": "\"Schibsted Grotesk\", \"Helvetica Neue\", Arial, system-ui, sans-serif",
++   "font-sans": " ",
+    "font-size-2xl": "1.875rem",
+    "font-size-fact": "1.0625rem",
+    "font-size-lg": "1.25rem",
+    "font-size-md": "1rem",
+    "font-size-sm": "0.875rem",
+
+ ❯ packages/tokens/test/source-table.test.ts:42:22
+     40|     const declared = Object.fromEntries(expectedTokens.map((token) => …
+     41|     const expected = Object.fromEntries(expectedTokens.map((token) => …
+     42|     expect(declared).toEqual(expected);
+       |                      ^
+     43|   });
+     44|
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[1/2]⎯
+
+ FAIL  |tokens-source-table| packages/tokens/test/source-table.test.ts > the JSON export from the real source > gives each token its group, its resolved value per theme (or its one value) and its references
+AssertionError: expected { 'color-canvas': { …(4) }, …(114) } to deeply equal { 'color-canvas': { …(4) }, …(114) }
+
+- Expected
++ Received
+
+@@ -364,16 +364,16 @@
+    "font-display": {
+      "group": "type",
+      "ref": [
+        "--ocelle-font-sans",
+      ],
+-     "value": "\"Schibsted Grotesk\", \"Helvetica Neue\", Arial, system-ui, sans-serif",
++     "value": "",
+    },
+    "font-sans": {
+      "group": "type",
+      "ref": undefined,
+-     "value": "\"Schibsted Grotesk\", \"Helvetica Neue\", Arial, system-ui, sans-serif",
++     "value": "",
+    },
+    "font-size-2xl": {
+      "group": "type",
+      "ref": undefined,
+      "value": "1.875rem",
+
+ ❯ packages/tokens/test/source-table.test.ts:95:20
+     93|       }),
+     94|     );
+     95|     expect(actual).toEqual(expected);
+       |                    ^
+     96|   });
+     97| });
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[2/2]⎯
+
+
+ Test Files  1 failed | 11 passed (12)
+      Tests  2 failed | 135 passed (137)
+   Start at  13:46:46
+   Duration  1.37s (import 47%, transform 26%, tests 23%, worker 3%)
+
+# exit 1

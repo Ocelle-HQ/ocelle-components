@@ -1,0 +1,199 @@
+schema: review-findings/v1
+complete: true
+phase: plan
+round: 1
+lens: correctness
+findings:
+  - id: PLAN-CORRECTNESS-1-001
+    severity: 4
+    title: "Lever 1 as designed (tokens groupOrder 0, others 1) runs the token tests LAST under Stryker, not first"
+    evidence:
+      - artifact: "research.md § R-05 Decision: \"`vitest.mutation.config.ts` gives the `tokens` project `sequence.groupOrder: 0` and every other project `1`\"; plan.md § Summary and § Project Structure (\"tokens project groupOrder 0 (lever 1)\")"
+      - artifact: "research.md § R-05: \"Vitest 5.0.5's `BaseSequencer.sort` orders files by `sequence.groupOrder` first, then failed-before-passed, then longest recorded duration first\" (omits the project-name step and the grouping step)"
+      - code: "node_modules/vitest (5.0.5) dist/chunks/index.1TqnEahn.js:6276 groupSpecs(): `if (isolate === true && order === 0 && spec.project.config.maxWorkers === 1) return sequential.specs.push([spec]);` and :6310 `if (sequential.specs.length) groups.push(sequential);` -- specs of a groupOrder-0 project with maxWorkers 1 go into a `sequential` group that is appended AFTER every numbered group; executeTests (:6162) runs groups in array order"
+      - code: "@stryker-mutator/vitest-runner 10.1.1 dist/src/vitest-test-runner.js:104-107 passes `maxWorkers: 1` to createVitest; vitest index.1TqnEahn.js:6826-6847 PROJECT_CLI_OVERRIDES includes `maxWorkers` and `isolate`, so every project gets maxWorkers 1; nothing sets isolate, so it is Vitest's default true"
+      - code: "vitest index.1TqnEahn.js:7787-7791 BaseSequencer.sort: after groupOrder, `if (a.project.name !== b.project.name) return a.project.name < b.project.name ? -1 : 1;` -- projects run in name order (elements, gates, storybook, styles, tokens), which is why the token tests run last today (op 004: contrast.test.ts, a gates test, is 'the fourth test the run reaches')"
+      - code: "probe (scratchpad grouporder/, two node projects `aproject` and `zproject`, `vitest run --maxWorkers=1`, Vitest 5.0.5): no groupOrder -> `aproject zproject`; zproject groupOrder 0 + aproject 1 (the plan's lever) -> `aproject zproject` (zproject still last); zproject 1 + aproject 2 -> `zproject aproject`"
+    claim: |
+      Under Stryker every project has maxWorkers 1 and isolate true, so a project left at groupOrder 0 is put in
+      Vitest's trailing `sequential` group, which runs after every group with a non-zero order. The plan's lever puts
+      `tokens` at 0 and every other project at 1: the other projects form group 1 and run first, and the token tests
+      run last, exactly as today. The lever would change nothing (or make things worse) and the heavy green runs would
+      be spent finding that out. The planned red assertion in vitest-mutation-config.test.ts ("the tokens project's
+      group sorts first") checks a config number, so it would go green on this broken lever. The research's causal
+      account is also wrong: within one group the files are not ordered by duration across projects but by project
+      name first, which is the actual reason `source-table.test.ts` comes after the gates and storybook tests.
+      Separately, the existing assertion `expect(mutation).toEqual(all.filter(...))`
+      (gates/test/integration/vitest-mutation-config.test.ts:40) deep-compares the mutation projects with
+      vitest.config.ts's, so any `sequence` added only in vitest.mutation.config.ts breaks an existing test, and the
+      plan does not say how that test changes (Principle VIII: replaced by a stricter one with the reason recorded).
+    remedies:
+      - "Change R-05 and the plan to give `tokens` `sequence.groupOrder: 1` and every other project `2` (no project at 0), correct the BaseSequencer/groupSpecs description (project-name order, the trailing sequential group for order 0 with maxWorkers 1 and isolate), make the red test assert the effective run order under maxWorkers 1 (for example an integration test that runs Vitest on two fixture projects with the mutation config's group settings, or resolves the mutation config and checks that no in-process project is at order 0 and tokens has the lowest order), and state how the existing toEqual assertion in vitest-mutation-config.test.ts is replaced by a stricter one."
+
+  - id: PLAN-CORRECTNESS-1-002
+    severity: 3
+    title: "R-05 explains the source.ts time by test runs alone; the TypeScript checker, which 001 measured as the dominant shard cost, is not analysed, and lever 2 goes against that measurement"
+    evidence:
+      - artifact: "research.md § R-05 'What Stryker does' covers only the vitest runner; 'Lever 2 ... The measured candidate is `concurrency: 4`'"
+      - artifact: "spec.md FR-009/FR-011a: the measurement run is with the TypeScript checker on; op 004's 578 s was with the checker off (ops/004-token-source-mutation/mutation/README.md § How the whole-file runs were made)"
+      - code: "specs/001-repository-foundation/reviews/phase-4/mutation-shards.md:59-63: 'What a shard's time depends on (R1-02): Stryker's TypeScript checker, not the test runs. On gates/bin/pins.ts lines 38-110 (206 mutants) one run took 197 s with the checker and 15 s without it. The checker checks the mutants of one file one at a time'"
+      - code: "specs/001-repository-foundation/reviews/phase-4/round-1-fixes.md:13 (R1-02): concurrency set to 8 because 'more of them keep the cores busy: 197 s to 140 s on the same mutants'"
+      - code: "@stryker-mutator/typescript-checker 10.1.1 dist/src/typescript-checker.js:92-100 group(): mutants of one file are never grouped, so the 224 mutants of source.ts:121-180 are checked one by one"
+    claim: |
+      The FR-010 bound (176 s) applies to the gate's run with the checker on. One source.ts entry has up to 224 mutants
+      in one file (op 004), and the repository's own measurement shows the checker costs about 1 s per mutant of a
+      single file at concurrency 4-8 on this sandbox, so the checker alone can take most or all of 176 s for that entry
+      whatever the test order. The plan's levers target only the test phase; lever 2 lowers concurrency from 8 to 4,
+      which 001 measured to make the checker slower (140 s -> 197 s). The plan can therefore reach FR-014 (an
+      amendment of 001 FR-013) without ever having examined the cost that dominates, or choose a lever that makes it
+      worse. The red runs will show the totals but not the split, so the lever choice is not grounded.
+    remedies:
+      - "Add to R-05 and R-06 that each red and green measurement records the checker phase and the test phase separately (Stryker's log timestamps between 'Starting checker' / mutation-testing start and the end, or a run with --logLevel debug), state the expected checker cost of the densest entry from 001's figures, and make lever 2 a measured choice in either direction (lower or higher concurrency), with the 001 R1-02 evidence that 8 helps the checker cited; if the checker phase alone exceeds the bound, go straight to the FR-014 decision rather than lever 2."
+
+  - id: PLAN-CORRECTNESS-1-003
+    severity: 3
+    title: "R-07 drops the spec's re-measurement of a source.ts entry in a shard of its own; the spec says the plan says how that run is made"
+    evidence:
+      - artifact: "spec.md § Assumptions 'CI measurement': \"If a mixed shard misses 480 s, the `source.ts` entry is measured again on CI in a shard that holds it alone (the plan says how that run is made), and that time decides.\""
+      - artifact: "research.md § R-07: \"CI gives no way to run one entry alone without a workflow change ... So the landing pass then brings the measured times to the operator as a decision ... accept the upper bound as measured; apply lever 2 and measure again; or amend 001 FR-013\""
+      - code: "gates/lib/mutation/shards.ts planShards(): entries sorted by path and filled greedily; the mission's own gates/ changes sort before packages/tokens/src/source.ts, so the first source.ts entry can share a shard with gate entries (research.md R-07 says so too)"
+    claim: |
+      The approved spec requires a defined alone-shard re-measurement when a mixed shard misses 480 s, and makes that
+      time decide FR-010's CI half. The plan replaces it with a menu that includes "accept the upper bound as measured"
+      -- i.e. accept a shard that missed 480 s -- which contradicts FR-010 ("both must hold") and SC-004. Spec and plan
+      disagree on how FR-010 is closed. The mixing comes only from the mission's own changes sharing the pull
+      request's diff with the measurement commit, so an alone shard needs a run whose diff holds only source.ts (for
+      example a temporary pull request based on the mission head); that departs from the operator's SPEC-1-04 answer
+      and so is an operator decision, not something the plan can settle by declaring it impossible.
+    remedies:
+      - "Bring the fork to the operator before tasks: (a) amend the spec's *Assumptions* so that a missed mixed shard goes to the landing decision R-07 lists, removing 'accept the upper bound' as an option that passes FR-010; or (b) keep the spec and have the plan define the alone run (for example a temporary pull request whose base is the mission head and whose only change is the trailing-space commit, so every source.ts entry is a shard of its own), recorded with its link."
+      - "Whichever is chosen, remove 'accept the upper bound as measured' from R-07 as a way to mark FR-010 met: a shard over 480 s does not meet FR-010."
+
+  - id: PLAN-CORRECTNESS-1-004
+    severity: 2
+    title: "The CI measurement commit leaves source.ts's 8 blank lines unchanged, so CI's source.ts entries are not the sandbox entries 1-60, 61-120, 121-180, 181-230"
+    evidence:
+      - artifact: "research.md § R-07: \"appends a trailing space to every line of `packages/tokens/src/source.ts` that is not blank ... CI's `mutation-plan` then makes the four `source.ts` entries\"; R-06 names the entries `source.ts:1-60`, `61-120`, `121-180`, `181-230`"
+      - code: "grep -c '^\\s*$' packages/tokens/src/source.ts -> 8 (lines 11, 28, 33, 120, 143, 173, 197, 229)"
+      - code: "gates/lib/mutation/shards.ts splitFile(): entries hold 60 changed lines; with 222 changed lines the entries become source.ts:1-63, 64-124, 125-186, 187-230"
+    claim: |
+      With blank lines unchanged the CI plan cuts source.ts at different lines from the sandbox runs, so the CI figure
+      for each entry is not the figure of the entry measured on the sandbox (different mutants, different cuts), and
+      the evidence README cannot pair sandbox and CI times per entry as FR-010 implies ("each such measurement run" and
+      "every source.ts entry"). The cut count also differs from the one recorded under FR-009.
+    remedies:
+      - "Make the measurement commit change every line, blank ones included (a single space on a blank line changes no output), so CI's entries equal the --plan entries for B; or record CI's entries and cut count explicitly and state that the CI and sandbox entries differ, pairing them by mutant count."
+
+  - id: PLAN-CORRECTNESS-1-005
+    severity: 2
+    title: "'One selected file is one entry' is false for a hand-written --files list; selectFiles merges two entries of one file"
+    evidence:
+      - artifact: "research.md § R-03: \"One file never has two entries in one shard (001 FR-013), so one selected file is one entry.\"; data-model.md § Entry: \"One shard never holds two entries of one file, so `entry` is unique within a run.\""
+      - artifact: "spec.md FR-003: \"in a `--files` shard run each entry is named exactly as given to `--files`\""
+      - code: "gates/lib/mutation/shards.ts:158-168 selectFiles(): `windows = wanted.filter((item) => item.path === file.path)` and one ChangedFile per path with the windows' ranges joined; nothing rejects `a.ts:1-60,a.ts:61-120`, `a.ts,a.ts:1-60` or a repeated entry"
+      - code: ".claude/skills/ocelle-land/SKILL.md:119 runs `gate:mutation -- --base <merge-base> --files <changed source>` by hand, so --files input is not only planShards' output"
+    claim: |
+      planShards never puts two entries of one file in a shard, but --files accepts any list. With two entries of one
+      file the planned ChangedFile.entry has no single value: the gate either names only one of them or names a
+      merged range nobody gave, and a zero-mutant entry among them is not reported (the merged file has mutants) --
+      FR-003 and FR-006 break for that input, and the summary's zero-mutant count is wrong.
+    remedies:
+      - "Classify per entry, not per selected file: carry each Wanted entry with its window and count mutants per entry (a mutant on the changed lines inside the entry's window), so every entry is named as given and judged alone."
+      - "Or reject two entries of one file (and duplicates) in one --files list as exit 2 with a new cause; this adds an exit-2 cause, so the contract's 'every exit-2 cause unchanged' and 001's gate-cli row must say so."
+
+  - id: PLAN-CORRECTNESS-1-006
+    severity: 2
+    title: "R-03's fallback recognises Stryker log lines that 10.1.1 does not print; its source shows a report is written when no mutant exists"
+    evidence:
+      - artifact: "research.md § R-03: \"its 'No files marked to be mutated' or 'Found 0 of … file(s) to be mutated' log line, or its `0 Mutant(s) generated` line\"; \"Whether Stryker 10.1.1 writes a JSON report when no `mutate` entry has a mutant is not known from reading\""
+      - code: "grep over @stryker-mutator/core 10.1.1 dist/src: no 'No files marked to be mutated' and no 'Mutant(s) generated'; dist/src/fs/project.js:35-41 logs 'Found N of M file(s) to be mutated' only when filesToMutate.size > 0, else the warning 'No files found for mutation with the given glob expressions. As a result, a dry-run will be performed'"
+      - code: "@stryker-mutator/core dist/src/process/4-mutation-test-executor.js:44-63 execute(): with zero mutants the plan is empty and `mutationTestReportHelper.reportAll(results)` still runs; dist/src/reporters/mutation-test-report-helper.js:117-120 calls onMutationTestReportReady (the json reporter) with `files` built from the results, i.e. `{}`"
+    claim: |
+      The design names three detection lines; two do not exist in the pinned version and the third ('Found 0 of')
+      cannot appear. The real 'no files found for mutation' warning is the case where Stryker read no mutate file,
+      which the gate must keep as exit 2 (001 FR-011, phase 3 round 12); a fallback written from R-03's wording could
+      make that case pass. From the source, the expected outcome is the first branch (a report with empty files),
+      which the gate already classifies; the fallback is likely dead design that invites a wrong pass.
+    remedies:
+      - "Record in R-03 what 10.1.1's source shows (reportAll runs with empty results; the json report has `files: {}`), keep the probe as confirmation, and delete the fallback's log-line list; if the probe shows no report, design the fix from the line 10.1.1 actually prints and state that 'No files found for mutation with the given glob expressions' stays exit 2."
+
+  - id: PLAN-CORRECTNESS-1-007
+    severity: 2
+    title: "CI runner core count: R-05 assumes 4 vCPUs ('public repositories'), but the repository is internal until 1.0.0 and the project's records conflict"
+    evidence:
+      - artifact: "research.md § R-05 Lever 2: \"GitHub's `ubuntu-24.04` runners for public repositories have 4 vCPUs\""
+      - artifact: ".specify/memory/constitution.md § Technology: \"The repository is internal until then and goes public with 1.0.0.\""
+      - code: "specs/001-repository-foundation/reviews/phase-4/round-1.md:20 '594 s on 4 vCPU ... on a machine twice the size of the CI runner' vs round-2.md:27 'On the 4-vCPU CI runner'; GitHub's standard Linux runner for private and internal repositories has 2 vCPUs (GitHub docs, 'GitHub-hosted runners' reference, standard runners table)"
+    claim: |
+      Lever 2 is justified by matching concurrency to CI cores, and the 480 s CI bound is the decisive half of FR-010.
+      If CI has 2 vCPUs, concurrency 4 still oversubscribes CI by two, the sandbox measurement of lever 2 says nothing
+      about CI, and the 1.5-3.4x slow-down factor behind 176 s has a known cause the plan ignores. The plan states a
+      fact about the runner that the repository's own constitution contradicts.
+    remedies:
+      - "Replace the claim with the runner's core count as read from a CI job log of this repository (the 'Set up job' runner image section, or nproc in an existing step's output) and choose lever 2's candidate from it; if it cannot be read before tasks, state both cases and make the CI measurement record the core count."
+
+  - id: PLAN-CORRECTNESS-1-008
+    severity: 2
+    title: "FR-011a's red run is 'on the code before the mission's change', but the plan takes it after US1 has changed the gate"
+    evidence:
+      - artifact: "spec.md FR-011a: \"The red evidence for FR-009 and FR-010 MUST come from the same measurement run on the code before the mission's change\""
+      - artifact: "plan.md § Structure decision: \"US1 lands first so that US2's runs already print their Timeouts as report lines\"; Phase US2: \"Red: the measurement runs of R-06 on the code before the lever\""
+    claim: |
+      The measurement run is the gate itself, and US1 changes the gate (classification, output). The plan's red run is
+      therefore on the code after part of the mission's change, which the spec's wording does not allow; the
+      difference is probably small in time, but the spec and plan disagree on what the red evidence is, and a reviewer
+      checking FR-011a against the plan will find the red run taken at the wrong commit.
+    remedies:
+      - "Either amend FR-011a to 'on the code before User Story 2's change (after User Story 1)' with the reason (readable Timeout lines), or take the red runs at the phase base before US1 and read Timeouts from the kept mutation.json."
+
+  - id: PLAN-CORRECTNESS-1-009
+    severity: 1
+    title: "Judge design leaves the records comparison over every located line; with report lines present a records plant would fail"
+    evidence:
+      - artifact: "research.md § R-02 and data-model.md § Plant: report rules 'never counted as findings'; nothing says the `records` comparison excludes them"
+      - code: "gates/lib/plant-judge.ts:206-212: `// Here every line is a record` then `const records = lines.map(...)` over all reported lines"
+    claim: |
+      After the change a pass plant's lines can hold record, timeout, compile-error and zero-mutants lines. If the
+      records comparison keeps mapping `lines`, any plant with `records` and a report line fails as 'records differ:
+      unexpected ...'. No current plant has both, so no verdict changes today, but the design must say the records key
+      compares only `record` lines and the reports key only the three report rules.
+    remedies:
+      - "State in data-model.md § Plant that `records` compares only lines with rule `record` and `reports` only lines with rules timeout, compile-error, zero-mutants, and add a judge test with a records plant whose run also prints a report line."
+
+  - id: PLAN-CORRECTNESS-1-010
+    severity: 1
+    title: "Spec AS1/AS2 name the status `Timeout` / `CompileError`; the contract prints lowercase rules and no status word"
+    evidence:
+      - artifact: "spec.md US1 AS1: \"... its replacement and the status `Timeout`\"; AS2 \"with the status `CompileError`\"; FR-001 \"naming its path, line, mutator, replacement and status\""
+      - artifact: "contracts/mutation-output.md: `<path>:<start line>: mutation: timeout: <mutator>: replaced by <replacement>`"
+    claim: |
+      A test written from the spec looks for `Timeout` in the line and finds `timeout`. The rule carries the status,
+      but the spec and contract should say so, or the red tests and the plants will be written against two wordings.
+    remedies:
+      - "Add to the contract that the rule `timeout` / `compile-error` is the status Timeout / CompileError (FR-001's 'status'), or print the status in the message (`Timeout: replaced by ...`, as findings print `Survived: replaced by ...`)."
+
+  - id: PLAN-CORRECTNESS-1-011
+    severity: 1
+    title: "Order 'then Stryker's mutant id' is ambiguous: ids are strings"
+    evidence:
+      - artifact: "contracts/mutation-output.md: \"Within groups 2 and 3 the order is the changed files' order, then start line, then Stryker's mutant id\"; data-model.md: `id` 'ordering only'"
+      - code: "gates/lib/mutation/report.ts:30-35 `interface Mutant { readonly id: string; ... }`"
+    claim: |
+      With string ids, '10' sorts before '2' lexically; tests and code may pick different orders, and the contract
+      claims a deterministic order.
+    remedies:
+      - "Fix the tiebreak in the contract: start line, then start column, then id compared numerically (or the report's order), and say which."
+
+  - id: PLAN-CORRECTNESS-1-012
+    severity: 1
+    title: "Contract § Readers omits the phase reviewer, which reads the mutation gate's output to decide blocking findings"
+    evidence:
+      - artifact: "contracts/mutation-output.md § Readers: \"No other reader of gate output exists in the repository\""
+      - code: ".specify/extensions/story/commands/speckit.story.review.md:41-45 (and its copy in tooling/speckit/): the reviewer runs `pnpm run gate:mutation -- --base <sha>` and reads its lines ('the command lists the equivalent-mutant records it found ... read each one')"
+    claim: |
+      FR-005 says a reader of findings must not read report lines as findings. The reviewer session is such a reader;
+      its instructions mention records but not the new report lines, so a reviewer may treat a `timeout` line as a
+      blocking survivor or ignore what the spec's edge case asks it to decide ('The reviewer decides whether it
+      matters').
+    remedies:
+      - "List the story review command in § Readers and, if in scope, add one sentence to both copies of speckit.story.review.md that timeout, compile-error and zero-mutants lines are reports to read, not findings; otherwise list that wording change under the spec's Dropped for the operator."

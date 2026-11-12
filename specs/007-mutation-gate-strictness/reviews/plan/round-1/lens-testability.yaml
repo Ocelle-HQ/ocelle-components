@@ -1,0 +1,148 @@
+schema: review-findings/v1
+complete: true
+phase: plan
+round: 1
+lens: testability
+findings:
+  - id: PLAN-TESTABILITY-1-001
+    severity: 4
+    title: "Lever 1's only red test checks a config value. Under Stryker's runner options, Vitest 5.0.5 would run the planned tokens=0 / others=1 order backwards, with tokens last"
+    evidence:
+      - artifact: "research.md § R-05 Decision: \"`vitest.mutation.config.ts` gives the `tokens` project `sequence.groupOrder: 0` and every other project `1`\"; § R-05 Red-first: \"`vitest-mutation-config.test.ts` ... gains an assertion that the `tokens` project's group sorts first\"; plan.md Constitution Check VIII: \"lever 1 has a red assertion in `gates/test/integration/vitest-mutation-config.test.ts`\""
+      - artifact: "research.md § R-05: \"Vitest 5.0.5's `BaseSequencer.sort` orders files by `sequence.groupOrder` first, then failed-before-passed, then longest recorded duration first\". This leaves out the sorter's project-name step."
+      - code: "node_modules/.pnpm/vitest@5.0.5*/node_modules/vitest/dist/chunks/index.1TqnEahn.js:6273-6276 (groupSpecs): `if (isolate === true && order === 0 && spec.project.config.maxWorkers === 1) return sequential.specs.push([spec]);`, and :6310 `if (sequential.specs.length) groups.push(sequential);`. The groups run in array order (:6087 `for (const group of groups)`), so specs with groupOrder 0 go into the `sequential` bucket and run after groups[1]."
+      - code: "Same file :7787-7790 (BaseSequencer.sort): after groupOrder it compares `a.project.name < b.project.name`, so projects run in name order, before any duration comparison. Today 'tokens' sorts after 'elements (chromium)', 'gates', 'storybook' and 'styles'."
+      - code: "Probe (scratchpad probe.mjs): createVitest('test', { config: 'vitest.mutation.config.ts', maxWorkers: 1, maxConcurrency: 1, bail: 1, watch: false }), which is what @stryker-mutator/vitest-runner 10.1.1 dist/src/vitest-test-runner.js:105-139 passes. Every project resolved to `maxWorkers 1 isolate true groupOrder 0 pool forks`: tokens, styles, storybook, gates, elements (chromium)."
+      - code: "Stryker's JSON report carries `testsCompleted` and `statusReason` per Killed mutant (@stryker-mutator/core 10.1.1 dist/src/reporters/mutation-test-report-helper.js:78-86)."
+    claim: |
+      Under Stryker's options every project has maxWorkers 1 and isolate true. Vitest 5.0.5 therefore puts every spec
+      with groupOrder 0 into the `sequential` bucket, and that bucket runs after every numbered group. With the lever
+      as planned (tokens 0, others 1), the other projects run first and the tokens tests run last. That is the
+      opposite of what R-05 intends, and it is no change from today: by name order, tokens already runs last.
+      The planned red test reads `sequence.groupOrder` from the config, so it goes red before the change and green
+      after it while the behaviour is backwards. That is an assertion on configuration, not on observable behaviour
+      (Principle VIII). It certifies a lever that does not work. Only the heavy measurement would reveal it, and the
+      plan treats that measurement as exempt evidence, not as a test. R-05's account of the cause (durations) is also
+      incomplete: project-name order puts the tokens project last whatever the durations.
+    remedies:
+      - "Replace the config-value assertion with a behavioural red test in gates-integration. It creates Vitest the way Stryker's runner does (vitest.mutation.config.ts, maxWorkers 1, maxConcurrency 1, bail 1, read from or pinned to vitest-runner 10.1.1's options) and starts a small set of test files, one per mutation project, including one token test. A reporter records the order in which test modules start, and the test asserts that every tokens module starts before every other project's module. It is red today (tokens last by name), and it is also red for the plan's tokens=0/others=1 design, which exposes the inversion before any measurement."
+      - "Fix the lever design in research.md R-05: give tokens and the other projects non-zero group orders (for example tokens 1, others 2) so that no project falls into Vitest's `sequential` bucket, or choose the custom sequencer. Correct R-05's description of BaseSequencer.sort to include its project-name and isolate steps."
+      - "In R-06's evidence README, record each former-Timeout mutant's `testsCompleted` from the green mutation.json and require it to be no more than the number of tests in the tokens project. This is observable proof from the real run that the tokens tests ran first and bail stopped there."
+
+  - id: PLAN-TESTABILITY-1-002
+    severity: 3
+    title: "FR-011 asks for a kill 'on an assertion about the record's value or group', but the plan gives no checkable criterion and ignores the report field that holds the assertion"
+    evidence:
+      - artifact: "research.md § R-06 FR-011's per-mutant record: \"for Killed, the killing test from the report's `killedBy` and the assertion it fails on\". It does not say how the assertion is obtained or judged for about 121 mutants."
+      - artifact: "spec.md FR-011: \"Stryker's report names a killing test whose assertion is on the record's value or group\"; US2 AS4: \"(not failing because an unrelated check or the setup breaks)\""
+      - code: "@stryker-mutator/core 10.1.1 dist/src/reporters/mutation-test-report-helper.js:78-86: Killed mutants carry `killedBy` and `statusReason: result.failureMessage`."
+      - code: "@stryker-mutator/vitest-runner 10.1.1 dist/src/vitest-test-runner.js:138 `bail: 1`. Only the first failing test is recorded. With lever 1 that is whichever token test file fails first (packages/tokens/test has build, readme, source-form, json, validate, generate, ... tests), not necessarily source-table.test.ts."
+    claim: |
+      Lever 1 changes which test kills each mutant. With bail 1, `killedBy` names only the first failing test in the
+      new order. That could be a token test that fails on an unrelated check (a README table, the source-form check,
+      a validation error thrown at module load) rather than an assertion about the record's value. That is exactly the
+      vacuous kill that FR-011 and AS4 exclude. The plan's only check is a reviewer reading `killedBy` and naming an
+      assertion by hand, for each of about 121 mutants. Nothing decides it mechanically, so the "assertion about the
+      record" condition is not testable as planned. The report already carries the failure message (`statusReason`),
+      which would settle it.
+    remedies:
+      - "In R-06, define the FR-011 check from the green mutation.json for every former-Timeout mutant that ends as Killed: (a) every `killedBy` test id belongs to the tokens project and is named in the record; (b) `statusReason` is an assertion failure (Vitest's AssertionError or expect message), not a thrown error from module load or setup; (c) the message or the test names the mutated record or its group. Have the evidence README list `killedBy` and `statusReason` for each such mutant, and treat any mutant that fails (b) or (c) as not meeting FR-011."
+
+  - id: PLAN-TESTABILITY-1-003
+    severity: 3
+    title: "The 'no report, but Stryker found no mutants' fallback names log lines that Stryker 10.1.1 does not print, and has no test against passing a failed dry run"
+    evidence:
+      - artifact: "research.md § R-03 Real run with no mutant at all: \"when Stryker's output states that it found no mutants (its \\\"No files marked to be mutated\\\" or \\\"Found 0 of … file(s) to be mutated\\\" log line, or its `0 Mutant(s) generated` line ...) every entry is zero-mutant and the run passes\""
+      - code: "grep over @stryker-mutator/{core,instrumenter} 10.1.1 dist/src: neither 'No files marked to be mutated' nor 'Mutant(s) generated' exists. The actual lines are `Found %d of %d file(s) to be mutated` (core dist/src/fs/project.js:41), `Instrumented %d source file(s) with %d mutant(s)` (instrumenter dist/src/instrumenter.js:53), and the warning 'No files found for mutation with the given glob expressions. As a result, a dry-run will be performed ...' (core dist/src/fs/project.js:44)."
+      - code: "core dist/src/process/3-dry-run-executor.js:37-48: the dry run runs regardless of the mutant count and throws on failure or on zero tests, so no report is written. A run with zero mutants and a failing test therefore prints both the zero-mutant log line and the dry-run ERROR, and writes no report."
+      - code: "gates/plants/mutation/error-dry-run-fails/plant.json: its change has mutants. No plant or test covers a failed dry run on a change with zero mutants."
+    claim: |
+      If the probe shows that Stryker writes no report when there is no mutant, the plan adds a pass path that keys on
+      a log line. Two of the three lines it names do not exist in 10.1.1. Worse, a run with no mutants still performs
+      the dry run. With the fallback as described, a change with zero mutants whose tests fail would show the
+      "0 mutant(s)" line, have no report, and pass with exit 0. Today that run ends with exit 2. That breaks FR-007
+      (every existing could-not-run cause stays exit 2). It is a vacuous-pass hole, and no planned test or plant would
+      catch it, because the only error plant for the dry run has mutants.
+    remedies:
+      - "In R-03, name the real 10.1.1 lines (`Instrumented <n> source file(s) with 0 mutant(s)` or `Found 0 of <m> file(s) to be mutated`, whichever the probe shows). Specify that the fallback applies only when Stryker logs no ERROR line and its exit code is 0. Add a red gate test in mutation-report.test.ts for a recorded output that has the zero-mutant line, the dry-run failure ERROR ('There were failed tests in the initial test run.') and no report, and assert exit 2 with today's cause."
+      - "If the fallback is built, add an error plant (for example `error-dry-run-fails-zero-mutant`): a type-only change plus a failing test. It expects the cause 'Stryker wrote no report (There were failed tests in the initial test run.)', so the real gate proves the fallback cannot pass a failed dry run."
+
+  - id: PLAN-TESTABILITY-1-004
+    severity: 2
+    title: "The plant-judge design leaves cases untested: the `records` comparison counts every line, and `reports` on a non-mutation plant has no defined meaning"
+    evidence:
+      - code: "gates/lib/plant-judge.ts:203-209: for a pass plant with `records`, `lines.map(...)` formats every reported line as a record (\"Here every line is a record: a pass plant with any other finding line was rejected above\"). Once timeout, compile-error and zero-mutants lines are no longer findings, they reach this map and become 'unexpected' records."
+      - artifact: "research.md § R-02: \"the judge compares the plant's report lines with the run's the way it compares records\"; data-model.md § Plant: `reports` \"allowed in `pass` and `fail` plants of any gate but meaningful only for `mutation`\""
+      - code: "gates/test/plant-judge.test.ts:78-90 covers records only on runs without other report lines. No planned test names the combination of records and report lines."
+    claim: |
+      The plan's judge tests do not cover the interaction that the current code gets wrong. Take a pass plant with
+      `records` (pass-reasoned-record, or any future one) whose run also prints a compile-error or zero-mutants line.
+      It would fail with "records differ: unexpected ...", or the implementer would loosen the records path without a
+      red test to show it. "Allowed in any gate but meaningful only for mutation" is not testable: the expected verdict
+      for a lint plant with `reports` is undefined, so no test can fail for it. The plan also does not say that the
+      judge change lands before the plant edits. Without that, the plants' red run fails on parsePlant's
+      "unknown key reports" (a setup error), not on the missing report line.
+    remedies:
+      - "List these judge red tests in R-02: (1) a pass plant with `records` and a run that also has timeout, compile-error and zero-mutants lines, which passes and compares records only against `record` lines; (2) a pass plant with `reports` but no `records`, and a run that has record lines, which ignores the records; (3) missing and unexpected report lines each fail, and a `message` mismatch fails; (4) a fail plant with `reports` and exit 1."
+      - "Define `reports` on a plant of a gate other than mutation: either judgePlant rejects it ('only a mutation plant lists reports'), with a test, or it is checked against an empty set. Do not leave it 'allowed but meaningless'."
+      - "State the order in plan.md Phase US1: the judge's `reports` support is committed first, then the plant.json edits are run red against the old gate (missing compile-error or zero-mutants line), then the gate code. Keep that red output."
+
+  - id: PLAN-TESTABILITY-1-005
+    severity: 2
+    title: "The zero-mutant entry name rests on 'one file is one entry', which `--files` does not enforce, so the behaviour for two entries of one file is unspecified and untested"
+    evidence:
+      - artifact: "research.md § R-03: \"One file never has two entries in one shard (001 FR-013), so one selected file is one entry.\" data-model.md § Entry: \"One shard never holds two entries of one file, so `entry` is unique within a run.\""
+      - code: "gates/lib/mutation/shards.ts:163-168 (selectFiles): `const windows = wanted.filter((item) => item.path === file.path)...; return [{ path: file.path, ranges: cut(file.ranges, windows), ... }]`. A hand-written `--files a.ts:1-60,a.ts:61-120` is accepted and merged into one ChangedFile. Only planShards guarantees one entry per file; selectFiles does not check it."
+    claim: |
+      `--files` is also typed by hand, and R-06's measurement runs use it that way. For a list that holds two entries
+      of one file, the design does not say which `entry` name the merged ChangedFile carries, or how a zero-mutant
+      window next to a window with mutants is reported. A test cannot assert an undefined outcome. The mutation gate
+      will also generate mutants in this branch that no test kills or that need an equivalent record. AS6 and FR-003
+      ("each entry is named exactly as given") hold per entry, which the merged model cannot express.
+    remedies:
+      - "Pick one and test it red-first in mutation-shards.test.ts: (a) selectFiles rejects two entries of one file in one `--files` list as malformed, with a new exit-2 cause, matching 001 FR-013's shard rule; or (b) selected files keep one item per entry (path plus its own window), so each entry is judged and named separately. Update data-model.md § Entry to match."
+
+  - id: PLAN-TESTABILITY-1-006
+    severity: 2
+    title: "The Timeout line is proven only on recorded reports, while the US2 red runs will produce real Timeouts on the real gate that the plan does not use as a check"
+    evidence:
+      - artifact: "research.md § R-02: \"Timeout is proven by gate tests, not a plant ... feeds a recorded report with a `Timeout` mutant\"; plan.md: \"US1 lands first so that US2's runs already print their Timeouts as report lines\""
+      - artifact: "ops/004-token-source-mutation/mutation/README.md § Timeouts: 121 Timeouts with the checker off (entries 121-180 and 181-230). R-06's red runs (checker on, before lever 1) are expected to keep at least the group B and C ones."
+    claim: |
+      FR-008 and SC-001 allow a gate test for the Timeout kind. Even so, the fakes in mutation-fakes.ts write the
+      report shape the test author assumes. A wrong field read (for example `location.start.line` against a
+      multi-line mutant, or `replacement` missing in real Timeout entries) would pass the in-process test and fail on
+      the real gate. The red measurement runs are already real gate runs with real Timeouts, and their stdout and
+      mutation.json are kept. The plan does not compare the two, so it misses a free end-to-end check of FR-001 and
+      FR-004 on real Stryker output.
+    remedies:
+      - "Add to R-06: for each red entry, the evidence README checks (by a short script kept in evidence/, or by hand with the counts shown) that the number of `mutation: timeout:` lines in the gate's stdout equals the Timeout mutants on changed lines in that run's mutation.json, that each line's path, start line and mutator match one such mutant, and that the summary's `<t> timeouts` count matches. Do the same for compile-error lines."
+
+  - id: PLAN-TESTABILITY-1-007
+    severity: 1
+    title: "The output contract leaves the order and the plural form unsettled, and existing exact-summary tests change without being named"
+    evidence:
+      - artifact: "contracts/mutation-output.md: \"then start line, then Stryker's mutant id\"; summary \"<z> zero-mutant entr(y|ies)\", \"Singular and plural as `plural()` makes them\""
+      - code: "gates/lib/findings.ts:23-25: `plural(count, noun)` appends 's', so plural(2, 'zero-mutant entry') gives 'zero-mutant entrys'. Stryker mutant ids are strings (report.ts `readonly id: string`), so ordering by id is lexical ('10' < '9') unless the contract says numeric."
+      - code: "gates/test/mutation-records.test.ts:148 asserts the whole summary today: \"mutation: 1 mutant on the changed lines of 1 file, none survived; 2 equivalent records\""
+    claim: |
+      The contract cannot be tested exactly while the id order (lexical or numeric) is open and the plural rule it
+      cites cannot produce 'entries'. A test on either point would only pin whatever the implementation happened to
+      do. Existing tests that assert the full summary line must change their expected text. Under Principle VIII
+      (tests are not weakened afterwards), the plan should name them as replaced by stricter tests, not leave them to
+      be edited quietly.
+    remedies:
+      - "In contracts/mutation-output.md, state numeric ordering of Stryker ids (or ordering by start line and then column). Give the exact noun forms ('timeout', 'compile error', 'zero-mutant entry'/'zero-mutant entries'), and note that plural() gains an irregular form, with its own test. In plan.md Phase US1, list the existing tests whose expected summary changes (mutation-records.test.ts:148 and any other exact-summary assertion), extended with the new counts."
+
+  - id: PLAN-TESTABILITY-1-008
+    severity: 1
+    title: "FR-013's before/after comparison rests on one run each, while Timeout and Killed counts depend on load"
+    evidence:
+      - artifact: "research.md § R-06: \"FR-013 reference entries ... same command, before and after\"; spec.md FR-013: \"no fewer Killed, no more Timeout\""
+      - artifact: "ops/004-token-source-mutation/mutation/README.md § Timeouts: the status depends on the load (\"after the ≈32 s limit when eight full-suite runs share four cores\"). pre-red and final runs of the same entries differ (for example 121-180: 105 against 97 Timeouts)."
+    claim: |
+      A single before run and a single after run of generate.ts and wcag.ts cannot tell a regression from run-to-run
+      variance in statuses that depend on the time limit. An increase of one Timeout would be read as a failure of
+      FR-013, and an equal count could hide a real change.
+    remedies:
+      - "In R-06, require the before and after reference runs to be made under the same conditions (alone, same concurrency). Compare per mutant (id or location plus mutator), not only counts. If any mutant moves from Killed to Timeout, re-run both once and record both runs before calling it a regression."

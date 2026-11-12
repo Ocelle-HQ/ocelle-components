@@ -8,6 +8,11 @@
 // .git, .next, .nuxt, .svelte-kit or .stryker-tmp and only logs `Glob pattern "<entry>" did not result in any
 // files.`, so before the report is classified, any such line in Stryker's output means could not run, naming each
 // entry as logged (phase 3 round 12, O12-01; research.md R-08 "Unread `mutate` entries").
+// Mission 007 (spec FR-001 to FR-003, data-model § Mutant verdict): the verdict also holds what no test was seen
+// killing on changed lines, for the gate to report without changing the verdict: the Timeout and the CompileError
+// mutants, each in changed-file order, then start line, start column and mutant id compared as a number (an id that is
+// not a decimal integer after every numeric one, by string), and the zero-mutant entries, the entries with no mutant
+// on their changed lines (named by their `--files` entry, else by path), in changed-file order.
 import { oneLine } from "../findings.ts";
 import type { Finding } from "../findings.ts";
 import type { ChangedFile } from "./ranges.ts";
@@ -22,17 +27,43 @@ export interface StrykerRun {
   readonly output: string;
 }
 
-/** The mutants on changed lines: findings and how many mutants decided, or why the report cannot be used. */
+/** A Timeout or CompileError mutant on a changed line, as the gate reports it (007 data-model § Undecided mutant). */
+export interface UndecidedMutant {
+  readonly path: string;
+  /** The mutant's start line, as findings name it, even when that line is unchanged. */
+  readonly line: number;
+  readonly mutator: string;
+  /** The replacement on one line, empty when Stryker gives none. */
+  readonly replacement: string;
+}
+
+/**
+ * The mutants on changed lines: findings, how many mutants decided, the Timeout and CompileError mutants and the
+ * zero-mutant entries; or why the report cannot be used.
+ */
 export type MutantVerdict =
-  | { readonly ok: true; readonly findings: readonly Finding[]; readonly mutants: number }
+  | {
+      readonly ok: true;
+      readonly findings: readonly Finding[];
+      readonly mutants: number;
+      readonly timeouts: readonly UndecidedMutant[];
+      readonly compileErrors: readonly UndecidedMutant[];
+      readonly zeroEntries: readonly string[];
+    }
   | { readonly ok: false; readonly cause: string };
+
+/** A changed file of the run, named by its `--files` entry when it has one (shards.ts `selectFiles`). */
+export type RunEntry = ChangedFile & { readonly entry?: string };
 
 interface Mutant {
   readonly id: string;
   readonly mutatorName: string;
   readonly replacement?: string;
   readonly status: string;
-  readonly location: { readonly start: { readonly line: number }; readonly end: { readonly line: number } };
+  readonly location: {
+    readonly start: { readonly line: number; readonly column: number };
+    readonly end: { readonly line: number };
+  };
 }
 
 type Files = Readonly<Record<string, { readonly mutants: readonly Mutant[] } | undefined>>;
@@ -72,7 +103,27 @@ function unreadEntries(output: string): string[] {
   return [...output.matchAll(unreadWarning)].map((match) => String(match[1]));
 }
 
-export function classifyMutants(run: StrykerRun, changed: readonly ChangedFile[]): MutantVerdict {
+const decimal = /^\d+$/;
+
+/** Stryker's mutant ids compared as numbers; an id that is not a decimal integer after every numeric one, by string. */
+function compareIds(a: string, b: string): number {
+  const numericA = decimal.test(a);
+  const numericB = decimal.test(b);
+  if (numericA && numericB) return Number(a) - Number(b);
+  if (numericA !== numericB) return numericA ? -1 : 1;
+  if (a < b) return -1;
+  // Stryker disable next-line ConditionalExpression,EqualityOperator: equivalent, Array.prototype.sort reads only whether a comparison is below 0 here: it orders a pair the same for 0 and 1 (checked on V8 with random ids, duplicates included)
+  return a > b ? 1 : 0;
+}
+
+/** Mutants of one file by start line, then start column, then id. */
+function byPosition(a: Mutant, b: Mutant): number {
+  const { start: x } = a.location;
+  const { start: y } = b.location;
+  return x.line - y.line || x.column - y.column || compareIds(a.id, b.id);
+}
+
+export function classifyMutants(run: StrykerRun, changed: readonly RunEntry[]): MutantVerdict {
   const unread = unreadEntries(run.output);
   if (unread.length > 0) {
     const skipped = "node_modules, .git, .next, .nuxt, .svelte-kit or .stryker-tmp, in any case";
@@ -88,12 +139,30 @@ export function classifyMutants(run: StrykerRun, changed: readonly ChangedFile[]
   if (files === undefined) return cannotRun(`the Stryker report is not a JSON object with files; ${fix}`);
 
   const findings: Finding[] = [];
+  const timeouts: UndecidedMutant[] = [];
+  const compileErrors: UndecidedMutant[] = [];
+  const zeroEntries: string[] = [];
   let mutants = 0;
   for (const file of changed) {
-    for (const mutant of files[file.path]?.mutants ?? []) {
-      const { start, end } = mutant.location;
-      if (!file.ranges.some((range) => start.line <= range.end && end.line >= range.start)) continue;
-      mutants += 1;
+    const onChanged = (files[file.path]?.mutants ?? []).filter(({ location: { start, end } }) =>
+      file.ranges.some((range) => start.line <= range.end && end.line >= range.start),
+    );
+    if (onChanged.length === 0) zeroEntries.push(file.entry ?? file.path);
+    const undecided = (status: string): UndecidedMutant[] =>
+      onChanged
+        .filter((mutant) => mutant.status === status)
+        .sort(byPosition)
+        .map((mutant) => ({
+          path: file.path,
+          line: mutant.location.start.line,
+          mutator: mutant.mutatorName,
+          replacement: oneLine(mutant.replacement ?? ""),
+        }));
+    timeouts.push(...undecided("Timeout"));
+    compileErrors.push(...undecided("CompileError"));
+    mutants += onChanged.length;
+    for (const mutant of onChanged) {
+      const { start } = mutant.location;
       if (passing.has(mutant.status)) continue;
       if (!surviving.has(mutant.status)) {
         const where = `${file.path}:${String(start.line)}`;
@@ -107,5 +176,5 @@ export function classifyMutants(run: StrykerRun, changed: readonly ChangedFile[]
       });
     }
   }
-  return { ok: true, findings, mutants };
+  return { ok: true, findings, mutants, timeouts, compileErrors, zeroEntries };
 }

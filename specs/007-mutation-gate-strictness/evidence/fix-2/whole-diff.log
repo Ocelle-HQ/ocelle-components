@@ -1,0 +1,86 @@
+# pnpm run gate:mutation -- --base 3a247ef5f684a102f95e433e7cf41550839c79e4, 2026-11-11, at 4c78197 (lever 1 narrowed), alone (211.45 s, exit 0)
+# stdout and stderr:
+gates/lib/mutation/report.ts:115: mutation: record: ConditionalExpression,EqualityOperator: equivalent, Array.prototype.sort reads only whether a comparison is below 0 here: it orders a pair the same for 0 and 1 (checked on V8 with random ids, duplicates included)
+gates/bin/mutation.ts:170: mutation: compile-error: ArrowFunction: replaced by () => undefined
+gates/lib/mutation/report.ts:109: mutation: compile-error: BlockStatement: replaced by {}
+gates/lib/mutation/report.ts:120: mutation: compile-error: BlockStatement: replaced by {}
+gates/lib/mutation/report.ts:123: mutation: compile-error: ConditionalExpression: replaced by true
+gates/lib/mutation/report.ts:123: mutation: compile-error: ConditionalExpression: replaced by false
+gates/lib/mutation/report.ts:142: mutation: compile-error: ArrayDeclaration: replaced by ["Stryker was here"]
+gates/lib/mutation/report.ts:143: mutation: compile-error: ArrayDeclaration: replaced by ["Stryker was here"]
+gates/lib/mutation/report.ts:147: mutation: compile-error: LogicalOperator: replaced by files[file.path]?.mutants && []
+gates/lib/mutation/report.ts:147: mutation: compile-error: OptionalChaining: replaced by files[file.path].mutants
+gates/lib/mutation/report.ts:147: mutation: compile-error: ArrayDeclaration: replaced by ["Stryker was here"]
+gates/lib/mutation/report.ts:150: mutation: compile-error: LogicalOperator: replaced by file.entry && file.path
+gates/lib/mutation/report.ts:151: mutation: compile-error: ArrowFunction: replaced by () => undefined
+gates/lib/mutation/report.ts:155: mutation: compile-error: ArrowFunction: replaced by () => undefined
+gates/lib/mutation/report.ts:155: mutation: compile-error: ObjectLiteral: replaced by {}
+gates/lib/mutation/report.ts:159: mutation: compile-error: LogicalOperator: replaced by mutant.replacement && ""
+gates/lib/mutation/report.ts:179: mutation: compile-error: ObjectLiteral: replaced by {}
+gates/lib/mutation/report.ts:179: mutation: compile-error: BooleanLiteral: replaced by false
+gates/lib/mutation/shards.ts:147: mutation: compile-error: ArrowFunction: replaced by () => undefined
+gates/lib/mutation/shards.ts:147: mutation: compile-error: ObjectLiteral: replaced by {}
+gates/lib/mutation/shards.ts:161: mutation: compile-error: ArrowFunction: replaced by () => undefined
+gates/lib/mutation/shards.ts:162: mutation: compile-error: ArrowFunction: replaced by () => undefined
+gates/lib/mutation/shards.ts:163: mutation: compile-error: ObjectLiteral: replaced by {}
+gates/lib/mutation/shards.ts:167: mutation: compile-error: LogicalOperator: replaced by byPath.get(item.path) && []
+gates/lib/mutation/shards.ts:167: mutation: compile-error: ArrayDeclaration: replaced by ["Stryker was here"]
+gates/lib/mutation/shards.ts:167: mutation: compile-error: ArrowFunction: replaced by () => undefined
+gates/lib/mutation/shards.ts:171: mutation: compile-error: ConditionalExpression: replaced by true
+gates/lib/mutation/shards.ts:171: mutation: compile-error: ConditionalExpression: replaced by false
+gates/lib/mutation/shards.ts:171: mutation: compile-error: EqualityOperator: replaced by item !== undefined
+gates/lib/mutation/shards.ts:171: mutation: compile-error: ArrayDeclaration: replaced by ["Stryker was here"]
+gates/lib/mutation/shards.ts:173: mutation: compile-error: ObjectLiteral: replaced by {}
+gates/lib/plant-judge.ts:51: mutation: compile-error: ArrayDeclaration: replaced by []
+gates/lib/plant-judge.ts:85: mutation: compile-error: BlockStatement: replaced by {}
+gates/lib/plant-judge.ts:89: mutation: compile-error: BlockStatement: replaced by {}
+gates/lib/plant-judge.ts:90: mutation: compile-error: ConditionalExpression: replaced by true
+gates/lib/plant-judge.ts:91: mutation: compile-error: ArrayDeclaration: replaced by ["Stryker was here"]
+gates/lib/plant-judge.ts:96: mutation: compile-error: ConditionalExpression: replaced by true
+gates/lib/plant-judge.ts:96: mutation: compile-error: ConditionalExpression: replaced by false
+gates/lib/plant-judge.ts:96: mutation: compile-error: LogicalOperator: replaced by !isText(location) && !isReportRule(rule)
+gates/lib/plant-judge.ts:96: mutation: compile-error: BooleanLiteral: replaced by isText(location)
+gates/lib/plant-judge.ts:96: mutation: compile-error: BooleanLiteral: replaced by isReportRule(rule)
+gates/lib/plant-judge.ts:97: mutation: compile-error: ConditionalExpression: replaced by true
+gates/lib/plant-judge.ts:97: mutation: compile-error: ConditionalExpression: replaced by false
+gates/lib/plant-judge.ts:97: mutation: compile-error: EqualityOperator: replaced by message === undefined
+gates/lib/plant-judge.ts:97: mutation: compile-error: EqualityOperator: replaced by typeof message === "string"
+gates/lib/plant-judge.ts:97: mutation: compile-error: StringLiteral: replaced by ""
+gates/lib/plant-judge.ts:98: mutation: compile-error: ConditionalExpression: replaced by true
+gates/lib/plant-judge.ts:98: mutation: compile-error: ConditionalExpression: replaced by false
+gates/lib/plant-judge.ts:98: mutation: compile-error: EqualityOperator: replaced by message !== undefined
+gates/lib/plant-judge.ts:98: mutation: compile-error: ObjectLiteral: replaced by {}
+gates/lib/plant-judge.ts:98: mutation: compile-error: ObjectLiteral: replaced by {}
+gates/lib/plant-judge.ts:132: mutation: compile-error: ConditionalExpression: replaced by true
+gates/lib/plant-judge.ts:132: mutation: compile-error: ConditionalExpression: replaced by false
+gates/lib/plant-judge.ts:133: mutation: compile-error: ConditionalExpression: replaced by true
+gates/lib/plant-judge.ts:133: mutation: compile-error: StringLiteral: replaced by ""
+gates/lib/plant-judge.ts:135: mutation: compile-error: ConditionalExpression: replaced by true
+gates/lib/plant-judge.ts:135: mutation: compile-error: ConditionalExpression: replaced by false
+gates/lib/plant-judge.ts:135: mutation: compile-error: EqualityOperator: replaced by typeof reports !== "string"
+gates/lib/plant-judge.ts:135: mutation: compile-error: StringLiteral: replaced by ""
+gates/lib/plant-judge.ts:136: mutation: compile-error: ObjectLiteral: replaced by {}
+gates/lib/plant-judge.ts:219: mutation: compile-error: BlockStatement: replaced by {}
+gates/lib/plant-judge.ts:220: mutation: compile-error: BlockStatement: replaced by {}
+gates/lib/plant-judge.ts:221: mutation: compile-error: ArrayDeclaration: replaced by []
+gates/lib/plant-judge.ts:222: mutation: compile-error: MethodExpression: replaced by from
+gates/lib/plant-judge.ts:232: mutation: compile-error: ArrayDeclaration: replaced by []
+gates/lib/plant-judge.ts:239: mutation: compile-error: ArrowFunction: replaced by () => undefined
+gates/lib/plant-judge.ts:245: mutation: compile-error: BlockStatement: replaced by {}
+gates/lib/plant-judge.ts:247: mutation: compile-error: ConditionalExpression: replaced by true
+gates/lib/plant-judge.ts:248: mutation: compile-error: ArrayDeclaration: replaced by []
+gates/lib/plant-judge.ts:251: mutation: compile-error: ConditionalExpression: replaced by true
+gates/lib/plant-judge.ts:251: mutation: compile-error: ConditionalExpression: replaced by false
+gates/lib/plant-judge.ts:251: mutation: compile-error: EqualityOperator: replaced by message !== undefined
+gates/lib/plant-judge.ts:269: mutation: compile-error: ConditionalExpression: replaced by true
+gates/lib/plant-judge.ts:277: mutation: compile-error: ArrowFunction: replaced by () => undefined
+gates/lib/plant-judge.ts:277: mutation: compile-error: ArrowFunction: replaced by () => undefined
+gates/lib/plant-judge.ts:281: mutation: compile-error: ConditionalExpression: replaced by true
+gates/lib/plant-judge.ts:281: mutation: compile-error: ConditionalExpression: replaced by false
+gates/lib/plant-judge.ts:281: mutation: compile-error: EqualityOperator: replaced by plant.reports !== undefined
+gates/lib/plant-judge.ts:284: mutation: compile-error: ConditionalExpression: replaced by true
+gates/lib/plant-judge.ts:284: mutation: compile-error: ConditionalExpression: replaced by false
+gates/lib/plant-judge.ts:284: mutation: compile-error: EqualityOperator: replaced by plant.records === undefined
+gates/lib/plant-judge.ts:285: mutation: compile-error: BlockStatement: replaced by {}
+gates/lib/plant-judge.ts:289: mutation: compile-error: ArrowFunction: replaced by () => undefined
+mutation: 305 mutants on the changed lines of 5 files, none survived; 0 timeouts, 82 compile errors, 0 zero-mutant entries; 1 equivalent record

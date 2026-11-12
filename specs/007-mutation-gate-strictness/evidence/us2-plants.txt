@@ -1,0 +1,3 @@
+# pnpm run gate:plants, 2026-11-11, with lever 1 (vitest.mutation.config.ts split and groupOrder, T021), alone (157.53 s, exit 0)
+# stdout and stderr:
+plants: 186 plants of 13 gates and the registry judged, every plant as expected

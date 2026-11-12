@@ -1,0 +1,4 @@
+packages/tokens/src/source.ts:13: mutation: compile-error: ArrayDeclaration: replaced by []
+packages/tokens/src/source.ts:25: mutation: compile-error: ArrayDeclaration: replaced by []
+packages/tokens/src/source.ts:27: mutation: compile-error: ArrayDeclaration: replaced by []
+mutation: 19 mutants on the changed lines of 1 file, none survived; 0 timeouts, 3 compile errors, 0 zero-mutant entries; 0 equivalent records

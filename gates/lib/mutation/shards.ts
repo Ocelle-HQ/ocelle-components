@@ -1,16 +1,20 @@
 // Mutation shards for CI (FR-013, research.md R-08 "CI, sharded"): the changed files, sorted by path, become entries.
-// A file of at most 60 changed lines is one entry, its path; a file of more is split by line range into entries
-// `path:start-end` (Stryker's own `mutate` range syntax) of 60 changed lines each, the last holding the rest, a cut
-// falling inside a changed range where the count reaches 60, each entry running from its first to its last changed
+// A file of at most 30 changed lines is one entry, its path; a file of more is split by line range into entries
+// `path:start-end` (Stryker's own `mutate` range syntax) of 30 changed lines each, the last holding the rest, a cut
+// falling inside a changed range where the count reaches 30, each entry running from its first to its last changed
 // line (operator decisions: phase 3 round 9, O9-01, plant-judge.ts alone took 9:49 of the 10-minute CI job limit, so
-// 120; 002 phase 5 round 6, O6-01, a 120-line entry of packages/tokens/src/generate.ts ran past 600 s, so 60). The
+// 120; 002 phase 5 round 6, O6-01, a 120-line entry of packages/tokens/src/generate.ts ran past 600 s, so 60; 007
+// spec FR-014, 2026-11-11, "30-line entries, all files": with the TypeScript checker on, three 60-line entries of
+// packages/tokens/src/source.ts took 188 s to 283 s on the sandbox against a bound of 176 s, so 30). The
 // entries, in that order, are filled greedily into shards of at most 10 entries and 250 changed lines (operator
 // decision, phase 4 round 3: 500 lines let a shard run past the limit); an entry never crosses a shard, and the next
-// entry starts a new shard when the current one already holds an entry of its file, so no shard holds more than 60
+// entry starts a new shard when the current one already holds an entry of its file, so no shard holds more than 30
 // changed lines of one file (operator decision, phase 3 round 10, O10-01). A cut, the boundary between two
 // consecutive entries of one file, is counted by `countCuts`: a mutant spanning it is mutated in no shard, an
 // accepted limit (O10-02, gates/README.md). `--files` takes a shard's entries back: `selectFiles` cuts each file's
-// changed ranges to the entries naming it.
+// changed ranges to the entry naming it and keeps that entry, as given, as the name the run's report lines use (007
+// data-model § Entry). A list that names one file more than once (two entries of one file, or one entry repeated) selects
+// nothing, since two entries of one file never share a shard (operator decision, 2026-11-10, PLAN-CORRECTNESS-1-005 (a)).
 import type { ChangedFile, LineRange } from "./ranges.ts";
 
 /** One CI shard: its entries (`path` or `path:start-end`) and their number of changed lines. */
@@ -19,17 +23,24 @@ export interface Shard {
   readonly lines: number;
 }
 
+/** A changed file a `--files` list selects, with the entry that selected it, as given (trimmed). */
+export interface SelectedFile extends ChangedFile {
+  readonly entry: string;
+}
+
 /**
- * The changed files a `--files` list selects, their ranges cut to the listed entries; or the entries that select
- * nothing: malformed ranges, paths that are not changed files, or ranges holding no changed line, in that order.
+ * The changed files a `--files` list selects, their ranges cut to the listed entry; or the entries that select
+ * nothing: malformed ranges, every entry of a file named more than once, paths that are not changed files, or ranges
+ * holding no changed line, in that order.
  */
 export type Selection =
-  | { readonly files: readonly ChangedFile[] }
+  | { readonly files: readonly SelectedFile[] }
   | { readonly malformed: readonly string[] }
+  | { readonly repeated: readonly string[] }
   | { readonly missing: readonly string[] }
   | { readonly empty: readonly string[] };
 
-const maxEntryLines = 60;
+const maxEntryLines = 30;
 const maxEntries = 10;
 const maxLines = 250;
 
@@ -43,7 +54,7 @@ function lineCount(ranges: readonly LineRange[]): number {
   return ranges.reduce((sum, range) => sum + range.end - range.start + 1, 0);
 }
 
-/** A file's entries: its path, or line ranges of at most 60 changed lines each when it has more. */
+/** A file's entries: its path, or line ranges of at most 30 changed lines each when it has more. */
 function splitFile(file: ChangedFile): Entry[] {
   if (file.lines <= maxEntryLines) return [{ entry: file.path, path: file.path, lines: file.lines }];
   const entries: Entry[] = [];
@@ -130,19 +141,11 @@ function readEntry(entry: string, changed: ReadonlySet<string>): Wanted | undefi
   return { entry, path: entry.slice(0, split + ".ts".length), window: { start, end } };
 }
 
-/** The changed ranges cut to the windows, sorted, overlapping or adjacent ranges joined. */
-function cut(ranges: readonly LineRange[], windows: readonly LineRange[]): LineRange[] {
-  const pieces = ranges
-    .flatMap((range) => windows.map((window) => ({ start: Math.max(range.start, window.start), end: Math.min(range.end, window.end) })))
-    .filter((piece) => piece.start <= piece.end)
-    .sort((a, b) => a.start - b.start);
-  const joined: { start: number; end: number }[] = [];
-  for (const piece of pieces) {
-    const last = joined.at(-1);
-    if (last !== undefined && piece.start <= last.end + 1) last.end = Math.max(last.end, piece.end);
-    else joined.push({ ...piece });
-  }
-  return joined;
+/** The changed ranges (sorted and apart, as `changedFiles` reads them) cut to the window. */
+function cut(ranges: readonly LineRange[], window: LineRange): LineRange[] {
+  return ranges
+    .map((range) => ({ start: Math.max(range.start, window.start), end: Math.min(range.end, window.end) }))
+    .filter((piece) => piece.start <= piece.end);
 }
 
 export function selectFiles(changed: readonly ChangedFile[], list: string): Selection {
@@ -155,16 +158,19 @@ export function selectFiles(changed: readonly ChangedFile[], list: string): Sele
   const malformed = read.filter((item) => item.wanted === undefined).map((item) => item.entry);
   if (malformed.length > 0) return { malformed };
   const wanted = read.map((item) => item.wanted).filter((item) => item !== undefined);
+  const named = (path: string): number => wanted.filter((item) => item.path === path).length;
+  const repeated = wanted.filter((item) => named(item.path) > 1).map((item) => item.entry);
+  if (repeated.length > 0) return { repeated };
   const missing = wanted.filter((item) => !paths.has(item.path)).map((item) => item.entry);
   if (missing.length > 0) return { missing };
   const byPath = new Map(changed.map((file) => [file.path, file.ranges]));
-  const empty = wanted.filter((item) => cut(byPath.get(item.path) ?? [], [item.window]).length === 0).map((item) => item.entry);
+  const empty = wanted.filter((item) => cut(byPath.get(item.path) ?? [], item.window).length === 0).map((item) => item.entry);
   if (empty.length > 0) return { empty };
   const files = changed.flatMap((file) => {
-    const windows = wanted.filter((item) => item.path === file.path).map((item) => item.window);
-    if (windows.length === 0) return [];
-    const ranges = cut(file.ranges, windows);
-    return [{ path: file.path, ranges, lines: lineCount(ranges) }];
+    const item = wanted.find((one) => one.path === file.path);
+    if (item === undefined) return [];
+    const ranges = cut(file.ranges, item.window);
+    return [{ path: file.path, ranges, lines: lineCount(ranges), entry: item.entry }];
   });
   return { files };
 }

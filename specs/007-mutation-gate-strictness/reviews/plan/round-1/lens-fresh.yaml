@@ -1,0 +1,121 @@
+schema: review-findings/v1
+complete: true
+phase: plan
+round: 1
+lens: fresh
+findings:
+  - id: PLAN-FRESH-1-001
+    severity: 4
+    title: "Lever 1 as designed (tokens groupOrder 0, others 1) makes Vitest run the token tests last under Stryker, not first"
+    evidence:
+      - artifact: "research.md § R-05 Decision: \"`vitest.mutation.config.ts` gives the `tokens` project `sequence.groupOrder: 0` and every other project `1`\"; plan.md § Summary and Project Structure: \"tokens project groupOrder 0 (lever 1)\""
+      - artifact: "research.md § R-05 What Stryker does: \"`BaseSequencer.sort` orders files by `sequence.groupOrder` first, then failed-before-passed, then longest recorded duration first\" (omits the project-name and isolate keys, and omits groupSpecs)"
+      - code: "node_modules/.pnpm/vitest@5.0.5_*/node_modules/vitest/dist/chunks/index.1TqnEahn.js:6273-6276 (groupSpecs): `if (isolate === true && order === 0 && spec.project.config.maxWorkers === 1) return sequential.specs.push([spec]);` and :6310 `if (sequential.specs.length) groups.push(sequential);` — specs with groupOrder 0, isolate and one worker go to a group appended AFTER every numbered group"
+      - code: "Probe (createVitest('test', {config: 'vitest.mutation.config.ts', maxWorkers: 1, maxConcurrency: 1, bail: 1}), the options Stryker's vitest-test-runner.js:129-140 passes): every Stryker project resolves to maxWorkers 1, isolate true, groupOrder 0 (tokens, styles, storybook, gates, elements (chromium))"
+      - code: "Probe (groupSpecs copied verbatim from Vitest 5.0.5, fed specs with those settings): today (all 0) -> `elements,gates,storybook,styles,tokens`; plan (tokens 0, others 1) -> `elements,gates,storybook,styles | tokens`; alternative (tokens 1, others 2) -> `tokens | elements,gates,storybook,styles`"
+      - code: "index.1TqnEahn.js:7787-7791 (BaseSequencer.sort): after groupOrder, `if (a.project.name !== b.project.name) return a.project.name < b.project.name ? -1 : 1;` — today the token tests run last because `tokens` sorts last by project name, not because of recorded durations"
+    claim: |
+      Under Stryker every project has maxWorkers 1 and isolate true, so the project left at groupOrder 0 is moved by
+      Vitest's groupSpecs into the "sequential" group, which runs after all numbered groups. The planned setting
+      (tokens 0, everything else 1) therefore keeps the token tests at the very end of every static mutant's run,
+      exactly where op 004's Timeouts come from, and US2 would measure "lever 1 does nothing" and escalate to lever 2
+      or to an FR-014 amendment of 001 FR-013 for the wrong reason. The diagnosis in R-05 is also off: across projects
+      the default sequencer orders by project name, so duration caches play no part in why `source-table.test.ts` is late.
+      The planned red assertion ("the tokens project's group sorts first", read from the config numbers) would go
+      green on 0 < 1 while the executed order is the opposite, so it is a test that cannot catch this defect.
+    remedies:
+      - "R-05 and plan: give the tokens project a non-zero groupOrder lower than the others (for example tokens 1, every other Stryker project 2), state why 0 cannot be used (groupSpecs' sequential group under maxWorkers 1 and isolate), and correct the sequencer description (groupOrder, then project name, then isolate, then failed-first and duration within a project). Make the red test assert the executed order under Stryker's options (for example run Vitest with maxWorkers 1 and bail 1 on a fixture or the real config with a reporter recording module start order, or run a mutant that only a token test kills and assert it is killed within a bound), not the config numbers."
+
+  - id: PLAN-FRESH-1-002
+    severity: 3
+    title: "R-07 refuses the alone-shard CI re-measurement the spec requires, though a cheap way exists"
+    evidence:
+      - artifact: "spec.md § Assumptions, CI measurement: \"If a mixed shard misses 480 s, the `source.ts` entry is measured again on CI in a shard that holds it alone (the plan says how that run is made), and that time decides.\""
+      - artifact: "research.md § R-07: \"CI gives no way to run one entry alone without a workflow change, which the operator did not choose (SPEC-1-04). So the landing pass then brings the measured times to the operator as a decision ... accept the upper bound as measured; apply lever 2 ...; or amend 001 FR-013\""
+      - code: "gates/lib/mutation/shards.ts:70-86 planShards: entries sorted by path, greedy fill; `gates/...` entries of the mission's own change sort before `packages/tokens/src/source.ts`, so `source.ts:1-…` joins the last gate shard whenever it has room (≤ 10 entries, ≤ 250 lines); a diff holding only source.ts makes four shards each holding one source.ts entry (two entries of one file never share a shard)"
+      - code: ".github/workflows/ci.yml:79,102: the shards come from `--base ${{ github.event.pull_request.base.sha }}`, so a pull request whose diff is only the measurement commit yields source.ts-only shards with no workflow change"
+    claim: |
+      The plan contradicts the spec: the spec says a mixed shard that misses 480 s is re-measured alone and the plan
+      says how; the plan instead turns that case into an operator decision with "accept the upper bound" as an
+      option, which lets FR-010's CI half be closed without the measurement the spec defines. Running an entry alone
+      does not need a workflow change: the same measurement commit on a temporary draft pull request based on `main`
+      (or on the mission branch after its base already contains the gate changes) puts each source.ts entry in a
+      shard of its own. The mixed-shard case is also likely rather than rare, since the mission's own gate source
+      changes sort before `packages/` and leave room in the last gate shard.
+    remedies:
+      - "R-07: name the alone run (the measurement commit on a temporary draft PR whose diff holds only source.ts, closed unmerged after the times and run link are recorded), keep the operator decision only for an alone shard that still misses 480 s (lever 2 or FR-014), and drop 'accept the upper bound' as a way to close FR-010."
+      - "Or bring the conflict back to the operator at the plan gate: amend spec § Assumptions to the plan's operator-decision path, dated, if the operator prefers it."
+
+  - id: PLAN-FRESH-1-003
+    severity: 2
+    title: "The CI measurement commit leaves blank lines unchanged, so CI's source.ts entries are not the sandbox entries"
+    evidence:
+      - artifact: "research.md § R-07: \"appends a trailing space to every line of `packages/tokens/src/source.ts` that is not blank\"; § R-06: the sandbox entries are `source.ts:1-60`, `61-120`, `121-180`, `181-230` against `ec0f533~1`"
+      - code: "`grep -c '^$' packages/tokens/src/source.ts` = 8 of 230 lines: the measurement commit changes 222 lines, so splitFile (gates/lib/mutation/shards.ts:47-68) cuts after every 60 changed lines and the CI entries end at other file lines than 60/120/180 (four entries of 60, 60, 60 and 42 changed lines spanning shifted ranges)"
+    claim: |
+      FR-010 pairs a sandbox bound (176 s per entry) with a CI bound (480 s per entry) as two views of the same entries;
+      the plan's commit makes CI measure differently cut entries with different mutant sets and different cut-spanning
+      losses, so the sandbox-to-CI factor read from the evidence is not like for like and a CI entry may hold more of
+      the dense 121-180 records than the sandbox entry did.
+    remedies:
+      - "R-07: change every line, blank lines included (for example a single space on each blank line as well, or a trailing comment marker that is safe on every line), and check with `--plan` against the PR base that the source.ts entries are exactly `1-60,61-120,121-180,181-230` before pushing; record the plan output in the evidence."
+
+  - id: PLAN-FRESH-1-004
+    severity: 2
+    title: "Entry names are not unique per file: `--files` with two entries of one file merges them, so FR-003 cannot name each entry"
+    evidence:
+      - artifact: "research.md § R-03: \"One file never has two entries in one shard (001 FR-013), so one selected file is one entry.\"; data-model.md § Entry: \"One shard never holds two entries of one file, so `entry` is unique within a run.\""
+      - artifact: "spec.md FR-003: \"in a `--files` shard run each entry is named exactly as given to `--files`\""
+      - code: "Probe: selectFiles(changed source.ts 1-230, 'packages/tokens/src/source.ts:1-60,packages/tokens/src/source.ts:61-120') -> one ChangedFile with ranges [{1,120}]; with 'source.ts,source.ts:1-60' -> one ChangedFile with ranges [{1,230}]; with the same entry twice -> one ChangedFile (gates/lib/mutation/shards.ts:163-168 merges every window of a path)"
+    claim: |
+      The uniqueness the design relies on is a property of `--plan`'s output, not of `--files`, which is a public
+      argument the measurement runs, the quickstart and any reviewer type by hand. With two entries of one file the
+      planned `entry` field has no single value, and an entry with no mutant next to an entry with mutants of the
+      same file is not reported, contrary to FR-003 and AS6 ("a run judges only its own entries"). The data model
+      leaves this state undefined.
+    remedies:
+      - "data-model.md § Entry and R-03: make `--files` reject two entries naming the same file (exit 2, a new selection problem, plant or gate test), matching 001 FR-013's shard rule; or keep one selected item per entry (not per file) so classification counts mutants per entry window and names each."
+
+  - id: PLAN-FRESH-1-005
+    severity: 2
+    title: "The no-report fallback of R-03 keys on Stryker log lines that 10.1.1 never prints"
+    evidence:
+      - artifact: "research.md § R-03: \"when Stryker's output states that it found no mutants (its \\\"No files marked to be mutated\\\" or \\\"Found 0 of … file(s) to be mutated\\\" log line, or its `0 Mutant(s) generated` line ...)\""
+      - code: "@stryker-mutator/core 10.1.1 dist/src/fs/project.js:35-50: `Found ${n} of ${m} file(s) to be mutated` is logged only when filesToMutate.size > 0; size 0 logs `Warning: No files found for mutation with the given glob expressions`. `grep -rn 'No files marked\\|Mutant(s) generated'` over dist/src: no match"
+      - code: "gates/lib/mutation/report.ts:265-280: the size-0 case is a mutate entry Stryker did not read, which already ends as exit 2 (`Glob pattern ... did not result in any files.`) before any report check"
+      - code: "dist/src/process/4-mutation-test-executor.js:49-54 and 3-dry-run-executor.js: no early exit for zero mutants; a read file with no mutant goes through the dry run and the (empty) mutation run, so a report is expected"
+    claim: |
+      Two of the three named signals do not exist in Stryker 10.1.1 and the third ("Found 0 of") cannot appear for a
+      file Stryker read. If the probe of US1's first task does show no report, implementing the fallback as written
+      either matches nothing (the run stays exit 2 and AS3 fails on the real gate) or, if loosened to the "No files
+      found for mutation" warning, passes a run in which Stryker read nothing, the very case 001's O12-01 made exit 2.
+    remedies:
+      - "R-03: drop the named strings; state that 10.1.1 writes a report for a read file with no mutant (from the executor code) and that the probe confirms it; if the probe shows otherwise, the fallback condition is designed then from the probe's actual output and must still exit 2 when no file was read."
+
+  - id: PLAN-FRESH-1-006
+    severity: 2
+    title: "The judge's records branch counts every non-finding line as a record, so marking report lines as non-findings breaks pass plants with records"
+    evidence:
+      - artifact: "research.md § R-02: \"`judgePlant` treats the rules `record`, `timeout`, `compile-error` and `zero-mutants` ... as report lines, never as findings ... When it is absent, report lines are not checked, so every existing pass plant keeps its verdict without a change\""
+      - code: "gates/lib/plant-judge.ts:199-206: `// Here every line is a record: a pass plant with any other finding line was rejected above.` then `const records = lines.map(...)` over ALL reported lines, compared with plant.records by `differ`"
+      - code: "gates/lib/plant-judge.ts:161-171 `differ` compares de-duplicated sets, so two identical report lines (same location and rule, e.g. two Timeouts of one mutator on one line) satisfy one expected entry"
+    claim: |
+      Once `isRecord` is widened to the four reserved rules, any pass plant with `records` whose run also prints a
+      timeout, compile-error or zero-mutant line fails as "records differ: unexpected …", and those lines would be
+      parsed into a mangled record key. No current plant combines the two, but the plan's "without a change" claim
+      is false for the code as it is and an implementer following R-02 literally introduces the defect. The set
+      comparison also means `reports` cannot prove "every one is listed" (spec Edge Cases) when two lines coincide.
+    remedies:
+      - "R-02 and data-model § Plant: say that `records` is compared against lines with rule `record` only and `reports` against the three new rules only, each as a multiset (count included), with a judge test for a pass plant holding both a record and a report line."
+
+  - id: PLAN-FRESH-1-007
+    severity: 1
+    title: "The zero-mutant line's location `path:start-end` is not a location shape the gate contract allows"
+    evidence:
+      - artifact: "contracts/mutation-output.md § Examples: `packages/tokens/src/source.ts:61-120: mutation: zero-mutants: ...`"
+      - code: "specs/001-repository-foundation/contracts/gate-cli.md:8: \"where `location` is `path:line`, `path` or a commit hash\""
+    claim: |
+      The new line uses a fourth location form. The plan amends only the mutation rows of gate-cli.md, so the
+      general location rule of the contract and of 001 data-model § Finding would contradict the gate's output.
+    remedies:
+      - "R-08 / FR-015 records: amend gate-cli.md line 8 (and 001 data-model § Finding if it defines location) to allow `path:start-end` for mutation report lines, dated with mission 007."

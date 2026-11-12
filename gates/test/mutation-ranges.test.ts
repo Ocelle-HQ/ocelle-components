@@ -377,7 +377,7 @@ describe("mutation gate: diff headers and mutate inputs (phase 3 round 7, O7-01 
   it("mutates the files of tab-suffixed and quoted headers in a normal run", async () => {
     expect(await gate(["--base", base], quoted, sources, true)).toEqual({
       code: 0,
-      out: ["mutation: 4 mutants on the changed lines of 4 files, none survived; 0 equivalent records"],
+      out: ["mutation: 4 mutants on the changed lines of 4 files, none survived; 0 timeouts, 0 compile errors, 0 zero-mutant entries; 0 equivalent records"],
       err: [],
       mutated: [`${space}:1-1`, `${ok}:1-2`, `${both}:1-1`, `${accent}:1-2`],
     });
@@ -395,7 +395,7 @@ describe("mutation gate: diff headers and mutate inputs (phase 3 round 7, O7-01 
   it("--files selects the file of a quoted header", async () => {
     expect(await gate(["--base", base, "--files", accent], quoted, sources, true)).toEqual({
       code: 0,
-      out: ["mutation: 1 mutant on the changed lines of 1 file, none survived; 0 equivalent records"],
+      out: ["mutation: 1 mutant on the changed lines of 1 file, none survived; 0 timeouts, 0 compile errors, 0 zero-mutant entries; 0 equivalent records"],
       err: [],
       mutated: [`${accent}:1-2`],
     });
@@ -462,7 +462,7 @@ describe("mutation gate: diff headers and mutate inputs (phase 3 round 7, O7-01 
     const path = `gates/lib/a${part}b.ts`;
     expect(await gate(["--base", base], newFilesDiff({ [path]: 1 }), { [path]: "export {};\n" }, true)).toEqual({
       code: 0,
-      out: ["mutation: 1 mutant on the changed lines of 1 file, none survived; 0 equivalent records"],
+      out: ["mutation: 1 mutant on the changed lines of 1 file, none survived; 0 timeouts, 0 compile errors, 0 zero-mutant entries; 0 equivalent records"],
       err: [],
       mutated: [`${path}:1-1`],
     });

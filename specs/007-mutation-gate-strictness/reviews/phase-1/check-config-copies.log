@@ -1,0 +1,2 @@
+config-copies: .specify/extensions/story/story-config.yml and tooling/speckit/extensions/story/story-config.yml are identical
+exit 0
