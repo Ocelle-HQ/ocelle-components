@@ -135,6 +135,12 @@ requests and no console message; `pnpm run gate:manifest` passes and its plants 
 - [X] T029 [US1] `packages/elements/README.md` and `packages/elements/CHANGELOG.md` with the statements of T020
 - [X] T030 [US1] Run each pairing plant of T013 to T016a once (spec pairing table rows for US1), record in `specs/005-icons-brand-mark/reviews/phase-2/plants.md`; run `pnpm run gate:manifest`, `gate:style-lint`, `gate:csp`, `gate:prefix`, `gate:pins`, then `gate:plants` and `gate:mutation -- --base <phase base>` (one at a time)
 
+### Landing fold (red first; `reviews/phase-2/round-2.md`, landing round 1 L1-01 and L1-04)
+
+- [ ] T064 [US1] OP2-02, red: `packages/elements/test/node/readme.test.ts`: the two statements that carry "(FR-006)" (`define`, module and registration) and "(FR-034)" (`:host([hidden])`, styles) are expected without the parenthesised IDs, and a new case asserts that `packages/elements/README.md` and `packages/elements/CHANGELOG.md` hold no planning ID (no `FR-`, `SC-`, `US<n>-<n>`, `PLAN-`, `R-<nn>` or `T<nnn>` reference); both fail on the README as it stands
+- [ ] T065 [US1] OP2-02, green: `packages/elements/README.md` lines 231 and 243 lose "(FR-006)" and "(FR-034)", the sentences otherwise unchanged; T064 passes
+- [ ] T066 [US1] OP2-01: `specs/001-repository-foundation/contracts/ci-checks.md`: the first table gains the row `Custom-elements manifest` / `pnpm run gate:manifest` (job id `manifest`; since 005), before `Plants`; the gate-id paragraph names 005 FR-009's `manifest` and says fourteen in all (was thirteen); the required-checks paragraph says fifteen check names and that `gates/README.md` lists the same fifteen (was fourteen); a 005 paragraph after 002's: 005 FR-009 added the `Custom-elements manifest` check, so the first table has fifteen rows, and the ruleset on `main` must add that check name, until which the gate does not block a merge (`gates/README.md` § Required checks on `main`). No test reads this contract (no gate compares it), so `reviews/phase-2/tdd-exempt.md` states why it cannot go red; then `gate:unit-tests` and `gate:plants` (one at a time)
+
 **Checkpoint**: `tdd-check.sh 2` reports `pass`; quickstart steps 1 to 5 pass for `ocelle-icon`.
 
 ---
@@ -194,6 +200,12 @@ from the label, empty slots take no space, and an icon-only host's name is exact
 - [X] T047 [US3] `packages/elements/src/icon-slot.ts`: `iconSlotStyles` per R-10 and data-model § Slot convention (`.icon-row` inline-flex, `align-items: flex-start`, `padding-block: calc((var(--ocelle-icon-size) - 1lh) / 2)`; `.icon-slot` `block-size: 1lh`, centred, `flex: none`; `::slotted(*)` size, `max-inline-size: none`, `flex: none`, `--ocelle-icon-size: inherit` all `!important`, `color: inherit`; margins toward the label)
 - [X] T048 [US3] README slot-convention and naming sections (T045)
 - [X] T049 [US3] Run each US3 plant once, record in `reviews/phase-4/plants.md`; then `gate:style-lint`, `gate:csp`, `gate:prefix`, `gate:plants`, `gate:mutation -- --base <phase base>` (one at a time; csp and prefix because `icon-slot.ts` joins the built output, analysis L6)
+
+### Landing fold (red first; `reviews/phase-4/round-3.md`, landing round 1 L1-02)
+
+- [ ] T067 [US3] OP4-01, red: `gates/test/token-only.test.ts`: a factor on a group that holds only `1lh` is raw, whichever group it is: `padding-block: calc((1lh) * 3 + var(--ocelle-space-1))`, `calc(calc(1lh) * 3 + var(--ocelle-space-1))`, `calc(3 * (1lh) + var(--ocelle-space-1))`, `calc(((1lh)) * 3 + var(--ocelle-space-1))` and `calc((1lh) / 2 + var(--ocelle-space-1))` each report `1lh`, and `calc((1lh) + (1lh) + var(--ocelle-space-1))` is raw (two line boxes in one expression); `calc((1lh) + var(--ocelle-space-1))` and `calc((var(--ocelle-icon-size) - 1lh) / 2)` still pass; fail plant `gates/plants/style-lint/fail-lh-paren-factor` (`padding-block: calc((1lh) * 3 + var(--ocelle-space-1))`, finding `ocelle/token-only` `1lh`) (R-03)
+- [ ] T068 [US3] OP4-01, green: `gates/stylelint/token-only.ts` (`admittedLine`): when the group of `1lh` (parentheses or a nested `calc()`) holds nothing but that `1lh`, its neighbours are read in the enclosing group, repeated outward while the group holds only the one operand; T067 and the plants pass, the shipped `iconSlotStyles` still passes
+- [ ] T069 [US3] Run `fail-lh-paren-factor` once and record it in `reviews/phase-4/plants.md`; then `gate:style-lint`, `gate:plants`, `gate:mutation -- --base <phase base>` (one at a time)
 
 **Checkpoint**: `tdd-check.sh 4` reports `pass`.
 
