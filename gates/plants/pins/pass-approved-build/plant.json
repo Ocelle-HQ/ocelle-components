@@ -1,0 +1,4 @@
+{
+  "expect": "pass",
+  "why": "allowBuilds may approve exactly rs-module-lexer@2.9.0 and fsevents@2.3.3, each at its one version, beside false entries (005 research.md R-16)."
+}

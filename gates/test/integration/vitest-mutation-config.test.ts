@@ -5,9 +5,11 @@ import { afterEach, describe, expect, it } from "vitest";
 import { baseEnv, cleanUp, repo, runGate } from "./workspace.ts";
 
 // Stryker's vitest-runner uses vitest.mutation.config.ts: every project of vitest.config.ts except gates-integration,
-// tokens-browser, styles-browser and storybook-integration (002 contracts/gates.md § Mutation, 003 research.md R-09),
-// so a mutant that only a tool-, browser- or build-starting test covers is reported as NoCoverage (research.md R-08). The test first asserts that the file exists and only then loads it,
-// so at the red commit it fails on that assertion.
+// tokens-browser, styles-browser, storybook-integration (002 contracts/gates.md § Mutation, 003 research.md R-09) and,
+// since 005 (research.md R-11, R-12), elements (mutated by stryker.elements.config.json), elements-build and
+// elements-browser, so a mutant that only a tool-, browser- or build-starting test covers is reported as NoCoverage
+// (research.md R-08). The test first asserts that the file exists and only then loads it, so at the red commit it
+// fails on that assertion.
 //
 // 007 (research.md R-05, lever 1, narrowed 2026-11-11 after landing L1-01, FR-013): the mutation configuration splits
 // the tokens project in two and orders the projects with sequence.groupOrder, so under Stryker's options
@@ -15,7 +17,7 @@ import { baseEnv, cleanUp, repo, runGate } from "./workspace.ts";
 // default order (project name). The deep-equal of the earlier version (every mutation project equal to its
 // vitest.config.ts counterpart) is replaced by the stricter comparison below: exact names, each project equal to its
 // counterpart once its whole test.sequence is removed (with the two stated split exceptions), each test.sequence
-// exactly as R-05 assigns it, and the collected test modules exactly those of vitest.config.ts outside the four
+// exactly as R-05 assigns it, and the collected test modules exactly those of vitest.config.ts outside the seven
 // excluded projects, each once.
 interface Project {
   readonly test?: { readonly name?: unknown; readonly sequence?: unknown; readonly [key: string]: unknown };
@@ -31,7 +33,20 @@ interface ModuleOf {
 }
 
 const sourceTable = "packages/tokens/test/source-table.test.ts";
-const excluded = ["gates-integration", "tokens-browser", "styles-browser", "storybook-integration"];
+const excluded = [
+  "gates-integration",
+  "tokens-browser",
+  "styles-browser",
+  "storybook-integration",
+  "elements",
+  "elements-build",
+  "elements-browser",
+];
+/**
+ * The excluded projects as Vitest names a collected module's project: a browser-mode project carries its browser
+ * instance, so the in-process elements project (005 research.md R-11) is collected as "elements (chromium)".
+ */
+const excludedCollected = [...excluded, "elements (chromium)"];
 const helper = "gates/test/integration/vitest-order.ts";
 const timeout = 180_000;
 
@@ -66,7 +81,7 @@ function sorted(values: readonly string[]): string[] {
 }
 
 describe("vitest.mutation.config.ts", () => {
-  it("holds every project of vitest.config.ts except gates-integration, tokens-browser, styles-browser and storybook-integration, with tokens split for the start order", async () => {
+  it("holds every project of vitest.config.ts except gates-integration, tokens-browser, styles-browser, storybook-integration, elements, elements-build and elements-browser, with tokens split for the start order", async () => {
     expect(existsSync(join(repo, "vitest.mutation.config.ts"))).toBe(true);
     const all = await projectsOf("vitest.config.ts");
     const mutation = await projectsOf("vitest.mutation.config.ts");
@@ -76,6 +91,9 @@ describe("vitest.mutation.config.ts", () => {
       "styles",
       "styles-browser",
       "elements",
+      "elements-node",
+      "elements-build",
+      "elements-browser",
       "storybook",
       "storybook-integration",
       "gates",
@@ -85,7 +103,7 @@ describe("vitest.mutation.config.ts", () => {
       "tokens-source-table",
       "tokens",
       "styles",
-      "elements",
+      "elements-node",
       "storybook",
       "gates",
     ]);
@@ -109,12 +127,12 @@ describe("vitest.mutation.config.ts", () => {
   });
 
   it(
-    "collects exactly the test modules of vitest.config.ts outside the four excluded projects, each once",
+    "collects exactly the test modules of vitest.config.ts outside the seven excluded projects, each once",
     async () => {
       const all = await collected("vitest.config.ts");
       const mutation = await collected("vitest.mutation.config.ts");
       const expected = all
-        .filter((entry) => !excluded.includes(entry.project))
+        .filter((entry) => !excludedCollected.includes(entry.project))
         .map((entry) => entry.module);
       expect(expected.length).toBeGreaterThan(0);
       expect(sorted(mutation.map((entry) => entry.module))).toEqual(sorted(expected));
@@ -142,16 +160,16 @@ describe("vitest.mutation.config.ts", () => {
       );
       // The run stops as soon as a module outside tokens-source-table starts. Every other project is at one
       // groupOrder, so the next module belongs to one of them, and with Vitest's default order (project name)
-      // tokens is the last of them, so it is not a tokens module. Which of the others starts first is not fixed:
-      // elements runs in the browser (Vitest names it "elements (chromium)") and starts once Chromium is up, so a
-      // gates module often starts before it. A module that starts while the cancel is pending is checked too.
+      // tokens is the last of them, so it is not a tokens module. Which of the others starts first is not fixed by
+      // this check; since 005 (research.md R-12) the browser-mode elements project is not in this configuration, so
+      // elements-node, gates, storybook or styles. A module that starts while the cancel is pending is checked too.
       const ran = await helperRun(["order", "vitest.mutation.config.ts", "tokens-source-table"]);
       expect(ran.code).toBe(0);
       const started = (ran.json as { readonly started: readonly ModuleOf[] }).started;
       expect(started[0]).toEqual({ project: "tokens-source-table", module: sourceTable });
       expect(started.length).toBeGreaterThan(1);
       for (const entry of started.slice(1)) {
-        expect(["elements (chromium)", "gates", "storybook", "styles"]).toContain(entry.project);
+        expect(["elements-node", "gates", "storybook", "styles"]).toContain(entry.project);
       }
     },
     timeout,

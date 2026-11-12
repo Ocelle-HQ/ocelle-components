@@ -24,6 +24,7 @@ Security (research.md R-16):
 | Sign-off | `pnpm run gate:signoff -- --range ${{ github.event.pull_request.base.sha }}..${{ github.event.pull_request.head.sha }}` | `fetch-depth: 0` |
 | Contrast | `pnpm run gate:contrast` (job id `contrast`; since 002) | |
 | Brand rules | `pnpm run gate:brand-rules` (job id `brand-rules`; since 002) | |
+| Custom-elements manifest | `pnpm run gate:manifest` (job id `manifest`; since 005) | |
 | Plants | `pnpm run gate:plants` | |
 
 Helper jobs of the mutation gate (research.md R-08; listed as `helperJobs` in `gates/gates.json`, not checks that
@@ -47,15 +48,20 @@ It is not a gate, reports no check that the ruleset requires, and the registry c
 
 The set of gate job ids (one per row of the first table but Plants; for Mutation testing the verdict job `mutation`,
 not its helper jobs) equals the gate ids of `gates/gates.json` and the FR-020 list `fr020` of `gates/lib/registry.ts`:
-the eleven gates of this feature's FR-020 plus `contrast` and `brand-rules` of 002 FR-020, thirteen in all. The plant
-job checks this (research.md R-10).
+the eleven gates of this feature's FR-020 plus `contrast` and `brand-rules` of 002 FR-020 and `manifest` of 005
+FR-009, fourteen in all. The plant job checks this (research.md R-10).
 
-Required checks: a ruleset (or branch protection) on `main` requires the fourteen check names of the first table. The
+Required checks: a ruleset (or branch protection) on `main` requires the fifteen check names of the first table. The
 operator configures it in the feature verification (plan.md § Verification); `gates/README.md` lists the same
-fourteen names. The registry check cannot stop one pull request from removing a gate from `ci.yml`, `gates.json` and
+fifteen names. The registry check cannot stop one pull request from removing a gate from `ci.yml`, `gates.json` and
 `registry.ts` together; the ruleset does, since the removed check then never reports.
 
 Mission 002 (specs/002-design-tokens, note of 2026-11-04, landing review L1-02 of PR #19): 002 FR-020 added the
 `Contrast` and `Brand rules` checks, so the first table has fourteen rows (it had twelve). The ruleset on `main` must
 add the two check names `Contrast` and `Brand rules`; until the operator does so, neither gate blocks a merge
+(`gates/README.md` § Required checks on `main`).
+
+Mission 005 (specs/005-icons-brand-mark, note of 2026-11-12, landing review L1-01 of PR #26, operator round OP2-01):
+005 FR-009 added the `Custom-elements manifest` check, so the first table has fifteen rows. The ruleset on `main` must
+add the check name `Custom-elements manifest`; until the operator does so, the gate does not block a merge
 (`gates/README.md` § Required checks on `main`).

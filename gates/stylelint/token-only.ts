@@ -9,7 +9,11 @@
 // in stylelint.config.ts, makes a line height (in `line-height`, or after the `/` of `font`) pass only as one
 // var(--ocelle-line-height-*) reference without a fallback or as a CSS-wide keyword, and a `font` value with no
 // top-level `/` raw unless it is a CSS-wide keyword alone (it resets line-height to normal; scope amended by the
-// operator round of 2026-11-09, phase 2 round 2, O2-01); it is read apart from the token lists.
+// operator round of 2026-11-09, phase 2 round 2, O2-01); it is read apart from the token lists. Since 005 (research.md
+// R-03, R-08) `scale` takes only the bare numbers -1 and 1, and any function in its value is raw; and (R-03, R-10) the
+// unit `lh` passes only as `1lh`, as the whole value or, inside `calc()`, once per expression as an operand of `+` or
+// `-` in an expression that references an `--ocelle-*` token, a group that holds only `1lh` counting as that `1lh`
+// (OP4-01); and (R-03, R-09) `aspect-ratio` takes only the bare number 1 as its whole value.
 import stylelint from "stylelint";
 import type { Rule } from "stylelint";
 import valueParser from "postcss-value-parser";
@@ -65,26 +69,87 @@ function wordAllowed(word: string, property: string, inCalc: boolean): boolean {
   return !namedColours.has(identifier);
 }
 
-/** The raw parts of a function: a var() fallback and calc() operands are checked; any other function is raw. */
-function functionRaw(node: valueParser.FunctionNode, property: string, inCalc: boolean): string[] {
+/** Whether a word is a length in the unit `lh`, whatever its number. */
+function isLh(word: string): boolean {
+  const number = valueParser.unit(word);
+  return number !== false && number.unit.toLowerCase() === "lh";
+}
+
+/** Whether a word is exactly one line box, `1lh` (005 research.md R-03). */
+function isOneLine(word: string): boolean {
+  const number = valueParser.unit(word);
+  return number !== false && number.unit.toLowerCase() === "lh" && Number(number.number) === 1;
+}
+
+/** Whether a node is a calc() operator that adds or subtracts. */
+function isSum(node: Node | undefined): boolean {
+  return node?.type === "word" && (node.value === "+" || node.value === "-");
+}
+
+/** The operands of a group: its nodes but spaces and comments. */
+function operandsOf(group: readonly Node[]): Node[] {
+  return group.filter((node) => node.type !== "space" && node.type !== "comment");
+}
+
+/**
+ * The `1lh` a calc() expression admits (005 research.md R-03; PLAN-FRESH-3-002 (a)): its one `lh` length, when the
+ * expression holds exactly one (nested groups and calc() included), that length is `1lh`, each operator beside it in
+ * its group adds or subtracts, and the expression references an `--ocelle-*` token; none otherwise. A group that holds
+ * nothing but that `1lh` (`(1lh)`, `calc(1lh)`, at any depth) is that `1lh`, so its neighbours are read in the
+ * enclosing group instead, outward while the group holds the one operand (OP4-01, landing round 1 L1-02). Any function
+ * is climbed, not only a group or calc(): a `1lh` inside another function is never classified on its own (var() keeps
+ * no fallback there, any other function is raw whole), so what it admits makes no difference.
+ */
+function admittedLine(calc: valueParser.FunctionNode): Node | undefined {
+  const lengths: { readonly node: Node; readonly group: readonly Node[] }[] = [];
+  const tokens: Node[] = [];
+  // Each nested function's nodes, with that function and the group it sits in; the expression's own nodes have none.
+  const holders = new Map<readonly Node[], { readonly node: Node; readonly group: readonly Node[] }>();
+  const walk = (group: readonly Node[]): void => {
+    for (const node of group) {
+      if (node.type === "word" && isLh(node.value)) lengths.push({ node, group });
+      if (node.type !== "function") continue;
+      if (node.value.toLowerCase() === "var" && node.nodes[0]?.value.startsWith("--ocelle-") === true) tokens.push(node);
+      holders.set(node.nodes, { node, group });
+      walk(node.nodes);
+    }
+  };
+  walk(calc.nodes);
+  const [only] = lengths;
+  if (lengths.length !== 1 || only === undefined || tokens.length === 0 || !isOneLine(only.node.value)) return undefined;
+  let { node: subject, group } = only;
+  for (let up = holders.get(group); up !== undefined && operandsOf(group).length === 1; up = holders.get(group)) {
+    ({ node: subject, group } = up);
+  }
+  const operands = operandsOf(group);
+  const at = operands.findIndex((node) => node === subject);
+  const [before, after] = [operands[at - 1], operands[at + 1]];
+  return (before === undefined || isSum(before)) && (after === undefined || isSum(after)) ? only.node : undefined;
+}
+
+/**
+ * The raw parts of a function: a var() fallback and calc() operands are checked; any other function is raw. `line`
+ * is the `1lh` the enclosing calc() expression admits; an outermost calc() works out its own.
+ */
+function functionRaw(node: valueParser.FunctionNode, property: string, inCalc: boolean, line: Node | undefined): string[] {
   const name = node.value.toLowerCase();
   if (name === "var") {
     const comma = node.nodes.findIndex((child) => child.type === "div" && child.value === ",");
     return comma === -1 ? [] : classify(node.nodes.slice(comma + 1), property, inCalc);
   }
-  if (name === "calc" || (name === "" && inCalc)) return classify(node.nodes, property, true);
+  if (name === "calc" || (name === "" && inCalc)) return classify(node.nodes, property, true, inCalc ? line : admittedLine(node));
   return [valueParser.stringify(node)];
 }
 
-function classify(nodes: readonly Node[], property: string, inCalc: boolean): string[] {
+function classify(nodes: readonly Node[], property: string, inCalc: boolean, line?: Node): string[] {
   const raw: string[] = [];
   for (const node of nodes) {
     if (node.type === "word") {
-      if (!wordAllowed(node.value, property, inCalc)) raw.push(node.value);
+      if (node !== line && !wordAllowed(node.value, property, inCalc)) raw.push(node.value);
     } else if (node.type === "string") {
       if (isFont(property)) raw.push(valueParser.stringify(node));
     } else if (node.type === "function") {
-      raw.push(...functionRaw(node, property, inCalc));
+      raw.push(...functionRaw(node, property, inCalc, line));
     } else if (node.type === "unicode-range") {
       raw.push(node.value);
     }
@@ -122,16 +187,57 @@ function fontRaw(value: string, nodes: readonly Node[]): string[] {
   });
 }
 
+/** The numbers `scale` takes (005 research.md R-03, PLAN-TESTABILITY-1-011 (a)): a flip or no flip, never a factor. */
+const scaleNumbers = new Set([-1, 1]);
+
+/**
+ * The raw values of a `scale` value (005 research.md R-03, R-08; PLAN-FRESH-3-002 (a)): the whole value is checked, so
+ * each word is a keyword or the bare number -1 or 1, and any function (calc(), var() or another) is raw.
+ */
+function scaleRaw(nodes: readonly Node[]): string[] {
+  return nodes.flatMap((node) => {
+    if (node.type === "function") return [valueParser.stringify(node)];
+    // A space, a string or a comment is no number, so it is classified as for any property.
+    const number = valueParser.unit(node.value);
+    // Stryker disable next-line StringLiteral,BooleanLiteral: equivalent, what reaches here is no number, and classify() reads the property only for font values and unitless numbers and inCalc only for numbers and the operator words, which it allows outside calc() too as identifiers
+    if (number === false) return classify([node], "scale", false);
+    return number.unit === "" && scaleNumbers.has(Number(number.number)) ? [] : [node.value];
+  });
+}
+
+/**
+ * The raw values of an `aspect-ratio` value (005 research.md R-03, R-09; PLAN-FRESH-1-006 (a), PLAN-FRESH-3-002 (a)):
+ * the whole value is checked, so it passes as the bare number 1 alone ("as wide as high"); any other number, a number
+ * beside another part (`1 / 1`, `auto 1`) and any function (calc(), var() or another) are raw. Keywords stay allowed.
+ */
+function aspectRatioRaw(nodes: readonly Node[]): string[] {
+  const parts = nodes.filter((node) => node.type !== "space");
+  const [only] = parts;
+  if (parts.length === 1 && only?.type === "word" && only.value === "1") return [];
+  return parts.flatMap((node) => {
+    if (node.type === "function") return [valueParser.stringify(node)];
+    // Any number (in a word, or a string that reads as one) beside or instead of the bare 1.
+    if (valueParser.unit(node.value) !== false) return [node.value];
+    // A `/` divider, a keyword, a colour, a string or a comment: classified as for any property.
+    // Stryker disable next-line StringLiteral,BooleanLiteral: equivalent, what reaches here is no number, and classify() reads the property only for font values and unitless numbers and inCalc only for numbers and the operator words, which it allows outside calc() too as identifiers
+    return classify([node], "aspect-ratio", false);
+  });
+}
+
 /** The raw values (FR-024) in one declaration's value, in source order; empty when the value is token-only. */
 export function rawValues(property: string, value: string, options: RawOptions = {}): string[] {
   const name = property.toLowerCase();
   const nodes = valueParser(value).nodes;
+  if (name === "scale") return scaleRaw(nodes);
+  if (name === "aspect-ratio") return aspectRatioRaw(nodes);
   if (options.lineHeight === "token" && name === "line-height") {
     const [only] = nodes;
     return nodes.length === 1 && only !== undefined && tokenLineHeight(only) ? [] : [value.trim()];
   }
   if (options.lineHeight === "token" && name === "font") return fontRaw(value, nodes);
-  return classify(nodes, name, false);
+  // One line box as the whole value (the slot wrapper's `block-size: 1lh`, 005 research.md R-10).
+  const [only] = nodes;
+  return classify(nodes, name, false, nodes.length === 1 && only?.type === "word" && isOneLine(only.value) ? only : undefined);
 }
 
 /** The --ocelle-* names a value references with var(), each once, in order; nested ones and fallbacks included. */

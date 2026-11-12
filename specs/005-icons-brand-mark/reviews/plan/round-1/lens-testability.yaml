@@ -1,0 +1,195 @@
+schema: review-findings/v1
+complete: true
+phase: plan
+round: 1
+lens: testability
+# Checked against the repository at a9d1e2c (base 724dd0e). Browser probes ran in Chromium 1243
+# (/opt/pw-browsers/chromium-1243/chrome-linux64/chrome) through the repository's Playwright 1.64.1, with scripts in the
+# session scratchpad (fc.mjs, fc2.mjs, ax.mjs, mir.mjs, mir2.mjs, mir3.mjs). Nothing of them is in the repository.
+findings:
+  - id: PLAN-TESTABILITY-1-001
+    severity: 3
+    title: "The mirroring tolerance of 8/255 fails a correct implementation, and a box off the pixel grid fails at 255"
+    evidence:
+      - artifact: "research.md § R-08: \"'equal' allows a per-channel difference of at most 8 of 255 per pixel\"; plan.md § Decisions 8: \"per channel ≤ 8/255 for 'equal' … at 4× (80 px)\"; spec US2-4: \"'Equals' allows the per-channel tolerance for anti-aliasing the plan names, and no more\""
+      - code: "probe mir2.mjs: a 24-unit chevron (polyline 15 5 8 12 15 19), a search glyph and a folder glyph, stroke 2, round caps, in an 80 × 80 px box at integer offsets. Comparing the rtl capture (scale: -1 1 on the svg) with the ltr capture flipped horizontally gives a maximum per-channel difference of 24 (chevron), 12 (search) and 10 (folder); 5, 23 and 1 pixels exceed 8. At 20 px (mir3.mjs) the maxima are 18, 9 and 5."
+      - code: "probe mir.mjs: the same boxes at a fractional offset (margin 3.3 px, padding 7.4 px): the element screenshot is 81 × 81 px and the flipped comparison differs by 255, because the capture rounds outward and the flip axis falls between columns."
+    claim: |
+      Chromium does not rasterise a mirrored vector exactly as the mirror image of the unmirrored raster: anti-aliasing
+      at the stroke edges differs by up to 24/255 in a pixel-aligned 80 px box. With the plan's 8/255 rule the US2-4
+      test fails on a correct `scale: -1 1` implementation for at least `chevron-start` and `chevron-end`, so the green
+      step can only pass by loosening the tolerance after the red step, which Principle VIII forbids. A box at a
+      fractional position (any layout that is not pinned to whole pixels) makes the capture one pixel wider and the
+      comparison meaningless. The "differs" rule (more than 5 % of pixels by more than 64) is fine: measured 10.9 % to
+      26.3 %.
+    remedies:
+      - "Measure and pin the 'equal' criterion before the red step, as a count rule rather than a per-pixel maximum, for example: at most 1 % of pixels differ by more than 32/255 and none by more than 96 (measured worst case here: 24/255 on 5 of 6400 pixels). Keep the 'differs' rule. Record the measurement in research.md R-08."
+      - "State in R-08 that each captured box sits at whole-pixel coordinates (position the test container at integer offsets and assert the capture is exactly 80 × 80 px before comparing), so a fractional layout fails as a setup error, not as a mirroring result."
+  - id: PLAN-TESTABILITY-1-002
+    severity: 3
+    title: "The mutation split has only a pass plant, so a split that drops element ranges passes every plant"
+    evidence:
+      - artifact: "contracts/checks.md § Changed: \"`mutation` | changed `packages/elements/src/**` ranges run under `stryker.elements.config.json` … pass plant `pass-element-source`\"; research.md § R-12: \"a pass plant (an element-source change fully killed) is added\""
+      - code: "gates/bin/mutation.ts:141-143: when no range is selected the gate prints 'nothing to mutate' and returns 0"
+      - code: "gates/plants/mutation/: fail-gate-source-survivor and fail-no-test-runs exist for gate and token source; no fail plant has a change under packages/elements/src"
+    claim: |
+      The new code splits ranges by configuration and merges results. A split that loses the element group (a wrong
+      glob, an empty group skipped, a merge that keeps only the first run's report) leaves no mutant to classify, and
+      the gate returns 0, so `pass-element-source` still passes. Constitution VIII requires every gate to have a plant
+      that makes it fail; the changed behaviour of this gate has none, so the plants cannot catch the gate silently
+      passing every element-source change.
+    remedies:
+      - "Add `fail-element-source-survivor` (an element-source change in packages/elements/src with a mutant the elements test does not kill, expected finding `<path>:<line>` Survived) and `fail-element-source-no-coverage` (a new element module no test imports, NoCoverage) to gates/plants/mutation/, and a mixed plant (one gate-source and one element-source change, each with a survivor) whose expected findings name both, so the merge is proven too."
+  - id: PLAN-TESTABILITY-1-003
+    severity: 3
+    title: "The manifest gate cannot resolve the analyzer from gates/bin or in plant trees, so its plants break"
+    evidence:
+      - artifact: "plan.md § Technical Context: \"Dev: `@custom-elements-manifest/analyzer` 0.11.0\"; research.md § R-06: \"exact, a dev dependency of `@ocelle/elements`\" and \"Gate `manifest` (`gates/bin/manifest.ts` …): runs the same generation into memory from `--root`\""
+      - code: "package.json (root) devDependencies hold every tool the gates run (Stryker, ESLint, Playwright, parse5, …); packages/styles/node_modules holds only @ocelle: pnpm links a package's dev dependencies into that package's own node_modules, not the root's"
+      - code: "gates/lib/plant-repo.ts:318-326: a plant tree gets the configuration set and a symlink to the root node_modules only; no packages/*/node_modules"
+    claim: |
+      `gates/bin/manifest.ts` is root-workspace code. With the analyzer declared only in packages/elements, Node cannot
+      resolve it from gates/bin, and in the plant runner's temporary trees (root node_modules linked, nothing per
+      package) the generator script cannot resolve it either. Every manifest plant, `pass-repository` and the fail
+      plants included, would then end in exit 2 ("could not run") instead of its expected verdict, so SC-006 cannot be
+      met as planned and the plants prove nothing about the gate's checks.
+    remedies:
+      - "Declare `@custom-elements-manifest/analyzer` 0.11.0 as a root devDependency (as every other gate tool is), have `packages/elements/scripts/manifest.ts` and `gates/bin/manifest.ts` import it from there, and add a plant-runner integration expectation that `pass-repository` exits 0 in a built plant tree."
+  - id: PLAN-TESTABILITY-1-004
+    severity: 3
+    title: "define.ts's guard is tested only on built files, which are not mutated, so its mutants survive"
+    evidence:
+      - artifact: "plan.md § Phases 2: \"US1 scenarios 2 to 9, 11, 14, 16, 18 in-process\" and \"fixture tests for US1 scenarios 1, 10 and 15\"; Complexity Tracking: \"the fixture suites on the built files are not mutated\""
+      - artifact: "research.md § R-02: \"`define(tag, constructor)` … calls `customElements.define` only when `customElements.get(tag)` is undefined, and never throws for an existing name (FR-006)\""
+    claim: |
+      FR-006 (defining an existing tag does nothing and throws nothing) is tested only by US1-10 in the
+      `elements-browser` suite, which Stryker does not run. In-process each element module is evaluated once, so the
+      guard's condition mutated to `true` (always define) never throws there and survives; a surviving mutant in new
+      code is a blocking review finding. The plan names no in-process test that calls `define` for a tag already
+      defined.
+    remedies:
+      - "Add an in-process test in the `elements` project (phase 2, red first): import `define` from src/define.ts, call it for `ocelle-icon` with a different class after the element is defined, and assert in the same test that it does not throw, that `customElements.get(\"ocelle-icon\")` is still the original class, and (the paired positive) that `define` for a fresh tag defines it."
+  - id: PLAN-TESTABILITY-1-005
+    severity: 3
+    title: "The icon drawing data has no test that can kill a mutant inside it"
+    evidence:
+      - artifact: "data-model.md § Icon: \"`shapes` | list of `Shape` … `path { d }`, `line { x1 y1 x2 y2 }`, `polyline { points }` …\"; research.md § R-12: \"survivors there are killed by computed-style and DOM assertions, or recorded as equivalent with a reason\""
+      - code: "node_modules/.pnpm/@stryker-mutator+instrumenter@10.1.1/.../string-literal-mutator.js: every string literal that is an object property value is replaced by \"\"; a tagged template literal is replaced as a whole"
+      - code: "knowledge/speckit-flows/findings/frontend-missions.md § Testing pitfalls: \"Stryker does not mutate inside `[…] as const`, so source data written that way is never mutation-tested\""
+    claim: |
+      The planned US2 tests check that each drawing is non-empty, inside the box, distinct from the others and mirrored
+      correctly. A mutant that empties one shape's `d` or `points` in an icon with several shapes (`table`, `copy`,
+      `menu`, `search`, `file`) keeps the drawing non-empty, in bounds and distinct, and mirroring compares the mutated
+      drawing with itself, so the mutant survives. It is not equivalent (the glyph changes), so it cannot be recorded
+      as one. If the table is written `as const` (the easy way to derive `IconName` from it), Stryker makes no mutant
+      in it at all, and the drawings are not mutation-tested, against Principle VIII.
+    remedies:
+      - "Fork A: the US2 tests hold an independent expected table (per icon: shape kinds and their attributes, written in the test) and assert the rendered DOM equals it, beside the rule tests; R-07 states that icons.ts is not written `as const` and that `IconName` is declared as an explicit union checked against the table's keys by a type test."
+      - "Fork B: the drawing geometry is exempted from mutation with a `// Stryker disable` record per icon whose reason names the visual baselines of #10 as the evidence, recorded in Complexity Tracking with #10's merge as the sunset; structure (name, mirror flag, rendered attributes) stays mutated."
+  - id: PLAN-TESTABILITY-1-006
+    severity: 2
+    title: "In forced colours ButtonText equals CanvasText, so the button case cannot catch a wrong system colour"
+    evidence:
+      - artifact: "spec US1-7, US4-5, SC-004: \"`CanvasText` in text, `LinkText` in the link, `ButtonText` in the button\"; research.md § R-09: \"@media (forced-colors: active) { .ring { stroke: currentColor } .spot { fill: currentColor } }\""
+      - code: "probe fc.mjs (emulateMedia forcedColors active): dark palette CanvasText rgb(255,255,255), ButtonText rgb(255,255,255), LinkText rgb(255,255,0); light palette CanvasText rgb(0,0,0), ButtonText rgb(0,0,0), LinkText rgb(0,0,159). A currentColor stroke in text, link and button resolves to those."
+      - code: "probe fc2.mjs: a currentColor stroke inside `<button disabled>` resolves to GrayText, rgb(63,242,63) dark and rgb(96,0,0) light, distinct from CanvasText; an author stroke/fill of #C68A1E stays #C68A1E in forced colours"
+    claim: |
+      In both emulated palettes the button context resolves to the same colour as body text, so a defect that paints
+      `CanvasText` (a forced-colours rule `fill: CanvasText` instead of `currentColor`, or a system keyword picked in
+      the mark) passes the text and button cases. Only the link case separates them. The spec presents three contexts as
+      three checks; one of them proves nothing in Chromium, and the plan names no plant for the forced-colours rule
+      of the mark.
+    remedies:
+      - "Add a fourth context whose system colour differs from CanvasText and LinkText, a disabled native button (GrayText, measured), to the forced-colours tests of US1-7, US3-8 and US4-5, keep the link case in every variant, and name the planted defect `fill: CanvasText` in the mark's forced-colours rule, which the link and disabled-button cases make fail. Record in R-09 that ButtonText equals CanvasText in Chromium's emulated palettes."
+  - id: PLAN-TESTABILITY-1-007
+    severity: 2
+    title: "An external violation-recorder script is a request and a script the fixture definition does not allow"
+    evidence:
+      - artifact: "research.md § R-11: \"Each test records CSP violations (`securitypolicyviolation` listener in an external fixture script)\""
+      - artifact: "spec § The strict-CSP fixture: \"loads the browser build … with one same-origin `<script type=\"module\" src>` and nothing else (save the test-only scripts of the next item)\" and the allowed requests list, which names no recorder"
+      - code: "packages/tokens/test/browser/serve.ts:1-5, 116-124: the existing suites install the collector with page.addInitScript, \"which the page's CSP does not govern\", and make no request for it"
+    claim: |
+      A recorder loaded by a `<script src>` is a request outside the allowed list, so either the "no other request"
+      assertion fails on every fixture page or the allowed list is widened in the tests beyond the spec. It also starts
+      listening only once it has loaded, so a violation raised before it runs is not recorded and the zero-violation
+      check can pass vacuously.
+    remedies:
+      - "Install the violation collector with page.addInitScript, as packages/tokens/test/browser/serve.ts does, and say so in R-11; the fixture pages then hold only the scripts the spec allows."
+  - id: PLAN-TESTABILITY-1-008
+    severity: 2
+    title: "'Importing one entry point defines only that element' (US1-17) has no runtime test"
+    evidence:
+      - artifact: "plan.md § Phases 2: \"`test/node/build.test.ts` (US1-17, FR-001, FR-016)\"; contracts/checks.md § Package tests: build.test.ts proves \"module build imports only own files and `lit`\""
+      - artifact: "spec US1-17: \"When it imports only the `ocelle-icon` entry point, Then `ocelle-icon` is defined and `ocelle-brand-mark` is not; When it imports the package root, Then both are defined\""
+    claim: |
+      The build test is a Node test reading import statements; it cannot observe which elements are defined. Its rule
+      ("only own files and `lit`") also accepts `ocelle-icon.js` importing `./index.js` or `./ocelle-brand-mark.js`,
+      which would define both elements and break FR-002. No in-process or fixture test of the plan loads one entry point
+      alone and reads the registry.
+    remedies:
+      - "Add an in-process test file in the `elements` project that imports only src/ocelle-icon.ts and asserts, in one test, `customElements.get(\"ocelle-icon\")` is defined and `customElements.get(\"ocelle-brand-mark\")` is undefined, and a second file that imports src/index.ts and asserts both (Vitest browser mode runs each file in its own iframe; state that the elements project keeps `isolate` on). Keep the build test's import rule and add to it that dist/ocelle-icon.js imports neither index.js nor ocelle-brand-mark.js."
+  - id: PLAN-TESTABILITY-1-009
+    severity: 2
+    title: "Elements files outside src/ are in mutation scope with no test that can reach their mutants"
+    evidence:
+      - code: "gates/lib/mutation/ranges.ts:26-49: scope is every packages/*/**/*.ts outside test/ and dist/, so packages/elements/vite.browser.config.ts and packages/elements/scripts/manifest.ts are mutated"
+      - artifact: "research.md § R-12: only `packages/elements/src/**` goes to the elements config; \"other changed files keep `stryker.config.json`\"; § R-05: the build test runs `vite build -c vite.browser.config.ts`"
+      - code: "vitest.mutation.config.ts:8: projects that start real tools (gates-integration) are excluded; contracts/checks.md § Changed excludes only `elements-browser`, while elements-node's build.test.ts and pack.test.ts run vite, tsc and `pnpm pack`"
+    claim: |
+      `vite.browser.config.ts` is read by a spawned Vite process, which never sees Stryker's active mutant, so its
+      mutants are NoCoverage, a blocking finding. `scripts/manifest.ts` is mutated under the default configuration,
+      which also holds the `elements` browser project (the mixed run R-12 measured at 612 tests per mutant). And the
+      default mutation configuration would run elements-node's build and pack tests, which start real tools, for the
+      dry run and the mutants, against the rule that keeps such tests out of Stryker.
+    remedies:
+      - "Name in R-12 how each in-scope non-src file is covered: a node unit test that imports vite.browser.config.ts and asserts its entry, format, file name, externals and conditions (as storybook/.storybook/** is covered), manifest.ts's normaliser tested in-process by manifest.test.ts; move build.test.ts and pack.test.ts to a project excluded from vitest.mutation.config.ts (with gates/test/vitest-config.test.ts changed first), and state whether the `elements` project stays in the default Stryker config."
+  - id: PLAN-TESTABILITY-1-010
+    severity: 2
+    title: "'No console message' (US1-8, FR-016) is measured only in-process on Lit's development build"
+    evidence:
+      - artifact: "plan.md § Phases 2: US1-8 is in the in-process list; the fixture tests cover US1 1, 10 and 15 only; research.md § R-05: the build test checks the browser build holds no `console.` text"
+      - artifact: "spec FR-016: \"writes no console message in the built output … loading it writes no console message at all\"; US1-8: \"none at all on the page, Lit's development-mode warning included\""
+      - artifact: "research.md § R-11: in-process tests import element source through Vitest's Vite server, whose default resolve conditions include `development`, so `lit` resolves to its development build there"
+    claim: |
+      In-process, Lit's development build runs. Its dev-mode warning fires at import, before a test can install a
+      console spy, so the in-process assertion either fails on Lit's own warning or misses everything emitted at load,
+      depending on order, and it does not test the built output FR-016 names. On the built output the plan has only a
+      text search for `console.`, which a minifier's aliasing or `globalThis.console` would pass. No fixture page listens
+      for console messages.
+    remedies:
+      - "Add a Playwright `console` and `pageerror` listener, attached before navigation, to the fixture harness and assert zero messages on the US1-1 page and on an unknown-name page (US1-8 on the built file: `nonexistent`, `\"\"`, `Close`, ` close`, then a known name drawing, in the same test). State in R-11 that in-process console assertions spy before rendering and cover only messages emitted after import."
+  - id: PLAN-TESTABILITY-1-011
+    severity: 2
+    title: "The `scale` fail plant fails without the change, and no plant limits what `scale` accepts"
+    evidence:
+      - artifact: "contracts/checks.md § Changed: \"`scale` takes unitless numbers; pass plant `pass-scale-mirror`, fail plant `fail-scale-length`\" (research.md R-03: `scale: 2px 1`)"
+      - code: "gates/stylelint/token-only.ts:55-60: a number with any unit other than % or fr returns false before the unitless-property set is read, so `2px` is rejected with or without `scale` in the set"
+    claim: |
+      `fail-scale-length` fails before and after the change for a reason unrelated to it, so it does not show what the
+      change admits. Adding `scale` to the unitless set allows every unitless factor (`scale: 3`, `scale: 0.5`), which is
+      a raw size multiplier in element CSS; no plant or test states whether that is meant, so the lint change cannot be
+      seen to keep the token-only rule for sizes.
+    remedies:
+      - "Narrow the allowance to the values mirroring needs (`scale` words `-1` and `1` only) with a fail plant `fail-scale-factor` (`scale: 2`), which a change admitting every unitless factor would accept, and keep `fail-scale-length`."
+      - "Or keep any unitless factor, record in R-03 why a raw scale factor is not a size literal under constitution II, and replace `fail-scale-length` by a plant that only the unitless-set change could break (for example `scale: -1px 1`)."
+  - id: PLAN-TESTABILITY-1-012
+    severity: 1
+    title: "The pairing test's path differs between research and contracts; one of them puts it in the browser project"
+    evidence:
+      - artifact: "research.md § R-09: \"The pairing test is `packages/elements/test/brand-pairs.test.ts` (node)\"; contracts/checks.md § Package tests: \"`test/node/brand-pairs.test.ts` | `elements-node`\""
+      - code: "vitest.config.ts: the `elements` project includes `packages/elements/**/*.test.ts`; only test/node/** and test/browser/** are to be excluded (plan § Phases 1)"
+    claim: |
+      At the research path the test runs in the browser-mode `elements` project, where it cannot read pairs.json from the
+      file system, so its red run fails on setup, not on the missing rows.
+    remedies:
+      - "Use `packages/elements/test/node/brand-pairs.test.ts` in research.md R-09 too."
+  - id: PLAN-TESTABILITY-1-013
+    severity: 1
+    title: "US1-14's 'no request outside the allowed list' is tested nowhere"
+    evidence:
+      - artifact: "plan.md § Phases 2: US1-14 is in the in-process list only; spec US1-14: \"and no request outside the allowed list is made (FR-003)\""
+    claim: |
+      In-process tests record no requests, and no fixture test of the plan renders 500 icons, so half of US1-14 has no
+      test and the scenario cannot go red on it.
+    remedies:
+      - "Add the 500-icon page to the fixture suite with the request recorder (shared stylesheet object and no request in the same test), or state in the plan that the request half is covered by SC-001's page and drop it from US1-14 by a spec fix."

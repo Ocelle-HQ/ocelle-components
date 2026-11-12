@@ -134,6 +134,12 @@ round 1 re-pinned every registry package published less than 7 days before 2026-
     Adding an entry to `allowBuilds` needs a change to the pins gate, so it is reviewed as a gate change. Phase 1
     verifies that pnpm 12.16.1 reads both settings (these names appear in pnpm 12.16.1's own workspace state); if a
     name differs, the phase uses pnpm 12.16.1's name for the same policy and records it here.
+  - **Amendment, 2026-11-10** (005 research.md R-16, operator decision on PLAN-A11Y-SECURITY-1-005, option (c)): the
+    `allowBuilds` allow-list is no longer empty. It holds exactly `"rs-module-lexer@2.9.0": true` and
+    `"fsevents@2.3.3": true` (each at its one version; the pins gate's approved list holds exactly these two keys),
+    which supersedes "no dependency runs one" above and FR-027's "empty allow-list" for those two entries. The rest of
+    the policy is unchanged: the release age, no other install script, and the rule that an `allowBuilds` entry needs
+    a change to the pins gate.
 - **Rationale**: `--offline` makes pnpm refuse the network instead of falling back to it, which is FR-008's rule.
   Exact pins and a lockfile freeze whatever was resolved, including a release a few hours old; the release-age
   window is when compromised releases are usually found and withdrawn, and every CI job installs dependencies.

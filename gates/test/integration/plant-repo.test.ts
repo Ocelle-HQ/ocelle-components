@@ -1,5 +1,5 @@
 import { execFileSync } from "node:child_process";
-import { existsSync, lstatSync, readFileSync, readlinkSync } from "node:fs";
+import { cpSync, existsSync, lstatSync, mkdirSync, readFileSync, readlinkSync, rmSync, symlinkSync } from "node:fs";
 import { join } from "node:path";
 import { afterEach, describe, expect, it } from "vitest";
 import { buildCommitRepo, buildMutationRepo, buildRepoTree } from "../../lib/plant-repo.ts";
@@ -20,6 +20,9 @@ const configuration = [
   "vitest.config.ts",
   "vitest.mutation.config.ts",
   "stryker.config.json",
+  // The element mutation configuration (005 research.md R-12).
+  "stryker.elements.config.json",
+  "vitest.mutation.elements.config.ts",
   "packages/tokens/package.json",
   "packages/tokens/tsconfig.json",
   "packages/styles/package.json",
@@ -36,7 +39,33 @@ const configuration = [
   "packages/tokens/src/overrides.ts",
   "packages/tokens/src/generate.ts",
   "packages/tokens/contrast/pairs.json",
+  // The element source the manifest gate and the element plants read (005 research.md R-12).
+  "packages/elements/src/index.ts",
 ];
+
+/**
+ * The element files of the configuration set that may be absent until the manifest generator lands (005 research.md
+ * R-12): each is in the temporary repository unchanged when the repository has it, and absent when it does not.
+ */
+const mayBeAbsent = ["packages/elements/scripts/manifest.ts", "packages/elements/custom-elements-manifest.config.mjs", "packages/elements/custom-elements.json"];
+
+function copiedOrAbsent(dir: string): Record<string, boolean> {
+  return Object.fromEntries(
+    mayBeAbsent.map((file) => [
+      file,
+      existsSync(join(repo, file)) ? existsSync(join(dir, file)) && readFileSync(join(dir, file), "utf8") === readFileSync(join(repo, file), "utf8") : !existsSync(join(dir, file)),
+    ]),
+  );
+}
+
+/** Each package's own node_modules in the repository, which the temporary repository links (005 research.md R-12). */
+const packageModules = ["packages/tokens", "packages/styles", "packages/elements"].map((dir) => `${dir}/node_modules`).filter((path) => existsSync(join(repo, path)));
+
+function linkedModules(dir: string): Record<string, string | false> {
+  return Object.fromEntries(packageModules.map((path) => [path, lstatSync(join(dir, path), { throwIfNoEntry: false })?.isSymbolicLink() === true && readlinkSync(join(dir, path))]));
+}
+
+const allLinked = Object.fromEntries(packageModules.map((path) => [path, join(repo, path)]));
 
 function git(dir: string, args: readonly string[]): string {
   return execFileSync("git", args, { cwd: dir, env: baseEnv(), encoding: "utf8" }).trim();
@@ -53,6 +82,34 @@ function copiedUnchanged(dir: string): Record<string, boolean> {
 }
 
 const allTrue = Object.fromEntries(configuration.map((file) => [file, true]));
+
+/**
+ * A repository root built from this repository's configuration set, independent of its install state (005 research.md
+ * R-12): the root node_modules linked, packages/styles with a node_modules directory of its own, packages/tokens and
+ * packages/elements with none, and the named configuration-set entries left out.
+ */
+function sourceRoot(without: readonly string[] = []): string {
+  const root = tempDir("source-root");
+  const entries = [...configuration.filter((file) => file !== "packages/elements/src/index.ts"), "packages/elements/src", "gates/eslint", "gates/stylelint"];
+  for (const entry of entries.filter((path) => !without.includes(path))) cpSync(join(repo, entry), join(root, entry), { recursive: true });
+  for (const file of mayBeAbsent.filter((path) => existsSync(join(repo, path)))) cpSync(join(repo, file), join(root, file));
+  symlinkSync(join(repo, "node_modules"), join(root, "node_modules"), "dir");
+  mkdirSync(join(root, "packages/styles/node_modules"));
+  return root;
+}
+
+/** For each package directory of sourceRoot(): its node_modules link in the temporary repository, or false for none. */
+function packageLinks(dir: string): Record<string, string | false> {
+  return Object.fromEntries(
+    ["packages/tokens", "packages/styles", "packages/elements"].map((pkg) => {
+      const path = `${pkg}/node_modules`;
+      return [path, lstatSync(join(dir, path), { throwIfNoEntry: false }) === undefined ? false : readlinkSync(join(dir, path))];
+    }),
+  );
+}
+
+/** The configuration-set entries none of the builders may skip when a repository lacks them (005 research.md R-12). */
+const required = ["stryker.elements.config.json", "vitest.mutation.elements.config.ts", "packages/elements/src", "packages/tokens/src/source.ts"];
 const timeout = 60_000;
 
 afterEach(cleanUp);
@@ -66,6 +123,9 @@ describe("buildRepoTree", () => {
     expect(readFileSync(join(into, "gates/lib/y.ts"), "utf8")).toBe("export const y = 2;\n");
     expect(lstatSync(join(into, "node_modules")).isSymbolicLink()).toBe(true);
     expect(readlinkSync(join(into, "node_modules"))).toBe(join(repo, "node_modules"));
+    expect(packageModules).toContain("packages/styles/node_modules");
+    expect(linkedModules(into)).toEqual(allLinked);
+    expect(copiedOrAbsent(into)).toEqual(Object.fromEntries(mayBeAbsent.map((file) => [file, true])));
     expect(existsSync(join(into, "packages/tokens/src/index.ts"))).toBe(false);
     expect(existsSync(join(into, "tree"))).toBe(false);
   });
@@ -150,6 +210,20 @@ describe("buildRepoTree: plant deltas (002 contracts/gates.md § Configuration s
     expect(() => JSON.parse(written) as unknown).toThrow(SyntaxError);
   });
 
+  // 005 research.md R-06, R-12: manifest "absent" removes the committed custom-elements manifest, which the
+  // configuration set otherwise copies, so the manifest gate's break-missing plant presents a repository without it.
+  it('removes the committed manifest for manifest "absent", and keeps it without the part', async () => {
+    const into = tempDir("repo-tree");
+    await buildRepoTree(repo, join(fixtures, "manifest-absent-plant"), into);
+    const plain = tempDir("repo-tree");
+    await buildRepoTree(repo, join(fixtures, "tree-plant"), plain);
+    expect({ removed: existsSync(join(into, "packages/elements/custom-elements.json")), kept: existsSync(join(plain, "packages/elements/custom-elements.json")), source: existsSync(join(into, "packages/elements/src/ocelle-icon.ts")) }).toEqual({
+      removed: false,
+      kept: true,
+      source: true,
+    });
+  });
+
   it.each([
     { plant: "bad-token-plant", problem: "delta.json tokens: token override names an unknown token color-nope" },
     { plant: "bad-pair-plant", problem: "delta.json pairs: key light/color-nope/color-canvas matches no entry" },
@@ -211,8 +285,39 @@ describe("buildMutationRepo", () => {
       );
       expect(git(into, ["status", "--porcelain"])).toBe("");
       expect(lstatSync(join(into, "node_modules")).isSymbolicLink()).toBe(true);
+      expect(linkedModules(into)).toEqual(allLinked);
+      expect(baseFiles.filter((path) => path.split("/").includes("node_modules"))).toEqual([]);
       expect(copiedUnchanged(into)).toEqual(allTrue);
     },
     timeout,
   );
+});
+
+describe("the configuration set of a repository root without some node_modules or entries (005 research.md R-12)", () => {
+  it("links the node_modules of a package that has its own, and none for a package without", async () => {
+    const root = sourceRoot();
+    const expected = { "packages/tokens/node_modules": false, "packages/styles/node_modules": join(root, "packages/styles/node_modules"), "packages/elements/node_modules": false };
+    const tree = tempDir("repo-tree");
+    await buildRepoTree(root, join(fixtures, "empty-plant"), tree);
+    expect(packageLinks(tree)).toEqual(expected);
+    expect(readlinkSync(join(tree, "node_modules"))).toBe(join(root, "node_modules"));
+    const mutation = tempDir("mutation-repo");
+    await buildMutationRepo(root, join(fixtures, "mutation-plant"), mutation);
+    expect(packageLinks(mutation)).toEqual(expected);
+  }, timeout);
+
+  it.each(required)("rejects building from a repository root without %s, naming it", async (entry) => {
+    const root = sourceRoot([entry]);
+    await expect(buildRepoTree(root, join(fixtures, "empty-plant"), tempDir("repo-tree"))).rejects.toThrow(join(root, entry));
+    await expect(buildMutationRepo(root, join(fixtures, "mutation-plant"), tempDir("mutation-repo"))).rejects.toThrow(join(root, entry));
+  }, timeout);
+
+  it("builds from a repository root without the element files that may be absent, leaving them out", async () => {
+    const root = sourceRoot();
+    for (const file of mayBeAbsent) rmSync(join(root, file), { force: true });
+    const tree = tempDir("repo-tree");
+    await buildRepoTree(root, join(fixtures, "empty-plant"), tree);
+    expect(Object.fromEntries(mayBeAbsent.map((file) => [file, existsSync(join(tree, file))]))).toEqual(Object.fromEntries(mayBeAbsent.map((file) => [file, false])));
+    expect(existsSync(join(tree, "stryker.elements.config.json"))).toBe(true);
+  }, timeout);
 });

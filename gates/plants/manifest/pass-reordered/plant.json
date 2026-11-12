@@ -1,0 +1,4 @@
+{
+  "expect": "pass",
+  "why": "The committed manifest with the keys of every object in reverse order: key order is not a difference (FR-009)."
+}

@@ -1,0 +1,137 @@
+$ npx vitest run --project gates gates/test/mutation-split.test.ts   # worktree at c1cc7d5 (red), Node 22.23.4
+
+ RUN  v5.0.5 <worktree at c1cc7d5>
+
+ ❯ |gates| gates/test/mutation-split.test.ts (10 tests | 4 failed) 27ms
+   ❯ the split of the mutation gate (005 research.md R-12) (10)
+     × reports the timeout and compile-error lines of both runs in the changed files' order, and counts them (007) 9ms
+     × reports the zero-mutant entries of both runs in the changed files' order, and counts them (007) 1ms
+     × names the zero-mutant entries of a --files run of both configurations as given, in the changed files' order (007) 2ms
+     × reports the findings of both runs with the timeout lines of both, the summary counting each (007) 1ms
+
+⎯⎯⎯⎯⎯⎯⎯ Failed Tests 4 ⎯⎯⎯⎯⎯⎯⎯
+
+ FAIL  |gates| gates/test/mutation-split.test.ts > the split of the mutation gate (005 research.md R-12) > reports the timeout and compile-error lines of both runs in the changed files' order, and counts them (007)
+AssertionError: expected { code: +0, out: [ …(7) ], err: [] } to deeply equal { code: +0, out: [ …(7) ], err: [] }
+
+- Expected
++ Received
+
+  {
+    "code": 0,
+    "err": [],
+    "out": [
+      "gates/lib/x.ts:1: mutation: timeout: ConditionalExpression: replaced by true",
+-     "packages/elements/src/x.ts:1: mutation: timeout: ConditionalExpression: replaced by true",
+      "packages/tokens/src/x.ts:1: mutation: timeout: ConditionalExpression: replaced by true",
++     "packages/elements/src/x.ts:1: mutation: timeout: ConditionalExpression: replaced by true",
+      "gates/lib/x.ts:2: mutation: compile-error: ConditionalExpression: replaced by true",
++     "packages/tokens/src/x.ts:2: mutation: compile-error: ConditionalExpression: replaced by true",
+      "packages/elements/src/x.ts:2: mutation: compile-error: ConditionalExpression: replaced by true",
+-     "packages/tokens/src/x.ts:2: mutation: compile-error: ConditionalExpression: replaced by true",
+      "mutation: 6 mutants on the changed lines of 3 files, none survived; 3 timeouts, 3 compile errors, 0 zero-mutant entries; 0 equivalent records",
+    ],
+  }
+
+ ❯ gates/test/mutation-split.test.ts:119:102
+    117|   // in the order of the runs, which puts the token file of the defaul…
+    118|   it("reports the timeout and compile-error lines of both runs in the …
+    119|     expect(await gate(tools({ [gateFile]: 2, [elementFile]: 2, [tokenF…
+       |                                                                                                      ^
+    120|       code: 0,
+    121|       out: [
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[1/4]⎯
+
+ FAIL  |gates| gates/test/mutation-split.test.ts > the split of the mutation gate (005 research.md R-12) > reports the zero-mutant entries of both runs in the changed files' order, and counts them (007)
+AssertionError: expected { code: +0, out: [ …(4) ], err: [] } to deeply equal { code: +0, out: [ …(4) ], err: [] }
+
+- Expected
++ Received
+
+  {
+    "code": 0,
+    "err": [],
+    "out": [
+      "gates/lib/x.ts: mutation: zero-mutants: no mutant on the changed lines",
+-     "packages/elements/src/x.ts: mutation: zero-mutants: no mutant on the changed lines",
+      "packages/tokens/src/x.ts: mutation: zero-mutants: no mutant on the changed lines",
++     "packages/elements/src/x.ts: mutation: zero-mutants: no mutant on the changed lines",
+      "mutation: 0 mutants on the changed lines of 3 files, none survived; 0 timeouts, 0 compile errors, 3 zero-mutant entries; 0 equivalent records",
+    ],
+  }
+
+ ❯ gates/test/mutation-split.test.ts:135:97
+    133|
+    134|   it("reports the zero-mutant entries of both runs in the changed file…
+    135|     expect(await gate(tools({ [gateFile]: 2, [elementFile]: 2, [tokenF…
+       |                                                                                                 ^
+    136|       code: 0,
+    137|       out: [
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[2/4]⎯
+
+ FAIL  |gates| gates/test/mutation-split.test.ts > the split of the mutation gate (005 research.md R-12) > names the zero-mutant entries of a --files run of both configurations as given, in the changed files' order (007)
+AssertionError: expected { code: +0, out: [ …(3) ], err: [] } to deeply equal { code: +0, out: [ …(3) ], err: [] }
+
+- Expected
++ Received
+
+  {
+    "code": 0,
+    "err": [],
+    "out": [
+-     "packages/elements/src/x.ts: mutation: zero-mutants: no mutant on the changed lines",
+      "packages/tokens/src/x.ts:2-3: mutation: zero-mutants: no mutant on the changed lines",
++     "packages/elements/src/x.ts: mutation: zero-mutants: no mutant on the changed lines",
+      "mutation: 0 mutants on the changed lines of 2 files, none survived; 0 timeouts, 0 compile errors, 2 zero-mutant entries; 0 equivalent records",
+    ],
+  }
+
+ ❯ gates/test/mutation-split.test.ts:149:17
+    147|   it("names the zero-mutant entries of a --files run of both configura…
+    148|     const ran = await gate(tools({ [elementFile]: 4, [tokenFile]: 4 },…
+    149|     expect(ran).toEqual({
+       |                 ^
+    150|       code: 0,
+    151|       out: [
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[3/4]⎯
+
+ FAIL  |gates| gates/test/mutation-split.test.ts > the split of the mutation gate (005 research.md R-12) > reports the findings of both runs with the timeout lines of both, the summary counting each (007)
+AssertionError: expected { code: 1, out: [ …(6) ], err: [] } to deeply equal { code: 1, out: [ …(6) ], err: [] }
+
+- Expected
++ Received
+
+  {
+    "code": 1,
+    "err": [],
+    "out": [
+-     "packages/elements/src/x.ts:1: mutation: timeout: ConditionalExpression: replaced by true",
+      "packages/tokens/src/x.ts:1: mutation: timeout: ConditionalExpression: replaced by true",
+-     "packages/elements/src/x.ts:2: mutation: compile-error: ConditionalExpression: replaced by true",
++     "packages/elements/src/x.ts:1: mutation: timeout: ConditionalExpression: replaced by true",
+      "packages/tokens/src/x.ts:2: mutation: compile-error: ConditionalExpression: replaced by true",
++     "packages/elements/src/x.ts:2: mutation: compile-error: ConditionalExpression: replaced by true",
+      "packages/elements/src/x.ts:1: mutation: ConditionalExpression: Survived: replaced by true",
+      "mutation: 1 finding in 2 changed files (6 mutants on changed lines; 2 timeouts, 2 compile errors, 0 zero-mutant entries)",
+    ],
+  }
+
+ ❯ gates/test/mutation-split.test.ts:169:76
+    167|       return { exitCode: 0, stdout: "", stderr: "" };
+    168|     };
+    169|     expect(await gate(tools({ [elementFile]: 2, [tokenFile]: 2 }, mixe…
+       |                                                                            ^
+    170|       code: 1,
+    171|       out: [
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[4/4]⎯
+
+
+ Test Files  1 failed (1)
+      Tests  4 failed | 6 passed (10)
+   Start at  10:37:11
+   Duration  176ms (tests 39%, transform 30%, import 26%, worker 4%)
+

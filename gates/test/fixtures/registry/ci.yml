@@ -78,6 +78,10 @@ jobs:
     name: Brand rules
     steps:
       - run: pnpm run gate:brand-rules
+  manifest:
+    name: Custom-elements manifest
+    steps:
+      - run: pnpm run gate:manifest
   plants:
     name: Plants
     steps:

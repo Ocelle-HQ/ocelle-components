@@ -33,9 +33,30 @@ describe("gates/README.md (002 FR-022)", () => {
     for (const plant of ["a-monospace", "b-ochre-pair-not-excluded", "g-forced-colours-override", "g-system-colour-mapping", "source-invalid"]) expect(row("brand-rules")?.[4]).toContain(plant);
   });
 
-  it("requires fourteen checks on main, Contrast and Brand rules among them", () => {
+  it("lists manifest in The gates, with its check, command and plants (005 FR-009, research.md R-06)", () => {
+    const gates = rows(section("The gates"));
+    const row = gates.find((cells) => cells[0] === "`manifest`");
+    expect(row?.slice(0, 3)).toEqual(["`manifest`", "Custom-elements manifest", "`pnpm run gate:manifest`"]);
+    const plants = [
+      "fail-stale-property",
+      "fail-lost-attribute",
+      "fail-undescribed-property",
+      "fail-undescribed-attribute",
+      "fail-undescribed-event",
+      "fail-undescribed-slot",
+      "fail-undescribed-css-part",
+      "fail-undescribed-css-property",
+      "pass-repository",
+      "pass-reordered",
+      "break-not-json",
+      "break-missing",
+    ];
+    expect(plants.filter((plant) => !(row?.[4] ?? "").includes(plant))).toEqual([]);
+  });
+
+  it("requires fifteen checks on main, Contrast, Brand rules and Custom-elements manifest among them (005 research.md R-06)", () => {
     const required = section("Required checks on `main`");
-    expect(required).toContain("requires exactly these fourteen checks");
+    expect(required).toContain("requires exactly these fifteen checks");
     const listed = required.split("\n").filter((line) => /^\d+\. /.test(line)).map((line) => line.replace(/^\d+\. /, ""));
     expect(listed).toEqual([
       "Typecheck",
@@ -51,18 +72,18 @@ describe("gates/README.md (002 FR-022)", () => {
       "Sign-off",
       "Contrast",
       "Brand rules",
+      "Custom-elements manifest",
       "Plants",
     ]);
   });
 
-  it("has no Contrast check row in Deferred gates, and keeps the others", () => {
+  it("has no Contrast check row and, since 005, no Custom-elements manifest check row in Deferred gates, and keeps the others", () => {
     const deferred = rows(section("Deferred gates (FR-026)")).map((cells) => cells[0]);
     expect(deferred).toEqual([
       "Gate",
       "Storybook build",
       "Visual regression",
       "Accessibility (axe)",
-      "Custom-elements manifest check",
       "Remote loads in built output (constitution IV, beyond FR-021)",
     ]);
   });

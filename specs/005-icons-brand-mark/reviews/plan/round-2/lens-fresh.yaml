@@ -1,0 +1,92 @@
+schema: review-findings/v1
+complete: true
+phase: plan
+round: 2
+lens: fresh
+# Probes: Chromium 1243 through the pinned Playwright 1.64.1, scratchpad scripts only, nothing committed. Each probe
+# rebuilt the planned CSS from research.md/data-model.md by hand on a plain custom element (no Lit), which gives the
+# same cascade as Lit's adopted `static styles`. Engine versions come from the repository's caniuse-lite
+# 1.0.30001819 (`node_modules/.pnpm/caniuse-lite@1.0.30001819`).
+findings:
+  - id: PLAN-FRESH-2-001
+    severity: 3
+    title: "`:host { display: inline-block }` beats the UA `[hidden]` rule, so `<ocelle-icon hidden>` and `<ocelle-brand-mark hidden>` stay painted and a labelled one stays in the accessibility tree"
+    evidence:
+      - artifact: "research.md § R-04 Decision: \":host { display: inline-block; inline-size: var(--ocelle-icon-size); ... }\"; § R-09 Sizing: \":host { display: inline-block; block-size: ...; aspect-ratio: 1; ... }\"; data-model.md and contracts/elements-package.md name no `[hidden]` rule; spec § Host ARIA and FR-034 list host `aria-label`, `aria-hidden`, `role` but not the global `hidden` attribute"
+      - code: "probe p5.mjs: the R-04 `:host` sheet on a custom element, `<x-icon hidden>` in a paragraph with --ocelle-icon-size 20px -> box 20 x 20 px (painted). Probe p7.mjs: the same element with internals role img and ariaLabel \"X\" and the `hidden` attribute, `:host { display: inline-block }` -> CDP getFullAXTree still holds `image \"X\"` for it; without the `:host` display rule the hidden twin has no node. A shadow `:host` rule is author origin and outranks the UA stylesheet's `[hidden] { display: none }`."
+    claim: |
+      `hidden` is the standard way a host, a server-rendered page or a later control (#7's busy state, #13's
+      disclosure chevron, #16's close button) hides an element. With the planned `:host` rules it does nothing: the
+      icon or mark keeps its box and drawing, and a labelled one is still announced. No scenario, data-model row or
+      README rule covers the state, so nothing in the plan would catch it, and because every later element copies
+      these conventions (FR-008), every later element inherits the defect.
+    remedies:
+      - "Add `:host([hidden]) { display: none; }` to both elements' styles (R-04, R-09, data-model.md) and to the README conventions as a rule for every element; add a scenario to US1 and US4 (a `hidden` icon and mark have no box and contribute no node, paired with a visible labelled twin exposing one image node, plant: the `[hidden]` rule removed), and add `hidden` to the host-attribute list of § Host ARIA / FR-034."
+
+  - id: PLAN-FRESH-2-002
+    severity: 2
+    title: "The round-1 slot wrapper (`block-size: 1lh`) lets a slotted icon overflow the control's own box whenever the icon is taller than one line, which happens at the default icon size with xs or sm-tight type"
+    evidence:
+      - artifact: "research.md § R-10: \".icon-slot { ... block-size: 1lh; }: ... overflowing it evenly above and below when the icon is taller than the line box\"; spec US3-1 measures centring at `--ocelle-font-size-xs`, at `--ocelle-font-size-sm` with `--ocelle-line-height-tight` (\"a line box shorter than the icon\") and with `--ocelle-icon-size: 2rem`; no scenario relates the icon box to the control's box"
+      - code: "packages/tokens/src/source.ts:118-127,160: font-size-xs 0.75rem, sm 0.875rem, line-height-tight 1.15, normal 1.45, icon-size 1.25rem; so xs/normal gives a 17.4 px line and sm/tight 16.1 px, both under the 20 px icon"
+      - code: "probe p1b.mjs: R-10's row (inline-flex, align-items flex-start, 1 px border, no padding) inside a shadow `<button>`, wrapper `block-size: 1lh`, R-10's `::slotted` rules. sm/tight, 20 px icon: button border box 0 to 18.09, icon -0.95 to 19.05 (outside the border box at both edges). sm/tight, 32 px icon: button 59.05 to 77.14, icon 52.09 to 84.09 (7 px out each side). Same with `overflow: hidden` and 4 px padding: button 124.09 to 150.19, icon 121.14 to 153.14, so the icon is clipped. Centre difference 0.05 px in all three (US3-1 passes while the icon pokes out)."
+      - code: "probe p8.mjs: the same row with `padding-block: max(0px, calc((var(--ocelle-icon-size) - 1lh) / 2))`: the button box holds the icon in all three cases (0 to 22 vs 1 to 21; 61 to 95 vs 62 to 94) and the centre difference stays 0.05 px."
+    claim: |
+      Round 1 chose a one-line-box wrapper so the icon is centred on the first line, and accepted that the icon
+      overflows the line box. But with `align-items: flex-start` the row is only as tall as the label, so the overflow
+      leaves the control: the control's height ignores its icon, an icon-only or single-line control with compact type
+      is shorter than its icon, neighbouring rows of #7's action rows or #12's nav items can overlap the icon, and a
+      control that clips (`overflow: hidden` for rounded corners or truncation) cuts the icon. This happens at the
+      library's own default icon size with `--ocelle-font-size-xs`, not only after a resize. Every US3 scenario
+      passes in that state, so #7 and #12 would ship it.
+    remedies:
+      - "(a) Make the convention reserve the overflow: the row gets `padding-block: max(0px, calc((var(--ocelle-icon-size) - 1lh) / 2))` (or an equivalent the lint can admit, with the `token-only` change and plants it needs), measured above to contain the icon with centring unchanged; add to US3-1 and US3-10 the outcome \"the slotted icon's box lies inside the control's border box\" at the four type and size cases, with the plant \"padding rule removed\"."
+      - "(b) Keep the overflow, and make it a stated rule: FR-021 and the README say that a control must not clip its row and must give it block padding of at least half the difference between the icon size and the line height; add a US3 scenario on the test host with that padding and a clipping row as its plant, so #7 and #12 inherit a tested rule rather than an unstated one."
+
+  - id: PLAN-FRESH-2-003
+    severity: 2
+    title: "The round-1 mark sizing (`inline-size: auto; aspect-ratio: 1`) is stretched to the container's width in a column flex container, such as a stacked home link or a sidebar header"
+    evidence:
+      - artifact: "research.md § R-09 Sizing: \":host { display: inline-block; block-size: var(--ocelle-icon-size); inline-size: auto; aspect-ratio: 1; ... }\"; data-model.md § Box; spec US4-7 \"its width follows the drawing's square aspect\" and FR-024 \"its width following its height\"; US4-7 measures only a host with no size, `block-size: 32px` and `inline-size: 32px`, none in a flex column"
+      - code: "probe p2.mjs (R-09's `:host` and `svg` rules, --ocelle-icon-size 20px, 300 px wide parents): flex row 20 x 20, grid 20 x 20, grid `auto 1fr` 20 x 20, but `display:flex; flex-direction:column` 300 x 20, and an `<a href>` with `display:flex; flex-direction:column` 300 x 20. `align-items: normal` stretches an item whose cross size is `auto`, and a stretched size wins over `aspect-ratio`."
+      - code: "probe p3.mjs: the same sheet with `inline-size: max-content` instead of `auto`: column flex 20 x 20, the column link 20 x 20, host `block-size: 32px` 32 x 32, host `inline-size: 32px` 32 x 20 (US4-7's three outcomes still hold)."
+    claim: |
+      The icon is immune because it sets `inline-size` explicitly; the mark, after round 1's fix, is not. In a column
+      layout the mark's box becomes as wide as its parent with the drawing centred in it, so a home link built around
+      it gets a full-width hit area and focus outline, and the mark is not where a start-aligned lock-up puts it.
+      `ocelle-top-bar` (#12) is likely a row, but the mark is offered to "any host", and nothing in US4 would catch it.
+    remedies:
+      - "Change R-09 and data-model.md § Box to `inline-size: max-content` (a keyword, no lint change; measured above), and add to US4-7 a case in a column flex container expecting a 20 x 20 box, with the plant `inline-size: auto`."
+
+  - id: PLAN-FRESH-2-004
+    severity: 2
+    title: "Nothing makes `@ocelle/elements` require `@ocelle/tokens`: a host that does not link `tokens.css` gets 300 x 300 px icons and a mark with no ring, and neither the package nor the README says so"
+    evidence:
+      - artifact: "contracts/elements-package.md: \"`lit` 3.3.3 is a `dependencies` entry (exact)\" and no other dependency; research.md R-01 \"as the only runtime dependency\"; R-15's README contents list no token requirement; spec § The strict-CSP fixture links `tokens.css` on every page, so no scenario runs without it"
+      - code: "packages/styles/package.json:18-19 declares `\"peerDependencies\": { \"@ocelle/tokens\": \"workspace:0.0.0\" }`, and packages/styles/README.md:11-13 says \"Link `tokens.css` first ... Linked without `tokens.css`, the reset and a visible focus outline still apply, but no token value ...\": 003 settled both for a package that reads tokens"
+      - code: "probe p4.mjs: R-04's `:host` and `svg` rules with `--ocelle-icon-size` undefined: the icon is 300 x 300 px in a paragraph and in a flex row (`var()` invalid at computed time, `inline-size`/`block-size` fall back to `auto`, and the `svg` takes its 300 px default width at 100 %). By the same rule the mark's `.ring { stroke: var(--ocelle-color-ink) }` resolves to the inherited `stroke`, `none` by default, so the ring is not painted (data-model.md: the arcs carry no `stroke` attribute)."
+    claim: |
+      Kitty Desktop imports the module build through its bundler. Installing `@ocelle/elements` brings Lit and
+      nothing else, and the README as planned does not say that `tokens.css` must be linked, so the failure a host
+      meets first is a page full of giant icons. 003 already decided how a package that reads tokens states this
+      (a peer dependency and a README sentence on behaviour without tokens); 005, the first elements package, should
+      follow it, and later element missions copy whatever it sets.
+    remedies:
+      - "Add `@ocelle/tokens` (`workspace:0.0.0`) as a peer dependency of `@ocelle/elements` (contracts/elements-package.md, R-15, the CHANGELOG surface), add to the README the sentence \"link `tokens.css` first\" and what happens without it, make it a statement of the documentation test, and add the rule to the conventions so later elements state it too."
+
+  - id: PLAN-FRESH-2-005
+    severity: 2
+    title: "The stated engine floor (Chromium 73+, WebKit 16.4+) is below what the planned CSS needs: `:dir()` needs Chromium 120 and `@media not (...)` 104, and below those mirroring silently stops and the mark's ring disappears"
+    evidence:
+      - artifact: "research.md § R-05 Engine floor and contracts/elements-package.md § Engines: \"constructable stylesheets (Chromium 73+, WebKit 16.4+)\"; plan.md Technical Context \"Engine floor: constructable stylesheets (Chromium 73+, WebKit 16.4+), stated in the README\"; R-08 `:host(:dir(rtl)) .mirror { scale: -1 1 }`; R-09 variant rules inside `@media not (forced-colors: active)`; R-10 `block-size: 1lh`"
+      - code: "caniuse-lite 1.0.30001819 (probe ciu.cjs): css-dir-pseudo first full support chrome 120, safari 16.4; css-media-range-syntax (Media Queries 4, which brings `not (<feature>)` without a media type) chrome 104, safari 16.4. The `lh` unit is Chromium 109 and the `scale` property Chromium 104 (MDN; not in the installed caniuse data, not probed)."
+      - code: "data-model.md § Drawing: the four arcs carry `fill=\"none\"` and their stroke widths but no `stroke` attribute, and `.ring { stroke: ... }` exists only inside `@media not (forced-colors: active)` and `@media (forced-colors: active)`"
+    claim: |
+      The README is meant to tell hosts which engines work, and the plan derives its floor from one feature only. In
+      Chromium 104 to 119 the `:host(:dir(rtl))` selector is invalid, so the rule is dropped and the four directional
+      icons never mirror; in Chromium before 104 the `not (forced-colors: active)` query does not parse, so the
+      variant block never applies and the mark's ring has no stroke at all (invisible), while the spot is filled with
+      the default black. WebKit 16.4 is unaffected, so the WebKit figure stands; the Chromium figure is wrong by 47
+      versions and hides two silent failures.
+    remedies:
+      - "State the floor as the newest feature the elements use (Chromium 120, WebKit 16.4, with the feature behind each figure) in R-05, plan.md Technical Context, contracts/elements-package.md and the README, and add to the README conventions that a later element raising the floor updates it; and give the rosette's ring `stroke=\"currentColor\"` and spot `fill=\"currentColor\"` presentation attributes in `rosette.ts` (author CSS outranks them, so every variant is unchanged) so a dropped rule degrades to the mono mark rather than to an invisible ring."

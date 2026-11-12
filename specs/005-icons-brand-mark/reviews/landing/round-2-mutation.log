@@ -1,0 +1,345 @@
+$ pnpm run gate:mutation -- --base e7d7d54   # HEAD e11be27, Node 22.23.4
+gates/bin/contrast.ts:116: mutation: record: all: process boundary, covered by gates-integration: gates/test/integration/token-gates.test.ts "contrast --root <repo> checks 160 pairs in light and 168 in dark, 149 required per theme"
+gates/bin/manifest.ts:147: mutation: record: all: process boundary, covered by gates-integration: gates/test/integration/manifest.test.ts "exits 0 on pass-repository's temporary repository"
+gates/bin/mutation.ts:245: mutation: record: all: process boundary, covered by gates-integration: gates/test/integration/mutation.test.ts "reports a change only to source no test imports as a located NoCoverage finding (exit 1), not as could not run (review round 1, R1-10)"
+gates/lib/plant-repo.ts:365: mutation: record: all: process boundary, covered by gates-integration: gates/test/integration/plant-repo.test.ts "buildRepoTree copies the configuration set unchanged, lays tree/ over it at repository paths, and links node_modules"
+gates/lib/plant-repo.ts:367: mutation: record: all: process boundary, covered by gates-integration: gates/test/integration/plant-repo.test.ts "buildRepoTree copies the configuration set unchanged, lays tree/ over it at repository paths, and links node_modules"
+gates/lib/plant-repo.ts:369: mutation: record: all: process boundary, covered by gates-integration: gates/test/integration/plant-repo.test.ts "rejects building from a repository root without %s, naming it" and "builds from a repository root without the element files that may be absent, leaving them out"
+gates/lib/plant-repo.ts:372: mutation: record: all: process boundary, covered by gates-integration: gates/test/integration/plant-repo.test.ts "buildRepoTree copies the configuration set unchanged, lays tree/ over it at repository paths, and links node_modules"
+gates/lib/plant-repo.ts:374: mutation: record: all: process boundary, covered by gates-integration: gates/test/integration/plant-repo.test.ts "links the node_modules of a package that has its own, and none for a package without"
+gates/lib/plant-repo.ts:376: mutation: record: all: process boundary, covered by gates-integration: gates/test/integration/plant-repo.test.ts "buildRepoTree copies the configuration set unchanged, lays tree/ over it at repository paths, and links node_modules"
+gates/lib/plant-repo.ts:411: mutation: record: all: process boundary, covered by gates-integration: gates/test/integration/plant-repo.test.ts 'removes the committed manifest for manifest "absent", and keeps it without the part'
+gates/stylelint/token-only.ts:202: mutation: record: StringLiteral,BooleanLiteral: equivalent, what reaches here is no number, and classify() reads the property only for font values and unitless numbers and inCalc only for numbers and the operator words, which it allows outside calc() too as identifiers
+gates/stylelint/token-only.ts:222: mutation: record: StringLiteral,BooleanLiteral: equivalent, what reaches here is no number, and classify() reads the property only for font values and unitless numbers and inCalc only for numbers and the operator words, which it allows outside calc() too as identifiers
+packages/elements/scripts/manifest.ts:129: mutation: record: all: process boundary, the package's manifest script; writeManifest is tested in test/node/manifest.test.ts and the manifest gate compares the file it writes with a regeneration
+packages/elements/src/ocelle-brand-mark.ts:24: mutation: record: ObjectLiteral: equivalent, {} gives Lit's default options, which are type String's (attribute "label", the default converter, not reflected)
+packages/elements/src/ocelle-icon.ts:39: mutation: record: ObjectLiteral: equivalent, {} gives Lit's default options, which are type String's (attribute "label", the default converter, not reflected)
+gates/lib/plant-repo.ts:98: mutation: timeout: Regex: replaced by /(?:tsconfig.*\.json|eslint(?:\.[\w-]+)?\.config\.\w+|\.eslintrc.*|stylelint\.config\.\w+|\.stylelintrc.*|vitest(?:\.[\w-]+)*\.(?:config|workspace)\.\w+|vite(?:\.[\w-]+)?\.config\.\w+|stryker(?:\.[\w-]+)?\.conf(?:ig)?\.\w+)$/
+gates/lib/plant-repo.ts:98: mutation: timeout: Regex: replaced by /^(?:tsconfig.*\.json|eslint(?:\.[\w-]+)?\.config\.\w+|\.eslintrc.*|stylelint\.config\.\w+|\.stylelintrc.*|vitest(?:\.[\w-]+)*\.(?:config|workspace)\.\w+|vite(?:\.[\w-]+)?\.config\.\w+|stryker(?:\.[\w-]+)?\.conf(?:ig)?\.\w+)/
+gates/lib/plant-repo.ts:98: mutation: timeout: Regex: replaced by /^(?:tsconfig.*\.json|eslint(?:\.[\w-]+)?\.config\.\w+|\.eslintrc.*|stylelint\.config\.\w+|\.stylelintrc.*|vitest(?:\.[\w-]+)*\.(?:config|workspace)\.\w+|vite(?:\.[\w-])?\.config\.\w+|stryker(?:\.[\w-]+)?\.conf(?:ig)?\.\w+)$/
+gates/lib/plant-repo.ts:98: mutation: timeout: Regex: replaced by /^(?:tsconfig.*\.json|eslint(?:\.[\w-]+)?\.config\.\w+|\.eslintrc.*|stylelint\.config\.\w+|\.stylelintrc.*|vitest(?:\.[\w-]+)*\.(?:config|workspace)\.\w+|vite(?:\.[^\w-]+)?\.config\.\w+|stryker(?:\.[\w-]+)?\.conf(?:ig)?\.\w+)$/
+gates/lib/plant-repo.ts:98: mutation: timeout: Regex: replaced by /^(?:tsconfig.*\.json|eslint(?:\.[\w-]+)?\.config\.\w+|\.eslintrc.*|stylelint\.config\.\w+|\.stylelintrc.*|vitest(?:\.[\w-]+)*\.(?:config|workspace)\.\w+|vite(?:\.[\W-]+)?\.config\.\w+|stryker(?:\.[\w-]+)?\.conf(?:ig)?\.\w+)$/
+gates/stylelint/token-only.ts:121: mutation: timeout: BlockStatement: replaced by {}
+packages/elements/scripts/manifest.ts:27: mutation: timeout: StringLiteral: replaced by ""
+packages/elements/scripts/manifest.ts:36: mutation: timeout: Regex: replaced by /ocelle-[\w-]+\.ts$/
+packages/elements/scripts/manifest.ts:36: mutation: timeout: Regex: replaced by /^ocelle-[\w-]+\.ts/
+gates/bin/manifest.ts:35: mutation: compile-error: BlockStatement: replaced by {}
+gates/bin/manifest.ts:36: mutation: compile-error: StringLiteral: replaced by ""
+gates/bin/manifest.ts:39: mutation: compile-error: BlockStatement: replaced by {}
+gates/bin/manifest.ts:40: mutation: compile-error: ArrayDeclaration: replaced by ["Stryker was here"]
+gates/bin/manifest.ts:50: mutation: compile-error: BlockStatement: replaced by {}
+gates/bin/manifest.ts:56: mutation: compile-error: ObjectLiteral: replaced by {}
+gates/bin/manifest.ts:63: mutation: compile-error: BlockStatement: replaced by {}
+gates/bin/manifest.ts:64: mutation: compile-error: OptionalChaining: replaced by declaration[field]
+gates/bin/manifest.ts:64: mutation: compile-error: LogicalOperator: replaced by member.privacy !== "private" || member.privacy !== "protected"
+gates/bin/manifest.ts:64: mutation: compile-error: EqualityOperator: replaced by member.privacy === "private"
+gates/bin/manifest.ts:65: mutation: compile-error: ArrowFunction: replaced by () => undefined
+gates/bin/manifest.ts:65: mutation: compile-error: ArrayDeclaration: replaced by []
+gates/bin/manifest.ts:68: mutation: compile-error: BlockStatement: replaced by {}
+gates/bin/manifest.ts:69: mutation: compile-error: ObjectLiteral: replaced by {}
+gates/bin/manifest.ts:69: mutation: compile-error: ObjectLiteral: replaced by {}
+gates/bin/manifest.ts:73: mutation: compile-error: BlockStatement: replaced by {}
+gates/bin/manifest.ts:80: mutation: compile-error: ConditionalExpression: replaced by true
+gates/bin/manifest.ts:80: mutation: compile-error: ConditionalExpression: replaced by false
+gates/bin/manifest.ts:80: mutation: compile-error: LogicalOperator: replaced by before === undefined && after === undefined
+gates/bin/manifest.ts:80: mutation: compile-error: ConditionalExpression: replaced by false
+gates/bin/manifest.ts:80: mutation: compile-error: EqualityOperator: replaced by before !== undefined
+gates/bin/manifest.ts:80: mutation: compile-error: ConditionalExpression: replaced by false
+gates/bin/manifest.ts:80: mutation: compile-error: EqualityOperator: replaced by after !== undefined
+gates/bin/manifest.ts:80: mutation: compile-error: BlockStatement: replaced by {}
+gates/bin/manifest.ts:97: mutation: compile-error: BlockStatement: replaced by {}
+gates/bin/manifest.ts:98: mutation: compile-error: ArrayDeclaration: replaced by ["Stryker was here"]
+gates/bin/manifest.ts:103: mutation: compile-error: LogicalOperator: replaced by typeof entry.description !== "string" && entry.description.trim() === ""
+gates/bin/manifest.ts:103: mutation: compile-error: ConditionalExpression: replaced by false
+gates/bin/manifest.ts:103: mutation: compile-error: EqualityOperator: replaced by typeof entry.description === "string"
+gates/bin/manifest.ts:103: mutation: compile-error: StringLiteral: replaced by ""
+gates/bin/manifest.ts:106: mutation: compile-error: ObjectLiteral: replaced by {}
+gates/bin/manifest.ts:106: mutation: compile-error: ObjectLiteral: replaced by {}
+gates/bin/manifest.ts:112: mutation: compile-error: BlockStatement: replaced by {}
+gates/bin/manifest.ts:117: mutation: compile-error: BlockStatement: replaced by {}
+gates/bin/manifest.ts:119: mutation: compile-error: BlockStatement: replaced by {}
+gates/bin/manifest.ts:120: mutation: compile-error: StringLiteral: replaced by ""
+gates/bin/manifest.ts:121: mutation: compile-error: BlockStatement: replaced by {}
+gates/bin/manifest.ts:122: mutation: compile-error: ObjectLiteral: replaced by {}
+gates/bin/manifest.ts:124: mutation: compile-error: BlockStatement: replaced by {}
+gates/bin/manifest.ts:125: mutation: compile-error: ObjectLiteral: replaced by {}
+gates/bin/manifest.ts:126: mutation: compile-error: BlockStatement: replaced by {}
+gates/bin/manifest.ts:127: mutation: compile-error: ObjectLiteral: replaced by {}
+gates/bin/manifest.ts:131: mutation: compile-error: BlockStatement: replaced by {}
+gates/bin/manifest.ts:133: mutation: compile-error: ArrowFunction: replaced by () => undefined
+gates/bin/manifest.ts:133: mutation: compile-error: ObjectLiteral: replaced by {}
+gates/bin/manifest.ts:135: mutation: compile-error: ConditionalExpression: replaced by true
+gates/bin/manifest.ts:135: mutation: compile-error: ConditionalExpression: replaced by false
+gates/bin/manifest.ts:135: mutation: compile-error: StringLiteral: replaced by ""
+gates/bin/manifest.ts:143: mutation: compile-error: ObjectLiteral: replaced by {}
+gates/bin/manifest.ts:144: mutation: compile-error: ObjectLiteral: replaced by {}
+gates/bin/mutation.ts:72: mutation: compile-error: BlockStatement: replaced by {}
+gates/bin/mutation.ts:82: mutation: compile-error: ArrowFunction: replaced by () => undefined
+gates/bin/mutation.ts:83: mutation: compile-error: ArrowFunction: replaced by () => undefined
+gates/bin/mutation.ts:191: mutation: compile-error: ArrayDeclaration: replaced by ["Stryker was here"]
+gates/bin/mutation.ts:192: mutation: compile-error: ArrayDeclaration: replaced by ["Stryker was here"]
+gates/bin/mutation.ts:196: mutation: compile-error: ConditionalExpression: replaced by true
+gates/bin/mutation.ts:200: mutation: compile-error: ObjectLiteral: replaced by {}
+gates/bin/mutation.ts:202: mutation: compile-error: BooleanLiteral: replaced by verdict.ok
+gates/bin/mutation.ts:202: mutation: compile-error: ConditionalExpression: replaced by true
+gates/bin/mutation.ts:202: mutation: compile-error: ConditionalExpression: replaced by false
+gates/bin/mutation.ts:202: mutation: compile-error: ObjectLiteral: replaced by {}
+gates/bin/mutation.ts:209: mutation: compile-error: ArrowFunction: replaced by () => undefined
+gates/bin/mutation.ts:209: mutation: compile-error: ArrowFunction: replaced by () => undefined
+gates/bin/mutation.ts:210: mutation: compile-error: ArrowFunction: replaced by () => undefined
+gates/bin/mutation.ts:210: mutation: compile-error: ArrowFunction: replaced by () => undefined
+gates/bin/mutation.ts:211: mutation: compile-error: ArrowFunction: replaced by () => undefined
+gates/bin/mutation.ts:211: mutation: compile-error: ArrowFunction: replaced by () => undefined
+gates/bin/mutation.ts:211: mutation: compile-error: LogicalOperator: replaced by file.entry && file.path
+gates/lib/pins-rules.ts:84: mutation: compile-error: ArrowFunction: replaced by () => undefined
+gates/lib/plant-repo.ts:63: mutation: compile-error: ArrayDeclaration: replaced by []
+gates/lib/plant-repo.ts:64: mutation: compile-error: ArrayDeclaration: replaced by []
+gates/lib/plant-repo.ts:84: mutation: compile-error: BlockStatement: replaced by {}
+gates/lib/plant-repo.ts:92: mutation: compile-error: BlockStatement: replaced by {}
+gates/lib/plant-repo.ts:93: mutation: compile-error: ArrowFunction: replaced by () => undefined
+gates/lib/plant-repo.ts:240: mutation: compile-error: ArrayDeclaration: replaced by []
+gates/lib/plant-repo.ts:269: mutation: compile-error: ConditionalExpression: replaced by true
+gates/lib/plant-repo.ts:291: mutation: compile-error: OptionalChaining: replaced by delta.manifest
+gates/lib/plant-repo.ts:291: mutation: compile-error: StringLiteral: replaced by ""
+gates/stylelint/token-only.ts:73: mutation: compile-error: BlockStatement: replaced by {}
+gates/stylelint/token-only.ts:75: mutation: compile-error: LogicalOperator: replaced by number !== false || number.unit.toLowerCase() === "lh"
+gates/stylelint/token-only.ts:75: mutation: compile-error: ConditionalExpression: replaced by true
+gates/stylelint/token-only.ts:75: mutation: compile-error: EqualityOperator: replaced by number === false
+gates/stylelint/token-only.ts:75: mutation: compile-error: BooleanLiteral: replaced by true
+gates/stylelint/token-only.ts:79: mutation: compile-error: BlockStatement: replaced by {}
+gates/stylelint/token-only.ts:81: mutation: compile-error: LogicalOperator: replaced by number !== false && number.unit.toLowerCase() === "lh" || Number(number.number) === 1
+gates/stylelint/token-only.ts:81: mutation: compile-error: ConditionalExpression: replaced by true
+gates/stylelint/token-only.ts:81: mutation: compile-error: LogicalOperator: replaced by number !== false || number.unit.toLowerCase() === "lh"
+gates/stylelint/token-only.ts:81: mutation: compile-error: ConditionalExpression: replaced by true
+gates/stylelint/token-only.ts:81: mutation: compile-error: EqualityOperator: replaced by number === false
+gates/stylelint/token-only.ts:81: mutation: compile-error: BooleanLiteral: replaced by true
+gates/stylelint/token-only.ts:85: mutation: compile-error: BlockStatement: replaced by {}
+gates/stylelint/token-only.ts:86: mutation: compile-error: LogicalOperator: replaced by node?.type === "word" || node.value === "+" || node.value === "-"
+gates/stylelint/token-only.ts:86: mutation: compile-error: ConditionalExpression: replaced by true
+gates/stylelint/token-only.ts:86: mutation: compile-error: EqualityOperator: replaced by node?.type !== "word"
+gates/stylelint/token-only.ts:86: mutation: compile-error: OptionalChaining: replaced by node.type
+gates/stylelint/token-only.ts:86: mutation: compile-error: StringLiteral: replaced by ""
+gates/stylelint/token-only.ts:86: mutation: compile-error: LogicalOperator: replaced by node.value === "+" && node.value === "-"
+gates/stylelint/token-only.ts:86: mutation: compile-error: EqualityOperator: replaced by node.value !== "+"
+gates/stylelint/token-only.ts:90: mutation: compile-error: BlockStatement: replaced by {}
+gates/stylelint/token-only.ts:91: mutation: compile-error: MethodExpression: replaced by group
+gates/stylelint/token-only.ts:91: mutation: compile-error: LogicalOperator: replaced by node.type !== "space" || node.type !== "comment"
+gates/stylelint/token-only.ts:91: mutation: compile-error: EqualityOperator: replaced by node.type === "space"
+gates/stylelint/token-only.ts:91: mutation: compile-error: StringLiteral: replaced by ""
+gates/stylelint/token-only.ts:91: mutation: compile-error: StringLiteral: replaced by ""
+gates/stylelint/token-only.ts:103: mutation: compile-error: BlockStatement: replaced by {}
+gates/stylelint/token-only.ts:104: mutation: compile-error: ArrayDeclaration: replaced by ["Stryker was here"]
+gates/stylelint/token-only.ts:105: mutation: compile-error: ArrayDeclaration: replaced by ["Stryker was here"]
+gates/stylelint/token-only.ts:110: mutation: compile-error: StringLiteral: replaced by ""
+gates/stylelint/token-only.ts:110: mutation: compile-error: ObjectLiteral: replaced by {}
+gates/stylelint/token-only.ts:111: mutation: compile-error: ConditionalExpression: replaced by true
+gates/stylelint/token-only.ts:111: mutation: compile-error: ConditionalExpression: replaced by false
+gates/stylelint/token-only.ts:111: mutation: compile-error: EqualityOperator: replaced by node.type === "function"
+gates/stylelint/token-only.ts:111: mutation: compile-error: StringLiteral: replaced by ""
+gates/stylelint/token-only.ts:112: mutation: compile-error: OptionalChaining: replaced by node.nodes[0].value
+gates/stylelint/token-only.ts:112: mutation: compile-error: CallExpression: replaced by ;
+gates/stylelint/token-only.ts:113: mutation: compile-error: ObjectLiteral: replaced by {}
+gates/stylelint/token-only.ts:119: mutation: compile-error: ConditionalExpression: replaced by true
+gates/stylelint/token-only.ts:119: mutation: compile-error: ConditionalExpression: replaced by false
+gates/stylelint/token-only.ts:119: mutation: compile-error: LogicalOperator: replaced by (lengths.length !== 1 || only === undefined || tokens.length === 0) && !isOneLine(only.node.value)
+gates/stylelint/token-only.ts:119: mutation: compile-error: ConditionalExpression: replaced by false
+gates/stylelint/token-only.ts:119: mutation: compile-error: LogicalOperator: replaced by (lengths.length !== 1 || only === undefined) && tokens.length === 0
+gates/stylelint/token-only.ts:119: mutation: compile-error: ConditionalExpression: replaced by false
+gates/stylelint/token-only.ts:119: mutation: compile-error: LogicalOperator: replaced by lengths.length !== 1 && only === undefined
+gates/stylelint/token-only.ts:119: mutation: compile-error: ConditionalExpression: replaced by false
+gates/stylelint/token-only.ts:119: mutation: compile-error: EqualityOperator: replaced by only !== undefined
+gates/stylelint/token-only.ts:121: mutation: compile-error: ConditionalExpression: replaced by false
+gates/stylelint/token-only.ts:121: mutation: compile-error: LogicalOperator: replaced by up !== undefined || operandsOf(group).length === 1
+gates/stylelint/token-only.ts:121: mutation: compile-error: ConditionalExpression: replaced by true
+gates/stylelint/token-only.ts:121: mutation: compile-error: EqualityOperator: replaced by up === undefined
+gates/stylelint/token-only.ts:126: mutation: compile-error: ArrayDeclaration: replaced by []
+gates/stylelint/token-only.ts:127: mutation: compile-error: ConditionalExpression: replaced by false
+gates/stylelint/token-only.ts:140: mutation: compile-error: LogicalOperator: replaced by name === "calc" && name === "" && inCalc
+gates/stylelint/token-only.ts:140: mutation: compile-error: EqualityOperator: replaced by name !== "calc"
+gates/stylelint/token-only.ts:148: mutation: compile-error: CallExpression: replaced by ;
+gates/stylelint/token-only.ts:191: mutation: compile-error: ArrayDeclaration: replaced by []
+gates/stylelint/token-only.ts:197: mutation: compile-error: BlockStatement: replaced by {}
+gates/stylelint/token-only.ts:198: mutation: compile-error: BlockStatement: replaced by {}
+gates/stylelint/token-only.ts:199: mutation: compile-error: ConditionalExpression: replaced by true
+gates/stylelint/token-only.ts:199: mutation: compile-error: StringLiteral: replaced by ""
+gates/stylelint/token-only.ts:203: mutation: compile-error: ConditionalExpression: replaced by true
+gates/stylelint/token-only.ts:203: mutation: compile-error: ConditionalExpression: replaced by false
+gates/stylelint/token-only.ts:203: mutation: compile-error: EqualityOperator: replaced by number !== false
+gates/stylelint/token-only.ts:213: mutation: compile-error: BlockStatement: replaced by {}
+gates/stylelint/token-only.ts:214: mutation: compile-error: EqualityOperator: replaced by node.type === "space"
+gates/stylelint/token-only.ts:214: mutation: compile-error: StringLiteral: replaced by ""
+gates/stylelint/token-only.ts:216: mutation: compile-error: LogicalOperator: replaced by parts.length === 1 && only?.type === "word" || only.value === "1"
+gates/stylelint/token-only.ts:216: mutation: compile-error: ConditionalExpression: replaced by true
+gates/stylelint/token-only.ts:216: mutation: compile-error: ConditionalExpression: replaced by true
+gates/stylelint/token-only.ts:216: mutation: compile-error: EqualityOperator: replaced by only?.type !== "word"
+gates/stylelint/token-only.ts:216: mutation: compile-error: OptionalChaining: replaced by only.type
+gates/stylelint/token-only.ts:216: mutation: compile-error: StringLiteral: replaced by ""
+gates/stylelint/token-only.ts:217: mutation: compile-error: BlockStatement: replaced by {}
+gates/stylelint/token-only.ts:218: mutation: compile-error: StringLiteral: replaced by ""
+gates/stylelint/token-only.ts:220: mutation: compile-error: BooleanLiteral: replaced by true
+gates/stylelint/token-only.ts:231: mutation: compile-error: ConditionalExpression: replaced by true
+gates/stylelint/token-only.ts:231: mutation: compile-error: EqualityOperator: replaced by name !== "scale"
+gates/stylelint/token-only.ts:232: mutation: compile-error: ConditionalExpression: replaced by true
+gates/stylelint/token-only.ts:232: mutation: compile-error: EqualityOperator: replaced by name !== "aspect-ratio"
+gates/stylelint/token-only.ts:240: mutation: compile-error: LogicalOperator: replaced by nodes.length === 1 && only?.type === "word" || isOneLine(only.value)
+gates/stylelint/token-only.ts:240: mutation: compile-error: ConditionalExpression: replaced by true
+gates/stylelint/token-only.ts:240: mutation: compile-error: ConditionalExpression: replaced by true
+gates/stylelint/token-only.ts:240: mutation: compile-error: EqualityOperator: replaced by only?.type !== "word"
+gates/stylelint/token-only.ts:240: mutation: compile-error: OptionalChaining: replaced by only.type
+gates/stylelint/token-only.ts:240: mutation: compile-error: StringLiteral: replaced by ""
+packages/elements/scripts/manifest.ts:38: mutation: compile-error: ArrayDeclaration: replaced by []
+packages/elements/scripts/manifest.ts:43: mutation: compile-error: BlockStatement: replaced by {}
+packages/elements/scripts/manifest.ts:44: mutation: compile-error: StringLiteral: replaced by ""
+packages/elements/scripts/manifest.ts:47: mutation: compile-error: BlockStatement: replaced by {}
+packages/elements/scripts/manifest.ts:48: mutation: compile-error: ArrayDeclaration: replaced by ["Stryker was here"]
+packages/elements/scripts/manifest.ts:52: mutation: compile-error: BlockStatement: replaced by {}
+packages/elements/scripts/manifest.ts:53: mutation: compile-error: ConditionalExpression: replaced by true
+packages/elements/scripts/manifest.ts:53: mutation: compile-error: ConditionalExpression: replaced by false
+packages/elements/scripts/manifest.ts:54: mutation: compile-error: BooleanLiteral: replaced by isObject(value)
+packages/elements/scripts/manifest.ts:54: mutation: compile-error: ConditionalExpression: replaced by true
+packages/elements/scripts/manifest.ts:54: mutation: compile-error: ConditionalExpression: replaced by false
+packages/elements/scripts/manifest.ts:55: mutation: compile-error: ArrowFunction: replaced by () => undefined
+packages/elements/scripts/manifest.ts:59: mutation: compile-error: BlockStatement: replaced by {}
+packages/elements/scripts/manifest.ts:61: mutation: compile-error: ConditionalExpression: replaced by true
+packages/elements/scripts/manifest.ts:61: mutation: compile-error: ConditionalExpression: replaced by false
+packages/elements/scripts/manifest.ts:61: mutation: compile-error: LogicalOperator: replaced by (union === undefined || !isObject(type)) && typeof type.text !== "string"
+packages/elements/scripts/manifest.ts:61: mutation: compile-error: ConditionalExpression: replaced by false
+packages/elements/scripts/manifest.ts:61: mutation: compile-error: LogicalOperator: replaced by union === undefined && !isObject(type)
+packages/elements/scripts/manifest.ts:61: mutation: compile-error: ConditionalExpression: replaced by false
+packages/elements/scripts/manifest.ts:61: mutation: compile-error: EqualityOperator: replaced by union !== undefined
+packages/elements/scripts/manifest.ts:61: mutation: compile-error: BooleanLiteral: replaced by isObject(type)
+packages/elements/scripts/manifest.ts:61: mutation: compile-error: ConditionalExpression: replaced by false
+packages/elements/scripts/manifest.ts:61: mutation: compile-error: EqualityOperator: replaced by typeof type.text === "string"
+packages/elements/scripts/manifest.ts:61: mutation: compile-error: StringLiteral: replaced by ""
+packages/elements/scripts/manifest.ts:66: mutation: compile-error: BlockStatement: replaced by {}
+packages/elements/scripts/manifest.ts:67: mutation: compile-error: LogicalOperator: replaced by member.privacy !== "private" || member.privacy !== "protected"
+packages/elements/scripts/manifest.ts:67: mutation: compile-error: EqualityOperator: replaced by member.privacy === "private"
+packages/elements/scripts/manifest.ts:70: mutation: compile-error: BlockStatement: replaced by {}
+packages/elements/scripts/manifest.ts:73: mutation: compile-error: ArrowFunction: replaced by () => undefined
+packages/elements/scripts/manifest.ts:83: mutation: compile-error: BlockStatement: replaced by {}
+packages/elements/scripts/manifest.ts:88: mutation: compile-error: BlockStatement: replaced by {}
+packages/elements/scripts/manifest.ts:91: mutation: compile-error: ArrowFunction: replaced by () => undefined
+packages/elements/scripts/manifest.ts:92: mutation: compile-error: ArrowFunction: replaced by () => undefined
+packages/elements/scripts/manifest.ts:100: mutation: compile-error: BlockStatement: replaced by {}
+packages/elements/scripts/manifest.ts:103: mutation: compile-error: ConditionalExpression: replaced by true
+packages/elements/scripts/manifest.ts:103: mutation: compile-error: ConditionalExpression: replaced by false
+packages/elements/scripts/manifest.ts:103: mutation: compile-error: LogicalOperator: replaced by !ts.isTypeAliasDeclaration(statement) && statement.name.text !== "IconName"
+packages/elements/scripts/manifest.ts:103: mutation: compile-error: BooleanLiteral: replaced by ts.isTypeAliasDeclaration(statement)
+packages/elements/scripts/manifest.ts:105: mutation: compile-error: ArrowFunction: replaced by () => undefined
+packages/elements/scripts/manifest.ts:105: mutation: compile-error: ConditionalExpression: replaced by true
+packages/elements/scripts/manifest.ts:105: mutation: compile-error: ConditionalExpression: replaced by false
+packages/elements/scripts/manifest.ts:105: mutation: compile-error: LogicalOperator: replaced by ts.isLiteralTypeNode(member) || ts.isStringLiteral(member.literal)
+packages/elements/scripts/manifest.ts:110: mutation: compile-error: BlockStatement: replaced by {}
+packages/elements/scripts/manifest.ts:114: mutation: compile-error: ArrowFunction: replaced by () => undefined
+packages/elements/scripts/manifest.ts:114: mutation: compile-error: StringLiteral: replaced by ""
+packages/elements/scripts/manifest.ts:115: mutation: compile-error: ObjectLiteral: replaced by {}
+packages/elements/scripts/manifest.ts:117: mutation: compile-error: StringLiteral: replaced by ""
+packages/elements/scripts/manifest.ts:120: mutation: compile-error: BlockStatement: replaced by {}
+packages/elements/src/define.ts:8: mutation: compile-error: CallExpression: replaced by ;
+packages/elements/src/icons.ts:41: mutation: compile-error: ObjectLiteral: replaced by {}
+packages/elements/src/icons.ts:42: mutation: compile-error: ObjectLiteral: replaced by {}
+packages/elements/src/icons.ts:42: mutation: compile-error: ObjectLiteral: replaced by {}
+packages/elements/src/icons.ts:42: mutation: compile-error: StringLiteral: replaced by ""
+packages/elements/src/icons.ts:43: mutation: compile-error: ObjectLiteral: replaced by {}
+packages/elements/src/icons.ts:43: mutation: compile-error: ObjectLiteral: replaced by {}
+packages/elements/src/icons.ts:43: mutation: compile-error: StringLiteral: replaced by ""
+packages/elements/src/icons.ts:44: mutation: compile-error: ObjectLiteral: replaced by {}
+packages/elements/src/icons.ts:44: mutation: compile-error: ObjectLiteral: replaced by {}
+packages/elements/src/icons.ts:44: mutation: compile-error: StringLiteral: replaced by ""
+packages/elements/src/icons.ts:45: mutation: compile-error: ObjectLiteral: replaced by {}
+packages/elements/src/icons.ts:45: mutation: compile-error: ObjectLiteral: replaced by {}
+packages/elements/src/icons.ts:45: mutation: compile-error: StringLiteral: replaced by ""
+packages/elements/src/icons.ts:46: mutation: compile-error: ObjectLiteral: replaced by {}
+packages/elements/src/icons.ts:49: mutation: compile-error: ObjectLiteral: replaced by {}
+packages/elements/src/icons.ts:49: mutation: compile-error: StringLiteral: replaced by ""
+packages/elements/src/icons.ts:50: mutation: compile-error: ObjectLiteral: replaced by {}
+packages/elements/src/icons.ts:50: mutation: compile-error: StringLiteral: replaced by ""
+packages/elements/src/icons.ts:53: mutation: compile-error: ObjectLiteral: replaced by {}
+packages/elements/src/icons.ts:56: mutation: compile-error: ObjectLiteral: replaced by {}
+packages/elements/src/icons.ts:56: mutation: compile-error: StringLiteral: replaced by ""
+packages/elements/src/icons.ts:57: mutation: compile-error: ObjectLiteral: replaced by {}
+packages/elements/src/icons.ts:57: mutation: compile-error: StringLiteral: replaced by ""
+packages/elements/src/icons.ts:60: mutation: compile-error: ObjectLiteral: replaced by {}
+packages/elements/src/icons.ts:63: mutation: compile-error: ObjectLiteral: replaced by {}
+packages/elements/src/icons.ts:63: mutation: compile-error: StringLiteral: replaced by ""
+packages/elements/src/icons.ts:64: mutation: compile-error: ObjectLiteral: replaced by {}
+packages/elements/src/icons.ts:64: mutation: compile-error: StringLiteral: replaced by ""
+packages/elements/src/icons.ts:65: mutation: compile-error: ObjectLiteral: replaced by {}
+packages/elements/src/icons.ts:65: mutation: compile-error: StringLiteral: replaced by ""
+packages/elements/src/icons.ts:68: mutation: compile-error: ObjectLiteral: replaced by {}
+packages/elements/src/icons.ts:71: mutation: compile-error: ObjectLiteral: replaced by {}
+packages/elements/src/icons.ts:71: mutation: compile-error: StringLiteral: replaced by ""
+packages/elements/src/icons.ts:72: mutation: compile-error: ObjectLiteral: replaced by {}
+packages/elements/src/icons.ts:72: mutation: compile-error: StringLiteral: replaced by ""
+packages/elements/src/icons.ts:75: mutation: compile-error: ObjectLiteral: replaced by {}
+packages/elements/src/icons.ts:75: mutation: compile-error: ObjectLiteral: replaced by {}
+packages/elements/src/icons.ts:75: mutation: compile-error: StringLiteral: replaced by ""
+packages/elements/src/icons.ts:76: mutation: compile-error: ObjectLiteral: replaced by {}
+packages/elements/src/icons.ts:79: mutation: compile-error: ObjectLiteral: replaced by {}
+packages/elements/src/icons.ts:79: mutation: compile-error: StringLiteral: replaced by ""
+packages/elements/src/icons.ts:80: mutation: compile-error: ObjectLiteral: replaced by {}
+packages/elements/src/icons.ts:80: mutation: compile-error: StringLiteral: replaced by ""
+packages/elements/src/icons.ts:83: mutation: compile-error: ObjectLiteral: replaced by {}
+packages/elements/src/icons.ts:86: mutation: compile-error: ObjectLiteral: replaced by {}
+packages/elements/src/icons.ts:86: mutation: compile-error: StringLiteral: replaced by ""
+packages/elements/src/icons.ts:87: mutation: compile-error: ObjectLiteral: replaced by {}
+packages/elements/src/icons.ts:87: mutation: compile-error: StringLiteral: replaced by ""
+packages/elements/src/icons.ts:90: mutation: compile-error: ObjectLiteral: replaced by {}
+packages/elements/src/icons.ts:93: mutation: compile-error: ObjectLiteral: replaced by {}
+packages/elements/src/icons.ts:93: mutation: compile-error: StringLiteral: replaced by ""
+packages/elements/src/icons.ts:94: mutation: compile-error: ObjectLiteral: replaced by {}
+packages/elements/src/icons.ts:94: mutation: compile-error: StringLiteral: replaced by ""
+packages/elements/src/icons.ts:95: mutation: compile-error: ObjectLiteral: replaced by {}
+packages/elements/src/icons.ts:95: mutation: compile-error: StringLiteral: replaced by ""
+packages/elements/src/icons.ts:96: mutation: compile-error: ObjectLiteral: replaced by {}
+packages/elements/src/icons.ts:96: mutation: compile-error: StringLiteral: replaced by ""
+packages/elements/src/icons.ts:99: mutation: compile-error: ObjectLiteral: replaced by {}
+packages/elements/src/icons.ts:102: mutation: compile-error: ObjectLiteral: replaced by {}
+packages/elements/src/icons.ts:102: mutation: compile-error: StringLiteral: replaced by ""
+packages/elements/src/icons.ts:103: mutation: compile-error: ObjectLiteral: replaced by {}
+packages/elements/src/icons.ts:103: mutation: compile-error: StringLiteral: replaced by ""
+packages/elements/src/icons.ts:110: mutation: compile-error: BlockStatement: replaced by {}
+packages/elements/src/icons.ts:111: mutation: compile-error: ConditionalExpression: replaced by true
+packages/elements/src/icons.ts:111: mutation: compile-error: ConditionalExpression: replaced by false
+packages/elements/src/icons.ts:111: mutation: compile-error: LogicalOperator: replaced by name === null && name === undefined
+packages/elements/src/icons.ts:111: mutation: compile-error: ConditionalExpression: replaced by false
+packages/elements/src/icons.ts:111: mutation: compile-error: EqualityOperator: replaced by name !== null
+packages/elements/src/icons.ts:111: mutation: compile-error: ConditionalExpression: replaced by false
+packages/elements/src/icons.ts:111: mutation: compile-error: EqualityOperator: replaced by name !== undefined
+packages/elements/src/naming.ts:12: mutation: compile-error: BlockStatement: replaced by {}
+packages/elements/src/naming.ts:13: mutation: compile-error: ConditionalExpression: replaced by true
+packages/elements/src/naming.ts:13: mutation: compile-error: ConditionalExpression: replaced by false
+packages/elements/src/naming.ts:13: mutation: compile-error: EqualityOperator: replaced by hostAriaLabel === null
+packages/elements/src/naming.ts:13: mutation: compile-error: ConditionalExpression: replaced by true
+packages/elements/src/naming.ts:14: mutation: compile-error: OptionalChaining: replaced by label.trim
+packages/elements/src/naming.ts:24: mutation: compile-error: ConditionalExpression: replaced by true
+packages/elements/src/naming.ts:24: mutation: compile-error: ConditionalExpression: replaced by false
+packages/elements/src/naming.ts:24: mutation: compile-error: LogicalOperator: replaced by drawable || name !== undefined
+packages/elements/src/naming.ts:24: mutation: compile-error: ConditionalExpression: replaced by true
+packages/elements/src/naming.ts:24: mutation: compile-error: EqualityOperator: replaced by name === undefined
+packages/elements/src/ocelle-brand-mark.ts:29: mutation: compile-error: BlockStatement: replaced by {}
+packages/elements/src/ocelle-brand-mark.ts:121: mutation: compile-error: BlockStatement: replaced by {}
+packages/elements/src/ocelle-icon.ts:16: mutation: compile-error: BlockStatement: replaced by {}
+packages/elements/src/ocelle-icon.ts:18: mutation: compile-error: ConditionalExpression: replaced by case "line":
+packages/elements/src/ocelle-icon.ts:18: mutation: compile-error: StringLiteral: replaced by ""
+packages/elements/src/ocelle-icon.ts:20: mutation: compile-error: ConditionalExpression: replaced by case "polyline":
+packages/elements/src/ocelle-icon.ts:20: mutation: compile-error: StringLiteral: replaced by ""
+packages/elements/src/ocelle-icon.ts:22: mutation: compile-error: ConditionalExpression: replaced by case "path":
+packages/elements/src/ocelle-icon.ts:22: mutation: compile-error: StringLiteral: replaced by ""
+packages/elements/src/ocelle-icon.ts:24: mutation: compile-error: ConditionalExpression: replaced by case "rect":
+packages/elements/src/ocelle-icon.ts:24: mutation: compile-error: StringLiteral: replaced by ""
+packages/elements/src/ocelle-icon.ts:26: mutation: compile-error: ConditionalExpression: replaced by case "circle":
+packages/elements/src/ocelle-icon.ts:26: mutation: compile-error: StringLiteral: replaced by ""
+packages/elements/src/ocelle-icon.ts:44: mutation: compile-error: BlockStatement: replaced by {}
+packages/elements/src/ocelle-icon.ts:98: mutation: compile-error: BlockStatement: replaced by {}
+packages/elements/src/ocelle-icon.ts:100: mutation: compile-error: ConditionalExpression: replaced by true
+packages/elements/src/ocelle-icon.ts:100: mutation: compile-error: ConditionalExpression: replaced by false
+packages/elements/src/ocelle-icon.ts:100: mutation: compile-error: EqualityOperator: replaced by icon !== undefined
+packages/elements/vite.browser.config.ts:18: mutation: compile-error: StringLiteral: replaced by ""
+packages/elements/vite.browser.config.ts:24: mutation: compile-error: StringLiteral: replaced by ""
+packages/elements/vite.browser.config.ts:24: mutation: compile-error: ArrowFunction: replaced by () => undefined
+gates/bin/contrast.ts: mutation: zero-mutants: no mutant on the changed lines
+packages/elements/src/browser.ts: mutation: zero-mutants: no mutant on the changed lines
+packages/elements/src/index.ts: mutation: zero-mutants: no mutant on the changed lines
+mutation: 881 mutants on the changed lines of 18 files, none survived; 9 timeouts, 315 compile errors, 3 zero-mutant entries; 15 equivalent records
+exit 0 in 560s

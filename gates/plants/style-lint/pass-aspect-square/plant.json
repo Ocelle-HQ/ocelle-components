@@ -1,0 +1,4 @@
+{
+  "expect": "pass",
+  "why": "The mark's sizing rule aspect-ratio: 1 in an element's css template passes: aspect-ratio takes the bare number 1 as its whole value, as wide as high, the size coming from the token (005 research.md R-03, R-09; PLAN-FRESH-1-006 (a))."
+}

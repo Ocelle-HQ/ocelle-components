@@ -86,6 +86,225 @@ describe("rawValues: allowed values", () => {
   });
 });
 
+// The `scale` allowance (005 research.md R-03, R-08; operator decisions PLAN-TESTABILITY-1-011 (a) and PLAN-FRESH-3-002
+// (a); T034): `scale` takes only the numbers -1 and 1, as bare words, so the mirroring rule `scale: -1 1` passes. The
+// whole value is checked: any other number, a length or a percentage is raw, and so is any function (calc(), var() or
+// another), so calc() does not reopen the allowance. Keywords stay allowed as for every property.
+describe("rawValues: scale takes only -1 and 1", () => {
+  it.each([
+    { value: "-1 1" },
+    { value: "1 -1" },
+    { value: "-1" },
+    { value: "1" },
+    { value: "1 1 -1" },
+  ])("scale: $value is token-only (only the control 4px after it is raw)", ({ value }) => {
+    expect(rawValues("scale", `${value} 4px`)).toEqual(["4px"]);
+    expect(rawValues("SCALE", value)).toEqual([]);
+  });
+
+  // Each guard below shares its test with the mirroring value it guards (it holds before the allowance too).
+  it("keeps keywords allowed: scale: none and inherit pass, beside -1 1", () => {
+    expect({ none: rawValues("scale", "none"), inherit: rawValues("scale", "inherit"), mirror: rawValues("scale", "-1 1") }).toEqual({ none: [], inherit: [], mirror: [] });
+  });
+
+  it.each([
+    { value: "2", raw: ["2"] },
+    { value: "2px 1", raw: ["2px"] },
+    { value: "calc(2)", raw: ["calc(2)"] },
+    { value: "calc(-1) 1", raw: ["calc(-1)"] },
+    { value: "calc(3) calc(3)", raw: ["calc(3)", "calc(3)"] },
+    { value: "var(--ocelle-icon-size)", raw: ["var(--ocelle-icon-size)"] },
+    { value: "-1 0.5", raw: ["0.5"] },
+    { value: "0", raw: ["0"] },
+    { value: "-2 1", raw: ["-2"] },
+    { value: "50% 1", raw: ["50%"] },
+    { value: "1.5", raw: ["1.5"] },
+    { value: "1px -1", raw: ["1px"] },
+    { value: "red 1", raw: ["red"] },
+    { value: "#000", raw: ["#000"] },
+  ])("scale: $value is raw: $raw, while -1 1 passes", ({ value, raw }) => {
+    expect({ value: rawValues("scale", value), mirror: rawValues("scale", "-1 1") }).toEqual({ value: raw, mirror: [] });
+  });
+
+  it("leaves other properties as before: a bare -1 or 1 is still raw for width, and calc(2) still passes there, while scale: -1 1 passes", () => {
+    expect({ width: rawValues("width", "-1 1"), calc: rawValues("width", "calc(2)"), order: rawValues("order", "-1"), mirror: rawValues("scale", "-1 1") }).toEqual({ width: ["-1", "1"], calc: [], order: [], mirror: [] });
+  });
+
+  it("reports the mirroring rule of an element template not at all, and a scale factor at its line", async () => {
+    const code = "const css = String.raw;\nexport const styles = css`\n  :host(:dir(rtl)) .mirror {\n    scale: -1 1;\n  }\n  .big {\n    scale: calc(2);\n  }\n`;\n";
+    const { results } = await stylelint.lint({ code, codeFilename: "x.ts", config: { plugins: [plugin], rules: { [ruleName]: true }, customSyntax: "postcss-lit" } });
+    expect(results[0]?.warnings.map(({ line, text }) => ({ line, text }))).toEqual([
+      { line: 7, text: "scale: raw calc(2); use a --ocelle-* token (FR-024) (ocelle/token-only)" },
+    ]);
+  });
+});
+
+// The `aspect-ratio` allowance (005 research.md R-03, R-09; operator decisions PLAN-FRESH-1-006 (a) and PLAN-FRESH-3-002
+// (a); T050): `aspect-ratio` takes only the number 1, as the whole value, so the mark's `aspect-ratio: 1` passes and
+// takes its size from the token. Any other number, a ratio with `/` (`1 / 1` included), a length and any function
+// (calc(), var() or another) are raw, so calc() does not reopen the allowance. Keywords stay allowed as for every
+// property. Each guard shares its test with the square value it guards.
+describe("rawValues: aspect-ratio takes only 1, as the whole value", () => {
+  it("aspect-ratio: 1 is token-only, in any case of the property name, while 16 / 9 stays raw", () => {
+    expect({ square: rawValues("aspect-ratio", "1"), upper: rawValues("ASPECT-RATIO", "1"), spaced: rawValues("aspect-ratio", " 1 "), ratio: rawValues("aspect-ratio", "16 / 9") }).toEqual({
+      square: [],
+      upper: [],
+      spaced: [],
+      ratio: ["16", "9"],
+    });
+  });
+
+  it("keeps keywords allowed: aspect-ratio: auto and inherit pass, beside 1", () => {
+    expect({ auto: rawValues("aspect-ratio", "auto"), inherit: rawValues("aspect-ratio", "inherit"), square: rawValues("aspect-ratio", "1") }).toEqual({ auto: [], inherit: [], square: [] });
+  });
+
+  it.each([
+    { value: "2", raw: ["2"] },
+    { value: "1 / 1", raw: ["1", "1"] },
+    { value: "1/1", raw: ["1", "1"] },
+    { value: "calc(2)", raw: ["calc(2)"] },
+    { value: "calc(1)", raw: ["calc(1)"] },
+    { value: "var(--ocelle-icon-size)", raw: ["var(--ocelle-icon-size)"] },
+    { value: "auto 1", raw: ["1"] },
+    { value: "0", raw: ["0"] },
+    { value: "1.5", raw: ["1.5"] },
+    { value: "-1", raw: ["-1"] },
+    { value: "1px", raw: ["1px"] },
+    { value: "100%", raw: ["100%"] },
+    { value: "red", raw: ["red"] },
+    { value: "#000 / 1", raw: ["#000", "1"] },
+  ])("aspect-ratio: $value is raw: $raw, while aspect-ratio: 1 passes", ({ value, raw }) => {
+    expect({ value: rawValues("aspect-ratio", value), square: rawValues("aspect-ratio", "1") }).toEqual({ value: raw, square: [] });
+  });
+
+  it("leaves other properties as before: a bare 1 is still raw for width and calc(2) still passes there, while aspect-ratio: 1 passes", () => {
+    expect({ width: rawValues("width", "1"), calc: rawValues("width", "calc(2)"), square: rawValues("aspect-ratio", "1") }).toEqual({ width: ["1"], calc: [], square: [] });
+  });
+
+  it("reports the mark's aspect-ratio: 1 in an element template not at all, and aspect-ratio: calc(2) at its line", async () => {
+    const code = "const css = String.raw;\nexport const styles = css`\n  :host {\n    aspect-ratio: 1;\n  }\n  .wide {\n    aspect-ratio: calc(2);\n  }\n`;\n";
+    const { results } = await stylelint.lint({ code, codeFilename: "x.ts", config: { plugins: [plugin], rules: { [ruleName]: true }, customSyntax: "postcss-lit" } });
+    expect(results[0]?.warnings.map(({ line, text }) => ({ line, text }))).toEqual([
+      { line: 7, text: "aspect-ratio: raw calc(2); use a --ocelle-* token (FR-024) (ocelle/token-only)" },
+    ]);
+  });
+});
+
+// The `1lh` allowance (005 research.md R-03, R-10; operator decisions PLAN-CORRECTNESS-1-004 (a), PLAN-FRESH-2-002 (a)
+// and PLAN-FRESH-3-002 (a); T041): the unit `lh` is allowed only as `1lh`, one line box of the element's own line
+// height, as a value on its own (the slot wrapper's `block-size: 1lh`) and inside `calc()` only as an operand of `+` or
+// `-` (never of `*` or `/`), at most once per `calc()` expression, in a `calc()` that also references an `--ocelle-*`
+// token (the row's `padding-block: calc((var(--ocelle-icon-size) - 1lh) / 2)`). Every other use of `lh` is raw. Each
+// guard shares its test with the allowed value it guards, since `2lh` and the rest were raw before the allowance too.
+describe("rawValues: 1lh alone, and once beside a token in calc()", () => {
+  const row = "calc((var(--ocelle-icon-size) - 1lh) / 2)";
+
+  it.each([
+    { property: "block-size", value: "1lh" },
+    { property: "BLOCK-SIZE", value: "1LH" },
+    { property: "min-block-size", value: "1lh" },
+  ])("$property: $value is token-only", ({ property, value }) => {
+    expect(rawValues(property, value)).toEqual([]);
+  });
+
+  it.each([
+    { property: "padding-block", value: row },
+    { property: "padding-block", value: "calc(var(--ocelle-icon-size) - 1lh)" },
+    { property: "padding-block", value: "calc(1lh - var(--ocelle-icon-size))" },
+    { property: "margin-block", value: "calc(var(--ocelle-space-1) + 1lh)" },
+    { property: "margin-block", value: "calc(var(--ocelle-space-1) + (1lh - var(--ocelle-space-1)))" },
+    { property: "margin-block", value: "calc(var(--ocelle-space-1) * 2 + 1lh)" },
+    // A comment is no length and no operand, even one that reads 1lh.
+    { property: "padding-block", value: "calc(var(--ocelle-icon-size) - /*1lh*/ 1lh)" },
+    { property: "inset-block-start", value: "calc((var(--ocelle-icon-size) - 1lh) / 2) var(--ocelle-space-1)" },
+  ])("$property: $value is token-only", ({ property, value }) => {
+    expect(rawValues(property, value)).toEqual([]);
+  });
+
+  it.each([
+    { property: "block-size", value: "2lh", raw: ["2lh"] },
+    { property: "block-size", value: "0.5lh", raw: ["0.5lh"] },
+    { property: "block-size", value: "-1lh", raw: ["-1lh"] },
+    { property: "block-size", value: "1rlh", raw: ["1rlh"] },
+    { property: "block-size", value: "calc(2lh)", raw: ["2lh"] },
+    { property: "block-size", value: "calc(1lh)", raw: ["1lh"] },
+    { property: "block-size", value: "calc(1lh * 2)", raw: ["1lh"] },
+    { property: "block-size", value: "calc(2 * 1lh)", raw: ["1lh"] },
+    { property: "block-size", value: "calc(1lh / 2)", raw: ["1lh"] },
+    { property: "block-size", value: "calc(var(--ocelle-space-1) + 1lh * 2)", raw: ["1lh"] },
+    { property: "block-size", value: "calc(var(--ocelle-space-1) / 1lh)", raw: ["1lh"] },
+    { property: "block-size", value: "calc(var(--ocelle-space-1) + 1lh + 1lh)", raw: ["1lh", "1lh"] },
+    { property: "block-size", value: "calc(1lh + 1lh)", raw: ["1lh", "1lh"] },
+    { property: "block-size", value: "calc(1lh + 1px)", raw: ["1lh", "1px"] },
+    { property: "block-size", value: "calc(1lh + var(--other))", raw: ["1lh"] },
+    { property: "block-size", value: "calc((1lh) + 0)", raw: ["1lh"] },
+    { property: "block-size", value: "calc(1lh + env(--ocelle-icon-size))", raw: ["1lh", "env(--ocelle-icon-size)"] },
+    { property: "padding-block", value: "calc(var(--ocelle-icon-size) - 2lh)", raw: ["2lh"] },
+    { property: "padding-block", value: "calc(var(--ocelle-icon-size) - 1lh - 1lh)", raw: ["1lh", "1lh"] },
+    { property: "padding-block", value: "calc(var(--ocelle-icon-size) - 1lh) calc(var(--ocelle-icon-size) - 1lh - 1lh)", raw: ["1lh", "1lh"] },
+    { property: "padding-block", value: "calc((var(--ocelle-icon-size) - 1lh) / 2) 1lh", raw: ["1lh"] },
+    { property: "padding-block", value: "1lh 1lh", raw: ["1lh", "1lh"] },
+    { property: "padding-block", value: "1lh var(--ocelle-space-1)", raw: ["1lh"] },
+    { property: "block-size", value: "var(--ocelle-icon-size, 1lh)", raw: ["1lh"] },
+    { property: "block-size", value: "max(1lh, var(--ocelle-icon-size))", raw: ["max(1lh, var(--ocelle-icon-size))"] },
+  ])("$property: $value is raw: $raw, while block-size: 1lh and the row's padding pass", ({ property, value, raw }) => {
+    expect({ value: rawValues(property, value), alone: rawValues("block-size", "1lh"), row: rawValues("padding-block", row) }).toEqual({ value: raw, alone: [], row: [] });
+  });
+
+  it("counts 1lh once per calc() expression, nested groups and calc() included, while each of two calc() expressions may hold one", () => {
+    expect({
+      nested: rawValues("padding-block", "calc(var(--ocelle-icon-size) - (1lh + calc(1lh)))"),
+      two: rawValues("padding-block", "calc(var(--ocelle-icon-size) - 1lh) calc(var(--ocelle-space-1) + 1lh)"),
+    }).toEqual({ nested: ["1lh", "1lh"], two: [] });
+  });
+
+  // OP4-01 (landing round 1 L1-02, T067): a group that holds only 1lh, parentheses or a nested calc(), any depth, is
+  // that 1lh, so a factor on the group is a factor on 1lh and is raw; a sum beside the group stays admitted.
+  it.each([
+    { value: "calc((1lh) * 3 + var(--ocelle-space-1))", raw: ["1lh"] },
+    { value: "calc(calc(1lh) * 3 + var(--ocelle-space-1))", raw: ["1lh"] },
+    { value: "calc(3 * (1lh) + var(--ocelle-space-1))", raw: ["1lh"] },
+    { value: "calc(((1lh)) * 3 + var(--ocelle-space-1))", raw: ["1lh"] },
+    { value: "calc((1lh) / 2 + var(--ocelle-space-1))", raw: ["1lh"] },
+    { value: "calc(var(--ocelle-space-1) * (1lh))", raw: ["1lh"] },
+    { value: "calc(var(--ocelle-space-1) - calc((1lh)) / 2)", raw: ["1lh"] },
+    // Two line boxes in one expression, each alone in its group (reported before OP4-01 too).
+    { value: "calc((1lh) + (1lh) + var(--ocelle-space-1))", raw: ["1lh", "1lh"] },
+  ])("padding-block: a factor on a group that holds only 1lh, $value, is raw: $raw", ({ value, raw }) => {
+    expect(rawValues("padding-block", value)).toEqual(raw);
+  });
+
+  it.each([
+    "calc((1lh) + var(--ocelle-space-1))",
+    "calc(var(--ocelle-space-1) - calc(1lh))",
+    "calc(var(--ocelle-space-1) + ((1lh)))",
+    "calc((var(--ocelle-icon-size) - 1lh) / 2)",
+  ])("padding-block: %s, 1lh alone in a group that is an operand of + or -, or beside a sum in its group, is token-only", (value) => {
+    expect(rawValues("padding-block", value)).toEqual([]);
+  });
+
+  it("asks the token of the calc() expression that holds 1lh, wherever it is in that expression", () => {
+    expect({
+      nested: rawValues("padding-block", "calc((1lh - var(--ocelle-icon-size)) / 2)"),
+      other: rawValues("padding-block", "calc(1lh + 0) var(--ocelle-space-1)"),
+    }).toEqual({ nested: [], other: ["1lh"] });
+  });
+
+  it("reports the slot convention's rules of an element template not at all, and a multiple of a line box at its line", async () => {
+    const code =
+      "const css = String.raw;\nexport const styles = css`\n  .icon-row {\n    padding-block: calc((var(--ocelle-icon-size) - 1lh) / 2);\n  }\n" +
+      "  .icon-slot {\n    block-size: 1lh;\n  }\n  .big {\n    block-size: calc(1lh * 2);\n  }\n`;\n";
+    const { results } = await stylelint.lint({
+      code,
+      codeFilename: "x.ts",
+      config: { plugins: [plugin], rules: { [ruleName]: true }, customSyntax: "postcss-lit" },
+    });
+    expect(results[0]?.warnings.map(({ line, text }) => ({ line, text }))).toEqual([
+      { line: 10, text: "block-size: raw 1lh; use a --ocelle-* token (FR-024) (ocelle/token-only)" },
+    ]);
+  });
+});
+
 describe("referencedTokens()", () => {
   it.each([
     { value: "var(--ocelle-a) var", names: ["--ocelle-a"] },

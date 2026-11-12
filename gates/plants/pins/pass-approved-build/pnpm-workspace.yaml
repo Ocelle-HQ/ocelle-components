@@ -1,0 +1,11 @@
+# Plant for the install-and-pins check: a mini-workspace.
+packages:
+  - "packages/*"
+
+minimumReleaseAge: 10080
+minimumReleaseAgeStrict: true
+# The two approved install scripts (005 research.md R-16), each at its one version.
+allowBuilds:
+  esbuild: false
+  "rs-module-lexer@2.9.0": true
+  "fsevents@2.3.3": true

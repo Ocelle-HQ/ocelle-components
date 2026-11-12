@@ -1,0 +1,48 @@
+Scope: all 5 workspace projects
+✓ Lockfile passes supply-chain policies (verified 1d ago)
+Lockfile is up to date, resolution step is skipped
+Packages are hard linked from the content-addressable store to the virtual store.
+  Content-addressable store is at: /root/.local/share/pnpm/store/v11
+  Virtual store is at:             node_modules/.pnpm
+Packages: +501
+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+Progress: resolved 501, reused 501, downloaded 0, added 501, done
+.../node_modules/rs-module-lexer postinstall$ node postinstall.js
+.../node_modules/rs-module-lexer postinstall: Done
+
+devDependencies:
++ @custom-elements-manifest/analyzer 0.11.0
++ @eslint/js 10.0.1
++ @stryker-mutator/core 10.1.1
++ @stryker-mutator/typescript-checker 10.1.1
++ @stryker-mutator/vitest-runner 10.1.1
++ @types/node 26.6.5
++ @vitest/browser-playwright 5.0.5
++ @vitest/eslint-plugin 1.6.28
++ eslint 10.13.0
++ jiti 2.7.0
++ parse5 8.0.1
++ playwright 1.64.1
++ postcss 8.5.31
++ postcss-lit 1.4.1
++ postcss-selector-parser 7.1.7
++ postcss-value-parser 4.2.0
++ stylelint 17.16.0
++ typescript 6.0.3
++ typescript-eslint 8.72.0
++ vite 8.3.5
++ vitest 5.0.5
+
+Done in 339ms using pnpm v12.16.1
+$ node gates/bin/setup-offline.ts
+setup: installed offline; Chromium at /opt/pw-browsers/chromium-1243/chrome-linux64/chrome
+$ node gates/bin/test.ts
+gates/test/token-only.test.ts:273: unit-tests: rawValues: 1lh alone, and once beside a token in calc() padding-block: a factor on a group that holds only 1lh, calc((1lh) * 3 + var(--ocelle-space-1)), is raw: [ '1lh' ]: AssertionError: expected [] to deeply equal [ '1lh' ]
+gates/test/token-only.test.ts:273: unit-tests: rawValues: 1lh alone, and once beside a token in calc() padding-block: a factor on a group that holds only 1lh, calc(calc(1lh) * 3 + var(--ocelle-space…, is raw: [ '1lh' ]: AssertionError: expected [] to deeply equal [ '1lh' ]
+gates/test/token-only.test.ts:273: unit-tests: rawValues: 1lh alone, and once beside a token in calc() padding-block: a factor on a group that holds only 1lh, calc(3 * (1lh) + var(--ocelle-space-1)), is raw: [ '1lh' ]: AssertionError: expected [] to deeply equal [ '1lh' ]
+gates/test/token-only.test.ts:273: unit-tests: rawValues: 1lh alone, and once beside a token in calc() padding-block: a factor on a group that holds only 1lh, calc(((1lh)) * 3 + var(--ocelle-space-1…, is raw: [ '1lh' ]: AssertionError: expected [] to deeply equal [ '1lh' ]
+gates/test/token-only.test.ts:273: unit-tests: rawValues: 1lh alone, and once beside a token in calc() padding-block: a factor on a group that holds only 1lh, calc((1lh) / 2 + var(--ocelle-space-1)), is raw: [ '1lh' ]: AssertionError: expected [] to deeply equal [ '1lh' ]
+gates/test/token-only.test.ts:273: unit-tests: rawValues: 1lh alone, and once beside a token in calc() padding-block: a factor on a group that holds only 1lh, calc(var(--ocelle-space-1) * (1lh)), is raw: [ '1lh' ]: AssertionError: expected [] to deeply equal [ '1lh' ]
+gates/test/token-only.test.ts:273: unit-tests: rawValues: 1lh alone, and once beside a token in calc() padding-block: a factor on a group that holds only 1lh, calc(var(--ocelle-space-1) - calc((1lh)…, is raw: [ '1lh' ]: AssertionError: expected [] to deeply equal [ '1lh' ]
+unit-tests: 7 of 2532 tests failed
+[ELIFECYCLE] Test failed. See above for more details.
