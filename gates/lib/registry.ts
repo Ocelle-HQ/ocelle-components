@@ -42,6 +42,9 @@ export const fr020: readonly string[] = [
 /** The id of the plant job in ci.yml; it is not a gate. */
 export const plantJob = "plants";
 
+/** The plant job's helper jobs in ci.yml (plan decision 23): its plan and its shards; not gates either. */
+export const plantHelperJobs: readonly string[] = ["plants-plan", "plants-shard"];
+
 const forms: readonly string[] = ["repo-tree", "commit-repo", "mutation-repo", "workspace"];
 const textFields = ["id", "check", "command", "plantCommand", "scope"] as const;
 
@@ -113,7 +116,7 @@ export interface RegistryInput {
 /** One finding per gate id missing from the registry, the workflow's gate jobs or the FR-020 list. */
 export function checkRegistry(input: RegistryInput): Finding[] {
   const registered = new Set(input.registry.map((gate) => gate.id));
-  const helpers = new Set(input.registry.flatMap((gate) => gate.helperJobs));
+  const helpers = new Set([...input.registry.flatMap((gate) => gate.helperJobs), ...plantHelperJobs]);
   const gateJobs = new Set(input.jobs.filter((job) => job !== plantJob && !helpers.has(job)));
   const listed = new Set(fr020);
   const finding = (path: string, rule: string, message: string): Finding => ({ location: { path }, gate: "plants", rule, message });
@@ -126,14 +129,48 @@ export function checkRegistry(input: RegistryInput): Finding[] {
   return findings;
 }
 
-/** A finding when a step of the plants job of the workflow passes `--skip-container` (006 research.md R-07). */
-export function skipContainerFindings(workflow: string, workflowPath: string): Finding[] {
-  // A line at indent 0 to 2 starts a top-level key or a job; the lines below the plants job's key are its own.
-  let inPlants = false;
-  let found = false;
+/** The lines below each job key of a workflow (a key at indent 2 after an unindented key), by job id. */
+function jobLines(workflow: string): Map<string, string[]> {
+  const jobs = new Map<string, string[]>();
+  let current: string[] | undefined;
   for (const line of workflow.split(/\r?\n/)) {
-    if (/^ {0,2}\S/.test(line)) inPlants = line.startsWith("  ") && /^(['"]?)plants\1:/.test(line.slice(2));
-    else if (inPlants && line.includes("--skip-container")) found = true;
+    // A line at indent 0 to 2 starts a top-level key or a job; the lines below a job's key are its own.
+    if (!/^ {0,2}\S/.test(line)) {
+      current?.push(line);
+      continue;
+    }
+    const key = line.startsWith("  ") ? /^(['"]?)([\w-]+)\1:/.exec(line.slice(2)) : null;
+    if (key === null) {
+      current = undefined;
+      continue;
+    }
+    const id = String(key[2]);
+    // Stryker disable next-line ArrayDeclaration: equivalent, a job's lines start empty, and a placeholder line holds neither --skip-container nor --shard or --plan
+    current = jobs.get(id) ?? [];
+    jobs.set(id, current);
   }
-  return found ? [{ location: { path: workflowPath }, gate: "plants", rule: "skip-container-in-ci", message: "the plants job passes --skip-container, so CI would not run the visual plants" }] : [];
+  return jobs;
+}
+
+/**
+ * A finding for each of the three plant jobs (plants-plan, plants-shard, plants) a step of which passes
+ * `--skip-container` (006 research.md R-07, plan decision 23).
+ */
+export function skipContainerFindings(workflow: string, workflowPath: string): Finding[] {
+  const jobs = jobLines(workflow);
+  const passes = (job: string): boolean => {
+    // Stryker disable next-line ArrayDeclaration: equivalent, a job's lines start empty, and a placeholder line holds neither --skip-container nor --shard or --plan
+    const lines = jobs.get(job) ?? [];
+    return lines.some((line) => line.includes("--skip-container"));
+  };
+  return [...plantHelperJobs, plantJob]
+    .filter(passes)
+    .map((job) => ({ location: { path: workflowPath }, gate: "plants", rule: "skip-container-in-ci", message: `the ${job} job passes --skip-container, so CI would not run the visual plants` }));
+}
+
+/** A finding when a step of the plants job (the Plants check) passes `--shard` or `--plan` (plan decision 23). */
+export function shardInPlantCheckFindings(workflow: string, workflowPath: string): Finding[] {
+  // Stryker disable next-line ArrayDeclaration: equivalent, a job's lines start empty, and a placeholder line holds neither --skip-container nor --shard or --plan
+  const partial = (jobLines(workflow).get(plantJob) ?? []).some((line) => /--(?:shard|plan)\b/.test(line));
+  return partial ? [{ location: { path: workflowPath }, gate: "plants", rule: "shard-in-plant-check", message: "the plants job passes --shard or --plan, so the Plants check would judge one shard or none" }] : [];
 }

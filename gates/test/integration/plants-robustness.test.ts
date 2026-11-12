@@ -148,18 +148,30 @@ const otherGates = (JSON.parse(readFileSync(join(repo, "gates/gates.json"), "utf
   .map((gate) => gate.id)
   .filter((id) => id !== "contrast" && id !== "brand-rules");
 const missing = otherGates.flatMap((id) => ["fail", "pass", "error"].map((kind) => `gates/plants/${id}: plants: missing-plant: gate ${id} has no ${kind} plant`));
+/** The plant directories of the two gates and of the registry, as `<gate>/<case>`. */
+function plantNames(): string[] {
+  return ["contrast", "brand-rules", "plants"].flatMap((dir) =>
+    readdirSync(join(repo, "gates/plants", dir), { withFileTypes: true })
+      .filter((entry) => entry.isDirectory())
+      .map((entry) => `${dir}/${entry.name}`),
+  );
+}
+
 /** The number of plant directories of the two gates and of the registry. */
 function plantCount(): number {
-  return ["contrast", "brand-rules", "plants"]
-    .map((dir) => readdirSync(join(repo, "gates/plants", dir), { withFileTypes: true }).filter((entry) => entry.isDirectory()).length)
-    .reduce((a, b) => a + b, 0);
+  return plantNames().length;
+}
+
+/** Plan decision 24: the stderr lines of the plant times, their seconds written `<s>`, sorted. */
+function times(stderr: readonly string[]): string[] {
+  return stderr.map((line) => line.replace(/^(note: plant time: [a-z0-9-]+\/[a-z0-9-]+): \d+\.\d s$/, "$1: <s> s")).sort();
 }
 
 afterEach(cleanUp);
 
 describe("contrast and brand-rules plants under neighbouring changes", () => {
   it("has the two gates' plants and the registry's", () => {
-    expect({ others: otherGates.length, plants: plantCount() }).toEqual({ others: 13, plants: 32 });
+    expect({ others: otherGates.length, plants: plantCount() }).toEqual({ others: 13, plants: 33 });
   });
 
   it.each([
@@ -174,10 +186,10 @@ describe("contrast and brand-rules plants under neighbouring changes", () => {
       const gate = await runGate("gates/bin/contrast.ts", ["--root", root], { cwd: root, env: baseEnv() });
       expect({ code: gate.code, stdout: gate.stdout }).toEqual({ code: 0, stdout: [variant.summary] });
       const job = await runGate("gates/bin/plants.ts", ["--root", root], { cwd: root, env: baseEnv() });
-      expect({ code: job.code, stdout: job.stdout, stderr: job.stderr }).toEqual({
+      expect({ code: job.code, stdout: job.stdout, stderr: times(job.stderr) }).toEqual({
         code: 1,
         stdout: [...missing, `plants: ${String(missing.length)} problems in ${String(plantCount())} plants`],
-        stderr: [],
+        stderr: plantNames().map((plant) => `note: plant time: ${plant}: <s> s`).sort(),
       });
     },
     timeout,

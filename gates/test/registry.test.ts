@@ -272,6 +272,7 @@ describe("the split plant jobs (plan decision 23)", () => {
     expect(skipContainerFindings(split(`${plan} --skip-container`, shard, verdict), "ci.yml")).toEqual([skip("plants-plan")]);
     expect(skipContainerFindings(split(`${plan} --skip-container`, shard, `${verdict} --skip-container`), "ci.yml")).toEqual([skip("plants-plan"), skip("plants")]);
     expect(skipContainerFindings(split(plan, shard, verdict), "ci.yml")).toEqual([]);
+    expect(skipContainerFindings("jobs:\n  x plants:\n    steps:\n      - run: pnpm run gate:plants -- --skip-container\n", "ci.yml")).toEqual([]);
   });
 
   it("finds --shard or --plan in a step of the plants job, and none for --shard in plants-shard or --plant", () => {

@@ -253,3 +253,31 @@ export function aloneDecision(plantPath: string, storyTheme: StoryTheme, alone: 
   }
   return { copy: true };
 }
+
+/** The most `visual` (or `axe`) plants in one shard (plan decision 23): 8, provisional until tasks.md T046h. */
+export const shardSize = 8;
+
+/**
+ * The partition of the plant job into shards (plan decision 23; contracts/plants.md § Shards), plants written
+ * `<gate>/<case>`: shard 1 every plant of a gate other than `visual` and `axe` and the registry's plants, in their
+ * order; then the `visual` plants sorted by name in consecutive groups of at most `size`; then the `axe` plants the
+ * same way. Every plant is in exactly one shard.
+ */
+export function plantShards(plants: readonly string[], size: number): string[][] {
+  const grouped = (gate: string): string[][] => {
+    const own = plants.filter((plant) => plant.startsWith(`${gate}/`)).sort();
+    return Array.from({ length: Math.ceil(own.length / size) }, (_, index) => own.slice(index * size, (index + 1) * size));
+  };
+  const first = plants.filter((plant) => !plant.startsWith("visual/") && !plant.startsWith("axe/"));
+  return [first, ...grouped("visual"), ...grouped("axe")];
+}
+
+/** A plant's time in seconds with one decimal (plan decision 24). */
+export function plantSeconds(milliseconds: number): string {
+  return (milliseconds / 1000).toFixed(1);
+}
+
+/** The note of a plant's time, `note: plant time: <gate>/<case>: <seconds> s` (plan decision 24). */
+export function plantTimeNote(plant: string, milliseconds: number): string {
+  return `note: plant time: ${plant}: ${plantSeconds(milliseconds)} s`;
+}
