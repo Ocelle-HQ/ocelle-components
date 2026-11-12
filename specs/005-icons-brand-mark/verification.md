@@ -4,12 +4,12 @@ The GitHub-side checks of this mission's pull request. The orchestrator drafted 
 2026-11-12 during the landing pass. An item is done only when it is marked **done** and its evidence is filled in. The
 operator signs it off at the end.
 
-Pull request: https://github.com/Ocelle-HQ/ocelle-components/pull/26 (base `main` at `3a247ef`, closes #17).
+Pull request: https://github.com/Ocelle-HQ/ocelle-components/pull/26 (base `main` at `e7d7d54`, closes #17).
 
 ## 1. The fifteen checks green
 
-Run https://github.com/Ocelle-HQ/ocelle-components/actions/runs/43188981994 (head `147394e`, the merge of `main` after
-the landing fold): 28 of 28 jobs succeeded. These fifteen checks of
+Run https://github.com/Ocelle-HQ/ocelle-components/actions/runs/43206816174 (head `a287b02`, after the merge of `main`
+with mission 007 and landing round 2): 44 of 44 jobs succeeded. These fifteen checks of
 `specs/001-repository-foundation/contracts/ci-checks.md` are green:
 
 1. Typecheck
@@ -28,9 +28,10 @@ the landing fold): 28 of 28 jobs succeeded. These fifteen checks of
 14. Brand rules
 15. Custom-elements manifest (new in this mission)
 
-The helper job `Mutation plan` and the 12 `Mutation shard` jobs are green too. The slowest shard,
-`gates/bin/manifest.ts:121-148,gates/bin/mutation.ts,gates/lib/pins-rules.ts,…`, took 6:42 of its 10 minutes. Landing round 1 noted that a shard mixing element source and other
-source runs Stryker twice; every shard of this run finished within that 6:42.
+The helper job `Mutation plan` and the 28 `Mutation shard` jobs are green too. The slowest shard,
+`gates/lib/plant-repo.ts:95-406`, took 5:57 of its 10 minutes. Two shards mix element source and other source and so
+run Stryker twice (landing round 2, L2-02); every shard finished within that 5:57. An earlier run on head `147394e`,
+before mission 007 reached `main`, was green too (run 43188981994, 28 of 28 jobs).
 
 Status: **done**. Re-confirm on the final head before the merge.
 
