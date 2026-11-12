@@ -37,3 +37,11 @@
   shrink-to-fit host, FR-025).
 - The six open questions of the triage record were settled by the operator while specifying (spec preamble); no
   [NEEDS CLARIFICATION] marker was needed.
+- Check 1 fixes (`reviews/spec/check-1-fixes.md`): the scroller keeps room for its slotted controls' focus rings
+  (FR-001, US1-13); a lane never widens for its content and non-lane children share alike (FR-013, US2-14); an
+  untitled lane's name and role and a host `aria-label` on a lane are defined (FR-018, FR-019, US2-6); the
+  `*-below` attributes accept a closed list of forms and default to the token as computed on the element (FR-025,
+  FR-034, US3-10); a shrink-to-fit list-detail has layout-independent intrinsic sizes and a stated expected layout
+  (FR-025, US3-12); the board's "no page scroll" is bounded to a definite-size container (FR-014, Edge Cases). The
+  paired "does not" table carries the new pairs. Items above re-checked and still hold; the 14 notes of check 1 are
+  left to the plan except SPEC-1-13 and SPEC-1-18, which are fixed.
