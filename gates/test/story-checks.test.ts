@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
-import { allowedFamily, closedShadowHosts, fontProblems, harness, isHarness, storyTextNodes } from "../lib/story-checks.ts";
-import type { CdpNode, TextNode } from "../lib/story-checks.ts";
+import { allowedFamily, closedShadowHosts, emptyRoot, fontProblems, harness, isHarness, nonRendered, outsideRoot, storyTextNodes } from "../lib/story-checks.ts";
+import type { BodyChild, CdpNode, RootNode, TextNode } from "../lib/story-checks.ts";
 
 // The in-page checks of a story-theme (FR-014, FR-027; research.md R-05, R-08): the harness nodes the phase 1 spike
 // recorded in Storybook 10.6.5's preview (spike § 3), the text nodes of a pierced DevTools document (user-agent shadow
@@ -164,5 +164,69 @@ describe("storyTextNodes and fontProblems: edges", () => {
     expect(used('"Schibsted Grotesk",   "Plant Face", serif', "Plant Face")).toEqual(["Plant Face (unloaded)"]);
     expect(used('"Plant" x, serif', "Plant x")).toEqual([]);
     expect(used('x"Plant", serif', "xPlant")).toEqual([]);
+  });
+});
+
+// The empty check of the axe gate (FR-014, US3 scenario 4; research.md R-08): the story root renders no content when
+// no node below it (open shadow roots included) has a client rect of non-zero width and height, an element's box or a
+// non-whitespace text's line box. The root's own box is not counted: the page collects the root's child nodes.
+describe("emptyRoot (research.md R-08)", () => {
+  const box = (width: number, height: number): { width: number; height: number } => ({ width, height });
+  const el = (rects: { width: number; height: number }[], children: RootNode[] = [], shadow?: RootNode[]): RootNode => (shadow === undefined ? { rects, children } : { rects, children, shadow });
+  const txt = (text: string, rects: { width: number; height: number }[] = [box(40, 16)]): RootNode => ({ text, rects });
+
+  it("finds an empty root empty, and whitespace-only text with no element of any size", () => {
+    expect([emptyRoot([]), emptyRoot([txt("  \n\t ")]), emptyRoot([el([], [txt(" ", [box(4, 16)])])])]).toEqual([true, true, true]);
+  });
+
+  it("finds a zero-width but tall box and a zero-height but wide box empty, and a box of both sizes not empty", () => {
+    expect([emptyRoot([el([box(0, 300)])]), emptyRoot([el([box(600, 0)])]), emptyRoot([el([box(0, 300), box(1, 1)])])]).toEqual([true, true, false]);
+  });
+
+  it("finds elements with no box (display: none) holding text that draws nothing empty", () => {
+    expect(emptyRoot([el([], [txt("hidden", [])]), el([], [el([], [txt("deeper", [])])])])).toBe(true);
+  });
+
+  it("finds drawn text not empty, at any depth, and text only inside an open shadow root not empty", () => {
+    expect([
+      emptyRoot([txt("Hello")]),
+      emptyRoot([el([], [el([], [txt("deep")])])]),
+      emptyRoot([el([box(0, 0)], [], [txt("in the shadow root")])]),
+      emptyRoot([el([box(0, 0)], [], [el([], [el([box(10, 10)])])])]),
+    ]).toEqual([false, false, false, false]);
+  });
+
+  it("does not count drawn text that is whitespace, nor a shadow root that holds only that", () => {
+    expect(emptyRoot([el([box(0, 0)], [], [txt(" \n ")])])).toBe(true);
+  });
+});
+
+// The outside-root check (FR-014, US3 scenario 8; research.md R-08, spike § 3): every element child of <body> that is
+// neither #storybook-root, a harness node nor a non-rendered element (script, style, link, template, noscript), one
+// per element, by tag.
+describe("nonRendered and outsideRoot (research.md R-08)", () => {
+  const child = (tag: string, id = "", classes: string[] = []): BodyChild => ({ tag, id, classes });
+  const preview: BodyChild[] = [
+    child("div", "", ["sb-preparing-story", "sb-wrapper"]),
+    child("div", "", ["sb-preparing-docs", "sb-wrapper"]),
+    child("div", "", ["sb-nopreview", "sb-wrapper"]),
+    child("div", "", ["sb-errordisplay", "sb-wrapper"]),
+    child("div", "storybook-root"),
+    child("div", "storybook-docs"),
+    child("script"),
+    child("div", "scripts-root"),
+  ];
+
+  it("are the five elements that render nothing", () => {
+    expect(nonRendered).toEqual(["script", "style", "link", "template", "noscript"]);
+  });
+
+  it("finds nothing outside the root of Storybook's own preview body (spike § 3)", () => {
+    expect(outsideRoot(preview)).toEqual([]);
+  });
+
+  it("names each other element by tag, in order, and leaves out style, link, template and noscript", () => {
+    const body = [...preview, child("button"), child("style"), child("div", "portal", ["sb-wrapper"]), child("link"), child("template"), child("noscript"), child("ocelle-tooltip")];
+    expect(outsideRoot(body)).toEqual(["button", "div", "ocelle-tooltip"]);
   });
 });

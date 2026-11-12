@@ -69,6 +69,25 @@ describe("ci.yml storybook-build job (006 FR-017)", () => {
   });
 });
 
+// 006 FR-017 and US3 scenario 7 (contracts/gates.md § `axe`, § The registry): the job `axe`, named "Accessibility",
+// checks out, sets up (which installs Playwright's Chromium, the host browser axe runs in, research.md R-08) and runs
+// the gate, nothing else: the gate builds the Storybook itself.
+describe("ci.yml axe job (006 FR-017)", () => {
+  it("is named Accessibility and runs pnpm run gate:axe after checkout and setup", () => {
+    expect(job("axe")).toEqual([
+      "  axe:",
+      "    name: Accessibility",
+      "    runs-on: ubuntu-24.04",
+      "    steps:",
+      "      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1",
+      "        with:",
+      "          persist-credentials: false",
+      "      - uses: ./.github/actions/setup",
+      "      - run: pnpm run gate:axe",
+    ]);
+  });
+});
+
 // 006 FR-017, FR-018, FR-026 and US2 scenario 12 (contracts/gates.md § `visual`, § The registry; research.md R-07, R-11):
 // the job `visual`, named "Visual regression", runs the gate under both engines, records the runner's free disk after
 // both pulls, and uploads storybook/.visual/ (the captures in baseline layout among it) when it fails; the Plants job
