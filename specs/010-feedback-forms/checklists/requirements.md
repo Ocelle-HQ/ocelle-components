@@ -38,4 +38,11 @@
 - The three questions the operator answered while specifying (form-control model, announcement on insertion, error
   text and validity) are recorded at the top of the spec; no clarification marker remains.
 - FR numbers jump from FR-011 to FR-020 on purpose: FR-020 onwards is the form-control convention that #14 cites.
-- Open for the spec check: spec-kitty-design#509, #513 and ADR-0078 were not read (Assumptions, last item).
+- spec-kitty-design#509, #513 and ADR-0078 were not read; the operator confirmed at spec check 1 that #9's wording is
+  the requirement for them (SPEC-1-09, Assumptions, last item).
+- Spec check 1 fixes (`reviews/spec/check-1-fixes.md`): "announced" is defined as a change between accessibility-tree
+  snapshots, with the insertion and reveal case and nested regions (SPEC-1-01, -02); the notice's text and what counts
+  as a change are defined (SPEC-1-03); an empty heading element counts as absent and one content-box measurement is
+  used (SPEC-1-04, -05); widths name tokens (SPEC-1-06); autofill is not measured (SPEC-1-07); naming precedence is
+  exact (SPEC-1-08). The operator's answers to SPEC-1-09 to SPEC-1-12 are recorded at the top of the spec and in
+  FR-008, FR-025 and FR-027; no clarification marker remains.

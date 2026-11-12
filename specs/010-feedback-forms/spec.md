@@ -23,7 +23,8 @@ sizing of #7's metric, and the selection elements of #14 stay out."
 and the "Done when" checklist of #7 it refers to are the sources of the requirements below. The spec-kitty-design
 issues #9 cites (#509 compact notice, #513 notice without an empty heading block) and ADR-0078 (D5, no ID reference
 across a shadow root) were not read for this spec; their content is known only through #9's wording and epic #1's gap
-table. Their `sk-*` names are kitty-mission-ui roles, not names of this library.
+table. The operator confirmed at spec check 1 that #9's own wording is the requirement for them and that their texts
+are not read (SPEC-1-09). Their `sk-*` names are kitty-mission-ui roles, not names of this library.
 
 **Operator decisions while specifying** (2026-11-12, human:jeroennouwsdev):
 
@@ -38,6 +39,19 @@ table. Their `sk-*` names are kitty-mission-ui roles, not names of this library.
 - Error text, "Announce only (Recommended)": a host-set `error` is shown, announced and marks the control invalid for
   assistive technology, but does not block form submission; the form's validity comes only from the native
   constraints (FR-027).
+
+**Operator answers at spec check 1** (2026-11-12, human:jeroennouwsdev):
+
+- SPEC-1-09, "#9's wording suffices": #9's own wording is the requirement for spec-kitty-design#509, #513 and
+  ADR-0078 D5; their texts are not read.
+- SPEC-1-10, "Reveal announces": removing `hidden` from an announcing notice announces its current text once, as an
+  insertion does (FR-008).
+- SPEC-1-11, "Nothing automatic": an `error` present when the page is first loaded is not announced and does not move
+  focus. It is part of the control's description and invalid state, so it is read when the user reaches the control.
+  The README tells hosts to put an error summary or a notice at the top of the page and focus it. Only later changes
+  of `error` are announced (FR-027).
+- SPEC-1-12, "Block, fill container": the form-control hosts are block-level and the control fills their inline size.
+  In a filter bar the host sets the element's width, or places it as a flex or grid item (FR-025).
 
 ## Consumer need
 
@@ -72,9 +86,24 @@ the element source and on strict-CSP fixture pages that load only the browser bu
 `Content-Security-Policy: default-src 'none'; script-src 'self'; style-src 'self'`, with no CSP violation reported.
 
 **What "announced" means here.** No screen reader runs in this repository's tests. A scenario that says a text is
-*announced* (politely or assertively) is checked on the browser's accessibility tree: a live region node with that
-politeness existed in the tree before the change, and after the change its text is exactly the announced text; *once*
-means exactly one such change of the region's text per triggering change, counted over the whole scenario. A scenario
+*announced* (politely or assertively) is checked on the browser's accessibility tree, read as a sequence of snapshots
+taken after each accessibility-tree update:
+
+- A *live region node* is a node whose live politeness is `polite` or `assertive`, by its role (`status`, `alert`) or
+  by `aria-live`. The host's own node counts.
+- An *announcement* is a live region node that is in two consecutive snapshots and whose text in the later one differs
+  from its text in the earlier one and is not empty. The announced text is the region's text in the later snapshot,
+  with whitespace collapsed and trimmed.
+- *Insertion and reveal.* When an announcing notice is inserted, or is revealed by removing `hidden` (FR-008), its
+  live region node first appears in a snapshot with empty text; in a later snapshot its text becomes exactly the
+  announced text. That one change is the announcement. A region that first appears already holding text (first load,
+  `announce` set on an existing notice) has made no announcement.
+- *Once* means exactly one announcement per triggering change, counted over the whole scenario on every live region
+  node that is the notice's host or inside it, or the form control's host or inside it. "Never by two live regions"
+  is measured the same way: for one triggering change, exactly one such node announces, so a live region nested in
+  another live region whose text also changes counts as two announcements and fails.
+
+A scenario
 that says a control's label, description or error is *announced* checks the accessible name, the accessible
 description and the invalid state of the focused control's node in the accessibility tree. Tests that only check that
 an attribute such as `aria-live` is present do not count (knowledge guard `vacuous-tests`).
@@ -101,10 +130,11 @@ colours and accessibility tree; insert and change announcing notices and count t
    4.5:1 and the marker 3:1 against that ground (the contrast check, FR-005).
 3. **Given** `tone="bogus"` or `tone=""`, **When** it renders, **Then** it has the `info` look and the `info`
    announcement politeness, with no error or console message.
-4. **Given** a notice with no element in its `heading` slot (or only whitespace text there), **When** it renders,
-   **Then** the box's content starts at its top padding with the body text: no heading box is rendered, and the
-   distance from the box's top border edge to the first line box of the body equals the box's block-start padding
-   (#513).
+4. **Given** a notice whose heading is absent (FR-006): no element in its `heading` slot, or only elements whose text
+   content is empty or whitespace, such as `<span slot="heading"></span>` or `<span slot="heading"> </span>` as a
+   server template writes for a null heading, **When** it renders, **Then** the box's content starts with the body
+   text: no heading box is rendered, and the distance from the top of the box's content box to the top of the first
+   line box of the body is 0, in both sizes, with and without forced colours (#513).
 5. **Given** a notice with `<span slot="heading">Run failed</span>` and body text, **When** it renders, **Then** the
    heading is drawn above the body, in the heading text style (FR-006), separated from it by one `--ocelle-space-2`
    gap; removing the heading element afterwards returns the box to scenario 4's layout without a reload.
@@ -112,14 +142,15 @@ colours and accessibility tree; insert and change announcing notices and count t
    `--ocelle-line-height-compact` (the scale of the base styles' `data-ocelle-density="compact"` hook) and its
    padding is the compact padding of FR-007, smaller than the regular padding on both axes; `size="regular"`, no
    `size` and any other value give the regular size.
-7. **Given** a notice without `announce`, **When** it is inserted into a loaded page or its text or tone changes,
-   **Then** no live region node exists for it in the accessibility tree and nothing is announced.
-8. **Given** a page that has finished loading, **When** a script or an htmx swap inserts
+7. **Given** a notice without `announce` and without a host `role` of `alert` or `status`, **When** it is inserted
+   into a parsed page, revealed, or its text or tone changes, **Then** neither its host nor any node inside it is a
+   live region node in the accessibility tree and nothing is announced.
+8. **Given** a page that has finished parsing, **When** a script or an htmx swap inserts
    `<ocelle-notice announce tone="success">Saved</ocelle-notice>`, **Then** "Saved" is announced politely, once.
 9. **Given** the same with `tone="danger"` (or `warning`), **Then** the text is announced assertively, once.
 10. **Given** an announcing notice that is part of the page as first loaded (in the HTML the server sent), **When** the
-    page loads, **Then** nothing is announced for it; a later change of its text is announced once.
-11. **Given** a connected announcing notice, **When** its body text changes (the host replaces a text node, or changes
+    page is parsed and loaded, **Then** nothing is announced for it; a later change of its text is announced once.
+11. **Given** a connected announcing notice, **When** its text (FR-008) changes (the host replaces a text node, or changes
     the heading), **Then** the new text (heading and body, in that order, separated by one space) is announced once;
     **When** the host sets the same text again, or the element re-renders for any other reason (a `size` change, a
     theme change, moving the element within the page), **Then** nothing is announced.
@@ -131,15 +162,28 @@ colours and accessibility tree; insert and change announcing notices and count t
 14. **Given** an announcing notice, **When** `announce` is removed, **Then** later changes are not announced; **when**
     it is set again, **Then** the current text is not announced, and the next change is.
 15. **Given** a host `role` on the notice (FR-009), **When** it renders, **Then** the host's node in the accessibility
-    tree has that role: `role="alert"` forces assertive announcements and `role="status"` polite announcements
-    whatever the tone; with any other role (for example `note`, `region` with an `aria-label`, `none`) the politeness
-    follows the tone; and in no case is one change announced twice.
+    tree has that role, and the outcome is the one FR-009's table gives for that role with and without `announce`:
+    `role="alert"` announces assertively and `role="status"` politely whatever the tone, with or without `announce`,
+    at the moments FR-008 names (insertion after parsing, reveal, change) and not on first load; with any other role
+    (for example `note`, `region` with an `aria-label`, `none`) the notice behaves as with no role. In every case each
+    triggering change is announced by exactly one live region node (no nested second region), and a server-rendered
+    `role="alert"` notice is not announced when the page is first parsed.
 16. **Given** forced-colours mode, **When** a notice of each tone renders, **Then** the box border and the marker are
     visible in system colours (the marker in `CanvasText`), and the text is `CanvasText` on `Canvas`.
-17. **Given** a host `hidden` attribute, **Then** the notice has no box and nothing in it is announced while hidden.
+17. **Given** a host `hidden` attribute, **Then** the notice has no box and nothing in it is announced while hidden;
+    **when** the host removes `hidden` from an announcing notice (inserted hidden, or part of the page as first loaded
+    and hidden), **Then** its current text is announced once, as for an insertion (operator answer SPEC-1-10); text
+    changes made while hidden are not announced on their own, only the text current at the reveal is.
 18. **Given** a notice with slotted inline content (a link, an `ocelle-icon`), **When** it
     renders, **Then** the content keeps its own semantics in the accessibility tree (the link stays a link, focusable
     by Tab) and inherits the notice's text colour.
+19. **Given** an announcing notice inserted with the body
+    `<ocelle-icon name="arrow-end" label="Error"></ocelle-icon> Run failed. <a href="/runs/7">View run 7</a><span
+    aria-hidden="true"> (details)</span>` and no heading, **Then** "Error Run failed. View run 7" is announced once
+    (the icon's `label` counts, the `aria-hidden` span does not); **when** the host then changes the link's text node
+    to "View run 8", **Then** "Error Run failed. View run 8" is announced once; **when** the host sets
+    `aria-hidden="true"` on the link, **Then** "Error Run failed." is announced once; **when** the host changes the
+    link's `href` only, **Then** nothing is announced.
 
 ---
 
@@ -195,15 +239,29 @@ validity, events and the accessibility tree.
 12. **Given** `readonly`, **Then** the field can be focused and its value is submitted, but it cannot be edited.
 13. **Given** an external label, `<label for="t">Title</label><ocelle-form-input id="t" name="title">`, **Then** the
     field is named "Title", clicking the label focuses the field, and `element.labels` holds that label; **given** a
-    host `aria-label="Search lanes"` without `label`, **Then** the field is named "Search lanes".
+    host `aria-label="Search lanes"` without `label`, **Then** the field is named "Search lanes"; **given** both
+    `<label for="t">Title</label>` and `label="Lane title"`, **Then** the field is named "Title Lane title"; **given**
+    `aria-label="Search lanes"` together with `label="Lane title"` and the external label, **Then** the field is named
+    "Search lanes"; **given** a host `aria-labelledby` naming an element in the page and no other source, **Then** the
+    field has no accessible name (FR-022).
 14. **Given** keyboard use, **When** the user tabs, **Then** the field takes focus once (the host is not a second tab
     stop), shows the token focus ring (`--ocelle-color-focus`, `--ocelle-focus-width`, `--ocelle-focus-offset`), and
     `element.focus()` focuses the field; Shift+Tab leaves it.
 15. **Given** forced-colours mode, **Then** the field's boundary, the focus ring (in `Highlight`) and the error mark
     are visible.
-16. **Given** the browser restores the page from history or autofills it, **When** the form state is restored,
-    **Then** the field shows and submits the restored value.
+16. **Given** the user has typed a value, **When** the user navigates away and back so that the browser restores the
+    page's form state from history, **Then** the field shows and submits the restored value. (Autofill is not
+    measured: it cannot be triggered by a test; README, limitations.)
 17. **Given** `autocomplete="email"` on the host, **Then** the inner field carries the same `autocomplete` value.
+18. **Given** a page as first loaded (the server re-rendered a failed plain form post) with
+    `<ocelle-form-input name="title" label="Title" error="Title is taken">`, **When** the page is parsed and loaded,
+    **Then** nothing is announced for the error and focus does not move (it stays where the browser puts it on load);
+    the error text is shown, and when the user reaches the field, the focused field reports invalid and its
+    accessible description ends with "Title is taken" (operator answer SPEC-1-11); **when** the host later changes
+    `error` to "Title is too long", **Then** that text is announced politely once.
+19. **Given** an input in a container 30rem wide with no width set on the host, **Then** the host's computed `display`
+    is `block` and the field's border box is as wide as the host's content box; **given** the host placed as a flex
+    item, or with a `width` set by the host page, **Then** the field fills that width (operator answer SPEC-1-12).
 
 ---
 
@@ -241,8 +299,8 @@ keyboard, submit, reset, change the options, and read `FormData`, validity, even
    option without one), and no change event is dispatched; `element.value = "todo"` by script selects that option
    with no event; setting a value no option has selects nothing and `element.value` reads `""`, as a native select.
 7. **Given** `description`, `error`, `disabled`, `<fieldset disabled>`, an external `<label for>`, a host `aria-label`,
-   history restore, forced-colours mode and keyboard focus, **Then** each behaves as User Story 2 scenarios 9, 10,
-   11, 13, 14, 15 and 16 describe for the input.
+   history restore, forced-colours mode, keyboard focus, a first-load `error` and the inline size, **Then** each
+   behaves as User Story 2 scenarios 9, 10, 11, 13, 14, 15, 16, 18 and 19 describe for the input.
 8. **Given** the select, **Then** it shows an open-list indicator drawn with the `chevron-down` icon of the shared set
    in `currentColor`, which is decorative and is also visible in forced colours.
 9. **Given** an `<option>` child, **Then** the light-DOM `<option>` elements themselves are not rendered or exposed
@@ -286,8 +344,12 @@ gates and the README documentation test.
   (whitespace collapsed and trimmed) is unchanged, so nothing is announced.
 - A notice moved to another place in the page (removed and inserted in the same task): not a new insertion; nothing
   is announced. A notice removed and inserted again in a later task is a new insertion and is announced.
-- An announcing notice inserted while hidden (`hidden`), then shown: nothing is announced while hidden; showing it does
-  not announce; its next change does.
+- An announcing notice inserted while hidden (`hidden`), then shown: nothing is announced while hidden; removing
+  `hidden` announces its current text once, as an insertion does (operator answer SPEC-1-10); hiding and showing it
+  again announces it once more. The same holds for a hidden announcing notice that is part of the page as first
+  loaded.
+- A notice whose heading slot holds only an empty or whitespace element (`<span slot="heading"></span>`): the heading
+  is absent (FR-006); the notice looks as one without a heading, and its announced text is the body alone.
 - Two announcing notices change in the same task: each announces its own text once.
 - A form element outside any `<form>`: it works as a control (value, events, validity) and submits nothing.
 - A form element with `form="other-form"` naming a form elsewhere in the page: it belongs to that form, as a native
@@ -298,8 +360,12 @@ gates and the README documentation test.
 - `ocelle-form-select` with no `<option>` children: an empty native select; `value` is `""`; with `required` it is
   `valueMissing`.
 - An `error` set while the field has focus: announced once, politely; set to the same text again: not announced.
-- Both `label` and an external `<label for>`: the field's name is both, in the order the browser computes for a
-  labelled control (the external label first), with no duplicate words from the same source.
+- An `error` present in the page as first loaded: not announced and focus does not move; it is read as part of the
+  control's description when the user reaches the control (operator answer SPEC-1-11).
+- Both `label` and an external `<label for>`: the field's name is the external label text, then the `label` text,
+  joined by one space (FR-022). A host `aria-label` overrides both.
+- A host `aria-labelledby`: not supported (it would cross the shadow root); it does not name the control, and the
+  README says to use `label` or `aria-label`.
 - A host `aria-describedby` pointing at an element in the page: not supported (it would cross the shadow root); the
   README says to use `description`.
 - Right-to-left text (`dir="rtl"`): label, field, description and error follow the inline direction; the select's
@@ -319,7 +385,7 @@ gates and the README documentation test.
   builds (module and browser), and the browser scenarios run in process and on strict-CSP fixture pages.
 - **FR-002**: Every element attaches an open shadow root and renders every surface inside its own host (006 FR-014,
   FR-027). Styles of form controls inside the shadow root set `font: inherit` (006 FR-025).
-- **FR-003**: Elements perform no I/O and emit no event other than those named in FR-024 and FR-031; the native
+- **FR-003**: Elements perform no I/O and emit no event other than those named in FR-024; the native
   composed `input` event of the inner control reaches the host as the browser delivers it.
 
 **`ocelle-notice`**
@@ -333,27 +399,53 @@ gates and the README documentation test.
   changes the element's colour choice (not a token value) or, if no token pair passes, records the token change this
   needs as part of this feature.
 - **FR-006**: Slots: `heading` (optional; its content is drawn in the subhead style, `--ocelle-font-size-subhead` at
-  the regular size and `--ocelle-font-size-sm` bold at the compact size) and the default slot (the body). When the
-  `heading` slot has no assigned element and no non-whitespace text, no heading box is rendered and no gap is left
-  (#513); the layout updates when slotted content changes. CSS parts: `heading` and `body`.
+  the regular size and `--ocelle-font-size-sm` bold at the compact size) and the default slot (the body). Only
+  elements can be assigned to the `heading` slot. The heading is *absent* when no element is assigned to it, or when
+  the text content of all its assigned elements together is empty or whitespace only (for example the
+  `<span slot="heading"></span>` a server template writes for a null heading). An absent heading renders no heading
+  box and leaves no gap (#513), and contributes nothing to the announced text; the layout updates when slotted
+  content changes. CSS parts: `heading` and `body`.
 - **FR-007**: `size` (attribute and property, reflected): `regular` (default) or `compact`; any other value behaves as
   `regular`. Regular padding is `--ocelle-space-3` block and `--ocelle-space-4` inline; compact padding is
   `--ocelle-space-2` block and `--ocelle-space-3` inline, with the text at `--ocelle-font-size-sm` and
   `--ocelle-line-height-compact`, the scale of the base styles' compact density hook (#509, the notice's part).
-- **FR-008**: `announce` (boolean attribute and property, reflected). With `announce` and while the notice is shown
-  (not `hidden`), the notice announces its text (heading, then body, whitespace collapsed and trimmed, the two parts
-  joined by one space) once: when it is inserted into a document that has finished parsing, and on each later change
-  of that text or of its politeness. It does not announce when it is part of the document as first parsed, when the
-  text and politeness are unchanged, when it re-renders for another reason, when it is moved within the page in one
-  task, or when `announce` is set on an existing notice. Several changes in one task announce the final text once.
-  Without `announce` the notice has no live region and announces nothing.
+- **FR-008**: `announce` (boolean attribute and property, reflected).
+  - *The notice's text* is the heading text, then the body text, each with whitespace collapsed and trimmed, joined by
+    one space (an absent or empty part adds nothing and no space). The heading text is taken from the elements
+    assigned to the `heading` slot, the body text from the nodes assigned to the default slot, in tree order: the data
+    of each text node, and for an `ocelle-icon` with a non-empty `label` that label and for an `img` with a non-empty
+    `alt` that alt, each counted as if surrounded by spaces. The subtree of an element with `hidden` or
+    `aria-hidden="true"`, and of `script`, `style` and `template` elements, is skipped. Other accessible names
+    (`title`, `aria-label` of slotted elements) do not count.
+  - *A change* is any mutation of the notice's light-DOM subtree or of its `tone` or host `role` (child nodes added or
+    removed, text data changed, an attribute changed) after which the notice's text or its politeness (FR-009) differs
+    from the last text and politeness it announced or, if it has not announced, from those it had when it began
+    announcing. A mutation that leaves both unchanged (an `href` change, the same text set again, a re-render) is not
+    a change.
+  - With `announce` and while the notice is shown (not `hidden`), the notice announces its text once: when it is
+    inserted into a document that has finished parsing, when `hidden` is removed (operator answer SPEC-1-10), and on
+    each later change. It does not announce when it is part of the document as first parsed, when it re-renders for
+    another reason, when it is moved within the page in one task, or when `announce` is set on an existing notice
+    (the current text is then the baseline for the next change). Changes while hidden are not announced; the reveal
+    announces the text current at that moment. Several changes in one task announce the final text once.
+  - Without `announce`, and without a host `role` of `alert` or `status`, the notice has no live region node and
+    announces nothing.
 - **FR-009**: Politeness: `assertive` for `warning` and `danger`, `polite` for `info`, `success` and `neutral`. A host
-  `role` attribute is the host's role as written (the "role override"): `role="alert"` makes every announcement
-  assertive and `role="status"` polite, whatever the tone; any other host role leaves the politeness to the tone. In
-  every combination one change is announced once, never by two live regions. Without a host role the notice adds no
-  landmark or live role to the page beyond the live region of FR-008.
-- **FR-010**: In forced-colours mode the box has a 1 px border and the marker is drawn in `CanvasText`, so each notice
-  stays outlined and marked; text is `CanvasText` on `Canvas`.
+  `role` attribute is the host's role as written (the "role override") and is the role of the host's node in the
+  accessibility tree. The outcome for each combination, measured as "What 'announced' means here" says:
+
+  | Host role | Without `announce` | With `announce` |
+  |-----------|--------------------|-----------------|
+  | none, or any role other than `alert` and `status` (for example `note`, `region`, `none`) | No live region node at or inside the host; nothing is announced. | One live region node; politeness from the tone; announces as FR-008 says. |
+  | `alert` | Announces as FR-008 says, assertively whatever the tone: a host that writes `role="alert"` asks for announcements by the role's own meaning. | The same. |
+  | `status` | Announces as FR-008 says, politely whatever the tone. | The same. |
+
+  In every row, first load announces nothing (a server-rendered `role="alert"` notice included), and each triggering
+  change is announced by exactly one live region node at or inside the host: the host's role never adds a second
+  announcement of a change, and no live region whose text changes is nested inside another one whose text changes
+  too. Without a host role the notice adds no landmark or live role to the page beyond the live region of FR-008.
+- **FR-010**: In forced-colours mode the box has a border of `--ocelle-border-width` (1 px) and the marker is drawn in
+  `CanvasText`, so each notice stays outlined and marked; text is `CanvasText` on `Canvas`.
 - **FR-011**: Slotted content keeps its own semantics and focusability; the notice sets no `tabindex` and traps no
   focus. The notice has no event and no CSS custom property of its own.
 
@@ -363,16 +455,24 @@ gates and the README documentation test.
   description and the error live in one open shadow root, and every ID reference among them stays inside it. The host
   takes part in its form through `ElementInternals`: it submits its value under `name` (none without `name` or when
   disabled), joins the form named by a `form` attribute, follows a `fieldset`'s disabled state, restores its default
-  value on form reset and its state on history restore or autofill, and is associated with an external
-  `<label for>`. The README documents this as the convention later form-like elements follow.
+  value on form reset and its state on history restore, and is associated with an external `<label for>`. Restore
+  by autofill is not measured (no test can trigger autofill); the README lists it under its limitations, as it does
+  WebKit. The README documents this as the convention later form-like elements follow.
 - **FR-021**: Shared attributes and properties: `name`, `label`, `description`, `error`, `required`, `disabled`
   (all reflected) and `value` (property; the `value` attribute of the input is its default value, restored on reset).
   The host exposes `form`, `labels`, `validity`, `validationMessage`, `willValidate`, `checkValidity()` and
   `reportValidity()` as a native control does. `focus()` on the host focuses the inner control; the host is not a
   separate tab stop.
-- **FR-022**: Naming: the inner control's accessible name is computed from the `label` text, an external `<label>`
-  associated with the host, and a host `aria-label` (constitution III: ARIA set on a host reaches the inner control);
-  with none of them it has no name and the README says one is required. The `description` is the control's accessible
+- **FR-022**: Naming: the inner control's accessible name is, in this order of precedence (constitution III: ARIA
+  set on a host reaches the inner control):
+  1. a non-empty host `aria-label`: its text, alone, whatever else is set;
+  2. otherwise the text of each external `<label>` associated with the host (in `element.labels` order), then the
+     `label` text, each with whitespace collapsed and trimmed, joined by one space (for example "Title Lane title");
+     either part may be missing;
+  3. with none of them the control has no name, and the README says one is required.
+
+  A host `aria-labelledby` is not supported (it would reference across the shadow root): it does not name the
+  control, and the README says to use `label` or `aria-label`. The `description` is the control's accessible
   description; a host `aria-describedby` is not supported (README).
 - **FR-023**: Validity mirrors the inner control's native constraint validation (`required`, `type`, `minlength`,
   `maxlength`, `pattern`, `min`, `max`, `step` for the input; `required` for the select): the host's validity flags
@@ -383,8 +483,11 @@ gates and the README documentation test.
   `change` event) the host dispatches `ocelle-form-input-change` or `ocelle-form-select-change`, a `CustomEvent` with
   `detail: { value: string }`, `bubbles: true`, `composed: true`. No event is dispatched for a change made by script,
   by reset or by restore.
-- **FR-025**: Look: the label above the control in the label text style, the control with a 1 px
-  `--ocelle-color-control-border` boundary (never `--ocelle-color-rule`), radius `--ocelle-radius-2`, block size at
+- **FR-025**: Size: the host is `display: block` and the control fills the host's inline size (operator answer
+  SPEC-1-12); the element sets no width of its own, so in a filter bar the host page sets the element's width or
+  places it as a flex or grid item. Look: the label above the control in the label text style, the control with a
+  boundary of `--ocelle-border-width` (1 px) in `--ocelle-color-control-border` (never `--ocelle-color-rule`), radius
+  `--ocelle-radius-2`, block size at
   least `--ocelle-target-min`, the token focus ring on `:focus-visible`, disabled colours from `--ocelle-color-disabled-*`,
   and the description under it in `--ocelle-color-ink-muted`. In forced-colours mode the boundary uses `ButtonBorder`
   or `CanvasText` and the focus ring `Highlight`.
@@ -393,11 +496,16 @@ gates and the README documentation test.
   per FR-031).
 - **FR-027**: `error` (operator decision, announce only): a non-empty, non-whitespace `error` is shown under the
   control, makes the control report invalid to assistive technology, is added after the description to its accessible
-  description, and is announced politely once each time its text changes to a new non-empty text. It does not change
+  description, and is announced politely once each time its text changes, after the document has finished parsing,
+  to a new non-empty text (measured as "What 'announced' means here" says). An `error` present when the page is first
+  loaded is not announced and does not move focus; it is read as part of the control's description and invalid state
+  when the user reaches the control, and the README tells hosts to put an error summary or a notice at the top of the
+  page and focus it (operator answer SPEC-1-11). The element never moves focus because of `error`. It does not change
   the host's form validity or block submission; the host clears it. An empty `error` shows nothing.
 - **FR-028**: The error text is drawn in `--ocelle-color-danger` (meeting 4.5:1 on the main grounds) with a non-colour
-  mark: the control's boundary becomes `--ocelle-color-danger` and 2 px wide, so the error state is not shown by text
-  colour alone.
+  mark: the control's boundary becomes `--ocelle-color-danger` and `--ocelle-bar-width` (3 px) wide instead of
+  `--ocelle-border-width`, so the error state is not shown by text colour alone. Both are existing tokens; this
+  feature adds no width token.
 
 **`ocelle-form-input`**
 
@@ -431,7 +539,8 @@ gates and the README documentation test.
   as the conventions say, and the README documents them. The manifest adds no new kind of source path (#27).
 - **FR-035**: The README gets one section per element and a "Form controls" section (FR-020 to FR-028), names the tokens
   each element reads, defines what "announced" covers in the tests (accessibility tree, not a screen reader), and
-  states the WebKit limitation for form association, `ElementInternals` and live regions. A documentation test checks
+  states the WebKit limitation for form association, `ElementInternals` and live regions and that restore by autofill
+  is not measured, and tells hosts how to surface a first-load `error` (FR-027). A documentation test checks
   that these sections exist and name each attribute, event, slot and part.
 - **FR-036**: The `@ocelle/elements` changelog names the three elements and their attributes, properties, events,
   slots and parts as new (MINOR). The engine floor in the README is raised if an element uses a feature newer than it.
@@ -439,9 +548,10 @@ gates and the README documentation test.
 ### Key Entities
 
 - **Notice**: a message with a tone (five values), an optional heading, a body, a size, and an announcement mode;
-  its announced text is heading and body joined.
-- **Announcement**: one change of a live region's text with a politeness (polite or assertive), caused by an insertion,
-  a text change or a politeness change of an announcing notice, or by a new error text of a form control.
+  its announced text is heading and body joined, as FR-008 defines it.
+- **Announcement**: one change of a live region's text to a new non-empty text with a politeness (polite or
+  assertive), caused by an insertion, a reveal, a text change or a politeness change of an announcing notice, or by a
+  new error text of a form control after first load.
 - **Form control**: a form-associated element with a name, a value, a default value, a validity, a label, a
   description, an error text and a disabled state; the input adds a type and its native constraints, the select a list
   of options and option groups read from its children.
@@ -453,12 +563,13 @@ gates and the README documentation test.
 - **SC-001**: Every acceptance scenario of User Stories 1 to 3 passes on the in-process run and on the strict-CSP
   fixture pages, with zero CSP violations reported.
 - **SC-002**: For each of the five tones, the announcement scenarios count exactly one announcement per triggering
-  change and zero for each non-triggering one (first load, same text, re-render, move, `announce` set later).
+  change (insertion, reveal, text change, politeness change) and zero for each non-triggering one (first load, same
+  text, re-render, move, `announce` set later, change while hidden), for each host role row of FR-009.
 - **SC-003**: Over every combination of `name`, `required`, `disabled`, `fieldset disabled`, reset and restore tested,
   the form data and validity flags of each form element equal those of a native `<input>` or `<select>` with the same
   attributes and value, entry by entry.
-- **SC-004**: A notice without a heading has zero pixels between its top padding edge and its body's first line box,
-  in both sizes (#513).
+- **SC-004**: A notice with an absent heading (FR-006) has zero pixels between the top of its content box and the top
+  of its body's first line box, in both sizes, with and without forced colours (#513).
 - **SC-005**: Every story of the three elements has a committed baseline in light and dark and zero serious or
   critical axe findings, and the manifest, csp, prefix and documentation checks pass.
 - **SC-006**: The README's form-control section answers, without further design, how a later form-like element takes
@@ -487,5 +598,5 @@ gates and the README documentation test.
   contracts/container.md) and must be rechecked when #10 lands.
 - Parallel missions (#16 as 008, #15 as 009, #8 as 011) edit `packages/elements/src/index.ts`,
   `custom-elements.json` and the Storybook configuration; conflicts are resolved by merging `main`, never by rebasing.
-- spec-kitty-design#509, #513 and ADR-0078 were not read; if their text adds a need beyond #9's wording, the spec check
-  raises it as an operator question.
+- spec-kitty-design#509, #513 and ADR-0078 were not read. The operator confirmed at spec check 1 that #9's wording is
+  sufficient and is the requirement for them (SPEC-1-09); their texts are not read for this feature.
