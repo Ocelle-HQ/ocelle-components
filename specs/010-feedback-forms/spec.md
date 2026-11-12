@@ -1,0 +1,491 @@
+# Feature Specification: Feedback and Forms
+
+**Feature Branch**: `010-feedback-forms` (work happens on `claude/009-feedback-forms`)
+
+**Created**: 2026-11-12
+
+**Status**: Draft
+
+**Input**: User description: "Build issue #9 (triage/010-feedback-forms.md) in @ocelle/elements on the conventions of
+mission 005: ocelle-notice (tone, role override, no heading wrapper or gap when no heading is slotted per
+spec-kitty-design#513, size="compact" per #509, and with announce a polite or assertive live region chosen by tone
+that announces each change once); ocelle-form-input (label, type, placeholder, .value, input event) and
+ocelle-form-select (native-select-based, for closed choices such as lane and log filters), both taking part in forms
+through ElementInternals or a light-DOM control, chosen once as the form-control convention later form elements (#14)
+follow, with label, description and error message announced and no ID reference crossing a shadow root; for each
+element the #7 'Done when' checklist (stories per variant and state in light and dark, interaction tests for every
+event and payload, keyboard and screen-reader behaviour, axe with no serious or critical finding, manifest entries,
+strict-CSP built output) plus form-submission tests of value and validity and announcement tests for the notice;
+visual baselines and axe run on the #10 harness (specs/006-storybook-workbench) once it lands; ocelle-button, compact
+sizing of #7's metric, and the selection elements of #14 stay out."
+
+**Issues**: #9 (triage record `triage/010-feedback-forms.md`, approved by the operator on 2026-11-12). The body of #9
+and the "Done when" checklist of #7 it refers to are the sources of the requirements below. The spec-kitty-design
+issues #9 cites (#509 compact notice, #513 notice without an empty heading block) and ADR-0078 (D5, no ID reference
+across a shadow root) were not read for this spec; their content is known only through #9's wording and epic #1's gap
+table. Their `sk-*` names are kitty-mission-ui roles, not names of this library.
+
+**Operator decisions while specifying** (2026-11-12, human:jeroennouwsdev):
+
+- Form-control convention, "ElementInternals (Recommended)": `ocelle-form-input` and `ocelle-form-select` are
+  form-associated custom elements. The native control lives in the element's open shadow root together with its
+  label, description and error text, so every ID reference stays inside one root, and the host element carries the
+  form value, validity, reset and restore, the disabled state and the association with an external `<label for>`.
+  This is the convention later form-like elements (#14) follow (FR-020).
+- Notice announcements, "Insertion and changes (Recommended)": with `announce`, a notice inserted into the page after
+  it has loaded is announced once, and each later change of its text or tone is announced once more. A notice that is
+  part of the page as first loaded is not announced (FR-008).
+- Error text, "Announce only (Recommended)": a host-set `error` is shown, announced and marks the control invalid for
+  assistive technology, but does not block form submission; the form's validity comes only from the native
+  constraints (FR-027).
+
+## Consumer need
+
+- kitty-mission-ui uses the Spec Kitty notice in 28 places. Its notice draws a heading block and a gap even when no
+  heading is given (spec-kitty-design#513), has no compact size for dense screens (#509), and announces through a live
+  region whose politeness does not follow the notice's tone (#9).
+- kitty-mission-ui uses a form input in 2 places, and Kitty Desktop V2's lane and log filters need a select for closed
+  choices; Spec Kitty ships the select only as a light-DOM style, so each screen styles a raw `<select>` itself (#9).
+- The Ocelle web console renders forms on the server (Thymeleaf) and submits them as plain HTML forms or with htmx
+  under a strict CSP: a form control only counts if the browser's own form data contains its value and the browser's
+  own constraint validation sees it. Label, description and error must be announced by assistive technology, and no
+  ID reference may cross a shadow root (constitution III; ADR-0078 D5 as #9 cites it).
+- Epic #1's gap table: `#513 | notice without empty heading block | #9`, and `#509 | ... compact notice | #7, #9, #5`
+  (the compact notice is this feature's part of #509; the metric's row layout and the eyebrow style stay with #7).
+- Expected outcomes elsewhere, which this feature makes possible but cannot show itself: kitty-mission-ui replaces
+  its notices, inputs and filter selects with `ocelle-*` and drops its local styles and empty-heading workarounds;
+  #14's form-like elements follow FR-020 without a new design question. What this feature checks for them is SC-006.
+
+## User Scenarios & Testing *(mandatory)*
+
+The users of this feature are host pages that show notices and collect input (Kitty Desktop's webview, Kitty
+Dashboard, the Ocelle console's server-rendered pages under the strict CSP, which load the browser build), assistive
+technology users of those hosts, keyboard users, the authors of later form-like elements of this library, and the
+operator who reviews pull requests.
+
+**Engines.** Behaviour is measured in Chromium, the only engine available to this repository's test runs. WebKit
+(Kitty Desktop on macOS and Linux) is not measured; the README names that as an open limitation, as for mission 005.
+
+**Fixture pages.** Every browser scenario below, except the Storybook stories (FR-033), runs as mission 005's browser
+scenarios do (README "Element conventions", Files and tests): written once against a driver and run both in process on
+the element source and on strict-CSP fixture pages that load only the browser build, served with
+`Content-Security-Policy: default-src 'none'; script-src 'self'; style-src 'self'`, with no CSP violation reported.
+
+**What "announced" means here.** No screen reader runs in this repository's tests. A scenario that says a text is
+*announced* (politely or assertively) is checked on the browser's accessibility tree: a live region node with that
+politeness existed in the tree before the change, and after the change its text is exactly the announced text; *once*
+means exactly one such change of the region's text per triggering change, counted over the whole scenario. A scenario
+that says a control's label, description or error is *announced* checks the accessible name, the accessible
+description and the invalid state of the focused control's node in the accessibility tree. Tests that only check that
+an attribute such as `aria-live` is present do not count (knowledge guard `vacuous-tests`).
+
+### User Story 1 - `ocelle-notice` (Priority: P1)
+
+A host shows a message about a state or result (an info hint, a success, a warning, a failure) in a box whose look
+follows its tone, with or without a heading, in the regular or the compact size. When the message is news to the user,
+the host sets `announce` and assistive technology reads it out once, politely or assertively according to its tone.
+
+**Why this priority**: 28 uses in kitty-mission-ui today, the smallest element, and the one #513 and #509 name. It
+can ship and be used on its own.
+
+**Independent Test**: Place notices of every tone, size and heading state on a fixture page, read their boxes,
+colours and accessibility tree; insert and change announcing notices and count the live-region changes.
+
+**Acceptance Scenarios**:
+
+1. **Given** `<ocelle-notice>` with body text and no `tone`, **When** it renders, **Then** it shows the body text in a
+   box with the `info` look: ground `--ocelle-color-info-bg`, the tone marker (FR-004) in `--ocelle-color-info`, text
+   `--ocelle-color-ink`, radius `--ocelle-radius-row`; `tone` reads back as `"info"`.
+2. **Given** each tone `info`, `success`, `warning`, `danger` and `neutral`, **When** it renders in light and in dark,
+   **Then** the ground is `--ocelle-color-<tone>-bg` and the marker `--ocelle-color-<tone>`, and the body text meets
+   4.5:1 and the marker 3:1 against that ground (the contrast check, FR-005).
+3. **Given** `tone="bogus"` or `tone=""`, **When** it renders, **Then** it has the `info` look and the `info`
+   announcement politeness, with no error or console message.
+4. **Given** a notice with no element in its `heading` slot (or only whitespace text there), **When** it renders,
+   **Then** the box's content starts at its top padding with the body text: no heading box is rendered, and the
+   distance from the box's top border edge to the first line box of the body equals the box's block-start padding
+   (#513).
+5. **Given** a notice with `<span slot="heading">Run failed</span>` and body text, **When** it renders, **Then** the
+   heading is drawn above the body, in the heading text style (FR-006), separated from it by one `--ocelle-space-2`
+   gap; removing the heading element afterwards returns the box to scenario 4's layout without a reload.
+6. **Given** `size="compact"`, **When** it renders, **Then** its text uses `--ocelle-font-size-sm` and
+   `--ocelle-line-height-compact` (the scale of the base styles' `data-ocelle-density="compact"` hook) and its
+   padding is the compact padding of FR-007, smaller than the regular padding on both axes; `size="regular"`, no
+   `size` and any other value give the regular size.
+7. **Given** a notice without `announce`, **When** it is inserted into a loaded page or its text or tone changes,
+   **Then** no live region node exists for it in the accessibility tree and nothing is announced.
+8. **Given** a page that has finished loading, **When** a script or an htmx swap inserts
+   `<ocelle-notice announce tone="success">Saved</ocelle-notice>`, **Then** "Saved" is announced politely, once.
+9. **Given** the same with `tone="danger"` (or `warning`), **Then** the text is announced assertively, once.
+10. **Given** an announcing notice that is part of the page as first loaded (in the HTML the server sent), **When** the
+    page loads, **Then** nothing is announced for it; a later change of its text is announced once.
+11. **Given** a connected announcing notice, **When** its body text changes (the host replaces a text node, or changes
+    the heading), **Then** the new text (heading and body, in that order, separated by one space) is announced once;
+    **When** the host sets the same text again, or the element re-renders for any other reason (a `size` change, a
+    theme change, moving the element within the page), **Then** nothing is announced.
+12. **Given** a connected announcing `info` notice, **When** its `tone` changes to `danger` with the same text, **Then**
+    the text is announced once, assertively; a change from `danger` to `warning` with the same text announces nothing
+    (same politeness, same text).
+13. **Given** several text changes made in one task (for example a script that sets the body three times in a row),
+    **When** they settle, **Then** only the final text is announced, once.
+14. **Given** an announcing notice, **When** `announce` is removed, **Then** later changes are not announced; **when**
+    it is set again, **Then** the current text is not announced, and the next change is.
+15. **Given** a host `role` on the notice (FR-009), **When** it renders, **Then** the host's node in the accessibility
+    tree has that role: `role="alert"` forces assertive announcements and `role="status"` polite announcements
+    whatever the tone; with any other role (for example `note`, `region` with an `aria-label`, `none`) the politeness
+    follows the tone; and in no case is one change announced twice.
+16. **Given** forced-colours mode, **When** a notice of each tone renders, **Then** the box border and the marker are
+    visible in system colours (the marker in `CanvasText`), and the text is `CanvasText` on `Canvas`.
+17. **Given** a host `hidden` attribute, **Then** the notice has no box and nothing in it is announced while hidden.
+18. **Given** a notice with slotted inline content (a link, an `ocelle-icon`), **When** it
+    renders, **Then** the content keeps its own semantics in the accessibility tree (the link stays a link, focusable
+    by Tab) and inherits the notice's text colour.
+
+---
+
+### User Story 2 - `ocelle-form-input` (Priority: P2)
+
+A host asks for a short text value (a name, a filter, an email, a URL) with a visible label, an optional description
+and an error the host may set. The value takes part in the surrounding form like a native input: it is submitted, it is
+validated by the browser's own constraints, reset restores it, a disabled fieldset disables it.
+
+**Why this priority**: 2 uses today, but it settles the form-control convention (FR-020) that the select and #14
+reuse; the select is built on it.
+
+**Independent Test**: Put inputs in a real `<form>` on a fixture page; type, submit, reset and read `FormData`,
+validity, events and the accessibility tree.
+
+**Acceptance Scenarios**:
+
+1. **Given** `<form><ocelle-form-input name="title" label="Title"></ocelle-form-input></form>`, **When** it renders,
+   **Then** a visible label "Title" is drawn above a text field; the focused field's node in the accessibility tree is
+   a textbox named "Title"; clicking the label focuses the field.
+2. **Given** that form, **When** the user types "Fix lane", **Then** `element.value` is `"Fix lane"`, and both
+   `new FormData(form).get("title")` and the request a plain submit sends contain `title=Fix lane`.
+3. **Given** each typing step, **When** a character is typed, **Then** one `input` event reaches a listener on the host
+   with `event.target` the host and `element.value` already the new value; **when** the field loses focus after a
+   change, or the user presses Enter, **Then** exactly one `ocelle-form-input-change` event with
+   `detail: { value: "<the value>" }`, `bubbles` and `composed`, is dispatched on the host (FR-024); no change event is
+   dispatched when the value did not change since the last one.
+4. **Given** `value="draft"` as an attribute, **When** the user types and the form is reset, **Then** the value
+   returns to `"draft"` and no `ocelle-form-input-change` is dispatched; **given** the property `element.value = "x"`
+   set by script, **Then** the field shows `x`, the form value is `x`, and no event is dispatched.
+5. **Given** `required` and an empty value, **When** the form's `checkValidity()` runs or the user submits, **Then** it
+   reports invalid, the submit does not happen, `element.validity.valueMissing` is `true`, `element.validationMessage`
+   is the browser's message for the inner field, and `reportValidity()` focuses the field; typing a value makes it
+   valid.
+6. **Given** `type="email"` with the value `"not-an-email"` (or `type="url"` with `"x"`, or `minlength`, `maxlength`
+   or `pattern` that the value breaks), **Then** the element's validity matches what a native `<input>` with the same
+   attributes and value reports, flag by flag, and the form does not submit.
+7. **Given** `type` set to each of `text`, `email`, `url`, `tel`, `search`, `password` and `number`, **Then** the inner
+   field has that type and its native behaviour (an `email` keyboard hint, a masked `password`, number stepping with
+   the arrow keys); any other value, or no `type`, gives `text` and `type` reads back as `"text"`.
+8. **Given** `placeholder="Filter lanes"` and an empty value, **Then** the placeholder is shown in
+   `--ocelle-color-ink-muted` (meeting 4.5:1) and is not the field's accessible name when a `label` is set.
+9. **Given** `description="Shown on the lane card"`, **Then** the text is shown under the label and is the focused
+   field's accessible description.
+10. **Given** a host that sets `error="Title is taken"`, **When** it renders, **Then** the error text is shown under
+    the field in `--ocelle-color-danger` with a non-colour mark (FR-028), the focused field reports invalid to
+    assistive technology and its description is the description followed by the error, and the error text is
+    announced politely once; the form still submits (operator decision); clearing `error` removes the text, the
+    invalid state and announces nothing.
+11. **Given** `disabled`, or the element inside `<fieldset disabled>`, **Then** the field cannot be focused or edited,
+    is drawn with the disabled tokens, reports disabled in the accessibility tree, and its value is not in the form
+    data; enabling it restores all of that.
+12. **Given** `readonly`, **Then** the field can be focused and its value is submitted, but it cannot be edited.
+13. **Given** an external label, `<label for="t">Title</label><ocelle-form-input id="t" name="title">`, **Then** the
+    field is named "Title", clicking the label focuses the field, and `element.labels` holds that label; **given** a
+    host `aria-label="Search lanes"` without `label`, **Then** the field is named "Search lanes".
+14. **Given** keyboard use, **When** the user tabs, **Then** the field takes focus once (the host is not a second tab
+    stop), shows the token focus ring (`--ocelle-color-focus`, `--ocelle-focus-width`, `--ocelle-focus-offset`), and
+    `element.focus()` focuses the field; Shift+Tab leaves it.
+15. **Given** forced-colours mode, **Then** the field's boundary, the focus ring (in `Highlight`) and the error mark
+    are visible.
+16. **Given** the browser restores the page from history or autofills it, **When** the form state is restored,
+    **Then** the field shows and submits the restored value.
+17. **Given** `autocomplete="email"` on the host, **Then** the inner field carries the same `autocomplete` value.
+
+---
+
+### User Story 3 - `ocelle-form-select` (Priority: P3)
+
+A host offers a closed choice (a lane filter, a log level) as a native select with the same label, description,
+error and form behaviour as `ocelle-form-input`, written with ordinary `<option>` children so a server-rendered page
+needs no script to fill it.
+
+**Why this priority**: Kitty Desktop V2's lane and log filters need it (#15 is the consumer); it reuses User Story 2's
+convention.
+
+**Independent Test**: Put selects with `<option>` and `<optgroup>` children in a real `<form>`; choose with mouse and
+keyboard, submit, reset, change the options, and read `FormData`, validity, events and the accessibility tree.
+
+**Acceptance Scenarios**:
+
+1. **Given** `<ocelle-form-select name="lane" label="Lane"><option value="todo">To do</option><option value="done"
+   selected>Done</option></ocelle-form-select>` in a form, **Then** a visible label "Lane" is drawn above a native
+   select showing "Done"; the focused select's node is a combobox (Chromium's role for a single native select) named
+   "Lane"; `element.value` is `"done"` and the form data holds `lane=done`.
+2. **Given** keyboard use, **When** the select is focused, **Then** the native select's own keys work unchanged
+   (arrow keys change the choice, Alt+Down or Space opens the list, typing a letter jumps to an option); **when** the
+   choice changes, **Then** one `input` event reaches the host with `element.value` already the new value, and one
+   `ocelle-form-select-change` with `detail: { value }`, `bubbles` and `composed`.
+3. **Given** `<optgroup label="Active">` children holding options, and options with `disabled`, **Then** the native
+   select shows the same groups and disabled options, in the same order, with the same labels and values.
+4. **Given** the host adds, removes or edits an `<option>` child (text, `value`, `selected`, `disabled`) after
+   rendering, **Then** the native select reflects the change; if the selected option is removed, the value becomes
+   what a native select would choose (the first enabled option), without dispatching a change event.
+5. **Given** `required` and a first option with an empty value selected (`<option value="">Choose a lane</option>`),
+   **Then** the element reports `valueMissing` and the form does not submit, as a native select does; choosing another
+   option makes it valid.
+6. **Given** a form reset, **Then** the selection returns to the option marked `selected` in the markup (or the first
+   option without one), and no change event is dispatched; `element.value = "todo"` by script selects that option
+   with no event; setting a value no option has selects nothing and `element.value` reads `""`, as a native select.
+7. **Given** `description`, `error`, `disabled`, `<fieldset disabled>`, an external `<label for>`, a host `aria-label`,
+   history restore, forced-colours mode and keyboard focus, **Then** each behaves as User Story 2 scenarios 9, 10,
+   11, 13, 14, 15 and 16 describe for the input.
+8. **Given** the select, **Then** it shows an open-list indicator drawn with the `chevron-down` icon of the shared set
+   in `currentColor`, which is decorative and is also visible in forced colours.
+9. **Given** an `<option>` child, **Then** the light-DOM `<option>` elements themselves are not rendered or exposed
+   outside the native select (no duplicate text in the accessibility tree).
+
+---
+
+### User Story 4 - Stories, baselines, axe and records (Priority: P4)
+
+A contributor and the operator see every variant and state of the three elements in Storybook, in light and dark,
+with committed baselines and an axe run, and the README, manifest and changelog describe the new surface.
+
+**Why this priority**: constitution V and #7's "Done when"; it depends on Stories 1 to 3 and on #10's harness.
+
+**Independent Test**: Build Storybook and run the `visual` and `axe` gates of #10, the `manifest`, `csp` and `prefix`
+gates and the README documentation test.
+
+**Acceptance Scenarios**:
+
+1. **Given** the built Storybook, **Then** it holds a story for each notice tone, each size, with and without a
+   heading, and an announcing notice; for each form element its empty, placeholder, filled, with description, with
+   error, required, disabled, read-only (input only) and focused states, and the select with option groups; hover is
+   declared as #10's harness asks (006 FR-031).
+2. **Given** #10's `visual` gate, **Then** every one of these stories has a committed baseline in light and dark that
+   matches its capture, and no story is drawn with a font other than Schibsted Grotesk, form-control text included.
+3. **Given** #10's `axe` gate, **Then** it reports no serious or critical finding on any of these stories in either
+   theme, and no element attaches a closed shadow root.
+4. **Given** the `manifest` gate, **Then** the committed manifest declares each element's tag, class, properties and
+   attributes with types, defaults and descriptions, events with their detail types, slots, CSS parts and CSS custom
+   properties (each list stated even when empty), and it matches a regeneration.
+5. **Given** the README documentation test, **Then** the README documents each element's attributes, properties,
+   events, slots, parts and the tokens it reads, the form-control convention (FR-020), what "announced" covers and
+   what it does not (no real screen reader), and the WebKit limitation; the changelog names the new surface.
+
+---
+
+### Edge Cases
+
+- A notice's body is empty and it has no heading: it renders an empty box with padding only, and announces nothing.
+- A notice whose text changes to the same text with different whitespace (`"Saved"` → `" Saved "`): the normalized text
+  (whitespace collapsed and trimmed) is unchanged, so nothing is announced.
+- A notice moved to another place in the page (removed and inserted in the same task): not a new insertion; nothing
+  is announced. A notice removed and inserted again in a later task is a new insertion and is announced.
+- An announcing notice inserted while hidden (`hidden`), then shown: nothing is announced while hidden; showing it does
+  not announce; its next change does.
+- Two announcing notices change in the same task: each announces its own text once.
+- A form element outside any `<form>`: it works as a control (value, events, validity) and submits nothing.
+- A form element with `form="other-form"` naming a form elsewhere in the page: it belongs to that form, as a native
+  control does.
+- A form element without `name`: its value is not in the form data, as for a native control.
+- `ocelle-form-input` with `type="number"` and a non-numeric typed value: the value is `""` and the validity is
+  `badInput`, as for a native number input.
+- `ocelle-form-select` with no `<option>` children: an empty native select; `value` is `""`; with `required` it is
+  `valueMissing`.
+- An `error` set while the field has focus: announced once, politely; set to the same text again: not announced.
+- Both `label` and an external `<label for>`: the field's name is both, in the order the browser computes for a
+  labelled control (the external label first), with no duplicate words from the same source.
+- A host `aria-describedby` pointing at an element in the page: not supported (it would cross the shadow root); the
+  README says to use `description`.
+- Right-to-left text (`dir="rtl"`): label, field, description and error follow the inline direction; the select's
+  indicator moves to the inline end.
+- Two copies of the package on a page: the first definition wins, as for mission 005's elements; form association is
+  that of the first copy.
+
+## Requirements *(mandatory)*
+
+### Functional Requirements
+
+**Conventions shared by the three elements**
+
+- **FR-001**: Each element follows the README's "Element conventions" (mission 005): its own module and entry point,
+  `define` registration, static token-only styles with `:host([hidden]) { display: none; }`, variant rules inside
+  `@media not (forced-colors: active)`, the manifest generated and committed, stories in the existing Storybook, both
+  builds (module and browser), and the browser scenarios run in process and on strict-CSP fixture pages.
+- **FR-002**: Every element attaches an open shadow root and renders every surface inside its own host (006 FR-014,
+  FR-027). Styles of form controls inside the shadow root set `font: inherit` (006 FR-025).
+- **FR-003**: Elements perform no I/O and emit no event other than those named in FR-024 and FR-031; the native
+  composed `input` event of the inner control reaches the host as the browser delivers it.
+
+**`ocelle-notice`**
+
+- **FR-004**: `tone` (attribute and property, reflected): `info` (default), `success`, `warning`, `danger`, `neutral`;
+  any other value behaves as `info` and the property reads `"info"`. The notice draws its ground in
+  `--ocelle-color-<tone>-bg` and a tone marker, a solid bar of `--ocelle-space-1` along the box's inline-start edge, in
+  `--ocelle-color-<tone>`; the bar marks the tone together with the ground, so the ground colour is never the only mark.
+- **FR-005**: For every tone, in both themes, the body and heading text in `--ocelle-color-ink` meet 4.5:1 and the
+  marker meets 3:1 against the tone's ground, checked by the repository's contrast check. Where a pair fails, the plan
+  changes the element's colour choice (not a token value) or, if no token pair passes, records the token change this
+  needs as part of this feature.
+- **FR-006**: Slots: `heading` (optional; its content is drawn in the subhead style, `--ocelle-font-size-subhead` at
+  the regular size and `--ocelle-font-size-sm` bold at the compact size) and the default slot (the body). When the
+  `heading` slot has no assigned element and no non-whitespace text, no heading box is rendered and no gap is left
+  (#513); the layout updates when slotted content changes. CSS parts: `heading` and `body`.
+- **FR-007**: `size` (attribute and property, reflected): `regular` (default) or `compact`; any other value behaves as
+  `regular`. Regular padding is `--ocelle-space-3` block and `--ocelle-space-4` inline; compact padding is
+  `--ocelle-space-2` block and `--ocelle-space-3` inline, with the text at `--ocelle-font-size-sm` and
+  `--ocelle-line-height-compact`, the scale of the base styles' compact density hook (#509, the notice's part).
+- **FR-008**: `announce` (boolean attribute and property, reflected). With `announce` and while the notice is shown
+  (not `hidden`), the notice announces its text (heading, then body, whitespace collapsed and trimmed, the two parts
+  joined by one space) once: when it is inserted into a document that has finished parsing, and on each later change
+  of that text or of its politeness. It does not announce when it is part of the document as first parsed, when the
+  text and politeness are unchanged, when it re-renders for another reason, when it is moved within the page in one
+  task, or when `announce` is set on an existing notice. Several changes in one task announce the final text once.
+  Without `announce` the notice has no live region and announces nothing.
+- **FR-009**: Politeness: `assertive` for `warning` and `danger`, `polite` for `info`, `success` and `neutral`. A host
+  `role` attribute is the host's role as written (the "role override"): `role="alert"` makes every announcement
+  assertive and `role="status"` polite, whatever the tone; any other host role leaves the politeness to the tone. In
+  every combination one change is announced once, never by two live regions. Without a host role the notice adds no
+  landmark or live role to the page beyond the live region of FR-008.
+- **FR-010**: In forced-colours mode the box has a 1 px border and the marker is drawn in `CanvasText`, so each notice
+  stays outlined and marked; text is `CanvasText` on `Canvas`.
+- **FR-011**: Slotted content keeps its own semantics and focusability; the notice sets no `tabindex` and traps no
+  focus. The notice has no event and no CSS custom property of its own.
+
+**Form-control convention (`ocelle-form-input`, `ocelle-form-select`, and #14 after them)**
+
+- **FR-020**: Both are form-associated custom elements (operator decision). The native control, the visible label, the
+  description and the error live in one open shadow root, and every ID reference among them stays inside it. The host
+  takes part in its form through `ElementInternals`: it submits its value under `name` (none without `name` or when
+  disabled), joins the form named by a `form` attribute, follows a `fieldset`'s disabled state, restores its default
+  value on form reset and its state on history restore or autofill, and is associated with an external
+  `<label for>`. The README documents this as the convention later form-like elements follow.
+- **FR-021**: Shared attributes and properties: `name`, `label`, `description`, `error`, `required`, `disabled`
+  (all reflected) and `value` (property; the `value` attribute of the input is its default value, restored on reset).
+  The host exposes `form`, `labels`, `validity`, `validationMessage`, `willValidate`, `checkValidity()` and
+  `reportValidity()` as a native control does. `focus()` on the host focuses the inner control; the host is not a
+  separate tab stop.
+- **FR-022**: Naming: the inner control's accessible name is computed from the `label` text, an external `<label>`
+  associated with the host, and a host `aria-label` (constitution III: ARIA set on a host reaches the inner control);
+  with none of them it has no name and the README says one is required. The `description` is the control's accessible
+  description; a host `aria-describedby` is not supported (README).
+- **FR-023**: Validity mirrors the inner control's native constraint validation (`required`, `type`, `minlength`,
+  `maxlength`, `pattern`, `min`, `max`, `step` for the input; `required` for the select): the host's validity flags
+  and message equal those of the inner control, and `reportValidity()` shows the browser's message anchored to the
+  inner control and focuses it.
+- **FR-024**: Events: the native `input` event of the inner control reaches host listeners (it is composed), with
+  the host's `value` already updated; on each committed change (the change the native control signals with its own
+  `change` event) the host dispatches `ocelle-form-input-change` or `ocelle-form-select-change`, a `CustomEvent` with
+  `detail: { value: string }`, `bubbles: true`, `composed: true`. No event is dispatched for a change made by script,
+  by reset or by restore.
+- **FR-025**: Look: the label above the control in the label text style, the control with a 1 px
+  `--ocelle-color-control-border` boundary (never `--ocelle-color-rule`), radius `--ocelle-radius-2`, block size at
+  least `--ocelle-target-min`, the token focus ring on `:focus-visible`, disabled colours from `--ocelle-color-disabled-*`,
+  and the description under it in `--ocelle-color-ink-muted`. In forced-colours mode the boundary uses `ButtonBorder`
+  or `CanvasText` and the focus ring `Highlight`.
+- **FR-026**: CSS parts: `label`, `control`, `description`, `error`. Slots: none (label, description and error are text
+  attributes, so their content cannot cross the shadow root; the select's `<option>` children are read, not slotted,
+  per FR-031).
+- **FR-027**: `error` (operator decision, announce only): a non-empty, non-whitespace `error` is shown under the
+  control, makes the control report invalid to assistive technology, is added after the description to its accessible
+  description, and is announced politely once each time its text changes to a new non-empty text. It does not change
+  the host's form validity or block submission; the host clears it. An empty `error` shows nothing.
+- **FR-028**: The error text is drawn in `--ocelle-color-danger` (meeting 4.5:1 on the main grounds) with a non-colour
+  mark: the control's boundary becomes `--ocelle-color-danger` and 2 px wide, so the error state is not shown by text
+  colour alone.
+
+**`ocelle-form-input`**
+
+- **FR-029**: `type` (attribute and property, reflected): `text` (default), `email`, `url`, `tel`, `search`,
+  `password`, `number`; any other value behaves as `text`. `placeholder`, `readonly`, `autocomplete`, `inputmode`,
+  `minlength`, `maxlength`, `pattern`, `min`, `max` and `step` are passed to the inner field unchanged.
+- **FR-030**: Pressing Enter in the field submits its form as a native input does (implicit submission), after the
+  `ocelle-form-input-change` event if the value changed.
+
+**`ocelle-form-select`**
+
+- **FR-031**: The element's light-DOM `<option>` and `<optgroup>` children are the source of the choices: the native
+  select inside mirrors their order, labels, values, `selected` (as the default selection, restored on reset) and
+  `disabled`, and follows every later change to them. The light-DOM children are not rendered and not exposed. One
+  choice only: there is no `multiple` and no `size` list mode.
+- **FR-032**: The select draws an open-list indicator with the shared icon set's `chevron-down` in `currentColor`,
+  decorative (hidden from the accessibility tree), visible in forced colours, at the inline end under either text
+  direction. The native select's own keyboard behaviour is not changed.
+
+**Stories, gates and records**
+
+- **FR-033**: Each element has a Storybook story per variant and state (User Story 4 scenario 1), in light and dark,
+  written as the contributor note of #10's harness says (006 FR-025, FR-031). Each story has a committed baseline from
+  #10's pinned container, passes the `visual` and `axe` gates, and passes the `csp` and `prefix` gates' Storybook
+  checks. This feature is implemented after #10 is on `main` (operator wave planning); if #10's harness differs from
+  the design in `specs/006-storybook-workbench` when it lands, the plan is rechecked before the stories phase.
+- **FR-034**: The manifest declares, for each element, every public property and attribute (type, default,
+  description), every event with its detail type, every slot (the notice's two; none for the form elements), every
+  CSS part and every CSS custom property (none), each list stated even when empty. Standard attributes the elements
+  observe without a property (`role` on the notice, `aria-label` and `form` on the form elements) are not declared,
+  as the conventions say, and the README documents them. The manifest adds no new kind of source path (#27).
+- **FR-035**: The README gets one section per element and a "Form controls" section (FR-020 to FR-028), names the tokens
+  each element reads, defines what "announced" covers in the tests (accessibility tree, not a screen reader), and
+  states the WebKit limitation for form association, `ElementInternals` and live regions. A documentation test checks
+  that these sections exist and name each attribute, event, slot and part.
+- **FR-036**: The `@ocelle/elements` changelog names the three elements and their attributes, properties, events,
+  slots and parts as new (MINOR). The engine floor in the README is raised if an element uses a feature newer than it.
+
+### Key Entities
+
+- **Notice**: a message with a tone (five values), an optional heading, a body, a size, and an announcement mode;
+  its announced text is heading and body joined.
+- **Announcement**: one change of a live region's text with a politeness (polite or assertive), caused by an insertion,
+  a text change or a politeness change of an announcing notice, or by a new error text of a form control.
+- **Form control**: a form-associated element with a name, a value, a default value, a validity, a label, a
+  description, an error text and a disabled state; the input adds a type and its native constraints, the select a list
+  of options and option groups read from its children.
+
+## Success Criteria *(mandatory)*
+
+### Measurable Outcomes
+
+- **SC-001**: Every acceptance scenario of User Stories 1 to 3 passes on the in-process run and on the strict-CSP
+  fixture pages, with zero CSP violations reported.
+- **SC-002**: For each of the five tones, the announcement scenarios count exactly one announcement per triggering
+  change and zero for each non-triggering one (first load, same text, re-render, move, `announce` set later).
+- **SC-003**: Over every combination of `name`, `required`, `disabled`, `fieldset disabled`, reset and restore tested,
+  the form data and validity flags of each form element equal those of a native `<input>` or `<select>` with the same
+  attributes and value, entry by entry.
+- **SC-004**: A notice without a heading has zero pixels between its top padding edge and its body's first line box,
+  in both sizes (#513).
+- **SC-005**: Every story of the three elements has a committed baseline in light and dark and zero serious or
+  critical axe findings, and the manifest, csp, prefix and documentation checks pass.
+- **SC-006**: The README's form-control section answers, without further design, how a later form-like element takes
+  part in forms, names its control and shows an error: the documentation test finds the items of FR-020 to FR-028.
+- **SC-007**: Changed source is mutation-tested under the repository's mutation gate with no surviving mutant in new
+  code that the review does not record as equivalent.
+
+## Assumptions
+
+- The tone of a notice is also stated by its text (hosts write "Saved", "Run failed"); the marker and ground support it
+  visually and are not the only carrier of meaning, so no tone icon is required. The notice does not draw a tone icon
+  of its own; a host may slot an `ocelle-icon` into the body or heading. A tone icon set can be added later as a MINOR
+  change.
+- No dismiss button or action slot is added to the notice: #9 names neither, and a dismiss control would depend on
+  #7's `ocelle-button`. Toasts and notice stacks are out of scope.
+- `textarea`, checkbox, radio, multi-select, combobox with typing and the selection elements of #14 are out of scope;
+  #14 follows FR-020.
+- The form elements perform no validation logic of their own beyond the native constraints (constitution I); server
+  validation reaches them as `error` text.
+- The compact notice uses the existing compact scale tokens; no new size token is needed. If the contrast check shows
+  a tone pair failing (FR-005), the needed token change is part of this feature.
+- Chromium exposes a single native select as a combobox; scenarios name Chromium's roles. WebKit's roles, form
+  association and live-region behaviour in shadow roots are not measured (README, Engines).
+- #10 (mission 006) lands on `main` before this feature's implementation starts (operator wave planning); its design is
+  read from branch `claude/010-storybook-workbench`, `specs/006-storybook-workbench` (spec FR-025, contracts/gates.md,
+  contracts/container.md) and must be rechecked when #10 lands.
+- Parallel missions (#16 as 008, #15 as 009, #8 as 011) edit `packages/elements/src/index.ts`,
+  `custom-elements.json` and the Storybook configuration; conflicts are resolved by merging `main`, never by rebasing.
+- spec-kitty-design#509, #513 and ADR-0078 were not read; if their text adds a need beyond #9's wording, the spec check
+  raises it as an operator question.
