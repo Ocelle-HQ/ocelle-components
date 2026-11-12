@@ -144,7 +144,8 @@ describe("ci.yml visual and plants jobs (006 FR-017, FR-018)", () => {
     ]);
   });
 
-  it("plants-shard judges one planned shard under both engines after the toolset removal, and uploads its report always", () => {
+  // Plan decision 28 (operator decision 2026-11-12, "Measure disk, then B'"): the free disk before the toolset removal too.
+  it("plants-shard prints the free disk before and after the toolset removal, judges one planned shard under both engines, and uploads its report always", () => {
     expect(job("plants-shard")).toEqual([
       "  plants-shard:",
       "    name: Plants shard",
@@ -155,6 +156,7 @@ describe("ci.yml visual and plants jobs (006 FR-017, FR-018)", () => {
       "      matrix:",
       "        shard: ${{ fromJSON(needs.plants-plan.outputs.shards) }}",
       "    steps:",
+      "      - run: df -h /",
       "      - run: sudo rm -rf /usr/local/lib/android /usr/share/dotnet /opt/ghc /usr/local/.ghcup /opt/hostedtoolcache/CodeQL",
       "      - run: df -h /",
       ...setup.slice(2),
