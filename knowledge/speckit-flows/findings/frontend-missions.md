@@ -145,7 +145,7 @@ pitfalls up front. Each entry names where it was found. New entries are added as
   tests per mutant). Route element source to its own Stryker and Vitest configuration with only the browser
   project. (005 R-12)
 - Mixing both Stryker configurations in one CI shard runs Stryker twice. Watch that shard against the 10-minute
-  limit (005 landing; 6:15 on run 43188981994).
+  limit (005 landing; every shard of run 43188981994 finished within 6:42).
 
 # Candidates for a frontend profile or lens
 

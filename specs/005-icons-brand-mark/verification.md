@@ -29,8 +29,8 @@ the landing fold): 28 of 28 jobs succeeded. These fifteen checks of
 15. Custom-elements manifest (new in this mission)
 
 The helper job `Mutation plan` and the 12 `Mutation shard` jobs are green too. The slowest shard,
-`gates/bin/manifest.ts:121-148,gates/bin/mutation.ts,gates/lib/pins-rules.ts,…`, took 6:42 of its 10 minutes; the
-shard that mixes element source and other source (both Stryker configurations, landing round 1) took 6:15.
+`gates/bin/manifest.ts:121-148,gates/bin/mutation.ts,gates/lib/pins-rules.ts,…`, took 6:42 of its 10 minutes. Landing round 1 noted that a shard mixing element source and other
+source runs Stryker twice; every shard of this run finished within that 6:42.
 
 Status: **done**. Re-confirm on the final head before the merge.
 
