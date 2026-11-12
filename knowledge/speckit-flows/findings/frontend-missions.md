@@ -156,6 +156,16 @@ pitfalls up front. Each entry names where it was found. New entries are added as
   phase 3, #20)
 - A browser test cannot tell a token from a literal in computed style, so a lint rule must enforce token use.
   (003 SPEC-1-06)
+- In-process browser tests share one page. `page.emulateMedia({ forcedColors: "none" })` does not reset the
+  `colorScheme` that a dark forced-colours palette set, so the next test file sees `prefers-color-scheme: dark`. That
+  made the mutation gate's initial run fail in 4 of 5 runs, depending on file order. Reset every emulated media
+  feature in the same helper, and shuffle file order (`--sequence.shuffle.files`) when a suite shares a page.
+  (005 phase 4 R1-01)
+- Stryker with a Vitest workspace that mixes browser-mode and Node projects runs the whole suite per mutant (612
+  tests per mutant). Route element source to its own Stryker and Vitest configuration with only the browser
+  project. (005 R-12)
+- Mixing both Stryker configurations in one CI shard runs Stryker twice. Watch that shard against the 10-minute
+  limit (005 landing; every shard of run 43188981994 finished within 6:42).
 
 # Candidates for a frontend profile or lens
 

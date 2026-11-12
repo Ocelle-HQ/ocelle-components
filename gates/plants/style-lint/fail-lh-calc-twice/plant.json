@@ -1,0 +1,11 @@
+{
+  "expect": "fail",
+  "why": "Two line boxes in one calc() expression are raw: 1lh is admitted at most once per expression (005 research.md R-03, PLAN-FRESH-3-002 (a)).",
+  "findings": [
+    {
+      "location": "packages/elements/src/x.ts:6",
+      "rule": "ocelle/token-only",
+      "message": "1lh, 1lh"
+    }
+  ]
+}

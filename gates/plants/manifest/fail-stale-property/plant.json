@@ -1,0 +1,16 @@
+{
+  "expect": "fail",
+  "why": "A public property added to ocelle-icon in source without regenerating the manifest (US1 scenario 12): a stale finding for the property and one for its attribute.",
+  "findings": [
+    {
+      "location": "packages/elements/custom-elements.json",
+      "rule": "stale",
+      "message": "ocelle-icon.attribute.tone differs from the generated manifest"
+    },
+    {
+      "location": "packages/elements/custom-elements.json",
+      "rule": "stale",
+      "message": "ocelle-icon.property.tone differs from the generated manifest"
+    }
+  ]
+}

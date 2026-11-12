@@ -1,0 +1,269 @@
+schema: review-findings/v1
+complete: true
+phase: plan
+round: 1
+lens: correctness
+# Probes: Playwright 1.64.1 from the repository's node_modules, Chromium 1243 (OCELLE_CHROMIUM_PATH); lit 3.3.3 and
+# @custom-elements-manifest/analyzer 0.11.0 installed with --ignore-scripts in the session scratchpad only. Nothing
+# of them is in the repository.
+findings:
+  - id: PLAN-CORRECTNESS-1-001
+    severity: 3
+    title: "The chrome variant keeps its token ring in forced colours: the forced-colours rule loses on specificity"
+    evidence:
+      - artifact: |
+          research.md R-09: ":host([ground=\"chrome\"]) .ring { stroke: var(--ocelle-color-chrome-ink) }" and
+          "@media (forced-colors: active) { .ring { stroke: currentColor } .spot { fill: currentColor } }"; data-model.md
+          § ocelle-brand-mark, Variants, row "forced colours (all) | @media (forced-colors: active) | currentColor".
+          spec.md FR-027 "In forced-colours mode both parts of the mark, in every variant, are painted in currentColor";
+          SC-004 "100% of the painted parts of every ... mark variant use the system colour".
+      - code: |
+          Probe (scratchpad probe/p1.mjs): a shadow root adopting exactly R-09's rules in R-09's order, with the
+          variant tokens set to rgb(1,1,1) ink, rgb(2,2,2) chrome-ink, rgb(3,3,3) accent. With
+          emulateMedia({ forcedColors: "active", colorScheme: "dark" }) the computed ring stroke is rgb(255,255,255)
+          (CanvasText) for the default, mono and chrome+mono marks, but rgb(2, 2, 2), the chrome-ink token, for
+          ground="chrome". :host([ground="chrome"]) .ring has specificity (0,3,0) (pseudo-class + its argument +
+          class) against (0,1,0) for the media rule's .ring, and Chromium does not force author stroke or fill (as
+          spec check 2 measured for fill), so nothing else repaints it.
+    claim: |
+      The plan's design does not meet FR-027 or SC-004 for the variant ocelle-top-bar uses (#12 places the mark on
+      the chrome in both themes). In forced colours the ring stays the chrome-ink token colour, which is not the
+      system colour of its context and can disappear against a forced Canvas (light palette: a light ring on a
+      light Canvas). The default variant only works because its rule happens to have the same specificity and comes
+      first.
+    remedies:
+      - "R-09 and data-model.md: give the forced-colours rules at least the specificity of every variant rule they must beat (for example `@media (forced-colors: active) { :host .ring, :host([ground]) .ring { stroke: currentColor } :host .spot { fill: currentColor } }`, or wrap the variant rules in `@media not (forced-colors: active)`), and name the chrome variant in forced colours as the planted defect of US4-5's test."
+  - id: PLAN-CORRECTNESS-1-002
+    severity: 3
+    title: "Most browser scenarios run only in-process from source, not on the strict-CSP fixture with the browser build the spec requires"
+    evidence:
+      - artifact: |
+          spec.md User Scenarios, "The strict-CSP fixture": "Every browser scenario of this feature, except the
+          Storybook stories (FR-019), runs on one kind of fixture page" and "The CSP and request checks and the size,
+          colour and accessibility measurements of a scenario run on the same page ... and all of them test the
+          browser build". FR-033: "The strict-CSP fixture's CSP, request, size, colour and accessibility checks test
+          the browser build." FR-016: no console message "in the built output ... loading it writes no console
+          message at all". US1-17: "ocelle-icon is defined and ocelle-brand-mark is not" for a bundle of the module
+          build.
+      - artifact: |
+          plan.md § Phases: phase 2 "US1 scenarios 2 to 9, 11, 14, 16, 18 in-process" and fixture tests only "for US1
+          scenarios 1, 10 and 15"; phase 3 runs US2 1 to 4 in-process only; phase 4 fixture tests only "for US3
+          scenarios 1, 2, 6 and 9"; phase 5 "US4 scenarios 1 to 3, 5 to 9, 13, 14 in-process". research.md R-11: the
+          in-process tests "import element source" in the `elements` Vitest browser project. build.test.ts (R-05) is
+          the only planned test of US1-17 and it is a node test of import statements.
+      - code: |
+          The in-process project is Vitest browser mode on a Vite dev server: Lit resolves through its "development"
+          export condition there (lit-html/package.json exports "development": "./development/lit-html.js"), and
+          lit-element/development/lit-element.js:77 and @lit/reactive-element/development/reactive-element.js:50
+          call console.warn for the dev-mode warning. The page is not served under the strict CSP header.
+    claim: |
+      The plan contradicts the spec's test model. Accessibility-tree outcomes (US1-5, 6, 18; US4-6, 14), forced
+      colours (US1-7, US4-5), mirroring (US2-4), sizing (US1-2, 3; US3-3, 4, 5, 8, 10) and the unknown-name
+      behaviour (US1-8) are measured only on source under Lit's development build, without the strict CSP and not
+      on the browser build, which is what the console host loads. US1-8's "no console message at all on the page,
+      Lit's development-mode warning included" cannot hold where the dev build is loaded, so that test either fails
+      or has to filter the very message the spec names. The runtime half of US1-17 (which element a bundle of one
+      entry point defines) has no planned test at all. Mutation needs the in-process tests, but that does not
+      remove the spec's requirement for the fixture tests.
+    remedies:
+      - "Plan: keep the in-process suites for mutation and also run every browser scenario of the spec on the strict-CSP fixture with the browser build (one shared scenario body driven by both harnesses), including US1-8's console check and a fixture test of US1-17 that loads a bundle of `ocelle-icon.js` only and a bundle of the root, each checking `customElements.get` for both tags."
+      - "Spec (operator decision): narrow the fixture rule to a named list of scenarios (CSP, requests, upgrade, double definition, slot convention, SC-001) and allow the others in-process from source, and move US1-8's console clause and US1-17's runtime half onto named fixture tests."
+  - id: PLAN-CORRECTNESS-1-003
+    severity: 3
+    title: "Chromium does not trim a host aria-label, so US1-18 and US4-14 cannot pass with R-13's mechanism; the fork is due now"
+    evidence:
+      - artifact: |
+          spec.md US1-18: `aria-label=" Close "` "exposes exactly one image node named \"Close\""; US4-14 the same with
+          " Ocelle "; FR-034 "with surrounding whitespace removed". research.md R-13 "To verify in the phase 1 spike:
+          that Chromium trims a host aria-label"; plan.md decision 6 "if it does not, phase 2 stops for an operator
+          fork on US1-18".
+      - code: |
+          Probe (scratchpad probe/p4.mjs): a custom element with attachInternals(), internals.role = "img" and
+          internals.ariaLabel set to the trimmed host aria-label, host `id="aria-named" aria-label=" Close "`.
+          Accessibility.getFullAXTree gives the node `image " Close "` (leading and trailing space kept), while the
+          `both` host (aria-label="Close") gives `image "Close"`. The host attribute wins over the internals value,
+          as R-13 itself relies on for aria-hidden.
+    claim: |
+      The spike's question is answered: Chromium keeps the spaces, and an element cannot change the name a host
+      attribute gives without rewriting the host's own attribute. The plan as written will reach phase 2, fail the
+      spike, and stop mid-implementation for a decision that can be taken at the plan gate. Leaving it open also
+      leaves US1-18, US4-14, FR-034 and SC-003 in the approved artifacts with a requirement the chosen design cannot
+      meet.
+    remedies:
+      - "Spec and plan (operator fork now): either the README states that a host passes a trimmed `aria-label` and US1-18 / US4-14 use `aria-label=\"Close\"` / `\"Ocelle\"` (with the whitespace-only case kept, since hiding works), or the element normalises the host attribute (rewrites `aria-label` to its trimmed value, which mutates host-owned state and needs its own README note and test). Record the measurement in research.md R-13 and drop the spike item."
+  - id: PLAN-CORRECTNESS-1-004
+    severity: 3
+    title: "The zero-width-space strut centres a slotted icon only when the label's line box is at least the icon size"
+    evidence:
+      - artifact: |
+          research.md R-10: ".icon-slot::before { content: \"\\200b\"; }: the zero-width space gives the wrapper the
+          label's line-box height, so the icon is centred on the label's first line whether the label wraps or not";
+          row `align-items: flex-start`. spec.md US3-1 "the block-axis centre of the icon box and the block-axis
+          centre of the label's first line box differ by at most 0.5 px"; FR-021.
+      - code: |
+          Probe (scratchpad probe/p2.mjs): R-10's wrapper, strut and !important ::slotted rules, icon 20 px, label
+          "Open project". Centre difference: 14px/1.45 -> 0.14 px, 16px/1.45 -> 0.09 px, but 14px/1.15 -> 2.0 px,
+          12px/1.5 -> 1.0 px, 14px/1.15 wrapped onto two lines -> 2.0 px. When the icon is taller than the line box
+          the wrapper grows to the icon, the row is flex-start, so the icon's top sits on the label's top. The same
+          probe with `.icon-slot { block-size: 1lh }` instead of the strut (probe/p3.mjs) gives at most 0.14 px in all
+          six cases, the icon overflowing the line box evenly.
+      - code: |
+          packages/tokens/src/source.ts:118-130: font-size-xs 0.75rem, font-size-sm 0.875rem, line-height-tight 1.15;
+          icon-size 1.25rem (line 160). font-size-xs gives a line box under 20 px with every line-height token
+          (12 x 1.65 = 19.8 px).
+    claim: |
+      The convention #7 and #12 will copy fails its own centring rule for compact or tight-leading controls the
+      token set allows (any `font-size-xs` label, `font-size-sm` with `line-height-tight`). A test host that happens
+      to use body text passes US3-1 while the convention is wrong for real controls, and the README would promise
+      a centring that does not hold.
+    remedies:
+      - "R-10 and data-model.md: size the wrapper to one line (`block-size: 1lh` with `align-items: center`, measured above), which needs the `token-only` rule to accept `1lh` as it will accept `scale` (unit test and plants, as R-03); and have US3-1's test run the host at the tightest token pair (`font-size-xs`, `line-height-tight`) as well as body text."
+      - "Keep the strut, state in FR-021 and the README that the label's line box must be at least `--ocelle-icon-size` tall, and test the host at the smallest pair the convention allows."
+  - id: PLAN-CORRECTNESS-1-005
+    severity: 2
+    title: "The analyzer's output for the planned element code lacks the tag name and defaults and adds an undescribed aria-label attribute; R-06's normaliser covers none of it"
+    evidence:
+      - artifact: |
+          research.md R-02 "define(tag, constructor) in define.ts ... Each element module ends with one define(...)
+          call"; R-13 "The elements observe aria-label by adding it to observedAttributes ... without declaring a
+          property (FR-034: not in the manifest)"; R-01 "declare fields"; R-06 lists the normaliser's steps: empty
+          lists, IconName union, "drops attribute entries for non-public members", sort keys. data-model.md
+          § Manifest "Schema 2.1.0 (the analyzer's) ... each element declaration has tagName ... default".
+          spec.md US1-11 and US4-12: tag name, and the default "absent" for every property; FR-034 "the manifest does
+          not declare it".
+      - code: |
+          Probe (scratchpad cem/): analyzer 0.11.0 `cem analyze --litelement` on an element written as planned
+          (static override properties, declare fields, module-level define("ocelle-icon", OcelleIcon) helper,
+          observedAttributes extended with "aria-label"). Output: "schemaVersion": "1.0.0"; no tagName and no
+          custom-element-definition export; members `name` and `label` with no `default`; and an attributes entry
+          {"name": "aria-label"} with no type or description. With an inline
+          `if (!customElements.get(...)) customElements.define(...)` the tagName and the definition export appear;
+          a JSDoc `@tagname ocelle-icon` also gives tagName; `@default undefined` gives "default": "undefined".
+    claim: |
+      As planned, the committed manifest would miss FR-007's tag name and US1-11's defaults, and would declare
+      `aria-label` against FR-034, which the gate's own no-description rule then reports on the repository. The
+      phase 2 spike runs the analyzer on "a scratch element", which need not use the define helper or the
+      observedAttributes override, so the gap can survive the spike.
+    remedies:
+      - "R-02, R-06 and data-model.md: register with an inline guarded `customElements.define` (or require `@tagname` JSDoc on every element class), give each property a `@default` JSDoc tag (or have the normaliser write `default` from the declared type), make the normaliser drop observed attributes that are not reactive properties (named: `aria-label`), and correct the schema version to what 0.11.0 writes."
+  - id: PLAN-CORRECTNESS-1-006
+    severity: 2
+    title: "The manifest and mutation plants need files the plant repositories do not contain"
+    evidence:
+      - artifact: |
+          research.md R-06 pass plant "pass-repository (the repository as committed)" for the manifest gate, which
+          "runs the same generation into memory from --root"; R-12 pass plant `pass-element-source` in
+          gates/plants/mutation/ run under `stryker.elements.config.json` and `vitest.mutation.elements.config.ts`.
+          plan.md § Source Code lists no change to gates/lib/plant-repo.ts.
+      - code: |
+          gates/lib/plant-repo.ts:30-41 rootConfiguration holds only stryker.config.json and vitest(.mutation).config.ts
+          of the Stryker and Vitest configurations; :55-62 configurationSet adds per package only package.json and
+          tsconfig.json plus the token files, so a repo-tree plant has no packages/elements/src/**, no icons.ts and
+          no custom-elements.json. gates/bin/plants.ts:79-82 rejects a plant that carries configuration files.
+          gates/test/plant-repo.test.ts:20-30 pins the configuration set.
+    claim: |
+      `pass-repository` cannot be "the repository as committed" in the repo-tree form: its tree would have to copy
+      the whole element source and manifest and drift with every element change. The mutation plant's temporary
+      repository will not have the elements-only Stryker and Vitest configurations, so it cannot exercise the
+      routing it is meant to prove. Both need a change to the plant infrastructure and its pinned test, which the
+      plan does not list.
+    remedies:
+      - "Plan and contracts/checks.md: add `stryker.elements.config.json` and `vitest.mutation.elements.config.ts` to `rootConfiguration` (and to `configurationName` so plants cannot carry them), add the element source and manifest the manifest gate reads to the configuration set (or give the manifest gate's pass plant another form), with `gates/test/plant-repo.test.ts` changed first."
+  - id: PLAN-CORRECTNESS-1-007
+    severity: 2
+    title: "The pair-count change touches five pinned tests, not the one the plan names"
+    evidence:
+      - artifact: |
+          research.md R-09 "Row counts become 160 light and 168 dark; the counts pinned in
+          gates/test/integration/token-gates.test.ts change with them, test first"; contracts/checks.md § Changed,
+          contrast row; plan.md § Source Code "gates/test/ (... token-gates counts)".
+      - code: |
+          The counts 158/157 (or the 315 total) are also pinned in gates/test/contrast-pairs.test.ts:59-66 (counts,
+          315 lines, 315 unique keys), gates/test/contrast.test.ts:80-81 (in-process gate summary),
+          gates/test/integration/plants-robustness.test.ts:111,123 (the summaries "158 pairs checked in light, 157 in
+          dark"; :117 expects 159 after one inserted light row) and the Stryker comment at gates/bin/contrast.ts:116.
+          Arithmetic: 158 + 2 = 160 light, 157 + 11 = 168 dark, 315 + 13 = 328.
+    claim: |
+      Adding the thirteen rows as planned turns four more test files red, and they are outside the phase's
+      planned test changes, so the phase's red/green record would not match. The plan's total is right; its list of
+      affected tests is not.
+    remedies:
+      - "R-09, contracts/checks.md and phase 5: list every pinned count (contrast-pairs.test.ts, contrast.test.ts, plants-robustness.test.ts, token-gates.test.ts, the contrast.ts comment) as changed test first, with 328 entries."
+  - id: PLAN-CORRECTNESS-1-008
+    severity: 2
+    title: "New mutation-scope files outside src/ go to the main Stryker config with no in-process test, and the main config keeps the browser-mode elements project"
+    evidence:
+      - artifact: |
+          research.md R-12 "routes changed files under packages/elements/src/** to a second Stryker configuration ...
+          other changed files keep stryker.config.json"; plan.md § Source Code `packages/elements/vite.browser.config.ts`,
+          `scripts/manifest.ts`; R-11 "elements-browser is added to vitest.mutation.config.ts's excluded set" (the
+          `elements` project stays).
+      - code: |
+          gates/lib/mutation/ranges.ts:27 scope ":(glob)packages/*/**/*.ts", excluding only tests, test/, stories,
+          .d.ts and dist; so packages/elements/vite.browser.config.ts is mutated. Its only planned check is
+          build.test.ts, which runs the build as a child process, where Stryker's in-process mutant switching does
+          not reach. Precedent: storybook/.storybook/main.ts is killed by an in-process import in
+          storybook/test/unit/main.test.ts. vitest.mutation.config.ts:8 excludes only gates-integration,
+          tokens-browser, styles-browser and storybook-integration.
+    claim: |
+      The browser build's configuration (entry, format, output name, emptyOutDir, conditions) will produce NoCoverage
+      survivors, a blocking finding under constitution VIII, unless a unit test imports it. With element source
+      routed to its own configuration, keeping the growing browser-mode `elements` suite in the main configuration
+      adds it to the dry run of every non-element shard, against the 10-minute shard limit (not measured here).
+    remedies:
+      - "Plan: add a node unit test that imports `vite.browser.config.ts` and asserts its library entry, format, file name, `emptyOutDir` and resolve conditions (as storybook's main.test.ts does), and exclude the `elements` project from `vitest.mutation.config.ts` now that `stryker.elements.config.json` covers it, with `gates/test/vitest-config.test.ts` changed first."
+  - id: PLAN-CORRECTNESS-1-009
+    severity: 1
+    title: "Artifacts disagree on small facts: pairing-test path, spike phase, manifest schema, fixture CSP"
+    evidence:
+      - artifact: |
+          research.md R-09 "The pairing test is packages/elements/test/brand-pairs.test.ts (node)" against R-11 and
+          contracts/checks.md "test/node/brand-pairs.test.ts" (only test/node/** is the node project; test/*.test.ts is
+          the browser-mode `elements` project). R-06 "the phase 1 spike" and R-13 "the phase 1 spike" against plan.md
+          phase 2 "spike (recorded in reviews/phase-2/spike.md)". data-model.md § Manifest "Schema 2.1.0 (the
+          analyzer's)" against the analyzer 0.11.0 output "schemaVersion": "1.0.0" (probe in 1-005). plan.md Technical
+          Context "strict CSP (default-src 'none'; script-src 'self'; style-src 'self')" without the fixture's
+          `font-src 'self'` (spec User Scenarios).
+    claim: |
+      Each is minor, but tasks are generated from these artifacts: a pairing test placed at test/brand-pairs.test.ts
+      would run in the browser project and fail on node:fs, and the spike's phase decides when the operator fork of
+      1-003 happens.
+    remedies:
+      - "Align research.md R-06, R-09, R-13 and data-model.md with plan.md: test/node/brand-pairs.test.ts, the spike in phase 2, the schema version the analyzer writes, and the fixture CSP with font-src 'self'."
+  - id: PLAN-CORRECTNESS-1-010
+    severity: 1
+    title: "The required-checks set changes from fourteen to fifteen, but the plan names no ruleset change or README update"
+    evidence:
+      - artifact: |
+          plan.md § Constitution Check, Workflow gates: "One gate added (manifest) ... registry, CI job, README row and
+          plants follow 001's contract." No mention of the ruleset on main.
+      - code: |
+          gates/README.md:115 "The ruleset (or branch protection) on main requires exactly these fourteen checks";
+          :132 "A change to this set is a change to the ruleset, which the operator makes"; gates/lib/registry.ts:4
+          "the fourteen checks". Precedent: specs/002-design-tokens/plan.md:89 "contrast and brand-rules become
+          required checks (operator ruleset change)".
+    claim: |
+      Without the operator's ruleset change the "Custom-elements manifest" check runs but does not block a merge,
+      so the constitution's merge rule for the manifest check is not in force. The README's count goes stale.
+    remedies:
+      - "plan.md Workflow gates row: state that the manifest check becomes a required check by an operator ruleset change, and that gates/README.md and the registry.ts comment change from fourteen to fifteen."
+  - id: PLAN-CORRECTNESS-1-011
+    severity: 1
+    title: "Mapping the rosette by the app icon's transform keeps the rounded square's padding: the mark paints about 62 % of its box"
+    evidence:
+      - artifact: |
+          research.md R-09 and data-model.md § Drawing: "viewBox=\"0 0 100 100\" ... Geometry is the reference's rosette
+          group under its translate(14 14) scale(0.72)". spec.md US4 Assumptions "Rosette, not app icon ... The element
+          draws the bare rosette"; FR-024 "--ocelle-icon-size high by default".
+      - code: |
+          sources/ocelle-docs-logo.reference.svg: arcs of radius 35 to 38 about (50,50) with stroke widths 11 to 16; the
+          painted extent of the group is about 7.5 to 94 in its own units, which the transform maps to about 19.4 to
+          81.6 of the 100-unit box (computed from the arc endpoints, radii and half stroke widths). The icons fill
+          1 to 23 of 24 (R-07).
+    claim: |
+      The 14-unit inset existed to fit the rosette inside the app icon's rounded square, which the element drops. At
+      the default 20 px the visible mark is about 12.4 px inside a 20 px box, beside 18 px icons. The top bar would
+      then need a host size override to get a mark the height of its icons. US4-9 allows any uniform scale, so
+      nothing requires keeping the inset.
+    remedies:
+      - "R-09 and data-model.md: choose the viewBox (or the uniform scale) from the rosette's painted extent so the mark fills its box as the icons do, and state the chosen scale for US4-9's fit."

@@ -24,6 +24,7 @@
     "gate:pins": "node gates/bin/pins.ts",
     "gate:contrast": "node gates/bin/contrast.ts",
     "gate:brand-rules": "node gates/bin/brand-rules.ts",
+    "gate:manifest": "node gates/bin/manifest.ts",
     "gate:plants": "node gates/bin/plants.ts",
     "gate:storybook-build": "node gates/bin/storybook-build.ts",
     "gate:visual": "node gates/bin/visual.ts",
@@ -31,6 +32,7 @@
     "visual:update": "node gates/bin/baselines.ts"
   },
   "devDependencies": {
+    "@custom-elements-manifest/analyzer": "0.11.0",
     "@eslint/js": "10.0.1",
     "@stryker-mutator/core": "10.1.1",
     "@stryker-mutator/typescript-checker": "10.1.1",

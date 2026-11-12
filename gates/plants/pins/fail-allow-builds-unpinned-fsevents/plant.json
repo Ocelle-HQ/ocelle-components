@@ -1,0 +1,11 @@
+{
+  "expect": "fail",
+  "why": "fsevents approved without its version would let every later version run its install script; only fsevents@2.3.3 is approved, so a gate that matched the second key by name alone fails (005 research.md R-16).",
+  "findings": [
+    {
+      "location": "pnpm-workspace.yaml",
+      "rule": "allow-builds",
+      "message": "allowBuilds lets fsevents run install scripts"
+    }
+  ]
+}

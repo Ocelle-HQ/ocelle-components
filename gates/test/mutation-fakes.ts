@@ -70,8 +70,11 @@ export function fakeGit(diff: string, diffFailure?: string): MutationTools["git"
 /** Where Stryker writes its JSON report, as stryker.config.json names it (`jsonReporter.fileName`). */
 export const reportPath = "reports/mutation/mutation.json";
 
-/** A Stryker run of the doubles: it may write files into the repository, and returns Stryker's exit code and output. */
-export type FakeStryker = (mutate: readonly string[], files: Map<string, string>) => ToolRun;
+/**
+ * A Stryker run of the doubles: it may write files into the repository, and returns Stryker's exit code and output.
+ * `config` is the Stryker configuration file the gate runs it with (005 research.md R-12).
+ */
+export type FakeStryker = (mutate: readonly string[], files: Map<string, string>, config?: string) => ToolRun;
 
 /** A Stryker that must not run: the gate decided without it. */
 export const noStryker: FakeStryker = () => {
@@ -93,7 +96,7 @@ export function fakeRepo(
       tree.delete(path);
       return Promise.resolve();
     },
-    stryker: (mutate) => Promise.resolve().then(() => stryker(mutate, tree)),
+    stryker: (mutate, config) => Promise.resolve().then(() => stryker(mutate, tree, config)),
   };
 }
 
@@ -182,5 +185,32 @@ export function skippingStryker(statusOf: (path: string) => string): FakeStryker
     stryker(mutate.filter((entry) => !skipped(entry)), files);
     const stdout = mutate.filter(skipped).map((entry) => `${unreadWarning(entry)}\n`).join("");
     return { exitCode: 0, stdout, stderr: "" };
+  };
+}
+
+/** The two Stryker configurations and their JSON reports (stryker.config.json, stryker.elements.config.json; 005 R-12). */
+export const strykerConfig = "stryker.config.json";
+export const elementsConfig = "stryker.elements.config.json";
+export const elementsReportPath = "reports/mutation/mutation-elements.json";
+
+/**
+ * A Stryker that, as the two configurations do, runs only its own tests (005 research.md R-12): under
+ * stryker.elements.config.json (the elements project only) a mutant of `packages/elements/src/**` gets
+ * `statusOf(path)` and any other mutant `NoCoverage`; under stryker.config.json (every in-process project but
+ * elements) the other way round. Otherwise as `fakeStryker`, writing the report its configuration names.
+ */
+export function configuredStryker(statusOf: (path: string) => string): FakeStryker {
+  return (mutate, files, config = strykerConfig) => {
+    const elementsRun = config === elementsConfig;
+    const mutants: Record<string, object[]> = {};
+    mutate.forEach((entry, index) => {
+      const match = /^(.*):(\d+)-(\d+)$/s.exec(entry);
+      if (match === null) throw new Error(`not a mutate range: ${entry}`);
+      const [, path = "", start = "0"] = match;
+      const covered = path.startsWith("packages/elements/src/") === elementsRun;
+      (mutants[path] ??= []).push(mutant(String(index), Number(start), covered ? statusOf(path) : "NoCoverage"));
+    });
+    files.set(elementsRun ? elementsReportPath : reportPath, strykerReport(mutants));
+    return { exitCode: 0, stdout: "", stderr: "" };
   };
 }

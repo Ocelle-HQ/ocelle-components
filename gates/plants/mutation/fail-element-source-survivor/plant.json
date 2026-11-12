@@ -1,0 +1,11 @@
+{
+  "expect": "fail",
+  "why": "A surviving mutant in changed element source is a finding: the split runs it under stryker.elements.config.json, whose elements test does not kill it (005 research.md R-12).",
+  "findings": [
+    {
+      "location": "packages/elements/src/x.ts:3",
+      "rule": "StringLiteral",
+      "message": "Survived"
+    }
+  ]
+}

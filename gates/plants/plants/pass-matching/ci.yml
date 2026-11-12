@@ -75,8 +75,10 @@ jobs:
           fetch-depth: 0
       - uses: ./.github/actions/setup
       - id: plan
+        env:
+          BASE: ${{ github.event.pull_request.base.sha }}
         run: |
-          shards="$(pnpm --silent run gate:mutation -- --base ${{ github.event.pull_request.base.sha }} --plan)"
+          shards="$(pnpm --silent run gate:mutation -- --base "$BASE" --plan)"
           echo "$shards"
           echo "shards=$shards" >> "$GITHUB_OUTPUT"
   mutation-shard:
@@ -95,7 +97,11 @@ jobs:
           persist-credentials: false
           fetch-depth: 0
       - uses: ./.github/actions/setup
-      - run: pnpm run gate:mutation -- --base ${{ github.event.pull_request.base.sha }} --files ${{ matrix.shard.files }}
+      # Values reach the script through the environment, never pasted into it (a shard's file list comes from the pull request).
+      - env:
+          BASE: ${{ github.event.pull_request.base.sha }}
+          FILES: ${{ matrix.shard.files }}
+        run: pnpm run gate:mutation -- --base "$BASE" --files "$FILES"
   mutation:
     name: Mutation testing
     needs: [mutation-plan, mutation-shard]
@@ -160,7 +166,10 @@ jobs:
           persist-credentials: false
           fetch-depth: 0
       - uses: ./.github/actions/setup
-      - run: pnpm run gate:signoff -- --range ${{ github.event.pull_request.base.sha }}..${{ github.event.pull_request.head.sha }}
+      - env:
+          BASE: ${{ github.event.pull_request.base.sha }}
+          HEAD: ${{ github.event.pull_request.head.sha }}
+        run: pnpm run gate:signoff -- --range "$BASE..$HEAD"
   contrast:
     name: Contrast
     runs-on: ubuntu-24.04
@@ -179,6 +188,15 @@ jobs:
           persist-credentials: false
       - uses: ./.github/actions/setup
       - run: pnpm run gate:brand-rules
+  manifest:
+    name: Custom-elements manifest
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: ./.github/actions/setup
+      - run: pnpm run gate:manifest
   storybook-build:
     name: Storybook build
     runs-on: ubuntu-24.04
@@ -196,7 +214,20 @@ jobs:
         with:
           persist-credentials: false
       - uses: ./.github/actions/setup
-      - run: pnpm run gate:visual -- --engine both
+      - run: pnpm run gate:visual -- --engine both --remove-docker-image
+      - run: |
+          reference="$(node -p 'const pin = require("./storybook/visual/container.json"); `${pin.image}@${pin.digest}`')"
+          tag="$(node -p 'const pin = require("./storybook/visual/container.json"); `${pin.image}:${pin.tag}`')"
+          record="$RUNNER_TEMP/pin-record"
+          mkdir -p "$record"
+          skopeo --version > "$record/skopeo-version.txt"
+          skopeo inspect --raw "docker://$reference" > "$record/skopeo-inspect-raw-manifest.json"
+          podman image inspect "$reference" > "$record/podman-inspect.json"
+          skopeo inspect --raw "docker://$tag" > "$record/skopeo-inspect-raw-index.json"
+      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: pin-record
+          path: ${{ runner.temp }}/pin-record/
       - if: always()
         run: df -h /
       - if: failure()
@@ -205,12 +236,68 @@ jobs:
           name: visual
           path: storybook/.visual/
           include-hidden-files: true
+  plants-plan:
+    name: Plants plan
+    runs-on: ubuntu-24.04
+    outputs:
+      shards: ${{ steps.plan.outputs.shards }}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: ./.github/actions/setup
+      - id: plan
+        run: |
+          shards="$(pnpm --silent run gate:plants -- --plan)"
+          echo "$shards"
+          echo "shards=$shards" >> "$GITHUB_OUTPUT"
+  plants-shard:
+    name: Plants shard
+    needs: plants-plan
+    runs-on: ubuntu-24.04
+    strategy:
+      fail-fast: false
+      matrix:
+        shard: ${{ fromJSON(needs.plants-plan.outputs.shards) }}
+    steps:
+      - run: df -h /
+      - run: sudo rm -rf /usr/local/lib/android /usr/share/dotnet /opt/ghc /usr/local/.ghcup /opt/hostedtoolcache/CodeQL
+      - run: df -h /
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: ./.github/actions/setup
+      - env:
+          OCELLE_VISUAL_ENGINE: both
+          SHARD: ${{ matrix.shard }}
+        run: pnpm run gate:plants -- --shard "$SHARD"
+      - if: always()
+        run: df -h /
+      - if: always()
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: plant-shard-${{ matrix.shard }}
+          path: storybook/.visual/plant-shards/
+          include-hidden-files: true
+      - if: failure()
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: plants-${{ matrix.shard }}
+          path: storybook/.visual/plants/
+          include-hidden-files: true
   plants:
     name: Plants
+    needs: [plants-plan, plants-shard]
+    if: always()
     runs-on: ubuntu-24.04
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           persist-credentials: false
       - uses: ./.github/actions/setup
-      - run: pnpm run gate:plants
+      - uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
+        with:
+          pattern: plant-shard-*
+          path: storybook/.visual/plant-shards/
+          merge-multiple: true
+      - run: pnpm run gate:plants -- --verdict storybook/.visual/plant-shards

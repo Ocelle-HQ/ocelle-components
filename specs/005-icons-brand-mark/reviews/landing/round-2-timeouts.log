@@ -1,0 +1,115 @@
+# Timeout comparison, stryker.config.json, --mutate gates/lib/plant-repo.ts:98-98,packages/elements/scripts/manifest.ts:27-36,gates/stylelint/token-only.ts:121-121 (HEAD) / :121-123 (pre-merge)
+# status per mutant, from reports/mutation/mutation.json
+
+## HEAD e11be27 (merged config: groupOrder split, 005 exclusions), 115 s
+gates/lib/plant-repo.ts 98 Regex Killed /^(?:tsconfig.*\.json|eslint(?:\.[\W-]+)
+gates/lib/plant-repo.ts 98 Regex Killed /^(?:tsconfig.*\.json|eslint(?:\.[\w-])?
+gates/lib/plant-repo.ts 98 Regex Killed /^(?:tsconfig.*\.json|eslint(?:\.[\w-]+)
+gates/lib/plant-repo.ts 98 Regex Killed /^(?:tsconfig.*\.json|eslint(?:\.[\w-]+)
+gates/lib/plant-repo.ts 98 Regex Killed /^(?:tsconfig.*\.json|eslint(?:\.[\w-]+)
+gates/lib/plant-repo.ts 98 Regex Killed /^(?:tsconfig.*\.json|eslint(?:\.[\w-]+)
+gates/lib/plant-repo.ts 98 Regex Killed /^(?:tsconfig.*\.json|eslint(?:\.[\w-]+)
+gates/lib/plant-repo.ts 98 Regex Killed /^(?:tsconfig.*\.json|eslint(?:\.[\w-]+)
+gates/lib/plant-repo.ts 98 Regex Killed /^(?:tsconfig.*\.json|eslint(?:\.[\w-]+)
+gates/lib/plant-repo.ts 98 Regex Killed /^(?:tsconfig.*\.json|eslint(?:\.[\w-]+)
+gates/lib/plant-repo.ts 98 Regex Killed /^(?:tsconfig.*\.json|eslint(?:\.[\w-]+)
+gates/lib/plant-repo.ts 98 Regex Killed /^(?:tsconfig.*\.json|eslint(?:\.[\w-]+)
+gates/lib/plant-repo.ts 98 Regex Killed /^(?:tsconfig.*\.json|eslint(?:\.[\w-]+)
+gates/lib/plant-repo.ts 98 Regex Killed /^(?:tsconfig.*\.json|eslint(?:\.[\w-]+)
+gates/lib/plant-repo.ts 98 Regex Killed /^(?:tsconfig.*\.json|eslint(?:\.[\w-]+)
+gates/lib/plant-repo.ts 98 Regex Killed /^(?:tsconfig.*\.json|eslint(?:\.[\w-]+)
+gates/lib/plant-repo.ts 98 Regex Killed /^(?:tsconfig.*\.json|eslint(?:\.[\w-]+)
+gates/lib/plant-repo.ts 98 Regex Killed /^(?:tsconfig.*\.json|eslint(?:\.[\w-]+)
+gates/lib/plant-repo.ts 98 Regex Killed /^(?:tsconfig.*\.json|eslint(?:\.[\w-]+)
+gates/lib/plant-repo.ts 98 Regex Killed /^(?:tsconfig.*\.json|eslint(?:\.[\w-]+)
+gates/lib/plant-repo.ts 98 Regex Killed /^(?:tsconfig.*\.json|eslint(?:\.[\w-]+)
+gates/lib/plant-repo.ts 98 Regex Killed /^(?:tsconfig.*\.json|eslint(?:\.[\w-]+)
+gates/lib/plant-repo.ts 98 Regex Killed /^(?:tsconfig.*\.json|eslint(?:\.[\w-]+)
+gates/lib/plant-repo.ts 98 Regex Killed /^(?:tsconfig.*\.json|eslint(?:\.[\w-]+)
+gates/lib/plant-repo.ts 98 Regex Killed /^(?:tsconfig.*\.json|eslint(?:\.[\w-]+)
+gates/lib/plant-repo.ts 98 Regex Killed /^(?:tsconfig.*\.json|eslint(?:\.[\w-]+)
+gates/lib/plant-repo.ts 98 Regex Killed /^(?:tsconfig.*\.json|eslint(?:\.[\w-]+)
+gates/lib/plant-repo.ts 98 Regex Killed /^(?:tsconfig.*\.json|eslint(?:\.[\w-]+)
+gates/lib/plant-repo.ts 98 Regex Killed /^(?:tsconfig.*\.json|eslint(?:\.[\w-]+)
+gates/lib/plant-repo.ts 98 Regex Killed /^(?:tsconfig.*\.json|eslint(?:\.[^\w-]+
+gates/lib/plant-repo.ts 98 Regex Killed /^(?:tsconfig.\.json|eslint(?:\.[\w-]+)?
+gates/lib/plant-repo.ts 98 Regex Timeout /(?:tsconfig.*\.json|eslint(?:\.[\w-]+)?
+gates/stylelint/token-only.ts 121 ConditionalExpression CompileError false
+gates/stylelint/token-only.ts 121 ConditionalExpression CompileError true
+gates/stylelint/token-only.ts 121 ConditionalExpression Killed true
+gates/stylelint/token-only.ts 121 EqualityOperator CompileError up === undefined
+gates/stylelint/token-only.ts 121 EqualityOperator Killed operandsOf(group).length !== 1
+gates/stylelint/token-only.ts 121 LogicalOperator CompileError up !== undefined || operandsOf(group).le
+packages/elements/scripts/manifest.ts 27 StringLiteral Timeout ""
+packages/elements/scripts/manifest.ts 35 StringLiteral Killed ""
+packages/elements/scripts/manifest.ts 36 Regex Killed /^ocelle-[\W-]+\.ts$/
+packages/elements/scripts/manifest.ts 36 Regex Killed /^ocelle-[\w-]\.ts$/
+packages/elements/scripts/manifest.ts 36 Regex Killed /^ocelle-[^\w-]+\.ts$/
+packages/elements/scripts/manifest.ts 36 Regex Timeout /^ocelle-[\w-]+\.ts/
+packages/elements/scripts/manifest.ts 36 Regex Timeout /ocelle-[\w-]+\.ts$/
+
+## 9d9b315 (005 before the merge, no groupOrder), 115 s
+gates/lib/plant-repo.ts 98 Regex Killed /^(?:tsconfig.*\.json|eslint(?:\.[\W-]+)
+gates/lib/plant-repo.ts 98 Regex Killed /^(?:tsconfig.*\.json|eslint(?:\.[\w-])?
+gates/lib/plant-repo.ts 98 Regex Killed /^(?:tsconfig.*\.json|eslint(?:\.[\w-]+)
+gates/lib/plant-repo.ts 98 Regex Killed /^(?:tsconfig.*\.json|eslint(?:\.[\w-]+)
+gates/lib/plant-repo.ts 98 Regex Killed /^(?:tsconfig.*\.json|eslint(?:\.[\w-]+)
+gates/lib/plant-repo.ts 98 Regex Killed /^(?:tsconfig.*\.json|eslint(?:\.[\w-]+)
+gates/lib/plant-repo.ts 98 Regex Killed /^(?:tsconfig.*\.json|eslint(?:\.[\w-]+)
+gates/lib/plant-repo.ts 98 Regex Killed /^(?:tsconfig.*\.json|eslint(?:\.[\w-]+)
+gates/lib/plant-repo.ts 98 Regex Killed /^(?:tsconfig.*\.json|eslint(?:\.[\w-]+)
+gates/lib/plant-repo.ts 98 Regex Killed /^(?:tsconfig.*\.json|eslint(?:\.[\w-]+)
+gates/lib/plant-repo.ts 98 Regex Killed /^(?:tsconfig.*\.json|eslint(?:\.[\w-]+)
+gates/lib/plant-repo.ts 98 Regex Killed /^(?:tsconfig.*\.json|eslint(?:\.[\w-]+)
+gates/lib/plant-repo.ts 98 Regex Killed /^(?:tsconfig.*\.json|eslint(?:\.[\w-]+)
+gates/lib/plant-repo.ts 98 Regex Killed /^(?:tsconfig.*\.json|eslint(?:\.[\w-]+)
+gates/lib/plant-repo.ts 98 Regex Killed /^(?:tsconfig.*\.json|eslint(?:\.[\w-]+)
+gates/lib/plant-repo.ts 98 Regex Killed /^(?:tsconfig.*\.json|eslint(?:\.[\w-]+)
+gates/lib/plant-repo.ts 98 Regex Killed /^(?:tsconfig.*\.json|eslint(?:\.[\w-]+)
+gates/lib/plant-repo.ts 98 Regex Killed /^(?:tsconfig.*\.json|eslint(?:\.[\w-]+)
+gates/lib/plant-repo.ts 98 Regex Killed /^(?:tsconfig.*\.json|eslint(?:\.[\w-]+)
+gates/lib/plant-repo.ts 98 Regex Killed /^(?:tsconfig.*\.json|eslint(?:\.[\w-]+)
+gates/lib/plant-repo.ts 98 Regex Killed /^(?:tsconfig.*\.json|eslint(?:\.[\w-]+)
+gates/lib/plant-repo.ts 98 Regex Killed /^(?:tsconfig.*\.json|eslint(?:\.[\w-]+)
+gates/lib/plant-repo.ts 98 Regex Killed /^(?:tsconfig.*\.json|eslint(?:\.[\w-]+)
+gates/lib/plant-repo.ts 98 Regex Killed /^(?:tsconfig.*\.json|eslint(?:\.[\w-]+)
+gates/lib/plant-repo.ts 98 Regex Killed /^(?:tsconfig.*\.json|eslint(?:\.[\w-]+)
+gates/lib/plant-repo.ts 98 Regex Killed /^(?:tsconfig.*\.json|eslint(?:\.[\w-]+)
+gates/lib/plant-repo.ts 98 Regex Killed /^(?:tsconfig.*\.json|eslint(?:\.[\w-]+)
+gates/lib/plant-repo.ts 98 Regex Killed /^(?:tsconfig.*\.json|eslint(?:\.[\w-]+)
+gates/lib/plant-repo.ts 98 Regex Killed /^(?:tsconfig.*\.json|eslint(?:\.[^\w-]+
+gates/lib/plant-repo.ts 98 Regex Killed /^(?:tsconfig.\.json|eslint(?:\.[\w-]+)?
+gates/lib/plant-repo.ts 98 Regex Timeout /(?:tsconfig.*\.json|eslint(?:\.[\w-]+)?
+gates/lib/plant-repo.ts 98 Regex Timeout /^(?:tsconfig.*\.json|eslint(?:\.[\w-]+)
+gates/stylelint/token-only.ts 121 BlockStatement Timeout {}
+gates/stylelint/token-only.ts 121 ConditionalExpression CompileError false
+gates/stylelint/token-only.ts 121 ConditionalExpression CompileError true
+gates/stylelint/token-only.ts 121 ConditionalExpression Killed true
+gates/stylelint/token-only.ts 121 EqualityOperator CompileError up === undefined
+gates/stylelint/token-only.ts 121 EqualityOperator Killed operandsOf(group).length !== 1
+gates/stylelint/token-only.ts 121 LogicalOperator CompileError up !== undefined || operandsOf(group).le
+packages/elements/scripts/manifest.ts 27 StringLiteral Timeout ""
+packages/elements/scripts/manifest.ts 35 StringLiteral Killed ""
+packages/elements/scripts/manifest.ts 36 Regex Killed /^ocelle-[\W-]+\.ts$/
+packages/elements/scripts/manifest.ts 36 Regex Killed /^ocelle-[\w-]\.ts$/
+packages/elements/scripts/manifest.ts 36 Regex Killed /^ocelle-[^\w-]+\.ts$/
+packages/elements/scripts/manifest.ts 36 Regex Timeout /^ocelle-[\w-]+\.ts/
+packages/elements/scripts/manifest.ts 36 Regex Timeout /ocelle-[\w-]+\.ts$/
+
+## Shard runs at HEAD (gate:mutation --base e7d7d54 --files <plan shard>)
+[gates/lib/plant-repo.ts:95-406] exit 0 186s: mutation: 68 mutants on the changed lines of 1 file, none survived; 9 timeouts, 4 compile errors, 0 zero-mutant entries; 6 equivalent records
+gates/lib/plant-repo.ts:98: mutation: timeout: Regex: replaced by /^(?:tsconfig.*\.json|es
+gates/lib/plant-repo.ts:98: mutation: timeout: Regex: replaced by /^(?:tsconfig.*\.json|es
+gates/lib/plant-repo.ts:98: mutation: timeout: Regex: replaced by /^(?:tsconfig.*\.json|es
+gates/lib/plant-repo.ts:98: mutation: timeout: Regex: replaced by /^(?:tsconfig.*\.json|es
+gates/lib/plant-repo.ts:98: mutation: timeout: Regex: replaced by /^(?:tsconfig.*\.json|es
+gates/lib/plant-repo.ts:98: mutation: timeout: Regex: replaced by /^(?:tsconfig.*\.json|es
+gates/lib/plant-repo.ts:240: mutation: timeout: StringLiteral: replaced by ""
+gates/lib/plant-repo.ts:240: mutation: timeout: StringLiteral: replaced by ""
+gates/lib/plant-repo.ts:240: mutation: timeout: StringLiteral: replaced by ""
+[packages/elements/scripts/manifest.ts:31-60] exit 0 200s: mutation: 34 mutants on the changed lines of 1 file, none survived; 2 timeouts, 12 compile errors, 0 zero-mutant entries; 0 equivalent records
+packages/elements/scripts/manifest.ts:36: mutation: timeout: Regex: replaced by /ocelle-[\
+packages/elements/scripts/manifest.ts:36: mutation: timeout: Regex: replaced by /^ocelle-[
+[packages/elements/scripts/manifest.ts:121-130,packages/elements/src/browser.ts,packages/elements/src/define.ts,packages/elements/src/icon-slot.ts:1-30] exit 0 171s: mutation: 11 mutants on the changed lines of 4 files, none survived; 0 timeouts, 1 compile error, 2 zero-mutant entries; 1 equivalent record
+
+[exited with code 0]

@@ -4,10 +4,31 @@
   "private": true,
   "type": "module",
   "exports": {
-    ".": "./dist/index.js"
+    ".": "./dist/index.js",
+    "./ocelle-icon.js": "./dist/ocelle-icon.js",
+    "./ocelle-brand-mark.js": "./dist/ocelle-brand-mark.js",
+    "./browser.js": "./dist/browser/ocelle-elements.js",
+    "./custom-elements.json": "./custom-elements.json"
   },
-  "files": ["dist"],
+  "customElements": "custom-elements.json",
+  "files": [
+    "dist",
+    "custom-elements.json",
+    "licenses",
+    "README.md",
+    "CHANGELOG.md",
+    "LICENSE",
+    "NOTICE",
+    "THIRD_PARTY_NOTICES"
+  ],
   "scripts": {
-    "build": "tsc -p tsconfig.json"
+    "build": "tsc -p tsconfig.json && vite build -c vite.browser.config.ts && cp ../../LICENSE ../../NOTICE ../../THIRD_PARTY_NOTICES .",
+    "manifest": "node scripts/manifest.ts"
+  },
+  "dependencies": {
+    "lit": "3.3.3"
+  },
+  "peerDependencies": {
+    "@ocelle/tokens": "workspace:0.0.0"
   }
 }

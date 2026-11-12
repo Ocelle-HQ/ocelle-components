@@ -1,0 +1,113 @@
+Scope: all 5 workspace projects
+✓ Lockfile passes supply-chain policies (verified 1d ago)
+Lockfile is up to date, resolution step is skipped
+Packages are hard linked from the content-addressable store to the virtual store.
+  Content-addressable store is at: /root/.local/share/pnpm/store/v11
+  Virtual store is at:             node_modules/.pnpm
+Packages: +501
+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+Progress: resolved 501, reused 501, downloaded 0, added 501, done
+.../node_modules/rs-module-lexer postinstall$ node postinstall.js
+.../node_modules/rs-module-lexer postinstall: Done
+
+devDependencies:
++ @custom-elements-manifest/analyzer 0.11.0
++ @eslint/js 10.0.1
++ @stryker-mutator/core 10.1.1
++ @stryker-mutator/typescript-checker 10.1.1
++ @stryker-mutator/vitest-runner 10.1.1
++ @types/node 26.6.5
++ @vitest/browser-playwright 5.0.5
++ @vitest/eslint-plugin 1.6.28
++ eslint 10.13.0
++ jiti 2.7.0
++ parse5 8.0.1
++ playwright 1.64.1
++ postcss 8.5.31
++ postcss-lit 1.4.1
++ postcss-selector-parser 7.1.7
++ postcss-value-parser 4.2.0
++ stylelint 17.16.0
++ typescript 6.0.3
++ typescript-eslint 8.72.0
++ vite 8.3.5
++ vitest 5.0.5
+
+Done in 470ms using pnpm v12.16.1
+$ node gates/bin/setup-offline.ts
+setup: installed offline; Chromium at /opt/pw-browsers/chromium-1243/chrome-linux64/chrome
+$ node gates/bin/test.ts
+packages/elements/test/node/manifest.test.ts:120: unit-tests: normalise(raw, names) orders the modules by code point, not by locale: upper case before lower case, '-' before '.' (phase 2 review R1-06): AssertionError: expected [ 'src/ocelle-a.ts', …(4) ] to deeply equal [ 'src/ocelle-B.ts', …(4) ]
+packages/elements/test/node/manifest.test.ts:236: unit-tests: generate(root) on the repository's element source declares ocelle-icon with its tag name, class, name (the union of the thirteen names) and label with types, defaults and attributes, name reflected and label not, and no slot, event, part or CSS property (US1 scenario 11, US2 scenario 1): AssertionError: expected [ { attribute: 'name', …(7) }, …(1) ] to deeply equal [ { kind: 'field', …(7) }, …(1) ]
+packages/elements/test/node/readme.test.ts:127: unit-tests: packages/elements/README.md states: `name` (attribute and property, reflected): the icon's name, exactly as listed in Icons: AssertionError: expected '# @ocelle/elements The Ocelle web com…' to contain '`name` (attribute and property, refle…'
+packages/elements/test/node/readme.test.ts:127: unit-tests: packages/elements/README.md states: Every drawing is the project's own, on a 24-unit grid with one stroke width, round caps and joins, painted only in `currentColor`: AssertionError: expected '# @ocelle/elements The Ocelle web com…' to contain 'Every drawing is the project\'s own, …'
+packages/elements/test/node/readme.test.ts:127: unit-tests: packages/elements/README.md states: `chevron-start`, `chevron-end`, `arrow-start` and `arrow-end` follow the inline direction: under right-to-left text (`dir="rtl"` on the icon or an ancestor) they are mirrored, so start points right and end points left; the other icons are never mirrored: AssertionError: expected '# @ocelle/elements The Ocelle web com…' to contain '`chevron-start`, `chevron-end`, `arro…'
+packages/elements/test/node/readme.test.ts:127: unit-tests: packages/elements/README.md states: The names are public surface: renaming or removing one is a major change, adding one a minor change: AssertionError: expected '# @ocelle/elements The Ocelle web com…' to contain 'The names are public surface: renamin…'
+packages/elements/test/node/readme.test.ts:127: unit-tests: packages/elements/README.md states: Every icon is the project's own drawing, under Apache-2.0; no third-party icon set is used, so `THIRD_PARTY_NOTICES` lists none: AssertionError: expected '# @ocelle/elements The Ocelle web com…' to contain 'Every icon is the project\'s own draw…'
+packages/elements/test/node/readme.test.ts:137: unit-tests: packages/elements/README.md lists the thirteen names of the set, whether each mirrors and the consumer need it meets, in its Icons table (US2-1, FR-018, SC-007): AssertionError: expected [] to deeply equal [ …(13) ]
+packages/elements/test/node/readme.test.ts:163: unit-tests: packages/elements/CHANGELOG.md names `chevron-start` under Unreleased / Added (constitution VII, FR-031, SC-008): AssertionError: expected ' - `ocelle-icon`, an icon of the set …' to contain '`chevron-start`'
+packages/elements/test/node/readme.test.ts:163: unit-tests: packages/elements/CHANGELOG.md names `chevron-end` under Unreleased / Added (constitution VII, FR-031, SC-008): AssertionError: expected ' - `ocelle-icon`, an icon of the set …' to contain '`chevron-end`'
+packages/elements/test/node/readme.test.ts:163: unit-tests: packages/elements/CHANGELOG.md names `chevron-up` under Unreleased / Added (constitution VII, FR-031, SC-008): AssertionError: expected ' - `ocelle-icon`, an icon of the set …' to contain '`chevron-up`'
+packages/elements/test/node/readme.test.ts:163: unit-tests: packages/elements/CHANGELOG.md names `chevron-down` under Unreleased / Added (constitution VII, FR-031, SC-008): AssertionError: expected ' - `ocelle-icon`, an icon of the set …' to contain '`chevron-down`'
+packages/elements/test/node/readme.test.ts:163: unit-tests: packages/elements/CHANGELOG.md names `arrow-start` under Unreleased / Added (constitution VII, FR-031, SC-008): AssertionError: expected ' - `ocelle-icon`, an icon of the set …' to contain '`arrow-start`'
+packages/elements/test/node/readme.test.ts:163: unit-tests: packages/elements/CHANGELOG.md names `arrow-end` under Unreleased / Added (constitution VII, FR-031, SC-008): AssertionError: expected ' - `ocelle-icon`, an icon of the set …' to contain '`arrow-end`'
+packages/elements/test/node/readme.test.ts:163: unit-tests: packages/elements/CHANGELOG.md names `menu` under Unreleased / Added (constitution VII, FR-031, SC-008): AssertionError: expected ' - `ocelle-icon`, an icon of the set …' to contain '`menu`'
+packages/elements/test/node/readme.test.ts:163: unit-tests: packages/elements/CHANGELOG.md names `close` under Unreleased / Added (constitution VII, FR-031, SC-008): AssertionError: expected ' - `ocelle-icon`, an icon of the set …' to contain '`close`'
+packages/elements/test/node/readme.test.ts:163: unit-tests: packages/elements/CHANGELOG.md names `folder` under Unreleased / Added (constitution VII, FR-031, SC-008): AssertionError: expected ' - `ocelle-icon`, an icon of the set …' to contain '`folder`'
+packages/elements/test/node/readme.test.ts:163: unit-tests: packages/elements/CHANGELOG.md names `file` under Unreleased / Added (constitution VII, FR-031, SC-008): AssertionError: expected ' - `ocelle-icon`, an icon of the set …' to contain '`file`'
+packages/elements/test/node/readme.test.ts:163: unit-tests: packages/elements/CHANGELOG.md names `search` under Unreleased / Added (constitution VII, FR-031, SC-008): AssertionError: expected ' - `ocelle-icon`, an icon of the set …' to contain '`search`'
+packages/elements/test/node/readme.test.ts:163: unit-tests: packages/elements/CHANGELOG.md names `table` under Unreleased / Added (constitution VII, FR-031, SC-008): AssertionError: expected ' - `ocelle-icon`, an icon of the set …' to contain '`table`'
+packages/elements/test/node/readme.test.ts:163: unit-tests: packages/elements/CHANGELOG.md names `copy` under Unreleased / Added (constitution VII, FR-031, SC-008): AssertionError: expected ' - `ocelle-icon`, an icon of the set …' to contain '`copy`'
+storybook/test/integration/elements-stories.test.ts:120: unit-tests: the ocelle-icon stories in the built Storybook (US1-13, FR-019) elements-ocelle-icon--set in light: renders its ocelle-icon with the story's name and label, with base.css applied, no violation and no request outside the origin: AssertionError: expected { theme: undefined, …(5) } to deeply equal { Object (theme, base, ...) }
+storybook/test/integration/elements-stories.test.ts:120: unit-tests: the ocelle-icon stories in the built Storybook (US1-13, FR-019) elements-ocelle-icon--set in dark: renders its ocelle-icon with the story's name and label, with base.css applied, no violation and no request outside the origin: AssertionError: expected { theme: undefined, …(5) } to deeply equal { theme: 'dark', base: { …(2) }, …(4) }
+storybook/test/integration/elements-stories.test.ts:120: unit-tests: the ocelle-icon stories in the built Storybook (US1-13, FR-019) elements-ocelle-icon--set-right-to-left in light: renders its ocelle-icon with the story's name and label, with base.css applied, no violation and no request outside the origin: AssertionError: expected { theme: undefined, …(5) } to deeply equal { Object (theme, base, ...) }
+storybook/test/integration/elements-stories.test.ts:120: unit-tests: the ocelle-icon stories in the built Storybook (US1-13, FR-019) elements-ocelle-icon--set-right-to-left in dark: renders its ocelle-icon with the story's name and label, with base.css applied, no violation and no request outside the origin: AssertionError: expected { theme: undefined, …(5) } to deeply equal { theme: 'dark', base: { …(2) }, …(4) }
+packages/elements/test/browser/icon-set.test.ts:32: unit-tests: ocelle-icon's set on the strict-CSP fixture with the browser build (US2) US2-1, US2-2: exactly the thirteen name…: AssertionError: expected { observed: { …(3) }, …(1) } to deeply equal { observed: { …(3) }, …(1) }
+packages/elements/test/browser/icon-set.test.ts:32: unit-tests: ocelle-icon's set on the strict-CSP fixture with the browser build (US2) US2-2, US2-3, US1-2, US1-7: chevron-sta…: AssertionError: expected { observed: { …(9) }, …(1) } to deeply equal { observed: { …(9) }, …(1) }
+packages/elements/test/browser/icon-set.test.ts:32: unit-tests: ocelle-icon's set on the strict-CSP fixture with the browser build (US2) US2-2, US2-3, US1-2, US1-7: chevron-end…: AssertionError: expected { observed: { …(9) }, …(1) } to deeply equal { observed: { …(9) }, …(1) }
+packages/elements/test/browser/icon-set.test.ts:32: unit-tests: ocelle-icon's set on the strict-CSP fixture with the browser build (US2) US2-2, US2-3, US1-2, US1-7: chevron-up …: AssertionError: expected { observed: { …(9) }, …(1) } to deeply equal { observed: { …(9) }, …(1) }
+packages/elements/test/browser/icon-set.test.ts:32: unit-tests: ocelle-icon's set on the strict-CSP fixture with the browser build (US2) US2-2, US2-3, US1-2, US1-7: chevron-dow…: AssertionError: expected { observed: { …(9) }, …(1) } to deeply equal { observed: { …(9) }, …(1) }
+packages/elements/test/browser/icon-set.test.ts:32: unit-tests: ocelle-icon's set on the strict-CSP fixture with the browser build (US2) US2-2, US2-3, US1-2, US1-7: arrow-start…: AssertionError: expected { observed: { …(9) }, …(1) } to deeply equal { observed: { …(9) }, …(1) }
+packages/elements/test/browser/icon-set.test.ts:32: unit-tests: ocelle-icon's set on the strict-CSP fixture with the browser build (US2) US2-2, US2-3, US1-2, US1-7: arrow-end d…: AssertionError: expected { observed: { …(9) }, …(1) } to deeply equal { observed: { …(9) }, …(1) }
+packages/elements/test/browser/icon-set.test.ts:32: unit-tests: ocelle-icon's set on the strict-CSP fixture with the browser build (US2) US2-2, US2-3, US1-2, US1-7: folder draw…: AssertionError: expected { observed: { …(9) }, …(1) } to deeply equal { observed: { …(9) }, …(1) }
+packages/elements/test/browser/icon-set.test.ts:32: unit-tests: ocelle-icon's set on the strict-CSP fixture with the browser build (US2) US2-2, US2-3, US1-2, US1-7: file draws …: AssertionError: expected { observed: { …(9) }, …(1) } to deeply equal { observed: { …(9) }, …(1) }
+packages/elements/test/browser/icon-set.test.ts:32: unit-tests: ocelle-icon's set on the strict-CSP fixture with the browser build (US2) US2-2, US2-3, US1-2, US1-7: search draw…: AssertionError: expected { observed: { …(9) }, …(1) } to deeply equal { observed: { …(9) }, …(1) }
+packages/elements/test/browser/icon-set.test.ts:32: unit-tests: ocelle-icon's set on the strict-CSP fixture with the browser build (US2) US2-2, US2-3, US1-2, US1-7: table draws…: AssertionError: expected { observed: { …(9) }, …(1) } to deeply equal { observed: { …(9) }, …(1) }
+packages/elements/test/browser/icon-set.test.ts:32: unit-tests: ocelle-icon's set on the strict-CSP fixture with the browser build (US2) US2-2, US2-3, US1-2, US1-7: copy draws …: AssertionError: expected { observed: { …(9) }, …(1) } to deeply equal { observed: { …(9) }, …(1) }
+packages/elements/test/browser/icon-set.test.ts:32: unit-tests: ocelle-icon's set on the strict-CSP fixture with the browser build (US2) US2-4: under dir=rtl the four inline-di…: AssertionError: expected { observed: { …(13) }, …(1) } to deeply equal { observed: { …(13) }, …(1) }
+packages/elements/test/browser/icon.test.ts:51: unit-tests: ocelle-icon on the strict-CSP fixture with the browser build (US1) US1-6: a label names the icon as one im…: AssertionError: expected { observed: { …(2) }, …(1) } to deeply equal { observed: { …(2) }, …(1) }
+gates/test/token-only.test.ts:100: unit-tests: rawValues: scale takes only -1 and 1 scale: -1 1 is token-only (only the control 4px after it is raw): AssertionError: expected [ '-1', '1', '4px' ] to deeply equal [ '4px' ]
+gates/test/token-only.test.ts:100: unit-tests: rawValues: scale takes only -1 and 1 scale: 1 -1 is token-only (only the control 4px after it is raw): AssertionError: expected [ '1', '-1', '4px' ] to deeply equal [ '4px' ]
+gates/test/token-only.test.ts:100: unit-tests: rawValues: scale takes only -1 and 1 scale: -1 is token-only (only the control 4px after it is raw): AssertionError: expected [ '-1', '4px' ] to deeply equal [ '4px' ]
+gates/test/token-only.test.ts:100: unit-tests: rawValues: scale takes only -1 and 1 scale: 1 is token-only (only the control 4px after it is raw): AssertionError: expected [ '1', '4px' ] to deeply equal [ '4px' ]
+gates/test/token-only.test.ts:100: unit-tests: rawValues: scale takes only -1 and 1 scale: 1 1 -1 is token-only (only the control 4px after it is raw): AssertionError: expected [ '1', '1', '-1', '4px' ] to deeply equal [ '4px' ]
+gates/test/token-only.test.ts:106: unit-tests: rawValues: scale takes only -1 and 1 keeps keywords allowed: scale: none and inherit pass, beside -1 1: AssertionError: expected { none: [], inherit: [], …(1) } to deeply equal { none: [], inherit: [], mirror: [] }
+gates/test/token-only.test.ts:122: unit-tests: rawValues: scale takes only -1 and 1 scale: 2 is raw: [ '2' ], while -1 1 passes: AssertionError: expected { value: [ '2' ], …(1) } to deeply equal { value: [ '2' ], mirror: [] }
+gates/test/token-only.test.ts:122: unit-tests: rawValues: scale takes only -1 and 1 scale: 2px 1 is raw: [ '2px' ], while -1 1 passes: AssertionError: expected { value: [ '2px', '1' ], …(1) } to deeply equal { value: [ '2px' ], mirror: [] }
+gates/test/token-only.test.ts:122: unit-tests: rawValues: scale takes only -1 and 1 scale: calc(2) is raw: [ 'calc(2)' ], while -1 1 passes: AssertionError: expected { value: [], mirror: [ '-1', '1' ] } to deeply equal { value: [ 'calc(2)' ], mirror: [] }
+gates/test/token-only.test.ts:122: unit-tests: rawValues: scale takes only -1 and 1 scale: calc(-1) 1 is raw: [ 'calc(-1)' ], while -1 1 passes: AssertionError: expected { value: [ '1' ], …(1) } to deeply equal { value: [ 'calc(-1)' ], mirror: [] }
+gates/test/token-only.test.ts:122: unit-tests: rawValues: scale takes only -1 and 1 scale: calc(3) calc(3) is raw: [ 'calc(3)', 'calc(3)' ], while -1 1 passes: AssertionError: expected { value: [], mirror: [ '-1', '1' ] } to deeply equal { …(2) }
+gates/test/token-only.test.ts:122: unit-tests: rawValues: scale takes only -1 and 1 scale: var(--ocelle-icon-size) is raw: [ 'var(--ocelle-icon-size)' ], while -1 1 passes: AssertionError: expected { value: [], mirror: [ '-1', '1' ] } to deeply equal { …(2) }
+gates/test/token-only.test.ts:122: unit-tests: rawValues: scale takes only -1 and 1 scale: -1 0.5 is raw: [ '0.5' ], while -1 1 passes: AssertionError: expected { value: [ '-1', '0.5' ], …(1) } to deeply equal { value: [ '0.5' ], mirror: [] }
+gates/test/token-only.test.ts:122: unit-tests: rawValues: scale takes only -1 and 1 scale: 0 is raw: [ '0' ], while -1 1 passes: AssertionError: expected { value: [], mirror: [ '-1', '1' ] } to deeply equal { value: [ '0' ], mirror: [] }
+gates/test/token-only.test.ts:122: unit-tests: rawValues: scale takes only -1 and 1 scale: -2 1 is raw: [ '-2' ], while -1 1 passes: AssertionError: expected { value: [ '-2', '1' ], …(1) } to deeply equal { value: [ '-2' ], mirror: [] }
+gates/test/token-only.test.ts:122: unit-tests: rawValues: scale takes only -1 and 1 scale: 50% 1 is raw: [ '50%' ], while -1 1 passes: AssertionError: expected { value: [ '1' ], …(1) } to deeply equal { value: [ '50%' ], mirror: [] }
+gates/test/token-only.test.ts:122: unit-tests: rawValues: scale takes only -1 and 1 scale: 1.5 is raw: [ '1.5' ], while -1 1 passes: AssertionError: expected { value: [ '1.5' ], …(1) } to deeply equal { value: [ '1.5' ], mirror: [] }
+gates/test/token-only.test.ts:126: unit-tests: rawValues: scale takes only -1 and 1 leaves other properties as before: a bare -1 or 1 is still raw for width, and calc(2) still passes there, while scale: -1 1 passes: AssertionError: expected { Object (width, calc, ...) } to deeply equal { Object (width, calc, ...) }
+gates/test/token-only.test.ts:130: unit-tests: rawValues: scale takes only -1 and 1 reports the mirroring rule of an element template not at all, and a scale factor at its line: AssertionError: expected [ { line: 4, …(1) } ] to deeply equal [ { line: 7, …(1) } ]
+packages/elements/test/icon-set.test.ts:17: unit-tests: ocelle-icon's set, in process (US2) US2-1, US2-2: exactly the thirteen name…: AssertionError: expected { drawn: [ 'menu', 'close' ], …(2) } to deeply equal { …(3) }
+packages/elements/test/icon-set.test.ts:17: unit-tests: ocelle-icon's set, in process (US2) US2-2, US2-3, US1-2, US1-7: chevron-sta…: AssertionError: expected { …(9) } to deeply equal { drawing: { …(2) }, …(8) }
+packages/elements/test/icon-set.test.ts:17: unit-tests: ocelle-icon's set, in process (US2) US2-2, US2-3, US1-2, US1-7: chevron-end…: AssertionError: expected { …(9) } to deeply equal { drawing: { …(2) }, …(8) }
+packages/elements/test/icon-set.test.ts:17: unit-tests: ocelle-icon's set, in process (US2) US2-2, US2-3, US1-2, US1-7: chevron-up …: AssertionError: expected { …(9) } to deeply equal { drawing: { …(2) }, …(8) }
+packages/elements/test/icon-set.test.ts:17: unit-tests: ocelle-icon's set, in process (US2) US2-2, US2-3, US1-2, US1-7: chevron-dow…: AssertionError: expected { …(9) } to deeply equal { drawing: { …(2) }, …(8) }
+packages/elements/test/icon-set.test.ts:17: unit-tests: ocelle-icon's set, in process (US2) US2-2, US2-3, US1-2, US1-7: arrow-start…: AssertionError: expected { …(9) } to deeply equal { drawing: { …(2) }, …(8) }
+packages/elements/test/icon-set.test.ts:17: unit-tests: ocelle-icon's set, in process (US2) US2-2, US2-3, US1-2, US1-7: arrow-end d…: AssertionError: expected { …(9) } to deeply equal { drawing: { …(2) }, …(8) }
+packages/elements/test/icon-set.test.ts:17: unit-tests: ocelle-icon's set, in process (US2) US2-2, US2-3, US1-2, US1-7: folder draw…: AssertionError: expected { …(9) } to deeply equal { drawing: { …(2) }, …(8) }
+packages/elements/test/icon-set.test.ts:17: unit-tests: ocelle-icon's set, in process (US2) US2-2, US2-3, US1-2, US1-7: file draws …: AssertionError: expected { …(9) } to deeply equal { drawing: { …(2) }, …(8) }
+packages/elements/test/icon-set.test.ts:17: unit-tests: ocelle-icon's set, in process (US2) US2-2, US2-3, US1-2, US1-7: search draw…: AssertionError: expected { …(9) } to deeply equal { drawing: { …(2) }, …(8) }
+packages/elements/test/icon-set.test.ts:17: unit-tests: ocelle-icon's set, in process (US2) US2-2, US2-3, US1-2, US1-7: table draws…: AssertionError: expected { …(9) } to deeply equal { drawing: { …(2) }, …(8) }
+packages/elements/test/icon-set.test.ts:17: unit-tests: ocelle-icon's set, in process (US2) US2-2, US2-3, US1-2, US1-7: copy draws …: AssertionError: expected { …(9) } to deeply equal { drawing: { …(2) }, …(8) }
+packages/elements/test/icon-set.test.ts:17: unit-tests: ocelle-icon's set, in process (US2) US2-4: under dir=rtl the four inline-di…: AssertionError: expected { 'chevron-start': { …(4) }, …(12) } to deeply equal { 'chevron-start': { …(4) }, …(12) }
+packages/elements/test/icon.test.ts:17: unit-tests: ocelle-icon, in process (US1) US1-6: a label names the icon as one im…: AssertionError: expected { …(2) } to deeply equal { drawn: { …(2) }, steps: [ …(6) ] }
+unit-tests: 72 of 2295 tests failed
+[ELIFECYCLE] Test failed. See above for more details.

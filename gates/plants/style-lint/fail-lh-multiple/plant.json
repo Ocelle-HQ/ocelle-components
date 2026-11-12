@@ -1,0 +1,11 @@
+{
+  "expect": "fail",
+  "why": "A multiple of a line box (block-size: 2lh) is raw: lh passes only as 1lh (005 research.md R-03).",
+  "findings": [
+    {
+      "location": "packages/elements/src/x.ts:6",
+      "rule": "ocelle/token-only",
+      "message": "2lh"
+    }
+  ]
+}

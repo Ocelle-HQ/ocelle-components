@@ -1,0 +1,11 @@
+{
+  "expect": "fail",
+  "why": "A length in scale (scale: 2px 1) is raw, with or without the scale allowance (005 research.md R-03).",
+  "findings": [
+    {
+      "location": "packages/elements/src/x.ts:6",
+      "rule": "ocelle/token-only",
+      "message": "2px"
+    }
+  ]
+}

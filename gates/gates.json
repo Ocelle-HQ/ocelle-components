@@ -105,6 +105,14 @@
     "scope": "002 FR-018, FR-019: rules (a) to (g) on the token source, the stylesheet the root's generator makes from it, and the excluded ochre pair of packages/tokens/contrast/pairs.json"
   },
   {
+    "id": "manifest",
+    "check": "Custom-elements manifest",
+    "command": "pnpm run gate:manifest",
+    "plantCommand": "node gates/bin/manifest.ts --root {root}",
+    "plantForm": "repo-tree",
+    "scope": "005 FR-009: the committed packages/elements/custom-elements.json against the manifest packages/elements/scripts/manifest.ts generates from packages/elements/src/ocelle-*.ts, and a description on every public member of the six kinds"
+  },
+  {
     "id": "storybook-build",
     "check": "Storybook build",
     "command": "pnpm run gate:storybook-build",

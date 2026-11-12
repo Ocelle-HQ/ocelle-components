@@ -46,10 +46,7 @@
     "plantCommand": "node gates/bin/mutation.ts --root {root} --base {base}",
     "plantForm": "mutation-repo",
     "scope": "package source TypeScript and gate source changed since the base commit; only mutants on changed lines decide",
-    "helperJobs": [
-      "mutation-plan",
-      "mutation-shard"
-    ]
+    "helperJobs": ["mutation-plan", "mutation-shard"]
   },
   {
     "id": "csp",
@@ -57,7 +54,7 @@
     "command": "pnpm run gate:csp",
     "plantCommand": "node gates/bin/csp.ts --root {root}",
     "plantForm": "repo-tree",
-    "scope": "built output of the three packages (packages/*/dist/)"
+    "scope": "built output of the three packages (packages/*/dist/); since 002 FR-023 the Storybook inputs before bundling (storybook/stories/, .storybook/, scripts/, .generated/; .ts parsed as TypeScript, markup literals in storybook/scripts/ exempt) and the HTML entries storybook/dist/*.html, not the bundles (narrows SPEC-1-05; the run-time CSP test covers the bundles)"
   },
   {
     "id": "prefix",
@@ -65,7 +62,7 @@
     "command": "pnpm run gate:prefix",
     "plantCommand": "node gates/bin/prefix.ts --root {root}",
     "plantForm": "repo-tree",
-    "scope": "package source, test code and built output of the three packages"
+    "scope": "package source, test code and built output of the three packages; since 002 FR-023 the Storybook workspace's source, tests, generated stylesheets and the HTML entries storybook/dist/*.html, not the bundles"
   },
   {
     "id": "config-copies",
@@ -106,6 +103,14 @@
     "plantCommand": "node gates/bin/brand-rules.ts --root {root}",
     "plantForm": "repo-tree",
     "scope": "002 FR-018, FR-019: rules (a) to (g) on the token source, the stylesheet the root's generator makes from it, and the excluded ochre pair of packages/tokens/contrast/pairs.json"
+  },
+  {
+    "id": "manifest",
+    "check": "Custom-elements manifest",
+    "command": "pnpm run gate:manifest",
+    "plantCommand": "node gates/bin/manifest.ts --root {root}",
+    "plantForm": "repo-tree",
+    "scope": "005 FR-009: the committed packages/elements/custom-elements.json against the manifest packages/elements/scripts/manifest.ts generates from packages/elements/src/ocelle-*.ts, and a description on every public member of the six kinds"
   },
   {
     "id": "storybook-build",

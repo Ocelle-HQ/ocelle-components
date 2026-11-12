@@ -108,6 +108,14 @@
     "scope": "files"
   },
   {
+    "id": "manifest",
+    "check": "Custom-elements manifest",
+    "command": "pnpm run gate:manifest",
+    "plantCommand": "node gates/bin/manifest.ts --root {root}",
+    "plantForm": "repo-tree",
+    "scope": "files"
+  },
+  {
     "id": "storybook-build",
     "check": "Storybook build",
     "command": "pnpm run gate:storybook-build",

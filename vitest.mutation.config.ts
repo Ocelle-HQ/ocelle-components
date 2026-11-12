@@ -1,8 +1,10 @@
 // Stryker's Vitest configuration (stryker.config.json, research.md R-08): every project of vitest.config.ts except
 // gates-integration, whose tests start real tools, tokens-browser and styles-browser, whose tests start Chromium
-// (003 research.md R-09), and storybook-integration, whose global setup builds the Storybook (002 research.md R-03, R-10, contracts/gates.md
-// § Mutation). Stryker runs only in-process tests for each mutant, so a mutant that only an
-// excluded project's test covers is reported as NoCoverage, and a shard's time follows its line bound.
+// (003 research.md R-09), storybook-integration, whose global setup builds the Storybook (002 research.md R-03, R-10,
+// contracts/gates.md § Mutation), and, since 005 (research.md R-11, R-12), elements, which
+// stryker.elements.config.json mutates on its own, elements-build, whose tests start tsc, Vite and pnpm pack, and
+// elements-browser, whose tests start Chromium. Stryker runs only in-process tests for each mutant, so a mutant that
+// only an excluded project's test covers is reported as NoCoverage, and a shard's time follows its line bound.
 //
 // The start order (007 research.md R-05, lever 1, operator decision PLAN-FRESH-3-001 (a), narrowed on 2026-11-11).
 // Stryker's runner runs the test files one after the other with bail, and a static mutant (every token record of
@@ -23,7 +25,15 @@ import { defineConfig } from "vitest/config";
 import base from "./vitest.config.ts";
 
 /** The projects Stryker does not run. */
-const excluded = new Set(["gates-integration", "tokens-browser", "styles-browser", "storybook-integration"]);
+const excluded = new Set([
+  "gates-integration",
+  "tokens-browser",
+  "styles-browser",
+  "storybook-integration",
+  "elements",
+  "elements-build",
+  "elements-browser",
+]);
 
 /** The token test that starts every Stryker run. */
 const sourceTable = "packages/tokens/test/source-table.test.ts";

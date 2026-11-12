@@ -1,0 +1,11 @@
+{
+  "expect": "fail",
+  "why": "A factor on a group that holds only 1lh (calc((1lh) * 3 + var(--ocelle-space-1))) is a factor on 1lh and is raw, though the expression references a token: 1lh is admitted only as an operand of + or - (005 research.md R-03; landing round 1 L1-02, OP4-01).",
+  "findings": [
+    {
+      "location": "packages/elements/src/x.ts:6",
+      "rule": "ocelle/token-only",
+      "message": "1lh"
+    }
+  ]
+}

@@ -1,0 +1,42 @@
+
+ RUN  v5.0.5 /home/user/ocelle-components
+
+ ❯ |gates-integration| gates/test/integration/plant-repo.test.ts (20 tests | 4 failed) 776ms
+   ❯ the configuration set of a repository root without some node_modules or entries (005 research.md R-12) (6)
+     × rejects building from a repository root without stryker.elements.config.json, naming it 38ms
+     × rejects building from a repository root without vitest.mutation.elements.config.ts, naming it 35ms
+     × rejects building from a repository root without packages/elements/src, naming it 24ms
+     × rejects building from a repository root without packages/tokens/src/source.ts, naming it 26ms
+
+⎯⎯⎯⎯⎯⎯⎯ Failed Tests 4 ⎯⎯⎯⎯⎯⎯⎯
+
+ FAIL  |gates-integration| gates/test/integration/plant-repo.test.ts > the configuration set of a repository root without some node_modules or entries (005 research.md R-12) > rejects building from a repository root without stryker.elements.config.json, naming it
+ FAIL  |gates-integration| gates/test/integration/plant-repo.test.ts > the configuration set of a repository root without some node_modules or entries (005 research.md R-12) > rejects building from a repository root without vitest.mutation.elements.config.ts, naming it
+ FAIL  |gates-integration| gates/test/integration/plant-repo.test.ts > the configuration set of a repository root without some node_modules or entries (005 research.md R-12) > rejects building from a repository root without packages/elements/src, naming it
+ FAIL  |gates-integration| gates/test/integration/plant-repo.test.ts > the configuration set of a repository root without some node_modules or entries (005 research.md R-12) > rejects building from a repository root without packages/tokens/src/source.ts, naming it
+AssertionError: promise resolved "undefined" instead of rejecting
+
+- Expected:
+Error {
+  "message": "rejected promise",
+}
+
++ Received:
+undefined
+
+ ❯ gates/test/integration/plant-repo.test.ts:297:91
+    295|   it.each(required)("rejects building from a repository root without %…
+    296|     const root = sourceRoot([entry]);
+    297|     await expect(buildRepoTree(root, join(fixtures, "empty-plant"), te…
+       |                                                                                           ^
+    298|     await expect(buildMutationRepo(root, join(fixtures, "mutation-plan…
+    299|   }, timeout);
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[1/4]⎯
+
+
+ Test Files  1 failed (1)
+      Tests  4 failed | 16 passed (20)
+   Start at  11:26:15
+   Duration  983ms (tests 90%, transform 7%, import 2%)
+

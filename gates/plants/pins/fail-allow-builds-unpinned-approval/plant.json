@@ -1,0 +1,11 @@
+{
+  "expect": "fail",
+  "why": "rs-module-lexer approved without its version would let every later version run its install script; only rs-module-lexer@2.9.0 is approved (005 research.md R-16).",
+  "findings": [
+    {
+      "location": "pnpm-workspace.yaml",
+      "rule": "allow-builds",
+      "message": "allowBuilds lets rs-module-lexer run install scripts"
+    }
+  ]
+}
