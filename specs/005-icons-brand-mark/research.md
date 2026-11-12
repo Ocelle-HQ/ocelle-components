@@ -104,13 +104,20 @@ each marked with the finding it answers.
     (`block-size: 2lh`), `fail-lh-multiple-calc` (`padding-block: calc(var(--ocelle-icon-size) - 2lh)`),
     `fail-lh-calc-factor` (`block-size: calc(1lh * 2)`, a factor on `1lh` and no token; PLAN-FRESH-3-002) and
     `fail-lh-calc-twice` (`padding-block: calc(var(--ocelle-icon-size) - 1lh - 1lh)`, two line boxes in one
-    expression; the case the round-3 refute named as still open under the bare (a) rule). Unit tests cover each rule
-    part apart: `calc(1lh * 2)` beside a token, `calc(1lh + 1lh)` without one, and `calc(1lh)` alone are raw. The lint's
+    expression; the case the round-3 refute named as still open under the bare (a) rule) and `fail-lh-paren-factor`
+    (`padding-block: calc((1lh) * 3 + var(--ocelle-space-1))`, a factor on a group that holds only `1lh`; landing
+    round 1 L1-02, OP4-01). Unit tests cover each rule part apart: `calc(1lh * 2)` beside a token, `calc(1lh + 1lh)`
+    without one, and `calc(1lh)` alone are raw. A group that holds nothing but `1lh`, in parentheses (`(1lh)`,
+    `((1lh))`) or as a nested `calc(1lh)`, counts as that `1lh`: its operators are read in the enclosing group, so
+    `calc((1lh) * 3 + var(--ocelle-space-1))` and `calc(calc(1lh) * 3 + var(--ocelle-space-1))` are raw like
+    `calc(1lh * 3 + var(--ocelle-space-1))`, and `calc((1lh) + var(--ocelle-space-1))` passes like
+    `calc(1lh + var(--ocelle-space-1))`. The lint's
     `calc()` rule is otherwise unchanged for other properties: it already admits unitless factors beside a token
     (`calc(var(--ocelle-space-1) * 2)`), and `/ 2` in the padding rule is such a factor.
   - **What this closes and what it does not**: closed are every `calc()` (or other function) spelling of `scale` and
-    `aspect-ratio`, a factor written directly on `1lh`, `1lh` in a `calc()` without a token, and more than one `1lh`
-    in one expression. Not closed: a factor applied to a parenthesised group that holds `1lh` beside a token, which
+    `aspect-ratio`, a factor written directly on `1lh` or on a group that holds only `1lh` (`(1lh) * 3`,
+    `calc(1lh) * 3`; OP4-01), `1lh` in a `calc()` without a token, and more than one `1lh` in one expression. Not
+    closed: a factor applied to a parenthesised group that holds `1lh` beside a token, which
     the padding rule itself needs (`(… - 1lh) / 2`); so `calc((var(--ocelle-space-1) + 1lh) * 2)` passes the lint and
     is left to review, which the README's conventions name (R-15). Outside `calc()` no other multiple of `lh` passes.
   - Why these are not raw literals under constitution II: `-1`/`1` flip or keep a drawing and change no size, `1` as
