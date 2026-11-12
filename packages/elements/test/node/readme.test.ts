@@ -27,7 +27,7 @@ const flat = (text: string): string => text.replace(/\s+/g, " ");
 const fragments = [
   // module and registration (FR-002, R-02)
   "Each element lives in its own module, `src/<tag>.ts`, which ends with one `define(\"<tag>\", <Class>)` call: importing the module defines that element and no other, and importing the package root defines every element",
-  "`define` (`src/define.ts`, internal) defines a tag only while it is free: a second definition of the same tag does nothing and throws nothing (FR-006)",
+  "`define` (`src/define.ts`, internal) defines a tag only while it is free: a second definition of the same tag does nothing and throws nothing.",
   // static properties and the JSDoc tags (R-01, R-02, R-06)
   "Elements declare their reactive properties with `static override properties = { … }` and `declare` fields, not decorators",
   "Every element class carries the JSDoc tag `@tagname <tag>`, and every public property a description and `@default undefined`: the manifest takes the tag name and the defaults from them",
@@ -35,7 +35,7 @@ const fragments = [
   // styles (FR-003, R-03, R-04, R-09)
   "An element's styles are one `css` tagged template assigned to `static styles`, built only from `--ocelle-*` tokens and the values the `style-lint` gate allows, so every instance adopts one shared stylesheet",
   "No template has a `style` attribute or a `<style>` element",
-  "Every element's styles hold `:host([hidden]) { display: none; }` beside its `:host` display rule, which would otherwise beat the user-agent `[hidden]` rule (FR-034)",
+  "Every element's styles hold `:host([hidden]) { display: none; }` beside its `:host` display rule, which would otherwise beat the user-agent `[hidden]` rule.",
   "Variant rules go inside `@media not (forced-colors: active)`, so a forced-colours rule never has to outrank a variant selector",
   // the manifest and the token rule (FR-007, FR-009)
   "`custom-elements.json` is generated from the element source by `pnpm --filter @ocelle/elements run manifest` and committed; the `manifest` gate fails when it differs from a regeneration or when a public member has no description",
@@ -205,6 +205,20 @@ describe("packages/elements/CHANGELOG.md", () => {
     ...["chevron-start", "chevron-end", "chevron-up", "chevron-down", "arrow-start", "arrow-end", "menu", "close", "folder", "file", "search", "table", "copy"].map((name) => `\`${name}\``),
   ])("names %s under Unreleased / Added (constitution VII, FR-031, SC-008)", (surface) => {
     expect(added).toContain(surface);
+  });
+});
+
+/**
+ * The planning IDs of the specs (005 OP2-02, landing L1-04): requirement, criterion, scenario, plan, research and task
+ * references belong to `specs/`, so the package-facing documents carry none.
+ */
+const planningIds = /\b(?:FR-\d+|SC-\d+|US\d+-\d+|PLAN-[A-Z0-9-]+|R-\d{2}|T\d{3})\b/g;
+
+describe("the package-facing documents carry no planning ID (OP2-02)", () => {
+  it.each(["README.md", "CHANGELOG.md"])("%s holds no FR-, SC-, US<n>-<n>, PLAN-, R-<nn> or T<nnn> reference", (file) => {
+    const text = read(file);
+    expect(text).not.toBe("");
+    expect(text.match(planningIds) ?? []).toEqual([]);
   });
 });
 
