@@ -91,7 +91,8 @@ const allTrue = Object.fromEntries(configuration.map((file) => [file, true]));
  */
 function sourceRoot(without: readonly string[] = []): string {
   const root = tempDir("source-root");
-  const entries = [...configuration.filter((file) => file !== "packages/elements/src/index.ts"), "packages/elements/src", "gates/eslint", "gates/stylelint"];
+  // The Storybook workspace inputs too, which the configuration set holds since 006 (research.md R-16).
+  const entries = [...configuration.filter((file) => file !== "packages/elements/src/index.ts"), "packages/elements/src", "gates/eslint", "gates/stylelint", ...storybookInputs];
   for (const entry of entries.filter((path) => !without.includes(path))) cpSync(join(repo, entry), join(root, entry), { recursive: true });
   for (const file of mayBeAbsent.filter((path) => existsSync(join(repo, path)))) cpSync(join(repo, file), join(root, file));
   symlinkSync(join(repo, "node_modules"), join(root, "node_modules"), "dir");
