@@ -28,8 +28,11 @@ Change a token value in `packages/tokens/src/source.ts`, rerun: exit 1 with `dif
 `storybook/.visual/` and the new captures in baseline layout in `storybook/.visual/baselines/`. Delete one baseline:
 `missing-baseline`. Revert.
 
-`pnpm run gate:visual -- --engine host` exits 2 "not the pinned container: …". In CI the job runs `--engine both`, and
-the gate requires both engines there in any case. When CI reports `differs` or `missing-baseline` on a tree whose local
+`pnpm run gate:visual -- --engine host` exits 2 "not the pinned container: …". In CI the job runs `--engine both
+--remove-docker-image` (docker's copy of the image is removed after run 1, before podman's pull; operator decision
+2026-11-11), and the gate requires both engines there in any case. Locally, leave the option out: it would remove your
+docker copy, and without docker then podman it exits 2. The job then uploads the artifact `pin-record` (`skopeo
+--version`, skopeo's raw manifest and podman's inspect output of the pin). When CI reports `differs` or `missing-baseline` on a tree whose local
 run passes, take the files of the job artifact's `baselines/` folder and commit them (CI is the producer of record).
 
 ## 3. Accessibility (US3)
@@ -59,8 +62,18 @@ pnpm run gate:plants -- --skip-container                      # without an engin
 ```
 
 Without an engine and without `--skip-container`, the plant job runs no `visual` plant that needs one, prints
-`plants: not run (no container engine): <plant>` for each and exits 2. In CI the Plants job runs every plant with
-`OCELLE_VISUAL_ENGINE=both`.
+`plants: not run (no container engine): <plant>` for each and exits 2. Every mode prints `note: plant time:
+<gate>/<case>: <seconds> s` on stderr for each plant.
+
+In CI the plant job is split (operator decision 2026-11-11): "Plants plan" prints the shards, each "Plants shard" job
+judges one with `OCELLE_VISUAL_ENGINE=both`, and "Plants" checks that every shard reported and every plant was as
+expected. The same modes run locally:
+
+```sh
+pnpm --silent run gate:plants -- --plan                       # [1,2,…,n]
+OCELLE_VISUAL_ENGINE=auto pnpm run gate:plants -- --shard 2   # one shard; writes storybook/.visual/plant-shards/2.json
+pnpm run gate:plants -- --verdict storybook/.visual/plant-shards   # the registry check and every shard's report
+```
 
 A change that moves a plant story's pixels (a token value, `base.css`, the pin) regenerates the `visual` pass plants'
 own baselines:
@@ -70,7 +83,7 @@ pnpm run visual:update -- --plant visual/pass-unused-face                    # w
 pnpm run visual:update -- --plant visual/pass-second-render --story <id>     # single-story-theme requests (required: captureAlone)
 ```
 
-When CI's Plants job fails on such a plant, its artifact holds the captures at
+When a CI Plants shard fails on such a plant, its artifact `plants-<k>` holds the captures at
 `gates/plants/visual/<name>/tree/storybook/baselines/`; commit them at those paths. For `pass-second-render` the artifact
 holds captures made alone (never the full run's); when the job prints `captured alone matches the baseline; the full
 run differs (freshness)`, there is nothing to commit: freshness is broken and the capture code needs fixing.

@@ -35,14 +35,18 @@ The `visual` and `axe` gates build through the same build function, so the same 
 
 | | |
 |---|---|
-| Command | `pnpm run gate:visual -- --engine both` (CI; in CI the gate requires both engines in any case, research.md R-06) |
+| Command | `pnpm run gate:visual -- --engine both --remove-docker-image` (CI; in CI the gate requires both engines in any case, research.md R-06; the option: research.md R-07, operator decision 2026-11-11) |
 | Plant command | `node gates/bin/visual.ts --root {root} --engine {engine}` (form `repo-tree`; `{engine}`: research.md R-06) |
 | Scope | every story of the built index, in `light` and `dark`, against `storybook/baselines/` |
-| Options | `--engine <docker\|podman\|both\|auto\|host\|<name>>`, default `auto` (`both` in CI) (research.md R-06) |
+| Options | `--engine <docker\|podman\|both\|auto\|host\|<name>>`, default `auto` (`both` in CI) (research.md R-06); `--remove-docker-image`: after run 1 under docker, remove docker's copy of the pin (`docker image rm <image>@<digest>`) before podman's pull, valid only when the resolved engines are docker then podman (research.md R-07); not part of the plant command or of `visual:update` |
 | Exit 0 | `visual: <n> captures match their baselines (<engines>)`, where `<engines>` is `docker+podman`, or `<engine> only: no cross-engine comparison` (never in CI) |
 
-Order of a run: engine resolution → pin check → build (R-03) → run 1 → run 2 → per story-theme the verdict
-(data-model.md § Verdict per story-theme) → stray baselines.
+Order of a run (operator decision 2026-11-11, "Apply now"; research.md R-06, R-07; the pure function `runSteps`):
+engine resolution → the skopeo check and the `--remove-docker-image` check → reference form → pin check under run 1's
+engine → build (R-03) → run 1 → with `--remove-docker-image`, the removal of docker's copy → pin check under run 2's
+engine, when it is another engine → run 2 → per story-theme the verdict (data-model.md § Verdict per story-theme) →
+stray baselines. Each engine's pin check passes before any capture under it; the removal touches only docker's image
+store, after run 1's captures are read back.
 
 | Rule | Location | When |
 |---|---|---|
@@ -66,7 +70,12 @@ Written to `storybook/.visual/` (ignored; uploaded by the CI job on failure): fo
 Exit 2: no engine, a missing engine under `both`, a named engine not found; a single engine in CI; a `host` run that
 exits 0; a pin that is a tag, names an index, or whose pulled image does not list the pinned digest or is not
 linux/amd64; the image cannot be obtained; the capture's refusal "not the pinned container: <check>"; the Storybook
-build failed ("the Storybook build failed; run pnpm run gate:storybook-build").
+build failed ("the Storybook build failed; run pnpm run gate:storybook-build"); `--remove-docker-image` with engines
+other than docker then podman ("--remove-docker-image needs both engines (docker for run 1, podman for run 2)", before
+any engine command). A pin check failure under run 2's engine comes after run 1 and is the same exit 2.
+
+Notes (stderr): `note: docker's copy of the pinned image was not removed: <last stderr line>` when the removal fails;
+the run goes on.
 
 ## `visual:update` (the baseline command, not a gate)
 
@@ -122,10 +131,26 @@ Storybook build failed.
 
 `gates/gates.json` and the FR-020 list of `gates/lib/registry.ts` gain `storybook-build`, `visual` and `axe`; `ci.yml`
 gains the jobs `storybook-build` ("Storybook build"), `visual` ("Visual regression") and `axe` ("Accessibility"). The
-`visual` job uploads `storybook/.visual/` with `actions/upload-artifact` (pinned by SHA) when it fails. The `plants`
-job runs `pnpm run gate:plants` with `OCELLE_VISUAL_ENGINE=both`, and uploads `storybook/.visual/plants/` (the failing
-`visual` pass plants' captures in tree layout; for a `captureAlone` plant, captures made alone by single-story-theme
-requests, never the full run's, research.md R-11) the same way when it fails; the registry check fails when that job's steps
-contain `--skip-container` (research.md R-07). That CI compares docker with podman does not rest on the workflow text:
-the gate requires both engines whenever `CI` or `GITHUB_ACTIONS` is `true` (research.md R-06). Root `package.json`
-gains the scripts `gate:storybook-build`, `gate:visual`, `gate:axe` and `visual:update`.
+`visual` job uploads `storybook/.visual/` with `actions/upload-artifact` (pinned by SHA) when it fails. After its gate
+step it runs the pin record step (research.md R-02, operator decision 2026-11-11, "Add the CI step"): `skopeo
+--version`, `skopeo inspect --raw docker://<image>@<digest>` and `podman image inspect <image>@<digest>` written to
+`$RUNNER_TEMP/pin-record/` and uploaded as the artifact `pin-record`; the gate's output is unchanged by it. Its gate step
+passes `--remove-docker-image` (research.md R-07). Root `package.json` gains the scripts `gate:storybook-build`,
+`gate:visual`, `gate:axe` and `visual:update`.
+
+**The plant jobs (operator decision 2026-11-11, "In phase 3 now"; research.md R-07).** The plant job is split into
+three jobs, and the check the ruleset requires is still the one named "Plants":
+
+| Job | Name | Runs | Artifacts |
+|---|---|---|---|
+| `plants-plan` | Plants plan | `pnpm --silent run gate:plants -- --plan`, the shard numbers as the job output `shards` | |
+| `plants-shard` | Plants shard | matrix `shard: ${{ fromJSON(needs.plants-plan.outputs.shards) }}`, `fail-fast: false`; the toolset removal step with `df -h /`; `pnpm run gate:plants -- --shard "$SHARD"` with `SHARD` from the matrix and `OCELLE_VISUAL_ENGINE=both`; `df -h /` always | `plant-shard-<k>`: `storybook/.visual/plant-shards/<k>.json`, always; `plants-<k>`: `storybook/.visual/plants/` (the failing `visual` pass plants' captures in tree layout; for a `captureAlone` plant, captures made alone by single-story-theme requests, never the full run's, research.md R-11), on failure |
+| `plants` | Plants | `needs: [plants-plan, plants-shard]`, `if: always()`; downloads every `plant-shard-*` artifact into `storybook/.visual/plant-shards/` (`actions/download-artifact` pinned by SHA, `merge-multiple`) and runs `pnpm run gate:plants -- --verdict storybook/.visual/plant-shards` | |
+
+The upload and download actions are pinned by commit SHA, and the uploads include hidden files. The verdict recomputes the
+partition, so that every plant was judged does not rest on the matrix (contracts/plants.md § Shards). The registry check
+(run by `--verdict`, and by `gate:plants` without a mode) treats `plants-plan` and `plants-shard` as the plant job's
+helper jobs, not gate jobs; it fails (`skip-container-in-ci`) when a step of any of the three plant jobs contains
+`--skip-container` (research.md R-07), and (`shard-in-plant-check`) when a step of the `plants` job contains `--shard`
+or `--plan`, since the required check would then judge one shard or none. That CI compares docker with podman does not
+rest on the workflow text: the gate requires both engines whenever `CI` or `GITHUB_ACTIONS` is `true` (research.md R-06).

@@ -57,6 +57,19 @@ any written fixture). The
 operator pushes the branch for it (agents never push); phase 3 is not approved without that run. Landing confirms it
 again but is no longer the first evidence.
 
+**The pin record (operator decision 2026-11-11, "Add the CI step", human:jeroennouwsdev).** CI run 43072665056 (head
+`07c97ef`) passed under both engines, but the gates print their summary lines only, so its log holds none of these
+outputs and the fixtures could not be replaced. The "Visual regression" job therefore gains one step after the gate
+step (which it follows only when the gate passed, so podman holds the pin): it reads `<image>@<digest>` from
+`storybook/visual/container.json`, writes `skopeo --version` to `skopeo-version.txt`, `skopeo inspect --raw
+docker://<image>@<digest>` to `skopeo-inspect-raw-manifest.json` and `podman image inspect <image>@<digest>` to
+`podman-inspect.json` in `$RUNNER_TEMP/pin-record/`, and uploads that directory as the artifact `pin-record` with
+`actions/upload-artifact` pinned by SHA. The gate's own output stays as its contract says. The step stays in the job:
+it costs seconds, and it records the runner's real outputs again whenever the pin or the runner image moves. The
+podman fixture and skopeo's manifest fixture are then replaced from the artifact, test-first if the bytes differ
+(tasks.md T046f, T046g). The step reads no index, so `skopeo-inspect-raw-index.json` stays a copy of the tag's index
+docker recorded, as its README says.
+
 **Other hosts' CPUs (operator decision on PLAN-FRESH-1-006, option (a)).** FR-026's two captures run on one CPU, and
 Chromium's rasteriser (Skia) picks SIMD code paths at run time by CPU feature level, so a contributor's machine
 (another x86 generation, or an arm64 host emulating amd64) may produce bytes CI does not. That equality is stated, not
@@ -277,7 +290,12 @@ the font rule is not relaxed.
   three steps passed before podman's, and the spike recorded its raw output for this pin. The cost is a host tool:
   skopeo must be installed wherever the gate runs under podman. GitHub's `ubuntu-24.04` runner image is expected to
   carry it beside podman; phase 3's CI run confirms that (`skopeo --version` in its log), and a runner without it is
-  a stop-and-ask, since installing it in the workflow is a CI change the operator decides.
+  a stop-and-ask, since installing it in the workflow is a CI change the operator decides. (CI run 43072665056 passed
+  under podman, so skopeo was found; its version is recorded by the `pin-record` artifact of R-02 from the next run.)
+- **When each engine's pin check runs (operator decision 2026-11-11, "Apply now"; R-07).** Steps 2 to 4 run under an
+  engine just before that engine's first run, not for every engine before the build: under `both`, docker's check,
+  the build and run 1, then (with `--remove-docker-image`) the removal of docker's copy, then podman's check and run
+  2. The reference form (step 1), the skopeo check and the option's check still run before any engine command.
 - The run arguments (contracts/container.md): `run --rm --platform linux/amd64 --network none --user <uid>:<gid>`
   (docker) or `--userns=keep-id` (podman), the mounts of R-03, `-e OCELLE_VISUAL_PIN=<digest>`, the image by digest,
   and `node <repo>/gates/visual/capture.ts <request.json>`. The argument builder is unit-tested with root equal to the
@@ -332,6 +350,96 @@ disk runs short, the `Visual regression` job prunes the docker copy (`docker ima
 pull, and the `Plants` job first removes the runner's unused preinstalled toolsets; when the job's time nears the
 30-minute mark, the `visual` plants are moved to a matrix job, which needs a registry change and so is the operator's.
 
+**Measured by CI run 43072665056 (head `07c97ef`, reviews/phase-3/ci-run.md).** The Plants gate took 37 min 13 s for
+241 plants with 12 repository stories, past the 30-minute mark; both visual jobs ended with 4.2G free (95% used). The
+log holds no time per plant, so the time per `visual` plant (about 43 s, about 1.8 s per story-theme) is an estimate.
+The operator decided on 2026-11-11 (human:jeroennouwsdev):
+
+- **The disk measures now ("Apply now").** Both measures above are taken in phase 3, whatever the next run's disk:
+  - *The docker copy in "Visual regression".* The gate gains `--remove-docker-image` (gate only; not the plant
+    command, not `visual:update`). With it, after run 1 under docker the gate removes docker's copy
+    (`docker image rm <image>@<digest>`) before podman's pull. That needs the pin checks to move: today both engines'
+    pin checks (media type, pull, identity) run before the build and run 1, so podman's pull comes before run 1 and
+    docker's copy cannot go before it without run 1 then pulling it again, outside the identity check. The order of a
+    run becomes: engine resolution, the skopeo check and the option's check, the pin check under run 1's engine, the
+    build, run 1, the removal, the pin check under run 2's engine (when it is another engine), run 2, the verdicts
+    (contracts/gates.md § `visual`; the order is a pure function `runSteps`, unit-tested). **Neither guarantee is
+    weakened**: each engine's pin check still passes before any capture under that engine, so every capture comes
+    from an image whose digest, media type, `Os` and `Architecture` were checked in that engine's store; run 1's
+    captures are read back from run 1's directory before the removal, which touches only docker's image store; run 2
+    runs from podman's own pull. A podman pin failure now ends the run with the same exit 2 cause, after run 1 rather
+    than before it (the cost of a wasted run 1, not a weaker check). The option is refused, exit 2
+    `--remove-docker-image needs both engines (docker for run 1, podman for run 2)`, unless the resolved engines are
+    docker then podman, checked before any engine command; a failed removal is a stderr note
+    `note: docker's copy of the pinned image was not removed: <last stderr line>` and the run goes on (the job's
+    `df -h /` shows the effect). Locally nobody passes it, so a contributor's docker copy stays. The Plants shards
+    keep both copies: every `visual` plant runs the gate with both engines, and removing docker's copy per plant would
+    pull it again for each.
+  - *Toolsets in the Plants shards.* Each Plants shard job (below) first removes the runner's preinstalled toolsets
+    the repository never uses (`/usr/local/lib/android`, `/usr/share/dotnet`, `/opt/ghc`, `/usr/local/.ghcup`,
+    `/opt/hostedtoolcache/CodeQL`) and prints `df -h /`; nothing the setup action, docker, podman or skopeo uses is
+    among them (Node comes from `/opt/hostedtoolcache/node`, kept).
+- **The Plants job is split in phase 3 ("In phase 3 now")**, before phase 4 adds the `axe` plants, as below.
+- **Time per plant before the split count ("Measure first")**: the 9-story count the run's estimate gave is not
+  approved; the plant job prints each plant's time (below) and the count is derived from the next run.
+
+**The split (operator decision 2026-11-11, "In phase 3 now").** Shapes weighed:
+1. a matrix on the `plants` job itself: GitHub names the checks `Plants (1)` and so on, so the required check
+   "Plants" is never reported and the `main` ruleset (the operator's) would have to change, again whenever the shard
+   count does;
+2. shard jobs plus a "Plants" job that passes when every shard job passed, as "Mutation testing" does: the ruleset is
+   unchanged, but that every plant was judged rests on the workflow text (a matrix that lists fewer shards passes);
+3. shard jobs plus a "Plants" job that **recomputes the partition** from the repository and accepts only one report
+   per shard, each holding exactly that shard's plants, all as expected.
+
+Chosen: **3**. It keeps the required check "Plants" (no ruleset change) and keeps every guarantee of the single job
+without resting on the workflow text, as the CI rule of R-06 does for the engines; its cost over 2 is one small
+artifact per shard and one download. The jobs (contracts/gates.md § The registry):
+- `plants-plan` ("Plants plan"): `pnpm --silent run gate:plants -- --plan` prints the shard numbers as JSON
+  (`[1,2,…,n]`), so the shard count follows the plants with no workflow edit (as `mutation-plan` does);
+- `plants-shard` ("Plants shard", matrix over the plan's numbers, `fail-fast: false`): removes the unused toolsets,
+  runs `pnpm run gate:plants -- --shard <k>` with `OCELLE_VISUAL_ENGINE=both`, prints `df -h /` always, uploads its
+  report `storybook/.visual/plant-shards/<k>.json` always (artifact `plant-shard-<k>`) and
+  `storybook/.visual/plants/` on failure (artifact `plants-<k>`);
+- `plants` ("Plants", the required check, `needs` both, `if: always()`): downloads the `plant-shard-*` artifacts into
+  `storybook/.visual/plant-shards/` and runs `pnpm run gate:plants -- --verdict storybook/.visual/plant-shards`.
+
+The partition is a pure function `plantShards(plants, size)` of the plant list (unit-tested): shard 1 holds every
+plant of a gate other than `visual` and `axe`, the `storybook-build` plants among them, and the registry's plants;
+then the `visual` plants, sorted by name, in consecutive groups of at most `size`; then the `axe` plants the same way.
+Every plant is in exactly one shard. `size` is **8, provisional**: at the run's estimate a shard of 8 `visual` plants
+takes about 6 minutes of plants plus setup and both pulls, under the 10-minute goal of a new job, and stays far below
+30 minutes even if the estimate is off by three times, so the run that measures the times cannot itself fail on time.
+The value is derived again from the measured times (tasks.md T046h) and approved with the split count; phase 4's run
+does the same for the `axe` groups. Each shard pulls the image under both engines (about 2 GB transferred, 7.2 GB
+unpacked), so more shards cost runner time and transfer; that is the trade the derived `size` weighs.
+
+What each guarantee of the single job rests on after the split:
+- **every plant judged**: `--verdict` recomputes `plantShards` on the checked-out tree and exits 2 naming each shard
+  `1..n` with no report (`shard <k> of <n> reported no result`), a report whose `of` is not `n`, and a report whose
+  plants are not exactly that shard's (`shard <k> judged other plants than the partition gives it: <plant>`); a report
+  with a skipped or not-run plant is exit 2 as the single run is. Its findings are the plants not as expected, printed
+  from the reports as the single run prints them, and it runs the structural checks of the whole set (unknown gate,
+  a gate without a fail, pass or breaking plant, an invalid `plant.json`), which a shard does not;
+- **under both engines**: unchanged. Each shard sets `OCELLE_VISUAL_ENGINE=both`, and the gate itself refuses a single
+  engine in CI (R-06), so a `visual` plant run in CI under one engine is not as expected;
+- **the registry check**: runs in `--verdict` on the repository's `gates.json` and `ci.yml`. `plants-plan` and
+  `plants-shard` are the plant job's helper jobs, not gate jobs; `skip-container-in-ci` covers every step of the three
+  plant jobs; a new rule `shard-in-plant-check` fails when a step of the `plants` job passes `--shard` or `--plan`,
+  since the required check would then judge one shard or none (registry plants `fail-skip-container-in-shard`,
+  `fail-shard-in-plant-check`, `pass-split-plant-jobs`);
+- **artifacts on failure**: each shard uploads its own `storybook/.visual/plants/` as `plants-<k>` (artifact names must
+  differ within a run).
+`gate:plants` without `--plan`, `--shard` or `--verdict` is unchanged: it runs and judges every plant in one process
+(locally, and any job that runs it so).
+
+**The time of each plant (operator decision 2026-11-11, "Measure first").** `gate:plants` prints, on stderr, one note
+per plant after judging it, `note: plant time: <gate>/<case>: <seconds> s` (seconds with one decimal, from the start of
+the plant's root to its judgement), in every mode; the stdout summary line is unchanged. Plants of the non-Storybook
+gates run at once, so their times overlap; the Storybook plants run one at a time, so theirs are the plant's own. Each
+shard report holds the same times. The time per story-theme of a plant is its time over its root's story-themes (the
+repository's 24 plus two per story of its own), and the split count is derived from those (tasks.md T046h).
+
 **Plant cost grows with the repository's stories (operator decision on PLAN-FRESH-2-007, option (b)).** Plant roots
 keep every repository story (R-16), so each Storybook plant builds and captures (visual: twice) or audits all of them,
 and the Plants job's time grows with plants × stories (**measured** by the plan squad's round 2: 424 to 661 ms per
@@ -342,7 +450,11 @@ CI run of the branch (R-02), the Plants job's time per story-theme for `visual` 
 would pass 30 minutes. The count is recorded, with the operator's approval, in the plan's Complexity Tracking row
 "Plant roots hold every repository story", whose sunset is the op that splits the Plants job (a matrix, the operator's
 registry change) before the repository reaches that count. The element issues (#7 to #9, #12 to #17) check the count
-when they add stories. A consequence of the rule: `fail-token-changed`'s exact list names every story-theme that
+when they add stories. **Since the operator's decisions of 2026-11-11** the split is phase 3's (above), not a later
+op's, and the count changes meaning: the **split count** is now the number of repository stories at which one Plants
+shard of the approved `size` would pass 10 minutes, derived with `size` from the per-plant times of the first run with
+the split (tasks.md T046h) and recorded with the operator's approval in the same row, whose sunset becomes the change
+that lowers `size` (with its test) before the repository holds that count. A consequence of the rule: `fail-token-changed`'s exact list names every story-theme that
 shows `color-ink` (light), so a pull request that adds such a story updates that list in the same change; the plant
 then fails loudly with the unexpected `differs` until it does, and never passes vacuously.
 
@@ -800,11 +912,13 @@ it. `gates/lib/plant-repo.ts` changes, test-first in `gates/test/plant-repo.test
   links, and with the flag a build wrote nothing there (spike § 4). An integration test builds a plant root and
   asserts that no file below the repository's `storybook/node_modules` **or its root `node_modules`** was added,
   removed or changed (path, size and modification time listed before and after, as the spike did). With the
-  Storybook plants run one at a time (R-07), no two builds run at once.
+  Storybook plants run one at a time (R-07), no two builds run at once; in CI each Plants shard is its own runner with
+  its own checkout, so this holds per shard (operator decision 2026-11-11, "In phase 3 now", R-07).
 - A plant's `tree/` story files replace or add to `storybook/stories/`; a plant that needs fewer stories replaces the
   story files it keeps and removes none of the configuration set, so every plant root holds every repository story
   (operator decision on PLAN-FRESH-2-007, option (b); the cost and its sunset: R-07). The one removal is a `delta.json`
-  `baselines` edit `remove` (R-11).
+  `baselines` edit `remove` (R-11). The split of the Plants job (R-07, 2026-11-11) spreads that cost over shards and
+  leaves the plant roots as they are: a shard's plant root is built exactly as the single job's was.
 - **Repository baselines a plant edits** are generated from the current files by the `delta.json` key `baselines`, and
   `treeProblems` refuses a tree copy of one (R-11, PLAN-FRESH-2-003).
 - **`baselinesOf` (PLAN-FRESH-2-002).** `plant.json` gains the optional key `baselinesOf`, valid only for `visual`

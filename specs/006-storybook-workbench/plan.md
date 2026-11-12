@@ -72,7 +72,9 @@ and podman, and are expected to have skopeo (confirmed by phase 3's CI run, rese
 
 **Performance Goals**: each new job well under 10 minutes; the Storybook build takes 2.2 s here (measured). The image
 is about 1 GB to pull and 3.6 GB unpacked per engine store (measured). Phase 3's review records the `Plants` job time
-and the runner's free disk after both pulls (research R-07).
+and the runner's free disk after both pulls (research R-07). CI run 43072665056 measured the single Plants job at
+37 min 13 s and 4.2G free in both visual jobs, so the Plants job is split into shards, each a new job under the
+10-minute goal, and both disk measures are taken (decisions 23 to 25, operator decisions 2026-11-11).
 
 **Constraints**: byte-exact baselines; no network inside a capture (`--network none`, plus request routing); no root
 needed on the host; one heavy job at a time locally.
@@ -93,6 +95,8 @@ about 14 new source modules.
   (research R-06). Integration tests not about that rule remove both from the gate's environment.
 - Podman behaviours (run arguments, rootless writes, inspect output, skopeo's raw manifest, cross-engine bytes) are
   proven by the CI run of the branch that phase 3's review holds (research R-02); the operator pushes the branch for it.
+  The inspect output and skopeo's raw manifest come from that run's `pin-record` artifact (decision 22); the removal
+  of docker's copy and the Plants shards (decisions 23, 25) are proven only there too.
 - One heavy job at a time: browser suites, the container, mutation and plants never run in parallel.
 
 ## Constitution Check
@@ -114,9 +118,9 @@ rounds 1 and 2 and the phase 1 spike.*
 | V. Storybook, baselines | Every story has two committed baselines made in a pinned container, covering the full page at scroll position (0, 0). The gate fails on a missing or stray baseline. CI's captures are the record when local and CI disagree (R-02), for the plants' baselines too: the baseline command's plant mode regenerates them and the Plants job uploads its captures in tree layout, for `pass-second-render` (`captureAlone`) captures made alone by single-story-theme requests so its freshness reference never comes from a full run (R-11). A story per state includes pointer states, whose target must lie inside the initial viewport so a state is never silently not applied (R-15). Baselines change only in a pull request whose description says why; the contributor note says so and landing checks it. |
 | VI. Own code | The gates and the capture are this repository's code. The container image and axe-core are third-party tools used in CI and development only, not shipped (plan-gate decision 1); so are the host tools the gate calls (docker, podman, and skopeo under podman, decision 21). |
 | VII. Semver | No published surface changes. |
-| VIII. Test-first, proven | Every phase starts red, each red an assertion of the missing behaviour (the pin test asserts the file exists first; the render test's red is taken from the build output). Every decision, the capture's and the in-page checks' included, is a pure module, mutation-tested; only collection and process wiring carry `Stryker disable` comments naming their integration test, and `gates/visual/` is in the mutation scope (R-12). Every gate has fail, pass and breaking plants, with controls where a pass plant alone could not fail (R-04, R-11); the plant job cannot skip or silently drop the container plants (R-07). Plants stay meaningful as the repository changes: edited repository baselines are generated from the current files, never stored, fail plants take the baselines of their pass plant, and plant roots carry the repository's exceptions with their plan files (R-11, R-16). Each capture has one status by a tested order, so a plant's exact expectation does not rest on an unwritten choice (R-05); axe is shown to audit inside open shadow roots (R-08). Each capture refusal check has its own unit test and cause (R-06). The podman behaviours are proven in a CI run of the branch before phase 3 is approved (R-02). |
-| Supply chain | `axe-core` and `pngjs` are pinned exactly and pass the release-age rule. The image is pinned by its manifest digest, pulled and run only by digest, checked by media type and `RepoDigests` on every engine (R-06). A test ties `container.json` to `.node-version` and to Playwright's expected headless-shell build (contracts/container.md). |
-| Workflow gates | The registry gains three gates (`gates.json`, FR-020 list, `ci.yml` jobs). The required checks go from fourteen to seventeen in `gates/README.md`; the ruleset change is the operator's. In CI the visual gate requires both engines whatever the workflow passes (R-06). |
+| VIII. Test-first, proven | Every phase starts red, each red an assertion of the missing behaviour (the pin test asserts the file exists first; the render test's red is taken from the build output). Every decision, the capture's and the in-page checks' included, is a pure module, mutation-tested; only collection and process wiring carry `Stryker disable` comments naming their integration test, and `gates/visual/` is in the mutation scope (R-12). Every gate has fail, pass and breaking plants, with controls where a pass plant alone could not fail (R-04, R-11); the plant job cannot skip or silently drop the container plants (R-07). Plants stay meaningful as the repository changes: edited repository baselines are generated from the current files, never stored, fail plants take the baselines of their pass plant, and plant roots carry the repository's exceptions with their plan files (R-11, R-16). Each capture has one status by a tested order, so a plant's exact expectation does not rest on an unwritten choice (R-05); axe is shown to audit inside open shadow roots (R-08). Each capture refusal check has its own unit test and cause (R-06). The podman behaviours are proven in a CI run of the branch before phase 3 is approved (R-02). Split into shards, the plant job still cannot drop a plant: the "Plants" check recomputes the partition and fails on a shard with no report or other plants than its own, and the registry check covers every plant job (decision 23, R-07). |
+| Supply chain | `axe-core` and `pngjs` are pinned exactly and pass the release-age rule. The image is pinned by its manifest digest, pulled and run only by digest, checked by media type and `RepoDigests` on every engine (R-06). A test ties `container.json` to `.node-version` and to Playwright's expected headless-shell build (contracts/container.md). `actions/download-artifact`, new with the split plant job, is pinned by commit SHA as `upload-artifact` is (decision 23). |
+| Workflow gates | The registry gains three gates (`gates.json`, FR-020 list, `ci.yml` jobs). The required checks go from fourteen to seventeen in `gates/README.md`; the ruleset change is the operator's. In CI the visual gate requires both engines whatever the workflow passes (R-06). The split plant job keeps the one required check "Plants" (its verdict job); `plants-plan` and `plants-shard` are helper jobs, not required (decision 23). |
 
 ## Decisions the operator should see at the plan gate
 
@@ -166,7 +170,8 @@ Updated after the plan squad's round 1; the operator's fork decisions of 2026-11
     this plan's (R-16).
 15. **Plant roots keep every repository story**; phase 3 measures the Plants job's time per story-theme in CI and sets
     the story count at which the job is split, recorded with the operator's approval in Complexity Tracking
-    (PLAN-FRESH-2-007 (b)) (R-07).
+    (PLAN-FRESH-2-007 (b)) (R-07). Since the operator's decisions of 2026-11-11 the split is phase 3's (decision 23)
+    and the count is derived from measured per-plant times (decision 24).
 16. **The font check reads form-control text**: text nodes are collected through CDP with `pierce: true`, user-agent
     shadow roots included and attributed to their host control (spec delta to FR-027 and FR-025, PLAN-FRESH-3-001)
     (R-05).
@@ -190,6 +195,32 @@ Updated after the plan squad's round 1; the operator's fork decisions of 2026-11
     absence is exit 2 "the pin check under podman needs skopeo: skopeo not found", checked before any engine's pin
     check (operator decision 2026-11-11, "skopeo inspect --raw") (R-06, contracts/container.md § The pin check).
 
+Decisions 22 to 25 are the operator's of 2026-11-11 (human:jeroennouwsdev) on CI run 43072665056 (head `07c97ef`,
+reviews/phase-3/ci-run.md: Visual regression 24/24 under docker+podman, the Plants gate 37 min 13 s with 241 plants,
+4.2G free at the end of both visual jobs, no podman or skopeo output in the logs).
+
+22. **A pin record step in "Visual regression"** ("Add the CI step"): after the gate step, `skopeo --version`,
+    `skopeo inspect --raw docker://<image>@<digest>` and `podman image inspect <image>@<digest>` are written to files
+    and uploaded as the artifact `pin-record`; the gate's output stays as its contract says. The next run's record
+    replaces T022's podman fixture and T044a's skopeo manifest fixture, test-first if the bytes differ (R-02,
+    contracts/container.md § The pin record).
+23. **The Plants job is split in phase 3** ("In phase 3 now"), before phase 4: `plants-plan` prints the shard numbers,
+    `plants-shard` (a matrix) judges one shard each under both engines and writes a report, and `plants` ("Plants", the
+    required check) recomputes the partition and accepts only a complete set of reports, as expected. Chosen over a
+    matrix on `plants` itself (it would rename the required check, a ruleset change) and over a verdict job that trusts
+    the shard jobs' results as "Mutation testing" does (that every plant was judged would rest on the matrix text). The
+    shard size is 8 `visual` (or `axe`) plants, provisional until measured (R-07; contracts/gates.md § The registry;
+    contracts/plants.md § Shards).
+24. **Each plant's time is printed** ("Measure first"): `note: plant time: <gate>/<case>: <seconds> s` on stderr per
+    plant, in every mode, and in each shard report; the summary line is unchanged. The 9-story split count estimated
+    from run 43072665056 is not approved; the count and the shard size are derived from the first run with the notes
+    and proposed again (R-07; contracts/plants.md § Plant runner changes).
+25. **The disk measures now** ("Apply now"): the "Visual regression" job runs the gate with `--remove-docker-image`,
+    which removes docker's copy after run 1 and before podman's pull, each engine's pin check now running just before
+    that engine's first run so no capture comes from an unchecked image; each Plants shard first removes the runner's
+    unused toolsets. Neither the docker-podman comparison nor the pin checks are weakened (R-07; contracts/gates.md §
+    `visual`; contracts/container.md § The pin check).
+
 ## Project Structure
 
 ### Documentation (this feature)
@@ -210,12 +241,15 @@ gates/
 ├── bin/csp.ts                                                   # Storybook scope removed
 ├── bin/prefix.ts                                                # declarations matched across lines
 ├── bin/plants.ts, lib/plant-judge.ts, lib/plant-runner.ts       # `engine` and `unlinked` keys, --skip-container,
-│                                                                #   engine probe and not-run, serial Storybook plants
+│                                                                #   engine probe and not-run, serial Storybook plants,
+│                                                                #   plant time notes, --plan, --shard, --verdict and
+│                                                                #   plantShards (decisions 23, 24)
 ├── lib/plant-repo.ts                                            # configuration set with the Storybook workspace,
 │                                                                #   storybook/node_modules link, delta `baselines`
 │                                                                #   and `exceptions`, `baselinesOf`, `captureAlone` (R-11, R-16)
 ├── lib/storybook-index.ts, storybook-build.ts, storybook-serve.ts   # index, build parser and CLI check, local server
-├── lib/container.ts                                             # engine resolution (CI rule), pin and inspect parsers, run args
+├── lib/container.ts                                             # engine resolution (CI rule), pin and inspect parsers, run args,
+│                                                                #   runSteps and removeCommand (decision 25)
 ├── lib/capture-plan.ts                                          # refusal predicate, context and screenshot options,
 │                                                                #   readiness classification, request and I/O
 │                                                                #   classification, pointer parameter and viewport
@@ -311,7 +345,14 @@ data the gates read (baselines, pin, exceptions).
    - **the review holds a CI run of the branch** (Visual regression and Plants under docker and podman, the podman
      inspect outputs and skopeo's raw manifest output with `skopeo --version`, the job time, the time per story-theme of `visual` and `axe` plants with the split count derived
      from it, and the runner's free disk after both pulls), the operator pushing the branch; the split count goes into
-     Complexity Tracking with the operator's approval.
+     Complexity Tracking with the operator's approval;
+   - after CI run 43072665056 (decisions 22 to 25, operator decisions 2026-11-11): the pin record step; the gate's
+     `--remove-docker-image` with `runSteps` and `removeCommand`, red first in `container.test.ts` and
+     `ci-workflow.test.ts`; the plant job's `--plan`, `--shard`, `--verdict`, `plantShards`, the shard report and the
+     plant time notes, red first in `plants.test.ts`, `registry.test.ts`, `ci-workflow.test.ts` and the plants
+     integration test, with the registry rule `shard-in-plant-check` and its plants; the three plant jobs with the
+     toolset removal; then a CI run holding them (T045), the fixtures replaced from its `pin-record` artifact, and the
+     split count and shard size derived from its plant times for the operator's approval.
 4. **US3 Accessibility** (P3):
    - `axe-rules.ts` (selection on fixture metadata, and the test that derives the 4.14.0 lists from axe-core's own
      metadata), `axe-verdict.ts` (incomplete findings, outside-root, `printSelector`), `story-checks.ts` (empty,
@@ -349,11 +390,12 @@ Closed by this feature:
 | 002 exception 1: the Storybook page's CSP header with `font-src 'self'`, `connect-src 'self'` | 002 plan | the Storybook is not a CSP target (operator Q1 (a), FR-020, FR-021) |
 | 002 exception 2: the static `csp`/`prefix` scope widened to the Storybook inputs and HTML entries | 002 plan | `csp` no longer reads the Storybook; `prefix`'s Storybook scope is coverage, not an exception to IV (FR-022) |
 
-Opened by this feature, an accepted cost with a sunset (operator decision on PLAN-FRESH-2-007, option (b), 2026-11-10):
+Opened by this feature, an accepted cost with a sunset (operator decision on PLAN-FRESH-2-007, option (b), 2026-11-10;
+scope and sunset updated by the operator's decisions on CI run 43072665056, 2026-11-11, human:jeroennouwsdev):
 
 | Item | Scope | Rationale | Sunset |
 |---|---|---|---|
-| Plant roots hold every repository story | the Plants job: every `storybook-build`, `visual` and `axe` plant builds, captures (twice) or audits all repository stories, so its time grows with plants × stories | plants keep the whole configuration set, so no plant can miss a repository input (research R-16); the growth is measured, not guessed (research R-07) | the op that splits the Plants job (a matrix, the operator's registry change) before the repository holds the **split count** of stories, the count phase 3's review derives from the CI run's time per story-theme and records here with the operator's approval |
+| Plant roots hold every repository story | the Plants shards: every `storybook-build`, `visual` and `axe` plant builds, captures (twice) or audits all repository stories, so a shard's time grows with its plants × the stories; since the operator's decision of 2026-11-11 ("In phase 3 now", decision 23) the plant job is split into shards of at most `size` `visual` (or `axe`) plants, `size` 8 provisional | plants keep the whole configuration set, so no plant can miss a repository input (research R-16); the growth is measured, not guessed (research R-07): CI run 43072665056 took 37 min 13 s for the single Plants gate with 12 stories; the time per plant is printed from the next run on (decision 24, operator decision 2026-11-11, "Measure first") | the change that lowers `size` (with its `plantShards` test) before the repository holds the **split count**, the number of stories at which one shard of `size` plants would pass 10 minutes; `size` and the count are derived from the measured per-plant times by tasks.md T046h and recorded here with the operator's approval (the 9-story count estimated from run 43072665056 is not approved) |
 
 axe exceptions under FR-029, if phase 1's spike finds one that needs a token or base-style change, are added here as
 rows, with the operator's approval, before phase 4 records them in `storybook/a11y-exceptions.json`. Each row names

@@ -450,6 +450,10 @@ script no longer fails the `csp` gate; the packages' plants still fail it; the R
   run; it never reports them as passed. A local option MAY run every other plant and exit by their result alone,
   printing each `visual` plant it skipped by name and stating that the run is partial; the plant job's registry
   check MUST fail when the "Plants" job of `.github/workflows/ci.yml` passes that option, so CI cannot skip them.
+  When the plant job is split across several CI jobs (operator decision 2026-11-11, on CI run 43072665056), the one
+  "Plants" check MUST pass only when every plant was judged in exactly one part, as expected, and MUST fail naming
+  each part that reported no result; the registry check MUST fail when any job of the split passes that option, or
+  when the "Plants" check itself judges only one part; the failing parts' artifacts MUST still be uploaded.
 - **FR-019**: The new gates' own source MUST be covered by the mutation gate as other gate source is.
 
 **CSP target, exceptions and documentation (US4)**

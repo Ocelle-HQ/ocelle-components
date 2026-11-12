@@ -51,6 +51,22 @@ phase 1 spike recorded it on this pin). `pull` and the identity check under podm
 is a pure function of the resolved engines and the tools found on `PATH`, unit-tested; it runs once, before the pin
 check of the first engine, so `both` without skopeo exits 2 before docker pulls anything.
 
+**When each engine's steps run, and docker's copy (operator decision 2026-11-11, "Apply now"; research.md R-07).** The
+reference form and the skopeo check run once before any engine command. The media type, pull and identity steps run
+under an engine just before that engine's first run: under `both`, docker's steps, the build and run 1, then podman's
+steps and run 2. With the gate's `--remove-docker-image` (CI's "Visual regression" job only), the gate runs
+`docker image rm <image>@<digest>` after run 1 and before podman's steps, so the runner never holds both unpacked copies
+at once; the option is exit 2 `--remove-docker-image needs both engines (docker for run 1, podman for run 2)` unless
+the resolved engines are docker then podman, and a failed removal is the note `note: docker's copy of the pinned image
+was not removed: <last stderr line>`. No capture runs from an image whose steps have not passed in that engine's store:
+docker's copy is removed only after the last docker run, and podman's run uses podman's own checked pull. The order and
+the removal command are pure functions of `gates/lib/container.ts` (`runSteps`, `removeCommand`), unit-tested.
+
+**The pin record (operator decision 2026-11-11, "Add the CI step"; research.md R-02).** After the gate passes, the
+"Visual regression" job writes `skopeo --version`, `skopeo inspect --raw docker://<image>@<digest>` and `podman image
+inspect <image>@<digest>` to `skopeo-version.txt`, `skopeo-inspect-raw-manifest.json` and `podman-inspect.json` and
+uploads them as the artifact `pin-record`. Those bytes replace the fixtures of the same names (tasks.md T046f).
+
 `.Id` is never compared: it is the manifest digest on docker's containerd image store and the config digest on
 docker's classic store and on podman. The parsers are pure functions, unit-tested on recorded inspect outputs of docker
 with the containerd store, docker with the classic overlay2 store and podman (fixtures; podman's real output is recorded

@@ -127,6 +127,14 @@ Added: `fail-storybook-html-multiline-monospace` (a `storybook/dist/iframe.html`
 
 Added: `fail-skip-container-in-ci` (a `ci.yml` whose `plants` job passes `--skip-container`; finding on that file).
 
+Added by the split of the plant job (operator decision 2026-11-11, "In phase 3 now"; research.md R-07):
+`fail-skip-container-in-shard` (a `ci.yml` with the three plant jobs whose `plants-shard` job passes
+`--skip-container`: `skip-container-in-ci` on that file), `fail-shard-in-plant-check` (a `ci.yml` whose `plants` job
+runs `gate:plants -- --shard 1`: `shard-in-plant-check` on that file) and `pass-split-plant-jobs` (a `gates.json` and a
+`ci.yml` with the three plant jobs as contracts/gates.md § The registry gives them: no finding, so `plants-plan` and
+`plants-shard` are not taken for gate jobs). `fail-skip-container-in-ci` keeps its single `plants` job: the rule still
+covers it.
+
 ## Plant runner changes
 
 - `plant.json` gains the optional key `engine` (`both`, `host`, `missing`), valid only for plants of the `visual`
@@ -151,6 +159,49 @@ Added: `fail-skip-container-in-ci` (a `ci.yml` whose `plants` job passes `--skip
   story-themes in the same root and engine (two runs) and copies those captures, except one equal to the committed
   baseline, for which it prints `plants: visual/<name>: <story-id>/<theme>: captured alone matches the baseline; the
   full run differs (freshness)`; CI's captures made alone are the record for that plant (research.md R-11);
-  the `plants` job uploads `storybook/.visual/plants/` on failure (research.md R-11).
+  the `plants` job uploads `storybook/.visual/plants/` on failure (research.md R-11); since the split, each
+  `plants-shard` job uploads its own as `plants-<k>` (contracts/gates.md § The registry).
 - `--skip-container`, and the engine probe with `plants: not run (no container engine): <plant>` and exit 2
   (research.md R-07).
+- **Each plant's time (operator decision 2026-11-11, "Measure first"; research.md R-07).** After judging each plant,
+  in every mode, `gate:plants` prints on stderr `note: plant time: <gate>/<case>: <seconds> s` (`<gate>` `plants` for
+  the registry's plants; seconds with one decimal, from the start of the plant's root to its judgement). The note is a
+  pure function of the plant and the elapsed milliseconds, unit-tested; the clock is injected into `plants()`. The
+  stdout lines (findings and the summary `plants: <n> plants of <g> gates and the registry judged, every plant as
+  expected`) are unchanged.
+
+## Shards (operator decision 2026-11-11, "In phase 3 now"; research.md R-07)
+
+`gate:plants` gains three modes; without one it is unchanged (every plant in one process, the registry check first).
+
+| Mode | Does | stdout on success | Exit 2 (besides the single run's causes) |
+|---|---|---|---|
+| `--plan` | computes `plantShards` on the repository's plants | the shard numbers as one JSON line, `[1,2,…,n]` | |
+| `--shard <k>` | judges exactly the plants of shard `k` (no registry check, no structural check of the whole set), as the single run would (concurrency, Storybook plants one at a time, the engine probe, `--skip-container`, the captures copy), and writes the report | `plants: shard <k> of <n>: <m> plants judged, every plant as expected` (findings and `plants: <p> problems in <m> plants` as the single run, exit 1) | `k` not in `1..n` (`there is no shard <k>; the plan has <n>`) |
+| `--verdict <dir>` | the registry check, the structural checks of the whole set (unknown gate, a gate without a fail, pass or breaking plant, an invalid `plant.json`), `plantShards` recomputed, and the reports in `<dir>` | the single run's summary line, `plants: <n> plants of <g> gates and the registry judged, every plant as expected`, `<n>` counting every shard's plants | a shard `1..n` with no report (`shard <k> of <n> reported no result`), a report that is not valid or names a shard outside `1..n` or an `of` other than `n`, a report whose plants are not exactly its shard's (`shard <k> judged other plants than the partition gives it: <plant>`), a report with a skipped or not-run plant (as the single run's causes) |
+
+`--verdict` prints, as findings, the registry check's findings, the structural problems, and every problem line the
+reports hold (exit 1, summary `plants: <p> problems in <n> plants`), as the single run would have printed them.
+
+`plantShards(plants, size)` (`gates/lib/plant-runner.ts`, pure, unit-tested): shard 1 holds every plant of the gates
+other than `visual` and `axe` and the registry's plants; then the `visual` plants sorted by `<case>` in consecutive
+groups of at most `size`; then the `axe` plants the same way; a gate with no plants adds no shard; every plant is in
+exactly one shard. `size` is 8, provisional until tasks.md T046h derives it from the measured times.
+
+The report `storybook/.visual/plant-shards/<k>.json` (the directory is ignored with `storybook/.visual/`), written by
+`--shard <k>` whatever its exit:
+
+```json
+{
+  "shard": 2,
+  "of": 7,
+  "plants": [
+    { "plant": "visual/error-host", "asExpected": true, "lines": [], "seconds": 41.7 }
+  ],
+  "skipped": [],
+  "notRun": []
+}
+```
+
+`plant` is `<gate>/<case>`; `lines` are the problem lines the single run would print for that plant; `seconds` the
+time of its note. A shard that exits 2 before judging any plant writes no report, and the verdict then names it.
