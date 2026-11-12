@@ -228,7 +228,7 @@ question.
 **Module and registration.** Each element lives in its own module, `src/<tag>.ts`, which ends with one
 `define("<tag>", <Class>)` call: importing the module defines that element and no other, and importing the package root
 defines every element. `define` (`src/define.ts`, internal) defines a tag only while it is free: a second definition of
-the same tag does nothing and throws nothing (FR-006). The module exports the class and declares it in
+the same tag does nothing and throws nothing. The module exports the class and declares it in
 `HTMLElementTagNameMap`; `src/index.ts` re-exports it.
 
 **Properties.** Elements declare their reactive properties with `static override properties = { … }` and `declare`
@@ -240,7 +240,7 @@ the manifest does not list it.
 **Styles.** An element's styles are one `css` tagged template assigned to `static styles`, built only from `--ocelle-*`
 tokens and the values the `style-lint` gate allows, so every instance adopts one shared stylesheet. No template has a
 `style` attribute or a `<style>` element. Every element's styles hold `:host([hidden]) { display: none; }` beside its
-`:host` display rule, which would otherwise beat the user-agent `[hidden]` rule (FR-034). Variant rules go inside
+`:host` display rule, which would otherwise beat the user-agent `[hidden]` rule. Variant rules go inside
 `@media not (forced-colors: active)`, so a forced-colours rule never has to outrank a variant selector.
 
 **Manifest.** `custom-elements.json` is generated from the element source by
