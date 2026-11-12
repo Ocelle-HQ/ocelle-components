@@ -118,3 +118,35 @@ export function closedShadowHosts(calls: readonly ShadowCall[]): string[] {
   for (const call of calls) if (call.mode === "closed" && !hosts.includes(call.host)) hosts.push(call.host);
   return hosts;
 }
+
+/** A client rect's size. */
+export interface Size {
+  readonly width: number;
+  readonly height: number;
+}
+
+/**
+ * A node of the story root (research.md R-08, FR-014): a text node with its client rects, or an element with its
+ * client rects, its child nodes and, when it hosts an open shadow root, that root's child nodes.
+ */
+export type RootNode = { readonly text: string; readonly rects: readonly Size[] } | { readonly rects: readonly Size[]; readonly children: readonly RootNode[]; readonly shadow?: readonly RootNode[] };
+
+/** Whether a story root whose child nodes these are renders no content (no box of non-zero size, no drawn non-whitespace text). */
+export function emptyRoot(children: readonly RootNode[]): boolean {
+  throw new Error(`not implemented (story-checks, phase 4): ${String(children.length)}`);
+}
+
+/** An element child of `<body>`: its tag (local name), id and classes. */
+export interface BodyChild {
+  readonly tag: string;
+  readonly id: string;
+  readonly classes: readonly string[];
+}
+
+/** The elements that render nothing, never outside the root (research.md R-08). */
+export const nonRendered: readonly string[] = [];
+
+/** The tags of the body's element children outside the story root: not the root, not a harness node, not a non-rendered element. */
+export function outsideRoot(children: readonly BodyChild[]): string[] {
+  throw new Error(`not implemented (story-checks, phase 4): ${String(children.length)}`);
+}
