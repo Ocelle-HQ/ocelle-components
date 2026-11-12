@@ -147,8 +147,8 @@ describe("plant job (gates/bin/plants.ts)", () => {
   );
   // Plan decision 23 (contracts/plants.md § Shards): the Plants check recomputes the partition, so an empty report
   // directory names every shard of the plan. Five visual plant directories (no plant.json, so none runs) give the plan
-  // of plantsRoot() three shards at the repository's size 4 (plan decision 29): shard 1 its other plants, shards 2 and
-  // 3 four and one visual plant.
+  // of plantsRoot() three shards at the repository's size 3 (plan decision 30): shard 1 its other plants, shards 2 and
+  // 3 three and two visual plants.
   it(
     "--verdict on an empty directory exits 2 naming every shard of the repository's plan",
     async () => {

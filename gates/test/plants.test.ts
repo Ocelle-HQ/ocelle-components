@@ -768,14 +768,14 @@ describe("plantArgs", () => {
 
 // Plan decisions 23 and 24 (operator decisions 2026-11-11, "In phase 3 now" and "Measure first"; contracts/plants.md
 // § Shards, § Plant runner changes): each plant's time on stderr, and the three modes of the split plant job. The
-// repository in memory holds 9 visual plants, so with the repository's size 4 (plan decision 29) the plan has 4 shards:
-// shard 1 every other plant and the registry's, shard 2 the visual plants error-basic, fail-basic, pass-basic and
-// pass-v01, shard 3 pass-v02 to pass-v05, shard 4 pass-v06. The stopwatch gives 1,250 ms for every plant.
+// repository in memory holds 9 visual plants, so with the repository's size 3 (plan decision 30) the plan has 4 shards:
+// shard 1 every other plant and the registry's, shard 2 the visual plants error-basic, fail-basic and pass-basic,
+// shard 3 pass-v01 to pass-v03, shard 4 pass-v04 to pass-v06. The stopwatch gives 1,250 ms for every plant.
 describe("plants: plant times and shards (plan decisions 23 and 24)", () => {
   const extra = Array.from({ length: 6 }, (_, index) => `pass-v${String(index + 1).padStart(2, "0")}`);
   const visual = ["error-basic", "fail-basic", "pass-basic", ...extra].map((name) => `visual/${name}`);
   const others = gateIds.filter((id) => id !== "visual").flatMap((id) => ["error-basic", "fail-basic", "pass-basic"].map((name) => `${id}/${name}`));
-  const partition = [[...others, "plants/matching", "plants/missing-entry"], visual.slice(0, 4), visual.slice(4, 8), visual.slice(8)];
+  const partition = [[...others, "plants/matching", "plants/missing-entry"], visual.slice(0, 3), visual.slice(3, 6), visual.slice(6)];
   const note = (plant: string): string => `note: plant time: ${plant}: 1.3 s`;
 
   function sharded(): Map<string, string> {
@@ -872,9 +872,9 @@ describe("plants: plant times and shards (plan decisions 23 and 24)", () => {
     const run = await shardJob(flawed(), ["--", "--shard", "2"]);
     expect({ code: run.code, out: run.out, err: run.err, ran: run.ran }).toEqual({
       code: 0,
-      out: ["plants: shard 2 of 4: 4 plants judged, every plant as expected"],
-      err: visual.slice(0, 4).map(note),
-      ran: visual.slice(0, 4).map((plant) => `gates/plants/${plant}`),
+      out: ["plants: shard 2 of 4: 3 plants judged, every plant as expected"],
+      err: visual.slice(0, 3).map(note),
+      ran: visual.slice(0, 3).map((plant) => `gates/plants/${plant}`),
     });
     expect([...run.written.keys()]).toEqual(["storybook/.visual/plant-shards/2.json"]);
     expect(JSON.parse(run.written.get("storybook/.visual/plant-shards/2.json") ?? "")).toEqual(report(2));
@@ -883,10 +883,10 @@ describe("plants: plant times and shards (plan decisions 23 and 24)", () => {
   it("--shard writes its report also when a plant is not as expected, with that plant's problem lines (exit 1)", async () => {
     const rejected: PlantRun = { exit: 1, stdout: ["a--b/light: visual: differs: x", "visual: 1 finding in 24 story-themes"], stderr: [] };
     const line = "gates/plants/visual/pass-v01: plants: not-accepted: expected exit 0 with no finding, got exit 1 (a--b/light differs)";
-    const run = await shardJob(sharded(), ["--shard", "2"], { runs: { "gates/plants/visual/pass-v01": rejected } });
-    expect({ code: run.code, out: run.out }).toEqual({ code: 1, out: [line, "plants: 1 problem in 4 plants"] });
-    const written = report(2);
-    expect(JSON.parse(run.written.get("storybook/.visual/plant-shards/2.json") ?? "")).toEqual({
+    const run = await shardJob(sharded(), ["--shard", "3"], { runs: { "gates/plants/visual/pass-v01": rejected } });
+    expect({ code: run.code, out: run.out }).toEqual({ code: 1, out: [line, "plants: 1 problem in 3 plants"] });
+    const written = report(3);
+    expect(JSON.parse(run.written.get("storybook/.visual/plant-shards/3.json") ?? "")).toEqual({
       ...written,
       plants: written.plants.map((plant) => (plant.plant === "visual/pass-v01" ? { ...plant, asExpected: false, lines: [line] } : plant)),
     });
@@ -1003,13 +1003,13 @@ describe("plants: plant times and shards (plan decisions 23 and 24)", () => {
 
   it("--verdict exits 2 on a report with a plant not run for want of an engine, naming it", async () => {
     const three = report(3);
-    const notRun = { ...three, plants: three.plants.filter((plant) => plant.plant !== "visual/pass-v03" && plant.plant !== "visual/pass-v04"), notRun: ["visual/pass-v03", "visual/pass-v04"] };
+    const notRun = { ...three, plants: three.plants.filter((plant) => plant.plant !== "visual/pass-v02" && plant.plant !== "visual/pass-v03"), notRun: ["visual/pass-v02", "visual/pass-v03"] };
     const run = await shardJob(sharded(), ["--verdict", "dir"], { reports: reports(report(1), report(2), notRun, report(4)) });
     expect({ code: run.code, err: run.err }).toEqual({
       code: 2,
       err: [
+        "plants: not run (no container engine): gates/plants/visual/pass-v02",
         "plants: not run (no container engine): gates/plants/visual/pass-v03",
-        "plants: not run (no container engine): gates/plants/visual/pass-v04",
         "plants: could not run: shard 3 could not run 2 visual plants (no container engine); the Plants check judges every plant",
       ],
     });
@@ -1017,9 +1017,9 @@ describe("plants: plant times and shards (plan decisions 23 and 24)", () => {
 
   it("--verdict prints the reports' problem lines with the single run's summary of problems (exit 1)", async () => {
     const line = "gates/plants/visual/pass-v01: plants: not-accepted: expected exit 0 with no finding, got exit 1 (a--b/light differs)";
-    const two = report(2);
-    const failing = { ...two, plants: two.plants.map((plant) => (plant.plant === "visual/pass-v01" ? { ...plant, asExpected: false, lines: [line] } : plant)) };
-    const run = await shardJob(sharded(), ["--verdict", "dir"], { reports: reports(report(1), failing, report(3), report(4)) });
+    const three = report(3);
+    const failing = { ...three, plants: three.plants.map((plant) => (plant.plant === "visual/pass-v01" ? { ...plant, asExpected: false, lines: [line] } : plant)) };
+    const run = await shardJob(sharded(), ["--verdict", "dir"], { reports: reports(report(1), report(2), failing, report(4)) });
     expect({ code: run.code, out: run.out, err: run.err }).toEqual({ code: 1, out: [line, "plants: 1 problem in 56 plants"], err: [] });
   });
 
