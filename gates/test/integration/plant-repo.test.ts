@@ -91,7 +91,8 @@ const allTrue = Object.fromEntries(configuration.map((file) => [file, true]));
  */
 function sourceRoot(without: readonly string[] = []): string {
   const root = tempDir("source-root");
-  const entries = [...configuration.filter((file) => file !== "packages/elements/src/index.ts"), "packages/elements/src", "gates/eslint", "gates/stylelint"];
+  // The Storybook workspace inputs too, which the configuration set holds since 006 (research.md R-16).
+  const entries = [...configuration.filter((file) => file !== "packages/elements/src/index.ts"), "packages/elements/src", "gates/eslint", "gates/stylelint", ...storybookInputs];
   for (const entry of entries.filter((path) => !without.includes(path))) cpSync(join(repo, entry), join(root, entry), { recursive: true });
   for (const file of mayBeAbsent.filter((path) => existsSync(join(repo, path)))) cpSync(join(repo, file), join(root, file));
   symlinkSync(join(repo, "node_modules"), join(root, "node_modules"), "dir");
@@ -221,7 +222,7 @@ describe("buildRepoTree: the Storybook workspace (006 research.md R-16)", () => 
     await buildRepoTree(fake, join(fixtures, "empty-plant"), into);
     expect(read(into, "storybook/baselines/fixture--story.light.png")).toBe("not a png, a fixture baseline\n");
     const repository = readdirSync(join(repo, "storybook/baselines"));
-    expect(repository).toHaveLength(24);
+    expect(repository).toHaveLength(42);
     expect(readdirSync(join(into, "storybook/baselines")).sort()).toEqual([...repository, "fixture--story.light.png"].sort());
     expect(repository.filter((name) => !readFileSync(join(into, "storybook/baselines", name)).equals(readFileSync(join(repo, "storybook/baselines", name))))).toEqual([]);
   });
