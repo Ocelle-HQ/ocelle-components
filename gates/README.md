@@ -48,10 +48,11 @@ missing or invalid, or a plant carries gate configuration.
 
 **The split plant job (006 plan decisions 23 and 24).** `gate:plants` has three modes besides the single run (every
 plant in one process, the registry check first), which stays what runs locally:
-- `--plan` prints the shard numbers as one JSON line, `[1,2,…,n]`. Shard 1 holds every plant of the gates other than
-  `visual` and `axe`, and the registry's plants; then come the `visual` plants by name in groups of at most 3, then
-  the `axe` plants the same way (`plantShards` and `shardSize` in `gates/lib/plant-runner.ts`; 3 is approved by the
-  operator, plan decision 30).
+- `--plan` prints the shard numbers as one JSON line, `[1,2,…,n]`. The first shards hold the other plants (every
+  plant of the gates other than `visual` and `axe`, and the registry's plants), sorted by `<gate>/<case>` and dealt in
+  turn over shards of at most 80; then come the `visual` plants by name in groups of at most 3, then the `axe` plants
+  the same way (`plantShards`, `otherShardSize` and `shardSize` in `gates/lib/plant-runner.ts`; 80 and 3 are approved
+  by the operator, plan decision 30).
 - `--shard <k>` judges only shard `k`'s plants as the single run would, with no registry or structural check, prints
   `plants: shard <k> of <n>: <m> plants judged, every plant as expected`, and writes the report
   `storybook/.visual/plant-shards/<k>.json` whatever its exit.

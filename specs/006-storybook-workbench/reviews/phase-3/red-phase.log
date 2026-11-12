@@ -1,5 +1,5 @@
 Scope: all 5 workspace projects
-✓ Lockfile passes supply-chain policies (verified 3h ago)
+✓ Lockfile passes supply-chain policies (verified 4h ago)
 Lockfile is up to date, resolution step is skipped
 Packages are hard linked from the content-addressable store to the virtual store.
   Content-addressable store is at: /root/.local/share/pnpm/store/v11
@@ -35,10 +35,17 @@ devDependencies:
 + vite 8.3.5
 + vitest 5.0.5
 
-Done in 422ms using pnpm v12.16.1
+Done in 267ms using pnpm v12.16.1
 $ node gates/bin/setup-offline.ts
 setup: installed offline; Chromium at /opt/pw-browsers/chromium-1243/chrome-linux64/chrome
 $ node gates/bin/test.ts
-gates/test/plant-runner.test.ts:652: unit-tests: plantShards and shardSize (plan decision 23) is 3 in the repository, approved by plan decision 30: AssertionError: expected 4 to be 3 // Object.is equality
-unit-tests: 1 of 2987 tests failed
+gates/test/plant-runner.test.ts:631: unit-tests: plantShards and shardSize (plan decision 23) puts the registry's and the other gates' plants in shard 1, sorted, then the visual plants by name in groups of the size: AssertionError: expected [ [ …(10) ], …(3) ] to deeply equal [ [ 'lint/error-a', …(9) ], …(3) ]
+gates/test/plant-runner.test.ts:640: unit-tests: plantShards and shardSize (plan decision 23) adds the axe plants after the visual ones the same way, and gives one shard without visual or axe plants: AssertionError: expected [ [ …(8) ], …(5) ] to deeply equal [ [ 'lint/error-a', …(7) ], …(5) ]
+gates/test/plant-runner.test.ts:654: unit-tests: plantShards and shardSize (plan decision 23) deals the 10 other plants in turn over 3 shards at otherSize 4, the 17 visual plants at size 8 following as shards 4 to 6: AssertionError: expected [ [ …(10) ], …(3) ] to deeply equal [ [ 'lint/error-a', …(3) ], …(5) ]
+gates/test/plant-runner.test.ts:665: unit-tests: plantShards and shardSize (plan decision 23) deals the 10 other plants over 2 shards of 5 at otherSize 5: AssertionError: expected [ [ …(10) ] ] to deeply equal [ [ 'lint/error-a', …(4) ], …(1) ]
+gates/test/plant-runner.test.ts:672: unit-tests: plantShards and shardSize (plan decision 23) keeps the 10 other plants in one shard, sorted, at otherSize 10 or more: AssertionError: expected [ [ …(10) ], …(1) ] to deeply equal [ [ 'lint/error-a', …(9) ], …(1) ]
+gates/test/plant-runner.test.ts:678: unit-tests: plantShards and shardSize (plan decision 23) gives the same partition for the input reversed or shuffled: AssertionError: expected [ [ 'lint/error-a', …(9) ], …(2) ] to deeply equal [ [ 'lint/error-a', …(3) ], …(2) ]
+gates/test/plant-runner.test.ts:691: unit-tests: plantShards and shardSize (plan decision 23) puts every plant in exactly one shard, the other plants' shards differing in size by at most one: AssertionError: expected [ 'axe/case-1', 'axe/case-2', …(34) ] to deeply equal [ 'lint/error-a', 'lint/fail-b', …(8) ]
+gates/test/plant-runner.test.ts:702: unit-tests: plantShards and shardSize (plan decision 23) is 80 for the other plants in the repository, by plan decision 30: AssertionError: expected undefined to be 80 // Object.is equality
+unit-tests: 8 of 2993 tests failed
 [ELIFECYCLE] Test failed. See above for more details.
