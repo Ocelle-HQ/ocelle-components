@@ -56,7 +56,7 @@ directly (type stripping), inside the container too.
 - host tools: docker (with buildx) or podman; under podman also skopeo, which reads the pin's raw manifest for the
   pin check's media type (operator decision 2026-11-11, decision 21; research R-06).
 
-**Storage**: files: `storybook/baselines/*.png` (24 at first), `storybook/visual/container.json`,
+**Storage**: files: `storybook/baselines/*.png` (24 at first, 42 with mission 005's stories, decision 29), `storybook/visual/container.json`,
 `storybook/a11y-exceptions.json`; ignored output in `storybook/.visual/`.
 
 **Testing**: `gates` (unit, pure modules, mutation-tested: every decision of the capture and of the in-page checks
@@ -79,7 +79,7 @@ and the runner's free disk after both pulls (research R-07). CI run 43072665056 
 **Constraints**: byte-exact baselines; no network inside a capture (`--network none`, plus request routing); no root
 needed on the host; one heavy job at a time locally.
 
-**Scale/Scope**: 3 gates, 1 command (with a plant mode), about 70 plants (new and changed), 12 stories, 24 baselines,
+**Scale/Scope**: 3 gates, 1 command (with a plant mode), about 70 plants (new and changed), 12 stories, 24 baselines (21 stories and 42 baselines since the merge of mission 005, decision 29),
 about 14 new source modules.
 
 ## Environment (for every role in this feature)
@@ -121,7 +121,7 @@ rounds 1 and 2 and the phase 1 spike.*
 | VII. Semver | No published surface changes. |
 | VIII. Test-first, proven | Every phase starts red, each red an assertion of the missing behaviour (the pin test asserts the file exists first; the render test's red is taken from the build output). Every decision, the capture's and the in-page checks' included, is a pure module, mutation-tested; only collection and process wiring carry `Stryker disable` comments naming their integration test, and `gates/visual/` is in the mutation scope (R-12). Every gate has fail, pass and breaking plants, with controls where a pass plant alone could not fail (R-04, R-11); the plant job cannot skip or silently drop the container plants (R-07). Plants stay meaningful as the repository changes: edited repository baselines are generated from the current files, never stored, fail plants take the baselines of their pass plant, and plant roots carry the repository's exceptions with their plan files (R-11, R-16). Each capture has one status by a tested order, so a plant's exact expectation does not rest on an unwritten choice (R-05); axe is shown to audit inside open shadow roots (R-08). Each capture refusal check has its own unit test and cause (R-06). The podman behaviours are proven in a CI run of the branch before phase 3 is approved (R-02). Split into shards, the plant job still cannot drop a plant: the "Plants" check recomputes the partition and fails on a shard with no report or other plants than its own, and the registry check covers every plant job (decision 23, R-07). |
 | Supply chain | `axe-core` and `pngjs` are pinned exactly and pass the release-age rule. The image is pinned by its manifest digest, pulled and run only by digest, checked by media type and `RepoDigests` on every engine (R-06). A test ties `container.json` to `.node-version` and to Playwright's expected headless-shell build (contracts/container.md). `actions/download-artifact`, new with the split plant job, is pinned by commit SHA as `upload-artifact` is (decision 23). |
-| Workflow gates | The registry gains three gates (`gates.json`, FR-020 list, `ci.yml` jobs). The required checks go from fourteen to seventeen in `gates/README.md`; the ruleset change is the operator's. In CI the visual gate requires both engines whatever the workflow passes (R-06). The split plant job keeps the one required check "Plants" (its verdict job); `plants-plan` and `plants-shard` are helper jobs, not required (decision 23). |
+| Workflow gates | The registry gains three gates (`gates.json`, FR-020 list, `ci.yml` jobs). The required checks go from fourteen to seventeen in `gates/README.md` (since the merge of mission 005 main's list holds fifteen, "Custom-elements manifest" added; with the three gates that is eighteen, a count the operator confirms before phase 5, tasks.md T071); the ruleset change is the operator's. In CI the visual gate requires both engines whatever the workflow passes (R-06). The split plant job keeps the one required check "Plants" (its verdict job); `plants-plan` and `plants-shard` are helper jobs, not required (decision 23). |
 
 ## Decisions the operator should see at the plan gate
 
@@ -256,6 +256,13 @@ and B'. The question was "Which plant shard setup do you choose?".
        - **A'** otherwise: the removal stays, and `size` becomes 4: 13 shards, split count 19 stories (about 360 s
          fixed part per shard) (T046o, T046p).
 
+    **No longer holds (decision 29).** The B' and A' figures above (`size` 6, 9 shards, split count 21; `size` 4,
+    13 shards, split count 19) were estimated from run 43211645709's 1.47 s per story-theme with 12 repository
+    stories. Since the merge of mission 005 the repository holds 21 stories: B''s split count is already reached and
+    A''s is passed (at 1.47 s × 44 story-themes per plant root, A' gives about 360 + 4 × 65 ≈ 620 s per shard, B'
+    about 210 + 6 × 65 ≈ 600 s). Step 1's "`size` stays 8 for that run" is replaced by decision 29's `size` 4. The
+    disk condition below stands; the options, sizes and split counts are re-derived by T046l from the measuring run.
+
     **The disk condition.** For each shard k of the measuring run:
     - `A_k`, the free disk before the removal (the new first `df -h /`);
     - `B_k`, the free disk after the removal;
@@ -269,6 +276,36 @@ and B'. The question was "Which plant shard setup do you choose?".
     keep. The records give no value for `M`, and none for the gap between the end-of-shard use and the peak, so
     T046l asks the operator for both. The branch is the operator's answer to T046l; this plan does not choose it
     from the numbers alone.
+
+Decision 29 is the operator's of 2026-11-12, on the merge `39763c7` of origin/main `476602e` (mission 005, icons and
+the Ocelle brand mark) into this branch. Mission 005 adds 9 stories (`icon.stories.ts`, `brand-mark.stories.ts`): the
+repository goes from 12 to 21 stories, 24 to 42 story-themes. The 18 new story-themes have no baseline, so
+`gate:visual` reports 18 `missing-baseline` findings, and the tests and plants that name the repository's stories
+(the `storybook-build`, `storybook-index`, `visual` and plants tests; plants with exact repository lists such as
+`fail-token-changed` and `pass-repository`) fail on the 12/24 counts. At 1.47 s per story-theme a `visual` plant now
+takes about 62 s, against 38 s before, so decision 28's measuring run at `size` 8 would take about 12 to 14 minutes
+per shard. The questions were "How should the 18 new baselines be made?" and "What size should the measuring run
+use?".
+
+29. **The 21 stories: baselines made locally, and the measuring run at `size` 4** ("Generate locally"; "Size 4, keep
+    removal"). It amends decision 28:
+    1. The 18 new baselines are made with `visual:update` under docker in the pinned container, as the first 24 were
+       (decision 7: CI's captures stay the record, so CI then confirms the bytes under docker and podman in the
+       measuring run). Then, test-first, the tests and plants that name the repository's stories take the merged
+       repository's values, written by hand: `fail-token-changed`'s list is measured again for the new story-themes,
+       as the phase 1 spike measured the first (contracts/plants.md) (tasks.md T046q, T046r, T046s).
+    2. The measuring run of decision 28 uses shard `size` 4 and keeps the toolset removal: about 13 shards (shard 1
+       and the 48 `visual` plants in groups of 4). `size` 4 is red first in `plantShards`' test of the repository's
+       `size`, then `plant-runner.ts`, and `gates/README.md` names it (T046t, T046u). It is the measuring run's size,
+       provisional; it approves no `size` and no split count. The operator pushes for that run (T046v).
+    3. That one run gives each shard's `A_k`, `B_k` and `E_k` (decision 28's disk condition, unchanged) and its time
+       at 21 stories, with the per-story-theme time and each shard's fixed part (T046k).
+    4. From those measurements alone the B' (no toolset removal) and A' (removal kept) options are re-derived: for
+       each, the largest `size` that keeps a shard under 10 minutes, its shard count, and its split count, which must
+       lie above the 21 stories the repository holds. They go to the operator with decision 28's four questions:
+       `M`, whether the end-of-shard use stands for the peak, B' or A', and approval of the split count with its
+       Complexity Tracking row (T046l). Until that answer no split count is approved and the row "Plant roots hold
+       every repository story" keeps its text. The branch's tasks then use the approved `size` (T046m to T046p).
 
 ## Project Structure
 
@@ -318,7 +355,7 @@ gates/
 ├── test/…                                                       # unit and integration tests, inspect-output fixtures
 └── README.md                                                    # gates, deferred table (elements run-time CSP test)
 storybook/
-├── baselines/*.png                                              # 24 baselines
+├── baselines/*.png                                              # 24 baselines; 42 with mission 005's stories (decision 29)
 ├── visual/container.json
 ├── a11y-exceptions.json                                         # the 10 Complexity Tracking entries (phase 4)
 ├── README.md                                                    # contributor note (FR-025)
@@ -408,7 +445,12 @@ data the gates read (baselines, pin, exceptions).
      `ci.yml`; a CI run that measures the free disk; the operator's choice between B' (no toolset removal, `size` 6)
      and A' (the removal kept, `size` 4) on the disk condition of decision 28, with the split count approved then;
      the chosen branch red first in `ci-workflow.test.ts` (B' only) and in `plantShards`' test of the repository's
-     `size`, then a CI run of it.
+     `size`, then a CI run of it;
+   - after the merge of mission 005 (decision 29, operator decisions 2026-11-12, "Generate locally" and "Size 4, keep
+     removal"): the 18 new baselines from `visual:update` under docker; the tests and plants that name the
+     repository's stories, red first; `size` 4 for the measuring run, red first in `plantShards`' test; the
+     measuring run itself (CI's confirmation of the 42 baselines and the disk and time records at 21 stories); the
+     B'/A' options and the split count re-derived from that run for the operator.
 4. **US3 Accessibility** (P3):
    - `axe-rules.ts` (selection on fixture metadata, and the test that derives the 4.14.0 lists from axe-core's own
      metadata), `axe-verdict.ts` (incomplete findings, outside-root, `printSelector`), `story-checks.ts` (empty,

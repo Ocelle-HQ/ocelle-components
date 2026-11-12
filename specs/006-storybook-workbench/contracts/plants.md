@@ -7,7 +7,8 @@ files in a plant's `tree/` replace or add to `storybook/stories/`; a plant that 
 files it keeps and removes none of the configuration set, so every plant root holds every repository story (operator
 decision on PLAN-FRESH-2-007, option (b); its cost and sunset: research.md R-07, plan Complexity Tracking). Where a
 plant's exact findings depend on the existing stories (`fail-token-changed`), the phase 1 spike lists them, and a pull
-request that adds a story changing them updates the list in the same change.
+request that adds a story changing them updates the list in the same change. Mission 005's 9 stories, merged into
+this branch, are measured and added by this feature (plan decision 29, tasks.md T046s).
 
 No plant `tree/` holds a copy of a repository baseline: a plant edits or removes one by its `delta.json` `baselines`
 key, applied to the current file (research.md R-11). Pass plants with stories of their own hold those stories'
@@ -33,7 +34,7 @@ repository's entries and copies the plan files they name (research.md R-16).
 
 | Plant | Expect | Findings or cause |
 |---|---|---|
-| `fail-token-changed` | fail | a `delta.json` token change of `color-ink` (light): `differs` on every story-theme that shows it (listed exactly by the phase 1 spike) |
+| `fail-token-changed` | fail | a `delta.json` token change of `color-ink` (light): `differs` on every story-theme that shows it (listed exactly by the phase 1 spike, and for mission 005's stories by the measurement of tasks.md T046s, plan decision 29) |
 | `fail-one-pixel` | fail | `delta.json` `baselines: [{ "file": "tokens--colour.light.png", "edit": "one-pixel" }]`, applied to the current repository baseline: exactly one `differs` at `tokens--colour/light` (SC-006) |
 | `fail-missing-baseline` | fail | `delta.json` `baselines: [{ "file": "tokens--colour.light.png", "edit": "remove" }]`: `missing-baseline` at `tokens--colour/light` |
 | `fail-stray-baseline` | fail | `storybook/baselines/gone--story.light.png`: `stray-baseline` |
@@ -186,7 +187,8 @@ reports hold (exit 1, summary `plants: <p> problems in <n> plants`), as the sing
 `plantShards(plants, size)` (`gates/lib/plant-runner.ts`, pure, unit-tested): shard 1 holds every plant of the gates
 other than `visual` and `axe` and the registry's plants; then the `visual` plants sorted by `<case>` in consecutive
 groups of at most `size`; then the `axe` plants the same way; a gate with no plants adds no shard; every plant is in
-exactly one shard. `size` is 8, provisional until tasks.md T046h derives it from the measured times.
+exactly one shard. `size` is 4 (plan decision 29, "Size 4, keep removal": the measuring run's size, was 8),
+provisional until the operator approves a `size` in answer to tasks.md T046l, re-derived from the measured times.
 
 The report `storybook/.visual/plant-shards/<k>.json` (the directory is ignored with `storybook/.visual/`), written by
 `--shard <k>` whatever its exit:
