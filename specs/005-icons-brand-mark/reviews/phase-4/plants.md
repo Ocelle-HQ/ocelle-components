@@ -42,3 +42,19 @@ calc(var(--ocelle-icon-size) - 1lh - 1lh)`) each fail with one `ocelle/token-onl
 | `gate:mutation -- --base aea13f4` (final) | exit 0: 150 mutants on the changed lines of 2 files, none survived; 0 equivalent records |
 
 No mutation shard came near 10 minutes.
+
+## The landing fold plant (T069; OP4-01, landing round 1 L1-02)
+
+`fail-lh-paren-factor` (`padding-block: calc((1lh) * 3 + var(--ocelle-space-1))`) was run once by copying its
+`tree/packages/elements/src/x.ts` into the working tree and running `gate:style-lint`, then removing the copy:
+
+| Run | Result |
+|---|---|
+| before the fix (at the red commit `b65dabf`) | exit 0, "13 files checked, no finding": the plant's expected finding is missing, so the plant does not hold |
+| after the fix | exit 1, one finding `packages/elements/src/x.ts:6: style-lint: ocelle/token-only: padding-block: raw 1lh`, as its `plant.json` expects |
+
+| Gate (after the fix, one at a time, Node 22) | Result |
+|---|---|
+| `gate:style-lint` | exit 0, 12 files, no finding (the shipped `iconSlotStyles` included) |
+| `gate:plants` | exit 0: 218 plants of 14 gates and the registry judged, every plant as expected |
+| `gate:mutation -- --base b65dabf` (the fix's parent, the red commit) | exit 0: 24 mutants on the changed lines of `gates/stylelint/token-only.ts`, none survived; 0 equivalent records |
