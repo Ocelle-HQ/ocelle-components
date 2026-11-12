@@ -124,22 +124,74 @@ describe("ci.yml visual and plants jobs (006 FR-017, FR-018)", () => {
     ]);
   });
 
-  it("plants runs the job with OCELLE_VISUAL_ENGINE=both and uploads storybook/.visual/plants/ on failure", () => {
-    expect(job("plants")).toEqual([
-      "  plants:",
-      "    name: Plants",
-      ...setup,
+  // Plan decisions 23 and 25 (operator decisions 2026-11-11, "In phase 3 now" and "Apply now"; contracts/gates.md § The
+  // registry): the plant job split into the plan, a matrix of shards (each first removing the runner's unused toolsets)
+  // and the Plants check, which downloads every shard's report and gives the verdict.
+  it("plants-plan prints the plan as the shards output", () => {
+    expect(job("plants-plan")).toEqual([
+      "  plants-plan:",
+      "    name: Plants plan",
+      "    runs-on: ubuntu-24.04",
+      "    outputs:",
+      "      shards: ${{ steps.plan.outputs.shards }}",
+      "    steps:",
+      ...setup.slice(2),
+      "      - id: plan",
+      "        run: |",
+      '          shards="$(pnpm --silent run gate:plants -- --plan)"',
+      '          echo "$shards"',
+      '          echo "shards=$shards" >> "$GITHUB_OUTPUT"',
+    ]);
+  });
+
+  it("plants-shard judges one planned shard under both engines after the toolset removal, and uploads its report always", () => {
+    expect(job("plants-shard")).toEqual([
+      "  plants-shard:",
+      "    name: Plants shard",
+      "    needs: plants-plan",
+      "    runs-on: ubuntu-24.04",
+      "    strategy:",
+      "      fail-fast: false",
+      "      matrix:",
+      "        shard: ${{ fromJSON(needs.plants-plan.outputs.shards) }}",
+      "    steps:",
+      "      - run: sudo rm -rf /usr/local/lib/android /usr/share/dotnet /opt/ghc /usr/local/.ghcup /opt/hostedtoolcache/CodeQL",
+      "      - run: df -h /",
+      ...setup.slice(2),
       "      - env:",
       "          OCELLE_VISUAL_ENGINE: both",
-      "        run: pnpm run gate:plants",
+      "          SHARD: ${{ matrix.shard }}",
+      '        run: pnpm run gate:plants -- --shard "$SHARD"',
       "      - if: always()",
       "        run: df -h /",
+      "      - if: always()",
+      `        uses: ${upload}`,
+      "        with:",
+      "          name: plant-shard-${{ matrix.shard }}",
+      "          path: storybook/.visual/plant-shards/",
+      "          include-hidden-files: true",
       "      - if: failure()",
       `        uses: ${upload}`,
       "        with:",
-      "          name: plants",
+      "          name: plants-${{ matrix.shard }}",
       "          path: storybook/.visual/plants/",
       "          include-hidden-files: true",
+    ]);
+  });
+
+  it("plants, named Plants, downloads every shard's report after the shards, always, and gives the verdict", () => {
+    expect(job("plants")).toEqual([
+      "  plants:",
+      "    name: Plants",
+      "    needs: [plants-plan, plants-shard]",
+      "    if: always()",
+      ...setup,
+      "      - uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2",
+      "        with:",
+      "          pattern: plant-shard-*",
+      "          path: storybook/.visual/plant-shards/",
+      "          merge-multiple: true",
+      "      - run: pnpm run gate:plants -- --verdict storybook/.visual/plant-shards",
     ]);
   });
 });
