@@ -1,0 +1,2 @@
+$ node gates/bin/plants.ts
+plants: 186 plants of 13 gates and the registry judged, every plant as expected

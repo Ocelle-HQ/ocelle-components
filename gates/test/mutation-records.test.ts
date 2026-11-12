@@ -145,7 +145,7 @@ describe("mutation gate: records and disable forms (US2 scenario 4)", () => {
       out: [
         "gates/lib/a.ts:2: mutation: record: ConditionalExpression: the guard only narrows the type",
         "gates/lib/a.ts:4: mutation: record: StringLiteral, EqualityOperator: both are logged only",
-        "mutation: 1 mutant on the changed lines of 1 file, none survived; 2 equivalent records",
+        "mutation: 1 mutant on the changed lines of 1 file, none survived; 0 timeouts, 0 compile errors, 0 zero-mutant entries; 2 equivalent records",
       ],
       err: [],
     });
@@ -162,7 +162,7 @@ describe("mutation gate: records and disable forms (US2 scenario 4)", () => {
         "gates/lib/a.ts:2: mutation: record: ConditionalExpression: the guard only narrows the type",
         "gates/lib/a.ts:4: mutation: record: StringLiteral, EqualityOperator: both are logged only",
         `gates/lib/a.ts:6: mutation: disable-form: ${otherForm}`,
-        "mutation: 1 finding in 1 changed file (1 mutant on changed lines)",
+        "mutation: 1 finding in 1 changed file (1 mutant on changed lines; 0 timeouts, 0 compile errors, 0 zero-mutant entries)",
       ],
       err: [],
     });

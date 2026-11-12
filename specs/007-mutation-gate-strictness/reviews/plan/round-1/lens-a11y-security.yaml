@@ -1,0 +1,44 @@
+schema: review-findings/v1
+complete: true
+phase: plan
+round: 1
+lens: a11y-security
+# Scope read: spec.md, plan.md, research.md, data-model.md, contracts/mutation-output.md, quickstart.md,
+# constitution 1.3.1. Round 1, so there are no earlier refute/verify records.
+# Checked and found clean (no finding):
+# - Principles I-V: no element, token, style, story or CSP surface changes (plan § Constitution Check); research R-07
+#   keeps dist/ byte-identical and the measurement commit is reverted before merge. No WCAG, shadow-root ID, keyboard,
+#   focus, target-size or reduced-motion surface exists in this feature. The new output is plain text with no colour
+#   cue (contracts/mutation-output.md), so a reviewer on a screen reader reads it as the existing findings.
+# - No new dependency (plan § Technical Context). Vitest 5.0.5 has `sequence.groupOrder`
+#   (node_modules/.pnpm/vitest@5.0.5_*/node_modules/vitest/dist/chunks/plugin.d.C8mmycim.d.ts); Stryker's vitest
+#   runner 10.1.1 does not override `sequence` (dist/src/vitest-test-runner.js:126-141 sets maxConcurrency 1, bail 1,
+#   maxWorkers 1 only), so lever 1 is a pure configuration change with no supply-chain effect.
+# - CI injection: the new `--files` entry name printed by the zero-mutant line comes from the plan JSON, which reaches
+#   the shard script through the environment (.github/workflows/ci.yml:100-104), and paths with line terminators are
+#   already exit 2 (gates/lib/mutation/ranges.ts:132 `unusable`), so a zero-mutant line cannot be split into a second
+#   (workflow-command) line. Replacements go through `oneLine` (research R-01), as findings do today.
+# - Evidence copies of mutation.json carry only the sandbox projectRoot (op 004 precedent,
+#   ops/004-token-source-mutation/mutation/entry-1_60.json), no secret or personal data.
+findings:
+  - id: PLAN-A11Y-SECURITY-1-001
+    severity: 3
+    title: "R-03 fallback turns an exit-2 guard into a pass on free-text log lines that Stryker 10.1.1 does not print, one of them matched as a substring of non-zero counts"
+    evidence:
+      - artifact: "research.md § R-03 'Real run with no mutant at all': 'when Stryker's output states that it found no mutants (its \"No files marked to be mutated\" or \"Found 0 of … file(s) to be mutated\" log line, or its `0 Mutant(s) generated` line; the task records which line 10.1.1 prints), every entry is zero-mutant and the run passes.'"
+      - code: "grep over node_modules/.pnpm/@stryker-mutator+*/node_modules/@stryker-mutator/*/dist for 'Mutant(s) generated' and 'No files marked': no match in 10.1.1."
+      - code: "@stryker-mutator/core 10.1.1 dist/src/fs/project.js:35-44: 'Found ${n} of ${m} file(s) to be mutated' is logged only when filesToMutate.size is non-zero; with no file the else branch warns 'No files found for mutation with the given glob expressions'. So 'Found 0 of …' is never printed."
+      - code: "@stryker-mutator/instrumenter 10.1.1 dist/src/instrumenter.js:53: the line actually printed is 'Instrumented %d source file(s) with %d mutant(s)'."
+      - code: "gates/lib/mutation/report.ts:84-86 and gates/test/integration/mutation.test.ts:153-167: a run without a report is exit 2 today ('Stryker wrote no report'), a guard proven by review round 1, R1-01."
+    claim: |
+      The fallback converts today's fail-closed "Stryker wrote no report" (exit 2) into exit 0 with every entry
+      reported as zero-mutant, decided from Stryker's log text. Two of the three candidate lines do not exist in
+      Stryker 10.1.1, and the third ("Found 0 of …") cannot be printed, so if the probe shows the no-report case the
+      task has no specified safe signal and will invent one at implementation time. The candidate "0 Mutant(s)
+      generated" is also a substring of "10 Mutant(s) generated", "120 Mutant(s) generated" and so on: a plain
+      `includes`/unanchored match, as the wording invites, would let a run that generated mutants and then failed to
+      write its report (reporter crash, disk, killed process) pass with no mutant tested. That is the "gate that
+      silently passes everything" Principle VIII exists to catch, and the plan gives this new pass path no plant and
+      no negative test (only "Any other run without a report stays exit 2", with no test named for it).
+    remedies:
+      - "Rewrite R-03's fallback to name the one line 10.1.1 prints, anchored as a whole count ('Instrumented <d> source file(s) with 0 mutant(s)', matched with a regex that requires a non-digit before 0), and require in addition Stryker exit code 0 and no ERROR line (report.ts lastError undefined); state that any other no-report run stays exit 2 and keep the R1-01 integration test as is. Add to the plan red gate tests in gates/test/mutation-report.test.ts for: no report + 'with 10 mutant(s)' -> exit 2; no report + 'with 0 mutant(s)' + non-zero exit -> exit 2; no report + 'with 0 mutant(s)' + exit 0 -> pass with every entry zero-mutant. The pass-zero-mutant plant then proves the real path either way."

@@ -26,7 +26,7 @@ and changes nothing else. The registry of gates is `gates/gates.json`; the FR-02
 | `style-lint` | Style lint | `pnpm run gate:style-lint` | the styles of FR-024 (token-only), and since 002 every `var(--ocelle-…)` reference to a name that is neither a token of `packages/tokens/src/source.ts` nor a custom property `packages/elements/custom-elements.json` declares (exact name; 002 FR-010); in `packages/styles/**/*.css` a line height must be an `--ocelle-line-height-*` token or a CSS-wide keyword, and a `font` shorthand there must state one (003 FR-002) | a raw value in an element `css` template, in stylesheets of `elements/src`, `styles/src` and `styles/` outside `src/`, one per FR-024 reject class; a misspelt token (`var(--ocelle-color-canvs)`), a misspelt element property (`var(--ocelle-button-gpa)`); the six `packages/styles` line-height fail plants (`fail-styles-literal-line-height`, `fail-styles-percent-line-height`, `fail-styles-calc-line-height`, `fail-styles-normal-line-height`, `fail-styles-font-without-line-height`, `fail-styles-other-token-line-height`); pass: the ten allowed values (nine in `styles/src`; the unitless line height, `pass-line-height`, in `elements/src`), `pass-styles-line-height-token`, a story, element test code, token definitions, real tokens, a declared element property; breaking: a stylesheet that does not parse, an element property with a token's full name |
 | `unit-tests` | Unit tests | `pnpm run gate:unit-tests` (`pnpm test`) | every test file | a failing test in `tokens`, `styles`, a colocated test, `gates`, and `elements` in Chromium; pass: a passing test alone in each project, a failing fixture not run; breaking: a file that throws while loading, no test file |
 | `test-lint` | Test lint | `pnpm run gate:test-lint` | all test code (FR-010) | the seven FR-010 patterns of SC-004, an assertion-free colocated element test and gate test; pass: a real assertion, an excluded fixture; breaking: a file that does not parse |
-| `mutation` | Mutation testing | `pnpm run gate:mutation -- --base <sha>` | changed package source and gate source lines, and since 002 `storybook/scripts/`, `storybook/.storybook/` and `storybook/stories/` (not `*.stories.ts`) | an unchecked covered line, a line no test runs, a record without a reason, `// Stryker disable all`, a survivor in gate source; pass: a fully checked change, a reasoned record (listed), a test-only change, a `CompileError`-only change; breaking: a `--base` that does not resolve (the plant's `plant.json` `base`), a failed dry run |
+| `mutation` | Mutation testing | `pnpm run gate:mutation -- --base <sha>` | changed package source and gate source lines, and since 002 `storybook/scripts/`, `storybook/.storybook/` and `storybook/stories/` (not `*.stories.ts`) | an unchecked covered line, a line no test runs, a record without a reason, `// Stryker disable all`, a survivor in gate source; pass: a fully checked change (no report line), a reasoned record (listed), a test-only change, a `CompileError`-only change (its `compile-error` report line), a type-only change (its `zero-mutants` report line, on a real Stryker run with no mutant); breaking: a `--base` that does not resolve (the plant's `plant.json` `base`), a failed dry run, a failed dry run of a type-only change with no mutant. Report lines, not findings (007): `timeout`, `compile-error` and `zero-mutants` lines and their counts in the summary |
 | `csp` | Content security | `pnpm -r build && pnpm run gate:csp` | built output of the three packages; since 002 the Storybook inputs and HTML entries (below) | each FR-021 construct, a `style` attribute after a newline, `<svg/onload=>`, `(0, eval)(s)`, an inline script in `storybook/dist/index.html`, a `style` attribute in a story's markup string, `new Function` in `.storybook/preview.ts`, `eval` in `storybook/scripts/`; pass: `<script src>`, `setTimeout(fn, 0)`, `retrieval(x)`, `isFunction(x)`, an inline script in source, external scripts in a Storybook HTML entry, tag names in `storybook/scripts/externalise.ts`; breaking: a `.js` file that does not parse, a Storybook `.ts` file that does not parse |
 | `prefix` | Prefix | `pnpm -r build && pnpm run gate:prefix` | package source, test code and built output of the three packages; since 002 the Storybook workspace (below) | `<sk-button>`, `<SK-Button>`, `--sk-color` in test code, an `sk-select` event in `dist/`, `monospace`, `Menlo`, `Menlo, monospace` in `storybook/.generated/swatches.css`; pass: `task-list`, `desk-row`, `--risk-level`, a name outside the packages; breaking: invalid UTF-8 |
 | `config-copies` | Story config copies | `pnpm run gate:config-copies` | the two story configuration copies (FR-006) | one setting differs, a narrowed `test_pathspec`; pass: equal copies; breaking: a copy missing |
@@ -81,6 +81,16 @@ take verbatim as a `mutate` input, checked before Stryker runs, and a `mutate` e
 `node_modules`, `.git`, `.next`, `.nuxt`, `.svelte-kit` or `.stryker-tmp`, in any case. The cause names each such
 path or entry (contracts/gate-cli.md, mutation row; phase 3 round 12, O12-01). A changed file that Stryker read but
 its report does not list has no mutant on its changed lines and passes.
+
+Since mission 007 (2026-11-10, `specs/007-mutation-gate-strictness/contracts/mutation-output.md`), the gate also prints
+what no test was seen killing on changed lines, after the equivalent records and before the findings: one
+`<path>:<line>: mutation: timeout: <mutator>: replaced by <replacement>` line per Timeout mutant, one
+`<path>:<line>: mutation: compile-error: ...` line per CompileError mutant, and one
+`<entry>: mutation: zero-mutants: no mutant on the changed lines` line per entry with no mutant on its changed lines
+(the path, or the `--files` entry as given, `path:start-end` for a range). Its summary counts the three, also when
+zero. These are reports to read, not findings: they change no exit code, and the plant judge never counts them as
+findings; a mutation plant may assert them with `reports` in its `plant.json` (contracts/plants.md). A `--files` list
+that names one file more than once is exit 2, since one file's entries never share a shard.
 
 ## The Storybook scope of `csp` and `prefix` (002 FR-023)
 
@@ -140,6 +150,12 @@ R-08). A cut is the boundary between two consecutive entries of one file. A muta
 spans a cut (starts in one entry of a file and ends in the next) is mutated in no shard, since Stryker mutates a node
 only when it lies wholly inside one `mutate` range; the smaller mutants inside it, each within one entry, still are.
 This is an accepted limit (operator decision, phase 3 round 10, O10-02; research.md R-08, "Cuts, an accepted limit").
+Amendment 2026-11-11 (mission 007, spec FR-014): the entry bound is now 30 changed lines, for every file. A file of
+more than 30 changed lines is split into entries of at most 30 changed lines, so no shard holds more than 30 changed
+lines of one file; the 10-entry and 250-line shard bounds and the rule that two entries of one file never share a
+shard stand (operator decision, 2026-11-11, "30-line entries, all files": with the TypeScript checker on, three of
+the four 60-line entries of `packages/tokens/src/source.ts` took 188 s, 251 s and 283 s on the sandbox against
+mission 007's bound of 176 s; `specs/007-mutation-gate-strictness/evidence/README.md`).
 `--plan` reports the number of shards and of cuts it made on stderr, in one line,
 `mutation: plan: <s> shards, <c> cuts within files (...)`, and the JSON on stdout stays the one array the job
 reads. Each `mutation-shard` job passes its shard's entries unchanged to `--files` and runs under a 10-minute limit. `.github/workflows/cache.yml`

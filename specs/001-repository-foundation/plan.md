@@ -54,7 +54,9 @@ by operator decision, phase 3 round 9, human:jeroennouwsdev, 2026-11-03: plant-j
 minutes; its entry bound lowered from 120 to 60 by operator decision, 2026-11-05, phase 5 round 6 of mission 002,
 O6-01, human:jeroennouwsdev: the 120-line shard `packages/tokens/src/generate.ts:121-240` took 670 s;
 one file's entries in separate shards by operator decision, phase 3 round 10, human:jeroennouwsdev, 2026-11-03)
-under 10 minutes,
+under 10 minutes (*Note, 2026-11-11:* the entry bound is now 30 changed lines for every file, by the FR-013 amendment
+of `spec.md` (operator decision of mission 007, human:jeroennouwsdev, "30-line entries, all files",
+`specs/007-mutation-gate-strictness/` FR-014); the 60-line text of this goal is kept as it was decided),
 the CI mutation check split into such shards (SC-005, FR-013, R-08)
 
 **Constraints**: offline setup never touches the network (FR-008); no gate reads `gates/plants/` except the plant job,
@@ -212,7 +214,9 @@ contracts/gate-cli.md, `gates/README.md`). The 10-entry and 250-line bounds, the
 never share a shard, the 10-minute shard limit and the accepted cut limit stay; measurements recorded above under
 the 120-line bound stay as recorded. `gates/lib/mutation/shards.ts` changed test-first in mission 002 as T071 (red
 under `red.sh 5 fix-6`, reviewed as 002 phase 5 round 7). Mutation strength is unchanged: every changed line is
-still mutated, in more, shorter shards. No new exception.
+still mutated, in more, shorter shards. No new exception. *Note, 2026-11-11:* the entry bound is now 30 changed lines
+for every file, by the FR-013 amendment of `spec.md` (operator decision of mission 007, human:jeroennouwsdev, "30-line
+entries, all files", `specs/007-mutation-gate-strictness/` FR-014); the 60-line text here is kept as it was decided.
 
 ## Project Structure
 

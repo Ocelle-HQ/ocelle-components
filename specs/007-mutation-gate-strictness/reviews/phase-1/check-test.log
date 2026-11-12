@@ -1,0 +1,3 @@
+$ node gates/bin/test.ts
+unit-tests: 2038 tests passed in 97 files
+exit 0 123s

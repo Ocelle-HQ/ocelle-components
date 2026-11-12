@@ -1,0 +1,5 @@
+{
+  "expect": "error",
+  "why": "A type-only change with no mutant on its changed line, beside a test that fails without any mutant: Stryker's dry run fails and writes no report, so the gate could not run, as for a change with mutants (007 research R-03; error-dry-run-fails).",
+  "cause": "mutation: could not run: Stryker wrote no report (There were failed tests in the initial test run.)"
+}

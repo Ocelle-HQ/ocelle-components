@@ -1,0 +1,48 @@
+$ node specs/007-mutation-gate-strictness/evidence/compare.mjs specs/007-mutation-gate-strictness/evidence/lever3/source-1-30/mutation.json specs/007-mutation-gate-strictness/evidence/fix-2/source-1-30/mutation.json packages/tokens/src/source.ts
+packages/tokens/src/source.ts: 19 mutants in both runs, every key once
+move CompileError -> CompileError: 3
+move Killed -> Killed: 16
+(exit 0)
+
+$ node specs/007-mutation-gate-strictness/evidence/compare.mjs specs/007-mutation-gate-strictness/evidence/lever3/source-31-60/mutation.json specs/007-mutation-gate-strictness/evidence/fix-2/source-31-60/mutation.json packages/tokens/src/source.ts
+packages/tokens/src/source.ts: 115 mutants in both runs, every key once
+move CompileError -> CompileError: 61
+move Killed -> Killed: 54
+(exit 0)
+
+$ node specs/007-mutation-gate-strictness/evidence/compare.mjs specs/007-mutation-gate-strictness/evidence/lever3/source-61-90/mutation.json specs/007-mutation-gate-strictness/evidence/fix-2/source-61-90/mutation.json packages/tokens/src/source.ts
+packages/tokens/src/source.ts: 79 mutants in both runs, every key once
+move CompileError -> CompileError: 36
+move Killed -> Killed: 43
+(exit 0)
+
+$ node specs/007-mutation-gate-strictness/evidence/compare.mjs specs/007-mutation-gate-strictness/evidence/lever3/source-91-120/mutation.json specs/007-mutation-gate-strictness/evidence/fix-2/source-91-120/mutation.json packages/tokens/src/source.ts
+packages/tokens/src/source.ts: 123 mutants in both runs, every key once
+move CompileError -> CompileError: 63
+move Killed -> Killed: 60
+(exit 0)
+
+$ node specs/007-mutation-gate-strictness/evidence/compare.mjs specs/007-mutation-gate-strictness/evidence/lever3/source-121-150/mutation.json specs/007-mutation-gate-strictness/evidence/fix-2/source-121-150/mutation.json packages/tokens/src/source.ts
+packages/tokens/src/source.ts: 110 mutants in both runs, every key once
+move CompileError -> CompileError: 54
+move Killed -> Killed: 56
+(exit 0)
+
+$ node specs/007-mutation-gate-strictness/evidence/compare.mjs specs/007-mutation-gate-strictness/evidence/lever3/source-151-180/mutation.json specs/007-mutation-gate-strictness/evidence/fix-2/source-151-180/mutation.json packages/tokens/src/source.ts
+packages/tokens/src/source.ts: 114 mutants in both runs, every key once
+move CompileError -> CompileError: 57
+move Killed -> Killed: 57
+(exit 0)
+
+$ node specs/007-mutation-gate-strictness/evidence/compare.mjs specs/007-mutation-gate-strictness/evidence/lever3/source-181-210/mutation.json specs/007-mutation-gate-strictness/evidence/fix-2/source-181-210/mutation.json packages/tokens/src/source.ts
+packages/tokens/src/source.ts: 79 mutants in both runs, every key once
+move CompileError -> CompileError: 31
+move Killed -> Killed: 48
+(exit 0)
+
+$ node specs/007-mutation-gate-strictness/evidence/compare.mjs specs/007-mutation-gate-strictness/evidence/lever3/source-211-230/mutation.json specs/007-mutation-gate-strictness/evidence/fix-2/source-211-230/mutation.json packages/tokens/src/source.ts
+packages/tokens/src/source.ts: 40 mutants in both runs, every key once
+move CompileError -> CompileError: 18
+move Killed -> Killed: 22
+(exit 0)
+

@@ -1,0 +1,11 @@
+{
+  "expect": "pass",
+  "why": "A type-only change to package source: Stryker finds no mutant on the changed line, so the run is a zero-mutant entry, reported by its path, and passes (007 FR-003, US1 scenario 3, on a real Stryker run, FR-008).",
+  "reports": [
+    {
+      "location": "packages/tokens/src/x.ts",
+      "rule": "zero-mutants",
+      "message": "no mutant on the changed lines"
+    }
+  ]
+}
