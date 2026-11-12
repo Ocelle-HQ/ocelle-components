@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import type { Plant } from "../lib/plant-judge.ts";
-import { aloneDecision, containerDecision, engineValue, errorText, failedOwn, gateRunsAtOnce, keptPlantDir, limiter, needsEngine, outputLines, plantShards, plantTimeNote, plantValues, resolveLocations, runPlant, shardSize } from "../lib/plant-runner.ts";
+import { aloneDecision, containerDecision, engineValue, errorText, failedOwn, gateRunsAtOnce, keptPlantDir, limiter, needsEngine, outputLines, otherShardSize, plantShards, plantTimeNote, plantValues, resolveLocations, runPlant, shardSize } from "../lib/plant-runner.ts";
 import type { BuiltRepo, RunnerTools, TreeView } from "../lib/plant-runner.ts";
 import type { Gate, PlantForm } from "../lib/registry.ts";
 import type { ToolRun } from "../lib/spawn.ts";
@@ -626,9 +626,11 @@ describe("plantShards and shardSize (plan decision 23)", () => {
   // The visual and axe plants out of name order, and before the others, to show both orders are the shards' own.
   const shuffled = (list: readonly string[]): string[] => [...list].reverse();
 
-  it("puts the registry's and the other gates' plants in shard 1, then the visual plants by name in groups of the size", () => {
-    expect(plantShards([...shuffled(visual), ...registry, ...lint, ...storybook], 8)).toEqual([
-      [...registry, ...lint, ...storybook],
+  // Plan decision 30 ("Split its plants"): an otherSize of 80 gives one shard of the other plants here, and that shard
+  // holds them sorted by <gate>/<case>, no longer in their input order.
+  it("puts the registry's and the other gates' plants in shard 1, sorted, then the visual plants by name in groups of the size", () => {
+    expect(plantShards([...shuffled(visual), ...registry, ...lint, ...storybook], 8, 80)).toEqual([
+      [...lint, ...registry, ...storybook],
       visual.slice(0, 8),
       visual.slice(8, 16),
       visual.slice(16),
@@ -636,15 +638,69 @@ describe("plantShards and shardSize (plan decision 23)", () => {
   });
 
   it("adds the axe plants after the visual ones the same way, and gives one shard without visual or axe plants", () => {
-    const shards = plantShards([...shuffled(axe), ...registry, ...shuffled(visual), ...lint], 8);
-    expect(shards).toEqual([[...registry, ...lint], visual.slice(0, 8), visual.slice(8, 16), visual.slice(16), axe.slice(0, 8), axe.slice(8)]);
-    expect(plantShards([...registry, ...lint, ...storybook], 8)).toEqual([[...registry, ...lint, ...storybook]]);
-    expect(plantShards([...registry, ...visual.slice(0, 3)], 2)).toEqual([registry, visual.slice(0, 2), visual.slice(2, 3)]);
+    const shards = plantShards([...shuffled(axe), ...registry, ...shuffled(visual), ...lint], 8, 80);
+    expect(shards).toEqual([[...lint, ...registry], visual.slice(0, 8), visual.slice(8, 16), visual.slice(16), axe.slice(0, 8), axe.slice(8)]);
+    expect(plantShards([...registry, ...lint, ...storybook], 8, 80)).toEqual([[...lint, ...registry, ...storybook]]);
+    expect(plantShards([...registry, ...visual.slice(0, 3)], 2, 80)).toEqual([registry, visual.slice(0, 2), visual.slice(2, 3)]);
   });
 
   it("puts every plant in exactly one shard", () => {
     const all = [...registry, ...lint, ...storybook, ...visual, ...axe];
-    expect(plantShards(all, 8).flat().sort()).toEqual([...all].sort());
+    expect(plantShards(all, 8, 80).flat().sort()).toEqual([...all].sort());
+  });
+
+  // Plan decision 30 (operator decision 2026-11-12, "Split its plants"; contracts/plants.md § Shards): the other plants
+  // sorted by <gate>/<case> and dealt in turn over max(1, ceil(n / otherSize)) shards, before the visual plants.
+  it("deals the 10 other plants in turn over 3 shards at otherSize 4, the 17 visual plants at size 8 following as shards 4 to 6", () => {
+    expect(plantShards([...shuffled(visual), ...registry, ...lint, ...storybook], 8, 4)).toEqual([
+      ["lint/error-a", "lint/pass-d", "plants/fail-gate-without-job", "storybook-build/pass-y"],
+      ["lint/fail-b", "lint/pass-e", "plants/pass-matching"],
+      ["lint/fail-c", "plants/fail-gate-without-entry", "storybook-build/fail-x"],
+      visual.slice(0, 8),
+      visual.slice(8, 16),
+      visual.slice(16),
+    ]);
+  });
+
+  it("deals the 10 other plants over 2 shards of 5 at otherSize 5", () => {
+    expect(plantShards([...registry, ...lint, ...storybook], 8, 5)).toEqual([
+      ["lint/error-a", "lint/fail-c", "lint/pass-e", "plants/fail-gate-without-job", "storybook-build/fail-x"],
+      ["lint/fail-b", "lint/pass-d", "plants/fail-gate-without-entry", "plants/pass-matching", "storybook-build/pass-y"],
+    ]);
+  });
+
+  it("keeps the 10 other plants in one shard, sorted, at otherSize 10 or more", () => {
+    for (const otherSize of [10, 11, 80]) {
+      expect(plantShards([...storybook, ...registry, ...lint, ...visual.slice(0, 2)], 8, otherSize)).toEqual([[...lint, ...registry, ...storybook], visual.slice(0, 2)]);
+    }
+  });
+
+  it("gives the same partition for the input reversed or shuffled", () => {
+    const all = [...registry, ...lint, ...storybook, ...visual, ...axe];
+    const interleaved = all.filter((_, index) => index % 2 === 1).concat(all.filter((_, index) => index % 2 === 0).reverse());
+    const sorted = plantShards([...all].sort(), 8, 4);
+    expect(sorted.slice(0, 3)).toEqual([
+      ["lint/error-a", "lint/pass-d", "plants/fail-gate-without-job", "storybook-build/pass-y"],
+      ["lint/fail-b", "lint/pass-e", "plants/pass-matching"],
+      ["lint/fail-c", "plants/fail-gate-without-entry", "storybook-build/fail-x"],
+    ]);
+    expect(plantShards([...all].reverse(), 8, 4)).toEqual(sorted);
+    expect(plantShards(interleaved, 8, 4)).toEqual(sorted);
+  });
+
+  it("puts every plant in exactly one shard, the other plants' shards differing in size by at most one", () => {
+    const all = [...registry, ...lint, ...storybook, ...visual, ...axe];
+    for (const otherSize of [1, 2, 3, 4, 5, 6, 7, 9, 10]) {
+      const shards = plantShards(all, 8, otherSize);
+      const others = shards.slice(0, Math.ceil(10 / otherSize));
+      expect(shards.flat().sort()).toEqual([...all].sort());
+      expect(others.flat().sort()).toEqual([...registry, ...lint, ...storybook].sort());
+      expect(Math.max(...others.map((shard) => shard.length)) - Math.min(...others.map((shard) => shard.length))).toBeLessThanOrEqual(1);
+    }
+  });
+
+  it("is 80 for the other plants in the repository, by plan decision 30", () => {
+    expect(otherShardSize).toBe(80);
   });
 
   // Plan decision 30 (operator's answer to tasks.md T046l, "A' size 3"): the approved size, no longer the measuring
