@@ -3,7 +3,7 @@ type: Run Summary
 title: 007-mutation-gate-strictness
 description: Review rounds, findings and TDD checks per phase of 007-mutation-gate-strictness, generated from its review files
 tags: [run, 007-mutation-gate-strictness]
-generated: { by: process:story-summary, at: 2026-11-11T20:18:26Z }
+generated: { by: process:story-summary, at: 2026-11-12T02:33:06Z }
 sources:
   - id: p1-r1
     resource: ../../../specs/007-mutation-gate-strictness/reviews/phase-1/round-1.md
