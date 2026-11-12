@@ -251,6 +251,7 @@ jobs:
       matrix:
         shard: ${{ fromJSON(needs.plants-plan.outputs.shards) }}
     steps:
+      - run: df -h /
       - run: sudo rm -rf /usr/local/lib/android /usr/share/dotnet /opt/ghc /usr/local/.ghcup /opt/hostedtoolcache/CodeQL
       - run: df -h /
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1

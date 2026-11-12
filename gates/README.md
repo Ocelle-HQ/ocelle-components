@@ -59,7 +59,7 @@ plant in one process, the registry check first), which stays what runs locally:
   run's summary line.
 
 In CI the job `plants-plan` ("Plants plan") prints the plan. The matrix job `plants-shard` ("Plants shard") first
-removes the runner's unused toolsets, then judges one shard each under both engines and uploads its report
+prints the free disk (`df -h /`), removes the runner's unused toolsets and prints it again, then judges one shard each under both engines and uploads its report
 (`plant-shard-<k>`), and on failure its captures (`plants-<k>`). The job `plants` ("Plants", the required check) runs
 after them, always: it downloads every report and gives the verdict. `plants-plan` and `plants-shard` are the plant
 job's helper jobs, not gates. The registry check fails (`skip-container-in-ci`) when a step of any of the three jobs
