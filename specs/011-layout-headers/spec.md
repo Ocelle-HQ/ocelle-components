@@ -41,6 +41,16 @@ the personal drawer itself stay with #12 and #16."
 Constitution II says "No monospace anywhere", so the eyebrow is set in Schibsted Grotesk, uppercase and tracked
 (FR-030, FR-031).
 
+**Upper-case text in the accessibility tree** (probe for spec check 1, 2026-11-12, Google Chrome for Testing
+153.0.8010.12, headless, CDP `Accessibility.getFullAXTree`, ignored nodes filtered out): an `<h3 slot="heading">Recent
+runs</h3>` slotted into a shadow root whose adopted stylesheet sets `::slotted([slot=heading]) { text-transform:
+uppercase }` is exposed as a heading named "RECENT RUNS", and its static text and inline text boxes are "RECENT RUNS"
+too; a light-DOM `h3` upper-cased by an inline style gives the same. Chromium therefore names a CSS upper-cased heading
+by its drawn, upper-cased text. This feature accepts that: the eyebrow is drawn upper-cased, its accessible name in
+Chromium is the drawn text, and its DOM text stays as the page wrote it (FR-031, US1-5). The name and the visible text
+then agree; no other technique, which would change the page's own DOM or the eyebrow's look, is used. Tests compare the
+name with the written text ignoring case, so they hold in an engine that exposes the written text instead.
+
 **Design stage**: the visual and axe gates come from #10 (`specs/006-storybook-workbench`, final on branch
 `claude/010-storybook-workbench`, not yet on `main`). The operator has decided that this feature is implemented only
 after #10 is merged, so its stories are captured and audited by those gates (FR-037, FR-038). The plan states the
@@ -133,6 +143,7 @@ gaps, fonts and colours, and read the accessibility tree.
 1. **Given** `<ocelle-section-header><h2 slot="heading">Runs</h2></ocelle-section-header>`, **When** the
    accessibility tree is read, **Then** it holds exactly one heading node, level 2, named "Runs", the slotted `h2`
    itself, and the element adds no heading, landmark or group node of its own; the same with an `h4` gives level 4.
+   After upgrade the section header carries no `size` or `variant` attribute that the page did not write (FR-006).
 2. **Given** a section header with a heading, an eyebrow (`<span slot="eyebrow">Mission</span>`), a description
    and two buttons in `actions`, **When** it is laid out at 1280 px in left-to-right and in right-to-left, **Then** the
    eyebrow is above the heading, the description under it, the actions at the inline end on the heading's first line,
@@ -143,12 +154,14 @@ gaps, fonts and colours, and read the accessibility tree.
    between its parts.
 4. **Given** a section header whose empty `actions` slot is then filled by script, and a second one whose filled
    `eyebrow` slot is then emptied, **When** each is measured before and after, **Then** the first gains the actions
-   gap and the second loses the eyebrow gap, with no other change on the page.
+   gap and the second loses the eyebrow gap, and the border boxes of every other element on the page (the other
+   section header, its slotted children and the page's own elements) are the same before and after.
 5. **Given** `<ocelle-section-header variant="eyebrow"><h3 slot="heading">Recent</h3></ocelle-section-header>` above a
    list, **When** it is laid out and the tree is read, **Then** the heading text is drawn with the eyebrow tokens
    (uppercase, tracked, 12 px, `--ocelle-color-eyebrow`) in both themes, the tree still holds one level-3 heading
-   named "Recent" (its name is the text as written, not upper-cased), and an `eyebrow` or `description` slotted into
-   it is not rendered.
+   whose name equals "Recent" ignoring case (Chromium exposes the drawn "RECENT"; see "Upper-case text in the
+   accessibility tree" above), the slotted `h3`'s text content is still "Recent", and an `eyebrow` or `description`
+   slotted into it is not rendered.
 6. **Given** a section header with `size="compact"`, and one at the default size, **When** both are measured,
    **Then** the compact heading is drawn at `--ocelle-font-size-subhead` and the default at `--ocelle-font-size-lg`,
    both at `--ocelle-font-weight-strong` in `--ocelle-font-display`, and the compact one's gaps are those of FR-011.
@@ -161,7 +174,7 @@ gaps, fonts and colours, and read the accessibility tree.
    slotted section header is drawn at the compact size of scenario 6 without the page setting `size` on it.
 9. **Given** a compact card whose slotted section header has `size="regular"` set by the page, **When** it is
    measured, **Then** the section header is drawn at the default size: the header's own `size` wins over the card's
-   density.
+   density. The same with `size="compact"` on a section header in a regular card draws it compact.
 10. **Given** a card with `inset`, in each density, **When** it is measured in both themes, **Then** its ground is
     `--ocelle-color-inset`, and its padding, gap, border and radius are those of its density.
 11. **Given** a card with no header (nothing in the `header` slot) and one with a header, **When** both are measured,
@@ -170,14 +183,26 @@ gaps, fonts and colours, and read the accessibility tree.
 12. **Given** a card holding a link and a button, **When** the page is tabbed through, **Then** focus moves through
     the link and the button in document order and the card, the section header and their shadow roots add no tab
     stop.
-13. **Given** a card and a section header in forced-colours mode, **When** they are drawn, **Then** the card's border
-    is visible in a system colour, the slotted heading and eyebrow keep a system text colour, and no state or part is
-    marked by colour alone.
+13. **Given** a regular card, an inset card and a section header with an eyebrow in forced-colours mode, **When** they
+    are drawn, **Then** both cards' borders are drawn in a system colour that differs from their ground,
+    the slotted heading, eyebrow and description are drawn in a system text colour on a system background, and the
+    inset card draws with the same ground, border and text colours as the regular card. That last outcome is accepted:
+    `inset` marks only that a card is nested, which the nesting itself already shows, so losing the sunken ground in
+    forced colours loses no information (FR-016).
 14. **Given** a compact card with a section header whose heading is a 60-character run with no break opportunity and
     two actions, **When** the page reflows at 320 px, **Then** there is no horizontal scroll, the heading wraps inside
-    the card, and the actions move under the heading rather than overflow.
+    the card, and the actions move under the heading column, `--ocelle-space-2` below it, at its inline start, rather
+    than overflow (FR-010).
 15. **Given** `tokens.css` as built, **When** it is read, **Then** it defines the eyebrow tokens of FR-030, and the
     contrast check covers `--ocelle-color-eyebrow` as text on every main ground in both themes and passes.
+16. **Given** a section header with an eyebrow, a description and actions but an empty `heading` slot, beside one with
+    all four filled, **When** both are measured, **Then** the first has no box, gap or margin for the heading (its
+    eyebrow and description are `--ocelle-space-1` apart, the single gap of FR-011) while the second has both gaps; the
+    first's accessibility tree holds no heading.
+17. **Given** a compact card whose slotted section header has `size=""`, a second whose header has `size="bogus"`, and
+    the same two section headers outside any card, **When** they are measured, **Then** the two in the compact card are
+    drawn at the compact size (an empty or invalid `size` is no `size`, so the card decides) and the two outside a card
+    at the default size; each keeps the attribute value the page wrote.
 
 ---
 
@@ -197,12 +222,12 @@ rule and gaps, read the accessibility tree, and reflow at 320 px.
 1. **Given** `<ocelle-page-header><h1 slot="heading">Missions</h1></ocelle-page-header>`, **When** the tree is read,
    **Then** it holds one level-1 heading named "Missions", the slotted `h1`, and no heading, banner or other landmark
    from the element; the same with an `h2` gives level 2 and still no `h1` anywhere on the page.
-2. **Given** a page header with eyebrow, heading, description and actions at the default size, **When** it is
-   measured in both themes in left-to-right and right-to-left, **Then** the eyebrow is above the heading with the
-   eyebrow tokens, the heading is drawn at `--ocelle-font-size-2xl` in `--ocelle-font-display`,
-   `--ocelle-font-weight-display`, `--ocelle-tracking-display` and `--ocelle-line-height-tight`, the description
-   follows with a `--ocelle-space-1` gap and no other gap between heading and description, the actions sit at the
-   inline end, the band has block padding `--ocelle-space-4` and inline padding `--ocelle-space-6`, and a
+2. **Given** a page header with eyebrow, heading, description and actions at the default size, **When** it is measured
+   in both themes in left-to-right and right-to-left, **Then** the eyebrow is above the heading with the eyebrow tokens,
+   the heading is drawn at `--ocelle-font-size-2xl` in `--ocelle-font-display`, `--ocelle-font-weight-display`,
+   `--ocelle-tracking-display` and `--ocelle-line-height-tight`, the description follows with a `--ocelle-space-1` gap
+   and no other gap between heading and description, the actions sit at the inline end with their block start at the
+   heading's block start, the band has block padding `--ocelle-space-4` and inline padding `--ocelle-space-6`, and a
    `--ocelle-border-width` rule in `--ocelle-color-rule` runs along its block end.
 3. **Given** the same header with `size="compact"`, **When** it is measured, **Then** the heading is drawn at
    `--ocelle-font-size-xl` (24 px) with the same face, weight, tracking and line height, and everything else is as in
@@ -212,7 +237,7 @@ rule and gaps, read the accessibility tree, and reflow at 320 px.
    scenario 2.
 5. **Given** a page header with a 60-character unbroken heading, a description and three actions, **When** the page
    reflows at 320 px, **Then** there is no horizontal scroll, the heading wraps, and the actions move under the
-   description.
+   description, `--ocelle-space-2` below it, at the inline start (FR-019).
 6. **Given** a page header whose actions hold a button, **When** the page is tabbed through, **Then** focus reaches
    the button in document order and the element adds no tab stop.
 7. **Given** a page header in forced-colours mode, **When** it is drawn, **Then** the rule under the band is visible
@@ -261,6 +286,19 @@ landmark, and reflow at 320 px.
    colour.
 10. **Given** the sidebar at 320 px wide (its container the full viewport), **When** the page reflows, **Then** there
     is no horizontal scroll and no section's text is clipped.
+11. **Given** a sidebar whose default slot holds a text node ("Loose text") between two section elements, **When** it
+    is measured, **Then** the text is rendered between the two sections in document order, and dividers lie only
+    between assigned elements: there is one divider between the two sections and none on either side of the text
+    (FR-021). A default slot holding only non-empty text is non-empty, so the head-to-sections and
+    sections-to-footer dividers are drawn.
+12. **Given** a sidebar with no `label` but `aria-label="Team"` on its host, a second with `label="Projects"` and
+    `aria-label="Other"`, and a third with neither, **When** the tree is read and axe runs on the page, **Then** the
+    first's landmark is named "Team", the second's "Projects" (`label` wins), the third's landmark has no name, each
+    page holds exactly one navigation landmark per sidebar, and axe reports no serious or critical finding caused by
+    the host's `aria-label` (FR-028).
+13. **Given** a sidebar with a head and a footer and an empty default slot, beside one with a head, one section and
+    a footer, **When** both are measured, **Then** the first has exactly one divider, between head and footer, and no
+    padding for the empty sections, while the second has two.
 
 ---
 
@@ -286,20 +324,31 @@ orientation with focus inside, and reflow at 320 px.
 2. **Given** the rail without `orientation` and with `orientation="vertical"`, **When** each is measured in both
    themes, **Then** both lay the primary items out in a column from the block start, the bottom items in a column at
    the block end, with one `--ocelle-border-width` divider between the groups, on the `--ocelle-color-chrome` ground
-   with `--ocelle-color-chrome-ink` text, `--ocelle-shell-rail-width` wide.
+   with `--ocelle-color-chrome-ink` text, `--ocelle-shell-rail-width` (52 px) wide. With square items of
+   `--ocelle-size-rail-item` (40 px) in both groups, each item lies inside the rail's content box with no overflow,
+   is centred in the inline direction, and, when it has keyboard focus, its focus ring (`--ocelle-focus-width` drawn
+   `--ocelle-focus-offset` outside the item) lies wholly inside the rail's border box and is not clipped.
 3. **Given** the rail with `orientation="horizontal"`, **When** it is measured in left-to-right and right-to-left,
    **Then** the primary items run in a row from the inline start, the bottom items at the inline end, with the
-   divider between the groups running in the block direction, and the rail fills its container's inline size.
+   divider between the groups running in the block direction over the rail's content block size, and the rail fills
+   its container's inline size. With `--ocelle-size-rail-item` items, each item is centred in the block direction and
+   its focus ring is not clipped, as in scenario 2.
 4. **Given** a vertical rail and a horizontal rail, **When** the viewport is resized through 721, 720, 719 and 320 px
    (and the rail's container through the same widths), **Then** each rail keeps its orientation at every width: the
    element itself has no viewport or container threshold.
 5. **Given** a rail with focus on its second link, **When** script changes `orientation` from vertical to horizontal
    and back, **Then** focus stays on that link, the links keep their document and tab order, and the landmark and its
    name are unchanged.
-6. **Given** a rail with an empty `bottom` slot and one with bottom items, **When** both are measured, **Then** the
-   first has no divider and no space for the bottom group, while the second has both.
-7. **Given** a horizontal rail with ten links at 320 px, **When** the page reflows, **Then** there is no horizontal
-   scroll: the links wrap onto further rows and none is clipped.
+6. **Given** a rail with an empty `bottom` slot, one with bottom items and primary items, and one with bottom items
+   and an empty default slot, in each orientation, **When** they are measured, **Then** the first has no divider and
+   no space for the bottom group; the second has both; the third has no divider and no space for the primary group,
+   and its bottom group sits at the block end (vertical) or the inline end (horizontal).
+7. **Given** a horizontal rail with eight `--ocelle-size-rail-item` links in the default slot and two in `bottom`, at
+   320 px in left-to-right and right-to-left, **When** the page reflows, **Then** there is no horizontal scroll and
+   no link is clipped; the two bottom links sit on one row at the inline end of the first row; the primary links fill
+   the remaining inline size from the inline start and wrap onto further rows below the first; and the divider runs
+   in the block direction between the primary and bottom groups from the block start of the first row to the block
+   end of the last row (FR-025).
 8. **Given** `orientation="sideways"` (a value outside the list), **When** the rail is measured, **Then** it is laid
    out vertically, as with no `orientation`.
 9. **Given** the rail in forced-colours mode, **When** it is drawn, **Then** the divider is visible in a system
@@ -307,6 +356,9 @@ orientation with focus inside, and reflow at 320 px.
 10. **Given** a page that sets `orientation` from its own query with an exclusive bound, as the README shows
     (vertical while its column is at least the bound, horizontal below), **When** the column is exactly at the bound,
     **Then** the rail is vertical, and 1 px below it horizontal.
+11. **Given** a rail with no `label` but `aria-label="Personal"` on its host, and one with both `label="Me"` and
+    `aria-label="Other"`, **When** the tree is read and axe runs on the page, **Then** the landmarks are named
+    "Personal" and "Me", and axe reports no serious or critical finding caused by the host's `aria-label` (FR-028).
 
 ### Edge Cases
 
@@ -321,10 +373,19 @@ orientation with focus inside, and reflow at 320 px.
 - A compact card whose header slot holds something other than a section header: the card's density changes only its
   own padding and gap.
 - A context sidebar or personal rail without `label`, or with an empty or whitespace-only `label`: the navigation
-  landmark is present with no name; the README says to always set a distinct `label`, since axe's landmark rules
-  flag two unnamed navigation landmarks.
+  landmark is present with no name, unless the host carries a non-empty `aria-label`, which then names it (FR-028,
+  US3-12, US4-11); the README says to always set a distinct `label`, since axe's landmark rules flag two unnamed
+  navigation landmarks.
 - A personal rail with no primary items but bottom items: the bottom group sits at the block end (vertical) or the
-  inline end (horizontal), with no divider.
+  inline end (horizontal), with no divider (US4-6).
+- A context sidebar whose default slot is empty but whose head and footer are filled: one divider, between head and
+  footer (US3-13). Text nodes in the sidebar's default slot are rendered but are not sections; dividers separate only
+  assigned elements (US3-11), and the README says to wrap each section in an element.
+- A section header or page header with an empty `heading` slot: the heading part adds no box or gap (US1-16, FR-005).
+- A section header or page header inside a `[data-ocelle-prose=""]` region of `@ocelle/styles`: the prose rules of
+  `base.css` for `h1` to `h6` (margins, size, weight) are host-page rules, so they win over the element's slotted
+  heading styles (Slotted headings, above) and the heading is drawn at the prose sizes and margins. This feature
+  accepts that and does not change `base.css`; the README says to place these elements outside a prose region.
 - Right-to-left: every inline position (actions, horizontal rail groups) follows the inline direction (US1-2, US2-2,
   US4-3).
 - `hidden` on any of the five hosts: no box and no node, by the element conventions' `:host([hidden])` rule.
@@ -353,8 +414,11 @@ orientation with focus inside, and reflow at 320 px.
 - **FR-005**: An empty slot (as defined above) MUST add no box, padding, gap, margin or divider; the layout MUST
   follow changes of a slot's content without the page doing anything else.
 - **FR-006**: Attributes that select a variant (`density`, `inset`, `size`, `variant`, `orientation`) MUST reflect
-  between property and attribute; `label` MUST NOT be reflected. An attribute value outside a property's list MUST
-  behave as the property's default.
+  between property and attribute once the page sets them; `label` MUST NOT be reflected. A property's default is
+  "not set" (the README convention's `@default undefined`): the element gives it no initial value, writes no
+  attribute on upgrade, and draws the look the requirements below name as the default. An absent, empty or
+  invalid attribute value (one outside the property's list) MUST behave as "not set"; the element keeps the value the
+  page wrote and does not rewrite it.
 - **FR-007**: The five elements MUST declare no CSS parts and no element CSS custom properties in this release; the
   manifest states each list empty. They read the tokens named in FR-010 to FR-031 by inheritance, and the README names
   them.
@@ -362,52 +426,63 @@ orientation with focus inside, and reflow at 320 px.
 **Section header**
 
 - **FR-010**: `ocelle-section-header` MUST have the slots `heading`, `eyebrow`, `description` and `actions`, laid out
-  as US1-2: eyebrow above the heading, description below it, actions at the inline end on the heading's first line,
-  wrapping under the heading when the inline space runs out (US1-14).
+  as US1-2: eyebrow above the heading, description below it (together, the heading column), and the actions at the
+  inline end with their block start at the heading's block start. When the heading column, at the inline size of
+  its longest word, and the actions do not fit side by side, the actions move under the heading column, at its
+  inline start, `--ocelle-space-2` below it; a word longer than the line then wraps within itself (US1-14).
 - **FR-011**: Between non-empty parts the section header MUST use a `--ocelle-space-1` gap between eyebrow and
   heading and between heading and description, and a `--ocelle-space-4` gap between the heading column and the
   actions; at `size="compact"` the gaps are the same and only the heading's size changes (FR-012). It MUST have no
   padding of its own.
-- **FR-012**: `size` MUST take `"regular"` (default) or `"compact"`. The slotted heading is drawn in
+- **FR-012**: `size` MUST take `"regular"` or `"compact"`; not set (FR-006) it draws regular, or compact inside a
+  compact card (FR-017). The slotted heading is drawn in
   `--ocelle-font-display` at `--ocelle-font-weight-strong`, `--ocelle-line-height-tight` and `--ocelle-color-ink`, at
   `--ocelle-font-size-lg` (regular) or `--ocelle-font-size-subhead` (compact), with no margin. The description is
   drawn at `--ocelle-font-size-sm` in `--ocelle-color-ink-muted`.
-- **FR-013**: `variant` MUST take `"default"` (default) or `"eyebrow"`. In the eyebrow variant the slotted heading is
-  drawn with the eyebrow style (FR-031) instead of FR-012's heading style, and the `eyebrow` and `description` slots
-  are not rendered; `actions` are. The heading's accessible name is its text as written.
+- **FR-013**: `variant` MUST take `"default"` or `"eyebrow"`; not set (FR-006) it draws as `"default"`. In the eyebrow
+  variant the slotted heading is drawn with the eyebrow style (FR-031) instead of FR-012's heading style, and the
+  `eyebrow` and `description` slots are not rendered; `actions` are. The heading's DOM text is left as the page wrote
+  it; its accessible name is whatever the engine derives from it (the drawn, upper-cased text in Chromium, see
+  "Upper-case text in the accessibility tree"), and tests compare it with the written text ignoring case.
 
 **Card**
 
 - **FR-014**: `ocelle-card` MUST have a `header` slot and a default slot (the body), laid out header above body.
-- **FR-015**: `density` MUST take `"regular"` (default) or `"compact"`. Both have a `--ocelle-border-width` border in
-  `--ocelle-color-rule`, `--ocelle-radius-row` corners and the `--ocelle-color-sheet` ground. Regular has padding
-  `--ocelle-space-7` and a header-to-body gap of `--ocelle-space-2`; compact has padding `--ocelle-space-5` and a gap
-  of `--ocelle-space-4`.
+- **FR-015**: `density` MUST take `"regular"` or `"compact"`; not set (FR-006) it draws regular. Both have a
+  `--ocelle-border-width` border in `--ocelle-color-rule`, `--ocelle-radius-row` corners and the `--ocelle-color-sheet`
+  ground. Regular has padding `--ocelle-space-7` and a header-to-body gap of `--ocelle-space-2`; compact has padding
+  `--ocelle-space-5` and a gap of `--ocelle-space-4`.
 - **FR-016**: `inset` (boolean) MUST draw the card on `--ocelle-color-inset` instead of `--ocelle-color-sheet`,
-  changing nothing else.
+  changing nothing else. In forced-colours mode both grounds become the system background, so an inset card draws
+  like a regular one; this is accepted, because `inset` carries no information the nesting does not (US1-13).
 - **FR-017**: In a compact card, a section header assigned to the `header` slot MUST be drawn at its compact size
-  unless the section header has its own `size` attribute, which wins (US1-8, US1-9).
+  unless the section header has its own valid `size` attribute (`"regular"` or `"compact"`), which wins; a section
+  header with an absent, empty or invalid `size` takes the card's density (US1-8, US1-9, US1-17).
 - **FR-018**: The card MUST expose no role or landmark of its own; a page that needs a region or an article wraps or
   labels its content itself, as the README says.
 
 **Page header**
 
 - **FR-019**: `ocelle-page-header` MUST have the slots `heading`, `eyebrow`, `description` and `actions`, and `size`
-  with `"regular"` (default) and `"compact"`, laid out and drawn as US2-2 and US2-3: the eyebrow with the eyebrow style
-  (FR-031) at both sizes; the heading in `--ocelle-font-display`, `--ocelle-font-weight-display`,
-  `--ocelle-tracking-display`, `--ocelle-line-height-tight` and `--ocelle-color-ink`, at `--ocelle-font-size-2xl`
-  (regular) or `--ocelle-font-size-xl` (compact), with no margin; the description at `--ocelle-font-size-md` in
-  `--ocelle-color-ink-soft` with a `--ocelle-space-1` gap above it; a `--ocelle-space-1` gap between eyebrow and
-  heading; the actions at the inline end with a `--ocelle-space-4` gap; block padding `--ocelle-space-4`, inline
-  padding `--ocelle-space-6`; a `--ocelle-border-width` rule in `--ocelle-color-rule` along the block end. The page
-  header exposes no heading, banner or other landmark of its own (US2-1).
+  with `"regular"` and `"compact"` (not set, FR-006, it draws regular), laid out and drawn as US2-2 and US2-3: the
+  eyebrow with the eyebrow style (FR-031) at both sizes; the heading in `--ocelle-font-display`,
+  `--ocelle-font-weight-display`, `--ocelle-tracking-display`, `--ocelle-line-height-tight` and `--ocelle-color-ink`, at
+  `--ocelle-font-size-2xl` (regular) or `--ocelle-font-size-xl` (compact), with no margin; the description at
+  `--ocelle-font-size-md` in `--ocelle-color-ink-soft` with a `--ocelle-space-1` gap above it; a `--ocelle-space-1` gap
+  between eyebrow and heading; the actions at the inline end with a `--ocelle-space-4` gap and their block start at the
+  heading's block start, moving under the description (or the heading when there is none), at the inline start,
+  `--ocelle-space-2` below it, by the rule of FR-010 (US2-5); block padding `--ocelle-space-4`, inline padding
+  `--ocelle-space-6`; a `--ocelle-border-width` rule in `--ocelle-color-rule` along the block end. The page header
+  exposes no heading, banner or other landmark of its own (US2-1).
 
 **Context sidebar**
 
 - **FR-020**: `ocelle-context-sidebar` MUST expose one navigation landmark named by `label` (US3-1, US3-2), holding
   everything the page slots into it, on `--ocelle-color-rail`.
 - **FR-021**: It MUST have the slots `head`, a default slot (each assigned element is one section) and `footer`,
-  stacked in that order. Each non-empty part has padding `--ocelle-space-4` on every side.
+  stacked in that order. Each non-empty part has padding `--ocelle-space-4` on every side. Text assigned to the
+  default slot is rendered in document order but is not a section: it makes the default slot non-empty and gets no
+  divider of its own (US3-11).
 - **FR-022**: A `--ocelle-border-width` divider in `--ocelle-color-rule` MUST lie between each two adjacent non-empty
   parts: head and first section, each two sections, last section and footer. An empty part has no padding and no
   divider (US3-5).
@@ -420,16 +495,28 @@ orientation with focus inside, and reflow at 320 px.
 - **FR-024**: `ocelle-personal-rail` MUST expose one navigation landmark named by `label`, with its items inside it in
   document order, on `--ocelle-color-chrome` with `--ocelle-color-chrome-ink` text in both themes (constitution II).
 - **FR-025**: It MUST have a default slot (primary items) and a `bottom` slot, and `orientation` with `"vertical"`
-  (default) and `"horizontal"`, laid out as US4-2 and US4-3, with a `--ocelle-space-1` gap between items, padding
-  `--ocelle-space-2`, and a `--ocelle-border-width` divider in `--ocelle-color-chrome-muted` between the groups only
-  when both are non-empty. A vertical rail is `--ocelle-shell-rail-width` wide and fills its container's block size;
-  a horizontal rail fills its container's inline size and wraps its items onto further rows when they do not fit.
+  (not set, FR-006, it is vertical) and `"horizontal"`, laid out as US4-2 and US4-3, with a `--ocelle-space-1` gap
+  between items and between rows, padding `--ocelle-space-2` except a vertical rail's inline padding, which is
+  `--ocelle-space-1`, and a `--ocelle-border-width` divider in `--ocelle-color-chrome-muted` between the groups only
+  when both are non-empty. Items are centred across the rail. A vertical rail is
+  `--ocelle-shell-rail-width` wide (52 px, leaving a 44 px content box, `--ocelle-target-min`, so a
+  `--ocelle-size-rail-item` item fits with room for its focus ring, US4-2) and fills its container's block size; its
+  divider runs in the inline direction across the content box. A horizontal rail fills its container's inline size;
+  its bottom group sits at the inline end of the first row and is as wide as its items on one row, up to half the
+  rail's content inline size, beyond which its own items wrap; the primary group takes the rest of the inline size
+  from the inline start and wraps its items onto further rows; the divider runs in the block direction between the
+  two groups over the rail's whole content block size, every row included (US4-3, US4-7).
 - **FR-026**: The rail MUST change orientation only when `orientation` changes: it has no viewport or container query
   of its own (US4-4). Changing it MUST keep focus, document order, tab order and the landmark (US4-5). This is the
   whole interface #12's shell and personal drawer use to drive it; the README shows a page setting it from its own
   query with an exclusive bound (`width < N`, never `max-width: N`) (US4-10).
-- **FR-027**: The rail MUST NOT size or style its items beyond the gap and the chrome ink colour they inherit; item
-  size and density are the items' own (#12's `ocelle-nav-item`).
+- **FR-027**: The rail MUST NOT size or style its items beyond the gap, their centring across the rail and the
+  chrome ink colour they inherit; item size and density are the items' own (#12's `ocelle-nav-item`, expected at
+  `--ocelle-size-rail-item`).
+- **FR-028**: For the sidebar and the rail, a non-empty `aria-label` on the host MUST name the navigation landmark
+  when `label` is not set, empty or whitespace only, and `label` wins when both are set (constitution III: a name set
+  on the host reaches the landmark). The page still holds one navigation landmark per element, and the host's
+  `aria-label` MUST NOT cause an axe serious or critical finding (US3-12, US4-11). The README recommends `label`.
 
 **Tokens**
 
@@ -441,7 +528,8 @@ orientation with focus inside, and reflow at 320 px.
 - **FR-031**: The eyebrow style MUST be: `--ocelle-font-sans` (Schibsted Grotesk, never a monospace family),
   `--ocelle-font-size-eyebrow`, `--ocelle-font-weight-eyebrow`, `--ocelle-tracking-eyebrow`,
   `--ocelle-line-height-normal`, `--ocelle-color-eyebrow`, upper case, with tabular figures (`--ocelle-figures`), and
-  no margin. The page header's eyebrow and the section header's eyebrow and eyebrow variant use it.
+  no margin. The page header's eyebrow and the section header's eyebrow and eyebrow variant use it. Upper case is a
+  drawing of the text only: the slotted DOM text is unchanged.
 - **FR-032**: The contrast check MUST cover `--ocelle-color-eyebrow` on every main ground in both themes and pass
   (US1-15).
 
@@ -455,10 +543,22 @@ orientation with focus inside, and reflow at 320 px.
 - **FR-035**: The browser build and the module build MUST pass the `csp` gate; the fixture pages of every scenario
   MUST record no CSP violation and no request outside the allowed list, each paired with the positive outcome of its
   scenario.
-- **FR-036**: The package README MUST gain a section per element (usage, slots, properties, the tokens it reads, the
-  slotted-heading rule, the empty-slot rule, landmark naming with a distinct `label`, and for the rail the orientation
-  example of US4-10), and the `@ocelle/elements` and `@ocelle/tokens` changelogs MUST name the new elements and
-  tokens as MINOR additions. A documentation test checks the README statements.
+- **FR-036**: The package README MUST gain a section per element, and the `@ocelle/elements` and `@ocelle/tokens`
+  changelogs MUST name the new elements and tokens as MINOR additions. A documentation test asserts that each
+  element's section contains these statements, each a test of its own:
+  - every element: a usage example; each of its slots by name; each of its properties and attributes with its values
+    and its "not set" look; each token it reads (FR-007); the empty-slot rule, including "remove an element from the
+    slot rather than hide it"; the Consumer-need workaround it replaces (SC-006);
+  - section header and page header: the slotted-heading rule (slot one heading element; the page's own heading rules
+    win) and "place outside a `[data-ocelle-prose]` region";
+  - section header: the eyebrow variant draws the heading upper case while its DOM text stays as written;
+  - card: the compact card sets a slotted section header's size unless the header has a valid `size`; the card has
+    no role, and a page that needs a region or article adds it;
+  - sidebar and rail: "set a distinct `label`", and that a host `aria-label` names the landmark when `label` is not
+    set;
+  - sidebar: wrap each section in an element;
+  - rail: the orientation example of US4-10 with an exclusive bound (`width < N`), and that items are sized by
+    themselves (`--ocelle-size-rail-item`).
 - **FR-037**: Every story of these elements MUST have committed visual baselines in light and dark, produced as #10's
   contributor note says, and the `visual` gate MUST pass.
 - **FR-038**: The `axe` gate MUST report no serious or critical finding on any story of these elements in either
@@ -471,7 +571,7 @@ orientation with focus inside, and reflow at 320 px.
 - **Slot part**: a named region of an element (heading, eyebrow, description, actions, header, body, head, section,
   footer, bottom) that holds the page's own light-DOM content; it is empty or filled (Empty slot, above).
 - **Variant attribute**: a reflected attribute that selects one look (`density`, `inset`, `size`, `variant`,
-  `orientation`); a value outside its list is its default.
+  `orientation`); not set by default, and an absent, empty or invalid value draws its default look (FR-006).
 - **Landmark label**: the `label` property of the sidebar and rail, the accessible name of their navigation landmark.
 - **Eyebrow tokens**: the four tokens of FR-030 that make up the eyebrow style of FR-031.
 
@@ -491,8 +591,8 @@ orientation with focus inside, and reflow at 320 px.
   VIII, mission 007's mutation gate).
 - **SC-006**: Each of the five Kitty Desktop workarounds named in "Consumer need" (part-level padding and gap
   overrides, token-painted dividers, pinned page-header font rules, personal-rail `::part` overrides, card density
-  overrides) has a matching element property, slot or default in this feature, listed in the README's per-element
-  sections.
+  overrides) has a matching element property, slot or default in this feature, named in the README's per-element
+  sections as FR-036 lists and asserted by its documentation test.
 
 ## Deviations from the upstream issues
 
@@ -500,6 +600,7 @@ orientation with focus inside, and reflow at 320 px.
 |---|---|---|
 | #529, #497: a monospace eyebrow | Schibsted Grotesk, uppercase, tracked, tabular figures | Constitution II, no monospace |
 | #516: compact card radius 12 px ("md") | `--ocelle-radius-row` (6 px) in both densities | Constitution II's radius rule; operator decision |
+| #516: regular card radius 16 px | `--ocelle-radius-row` (6 px) in both densities | Constitution II's radius rule; operator decision |
 | #516: 2 px border on the regular card | `--ocelle-border-width` (1 px) in both densities | The token set has one border width |
 | #516: 18 px / 700 compact title | `--ocelle-font-size-subhead` (18 px) at `--ocelle-font-weight-strong` (600) | No 700 weight token; operator decision on existing tokens |
 | #529: title tracking `-0.01em`, line height 1.2 | `--ocelle-tracking-display`, `--ocelle-line-height-tight` | Operator decision on existing tokens |
