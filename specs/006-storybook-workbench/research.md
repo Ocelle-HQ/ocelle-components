@@ -420,6 +420,13 @@ The value is derived again from the measured times (tasks.md T046h) and approved
 does the same for the `axe` groups. Each shard pulls the image under both engines (about 2 GB transferred, 7.2 GB
 unpacked), so more shards cost runner time and transfer; that is the trade the derived `size` weighs.
 
+**Since plan decision 30** (operator decisions 2026-11-12, on CI run 43242674392 at 21 stories):
+- `size` is 3, approved, with the toolset removal kept (A'). The split count is 25 stories.
+- The non-visual plants are no longer all in shard 1. Shard 1 took 12 min 34 s with 232 plants, and no `size`
+  changes it. They are sorted by `<gate>/<case>` and dealt in turn over ⌈n / 80⌉ shards, which is 3 at 232 plants.
+  Dealing in turn spreads each gate's plants, since plants of one gate cost alike and gates differ widely.
+- The plan has 19 shards (contracts/plants.md § Shards).
+
 What each guarantee of the single job rests on after the split:
 - **every plant judged**: `--verdict` recomputes `plantShards` on the checked-out tree and exits 2 naming each shard
   `1..n` with no report (`shard <k> of <n> reported no result`), a report whose `of` is not `n`, and a report whose

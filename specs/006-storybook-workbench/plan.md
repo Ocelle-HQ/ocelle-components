@@ -74,7 +74,9 @@ and podman, and are expected to have skopeo (confirmed by phase 3's CI run, rese
 is about 1 GB to pull and 3.6 GB unpacked per engine store (measured). Phase 3's review records the `Plants` job time
 and the runner's free disk after both pulls (research R-07). CI run 43072665056 measured the single Plants job at
 37 min 13 s and 4.2G free in both visual jobs, so the Plants job is split into shards, each a new job under the
-10-minute goal, and both disk measures are taken (decisions 23 to 25, operator decisions 2026-11-11).
+10-minute goal, and both disk measures are taken (decisions 23 to 25, operator decisions 2026-11-11). After CI run
+43242674392, the shards are `size` 3 with the toolset removal kept, and the non-visual plants are split over 3 shards:
+19 Plants shards in all, each under 10 minutes, with at least 4G free at its end (decision 30).
 
 **Constraints**: byte-exact baselines; no network inside a capture (`--network none`, plus request routing); no root
 needed on the host; one heavy job at a time locally.
@@ -211,7 +213,8 @@ reviews/phase-3/ci-run.md: Visual regression 24/24 under docker+podman, the Plan
     matrix on `plants` itself (it would rename the required check, a ruleset change) and over a verdict job that trusts
     the shard jobs' results as "Mutation testing" does (that every plant was judged would rest on the matrix text). The
     shard size is 8 `visual` (or `axe`) plants, provisional until measured (R-07; contracts/gates.md § The registry;
-    contracts/plants.md § Shards).
+    contracts/plants.md § Shards). By decision 30, the approved `size` is 3, and the non-visual plants are dealt over
+    shards of at most 80 instead of one shard 1.
 24. **Each plant's time is printed** ("Measure first"): `note: plant time: <gate>/<case>: <seconds> s` on stderr per
     plant, in every mode, and in each shard report; the summary line is unchanged. The 9-story split count estimated
     from run 43072665056 is not approved; the count and the shard size are derived from the first run with the notes
@@ -221,7 +224,8 @@ reviews/phase-3/ci-run.md: Visual regression 24/24 under docker+podman, the Plan
     that engine's first run so no capture comes from an unchecked image; each Plants shard first removes the runner's
     unused toolsets. Neither the docker-podman comparison nor the pin checks are weakened (R-07; contracts/gates.md §
     `visual`; contracts/container.md § The pin check). Whether the Plants shards keep the toolset removal is open
-    again by decision 28: it stays until the operator decides after the disk measurement.
+    again by decision 28: it stays until the operator decides after the disk measurement. **Settled by decision 30**
+    (A'): each Plants shard keeps the toolset removal.
 
 Decisions 26 and 27 are the operator's of 2026-11-12 (human:jeroennouwsdev), on the design of decisions 22 to 25.
 
@@ -277,6 +281,10 @@ and B'. The question was "Which plant shard setup do you choose?".
     T046l asks the operator for both. The branch is the operator's answer to T046l; this plan does not choose it
     from the numbers alone.
 
+    **Answered by decision 30.** `M` is 4G and `U_k` stands for the peak. The disk allowed B' (the worst
+    `A_k − U_k` is 4G, shard 12), but the operator chose A': step 4's branch is A' at `size` 3, and B' (T046m,
+    T046n) does not apply.
+
 Decision 29 is the operator's of 2026-11-12, on the merge `39763c7` of origin/main `476602e` (mission 005, icons and
 the Ocelle brand mark) into this branch. Mission 005 adds 9 stories (`icon.stories.ts`, `brand-mark.stories.ts`): the
 repository goes from 12 to 21 stories, 24 to 42 story-themes. The 18 new story-themes have no baseline, so
@@ -306,6 +314,86 @@ use?".
        `M`, whether the end-of-shard use stands for the peak, B' or A', and approval of the split count with its
        Complexity Tracking row (T046l). Until that answer no split count is approved and the row "Plant roots hold
        every repository story" keeps its text. The branch's tasks then use the approved `size` (T046m to T046p).
+
+    **Answered by decision 30.** A' with `size` 3 and split count 25. `size` 3 replaces the measuring run's
+    provisional 4.
+
+Decision 30 is the operator's of 2026-11-12 (human:jeroennouwsdev), on CI run 43242674392 (head `72a393b`,
+reviews/phase-3/ci-run-43242674392.md, T046k). All 132 jobs passed. The worst `A_k − U_k` was 4G (shard 12). Plants
+shard (1) took 12 min 34 s and Plants shard (8) 10 min 29 s. Shard 1 holds the 232 plants of the gates other than
+`visual` and `axe` plus the registry's plants. The questions were T046l's four and the record's fifth (shard 1).
+
+30. **A' at `size` 3, split count 25, and shard 1's plants split** ("M = 4G"; "End = peak is fine"; "A' size 3";
+    "Split its plants"). It answers T046l and closes the choice that decisions 28 and 29 left open:
+    1. **`M` is 4G.** This is the free disk every Plants shard must keep at its end.
+    2. **The end-of-shard use stands for the peak.** `U_k = B_k − E_k` is taken as a shard's peak use, and no peak
+       measure is added.
+    3. **A', `size` 3.** `plants-shard` keeps the toolset removal. `size` is 3, approved and no longer provisional.
+       The record's model gives:
+       - the worst `visual` shard at 387 + 3 × 60.6 ≈ 568 s at 21 stories;
+       - 16 `visual` shards for the 48 `visual` plants.
+
+       B' was allowed under `M` = 4G (the smallest `A_k − U_k` is 4G, shard 12, give or take 1G of rounding). The
+       operator chose A' anyway, so B' (T046m, T046n) does not apply.
+    4. **Split count 25, approved.** At `size` 3 and r = 1.377 s per story-theme, a `visual` shard takes 594 s at
+       24 stories and 602 s at 25. The Complexity Tracking row "Plant roots hold every repository story" now holds
+       25. At the record's slowest r (1.457 s) the count would be 26; the approved count is the lower one, 25.
+    5. **Shard 1's plants are split** ("Split its plants"). No `size` changes shard 1, since it holds no `visual`
+       plant. Its plants are spread over more shards, test-first (tasks.md T046w, T046x). The operator chose the
+       split; the rule and the number of shards are this plan's design:
+       - **The rule.** The signature becomes `plantShards(plants, size, otherSize)`. Take the plants of the gates
+         other than `visual` and `axe`, plus the registry's plants. Sort them by `<gate>/<case>`; there are n of them.
+         Deal them in turn over k = max(1, ⌈n / `otherSize`⌉) shards: the plant at index i (from 0) goes to shard
+         (i mod k) + 1, and each shard keeps the sorted order. The `visual` shards follow, then the `axe` shards, as
+         before. Every plant is in exactly one shard, and shards 1 to k differ in size by at most one plant.
+       - **Deterministic.** The partition depends only on the set of plants. It is sorted first, so neither the
+         order of `gates.json` nor a directory listing changes it.
+       - **The size.** `otherSize` is 80 (`otherShardSize` in `gates/lib/plant-runner.ts`). The 232 plants give
+         k = 3 shards of 78, 77 and 77.
+       - **Why dealt in turn, not in consecutive groups.** Plants of one gate cost about the same, but gates cost
+         very differently. The 8 `storybook-build` plants each build every story, one at a time after the other
+         plants. The `mutation` plants run Stryker. Consecutive groups by name would put a whole gate in one shard.
+         Dealing in turn puts ⌊g/k⌋ or ⌈g/k⌉ of a gate's g plants in each shard. The record holds no per-plant
+         times that would support a balance by time: shard 1's plants run concurrently, so their times overlap.
+         This rule needs none.
+       - **Why 3 shards.** Shard 1's gate step took 584 s for 232 plants. The estimates below scale that by plant
+         count. They add the run's worst non-gate part of a Plants shard: shard 8's 218 s removal plus up to 39 s of
+         set-up, checkout, `df` and upload, about 257 s.
+         - Three shards (78 plants each): about 584 × 78 / 232 ≈ 196 s per gate step, so about 453 s per job.
+         - Two shards (116 plants each): about 292 + 257 ≈ 549 s per job.
+
+         Two shards leave little margin, and they do not account for the `storybook-build` plants growing with the
+         stories. Three shards leave room. Each extra shard costs one job with its own set-up and removal, but no
+         image pull, since it holds no `visual` plant.
+       - **What does not change.** `--plan`, `--shard`, `--verdict` and the report keep their contract
+         (contracts/plants.md § Shards). The verdict recomputes the same partition. `ci.yml` and the registry
+         plants' copies of it are unchanged, because the matrix follows `--plan`. `gate:plants` without a mode
+         still judges every plant in one process.
+       - **The shard count.** The repository's plan becomes 3 + ⌈48 / 3⌉ = **19 shards**. The record's 17 counted
+         one shard for the non-visual plants.
+    6. **The confirming run** (tasks.md T046y, T046z) holds T046o to T046x. It must show:
+       - `size` 3 in the tree;
+       - the plan printing `[1,2,…,19]`;
+       - every Plants shard job under 10 minutes, including shards 1 to 3;
+       - the verdict `plants: 280 plants of 16 gates and the registry judged, every plant as expected`;
+       - `E_k` ≥ 4G (`M`) at the end of every Plants shard.
+
+       If any of these fails, that is a stop-and-ask. So is a shard closer to 10 minutes than the 568 s modelled
+       for the worst `visual` shard, which the operator accepted with `size` 3.
+
+    What it settles:
+    - **Decision 25.** The toolset part is settled: each Plants shard keeps the removal.
+    - **Decision 28.** Step 3 is answered, and step 4's branch is A'. The disk condition stays on record as the
+      reason B' was allowed. `M` now checks the end-of-shard disk of every A' shard.
+    - **Decision 29.** Step 4 is answered: `size` 3 and split count 25 replace the measuring run's provisional
+      `size` 4. T046h closes with T046o and T046p.
+    - **The split count's scope.** The count of 25 is set by the `visual` shards. The non-visual shards also grow
+      with the stories, through the `storybook-build` plants, but the record cannot separate that growth from the
+      growth in their number (shard 1 went from 384 s with 198 plants at 12 stories to 584 s with 232 at 21). The
+      confirming run records each non-visual shard's time, under the same stop-and-ask rule.
+
+    What it reopens: nothing. Decision 23's partition rule for shard 1 (one shard for every non-visual plant) is
+    replaced by item 5. The rule for the `visual` and `axe` groups is unchanged.
 
 ## Project Structure
 
@@ -450,7 +538,14 @@ data the gates read (baselines, pin, exceptions).
      removal"): the 18 new baselines from `visual:update` under docker; the tests and plants that name the
      repository's stories, red first; `size` 4 for the measuring run, red first in `plantShards`' test; the
      measuring run itself (CI's confirmation of the 42 baselines and the disk and time records at 21 stories); the
-     B'/A' options and the split count re-derived from that run for the operator.
+     B'/A' options and the split count re-derived from that run for the operator;
+   - after CI run 43242674392 (decision 30, operator decisions 2026-11-12: "M = 4G", "End = peak is fine",
+     "A' size 3", "Split its plants"):
+     - A' at `size` 3, red first in `plantShards`' test of the repository's `size`;
+     - the non-visual plants dealt in turn over ⌈n / 80⌉ shards, red first in `plant-runner.test.ts`;
+     - `gates/README.md` naming both;
+     - a confirming CI run, which must show 19 shards, every Plants shard under 10 minutes, the 280-plant verdict and
+       at least 4G free at the end of every shard.
 4. **US3 Accessibility** (P3):
    - `axe-rules.ts` (selection on fixture metadata, and the test that derives the 4.14.0 lists from axe-core's own
      metadata), `axe-verdict.ts` (incomplete findings, outside-root, `printSelector`), `story-checks.ts` (empty,
@@ -489,11 +584,12 @@ Closed by this feature:
 | 002 exception 2: the static `csp`/`prefix` scope widened to the Storybook inputs and HTML entries | 002 plan | `csp` no longer reads the Storybook; `prefix`'s Storybook scope is coverage, not an exception to IV (FR-022) |
 
 Opened by this feature, an accepted cost with a sunset (operator decision on PLAN-FRESH-2-007, option (b), 2026-11-10;
-scope and sunset updated by the operator's decisions on CI run 43072665056, 2026-11-11, human:jeroennouwsdev):
+scope and sunset updated by the operator's decisions on CI run 43072665056, 2026-11-11, and on CI run 43242674392,
+2026-11-12 (decision 30), human:jeroennouwsdev):
 
 | Item | Scope | Rationale | Sunset |
 |---|---|---|---|
-| Plant roots hold every repository story | the Plants shards: every `storybook-build`, `visual` and `axe` plant builds, captures (twice) or audits all repository stories, so a shard's time grows with its plants × the stories; since the operator's decision of 2026-11-11 ("In phase 3 now", decision 23) the plant job is split into shards of at most `size` `visual` (or `axe`) plants, `size` 8 provisional | plants keep the whole configuration set, so no plant can miss a repository input (research R-16); the growth is measured, not guessed (research R-07): CI run 43072665056 took 37 min 13 s for the single Plants gate with 12 stories; the time per plant is printed from the next run on (decision 24, operator decision 2026-11-11, "Measure first") | the change that lowers `size` (with its `plantShards` test) before the repository holds the **split count**, the number of stories at which one shard of `size` plants would pass 10 minutes; `size` and the count are derived from the measured per-plant times by tasks.md T046h and recorded here with the operator's approval (the 9-story count estimated from run 43072665056 is not approved) |
+| Plant roots hold every repository story | the Plants shards: every `storybook-build`, `visual` and `axe` plant builds, captures (twice) or audits all repository stories, so a shard's time grows with its plants × the stories; since the operator's decision of 2026-11-11 ("In phase 3 now", decision 23) the plant job is split into shards; since decision 30 (operator decisions 2026-11-12, "A' size 3", "Split its plants") the `visual` (and `axe`) plants are in shards of at most `size` 3, approved, the non-visual plants and the registry's are dealt in turn over ⌈n / 80⌉ shards (3 at 232 plants), and each shard keeps the toolset removal: 19 shards at 21 stories | plants keep the whole configuration set, so no plant can miss a repository input (research R-16); the growth is measured, not guessed (research R-07): CI run 43072665056 took 37 min 13 s for the single Plants gate with 12 stories; CI run 43242674392 (21 stories, `size` 4) measured 1.377 s per story-theme (median) and a worst fixed part of 387 s per `visual` shard, so a `size` 3 shard takes about 387 + 3 × 1.377 × (2s + 2) s at s stories, about 568 s at 21 (reviews/phase-3/ci-run-43242674392.md) | the change that lowers `size` (with its `plantShards` test) before the repository holds the **split count, 25 stories** (approved by the operator 2026-11-12, decision 30): the number of stories at which one `visual` shard of `size` 3 would pass 10 minutes (594 s at 24 stories, 602 s at 25); the non-visual shards' times are recorded by the confirming run (tasks.md T046z), and one near 10 minutes is a stop-and-ask |
 
 axe exceptions under FR-029, if phase 1's spike finds one that needs a token or base-style change, are added here as
 rows, with the operator's approval, before phase 4 records them in `storybook/a11y-exceptions.json`. Each row names

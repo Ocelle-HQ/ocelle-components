@@ -184,11 +184,24 @@ covers it.
 `--verdict` prints, as findings, the registry check's findings, the structural problems, and every problem line the
 reports hold (exit 1, summary `plants: <p> problems in <n> plants`), as the single run would have printed them.
 
-`plantShards(plants, size)` (`gates/lib/plant-runner.ts`, pure, unit-tested): shard 1 holds every plant of the gates
-other than `visual` and `axe` and the registry's plants; then the `visual` plants sorted by `<case>` in consecutive
-groups of at most `size`; then the `axe` plants the same way; a gate with no plants adds no shard; every plant is in
-exactly one shard. `size` is 4 (plan decision 29, "Size 4, keep removal": the measuring run's size, was 8),
-provisional until the operator approves a `size` in answer to tasks.md T046l, re-derived from the measured times.
+`plantShards(plants, size, otherSize)` (`gates/lib/plant-runner.ts`, pure, unit-tested) builds the shards in this
+order:
+1. **The other plants** (plan decision 30, "Split its plants"): the plants of the gates other than `visual` and
+   `axe`, plus the registry's plants. Sort them by `<gate>/<case>`; there are n of them. Deal them in turn over
+   k = max(1, ⌈n / `otherSize`⌉) shards: the plant at index i (from 0) goes to shard (i mod k) + 1, and each shard
+   keeps the sorted order. These are shards 1 to k, and their sizes differ by at most one plant.
+2. The `visual` plants, sorted by `<case>`, in consecutive groups of at most `size`.
+3. The `axe` plants the same way.
+
+A gate with no plants adds no shard, and every plant is in exactly one shard. The partition depends only on the set
+of plants, not on their order.
+
+The repository's values:
+- `size` (`shardSize`) is **3**, approved by the operator in answer to tasks.md T046l (plan decision 30, "A' size 3").
+  It was 8, then 4 for the measuring run.
+- `otherSize` (`otherShardSize`) is **80** (plan decision 30). The 232 other plants give 3 shards of 78, 77 and 77.
+
+The plan then has 3 + ⌈48 / 3⌉ = 19 shards.
 
 The report `storybook/.visual/plant-shards/<k>.json` (the directory is ignored with `storybook/.visual/`), written by
 `--shard <k>` whatever its exit:
