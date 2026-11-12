@@ -647,9 +647,10 @@ describe("plantShards and shardSize (plan decision 23)", () => {
     expect(plantShards(all, 8).flat().sort()).toEqual([...all].sort());
   });
 
-  // Plan decision 29 ("Size 4, keep removal"): the measuring run's size, provisional until the operator approves one.
-  it("is 4 in the repository, the measuring run's size, provisional until tasks.md T046l", () => {
-    expect(shardSize).toBe(4);
+  // Plan decision 30 (operator's answer to tasks.md T046l, "A' size 3"): the approved size, no longer the measuring
+  // run's provisional 4.
+  it("is 3 in the repository, approved by plan decision 30", () => {
+    expect(shardSize).toBe(3);
   });
 });
 
