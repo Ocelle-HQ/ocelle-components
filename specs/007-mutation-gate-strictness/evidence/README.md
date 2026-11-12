@@ -1642,3 +1642,40 @@ the CI measurement below (480 s per `gate:mutation` step) decides.
 - **An alone shard over 480 s** does not meet FR-010; a time over 480 s is never accepted as measured. The landing
   pass brings it to the operator as a decision at the landing gate, with two options: apply lever 2 (R-05) and measure
   again, or amend 001 FR-013 again under FR-014. Neither is a follow-up.
+
+### Result: CI measurement (landing L1-02, 2026-11-12)
+
+**FR-010's CI half holds.** Every shard holding a `source.ts` entry ran its `gate:mutation` step within 480 s, none
+was cancelled, and the whole run passed (29 jobs, all `success`).
+
+- **The measurement commit:** `d8238ff` on PR #25, a trailing space on all 230 lines of `packages/tokens/src/source.ts`.
+  `source.ts` has backticks only in comments, so no template literal changes; `dist/` built before and after is
+  byte-identical (`ci/dist-compare.txt`: `tokens.css`, `tokens.json`, `index.d.ts`).
+- **The local `--plan` check** (`--base 3a247ef`, before the push): 14 shards, 13 cuts; exactly the eight 30-line
+  entries `source.ts:1-30` to `211-230`. Seven are alone in their shard; `1-30` shares one with
+  `gates/lib/plant-judge.ts:281-305` (`ci/plan.stdout`, `ci/plan.stderr`). CI's `mutation-plan` job planned the same
+  14 shards.
+- **CI run:** [run 60](https://github.com/Ocelle-HQ/ocelle-components/actions/runs/43138324963), on the merge of
+  `d8238ff` into `3a247ef`. Step times, as GitHub reports them (step start to step end), for every shard in
+  `ci/shards.md`. The `source.ts` shards:
+
+  | Entry | Shard holds | `gate:mutation` step |
+  |---|---|---|
+  | `source.ts:1-30` | with `plant-judge.ts:281-305` | 115 s |
+  | `source.ts:31-60` | alone | 400 s (the slowest; 80 s under) |
+  | `source.ts:61-90` | alone | 162 s |
+  | `source.ts:91-120` | alone | 273 s |
+  | `source.ts:121-150` | alone | 385 s |
+  | `source.ts:151-180` | alone | 303 s |
+  | `source.ts:181-210` | alone | 171 s |
+  | `source.ts:211-230` | alone | 181 s |
+
+  The `31-60` shard reports 115 mutants, none survived, 0 timeouts, 61 compile errors.
+- **Core count (R-05):** the step log available here does not state it, and the job's runner section could not be
+  read from this sandbox (the log host is not reachable). So by R-05's fallback: the job ran on GitHub's standard
+  `ubuntu-24.04` runner; the constitution keeps the repository internal until 1.0.0, and GitHub documents 2 vCPUs for
+  the standard Linux runner of private and internal repositories. This is the documented size, not an observed one.
+  FR-010 holds at either size, because the 480 s bound is measured on CI itself.
+- **Decision rules:** no shard is over 480 s, so the mixed-shard fallback (a draft PR of `source.ts` alone) is not
+  needed, and nothing goes to the operator under the alone-shard rule.
+- **The revert** of `d8238ff` follows this record on the PR, before merge.
