@@ -756,3 +756,225 @@ describe("plantArgs", () => {
     expect(() => plantArgs("node x.ts --base {base}", { root: "/r" })).toThrow("plantCommand uses {base}, which this plant does not set");
   });
 });
+
+// Plan decisions 23 and 24 (operator decisions 2026-11-11, "In phase 3 now" and "Measure first"; contracts/plants.md
+// § Shards, § Plant runner changes): each plant's time on stderr, and the three modes of the split plant job. The
+// repository in memory holds 17 visual plants, so with the size 8 the plan has 4 shards: shard 1 every other plant and
+// the registry's, shard 2 the visual plants error-basic, fail-basic, pass-basic and pass-v01 to pass-v05, shard 3
+// pass-v06 to pass-v13, shard 4 pass-v14. The stopwatch gives 1,250 ms for every plant.
+describe("plants: plant times and shards (plan decisions 23 and 24)", () => {
+  const extra = Array.from({ length: 14 }, (_, index) => `pass-v${String(index + 1).padStart(2, "0")}`);
+  const visual = ["error-basic", "fail-basic", "pass-basic", ...extra].map((name) => `visual/${name}`);
+  const others = gateIds.filter((id) => id !== "visual").flatMap((id) => ["error-basic", "fail-basic", "pass-basic"].map((name) => `${id}/${name}`));
+  const partition = [[...others, "plants/matching", "plants/missing-entry"], visual.slice(0, 8), visual.slice(8, 16), visual.slice(16)];
+  const note = (plant: string): string => `note: plant time: ${plant}: 1.3 s`;
+
+  function sharded(): Map<string, string> {
+    const files = world();
+    for (const name of extra) files.set(`gates/plants/visual/${name}/plant.json`, passPlant);
+    return files;
+  }
+
+  interface Report {
+    readonly shard: number;
+    readonly of: number;
+    readonly plants: readonly { readonly plant: string; readonly asExpected: boolean; readonly lines: readonly string[]; readonly seconds: number }[];
+    readonly skipped: readonly string[];
+    readonly notRun: readonly string[];
+  }
+
+  /** A report of shard `k` in which every plant of the partition was judged as expected. */
+  const report = (k: number, changes: Partial<Report> = {}): Report => ({
+    shard: k,
+    of: 4,
+    plants: (partition[k - 1] ?? []).map((plant) => ({ plant, asExpected: true, lines: [], seconds: 1.3 })),
+    skipped: [],
+    notRun: [],
+    ...changes,
+  });
+
+  interface ShardRun {
+    readonly code: number;
+    readonly out: string[];
+    readonly err: string[];
+    readonly ran: string[];
+    readonly written: Map<string, string>;
+    readonly read: string[];
+  }
+
+  async function shardJob(files: Map<string, string>, args: readonly string[], options: { readonly runs?: Readonly<Record<string, PlantRun>>; readonly reports?: ReadonlyMap<string, string> } = {}): Promise<ShardRun> {
+    const out: string[] = [];
+    const err: string[] = [];
+    const ran: string[] = [];
+    const written = new Map<string, string>();
+    const read: string[] = [];
+    const below = (dir: string): string[] => [...files.keys()].filter((path) => path.startsWith(`${dir}/`)).map((path) => path.slice(dir.length + 1));
+    const tools: PlantTools = {
+      read: (path) => Promise.resolve(files.get(path)),
+      dirs: (path) => Promise.resolve([...new Set(below(path).filter((p) => p.includes("/")).map((p) => p.split("/")[0] ?? ""))].sort()),
+      files: (path) => Promise.resolve(below(path).sort()),
+      runPlant: (gate, plant) => {
+        ran.push(plant);
+        return Promise.resolve(options.runs?.[plant] ?? recorded(gate, plant));
+      },
+      stopwatch: () => () => 1250,
+      write: (path, text) => {
+        written.set(path, text);
+        return Promise.resolve();
+      },
+      reports: (dir) => {
+        read.push(dir);
+        return Promise.resolve(options.reports ?? new Map());
+      },
+    };
+    const io: Io = { cwd: "/work/repo", env: {}, out: (l) => out.push(l), err: (l) => err.push(l) };
+    const context: Context = { root: "/work/repo", toolCwd: "/work/repo", args };
+    return { code: await plants(context, tools, io), out, err, ran, written, read };
+  }
+
+  const reports = (...list: Report[]): Map<string, string> => new Map(list.map((one) => [`${String(one.shard)}.json`, JSON.stringify(one)]));
+  const complete = (): Report[] => [1, 2, 3, 4].map((k) => report(k));
+  /** The repository with a registry finding (--skip-container in the plants job) and a gate without a breaking plant. */
+  function flawed(): Map<string, string> {
+    const files = sharded();
+    files.set(".github/workflows/ci.yml", workflow.replace("      - run: pnpm run gate:plants\n", "      - run: pnpm run gate:plants -- --skip-container\n"));
+    files.delete("gates/plants/lint/error-basic/plant.json");
+    return files;
+  }
+
+  it("prints one plant time per plant judged, the registry's plants included, with one decimal, and the summary unchanged", async () => {
+    const run = await shardJob(world(), []);
+    const expected = [...gateIds.flatMap((id) => ["error-basic", "fail-basic", "pass-basic"].map((name) => `${id}/${name}`)), "plants/matching", "plants/missing-entry"];
+    expect({ code: run.code, out: run.out, err: [...run.err].sort() }).toEqual({
+      code: 0,
+      out: ["plants: 47 plants of 15 gates and the registry judged, every plant as expected"],
+      err: expected.map(note).sort(),
+    });
+  });
+
+  it("--plan prints the shard numbers as one JSON line and runs no plant", async () => {
+    const run = await shardJob(sharded(), ["--", "--plan"]);
+    expect({ code: run.code, out: run.out, err: run.err, ran: run.ran }).toEqual({ code: 0, out: ["[1,2,3,4]"], err: [], ran: [] });
+  });
+
+  it("--shard 2 judges only shard 2's plants, runs no registry check, and writes its report", async () => {
+    const run = await shardJob(flawed(), ["--", "--shard", "2"]);
+    expect({ code: run.code, out: run.out, err: run.err, ran: run.ran }).toEqual({
+      code: 0,
+      out: ["plants: shard 2 of 4: 8 plants judged, every plant as expected"],
+      err: visual.slice(0, 8).map(note),
+      ran: visual.slice(0, 8).map((plant) => `gates/plants/${plant}`),
+    });
+    expect([...run.written.keys()]).toEqual(["storybook/.visual/plant-shards/2.json"]);
+    expect(JSON.parse(run.written.get("storybook/.visual/plant-shards/2.json") ?? "")).toEqual(report(2));
+  });
+
+  it("--shard writes its report also when a plant is not as expected, with that plant's problem lines (exit 1)", async () => {
+    const rejected: PlantRun = { exit: 1, stdout: ["a--b/light: visual: differs: x", "visual: 1 finding in 24 story-themes"], stderr: [] };
+    const line = "gates/plants/visual/pass-v01: plants: not-accepted: expected exit 0 with no finding, got exit 1 (a--b/light differs)";
+    const run = await shardJob(sharded(), ["--shard", "2"], { runs: { "gates/plants/visual/pass-v01": rejected } });
+    expect({ code: run.code, out: run.out }).toEqual({ code: 1, out: [line, "plants: 1 problem in 8 plants"] });
+    const written = report(2);
+    expect(JSON.parse(run.written.get("storybook/.visual/plant-shards/2.json") ?? "")).toEqual({
+      ...written,
+      plants: written.plants.map((plant) => (plant.plant === "visual/pass-v01" ? { ...plant, asExpected: false, lines: [line] } : plant)),
+    });
+  });
+
+  it("--shard 1 judges the other gates' and the registry's plants, and reports neither a registry finding nor a structural problem", async () => {
+    const run = await shardJob(flawed(), ["--shard", "1"]);
+    expect({ code: run.code, out: run.out, ran: run.ran.length }).toEqual({ code: 0, out: ["plants: shard 1 of 4: 43 plants judged, every plant as expected"], ran: 41 });
+  });
+
+  it("--shard 5 exits 2 naming the plan's shard count, and writes no report", async () => {
+    const run = await shardJob(sharded(), ["--shard", "5"]);
+    expect({ code: run.code, out: run.out, err: run.err, ran: run.ran, written: [...run.written.keys()] }).toEqual({
+      code: 2,
+      out: [],
+      err: ["plants: could not run: there is no shard 5; the plan has 4"],
+      ran: [],
+      written: [],
+    });
+  });
+
+  it("--verdict on a complete, as-expected set of reports prints exactly the single run's summary line and runs no plant", async () => {
+    const run = await shardJob(sharded(), ["--", "--verdict", "storybook/.visual/plant-shards"], { reports: reports(...complete()) });
+    expect({ code: run.code, out: run.out, err: run.err, ran: run.ran, read: run.read }).toEqual({
+      code: 0,
+      out: ["plants: 61 plants of 15 gates and the registry judged, every plant as expected"],
+      err: [],
+      ran: [],
+      read: ["storybook/.visual/plant-shards"],
+    });
+  });
+
+  it("--verdict exits 2 naming a shard with no report", async () => {
+    const run = await shardJob(sharded(), ["--verdict", "dir"], { reports: reports(report(1), report(2), report(4)) });
+    expect({ code: run.code, out: run.out, err: run.err }).toEqual({ code: 2, out: [], err: ["plants: could not run: shard 3 of 4 reported no result"] });
+  });
+
+  it("--verdict exits 2 on a report of another plan's shard count, and on one that is not a shard report", async () => {
+    const other = await shardJob(sharded(), ["--verdict", "dir"], { reports: reports(report(1), report(2, { of: 3 }), report(3), report(4)) });
+    expect({ code: other.code, err: other.err }).toEqual({ code: 2, err: ["plants: could not run: 2.json: shard 2 of 3, but the plan has 4 shards", "plants: could not run: shard 2 of 4 reported no result"] });
+    const broken = await shardJob(sharded(), ["--verdict", "dir"], { reports: new Map([...reports(...complete()), ["2.json", '{"shard":2}']]) });
+    expect({ code: broken.code, err: broken.err }).toEqual({ code: 2, err: ["plants: could not run: 2.json is not a shard report", "plants: could not run: shard 2 of 4 reported no result"] });
+    const outside = await shardJob(sharded(), ["--verdict", "dir"], { reports: reports(...complete(), report(9)) });
+    expect({ code: outside.code, err: outside.err }).toEqual({ code: 2, err: ["plants: could not run: 9.json: shard 9 of 4, but the plan has 4 shards"] });
+  });
+
+  it("--verdict exits 2 when a report holds a plant of another shard", async () => {
+    const two = report(2);
+    const moved = { ...two, plants: [...two.plants, { plant: "visual/pass-v14", asExpected: true, lines: [], seconds: 1.3 }] };
+    const run = await shardJob(sharded(), ["--verdict", "dir"], { reports: reports(report(1), moved, report(3), report(4)) });
+    expect({ code: run.code, err: run.err }).toEqual({ code: 2, err: ["plants: could not run: shard 2 judged other plants than the partition gives it: visual/pass-v14"] });
+  });
+
+  it("--verdict exits 2 on a report with a skipped plant, naming it", async () => {
+    const three = report(3);
+    const skipped = { ...three, plants: three.plants.filter((plant) => plant.plant !== "visual/pass-v06"), skipped: ["visual/pass-v06"] };
+    const run = await shardJob(sharded(), ["--verdict", "dir"], { reports: reports(report(1), report(2), skipped, report(4)) });
+    expect({ code: run.code, err: run.err }).toEqual({
+      code: 2,
+      err: ["plants: skipped (no container): gates/plants/visual/pass-v06", "plants: could not run: shard 3 skipped 1 visual plant (--skip-container); the Plants check judges every plant"],
+    });
+  });
+
+  it("--verdict exits 2 on a report with a plant not run for want of an engine, naming it", async () => {
+    const three = report(3);
+    const notRun = { ...three, plants: three.plants.filter((plant) => plant.plant !== "visual/pass-v06" && plant.plant !== "visual/pass-v07"), notRun: ["visual/pass-v06", "visual/pass-v07"] };
+    const run = await shardJob(sharded(), ["--verdict", "dir"], { reports: reports(report(1), report(2), notRun, report(4)) });
+    expect({ code: run.code, err: run.err }).toEqual({
+      code: 2,
+      err: [
+        "plants: not run (no container engine): gates/plants/visual/pass-v06",
+        "plants: not run (no container engine): gates/plants/visual/pass-v07",
+        "plants: could not run: shard 3 could not run 2 visual plants (no container engine); the Plants check judges every plant",
+      ],
+    });
+  });
+
+  it("--verdict prints the reports' problem lines with the single run's summary of problems (exit 1)", async () => {
+    const line = "gates/plants/visual/pass-v01: plants: not-accepted: expected exit 0 with no finding, got exit 1 (a--b/light differs)";
+    const two = report(2);
+    const failing = { ...two, plants: two.plants.map((plant) => (plant.plant === "visual/pass-v01" ? { ...plant, asExpected: false, lines: [line] } : plant)) };
+    const run = await shardJob(sharded(), ["--verdict", "dir"], { reports: reports(report(1), failing, report(3), report(4)) });
+    expect({ code: run.code, out: run.out, err: run.err }).toEqual({ code: 1, out: [line, "plants: 1 problem in 61 plants"], err: [] });
+  });
+
+  it("--verdict reports the registry finding and the gate without a breaking plant that --shard does not", async () => {
+    const one = report(1);
+    const without = { ...one, plants: one.plants.filter((plant) => plant.plant !== "lint/error-basic") };
+    const run = await shardJob(flawed(), ["--verdict", "dir"], { reports: reports(without, report(2), report(3), report(4)) });
+    expect({ code: run.code, out: run.out, err: run.err, ran: run.ran, read: run.read }).toEqual({
+      code: 1,
+      out: [
+        ".github/workflows/ci.yml: plants: skip-container-in-ci: the plants job passes --skip-container, so CI would not run the visual plants",
+        "gates/plants/lint: plants: missing-plant: gate lint has no error plant",
+        "plants: 2 problems in 60 plants",
+      ],
+      err: [],
+      ran: [],
+      read: ["dir"],
+    });
+  });
+});

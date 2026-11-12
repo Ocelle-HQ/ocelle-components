@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import type { Plant } from "../lib/plant-judge.ts";
-import { aloneDecision, containerDecision, engineValue, errorText, failedOwn, gateRunsAtOnce, keptPlantDir, limiter, needsEngine, outputLines, plantValues, resolveLocations, runPlant } from "../lib/plant-runner.ts";
+import { aloneDecision, containerDecision, engineValue, errorText, failedOwn, gateRunsAtOnce, keptPlantDir, limiter, needsEngine, outputLines, plantShards, plantTimeNote, plantValues, resolveLocations, runPlant, shardSize } from "../lib/plant-runner.ts";
 import type { BuiltRepo, RunnerTools, TreeView } from "../lib/plant-runner.ts";
 import type { Gate, PlantForm } from "../lib/registry.ts";
 import type { ToolRun } from "../lib/spawn.ts";
@@ -612,5 +612,51 @@ describe("runPlant: the captures of a failing visual pass plant (006 research.md
     const { tools, calls } = recorder({}, failing);
     await runPlant(tools, "/repo", visualGate, "gates/plants/visual/pass-x", pass);
     expect(calls.at(-1)).toBe(`removeDir ${into}`);
+  });
+});
+
+// Plan decisions 23 and 24 (operator decisions 2026-11-11, "In phase 3 now" and "Measure first"; contracts/plants.md
+// § Shards, § Plant runner changes): the partition of the plants into shards, and the note of a plant's time.
+describe("plantShards and shardSize (plan decision 23)", () => {
+  const registry = ["plants/fail-gate-without-entry", "plants/fail-gate-without-job", "plants/pass-matching"];
+  const lint = ["lint/error-a", "lint/fail-b", "lint/fail-c", "lint/pass-d", "lint/pass-e"];
+  const storybook = ["storybook-build/fail-x", "storybook-build/pass-y"];
+  const visual = Array.from({ length: 17 }, (_, index) => `visual/case-${String(index + 1).padStart(2, "0")}`);
+  const axe = Array.from({ length: 9 }, (_, index) => `axe/case-${String(index + 1)}`);
+  // The visual and axe plants out of name order, and before the others, to show both orders are the shards' own.
+  const shuffled = (list: readonly string[]): string[] => [...list].reverse();
+
+  it("puts the registry's and the other gates' plants in shard 1, then the visual plants by name in groups of the size", () => {
+    expect(plantShards([...shuffled(visual), ...registry, ...lint, ...storybook], 8)).toEqual([
+      [...registry, ...lint, ...storybook],
+      visual.slice(0, 8),
+      visual.slice(8, 16),
+      visual.slice(16),
+    ]);
+  });
+
+  it("adds the axe plants after the visual ones the same way, and gives one shard without visual or axe plants", () => {
+    const shards = plantShards([...shuffled(axe), ...registry, ...shuffled(visual), ...lint], 8);
+    expect(shards).toEqual([[...registry, ...lint], visual.slice(0, 8), visual.slice(8, 16), visual.slice(16), axe.slice(0, 8), axe.slice(8)]);
+    expect(plantShards([...registry, ...lint, ...storybook], 8)).toEqual([[...registry, ...lint, ...storybook]]);
+    expect(plantShards([...registry, ...visual.slice(0, 3)], 2)).toEqual([registry, visual.slice(0, 2), visual.slice(2, 3)]);
+  });
+
+  it("puts every plant in exactly one shard", () => {
+    const all = [...registry, ...lint, ...storybook, ...visual, ...axe];
+    expect(plantShards(all, 8).flat().sort()).toEqual([...all].sort());
+  });
+
+  it("is 8 in the repository, provisional until tasks.md T046h derives it", () => {
+    expect(shardSize).toBe(8);
+  });
+});
+
+describe("plantTimeNote (plan decision 24)", () => {
+  it("names the plant and its seconds with one decimal", () => {
+    expect(plantTimeNote("visual/error-host", 1250)).toBe("note: plant time: visual/error-host: 1.3 s");
+    expect(plantTimeNote("plants/pass-matching", 41_660)).toBe("note: plant time: plants/pass-matching: 41.7 s");
+    expect(plantTimeNote("lint/fail-b", 0)).toBe("note: plant time: lint/fail-b: 0.0 s");
+    expect(plantTimeNote("lint/fail-b", 1249)).toBe("note: plant time: lint/fail-b: 1.2 s");
   });
 });

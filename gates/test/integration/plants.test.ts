@@ -66,6 +66,19 @@ function missing(id: string, present: readonly string[]): string[] {
   return kinds.filter((kind) => !present.includes(kind)).map((kind) => `gates/plants/${id}: plants: missing-plant: gate ${id} has no ${kind} plant`);
 }
 
+/** The plants of plantsRoot() as `<gate>/<case>`, each one the job judges. */
+const rootPlants = ["config-copies/pass-equal-copies", "mutation/error-unresolvable-base", "pins/error-invalid-json", "plants/fail-gate-without-entry", "plants/pass-matching", "signoff/fail-no-trailer"];
+
+/** Plan decision 24: a stderr line of a plant's time, with its seconds written `<s>`; any other line as it is. */
+function timeless(line: string): string {
+  return line.replace(/^(note: plant time: [a-z0-9-]+\/[a-z0-9-]+): \d+\.\d s$/, "$1: <s> s");
+}
+
+/** The stderr lines of the plant times, sorted (plants of other gates run at once, so their order is not fixed). */
+function times(stderr: readonly string[]): string[] {
+  return stderr.map(timeless).filter((line) => line.startsWith("note: plant time: ")).sort();
+}
+
 afterEach(cleanUp);
 
 describe("plant job (gates/bin/plants.ts)", () => {
@@ -74,7 +87,7 @@ describe("plant job (gates/bin/plants.ts)", () => {
     async () => {
       const root = plantsRoot();
       const ran = await runGate("gates/bin/plants.ts", ["--root", root], { cwd: tempDir("cwd"), env: baseEnv() });
-      expect({ code: ran.code, stdout: ran.stdout, stderr: ran.stderr }).toEqual({
+      expect({ code: ran.code, stdout: ran.stdout, stderr: [...ran.stderr].map(timeless).sort() }).toEqual({
         code: 1,
         stdout: [
           ...missing("typecheck", []),
@@ -94,7 +107,7 @@ describe("plant job (gates/bin/plants.ts)", () => {
           ...missing("visual", []),
           "plants: 41 problems in 6 plants",
         ],
-        stderr: [],
+        stderr: rootPlants.map((plant) => `note: plant time: ${plant}: <s> s`),
       });
     },
     timeout,
@@ -114,13 +127,30 @@ describe("plant job (gates/bin/plants.ts)", () => {
       const env: Record<string, string> = { ...baseEnv(), PATH: bin };
       delete env.OCELLE_VISUAL_ENGINE;
       const ran = await runGate("gates/bin/plants.ts", ["--root", root], { cwd: tempDir("cwd"), env });
-      expect({ code: ran.code, stderr: ran.stderr }).toEqual({
+      expect({ code: ran.code, times: times(ran.stderr), stderr: ran.stderr.filter((line) => !line.startsWith("note: plant time: ")) }).toEqual({
         code: 2,
+        times: rootPlants.map((plant) => `note: plant time: ${plant}: <s> s`),
         stderr: [
           "plants: not run (no container engine): gates/plants/visual/fail-needs-engine",
           "plants: not run (no container engine): gates/plants/visual/pass-needs-engine",
           "plants: could not run: no container engine for 2 visual plants; start docker or podman, or run a partial job with --skip-container",
         ],
+      });
+    },
+    timeout,
+  );
+  // Plan decision 23 (contracts/plants.md § Shards): the Plants check recomputes the partition, so an empty report
+  // directory names every shard of the plan. Nine visual plant directories (no plant.json, so none runs) give the plan
+  // of plantsRoot() three shards: shard 1 its other plants, shards 2 and 3 eight and one visual plant.
+  it(
+    "--verdict on an empty directory exits 2 naming every shard of the repository's plan",
+    async () => {
+      const root = plantsRoot();
+      for (let index = 1; index <= 9; index += 1) write(join(root, `gates/plants/visual/case-${String(index)}/tree/x.txt`), "x");
+      const ran = await runGate("gates/bin/plants.ts", ["--root", root, "--verdict", tempDir("reports")], { cwd: tempDir("cwd"), env: baseEnv() });
+      expect({ code: ran.code, stderr: ran.stderr }).toEqual({
+        code: 2,
+        stderr: [1, 2, 3].map((k) => `plants: could not run: shard ${String(k)} of 3 reported no result`),
       });
     },
     timeout,

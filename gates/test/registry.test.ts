@@ -1,7 +1,7 @@
 import { readFileSync } from "node:fs";
 import { describe, expect, it } from "vitest";
 import type { Finding } from "../lib/findings.ts";
-import { checkRegistry, ciJobs, fr020, parseRegistry, plantJob, skipContainerFindings } from "../lib/registry.ts";
+import { checkRegistry, ciJobs, fr020, parseRegistry, plantHelperJobs, plantJob, shardInPlantCheckFindings, skipContainerFindings } from "../lib/registry.ts";
 import type { Gate } from "../lib/registry.ts";
 
 // The registry check of the plant job (research.md R-10, data-model.md § Gate): the gate ids of gates.json, the gate
@@ -121,6 +121,12 @@ describe("checkRegistry", () => {
     ]);
   });
 
+  // Plan decision 23 (operator decision 2026-11-11, "In phase 3 now"; contracts/gates.md § The registry).
+  it("does not count the plant job's helper jobs plants-plan and plants-shard as gates", () => {
+    expect(plantHelperJobs).toEqual(["plants-plan", "plants-shard"]);
+    expect(checkRegistry({ registry, jobs: [...jobs, "plants-plan", "plants-shard"], ...paths })).toEqual([]);
+  });
+
   it("reports every gate when the registry and the workflow are empty", () => {
     expect(checkRegistry({ registry: [], jobs: [], ...paths })).toHaveLength(30);
   });
@@ -232,5 +238,47 @@ describe("skipContainerFindings (006 FR-018)", () => {
     expect(skipContainerFindings(plantsJob("      - run: pnpm run gate:plants"), "ci.yml")).toEqual([]);
     expect(skipContainerFindings(plantsJob("      - run: pnpm run gate:plants").replace("echo done", "pnpm run gate:plants -- --skip-container"), "ci.yml")).toEqual([]);
     expect(skipContainerFindings(readFileSync(new URL("../../.github/workflows/ci.yml", import.meta.url), "utf8"), ".github/workflows/ci.yml")).toEqual([]);
+  });
+});
+
+// Plan decision 23 (operator decision 2026-11-11, "In phase 3 now"; contracts/gates.md § The registry; research.md
+// R-07): with the plant job split, --skip-container is refused in any of the three plant jobs, and the Plants check
+// (the plants job) may not judge one shard (--shard) or none (--plan).
+describe("the split plant jobs (plan decision 23)", () => {
+  const split = (plan: string, shard: string, verdict: string): string =>
+    "jobs:\n  lint:\n    steps:\n      - run: pnpm run gate:lint\n" +
+    `  plants-plan:\n    name: Plants plan\n    steps:\n${plan}\n` +
+    `  plants-shard:\n    name: Plants shard\n    steps:\n${shard}\n` +
+    `  plants:\n    name: Plants\n    steps:\n${verdict}\n` +
+    "  after:\n    steps:\n      - run: pnpm run gate:plants -- --shard 1 --plan --skip-container\n";
+  const plan = "      - run: pnpm --silent run gate:plants -- --plan";
+  const shard = '      - run: pnpm run gate:plants -- --shard "$SHARD"';
+  const verdict = "      - run: pnpm run gate:plants -- --verdict storybook/.visual/plant-shards";
+  const skip = (job: string): Finding => ({
+    location: { path: "ci.yml" },
+    gate: "plants",
+    rule: "skip-container-in-ci",
+    message: `the ${job} job passes --skip-container, so CI would not run the visual plants`,
+  });
+  const partial: Finding = {
+    location: { path: "ci.yml" },
+    gate: "plants",
+    rule: "shard-in-plant-check",
+    message: "the plants job passes --shard or --plan, so the Plants check would judge one shard or none",
+  };
+
+  it("finds --skip-container in a step of plants-shard and of plants-plan", () => {
+    expect(skipContainerFindings(split(plan, `${shard} --skip-container`, verdict), "ci.yml")).toEqual([skip("plants-shard")]);
+    expect(skipContainerFindings(split(`${plan} --skip-container`, shard, verdict), "ci.yml")).toEqual([skip("plants-plan")]);
+    expect(skipContainerFindings(split(`${plan} --skip-container`, shard, `${verdict} --skip-container`), "ci.yml")).toEqual([skip("plants-plan"), skip("plants")]);
+    expect(skipContainerFindings(split(plan, shard, verdict), "ci.yml")).toEqual([]);
+  });
+
+  it("finds --shard or --plan in a step of the plants job, and none for --shard in plants-shard or --plant", () => {
+    expect(shardInPlantCheckFindings(split(plan, shard, "      - run: pnpm run gate:plants -- --shard 1"), "ci.yml")).toEqual([partial]);
+    expect(shardInPlantCheckFindings(split(plan, shard, "      - run: |\n          pnpm run gate:plants -- --plan"), "ci.yml")).toEqual([partial]);
+    expect(shardInPlantCheckFindings(split(plan, shard, verdict), "ci.yml")).toEqual([]);
+    expect(shardInPlantCheckFindings(split(plan, shard, `${verdict}\n      - run: pnpm run visual:update -- --plant visual/pass-x`), "ci.yml")).toEqual([]);
+    expect(shardInPlantCheckFindings(readFileSync(new URL("../../.github/workflows/ci.yml", import.meta.url), "utf8"), ".github/workflows/ci.yml")).toEqual([]);
   });
 });
