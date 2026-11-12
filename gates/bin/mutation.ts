@@ -73,6 +73,16 @@ function elementSource(path: string): boolean {
   return path.startsWith("packages/elements/src/");
 }
 
+/**
+ * Sorts the report items of the runs, in place, by the changed file each belongs to (`itemKey` of the item equal to
+ * `fileKey` of the file), so the lines of both configurations follow the changed files' order (007
+ * contracts/mutation-output.md); the sort is stable, so the items of one file keep their run's order.
+ */
+function inChangedOrder<T>(items: T[], files: readonly RunEntry[], itemKey: (item: T) => string, fileKey: (file: RunEntry) => string): void {
+  const position = (item: T): number => files.findIndex((file) => fileKey(file) === itemKey(item));
+  items.sort((a, b) => position(a) - position(b));
+}
+
 /** What the gate reads as a `+++` header of `git diff` (ranges.ts), for the cause of a header it cannot read. */
 const headerHint = 'the gate reads +++ b/<path>, a C-quoted "b/<path>" or /dev/null (check diff.noprefix and diff.mnemonicPrefix)';
 
@@ -174,8 +184,9 @@ export async function mutation(context: Context, tools: MutationTools, io: Io): 
     findings.push(...scan.findings);
   }
   // One Stryker run per configuration that has changed files, each after deleting its own earlier report, and their
-  // classified mutants merged (005 research.md R-12): every field of the verdict, findings, mutants, timeouts, compile
-  // errors and zero-mutant entries (007), summed or collected over the runs.
+  // classified mutants merged (005 research.md R-12): the findings in the order of the runs, the mutants summed, and
+  // 007's timeouts, compile errors and zero-mutant entries of both runs in the changed files' order
+  // (contracts/mutation-output.md).
   let mutants = 0;
   const timeouts: UndecidedMutant[] = [];
   const compileErrors: UndecidedMutant[] = [];
@@ -195,6 +206,9 @@ export async function mutation(context: Context, tools: MutationTools, io: Io): 
     compileErrors.push(...verdict.compileErrors);
     zeroEntries.push(...verdict.zeroEntries);
   }
+  inChangedOrder(timeouts, selected, (mutant) => mutant.path, (file) => file.path);
+  inChangedOrder(compileErrors, selected, (mutant) => mutant.path, (file) => file.path);
+  inChangedOrder(zeroEntries, selected, (entry) => entry, (file) => file.entry ?? file.path);
 
   for (const record of records) io.out(formatRecord(record));
   const undecided = (rule: string, mutant: UndecidedMutant): string =>
