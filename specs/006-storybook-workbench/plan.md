@@ -95,7 +95,8 @@ about 14 new source modules.
   (research R-06). Integration tests not about that rule remove both from the gate's environment.
 - Podman behaviours (run arguments, rootless writes, inspect output, skopeo's raw manifest, cross-engine bytes) are
   proven by the CI run of the branch that phase 3's review holds (research R-02); the operator pushes the branch for it.
-  The inspect output and skopeo's raw manifest come from that run's `pin-record` artifact (decision 22); the removal
+  The inspect output and skopeo's raw manifests (the pin's and the tag's index) come from that run's `pin-record`
+  artifact (decisions 22 and 27); the removal
   of docker's copy and the Plants shards (decisions 23, 25) are proven only there too.
 - One heavy job at a time: browser suites, the container, mutation and plants never run in parallel.
 
@@ -203,7 +204,7 @@ reviews/phase-3/ci-run.md: Visual regression 24/24 under docker+podman, the Plan
     `skopeo inspect --raw docker://<image>@<digest>` and `podman image inspect <image>@<digest>` are written to files
     and uploaded as the artifact `pin-record`; the gate's output stays as its contract says. The next run's record
     replaces T022's podman fixture and T044a's skopeo manifest fixture, test-first if the bytes differ (R-02,
-    contracts/container.md § The pin record).
+    contracts/container.md § The pin record). Extended by decision 27.
 23. **The Plants job is split in phase 3** ("In phase 3 now"), before phase 4: `plants-plan` prints the shard numbers,
     `plants-shard` (a matrix) judges one shard each under both engines and writes a report, and `plants` ("Plants", the
     required check) recomputes the partition and accepts only a complete set of reports, as expected. Chosen over a
@@ -220,6 +221,17 @@ reviews/phase-3/ci-run.md: Visual regression 24/24 under docker+podman, the Plan
     that engine's first run so no capture comes from an unchecked image; each Plants shard first removes the runner's
     unused toolsets. Neither the docker-podman comparison nor the pin checks are weakened (R-07; contracts/gates.md §
     `visual`; contracts/container.md § The pin check).
+
+Decisions 26 and 27 are the operator's of 2026-11-12 (human:jeroennouwsdev), on the design of decisions 22 to 25.
+
+26. **Decisions 23 and 25 are built as designed** ("Build as designed"): the three-job Plants split with the verdict
+    job (`plants-plan`, `plants-shard`, `plants`) and the provisional shard size 8, and the opt-in
+    `--remove-docker-image` with the run order docker's pin check, build, run 1, removal, podman's pin check, run 2.
+    The design is not changed; the shard size and the split count are still derived by T046h and approved then.
+27. **The pin record also reads the tag's index** ("Add the tag read"): the pin record step of decision 22 also runs
+    `skopeo inspect --raw docker://<image>:<tag>`, the tag from `container.json`, and saves it in the `pin-record`
+    artifact as `skopeo-inspect-raw-index.json`; T046f replaces that fixture too, test-first (R-02;
+    contracts/container.md § The pin record).
 
 ## Project Structure
 
@@ -351,7 +363,8 @@ data the gates read (baselines, pin, exceptions).
      `ci-workflow.test.ts`; the plant job's `--plan`, `--shard`, `--verdict`, `plantShards`, the shard report and the
      plant time notes, red first in `plants.test.ts`, `registry.test.ts`, `ci-workflow.test.ts` and the plants
      integration test, with the registry rule `shard-in-plant-check` and its plants; the three plant jobs with the
-     toolset removal; then a CI run holding them (T045), the fixtures replaced from its `pin-record` artifact, and the
+     toolset removal; then a CI run holding them (T045), the fixtures replaced from its `pin-record` artifact (the
+     index fixture among them, decision 27), and the
      split count and shard size derived from its plant times for the operator's approval.
 4. **US3 Accessibility** (P3):
    - `axe-rules.ts` (selection on fixture metadata, and the test that derives the 4.14.0 lists from axe-core's own

@@ -64,15 +64,18 @@ the removal command are pure functions of `gates/lib/container.ts` (`runSteps`, 
 
 **The pin record (operator decision 2026-11-11, "Add the CI step"; research.md R-02).** After the gate passes, the
 "Visual regression" job writes `skopeo --version`, `skopeo inspect --raw docker://<image>@<digest>` and `podman image
-inspect <image>@<digest>` to `skopeo-version.txt`, `skopeo-inspect-raw-manifest.json` and `podman-inspect.json` and
-uploads them as the artifact `pin-record`. Those bytes replace the fixtures of the same names (tasks.md T046f).
+inspect <image>@<digest>` to `skopeo-version.txt`, `skopeo-inspect-raw-manifest.json` and `podman-inspect.json`, and
+(operator decision 2026-11-12, "Add the tag read") `skopeo inspect --raw docker://<image>:<tag>`, `<image>` and `tag`
+from `container.json`, to `skopeo-inspect-raw-index.json`, and uploads them as the artifact `pin-record`. The tag is
+only read for this record, never pulled or run. Those bytes replace the fixtures of the same names, the index fixture
+included (tasks.md T046f).
 
 `.Id` is never compared: it is the manifest digest on docker's containerd image store and the config digest on
 docker's classic store and on podman. The parsers are pure functions, unit-tested on recorded inspect outputs of docker
 with the containerd store, docker with the classic overlay2 store and podman (fixtures; podman's real output is recorded
 by phase 3's CI run), each with a match, a mismatching digest, an arm64 image and an index media type. The raw
 manifests read under podman are skopeo's (`gates/test/fixtures/container/skopeo-inspect-raw-manifest.json` and
-`skopeo-inspect-raw-index.json`): until the CI run records skopeo's real output they are copies of the spike's recorded
+`skopeo-inspect-raw-index.json`): until the CI run's `pin-record` records skopeo's real output of both they are copies of the spike's recorded
 `docker buildx imagetools inspect --raw` outputs of the pin and of the tag's index, since a raw manifest is the
 registry's bytes whichever tool fetches it. `podman-manifest-inspect.json` is removed with the command it stood for.
 

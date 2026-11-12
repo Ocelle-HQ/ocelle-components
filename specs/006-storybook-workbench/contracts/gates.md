@@ -133,8 +133,10 @@ Storybook build failed.
 gains the jobs `storybook-build` ("Storybook build"), `visual` ("Visual regression") and `axe` ("Accessibility"). The
 `visual` job uploads `storybook/.visual/` with `actions/upload-artifact` (pinned by SHA) when it fails. After its gate
 step it runs the pin record step (research.md R-02, operator decision 2026-11-11, "Add the CI step"): `skopeo
---version`, `skopeo inspect --raw docker://<image>@<digest>` and `podman image inspect <image>@<digest>` written to
-`$RUNNER_TEMP/pin-record/` and uploaded as the artifact `pin-record`; the gate's output is unchanged by it. Its gate step
+--version`, `skopeo inspect --raw docker://<image>@<digest>`, `podman image inspect <image>@<digest>` and (operator
+decision 2026-11-12, "Add the tag read") `skopeo inspect --raw docker://<image>:<tag>` with the tag from
+`container.json`, written to `$RUNNER_TEMP/pin-record/` and uploaded as the artifact `pin-record`; the gate's output is
+unchanged by it. Its gate step
 passes `--remove-docker-image` (research.md R-07). Root `package.json` gains the scripts `gate:storybook-build`,
 `gate:visual`, `gate:axe` and `visual:update`.
 

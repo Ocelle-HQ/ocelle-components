@@ -67,8 +67,14 @@ docker://<image>@<digest>` to `skopeo-inspect-raw-manifest.json` and `podman ima
 `actions/upload-artifact` pinned by SHA. The gate's own output stays as its contract says. The step stays in the job:
 it costs seconds, and it records the runner's real outputs again whenever the pin or the runner image moves. The
 podman fixture and skopeo's manifest fixture are then replaced from the artifact, test-first if the bytes differ
-(tasks.md T046f, T046g). The step reads no index, so `skopeo-inspect-raw-index.json` stays a copy of the tag's index
-docker recorded, as its README says.
+(tasks.md T046f, T046g).
+
+**The tag read (operator decision 2026-11-12, "Add the tag read", human:jeroennouwsdev).** The step above read no
+index, so `skopeo-inspect-raw-index.json` could not be replaced. The step therefore also reads the tag's index,
+`skopeo inspect --raw docker://<image>:<tag>` with `<image>` and `tag` from `storybook/visual/container.json`, and
+writes it to `skopeo-inspect-raw-index.json` in the same `pin-record` artifact; T046f replaces that fixture too,
+test-first. The tag is only read, never pulled or run (container.md § `container.json`). A tag's index can be pushed
+again, so the recorded bytes are that day's index, not the spike's; the fixture's tests read only its `mediaType`.
 
 **Other hosts' CPUs (operator decision on PLAN-FRESH-1-006, option (a)).** FR-026's two captures run on one CPU, and
 Chromium's rasteriser (Skia) picks SIMD code paths at run time by CPU feature level, so a contributor's machine

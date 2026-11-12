@@ -32,7 +32,8 @@ Change a token value in `packages/tokens/src/source.ts`, rerun: exit 1 with `dif
 --remove-docker-image` (docker's copy of the image is removed after run 1, before podman's pull; operator decision
 2026-11-11), and the gate requires both engines there in any case. Locally, leave the option out: it would remove your
 docker copy, and without docker then podman it exits 2. The job then uploads the artifact `pin-record` (`skopeo
---version`, skopeo's raw manifest and podman's inspect output of the pin). When CI reports `differs` or `missing-baseline` on a tree whose local
+--version`, skopeo's raw manifest and podman's inspect output of the pin, and skopeo's raw index of the tag in
+`container.json`, operator decision 2026-11-12). When CI reports `differs` or `missing-baseline` on a tree whose local
 run passes, take the files of the job artifact's `baselines/` folder and commit them (CI is the producer of record).
 
 ## 3. Accessibility (US3)
