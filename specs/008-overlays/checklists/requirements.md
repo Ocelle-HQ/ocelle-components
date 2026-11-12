@@ -39,3 +39,9 @@
   recorded under "Operator decisions while specifying".
 - FR-016 (platform-initiated closes) and FR-036 (the cross-root description mechanism) leave a choice to the plan by
   design, with the outcome fixed in the spec.
+- Spec check 1 fixes (`reviews/spec/check-1-fixes.md`): whether the tooltip text is a description is stated by the
+  host through `describes` (FR-036), not by comparing names; one keyboard-focus condition (`:focus-visible`) governs
+  show, stay and hide (FR-031 to FR-033, US3 scenarios 10 and 12); no `style` attribute or `<style>` element is
+  written at runtime, with an assertion after each placement (FR-047, US3 scenario 13, SC-007). The operator's answer
+  to SPEC-1-04 adds the drawer's `heading-hidden` (FR-048, US2 scenario 6), recorded under "Operator decisions while
+  specifying". The `:focus-visible` and `style` names are kept as the observable platform conditions the tests check.

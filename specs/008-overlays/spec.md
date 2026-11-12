@@ -39,6 +39,9 @@ sources of the requirements below. `#450` and `#503` are spec-kitty/spec-kitty-d
   kitty-mission-ui needs one, is a later issue or op (Out of Scope).
 - Backdrop click, "Drawer yes, dialog no (Recommended)": a primary-button click on the backdrop requests the drawer's
   close; it does nothing on the dialog (FR-012).
+- Drawer heading (SPEC-1-04), "Add hidden-heading option": `ocelle-drawer` gains a boolean `heading-hidden` that keeps
+  the accessible name and the close control but hides the heading visually, so #12 can use it for the personal drawer.
+  `ocelle-dialog` always shows its heading (FR-005, FR-048, US2 scenario 6).
 
 ## Consumer need
 
@@ -140,6 +143,11 @@ and event scenarios hold with the `ocelle-drawer-` event names and the scenarios
    both themes (constitution II's personal-rail rule); the default ground is the sheet.
 5. **Given** US1 scenarios 1 to 5, 7, 8 and 12 with `ocelle-drawer` and its events, **Then** they hold; with
    motion allowed, the panel enters from and leaves towards its own side.
+6. **Given** an open drawer with `label="Personal"`, `ground="chrome"` and `heading-hidden`, **When** it renders and
+   the accessibility tree is read, **Then** no heading text is painted and the heading takes no space, the tree still
+   has one modal `dialog` node named "Personal" holding a heading "Personal", and the close control is visible, named
+   by `close-label`, reachable by Tab and closes the drawer with reason `"close-button"`; without `heading-hidden` the
+   heading is painted (FR-048).
 
 ---
 
@@ -162,9 +170,10 @@ pointer and keyboard. It is complete when the scenarios below pass in process an
 
 1. **Given** a trigger wrapped in `ocelle-tooltip`, **When** the pointer rests on the trigger for
    `--ocelle-tooltip-delay`, **Then** the bubble shows the text beside the trigger on its `placement` side; **When**
-   the trigger receives keyboard focus, **Then** the bubble shows at once.
+   the trigger receives keyboard focus (it matches `:focus-visible`), **Then** the bubble shows at once.
 2. **Given** a shown bubble, **When** the pointer moves from the trigger onto the bubble, **Then** the bubble stays
-   (hoverable); **When** the pointer leaves both, or the trigger loses focus while not hovered, **Then** it hides.
+   (hoverable); **When** the pointer leaves both while the trigger has no keyboard focus, or the trigger loses
+   keyboard focus while neither it nor the bubble is hovered, **Then** it hides.
 3. **Given** a shown bubble, **When** time passes with the pointer or focus still on the trigger or bubble, **Then** it
    stays (persistent; no timeout).
 4. **Given** a shown bubble, **When** the user presses Escape, **Then** the bubble hides, focus and pointer do not
@@ -174,17 +183,32 @@ pointer and keyboard. It is complete when the scenarios below pass in process an
    ancestor, **When** the bubble shows, **Then** it is painted whole, above the overlay and the backdrop, not clipped.
 6. **Given** a trigger near a viewport edge, **When** the bubble would overflow the viewport on its `placement` side,
    **Then** it is shown on the opposite side, and it is never wider than its maximum inline size (long text wraps).
-7. **Given** a trigger whose accessible name equals the tooltip text (#12's icon-only nav item, #7's ellipsised pill
-   tag), **When** the accessibility tree is read, **Then** the text is exposed once (as the name) and not again as a
-   description; **Given** a text that differs from the name, **Then** it is the trigger's accessible description; in
-   both cases no ID reference crosses a shadow root.
+7. **Given** a tooltip without `describes` whose text repeats the trigger's accessible name (#12's icon-only nav item,
+   #7's ellipsised pill tag), **When** the accessibility tree is read, **Then** the text is exposed once (as the
+   trigger's own name) and the trigger has no accessible description from the tooltip; **Given** the same tooltip with
+   `describes`, **Then** the text is the trigger's accessible description; in both cases no ID reference crosses a
+   shadow root.
 8. **Given** a tooltip in light, dark, forced-colours mode and with reduced motion, **When** it shows, **Then** its
    ground, ink and boundary come from tokens or system colours with contrast verified, and it appears without
    animation under reduced motion.
 9. **Given** a tooltip with an empty `text`, or `disabled`, **When** the trigger is hovered or focused, **Then** no
    bubble shows.
-10. **Given** a touch-only interaction (tap), **When** the trigger is activated, **Then** the trigger's own action
-    runs and no bubble is required for the user to understand it (the tooltip is never the only carrier).
+10. **Given** a touch-only interaction (tap), **When** the trigger is tapped (which focuses it without keyboard
+    focus), **Then** the trigger's own action runs and no bubble shows, neither on the tap nor while the trigger keeps
+    focus afterwards (the tooltip is never the only carrier).
+11. **Given** a tooltip without `describes` whose text differs from the trigger's name only in case or spacing (name
+    "Open  project", text "open project"), **When** the accessibility tree is read, **Then** the trigger has no
+    accessible description from the tooltip; **Given** a tooltip with `describes` whose text equals the name exactly,
+    **Then** the text is still the trigger's accessible description. The element compares no names; `describes` alone
+    decides (FR-036).
+12. **Given** a trigger clicked with the pointer (focused, not matching `:focus-visible`) whose bubble has shown after
+    the hover delay, **When** the pointer leaves the trigger and the bubble, **Then** the bubble hides although the
+    trigger still has focus, and it does not show again until the pointer rests on the trigger again or the trigger
+    receives keyboard focus.
+13. **Given** each placement scenario above (each `placement`, a flip at an edge, inside an open dialog and drawer, in
+    a clipped and a transformed container), **When** the bubble has been placed, **Then** no element that the three
+    elements render, no trigger, and no element of the host page has gained a `style` attribute, and no `<style>`
+    element has been added to the document or to any shadow root (FR-047).
 
 ### Edge Cases
 
@@ -233,7 +257,8 @@ pointer and keyboard. It is complete when the scenarios below pass in process an
   being shown: setting it shows or closes the element, and the element sets it to false whenever it closes.
 - **FR-005**: Each MUST take its accessible name from a `label` property, rendered as the visible heading inside the
   same shadow root as the `<dialog>` (no ID reference crosses a shadow root), with the elements README § Host ARIA
-  rule: a host `aria-label` names the element and decides alone.
+  rule: a host `aria-label` names the element and decides alone. The drawer's `heading-hidden` (FR-048) hides the
+  heading visually only; the dialog has no such option.
 - **FR-006**: Each MUST render a close control: a native `<button>` holding `ocelle-icon name="close"` (decorative),
   named by a `close-label` property whose default is "Close", meeting `--ocelle-target-min` and showing the token
   focus ring.
@@ -271,6 +296,11 @@ pointer and keyboard. It is complete when the scenarios below pass in process an
 - **FR-022**: Removing an open overlay from the document MUST leave no inert content, top-layer entry or backdrop.
 - **FR-023**: A second overlay opened from inside an open one MUST stack above it; Escape, the close control and the
   backdrop act only on the topmost; on its close, focus returns into the overlay beneath (FR-009).
+- **FR-047** (all three elements): Positioning the bubble, and any runtime styling of the dialog, drawer or bubble,
+  MUST NOT write a `style` attribute (including through the element's `style` property or CSSOM writes to it) on any
+  element, rendered or slotted or in the host page, and MUST NOT add a `<style>` element anywhere; runtime values
+  reach the CSS only through adopted stylesheets (constitution IV, triage record). US3 scenario 13 asserts it after
+  every placement, and the overlay scenarios assert it after open and close.
 
 **Dialog**
 
@@ -287,6 +317,11 @@ pointer and keyboard. It is complete when the scenarios below pass in process an
 - **FR-027**: It MUST take a `ground` property and attribute, `"sheet"` (default) or `"chrome"`; `"chrome"` uses the
   chrome ground and chrome ink tokens in both themes, so #8's personal rail can sit inside #12's drawer.
 - **FR-028**: With motion allowed, it MUST enter from and leave towards its own side (mirrored under `rtl`).
+- **FR-048**: It MUST take a reflected boolean `heading-hidden` property and attribute (default false; operator
+  decision). When set, the heading is not painted and takes no space, but it stays in the accessibility tree as the
+  same heading, the drawer's accessible name is unchanged (FR-005, including the host `aria-label` rule), and the
+  close control stays visible, focusable and in its place at the panel's block start. It is in the manifest and
+  documented as the option for #12's personal drawer.
 
 **Tooltip**
 
@@ -294,14 +329,18 @@ pointer and keyboard. It is complete when the scenarios below pass in process an
   first element slotted into its default slot, which may be a native control or a custom element's host whose inner
   control is focusable.
 - **FR-030**: It MUST take a `text` property and attribute (the bubble's plain text), a `placement` property and
-  attribute, `"top"` (default), `"bottom"`, `"start"` or `"end"` (logical under the element's direction), and a
-  `disabled` boolean; an empty `text` or `disabled` shows no bubble.
+  attribute, `"top"` (default), `"bottom"`, `"start"` or `"end"` (logical under the element's direction), a
+  `disabled` boolean, and a reflected `describes` boolean (default false, FR-036); an empty `text` or `disabled` shows
+  no bubble.
 - **FR-031**: The bubble MUST show when the pointer has rested on the trigger for `--ocelle-tooltip-delay` (FR-038),
-  and at once when the trigger, or a control inside it, receives keyboard focus (`:focus-visible`).
-- **FR-032**: The bubble MUST stay while the pointer is on the trigger or on the bubble, or the trigger holds focus,
-  with no timeout; it MUST hide when neither holds, allowing the pointer to cross the gap between trigger and bubble.
+  and at once when the trigger, or a control inside it, receives keyboard focus. Keyboard focus, here and in FR-032
+  and FR-033, means focus on the trigger or a control inside it that matches `:focus-visible`; focus from a pointer
+  click or a tap that does not match `:focus-visible` neither shows nor keeps a bubble.
+- **FR-032**: The bubble MUST stay while the pointer is on the trigger or on the bubble, or the trigger has keyboard
+  focus (FR-031), with no timeout; it MUST hide when none of these holds, allowing the pointer to cross the gap
+  between trigger and bubble. The same focus condition governs show, stay and hide.
 - **FR-033**: Escape while a bubble is shown MUST hide it and stop the key there (no overlay close request, FR-010);
-  focus and pointer do not move, and the bubble stays hidden until the pointer re-enters or focus re-enters.
+  focus and pointer do not move, and the bubble stays hidden until the pointer re-enters or keyboard focus re-enters.
 - **FR-034**: The bubble MUST be shown in the top layer through the Popover API (operator decision), above any open
   dialog or drawer and their backdrops, whole, whatever the overflow, transform or stacking context of its ancestors;
   it MUST not take focus, MUST not be light-dismissed by a click elsewhere other than by hiding, and at most one
@@ -309,9 +348,13 @@ pointer and keyboard. It is complete when the scenarios below pass in process an
 - **FR-035**: The bubble MUST be placed on its `placement` side of the trigger, offset by a space token, and flip to
   the opposite side when it would overflow the viewport; its inline size MUST not exceed a maximum from a token, and
   text wraps (including unbreakable strings).
-- **FR-036**: Assistive technology MUST get the text once: when it equals the trigger's accessible name it is not
-  exposed again; otherwise it is the trigger's accessible description; the bubble has role `tooltip`; no ID reference
-  crosses a shadow root (constitution III; the plan chooses light DOM, one shadow root or `ElementInternals`).
+- **FR-036**: Assistive technology MUST get the text once, as the host states it through `describes`: without
+  `describes` (the default, for text that repeats the trigger's name, as #12 and #7 use it) the text is not exposed
+  to assistive technology beyond the trigger's own name, and the trigger gets no accessible description from the
+  tooltip; with `describes` the text is the trigger's accessible description. The element never compares the text
+  with the trigger's name. The bubble has role `tooltip`; no ID reference crosses a shadow root (constitution III;
+  the plan chooses light DOM, one shadow root or `ElementInternals`). The documentation tells hosts to set `describes`
+  when the text adds to the name.
 - **FR-037**: The tooltip MUST NOT name its trigger or carry essential information: the documentation states that the
   trigger carries its own accessible name and that the bubble only repeats or supplements what is available
   otherwise; touch input shows no bubble.
@@ -335,13 +378,14 @@ pointer and keyboard. It is complete when the scenarios below pass in process an
 - **FR-042**: Each element MUST have a story per variant and state, in light and dark, with committed baselines and
   axe clean, written against #10's workbench (006 FR-012: top-layer content in the capture; FR-031: a declared hover
   state; FR-025: the contributor note). At least: dialog open (default, with footer, long scrolling body, prose with a
-  table, the Open project shape with a stand-in list); drawer start, end, `rtl`, chrome ground; tooltip shown by hover
-  on each placement, flipped at an edge, inside an open dialog, and with long text.
+  table, the Open project shape with a stand-in list); drawer start, end, `rtl`, chrome ground, chrome ground with
+  `heading-hidden`; tooltip shown by hover on each placement, flipped at an edge, inside an open dialog, and with
+  long text.
 - **FR-043**: Interaction tests MUST assert every event of each element with its payload and cancelability, every
   keyboard path (Tab, Shift+Tab, Escape, Enter and Space on the close control), and focus on open and on close for
   every reason (#16's focus-management tests), in process and on the strict-CSP fixture with the browser build.
-- **FR-044**: Accessibility-tree assertions MUST prove the names, roles, modality and descriptions of US1 scenario 8
-  and US3 scenario 7 in Chromium.
+- **FR-044**: Accessibility-tree assertions MUST prove the names, roles, modality and descriptions of US1 scenario 8,
+  US2 scenario 6 and US3 scenarios 7 and 11 in Chromium.
 - **FR-045**: The manifest MUST declare, for each element, every property, attribute, event (with its detail type),
   slot, part and own CSS custom property, each list stated even when empty (the tooltip's events list is empty).
 - **FR-046**: Changed source MUST pass mutation testing under mission 007's rules; timing code (the hover delay) is
@@ -349,11 +393,12 @@ pointer and keyboard. It is complete when the scenarios below pass in process an
 
 ### Key Entities
 
-- **Overlay** (`ocelle-dialog`, `ocelle-drawer`): `open`, `label`, `close-label`; drawer also `side`, `ground`; slots
+- **Overlay** (`ocelle-dialog`, `ocelle-drawer`): `open`, `label`, `close-label`; drawer also `side`, `ground`,
+  `heading-hidden`; slots
   default and `footer`; events `…-close-request` (cancelable, reason) and `…-close` (reason).
 - **Close reason**: `"escape"`, `"close-button"`, `"backdrop"` (drawer only), `"host"` (close event only).
 - **Opener**: the deepest focused element when an overlay opened; the focus target on close.
-- **Tooltip** (`ocelle-tooltip`): `text`, `placement`, `disabled`; trigger (first slotted element); bubble (top layer).
+- **Tooltip** (`ocelle-tooltip`): `text`, `placement`, `disabled`, `describes`; trigger (first slotted element); bubble (top layer).
 - **New tokens**: `--ocelle-drawer-inline`, `--ocelle-tooltip-delay`, and a bubble maximum inline size if needed.
 
 ## Success Criteria *(mandatory)*
@@ -374,7 +419,8 @@ pointer and keyboard. It is complete when the scenarios below pass in process an
 - **SC-006**: In a container with clipped overflow, a transformed ancestor and an open dialog, 100% of the bubble's box
   is painted on screen and above the overlay.
 - **SC-007**: No raw colour, size, duration or shadow literal appears in the three elements' styles (`style-lint`), and
-  the built output passes the strict-CSP check with every scenario exercised.
+  the built output passes the strict-CSP check with every scenario exercised, and after every placement, open and
+  close scenario 0 elements carry a `style` attribute and 0 `<style>` elements were added (FR-047).
 - **SC-008**: With reduced motion, open and close of each overlay and the bubble's show complete with 0 ms of
   animation.
 
@@ -393,7 +439,8 @@ pointer and keyboard. It is complete when the scenarios below pass in process an
   feature that lands second of #14 and this one adds the composed story.
 - **Only Chromium is measured** (elements README § Engines); WebKit behaviour of the Popover API and `<dialog>` is an
   open limitation, as it is for every element.
-- **Touch** has no hover; the tooltip shows on hover and keyboard focus only.
+- **Touch** has no hover, and a tap does not give keyboard focus; the tooltip shows on hover and keyboard focus only
+  (FR-031).
 
 ## Dependencies
 
