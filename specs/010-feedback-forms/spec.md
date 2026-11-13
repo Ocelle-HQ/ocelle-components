@@ -595,10 +595,10 @@ gates and the README documentation test.
   never rewrites it, and only the property reads the default (`tone="bogus"` stays in the attribute while `tone`
   reads `"info"`). Where the README's convention text was written for mission 005's two elements and does not fit
   the new ones (every property's `@default undefined`, against the defaults of FR-021 and `contracts/elements.md`;
-  a blank host `aria-label` deciding alone, against FR-022; a host `role` not supported, against FR-009; a host
-  `aria-hidden="true"` hiding the element, against FR-009 and FR-022), the README
-  restates it so that it covers each new element, in the phase that adds the element; what it says of 005's elements
-  is unchanged.
+  a blank host `aria-label` deciding alone, against FR-022; a host `aria-label` used as written, surrounding spaces
+  included, against FR-022 item 1; a host `role` not supported, against FR-009; a host `aria-hidden="true"` hiding
+  the element, against FR-009 and FR-022), the README restates it so that it covers each new element, in the phase
+  that adds the element, or earlier; what it says of 005's elements is unchanged.
 - **FR-002**: Every element attaches an open shadow root and renders every surface inside its own host (006 FR-014,
   FR-027). Styles of form controls inside the shadow root set `font: inherit` (006 FR-025).
 - **FR-003**: Elements perform no I/O and emit no event other than those named in FR-024; the native
@@ -911,9 +911,9 @@ gates and the README documentation test.
   CSS part and every CSS custom property (none), each list stated even when empty. For the form elements the
   declared members include the pass-through properties of FR-029, the read-only properties `form`, `labels`,
   `validity`, `validationMessage` and `willValidate`, and the methods `checkValidity()`, `reportValidity()` and
-  `focus()` (FR-021). Standard attributes the elements observe without a property of the same meaning (`role` on the
-  notice; `aria-label` and the other host ARIA attributes of FR-022 on the form elements; the `form` attribute, whose
-  like-named property is the read-only owning form, as on a native control) are not declared as attributes, as the
+  `focus()` (FR-021). Standard attributes the elements observe without a property of the same meaning (`hidden` on all
+  three elements; `role` on the notice; `aria-label` and the other host ARIA attributes of FR-022 on the form
+  elements; the `form` attribute, whose like-named property is the read-only owning form, as on a native control) are not declared as attributes, as the
   conventions say, and the README documents them. The input's `value` attribute is not one of them: it is the
   element's own attribute, the default value of FR-021, with no property of its own (the `value` property is the
   current value), and the manifest declares it as an attribute with its type (`string`), default (`""`) and
