@@ -20,7 +20,7 @@ states. Public members are in `contracts/elements.md`; the reasons are in `resea
 | announcer `aria-live` | private | `polite` / `assertive` / `off` | the politeness while live, else `off` (R-02) |
 | host `ariaLive` | `ElementInternals` default | `off` | always `off`, so a host role `alert` or `status` adds no second live region (R-02; measured in T002) |
 | baseline | private | text and politeness, or none | the last announced text and politeness, or those current when the notice began announcing (first load, `announce` or a live role set later, the alert path); none from an insertion or a reveal until the next write, so the end-of-wait re-check never drops an insertion or a reveal (PLAN-FRESH-3-001) |
-| alert baseline pending | private | none / `insertion or reveal` / `role change` / `became live` | the trigger that set it: the alert path (an insertion or a reveal, or a change of the host role to `alert`) or the "not live before" row for `alert`; reset to none by the end-of-task step in the next task (the move-detection `MessageChannel` task), which sets the baseline, by the cancel rows, and by a role change away from `alert` that leaves the notice live (PLAN-FRESH-3-002 (b), verify 1) |
+| alert baseline pending | private | none / `insertion or reveal` / `role change` / `became live` | the trigger that set it: the alert path (an insertion or a reveal, or a change of the host role to `alert`) or the "not live before" row for `alert`; reset to none by the end-of-task step in the next task (the move-detection `MessageChannel` task), which sets the baseline, by the cancel rows, and by a role change away from `alert` that leaves the notice live (PLAN-FRESH-3-002 (b), verify 1); the step changes nothing if the field is already none when it runs (round 3 verify 2) |
 | announcer state | private | `empty` / `waiting` / `holding` | `waiting`: empty and live, a timer of `W` running; `holding`: the copy written at a recorded time, emptied after `H`, or by a trigger once it has been current for at least `W` (R-02) |
 | first load | private, set once | true / false | constructed during the registration's `customElements.define` call (flag in `src/define.ts`), or connected while `document.readyState === "loading"` (R-02) |
 | moving | private | true / false | set on disconnect, cleared in a later task (R-02) |
@@ -77,7 +77,13 @@ can end on the baseline.
 baseline pending* to the trigger (`insertion or reveal`, or `role change`), and post the end-of-task step on the
 module's `MessageChannel`. For an insertion or a reveal the baseline is set to none at once (PLAN-FRESH-3-001); for a
 role change it stays as it was. The step runs in a later task, after the current task's `MutationObserver` records
-are delivered; it resets the field to none and sets the baseline to the text and politeness current then. Until it
+are delivered. If *alert baseline pending* is still set, it resets the field to none and sets the baseline to the
+text and politeness current then; if the field is already none (reset by a cancel row or by a role change away from
+`alert` since the trigger), the step does nothing: it leaves the baseline, and any wait the reset started, as they
+are, so the wait's re-check compares with the baseline that reset left (none after an insertion or a reveal), not
+with the text the wait is about to write (round 3 verify 2). A new trigger before the step runs sets the field
+again and posts its own step; the first step to run takes the baseline and the later one finds none and does
+nothing, which is the same result since both run after the same task's records. Until it
 runs, light-DOM mutations and `tone` changes match only their "alert baseline pending is not none" rows and start no
 wait, so text (or a tone) set in the same task as the insertion, reveal or role change (`host.append(n);
 n.textContent = msg`) is part of the alert reading and is not written as a copy. The other rows for these events

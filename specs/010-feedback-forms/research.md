@@ -106,8 +106,11 @@ host role to `alert` (from `status`, or added at runtime, with or without `annou
 (a held copy is emptied once it has been current for `W`, step 1 below), sets the announcer's `aria-live` to
 `assertive`, and takes the baseline at the end of the current task (operator decision PLAN-FRESH-3-002 (b)): it marks
 the baseline pending and posts a message on the module's `MessageChannel` (the one the move detection uses); the
-handler runs in a later task, after the current task's `MutationObserver` records are delivered, and sets the
-baseline to the text and politeness current then. Until it runs, light-DOM mutations and `tone` changes start no
+handler runs in a later task, after the current task's `MutationObserver` records are delivered, and, if the
+baseline is still pending, clears the marker and sets the baseline to the text and politeness current then; if the
+marker was cleared before it runs (by a cancel, or by a role change away from `alert`, below), it does nothing, so
+it cannot overwrite the baseline that clearing left or make the re-check of the wait it started drop the write
+(plan squad round 3 verify 2). Until it runs, light-DOM mutations and `tone` changes start no
 wait (data-model.md gives every other row for these events the condition that no alert baseline is pending, so each
 event matches one row). So the common
 `host.append(n); n.textContent = msg`, reveal-then-fill and role-then-fill in one task are read once, by the alert

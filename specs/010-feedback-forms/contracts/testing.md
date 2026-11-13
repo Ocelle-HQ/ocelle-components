@@ -144,6 +144,7 @@ the `elements-browser` project the same way. Each phase records the plant run's 
 | alert baseline | the alert path takes the baseline synchronously, at the DOM operation (PLAN-FRESH-3-002 (b)) | US1-15 `alert` cells with the text set in the same task after insertion, after reveal and after the role change (count 0) |
 | alert pending tone | a `tone` change while the alert baseline is pending takes the ordinary `tone` row (round 3 verify 1) | US1-15 `alert` cell with the `tone` changed in the same task after insertion (count 0) |
 | alert pending role | a change from `alert` to `status` while the alert baseline is pending leaves the marker set (round 3 verify 1) | US1-15 cells inserted, and revealed, as `alert` and changed to `status` in the same task (count 1, polite) |
+| alert step after reset | the end-of-task step sets the baseline even when the marker has already been reset (round 3 verify 2) | US1-15 cells inserted, and revealed, as `alert` and changed to `status` in the same task (count 1, polite) |
 | merge window | no restart: each trigger writes after its own wait | US1-13 changes in different tasks 100 ms apart (count 1) |
 | minimum hold | a trigger during the hold empties the copy at once (PLAN-FRESH-2-001) | US1-13 change 10 ms after a write (the first copy counts under `"settled"`) |
 | baseline re-check | writes at the end of the wait without comparing with the baseline | US1-13 `A`, `B`, `A` within the wait (count 0) |

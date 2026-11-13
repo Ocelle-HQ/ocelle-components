@@ -119,7 +119,8 @@ VIII, and I for the internal setter) and after round 3's fixes (rows I, III and 
     (`ax_event_generator.cc`) carries them. Not measured by the capture; the scenarios check a zero count and the
     host's `alert` role. The baseline is taken at the end of the task (operator decision PLAN-FRESH-3-002 (b)), so
     text or a `tone` set in the same task is read once, and a change back to `status` in that task acts as if the
-    trigger had happened under `status` (the pending marker records the trigger; data-model.md rows); a change in a later task before the next serialisation is read twice
+    trigger had happened under `status` (the pending marker records the trigger; data-model.md rows; the end-of-task
+    step does nothing once the marker has been reset, round 3 verify 2); a change in a later task before the next serialisation is read twice
     (README). The event also reads a `role="alert"` notice shown by a hidden ancestor (PLAN-FRESH-3-003, spec FR-008).
 11. **Test-only timing in process** (R-09; operator decision PLAN-FRESH-2-003 (a)): `src/live.ts` exports an internal
     setter for `D` and `H` used only by `test/in-process.ts`; fixture pages run at the real figures. T002 measures the
