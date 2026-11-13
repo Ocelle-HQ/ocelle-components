@@ -1,0 +1,8 @@
+{
+  "baselines": [
+    {
+      "file": "tokens--colour.dark.png",
+      "edit": "reencode"
+    }
+  ]
+}

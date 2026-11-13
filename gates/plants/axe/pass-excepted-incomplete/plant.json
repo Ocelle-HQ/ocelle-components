@@ -1,0 +1,4 @@
+{
+  "expect": "pass",
+  "why": "The fail-incomplete story with an exception entry per theme for color-contrast-incomplete and the plan rows: excepted (FR-029, research.md R-08)."
+}

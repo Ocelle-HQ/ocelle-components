@@ -1,0 +1,1 @@
+{ "expect": "pass", "why": "a fixture repository whose storybook/a11y-exceptions.json names a plan file it holds, and which holds a baseline" }

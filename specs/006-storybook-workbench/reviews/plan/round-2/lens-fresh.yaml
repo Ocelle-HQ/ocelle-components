@@ -1,0 +1,168 @@
+schema: review-findings/v1
+complete: true
+phase: plan
+round: 2
+lens: fresh
+# Checked at 5e824c8 (round-2 base.sha f6d69e0 plus the round-opening commit). Round 1's refute.md, fixes-1.md,
+# fixes-2.md, verify-1.md and verify-2.md were read; nothing settled there is repeated. Probes ran from the scratchpad
+# only, on host Chromium 1243 (OCELLE_CHROMIUM_PATH) with the repository's Playwright 1.64.1 and pngjs, against the
+# committed storybook/dist build: per-story requests, storage and attachShadow calls, body children and font faces;
+# hover above and below the fold with a full-page screenshot; a cross-line font-declaration scan over the prefix
+# scope (0 findings on line and cross-line matching alike, so no finding there). axe-core 4.14.0's tarball was fetched
+# into the scratchpad for axe.d.ts. Storybook 10.6.5's cache resolver was read in storybook/node_modules.
+findings:
+  - id: PLAN-FRESH-2-001
+    severity: 3
+    title: "A pointer state on an element below the 800 px fold is silently not applied, or its scroll moves fixed and top-layer content in the full-page capture"
+    evidence:
+      - artifact: "research.md R-15: \"then `hover` moves the mouse to the centre of the element, and `press` also holds the primary button down\"; R-04 Extent: \"`fullPage: true`, no clip, so its height is the document's scroll height\"; data-model.md § Pointer state; FR-031 (\"MUST apply it\"); US2 scenario 14 (\"the capture shows that state\"). No artifact says where the target must lie or what scroll position the capture is taken at; FR-006 lists scroll position as an input the capture fixes."
+      - code: "probe hover2.mjs (host Chromium 1243, viewport 1280x800, `#b:hover{background:red}`): `page.mouse.move` to the centre of the element's boundingBox, two frames, full-page screenshot. Target at top 300 px: pixel (255,0,0), hovered. Target at top 1500 px: pixel (0,0,255), not hovered, scrollY 0, no error raised."
+      - code: "probe hover-probe.mjs: `elementHandle.hover()` on the same 1500 px target scrolls to scrollY 1125; a `position: fixed; top: 0` element then appears at y = 1130 in the 2000 px full-page capture (green pixel at (10,1130), white at the top), not at y = 0."
+    claim: |
+      R-15 moves the mouse to the element's centre. Playwright's mouse coordinates are viewport coordinates. For a target
+      below y = 800, the move lands outside the viewport, so nothing is hovered and no error is raised. The capture then
+      shows the resting state, and FR-031's "MUST apply it" fails silently. `pointer-target` covers only a malformed
+      parameter or a selector that matches no element or several, so nothing reports this. If the implementer uses
+      Playwright's scrolling `hover()` instead, the page is left scrolled. The full-page capture then draws
+      `position: fixed`, `sticky` and viewport-relative top-layer content (a centred `<dialog>`, a popover) at the scroll
+      offset. A scroll position the capture does not fix enters the baseline, which goes against FR-006.
+
+      None of the planned plants can catch this. `pass-hover-and-press`, `fail-hover-style-changed` and
+      `fail-hover-reveals-unlabelled` say nothing of the target's position, so a target above the fold passes them with
+      either implementation. The same scroll leak happens without a pointer: a story that focuses or `scrollIntoView`s
+      an element below the fold (`pass-animation-and-caret` focuses a text field) also leaves the page scrolled.
+    remedies:
+      - "R-15, data-model.md § Pointer state, FR-031: the target's bounding box must lie inside the initial 1280 x 800 viewport, otherwise `pointer-target` ('target outside the viewport'). R-04 and contracts/container.md § Per story-theme: before the pointer step and again just before the screenshot, `scrollX`/`scrollY` must be 0, otherwise `window.scrollTo(0, 0)` is applied and the capture continues (or, as an alternative, a finding `scrolled`). Both decisions are pure functions in `capture-plan.ts`, with unit tests (box inside, partly outside, below the fold; scroll 0 and not 0). Add the plants `fail-pointer-target-below-fold` (visual and axe) and a pass plant whose story focuses a field below the fold, and has a fixed-position element, with its baselines."
+      - "Allow a target anywhere: hover by scrolling it into view, and record the resulting scroll offset as an input the capture fixes, stated in FR-006 and in the contributor note. Add a plant whose target lies below the fold and whose fixed-position element shows where the offset puts it."
+
+  - id: PLAN-FRESH-2-002
+    severity: 3
+    title: "Baselines committed inside plant trees have no producing command and no CI record, so CI cannot be the producer of record for them"
+    evidence:
+      - artifact: "contracts/plants.md § visual: `pass-unused-face`, `pass-animation-and-caret`, `pass-second-render`, `pass-overflow-and-popover`, `pass-hover-and-press`, `fail-below-fold`, `fail-overflow-changed` and `fail-hover-style-changed` each hold their own stories \"with their baselines\" in `tree/`; research.md R-11 Freshness: `pass-second-render`'s baselines \"are made by single-story-theme requests (a capture request holding only that story and one theme)\""
+      - artifact: "contracts/gates.md § visual:update: the only option is `[-- --engine <…>]`, with no `--root`, no story selection and no way to write into a plant's `tree/`; § The registry: only \"The `visual` job uploads `storybook/.visual/`\"; the `plants` job uploads nothing"
+      - artifact: "plan.md decision 7 and research.md R-02 \"Other hosts' CPUs\": CI is the producer of record, because local bytes may differ from CI's"
+    claim: |
+      Eight visual plants carry PNG baselines for their own stories. No planned command produces them. `visual:update`
+      writes only the repository's `storybook/baselines/`, and no option builds a plant root or captures one story-theme
+      on its own, which R-11 says the `pass-second-render` baselines need.
+
+      Round 1's fix to PLAN-FRESH-1-006 makes CI the producer of record when local bytes and CI's differ, but only
+      through the Visual regression job's artifact. When a contributor's machine and CI disagree (the case that fix
+      accepts), the plant baselines produced locally fail in the Plants job, and that job uploads no captures to commit.
+      The same happens on every change that moves a plant story's pixels: a token value the plant stories use, a
+      `base.css` change, or a pin move ("Moving the pin is a baseline change"). The pass plants then fail, and each
+      author has to hand-build plant roots to regenerate their baselines. Principle VIII needs these plants to keep
+      passing for the right reason. The plan gives no way to keep them up to date.
+    remedies:
+      - "Add a plant-baseline command, for example `pnpm run visual:update -- --plant <gate>/<name>`, to contracts/gates.md and R-11. It materialises the plant root with plant-repo.ts, runs the same two runs, writes the plant's own story-themes back into `gates/plants/visual/<name>/tree/storybook/baselines/`, and accepts `--story <id>` for single-story-theme requests (pass-second-render). On failure the Plants job uploads each visual plant's captures in tree layout, beside the Visual regression artifact, and the contributor note says to commit those. Unit-test the argument and plan logic and add an integration test that regenerates one plant."
+
+  - id: PLAN-FRESH-2-003
+    severity: 3
+    title: "fail-one-pixel and fail-same-pixels-other-bytes hold edited copies of repository baselines and keep passing vacuously once the story changes"
+    evidence:
+      - artifact: "contracts/plants.md § visual: `fail-one-pixel` holds \"one baseline of one story-theme with one pixel changed (a valid normalised PNG): exactly one `differs` at that story-theme (SC-006)\"; `fail-same-pixels-other-bytes` holds \"one baseline re-encoded at another deflate level: `differs`\". Both are files in the plant's `tree/` that replace the repository baseline copied by the configuration set (research.md R-16)."
+      - code: "gates/lib/plant-repo.ts:242-254 `treeProblems`: a tree copy of the token source or the pair list is refused (\"a plant changes the token source by delta.json tokens\"). The repository already forbids stale whole-file copies of inputs that change, and states each change as a delta applied to the current file."
+    claim: |
+      Each of these plants proves its property only while its stored PNG equals the current repository baseline apart
+      from one pixel (SC-006), or decodes to the same pixels (US2 scenario 3, bytes and not pixels). Once the story or a
+      token it shows changes and the repository baselines are regenerated, the plant's copy differs in many pixels. The
+      gate still reports exactly one `differs` at that story-theme, so both plants keep passing. They then prove only
+      that a changed story differs: a gate that compared with a pixel tolerance, or compared decoded pixels, would pass
+      them both.
+
+      Every token or base-style op will cause this, and so will element work that touches the shared stories. Nothing
+      checks that the copies are current, so the regression goes unseen, which Principle VIII forbids.
+    remedies:
+      - "Generate the edit when the plant root is materialised, not from a stored copy. Add an optional plant key in delta.json, for example `baselines: [{ \"file\": \"tokens--colour.light.png\", \"edit\": \"one-pixel\" | \"reencode\" }]`, that plant-repo.ts applies to the current repository baseline (one pixel inverted at a fixed coordinate; re-encoded at another deflate level, pixels unchanged). `treeProblems` refuses a tree copy of a file under `storybook/baselines/` that the repository also holds. Unit-test both edits (one pixel decoded differs, pixels equal after re-encode, bytes differ) in gates/test/plant-repo.test.ts, red first."
+
+  - id: PLAN-FRESH-2-004
+    severity: 3
+    title: "Plant roots copy storybook/a11y-exceptions.json but not the plan files its entries name, so the first recorded exception breaks every axe plant"
+    evidence:
+      - artifact: "research.md R-16: `configurationSet` adds \"`storybook/a11y-exceptions.json`\" (and `.node-version`, base.css, fonts, the Storybook workspace), with no `specs/` file; research.md R-08 Exceptions: \"The gate honours an entry only when the `plan` file exists in the root under test ... otherwise the entry gives the finding `unrecorded-exception` ... and the node stays a finding\""
+      - artifact: "plan.md § Complexity Tracking: axe exceptions found by the phase 1 spike \"are added here as rows ... before phase 4 records them in `storybook/a11y-exceptions.json`\", each naming `specs/006-storybook-workbench/plan.md` as its `plan`"
+      - code: "gates/lib/plant-repo.ts:30-62: the configuration set is root configuration files, package manifests, gates/eslint, gates/stylelint and the token files; no `specs/` path is ever copied"
+    claim: |
+      Round 1 made exceptions require their plan row (PLAN-CORRECTNESS-1-009 (a)) and made plant roots carry the
+      Storybook workspace (PLAN-CORRECTNESS-1-001). Combined, the two fixes break. As soon as the repository's exception
+      file holds one honoured entry, every axe plant root holds that entry without the plan it names.
+
+      In every axe plant, the entry is then `unrecorded-exception` and the excepted node becomes a finding again. Every
+      `pass-*` axe plant fails, and every `fail-*` plant gains two unexpected findings per entry, which breaks the exact
+      expectations. The plan expects this situation: the Complexity Tracking note sets out how phase 1's spike may lead
+      to such an entry. A sunset op that later fixes the cause would hit the same break in reverse.
+    remedies:
+      - "R-16 and contracts/plants.md: the configuration set also copies each `plan` path named by the repository's `storybook/a11y-exceptions.json` (read when the root is materialised; a pure function with unit tests: no entries, two entries naming one plan, a missing plan file is an error of the plant run). Add a check that `pass-repository` passes with one honoured exception present."
+      - "R-16: plant roots get `storybook/a11y-exceptions.json` as `[]` unless the plant's `tree/` supplies one. `pass-repository` carries the repository's file together with its plan rows, through the same delta mechanism as tokens, so the repository's exceptions are still checked in one plant."
+
+  - id: PLAN-FRESH-2-005
+    severity: 2
+    title: "The printed axe selector, which exceptions must match exactly, is undefined for nodes in shadow roots, and no plant shows that axe audits inside an open shadow root"
+    evidence:
+      - code: "axe-core 4.14.0 axe.d.ts (tarball in scratchpad): line 169 `target: UnlabelledFrameSelector;`, line 54 `type UnlabelledFrameSelector = CrossTreeSelector[];`, line 49 `type CrossTreeSelector = BaseSelector | ShadowDomSelector;`, line 48 `type ShadowDomSelector = MultiArray<BaseSelector>;`. A node inside a shadow root has a nested array as its target, not a string."
+      - artifact: "research.md R-08 Output: \"`<story-id>/<theme>: axe: <rule>: <impact>: <selector>`\"; Exceptions: \"`selector` the node's selector exactly as the gate prints it\", which the Complexity Tracking row must hold in backticks; data-model.md § Exception. Nowhere is it said how a target is turned into `<selector>`."
+      - artifact: "contracts/plants.md § axe: every fail plant's node lies in light DOM; `fail-closed-shadow-root` does not run axe. spec FR-025 tells every element to use open shadow roots, so element stories' findings are shadow-DOM nodes."
+    claim: |
+      Every consumer of this gate (#7 to #9, #12 to #17) renders custom elements with open shadow roots. axe reports
+      their nodes as nested targets such as `[["ocelle-button", "button"]]`. The plan neither defines how such a target
+      is printed nor tests it. An implementation can use `String(target)`, which gives "ocelle-button,button" and reads
+      as a CSS selector list, or keep only the host, which merges distinct nodes. Exception matching and the backticked
+      plan row both rely on that string.
+
+      No plant puts a violating node inside an open shadow root either. Nothing fails if the context's include or
+      exclude construction (R-08, whole document minus harness nodes) stops axe at shadow boundaries, and that is the
+      case the element issues depend on.
+    remedies:
+      - "R-08 Output and data-model.md § Exception: define the printed selector as the target's shadow levels joined by ` >>> ` (frames are not expected; a frame target is printed level by level and named), as a pure function in axe-verdict.ts with unit cases for a light-DOM target, a one-level and a two-level shadow target, and a selector holding a `|`, which cannot appear inside a Markdown table cell. Add the axe plant `fail-open-shadow-unlabelled` (an unlabelled button inside an open shadow root: `button-name` with the ` >>> ` selector on both themes) and an exception pass plant for a shadow-DOM node."
+
+  - id: PLAN-FRESH-2-006
+    severity: 2
+    title: "One capture result holds one status, but the plan does not say which wins when font and io both hold, and fail-font-not-loaded triggers both"
+    evidence:
+      - artifact: "contracts/container.md § Capture request and result: each `result.json` entry has a single `status` (`font` with `families`, `io` with `calls`, ...); data-model.md § Verdict per story-theme steps 5-7 (\"either run `font` → `font` ... either run `io` → `io`\") order statuses *across runs*, which presumes each run already chose one"
+      - artifact: "contracts/plants.md § visual `fail-font-not-loaded`: \"an `@font-face` whose source is a path not in `dist`, so the face ends in `error`: `font` on both themes\"; research.md R-14: `io` covers \"every same-origin request for a path that is not a file of `dist`\"; FR-030 \"a request for a file the build does not hold\""
+    claim: |
+      The face's failed request in `fail-font-not-loaded` is `io` by R-14 and FR-030, and the face in `error` is `font`
+      by R-05. The capture can write only one status per story-theme, and the artifacts do not say which. If the capture
+      reports `io` first, which is natural since requests are recorded during routing and before the font check, the
+      plant gets `io` and fails its exact expectation. The same applies to `network` against `font` when a story loads
+      a font from another origin. A precedence inside the capture is a decision, and it has no pure function or unit
+      test.
+    remedies:
+      - "contracts/container.md and R-05/R-14: the capture chooses its one status by the order of data-model.md steps 1-7, a pure function in capture-plan.ts unit-tested with font and io both present and with network and font both present. Change `fail-font-not-loaded` so it isolates `font`: the face's source is a file in `dist` holding invalid font data, so the face ends in `error` with no `io`. Add a separate plant for a missing font file that expects the chosen winner."
+
+  - id: PLAN-FRESH-2-007
+    severity: 2
+    title: "Every Storybook plant must run all repository stories, so the plant job grows with plants times stories, and fail-token-changed's list changes with every element issue"
+    evidence:
+      - artifact: "research.md R-16: the configuration set copies `storybook/stories/` and `storybook/baselines/`; \"a plant that needs fewer stories replaces the story files it keeps and removes none of the configuration set\"; contracts/plants.md intro, same rule; `fail-token-changed`: \"`differs` on every story-theme that shows it (listed exactly by the phase 1 spike)\""
+      - code: "probe io-probe.mjs on host Chromium 1243 against storybook/dist: one story-theme in a fresh context (navigation, readiness, fonts, full-page screenshot) takes 424-661 ms. Each visual plant does 2 runs x (24 + own) story-themes, and each axe plant does 24+ runs. With about 30 visual and 20 axe plants run one at a time (R-07), the 12 repository stories alone account for roughly 10 to 15 minutes of the Plants job."
+    claim: |
+      Plants cannot remove the repository's stories, so the cost of each Storybook plant grows with the repository's
+      story count. The element issues (#7 to #9, #12 to #17) each add one story per variant and state. At about 150
+      more stories, the measured rate gives each visual plant several minutes, and the serial Plants job runs for hours.
+      This is well past R-07's 30-minute mark, whose only answer is a matrix the operator must approve.
+
+      Besides cost, every element story that shows `color-ink` changes `fail-token-changed`'s exact expected findings,
+      so every element pull request has to edit a visual plant's expectations. The design will not hold up once the
+      consumers arrive. Plants need only their own stories, apart from the few that are about the repository's stories.
+    remedies:
+      - "R-16 and contracts/plants.md: the configuration set holds the Storybook configuration (`package.json`, `.storybook/`, `scripts/`, `stories/render.ts` and its data, container.json, a11y-exceptions.json) but not the repository's `*.stories.ts` and `storybook/baselines/`. A new plant key, for example `stories: \"repository\"`, adds them for the plants that are about them (`pass-repository`, `fail-token-changed`, `fail-one-pixel`, `fail-missing-baseline`, `fail-stray-baseline`, `fail-same-pixels-other-bytes`). `fail-token-changed` then uses a plant story of its own, so its expectation stays fixed."
+      - "Keep the rule and record its growth: phase 3's review measures time per story-theme in CI, and the plan sets the story count at which the plant job is split, with the operator's approval as a Complexity Tracking row that has a sunset."
+
+  - id: PLAN-FRESH-2-008
+    severity: 1
+    title: "Storybook's own file cache, not only Vite's, writes into the shared storybook/node_modules on every build"
+    evidence:
+      - artifact: "research.md R-16 Caches: \"So that builds in different roots never write into the shared `storybook/node_modules`, the Storybook configuration sets Vite's `cacheDir` to `storybook/.cache/vite`\""
+      - code: "storybook/node_modules/.cache/storybook/10.6.5/default/telemetry/storybook-09450a31… and …bd268263…, mtimes 08:03:12.96 and 08:03:12.97, written 0.5 s before storybook/dist/iframe.html (08:03:13.43), so by the build itself, telemetry disabled (contents `{\"key\":\"portableStories\",...}`, `{\"key\":\"applicationFiles\",...}`)"
+      - code: "storybook/node_modules/storybook/dist/_node-chunks/chunk-VR6EPSNI.js:13483-13503: `resolvePathInStorybookCache` uses `cache(\"storybook\")`, which reads `env.CACHE_DIR` and otherwise falls back to `<cwd>/node_modules/.cache/storybook`"
+    claim: |
+      Moving Vite's `cacheDir` does not keep Storybook's own file-system cache out of `storybook/node_modules`. In a
+      plant root that directory is a link to the repository's real one, so every plant build writes into the
+      repository's install. R-16's stated reason is therefore not met, and the phase 1 spike check R-16 plans ("a build
+      writes nothing under `storybook/node_modules`") will fail with no planned response. Running Storybook plants one
+      at a time keeps two builds from racing. It does not stop builds in different roots from sharing these entries.
+    remedies:
+      - "R-16 and R-09: the build function sets `CACHE_DIR=<root>/storybook/.cache` in the build's environment (Storybook 10.6.5 honours it at chunk-VR6EPSNI.js:13485), next to the Vite `cacheDir`. The spike check then covers both, and an integration test asserts that a plant-root build leaves `storybook/node_modules` unchanged (no new or changed file below it)."

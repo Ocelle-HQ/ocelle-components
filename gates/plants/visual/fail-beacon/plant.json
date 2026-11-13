@@ -1,0 +1,16 @@
+{
+  "expect": "fail",
+  "why": "A story that makes run-time I/O while it renders, navigator.sendBeacon (analysis C1): io on both themes, naming the call (FR-030, research.md R-14).",
+  "findings": [
+    {
+      "location": "beacon--call/light",
+      "rule": "io",
+      "message": "sendBeacon /api/beacon"
+    },
+    {
+      "location": "beacon--call/dark",
+      "rule": "io",
+      "message": "sendBeacon /api/beacon"
+    }
+  ]
+}

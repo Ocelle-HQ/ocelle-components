@@ -25,7 +25,11 @@
     "gate:contrast": "node gates/bin/contrast.ts",
     "gate:brand-rules": "node gates/bin/brand-rules.ts",
     "gate:manifest": "node gates/bin/manifest.ts",
-    "gate:plants": "node gates/bin/plants.ts"
+    "gate:plants": "node gates/bin/plants.ts",
+    "gate:storybook-build": "node gates/bin/storybook-build.ts",
+    "gate:visual": "node gates/bin/visual.ts",
+    "gate:axe": "node gates/bin/axe.ts",
+    "visual:update": "node gates/bin/baselines.ts"
   },
   "devDependencies": {
     "@custom-elements-manifest/analyzer": "0.11.0",
@@ -36,10 +40,12 @@
     "@types/node": "26.6.5",
     "@vitest/browser-playwright": "5.0.5",
     "@vitest/eslint-plugin": "1.6.28",
+    "axe-core": "4.14.0",
     "eslint": "10.13.0",
     "jiti": "2.7.0",
     "parse5": "8.0.1",
     "playwright": "1.64.1",
+    "pngjs": "7.0.0",
     "postcss": "8.5.31",
     "postcss-lit": "1.4.1",
     "postcss-selector-parser": "7.1.7",

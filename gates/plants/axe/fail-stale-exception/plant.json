@@ -1,0 +1,11 @@
+{
+  "expect": "fail",
+  "why": "An exception entry with its Complexity Tracking row for a story that has no such node: stale-exception at the entry (FR-029, research.md R-08).",
+  "findings": [
+    {
+      "location": "storybook/a11y-exceptions.json#0",
+      "rule": "stale-exception",
+      "message": "matches no node: stale--clean/light color-contrast #plant-clean"
+    }
+  ]
+}

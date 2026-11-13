@@ -1,0 +1,16 @@
+{
+  "expect": "fail",
+  "why": "A story that makes run-time I/O while it renders, navigator.clipboard.writeText, recorded whether its promise resolves or rejects (analysis C1): io on both themes, naming the call (FR-030, research.md R-14).",
+  "findings": [
+    {
+      "location": "clipboard-write--call/light",
+      "rule": "io",
+      "message": "clipboard.writeText"
+    },
+    {
+      "location": "clipboard-write--call/dark",
+      "rule": "io",
+      "message": "clipboard.writeText"
+    }
+  ]
+}

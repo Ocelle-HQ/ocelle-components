@@ -1,0 +1,56 @@
+
+T  Building storybook v10.6.5
+|
+o  Cleaning outputDir: dist
+|
+o  Loading presets
+|
+•  Building open services..
+|
+•  Building preview..
+|  Vite vite v8.3.5 building client environment for production...
+|
+!  🚨 Unable to index ./stories/not-csf.stories.ts:
+|  NoMetaError: CSF: missing default export
+|  /work/root/storybook/stories/not-csf.stories.ts
+|  (line 1, col 0)
+
+|  More info: ]8;;https://storybook.js.org/docs/writing-stories?ref=error#default-exporthttps://storybook.js.org/docs/writing-stories?ref=error#...]8;;
+|  at CsfFile.parse
+|  (file:///work/repo/node_modules/.pnpm/storybook@10.6.5_react@19.3.1/node_modules/storybook/dist/_node-chunks/chunk-FRYV2VFJ.js:545:13)
+|  at Object.createIndex
+|  (file:///work/repo/node_modules/.pnpm/storybook@10.6.5_react@19.3.1/node_modules/storybook/dist/core-server/presets/common-preset.js:2232:154)
+|  at async _StoryIndexGenerator.extractStories
+|  (file:///work/repo/node_modules/.pnpm/storybook@10.6.5_react@19.3.1/node_modules/storybook/dist/core-server/index.js:16873:23)
+|  at async
+|  file:///work/repo/node_modules/.pnpm/storybook@10.6.5_react@19.3.1/node_modules/storybook/dist/core-server/index.js:16794:39
+|  at async Promise.all (index 1)
+|  at async Promise.all (index 0)
+|  at async _StoryIndexGenerator.updateExtracted
+|  (file:///work/repo/node_modules/.pnpm/storybook@10.6.5_react@19.3.1/node_modules/storybook/dist/core-server/index.js:16782:5)
+|  at async _StoryIndexGenerator.ensureExtracted
+|  (file:///work/repo/node_modules/.pnpm/storybook@10.6.5_react@19.3.1/node_modules/storybook/dist/core-server/index.js:16817:5)
+|  at async _StoryIndexGenerator.initialize
+|  (file:///work/repo/node_modules/.pnpm/storybook@10.6.5_react@19.3.1/node_modules/storybook/dist/core-server/index.js:16778:5)
+|  at async
+|  file:///work/repo/node_modules/.pnpm/storybook@10.6.5_react@19.3.1/node_modules/storybook/dist/core-server/presets/common-preset.js:2347:10
+|
+x  Error: Unable to index ./stories/not-csf.stories.ts
+|  at _StoryIndexGenerator.getIndexAndStats
+|  (file:///work/repo/node_modules/.pnpm/storybook@10.6.5_react@19.3.1/node_modules/storybook/dist/core-server/index.js:17054:15)
+|  at async _StoryIndexGenerator.getIndex
+|  (file:///work/repo/node_modules/.pnpm/storybook@10.6.5_react@19.3.1/node_modules/storybook/dist/core-server/index.js:17043:13)
+|  at async writeIndexJson
+|  (file:///work/repo/node_modules/.pnpm/storybook@10.6.5_react@19.3.1/node_modules/storybook/dist/core-server/index.js:7405:20)
+|  at async Promise.all (index 4)
+|  at async buildStaticStandalone
+|  (file:///work/repo/node_modules/.pnpm/storybook@10.6.5_react@19.3.1/node_modules/storybook/dist/core-server/index.js:7603:7)
+|  at async withTelemetry
+|  (file:///work/repo/node_modules/.pnpm/storybook@10.6.5_react@19.3.1/node_modules/storybook/dist/_node-chunks/chunk-AZLAKLIP.js:142:12)
+|  at async build
+|  (file:///work/repo/node_modules/.pnpm/storybook@10.6.5_react@19.3.1/node_modules/storybook/dist/bin/core.js:4821:3)
+|  at async _Command.<anonymous>
+|  (file:///work/repo/node_modules/.pnpm/storybook@10.6.5_react@19.3.1/node_modules/storybook/dist/bin/core.js:5003:7)
+|
+—  Storybook exited with an error
+
