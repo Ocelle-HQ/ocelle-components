@@ -46,3 +46,9 @@
   used (SPEC-1-04, -05); widths name tokens (SPEC-1-06); autofill is not measured (SPEC-1-07); naming precedence is
   exact (SPEC-1-08). The operator's answers to SPEC-1-09 to SPEC-1-12 are recorded at the top of the spec and in
   FR-008, FR-025 and FR-027; no clarification marker remains.
+- Spec check 2 fixes (`reviews/spec/check-2-fixes.md`): the region's text and the announcement's politeness are read
+  from the accessibility-tree snapshot by a stated rule (SPEC-2-01); a live region node is any node with a live
+  politeness, whatever its source, and FR-009 lists `log`, other live roles and a host `aria-live`, `aria-atomic` or
+  `aria-relevant` as not supported (SPEC-2-02). The operator's answers at spec check 2 (SPEC-2-03, a control inserted
+  with `error` announces once per control; FR-009, role implies announce) are recorded at the top of the spec and in
+  FR-009, FR-027 and User Story 2 scenario 20; no clarification marker remains.
