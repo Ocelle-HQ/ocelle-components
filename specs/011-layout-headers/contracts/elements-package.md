@@ -53,9 +53,12 @@ Slots: `heading`, `eyebrow`, `description`, `actions`. Events, parts, CSS custom
 
 Slots: `head`, default (sections, one element each), `footer`. Events, parts, CSS custom properties: none. The host
 is the navigation landmark (through `ElementInternals`, held under an internal `Symbol("internals")` key so axe's
-landmark rules see it, research.md R-11, and not listed in the manifest); a host `aria-label` names it as the README's
+role computation sees its `navigation` role, research.md R-11, and not listed in the manifest; axe's landmark rules
+do not select it); a host `aria-label` names it as the README's
 Host ARIA rule says, and the element never writes it. A `hidden` section draws nothing of its own but still counts as content (spec Edge Cases); the edge margins of slotted
-sections, head and footer are trimmed (FR-008).
+sections, head and footer are trimmed, a `hidden` edge element skipped (FR-008); a section's padding, inline margins,
+divider and display are `!important`, so a page rule does not change them, while its block margins are the page's
+(FR-022).
 
 ### `ocelle-personal-rail` (class `OcellePersonalRail`)
 

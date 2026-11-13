@@ -76,10 +76,21 @@ the personal drawer itself stay with #12 and #16."
   item takes it when it inherits colour, and the README says plain `<a>` items need `color: inherit` and a 24 px
   target (FR-027, US4-2).
 - Axe and the landmark hosts (PLAN-FRESH-2-004), "axe reads the internals": the hosts hold their internals where axe
-  reads them, so axe's landmark rules apply, and one unnamed-pair story per element shows axe's `landmark-unique`
-  note (FR-028, FR-038; research.md R-11).
+  reads them (FR-028; research.md R-11). Its premise that axe's landmark rules then apply, and its unnamed-pair story,
+  were withdrawn in plan squad round 3 (PLAN-FRESH-3-001, below).
 - The README's orientation example (PLAN-FRESH-2-005), "a viewport media query": the example reads the viewport with
   `matchMedia("(width < Npx)")` (FR-026, US4-10).
+
+**Operator decisions in plan squad round 3** (2026-11-13, human:jeroennouwsdev; `reviews/plan/round-3/refute.md`):
+
+- Axe and the landmark hosts (PLAN-FRESH-3-001), option (b), "keep the symbol key for axe's role computation": axe's
+  role computation reads the internals under the symbol key, but axe's landmark rules select nodes by `role`
+  attribute or landmark tag and never see an internals-only host. Every claim that they do is removed, with the
+  unnamed-pair stories; a role probe (`axe.commons.aria.getRole(host) === "navigation"`, planted with a `#private`
+  field) is the evidence instead (FR-028, FR-038; research.md R-11).
+- Sidebar sections under page resets (PLAN-FRESH-3-002), option (a), "follow the slot convention": a section's
+  padding, inline margins, divider and display are `!important`, so a page rule does not change them; its block
+  margins stay the page's to set (FR-008, FR-021, FR-022, US3-3).
 
 **Constitution decision recorded by triage**: #8 and spec-kitty-design#529 ask for a "12 px mono uppercase" eyebrow.
 Constitution II says "No monospace anywhere", so the eyebrow is set in Schibsted Grotesk, uppercase and tracked
@@ -225,7 +236,9 @@ gaps, fonts and colours, and read the accessibility tree.
    `--ocelle-space-7` on every side and a `--ocelle-space-2` gap between header and body, measured from the section
    header's border box to the slotted `p`'s border box, and the `p`'s block end lies at the card's block-end padding
    edge (its UA margins trimmed, FR-008). With a body of two `p` elements, the first starts the same gap below the
-   header, the last ends at the padding edge, and the margin between them is the page's (the UA margin).
+   header, the last ends at the padding edge, and the margin between them is the page's (the UA margin). With a body
+   `<p hidden>` before the visible `p` and another after it, the visible `p` still starts the same gap below the
+   header and ends at the padding edge (a hidden element at an edge is skipped by the trim, FR-008).
 8. **Given** the same card with `density="compact"`, **When** it is measured, **Then** its padding is
    `--ocelle-space-5`, its header-to-body gap `--ocelle-space-4`, its border and radius as in scenario 7, and the
    slotted section header is drawn at the compact size of scenario 6 without the page setting `size` on it.
@@ -314,6 +327,12 @@ rule and gaps, read the accessibility tree, and reflow at 320 px.
    the button in document order and the element adds no tab stop.
 7. **Given** a page header in forced-colours mode, **When** it is drawn, **Then** the rule under the band is visible
    in a system colour.
+8. **Given** a page header with an eyebrow, a description (a `<p slot="description">`) and actions but an empty
+   `heading` slot, a second with only a description and actions, and a third with all four filled, **When** they are
+   measured, **Then** the first has no box, gap or margin for the heading (its eyebrow's and description's border
+   boxes are `--ocelle-space-1` apart, a single gap), the second's description border box starts at the band's
+   block-start padding edge, the third has both the eyebrow-to-heading and the heading-to-description gaps of
+   scenario 2, and the trees of the first two hold no heading (FR-005, FR-019; the page-header twin of US1-16).
 
 ---
 
@@ -351,7 +370,11 @@ landmark, and reflow at 320 px.
    section's padding and divider are as above and each divider spans the sidebar's whole inline size. The same holds
    when the sections are a `ul` of links and a `p`, and the head and footer a `p` each: each one's border box lies
    exactly `--ocelle-space-4` inside its part, with no UA margin and no gap between a divider and the padding next to
-   it (FR-008). With a hidden `div` section and a hidden `ocelle-section-header` section between two visible ones,
+   it (FR-008); with a footer `<p hidden>` before the visible footer `p` and another after it, the visible `p` still
+   lies exactly `--ocelle-space-4` inside its part. The same holds under a page rule `ul { margin: 0; padding: 0;
+   list-style: none }` and under a page rule `* { margin: 0; padding: 0; border: 0 solid }`: the four dividers are
+   drawn, each spans the sidebar's whole inline size, and each section keeps its `--ocelle-space-4` padding on every
+   side (a page rule does not change a section's padding, inline margins, divider or display, FR-022). With a hidden `div` section and a hidden `ocelle-section-header` section between two visible ones,
    neither hidden section has a box, padding or divider, and there is exactly one divider between the two visible
    sections, with `--ocelle-space-4` of padding on both sides as between the visible sections above; with the first
    section hidden, the first visible section has no divider of its own, so one divider lies between it and the head
@@ -387,8 +410,7 @@ landmark, and reflow at 320 px.
     node in the tree carries a landmark's name, and each host keeps the `aria-label` value the page wrote; **When**
     script then removes `aria-label` from the second and third, **Then** both landmarks are named "Projects". Each of
     the four cases is also a story of its own, rendered alone, on which the `axe` gate reports no serious or critical
-    finding (FR-028, FR-038); a further story of two unnamed sidebars gets axe's moderate `landmark-unique` note on
-    both hosts, which shows axe sees the host landmark (research.md R-11).
+    finding (FR-028, FR-038).
 13. **Given** a sidebar with a head and a footer and an empty default slot, beside one with a head, one section and
     a footer, **When** both are measured, **Then** the first has exactly one divider, between head and footer, and no
     padding for the empty sections (head and footer padding meet at that divider), while the second has two and its
@@ -462,8 +484,7 @@ orientation with focus inside, and reflow at 320 px.
     per rail, no other node in the tree carries a landmark's name, and each host keeps the `aria-label` value the page
     wrote; **When** script then removes `aria-label` from the second and third, **Then** both are named "Me". Each of
     the three cases is also a story of its own, rendered alone, on which the `axe` gate reports no serious or
-    critical finding (FR-028, FR-038); a further story of two unnamed rails gets axe's moderate `landmark-unique` note
-    on both hosts (research.md R-11).
+    critical finding (FR-028, FR-038).
 
 ### Edge Cases
 
@@ -486,8 +507,9 @@ orientation with focus inside, and reflow at 320 px.
   `aria-label`: the navigation landmark is present with no name. A host `aria-label` decides the name alone when
   present, so a non-empty one names the landmark and a blank one leaves it unnamed even with a `label` (FR-028,
   US3-12, US4-11); the README says to always set a distinct `label`, since assistive technology lists unnamed
-  navigation landmarks with nothing to tell them apart (axe's moderate `landmark-unique` note marks two of them on a
-  page, R-11).
+  navigation landmarks with nothing to tell them apart. No axe rule flags two unnamed hosts of these elements (axe's
+  landmark rules select by `role` attribute or tag, not by internals role, R-11); the tree reads of US3-12 and US4-11
+  hold the naming.
 - A personal rail with no primary items but bottom items: the bottom group sits at the block end (vertical) or the
   inline end (horizontal), with no divider (US4-6).
 - A context sidebar whose default slot is empty but whose head and footer are filled: one divider, between head and
@@ -495,7 +517,8 @@ orientation with focus inside, and reflow at 320 px.
   slot non-empty but add no divider of their own, so text between two sections leaves one divider, at the second
   section's block start, and a slot of text alone sits between the head and footer dividers (US3-11, FR-022); the
   README says to wrap each section in an element.
-- A section header or page header with an empty `heading` slot: the heading part adds no box or gap (US1-16, FR-005).
+- A section header or page header with an empty `heading` slot: the heading part adds no box or gap (US1-16, US2-8,
+  FR-005).
 - A section header or page header inside a `[data-ocelle-prose=""]` region of `@ocelle/styles`: the prose rules of
   `base.css` for `h1` to `h6` (margins, size, weight) are host-page rules, so they win over the element's slotted
   heading styles (Slotted headings, above) and the heading is drawn at the prose sizes and margins. This feature
@@ -512,6 +535,11 @@ orientation with focus inside, and reflow at 320 px.
   (Empty slot, FR-036).
 - Slotted content with user-agent margins (a `p` description or body, a `ul` section): the elements trim its edge
   block margins, so the gaps and padding the scenarios state hold; a page rule that sets those margins wins (FR-008).
+  A `hidden` element at the edge of a card body or a sidebar head or footer is skipped: the first and last visible
+  elements are trimmed (US1-7, US3-3).
+- A page reset on sidebar sections (`ul { margin: 0; padding: 0 }`, `* { margin: 0; padding: 0; border: 0 solid }`):
+  a section keeps its padding, full-width divider and block display, which the sidebar sets `!important` as the slot
+  convention does; only its block margins are the page's (FR-008, FR-022, US3-3).
 - Plain `<a>` items in the personal rail: the user agent's link colour beats the rail's inherited chrome ink, so the
   README says to give them `color: inherit` and a target of at least 24 px, or to use `ocelle-nav-item` (FR-027).
 - Very long words and identifiers in any slot wrap inside the element and never cause horizontal scroll (US1-14,
@@ -553,10 +581,12 @@ orientation with focus inside, and reflow at 320 px.
   them.
 - **FR-008**: The elements MUST trim the block margins at the edges of slotted content (operator decision
   PLAN-FRESH-2-002 (a)): the section header's and page header's eyebrow and description have no block margin, the
-  card body's first element no block-start margin and its last no block-end margin, each context-sidebar section no
-  block margin, and the sidebar head's and footer's first element no block-start and last element no block-end
-  margin. Margins between slotted elements of one part stay the page's, and a rule of the page's own stylesheet that
-  sets these margins wins (Shadow DOM's cascade order) (US1-2, US1-7, US1-11, US2-2, US3-3).
+  card body's first visible element no block-start margin and its last visible element no block-end margin, each
+  context-sidebar section no block margin, and the sidebar head's and footer's first visible element no block-start
+  and last visible element no block-end margin; an element with the `hidden` attribute is skipped when finding the
+  first and last (PLAN-FRESH-3-004). Margins between slotted elements of one part stay the page's, and a rule of the
+  page's own stylesheet that sets these margins wins (Shadow DOM's cascade order) (US1-2, US1-7, US1-11, US2-2,
+  US3-3).
 
 **Section header**
 
@@ -609,8 +639,9 @@ orientation with focus inside, and reflow at 320 px.
   eyebrow with the eyebrow style (FR-031) at both sizes; the heading in `--ocelle-font-display`,
   `--ocelle-font-weight-display`, `--ocelle-tracking-display`, `--ocelle-line-height-tight` and `--ocelle-color-ink`, at
   `--ocelle-font-size-2xl` (regular) or `--ocelle-font-size-xl` (compact), with no margin; the description at
-  `--ocelle-font-size-md` in `--ocelle-color-ink-soft` with a `--ocelle-space-1` gap above it and no block margin of
-  its own (FR-008); a `--ocelle-space-1` gap
+  `--ocelle-font-size-md` in `--ocelle-color-ink-soft` with a `--ocelle-space-1` gap above it when the heading is
+  non-empty (no gap or margin for an empty heading, FR-005, US2-8) and no block margin of its own (FR-008); a
+  `--ocelle-space-1` gap
   between eyebrow and heading; the actions at the inline end with a `--ocelle-space-4` gap and their block start at the
   heading's block start, moving under the description (or the heading when there is none), at the inline start,
   `--ocelle-space-2` below it, by the rule of FR-010 (US2-5); block padding `--ocelle-space-4`, inline padding
@@ -625,7 +656,8 @@ orientation with focus inside, and reflow at 320 px.
 - **FR-021**: It MUST have the slots `head`, a default slot (each assigned element is one section) and `footer`,
   stacked in that order. The parts that are padded are the head, each section (each element assigned to the default
   slot, not the default slot's region as a whole) and the footer: each non-empty one has padding `--ocelle-space-4`
-  on every side. There is no gap between parts: two adjacent padded parts meet at the divider between them (FR-022).
+  on every side, whatever rule the page sets on a section (operator decision PLAN-FRESH-3-002 (a); FR-022). There is
+  no gap between parts: two adjacent padded parts meet at the divider between them (FR-022).
   Text assigned to the default slot is rendered in document order but is not a section: it makes the default slot
   non-empty, gets `--ocelle-space-4` inline padding and no block padding, and gets no divider of its own (US3-11).
 - **FR-022**: A `--ocelle-border-width` divider in `--ocelle-color-rule` MUST lie between each two adjacent non-empty
@@ -638,8 +670,11 @@ orientation with focus inside, and reflow at 320 px.
   (US3-11). When the default slot is empty, one divider lies between a non-empty head and a non-empty footer (US3-13),
   at the head's block end. Each divider lies outside the padding of the parts on either side of it and spans the
   sidebar's whole inline size. An empty part has no padding and no divider (US3-3, US3-5, US3-13). Each section is
-  laid out as a block whatever its element (a `span` or a custom element included), unless the page's own rule sets
-  its display (US3-3). A section that is `hidden` (the attribute) has no box, padding or divider, whatever its element:
+  laid out as a block whatever its element (a `span` or a custom element included). A page rule on a section does
+  not change its padding, inline margins, divider or display (the sidebar sets them `!important`, as the slot
+  convention does; operator decision PLAN-FRESH-3-002 (a)), so a page reset such as `ul { margin: 0; padding: 0 }` or
+  `* { border: 0 solid }` leaves FR-021's padding and these dividers in place; only the section's block margins are
+  the page's to set (FR-008) (US3-3). A section that is `hidden` (the attribute) has no box, padding or divider, whatever its element:
   "the first section" and "consecutive sections" above count visible sections only, while a hidden section still
   makes the default slot non-empty (Empty slot; US3-3).
 - **FR-023**: The sidebar MUST fill its container's block size when its content is shorter, with the footer at the
@@ -685,9 +720,12 @@ orientation with focus inside, and reflow at 320 px.
   `aria-label`; removing the host `aria-label` falls back to `label`. The page still holds one navigation landmark
   per element and no other node carrying its name, and the element never writes, rewrites or removes the host's
   `aria-label` (US3-12, US4-11). The host's `aria-label` MUST NOT cause an axe serious or critical finding, as the
-  `axe` gate checks on one story per case of US3-12 and US4-11, each rendered alone (FR-038). The host landmark MUST
-  be visible to axe's landmark rules (operator decision PLAN-FRESH-2-004 (b); how is research.md R-11), as one
-  unnamed-pair story per element shows with axe's moderate `landmark-unique` note. The README recommends `label`.
+  `axe` gate checks on one story per case of US3-12 and US4-11, each rendered alone (FR-038). The host's internals
+  MUST be held where axe's role computation reads them, so that axe judges the host's ARIA attributes against its
+  `navigation` role (operator decisions PLAN-FRESH-2-004 (b) and PLAN-FRESH-3-001 (b); how is research.md R-11), as a
+  role probe shows: `axe.commons.aria.getRole(host)` is `navigation`. axe's landmark rules select by `role` attribute
+  or landmark tag and do not see the host; landmark naming is held by the tree reads of US3-12 and US4-11. The README
+  recommends `label`.
 
 **Tokens**
 
@@ -733,7 +771,9 @@ orientation with focus inside, and reflow at 320 px.
     landmarks with nothing to tell them apart, and that a host `aria-label` decides the landmark's name alone when
     present (a blank one leaves it unnamed even with a `label`), with `label` used only when the host has none;
   - sidebar: wrap each section in an element; a `hidden` section draws nothing of its own but still counts as
-    content, so remove sections from the slot rather than hide them all;
+    content, so remove sections from the slot rather than hide them all; a page rule does not change a section's
+    padding, inline margins, divider or display (they are `!important`, as the slot convention's), while its block
+    margins are the page's to set (FR-022);
   - rail: the orientation example of US4-10, a viewport media query with an exclusive bound
     (`matchMedia("(width < Npx)")`); that items are sized by themselves (`--ocelle-size-rail-item`); and that `<a>`
     items need `color: inherit` (or are `ocelle-nav-item` elements) and a target of at least 24 px (FR-027).
@@ -741,8 +781,8 @@ orientation with focus inside, and reflow at 320 px.
   contributor note says, and the `visual` gate MUST pass.
 - **FR-038**: The `axe` gate MUST report no serious or critical finding on any story of these elements in either
   theme. The stories include one per case of US3-12 and US4-11, each rendering that one landmark alone, so this gate
-  holds FR-028's axe clause, and one unnamed-pair story per landmark element, on which axe's moderate
-  `landmark-unique` note (not a gate failure) is expected and recorded in the phase evidence. Rail stories hold
+  holds FR-028's axe clause; the role probe of FR-028 is recorded in the phase evidence (research.md R-11). Rail
+  stories hold
   stand-in items that inherit the chrome ink and are `--ocelle-size-rail-item` squares, styled by a same-origin story
   stylesheet (research.md R-10).
 - **FR-039**: The engine floor MUST NOT be raised by this feature unless the plan records the feature that raises it
