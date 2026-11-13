@@ -60,7 +60,8 @@ cleared in one task, a state cleared in the first animation frame, a state short
 rule says), and the vacuous cases: a region whose text never changes, a region that appears holding text, a nested
 region pair whose texts both change (two announcements).
 
-In process it is a set of Vitest browser commands registered in `vitest.config.ts` (as `axTree` is); on fixture pages
+In process it is a set of Vitest browser commands registered in the repository root's `vitest.config.ts` (as
+`axTree` is; analysis U5); on fixture pages
 it is the same code over the page's CDP session. Both harnesses share `test/live.ts`.
 
 ## Driver steps
@@ -77,8 +78,22 @@ it is the same code over the page's CDP session. Both harnesses share `test/live
   (first load, research R-09). The capture is armed on the container before the call.
 - `drive.readyState(value)` (in process): makes `src/live.ts`'s `readyState` read return `value` for the step
   (T002 confirms the mechanism, research R-09).
-- `drive.after(ms)`: returns `ms` after the previous step's end, measured in the page, for the scenarios with
-  changes in different tasks a set time apart (spec User Story 1 scenario 13: 100 ms apart, 10 ms after a write).
+- `insertInteractive(containerId, markup)` (both harnesses; analysis U4): inserts `markup` into the container while
+  `document.readyState` is `"interactive"`, with the element already defined, arms the capture before the insertion
+  and returns the insertion's page time. In process: `liveCapture.start(containerId)`, then
+  `drive.readyState("interactive")` and `insert(containerId, markup, "innerHTML")`. On fixture pages:
+  `liveCapture.startDocument` of a fixture page that loads the browser build and then a same-origin module script
+  whose `DOMContentLoaded` listener inserts the markup of a `<template>` in the page and records `performance.now()`
+  (module scripts run before `DOMContentLoaded`, so the definition is registered first). A shared scenario body calls
+  it once, with no harness condition; US1-8's `"interactive"` cell uses it. `registerFirstLoad` and
+  `drive.readyState` stay in process only and are not called by a shared body's cell that runs on fixture pages.
+- `drive.after(ms)`: returns no earlier than `ms` after the previous step's end, measured in the page, and resolves
+  with the gap it achieved, in page milliseconds (`performance.now()` from the previous step's end to its own
+  return), for the scenarios with changes in different tasks a set time apart (spec User Story 1 scenario 13: 100 ms
+  apart, 10 ms after a write; FR-027's merge). Each such cell asserts, unconditionally, that the gap lies between its
+  stated fraction of `W` and `W` (for example `W / 3` ≤ gap < `W` for the 100 ms step), so a late step fails as a
+  named assertion instead of testing another case (analysis A2); T002 records the overshoot in process at the test
+  `W`.
   Scenario bodies state these times as fractions of the `W` in force (100 ms is `W / 3` after load), so the
   in-process run with the test `D` keeps the same relation; the driver exposes that `W` for both load states (in
   process from the one timing constant of `test/in-process.ts`, on fixture pages from Chromium's 150 and 350 ms).
@@ -150,44 +165,48 @@ rejects with that message; a plant whose scenario passes fails the row. Rows tha
 the `elements-browser` project the same way. Each phase records the plant run's output in
 `specs/010-feedback-forms/reviews/phase-<n>/plants.md`, as 005 did in `reviews/phase-4/plants.md`.
 
-| Family | Plant | Must turn red |
-|---|---|---|
-| insertion announcement | announcer created already holding the text (no empty wait) | US1-8, US1-15 `status` insertion and reveal, US2-20 |
-| alert path | writes the copy for a `role="alert"` host on insertion, reveal and a change to `alert` (PLAN-FRESH-2-002) | US1-15 and the SC-002 `alert` row: insertion, reveal and `status` → `alert` (count 0) |
-| alert baseline | the alert path takes the baseline synchronously, at the DOM operation (PLAN-FRESH-3-002 (b)) | US1-15 `alert` cells with the text set in the same task after insertion, after reveal and after the role change (count 0) |
-| alert pending tone | a `tone` change while the alert baseline is pending takes the ordinary `tone` row (round 3 verify 1) | US1-15 `alert` cell with the `tone` changed in the same task after insertion (count 0) |
-| alert pending role | a change from `alert` to `status` while the alert baseline is pending leaves the marker set (round 3 verify 1) | US1-15 cells inserted, and revealed, as `alert` and changed to `status` in the same task (count 1, polite) |
-| alert step after reset | the end-of-task step sets the baseline even when the marker has already been reset (round 3 verify 2) | US1-15 cells inserted, and revealed, as `alert` and changed to `status` in the same task (count 1, polite) |
-| merge window | no restart: each trigger writes after its own wait | US1-13 changes in different tasks 100 ms apart (count 1) |
-| minimum hold | a trigger during the hold empties the copy at once (PLAN-FRESH-2-001) | US1-13 change 10 ms after a write (the first copy counts under `"settled"`) |
-| baseline re-check | writes at the end of the wait without comparing with the baseline | US1-13 `A`, `B`, `A` within the wait (count 0) |
-| reveal baseline | the re-check also applies to insertion and reveal (the baseline not set to none, PLAN-FRESH-3-001) | US1-8, US1-17 and US2-22 (first loaded hidden then revealed; announced, hidden and revealed with the same text; count 1) |
-| shipped timing | `announcerDefaults` with `delayLoaded: 0`; the timing in force not started from the constant | `test/live-timing.test.ts` |
-| hold | empties the copy after `W` instead of `H` (PLAN-FRESH-2-005) | US1-13 hold scenario (copy settled for `H`) |
-| first load, late write | writes exactly the pre-load `W` after first load under `drive.readyState("loading")` (PLAN-FRESH-2-004) | US1-10 under `registerFirstLoad`, under both rules |
-| short-lived empty state | text written in a microtask after the announcer appears; text written in the first animation frame | US1-8 (`"settled"` count 0) |
-| first load | the constructor's `isConnected` rule of the first draft (research R-02) | US1-8 and US2-20 for `innerHTML`, `template` and `domparser` |
-| first load | announces on first load | US1-10 under `startDocument` and `registerFirstLoad`, US2-18 |
-| nested region | the content wrapper also carries `aria-live` | US1-15 (two announcements) |
-| host-role region | `internals.ariaLive` left unset | US1-15 (the host's node announces as well) |
-| politeness | always polite | US1-9, US1-12, US1-15 `alert` |
-| politeness baseline | announces on any tone change | US1-12 (`danger` → `warning`) |
-| move | move flag never set | US1-11 (move), US2-20 (move) |
-| later task | move flag never cleared | Edge case "removed and inserted again in a later task" |
-| text baseline | compares with the last written copy before normalising | US1-11 (same text again), Edge case whitespace |
-| hidden | announces while `hidden` | US1-17, US2-22 |
-| error baseline | clearing does not reset the baseline; no whitespace normalisation | US2-10 |
-| heading gap | the heading part not hidden when absent | US1-4, SC-004 |
-| host ARIA | ignores host `aria-invalid="true"`; lets host `"false"` clear the element's own state | US2-23 |
-| naming | name span visually hidden instead of `hidden`; name not recomputed on label text change | US2-1 (label text once), US2-13 (rename without focus) |
-| change event | no last-committed guard | US2-3 (Enter then blur) |
-| implicit submission | never submits; submits ignoring the one-field rule | US2-21 in process |
-| form value | forgets `setFormValue`; reset keeps the typed value; restore ignored | US2-2, US2-4, SC-003 |
-| validity | `setValidity({})` always | US2-5, US2-6, US3-5 |
-| option mirroring | the option observer misses `characterData` | US3-4 |
-| indicator | indicator without `pointer-events: none` | US3-8 |
-| capture bounds | an element that mutates its own attribute in a loop | the bound's assertion, not a timeout |
-| oracle reading | takes a link's own name; visits an `img`'s descendants; ignores the keeping rule | the named `test/live-reading.ts` unit tests |
+The last column names the task that adds each row or cell (analysis G11): the capture and oracle rows are T001c's
+(phase 1); the US1, SC-002 and `live-timing` cells T016's (phase 2), with notice plants; the US2 cells T034's (phase 3), with plant classes derived
+from `ocelle-form-input`; the US3 cells T052's (phase 4), with plant classes derived from `ocelle-form-select`.
+
+| Family | Plant | Must turn red | Added by |
+|---|---|---|---|
+| insertion announcement | announcer created already holding the text (no empty wait) | US1-8, US1-15 `status` insertion and reveal, US2-20 | US1 cells T016; US2-20 T034 |
+| alert path | writes the copy for a `role="alert"` host on insertion, reveal and a change to `alert` (PLAN-FRESH-2-002) | US1-15 and the SC-002 `alert` row: insertion, reveal and `status` → `alert` (count 0) | T016 |
+| alert baseline | the alert path takes the baseline synchronously, at the DOM operation (PLAN-FRESH-3-002 (b)) | US1-15 `alert` cells with the text set in the same task after insertion, after reveal and after the role change (count 0) | T016 |
+| alert pending tone | a `tone` change while the alert baseline is pending takes the ordinary `tone` row (round 3 verify 1) | US1-15 `alert` cell with the `tone` changed in the same task after insertion (count 0) | T016 |
+| alert pending role | a change from `alert` to `status` while the alert baseline is pending leaves the marker set (round 3 verify 1) | US1-15 cells inserted, and revealed, as `alert` and changed to `status` in the same task (count 1, polite) | T016 |
+| alert step after reset | the end-of-task step sets the baseline even when the marker has already been reset (round 3 verify 2) | US1-15 cells inserted, and revealed, as `alert` and changed to `status` in the same task (count 1, polite) | T016 |
+| merge window | no restart: each trigger writes after its own wait | US1-13 changes in different tasks 100 ms apart (count 1) | T016 |
+| minimum hold | a trigger during the hold empties the copy at once (PLAN-FRESH-2-001) | US1-13 change 10 ms after a write (the first copy counts under `"settled"`) | T016 |
+| baseline re-check | writes at the end of the wait without comparing with the baseline | US1-13 `A`, `B`, `A` within the wait (count 0) | T016 |
+| reveal baseline | the re-check also applies to insertion and reveal (the baseline not set to none, PLAN-FRESH-3-001) | US1-8, US1-17 and US2-22 (first loaded hidden then revealed; announced, hidden and revealed with the same text; count 1) | US1 cells T016; US2-22 T034 |
+| shipped timing | `announcerDefaults` with `delayLoaded: 0`; the timing in force not started from the constant | `test/live-timing.test.ts` | T016 |
+| hold | empties the copy after `W` instead of `H` (PLAN-FRESH-2-005) | US1-13 hold scenario (copy settled for `H`) | T016 |
+| first load, late write | writes exactly the pre-load `W` after first load under `drive.readyState("loading")` (PLAN-FRESH-2-004) | US1-10 under `registerFirstLoad`, under both rules | T016 |
+| short-lived empty state | text written in a microtask after the announcer appears; text written in the first animation frame | US1-8 (`"settled"` count 0) | T016 |
+| first load | the constructor's `isConnected` rule of the first draft (research R-02) | US1-8 and US2-20 for `innerHTML`, `template` and `domparser` | US1-8 T016; US2-20 T034 |
+| first load | announces on first load | US1-10 under `startDocument` and `registerFirstLoad`, US2-18 | US1-10 T016; US2-18 T034 |
+| nested region | the content wrapper also carries `aria-live` | US1-15 (two announcements) | T016 |
+| host-role region | `internals.ariaLive` left unset | US1-15 (the host's node announces as well) | T016 |
+| politeness | always polite | US1-9, US1-12, US1-15 `alert` | T016 |
+| politeness baseline | announces on any tone change | US1-12 (`danger` → `warning`) | T016 |
+| move | move flag never set | US1-11 (move), US2-20 (move) | US1-11 T016; US2-20 T034 |
+| later task | move flag never cleared | Edge case "removed and inserted again in a later task" | T016 |
+| text baseline | compares with the last written copy before normalising | US1-11 (same text again), Edge case whitespace | T016 |
+| hidden | announces while `hidden` | US1-17, US2-22 | US1-17 T016; US2-22 T034 |
+| error baseline | clearing does not reset the baseline; no whitespace normalisation | US2-10 | T034 |
+| heading gap | the heading part not hidden when absent | US1-4, SC-004 | T016 |
+| host ARIA | ignores host `aria-invalid="true"`; lets host `"false"` clear the element's own state | US2-23 | T034 |
+| naming | name span visually hidden instead of `hidden`; name not recomputed on label text change | US2-1 (label text once), US2-13 (rename without focus) | T034 |
+| change event | no last-committed guard | US2-3 (Enter then blur) | T034 |
+| implicit submission | never submits; submits ignoring the one-field rule | US2-21 in process | T034 |
+| form value | forgets `setFormValue`; reset keeps the typed value; restore ignored | US2-2, US2-4, SC-003 | T034 |
+| validity | `setValidity({})` always | US2-5, US2-6, US3-5 | US2-5, US2-6 T034; US3-5 T052 |
+| option mirroring | the option observer misses `characterData` | US3-4 | T052 |
+| indicator | indicator without `pointer-events: none` | US3-8 | T052 |
+| capture bounds | an element that mutates its own attribute in a loop | the bound's assertion, not a timeout | T001c |
+| oracle reading | takes a link's own name; visits an `img`'s descendants; ignores the keeping rule | the named `test/live-reading.ts` unit tests | T001c |
 
 Families without a plant (styles measured on computed tokens, forced colours, focus ring, keyboard steps of the native
 controls) have no partially working element before their phase: their red-first run against the code without the

@@ -20,7 +20,9 @@ and, for phase 5, #10 (mission 006) merged on `main` with podman or docker avail
    and the gate tests' figures read as research R-04's table gives them: 154 required per theme and 308 in all,
    165/173 entries (338 in all), the summary 165/173/154, and 166 for plant variant (2).
 5. Manifest and docs: `pnpm --filter @ocelle/elements run manifest`, then `pnpm run gate:manifest` (no `role` or
-   `hidden` attribute declared from phase 2 on); the README test in `test/node/readme.test.ts` (SC-006), whose
+   `hidden` attribute declared from phase 2 on; the gate reports `3`, `4` and `5 elements checked` after phases 2, 3
+   and 4, and each new entry point follows the previous element's, before `./browser.js`, as research R-11 orders
+   them); the README test in `test/node/readme.test.ts` (SC-006), whose
    assertions each phase adds in its red commit, mapped item by item in `reviews/phase-5/readme-map.md`.
 6. Built output: `pnpm --filter @ocelle/elements run build`, then `pnpm run gate:csp` and `pnpm run gate:prefix`.
 7. Stories (after #10): `pnpm run gate:storybook-build`, `pnpm run visual:update` in the pinned container to produce
