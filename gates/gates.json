@@ -123,7 +123,7 @@
   {
     "id": "visual",
     "check": "Visual regression",
-    "command": "pnpm run gate:visual -- --engine both",
+    "command": "pnpm run gate:visual -- --engine both --remove-docker-image",
     "plantCommand": "node gates/bin/visual.ts --root {root} --engine {engine}",
     "plantForm": "repo-tree",
     "scope": "every story of the built Storybook index in light and dark, captured twice in the pinned linux/amd64 container (docker and podman in CI) and compared byte for byte with storybook/baselines/ (006 FR-003 to FR-012, FR-026 to FR-028, FR-030, FR-031)"
