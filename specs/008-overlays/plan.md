@@ -158,8 +158,9 @@ Settled in the squad's round 3 (18 by the operator at the fork, 19 and 20 confir
     not above the overlay and is ordinary content: Escape requests the overlay's close on every press through the
     keydown path, no `cancel`, and leaves it open, and Tab treats its content as ordinary stops. The overlay knows
     the order from a below record taken at `showModal()` and cleared per dialog on its `close` or a `toggle` with
-    `oldState` `open`; a cancelable `cancel` after a stand-aside is the fallback (one request, dialog recorded as
-    below), and a non-cancelable one there is a stated limit (squad round 3 verify 1 to verify 4).
+    `oldState` `open` (removing and setting the `open` attribute fires neither, so a dialog reopened that way stays
+    below, a stated limit); a cancelable `cancel` after a stand-aside is the fallback (one request, dialog recorded as
+    below), and a non-cancelable one there is a stated limit (squad round 3 verify 1 to verify 5).
 20. **Drawer body fills its column** (R-18): the footer sits at the panel's end; the drawer has its own one-line-body
     row instead of the dialog's 132 px one.
 

@@ -55,7 +55,8 @@ closed ──(reconnected)──▶ closed         (the host sets open = true to
   popover or modal dialog is open but keeps handling Tab for a non-modal dialog (R-02). **Below record**: at
   `showModal()` the overlay records the open non-modal dialogs in its flat tree as below it; a dialog leaves the
   record on its next `close` event or a `toggle` whose `oldState` is `open` (capture phase), and an unrecorded open
-  dialog counts as opened after the overlay. Fallback: if the overlay stood aside and the press fires a cancelable
+  dialog counts as opened after the overlay; removing and setting the `open` attribute fires neither, so a recorded
+  dialog reopened that way stays below (a stated limit). Fallback: if the overlay stood aside and the press fires a cancelable
   `cancel` on its own `<dialog>`, it prevents it, requests once with `escape` and adds that dialog to the below
   record; a non-cancelable `cancel` there is a platform close with `host`, a stated limit (R-02). The top also handles Escape and Tab
   whose deep active element is the document body, from a `document` listener (R-02). Opening an overlay first hides

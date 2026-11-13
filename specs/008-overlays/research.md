@@ -90,9 +90,9 @@ unmerged). Results marked "squad probe" were measured by the plan squad's round 
   for it, so R-04 goes on handling Tab, its focusable content being ordinary stops. A slotted dialog's own `cancel`
   and `close` do not bubble and never run the overlay's `cancel` path (a capture-phase listener checks that the
   target is the overlay's own `<dialog>`). The tooltip's bubble is `popover="manual"` (R-10), so it is not such an element; its Escape is its own (R-12).
-- **Non-modal dialogs in slotted content** (squad round 3 verify 1 to verify 4, PLAN-FRESH-3-002). What decides the
+- **Non-modal dialogs in slotted content** (squad round 3 verify 1 to verify 5, PLAN-FRESH-3-002). What decides the
   platform's outcome is when the slotted dialog was opened relative to the overlay's `showModal()`, not whether it
-  was opened by `show()` or by the `open` attribute. **Measured** (verify probes v3 to v9, Chromium 153, no overlay
+  was opened by `show()` or by the `open` attribute. **Measured** (verify probes v3 to v10, Chromium 153, no overlay
   handlers but a vetoing `cancel` logger, no user activation):
   - opened **after** the overlay's `showModal()`, by any method (`show()`, `setAttribute('open', '')`, `close()` or
     `removeAttribute('open')` followed by `setAttribute`, a script-created element with `open` inserted, `innerHTML`,
@@ -103,18 +103,26 @@ unmerged). Results marked "squad probe" were measured by the plan squad's round 
   - open **before** the overlay's `showModal()` (in the parsed markup, or opened by script before the overlay
     opened), with focus inside it or on a sibling button: it is below the overlay. In the parsed `<dialog open>`
     case, whatever its `closedby`, native Escape leaves it open and fires a cancelable `cancel` on the overlay's
-    `<dialog>`. A `closedby="any"` dialog opened with `show()` before the overlay gets, on the first Escape, a
-    **non-cancelable** `cancel` on the overlay's `<dialog>`: without user activation the platform would close a
-    vetoed overlay there.
+    `<dialog>`. For a dialog opened by script before the overlay (verify probes v9 and v10: `show()` with
+    `closedby="any"`, `setAttribute('open', '')`, `closedby="none"`), whether that native `cancel` is cancelable
+    depends on how the script ran: opened just before `showModal()` in the probe's script, the first `cancel` is
+    **non-cancelable**; opened from a script of the parsed page, the first is cancelable and the second is not.
+    Either way, without user activation the platform can close a vetoed overlay there.
   The first case is a close watcher above the overlay and the overlay stands aside for it (the fifth exception
   above). The other two are not; for them the overlay handles Escape on the keydown path by the rules above (one
   request with reason `escape` on every press, no `cancel`, the slotted dialog stays open; a host that wants it
   closed closes it), so its `preventDefault()` keeps the press from the platform and the veto holds on every
-  repetition, including the open-before `closedby="any"` case whose native `cancel` would not be cancelable; R-04
+  repetition, including the open-before cases whose native `cancel` would not be cancelable; R-04
   handles Tab as usual. To know the order, the overlay records, when it calls `showModal()`, every open non-modal
   `<dialog>` in its flat tree as below it; a dialog leaves that record on its next `close` event or on a `toggle`
   event whose `oldState` is `open` (capture phase on the overlay's `<dialog>`; a coalesced close-and-reopen toggle
-  has `oldState` `open` too), so a dialog closed and opened again after the overlay counts as opened after it. A
+  has `oldState` `open` too), so a dialog closed with `close()` (or any close that fires `close` or such a `toggle`)
+  and opened again after the overlay counts as opened after it. Removing the `open` attribute and setting it again
+  fires neither `toggle` nor `close` (verify probe v10, in one task or 30 ms apart), so a dialog recorded as below
+  that is reopened that way stays in the record and stays ordinary content: Escape requests the overlay's close on
+  every press through the keydown path and the dialog stays open, where natively the platform would close it alone
+  (verify probe v11). This is a stated limit that the README names; a host that wants the platform's outcome
+  reopens the dialog with `close()` and `show()` (or the attribute) instead. A
   `toggle` with `oldState` `closed` for a recorded dialog is the late event of its opening before the overlay and
   leaves the record as it is. Any open non-modal dialog not in the record counts as opened after the overlay.
   **Fallback** for a case outside these measurements (for example an already-open dialog moved into the overlay's

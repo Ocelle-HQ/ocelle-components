@@ -59,7 +59,9 @@ an event's `detail`, is MAJOR.
     Tab inside a nested native modal is left to the platform. A slotted non-modal `<dialog>` that was already open
     when the overlay opened, whatever its `closedby`, or one opened after it with `closedby` absent, `auto` or
     `none`, is ordinary content: Escape requests the overlay's close on every press and leaves it open, so close it
-    yourself if needed. An open `<dialog>` moved into an already open overlay is outside what was measured: if the
+    yourself if needed. Such a dialog reopened by removing and setting its `open` attribute stays ordinary content
+    (the change fires no event the overlay can see); reopen it with `close()` and then `show()` or the attribute to
+    have Escape close it alone (R-02). An open `<dialog>` moved into an already open overlay is outside what was measured: if the
     platform then closes the overlay on Escape, the close comes with reason `host` (R-02);
   - during the exit, Escape, the close control and the backdrop request nothing; only `open = true` stops a close
     (R-02, R-06).

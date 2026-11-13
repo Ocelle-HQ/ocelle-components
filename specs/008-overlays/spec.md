@@ -283,10 +283,12 @@ pointer and keyboard. It is complete when the scenarios below pass in process an
   after the overlay (by `show()` or by the `open` attribute) whose `closedby` state is Close Request or Any: the
   platform closes it alone, the next Escape requests the overlay's close. A slotted non-modal `<dialog>` that was
   already open when the overlay opened, whatever its `closedby`, or one opened after it with `closedby` absent,
-  `auto` or `none`, is ordinary content: Escape requests the overlay's close and leaves it open (FR-010). An open
-  dialog moved into an already open overlay is outside what was measured; if the platform then closes the overlay
-  on Escape without a cancelable `cancel`, the close is reported with reason `"host"`, a limit the documentation
-  states.
+  `auto` or `none`, is ordinary content: Escape requests the overlay's close and leaves it open (FR-010). One that
+  was already open and is reopened by removing and setting its `open` attribute stays ordinary content, as the
+  change fires no event; reopened with `close()` first, it counts as opened after the overlay. The documentation
+  states this. An open dialog moved into an already open overlay is outside what was measured; if the platform then
+  closes the overlay on Escape without a cancelable `cancel`, the close is reported with reason `"host"`, a limit
+  the documentation states.
 - **Content the overlay cannot see into.** Slotted content with a closed shadow root, an iframe, or a video or audio
   element with controls keeps its own focusable parts reachable by Tab and Shift+Tab inside the overlay; leaving it
   past the cycle's end may cost one extra press, and a closed shadow root at the end that does not delegate focus is
