@@ -17,7 +17,7 @@ Three new elements in `@ocelle/elements`, following mission 005's conventions:
     stops; operator decision), return to the deepest opener only while focus is still the overlay's (R-04, R-05).
   - Escape is handled on `keydown` by the topmost overlay only, so a host's veto survives the platform's
     repeated-Escape rule (measured, R-02), also with focus on the document body; Escapes already handled by slotted
-    content, and Escapes while a slotted popover, modal native dialog or close-request/any non-modal dialog is open
+    content, and Escapes while a slotted popover, modal native dialog or close-request/any non-modal dialog opened after the overlay is open
     (the platform closes it alone), are left
     alone. While closing, user input requests nothing (R-02, R-06).
   - A native `close` event is a platform close only when it is not one of the overlay's own `close()` calls and the
@@ -85,7 +85,7 @@ Token-only CSS with no new `token-only` allowance. No I/O. No ID reference acros
 |---|---|
 | I. Names, events, no I/O, manifest | Tags `ocelle-dialog`, `ocelle-drawer`, `ocelle-tooltip`. Events `ocelle-dialog-close-request`, `ocelle-dialog-close` and the drawer pair, all `bubbles` and `composed`, with typed `detail`. The tooltip has no events. No I/O and no console output. Every property, attribute, event, slot, part and own CSS custom property is in the generated manifest, inherited members included, through JSDoc on each concrete class (R-01). The tooltip's unrendered slot is `description`, a plain name (R-13). The describes span is written with `textContent` (R-13). |
 | II. Tokens only | Static CSS only from tokens through `var()`/`calc()`, with no new lint allowance. Runtime numbers (bubble coordinates, WAAPI keyframes of `%` and opacity) are not element CSS literals (R-06, R-11). The bubble uses existing chrome colour pairs, so contrast is already checked. Only the dialog surfaces use `elevation-raised` (#5). The radius is `radius-2`. No monospace. |
-| III. Accessible | Modal `<dialog>` named in one shadow root (R-08). Full keyboard model: Tab cycle, Escape, Enter and Space on the close control. The topmost overlay handles Tab at the cycle's ends, from a non-stop and from the body, so the cycle holds there, and leaves middle moves native, so slotted content with closed shadow roots, iframes and media controls stays keyboard-reachable (WCAG 2.1.1); the stop list follows the engine's navigation order, positive `tabindex` included, so the ends never cut off a slotted element; slotted scrollers are stops; the extra press and reverse-wrap limits are stated (R-04). Escape and Tab are left to a slotted popover or modal native dialog while it is open, as the platform orders them; a non-modal slotted dialog opened with `show()` whose `closedby` state is Close Request or Any has its Escape left to the platform too, while any other non-modal slotted dialog keeps the overlay's Escape handling, and every non-modal dialog keeps the overlay's Tab handling (R-02). The close control meets `target-min` with the focus ring. WCAG 1.4.13 holds: the bubble is dismissable, hoverable and persistent (R-11, R-12). No ID reference crosses a shadow root (R-13). Reduced motion gives no animation, by the media query as well as the tokens (R-06). Forced colours: a `CanvasText` panel border, `Canvas` backdrop and an outline focus ring (R-09). The overflowing body is a Tab stop and keeps a minimum block size at 320 × 256 (R-04, R-18). Nested overlays act only when topmost (R-02). Host `aria-label` asserted open and closed and under axe (R-08). axe runs on every story (R-16). |
+| III. Accessible | Modal `<dialog>` named in one shadow root (R-08). Full keyboard model: Tab cycle, Escape, Enter and Space on the close control. The topmost overlay handles Tab at the cycle's ends, from a non-stop and from the body, so the cycle holds there, and leaves middle moves native, so slotted content with closed shadow roots, iframes and media controls stays keyboard-reachable (WCAG 2.1.1); the stop list follows the engine's navigation order, positive `tabindex` included, so the ends never cut off a slotted element; slotted scrollers are stops; the extra press and reverse-wrap limits are stated (R-04). Escape and Tab are left to a slotted popover or modal native dialog while it is open, as the platform orders them; a non-modal slotted dialog opened after the overlay (by `show()` or the `open` attribute) whose `closedby` state is Close Request or Any has its Escape left to the platform too, while any other non-modal slotted dialog (one already open when the overlay opened, or one with `closedby` absent, `auto` or `none`) keeps the overlay's Escape handling, so the veto holds on every press, and every non-modal dialog keeps the overlay's Tab handling (R-02). The close control meets `target-min` with the focus ring. WCAG 1.4.13 holds: the bubble is dismissable, hoverable and persistent (R-11, R-12). No ID reference crosses a shadow root (R-13). Reduced motion gives no animation, by the media query as well as the tokens (R-06). Forced colours: a `CanvasText` panel border, `Canvas` backdrop and an outline focus ring (R-09). The overflowing body is a Tab stop and keeps a minimum block size at 320 × 256 (R-04, R-18). Nested overlays act only when topmost (R-02). Host `aria-label` asserted open and closed and under axe (R-08). axe runs on every story (R-16). |
 | IV. Strict CSP | Adopted stylesheets only. The placement sheet is constructable (R-11). WAAPI sets no attribute (R-06). Timers take functions. Every scenario also runs on the strict-CSP fixture, and FR-047's counts run after each one. |
 | V. Storybook and behaviour | A story per variant and state in both themes (data-model § Stories), written against #10 (R-16). Interaction tests cover every event, payload, keyboard path and focus outcome (checks § Test matrix). |
 | VI. Consumers | #16's consumers: the Open project dialog, #12's personal drawer, kitty-mission-ui flyouts, #12's nav-item bubble and #7's pill-tag ellipsis (contract § consumers). Own code. |
@@ -149,15 +149,17 @@ Settled in the squad's round 3 (18 by the operator at the fork, 19 and 20 confir
     sequential navigation order (positive `tabindex` included), so the ends are where native moves end and no slotted
     element is left out (squad round 3 verify 1).
 19. **Slotted close watchers** (R-02): while a slotted `popover="auto"`/`"hint"` element, a native `<dialog>` shown
-    modally from slotted content, or a non-modal `<dialog>` opened with `show()` whose `closedby` state is Close
-    Request or Any is open, the overlay neither prevents nor requests on Escape, and it handles no Tab while the
-    popover or the nested modal dialog is open (a non-modal dialog keeps R-04's Tab); the platform closes that
-    element alone. A slotted non-modal `<dialog>` opened by the `open` attribute, or with `show()` and `closedby`
-    absent or `none`, is not above the overlay and is ordinary content: Escape requests the overlay's close and
-    leaves it open, and Tab treats its content as ordinary stops. Because the overlay cannot tell `show()` from the
-    attribute, an attribute-opened dialog with `closedby` `closerequest` or `any` gets its first Escape through the
-    prevented cancelable `cancel` (one request), and later presses through the keydown path (squad round 3 verify 1,
-    verify 2 and verify 3).
+    modally from slotted content, or a non-modal `<dialog>` opened after the overlay's `showModal()` (by `show()` or
+    by the `open` attribute) whose `closedby` state is Close Request or Any is open, the overlay neither prevents nor
+    requests on Escape, and it handles no Tab while the popover or the nested modal dialog is open (a non-modal
+    dialog keeps R-04's Tab); the platform closes that element alone. The platform's outcome for a non-modal dialog
+    depends on opening order, not on the method (verify probes v6 to v9): a slotted non-modal `<dialog>` already open
+    when the overlay opened, whatever its `closedby`, or opened after it with `closedby` absent, `auto` or `none`, is
+    not above the overlay and is ordinary content: Escape requests the overlay's close on every press through the
+    keydown path, no `cancel`, and leaves it open, and Tab treats its content as ordinary stops. The overlay knows
+    the order from a below record taken at `showModal()` and cleared per dialog on its `close` or a `toggle` with
+    `oldState` `open`; a cancelable `cancel` after a stand-aside is the fallback (one request, dialog recorded as
+    below), and a non-cancelable one there is a stated limit (squad round 3 verify 1 to verify 4).
 20. **Drawer body fills its column** (R-18): the footer sits at the panel's end; the drawer has its own one-line-body
     row instead of the dialog's 132 px one.
 
