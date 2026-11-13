@@ -1,0 +1,60 @@
+schema: review-findings/v1
+complete: true
+phase: plan
+round: 1
+lens: a11y-security
+# Checked (2026-11-13), besides the findings below:
+# - Contrast: --ocelle-color-eyebrow aliases --ocelle-color-ink-muted, whose rows in packages/tokens/contrast/pairs.json
+#   already pass on all nine main grounds in both themes (lowest: light on color-inset 5.2, dark on color-accent-low
+#   5.09, both above 4.5 for 12 px text). The sidebar (color-rail) and inset card (color-inset) are main grounds, so the
+#   eyebrow and description inside them are covered. Focus ring (color-focus) on color-chrome: 3.3 light / 8.75 dark.
+# - Vertical-rail focus-ring arithmetic of R-10 against packages/tokens/src/source.ts: shell-rail-width 3.25rem (52 px),
+#   space-1 0.25rem, size-rail-item 2.5rem (40 px), focus-offset 2px + focus-width 3px: content box 44 px, 2 px each
+#   side, ring 3 px into the 4 px padding, 1 px inside the box. Correct; horizontal rail padding space-2 (8 px) also fits.
+# - Forced colours: probe in Google Chrome for Testing 153.0.8010.12 with forcedColors 'active': a 1 px border in
+#   #E2DDD3 on #FBFAF7 computes to rgb(0,0,0) on rgb(255,255,255); R-08's "border-color is forced to a system colour"
+#   holds, so US1-13, US2-7, US3-9 and US4-9 can pass with borders alone.
+# - Strict CSP: no inline style or script in the plan's templates (adopted stylesheets, no `style` attribute); Lit
+#   attribute bindings; MutationObserver and WeakMap are not I/O; no network request from any element; no new
+#   dependency (axe-core 4.14.0 is a root devDependency on claude/010-storybook-workbench at 5f49794, package.json:43).
+# - No ID reference crosses a shadow root (names are strings). No motion is planned, so reduced motion is not engaged.
+# - The existing fixture driver (packages/elements/test/browser/driver.ts:2-3) runs scenarios through page.evaluate,
+#   which the page CSP does not block; serve.ts records CSP violations and requests outside the allowed list.
+findings:
+  - id: PLAN-A11Y-SECURITY-1-001
+    severity: 3
+    title: "R-11's two measured options both fail in Chromium: a host aria-label names the host as a second (generic) node beside the inner nav, and internals.role = 'none' does not remove it"
+    evidence:
+      - artifact: "research.md § R-11: 'render <nav> in the shadow root with aria-label bound to the resolved name' and 'Two options are measured: (i) nothing on the host; (ii) ElementInternals with internals.role = \"none\" ... The first option that gives exactly one navigation landmark with the expected name, no other node carrying the name ... If neither passes, the operator is asked before the US3 red commit'; plan.md § Decisions 7"
+      - code: "Probe (scratchpad probe.cjs), Google Chrome for Testing 153.0.8010.12 headless, Playwright, CDP Accessibility.getFullAXTree, ignored nodes filtered. Custom element, open shadow root <nav aria-label=resolved><slot></nav>, host with id. Option (i) host aria-label=\"Team\": nodes `generic \"Team\"` (the host) and `navigation \"Team\"`. Option (ii) same plus attachInternals().role = 'none': still `generic \"Team2\"` and `navigation \"Team2\"` (ARIA 1.2 presentational-roles conflict resolution: a global property such as aria-label makes the UA ignore none). Both fail R-11's 'no other node carrying the name' criterion for US3-12's first two cases and US4-11's first two."
+      - code: "Probe (scratchpad probe.cjs, p3.cjs), same browser. Option not in R-11, the host as the landmark: attachInternals().role = 'navigation', internals.ariaLabel = label, children slotted directly. Host aria-label=\"TeamB\" -> one `navigation \"TeamB\"`; label only -> `navigation \"ProjectsB\"`; host aria-label=\"\" with internals.ariaLabel='Internal' -> `navigation \"\"` (blank host attribute leaves it unnamed); removing the host aria-label -> `navigation \"Internal\"` (falls back). No second named node in any case."
+      - code: "packages/elements/src/naming.ts:12-28: 005's elements already name the host itself through ElementInternals (accessibleName + expose, internals.role / internals.ariaLabel), and its header comment records 'Chromium names the host from a present aria-label whatever the element sets'."
+    claim: |
+      The spike's fork is already decided by measurement: neither option R-11 lists can meet its own acceptance rule,
+      so as planned phase 4 stops for an operator question. If option (i) were taken anyway, the sidebar and rail
+      would expose a named generic node and a navigation landmark with the same name, so the name is announced
+      twice. That breaks SC-003's "exactly the navigation landmarks ... and no other ... node from the five elements"
+      in spirit, and constitution III's "an accessible name set on a host reaches the real inner control". A generic
+      element carrying aria-label is also what axe's aria-prohibited-attr rule targets (not measured: axe-core is not
+      installed in this container). A design that meets FR-028 natively exists and is the one 005 uses: make the
+      host the landmark with ElementInternals (role "navigation", ariaLabel from accessibleName()). Chromium's own
+      precedence then gives FR-028's whole rule (host aria-label decides, a blank one unnames, removal falls back)
+      without copying a name into the shadow root.
+    remedies:
+      - "Replace R-11's design with the host as the landmark: `internals.role = \"navigation\"` and `internals.ariaLabel = accessibleName(label, getAttribute(\"aria-label\"))` (reuse src/naming.ts), no <nav> in the shadow root; update R-09/R-10 (the flex container becomes an inner div or the host), plan.md Decisions 7, data-model.md and the US3/US4 pairing plant. Keep one spike measurement: axe 4.14.0 on the four US3-12 cases with this design, because axe reads the role attribute and not ElementInternals and may still report aria-prohibited-attr on the host. If axe does report it, take that result to the operator at the plan gate, not at the US3 red commit."
+  - id: PLAN-A11Y-SECURITY-1-002
+    severity: 2
+    title: "The plan does not say how axe runs on the strict-CSP fixture page for US3-12 and US4-11, so the same page's CSP and request records could be voided"
+    evidence:
+      - artifact: "plan.md § Phases 4: 'US3-12 with axe on the fixture page, R-11's chosen option'; spec.md § Fixtures: 'The CSP and request checks run on the same page as the measurements'; spec US3-12 / US4-11 '... and axe runs on the page'; FR-035 'the fixture pages of every scenario MUST record no CSP violation and no request outside the allowed list'"
+      - code: "packages/elements/test/browser/serve.ts:112-148: the allowed requests are the page, its stylesheets, the font, the browser build and, on `scripts` pages, named test-only bundles; any other request is reported in `outside`, and CSP violations are recorded. driver.ts:2-3: scenarios run through page.evaluate, which the CSP does not block."
+      - code: "Playwright's page.addScriptTag inserts a <script> element (inline content, or a URL), so under `script-src 'self'` the inline form raises a securitypolicyviolation. The usual workaround, the context option bypassCSP, turns the policy off for the whole page. Neither is excluded by the plan."
+    claim: |
+      axe-core has to get onto a page served under `script-src 'self'`. The plan leaves the mechanism open, and the
+      easy ones damage the security evidence of that same page. An inline script tag records a CSP violation, so the
+      positive CSP pairing fails or gets loosened. A bypassCSP context makes the page's "no CSP violation" outcome
+      vacuous (constitution IV evidence, VIII non-vacuous). A URL that is not on the allowed list shows up as a request
+      outside it. The in-process harness runs the same scenario bodies, so it also needs a stated way to run axe or a
+      stated reason the axe part runs on the fixture only.
+    remedies:
+      - "State in research.md R-13 (and contracts/checks.md) how axe is loaded on the fixture page: either axe-core's source run through page.evaluate (CDP, not subject to the page CSP) or served as a named test-only same-origin bundle on a `scripts` page's allowed list. Forbid bypassCSP and inline script tags in fixture suites. Keep US3-12's and US4-11's CSP-violation and outside-request records on that page, paired with the positive outcome as FR-035 requires. Say whether the axe assertion also runs in process or only on the fixture, and why."
