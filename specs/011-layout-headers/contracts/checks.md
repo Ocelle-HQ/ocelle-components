@@ -4,9 +4,9 @@
 
 | Project | Files | Mutated |
 |---|---|---|
-| `elements` | `test/<element>.test.ts` (in process, shared bodies from `test/scenarios/<element>.ts`), `test/slot-state.test.ts`, `test/card-context.test.ts`, `test/commands.test.ts` (the new readers, R-13), `test/entry-<element>.test.ts`, `test/entry-card-order.test.ts` (definition order, R-05), `test/entry-root.test.ts` | yes, under `stryker.elements.config.json` |
+| `elements` | `test/<element>.test.ts` (in process, shared bodies from `test/scenarios/<element>.ts`), `test/slot-state.test.ts`, `test/card-context.test.ts`, `test/commands.test.ts` (the new readers, R-13), `test/entry-<element>.test.ts`, `test/entry-card-order.test.ts` (definition order, R-05), `test/entry-root.test.ts`, `test/exports.test.ts` (the root's run-time exports, re-listed at each phase base) | yes, under `stryker.elements.config.json` |
 | `elements-browser` | `test/browser/<element>.test.ts` on strict-CSP fixture pages of the browser build, including the mixed-copy card page (R-05), the README orientation example page (US4-10) and the rail pages' linked same-origin stand-in item stylesheet (R-10) | no |
-| `elements-node` | `test/node/readme.test.ts` (FR-036 statements, including the amended Styles paragraph), `test/node/manifest.test.ts` (including no member for the sidebar's and rail's internals key, R-11) | yes, default configuration |
+| `elements-node` | `test/node/readme.test.ts` (FR-036 statements, including the amended Styles paragraph, and the Entry points rows and `exports` keys, re-listed at each phase base), `test/node/manifest.test.ts` (including no member for the sidebar's and rail's internals key, R-11) | yes, default configuration |
 | `elements-build` | `test/build/build.test.ts`, `test/build/pack.test.ts` (new `dist/<tag>.js` files) | no |
 
 Mutation scope follows 005 decision 16: `packages/elements/src/**` is the changed source; test code, fixture suites
@@ -29,8 +29,9 @@ not run axe (operator decision PLAN-TESTABILITY-1-007 (b)).
 
 ## Gates run per phase
 
-`typecheck`, `lint`, `style-lint`, `test-lint`, `test`, `manifest`, `csp`, `prefix`, `mutation` (phase base), and,
-from #10, `storybook-build`, `visual` and `axe`; phase 2 adds `contrast` and `brand-rules`. `gate:plants` runs
+Phase 1 (no element, no style): `typecheck`, `lint`, `test-lint`, `test` and `mutation` (phase base, over
+`src/slot-state.ts`). Phases 2 to 5: `typecheck`, `lint`, `style-lint`, `test-lint`, `test`, `manifest`, `csp`,
+`prefix`, `mutation` (phase base), and, from #10, `storybook-build`, `visual` and `axe`; phase 2 adds `contrast` and `brand-rules`. `gate:plants` runs
 before each review when a gate's inputs changed (the `contrast` counts in phase 2).
 
 Beside the gates, each phase's evidence holds, in `reviews/phase-N/plants.md`: the pairing plants below, and the
@@ -84,8 +85,8 @@ no test hook is added to source.
 | Card adds no node of its own (US1-19, FR-018) | the slotted `h2` is present in the card's subtree | a `role="region"` wrapper in the card's template |
 | No event (FR-002) | the step's layout change happens | `dispatchEvent(new Event("change"))` on slot change |
 | No tab stop added (US1-12, US2-6, US3-8) | focus reaches each slotted control in order | wrapper with `tabindex="0"` |
-| No attribute written on upgrade (US1-1) | setting `size` by property reflects it | initializer `size = "regular"` |
-| Empty or invalid `size` not rewritten and treated as not set (US1-17, US4-8) | valid value draws its look | styles keyed on `:host(:not([size="regular"]))` |
+| No attribute written on upgrade (US1-1; FR-006 for the card's `density` and `inset`, the page header's `size` and the rail's `orientation`) | setting the property reflects it | an initializer on the property (`size = "regular"`, `density = "regular"`, `inset = true`, `orientation = "vertical"`), each in its element |
+| Empty or invalid value not rewritten and treated as not set (US1-17, US4-8; FR-006 for the card's `density`, the section header's `variant` and the page header's `size`) | valid value draws its look | styles keyed on `:host(:not([size="regular"]))`; separately, for each other attribute, the default look keyed on a `:not()` of the default value (`:host(:not([density="regular"]))`, `:host(:not([variant="default"]))`) or the element rewriting an invalid value to the default |
 | Nested or body section header not compacted (US1-18) | directly assigned header is compacted | card notifies, and the header resolves from, `querySelectorAll` descendants instead of its assigned slot |
 | Header no longer compact after density removed (R-05, PLAN-TESTABILITY-1-009) | header compact after density set by script | card does not notify headers when `density` changes |
 | Header moved to the body is no longer compact, and compact again when moved back (R-05) | header compact while in the `header` slot | card does not notify headers that left the slot (`previous` dropped) |
