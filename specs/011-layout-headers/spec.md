@@ -504,8 +504,12 @@ orientation with focus inside, and reflow at 320 px.
   US4-3).
 - `hidden` on any of the five hosts: no box and no node, by the element conventions' `:host([hidden])` rule.
 - An assigned element that is `hidden` counts as content (Empty slot, above). A `hidden` context-sidebar section,
-  an `ocelle-section-header` included, still has no box, padding or divider, and the dividers lie as if it were not
-  there (FR-022, US3-3).
+  an `ocelle-section-header` included, has no box, padding or divider of its own, and "the first section" and
+  "consecutive sections" count visible sections only, so the dividers between and before the visible sections lie as
+  if it were not there (FR-022, US3-3). It still makes the default slot non-empty, so the head-to-default-slot and
+  default-slot-to-footer dividers stay; when every section is hidden and the slot holds no text, those two dividers
+  meet with no padding between them. The README says to remove such sections from the slot rather than hide them
+  (Empty slot, FR-036).
 - Slotted content with user-agent margins (a `p` description or body, a `ul` section): the elements trim its edge
   block margins, so the gaps and padding the scenarios state hold; a page rule that sets those margins wins (FR-008).
 - Plain `<a>` items in the personal rail: the user agent's link colour beats the rail's inherited chrome ink, so the
@@ -728,7 +732,8 @@ orientation with focus inside, and reflow at 320 px.
   - sidebar and rail: "set a distinct `label`", with the reason that assistive technology lists unnamed navigation
     landmarks with nothing to tell them apart, and that a host `aria-label` decides the landmark's name alone when
     present (a blank one leaves it unnamed even with a `label`), with `label` used only when the host has none;
-  - sidebar: wrap each section in an element; a `hidden` section draws nothing;
+  - sidebar: wrap each section in an element; a `hidden` section draws nothing of its own but still counts as
+    content, so remove sections from the slot rather than hide them all;
   - rail: the orientation example of US4-10, a viewport media query with an exclusive bound
     (`matchMedia("(width < Npx)")`); that items are sized by themselves (`--ocelle-size-rail-item`); and that `<a>`
     items need `color: inherit` (or are `ocelle-nav-item` elements) and a target of at least 24 px (FR-027).

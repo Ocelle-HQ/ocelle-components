@@ -27,7 +27,8 @@ None emits an event, declares a CSS part or an element CSS custom property, or i
   (FR-028). The host is the landmark: `internals.ariaLabel` holds the `label` name and a host attribute wins over it
   natively (R-11); the element never writes the host's `aria-label`.
 - Slot empty: no assigned element and every assigned text node empty or whitespace only (spec "Empty slot"). A
-  `hidden` sidebar section counts as content but draws no box, padding or divider (FR-022).
+  `hidden` sidebar section counts as content but draws no box, padding or divider of its own (FR-022); the default
+  slot's head and footer dividers stay even when every section is hidden (spec Edge Cases).
 
 ## State transitions
 

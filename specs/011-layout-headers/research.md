@@ -237,7 +237,11 @@ free space, so in a sidebar taller than its content the free space lies between 
   `div` or `ocelle-section-header` section would be drawn as a padded, bordered block (probed in plan squad round 2:
   51 px each). With it, a hidden section has no box, padding or divider, and when the first section is hidden the
   first visible one has no `border-block-start` of its own, so it does not double the sections wrapper's head
-  divider. Hidden sections still count as content for slot emptiness (spec "Empty slot", R-03);
+  divider. Hidden sections still count as content for slot emptiness (spec "Empty slot", R-03), so the sections
+  wrapper and its head and footer borders stay; when every section is hidden and the slot holds no text, those two
+  borders meet with no block padding between them (PLAN-FRESH-2-001, verify 1). The spec states this as the
+  consequence of its Empty slot rule and the README says to remove sections rather than hide them; no rule here
+  collapses it, since a hidden attribute change fires no `slotchange`;
 - the sections wrapper has `border-block-start` when the head is non-empty and `border-block-end` when the footer is
   non-empty (internal classes from R-03; nothing when the default slot is empty, R-03 hides it);
 - when the default slot is empty and both head and footer are non-empty, the head wrapper has `border-block-end`
