@@ -67,12 +67,39 @@ something only the element gives:
   (R-02): after `updateComplete`, poll once per animation frame until two consecutive frames give the same geometry,
   failing after 10 frames. The stacking and probe plants are run with this wait. A body resizes the host 600 → 300 →
   600 px and asserts two columns, one column, two columns.
+- **The measure pass owns the class (PLAN-FRESH-3-002).** A 300 px block sheet (stacked) is resized to 290 px; after
+  the layout wait it is still one column (the `<dl>`'s computed `grid-template-columns` is one track and each value is
+  below its label). Plant: the class not restored after the measure (the pass toggles `stacked` only when the decision
+  changes); this body must fail.
+- **Re-decide triggers (US1-12, PLAN-FRESH-3-001 (c)).** Each body compares the changed sheet with a fresh load of
+  the same content in the same space, and asserts the fresh load's layout (two columns) as well, so it cannot pass on
+  a sheet that stacks everywhere. The content is the one phase 1's spike fixes (R-02): its two-column size is above
+  the threshold at 1200 and 1280 px and its stacked size below it.
+  - widen: the pair "Created by op" / "Ada Lovelace and Charles Babbage" in a `showModal()` dialog, loaded at a 360 px
+    viewport (one column), widened to 1200 px: two columns, as a load at 1200 px;
+  - relabel: the pair "Id" / the same value in a dialog at 1280 px (one column), relabelled "Created by operator":
+    two columns, as a fresh load;
+  - value text: the same stacked sheet with its value's text node changed in place (the driver's `text`, a
+    `characterData` change) to a longer text whose two-column size crosses the threshold: two columns, as a fresh
+    load.
+  Plant: the extra triggers removed (the pass runs only from the host and probe `ResizeObserver` and on `layout`);
+  the widen and relabel bodies must fail. A second plant, `characterData` removed from the observer, must fail the
+  value-text body.
+- **Unobserved changes (FR-009, PLAN-FRESH-3-001 (c)).** For each case phase 1's spike names as outside the guarantee
+  (R-02 § Changes the pass does not observe), a body makes that change twice, once with `layout="columns"` and once
+  with an inline size on the sheet, and asserts the chosen layout after the change (the consumer's remedy the README
+  gives), paired with the automatic layout of a fresh load in the changed space. If the spike names no such case,
+  there is no body and the README says history independence holds in every measured host.
 - **Copy (US1-4, PLAN-TESTABILITY-1-012).** The driver selects the rendered value's text and performs a user copy;
   the body reads the copy event's `clipboardData.getData("text/plain")` and asserts it equals the 64-character
   identifier. The same body asserts US1-3's wrap (the value spans more than one line box). Plant: a copy of
   `ocelle-fact` that inserts U+200B every 16 characters into its value; US1-4 must fail.
 
 **Progress (US3).**
+- **No fill transition (US3-2, PLAN-FRESH-3-003 (b)).** US3-2 reads the fill's inline size after `settle()` (one
+  frame after the change) and asserts 75% of the track, with `animations()` on the bar empty in the same read. The
+  value-removed body reads the 40% mark the same way, with and without reduced motion. Plant: a 200 ms `inline-size`
+  transition on the fill (`--ocelle-motion-base`); US3-2 and the value-removed body must fail.
 - **Value properties (US3-1 to US3-4, US3-6; PLAN-TESTABILITY-1-006).** `AxNode` carries `value`, `valuemin`,
   `valuemax` and `valuetext` (§ Driver additions). Every absence assertion sits beside a presence read of the same
   property for a determinate bar in the same body.
@@ -81,19 +108,26 @@ something only the element gives:
 - **Reduced motion (US3-5, PLAN-TESTABILITY-1-009).** The body reads running animations and transitions on the
   element's subtree (`getAnimations`, § Driver additions): none under reduced motion, paired in the same body with at
   least one running animation on the mark without reduced motion, and the still mark's geometry (30% to 70% of the
-  track). Both reads fall inside the page's first sweep iteration after the mount (which starts a fresh page sweep,
+  track). Both reads fall inside the first sweep iteration after the mount (which starts a fresh loading episode,
   § Driver additions), the reduced-motion read first, so "none" cannot come from a sweep that has already ended.
   Plant: the still-mark inset removed. Removing `animation: none` is an equivalent change (the duration is already
   0 ms under reduced motion), recorded, not a plant.
 - **Bounded sweep (US3-12, PLAN-A11Y-SECURITY-1-001 (a)).** Without reduced motion, the mark's animation has a finite
   end time below 5000 ms (`effect.getComputedTiming().endTime`); after `finished` resolves the subtree has no running
   animation and the mark has the still mark's geometry. Plant: `infinite` restored.
-- **One sweep per page (US3-14, PLAN-FRESH-2-005 (a)).** After a fresh mount an indeterminate bar is shown; 2 s later
-  the driver's `replace` swaps it for a new indeterminate bar (a new node, as an htmx swap does). The body asserts a
-  running animation on the new bar right after the swap (it joined the window), then, 5 s after the first bar was
-  shown, no running animation on any bar and the still mark's geometry. A second body makes a bar determinate and then
-  indeterminate again after the window and asserts no running animation at once, paired with the still mark's
-  geometry. Plant: the shared start dropped (each animation keeps its own start); US3-14 must fail.
+- **One sweep per loading episode (US3-14, US3-15, PLAN-FRESH-2-005 (a), PLAN-FRESH-3-004 (a)).**
+  - US3-14: after a fresh mount an indeterminate bar is shown; 2 s later the driver's `replace` swaps it for a new
+    indeterminate bar (a new node, in one task, as an htmx swap does). The body asserts a running animation on the new
+    bar right after the swap (it joined the window), then, 5 s after the first bar was shown, no running animation on
+    any bar and the still mark's geometry. Plant: the shared start dropped (each animation keeps its own start);
+    US3-14 must fail.
+  - Within one episode: after the window, a bar made determinate and indeterminate again within one task (one
+    `setProperty` of `value` and its removal before a frame) shows no running animation at once, paired with the still
+    mark's geometry.
+  - US3-15: after the window, the only bar is removed (the driver's `remove`), the driver waits two animation frames
+    (`frames(2)`), and a new indeterminate bar is inserted (`replace` on a placeholder): a running animation on the
+    new bar, whose end time is below 5000 ms after its own start. Paired in the same body with the still mark on the
+    first bar before its removal. Plant: the episode never ends (the start kept for the document); US3-15 must fail.
 - **Mark colour (US3-7).** Plant: the `accent-strong` inset shadow removed.
 - **Forced colours (US3-8, PLAN-A11Y-SECURITY-1-006).** The track's outline colour and the fill's background are
   system colours and differ; the fill's computed `box-shadow` is `none`. Plant: the forced-colours `box-shadow: none`
@@ -114,8 +148,11 @@ From the spec check notes and squad round 1:
     (the plain rendering) (PLAN-TESTABILITY-1-014);
   - a non-`ocelle-fact` child is hidden;
   - shrink-to-fit hosts (dialog, popover, float, default flex item, a flex row with a 400 px fixed sibling, a grid
-    `auto` track, a table cell) with FR-009's bound; a sheet loaded at 360 px then widened to 1200 px in each, with
-    the same layout as loaded at 1200 px (PLAN-CORRECTNESS-1-003 (a), PLAN-FRESH-2-001 (c));
+    `auto` track, a table cell) with FR-009's bound; a sheet with the spike's named content (R-02, "Created by op" /
+    "Ada Lovelace and Charles Babbage" or its lengthened form) loaded at 360 px then widened to 1200 px in each, with
+    the same layout as loaded at 1200 px (PLAN-CORRECTNESS-1-003 (a), PLAN-FRESH-2-001 (c), PLAN-FRESH-3-001 (c));
+  - the re-decide trigger bodies (widen, relabel, value text), the 300 → 290 px measure-pass body and the
+    unobserved-change bodies of § Oracles (US1-12, PLAN-FRESH-3-001 (c), PLAN-FRESH-3-002);
   - `layout` (US1-11, FR-013, PLAN-FRESH-2-001 (c)): a short sheet in a dialog at 1280 px, one column without
     `layout` and two columns with `layout="columns"`; `layout="stacked"` in a 600 px block container, one column;
     `layout="columns"` at a 320 px viewport, two columns with the page scroll width equal to the viewport width; an
@@ -147,7 +184,8 @@ From the spec check notes and squad round 1:
   - a `value` set, then removed: the mark is 40% of the track, with and without reduced motion (PLAN-CORRECTNESS-1-005);
   - right-to-left indeterminate: at the start of the sweep the mark is at the inline-start (right) side and moves
     towards the left; the determinate fill grows from the right (PLAN-CORRECTNESS-1-004);
-  - one sweep per page: US3-14 and the determinate-then-indeterminate body after the window (PLAN-FRESH-2-005 (a));
+  - one sweep per loading episode: US3-14, the determinate-then-indeterminate body within one task after the window,
+    and US3-15 (PLAN-FRESH-2-005 (a), PLAN-FRESH-3-004 (a));
   - at a 320 px viewport, motion not reduced, the page scroll width equals the viewport width while the sweep runs
     (sampled at several animation times) (PLAN-CORRECTNESS-1-006);
   - `ground="tinted"`: the track boundary colour resolves to `--ocelle-color-accent-strong`; unset, to
@@ -187,7 +225,8 @@ a stated reason why its expected value differs from the browser default and from
 | forced-colours fill | US3-8 | plant: the fill's `box-shadow: none` removed |
 | still mark | US3-5, US3-12 | plant: the still-mark inset removed |
 | bounded sweep | US3-12 | plant: `infinite` restored |
-| one sweep per page | US3-14 | plant: the shared start dropped |
+| no fill transition | US3-2, value-removed body | plant: a 200 ms `inline-size` transition on the fill |
+| one sweep per loading episode (element logic, listed here with its plants) | US3-14, US3-15 | plants: the shared start dropped (US3-14); the episode never ends (US3-15) |
 | right-to-left sweep | RTL indeterminate body | plant: the right-to-left keyframes rule removed |
 | determinate direction | RTL determinate body | reason: the fill's inline-start edge is asserted at the left in LTR and the right in RTL in one body |
 | visible label figures | US3-10 | reason: `tabular-nums` differs from `normal` |
@@ -208,8 +247,11 @@ first phase that uses it:
 | `layout(id)` | the layout-settle wait (R-02) | 1 |
 | `copy(id)` | selects the element's rendered text, performs a user copy, returns the copy event's `text/plain` | 1 |
 | `move(id, parentId)` | moves an element under another parent (or to the body) | 1 |
+| `text(id, value)` | sets the data of the element's first text node (a `characterData` change, not a `childList` one) and waits for the element's ancestors' updates (PLAN-FRESH-3-001 (c)) | 1 |
+| `remove(id)` | removes an element from the page | 3 |
+| `frames(n)` | waits `n` animation frames (PLAN-FRESH-3-004 (a)) | 3 |
 | `replace(id, markup)` | replaces an element with new nodes parsed from markup, in one task, as an htmx swap does | 3 |
-| page sweep start reset in `mount` | each harness's `mount` deletes the document's page sweep start (R-06), so every body starts as a fresh page; its test mounts an indeterminate bar, waits past the 4.2 s window (no running animation), mounts again and asserts a running sweep | 3 |
+| episode reset in `mount` | each harness's `mount` deletes the document's loading-episode record (R-06), so every body starts as a fresh page even when the previous body left a bar connected; its test mounts an indeterminate bar, waits past the 4.2 s window (no running animation), mounts again and asserts a running sweep | 3 |
 | `pressTab()`, `focused()` | presses Tab; returns the focused element through shadow roots | 2 |
 | `reducedMotion(mode)` | the command `emulateReducedMotion`: `page.emulateMedia({ reducedMotion })` in `emulate()`, so forced colours do not clear it; reset in each progress test file's `afterEach`; its test asserts `matchMedia` after the command, after a later `emulateForcedColors` call, and after the reset | 3 |
 | `animations(id)` | running animations and transitions on the element and its shadow subtree, with play state and end time | 3 |
@@ -243,12 +285,18 @@ PLAN-A11Y-SECURITY-1-005):
 - every story under reduced motion: no running animation or transition (SC-005), paired with a running animation on
   the indeterminate progress story without reduced motion (PLAN-FRESH-2-009). The sweep ends 4.2 s after the page
   start with `animation-fill-mode: none`, and after PLAN-FRESH-2-005 (a) re-inserting the bar or making it
-  determinate and then indeterminate does not restart it within a page. So each motion read restarts the sweep the
-  only way it restarts, by loading the story afresh (a new document, so a new page start), and reads within the first
-  1400 ms iteration; the read records the mark animation's `currentTime` and fails as "read outside the first
-  iteration" when it is 1400 ms or more, so a slow machine fails loudly instead of passing or failing on timing. The
-  reduced-motion read uses the same fresh load, so "no running animation" is not the result of a sweep that already
-  ended;
+  determinate and then indeterminate does not restart it within a loading episode. So each of the two motion reads
+  is taken on its own fresh load of the story (a new document, so a new episode) and within its first 1400 ms:
+  - the read without reduced motion records the mark animation's `currentTime` and fails as "read outside the first
+    iteration" when it is 1400 ms or more;
+  - the reduced-motion read has no mark animation to time (R-06: `animation: none`), so it is timed by the clock
+    (PLAN-FRESH-3-005): the test records `performance.now()` in the page as soon as the story's element has first
+    rendered, and the read, in one evaluation, takes `performance.now()` again and fails as "read outside the first
+    iteration" when it is 1400 ms or more after the first; asserts `matchMedia("(prefers-reduced-motion:
+    reduce)").matches`, so an emulation that silently did not apply fails loudly; and only then asserts no running
+    animation or transition.
+  A slow machine thus fails loudly instead of passing or failing on timing, and "no running animation" cannot be the
+  result of a sweep that already ended or of a missing emulation;
 - every story: each progressbar node in its accessibility tree has a non-empty name, paired with the count of
   progressbar nodes in the progress and panel-loading stories being above 0. Plant: one story's `label` removed.
 

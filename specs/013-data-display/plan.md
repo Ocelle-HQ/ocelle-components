@@ -3,8 +3,8 @@
 **Branch**: `013-data-display` (work on `claude/013-data-display`) | **Date**: 2026-11-13 | **Spec**: [spec.md](spec.md)
 
 **Input**: Feature specification from `specs/013-data-display/spec.md` (approved at the spec gate after check 2,
-2026-11-13), amended by the operator's fork decisions of squad rounds 1 and 2 (2026-11-13,
-`reviews/plan/round-1/refute.md`, `reviews/plan/round-2/refute.md`).
+2026-11-13), amended by the operator's fork decisions of squad rounds 1 to 3 (2026-11-13,
+`reviews/plan/round-1/refute.md`, `reviews/plan/round-2/refute.md`, `reviews/plan/round-3/refute.md`).
 
 ## Summary
 
@@ -12,17 +12,20 @@ This mission adds four elements to `@ocelle/elements`, under 005's element conve
 child `ocelle-fact`, `ocelle-empty-state` and `ocelle-progress`. They replace kitty-mission-ui's three largest class
 families: 183 uses of `.sk-facts`, `.sk-empty-state` and `.sk-progress`.
 
-Measurements in this container ([spike/RESULTS.md](spike/RESULTS.md)) and squad rounds 1 and 2 drove these designs:
+Measurements in this container ([spike/RESULTS.md](spike/RESULTS.md)) and squad rounds 1 to 3 drove these designs:
 
 - **Facts semantics.** `ocelle-facts` renders the description list itself and places each `ocelle-fact` into its
   `<dd>` by manual slot assignment. This is the only structure that gives one clean Chromium description list and
   passes axe's `definition-list` and `dlitem` rules (R-01). So FR-004 can stand as written; see the decision at the
   plan gate. A hidden fact is no pair, before upgrade as after, and a fact's `lang` and `dir` reach its label.
 - **Facts stacking.** The sheet stacks when its own inline size, as laid out in two columns, is below a token-sized
-  threshold, through one `ResizeObserver` on the host and the threshold probes, with no `container-type` (a size
-  container collapses to 0 px in dialogs and flex items). The measure never reads the stacked layout, so the layout
-  does not depend on history, and a hook or font-size change re-decides at once. In a shrink-to-fit host a short sheet
-  stacks; a public `layout="columns" | "stacked"` lets the consumer choose (R-02, PLAN-FRESH-2-001 (c)).
+  threshold, with no `container-type` (a size container collapses to 0 px in dialogs and flex items). One measure
+  pass, which alone owns the `stacked` class, decides; it runs from a `ResizeObserver` on the host and the threshold
+  probes, after every render, on value text changed in place, and on window resize (PLAN-FRESH-3-001 (c),
+  PLAN-FRESH-3-002). The measure never reads the stacked layout, so for those changes the layout does not depend on
+  history; changes of the offered space the pass does not observe are named by phase 1's spike, and there the README
+  asks for `layout` or an inline size. In a shrink-to-fit host a short sheet stacks; a public
+  `layout="columns" | "stacked"` lets the consumer choose (R-02, PLAN-FRESH-2-001 (c)).
 - **Facts density.** `density="compact"` tightens the gaps; inside 003's compact region the values take the region's
   14 px / 1.5 scale (#531), through two hooks `@ocelle/styles` sets (R-03).
 - **Progress naming.** `ocelle-progress` is the progressbar itself through `ElementInternals`. This is one node, and a
@@ -31,8 +34,9 @@ Measurements in this container ([spike/RESULTS.md](spike/RESULTS.md)) and squad 
   with `ground="tinted"` (R-06).
 - **Progress motion.** The indeterminate sweep is `calc(var(--ocelle-motion-base) * 7)` three times (4.2 s), then the
   mark rests as a still mid-track mark (WCAG 2.2.2); under reduced motion the still mark shows at once. The sweep is
-  anchored to the page through the Web Animations API, so a replaced or re-shown bar does not start another
-  (R-06, PLAN-FRESH-2-005 (a)).
+  anchored to a loading episode through the Web Animations API, so a replaced or re-shown bar does not start another,
+  and a later episode, after no indeterminate bar has been connected at a frame boundary, gets its own sweep (R-06,
+  PLAN-FRESH-2-005 (a), PLAN-FRESH-3-004 (a)). The fill has no width transition (PLAN-FRESH-3-003 (b)).
 - **Empty-state parts.** A part is present only while something slotted into it renders; `hidden` on slotted content
   is observed (R-04, PLAN-FRESH-2-007 (a)).
 
@@ -56,7 +60,7 @@ with `@vitest/browser-playwright`, Playwright 1.64.1, Stryker 10.1.1, Stylelint 
   browser build on strict-CSP fixture pages (`elements-browser`).
 - Driver additions in both harnesses, each with its own test: viewport, scroll width, layout settle, copy, move, Tab
   and focus, reduced motion (`page.emulateMedia({ reducedMotion })`), running animations, AX value properties,
-  replace, and a page sweep start reset in `mount`.
+  replace, text (a character-data change), remove, frames, and a loading-episode reset in `mount`.
 - The story test in `storybook-integration`, with three story-level checks (320 px reflow, reduced motion, progress
   names).
 - `@ocelle/styles` browser tests for its two new rules; `token-only` unit tests and plants for the allowance.
@@ -69,7 +73,8 @@ is unchanged (R-08).
 **Project Type**: library (web components) in a pnpm workspace.
 
 **Performance Goals**: none specific. Each element class adopts one shared stylesheet. Facts uses one
-`ResizeObserver` and one `MutationObserver` per sheet; one `MutationObserver` per empty state.
+`ResizeObserver`, one `MutationObserver` and one `window` `resize` listener per sheet; one `MutationObserver` per
+empty state.
 
 **Constraints**:
 - strict CSP with no exception (the fill's width is a CSSOM write, R-06);
@@ -79,24 +84,24 @@ is unchanged (R-08).
 - one heavy job at a time in this container.
 
 **Scale/Scope**: 4 elements, 0 tokens, 0 contrast rows, 2 `@ocelle/styles` rules, 1 `token-only` allowance (4
-forms), 10 driver additions (1 of them the browser command `emulateReducedMotion`) and a change to `mount`, about 27
+forms), 13 driver additions (1 of them the browser command `emulateReducedMotion`) and a change to `mount`, about 27
 stories.
 
 ## Constitution Check
 
-*Gate: passes before Phase 0. Re-checked after Phase 1 design and after squad rounds 1 and 2's fixes: passes, with the
+*Gate: passes before Phase 0. Re-checked after Phase 1 design and after squad rounds 1 to 3's fixes: passes, with the
 one inherited exception in Complexity Tracking.*
 
 | Principle | How this plan meets it |
 |---|---|
 | I. Names, no I/O, small interface, manifest | **Tags**: `ocelle-facts`, `ocelle-fact`, `ocelle-empty-state`, `ocelle-progress`. **Events**: none, since no element has a user intent to report. **I/O**: none. **Interfaces**: `density` and `layout` (PLAN-FRESH-2-001 (c)); `label` and `wrap`; `variant`; and `value`, `max`, `value-text`, `label`, `show-label`, `size`, `ground`. Every property `| undefined` with `@default undefined`, so no unset property writes an attribute (PLAN-CORRECTNESS-1-011 (a)). Three CSS hooks named after the element: `--ocelle-facts-stack-below`, `--ocelle-facts-value-size`, `--ocelle-facts-value-line-height`. The manifest declares everything, each list stated even when empty ([contracts/elements.md](contracts/elements.md)). |
 | II. Tokens only, brand rules | **Lint**: every style is a `css` template or `base.css` rule checked by `token-only`. One recorded allowance (R-10): `fit-content(<percentage>)` and `minmax(0, <flex>)` in grid columns, `translateX(<percentage>)` in `transform`, and a bare integer `animation-iteration-count`, each with unit tests and plants. **No monospace**: values use `font-sans` with `figures`. **Ochre fill never the only mark**: the `accent-strong` inset edge on every fill and mark, in both themes (R-06). **Ochre text on bone**: none. **`color-rule`**: not used. **Radius**: `radius-1` on the progress track (a small mark). |
-| III. Accessible by construction | **ID references**: none. Facts has no cross-root reference because the sheet renders `dt`/`dd` itself (R-01); a hidden fact is no pair and a fact's `lang`/`dir` reach its term. Progress takes its name through ElementInternals, so a host `aria-label` names it (R-05). **Headings**: the empty state never adds one; the level is the consumer's. **Motion**: the sweep ends by itself in 4.2 s on the still mark (WCAG 2.2.2), once per page, so a polled or re-shown bar does not restart it (PLAN-FRESH-2-005 (a)), and under reduced motion only the still mark shows (R-06). **Contrast**: the fill's edge and the track boundary meet 3:1 on every main and state ground (`ground="tinted"` on inset, accent-low, hover-bg and state grounds), all through existing rows. **Forced colours**: a track outline, `Highlight` fill with no author shadow, and `CanvasText` text. **Reflow**: at 320 px and 640 px; the track clips the mark; the facts probes take no block size. **Accessibility-tree tests** in both harnesses, with value properties. **Story names**: the story test asserts every progressbar in every story is named. **axe**: see Complexity Tracking. Under #10, axe cannot check the progress name (R-05); the AX-tree tests prove it. |
+| III. Accessible by construction | **ID references**: none. Facts has no cross-root reference because the sheet renders `dt`/`dd` itself (R-01); a hidden fact is no pair and a fact's `lang`/`dir` reach its term. Progress takes its name through ElementInternals, so a host `aria-label` names it (R-05). **Headings**: the empty state never adds one; the level is the consumer's. **Motion**: the sweep ends by itself in 4.2 s on the still mark (WCAG 2.2.2), once per loading episode, so a polled or re-shown bar does not restart it, and a later episode in a single-page or webview shell gets its own bounded sweep (PLAN-FRESH-2-005 (a), PLAN-FRESH-3-004 (a)); the fill has no width transition (PLAN-FRESH-3-003 (b)); under reduced motion only the still mark shows (R-06). **Contrast**: the fill's edge and the track boundary meet 3:1 on every main and state ground (`ground="tinted"` on inset, accent-low, hover-bg and state grounds), all through existing rows. **Forced colours**: a track outline, `Highlight` fill with no author shadow, and `CanvasText` text. **Reflow**: at 320 px and 640 px; the track clips the mark; the facts probes take no block size. **Accessibility-tree tests** in both harnesses, with value properties. **Story names**: the story test asserts every progressbar in every story is named. **axe**: see Complexity Tracking. Under #10, axe cannot check the progress name (R-05); the AX-tree tests prove it. |
 | IV. Strict CSP, offline | **Styles**: adopted stylesheets, with no `style` attribute in any template. The progress fill's width is set and removed through the CSSOM, which `style-src` does not block (R-06). **Fixture pages** assert zero violations with each element rendered. **Network**: none. |
 | V. Storybook, behaviour tests | **Stories**: one per variant and state, light and dark (R-08). The unnamed progress and the host-`aria-label` progress are excepted and proven by tests (FR-050, R-05). **Events**: none to assert. **Keyboard**: no element is focusable, and focus passing through slotted content is tested (US2-6). **Baselines**: see Complexity Tracking. |
 | VI. Consumer-driven, own code | **Needs**: kitty-mission-ui's three class families, with the inventory of their modifiers and states (with counts, role names only) an input the operator supplies before the plan gate and recorded in R-11; a gap goes to the operator (Decision 5, PLAN-FRESH-2-006). spec-kitty-design #531 and #535 read from 003's verbatim copy (R-03); #280, #498, #510 and #523 unread, with a read-only fetch requested (Decision 5). Nothing copied. The README mapping names roles only (FR-058) and each element's rows land in its own phase, red first. |
 | VII. Semver | **MINOR**: four elements, four entry points, three CSS hooks, two base-style rules. CHANGELOG entries for `@ocelle/elements` and `@ocelle/styles` (FR-057). `@ocelle/tokens` is unchanged. |
-| VIII. Test-first, non-vacuous | **Scaffold** before each red commit in phases 1 to 3 (`scaffold.sh`), so bodies fail on assertions; the red log is checked per body. **Red first**: each phase's red commit holds the scenario bodies, the driver tests, the story-test extension (I3), and the `token-only` and `@ocelle/styles` tests. `red.sh` records one red record per phase. **Pairing**: "does not" outcomes are paired with a positive one; bodies the light DOM could pass also assert what only the element gives. **Plants**: every CSS-only behaviour has a plant or a stated reason, since Stryker does not mutate `css` templates ([contracts/checks.md](contracts/checks.md)); the gate allowance has its plants. **Mutation**: element source is mutated in process (005 R-12 and decision 16's reading); Timeout and CompileError are reported and pass (#23). **Spikes** are recorded before red commits (phase 1: facts structure under Lit and axe 4.14.0, the empty term, the two-column measure in every shrink-to-fit and shared host and the layout-settle wait; phase 3: the `valuetext` oracle), and a failing spike result goes to the operator, not to review. |
+| VIII. Test-first, non-vacuous | **Scaffold** before each red commit in phases 1 to 3 (`scaffold.sh`), so bodies fail on assertions; the red log is checked per body. **Red first**: each phase's red commit holds the scenario bodies, the driver tests, the story-test extension (I3), and the `token-only` and `@ocelle/styles` tests. `red.sh` records one red record per phase. **Pairing**: "does not" outcomes are paired with a positive one; bodies the light DOM could pass also assert what only the element gives. **Plants**: every CSS-only behaviour has a plant or a stated reason, since Stryker does not mutate `css` templates ([contracts/checks.md](contracts/checks.md)); the gate allowance has its plants. **Mutation**: element source is mutated in process (005 R-12 and decision 16's reading); Timeout and CompileError are reported and pass (#23). **Spikes** are recorded before red commits (phase 1: facts structure under Lit and axe 4.14.0, the empty term, the two-column measure in every shrink-to-fit and shared host, the round 3 re-decide cases and the unobserved changes, and the layout-settle wait; phase 3: the `valuetext` oracle), and a failing spike result goes to the operator, not to review, except the unobserved changes of R-02, whose narrowing the operator has already decided (PLAN-FRESH-3-001 (c)). **Story test**: the reduced-motion read is timed by the clock and asserts the emulation applied (PLAN-FRESH-3-005). |
 | Licence, supply chain | No new dependency or asset. |
 | Workflow gates | No gate added. The `style-lint` gate gains one allowance with plants (R-10); the other gates run unchanged on the new source (contracts/checks.md § Gates touched). |
 
@@ -112,8 +117,12 @@ one inherited exception in Complexity Tracking.*
    threshold probes, against a public hook `--ocelle-facts-stack-below` (`calc(var(--ocelle-space-10) * 6)`, 24rem, by
    default; an absolute length only, with a fallback for anything else). A short sheet in a shrink-to-fit host stacks
    even with room; the new public `layout="columns" | "stacked"` (FR-013) is the consumer's choice there, and the
-   README says so. FR-005 and FR-009 are amended accordingly and US1-11 added. Phase 1's spike measures the measure in
-   every host; if it is not state-independent somewhere, the result comes back to the operator before the red commit.
+   README says so. FR-005 and FR-009 are amended accordingly and US1-11 added. Round 3 (PLAN-FRESH-3-001 (c),
+   PLAN-FRESH-3-002): the decision is one measure pass that alone owns the `stacked` class, run from the observer, after
+   every render, on value text changed in place and on window resize (FR-005, US1-12); phase 1's spike names the
+   changes of the offered space it does not observe, and for those FR-009 is narrowed as the operator decided: the
+   README asks for `layout` or an inline size there, and the bodies assert that remedy. Any other spike result that
+   shows the measure is not state-independent comes back to the operator before the red commit.
 3. **Progress basis (R-05).** ElementInternals, so axe cannot test the name. No story sets a host `aria-label` (that
    would be an axe false positive), the AX-tree tests carry the evidence, and the story test checks every bar in every
    story is named.
@@ -132,6 +141,12 @@ one inherited exception in Complexity Tracking.*
 8. **Squad round 2 (`reviews/plan/round-2/refute.md`).** The facts `layout` property (PLAN-FRESH-2-001 (c)), one
    sweep per page (PLAN-FRESH-2-005 (a)) and hidden slotted parts observed (PLAN-FRESH-2-007 (a)), as decided; the
    spec's FR-005, FR-009, FR-013, FR-023, FR-033 and FR-058, and US1-11, US2-9 and US3-14, record them.
+9. **Squad round 3 (`reviews/plan/round-3/refute.md`).** Stacking re-decided on the cheap triggers with FR-009
+   narrowed for unobserved changes (PLAN-FRESH-3-001 (c)); no fill width transition (PLAN-FRESH-3-003 (b)); one sweep
+   per loading episode (PLAN-FRESH-3-004 (a)), as decided. FR-005, FR-009 and FR-033, US1-12, US3-2 and US3-15, and
+   the edge cases "Facts inside a shrink-to-fit host", "Progress replaced or re-shown" and "Rapid value changes" record
+   them. Fixes: the measure pass owns the `stacked` class (PLAN-FRESH-3-002) and the story test's reduced-motion read
+   is timed by the clock (PLAN-FRESH-3-005).
 6. **`value-text` while indeterminate** is not exposed (R-05).
 7. **The `token-only` allowance (R-10, PLAN-CORRECTNESS-1-001 (a))** and **no new contrast rows (R-06,
    PLAN-CORRECTNESS-1-007 (b))**, as decided.
@@ -211,9 +226,16 @@ body. Each phase is folded after its approval.
        for the operator (R-01);
      - the two-column measure of R-02 in a dialog, a popover, a float, a default flex item, a flex row with a fixed
        sibling, a grid `auto` track and a table cell: FR-009's bound, a short sheet in a dialog at 1280 px (stacked
-       without `layout`, two columns with `layout="columns"`), a sheet loaded at 360 px then widened, and whether a
-       flip raises the `ResizeObserver` loop error; if the measure is not state-independent somewhere, the operator
-       decides;
+       without `layout`, two columns with `layout="columns"`), a sheet with named content loaded at 360 px then
+       widened, and whether a flip raises the `ResizeObserver` loop error;
+     - the round 3 cases (R-02, PLAN-FRESH-3-001 (c)): widen from 360 px in a dialog, relabel from "Id", value text
+       changed in place, each against a fresh load, with the content fixed so it crosses the threshold in the
+       harness's fonts; and with the extra triggers removed, both named cases stacked;
+     - the unobserved changes (a fixed flex sibling shrunk, a grid neighbour removed, a table column widened, a dialog
+       reopened at another width, a late web font), each against a fresh load: the cases that differ are the FR-009
+       narrowing, recorded in R-02 and carried into the README and the bodies; any other state dependence goes to
+       the operator;
+     - the 300 → 290 px measure-pass case (PLAN-FRESH-3-002);
      - the probes with an invalid, a percentage and a 0 hook, a valid 15rem and 40rem hook, and a hook changed at a
        fixed width;
      - the layout-settle wait in both harnesses;
@@ -221,13 +243,15 @@ body. Each phase is folded after its approval.
      - the compact-region hooks in Chromium;
    - **scaffold**: `ocelle-fact.ts`, `ocelle-facts.ts`, their exports and entries;
    - **red**:
-     - US1 scenarios 1 to 10 as shared bodies, with the oracles of contracts/checks.md (flat-tree structure,
+     - US1 scenarios 1 to 10 as shared bodies (US1-11 and US1-12 below), with the oracles of contracts/checks.md (flat-tree structure,
        each-definition-its-own-value, layout settle, copy);
      - the extra facts bodies of contracts/checks.md (dynamic children and labels, hidden facts, `lang`, right-to-left,
        640 px, `ocelle-fact` alone and moved, non-fact children, shrink-to-fit and shared hosts and history, `layout`
        (US1-11), resize, the hook fallbacks, the valid-hook and hook-change bodies and the probes' overflow, compact
        region, unset properties);
-     - the driver additions `viewport`, `scrollWidth`, `layout`, `copy` and `move`, with their tests;
+     - US1-12's re-decide bodies (widen, relabel, value text), the 300 → 290 px measure-pass body and the
+       unobserved-change bodies (PLAN-FRESH-3-001 (c), PLAN-FRESH-3-002);
+     - the driver additions `viewport`, `scrollWidth`, `layout`, `copy`, `move` and `text`, with their tests;
      - `entry-facts` and `entry-fact` tests; the build test of the container import rule;
      - the `token-only` unit tests for the grid functions, and their `gates/README.md` statements;
      - the `@ocelle/styles` tests (compact-region hooks, pre-upgrade rule with a hidden fact, README statements);
@@ -235,7 +259,8 @@ body. Each phase is folded after its approval.
        container import rule), the Builds correction and the engines line;
      - the readme-test statements for the `.sk-facts` mapping rows of R-11's inventory (FR-058, PLAN-FRESH-2-006);
      - the story-test extension for the facts stories (presence, light and dark, 320 px reflow, reduced motion);
-     - the named plants of contracts/checks.md for facts;
+     - the named plants of contracts/checks.md for facts (among them the extra triggers removed, `characterData`
+       removed and the class not restored after the measure);
    - **green**:
      - `ocelle-fact.ts` and `ocelle-facts.ts`;
      - the `token-only` allowance for the grid functions, its plants and its `gates/README.md` row;
@@ -270,9 +295,10 @@ body. Each phase is folded after its approval.
      if none exposes it, US3-3 goes to the operator;
    - **scaffold**: `ocelle-progress.ts`, its exports and entries;
    - **red**:
-     - the driver additions `reducedMotion` (`emulateReducedMotion`), `animations`, the AX value properties, `replace`
-       and the page sweep start reset in `mount`, with their tests;
-     - US3 scenarios 1 to 14 as shared bodies, with the oracles of contracts/checks.md;
+     - the driver additions `reducedMotion` (`emulateReducedMotion`), `animations`, the AX value properties,
+       `replace`, `remove`, `frames` and the loading-episode reset in `mount`, with their tests;
+     - US3 scenarios 1 to 15 as shared bodies, with the oracles of contracts/checks.md (US3-2 read at once with no
+       transition running, PLAN-FRESH-3-003 (b); US3-15 a new episode, PLAN-FRESH-3-004 (a));
      - SPEC-2-02's bodies, the value-removed body, the right-to-left indeterminate body, the 320 px sweep body, the
        tinted-ground body, unset properties;
      - US2-7 extended to `ocelle-progress` and its width in the column;
@@ -281,18 +307,19 @@ body. Each phase is folded after its approval.
        statements;
      - the entry test, the README statements, the readme-test statements for the `.sk-progress` mapping rows
        (FR-058) and the story-test extension (progress stories and the empty-state panel-loading story, with the
-       progressbar-name check, and the motion reads on a fresh story load within the first iteration);
+       progressbar-name check, and the motion reads each on its own fresh story load within the first iteration, the
+       reduced-motion read timed by the clock and asserting the emulation, PLAN-FRESH-3-005);
      - the named plants of contracts/checks.md for progress (still-mark inset removed, `infinite` restored, clip
        removed, inset shadow removed, tinted rule removed, forced-colours `box-shadow: none` removed, right-to-left
-       keyframes removed, the shared start dropped, the `::slotted(ocelle-progress)` rule removed, a story's `label`
-       removed);
+       keyframes removed, the shared start dropped, the episode never ends, a fill `inline-size` transition added, the
+       `::slotted(ocelle-progress)` rule removed, a story's `label` removed);
    - **green**:
      - `ocelle-progress.ts`, the `emulateReducedMotion` command and the other driver additions;
      - the `token-only` allowance for the translate and the iteration count, its plants and its `gates/README.md` row;
      - exports and the manifest;
      - the stories;
-     - the README section (naming and the axe false positive, the bounded sweep once per page, `ground="tinted"`, the
-       busy vocabulary) and the `.sk-progress` mapping rows;
+     - the README section (naming and the axe false positive, the bounded sweep once per loading episode, no fill
+       transition, `ground="tinted"`, the busy vocabulary) and the `.sk-progress` mapping rows;
      - the CHANGELOG.
 4. **Polish and cross-cutting** (no new behaviour unless named):
    - exempt (documentation): the final CHANGELOG surface lists (FR-057), the review check that the three mapping

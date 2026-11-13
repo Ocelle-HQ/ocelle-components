@@ -6,8 +6,8 @@ headless Chromium 153.0.8010.12 with axe-core 4.10.2. The scripts, raw outputs a
 `RESULTS.md` says. #10's `axe` gate pins axe-core 4.14.0. The spike's axe results are re-run against that version in
 phase 1's spike (R-01) before the red commit; a failing recheck stops the flow for the operator (R-01).
 
-Squad rounds 1 and 2 (2026-11-13) changed this file: the operator's fork decisions are cited by finding ID with the
-option taken, for example "PLAN-CORRECTNESS-1-003 (a)" or "PLAN-FRESH-2-001 (c)".
+Squad rounds 1 to 3 (2026-11-13) changed this file: the operator's fork decisions are cited by finding ID with the
+option taken, for example "PLAN-CORRECTNESS-1-003 (a)", "PLAN-FRESH-2-001 (c)" or "PLAN-FRESH-3-001 (c)".
 
 ## R-01 `ocelle-facts`: description list through manual slot assignment (FR-003, FR-004, FR-005)
 
@@ -46,10 +46,13 @@ root, outside the fact, so the sheet carries the fact's host attributes that con
 
 **Consequences (FR-003, edge cases, SPEC-2-06).**
 - `ocelle-facts` keeps its rendering current with one `MutationObserver` on itself: `childList: true`, `subtree: true`,
-  `attributes: true`, `attributeFilter: ["label", "hidden", "aria-hidden", "lang", "dir"]`. With manual assignment
-  there is no `slotchange` for an unassigned child. `subtree` is needed to see the children's attributes; the callback
-  re-renders only for a `childList` record on the host itself or an attribute record whose target's `parentElement` is
-  the host, so attributes inside a value (a `lang` on a value's `<span>`) cause no re-render.
+  `characterData: true`, `attributes: true`, `attributeFilter: ["label", "hidden", "aria-hidden", "lang", "dir"]`.
+  With manual assignment there is no `slotchange` for an unassigned child. `subtree` is needed to see the children's
+  attributes; the callback re-renders only for a `childList` record on the host itself or an attribute record whose
+  target's `parentElement` is the host, so attributes inside a value (a `lang` on a value's `<span>`) cause no
+  re-render. A `childList` or `characterData` record whose target lies inside a pair (value text changed by Svelte or
+  htmx, a node added to a value) causes no re-render but re-runs the layout decision (R-02 § Mechanism,
+  PLAN-FRESH-3-001 (c)), because it can change the sheet's two-column size without changing its stacked size.
 - `ocelle-fact`'s `label` property reflects to its attribute (`reflect: true`), so a property-only change reaches the
   observer. Reflection of an unset property writes nothing (PLAN-CORRECTNESS-1-011 (a), contracts/elements.md).
 - Children that are not `ocelle-fact` (text, a raw `<dt>`, a `<div>`) are never assigned, so they are neither rendered
@@ -128,7 +131,8 @@ choose where that is not what they want.
 - **Measure.** The sheet's own content-box inline size **as laid out in two columns**. In a block container this is
   the container's inline size in either state. In a shrink-to-fit host (dialog, popover, float, flex item, grid `auto`
   track, table cell) it is the content's two-column max-content, capped by the space the host offers. The measure
-  never reads the stacked layout, so the same content in the same space gives one layout from any history (FR-009).
+  never reads the stacked layout. It gives one layout from any history only if it is read again whenever it can
+  change, which is the trigger list below (PLAN-FRESH-3-001 (c)).
 - **Rule.** With `layout` unset: two columns when the measure is at least the threshold; one column below it. A short
   sheet in a wide dialog therefore stacks, as the measurement above shows; that is the documented cost of this option.
   FR-009's bound still holds: the sheet's resolved size in a shrink-to-fit host is its max-content (two-column or
@@ -138,16 +142,53 @@ choose where that is not what they want.
   the rule above. The README tells consumers with a sheet in a shrink-to-fit host to set `layout`, or to give the sheet
   an inline size (then it measures that size). With `layout="columns"` at 320 px the value column is still
   `minmax(0, 1fr)` and the label column is capped at 50%, so the page does not scroll sideways (FR-009).
-- **Mechanism.** One `ResizeObserver` observes the host and both probes (below). Its callback reads the threshold from
-  the probes and, when `layout` is unset, the measure: if the `<dl>` is stacked, the callback removes the `stacked`
-  class, reads the host's content-box inline size (which forces a layout in two columns), and sets the state, all
-  before paint; in a block container the pass changes no size. The decision is made in the callback, not in
-  `render()`, so a Lit update loop cannot oscillate. Phase 1's spike measures this in every host of FR-009 and the
-  shared hosts above, and records whether a flip raises the "ResizeObserver loop completed with undelivered
-  notifications" error, which the fixture's console check would record. If it does, the state is set in a
-  `requestAnimationFrame` from the callback, and the spike records the frames the layout wait then takes. If the
-  measure is not state-independent in some host, the result goes to the operator before the red commit (FR-005 and
-  FR-009 are the operator's).
+- **Mechanism: the measure pass.** One function, the measure pass, makes the decision. It reads the threshold from
+  the probes and, when `layout` is unset, the measure: it removes the `stacked` class from the `<dl>`, reads the host's
+  content-box inline size (which forces a layout in two columns), and then sets the class from the decision with
+  `classList.toggle("stacked", stacked)`, unconditionally, whether or not the decision changed. With `layout` set it
+  sets the class from `layout` alone. All of it runs before paint; in a block container the pass changes no size.
+- **The class is owned by the measure pass alone (PLAN-FRESH-3-002).** The template does not bind the `<dl>`'s
+  `class`, and `stacked` is not a reactive property. A Lit attribute binding commits only when the new value differs
+  from its own last committed value, not from the DOM, and `requestUpdate` skips an update when `hasChanged` is false;
+  so a template binding would never restore a class the pass removed when the decision stays "stacked" (a narrow sheet
+  resized, a probe callback), and the `<dl>` would be left in two columns. Owning the class in the pass means the pass
+  never leaves the DOM different from the decision, and no Lit update follows a decision, so no update loop can
+  oscillate. Because a re-render can create a new `<dl>` (from no pairs to some), the pass also runs in `updated()`
+  after every render. A body resizes a 300 px sheet to 290 px and asserts one column after the layout wait; the plant
+  "class not restored after the measure" (the class toggled only when the decision changes) must fail it.
+- **When the pass runs (PLAN-FRESH-3-001 (c)).** While the sheet is stacked in a shrink-to-fit host, its size is its
+  stacked max-content, so a change of the two-column measure that leaves the widest single label or value alone does
+  not resize the host, and a `ResizeObserver` on the host alone never re-decides. Round 3 reproduced both cases: a
+  dialog loaded at 360 px and widened to 1200 px stays stacked at its stacked size, and a stacked sheet relabelled
+  from "Id" to "Created by operator" stays stacked, while a fresh load of the same content in the same space gives two
+  columns. The pass therefore runs on each of these triggers, the cheap ones of the lens's list (operator option (c)):
+  - the callback of one `ResizeObserver` that observes the host and both probes (a resize of the sheet; a threshold
+    change, PLAN-FRESH-2-004);
+  - `updated()`, after every render: every re-render from the facts `MutationObserver` (a child added, removed,
+    reordered, hidden or shown; a label, `lang` or `dir` changed) and a change of `layout`;
+  - the facts `MutationObserver`'s `childList` and `characterData` records inside a pair (R-01), which do not
+    re-render: value text changed in place;
+  - `window` `resize`, which covers a dialog or popover, whose offered space is the viewport, and every host whose
+    space follows the window. The listener is added in `connectedCallback` and removed in `disconnectedCallback`.
+- **Changes the pass does not observe, and the narrowing (PLAN-FRESH-3-001 (c)).** The lens's other triggers (a
+  `ResizeObserver` on the host's parent, `visualViewport` resize, `document.fonts` `loadingdone`) are not taken.
+  Phase 1's spike runs, in every host of FR-009 and the shared hosts above, the cases the triggers above should cover
+  (the two round 3 cases with their named content, below) and the cases they may not: the space a shared host offers
+  changed without a window resize (a 400 px flex sibling shrunk to 100 px; a grid `auto` track's neighbour removed; a
+  table cell's column widened by another row), a dialog closed and reopened at another width in the same window, and
+  a web font that loads after the first decision. For each case, a fresh load of the same content in the same space is
+  compared with the changed sheet. Where they differ, history independence is not guaranteed for that case: the
+  operator's option (c) has already decided that this narrows FR-005 and FR-009 rather than adding triggers or
+  returning to the operator. The spike's list of unobserved cases is recorded in `reviews/phase-1/spike.md` and copied
+  into this section, the README's facts section (in a shrink-to-fit or shared host, set `layout` or give the sheet an
+  inline size where such a change can happen) and FR-009's bodies, which for each such case assert the consumer's
+  remedy (with `layout="columns"`, and with an inline size on the sheet, the layout after the change is the chosen
+  one) instead of history independence. In a block container the measure is the container's size, which a resize of
+  the host always reports, so no case is narrowed there.
+- **The `ResizeObserver` loop error.** Phase 1's spike records whether a flip raises the "ResizeObserver loop completed
+  with undelivered notifications" error, which the fixture's console check would record. If it does, the pass sets
+  the class in a `requestAnimationFrame` from the callback, and the spike records the frames the layout wait then
+  takes.
 - **Threshold (PLAN-FRESH-2-008).** It comes from a hook, `--ocelle-facts-stack-below`, set by default in `:host` to
   `calc(var(--ocelle-space-10) * 6)`, which is 24rem (384 px at the default root size, more than 320 px as FR-005
   requires). The default is built from the spacing scale, not from `--ocelle-shell-sidebar-width`: the `calc()`
@@ -172,8 +213,8 @@ choose where that is not what they want.
   overflow: an absolutely positioned 384 px probe with `block-size: 0` leaves the page's scroll width at 320 px, but the
   same probe with `block-size: 1px` gives 392 px (measured, Chromium 153). A body asserts the page scroll width at
   320 px with the probes present, and a plant (`block-size: 1px` on the probe) must fail it.
-- **State.** The `stacked` state is a class on the `<dl>`, not a host attribute, and the probes carry classes, not
-  parts, so neither is public surface (`layout` is the public input). The `<dl>` then becomes one column,
+- **State.** The `stacked` state is a class on the `<dl>`, set only by the measure pass (above), not a host attribute,
+  and the probes carry classes, not parts, so neither is public surface (`layout` is the public input). The `<dl>` then becomes one column,
   `minmax(0, 1fr)`, with each value below its label.
 - **Why a hook rather than a constant.** `--ocelle-facts-stack-below` is the element's own hook (README § Element
   conventions: `--ocelle-<element>-<property>`). A consumer with a wider inspector can lower it. It is declared in the
@@ -191,10 +232,15 @@ choose where that is not what they want.
 - PLAN-FRESH-2-001's other options, not chosen by the operator: (a) "available space" defined per shared host, (b) a
   squeeze rule on the value column's max-content and a token floor, (d) no override, with the consumer giving the
   sheet an inline size.
+- PLAN-FRESH-3-001's other options, not chosen by the operator: (a) every trigger of the lens's list (also a
+  `ResizeObserver` on the host's parent, `visualViewport` resize and `document.fonts` `loadingdone`) as a guarantee in
+  every host; (b) the narrowing alone, with no added trigger.
+- For PLAN-FRESH-3-002, measuring without touching the `<dl>` (a separate always-two-column measuring element): it
+  would duplicate the pairs' content, which FR-003 forbids, or measure something other than the sheet.
 
 **When the layout is read (PLAN-TESTABILITY-1-003).** `settle()` in `test/in-process.ts` waits for `updateComplete`
 and one `requestAnimationFrame`. Animation-frame callbacks run before layout and before `ResizeObserver` delivery in
-the same frame, and the `stacked` class is set in the observer callback and followed by a Lit update, so one frame
+the same frame, and the `stacked` class is set in the observer callback (with no Lit update after it), so one frame
 reads the pre-decision layout. The facts bodies therefore wait with a layout settle: after `updateComplete`, the driver
 polls once per animation frame until two consecutive frames give the same host and `<dl>` geometry and the element's
 `updateComplete` is resolved, failing the body after 10 frames. Phase 1's spike measures the number of frames this
@@ -208,6 +254,16 @@ after the first layout.
   a dialog at 1280 px (one column without `layout`, two columns with `layout="columns"`); a sheet loaded at 360 px
   then widened to 1200 px (the same layout as loaded at 1200 px, in each host); and whether a flip raises the
   `ResizeObserver` loop error;
+- the round 3 cases with their content (PLAN-FRESH-3-001 (c)): the pair "Created by op" / "Ada Lovelace and Charles
+  Babbage" in a `showModal()` dialog loaded at 360 px and widened to 1200 px gives the layout of a load at 1200 px;
+  the pair "Id" / "Ada Lovelace and Charles Babbage" in a dialog at 1280 px, relabelled "Created by operator", gives
+  the layout of a fresh load with that label; and the same value's text changed in place (a `characterData` change)
+  across the threshold gives the layout of a fresh load. The spike first confirms in the harness's fonts that each
+  content's two-column size is above the 384 px threshold at 1200 or 1280 px and its stacked size below it, and
+  lengthens the value if not (round 3's refuter had to, in another font); the content used is recorded and the bodies
+  use it. With the extra triggers removed, both named cases must keep the stacked layout (the plant);
+- the unobserved cases of § Changes the pass does not observe, each against a fresh load, to name the narrowing;
+- the 300 px sheet resized to 290 px, stacked after the pass (PLAN-FRESH-3-002);
 - the stacked and two-column states at 300 px and 600 px, `layout="columns"` at 320 px with no page overflow, and the
   layout-settle wait in both harnesses;
 - the probes with an invalid hook, a percentage hook and a 0 hook at 320 px (stacked), with a valid 15rem hook at
@@ -456,8 +512,15 @@ its oracle is not weakened.
 - **Leaving the determinate state (PLAN-CORRECTNESS-1-005).** Whenever the bar is not determinate, `updated()` calls
   `fill.style.removeProperty("inline-size")`, so the stylesheet's 40% mark applies. An inline declaration beats the
   stylesheet, and without the removal a bar whose value is removed (FR-032) would keep the last fraction as its mark.
-- A width transition uses `--ocelle-motion-base` and `--ocelle-easing-standard`, which is 0 ms under reduced motion
-  through the tokens.
+- **No width transition (PLAN-FRESH-3-003 (b)).** The fill has no `transition`: a value change, and leaving or
+  entering the determinate state, change the fill's inline size at once. Round 3 measured why: with a 200 ms
+  `inline-size` transition (`--ocelle-motion-base`), the fill at 7/12 set to 75% read 233 px of 300 px one frame
+  later, and after the value was removed it still read 300 px, not the 40% mark's 160 px, with a running
+  `CSSTransition` in `getAnimations()`. That contradicted US3-2's 75% read, the value-removed body and the
+  after-window body. The spec words the transition "if any" (Edge Cases, Rapid value changes), and the operator chose
+  to drop it. US3-2 reads the fill at once, and with `animations()` empty, so a transition added later fails it; the
+  plant "a 200 ms `inline-size` transition on the fill" must fail US3-2 and the value-removed body (contracts/checks.md
+  § CSS-only behaviours).
 
 **Indeterminate: a bounded sweep that ends on the still mark (FR-033, PLAN-A11Y-SECURITY-1-001 (a)).**
 - The mark's own geometry is the still mark: 40% wide (`inline-size: 40%`) at `inset-inline-start: 30%`, the middle
@@ -474,32 +537,54 @@ its oracle is not weakened.
   then rests on its own geometry, the still mark, without any further motion. The bar still shows that work is going
   on. The total is `--ocelle-motion-base` × 7 × 3 = `--ocelle-motion-base` × 21, so a consumer that overrides
   `--ocelle-motion-base` above 238 ms (5000 / 21) takes the sweep past 5 s; the README says so.
-- **One sweep per page (PLAN-FRESH-2-005 (a)).** A CSS animation starts on every insertion and whenever an element
-  leaves `display: none`. Per node, an htmx poll that swaps the loading region, or a Svelte `{#if}`, would start a
-  fresh 4.2 s sweep each time, so motion would run as long as the polling lasts: 2.2.2's 5 s would hold per animation
-  but not for what the user sees (constitution I names htmx pages as hosts). The sweep is therefore anchored to the
-  page:
-  - **The page start.** When the first indeterminate bar's mark animation starts on a document, the element records
-    `document.timeline.currentTime` as the page's sweep start. It is kept on the `document` under
-    `Symbol.for("ocelle.progress.sweepStart")`, so two copies of the package on a page share it. It is not public
-    surface: no manifest entry, no README name.
+- **One sweep per loading episode (PLAN-FRESH-2-005 (a), amended by PLAN-FRESH-3-004 (a)).** A CSS animation starts
+  on every insertion and whenever an element leaves `display: none`. Per node, an htmx poll that swaps the loading
+  region, or a Svelte `{#if}`, would start a fresh 4.2 s sweep each time, so motion would run as long as the polling
+  lasts: 2.2.2's 5 s would hold per animation but not for what the user sees (constitution I names htmx pages as
+  hosts). Anchoring the sweep to the document (round 2) fixed that, but in a client-routed Svelte shell or a Tauri
+  webview the document lasts the whole app session, so the first indeterminate bar after launch used the only sweep and
+  US3-4's moving mark was not seen again for that session (round 3). The sweep is therefore anchored to a loading
+  episode: a run of time in which at least one indeterminate bar is connected to the document.
+  - **The episode record.** It is kept on the `document` under `Symbol.for("ocelle.progress.sweep")`, so two copies of
+    the package on a page share it: the episode's sweep start, and the set of connected indeterminate bars. It is not
+    public surface: no manifest entry, no README name.
+  - **Membership.** A bar joins the set when it is connected while indeterminate, or becomes indeterminate while
+    connected; it leaves when it is disconnected or becomes determinate. A bar hidden with `display: none` (its own
+    `hidden`, or an ancestor's) stays connected and stays in the set, so a re-show continues the episode. (The lens's
+    wording "connected and shown" is read this way: the option itself requires that a re-show from `display: none`
+    does not reset.)
+  - **The episode start.** When the first bar's mark animation starts while the record has no start, the element
+    records `document.timeline.currentTime` as the episode's sweep start.
   - **Each animation joins it.** Whenever the mark has a CSS animation (in `updated()`, after `getAnimations()` on the
     mark brings its style up to date, and on every `animationstart` event from the mark, which also covers a node
     leaving `display: none`, an ancestor re-shown and a direction change that swaps the keyframes), the element sets
-    that animation's `startTime` to the page start through the Web Animations API. This is not a style write, so the
-    strict CSP is unaffected (constitution IV).
-  - **After the window.** A bar inserted, re-shown or made indeterminate again after the page start plus the sweep's
-    active duration has a `startTime` that puts its animation past its end: with `animation-fill-mode: none` it shows
-    the still mark at once, with no running animation. A bar inserted inside the window continues the sweep where the
-    page's sweep is.
-  - **Cost, accepted with the option.** A genuinely new operation later on the same page also shows only the still
-    mark. The README says so: the sweep runs once per page, for at most 4.2 s at the default tokens.
-  - **Tests.** A body replaces the bar 2 s after the first insertion (the driver's `replace`) and asserts no running
-    animation on the page's bars 5 s after the first insertion, with the still mark's geometry (US3-14); the plant
-    "the shared start dropped" (each animation keeps its own start) must fail it. Each harness's `mount` deletes the
-    page start, so every body starts as a fresh page (contracts/checks.md § Driver additions).
-- **Alternatives (PLAN-FRESH-2-005), not chosen by the operator.** (b) Per-node restarts, with the README telling
+    that animation's `startTime` to the episode start through the Web Animations API. This is not a style write, so
+    the strict CSP is unaffected (constitution IV).
+  - **After the window.** A bar inserted, re-shown or made indeterminate again during the episode but after its start
+    plus the sweep's active duration has a `startTime` that puts its animation past its end: with
+    `animation-fill-mode: none` it shows the still mark at once, with no running animation. A bar inserted inside the
+    window continues the sweep where the episode's sweep is.
+  - **The episode ends at a frame boundary.** When a bar leaves the set and the set is empty, the element requests an
+    animation frame; in that callback, if the set is still empty, it deletes the episode start. An htmx swap removes
+    the old bar and inserts the new one in one task, and a determinate-then-indeterminate change within one task never
+    leaves the set empty at a frame boundary, so neither ends the episode, and the 2.2.2 bound holds for one continuous
+    loading episode. A new operation after every indeterminate bar has been gone (removed or determinate) for a frame
+    boundary gets its own sweep.
+  - **Cost, accepted with the option.** Motion is bounded per episode, not per page: a bar removed and re-inserted
+    with a frame or more between (a Svelte `{#if}` that flaps, a swap done in two tasks), or one alternating between
+    determinate and indeterminate with gaps of a frame or more, starts a new sweep each time. The README says so, and
+    tells consumers to keep one bar indeterminate across one continuous wait (keep the node, or swap it in one task).
+  - **Tests.** US3-14 replaces the bar 2 s after the first insertion (the driver's `replace`, one task) and asserts no
+    running animation on the page's bars 5 s after the first insertion, with the still mark's geometry; the plant "the
+    shared start dropped" (each animation keeps its own start) must fail it. US3-15 removes the only bar after its
+    sweep has ended, waits two animation frames (the driver's `frames`), inserts a new indeterminate bar and asserts a
+    running sweep on it; the plant "the episode never ends" (the start kept for the document) must fail it. Each
+    harness's `mount` deletes the episode record, so every body starts as a fresh page (contracts/checks.md § Driver
+    additions).
+- **Alternatives, not chosen by the operator.** PLAN-FRESH-2-005: (b) per-node restarts, with the README telling
   consumers to keep the node across polls; (c) one sweep per region or consumer-set key, which adds public surface.
+  PLAN-FRESH-3-004: (b) keep one sweep per document and state that in a single-page or webview shell it runs once per
+  app session; (c) one sweep per stable region or per consumer-set key, which adds public surface.
 - `translateX(<percentage>)` and the bare integer of `animation-iteration-count` need a recorded `token-only`
   allowance (R-10, PLAN-CORRECTNESS-1-001 (a)).
 - No new motion token is needed: `calc()` with a number factor on a token passes `token-only`, and it resolves to 0 ms
@@ -612,9 +697,11 @@ Both are additions to documented base-style behaviour (MINOR, constitution VII).
   width (SC-002); every story under reduced motion has no running animation or transition (SC-005); every progressbar
   node in every story has a non-empty name. Each is paired with a positive read (the story's element rendered with a
   non-zero size; a running animation on the indeterminate story without reduced motion). The sweep lasts 4.2 s from
-  the page start (R-06), so the motion reads are taken on a freshly loaded story page within the first 1400 ms
-  iteration, and the reduced-motion read uses the same fresh load (PLAN-FRESH-2-009, contracts/checks.md § Story
-  test). `red.sh` records one red record per phase. The stories themselves are not tests and land in green.
+  the episode start (R-06), so each motion read is taken on its own freshly loaded story page within the first
+  1400 ms (PLAN-FRESH-2-009). The read without reduced motion is timed by the mark animation's `currentTime`; the
+  reduced-motion read, which has no animation to time, is timed by the clock (`performance.now()` from the story's
+  first render) and asserts in the same read that `prefers-reduced-motion: reduce` matches, so a missing emulation
+  fails loudly instead of passing as "no running animation" (PLAN-FRESH-3-005, contracts/checks.md § Story test). `red.sh` records one red record per phase. The stories themselves are not tests and land in green.
 - **#10 (FR-051).** #10 is designed, not merged (`origin/claude/010-storybook-workbench`,
   `specs/006-storybook-workbench`). The stories follow its contributor note (FR-025): open shadow roots, every surface
   inside the host, `font: inherit` on form controls (none here), and run-time CSP proven in the element package's own

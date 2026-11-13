@@ -71,7 +71,8 @@ uses them in server-rendered pages under a strict CSP.
 - Compact density (PLAN-CORRECTNESS-1-002, (b)): inside a `data-ocelle-density="compact"` region values take the
   region's size and line height; `density="compact"` only tightens gaps (FR-008).
 - Stacking (PLAN-CORRECTNESS-1-003, (a)): the switch is decided on the inline space available to the element, so the
-  layout does not depend on history (FR-005, FR-009). Amended in round 2 (PLAN-FRESH-2-001 (c), below).
+  layout does not depend on history (FR-005, FR-009). Amended in rounds 2 and 3 (PLAN-FRESH-2-001 (c),
+  PLAN-FRESH-3-001 (c), below).
 - Module dependency (PLAN-CORRECTNESS-1-012, (a)): a container module imports its item element, recorded in the
   README conventions (FR-056).
 - FR-004 recheck (PLAN-CORRECTNESS-1-014, (b)): the recheck under Lit and axe-core 4.14.0 stays in phase 1's spike;
@@ -92,8 +93,22 @@ uses them in server-rendered pages under a strict CSP.
   shrink-to-fit host choose two columns or one (FR-005, FR-009, FR-013, US1-11).
 - Indeterminate motion on a page (PLAN-FRESH-2-005, (a)): the sweep is anchored to the page, so a bar replaced,
   re-shown or made indeterminate again continues the page's one sweep instead of starting another (FR-033, US3-14).
+  Amended in round 3 (PLAN-FRESH-3-004 (a), below): the sweep belongs to a loading episode, not the whole page.
 - Hidden slotted parts (PLAN-FRESH-2-007, (a)): an empty-state part is present only while something assigned to its
   slot renders, and toggling `hidden` on slotted content updates the layout (FR-023, US2-9).
+
+**Operator decisions at the plan squad, round 3** (2026-11-13, human:jeroennouwsdev; finding IDs in
+`reviews/plan/round-3/refute.md`):
+
+- Stacking triggers (PLAN-FRESH-3-001, (c)): the automatic switch is re-decided on the element's own resize, a
+  threshold change, every content change (value text included) and a window resize, and history independence is
+  narrowed for any change of the offered space the element does not observe, where `layout` or an inline size is the
+  consumer's remedy (FR-005, FR-009, US1-12).
+- Fill transition (PLAN-FRESH-3-003, (b)): the fill has no width transition; its inline size changes at once (US3-2,
+  edge case "Rapid value changes").
+- Indeterminate motion per loading episode (PLAN-FRESH-3-004, (a)), amending round 2's PLAN-FRESH-2-005 (a): the one
+  sweep belongs to a continuous loading episode, which ends when no indeterminate bar is connected at a frame boundary;
+  a later episode gets its own sweep (FR-033, US3-15).
 
 ## Scope
 
@@ -168,6 +183,12 @@ px, check the layout, the absence of horizontal overflow, the computed type of t
     `layout`, **Then** its pairs are in one column (its own two-column inline size is below the threshold, FR-005);
     **When** `layout="columns"` is set, **Then** they are in two columns with no horizontal overflow; and **Given**
     `layout="stacked"` in a 600 px block container, **Then** they are in one column (FR-013).
+12. **Given** a sheet with the pair "Created by op" / "Ada Lovelace and Charles Babbage" (content whose two-column
+    size is above the threshold at 1200 px and whose stacked size is below it; the plan fixes the exact text) in a
+    `<dialog>`, loaded at a 360 px viewport (one column), **When** the viewport is widened to 1200 px, **Then** its
+    layout is the layout of the same sheet loaded at 1200 px; and **Given** a stacked sheet in a 1280 px dialog with
+    the label "Id" and the same value, **When** the label is changed to "Created by operator", or the value's text is
+    changed in place, **Then** its layout is the layout of a fresh load of the changed content (FR-005, FR-009).
 
 ---
 
@@ -238,7 +259,8 @@ non-text contrast of the fill's mark against the track and the ground in light a
    exposes one progressbar named "Tasks done" with value 7, minimum 0 and maximum 12, and no ID reference crosses a
    shadow root.
 2. **Given** the same element, **When** `value` changes to 9, **Then** the exposed value is 9 and the fill's inline
-   size is 75% of the track. No event is emitted (the element has no user intent to report).
+   size is 75% of the track at once, with no transition running. No event is emitted (the element has no user intent
+   to report).
 3. **Given** a `value-text` of "7 of 12", **When** the tree is read, **Then** the exposed value text is "7 of 12".
 4. **Given** no `value` attribute, **When** it renders, **Then** the bar is indeterminate: the progressbar has a name
    and no current value, and a moving mark shows activity (for the bounded time FR-033 states).
@@ -270,6 +292,10 @@ non-text contrast of the fill's mark against the track and the ground in light a
     poll swapping the region), without reduced motion, **When** 5 s have passed since the first bar was shown, **Then**
     no animation runs on the page's bars and the still mark shows: the page's moving mark ran for less than 5 s in
     total (FR-033).
+15. **Given** an indeterminate bar whose sweep has ended, and no other indeterminate bar on the page, **When** it is
+    removed and, after at least one frame, a new indeterminate bar is shown (a later operation in a single-page shell),
+    without reduced motion, **Then** the new bar's mark moves (a new loading episode), and its motion still ends in
+    less than 5 s (FR-033).
 
 ---
 
@@ -287,10 +313,13 @@ non-text contrast of the fill's mark against the track and the ground in light a
   allowed.
 - **Facts inside a shrink-to-fit host** (a `<dialog>`, a popover, a float, a flex item, a grid `auto` track, a table
   cell). The automatic layout switch is decided on the element's own inline size as laid out in two columns (FR-005),
-  never on its stacked size, so the same content in the same space gives the same layout whatever happened before (a
-  narrow window widened, a dialog reopened). There that size is the content's two-column max-content, capped by the
-  space the host offers, so a sheet with short content stacks even in a wide dialog; the consumer sets `layout`
-  (FR-013) or gives the element an inline size. The element's inline size there is the one FR-009 states: never 0,
+  never on its stacked size, and re-decided on every change the element observes (its own resize, a threshold change,
+  a content change, a window resize), so for those changes the same content in the same space gives the same layout
+  whatever happened before (a narrow window widened, a label or value changed). A change of the offered space the
+  element does not observe (the plan names them, for example a sibling in a flex row shrinking) may leave the earlier
+  layout; there the consumer sets `layout` or gives the element an inline size (FR-009). In such a host the two-column
+  size is the content's two-column max-content, capped by the space the host offers, so a sheet with short content
+  stacks even in a wide dialog; the consumer sets `layout` (FR-013) or gives the element an inline size. The element's inline size there is the one FR-009 states: never 0,
   and at least its widest label's or value's max-content inline size, capped by the space the host offers.
 - **A hidden fact.** An `ocelle-fact` with `hidden` or `aria-hidden="true"` is not a pair: no row, no term, no
   definition, until the attribute is removed. `lang` and `dir` on a fact apply to its label as well as its value
@@ -315,12 +344,15 @@ non-text contrast of the fill's mark against the track and the ground in light a
 - **Progress `max` absent.** It defaults to 100.
 - **Progress inside an `ocelle-empty-state` panel that is removed.** Nothing keeps running: the indeterminate motion
   is a CSS animation that ends with the node.
-- **Progress replaced or re-shown while loading** (an htmx poll swapping the region, a Svelte `{#if}`). The sweep
-  belongs to the page, not to the node: a new or re-shown bar continues the page's one sweep, and once that has ended
-  it shows the still mark at once (FR-033). A later, unrelated loading region on the same page therefore shows the
-  still mark without a sweep.
+- **Progress replaced or re-shown while loading** (an htmx poll swapping the region in one task, a bar re-shown from
+  `display: none`). The sweep belongs to the loading episode, not to the node: a new or re-shown bar continues the
+  episode's one sweep, and once that has ended it shows the still mark at once (FR-033). The episode ends when no
+  indeterminate bar is connected at a frame boundary; a later loading region after that, on the same page or in a
+  single-page shell, gets a sweep of its own. A bar removed and re-inserted with a frame or more between (a Svelte
+  `{#if}` that flaps) starts a new episode; the README says to keep the node across one continuous wait.
 - **Rapid value changes.** The exposed value follows the property. The element does not throttle or animate the
-  value number. The fill's width transition, if any, uses `--ocelle-motion-base` and is 0 ms under reduced motion.
+  value number, and the fill has no width transition: its inline size jumps to each new value (operator decision
+  PLAN-FRESH-3-003 (b)).
 - **Right-to-left.** The progress fill grows from the inline start (right under `dir="rtl"`), and the indeterminate
   mark moves from the inline start to the inline end. The facts columns mirror.
 - **Two copies of the package on a page.** As the library's existing rule: the first definition wins.
@@ -364,9 +396,11 @@ the exceptions FR-050 and FR-054 name.
   first, values in the second) while its own inline size, as laid out in two columns (not the viewport's, and never
   its stacked size), is at least a threshold, and as one column (each value directly below its label) below it. In a
   block container that size is the container's inline size; in a shrink-to-fit host it is the content's two-column
-  max-content capped by the space the host offers. The measure never reads the stacked layout, so the layout depends
-  only on the content and the space, never on the element's previous state. A change of the threshold (its hook or
-  the root font size) MUST take effect without a resize. The threshold is a token-derived length set in the plan and
+  max-content capped by the space the host offers. The measure never reads the stacked layout, and the element MUST
+  re-decide on every change it observes: its own resize, a change of the threshold (its hook or the root font size),
+  a change of its pairs or of their content (value text included) and a window resize, each without a resize of the
+  element. For those changes the layout depends only on the content and the space, never on the element's previous
+  state (FR-009 states the narrowing for other changes; operator decision PLAN-FRESH-3-001 (c)). The threshold is a token-derived length set in the plan and
   MUST be greater than 320 px. Operator decision PLAN-FRESH-2-001 (c).
   In two columns, the label column takes the max-content inline size of the widest label, capped at a share of the
   element's inline size that the plan sets (no more than half); longer labels wrap inside the cap. The value column
@@ -388,7 +422,12 @@ the exceptions FR-050 and FR-054 name.
 - **FR-009**: In a shrink-to-fit host (a `<dialog>`, a popover, a float, a default flex item), an element with at
   least one pair MUST take an inline size that is never 0 and is at least the smaller of the inline space the host
   offers and the max-content inline size of its widest label or value. Its layout there MUST NOT depend on its
-  history: the same content in the same space gives the same layout (FR-005). Because the automatic switch reads the
+  history for any change FR-005 lists: the same content in the same space gives the same layout. A change of the
+  offered space that the element does not observe (no resize of the element and no window resize: the plan's research
+  names these cases from measurement, for example a fixed flex sibling shrinking) is outside that guarantee: the
+  README MUST name those cases and tell the consumer to set `layout` or give the element an inline size there, and
+  the tests assert that remedy for them instead of history independence (operator decision PLAN-FRESH-3-001 (c)). In
+  a block container no case is excluded. Because the automatic switch reads the
   element's own two-column size, a sheet whose content is narrower than the threshold stacks there even where the
   host has room; `layout` (FR-013) lets the consumer choose, and the README says so (operator decision
   PLAN-FRESH-2-001 (c)). The element MUST NOT cause horizontal scrolling of
@@ -451,7 +490,9 @@ the exceptions FR-050 and FR-054 name.
   interactive page) and then show the still mark, with nothing running. The total is per page, not per node: a bar
   inserted, replaced, re-shown or made indeterminate again continues the page's one sweep, which starts when the
   first indeterminate bar is shown, and after it ends shows the still mark at once (operator decision
-  PLAN-FRESH-2-005 (a)). Under `prefers-reduced-motion: reduce` it MUST
+  PLAN-FRESH-2-005 (a)). The page's sweep belongs to one loading episode: the episode ends when no indeterminate bar
+  is connected to the page at a frame boundary, and the next indeterminate bar after that starts a new sweep, under
+  the same bound (operator decision PLAN-FRESH-3-004 (a)). Under `prefers-reduced-motion: reduce` it MUST
   run no animation or transition and show the still mark at once. The still mark still reads as "in progress" (a
   partial or patterned fill, set in the plan). Operator decision PLAN-A11Y-SECURITY-1-001 (a). The loop period MAY be
   a new motion token under FR-040 if `--ocelle-motion-fast` and `--ocelle-motion-base` are too short for it; such a

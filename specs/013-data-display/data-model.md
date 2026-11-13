@@ -41,22 +41,32 @@ its own line; no label is shown until upgrade (R-01, PLAN-FRESH-2-002).
 
 **Derived values:**
 - `pairs`: the `ocelle-fact` children in source order that are not hidden, recomputed on every `childList` mutation of
-  the host and every `label`, `hidden`, `aria-hidden`, `lang` or `dir` mutation of a child (R-01).
+  the host and every `label`, `hidden`, `aria-hidden`, `lang` or `dir` mutation of a child (R-01). `childList` and
+  `characterData` mutations inside a pair do not recompute it, but re-run the measure pass (below).
 - `threshold`: the hook probe's inline size, or the default probe's when the hook probe measures 0 or not finite
   (R-02).
 - `measure`: the sheet's own content-box inline size as laid out in two columns, independent of `stacked`: the
   container's inline size in a block container, the two-column max-content capped by the host's space in a
   shrink-to-fit host (R-02; measured in phase 1's spike).
 - `stacked`: `layout === "stacked"`, or `layout` unset (or any other value) and `measure < threshold`; `false` for
-  `layout === "columns"`. Recomputed in the callback of one `ResizeObserver` that observes the host and both probes,
-  so a change of the hook or of the root font size re-decides without a resize of the sheet (R-02,
-  PLAN-FRESH-2-004), and on a change of `layout`.
+  `layout === "columns"`. Decided by the measure pass (R-02), which runs:
+  - in the callback of one `ResizeObserver` that observes the host and both probes, so a change of the hook or of the
+    root font size re-decides without a resize of the sheet (PLAN-FRESH-2-004);
+  - in `updated()`, after every render (a re-render from the facts `MutationObserver`, a change of `layout`);
+  - on the facts `MutationObserver`'s `childList` and `characterData` records inside a pair (value text changed in
+    place);
+  - on `window` `resize` (PLAN-FRESH-3-001 (c)).
+  Changes of the offered space that none of these reports (named by phase 1's spike, R-02 § Changes the pass does not
+  observe) are outside the history-independence guarantee; there the README asks for `layout` or an inline size.
+- `stacked` is not a reactive property and is not bound in the template. The measure pass removes the `stacked` class,
+  reads the measure, and sets the class from the decision unconditionally, so the DOM never differs from the decision
+  (PLAN-FRESH-3-002).
 
 **Rendered:**
 - With no pairs: nothing.
 - Otherwise:
   ```text
-  <dl part="list" class="{stacked}">
+  <dl part="list">        (class "stacked" set by the measure pass only, never by the template)
     per pair: <dt part="label" lang="{fact lang}" dir="{fact dir}">{label}</dt><dd part="value"><slot/></dd>,
               with the slot assigned to that pair
   </dl>
@@ -69,7 +79,10 @@ its own line; no label is shown until upgrade (R-01, PLAN-FRESH-2-002).
 - A child is added, removed or reordered, or hidden or shown: the element re-renders and re-assigns the slots.
 - A child's `label`, `lang` or `dir` changes: the element re-renders.
 - The measure crosses the threshold, or the threshold crosses the measure (the hook or the root font size changed):
-  `stacked` flips. The same content in the same space gives the same state from any history.
+  `stacked` flips at the next run of the measure pass. The same content in the same space gives the same state from
+  any history, for every change one of the pass's triggers reports (above).
+- Value text changes in place, a label changes, or the window is resized: the measure pass re-runs, so a stacked sheet
+  in a shrink-to-fit host whose two-column size has crossed the threshold leaves the stacked state.
 - `layout` is set or removed: the layout follows it at once.
 
 None of these emits an event.
@@ -127,20 +140,28 @@ None of these emits an event.
 
 **Rendered fill:**
 - determinate: the fill from the inline start, its inline size `fraction × 100%` written through the CSSOM;
-- not determinate: the inline `inline-size` removed (`style.removeProperty`), so the mark takes the stylesheet's 40%.
+- not determinate: the inline `inline-size` removed (`style.removeProperty`), so the mark takes the stylesheet's 40%;
+- no `transition` on the fill: every change of its inline size takes effect at once (PLAN-FRESH-3-003 (b)).
 
 **States:**
 - determinate (fill at `fraction`, from the inline start, mirrored under `dir="rtl"`);
-- indeterminate, motion not reduced: the mark sweeps from the inline start to the inline end within the page's one
-  sweep window (three loops, 4.2 s at the default tokens, from the page start), then rests as the still mark;
+- indeterminate, motion not reduced: the mark sweeps from the inline start to the inline end within the loading
+  episode's one sweep window (three loops, 4.2 s at the default tokens, from the episode start), then rests as the
+  still mark;
 - indeterminate, after the sweep, and under reduced motion: the still mark, 30% to 70% of the track, with no running
   animation;
 - each in two sizes, two grounds (`ground` unset or `tinted`), with or without the visible label.
 
-**Page sweep start** (R-06, PLAN-FRESH-2-005 (a)): one per document, recorded from `document.timeline.currentTime`
-when the first indeterminate mark's animation starts, and kept on the `document` (not public surface). Every mark
-animation's `startTime` is set to it, so a bar inserted, replaced, re-shown or made indeterminate again continues the
-page's sweep, and after the window shows the still mark at once.
+**Loading episode** (R-06, PLAN-FRESH-2-005 (a), amended by PLAN-FRESH-3-004 (a)): kept on the `document` (not
+public surface), shared by every copy of the package:
+- `bars`: the connected indeterminate bars. A bar joins when it is connected while indeterminate or becomes
+  indeterminate while connected, and leaves when it is disconnected or becomes determinate. A bar under `display: none`
+  stays connected and stays in the set.
+- `start`: the episode's sweep start, recorded from `document.timeline.currentTime` when the first mark animation
+  starts while there is none. Every mark animation's `startTime` is set to it, so a bar inserted, replaced, re-shown or
+  made indeterminate again during the episode continues its sweep, and after the window shows the still mark at once.
+- The episode ends when `bars` is empty at an animation-frame callback requested when the last bar left: `start` is
+  deleted, and the next indeterminate bar starts a new sweep. A swap in one task never ends it.
 
-The track clips the mark. A transition from determinate to indeterminate does not restart the sweep: it joins the
-page's sweep window. The element emits no event.
+The track clips the mark. A change from determinate to indeterminate does not restart the sweep while the episode
+lasts: it joins the episode's sweep window. The element emits no event.

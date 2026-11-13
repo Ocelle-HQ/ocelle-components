@@ -98,7 +98,10 @@ Tokens read (README, not manifest): `font-sans`, `font-size-sm`, `font-size-fact
   `lang` and `dir` on a fact apply to its label; the wrap policy (the value only); digests are the consumer's; the
   threshold hook (an absolute length only, with its fallback) and the stacking rule on the sheet's own two-column
   size; `layout`, and that a sheet in a shrink-to-fit host (dialog, popover, float, flex item) with short content
-  stacks unless `layout` is set or the sheet is given an inline size; density: `density="compact"` tightens gaps, a
+  stacks unless `layout` is set or the sheet is given an inline size; the changes the sheet re-decides on (its own
+  resize, a threshold change, a content change including value text, a window resize) and the changes of the offered
+  space it does not observe, named by phase 1's spike (R-02, for example a fixed flex sibling shrinking), where the
+  consumer sets `layout` or gives the sheet an inline size (FR-009, PLAN-FRESH-3-001 (c)); density: `density="compact"` tightens gaps, a
   compact region sets the value scale (#531); before upgrade (each value on its own line through `@ocelle/styles`, a
   hidden fact stays hidden, labels only after upgrade); tokens read; the `.sk-facts` mapping rows (FR-058, phase 1).
 - **`ocelle-empty-state`**: the heading rule (the consumer's own heading, no `level`), slots, variants, the gaps
@@ -108,9 +111,12 @@ Tokens read (README, not manifest): `font-sans`, `font-size-sm`, `font-size-fact
 - **`ocelle-progress`**: naming (`label` recommended, or a host `aria-label`; an unnamed bar is a consumer error); axe
   does not check the name, and a host `aria-label` makes axe report a false `aria-prohibited-attr` in a consumer's own
   audit (R-05); the value rules; `value-text`; the bounded sweep (under 5 s, then the still mark, WCAG 2.2.2;
-  `--ocelle-motion-base` × 21 in total, so an override above 238 ms takes it past 5 s), run once per page: a bar
-  inserted, replaced or made indeterminate again continues the page's sweep and after it shows the still mark at once,
-  including a later, unrelated loading region (PLAN-FRESH-2-005 (a)); reduced motion; `ground="tinted"` and which
+  `--ocelle-motion-base` × 21 in total, so an override above 238 ms takes it past 5 s), run once per loading episode:
+  a bar inserted, replaced in one task, re-shown or made indeterminate again continues the episode's sweep and after
+  it shows the still mark at once; the episode ends when no indeterminate bar is connected at a frame boundary, and a
+  later loading region then gets its own sweep, so keep one bar (or swap it in one task) across one continuous wait
+  (PLAN-FRESH-2-005 (a), PLAN-FRESH-3-004 (a)); the fill has no width transition (PLAN-FRESH-3-003 (b)); reduced
+  motion; `ground="tinted"` and which
   grounds need it; the busy vocabulary (FR-033); tokens read; the `.sk-progress` mapping rows (FR-058, phase 3).
 - **Element conventions**: one paragraph each for slotted items (FR-056, with the container-imports-its-item rule) and
   for the identifier wrap property; the `undefined` defaults are unchanged from 005.
