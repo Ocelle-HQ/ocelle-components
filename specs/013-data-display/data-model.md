@@ -24,15 +24,17 @@ when the property is unset; the manifest description states it.
 - Outside, it renders `<span part="label">` and the `<slot>` as two blocks, with no term or definition roles.
 - A move into or out of `ocelle-facts` reconnects the fact, which decides again and re-renders.
 
-**Before upgrade:** an unknown inline element. Inside an undefined `ocelle-facts`, `@ocelle/styles` makes it a block,
-so each value is on its own line; no label is shown until upgrade (R-01).
+**Before upgrade:** an unknown inline element. Inside an undefined `ocelle-facts`, `@ocelle/styles` makes it a block
+unless it has `hidden` (`:not([hidden])`, so a hidden fact keeps the user-agent `display: none`), so each value is on
+its own line; no label is shown until upgrade (R-01, PLAN-FRESH-2-002).
 
 ## `ocelle-facts` (the sheet)
 
 | Input | Type | Effective default | Rule |
 |---|---|---|---|
 | `density` (attribute, reflected) | `"compact" \| undefined` | default spacing | `compact` sets the row gap to `--ocelle-space-1`. It changes no type. Any other value acts as unset. |
-| `--ocelle-facts-stack-below` (CSS hook) | absolute length | `calc(var(--ocelle-shell-sidebar-width) + var(--ocelle-space-10))` (24rem) | The threshold below which pairs stack. A percentage, 0 or an invalid value falls back to the default (R-02). |
+| `layout` (attribute, reflected) | `"columns" \| "stacked" \| undefined` | automatic | `columns` keeps two columns and `stacked` one column at any size; unset or any other value gives the automatic switch (R-02, FR-013, PLAN-FRESH-2-001 (c)). |
+| `--ocelle-facts-stack-below` (CSS hook) | absolute length | `calc(var(--ocelle-space-10) * 6)` (24rem) | The threshold below which pairs stack automatically. A percentage, 0 or an invalid value falls back to the default (R-02). |
 | `--ocelle-facts-value-size` (CSS hook, inherited) | length | `--ocelle-font-size-fact` | The values' font size. `@ocelle/styles` sets it to `--ocelle-font-size-sm` in a `data-ocelle-density="compact"` region and back in a `regular` one (R-03). |
 | `--ocelle-facts-value-line-height` (CSS hook, inherited) | number | `--ocelle-line-height-normal` | The values' line height. `@ocelle/styles` sets it to `--ocelle-line-height-compact` in a compact region and back in a `regular` one. |
 | children | nodes | none | Only `ocelle-fact` children without `hidden` or `aria-hidden="true"` are pairs, in source order. |
@@ -42,9 +44,13 @@ so each value is on its own line; no label is shown until upgrade (R-01).
   the host and every `label`, `hidden`, `aria-hidden`, `lang` or `dir` mutation of a child (R-01).
 - `threshold`: the hook probe's inline size, or the default probe's when the hook probe measures 0 or not finite
   (R-02).
-- `available`: the inline space available to the sheet, independent of `stacked` (R-02; the mechanism is measured in
-  phase 1's spike).
-- `stacked`: `available < threshold`, recomputed in the `ResizeObserver` callback (R-02).
+- `measure`: the sheet's own content-box inline size as laid out in two columns, independent of `stacked`: the
+  container's inline size in a block container, the two-column max-content capped by the host's space in a
+  shrink-to-fit host (R-02; measured in phase 1's spike).
+- `stacked`: `layout === "stacked"`, or `layout` unset (or any other value) and `measure < threshold`; `false` for
+  `layout === "columns"`. Recomputed in the callback of one `ResizeObserver` that observes the host and both probes,
+  so a change of the hook or of the root font size re-decides without a resize of the sheet (R-02,
+  PLAN-FRESH-2-004), and on a change of `layout`.
 
 **Rendered:**
 - With no pairs: nothing.
@@ -62,8 +68,9 @@ so each value is on its own line; no label is shown until upgrade (R-01).
 **Transitions:**
 - A child is added, removed or reordered, or hidden or shown: the element re-renders and re-assigns the slots.
 - A child's `label`, `lang` or `dir` changes: the element re-renders.
-- The available space crosses the threshold: `stacked` flips. The same content in the same space gives the same state
-  from any history.
+- The measure crosses the threshold, or the threshold crosses the measure (the hook or the root font size changed):
+  `stacked` flips. The same content in the same space gives the same state from any history.
+- `layout` is set or removed: the layout follows it at once.
 
 None of these emits an event.
 
@@ -78,8 +85,11 @@ None of these emits an event.
 | slot `actions` | nodes | none | Buttons or links. |
 
 **Derived values:**
-- `has.visual`, `has.heading`, `has.text` and `has.actions`, each true when the slot has assigned nodes that are not
-  whitespace-only text, updated on `slotchange`. A part whose flag is false is `display: none`.
+- `has.visual`, `has.heading`, `has.text` and `has.actions`, each true when something assigned to the slot renders:
+  an assigned element whose computed `display` is not `none`, or an assigned text node with non-whitespace text.
+  Recomputed on `slotchange` and from a `MutationObserver` on the assigned nodes (`hidden` on elements, character data
+  on text nodes), so toggling `hidden` on slotted content updates them (R-04, PLAN-FRESH-2-007 (a)). A part whose flag
+  is false is `display: none`.
 - `last`: the last present part. Each present part but `last` carries the `margin-block-end` R-04's table names for it;
   `last` carries none, and no part has a block-start margin. An absent part therefore adds no space and no gap, at
   the start, in the middle or at the end.
@@ -121,11 +131,16 @@ None of these emits an event.
 
 **States:**
 - determinate (fill at `fraction`, from the inline start, mirrored under `dir="rtl"`);
-- indeterminate, motion not reduced: the mark sweeps from the inline start to the inline end three times (4.2 s at the
-  default tokens), then rests as the still mark;
+- indeterminate, motion not reduced: the mark sweeps from the inline start to the inline end within the page's one
+  sweep window (three loops, 4.2 s at the default tokens, from the page start), then rests as the still mark;
 - indeterminate, after the sweep, and under reduced motion: the still mark, 30% to 70% of the track, with no running
   animation;
 - each in two sizes, two grounds (`ground` unset or `tinted`), with or without the visible label.
 
-The track clips the mark. A transition from determinate to indeterminate restarts the sweep. The element emits no
-event.
+**Page sweep start** (R-06, PLAN-FRESH-2-005 (a)): one per document, recorded from `document.timeline.currentTime`
+when the first indeterminate mark's animation starts, and kept on the `document` (not public surface). Every mark
+animation's `startTime` is set to it, so a bar inserted, replaced, re-shown or made indeterminate again continues the
+page's sweep, and after the window shows the still mark at once.
+
+The track clips the mark. A transition from determinate to indeterminate does not restart the sweep: it joins the
+page's sweep window. The element emits no event.

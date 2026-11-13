@@ -23,6 +23,7 @@ Prerequisites: the repository installed offline (`pnpm run setup:offline`), with
    `specs/006-storybook-workbench/contracts/gates.md`). There is no serious or critical finding, and the baselines are
    committed from the pinned container.
 
-Expected: the spec's SC-002 to SC-007 hold. SC-001 is checked in review against the README mapping.
+Expected: the spec's SC-002 to SC-007 hold. SC-001 is checked in review: the README mapping covers every variant of
+the operator-supplied inventory in research R-11.
 
 The spike behind the design decisions can be rerun from [spike/](spike/) (see `spike/RESULTS.md`).

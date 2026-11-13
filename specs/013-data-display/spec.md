@@ -71,7 +71,7 @@ uses them in server-rendered pages under a strict CSP.
 - Compact density (PLAN-CORRECTNESS-1-002, (b)): inside a `data-ocelle-density="compact"` region values take the
   region's size and line height; `density="compact"` only tightens gaps (FR-008).
 - Stacking (PLAN-CORRECTNESS-1-003, (a)): the switch is decided on the inline space available to the element, so the
-  layout does not depend on history (FR-005, FR-009).
+  layout does not depend on history (FR-005, FR-009). Amended in round 2 (PLAN-FRESH-2-001 (c), below).
 - Module dependency (PLAN-CORRECTNESS-1-012, (a)): a container module imports its item element, recorded in the
   README conventions (FR-056).
 - FR-004 recheck (PLAN-CORRECTNESS-1-014, (b)): the recheck under Lit and axe-core 4.14.0 stays in phase 1's spike;
@@ -83,6 +83,17 @@ uses them in server-rendered pages under a strict CSP.
   that puts each fact on its own line (FR-012).
 - The plan-level decisions (a `token-only` allowance, no new contrast rows, `undefined` property defaults) are in the
   plan.
+
+**Operator decisions at the plan squad, round 2** (2026-11-13, human:jeroennouwsdev; finding IDs in
+`reviews/plan/round-2/refute.md`):
+
+- Stacking (PLAN-FRESH-2-001, (c)), amending round 1's PLAN-CORRECTNESS-1-003 (a): the automatic switch is decided on
+  the element's own inline size, as laid out in two columns, and a public `layout` property lets a consumer in a
+  shrink-to-fit host choose two columns or one (FR-005, FR-009, FR-013, US1-11).
+- Indeterminate motion on a page (PLAN-FRESH-2-005, (a)): the sweep is anchored to the page, so a bar replaced,
+  re-shown or made indeterminate again continues the page's one sweep instead of starting another (FR-033, US3-14).
+- Hidden slotted parts (PLAN-FRESH-2-007, (a)): an empty-state part is present only while something assigned to its
+  slot renders, and toggling `hidden` on slotted content updates the layout (FR-023, US2-9).
 
 ## Scope
 
@@ -153,6 +164,10 @@ px, check the layout, the absence of horizontal overflow, the computed type of t
 10. **Given** a pair with no `label` (absent or empty), **When** it renders, **Then** the row keeps an empty label box
     in the label column and its value in the value column, and the description list holds an empty term followed by
     that value's definition (FR-003).
+11. **Given** a short sheet ("Owner" / "Ada Lovelace") in a `<dialog>` 1280 px wide, **When** it renders without
+    `layout`, **Then** its pairs are in one column (its own two-column inline size is below the threshold, FR-005);
+    **When** `layout="columns"` is set, **Then** they are in two columns with no horizontal overflow; and **Given**
+    `layout="stacked"` in a 600 px block container, **Then** they are in one column (FR-013).
 
 ---
 
@@ -195,6 +210,10 @@ button stays in the tab order.
    text-contrast check on each main ground the tokens declare (neither variant paints a ground of its own). **Given**
    forced colours, **Then** the heading's and body's computed text colours are system colours (`CanvasText`) and
    neither is transparent.
+9. **Given** an empty state with a heading, a body and one action slotted with `hidden`, **When** it renders, **Then**
+   the body is the last present part and ends at the block padding, with no gap below it; **When** `hidden` is removed
+   from the action, **Then** the action is shown below the body, separated by the body-to-actions gap, without any
+   other change to the slots (FR-023).
 
 ---
 
@@ -247,6 +266,10 @@ non-text contrast of the fill's mark against the track and the ground in light a
 13. **Given** a bar on an inset, accent-low, hover-bg or state ground with `ground="tinted"` (FR-036), **When** it
     renders, **Then** the track's boundary is drawn in `--ocelle-color-accent-strong`; without `ground`, on the other
     main grounds, it is drawn in `--ocelle-color-control-border`. Either meets 3:1 against its ground.
+14. **Given** an indeterminate bar that is replaced by a new indeterminate bar 2 s after the first was shown (an htmx
+    poll swapping the region), without reduced motion, **When** 5 s have passed since the first bar was shown, **Then**
+    no animation runs on the page's bars and the still mark shows: the page's moving mark ran for less than 5 s in
+    total (FR-033).
 
 ---
 
@@ -262,11 +285,13 @@ non-text contrast of the fill's mark against the track and the ground in light a
 - **A child of `ocelle-facts` that is not an `ocelle-fact`** (text, a raw `<dt>`, a `<div>`). It is not rendered and
   not exposed; whitespace between pairs is ignored. Nothing throws. The README says only `ocelle-fact` children are
   allowed.
-- **Facts inside a shrink-to-fit host** (a `<dialog>`, a popover, a float, a default flex item). The layout switch is
-  decided on the inline space available to the element (FR-005), not on its resolved size, so the same content in
-  the same space gives the same layout whatever happened before (a narrow window widened, a dialog reopened). The
-  element's inline size there is the one FR-009 states: never 0, and at least its widest label's or value's
-  max-content inline size, capped by the available inline space.
+- **Facts inside a shrink-to-fit host** (a `<dialog>`, a popover, a float, a flex item, a grid `auto` track, a table
+  cell). The automatic layout switch is decided on the element's own inline size as laid out in two columns (FR-005),
+  never on its stacked size, so the same content in the same space gives the same layout whatever happened before (a
+  narrow window widened, a dialog reopened). There that size is the content's two-column max-content, capped by the
+  space the host offers, so a sheet with short content stacks even in a wide dialog; the consumer sets `layout`
+  (FR-013) or gives the element an inline size. The element's inline size there is the one FR-009 states: never 0,
+  and at least its widest label's or value's max-content inline size, capped by the space the host offers.
 - **A hidden fact.** An `ocelle-fact` with `hidden` or `aria-hidden="true"` is not a pair: no row, no term, no
   definition, until the attribute is removed. `lang` and `dir` on a fact apply to its label as well as its value
   (FR-003).
@@ -283,10 +308,17 @@ non-text contrast of the fill's mark against the track and the ground in light a
 - **Empty-state with a slotted heading of a different element** (for example a `<p>` styled as a heading). The
   element styles the slot's content and does not change its role. The consumer owns the heading semantics.
 - **Empty-state with only actions.** Allowed. The actions keep their own names.
+- **Empty-state with hidden slotted content.** A slotted element with `hidden`, or only whitespace, makes its part
+  absent (no space, no gap); removing `hidden` brings the part back (FR-023). Content hidden by the consumer's own
+  class or style rule is not observed; the README says to use `hidden` or remove the node.
 - **Progress `value` greater than `max`.** Clamped to `max`, see FR-032.
 - **Progress `max` absent.** It defaults to 100.
 - **Progress inside an `ocelle-empty-state` panel that is removed.** Nothing keeps running: the indeterminate motion
   is a CSS animation that ends with the node.
+- **Progress replaced or re-shown while loading** (an htmx poll swapping the region, a Svelte `{#if}`). The sweep
+  belongs to the page, not to the node: a new or re-shown bar continues the page's one sweep, and once that has ended
+  it shows the still mark at once (FR-033). A later, unrelated loading region on the same page therefore shows the
+  still mark without a sweep.
 - **Rapid value changes.** The exposed value follows the property. The element does not throttle or animate the
   value number. The fill's width transition, if any, uses `--ocelle-motion-base` and is 0 ms under reduced motion.
 - **Right-to-left.** The progress fill grows from the inline start (right under `dir="rtl"`), and the indeterminate
@@ -328,12 +360,14 @@ the exceptions FR-050 and FR-054 name.
   cleanly with `ocelle-fact` children (Q1 b) and the consumer's content unchanged (FR-003), and reports the result to
   the operator before tasks are generated. The operator then confirms this requirement or replaces it; tasks are not
   generated against FR-004 until then.
-- **FR-005**: The element MUST lay its pairs out as a two-column grid (labels in the first, values in the second)
-  while the inline space available to it (not the viewport's) is at least a threshold, and as one column (each value
-  directly below its label) below it. In a block container the available space is the element's own inline size; in
-  a shrink-to-fit host it is the space the host offers, not the element's resolved size, so the layout depends only on
-  the content and the space, never on the element's previous state. The threshold is a token-derived length set in
-  the plan and MUST be greater than 320 px.
+- **FR-005**: Unless `layout` is set (FR-013), the element MUST lay its pairs out as a two-column grid (labels in the
+  first, values in the second) while its own inline size, as laid out in two columns (not the viewport's, and never
+  its stacked size), is at least a threshold, and as one column (each value directly below its label) below it. In a
+  block container that size is the container's inline size; in a shrink-to-fit host it is the content's two-column
+  max-content capped by the space the host offers. The measure never reads the stacked layout, so the layout depends
+  only on the content and the space, never on the element's previous state. A change of the threshold (its hook or
+  the root font size) MUST take effect without a resize. The threshold is a token-derived length set in the plan and
+  MUST be greater than 320 px. Operator decision PLAN-FRESH-2-001 (c).
   In two columns, the label column takes the max-content inline size of the widest label, capped at a share of the
   element's inline size that the plan sets (no more than half); longer labels wrap inside the cap. The value column
   takes the rest, and its content never widens it.
@@ -352,9 +386,12 @@ the exceptions FR-050 and FR-054 name.
   spec-kitty-design #531 (the compact screen scale for fact values), read by the plan's research (R-03). Operator
   decision PLAN-CORRECTNESS-1-002 (b).
 - **FR-009**: In a shrink-to-fit host (a `<dialog>`, a popover, a float, a default flex item), an element with at
-  least one pair MUST take an inline size that is never 0 and is at least the smaller of the available inline space
-  and the max-content inline size of its widest label or value. Its layout there MUST NOT depend on its history: the
-  same content in the same space gives the same layout (FR-005). The element MUST NOT cause horizontal scrolling of
+  least one pair MUST take an inline size that is never 0 and is at least the smaller of the inline space the host
+  offers and the max-content inline size of its widest label or value. Its layout there MUST NOT depend on its
+  history: the same content in the same space gives the same layout (FR-005). Because the automatic switch reads the
+  element's own two-column size, a sheet whose content is narrower than the threshold stacks there even where the
+  host has room; `layout` (FR-013) lets the consumer choose, and the README says so (operator decision
+  PLAN-FRESH-2-001 (c)). The element MUST NOT cause horizontal scrolling of
   the page at 320 px CSS width or at 200% zoom. For the plan's research: a size container query is one way to switch
   on the element's own inline size, but it applies inline-size containment, which collapses a box to 0 px in
   shrink-to-fit hosts (`knowledge/speckit-flows/findings/frontend-missions.md` § Layout; 003 A11Y-SECURITY-1-001,
@@ -366,7 +403,10 @@ the exceptions FR-050 and FR-054 name.
 - **FR-012**: Before the elements are defined (a deferred module, a slow network, a script error), `@ocelle/styles`
   MUST show each `ocelle-fact` child of an undefined `ocelle-facts` on its own line, so a server-rendered page does
   not run the values together. Labels are attributes and appear only after upgrade; the README MUST say so. Operator
-  decision PLAN-FRESH-1-009 (a).
+  decision PLAN-FRESH-1-009 (a). An `ocelle-fact` with `hidden` stays hidden before upgrade as after it (FR-003).
+- **FR-013**: `ocelle-facts` MUST offer a `layout` property (`"columns" | "stacked"`, unset by default). `columns`
+  keeps two columns and `stacked` keeps one column at any size; unset, or any other value, gives FR-005's automatic
+  switch. Either set value keeps FR-009's no-horizontal-scroll rule. Operator decision PLAN-FRESH-2-001 (c).
 
 ### `ocelle-empty-state` (P2)
 
@@ -386,7 +426,10 @@ the exceptions FR-050 and FR-054 name.
   token (operator decision Q2); the plan names the steps.
 - **FR-023**: An empty slot MUST take no space and add no gap, wherever it is: the first present part starts at the
   block padding, the last ends at it, and two present parts are separated by the gap the plan names for that pair
-  (every pair that can become adjacent has one, in both variants).
+  (every pair that can become adjacent has one, in both variants). A slot is empty when nothing assigned to it
+  renders: no assigned element that generates a box and no non-whitespace text. A slotted element with `hidden` is
+  therefore empty content, and adding or removing `hidden` on slotted content, or changing slotted text, updates the
+  layout. Operator decision PLAN-FRESH-2-007 (a).
 - **FR-024**: The element MUST NOT add a landmark, live region, heading or tab stop of its own. It emits no event.
 
 ### `ocelle-progress` (P3)
@@ -405,7 +448,10 @@ the exceptions FR-050 and FR-054 name.
   that is not a finite number above 0 is treated as 100. Nothing throws.
 - **FR-033**: The indeterminate bar MUST show activity with a moving mark that uses token durations and easing. The
   motion MUST end by itself in less than 5 s in total (WCAG 2.2.2: the bar can be shown for minutes beside an
-  interactive page) and then show the still mark, with nothing running. Under `prefers-reduced-motion: reduce` it MUST
+  interactive page) and then show the still mark, with nothing running. The total is per page, not per node: a bar
+  inserted, replaced, re-shown or made indeterminate again continues the page's one sweep, which starts when the
+  first indeterminate bar is shown, and after it ends shows the still mark at once (operator decision
+  PLAN-FRESH-2-005 (a)). Under `prefers-reduced-motion: reduce` it MUST
   run no animation or transition and show the still mark at once. The still mark still reads as "in progress" (a
   partial or patterned fill, set in the plan). Operator decision PLAN-A11Y-SECURITY-1-001 (a). The loop period MAY be
   a new motion token under FR-040 if `--ocelle-motion-fast` and `--ocelle-motion-base` are too short for it; such a
@@ -467,7 +513,8 @@ the exceptions FR-050 and FR-054 name.
   their hooks, any added tokens, and the added base-style rules (constitution VII, MINOR).
 - **FR-058**: The README MUST map each kitty-mission-ui `.sk-facts`, `.sk-empty-state` and `.sk-progress` variant to
   the element and variant that replaces it (SC-001). The mapping names the roles only and copies no code
-  (constitution VI).
+  (constitution VI). The variants are those of the inventory the plan's research records (modifiers and states, with
+  counts, role names only), supplied by the operator; a variant no element or variant covers goes to the operator.
 
 ### Key Entities
 

@@ -6,8 +6,8 @@ headless Chromium 153.0.8010.12 with axe-core 4.10.2. The scripts, raw outputs a
 `RESULTS.md` says. #10's `axe` gate pins axe-core 4.14.0. The spike's axe results are re-run against that version in
 phase 1's spike (R-01) before the red commit; a failing recheck stops the flow for the operator (R-01).
 
-Squad round 1 (2026-11-13) changed this file: the operator's fork decisions are cited by finding ID with the option
-taken, for example "PLAN-CORRECTNESS-1-003 (a)".
+Squad rounds 1 and 2 (2026-11-13) changed this file: the operator's fork decisions are cited by finding ID with the
+option taken, for example "PLAN-CORRECTNESS-1-003 (a)" or "PLAN-FRESH-2-001 (c)".
 
 ## R-01 `ocelle-facts`: description list through manual slot assignment (FR-003, FR-004, FR-005)
 
@@ -74,11 +74,17 @@ root, outside the fact, so the sheet carries the fact's host attributes that con
   error), `ocelle-facts` and `ocelle-fact` are unknown inline elements: each value is shown as inline text, the values
   run together on one line, and no label is shown, because the label is an attribute. A server-rendered console page
   shows exactly that. The library therefore ships one recommended rule in `@ocelle/styles`' `base.css`:
-  `:where(ocelle-facts:not(:defined) > ocelle-fact) { display: block; }` (the whole selector inside `:where()`, so
-  (0,0,0) as `base.css`' header requires, and any page rule wins),
+  `:where(ocelle-facts:not(:defined) > ocelle-fact:not([hidden])) { display: block; }` (the whole selector inside
+  `:where()`, so (0,0,0) as `base.css`' header requires, and any page rule wins),
   which puts each value on its own line before upgrade. Labels still appear only after upgrade; the README says so in
   the facts section and corrects its "until then its box is empty" sentence (README line 37) for elements with
   light-DOM content. A styles test and a fixture body (an undefined sheet, then defined) prove the rule.
+- **A hidden fact before upgrade (PLAN-FRESH-2-002).** `base.css` has no `[hidden]` rule, so the only `display: none`
+  on `[hidden]` is the user-agent sheet's, and any author-origin `display` overrides it whatever its specificity.
+  Without `:not([hidden])`, an undefined sheet's `<ocelle-fact hidden>` computes `display: block` (18 px high, its
+  text in `innerText`, measured), against FR-003 and the "A hidden fact" edge case. With it, the hidden fact keeps the
+  user-agent `display: none` before upgrade as after. The styles test includes a hidden fact (no box, `display:
+  none`), and the plant "`:not([hidden])` removed" must fail it.
 
 **Operator decision pending (spec SPEC-1-04 "D").** The measurement shows FR-004 can be met as written with Q1 (b).
 The operator confirms or replaces FR-004 at the plan gate, before tasks.
@@ -91,7 +97,7 @@ tree that is not `DescriptionList > term, definition, …`, or an empty term pru
 the operator before the red commit. FR-003, FR-004 and US1-10 are the operator's to change; review does not reword
 them. Whatever the operator decides, US1-6, US1-7 and US1-10 keep an accessibility-tree oracle (contracts/checks.md).
 
-## R-02 `ocelle-facts`: stacking on the space available, without containment (FR-005, FR-009)
+## R-02 `ocelle-facts`: stacking on its own two-column size, with a `layout` override (FR-005, FR-009, FR-013)
 
 **Problem.** A size container query on the host needs `container-type: inline-size`. The spike (C) measured that host
 at 0 px inline size inside a `showModal()` dialog and inside a default flex item. This is the collapse FR-009 forbids,
@@ -103,34 +109,51 @@ a query.
 host's own resolved inline size with the threshold. In a shrink-to-fit host that size is the sheet's max-content,
 which depends on the sheet's state: two-column max-content can be above the threshold while stacked max-content is
 below it. Reproduced: in a default flex item the sheet is 227 px and stacked at 360 px, and stays 227 px and stacked
-after widening to 1200 px; a short sheet ("Owner / Ada Lovelace") stacks in a dialog at 1200 px. The layout depended on
-history, and a short sheet stacked with ample room. The earlier rejection of flex-wrap for "stacking in a dialog with
-room" applied to that design as well; flex-wrap is rejected only because it loses the shared column.
+after widening to 1200 px. The layout depended on history. The earlier rejection of flex-wrap for "stacking in a dialog
+with room" applied to that design as well; flex-wrap is rejected only because it loses the shared column.
 
-**Decision (PLAN-CORRECTNESS-1-003 (a)).** The grid is plain, with no containment. The element switches between two
-columns and one column on a state-independent measure: **the inline space available to the sheet**, compared with the
-threshold.
-- **Available inline space.** In a block container the sheet fills its container, and the available space is its own
-  content-box inline size. In a shrink-to-fit host (dialog, popover, float, default flex item) it is the space that
-  host offers the sheet, not the sheet's resolved size: the inline size the sheet would take if it filled that space.
-  It never depends on whether the sheet is stacked, so the same content in the same space gives one layout from any
-  history.
-- **Rule.** Two columns when the available inline space is at least the threshold; one column below it. FR-009 still
-  holds: the sheet's own resolved size in a shrink-to-fit host is its max-content (two-column or stacked), capped by
-  the available space, never 0.
-- **Mechanism, chosen in phase 1's spike.** The spike measures, in each shrink-to-fit host, candidates for reading the
-  available space without a feedback from the sheet's state, and picks the first that meets the rule:
-  1. a `ResizeObserver` on the host and on the nearest ancestor whose inline size does not depend on its content
-     (found by walking up through `parentElement` and shadow hosts), the available space being that ancestor's
-     content-box inline size less the host's inline margins;
-  2. a measurement pass inside the observer callback: the `<dl>` is laid out two-column with `inline-size` filling its
-     containing block, the host's inline size is read, and the state is set before paint.
-  The decision is made in the callback, not in `render()`, so a Lit update loop cannot oscillate. If no candidate
-  meets the rule in every host of FR-009, the spike's result goes to the operator before the red commit (FR-005 and
+**What round 2 found in the available-space design (PLAN-FRESH-2-001).** Round 1's decision (a) read "the inline
+space available to the sheet". Neither of its candidate mechanisms met it:
+- the measurement pass (the `<dl>` laid out two-column, filling its containing block, then the host read) gives the
+  sheet's own two-column size: 173 px for a short sheet ("Owner / Ada Lovelace") in a `showModal()` dialog at
+  1280 px, so it stacks there;
+- the ancestor walk (the nearest ancestor whose inline size does not depend on its content) reads a shared ancestor
+  that is too wide: for a default flex item, 200 px of a 600 px row beside a 400 px sibling, the first such ancestor
+  is the row, which reads 600 px and keeps a 200 px sheet in two columns. Flex rows with siblings, grid `auto` tracks
+  and table cells share their container, and no platform API says whether a box's inline size depends on its content.
+
+**Decision (PLAN-FRESH-2-001 (c), amending PLAN-CORRECTNESS-1-003 (a)).** The grid is plain, with no containment. The
+automatic switch reads the sheet's own size, in a state-independent form, and a public property lets the consumer
+choose where that is not what they want.
+- **Measure.** The sheet's own content-box inline size **as laid out in two columns**. In a block container this is
+  the container's inline size in either state. In a shrink-to-fit host (dialog, popover, float, flex item, grid `auto`
+  track, table cell) it is the content's two-column max-content, capped by the space the host offers. The measure
+  never reads the stacked layout, so the same content in the same space gives one layout from any history (FR-009).
+- **Rule.** With `layout` unset: two columns when the measure is at least the threshold; one column below it. A short
+  sheet in a wide dialog therefore stacks, as the measurement above shows; that is the documented cost of this option.
+  FR-009's bound still holds: the sheet's resolved size in a shrink-to-fit host is its max-content (two-column or
+  stacked), capped by the space the host offers, never 0.
+- **`layout` (FR-013).** A reflected property `"columns" | "stacked" | undefined`. `columns` keeps two columns and
+  `stacked` keeps one column at any size; the measure and the threshold are not used. Unset, or any other value, gives
+  the rule above. The README tells consumers with a sheet in a shrink-to-fit host to set `layout`, or to give the sheet
+  an inline size (then it measures that size). With `layout="columns"` at 320 px the value column is still
+  `minmax(0, 1fr)` and the label column is capped at 50%, so the page does not scroll sideways (FR-009).
+- **Mechanism.** One `ResizeObserver` observes the host and both probes (below). Its callback reads the threshold from
+  the probes and, when `layout` is unset, the measure: if the `<dl>` is stacked, the callback removes the `stacked`
+  class, reads the host's content-box inline size (which forces a layout in two columns), and sets the state, all
+  before paint; in a block container the pass changes no size. The decision is made in the callback, not in
+  `render()`, so a Lit update loop cannot oscillate. Phase 1's spike measures this in every host of FR-009 and the
+  shared hosts above, and records whether a flip raises the "ResizeObserver loop completed with undelivered
+  notifications" error, which the fixture's console check would record. If it does, the state is set in a
+  `requestAnimationFrame` from the callback, and the spike records the frames the layout wait then takes. If the
+  measure is not state-independent in some host, the result goes to the operator before the red commit (FR-005 and
   FR-009 are the operator's).
-- **Threshold.** It comes from a hook, `--ocelle-facts-stack-below`, set by default in `:host` to
-  `calc(var(--ocelle-shell-sidebar-width) + var(--ocelle-space-10))`, which is 24rem (384 px at the default root size,
-  more than 320 px as FR-005 requires).
+- **Threshold (PLAN-FRESH-2-008).** It comes from a hook, `--ocelle-facts-stack-below`, set by default in `:host` to
+  `calc(var(--ocelle-space-10) * 6)`, which is 24rem (384 px at the default root size, more than 320 px as FR-005
+  requires). The default is built from the spacing scale, not from `--ocelle-shell-sidebar-width`: the `calc()`
+  resolves on the host from inherited custom properties, so a consumer that resizes its shell's sidebar on `:root`
+  would otherwise move every sheet's stacking point, including in dialogs and inspectors with no sidebar. The spacing
+  scale has no layout meaning of its own.
 - **Probes (PLAN-A11Y-SECURITY-1-004).** The element resolves the threshold to pixels through two probes inside a
   holder: `<div class="probes" aria-hidden="true">` with `position: absolute; inline-size: 0; block-size: 0;
   overflow: visible; visibility: hidden`, holding a hook probe `<div class="probe">` at `inline-size:
@@ -140,13 +163,18 @@ threshold.
   **When the hook probe measures 0 or a non-finite value, the element uses the default probe's measure.** The hook
   takes an absolute length only; the README says so, and that a percentage, 0 or an invalid value falls back to
   24rem.
+- **The probes are observed (PLAN-FRESH-2-004).** The same `ResizeObserver` observes both probes, so a run-time change
+  of `--ocelle-facts-stack-below`, or a root font-size change while a px-sized container keeps its width, resizes a
+  probe and re-runs the decision at once. Without this the layout would stay stale until an unrelated resize, which is
+  the history dependence round 1 removed. A body changes the hook from 15rem to 40rem on a sheet held at 450 px and
+  asserts the flip from two columns to one with no resize of the sheet.
 - **Zero block size is a requirement.** The probes and their holder take no block size, so they add no scrollable
   overflow: an absolutely positioned 384 px probe with `block-size: 0` leaves the page's scroll width at 320 px, but the
   same probe with `block-size: 1px` gives 392 px (measured, Chromium 153). A body asserts the page scroll width at
   320 px with the probes present, and a plant (`block-size: 1px` on the probe) must fail it.
 - **State.** The `stacked` state is a class on the `<dl>`, not a host attribute, and the probes carry classes, not
-  parts, so neither is public surface. The `<dl>` then becomes one column, `minmax(0, 1fr)`, with each value below
-  its label.
+  parts, so neither is public surface (`layout` is the public input). The `<dl>` then becomes one column,
+  `minmax(0, 1fr)`, with each value below its label.
 - **Why a hook rather than a constant.** `--ocelle-facts-stack-below` is the element's own hook (README § Element
   conventions: `--ocelle-<element>-<property>`). A consumer with a wider inspector can lower it. It is declared in the
   manifest's CSS custom properties.
@@ -159,6 +187,10 @@ threshold.
   content's max-content, and it fails FR-009 for long values.
 - Flex-wrap per pair: it loses the shared column.
 - The host's own resolved inline size (the first design): history-dependent in shrink-to-fit hosts, as above.
+- The available inline space with an ancestor walk (round 1's candidate 1): a shared ancestor is too wide, as above.
+- PLAN-FRESH-2-001's other options, not chosen by the operator: (a) "available space" defined per shared host, (b) a
+  squeeze rule on the value column's max-content and a token floor, (d) no override, with the consumer giving the
+  sheet an inline size.
 
 **When the layout is read (PLAN-TESTABILITY-1-003).** `settle()` in `test/in-process.ts` waits for `updateComplete`
 and one `requestAnimationFrame`. Animation-frame callbacks run before layout and before `ResizeObserver` delivery in
@@ -166,16 +198,20 @@ the same frame, and the `stacked` class is set in the observer callback and foll
 reads the pre-decision layout. The facts bodies therefore wait with a layout settle: after `updateComplete`, the driver
 polls once per animation frame until two consecutive frames give the same host and `<dl>` geometry and the element's
 `updateComplete` is resolved, failing the body after 10 frames. Phase 1's spike measures the number of frames this
-takes in both harnesses, and the "probe removed" plant is run with this wait in place, so it fails on the layout and
-not on timing. A body resizes the host from 600 px to 300 px and back to 600 px, so the observer path runs after the
-first layout.
+takes in both harnesses, and the stacking and probe plants are run with this wait in place, so they fail on the
+layout and not on timing. A body resizes the host from 600 px to 300 px and back to 600 px, so the observer path runs
+after the first layout.
 
 **To measure in phase 1's spike**, before the red commit:
-- the available-space mechanism (above) in a `showModal()` dialog, a popover, a float and a default flex item: the
-  host's inline size against FR-009's bound, a short sheet in a dialog at 1280 px (two columns), and a sheet loaded at
-  360 px then widened to 1200 px (two columns after widening, the same as loaded wide);
-- the stacked state at 300 px and the two-column state at 600 px, and the layout-settle wait in both harnesses;
-- the probes with an invalid hook, a percentage hook and a 0 hook at 320 px (stacked);
+- the measure (above) in a `showModal()` dialog, a popover, a float, a default flex item, a flex row with a 400 px
+  fixed sibling, a grid `auto` track and a table cell: the host's inline size against FR-009's bound; a short sheet in
+  a dialog at 1280 px (one column without `layout`, two columns with `layout="columns"`); a sheet loaded at 360 px
+  then widened to 1200 px (the same layout as loaded at 1200 px, in each host); and whether a flip raises the
+  `ResizeObserver` loop error;
+- the stacked and two-column states at 300 px and 600 px, `layout="columns"` at 320 px with no page overflow, and the
+  layout-settle wait in both harnesses;
+- the probes with an invalid hook, a percentage hook and a 0 hook at 320 px (stacked), with a valid 15rem hook at
+  300 px (two columns) and a valid 40rem hook at 600 px (stacked), and a hook changed at a fixed 450 px width;
 - right-to-left mirroring of the columns (SPEC-2-08).
 
 ## R-03 `ocelle-facts`: grid, type and density (FR-005 to FR-008)
@@ -224,6 +260,7 @@ first layout.
   - **#280, #498, #510 and #523** are not in the repository and were not read: that repository is outside this
     session's GitHub scope. The plan asks the orchestrator to fetch them read-only before the plan gate (plan
     Decision 5); #510 bears on FR-022 and US2, #498 on US3.
+  - The kitty-mission-ui variant inventory the README mapping needs is R-11.
 - **Wrap policy (FR-007, SPEC-2-10, PLAN-CORRECTNESS-1-015).** `ocelle-fact` has a `wrap` property, reflected and
   taking only `"anywhere"`. With it, the fact's shadow rule `:host([wrap="anywhere"]) slot { overflow-wrap: anywhere; }`
   sets the policy on the value's slot, which the value content inherits through the flat tree. The label never takes
@@ -245,10 +282,23 @@ first layout.
   name="visual"></slot></div>`, `<div class="heading"><slot name="heading"></slot></div>`, `<div class="text"><slot>
   </slot></div>` and `<div class="actions"><slot name="actions"></slot></div>`. None of these wrappers has a role:
   they are generic and ignored. There is no heading, landmark, live region or tab stop.
-- **Present parts (FR-023, SPEC-2-06).** A part is present while its slot has assigned nodes that are not
-  whitespace-only text. This is tracked by a `slotchange` listener per slot into internal state (`has.visual`,
-  `has.heading`, `has.text`, `has.actions`). An absent part's wrapper is `display: none`. Filling or emptying a slot
-  later updates it.
+- **Present parts (FR-023, SPEC-2-06, PLAN-FRESH-2-007 (a)).** A part is present while something assigned to its slot
+  renders: an assigned element whose computed `display` is not `none` (it generates a box, or `display: contents`), or
+  an assigned text node with non-whitespace text. Measured in round 2: a slotted `<div hidden>` is in
+  `assignedNodes()`, and removing `hidden` fires no `slotchange`, so counting assigned nodes alone would keep a hidden
+  part present (its neighbour keeping a `margin-block-end`, a gap FR-023 forbids) and miss a later toggle. The flags
+  (`has.visual`, `has.heading`, `has.text`, `has.actions`) are therefore recomputed:
+  - on `slotchange` of each slot, which also re-targets the observer below at the new assigned nodes;
+  - from one `MutationObserver` on the assigned nodes: `attributes` with `attributeFilter: ["hidden"]` on assigned
+    elements, and `characterData` on assigned text nodes.
+  An absent part's wrapper is `display: none`. Filling or emptying a slot, or toggling `hidden` on slotted content,
+  updates it. `checkVisibility()` is not used: it is WebKit 17.4, above the engine floor (16.4). Content the consumer
+  hides with its own class or style rule is not observed (no attribute the observer can name); the README says to
+  use `hidden` or to remove the node. A body toggles `hidden` on a slotted action (US2-9), and the plant "the `hidden`
+  observer removed" must fail it.
+- **Alternatives (PLAN-FRESH-2-007), not chosen by the operator.** (b) Keep counting assigned nodes and document that
+  a hidden slotted element counts as present; (c) a flex `gap` with `display: contents` wrappers, so hidden content
+  adds no space by construction, which may not reproduce R-04's per-pair gap table.
 - **Gaps between present parts (FR-021, FR-023, PLAN-CORRECTNESS-1-009).** The column has no `gap`. Each present part
   except the last present one carries a `margin-block-end`, chosen by that part (the previous present part of the
   pair); the last present part has none, and no part has a `margin-block-start`. So the first present part starts at
@@ -424,7 +474,32 @@ its oracle is not weakened.
   then rests on its own geometry, the still mark, without any further motion. The bar still shows that work is going
   on. The total is `--ocelle-motion-base` × 7 × 3 = `--ocelle-motion-base` × 21, so a consumer that overrides
   `--ocelle-motion-base` above 238 ms (5000 / 21) takes the sweep past 5 s; the README says so.
-  The motion restarts only when the bar becomes indeterminate again (a value removed after being set).
+- **One sweep per page (PLAN-FRESH-2-005 (a)).** A CSS animation starts on every insertion and whenever an element
+  leaves `display: none`. Per node, an htmx poll that swaps the loading region, or a Svelte `{#if}`, would start a
+  fresh 4.2 s sweep each time, so motion would run as long as the polling lasts: 2.2.2's 5 s would hold per animation
+  but not for what the user sees (constitution I names htmx pages as hosts). The sweep is therefore anchored to the
+  page:
+  - **The page start.** When the first indeterminate bar's mark animation starts on a document, the element records
+    `document.timeline.currentTime` as the page's sweep start. It is kept on the `document` under
+    `Symbol.for("ocelle.progress.sweepStart")`, so two copies of the package on a page share it. It is not public
+    surface: no manifest entry, no README name.
+  - **Each animation joins it.** Whenever the mark has a CSS animation (in `updated()`, after `getAnimations()` on the
+    mark brings its style up to date, and on every `animationstart` event from the mark, which also covers a node
+    leaving `display: none`, an ancestor re-shown and a direction change that swaps the keyframes), the element sets
+    that animation's `startTime` to the page start through the Web Animations API. This is not a style write, so the
+    strict CSP is unaffected (constitution IV).
+  - **After the window.** A bar inserted, re-shown or made indeterminate again after the page start plus the sweep's
+    active duration has a `startTime` that puts its animation past its end: with `animation-fill-mode: none` it shows
+    the still mark at once, with no running animation. A bar inserted inside the window continues the sweep where the
+    page's sweep is.
+  - **Cost, accepted with the option.** A genuinely new operation later on the same page also shows only the still
+    mark. The README says so: the sweep runs once per page, for at most 4.2 s at the default tokens.
+  - **Tests.** A body replaces the bar 2 s after the first insertion (the driver's `replace`) and asserts no running
+    animation on the page's bars 5 s after the first insertion, with the still mark's geometry (US3-14); the plant
+    "the shared start dropped" (each animation keeps its own start) must fail it. Each harness's `mount` deletes the
+    page start, so every body starts as a fresh page (contracts/checks.md § Driver additions).
+- **Alternatives (PLAN-FRESH-2-005), not chosen by the operator.** (b) Per-node restarts, with the README telling
+  consumers to keep the node across polls; (c) one sweep per region or consumer-set key, which adds public surface.
 - `translateX(<percentage>)` and the bare integer of `animation-iteration-count` need a recorded `token-only`
   allowance (R-10, PLAN-CORRECTNESS-1-001 (a)).
 - No new motion token is needed: `calc()` with a number factor on a token passes `token-only`, and it resolves to 0 ms
@@ -485,7 +560,8 @@ No new token.
 - The progress track uses `color-inset`, `color-control-border`, `color-accent-strong`, `space-2`, `space-1`,
   `radius-1` and `measure-cell`.
 - The loop period is `calc(var(--ocelle-motion-base) * 7)`.
-- The facts threshold is the hook `--ocelle-facts-stack-below`, which defaults to existing tokens; the value scale is
+- The facts threshold is the hook `--ocelle-facts-stack-below`, which defaults to existing tokens
+  (`calc(var(--ocelle-space-10) * 6)`, R-02); the value scale is
   the hooks `--ocelle-facts-value-size` and `--ocelle-facts-value-line-height`, which default to existing tokens.
 
 `@ocelle/tokens` does not change (PLAN-CORRECTNESS-1-007 (b)): no contrast row, no declared ground and no pinned count
@@ -494,8 +570,8 @@ moves. Every pair is checked by an existing row (R-06).
 `@ocelle/styles` changes in phase 1, in `base.css`, with tests, README and CHANGELOG:
 - the compact and regular rules of the density hook also set `--ocelle-facts-value-size` and
   `--ocelle-facts-value-line-height` (R-03, PLAN-CORRECTNESS-1-002 (b));
-- the pre-upgrade rule `:where(ocelle-facts:not(:defined) > ocelle-fact) { display: block; }`, specificity (0,0,0) (R-01, PLAN-FRESH-1-009
-  (a)).
+- the pre-upgrade rule `:where(ocelle-facts:not(:defined) > ocelle-fact:not([hidden])) { display: block; }`,
+  specificity (0,0,0), which leaves a hidden fact hidden (R-01, PLAN-FRESH-1-009 (a), PLAN-FRESH-2-002).
 Both are additions to documented base-style behaviour (MINOR, constitution VII).
 
 ## R-08 Test harnesses, stories and #10 (FR-050 to FR-055, I3)
@@ -519,8 +595,9 @@ Both are additions to documented base-style behaviour (MINOR, constitution VII).
     the viewport at 1280 × 800. Each is added to the driver interface and both harnesses, with its own test (contracts
     /checks.md § Driver additions).
 - **Stories.** In `storybook/stories/<element>.stories.ts`, in light and dark (#10's harness captures both):
-  - **facts**: default, compact, stacked (a 300 px wrapper), identifier wrap, missing label, missing value, link in
-    value, right-to-left, inside a compact region;
+  - **facts**: default, compact, stacked (a 300 px wrapper), `layout="columns"` in a shrink-to-fit wrapper,
+    `layout="stacked"` in a wide wrapper, identifier wrap, missing label, missing value, link in value, right-to-left,
+    inside a compact region;
   - **empty-state**: default, panel, panel loading (with an indeterminate `ocelle-progress`), heading only, actions
     only, several actions at 320 px;
   - **progress**: determinate, zero, full, indeterminate, compact, labelled, labelled compact, value text,
@@ -534,8 +611,10 @@ Both are additions to documented base-style behaviour (MINOR, constitution VII).
   PLAN-A11Y-SECURITY-1-005): every facts story at a 320 px viewport has a page scroll width equal to the viewport
   width (SC-002); every story under reduced motion has no running animation or transition (SC-005); every progressbar
   node in every story has a non-empty name. Each is paired with a positive read (the story's element rendered with a
-  non-zero size; a running animation on the indeterminate story without reduced motion). `red.sh` records one red
-  record per phase. The stories themselves are not tests and land in green.
+  non-zero size; a running animation on the indeterminate story without reduced motion). The sweep lasts 4.2 s from
+  the page start (R-06), so the motion reads are taken on a freshly loaded story page within the first 1400 ms
+  iteration, and the reduced-motion read uses the same fresh load (PLAN-FRESH-2-009, contracts/checks.md § Story
+  test). `red.sh` records one red record per phase. The stories themselves are not tests and land in green.
 - **#10 (FR-051).** #10 is designed, not merged (`origin/claude/010-storybook-workbench`,
   `specs/006-storybook-workbench`). The stories follow its contributor note (FR-025): open shadow roots, every surface
   inside the host, `font: inherit` on form controls (none here), and run-time CSP proven in the element package's own
@@ -558,8 +637,9 @@ Both are additions to documented base-style behaviour (MINOR, constitution VII).
 - **Engines.** ElementInternals ARIA reflection (`role`, `ariaValueNow`, …) is already used by `ocelle-icon`.
   `slotAssignment: "manual"` and `HTMLSlotElement.assign()` are Chromium 86 and WebKit 16.4. `ResizeObserver` is older
   than both. `fit-content()` in grid tracks is older than both. `overflow: clip` is Chromium 90 and WebKit 16. The
-  floor (Chromium 120, WebKit 16.4) does not rise. The README's Engines list adds manual slot assignment with its
-  figures.
+  floor (Chromium 120, WebKit 16.4) does not rise. Setting a CSS animation's `startTime` (R-06) and
+  `MutationObserver` (R-04) are older than the floor; `checkVisibility()` (WebKit 17.4) is not used. The README's
+  Engines list adds manual slot assignment with its figures.
 
 ## R-09 Wave dependencies
 
@@ -600,3 +680,31 @@ identifier and was already allowed; the sweep does not use it.)
   property `custom-elements.json` declares. The three facts hooks are declared in the manifest (contracts/elements.md),
   and `base.css` sets two of them as custom-property declarations, so the regenerated manifest lands in the same green
   commit as the `base.css` change.
+
+## R-11 kitty-mission-ui variant inventory (FR-058, SC-001, PLAN-FRESH-2-006)
+
+**Need.** SC-001 and FR-058 ask for a README mapping of every `.sk-facts`, `.sk-empty-state` and `.sk-progress`
+variant kitty-mission-ui uses. Constitution VI makes that consumer need the driver of the elements' surface. The only
+record in this repository is the triage record (`triage/013-data-display.md`: 183 class uses, 34, 75 and 74, with no
+modifiers or states) and 003's copy of the spec-kitty-design issues; a repository grep outside `specs/013` finds
+nothing else.
+
+**Input the operator supplies.** kitty-mission-ui is outside this session's GitHub scope, so the orchestrator cannot
+fetch it (plan Decision 5). The operator supplies, before the plan gate, an inventory of the three class families'
+modifiers and states as kitty-mission-ui uses them, with a count for each, naming roles only and copying no code
+(constitution VI). It is recorded here, in the table below, before the plan gate.
+
+| Family | Modifier or state (role name) | Uses | Element and variant | Phase |
+|---|---|---|---|---|
+| `.sk-facts` | pending the operator's inventory | | | 1 |
+| `.sk-empty-state` | pending the operator's inventory | | | 2 |
+| `.sk-progress` | pending the operator's inventory | | | 3 |
+
+**Gaps.** A variant that no element, property or slot of this plan covers goes to the operator before the plan gate
+(or, if found later, before the red commit of its element's phase); the surface is not widened by review.
+
+**Where the mapping is written.** Each element's mapping rows (FR-058) are written in that element's phase, red
+first: the readme-test statements for the rows in the phase's red commit, the rows in its green commit (facts in
+phase 1, empty state in phase 2, progress in phase 3). Phase 4 checks only that the three sections together cover
+the inventory (SC-001, in review).
+

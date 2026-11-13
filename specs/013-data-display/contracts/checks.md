@@ -65,7 +65,7 @@ something only the element gives:
   holds its own fact's value text and follows its own fact's term. Plant: the slots assigned in reverse order.
 - **Layout settle (US1-1 to US1-3, US1-9, the resize bodies; PLAN-TESTABILITY-1-003).** The driver's `layout` wait
   (R-02): after `updateComplete`, poll once per animation frame until two consecutive frames give the same geometry,
-  failing after 10 frames. The "probe removed" plant is run with this wait. A body resizes the host 600 → 300 →
+  failing after 10 frames. The stacking and probe plants are run with this wait. A body resizes the host 600 → 300 →
   600 px and asserts two columns, one column, two columns.
 - **Copy (US1-4, PLAN-TESTABILITY-1-012).** The driver selects the rendered value's text and performs a user copy;
   the body reads the copy event's `clipboardData.getData("text/plain")` and asserts it equals the 64-character
@@ -81,11 +81,19 @@ something only the element gives:
 - **Reduced motion (US3-5, PLAN-TESTABILITY-1-009).** The body reads running animations and transitions on the
   element's subtree (`getAnimations`, § Driver additions): none under reduced motion, paired in the same body with at
   least one running animation on the mark without reduced motion, and the still mark's geometry (30% to 70% of the
-  track). Plant: the still-mark inset removed. Removing `animation: none` is an equivalent change (the duration is
-  already 0 ms under reduced motion), recorded, not a plant.
+  track). Both reads fall inside the page's first sweep iteration after the mount (which starts a fresh page sweep,
+  § Driver additions), the reduced-motion read first, so "none" cannot come from a sweep that has already ended.
+  Plant: the still-mark inset removed. Removing `animation: none` is an equivalent change (the duration is already
+  0 ms under reduced motion), recorded, not a plant.
 - **Bounded sweep (US3-12, PLAN-A11Y-SECURITY-1-001 (a)).** Without reduced motion, the mark's animation has a finite
   end time below 5000 ms (`effect.getComputedTiming().endTime`); after `finished` resolves the subtree has no running
   animation and the mark has the still mark's geometry. Plant: `infinite` restored.
+- **One sweep per page (US3-14, PLAN-FRESH-2-005 (a)).** After a fresh mount an indeterminate bar is shown; 2 s later
+  the driver's `replace` swaps it for a new indeterminate bar (a new node, as an htmx swap does). The body asserts a
+  running animation on the new bar right after the swap (it joined the window), then, 5 s after the first bar was
+  shown, no running animation on any bar and the still mark's geometry. A second body makes a bar determinate and then
+  indeterminate again after the window and asserts no running animation at once, paired with the still mark's
+  geometry. Plant: the shared start dropped (each animation keeps its own start); US3-14 must fail.
 - **Mark colour (US3-7).** Plant: the `accent-strong` inset shadow removed.
 - **Forced colours (US3-8, PLAN-A11Y-SECURITY-1-006).** The track's outline colour and the fill's background are
   system colours and differ; the fill's computed `box-shadow` is `none`. Plant: the forced-colours `box-shadow: none`
@@ -105,26 +113,41 @@ From the spec check notes and squad round 1:
   - a standalone fact moved into an `ocelle-facts` (one term, no extra label text in the AX subtree) and back out
     (the plain rendering) (PLAN-TESTABILITY-1-014);
   - a non-`ocelle-fact` child is hidden;
-  - shrink-to-fit hosts (dialog, popover, float, flex item) with FR-009's bound; a short sheet in a dialog at 1280 px
-    in two columns; a sheet loaded at 360 px then widened to 1200 px in two columns (PLAN-CORRECTNESS-1-003 (a));
+  - shrink-to-fit hosts (dialog, popover, float, default flex item, a flex row with a 400 px fixed sibling, a grid
+    `auto` track, a table cell) with FR-009's bound; a sheet loaded at 360 px then widened to 1200 px in each, with
+    the same layout as loaded at 1200 px (PLAN-CORRECTNESS-1-003 (a), PLAN-FRESH-2-001 (c));
+  - `layout` (US1-11, FR-013, PLAN-FRESH-2-001 (c)): a short sheet in a dialog at 1280 px, one column without
+    `layout` and two columns with `layout="columns"`; `layout="stacked"` in a 600 px block container, one column;
+    `layout="columns"` at a 320 px viewport, two columns with the page scroll width equal to the viewport width; an
+    unknown value (`layout="grid"`) acting as unset; removing `layout` returning to the automatic layout;
   - the resize body (600 → 300 → 600 px);
-  - the hook: invalid (`24 rem`), a percentage and 0, each at 320 px, stacked; and the page scroll width at 320 px
-    with the probes present (PLAN-A11Y-SECURITY-1-004);
+  - the hook fallbacks: invalid (`24 rem`), a percentage and 0, each at 320 px, stacked; and the page scroll width at
+    320 px with the probes present (PLAN-A11Y-SECURITY-1-004);
+  - a valid hook where the default gives the opposite result (PLAN-FRESH-2-003): a 300 px sheet with the hook at
+    15rem in two columns, and a 600 px sheet with the hook at 40rem stacked;
+  - the hook changed at run time (PLAN-FRESH-2-004): a sheet held at 450 px, hook 15rem (two columns), then 40rem
+    (one column) with no resize of the sheet, asserted after the layout wait;
   - inside a `data-ocelle-density="compact"` region: values at 14 px and 1.5; in a `regular` region nested in it:
     17 px and 1.45; `density="compact"` alone: values at 17 px, row gap `--ocelle-space-1`
     (PLAN-CORRECTNESS-1-002 (b));
   - the import of `ocelle-facts.js` alone defines `ocelle-fact` (entry test, PLAN-CORRECTNESS-1-012 (a));
-  - unset properties write no attribute (`density`, and `label` and `wrap` on a fact) (PLAN-CORRECTNESS-1-011 (a)).
+  - unset properties write no attribute (`density` and `layout`, and `label` and `wrap` on a fact)
+    (PLAN-CORRECTNESS-1-011 (a)).
 - **empty state:**
   - slots filled and emptied after first render; several actions at 320 px (SPEC-2-07);
   - heading only, actions only, and visual plus text: the first present part starts at the block padding edge, the
     last ends at it, and each gap is R-04's for that pair (PLAN-CORRECTNESS-1-009);
+  - hidden slotted content (US2-9, PLAN-FRESH-2-007 (a)): an action slotted with `hidden` leaves the body as the last
+    present part (no gap below it), and removing `hidden` brings the action back with the body-to-actions gap; a
+    slotted `<div hidden>` as the only visual leaves the heading at the block padding edge; default-slot text changed
+    from whitespace to words makes the text part present. Plant: the `hidden` observer removed;
   - unset `variant` writes no attribute.
 - **progress:**
   - `value-text` ignored while indeterminate and kept when clamped (SPEC-2-02);
   - a `value` set, then removed: the mark is 40% of the track, with and without reduced motion (PLAN-CORRECTNESS-1-005);
   - right-to-left indeterminate: at the start of the sweep the mark is at the inline-start (right) side and moves
     towards the left; the determinate fill grows from the right (PLAN-CORRECTNESS-1-004);
+  - one sweep per page: US3-14 and the determinate-then-indeterminate body after the window (PLAN-FRESH-2-005 (a));
   - at a 320 px viewport, motion not reduced, the page scroll width equals the viewport width while the sweep runs
     (sampled at several animation times) (PLAN-CORRECTNESS-1-006);
   - `ground="tinted"`: the track boundary colour resolves to `--ocelle-color-accent-strong`; unset, to
@@ -140,7 +163,11 @@ a stated reason why its expected value differs from the browser default and from
 |---|---|---|
 | label column capped at 50% | long-label body | plant: `fit-content(50%)` replaced by `auto` |
 | value column never widened | US1-3 | plant: `minmax(0, 1fr)` replaced by `1fr` |
-| stacking | US1-2, resize | plant: the probe removed |
+| stacking | US1-2, resize | plant: the `stacked` class's one-column rule removed |
+| threshold from a valid hook | valid-hook bodies (15rem at 300 px, 40rem at 600 px) | plant: the hook probe ignored (the default probe's measure always used); each valid-hook body must fail |
+| threshold fallback | hook-fallback bodies (invalid, percentage, 0 at 320 px) | plant: the default probe removed (no fallback); each fallback body must fail |
+| threshold change without resize | hook-change body (450 px) | plant: the probes not observed (only the host); the hook-change body must fail |
+| `layout` override | US1-11 | reason: one and two columns are asserted for the same short sheet in one body, and `stacked` in a container where the automatic layout gives two columns |
 | probes add no overflow | 320 px probe body | plant: `block-size: 1px` on the probe |
 | row gaps, default and compact | US1-9 | reason: both are asserted in one body, differ from each other and from the grid default (0) |
 | right-to-left columns | RTL body | reason: the label's inline position is asserted in LTR and RTL in one body |
@@ -149,6 +176,7 @@ a stated reason why its expected value differs from the browser default and from
 | wrap policy on the value only | US1-3, standalone wrap body | plant: the `wrap` rule removed; reason for the label: `normal` is asserted beside the value's `anywhere` |
 | facts forced colours | US1-8 | reason: system colours differ from the token colours read in the same body |
 | empty-state gaps and padding | US2-3, US2-4, present-parts bodies | plant: the "last present part has no margin" rule removed; reason: default and panel values are asserted in one body and differ |
+| hidden slotted content | US2-9 | plant: the `hidden` observer removed (presence counted from `slotchange` only) |
 | heading weights | US2-3, US2-4 | reason: 600 and 500 differ from each other and from the user-agent heading's 700 |
 | progress bar width in `visual` | US2-7 | plant: the `::slotted(ocelle-progress)` rule removed |
 | empty-state forced colours | US2-8 | reason: system colours differ from the token colours |
@@ -159,10 +187,12 @@ a stated reason why its expected value differs from the browser default and from
 | forced-colours fill | US3-8 | plant: the fill's `box-shadow: none` removed |
 | still mark | US3-5, US3-12 | plant: the still-mark inset removed |
 | bounded sweep | US3-12 | plant: `infinite` restored |
+| one sweep per page | US3-14 | plant: the shared start dropped |
 | right-to-left sweep | RTL indeterminate body | plant: the right-to-left keyframes rule removed |
 | determinate direction | RTL determinate body | reason: the fill's inline-start edge is asserted at the left in LTR and the right in RTL in one body |
 | visible label figures | US3-10 | reason: `tabular-nums` differs from `normal` |
 | facts before upgrade (`@ocelle/styles`) | styles browser test | plant: the rule removed from `base.css` |
+| hidden fact before upgrade (`@ocelle/styles`) | styles browser test (hidden fact) | plant: `:not([hidden])` removed from the rule |
 
 ## Driver additions (PLAN-TESTABILITY-1-013, PLAN-CORRECTNESS-1-013, PLAN-TESTABILITY-1-006)
 
@@ -178,6 +208,8 @@ first phase that uses it:
 | `layout(id)` | the layout-settle wait (R-02) | 1 |
 | `copy(id)` | selects the element's rendered text, performs a user copy, returns the copy event's `text/plain` | 1 |
 | `move(id, parentId)` | moves an element under another parent (or to the body) | 1 |
+| `replace(id, markup)` | replaces an element with new nodes parsed from markup, in one task, as an htmx swap does | 3 |
+| page sweep start reset in `mount` | each harness's `mount` deletes the document's page sweep start (R-06), so every body starts as a fresh page; its test mounts an indeterminate bar, waits past the 4.2 s window (no running animation), mounts again and asserts a running sweep | 3 |
 | `pressTab()`, `focused()` | presses Tab; returns the focused element through shadow roots | 2 |
 | `reducedMotion(mode)` | the command `emulateReducedMotion`: `page.emulateMedia({ reducedMotion })` in `emulate()`, so forced colours do not clear it; reset in each progress test file's `afterEach`; its test asserts `matchMedia` after the command, after a later `emulateForcedColors` call, and after the reset | 3 |
 | `animations(id)` | running animations and transitions on the element and its shadow subtree, with play state and end time | 3 |
@@ -209,7 +241,14 @@ PLAN-A11Y-SECURITY-1-005):
 - every facts story at a 320 px viewport: page scroll width equals the viewport width (SC-002), paired with the
   sheet's rendered inline size above 0;
 - every story under reduced motion: no running animation or transition (SC-005), paired with a running animation on
-  the indeterminate progress story without reduced motion;
+  the indeterminate progress story without reduced motion (PLAN-FRESH-2-009). The sweep ends 4.2 s after the page
+  start with `animation-fill-mode: none`, and after PLAN-FRESH-2-005 (a) re-inserting the bar or making it
+  determinate and then indeterminate does not restart it within a page. So each motion read restarts the sweep the
+  only way it restarts, by loading the story afresh (a new document, so a new page start), and reads within the first
+  1400 ms iteration; the read records the mark animation's `currentTime` and fails as "read outside the first
+  iteration" when it is 1400 ms or more, so a slow machine fails loudly instead of passing or failing on timing. The
+  reduced-motion read uses the same fresh load, so "no running animation" is not the result of a sweep that already
+  ended;
 - every story: each progressbar node in its accessibility tree has a non-empty name, paired with the count of
   progressbar nodes in the progress and panel-loading stories being above 0. Plant: one story's `label` removed.
 
@@ -219,7 +258,9 @@ PLAN-A11Y-SECURITY-1-005):
   `--ocelle-facts-value-line-height` resolve to the compact size and line height, and inside a nested regular region
   to `--ocelle-font-size-fact` and `--ocelle-line-height-normal`.
 - A browser test on an undefined `ocelle-facts` (no element module loaded): each `ocelle-fact` child is a block, one
-  per line; once the elements are defined, the rule no longer matches.
+  per line; a child with `hidden` computes `display: none` and has no box (no client rects, its text not in the
+  sheet's `innerText`) (PLAN-FRESH-2-002); once the elements are defined, the rule no longer matches. Plants: the rule
+  removed; `:not([hidden])` removed.
 - `packages/styles/test/readme.test.ts`: the README statements for both.
 
 ## Gates touched

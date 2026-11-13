@@ -33,18 +33,19 @@ default.
 | Kind | Name | Type / value | Default | Description (manifest) |
 |---|---|---|---|---|
 | property / attribute | `density` / `density` (reflected) | `"compact" \| undefined` | `undefined` | Row spacing: `compact` tightens the gaps for dense screens. Unset gives the default spacing. It does not change the type: in a `data-ocelle-density="compact"` region the values take the region's scale. |
+| property / attribute | `layout` / `layout` (reflected) | `"columns" \| "stacked" \| undefined` | `undefined` | `columns` keeps two columns and `stacked` one column at any size. Unset switches automatically on the sheet's own two-column inline size; set it for a sheet in a dialog, popover or other shrink-to-fit host, where a short sheet would otherwise stack. |
 | slot | (default) | `ocelle-fact` elements | none | The pairs, in source order. Other children, and facts with `hidden` or `aria-hidden="true"`, are not shown. |
 | part | `list` | `<dl>` | none | The description list grid. |
 | part | `label` | `<dt>` | none | Each term (label). Carries the fact's `lang` and `dir`. |
 | part | `value` | `<dd>` | none | Each definition (value) box. |
-| CSS property | `--ocelle-facts-stack-below` | absolute length | 24rem from tokens | Below this available inline size, each value stacks under its label. A percentage, 0 or an invalid value falls back to the default. |
+| CSS property | `--ocelle-facts-stack-below` | absolute length | 24rem from tokens | With `layout` unset, below this inline size (the sheet's own, as laid out in two columns) each value stacks under its label. A percentage, 0 or an invalid value falls back to the default. |
 | CSS property | `--ocelle-facts-value-size` | length | `--ocelle-font-size-fact` | The values' font size. Set by `@ocelle/styles`' density hook (`--ocelle-font-size-sm` in a compact region). |
 | CSS property | `--ocelle-facts-value-line-height` | number | `--ocelle-line-height-normal` | The values' line height. Set by `@ocelle/styles`' density hook (`--ocelle-line-height-compact` in a compact region). |
 | events | none | | | |
 
 Tokens read (README, not manifest): `font-sans`, `font-size-sm`, `font-size-fact`, `font-weight-medium`,
 `font-weight-regular`, `color-ink`, `color-ink-muted`, `figures`, `line-height-normal`, `space-1`, `space-3`,
-`space-4`, `shell-sidebar-width`, `space-10`.
+`space-4`, `space-10` (the threshold's default is `calc(var(--ocelle-space-10) * 6)`, R-02).
 
 ## `ocelle-fact`
 
@@ -95,24 +96,32 @@ Tokens read (README, not manifest): `font-sans`, `font-size-sm`, `font-size-fact
 - **`ocelle-facts`** (with `ocelle-fact`): usage; the slotted-item convention (only `ocelle-fact` children; the sheet
   renders the terms; manual slot assignment, R-01); `hidden` and `aria-hidden="true"` on a fact remove the pair, and
   `lang` and `dir` on a fact apply to its label; the wrap policy (the value only); digests are the consumer's; the
-  threshold hook (an absolute length only, with its fallback) and the stacking rule on the available space; density:
-  `density="compact"` tightens gaps, a compact region sets the value scale (#531); before upgrade (each value on its
-  own line through `@ocelle/styles`, labels only after upgrade); tokens read.
+  threshold hook (an absolute length only, with its fallback) and the stacking rule on the sheet's own two-column
+  size; `layout`, and that a sheet in a shrink-to-fit host (dialog, popover, float, flex item) with short content
+  stacks unless `layout` is set or the sheet is given an inline size; density: `density="compact"` tightens gaps, a
+  compact region sets the value scale (#531); before upgrade (each value on its own line through `@ocelle/styles`, a
+  hidden fact stays hidden, labels only after upgrade); tokens read; the `.sk-facts` mapping rows (FR-058, phase 1).
 - **`ocelle-empty-state`**: the heading rule (the consumer's own heading, no `level`), slots, variants, the gaps
-  between present parts, a progress bar in `visual`, the cascade note, the loading panel, and tokens read.
+  between present parts (a part with only hidden or whitespace content is absent; hide slotted content with `hidden`
+  or remove it, since a class or style rule is not observed), a progress bar in `visual`, the cascade note, the
+  loading panel, tokens read, and the `.sk-empty-state` mapping rows (FR-058, phase 2).
 - **`ocelle-progress`**: naming (`label` recommended, or a host `aria-label`; an unnamed bar is a consumer error); axe
   does not check the name, and a host `aria-label` makes axe report a false `aria-prohibited-attr` in a consumer's own
-  audit (R-05); the value rules; `value-text`; the bounded sweep (under 5 s, then the still mark, WCAG 2.2.2; `--ocelle-motion-base` × 21 in total, so an
-  override above 238 ms takes it past 5 s) and
-  reduced motion; `ground="tinted"` and which grounds need it; the busy vocabulary (FR-033); tokens read.
+  audit (R-05); the value rules; `value-text`; the bounded sweep (under 5 s, then the still mark, WCAG 2.2.2;
+  `--ocelle-motion-base` × 21 in total, so an override above 238 ms takes it past 5 s), run once per page: a bar
+  inserted, replaced or made indeterminate again continues the page's sweep and after it shows the still mark at once,
+  including a later, unrelated loading region (PLAN-FRESH-2-005 (a)); reduced motion; `ground="tinted"` and which
+  grounds need it; the busy vocabulary (FR-033); tokens read; the `.sk-progress` mapping rows (FR-058, phase 3).
 - **Element conventions**: one paragraph each for slotted items (FR-056, with the container-imports-its-item rule) and
   for the identifier wrap property; the `undefined` defaults are unchanged from 005.
 - **Builds**: the sentence "until then its box is empty" corrected for elements with light-DOM content (R-01).
 - **Engines**: manual slot assignment (`slotAssignment: "manual"`, `HTMLSlotElement.assign`): Chromium 86, WebKit
   16.4. The floor is unchanged.
-- **Mapping (FR-058)**: each kitty-mission-ui `.sk-facts`, `.sk-empty-state` and `.sk-progress` variant to its element
-  and variant, naming roles only.
+- **Mapping (FR-058)**: each kitty-mission-ui `.sk-facts`, `.sk-empty-state` and `.sk-progress` variant of the
+  inventory in research R-11 to its element and variant, naming roles only. Each element's rows are written in that
+  element's phase, red first (PLAN-FRESH-2-006).
 
 `@ocelle/styles`' README gains, in § Compact scale, the two facts hooks its density rules set, and a section for the
-pre-upgrade facts rule (R-07): `:where(ocelle-facts:not(:defined) > ocelle-fact)`, wrapped whole in `:where()` like
-every base selector, so its specificity is (0,0,0) and any page rule overrides it.
+pre-upgrade facts rule (R-07): `:where(ocelle-facts:not(:defined) > ocelle-fact:not([hidden]))`, wrapped whole in
+`:where()` like every base selector, so its specificity is (0,0,0) and any page rule overrides it, and a hidden fact
+keeps the user-agent `display: none` (PLAN-FRESH-2-002).
