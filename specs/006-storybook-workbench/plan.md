@@ -123,7 +123,7 @@ rounds 1 and 2 and the phase 1 spike.*
 | VII. Semver | No published surface changes. |
 | VIII. Test-first, proven | Every phase starts red, each red an assertion of the missing behaviour (the pin test asserts the file exists first; the render test's red is taken from the build output). Every decision, the capture's and the in-page checks' included, is a pure module, mutation-tested; only collection and process wiring carry `Stryker disable` comments naming their integration test, and `gates/visual/` is in the mutation scope (R-12). Every gate has fail, pass and breaking plants, with controls where a pass plant alone could not fail (R-04, R-11); the plant job cannot skip or silently drop the container plants (R-07). Plants stay meaningful as the repository changes: edited repository baselines are generated from the current files, never stored, fail plants take the baselines of their pass plant, and plant roots carry the repository's exceptions with their plan files (R-11, R-16). Each capture has one status by a tested order, so a plant's exact expectation does not rest on an unwritten choice (R-05); axe is shown to audit inside open shadow roots (R-08). Each capture refusal check has its own unit test and cause (R-06). The podman behaviours are proven in a CI run of the branch before phase 3 is approved (R-02). Split into shards, the plant job still cannot drop a plant: the "Plants" check recomputes the partition and fails on a shard with no report or other plants than its own, and the registry check covers every plant job (decision 23, R-07). |
 | Supply chain | `axe-core` and `pngjs` are pinned exactly and pass the release-age rule. The image is pinned by its manifest digest, pulled and run only by digest, checked by media type and `RepoDigests` on every engine (R-06). A test ties `container.json` to `.node-version` and to Playwright's expected headless-shell build (contracts/container.md). `actions/download-artifact`, new with the split plant job, is pinned by commit SHA as `upload-artifact` is (decision 23). |
-| Workflow gates | The registry gains three gates (`gates.json`, FR-020 list, `ci.yml` jobs). The required checks go from fourteen to seventeen in `gates/README.md` (since the merge of mission 005 main's list holds fifteen, "Custom-elements manifest" added; with the three gates that is eighteen, a count the operator confirms before phase 5, tasks.md T071); the ruleset change is the operator's. In CI the visual gate requires both engines whatever the workflow passes (R-06). The split plant job keeps the one required check "Plants" (its verdict job); `plants-plan` and `plants-shard` are helper jobs, not required (decision 23). |
+| Workflow gates | The registry gains three gates (`gates.json`, FR-020 list, `ci.yml` jobs). The required checks go from fifteen to eighteen in `gates/README.md` (main's list holds fifteen since the merge of mission 005, "Custom-elements manifest" added; the three gates make eighteen, decision 31); the ruleset change is the operator's. In CI the visual gate requires both engines whatever the workflow passes (R-06). The split plant job keeps the one required check "Plants" (its verdict job); `plants-plan` and `plants-shard` are helper jobs, not required (decision 23). |
 
 ## Decisions the operator should see at the plan gate
 
@@ -398,6 +398,21 @@ shard (1) took 12 min 34 s and Plants shard (8) 10 min 29 s. Shard 1 holds the 2
     What it reopens: nothing. Decision 23's partition rule for shard 1 (one shard for every non-visual plant) is
     replaced by item 5. The rule for the `visual` and `axe` groups is unchanged.
 
+Decisions 31 and 32 are the operator's of 2026-11-13, before phase 5's red. Decision 31 answers T071's stop-and-ask:
+since the merge of mission 005 (`39763c7`), `gates/README.md` § Required checks on `main` lists fifteen checks, not the
+fourteen FR-023 counted from. Decision 32 answers analysis finding D1: 001's "Custom-elements manifest gate absent"
+row has the sunset "the first element feature (#7) or #10", and this feature is #10.
+
+31. **Eighteen required checks.** `gates/README.md` § Required checks on `main` lists main's fifteen plus
+    "Storybook build", "Visual regression" and "Accessibility": eighteen. FR-023, US4 scenario 4, § Constitution Check
+    (Workflow gates), tasks.md T071 and phase 5's Independent Test say eighteen. The operator adds the three checks to
+    main's ruleset.
+32. **001's manifest sunset moves with the README's manifest row.** T072 also rewrites the sunset of 001's
+    "Custom-elements manifest gate absent" row in its Complexity Tracking to "the first element feature (#17 or #7)",
+    the wording T071 uses for `gates/README.md`'s manifest row (FR-024, US4 scenario 5). The spec prompt
+    ("the custom-elements manifest check stays with the first element feature (#17 or #7)") is the approval. 001's
+    plan is edited by T072 in phase 5, not by this decision.
+
 ## Project Structure
 
 ### Documentation (this feature)
@@ -568,7 +583,7 @@ data the gates read (baselines, pin, exceptions).
      `csp.test.ts` → `render.test.ts`, red first from the build output: `iframe.html` holds Storybook's inline
      `<script>` elements and `dist/` holds no `inline-<hash>.js` file, which fails against the old build script;
    - `gates.json` scope texts, `gates/README.md` (FR-023, the deferred row for the `@ocelle/elements` run-time CSP test);
-   - the exception rows in 001's and 002's plans (FR-024);
+   - the exception rows in 001's and 002's plans, and the sunset of 001's manifest row (FR-024, decision 32);
    - `storybook/README.md` with its readme test, red first (FR-025, every item including open shadow roots, surfaces
      inside the host, the font of form controls set in an element's shadow styles, pointer states and their viewport rule, element run-time CSP, CI's captures, and plant
      baselines: the plant mode and the Plants job's artifact, and that `pass-second-render`'s record is CI's captures

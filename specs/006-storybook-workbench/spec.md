@@ -256,10 +256,11 @@ script no longer fails the `csp` gate; the packages' plants still fail it; the R
    scope or the two exceptions, the deferred-gates table no longer lists the three gates, the custom-elements
    manifest row names the first element feature (#17 or #7) alone, a row names the first element feature (#17 or
    #7) as the deliverer of the `@ocelle/elements` run-time strict-CSP browser test, and the required checks on `main`
-   list seventeen checks.
+   list eighteen checks.
 5. **Given** mission 001's and 002's plans, **When** the maintainer reads their Complexity Tracking, **Then** the
    "Storybook build, visual regression and axe gates absent" row and 002's two Storybook exception rows are marked
-   closed by this feature with its number.
+   closed by this feature with its number, and 001's "Custom-elements manifest gate absent" row has the sunset "the
+   first element feature (#17 or #7)".
 6. **Given** an element issue's author, **When** they read the contributor note, **Then** it says where stories go,
    that each variant and state is one story (a hover or press state through the pointer parameter), that themes are
    captured by the harness (a story is not written twice), how to produce and commit baselines (including that on an
@@ -470,10 +471,13 @@ script no longer fails the `csp` gate; the packages' plants still fail it; the R
 - **FR-023**: `gates/README.md` MUST list the three new gates with their plants, drop the Storybook CSP scope and
   002's two exceptions, drop the three gates from the deferred list, name the first element feature (#17 or #7) as
   the deliverer of the custom-elements manifest check, name the first element feature (#17 or #7) as the deliverer of
-  the `@ocelle/elements` run-time strict-CSP browser test (the Storybook no longer observes CSP), and list seventeen
-  required checks on `main` (the fourteen plus "Storybook build", "Visual regression", "Accessibility").
+  the `@ocelle/elements` run-time strict-CSP browser test (the Storybook no longer observes CSP), and list eighteen
+  required checks on `main` (main's fifteen since mission 005, "Custom-elements manifest" included, plus "Storybook
+  build", "Visual regression", "Accessibility"; operator decision 2026-11-13, plan.md decision 31).
 - **FR-024**: 001's "Storybook build, visual regression and axe gates absent" row and 002's two Storybook exception
-  rows MUST be marked closed by feature 006 in their plans' Complexity Tracking.
+  rows MUST be marked closed by feature 006 in their plans' Complexity Tracking, and 001's "Custom-elements manifest
+  gate absent" row's sunset MUST read "the first element feature (#17 or #7)" (operator decision 2026-11-13, plan.md
+  decision 32; the spec prompt's approval).
 - **FR-025**: A contributor note MUST explain how an element issue adds a story per variant and state, that the
   harness captures both themes, how to produce, inspect and commit baselines, and that a baseline change needs a
   pull request description that says why (constitution V), and that on an arm64 host the capture runs the
