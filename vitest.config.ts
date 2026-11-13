@@ -15,6 +15,10 @@ const axTree: BrowserCommand<[id: string, scope?: "element" | "subtree"]> = asyn
 const emulateForcedColors: BrowserCommand<[mode: "active" | "none", palette?: "light" | "dark"]> = async (context, mode, palette) => {
   await (await elementCommands()).emulateForcedColors(context, mode, palette);
 };
+// 011 research.md R-13 readers. Scaffold (phase 1): registered, not implemented; T006 gives them their behaviour.
+const scrollWidth: BrowserCommand<[]> = () => Promise.reject(new Error("scrollWidth: not implemented"));
+const activeElement: BrowserCommand<[]> = () => Promise.reject(new Error("activeElement: not implemented"));
+const textBoxes: BrowserCommand<[id: string]> = () => Promise.reject(new Error("textBoxes: not implemented"));
 
 // Plants and gate-test fixtures are inputs of the gates and their tests, never tests of this repository
 // (FR-028, research.md R-10): every project excludes them.
@@ -79,7 +83,7 @@ export default defineConfig({
             provider: playwright({ launchOptions }),
             headless: true,
             instances: [{ browser: "chromium" }],
-            commands: { axTree, emulateForcedColors },
+            commands: { axTree, emulateForcedColors, scrollWidth, activeElement, textBoxes },
           },
         },
       },
