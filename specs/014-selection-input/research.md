@@ -96,34 +96,51 @@ drifts on text changes.
 child, disabled children included (operator decision PLAN-CORRECTNESS-1-004 (a)): a disabled child stays focusable,
 the roving keys skip it (R-04) and Tab does not reach it, so a focused child that becomes disabled keeps focus (US1-18,
 SPEC-3-02). A `mousedown` on a disabled child has its default prevented, so a click neither focuses nor selects it.
-Focus moves with `child.focus({ focusVisible: true })` (focus ring on keyboard moves) and the ring is drawn by
-`:host(:focus-visible)` as an outline from the focus tokens (R-15; FR-007).
+Focus moves with `child.focus({ focusVisible: true })` (focus ring on keyboard moves) and the ring is drawn from the
+focus tokens on a raised `:host(:focus-visible)::after` of the option, tab or segment (R-06, R-15; FR-007).
 
-**Focus record** (PLAN-CORRECTNESS-1-004, PLAN-FRESH-2-001). Chromium blurs a focused element synchronously when it
-is removed or moved (a move is remove + insert); by the time a batch (R-05) runs, `document.activeElement` is the
-body. The blur cannot be told apart from a user leaving the child at the event: measured in Chromium 153 (plan squad
-round 2), `insertBefore(a, null)` of a focused child and `a.remove()` both fire `blur` then `focusout` on the parent
-while the target is still connected and still the parent's child (`isConnected === true`, `parentNode === parent`),
-and `activeElement` is the body afterwards; a `focusout` fired after detachment could not reach the parent at all.
-So the record does not decide at `focusout`. Each parent keeps, from `focusin` / `focusout` on its host:
+**Focus record** (PLAN-CORRECTNESS-1-004, PLAN-FRESH-2-001, PLAN-FRESH-3-001). Chromium blurs a focused element
+synchronously when it is removed or moved (a move is remove + insert); by the time a batch (R-05) runs,
+`document.activeElement` is the body. Measured in Chromium 153 (plan squad round 2), `insertBefore(a, null)` of a
+focused child and `a.remove()` both fire `blur` then `focusout` on the parent inside the `remove()` /
+`insertBefore()` call, while the target is still connected and still the parent's child (`isConnected === true`,
+`parentNode === parent`), and `activeElement` is the body afterwards; a `focusout` fired after detachment could not
+reach the parent at all. A user's blur looks the same at the event: while `focusout` is dispatched for a Tab or a
+click, `activeElement` is the body and the new element has not received focus yet, and a host that re-renders its
+children on blur in a microtask or a `requestAnimationFrame` mutates the parent before the focus change completes
+(measured in plan squad round 3: a record scoped to the task of the blur, with a `setTimeout(0)` clear, refocused the
+option after a real Tab and a real click on an outside button, so the user could not leave). So the record decides
+whether the removal caused the blur, not when the mutation happened. Each parent keeps, from `focusin` / `focusout`
+on its host (one capture-phase listener on the host, so it runs before any listener on the child and before bubbling
+listeners):
 
 - `focused`: the child that has focus (set on `focusin` on a child, cleared on `focusout`);
-- `blurred`: on every `focusout` whose target is one of this parent's children, that child, recorded
-  unconditionally, but only for the task it happened in: the `focusout` handler posts a task (`setTimeout(0)`) that
-  clears it (if it still holds that child). A `focusin` on any child also clears it.
+- `blurred`: set only by a `focusout` whose target is one of this parent's children and whose `relatedTarget` is
+  `null`. A `focusout` with a non-null `relatedTarget` (focus is going to a known element: Tab, Shift+Tab, a click on
+  a focusable) records nothing and clears `blurred`. A `focusin` on any child also clears it.
 
-The host `childList` observer's callback runs in the microtask checkpoint of the task that removed or moved the child
-(and the `value` setter's `takeRecords()` runs synchronously within it), so the batch sees `blurred` from that task
-only. The batch treats `blurred` as "had focus at the batch" only when the batch's own records list that child in
-`removedNodes` and `document.activeElement` is the body, `null` or nothing inside the parent. Then: a child that is
-still or again a child after the batch (a move, the same position included) is refocused; a child that is gone moves
-focus per FR-011 (and per FR-011a with the selection for tabs and segments). Otherwise focus is left alone. A user who
-blurs a child to the page sets `blurred` in that task; a host move of the same child in a later task finds it
-cleared and does not steal focus back (lens remedy rejected in round 2's refute: keeping `blurred` until a later batch
-or `focusin` would refocus there). US1-21 reads `document.activeElement` after `insertBefore` of the focused option;
-plant: no refocus. Its negative pair, "a move does not steal focus back" (contract § Pairings): the user clicks the
-page to leave the focused option, then, in a later task, the host moves that option; focus stays on the body; plants:
-the record not scoped to its task, refocusing after any blur.
+When it sets `blurred`, the `focusout` handler queues a microtask at once. A removal-induced blur runs the handler
+inside the `remove()` / `insertBefore()` call, so this microtask is queued before any microtask a host listener or the
+host's later code queues, and it runs first. It calls the host observer's `takeRecords()`. Only when those records
+list `blurred` in `removedNodes` did the removal cause the blur: it processes those records as the batch with
+`blurred` as "had focus at the batch", provided `document.activeElement` is the body or `null` (an element anywhere,
+inside the parent or not, means focus went somewhere and is left alone). Otherwise it clears `blurred` and processes
+any records it took as an ordinary batch. Then, when the child had focus: a child that is still or again a child
+after the batch (a move, the same position included) is refocused; a child that is gone moves focus per FR-011 (and
+per FR-011a with the selection for tabs and segments). In every other case focus is left alone. No task
+(`setTimeout(0)`) clears the record and no "nothing inside the parent" clause qualifies a batch; both were the round-2
+design and both trapped focus (PLAN-FRESH-3-001). The phase-2 spike records, in Chromium, the order of the listener
+calls and microtasks for a removal-induced blur (`relatedTarget` null, records found by `takeRecords()`) and for a user
+Tab and click followed by a host move or removal in a microtask and in a `requestAnimationFrame`
+(`reviews/phase-2/spike.md`).
+
+US1-21 reads `document.activeElement` after `insertBefore` of the focused option; plant: no refocus. Its negative
+pairs (contract § Pairings): "a move does not steal focus back" (the user clicks the page to leave the focused option,
+then, in a later task, the host moves that option; focus stays on the body) and "Tab out while the host re-renders on
+blur" (a host `focusout` listener moves or removes the focused option in a microtask, and in another case in a
+`requestAnimationFrame`; a real Tab and a real click on an outside button; `document.activeElement` is the outside
+element). Plants: the record scoped only by its task (`setTimeout(0)` clear, no `relatedTarget` or `takeRecords()`
+check), the "nothing inside the parent" clause, refocusing after any blur.
 
 **Selected panel.** The selected tab's panel is focusable (`tabIndex` 0) only when it holds no element in the
 sequential focus order (PLAN-A11Y-SECURITY-1-009): elements with `tabIndex >= 0` that are not disabled or hidden,
@@ -134,12 +151,12 @@ of a panel after render is followed. US2-22: a panel holding only `ocelle-link` 
 removed after render becomes one; plant: a light-DOM selector query measured at tabs updates only.
 
 **Listbox scroll container** (PLAN-A11Y-SECURITY-1-007, PLAN-FRESH-1-013). `part="list"` is the scroll container
-(FR-017). It has inline and block padding of at least `--ocelle-focus-width` + `--ocelle-focus-offset`, so the outline
-of the first, the last and any scrolled-to option lies inside its clip (US1-16 measures the ring's box against the
-container's client box; plant: no padding). It carries `tabindex="-1"`, which turns off Chromium's keyboard-focusable
-scroller (Chromium 130+ makes an overflowing scroller with no focusable descendant a tab stop, 008 research): an
-all-disabled overflowing listbox has no tab stop (US1-22; plant: no tabindex on the scroller). A `mousedown` on the
-list part itself (its padding, not an option) has its default prevented so it never takes focus.
+(FR-017). It has inline and block padding of at least `--ocelle-focus-width` + `--ocelle-focus-offset`, so the ring (the
+option's raised `::after`, R-06) of the first, the last and any scrolled-to option lies inside its clip (US1-16 measures
+the ring's box against the container's client box; plant: no padding). It carries `tabindex="-1"`, which turns off
+Chromium's keyboard-focusable scroller (Chromium 130+ makes an overflowing scroller with no focusable descendant a tab
+stop, 008 research): an all-disabled overflowing listbox has no tab stop (US1-22; plant: no tabindex on the scroller). A
+`mousedown` on the list part itself (its padding, not an option) has its default prevented so it never takes focus.
 
 **Rationale.** Children in the light DOM keep the composite in one tree scope; no `aria-activedescendant` is needed.
 Keeping disabled children at -1 is the only way to keep focus on a child that becomes disabled.
@@ -234,14 +251,30 @@ relative; z-index: 1`) so its `--ocelle-color-accent-strong` lines (operator dec
 lie over its neighbours' `control-border` lines at the same width. The pressed bar is R-15's block-end bar inside the
 box.
 
-**Focus ring above the neighbours** (PLAN-FRESH-2-003). Flex items paint atomically in order, and the raised pressed
-or hovered segment paints above its neighbours: measured in the round-2 lens probe (Chromium 153, the joined
-geometry), a focused segment's outline is covered on the side of a later filled neighbour and on the side of a raised
-one, so the ring shows on three sides only. A gap is ruled out (US3-9: the segments touch). The focused child is
-therefore raised above everything: `:host(:focus-visible) { position: relative; z-index: 2; }` on `ocelle-segment`,
-and the same rule on `ocelle-tab`, whose wrapped row has no gap between tabs (R-15). The ring then lies over the
-neighbour's fill, so its grounds include `accent-low` and `hover-bg` (R-15's table). Read: R-15 What the tests read;
-plant: no `z-index` on the focused segment.
+**Focus ring above the neighbours** (PLAN-FRESH-2-003, PLAN-FRESH-3-002, PLAN-FRESH-3-003). Flex items and
+positioned boxes paint atomically in order, and the raised pressed or hovered segment paints above its neighbours:
+measured in the round-2 lens probe (Chromium 153, the joined geometry), a focused segment's outline is covered on the
+side of a later filled neighbour and on the side of a raised one, so the ring shows on three sides only. A gap is ruled
+out (US3-9: the segments touch). Raising the whole focused host (`z-index: 2`, the round-2 design) is wrong too: its
+own `control-border` box then covers the pressed or hovered neighbour's `accent-strong` line (measured in round 3:
+the shared line is `control-border` grey in both orders), which breaks US3-9, FR-029 and #5 rule 1. The same cut
+happens in the listbox: `ocelle-option` is a positioned box (its bar is an absolute `::before`, R-15) and options
+stack with no gap, so a later hovered option's `hover-bg` fill covers the block-end side of the focused option's
+outline (measured in round 3).
+
+So the ring is not the host's outline. On `ocelle-option`, `ocelle-tab` and `ocelle-segment` (both variants, one
+rule) the ring is a `:host(:focus-visible)::after` absolutely positioned at
+`inset: calc(-1 * (var(--ocelle-focus-offset) + var(--ocelle-focus-width)))` with a `--ocelle-focus-width` solid
+border in `--ocelle-color-focus`, `pointer-events: none` and `z-index: 2`. The focused host itself is
+`position: relative` with `z-index: auto`, so it opens no stacking context: the pseudo-element stacks in the parent's
+context above the raised neighbours (`z-index: 1`), while the host's own border stays at its own level and never
+covers a neighbour's `accent-strong` line. A focused segment that is itself pressed or hovered is already raised
+(`z-index: 1`, a stacking context that would hold its ring below a later raised neighbour), so it is raised to
+`z-index: 2` instead; its own lines are then `accent-strong`, which may cover a neighbour's line only with the same
+colour. Under `@media (forced-colors: active)` the ring pseudo-element has `forced-color-adjust: none` and a
+`Highlight` border, as the bar does (R-15). The ring then lies over the neighbour's fill, so its grounds include
+`accent-low` and `hover-bg` (R-15's table). Read: R-15 What the tests read; plants: `z-index` on the focused host, the
+option's ring not raised.
 
 **Cross-element call** (operator decision PLAN-CORRECTNESS-1-015 (a)). The parent cannot reach a segment's internals.
 `ocelle-segment` exposes an internal method under a module-private symbol (`src/internals.ts`) that sets its row
@@ -319,10 +352,16 @@ counting the user's transient activation then. Chromium probably does; WebKit, a
 measured and cannot be probed here. Therefore:
 
 - the phase-5 spike adds a host listener calling `navigator.clipboard.writeText` from the deferred request in
-  Chromium (clipboard permission granted to the test context), recording `navigator.userActivation.isActive` at the
-  dispatch and whether the write resolved, in `reviews/phase-5/spike.md`. This listener exists only in the spike
-  page; no scenario of the element calls the clipboard, and the clipboard observer's zero-call assertion (R-11) is
-  unchanged;
+  Chromium, with no clipboard permission granted to the test context (PLAN-FRESH-3-004: in Chromium a granted
+  clipboard-write permission replaces the user-activation requirement, so a granted write resolves on a page never
+  clicked and the spike could not fail). The same page holds two controls, run first: a write with no prior click
+  must reject (the gate is on), and a write made synchronously in a real click's handler must resolve (the setup can
+  succeed). Only when both hold does it record the deferred request's write: `navigator.userActivation.isActive` at
+  the dispatch and whether the write resolved or rejected, in `reviews/phase-5/spike.md`. If the controls cannot be
+  made to hold without a grant, the spike records that it cannot answer the question in Chromium, and the Chromium
+  question goes to the owners as open together with the WebKit question and plan decision 1, never as a grant-based
+  pass. This listener exists only in the spike page; no scenario of the element calls the clipboard, and the
+  clipboard observer's zero-call assertion (R-11) is unchanged;
 - the WebKit question (does a clipboard write from the deferred request still count as user-activated in WKWebView
   and WebKitGTK) goes to kitty-mission-ui and the console owners together with plan decision 1's engine question
   (R-06), and the answer is recorded here;
@@ -626,7 +665,7 @@ feature and the README says so. Every pair below is a `checked` row of `pairs.js
 | disabled child | none | as rest | `disabled-ink` (exempt) |
 | copy field | text well `inset`; control `sheet` | outer border `control-border` on main; divider `accent-strong` on `inset` / `sheet` | `ink` on `inset`; icon `ink` on `sheet` |
 | link | none | underline (text colour) | `link`, `link-hover` on main |
-| focus ring (all) | | outline `focus-width`, `color-focus` at `focus-offset` on main; for a focused segment or tab beside a pressed or hovered neighbour also on `accent-low` and `hover-bg` (the focused child raised, R-06), pairs checked as `color-accent-strong`'s (which `color-focus` aliases) on those grounds | |
+| focus ring (all) | | ring `focus-width`, `color-focus` at `focus-offset` on main (an outline on the link and the Copy control; a raised `::after` border on option, tab and segment, R-06); for a focused option, tab or segment beside a pressed, selected or hovered neighbour also on `accent-low` and `hover-bg` (the ring pseudo-element raised above the neighbours, R-06), pairs checked as `color-accent-strong`'s (which `color-focus` aliases) on those grounds | |
 
 **Techniques** (PLAN-A11Y-SECURITY-1-005). Outside forced colours, the option's and tab's bar, and the joined pressed
 segment's bar, are a `:host::before` pseudo-element positioned inside the host's box (absolute, `bar-width` thick, on
@@ -636,7 +675,10 @@ padding reduced by `bar-width` minus `border-width`, so the outer box is unchang
 colours would otherwise replace its background), the default pressed segment's border colour is `Highlight`
 (`forced-color-adjust: none` on that rule's element, with text `ButtonText` and fill `ButtonFace` set explicitly),
 boundaries (segment borders, the copy field's border and divider, the Copy control) are `ButtonBorder`, the link is
-`LinkText`, and the focus ring is an outline, which forced colours keep, in `Highlight`. No bar is a `box-shadow`
+`LinkText`, the link's and the Copy control's focus ring is an outline, which forced colours keep, in `Highlight`,
+and the option's, tab's and segment's ring is the raised `:host(:focus-visible)::after` of R-06 (a `focus-width`
+border at `focus-offset`, `pointer-events: none`, `z-index: 2`, the focused host `position: relative` and not raised
+by focus), which under forced colours has `forced-color-adjust: none` and a `Highlight` border. No bar is a `box-shadow`
 (forced colours compute it to `none`). Plant for US1-15, US2-11, US3-11: the bar as an inset `box-shadow` only.
 
 **What the tests read** (PLAN-TESTABILITY-1-010).
@@ -652,13 +694,22 @@ boundaries (segment borders, the copy field's border and divider, the Copy contr
 - Per-fragment ring (US5-6): for each client rect of the link from `driver.lines`, pixels just outside the rect's
   edges are `color-focus`; plant: the ring drawn on the first fragment only (`display: inline-block`).
 - Radii (US3-10, US3-18): computed `border-*-radius` of each segment.
-- Ring inside the listbox clip (US1-16): the option's outline box (its border box grown by width and offset) lies
-  within `part="list"`'s client box.
-- Ring on every side of a joined segment (US3-9 with FR-007; PLAN-FRESH-2-003): with `driver.pixels`, the pixels just
-  outside all four edges of a focused joined segment are `color-focus`, once with the pressed segment as its
-  neighbour (keyboard focus moved off the pressed segment, US3-2) and once beside a hovered one (pointer on the
-  neighbour); the same read for a focused tab beside the selected and a hovered tab. Plant: no `z-index` on the
-  focused segment.
+- Ring inside the listbox clip (US1-16): the option's ring box (the `::after`'s border box, the option's border box
+  grown by width and offset) lies within `part="list"`'s client box.
+- Ring on every side of a joined segment (US3-9 with FR-007; PLAN-FRESH-2-003, PLAN-FRESH-3-002): with
+  `driver.pixels`, the pixels just outside all four edges of a focused joined segment are `color-focus`, once with the
+  pressed segment as its neighbour (keyboard focus moved off the pressed segment, US3-2), once beside a hovered one
+  (pointer on the neighbour), and once with the focused segment itself pressed beside a later hovered one; the same
+  read for a focused tab beside the selected and a hovered tab. Plants: the ring as the host's outline with no
+  raise, the ring pseudo-element without `z-index`.
+- Pressed and hovered lines beside a focused neighbour (US3-9, FR-029; PLAN-FRESH-3-002): the "one line" read above,
+  taken across the shared line between the pressed segment and a focused neighbour on either side (focused before and
+  focused after), and between a hovered segment and a focused neighbour: the pixel run is `accent-strong`, not
+  `control-border`. Plant: `z-index` on the focused host.
+- Option ring beside a hovered option (FR-007; PLAN-FRESH-3-003): with `driver.pixels`, the pixels just outside all
+  four edges of a focused option are `color-focus` with the pointer on the next option and, in a second read, on the
+  previous option, inside the US1-16 clip (the option scrolled so its ring box lies within `part="list"`'s client
+  box). Plant: the option's ring not raised (an outline on the host, or the `::after` without `z-index`).
 
 ## R-16 Entry points: a parent defines its children; the copy field defines `ocelle-icon`
 

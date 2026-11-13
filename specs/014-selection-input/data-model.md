@@ -25,7 +25,7 @@ paired tab carries `aria-controls`; only the assigned panel carries `aria-labell
 | `selected` | child node or `null` | the selected option / tab, the pressed segment |
 | `remembered` | string or `null` | FR-010a: last non-empty host value no enabled child had |
 | `focused` | child node or `null` | the child that has focus, set on `focusin` on a child, cleared on `focusout` (R-03; all kinds) |
-| `blurred` | child node or `null` | set on every `focusout` from a child (Chromium fires it while a removed or moved child is still connected and still a child, so nothing is decided there); cleared by a task the `focusout` handler posts and by any `focusin` on a child, so it lives only for the task of the blur (R-03, PLAN-FRESH-2-001) |
+| `blurred` | child node or `null` | set only by a `focusout` from a child whose `relatedTarget` is `null` (a `focusout` with a non-null `relatedTarget`, the user going to a known element, records nothing and clears it); the handler queues a microtask at once that calls the host observer's `takeRecords()` and keeps `blurred` as "had focus" only when those records list it in `removedNodes` (the removal caused the blur; Chromium runs the handler inside the `remove()` / `insertBefore()` call), processing them as the batch; otherwise cleared there. Also cleared by any `focusin` on a child. No task clears it (R-03, PLAN-FRESH-2-001, PLAN-FRESH-3-001) |
 | `lastFocused` | child node or `null` | listbox tab stop fallback (FR-016) |
 | `kind` | `"listbox"` / `"tabs"` / `"segments"` | listbox may have no selection; the others keep one while any child is enabled |
 
@@ -49,9 +49,9 @@ the live child list.
 | batch: children added / enabled / value changed | if `remembered` matches an enabled child: select it, forget | Precedence: remembered match, else keep, else first enabled |
 | batch: selected child removed | `value` → `""`, no event | FR-011a: next enabled after, else nearest before; remembered first |
 | batch: selected child disabled | stays selected, loses tab stop; keeps focus if focused (`tabindex="-1"`) | FR-011a as for removal; focus moves with the selection if the child had focus |
-| batch: focused child removed (`blurred` is that child, it is in the batch's `removedNodes`, node gone, focus on the body, `null` or nothing inside the parent) | focus FR-011 target | same (= selection target when it was selected) |
-| batch: child moved (node present before and after, the same position included) | keeps selection; refocused only if `blurred` is that child, it is in the batch's `removedNodes`, and focus is on the body, `null` or nothing inside the parent | same |
-| batch: child moved or removed in a later task than its blur (`blurred` already cleared) | focus left where it is (no focus stolen back) | same |
+| batch: focused child removed (`blurred` is that child, the records taken by its `focusout` microtask list it in `removedNodes`, node gone, focus on the body or `null`) | focus FR-011 target | same (= selection target when it was selected) |
+| batch: child moved (node present before and after, the same position included) | keeps selection; refocused only if `blurred` is that child, the records taken by its `focusout` microtask list it in `removedNodes`, and focus is on the body or `null` | same |
+| batch: child moved or removed after the user's blur (a later task, a host microtask or `requestAnimationFrame` after the blur, or any blur with a non-null `relatedTarget`; `blurred` null or not in the taken records) | focus left where it is (no focus stolen back, the user can leave the parent) | same |
 
 No transition emits an event except "user selects child" (FR-002) and the listbox's user activation (FR-014a).
 

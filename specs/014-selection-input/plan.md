@@ -67,7 +67,7 @@ attribute, no ID reference across a shadow root, real keyboard input in tests, m
 |---|---|
 | I. `ocelle-` names, no I/O, small interface, manifest | Nine `ocelle-*` tags; events `ocelle-listbox-change`, `ocelle-listbox-activate`, `ocelle-tabs-change`, `ocelle-segmented-choice-change`, `ocelle-copy-field-request`, `ocelle-link-activate`, all bubbling and composed. No I/O: the copy field emits a request and never touches the clipboard; the link's only navigation is `location.assign` of an `href` that `navigationTarget` allows at activation, after an uncancelled event (FR-047, R-08), which is the documented behaviour, not I/O (SPEC-1-22). The `ResizeObserver` of R-06 observes the element and its own segments. Manifest per `contracts/elements.md`, every list stated; `roving.ts`, `selection.ts`, `link-target.ts` and `internals.ts` are internal, and the internals symbol is not surface. |
 | II. Tokens only, brand rules | All styles from tokens (`color-accent-low`, `color-accent-strong`, `color-hover-bg`, `color-disabled-ink`, `bar-width`, `border-width`, `control-border`, `inset`, `sheet`, `link`, `link-hover`, `focus-*`, `target-min`, `radius-2`, `space-2`, `icon-size`), per element and ground in R-15. Ochre fill never alone: every selected state has an `accent-strong` bar. #5 rule 1 (extended) held everywhere: a control on `accent-low`, `inset` or `hover-bg` is bordered in `accent-strong`, so the joined pressed (and hovered) segment's lines and the Copy control's divider against the `inset` well are `accent-strong` at `border-width` (operator decision PLAN-CORRECTNESS-1-010 (a)); no `control-border` line bounds `accent-low`, `inset` or `hover-bg`; no control boundary on `color-rule`. No monospace: the copy field's text uses the sans with tabular figures. No new token; `@ocelle/tokens` gains the checked non-text pairs of `color-accent-strong` on the six main grounds (R-17, operator decision PLAN-CORRECTNESS-1-011 (b)). |
-| III. Accessible by construction | Children in the parent's tree scope; ids generated only in that scope (R-02, SC-003). Full keyboard models of their ARIA patterns with roving tabindex: listbox, tablist (the role on the shadow `part="tablist"`, so panels are beside it, R-01), toolbar of toggle buttons for the segmented choice (operator decision PLAN-A11Y-SECURITY-1-008 (a)); keys taken only from the parent's own children (R-04); focus kept across moves and on a child that becomes disabled, through a focus record scoped to the task of the blur so a later host move never steals focus back (R-03); the focus ring raised above joined neighbours so no side is cut (R-06, R-15). Host `aria-label` decides naming; forwarded to the link's anchor with exactly one named node, and the README requires it to contain the visible text (WCAG 2.5.3, R-08). Targets at `target-min` (R-10). Non-text contrast of every bar, border and divider checked automatically: `@ocelle/tokens`' pair list (R-17) and the element pairs check over each stylesheet (R-17). Forced-colours `Highlight` bars as pseudo-elements with `forced-color-adjust: none`, system boundaries, outline focus rings never clipped (R-03, R-15). Axe on every story through #10, internals stored where axe reads them (R-01, operator decision PLAN-FRESH-1-001 (a)); `aria-labelledby` only on the assigned tab panel, so axe 4.14.0 reports no serious `incomplete` on the tabs (R-02). The copy field's request reaches the host after the cleared live region is in the tree (R-07, operator decision PLAN-TESTABILITY-1-011 (a)); that it arrives outside the click's task is stated in the README for hosts that copy from the page (operator decision PLAN-FRESH-2-004 (a)). |
+| III. Accessible by construction | Children in the parent's tree scope; ids generated only in that scope (R-02, SC-003). Full keyboard models of their ARIA patterns with roving tabindex: listbox, tablist (the role on the shadow `part="tablist"`, so panels are beside it, R-01), toolbar of toggle buttons for the segmented choice (operator decision PLAN-A11Y-SECURITY-1-008 (a)); keys taken only from the parent's own children (R-04); focus kept across moves and on a child that becomes disabled, through a focus record that counts a blur only when the removal or move caused it (`relatedTarget` null and the child in the records its `focusout` microtask takes), so neither a later host move nor a host re-render on blur steals focus back and the user can always Tab or click out (WCAG 2.1.2; R-03); the focus ring of options, tabs and segments drawn on a raised `::after` above every neighbour while the focused host stays unraised, so no side is cut and no neighbour's `accent-strong` line is covered (R-06, R-15). Host `aria-label` decides naming; forwarded to the link's anchor with exactly one named node, and the README requires it to contain the visible text (WCAG 2.5.3, R-08). Targets at `target-min` (R-10). Non-text contrast of every bar, border and divider checked automatically: `@ocelle/tokens`' pair list (R-17) and the element pairs check over each stylesheet (R-17). Forced-colours `Highlight` bars as pseudo-elements with `forced-color-adjust: none`, system boundaries, `Highlight` focus rings (outlines, and the raised ring pseudo-elements with `forced-color-adjust: none`) never clipped (R-03, R-06, R-15). Axe on every story through #10, internals stored where axe reads them (R-01, operator decision PLAN-FRESH-1-001 (a)); `aria-labelledby` only on the assigned tab panel, so axe 4.14.0 reports no serious `incomplete` on the tabs (R-02). The copy field's request reaches the host after the cleared live region is in the tree (R-07, operator decision PLAN-TESTABILITY-1-011 (a)); that it arrives outside the click's task is stated in the README for hosts that copy from the page (operator decision PLAN-FRESH-2-004 (a)). |
 | IV. Strict CSP, offline | Adopted stylesheets only; no `style` attribute (joined rounding through custom states, R-06); browser build under the fixture's strict CSP in every browser scenario; the `file:` scenario carries the same policy in a `<meta>` element (R-09). |
 | V. Storybook, behaviour tests | Stories per variant and state in light and dark with baselines from #10's pinned container, an icon story per child (R-12); every event, payload and key path asserted with real input, and every paint claim read from computed styles or pixels, not from baselines alone (R-11, R-15). Stories written in the red commit (operator decision I3). |
 | VI. Consumer-driven, own code | Needs from #14 and spec-kitty-design #511, #521, #522, #527, #534 (read only as requirements, not available to this session); first consumer #16's Open project dialog, whose confirm gesture is `ocelle-listbox-activate` (operator decision PLAN-CORRECTNESS-1-018 (b)). Form association has no consumer need and stays out (spec Assumptions). Nothing copied. |
@@ -110,7 +110,8 @@ entry defines its children and the copy field's defines `ocelle-icon`, source st
 reads (PLAN-FRESH-1-001 (a)).
 
 Decided at plan squad round 2 (`reviews/plan/round-2/refute.md`): the copy request stays deferred past the next
-frame; the phase-5 spike records a page clipboard write from it in Chromium, the WebKit question goes with decision 1,
+frame; the phase-5 spike records a page clipboard write from it in Chromium (no permission granted, behind a
+reject control and a resolve control, plan squad round 3, PLAN-FRESH-3-004), the WebKit question goes with decision 1,
 and the README tells page-copying hosts the request is outside the click's task (PLAN-FRESH-2-004 (a)).
 
 ## Project Structure
@@ -188,33 +189,41 @@ gate on the phase's changes → plant runs recorded in `reviews/phase-N/plants.m
      `Accessibility.nodesUpdated` (R-07), each with a unit test that fails before it exists.
    - `vitest.config.ts` gains `elements-browser-file` and excludes `test/browser-file/**` from `elements`;
      `vitest.mutation.config.ts` excludes `elements-browser-file`; `gates/test/vitest-config.test.ts` first (R-09).
-2. **US1 Listbox (P1, MVP)**: `roving.ts`, `selection.ts` and `internals.ts` with in-process tests over every key,
-   edge, origin case and FR-009 to FR-011a transition, batching and focus-record case (data-model.md), including
-   SPEC-3-02 and SPEC-3-03 (R-14) and the task-scoped `blurred` record with its "a move does not steal focus back"
-   pairing (R-03); `ocelle-listbox`, `ocelle-option` with the activate event (R-18); scenarios US1-1
-   to 23 in both harnesses; `@ocelle/tokens`' new `accent-strong` pairs and the element pairs check (R-17); listbox
-   stories (FR-050, the icon story included) and the story test with the axe `aria-allowed-attr` check (R-01); entry
-   points (R-16), manifest, README section (activate event, module rule amended) with the engine floor unchanged in
-   this phase; CHANGELOGs of both packages.
+2. **US1 Listbox (P1, MVP)**: `roving.ts`, `selection.ts` and `internals.ts` with in-process tests over every key, edge,
+   origin case and FR-009 to FR-011a transition, batching and focus-record case (data-model.md), including SPEC-3-02 and
+   SPEC-3-03 (R-14) and the `blurred` record (set only on a `relatedTarget`-null `focusout`, kept only when the records
+   its `focusout` microtask takes list the child) with its "a move does not steal focus back" and "Tab out while the
+   host re-renders on blur" pairings (R-03); a spike recording the Chromium order of listener calls and microtasks for a
+   removal-induced blur and for a user Tab and click followed by a host move or removal in a microtask and in a
+   `requestAnimationFrame` (`reviews/phase-2/spike.md`); the option's ring on a raised `::after` with the four-sided
+   read beside a hovered next and previous option inside the US1-16 clip (R-06, R-15); `ocelle-listbox`, `ocelle-option`
+   with the activate event (R-18); scenarios US1-1 to 23 in both harnesses; `@ocelle/tokens`' new `accent-strong` pairs
+   and the element pairs check (R-17); listbox stories (FR-050, the icon story included) and the story test with the axe
+   `aria-allowed-attr` check (R-01); entry points (R-16), manifest, README section (activate event, module rule amended)
+   with the engine floor unchanged in this phase; CHANGELOGs of both packages.
 3. **US2 Tabs (P2)**: spike R-02 (generated ids vs element reflection) and the host-exposure spike (R-01), recorded;
-   `ocelle-tabs` (tablist on the shadow part, manual assignment per batch, panel focusability observer),
-   `ocelle-tab`, `ocelle-tab-panel` (`aria-labelledby` on the assigned panel only, R-02; focused tab raised, R-06);
-   scenarios US2-1 to 23 with the focused-tab ring read (R-15); tabs stories and the story test running #10's full
-   rule set on them (no violation, no serious or critical `incomplete`; plant: `aria-labelledby` on every panel);
+   `ocelle-tabs` (tablist on the shadow part, manual assignment per batch, panel focusability observer), `ocelle-tab`,
+   `ocelle-tab-panel` (`aria-labelledby` on the assigned panel only, R-02; the focused tab's ring on a raised `::after`,
+   R-06); scenarios US2-1 to 23 with the focused-tab ring read (R-15); tabs stories and the story test running #10's
+   full rule set on them (no violation, no serious or critical `incomplete`; plant: `aria-labelledby` on every panel);
    the axe defect recorded in `reviews/phase-3/spike.md` for an upstream report; manifest; README.
 4. **US3 Segmented choice (P3)**: `ocelle-segmented-choice` (toolbar), `ocelle-segment`; the joined variant with the
    internal `ResizeObserver` on the group and its segments, the shared-line technique and custom states (R-06), the
-   engine-floor raise in the README; the focused segment raised above its neighbours (R-06); scenarios US3-1 to 19
-   with resize measurements after the observations' delivery and the four-sided ring read beside the pressed and a
-   hovered segment (R-15); stories (default, joined one row and wrapped, pressed, disabled, focused, icon).
-5. **US4 Copy field (P4)**: spike R-07 (request timing against the tree, observed through
-   `Accessibility.nodesUpdated`; a spike-page host listener writing the clipboard from the deferred request in
-   Chromium, `navigator.userActivation.isActive` recorded, PLAN-FRESH-2-004 (a)); `ocelle-copy-field` (R-07) with the imperative live-region text and `ocelle-icon`
-   defined by its entry; scenarios US4-1 to 12 with the clipboard observer, the live-region MutationObserver, and for
-   US4-6 a synchronous listener with the frame-order record and the tree-update history (no tree read from the
-   listener); stories; README with the
-   `copy-control` surface, the future `ocelle-button` swap (FR-044) and the request's timing outside the click's task
-   with the user-activation note for page-copying hosts (FR-035).
+   engine-floor raise in the README; the focused segment's ring on a raised `::after`, the host not raised by focus
+   (R-06); scenarios US3-1 to 19 with resize measurements after the observations' delivery, the four-sided ring read
+   beside the pressed and a hovered segment, and the `accent-strong` shared-line read with a focused neighbour on
+   either side of the pressed and of a hovered segment (R-15); stories (default, joined one row and wrapped, pressed,
+   disabled, focused, icon).
+5. **US4 Copy field (P4)**: spike R-07 (request timing against the tree, observed through `Accessibility.nodesUpdated`;
+   a spike-page host listener writing the clipboard from the deferred request in Chromium with no clipboard permission
+   granted, after two controls in the same page hold (a write with no prior click rejects, a write synchronously in the
+   click handler resolves), `navigator.userActivation.isActive` at dispatch and the result recorded, or, if the controls
+   cannot hold, the question recorded as unanswerable here and sent open with decision 1; PLAN-FRESH-2-004 (a),
+   PLAN-FRESH-3-004); `ocelle-copy-field` (R-07) with the imperative live-region text and `ocelle-icon` defined by its
+   entry; scenarios US4-1 to 12 with the clipboard observer, the live-region MutationObserver, and for US4-6 a
+   synchronous listener with the frame-order record and the tree-update history (no tree read from the listener);
+   stories; README with the `copy-control` surface, the future `ocelle-button` swap (FR-044) and the request's timing
+   outside the click's task with the user-activation note for page-copying hosts (FR-035).
 6. **US5 Link (P5)**: spikes R-09 and the host-exposure spike (R-08); `link-target.ts` with its in-process tests;
    `ocelle-link` (R-08); `link-target.html`; scenarios US5-1 to 14 including the navigation observations (fragments
    in process, cross-document on the fixture, US5-11's base inserted after load, `context.on("page")` for US5-13);
