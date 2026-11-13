@@ -1,0 +1,87 @@
+schema: review-findings/v1
+complete: true
+phase: plan
+round: 3
+lens: fresh
+findings:
+  - id: PLAN-FRESH-3-001
+    severity: 3
+    title: "The round-2 baseline re-check at the end of the wait drops the reveal announcement (and, as written, the insertion one), for the notice and for the error"
+    evidence:
+      - artifact: "data-model.md § Announcement transitions, *Announce*: 'When the wait ends, recompute the text and politeness: if both equal the baseline, write nothing (the announcer stays `empty`)'. The check has no condition on what triggered the wait."
+      - artifact: "data-model.md row 'first connect | first load | none (... the baseline is the current text and politeness)', and row '`hidden` removed | live, host role not `alert` | announce'. No row resets the baseline on reveal or on insertion. Field 'baseline': 'the last announced text and politeness, or those current when the notice began announcing'. Note: 'A `hidden` notice is announced when `hidden` is removed, with the text and politeness current at that moment.'"
+      - artifact: "research.md R-02 step 3: 'compares them with the baseline: if both are equal (a text that went `A`, `B`, `A`), it writes nothing'. § Triggers: 'Insertion after parsing ..., reveal ..., and a change by FR-008's rule' all use the same path. R-06: the error announcer has 'the same restart, baseline re-check and minimum hold as R-02'. data-model.md error rows: 'first connect | first load | none; error baseline := the normalised `error`' and '`hidden` removed | `error` non-empty | announce the error'."
+      - artifact: "spec.md US1-17: 'when the host removes `hidden` from an announcing notice (inserted hidden, or part of the page as first loaded and hidden), Then its current text is announced once'. US2-22: same for `error` ('the `error` current at that moment, if non-empty, is announced politely once'). SC-002 counts one per insertion and per reveal."
+      - artifact: "reviews/plan/round-2/verify-1.md, PLAN-FRESH-2-001: 'No contradiction found'. Only the A-B-A case was checked against the re-check."
+    claim: |
+      The re-check that PLAN-FRESH-2-001 (a) added compares the text at the end of every wait with the baseline. But
+      insertion and reveal are triggers that announce text which does not differ from the baseline. Take a notice that
+      was first loaded hidden: its baseline is its text (first-load row). On reveal, the wait ends with that same text
+      and politeness, so step 3 writes nothing. US1-17 and US2-22 (first-load-hidden cases) and the SC-002 reveal cells
+      then count 0 instead of 1. The same happens for a notice that was inserted, announced and then hidden and shown
+      again: its baseline is the text it announced, so the reveal is dropped. Insertion depends on how the field
+      definition is read. "Those current when the notice began announcing", taken at connect, is the inserted text,
+      so every insertion announcement would be dropped as well. The design as written cannot pass the spec's own
+      reveal scenarios. Either the implementer departs from the data model without a record, or the red tests are
+      "fixed" by bending the baseline rules ad hoc. Verify 1 of round 2 checked only A-B-A against the new rule.
+    remedies:
+      - "State in R-02 step 3, R-06 and data-model.md *Announce* that the end-of-wait comparison applies only when every trigger merged into the wait was a change (FR-008's rule). A wait that includes an insertion or a reveal always writes the current text (non-empty), and only the cancel rows stop it. Equivalently, insertion and reveal set the baseline to 'none' before the wait starts. Define the baseline of an inserted notice or control in the data-model field table. Add SC-002/US1-17/US2-22 cells for 'announced, hidden, revealed with the same text' (count 1) and 'first loaded hidden, revealed' (count 1). Add a plant 're-check also on insertion and reveal' that must turn US1-8, US1-17 and US2-22 red."
+  - id: PLAN-FRESH-3-002
+    severity: 3
+    title: "The alert path takes its baseline synchronously, but the platform alert event reads the content at the next serialisation, so a text set after insertion, reveal or a change to alert in the same task (or within D) is read twice"
+    evidence:
+      - artifact: "data-model.md *Alert path*: 'cancel any pending wait ..., set the announcer's `aria-live` to `assertive`, and set the baseline to the current text and `assertive`'. The rows 'first connect | not first load, not `hidden`, host role `alert` | alert path', '`hidden` removed | host role `alert` | alert path' and 'host role changed to `alert`' run from connectedCallback and attribute callbacks, synchronously at the DOM operation."
+      - artifact: "data-model.md row 'light-DOM mutation | live, not `hidden`, text differs from the baseline | announce'. The MutationObserver delivers in a microtask after the alert path has already run."
+      - artifact: "spec.md FR-008: 'Several changes in one task announce the final text once', and by PLAN-FRESH-2-001 (a) changes less than `W` apart merge. FR-009 *Platform alert event*: insertion, reveal and the change to `alert` are carried by the platform event and count zero. FR-009: 'the host's role never adds a second announcement of a change'."
+      - code: "ui/accessibility/ax_event_generator.cc (main, fetched 2026-11-13): `OnAtomicUpdateFinished` adds `Event::ALERT` for a NODE_CREATED/SUBTREE_CREATED alert node (lines 1081-1082). `OnRoleChanged` (line 394) and `OnIgnoredChanged` (lines 416-417) also add it. All three run on the serialised tree update, which is at least D after the DOM change (R-01, `GetDeferredEventsDelay()`), so the event reads whatever the node holds at that serialisation."
+      - artifact: "contracts/testing.md § Plants 'alert path' row and plan.md phase 2: the `alert` cells insert, reveal or change the role with the text already in place. No scenario sets the text after the alert-path trigger."
+    claim: |
+      Common host code does `host.append(n); n.textContent = msg`, or `n.hidden = false; n.textContent = msg`, or
+      `n.setAttribute("role","alert"); n.textContent = msg`. In each, the alert path runs at the append or attribute
+      change and sets the baseline to the old text (often empty). The microtask MutationObserver then sees text that
+      differs and starts an announcement, so a copy is written W later. The platform alert event fires at the first
+      serialisation, about D after the task, and reads the new text from the visible node. The user hears the message
+      twice: once from ALERT and once from the assertive copy. That is the double reading PLAN-FRESH-2-002 (a) was
+      chosen to remove. It also contradicts FR-008's rule that changes in one task, or less than W apart, are one
+      triggering change, which in the `alert` row should count zero. The tree capture counts one live-region
+      announcement and cannot see the ALERT. A scenario written from FR-008 + FR-009 would expect 0, but none exists,
+      so the suite stays green. A change in a later task but before the serialisation (less than D after the trigger)
+      has the same effect, and the element cannot know when the serialisation happened.
+    remedies:
+      - "(a) After an alert-path trigger, keep a window of `W` (as the FR-008 merge rule does for live changes) in which light-DOM changes only move the baseline to the current text and start no wait. Accept and document in the README and R-02 that a change between the serialisation and the end of that window is read by neither. Add `alert`-row scenarios: insert then fill in one task, reveal then fill, role then fill (count 0, host role `alert`). Add a plant 'baseline taken synchronously' that turns them red."
+      - "(b) Take the alert path's baseline at the end of the current task (after the MutationObserver records of that task are delivered, e.g. in the move-detection MessageChannel task), which covers the same-task patterns. Document in FR-009 and the README that a change made in a later task but before the next serialisation (less than D) is read twice. Add the same three scenarios and the plant."
+      - "(c) Keep the design and state in FR-009 and the README that text set after the insertion, reveal or role change of a `role=\"alert\"` notice, in the same task or shortly after, is read twice. Tell hosts to set the text before inserting, revealing or setting the role. Add a scenario that pins the resulting count of 1 so the behaviour is deliberate."
+  - id: PLAN-FRESH-3-003
+    severity: 2
+    title: "FR-008 says a notice revealed by a hidden ancestor is not announced, but for role=\"alert\" the platform alert event reads it; the README statement is false for that row and the zero count is vacuous"
+    evidence:
+      - artifact: "spec.md FR-008 last bullet: 'Only the host's own `hidden` attribute counts as hiding and revealing for this requirement. A notice inside a hidden ancestor (a container with `hidden`, a closed `<details>`, a `display: none` panel) that is then shown enters the tree already holding text and is not announced; the README says so.'"
+      - code: "ui/accessibility/ax_event_generator.cc (main, fetched 2026-11-13) lines 397-418: `OnIgnoredChanged` adds `Event::ALERT` for any alert node that becomes unignored, whatever made it unignored (comment: 'Fire alert events when a node with alert role becomes unignored'). Lines 1081-1082 add it for an alert node created in the update, which is the case when a display:none subtree enters the tree. Neither path looks at what changed on the host."
+      - artifact: "research.md R-02 § The platform alert event lists only 'insertion after parsing, a reveal [the host's `hidden`] or a change of the host role to `alert`'. The README items in plan.md phase 2 name the event for those cases only."
+    claim: |
+      With a `role="alert"` host, opening a `<details>`, switching a tab panel or removing `hidden` from a container
+      unignores or creates the host's alert node, and Chromium fires ALERT. Screen readers read the notice. FR-008 and
+      the README would tell hosts the opposite. Consumers that keep server-rendered alert notices in collapsed panels
+      (an error summary inside a closed `<details>`, inactive tabs) get readings the documentation says do not happen.
+      They also get an asymmetry the spec does not state: `status` and `announce` notices stay silent there, while
+      `alert` notices are read. Any scenario for this case counts zero live-region announcements and passes whatever
+      the platform does.
+    remedies:
+      - "Amend FR-008's hidden-ancestor bullet, R-02 § The platform alert event and the README item: for a host `role=\"alert\"`, Chromium's alert event reads the notice whenever its node is created or unignored, so a reveal by an ancestor is read (not measured, Chromium only); for the other rows it is not announced. Cite lines 416-417 and 1081-1082."
+  - id: PLAN-FRESH-3-004
+    severity: 2
+    title: "The test-only timing setter leaves the shipped figures (150, 350, 5000 ms) unkilled in process, and the mutation gate counts their survivors as failures"
+    evidence:
+      - artifact: "research.md R-09 § Timing in process: '`test/in-process.ts` calls it before each scenario' and 'Fixture pages never call the setter and run at Chromium's 150 and 350 ms and the real `H`; they are the evidence that the real figures work.' § Mutation: 'Element source under `packages/elements/src/**` is mutated in process ... a survivor in new code is a blocking review finding unless the review records it as equivalent.'"
+      - code: "gates/lib/mutation/report.ts:71 `const surviving = new Set([\"Survived\", \"NoCoverage\"]);` Both statuses fail the gate."
+      - code: "gates/bin/mutation.ts:71-74 (cited in R-09): Stryker runs only the in-process `elements` configuration, so fixture-page scenarios kill no mutant."
+    claim: |
+      Every in-process scenario replaces D and H before it runs, so the default values in `src/live.ts` are never read
+      by a mutated run. Mutants such as `150 → 0`, `350 → 0`, `5000 → 0` and the defaults' object literal emptied
+      therefore survive (or are NoCoverage), and the gate treats them as survivors. They are not equivalent: `D = 0`
+      gives `W = 0`, which is exactly the coalesced write PLAN-FRESH-1-001 removed. The phase review would then face a
+      blocking survivor it can neither kill nor honestly call equivalent. The plan does not name this outcome, and T002
+      does not list it among the mutants it must name.
+    remedies:
+      - "Plan the defaults as one exported internal constant of `src/live.ts` (for example `announcerDefaults = { delayLoaded: 150, delayLoading: 350, hold: 5000 }`). Add an in-process test that asserts the timing in force before any `setAnnouncerTimingForTests` call equals the spec figures, or have the setter return the previous values and assert them. List these mutants in R-09 with the test that kills them."
+      - "Alternatively, record in R-09 that these lines carry a Stryker disable comment whose reason names the fixture-page scenarios covering them, with the operator's acceptance, since they are not equivalent mutants."
