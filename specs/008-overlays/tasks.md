@@ -1,0 +1,415 @@
+# Tasks: Overlays — Dialog, Drawer and Tooltip
+
+**Input**: the design documents in `specs/008-overlays/`, approved at the plan gate on 2026-11-13 (human:MOES-Media)
+after three plan-squad rounds (`reviews/plan/round-1..3/`):
+- spec.md: FR-001 to FR-048, SC-001 to SC-008, US1 scenarios 1 to 16, US2 1 to 7, US3 1 to 14;
+- plan.md: decisions 1 to 20 and the phase list;
+- research.md: R-01 to R-18, with R-05a;
+- data-model.md;
+- contracts/elements-overlays.md and contracts/checks.md (the gate table and the **test matrix**, cited below as
+  "matrix § …");
+- quickstart.md.
+
+**Hold**: implementation waits until #10 (Storybook workbench) is merged (operator, 2026-11-12). The story tasks of
+each phase start with R-16's recheck against merged `main`.
+
+**Tests**: required. Constitution VIII applies to every phase. The phase flow is:
+1. `base.sh`;
+2. one red commit holding only test files, proven by `red.sh` (the failure must be the missing behaviour, not a
+   syntax, import or setup error);
+3. green;
+4. `tdd-check.sh`;
+5. an independent review.
+
+Expected values are written by hand from the spec, research and the matrix, never read from the source under test:
+token values come from `packages/tokens/src/source.ts` through the computed style, and focus lists are written out.
+
+Rules for every scenario:
+- **Shared bodies.** Every browser scenario is written once in `packages/elements/test/scenarios/*.ts` against the
+  driver, and run by the in-process `elements` project (source, mutated) and by `elements-browser` (built browser
+  build, strict-CSP fixture).
+- **Fixture assertions.** Fixture runs also assert zero CSP violations, only allowed requests and no console message.
+- **FR-047 counts.** After every scenario, the FR-047 counts are asserted as a delta from mount: 0 `style` attributes
+  and 0 added `<style>` elements, transient writes included.
+- **Bounded waits.** Every wait is a bounded poll (at most 1 000 ms) that fails with a message, never an unbounded
+  wait (R-15).
+- **"Does not" outcomes.** A "does not" assertion shares its test with the positive outcome it guards.
+
+**Environment**:
+- Node 22 in this container, 26.13.0 in CI. Browser runs set `OCELLE_CHROMIUM_PATH` as
+  `knowledge/speckit-flows/findings/frontend-missions.md` § Browser path describes.
+- One heavy job (browser suites, mutation, plants) at a time. Never `git stash`.
+- **Shared files** with the parallel missions 009 to 011 (`packages/elements/src/index.ts`, `test/exports.test.ts`,
+  `package.json` `exports`, `custom-elements.json`, the README and CHANGELOGs, `storybook/.storybook/*`,
+  `packages/tokens/src/source.ts`, `test/expected.ts`): conflicts are resolved by merging `main`, never by rebasing.
+  The manifest is regenerated, not hand-merged (R-17). Do not merge `main` during a run; `/ocelle-land` does that.
+
+## Format: `[ID] [P?] [Story] Description`
+
+- **[P]**: can run in parallel (different files, no dependency on an open task).
+- **[Story]**: US1 dialog, US2 drawer, US3 tooltip.
+
+---
+
+## Phase 1: Setup — test harness additions (R-14)
+
+**Goal**: the driver, browser commands and test projects every scenario of US1 to US3 needs, each proven by a
+self-test.
+
+**Independent Test**: the harness self-tests of matrix § Harness self-tests pass in both harnesses, and failed against
+the driver as it was.
+
+### Tests (red, one commit)
+
+- [ ] T001 [P] Write the self-test bodies in `packages/elements/test/scenarios/harness.ts`, one per row of matrix § Harness self-tests, with stand-in elements defined in the test file:
+  - `styleAttributes()`: nested shadow root, CSSOM write, a write then removed;
+  - `styleElements()`: a `<style>` added in a shadow root;
+  - `topLayer()`: order with a modal dialog and a manual popover;
+  - `focusPath()`: into an open shadow root and into an iframe;
+  - `focusVisible()`: after Tab and after a click;
+  - `record(id, names)`: the state at dispatch (`open`, `:modal`, `focusPath`);
+  - `animations()`: duration, easing and keyframes of a WAAPI animation;
+  - `pointer(path)`: stopping at a point;
+  - `touchTap()`: pointer type `touch`, touch context only;
+  - `viewport()`: 1280 × 800;
+  - `reducedMotion(on)`: set, then reset;
+  - `axTree`: `description`, `modal` and `level`;
+  - device: the default context matches `(hover: hover)` and `(pointer: fine)` with `maxTouchPoints` 0; the touch
+    context has `maxTouchPoints` above 0.
+- [ ] T002 [P] Write the runners for T001: `packages/elements/test/harness.test.ts` (in process), `packages/elements/test/browser/harness.test.ts` (fixture), `packages/elements/test/harness.touch.test.ts` (in process, touch device) and `packages/elements/test/browser/harness.touch.test.ts` (fixture, `visit(…, { touch: true })`).
+- [ ] T003 [P] Add tests for the new browser commands (`emulateReducedMotion`, `pointerPath`, `touchTap`, the extended `axTree`) to `packages/elements/test/commands.test.ts`.
+- [ ] T004 Make the red commit of T001 to T003 (test files only). `red.sh 1` must show each self-test failing because the driver method or command is missing.
+
+### Implementation (green)
+
+- [ ] T005 Add the methods of T001 to the `Driver` interface in `packages/elements/test/scenarios/driver.ts`. FR-047's counts are taken as a delta from mount, with transient writes counted through a `MutationObserver` on every shadow root. No new method uses `driver.style()` (R-14).
+- [ ] T006 [P] Implement the additions in process in `packages/elements/test/in-process.ts`, using real CDP input via `userEvent` from `vitest/browser` and the new commands.
+- [ ] T007 [P] Implement the additions on the fixture in `packages/elements/test/browser/driver.ts`, using `page.keyboard`, `page.mouse`, `page.touchscreen` and CDP.
+- [ ] T008 [P] Add the browser commands `emulateReducedMotion`, `pointerPath` and `touchTap` to `packages/elements/test/commands.ts`, and make `axTree` also return `description`, `modal` and `level`. The reset helper resets reduced motion together with forced colours.
+- [ ] T009 Update `vitest.config.ts`:
+  - the `elements` project gets a 1280 × 800 viewport and no touch;
+  - a new `elements-touch` project includes only `packages/elements/test/*.touch.test.ts`, with the same excludes as `elements` (`test/node/**`, `test/build/**`, `test/browser/**`), browser mode with `hasTouch`;
+  - the new commands are registered.
+
+  Add `elements-touch` to `vitest.mutation.elements.config.ts`.
+- [ ] T010 [P] Add a `visit(page, { touch: true })` option to `packages/elements/test/browser/serve.ts` that opens a separate context with `hasTouch`. The default context is unchanged (1280 × 800, no touch).
+- [ ] T011 [P] Add the fixture pages `packages/elements/test/browser/fixtures/overlays.html` and `tooltip.html` (linking `tokens.css` and `ocelle-elements.js`, no inline script or style), and the test delay stylesheet `packages/elements/test/fixtures/tooltip-delay.css` (`--ocelle-tooltip-delay: 300ms`), linked on the fixture and adopted in process (R-15).
+- [ ] T012 Run the `elements`, `elements-touch` and `elements-browser` projects and `pnpm run gate:test-lint`: all self-tests pass. Record the red and green runs in `specs/008-overlays/reviews/phase-1/notes.md`.
+
+**Checkpoint**: `tdd-check.sh 1` reports `pass`.
+
+---
+
+## Phase 2: User Story 1 - A modal dialog (Priority: P1) 🎯 MVP
+
+**Goal**:
+- US1 scenarios 1 to 16;
+- FR-001 to FR-024 and FR-042 to FR-047 for the dialog;
+- `overlay.ts`, `focusable.ts` and `ocelle-dialog.ts`, with the entry point, manifest, README section and CHANGELOG.
+
+**Independent Test**: matrix § Dialog passes in both harnesses, and the dialog stories pass the visual and axe gates
+(after #10).
+
+### Measurement (first)
+
+- [ ] T013 [US1] Measure R-01: does the manifest analyzer list members inherited from a base class in `src/overlay.ts`, which is outside `src/ocelle-*.ts`, on the subclass, with their descriptions?
+  - Use a scratch subclass outside the repository; do not commit scratch code.
+  - Record the outcome in `specs/008-overlays/reviews/phase-2/measure.md`.
+  - If inherited members are missing, the fallback is to widen `packages/elements/scripts/manifest.ts`'s module filter and replace the pinned rule in `test/node/manifest.test.ts:205`, red first, inside this phase.
+- [ ] T014 [US1] In Chromium, measure the exact `focusPath()` lists for the matrix rows that research left to measurement. Write them into `specs/008-overlays/contracts/checks.md` before any code, in a commit of that file and `reviews/phase-2/measure.md` only. The rows:
+  - § Dialog "Opaque content", cases (i) and (ii), both directions, with and without `delegatesFocus`;
+  - "Positive `tabindex` at the ends", case (iii);
+  - whether the engine signals focus leaving a slotted iframe or closed root for the body (R-04's repair; Risks "Opaque slotted content").
+
+  Each list must meet the rules the row states. If one cannot, stop and ask the operator.
+
+### Tests (red, one commit)
+
+- [ ] T015 [P] [US1] Write the shared bodies for matrix § Dialog in `packages/elements/test/scenarios/dialog.ts`, every row:
+  - open and initial focus;
+  - the Tab cycle with its non-stop, body, scroller, opaque-content, native-middle and positive-`tabindex` rows (exact lists, n + 2 presses, both directions);
+  - Escape in a slotted iframe;
+  - long body and the 320 × 256 viewport;
+  - one-line body (132 px);
+  - Escape × veto, including after a click on body prose and with focus on the body;
+  - Escape with slotted content, slotted close watchers and slotted non-modal dialogs (every case of the row);
+  - synthetic `cancel`;
+  - the close control (click, Enter, Space; target size; focus ring);
+  - backdrop click (nothing);
+  - host close;
+  - platform close and the `method="dialog"` form (nothing);
+  - focus return and conditional focus return (a), (b), (c);
+  - nested in a drawer (stand-in `ocelle-drawer`-like host built in the test file, replaced by the real drawer in T036);
+  - removed and moved while open;
+  - rapid toggle;
+  - input during the exit;
+  - stale native `close` event;
+  - motion read from `animations()`;
+  - computed styles and sizes;
+  - forced colours, both palettes;
+  - accessibility tree, including the host `aria-label` open and closed.
+
+  Event rows read the state at dispatch from `record()`, and every row ends with the FR-047 counts.
+- [ ] T016 [P] [US1] Write the runners `packages/elements/test/dialog.test.ts` (in process) and `packages/elements/test/browser/dialog.test.ts` (fixture `overlays.html`) over T015.
+- [ ] T017 [P] [US1] Write `packages/elements/test/entry-dialog.test.ts`: `@ocelle/elements/ocelle-dialog.js` defines `ocelle-dialog` and `ocelle-icon` and no other tag. Add `OcelleDialog` to the sorted keys in `packages/elements/test/exports.test.ts`.
+- [ ] T018 [P] [US1] In `packages/elements/test/node/manifest.test.ts`, the `ocelle-dialog` entry must list:
+  - properties and attributes `open` (reflected, default `false`), `label`, `closeLabel`/`close-label` (default "Close");
+  - events `ocelle-dialog-close-request` (detail `{ reason: "escape" | "close-button" }`) and `ocelle-dialog-close` (detail `{ reason: "escape" | "close-button" | "host" }`);
+  - slots default and `footer`;
+  - parts `panel`, `heading`, `body`, `footer`, `close-button`;
+  - CSS property `--ocelle-dialog-inline-size`;
+  - every member with a description (SC-003, R-01).
+- [ ] T019 [P] [US1] Add `ocelle-dialog.js` to the dist file lists in `packages/elements/test/build/build.test.ts` and `test/build/pack.test.ts`. Add the `ocelle-dialog` README fragments to `packages/elements/test/node/readme.test.ts`:
+  - the intro line naming the element;
+  - the section with the tokens read (data-model § `ocelle-dialog`);
+  - the host pattern;
+  - the R-02, R-03, R-04, R-05 and R-08 statements: the stated limits, focus moves in the `…-close` listener, the `method="dialog"` advice, a label being required, and the closed-host `aria-label` behaviour.
+- [ ] T020 [US1] Make the red commit of T015 to T019 (test files only). `red.sh 2` must show each failing because `ocelle-dialog` is undefined or its entry, manifest or README section is missing.
+
+### Implementation (green)
+
+- [ ] T021 [US1] `packages/elements/src/focusable.ts`: two orders over the overlay's flat tree, following open shadow roots and slots (R-04):
+  - flat-tree order;
+  - the engine's sequential navigation order, with positive `tabindex` first within each scope.
+
+  Stops:
+  - a stop is focusable, rendered (not `display: none` or `visibility: hidden`), and not `disabled`, `inert` or `hidden`;
+  - a radio group is one stop (its checked radio, else the first);
+  - iframes and media elements with `controls` are stops;
+  - overflowing scroll containers with nothing focusable inside are stops where the engine focuses them;
+  - custom elements whose `shadowRoot` reads null are tried as stops when the overlay moves focus.
+- [ ] T022 [US1] `packages/elements/src/overlay.ts`, the internal base `OcelleOverlay` (no tag), per R-01 to R-08 and R-18:
+  - **Rendering and properties**:
+    - the shadow root renders `<dialog part="panel">` with a header holding `<h2 part="heading" id="heading">`, the close `<button part="close-button">` with `ocelle-icon name="close"` and the `close-label`, the body `<div part="body">` with the default slot, and `<footer part="footer">` with the `footer` slot, not rendered while the slot is empty;
+    - properties `open` (reflected), `label` and `closeLabel` (`close-label`, default "Close"); `aria-label` is observed, and the name follows `naming.ts`'s `accessibleName` (R-08).
+  - **Open and close**:
+    - `showModal()` on `open`, with explicit initial focus (R-04);
+    - the module-level overlay stack; only the topmost acts;
+    - focus return to the deepest opener, only while focus is still the overlay's (R-05);
+    - disconnection closes silently and sets `open` to false (R-05a).
+  - **Keyboard**:
+    - the keydown Escape path on the `<dialog>`, plus the topmost overlay's `document` listener for Escape and Tab with focus on the body;
+    - the exceptions: Escape already handled by slotted content, `isComposing`, a search field with a value, slotted close watchers by the below record taken at `showModal()`;
+    - the cancelable-`cancel` fallback; a non-cancelable `cancel` closes with reason `host` (R-02);
+    - the hybrid Tab handling: explicit moves only at the ends, from a non-stop and from the body; native middle moves; a move that lands on the body is repaired to the first stop; no Tab handling while a slotted popover or nested modal dialog is open (R-04).
+  - **Events**:
+    - `…-close-request` is cancelable, `…-close` is not; both bubble and are composed;
+    - close order: `open` false, then the exit animation, then `<dialog>.close()`, then focus returned, then `…-close` (R-06);
+    - user input while closing requests nothing;
+    - own-`close()` counting against stale native `close` events (R-03).
+  - **Motion**: through WAAPI, with duration and easing read from the computed tokens; skipped under `prefers-reduced-motion: reduce` by `matchMedia` as well as the token (R-06).
+  - **Body**: the overflowing body becomes a Tab stop (`tabindex="0"` only while it overflows) and keeps the minimum block size `calc(3 * var(--ocelle-target-min))` with `box-sizing: border-box` (R-18).
+  - **Styles**: shared static styles from tokens only:
+    - the UA reset;
+    - `::backdrop` with `color-overlay`;
+    - forced colours: a `CanvasText` border, `Canvas` ground and an outline focus ring, with variant rules inside `@media not (forced-colors: active)`;
+    - `:host([hidden]) { display: none; }`.
+- [ ] T023 [US1] `packages/elements/src/ocelle-dialog.ts`, class `OcelleDialog extends OcelleOverlay`:
+  - the event prefix `ocelle-dialog`, and no backdrop handler;
+  - centred, with `inline-size: var(--ocelle-dialog-inline-size)` (default `var(--ocelle-measure-reading)`), `max-inline-size: var(--ocelle-dialog-max-inline)`, `max-block-size: var(--ocelle-dialog-max-block)`, radius `radius-2` and shadow `elevation-raised`;
+  - JSDoc tags `@tagname`, `@fires {…} ocelle-dialog-close-request - …`, `@fires {…} ocelle-dialog-close - …`, `@slot`, `@csspart` and `@cssprop`, each with a description (R-01);
+  - `define("ocelle-dialog", OcelleDialog)`, and the `HTMLElementTagNameMap` entry.
+- [ ] T024 [US1] Packaging and docs:
+  - export `OcelleDialog` from `packages/elements/src/index.ts`;
+  - add the `./ocelle-dialog.js` entry point to `packages/elements/package.json` `exports`;
+  - regenerate `packages/elements/custom-elements.json` (`pnpm --filter @ocelle/elements run manifest`); apply T013's fallback if the measurement required it;
+  - write the README `ocelle-dialog` section and the intro line (T019);
+  - add the CHANGELOG "Added" entry for `ocelle-dialog`.
+- [ ] T025 [US1] Run the T015 to T019 suites green in both harnesses. Then run, one at a time: `gate:typecheck`, `gate:lint`, `gate:style-lint`, `gate:test-lint`, `gate:manifest`, `gate:csp`, `gate:prefix`, and `gate:mutation -- --base <phase base>`. Record every Timeout report line with its cause in `reviews/phase-2/notes.md`, and add an assertion that kills it where possible (R-15).
+
+### Stories (after #10 is merged)
+
+- [ ] T026 [US1] R-16 recheck against merged `main`, before any story work. Compare #10's merged state with research R-16 and update R-16 and tasks T027 to T029, T038 to T040 and T050 to T052 in one commit:
+  - the pointer-state parameter shape;
+  - the capture context (viewport, reduced motion, animations);
+  - the top-layer capture;
+  - per-story viewport support (for the 320 × 256 story);
+  - the baseline path and the produce command;
+  - the axe rule set and `storybook/a11y-exceptions.json`;
+  - the story-index test;
+  - `storybook/README.md`.
+- [ ] T027 [P] [US1] Red, in the test file the recheck names (today `storybook/test/integration/elements-stories.test.ts`): the dialog stories of data-model § Stories exist in light and dark, each renders an open, modal `ocelle-dialog`, and there are zero CSP violations.
+- [ ] T028 [US1] Green: `storybook/stories/dialog.stories.ts` with the stories of data-model § Stories. The 320 × 256 story is written only if the recheck found per-story viewports.
+- [ ] T029 [US1] Produce the baselines in the pinned container (`pnpm run visual:update`), then run `gate:storybook-build`, `gate:visual` and `gate:axe`. Commit the baselines. CI's captures win over local ones (006 FR-005).
+
+**Checkpoint**: `tdd-check.sh 2` reports `pass`.
+
+---
+
+## Phase 3: User Story 2 - A modal side drawer (Priority: P2)
+
+**Goal**:
+- US2 scenarios 1 to 7;
+- FR-025 to FR-028, FR-048 and FR-012's drawer half;
+- the `drawer-inline` token.
+
+**Independent Test**: matrix § Drawer passes in both harnesses, and the drawer stories pass the visual and axe gates
+(after #10).
+
+### Tests (red, one commit)
+
+- [ ] T030 [P] [US2] Write `packages/elements/test/scenarios/drawer.ts`:
+  - matrix § Drawer's inherited dialog rows, reusing T015's bodies with the `ocelle-drawer` tag and event prefix (not the dialog's one-line-body row);
+  - the drawer's own one-line body (fills the column, footer at the panel's end, each `side`);
+  - backdrop during the exit;
+  - backdrop on each side under `ltr` and `rtl` × veto;
+  - panel-padding click, press inside released outside, press outside released inside, and a secondary-button click: nothing;
+  - placement `side` × `dir`;
+  - size;
+  - motion `translate` sign by side and direction;
+  - `ground`;
+  - `heading-hidden`.
+- [ ] T031 [P] [US2] Write the runners `packages/elements/test/drawer.test.ts` and `packages/elements/test/browser/drawer.test.ts`. In `test/scenarios/dialog.ts`, the nested row now uses the real `ocelle-drawer`.
+- [ ] T032 [P] [US2] Write `packages/elements/test/entry-drawer.test.ts` and update the exports test keys. The `manifest.test.ts` entry for `ocelle-drawer` must list:
+  - the dialog's members;
+  - `side` (`"start" | "end"`, default `"start"`, reflected), `ground` (`"sheet" | "chrome"`, default `"sheet"`, reflected), `headingHidden`/`heading-hidden` (boolean, default `false`, reflected);
+  - the events with the extra reason `"backdrop"`;
+  - no `--ocelle-dialog-inline-size`.
+
+  Add the dist files to the build and pack tests, and the README drawer fragments to `readme.test.ts`, including #12's personal-drawer example.
+- [ ] T033 [P] [US2] Tokens: add the `drawer-inline` row (group `shell`, value `var(--ocelle-shell-sidebar-width)`, ref `["shell-sidebar-width"]`) to `packages/tokens/test/expected.ts`. Add the computed value 20rem to the `tokens-browser` value tests, and the token to the tokens README and CHANGELOG checks (`test/readme.test.ts`).
+- [ ] T034 [US2] Make the red commit of T030 to T033. `red.sh 3` must show each failing for the missing element or token.
+
+### Implementation (green)
+
+- [ ] T035 [US2] Add `drawer-inline` to `packages/tokens/src/source.ts` (group `shell`, value `var(--ocelle-shell-sidebar-width)`, ref `["shell-sidebar-width"]`, with a comment naming #450), and to the tokens README and CHANGELOG.
+- [ ] T036 [US2] `packages/elements/src/ocelle-drawer.ts`, class `OcelleDrawer extends OcelleOverlay`:
+  - the `ocelle-drawer` prefix;
+  - `side`, `ground` and `heading-hidden`; unknown values render as the default;
+  - logical edge placement, full block size, `inline-size: var(--ocelle-drawer-inline)` capped by `max-inline-size: var(--ocelle-dialog-max-inline)`, square on its viewport edge;
+  - the body fills the column, with the footer at the panel's end (R-18);
+  - the chrome ground uses `color-chrome` with `color-chrome-ink`;
+  - `heading-hidden` uses the visually hidden pattern with `--ocelle-size-visually-hidden`, keeps the heading in the tree, and keeps the close control at the block start;
+  - backdrop click per R-07: primary button, both `pointerdown` and `click` outside the border box, target the `<dialog>`, ignored while closing;
+  - the slide motion signed by side and `:dir(rtl)`;
+  - JSDoc tags and `define`.
+- [ ] T037 [US2] Packaging and docs: the export, the `./ocelle-drawer.js` entry point, the regenerated manifest, the README section and the CHANGELOG entry. Run the T030 to T033 suites green, then the gates as in T025, plus `gate:contrast` and `gate:brand-rules` because of the token, and `pnpm vitest run --project tokens --project tokens-browser`.
+
+### Stories (after #10 is merged; T026 done)
+
+- [ ] T038 [P] [US2] Red: the drawer stories of data-model § Stories exist in light and dark and each renders an open `ocelle-drawer`.
+- [ ] T039 [US2] Green: `storybook/stories/drawer.stories.ts`.
+- [ ] T040 [US2] Produce the baselines; run `gate:storybook-build`, `gate:visual` and `gate:axe`; commit the baselines.
+
+**Checkpoint**: `tdd-check.sh 3` reports `pass`.
+
+---
+
+## Phase 4: User Story 3 - A tooltip that meets WCAG 1.4.13 (Priority: P3)
+
+**Goal**:
+- US3 scenarios 1 to 14;
+- FR-029 to FR-041;
+- the `tooltip-delay` and `tooltip-max-inline` tokens;
+- the engine floor raised to WebKit 17.
+
+**Independent Test**: matrix § Tooltip passes in both harnesses and in the touch contexts, and the tooltip stories pass
+the visual and axe gates (after #10).
+
+### Tests (red, one commit)
+
+- [ ] T041 [P] [US3] Write `packages/elements/test/scenarios/tooltip.ts`, covering matrix § Tooltip:
+  - hover delay at 300 ms: not shown at 150 ms, shown by 450 ms; re-entry; reduced motion with the same bounds; delay 0 shows in the same task;
+  - keyboard focus; click focus; late `:focus-visible` (assert `focusVisible()` true first); the text-field trigger;
+  - the hoverable gap (`pointer()` stops); leave;
+  - Escape: stays dismissed, and the recorders see nothing; inside a dialog, two presses (SC-005);
+  - a trigger that opens an overlay (dialog and drawer);
+  - empty `text`, `disabled`, a trigger disabled or removed while shown, a slot change, two tooltips;
+  - placement: each value, flip, cross-axis clamp, `ltr` and `rtl`, clipped and transformed containers, inside an open dialog and drawer;
+  - following the trigger: container scroll, dialog body scroll, viewport resize;
+  - size and unbreakable text;
+  - host layout (`display: contents`, the pill still ellipsises);
+  - the accessibility tree with and without `describes`;
+  - the `describes` lifecycle: `textContent` only, a unique id, the host's ids kept, the observer re-adding the id, the span re-created after one microtask, slot change;
+  - forced colours.
+- [ ] T042 [P] [US3] Write the runners `packages/elements/test/tooltip.test.ts` and `test/browser/tooltip.test.ts` (fixture `tooltip.html`). Write `packages/elements/test/tooltip.touch.test.ts` and `test/browser/tooltip.touch.test.ts` for the touch row (a tap on a button trigger: the action runs, no bubble). Write `packages/elements/test/tooltip-no-popover.test.ts` (in process, `showPopover` removed before definition: nothing shows, no box, nothing throws).
+- [ ] T043 [P] [US3] Write `packages/elements/test/entry-tooltip.test.ts` and update the exports keys. The `manifest.test.ts` entry for `ocelle-tooltip` must list:
+  - `text` (default `""`), `placement` (`"top" | "bottom" | "start" | "end"`, default `"top"`, reflected), `disabled` (reflected), `describes` (reflected);
+  - the default slot and the `description` slot;
+  - part `bubble`;
+  - an empty events list.
+
+  Add the dist files to the build and pack tests.
+- [ ] T044 [P] [US3] In `packages/elements/test/node/readme.test.ts`:
+  - change the § Engines floor line (pinned at `:65`) to "Chromium 120+ and WebKit 17+", with the Popover API (Chromium 114, WebKit 17) as the newest feature;
+  - add the tooltip section fragments: the tokens read; the stated limits (text-field triggers, custom-element triggers with `describes`, touch); and #7's and #12's usage.
+- [ ] T045 [P] [US3] Tokens: add the `tooltip-delay` row (group `motion`, `500ms`) and the `tooltip-max-inline` row (group `size`, `18rem`) to `packages/tokens/test/expected.ts`, and the computed values to `tokens-browser`. Test that the reduced-motion block still sets only `motion-fast` and `motion-base`, so `tooltip-delay` is not zeroed (brand rule (f)). Add the README and CHANGELOG checks.
+- [ ] T046 [US3] Make the red commit of T041 to T045. `red.sh 4` must show each failing for the missing element, token or floor text.
+
+### Implementation (green)
+
+- [ ] T047 [US3] Add `tooltip-delay` and `tooltip-max-inline` to `packages/tokens/src/source.ts`, and to the tokens README and CHANGELOG.
+- [ ] T048 [US3] `packages/elements/src/ocelle-tooltip.ts`, class `OcelleTooltip`, per R-10 to R-13:
+  - **Host**: `:host { display: contents }`; the trigger is the first assigned element, tracked on `slotchange`.
+  - **Bubble**:
+    - `<div part="bubble" popover="manual" aria-hidden="true">`, hidden by default and shown only through `:popover-open`;
+    - the element does nothing when `showPopover` is absent;
+    - the UA `[popover]` styles reset;
+    - colours `color-chrome` and `color-chrome-ink`; forced colours `Canvas`, `CanvasText` and a `CanvasText` border;
+    - `max-inline-size: var(--ocelle-tooltip-max-inline)`, wrapping unbreakable strings;
+    - the transparent `--ocelle-space-2` padding on the trigger's side.
+  - **Show and hide**:
+    - hover tracked by `pointerover`/`pointerout` with `relatedTarget`, ignoring `touch`;
+    - the delay read from the computed `--ocelle-tooltip-delay`, through `setTimeout` with a function; 0 ms shows synchronously;
+    - `:focus-visible` checked on focus arrival only;
+    - the capture-phase `window` Escape listener while shown;
+    - one shown bubble at a time; hidden when an overlay opens.
+  - **Placement**:
+    - a per-instance constructable sheet with physical `top`/`left` coordinates (no `style` attribute, FR-047);
+    - logical `placement` under `:dir(rtl)`; flip; cross-axis clamp within `--ocelle-gutter`;
+    - a per-frame trigger-rect check while shown.
+  - **`describes`**: a light-DOM `span[slot="description"][role="tooltip"][hidden]` written with `textContent`, with a unique id. A `MutationObserver` re-adds the id to the trigger's `aria-describedby`, keeping the host's ids, and re-creates a removed span within one microtask. Everything is cleaned up on unset and disconnect.
+  - **Manifest and registration**: JSDoc tags, `define`.
+- [ ] T049 [US3] Packaging and docs:
+  - the export and the `./ocelle-tooltip.js` entry point;
+  - the regenerated manifest;
+  - the README tooltip section, and § Engines raised to WebKit 17;
+  - CHANGELOG entries for `@ocelle/elements` (`ocelle-tooltip` and the floor) and `@ocelle/tokens`;
+  - `storybook/.storybook/stories-layout.css`: the tooltip delay override class (`--ocelle-tooltip-delay: 0ms`, R-16), or the place the recheck named.
+
+  Run the suites green, including `elements-touch`, then the gates as in T037.
+
+### Stories (after #10 is merged; T026 done)
+
+- [ ] T050 [P] [US3] Red: the tooltip stories of data-model § Stories exist in light and dark, each declares one hover pointer state on a trigger wholly inside 1280 × 800, and its bubble is `:popover-open` in the capture.
+- [ ] T051 [US3] Green: `storybook/stories/tooltip.stories.ts`, using the delay override class.
+- [ ] T052 [US3] Produce the baselines; run `gate:storybook-build`, `gate:visual` and `gate:axe`; commit the baselines.
+
+### Record (FR-041)
+
+- [ ] T053 [US3] Record the WebKitGTK version Kitty Desktop ships, read from its build files, against WebKit 17 in research R-10 and `reviews/phase-4/notes.md`. If it is below WebKit 17, stop and ask the operator before the phase is approved (plan Risks).
+
+**Checkpoint**: `tdd-check.sh 4` reports `pass`.
+
+---
+
+## Phase 5: Polish & cross-cutting
+
+- [ ] T054 Close out R-16: confirm that research R-16 states the merged #10's facts and that no story task depends on the unmerged branch. Record this in `reviews/phase-5/notes.md`.
+- [ ] T055 Walk through `quickstart.md` steps 1 to 7 and the two hand checks, and record the results in `reviews/phase-5/notes.md`.
+- [ ] T056 Check the three CHANGELOGs name every surface addition (three elements, three entry points, three tokens, the floor). Docs only; `reviews/phase-5/tdd-exempt.md` states why no test could fail beyond those of T019, T032, T044 and T045.
+
+---
+
+## Dependencies & Execution Order
+
+- Phase 1 blocks everything. Phase 2 blocks Phase 3, because the drawer reuses `overlay.ts` and the dialog
+  scenarios. Phase 4 needs Phase 2 for the dialog rows, and Phase 3 for the drawer rows (inside a drawer, a trigger
+  that opens a drawer).
+- In each phase: measurement first (Phase 2), then the red commit, then green, then stories.
+- **Stories**: every story task (T026 to T029, T038 to T040, T050 to T052) waits until #10 is merged. T026 runs first
+  and once.
+- Within a red commit, the [P] tasks touch different files.
+
+## Parallel Opportunities
+
+- Phase 1: T001 to T003 in parallel, then T005 to T011 in parallel after T005's interface.
+- Phase 2: T015 to T019 in parallel.
+- Phase 3: T030 to T033 in parallel.
+- Phase 4: T041 to T045 in parallel.
+
+## Implementation Strategy
+
+- **MVP**: Phases 1 and 2. This gives the dialog for the Open project consumer.
+- Then the drawer for #12, then the tooltip for #7 and #12. Each phase lands as its own reviewed unit and is folded
+  after approval (`/ocelle-run` step 4.3).
