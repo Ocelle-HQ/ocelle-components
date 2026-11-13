@@ -101,12 +101,20 @@ modal, level. Device: the default context (`elements`, `visit()`) matches `(hove
     slotted native modal `<dialog>` with two buttons shown above the overlay from slotted content: Escape closes it
     alone with no request and no `cancel` on the overlay; before that, Tab and Shift+Tab, n + 2 presses each, keep
     `focusPath()` inside the nested dialog; a further Escape then requests the overlay's close with `escape`.
-  - **Slotted non-modal dialogs** (R-02, squad round 3 verify 1 and verify 2): a slotted `<dialog open>` holding a
-    button (any `closedby`), and separately a slotted `<dialog>` opened with `show()` holding a button with `closedby`
-    absent and with `closedby="none"`, each with focus on its button and with focus on a sibling slotted button,
-    × {no veto, veto then Escape twice}: each Escape gives one request with reason `escape` and no `cancel` on the
-    overlay, the slotted dialog stays open; no veto closes the overlay; under veto the overlay stays open and `:modal`
-    on every press, focus inside. Tab and Shift+Tab, n + 2 presses each: the slotted dialog's button is a stop in the
+  - **Slotted non-modal dialogs** (R-02, squad round 3 verify 1, verify 2 and verify 3): a slotted `<dialog open>`
+    holding a button with `closedby` absent, `"auto"` and `"none"`, and separately a slotted `<dialog>` opened with
+    `show()` holding a button with `closedby` absent and with `closedby="none"`, each with focus on its button and
+    with focus on a sibling slotted button, × {no veto, veto then Escape twice}: each Escape gives one request with
+    reason `escape` and no `cancel` on the overlay, the slotted dialog stays open; no veto closes the overlay; under
+    veto the overlay stays open and `:modal` on every press, focus inside. A slotted `<dialog open>` (opened by the
+    attribute) holding a button with `closedby="closerequest"`, and with `closedby="any"`, with focus on its button
+    and on a sibling slotted button, × {no veto, veto then Escape twice}: the first Escape gives exactly one request
+    with reason `escape` through one cancelable `cancel` on the overlay's `<dialog>`, which the overlay prevents (the
+    stand-aside, then the `cancel` fallback of R-02); each later press gives one request with reason `escape` and no
+    `cancel` on the overlay; the slotted dialog stays open on every press; no veto closes the overlay on the first
+    press; under veto the overlay stays open and `:modal` on every press, focus inside. After that dialog is closed
+    with `close()` and opened again by the attribute, the first Escape again goes through one prevented `cancel`. For every
+    non-modal case in this row, Tab and Shift+Tab, n + 2 presses each: the slotted dialog's button is a stop in the
     exact list, no `body`. Separately a slotted `<dialog>` opened with `show()` and `closedby="closerequest"`, and with
     `closedby="any"`, holding a button, focus inside: the first Escape closes that dialog alone (`open` false) with no
     `…-close-request` and no `cancel` on the overlay, the overlay stays open and `:modal`; the second Escape requests
