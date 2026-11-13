@@ -148,9 +148,9 @@ picked up at the next size, slot or scroll event (FR-014, operator decision PLAN
 | `.region-ring` | absolutely positioned over the box, inset by the ring width, with no pointer events. Shown by `.region-box:focus-visible ~ .region-ring` (the box's ring) and by `.region-frame:focus-visible > .region-ring` (the handover ring, R-07) with the token focus ring; `Highlight` in forced colours. It comes after the box, so it paints over the masked box |
 | `.region-edge` | always laid out: absolutely positioned at the box's inline start (`.start`) or end (`.end`), `inline-size: var(--ocelle-scroller-fade-size)`, `box-sizing: border-box`, no pointer events, nothing painted outside forced colours; the module's fade-depth measure. In forced colours, on the side whose `fadeStart` or `fadeEnd` is set, `var(--ocelle-border-width) solid CanvasText` on its outer inline side |
 
-A host that needs a different track layout (the board's flex row and its lanes' `contain: inline-size`, research.md
-R-08) adds rules to `.region-track` and its slotted children in its own styles; it does not change the module's, and it
-adds no block ring room of its own.
+A host that needs a different track layout (the board's flex row and its slotted children's `contain: inline-size`,
+research.md R-08) adds rules to `.region-track` and its slotted children in its own styles; it does not change the
+module's, and it adds no block ring room of its own.
 
 ## Pure functions (unit-tested without layout)
 

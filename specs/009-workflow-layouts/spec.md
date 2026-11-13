@@ -117,6 +117,15 @@ again:
   browser case, paired where it is a "does not" (the pairing table). The plan's timing goal for twelve lanes of forty
   cards is dropped.
 
+**Operator decisions on the re-run analysis** (2026-11-13, `analysis-report.md` at head 321ea0f,
+`reviews/analysis/operator-decisions.md`). These amend the text again:
+
+- **Own plant for content removed while scrolled** (U1): the pairing row's plant is now the fades and the tab stop
+  computed from a cached `scrollLeft` instead of the clamped one, which only that case catches; the state not
+  recomputed on `slotchange` or the track's resize is US1-3's plant (Edge Cases "Content changes while scrolled").
+- **One lane** (F7): worded as US2-3 words it, the board's inline size less its ring room on each inline side
+  (Edge Cases "One lane, or no lanes").
+
 ## Consumer need
 
 - **Board and pipeline screens.** Kitty Desktop's board and pipeline screens build on the Spec Kitty class families
@@ -209,7 +218,7 @@ test, and its plan names a planted defect that makes it fail:
 | A board with no lanes does not overflow, is not a tab stop and adds no node (Edge Cases "One lane, or no lanes", FR-013) | A twin board with five lanes in Frame N on the same page is a tab stop and a named region | A board that always applies its region role and tab stop |
 | A non-lane child of a board does not widen for content wider than its share (Edge Cases "Non-lane children of a board", FR-013) | It and the lanes beside it are equal within 1 px, each at least `--ocelle-lane-min-width` | The inline-size containment on the lane host only, not in the board's `::slotted(*)` |
 | A change of a lane's `count` or `count-label` adds no live region and no announcement node (Edge Cases "Lane count updates", FR-018, FR-019) | The visible count and the group's name show the new value | An `aria-live` region on the lane's header |
-| After content is removed while scrolled to the end, no fade remains at the clamped end, and a board that then fits keeps no tab stop and no region (Edge Cases "Content changes while scrolled", FR-002, FR-007) | While it still overflows, the start fade shows at the clamped position | The state not recomputed on `slotchange` or on the track's resize |
+| After content is removed while scrolled to the end, no fade remains at the clamped end, and a board that then fits keeps no tab stop and no region (Edge Cases "Content changes while scrolled", FR-002, FR-007) | While it still overflows, the start fade shows at the clamped position | The fades and the tab stop computed from a cached `scrollLeft` (the value before the removal) instead of the clamped one |
 | A lane does not widen for content wider than its share (US2-14, FR-013) | In the same board, the nested overflowing scroller in that lane is a tab stop, and all lanes are equal within 1 px | A lane whose minimum inline size is its content's min-content (the flex default); a lane whose content feeds the board's intrinsic size (no inline-size containment) |
 | A focused card in a `flat` lane at the board's edges is not clipped by the board's scroll box (US2-15, FR-014) | The board does not scroll in the block direction, and in Frame W it still does not overflow | A board scroll box with no room for the ring |
 | In two columns, `detail-open` hides nothing (US3-4, FR-027) | In one column, the same attribute shows the detail and hides the list | `detail-open` applied in every layout |
@@ -565,8 +574,8 @@ goes.
   page zoom and a changed root font size move every figure together, the scroller's fade depth and focus clearance
   too. The frames' px figures assume 16 px; each element also has one case at a 20 px root font size.
 - **Many lanes.** With twelve lanes in Frame W, each keeps `--ocelle-lane-min-width` and the board scrolls.
-- **One lane, or no lanes.** One lane takes the board's full inline size. A board with no lanes draws an empty box,
-  does not overflow and adds no node.
+- **One lane, or no lanes.** One lane takes the board's inline size less its ring room on each inline side (FR-014).
+  A board with no lanes draws an empty box, does not overflow and adds no node.
 - **Lane content.** A lane slots any content. It needs no `ocelle-card` (#8): cards from #8, or the host's own
   markup, sit in the lane's default slot in order.
 - **Non-lane children of a board.** A board slots any element. Any child, a lane or not, takes the same minimum

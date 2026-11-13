@@ -410,7 +410,8 @@ Its fitting twin is none of these. `ocelle-test-overflow-host` passes US1-1, US1
   - **US2-12:** a hidden board and a hidden lane. Plant: `:host([hidden])` removed.
   - **US2-13:** fixture checks.
   - **US2-14:** with `base.css`: equal lanes, the identifier broken, the image capped, the nested `Tags` scroller a
-    `group` tab stop of its own. Plants: min-content minimum; a lane without inline-size containment (R-08).
+    `group` tab stop of its own. Plants: min-content minimum; the board's `::slotted(*)` without inline-size containment
+    (R-08).
   - **US2-15:** flat lanes with card rings, whole at the board's edges and clear of the fades in Frame N. Plant: no
     ring room.
   - **SPEC-2-06** (R-08): wide fixed content overlaps the next lane. Added after the first render as a card that
@@ -434,10 +435,12 @@ Its fitting twin is none of these. `ocelle-test-overflow-host` passes US1-1, US1
       Plant: `aria-live="polite"` on the header.
     - **Content changes while scrolled:** five lanes in Frame N scrolled to the end; removing one lane leaves the
       board overflowing at the clamped end, with the start fade and no end fade (on pixels); removing two more makes
-      it fit, with no tab stop, no region and no fade. Plant: the state not recomputed on `slotchange` or on the
-      track's resize.
-- [ ] T033 [P] [US2] `packages/elements/test/workflow-board.test.ts` and `workflow-lane.test.ts` (in-process over
-  T032), and `packages/elements/test/browser/workflow-board.test.ts` (fixture over T032).
+      it fit, with no tab stop, no region and no fade. Plant: the fades and the tab stop computed from a cached
+      `scrollLeft` (the value read before the removal) instead of the clamped one (analysis U1). The state not
+      recomputed on `slotchange` or the track's resize is US1-3's plant, which the clamp's `scroll` would mask here.
+- [ ] T033 [US2] `packages/elements/test/workflow-board.test.ts` and `workflow-lane.test.ts` (in-process over
+  T032), and `packages/elements/test/browser/workflow-board.test.ts` (fixture over T032). It follows T032, whose
+  bodies it runs.
 - [ ] T034 [P] [US2] `packages/elements/test/entry-workflow-board.test.ts`: the module defines `ocelle-workflow-board`
   and not the lane. `entry-workflow-lane.test.ts`: it defines `ocelle-workflow-lane` only. Extend `entry-root.test.ts`
   and `exports.test.ts`.
@@ -445,8 +448,9 @@ Its fitting twin is none of these. `ocelle-test-overflow-host` passes US1-1, US1
   lane entry (`label`; `count` `number | undefined`; `count-label`/`countLabel`; `variant` `"flat" | undefined`,
   reflected; default slot). Neither has events, parts or CSS custom properties.
 - [ ] T036 [P] [US2] `packages/elements/test/node/readme.test.ts`:
-  - § `ocelle-workflow-board`: its slot and tokens; the board paints no ground and goes on a main ground; wrap wide
-    content in an `ocelle-scroller`; `base.css` caps nested images; a shrink-to-fit host needs a definite inline size;
+  - § `ocelle-workflow-board`: its slot and tokens; a board holds lanes (Edge Cases "Non-lane children of a
+    board", analysis C8); the board paints no ground and goes on a main ground; wrap wide content in an
+    `ocelle-scroller`; `base.css` caps nested images; a shrink-to-fit host needs a definite inline size;
     a width-only change inside a lane is picked up at the next size, slot or scroll event (FR-014, PLAN-FRESH-1-006 (b)).
   - § `ocelle-workflow-lane`: its attributes, the name rule with no built-in words, the `color-sheet` ground, and
     the flat variant.
@@ -697,7 +701,7 @@ reports `pass`.
 - Phase 1: T003, T004 and T005 (different packages).
 - Phase 2: T010, T011, T012 and T015 to T020 are separate files. T013 is the shared body that T014 runs, so T014
   follows T013.
-- Phase 3: T031 and T033 to T037.
+- Phase 3: T031 and T034 to T037. T033 follows T032, whose bodies it runs.
 - Phase 4: T046, T048, T049 and T051 to T053. T050 follows T047 (its bodies) and T049 (the same browser file).
 - Never in parallel: browser suites, mutation, plants and `visual:update` (one heavy job at a time).
 

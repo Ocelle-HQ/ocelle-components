@@ -332,7 +332,8 @@ Every phase runs each pairing plant it names once against its test and records t
        non-lane children (a `div` child with sentence text is equal to the lanes; plant: containment on the lane host
        only, F1); lane count updates (the visible count and the name follow; no live region; plant: `aria-live` on the
        header); content removed while scrolled to the end (the fades and the tab stop follow the clamped position;
-       plant: the state not recomputed on `slotchange` or the track's resize).
+       plant: the fades and the tab stop computed from a cached `scrollLeft` instead of the clamped one, analysis U1;
+       the state not recomputed on `slotchange` or the track's resize stays US1-3's plant).
 
      The board's region role is asserted on the board (the test host and the scroller cover `group`). `sheets()`
      asserts one per-instance sheet per board root and none on the lane (R-13 § The conventions). A 20 px root
