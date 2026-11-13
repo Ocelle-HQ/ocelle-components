@@ -296,8 +296,11 @@ Its fitting twin is none of these. `ocelle-test-overflow-host` passes US1-1, US1
   - the reduced-motion statement for keys pressed while a slotted control has focus (FR-009, PLAN-FRESH-2-003 (a));
   - § Engines: the mask properties with their figures (R-18).
 - [ ] T020 [P] [US1] `storybook/test/integration/elements-stories.test.ts`: the six scroller stories of
-  contracts/elements.md § Stories are in the built Storybook, and each renders `ocelle-scroller` in light and dark with
-  zero CSP violations.
+  contracts/elements.md § Stories are in the built Storybook, and each, in light and dark, renders `ocelle-scroller`,
+  with no `style` attribute and no class on the story's markup (the light DOM it renders) and no request outside the
+  origin. The test also checks that the `[data-frame]` rules in `storybook/.storybook/stories-layout.css` are a copy
+  of `packages/elements/test/fixtures/frames.css`. It counts no CSP violations: the Storybook is not a CSP target
+  (006 FR-020), and strict CSP is proved in the `elements-browser` fixtures (R-15, R-17).
 
 ### Implementation (green)
 
@@ -338,8 +341,8 @@ Its fitting twin is none of these. `ocelle-test-overflow-host` passes US1-1, US1
   (`pnpm --filter @ocelle/elements run manifest`).
 - [ ] T027 [US1] `storybook/stories/scroller.stories.ts`: Fits; Overflowing at start; Overflowing in the middle;
   Overflowing at the end; Right to left; Unlabelled. Frames use `data-frame` and `[data-story]` rules in
-  `storybook/.storybook/stories-layout.css`, taken from `frames.css` by import or as a copy checked by a
-  `storybook-integration` test. No `style` attribute and no class anywhere. The mid-scroll and end stories set
+  `storybook/.storybook/stories-layout.css`; the `[data-frame]` rules there are a copy of `frames.css`, checked by
+  T020's test. No `style` attribute and no class anywhere. The mid-scroll and end stories set
   `scrollLeft` after `updateComplete` in their render (R-15).
 - [ ] T028 [US1] Baselines: `pnpm run visual:update` in the pinned container under docker for the six stories in light
   and dark, committed under `storybook/baselines/`. Confirm them by a CI run of the branch, and commit CI's artifact
@@ -455,7 +458,8 @@ Its fitting twin is none of these. `ocelle-test-overflow-host` passes US1-1, US1
   - § `ocelle-workflow-lane`: its attributes, the name rule with no built-in words, the `color-sheet` ground, and
     the flat variant.
 - [ ] T037 [P] [US2] `storybook/test/integration/elements-stories.test.ts`: the five board and six lane stories of
-  contracts/elements.md § Stories.
+  contracts/elements.md § Stories, each rendering in light and dark with no `style` attribute and no class on the
+  story's markup and no request outside the origin, as in T020 (no CSP count, R-15).
 
 ### Implementation (green)
 
@@ -474,7 +478,8 @@ Its fitting twin is none of these. `ocelle-test-overflow-host` passes US1-1, US1
   `./ocelle-workflow-board.js` and `./ocelle-workflow-lane.js`. Regenerate `custom-elements.json`.
 - [ ] T041 [US2] `storybook/stories/workflow-board.stories.ts` (Five lanes; Five lanes, narrow; One lane; No lanes;
   Right to left) and `workflow-lane.stories.ts` (Default with count; Default without count; Flat with count; Flat
-  without count; Long title; Untitled with count), on `color-canvas`. Frames come from `frames.css` and the cards use
+  without count; Long title; Untitled with count), on `color-canvas`. Frames come from the copy of `frames.css` in
+  `stories-layout.css` (T027), and the cards use
   sentence-length text.
 - [ ] T042 [US2] Produce the baselines with `visual:update` and confirm them in CI, as in T028. Run `gate:axe`.
 - [ ] T043 [US2] README sections of T036, and the changelog entries for the two elements and their entry points.
@@ -611,7 +616,9 @@ with three columns.
       through layout alone;
     - and that hosts set `narrow`, `detail-open` and the `*-below` thresholds from a task, not from a `ResizeObserver`
       callback (R-13; round 3 verify note).
-- [ ] T053 [P] [US3] `storybook/test/integration/elements-stories.test.ts`: the six list-detail stories.
+- [ ] T053 [P] [US3] `storybook/test/integration/elements-stories.test.ts`: the six list-detail stories, each
+  rendering in light and dark with no `style` attribute and no class on the story's markup and no request outside the
+  origin, as in T020 (no CSP count, R-15).
 
 ### Implementation (green)
 
@@ -638,7 +645,8 @@ with three columns.
 - [ ] T057 [US3] `index.ts` and `browser.ts` define and export the element. `package.json` gets the export
   `./ocelle-list-detail.js`. Regenerate `custom-elements.json`.
 - [ ] T058 [US3] `storybook/stories/list-detail.stories.ts`: Three columns; Two columns, inspector stacked; One column,
-  list; One column, detail; No inspector; Right to left. Frames come from `frames.css`.
+  list; One column, detail; No inspector; Right to left. Frames come from the copy of `frames.css` in
+  `stories-layout.css` (T027).
 - [ ] T059 [US3] Produce the baselines with `visual:update` and confirm them in CI, as in T028. Run `gate:axe`.
 - [ ] T060 [US3] README sections of T052, and changelog entries for `ocelle-list-detail`, its entry point,
   `remeasure()` and the container-tier convention. The `@ocelle/tokens` changelog names the six tokens (FR-035).

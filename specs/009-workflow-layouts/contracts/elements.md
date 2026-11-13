@@ -158,7 +158,9 @@ The board module does not define the lane: a host imports both, or the root.
 | `workflow-lane.stories.ts` | Default with count; Default without count; Flat with count; Flat without count; Long title; Untitled with count |
 | `list-detail.stories.ts` | Three columns; Two columns, inspector stacked; One column, list; One column, detail; No inspector; Right to left |
 
-Frames are sized by the same `[data-frame]` rules as the tests (one source, `packages/elements/test/fixtures/frames.css`,
-research.md R-17), through `storybook/.storybook/stories-layout.css`. No story uses a `style` attribute or a class. The
+Frames are sized by the same `[data-frame]` rules as the tests: `storybook/.storybook/stories-layout.css` holds a copy
+of them, checked against the one source, `packages/elements/test/fixtures/frames.css`, by a `storybook-integration`
+test (research.md R-15, R-17). No story uses a `style` attribute or a class; the story tests assert it on each story's
+markup (research.md R-15). The
 board and lane stories' nested scroller has an item-specific `label` ("Tags of WP-12"). Default-lane stories render on
 `color-canvas`.

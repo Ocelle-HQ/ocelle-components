@@ -757,9 +757,13 @@ layout's, whatever tier it shows, so a shrink-to-fit host cannot make the tier a
 **Decision.**
 
 - **Stories.** In `storybook/stories/<element>.stories.ts`, as 005's are:
-  - frames sized by the tests' `[data-frame]` rules (one source, R-17) through `storybook/.storybook/stories-layout.css`,
-    other story layout by `[data-story="…"]` rules there, with no `style` attribute and no class (the `csp` gate's
-    Storybook check);
+  - frames sized by the tests' `[data-frame]` rules (one source, R-17), held as a copy in
+    `storybook/.storybook/stories-layout.css` that a `storybook-integration` test checks against
+    `packages/elements/test/fixtures/frames.css`. Not an import: #10's repo-tree plant roots do not hold
+    `packages/elements/test/`, so an `@import` breaks every Storybook plant (recheck D1, operator decision (b));
+  - other story layout by `[data-story="…"]` rules there, with no `style` attribute and no class. Each phase's story
+    test asserts this on its new stories' markup (Story test below). #10 took the Storybook out of the `csp` gate
+    (006 FR-020), so no gate checks it (recheck D2);
   - the board and lane stories' nested scroller labelled per item ("Tags of WP-12", R-01), and the default-lane
     stories on `color-canvas` (R-10);
   - each story inside 1280 × 800 at scroll (0, 0).
@@ -783,7 +787,11 @@ layout's, whatever tier it shows, so a shrink-to-fit host cannot make the tier a
   operator. Each element's browser tests also assert the tree exactly (R-01), and US1-12's unlabelled scroller is
   asserted as a tab stop with no role and no name (SPEC-1-10).
 - **Story test.** The existing `storybook-integration` story-inventory test (005's `elements-stories.test.ts`) grows
-  with the new story ids, red first in each phase.
+  with the new story ids, red first in each phase. For each new story, in light and dark, it asserts that the story
+  renders its element, that no element of the story's markup (the light DOM it renders, not the elements' shadow
+  trees) carries a `style` attribute or a class, and that no request leaves the origin. It counts no CSP violations:
+  the Storybook is not a CSP target since 006 FR-020, and strict CSP is proved in the `elements-browser` fixtures
+  (recheck D2). Phase 2's story test (T020) also checks the frame copy against `frames.css` (recheck D1).
 
 **Recheck when #10 lands** (a task at the start of implementation). Before phase 2's red step, re-read #10 as merged
 on `main` and update this entry, `contracts/elements.md` § Stories and the tasks where any of these differ:
@@ -799,6 +807,9 @@ on `main` and update this entry, `contracts/elements.md` § Stories and the task
 - any Storybook configuration this feature touches.
 
 Then merge `main` (never rebase).
+
+**Rechecked** at T001 (`reviews/phase-1/recheck-10.md`): every item as designed except the frame route (D1) and the
+Storybook's CSP check (D2), both settled above by the operator (`reviews/phase-1/operator-decisions.md`).
 
 **Alternatives.** Stories under 001's "visual regression and axe absent" exception, as 005 did: not needed, because the
 operator sequences this feature after #10.
@@ -863,10 +874,11 @@ viewport fails instead of passing.
 source and they are tested. `packages/elements/test/fixtures/frames.css` holds Frames W, R, N and S as
 `[data-frame="W"]` (and so on) rules in px. The in-process driver reads it as text (`?raw`) and adopts it through
 `driver.rules()`; the fixture pages link it same-origin; the stories use the same `data-frame` attribute (an
-attribute, not a class or a `style`), and `storybook/.storybook/stories-layout.css` takes those rules from that file by
-import, or, where #10's Storybook configuration cannot import it, holds a copy that a `storybook-integration` test
-compares with the source. The frames are not exempt: a phase 1 test, red before the frame CSS exists, asserts in both
-harnesses each frame's measured inline size (876, 1196, 636 and 288 px) at its viewport.
+attribute, not a class or a `style`), and `storybook/.storybook/stories-layout.css` holds a copy of those rules that a
+`storybook-integration` test (phase 2's story test, T020, red first) compares with the source. An import is not used:
+#10's Storybook plant roots do not hold `packages/elements/test/` (R-15, recheck D1). The frames are not exempt: a
+phase 1 test, red before the frame CSS exists, asserts in both harnesses each frame's measured inline size (876, 1196,
+636 and 288 px) at its viewport.
 
 **Root font size (PLAN-TESTABILITY-1-010).** Every px figure above assumes a 16 px root, so a hard-coded `× 16` would
 pass. Each element has one case at a 20 px root font size (set by a test stylesheet through `driver.rules()`, not a
