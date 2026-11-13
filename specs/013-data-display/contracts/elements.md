@@ -82,7 +82,7 @@ Tokens read (README, not manifest): `font-sans`, `font-size-sm`, `font-size-fact
 | property / attribute | `label` / `label` | `string \| undefined` | `undefined` | Accessible name. Required unless the host has an `aria-label`; prefer `label`. |
 | property / attribute | `showLabel` / `show-label` | `boolean \| undefined` | `undefined` | Shows the label (and value text) as text. Unset hides it. |
 | property / attribute | `size` / `size` (reflected) | `"compact" \| undefined` | `undefined` | `compact` is a thin bar with the label beside it. Unset gives the default size. |
-| property / attribute | `ground` / `ground` (reflected) | `"tinted" \| undefined` | `undefined` | `tinted` draws the track boundary in the accent-strong colour, for a bar on an inset, accent-low, hover or state ground. Unset is for canvas, sheet, pane, panel, inspector and rail. |
+| property / attribute | `ground` / `ground` (reflected) | `"tinted" \| undefined` | `undefined` | `tinted` draws the track boundary in the accent-strong colour, for a bar on an inset, accent-low, hover-bg or state ground. Unset is for canvas, sheet, pane, panel, inspector and rail. |
 | observed attribute | `aria-label` | | | Not declared in the manifest (README convention). It names the bar, overriding `label`. |
 | part | `track` | `<div>` | none | The track. |
 | part | `fill` | `<div>` | none | The filled part, the sweeping mark or the still mark. |
@@ -124,8 +124,10 @@ Tokens read (README, not manifest): `font-sans`, `font-size-sm`, `font-size-fact
 - **Engines**: manual slot assignment (`slotAssignment: "manual"`, `HTMLSlotElement.assign`): Chromium 86, WebKit
   16.4. The floor is unchanged.
 - **Mapping (FR-058)**: each kitty-mission-ui `.sk-facts`, `.sk-empty-state` and `.sk-progress` variant of the
-  inventory in research R-11 to its element and variant, naming roles only. Each element's rows are written in that
-  element's phase, red first (PLAN-FRESH-2-006).
+  inventory in research R-11 to its element and variant, naming roles only. The table holds the `.sk-*` family names
+  beside each row's role name (Markdown is outside the `prefix` gate); the readme tests assert the rows by role name,
+  with no `sk-` string in test code (operator decision I1, R-11). Each element's rows are written in that element's
+  phase, red first (PLAN-FRESH-2-006).
 
 `@ocelle/styles`' README gains, in § Compact scale, the two facts hooks its density rules set, and a section for the
 pre-upgrade facts rule (R-07): `:where(ocelle-facts:not(:defined) > ocelle-fact:not([hidden]))`, wrapped whole in

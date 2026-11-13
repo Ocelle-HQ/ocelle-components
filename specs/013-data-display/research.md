@@ -442,7 +442,9 @@ children are presentational.
   empty-state panel-loading story, and any later story holding a bar. A plant (one story's `label` removed) must fail
   it.
 - No story sets a host `aria-label`. The host-label override (US3-10) is a browser test only, beside the unnamed state
-  (US3-11, FR-050). This keeps #10's `axe` gate free of a false positive with no exception entry.
+  (US3-11, FR-050). This keeps #10's `axe` gate free of a false positive with no exception entry. Both states, with
+  `ocelle-fact` outside `ocelle-facts`, are the plan's one Complexity Tracking row against constitution V (operator,
+  tasks gate, C1), with its sunset: stories once the pinned axe-core reads ElementInternals ARIA.
 - **README.** It recommends `label` as the way to name a bar, says a host `aria-label` also names it (Host ARIA) but
   makes axe report `aria-prohibited-attr` in a consumer's own audit, a false positive of axe with ElementInternals,
   and says that axe does not check the bar's name, so a consumer's tests should.
@@ -483,7 +485,14 @@ its oracle is not weakened.
   and it adds no scrollable overflow to the element or the page. Without the clip a 40% mark at the end of its sweep
   gives a 320 px page a scroll width of 403 px (measured).
 - `block-size: var(--ocelle-space-2)` (8 px). With `size="compact"`, `--ocelle-space-1` (4 px).
-- `background-color: var(--ocelle-color-inset)`, `border-radius: var(--ocelle-radius-1)`.
+- `background-color: var(--ocelle-color-inset)`, `border-radius: var(--ocelle-radius-1)`. **Why `radius-1`
+  (constitution II, analysis A1).** Principle II names `radius-2` as the one general radius and makes the token
+  contract binding; that contract (`packages/tokens/README.md`, brand rules) reserves `radius-1` for small marks. The
+  track is a small mark, not a surface: it is 8 px (compact 4 px) high and holds no text or control, like the dots and
+  focus corners `radius-1` (2 px) is declared for in `packages/tokens/src/source.ts`. On the 8 px track `radius-2`
+  (4 px) is half the block size, which would round the ends fully into the pill shape the brand rules keep for state
+  pills; `radius-1` keeps it a bar with softened corners. So the track takes the small-mark radius, as the contract
+  allows, and no radius is added; the constitution's wording is not changed.
 - **Boundary (FR-036, PLAN-A11Y-SECURITY-1-002 (a)).** `box-shadow: 0 0 0 var(--ocelle-border-width)
   var(--ocelle-color-control-border)`, an outline drawn outside the box that takes no layout space and is not clipped
   by the track's own `overflow`. Zero is a permitted raw value. `color-control-border` is declared and checked at 3:1
@@ -707,7 +716,10 @@ Both are additions to documented base-style behaviour (MINOR, constitution VII).
   - Story text is Latin script, which Schibsted Grotesk draws: #10's `font` rule fails any text drawn in another
     face, so the right-to-left stories set `dir="rtl"` on Latin content, as `icon.stories.ts`'s set does, and
     `lang` with a non-Latin script is left to the browser tests.
-  - There is no story for the unnamed progress (FR-050) or for a host `aria-label` on progress (R-05).
+  - There is no story for the unnamed progress (FR-050), for a host `aria-label` on progress (R-05) or for
+    `ocelle-fact` outside `ocelle-facts` (FR-050). These three states are the plan's one Complexity Tracking row
+    (constitution V, approved by the operator at the tasks gate); each is proven by shared browser bodies in both
+    harnesses.
 - **Story test (I3).** `storybook/test/integration/elements-stories.test.ts` is extended in each phase's red commit,
   before green. It checks each new story is present in the built Storybook and renders its element in light and dark,
   with no outside request, as the merged test does for 005's stories (since #10 the Storybook is served with no CSP
@@ -842,8 +854,26 @@ since that phase's README-mapping task needs them; the phase does not take its r
 **Gaps.** A variant that no element, property or slot of this plan covers goes to the operator before the red commit
 of its element's phase; the surface is not widened by review.
 
+**Who records it, and when (analysis U1).** For each family an operator step precedes the phase's red tasks: the
+operator supplies the family's rows and the planner records them in the table above, in a documentation commit of
+their own before the phase's red commit (tasks T002a, T022a, T036a). A family still pending is a known blocker of
+that phase's red commit (T012, T028, T045): the implementer stops and asks; it does not write the mapping statements
+from anything else.
+
 **Where the mapping is written.** Each element's mapping rows (FR-058) are written in that element's phase, red
 first: the readme-test statements for the rows in the phase's red commit, the rows in its green commit (facts in
 phase 1, empty state in phase 2, progress in phase 3). Phase 4 checks only that the three sections together cover
 the inventory (SC-001, in review).
+
+**How the mapping is proven without `sk-` in test code (operator decision I1, "Roles, not sk- names", tasks gate).**
+The `prefix` gate reads every text file below `packages/<name>/` except Markdown, and its pattern matches `sk-` after
+a `.`; FR-002 forbids `sk-` names in source and tests. So:
+- the README mapping table (Markdown, outside the gate) holds the `.sk-*` family names next to each row's role name,
+  its element and its variant;
+- the readme tests (`packages/elements/test/node/readme.test.ts`) assert each row by its role name from the
+  "Modifier or state (role name)" column above, for example the row "facts compact" names `ocelle-facts` and
+  `density="compact"`, one assertion per row. No `sk-` string appears in test code, built directly or indirectly
+  (no concatenation, escape or character code that would spell it);
+- the `.sk-*` family column is checked against this inventory in review (SC-001, T054).
+The role names in this table are therefore written without the `sk-` prefix.
 

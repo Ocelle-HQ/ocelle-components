@@ -6,7 +6,9 @@
 2026-11-13), amended by the operator's fork decisions of squad rounds 1 to 3 (2026-11-13,
 `reviews/plan/round-1/refute.md`, `reviews/plan/round-2/refute.md`, `reviews/plan/round-3/refute.md`), and by the
 operator's decisions at the plan gate (2026-11-13, `reviews/plan/operator-gate.md`): FR-004 confirmed, #10 merged
-into this branch and the plan updated for it, and the upstream inputs to follow.
+into this branch and the plan updated for it, and the upstream inputs to follow. The analysis after tasks
+(`analysis-report.md`) is resolved with the operator's decisions at the tasks gate (2026-11-13,
+`reviews/analysis/operator-decisions.md`; resolution note `reviews/analysis/fixes-1.md`).
 
 ## Summary
 
@@ -32,8 +34,8 @@ Measurements in this container ([spike/RESULTS.md](spike/RESULTS.md)) and squad 
   14 px / 1.5 scale (#531), through two hooks `@ocelle/styles` sets (R-03).
 - **Progress naming.** `ocelle-progress` is the progressbar itself through `ElementInternals`. This is one node, and a
   host `aria-label` still names it (R-05). Its fill always carries an `accent-strong` edge, at 4.1:1 or more against
-  the track and every ground, and its track boundary uses `accent-strong` on inset, accent-low, hover and state grounds
-  with `ground="tinted"` (R-06).
+  the track and every ground, and its track boundary uses `accent-strong` on inset, accent-low, hover-bg and state
+  grounds with `ground="tinted"` (R-06).
 - **Progress motion.** The indeterminate sweep is `calc(var(--ocelle-motion-base) * 7)` three times (4.2 s), then the
   mark rests as a still mid-track mark (WCAG 2.2.2); under reduced motion the still mark shows at once. The sweep is
   anchored to a loading episode through the Web Animations API, so a replaced or re-shown bar does not start another,
@@ -96,17 +98,18 @@ stories, each with two baselines.
 
 ## Constitution Check
 
-*Gate: passes before Phase 0. Re-checked after Phase 1 design, after squad rounds 1 to 3's fixes, and after #10's
-merge (plan gate, 2026-11-13): passes, with no exception (Complexity Tracking).*
+*Gate: passes before Phase 0. Re-checked after Phase 1 design, after squad rounds 1 to 3's fixes, after #10's merge
+(plan gate, 2026-11-13) and after the analysis of the tasks (tasks gate, 2026-11-13): passes, with one recorded
+exception to Principle V, the three story-less states, approved by the operator (Complexity Tracking).*
 
 | Principle | How this plan meets it |
 |---|---|
 | I. Names, no I/O, small interface, manifest | **Tags**: `ocelle-facts`, `ocelle-fact`, `ocelle-empty-state`, `ocelle-progress`. **Events**: none, since no element has a user intent to report. **I/O**: none. **Interfaces**: `density` and `layout` (PLAN-FRESH-2-001 (c)); `label` and `wrap`; `variant`; and `value`, `max`, `value-text`, `label`, `show-label`, `size`, `ground`. Every property `| undefined` with `@default undefined`, so no unset property writes an attribute (PLAN-CORRECTNESS-1-011 (a)). Three CSS hooks named after the element: `--ocelle-facts-stack-below`, `--ocelle-facts-value-size`, `--ocelle-facts-value-line-height`. The manifest declares everything, each list stated even when empty ([contracts/elements.md](contracts/elements.md)). |
-| II. Tokens only, brand rules | **Lint**: every style is a `css` template or `base.css` rule checked by `token-only`. One recorded allowance (R-10): `fit-content(<percentage>)` and `minmax(0, <flex>)` in grid columns, `translateX(<percentage>)` in `transform`, and a bare integer `animation-iteration-count`, each with unit tests and plants. **No monospace**: values use `font-sans` with `figures`. **Ochre fill never the only mark**: the `accent-strong` inset edge on every fill and mark, in both themes (R-06). **Ochre text on bone**: none. **`color-rule`**: not used. **Radius**: `radius-1` on the progress track (a small mark). |
+| II. Tokens only, brand rules | **Lint**: every style is a `css` template or `base.css` rule checked by `token-only`. One recorded allowance (R-10): `fit-content(<percentage>)` and `minmax(0, <flex>)` in grid columns, `translateX(<percentage>)` in `transform`, and a bare integer `animation-iteration-count`, each with unit tests and plants. **No monospace**: values use `font-sans` with `figures`. **Ochre fill never the only mark**: the `accent-strong` inset edge on every fill and mark, in both themes (R-06). **Ochre text on bone**: none. **`color-rule`**: not used. **Radius**: `radius-1` on the progress track, a small mark under the token contract's radius rule (`packages/tokens/README.md`: `radius-1` for small marks), argued in R-06. |
 | III. Accessible by construction | **ID references**: none. Facts has no cross-root reference because the sheet renders `dt`/`dd` itself (R-01); a hidden fact is no pair and a fact's `lang`/`dir` reach its term. Progress takes its name through ElementInternals, so a host `aria-label` names it (R-05). **Headings**: the empty state never adds one; the level is the consumer's. **Motion**: the sweep ends by itself in 4.2 s on the still mark (WCAG 2.2.2), once per loading episode, so a polled or re-shown bar does not restart it, and a later episode in a single-page or webview shell gets its own bounded sweep (PLAN-FRESH-2-005 (a), PLAN-FRESH-3-004 (a)); the fill has no width transition (PLAN-FRESH-3-003 (b)); under reduced motion only the still mark shows (R-06). **Contrast**: the fill's edge and the track boundary meet 3:1 on every main and state ground (`ground="tinted"` on inset, accent-low, hover-bg and state grounds), all through existing rows. **Forced colours**: a track outline, `Highlight` fill with no author shadow, and `CanvasText` text. **Reflow**: at 320 px and 640 px; the track clips the mark; the facts probes take no block size. **Accessibility-tree tests** in both harnesses, with value properties. **Story names**: the story test asserts every progressbar in every story is named. **axe**: #10's `axe` gate runs on every story of the four elements in light and dark with no serious or critical violation or incomplete result, in each phase, and no `storybook/a11y-exceptions.json` entry is added (R-08). axe cannot check the progress name (R-05); the AX-tree tests prove it. |
 | IV. Strict CSP, offline | **Styles**: adopted stylesheets, with no `style` attribute in any template. The progress fill's width is set and removed through the CSSOM, which `style-src` does not block (R-06). **Fixture pages** assert zero violations with each element rendered. **Network**: none. |
-| V. Storybook, behaviour tests | **Stories**: one per variant and state, light and dark (R-08). The unnamed progress and the host-`aria-label` progress are excepted and proven by tests (FR-050, R-05). **Events**: none to assert. **Keyboard**: no element is focusable, and focus passing through slotted content is tested (US2-6). **Baselines**: each phase commits its stories' light and dark baselines (`storybook/baselines/<story-id>.<theme>.png`), produced by `pnpm run visual:update` in #10's pinned linux/amd64 container, and passes #10's `visual` gate; CI's captures are the record when they differ from a local run (R-08). The stories meet #10's index rules (`empty`, `outside-root`, `closed-shadow-root`, `pointer-target`, `font`, render) and its contributor note (`storybook/README.md`, 006 FR-025). |
-| VI. Consumer-driven, own code | **Needs**: kitty-mission-ui's three class families, with the inventory of their modifiers and states (with counts, role names only) an input the operator supplies later ("Proceed, inputs later", plan gate), recorded in R-11 before each phase's red commit; a gap goes to the operator (Decision 5, PLAN-FRESH-2-006). spec-kitty-design #531 and #535 read from 003's verbatim copy (R-03); #280, #498, #510 and #523 unread, the read access having been denied (Decision 5). Nothing copied. The README mapping names roles only (FR-058) and each element's rows land in its own phase, red first. |
+| V. Storybook, behaviour tests | **Stories**: one per variant and state, light and dark (R-08), with one recorded exception (Complexity Tracking, approved by the operator at the tasks gate): three states have no story and are proven by browser tests instead, the unnamed progress (US3-11), the progress named by a host `aria-label` (US3-10) and `ocelle-fact` outside `ocelle-facts` (FR-050, R-05, R-08). **Events**: none to assert. **Keyboard**: no element is focusable, and focus passing through slotted content is tested (US2-6). **Baselines**: each phase commits its stories' light and dark baselines (`storybook/baselines/<story-id>.<theme>.png`), produced by `pnpm run visual:update` in #10's pinned linux/amd64 container, and passes #10's `visual` gate; CI's captures are the record when they differ from a local run (R-08). The stories meet #10's index rules (`empty`, `outside-root`, `closed-shadow-root`, `pointer-target`, `font`, render) and its contributor note (`storybook/README.md`, 006 FR-025). |
+| VI. Consumer-driven, own code | **Needs**: kitty-mission-ui's three class families, with the inventory of their modifiers and states (with counts, role names only) an input the operator supplies later ("Proceed, inputs later", plan gate), recorded in R-11 before each phase's red commit; a gap goes to the operator (Decision 5, PLAN-FRESH-2-006). spec-kitty-design #531 and #535 read from 003's verbatim copy (R-03); #280, #498, #510 and #523 unread, the read access having been denied (Decision 5). Nothing copied. The README mapping names roles only (FR-058) and each element's rows land in its own phase, red first: the README table holds the `.sk-*` family names (Markdown is outside the `prefix` gate), and the readme tests assert the rows by their role names, with no `sk-` string in test code (operator decision I1, tasks gate; R-11). |
 | VII. Semver | **MINOR**: four elements, four entry points, three CSS hooks, two base-style rules. CHANGELOG entries for `@ocelle/elements` and `@ocelle/styles` (FR-057). `@ocelle/tokens` is unchanged. |
 | VIII. Test-first, non-vacuous | **Scaffold** before each red commit in phases 1 to 3 (`scaffold.sh`), so bodies fail on assertions; the red log is checked per body. **Red first**: each phase's red commit holds the scenario bodies, the driver tests, the story-test extension (I3), and the `token-only` and `@ocelle/styles` tests. `red.sh` records one red record per phase. **Pairing**: "does not" outcomes are paired with a positive one; bodies the light DOM could pass also assert what only the element gives. **Plants**: every CSS-only behaviour has a plant or a stated reason, since Stryker does not mutate `css` templates ([contracts/checks.md](contracts/checks.md)); the gate allowance has its plants. **Mutation**: element source is mutated in process (005 R-12 and decision 16's reading); Timeout and CompileError are reported and pass (#23). **Spikes** are recorded before red commits (phase 1: facts structure under Lit and axe 4.14.0, the empty term, the two-column measure in every shrink-to-fit and shared host, the round 3 re-decide cases and the unobserved changes, and the layout-settle wait; phase 3: the `valuetext` oracle), and a failing spike result goes to the operator, not to review, except the unobserved changes of R-02, whose narrowing the operator has already decided (PLAN-FRESH-3-001 (c)). **Story test**: the reduced-motion read is timed by the clock and asserts the emulation applied (PLAN-FRESH-3-005). |
 | Licence, supply chain | No new dependency or asset. |
@@ -147,17 +150,17 @@ merge (plan gate, 2026-11-13): passes, with no exception (Complexity Tracking).*
    README-mapping task needs its family's inventory recorded in R-11 before that phase's red commit, and the phase
    does not take its red commit without it. A variant that no element or variant covers goes to the operator; the
    surface is not widened by review.
-8. **Squad round 2 (`reviews/plan/round-2/refute.md`).** The facts `layout` property (PLAN-FRESH-2-001 (c)), one
+6. **Squad round 2 (`reviews/plan/round-2/refute.md`).** The facts `layout` property (PLAN-FRESH-2-001 (c)), one
    sweep per page (PLAN-FRESH-2-005 (a), amended to one sweep per loading episode in round 3) and hidden slotted parts observed (PLAN-FRESH-2-007 (a)), as decided; the
    spec's FR-005, FR-009, FR-013, FR-023, FR-033 and FR-058, and US1-11, US2-9 and US3-14, record them.
-9. **Squad round 3 (`reviews/plan/round-3/refute.md`).** Stacking re-decided on the cheap triggers with FR-009
+7. **Squad round 3 (`reviews/plan/round-3/refute.md`).** Stacking re-decided on the cheap triggers with FR-009
    narrowed for unobserved changes (PLAN-FRESH-3-001 (c)); no fill width transition (PLAN-FRESH-3-003 (b)); one sweep
    per loading episode (PLAN-FRESH-3-004 (a)), as decided. FR-005, FR-009 and FR-033, US1-12, US3-2 and US3-15, and
    the edge cases "Facts inside a shrink-to-fit host", "Progress replaced or re-shown" and "Rapid value changes" record
    them. Fixes: the measure pass owns the `stacked` class (PLAN-FRESH-3-002) and the story test's reduced-motion read
    is timed by the clock (PLAN-FRESH-3-005).
-6. **`value-text` while indeterminate** is not exposed (R-05).
-7. **The `token-only` allowance (R-10, PLAN-CORRECTNESS-1-001 (a))** and **no new contrast rows (R-06,
+8. **`value-text` while indeterminate** is not exposed (R-05).
+9. **The `token-only` allowance (R-10, PLAN-CORRECTNESS-1-001 (a))** and **no new contrast rows (R-06,
    PLAN-CORRECTNESS-1-007 (b))**, as decided.
 
 ## Project Structure
@@ -274,7 +277,8 @@ fixed in the story or the element; an exception entry would need a Complexity Tr
    - **red**:
      - US1 scenarios 1 to 10 as shared bodies (US1-11 and US1-12 below), with the oracles of contracts/checks.md (flat-tree structure,
        each-definition-its-own-value, layout settle, copy);
-     - the extra facts bodies of contracts/checks.md (dynamic children and labels, hidden facts, `lang`, right-to-left,
+     - the extra facts bodies of contracts/checks.md (no pairs, a very long label, dynamic children and labels,
+       hidden facts, `lang`, right-to-left,
        640 px, `ocelle-fact` alone and moved, non-fact children, shrink-to-fit and shared hosts and history, `layout`
        (US1-11), resize, the hook fallbacks, the valid-hook and hook-change bodies and the probes' overflow, compact
        region, unset properties);
@@ -286,9 +290,10 @@ fixed in the story or the element; an exception entry would need a Complexity Tr
      - the `@ocelle/styles` tests (compact-region hooks, pre-upgrade rule with a hidden fact, README statements);
      - the README test statements for the facts section (with `layout`), the slotted-item convention (with the
        container import rule), the Builds correction and the engines line;
-     - the readme-test statements for the `.sk-facts` mapping rows of R-11's inventory (FR-058, PLAN-FRESH-2-006);
-       the `.sk-facts` inventory must be recorded in R-11 before this red commit, and a gap goes to the operator
-       (Decision 5);
+     - the readme-test statements for the facts mapping rows of R-11's inventory (FR-058, PLAN-FRESH-2-006), keyed
+       by role names with no `sk-` string in test code (operator decision I1, R-11); the `.sk-facts` inventory must be
+       recorded in R-11 before this red commit (an operator step before the red tasks), and a gap goes to the
+       operator (Decision 5);
      - the story-test extension for the facts stories (presence, light and dark, 320 px reflow, reduced motion);
      - the named plants of contracts/checks.md for facts (among them the extra triggers removed, `characterData`
        removed and the class not restored after the measure);
@@ -306,13 +311,14 @@ fixed in the story or the element; an exception entry would need a Complexity Tr
      - US2 scenarios 1 to 6 and 8 as shared bodies, with the element-only assertions of contracts/checks.md (markup
        out of slot order, geometry in the column);
      - US2-7 with an `ocelle-progress` stand-in: a plain element in `visual`, since progress comes in phase 3; phase 3
-       extends US2-7 to the real `ocelle-progress` and its width;
+       extends US2-7 to the real `ocelle-progress` and its width. The `::slotted(ocelle-progress)` rule's plant runs
+       in phase 3 only, against the real bar, since a stand-in of another tag cannot be matched by the rule;
      - the present-parts bodies (heading only, actions only, visual plus text), the slots filled and emptied later,
-       hidden slotted content (US2-9), several actions at 320 px, unset `variant`;
+       hidden slotted content (US2-9), several actions and a long heading and body at 320 px, unset `variant`;
      - the driver additions `pressTab` and `focused`, with their tests;
-     - the entry test, the README statements, the readme-test statements for the `.sk-empty-state` mapping rows
-       (FR-058; the `.sk-empty-state` inventory recorded in R-11 before this red commit, a gap to the operator) and
-       the story-test extension;
+     - the entry test, the README statements, the readme-test statements for the empty-state mapping rows (FR-058,
+       keyed by role names with no `sk-` string in test code; the `.sk-empty-state` inventory recorded in R-11 before
+       this red commit, a gap to the operator) and the story-test extension;
      - the named plants for the empty state (the "last present part has no margin" rule removed, the `hidden` observer
        removed);
    - **green**:
@@ -332,18 +338,20 @@ fixed in the story or the element; an exception entry would need a Complexity Tr
      - US3 scenarios 1 to 15 as shared bodies, with the oracles of contracts/checks.md (US3-2 read at once with no
        transition running, PLAN-FRESH-3-003 (b); US3-15 a new episode, PLAN-FRESH-3-004 (a));
      - SPEC-2-02's bodies, the value-removed body, the right-to-left indeterminate body, the 320 px sweep body, the
-       tinted-ground body, unset properties;
+       tinted-ground body, the compact long-label body at 320 px, the no-tab-stop body (FR-039), unset properties;
      - US2-7 extended to `ocelle-progress` and its width in the column;
      - the pairing test in two halves (`test/node/progress-pairs.test.ts`, `test/build/build.test.ts`);
      - the `token-only` unit tests for the translate and the iteration count, and their `gates/README.md`
        statements;
-     - the entry test, the README statements, the readme-test statements for the `.sk-progress` mapping rows
-       (FR-058; the `.sk-progress` inventory recorded in R-11 before this red commit, a gap to the operator) and the
+     - the entry test, the README statements, the readme-test statements for the progress mapping rows (FR-058, keyed
+       by role names with no `sk-` string in test code; the `.sk-progress` inventory recorded in R-11 before this red
+       commit, a gap to the operator) and the
        story-test extension (progress stories and the empty-state panel-loading story, with the
        progressbar-name check, and the motion reads each on its own fresh story load within the first iteration, the
        reduced-motion read timed by the clock and asserting the emulation, PLAN-FRESH-3-005);
      - the named plants of contracts/checks.md for progress (still-mark inset removed, `infinite` restored, clip
-       removed, inset shadow removed, tinted rule removed, forced-colours `box-shadow: none` removed, right-to-left
+       removed, inset shadow removed, tinted rule removed, track `min-inline-size` removed, forced-colours
+       `box-shadow: none` removed, right-to-left
        keyframes removed, the shared start dropped, the episode never ends, a fill `inline-size` transition added, the
        `::slotted(ocelle-progress)` rule removed, a story's `label` removed);
    - **green**:
@@ -365,13 +373,16 @@ driver change one phase at a time. Phase 3 extends one phase 2 scenario (US2-7).
 
 ## Complexity Tracking
 
-No exception. The row for missing baselines and axe is dropped: #10 is merged (3828d2f), 001's exception
-"Storybook build, visual regression and axe gates absent" is closed by it, and every story of this feature gets its
-baselines and its axe run in its own phase (R-08). No `storybook/a11y-exceptions.json` entry is planned; an entry would
-need a row here and the operator's approval.
+| Exception | Principle | Scope | Rationale | Sunset | Approval |
+|---|---|---|---|---|---|
+| Three supported states have no story | V (a story per variant and per state) | `ocelle-progress` with neither `label` nor a host `aria-label` (US3-11); `ocelle-progress` named by a host `aria-label` (US3-10); `ocelle-fact` outside `ocelle-facts` (spec edge case, FR-050). Each is proven instead by shared browser bodies in both harnesses (T038's US3-10 and US3-11, T005's standalone and moved-fact bodies). No other state of the four elements is excepted, and no `storybook/a11y-exceptions.json` entry is added. | The unnamed bar fails axe's `aria-progressbar-name` by design (it is a consumer error the element must not hide, FR-030). A host `aria-label` on an ElementInternals bar makes axe report a false `aria-prohibited-attr` (serious), which a story would turn into a failing `axe` gate or an exception entry (R-05). `ocelle-fact` alone is a fallback rendering with no layout of its own to baseline; its behaviour (plain text, no term or definition role, the wrap policy) is asserted on the accessibility tree and computed style in both harnesses (R-08). | The two progress states get stories when the pinned axe-core reads ElementInternals ARIA (role, name and attributes set through `ElementInternals`), so neither state fails or falsely fails the `axe` gate; the unnamed state then gets a story only if the gate can carry it as a known consumer error without an exception entry. The standalone fact gets a story when a consumer needs `ocelle-fact` outside `ocelle-facts` as a supported layout (it would then become a variant with its own look). | Operator, tasks gate, 2026-11-13 (`reviews/analysis/operator-decisions.md`, C1 "Record exception row"). |
 
-The progress stories' axe pass not covering the accessible name is a property of axe with ElementInternals, not an
-exception: the requirement (FR-030) is proven by the AX-tree tests and the story test's name check (R-05). The unnamed
-and host-`aria-label` progress states having no story is the spec's own exception (FR-050) and R-05's reasoning,
-recorded there. The `token-only` allowance (R-10) is a recorded gate change with plants, not a constitution exception:
-it admits no raw colour, font, size, radius, shadow or duration.
+The row for missing baselines and axe is dropped: #10 is merged (3828d2f), 001's exception "Storybook build, visual
+regression and axe gates absent" is closed by it, and every story of this feature gets its baselines and its axe run
+in its own phase (R-08). No `storybook/a11y-exceptions.json` entry is planned; an entry would need a row here and the
+operator's approval.
+
+The progress stories' axe pass not covering the accessible name is a property of axe with ElementInternals, not a
+further exception: the requirement (FR-030) is proven by the AX-tree tests and the story test's name check (R-05). The
+`token-only` allowance (R-10) is a recorded gate change with plants, not a constitution exception: it admits no raw
+colour, font, size, radius, shadow or duration.

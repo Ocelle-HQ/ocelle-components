@@ -95,6 +95,12 @@ something only the element gives:
   identifier. The same body asserts US1-3's wrap (the value spans more than one line box). Plant: a copy of
   `ocelle-fact` that inserts U+200B every 16 characters into its value; US1-4 must fail.
 
+- **Label type (US1-5, FR-006; analysis G4).** The US1-5 body also reads a label's computed style in the same sheet:
+  font family through `--ocelle-font-sans`, size `--ocelle-font-size-sm`, weight `--ocelle-font-weight-medium`,
+  colour `--ocelle-color-ink-muted` (R-03), and asserts the label's size and weight each differ from the value's
+  (`--ocelle-font-size-fact`, `--ocelle-font-weight-regular`) and its colour from the value's `--ocelle-color-ink`.
+  Expected values come from `packages/tokens/src/source.ts`.
+
 **Progress (US3).**
 - **No fill transition (US3-2, PLAN-FRESH-3-003 (b)).** US3-2 reads the fill's inline size after `settle()` (one
   frame after the change) and asserts 75% of the track, with `animations()` on the bar empty in the same read (the
@@ -108,6 +114,10 @@ something only the element gives:
 - **Value properties (US3-1 to US3-4, US3-6; PLAN-TESTABILITY-1-006).** `AxNode` carries `value`, `valuemin`,
   `valuemax` and `valuetext` (§ Driver additions). Every absence assertion sits beside a presence read of the same
   property for a determinate bar in the same body.
+- **Indeterminate inputs (US3-6, FR-032; analysis G8).** Besides below 0, above max, `NaN` and `max` ≤ 0, the US3-6
+  body sets `value=""` and `value="   "` (each indeterminate: no current value exposed, the indeterminate mark shown,
+  not a 0-width fill) and, after a determinate value, the property to `null` (indeterminate again), each paired in
+  the same body with a determinate bar's value read and with no exception thrown.
 - **Value text (US3-3).** The oracle is picked in phase 3's spike among platform reads only (R-05). No
   `internals` reflection read. If no platform read exposes it, US3-3 goes to the operator before the red commit.
 - **Reduced motion (US3-5, PLAN-TESTABILITY-1-009).** The body reads running animations and transitions on the
@@ -133,6 +143,13 @@ something only the element gives:
     (`frames(2)`), and a new indeterminate bar is inserted (`replace` on a placeholder): a running animation on the
     new bar, whose end time is below 5000 ms after its own start. Paired in the same body with the still mark on the
     first bar before its removal. Plant: the episode never ends (the start kept for the document); US3-15 must fail.
+- **Sizes and label position (US3-9, FR-034, FR-035; analysis G3).** In one body, two bars with `label` and
+  `show-label`: at the default size the track's block size is 8 px and the label's box is above the track (its block
+  end at or above the track's block start, their inline starts aligned); with `size="compact"` the track is 4 px and
+  the label's box is beside the track on the same line (their block ranges overlap and their inline ranges do not).
+- **No tab stop (FR-039; analysis G7).** A button before and a button after a bar: from the first button, one Tab
+  moves focus to the second (the driver's `pressTab` and `focused`), paired in the same body with the bar's
+  progressbar node exposed with its name, so the bar is present and skipped.
 - **Mark colour (US3-7).** Plant: the `accent-strong` inset shadow removed.
 - **Forced colours (US3-8, PLAN-A11Y-SECURITY-1-006).** The track's outline colour and the fill's background are
   system colours and differ; the fill's computed `box-shadow` is `none`. Plant: the forced-colours `box-shadow: none`
@@ -142,6 +159,15 @@ something only the element gives:
 
 From the spec check notes and squad round 1:
 - **facts:**
+  - no pairs (FR-010; analysis G1): an `ocelle-facts` with no `ocelle-fact` child (empty, and with only whitespace)
+    renders no box with an inline or block size above 0 in its shadow root, its subtree in the AX tree holds no list,
+    term or definition, and no error is reported; in the same body one `ocelle-fact` is then added and the AX tree
+    holds one description list with one term and one definition;
+  - a very long label (FR-005, edge case "Very long label"; analysis G2): in a 600 px sheet in two columns, a pair
+    whose label is several sentences long: the label column's inline size equals 50% of the sheet's content box, the
+    label spans more than one line box and breaks only between words, and the value column takes the rest (its
+    inline start at the label column's end plus the column gap); a short-label pair in the same sheet sits in the
+    same columns;
   - dynamic add, remove and reorder, and a label change (SPEC-2-06);
   - a fact hidden at first render; `hidden` toggled on and off after render (no row, no term, no definition, then back
     in source order); `aria-hidden="true"` on a fact; `lang` on a fact read from its `<dt>` (computed language)
@@ -176,7 +202,10 @@ From the spec check notes and squad round 1:
   - unset properties write no attribute (`density` and `layout`, and `label` and `wrap` on a fact)
     (PLAN-CORRECTNESS-1-011 (a)).
 - **empty state:**
-  - slots filled and emptied after first render; several actions at 320 px (SPEC-2-07);
+  - slots filled and emptied after first render; several actions at 320 px, with a long heading and a long body in
+    the same element (SPEC-2-07; edge case "Long empty-state heading or body at 320 px", analysis G6): the page
+    scroll width equals the viewport width, heading and body each span more than one line box and break only between
+    words, and each stays inside the element's content box;
   - heading only, actions only, and visual plus text: the first present part starts at the block padding edge, the
     last ends at it, and each gap is R-04's for that pair (PLAN-CORRECTNESS-1-009);
   - hidden slotted content (US2-9, PLAN-FRESH-2-007 (a)): an action slotted with `hidden` leaves the body as the last
@@ -196,6 +225,10 @@ From the spec check notes and squad round 1:
     (sampled at several animation times) (PLAN-CORRECTNESS-1-006);
   - `ground="tinted"`: the track boundary colour resolves to `--ocelle-color-accent-strong`; unset, to
     `--ocelle-color-control-border` (US3-13);
+  - a long label beside a compact bar at 320 px (edge case; analysis G5): `size="compact"`, `show-label` and a label
+    of several sentences, at a 320 px viewport: the track's inline size is at least the `--ocelle-measure-cell` value
+    (from `source.ts`), the label wraps between words, and the page scroll width equals the viewport width;
+  - no tab stop (FR-039), as in § Oracles;
   - unset properties write no attribute (`size`, `ground`).
 
 ## CSS-only behaviours (PLAN-TESTABILITY-1-008)
@@ -216,16 +249,19 @@ a stated reason why its expected value differs from the browser default and from
 | row gaps, default and compact | US1-9 | reason: both are asserted in one body, differ from each other and from the grid default (0) |
 | right-to-left columns | RTL body | reason: the label's inline position is asserted in LTR and RTL in one body |
 | value type and figures | US1-5 | reason: 17 px differs from the 16 px default; `tabular-nums` differs from `normal` |
+| label type | US1-5 | reason: the label's size, weight and colour are asserted beside the value's in one body, and each pair differs (14 px vs 17 px, 500 vs 400, ink-muted vs ink) |
 | compact-region value scale | compact-region body | plant: the two hook declarations removed from `base.css`'s compact rule |
 | wrap policy on the value only | US1-3, standalone wrap body | plant: the `wrap` rule removed; reason for the label: `normal` is asserted beside the value's `anywhere` |
 | facts forced colours | US1-8 | reason: system colours differ from the token colours read in the same body |
 | empty-state gaps and padding | US2-3, US2-4, present-parts bodies | plant: the "last present part has no margin" rule removed; reason: default and panel values are asserted in one body and differ |
 | hidden slotted content | US2-9 | plant: the `hidden` observer removed (presence counted from `slotchange` only) |
 | heading weights | US2-3, US2-4 | reason: 600 and 500 differ from each other and from the user-agent heading's 700 |
-| progress bar width in `visual` | US2-7 | plant: the `::slotted(ocelle-progress)` rule removed |
+| progress bar width in `visual` | US2-7 (phase 3, real bar) | plant: the `::slotted(ocelle-progress)` rule removed, run in phase 3 only (T052): phase 2's stand-in is not an `ocelle-progress`, so the rule cannot match it (analysis U2) |
 | empty-state forced colours | US2-8 | reason: system colours differ from the token colours |
 | track clip | 320 px sweep body | plant: `overflow: clip` removed |
 | block sizes | US3-9 | reason: default 8 px and compact 4 px in one body |
+| label above or beside the bar | US3-9 | reason: the label's box is above the track at the default size and on the same line at compact size, in one body |
+| track minimum length | compact long-label body at 320 px | plant: the track's `min-inline-size` removed |
 | mark edge | US3-7 | plant: the inset shadow removed |
 | tinted boundary | US3-13 | plant: the `ground="tinted"` rule removed |
 | forced-colours fill | US3-8 | plant: the fill's `box-shadow: none` removed |
@@ -290,7 +326,10 @@ PLAN-A11Y-SECURITY-1-005):
 - every facts story at a 320 px viewport: page scroll width equals the viewport width (SC-002), paired with the
   sheet's rendered inline size above 0;
 - every story under reduced motion: no running animation or transition (SC-005), paired with a running animation on
-  the indeterminate progress story without reduced motion (PLAN-FRESH-2-009). The sweep ends 4.2 s after the page
+  the indeterminate progress story without reduced motion (PLAN-FRESH-2-009). In phases 1 and 2 no story animates
+  yet, so the facts and empty-state reduced-motion reads are paired only with the `matchMedia` assertion; the
+  animation positive arrives with the indeterminate progress story in phase 3 (T044), and from then on the check on
+  every story runs beside it (analysis G9). The sweep ends 4.2 s after the page
   start with `animation-fill-mode: none`, and after PLAN-FRESH-2-005 (a) re-inserting the bar or making it
   determinate and then indeterminate does not restart it within a loading episode. So each of the two motion reads
   is taken on its own fresh load of the story (a new document, so a new episode) and within its first 1400 ms:
@@ -324,9 +363,9 @@ PLAN-A11Y-SECURITY-1-005):
 |---|---|
 | `manifest` | Four new declarations, regenerated and committed. |
 | `style-lint` (`token-only`) | New `css` templates and `base.css` rules. One recorded allowance (R-10): `fit-content(<percentage>)` and `minmax(0, <flex>)` in `grid-template-columns` (phase 1), `translateX(<percentage>)` in `transform` and a bare integer `animation-iteration-count` (phase 3), with unit tests in red, and the allowance, its plants and its `gates/README.md` row in green. |
-| `prefix` | New source, stories and build output: no `sk-`, no monospace. |
+| `prefix` | New source, tests, stories and build output: no `sk-`, no monospace. The README mapping (FR-058) holds the `.sk-*` family names in Markdown, which the gate skips; the readme tests assert the mapping rows by role name and hold no `sk-` string, built directly or indirectly (operator decision I1, "Roles, not sk- names", tasks gate; R-11). |
 | `csp` | The built output of `@ocelle/elements` (since 006 FR-020 no Storybook file is in its scope). Run-time CSP on the fixture pages. |
-| `contrast` | Unchanged: no row added (PLAN-CORRECTNESS-1-007 (b)). |
+| `contrast` | Unchanged: no row added (PLAN-CORRECTNESS-1-007 (b)). Run in each of phases 1 to 3 (expected unchanged), since US1-8, US2-8 and US3-7 rely on the existing rows. |
 | `mutation` | New element source, in process; Timeout and CompileError are reported and pass (#23). CSS-only behaviours are covered by plants (above). |
 | `test-lint` | New tests. |
 | `storybook-build` | #10's (on `main`, 3828d2f). Builds the new stories; `built <n> stories` grows by each phase's stories. |

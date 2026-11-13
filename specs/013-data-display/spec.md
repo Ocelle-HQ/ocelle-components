@@ -36,10 +36,10 @@ spec was written. The requirements below come from #13's body, the epic #1's gap
 the source record. The plan's research has since read #531 and #535 from their verbatim copy in
 `specs/003-base-styles/sources/spec-kitty-design-issues.md` (research R-03; FR-008 follows #531); #280, #498, #510 and
 #523 are still unread.
-The plan's research MUST read those six issues (fetched read-only, as for triage) and record anything in them that
-changes or adds to a requirement here, in particular #531 for FR-008, #510 for FR-022 and US2, #535 for FR-007 and
-#498 for US3. The read access for #280, #498, #510 and #523 was denied, and the operator decided at the plan gate to
-proceed without them (below); anything in them read later that changes a requirement goes to the operator.
+The plan's research was to read those six issues and record anything in them that changes or adds to a requirement
+here (#531 for FR-008, #510 for FR-022 and US2, #535 for FR-007, #498 for US3). It read #531 and #535; the read access
+for #280, #498, #510 and #523 was denied, and the operator decided at the plan gate to proceed without them ("Proceed,
+inputs later", below). Anything in them read later that changes a requirement goes to the operator.
 Spec Kitty's `sk-*` names are kitty-mission-ui roles, not names in this library.
 
 **Consumers** (constitution VI): kitty-mission-ui (Kitty Desktop and Kitty Dashboard) replaces its `.sk-facts` (34
@@ -123,6 +123,15 @@ uses them in server-rendered pages under a strict CSP.
   needed before the red commit of each element's phase; any gap goes to the operator. spec-kitty-design #280, #498,
   #510 and #523 remain unread.
 
+**Operator decisions at the tasks gate** (2026-11-13, human:jeroennouwsdev; `reviews/analysis/operator-decisions.md`):
+
+- C1, "Record exception row": the three states with no story (the unnamed progress, the progress named by a host
+  `aria-label`, `ocelle-fact` outside `ocelle-facts`) are one recorded exception to constitution V in the plan's
+  Complexity Tracking, approved with this decision (FR-050).
+- I1, "Roles, not sk- names": the README mapping table holds the `.sk-*` names (Markdown is outside the `prefix`
+  gate); the readme tests assert the mapping rows by their role names, with no `sk-` string in test code (FR-002,
+  FR-058).
+
 ## Scope
 
 **In scope:** four new custom elements in `@ocelle/elements` (`ocelle-facts` with its child `ocelle-fact`,
@@ -176,8 +185,8 @@ px, check the layout, the absence of horizontal overflow, the computed type of t
    its font size through `--ocelle-font-size-fact`, and its `font-variant-numeric` is `tabular-nums` through
    `--ocelle-figures`. No computed font family in the element is a monospace family.
 6. **Given** an `ocelle-facts` with three pairs, **When** the accessibility tree is read in Chromium, **Then** it holds
-   one description list with three terms and three definitions, each definition following its term (FR-004; subject
-   to the operator's decision after the plan's measurement).
+   one description list with three terms and three definitions, each definition following its term (FR-004, confirmed
+   by the operator at the plan gate after the plan's measurement).
 7. **Given** a pair whose value is empty, **When** it renders, **Then** the row keeps its label and an empty value box,
    and the description list still holds that term with an empty definition.
 8. **Given** the page in light or dark theme, **When** it renders, **Then** labels and values meet the text-contrast
@@ -546,9 +555,12 @@ the exceptions FR-050 and FR-054 name.
   (`specs/006-storybook-workbench` FR-025): open shadow roots, every surface inside the host, a declared hover or
   press state where one exists. Exceptions: `ocelle-fact` has no stories file of its own; its states (with and
   without a label or value, identifier wrap) are stories in `facts.stories.ts`, and its behaviour outside
-  `ocelle-facts` is proven by browser tests. The unnamed progress state (US3 scenario 11) has no story, because axe's
-  `aria-progressbar-name` rule fails it by design; it is proven by a browser test only, and the plan records this
-  exclusion.
+  `ocelle-facts` is proven by browser tests, with no story. The unnamed progress state (US3 scenario 11) has no story,
+  because axe's `aria-progressbar-name` rule fails it by design. The progress named by a host `aria-label` (US3
+  scenario 10) has no story, because axe reports a false `aria-prohibited-attr` for a host `aria-label` on an
+  ElementInternals bar (research R-05). Each of these three states is proven by browser tests only. They are one
+  exception to constitution V, recorded in the plan's Complexity Tracking with scope, rationale and a sunset, and
+  approved by the operator at the tasks gate (2026-11-13, "Record exception row").
 - **FR-051**: Visual baselines and the `axe` run follow #10, merged on `main` (3828d2f). Each phase that adds stories
   MUST commit their light and dark baselines, produced in #10's pinned container (`storybook/visual/container.json`)
   by its baseline command, and its stories MUST pass #10's `storybook-build`, `visual` and `axe` gates, the `axe` gate

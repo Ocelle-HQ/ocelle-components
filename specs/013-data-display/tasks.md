@@ -11,6 +11,10 @@ rounds (`reviews/plan/round-1..3/`) and the plan-gate decisions in `reviews/plan
 - quickstart.md;
 - spike/RESULTS.md.
 
+Amended after the analysis of the tasks (`analysis-report.md`) with the operator's decisions at the tasks gate
+(2026-11-13, `reviews/analysis/operator-decisions.md`); the resolution of each finding is in
+`reviews/analysis/fixes-1.md`. Added tasks: T002a, T022a, T036a.
+
 **Tests**: required. Constitution Principle VIII applies to every phase.
 
 **Phase flow**: `base.sh`, then `scaffold.sh` (phases 1 to 3), then one red commit of test files only proven by
@@ -55,8 +59,9 @@ order 1 → 2 → 3 → 4:
     unobserved changes FR-009 is narrowed for (R-02);
   - a flip raises the `ResizeObserver` loop error.
 - **T035 (phase 3 spike)**: no platform read exposes `valuetext`. US3-3 goes to the operator (R-05).
-- **R-11 inventory**: a phase's `.sk-*` family is missing from research R-11 before that phase's red commit, or has a
-  variant that no element or variant covers (Decision 5, operator: "proceed, inputs later").
+- **R-11 inventory** (T002a, T022a, T036a): a phase's `.sk-*` family is missing from research R-11 before that phase's
+  red commit, or has a variant that no element or variant covers (Decision 5, operator: "proceed, inputs later"). This
+  is a known blocker of T012, T028 and T045.
 - **Plants**: a plant that does not bite.
 - **axe**: the `axe` gate fails on a new story in a way that would need a `storybook/a11y-exceptions.json` entry.
 - **Baselines**: `visual:update` reports a changed or removed baseline.
@@ -114,6 +119,10 @@ order 1 → 2 → 3 → 4:
   - exports in `packages/elements/src/index.ts`, `src/browser.ts` and `packages/elements/package.json` `exports` (`./ocelle-facts.js`, `./ocelle-fact.js`);
   - no test file.
 
+### Inventory (operator step, before the red tasks)
+
+- [ ] T002a [US1] Operator step, recorded by the planner: the operator supplies the `.sk-facts` modifiers and states with a count for each (role names only, no code), and the planner records them in the R-11 table of `specs/013-data-display/research.md` (role names without the `sk-` prefix, each with its element and variant) in a documentation commit of its own, before T010 is written. A row no element or variant covers goes to the operator. While the family is pending, T010's mapping statements and T012 are blocked: stop and ask.
+
 ### Tests (red, one commit, test files only)
 
 - [ ] T003 [P] [US1] Driver additions `viewport`, `scrollWidth`, `layout`, `copy`, `move`, `text`, as contracts/checks.md § Driver additions specifies:
@@ -126,6 +135,7 @@ order 1 → 2 → 3 → 4:
     - US1-6, US1-7, US1-10 and the reorder body read `axSubtree` with a distinct value per pair;
     - US1-3 and US1-4 use the 64-character identifier, with the copy oracle;
     - US1-1 to US1-3 and US1-9 use the `layout` wait;
+    - US1-5 also reads a label's type in the same sheet (`--ocelle-font-sans`, `--ocelle-font-size-sm`, `--ocelle-font-weight-medium`, `--ocelle-color-ink-muted`), each of size, weight and colour asserted different from the value's (FR-006, contracts/checks.md § Oracles, label type);
     - US1-8 checks forced colours with system colours read beside the token colours;
     - the FR-011 link sits inside the value column.
   - US1-11, the `layout` property (FR-013): a short sheet in a dialog at 1280 px, one column without `layout` and two columns with `layout="columns"`; `stacked` in a 600 px block; `columns` at 320 px with no page overflow; `layout="grid"` acts as unset; removing `layout` returns to automatic.
@@ -133,6 +143,8 @@ order 1 → 2 → 3 → 4:
   - The 300 → 290 px measure-pass body.
   - The unobserved-change bodies for each case T001 recorded: `layout="columns"` and an inline size, each paired with a fresh load.
 - [ ] T005 [US1] `packages/elements/test/scenarios/facts.ts` (continued): the extra facts bodies of contracts/checks.md § Extra scenario bodies:
+  - no pairs (FR-010): empty and whitespace-only sheets render no sized box, expose no list, term or definition, and report no error, paired in the same body with one `ocelle-fact` added giving one description list with one term and one definition;
+  - a very long label (FR-005, edge case): in a 600 px two-column sheet, the label column equals 50% of the sheet's content box, the label wraps between words inside it, and the value column takes the rest, beside a short-label pair in the same columns (the guard of T021's `fit-content(50%)`→`auto` plant);
   - dynamic add, remove, reorder and label change;
   - hidden facts: at first render, toggled after render, and `aria-hidden="true"`;
   - `lang` on a fact, read from its `<dt>`;
@@ -169,8 +181,8 @@ order 1 → 2 → 3 → 4:
   - the slotted-item convention with the container import rule (FR-056);
   - the Builds correction, and the Engines line for manual slot assignment (Chromium 86, WebKit 16.4, floor unchanged).
 
-  Also the `.sk-facts` mapping-row statements (FR-058), written from the `.sk-facts` inventory in research R-11. That inventory must be recorded before this red commit; if it is missing or has a gap, stop and ask the operator (Decision 5).
-- [ ] T011 [P] [US1] `storybook/test/integration/elements-stories.test.ts` (I3, contracts/checks.md § Story test): each facts story of research R-08 is in the built index and renders its `ocelle-facts` in light and dark with no outside request. Each facts story at a 320 px viewport has a page scroll width equal to the viewport width, paired with a non-zero sheet size. Each facts story under reduced motion has no running animation, read on a fresh load and timed by the clock with the `matchMedia` assertion.
+  Also the facts mapping-row statements (FR-058), one per row of the `.sk-facts` inventory in research R-11 (T002a), each keyed by the row's role name (for example "facts compact" names `ocelle-facts` and `density="compact"`). No `sk-` string appears in test code, built directly or indirectly; the README table holds the `.sk-*` names, Markdown being outside `gate:prefix` (operator decision I1, research R-11, contracts/checks.md § Gates touched). If the inventory is missing or has a gap, stop and ask the operator (Decision 5).
+- [ ] T011 [P] [US1] `storybook/test/integration/elements-stories.test.ts` (I3, contracts/checks.md § Story test): each facts story of research R-08 is in the built index and renders its `ocelle-facts` in light and dark with no outside request. Each facts story at a 320 px viewport has a page scroll width equal to the viewport width, paired with a non-zero sheet size. Each facts story under reduced motion has no running animation, read on a fresh load and timed by the clock with the `matchMedia` assertion. No facts story animates, so this check is paired only with the `matchMedia` assertion until the animation positive on the indeterminate progress story arrives in T044 (contracts/checks.md § Story test).
 - [ ] T012 [US1] Red commit of T003 to T011 (test files only). Run `.specify/extensions/story/scripts/red.sh 1 phase` and confirm per body in the red log that each fails on an assertion against the scaffold.
 
 ### Implementation (green)
@@ -215,7 +227,7 @@ order 1 → 2 → 3 → 4:
   Also a `packages/elements/CHANGELOG.md` entry for `ocelle-facts` and `ocelle-fact`.
 - [ ] T021 [US1] Checks, one heavy job at a time:
   1. Run each facts plant of contracts/checks.md once (§ Oracles and § CSS-only behaviours: the A1 `<dl><slot>` structure, slots in reverse order, the U+200B copy, the extra triggers removed, `characterData` removed, class not restored after the measure, `fit-content(50%)`→`auto`, `minmax(0, 1fr)`→`1fr`, the `stacked` rule removed, the hook probe ignored, the default probe removed, probes not observed, probe `block-size: 1px`, the compact hooks removed, the `wrap` rule removed, the styles rule removed, `:not([hidden])` removed) and record the results in `specs/013-data-display/reviews/phase-1/plants.md`.
-  2. Run `pnpm run gate:manifest`, `gate:style-lint`, `gate:csp`, `gate:prefix`, `gate:test-lint`, `gate:storybook-build`, `gate:visual`, `gate:axe` (no `storybook/a11y-exceptions.json` entry added), `gate:plants`, then `gate:mutation -- --base <phase base>`.
+  2. Run `pnpm run gate:manifest`, `gate:style-lint`, `gate:csp`, `gate:prefix`, `gate:test-lint`, `gate:contrast` (unchanged; US1-8 relies on the existing text rows), `gate:storybook-build`, `gate:visual`, `gate:axe` (no `storybook/a11y-exceptions.json` entry added), `gate:plants`, then `gate:mutation -- --base <phase base>`.
   3. Record the three Storybook gates' summary lines and the `visual:update` line in the phase review.
 
 **Checkpoint**: `tdd-check.sh 1` reports `pass`; quickstart steps 1 to 6 pass for facts.
@@ -242,6 +254,10 @@ order 1 → 2 → 3 → 4:
   - its exports in `src/index.ts`, `src/browser.ts` and `package.json` (`./ocelle-empty-state.js`);
   - no test file.
 
+### Inventory (operator step, before the red tasks)
+
+- [ ] T022a [US2] Operator step, recorded by the planner: the `.sk-empty-state` modifiers and states with counts (role names only) recorded in the R-11 table of `specs/013-data-display/research.md` in a documentation commit of its own, before T026 is written. A gap goes to the operator; while the family is pending, T026's mapping statements and T028 are blocked.
+
 ### Tests (red, one commit, test files only)
 
 - [ ] T023 [P] [US2] Driver additions `pressTab()` and `focused()` (contracts/checks.md § Driver additions), in the `Driver` interface, both harnesses and their tests.
@@ -256,7 +272,7 @@ order 1 → 2 → 3 → 4:
   - The present-parts bodies (heading only, actions only, visual plus text: the first and last present parts at the padding edge, each gap R-04's).
   - Slots filled and emptied after first render.
   - US2-9, hidden slotted content: a hidden action; `hidden` removed; a hidden only-visual; whitespace changed to words.
-  - Several actions at 320 px with no page overflow.
+  - Several actions at 320 px, with a long heading and a long body in the same element: no page overflow, heading and body wrap between words inside the element's content box.
   - Unset `variant` writes no attribute.
 - [ ] T025 [P] [US2] Test files for the empty state:
   - `packages/elements/test/empty-state.test.ts` (in process) and `packages/elements/test/browser/empty-state.test.ts` (fixture) over T024;
@@ -266,8 +282,8 @@ order 1 → 2 → 3 → 4:
   - the heading rule (the consumer's own heading, no `level`, FR-056);
   - slots, variants, the cascade note, the loading panel, tokens read.
 
-  Also the `.sk-empty-state` mapping-row statements (FR-058), written from research R-11's `.sk-empty-state` inventory, which must be recorded before this red commit; if it is missing or has a gap, stop and ask the operator.
-- [ ] T027 [P] [US2] `storybook/test/integration/elements-stories.test.ts`: the empty-state stories of research R-08, present, in light and dark, with no outside request; under reduced motion, no running animation, using the same clock-timed fresh-load read.
+  Also the empty-state mapping-row statements (FR-058), one per row of research R-11's `.sk-empty-state` inventory (T022a), each keyed by the row's role name, with no `sk-` string in test code (operator decision I1, research R-11). If the inventory is missing or has a gap, stop and ask the operator.
+- [ ] T027 [P] [US2] `storybook/test/integration/elements-stories.test.ts`: the empty-state stories of research R-08, present, in light and dark, with no outside request; under reduced motion, no running animation, using the same clock-timed fresh-load read. As in T011, the animation positive arrives in T044; until then the check is paired with the `matchMedia` assertion only.
 - [ ] T028 [US2] Red commit of T023 to T027. Run `red.sh 2 phase`, and check the red log per body.
 
 ### Implementation (green)
@@ -290,8 +306,8 @@ order 1 → 2 → 3 → 4:
   - `packages/elements/README.md`: the `ocelle-empty-state` section and the `.sk-empty-state` mapping rows;
   - `packages/elements/CHANGELOG.md` entry.
 - [ ] T034 [US2] Checks:
-  1. Run the empty-state plants once: the "last present part has no margin" rule removed, the `hidden` observer removed, and the `::slotted(ocelle-progress)` rule removed against the stand-in. Record them in `reviews/phase-2/plants.md`.
-  2. Run `gate:manifest`, `gate:style-lint`, `gate:csp`, `gate:prefix`, `gate:test-lint`, `gate:storybook-build`, `gate:visual`, `gate:axe`, `gate:plants`, then `gate:mutation -- --base <phase base>`, and record the summary lines.
+  1. Run the empty-state plants once: the "last present part has no margin" rule removed and the `hidden` observer removed. Record them in `reviews/phase-2/plants.md`. The `::slotted(ocelle-progress)` plant is not run here: the stand-in is not an `ocelle-progress`, so the rule cannot match it; it runs in T052 against the real bar.
+  2. Run `gate:manifest`, `gate:style-lint`, `gate:csp`, `gate:prefix`, `gate:test-lint`, `gate:contrast` (unchanged; US2-8 relies on the existing text rows), `gate:storybook-build`, `gate:visual`, `gate:axe`, `gate:plants`, then `gate:mutation -- --base <phase base>`, and record the summary lines.
 
 **Checkpoint**: `tdd-check.sh 2` reports `pass`.
 
@@ -321,6 +337,10 @@ order 1 → 2 → 3 → 4:
   - its exports (`./ocelle-progress.js`);
   - no test file.
 
+### Inventory (operator step, before the red tasks)
+
+- [ ] T036a [US3] Operator step, recorded by the planner: the `.sk-progress` modifiers and states with counts (role names only) recorded in the R-11 table of `specs/013-data-display/research.md` in a documentation commit of its own, before T043 is written. A gap goes to the operator; while the family is pending, T043's mapping statements and T045 are blocked.
+
 ### Tests (red, one commit, test files only)
 
 - [ ] T037 [P] [US3] Driver additions from contracts/checks.md § Driver additions, with their tests:
@@ -335,9 +355,10 @@ order 1 → 2 → 3 → 4:
     - US3-3 uses the T035 oracle;
     - US3-4 pairs absence with a determinate read;
     - US3-5 reads reduced motion first, inside the first iteration, then motion, plus the still mark at 30% to 70%;
+    - US3-6 also sets `value=""`, `value="   "` and, after a value, the property to `null`: each indeterminate (no current value, not a 0 fill), paired with a determinate read, nothing thrown (FR-032);
     - US3-7 checks the `accent-strong` edge;
     - US3-8 checks forced colours (system colours that differ, fill `box-shadow: none`);
-    - US3-9 checks 8 px and 4 px;
+    - US3-9 checks 8 px and 4 px, and with `show-label` the label's box above the track at the default size and beside it on the same line at compact size, in one body (FR-035);
     - US3-10 checks the host `aria-label` override and visible label figures;
     - US3-11 checks the unnamed bar;
     - US3-12 checks the end time below 5000 ms and the still mark after `finished`;
@@ -349,6 +370,8 @@ order 1 → 2 → 3 → 4:
   - The determinate-then-indeterminate within one task after the window.
   - The right-to-left indeterminate and determinate bodies.
   - The 320 px sweep body: page scroll width sampled at several animation times.
+  - The compact long-label body at 320 px: `size="compact"`, `show-label` and a long label; the track's inline size is at least the `--ocelle-measure-cell` value, the label wraps between words, and the page scroll width equals the viewport width.
+  - The no-tab-stop body (FR-039): from a button before the bar, one Tab focuses the button after it (`pressTab`, `focused`), paired with the bar's named progressbar node in the same body.
   - Unset properties write no attribute (`size`, `ground`).
 - [ ] T039 [US3] `packages/elements/test/scenarios/empty-state.ts`: extend US2-7 to a real `ocelle-progress` in `visual`:
   - above the heading at the panel's visual-to-heading gap;
@@ -371,7 +394,7 @@ order 1 → 2 → 3 → 4:
   - reduced motion; no fill transition; `ground="tinted"`;
   - the busy vocabulary (FR-033); tokens read.
 
-  Also the `.sk-progress` mapping-row statements (FR-058), written from research R-11's `.sk-progress` inventory, which must be recorded before this red commit; if it is missing or has a gap, stop and ask the operator.
+  Also the progress mapping-row statements (FR-058), one per row of research R-11's `.sk-progress` inventory (T036a), each keyed by the row's role name, with no `sk-` string in test code (operator decision I1, research R-11). If the inventory is missing or has a gap, stop and ask the operator.
 - [ ] T044 [P] [US3] `storybook/test/integration/elements-stories.test.ts`: the progress stories and the empty-state panel-loading story of research R-08, present, in light and dark, with no outside request. Also:
   - each motion read on its own fresh story load within the first iteration: without reduced motion, a running animation on the indeterminate story, guarded by `currentTime` under 1400 ms; under reduced motion, no running animation, timed by `performance.now()`, with `matchMedia("(prefers-reduced-motion: reduce)").matches` asserted first;
   - every progressbar in every story has a non-empty name, paired with a count above 0 in the progress and panel-loading stories.
@@ -411,6 +434,7 @@ order 1 → 2 → 3 → 4:
      - still-mark inset removed;
      - `infinite` restored;
      - track clip removed;
+     - track `min-inline-size` removed (the compact long-label body must fail);
      - inset shadow removed;
      - tinted rule removed;
      - forced-colours `box-shadow: none` removed;
@@ -418,7 +442,7 @@ order 1 → 2 → 3 → 4:
      - the shared start dropped;
      - the episode never ends;
      - a 200 ms fill `inline-size` transition added;
-     - the `::slotted(ocelle-progress)` rule removed, against the real bar;
+     - the `::slotted(ocelle-progress)` rule removed, against the real bar (run here only, not in phase 2);
      - a story's `label` removed.
   2. Run `gate:manifest`, `gate:style-lint`, `gate:csp`, `gate:prefix`, `gate:test-lint`, `gate:contrast` (unchanged), `gate:storybook-build`, `gate:visual`, `gate:axe`, `gate:plants`, then `gate:mutation -- --base <phase base>`. Timeout and CompileError mutants are reported and pass (#23).
 
@@ -432,7 +456,7 @@ order 1 → 2 → 3 → 4:
 gate runs), and the phase review states why no test can fail for them.
 
 - [ ] T053 Final surface lists in `packages/elements/CHANGELOG.md` and `packages/styles/CHANGELOG.md` (FR-057): the four elements, their entry points, the `--ocelle-facts-stack-below` hook and the two facts value hooks, `base.css`'s two rules, and the `token-only` allowance. Mark this exempt (documentation).
-- [ ] T054 Review check, recorded in `specs/013-data-display/reviews/phase-4/coverage.md`: the three README mapping sections together cover every variant in research R-11's inventory (SC-001; the rows themselves landed red first in phases 1 to 3). A gap goes to the operator. Mark this exempt.
+- [ ] T054 Review check, recorded in `specs/013-data-display/reviews/phase-4/coverage.md`: the three README mapping sections together cover every variant in research R-11's inventory, with each row's `.sk-*` family name checked here, since the readme tests key the rows by role name only (SC-001, operator decision I1; the rows themselves landed red first in phases 1 to 3). A gap goes to the operator. Mark this exempt.
 - [ ] T055 Run quickstart.md steps 1 to 7 on the whole mission, one heavy job at a time. `gate:storybook-build`, `gate:visual` and `gate:axe` must pass on all the mission's stories (SC-003, FR-051), and the summary lines are recorded in `specs/013-data-display/reviews/phase-4/quickstart.md`. Mark this exempt.
 
 **Checkpoint**: the phase 4 review approves; `summary.sh` follows in `/ocelle-run` step 4.4.
@@ -443,7 +467,7 @@ gate runs), and the phase review states why no test can fail for them.
 
 - **Phase order**: phase 1 → phase 2 → phase 3 → phase 4. Phase 2 uses phase 1's driver additions. Phase 3 extends
   T024's US2-7 (T039) and adds the panel-loading story to phase 2's stories file.
-- **Within each phase**: spike, then scaffold, then red tasks. Red tasks marked [P] write different files and can be
+- **Within each phase**: spike, then scaffold, then the R-11 inventory step (T002a, T022a, T036a; an operator step, committed apart from the red commit), then red tasks. Red tasks marked [P] write different files and can be
   written in parallel, but land in one red commit. Green tasks run in order: element, lint allowance, manifest,
   stories, baselines, docs, checks.
 - **Parallel examples**:
