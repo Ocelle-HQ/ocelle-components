@@ -18,6 +18,7 @@ const failPlant = (location: string, rule: string, message?: string): string =>
   JSON.stringify({ expect: "fail", why: "a planted defect", findings: [{ location, rule, ...(message === undefined ? {} : { message }) }] });
 const passPlant = JSON.stringify({ expect: "pass", why: "a near-miss" });
 const errorPlant = JSON.stringify({ expect: "error", why: "a breaking input", cause: "could not run: broken input" });
+const axeDelta = JSON.stringify({ exceptions: "repository" });
 
 /** A repository in memory: every gate with a fail, a pass and a breaking plant, and two registry plants. */
 function world(): Map<string, string> {
@@ -31,6 +32,8 @@ function world(): Map<string, string> {
     files.set(`gates/plants/${id}/pass-basic/plant.json`, passPlant);
     files.set(`gates/plants/${id}/error-basic/plant.json`, errorPlant);
   }
+  // Every axe plant root carries the repository's exceptions (006 research.md R-16).
+  for (const name of ["fail-basic", "pass-basic", "error-basic"]) files.set(`gates/plants/axe/${name}/delta.json`, axeDelta);
   const withoutCsp = (JSON.parse(registryText) as { id: string }[]).filter((gate) => gate.id !== "csp");
   files.set("gates/plants/plants/missing-entry/plant.json", failPlant("gates.json", "no-registry-entry", "csp"));
   files.set("gates/plants/plants/missing-entry/gates.json", JSON.stringify(withoutCsp));
@@ -429,6 +432,58 @@ describe("plants: the unlinked key (006 research.md R-16)", () => {
     const files = world();
     files.set("gates/plants/storybook-build/error-basic/plant.json", JSON.stringify({ expect: "error", why: "w", cause: "c", unlinked: ["node_modules"] }));
     expect((await result(job(files))).out[0]).toBe('gates/plants/storybook-build/error-basic/plant.json: plants: invalid-plant: unlinked must be ["storybook/node_modules"]');
+  });
+});
+
+// 006 contracts/plants.md § Plant runner changes, research.md R-16 and plan decision 14 (phase 4 review round 1,
+// R1-01): every axe plant root holds the repository's stories and carries their exceptions, so an axe plant whose
+// delta.json is missing, does not set `exceptions: "repository"` or is not a valid delta is invalid and does not run;
+// the key on a plant of another gate is not refused.
+describe("plants: an axe plant carries the repository's exceptions (006 research.md R-16)", () => {
+  const r16 = "an axe plant root holds the repository's stories and carries their exceptions";
+
+  it("rejects an axe plant with no delta.json or one without exceptions, without running it", async () => {
+    const files = world();
+    files.delete("gates/plants/axe/error-basic/delta.json");
+    files.set("gates/plants/axe/fail-basic/delta.json", JSON.stringify({ baselines: [] }));
+    const ran = job(files);
+    expect(await result(ran)).toEqual({
+      code: 1,
+      out: [
+        `gates/plants/axe/error-basic/plant.json: plants: invalid-plant: ${r16}`,
+        `gates/plants/axe/fail-basic/plant.json: plants: invalid-plant: ${r16}`,
+        "gates/plants/axe: plants: missing-plant: gate axe has no fail plant",
+        "gates/plants/axe: plants: missing-plant: gate axe has no error plant",
+        "plants: 4 problems in 53 plants",
+      ],
+      err: [],
+    });
+    expect(ran.ran.filter((plant) => plant.startsWith("axe "))).toEqual(["axe gates/plants/axe/pass-basic"]);
+  });
+
+  it("rejects an axe plant whose delta.json is not a valid delta, naming the problem", async () => {
+    const files = world();
+    files.set("gates/plants/axe/error-basic/delta.json", JSON.stringify({ exceptions: "all" }));
+    files.set("gates/plants/axe/fail-basic/delta.json", JSON.stringify({ exception: "repository" }));
+    const ran = job(files);
+    expect((await result(ran)).out).toEqual([
+      'gates/plants/axe/error-basic/plant.json: plants: invalid-plant: delta.json: exceptions must be "repository"',
+      "gates/plants/axe/fail-basic/plant.json: plants: invalid-plant: delta.json: unknown key exception",
+      "gates/plants/axe: plants: missing-plant: gate axe has no fail plant",
+      "gates/plants/axe: plants: missing-plant: gate axe has no error plant",
+      "plants: 4 problems in 53 plants",
+    ]);
+    expect(ran.ran.filter((plant) => plant.startsWith("axe "))).toEqual(["axe gates/plants/axe/pass-basic"]);
+  });
+
+  it("does not refuse exceptions \"repository\" on a plant of another gate", async () => {
+    const files = world();
+    files.set("gates/plants/visual/pass-basic/delta.json", axeDelta);
+    files.set("gates/plants/storybook-build/fail-basic/delta.json", axeDelta);
+    files.set("gates/plants/lint/error-basic/delta.json", axeDelta);
+    const ran = job(files);
+    expect(await result(ran)).toEqual({ code: 0, out: ["plants: 53 plants of 17 gates and the registry judged, every plant as expected"], err: [] });
+    expect(ran.ran).toEqual(expect.arrayContaining(["visual gates/plants/visual/pass-basic", "storybook-build gates/plants/storybook-build/fail-basic", "lint gates/plants/lint/error-basic"]));
   });
 });
 
