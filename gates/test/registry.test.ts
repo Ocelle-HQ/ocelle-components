@@ -177,7 +177,7 @@ describe("the repository's registry (002 FR-020)", () => {
     expect(gate === undefined ? undefined : { id: gate.id, check: gate.check, command: gate.command, plantCommand: gate.plantCommand, plantForm: gate.plantForm }).toEqual({
       id: "visual",
       check: "Visual regression",
-      command: "pnpm run gate:visual -- --engine both",
+      command: "pnpm run gate:visual -- --engine both --remove-docker-image",
       plantCommand: "node gates/bin/visual.ts --root {root} --engine {engine}",
       plantForm: "repo-tree",
     });
