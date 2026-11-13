@@ -134,10 +134,14 @@ stories pass the visual and axe gates.
 15. **Given** an open dialog whose body holds three buttons, one of them with a positive `tabindex` (the last in
     tree order, or the first), **When** the user presses Tab or Shift+Tab repeatedly, **Then** focus reaches every
     button in the engine's order and wraps where that order ends, never leaving the dialog (FR-008, SC-002).
-16. **Given** an open dialog holding a slotted non-modal `<dialog>` (open by attribute or by `show()`) with a button,
-    **When** the user presses Escape with focus in it or beside it, **Then** one `ocelle-dialog-close-request` with
-    `detail.reason === "escape"` is dispatched and the slotted dialog stays open; under a veto, repeated Escapes keep
-    the dialog open; Tab reaches the slotted dialog's button as an ordinary stop (FR-008, FR-010).
+16. **Given** an open dialog holding a slotted non-modal `<dialog>` with a button, open by the `open` attribute or
+    opened with `show()` with `closedby` absent or `none`, **When** the user presses Escape with focus in it or
+    beside it, **Then** one `ocelle-dialog-close-request` with `detail.reason === "escape"` is dispatched and the
+    slotted dialog stays open; under a veto, repeated Escapes keep the dialog open; Tab reaches the slotted dialog's
+    button as an ordinary stop (FR-008, FR-010). **Given** instead the slotted dialog is opened with `show()` and
+    `closedby="closerequest"` or `"any"`, **When** the user presses Escape, **Then** the platform closes that dialog
+    alone, no request is dispatched and the overlay stays open; the next Escape requests the overlay's close with
+    reason `"escape"` (FR-010).
 
 ---
 
@@ -274,8 +278,10 @@ pointer and keyboard. It is complete when the scenarios below pass in process an
   Escape that cancels an IME composition, and an Escape that clears a non-empty search field do not request the
   overlay's close (FR-010). Nor does an Escape while a slotted popover menu (`popover="auto"` or `"hint"`) or a
   native `<dialog>` shown modally from slotted content is open: the platform closes that menu or dialog alone, and
-  the next Escape requests the overlay's close (FR-010). A slotted non-modal `<dialog>` (open by attribute or by
-  `show()`) is ordinary content: Escape requests the overlay's close and leaves it open (FR-010).
+  the next Escape requests the overlay's close (FR-010). The same holds for a slotted non-modal `<dialog>` opened with
+  `show()` whose `closedby` state is Close Request or Any: the platform closes it alone, the next Escape requests the
+  overlay's close. A slotted non-modal `<dialog>` opened by the `open` attribute, or opened with `show()` with
+  `closedby` absent or `none`, is ordinary content: Escape requests the overlay's close and leaves it open (FR-010).
 - **Content the overlay cannot see into.** Slotted content with a closed shadow root, an iframe, or a video or audio
   element with controls keeps its own focusable parts reachable by Tab and Shift+Tab inside the overlay; leaving it
   past the cycle's end may cost one extra press, and a closed shadow root at the end that does not delegate focus is
@@ -358,11 +364,13 @@ pointer and keyboard. It is complete when the scenarios below pass in process an
 - **FR-010**: Escape, while the overlay is the topmost open one and no tooltip bubble inside it is shown, MUST
   dispatch the close request with reason `"escape"`, unless the key has already been handled (`defaultPrevented`),
   cancels an IME composition, or clears a non-empty search field, or another close watcher is open above the overlay
-  in its content (an open `popover="auto"` or `"hint"` element, such as a slotted menu, or a native `<dialog>` other
-  than its own shown modally); then the overlay does nothing, and the platform closes that popover or dialog alone,
-  as it does outside an overlay, while Tab inside a nested native modal is left to it. A non-modal `<dialog>` in the
-  content (open by attribute or by `show()`) is not such a close watcher: Escape requests the overlay's close as
-  usual and leaves that dialog open, and Tab treats its content as ordinary stops. With focus inside a slotted iframe,
+  in its content (an open `popover="auto"` or `"hint"` element, such as a slotted menu, a native `<dialog>` other
+  than its own shown modally, or a non-modal `<dialog>` opened with `show()` whose `closedby` state is Close Request
+  or Any); then the overlay does nothing, and the platform closes that popover or dialog alone,
+  as it does outside an overlay, while Tab inside a nested native modal is left to it. A non-modal `<dialog>` opened
+  by the `open` attribute, or opened with `show()` with `closedby` absent or `none`, is not such a close watcher:
+  Escape requests the overlay's close as usual and leaves that dialog open, and Tab treats the content of any
+  non-modal dialog as ordinary stops. With focus inside a slotted iframe,
   Escape reaches neither the overlay nor the platform and does nothing to the overlay; the documentation states this
   limit. Opening an overlay hides any shown tooltip bubble outside it.
 - **FR-011**: Activating the close control MUST dispatch the close request with reason `"close-button"`.

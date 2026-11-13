@@ -53,10 +53,12 @@ an event's `detail`, is MAJOR.
     reached going forward); positive `tabindex` in slotted content is followed as the engine follows it, and the
     cycle wraps where that order ends (operator decision, R-04);
   - Escape with focus inside a slotted iframe does nothing to the overlay (R-02);
-  - while a slotted popover (`popover="auto"` or `"hint"`, a menu) or a native `<dialog>` shown modally from slotted
-    content is open, Escape closes it alone, as the platform does, and the overlay requests nothing; Tab inside a
-    nested native modal is left to the platform. A slotted non-modal `<dialog>` (open attribute or `show()`) is
-    ordinary content: Escape requests the overlay's close and leaves it open, so close it yourself if needed (R-02);
+  - while a slotted popover (`popover="auto"` or `"hint"`, a menu), a native `<dialog>` shown modally from slotted
+    content, or a non-modal `<dialog>` opened with `show()` whose `closedby` is Close Request or Any is open, Escape
+    closes it alone, as the platform does, and the overlay requests nothing; Tab inside a nested native modal is left
+    to the platform. A slotted non-modal `<dialog>` opened by the `open` attribute, or with `show()` and `closedby`
+    absent or `none`, is ordinary content: Escape requests the overlay's close and leaves it open, so close it
+    yourself if needed (R-02);
   - during the exit, Escape, the close control and the backdrop request nothing; only `open = true` stops a close
     (R-02, R-06).
 - Manifest: the events, slots, parts and CSS property are declared with JSDoc on the concrete class (R-01).
