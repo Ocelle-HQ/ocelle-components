@@ -42,23 +42,34 @@ rule. `--ocelle-figures` is applied with `font-variant-numeric`.
 
 **Edge margins of slotted content** (operator decision PLAN-FRESH-2-002 (a), FR-008): the elements trim the user
 agent's block margins at the edges of the content the page slots, so a `<p>` description or body and a `<ul>` section
-take the gaps and padding the spec states and no 16 px more. Each rule is a `::slotted()` rule, so a page rule still
-wins (outer context first):
+take the gaps and padding the spec states and no 16 px more. Each rule is a normal `::slotted()` declaration, so a
+page rule still wins (outer context first):
 
 - section header and page header: `margin-block: 0` on `::slotted([slot="eyebrow"])` and
-  `::slotted([slot="description"])` (the heading already has `margin: 0`); the page header's description gap is the
-  description wrapper's `margin-block-start` (R-07), not the slotted element's margin;
-- card (R-08): `margin-block-start: 0` on the first body element, `::slotted(:nth-child(1 of :not([slot])))`, and
-  `margin-block-end: 0` on the last, `::slotted(:nth-last-child(1 of :not([slot])))`, so paragraphs of the body keep
-  their spacing between each other while the first starts at the header gap (or the padding edge) and the last ends
+  `::slotted([slot="description"])` (the heading already has `margin: 0`); in both headers the heading-to-description
+  gap is the heading column's flex `gap` (R-04, R-07), not a margin of the slotted element or of a wrapper;
+- card (R-08): `margin-block-start: 0` on the first visible body element,
+  `::slotted(:nth-child(1 of :not([slot]):not([hidden])))`, and `margin-block-end: 0` on the last,
+  `::slotted(:nth-last-child(1 of :not([slot]):not([hidden])))`, so paragraphs of the body keep their spacing between
+  each other while the first visible one starts at the header gap (or the padding edge) and the last visible one ends
   at the padding edge;
 - context sidebar (R-09): `margin-block: 0` on each section (one element per section); on the head and footer, the
-  first element of the slot gets `margin-block-start: 0` (`::slotted(:nth-child(1 of [slot="head"]))`, the same for
-  `footer`) and the last `margin-block-end: 0` (`:nth-last-child(1 of …)`), as in the card body;
+  first visible element of the slot gets `margin-block-start: 0`
+  (`::slotted(:nth-child(1 of [slot="head"]:not([hidden])))`, the same for `footer`) and the last visible one
+  `margin-block-end: 0` (`:nth-last-child(1 of [slot="head"]:not([hidden]))`, the same for `footer`), as in the card
+  body;
 - the rail sets no margin rule: its items are links or `ocelle-nav-item` elements with no UA block margin.
 
+**Hidden elements at an edge** (PLAN-FRESH-3-004): every edge-trim selector excludes `[hidden]`, as R-09's section
+rules do (PLAN-FRESH-2-001). Without it, in a body `<p hidden>Draft</p><p>Body</p>` the hidden `p` takes the trim
+(and stays `display: none`, since the trim sets no display) while the visible `p` keeps its UA 16 px
+`margin-block-start` (probed in plan squad round 3); the same for a hidden last body element and a hidden first or
+last head or footer element. With the exclusion, the first and last *visible* elements are trimmed.
+
 Margins between slotted elements of one part (two body paragraphs, two footer lines) are the page's. The README
-states the trim and that a page rule wins (FR-036).
+states the trim and that a page rule wins (FR-036). The sidebar's section padding, inline margins, divider and display
+are not trims and are `!important` (R-09), so a page rule does not change them; only a section's block margins are
+the page's to set.
 
 **Rationale**: keeps the page's heading level and outline with no ID reference across a shadow root (constitution
 III; spec Assumptions).
@@ -69,7 +80,9 @@ anchors would not reach it).
 Measure before red: the UA `h1` margin and font size are overridden by `::slotted()` in Chromium (expected by the
 cascade), and `text-transform` on a slotted heading gives the upper-cased name (already probed for spec check 1); the
 UA `p` and `ul` block margins are overridden by the edge-margin rules above, and a body or footer of two `p`
-elements keeps the margin between them (`:nth-child(1 of S)` and `:nth-last-child(1 of S)` under `::slotted()`).
+elements keeps the margin between them (`:nth-child(1 of S)` and `:nth-last-child(1 of S)` under `::slotted()`); a
+body `<p hidden>` before and after the visible `p`, and a footer `<p hidden>` before and after the visible one, leave
+the visible `p` trimmed at both edges (`S` with `:not([hidden])`).
 
 ## R-03 Empty slots
 
@@ -189,10 +202,15 @@ container when the resolved size is compact, and its stylesheet keys the heading
 
 **Decision**: the host is `display: block` with block padding `--ocelle-space-4`, inline padding `--ocelle-space-6`
 and `border-block-end: var(--ocelle-border-width) solid var(--ocelle-color-rule)`; it paints **no ground of its own**
-(`background: none`): the band shows the surface it sits on (the page canvas or a pane). The description wrapper
-carries `margin-block-start: var(--ocelle-space-1)` and the column has no other gap between heading and description;
-the eyebrow-to-heading gap is the outer column's `--ocelle-space-1` (R-04: the eyebrow sits above the row, so the
-actions' block start is the heading's, US2-2). The host also sets `box-sizing: border-box` (R-01). The actions follow R-04's wrap rule, `--ocelle-space-2` under the
+(`background: none`): the band shows the surface it sits on (the page canvas or a pane). The heading-to-description
+gap is the heading column's `gap: var(--ocelle-space-1)`, exactly as in R-04; no wrapper or slotted element carries a
+margin for it (PLAN-FRESH-3-003). A margin on the description wrapper would survive when the heading wrapper is
+`display: none` (an empty `heading` slot, R-03), giving 2 × `--ocelle-space-1` from eyebrow to description and a
+`--ocelle-space-1` offset inside the band padding when the description is the first visible part (probed in plan
+squad round 3: about 8 px instead of 4 px); a flex `gap` is dropped with the hidden item, as US1-16 measures in the
+section header and US2-8 in the page header. The eyebrow-to-heading gap is the outer column's `--ocelle-space-1`
+(R-04: the eyebrow sits above the row, so the actions' block start is the heading's, US2-2). The host also sets
+`box-sizing: border-box` (R-01). The actions follow R-04's wrap rule, `--ocelle-space-2` under the
 column. The `<header>` element is not used in the shadow root (a `header` not inside sectioning content maps to a
 banner landmark); the band is a plain `div` (US2-1).
 
@@ -205,9 +223,10 @@ banner landmark); the band is a plain `div` (US2-1).
 its density; inside, a
 flex column with `gap` of the density (`--ocelle-space-2` regular, `--ocelle-space-4` compact) holding the `header`
 wrapper and the default-slot wrapper. A card whose header slot is empty hides its wrapper (R-03), so no gap remains
-(US1-11). The first and last body elements have their outer block margin trimmed (R-02, FR-008), so a `<p>Body</p>`
-starts exactly the density's gap below the header (or at the padding edge with no header) and ends at the padding
-edge (US1-7, US1-11). `inset` swaps `background-color` to `--ocelle-color-inset`. In forced colours the border colour is left to
+(US1-11). The first and last visible body elements have their outer block margin trimmed (R-02, FR-008; a `hidden`
+body element at an edge is skipped, PLAN-FRESH-3-004), so a `<p>Body</p>` starts exactly the density's gap below the
+header (or at the padding edge with no header) and ends at the padding edge, with or without a `<p hidden>` before or
+after it (US1-7, US1-11). `inset` swaps `background-color` to `--ocelle-color-inset`. In forced colours the border colour is left to
 the system (`border-color` is forced to a system colour by the user agent) and grounds become `Canvas`; nothing
 else is needed for US1-13 beyond `forced-color-adjust: auto` (the default). The density's padding and gap rules are
 layout rules outside the forced-colours query (R-01), so a compact card keeps them in forced colours (US1-13). The card
@@ -226,11 +245,24 @@ Dividers follow the content (operator decision PLAN-CORRECTNESS-1-004 (b)): each
 free space, so in a sidebar taller than its content the free space lies between the last divider and the footer.
 
 - each section (`::slotted(:not([slot]):not([hidden]))`, an element in the default slot that the page has not
-  hidden) is `display: block` (a `span` or a custom element such as `ocelle-section-header` is otherwise inline, and
-  its border and negative margins would apply to its line boxes only; a page rule still wins), has padding
-  `--ocelle-space-4`, `margin-block: 0` (R-02, FR-008) and
-  `border-block-start: var(--ocelle-border-width) solid var(--ocelle-color-rule)`; the first visible section
-  (`::slotted(:nth-child(1 of :not([slot]):not([hidden])))`) has none;
+  hidden) is `display: block !important` (a `span` or a custom element such as `ocelle-section-header` is otherwise
+  inline, and its border and negative margins would apply to its line boxes only), has `padding:
+  var(--ocelle-space-4) !important`, `margin-block: 0` (normal, R-02, FR-008: a page rule on a section's block margins
+  wins), `margin-inline: calc(-1 * var(--ocelle-space-4)) !important` (below) and `border-block-start:
+  var(--ocelle-border-width) solid var(--ocelle-color-rule) !important`; the first visible section
+  (`::slotted(:nth-child(1 of :not([slot]):not([hidden])))`) has `border-block-start: none !important`;
+- **page resets** (operator decision PLAN-FRESH-3-002 (a)): the padding, inline margins, divider and display above are
+  `!important`, following the slot convention (`packages/elements/README.md`: "the convention's size rules on slotted
+  elements are `!important`"). For normal declarations the outer (page) context wins whatever the specificity; for
+  `!important` ones the inner (shadow) context wins, over a page's `!important` too (CSS Cascade 5 § Context). Probed
+  in plan squad round 3 with normal declarations on a 320 px sidebar of two `ul` sections: a page
+  `ul { margin: 0; padding: 0; list-style: none }` or `* { margin: 0; padding: 0 }` left each section 288 px wide with
+  no padding and its divider inset 16 px on each side, and a preflight `*, ::before, ::after { box-sizing:
+  border-box; border: 0 solid; margin: 0; padding: 0 }` removed the divider altogether. With `!important` the
+  section keeps FR-021's padding and FR-022's full-width divider under any page rule. `margin-block: 0` stays normal,
+  so FR-008's "a page rule wins" still holds for a section's block margins, and the README says which properties a
+  page can and cannot set on a section (FR-036). The `hidden` exclusion below is unchanged, so a hidden section still
+  draws nothing;
 - hidden sections (PLAN-FRESH-2-001): every section rule, the first-section exception included, excludes `[hidden]`.
   A `::slotted()` rule is an author rule of the outer context, so it beats both the user agent's `[hidden] { display:
   none }` and a slotted custom element's own `:host([hidden])` (an inner-context rule); without the exclusion a hidden
@@ -247,12 +279,12 @@ free space, so in a sidebar taller than its content the free space lies between 
 - when the default slot is empty and both head and footer are non-empty, the head wrapper has `border-block-end`
   (US3-13), the same side of the free space as the sections wrapper's `border-block-end` in US3-3;
 - text in the default slot: the sections wrapper has inline padding `--ocelle-space-4` and no block padding; each
-  section takes negative inline margins equal to that padding (`margin-inline: calc(-1 * var(--ocelle-space-4))`) so
-  its border spans the sidebar's whole inline size and its own padding gives the content inset (FR-021, FR-022,
-  US3-11).
+  section takes negative inline margins equal to that padding (`margin-inline: calc(-1 * var(--ocelle-space-4))
+  !important`) so its border spans the sidebar's whole inline size and its own padding gives the content inset
+  (FR-021, FR-022, US3-11).
 
-The head and footer content has its edge margins trimmed as R-02 states, so a `<p>` footer sits `--ocelle-space-4`
-from every side of its part. Element children with `slot=""` are not in scope: the README says sections carry no
+The head and footer content has its edge margins trimmed as R-02 states (first and last visible element, `hidden`
+ones skipped), so a `<p>` footer sits `--ocelle-space-4` from every side of its part, also beside a `<p hidden>`. Element children with `slot=""` are not in scope: the README says sections carry no
 `slot` attribute.
 
 **Rationale**: the spec's divider placement (FR-022 as fixed for SPEC-3-01 and for PLAN-CORRECTNESS-1-004) with no
@@ -265,7 +297,10 @@ default-slot element when a head element precedes it in DOM order (`:nth-child(o
 sections; a hidden `div` section and a hidden `ocelle-section-header` section (whose own sheet has
 `:host([hidden]) { display: none }`) between two visible ones have no box under the `:not([hidden])` rules, with
 exactly one divider between the visible sections, and a hidden first section leaves the first visible one without a
-border of its own (`:nth-child(1 of :not([slot]):not([hidden]))`); `ul` and `p` sections take no UA margin; the host
+border of its own (`:nth-child(1 of :not([slot]):not([hidden]))`); `ul` and `p` sections take no UA margin; under
+a page `ul { margin: 0; padding: 0; list-style: none }` and under a page `* { margin: 0; padding: 0; border: 0 solid }`
+the `!important` section rules keep each `ul` section's padding and full-width divider (and with `!important`
+dropped they do not, as probed in plan squad round 3); the host
 box fills a 600 px container and grows past a shorter one, measured in a block container, a
 flex-row container and a grid container, each with and without base.css. The page's DOM is never changed, so there is
 no script fallback that marks the first section; if the measurement fails, the operator is asked before the US3 red
@@ -351,10 +386,12 @@ keyed by a symbol described `internals`: `src/naming.ts` gains `export const int
 (internal; not exported from `src/index.ts` or `src/browser.ts`), and the sidebar and rail declare
 `readonly [internalsKey] = this.attachInternals()`. axe-core 4.14.0's `gather-internals` reads exactly that (own
 properties `_internals`, `internals` or `internals_`, or own symbols described `internals` or `privateInternals`), so
-axe sees the hosts' `navigation` role and its landmark rules apply to them. The field is not public surface: it is a
+axe's role computation gives each host the `navigation` role (`axe.commons.aria.getRole(host) === "navigation"`) and
+its ARIA attribute checks judge a host `aria-*` attribute against that role. axe's landmark rules do not see the host
+(PLAN-FRESH-3-001, below). The field is not public surface: it is a
 symbol-keyed field with no string name, marked `@internal` (and `@ignore`) so the manifest generator omits it, and
 `test/node/manifest.test.ts` asserts that neither element's manifest entry lists a member for it, paired with
-the same entry listing `label`. The same change for 005's `ocelle-icon` and `ocelle-brand-mark` (whose `img` role axe does not see either)
+the same entry listing `label`. The same change for 005's `ocelle-icon` and `ocelle-brand-mark` (whose `img` role axe's role computation does not see either)
 was considered: it would change 005's source and its tests, which is outside this feature's scope, so it is raised to
 the operator at the plan gate as a follow-up for those elements and 005 is not touched here.
 
@@ -377,25 +414,41 @@ pass `aria-prohibited-attr` (axe 4.14.0 `listProhibitedAttrs` returns none for a
 therefore only catch a regression that adds a node or attribute axe does flag, and could never fail on naming; that
 is why the internals move to the `internals` symbol above.
 
-With the symbol field, axe treats each host as a `navigation` landmark: the per-case stories then catch a serious or
-critical finding on the landmark itself (an ARIA attribute not allowed or prohibited on `navigation`, an invalid
-`aria-label` value, a second landmark node in the template) in either theme. They still do not check which name the
-landmark gets (the package scenarios' tree reads do, US3-12, US4-11), and `landmark-unique` is moderate, so the gate
-does not fail on two unnamed landmarks. To show that axe reads the landmark, one story per element renders an
-unnamed pair (two sidebars, two rails, neither with `label` or `aria-label`), on which axe's moderate
-`landmark-unique` note is expected on both hosts; the phase evidence records that note from the `axe` gate's report
-(or from #10's axe runner on that story, if the report omits moderate results), and the plant that moves the
-internals back into a `#private` field makes it disappear (contracts/checks.md). The symbol-field outcomes (the note
-on the pair, no serious or critical finding on the seven cases) are measured in the phase-1 spike against #10 as
-merged and recorded in `reviews/phase-1/spike.md`; an adverse result is taken to the operator before the US3 red
-commit.
+**What axe sees under the symbol key** (measured in plan squad round 3, `reviews/plan/round-3/refute.md`,
+PLAN-FRESH-3-001; operator decision (b)): axe's role computation reads the symbol, so `axe.commons.aria.getRole(host)`
+is `navigation` for each host (and `null` with the `#private` field). axe's landmark rules do not: `landmark-unique`
+selects its nodes by `[role=banner], [role=complementary], [role=contentinfo], [role=main], [role=navigation],
+[role=region], [role=search], [role=form], form, footer, header, aside, main, nav, section` (axe-core 4.14.0
+`axe.js:37604-37608`), and the other landmark rules (`landmark-*-is-top-level`, `landmark-no-duplicate-*`) select the
+same way, by `role` attribute or landmark tag, before any role computation runs. A host whose role comes only from
+`ElementInternals` is never a candidate, so two unnamed hosts raise no `landmark-unique` note under either key (for
+real `<nav>` elements, or an explicit `role="navigation"` attribute, axe reports the note on one node of the pair,
+not on both). No claim here or in the spec rests on axe's landmark rules seeing the host, and there is no
+unnamed-pair story.
+
+What the symbol key gives: on the per-case stories (US3-12, US4-11, each rendered alone), axe judges the host's ARIA
+attributes against `navigation`, so the `axe` gate catches a serious or critical finding on the host and its subtree
+(an ARIA attribute not allowed or prohibited on `navigation`, an invalid `aria-label` value, a second landmark node
+in the template) in either theme. The stories do not check which name the landmark gets, and no axe rule checks two
+unnamed landmarks; landmark naming is held by the package scenarios' tree reads (US3-12, US4-11), and the README's
+"set a distinct `label`" (FR-036).
+
+**Role probe** (the check that can fail, replacing the unnamed-pair story): the phase-1 spike and the phase evidence
+of phases 4 and 5 run axe-core as pinned by #10 on a page holding the element (a story or a fixture page) and assert
+`axe.commons.aria.getRole(host) === "navigation"` for one host with `label`, one with a host `aria-label` and one with
+neither, recorded in `reviews/phase-N/` with the axe-core version; the plant moves the internals back into a
+`#private` field, and the probe then reads `null` (contracts/checks.md). The symbol-field outcomes (the role probe,
+and no serious or critical finding on the seven cases) are measured in the phase-1 spike against #10 as merged and
+recorded in `reviews/phase-1/spike.md`; an adverse result is taken to the operator before the US3 red commit.
 
 **Rationale**: the operator's "Follow convention" and FR-028; PLAN-A11Y-SECURITY-1-001 (both earlier options left a
 named generic host node).
 
 **Alternatives**: an inner `<nav>` with nothing on the host (option i) or with `internals.role = "none"` (option ii),
 both rejected by the probe above. Internals in a `#private` field as in 005, with the measurement recorded and the
-stories' limits stated (PLAN-FRESH-2-004 option (a), not chosen).
+stories' limits stated (PLAN-FRESH-2-004 option (a), and again PLAN-FRESH-3-001 option (a), not chosen). An
+unnamed-pair story expecting axe's `landmark-unique` note (the round-2 design, dropped in round 3: the note cannot
+appear on an internals-only host, so its plant was vacuous).
 
 ## R-12 Eyebrow tokens (FR-030 to FR-032)
 
@@ -485,9 +538,8 @@ one element state inside the story root, open shadow roots only, no element outs
 of these elements has hover or press behaviour). Baselines are produced by `pnpm run visual:update` in the pinned
 container and committed under `storybook/baselines/<story-id>.<theme>.png`; when a local capture and CI's disagree,
 CI's captures from the job artifact are committed (#10 FR-005). The `axe` gate runs every story in both themes;
-sidebar and rail stories each render one landmark with a distinct label, so `landmark-unique` holds now that axe sees
-the internals landmark (R-11), except the one unnamed-pair story per element, which exists to show axe's moderate
-`landmark-unique` note (R-11). Rail stories hold the stand-in items of R-10 under `[data-story="rail-items"]`, so
+sidebar and rail stories each render one landmark, with a distinct label where they have one (axe's landmark rules do
+not select an internals-only host, R-11, so no story relies on them). Rail stories hold the stand-in items of R-10 under `[data-story="rail-items"]`, so
 `color-contrast` and `target-size` hold on them. FR-028's axe clause is held here (operator decision PLAN-TESTABILITY-1-007
 (b)): one story per US3-12 case (host `aria-label` only, both, blank host `aria-label` with `label`, neither) and per
 US4-11 case (host `aria-label` only, both, blank with `label`), each rendering that one landmark alone.
@@ -500,7 +552,7 @@ unbreakable `white-space: nowrap` run. #10's capture stays at 1280 × 800 px; th
 **Recheck when #10 lands**: before phase 1 starts, the implementer compares #10 as merged on `main` against this
 item (story file location, story id scheme, baseline path and naming, `visual:update` and gate commands, the axe rule
 set and its excluded rules, the contributor note's items, the story layout sheet and whether a story may add rules
-to it or a sheet beside it, and whether the `axe` gate's report lists moderate results) and records any difference
+to it or a sheet beside it, and the axe-core version #10 pins, which the role probe of R-11 runs) and records any difference
 in `reviews/phase-1/spike.md`; a difference that changes a task is raised to the operator before the red commit. At
 `5f49794` the `axe` gate is not implemented (`gates/bin/axe.ts` is the "not implemented (axe, phase 4)" stub), so
 the recheck confirms that #10 as merged runs axe-core on every story in both themes with FR-016's rule set; if it

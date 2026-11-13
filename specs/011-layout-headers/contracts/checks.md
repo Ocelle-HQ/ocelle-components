@@ -47,12 +47,22 @@ element's box and every clipping ancestor, paired with the element rendering its
 PLAN-CORRECTNESS-1-009 (a)). Plant: a story whose slotted text is an unbreakable `white-space: nowrap` run.
 
 The stories include one per case of US3-12 (four) and of US4-11 (three), each rendering that one landmark alone, so
-the `axe` gate holds FR-028's axe clause (FR-038), and one unnamed-pair story for the sidebar and one for the rail
-(two hosts, neither with `label` or `aria-label`). The phase evidence records axe's moderate `landmark-unique` note on
-both hosts of each pair story, from the `axe` gate's report or, if that omits moderate results, from #10's axe runner
-on that story; with the plant "internals held in a `#private` field" (research.md R-11) the note is gone. Rail
-stories set `data-story="rail-items"` on their root, and the story stylesheet sizes their stand-in `<a>` items to
-`--ocelle-size-rail-item` squares with `color: inherit` (research.md R-10); no story uses a `style` attribute.
+the `axe` gate holds FR-028's axe clause (FR-038). There is no unnamed-pair story: axe's landmark rules select by
+`role` attribute or landmark tag and never see an internals-only host (research.md R-11, operator decision
+PLAN-FRESH-3-001 (b)).
+
+## Role probe (phase evidence, research.md R-11)
+
+In the phase-1 spike and in the evidence of phases 4 (sidebar) and 5 (rail), axe-core as pinned by #10 is loaded on a
+page holding the element (a story or a fixture page) and `axe.commons.aria.getRole(host)` is asserted to be
+`"navigation"` for a host with `label`, one with a host `aria-label` and one with neither; the result and the
+axe-core version are recorded in `reviews/phase-N/`. Plant: the internals held in a `#private` field instead of under
+`internalsKey`; the probe then reads `null` and fails (pairing plants, below).
+
+## Stand-in rail items
+
+Rail stories set `data-story="rail-items"` on their root, and the story stylesheet sizes their stand-in `<a>` items
+to `--ocelle-size-rail-item` squares with `color: inherit` (research.md R-10); no story uses a `style` attribute.
 
 ## Pairing plants ("does not" outcomes)
 
@@ -64,11 +74,11 @@ no test hook is added to source.
 
 | "Does not" outcome | Paired positive outcome | Planted defect |
 |---|---|---|
-| Empty part adds no gap/padding (US1-3, US1-16, US2-4, US3-5, US3-13, US4-6) | filled twin on the same page has the gap | wrapper of an empty slot not hidden |
+| Empty part adds no gap/padding (US1-3, US1-16, US2-4, US2-8, US3-5, US3-13, US4-6) | filled twin on the same page has the gap | wrapper of an empty slot not hidden; separately, for US2-8, the page header's heading-to-description gap moved from the heading column's `gap` to a `margin-block-start` on the description wrapper |
 | Gap follows content change (US1-4, US3-6) | the change that adds content adds the gap | slot state read once at first render only |
 | Other elements' boxes unchanged by a slot change (US1-4) | the changed header gains or loses its gap | a host margin keyed on the internal slot state |
 | Element adds no heading/landmark (US1-1, US2-1) | the slotted heading is exactly one node with its level | template renders `role="heading"` / a `<header>` |
-| Empty heading slot leaves no heading (US1-16) | the filled twin's slotted heading is one node with its level | heading wrapper rendered with `role="heading"` and `aria-level` |
+| Empty heading slot leaves no heading (US1-16, US2-8) | the filled twin's slotted heading is one node with its level | heading wrapper rendered with `role="heading"` and `aria-level` |
 | No `h1` from the element (US2-1, `h2` case) | the slotted `h2` is level 2 | heading wrapper rendered as an `h1` |
 | Eyebrow and description not rendered in the eyebrow variant (US1-5) | the heading drawn in the eyebrow style and the actions rendered | eyebrow and description wrappers rendered in the eyebrow variant |
 | Card adds no node of its own (US1-19, FR-018) | the slotted `h2` is present in the card's subtree | a `role="region"` wrapper in the card's template |
@@ -81,9 +91,11 @@ no test hook is added to source.
 | Header moved to the body is no longer compact, and compact again when moved back (R-05) | header compact while in the `header` slot | card does not notify headers that left the slot (`previous` dropped) |
 | Definition order changes nothing (R-05; header defined after the card, and before) | header compact in both orders | header resolves its size only in its constructor, not in `willUpdate` / on connect |
 | Layout variants hold in forced colours (US1-13 compact card, US4-9 horizontal rail; FR-001) | borders and divider visible in a system colour | the layout rule moved inside `@media not (forced-colors: active)` |
+| Section padding, full-width divider and display survive a page reset (US3-3 reset variants, FR-021, FR-022) | the same four dividers and padding as the sidebar with no page rule | `!important` dropped from the section rules (padding, `margin-inline`, `border-block-start`, `display`), each in turn |
 | No divider between sections in a one-section sidebar, none before the first section (US3-7, US3-3) | four dividers in US3-3 | border on the first section too (the `:nth-child(1 of :not([slot]):not([hidden]))` rule dropped) |
 | Hidden sections draw no box, padding or divider (US3-3 hidden variant, FR-022) | exactly one divider between the two visible sections, with `--ocelle-space-4` padding on both sides | `:not([hidden])` dropped from the section rules; separately, dropped from the first-section rule only (a hidden first section then leaves a double rule under the head) |
 | No UA margin on slotted `p` and `ul` content (FR-008; US1-2, US1-7, US1-11, US2-2, US3-3) | the stated gap or padding to the slotted element's border box | each reset dropped in turn: `margin-block: 0` on the section header's and page header's description and eyebrow; the card body's first-element start and last-element end resets; the sidebar sections' `margin-block: 0`; the head's and footer's edge resets |
+| A hidden edge element takes no trim of its own (US1-7 `<p hidden>` variant, US3-3 footer `<p hidden>` variant, FR-008) | the visible `p` starts the density's gap below the header and ends at the padding edge | `:not([hidden])` dropped from the card's first-element rule; separately, from the sidebar footer's last-element rule |
 | Body paragraphs keep their spacing between each other (US1-7, FR-008) | the first `p` starts the density's gap below the header | `margin-block: 0` on every body element instead of the first and last |
 | Footer does not overlap the last section (US3-4) | the sidebar grows with its content | `max-block-size: 100%` on the layout container |
 | No divider for text in the sidebar default slot (US3-11) | one divider at the second section | border on the sections wrapper's text lines |
@@ -91,7 +103,7 @@ no test hook is added to source.
 | Rail keeps orientation at every width (US4-4) | the set orientation draws its layout | a `@media (max-width: 720px)` flip; separately, `container-type: inline-size` on the host with a `@container (max-width: 720px)` flip |
 | Orientation change keeps focus (US4-5) | layout changes on the same change | template re-rendered with new nodes per orientation |
 | README orientation example uses an exclusive bound (US4-10) | rail vertical at the bound, horizontal 1 px below | the README example's `matchMedia("(width < Npx)")` rewritten to `matchMedia("(max-width: Npx)")` (README planted; the test runs the README's code) |
-| Axe sees the host landmark (FR-028, FR-038, R-11) | moderate `landmark-unique` note on both hosts of the unnamed-pair story | internals held in a `#private` field instead of under `internalsKey` (note gone) |
+| Axe's role computation sees the host role (FR-028, R-11; a positive outcome whose plant must fail) | `axe.commons.aria.getRole(host) === "navigation"` in the role probe, for each host case | internals held in a `#private` field instead of under `internalsKey` (the probe reads `null`) |
 | Internals key not in the manifest (R-11) | the element's manifest entry lists `label` | the `@internal` tag removed from the field |
 | No horizontal scroll at 320 px (US1-14, US2-5, US3-10, US4-7) | parts stack in the stated order | `flex-wrap: nowrap` on the row / `overflow-wrap: normal` |
 | No text clipped at 320 px (Reflow, US1-14, US2-5, US3-10, US4-7) | parts stack in the stated order | `overflow: hidden` plus `white-space: nowrap` on a wrapper |
