@@ -121,6 +121,16 @@ stories pass the visual and axe gates.
 12. **Given** `prefers-reduced-motion: reduce`, **When** the dialog opens or closes, **Then** it appears and disappears
     with no animation, even when an ancestor sets `--ocelle-motion-base`; without it, its entry and exit use
     `--ocelle-motion-base` and `--ocelle-easing-standard`.
+13. **Given** an open dialog holding a slotted menu (`popover="auto"`) opened from a slotted button, or a native
+    modal `<dialog>` shown from slotted content, **When** the user presses Escape, **Then** that menu or dialog closes
+    alone, no `ocelle-dialog-close-request` is dispatched and the dialog stays open; **When** the user presses Escape
+    again, **Then** the dialog's close is requested with `detail.reason === "escape"`; while the nested native dialog
+    is open, Tab stays inside it (FR-010).
+14. **Given** an open dialog whose body holds, between two buttons or as its last content, an element with a closed
+    shadow root holding two buttons, or an iframe holding two buttons, **When** the user presses Tab or Shift+Tab
+    repeatedly, **Then** focus reaches each inner button in its native order and never leaves the dialog, with at
+    most the stated extra press and the stated reverse-wrap limit (FR-008, SC-002); **When** focus is inside the
+    iframe and the user presses Escape, **Then** nothing is requested and the dialog stays open (FR-010).
 
 ---
 
@@ -148,13 +158,16 @@ and event scenarios hold with the `ocelle-drawer-` event names and the scenarios
    `--ocelle-dialog-max-inline`, and its content box has a definite inline size.
 4. **Given** `ground="chrome"`, **When** it renders, **Then** the panel uses the chrome ground and chrome ink tokens in
    both themes (constitution II's personal-rail rule); the default ground is the sheet.
-5. **Given** US1 scenarios 1 to 5, 7, 8 and 12 with `ocelle-drawer` and its events, **Then** they hold; with
+5. **Given** US1 scenarios 1 to 5, 7, 8, 12, 13 and 14 with `ocelle-drawer` and its events, **Then** they hold; with
    motion allowed, the panel enters from and leaves towards its own side.
 6. **Given** an open drawer with `label="Personal"`, `ground="chrome"` and `heading-hidden`, **When** it renders and
    the accessibility tree is read, **Then** no heading text is painted and the heading takes no space, the tree still
    has one modal `dialog` node named "Personal" holding a heading "Personal", and the close control is visible, named
    by `close-label`, reachable by Tab and closes the drawer with reason `"close-button"`; without `heading-hidden` the
    heading is painted (FR-048).
+7. **Given** an open drawer with a body of one short sentence and a filled footer, **When** it renders, **Then** the
+   body fills the panel between header and footer (its block size is the panel's minus the header's and footer's)
+   and the footer's block end is at the panel's block end (FR-017, FR-018).
 
 ---
 
@@ -252,7 +265,14 @@ pointer and keyboard. It is complete when the scenarios below pass in process an
   reason `"host"` (FR-013, FR-016).
 - **Escape that slotted content uses.** An Escape that slotted content has already handled (`preventDefault()`), an
   Escape that cancels an IME composition, and an Escape that clears a non-empty search field do not request the
-  overlay's close (FR-010).
+  overlay's close (FR-010). Nor does an Escape while a slotted popover menu (`popover="auto"` or `"hint"`) or a
+  native `<dialog>` shown from slotted content is open: the platform closes that menu or dialog alone, and the next
+  Escape requests the overlay's close (FR-010).
+- **Content the overlay cannot see into.** Slotted content with a closed shadow root, an iframe, or a video or audio
+  element with controls keeps its own focusable parts reachable by Tab and Shift+Tab inside the overlay; leaving it
+  past the cycle's end may cost one extra press, and a closed shadow root at the end that does not delegate focus is
+  skipped by the Shift+Tab wrap and reached in the forward direction (FR-008). Escape with focus inside a slotted
+  iframe does nothing to the overlay (FR-010).
 - **`open` toggled quickly.** Setting `open` true and false in one task, or twice while an exit animation runs,
   leaves the element in the last state set, with at most one close event per close. A host that sets `open` again in
   its close listener, or right after moving the element, gets an open overlay that stays open.
@@ -313,7 +333,13 @@ pointer and keyboard. It is complete when the scenarios below pass in process an
   in the content with nothing focusable inside it (a wide prose table) is a stop where the engine makes it focusable.
   From focus inside the overlay on no stop (the dialog itself after a click on its text, an element focused by
   script) Tab goes to the next stop and Shift+Tab to the previous one; from the document body (a focused element the
-  host removed) to the first and the last. Only the topmost overlay wraps.
+  host removed) to the first and the last. Only the topmost overlay wraps. Between the cycle's ends Tab and Shift+Tab
+  move focus as the engine does (operator decision), so focusable content the overlay cannot see into (an element
+  with a closed shadow root, an iframe, media controls) stays reachable by keyboard; a move that leaves such content
+  past the cycle's end and lands on the document body is brought back to the first stop, and where the engine gives
+  no signal for it, the next press does so (one extra press). A Shift+Tab wrap onto such content at the end lands on
+  the content where it can take focus and otherwise on the stop before it. The documentation states the extra press
+  and the reverse-wrap limit, and that positive `tabindex` in slotted content does not decide the cycle's ends.
 - **FR-009**: On every close, focus MUST return to the element (the deepest one, inside shadow roots) that had focus
   when the overlay opened, if it is still connected and focusable, provided focus is then still inside the closing
   overlay or on the body; focus another overlay has taken MUST NOT be moved. An opener inside an overlay that is
@@ -321,8 +347,12 @@ pointer and keyboard. It is complete when the scenarios below pass in process an
   the documentation tells hosts to move focus elsewhere in the `…-close` listener, after the return.
 - **FR-010**: Escape, while the overlay is the topmost open one and no tooltip bubble inside it is shown, MUST
   dispatch the close request with reason `"escape"`, unless the key has already been handled (`defaultPrevented`),
-  cancels an IME composition, or clears a non-empty search field; then the overlay does nothing. Opening an overlay
-  hides any shown tooltip bubble outside it.
+  cancels an IME composition, or clears a non-empty search field, or another close watcher is open in the overlay's
+  content (an open `popover="auto"` or `"hint"` element, such as a slotted menu, or an open native `<dialog>` other
+  than its own); then the overlay does nothing, and the platform closes that popover or dialog alone, as it does
+  outside an overlay, while Tab inside a nested native modal is left to it. With focus inside a slotted iframe,
+  Escape reaches neither the overlay nor the platform and does nothing to the overlay; the documentation states this
+  limit. Opening an overlay hides any shown tooltip bubble outside it.
 - **FR-011**: Activating the close control MUST dispatch the close request with reason `"close-button"`.
 - **FR-012**: A primary-button click on the backdrop MUST dispatch `ocelle-drawer-close-request` with reason
   `"backdrop"` on the drawer and MUST do nothing on the dialog; a press that starts inside the panel and ends on the
@@ -348,9 +378,10 @@ pointer and keyboard. It is complete when the scenarios below pass in process an
 - **FR-018**: The body MUST scroll when the content exceeds the space left by the heading and footer, which stay
   visible; while it overflows the body is itself a Tab stop, so it is reachable by keyboard scrolling with or without
   focusable content. The body keeps a token-derived minimum block size (three times `--ocelle-target-min`, 132 px by
-  default) at every viewport size, so a one-line body is that tall, with space below its text (operator decision;
-  the documentation says so); when the viewport is too short for the heading, footer and that minimum, the panel
-  scrolls as a whole (WCAG 1.4.10).
+  default) at every viewport size, so a one-line dialog body is that tall, with space below its text (operator
+  decision; the documentation says so). The drawer's body grows to fill its full-height panel between heading and
+  footer, with the same minimum, so the drawer's footer is at the panel's end. When the viewport is too short for the
+  heading, footer and that minimum, the panel scrolls as a whole (WCAG 1.4.10).
 - **FR-019**: The panel's content box MUST have a definite inline size (base styles FR-017).
 - **FR-020**: Entry and exit MUST animate only with `--ocelle-motion-base` and `--ocelle-easing-standard` and MUST NOT
   animate under `prefers-reduced-motion: reduce`, whatever value a host sets on those tokens.
@@ -484,7 +515,10 @@ pointer and keyboard. It is complete when the scenarios below pass in process an
 - **SC-002**: From an open overlay with n focus stops, n + 2 Tab presses give exactly the expected wrap-around
   sequence of stops, with no stop on the document body or outside the overlay, and the same for Shift+Tab, started
   from the first stop, the last stop, the close control, the dialog itself (after a click on its text) and the
-  document body.
+  document body. With slotted content the overlay cannot see into (an element with a closed shadow root holding two
+  buttons, an iframe holding two buttons), in the middle and at the end, every inner button is in the sequence in
+  its native order in both directions, except the stated reverse-wrap limit (FR-008), and the document body appears
+  at most once per cycle, only where the stated extra press applies.
 - **SC-003**: Every event the three elements emit is asserted with its full payload and cancelability: 2 events per
   overlay, 0 for the tooltip, and the manifest lists exactly those.
 - **SC-004**: axe reports 0 serious or critical findings on every story of the three elements in light and dark, and

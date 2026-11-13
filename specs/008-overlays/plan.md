@@ -11,12 +11,14 @@ Three new elements in `@ocelle/elements`, following mission 005's conventions:
 
 - `ocelle-dialog` and `ocelle-drawer`. They share an internal base (`src/overlay.ts`) around a native `<dialog>`
   shown with `showModal()`, with the user-agent chrome reset to tokens.
-  - Focus: explicit initial focus, a Tab cycle the topmost overlay handles on every Tab, also from a non-stop or the
-    body (the overflowing body and slotted overflowing scrollers are stops), return to the deepest opener only while
-    focus is still the overlay's (R-04, R-05).
+  - Focus: explicit initial focus, a Tab cycle the topmost overlay handles at its ends, from a non-stop and from the
+    body, with native moves in the middle so content it cannot see into (closed shadow roots, iframes, media controls)
+    stays reachable (the overflowing body and slotted overflowing scrollers are stops; operator decision), return to
+    the deepest opener only while focus is still the overlay's (R-04, R-05).
   - Escape is handled on `keydown` by the topmost overlay only, so a host's veto survives the platform's
     repeated-Escape rule (measured, R-02), also with focus on the document body; Escapes already handled by slotted
-    content are left alone. While closing, user input requests nothing (R-02, R-06).
+    content, and Escapes while a slotted popover or native dialog is open (the platform closes it alone), are left
+    alone. While closing, user input requests nothing (R-02, R-06).
   - A native `close` event is a platform close only when it is not one of the overlay's own `close()` calls and the
     `<dialog>` is not open at the time, so a reopen never meets a stale event (R-03).
   - Events: a cancelable `…-close-request` and a `…-close` that fires once the overlay has left the top layer.
@@ -82,7 +84,7 @@ Token-only CSS with no new `token-only` allowance. No I/O. No ID reference acros
 |---|---|
 | I. Names, events, no I/O, manifest | Tags `ocelle-dialog`, `ocelle-drawer`, `ocelle-tooltip`. Events `ocelle-dialog-close-request`, `ocelle-dialog-close` and the drawer pair, all `bubbles` and `composed`, with typed `detail`. The tooltip has no events. No I/O and no console output. Every property, attribute, event, slot, part and own CSS custom property is in the generated manifest, inherited members included, through JSDoc on each concrete class (R-01). The tooltip's unrendered slot is `description`, a plain name (R-13). The describes span is written with `textContent` (R-13). |
 | II. Tokens only | Static CSS only from tokens through `var()`/`calc()`, with no new lint allowance. Runtime numbers (bubble coordinates, WAAPI keyframes of `%` and opacity) are not element CSS literals (R-06, R-11). The bubble uses existing chrome colour pairs, so contrast is already checked. Only the dialog surfaces use `elevation-raised` (#5). The radius is `radius-2`. No monospace. |
-| III. Accessible | Modal `<dialog>` named in one shadow root (R-08). Full keyboard model: Tab cycle, Escape, Enter and Space on the close control. Every Tab is handled by the topmost overlay, so the cycle holds from a non-stop and from the body, and slotted scrollers are stops (R-04). The close control meets `target-min` with the focus ring. WCAG 1.4.13 holds: the bubble is dismissable, hoverable and persistent (R-11, R-12). No ID reference crosses a shadow root (R-13). Reduced motion gives no animation, by the media query as well as the tokens (R-06). Forced colours: a `CanvasText` panel border, `Canvas` backdrop and an outline focus ring (R-09). The overflowing body is a Tab stop and keeps a minimum block size at 320 × 256 (R-04, R-18). Nested overlays act only when topmost (R-02). Host `aria-label` asserted open and closed and under axe (R-08). axe runs on every story (R-16). |
+| III. Accessible | Modal `<dialog>` named in one shadow root (R-08). Full keyboard model: Tab cycle, Escape, Enter and Space on the close control. The topmost overlay handles Tab at the cycle's ends, from a non-stop and from the body, so the cycle holds there, and leaves middle moves native, so slotted content with closed shadow roots, iframes and media controls stays keyboard-reachable (WCAG 2.1.1); slotted scrollers are stops; the extra press and reverse-wrap limits are stated (R-04). Escape and Tab are left to a slotted popover or native dialog while it is open, as the platform orders them (R-02). The close control meets `target-min` with the focus ring. WCAG 1.4.13 holds: the bubble is dismissable, hoverable and persistent (R-11, R-12). No ID reference crosses a shadow root (R-13). Reduced motion gives no animation, by the media query as well as the tokens (R-06). Forced colours: a `CanvasText` panel border, `Canvas` backdrop and an outline focus ring (R-09). The overflowing body is a Tab stop and keeps a minimum block size at 320 × 256 (R-04, R-18). Nested overlays act only when topmost (R-02). Host `aria-label` asserted open and closed and under axe (R-08). axe runs on every story (R-16). |
 | IV. Strict CSP | Adopted stylesheets only. The placement sheet is constructable (R-11). WAAPI sets no attribute (R-06). Timers take functions. Every scenario also runs on the strict-CSP fixture, and FR-047's counts run after each one. |
 | V. Storybook and behaviour | A story per variant and state in both themes (data-model § Stories), written against #10 (R-16). Interaction tests cover every event, payload, keyboard path and focus outcome (checks § Test matrix). |
 | VI. Consumers | #16's consumers: the Open project dialog, #12's personal drawer, kitty-mission-ui flyouts, #12's nav-item bubble and #7's pill-tag ellipsis (contract § consumers). Own code. |
@@ -127,12 +129,28 @@ Settled in the squad's round 1 (9 to 13 by the operator at the forks, 14 a confi
 Settled in the squad's round 2 (15 by the operator at the fork, 16 and 17 confirmed fixes):
 
 15. **Body minimum block size unconditional** (R-18, operator decision PLAN-FRESH-2-006 (a)): every body is at least
-    132 px tall, a one-line confirmation included; FR-018, the README, a geometry row and a story state it.
-16. **Every Tab handled, scrollers as stops** (R-04): the topmost overlay moves focus on every Tab from the deep
-    active element's flat-tree position, also from a non-stop or the body; overflowing slotted scrollers with nothing
-    focusable inside are stops where the engine focuses them.
+    132 px tall, a one-line confirmation included; FR-018, the README, a geometry row and a story state it. The
+    drawer's body also fills its full-height column (20).
+16. **Every Tab handled, scrollers as stops** (R-04; the every-Tab part is replaced by 18): the topmost overlay
+    moves focus on every Tab from the deep active element's flat-tree position, also from a non-stop or the body;
+    overflowing slotted scrollers with nothing focusable inside are stops where the engine focuses them.
 17. **Closing ignores input; stale `close` events ignored** (R-02, R-03, R-06): one close gives one request and one
     `…-close`, and a reopen after `…-close` or a move stays open.
+
+Settled in the squad's round 3 (18 by the operator at the fork, 19 and 20 confirmed fixes):
+
+18. **Hybrid Tab handling** (R-04, operator decision PLAN-FRESH-3-001 (a); replaces the "every Tab" part of 16): the
+    topmost overlay handles a Tab explicitly only at the cycle's ends, from a non-stop of its own tree and from the
+    body; middle moves and moves from opaque content (closed shadow roots, iframes, media controls) are native, and a
+    native move that lands on the body is repaired to the first stop. Stated limits in FR-008 and the README: a
+    possible extra press when leaving opaque content at the end, a closed root without `delegatesFocus` skipped by
+    the Shift+Tab wrap, positive `tabindex` not deciding the ends, and Escape inside a slotted iframe doing nothing
+    (FR-010).
+19. **Slotted close watchers** (R-02): while a slotted `popover="auto"`/`"hint"` element or a native `<dialog>` from
+    slotted content is open, the overlay neither prevents nor requests on Escape and handles no Tab; the platform
+    closes that element alone.
+20. **Drawer body fills its column** (R-18): the footer sits at the panel's end; the drawer has its own one-line-body
+    row instead of the dialog's 132 px one.
 
 ## Risks
 
@@ -150,6 +168,10 @@ Settled in the squad's round 2 (15 by the operator at the fork, 16 and 17 confir
 - **Scrollers below Chromium 130 and in WebKit** (R-04): a slotted overflowing scroller with nothing focusable
   inside is not focusable there, so it is skipped by the cycle and reachable by keyboard only as the engine allows
   outside an overlay. Only Chromium 153 is measured.
+- **Opaque slotted content** (R-04, R-02): how the engine signals focus leaving a slotted iframe or closed shadow root
+  for the body is measured in Phase 2's first dialog task, which also writes the exact opaque-content `focusPath()`
+  lists into the rows; where no signal exists the stated extra press applies. Escape inside a slotted iframe does
+  nothing to the overlay (stated limit).
 - **Slotted widgets that stop Escape** (R-02): a vetoed overlay can then close on a repeated Escape with reason
   `host`. Stated in the README; #14's listbox should call `preventDefault()` instead.
 - **Parallel siblings** (R-17): merge conflicts in shared files are resolved by merging `main`, then regenerating the

@@ -52,6 +52,22 @@ modal, level. Device: the default context (`elements`, `visit()`) matches `(hove
     the inline axis) with no footer, and the same table before a footer with one button, both directions: the exact
     `focusPath()` lists include the table once, in its place, and no `body`; ArrowRight on the focused table scrolls
     it.
+  - **Opaque content** (operator decision PLAN-FRESH-3-001 (a), R-04): a slotted custom element with a closed shadow
+    root holding two buttons (c1, c2; no `delegatesFocus`), and a slotted `<iframe srcdoc>` holding two buttons (f1,
+    f2; `focusPath()` reads the frame's element plus its inner active element), each placed (i) between two slotted
+    buttons and (ii) as the last body content with no footer; Tab and Shift+Tab, n + 2 presses each, started from the
+    close control. The exact `focusPath()` lists are measured in Chromium in Phase 2's first dialog task and written
+    into the rows before the code (the round 3 probe's native list for (i), `b1 xc xc fr[f1] fr[f2] b2`, is the
+    reference). Each list must hold: in (i), both directions, every inner button appears once per cycle in native
+    order and there is no `body` entry; in (ii) forward, every inner button appears in order, followed by the close
+    control, with at most one `body` entry (the stated extra press, R-04's repair); in (ii) backward, the iframe's
+    inner buttons are reached from the frame and the closed root is skipped by the wrap (the stated reverse-wrap
+    limit). No list holds a page element outside the overlay. A host with `delegatesFocus` in (ii) backward: its
+    inner buttons are reached.
+  - **Middle moves are native** (R-04): a slotted button with `tabindex="2"` between two plain buttons: the middle
+    moves follow the engine's order and the wraps follow flat-tree order, as the README states.
+- **Escape in a slotted iframe** (R-02, FR-010): focus on f1 inside a slotted iframe, Escape × {no veto, veto}: no
+  `…-close-request`, no `cancel`, the dialog stays open and `:modal`.
 - **Long body** (FR-018): a prose-only body taller than `dialog-max-block`: panel height ≤ `dialog-max-block`, heading
   and footer boxes inside the panel, body `scrollHeight > clientHeight`, Tab from the close control reaches the body,
   ArrowDown and PageDown then scroll it; the body has no `tabindex` once it no longer overflows. Short viewport
@@ -68,6 +84,14 @@ modal, level. Device: the default context (`elements`, `visit()`) matches `(hove
   with reason `host` (the stated limit, R-02). A slotted control that calls `preventDefault()` on Escape: no request,
   the dialog stays open. A slotted `<input type=search>` with a value: Escape clears the value, no request, open. An
   Escape with `isComposing`: no request.
+  - **Slotted close watchers** (R-02, PLAN-FRESH-3-002): a slotted `popover="auto"` menu opened by a click on its
+    slotted `popovertarget` invoker, with focus on the invoker and with focus on a button inside the menu, × {no veto,
+    veto}: the first Escape closes the menu (`:popover-open` false) with no `…-close-request` and no `cancel` on the
+    overlay, the overlay stays open and `:modal`; the second Escape requests with reason `escape` (then closes without
+    a veto, stays open with focus inside under veto). The same with `popover="hint"` where the engine supports it. A
+    slotted native modal `<dialog>` with two buttons shown above the overlay from slotted content: Escape closes it
+    alone with no request and no `cancel` on the overlay; before that, Tab and Shift+Tab, n + 2 presses each, keep
+    `focusPath()` inside the nested dialog; a further Escape then requests the overlay's close with `escape`.
 - **Synthetic `cancel`**: a dispatched non-cancelable `cancel` followed by the inner `close()`: `…-close` with `host`;
   a cancelable `cancel` runs the request path once.
 - **Close control** by click, Enter and Space × {veto, no veto}, reason `close-button`; its box ≥ `target-min` in both
@@ -117,10 +141,17 @@ modal, level. Device: the default context (`elements`, `visit()`) matches `(hove
 
 ### Drawer
 
-- The dialog's rows with `ocelle-drawer-` events (initial focus, Tab cycle with its non-stop, body and scroller
-  starts, long body, one-line body, Escape and its slotted-content rows, close control, host and platform close,
-  focus return, nested, removed, moved, rapid toggle, input during the exit, stale native `close` event, styles,
-  forced colours, accessibility tree).
+- The dialog's rows with `ocelle-drawer-` events (initial focus, Tab cycle with its non-stop, body, scroller and
+  opaque-content starts and its native middle moves, long body, Escape and its slotted-content rows including the
+  slotted close watchers, Escape in a slotted iframe, close control, host and platform close, focus return, nested,
+  removed, moved, rapid toggle, input during the exit, stale native `close` event, styles, forced colours,
+  accessibility tree). The dialog's "one-line body" row is not inherited; the drawer has its own below.
+- **One-line body** (R-18, PLAN-FRESH-3-003): a body of one short sentence and a footer with one button at
+  1280 × 800, each `side`: the body part's block size (border box) equals the panel's block size (border box) minus
+  the header's and the footer's boxes (and the panel's block padding and border, if any), it is at least the computed
+  `calc(3 * var(--ocelle-target-min))`, the text is at its block start, the footer box's block end is at the panel's
+  block end (less the panel's block-end padding and border), and the body has no `tabindex`. Without the footer the
+  body's block end is at the panel's.
 - **Backdrop during the exit** (motion on, R-07): a double click on the backdrop with no veto: exactly one
   `ocelle-drawer-close-request` and one `ocelle-drawer-close`, both with reason `backdrop`.
 - **Backdrop**: a primary click on the backdrop on each side of the panel (start and end, under `ltr` and `rtl`) ×

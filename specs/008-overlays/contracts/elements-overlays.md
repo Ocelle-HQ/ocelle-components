@@ -43,9 +43,19 @@ an event's `detail`, is MAJOR.
     false; the host reopens it after re-inserting it (also in the same task; a reopen there, or in the `…-close`
     listener, stays open, R-03);
   - the body is at least three times `--ocelle-target-min` tall (132 px by default) at every size, so a one-line
-    confirmation has space below its text (operator decision, R-18);
+    confirmation has space below its text (operator decision, R-18); in the drawer the body fills the full-height
+    panel between header and footer, so the footer is at the panel's end;
   - an overflowing scroller in slotted content with nothing focusable inside (a wide prose table) is a Tab stop where
     the engine focuses scrollers (Chromium 130 and later); elsewhere it is skipped (R-04);
+  - between the cycle's ends Tab moves as the engine does, so content with a closed shadow root, an iframe or media
+    controls keeps its inner focusable parts reachable; leaving such content past the cycle's end can cost one extra
+    press, a closed shadow root at the end that does not use `delegatesFocus` is skipped by the Shift+Tab wrap (it is
+    reached going forward), and positive `tabindex` does not decide the cycle's ends, so avoid it inside an overlay
+    (operator decision, R-04);
+  - Escape with focus inside a slotted iframe does nothing to the overlay (R-02);
+  - while a slotted popover (`popover="auto"` or `"hint"`, a menu) or a native `<dialog>` shown from slotted content
+    is open, Escape closes it alone, as the platform does, and the overlay requests nothing; Tab inside a nested
+    native modal is left to the platform (R-02);
   - during the exit, Escape, the close control and the backdrop request nothing; only `open = true` stops a close
     (R-02, R-06).
 - Manifest: the events, slots, parts and CSS property are declared with JSDoc on the concrete class (R-01).

@@ -46,15 +46,24 @@ closed ──(reconnected)──▶ closed         (the host sets open = true to
   other case it is ignored.
 - **Only `open = true` leaves `closing`**: Escape, `cancel`, the close control and the backdrop request nothing there.
 - **Overlay stack** (module-level, internal): the open overlays in opening order. Pushed on `showModal()`, removed when
-  the `<dialog>` closes or the host disconnects. Only the top acts on Escape and Tab (R-02, R-04); the top also
-  handles Escape and Tab whose deep active element is the document body, from a `document` listener (R-02). Opening
-  an overlay first hides the shown tooltip bubble, if any (R-10).
-- **Tab**: the top overlay handles every Tab and Shift+Tab: next (previous) stop after the deep active element's
-  flat-tree position, wrapping; from the body the first (last) stop (R-04).
-- **Stops**: the walk's tabbable elements, the body part while it overflows, and slotted overflowing scroll
-  containers with no tabbable descendant where the engine focuses them (R-04).
+  the `<dialog>` closes or the host disconnects. Only the top acts on Escape and Tab (R-02, R-04), and only while no
+  other close watcher (an open `popover="auto"`/`"hint"` element or another open `<dialog>`) is in its flat tree;
+  while one is, the overlay stands aside and the platform handles the key (R-02). The top also handles Escape and Tab
+  whose deep active element is the document body, from a `document` listener (R-02). Opening an overlay first hides
+  the shown tooltip bubble, if any (R-10).
+- **Tab** (hybrid, operator decision PLAN-FRESH-3-001 (a)): the top overlay handles a Tab or Shift+Tab explicitly only
+  at the cycle's ends (the wrap), from a non-stop of its own open tree (next or previous stop or opaque container
+  after the deep active element's flat-tree position) and from the body (first or last stop). From a middle stop or
+  an opaque focus container (closed shadow host holding focus, `<iframe>`, media element with `controls`) the native
+  move runs; a native move that lands on the body is repaired to the first stop, or, where the engine gives no
+  signal, the next press does it (R-04).
+- **Stops**: the walk's tabbable elements, the body part while it overflows, slotted overflowing scroll containers
+  with no tabbable descendant where the engine focuses them, `<iframe>`s and media elements with `controls`; custom
+  elements whose `shadowRoot` reads null are recorded as opaque containers, tried as candidates by explicit moves
+  (R-04).
 - **Body stop**: the `body` part has `tabindex="0"` exactly while it overflows (R-04, R-18). Its `min-block-size` is
-  `3 × target-min` (132 px) at every size, so a one-line body is 132 px tall (operator decision, R-18).
+  `3 × target-min` (132 px) at every size, so a one-line dialog body is 132 px tall (operator decision, R-18). The
+  drawer's body grows to fill its column (see `ocelle-drawer`).
 
 ### Events
 
@@ -90,6 +99,11 @@ The members of Overlay, plus:
 | `headingHidden` / `heading-hidden` | property, reflected attribute | boolean | `false` | Visually hidden heading, kept in the tree (FR-048). |
 
 An unknown `side` or `ground` value renders as the default.
+
+**Layout** (R-18, PLAN-FRESH-3-003): the panel spans the viewport's full block size; its column is header, body,
+footer, and the `body` part grows to fill the space between header and footer (`flex: 1 1 auto`, with the same
+`3 × target-min` minimum), so the footer is at the panel's block end whatever the body holds. A one-line drawer body
+is as tall as the panel minus header and footer, not 132 px.
 
 Tokens read, in addition to the dialog's: `drawer-inline` (new), `color-chrome`, `color-chrome-ink`,
 `color-chrome-hover`.

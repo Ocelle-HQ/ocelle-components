@@ -1,7 +1,7 @@
 # Research: Overlays — Dialog, Drawer and Tooltip
 
 **Feature**: [spec.md](spec.md) | **Plan**: [plan.md](plan.md) | **Date**: 2026-11-12
-(squad rounds 1 and 2 fixes 2026-11-13)
+(squad rounds 1 to 3 fixes 2026-11-13)
 
 Measurements were taken in this container with Playwright 1.64.1's Chromium (153.0.8010.12), using the probes noted
 under each decision. WebKit is not measured here (elements README § Engines). Facts about the repository come from
@@ -53,18 +53,38 @@ unmerged). Results marked "squad probe" were measured by the plan squad's round 
   stops Escape's propagation lets the `cancel` path run: `cancel:true`, then `cancel:false` and the dialog closes.
 - **Topmost** (FR-010, FR-023): a module-level stack of open overlays, internal to the package. An overlay is pushed
   when it calls `showModal()` and removed when its `<dialog>` closes or the host disconnects. An overlay acts on a
-  keydown (Escape here, Tab in R-04) only when it is the top of the stack. No `stopPropagation()` is called, so hosts
-  still see the key.
+  keydown (Escape here, Tab in R-04) only when it is the top of the stack and no other close watcher is open in its
+  content (below). The stack holds only Ocelle overlays; a native popover or dialog in slotted content is found by
+  that second check. No `stopPropagation()` is called, so hosts still see the key.
 - **Decision**: the overlay handles Escape on `keydown` (bubble phase, on its `<dialog>`). It ignores the event, neither
   preventing it nor requesting, when any of these holds:
   - the overlay is not the top of the stack;
   - the event is already `defaultPrevented` (a slotted widget, an inner overlay or a tooltip handled it);
   - `isComposing` is true (an IME composition is cancelled by the key);
   - the target, followed to the deep active element, is a text field whose Escape has a native action: an `<input>`
-    of type `search` with a non-empty value.
+    of type `search` with a non-empty value;
+  - another close watcher sits above the overlay within its content (squad round 3, PLAN-FRESH-3-002): an open
+    `popover="auto"` or `popover="hint"` element, or an open `<dialog>` other than its own, in its flat tree.
   Otherwise it calls `preventDefault()` and runs the request path (FR-010, FR-013).
+- **Close watchers in slotted content** (squad round 3, PLAN-FRESH-3-002). **Measured** (squad round 3 probe, Chromium
+  153): with a slotted `popover="auto"` menu open from a slotted invoker inside a shadow-root modal `<dialog>`, native
+  Escape closes the menu alone (`popover:false, dialog:true`, no `cancel`); with the keydown rule above minus this
+  exception it gives `popover:true, dialog:true` and a close request. A slotted native modal `<dialog>` shown above
+  the overlay behaves the same way. The platform's close-watcher stack already orders these, so while such an element
+  is open the overlay stands aside: its Escape keydown neither prevents nor requests (the platform closes that element
+  alone, as natively), its `document` listener below does nothing, and R-04 handles no Tab (a nested native modal keeps
+  its own sequential navigation). How the overlay knows is the implementer's choice, for example capture-phase
+  `toggle` and `close` listeners on its `<dialog>` (these events do not bubble, but a slotted descendant's pass the
+  `<dialog>` in capture) or a check of the flat tree at keydown. The tooltip's bubble is `popover="manual"` (R-10), so
+  it is not such an element; its Escape is its own (R-12).
+- **Escape inside a slotted iframe** (squad round 3, PLAN-FRESH-3-001): a key pressed in a frame's document is
+  dispatched there and never reaches the parent's `<dialog>` or `document`, and the platform's close watcher of the
+  parent does not see it either (squad round 3 probe: nothing recorded, the dialog stays open). So with focus inside
+  a slotted `<iframe>`, Escape does nothing to the overlay. This is a stated limit: spec FR-010 and the README say so,
+  and a row asserts it.
 - **Focus on the body inside an open overlay** (squad round 2, PLAN-FRESH-2-001): two ways remain for focus to reach
-  the document body while an overlay is open, after R-04 handles every Tab: a focused slotted element that the host
+  the document body while an overlay is open, besides a native Tab move off the cycle's end (repaired by R-04): a
+  focused slotted element that the host
   removes (or hides, or disables), and a host `blur()`. From the body, Escape's `keydown` targets the body and never
   passes the `<dialog>`, so the keydown path above would be skipped and the platform's repeated-Escape rule would
   close a vetoed overlay. So, while an overlay is the top of the stack, it also listens to `keydown` on `document`
@@ -72,7 +92,9 @@ unmerged). Results marked "squad probe" were measured by the plan squad's round 
   `<dialog>`: Escape goes through the same rules and request path, and Tab goes through R-04 (to the first stop,
   Shift+Tab to the last). The listener is added when the overlay becomes the top and removed when it stops being it.
   An event from inside the overlay is never handled twice: the `document` path acts only when the deep active element
-  is the body. No case is left to the stated limit below except slotted content that stops Escape's propagation.
+  is the body. No case is left to the stated limit below except slotted content that stops Escape's propagation (and
+  focus inside a slotted iframe, above). While another close watcher is open in its content, this listener stands
+  aside as well.
 - **While `closing`** (squad round 2, PLAN-FRESH-2-003): `open` is already false but the overlay is still modal and the
   top of the stack until its `<dialog>` closes (R-06). In that state an Escape `keydown` that the overlay acts on (it is
   the top of the stack) is prevented (`preventDefault()`, so the platform fires no `cancel`) and requests nothing,
@@ -124,22 +146,51 @@ unmerged). Results marked "squad probe" were measured by the plan squad's round 
   the first element marked `autofocus` among the default slot's assigned elements and their descendants (shadow roots
   included); else the first focusable element of the default slot's flattened content in tree order; else the close
   control. Footer content is not an initial focus target (FR-007 names the body only).
-- **Tab cycle**: the tab order is the close control (in the header), then the body's content (or the body itself, see
-  below), then the footer's. While the overlay is the top of the stack (R-02), it handles **every** Tab and Shift+Tab
-  `keydown` that reaches its `<dialog>` and is not already `defaultPrevented`: it builds the stop list (the walk
-  below), moves focus to the next stop (Shift+Tab: the previous one), wrapping at the ends, and calls
-  `preventDefault()`. The next stop is decided from the deep active element's position in flat-tree order, not from
-  equality with a stop (squad round 2, PLAN-FRESH-2-001):
-  - focus on a stop: the stop after it (before it);
-  - focus inside the overlay on no stop (the `<dialog>` itself after a click on prose, padding or the heading; the
-    panel; a slotted `tabindex="-1"` element focused by script; a focused element inside a scroller): the first stop
-    after it in flat-tree order (the last stop before it), wrapping;
-  - focus on the document body (a removed focused element, R-02): the first stop (the last).
-  The rest of the document is inert through `showModal()`; the explicit handling keeps focus out of the browser chrome
-  and off the document body, so the sequence is the same in every engine, whatever the engine's own sequential
-  navigation would do from a non-stop. The squad probes showed Chromium without the wrap passes through `body` once
-  per cycle, and that Shift+Tab from a focused `<dialog>` goes to `body`, so the tests assert the exact sequence
-  (SC-002) and start it from non-stops too.
+- **Tab cycle** (hybrid handling; operator decision PLAN-FRESH-3-001 (a), squad round 3): the tab order is the close
+  control (in the header), then the body's content (or the body itself, see below), then the footer's. While the
+  overlay is the top of the stack and no other close watcher is open in its content (R-02), it looks at each Tab and
+  Shift+Tab `keydown` that reaches its `<dialog>` and is not already `defaultPrevented`, builds the stop list (the walk
+  below) and decides from the deep active element's position in flat-tree order, not from equality with a stop
+  (squad round 2, PLAN-FRESH-2-001):
+  - **Handled explicitly** (the overlay moves focus and calls `preventDefault()`), where a press would leave the cycle
+    or starts off it:
+    - focus on the last stop with Tab, or on the first stop (the close control) with Shift+Tab: the wrap, to the
+      first (last) stop, unless an opaque container (below) lies after the last stop in flat-tree order, in which
+      case a Tab from the last stop is a middle press;
+    - focus inside the overlay's own open tree on no stop (the `<dialog>` itself after a click on prose, padding or
+      the heading; the panel; a slotted `tabindex="-1"` element focused by script; a focused element inside a
+      scroller): the first stop or opaque container after it in flat-tree order (the last before it), wrapping;
+    - focus on the document body (a removed focused element, R-02): the first stop (the last).
+  - **Native** (the overlay does nothing and the engine's sequential navigation runs): focus on a stop in the middle
+    of the cycle in the press's direction, or the deep active element is an **opaque focus container**: a shadow host
+    whose shadow root the overlay cannot read (closed, so `shadowRoot` reads null) and which holds focus, an
+    `<iframe>`, or a media element with `controls` (its controls live in a user-agent shadow tree). A Tab pressed inside
+    an iframe never reaches the parent document and is native anyway.
+  - **Repair**: when a native move the overlay let run lands on the document body, the overlay moves focus to the first
+    stop. Only a forward move can fall off the cycle this way, since the close control is always the first stop and a
+    Shift+Tab from it is handled. The mechanism is the implementer's choice (for example `focusout` inside the
+    overlay with no related target, and focus leaving a slotted frame), measured in Phase 2's first dialog task. Where
+    the engine reports no event for focus leaving opaque content, focus stays on the body until the next press, which
+    goes to the first stop through R-02's body path: one extra press, which the README states. A removed focused
+    element is not repaired; it is left to R-02's body path, as before.
+  - **Opaque containers in the walk**: the walk records an `<iframe>` with a layout box and a media element with
+    `controls` as stops, and records every custom element whose `shadowRoot` reads null (a closed root, or none: the
+    walk cannot tell, and the light content of either is walked as usual) as an opaque container in its tree
+    position. Explicit moves treat an opaque container as a candidate: `focus()` on it, and "Focus checked" moves on
+    when focus does not land (a closed host without `delegatesFocus` that is not itself focusable). So a Shift+Tab
+    wrap onto opaque content at the cycle's end lands on the container where it is focusable (a frame's document, a
+    media element, a delegating host) and reaches its inner stops natively from there; a closed root that does not
+    delegate focus is then skipped in the reverse wrap and reached in the forward direction. The README states both
+    limits (the possible extra press and the reverse wrap).
+  - **Positive `tabindex`** in slotted content: native middle moves honour it, the walk does not, so the cycle's ends
+    follow flat-tree order. The README advises against it inside an overlay.
+  The rest of the document is inert through `showModal()`. The explicit handling at the ends and from non-stops keeps
+  focus out of the browser chrome and off the document body; the native middle moves keep every focusable element the
+  engine reaches reachable, including content the walk cannot see into (WCAG 2.1.1). The squad probes showed Chromium
+  without the wrap passes through `body` once per cycle, that Shift+Tab from a focused `<dialog>` goes to `body`
+  (round 2), and that native Tab from the close control over a slotted button, a closed-shadow-root element of two
+  buttons, an iframe of two buttons and a button gives `b1 xc xc fr[f1] fr[f2] b2 BODY` (round 3), so the tests
+  assert the exact sequence (SC-002), start it from non-stops too, and slot opaque content in the middle and last.
 - **Body as a stop** (FR-018): while the `body` part overflows (`scrollHeight > clientHeight`, checked on a
   `ResizeObserver` of the body and its slot content and on `slotchange`), it carries `tabindex="0"`; otherwise the
   attribute is absent. The walk lists it as a stop in its place before the body's own content. So a prose-only long
@@ -162,10 +213,12 @@ unmerged). Results marked "squad probe" were measured by the plan squad's round 
   table is then reachable by keyboard only as the engine allows it outside an overlay. The README states this. The
   overlay never writes a `tabindex` on slotted content (it belongs to the host); the body part's own `tabindex`
   stays as below.
-- **Focus checked**: after each `focus()` call (initial focus and every Tab move) the overlay reads the deep active
-  element. If focus did not land on the candidate, it tries the next candidate in the same direction, ending with the
-  close control. It is mutation-tested through the overlay scenarios, with a scenario per exclusion, the radio group, a
-  CSS-hidden first element, the overflowing body, a slotted scroller and each non-stop start.
+- **Focus checked**: after each `focus()` call (initial focus and every explicit Tab move) the overlay reads the deep
+  active element. If focus did not land on the candidate (or, for an opaque container, inside it), it tries the next
+  candidate in the same direction, ending with the close control. It is mutation-tested through the overlay scenarios,
+  with a scenario per exclusion, the radio group, a CSS-hidden first element, the overflowing body, a slotted
+  scroller, each non-stop start and the opaque-content rows (a closed-shadow-root element and an iframe, each in the
+  middle and last, both directions).
 
 ## R-05 Focus return (FR-009, SPEC-1-12)
 
@@ -571,7 +624,12 @@ From `specs/006-storybook-workbench` on its branch (design final, unmerged):
   a 132 px body with empty space below its text. This is the stated look, not a defect: spec FR-018 and the README
   say so, a geometry row asserts it and a dialog story shows it in the baselines. A conditional minimum was
   considered and not taken (it needs a measured attribute, and `min()` is raw under `token-only`, R-09).
-- The drawer has the same column, at the full block size of the viewport.
+- **The drawer's body fills its column** (squad round 3, PLAN-FRESH-3-003): the drawer has the same column, at the
+  full block size of the viewport, and its body grows to fill the space between header and footer (`flex: 1 1 auto`,
+  with the same `min-block-size` token minimum), so the footer sits at the panel's block end (FR-017) whatever the
+  body holds. A one-line drawer body is therefore as tall as the panel minus the header and footer, not 132 px; the
+  dialog's 132 px row does not apply to the drawer (checks § Drawer has its own row). At a short viewport the
+  minimum and the panel's own scrolling apply as for the dialog.
 
 ## Spec-check notes settled here
 
