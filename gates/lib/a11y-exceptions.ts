@@ -1,5 +1,6 @@
 // The axe gate's exceptions (FR-029; data-model.md § Exception; research.md R-08): storybook/a11y-exceptions.json, a
-// list of { story, theme, rule, selector, reason, sunset, plan } entries, every field a non-empty string. An entry is
+// list of { story, theme, rule, selector, reason, sunset, plan } entries, every field a non-empty string; the plan, as
+// written, a feature plan inside the repository, specs/<feature>/plan.md (phase 4 review round 3, O3-01). An entry is
 // honoured only when its plan's `## Complexity Tracking` section holds a table row naming the same story, theme, rule
 // and selector (each in backticks, a `|` written `\|`) and the sunset; an honoured entry excepts the one node of its
 // rule with its selector in its story-theme. Pure, tested in process (gates/test/a11y-exceptions.test.ts).
@@ -56,6 +57,8 @@ export function parseExceptions(text: string): Exception[] | { readonly problem:
     if (entry.theme !== "light" && entry.theme !== "dark") return { problem: `${at}: theme must be light or dark` };
     const plan = posix.normalize(entry.plan);
     if (posix.isAbsolute(plan) || plan === ".." || plan.startsWith("../")) return { problem: `${at}: plan must be a path inside the repository` };
+    const feature = /^specs\/([^/]+)\/plan\.md$/.exec(entry.plan)?.[1];
+    if (feature === undefined || feature === "." || feature === "..") return { problem: `${at}: plan must be a feature plan, specs/<feature>/plan.md` };
     entries.push(entry);
   }
   return entries;
