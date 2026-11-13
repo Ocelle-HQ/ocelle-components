@@ -1,0 +1,96 @@
+schema: review-findings/v1
+complete: true
+phase: plan
+round: 2
+lens: fresh
+# Probes: Google Chrome for Testing 153.0.8010.12 (/opt/pw-browsers/chromium-1243), headless, file:// pages with
+# --dump-dom or --screenshot (pixels read with PIL); axe-core 4.14.0 from `npm pack axe-core@4.14.0` (the version #10
+# pins), run in the same Chromium. Probe pages are in the session scratchpad (probe/focus.html, ring.html, ring2.html,
+# lb.html, tabs3.html to tabs7.html). Round 1's refute, fixes 1 and 2 and verify 1 and 2 were read; nothing below
+# repeats a settled finding: each attacks a round-1 fix.
+findings:
+  - id: PLAN-FRESH-2-001
+    severity: 3
+    title: "The focus record's 'had focus at the batch' condition never holds in Chromium: focusout fires while the removed or moved child is still connected and still a child"
+    evidence:
+      - artifact: "research.md § R-03 Focus record (lines 87-94): 'on a `focusout` whose target is no longer connected or no longer a child of this parent, that child as \"had focus at the batch\"'; data-model.md § Selection state, `focused` row: 'on a `focusout` whose target is disconnected or no longer this parent's child, kept as \"had focus at the batch\"'"
+      - code: "probe focus.html in Chromium 153: focused child `a` of parent `p`; `p.insertBefore(a, null)` (a move) logs `blur` then `focusout` on `p` with `target=a connected=true parentIsP=true`, then activeElement BODY; `a.remove()` logs the same (`connected=true parentIsP=true`), then BODY. A focusout dispatched after detachment could not reach the parent's listener at all (the event path of a detached node does not include its former parent)."
+    claim: |
+      The round-1 fix for PLAN-CORRECTNESS-1-004 / PLAN-FRESH-1-009 tells the move and removal cases apart from an
+      ordinary blur by the target's state at `focusout`. Chromium fires `blur`/`focusout` synchronously inside the
+      removal step, before the node is detached, so at the listener the target is connected and still this parent's
+      child: every move and removal looks exactly like the user leaving the child. Read literally, the ordinary
+      `focusout` clears `focused`, the batch finds no "had focus" child, and neither the refocus of a moved child
+      (US1-21, SPEC-3-03) nor FR-011's focus move for a removed focused child happens. The planned test would go red
+      at green time with no design to fall back on; worse, an implementer who "fixes" it by never clearing on
+      `focusout` makes a later host move steal focus back from the page after the user has deliberately clicked away.
+    remedies:
+      - "R-03 and data-model § Selection state: on `focusout` from a child, keep that child as `blurred` (do not decide there); the batch treats it as 'had focus at the batch' only when the batch's own records list it in `removedNodes` (moved: also in `addedNodes` or still a child; removed: gone) and `document.activeElement` is the body or null; any batch or `focusin` elsewhere clears `blurred`. State the Chromium order measured above as the reason. Add to § Pairings a row 'a move does not steal focus back': the user moves focus out of the listbox (clicking the page), then the host moves the formerly focused option, and focus stays where the user put it; plant: refocusing on every batch after any blur. Keep US1-21 (focus kept on `insertBefore` of the focused option) as the positive pair."
+  - id: PLAN-FRESH-2-002
+    severity: 3
+    title: "aria-labelledby on unassigned tab panels crashes axe 4.14's color-contrast on every unselected tab: a serious 'incomplete' that #10's axe gate counts as a finding"
+    evidence:
+      - artifact: "research.md § R-02: 'writes, on the child hosts ..., `aria-controls` on the tab and `aria-labelledby` on the panel'; § R-05: 'only the selected tab's paired panel [is assigned] to the slot inside `part=\"panels\"`. Unselected panels ... are assigned nowhere'; contracts/elements.md § ocelle-tabs: 'aria-labelledby ... on the children'"
+      - artifact: "origin/claude/010-storybook-workbench specs/006-storybook-workbench/spec.md US3 scenario 2: 'A serious or critical result axe cannot decide (`incomplete` ...) is a finding in the same way'; spec.md FR-051 forbids failures and exception entries"
+      - code: "probe tabs7.html (manual slot assignment, tabs with internals role `tab` under Symbol('internals'), aria-controls on each tab, aria-labelledby on each panel, only panel 0 assigned): axe.run → incomplete `color-contrast` (serious) on `#t1`, 'Axe encountered an error'. With debug: `TypeError: Cannot read properties of undefined (reading '_isDisabled') at isDisabled (axe.js:29711) ... at colorContrastMatches (axe.js:33126)`: the matcher maps every element whose `aria-labelledby` names the tab to its virtual node (axe.js:33113-33125), and an unassigned panel is not in axe's flat tree, so the lookup is undefined."
+      - code: "probe tabs6.html (same page, no aria-labelledby on the unassigned panel): no violation or incomplete besides the probe's own link text; probe tabs5.html (all panels assigned): clean. So the crash comes from aria-labelledby on a panel outside the flat tree, exactly R-05's unselected panels."
+    claim: |
+      The round-1 fix for PLAN-CORRECTNESS-1-003 (manual slot assignment, only the selected panel assigned) combined
+      with R-02's ids puts `aria-labelledby="<tab id>"` on panels axe cannot see. axe-core 4.14.0's color-contrast
+      matcher then throws for every tab such a panel names, and reports a serious `incomplete` on each unselected
+      tab of every tabs story in both themes. #10's gate treats serious incomplete results as findings, and FR-051
+      allows no exception entry, so phase 3 cannot pass the `axe` gate as designed; the planned story test checks
+      only `aria-allowed-attr` on the listbox stories (R-01), so nothing in the red commit shows it before green.
+    remedies:
+      - "R-02, R-05, data-model § Child entry and the contract: write `aria-labelledby` only on the assigned (selected) panel and remove it from a panel when it is unassigned (an unassigned panel is not in the tree, so its name is moot); keep `aria-controls` on every paired tab (probe tabs6: clean). Extend phase 3's story test to run #10's full rule set on the tabs stories and assert no violation and no serious or critical `incomplete`; plant: `aria-labelledby` on every panel. Record the axe defect for an upstream report."
+      - "Keep every paired panel assigned and hide unselected ones with `hidden` on the panel host (axe and the tree then see them as hidden), and amend FR-024/US2-1's 'no node' outcome and R-05 accordingly, with the same story test and plant."
+  - id: PLAN-FRESH-2-003
+    severity: 2
+    title: "In the joined segmented choice the focus ring is painted under the raised pressed (or hovered) neighbour and under any later filled neighbour, so the ring is cut on the shared side"
+    evidence:
+      - artifact: "research.md § R-06 Shared lines: 'every segment has the same negative block-start and inline-start margins ... The pressed segment (and a hovered one) is raised (`position: relative; z-index: 1`)'; § R-15 table: 'focus ring (all): outline `focus-width`, `color-focus` at `focus-offset` on main'; § R-15 What the tests read: no ring read for segments or tabs"
+      - artifact: "spec.md US3-9: 'the segments touch with no gap'; FR-007: every interactive child shows the token focus ring; tokens focus-width 3px, focus-offset 2px (packages/tokens/src/source.ts:162-163)"
+      - code: "probe ring.html (flex row, 1px borders, -1px margins, 44px segments, outline 3px at offset 2px): focused segment followed by a filled neighbour: right side x=118..127 reads grey border then blue fill only, no red ring pixel; its free left side shows the 3 red ring pixels. Focused segment after a `position: relative; z-index: 1` filled neighbour: left side blue fill only, right side ring present. ring2.html (block-level siblings): the ring is drawn over the next sibling's fill, so block flow is safe and flex/inline-block rows are not."
+    claim: |
+      The round-1 fix for PLAN-CORRECTNESS-1-010 raises the pressed and hovered joined segments so their
+      `accent-strong` lines win over the neighbour's `control-border` line; that same raise, and flex items' atomic
+      painting, put the neighbour above the focused segment's outline. The common keyboard state (arrow from the
+      pressed segment to its neighbour; selection does not follow focus in the segmented choice, US3-2) shows the ring
+      on three sides only, and on the pressed side the ring that remains is drawn over `accent-low`, a ground R-15's
+      table does not list for the ring. Tabs have the same exposure if their wrapped row puts tabs flush (R-15 names
+      no gap between tabs and the hover fill is `hover-bg`). No planned read would notice: R-15 reads rings only for
+      the listbox clip and the link fragments.
+    remedies:
+      - "R-06/R-15: raise the focused child above everything (`:host(:focus-visible) { position: relative; z-index: 2 }` for segments, and tabs if they touch), or state a tab gap of at least `focus-width + focus-offset`; add `accent-low` and `hover-bg` as grounds of the ring in R-15's table (checked through `color-accent-strong`'s existing pairs); add to R-15 What the tests read and § Pairings: pixels just outside all four edges of a focused joined segment next to the pressed one (and next to a hovered one) are `color-focus`; plant: no z-index on the focused segment."
+  - id: PLAN-FRESH-2-004
+    severity: 2
+    title: "Deferring the copy request past the next frame moves the host's clipboard call out of the user-gesture handler, unexamined for the browser hosts that copy with navigator.clipboard"
+    evidence:
+      - artifact: "research.md § R-07 Request timing: 'waits for the next rendering update to complete (a `requestAnimationFrame` callback followed by a task ...), then dispatches `ocelle-copy-field-request`'; spec.md FR-035 (amended by operator decision PLAN-TESTABILITY-1-011 (a))"
+      - artifact: "spec.md § User Scenarios: hosts include 'Kitty Dashboard, the Ocelle console's server-rendered pages ... which load the browser build'; § Consumer need, Copy field: only Kitty Desktop's webview is said to copy through a desktop bridge; § Engines: 'WebKit (Kitty Desktop on macOS and Linux) is not measured'"
+      - code: "no WebKit is available here (/opt/pw-browsers holds Chromium only), so the WebKit behaviour is not probed; the HTML standard's transient activation lasts an implementation-defined duration, and the Clipboard API lets user agents require it for writes. The plan's spike (R-07) measures only the accessibility-tree timing in Chromium."
+    claim: |
+      The round-1 decision fixes one screen-reader timing problem by dispatching the request a frame plus a task
+      after the click. For a browser host (the console, Kitty Dashboard) the natural listener is
+      `navigator.clipboard.writeText(event.detail.text)`. Whether that still counts as within the user's activation
+      after the deferral is engine-specific: it is likely fine in Chromium (transient activation window) but is not
+      known for WebKit, which the spec names among the consumer engines, where clipboard writes have historically been
+      tied to user-gesture handling. Neither the plan nor the README content says that the request arrives outside the
+      activation's task, so a host could ship a copy button that silently fails in Safari with every test green.
+    remedies:
+      - "R-07 and phase 5: add to the spike a host listener calling `navigator.clipboard.writeText` from the deferred request in Chromium (recording `navigator.userActivation.isActive` at dispatch), and record the WebKit question with kitty-mission-ui and the console owners beside plan decision 1's engine question; the README's timing paragraph (FR-035) states that the request is dispatched after the next frame, outside the click's task, and that hosts writing the clipboard from the page must check their engines' user-activation rules."
+      - "Fork for the operator: dispatch synchronously in the activation (as before decision PLAN-TESTABILITY-1-011 (a)) and meet SPEC-2-12 instead by having the element clear the region and re-apply a host's same-text status after the next rendering update, so the host's clipboard call stays inside the gesture."
+  - id: PLAN-FRESH-2-005
+    severity: 2
+    title: "A host aria-label forwarded to the link's anchor that does not contain the link text is a serious axe violation (label-content-name-mismatch, WCAG 2.5.3); the plan and README guidance do not constrain it"
+    evidence:
+      - artifact: "research.md § R-08 Host exposure: 'Host `aria-label` is forwarded to the anchor'; spec.md US5-8: 'Given a host `aria-label` on the link, Then it is the link's name'; plan phase 6: 'stories with the hover pointer state; README with the `detail.href` warning'"
+      - code: "probe tabs6.html/tabs7.html: `<p>Text <ocelle-link aria-label=\"Docs\">here</ocelle-link></p>` with the label forwarded to the shadow `<a href>`: axe 4.14.0 reports `label-content-name-mismatch`, impact serious, target `ocelle-link,a`. The rule is enabled by default (axe.js:37469-37472, tags wcag21a, wcag253, no `experimental` tag), so it is in #10's rule set (006 FR-016: every default rule)."
+    claim: |
+      The round-1 fix for PLAN-A11Y-SECURITY-1-006 keeps forwarding the host `aria-label` and adds only the
+      one-named-node check. In running text the link's visible text is its label; an `aria-label` that does not start
+      with or contain it fails WCAG 2.5.3 (Label in Name, level A, inside constitution III's AA bar) and is a serious
+      axe finding. US5-8's story or any test fixture that names the link with a different string (the obvious way to
+      prove the label wins) would fail #10's gate, and the README tells hosts nothing about it.
+    remedies:
+      - "R-08 and the README content for the link: a host `aria-label` must contain the link's visible text (WCAG 2.5.3); US5-8's fixture and any host-label story use a label that begins with the visible text (e.g. text 'the mission log', label 'the mission log, opens in the viewer'), and phase 6's story test asserts no `label-content-name-mismatch` finding; plant: a label without the visible text in the story."
