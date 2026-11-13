@@ -114,7 +114,8 @@ stories pass the visual and axe gates.
     narrower than the dialog's preferred inline size, **Then** it is no wider than `--ocelle-dialog-max-inline`;
     **Given** a body that overflows with nothing focusable in it, **Then** Tab reaches the body and the arrow and Page
     keys scroll it; **Given** a 320 × 256 viewport (400 % zoom), **Then** the body keeps its minimum block size and its
-    whole content is reachable by scrolling (WCAG 1.4.10).
+    whole content is reachable by scrolling (WCAG 1.4.10); **Given** a body of one short sentence, **Then** the body
+    is as tall as its minimum block size (132 px by default), with the text at its start (operator decision).
 11. **Given** prose with a table in the dialog body, **When** it renders, **Then** the body has a definite inline size,
     so the prose fills it rather than shrinking to fit (base styles FR-017).
 12. **Given** `prefers-reduced-motion: reduce`, **When** the dialog opens or closes, **Then** it appears and disappears
@@ -253,7 +254,13 @@ pointer and keyboard. It is complete when the scenarios below pass in process an
   Escape that cancels an IME composition, and an Escape that clears a non-empty search field do not request the
   overlay's close (FR-010).
 - **`open` toggled quickly.** Setting `open` true and false in one task, or twice while an exit animation runs,
-  leaves the element in the last state set, with at most one close event per close.
+  leaves the element in the last state set, with at most one close event per close. A host that sets `open` again in
+  its close listener, or right after moving the element, gets an open overlay that stays open.
+- **Input while closing.** A held Escape, a key repeat on the close control, a second click on it or a double click on
+  the drawer's backdrop during the exit request nothing more: one request, one close event (FR-013, FR-014).
+- **Focus off the stops.** A click on the overlay's text focuses the dialog itself, and a host may remove a focused
+  element inside it: Tab still moves among the overlay's stops and Escape still asks for the close, so a veto holds
+  (FR-008, FR-013).
 - **Form in a dialog.** A `<form method="dialog">` in slotted content does nothing to the element (the platform's
   form submission does not reach a `<dialog>` in a shadow root): the element stays open, `open` stays true and no
   event is dispatched. The documentation tells hosts to set `open` to false from their submit handler (FR-016).
@@ -267,7 +274,8 @@ pointer and keyboard. It is complete when the scenarios below pass in process an
 - **Tooltip trigger opens an overlay.** A bubble shown by hover on a trigger that opens a dialog or drawer hides when
   the overlay opens and does not take the overlay's first Escape (FR-010, FR-034).
 - **Host re-renders the trigger's `aria-describedby`.** With `describes`, a host template that rewrites the trigger's
-  `aria-describedby`, or replaces the trigger, does not lose the description (FR-036).
+  `aria-describedby`, removes the tooltip's description node, or replaces the trigger, does not lose the description
+  (FR-036).
 - **Engine without the Popover API.** Below the floor no bubble is painted and nothing throws; this is not a tooltip
   path (Out of Scope), only the absence of a broken one.
 - **Theme change while open.** Switching `data-theme` while an overlay or bubble is shown repaints it in the new theme.
@@ -301,7 +309,11 @@ pointer and keyboard. It is complete when the scenarios below pass in process an
   element of the body content in tree order; else to the close control.
 - **FR-008**: While open, Tab and Shift+Tab MUST move focus only among the overlay's focusable elements, wrapping at
   the ends, and the content outside MUST be unreachable by keyboard, pointer and the accessibility tree. Elements
-  that are not rendered or not visible are not stops, and a radio group is one stop. Only the topmost overlay wraps.
+  that are not rendered or not visible are not stops, and a radio group is one stop. An overflowing scroll container
+  in the content with nothing focusable inside it (a wide prose table) is a stop where the engine makes it focusable.
+  From focus inside the overlay on no stop (the dialog itself after a click on its text, an element focused by
+  script) Tab goes to the next stop and Shift+Tab to the previous one; from the document body (a focused element the
+  host removed) to the first and the last. Only the topmost overlay wraps.
 - **FR-009**: On every close, focus MUST return to the element (the deepest one, inside shadow roots) that had focus
   when the overlay opened, if it is still connected and focusable, provided focus is then still inside the closing
   overlay or on the body; focus another overlay has taken MUST NOT be moved. An opener inside an overlay that is
@@ -317,12 +329,15 @@ pointer and keyboard. It is complete when the scenarios below pass in process an
   backdrop is not a backdrop click.
 - **FR-013**: The close request MUST be a `CustomEvent` named `ocelle-<element>-close-request`, `bubbles`, `composed`
   and `cancelable`, with `detail: { reason: "escape" | "close-button" | "backdrop" }`; when not cancelled, the element
-  closes; when cancelled, it stays open and focus stays inside, on every repetition of a request (Edge Cases,
-  repeated Escape, including its stated limit for slotted content that stops Escape's propagation).
+  closes; when cancelled, it stays open and focus stays inside, on every repetition of a request, wherever focus is
+  inside the overlay or on the document body (Edge Cases, repeated Escape, including its stated limit for slotted
+  content that stops Escape's propagation). While the overlay is closing, no request is dispatched: Escape, the close
+  control and the backdrop do nothing until the host sets `open` again.
 - **FR-014**: Every close MUST dispatch exactly one `ocelle-<element>-close` (`bubbles`, `composed`, not cancelable)
   after the element is closed and `open` is false, with `detail: { reason }` where reason is the request's reason, or
   `"host"` when the host set `open` to false or the platform closed it (FR-016). Removal from the document is the one
-  close without an event (FR-022).
+  close without an event (FR-022). Input during the exit and a host that reopens the overlay in its close listener or
+  right after a move MUST NOT cause a second close event or close the reopened overlay.
 - **FR-015**: Opening MUST NOT dispatch an event; the host opened it.
 - **FR-016**: A close the platform performs other than through FR-010 to FR-012 (`close()` called on the inner dialog,
   the platform's repeated-Escape close) MUST leave `open`, focus and the close event consistent with a close of reason
@@ -332,8 +347,10 @@ pointer and keyboard. It is complete when the scenarios below pass in process an
   panel), and parts for the panel, heading, body, footer and close control; all in the manifest.
 - **FR-018**: The body MUST scroll when the content exceeds the space left by the heading and footer, which stay
   visible; while it overflows the body is itself a Tab stop, so it is reachable by keyboard scrolling with or without
-  focusable content. The body keeps a token-derived minimum block size; when the viewport is too short for the
-  heading, footer and that minimum, the panel scrolls as a whole (WCAG 1.4.10).
+  focusable content. The body keeps a token-derived minimum block size (three times `--ocelle-target-min`, 132 px by
+  default) at every viewport size, so a one-line body is that tall, with space below its text (operator decision;
+  the documentation says so); when the viewport is too short for the heading, footer and that minimum, the panel
+  scrolls as a whole (WCAG 1.4.10).
 - **FR-019**: The panel's content box MUST have a definite inline size (base styles FR-017).
 - **FR-020**: Entry and exit MUST animate only with `--ocelle-motion-base` and `--ocelle-easing-standard` and MUST NOT
   animate under `prefers-reduced-motion: reduce`, whatever value a host sets on those tokens.
@@ -408,9 +425,9 @@ pointer and keyboard. It is complete when the scenarios below pass in process an
   element whose inner control takes focus cannot be described from outside its shadow root, and the documentation
   says so. The element never compares the text with the trigger's name. The description node (light DOM, text set as
   text, never parsed) has role `tooltip`; the painted bubble is hidden from the tree; no ID reference crosses a shadow
-  root (constitution III). The description survives a host re-render of the trigger's `aria-describedby` and a
-  replaced trigger (operator decision). The documentation tells hosts to set `describes` when the text adds to the
-  name.
+  root (constitution III). The description survives a host re-render of the trigger's `aria-describedby`, a host
+  re-render that removes the description node, and a replaced trigger (operator decision). The documentation tells
+  hosts to set `describes` when the text adds to the name.
 - **FR-037**: The tooltip MUST NOT name its trigger or carry essential information: the documentation states that the
   trigger carries its own accessible name and that the bubble only repeats or supplements what is available
   otherwise; touch input shows no bubble, except on a text-field trigger, which shows it on any focus (FR-029).
@@ -466,7 +483,8 @@ pointer and keyboard. It is complete when the scenarios below pass in process an
   the strict-CSP fixture.
 - **SC-002**: From an open overlay with n focus stops, n + 2 Tab presses give exactly the expected wrap-around
   sequence of stops, with no stop on the document body or outside the overlay, and the same for Shift+Tab, started
-  from the first stop, the last stop and the close control.
+  from the first stop, the last stop, the close control, the dialog itself (after a click on its text) and the
+  document body.
 - **SC-003**: Every event the three elements emit is asserted with its full payload and cancelability: 2 events per
   overlay, 0 for the tooltip, and the manifest lists exactly those.
 - **SC-004**: axe reports 0 serious or critical findings on every story of the three elements in light and dark, and

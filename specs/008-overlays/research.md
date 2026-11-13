@@ -1,6 +1,7 @@
 # Research: Overlays — Dialog, Drawer and Tooltip
 
-**Feature**: [spec.md](spec.md) | **Plan**: [plan.md](plan.md) | **Date**: 2026-11-12 (squad round 1 fixes 2026-11-13)
+**Feature**: [spec.md](spec.md) | **Plan**: [plan.md](plan.md) | **Date**: 2026-11-12
+(squad rounds 1 and 2 fixes 2026-11-13)
 
 Measurements were taken in this container with Playwright 1.64.1's Chromium (153.0.8010.12), using the probes noted
 under each decision. WebKit is not measured here (elements README § Engines). Facts about the repository come from
@@ -22,11 +23,14 @@ unmerged). Results marked "squad probe" were measured by the plan squad's round 
   today uses `@fires`, `@slot`, `@csspart` or `@cssprop`, and 005's entries have empty lists.
   - **Decision**: each concrete class (`ocelle-dialog.ts`, `ocelle-drawer.ts`) carries the JSDoc tags for its whole
     surface: `@slot` (default, `footer`), `@csspart` (`panel`, `heading`, `body`, `footer`, `close-button`),
-    `@cssprop --ocelle-dialog-inline-size` (dialog only), and `@fires ocelle-dialog-close-request
-    {CustomEvent<{ reason: "escape" | "close-button" }>}` / `@fires ocelle-dialog-close {CustomEvent<{ reason: … |
-    "host" }>}` (the drawer's pair with `"backdrop"`). The base builds event names from a subclass prefix, which the
-    analyzer cannot read, so the tags are the events' only source. `ocelle-tooltip.ts` carries `@slot` (default) and
-    `@csspart bubble`, and states no `@fires`, so its events list is empty (FR-045).
+    `@cssprop --ocelle-dialog-inline-size` (dialog only), and the two `@fires` tags in the analyzer's documented
+    form, type first, then name, then description (round 1 verify 2, PLAN-CORRECTNESS-1-006; squad round 2):
+    `@fires {CustomEvent<{ reason: "escape" | "close-button" }>} ocelle-dialog-close-request - …` and
+    `@fires {CustomEvent<{ reason: "escape" | "close-button" | "host" }>} ocelle-dialog-close - …`. The drawer's
+    pair is written the same way, with `ocelle-drawer-` names and `"backdrop"` in both unions. The base builds event
+    names from a subclass prefix, which the analyzer cannot read, so the tags are the events' only source.
+    `ocelle-tooltip.ts` carries `@slot` (default) and `@csspart bubble`, and states no `@fires`, so its events list
+    is empty (FR-045).
   - Phase 2's first task measures whether the analyzer lists the base's inherited properties on each subclass with
     their descriptions while the base is outside the filter. If it does, nothing else changes. If it does not, the
     filter must change: `scripts/manifest.ts` and `test/node/manifest.test.ts` are then changed files, the pinned test
@@ -59,9 +63,26 @@ unmerged). Results marked "squad probe" were measured by the plan squad's round 
   - the target, followed to the deep active element, is a text field whose Escape has a native action: an `<input>`
     of type `search` with a non-empty value.
   Otherwise it calls `preventDefault()` and runs the request path (FR-010, FR-013).
+- **Focus on the body inside an open overlay** (squad round 2, PLAN-FRESH-2-001): two ways remain for focus to reach
+  the document body while an overlay is open, after R-04 handles every Tab: a focused slotted element that the host
+  removes (or hides, or disables), and a host `blur()`. From the body, Escape's `keydown` targets the body and never
+  passes the `<dialog>`, so the keydown path above would be skipped and the platform's repeated-Escape rule would
+  close a vetoed overlay. So, while an overlay is the top of the stack, it also listens to `keydown` on `document`
+  (bubble phase) and handles an event whose deep active element is the document body as if it had reached its
+  `<dialog>`: Escape goes through the same rules and request path, and Tab goes through R-04 (to the first stop,
+  Shift+Tab to the last). The listener is added when the overlay becomes the top and removed when it stops being it.
+  An event from inside the overlay is never handled twice: the `document` path acts only when the deep active element
+  is the body. No case is left to the stated limit below except slotted content that stops Escape's propagation.
+- **While `closing`** (squad round 2, PLAN-FRESH-2-003): `open` is already false but the overlay is still modal and the
+  top of the stack until its `<dialog>` closes (R-06). In that state an Escape `keydown` that the overlay acts on (it is
+  the top of the stack) is prevented (`preventDefault()`, so the platform fires no `cancel`) and requests nothing,
+  whatever the rules above say; a cancelable `cancel` is prevented and requests nothing; a non-cancelable `cancel` and
+  the native close it causes end the exit early (R-03). Close-control and backdrop clicks are ignored (R-07, R-06). Only a host `open = true` leaves
+  `closing` (R-06). So a held Escape, Enter held on the close control or a double click on the backdrop gives exactly
+  one request and one `…-close` (FR-014).
 - **`cancel`**: the overlay listens to `cancel` on its `<dialog>`.
   - A **cancelable** `cancel` (a press the keydown path did not handle, for example because a slotted control stopped
-    its propagation) is prevented and runs the request path once, with reason `escape`.
+    its propagation) is prevented and, in `shown` only, runs the request path once, with reason `escape`.
   - A **non-cancelable** `cancel` cannot be vetoed (`preventDefault()` has no effect). It is a platform close: the
     overlay lets it happen and handles the resulting `close` as R-03 does, with reason `host`.
   - So the veto holds on every repetition of an Escape that reaches the overlay's keydown (US1-4). When slotted
@@ -78,9 +99,20 @@ unmerged). Results marked "squad probe" were measured by the plan squad's round 
   nothing when submitted: no `close` event, the dialog stays open, no navigation. The form-submission algorithm takes
   the form's nearest ancestor `<dialog>` in the DOM tree, and the inner dialog is in the shadow tree.
 - **Decision**: the platform closes that remain are `close()` called on the inner `<dialog>` through the open shadow
-  root, and a non-cancelable `cancel` (R-02). A `close` event on the inner `<dialog>` that the overlay did not cause
-  sets `open` to false, returns focus (R-05) and dispatches `…-close` with `detail.reason === "host"`. Nothing is
-  prevented.
+  root, and a non-cancelable `cancel` (R-02). A platform close sets `open` to false, returns focus (R-05) and
+  dispatches `…-close` with `detail.reason === "host"`. Nothing is prevented.
+- **Measured** (squad round 2 probe, Chromium 153): `close()` queues the `close` event as a task. After `close()`, one
+  microtask (a Lit update) and `showModal()`, or after removing a modal host, `close()`, re-inserting it and
+  `showModal()` in one task, the `close` event arrives later with the `<dialog>` open and `:modal`.
+- **Which `close` event is a platform close** (squad round 2, PLAN-FRESH-2-004): the overlay counts its own
+  `close()` calls on the inner `<dialog>` (R-06 at the end of the exit, R-05a on disconnection). Each native `close`
+  event first consumes one pending own call, if any, and is then ignored. An event that consumes none is a platform
+  close only when the overlay is in `shown` (or `opening`, whose entry animation is then cancelled) and the inner
+  `<dialog>` is not open at the time of the event; otherwise it is ignored. In `closing`, such an event (the
+  platform closed the `<dialog>` during the exit) ends the exit early: the animation is cancelled, focus returns
+  (R-05) and the pending `…-close` is dispatched once, with the closing reason. So a stale event that arrives after a
+  host reopened the overlay in its `…-close` listener, or after a re-insert and `open = true` (R-05a), never closes
+  the reopened overlay and dispatches nothing.
 - **Forms**: a slotted `method="dialog"` form does nothing to the overlay: `open` stays true, no event, focus stays.
   The README tells hosts to close the overlay with `open = false` from their own submit handler. The test matrix
   asserts both the inner `close()` path and the inert form.
@@ -93,11 +125,21 @@ unmerged). Results marked "squad probe" were measured by the plan squad's round 
   included); else the first focusable element of the default slot's flattened content in tree order; else the close
   control. Footer content is not an initial focus target (FR-007 names the body only).
 - **Tab cycle**: the tab order is the close control (in the header), then the body's content (or the body itself, see
-  below), then the footer's. `keydown` Tab on the last stop (or Shift+Tab on the first) moves focus to the other end
-  and prevents the default, only while the overlay is the top of the stack (R-02). The rest of the document is inert
-  through `showModal()`; the explicit wrap keeps focus out of the browser chrome and off the document body, so the
-  cycle is the same in every engine. The squad probe showed Chromium without the wrap passes through `body` once per
-  cycle, so the tests assert the exact sequence (SC-002).
+  below), then the footer's. While the overlay is the top of the stack (R-02), it handles **every** Tab and Shift+Tab
+  `keydown` that reaches its `<dialog>` and is not already `defaultPrevented`: it builds the stop list (the walk
+  below), moves focus to the next stop (Shift+Tab: the previous one), wrapping at the ends, and calls
+  `preventDefault()`. The next stop is decided from the deep active element's position in flat-tree order, not from
+  equality with a stop (squad round 2, PLAN-FRESH-2-001):
+  - focus on a stop: the stop after it (before it);
+  - focus inside the overlay on no stop (the `<dialog>` itself after a click on prose, padding or the heading; the
+    panel; a slotted `tabindex="-1"` element focused by script; a focused element inside a scroller): the first stop
+    after it in flat-tree order (the last stop before it), wrapping;
+  - focus on the document body (a removed focused element, R-02): the first stop (the last).
+  The rest of the document is inert through `showModal()`; the explicit handling keeps focus out of the browser chrome
+  and off the document body, so the sequence is the same in every engine, whatever the engine's own sequential
+  navigation would do from a non-stop. The squad probes showed Chromium without the wrap passes through `body` once
+  per cycle, and that Shift+Tab from a focused `<dialog>` goes to `body`, so the tests assert the exact sequence
+  (SC-002) and start it from non-stops too.
 - **Body as a stop** (FR-018): while the `body` part overflows (`scrollHeight > clientHeight`, checked on a
   `ResizeObserver` of the body and its slot content and on `slotchange`), it carries `tabindex="0"`; otherwise the
   attribute is absent. The walk lists it as a stop in its place before the body's own content. So a prose-only long
@@ -108,10 +150,22 @@ unmerged). Results marked "squad probe" were measured by the plan squad's round 
   (`getClientRects().length === 0`, which covers `display: none` and closed `<details>` content) and elements whose
   computed `visibility` is not `visible`. A radio group (same `name`, same form owner or tree) is one stop: its checked
   radio, or its first when none is checked.
-- **Focus checked**: after each `focus()` call (initial focus and the wrap) the overlay reads the deep active element.
-  If focus did not land on the candidate, it tries the next candidate in the same direction, ending with the close
-  control. It is mutation-tested through the overlay scenarios, with a scenario per exclusion, the radio group, a
-  CSS-hidden first element and the overflowing body.
+- **Scrollers as stops** (squad round 2, PLAN-FRESH-2-002): the walk also lists, in its tree position, every rendered
+  element of the overlay's content without a `tabindex` whose computed `overflow-x` or `overflow-y` is `auto` or
+  `scroll`, that overflows on that axis (`scrollWidth > clientWidth` or `scrollHeight > clientHeight`) and that has no
+  tabbable descendant, as Chromium's keyboard-focusable scrollers do (Chromium 130 and later). Measured (squad round 2
+  probe, Chromium 153): without the explicit handling, Tab from the close control over a slotted button and then an
+  overflowing `<div>` gives `b1 scr BODY`. This covers a wide prose table (`[data-ocelle-prose] table` is
+  `display: block; overflow-x: auto`, `packages/styles/src/base.css:190-193`, whose Tab stop 003 research relies on)
+  and a `<pre>`. Where the engine does not focus a scroller without a `tabindex` (Chromium 120 to 129, WebKit), the
+  "Focus checked" rule below skips it, so the cycle there is the remaining stops with no stop on the body; such a
+  table is then reachable by keyboard only as the engine allows it outside an overlay. The README states this. The
+  overlay never writes a `tabindex` on slotted content (it belongs to the host); the body part's own `tabindex`
+  stays as below.
+- **Focus checked**: after each `focus()` call (initial focus and every Tab move) the overlay reads the deep active
+  element. If focus did not land on the candidate, it tries the next candidate in the same direction, ending with the
+  close control. It is mutation-tested through the overlay scenarios, with a scenario per exclusion, the radio group, a
+  CSS-hidden first element, the overflowing body, a slotted scroller and each non-stop start.
 
 ## R-05 Focus return (FR-009, SPEC-1-12)
 
@@ -138,9 +192,10 @@ unmerged). Results marked "squad probe" were measured by the plan squad's round 
 - **Measured** (squad probe): a shadow `<dialog>` shown modally whose host is removed stays `open` but not `:modal`;
   re-inserted it renders in flow (`display: block`) and `showModal()` throws `InvalidStateError`.
 - **Decision**: in `disconnectedCallback` an open or closing overlay cancels any running animation, calls `close()` on
-  its inner `<dialog>`, leaves the overlay stack, drops its opener and sets `open` to false, with no event and no focus
-  move. A close in progress ends the same way, without its `…-close`. Re-inserted, the element is closed; the host
-  sets `open = true` to show it again (initial focus and a fresh opener as for any open).
+  its inner `<dialog>` (counted as its own, so the queued `close` event that arrives after a re-insert and
+  `open = true` is ignored, R-03), leaves the overlay stack, drops its opener and sets `open` to false, with no event
+  and no focus move. A close in progress ends the same way, without its `…-close`. Re-inserted, the element is
+  closed; the host sets `open = true` to show it again (initial focus and a fresh opener as for any open).
 - The README states it: a host that moves an open overlay in the DOM (a morph, a keyed reorder, a portal) reopens it
   afterwards. The spec's edge case "Moved while open" and FR-022 say the same.
 
@@ -153,6 +208,12 @@ unmerged). Results marked "squad probe" were measured by the plan squad's round 
   - Under reduced motion the duration is 0 and all of it happens in the same task after the next update.
   - Setting `open` again during an exit cancels the animation: the dialog stays shown, and no close event is
     dispatched for the cancelled close.
+  - During the exit (`closing`) user input asks for nothing (squad round 2, PLAN-FRESH-2-003): Escape and a
+    cancelable `cancel` are prevented and request nothing (R-02), close-control activations (click, Enter, Space,
+    and their key repeats) and backdrop clicks (R-07) are ignored. Only a host `open = true` leaves `closing`. One
+    close therefore gives exactly one `…-close` (FR-014).
+  - The `close()` at the end of the exit is counted as the overlay's own, so its queued `close` event, which may
+    arrive after a host reopened the overlay in the `…-close` listener, is consumed and ignored (R-03).
 - **Mechanism**: the Web Animations API (`element.animate`), not CSS transitions. Closing a top-layer `<dialog>` with
   an exit transition needs `transition-behavior: allow-discrete` / `@starting-style` (WebKit 17.4 / 17.5) or `overlay`
   (no WebKit). WAAPI is in WebKit since 13.1 and writes no `style` attribute (FR-047).
@@ -173,7 +234,8 @@ unmerged). Results marked "squad probe" were measured by the plan squad's round 
 - **Decision**: the `<dialog>` element is the panel, so a click on `::backdrop` targets the dialog with coordinates
   outside its border box. The drawer records `pointerdown` (primary button, `isPrimary`). A `click` whose `pointerdown`
   and `click` both lie outside the panel's border box, and whose target is the `<dialog>` itself, is a backdrop click.
-  A press that starts inside and ends outside, or starts outside and ends inside, is not one.
+  A press that starts inside and ends outside, or starts outside and ends inside, is not one. A backdrop click while
+  the drawer is `closing` is ignored (R-02, R-06), so a double click requests once.
 - **Squad probe**: a click 5 px inside a padded modal dialog and a click on the backdrop both have `target` = the
   dialog, so only the coordinate check separates them; the matrix clicks the panel's padding.
 - The dialog has no backdrop handler.
@@ -349,6 +411,14 @@ unmerged). Results marked "squad probe" were measured by the plan squad's round 
   and not acted on again. On `slotchange` to a new trigger the id moves: it is removed from the old trigger and added
   to the new one, and the observer follows. The observer is disconnected when `describes` is unset, `text` becomes
   empty or the tooltip disconnects.
+- **The span itself is kept too** (squad round 2, PLAN-FRESH-2-005): the span is a child of the host in the host's own
+  light DOM, which a host template owns, so a morphing or keyed re-render can remove it. Measured (squad round 2
+  probe): removing a light-DOM child assigned to an unrendered slot name fires no `slotchange`. So while `describes`
+  holds and `text` is not empty, the tooltip also notices the span's removal (the mechanism is the implementer's
+  choice: a `MutationObserver` on the host's `childList`, or a `<slot name="description">` inside a never-painted
+  container of the shadow root, whose `slotchange` then fires) and re-creates it within one microtask, with the same
+  id and text, written as above. The id stays in the trigger's `aria-describedby` throughout. Its own re-insert is
+  recognised and not acted on again.
 - **Spec wording**: FR-036 now says "the description node has role `tooltip`; the painted bubble is hidden from the
   tree" (squad round 1).
 - **Custom-element triggers** (SPEC-2-05): `describes` is supported only when the trigger itself is the focusable
@@ -391,17 +461,27 @@ unmerged). Results marked "squad probe" were measured by the plan squad's round 
     iframe's offset in the runner page.
   - `axTree` returns `description`, `modal` and `level` as well as role and name.
   - `vitest.config.ts`: the `elements` project sets `browser.viewport` to 1280 × 800, as on the fixture
-    (`serve.ts:127`) and in #10's capture, and enables touch for the Chromium instance (`hasTouch`), so the shared
-    geometry scenarios run at one size and `touchTap` works.
+    (`serve.ts:127`) and in #10's capture, so the shared geometry scenarios run at one size. It does **not** enable
+    touch (squad round 2, PLAN-FRESH-2-007): measured in Chromium 153 at 1280 × 800, a default context matches
+    `(hover: hover)` and `(pointer: fine)` with `maxTouchPoints` 0, and a `hasTouch` context matches neither, with
+    `maxTouchPoints` 1. Every element test of 005 and the siblings keeps running as a mouse device.
+  - **Touch only where the touch rows run**: a new project `elements-touch`, the same browser-mode Chromium at
+    1280 × 800 with `hasTouch` in its context options, includes only `packages/elements/test/**/*.touch.test.ts`
+    (the touch rows of checks § Tooltip), which the `elements` project excludes. `vitest.mutation.elements.config.ts`
+    takes both projects, so the touch rows still kill mutants. `touchTap` is used only there.
 - **Strict-CSP fixture**: new pages `overlays.html` and `tooltip.html`, with real input through `page.keyboard`,
-  `page.mouse` and `page.touchscreen`. `serve.ts`'s `visit()` creates its context with `hasTouch: true`.
+  `page.mouse` and `page.touchscreen`. `serve.ts`'s `visit()` keeps its default context (no touch) and gains an option
+  `{ touch: true }` that creates a separate context with `hasTouch: true`, used only by the touch rows'
+  `test/browser/*.touch.test.ts` files.
 - **Self-tests** (Phase 1, both harnesses, stand-in elements, after `test/commands.test.ts`'s precedent): a CSSOM
   `style` write inside a nested open shadow root is counted, also when removed again; a `<style>` added to a shadow
   root is counted; `topLayer()` reports a `:popover-open` element and a `:modal` dialog in order; `focusPath()`
   reports an inner shadow button; `record()` captures the state at dispatch; `animations()` reads a running
   animation's timing and keyframes; `pointer()` stops at a given point (an element there reports `:hover`);
-  `touchTap()` gives a `pointerType === "touch"` pointer event; `focusVisible()` reads true after Tab and false
-  after a click on a button; the viewport is 1280 × 800. Each self-test is red against the driver as it is.
+  `touchTap()` gives a `pointerType === "touch"` pointer event (in the touch context); `focusVisible()` reads true
+  after Tab and false after a click on a button; the viewport is 1280 × 800; the default context matches
+  `(hover: hover)` and `(pointer: fine)` and has `maxTouchPoints` 0, and the touch context (`elements-touch`,
+  `visit(…, { touch: true })`) has `maxTouchPoints` above 0. Each self-test is red against the driver as it is.
 
 ## R-15 Timing tests and mutation (FR-046; mission 007)
 
@@ -478,10 +558,15 @@ From `specs/006-storybook-workbench` on its branch (design final, unmerged):
   `gutter` 1rem, `target-min` 2.75rem. At 320 × 256 CSS px (1280 × 1024 at 400 % zoom) the panel is at most 224 px,
   and a 44 px header with a wrapped heading plus a footer of two wrapped 44 px buttons leaves the body at or near 0.
 - **Decision**: the panel is a block-axis column (header, body, footer) with `max-block-size:
-  var(--ocelle-dialog-max-block)`. The body has `overflow-y: auto` and `min-block-size: calc(3 *
-  var(--ocelle-target-min))`. When the viewport is too short for header, footer and that minimum, the panel's own
-  `overflow-y: auto` takes over and the panel scrolls as a whole, so the body's content stays reachable. The body is a
-  Tab stop while it overflows (R-04).
+  var(--ocelle-dialog-max-block)`. The body has `box-sizing: border-box`, `overflow-y: auto` and `min-block-size:
+  calc(3 * var(--ocelle-target-min))`. When the viewport is too short for header, footer and that minimum, the panel's
+  own `overflow-y: auto` takes over and the panel scrolls as a whole, so the body's content stays reachable. The body
+  is a Tab stop while it overflows (R-04).
+- **The minimum is unconditional** (operator decision PLAN-FRESH-2-006 (a)): it applies at every viewport size, so
+  every body is at least 8.25rem (132 px at a 16 px root) tall. A one-line confirmation ("Delete this project?") gets
+  a 132 px body with empty space below its text. This is the stated look, not a defect: spec FR-018 and the README
+  say so, a geometry row asserts it and a dialog story shows it in the baselines. A conditional minimum was
+  considered and not taken (it needs a measured attribute, and `min()` is raw under `token-only`, R-09).
 - The drawer has the same column, at the full block size of the viewport.
 
 ## Spec-check notes settled here

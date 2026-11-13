@@ -40,7 +40,14 @@ an event's `detail`, is MAJOR.
   - a slotted widget that handles Escape calls `preventDefault()`, not `stopPropagation()`; if it stops propagation,
     a vetoed overlay can be closed by the platform on a repeated Escape, with reason `host`;
   - removing an open overlay from the document (a move, a morph, a portal) closes it with no event and sets `open` to
-    false; the host reopens it after re-inserting it.
+    false; the host reopens it after re-inserting it (also in the same task; a reopen there, or in the `…-close`
+    listener, stays open, R-03);
+  - the body is at least three times `--ocelle-target-min` tall (132 px by default) at every size, so a one-line
+    confirmation has space below its text (operator decision, R-18);
+  - an overflowing scroller in slotted content with nothing focusable inside (a wide prose table) is a Tab stop where
+    the engine focuses scrollers (Chromium 130 and later); elsewhere it is skipped (R-04);
+  - during the exit, Escape, the close control and the backdrop request nothing; only `open = true` stops a close
+    (R-02, R-06).
 - Manifest: the events, slots, parts and CSS property are declared with JSDoc on the concrete class (R-01).
 
 ### Host pattern
@@ -88,7 +95,8 @@ As `ocelle-dialog`, with the `ocelle-drawer-` event prefix, `"backdrop"` as an e
 - With `describes`, the tooltip adds one hidden light-DOM `span[slot="description"][role="tooltip"]` to its host (text
   set as text, never parsed; id `ocelle-tooltip-desc-<n>`, unique in the trigger's root) and its id to the trigger's
   `aria-describedby`, keeping the host's ids. While `describes` holds it watches that attribute and re-adds its id if a
-  host re-render drops it, and moves the id when the trigger is replaced (operator decision, R-13). This is supported
+  host re-render drops it, re-creates the span with the same id if a host re-render removes it, and moves the id when
+  the trigger is replaced (operator decision, R-13). This is supported
   only when the trigger is itself the focusable element.
 
 ### #7 and #12 (consumers inside their own shadow roots)

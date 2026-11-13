@@ -6,8 +6,8 @@ No new gate. The existing gates cover this feature as follows.
 |---|---|
 | `typecheck`, `lint`, `test-lint` | As for every element. |
 | `style-lint` (`token-only`) | The three elements' `css` templates use only tokens, `var()`/`calc()`, `%`, keywords and system colours (forced colours). No new allowance is planned. |
-| `unit-tests` | `elements` (in process, mutated) and `elements-browser` (strict-CSP fixture, built browser build) run the shared scenarios. `elements-node` runs the manifest and README tests, `elements-build` the build and pack tests. `tokens` and `tokens-browser` cover the three new tokens. |
-| `mutation` | Changed lines in `packages/elements/src/**` (elements-only config) and `packages/tokens/src/source.ts` (default config). Timeout and CompileError mutants are report lines (007). R-15 aims for zero Timeouts. |
+| `unit-tests` | `elements` (in process, mutated) and `elements-browser` (strict-CSP fixture, built browser build) run the shared scenarios; `elements-touch` (in process with `hasTouch`, mutated) runs only the touch rows, and the fixture runs them in a separate touch context (R-14). `elements-node` runs the manifest and README tests, `elements-build` the build and pack tests. `tokens` and `tokens-browser` cover the three new tokens. |
+| `mutation` | Changed lines in `packages/elements/src/**` (elements-only config, which runs the `elements` and `elements-touch` projects) and `packages/tokens/src/source.ts` (default config). Timeout and CompileError mutants are report lines (007). R-15 aims for zero Timeouts. |
 | `csp` | Built output: no inline style, `style` attribute or string timers. FR-047's run-time "no `style` attribute" is proven by the scenarios (`styleAttributes()`), since the `csp` gate cannot see CSSOM writes. |
 | `prefix` | No `sk-` names, no monospace. |
 | `contrast` | No new colour pairs: the bubble uses `color-chrome-ink` on `color-chrome`, already checked. |
@@ -30,7 +30,10 @@ Each new driver method and browser command, in both harnesses, with stand-in ele
 as it is (R-14): style-attribute count (nested shadow root, CSSOM write, written then removed); `<style>` count in a
 shadow root; `topLayer()` order; `focusPath()` into a shadow root; `focusVisible()` after Tab and after a click;
 `record()` state at dispatch; `animations()` timing and keyframes; `pointer()` stopping at a point; `touchTap()`
-pointer type; `viewport()` at 1280 × 800; `emulateReducedMotion` set and reset; `axTree` description, modal, level.
+pointer type (touch context); `viewport()` at 1280 × 800; `emulateReducedMotion` set and reset; `axTree` description,
+modal, level. Device: the default context (`elements`, `visit()`) matches `(hover: hover)` and `(pointer: fine)` with
+`maxTouchPoints` 0; the touch context (`elements-touch`, `visit(…, { touch: true })`) has `maxTouchPoints` above 0
+(R-14).
 
 ### Dialog
 
@@ -40,12 +43,26 @@ pointer type; `viewport()` at 1280 × 800; `emulateReducedMotion` set and reset;
 - **Tab cycle** (SC-002): for n stops, n + 2 Tab presses give `focusPath()` equal to the expected wrap-around list,
   with no `body` entry; the same for Shift+Tab; started from the first stop, the last stop and the close control. A
   radio group is one stop; a CSS-hidden element is skipped.
+  - **From a non-stop** (R-04): started, in both directions, from the focused `<dialog>` (after a pointer click on
+    body prose, `focusPath()` reads the dialog) and from a slotted `tabindex="-1"` element focused by script: the
+    first press goes to the next (previous) stop in flat-tree order, then the exact wrap-around list, no `body`.
+  - **From the body** (R-02, R-04): a focused slotted button that the host removes (focus on the body): Tab gives the
+    first stop, Shift+Tab the last, then the exact list.
+  - **Slotted scroller** (R-04): a body ending in a wide prose table (`data-ocelle-prose`, no links, overflowing on
+    the inline axis) with no footer, and the same table before a footer with one button, both directions: the exact
+    `focusPath()` lists include the table once, in its place, and no `body`; ArrowRight on the focused table scrolls
+    it.
 - **Long body** (FR-018): a prose-only body taller than `dialog-max-block`: panel height ≤ `dialog-max-block`, heading
   and footer boxes inside the panel, body `scrollHeight > clientHeight`, Tab from the close control reaches the body,
   ArrowDown and PageDown then scroll it; the body has no `tabindex` once it no longer overflows. Short viewport
   320 × 256: the body keeps its minimum block size and its last content is reachable by scrolling (R-18).
+- **One-line body** (operator decision, R-18): a body of one short sentence at 1280 × 800: the body part's block size
+  (border box) equals the computed `calc(3 * var(--ocelle-target-min))`, 132 px, the text at its block start; the
+  body has no `tabindex`.
 - **Escape** × {no veto, veto, veto then Escape twice}: one request with reason `escape`, then close (no veto), or
-  open with focus inside on every press (veto).
+  open with focus inside on every press (veto). The same three after a pointer click on body prose (focus on the
+  `<dialog>`), after that click and a Shift+Tab, and after the host removed a focused slotted button (focus on the
+  body): one request per press, never a `cancel:false` close, open with focus inside under veto (R-02, R-04).
 - **Escape with slotted content**: a focused slotted control that stops Escape's propagation × {no veto, veto, veto
   then Escape twice}: no veto closes with `escape`; veto keeps it open on the first press; the second press closes
   with reason `host` (the stated limit, R-02). A slotted control that calls `preventDefault()` on Escape: no request,
@@ -76,6 +93,13 @@ pointer type; `viewport()` at 1280 × 800; `emulateReducedMotion` set and reset;
   shows it modally with initial focus.
 - **Rapid toggle**: `open` true and false in one task; re-open during the exit with motion on: the animation is
   cancelled, the dialog stays `:modal`, no close event.
+- **Input during the exit** (motion on, R-02, R-06): after a request that is not cancelled, within the exit: Escape
+  twice; two close-control clicks; Enter keydown twice on the close control (the second with `repeat`): in each case
+  exactly one `…-close-request` and one `…-close`, no `cancel` event, and focus on the opener after the close.
+- **Stale native `close` event** (R-03): the host sets `open = true` in the `…-close` listener (motion on and under
+  reduced motion): after the next task and the next frame the dialog is shown and `:modal`, `open` is true, exactly
+  one `…-close` was dispatched; remove, re-insert and set `open = true` in the same task: after the next task and the
+  next frame shown, `:modal`, `open` true, no `…-close`; the inner `close()` row above still gives `host`.
 - **Motion** (`animations()`): entry and exit are opacity keyframes with duration equal to the computed
   `--ocelle-motion-base` and easing equal to the computed `--ocelle-easing-standard`. Under reduced motion no
   animation is created, also when an ancestor sets `--ocelle-motion-base: 200ms` (R-06).
@@ -93,9 +117,12 @@ pointer type; `viewport()` at 1280 × 800; `emulateReducedMotion` set and reset;
 
 ### Drawer
 
-- The dialog's rows with `ocelle-drawer-` events (initial focus, Tab cycle, long body, Escape and its slotted-content
-  rows, close control, host and platform close, focus return, nested, removed, moved, rapid toggle, styles, forced
-  colours, accessibility tree).
+- The dialog's rows with `ocelle-drawer-` events (initial focus, Tab cycle with its non-stop, body and scroller
+  starts, long body, one-line body, Escape and its slotted-content rows, close control, host and platform close,
+  focus return, nested, removed, moved, rapid toggle, input during the exit, stale native `close` event, styles,
+  forced colours, accessibility tree).
+- **Backdrop during the exit** (motion on, R-07): a double click on the backdrop with no veto: exactly one
+  `ocelle-drawer-close-request` and one `ocelle-drawer-close`, both with reason `backdrop`.
 - **Backdrop**: a primary click on the backdrop on each side of the panel (start and end, under `ltr` and `rtl`) ×
   {veto, no veto}, reason `backdrop`; a click on the panel's padding (inside the border box, target the `<dialog>`):
   nothing; a press inside released on the backdrop: nothing; a press on the backdrop released inside: nothing; a
@@ -126,7 +153,8 @@ pointer type; `viewport()` at 1280 × 800; `emulateReducedMotion` set and reset;
   hides the bubble only, the second requests the dialog's close (SC-005).
 - **Trigger opens an overlay**: hover a trigger past the delay, click it to open a dialog, and the same for a drawer:
   the bubble is hidden when the overlay opens and one Escape requests the overlay's close.
-- **Touch**: `touchTap()` on a button trigger: the trigger's action runs, no bubble on the tap or while it keeps focus.
+- **Touch** (touch context only: `*.touch.test.ts` in `elements-touch` and on `visit(…, { touch: true })`, R-14):
+  `touchTap()` on a button trigger: the trigger's action runs, no bubble on the tap or while it keeps focus.
 - **Empty `text`**, **`disabled`**: no bubble on hover or focus. Trigger becomes `disabled` while shown: hidden.
   Trigger removed while shown: hidden.
 - **Slot change**: the slotted trigger replaced: the new trigger shows the bubble; the old one gets no bubble, no
@@ -147,7 +175,9 @@ pointer type; `viewport()` at 1280 × 800; `emulateReducedMotion` set and reset;
   element children; the span's id is unique in the trigger's root; a host `aria-describedby="x"` keeps `x` after
   `describes` is set, unset and the tooltip disconnected; text changed: description updated; text emptied: no span,
   no id; the host overwrites the trigger's `aria-describedby`: the tooltip's id is back after one microtask and the
-  host's ids are kept; slot change: the new trigger is described, the old one no longer carries the id.
+  host's ids are kept; the host removes the span (a re-render of the tooltip's children): after one microtask one
+  span is back with the same id and text, and the trigger's description is the text; slot change: the new trigger is
+  described, the old one no longer carries the id.
 - **Forced colours**: bubble ground `Canvas`, ink `CanvasText`, `CanvasText` border.
 - **No Popover API**: with `showPopover` removed from `HTMLElement.prototype` before the element is defined (in
   process only): hover and focus show nothing, the bubble has no box, nothing throws.

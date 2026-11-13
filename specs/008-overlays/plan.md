@@ -11,10 +11,14 @@ Three new elements in `@ocelle/elements`, following mission 005's conventions:
 
 - `ocelle-dialog` and `ocelle-drawer`. They share an internal base (`src/overlay.ts`) around a native `<dialog>`
   shown with `showModal()`, with the user-agent chrome reset to tokens.
-  - Focus: explicit initial focus, a Tab cycle (the overflowing body is a stop), return to the deepest opener only
-    while focus is still the overlay's (R-04, R-05).
+  - Focus: explicit initial focus, a Tab cycle the topmost overlay handles on every Tab, also from a non-stop or the
+    body (the overflowing body and slotted overflowing scrollers are stops), return to the deepest opener only while
+    focus is still the overlay's (R-04, R-05).
   - Escape is handled on `keydown` by the topmost overlay only, so a host's veto survives the platform's
-    repeated-Escape rule (measured, R-02); Escapes already handled by slotted content are left alone.
+    repeated-Escape rule (measured, R-02), also with focus on the document body; Escapes already handled by slotted
+    content are left alone. While closing, user input requests nothing (R-02, R-06).
+  - A native `close` event is a platform close only when it is not one of the overlay's own `close()` calls and the
+    `<dialog>` is not open at the time, so a reopen never meets a stale event (R-03).
   - Events: a cancelable `…-close-request` and a `…-close` that fires once the overlay has left the top layer.
   - Motion through the Web Animations API, from the motion tokens, skipped under reduced motion.
   - Removal from the document closes the overlay with no event and sets `open` to false (operator decision, R-05a).
@@ -52,7 +56,8 @@ Every decision is in [research.md](research.md). The surface is in
 The driver gains real keyboard, pointer-path and touch input, focus paths and `:focus-visible` reads, reduced-motion
 emulation, event recording with the state at dispatch, animation reads, top-layer state and FR-047's style counts as a
 delta with transient writes (R-14). Each addition has a self-test in both harnesses. `axTree` also returns
-description, modal and level. The in-process harness runs at 1280 × 800 with touch, like the fixture. Timing is tested
+description, modal and level. The in-process harness runs at 1280 × 800, like the fixture, as a mouse device; touch is
+enabled only for the touch rows, in an `elements-touch` project and a separate fixture context (R-14). Timing is tested
 with bounded waits only, from both sides (R-15).
 
 **Target Platform**: Chromium measured. WebKit (Kitty Desktop) unmeasured. Engine floor Chromium 120 / WebKit 17 for
@@ -77,7 +82,7 @@ Token-only CSS with no new `token-only` allowance. No I/O. No ID reference acros
 |---|---|
 | I. Names, events, no I/O, manifest | Tags `ocelle-dialog`, `ocelle-drawer`, `ocelle-tooltip`. Events `ocelle-dialog-close-request`, `ocelle-dialog-close` and the drawer pair, all `bubbles` and `composed`, with typed `detail`. The tooltip has no events. No I/O and no console output. Every property, attribute, event, slot, part and own CSS custom property is in the generated manifest, inherited members included, through JSDoc on each concrete class (R-01). The tooltip's unrendered slot is `description`, a plain name (R-13). The describes span is written with `textContent` (R-13). |
 | II. Tokens only | Static CSS only from tokens through `var()`/`calc()`, with no new lint allowance. Runtime numbers (bubble coordinates, WAAPI keyframes of `%` and opacity) are not element CSS literals (R-06, R-11). The bubble uses existing chrome colour pairs, so contrast is already checked. Only the dialog surfaces use `elevation-raised` (#5). The radius is `radius-2`. No monospace. |
-| III. Accessible | Modal `<dialog>` named in one shadow root (R-08). Full keyboard model: Tab cycle, Escape, Enter and Space on the close control. The close control meets `target-min` with the focus ring. WCAG 1.4.13 holds: the bubble is dismissable, hoverable and persistent (R-11, R-12). No ID reference crosses a shadow root (R-13). Reduced motion gives no animation, by the media query as well as the tokens (R-06). Forced colours: a `CanvasText` panel border, `Canvas` backdrop and an outline focus ring (R-09). The overflowing body is a Tab stop and keeps a minimum block size at 320 × 256 (R-04, R-18). Nested overlays act only when topmost (R-02). Host `aria-label` asserted open and closed and under axe (R-08). axe runs on every story (R-16). |
+| III. Accessible | Modal `<dialog>` named in one shadow root (R-08). Full keyboard model: Tab cycle, Escape, Enter and Space on the close control. Every Tab is handled by the topmost overlay, so the cycle holds from a non-stop and from the body, and slotted scrollers are stops (R-04). The close control meets `target-min` with the focus ring. WCAG 1.4.13 holds: the bubble is dismissable, hoverable and persistent (R-11, R-12). No ID reference crosses a shadow root (R-13). Reduced motion gives no animation, by the media query as well as the tokens (R-06). Forced colours: a `CanvasText` panel border, `Canvas` backdrop and an outline focus ring (R-09). The overflowing body is a Tab stop and keeps a minimum block size at 320 × 256 (R-04, R-18). Nested overlays act only when topmost (R-02). Host `aria-label` asserted open and closed and under axe (R-08). axe runs on every story (R-16). |
 | IV. Strict CSP | Adopted stylesheets only. The placement sheet is constructable (R-11). WAAPI sets no attribute (R-06). Timers take functions. Every scenario also runs on the strict-CSP fixture, and FR-047's counts run after each one. |
 | V. Storybook and behaviour | A story per variant and state in both themes (data-model § Stories), written against #10 (R-16). Interaction tests cover every event, payload, keyboard path and focus outcome (checks § Test matrix). |
 | VI. Consumers | #16's consumers: the Open project dialog, #12's personal drawer, kitty-mission-ui flyouts, #12's nav-item bubble and #7's pill-tag ellipsis (contract § consumers). Own code. |
@@ -119,6 +124,16 @@ Settled in the squad's round 1 (9 to 13 by the operator at the forks, 14 a confi
 14. **Focus return only while focus is the overlay's** (R-05): a follow-up dialog that took focus keeps it. A host
     moves focus in the `…-close` listener, after the return; a move to the inert page during the exit has no effect.
 
+Settled in the squad's round 2 (15 by the operator at the fork, 16 and 17 confirmed fixes):
+
+15. **Body minimum block size unconditional** (R-18, operator decision PLAN-FRESH-2-006 (a)): every body is at least
+    132 px tall, a one-line confirmation included; FR-018, the README, a geometry row and a story state it.
+16. **Every Tab handled, scrollers as stops** (R-04): the topmost overlay moves focus on every Tab from the deep
+    active element's flat-tree position, also from a non-stop or the body; overflowing slotted scrollers with nothing
+    focusable inside are stops where the engine focuses them.
+17. **Closing ignores input; stale `close` events ignored** (R-02, R-03, R-06): one close gives one request and one
+    `…-close`, and a reopen after `…-close` or a move stays open.
+
 ## Risks
 
 - **#10 not merged**: the story, baseline and axe tasks are written against its branch. The tasks' first step for those
@@ -132,6 +147,9 @@ Settled in the squad's round 1 (9 to 13 by the operator at the forks, 14 a confi
   from JSDoc on each concrete class regardless. If inherited properties are missing, the fallback changes
   `scripts/manifest.ts`'s module filter and replaces the pinned `test/node/manifest.test.ts` rule with a stricter one,
   red first.
+- **Scrollers below Chromium 130 and in WebKit** (R-04): a slotted overflowing scroller with nothing focusable
+  inside is not focusable there, so it is skipped by the cycle and reachable by keyboard only as the engine allows
+  outside an overlay. Only Chromium 153 is measured.
 - **Slotted widgets that stop Escape** (R-02): a vetoed overlay can then close on a repeated Escape with reason
   `host`. Stated in the README; #14's listbox should call `preventDefault()` instead.
 - **Parallel siblings** (R-17): merge conflicts in shared files are resolved by merging `main`, then regenerating the
@@ -176,7 +194,8 @@ packages/elements/
 ├── test/{dialog,drawer,tooltip,harness}.test.ts   # in process
 ├── test/tooltip-no-popover.test.ts                # in process, Popover API removed (R-10)
 ├── test/browser/driver.ts         # fixture driver implementation of the additions
-├── test/browser/serve.ts          # hasTouch context
+├── test/browser/serve.ts          # visit(…, { touch: true }): a separate hasTouch context for the touch rows only
+├── test/*.touch.test.ts, test/browser/*.touch.test.ts   # the touch rows (R-14)
 ├── test/browser/{dialog,drawer,tooltip,harness}.test.ts   # strict-CSP fixture
 ├── test/browser/fixtures/{overlays,tooltip}.html
 ├── test/commands.ts               # + emulateReducedMotion, pointerPath, touchTap; axTree with description, modal, level
@@ -190,7 +209,8 @@ storybook/
 ├── stories/{dialog,drawer,tooltip}.stories.ts     # after #10 (R-16)
 ├── .storybook/stories-layout.css  # tooltip delay override class
 └── baselines/…                    # after #10
-vitest.config.ts                   # elements project: viewport 1280 × 800, touch; new commands (R-14)
+vitest.config.ts                   # elements: 1280 × 800, no touch; + elements-touch project; commands (R-14)
+vitest.mutation.elements.config.ts # takes elements and elements-touch (R-14)
 ```
 
 **Structure Decision**: the existing workspace layout. All element code is in `packages/elements/src`, the tokens are in
@@ -198,10 +218,11 @@ vitest.config.ts                   # elements project: viewport 1280 × 800, tou
 
 ## Phases (for /speckit-tasks)
 
-1. **Setup**: driver and command additions in both harnesses, the `vitest.config.ts` viewport and touch, the
-   `serve.ts` touch context, the fixture pages and the test delay stylesheet (300 ms). These are test code; each new
-   probe and command gets a self-test that is red against the driver as it was (R-14), and those runs are the red
-   evidence for this phase.
+1. **Setup**: driver and command additions in both harnesses, the `vitest.config.ts` viewport and the
+   `elements-touch` project (also in `vitest.mutation.elements.config.ts`), the `serve.ts` touch context option, the
+   device self-test (default context `(hover: hover)` and `(pointer: fine)`), the fixture pages and the test delay
+   stylesheet (300 ms). These are test code; each new probe and command gets a self-test that is red against the
+   driver as it was (R-14), and those runs are the red evidence for this phase.
 2. **US1 dialog (P1)**: `overlay.ts`, `focusable.ts`, `ocelle-dialog.ts`, the entry point with
    `entry-dialog.test.ts`, the build and pack file lists, the manifest (R-01's measurement first, JSDoc tags, the
    manifest test), the README section with its `readme.test.ts` fragments, the README intro line, and the CHANGELOG.

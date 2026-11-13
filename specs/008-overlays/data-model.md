@@ -24,6 +24,10 @@ shown ──(Escape | close control | backdrop [drawer])──▶ request event
 shown ──(host: open = false)──▶ closing("host")
 shown ──(platform close: inner close(), non-cancelable cancel)──▶ closing("host")    (R-02, R-03)
 closing(reason) ──(exit animation ends or 0 ms)──▶ <dialog>.close(); focus returned if still ours; …-close {reason} ──▶ closed
+closing(reason) ──(platform closes the <dialog> during the exit)──▶ exit cancelled; focus returned if still ours;
+                                               …-close {reason} ──▶ closed                                 (R-03)
+closing ──(Escape | cancel | close control | backdrop)──▶ closing   (Escape and a cancelable cancel prevented;
+                                               nothing requested, nothing dispatched; R-02, R-06, R-07)
 closing ──(host: open = true)──▶ shown   (animation cancelled, no close event)       (R-06)
 any ──(disconnected)──▶ closed, open = false   (no event, no focus move; no top-layer entry or inert content left;
                                                a close in progress ends without its …-close; FR-022, R-05a)
@@ -35,10 +39,22 @@ closed ──(reconnected)──▶ closed         (the host sets open = true to
   or on the body (R-05).
 - `open` is false from the first moment of `closing` (FR-004).
 - A slotted `<form method="dialog">` causes no transition (R-03).
+- **Native `close` events** (R-03): `ownCloses` counts the overlay's own `close()` calls on the inner `<dialog>` (end
+  of the exit, disconnection). Each native `close` event consumes one if any and is then ignored, so a queued event
+  that arrives after a reopen changes nothing. An event that consumes none is a platform close only in `shown` (or
+  `opening`) with the inner `<dialog>` not open at the time of the event; in `closing` it ends the exit early; in any
+  other case it is ignored.
+- **Only `open = true` leaves `closing`**: Escape, `cancel`, the close control and the backdrop request nothing there.
 - **Overlay stack** (module-level, internal): the open overlays in opening order. Pushed on `showModal()`, removed when
-  the `<dialog>` closes or the host disconnects. Only the top acts on Escape and Tab (R-02, R-04). Opening an overlay
-  first hides the shown tooltip bubble, if any (R-10).
-- **Body stop**: the `body` part has `tabindex="0"` exactly while it overflows (R-04, R-18).
+  the `<dialog>` closes or the host disconnects. Only the top acts on Escape and Tab (R-02, R-04); the top also
+  handles Escape and Tab whose deep active element is the document body, from a `document` listener (R-02). Opening
+  an overlay first hides the shown tooltip bubble, if any (R-10).
+- **Tab**: the top overlay handles every Tab and Shift+Tab: next (previous) stop after the deep active element's
+  flat-tree position, wrapping; from the body the first (last) stop (R-04).
+- **Stops**: the walk's tabbable elements, the body part while it overflows, and slotted overflowing scroll
+  containers with no tabbable descendant where the engine focuses them (R-04).
+- **Body stop**: the `body` part has `tabindex="0"` exactly while it overflows (R-04, R-18). Its `min-block-size` is
+  `3 × target-min` (132 px) at every size, so a one-line body is 132 px tall (operator decision, R-18).
 
 ### Events
 
@@ -113,7 +129,8 @@ any ──(no Popover API in the engine)──▶ hidden, permanently           
 - With `describes`, one light-DOM `span[slot="description"][role="tooltip"][hidden]` (made with `createElement`, text
   set with `textContent`, id `ocelle-tooltip-desc-<n>` unique in the trigger's root) and its id in the trigger's
   `aria-describedby` exist while `describes` is set and `text` is not empty, whatever the state. A `MutationObserver`
-  re-adds the id when a host write drops it, and the id moves with the trigger on `slotchange` (R-13).
+  re-adds the id when a host write drops it, the span is re-created with the same id within one microtask when a host
+  re-render removes it, and the id moves with the trigger on `slotchange` (R-13).
 
 ## New tokens (`packages/tokens/src/source.ts`)
 
@@ -127,6 +144,6 @@ any ──(no Popover API in the engine)──▶ hidden, permanently           
 
 | File | Stories (each in light and dark) |
 |---|---|
-| `dialog.stories.ts` | default open; with footer actions; long scrolling body; prose with a table; Open project shape (stand-in list); long label; named by a host `aria-label` (R-08); short viewport 320 × 256 if #10 takes a per-story viewport (R-16, R-18) |
+| `dialog.stories.ts` | default open; one-line confirmation body (132 px minimum, R-18); with footer actions; long scrolling body; prose with a table; Open project shape (stand-in list); long label; named by a host `aria-label` (R-08); short viewport 320 × 256 if #10 takes a per-story viewport (R-16, R-18) |
 | `drawer.stories.ts` | start; end; `rtl` start; chrome ground; chrome ground with `heading-hidden`; long scrolling body |
 | `tooltip.stories.ts` | hover top; hover bottom; hover start; hover end; flipped at the top edge; `rtl` hover start; `rtl` hover end; inside an open dialog; long text |
