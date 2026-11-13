@@ -1,14 +1,17 @@
 Scope: all 5 workspace projects
-✓ Lockfile passes supply-chain policies (verified 1h ago)
+✓ Lockfile passes supply-chain policies (verified 1d ago)
 Lockfile is up to date, resolution step is skipped
 Packages are hard linked from the content-addressable store to the virtual store.
   Content-addressable store is at: /root/.local/share/pnpm/store/v11
   Virtual store is at:             node_modules/.pnpm
-Packages: +470
+Packages: +502
 ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-Progress: resolved 470, reused 470, downloaded 0, added 470, done
+Progress: resolved 502, reused 502, downloaded 0, added 502, done
+.../node_modules/rs-module-lexer postinstall$ node postinstall.js
+.../node_modules/rs-module-lexer postinstall: Done
 
 devDependencies:
++ @custom-elements-manifest/analyzer 0.11.0
 + @eslint/js 10.0.1
 + @stryker-mutator/core 10.1.1
 + @stryker-mutator/typescript-checker 10.1.1
@@ -32,8 +35,8 @@ devDependencies:
 + vite 8.3.5
 + vitest 5.0.5
 
-Done in 393ms using pnpm v12.16.1
+Done in 399ms using pnpm v12.16.1
 $ node gates/bin/setup-offline.ts
 setup: installed offline; Chromium at /opt/pw-browsers/chromium-1243/chrome-linux64/chrome
 $ node gates/bin/test.ts
-unit-tests: 2048 tests passed in 100 files
+unit-tests: 3112 tests passed in 138 files
