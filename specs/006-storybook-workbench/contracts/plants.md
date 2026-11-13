@@ -29,6 +29,7 @@ repository's entries and copies the plan files they name (research.md R-16).
 | `pass-type-error-only` | pass | a story with a type error that is valid syntax (the `typecheck` gate's) |
 | `error-missing-dependencies` | error | `unlinked: ["storybook/node_modules"]`; cause `storybook is not installed; run pnpm install` (FR-017's missing dependencies), given only by the gate's CLI check: the build, run with `--config.verify-deps-before-run=false`, neither reinstalls nor names them (research.md R-09) |
 | `error-no-build-script` | error | cause `storybook/package.json has no build script` |
+| `error-config-unreadable` | error | a `tree/` whose `storybook/.storybook/main.ts` cannot be evaluated (`const config = {;`); cause `storybook-build: could not run: storybook/.storybook/main.ts cannot be evaluated` (FR-001's "configuration unreadable"; added 2026-11-13, operator round `reviews/phase-2/round-2.md` O2-02, choice (a)) |
 
 ## `visual`
 
@@ -111,6 +112,7 @@ repository's entries and copies the plan files they name (research.md R-16).
 | `pass-second-render` | pass | a story whose button loses its label on any render after the first in a page |
 | `error-build-fails` | error | cause `the Storybook build failed` |
 | `error-bad-exceptions` | error | an exception entry without a `reason`; cause `a11y-exceptions.json` |
+| `error-exception-plan-not-a-plan` | error | an exception entry whose `plan` is `storybook/notes.md`, a file in `tree/` with a `## Complexity Tracking` row naming the entry; cause `a11y-exceptions.json#0: plan must be a feature plan, specs/<feature>/plan.md` (added 2026-11-13, operator round `reviews/phase-4/round-3.md` O3-01) |
 
 ## `csp` (changed, research.md R-10)
 
