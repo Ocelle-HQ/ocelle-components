@@ -1,0 +1,10 @@
+{
+  "expect": "fail",
+  "why": "One pixel of one repository baseline changed (the current tokens--colour.light.png, edited by delta.json): exactly one differs finding (SC-006).",
+  "findings": [
+    {
+      "location": "tokens--colour/light",
+      "rule": "differs"
+    }
+  ]
+}

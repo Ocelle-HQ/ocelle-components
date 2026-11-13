@@ -1,0 +1,6 @@
+{
+  "expect": "error",
+  "why": "The capture run outside the pinned image (--engine host, on the runner) refuses: exit 2, not the pinned container (FR-009, US2 scenario 7).",
+  "cause": "not the pinned container",
+  "engine": "host"
+}

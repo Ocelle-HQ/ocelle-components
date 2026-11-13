@@ -1,0 +1,4 @@
+{
+  "expect": "pass",
+  "why": "The three plant jobs as contracts/gates.md § The registry gives them: plants-plan and plants-shard are the plant job's helper jobs, not gate jobs, and the plants job gives the verdict, so the registry check finds nothing (plan decision 23)."
+}

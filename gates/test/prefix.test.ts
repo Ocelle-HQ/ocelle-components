@@ -96,6 +96,33 @@ describe("scanText: monospace", () => {
   });
 });
 
+// A font declaration across lines (006 research.md R-10, plan decision 5): the declaration runs to its terminating `;`
+// or `}` over line breaks, and its finding is at the line where it starts, so Storybook's multi-line vendor stack
+// (`font-family:` on one line, `monospace` on a later one) has no blind spot in the HTML the gate reads.
+describe("scanText: a font declaration across lines (006 R-10)", () => {
+  it("finds a font-family whose value ends in monospace on the next line, as one finding at the line where it starts", () => {
+    expect(scanText(path, "a {\n  font-family: ui-sans-serif,\n    monospace;\n}\n")).toEqual([at(2, "monospace", mono("monospace"))]);
+  });
+
+  it("names every family of a declaration over three lines in one finding at its first line", () => {
+    const text = "<style>\n  code {\n    font-family:\n      ui-monospace, Menlo, Monaco,\n      monospace;\n  }\n</style>\n";
+    expect(scanText(path, text)).toEqual([at(3, "monospace", mono("ui-monospace, Menlo, Monaco, monospace"))]);
+  });
+
+  it("ends a declaration at its } as at its ;, and reports a later declaration at its own line", () => {
+    const text = "a { font-family: Arial\n} b { color: monospace;\nfont: 12px\nMenlo }\n";
+    expect(scanText(path, text)).toEqual([at(3, "monospace", mono("Menlo"))]);
+  });
+
+  it("finds nothing past the ; that ends a declaration (only the control on the last line)", () => {
+    expect(scanText(path, "font-family: Arial;\nmonospace\nfont-family: monospace;")).toEqual([at(3, "monospace", mono("monospace"))]);
+  });
+
+  it("keeps sk- names per line beside a declaration across lines", () => {
+    expect(scanText(path, "a { font-family: x,\n--sk-y,\nmonospace; }")).toEqual([at(1, "monospace", mono("monospace")), at(2, "sk-name", name("--sk-y"))]);
+  });
+});
+
 describe("isCovered", () => {
   it("selects the text files of the three packages, without installed dependencies, Markdown, binaries and maps", () => {
     const paths = [

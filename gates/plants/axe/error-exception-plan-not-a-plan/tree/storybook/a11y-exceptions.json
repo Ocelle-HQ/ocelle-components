@@ -1,0 +1,11 @@
+[
+  {
+    "story": "clean--text",
+    "theme": "light",
+    "rule": "color-contrast",
+    "selector": "p",
+    "reason": "a planted exception",
+    "sunset": "the plant's sunset",
+    "plan": "storybook/notes.md"
+  }
+]

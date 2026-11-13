@@ -1,0 +1,16 @@
+{
+  "expect": "fail",
+  "why": "A story that makes run-time I/O while it renders, document.execCommand(\"copy\") (analysis C1): io on both themes, naming the call (FR-030, research.md R-14).",
+  "findings": [
+    {
+      "location": "exec-copy--call/light",
+      "rule": "io",
+      "message": "execCommand copy"
+    },
+    {
+      "location": "exec-copy--call/dark",
+      "rule": "io",
+      "message": "execCommand copy"
+    }
+  ]
+}

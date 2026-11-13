@@ -1,0 +1,21 @@
+{
+  "expect": "fail",
+  "why": "An exception entry whose plan holds no Complexity Tracking row for it (the row names the other theme): unrecorded-exception at the entry, and the node it names stays a finding, beside the other theme's (FR-029, US3 scenario 9).",
+  "findings": [
+    {
+      "location": "storybook/a11y-exceptions.json#0",
+      "rule": "unrecorded-exception",
+      "message": "specs/plant/plan.md's Complexity Tracking holds no row"
+    },
+    {
+      "location": "unrecorded--button/light",
+      "rule": "button-name",
+      "message": "critical: #plant-unrecorded"
+    },
+    {
+      "location": "unrecorded--button/dark",
+      "rule": "button-name",
+      "message": "critical: #plant-unrecorded"
+    }
+  ]
+}
