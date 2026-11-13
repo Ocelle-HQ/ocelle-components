@@ -98,7 +98,11 @@ and panels are not rendered.
 
 Roles `toolbar` (horizontal orientation, operator decision PLAN-A11Y-SECURITY-1-008 (a)) / `button` with
 `aria-pressed`. Custom states on segments for joined rows, set through a feature-checked internal method (R-06):
-internal, not manifest surface.
+internal, not manifest surface. This holds if the operator confirms plan decision 1. If not (the stop at T064,
+operator decision Q2 (c)), the parent writes `data-ocelle-row-start`, `data-ocelle-row-end`, `data-ocelle-first-row`
+and `data-ocelle-last-row` on segment hosts instead. These attributes are element-owned and overwritten on every
+regroup, like the state attributes of R-01. They are not manifest attributes, and the README documents them as
+element-owned (R-06 Status).
 
 ## `ocelle-copy-field`
 
@@ -188,3 +192,11 @@ recorded in `reviews/phase-N/plants.md` (research R-11).
 | no mutation on a set of the current value (Edge Cases, US1-18, US2-17) | an earlier set mutates the states | rewriting `aria-selected` / `aria-pressed` on every set | MutationObserver over the parent's subtree |
 | no transition (Edge Cases "Motion") | the selected paint changes | a `transition` on the selected paint | computed `transition-duration` read |
 | internals visible to axe (FR-051) | the stories render | internals in a private field | the `axe` gate's rule set on the listbox stories |
+| a child outside its parent has no role and no tab stop (Edge Cases; phases 2 to 4) | the same child inside its parent is exposed with its role and takes the tab stop | the child setting its role and `tabindex` in its own `connectedCallback` regardless of the parent | an `ocelle-option`, `ocelle-tab`, `ocelle-tab-panel` or `ocelle-segment` placed directly in the page beside a parent holding the same child |
+| a host `value` set does not select the second of two children with the same value (Edge Cases; phases 2 to 4) | a user selection of the second exposes the second as selected or pressed and reports the same value | selecting the last match; exposing the first after a user selection of the second | two children with the same `value` |
+| an empty listbox has no tab stop (Edge Cases) | the empty listbox is exposed as a named listbox; one appended option then takes the tab stop | `tabindex="0"` on the host or `part="list"` with no options | `<ocelle-listbox label="Folders">` with no options, a real Tab from a button before it to a button after it |
+| a long child label is not truncated and the page does not scroll sideways (Edge Cases, SPEC-1-15; option, tab, segment) | the child's block size grows and its whole text is in the tree | `white-space: nowrap` or `text-overflow: ellipsis` on the child | 320 px viewport, a label longer than the parent's inline size, page scroll width read |
+| host `hidden` leaves no box and no node (Edge Cases; all five controls) | the same element without `hidden` has a box and a node | a `display` rule on `:host` that overrides `:host([hidden])` | `hidden` set on the element, then removed |
+| a second definition does not replace the first (Edge Cases, two copies of the package; every new element) | the element defined by the first copy works as specified | `define` without the "already defined" check | a second class registered under the same tag after the first; no exception, the first class's instance still exposed |
+| a `status` attribute is not reflected after the element clears `status` (Edge Cases, FR-042) | the property reads `""` after the clear | reflecting `status` | `status` written as an attribute in the markup, then a request |
+| joined, row attributes (only if plan decision 1 is not confirmed): host-written row attributes do not stay (R-06 Status) | the measured radii per row | writing the row attributes only when absent | a host writes `data-ocelle-row-start` on a middle segment; read after the next regroup |

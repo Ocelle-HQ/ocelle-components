@@ -5,9 +5,13 @@ plan squad rounds (`reviews/plan/round-1` to `round-3`): `plan.md`, `spec.md`, `
 `data-model.md`, `contracts/elements.md`, `quickstart.md`.
 
 **Implementation waits for #10.** #10 (Storybook workbench) merged on `main` as `3828d2f` on 2026-11-13. By the
-operator's decisions (spec check 1 Q3 (c); 2026-11-13 "defer to phase 1"), no phase starts before T001 has rechecked
-this plan against #10 as merged and any difference has been fixed in plan and tasks. `main` is merged into the
-branch at landing (`/ocelle-land`), not during the run.
+operator's decisions (spec check 1 Q3 (c); 2026-11-13 "defer to phase 1"; analysis Q1 (a)), T001 first merges
+`origin/main` (`3828d2f` or later) into `claude/014-selection-input` as one recorded merge commit, then rechecks this
+plan against #10 as merged. No phase work starts before any difference has been fixed in plan and tasks. The merge
+is made before `base.sh 1`, so phase 1's `base.sha` is the merge commit and every fold base of `/ocelle-run` step 4.3
+starts after it. Every fold range then holds no merge commit, and no fold rewrites the merge (plan.md "The phase
+folds and the T001 merge"). This is the only merge of `main` during the run. `/ocelle-land` merges `main` again at
+landing.
 
 **Tests**: required. Constitution Principle VIII applies to every phase. The phase flow is `base.sh`, `scaffold.sh`
 (new modules with signatures and no behaviour), one red commit of test-only files proven by `red.sh` (one red record
@@ -40,9 +44,11 @@ lines are reports, not findings; entries are at most 30 changed lines.
 (`/ocelle-run` step 4.3); phase 7 Polish holds only cross-element records.
 
 **Stop-and-ask points** (the implementer stops, records the question in the phase review, does not work around it):
+- **T001 merge**: `git merge --no-ff --signoff origin/main` conflicts in a file outside
+  `specs/014-selection-input/`.
 - **T001 recheck**: #10 as merged differs from this plan in a way that changes a spec outcome (not just a name or
   command) — gate ids, story id scheme, the pointer or focus parameters, the axe rule set or exception format.
-- **T020 spike (phase 2)**: the Chromium order of `focusout`, the `focusout` microtask and the `childList` records
+- **T010 spike (phase 2)**: the Chromium order of `focusout`, the `focusout` microtask and the `childList` records
   contradicts R-03 (the blur of a removal is not found by `takeRecords()` in the microtask, or a user Tab/click blur
   has a null `relatedTarget`).
 - **T040 spikes (phase 3)**: the tabs host with a host `aria-label` exposes more or fewer than one named node (R-01,
@@ -55,8 +61,11 @@ lines are reports, not findings; entries are at most 30 changed lines.
 - **T090 spikes (phase 6)**: the `file:` page cannot load the browser build or navigate under
   `--allow-file-access-from-files` (R-09, plan decision 6); the link host with a host `aria-label` exposes other than
   one named link (R-08, plan decision 7).
-- **The engine-floor raise (T064)** before kitty-mission-ui's WebKitGTK and WKWebView minimums are known (plan
-  decision 1): implement the `:state()` design only if the operator has confirmed the floor; else stop.
+- **The engine-floor raise (T064)** (plan decision 1, still open; operator decision Q2 (c)): the operator asks
+  kitty-mission-ui for its WebKitGTK and WKWebView minimums first. At T064 the implementer stops until the operator's
+  answer to decision 1 is recorded in research R-06. "Yes" (floor confirmed): T064, T066 and T067 as written, and
+  T062a, T064a, T066a and T067a are skipped. "No": T062a, T064a, T066a and T067a replace the custom-state parts of
+  T064, T066 and T067, and the floor stays at Chromium 120 / WebKit 16.4.
 - **A plant that does not bite. Any mutation shard over 10 minutes. A new colour pairing not in R-15/R-17.**
 
 ## Format: `[ID] [P?] [Story] Description`
@@ -77,7 +86,7 @@ project.
 
 ### Recheck (first; documentation, exemption with reason)
 
-- [ ] T001 Recheck plan, research R-12, contracts and tasks against #10 as merged on `main` (`3828d2f`): `specs/006-storybook-workbench/spec.md` (FR-016 rule set, FR-025 contributor note, FR-027, FR-031), `contracts/gates.md` (`storybook-build`, `visual`, `visual:update`, `axe`, exception format), `contracts/container.md`, `storybook/` layout and story id scheme, the story test's location; record each difference and its fix in `specs/014-selection-input/reviews/phase-1/recheck-10.md`; amend plan/tasks before T010 (stop-and-ask if a spec outcome changes)
+- [ ] T001 Merge, then recheck. (1) Before `base.sh 1`: `git merge --no-ff --signoff origin/main` (`3828d2f` or later) into `claude/014-selection-input`, as one recorded merge commit (not a rebase or a squash; operator decision Q1 (a)). Check that `storybook/a11y-exceptions.json`, `storybook/baselines/`, `storybook/visual/`, `specs/006-storybook-workbench/` and the `gate:storybook-build`, `gate:visual` and `gate:axe` scripts are present. Then run `base.sh 1`, so the phase base and every fold base start after the merge (plan.md "The phase folds and the T001 merge"). (2) Recheck plan, research R-12, contracts and tasks against #10 as merged (`3828d2f`): `specs/006-storybook-workbench/spec.md` (FR-016 rule set, FR-025 contributor note, FR-027, FR-031), `contracts/gates.md` (`storybook-build`, `visual`, `visual:update`, `axe`, exception format), `contracts/container.md`, `storybook/` layout and story id scheme, the story test's location; record each difference and its fix in `specs/014-selection-input/reviews/phase-1/recheck-10.md`; amend plan/tasks before T010 (stop-and-ask if a spec outcome changes)
 
 ### Tests (red, one commit)
 
@@ -85,14 +94,17 @@ project.
 - [ ] T003 [P] `packages/elements/test/driver-recorders.test.ts`: unit tests for the keydown recorder (key, `defaultPrevented`, document bubble phase), the clipboard observer (`writeText`, `write`, `execCommand('copy')`) installed at every mount and fixture page, `activationRecord` (click, end of click task, first frame, request; R-07) and the `axUpdates` recorder of `Accessibility.nodesUpdated` (R-07)
 - [ ] T004 [P] `packages/elements/test/ax-states.test.ts`: the separate `axStates` command reports `selected`, `pressed`, `disabled`, `controls`, `live` and names; mission 005's `axTree` output stays exactly `{ role, name }` (PLAN-TESTABILITY-1-014)
 - [ ] T005 [P] `gates/test/vitest-config.test.ts`: project `elements-browser-file` exists with `--allow-file-access-from-files`, includes only `packages/elements/test/browser-file/**`; `elements` and `elements-browser` exclude it; `vitest.mutation.config.ts` excludes `elements-browser-file` (R-09)
+- [ ] T005a `red.sh 1`: the red record of the phase. It is the red proof for T002 and T003. Their driver lives under `packages/elements/test/`, a test path (`story-config.yml` `test_pathspec`), so `tdd-check.sh` overlays it onto the base, and the phase-level check fails at base only through T004 and T005 (analysis U2)
 
 ### Implementation (green)
 
 - [ ] T006 `packages/elements/test/scenarios/driver.ts`, `packages/elements/test/in-process.ts`, `packages/elements/test/browser/driver.ts`: the commands and recorders of T002, T003
 - [ ] T007 `packages/elements/test/commands.ts` and `vitest.config.ts` (browser commands): `axStates` (T004)
 - [ ] T008 `vitest.config.ts`, `vitest.mutation.config.ts`: the `elements-browser-file` project and exclusions (T005)
+- [ ] T008a Run one named plant per driver command and recorder once, and record each with the test that failed in `specs/014-selection-input/reviews/phase-1/plants.md` (analysis U2). The plants: `press` dropping modifiers; `click` ignoring `button`, `modifiers` or `count`; child addressing off by one; `activeElement` stopping at the first shadow host; `mutate` running its steps in separate tasks; `resize` that settles; `afterResizeDelivery` resolving before the delivery; `computedPart` reading the host; a constant page scroll offset or viewport size; the keydown recorder in the capture phase; the clipboard observer not installed on fixture pages, and one per observed call (`writeText`, `write`, `execCommand('copy')`); `activationRecord` without the first frame; `axUpdates` dropping updates; `axStates` without `pressed`; `axTree` with an extra field. Phase 1's review states that `red.sh 1` (T005a), not `tdd-check.sh`'s per-unit base run, is the red proof for T002 and T003
 
-**Checkpoint**: `tdd-check.sh 1` reports `pass`; `recheck-10.md` committed.
+**Checkpoint**: the T001 merge commit is on the branch below phase 1's `base.sha`; `tdd-check.sh 1` reports `pass`;
+`recheck-10.md` and `plants.md` committed.
 
 ---
 
@@ -117,12 +129,12 @@ with every key, selected and activated; tree, focus, paint and events are read a
 
 - [ ] T012 [P] [US1] `packages/elements/test/roving.test.ts`: `owns(event, children)` (target is a child itself and not `defaultPrevented`) and `target(key, { index, enabled, wrap, rtl, axis })` for every key of the three key maps (R-04), ends, all disabled, single child, rtl, unhandled keys → `null`; "Disabled children stay in the list with `enabled` false (focusable at `tabindex="-1"`, skipped by every move)"
 - [ ] T013 [P] [US1] `packages/elements/test/selection.test.ts`: every transition of data-model § Transitions for all three kinds, FR-009 defaults ("missing or blank (only whitespace) → index as string", "never `""`; not trimmed"), FR-010 current-value no-op, FR-010a remembered value and Precedence, FR-011/FR-011a targets, batching "one batch per microtask checkpoint" with the `value` setter taking pending records, the focus record (`blurred` set only on a `relatedTarget`-null `focusout`, kept only when its microtask's `takeRecords()` lists the child in `removedNodes`), moves keeping selection (SPEC-3-03), a focused child becoming disabled keeping focus at `tabindex="-1"` (PLAN-CORRECTNESS-1-004 (a))
-- [ ] T014 [P] [US1] `packages/elements/test/scenarios/listbox.ts`: US1-1 to US1-23 as shared scenario bodies, each "does not" outcome paired as `contracts/elements.md` § Pairings states (including "a move does not steal focus back", "Tab out while the host re-renders on blur", Space does not scroll, disabled click, forgotten remembered value)
+- [ ] T014 [P] [US1] `packages/elements/test/scenarios/listbox.ts`: US1-1 to US1-23 as shared scenario bodies, each "does not" outcome paired as `contracts/elements.md` § Pairings states (including "a move does not steal focus back", "Tab out while the host re-renders on blur", Space does not scroll, disabled click, forgotten remembered value). The spec's Edge Cases for the listbox, by name (analysis G1): an `ocelle-option` outside a listbox (no role, no tab stop); two options with the same value (a host set selects the first; a user selection of the second exposes the second and reports the same value); an empty listbox (named, no tab stop); a long option label at 320 px (wraps, the option grows, nothing truncated, no sideways scroll); host `hidden` on the listbox (no box, no node); a second definition of `ocelle-listbox` and `ocelle-option` (the first wins, nothing thrown); the option's accessible name following a text change
 - [ ] T015 [P] [US1] `packages/elements/test/listbox.test.ts` (in-process) and `packages/elements/test/browser/listbox.test.ts` with `packages/elements/test/browser/fixtures/listbox.html` (strict-CSP fixture; zero violations, allowed requests only, no console message)
 - [ ] T016 [P] [US1] Paint and ring reads in `scenarios/listbox.ts`: selected bar on the inline-start edge in `accent-strong` on the main grounds and `Highlight` in forced colours (R-15), the option's focus ring on a raised `::after` read on all four sides beside a hovered next and previous option inside the US1-16 clip (R-06, R-15)
 - [ ] T017 [P] [US1] `packages/elements/test/entry-ocelle-listbox.test.ts`, `entry-ocelle-option.test.ts`: importing `ocelle-listbox.js` alone defines `ocelle-listbox` and `ocelle-option` (R-16; plant: parent not importing child); `entry-root.test.ts` gains both
 - [ ] T018 [P] [US1] `packages/elements/test/node/selection-pairs.test.ts` with `test/node/selection-pairs-check.ts`: every fill, bar, border and text token the listbox's stylesheet paints, per ground, is a checked pair in `packages/tokens/contrast/pairs.json` (R-17); `gates/test/contrast-pairs.test.ts` pinned counts move from 160 light / 168 dark to 166 / 174
-- [ ] T019 [P] [US1] `storybook/stories/listbox.stories.ts` (no selection, selected, disabled option, focused option, scrolling listbox, option with icon; FR-050) and `storybook/test/integration/elements-stories.test.ts`: each listbox story renders its options in light and dark, and axe reports no `aria-allowed-attr` (R-01; plant: internals in a private field); `packages/elements/test/node/readme.test.ts` gains the listbox statements (usage, properties, events and payloads including `ocelle-listbox-activate`, keyboard model, naming, tokens read, the amended module rule "importing the module defines that element and the elements it renders or owns as children")
+- [ ] T019 [P] [US1] `storybook/stories/listbox.stories.ts` (no selection, selected, disabled option, focused option, hovered option via #10's pointer parameter, scrolling listbox, option with icon; FR-050) and `storybook/test/integration/elements-stories.test.ts`: each listbox story renders its options in light and dark, and axe reports no `aria-allowed-attr` (R-01; plant: internals in a private field); `packages/elements/test/node/readme.test.ts` gains the listbox statements (usage, properties, events and payloads including `ocelle-listbox-activate`, keyboard model, naming, tokens read, the amended module rule "importing the module defines that element and the elements it renders or owns as children")
 - [ ] T020 [US1] `red.sh 2`: the red record of the phase
 
 ### Implementation (green)
@@ -134,7 +146,7 @@ with every key, selected and activated; tree, focus, paint and events are read a
 - [ ] T025 [US1] `pnpm --filter @ocelle/elements run manifest`: `packages/elements/custom-elements.json` per contracts § `ocelle-listbox`, § `ocelle-option`
 - [ ] T026 [US1] `packages/elements/README.md` listbox section and amended module rule; `packages/elements/CHANGELOG.md` entry
 - [ ] T027 [US1] Baselines for the listbox stories with #10's baseline command in the pinned container (`storybook/baselines/`), inspected and committed with the reason in the commit message
-- [ ] T028 [US1] Run each US1 plant once, record in `specs/014-selection-input/reviews/phase-2/plants.md`; then `gate:contrast`, `gate:style-lint`, `gate:manifest`, `gate:csp`, `gate:prefix`, `gate:storybook-build`, `gate:visual`, `gate:axe`, `gate:plants`, `gate:mutation -- --base <phase base>` one at a time
+- [ ] T028 [US1] Run each US1 plant once, record in `specs/014-selection-input/reviews/phase-2/plants.md`; then `gate:typecheck`, `gate:lint`, `gate:test-lint`, `gate:style-lint`, `gate:brand-rules`, `gate:unit-tests`, `gate:signoff`, `gate:pins`, `gate:config-copies`, `gate:contrast`, `gate:manifest`, `gate:csp`, `gate:prefix`, `gate:storybook-build`, `gate:visual`, `gate:axe`, `gate:plants`, `gate:mutation -- --base <phase base>` one at a time (the constitution's merge gates as the repository defines them; analysis G4)
 
 **Checkpoint**: `tdd-check.sh 2` reports `pass`; quickstart steps 1 to 6 pass for the listbox.
 
@@ -159,10 +171,10 @@ unselected panel node; the tabs stories pass #10's full axe rule set.
 
 ### Tests (red, one commit)
 
-- [ ] T042 [P] [US2] `packages/elements/test/scenarios/tabs.ts`: US2-1 to US2-23 with pairings (unselected panels have no node, no id reference across a shadow root, keys from panel content not handled, Enter/Space on the selected tab silent), the selected bar on the block-end edge, the focused tab's raised ring read
+- [ ] T042 [P] [US2] `packages/elements/test/scenarios/tabs.ts`: US2-1 to US2-23 with pairings (unselected panels have no node, no id reference across a shadow root, keys from panel content not handled, Enter/Space on the selected tab silent), the selected bar on the block-end edge, the focused tab's raised ring read. The spec's Edge Cases for tabs, by name (analysis G1): an `ocelle-tab` and an `ocelle-tab-panel` outside `ocelle-tabs` (no role, no tab stop); two tabs with the same value (a host set selects the first; a user selection of the second exposes the second and reports the same value); a long tab label at 320 px (wraps, the tab grows, nothing truncated, no sideways scroll); host `hidden` on the tabs (no box, no node); a second definition of each of the three tags (the first wins, nothing thrown); the tab's accessible name and the panel's name following a text change
 - [ ] T043 [P] [US2] `packages/elements/test/tabs.test.ts`, `packages/elements/test/browser/tabs.test.ts`, `packages/elements/test/browser/fixtures/tabs.html` (children with no host-written id or `aria-*`, SC-003)
 - [ ] T044 [P] [US2] `packages/elements/test/entry-ocelle-tabs.test.ts` (defines tab and panel too), `entry-ocelle-tab.test.ts`, `entry-ocelle-tab-panel.test.ts`; `entry-root.test.ts`
-- [ ] T045 [P] [US2] `storybook/stories/tabs.stories.ts` (first selected, another selected, disabled tab, wrapped rows, focused tab, tab with icon) and the story test: #10's full rule set on the tabs stories, no violation and no serious or critical `incomplete` (plant: `aria-labelledby` on every panel); `selection-pairs.test.ts` and `readme.test.ts` gain the tabs
+- [ ] T045 [P] [US2] `storybook/stories/tabs.stories.ts` (first selected, another selected, disabled tab, wrapped rows, focused tab, hovered tab via #10's pointer parameter, focused tab panel with no focusable content (the panel is the tab stop, US2-6), tab with icon; FR-050) and the story test: #10's full rule set on the tabs stories, no violation and no serious or critical `incomplete` (plant: `aria-labelledby` on every panel); `selection-pairs.test.ts` and `readme.test.ts` gain the tabs
 - [ ] T046 [US2] `red.sh 3`
 
 ### Implementation (green)
@@ -179,7 +191,9 @@ unselected panel node; the tabs stories pass #10's full axe rule set.
 ## Phase 4: User Story 3 - Choose one of a few options as a toggle group: `ocelle-segmented-choice` (Priority: P3)
 
 **Goal**: US3 scenarios 1 to 19; FR-026 to FR-030; a toolbar of toggle buttons; the joined variant with its internal
-`ResizeObserver`, custom states and `accent-strong` lines around the pressed segment; the engine-floor raise.
+`ResizeObserver`, custom states and `accent-strong` lines around the pressed segment; the engine-floor raise, if
+the operator confirms plan decision 1 at the T064 stop (otherwise element-owned row attributes and no floor raise:
+T062a, T064a, T066a, T067a).
 
 **Independent Test**: on the strict-CSP fixture, four segments are walked and pressed; the joined variant is measured
 at one-row and two-row widths after the observer's delivery; shared lines beside the pressed and a hovered segment
@@ -191,19 +205,23 @@ stay `accent-strong` with a focused neighbour on either side.
 
 ### Scaffold
 
-- [ ] T061 [US3] `scaffold.sh`: `packages/elements/src/{ocelle-segmented-choice,ocelle-segment}.ts`; `index.ts`, `browser.ts`; `exports`
+- [ ] T061 [US3] `scaffold.sh`: `packages/elements/src/{ocelle-segmented-choice,ocelle-segment}.ts`; `index.ts`, `browser.ts`; `exports`. No row mechanism is scaffolded (no row-state method and no row attribute): it waits for plan decision 1 at T064, and the red tests read the radii, not the mechanism
 
 ### Tests (red, one commit)
 
-- [ ] T062 [P] [US3] `packages/elements/test/scenarios/segmented-choice.ts`: US3-1 to US3-19 with pairings (focus-only moves emit nothing, joined: no `style` attribute, shared line not widened, pressed lines not `control-border` also with a focused neighbour), resize measurements, four-sided ring read beside the pressed and a hovered segment, the focused pressed segment beside a later hovered one
+- [ ] T062 [P] [US3] `packages/elements/test/scenarios/segmented-choice.ts`: US3-1 to US3-19 with pairings (focus-only moves emit nothing, joined: no `style` attribute, shared line not widened, pressed lines not `control-border` also with a focused neighbour), resize measurements, four-sided ring read beside the pressed and a hovered segment, the focused pressed segment beside a later hovered one. The spec's Edge Cases for the segmented choice, by name (analysis G1): an `ocelle-segment` outside a segmented choice (no role, no tab stop); two segments with the same value (a host set presses the first; a user press of the second exposes the second as pressed and reports the same value); a long segment label at 320 px in both variants (wraps, the segment grows, nothing truncated, no sideways scroll); host `hidden` on the segmented choice (no box, no node); a second definition of both tags (the first wins, nothing thrown); the segment's accessible name following a text change
+- [ ] T062a [P] [US3] Only if the operator does not confirm plan decision 1 (stop at T064): in `scenarios/segmented-choice.ts`, a host-written `data-ocelle-row-start` on a middle segment does not survive the next regroup, paired with the measured radii per row (contracts § Pairings, plant: writing the row attributes only when absent)
 - [ ] T063 [P] [US3] `packages/elements/test/segmented-choice.test.ts`, `packages/elements/test/browser/segmented-choice.test.ts`, `fixtures/segmented-choice.html`; `entry-ocelle-segmented-choice.test.ts`, `entry-ocelle-segment.test.ts`; `entry-root.test.ts`
-- [ ] T064 [P] [US3] `storybook/stories/segmented-choice.stories.ts` (default, joined one row, joined wrapped, pressed, disabled, focused, icon) and the story test; `selection-pairs.test.ts`; `readme.test.ts` gains the segmented choice and the engine floor Chromium 125 / WebKit 17.4 with `:state()` as the feature (only if the operator confirmed plan decision 1; otherwise stop-and-ask)
+- [ ] T064 [P] [US3] **Stop here until plan decision 1 is recorded** (operator decision Q2 (c)). `storybook/stories/segmented-choice.stories.ts` (default, joined one row, joined wrapped, pressed, disabled, focused, hovered segment in the default variant and in the joined variant via #10's pointer parameter, icon; FR-050) and the story test; `selection-pairs.test.ts`; `readme.test.ts` gains the segmented choice and, if the operator confirmed decision 1, the engine floor Chromium 125 / WebKit 17.4 with `:state()` as the feature
+- [ ] T064a [P] [US3] Only if the operator does not confirm decision 1, instead of T064's engine-floor statement: `readme.test.ts` asserts the engine floor stays Chromium 120 / WebKit 16.4, and that the README documents `data-ocelle-row-start`, `data-ocelle-row-end`, `data-ocelle-first-row` and `data-ocelle-last-row` as element-owned and overwritten on every regroup (R-06 Status); the stories and story test of T064 are unchanged
 - [ ] T065 [US3] `red.sh 4`
 
 ### Implementation (green)
 
 - [ ] T066 [US3] `packages/elements/src/ocelle-segment.ts`, `ocelle-segmented-choice.ts`: `toolbar` role, toggle buttons with `aria-pressed`, roving with wrap on both axes, `joined` with the internal `ResizeObserver` on the group and its segments, custom states for rows, `accent-low` fill and block-end bar for the pressed segment, `accent-strong` lines around it, raised `::after` ring, target size
+- [ ] T066a [US3] Only if the operator does not confirm decision 1, instead of T066's custom states: the parent writes the row attributes on segment hosts at each regroup and overwrites host-written ones, and the segment's CSS rounds with `:host([data-ocelle-row-start])` and so on; no internal row method on the segment, no `:state()` (R-06 Status; passes T062a)
 - [ ] T067 [US3] Manifest; README segmented-choice section and engines section; CHANGELOG
+- [ ] T067a [US3] Only if the operator does not confirm decision 1, instead of T067's engines section: README segmented-choice section with the element-owned row attributes, engines section unchanged (Chromium 120 / WebKit 16.4); CHANGELOG without a floor raise
 - [ ] T068 [US3] Baselines in the pinned container, committed with the reason
 - [ ] T069 [US3] Plants recorded in `reviews/phase-4/plants.md`; the gates of T028
 
@@ -230,9 +248,9 @@ reaches the tree as empty → text.
 
 ### Tests (red, one commit)
 
-- [ ] T077 [P] [US4] `packages/elements/test/scenarios/copy-field.ts`: US4-1 to US4-12 with the clipboard observer, the live-region MutationObserver, US4-6's synchronous listener with `activationRecord` and `axUpdates` (plants: synchronous dispatch, microtask dispatch, dispatch in the element's own frame callback), disabled control emits nothing, flush border and target size, `accent-strong` divider against the inset well
+- [ ] T077 [P] [US4] `packages/elements/test/scenarios/copy-field.ts`: US4-1 to US4-12 with the clipboard observer, the live-region MutationObserver, US4-6's synchronous listener with `activationRecord` and `axUpdates` (plants: synchronous dispatch, microtask dispatch, dispatch in the element's own frame callback), disabled control emits nothing, flush border and target size, `accent-strong` divider against the inset well. The spec's Edge Cases for the copy field, by name (analysis G1): `status` set with no request (shown in the live region like any status); the `status` attribute not reflected after the element clears `status` (the property reads `""`, the attribute stays as written; contracts § Pairings); host `hidden` (no box, no node); a second definition of `ocelle-copy-field` (the first wins, nothing thrown)
 - [ ] T078 [P] [US4] `packages/elements/test/copy-field.test.ts`, `packages/elements/test/browser/copy-field.test.ts`, `fixtures/copy-field.html`; `entry-ocelle-copy-field.test.ts` (defines `ocelle-icon` too); `entry-root.test.ts`
-- [ ] T079 [P] [US4] `storybook/stories/copy-field.stories.ts` (short, wrapped long command, with a status, empty) and the story test; `selection-pairs.test.ts`; `readme.test.ts` gains the copy field, the `copy-control` surface (box, name, events), the future `ocelle-button` swap as a PATCH (FR-044), and the request outside the click's task with the user-activation note
+- [ ] T079 [P] [US4] `storybook/stories/copy-field.stories.ts` (short, wrapped long command, with a status, empty, focused Copy control (US4-9); FR-050) and the story test; `selection-pairs.test.ts`; `readme.test.ts` gains the copy field, the `copy-control` surface (box, name, events), the future `ocelle-button` swap as a PATCH (FR-044), and the request outside the click's task with the user-activation note
 - [ ] T080 [US4] `red.sh 5`
 
 ### Implementation (green)
@@ -266,15 +284,15 @@ the `file:` copy navigates to its `file:` target.
 ### Tests (red, one commit)
 
 - [ ] T092 [P] [US5] `packages/elements/test/link-target.test.ts`: `navigationTarget(href, baseURI, documentProtocol)` for `http:`, `https:`, the document's own protocol, `javascript:` padded and tab-split, `data:`, protocol-relative, custom-scheme `<base>`, `""` and fragments (FR-047)
-- [ ] T093 [P] [US5] `packages/elements/test/scenarios/link.ts`: US5-1 to US5-14 with "Observing navigation" (fragments in process; cross-document on the fixture; US5-11's base inserted after load; `context.on("page")` for US5-13), modified activations emit nothing, Space not handled, per-fragment focus ring
+- [ ] T093 [P] [US5] `packages/elements/test/scenarios/link.ts`: US5-1 to US5-14 with "Observing navigation" (fragments in process; cross-document on the fixture; US5-11's base inserted after load; `context.on("page")` for US5-13), modified activations emit nothing, Space not handled, per-fragment focus ring. The spec's Edge Cases for the link, by name (analysis G1): host `hidden` (no box, no node); a second definition of `ocelle-link` (the first wins, nothing thrown)
 - [ ] T094 [P] [US5] `packages/elements/test/link.test.ts`, `packages/elements/test/browser/link.test.ts`, `fixtures/link.html`, `fixtures/link-target.html`; `packages/elements/test/browser-file/link-file.test.ts` with `browser-file/fixtures/` (policy in a `<meta>` element; US5-12); `entry-ocelle-link.test.ts`; `entry-root.test.ts`
-- [ ] T095 [P] [US5] `storybook/stories/link.stories.ts` (in a paragraph, wrapped across lines, focused, hover via #10's pointer parameter, host label containing the visible text) and the story test asserting no `label-content-name-mismatch` (plant: a label without the visible text); `readme.test.ts` gains the link, the `detail.href` warning and the label-in-name rule
+- [ ] T095 [P] [US5] `storybook/stories/link.stories.ts` (in a paragraph, wrapped across lines, focused, hover via #10's pointer parameter, host label containing the visible text) and the story test asserting no `label-content-name-mismatch` (plant: a label without the visible text); `readme.test.ts` gains the link, the `detail.href` warning, the label-in-name rule, and these statements (analysis G2): a host that navigates itself applies the same resolved-protocol check (FR-047); hosts that need other schemes handle the event (US5-9); a user's modified activation keeps the browser's new tab or window; a modified activation of a link without `href` does nothing; a host that wants to open a new window itself handles the event (FR-049)
 - [ ] T096 [US5] `red.sh 6`
 
 ### Implementation (green)
 
 - [ ] T097 [US5] `packages/elements/src/link-target.ts` and `packages/elements/src/ocelle-link.ts` (R-08): `part="anchor"`, `delegatesFocus`, `href` on the anchor only when allowed, `role="link"` and `tabindex="0"` otherwise, plain-activation interception (Alt included) with Enter handled on keydown for anchors without `href`, cancelable event, `location.assign` of the allowed target, host `aria-label` forwarded
-- [ ] T098 [US5] Manifest; README link section; CHANGELOG
+- [ ] T098 [US5] Manifest; README link section with every statement T095 checks (the `detail.href` warning, the label-in-name rule, FR-047's resolved-protocol check for hosts, US5-9's other schemes, FR-049's three statements); CHANGELOG
 - [ ] T099 [US5] Baselines in the pinned container, committed with the reason
 - [ ] T100 [US5] Plants recorded in `reviews/phase-6/plants.md`; the gates of T028 plus `vitest run --project elements-browser-file`
 
@@ -286,8 +304,8 @@ the `file:` copy navigates to its `file:` target.
 
 **Purpose**: cross-element records only.
 
-- [ ] T110 `packages/elements/test/node/readme.test.ts` (red first): the README overview names the nine elements and the entry-point table lists every new specifier (contracts § Entry points)
-- [ ] T111 `packages/elements/README.md` overview and entry-point table; `packages/elements/CHANGELOG.md` MINOR entry naming the nine elements, six events and the engine floor
+- [ ] T110 `packages/elements/test/node/readme.test.ts` (red first): the README overview names the nine elements and the entry-point table lists every new specifier (contracts § Entry points); the README has one example per SC-009 use: the Open project folder picker (listbox), tabbed screens (tabs), segmented choices (segmented choice), in-text links (link) and copy fields (copy field), each built from the elements' public surface with no ARIA attribute, `ResizeObserver` or clipboard call of the host's own (SC-009, R-14; analysis G3)
+- [ ] T111 `packages/elements/README.md` overview, entry-point table and the SC-009 examples of T110; `packages/elements/CHANGELOG.md` MINOR entry naming the nine elements, six events and the engine floor as decided at T064 (raised, or unchanged with the row attributes)
 - [ ] T112 If #16 (mission 008) has merged before this feature lands: the composed `ocelle-dialog` + `ocelle-listbox` story with its baselines (FR-054); otherwise record in `reviews/phase-7/notes.md` that 008 adds it
 - [ ] T113 Full gate run per `specs/014-selection-input/quickstart.md`, one heavy job at a time; record in `reviews/phase-7/gates.md`
 
@@ -297,13 +315,15 @@ the `file:` copy navigates to its `file:` target.
 
 ## Dependencies & Execution Order
 
-- T001 (recheck against #10) blocks every other task.
+- T001 (merge of `origin/main`, then the recheck against #10) blocks every other task. The merge comes before
+  `base.sh 1`.
 - Phase 1 blocks phases 2 to 6 (driver commands and recorders, the file project).
 - Phase 2 (US1) blocks phases 3 and 4: it creates `roving.ts`, `selection.ts`, `internals.ts`, the pairs check and the
   token pairs.
 - Phases 5 (US4) and 6 (US5) depend only on phase 1 and the conventions, but share the README, the readme test, the
   story test, the manifest and `index.ts`, so phases run in order 2 to 7, one review unit at a time.
-- T064's engine-floor statement needs the operator's confirmation of plan decision 1.
+- T064 stops until the operator's answer to plan decision 1 is recorded. "Yes": T064, T066 and T067. "No": T062a,
+  T064a, T066a and T067a in their place for the row mechanism and the engines section (operator decision Q2 (c)).
 
 ## Parallel Opportunities
 

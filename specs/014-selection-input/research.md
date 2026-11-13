@@ -305,9 +305,16 @@ under the plan's "Decisions the operator should see". The real trade-off (PLAN-F
 The earlier claim that the floor raise "touches no consumer today" is withdrawn: Kitty Desktop on Linux runs the
 distribution's WebKitGTK and on macOS WKWebView, and their minimum versions are not recorded in this repository
 (README § Engines: WebKit is not measured). Before the operator takes plan decision 1, kitty-mission-ui is asked for
-its WebKitGTK and WKWebView minimums; the answer is recorded here. The same request carries R-07's user-activation
-question (a clipboard write from the deferred copy request in WKWebView and WebKitGTK; PLAN-FRESH-2-004 (a)), also
-put to the console owners.
+its WebKitGTK and WKWebView minimums; the answer is recorded here. **Status** (analysis U1, operator decision Q2 (c),
+2026-11-13): decision 1 stays open, and the stop at T064 stays. The operator asks kitty-mission-ui for its minimums
+first. If the operator then confirms the floor, phase 4 implements the custom states (T064, T066, T067). If not, phase 4
+implements the row attributes instead (T062a, T064a, T066a, T067a), and the package floor stays Chromium 120 / WebKit
+16.4. Under the alternative, the parent writes `data-ocelle-row-start`, `data-ocelle-row-end`, `data-ocelle-first-row`
+and `data-ocelle-last-row` on segment hosts. These attributes are element-owned and overwritten on every regroup. The
+segment's own CSS reads them (`:host([data-ocelle-row-start])` and so on), and no internal method is called on the
+segment. The shared-line, focus-ring and timing rules above are the same for both designs. Only the selector that rounds
+the corners differs. The same request carries R-07's user-activation question (a clipboard write from the deferred copy
+request in WKWebView and WebKitGTK; PLAN-FRESH-2-004 (a)), also put to the console owners.
 
 **Alternatives.** CSS only: no selector reaches "first item of a wrapped row". A consumer `ResizeObserver`: what #511
 asks to remove.
@@ -571,19 +578,26 @@ that failed on it in `reviews/phase-N/plants.md` (as 005's phases did).
 
 ## R-12 Stories, baselines and axe on #10 (recheck when #10 merges; implementation waits for it)
 
-**Decision.** Stories in `storybook/stories/<element>.stories.ts` (listbox, tabs, segmented-choice, copy-field,
-link), one story per variant and state named in FR-050 (an icon story for option, tab and segment included), captured
-in light and dark by #10's `visual` gate; baselines produced with #10's `visual:update` in the pinned container (006
-`contracts/container.md`) and committed under `storybook/baselines/`; the `axe` gate over every story. Focused states
-use a story `play` that focuses the target through the story's render (006 renders each story fresh and captures
-after the render signal); hover uses 006 FR-031's pointer parameter (link hover). Per operator decision I3, the
-stories and the story test (`storybook/test/integration/elements-stories.test.ts`, extended) are written in the
+**Decision.** One stories file per control, `storybook/stories/<control>.stories.ts` (listbox, tabs,
+segmented-choice, copy-field, link), covering its children (FR-050; the files carry no `ocelle-` prefix, like the
+existing `icon.stories.ts`); one story per variant and state named in FR-050 (an icon story for option, tab and
+segment included), captured in light and dark by #10's `visual` gate; baselines produced with #10's `visual:update` in
+the pinned container (006 `contracts/container.md`) and committed under `storybook/baselines/`; the `axe` gate over
+every story. Focused states use a story `play` that focuses the target through the story's render (006 renders each
+story fresh and captures after the render signal): the focused option, tab and segment, the focused Copy control
+(US4-9) and the focused tab panel with no focusable content (US2-6, FR-023). Hover uses 006 FR-031's pointer
+parameter: the hovered link, option and tab, and the hovered segment in the default and the joined variant (R-15's
+`hover-bg` fill, and the joined segment's `accent-strong` lines). These hover and focus stories give each state of
+R-15 that has its own paint a baseline (constitution V; analysis C1, operator decision Q3 (a)). Per operator decision
+I3, the stories and the story test (`storybook/test/integration/elements-stories.test.ts`, extended) are written in the
 phase's red commit; the baselines are produced in the green commit (a capture of a story that does not render yet is
 meaningless).
 
-**Recheck.** Phase 1's first task compares this plan with #10 as merged: the gate ids, the story id scheme, the
-pointer and focus parameters, the baseline command, the contributor note (006 FR-025) and `contracts/gates.md` /
-`contracts/container.md`. Differences are fixed in the plan and tasks before phase 2's red commit (FR-053).
+**Recheck.** Phase 1's first task first merges `origin/main` (`3828d2f` or later) into the branch as a recorded merge
+commit (analysis I1, operator decision Q1 (a)), then compares this plan with #10 as merged: the gate ids, the story id
+scheme, the pointer and focus parameters, the baseline command, the contributor note (006 FR-025) and
+`contracts/gates.md` / `contracts/container.md`. Differences are fixed in the plan and tasks before phase 2's red commit
+(FR-053).
 
 ## R-13 Mutation testing under #23
 
@@ -616,11 +630,11 @@ Each open note of the spec checks (check-3 SPEC-3-04) with its answer (PLAN-CORR
 - SPEC-1-14: R-07. SPEC-1-16: R-10. SPEC-2-07: R-08. SPEC-2-05: R-08 and R-11. SPEC-2-06: R-09. SPEC-2-10: R-07 (no
   slot). SPEC-2-11: R-07. SPEC-1-22: Constitution Check I. SPEC-1-23: R-12.
 - SPEC-1-15: long labels wrap inside the child, which grows in block size, never truncated (spec Edge Cases; one
-  scenario per parent at 320 px, phases 2 to 4); hover paint is R-15's (`hover-bg` fill; a hovered segment's lines
-  in `accent-strong`); there is no parent-level `disabled` (spec Edge Cases); a tablist or segmented choice with no
-  children is FR-011a's "no child enabled" (US2-20, US3-17); the `icon` slot has a scenario per child (US1-23, US2-23,
-  US3-19: placement and size from 005's slot convention through `scenarios/slot.ts` helpers, nothing added to the
-  name, the selected paint unchanged) and an icon story per element (FR-050).
+  scenario per parent at 320 px, phases 2 to 4: T014, T042, T062); hover paint is R-15's (`hover-bg` fill; a hovered
+  segment's lines in `accent-strong`); there is no parent-level `disabled` (spec Edge Cases); a tablist or segmented
+  choice with no children is FR-011a's "no child enabled" (US2-20, US3-17); the `icon` slot has a scenario per child
+  (US1-23, US2-23, US3-19: placement and size from 005's slot convention through `scenarios/slot.ts` helpers, nothing
+  added to the name, the selected paint unchanged) and an icon story per element (FR-050).
 - SPEC-1-19: without a host name the copy field is an unnamed group (FR-034), confirmed by phase 5's tree read; the
   README tells hosts to name it.
 - SPEC-1-20: R-07 (the part's stated surface; operator decision PLAN-CORRECTNESS-1-017 (a)).
@@ -634,7 +648,7 @@ Each open note of the spec checks (check-3 SPEC-3-04) with its answer (PLAN-CORR
   transition or an animation (spec Edge Cases "Motion"); one test per element asserts the computed
   `transition-duration` and `animation-name` of each child, the Copy control and the link anchor are `0s` and `none`,
   plant: a `transition` on the selected paint. SC-009 stays a documentation outcome: the README has one example per
-  listed use, checked by the documentation test.
+  listed use, checked by the documentation test (T110 red, T111 green).
 - SPEC-2-08: an empty `href` counts as an `href` and navigates to the document itself; a fragment `href` navigates
   within the document, observed by the URL's fragment with the marker kept (spec "Observing navigation", US5-14).
 - SPEC-2-09 (reflection and order): the parents' `value` is an attribute and a property, not reflected (the attribute

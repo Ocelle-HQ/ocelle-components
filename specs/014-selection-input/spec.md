@@ -922,14 +922,18 @@ navigate" means the URL, its fragment included, is unchanged (scenario 14).
 
 **Stories, baselines, axe (on #10's design; implementation after #10 merges)**
 
-- **FR-050**: Every element has stories in `storybook/stories/<element>.stories.ts` per variant and state, each
-  captured in light and dark by #10's `visual` gate with committed baselines from the pinned container: listbox (no
-  selection, a selected option, a disabled option, focused option, a scrolling listbox), tabs (first selected, another
-  selected, a disabled tab, wrapped rows, focused tab), segmented choice (default and joined, one row and wrapped,
-  pressed, disabled, focused), copy field (short, wrapped long command, with a status, empty/disabled), link (in a
-  paragraph, wrapped across lines, focused, with a hover state declared per 006 FR-031); and one story each for an
-  option, a tab and a segment with an `icon` (User Story 1 scenario 23, User Story 2 scenario 23, User Story 3
-  scenario 19).
+- **FR-050**: Each control has one stories file, `storybook/stories/<control>.stories.ts` for `listbox`, `tabs`,
+  `segmented-choice`, `copy-field` and `link`, which also covers its children (option; tab and tab panel; segment).
+  The files hold a story per variant and state, each captured in light and dark by #10's `visual` gate with committed
+  baselines from the pinned container: listbox (no selection, a selected option, a disabled option, focused option, a
+  hovered option, a scrolling listbox), tabs (first selected, another selected, a disabled tab, wrapped rows, focused
+  tab, a hovered tab, a focused tab panel with no focusable content, which is itself the tab stop per User Story 2
+  scenario 6), segmented choice (default and joined, one row and wrapped, pressed, disabled, focused, a hovered segment
+  in the default variant and in the joined variant), copy field (short, wrapped long command, with a status,
+  empty/disabled, the focused Copy control per User Story 4 scenario 9), link (in a paragraph, wrapped across lines,
+  focused, hovered); and one story each for an option, a tab and a segment with an `icon` (User Story 1 scenario 23,
+  User Story 2 scenario 23, User Story 3 scenario 19). Every hover story declares its hover state with 006 FR-031's
+  pointer parameter, and every hover and focus story is a state story under constitution V.
 - **FR-051**: The `axe` gate reports no serious or critical finding on any of these stories in either theme, with no
   new entry in `storybook/a11y-exceptions.json`.
 - **FR-052**: The stories and the tests that read them are written in each phase's red commit, before the green
