@@ -25,7 +25,13 @@ never a package's `dist/` (research.md R-09).
 
 Exit 2, checked before the build in this order: `storybook/package.json` missing or without a `build` script; the
 Storybook CLI not resolvable from `storybook/node_modules` ("storybook is not installed; run pnpm install"); `pnpm` not
-found. After a successful build: `dist/index.json` missing or not JSON. The CLI check is the only signal of missing
+found. After a successful build: `dist/index.json` missing or not JSON. After a failed build (amendment 2026-11-13,
+landing review L1-03, operator round `reviews/phase-2/round-2.md` O2-02, choice (a); FR-001's "configuration
+unreadable", the spec unchanged), checked before any finding is read from the output: a build ended by a signal
+(`storybook-build: could not run: the build was ended by a signal`), and Storybook's `MainFileEvaluationError` in the
+output (`storybook-build: could not run: storybook/.storybook/main.ts cannot be evaluated (<the cleaned output line
+that holds MainFileEvaluationError>)`); breaking plant `error-config-unreadable` (contracts/plants.md). Before the
+amendment both ended exit 1 with one `build-error` at `storybook/package.json`. The CLI check is the only signal of missing
 dependencies: the build itself gives none that names them (without the flag pnpm reinstalls them and the build passes;
 with it the script fails `storybook: not found`, exit 127; research.md R-09, spike § 1).
 
@@ -124,8 +130,10 @@ the gate's causes: a gate other than `visual`, no such plant, a plant with no st
 Notes (stderr): `note: <story-id>/<theme>: <rule-id>: <impact>: <selector>` for moderate and minor violations;
 `… incomplete …` for moderate and minor incomplete results; `… excepted (<reason>)` for an honoured exception.
 
-Exit 2: no browser; `axe-core` not found; `storybook/a11y-exceptions.json` not a list of complete entries; the
-Storybook build failed.
+Exit 2: no browser; `axe-core` not found; `storybook/a11y-exceptions.json` not a list of complete entries, an entry
+whose `plan` is not a feature plan (`storybook/a11y-exceptions.json#<index>: plan must be a feature plan, specs/<feature>/plan.md`, amendment
+2026-11-13, landing review L1-04, operator round `reviews/phase-4/round-3.md` O3-01; data-model.md § Exception)
+included; the Storybook build failed.
 
 ## The registry
 

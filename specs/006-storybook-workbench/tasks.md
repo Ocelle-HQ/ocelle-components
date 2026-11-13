@@ -8,7 +8,11 @@ plan-squad rounds:
   43064614842, 2026-11-11; decisions 22 to 25 and the updated row "Plant roots hold every repository story" added by
   the operator's decisions on CI run 43072665056, 2026-11-11; decisions 26 and 27 added by the operator's answers of
   2026-11-12; decision 28 added by the operator's decision on CI run 43211645709, 2026-11-12; decision 29 added by
-  the operator's decisions on the merge of mission 005, 2026-11-12);
+  the operator's decisions on the merge of mission 005, 2026-11-12; decision 30 added 2026-11-12, decisions 31 and 32
+  added 2026-11-13; decision 33 added by the operator's decision at landing, 2026-11-13);
+- the landing review `reviews/landing/round-1.md` and its operator rounds (2026-11-13): `reviews/phase-2/round-2.md`
+  (label `fix-1`), `reviews/phase-4/round-3.md` (label `fix-2`) and `reviews/phase-5/round-2.md` (label `fix-1`), each
+  carried by a "Landing: operator round" section of its phase (T075 to T092);
 - research.md R-01 to R-16;
 - data-model.md;
 - contracts/gates.md, contracts/container.md, contracts/plants.md;
@@ -203,6 +207,52 @@ with the new job; `tdd-check.sh 2` reports `pass`.
 - [X] T017 [US1] `gates/gates.json` entry (contracts/gates.md § `storybook-build`), `gates/lib/registry.ts` FR-020 list, `.github/workflows/ci.yml` job `storybook-build` ("Storybook build": checkout, setup, `pnpm run gate:storybook-build`)
 - [X] T018 [US1] Run the phase's checks one at a time: `pnpm test`, `pnpm run gate:typecheck`, `gate:lint`, `gate:test-lint`, `gate:storybook-build`, `gate:plants` (with `--skip-container` if the visual gate is still a stub, recording that), `gate:mutation -- --base <phase base>`; record times in the review
 
+### Landing: operator round 2 (fix-1: O2-01, O2-02, O2-03)
+
+On 2026-11-13 the operator decided the landing review's phase 2 items (`reviews/phase-2/round-2.md`; landing review
+`reviews/landing/round-1.md` L1-02, L1-03, L1-07). The round's label is `fix-1`.
+
+- L1-02 (O2-01): the `\d+` → `\d` mutant of the Vite location regex (`gates/lib/storybook-build.ts:81`) survives. A
+  test kills it; no source change is expected.
+- L1-03 (O2-02): **"(a) Exit 2 + plant (Recommended)"**. A failed build whose output holds Storybook's
+  `MainFileEvaluationError`, and a build ended by a signal, exit 2 (could not run), as FR-001 says, with the breaking
+  plant `error-config-unreadable`. No spec change (FR-001 already says exit 2 for an unreadable configuration);
+  contracts/gates.md § `storybook-build` and contracts/plants.md § `storybook-build` carry it (amendment 2026-11-13).
+- L1-07 (O2-03): the four regex mutants that end as `timeout` at `:75`, `:77` and `:79` (landing log
+  `reviews/landing/round-1-mutation-shard-92.log`, lines 2 to 5) are killed outright by tests, never by a timeout.
+
+Every expected value is written by hand from the contracts and the recorded fixture, never read from the code under
+test. The red commit holds test files and fixtures only.
+
+**Red (one commit)**
+
+- [ ] T075 [US1] O2-01, `gates/test/storybook-build.test.ts` (`describe("buildFindings …")`): a failed build whose Vite error has a location with a line and a column of two or more digits, `╭─[ stories/b.ts:12:34 ]`, after its `[<code>] <message>` line, gives exactly one `build-error` finding at `storybook/stories/b.ts` with that message (exact `formatFinding` string). With the mutant `/╭─\[ (\S+?):\d:\d+ \]/` the location does not match and the finding falls back to `storybook/package.json`, so the case fails against it. Today's code passes it; it is part of the red commit as the mutant's killer, and the red evidence for it is the mutation run of T080.
+- [ ] T076 [US1] O2-03, `gates/test/storybook-build.test.ts`, one case per timed-out mutant (each an exact assertion on `buildFindings`, in process, no build):
+  - `:75` without `^` (`/[|!xoT•—│┌└◇●■▲](?: {2}|$)/`): a Vite message line that ends with a mark character, for example `[PARSE_ERROR] Error: Unexpected token |`, keeps that character in the finding's message;
+  - `:75` with one space (`/^[|!xoT•—│┌└◇●■▲](?: |$)/`): a continuation line of a Vite message that begins with a mark character and one space, for example `x is not exported by stories/helper.ts`, is kept whole in the message;
+  - `:77` without `$` (`/Unable to index \.\/(\S+):/`): a line `Unable to index ./stories/a.stories.ts: <more text>` on one line is not an indexer error: no finding at `storybook/stories/a.stories.ts`;
+  - `:79` without `^` (`/\[[^\]]+\] /`): a line that holds `[<word>] ` after other text (for example `see [docs] for details`), followed by a `╭─[ stories/b.ts:2:1 ]` location, starts no Vite message, so no finding is at `storybook/stories/b.ts` and the one finding is at `storybook/package.json`.
+
+  Today's code passes each case; T080 proves each kills its mutant (Killed, not Timeout).
+- [ ] T077 [US1] O2-02, the recorded output and its tests:
+  - record `gates/test/fixtures/storybook-build/config-unreadable/` (`exit`, `stdout.txt`, `stderr.txt`) and `config-unreadable-unicode/` from a scratch root (`git archive HEAD` into the scratchpad, the repository's `node_modules` and `storybook/node_modules` linked, as L1-03 reproduced it) whose `storybook/.storybook/main.ts` is `const config = {;`, with the gate's build command and environment, under `TERM=linux` and with `TERM` unset, `CI=true`; paths substituted as `gates/test/fixtures/storybook-build/README.md` says; add both cases to that README;
+  - `gates/test/storybook-build.test.ts` (`describe("classifyBuild")`): on each fixture, `classifyBuild` gives exit 2 with the cause `storybook-build: could not run: storybook/.storybook/main.ts cannot be evaluated (<the fixture's line that holds MainFileEvaluationError, its colour codes and line mark removed and trimmed>)`, the line written by hand from the fixture; the same output with a located Vite error added before it is still exit 2 (the check comes before any finding);
+  - a build ended by a signal (`exitCode: null`), with and without output that names a file: exit 2, cause `storybook-build: could not run: the build was ended by a signal`. This replaces the `exitCode: null` half of "places a failed build that names no file at storybook/package.json, with its exit code or the signal" (`:76`); the exit-code half stays. State the replacement and its reason (landing L1-03, FR-001, operator choice (a)) in the commit body and in the fixes note;
+  - `storybookBuild` (`describe("storybookBuild …")`, the injected `run`): a run that returns the fixture's output gives the exit 2 cause above and does not read the index;
+  - `gates/test/integration/storybook-build.test.ts`: the gate on a fixture tree whose `storybook/.storybook/main.ts` is `const config = {;` exits 2 with stderr holding `storybook-build: could not run: storybook/.storybook/main.ts cannot be evaluated` and prints no finding.
+- [ ] T078 [US1] Commit T075 to T077 alone (`test(006-storybook-workbench): phase 2 fix-1 red — O2-01, O2-02, O2-03`), signed off. Then run `.specify/extensions/story/scripts/red.sh 2 fix-1`. Confirm the commit is red only through T077's cases, each an assertion mismatch (exit 1 with a finding where exit 2 is expected), not a load or setup error; T075's and T076's cases pass at it, as expected.
+
+**Green**
+
+- [ ] T079 [US1] O2-02, `gates/lib/storybook-build.ts` (`classifyBuild`, or a pure check it calls before `buildFindings`): on a failed build, a signal (`exitCode === null`) is exit 2 `storybook-build: could not run: the build was ended by a signal`; else a cleaned output line holding `MainFileEvaluationError` is exit 2 `storybook-build: could not run: storybook/.storybook/main.ts cannot be evaluated (<that line>)`; the rest of `buildFindings` is unchanged (its signal wording is then unreachable: remove it). Update the file's header comment. The `visual` and `axe` gates build through the same function and keep their own cause ("the Storybook build failed"). Plant `gates/plants/storybook-build/error-config-unreadable/` as contracts/plants.md § `storybook-build` gives it (`tree/storybook/.storybook/main.ts` holding `const config = {;`; `plant.json` `expect: "error"`, a `why`, cause `storybook-build: could not run: storybook/.storybook/main.ts cannot be evaluated`). `gates/README.md`'s `storybook-build` row: the breaking plants list gains `error-config-unreadable`, and its text says an unreadable configuration and a build ended by a signal exit 2. T077 now passes.
+- [ ] T080 [US1] Run the checks, one at a time:
+  - `pnpm test`, `pnpm run gate:typecheck`, `gate:lint`, `gate:test-lint`, `gate:storybook-build` (exit 0, `built 21 stories`);
+  - the plant shards that hold the `storybook-build` plants (shards 1 to 3, the other plants: `pnpm run gate:plants -- --shard <k>`), alone; every plant as expected, `error-config-unreadable` included;
+  - `pnpm run gate:mutation -- --base <T078 red commit>`, alone, before the green commit: no survivor on the changed lines;
+  - the landing's shard 92 again over the whole regex block, `pnpm run gate:mutation -- --base 476602e --files gates/lib/storybook-build.ts:<first line of the controls regex>-<last line of buildFindings>` (the line numbers after T079), alone: none survived, and each of the five mutants of the landing log (the `:81` survivor and the four `:75` to `:79` timeouts, at their new lines) is Killed, not Timeout. Read every other `timeout` line and name it in the fixes note; a timeout among the five is a stop-and-ask.
+
+  Write the round's fixes note (`reviews/phase-2/round-2-fixes.md`: `| ID | Resolution | Red test | Where |`, with the checks and the mutation output). Commit green (`fix(006-storybook-workbench): phase 2 fix-1 — O2-01, O2-02, O2-03`), signed off. Then run `.specify/extensions/story/scripts/tdd-check.sh 2` (`pass`).
+
 ---
 
 ## Phase 3: User Story 2 - Every story has an exact, byte-stable visual baseline in light and dark (Priority: P2)
@@ -354,6 +404,30 @@ plant is judged correctly; `tdd-check.sh 4` reports `pass`.
 - [X] T059 [US3] `gates/gates.json` entry (contracts/gates.md § `axe`), `gates/lib/registry.ts` FR-020 list, `.github/workflows/ci.yml` job `axe` ("Accessibility")
 - [X] T060 [US3] Run the phase's checks one at a time: `pnpm test`, typecheck, lint, test-lint, `gate:axe`, `gate:visual` (T057's `tabindex` must leave the 42 baselines matching; a `differs` is a stop-and-ask), `OCELLE_VISUAL_ENGINE=auto pnpm run gate:plants`, `gate:mutation -- --base <phase base>`; record times
 
+### Landing: operator round 3 (fix-2: O3-01)
+
+On 2026-11-13 the operator folded landing note L1-04 into phase 4 (`reviews/phase-4/round-3.md`, O3-01; landing
+review `reviews/landing/round-1.md`): an exception entry's `plan` must name a feature plan, `specs/<feature>/plan.md`,
+test-first. The rule is in data-model.md § Exception, contracts/gates.md § `axe` (exit 2) and contracts/plants.md
+§ `axe` (the breaking plant `error-exception-plan-not-a-plan`), amendment 2026-11-13. The round's label is `fix-2`
+(phase 4's `fix-1` was round 1's). Phase 2's landing round comes first (Dependencies).
+
+**Red (one commit)**
+
+- [ ] T081 [US3] O3-01, `gates/test/a11y-exceptions.test.ts` (`parseExceptions`, beside the "plan must be a path inside the repository" cases at `:74-78`): each of these `plan` values gives exactly the problem `storybook/a11y-exceptions.json#0: plan must be a feature plan, specs/<feature>/plan.md`: `storybook/notes.md` (the landing's reproduction), `plan.md`, `specs/plan.md`, `specs/a/b/plan.md`, `specs/a/plan.md.bak`, `specs/a/notes.md`, `./specs/a/plan.md`, `specs/./plan.md`, `specs/../plan.md`, `specs/a/../b/plan.md`. The cases that leave the repository (`/abs/plan.md`, `specs/../../plan.md`, `specs/../..`) keep their message, unchanged. `specs/006-storybook-workbench/plan.md` and `specs/a/plan.md` parse with no problem. The rule is on the text as written (data-model.md § Exception).
+- [ ] T082 [US3] O3-01, `gates/test/axe-gate.test.ts` (the injected `AxeTools`): an exceptions file whose entry names `plan: "storybook/notes.md"` gives exit 2 with the cause `axe: could not run: storybook/a11y-exceptions.json#0: plan must be a feature plan, specs/<feature>/plan.md`, before any build (the injected `build` is not called).
+- [ ] T083 [US3] Commit T081 and T082 alone (`test(006-storybook-workbench): phase 4 fix-2 red — O3-01 exception plan path`), signed off. Then run `.specify/extensions/story/scripts/red.sh 4 fix-2`. Confirm the commit is red only through the new cases, each an assertion mismatch (no problem, or `recorded`, where the problem is expected), not a load or setup error.
+
+**Green**
+
+- [ ] T084 [US3] O3-01, `gates/lib/a11y-exceptions.ts` (`parseExceptions`, after the inside-the-repository check): a `plan` whose text does not match `^specs/[^/]+/plan\.md$`, or whose feature segment is `.` or `..`, is the problem `<at>: plan must be a feature plan, specs/<feature>/plan.md`; update the header comment. Plant `gates/plants/axe/error-exception-plan-not-a-plan/` as contracts/plants.md § `axe` gives it (`delta.json` `exceptions: "repository"`, as every axe plant; `tree/storybook/a11y-exceptions.json` with one entry whose `plan` is `storybook/notes.md`, and `tree/storybook/notes.md` with a `## Complexity Tracking` row naming it; `plant.json` `expect: "error"`, a `why`, cause `a11y-exceptions.json#0: plan must be a feature plan, specs/<feature>/plan.md`). `gates/README.md`'s `axe` row: the breaking plants list gains it, and its text says the `plan` must be `specs/<feature>/plan.md`. T081 and T082 now pass.
+- [ ] T085 [US3] Run the checks, one at a time:
+  - `pnpm test`, `pnpm run gate:typecheck`, `gate:lint`, `gate:test-lint`, `gate:axe` (exit 0, 42 runs, 10 excepted: the repository's entries all name `specs/006-storybook-workbench/plan.md`);
+  - `pnpm --silent run gate:plants -- --plan`, then each shard that holds `axe` plants, alone (`--shard <k>`); every plant as expected. The new plant gives 25 `axe` plants, so one more `axe` shard (28 shards in all, from 27 at the landing head); record the plan's shard count and the new shard's time in the fixes note. A Plants shard above 570 s is a stop-and-ask (plan decision 30);
+  - `pnpm run gate:mutation -- --base <T083 red commit>`, alone, before the green commit: no survivor on the changed lines.
+
+  Write the round's fixes note (`reviews/phase-4/round-3-fixes.md`). Commit green (`fix(006-storybook-workbench): phase 4 fix-2 — O3-01 exception plan path`), signed off. Then run `.specify/extensions/story/scripts/tdd-check.sh 4` (`pass`).
+
 ---
 
 ## Phase 5: User Story 4 - The CSP check targets the packages only; exceptions closed; element issues know how to add stories (Priority: P4)
@@ -385,6 +459,50 @@ lists eighteen required checks (FR-023; main's fifteen since mission 005 plus th
 - [X] T073 [P] [US4] `storybook/README.md`: the contributor note (FR-025, every item of T065)
 - [X] T074 [US4] Run the phase's checks one at a time: `pnpm test`, typecheck, lint, test-lint, `gate:csp`, `gate:prefix`, `gate:plants`, `gate:mutation -- --base <phase base>`; the phase review records one walk-through of the contributor note on a scratch story (SC-005)
 
+### Landing: operator round 2 (fix-1: O2-01, O2-02, O2-03)
+
+On 2026-11-13 the operator decided phase 5's landing items (`reviews/phase-5/round-2.md`; landing review
+`reviews/landing/round-1.md` and its known stale wording, L1-01, L1-05). The round's label is `fix-1`.
+
+- R1-01 of round 1 (O2-01): **"Fix at landing (Recommended)"**. Mission 005 (#17) already delivered the manifest gate
+  and the elements' strict-CSP browser test (`packages/elements/test/browser/serve.ts`), so "the first element feature
+  (#17 or #7)" is stale. Plan decision 33 (2026-11-13) amends decision 32: 001's "Custom-elements manifest gate
+  absent" row is marked closed by 005, `gates/README.md`'s deferred row for the run-time test is dropped. FR-023,
+  FR-024, US4 scenarios 4 and 5 and research.md R-10 are amended in the same commit as decision 33.
+- L1-01 (O2-02): `specs/001-repository-foundation/contracts/ci-checks.md` gets the three checks, the split plant job
+  and the counts. No test reads that contract (`grep -rn "ci-checks" gates/test storybook/test` finds only a comment in
+  `ci-workflow.test.ts`), so this item is a record change with no red (Principle VIII: no behaviour); the fixes note
+  says so. 001's `contracts/gate-cli.md` rows the landing mentioned ("consider") are not part of this round.
+- L1-05 (O2-03): the `visual` command in `gates/gates.json` and `gates/README.md` gains `--remove-docker-image`, as
+  `ci.yml` and contracts/gates.md § `visual` already give it.
+- L1-08 (the 42 baselines named in PR #24's description) is the operator's, on the pull request; it is not a task.
+
+Phases 2 and 4's landing rounds come first (Dependencies).
+
+**Red (one commit)**
+
+- [ ] T086 [US4] O2-01, `gates/test/gates-readme.test.ts` (the Deferred gates case at `:86`): the table is exactly the header and the "Remote loads in built output (constitution IV, beyond FR-021)" row, "the first element feature"; no row for the `@ocelle/elements` run-time strict-CSP browser test. In the same case, the section's text names mission 005 (#17) and `packages/elements/test/browser/serve.ts` as where that test is, and the whole README holds no "(#17 or #7)". Rename the case to say so (006 FR-023, plan decision 33).
+- [ ] T087 [US4] O2-03, the `visual` command with `--remove-docker-image`: `gates/test/registry.test.ts` (`:180`, the `visual` entry of `gates.json`) and `gates/test/gates-readme.test.ts` (`:113`, the README gate table) expect `pnpm run gate:visual -- --engine both --remove-docker-image`. `ci-workflow.test.ts:133` already expects it and stays.
+- [ ] T088 [US4] Commit T086 and T087 alone (`test(006-storybook-workbench): phase 5 fix-1 red — O2-01, O2-03`), signed off. Then run `.specify/extensions/story/scripts/red.sh 5 fix-1`. Confirm the commit is red only through T086 and T087, each an assertion mismatch (the README's extra row and text, the commands without the option), not a load or setup error.
+
+**Green**
+
+- [ ] T089 [US4] O2-01 and O2-03, `gates/README.md`: § Deferred gates without the `@ocelle/elements` run-time strict-CSP row; the paragraph after the table says mission 005 (#17) delivered that test (`packages/elements/test/browser/serve.ts` serves every element page with constitution IV's header and a `securitypolicyviolation` collector) and, as today, that since 006 the Storybook no longer observes CSP; the `visual` row's command `pnpm run gate:visual -- --engine both --remove-docker-image`. `gates/gates.json`'s `visual` `command` the same. The copies of the registry in plant trees and fixtures (`gates/plants/plants/*/gates.json`, `gates/test/fixtures/registry/gates.json`) are worlds of the registry check, which does not compare the command: leave them. T086 and T087 now pass.
+- [ ] T090 [P] [US4] O2-01, `specs/001-repository-foundation/plan.md` Complexity Tracking, the "Custom-elements manifest gate absent" row: keep its text and add, as the row above it does, "**Closed by feature 005 (#17, `specs/005-icons-brand-mark/`)**: the `manifest` gate exists, with its plants and the required check Custom-elements manifest (006 plan.md decision 33, operator decision 2026-11-13)". No test reads it (record change).
+- [ ] T091 [P] [US4] O2-02, `specs/001-repository-foundation/contracts/ci-checks.md` (landing L1-01's required change):
+  - first table: rows `Storybook build` (`pnpm run gate:storybook-build`, job id `storybook-build`; since 006), `Visual regression` (`pnpm run gate:visual -- --engine both --remove-docker-image`, job id `visual`; then the pin record step and its `pin-record` artifact, and the `visual` artifact `storybook/.visual/` on failure; since 006) and `Accessibility` (`pnpm run gate:axe`, job id `axe`; since 006); the Plants row becomes the verdict job: `needs: [plants-plan, plants-shard]`, `if: always()`, the download of every `plant-shard-*` artifact into `storybook/.visual/plant-shards/`, then `pnpm run gate:plants -- --verdict storybook/.visual/plant-shards`, all as contracts/gates.md § The registry gives them;
+  - the helper-job table gains `plants-plan` and `plants-shard` (the registry's `plantHelperJobs`), each as contracts/gates.md § The registry gives it, and its lead sentence names both gates' helper jobs;
+  - "fourteen in all" becomes seventeen (with `storybook-build`, `visual` and `axe` of 006 FR-020 named), and "fifteen" becomes "eighteen" in both places of the Required checks paragraph;
+  - a "Mission 006" paragraph after 005's, dated 2026-11-13 (landing review L1-01 of PR #24, operator round `reviews/phase-5/round-2.md` O2-02): 006 FR-020 added `Storybook build`, `Visual regression` and `Accessibility`, so the first table has eighteen rows; the ruleset on `main` must add the three names; until the operator does, none of the three gates blocks a merge (`gates/README.md` § Required checks on `main`).
+
+  Check each name, command and count against `gates/gates.json`, `gates/lib/registry.ts` (`fr020`, `plantHelperJobs`), `.github/workflows/ci.yml` and `gates/README.md` § Required checks on `main`.
+- [ ] T092 [US4] Run the checks, one at a time:
+  - `pnpm test`, `pnpm run gate:typecheck`, `gate:lint`, `gate:test-lint`;
+  - the plant shards that hold the `plants` registry plants (the other plants, shards 1 to 3), alone; every plant as expected with the changed `gates.json`;
+  - `pnpm run gate:mutation -- --base <T088 red commit>`, alone, before the green commit (no changed source line is expected: report what it prints).
+
+  Write the round's fixes note (`reviews/phase-5/round-2-fixes.md`, with O2-02's no-red reason). Commit green (`fix(006-storybook-workbench): phase 5 fix-1 — O2-01, O2-02, O2-03`), signed off. Then run `.specify/extensions/story/scripts/tdd-check.sh 5` (`pass`).
+
 ---
 
 ## Dependencies & Execution Order
@@ -395,6 +513,15 @@ lists eighteen required checks (FR-023; main's fifteen since mission 005 plus th
   pointer functions of Phase 3.
 - Phase 5 (US4) depends only on Phase 1 and can follow any phase; it is last by priority.
 - Within a phase: the red tests, their commit and `red.sh`, then the implementation; `[P]` tasks touch different files.
+- Landing operator rounds (2026-11-13), on the folded branch, one phase at a time in this order, each red commit, then
+  green, then `tdd-check.sh` and a review round before the next:
+  - phase 2 (T075 to T080, `fix-1`): T075 to T077 before T078; T079 after T078; T080 last;
+  - phase 4 (T081 to T085, `fix-2`): after phase 2's, since both edit `gates/README.md`; T081 and T082 before T083;
+  - phase 5 (T086 to T092, `fix-1`): after phase 4's (`gates/README.md` again, and T085's plant count is settled);
+    T086 and T087 before T088; T090 and T091 any time before T092's commit;
+  - the operator confirms PR #24's description says why the 42 baselines are added (landing L1-08) and adds
+    `Storybook build`, `Visual regression` and `Accessibility` to the ruleset on `main` (landing L1-01); neither is a
+    task.
 
 ## Parallel Opportunities
 
@@ -402,6 +529,8 @@ lists eighteen required checks (FR-023; main's fifteen since mission 005 plus th
 - Phase 3: T019 to T027 (tests) are independent; T029 to T034 (pure modules) are independent.
 - Phase 4: T047 to T053a; T055's modules.
 - Phase 5: T061 to T066; T068, T069, T070, T072, T073.
+- Landing rounds: T075 to T077 (one test file and fixtures, so in sequence); T081 and T082; T086 and T087; T090 and
+  T091 beside T089.
 - Heavy runs (browser suites, the container, plants, mutation) are never parallel.
 
 ## Implementation Strategy
@@ -412,4 +541,5 @@ lists eighteen required checks (FR-023; main's fifteen since mission 005 plus th
   decision 28, T046q to T046v for plan decision 29, and T046w to T046z for plan decision 30).
 - **Increment 3**: Phase 4: axe.
 - **Increment 4**: Phase 5: CSP retarget, the closed exceptions and the contributor note.
+- **Landing**: the operator rounds of 2026-11-13 on phases 2, 4 and 5 (T075 to T092), then a second landing review.
 - Each phase is reviewed and folded before the next starts.

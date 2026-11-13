@@ -110,7 +110,12 @@ The browser context of each axe run has the capture's options, `contextOptions(t
 "reason": "…", "sunset": "…", "plan": "specs/<feature>/plan.md" }]`. Every field a non-empty string. An entry is
 **honoured** only when its `plan` file exists in the root under test and that file's `## Complexity Tracking` section
 holds a table row naming the same story, theme, rule and selector (each in backticks) and the sunset; otherwise it is
-`unrecorded-exception` and excepts nothing. An honoured entry matches only the one serious or critical node of that
+`unrecorded-exception` and excepts nothing. The `plan` text, as written, must name a feature plan: it matches
+`^specs/[^/]+/plan\.md$` with a feature segment other than `.` and `..`; any other `plan` makes the file malformed,
+"could not run" (`storybook/a11y-exceptions.json#<index>: plan must be a feature plan, specs/<feature>/plan.md`), so no file other than a plan,
+which a plan review reads, can carry the row (amendment 2026-11-13, landing review L1-04, operator round
+`reviews/phase-4/round-3.md` O3-01; FR-029 and the constitution's Governance name the plan's Complexity Tracking). An
+honoured entry matches only the one serious or critical node of that
 rule with that selector in that story-theme. An honoured entry that matched no node in a run is `stale-exception`.
 
 `<selector>` is the node's axe target as the gate prints it (`printSelector`, research.md R-08): the shadow levels of

@@ -38,8 +38,9 @@ Three new gates make the Storybook a checked visual source of truth:
 Each gate has fail, pass and breaking plants, and plant roots now hold the Storybook workspace. Following the
 operator's answer Q1 (a), the `csp` gate goes back to covering only the packages' built output. The Storybook loses
 its CSP header test, its externaliser is cut down to moving `<style>` elements only, and 002's two Storybook
-exceptions and 001's "gates absent" exception are closed. The `@ocelle/elements` run-time CSP browser test is recorded
-as the first element feature's. A contributor note in `storybook/README.md` tells
+exceptions and 001's "gates absent" exception are closed. The `@ocelle/elements` run-time CSP browser test was
+recorded as the first element feature's; mission 005 (#17) had already delivered it, so by decision 33 (2026-11-13)
+its deferred row is dropped and 001's manifest row is marked closed by 005. A contributor note in `storybook/README.md` tells
 element issues how to add stories and baselines, and a documentation test checks the note's items.
 
 ## Technical Context
@@ -117,7 +118,7 @@ rounds 1 and 2 and the phase 1 spike.*
 | I. Names, no I/O | No element is added. The gates' names carry no `sk-`. The prefix gate's Storybook scope does not change (FR-022); it now matches declarations across lines. Run-time I/O of a story (same-origin fetch, XHR, WebSocket, EventSource, ping, storage by method or named property, cookies, IndexedDB, the Cache API, clipboard, beacon, and storage left when the render ends) fails the visual gate as `io` (FR-030, R-14), so the no-I/O rule has a check from the first element on. |
 | II. Tokens, brand rules | The `font` rule makes "no face but Schibsted Grotesk" a merge gate for every story (research R-05), the text of form controls (values, placeholders, button-type input labels, in user-agent shadow roots) included, and the contributor note says an element's shadow styles set its form controls' font. The monospace walk stays in the render test. |
 | III. Accessible | axe runs on every story in both themes, on the whole document minus Storybook's harness, so surfaces anywhere are audited, and a surface outside the story root, or a closed shadow root axe cannot enter, fails. Serious and critical violations and serious and critical incomplete results fail the gate, so rendered contrast that axe cannot decide is not passed silently; empty stories are not passes. The rule set and the harness-document rules not run are named in FR-016 and checked against axe-core's own metadata (R-08). An exception covers one node and is honoured only with its Complexity Tracking row (FR-029); the spike's one existing violation is fixed in the story's render code (`tabindex="0"` on its wide tables), and only the incomplete results whose fix is a 003 change are excepted, node by node. Pointer states can be stories and are audited (R-15), in a browser context with the capture's options (1280 × 800, reduced motion), so axe audits the page the capture shows (R-08). Forced colours stay with the element tests (spec Edge Cases). |
-| IV. Strict CSP | `csp` covers the packages' built output "with no exception" again: the Storybook is not built output of a package (operator Q1 (a)), so 002's exceptions 1 and 2 close. Elements remain bound to IV through their package output; their run-time strict-CSP browser test is recorded in `gates/README.md`'s deferred table as the first element feature's (#17 or #7), and the contributor note says element packages prove it in their own browser tests (R-10). |
+| IV. Strict CSP | `csp` covers the packages' built output "with no exception" again: the Storybook is not built output of a package (operator Q1 (a)), so 002's exceptions 1 and 2 close. Elements remain bound to IV through their package output; their run-time strict-CSP browser test is delivered by mission 005 (#17, `packages/elements/test/browser/serve.ts`), so `gates/README.md`'s deferred table holds no row for it (decision 33, 2026-11-13; it was recorded there as the first element feature's (#17 or #7)), and the contributor note says element packages prove it in their own browser tests (R-10). |
 | V. Storybook, baselines | Every story has two committed baselines made in a pinned container, covering the full page at scroll position (0, 0). The gate fails on a missing or stray baseline. CI's captures are the record when local and CI disagree (R-02), for the plants' baselines too: the baseline command's plant mode regenerates them and the Plants job uploads its captures in tree layout, for `pass-second-render` (`captureAlone`) captures made alone by single-story-theme requests so its freshness reference never comes from a full run (R-11). A story per state includes pointer states, whose target must lie inside the initial viewport so a state is never silently not applied (R-15). Baselines change only in a pull request whose description says why; the contributor note says so and landing checks it. |
 | VI. Own code | The gates and the capture are this repository's code. The container image and axe-core are third-party tools used in CI and development only, not shipped (plan-gate decision 1); so are the host tools the gate calls (docker, podman, and skopeo under podman, decision 21). |
 | VII. Semver | No published surface changes. |
@@ -411,7 +412,30 @@ row has the sunset "the first element feature (#7) or #10", and this feature is 
     "Custom-elements manifest gate absent" row in its Complexity Tracking to "the first element feature (#17 or #7)",
     the wording T071 uses for `gates/README.md`'s manifest row (FR-024, US4 scenario 5). The spec prompt
     ("the custom-elements manifest check stays with the first element feature (#17 or #7)") is the approval. 001's
-    plan is edited by T072 in phase 5, not by this decision.
+    plan is edited by T072 in phase 5, not by this decision. **Amended by decision 33 (2026-11-13)**: the wording
+    "the first element feature (#17 or #7)" is stale, since mission 005 (#17) delivered the manifest gate before this
+    decision was taken; 001's row is marked closed by 005, not given a sunset.
+
+Decision 33 is the operator's of 2026-11-13, at landing (reviews/landing/round-1.md, the known stale wording;
+reviews/phase-5/round-2.md O2-01, from phase 5 round 1's R1-01). The operator's answer: "Fix at landing
+(Recommended)" ("Leave phase 5 as approved. At landing (/ocelle-land), amend decision 32 to say the row and the sunset
+are closed by 005 (#17), drop the deferred row and correct research.md, test-first, so CI on this push stays as is.").
+
+33. **Mission 005 (#17) closed the manifest row and the elements' run-time CSP row.** Mission 005
+    (`specs/005-icons-brand-mark/`, main's `476602e`, merged into this branch in `39763c7`), the first element
+    feature, delivered the `manifest` gate (the "Custom-elements manifest" check) and the strict-CSP browser test of the elements
+    (`packages/elements/test/browser/serve.ts`: every element page served with constitution IV's header and a
+    `securitypolicyviolation` collector). So:
+    - 001's "Custom-elements manifest gate absent" row in its Complexity Tracking is marked closed by mission 005
+      (#17, `specs/005-icons-brand-mark/`), replacing the sunset decision 32 wrote (FR-024, US4 scenario 5);
+    - `gates/README.md` § Deferred gates drops the row for the `@ocelle/elements` run-time strict-CSP browser test, and
+      the paragraph after the table says that 005 delivered it in `packages/elements/test/browser/` (FR-023, US4
+      scenario 4); the "Remote loads in built output" row is not part of this decision and stays;
+    - research.md R-10 § Elements' run-time CSP is corrected (2026-11-13): no deferred row is added, the test exists.
+
+    Test-first in phase 5's fix-1 (tasks.md, phase 5 § Landing: operator round 2):
+    `gates/test/gates-readme.test.ts` expects the deferred table without the row, red before `gates/README.md`
+    changes. No test reads 001's plan, so its row is a record change. What it reopens: nothing; phase 5's approval stands for everything else.
 
 ## Project Structure
 
@@ -459,7 +483,7 @@ gates/
 ├── plants/storybook-build/, visual/, axe/                       # new plants (contracts/plants.md)
 ├── plants/csp/, plants/prefix/, plants/plants/                  # changed plants
 ├── test/…                                                       # unit and integration tests, inspect-output fixtures
-└── README.md                                                    # gates, deferred table (elements run-time CSP test)
+└── README.md                                                    # gates, deferred table (elements run-time CSP row dropped, decision 33)
 storybook/
 ├── baselines/*.png                                              # 24 baselines; 42 with mission 005's stories (decision 29)
 ├── visual/container.json
@@ -582,8 +606,10 @@ data the gates read (baselines, pin, exceptions).
    - the externaliser cut down to `<style>` elements, red first in its unit test (a `<script>` stays inline);
      `csp.test.ts` → `render.test.ts`, red first from the build output: `iframe.html` holds Storybook's inline
      `<script>` elements and `dist/` holds no `inline-<hash>.js` file, which fails against the old build script;
-   - `gates.json` scope texts, `gates/README.md` (FR-023, the deferred row for the `@ocelle/elements` run-time CSP test);
-   - the exception rows in 001's and 002's plans, and the sunset of 001's manifest row (FR-024, decision 32);
+   - `gates.json` scope texts, `gates/README.md` (FR-023, the deferred row for the `@ocelle/elements` run-time CSP test;
+     dropped at landing, decision 33);
+   - the exception rows in 001's and 002's plans, and the sunset of 001's manifest row (FR-024, decision 32; at
+     landing the row is marked closed by mission 005, decision 33);
    - `storybook/README.md` with its readme test, red first (FR-025, every item including open shadow roots, surfaces
      inside the host, the font of form controls set in an element's shadow styles, pointer states and their viewport rule, element run-time CSP, CI's captures, and plant
      baselines: the plant mode and the Plants job's artifact, and that `pass-second-render`'s record is CI's captures

@@ -672,12 +672,15 @@ dependencies") is dropped, and FR-017 needs no change.
 - The mutation gate's Storybook scope is unchanged: `storybook/scripts/externalise.ts` stays in it, with its smaller
   behaviour.
 
-**Elements' run-time CSP (PLAN-A11Y-SECURITY-1-007).** The removed CSP header test was the only place a rendered story
-was observed under the strict policy; `packages/elements` has no run-time CSP test yet. So `gates/README.md`'s deferred
-table gains a row naming the first element feature (#17 or #7) as the deliverer of the `@ocelle/elements` run-time
-strict-CSP browser test (served with the header and a `securitypolicyviolation` collector, as
-`packages/tokens/test/browser/serve.ts` does), and the contributor note (FR-025) says each element package proves
-run-time strict CSP in its own browser tests, not in the Storybook. The Storybook page is not brought back under a CSP
+**Elements' run-time CSP (PLAN-A11Y-SECURITY-1-007; corrected 2026-11-13, plan.md decision 33).** The removed CSP
+header test was the only place a rendered story was observed under the strict policy. Mission 005 (#17), merged into
+this branch in `39763c7`, already gives `packages/elements` its run-time strict-CSP browser test:
+`packages/elements/test/browser/serve.ts` serves every element page with constitution IV's header and a
+`securitypolicyviolation` collector, as `packages/tokens/test/browser/serve.ts` does. So `gates/README.md`'s deferred
+table holds no row for it, and the contributor note (FR-025) says each element package proves run-time strict CSP in
+its own browser tests, not in the Storybook. (Before this correction the text said `packages/elements` had no
+run-time CSP test yet and that the deferred table gained a row naming the first element feature (#17 or #7); phase 5
+built that row, and the landing drops it.) The Storybook page is not brought back under a CSP
 (operator Q1).
 
 **Alternative.** Removing the externaliser entirely: the vendor monospace stack then sits in a prefix-covered file

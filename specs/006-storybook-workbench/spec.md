@@ -45,6 +45,13 @@ linux/amd64 pinned image, identified by that platform's image digest; on arm64 h
 runs under emulation and is slower, so a baseline produced on any machine is byte-identical to CI's. "Any machine"
 in this spec means any host with podman or docker that can run that linux/amd64 image, natively or emulated.
 
+**Landing operator round (2026-11-13, plan.md decision 33)**: mission 005 (#17, `specs/005-icons-brand-mark/`), the
+first element feature, already delivered the custom-elements manifest gate (the "Custom-elements manifest" check) and
+the `@ocelle/elements` run-time strict-CSP browser test (`packages/elements/test/browser/serve.ts`), so "the first
+element feature (#17 or #7)" is stale (`reviews/phase-5/round-2.md` O2-01). FR-023, FR-024, US4 scenarios 4 and 5 and
+§ Out of Scope now say that 005 closed both: `gates/README.md`'s deferred row for the run-time test is dropped and
+001's "Custom-elements manifest gate absent" row is marked closed by 005. The spec prompt above is quoted as given.
+
 ## Consumer need
 
 Constitution V makes Storybook the visual source of truth and requires every story to have a committed baseline,
@@ -253,14 +260,15 @@ script no longer fails the `csp` gate; the packages' plants still fail it; the R
    `sk-` names and monospace families (this is not a CSP check and stays).
 4. **Given** `gates/README.md`, **When** the maintainer reads it, **Then** the Storybook build, visual regression and
    accessibility gates are in the gates table with their plants, the Storybook scope section no longer lists a CSP
-   scope or the two exceptions, the deferred-gates table no longer lists the three gates, the custom-elements
-   manifest row names the first element feature (#17 or #7) alone, a row names the first element feature (#17 or
-   #7) as the deliverer of the `@ocelle/elements` run-time strict-CSP browser test, and the required checks on `main`
-   list eighteen checks.
+   scope or the two exceptions, the deferred-gates table lists neither the three gates, nor the custom-elements
+   manifest check, nor the `@ocelle/elements` run-time strict-CSP browser test (both delivered by mission 005, #17:
+   the `manifest` gate and `packages/elements/test/browser/serve.ts`), and the required checks on `main` list eighteen
+   checks (amended 2026-11-13, plan.md decision 33; it named the first element feature (#17 or #7) for both).
 5. **Given** mission 001's and 002's plans, **When** the maintainer reads their Complexity Tracking, **Then** the
    "Storybook build, visual regression and axe gates absent" row and 002's two Storybook exception rows are marked
-   closed by this feature with its number, and 001's "Custom-elements manifest gate absent" row has the sunset "the
-   first element feature (#17 or #7)".
+   closed by this feature with its number, and 001's "Custom-elements manifest gate absent" row is marked closed by
+   mission 005 (#17) (amended 2026-11-13, plan.md decision 33; it gave the sunset "the first element feature (#17 or
+   #7)").
 6. **Given** an element issue's author, **When** they read the contributor note, **Then** it says where stories go,
    that each variant and state is one story (a hover or press state through the pointer parameter), that themes are
    captured by the harness (a story is not written twice), how to produce and commit baselines (including that on an
@@ -469,15 +477,18 @@ script no longer fails the `csp` gate; the packages' plants still fail it; the R
 - **FR-022**: The `prefix` gate's scope on `storybook/` MUST be unchanged: the Storybook workspace's source, tests,
   generated stylesheets (`storybook/.generated/`) and HTML entries `storybook/dist/*.html`, not the bundles.
 - **FR-023**: `gates/README.md` MUST list the three new gates with their plants, drop the Storybook CSP scope and
-  002's two exceptions, drop the three gates from the deferred list, name the first element feature (#17 or #7) as
-  the deliverer of the custom-elements manifest check, name the first element feature (#17 or #7) as the deliverer of
-  the `@ocelle/elements` run-time strict-CSP browser test (the Storybook no longer observes CSP), and list eighteen
-  required checks on `main` (main's fifteen since mission 005, "Custom-elements manifest" included, plus "Storybook
-  build", "Visual regression", "Accessibility"; operator decision 2026-11-13, plan.md decision 31).
+  002's two exceptions, drop the three gates from the deferred list, list in the deferred list neither the
+  custom-elements manifest check nor the `@ocelle/elements` run-time strict-CSP browser test, both delivered by
+  mission 005 (#17: the `manifest` gate, and `packages/elements/test/browser/serve.ts`; the Storybook no longer
+  observes CSP), and list eighteen required checks on `main` (main's fifteen since mission 005, "Custom-elements
+  manifest" included, plus "Storybook build", "Visual regression", "Accessibility"; operator decision 2026-11-13,
+  plan.md decision 31). (Amended 2026-11-13, plan.md decision 33: it named the first element feature (#17 or #7) as
+  the deliverer of both.)
 - **FR-024**: 001's "Storybook build, visual regression and axe gates absent" row and 002's two Storybook exception
   rows MUST be marked closed by feature 006 in their plans' Complexity Tracking, and 001's "Custom-elements manifest
-  gate absent" row's sunset MUST read "the first element feature (#17 or #7)" (operator decision 2026-11-13, plan.md
-  decision 32; the spec prompt's approval).
+  gate absent" row MUST be marked closed by mission 005 (#17, `specs/005-icons-brand-mark/`), which delivered the
+  `manifest` gate (operator decision 2026-11-13, plan.md decision 33, which replaces decision 32's sunset "the first
+  element feature (#17 or #7)").
 - **FR-025**: A contributor note MUST explain how an element issue adds a story per variant and state, that the
   harness captures both themes, how to produce, inspect and commit baselines, and that a baseline change needs a
   pull request description that says why (constitution V), and that on an arm64 host the capture runs the
@@ -554,7 +565,7 @@ script no longer fails the `csp` gate; the packages' plants still fail it; the R
 
 - Element and icon stories and their baselines (#7 to #9, #12 to #17); interaction tests (constitution V, second
   bullet).
-- The custom-elements manifest check (the first element feature, #17 or #7).
+- The custom-elements manifest check (delivered by mission 005, #17; plan.md decision 33).
 - Publishing the Storybook (GitHub Pages or elsewhere).
 - Restoring the manager UI; switching the Storybook framework.
 - Changing the `main` ruleset (operator).
