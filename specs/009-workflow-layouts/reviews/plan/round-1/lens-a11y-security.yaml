@@ -1,0 +1,140 @@
+schema: review-findings/v1
+complete: true
+phase: plan
+round: 1
+lens: a11y-security
+# Checked and found sound (not findings): no ID reference crosses a shadow root (names are copied as text, R-01);
+# `transparent`, `CanvasText` and `Highlight` pass token-only (gates/stylelint/token-only.ts:32, named colours only);
+# the csp gate parses template literals for `style=` attributes (gates/bin/csp.ts header), so a Lit `styleMap`
+# binding would be caught, and R-13's CSSOM `style.setProperty` writes are not governed by style-src; axe 4.14.0
+# (#10's pin) exempts valid custom-element names from `aria-prohibited-attr` (axe.js listProhibitedAttrs,
+# `_isValidCustomElementName`), so a host `aria-label` on these hosts is not an axe finding; ink-soft and ink-muted
+# are checked text pairs on every main ground (packages/tokens/src/source.ts:13-23, 45-47); R-18's engine figures
+# for unprefixed `mask-image` and `:focus-visible` match the published support; no new runtime or dev dependency;
+# no element I/O or network. Chromium's own focus scrolling runs before `focusin` reaches the host (probe below),
+# so R-06's clearance is not undone by it.
+findings:
+  - id: PLAN-A11Y-SECURITY-1-001
+    severity: 3
+    title: "The fade-suppression flag cannot tell the module's own scroll from a user's: scroll events are asynchronous"
+    evidence:
+      - artifact: "research.md § R-06, 'When the control does not fit': 'It reports the fade on the covering side(s) as suppressed until `focusout` from that element or a scroll the module did not make (a flag set around its own assignment).' Same rule in data-model.md § Overflow-region state, `suppressed`."
+      - artifact: "contracts/overflow-region.md § Lifecycle: edges update on `scroll`; § Effects: 'every write is an instant `scrollLeft` assignment'."
+      - code: "Probe in Chrome for Testing 153 headless (scratchpad probe/p.html): `own=true; box.scrollLeft=120; own=false;` then a `scroll` listener. Log: 'after assignment, sync, scrollLeft=120' / 'microtask after assignment' / 'scroll event, own flag=false, scrollLeft=120'. The scroll event is dispatched later, in the rendering steps (CSSOM View 'run the scroll steps'), after the synchronous flag is already cleared and after microtasks."
+    claim: |
+      R-06's fallback for a control wider than the box less the fade depths aligns the control and suppresses the
+      covering fade(s). It then clears the suppression on "a scroll the module did not make", detected by a flag set
+      around the module's own `scrollLeft` assignment. Because the `scroll` event for that very assignment arrives
+      after the flag is reset, the module will always see its own clearance scroll as a user scroll and drop the
+      suppression in the same frame. The fade is then drawn over the focused control's ring box, which is exactly
+      what FR-001 and US1-13's last case forbid (and what WCAG 2.4.11 Focus Not Obscured guards against). A
+      microtask-scoped flag fails too (the probe shows the event after the microtask). The design will either fail
+      US1-13 or be "fixed" in green with a timing hack.
+    remedies:
+      - "Replace the flag in R-06, data-model.md and contracts/overflow-region.md with a position check: the module records the `scrollLeft` it wrote, and a later `scroll` event clears the suppression only when the box's `scrollLeft` differs from that recorded value by more than 1 px (or when a user input that scrolls, `wheel`, `pointerdown` on the box or a key on the box, has occurred since). Add a scenario: the wide-button fallback keeps its fade suppressed over at least two animation frames after focus, and a subsequent user scroll (wheel or arrow key with the box focused after Shift+Tab) restores the fade. Name its plant: a synchronous flag around the assignment."
+  - id: PLAN-A11Y-SECURITY-1-002
+    severity: 2
+    title: "The focus-handover walk only finds light-DOM tabbables, but the library's controls keep their focusable part in a shadow root"
+    evidence:
+      - artifact: "research.md § R-07: 'to the first focusable assigned element (or descendant of one), found with a `tabbable` walk over the slot's flattened assigned elements: `tabIndex >= 0`, not disabled, not `inert`, with a box'."
+      - code: "packages/styles/README.md:61 and specs/003-base-styles/spec.md:398-400 (operator decision PLAN-FRESH-2-004 (a)): 'Elements put their focusable part inside the shadow root or use `delegatesFocus`'. A host of such an element has `tabIndex` -1 and its descendants walked in light DOM hold no focusable node."
+      - artifact: "spec.md FR-004: 'focus moves to the first focusable slotted element. When there is none, focus moves to the host'."
+    claim: |
+      The scroller's main content is chip rows and button rows, which will be this library's own chips and buttons.
+      By the library's own convention their focusable node is inside their shadow root (or the host delegates focus
+      and reports `tabIndex` -1). R-07's walk tests `tabIndex >= 0` on light-DOM nodes only, so for a row of ocelle
+      chips it finds nothing and sends focus to the scroller host, although a focusable slotted control exists. FR-004
+      is then not met, and a keyboard user loses their place in the strip (the next Tab goes to the first chip, but
+      a screen-reader user hears the unnamed host instead of a control). "not `inert`" also needs to cover an inert
+      ancestor, not only the node's own attribute. The test fixtures named in the plan (links, buttons) are all light
+      DOM, so the gap would not be caught.
+    remedies:
+      - "Specify the walk in R-07 and the contract as: for each flattened assigned element in tree order, descend into open shadow roots (and their slots' assigned nodes); a candidate is focusable when it is not disabled, has no `inert` ancestor (`closest('[inert]')` across shadow boundaries), `checkVisibility()` is true and either `tabIndex >= 0` or it is a shadow host with `delegatesFocus` whose shadow root holds such a candidate; focus it with `focus()`. Add a US1-4 case with a slotted test element whose button lives in its open shadow root (and one using `delegatesFocus`), asserting `document.activeElement`/deep active element is that button. Plant: the light-DOM-only walk."
+  - id: PLAN-A11Y-SECURITY-1-003
+    severity: 2
+    title: "The list-detail pane wrapper's focus ring is unspecified: outset (clipped at ancestor edges) and not Highlight in forced colours"
+    evidence:
+      - artifact: "research.md § R-14, 'Ring': 'The wrapper's ring is the token focus ring on `:focus-visible`.' contracts/elements.md § ocelle-list-detail: 'the focus ring tokens for the pane wrappers'. Nothing says where it is drawn or what it uses in forced colours."
+      - artifact: "spec.md US1-9: the scroller's ring is 'drawn inside its own box, so no ancestor's overflow clips it (003: an outset ring at an edge loses its sides)'; FR-005: 'In forced colours the ring uses the system highlight colour'."
+      - code: "packages/styles/src/base.css:47-57 draws the token ring at `outline-offset: var(--ocelle-focus-offset)` (outset) and switches to `Highlight` in forced colours; base.css:199-200 insets the ring (`outline-offset: calc(var(--ocelle-focus-width) * -1)`) for a full-width prose table, the 003 precedent for full-width focus targets. base.css does not reach into shadow roots, so the wrapper gets only what the element's own sheet says."
+    claim: |
+      In one column (Frames N and S, where FR-028's focus move happens) a pane wrapper is as wide as the element,
+      which is as wide as its container. A token ring at the default 2 px outset offset extends 5 px past the element
+      on every side, so the container cell or any ancestor scroll container (an app shell's main region) clips its
+      inline sides and often its block start: the moved focus is not fully visible (WCAG 2.4.7, and the 003 pitfall
+      the spec cites for the scroller). In forced colours, unless the element's sheet says `Highlight`, the forced
+      outline colour differs from every other ring in the library (base.css and FR-005 use Highlight). R-14's tests
+      (ring shown after a key, not after a click) would pass with a clipped or forced-to-CanvasText ring.
+    remedies:
+      - "In R-14 and contracts/elements.md, draw the pane wrapper's ring inset (`outline-offset: calc(var(--ocelle-focus-width) * -1)`, as base.css:200 does for prose tables) and set `outline-color: Highlight` under `@media (forced-colors: active)`. Extend US3-6's ring case to assert, in Frame N inside an `overflow: hidden` frame, that the ring's outline box lies inside the frame on all four sides, and a forced-colours case asserting the outline colour is Highlight. Plant: the default outset ring."
+  - id: PLAN-A11Y-SECURITY-1-004
+    severity: 2
+    title: "Arrow-key handling takes modified arrows too, blocking Alt+Left/Right history navigation and other shortcuts"
+    evidence:
+      - artifact: "research.md § R-02: 'handles `ArrowLeft` and `ArrowRight` itself, only when the keydown's composed target is the scroll box: it calls `preventDefault` ... at the extent it still calls `preventDefault`'. contracts/overflow-region.md § Effects: same. No mention of `altKey`, `ctrlKey`, `metaKey`, `shiftKey` or `isComposing`."
+      - code: "Not probed. Chromium routes non-reserved accelerators (Alt+ArrowLeft/Right back/forward on Windows and Linux) to the page first, and a `preventDefault` on the keydown suppresses them; Cmd+ArrowLeft/Right and Ctrl+ArrowLeft/Right are likewise OS or browser shortcuts the element has no business taking."
+    claim: |
+      With the board or a scroller focused (which, after US1-2, is where Tab lands first), a keyboard user pressing
+      Alt+ArrowLeft to go back gets a 40 px scroll instead, and at the extent gets nothing at all, because the module
+      prevents the default unconditionally. Keyboard-only users depend on these shortcuts more than anyone. FR-006
+      only requires plain ArrowLeft and ArrowRight to scroll, so taking modified keys is behaviour beyond the spec
+      that removes platform keyboard paths (constitution III: the keyboard model must not break the platform's).
+    remedies:
+      - "In R-02 and the contract, handle the keydown only when `!event.altKey && !event.ctrlKey && !event.metaKey && !event.isComposing` (decide and state whether Shift+Arrow is handled; the simplest is to leave it to the browser too). Add to US1-5's test: Alt+ArrowLeft and Ctrl+ArrowRight on the focused box are not `defaultPrevented` and do not change `scrollLeft`. Plant: no modifier check."
+  - id: PLAN-A11Y-SECURITY-1-005
+    severity: 2
+    title: "Always-focusable pane wrappers (tabindex -1) take focus on every click in a pane and add focusable generic nodes to the tree"
+    evidence:
+      - artifact: "research.md § R-14: 'Each pane wrapper has `tabindex=\"-1\"` at all times.' R-11: 'The panes are plain `div`s with no role (FR-029, US3-14).'"
+      - artifact: "spec.md US3-14: 'Each pane's slotted content appears in the tree in pane order ... as it would without the element.'"
+      - code: "HTML focus rules: an element with a `tabindex` attribute is click-focusable, so a pointer down on non-focusable content in a pane (text, a card body) focuses the nearest focusable ancestor in the flat tree, the wrapper. Chromium exposes focusable elements as unignored nodes, so each wrapper is a `generic` node in the filtered tree."
+    claim: |
+      With wrappers focusable at all times, clicking text in the detail moves focus to the detail wrapper (and
+      `document.activeElement` to the host), which changes where the next Tab starts, makes R-14's "focus was inside
+      the hidden pane" true for pointer users who never focused anything, and so triggers focus moves on later tier
+      changes that the spec meant only for focus in a pane. It also puts up to three extra focusable generic nodes in
+      the tree, which conflicts with US3-14's "as it would without the element" and with the exact-tree assertions
+      R-01 and R-15 promise. R-07 already uses the cleaner pattern for the scroller host.
+    remedies:
+      - "Change R-14 and data-model.md: a pane wrapper gets `tabindex=\"-1\"` only immediately before the element calls `focus()` on it, and loses it on the wrapper's `blur`/`focusout`, as R-07 does for the host. Add assertions: before any switch, no wrapper has a `tabindex` and the filtered tree under the host is exactly the slotted content in pane order; a click on pane text does not make the host `document.activeElement`. Plant: wrappers focusable at all times."
+  - id: PLAN-A11Y-SECURITY-1-006
+    severity: 2
+    title: "Following the README's 'always give a label' turns every overflowing card tag row into a region landmark"
+    evidence:
+      - artifact: "spec.md Assumptions, 'Lane semantics': 'A lane is a group, not a landmark: five landmarks on one board would crowd the landmark list.'"
+      - artifact: "spec.md US1-12: 'The README says to always give a `label`'; FR-002/FR-010: a labelled overflowing scroller is a `region` with that name; US2-14: a nested scroller in a lane is 'a region named \"Tags\" of its own'."
+      - code: "WAI-ARIA 1.2 § region: a region is a landmark and authors should reserve it for content 'sufficiently important' that users want it in a page summary; HTML-AAM maps a named region to a landmark in every screen reader's landmark list."
+    claim: |
+      The plan's README tells hosts to label every scroller. Chip and tag rows are typically per card, so a board of
+      five lanes with a tag row on each card yields dozens of landmarks named "Tags" while they overflow, the exact
+      crowding the spec rejected for lanes, and worse because the names repeat. The landmark list stops being useful
+      for the whole screen. The plan has no guidance or test about it.
+    remedies:
+      - "README and contracts/elements.md: state that every labelled overflowing scroller is a landmark, that scrollers repeated per item take a name that identifies the item (for example 'Tags of WP-12') or sit inside content that is already a named group, and give the board and lane stories' nested scroller an item-specific label. No surface change."
+      - "Spec change for the operator: the scroll box takes `role=\"group\"` with its name (not a landmark, still a named container for the tab stop), and only the board keeps `region`; US1-1, US1-12, US2-14 and the module contract change accordingly."
+  - id: PLAN-A11Y-SECURITY-1-007
+    severity: 1
+    title: "Handover focus on the scroller host relies on base.css's outset ring or the UA default; the plan specifies neither"
+    evidence:
+      - artifact: "research.md § R-07: 'when there is none, to the host. The module first sets `tabindex=\"-1\"` on the host'. contracts/overflow-region.md § Effects. No ring is specified for the host; `.region-ring` is shown only by `.region-box:focus-visible ~ .region-ring`."
+      - code: "packages/styles/src/base.css:47-51: `:where(:focus-visible)` draws the token ring outset on any focusable light-DOM node, including a host; packages/styles/README.md:59-61 says hosts get that ring and an element's `:host` rules cannot override it. Without base.css the UA default ring applies."
+    claim: |
+      After a keyboard user's focused strip stops overflowing with no focusable content, focus lands on the host with
+      `:focus-visible` matching (script focus after keyboard). The ring then drawn is base.css's outset ring around a
+      full-width block (clipped at container edges, the 003 pitfall) or, without base.css, the UA ring, not the token
+      ring. It also writes a `tabindex` to the host, the only host write in the module. Not tested by the plan.
+    remedies:
+      - "Hand focus to an inner shadow node instead of the host: `.region-frame` gets `tabindex=\"-1\"` only for the handover and is focused (the document's active element is still the host, satisfying FR-004's 'moves to the host'), with the module's inset token ring and Highlight in forced colours. This also removes the host write. Add to US1-4: the focused node shows the inset token ring inside the host's box. If the host must stay the target, state the ring (base.css's) and test it."
+  - id: PLAN-A11Y-SECURITY-1-008
+    severity: 1
+    title: "Text inputs match :focus-visible on pointer focus, so R-06 scrolls the strip from under the pointer for them"
+    evidence:
+      - artifact: "research.md § R-06, 'When it applies': 'When the focused element ... matches `:focus-visible` ... Pointer focus does not apply: a click on a chip half under a fade does not scroll the strip from under the pointer'."
+      - code: "HTML/Selectors 4 `:focus-visible` heuristics, implemented in Chromium: an element that supports keyboard input (text `<input>`, `<textarea>`, contenteditable) matches `:focus-visible` whatever the input modality, so a click focus on it counts as keyboard focus to R-06."
+    claim: |
+      A filter strip holding a text input (a common chip-row pattern) will be scrolled by the clearance on a pointer
+      click into the input, moving the caret target and any drag selection under the pointer, the outcome R-06 says
+      it avoids. Either the behaviour is wanted for inputs (the user will type, and the ring must be clear), or it is
+      not; the plan should say which and test it, rather than leave it to the heuristic.
+    remedies:
+      - "State in R-06 that text-entry controls are cleared on any focus (because they show a ring on pointer focus and the ring must not sit under a fade), and add a US1-13 case: a slotted `<input type=\"text\">` half under the end fade, clicked, is scrolled clear and its ring box is outside the fade; a slotted button clicked in the same position is not moved."
