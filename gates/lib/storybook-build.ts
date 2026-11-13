@@ -3,7 +3,9 @@
 // storybook/node_modules, the only signal of missing dependencies), the workspace's own build script run through pnpm
 // with its dependency check before `run` turned off (operator decision on the phase 1 spike § 4: it would re-link the
 // repository's node_modules from a plant root) and Storybook's file cache below the root's storybook/.cache, and the
-// verdict on the build's output and its index. Every decision is pure and tested in process on the spike's recorded
+// verdict on the build's output and its index: a build ended by a signal, or one whose configuration Storybook cannot
+// evaluate (its MainFileEvaluationError), could not run (exit 2, FR-001; operator round reviews/phase-2/round-2.md
+// O2-02), before any finding of its output. Every decision is pure and tested in process on the spike's recorded
 // outputs (gates/test/storybook-build.test.ts); gates/bin/storybook-build.ts only hands it the file system and pnpm.
 import { join } from "node:path";
 import type { Io } from "./cli.ts";
@@ -111,8 +113,14 @@ export function buildFindings(run: BuildRun): Finding[] {
     else if (message !== undefined && line !== "") message.push(line);
   }
   if (findings.length > 0) return findings;
-  const how = run.exitCode === null ? "was ended by a signal" : `failed with exit code ${String(run.exitCode)}`;
-  return [{ location: { path: manifestPath }, gate, rule: "build-error", message: `the build ${how} and named no file` }];
+  return [{ location: { path: manifestPath }, gate, rule: "build-error", message: `the build failed with exit code ${String(run.exitCode)} and named no file` }];
+}
+
+/** Why a failed build could not run, before any finding: a signal ended it, or Storybook cannot evaluate its configuration. */
+function failedRunProblem(run: BuildRun): string | undefined {
+  if (run.exitCode === null) return "the build was ended by a signal";
+  const unreadable = cleanLines(`${run.stdout}\n${run.stderr}`).find((line) => line.includes("MainFileEvaluationError"));
+  return unreadable === undefined ? undefined : `storybook/.storybook/main.ts cannot be evaluated (${unreadable})`;
 }
 
 /** The gate's result from the build's run and, after a successful build, the built index's text. */
@@ -129,6 +137,8 @@ export function classifyBuild(run: BuildRun, indexText: string | undefined): Gat
     if (count > 0) return { exit: 0, summary: `${gate}: built ${String(count)} ${count === 1 ? "story" : "stories"}` };
     findings = [{ location: { path: indexPath }, gate, rule: "empty-index", message: "the built index holds no story" }];
   } else {
+    const problem = failedRunProblem(run);
+    if (problem !== undefined) return { exit: 2, cause: `${gate}: could not run: ${problem}` };
     findings = buildFindings(run);
   }
   const files = new Set(findings.map((found) => formatLocation(found.location))).size;
