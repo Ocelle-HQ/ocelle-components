@@ -52,3 +52,12 @@
   `aria-relevant` as not supported (SPEC-2-02). The operator's answers at spec check 2 (SPEC-2-03, a control inserted
   with `error` announces once per control; FR-009, role implies announce) are recorded at the top of the spec and in
   FR-009, FR-027 and User Story 2 scenario 20; no clarification marker remains.
+- Spec check 3 fixes (`reviews/spec/check-3-fixes.md`): FR-008's last bullet and User Story 1 scenario 7 cover only
+  FR-009's first row, so no scenario promises "no live region node" for the unsupported rows (SPEC-3-01). Runtime
+  host role changes, the error baseline and whitespace rule, the limit of the tree-to-DOM text equality, the `hidden`
+  rules for form controls and an observable definition of first load are stated (SPEC-3-02 to SPEC-3-06). The open
+  notes of checks 1 and 2 are settled in the spec or named in the Assumptions as questions the plan must settle
+  (SPEC-3-07). The operator approved the spec at the gate after check 3 once these fixes are made ("Approve after a
+  final fix"), recorded at the top of the spec; no further spec check follows. Items above re-checked after the
+  fixes; "testable and unambiguous" now also rests on the capture rule and the "When it renders" convention of the
+  User Scenarios.
