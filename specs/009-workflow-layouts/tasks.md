@@ -92,7 +92,7 @@ not work around it:
 
 ### Records (exempt, first)
 
-- [ ] T001 Recheck #10 (R-15; plan.md recheck note). Confirm #10 is merged on `main`, then merge `main` into
+- [X] T001 Recheck #10 (R-15; plan.md recheck note). Confirm #10 is merged on `main`, then merge `main` into
   `claude/015-workflow-layouts` (never rebase). Read #10 as merged against R-15's list:
   - the viewport and scale;
   - the theme global;
@@ -107,7 +107,7 @@ not work around it:
   Record each item as "as designed" or "differs: …" in `specs/009-workflow-layouts/reviews/phase-1/recheck-10.md`.
   Where an item differs, update R-15, `contracts/elements.md` § Stories and the affected tasks below in the same
   commit, and name them in the record.
-- [ ] T002 Check `main` for sibling 011's (#8) uppercase letter-spacing token and container-tier convention (R-16,
+- [X] T002 Check `main` for sibling 011's (#8) uppercase letter-spacing token and container-tier convention (R-16,
   spec Assumptions "Sibling tokens"). Record the result in `specs/009-workflow-layouts/reviews/phase-1/sibling-011.md`:
   - absent: this feature adds `--ocelle-tracking-caps` and writes the convention;
   - present: adopt its name and value in T003 to T006 and in contracts/elements.md, and record the mapping.
