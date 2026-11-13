@@ -62,9 +62,13 @@ Tokens read: `color-sheet`, `color-control-border`, `color-ink`, `color-ink-mute
 | Member | Kind | Type | Default |
 |---|---|---|---|
 | `type` | attribute + property, reflected | `"text" \| "email" \| "url" \| "tel" \| "search" \| "password" \| "number"` | `"text"` |
-| `placeholder`, `autocomplete`, `inputMode` (`inputmode`), `pattern`, `min`, `max`, `step` | attribute + property, reflected | `string` | unset |
+| `placeholder`, `autocomplete`, `inputMode` (`inputmode`), `pattern`, `min`, `max`, `step` | attribute + property, reflected | `string \| undefined` | unset: `undefined`, and the inner field has no such attribute |
 | `readOnly` (`readonly`) | boolean attribute + property, reflected | `boolean` | `false` |
-| `minLength` (`minlength`), `maxLength` (`maxlength`) | attribute + property, reflected | `number` | unset (no limit) |
+| `minLength` (`minlength`), `maxLength` (`maxlength`) | attribute + property, reflected | `number \| undefined` | unset: `undefined`, the inner field has no such attribute and the length is not limited |
+
+An unknown `type` stays in the attribute as written while the property reads `"text"` (FR-001). No `defaultValue`
+property (FR-021). "Unset" reads `undefined`, as 005's optional attributes do (`ocelle-icon`'s `label`), so no
+default is reflected onto the host; tests assert each type and the unset reading (analysis G5).
 
 Events: `ocelle-form-input-change`, `CustomEvent<{ value: string }>`, `bubbles`, `composed`; the native composed
 `input` reaches the host.
@@ -72,7 +76,8 @@ Events: `ocelle-form-input-change`, `CustomEvent<{ value: string }>`, `bubbles`,
 ## `ocelle-form-select`
 
 Options from light-DOM `<option>` and `<optgroup>` children. A host `value` attribute is ignored. The open-list
-indicator is drawn in the select's own shadow root from the shared set's `chevron-down` (research R-07); importing
+indicator is drawn in the select's own shadow root: the icon data is the shared set's `chevron-down` from
+`src/icons.ts`, the drawing comes from the internal `src/icon-svg.ts` that `ocelle-icon` also uses (research R-07); importing
 the module defines `ocelle-form-select` and no other element.
 Tokens read, in addition to the shared list: `icon-size` (the indicator).
 Events: `ocelle-form-select-change`, `CustomEvent<{ value: string }>`, `bubbles`, `composed`; the native composed

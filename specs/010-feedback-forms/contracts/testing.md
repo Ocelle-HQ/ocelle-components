@@ -47,8 +47,13 @@ Bounds: a step that pauses more than 2000 times, or runs longer than 5000 ms, fa
 exceeded …", so a looping element or mutant ends as a failed test, not a Timeout (research R-09). The figures are
 re-measured in T002.
 
-`regionText(nodes, region)` and `announcements()` live in `test/live-reading.ts` and have unit tests of their own on
-recorded `getFullAXTree` node lists from the T002 spike: one per reading rule (StaticText taken; `img` name taken and
+`regionText(nodes, region)` and `announcements()` live in `test/live-reading.ts` and have unit tests of their own.
+The reading rules run on `getFullAXTree` node lists in `test/fixtures/ax/`, recorded before the red commit (T001) by
+a throwaway Playwright script against the pre-installed Chromium on planted regions (script not committed; each
+fixture's header comment names the Chromium version and the planted markup); the T002 spike re-records them with the
+capture as drafted for T004 and stops for the operator if a field the reading uses differs, and T001's lists are not
+replaced or edited after the red commit (research R-09, analysis I6). The keeping rules run on hand-written snapshot
+sequences. There is one test per reading rule (StaticText taken; `img` name taken and
 its descendants not visited; a link's own name skipped and its StaticText children taken; inline text boxes skipped;
 an ignored subtree contributes nothing; whitespace collapsed and trimmed), one per keeping rule (a state set and
 cleared in one task, a state cleared in the first animation frame, a state shorter than `D`, each kept or not as the
@@ -75,9 +80,14 @@ it is the same code over the page's CDP session. Both harnesses share `test/live
 - `drive.after(ms)`: returns `ms` after the previous step's end, measured in the page, for the scenarios with
   changes in different tasks a set time apart (spec User Story 1 scenario 13: 100 ms apart, 10 ms after a write).
   Scenario bodies state these times as fractions of the `W` in force (100 ms is `W / 3` after load), so the
-  in-process run with the test `D` keeps the same relation.
+  in-process run with the test `D` keeps the same relation; the driver exposes that `W` for both load states (in
+  process from the one timing constant of `test/in-process.ts`, on fixture pages from Chromium's 150 and 350 ms).
+  `drive.after` has a test of its own that fails without it (T001b; analysis G6).
 - Timing (in process only): `test/in-process.ts` calls `setAnnouncerTimingForTests` of `src/live.ts` before each
   scenario with the one test constant that also sets the capture's `D` (research R-09). Fixture pages never call it.
+  Phase 1 (T005) adds the constant and the capture's `D`; phase 2 (T020a) adds the call, and
+  `test/in-process-timing.test.ts` (T014a) checks that the capture's `D` is the constant's and that an inserted
+  notice's copy is written `2 × D` of the constant after the insertion (analysis G7).
   It keeps the timing its first call in the test file returned (the shipped `announcerDefaults`) and exposes it
   read-only; `test/live-timing.test.ts` asserts that value and `announcerDefaults` against the literals
   `{ delayLoaded: 150, delayLoading: 350, hold: 5000 }`, so the shipped figures' mutants are killed in process
@@ -123,8 +133,11 @@ cannot pass (PLAN-TESTABILITY-1-006). The field's typed value is `Fix lane` and 
 | US2-21 form with no submit button and two fields, Enter in the first | `submit` returns `null` |
 | US2-21 mixed form (one native input, one `ocelle-form-input`), Enter in the `ocelle-form-input` | `submit` returns `null`, as the two-field twin (absolute only) |
 | US2-21 mixed form, Enter in the native input | `submit` returns both entries (the browser's rule, no twin; README limitation) |
+| `name="title"` and `form="other"`, placed inside form `main`, with form `other` elsewhere in the page (FR-020, Edge Cases) | `formData("other")` holds `title=Fix lane`; `formData("main")` has no `title` entry; `form` is the `other` form |
+| `name="title"`, outside any form, with form `main` elsewhere in the page (Edge Cases) | `form` is `null`; `formData("main")` has no `title` entry; `value` reads `Fix lane`, `willValidate` true, `valid` true; with `required` and an empty value `valueMissing` true |
 
-The select's rows follow the same pattern with its options (US3 scenarios 5 and 6), listed in its scenario body.
+The select's rows follow the same pattern with its options (US3 scenarios 5 and 6), listed in its scenario body,
+the `form="other"` and outside-any-form rows included (analysis G2).
 
 ## Plants
 

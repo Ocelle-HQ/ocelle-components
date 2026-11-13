@@ -151,11 +151,14 @@ politeness; an insertion or a reveal sets the error baseline to none, so the re-
 
 ## Input-only fields (`ocelle-form-input`)
 
-`type` (reflected; unknown reads `text`), `placeholder`, `readOnly`, `autocomplete`, `inputMode`, `minLength`,
-`maxLength` (numbers, absent = no limit), `pattern`, `min`, `max`, `step` (strings): passed to the inner `<input>`.
+`type` (reflected; an unknown value stays in the attribute and reads `text`), `placeholder`, `readOnly` (boolean),
+`autocomplete`, `inputMode`, `minLength`, `maxLength` (numbers, absent = no limit), `pattern`, `min`, `max`, `step`
+(strings): passed to the inner `<input>`. An absent one reads `undefined` and the inner `<input>` has no such
+attribute (contracts/elements.md). No `defaultValue` property.
 
 ## Select-only fields (`ocelle-form-select`)
 
 Options: an ordered list mirrored from the host's light-DOM `<option>` and `<optgroup>` children (label, value,
 `selected` as default selection, `disabled`, group label). Single choice only. The indicator is drawn in the shadow
-root from `iconOf("chevron-down")`, `aria-hidden`, with `pointer-events: none` (R-07).
+root, the icon data from `iconOf("chevron-down")` of `src/icons.ts` and the drawing from `src/icon-svg.ts`,
+`aria-hidden`, with `pointer-events: none` (R-07).

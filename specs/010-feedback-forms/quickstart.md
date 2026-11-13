@@ -17,9 +17,11 @@ and, for phase 5, #10 (mission 006) merged on `main` with podman or docker avail
 3. Forms: the native-twin suites compare `FormData`, submissions and validity with native controls and with the
    absolute outcomes of `contracts/testing.md` § Twins (SC-003).
 4. Tokens: `pnpm run gate:contrast` passes with ink on the five state grounds added in `source.ts` and `pairs.json`,
-   and the gate tests' required-set counts read 154 and 165/173/154 (research R-04).
-5. Manifest and docs: `pnpm --filter @ocelle/elements run manifest`, then `pnpm run gate:manifest`; the README test
-   in `test/node/readme.test.ts` (SC-006).
+   and the gate tests' figures read as research R-04's table gives them: 154 required per theme and 308 in all,
+   165/173 entries (338 in all), the summary 165/173/154, and 166 for plant variant (2).
+5. Manifest and docs: `pnpm --filter @ocelle/elements run manifest`, then `pnpm run gate:manifest` (no `role` or
+   `hidden` attribute declared from phase 2 on); the README test in `test/node/readme.test.ts` (SC-006), whose
+   assertions each phase adds in its red commit, mapped item by item in `reviews/phase-5/readme-map.md`.
 6. Built output: `pnpm --filter @ocelle/elements run build`, then `pnpm run gate:csp` and `pnpm run gate:prefix`.
 7. Stories (after #10): `pnpm run gate:storybook-build`, `pnpm run visual:update` in the pinned container to produce
    baselines, then `pnpm run gate:visual` and `pnpm run gate:axe` (SC-005).
