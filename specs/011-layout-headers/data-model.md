@@ -10,8 +10,8 @@ contract in [contracts/elements-package.md](contracts/elements-package.md).
 | `ocelle-section-header` | `size`: `"regular"` \| `"compact"`, not set; `variant`: `"default"` \| `"eyebrow"`, not set | `heading`, `eyebrow`, `description`, `actions` | empty flag per slot (R-03); resolved size, read from its own `size` and its assigned slot (R-05) |
 | `ocelle-card` | `density`: `"regular"` \| `"compact"`, not set; `inset`: boolean | `header`, default (body) | empty flag per slot; the section headers it last notified (R-05) |
 | `ocelle-page-header` | `size`: `"regular"` \| `"compact"`, not set | `heading`, `eyebrow`, `description`, `actions` | empty flag per slot |
-| `ocelle-context-sidebar` | `label`: string, not reflected; a host `aria-label` overrides it natively | `head`, default (sections), `footer` | empty flag per slot; `ElementInternals` role `navigation` and name from `label` (R-11) |
-| `ocelle-personal-rail` | `label`: string, not reflected; `orientation`: `"vertical"` \| `"horizontal"`, not set; a host `aria-label` overrides it natively | default (primary), `bottom` | empty flag per slot; `ElementInternals` role `navigation` and name from `label` (R-11) |
+| `ocelle-context-sidebar` | `label`: string, not reflected; a host `aria-label` overrides it natively | `head`, default (sections), `footer` | empty flag per slot; `ElementInternals` role `navigation` and name from `label`, held under the internal `internals` symbol key (R-11) |
+| `ocelle-personal-rail` | `label`: string, not reflected; `orientation`: `"vertical"` \| `"horizontal"`, not set; a host `aria-label` overrides it natively | default (primary), `bottom` | empty flag per slot; `ElementInternals` role `navigation` and name from `label`, held under the internal `internals` symbol key (R-11) |
 
 None emits an event, declares a CSS part or an element CSS custom property, or is focusable.
 
@@ -26,7 +26,8 @@ None emits an event, declares a CSS part or an element CSS custom property, or i
 - Landmark name: host `aria-label` present → its value (blank → no name); else `label` when not blank; else no name
   (FR-028). The host is the landmark: `internals.ariaLabel` holds the `label` name and a host attribute wins over it
   natively (R-11); the element never writes the host's `aria-label`.
-- Slot empty: no assigned element and every assigned text node empty or whitespace only (spec "Empty slot").
+- Slot empty: no assigned element and every assigned text node empty or whitespace only (spec "Empty slot"). A
+  `hidden` sidebar section counts as content but draws no box, padding or divider (FR-022).
 
 ## State transitions
 

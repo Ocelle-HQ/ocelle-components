@@ -52,8 +52,10 @@ Slots: `heading`, `eyebrow`, `description`, `actions`. Events, parts, CSS custom
 | `label` | property only (not reflected; attribute `label` read) | `string \| undefined` | `undefined` | Names the navigation landmark when the host has no `aria-label` |
 
 Slots: `head`, default (sections, one element each), `footer`. Events, parts, CSS custom properties: none. The host
-is the navigation landmark (through `ElementInternals`, not listed in the manifest, as in 005); a host `aria-label`
-names it as the README's Host ARIA rule says, and the element never writes it.
+is the navigation landmark (through `ElementInternals`, held under an internal `Symbol("internals")` key so axe's
+landmark rules see it, research.md R-11, and not listed in the manifest); a host `aria-label` names it as the README's
+Host ARIA rule says, and the element never writes it. A `hidden` section draws nothing; the edge margins of slotted
+sections, head and footer are trimmed (FR-008).
 
 ### `ocelle-personal-rail` (class `OcellePersonalRail`)
 
@@ -63,11 +65,13 @@ names it as the README's Host ARIA rule says, and the element never writes it.
 | `orientation` / `orientation` | property, attribute (reflected) | `"vertical" \| "horizontal" \| undefined` | `undefined` | Layout direction, set by the page or a shell; not set is vertical; the element never changes it itself |
 
 Slots: default (primary items), `bottom`. Events, parts, CSS custom properties: none. The host is the navigation
-landmark, named as for the sidebar.
+landmark, named and held as for the sidebar. The host's colour is `--ocelle-color-chrome-ink`; the rail styles no item,
+so an item shows chrome ink only when it inherits colour (plain `<a>` items need `color: inherit`, FR-027).
 
 **For #12**: the rail's whole interface for a shell or drawer is `orientation` (and `label`). A shell that wants
 the rail horizontal inside the personal drawer and vertical in its column sets `orientation` from its own tier,
-with an exclusive bound in its own query. Anything more (events, an item density) is #12's to add, as MINOR.
+with an exclusive bound in its own query. The README's example, which #12 may copy, is a viewport media query,
+`matchMedia("(width < Npx)")` (FR-026, research.md R-10); a column- or container-driven tier is #12's to build. Anything more (events, an item density) is #12's to add, as MINOR.
 
 ## Tokens (`@ocelle/tokens`)
 
