@@ -1,0 +1,185 @@
+schema: review-findings/v1
+complete: true
+phase: plan
+round: 1
+lens: a11y-security
+# Probes: Chromium 153 (/opt/pw-browsers/chromium-1243) driven by /opt/node-tools Playwright, plain shadow DOM pages
+# (no Lit), AX tree read through CDP Accessibility.getFullAXTree; scripts kept in the session scratchpad only.
+findings:
+  - id: PLAN-A11Y-SECURITY-1-001
+    severity: 3
+    title: "The row's accessible name from content includes the description and tags, which are also its description"
+    evidence:
+      - artifact: "research.md § R-05: 'otherwise the content (the default slot; slotted icons are decorative ...)'; data-model.md § Shared `nameSource`: 'else content'; research.md § R-10: the description and tags groups are inside 'the row's inner control', a flex container"
+      - artifact: "spec.md US4 scenario 3: 'named by its title ... its accessible description is the slotted description's text followed by the slotted tags' text'; FR-034 'the title slot as content'"
+      - code: "Probe: shadow root with <button><span part=title><slot></slot></span><span><slot name=description></slot></span><span><slot name=tags></slot></span></button>, ariaDescribedByElements = [description, tags]. CDP: button name 'I Mission 42 Due Friday BlockedDesign', description 'Due Friday Blocked Design' (name from content walks every slot inside the button, the tags run together with no space)."
+      - code: "Probe: same page with the inner button's ariaLabelledByElements = [the shadow span part=title] gives name 'Mission 42', description 'Due Friday Blocked' (reference inside the same shadow root, no ID crossing)."
+    claim: |
+      Name from content on a <button> or <a> is computed from the whole flattened subtree, so the plan's "otherwise the
+      content" names the row by its title, its description and its tags (and any text slotted into trailing), and a
+      screen reader then reads the description and tags twice: once in the name, once as the description FR-034 builds.
+      Adjacent tags also concatenate without a separator ("BlockedDesign"). US4-3 and US4-12 would fail at green with no
+      design to fall back on, and the plan's control.ts rule ("content") is the convention later controls inherit, so
+      it is wrong for any control with non-name content inside its inner control. WCAG 4.1.2 / 1.3.1.
+    remedies:
+      - "Research R-05 and data-model nameSource: when no host aria-labelledby, host aria-label or label is set, the row sets its inner control's ariaLabelledByElements to its own shadow `[part=title]` wrapper (same shadow root, so no ID reference crosses a shadow root); the button keeps name from content because its content is only the label and the decorative icon. State in the control conventions that a control whose inner control holds non-name content names itself from the part that is its name. Add a control.test.ts case and keep US4-3/US4-12 as the acceptance proof."
+
+  - id: PLAN-A11Y-SECURITY-1-002
+    severity: 3
+    title: "Adopting iconSlotStyles shrinks every slotted element, including tags and description, to an icon square"
+    evidence:
+      - artifact: "research.md § R-01: 'laid out by mission 005's slot convention (`icon-row`, `iconSlotStyles`)'; § R-10: 'The tags slot's container is display: flex; flex-wrap: wrap'"
+      - code: "packages/elements/src/icon-slot.ts:22-29: an unscoped `::slotted(*) { inline-size: var(--ocelle-icon-size) !important; block-size: var(--ocelle-icon-size) !important; max-inline-size: none !important; flex: none !important; }` (applies to every slot of the shadow root, not only icon and trailing)"
+      - code: "Probe: the iconSlotStyles text read from icon-slot.ts adopted with a `.tags { display:flex; flex-wrap:wrap }` container; the slotted <span slot=tags>Blocked by review</span> renders 16 x 16 px with scrollWidth 47 (text overflowing onto neighbours)."
+    claim: |
+      The 005 rule was written for a test host whose only slotted elements are icons. In a row, the description and
+      tag elements become flex or grid items and get the icon size with !important, so tag and description text
+      overflows a 16 px box and overlaps other content; a button whose label is an element (`<span>Save</span>`) in a
+      flex label wrapper is hit the same way. The !important also defeats R-10's own tag wrapping rules
+      (max-inline-size 100%). Text that overlaps is lost information (WCAG 1.4.10, 1.4.12) and breaks US5-8.
+    remedies:
+      - "Scope the convention's size rules to `slot[name=\"icon\"]::slotted(*), slot[name=\"trailing\"]::slotted(*)` in src/icon-slot.ts (an internal change to 005's module, test-first with a slot.test.ts case slotting a non-icon element into the default slot and asserting its box is untouched), and add a row scenario asserting a slotted tag's box equals its text's width."
+
+  - id: PLAN-A11Y-SECURITY-1-003
+    severity: 3
+    title: "Moved ARIA cannot be cleared by removeAttribute, which is how Svelte and Lit clear an attribute bound to undefined"
+    evidence:
+      - artifact: "research.md § R-03: 'Frameworks that set attributes declaratively (Svelte, htmx swaps, Thymeleaf renders) set the attribute again on each change, which the element moves again, so their state stays in step'; spec FR-004: 'removeAttribute on an attribute already moved changes nothing'"
+      - code: "Probe: custom element observing aria-current that removes it in attributeChangedCallback; setAttribute('aria-current','page') then host removeAttribute('aria-current'): attributeChangedCallback ran for (null->'page') and the element's own (page->null) only; the host's later removeAttribute on the now-absent attribute produced no callback."
+      - artifact: "Svelte 5 set_attribute: caches the last value per element and calls element.removeAttribute when the new value is null or undefined (`aria-current={isCurrent ? 'page' : undefined}`); Lit's attribute part removes the attribute for `nothing`/ifDefined(undefined). kitty-mission-ui is a Svelte shell (constitution I)."
+    claim: |
+      The research's claim that declarative frameworks stay in step holds only for value-to-value changes. The idiomatic
+      way to clear aria-current, aria-label, aria-controls or aria-describedby in Svelte and Lit is to bind undefined,
+      which calls removeAttribute on an attribute the element already removed: no callback fires, and the inner control
+      keeps announcing the old state (a nav item still "current page", a disclosure button still named or related to a
+      panel that is gone). A stale state exposed to assistive technology fails WCAG 4.1.2, and the failure is silent:
+      the host's DOM shows no attribute. This is the convention #12 and #14 inherit.
+    remedies:
+      - "(a) Keep the move; README and the control conventions give a framework recipe (bind \"\" or \"false\", never undefined/null, with Svelte and Lit examples), research R-03's sentence about frameworks is corrected, and a scenario asserts that removeAttribute after a move leaves the state (so the limit is tested, not assumed)."
+      - "(b) Keep the move and override the ARIAMixin reflection accessors on the element classes (ariaExpanded, ariaCurrent, ariaLabel, ariaControlsElements, ...) so a property set to null clears the moved state; Lit `.ariaCurrent=${x}` and any property-binding host can then clear; document that attribute removal still cannot."
+      - "(c) Add element properties (e.g. `expanded`, `current` on the button) as an additional, clearable channel beside the moved host attributes (the operator rejected properties instead of host ARIA, not in addition); a MINOR surface addition stated in FR-009."
+
+  - id: PLAN-A11Y-SECURITY-1-004
+    severity: 2
+    title: "Host ARIA not on the move list (aria-haspopup, aria-pressed) stays on the role-less host, and #12's menu button needs aria-haspopup"
+    evidence:
+      - artifact: "spec.md FR-009: passthrough attributes are exactly aria-expanded, aria-controls, aria-current, aria-label, aria-labelledby, aria-describedby; triage/012-button-action-row.md:66 '`ocelle-top-bar`'s \"menu button\" ... will follow the link, current and name conventions set here'"
+      - artifact: "research.md § R-03: a role-less host with aria-expanded draws axe incomplete aria-allowed-attr (critical); 006 contracts/gates.md (origin/claude/010-storybook-workbench) line 114: '<axe rule id>-incomplete ... serious or critical' fails the gate"
+      - artifact: "WAI-ARIA APG Menu Button pattern: the button has aria-haspopup (menu or true) and aria-expanded; a toggle button has aria-pressed."
+    claim: |
+      The plan defines no behaviour for an ARIA attribute outside the list: it stays on the host, where (per the plan's
+      own R-03 measurement) it is a second generic node and an axe incomplete result that #10's axe gate fails, and the
+      inner control never gets it. The first consumer named for these conventions is a menu button, whose ARIA pattern
+      requires aria-haspopup on the control; built on ocelle-button it either cannot announce the popup or fails the
+      axe gate. The README must say what happens to an unlisted aria-* on the host.
+    remedies:
+      - "(a) Add aria-haspopup and aria-pressed to ocelle-button's moved list now (FR-009, data-model, contract, scenarios like US2-4), so #12's menu button and toggle buttons are covered before 1.0.0."
+      - "(b) Keep the list; the control conventions state that any other aria-* on the host is unsupported (stays on the host, axe flags it) and that adding one to the list is a MINOR change a consumer requests; #12's spec adds aria-haspopup when it needs it."
+      - "(c) Move every ARIA state and property that is allowed on role button/link (a fixed list taken from WAI-ARIA 1.2, stated in research) so the convention needs no per-consumer additions."
+
+  - id: PLAN-A11Y-SECURITY-1-005
+    severity: 2
+    title: "Unavailable link keeps href on a refuted premise: an <a> without href stays focusable with tabindex=0"
+    evidence:
+      - artifact: "research.md § R-06 'Open (check-3 note SPEC-3-03)': 'removing href would also remove the link role's focusability, which unavailable must keep'; plan.md decision 6 the same"
+      - code: "Probe: `<a id=a role=link tabindex=0 aria-disabled=true>Gone</a>` in a shadow root: .focus() makes it the shadow root's activeElement; CDP reports role link, name 'Gone', focusable true."
+      - artifact: "spec.md 'Not activated' and FR-003: 'a disabled or unavailable link opens no new tab or window either'; US5-6 'navigates nowhere (not in the current tab, not in a new tab or window)'"
+    claim: |
+      The only reason given for leaving the busy link button's and unavailable row's href in place is false: role=link
+      plus tabindex=0 keeps the control focusable and announced as a link, unavailable, with no URL. Keeping href leaves
+      the context menu (reachable by keyboard with the Menu key or Shift+F10), drag-to-tab and the status-bar URL as
+      routes to open an item the spec says cannot be opened right now, which the README then has to carve out of the
+      "not activated" guarantee.
+    remedies:
+      - "(a) Unavailable link mode (busy button, unavailable row) renders `<a role=\"link\" tabindex=\"0\" aria-disabled=\"true\">` with no href, the guard still on click/auxclick; drop the README context-menu exception; add scenarios asserting no href and focusability; R-06 and decision 6 corrected."
+      - "(b) Keep href and the documented exception, but correct R-06's rationale to say it is a choice (keeping the URL visible and the context menu working) rather than a necessity, so the operator decides on the real trade-off."
+
+  - id: PLAN-A11Y-SECURITY-1-006
+    severity: 2
+    title: "The outer focus ring of a row is clipped in scroll containers and covered by the next row when rows are positioned"
+    evidence:
+      - artifact: "research.md § R-12: 'A full-width row at the viewport edge would clip an outer ring ...; the README tells hosts to give a row list --ocelle-focus-offset plus --ocelle-focus-width of inline padding. The plan squad may challenge it.'; spec.md US4-9 / FR-041 'the focus ring is drawn around the whole row'"
+      - code: "Probe (outline 3px, offset 2px, as the tokens): a full-width block inside an `overflow:auto` container shows no ring pixel outside the container edge (ring clipped on both inline sides); two adjacent 44 px blocks with position:relative: the pixel 3 px below the first block is the second block's background, not the ring (static blocks: ring visible)."
+      - code: "packages/tokens/src/source.ts:162-164 focus-width 3px, focus-offset 2px, bar-width 3px"
+    claim: |
+      Navigation and list panels are scroll containers, and flush rows sit edge to edge with no gap; the current bar
+      will very likely need a positioned box. Then the 5 px outer ring of a focused row is cut at the container's
+      inline edges and hidden under the following row, so the focus indicator of the row is partly or wholly hidden in
+      exactly the consumer's layout (WCAG 2.4.7; 2.4.11 for author content covering it). A README note asking hosts to
+      pad does not help in a scroll container that must be flush, and does not address the next row.
+    remedies:
+      - "(a) Draw the row's ring inside: a negative outline offset equal to focus-offset plus focus-width, via a new token (e.g. `--ocelle-focus-offset-inset`, alias calc of the two) so the style-lint gate needs no allowance; FR-042's focus pairs against accent-low, hover-bg and sheet already cover the row's own surfaces; add scenarios in an overflow:auto list asserting ring pixels on all four sides."
+      - "(b) Keep the outer ring but have the row raise itself while focused (`:host(:focus-within) { position: relative; z-index: ... }` from a token) and keep the README padding note; add a scenario with adjacent rows and an overflow container that shows the clipping limit."
+
+  - id: PLAN-A11Y-SECURITY-1-007
+    severity: 2
+    title: "No forced-colours mechanism for the current bar and the flush-row hover; a background-drawn bar or hover vanishes"
+    evidence:
+      - artifact: "spec.md US4-8: flush hover in forced colours 'visible in a system colour, again without moving or resizing'; US5-4: 'in forced colours the bar stays visible in a system colour'; FR-031 'No state of a flush row moves or resizes its content'"
+      - artifact: "research.md § R-12 'variant rules inside @media not (forced-colors: active)' and controlStyles 'forced colours'; R-08 item 3 and data-model give no drawing method for the bar or the flush hover"
+      - code: "Probe, forced-colors active: a div with background-color rgb(255,0,0) and border-inline-start 4px blue computes background rgb(255,255,255) and border rgb(0,0,0): backgrounds are forced to Canvas, borders survive."
+    claim: |
+      In forced colours the accent-low surface, a hover-bg surface and any bar painted as a background or box-shadow
+      are removed, while a border would move the flush row's content (forbidden by FR-031). The plan leaves the method
+      open, so the phase that builds it has to invent a design under a spec that rules out the obvious ones; the
+      current state would then be conveyed only by aria-current, failing 1.4.11 / 1.4.1 for forced-colours users.
+    remedies:
+      - "Research R-12 states the method and data-model records it: the bar is an absolutely positioned pseudo-element with `forced-color-adjust: none` and a system colour (e.g. Highlight) inside `@media (forced-colors: active)` (or a border on the pseudo-element, which is forced but kept); the flush hover in forced colours is an outline or inset ring in Highlight that takes no layout space; each with a forced-colours scenario reading pixels, not computed styles."
+
+  - id: PLAN-A11Y-SECURITY-1-008
+    severity: 2
+    title: "The href scheme check throws on an unparseable URL and the research leaves other script-capable schemes unsettled"
+    evidence:
+      - artifact: "research.md § R-02: 'its scheme, parsed with new URL(href, document.baseURI), is not javascript:'; contracts/checks.md control.test.ts: 'mode decision table (empty, whitespace, javascript:, JavaScript:, relative)'"
+      - code: "Probe: new URL('http://[', document.baseURI) throws TypeError 'Failed to construct URL: Invalid URL'; new URL of 'java\\tscript:alert(1)', ' \\u0001javascript:alert(1)' and 'JAVASCRIPT:x' all give protocol 'javascript:'."
+      - artifact: "reviews/spec/check-2.md SPEC-2-11 and check-1.md SPEC-1-20: 'Say whether other script-capable schemes (vbscript:, data:) are treated the same way' left to 'the plan's research'; R-02 does not answer it"
+    claim: |
+      An href attribute set from user or server data that is not a valid URL makes the mode decision throw inside the
+      element's update, so the control does not render (a button that disappears or a broken update loop) rather than
+      falling back. The planned decision table does not test the parser normalisation cases that make a naive string
+      check unsafe (tab or newline inside the scheme, leading C0 controls), so a later refactor to startsWith could pass
+      the tests. SPEC-2-11 asked the research to decide data: and other schemes; it is silent.
+    remedies:
+      - "R-02 and data-model `mode`: an href that fails to parse is button mode (no href rendered), caught, no error; control.test.ts adds 'http://[', 'java\\tscript:', '\\u0001javascript:', ' javascript:' and 'data:text/html,...' rows; R-02 records the decision on data: (e.g. left to the host because Chromium blocks top-level data: navigation, or treated like javascript:) and the README states it."
+
+  - id: PLAN-A11Y-SECURITY-1-009
+    severity: 2
+    title: "An endlessly rotating spinner has no stop when motion is allowed (WCAG 2.2.2, Level A)"
+    evidence:
+      - artifact: "research.md § R-07: rotation with an @keyframes animation of --ocelle-motion-spin (800 ms), animation none only under prefers-reduced-motion; spec FR-017"
+      - artifact: "WCAG 2.2 SC 2.2.2 Pause, Stop, Hide: moving content that starts automatically, lasts more than five seconds and is shown in parallel with other content needs a way to pause it; Understanding 2.2.2 treats a loading animation as essential only 'if interaction cannot occur during that phase for all users'"
+    claim: |
+      A busy button is shown beside an interactive page (only the button itself is blocked), and busy can last longer
+      than five seconds; the spinner then moves indefinitely with no mechanism to stop it other than an OS preference
+      the user may not know or have set. Reduced motion is 2.3.3 (AAA) territory; 2.2.2 is Level A and the plan does
+      not address it.
+    remedies:
+      - "(a) Limit the animation to under five seconds (e.g. animation-iteration-count 6 at 800 ms = 4.8 s, the count as a token or an allowed literal) and end on the still arc that the reduced-motion state already shows; add a scenario that reads the animation's iteration count and end state."
+      - "(b) Record in research that the busy spinner is treated as an essential loading indicator under Understanding 2.2.2, with the argument, and state it in the README so hosts with long-running actions use their own pausable indicator."
+
+  - id: PLAN-A11Y-SECURITY-1-010
+    severity: 1
+    title: "Description and tags ink is unnamed, so flush-row text on state grounds has no contrast rows"
+    evidence:
+      - artifact: "spec.md FR-042: 'Title and description text meet text contrast on the row's surface in every state ... the contrast check covers each'; research.md § R-08 adds only color-ink to the state grounds; no token is named for the description or tags text"
+      - code: "packages/tokens/src/source.ts:45,47: color-ink-soft and color-ink-muted declare grounds `main` only (no state grounds). Computed by hand from the token values: ink-muted on the state grounds is 5.40 to 5.95 light and 5.59 to 6.27 dark, so it would pass, but no row checks it."
+    claim: |
+      A flush row has no surface, so its description sits on whatever ground it is placed on, including the state
+      grounds FR-042 names. If the description uses ink-soft or ink-muted (the usual secondary text), those pairs are
+      not declared, and the contrast check that FR-018/FR-042 rely on does not cover them; a later token value change
+      could drop them below 4.5:1 unnoticed.
+    remedies:
+      - "R-08 names the description (and tags, if not slotted elements with their own colours) ink token and adds the state grounds to that token's contrast.grounds with the new required rows in pairs.json and the gate counts."
+
+  - id: PLAN-A11Y-SECURITY-1-011
+    severity: 1
+    title: "`label` can replace a visible label with unrelated text (WCAG 2.5.3 Label in Name) and nothing documents the limit"
+    evidence:
+      - artifact: "spec.md FR-006 / FR-013 and research.md § R-05: a trimmed label becomes the inner control's aria-label and wins over content"
+      - artifact: "006 spec FR-016 (origin/claude/010-storybook-workbench): experimental axe rules are not run, so label-content-name-mismatch (experimental) does not check it"
+    claim: |
+      With visible content present, `label` overrides it with any text, so a speech-input user saying the visible words
+      may not reach the control. The row's `label` (#528) is exactly that case. No gate checks it and the README
+      conventions do not say the name must contain the visible text.
+    remedies:
+      - "Control conventions (FR-008, README) state that when content is visible, `label` and a host aria-label must contain the visible text, ideally at the start (WCAG 2.5.3), and the label stories use names that do (as US4-4's 'Open mission 42' does)."

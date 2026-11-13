@@ -1,0 +1,227 @@
+schema: review-findings/v1
+complete: true
+phase: plan
+round: 1
+lens: correctness
+# Checked: spec.md, plan.md, research.md, data-model.md, contracts/elements-package.md, contracts/checks.md,
+# quickstart.md and the constitution against each other and against the repository at base 0575d38
+# (packages/elements/src, packages/elements/scripts/manifest.ts, packages/tokens/src/{source,generate}.ts,
+# gates/stylelint/token-only.ts, packages/styles/src/base.css, vitest configs, storybook/stories) and against
+# #10's design on origin/claude/010-storybook-workbench (specs/006-storybook-workbench, package.json,
+# gates/lib/plant-runner.ts). Two Chromium 153 probes over CDP (headless, /opt/pw-browsers/chromium-1243), scripts in
+# the session scratchpad, not in the repository. Contrast figures of R-08 recomputed from source.ts values: they match.
+findings:
+  - id: PLAN-CORRECTNESS-1-001
+    severity: 3
+    title: "Moving host ARIA makes removal a no-op, which contradicts four acceptance scenarios and leaves stale state in declarative hosts"
+    evidence:
+      - artifact: "spec.md § FR-004: \"`removeAttribute` on an attribute already moved changes nothing\"; research.md R-03 line 65: \"Frameworks that set attributes declaratively (Svelte, htmx swaps, Thymeleaf renders) set the attribute again on each change, which the element moves again, so their state stays in step\""
+      - artifact: "spec.md US2 scenario 4 (line 184): \"removing it reports no expanded state\"; US2-5 (line 186): \"removing it removes it\"; US2-9 (line 196): \"removing `aria-labelledby` names it \\\"Remove\\\"\"; US4-12: \"removing `aria-describedby` restores \\\"Due Friday Blocked Design\\\"\"; US2 Independent Test (line 171): \"change and remove it\""
+      - code: "DOM: removeAttribute on an absent attribute fires no attributeChangedCallback, so after the move the element cannot observe a host's removal. Svelte 5 and Lit attribute bindings and React 19 call removeAttribute for null/undefined (e.g. aria-current={isCurrent ? 'page' : undefined}); htmx morph swaps (idiomorph) diff live attributes against the new HTML, and the live host no longer has the moved attribute, so a removal in the new HTML is never applied. The APG disclosure pattern reads aria-expanded back (getAttribute) to toggle it; after the move it reads null every time."
+    claim: |
+      Under FR-004 the scenarios that remove a passthrough attribute cannot pass as written: after the move the
+      attribute is already absent, so removing it again does nothing and the inner control keeps the old state.
+      Phase 3's red tests therefore either test something impossible or quietly reread "removing" as "setting empty".
+      Both break Principle VIII's link between the spec and its tests. R-03's claim that declarative hosts "stay in
+      step" holds for changes but not for removals. In kitty-mission-ui's Svelte shell, moving the current page from
+      item A to item B removes aria-current from A, and A goes on announcing "current page". The same happens to
+      aria-expanded with a value that becomes undefined, and to htmx morph swaps in the console. A host that toggles
+      by reading the attribute back always sets "true". These are wrong states that an assistive technology announces
+      on #12's navigation items, which the plan says follow this convention.
+    remedies:
+      - "(a) Keep the move. Rewrite US2-4, US2-5, US2-9, US4-12 and the US2 Independent Test to clear with the empty value or \"false\", and add a scenario that a removeAttribute after the move changes nothing. In R-03 and the README, replace the \"stay in step\" claim with framework guidance: bind `aria-current={x ?? \"false\"}`, `aria-expanded={String(open)}`, keep the state in the host and never read it back from the attribute, and note that htmx morph swaps do not clear a moved attribute."
+      - "(b) Keep the move and add reflected, non-ARIA attributes with the same meaning (`expanded`, `current`, and an id-list `controls` on the button), which removal does clear. The README recommends them for declarative hosts, and the moved host ARIA stays for #501's ask. MINOR surface, recorded in FR-009, the manifest and the contract."
+      - "(c) Take the decision back to the operator: keep the attributes on the host as well as on the inner control, and record the axe `aria-allowed-attr`/`aria-prohibited-attr` incomplete results as exceptions in #10's a11y-exceptions with a Complexity Tracking row."
+
+  - id: PLAN-CORRECTNESS-1-002
+    severity: 3
+    title: "Row name from content includes the slotted description and tags, so the row is not \"named by its title\""
+    evidence:
+      - artifact: "spec.md US4 scenario 3: \"named by its title (or by FR-034's name passthrough when set)\"; FR-034: \"The row's accessible name follows FR-006 (the title slot as content)\"; research.md R-05 line 100: \"otherwise the content (the default slot ...)\"; data-model.md nameSource: \"else content\""
+      - code: "Probe, Chromium 153 over CDP: a custom element whose shadow root holds <button><slot></slot> <slot name=description></slot> <slot name=tags></slot></button>, with light children 'Mission 42', <span slot=description>Due Friday</span>, <span slot=tags>Blocked</span><span slot=tags>Design</span> and ariaDescribedByElements set to the slotted spans. AX node: button name \"Mission 42 Due Friday BlockedDesign\", description \"Due Friday Blocked Design\". The same element with aria-labelledby=\"t\" on the button, pointing at a shadow <span id=t> that wraps the default slot: name \"Mission 43\", description \"Due Monday Ready\"."
+    claim: |
+      The plan puts the description and tags slots inside the inner <button>/<a> (R-10's flex/grid inner control)
+      and leaves the name to "the content". Name from content walks the whole flat subtree, so the row's name becomes
+      title + description + tags. A screen reader then hears the description and tags twice, once in the name and
+      once in the description, and US4-3, US4-4 and US4-12 fail. The fix has to work inside FR-006's order: an
+      in-shadow aria-labelledby on the title wrapper outranks aria-label in Accessible Name 1.2. So it may be applied
+      only when no host aria-labelledby, host aria-label or `label` is set, or the moved aria-label and `label` would
+      lose to it. Neither research nor the data model states this.
+    remedies:
+      - "Add to R-05 and the data model's nameSource for the row: when no host aria-labelledby, host aria-label or trimmed `label` is present, the inner control's name comes from an in-shadow-root aria-labelledby (or ariaLabelledByElements) pointing at the title wrapper (the `title` part) that holds the default slot; otherwise that reference is removed so FR-006's order holds. Add a US4 scenario asserting that the name excludes the description and tags text."
+
+  - id: PLAN-CORRECTNESS-1-003
+    severity: 3
+    title: "R-09 centres the content in the minimum box, which breaks flush alignment (FR-012, US1-12, #518) for short and icon-only buttons"
+    evidence:
+      - artifact: "research.md R-09 line 191: \"the inner control is a flex box that centres the slot convention's `icon-row`\"; \"`flush`: `padding-inline: 0` ... minimum sizes of its `size` unchanged\""
+      - artifact: "spec.md FR-012: \"Its content starts at the box's inline start, so the inline-start edge of the label (or, with an icon, of the icon) equals that of surrounding text within 0.5 CSS px\"; US1-12 \"with or without an icon, in each `size`\""
+      - code: "packages/tokens/src/source.ts:166-167: target-min 2.75rem (44 px), icon-size 1.25rem (20 px); space-6 1.5rem (24 px, R-09's compact minimum). An icon-only flush default button centres a 20 px icon in 44 px: icon edge 12 px from the box start. Compact: 2 px. A short label such as \"Go\" (about 20 px at font-size-md) in a 44 px minimum: about 12 px."
+    claim: |
+      With `min-inline-size` at 44 px (default) or 24 px (compact) and centred content, any flush button whose
+      content is narrower than the minimum starts its label or icon to the inline-end side of the box start.
+      FR-012's 0.5 px alignment then fails. That alignment is #12's whole need (#518): an icon-only "home"
+      breadcrumb or a short crumb misaligns. US1-12's tests would fail against the planned CSS, so the plan builds
+      the wrong layout for #12 and #14's flush copy control.
+    remedies:
+      - "State in R-09 that a flush button's inner control aligns its content to the inline start (`justify-content: flex-start`, mirrored under `dir=\"rtl\"` by logical flow), so the extra minimum size falls at the inline end. Non-flush buttons stay centred. Add US1-12 cases for an icon-only and a one-character flush button in each size."
+
+  - id: PLAN-CORRECTNESS-1-004
+    severity: 3
+    title: "The spinner rotation needs an angle literal that style-lint rejects; R-07's reason for the new token is wrong"
+    evidence:
+      - artifact: "research.md R-07 line 144: \"a new token is not needed if the duration is `calc(var(--ocelle-motion-base) * 4)`, but the `token-only` lint forbids a bare number factor beside a token\"; \"It rotates with an `@keyframes` animation\"; contracts/checks.md § Gates touched: \"no new allowance planned (a needed one stops the phase and goes to the squad)\""
+      - code: "gates/stylelint/token-only.ts:63-64: a word with any unit other than % or fr is raw (`if (unit !== \"\") return false`), so `1turn` and `360deg` are raw; a bare number passes `inCalc`. Line 141: any function other than var() and calc() is raw whole, so `rotate(...)` in `transform` is raw. packages/elements/src/icon-slot.ts:25 already ships `calc((var(--ocelle-icon-size) - 1lh) / 2)`, a bare factor beside a token, and it passes the gate."
+    claim: |
+      A rotating spinner needs `transform: rotate(1turn)`, `rotate: 360deg` or a similar angle in its @keyframes.
+      Every such value is raw to ocelle/token-only, and nothing in the plan supplies an angle token. Under the plan's
+      own rule, phase 4 would stop at the gate, so the fork belongs at this plan gate. R-07 also justifies the new
+      public token `--ocelle-motion-spin` with a lint restriction that does not exist (calc factors pass). A public
+      token added for the wrong reason is still MINOR surface, and every later spinner inherits it.
+    remedies:
+      - "(a) Add a public angle token (e.g. `--ocelle-motion-turn: 1turn`) used as `rotate: var(--ocelle-motion-turn)` in the keyframes, with its tokens tests and changelog; keep or drop `motion-spin` on its own merits, and correct R-07's rationale."
+      - "(b) Add a narrow style-lint allowance (only `1turn` as the whole value of `rotate` inside @keyframes), test-first with a plant, as 005 did for `scale` and `1lh`; drop `--ocelle-motion-spin` in favour of `calc(var(--ocelle-motion-base) * 4)`, which the gate already allows."
+      - "(c) Animate the arc without rotation, e.g. `stroke-dashoffset` driven by a token-based calc() value, and rewrite R-07 and US3-6 accordingly."
+
+  - id: PLAN-CORRECTNESS-1-005
+    severity: 2
+    title: "Primary hover changes nothing visible, and no design exists for the active state FR-018 and FR-019 require"
+    evidence:
+      - artifact: "research.md R-08.4 line 178: \"a hovered primary keeps its fill and its border changes to `--ocelle-color-hover-border`\"; R-08.2 line 162: hover-border is `var(--ocelle-color-accent-strong)`; R-08.4: primary has \"an `--ocelle-color-accent-strong` border on every ground\""
+      - artifact: "spec.md FR-019: \"Hover and active states change surface and border through tokens\"; FR-018: \"every variant ... and state pair (enabled, hover, active, focus, disabled, busy) meets ... and the contrast check covers each pair\""
+    claim: |
+      With the default tokens, the primary button's border is already accent-strong, and its hover border is an
+      alias of accent-strong. A hovered primary therefore looks the same as an idle one, which contradicts FR-019.
+      Research, the data model and the contracts define no active (pressed) colours for any variant. That leaves
+      FR-018's "active" contrast rows and FR-019's active change without a design, and 006's `press` pointer stories
+      (R-13) with no specified look.
+    remedies:
+      - "Specify in R-08 a visible primary hover (e.g. a darker fill token or the hover-bg ring) and the active state of each variant and of `flush`, with the tokens used and their contrast rows added to pairs.json, or record in the spec that `active` equals `hover` and that the primary's hover is carried by a named token change."
+
+  - id: PLAN-CORRECTNESS-1-006
+    severity: 2
+    title: "The manifest normaliser drops standard ARIA attributes, so the passthrough attributes FR-009 calls public are either undeclared or undescribed"
+    evidence:
+      - code: "packages/elements/scripts/manifest.ts:37-38: `standardAttributes = new Set([\"aria-label\"])`, \"Attributes every element may observe that are standard attributes, not its members\"; packages/elements/custom-elements.json has no aria-label entry for ocelle-icon; gates/bin/manifest.ts reports `no-description` for any declared attribute without a description"
+      - artifact: "spec.md FR-009 lists the passthrough attributes as part of \"the public interface ... changing it after release is a MAJOR change\"; FR-053 \"The custom-elements manifest lists every public property, attribute ...\"; plan.md Project Structure does not list packages/elements/scripts/manifest.ts; contracts/checks.md § Gates touched: manifest \"two new elements ... (regenerated, committed)\""
+    claim: |
+      If the elements observe aria-expanded, aria-controls, aria-current, aria-labelledby and aria-describedby
+      through observedAttributes, as 005's icon does for aria-label, the analyzer emits them. Only aria-label is
+      normalised away, so the other five show up without descriptions and the manifest gate fails `no-description`.
+      Alternatively the plan extends the normaliser, and then FR-053 and constitution I ("the custom-elements
+      manifest declares every public ... attribute") are not met for attributes FR-009 calls public. The plan
+      decides neither way and leaves out the script that has to change.
+    remedies:
+      - "(a) Declare the moved attributes as manifest attributes with descriptions (JSDoc `@attr` on each element), change the normaliser so `aria-label` is dropped only for 005's elements or is also declared, and add scripts/manifest.ts and its tests to the plan."
+      - "(b) Extend `standardAttributes` to the six ARIA names, and amend FR-053 and FR-009 to say the passthrough attributes are documented in the README and contract, not in the manifest, recording the deviation from constitution I in Complexity Tracking."
+
+  - id: PLAN-CORRECTNESS-1-007
+    severity: 2
+    title: "`--ocelle-motion-spin` at 0 ms under reduced motion needs a generator change that the plan does not list"
+    evidence:
+      - code: "packages/tokens/src/generate.ts:281: the reduced-motion block is hard-coded, `declaration(\"    \", \"motion-fast\", \"0ms\")${declaration(\"    \", \"motion-base\", \"0ms\")}`; packages/tokens/test/generate.test.ts:107: \"sets exactly --ocelle-motion-fast and --ocelle-motion-base to 0ms under prefers-reduced-motion: reduce (FR-007)\""
+      - artifact: "plan.md Project Structure line 132: \"packages/tokens/src/source.ts, test/expected.ts, test/browser/values.test.ts, contrast/pairs.json, README.md, CHANGELOG.md\"; research.md R-07/R-08 \"Every new or changed token goes through `source.ts`, `test/expected.ts` ...\""
+    claim: |
+      Adding a record to source.ts does not put `motion-spin: 0ms` under the reduced-motion query. The generator
+      emits only the two named tokens, and an existing test asserts exactly those two. The plan's file list and
+      R-08's path miss generate.ts, generate.test.ts (its meaning has to change from "exactly two" to "exactly three",
+      which Principle VIII asks to be recorded as a stricter replacement) and the mutation scope of generate.ts. As
+      planned, R-07's "two independent mechanisms" collapses to one.
+    remedies:
+      - "Add packages/tokens/src/generate.ts and test/generate.test.ts to the plan (preferably driving the reduced-motion block from the motion records rather than a second hard-coded name), with the test change recorded as stricter, and mutation of generate.ts under the default config."
+
+  - id: PLAN-CORRECTNESS-1-008
+    severity: 2
+    title: "FR-006 and US2-8 cite mission 005's host aria-label rule, but the moved aria-label behaves differently"
+    evidence:
+      - code: "packages/elements/README.md:188-191 (005's Host ARIA): \"when present it decides alone: a blank host `aria-label` leaves the element unlabelled even with a `label`. ... removing it falls back to `label`\"; packages/elements/src/naming.ts:13 treats a whitespace-only host aria-label as blank"
+      - artifact: "spec.md FR-004: `aria-label=\"\"` clears the moved state (so `label` or content names the control) and removeAttribute changes nothing; FR-006: \"the host's `aria-label` (mission 005's host ARIA rule)\"; US2-8: \"as mission 005's host ARIA rule says\"; data-model.md: moved aria-label \"not trimmed\", \"an empty string deletes the entry\""
+    claim: |
+      Under 005's rule a blank host aria-label leaves the element unlabelled and removing it falls back to `label`.
+      Under 012 an empty aria-label falls back to `label`, and removal does nothing. A whitespace-only value is
+      stored, applied to the inner control and, under AccName, ignored, so content names the control. One package
+      README would then state two contradictory host-ARIA rules, while the spec says 012 follows 005's. Tests written
+      from 005's rule, as US2-8 directs, would assert the wrong result for `aria-label=""` with `label` set.
+    remedies:
+      - "Drop the references to 005's rule from FR-006 and US2-8. State 012's own aria-label semantics (empty or whitespace-only clears and falls back to `label`, then content; removal is a no-op) in FR-004 and the control conventions, and add a README sentence saying 005's elements keep their own rule."
+
+  - id: PLAN-CORRECTNESS-1-009
+    severity: 2
+    title: "\"A landing after phase 2 alone already gives #12 and #14 the button\" is false for #12"
+    evidence:
+      - artifact: "plan.md line 181-182; phase 2 is button mode only (\"`control.ts` (button mode only ...)\"), and link mode, aria-current passthrough and aria-labelledby are phase 3"
+      - artifact: "contracts/elements-package.md: the #12 example is `<ocelle-button flush size=\"compact\" href=\"/projects\">Projects</ocelle-button>`; triage/012 § Related work: #12's nav item uses `aria-current` per these conventions; spec SC-006"
+    claim: |
+      Breadcrumb items are links, and the current crumb carries aria-current. Both arrive in phase 3. A phase-2-only
+      landing gives #12 a flush compact button it cannot use for a trail. It would also ship a README whose control
+      conventions 2, 4 and 6 are missing. An operator deciding whether to cut the mission short would be misled.
+    remedies:
+      - "Change the sentence to \"after phase 3\" (link mode and passthrough) for #12, and \"after phase 2\" for #14's copy control only."
+
+  - id: PLAN-CORRECTNESS-1-010
+    severity: 2
+    title: "Phase 7's \"whichever lands second\" puts an unrecorded obligation on #10, and 006's own model allows only shardSize 1 at 49 stories"
+    evidence:
+      - artifact: "plan.md line 171-174: \"If #10 is not on `main` at landing, this phase is left to whichever of 012 and #10 lands second\"; research.md R-13 line 278; Complexity Tracking sunset \"the merge of #10 (phase 7 then runs)\""
+      - code: "origin/claude/010-storybook-workbench:specs/006-storybook-workbench/plan.md line 610: shard time ≈ 387 + size × 1.377 × (2s + 2) s, and lowering `size` is due \"before the repository holds the split count, 25 stories\"; gates/lib/plant-runner.ts:269 `shardSize = 3`; main today: 21 story exports (storybook/stories: base 4, brand-mark 4, icon 5, tokens 8). With about 28 more stories (s = 49): size 3 ≈ 800 s, size 2 ≈ 662 s, size 1 ≈ 525 s"
+    claim: |
+      If 012 lands first, main holds about 49 stories without baselines or story axe runs. #10's design does not
+      include producing 012's baselines, so #10's visual gate would fail on landing. #10 would also land past its own
+      split-count sunset (25), and nothing in #10's artifacts records any of this. 012's Complexity Tracking sunset
+      ("phase 7 then runs") then names work no mission owns. If #10 lands first, 006's measured model says only
+      `size` 1 keeps a shard under 10 minutes at 49 stories. That roughly triples the visual/axe shard count and its
+      fixed 387 s each. The plan says only "lowered".
+    remedies:
+      - "(a) Require #10 to land first: phase 7 becomes a blocking part of 012's landing (012 waits for #10), with the shard figure stated (size 1 at about 49 stories, per 006's model) and the CI cost recorded."
+      - "(b) Allow 012 to land first, but record the obligation where #10 will see it: an operator-approved note in #10's tasks or triage, and a Complexity Tracking row in 012 naming the owner and the exact work (baselines for the 012 stories, story axe, counts, shardSize to 1)."
+      - "(c) Cut the story count before #10 (only the stories FR-050 strictly needs in phase 2 to 6, more states combined per story) so the total stays nearer the split count, and state the resulting shard size."
+
+  - id: PLAN-CORRECTNESS-1-011
+    severity: 2
+    title: "R-10's min-content widths let one long unbreakable title widen the row beyond its container, against the long-title edge case"
+    evidence:
+      - artifact: "research.md R-10 lines 204-209: the title group `min-inline-size: min-content`, the host `display: block; min-inline-size: min-content`; spec.md Edge Cases line 375: \"Very long titles and unbreakable identifiers ... wrap per `base.css`'s identifier wrapping (#535) in card layout; in row layout the title wraps, never overflows the row\""
+      - code: "packages/styles/src/base.css:230-231: identifier wrapping is opt-in, `[data-ocelle-wrap=\"anywhere\"] { overflow-wrap: anywhere; }`, and cannot reach a title given as bare text in the row's default slot; nothing in research sets overflow-wrap on the title wrapper"
+    claim: |
+      With `overflow-wrap: normal`, the min-content of a title holding a long identifier or digest is that word's
+      full width. The plan pins both the title group and the host to at least min-content. So a row in a narrow rail
+      or card grows wider than its container and overflows the list, even though it never overflows "the row"
+      itself. base.css's identifier wrapping, which the spec relies on for cards, does not reach shadow-rendered
+      title text. The plan has no rule that makes US5-8's parenthetical and the edge case true.
+    remedies:
+      - "Set `overflow-wrap: anywhere` on the row's title wrapper (part `title`) in both layouts, so min-content shrinks to a character but never to 0, keeping FR-040, and state it in R-10. Rewrite the edge case so it does not depend on base.css, and add a scenario: a 60-character unbreakable title in a 200 px container wraps and the row's inline size is at most the container's."
+
+  - id: PLAN-CORRECTNESS-1-012
+    severity: 1
+    title: "R-01's heading and opening decision say \"no `delegatesFocus`\" while its refined decision and the contract set it"
+    evidence:
+      - artifact: "research.md line 11 \"## R-01 Element structure: one inner control, no `delegatesFocus`\"; line 16 \"The shadow root is attached without `delegatesFocus`.\"; line 22 \"**Decision refined**: set `delegatesFocus: true`\"; contracts/elements-package.md convention 1 \"with `delegatesFocus`\"; plan.md decision 3"
+    claim: |
+      The record contradicts itself. A task writer who reads R-01's heading would build the opposite of convention 1,
+      which binds later controls.
+    remedies:
+      - "Retitle R-01 and replace its first decision paragraph with the refined one (delegatesFocus: true), keeping the measurement as rationale."
+
+  - id: PLAN-CORRECTNESS-1-013
+    severity: 1
+    title: "Hiding the icon wrapper with `hidden` does not work against the slot convention's `.icon-slot { display: inline-flex }`"
+    evidence:
+      - artifact: "research.md R-07 line 133-134: \"while busy the `icon` slot's wrapper gets the `hidden` attribute (the slotted icon is not shown)\""
+      - code: "packages/elements/src/icon-slot.ts:28-33: `.icon-slot { display: inline-flex; ... }`. The author-level class rule outranks the user-agent `[hidden] { display: none }`, so a hidden `.icon-slot` still renders"
+    claim: |
+      As written, a busy button with an icon shows both the icon and the spinner. That breaks US3-4 (the icon is not
+      shown, and the box does not change size).
+    remedies:
+      - "State in R-07 that the shared styles add `.icon-slot[hidden] { display: none; }` (or toggle a class), and keep the US3-4 box assertion."
+
+  - id: PLAN-CORRECTNESS-1-014
+    severity: 1
+    title: "The mode rule does not say what an unparseable `href` does; `new URL()` throws on it"
+    evidence:
+      - artifact: "research.md R-02: \"its scheme, parsed with `new URL(href, document.baseURI)`, is not `javascript:`\"; data-model.md `mode`; contracts/checks.md control.test decision table: \"empty, whitespace, `javascript:`, `JavaScript:`, relative\""
+      - code: "WHATWG URL: `new URL(\"http://[\", base)` throws TypeError; an `<a href=\"http://[\">` is still a link in Chromium (it has an href attribute)"
+    claim: |
+      Without a rule, an invalid href either throws during render (the element breaks) or falls into an unspecified
+      mode, and FR-002's \"exactly when\" has a gap.
+    remedies:
+      - "Add to FR-002, R-02 and the decision table: an href that fails to parse is treated as link mode with the href as written (as a native `<a>` does), or as button mode; pick one and test it."
