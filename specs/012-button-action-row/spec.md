@@ -254,7 +254,7 @@ the event and its payload, the accessibility tree and the boxes in a shrink-wrap
    `aria-labelledby` wins (FR-006).
 5. **Given** `busy` on the row, **When** the tree is read, **Then** the row reports `aria-busy="true"`; activation
    still dispatches the event (busy means "content updating", not "unavailable").
-6. **Given** `presentation="flush"`, **When** rendered, **Then** the row has no border, no surface fill and no block
+6. **Given** `presentation="flush"` with no `current` and no hover, **When** rendered, **Then** the row has no border, no surface fill and no block
    padding beyond the compact navigation density (FR-031), and every empty slot (icon, description, tags, trailing)
    takes no space and adds no gap.
 7. **Given** a row in a shrink-wrapping container (an `inline-block`, `inline-flex`, `float` or `max-content` grid
@@ -264,7 +264,10 @@ the event and its payload, the accessibility tree and the boxes in a shrink-wrap
    the hover tokens (FR-036); in forced-colours mode the hover keeps a visible system-colour border. **Given** a
    `flush` row, **When** a pointer hovers it, **Then** only its surface changes, to `--ocelle-color-hover-bg`; no
    border appears and no part of the row moves or changes size; in forced-colours mode the hover is visible in a
-   system colour, again without moving or resizing any part of the row.
+   system colour, again without moving or resizing any part of the row. **Given** a row with `current` set (either
+   presentation), **When** a pointer hovers it, **Then** its surface stays `--ocelle-color-accent-low` and the
+   current bar stays drawn (FR-036, FR-037); a `default` current row's border changes to the hover-border token, and
+   a `flush` current row shows no hover change.
 9. **Given** focus on a row by keyboard, **Then** the token focus ring is drawn around the whole row.
 10. **Given** a host listener that calls `preventDefault()` on the event, **When** a focused button-mode row is
     activated by click, Enter or Space, **Then** the listener sees `event.defaultPrevented` become `true`, the event is
@@ -308,7 +311,9 @@ tree, the navigation result and the line boxes of the tags.
    surface and a bar at the row's inline start (the left edge in left-to-right text, the right edge under
    `dir="rtl"`), `--ocelle-bar-width` wide, the row's full block size, in `--ocelle-color-current`; never ochre fill
    alone on a light ground (constitution II); in forced colours the bar stays visible in a system colour. The full
-   mark (surface and bar) is drawn in both presentations; on a `flush` row it adds no border.
+   mark (surface and bar) is drawn in both presentations; on a `flush` row it adds no border. **When** a pointer
+   hovers the current row, **Then** the full mark stays: the surface stays `--ocelle-color-accent-low`, not
+   `--ocelle-color-hover-bg` (FR-036).
 5. **Given** `unavailable` on a row (button or link mode), **When** the tree is read, **Then** the row reports
    `aria-disabled="true"`, stays in the tab order, and its accessible description (the description and tags text of
    FR-034, if any) is unchanged.
@@ -479,7 +484,7 @@ tree, the navigation result and the line boxes of the tags.
 - **FR-031**: `presentation` (reflected) is `default` (bordered row on a surface, `--ocelle-radius-row`) or `flush`
   (no border, no surface, compact navigation density: block padding `--ocelle-space-1` and the compact text scale). A
   flush row stays borderless in every state: on hover only its surface changes (FR-036), as on a flush button
-  (FR-019), and the current mark (FR-037) is drawn in full, its `--ocelle-color-accent-low` surface and its bar, with
+  (FR-019), except that a current flush row does not change on hover; the current mark (FR-037) is drawn in full, its `--ocelle-color-accent-low` surface and its bar, with
   no border. No state of a flush row moves or resizes its content.
   Every row, in every presentation and layout, has a block size of at least `--ocelle-target-min`; the flush density
   reduces padding but not this minimum (operator decision, SPEC-1-08). In every presentation an empty slot takes no
@@ -502,11 +507,14 @@ tree, the navigation result and the line boxes of the tags.
 - **FR-035**: `busy` (boolean, reflected) sets `aria-busy="true"` on the inner control and does not block activation.
 - **FR-036**: On hover (and not when unavailable) the row's surface becomes `--ocelle-color-hover-bg` and, on a
   `default`-presentation row, its border becomes a hover-border token; a `flush` row gets no border on hover
-  (FR-031). Both are `--ocelle-*` tokens a host can override on an ancestor (#525). If no fitting hover-border token
+  (FR-031). The current mark takes precedence over the hover surface: a row with `current` set keeps its
+  `--ocelle-color-accent-low` surface and its bar on hover, so only a `default` current row's border changes and a
+  `flush` current row shows no hover change. Both are `--ocelle-*` tokens a host can override on an ancestor (#525). If no fitting hover-border token
   exists, it is added to `@ocelle/tokens` with its contrast pair in the contrast check.
 - **FR-037**: `current` (reflected) is `page` or `true`; it sets `aria-current` with that value on the inner control
   and shows the current mark of story 5 scenario 4 (an `--ocelle-color-accent-low` surface and an inline-start bar of
-  `--ocelle-bar-width` in `--ocelle-color-current`). Any other value is treated as absent.
+  `--ocelle-bar-width` in `--ocelle-color-current`), which stays on hover (FR-036). Any other value is treated as
+  absent.
 - **FR-038**: In card layout, the gap between the title line and what follows is a token-based value (an existing
   `--ocelle-space-*` token or a new `--ocelle-*` token), and the title is the CSS part `title` so a host can adjust it.
   Tags wrap only between slotted tags; text inside a tag is not broken inside a word.
@@ -521,8 +529,8 @@ tree, the navigation result and the line boxes of the tags.
   `--ocelle-color-accent-strong` on `accent-low`, `inset`, `hover-bg` and the state grounds (#5 rule 1); it is never
   `--ocelle-color-rule` (constitution II). In both themes, and on each main ground and state ground the row is placed
   on, these pairs meet WCAG 2.2 AA non-text contrast (3:1), and the contrast check covers each: the default border
-  against the ground; the hover border (FR-036, `default` presentation only) against `--ocelle-color-hover-bg` and
-  the ground; the current bar (`--ocelle-color-current`, both presentations) against `--ocelle-color-accent-low`; the
+  against the ground; the hover border (FR-036, `default` presentation only) against `--ocelle-color-hover-bg`,
+  `--ocelle-color-accent-low` (a hovered current row) and the ground; the current bar (`--ocelle-color-current`, both presentations) against `--ocelle-color-accent-low`; the
   focus ring (`--ocelle-color-focus`) against the ground, `--ocelle-color-accent-low` and `--ocelle-color-hover-bg`.
   Title and description text meet text contrast
   on the row's surface in every state, except the unavailable state's disabled ink and border, which are exempt as

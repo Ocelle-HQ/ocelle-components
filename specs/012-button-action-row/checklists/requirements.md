@@ -52,3 +52,10 @@
   and the hover-border scenario and contrast pair are limited to the `default` presentation; the row's tags reach the
   accessible description after the description, with a scenario. Notes SPEC-2-05 to SPEC-2-12 are left open. See
   `reviews/spec/check-2-fixes.md`.
+- Spec check 3 (2026-11-13): the blocking finding SPEC-3-01 was fixed: the current mark takes precedence over the
+  hover surface, so a hovered current row keeps its `accent-low` surface and bar (a `default` current row changes
+  only its border, a `flush` current row shows no hover change), and the hover-border contrast pair now includes
+  `accent-low`; the current bar stays on `accent-low` only. Note SPEC-3-05 was fixed with it (US4 scenario 6 is
+  limited to a row with no `current` and no hover). The items above were re-checked after the fixes. Notes SPEC-3-02,
+  SPEC-3-03, SPEC-3-04, SPEC-3-06 and SPEC-3-07 are left open for the plan. The operator approved the spec at the
+  gate after this final fix; no further spec check follows. See `reviews/spec/check-3-fixes.md`.
