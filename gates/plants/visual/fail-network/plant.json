@@ -1,0 +1,16 @@
+{
+  "expect": "fail",
+  "why": "A request outside the origin (an image from https://example.com/): network on both themes (FR-007, FR-030).",
+  "findings": [
+    {
+      "location": "network--remote-image/light",
+      "rule": "network",
+      "message": "https://example.com/plant.png"
+    },
+    {
+      "location": "network--remote-image/dark",
+      "rule": "network",
+      "message": "https://example.com/plant.png"
+    }
+  ]
+}

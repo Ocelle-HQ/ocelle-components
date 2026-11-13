@@ -36,8 +36,8 @@ describe("parseRegistry: entries", () => {
 });
 
 describe("fr020", () => {
-  it("is the fourteen gates of FR-020, in the order of the spec, with 002's contrast and brand-rules and 005's manifest last", () => {
-    expect(fr020).toEqual(["typecheck", "lint", "style-lint", "unit-tests", "test-lint", "mutation", "csp", "prefix", "config-copies", "pins", "signoff", "contrast", "brand-rules", "manifest"]);
+  it("is the seventeen gates of FR-020, in the order of the spec, with 002's contrast and brand-rules, 005's manifest, then 006's storybook-build, visual and axe", () => {
+    expect(fr020).toEqual(["typecheck", "lint", "style-lint", "unit-tests", "test-lint", "mutation", "csp", "prefix", "config-copies", "pins", "signoff", "contrast", "brand-rules", "manifest", "storybook-build", "visual", "axe"]);
   });
 });
 

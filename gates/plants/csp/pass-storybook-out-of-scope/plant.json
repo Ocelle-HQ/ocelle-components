@@ -1,0 +1,4 @@
+{
+  "expect": "pass",
+  "why": "The Storybook is not a CSP target: an inline script in storybook/dist/index.html and a style attribute in a story's markup are outside the gate's scope, which is the packages' built output only (006 FR-020, US4 scenario 1)."
+}

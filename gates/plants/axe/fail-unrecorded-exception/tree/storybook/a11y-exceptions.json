@@ -1,0 +1,11 @@
+[
+  {
+    "story": "unrecorded--button",
+    "theme": "light",
+    "rule": "button-name",
+    "selector": "#plant-unrecorded",
+    "reason": "a planted exception",
+    "sunset": "the plant's sunset",
+    "plan": "specs/plant/plan.md"
+  }
+]

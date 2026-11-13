@@ -1,0 +1,20 @@
+[
+  {
+    "story": "open-shadow--unlabelled",
+    "theme": "light",
+    "rule": "button-name",
+    "selector": "ocelle-plant-open >>> button",
+    "reason": "a planted exception",
+    "sunset": "the plant's sunset",
+    "plan": "specs/plant/plan.md"
+  },
+  {
+    "story": "open-shadow--unlabelled",
+    "theme": "dark",
+    "rule": "button-name",
+    "selector": "ocelle-plant-open >>> button",
+    "reason": "a planted exception",
+    "sunset": "the plant's sunset",
+    "plan": "specs/plant/plan.md"
+  }
+]

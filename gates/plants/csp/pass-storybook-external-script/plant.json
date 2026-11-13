@@ -1,4 +1,0 @@
-{
-  "expect": "pass",
-  "why": "External scripts and stylesheets in an HTML entry of the Storybook build output are allowed (002 FR-023)."
-}

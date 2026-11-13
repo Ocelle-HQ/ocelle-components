@@ -1,0 +1,8 @@
+{
+  "baselines": [
+    {
+      "file": "tokens--colour.light.png",
+      "edit": "one-pixel"
+    }
+  ]
+}

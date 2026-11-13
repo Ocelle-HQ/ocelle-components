@@ -1,0 +1,11 @@
+[
+  {
+    "story": "base-styles--prose-document",
+    "theme": "dark",
+    "rule": "color-contrast-incomplete",
+    "selector": "td",
+    "reason": "an exception whose plan file the repository does not hold",
+    "sunset": "a fixture sunset",
+    "plan": "specs/no-such-feature/plan.md"
+  }
+]

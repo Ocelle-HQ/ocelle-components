@@ -1,0 +1,92 @@
+[
+  {
+    "story": "base-styles--prose-document",
+    "theme": "light",
+    "rule": "color-contrast-incomplete",
+    "selector": "table:nth-child(12) > thead > tr > th:nth-child(12)",
+    "reason": "clipped column of the wide table's scroll box (`elmPartiallyObscured`)",
+    "sunset": "the op that fixes the color-contrast incomplete results of base.css's prose table scroll box (003 surface), to be opened by the operator",
+    "plan": "specs/006-storybook-workbench/plan.md"
+  },
+  {
+    "story": "base-styles--prose-document",
+    "theme": "light",
+    "rule": "color-contrast-incomplete",
+    "selector": "table:nth-child(12) > tbody > tr:nth-child(1) > td:nth-child(12)",
+    "reason": "clipped column of the wide table's scroll box (`elmPartiallyObscured`)",
+    "sunset": "the op that fixes the color-contrast incomplete results of base.css's prose table scroll box (003 surface), to be opened by the operator",
+    "plan": "specs/006-storybook-workbench/plan.md"
+  },
+  {
+    "story": "base-styles--prose-document",
+    "theme": "light",
+    "rule": "color-contrast-incomplete",
+    "selector": "tr:nth-child(2) > td:nth-child(12)",
+    "reason": "clipped column of the wide table's scroll box (`elmPartiallyObscured`)",
+    "sunset": "the op that fixes the color-contrast incomplete results of base.css's prose table scroll box (003 surface), to be opened by the operator",
+    "plan": "specs/006-storybook-workbench/plan.md"
+  },
+  {
+    "story": "base-styles--prose-document",
+    "theme": "light",
+    "rule": "color-contrast-incomplete",
+    "selector": "table:nth-child(14) > thead > tr > th:nth-child(12)",
+    "reason": "clipped column of the linked wide table's scroll box (`elmPartiallyObscured`)",
+    "sunset": "the op that fixes the color-contrast incomplete results of base.css's prose table scroll box (003 surface), to be opened by the operator",
+    "plan": "specs/006-storybook-workbench/plan.md"
+  },
+  {
+    "story": "base-styles--prose-document",
+    "theme": "light",
+    "rule": "color-contrast-incomplete",
+    "selector": "table:nth-child(14) > tbody > tr > td:nth-child(12)",
+    "reason": "clipped column of the linked wide table's scroll box (`elmPartiallyObscured`)",
+    "sunset": "the op that fixes the color-contrast incomplete results of base.css's prose table scroll box (003 surface), to be opened by the operator",
+    "plan": "specs/006-storybook-workbench/plan.md"
+  },
+  {
+    "story": "base-styles--prose-document",
+    "theme": "dark",
+    "rule": "color-contrast-incomplete",
+    "selector": "table:nth-child(12) > thead > tr > th:nth-child(12)",
+    "reason": "clipped column of the wide table's scroll box (`elmPartiallyObscured`)",
+    "sunset": "the op that fixes the color-contrast incomplete results of base.css's prose table scroll box (003 surface), to be opened by the operator",
+    "plan": "specs/006-storybook-workbench/plan.md"
+  },
+  {
+    "story": "base-styles--prose-document",
+    "theme": "dark",
+    "rule": "color-contrast-incomplete",
+    "selector": "table:nth-child(12) > tbody > tr:nth-child(1) > td:nth-child(12)",
+    "reason": "clipped column of the wide table's scroll box (`elmPartiallyObscured`)",
+    "sunset": "the op that fixes the color-contrast incomplete results of base.css's prose table scroll box (003 surface), to be opened by the operator",
+    "plan": "specs/006-storybook-workbench/plan.md"
+  },
+  {
+    "story": "base-styles--prose-document",
+    "theme": "dark",
+    "rule": "color-contrast-incomplete",
+    "selector": "tr:nth-child(2) > td:nth-child(12)",
+    "reason": "clipped column of the wide table's scroll box (`elmPartiallyObscured`)",
+    "sunset": "the op that fixes the color-contrast incomplete results of base.css's prose table scroll box (003 surface), to be opened by the operator",
+    "plan": "specs/006-storybook-workbench/plan.md"
+  },
+  {
+    "story": "base-styles--prose-document",
+    "theme": "dark",
+    "rule": "color-contrast-incomplete",
+    "selector": "table:nth-child(14) > thead > tr > th:nth-child(12)",
+    "reason": "clipped column of the linked wide table's scroll box (`elmPartiallyObscured`)",
+    "sunset": "the op that fixes the color-contrast incomplete results of base.css's prose table scroll box (003 surface), to be opened by the operator",
+    "plan": "specs/006-storybook-workbench/plan.md"
+  },
+  {
+    "story": "base-styles--prose-document",
+    "theme": "dark",
+    "rule": "color-contrast-incomplete",
+    "selector": "table:nth-child(14) > tbody > tr > td:nth-child(12)",
+    "reason": "clipped column of the linked wide table's scroll box (`elmPartiallyObscured`)",
+    "sunset": "the op that fixes the color-contrast incomplete results of base.css's prose table scroll box (003 surface), to be opened by the operator",
+    "plan": "specs/006-storybook-workbench/plan.md"
+  }
+]

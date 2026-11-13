@@ -1,0 +1,5 @@
+{
+  "expect": "error",
+  "why": "storybook/.storybook/main.ts cannot be evaluated (Storybook's MainFileEvaluationError): the configuration is unreadable, so the gate could not run and names the file (FR-001; operator round specs/006-storybook-workbench/reviews/phase-2/round-2.md O2-02, choice (a)).",
+  "cause": "storybook-build: could not run: storybook/.storybook/main.ts cannot be evaluated"
+}

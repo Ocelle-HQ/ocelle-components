@@ -1,0 +1,5 @@
+{
+  "expect": "fail",
+  "why": "The stories glob matches only story files with no story export (the repository's story files replaced): the build succeeds and the built index holds no story, which is not a passing build (FR-001, US1 scenario 4).",
+  "findings": [{ "location": "storybook/dist/index.json", "rule": "empty-index", "message": "the built index holds no story" }]
+}
