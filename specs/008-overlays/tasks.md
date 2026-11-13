@@ -10,14 +10,16 @@ after three plan-squad rounds (`reviews/plan/round-1..3/`):
   "matrix § …");
 - quickstart.md.
 
-**Hold**: implementation waits until #10 (Storybook workbench) is merged (operator, 2026-11-12). The story tasks of
-each phase start with R-16's recheck against merged `main`.
+**Hold**: implementation waits until #10 (Storybook workbench) is merged (operator, 2026-11-12). R-16's recheck
+against merged `main` (T026) runs once, in Phase 2 before its red commit, because each phase's story tests are part of
+that phase's red commit (operator decision on analysis I3, 2026-11-13).
 
 **Tests**: required. Constitution VIII applies to every phase. The phase flow is:
 1. `base.sh`;
-2. one red commit holding only test files, proven by `red.sh` (the failure must be the missing behaviour, not a
-   syntax, import or setup error);
-3. green;
+2. one red commit holding only test files, the phase's story tests included, proven by `red.sh <phase> phase` (the
+   failure must be the missing behaviour, not a syntax, import or setup error); there is no second red commit for
+   the stories, so `red-commits` keeps one `phase` record per phase;
+3. green (the elements, then the stories and their baselines);
 4. `tdd-check.sh`;
 5. an independent review.
 
@@ -123,6 +125,18 @@ the driver as it was.
 
   Each list must meet the rules the row states. If one cannot, stop and ask the operator.
 
+### Story recheck (after #10 is merged; before the red commit)
+
+- [ ] T026 [US1] R-16 recheck against merged `main`, before any story test is written (so before T020's red commit, which holds T027). Compare #10's merged state with research R-16 and update R-16 and tasks T027 to T029, T038 to T040 and T050 to T052 in one commit of `research.md` and `tasks.md` only:
+  - the pointer-state parameter shape;
+  - the capture context (viewport, reduced motion, animations);
+  - the top-layer capture;
+  - per-story viewport support (for the 320 × 256 story);
+  - the baseline path and the produce command;
+  - the axe rule set and `storybook/a11y-exceptions.json`;
+  - the story-index test;
+  - `storybook/README.md`.
+
 ### Tests (red, one commit)
 
 - [ ] T015 [P] [US1] Write the shared bodies for matrix § Dialog in `packages/elements/test/scenarios/dialog.ts`, every row:
@@ -164,7 +178,8 @@ the driver as it was.
   - the section with the tokens read (data-model § `ocelle-dialog`);
   - the host pattern;
   - the R-02, R-03, R-04, R-05 and R-08 statements: the stated limits, focus moves in the `…-close` listener, the `method="dialog"` advice, a label being required, and the closed-host `aria-label` behaviour.
-- [ ] T020 [US1] Make the red commit of T015 to T019 (test files only). `red.sh 2` must show each failing because `ocelle-dialog` is undefined or its entry, manifest or README section is missing.
+- [ ] T027 [P] [US1] Red, in the test file the recheck names (today `storybook/test/integration/elements-stories.test.ts`): the dialog stories of data-model § Stories exist in light and dark, each renders an open, modal `ocelle-dialog`, and there are zero CSP violations. Part of T020's red commit; T026 first.
+- [ ] T020 [US1] Make the red commit of T015 to T019 and T027 (test files only). `red.sh 2 phase` must show each failing because `ocelle-dialog` is undefined, its entry, manifest or README section is missing, or the dialog stories are missing.
 
 ### Implementation (green)
 
@@ -217,18 +232,8 @@ the driver as it was.
   - add the CHANGELOG "Added" entry for `ocelle-dialog`.
 - [ ] T025 [US1] Run the T015 to T019 suites green in both harnesses. Then run, one at a time: `gate:typecheck`, `gate:lint`, `gate:style-lint`, `gate:test-lint`, `gate:manifest`, `gate:csp`, `gate:prefix`, and `gate:mutation -- --base <phase base>`. Record every Timeout report line with its cause in `reviews/phase-2/notes.md`, and add an assertion that kills it where possible (R-15).
 
-### Stories (after #10 is merged)
+### Stories (green, after T025)
 
-- [ ] T026 [US1] R-16 recheck against merged `main`, before any story work. Compare #10's merged state with research R-16 and update R-16 and tasks T027 to T029, T038 to T040 and T050 to T052 in one commit:
-  - the pointer-state parameter shape;
-  - the capture context (viewport, reduced motion, animations);
-  - the top-layer capture;
-  - per-story viewport support (for the 320 × 256 story);
-  - the baseline path and the produce command;
-  - the axe rule set and `storybook/a11y-exceptions.json`;
-  - the story-index test;
-  - `storybook/README.md`.
-- [ ] T027 [P] [US1] Red, in the test file the recheck names (today `storybook/test/integration/elements-stories.test.ts`): the dialog stories of data-model § Stories exist in light and dark, each renders an open, modal `ocelle-dialog`, and there are zero CSP violations.
 - [ ] T028 [US1] Green: `storybook/stories/dialog.stories.ts` with the stories of data-model § Stories. The 320 × 256 story is written only if the recheck found per-story viewports.
 - [ ] T029 [US1] Produce the baselines in the pinned container (`pnpm run visual:update`), then run `gate:storybook-build`, `gate:visual` and `gate:axe`. Commit the baselines. CI's captures win over local ones (006 FR-005).
 
@@ -249,13 +254,15 @@ the driver as it was.
 ### Tests (red, one commit)
 
 - [ ] T030 [P] [US2] Write `packages/elements/test/scenarios/drawer.ts`:
-  - matrix § Drawer's inherited dialog rows, reusing T015's bodies with the `ocelle-drawer` tag and event prefix (not the dialog's one-line-body row);
+  - matrix § Drawer's inherited dialog rows, reusing T015's bodies with the `ocelle-drawer` tag and event prefix (not the dialog's one-line body, long body or styles rows, whose dialog geometry contradicts FR-003, FR-025 and FR-026);
+  - the drawer's own long body: panel block size equal to the viewport's (800 px, and 256 px at 320 × 256, not capped at `dialog-max-block`), each `side`, then the dialog's scrolling, Tab and `tabindex` assertions;
+  - the drawer's own styles: the UA reset, `max-inline-size` equal to `dialog-max-inline`, no block cap below the viewport, `color-overlay` backdrop, `elevation-raised` shadow, the two corner radii on the touched viewport edge 0 for each `side` × `dir`, not centred, definite body inline size, footer box present only when filled;
   - the drawer's own one-line body (fills the column, footer at the panel's end, each `side`);
   - backdrop during the exit;
   - backdrop on each side under `ltr` and `rtl` × veto;
   - panel-padding click, press inside released outside, press outside released inside, and a secondary-button click: nothing;
   - placement `side` × `dir`;
-  - size;
+  - size: `--ocelle-drawer-inline` uncapped, ≤ `dialog-max-inline` capped, unchanged by `--ocelle-dialog-inline-size` on the host;
   - motion `translate` sign by side and direction;
   - `ground`;
   - `heading-hidden`.
@@ -268,7 +275,8 @@ the driver as it was.
 
   Add the dist files to the build and pack tests, and the README drawer fragments to `readme.test.ts`, including #12's personal-drawer example.
 - [ ] T033 [P] [US2] Tokens: add the `drawer-inline` row (group `shell`, value `var(--ocelle-shell-sidebar-width)`, ref `["shell-sidebar-width"]`) to `packages/tokens/test/expected.ts`. Add the computed value 20rem to the `tokens-browser` value tests, and the token to the tokens README and CHANGELOG checks (`test/readme.test.ts`).
-- [ ] T034 [US2] Make the red commit of T030 to T033. `red.sh 3` must show each failing for the missing element or token.
+- [ ] T038 [P] [US2] Red, in the test file T026 names: the drawer stories of data-model § Stories exist in light and dark and each renders an open `ocelle-drawer`. Part of T034's red commit.
+- [ ] T034 [US2] Make the red commit of T030 to T033 and T038. `red.sh 3 phase` must show each failing for the missing element, token or stories.
 
 ### Implementation (green)
 
@@ -285,9 +293,8 @@ the driver as it was.
   - JSDoc tags and `define`.
 - [ ] T037 [US2] Packaging and docs: the export, the `./ocelle-drawer.js` entry point, the regenerated manifest, the README section and the CHANGELOG entry. Run the T030 to T033 suites green, then the gates as in T025, plus `gate:contrast` and `gate:brand-rules` because of the token, and `pnpm vitest run --project tokens --project tokens-browser`.
 
-### Stories (after #10 is merged; T026 done)
+### Stories (green, after T037)
 
-- [ ] T038 [P] [US2] Red: the drawer stories of data-model § Stories exist in light and dark and each renders an open `ocelle-drawer`.
 - [ ] T039 [US2] Green: `storybook/stories/drawer.stories.ts`.
 - [ ] T040 [US2] Produce the baselines; run `gate:storybook-build`, `gate:visual` and `gate:axe`; commit the baselines.
 
@@ -311,6 +318,7 @@ the visual and axe gates (after #10).
 - [ ] T041 [P] [US3] Write `packages/elements/test/scenarios/tooltip.ts`, covering matrix § Tooltip:
   - hover delay at 300 ms: not shown at 150 ms, shown by 450 ms; re-entry; reduced motion with the same bounds; delay 0 shows in the same task;
   - keyboard focus; click focus; late `:focus-visible` (assert `focusVisible()` true first); the text-field trigger;
+  - persistence (FR-032 "no timeout", US3-3): once shown, still `:popover-open` after a bounded 900 ms wait sampled every frame, for the pointer resting on the trigger, the pointer resting on the bubble, and keyboard focus with the pointer outside both, each in the test of the show it guards;
   - the hoverable gap (`pointer()` stops); leave;
   - Escape: stays dismissed, and the recorders see nothing; inside a dialog, two presses (SC-005);
   - a trigger that opens an overlay (dialog and drawer);
@@ -334,7 +342,8 @@ the visual and axe gates (after #10).
   - change the § Engines floor line (pinned at `:65`) to "Chromium 120+ and WebKit 17+", with the Popover API (Chromium 114, WebKit 17) as the newest feature;
   - add the tooltip section fragments: the tokens read; the stated limits (text-field triggers, custom-element triggers with `describes`, touch); and #7's and #12's usage.
 - [ ] T045 [P] [US3] Tokens: add the `tooltip-delay` row (group `motion`, `500ms`) and the `tooltip-max-inline` row (group `size`, `18rem`) to `packages/tokens/test/expected.ts`, and the computed values to `tokens-browser`. Test that the reduced-motion block still sets only `motion-fast` and `motion-base`, so `tooltip-delay` is not zeroed (brand rule (f)). Add the README and CHANGELOG checks.
-- [ ] T046 [US3] Make the red commit of T041 to T045. `red.sh 4` must show each failing for the missing element, token or floor text.
+- [ ] T050 [P] [US3] Red, in the test file T026 names: the tooltip stories of data-model § Stories exist in light and dark, each declares one hover pointer state on a trigger wholly inside 1280 × 800, and its bubble is `:popover-open` in the capture. Part of T046's red commit.
+- [ ] T046 [US3] Make the red commit of T041 to T045 and T050. `red.sh 4 phase` must show each failing for the missing element, token, floor text or stories.
 
 ### Implementation (green)
 
@@ -369,9 +378,8 @@ the visual and axe gates (after #10).
 
   Run the suites green, including `elements-touch`, then the gates as in T037.
 
-### Stories (after #10 is merged; T026 done)
+### Stories (green, after T049)
 
-- [ ] T050 [P] [US3] Red: the tooltip stories of data-model § Stories exist in light and dark, each declares one hover pointer state on a trigger wholly inside 1280 × 800, and its bubble is `:popover-open` in the capture.
 - [ ] T051 [US3] Green: `storybook/stories/tooltip.stories.ts`, using the delay override class.
 - [ ] T052 [US3] Produce the baselines; run `gate:storybook-build`, `gate:visual` and `gate:axe`; commit the baselines.
 
@@ -396,17 +404,18 @@ the visual and axe gates (after #10).
 - Phase 1 blocks everything. Phase 2 blocks Phase 3, because the drawer reuses `overlay.ts` and the dialog
   scenarios. Phase 4 needs Phase 2 for the dialog rows, and Phase 3 for the drawer rows (inside a drawer, a trigger
   that opens a drawer).
-- In each phase: measurement first (Phase 2), then the red commit, then green, then stories.
-- **Stories**: every story task (T026 to T029, T038 to T040, T050 to T052) waits until #10 is merged. T026 runs first
-  and once.
+- In each phase: measurement first (Phase 2, then the R-16 recheck T026), then the one red commit with the phase's
+  story tests (T027, T038, T050), then green, then story green and baselines.
+- **Stories**: every story task (T026 to T029, T038 to T040, T050 to T052) waits until #10 is merged, and so does
+  each red commit that holds one (T020, T034, T046). T026 runs first and once, before any story test is written.
 - Within a red commit, the [P] tasks touch different files.
 
 ## Parallel Opportunities
 
 - Phase 1: T001 to T003 in parallel, then T005 to T011 in parallel after T005's interface.
-- Phase 2: T015 to T019 in parallel.
-- Phase 3: T030 to T033 in parallel.
-- Phase 4: T041 to T045 in parallel.
+- Phase 2: T015 to T019 and T027 in parallel.
+- Phase 3: T030 to T033 and T038 in parallel.
+- Phase 4: T041 to T045 and T050 in parallel.
 
 ## Implementation Strategy
 

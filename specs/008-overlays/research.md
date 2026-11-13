@@ -628,6 +628,9 @@ unmerged). Results marked "squad probe" were measured by the plan squad's round 
     (the delay is not zeroed, R-09).
   - With the delay at `0ms`, the bubble shows in the same task as the `pointerover`.
   - Keyboard focus shows it at once, whatever the delay.
+  - Persistence (FR-032, no timeout): once shown by hover (pointer on the trigger, then on the bubble) or by
+    keyboard focus, the bubble is still shown after a bounded 900 ms wait sampled every frame, so a mutant or a
+    regression that hides it on a timer fails (checks § Tooltip "Persistence").
 - The exit animation is tested with `--ocelle-motion-base` at its real 200 ms: `open` is false at once, the close
   event fires only after the dialog has left the top layer, and focus is returned before the close event is
   dispatched, all read at dispatch by `record()` (R-14). Under reduced motion all of this happens within one update.

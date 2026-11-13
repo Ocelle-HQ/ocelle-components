@@ -181,10 +181,25 @@ modal, level. Device: the default context (`elements`, `visit()`) matches `(hove
 ### Drawer
 
 - The dialog's rows with `ocelle-drawer-` events (initial focus, Tab cycle with its non-stop, body, scroller and
-  opaque-content starts, its native middle moves and positive `tabindex` at the ends, long body, Escape and its
+  opaque-content starts, its native middle moves and positive `tabindex` at the ends, Escape and its
   slotted-content rows including the slotted close watchers and slotted non-modal dialogs, Escape in a slotted iframe, close control, host and platform close, focus return, nested,
-  removed, moved, rapid toggle, input during the exit, stale native `close` event, styles, forced colours,
-  accessibility tree). The dialog's "one-line body" row is not inherited; the drawer has its own below.
+  removed, moved, rapid toggle, input during the exit, stale native `close` event, forced colours,
+  accessibility tree). The dialog's "one-line body", "long body" and "styles" rows are not inherited: their expected
+  geometry (height capped at `dialog-max-block`, `radius-2`, `--ocelle-dialog-inline-size`, centred) is the dialog's
+  (FR-024) and contradicts FR-003, FR-025 and FR-026. The drawer has its own rows below.
+- **Long body** (FR-018, FR-025): a prose-only body taller than the viewport, each `side`: the panel's block size
+  (border box) equals the viewport's block size (800 px at 1280 × 800; not capped at `dialog-max-block`) and its
+  block start is at the viewport's; heading and footer boxes inside the panel, body `scrollHeight > clientHeight`, Tab
+  from the close control reaches the body, ArrowDown and PageDown then scroll it; the body has no `tabindex` once it
+  no longer overflows. Short viewport 320 × 256: the panel's block size equals 256 px, the body keeps its minimum
+  block size and its last content is reachable by scrolling (R-18).
+- **Styles** (computed, FR-003, FR-026): border, padding, margin and max sizes equal the token values (UA reset;
+  `max-inline-size` equals the computed `dialog-max-inline`, and `max-block-size` sets no cap below the viewport's
+  block size); background and colour as the Ground row states; `::backdrop` background is `color-overlay`; shadow
+  `elevation-raised`. Square on its viewport edge: each `side` × `dir`, the two corner radii on the edge the panel
+  touches compute to 0 (FR-003 sets no value for the other two corners, so this row does not assert them). The panel
+  is not centred: the Placement row's edge assertions hold. Body inline size definite with prose and a table (FR-019,
+  US2-3). Footer slot empty: no footer box; filled: footer box at the panel's end.
 - **One-line body** (R-18, PLAN-FRESH-3-003): a body of one short sentence and a footer with one button at
   1280 × 800, each `side`: the body part's block size (border box) equals the panel's block size (border box) minus
   the header's and the footer's boxes (and the panel's block padding and border, if any), it is at least the computed
@@ -198,7 +213,9 @@ modal, level. Device: the default context (`elements`, `visit()`) matches `(hove
   nothing; a press inside released on the backdrop: nothing; a press on the backdrop released inside: nothing; a
   secondary-button click on the backdrop: nothing.
 - **Placement**: `side` × `dir`: panel against the expected physical edge, full viewport block size.
-- **Size**: inline size equals the computed `--ocelle-drawer-inline` and ≤ `dialog-max-inline`.
+- **Size** (FR-026): uncapped (1280 wide): inline size equals the computed `--ocelle-drawer-inline`; capped (a
+  viewport narrower than `--ocelle-drawer-inline` plus two gutters): width ≤ `dialog-max-inline`. With
+  `--ocelle-dialog-inline-size: 40rem` set on the host the inline size is unchanged (the drawer has no such hook).
 - **Motion**: `side` × `dir`: the entry `translate` keyframe starts at the sign that moves the panel in from its own
   edge, the exit ends there; duration and easing from the tokens; none under reduced motion.
 - **Ground**: `ground="chrome"` computes chrome ground and ink; the default the sheet.
@@ -212,6 +229,11 @@ modal, level. Device: the default context (`elements`, `visit()`) matches `(hove
   trigger before the delay: shown by 450 ms from the first entry; under reduced motion the same bounds (the delay is
   not zeroed); delay 0: shown in the same task.
 - **Keyboard focus**: Tab to the trigger shows at once whatever the delay. Click focus on a button: not shown.
+- **Persistence** (FR-032 "no timeout", US3-3, WCAG 1.4.13; part of the hover delay and keyboard focus tests above,
+  test delay 300 ms): once shown, with nothing else changing, the bubble is still `:popover-open` after a bounded
+  wait of 900 ms (three times the delay, within R-15's 1 000 ms bound), sampled every frame of the wait so a hide
+  and re-show also fails: (a) the pointer resting on the trigger after the hover delay; (b) the pointer resting on
+  the bubble after crossing the gap; (c) keyboard focus on the trigger (Tab) with the pointer outside both boxes.
 - **Late `:focus-visible`**: click the trigger, move the pointer off both boxes (`pointer()`), press Shift, assert
   `focusVisible()` is true for the trigger, then assert no bubble within 450 ms.
 - **Text-field trigger** (stated limit, R-12): a clicked `<input type=text>` trigger shows the bubble at once.
