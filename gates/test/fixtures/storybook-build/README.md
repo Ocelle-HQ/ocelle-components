@@ -11,3 +11,8 @@
   `stories/helper.ts` holding `export const broken = ( ;` imported by `base.stories.ts`.
   Command: `pnpm --config.verify-deps-before-run=false --dir storybook run build` with `CI=true`, Storybook 10.6.5,
   Node 22. Paths substituted as in the spike: the tree's root `/work/root`, the repository `/work/repo`.
+- `config-unreadable/` (`TERM=linux`) and `config-unreadable-unicode/` (`TERM` unset): recorded at landing
+  (operator round `specs/006-storybook-workbench/reviews/phase-2/round-2.md` O2-02, landing L1-03) from a scratch root
+  (`git archive HEAD`, the repository's `node_modules` and `storybook/node_modules` linked) whose
+  `storybook/.storybook/main.ts` is `const config = {;`: Storybook cannot evaluate its configuration and names
+  `MainFileEvaluationError`, no story file. Same command and environment as above; paths substituted the same way.

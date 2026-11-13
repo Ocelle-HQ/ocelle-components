@@ -12,7 +12,8 @@ import type { Ran } from "./workspace.ts";
 // root without storybook/node_modules (exit 2 from the CLI check: without it pnpm would reinstall the dependencies
 // and the build pass, spike § 1). A build in a plant root writes nothing below the repository's root node_modules or
 // storybook/node_modules (path, size and modification time of every entry, before and after, as spike § 4 listed
-// them): pnpm's dependency check before `run` is off in the build command (operator decision on the spike § 4).
+// them): pnpm's dependency check before `run` is off in the build command (operator decision on the spike § 4). A root
+// whose storybook/.storybook/main.ts Storybook cannot evaluate exits 2 (operator round reviews/phase-2/round-2.md O2-02).
 const timeout = 300_000;
 const empty = join(repo, "gates/test/fixtures/plant-repo/empty-plant");
 const roots = join(repo, "gates/test/fixtures/storybook-build-roots");
@@ -83,6 +84,22 @@ describe("storybook-build gate (gates/bin/storybook-build.ts)", () => {
         code: 1,
         stdout: ["storybook/stories/broken.stories.ts: storybook-build: build-error: SyntaxError: Unexpected token (4:49)", "storybook-build: 1 finding in 1 file"],
         stderr: [],
+      });
+    },
+    timeout,
+  );
+
+  // Operator round reviews/phase-2/round-2.md O2-02 (landing L1-03, FR-001, operator choice (a)).
+  it(
+    "exits 2 and prints no finding when Storybook cannot evaluate storybook/.storybook/main.ts",
+    async () => {
+      const root = tempDir("storybook-build");
+      await buildRepoTree(repo, join(roots, "config-unreadable"), root);
+      const ran = await gate(root);
+      expect({ code: ran.code, stdout: ran.stdout, stderr: ran.stderr }).toEqual({
+        code: 2,
+        stdout: [],
+        stderr: ["storybook-build: could not run: storybook/.storybook/main.ts cannot be evaluated (SB_CORE-SERVER_0007 (MainFileEvaluationError): Storybook couldn't)"],
       });
     },
     timeout,

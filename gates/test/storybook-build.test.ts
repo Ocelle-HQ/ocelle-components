@@ -73,13 +73,65 @@ describe("buildFindings (spike § 1)", () => {
     ]);
   });
 
-  it("places a failed build that names no file at storybook/package.json, with its exit code or the signal", () => {
-    expect([
-      buildFindings({ exitCode: 1, stdout: "", stderr: "" }).map(formatFinding),
-      buildFindings({ exitCode: null, stdout: "", stderr: "" }).map(formatFinding),
-    ]).toEqual([
-      ["storybook/package.json: storybook-build: build-error: the build failed with exit code 1 and named no file"],
-      ["storybook/package.json: storybook-build: build-error: the build was ended by a signal and named no file"],
+  // The signal half of this case moved to classifyBuild (operator round reviews/phase-2/round-2.md O2-02, landing
+  // L1-03, FR-001, operator choice (a)): a build ended by a signal could not run (exit 2), it is no finding.
+  it("places a failed build that names no file at storybook/package.json, with its exit code", () => {
+    expect(buildFindings({ exitCode: 1, stdout: "", stderr: "" }).map(formatFinding)).toEqual([
+      "storybook/package.json: storybook-build: build-error: the build failed with exit code 1 and named no file",
+    ]);
+  });
+
+  // Operator round reviews/phase-2/round-2.md O2-01 (landing L1-02): a location whose line and column have two or more
+  // digits; the mutant `:\d:\d+` of the location pattern missed it and the finding fell back to storybook/package.json.
+  it("reads a Vite error's location whose line and column have two or more digits", () => {
+    const run: BuildRun = {
+      exitCode: 1,
+      stdout: ["x  Build failed with 1 error:", "|  [PARSE_ERROR] Expected a semicolon", "|  ╭─[ stories/b.ts:12:34 ]"].join("\n"),
+      stderr: "",
+    };
+    expect(buildFindings(run).map(formatFinding)).toEqual(["storybook/stories/b.ts: storybook-build: build-error: [PARSE_ERROR] Expected a semicolon"]);
+  });
+
+  // Operator round reviews/phase-2/round-2.md O2-03 (landing L1-07): one case per regex mutant that ended as a timeout.
+  it("strips a line mark only at the start of a line: a Vite message that ends with a mark character keeps it", () => {
+    const run: BuildRun = {
+      exitCode: 1,
+      stdout: ["[PARSE_ERROR] Error: Unexpected token |", "╭─[ stories/b.ts:2:1 ]"].join("\n"),
+      stderr: "",
+    };
+    expect(buildFindings(run).map(formatFinding)).toEqual(["storybook/stories/b.ts: storybook-build: build-error: [PARSE_ERROR] Error: Unexpected token |"]);
+  });
+
+  it("strips a line mark only before two spaces or the line end: a continuation line that begins with a mark character and one space is kept whole", () => {
+    const run: BuildRun = {
+      exitCode: 1,
+      stdout: ["[MISSING_EXPORT] Error: broken", "x is not exported by stories/helper.ts", "╭─[ stories/b.ts:2:1 ]"].join("\n"),
+      stderr: "",
+    };
+    expect(buildFindings(run).map(formatFinding)).toEqual([
+      "storybook/stories/b.ts: storybook-build: build-error: [MISSING_EXPORT] Error: broken x is not exported by stories/helper.ts",
+    ]);
+  });
+
+  it("reads an indexer error only from an Unable to index line that ends at its colon", () => {
+    const run: BuildRun = {
+      exitCode: 1,
+      stdout: ["x  Error: Unable to index ./stories/a.stories.ts: NoMetaError", "|  CSF: missing default export"].join("\n"),
+      stderr: "",
+    };
+    expect(buildFindings(run).map(formatFinding)).toEqual([
+      "storybook/package.json: storybook-build: build-error: the build failed with exit code 1 and named no file",
+    ]);
+  });
+
+  it("starts a Vite message only at a line that begins with [<code>]", () => {
+    const run: BuildRun = {
+      exitCode: 1,
+      stdout: ["|  see [docs] for details", "|  ╭─[ stories/b.ts:2:1 ]"].join("\n"),
+      stderr: "",
+    };
+    expect(buildFindings(run).map(formatFinding)).toEqual([
+      "storybook/package.json: storybook-build: build-error: the build failed with exit code 1 and named no file",
     ]);
   });
 
@@ -172,6 +224,31 @@ describe("classifyBuild", () => {
     });
     const two: BuildRun = { exitCode: 1, stdout: `${recorded("not-csf").stdout}\n${recorded("unresolved-import").stdout}`, stderr: "" };
     expect(printed(classifyBuild(two, undefined)).lines.at(-1)).toBe("storybook-build: 2 findings in 2 files");
+  });
+
+  // Operator round reviews/phase-2/round-2.md O2-02 (landing L1-03, FR-001, operator choice (a)): a configuration
+  // Storybook cannot evaluate, and a build ended by a signal, could not run (exit 2), before any finding.
+  const unreadable =
+    "storybook-build: could not run: storybook/.storybook/main.ts cannot be evaluated (SB_CORE-SERVER_0007 (MainFileEvaluationError): Storybook couldn't)";
+
+  it.each(["config-unreadable", "config-unreadable-unicode"])("could not run when Storybook cannot evaluate storybook/.storybook/main.ts (%s)", (name) => {
+    const run = recorded(name);
+    const located: BuildRun = { ...run, stdout: `|  [PARSE_ERROR] Expected a semicolon\n|  ╭─[ stories/b.ts:2:1 ]\n${run.stdout}` };
+    expect([printed(classifyBuild(run, okIndex)), printed(classifyBuild(located, okIndex))]).toEqual([
+      { exit: 2, lines: [unreadable] },
+      { exit: 2, lines: [unreadable] },
+    ]);
+  });
+
+  it("could not run when a signal ended the build, whether or not its output names a file", () => {
+    const signal = "storybook-build: could not run: the build was ended by a signal";
+    expect([
+      printed(classifyBuild({ exitCode: null, stdout: "", stderr: "" }, undefined)),
+      printed(classifyBuild({ ...recorded("unresolved-import"), exitCode: null }, undefined)),
+    ]).toEqual([
+      { exit: 2, lines: [signal] },
+      { exit: 2, lines: [signal] },
+    ]);
   });
 
   it("could not run when a successful build left no index, or an index it cannot read", () => {
@@ -295,6 +372,15 @@ describe("storybookBuild (the gate on a root)", () => {
     expect(printed(await done)).toEqual({
       exit: 1,
       lines: ["storybook/stories/not-csf.stories.ts: storybook-build: index-error: NoMetaError: CSF: missing default export", "storybook-build: 1 finding in 1 file"],
+    });
+    expect(calls.at(-1)?.startsWith("run ")).toBe(true);
+  });
+
+  it("could not run, and does not read the index, when Storybook cannot evaluate storybook/.storybook/main.ts", async () => {
+    const { done, calls } = gate({ run: recorded("config-unreadable") });
+    expect(printed(await done)).toEqual({
+      exit: 2,
+      lines: ["storybook-build: could not run: storybook/.storybook/main.ts cannot be evaluated (SB_CORE-SERVER_0007 (MainFileEvaluationError): Storybook couldn't)"],
     });
     expect(calls.at(-1)?.startsWith("run ")).toBe(true);
   });
