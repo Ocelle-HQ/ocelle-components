@@ -44,3 +44,11 @@
   listeners out (testable); the name order follows Accessible Name 1.2 with a scenario for the conflict; row contrast
   has its own requirement (FR-042); flush alignment, row minimum height and modifier clicks have measurable
   scenarios. See `reviews/spec/check-1-fixes.md`.
+- Spec check 2 (2026-11-13): the three blocking findings were fixed and the operator question answered by the
+  operator (human:jeroennouwsdev) and recorded in the spec header (FR-034). The items above were re-checked after the
+  fixes: SC-005 is scoped per element and matches FR-035 (a busy row still dispatches); "not activated" covers
+  modifier and middle clicks in link mode, with scenarios for the busy link-mode button and the unavailable link row;
+  the flush row's hover (surface only, no border, no layout shift) and current mark (full mark, no border) are stated,
+  and the hover-border scenario and contrast pair are limited to the `default` presentation; the row's tags reach the
+  accessible description after the description, with a scenario. Notes SPEC-2-05 to SPEC-2-12 are left open. See
+  `reviews/spec/check-2-fixes.md`.

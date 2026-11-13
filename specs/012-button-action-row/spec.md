@@ -40,6 +40,11 @@ checklist; ocelle-pill-tag, ocelle-status-indicator and ocelle-metric stay in #7
 - Current (SPEC-1-10), "(a) keep both as specified": the button passes through any host `aria-current` with no visual
   mark; the row has a `current` property (`page` or `true`) with a mark (FR-009, FR-037).
 
+**Operator decision after spec check 2** (2026-11-13, human:jeroennouwsdev):
+
+- Row tags (SPEC-2-04), "(a) in the description": the text of the `tags` slot joins the row's accessible
+  description, after the `description` slot's text, unless the host sets `aria-describedby` (FR-034).
+
 **Issues**: #7, in part (triage record `triage/012-button-action-row.md`, approved by the operator on 2026-11-13).
 This feature builds the two action controls of #7. `ocelle-pill-tag`, `ocelle-status-indicator` and `ocelle-metric`
 stay in #7 for a later status mission. The body of #7 (read on 2026-11-13) is the source of the requirements below.
@@ -79,7 +84,9 @@ Throughout, "the host" is the page or application that uses the element, and "th
 
 **Not activated.** Where a scenario or requirement says a control "is not activated", the observable outcome is all
 of: no navigation, no `ocelle-*` event dispatched, and no `click` event reaching a bubble-phase listener on the
-element or any of its ancestors (up to `document` and `window`). Capture-phase listeners are outside this guarantee:
+element or any of its ancestors (up to `document` and `window`). In link mode this holds for every kind of click: a
+plain click, a click with a modifier key (Ctrl, Meta, Shift or Alt) held and a middle click; none of them opens the
+target in the current tab, a new tab or a new window. Capture-phase listeners are outside this guarantee:
 for a link with no target and for a control with `aria-disabled="true"`, the browser dispatches the click and
 capture-phase listeners on ancestors run before the element can stop it. The README states this.
 
@@ -212,8 +219,9 @@ pointer and keyboard; read the tree, the layout boxes and the animation under ea
    visible.
 7. **Given** forced-colours mode, **When** `busy` is set, **Then** the spinner is visible in the control's system text
    colour.
-8. **Given** `busy` on a link-mode button, **When** it is clicked or Enter is pressed, **Then** it is not activated
-   (no navigation, no `click` reaching a bubble-phase listener), stays focusable, and reports busy and unavailable as in
+8. **Given** `busy` on a link-mode button, **When** it is clicked, clicked with Ctrl, Meta or Shift held,
+   middle-clicked, or Enter is pressed, **Then** it is not activated (no navigation in the current tab, no new tab or
+   window, no `click` reaching a bubble-phase listener), stays focusable, and reports busy and unavailable as in
    scenario 3.
 
 ---
@@ -238,7 +246,8 @@ the event and its payload, the accessibility tree and the boxes in a shrink-wrap
    element with `bubbles: true`, `composed: true`, `cancelable: true` and `detail` `{ rowId: "m-42" }`.
 2. **Given** a row without `row-id`, **When** it is activated, **Then** the event's `detail.rowId` is `""`.
 3. **Given** a row, **When** the tree is read, **Then** it is one node, role `button`, in the tab order once, named by
-   its title (or by FR-034's name passthrough when set), and the slotted description is its accessible description.
+   its title (or by FR-034's name passthrough when set), and its accessible description is the slotted description's
+   text followed by the slotted tags' text (FR-034).
 4. **Given** `label="Open mission 42"` on the row, **When** the tree is read, **Then** the row is named "Open mission
    42"; the host's `aria-label` wins over `label`; a host `aria-labelledby` naming an element in the host's tree names
    the row with that element's text (FR-005, FR-034); with both `aria-labelledby` and `aria-label` set,
@@ -251,8 +260,11 @@ the event and its payload, the accessibility tree and the boxes in a shrink-wrap
 7. **Given** a row in a shrink-wrapping container (an `inline-block`, `inline-flex`, `float` or `max-content` grid
    track), **When** rendered, **Then** its inline size is at least the min-content inline size of its content, never
    0.
-8. **Given** a row, **When** a pointer hovers it, **Then** its surface and its border change to the hover tokens
-   (FR-036); in forced-colours mode the hover keeps a visible system-colour border.
+8. **Given** a `default`-presentation row, **When** a pointer hovers it, **Then** its surface and its border change to
+   the hover tokens (FR-036); in forced-colours mode the hover keeps a visible system-colour border. **Given** a
+   `flush` row, **When** a pointer hovers it, **Then** only its surface changes, to `--ocelle-color-hover-bg`; no
+   border appears and no part of the row moves or changes size; in forced-colours mode the hover is visible in a
+   system colour, again without moving or resizing any part of the row.
 9. **Given** focus on a row by keyboard, **Then** the token focus ring is drawn around the whole row.
 10. **Given** a host listener that calls `preventDefault()` on the event, **When** a focused button-mode row is
     activated by click, Enter or Space, **Then** the listener sees `event.defaultPrevented` become `true`, the event is
@@ -260,6 +272,12 @@ the event and its payload, the accessibility tree and the boxes in a shrink-wrap
     row.
 11. **Given** a row in each presentation (`default`, `flush`) and each layout (`row`, `card`), with a one-line title
     and no other content, **When** rendered, **Then** its block size is at least `--ocelle-target-min` (FR-031).
+12. **Given** a row with slotted description text "Due Friday" and two slotted tags "Blocked" and "Design", **When**
+    the tree is read, **Then** its accessible description is "Due Friday Blocked Design" (description first, then the
+    tags in slot order); with tags and no description it is "Blocked Design"; **Given** also a host
+    `aria-describedby` naming an element in the host's tree with text "Owner: Ana", **Then** the description is
+    "Owner: Ana" and neither the slotted description nor the tags contribute (FR-034, FR-005); removing
+    `aria-describedby` restores "Due Friday Blocked Design".
 
 ---
 
@@ -289,12 +307,15 @@ tree, the navigation result and the line boxes of the tags.
 4. **Given** `current` set, **When** rendered, **Then** the row shows the current mark: an `--ocelle-color-accent-low`
    surface and a bar at the row's inline start (the left edge in left-to-right text, the right edge under
    `dir="rtl"`), `--ocelle-bar-width` wide, the row's full block size, in `--ocelle-color-current`; never ochre fill
-   alone on a light ground (constitution II); in forced colours the bar stays visible in a system colour.
+   alone on a light ground (constitution II); in forced colours the bar stays visible in a system colour. The full
+   mark (surface and bar) is drawn in both presentations; on a `flush` row it adds no border.
 5. **Given** `unavailable` on a row (button or link mode), **When** the tree is read, **Then** the row reports
-   `aria-disabled="true"`, stays in the tab order, and its description (if any) is still its accessible description.
-6. **Given** an unavailable row, **When** it is clicked or Enter or Space is pressed, **Then** it is not activated: no
-   `ocelle-action-row-activate` event is dispatched, a link row does not navigate, and no `click` reaches a
-   bubble-phase listener on the element or its ancestors.
+   `aria-disabled="true"`, stays in the tab order, and its accessible description (the description and tags text of
+   FR-034, if any) is unchanged.
+6. **Given** an unavailable row, **When** it is clicked or Enter or Space is pressed, or (a link row) it is clicked
+   with Ctrl, Meta or Shift held or middle-clicked, **Then** it is not activated: no `ocelle-action-row-activate` event
+   is dispatched, a link row navigates nowhere (not in the current tab, not in a new tab or window), and no `click`
+   reaches a bubble-phase listener on the element or its ancestors.
 7. **Given** an unavailable row, **When** rendered, **Then** its title and description use the disabled ink token,
    its hover does not change the surface, and in forced colours it uses `GrayText`.
 8. **Given** `layout="card"` with several slotted tags, **When** the card is narrower than the tags' total width,
@@ -366,7 +387,9 @@ tree, the navigation result and the line boxes of the tags.
   no navigable target. *Unavailable* means "exists but cannot be used right now": the inner control stays in the tab
   order, reports `aria-disabled="true"`, is not activated (same definition), and keeps its accessible name and
   description so a user can learn why. Capture-phase listeners on ancestors may see the browser's click in both
-  states; the element gives no guarantee about them. The button's `busy` and the row's `unavailable` are unavailable states.
+  states; the element gives no guarantee about them. The button's `busy` and the row's `unavailable` are unavailable
+  states. In link mode "not activated" covers modifier clicks and the middle click too, so a disabled or unavailable
+  link opens no new tab or window either.
 - **FR-004**: **ARIA passthrough.** The ARIA attributes this spec lists for an element, set on the host, reach the
   inner control and update when they change or are removed. The host does not also expose them, so an accessibility
   tree shows the state once, on the inner control, and axe reports no serious or critical finding caused by them.
@@ -454,7 +477,10 @@ tree, the navigation result and the line boxes of the tags.
   whitespace-only counts as none, as FR-013). `href`, `target` and `rel` apply to the inner link in link mode only,
   with FR-021's `noopener` rule; the row has no `download`.
 - **FR-031**: `presentation` (reflected) is `default` (bordered row on a surface, `--ocelle-radius-row`) or `flush`
-  (no border, no surface, compact navigation density: block padding `--ocelle-space-1` and the compact text scale).
+  (no border, no surface, compact navigation density: block padding `--ocelle-space-1` and the compact text scale). A
+  flush row stays borderless in every state: on hover only its surface changes (FR-036), as on a flush button
+  (FR-019), and the current mark (FR-037) is drawn in full, its `--ocelle-color-accent-low` surface and its bar, with
+  no border. No state of a flush row moves or resizes its content.
   Every row, in every presentation and layout, has a block size of at least `--ocelle-target-min`; the flush density
   reduces padding but not this minimum (operator decision, SPEC-1-08). In every presentation an empty slot takes no
   space and adds no gap.
@@ -466,13 +492,17 @@ tree, the navigation result and the line boxes of the tags.
   `CustomEvent` from the host with `bubbles: true`, `composed: true`, `cancelable: true` and `detail: { rowId: string
   }` (the current `row-id`, `""` when absent). In link mode the event is dispatched before navigation, and calling
   `preventDefault()` on it cancels the navigation. In link mode a click with Ctrl, Meta or Shift held, or a middle
-  click, dispatches no event and the browser's default (a new tab or window) happens (operator decision, SPEC-1-09).
-  An unavailable row is not activated (FR-003) and dispatches nothing.
-- **FR-034**: The row's accessible name follows FR-006 (the title slot as content); the `description` slot is its
-  accessible description unless the host sets `aria-describedby`, which then wins (FR-005).
+  click, dispatches no event and the browser's default (a new tab or window) happens (operator decision, SPEC-1-09);
+  this applies only to a row that is not unavailable. An unavailable row is not activated by any click or key (FR-003)
+  and dispatches nothing; a modifier click or middle click on an unavailable link row opens no new tab or window.
+- **FR-034**: The row's accessible name follows FR-006 (the title slot as content). Its accessible description is the
+  text of the `description` slot followed by the text of the `tags` slot (in slot order), so a screen-reader user hears
+  the status and labels a sighted user sees; an empty slot contributes nothing. When the host sets
+  `aria-describedby`, that wins (FR-005) and neither slot contributes (operator decision, SPEC-2-04).
 - **FR-035**: `busy` (boolean, reflected) sets `aria-busy="true"` on the inner control and does not block activation.
-- **FR-036**: On hover (and not when unavailable) the row's surface becomes `--ocelle-color-hover-bg` and its border a
-  hover-border token; both are `--ocelle-*` tokens a host can override on an ancestor (#525). If no fitting token
+- **FR-036**: On hover (and not when unavailable) the row's surface becomes `--ocelle-color-hover-bg` and, on a
+  `default`-presentation row, its border becomes a hover-border token; a `flush` row gets no border on hover
+  (FR-031). Both are `--ocelle-*` tokens a host can override on an ancestor (#525). If no fitting hover-border token
   exists, it is added to `@ocelle/tokens` with its contrast pair in the contrast check.
 - **FR-037**: `current` (reflected) is `page` or `true`; it sets `aria-current` with that value on the inner control
   and shows the current mark of story 5 scenario 4 (an `--ocelle-color-accent-low` surface and an inline-start bar of
@@ -491,9 +521,10 @@ tree, the navigation result and the line boxes of the tags.
   `--ocelle-color-accent-strong` on `accent-low`, `inset`, `hover-bg` and the state grounds (#5 rule 1); it is never
   `--ocelle-color-rule` (constitution II). In both themes, and on each main ground and state ground the row is placed
   on, these pairs meet WCAG 2.2 AA non-text contrast (3:1), and the contrast check covers each: the default border
-  against the ground; the hover border (FR-036) against `--ocelle-color-hover-bg` and the ground; the current bar
-  (`--ocelle-color-current`) against `--ocelle-color-accent-low`; the focus ring (`--ocelle-color-focus`) against the
-  ground, `--ocelle-color-accent-low` and `--ocelle-color-hover-bg`. Title and description text meet text contrast
+  against the ground; the hover border (FR-036, `default` presentation only) against `--ocelle-color-hover-bg` and
+  the ground; the current bar (`--ocelle-color-current`, both presentations) against `--ocelle-color-accent-low`; the
+  focus ring (`--ocelle-color-focus`) against the ground, `--ocelle-color-accent-low` and `--ocelle-color-hover-bg`.
+  Title and description text meet text contrast
   on the row's surface in every state, except the unavailable state's disabled ink and border, which are exempt as
   an inactive component (WCAG 1.4.3, 1.4.11); the focus ring of an unavailable row still meets 3:1.
 
@@ -523,7 +554,8 @@ tree, the navigation result and the line boxes of the tags.
   and focus.
 - **Control state**: enabled, disabled, unavailable (busy button, unavailable row), busy (row), current.
 - **Activate event** (`ocelle-action-row-activate`): payload `{ rowId: string }`; bubbling, composed, cancelable.
-- **Row parts**: title (default slot), icon, description, tags, trailing.
+- **Row parts**: title (default slot; the accessible name), icon, description and tags (together the accessible
+  description, FR-034), trailing.
 
 ## Success Criteria *(mandatory)*
 
@@ -535,8 +567,10 @@ tree, the navigation result and the line boxes of the tags.
   in both themes, on each main ground and state ground (disabled and unavailable text and borders exempt).
 - **SC-004**: Each element shows exactly one accessibility-tree node and one tab stop per instance (zero tab stops when
   disabled) in every story.
-- **SC-005**: Activating a row by pointer or keyboard produces exactly one event with the row's id, 100% of the time
-  across the interaction tests; activating a disabled, busy or unavailable control produces none.
+- **SC-005**: Activating an available row (busy or not) by pointer or keyboard produces exactly one event with the
+  row's id, 100% of the time across the interaction tests; activating a disabled or busy `ocelle-button`, or an
+  unavailable `ocelle-action-row`, produces no `click` reaching a bubble-phase listener and no event, and in link mode
+  no navigation by any click (plain, modifier or middle).
 - **SC-006**: A host can build #12's breadcrumb item (flush, compact) and #14's copy control from `ocelle-button`'s
   documented interface alone, with no style of its own beyond token overrides.
 - **SC-007**: The manifest, strict-CSP, prefix, style-lint and mutation gates pass with the two elements added.
