@@ -38,17 +38,22 @@ states. Public members are in `contracts/elements.md`; the reasons are in `resea
 | `hidden` set | — | cancel; announcer `empty` |
 | `hidden` removed | live | announce |
 | `announce` set, or role set to `alert`/`status` | the notice was not live before (no `announce` and no live role) | none; baseline := current text and politeness |
-| live role added, removed or changed (`alert` ↔ `status`) while live | not `hidden`, politeness differs from the baseline | announce with the new politeness |
-| live role added, removed or changed while live | politeness equals the baseline | none |
+| live role added or removed on a notice with `announce`, or changed (`alert` ↔ `status`) | the notice stays live, not `hidden`, politeness differs from the baseline | announce with the new politeness |
+| live role added or removed on a notice with `announce`, or changed (`alert` ↔ `status`) | the notice stays live, politeness equals the baseline | none |
 | `tone` changes | live, not `hidden`, politeness differs from the baseline | announce with the new politeness |
 | light-DOM mutation | live, not `hidden`, text differs from the baseline | announce |
 | light-DOM mutation | text and politeness equal the baseline (an `href` change, the same text again, a re-render) | none |
-| `announce` removed, or the live role removed without `announce` | the notice stops being live | cancel; announcer `empty` and `aria-live="off"` |
+| `announce` set or removed while a live role stays | the notice stays live; the role sets the politeness (FR-009), so it equals the baseline | none |
+| `announce` removed with no live role, or the live role removed (or replaced by a role with no live politeness) on a notice without `announce` | the notice stops being live | cancel; announcer `empty` and `aria-live="off"` |
 
 *Announce*: empty the announcer, set its `aria-live` to the politeness, and wait until it has been live, shown and
 empty for `W` (a new trigger while waiting restarts the wait); then write the text current at that moment as the
 copy, set the baseline to that text and politeness, hold the copy for `W` and empty the announcer. A trigger while
 holding starts again from the first step. The visible content is never hidden from the accessibility tree.
+
+Each event matches exactly one row (plan review PLAN-CORRECTNESS-1-007): a role change on a notice without
+`announce` is either the "not live before" row (role added) or the "stops being live" row (role removed), and only a
+role change that leaves the notice live (spec FR-008, "Live host role at runtime") is compared with the baseline.
 
 ## Form control (shared: `ocelle-form-input`, `ocelle-form-select`)
 
