@@ -329,7 +329,7 @@ focus. A label associated later (a new `<label for>`) is picked up at the next r
 accessible-name computation skips one (accname 1.2, step 2D), so the labels' text then `label` name the control
 (FR-022 item 1; analysis I10). This differs from 005's `ocelle-icon` and `ocelle-brand-mark`, where a blank host
 `aria-label` decides alone and leaves the element unlabelled (README § Host ARIA); the README scopes that sentence to
-those two elements and states the form controls' rule (tasks T034a, T041).
+those two elements in phase 2 (tasks T016b, T024) and states the form controls' rule in phase 3 (tasks T034a, T041).
 
 A host `aria-label` keeps its precedence (operator decision PLAN-A11Y-SECURITY-1-006 (b)): the README requires it to
 contain the visible label text when a visible label is drawn (WCAG 2.2 SC 2.5.3) and lists any other combination as
