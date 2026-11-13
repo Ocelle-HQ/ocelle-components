@@ -92,6 +92,16 @@ the personal drawer itself stay with #12 and #16."
   padding, inline margins, divider and display are `!important`, so a page rule does not change them; its block
   margins stay the page's to set (FR-008, FR-021, FR-022, US3-3).
 
+**Operator decision at the phase-1 spike** (2026-11-13, human:jeroennouwsdev; `reviews/phase-1/spike.md`
+§ Stop-and-ask):
+
+- Sidebar and rail in a stretching container, option (a), "`align-self: start`": the spike measured that a sidebar or
+  vertical rail whose content is taller than a flex-row or grid container of definite block size kept the
+  container's block size, its content overflowing. The host of `ocelle-context-sidebar` and of `ocelle-personal-rail`
+  is therefore aligned to the start of its flex line or grid area (`align-self: start`), so it fills a taller
+  container and grows past a shorter one in a block, flex-row or grid container alike. A page rule on the host's
+  `align-self` still wins, and the README says so (FR-023, FR-025, FR-036, US3-4, US4-2).
+
 **Constitution decision recorded by triage**: #8 and spec-kitty-design#529 ask for a "12 px mono uppercase" eyebrow.
 Constitution II says "No monospace anywhere", so the eyebrow is set in Schibsted Grotesk, uppercase and tracked
 (FR-030, FR-031).
@@ -380,7 +390,10 @@ landmark, and reflow at 320 px.
    section hidden, the first visible section has no divider of its own, so one divider lies between it and the head
    (hidden sections still count as content, Empty slot above).
 4. **Given** the same sidebar in a container shorter than its content, **When** it is measured, **Then** the footer
-   follows the last section (it does not overlap it) and the sidebar's block size is its content's.
+   follows the last section (it does not overlap it) and the sidebar's block size is its content's. The same holds
+   when that container is a block container, a flex row and a grid, each with a definite block size; and the same
+   sidebar in a 600 px flex-row container and in a 600 px grid container is 600 px tall with the footer's block end
+   at the container's block end, as in scenario 3 (FR-023; operator decision at the phase-1 spike).
 5. **Given** sidebars on one page with no footer, with no head, and with both, **When** they are measured, **Then**
    a sidebar with an empty footer has no footer padding, gap or divider after its last section, one with an empty
    head has none before its first section, and the full sidebar has all of them.
@@ -447,7 +460,12 @@ orientation with focus inside, and reflow at 320 px.
    `--ocelle-size-rail-item` (40 px) in both groups (links that inherit colour, FR-027), each item's computed colour
    is `--ocelle-color-chrome-ink`, and each item lies inside the rail's content box with no overflow,
    is centred in the inline direction, and, when it has keyboard focus, its focus ring (`--ocelle-focus-width` drawn
-   `--ocelle-focus-offset` outside the item) lies wholly inside the rail's border box and is not clipped.
+   `--ocelle-focus-offset` outside the item) lies wholly inside the rail's border box and is not clipped. The same
+   600 px height and bottom-group position hold when the 600 px container is a flex row and a grid. A vertical rail
+   whose items are taller than its container (a container shorter than its content, with a definite block size)
+   grows with its content: its block size is its content's, and its bottom group follows the primary group and lies
+   inside the rail's border box, in a block container, a flex row and a grid alike (FR-025; operator decision at the
+   phase-1 spike).
 3. **Given** the rail with `orientation="horizontal"`, **When** it is measured in left-to-right and right-to-left,
    **Then** the primary items run in a row from the inline start, the bottom items at the inline end, with the
    divider between the groups running in the block direction over the rail's content block size, and the rail fills
@@ -681,8 +699,10 @@ orientation with focus inside, and reflow at 320 px.
   block end; when its content is taller, it MUST grow with its content and the footer follows the last section
   (US3-3, US3-4). The divider follows the content: when the sidebar is taller than its content, the free space lies
   between the last divider before the footer and the footer itself, so that divider stays at the padding edge of the
-  part before it (operator decision, plan squad round 1). Scrolling, and the sidebar's inline size, are the
-  container's (the shell's) concern.
+  part before it (operator decision, plan squad round 1). Both hold whether the container is a block container, a
+  flex row or a grid: the sidebar is aligned to the start of its flex line or grid area rather than stretched to it
+  (`align-self: start`; operator decision at the phase-1 spike), and a page rule on the host's `align-self` wins
+  (FR-036). Scrolling, and the sidebar's inline size, are the container's (the shell's) concern.
 
 **Personal rail**
 
@@ -699,7 +719,9 @@ orientation with focus inside, and reflow at 320 px.
   divider runs in the inline direction across the content box, `--ocelle-space-1` after the primary group, and when
   the rail is taller than its content the free space lies between the divider and the bottom group (the divider
   follows the content, operator decision in plan squad round 1); a vertical rail taller than its container grows
-  with its content and scrolling is the container's. A horizontal rail fills its container's inline size;
+  with its content and scrolling is the container's. Both hold in a block container, a flex row and a grid: the rail
+  is aligned to the start of its flex line or grid area (`align-self: start`; operator decision at the phase-1
+  spike), and a page rule on the host's `align-self` wins (FR-036; US4-2). A horizontal rail fills its container's inline size;
   its bottom group sits at the inline end of the first row and is as wide as its items on one row, up to half the
   rail's content inline size, beyond which its own items wrap; the primary group takes the rest of the inline size
   from the inline start and wraps its items onto further rows; the divider runs in the block direction between the
@@ -778,6 +800,10 @@ orientation with focus inside, and reflow at 320 px.
     content, so remove sections from the slot rather than hide them all; a page rule does not change a section's
     padding, inline margins, divider or display (they are `!important`, as the slot convention's), while its block
     margins are the page's to set (FR-022);
+  - sidebar and vertical rail: it fills its container's block size when its content is shorter and grows with its
+    content when taller, scrolling being the container's, in a block, flex-row or grid container alike, because the
+    host is `align-self: start`; a page rule on the host's `align-self` wins (so a page that sets it to `stretch`
+    in a flex row or grid of definite block size keeps the element at the container's size) (FR-023, FR-025);
   - rail: the orientation example of US4-10, a viewport media query with an exclusive bound
     (`matchMedia("(width < Npx)")`); that items are sized by themselves (`--ocelle-size-rail-item`); and that `<a>`
     items need `color: inherit` (or are `ocelle-nav-item` elements) and a target of at least 24 px (FR-027).
