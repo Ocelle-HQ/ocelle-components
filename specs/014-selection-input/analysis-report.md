@@ -1,48 +1,46 @@
 ---
-analyzed_at: 2026-11-13T23:33:50Z
-head: b38b8b009932c91f5efe9fca9f16cf1eff456dca
-critical: 1
+analyzed_at: 2026-11-13T23:46:01Z
+head: dd9b39b3100c564fa21206ec8eed94e0b676e801
+critical: 0
 high: 1
-medium: 7
+medium: 4
 low: 1
-coverage: 98.6
+coverage: 100
 ---
 
 ## Specification Analysis Report
 
-Feature `specs/014-selection-input`. Artifacts: `spec.md` (1024 lines), `plan.md`, `tasks.md` (73 tasks, T001 to T113), with `research.md`, `data-model.md`, `contracts/elements.md` and `quickstart.md` read where the plan or tasks point to them. Constitution 1.3.1. Context: #10 (Storybook workbench) merged on `origin/main` as `3828d2f`. The operator chose to recheck the plan against it as phase 1's first task (T001) and not now, so this report does not compare the plan with #10's design. It reports only what the branch as it stands makes infeasible or inconsistent (I1).
+Feature `specs/014-selection-input`, second analysis after tasks. Artifacts: `spec.md` (1028 lines), `plan.md`, `tasks.md` (79 tasks, T001 to T113, with T005a, T008a, T062a, T064a, T066a and T067a), and `research.md`, `data-model.md`, `contracts/elements.md` and `quickstart.md` where the plan or tasks point to them. Constitution 1.3.1. This run reads the artifacts as fixed by `reviews/analysis/fixes-1.md` with `reviews/analysis/operator-decisions.md` (Q1 (a), Q2 (c), Q3 (a)). It also reads the workflow files that T001's merge depends on: `.claude/skills/speckit-story-implement/SKILL.md`, `.specify/extensions/story/scripts/base.sh`, `tooling/speckit/bin/fold-history.sh`, `.claude/skills/ocelle-run/SKILL.md` and `.claude/skills/ocelle-land/SKILL.md`. Context: #10 merged on `origin/main` as `3828d2f`. T001 merges `origin/main` into the branch (operator decision Q1 (a)). As before, the comparison with #10's design is left to T001's recheck. The one exception: this run read 006 FR-031 at `3828d2f` to confirm that a pointer state can target one child element, which the new hover stories need. It can.
+
+The findings of the previous report are resolved: C1 (FR-050, R-12, T019, T045, T064, T079), I1 (T001, plan, quickstart), I2, U1 (T062a, T064a, T066a, T067a; conditional Target Platform), U2 (T005a, T008a), G1 (T014, T042, T062, T077, T093 and § Pairings), G2 (T095, T098), G3 (T110, T111), G4 (T028, quickstart step 5) and I3 (FR-050 wording). The findings below are new or follow from those fixes.
 
 | ID | Category | Severity | Location(s) | Summary | Recommendation |
 |----|----------|----------|-------------|---------|----------------|
-| C1 | Constitution Alignment | CRITICAL | spec.md:925-932 (FR-050); research.md R-12; tasks.md T019, T045, T064, T079 | Constitution V says "Every element has a story per variant and per state". The spec and R-15 define a hover state with its own paint for options, tabs and segments: a `hover-bg` fill, and on a segment `accent-strong` boundary lines (spec Edge Cases "Hover", FR-029). No story covers that state, so the paint has no visual baseline. FR-050 declares a hover story for the link only. Two more states have no story: the copy field's focused Copy control (focus ring, US4-9), which FR-050 does not list although it lists "focused" for every other element, and a tab panel that is itself the tab stop (focus ring, US2-6, FR-023). | Add stories to FR-050 and to T019, T045, T064 and T079 (and to R-12): a hovered option, a hovered tab, a hovered segment in the default and joined variants (006 FR-031's pointer parameter, which R-12 already plans for the link), the focused Copy control, and a focused panel with no focusable content. The alternative is an exception in Complexity Tracking with the operator's approval. |
-| I1 | Inconsistency | HIGH | plan.md:9-12; quickstart.md:3; tasks.md:7-10, T001, T019, T027, T028, T049, T068, T083, T099 | plan.md and quickstart.md require #10 to be merged into this branch before any phase is implemented. tasks.md says `main` is merged in only at landing (`/ocelle-land`), "not during the run". The branch does not contain `3828d2f`: it has no `storybook/a11y-exceptions.json`, no `storybook/baselines/`, no `storybook/visual/`, and no `gate:storybook-build`, `gate:visual` or `gate:axe` script. It also lacks `specs/006-storybook-workbench/`, which T001 reads. As written, phases 2 to 6 cannot produce baselines or run the axe gate (T027, T028 and their equivalents), so FR-053 and SC-007 ("no phase lands with baselines or axe pending") cannot be met during the run. | Choose one rule and write it the same way in plan.md, quickstart.md and tasks.md. For example, T001 (or a task right after it) merges `origin/main` into the branch before T010. Operator question Q1 below. |
-| I2 | Inconsistency | MEDIUM | tasks.md:45 vs tasks.md:110, 126 | The stop-and-ask list names "T020 spike (phase 2)". Phase 2's spike is T010; T020 is `red.sh 2`. | Change the stop-and-ask entry to T010. |
-| U1 | Underspecification | MEDIUM | plan.md:50 (Target Platform), 80-86 (decision 1); tasks.md:58-59, T064, T066, T067; spec.md FR-056 | Plan decision 1 (engine floor Chromium 125 / WebKit 17.4 for `:state()`) is still open: it waits on kitty-mission-ui's WebKitGTK and WKWebView minimums. Technical Context nevertheless states the raised floor as fact. The tasks stop at T064, which is inside phase 4's red commit, after the T060 measurement and the T061 scaffold. No task covers the alternative the plan names (row attributes `data-ocelle-row-*`, no floor raise), so a "no" from the operator would leave phase 4 without tasks. | Settle decision 1 before phase 4 starts (it could be asked at T001), or add the alternative's tasks behind the same stop. Mark the Target Platform line as conditional. Operator question Q2 below. |
-| U2 | Underspecification | MEDIUM | tasks.md T002, T003, T006; `.specify/extensions/story/story-config.yml` (`test_pathspec` includes `**/test/**`) | Phase 1's driver commands and recorders (T006) live under `packages/elements/test/`, which counts as a test path. `tdd-check.sh` overlays the final test-path files onto the base, so T002 and T003, run "against the code from before the unit", run against the new driver too. Only `red.sh` shows that they can fail. The phase-level check fails at base only because T004 and T005 need the non-test `vitest.config.ts` changes. This is not counted as a constitution conflict, because the check as defined still fails at base, but per unit the non-vacuity proof of Principle VIII is weaker. | Have T006 or phase 1's review record this limitation, and name one plant per driver command and recorder (run in `reviews/phase-1/plants.md`). Alternatively, state in phase 1's review that `red.sh` is the proof for T002 and T003. |
-| G1 | Coverage Gap | MEDIUM | spec.md:649-683 (Edge Cases); research.md R-14 (SPEC-1-15: "one scenario per parent at 320 px, phases 2 to 4"); tasks.md T014, T042, T062, T077, T093 | The scenario tasks list only "USn-1 to USn-k" plus contracts § Pairings. The Pairings table covers some edge cases (no mutation on a current-value set, motion, continuous resize, first-render `value` + `status`). Several edge cases have no task. These include long child labels wrapping at 320 px for each parent, which R-14 explicitly promises. The others: duplicate values (the first selected on a host set, the clicked one exposed on a user selection), a child outside its parent (no role, no tab stop), an empty listbox (named, no tab stop), host `hidden`, two copies of the package (the first definition wins) for the new elements, the accessible name following a text change, a `status` set without a request, and a `status` attribute that is not reflected after a clear. | Add the edge cases to the scenario tasks of phases 2 to 5 by name (or to contracts § Pairings where a "does not" outcome is involved). |
-| G2 | Coverage Gap | MEDIUM | spec.md FR-049, FR-047 (README sentence), US5-9 (README sentence); tasks.md T095, T098 | T095's documentation test lists "the link, the `detail.href` warning and the label-in-name rule". It does not list three README statements the spec requires: that a modified activation keeps the browser's new tab or window, that a modified activation without `href` does nothing, and that a host that wants a new window handles the event (FR-049). It also omits that a host that navigates itself applies the same resolved-protocol check (FR-047), and that hosts needing other schemes handle the event (US5-9). | List these statements in T095 (and in T098's README section). |
-| G3 | Coverage Gap | MEDIUM | spec.md SC-009; research.md R-14 ("the README has one example per listed use, checked by the documentation test"); tasks.md T026, T110, T111 | No task writes or tests the README examples for each consumer use: the Open project folder picker, tabbed screens, segmented choices, in-text links and copy fields. T110 checks only the overview's nine elements and the entry-point table. | Add the examples to T110 (red) and T111 (green), or to the per-element README tasks T019, T045, T064, T079 and T095 with their green counterparts. |
-| G4 | Coverage Gap | MEDIUM | tasks.md T028 (and "the gates of T028" in T050, T069, T084, T100); quickstart.md steps 4-5; constitution "Development Workflow and Quality Gates" | The per-phase gate run and quickstart omit gates the constitution's merge list requires and the repository defines: `gate:typecheck`, `gate:lint`, `gate:test-lint`, `gate:brand-rules` (the checked brand rules of Principle II, which matter here because the copy field uses tabular figures, not monospace), `gate:unit-tests`, `gate:signoff` (DCO), `gate:pins` and `gate:config-copies`. CI runs them, but a phase could reach review with them failing. | Add them to T028's list and to quickstart step 5. |
-| I3 | Inconsistency | LOW | spec.md FR-050 (`storybook/stories/<element>.stories.ts`); plan.md:162; tasks.md T019, T045, T064, T079, T095 | FR-050 says "every element has stories in `<element>.stories.ts`". The plan and tasks name five files without the `ocelle-` prefix (`listbox.stories.ts`, and so on), which matches the existing `icon.stories.ts`. The child elements (option, tab, tab panel, segment) get no file of their own; they are covered in their parents' files. | Reword FR-050 to "one stories file per control (`listbox`, `tabs`, `segmented-choice`, `copy-field`, `link`), covering its children". |
+| I1 | Inconsistency | HIGH | tasks.md:11-12, T001, phase 1 checkpoint (l.106); plan.md:20-31, phase 1 (l.211-212); `.claude/skills/speckit-story-implement/SKILL.md` step 2; `.specify/extensions/story/scripts/base.sh`; `tooling/speckit/bin/fold-history.sh`:31 | T001 says the merge of `origin/main` comes *before* `base.sh 1`, so that phase 1's `base.sha` is the merge commit. But `implementer-ivan` runs phase 1 under `/speckit-story-implement`, whose step 2 runs `base.sh <N>` "once, before any change" and before it reads the phase's tasks. `base.sh` writes `base.sha` only if it is absent. An implementer following its procedure therefore records the pre-merge HEAD, and the merge lands inside phase 1's range. Three consequences follow. Phase 1's fold fails, because `fold-history.sh $FB` with FB = phase 1's `base.sha` refuses a range with a merge ("history has merge commits"). Phase 1's review diff and `gate:mutation -- --base <phase base>` would also cover all of #10's changes. Nothing in tasks, plan or the delegation says who performs the merge or how the procedure's order is overridden. | Take the merge out of the implementer's phase: the orchestrator (or the operator) makes the recorded merge commit before delegating "implement phase 1", and T001 keeps only the check that the merge is present plus the recheck. The alternative is to state in T001 and in the phase 1 delegation that the implementer does T001 (1) before the procedure's step 2. Operator question Q1. |
+| I2 | Inconsistency | MEDIUM | plan.md:20-31 ("Step 4.3.1's 'no merge commits on the branch' is read for this feature as 'none in the fold range'"); `.claude/skills/ocelle-run/SKILL.md` step 3.1 ("never merge `main` during a run"); `.claude/skills/ocelle-land/SKILL.md` step 8.1 ("no merge commits since the PR base") | The plan rereads one workflow rule for this feature. The text the orchestrator follows is unchanged in two places. `/ocelle-run` step 3.1 checks "no merge commits on the branch" before every fold and says never to merge `main` during a run. `/ocelle-land` step 8.1 checks "no merge commits since the PR base", and that range still holds the T001 merge commit, which is not an ancestor of `origin/main`. Taken literally, the orchestrator stops at each fold and at landing. The scripts themselves are fine: `fold-history.sh` checks only `FB..HEAD`. | Record the range reading where the orchestrator reads it: in `operator-decisions.md` as an explicit decision covering both `/ocelle-run` 3.1 and `/ocelle-land` 8.1, or in the delegation notes for this run. Cite it from plan.md. |
+| U1 | Underspecification | MEDIUM | tasks.md:64-68, T061, T062a, T064, T064a, T065, Dependencies (l.325-326); plan.md decision 1 | The stop for plan decision 1 is placed at T064. T062a, which comes before T064 in the same red commit, is "only if the operator does not confirm plan decision 1 (stop at T064)", so the implementer reaches a conditional task before the condition can be known. Phase 4 has one red commit (T062 to T064a, proven by `red.sh 4` at T065), so in practice the decision blocks the whole red commit, not just T064. T064 is also marked [P], although it is a blocking stop. | Move the stop to the start of phase 4's red commit (after T060 and T061, before T062), or to before phase 4 starts. Drop the [P] marker from the stop, and word T062a, T064a, T066a and T067a as "if decision 1 was answered no at the stop". |
+| U2 | Underspecification | MEDIUM | contracts/elements.md § `ocelle-segmented-choice` (l.101-105); research.md R-06 Status; tasks.md T064a, T067a; constitution I ("the custom-elements manifest declares every public property, attribute ..."), VII (public surface includes "the documented base-style hooks") | Under the row-attribute alternative, the README documents `data-ocelle-row-start`, `data-ocelle-row-end`, `data-ocelle-first-row` and `data-ocelle-last-row` on segment hosts as element-owned, and the contract says they are not manifest attributes. They are documented and selectable by host CSS, though, so nothing says whether hosts may style on them or whether renaming them is a MAJOR change. R-01's `aria-*` state attributes are a precedent, but those are ARIA states with platform meaning. These are new names the library invents. This is not counted as a constitution conflict, because the contract declares them non-public, but the semver status is open. | State in contracts and in T064a's README assertion that the row attributes are internal, not a styling hook, and may change in a PATCH. Alternatively, declare them in the manifest as read-only attributes. |
+| G1 | Coverage Gap | MEDIUM | spec.md:666-669 (Edge Cases "Hover": "Disabled children show no hover paint"); research.md R-15 table ("disabled child: none, as rest"); tasks.md T016, T042, T062; contracts/elements.md § Pairings | No task, scenario or pairing tests that a disabled option, tab or segment under the pointer shows no `hover-bg` fill (and, for a segment, no `accent-strong` lines). It is a "does not" outcome, so under the guard rules it needs a paired positive (an enabled child's hover fill), a plant (hover paint not gated on `aria-disabled`), and a setup that can fail. | Add it to T014, T042 and T062 by name and add a § Pairings row: "a disabled child shows no hover paint", paired with an enabled sibling's `hover-bg` under the pointer; plant: a `:host(:hover)` rule with no disabled exclusion. |
+| I3 | Inconsistency | LOW | plan.md Constitution Check VII (l.97: "the engine-floor raise is documented in the README and the changelog"); plan.md Source Code (l.168: `internals.ts # ... and the row-state method (R-01, R-06)`); plan.md phase 4 (l.248-249: "custom states (R-06), the engine-floor raise in the README") | After the Q2 (c) fix, the Summary, Technical Context and Constitution Check IV are conditional on decision 1. Three places still state the custom-state design as decided: the floor raise in Principle VII's row, the row-state method in `internals.ts`, and phase 4's first clause. T061 now scaffolds no row mechanism. | Make the three places conditional ("if decision 1 is confirmed"), as Constitution Check IV is. |
 
 **Coverage Summary Table:**
 
 | Requirement Key | Has Task? | Task IDs | Notes |
 |-----------------|-----------|----------|-------|
-| FR-001 nine-elements-conventions | Yes | T011, T017, T023, T041, T044, T047, T061, T063, T066, T076, T078, T081, T091, T094, T097 | entry tests per R-16 |
+| FR-001 nine-elements-conventions | Yes | T011, T014, T017, T023, T041, T042, T044, T047, T061, T062, T063, T066, T076, T077, T078, T081, T091, T093, T094, T097 | edge cases hidden and second definition now named |
 | FR-002 event-shape | Yes | T014, T042, T062, T077, T093 | |
-| FR-003 no-io | Yes | T003, T015, T077, T081 | clipboard observer, allowed requests only |
+| FR-003 no-io | Yes | T003, T008a, T015, T077, T081 | clipboard observer plants in T008a |
 | FR-004 same-scope-aria | Yes | T023, T043, T047 | SC-003 fixture |
 | FR-005 shared-keyboard | Yes | T012, T021 | |
 | FR-006 parent-naming | Yes | T014, T042, T047, T062 | |
-| FR-007 focus-ring | Yes | T016, T042, T062, T077, T093 | |
+| FR-007 focus-ring | Yes | T016, T019, T042, T045, T062, T064, T077, T079, T093 | focus stories added |
 | FR-008 selected-paint | Yes | T016, T042, T062 | |
 | FR-009 child-value-default | Yes | T013, T014 | |
-| FR-010 parent-value | Yes | T013, T014, T042, T062 | |
+| FR-010 parent-value | Yes | T013, T014, T042, T062 | duplicate values named |
 | FR-010a remembered-value | Yes | T013, T014, T042, T062 | |
 | FR-011 child-list-changes | Yes | T010, T013, T014 | |
 | FR-011a keep-one-selected | Yes | T013, T042, T062 | |
-| FR-012 listbox-roles | Yes | T014, T023 | |
+| FR-012 listbox-roles | Yes | T014, T023 | empty listbox named |
 | FR-013 listbox-arrows | Yes | T012, T014 | |
 | FR-014 listbox-select | Yes | T014, T023 | |
 | FR-014a listbox-activate | Yes | T013, T014, T023 | |
@@ -55,40 +53,40 @@ Feature `specs/014-selection-input`. Artifacts: `spec.md` (1024 lines), `plan.md
 | FR-021 tabs-keys | Yes | T012, T042 | |
 | FR-021a tabs-key-origin | Yes | T012, T042 | |
 | FR-022 tab-row-wrap | Yes | T042, T047 | |
-| FR-023 tab-to-panel-focus | Yes | T042, T047 | |
+| FR-023 tab-to-panel-focus | Yes | T042, T045, T047 | focused panel story |
 | FR-024 unselected-panels | Yes | T042 | |
 | FR-025 tab-bar-edge | Yes | T042 | |
 | FR-026 toolbar-roles | Yes | T062, T066 | |
 | FR-027 one-pressed | Yes | T013, T062 | |
 | FR-028 segment-keys | Yes | T012, T062 | |
-| FR-029 joined-variant | Yes | T060, T062, T066 | engine floor open (U1) |
+| FR-029 joined-variant | Yes | T060, T062, T062a, T066, T066a | decision 1 open; stop placement (U1) |
 | FR-030 segment-target | Yes | T062, T066 | |
 | FR-031 copy-value | Yes | T077, T081 | |
 | FR-032 copy-wrap | Yes | T077 | |
 | FR-033 copy-native-button | Yes | T077, T081 | |
 | FR-034 copy-label-group | Yes | T077, T081 | |
-| FR-035 copy-request-timing | Yes | T075, T077, T081 | |
-| FR-036 copy-disabled | Yes | T077 | |
+| FR-035 copy-request-timing | Yes | T075, T077, T079, T081 | |
+| FR-036 copy-disabled | Yes | T077, T079 | |
 | FR-037 copy-flush | Yes | T077 | |
 | FR-038 copy-parts | Yes | T079, T081, T082 | |
 | FR-039 copy-forced-colours | Yes | T077 | |
 | FR-040 copy-text-reading-order | Yes | T077 | |
 | FR-041 copy-status-region | Yes | T077, T081 | |
-| FR-042 copy-status-clear | Yes | T077 | |
+| FR-042 copy-status-clear | Yes | T077 | unreflected attribute paired |
 | FR-043 copy-no-own-output | Yes | T077 | |
 | FR-044 copy-swap-readme | Yes | T079, T082 | |
 | FR-045 link-exposure-paint | Yes | T093, T097 | |
 | FR-046 link-activation | Yes | T093, T097 | |
-| FR-047 link-navigation-check | Yes | T092, T093, T097 | README sentence untested (G2) |
+| FR-047 link-navigation-check | Yes | T092, T093, T095, T097, T098 | README sentence now tested |
 | FR-048 link-fragment-ring | Yes | T093 | |
-| FR-049 link-no-target-readme | Partial | T098 | not in T095's documentation test (G2) |
-| FR-050 stories | Yes | T019, T045, T064, T079, T095 | hover and two focus states missing (C1) |
-| FR-051 axe | Yes | T019, T028, T045, T050, T095 | needs #10 on the branch (I1) |
+| FR-049 link-no-target-readme | Yes | T095, T098 | |
+| FR-050 stories | Yes | T019, T045, T064, T079, T095 | hover and focus states added |
+| FR-051 axe | Yes | T019, T028, T045, T050, T095 | depends on T001's merge order (I1) |
 | FR-052 stories-in-red | Yes | T019, T045, T064, T079, T095 | |
-| FR-053 after-10 | Yes | T001 | merge rule conflicts (I1) |
+| FR-053 after-10 | Yes | T001 | merge order vs procedure (I1) |
 | FR-054 composed-dialog-story | Yes | T112 | |
-| FR-055 manifest | Yes | T025, T048, T067, T082, T098 | |
-| FR-056 readme | Yes | T019, T026, T045, T048, T064, T067, T079, T082, T095, T098, T110, T111 | |
+| FR-055 manifest | Yes | T025, T048, T067, T082, T098 | row attributes' status (U2) |
+| FR-056 readme | Yes | T019, T026, T045, T048, T064, T064a, T067, T067a, T079, T082, T095, T098, T110, T111 | |
 | FR-057 csp | Yes | T015, T028, T043, T063, T078, T094 | |
 | FR-058 changelog-pairs | Yes | T018, T024, T026, T111 | |
 | FR-059 keyboard-tests | Yes | T014, T042, T062, T077, T093 | |
@@ -97,45 +95,41 @@ Feature `specs/014-selection-input`. Artifacts: `spec.md` (1024 lines), `plan.md
 | SC-003 no-cross-root-id | Yes | T043 | |
 | SC-004 copy-no-hscroll | Yes | T077 | |
 | SC-005 joined-rounding | Yes | T060, T062 | |
-| SC-006 no-clipboard-call | Yes | T003, T077 | |
-| SC-007 baselines-axe | Yes | T027, T028, T049, T068, T083, T099 | needs #10 on the branch (I1) |
-| SC-008 gates-mutation | Yes | T028, T050, T069, T084, T100, T113 | gate list incomplete (G4) |
-| SC-009 readme-consumer-examples | No | none | G3 |
+| SC-006 no-clipboard-call | Yes | T003, T008a, T077 | |
+| SC-007 baselines-axe | Yes | T027, T028, T049, T068, T083, T099 | |
+| SC-008 gates-mutation | Yes | T028, T050, T069, T084, T100, T113 | full gate list |
+| SC-009 readme-consumer-examples | Yes | T110, T111 | |
 
-**Constitution Alignment Issues:**
+**Constitution Alignment Issues:** none found. Every state with its own paint now has a story (Principle V). Complexity Tracking is empty and needs no entry. U2 is close to Principle I's manifest rule and Principle VII's "documented base-style hooks": it would become a conflict if the README presented the row attributes as a styling hook without declaring them.
 
-- C1 (Principle V, "a story per variant and per state"): the hover states of options, tabs and segments, the focused Copy control, and a focused tab panel have no story and no baseline.
-- No other conflict found. Complexity Tracking is empty and needs no entry under the current plan. That changes if the operator accepts C1 as an exception, or if I1 is settled by deferring baselines to landing.
-
-**Unmapped Tasks:** none. T001 (recheck), the spikes (T010, T040, T060, T075, T090), `red.sh` runs and plant and gate runs serve FR-053 and constitution VIII, not a single requirement.
+**Unmapped Tasks:** none. T001 (merge and recheck), the spikes and measurement (T010, T040, T060, T075, T090), `red.sh` runs (T005a, T020, T046, T065, T080, T096), the plant runs (T008a and the plant part of T028, T050, T069, T084, T100) and the gate runs serve FR-053 and constitution VIII, not a single requirement.
 
 **Metrics:**
 
 - Total Requirements: 72 (63 functional: FR-001 to FR-059 with FR-010a, FR-011a, FR-014a, FR-021a; 9 success criteria, SC-001 to SC-009)
-- Total Tasks: 73
-- Coverage %: 98.6 (71 of 72 with at least one task; FR-049 counted as covered, partially)
+- Total Tasks: 79 (four of them, T062a, T064a, T066a and T067a, run only if decision 1 is answered no)
+- Coverage %: 100 (72 of 72 with at least one task)
 - Ambiguity Count: 0
 - Duplication Count: 0
-- Critical Issues Count: 1
+- Critical Issues Count: 0
 
 ### Next Actions
 
-- One CRITICAL (C1) and one HIGH (I1) finding: resolve both before phase 1's T010 (the first implementation step after the T001 recheck), as amendments to `spec.md` FR-050, `research.md` R-12, `plan.md`, `quickstart.md` and `tasks.md`. Both can be done in T001's amendment step, which the operator has already scheduled as phase 1's first task, if the operator prefers that to a separate fix now.
-- MEDIUM: fix I2 (rename the stop-and-ask entry), G1 to G4 (add the edge cases, README statements, consumer examples and missing gates to the named tasks), U1 (settle plan decision 1 before phase 4) and U2 (record the phase-1 proof limitation and plants).
-- LOW: I3, a wording fix in FR-050.
-- Suggested commands: edit `tasks.md` and `plan.md` by hand (or through T001's amendment) for I1, I2, U1, U2 and G1 to G4; edit FR-050 in `spec.md` with the operator's approval for C1 and I3 (the spec gate has passed, so a spec change goes to the operator).
+- No CRITICAL finding. One HIGH (I1): resolve it before "implement phase 1" is delegated. Otherwise phase 1's base is recorded before the merge, and phase 1's fold, review diff and mutation base all include #10. The fix is a tasks/plan edit (who merges, and when relative to `base.sh 1`), plus the operator's choice below.
+- MEDIUM: I2 (record the range reading of the "no merge commits" checks where the orchestrator reads it), U1 (move the decision-1 stop to before phase 4's red commit), U2 (state the semver status of the row attributes) and G1 (add the "disabled child shows no hover paint" scenario and pairing). These can be fixed with I1 in one pass, or at phase 4 for U1 and U2, since those only take effect there.
+- LOW: I3, three plan sentences to make conditional on decision 1.
+- Suggested commands: edit `tasks.md` and `plan.md` by hand for I1, I3 and U1; edit `contracts/elements.md` and T064a for U2; edit T014, T042, T062 and § Pairings for G1; record I2's reading in `reviews/analysis/operator-decisions.md`. No spec change is needed.
 
 ### Questions for the operator
 
-- **Q1 (I1): how does #10 reach this branch before phase 2?**
-  (a) T001 merges `origin/main` (`3828d2f` or later) into `claude/014-selection-input` as a recorded merge commit, then rechecks. Plan, quickstart and tasks say so.
-  (b) Merge `origin/main` now, as a separate step before T001.
-  (c) Keep the merge at landing, and defer baselines and axe for phases 2 to 6 to landing. This needs a Complexity Tracking exception to Principle V and FR-053.
-- **Q2 (U1): engine floor for the joined segmented choice.**
-  (a) Confirm Chromium 125 / WebKit 17.4 (`:state()`) now; T064 proceeds without a stop.
-  (b) Use the alternative, row attributes `data-ocelle-row-*` with no floor raise; tasks T064, T066 and T067 are rewritten for it.
-  (c) Keep the stop at T064 and ask kitty-mission-ui for its WebKitGTK and WKWebView minimums first.
-- **Q3 (C1): missing state stories.**
-  (a) Add the hover stories (option, tab, segment default and joined), the focused Copy control and the focused panel to FR-050 and the story tasks.
-  (b) Add only the hover stories, and record the two focus states as covered by computed-style reads, with a Complexity Tracking entry.
-  (c) Record all of them as an exception in Complexity Tracking, with a reason and a sunset.
+- **Q1 (I1): who makes the T001 merge, relative to `base.sh 1`?**
+  (a) The orchestrator makes the recorded merge commit (`git merge --no-ff --signoff origin/main`) before delegating "implement phase 1". T001 keeps only the check that the merge is on the branch, plus the recheck. Tasks and plan say so.
+  (b) The implementer does it, as T001 says now. The phase 1 delegation and T001 both state that T001 (1) comes before the procedure's step 2 (`base.sh 1`), as an exception to `/speckit-story-implement` for this phase.
+  (c) The operator merges now, as a separate step before any implementation, and T001 becomes the recheck only.
+- **Q2 (I2): how is the "no merge commits" rule of `/ocelle-run` 3.1 and `/ocelle-land` 8.1 applied to this feature?**
+  (a) Record an operator decision that, for this feature, both checks mean "none in the fold range `FB..HEAD`", which is what `fold-history.sh` checks.
+  (b) The same, and also amend both skills to state the range reading for every feature (a separate change outside this feature).
+- **Q3 (U1): where does phase 4 stop for plan decision 1?**
+  (a) Before phase 4's red commit (after T060 and T061), with the conditional tasks worded against that stop.
+  (b) Before phase 4 starts (before T060).
+  (c) Keep it at T064, and state that the implementer drafts both T062 and T062a, then drops the one that does not apply before committing red.
