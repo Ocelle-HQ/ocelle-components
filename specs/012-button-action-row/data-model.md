@@ -11,13 +11,13 @@ from properties and moved host attributes, and the transitions the tests cover.
 |---|---|---|
 | `mode` | `href` | `link` when `href.trim() !== ""`, `new URL(href, document.baseURI)` succeeds and its `protocol` is not `javascript:`; else `button`. A parse failure is caught: button mode, no error, no `href` rendered. `data:` and `vbscript:` are link mode, left to the host (R-02) |
 | `moved` | host attributes listed per element | a private map attribute → string; set when the host sets the attribute (then the host attribute is removed); an empty or whitespace-only value deletes the entry; any other value is stored as written; a later `removeAttribute` on the host fires nothing and changes nothing (R-03) |
-| `mirrors` | `moved` | for each entry, the host attribute `data-ocelle-moved-<attribute>` = the stored value as written; deleting an entry removes its mirror; at `connectedCallback`, a mirror whose attribute the host does not set is read back into `moved` (a host attribute present wins and rewrites the mirror); a later change to a mirror is not observed (R-03, PLAN-FRESH-2-002) |
+| `mirrors` | `moved` | for each entry, the host attribute `data-ocelle-moved-<attribute>` = the stored value as written; deleting an entry removes its mirror; at `connectedCallback`, a mirror whose attribute the host does not set is read back into `moved` (a host attribute present wins and rewrites the mirror); the mirrors are observed: a mirror removed or changed while `moved` holds its entry is restored from the stored value (a morphing swap removes them), the element's own writes are ignored; a mirror written while no entry is held is not read until the next upgrade (R-03, PLAN-FRESH-2-002, PLAN-FRESH-3-002) |
 | `states` | `moved` (button only) | `ElementInternals.states`: `expanded` ⇔ `moved["aria-expanded"] === "true"`; `pressed` ⇔ `moved["aria-pressed"] === "true"`; `current` ⇔ `moved["aria-current"]` present and not `"false"` (R-03) |
 | `references` | `moved["aria-controls" \| "aria-labelledby" \| "aria-describedby"]` | ids split on whitespace, looked up in `getRootNode()`, missing ids skipped, order kept; resolved on set and on `connectedCallback` (R-04) |
 | `nameSource` | `references.labelledby`, `moved["aria-label"]`, `label`, content | first present wins: labelledby elements, then the moved `aria-label` (as written), then the trimmed non-empty `label`, else content. Content: the button's inner control content; for the row, the inner control's `ariaLabelledByElements` = its own shadow `[part=title]` wrapper. Whenever a higher source is present, the internal reference is replaced (labelledby) or cleared (`aria-label`, `label`) (R-05) |
 | `state` | `disabled`, `busy` (button) / `unavailable`, `busy` (row) | `disabled` → disabled; else button `busy` or row `unavailable` → unavailable; else available. Row `busy` does not change `state` |
 | `ground` | `ground` attribute | absent or unknown → main (bordered variants and the default row use `control-border`); `accent-low`, `inset`, `hover-bg`, `state` → `accent-strong` (R-08); `chrome` → the chrome look of R-08 item 4a (`chrome-ink` text, `chrome-muted` border, `chrome-hover` hover, `chrome-active` active, `chrome-ink` hover border) |
-| layout | host `display` | button `inline-grid`, row `grid` with `min-inline-size: min-content`; the inner control is the single grid item, stretched in both axes, so its box equals the host's (R-01, PLAN-FRESH-2-001) |
+| layout | host `display` | button `inline-grid`, row `grid` with `min-inline-size: min-content`; the inner control is the single grid item, stretched in both axes, so its box equals the host's (R-01, PLAN-FRESH-2-001). A page rule on the element may override `display` or size and leave host area outside the inner control; the host guard below covers it, so no guarantee depends on this row (PLAN-FRESH-3-001) |
 
 States and what each guarantees:
 
@@ -28,8 +28,11 @@ States and what each guarantees:
 | disabled (button only) | out | disabled (`<button disabled>`, or the link below) | `<a role="link" aria-disabled="true">`, no `href`, no `tabindex` | not activated: native `disabled` (button mode) and the guard |
 
 The guard (R-06): on the inner control, `click` and `auxclick` listeners that call `preventDefault()` and
-`stopImmediatePropagation()` in **every state that is not available**, disabled links included. `host.click()` calls
-the inner control's `click()` in every state (R-06).
+`stopImmediatePropagation()` in **every state that is not available**, disabled links included. The host guard (R-01,
+PLAN-FRESH-3-001): `click` and `auxclick` listeners on the host, registered in the constructor, that call the same two
+methods on an event whose `composedPath()` does not contain the inner control (**in every state**) and on any event
+while the state is not available. `host.click()` calls the inner control's `click()` in every state (R-06), so its
+click passes through the inner control.
 
 Transitions: any state → any state by property change; focus stays on the inner control across available ↔
 unavailable (US3-2; in link mode the inner `<a>` stays the same element, losing and regaining `href` while keeping
@@ -88,8 +91,14 @@ tags never join the name).
 
 Description: `ariaDescribedByElements` of the inner control = the moved `aria-describedby` references when present;
 otherwise the elements assigned to the `description` slot, then those of the `tags` slot (assigned elements, flattened;
-text nodes slotted directly are wrapped by nothing and so do not count: hosts slot elements, documented), recomputed on
-`slotchange` (FR-034).
+text nodes slotted directly are wrapped by nothing and so do not count: hosts slot elements, documented), keeping only
+the elements with non-whitespace text (`textContent.trim() !== ""`), and `null` when none is kept, so a moved `title`
+then describes the row (FR-034, PLAN-FRESH-3-004).
+
+Slot emptiness (FR-031): `icon` and `trailing` are empty when no element is assigned; `description` and `tags` are
+empty when no assigned element has non-whitespace text. An empty slot's wrapper has `hidden` (no space, no gap).
+Emptiness and the description are recomputed on `slotchange` and on a `MutationObserver` on the host (`childList`,
+`characterData`, `subtree`), since text written into a slotted element fires no `slotchange` (R-04).
 
 Drawing (R-10, R-12): inline padding `space-3` in both presentations and every state; title and description
 wrappers `overflow-wrap: anywhere`, description and tags ink `color-ink-soft` (`chrome-muted` with `ground="chrome"`);

@@ -1,7 +1,7 @@
 # Research: Action Controls, `ocelle-button` and `ocelle-action-row`
 
-**Feature**: [spec.md](spec.md) | **Plan**: [plan.md](plan.md) | **Date**: 2026-11-13 (squad rounds 1 and 2 fixes, and
-the merge of feature 006 into this branch, applied the same day)
+**Feature**: [spec.md](spec.md) | **Plan**: [plan.md](plan.md) | **Date**: 2026-11-13 (squad rounds 1, 2 and 3 fixes,
+and the merge of feature 006 into this branch, applied the same day)
 
 Measurements were taken on 2026-11-13 in this container with Chromium 153.0.8010.12
 (`/opt/pw-browsers/chromium-1243/chrome-linux64/chrome`, the build `OCELLE_CHROMIUM_PATH` points at here; the pinned
@@ -9,7 +9,7 @@ Playwright 1.64.1 expects build 1248, which CI installs) through the CDP Accessi
 pages. The experiment scripts are not part of the repository; each finding below states what was measured. WebKit is
 not available here and is not measured (an open limitation, as in mission 005); WebKit release figures come from
 MDN's browser-compat-data 8.1.9 (read 2026-11-13). Squad findings are cited by id (`reviews/plan/round-1/refute.md`,
-`reviews/plan/round-2/refute.md`).
+`reviews/plan/round-2/refute.md`, `reviews/plan/round-3/refute.md`).
 
 ## R-01 Element structure: one inner control, with `delegatesFocus`
 
@@ -40,7 +40,40 @@ centred, R-09); a host that does not want that sets `align-self` on the element.
 US4-15 and US5-6 (stretched case) click 4 px inside the host's bottom edge, each with a plant restoring
 `inline-block` or `block`.
 
-**Alternatives**: the button refusing the stretch with `align-self: center` (round 2 option (b), not chosen); no
+**A restyled host, measured (PLAN-FRESH-3-001 (a))**: `:host { display: ... }` is the lowest-priority rule for the
+host's own box; any author rule on the element in the page wins. With `:host { display: inline-grid }`, a disabled
+flex inner `<button>` (min 44 px) in a 400 px container and a `document` click listener: no page rule, host and inner
+44 × 44, nothing clicked; page rule `display: block`, host 400 × 44, inner 44 × 44 (46 × 44 in the lens's probe), a
+click 4 px inside the host's inline-end edge reached `document` with the host as target; `display: flex; width:
+100%` the same; `width: 100%` alone, inner 400 × 44 (the grid stretch holds), no click. Adding `inline-size: 100%` to
+the inner control fixes `block` and `flex` but not `display: block; height: 90px` (the click at the bottom reached
+`document`). Full-width buttons in dialogs and narrow panes are a common page style, so the grid fill alone cannot
+carry FR-001 and FR-003.
+
+**Decision, host guard**: `control.ts` registers, in the element's constructor (so at upgrade, before any host
+listener added afterwards), a `click` and an `auxclick` listener on the host itself. Each calls `preventDefault()` and
+`stopImmediatePropagation()` when the event's `composedPath()` does not contain the inner control (its first entry is
+then the host: the click landed on host area outside the inner control), in every state, and when the control is not
+available. A click that passed through the inner control in the available state is left alone, so the button's
+`click` and the row's activation are unchanged; in the other states the inner guard (R-06) has already stopped it. The
+grid fill stays for looks (cards of equal height, a stretched button that is all control). So a click on host area
+outside the inner control never activates the element, available or not, and a host may restyle the element's
+`display` and size (README). The scenarios US1-17, US3-11, US5-6 (restyled case) and US5-12 click the outside points
+of spec § "Restyled host" under `display: block`, `display: flex; width: 100%` and `display: block; height: 90px`, and
+the inner control's centre as the positive case; plant: no host listener. Which points lie outside the inner control
+is measured for the button (both, under each rule); for the row, whose link-mode `<a>` may fill a block host's width,
+the phase's spike lists them by hand per mode and rule, and the scenario asserts the list from the boxes before
+clicking.
+
+**Its limits (stated in the README)**: the host listener sees a click at the host in the at-target phase, so it covers
+bubble-phase listeners on ancestors and host listeners added after upgrade. Capture-phase listeners on ancestors see
+the click first (as with the inner guard, spec "Not activated"), and so do listeners a host attached to the element
+before it was upgraded, which run in registration order before the element's own.
+
+**Alternatives**: the button refusing the stretch with `align-self: center` (round 2 option (b), not chosen); CSS
+only, with `inline-size: 100%` on the inner control and a README rule that hosts must not set `display` or a block
+size on the element (round 3 option (b), not chosen: it leaves the fixed-height case open); documenting that a
+`display` override voids FR-001 and FR-003 (round 3 option (c), not chosen); no
 `delegatesFocus` (rejected: `host.focus()` would do nothing); a light-DOM inner control (rejected:
 the host page's CSS would style it, against constitution II's token-only rule and mission 005's conventions);
 `ElementInternals` with `role="button"` on a focusable host (rejected: link mode needs a real `<a>` for modifier
@@ -126,7 +159,7 @@ bind the off value instead. The README gives one recipe per stack:
 | React | `aria-current={active ? "page" : "false"}`, `aria-expanded={open ? "true" : "false"}`, `aria-controls={open ? "panel" : ""}` | `undefined` or `null` |
 | Lit | `aria-current=${active ? "page" : "false"}` (an attribute binding with a string) | `nothing`, `ifDefined(undefined)` |
 | Svelte | `aria-current={active ? "page" : "false"}` | `undefined`, `null` |
-| htmx, Thymeleaf | render the attribute with the off value (`th:attr="aria-current=${active} ? 'page' : 'false'"`); a swap that replaces the element moves the new element's attributes at upgrade; htmx's history restore keeps the moved values through the mirrors (below) | omitting the attribute on an element that is updated in place; writing a `data-ocelle-moved-*` attribute |
+| htmx, Thymeleaf | render the attribute with the off value (`th:attr="aria-current=${active} ? 'page' : 'false'"`); a swap that replaces the element moves the new element's attributes at upgrade; a morphing swap (idiomorph's `morph`) sets the changed attributes on the live element, which moves them, and the element restores the mirrors the morph removes; htmx's history restore keeps the moved values through the mirrors (below) | omitting the attribute on an element that is updated in place; writing a `data-ocelle-moved-*` attribute |
 
 ARIA reflection properties on the host (`host.ariaExpanded = "true"`) set the attribute and are moved the same way;
 setting one to `null` removes the (absent) attribute and changes nothing, as `removeAttribute` does.
@@ -144,10 +177,29 @@ read back as the stored value (and applied, and its custom state set); a host at
 rewrites the mirror. One attribute per moved name was chosen over one attribute holding all pairs: no encoding to
 parse, each value readable in the DOM inspector, and the prefix gate's `ocelle` names hold. The mirrors are not ARIA,
 so the accessibility tree and axe ignore them; `getAttribute("aria-label")` on the host still returns `null`. Hosts do
-not write or remove mirrors (README); a mirror changed by the host after upgrade is not observed. The mirrors are
+not write or remove mirrors (README). The mirrors are
 public attributes of the element and are declared in the manifest (R-15; a MINOR addition). US2-13 re-creates a
 button from `outerHTML` and from `cloneNode(true)` after moving `aria-label` and `aria-current` (plant: no mirror);
 a row case does the same for `aria-label` (phase 5).
+
+**Mirrors restored (PLAN-FRESH-3-002 (a))**: a morphing swap treats the server markup as the whole truth for
+attributes, so it removes the mirrors, which the server never renders, on every morph of the element, with no act by
+the host. Measured by the refuter on a minimal element built as above: live `<x-m data-ocelle-moved-aria-label="Close">`,
+then idiomorph's attribute sync with the same server markup `<x-m aria-label="Close">` (set every differing attribute,
+then remove, in reverse order, every live attribute the new node lacks) gives `<x-m></x-m>` with the inner label still
+"Close", so the next `innerHTML` copy (htmx's history snapshot) upgrades unnamed. That idiomorph's `syncNodeFrom`
+works in this order is its published behaviour and was not checked offline (no idiomorph source in the container);
+any morph that removes attributes the server never renders does the same whatever the order. Turbo 8's page-refresh
+morph is the same kind of swap. Decision: the mirror names join the element's `observedAttributes`; when a mirror
+is removed or set to a value other than the stored one while the element holds a value for that attribute, the
+element writes the stored value back (its own writes, which equal the stored value, are ignored, so there is no
+loop). In the sync above the set pass re-moves `aria-label` and the removal pass deletes the mirror, which the element
+rewrites at once; the removal loop counts down over the live attributes and does not revisit the rewritten one (it
+is appended), so one morph leaves the mirror in place. A mirror written while no value is held is not read until the
+next upgrade (unsupported, README). US2-13 gains the morph case on the button: the scenario applies the attribute
+sync itself (no idiomorph dependency) with the unchanged server markup, asserts the mirrors and the inner control,
+then copies through `innerHTML`, and also removes and overwrites a mirror directly (plant: mirror not restored); the
+row's mirror case (phase 5) adds the same morph step for `aria-label`.
 
 **Styling hooks (PLAN-FRESH-1-009 (a))**: since a host selector `ocelle-button[aria-expanded="true"]` no longer
 matches, the button exposes the moved states as custom states through `ElementInternals.states`: `expanded` while the
@@ -160,7 +212,8 @@ and WebKit 17.4 (MDN browser-compat-data 8.1.9), which raises the README's WebKi
 option (d)); element properties instead of host ARIA (rejected by the operator: rewrites #501's ask); clearable
 reflected properties beside the moved ARIA, or overriding the ARIAMixin accessors (round 1 options (b) and (c),
 not chosen); documenting that live-DOM copies lose moved ARIA and steering hosts to `label` and off the htmx history
-cache (round 2 option (b), not chosen); declaring a host `title` unsupported (round 2 PLAN-FRESH-2-006 option (b), not
+cache (round 2 option (b), not chosen); keeping mirrors unobserved and giving morphing hosts a recipe that skips them
+(idiomorph `callbacks.beforeAttributeUpdated`, round 3 option (b), not chosen); declaring a host `title` unsupported (round 2 PLAN-FRESH-2-006 option (b), not
 chosen: measured, a host `title` names the role-less host, `generic "Close dialog"` beside `button "Save"`, the
 second named node the move removes, and axe raises nothing).
 
@@ -172,7 +225,21 @@ elements are assigned in order to the inner control's `ariaControlsElements`, `a
 `ariaDescribedByElements`, and ids not found are skipped. Lookup runs when the attribute is set and on
 `connectedCallback`. The row's own description (FR-034) is built the same way: the inner control's
 `ariaDescribedByElements` is set to the elements assigned to the `description` slot followed by those of the `tags`
-slot, unless a host `aria-describedby` was moved, which then wins.
+slot that have non-whitespace text (`null` when none has), unless a host `aria-describedby` was moved, which then
+wins.
+
+**Empty slotted elements (PLAN-FRESH-3-004)**: measured by the refuter (CDP full AX tree) on an inner `<button
+title="Open the mission">` named by its `[part=title]` wrapper: with `ariaDescribedByElements` set to `[]` or `null`
+the description is "Open the mission"; with an empty `<span slot="description"></span>` referenced it is undefined
+(the `title` fallback is lost); with "Due Friday" slotted it is "Due Friday". Server templates emit such empty spans
+(`th:text` of a null value). So a `description` or `tags` slot is *empty* when none of its assigned elements (flattened)
+has non-whitespace text (`textContent.trim() !== ""`), and only elements with text are referenced. The emptiness is
+recomputed on `slotchange` and, since writing text into a slotted element fires no `slotchange`, on a
+`MutationObserver` on the host with `childList`, `characterData` and `subtree` (light children only; no I/O). The
+same emptiness drives the slot wrappers' `hidden` (so an empty slot takes no space and adds no gap, FR-031, R-10).
+US4-16 adds an empty-span case (the description stays the title; plant: the raw assigned elements referenced) and
+US4-6 an empty-span gap case (plant: wrappers hidden from the raw assigned elements), each also writing text into
+the span and removing it again (plant: no `MutationObserver`).
 
 **Engine floor** (PLAN-FRESH-1-008 (a)): the README's floor rises to **Chromium 135** (element reflection) and
 **WebKit 17.4** (custom states, R-03). MDN browser-compat-data 8.1.9 gives `ariaControlsElements`,
@@ -227,6 +294,8 @@ it (as US4-4's "Open mission 42" on "Mission 42").
 listener that, while the control is in any state that is not available (disabled, busy button, unavailable row;
 disabled links included, PLAN-TESTABILITY-1-002), call `preventDefault()` and `stopImmediatePropagation()`. Disabled
 button mode also has the native `disabled` attribute; disabled and unavailable link mode also have no `href` (R-02).
+A second listener pair on the host itself (R-01, PLAN-FRESH-3-001 (a)) stops a click that did not pass through the
+inner control, so host area that a page rule leaves outside the inner control is no bypass.
 The row's own activation listener runs after the guard and only when the control is available; in link mode it
 ignores clicks with `ctrlKey`, `metaKey`, `shiftKey` or `altKey` and dispatches nothing for `auxclick` (SPEC-1-09;
 Alt is treated as a modifier, closing check-3 note SPEC-3-02: Chromium may download on Alt-click, which is the
@@ -453,7 +522,10 @@ var(--ocelle-space-1)` and each slotted tag gets `::slotted(*) { overflow-wrap: 
 tag never breaks inside a word, except a tag wider than the card, which gets `max-inline-size: 100%` and
 `overflow-wrap: anywhere` (US5-8). The host is `display: grid; min-inline-size: min-content` with the inner control as
 its single stretched item (R-01; FR-040): a grid container is block-level, so it stretches inline in a block parent
-as `display: block` did, and the inner control follows the host's block size in a grid of cards (US4-15).
+as `display: block` did, and the inner control follows the host's block size in a grid of cards (US4-15). Each
+slot's wrapper (icon, description, tags, trailing) gets the `hidden` attribute while its slot is empty, by FR-031's
+definition (for `description` and `tags`: no assigned element with non-whitespace text, R-04), so an empty slot takes
+no space and adds no gap.
 
 The slot convention's size rules are scoped to the icon slots (PLAN-A11Y-SECURITY-1-002): `src/icon-slot.ts` has an
 unscoped `::slotted(*)` that sets inline and block size to the icon size, `max-inline-size: none` and `flex: none`, all
@@ -653,6 +725,21 @@ updates 006's row (scope `size` 1, sunset the split count at size 1) and puts th
 approval at phase 1's review, as 006 decision 30 did for 25. Each CI run of the branch shows the Plants shards; phase
 6's review records a run at the full story count with every shard's time and the run's total; a shard near 10
 minutes is a stop-and-ask.
+
+**Size 1 is the last lever (PLAN-FRESH-3-003 (a))**: `plantShards` keeps each `visual` plant whole, so `size` 1 is its
+floor; nothing below it remains, and at size 1 a shard's time still grows with every repository story because each
+`visual` plant captures them all. Recomputed from the same model: 533 s at 52 stories and 599 s at 76, so after this
+feature (about 52 stories) the headroom is about **24 stories**, fewer than the about 31 this feature alone adds; the
+next element mission (the status mission, or #12's breadcrumbs and top bar) will pass the split count with no setting
+left to lower, and that mission would be blocked on a gate redesign. The cost accepted here: at 52 stories the 73
+`visual` and `axe` shards take about 73 × 533 s ≈ 38,900 s, about **10.8 runner-hours** per CI run (taking the
+`visual` model for every shard, an upper bound for the `axe` shards), plus the 3 non-visual shards, against 25 such
+shards, about 25 × 569 s ≈ 14,200 s or about 4 runner-hours, at 21 stories and size 3 today. Phase 1 writes these facts into 006's
+Complexity Tracking row as it updates it (size 1 the last lever, the headroom, the runner time) and into
+`gates/README.md`'s approved sizes, and phase 1's review, besides the split count, asks the operator to open a triage
+record for a plant design whose shard time does not grow with the repository's story count (for example `visual`
+plants that capture only the story-themes their changed inputs can affect), to be decided before the next element
+mission starts. This feature does not change its own story count for it (round 3 option (b), not chosen).
 
 ## R-14 Mutation testing
 

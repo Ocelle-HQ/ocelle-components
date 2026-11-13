@@ -91,6 +91,23 @@ option (a) each):
   (37dd501). Stories, baselines and the story-level axe gate are planned against 006 as it is on this branch and are
   done in each phase that adds stories, not in a later phase; nothing in this feature waits for #10 any more (FR-050).
 
+**Operator decisions at the plan squad, round 3** (2026-11-13, human:jeroennouwsdev; `reviews/plan/round-3/refute.md`,
+option (a) each):
+
+- Restyled hosts (PLAN-FRESH-3-001): the guarantee no longer depends on the host's `display`. Each element also
+  guards the host itself: a click on the host that did not pass through the inner control (a page rule such as
+  `display: block` or a fixed height gives the host area outside it) is stopped, as is any click while the control is
+  not available; a host may restyle the element's `display` and size (FR-001, FR-003).
+- Morphing swaps (PLAN-FRESH-3-002): the element restores a `data-ocelle-moved-*` mirror that is removed or changed
+  while it holds the value, so a morph (htmx's idiomorph `morph` swap, Turbo 8 page-refresh morphs) that deletes the
+  mirrors does not lose them (FR-004).
+- Plant shards (PLAN-FRESH-3-003): `shardSize` 1 is the last lever; the plan states the headroom it leaves and the
+  total Plants runner time, and phase 1's review asks the operator to open a triage record for a plant design whose
+  shard time does not grow with the story count, before the next element mission (plan decision 15, research R-13).
+- Empty description and tags slots (PLAN-FRESH-3-004, a confirmed fix): a `description` or `tags` slot is empty when
+  none of its assigned elements has non-whitespace text; an empty slot neither describes the row nor takes space
+  (FR-031, FR-034).
+
 **Issues**: #7, in part (triage record `triage/012-button-action-row.md`, approved by the operator on 2026-11-13).
 This feature builds the two action controls of #7. `ocelle-pill-tag`, `ocelle-status-indicator` and `ocelle-metric`
 stay in #7 for a later status mission. The body of #7 (read on 2026-11-13) is the source of the requirements below.
@@ -134,7 +151,9 @@ element or any of its ancestors (up to `document` and `window`). In link mode th
 plain click, a click with a modifier key (Ctrl, Meta, Shift or Alt) held and a middle click; none of them opens the
 target in the current tab, a new tab or a new window. Capture-phase listeners are outside this guarantee:
 for a link with no target and for a control with `aria-disabled="true"`, the browser dispatches the click and
-capture-phase listeners on ancestors run before the element can stop it. The README states this.
+capture-phase listeners on ancestors run before the element can stop it. So are listeners a host adds to the element
+before the element is upgraded (defined): for a click on the host outside the inner control (a restyled host, below),
+they run before the element's own host listener. The README states this.
 
 **Grounds.** The *main grounds* are the tokens `--ocelle-color-canvas`, `-sheet`, `-pane`, `-panel`, `-inspector`,
 `-rail`, `-inset`, `-accent-low` and `-hover-bg` (the `main` group of the token source); the *state grounds* are
@@ -146,6 +165,17 @@ themes, constitution II).
 in the block axis (`align-items` defaults to `stretch`) and grid items stretch in both axes. Scenarios that click
 "4 px inside the host's bottom edge" place the element so stretched (in a `display: flex` row beside a taller
 sibling, and in a two-column grid whose other cell is taller).
+
+**Restyled host.** A host is *restyled* when a rule of the page sets the element's own `display` or size, which
+outranks the element's `:host` styles. Scenarios that say "restyled" place the element in a 400 px wide container
+under each of three page rules on the element: `display: block`, `display: flex; width: 100%`, and `display: block;
+height: 90px`. Their *outside points* are the points 4 px inside the host's inline-end edge at its block centre and
+4 px inside its bottom edge at its inline centre that lie outside the inner control's box under that rule. For the
+button both points lie outside under each rule (measured, PLAN-FRESH-3-001); for the row, whose inner control may be
+an `<a>` that fills a block host's width, the phase's red commit lists them by hand per mode and rule from a spike, and
+under `display: block; height: 90px` the bottom point lies outside for every element and mode. Each scenario first
+asserts, from the two boxes, that its listed points lie outside the inner control, then clicks each of them, and
+clicks the inner control's centre as the positive case.
 
 ### User Story 1 - `ocelle-button` (Priority: P1)
 
@@ -222,6 +252,10 @@ activate it by pointer, Enter and Space; read its accessibility-tree node and it
 16. **Given** `variant="quiet"` with `ground="hover-bg"`, **When** placed on `--ocelle-color-canvas` and on
     `--ocelle-color-hover-bg` (a host row whose surface changes on hover), **Then** the border is
     `--ocelle-color-accent-strong` on both and meets 3:1 on both, as the contrast check proves (FR-018).
+17. **Given** a restyled host (see "Restyled host") of an available button and of a disabled button, under each of
+    the three page rules, **When** a pointer clicks each outside point, **Then** neither button is activated (no `click` reaches a bubble-phase listener on the element or its
+    ancestors); **When** a pointer clicks the inner control's centre, **Then** the available button delivers exactly
+    one `click` (one serial) whose target is the element, and the disabled one is not activated (FR-001, FR-003).
 
 ---
 
@@ -237,8 +271,8 @@ consumers work around today. It also fixes the passthrough rule every later cont
 
 **Independent Test**: render a button with `href`, with and without `disabled`; set each passthrough attribute on the
 host, change it, clear it with the empty or off value, remove it from the host after the move (which changes
-nothing) and copy the element from the live DOM; read the accessibility tree, the host's custom states and the
-navigation result.
+nothing), copy the element from the live DOM and apply a morph's attribute sync to it; read the accessibility tree,
+the host's custom states, the mirrors and the navigation result.
 
 **Acceptance Scenarios**:
 
@@ -281,7 +315,14 @@ navigation result.
     control is named "Close" and reports `aria-current="page"`, the copy matches `:state(current)`, and neither copy
     has an `aria-label` or `aria-current` host attribute; the original host carries
     `data-ocelle-moved-aria-label="Close"` and `data-ocelle-moved-aria-current="page"`; after `aria-current="false"`
-    the mirror reads `"false"`, and after `aria-label=""` the `aria-label` mirror is gone (FR-004).
+    the mirror reads `"false"`, and after `aria-label=""` the `aria-label` mirror is gone (FR-004). **Given** the same
+    moved values, **When** a morph applies the unchanged server markup `<ocelle-button aria-label="Close"
+    aria-current="page">` to the live element (idiomorph's attribute sync: set each attribute of the new markup that
+    differs, then remove, in reverse order, each live attribute the new markup lacks), **Then** both mirrors are on
+    the host afterwards with their values, the inner control is still named "Close" and reports `aria-current="page"`,
+    and a copy made afterwards from the container's `innerHTML` is named "Close" and reports `aria-current="page"`;
+    **When** the host removes a mirror or writes another value into it, **Then** the mirror reads its stored value
+    again (FR-004).
 14. **Given** `title="Close dialog"` on the host of `<ocelle-button>Save</ocelle-button>`, **When** the tree is read,
     **Then** there is one node, the button named "Save" with the description "Close dialog", no `generic` node for
     the host, and the host has no `title` attribute; **Given** an icon-only button with `title="Close"` and no other
@@ -327,6 +368,8 @@ pointer and keyboard; read the tree, the layout boxes and the animation under ea
    5 s (six turns of `--ocelle-motion-spin`) and then shows the same still arc as under reduced motion (FR-017).
 10. **Given** a busy button with a stretched host, **When** a pointer clicks 4 px inside the host's bottom edge,
     **Then** it is not activated (FR-001, FR-003).
+11. **Given** a busy button with a restyled host (see "Restyled host"), under each of the three page rules, **When** a
+    pointer clicks each outside point or the inner control's centre, **Then** it is not activated (FR-001, FR-003).
 
 ---
 
@@ -362,7 +405,9 @@ the event and its payload, the accessibility tree and the boxes in a shrink-wrap
    still dispatches the event (busy means "content updating", not "unavailable").
 6. **Given** `presentation="flush"` with no `current` and no hover, **When** rendered, **Then** the row has no border, no surface fill and no block
    padding beyond the compact navigation density (FR-031), and every empty slot (icon, description, tags, trailing)
-   takes no space and adds no gap.
+   takes no space and adds no gap; **Given** also an empty `<span slot="description"></span>` (or one holding only
+   whitespace), **Then** the description slot still takes no space and adds no gap, and after text is written into
+   that span its region takes space and the gap returns, and after the text is removed again it takes none (FR-031).
 7. **Given** a row in a shrink-wrapping container (an `inline-block`, `inline-flex`, `float` or `max-content` grid
    track), **When** rendered, **Then** its inline size is at least the min-content inline size of its content, never
    0.
@@ -407,7 +452,10 @@ the event and its payload, the accessibility tree and the boxes in a shrink-wrap
 16. **Given** `title="Open the mission"` on a row's host, **When** the tree is read, **Then** the row is one node, the
     host has no `title` attribute and no `generic` node appears for it; with no slotted description or tags the row's
     description is "Open the mission"; with a slotted description the description stays the slots' text (Accessible
-    Name 1.2 uses `title` for the description only when nothing else describes the control) (FR-030).
+    Name 1.2 uses `title` for the description only when nothing else describes the control) (FR-030); with an empty
+    `<span slot="description"></span>` (or one holding only whitespace) and no tags the description is still "Open the
+    mission"; after "Due Friday" is written into that span it is "Due Friday", and after the text is removed it is
+    "Open the mission" again (FR-034).
 17. **Given** `ground="chrome"` on a `default` row on `--ocelle-color-chrome`, **When** rendered and hovered, **Then**
     its title uses `--ocelle-color-chrome-ink`, its description and tags `--ocelle-color-chrome-muted`, it has no fill
     and a `--ocelle-color-chrome-muted` border; on hover its surface becomes `--ocelle-color-chrome-hover` and its
@@ -455,7 +503,9 @@ tree, the navigation result and the line boxes of the tags.
    FR-034, if any) is unchanged; a link row's inner link has no `href` and is still a focusable node of role `link`.
 6. **Given** an unavailable row, **When** it is clicked or Enter or Space is pressed, or (a link row) it is clicked
    with Ctrl, Meta, Shift or Alt held or middle-clicked, or the host calls its `click()` method, or (a stretched host)
-   a pointer clicks 4 px inside the host's bottom edge, **Then** it is not
+   a pointer clicks 4 px inside the host's bottom edge, or (a restyled host, under each of the three page rules) a
+   pointer clicks each outside point or the inner control's centre,
+   **Then** it is not
    activated: no `ocelle-action-row-activate` event
    is dispatched, a link row navigates nowhere (not in the current tab, not in a new tab or window), and no `click`
    reaches a bubble-phase listener on the element or its ancestors.
@@ -473,6 +523,10 @@ tree, the navigation result and the line boxes of the tags.
 11. **Given** `current="page"` and `ground="chrome"` on a row on `--ocelle-color-chrome`, **When** rendered and
     hovered, **Then** its surface is `--ocelle-color-chrome-hover` (not `--ocelle-color-accent-low`, a light surface in
     light), the bar is drawn as in scenario 4, and hovering changes neither (FR-037).
+12. **Given** an available row with a restyled host (see "Restyled host"), under each of the three page rules, in
+    button mode and in link mode, **When** a pointer clicks each outside point, **Then** it is not activated (no event, no navigation, no `click` reaching a bubble-phase listener);
+    **When** a pointer clicks the inner control's centre, **Then** exactly one `ocelle-action-row-activate` event is
+    dispatched (FR-001, FR-003).
 
 ---
 
@@ -518,17 +572,31 @@ tree, the navigation result and the line boxes of the tags.
 - **An ARIA attribute the element does not list** (for example `aria-pressed` on a row): not supported; it stays on the
   host and axe flags it; documented.
 - **A synthetic click dispatched on the host** (`dispatchEvent(new MouseEvent("click"))`): outside the guarantees;
-  `click()` is the supported way (documented).
+  `click()` is the supported way (documented). Since such a click does not pass through the inner control, the
+  element's host listener stops it in every state (FR-001), so bubble-phase listeners on ancestors and host listeners
+  added after upgrade do not see it.
 - **A container whose surface changes** (a host's list or table row that takes `hover-bg` on hover, or `accent-low`
   when selected) holding a bordered button: the host sets `ground` for the changed surface statically (`hover-bg` or
   `accent-low`); `--ocelle-color-accent-strong` meets 3:1 on every main ground, so the border holds in both states
   (FR-018, US1-16). The README states the rule.
 - **Copies of the live DOM** (`cloneNode(true)`, `innerHTML` or `outerHTML` round trips, htmx's history snapshot): the
   moved values travel in the element's `data-ocelle-moved-*` mirror attributes and are read back at upgrade (FR-004,
-  US2-13). A host that edits or removes a mirror attribute is unsupported (documented).
+  US2-13). The element restores a mirror that is removed or changed while it holds the value, so a morphing swap
+  (htmx's idiomorph `morph` swap, Turbo 8 page-refresh morphs), which removes every attribute the server markup lacks,
+  keeps them (FR-004, US2-13). A mirror a host writes while the element holds no value for it is unsupported
+  (documented).
 - **A host stretched by its layout** (a flex row, a grid cell): the inner control fills it, so every point of the host
   is the control; a button stretched by a flex row grows to the row's height (FR-001; a host that does not want that
   sets `align-self` on the element).
+- **A host restyled by a page rule** (`ocelle-button { display: block }`, a full-width utility class,
+  `display: flex; width: 100%`, a fixed `height`): supported. The page rule outranks the element's `:host` styles, so
+  the host may have area outside the inner control; a click there does not pass through the inner control and the
+  element's host listener stops it in every state (not activated, FR-001, FR-003); a click on the inner control
+  behaves as usual (US1-17, US3-11, US5-6, US5-12). The README states that a host may restyle `display` and size.
+- **An empty `description` or `tags` element** (`<span slot="description"></span>`, as a server template renders a
+  null value, or one holding only whitespace): the slot counts as empty (FR-034): it contributes nothing to the
+  description, so a moved `title` still describes the row, and it takes no space and adds no gap (FR-031); writing
+  text into the element later makes the slot non-empty without a `slotchange` (US4-6, US4-16).
 - **A flush button at the edge of a clipping container** (`overflow` other than `visible`, as a breadcrumb trail may
   be): the button's focus ring is drawn outside it, so the container keeps at least `--ocelle-focus-offset` +
   `--ocelle-focus-width` of unclipped space around it (for example `padding-inline` of that size with a matching
@@ -550,7 +618,14 @@ tree, the navigation result and the line boxes of the tags.
   never carries a role. The element's `focus()` focuses the inner control and its `click()` clicks the inner control,
   so a click started by `click()` gets the same guarantees as any other click (FR-003). The inner control fills the
   host's box in both axes, so a host stretched by its layout (a flex row, a grid cell) has no area outside the inner
-  control and every pointer click on the host reaches the inner control (operator decision, PLAN-FRESH-2-001).
+  control and every pointer click on the host reaches the inner control (operator decision, PLAN-FRESH-2-001). The
+  guarantee does not rest on that layout alone: a page rule on the element (its `display`, `width` or `height`)
+  outranks the element's `:host` styles and can leave host area outside the inner control, so each element also
+  listens for `click` and `auxclick` on the host itself, registered when the element is constructed (before any host
+  listener added after upgrade), and stops (`preventDefault()` and `stopImmediatePropagation()`) every such event whose
+  composed path does not pass through the inner control, in every state, and every such event while the control is
+  not available. A click outside the inner control therefore never activates the element, and a host may restyle the
+  element's `display` and size (operator decision, PLAN-FRESH-3-001).
 - **FR-002**: **Link versus button.** An element is in link mode exactly when it has a non-empty `href` that parses as
   a URL (against the document's base URL) whose scheme, as the URL parser reads it, is not `javascript:`; otherwise it
   is in button mode, with no error for an `href` that does not parse. `data:` and `vbscript:` URLs are link mode and
@@ -564,7 +639,8 @@ tree, the navigation result and the line boxes of the tags.
   order, reports `aria-disabled="true"`, is not activated (same definition), and keeps its accessible name and
   description so a user can learn why; in link mode it has no navigable target either (no `href`, so the context
   menu, drag and the status bar offer no URL) and stays a focusable node of role `link`. Capture-phase listeners on ancestors may see the browser's click in both
-  states; the element gives no guarantee about them. The button's `busy` and the row's `unavailable` are unavailable
+  states, and listeners a host added to the element before upgrade see a click on the host outside the inner control
+  (FR-001) before the element's host listener; the element gives no guarantee about them. The button's `busy` and the row's `unavailable` are unavailable
   states. In link mode "not activated" covers modifier clicks and the middle click too, so a disabled or unavailable
   link opens no new tab or window either.
 - **FR-004**: **ARIA passthrough.** The ARIA attributes (and `title`) this spec lists for an element, set on the host,
@@ -586,7 +662,11 @@ tree, the navigation result and the line boxes of the tags.
   the mirror when the value is cleared, and at upgrade reads a mirror back as the stored value of an attribute the
   host does not set; a host attribute set at upgrade wins over its mirror. The mirrors are not ARIA, so they add
   nothing to the accessibility tree; hosts do not write or remove them (README) (operator decision,
-  PLAN-FRESH-2-002). This rule is this feature's own; mission 005's host `aria-label`
+  PLAN-FRESH-2-002). The element observes its mirrors: one removed or changed while the element holds a value for it
+  is written back from the stored value, so a morphing swap (htmx's idiomorph `morph` swap, Turbo 8 page-refresh
+  morphs), which removes every attribute the server markup lacks, leaves the mirrors in place (operator decision,
+  PLAN-FRESH-3-002). A mirror written while no value is held is not read until the next upgrade (unsupported,
+  README). This rule is this feature's own; mission 005's host `aria-label`
   rule for `ocelle-icon` and `ocelle-brand-mark` is unchanged, and the README says the two differ.
 - **FR-005**: **ID references never cross a shadow root.** An ID-reference attribute set on the host
   (`aria-controls`, `aria-labelledby`, `aria-describedby`) is resolved by id in the host's own tree (its document or
@@ -603,8 +683,9 @@ tree, the navigation result and the line boxes of the tags.
   values the `style-lint` gate allows.
 - **FR-008**: The package README gains a "Control conventions" section stating FR-001 to FR-006 as rules later
   controls follow, and a section per element with its public interface (FR-009 for the button, FR-030 for the row).
-  The conventions section also states: what "not activated" guarantees and that capture-phase listeners are outside
-  it; what `busy` means on each element (unavailable on the button, FR-015; "content updating" without blocking
+  The conventions section also states: what "not activated" guarantees and that capture-phase listeners (and
+  listeners added to the element before upgrade) are outside it; that a host may restyle an element's `display` and
+  size without losing it (FR-001); what `busy` means on each element (unavailable on the button, FR-015; "content updating" without blocking
   activation on the row, FR-035); the two surfaces for "current" (the button's `aria-current` passthrough with no
   mark, the row's `current` property with a mark; operator decision, SPEC-1-10); that a primary action uses
   `size="default"`, so "primary action" in constitution III is not read as `variant="primary"`; and that when a
@@ -714,7 +795,9 @@ tree, the navigation result and the line boxes of the tags.
   no border. No state of a flush row moves or resizes its content.
   Every row, in every presentation and layout, has a block size of at least `--ocelle-target-min`; the flush density
   reduces padding but not this minimum (operator decision, SPEC-1-08). In every presentation an empty slot takes no
-  space and adds no gap.
+  space and adds no gap. The `icon` and `trailing` slots are empty when no element is assigned to them; the
+  `description` and `tags` slots are empty when none of their assigned elements has non-whitespace text, recomputed
+  when the assignment changes and when text or children inside an assigned element change (PLAN-FRESH-3-004).
 - **FR-032**: `layout` (reflected) is `row` (the default: icon, title and description, tags and trailing on one line;
   when the line cannot hold its content, the tags and trailing group moves as a whole to a second line, and the icon,
   title and description stay on the first) or `card` (icon and title on the first line with trailing at its
@@ -730,7 +813,10 @@ tree, the navigation result and the line boxes of the tags.
   the name is exactly the title's text; the description, tags and trailing content never join it). Its accessible
   description is the
   text of the `description` slot followed by the text of the `tags` slot (in slot order), so a screen-reader user hears
-  the status and labels a sighted user sees; an empty slot contributes nothing. When the host sets
+  the status and labels a sighted user sees; an empty slot (FR-031: no assigned element with non-whitespace text)
+  contributes nothing, and within a non-empty slot an assigned element without non-whitespace text contributes
+  nothing either, so with both slots empty the row has no slot description and a moved `title` describes it
+  (PLAN-FRESH-3-004). When the host sets
   `aria-describedby`, that wins (FR-005) and neither slot contributes (operator decision, SPEC-2-04).
 - **FR-035**: `busy` (boolean, reflected) sets `aria-busy="true"` on the inner control and does not block activation.
 - **FR-036**: On hover (and not when unavailable) the row's surface becomes `--ocelle-color-hover-bg` and, on a

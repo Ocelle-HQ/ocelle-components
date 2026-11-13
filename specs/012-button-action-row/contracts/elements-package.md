@@ -23,6 +23,10 @@ changing the event's payload, is a MAJOR change (constitution VII).
    host is outside the guarantees. The host is a grid container (`inline-grid` for the button, `grid` for the row) and
    the inner control its single stretched item, so the inner control fills the host when a flex row or a grid
    stretches it; a stretched button grows to the row's height (a host sets `align-self` on the element to avoid it).
+   A host may restyle the element's `display` and size: the element also listens for `click` and `auxclick` on the
+   host from its constructor and stops any that did not pass through the inner control, in every state, so host area
+   outside the inner control never activates it. Capture-phase listeners and listeners added to the element before
+   upgrade are outside that guarantee.
 2. **Link versus button.** Link mode exactly when `href` is non-empty after trimming, parses as a URL and is not a
    `javascript:` URL (by the URL parser, so `JAVASCRIPT:` and `java\tscript:` count); an unparseable `href` is button
    mode, with no error. `data:` and `vbscript:` URLs are left to the host.
@@ -36,7 +40,8 @@ changing the event's payload, is a MAJOR change (constitution VII).
    control: `getAttribute` on the host returns `null` afterwards. Each moved value is mirrored in an element-owned host
    attribute `data-ocelle-moved-<attribute>` that the element reads back at upgrade, so copies of the live DOM
    (`cloneNode(true)`, `innerHTML`/`outerHTML`, htmx's history restore) keep names and states; hosts never write or
-   remove a mirror. To clear, set an empty (or whitespace-only) value, or the
+   remove a mirror. The element restores a mirror that is removed or changed while it holds the value, so morphing
+   swaps (htmx's idiomorph `morph`, Turbo 8 morphs) keep them. To clear, set an empty (or whitespace-only) value, or the
    ARIA off value (`"false"`); `removeAttribute` (and a framework binding that becomes `undefined`, `null` or
    `nothing`) changes nothing, so bind the off value (README recipes for React, Lit, Svelte, htmx and Thymeleaf). A
    moved `aria-label` that is empty or whitespace-only clears it and the name falls back to `label`, then content
@@ -82,7 +87,7 @@ changing the event's payload, is a MAJOR change (constitution VII).
 | property, attribute (reflected) | `href` | string | — | link mode |
 | property, attribute (reflected) | `target`, `rel`, `download` | string | — | link mode only; `_blank` without `rel` → `noopener` |
 | moved host attribute | `aria-expanded`, `aria-controls`, `aria-current`, `aria-haspopup`, `aria-pressed`, `aria-label`, `aria-labelledby`, `aria-describedby`, `title` | | | see convention 4; declared in the manifest with descriptions; `aria-pressed` in button mode only; `title` is the inner control's tooltip and description (or name when nothing else names it) |
-| element-owned host attribute | `data-ocelle-moved-<attribute>` for each moved attribute (nine) | string | | the mirror of convention 4; declared; hosts do not write it |
+| element-owned host attribute | `data-ocelle-moved-<attribute>` for each moved attribute (nine) | string | | the mirror of convention 4; declared; hosts do not write it; restored by the element when removed or changed while it holds the value |
 | custom state | `expanded`, `pressed`, `current` | | | moved `aria-expanded="true"`, `aria-pressed="true"`, `aria-current` other than `"false"` |
 | method | `click()` | | | clicks the inner control |
 | slot | (default) | | | the label |
@@ -118,11 +123,11 @@ Not a form control: never submits or resets a form; a host submits with `form.re
 | property, attribute (reflected) | `unavailable` | boolean | `false` | unavailable state (a link row loses its `href`) |
 | property, attribute (reflected) | `busy` | boolean | `false` | `aria-busy="true"`; activation still works |
 | moved host attribute | `aria-label`, `aria-labelledby`, `aria-describedby`, `title` | | | convention 4; `aria-describedby` replaces the slots' description; `title` describes the row only when nothing else does; declared in the manifest |
-| element-owned host attribute | `data-ocelle-moved-<attribute>` for each moved attribute (four) | string | | the mirror of convention 4; declared; hosts do not write it |
+| element-owned host attribute | `data-ocelle-moved-<attribute>` for each moved attribute (four) | string | | the mirror of convention 4; declared; hosts do not write it; restored by the element when removed or changed while it holds the value |
 | method | `click()` | | | clicks the inner control (an available row dispatches its event) |
 | slot | (default) | | | the title, the accessible name (the description and tags never join it) |
 | slot | `icon`, `trailing` | | | mission 005 slot convention |
-| slot | `description`, `tags` | | | elements; their text is the accessible description, description first |
+| slot | `description`, `tags` | | | elements; their text is the accessible description, description first; an element without non-whitespace text contributes nothing, and a slot with no such element is empty (no space, no gap; a moved `title` then describes the row) |
 | event | `ocelle-action-row-activate` | `CustomEvent<{ rowId: string }>`, bubbles, composed, cancelable | | not on modifier or middle clicks of a link row; `preventDefault()` cancels a link row's navigation |
 | CSS parts | `control`, `title`, `description`, `tags` | | | the title and description wrap anywhere; the focus ring is drawn inside the row (2 to 5 px in from its edge) and the current bar inline-end of it with a gap (7 to 10 px in) |
 | CSS custom properties | none | | | reads tokens only, including the new `--ocelle-color-hover-border` |
