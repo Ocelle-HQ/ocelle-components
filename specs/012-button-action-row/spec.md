@@ -45,6 +45,13 @@ checklist; ocelle-pill-tag, ocelle-status-indicator and ocelle-metric stay in #7
 - Row tags (SPEC-2-04), "(a) in the description": the text of the `tags` slot joins the row's accessible
   description, after the `description` slot's text, unless the host sets `aria-describedby` (FR-034).
 
+**Operator decision at planning** (2026-11-13, human:jeroennouwsdev):
+
+- Host ARIA, "Move to inner control": measured in Chromium 153, a host that keeps `aria-label`, `aria-labelledby` or
+  `aria-expanded` shows as a second named `generic` node and draws axe "needs review" results (`aria-allowed-attr`,
+  `aria-prohibited-attr`) that #10's axe gate fails, and an `ElementInternals` role of `none` or `presentation` does
+  not help; so each element moves the listed host attributes onto its inner control (FR-004, plan research R-03).
+
 **Issues**: #7, in part (triage record `triage/012-button-action-row.md`, approved by the operator on 2026-11-13).
 This feature builds the two action controls of #7. `ocelle-pill-tag`, `ocelle-status-indicator` and `ocelle-metric`
 stay in #7 for a later status mission. The body of #7 (read on 2026-11-13) is the source of the requirements below.
@@ -396,8 +403,14 @@ tree, the navigation result and the line boxes of the tags.
   states. In link mode "not activated" covers modifier clicks and the middle click too, so a disabled or unavailable
   link opens no new tab or window either.
 - **FR-004**: **ARIA passthrough.** The ARIA attributes this spec lists for an element, set on the host, reach the
-  inner control and update when they change or are removed. The host does not also expose them, so an accessibility
-  tree shows the state once, on the inner control, and axe reports no serious or critical finding caused by them.
+  inner control and update whenever the host sets them again. The element **moves** each one: it applies the value to
+  the inner control and removes the attribute from the host, so an accessibility tree shows the state once, on the
+  inner control, and axe reports no serious or critical finding (and no "needs review" result) caused by them
+  (operator decision at planning, 2026-11-13). Reading the attribute back from the host gives `null` after the move.
+  To clear a moved state a host sets an empty value (`aria-controls=""`, `aria-labelledby=""`,
+  `aria-describedby=""`, `aria-label=""`) or the ARIA "off" value (`aria-expanded="false"` reports collapsed; `aria-current="false"`
+  clears the current state); `removeAttribute` on an attribute already moved changes nothing. The README states this.
+  Mission 005's host `aria-label` rule for `ocelle-icon` and `ocelle-brand-mark` is unchanged.
 - **FR-005**: **ID references never cross a shadow root.** An ID-reference attribute set on the host
   (`aria-controls`, `aria-labelledby`, `aria-describedby`) is resolved by id in the host's own tree (its document or
   the shadow root it is in) and related to the inner control by element reference, not by copying the id into the
