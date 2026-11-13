@@ -81,6 +81,20 @@ describe("parseExceptions (data-model.md § Exception)", () => {
     expect("problem" in parsed ? parsed.problem : parsed).toMatch(problem);
   });
 
+  // Phase 4 review round 3, O3-01 (landing L1-04): the plan text, as written, must name a feature plan,
+  // specs/<feature>/plan.md, whose feature segment is not `.` or `..`; a path that leaves the repository keeps its own
+  // problem, above.
+  it.each(["storybook/notes.md", "plan.md", "specs/plan.md", "specs/a/b/plan.md", "specs/a/plan.md.bak", "specs/a/notes.md", "./specs/a/plan.md", "specs/./plan.md", "specs/../plan.md", "specs/a/../b/plan.md"])(
+    "refuses the plan %s, which is not a feature plan",
+    (plan) => {
+      expect(parseExceptions(JSON.stringify([{ ...entry, plan }]))).toEqual({ problem: "storybook/a11y-exceptions.json#0: plan must be a feature plan, specs/<feature>/plan.md" });
+    },
+  );
+
+  it.each(["specs/006-storybook-workbench/plan.md", "specs/a/plan.md"])("reads the feature plan %s", (plan) => {
+    expect(parseExceptions(JSON.stringify([{ ...entry, plan }]))).toEqual([{ ...entry, plan }]);
+  });
+
   it("names each field once, in the entry's own order, the first missing one", () => {
     const parsed = parseExceptions(JSON.stringify([{ plan: "p", sunset: "s" }]));
     expect(parsed).toEqual({ problem: "storybook/a11y-exceptions.json#0: story must be a non-empty string" });
