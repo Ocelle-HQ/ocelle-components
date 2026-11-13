@@ -77,8 +77,8 @@ option keeps `tabindex="-1"`). Selected bar on the inline-start edge (FR-018, R-
 the selected tab's paired panel to the second (research R-05). A host writes no `slot` attribute (it would be
 ignored); the manifest declares only the default slot, as the host sees it. The host has no role; `part="tablist"`
 carries `role="tablist"` and its name from `label` or the host's `aria-label` (R-01). Roles `tab` / `tabpanel` on the
-children; `aria-selected`, `aria-controls`, `aria-labelledby`, `aria-disabled`, `tabindex` and generated ids on the
-children (R-02, R-03). Selected bar on the tab's block-end edge (FR-025). The tab row wraps (FR-022). Unpaired tabs
+children; `aria-selected`, `aria-disabled`, `tabindex` and generated ids on the children, `aria-controls` on every
+paired tab, `aria-labelledby` on the assigned (selected) panel only, removed when a panel is unassigned (R-02, R-03). Selected bar on the tab's block-end edge (FR-025). The tab row wraps (FR-022). Unpaired tabs
 and panels are not rendered.
 
 ## `ocelle-segmented-choice`, `ocelle-segment`
@@ -107,7 +107,7 @@ internal, not manifest surface.
 | property / attribute | `value` | string (not reflected) | `""` |
 | property / attribute | `status` | string (not reflected) | `""` |
 | property / attribute | `copy-label` / `copyLabel` | string (not reflected) | `"Copy"` |
-| event | `ocelle-copy-field-request` | `{ text: string }` | dispatched after the cleared region is rendered (FR-035, R-07) |
+| event | `ocelle-copy-field-request` | `{ text: string }` | dispatched after the cleared region is rendered (FR-035, R-07), outside the activation's task; the README tells hosts that write the clipboard from the page to check their engines' user-activation rules (PLAN-FRESH-2-004 (a)) |
 | slots | none | | |
 | parts | `value`, `copy-control` | | FR-038 |
 
@@ -124,8 +124,9 @@ not the element behind it (operator decision PLAN-CORRECTNESS-1-017 (a)); the RE
 | slot | (default) | | |
 | part | `anchor` | | |
 
-Host `aria-label` forwarded to the anchor, with exactly one named node in the tree (R-08). The README states that
-`detail.href` is the attribute as written and not validated.
+Host `aria-label` forwarded to the anchor, with exactly one named node in the tree (R-08); it must contain the link's
+visible text (WCAG 2.5.3), which the README states (R-08 Label in name). The README states that `detail.href` is the
+attribute as written and not validated.
 
 ## Pairings: "does not" outcomes and their plants
 
@@ -147,8 +148,10 @@ recorded in `reviews/phase-N/plants.md` (research R-11).
 | a disabled selected option is not reselected and emits nothing (US1-18) | the option stays selected and focused | the "current value" no-op dropped | |
 | no event when the selected child is removed or disabled (US1-14, US2-18, US3-15) | the fallback selection is exposed | change dispatched from the model's fallback | |
 | focus is not lost on a move (US1-21) | the moved option is still selected | no refocus after the batch | `insertBefore` of the focused option |
+| a move does not steal focus back (R-03, PLAN-FRESH-2-001) | US1-21: focus kept on an in-task move of the focused option | the focus record not scoped to the task of its blur; refocusing after any blur | the user clicks the page to leave the focused option, then in a later task the host moves that option; `document.activeElement` read |
 | remembered value forgotten: the appended child is not selected (US1-19, US2-19, US3-16, second halves) | the first half's selection on append | remembered value never forgotten | |
 | unselected panels have no node (US2-1, FR-024) | the selected panel is exposed and named | hiding panels with `visibility` only | |
+| no axe violation and no serious or critical `incomplete` on the tabs stories (FR-051, PLAN-FRESH-2-002) | the selected panel is named by its tab | `aria-labelledby` on every panel | #10's full rule set on every tabs story, both themes |
 | no tabpanel inside the tablist (US2-1) | tablist with three tabs exposed | the tablist role on the host | |
 | unpaired tabs and panels not rendered, no error (US2-9) | the paired tabs exposed | assigning every tab to the tablist slot | four tabs, three panels; console read |
 | the panel is not a stop when it holds a shadow-delegating focusable (US2-22) | the panel is a stop once its button is removed | a light-DOM selector query at tabs updates only | `ocelle-link` alone in a panel |
@@ -159,6 +162,7 @@ recorded in `reviews/phase-N/plants.md` (research R-11).
 | joined: regrouping without a group resize (US3-18) | radii after a label change | observing the group only | same container width and group block size |
 | joined: shared line not widened, one line (US3-9) | pressed bar drawn | pressed paint as a 3 px border; two borders without overlap | pixel runs across each boundary |
 | joined: pressed lines not `control-border` (US3-9) | lines drawn | the pressed segment's lines in `control-border` | |
+| joined: the focus ring is not cut by a neighbour (US3-9, FR-007; PLAN-FRESH-2-003) | ring pixels on the free side | no `z-index` on the focused segment | focused segment beside the pressed one and beside a hovered one; `color-focus` pixels just outside all four edges (R-15) |
 | no `ResizeObserver` loop or console error during continuous resize (Edge Cases) | rounding follows each step | row states changing margins or borders | ten resize steps, console and `error` events read |
 | no forced-colours paint lost (US1-15, US2-11, US3-11) | the `Highlight` bar present | the bar as an inset `box-shadow` only | emulated forced colours |
 | the focus ring not clipped in the listbox (US1-16) | the focused option scrolled into view | no padding on `part="list"` | first, last and scrolled-to option |
@@ -176,7 +180,8 @@ recorded in `reviews/phase-N/plants.md` (research R-11).
 | Space on the link emits nothing, its default not prevented (US5-2) | Enter emits | Space handled on the link | page taller than the viewport |
 | modified activation emits nothing (US5-13) | a plain click emits | emitting on every click | |
 | modified activation's default not prevented (US5-13) | a plain click's default prevented | `preventDefault()` on every click | `window` bubble listener; `context.on("page")` |
-| exactly one named node for the link (US5-8) | the link named by the host `aria-label` | forwarding the label and leaving the host named | |
+| exactly one named node for the link (US5-8) | the link named by the host `aria-label` | forwarding the label and leaving the host named | label starting with the visible text (R-08) |
+| no `label-content-name-mismatch` on the link stories (US5-8, WCAG 2.5.3; PLAN-FRESH-2-005) | the host label is the link's name | a story label without the visible text | #10's rule set on the link stories |
 | a cancelled fragment link does not change the fragment (US5-14) | an uncancelled one does | ignoring `defaultPrevented` | in process, `location.hash` read |
 | no mutation on a set of the current value (Edge Cases, US1-18, US2-17) | an earlier set mutates the states | rewriting `aria-selected` / `aria-pressed` on every set | MutationObserver over the parent's subtree |
 | no transition (Edge Cases "Motion") | the selected paint changes | a `transition` on the selected paint | computed `transition-duration` read |

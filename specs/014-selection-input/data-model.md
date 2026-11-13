@@ -14,7 +14,9 @@ R-08) work on. None of it is public surface except what `contracts/elements.md` 
 
 `ocelle-tab-panel` entries are paired with tab entries by index. `ocelle-tabs` assigns the paired tabs to the slot in
 `part="tablist"` and only the selected tab's paired panel to the slot in `part="panels"`, on each batch (manual slot
-assignment); unpaired tabs and panels are assigned nowhere and are not in the roving list (FR-019, SPEC-1-25).
+assignment); unpaired tabs and panels are assigned nowhere and are not in the roving list (FR-019, SPEC-1-25). Every
+paired tab carries `aria-controls`; only the assigned panel carries `aria-labelledby`, removed when it is unassigned
+(R-02, PLAN-FRESH-2-002).
 
 ## Selection state (per parent)
 
@@ -22,7 +24,8 @@ assignment); unpaired tabs and panels are assigned nowhere and are not in the ro
 |---|---|---|
 | `selected` | child node or `null` | the selected option / tab, the pressed segment |
 | `remembered` | string or `null` | FR-010a: last non-empty host value no enabled child had |
-| `focused` | child node or `null` | the child that has focus, kept from `focusin` / `focusout` on the host; on a `focusout` whose target is disconnected or no longer this parent's child, kept as "had focus at the batch" (R-03; all kinds) |
+| `focused` | child node or `null` | the child that has focus, set on `focusin` on a child, cleared on `focusout` (R-03; all kinds) |
+| `blurred` | child node or `null` | set on every `focusout` from a child (Chromium fires it while a removed or moved child is still connected and still a child, so nothing is decided there); cleared by a task the `focusout` handler posts and by any `focusin` on a child, so it lives only for the task of the blur (R-03, PLAN-FRESH-2-001) |
 | `lastFocused` | child node or `null` | listbox tab stop fallback (FR-016) |
 | `kind` | `"listbox"` / `"tabs"` / `"segments"` | listbox may have no selection; the others keep one while any child is enabled |
 
@@ -46,8 +49,9 @@ the live child list.
 | batch: children added / enabled / value changed | if `remembered` matches an enabled child: select it, forget | Precedence: remembered match, else keep, else first enabled |
 | batch: selected child removed | `value` → `""`, no event | FR-011a: next enabled after, else nearest before; remembered first |
 | batch: selected child disabled | stays selected, loses tab stop; keeps focus if focused (`tabindex="-1"`) | FR-011a as for removal; focus moves with the selection if the child had focus |
-| batch: focused child removed (`focused` recorded, node gone) | focus FR-011 target | same (= selection target when it was selected) |
-| batch: child moved (node present before and after, the same position included) | keeps selection; refocused if `focused` and focus is on the body or nothing inside the parent | same |
+| batch: focused child removed (`blurred` is that child, it is in the batch's `removedNodes`, node gone, focus on the body, `null` or nothing inside the parent) | focus FR-011 target | same (= selection target when it was selected) |
+| batch: child moved (node present before and after, the same position included) | keeps selection; refocused only if `blurred` is that child, it is in the batch's `removedNodes`, and focus is on the body, `null` or nothing inside the parent | same |
+| batch: child moved or removed in a later task than its blur (`blurred` already cleared) | focus left where it is (no focus stolen back) | same |
 
 No transition emits an event except "user selects child" (FR-002) and the listbox's user activation (FR-014a).
 

@@ -4,8 +4,9 @@ Each entry: decision, rationale, alternatives. "Spike" marks a decision that a p
 records in `reviews/phase-N/spike.md`; if the measurement contradicts the decision, the phase stops and the operator
 decides (the spike never silently changes the design).
 
-Plan squad round 1 (`reviews/plan/round-1/refute.md`) changed R-01 and R-03 to R-14 and added R-15 to R-18; the
-finding each change answers is named where it applies.
+Plan squad round 1 (`reviews/plan/round-1/refute.md`) changed R-01 and R-03 to R-14 and added R-15 to R-18; plan squad
+round 2 (`reviews/plan/round-2/refute.md`) changed R-02, R-03, R-05 to R-08 and R-15; the finding each change answers
+is named where it applies.
 
 ## R-01 Roles and states: `ElementInternals` for roles, host attributes for states
 
@@ -60,9 +61,23 @@ README says so.
 ## R-02 Tab-to-panel association: generated ids in the light DOM (spike in phase 3)
 
 **Decision.** `ocelle-tabs` pairs tab *i* with panel *i* and writes, on the child hosts (all in the page's own tree
-scope, beside each other), `aria-controls` on the tab and `aria-labelledby` on the panel, pointing at ids it
-generates: `ocelle-tabs-<n>-tab-<i>` and `ocelle-tabs-<n>-panel-<i>` with `n` a per-document counter. A child that
-already has an `id` keeps it and that id is used. The ids are rewritten when the pairing changes (FR-011). The tab and
+scope, beside each other), `aria-controls` on every paired tab and `aria-labelledby` on the assigned (selected) panel
+only, pointing at ids it generates: `ocelle-tabs-<n>-tab-<i>` and `ocelle-tabs-<n>-panel-<i>` with `n` a per-document
+counter. A child that already has an `id` keeps it and that id is used. The ids are rewritten when the pairing changes
+(FR-011); `aria-labelledby` is removed from a panel when it is unassigned and written on the panel that is assigned,
+in the same batch (R-05).
+
+**Why only the assigned panel is labelled** (PLAN-FRESH-2-002). axe-core 4.14.0, the version #10's `axe` gate pins,
+throws in its `color-contrast` matcher for a tab named by the `aria-labelledby` of a panel outside its flat tree (an
+unassigned panel under manual slot assignment), and reports a serious `incomplete` on each such tab (round-2 lens
+probe tabs7: `TypeError ... reading '_isDisabled'` in `colorContrastMatches`). #10's spec makes a serious or critical
+`incomplete` a gate finding with no exception entry, so every tabs story would fail the gate. With `aria-labelledby`
+on the assigned panel only and `aria-controls` kept on every paired tab, the probe (tabs6) is clean. An unassigned
+panel has no node (FR-024, R-05), so its name is moot and no spec outcome changes; the round-1 manual assignment
+(PLAN-CORRECTNESS-1-003) is kept. Assigning every panel and hiding unselected ones with `hidden` would undo that fix
+and is not chosen. The axe defect is recorded in `reviews/phase-3/spike.md` for an upstream report to axe-core.
+Phase 3's story test runs #10's full rule set on the tabs stories and asserts no violation and no serious or critical
+`incomplete`; plant: `aria-labelledby` on every panel. The tab and
 panel scenarios give children no `id` unless the scenario is about a host id, so the generated-id path is the one
 under test everywhere (PLAN-TESTABILITY-1-006).
 
@@ -84,14 +99,31 @@ SPEC-3-02). A `mousedown` on a disabled child has its default prevented, so a cl
 Focus moves with `child.focus({ focusVisible: true })` (focus ring on keyboard moves) and the ring is drawn by
 `:host(:focus-visible)` as an outline from the focus tokens (R-15; FR-007).
 
-**Focus record** (PLAN-CORRECTNESS-1-004). Chromium blurs a focused element synchronously when it is removed or moved
-(a move is remove + insert); by the time a batch (R-05) runs, `document.activeElement` is the body. Each parent
-therefore keeps a focus record from `focusin` / `focusout` on its host: the child that has focus, and, on a
-`focusout` whose target is no longer connected or no longer a child of this parent, that child as "had focus at the
-batch". The batch then: refocuses a child that is present before and after the batch and had focus (a move, the same
-position included), when focus is on the body or on nothing inside the parent; moves focus per FR-011 for a removed
-focused child (and per FR-011a with the selection for tabs and segments); leaves focus alone otherwise. US1-21 reads
-`document.activeElement` after `insertBefore` of the focused option; plant: no refocus.
+**Focus record** (PLAN-CORRECTNESS-1-004, PLAN-FRESH-2-001). Chromium blurs a focused element synchronously when it
+is removed or moved (a move is remove + insert); by the time a batch (R-05) runs, `document.activeElement` is the
+body. The blur cannot be told apart from a user leaving the child at the event: measured in Chromium 153 (plan squad
+round 2), `insertBefore(a, null)` of a focused child and `a.remove()` both fire `blur` then `focusout` on the parent
+while the target is still connected and still the parent's child (`isConnected === true`, `parentNode === parent`),
+and `activeElement` is the body afterwards; a `focusout` fired after detachment could not reach the parent at all.
+So the record does not decide at `focusout`. Each parent keeps, from `focusin` / `focusout` on its host:
+
+- `focused`: the child that has focus (set on `focusin` on a child, cleared on `focusout`);
+- `blurred`: on every `focusout` whose target is one of this parent's children, that child, recorded
+  unconditionally, but only for the task it happened in: the `focusout` handler posts a task (`setTimeout(0)`) that
+  clears it (if it still holds that child). A `focusin` on any child also clears it.
+
+The host `childList` observer's callback runs in the microtask checkpoint of the task that removed or moved the child
+(and the `value` setter's `takeRecords()` runs synchronously within it), so the batch sees `blurred` from that task
+only. The batch treats `blurred` as "had focus at the batch" only when the batch's own records list that child in
+`removedNodes` and `document.activeElement` is the body, `null` or nothing inside the parent. Then: a child that is
+still or again a child after the batch (a move, the same position included) is refocused; a child that is gone moves
+focus per FR-011 (and per FR-011a with the selection for tabs and segments). Otherwise focus is left alone. A user who
+blurs a child to the page sets `blurred` in that task; a host move of the same child in a later task finds it
+cleared and does not steal focus back (lens remedy rejected in round 2's refute: keeping `blurred` until a later batch
+or `focusin` would refocus there). US1-21 reads `document.activeElement` after `insertBefore` of the focused option;
+plant: no refocus. Its negative pair, "a move does not steal focus back" (contract § Pairings): the user clicks the
+page to leave the focused option, then, in a later task, the host moves that option; focus stays on the body; plants:
+the record not scoped to its task, refocusing after any blur.
 
 **Selected panel.** The selected tab's panel is focusable (`tabIndex` 0) only when it holds no element in the
 sequential focus order (PLAN-A11Y-SECURITY-1-009): elements with `tabIndex >= 0` that are not disabled or hidden,
@@ -162,8 +194,9 @@ observer sees appends, removals and moves (a same-position re-insert included) w
 listbox and the segmented choice slot their children through an ordinary default slot. `ocelle-tabs` uses
 `slotAssignment: "manual"`, where slot names and `slot` attributes are ignored, nothing is assigned automatically and
 appending a child fires no `slotchange`; on each batch it assigns the paired tabs to the slot inside
-`part="tablist"` and only the selected tab's paired panel to the slot inside `part="panels"`. Unselected panels and
-unpaired tabs and panels are assigned nowhere: no box, no node, not focusable, not clickable (FR-019, FR-024,
+`part="tablist"` and only the selected tab's paired panel to the slot inside `part="panels"`, moving the panel's
+`aria-labelledby` to the newly assigned panel (R-02). Unselected panels and unpaired tabs and panels are assigned
+nowhere and carry no `aria-labelledby`: no box, no node, not focusable, not clickable (FR-019, FR-024,
 SPEC-1-25). A host writes no `slot` attribute and the manifest lists no named slot (contract).
 
 **Batching** (operator decision PLAN-CORRECTNESS-1-014 (a)). Records are processed in one batch per microtask
@@ -201,6 +234,15 @@ relative; z-index: 1`) so its `--ocelle-color-accent-strong` lines (operator dec
 lie over its neighbours' `control-border` lines at the same width. The pressed bar is R-15's block-end bar inside the
 box.
 
+**Focus ring above the neighbours** (PLAN-FRESH-2-003). Flex items paint atomically in order, and the raised pressed
+or hovered segment paints above its neighbours: measured in the round-2 lens probe (Chromium 153, the joined
+geometry), a focused segment's outline is covered on the side of a later filled neighbour and on the side of a raised
+one, so the ring shows on three sides only. A gap is ruled out (US3-9: the segments touch). The focused child is
+therefore raised above everything: `:host(:focus-visible) { position: relative; z-index: 2; }` on `ocelle-segment`,
+and the same rule on `ocelle-tab`, whose wrapped row has no gap between tabs (R-15). The ring then lies over the
+neighbour's fill, so its grounds include `accent-low` and `hover-bg` (R-15's table). Read: R-15 What the tests read;
+plant: no `z-index` on the focused segment.
+
 **Cross-element call** (operator decision PLAN-CORRECTNESS-1-015 (a)). The parent cannot reach a segment's internals.
 `ocelle-segment` exposes an internal method under a module-private symbol (`src/internals.ts`) that sets its row
 states; the parent calls it only when the segment has it (feature check), so an un-upgraded segment or one from
@@ -230,7 +272,9 @@ under the plan's "Decisions the operator should see". The real trade-off (PLAN-F
 The earlier claim that the floor raise "touches no consumer today" is withdrawn: Kitty Desktop on Linux runs the
 distribution's WebKitGTK and on macOS WKWebView, and their minimum versions are not recorded in this repository
 (README § Engines: WebKit is not measured). Before the operator takes plan decision 1, kitty-mission-ui is asked for
-its WebKitGTK and WKWebView minimums; the answer is recorded here.
+its WebKitGTK and WKWebView minimums; the answer is recorded here. The same request carries R-07's user-activation
+question (a clipboard write from the deferred copy request in WKWebView and WebKitGTK; PLAN-FRESH-2-004 (a)), also
+put to the console owners.
 
 **Alternatives.** CSS only: no selector reaches "first item of a wrapped row". A consumer `ResizeObserver`: what #511
 asks to remove.
@@ -267,6 +311,24 @@ produces a change a screen reader sees: the activation clears, then waits for th
 (a `requestAnimationFrame` callback followed by a task, i.e. after that frame's style, layout and accessibility
 update), then dispatches `ocelle-copy-field-request` with the text captured at activation. Each activation schedules
 its own dispatch; a disconnected element dispatches nothing; the README states the timing (FR-035).
+
+**User activation** (PLAN-FRESH-2-004, operator decision (a): the deferred dispatch is kept). The request arrives a
+frame and a task after the click, outside the click's task. A browser host (the console, Kitty Dashboard) that writes
+the clipboard from the page with `navigator.clipboard.writeText(event.detail.text)` depends on the engine still
+counting the user's transient activation then. Chromium probably does; WebKit, a named consumer engine, is not
+measured and cannot be probed here. Therefore:
+
+- the phase-5 spike adds a host listener calling `navigator.clipboard.writeText` from the deferred request in
+  Chromium (clipboard permission granted to the test context), recording `navigator.userActivation.isActive` at the
+  dispatch and whether the write resolved, in `reviews/phase-5/spike.md`. This listener exists only in the spike
+  page; no scenario of the element calls the clipboard, and the clipboard observer's zero-call assertion (R-11) is
+  unchanged;
+- the WebKit question (does a clipboard write from the deferred request still count as user-activated in WKWebView
+  and WebKitGTK) goes to kitty-mission-ui and the console owners together with plan decision 1's engine question
+  (R-06), and the answer is recorded here;
+- the README's FR-035 paragraph says that the request is dispatched after the next frame, outside the click's task,
+  so a host that writes the clipboard from the page must check its engines' user-activation rules for clipboard
+  writes (a desktop bridge is not affected); the documentation test checks the statement.
 
 **What US4-6 observes** (verify 1 of plan round 1, PLAN-TESTABILITY-1-011). A tree read from the listener cannot
 test this: `axStates` is an asynchronous CDP command and Chromium builds the tree it returns from the DOM as it is at
@@ -355,6 +417,14 @@ the anchor kept as the native activation and focus target) and a form that keeps
 spike records the tree of each. US5-8 asserts exactly one named node in the paragraph; plant: the plain forward. If
 no form gives one named node, the phase stops and the operator decides.
 
+**Label in name** (PLAN-FRESH-2-005). A forwarded host `aria-label` that does not contain the link's visible text
+fails WCAG 2.5.3 (Label in Name, level A) and is axe-core 4.14.0's `label-content-name-mismatch`, impact serious, on
+by default and so in #10's rule set (round-2 lens probe: `aria-label="Docs"` on a link reading "here"). The element
+does not rewrite the label; the README's link section states that a host `aria-label` must contain the visible text,
+best starting with it (e.g. text "the mission log", label "the mission log, opens in the viewer"). US5-8's fixture and
+every story with a host label use such a label. Phase 6's story test runs #10's rule set on the link stories and
+asserts no `label-content-name-mismatch` finding; plant: a story label without the visible text.
+
 **Focus ring and underline** (PLAN-CORRECTNESS-1-019). The ring is an `outline` of `--ocelle-focus-width` in
 `--ocelle-color-focus` at `--ocelle-focus-offset` on the anchor; an inline box's outline is drawn per line fragment by
 the engine, so FR-048 holds with no `box-decoration-break` (which does not affect outlines). The underline is
@@ -362,8 +432,8 @@ the engine, so FR-048 holds with no `box-decoration-break` (which does not affec
 
 **README** (PLAN-A11Y-SECURITY-1-010). The link section states that `detail.href` is the attribute as written and not
 validated (it may be `javascript:` or `data:`), that the element refuses those and foreign schemes only for its own
-navigation, and that a host that navigates itself must apply the same resolved-protocol check; the documentation test
-checks the statement.
+navigation, and that a host that navigates itself must apply the same resolved-protocol check; it also states the
+label-in-name rule above (PLAN-FRESH-2-005). The documentation test checks both statements.
 
 **Alternatives.** No native anchor and `location.assign` only: loses the browser's new-tab behaviour that the
 operator's Q2 (a) keeps. Leaving the native navigation for plain clicks and cancelling it when the host cancels:
@@ -556,7 +626,7 @@ feature and the README says so. Every pair below is a `checked` row of `pairs.js
 | disabled child | none | as rest | `disabled-ink` (exempt) |
 | copy field | text well `inset`; control `sheet` | outer border `control-border` on main; divider `accent-strong` on `inset` / `sheet` | `ink` on `inset`; icon `ink` on `sheet` |
 | link | none | underline (text colour) | `link`, `link-hover` on main |
-| focus ring (all) | | outline `focus-width`, `color-focus` at `focus-offset` on main | |
+| focus ring (all) | | outline `focus-width`, `color-focus` at `focus-offset` on main; for a focused segment or tab beside a pressed or hovered neighbour also on `accent-low` and `hover-bg` (the focused child raised, R-06), pairs checked as `color-accent-strong`'s (which `color-focus` aliases) on those grounds | |
 
 **Techniques** (PLAN-A11Y-SECURITY-1-005). Outside forced colours, the option's and tab's bar, and the joined pressed
 segment's bar, are a `:host::before` pseudo-element positioned inside the host's box (absolute, `bar-width` thick, on
@@ -584,6 +654,11 @@ boundaries (segment borders, the copy field's border and divider, the Copy contr
 - Radii (US3-10, US3-18): computed `border-*-radius` of each segment.
 - Ring inside the listbox clip (US1-16): the option's outline box (its border box grown by width and offset) lies
   within `part="list"`'s client box.
+- Ring on every side of a joined segment (US3-9 with FR-007; PLAN-FRESH-2-003): with `driver.pixels`, the pixels just
+  outside all four edges of a focused joined segment are `color-focus`, once with the pressed segment as its
+  neighbour (keyboard focus moved off the pressed segment, US3-2) and once beside a hovered one (pointer on the
+  neighbour); the same read for a focused tab beside the selected and a hovered tab. Plant: no `z-index` on the
+  focused segment.
 
 ## R-16 Entry points: a parent defines its children; the copy field defines `ocelle-icon`
 
