@@ -6,13 +6,17 @@ Prerequisites: `pnpm run setup:offline`; in this container `export OCELLE_CHROMI
 1. Build: `pnpm -r build` — `packages/elements/dist/ocelle-button.js`, `dist/ocelle-action-row.js` and the browser
    build defining both.
 2. Element tests: `pnpm vitest run --project elements --project elements-browser` — every scenario of
-   [spec.md](spec.md) US1 to US5 passes in both harnesses; the fixture runs report zero CSP violations.
-3. Tokens: `pnpm vitest run --project tokens --project tokens-browser` and `pnpm run gate:contrast` — the rows of
-   [research.md](research.md) R-08 pass in both themes.
+   [spec.md](spec.md) US1 to US5 and every row of [contracts/checks.md](contracts/checks.md) § Edge cases and plan
+   decisions passes in both harnesses (link scenarios against the navigation sink in-process, with real navigation
+   on the fixture); the fixture runs report zero CSP violations.
+3. Tokens: `pnpm vitest run --project tokens --project tokens-browser` and `pnpm run gate:contrast` — the six new
+   tokens and the rows of [research.md](research.md) R-08 pass in both themes; the reduced-motion block sets exactly
+   the motion durations to `0ms`.
 4. Gates: `pnpm run gate:manifest`, `gate:style-lint`, `gate:csp`, `gate:prefix`, `gate:pins`, `gate:test-lint`, then
    `pnpm run gate:mutation -- --base <phase base>`.
 5. Stories: `pnpm vitest run --project storybook-integration` — the new stories render in light and dark.
-6. With #10 merged: `pnpm run visual:update` in the pinned container, then the visual and axe gates (see
+6. With #10 merged, before landing (phase 7 is blocking): `pnpm run visual:update` in the pinned container, then the
+   visual and axe gates and the Plants shards at `shardSize` 1, each under 10 minutes in CI (see
    [contracts/checks.md](contracts/checks.md) § With #10).
 
 Manual check (optional): open the Storybook, Tab through the button and row stories, press Enter and Space, and read
