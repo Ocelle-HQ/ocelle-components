@@ -1,0 +1,16 @@
+{
+  "expect": "fail",
+  "why": "A 2000 px tall story whose pointer.hover target lies at y = 1500, outside the initial 1280 × 800 viewport: pointer-target on both themes (FR-031, research.md R-15).",
+  "findings": [
+    {
+      "location": "pointer-target-below-fold--hover/light",
+      "rule": "pointer-target",
+      "message": "hover: target outside the viewport: .plant-low"
+    },
+    {
+      "location": "pointer-target-below-fold--hover/dark",
+      "rule": "pointer-target",
+      "message": "hover: target outside the viewport: .plant-low"
+    }
+  ]
+}

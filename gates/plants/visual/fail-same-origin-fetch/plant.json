@@ -1,0 +1,16 @@
+{
+  "expect": "fail",
+  "why": "A story that makes run-time I/O while it renders, a same-origin fetch of /api/items: io on both themes, naming the call (FR-030, research.md R-14).",
+  "findings": [
+    {
+      "location": "same-origin-fetch--call/light",
+      "rule": "io",
+      "message": "fetch /api/items"
+    },
+    {
+      "location": "same-origin-fetch--call/dark",
+      "rule": "io",
+      "message": "fetch /api/items"
+    }
+  ]
+}

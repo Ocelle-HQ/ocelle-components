@@ -1,0 +1,11 @@
+[
+  {
+    "story": "base-styles--prose-document",
+    "theme": "light",
+    "rule": "color-contrast-incomplete",
+    "selector": "table:nth-child(12) > tbody > tr > td",
+    "reason": "a fixture exception of the repository",
+    "sunset": "a fixture sunset",
+    "plan": "specs/fixture-feature/plan.md"
+  }
+]

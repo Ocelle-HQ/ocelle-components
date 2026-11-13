@@ -1,0 +1,6 @@
+{
+  "expect": "error",
+  "why": "The Storybook dependencies are not installed (the plant root has no storybook/node_modules link): the CLI check stops the gate before the build, naming the missing tool and how to install it (FR-017, US1 scenario 5, research.md R-09).",
+  "cause": "storybook-build: could not run: storybook is not installed; run pnpm install",
+  "unlinked": ["storybook/node_modules"]
+}

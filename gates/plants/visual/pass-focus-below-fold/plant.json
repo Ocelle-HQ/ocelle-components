@@ -1,0 +1,4 @@
+{
+  "expect": "pass",
+  "why": "A 2000 px tall story that focuses a text field at y = 1500 and holds a position: fixed; top: 0 element passes with baselines showing that element at the top of the page: every capture is taken at scroll position (0, 0) (FR-006, research.md R-04)."
+}

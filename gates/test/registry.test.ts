@@ -1,7 +1,7 @@
 import { readFileSync } from "node:fs";
 import { describe, expect, it } from "vitest";
 import type { Finding } from "../lib/findings.ts";
-import { checkRegistry, ciJobs, fr020, parseRegistry, plantJob } from "../lib/registry.ts";
+import { checkRegistry, ciJobs, fr020, parseRegistry, plantHelperJobs, plantJob, shardInPlantCheckFindings, skipContainerFindings } from "../lib/registry.ts";
 import type { Gate } from "../lib/registry.ts";
 
 // The registry check of the plant job (research.md R-10, data-model.md § Gate): the gate ids of gates.json, the gate
@@ -9,14 +9,14 @@ import type { Gate } from "../lib/registry.ts";
 // set; each id missing from one of them is one finding. Inputs: gates/test/fixtures/registry/.
 const registryText = readFileSync(new URL("fixtures/registry/gates.json", import.meta.url), "utf8");
 const workflow = readFileSync(new URL("fixtures/registry/ci.yml", import.meta.url), "utf8");
-const ids = ["typecheck", "lint", "style-lint", "unit-tests", "test-lint", "mutation", "csp", "prefix", "config-copies", "pins", "signoff", "contrast", "brand-rules", "manifest"];
+const ids = ["typecheck", "lint", "style-lint", "unit-tests", "test-lint", "mutation", "csp", "prefix", "config-copies", "pins", "signoff", "contrast", "brand-rules", "manifest", "storybook-build", "visual", "axe"];
 
 function finding(path: string, rule: string, message: string): Finding {
   return { location: { path }, gate: "plants", rule, message };
 }
 
 describe("fr020 and plantJob", () => {
-  it("lists the fourteen gates of FR-020 (002 FR-020: contrast and brand-rules added; 005 FR-009: manifest), and names the plant job plants", () => {
+  it("lists the seventeen gates of FR-020 (002 FR-020: contrast and brand-rules added; 005 FR-009: manifest; 006 FR-017: storybook-build, visual and axe), and names the plant job plants", () => {
     expect({ fr020, plantJob }).toEqual({ fr020: ids, plantJob: "plants" });
   });
 });
@@ -121,8 +121,14 @@ describe("checkRegistry", () => {
     ]);
   });
 
+  // Plan decision 23 (operator decision 2026-11-11, "In phase 3 now"; contracts/gates.md § The registry).
+  it("does not count the plant job's helper jobs plants-plan and plants-shard as gates", () => {
+    expect(plantHelperJobs).toEqual(["plants-plan", "plants-shard"]);
+    expect(checkRegistry({ registry, jobs: [...jobs, "plants-plan", "plants-shard"], ...paths })).toEqual([]);
+  });
+
   it("reports every gate when the registry and the workflow are empty", () => {
-    expect(checkRegistry({ registry: [], jobs: [], ...paths })).toHaveLength(28);
+    expect(checkRegistry({ registry: [], jobs: [], ...paths })).toHaveLength(34);
   });
 });
 
@@ -146,9 +152,48 @@ describe("the repository's registry (002 FR-020)", () => {
     ]);
   });
 
-  it("matches the workflow's gate jobs and the FR-020 list, fourteen gates", () => {
+  it("matches the workflow's gate jobs and the FR-020 list, seventeen gates", () => {
     expect(checkRegistry({ registry: real, registryPath: "gates/gates.json", jobs: ciJobs(realWorkflow), workflowPath: ".github/workflows/ci.yml" })).toEqual([]);
     expect(real.map((gate) => gate.id)).toEqual(ids);
+  });
+
+  // 006 FR-017 (contracts/gates.md § `storybook-build`): the Storybook build gate is a repo-tree gate with the check
+  // "Storybook build", its plant command running the gate on the plant root.
+  it("registers storybook-build as a repo-tree gate with the check Storybook build", () => {
+    const gate = real.find((g) => g.id === "storybook-build");
+    expect(gate === undefined ? undefined : { id: gate.id, check: gate.check, command: gate.command, plantCommand: gate.plantCommand, plantForm: gate.plantForm }).toEqual({
+      id: "storybook-build",
+      check: "Storybook build",
+      command: "pnpm run gate:storybook-build",
+      plantCommand: "node gates/bin/storybook-build.ts --root {root}",
+      plantForm: "repo-tree",
+    });
+  });
+
+  // 006 FR-017 (contracts/gates.md § `visual`): the visual gate is a repo-tree gate with the check "Visual regression",
+  // run in CI under both engines; its plant command passes the plant's engine (research.md R-06).
+  it("registers visual as a repo-tree gate with the check Visual regression, its plant command taking {engine}", () => {
+    const gate = real.find((g) => g.id === "visual");
+    expect(gate === undefined ? undefined : { id: gate.id, check: gate.check, command: gate.command, plantCommand: gate.plantCommand, plantForm: gate.plantForm }).toEqual({
+      id: "visual",
+      check: "Visual regression",
+      command: "pnpm run gate:visual -- --engine both --remove-docker-image",
+      plantCommand: "node gates/bin/visual.ts --root {root} --engine {engine}",
+      plantForm: "repo-tree",
+    });
+  });
+
+  // 006 FR-017 and US3 scenario 7 (contracts/gates.md § `axe`): the accessibility gate is a repo-tree gate with the
+  // check "Accessibility", its plant command running the gate on the plant root.
+  it("registers axe as a repo-tree gate with the check Accessibility", () => {
+    const gate = real.find((g) => g.id === "axe");
+    expect(gate === undefined ? undefined : { id: gate.id, check: gate.check, command: gate.command, plantCommand: gate.plantCommand, plantForm: gate.plantForm }).toEqual({
+      id: "axe",
+      check: "Accessibility",
+      command: "pnpm run gate:axe",
+      plantCommand: "node gates/bin/axe.ts --root {root}",
+      plantForm: "repo-tree",
+    });
   });
 
   it("gives each new gate a CI job named after its check that runs its command, like the other gate jobs", () => {
@@ -173,5 +218,85 @@ describe("the repository's registry (002 FR-020)", () => {
     expect(job("contrast")).toEqual(shape("contrast", "Contrast", "pnpm run gate:contrast"));
     expect(job("brand-rules")).toEqual(shape("brand-rules", "Brand rules", "pnpm run gate:brand-rules"));
     expect(job("manifest")).toEqual(shape("manifest", "Custom-elements manifest", "pnpm run gate:manifest"));
+    expect(job("storybook-build")).toEqual(shape("storybook-build", "Storybook build", "pnpm run gate:storybook-build"));
+    expect(job("axe")).toEqual(shape("axe", "Accessibility", "pnpm run gate:axe"));
+  });
+});
+
+// 006 FR-018 and research.md R-07: the plant job's `--skip-container` runs a partial job without the visual plants, so
+// the registry check fails when the Plants job of ci.yml passes it; any other job may.
+describe("skipContainerFindings (006 FR-018)", () => {
+  const plantsJob = (run: string): string => `jobs:\n  lint:\n    steps:\n      - run: pnpm run gate:lint\n  plants:\n    name: Plants\n    steps:\n      - uses: ./.github/actions/setup\n${run}\n  after:\n    steps:\n      - run: echo done\n`;
+  const found = (path: string): Finding => ({
+    location: { path },
+    gate: "plants",
+    rule: "skip-container-in-ci",
+    message: "the plants job passes --skip-container, so CI would not run the visual plants",
+  });
+
+  it("finds --skip-container in any step of the plants job, a block or a later line included", () => {
+    expect(skipContainerFindings(plantsJob("      - run: pnpm run gate:plants -- --skip-container"), "ci.yml")).toEqual([found("ci.yml")]);
+    expect(skipContainerFindings(plantsJob("      - env:\n          X: 1\n        run: |\n          echo start\n          pnpm run gate:plants -- --skip-container"), ".github/workflows/ci.yml")).toEqual([
+      found(".github/workflows/ci.yml"),
+    ]);
+  });
+
+  it("reads the plants job by its key at the job indent, quoted or not, wherever it stands", () => {
+    const deeper = "jobs:\n  lint:\n    plants:\n      - run: pnpm run gate:plants -- --skip-container\n  plants:\n    steps:\n      - run: pnpm run gate:plants\n";
+    expect(skipContainerFindings(deeper, "ci.yml")).toEqual([]);
+    expect(skipContainerFindings("jobs:\n  'plants':\n    steps:\n      - run: pnpm run gate:plants -- --skip-container\n", "ci.yml")).toEqual([found("ci.yml")]);
+    expect(skipContainerFindings("jobs:\n  plants:\n    steps:\n      - run: pnpm run gate:plants -- --skip-container\nenv:\n  X: --skip-container\n", "ci.yml")).toEqual([found("ci.yml")]);
+    expect(skipContainerFindings("jobs:\n  plants:\n    steps:\n      - run: pnpm run gate:plants\nenv:\n  X: --skip-container\n", "ci.yml")).toEqual([]);
+    expect(skipContainerFindings("xxplants:\n    run: pnpm run gate:plants -- --skip-container\njobs:\n  xplants:\n    steps:\n      - run: pnpm run gate:plants -- --skip-container\n", "ci.yml")).toEqual([]);
+    expect(skipContainerFindings("    run: pnpm run gate:plants -- --skip-container\njobs:\n  plants:\n    steps: []\n", "ci.yml")).toEqual([]);
+  });
+
+  it("finds nothing in a plants job without it, or when only another job passes it", () => {
+    expect(skipContainerFindings(plantsJob("      - run: pnpm run gate:plants"), "ci.yml")).toEqual([]);
+    expect(skipContainerFindings(plantsJob("      - run: pnpm run gate:plants").replace("echo done", "pnpm run gate:plants -- --skip-container"), "ci.yml")).toEqual([]);
+    expect(skipContainerFindings(readFileSync(new URL("../../.github/workflows/ci.yml", import.meta.url), "utf8"), ".github/workflows/ci.yml")).toEqual([]);
+  });
+});
+
+// Plan decision 23 (operator decision 2026-11-11, "In phase 3 now"; contracts/gates.md § The registry; research.md
+// R-07): with the plant job split, --skip-container is refused in any of the three plant jobs, and the Plants check
+// (the plants job) may not judge one shard (--shard) or none (--plan).
+describe("the split plant jobs (plan decision 23)", () => {
+  const split = (plan: string, shard: string, verdict: string): string =>
+    "jobs:\n  lint:\n    steps:\n      - run: pnpm run gate:lint\n" +
+    `  plants-plan:\n    name: Plants plan\n    steps:\n${plan}\n` +
+    `  plants-shard:\n    name: Plants shard\n    steps:\n${shard}\n` +
+    `  plants:\n    name: Plants\n    steps:\n${verdict}\n` +
+    "  after:\n    steps:\n      - run: pnpm run gate:plants -- --shard 1 --plan --skip-container\n";
+  const plan = "      - run: pnpm --silent run gate:plants -- --plan";
+  const shard = '      - run: pnpm run gate:plants -- --shard "$SHARD"';
+  const verdict = "      - run: pnpm run gate:plants -- --verdict storybook/.visual/plant-shards";
+  const skip = (job: string): Finding => ({
+    location: { path: "ci.yml" },
+    gate: "plants",
+    rule: "skip-container-in-ci",
+    message: `the ${job} job passes --skip-container, so CI would not run the visual plants`,
+  });
+  const partial: Finding = {
+    location: { path: "ci.yml" },
+    gate: "plants",
+    rule: "shard-in-plant-check",
+    message: "the plants job passes --shard or --plan, so the Plants check would judge one shard or none",
+  };
+
+  it("finds --skip-container in a step of plants-shard and of plants-plan", () => {
+    expect(skipContainerFindings(split(plan, `${shard} --skip-container`, verdict), "ci.yml")).toEqual([skip("plants-shard")]);
+    expect(skipContainerFindings(split(`${plan} --skip-container`, shard, verdict), "ci.yml")).toEqual([skip("plants-plan")]);
+    expect(skipContainerFindings(split(`${plan} --skip-container`, shard, `${verdict} --skip-container`), "ci.yml")).toEqual([skip("plants-plan"), skip("plants")]);
+    expect(skipContainerFindings(split(plan, shard, verdict), "ci.yml")).toEqual([]);
+    expect(skipContainerFindings("jobs:\n  x plants:\n    steps:\n      - run: pnpm run gate:plants -- --skip-container\n", "ci.yml")).toEqual([]);
+  });
+
+  it("finds --shard or --plan in a step of the plants job, and none for --shard in plants-shard or --plant", () => {
+    expect(shardInPlantCheckFindings(split(plan, shard, "      - run: pnpm run gate:plants -- --shard 1"), "ci.yml")).toEqual([partial]);
+    expect(shardInPlantCheckFindings(split(plan, shard, "      - run: |\n          pnpm run gate:plants -- --plan"), "ci.yml")).toEqual([partial]);
+    expect(shardInPlantCheckFindings(split(plan, shard, verdict), "ci.yml")).toEqual([]);
+    expect(shardInPlantCheckFindings(split(plan, shard, `${verdict}\n      - run: pnpm run visual:update -- --plant visual/pass-x`), "ci.yml")).toEqual([]);
+    expect(shardInPlantCheckFindings(readFileSync(new URL("../../.github/workflows/ci.yml", import.meta.url), "utf8"), ".github/workflows/ci.yml")).toEqual([]);
   });
 });

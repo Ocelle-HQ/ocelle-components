@@ -1,0 +1,1 @@
+{ "baselines": [{ "file": "fixture--a.light.png", "edit": "one-pixel" }, { "file": "fixture--a.dark.png", "edit": "reencode" }, { "file": "fixture--b.light.png", "edit": "remove" }] }

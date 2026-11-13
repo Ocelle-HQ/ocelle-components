@@ -1,0 +1,5 @@
+{
+  "expect": "fail",
+  "why": "A story file whose import does not resolve fails the Vite build, and the finding names the file (FR-001, US1 scenario 2).",
+  "findings": [{ "location": "storybook/stories/missing.stories.ts", "rule": "build-error", "message": "[UNRESOLVED_IMPORT] Could not resolve './no-such-module.ts'" }]
+}
