@@ -4,7 +4,7 @@
 
 **Created**: 2026-11-12
 
-**Status**: Draft
+**Status**: Approved at the spec gate (2026-11-13, after spec check 3)
 
 **Input**: User description: "Build issue #9 (triage/010-feedback-forms.md) in @ocelle/elements on the conventions of
 mission 005: ocelle-notice (tone, role override, no heading wrapper or gap when no heading is slotted per
@@ -645,7 +645,9 @@ gates and the README documentation test.
     (the current text is then the baseline for the next change). Changes while hidden are not announced; the reveal
     announces the text current at that moment. Several changes in one task announce the final text once. By operator
     ruling (PLAN-FRESH-2-001 (a)), so do changes in different tasks that follow each other by less than the
-    announcement wait (the plan's `W`: twice Chromium's serialisation delay, 300 ms after load, 700 ms before): the
+    announcement wait (the plan's `W`: twice Chromium's serialisation delay, 300 ms after load, 700 ms before; "after
+    load" means once `document.readyState` is `"complete"`, so a notice inserted while it is `"interactive"`, for
+    example from a `DOMContentLoaded` handler, is an insertion announced with the 700 ms wait): the
     announcement comes `W` after the last of them, with the text and politeness current then, and if those equal the
     baseline at that moment nothing is announced (a text that went `A`, `B`, `A`). A notice whose text keeps changing
     more often than every `W` is not announced until the changes stop; the README states `W` and this case. A change

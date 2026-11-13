@@ -270,17 +270,32 @@ Computed ratios (WCAG 2): ink on danger-bg 14.91 light, 13.96 dark; warning 15.0
 info 15.70, 13.59; neutral 14.25, 12.43. Markers on their grounds: danger 5.34 and 5.77, warning 5.60 and 6.83,
 success 5.40 and 8.55, info 5.82 and 9.42, neutral 5.40 and 5.59. All pass; no token value changes.
 
-The required set grows by five pairs per theme, and every place that holds it changes in the same phase-2 task
-(PLAN-CORRECTNESS-1-005; `packages/tokens/test/expected.ts` holds no pair count and is not touched):
+The required set grows by five pairs per theme. Every place that holds a figure of it changes in phase 2, the test
+files red first (T010) and the records in green (T018) (PLAN-CORRECTNESS-1-005; analysis I1;
+`packages/tokens/test/expected.ts` holds no pair count and is not touched). Each figure below was read from the
+repository file at the line named (head 3f46dc5, analysis U1); the new figure is the old one plus the rows this plan
+adds, five per theme:
 
-- `packages/tokens/contrast/pairs.json`: ten computed rows (`color-ink` on each state `-bg` ground, light and dark,
-  with the figures above); without them `gates/bin/contrast.ts:74-77` reports `missing-required-pair`;
-- `gates/test/contrast-required.test.ts:7,58-63`: the hand-transcribed A.8 set gains `[["color-ink"], "text",
-  stateGrounds]`, 149 → 154 (a deliberate edit of the test that guards the required set, made red first);
-- the summary counts 160/168/149 → 165/173/154 in `gates/test/contrast.test.ts:80-81`,
-  `gates/test/contrast-pairs.test.ts:5,59-61`, `gates/test/integration/token-gates.test.ts:13-16` and
-  `gates/test/integration/plants-robustness.test.ts:116-128`;
-- the comment at `gates/bin/contrast.ts:116`.
+| File and line | Holds | Today | After | Derivation |
+|---|---|---|---|---|
+| `packages/tokens/contrast/pairs.json` | rows per theme, and in all | 160 light, 168 dark, 328 rows | 165, 173, 338 | ten computed rows added (`color-ink` on each state `-bg` ground, light and dark, with the figures above); without them `gates/bin/contrast.ts:74-77` reports `missing-required-pair`. Green (T018). |
+| `gates/test/contrast-required.test.ts:7` (comment), `:58-59`, `:63` | required (fg, bg, kind) triples per theme, A.8 as transcribed | 149 | 154 | the transcription gains `[["color-ink"], "text", stateGrounds]` (its `stateGrounds` at `:11`), 149 + 5; a deliberate edit of the test that guards the required set |
+| `gates/test/contrast-required.test.ts:67`, `:69`, `:70` | required pairs over both themes | 298 | 308 | 2 × 154 |
+| `gates/test/contrast-pairs.test.ts:5` (comment), `:59`, `:61` | `pairs.json` entries per theme | 160, 168 | 165, 173 | + 5 per theme |
+| `gates/test/contrast-pairs.test.ts:63`, `:67` | `pairs.json` entry lines and distinct keys in all | 328 | **338** | 165 + 173 (equivalently 328 + 10) |
+| `gates/test/contrast.test.ts:80-81` | the gate's summary line | 160, 168, 149 | 165, 173, 154 | as above |
+| `gates/test/integration/token-gates.test.ts:13`, `:16` | the gate's summary line (test name and assertion) | 160, 168, 149 | 165, 173, 154 | as above |
+| `gates/test/integration/token-gates.test.ts:6` (comment), `:27` | lines of `contrast --print` (one per required pair) | 298 | 308 | 2 × 154 |
+| `gates/test/integration/plants-robustness.test.ts:116`, `:128` | summary of variants (1) and (3), which change a value but no pair | 160, 168, 149 | 165, 173, 154 | as above |
+| `gates/test/integration/plants-robustness.test.ts:122` | summary of variant (2), which inserts one pair first in light (`pairs: [first, ...realPairs]`) | 161, 168, 149 | **166**, 173, 154 | 165 + 1 |
+| `gates/bin/contrast.ts:116` (comment naming the `token-gates` test) | the test name's figures | 160, 168, 149 | 165, 173, 154 | follows the test name; green (T018) |
+| `packages/tokens/src/source.ts:4` (comment) | required pairs per theme | 149 | 154 | green (T018), with the grounds change at `:43` |
+
+The two figures in bold are the ones the task list first named without a source: 338 is the total of `pairs.json`
+entries (`contrast-pairs.test.ts:63,67`) and 166 the light count of plant variant (2)
+(`plants-robustness.test.ts:122`). The `pairs.json` counts were taken by parsing the file and counting entries per
+`theme` (160 light, 168 dark, 328 in all), the others by reading the lines named. T010 re-reads each line before
+editing it; a figure found different from this table is a stop-and-ask point.
 
 ## R-05 Form association (FR-020 to FR-024)
 
@@ -398,10 +413,10 @@ option); once dirty it keeps the chosen value if an option still has it, and oth
 option, without an event. Reset clears dirtiness. A host `value` attribute is ignored (FR-021).
 
 **Indicator** (operator decision PLAN-CORRECTNESS-1-003 (a)): the select draws the `chevron-down` drawing of the
-shared set itself, from `iconOf("chevron-down")` of `src/icons.ts`, as an `aria-hidden="true"` inline SVG in
-`currentColor` in its own shadow root, sized by `--ocelle-icon-size`; the shape-to-SVG rendering of
-`src/ocelle-icon.ts` moves to an internal module both elements use (a refactor of 005 code, kept green by the icon
-tests). The select module therefore imports no other element module and defines only `ocelle-form-select`, as the
+shared set itself: the icon data comes from `iconOf("chevron-down")` of `src/icons.ts`, and the drawing from
+`src/icon-svg.ts`, the internal module to which the shape-to-SVG rendering of `src/ocelle-icon.ts` moves and which
+both elements use (a refactor of 005 code, kept green by the icon tests; analysis I4). It is an `aria-hidden="true"`
+inline SVG in `currentColor` in the select's own shadow root, sized by `--ocelle-icon-size`. The select module therefore imports no other element module and defines only `ocelle-form-select`, as the
 README's "importing the module defines that element and no other" requires (`test/node/readme.test.ts:29`, the
 select's entry test written as `test/entry-icon.test.ts`). The indicator is positioned at the inline end with logical
 properties and has `pointer-events: none`, so a click on it reaches the native select (PLAN-A11Y-SECURITY-1-008, US3
@@ -471,7 +486,11 @@ only (not from `index.ts` or `browser.ts`, not in the manifest), a test-only set
 delayLoaded, delayLoading, hold })` that replaces `D` (both load states) and `H` and returns the timing it replaced;
 `W` and the minimum hold stay `2 × D`. Only `test/in-process.ts` calls it, before each scenario, from one constant that also gives the capture's
 `"settled"` rule and stop()'s quiet window their in-process `D` (R-01), so the element and the oracle use the same
-figure while the oracle keeps its own copy. The test `D` is chosen in T002 and is at least two rendering updates long,
+figure while the oracle keeps its own copy. Phase 1 (T005) defines that constant in `test/in-process.ts` and gives
+the capture its `D` from it; the setter call is added in phase 2 (T020a), when `src/live.ts` exists, and
+`test/in-process-timing.test.ts` checks that the capture's `D` equals the constant and that an inserted notice's copy
+is written `2 × D` of the constant after the insertion, not at Chromium's figures (analysis G7). The test `D` is
+chosen in T002 and is at least two rendering updates long,
 so the microtask and first-frame plants still count zero under `"settled"`. Fixture pages never call the setter and
 run at Chromium's 150 and 350 ms and the real `H`; they are the evidence that the real figures work. A test in
 `test/node/` checks that the setter is called only from `test/in-process.ts` (no `src/` module, no fixture page). T002 measures, with
@@ -499,8 +518,13 @@ alternative was a Stryker disable comment on those lines naming the fixture-page
 **The oracle** (PLAN-TESTABILITY-1-008). The reading `regionText()` and the counting `announcements()` are pure
 functions in `test/live-reading.ts`, unit-tested per rule (StaticText taken; `img` name taken and its descendants not
 visited; a link's own name skipped while its StaticText children count; inline text boxes skipped; ignored subtrees
-contributing nothing; whitespace; the `"settled"` and `"rendered"` rules; the vacuous cases) on recorded
-`getFullAXTree` node lists saved from the T002 spike. They are not mutated: the mutation gate selects changed package
+contributing nothing; whitespace; the `"settled"` and `"rendered"` rules; the vacuous cases). The reading rules run
+on `getFullAXTree` node lists in `test/fixtures/ax/`, recorded before the red commit by a throwaway Playwright script
+against the pre-installed Chromium on planted regions (as the "spike 2026-11-13" measurements here: script not
+committed, its Chromium version and the planted markup noted in each fixture's header comment); the keeping rules run
+on hand-written snapshot sequences. The T002 spike re-records the same planted regions with the capture as drafted
+for T004 and compares: a difference in a field the reading uses is a stop-and-ask point, and T001's lists are never
+replaced or edited after the red commit (analysis I6). They are not mutated: the mutation gate selects changed package
 and gate source and runs the elements configuration on `packages/elements/src/` only (`gates/bin/mutation.ts:71-74`),
 and extending its selection to test code would be a gate change this plan does not make. Instead each rule has a
 planted reading (a reading that takes a link's name, one that visits an `img`'s descendants, one that ignores the
