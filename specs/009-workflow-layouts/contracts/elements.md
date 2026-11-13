@@ -20,16 +20,25 @@ The board module does not define the lane: a host imports both, or the root.
 
 | Member | Kind | Type, default | Reflects | Description |
 |---|---|---|---|---|
-| `label` | property + attribute | `string \| undefined`, absent | no | Names the region while it overflows; trimmed, and blank counts as none (FR-010) |
+| `label` | property + attribute | `string \| undefined`, absent | no | Names the group while it overflows; trimmed, and blank counts as none (FR-010) |
 | (default) | slot | | | The strip's content |
 
 - **Events:** none. **Parts:** none. **CSS custom properties:** none.
 - **Tokens read:** `--ocelle-focus-offset`, `--ocelle-focus-width`, `--ocelle-color-focus`,
-  `--ocelle-scroller-fade-size`, `--ocelle-color-ink` (as a mask colour only).
-- **Tree:** while overflowing and named, one `region` node with the name, holding the content. Otherwise no node of its
-  own, beyond the host `generic` that an `id` or a host `aria-label` gives (research.md R-01).
-- **Keyboard:** it is a tab stop while overflowing. `ArrowLeft` and `ArrowRight` scroll it 40 px with no animation. Other
-  keys get the browser default.
+  `--ocelle-scroller-fade-size`, `--ocelle-color-ink` (as a mask colour only), `--ocelle-border-width` (the
+  forced-colours edge line).
+- **Tree:** while overflowing and named, one `group` node with the name, holding the content; it is not a landmark
+  (operator decision PLAN-A11Y-SECURITY-1-006 (b)). Otherwise no node of its own, beyond the host `generic` that an `id`
+  or a host `aria-label` gives (research.md R-01), and, while it holds a handover focus, the focused frame node
+  (research.md R-07).
+- **Naming guidance (README):** always give a `label`; a scroller repeated per item takes a name that identifies the
+  item ("Tags of WP-12").
+- **Host ARIA:** a non-blank host `aria-label` decides the name alone; a blank one counts as absent (FR-010). The
+  README's Host ARIA section scopes this rule to the scroller, the board and the lane.
+- **Keyboard:** it is a tab stop while overflowing. `ArrowLeft` and `ArrowRight` without a modifier scroll it 40 px with
+  no animation. Modified arrows (Alt, Ctrl, Meta, Shift), arrows during composition and other keys get the browser
+  default.
+- **Scrollbar:** the platform's horizontal scrollbar is kept, counted in the block size, and never faded (FR-001).
 
 ## `ocelle-workflow-board`
 
@@ -39,8 +48,12 @@ The board module does not define the lane: a host imports both, or the root.
 | (default) | slot | | | The lanes; any child is laid out as a lane (FR-013) |
 
 - **Events:** none. **Parts:** none. **CSS custom properties:** none.
-- **Tokens read:** the scroller's, plus `--ocelle-lane-min-width` and `--ocelle-space-3`.
-- **Tree and keyboard:** as the scroller (it uses the same module).
+- **Tokens read:** the scroller's (`--ocelle-border-width` included), plus `--ocelle-lane-min-width` and
+  `--ocelle-space-3`.
+- **Tree and keyboard:** as the scroller (it uses the same module), except that the named overflowing box is a
+  `region` landmark, not a `group` (FR-014).
+- **Layout:** every slotted child has `contain: inline-size`, so its intrinsic inline size is the lane minimum whatever
+  it holds (research.md R-08).
 - **Ground:** none of its own; it goes on a main ground (research.md R-10).
 
 ## `ocelle-workflow-lane`
@@ -55,8 +68,9 @@ The board module does not define the lane: a host imports both, or the root.
 
 - **Events:** none. **Parts:** none. **CSS custom properties:** none.
 - **Tokens read:**
-  - layout and chrome: `--ocelle-lane-min-width` (through the board), `--ocelle-color-panel`, `--ocelle-radius-row`,
-    `--ocelle-space-3`;
+  - layout and chrome: `--ocelle-lane-min-width` (through the board), `--ocelle-color-sheet` (the default lane's
+    ground, which differs from canvas, panel, inspector and pane in both themes; operator decision
+    PLAN-CORRECTNESS-1-011 (b), research.md R-10), `--ocelle-radius-row`, `--ocelle-space-3`;
   - title and count: `--ocelle-font-size-sm`, `--ocelle-font-size-xs`, `--ocelle-font-weight-strong`,
     `--ocelle-color-ink`, `--ocelle-color-ink-soft`, `--ocelle-color-ink-muted`, `--ocelle-tracking-caps`,
     `--ocelle-font-sans`, `--ocelle-figures`;
@@ -79,7 +93,12 @@ The board module does not define the lane: a host imports both, or the root.
 - **Events:** none (FR-029). **Parts:** none. **CSS custom properties:** none.
 - **Tokens read:** `--ocelle-list-track-width`, `--ocelle-shell-inspector-width`, `--ocelle-list-detail-collapse`,
   `--ocelle-list-detail-inspector-collapse`, `--ocelle-color-rule`, `--ocelle-border-width`, and the focus ring tokens
-  for the pane wrappers.
+  `--ocelle-focus-width` and `--ocelle-color-focus` for the pane wrappers' ring, drawn inset
+  (`outline-offset: calc(var(--ocelle-focus-width) * -1)`) and `Highlight` in forced colours (research.md R-14).
+- **Widths:** the inspector's 19rem is its border box, its 1 px border included (FR-023).
+- **Pane focus:** no pane wrapper has a `tabindex` at rest; a wrapper gets `tabindex="-1"` only while the element moves
+  focus to it, and loses it on `focusout` (FR-028, research.md R-14).
+- **Name:** none; a host `aria-label` is not used (FR-029).
 
 ### Container-tier convention (README; for #8 and #12)
 
@@ -117,5 +136,7 @@ The board module does not define the lane: a host imports both, or the root.
 | `workflow-lane.stories.ts` | Default with count; Default without count; Flat with count; Flat without count; Long title; Untitled with count |
 | `list-detail.stories.ts` | Three columns; Two columns, inspector stacked; One column, list; One column, detail; No inspector; Right to left |
 
-Frames are sized by `[data-story]` rules in `storybook/.storybook/stories-layout.css`. No story uses a `style`
-attribute or a class.
+Frames are sized by the same `[data-frame]` rules as the tests (one source, `packages/elements/test/fixtures/frames.css`,
+research.md R-17), through `storybook/.storybook/stories-layout.css`. No story uses a `style` attribute or a class. The
+board and lane stories' nested scroller has an item-specific `label` ("Tags of WP-12"). Default-lane stories render on
+`color-canvas`.

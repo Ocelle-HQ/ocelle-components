@@ -7,8 +7,10 @@ behaviour again in the repository's harness.
 
 ## R-01 Where the region and group roles live (FR-002, FR-010, FR-019)
 
-**Decision.** The region role of the scroller and the board, and the group role of the lane, are on an element in the
-element's own shadow root (the scroll box; the lane's group wrapper), never on the host. The element observes the
+**Decision.** The role of the scroll box (`group` for the scroller and for #13, `region` for the board; operator
+decision PLAN-A11Y-SECURITY-1-006 (b)), and the group role of the lane, are on an element in the element's own shadow
+root (the scroll box; the lane's group wrapper), never on the host. The module takes the role as a constructor option
+(`role`, default `"group"`; contracts/overflow-region.md § Inputs). The element observes the
 host's `aria-label` (`observedAttributes`, as 005's elements do) and gives the inner node the name FR-010 and FR-019
 define:
 
@@ -32,13 +34,34 @@ non-empty host `aria-label` it is a `generic` named by it. The scenarios assert:
 
 They do not assert that the host is absent. The README names the host node.
 
+**Why `group` for the scroller (operator decision).** Chip and tag rows repeat per card. As `region` landmarks, a
+board of five lanes with a tag row per card would put dozens of landmarks named "Tags" in the landmark list, the
+crowding the spec's "Lane semantics" assumption rejects for lanes. A named `group` keeps the tab stop's name without
+adding a landmark. The board, one per screen, stays a `region`. The README still says to give every scroller a
+`label`, and that a scroller repeated per item takes a name that identifies the item ("Tags of WP-12"); the board and
+lane stories' nested scroller uses such a name.
+
+**Host ARIA scope (PLAN-CORRECTNESS-1-005 (a)).** 005's README § Host ARIA states, for the whole package, that a
+blank host `aria-label` leaves the element unlabelled even with a `label` (pinned by `test/node/readme.test.ts`). For
+these elements a blank host `aria-label` counts as absent, for the reason measured above: only an inner node can keep
+the `label` name when the host's attribute is blank. The section is rewritten to scope each rule: the icon and the
+brand mark, blank decides (unchanged behaviour); the scroller, the board and the lane, blank counts as absent, with
+this entry's reason; list-detail takes no name. The new README items go into `readme.test.ts` red first, and the old
+package-wide sentence is replaced there by its scoped form (phase 2).
+
 **Alternatives.** Role on the host through internals: rejected, because of the blank-label measurement above. Copying
-the host `aria-label` and removing the attribute: rejected, because 005 forbids rewriting the host's ARIA.
+the host `aria-label` and removing the attribute: rejected, because 005 forbids rewriting the host's ARIA. `region` for
+every labelled scroller with item-specific names in the README (option (a) of PLAN-A11Y-SECURITY-1-006): not taken by
+the operator.
 
 ## R-02 Arrow keys and reduced motion (FR-006, FR-009, US1-5, US1-11; SPEC-1-08)
 
 **Decision.** The overflow-region module handles `ArrowLeft` and `ArrowRight` itself, only when the keydown's
-composed target is the scroll box:
+composed target is the scroll box and no modifier is involved: `altKey`, `ctrlKey`, `metaKey` and `shiftKey` are all
+false and `isComposing` is false (PLAN-A11Y-SECURITY-1-004). A modified arrow is left to the browser untouched:
+Alt+ArrowLeft and Alt+ArrowRight are history navigation in Chrome on Windows and Linux, Ctrl, Alt and Meta arrows are
+word-jump and assistive-technology keys, and Shift+Arrow has no scroll meaning the spec asks for, so the simplest rule
+is to leave it to the browser too. For a handled key the module:
 
 - it calls `preventDefault`;
 - it moves `scrollLeft` by 40 px in the key's visual direction with an instant assignment, so no browser smooth
@@ -47,7 +70,9 @@ composed target is the scroll box:
 
 Keys whose target is a descendant are not touched (US1-10). `Home`, `End`, `PageUp` and `PageDown` are not handled:
 the browser's default applies, and the element does not call `preventDefault` on them. The tests assert that, not a
-scroll result.
+scroll result. US1-5's test also presses Alt+ArrowLeft, Ctrl+ArrowRight, Meta+ArrowRight and Shift+ArrowRight on the
+focused box, with real input, and asserts that none is default-prevented and that `scrollLeft` does not change. Its
+plant is a handler with no modifier check.
 
 **Why (measured).** Chromium's own arrow-key scrolling of a focused scroll box is 40 px, but animated: `scrollLeft`
 was 0 right after the key press and 40 after 300 ms, also in a context with `reducedMotion: "reduce"`. Under reduced
@@ -77,23 +102,56 @@ says), the edges are:
 - **start** = `|scrollLeft| > 1`;
 - **end** = `scrollWidth − clientWidth − |scrollLeft| > 1`.
 
-The state is written in the observer callback, which runs before paint, so the next frame shows it. The tests wait
-for the element's `updateComplete` after two animation frames; that is the "within one animation frame after the
-resize is observed" of US1-3.
+The state is written in the observer callback, which runs before paint, so the frame in which the resize is observed
+paints it. Lit's update runs in the microtask checkpoint after that callback.
 
-**Alternatives.** A `MutationObserver` on slotted subtrees: not needed once the track's size is observed, and costly on
-large boards.
+**Testing the bound (PLAN-TESTABILITY-1-004 (a)).** US1-3's "within one animation frame after the resize is observed"
+is tested at that bound, not by a two-frame wait. The test registers its own `ResizeObserver` on the scroll box after
+the element has connected (observers are notified in creation order, so its callback runs after the module's in the
+same delivery) and asserts `tabindex` and the role synchronously in its callback, and again after awaiting
+`host.updateComplete` there. The plant is "the module's state write moved into a `requestAnimationFrame`": the
+write then lands in the next frame, after the test's callback, so the assertion fails. An assertion in the first
+`requestAnimationFrame` after the test's callback would not fail against that plant (the module's deferred frame
+callback runs first, with its update in the checkpoint after it), so the assertion stays in the observer callback.
+Every other scenario settles with the driver's two-frame `settle()` (R-17).
+
+**The board (PLAN-FRESH-1-006 (b)).** For the scroller the track is the content's max-content, so a content change
+resizes it. The board's lanes are contained (R-08), so the track's inline size no longer depends on what the lanes
+hold. A change inside a lane that changes only a descendant's inline size (a fixed-width element widened in the last
+lane) changes the box's `scrollWidth` but neither the box's nor the track's size. FR-014 (operator decision) reads
+FR-002 for the board as: such a change is picked up at the next size, slot or scroll event. A change that also
+changes a lane's block size (a card added) resizes the track, so it is picked up within one frame. The plan-level
+SPEC-2-06 test adds its wide content after the first render, as a new card whose block size grows the last lane, and
+asserts the board becomes a tab stop and region within one frame.
+
+**Alternatives.** A `MutationObserver` on slotted subtrees: not needed for the scroller once the track's size is
+observed, and costly on large boards. For the board it would catch the width-only change; the operator kept the cost
+out (option (a) of PLAN-FRESH-1-006 not taken). A `ResizeObserver` on each lane would not see it either: the lane's
+size is fixed by its containment.
 
 ## R-04 Ring room (FR-001, FR-014; SPEC-1-01 and SPEC-2-02 fixes)
 
 **Decision.** The ring room `calc(var(--ocelle-focus-offset) + var(--ocelle-focus-width))` (5 px) is placed as follows:
 
-- **Block direction.** Block padding of the scroll box (scroller) or of the lanes row (board).
+- **Block direction.** Block padding of the scroll box, for every host of the module: the scroller, the board and
+  #13 (`.region-box` in contracts/overflow-region.md). The board adds no block room of its own to its lanes row, so
+  the room comes from one place (PLAN-CORRECTNESS-1-012).
 - **Inline direction.** Inline padding of the track, which is inside the scrollable content, so the room is before the
   first and after the last item and counts as content for the overflow rule.
 
 The scroll box has `overflow-x: auto; overflow-y: hidden`. With the block room in its padding, a slotted control's ring
 fits inside it.
+
+**The native scrollbar (PLAN-FRESH-1-003 (a), operator decision).** The box keeps the platform's own horizontal
+scrollbar: it is the only drag affordance for a mouse user without a horizontal wheel. On a platform with classic
+scrollbars (Windows, most Linux desktops, "always show scrollbars") the scrollbar takes block space between the
+box's padding box and its border, so the box's block size is the content's, plus the ring room on each block side,
+plus the scrollbar's thickness; FR-001 and US1-13 say so. With overlay scrollbars the thickness is 0. Headless
+Chromium hides scrollbars (`--hide-scrollbars`, which Playwright adds in headless runs), so every test and baseline
+sees the overlay case. One `elements-browser` test launches Chromium with `ignoreDefaultArgs: ["--hide-scrollbars"]`
+and asserts, for an overflowing scroller and an overflowing board: block size = content + 2 × ring room + scrollbar
+thickness (`offsetHeight − clientHeight`, measured and greater than 0 in that run); the ring room is above the
+scrollbar; and the scrollbar is not faded (R-05).
 
 **Why.** Padding of the scroll container itself is inside the scrollport but, at the inline end, depends on the
 engine's scrollable-overflow rules. Padding of a track element is ordinary content size in every engine.
@@ -102,88 +160,198 @@ engine's scrollable-overflow rules. Padding of a track element is ordinary conte
 
 **Decision.**
 
-- **Fade.** The fade is a `mask-image` on the scroll box. It is a `linear-gradient` from `transparent` to an opaque
-  token colour (`var(--ocelle-color-ink)`; only alpha matters in a mask) over `--ocelle-scroller-fade-size` at each
-  fading edge. One rule per edge state (start, end, both) selects it from the module's outputs, and `:host(:dir(rtl))`
-  rules mirror the gradient direction.
+- **Fade.** The fade is a `mask-image` on the scroll box. Its fade layer is a `linear-gradient` from `transparent` to
+  an opaque token colour (`var(--ocelle-color-ink)`; only alpha matters in a mask) over `--ocelle-scroller-fade-size`
+  at each fading edge. One rule per edge state (start, end, both) selects it from the module's outputs, and
+  `:host(:dir(rtl))` rules mirror the gradient direction.
+- **The scrollbar stays unmasked (PLAN-FRESH-1-003 (a)).** The scrollbar belongs to the scroll box itself, and every
+  element inside the box scrolls with the content, so the mask cannot move to an inner element and still stand still
+  over the viewport. It stays on the box, and is kept off the scrollbar by clipping: the fade layer has
+  `mask-origin: padding-box; mask-clip: padding-box`, and the scrollbar lies between the box's padding box and its
+  border. Two opaque layers (`linear-gradient(var(--ocelle-color-ink), var(--ocelle-color-ink))`, clipped to the
+  border box and to the padding box) are composited with `exclude`, which leaves exactly the area outside the padding
+  box (the scrollbar) opaque; the fade layer is added over them (`mask-composite: add, exclude`, layers top to
+  bottom: fade, border-box solid, padding-box solid). The scrollbar test of R-04 proves it: with
+  `--hide-scrollbars` off, the scrollbar's pixels at a faded inline edge equal those of a twin plain
+  `overflow-x: auto` box of the same size, content and `scrollLeft`, within the pixel tolerance of 005's `pixels()`.
+  If Chromium places the scrollbar inside the mask's padding box, that test's first red run shows it and the phase
+  stops for the operator.
 - **Ring.** The scroll box's focus ring is not drawn on the masked box. It is drawn by a sibling overlay element in
   the shadow root, positioned over the box, inset by the ring width, with no pointer events, and shown by
   `.box:focus-visible ~ .ring`. So the mask never fades it. The overlay is `aria-hidden` and adds no node.
-- **Forced colours.** Under `@media (forced-colors: active)` the mask is `none`. Two edge elements, likewise siblings
-  and `aria-hidden`, draw a 1 px `CanvasText` `border-inline-start` or `border-inline-end` on the sides the module
-  reports as fading. The ring overlay uses `Highlight`.
+- **Edge elements.** Two edge elements, likewise siblings and `aria-hidden`, are always laid out: absolutely
+  positioned at the box's inline start and end, `inline-size: var(--ocelle-scroller-fade-size)` with
+  `box-sizing: border-box`, no pointer events, and nothing painted outside forced colours. They are also the module's
+  measure of the fade depth in px (R-06).
+- **Forced colours.** Under `@media (forced-colors: active)` the mask is `none`. The edge element on each side the
+  module reports as fading draws `var(--ocelle-border-width) solid CanvasText` on its outer inline side
+  (`border-inline-start` at the start, `border-inline-end` at the end). The ring overlay uses `Highlight`.
 - **No transition.** The fades appear and disappear with no transition at all. FR-009's "at most `--ocelle-motion-fast`"
   is met trivially. A gradient mask does not interpolate usefully.
 
-**Lint.** `transparent` and `var(--ocelle-*)` pass `token-only`, as do `%` stops. `CanvasText` and `Highlight` are
-identifiers, not named colours, so they pass too (the rule rejects only named colours, hex and raw units).
+**Lint (PLAN-CORRECTNESS-1-002 (a), operator decision).** `gates/stylelint/token-only.ts` `functionRaw` classifies
+only `var()` and `calc()`; any other function is raw whole, which `gates/test/token-only.test.ts` pins for
+`rgb(0 0 0)`. As the rule stands, every `mask-image: linear-gradient(...)` is reported. The `ocelle/token-only` rule
+is therefore extended: inside `linear-gradient()` the arguments are classified as at the top level of a value (each
+word by `wordAllowed`, so direction keywords such as `to` and `right`, `transparent` and `%` stops pass, and a hex,
+a named colour, a raw length and an angle are raw), `var()` and `calc()` are checked as everywhere, and any other
+nested function is raw. Every other gradient function (`radial-gradient()`, `conic-gradient()`,
+`repeating-linear-gradient()`) stays raw whole. The change is a gate change with red-first tests, plants and a
+contract entry (contracts/gates.md), done at the start of phase 2 before the scroller's styles. `CanvasText` and
+`Highlight` are identifiers, not named colours, so they pass as they are.
+
+**What the fade tests assert (PLAN-TESTABILITY-1-003).** A fade has no box, and the module's `data-fade` output says
+nothing about the mask, its mirror or the ring overlay. `data-fade` is never the assertion of a fade test. US1-6,
+US1-7 and US2-2 assert pixels (`driver.pixels()`): with opaque content of a known colour, on two different main
+grounds (`color-canvas` and `color-pane`) and in both themes, in `ltr` and `rtl`:
+
+- at a fading edge the composited colour rises monotonically from the ground at the box's edge to the content colour
+  over `--ocelle-scroller-fade-size` (32 px at a 16 px root);
+- inside that depth on a side without a fade, the pixels are the content colour;
+- under `rtl` at the inline start the fade is on the right edge, at the end on the left;
+- with the box focused by keyboard, the ring's pixels at a fading edge are the full `--ocelle-color-focus`.
+
+US1-8 asserts, under emulated forced colours, the computed `border-inline-start`/`border-inline-end` colour, width and
+side of each edge element and its box against the scroll box's edge; the edge element of a side with nothing
+off-screen has no border. The plants are those of the spec's table (both fades always; both lines always), plus "the
+`rtl` mirror rule removed" and "the ring overlay inside the masked box", each of which the pixel assertions catch.
 
 **Alternatives.**
 - A gradient overlay painted in the ground colour: rejected, because the element does not know the ground (US1-7: any
   main ground, both themes).
 - The ring as an inset `outline` on the box: it would be faded at the edges by the mask.
+- Gradients carried as tokens so element CSS says `mask-image: var(...)` only (option (b) of PLAN-CORRECTNESS-1-002):
+  not taken by the operator.
+- Hiding or thinning the scrollbar (`scrollbar-width`, option (b) of PLAN-FRESH-1-003): not taken by the operator.
 
 ## R-06 Focus clearance and the fade fallback belong to the module (FR-001, FR-014; SPEC-3-01, 3-02, 3-03)
 
 **Decision.**
 
 - **Owner.** The module owns focus clearance. It listens for `focusin` on its host, in the composed tree, so a focused
-  element inside a lane, or inside another element's shadow root, counts.
+  element inside a lane, or inside another element's shadow root, counts. Focus on the module's own shadow nodes (the
+  box, and the handover node of R-07) is not cleared.
 - **When it applies.** When the focused element (`composedPath()[0]`) matches `:focus-visible`, which covers keyboard
-  focus and script focus after keyboard use. Pointer focus does not apply: a click on a chip half under a fade does not
-  scroll the strip from under the pointer, and the browser's own focus scrolling is all that happens.
+  focus and script focus after keyboard use. FR-001 says so since the plan gate (PLAN-CORRECTNESS-1-006 (a)). Pointer
+  focus on a button, a link or a chip does not apply: a click on a chip half under a fade does not scroll the strip
+  from under the pointer, and the browser's own focus scrolling is all that happens.
+- **Text-entry controls (PLAN-A11Y-SECURITY-1-008).** A text `<input>`, a `<textarea>` and a contenteditable element
+  match `:focus-visible` on any focus, pointer focus included (the Selectors 4 heuristic Chromium implements). They
+  are therefore cleared on any focus, on purpose: they show a ring, and the ring must not sit under a fade. FR-001
+  names them, and US1-13 tests the pair: a slotted text input and a slotted button, each half under the end fade,
+  clicked; the input is scrolled clear, the button is not moved.
+- **Reading the figures (PLAN-CORRECTNESS-1-009).** The arithmetic needs px figures, and an unregistered custom
+  property computes to its token text (`--ocelle-scroller-fade-size` computes to `2rem`, and a host override such as
+  `calc(1rem + 4px)` to that text), so the module never parses custom-property text. It measures laid-out boxes at the
+  time of focus: the fade depth is the inline size of an edge element (R-05; `inline-size:
+  var(--ocelle-scroller-fade-size)`), and the ring room is the track's computed `padding-inline-start`, a used px
+  value. A 20 px root font size and a `calc()` override of the fade token are element-level cases (R-17).
 - **How it scrolls.** It reads the ring box (the focused element's border box grown by the ring room) against the
-  scroll box. It scrolls by the smallest amount that leaves the ring box at least `--ocelle-scroller-fade-size` from
-  each inline edge that would then still fade.
+  scroll box. It scrolls by the smallest amount that leaves the ring box at least the fade depth from each inline edge
+  that would then still fade.
 - **When the control does not fit.** If the ring box is wider than the box less the fade depths, the module aligns the
-  ring box's inline start with the box's inline start. It reports the fade on the covering side(s) as suppressed until
-  `focusout` from that element or a scroll the module did not make (a flag set around its own assignment).
+  ring box's inline start with the box's inline start and reports the fade on the covering side(s) as suppressed.
+- **Ending the suppression (PLAN-A11Y-SECURITY-1-001).** A flag set around the module's own `scrollLeft` assignment
+  cannot work: the `scroll` event of that assignment is dispatched in the rendering steps of a later frame (measured:
+  after the synchronous code and after the microtasks), when the flag is already reset, so the module would take its
+  own scroll for a user's and drop the suppression at once. Instead the module records the `scrollLeft` it wrote. The
+  suppression ends on `focusout` from the focused element, or on a `scroll` event whose `scrollLeft` differs from the
+  recorded value by more than 1 px (the user scrolled). The browser's clamping of a write is read back once after the
+  write, so the recorded value is the position the box really took. The test (US1-13's wide-button case) asserts
+  that no fade is drawn over the ring box in each of at least two animation frames after focus, and that a user
+  scroll (a wheel event over the box, and an arrow key on the box after Shift+Tab back to it) restores the fade. Its
+  plant is the synchronous flag.
 - **A control wider than the box** (SPEC-3-03) is aligned the same way and suppresses both fades. Only its start is
   guaranteed visible.
 - **Forced colours** (SPEC-3-01). Suppression applies to the forced-colours line too: the module's two edge outputs
   already include it, so the line and the fade can never disagree.
-- **SC-001.** It is read as "exactly the sides with content off-screen, except while the FR-001 fallback suppresses one
-  for a focused control". The wide-button case of US1-13 asserts the fallback, and the SC-001 states assert the rule.
+- **SC-001.** SC-001 names the exception since the plan gate: exactly the sides with content off-screen, except while
+  the FR-001 fallback suppresses one for a focused control. The wide-button case of US1-13 asserts the fallback, and
+  the SC-001 states assert the rule.
+
+**Pointer-focus oracle (PLAN-TESTABILITY-1-005).** "Not moved beyond the browser's own scroll" needs a figure. The
+test places, beside the scroller, a twin plain `overflow-x: auto` box with the same content, inline size, ring room
+padding and starting `scrollLeft`, and no module. Both receive the same real pointer click on the chip partly under
+the end fade. The scroller's `scrollLeft` after the click equals the twin's within 1 px, and the chip's fade side is
+not suppressed. The paired positive in the same test: the same chip, focused by Tab, is moved clear of the fade. The
+plant is "clearance on every `focusin`".
 
 **Contract.** `contracts/overflow-region.md` lists `fadeStart` and `fadeEnd` (off-screen and not suppressed) as outputs
-beside `offStart` and `offEnd`. FR-011's list grows accordingly; this is the reading of FR-011 the plan takes. #13 gets
-clearance for free when its code block holds a focusable element.
+beside `offStart` and `offEnd`. FR-011 lists them since the plan gate. #13 gets clearance for free when its code block
+holds a focusable element.
 
 **Alternatives.**
 - Clearance per host: rejected, because three copies would follow (scroller, board, #13).
 - Clearance on every focus: rejected, because the strip would jump under the pointer.
+- Ending the suppression on user scroll input (`wheel`, `pointerdown`, keys) instead of on `scroll`: it misses a drag
+  of the scrollbar thumb and touch panning that start outside the box; the position check sees every user scroll.
 
 ## R-07 Focus handover when overflow ends (FR-004, US1-4)
 
 **Decision.** When an update turns overflow off while the scroll box is `document.activeElement` through the shadow
 root, the module moves focus:
 
-- to the first focusable assigned element (or descendant of one), found with a `tabbable` walk over the slot's
-  flattened assigned elements: `tabIndex >= 0`, not disabled, not `inert`, with a box;
-- when there is none, to the host. The module first sets `tabindex="-1"` on the host and removes it on the host's
-  `focusout`.
+- **To the first focusable slotted element (PLAN-A11Y-SECURITY-1-002).** The library's own controls keep their
+  focusable part in their shadow root or use `delegatesFocus` (packages/styles/README.md, 003's PLAN-FRESH-2-004 (a)),
+  so a light-DOM walk would find nothing in a row of library chips. The walk goes over the slot's flattened assigned
+  elements in tree order and descends into open shadow roots (and their slots' assigned nodes). A candidate is
+  focusable when it is not disabled, has no `inert` ancestor (checked across shadow boundaries, not only on the node
+  itself), has a box (`getClientRects().length > 0`) and is not `visibility: hidden` (R-18), and either its `tabIndex >= 0` or it is a shadow host with `delegatesFocus`
+  whose shadow root holds such a candidate. It is focused with `focus()`. US1-4 adds two cases: a slotted test element
+  whose button is in its open shadow root, and one that delegates focus; the deep active element is that button. The
+  plant is the light-DOM-only walk.
+- **Otherwise to the element itself, on an inner node (PLAN-A11Y-SECURITY-1-007 (a), operator decision).** The module
+  gives `.region-frame`, the shadow wrapper of the box and its overlays, `tabindex="-1"` and focuses it. It removes the
+  attribute on the frame's `focusout`. `document.activeElement` is then the host, as FR-004 says, and nothing is
+  written to the host: the module has no host effect at all. The frame shows the module's own ring on
+  `:focus-visible`: `outline: var(--ocelle-focus-width) solid var(--ocelle-color-focus)` with
+  `outline-offset: calc(var(--ocelle-focus-width) * -1)`, inset inside the element's box (as base.css does for full-
+  width prose tables), so a clipping ancestor does not cut it, and `outline-color: Highlight` under forced colours.
+  base.css cannot reach it (it does not style shadow nodes), and it does not depend on whether the page links base.css.
+  US1-4 asserts, after a keyboard-driven handover with no focusable content, that the deep active element is the
+  frame, that its outline is the token ring inset inside the host's box, inside an `overflow: hidden` container, and
+  Highlight under forced colours. Plant: the frame's ring rule removed. While it holds focus the frame is an unignored
+  focusable `generic` node; it loses the attribute, and the node, when focus leaves.
 
-This is the module's only effect on the host. It is documented, and it does not touch a `tabindex` the host page set:
-if the host already has a `tabindex` attribute, the module leaves it alone and focuses the host as it is.
+**Alternatives.** Focusing the host with a temporary `tabindex="-1"` (option (b) of PLAN-A11Y-SECURITY-1-007): its ring
+would be base.css's outset ring (page rules beat `:host` rules) or the UA ring without base.css, clipped at container
+edges; not taken by the operator.
 
 ## R-08 Board and lane layout (FR-013 to FR-016, US2-1 to US2-4, US2-14; SPEC-2-04, 2-06)
 
 **Board layout.**
 - **Scroll box.** The board's shadow root is the scroller's structure: a scroll box, a track with the inline ring room,
-  the ring overlay and the edge elements.
+  the ring overlay and the edge elements. The board constructs the module with `role: "region"` (R-01).
 - **Track.** `display: flex; gap: var(--ocelle-space-3); min-inline-size: 100%`, with `box-sizing: border-box`, so a
   fitting board's lanes share the box minus the ring room.
-- **Lanes.** `::slotted(*)` gets `flex: 1 1 var(--ocelle-lane-min-width); min-inline-size: var(--ocelle-lane-min-width)`.
-  Every child has the same basis and minimum, so the shares are equal (FR-013), and no child takes its min-content as
-  its minimum.
+- **Lanes.** `::slotted(*)` gets `flex: 1 1 var(--ocelle-lane-min-width); min-inline-size: var(--ocelle-lane-min-width);
+  contain: inline-size`. Every child has the same basis and minimum, so the shares are equal (FR-013), and no child
+  takes its min-content as its minimum.
+- **Why the containment (PLAN-CORRECTNESS-1-001, measured by the squad).** The track keeps the module's
+  `inline-size: max-content`, so its inline-end ring room always follows the last lane. A row flex container's
+  max-content is the sum of its items' max-content contributions, not their flex bases, and `min-inline-size` only
+  sets a floor. Without containment a lane's contribution is its longest unwrapped card text: in Frame W (876 px)
+  five lanes holding one 66-character sentence each gave a 2200 px track (`scrollWidth` 2200 against 876, lanes
+  428 px), so the board overflowed at 1280 px, the complaint of spec-kitty-design#507. Lanes holding only "WP01" gave
+  876 px, which is why short test cards hide the defect. With `contain: inline-size` each child's intrinsic inline
+  size is its `min-inline-size`, the lane minimum, whatever it holds: sentence text, a 60-character identifier, a
+  400 px image and a nested 400 px scroller all gave `scrollWidth` 876 and five 164 px lanes in Frame W, and the board
+  still overflowed in Frame N (858 > 636, 5 px end room). A `fit-content` or `min-content` track does not do it: a
+  nested scroller's and a capped image's min-content contributions still widen the lanes (1108 px and 1098 px), and
+  an `auto` track loses the inline-end ring room in Frame N.
+- **Test content.** US2-1, US2-3, US2-14 and US2-15 use cards whose text is a sentence wider on one line than a lane's
+  share, as the spec's US2-1 now says. US2-14's plants are "min-content minimum" and "a lane without inline-size
+  containment"; the second makes US2-1 fail in Frame W.
 
 **Check (FR-015).** Five lanes need 5 × 160 + 4 × 12 = 848 px plus 2 × 5 px of ring room, 858 px, which is less than
-Frame W's 876 px. In Frame N (636 px) they overflow.
+Frame W's 876 px. In Frame N (636 px) they overflow. At a 20 px root (R-17) the lanes are 200 px and five need
+5 × 200 + 4 × 15 + 2 × 5 = 1070 px, so the board overflows in Frame W.
 
 **Block direction (SPEC-2-04).**
 - The track stretches its items (`align-items: stretch`), so lanes are as tall as the tallest one, the kanban
   convention.
-- The board takes that block size plus its block ring room and never scrolls in the block direction
+- The board takes that block size plus the block ring room of the module's `.region-box` padding (R-04; the lanes
+  row adds none), plus the scrollbar's thickness where one is drawn, and never scrolls in the block direction
   (`overflow-y: hidden`, with the room keeping rings inside).
 - `ArrowUp` and `ArrowDown` are not handled.
 
@@ -197,7 +365,9 @@ recorded here for the squad.
 (`overflow: visible`). It paints over the gap and into the next lane, and when it reaches past the board's end it adds
 to the board's scrollable overflow, so the board overflows. A plan-level test states both: the overlap is measured
 (the descendant's box crosses the lane's inline end), and with the wide content in the last lane the board becomes a
-tab stop. The README tells hosts to wrap such content in an `ocelle-scroller` (FR-013).
+tab stop. The wide content is added after the first render, as a new card that also grows the last lane's block size,
+so the observers see it within one frame (R-03, FR-014); a width-only change is the operator's reading of FR-002 and
+is not asserted within a frame. The README tells hosts to wrap such content in an `ocelle-scroller` (FR-013).
 
 ## R-09 Lane naming and the count (FR-018, FR-019; SPEC-1-14)
 
@@ -219,12 +389,31 @@ Without a title and without a shown count, the wrapper has no role and no `aria-
 **Name.** `"<title>, <count-label or count>"`, `"<count-label or count>"` without a title, or `"<title>"` without a
 shown count. The title and `count-label` are trimmed.
 
-## R-10 The flat lane's ground (US2-7; SPEC-1-15)
+## R-10 The lanes' grounds (US2-4, US2-7, US2-11; SPEC-1-15, PLAN-CORRECTNESS-1-011)
 
-The board paints no ground: it is layout only. A flat lane therefore sits on the host's ground. The flat lane's colours
-are `--ocelle-color-ink-soft` for title and count, and their text pairs are checked on every main ground (002). The
-README says the board and flat lanes go on a main ground. The flat-lane stories render on `color-canvas`, the
-preview's ground.
+**Flat lane.** The board paints no ground: it is layout only. A flat lane therefore sits on the host's ground. The flat
+lane's colours are `--ocelle-color-ink-soft` for title and count, and their text pairs are checked on every main
+ground (002). The README says the board and flat lanes go on a main ground. The flat-lane stories render on
+`color-canvas`, the preview's ground.
+
+**Default lane (operator decision PLAN-CORRECTNESS-1-011 (b)).** `color-canvas`, `color-panel` and `color-inspector`
+are the same value in both themes (`#F1EEE8` light, `#15130F` dark; packages/tokens/src/source.ts), so a lane on a
+`color-panel` ground would show no ground and no corners on the canvas, in a panel or in an inspector, and the
+default and flat lanes would differ by a few pixels. The default lane's ground is `--ocelle-color-sheet` (`#FBFAF7`
+light, `#211E18` dark), the ground cards use, which differs from canvas, panel and inspector, and from `color-pane`
+(`#FFFFFF`, `#1C1A15`) and `color-rail` (`#E9E5DD`, `#1C1A15`), in both themes. Its title and count colours
+(`color-ink`, `color-ink-muted`) are checked text pairs on `color-sheet`, a main ground, so no contrast pair is added.
+The default-lane stories render on `color-canvas`.
+
+A test asserts, in light and in dark, that the default lane's computed `background-color` differs from the computed
+values of `--ocelle-color-canvas`, `--ocelle-color-panel`, `--ocelle-color-inspector` and `--ocelle-color-pane` (each
+resolved through `driver.resolveColour()`), and a token test pins that `color-sheet` differs from those four records
+in both themes, so a later token change that merges them fails here. Plant: the lane ground set to
+`--ocelle-color-panel`.
+
+A consequence, recorded for #8: a card that uses `color-sheet` as its own ground has no ground of its own inside a
+default lane; it keeps whatever border or shadow #8 gives it. A host that wants grounded cards on a board uses the
+`flat` lane.
 
 ## R-11 list-detail layout (FR-022 to FR-027, US3-1 to US3-5, US3-13, US3-14)
 
@@ -246,10 +435,19 @@ In the one-column tier the panes that are not shown are `display: none` (no box,
 the inspector when it is a column. `border-block-start` on the inspector when it is stacked. Forced colours turn these
 into `CanvasText` by the user-agent's forced colour of `border-color` (tested).
 
-**Empty inspector.** `slotchange` on the `inspector` slot sets an internal `hasInspector` state. Without one, no
-inspector pane is rendered at all (FR-024).
+**Widths include the rule (operator decision PLAN-CORRECTNESS-1-003 (a)).** The inspector's border sits inside its
+fixed 19rem track, and the detail's inside its `1fr` share, so `--ocelle-shell-inspector-width` is the inspector's
+border-box width (304 px, content 303 px) and the three-column max-content is 288 + (480 + 1) + 304 = 1073 px for a
+30rem detail block (measured by the squad in a 1196 px flex row). FR-023 and US3-12 say so.
 
-**Tree.** The panes are plain `div`s with no role (FR-029, US3-14).
+**Empty inspector (PLAN-CORRECTNESS-1-007).** `slotchange` fires only on a slot in the shadow tree, so the `inspector`
+slot is always rendered. `slotchange` on it sets the internal `hasInspector` state. While it is false the slot's pane
+wrapper is `display: none` and outside the grid template: no track, no border and no space (FR-024). Only the track,
+the border and the space depend on `hasInspector`, never the slot. US3-8's test slots an inspector after the first
+render (three columns in Frame R), then removes it (two columns again). Plant: the slot rendered only when an
+inspector is present.
+
+**Tree.** The panes are plain `div`s with no role and, at rest, no `tabindex` (FR-029, US3-14, R-14).
 
 ## R-12 The `*-below` grammar and resolution (FR-025, FR-034; SPEC-3-04)
 
@@ -260,8 +458,9 @@ inspector pane is rendered at all (FR-024).
 |---|---|
 | `0`, `0px`, `0rem`, `56rem`, `55.5rem`, `880px`, `55em`, `56REM` | `+56rem`, `.5rem`, `56.rem`, `5.6e1rem`, `-0`, `-1rem`, units other than the three, `%`, `calc()`, `var()`, unitless numbers other than `0`, `wide`, empty |
 
-US3-10's lists gain `56REM` (accepted, one column in Frame W) and `+56rem`, `.5rem`, `5.6e1rem` (rejected, two columns
-in Frame W). These are examples within FR-025's text, so the spec is unchanged.
+US3-10's lists gain `56REM` (accepted, one column in Frame W) and `+56rem`, `.5rem`, `56.rem`, `5.6e1rem` and `-0`
+(rejected, two columns in Frame W). FR-025 states this grammar exactly since the plan gate (PLAN-CORRECTNESS-1-006 (a)):
+`.5` is a CSS number but not one of FR-025's forms.
 
 **Resolution.** It is re-read at every measurement:
 
@@ -287,49 +486,94 @@ layout's, whatever tier it shows, so a shrink-to-fit host cannot make the tier a
 
 **Decision (to be proven by a spike before phase 4's red step).**
 
-- **Measurement pass.** It runs on `slotchange` and when the track observer sees a content size change. In one task,
-  with no paint between, it renders all panes in the three-column grid, reads the max-content and min-content inline
-  sizes of the three-column grid and of the one-column stack from probe wrappers (`inline-size: max-content` and
-  `min-content`), then restores the tier.
+- **Measurement pass.** In one task, with no paint between, it renders all panes in the three-column grid, reads the
+  max-content and min-content inline sizes of the three-column grid and of the one-column stack from probe wrappers
+  (`inline-size: max-content` and `min-content`), then restores the tier.
+- **When it runs (PLAN-CORRECTNESS-1-008).** list-detail has no track; its triggers are named here and in
+  data-model.md:
+  - `slotchange` on each of the three slots (an assigned element added or removed);
+  - a `ResizeObserver` on the host (the `measured` size) and on each shown pane's wrapper (content of a shown pane
+    changing size);
+  - before applying every tier or `detail-open` change, so a pane that is about to be shown is measured with its
+    current content;
+  - a `MutationObserver` (`childList`, `characterData`, `subtree`) on the assigned elements of the panes that are not
+    shown, which have no box and so fire no resize: a host that replaces the detail's inner content while the list is
+    shown in one column (the select-a-record flow, an htmx swap) is seen. It observes only while a pane is hidden,
+    and only that pane's assigned elements, and it coalesces its records into one pass per frame.
 - **Sizer.** The two figures are applied to an internal, `aria-hidden`, zero-block-size sizer element in the shadow
   grid. Its `inline-size` is the max-content figure, capped by `max-inline-size: 100%`. The grid's `min-inline-size` is
   the min-content figure.
-- **Setting them.** Both are set through the CSSOM (`element.style.setProperty`) on shadow elements. Under the strict
-  CSP, CSSOM writes are allowed: CSP governs markup `style` attributes and `<style>` elements, which the `csp` gate
-  checks in built output, and a CSSOM write creates neither. The values are px figures computed by the element, not
-  author input.
-- **Expected results.** A shrink-to-fit host then sees a max-content of 1074 px and a min-content of the one-column
-  stack's. In a 1196 px flex row the element is 1074 px wide and shows three columns; in a 636 px row it shrinks to
+- **Setting them (PLAN-CORRECTNESS-1-004).** A CSSOM write through `element.style` sets the element's `style`
+  attribute (measured: `d.style.setProperty("inline-size", "10px")` serialises as `<div style="inline-size: 10px;">`),
+  which constitution IV forbids with no exception. The figures therefore go into a per-instance constructed
+  stylesheet adopted on the element's shadow root: `new CSSStyleSheet()` with two empty rules (`.sizer {}` and
+  `.grid {}`), appended to `shadowRoot.adoptedStyleSheets` after Lit's own sheets, and on each measurement the two
+  declarations are set through `CSSStyleRule.style.setProperty` on those rules. This writes no attribute, builds no CSS
+  text from input, and is the mechanism `static styles` uses. The values are px figures computed by the element. A
+  test asserts that no element of list-detail's shadow root carries a `style` attribute, after first render and after
+  a tier change and a measurement.
+- **Expected results (operator decision PLAN-CORRECTNESS-1-003 (a)).** A shrink-to-fit host then sees a max-content of
+  1073 px (288 + 480 + 1 + 304; the inspector's border is inside its 19rem) and a min-content of the one-column
+  stack's. In a 1196 px flex row the element is 1073 px wide and shows three columns; in a 636 px row it shrinks to
   636 px and shows one. A `<dialog>` with `max-inline-size: var(--ocelle-dialog-max-inline)` (1248 px in a 1280 px
   viewport) gives three columns. A table cell in a 636 px table gives one column. These are the figures SPEC-2-09 asks
   for, added to US3-12's test as stated cases.
-- **Spike pass condition.** US3-12's figures hold, the tier is stable over ten frames, and the measurement pass shows
-  no intermediate layout in a screenshot taken right after a `slotchange`.
+- **Stale content case (PLAN-CORRECTNESS-1-008).** In a 1196 px flex row with `narrow` set (one column, the list
+  shown), the host replaces the detail's inner content with a 40rem block that does not wrap, inside the same slotted
+  element (no `slotchange`, no resize). Then `narrow` is removed. Expected: the element is 1196 px wide (max-content
+  288 + 640 + 1 + 304 = 1233 px, shrunk to the row) and shows three columns. Stale figures would give 1073 px.
+- **Frame record (PLAN-TESTABILITY-1-006).** A screenshot samples whatever frame it captures, so it cannot catch one
+  leaked frame. From just before the `slotchange` (or the resize) until settle, a `requestAnimationFrame` loop and a
+  `ResizeObserver` on the grid record, in every frame, the grid's column count and each pane's box. The pass condition
+  is that every recorded frame shows the old or the new tier, never the measurement grid. The same record is an
+  assertion in US3-12's test, with the plant "the measurement pass split across a `requestAnimationFrame`".
+- **Spike pass condition.** US3-12's figures and the stale content case hold, the tier is stable over ten frames,
+  and the frame record never shows the measurement grid.
 - **If the spike fails.** It is a fork for the operator before phase 4 is implemented: relax US3-12 to "does not
-  collapse to 0 px and does not alternate", dropping the exact 1074 px.
+  collapse to 0 px and does not alternate", dropping the exact 1073 px.
 
 **Alternatives.**
 - `contain: inline-size` with `contain-intrinsic-inline-size`: it gives one figure for min-content and max-content, so
   a 636 px host could not shrink it (003's collapse pitfall, the other way round).
 - Keeping hidden panes in layout with `visibility: hidden`: contradicts "no box" (FR-027).
+- `element.style` writes with an operator ruling that IV means markup only: not offered, because IV is not negotiable
+  and the constructed stylesheet complies.
 
 ## R-14 Focus on a pane switch and at upgrade (FR-028, US3-6, US3-7; SPEC-1-11, SPEC-1-12, SPEC-2-11)
 
 **Decision.**
 
-- **Pane wrappers.** Each pane wrapper has `tabindex="-1"` at all times. Script focus only: it is never in the tab
-  order.
+- **Pane wrappers (PLAN-A11Y-SECURITY-1-005).** At rest no pane wrapper has a `tabindex`. A permanent `tabindex="-1"`
+  would make each wrapper an unignored focusable `generic` node (measured by the squad; a plain `div` around a slot is
+  ignored), against US3-14's "as it would without the element", and would make every click on pane text focus the
+  wrapper, which then arms the focus move below for pointer users who never focused anything. As R-07 does for the
+  scroller, the element sets `tabindex="-1"` on the shown pane's wrapper immediately before it calls `focus()` on it,
+  and removes it on the wrapper's `focusout`. Script focus only: it is never in the tab order. Tests: before any
+  switch no wrapper has a `tabindex` and the filtered tree under the host is exactly the slotted content in pane
+  order; after a switch, once focus has left the wrapper, the same holds; a real click on pane text does not make the
+  host `document.activeElement`. Plant: wrappers focusable at all times.
 - **When the element moves focus.** Before applying a tier or `detail-open` change, the element records whether
   `document.activeElement`, through the composed tree, is inside a pane that the change hides. After the update it
-  calls `focus()` on the shown pane's wrapper.
-- **Ring.** The wrapper's ring is the token focus ring on `:focus-visible`. Chromium's heuristic shows it after script
-  focus when the last user input was a key, and not after a pointer input. The tests cover both: a key press then the
-  host sets `detail-open` (ring shown), and a click then the host sets it (no ring). The spec's "when the change came
-  from the keyboard" is read as this heuristic.
-- **Upgrade (SPEC-1-12, SPEC-2-11).** At first render, the element checks whether focus is inside a pane that the
-  first layout hides. If so, focus moves to the shown pane, because "focus never stays on a node that has no box"
-  (US3-7) wins over "upgrading moves no focus". Otherwise upgrade moves nothing. The edge case in the spec is read that
-  way; a test covers both upgrade cases on a server-rendered fixture page.
+  focuses the shown pane's wrapper as above.
+- **Ring (PLAN-A11Y-SECURITY-1-003).** base.css does not reach into the shadow root, so the wrapper's ring is what the
+  element's sheet says: on `:focus-visible`, `outline: var(--ocelle-focus-width) solid var(--ocelle-color-focus)` with
+  `outline-offset: calc(var(--ocelle-focus-width) * -1)`, inset as base.css does for full-width prose tables. In one
+  column the wrapper is as wide as the element, so the default outset ring would be clipped by any clipping ancestor.
+  Under `@media (forced-colors: active)` the outline colour is `Highlight`, as every other ring in the library.
+  Chromium's heuristic shows the ring after script focus when the last user input was a key, and not after a pointer
+  input. The tests cover both: a key press then the host sets `detail-open` (ring shown), and a click then the host
+  sets it (no ring). The keyboard case runs in Frame N inside an `overflow: hidden` container and asserts that the
+  outline box lies inside the container on all four sides, and a forced-colours case asserts `Highlight`. Plant: the
+  default outset ring. The spec's "when the change came from the keyboard" is read as this heuristic.
+- **Upgrade (SPEC-1-12, SPEC-2-11; PLAN-CORRECTNESS-1-006 (a)).** At first render, the element checks whether focus is
+  inside a pane that the first layout hides. If so, focus moves to the shown pane, because focus never stays on a
+  node that has no box (US3-7). Otherwise upgrade moves nothing. FR-028 and the Edge Case say so since the plan gate.
+- **Upgrade tests (PLAN-TESTABILITY-1-007).** The first-render branch is element source, and only the in-process
+  `elements` project is mutated, so its cases run in-process: `test/list-detail-upgrade.test.ts` mounts the
+  server-rendered markup (with `detail-open`, in Frame N's width) with focus placed inside the list pane, and a twin
+  with focus outside the element, then dynamic-imports `src/ocelle-list-detail.ts` so the element upgrades in place
+  (each test file has its own iframe and registry). The server-rendered fixture page of `elements-browser` stays as
+  the built-output check.
 
 ## R-15 Stories, baselines and axe against #10 (FR-032, SC-007) — recheck when #10 lands
 
@@ -350,8 +594,11 @@ layout's, whatever tier it shows, so a shrink-to-fit host cannot make the tier a
 **Decision.**
 
 - **Stories.** In `storybook/stories/<element>.stories.ts`, as 005's are:
-  - frames sized by `[data-story="…"]` rules in `storybook/.storybook/stories-layout.css`, with no `style` attribute
-    and no class (the `csp` gate's Storybook check);
+  - frames sized by the tests' `[data-frame]` rules (one source, R-17) through `storybook/.storybook/stories-layout.css`,
+    other story layout by `[data-story="…"]` rules there, with no `style` attribute and no class (the `csp` gate's
+    Storybook check);
+  - the board and lane stories' nested scroller labelled per item ("Tags of WP-12", R-01), and the default-lane
+    stories on `color-canvas` (R-10);
   - each story inside 1280 × 800 at scroll (0, 0).
 - **Story list.** FR-032's list, plus the states SPEC-1-16 named that change pixels:
   - board right to left;
@@ -417,20 +664,71 @@ container-tier convention (R-12). A task at the start of implementation checks `
 
 **Harnesses.** As 005 (its R-11): shared scenario bodies in `packages/elements/test/scenarios/`, run in-process (the
 `elements` project, mutated by the elements-only Stryker configuration) and on strict-CSP fixture pages from the built
-browser build (`elements-browser`). The fixture pages add the frames as fixture-page CSS files (served same-origin, no
-inline style).
+browser build (`elements-browser`). Every US1 to US3 keyboard and focus scenario runs in-process as well as on the
+fixture pages, so the module's `keydown`, `focusin`, `focusout`, clearance and handover code, and list-detail's pane
+focus code, are mutated against them (PLAN-TESTABILITY-1-001).
+
+**Driver (PLAN-TESTABILITY-1-001, 1-002).** 005's `Driver` (`test/scenarios/driver.ts`) has no method for most of
+this feature's behaviour, and its in-process `settle()` (`test/in-process.ts`) waits for `updateComplete` and one
+`requestAnimationFrame`, which resolves before that frame's `ResizeObserver` delivery. A driver task, test first, opens
+phase 2 (as 005's T013 did for its interface). It adds, in both harnesses (`test/in-process.ts` and
+`test/browser/driver.ts`):
+
+- `press(key)`: real keyboard input by key name and chord (`Tab`, `Shift+Tab`, `ArrowLeft`, `ArrowRight`, `Home`,
+  `End`, `Alt+ArrowLeft`, `Ctrl+ArrowRight`, `Meta+ArrowRight`, `Shift+ArrowRight`), through `vitest/browser`'s
+  `userEvent` in-process (the Playwright provider sends real input) and Playwright's `page.keyboard` on the fixture
+  pages, never dispatched synthetic events, because `:focus-visible` follows real input only;
+- `click(target, point)`: a real pointer click at a point of an element's box;
+- `wheel(target, deltaX)`: a real wheel event over a box;
+- `activeElement()`: the deep active element, as the host's `id` plus a shadow selector;
+- `tabWalk(from, to)`: the sequence of deep focused nodes from a sentinel before the element to one after it;
+- `scrollLeft(target)` and `setScrollLeft(target, value)`;
+- `lastKeyPrevented()`: whether the last keydown was default-prevented, read by a capture listener on the window;
+- `reducedMotion(on)`, beside `forcedColors()`;
+- `viewport(width, height)`: in-process through `vitest/browser`'s `page.viewport`, on the fixture pages through
+  `page.setViewportSize`; the in-process default is Vitest's 414 × 896, so every frame scenario sets its frame's
+  viewport (1280 for Frames W and R, 720 for N, 320 for S) before mounting;
+- `frameRecord(target, read)`: a per-frame record (a `requestAnimationFrame` loop and a `ResizeObserver`) of a reading
+  until settle (R-13);
+- `settle()`: `updateComplete` after two animation frames, the contract's rule.
+
+The driver task's own tests prove each method against a plain fixture (a key that moves focus, a viewport that
+changes `innerWidth`). US3-10's `vw` case asserts the viewport width it relies on (1280 px), so a run at the wrong
+viewport fails instead of passing.
+
+**Frames (PLAN-TESTABILITY-1-008).** The frames are test oracles with margins as small as 18 px, so they are one
+source and they are tested. `packages/elements/test/fixtures/frames.css` holds Frames W, R, N and S as
+`[data-frame="W"]` (and so on) rules in px. The in-process driver reads it as text (`?raw`) and adopts it through
+`driver.rules()`; the fixture pages link it same-origin; the stories use the same `data-frame` attribute (an
+attribute, not a class or a `style`), and `storybook/.storybook/stories-layout.css` takes those rules from that file by
+import, or, where #10's Storybook configuration cannot import it, holds a copy that a `storybook-integration` test
+compares with the source. The frames are not exempt: a phase 1 test, red before the frame CSS exists, asserts in both
+harnesses each frame's measured inline size (876, 1196, 636 and 288 px) at its viewport.
+
+**Root font size (PLAN-TESTABILITY-1-010).** Every px figure above assumes a 16 px root, so a hard-coded `× 16` would
+pass. Each element has one case at a 20 px root font size (set by a test stylesheet through `driver.rules()`, not a
+`style` attribute), with fixed expected figures written in the test:
+
+- scroller: US1-13's clearance leaves the focused link's ring box 40 px from a fading edge, also with
+  `--ocelle-scroller-fade-size: calc(1rem + 4px)` set on the element (24 px);
+- board: lanes at 200 px minimum, so five lanes in Frame W overflow (5 × 200 + 4 × 15 + 2 × 5 = 1070 px > 876 px);
+- list-detail: the 40rem default is 800 px, so in a 720 px frame (1280 px viewport) it shows one column, and two at a
+  16 px root.
 
 **Overflow-region proof.** A test-only element `ocelle-test-overflow-host` (`test/fixtures/overflow-host.ts`) built on
-the module, with a scroll box of its own markup, runs US1-1, US1-3, US1-4 and US1-12 (US1-16, SC-008). It ships in no
-package, as 005's test host does.
+the module, with a scroll box of its own markup and the default `group` role, runs US1-1, US1-3, US1-4 and US1-12
+(US1-16, SC-008). It ships in no package, as 005's test host does. The board's tests cover the `region` role.
 
 **Mutation.** The module and the four elements are element source, mutated in-process. 007's stricter gate applies:
 Timeout and CompileError mutants are reported by location, and 30-line entries. The module's clearance arithmetic and
 the grammar of R-12 are pure functions with their own unit tests, so their mutants are killed without a browser
-layout.
+layout. The `ocelle/token-only` change (R-05) is gate source, mutated under `stryker.config.json`.
 
-**Plants.** Each "does not" row of the spec's table names its planted defect. The plan's phases name the test that
-carries each one.
+**Plants (PLAN-TESTABILITY-1-009).** Each "does not" row of the spec's table names its planted defect, and the plan's
+phases name the test that carries each one, with the plants this plan adds. As in 005 (`specs/005-icons-brand-mark/
+tasks.md`), every pairing plant is run once by the implementer against its test, the output is recorded in the
+phase's `reviews/phase-N/plants.md`, and a plant that does not make its test fail stops the phase (stop and ask). The
+pairing plants are not gate plants, so `gate:plants` does not run them; the record is their proof.
 
 ## R-18 Engine floor (README § Engines)
 
@@ -439,12 +737,16 @@ The new features used are:
 | Feature | Chromium | WebKit |
 |---|---|---|
 | `mask-image` unprefixed | 120 | 15.4 |
+| `mask-clip`, `mask-origin` and `mask-composite` unprefixed (R-05) | 120 | 15.4 |
+| `contain: inline-size` (R-08) | 105 | 15.4 |
 | `:focus-visible` | 86 | 15.4 |
 | `ResizeObserver` | 64 | 13.1 |
 | `:dir()` | already on the list | already on the list |
 
 All are within the current floor (Chromium 120+, WebKit 16.4+), so the floor does not move. The README's list gains
-`mask-image` with its figures.
+the mask properties and `contain: inline-size` with their figures. `Element.checkVisibility()` (WebKit 17.4) would
+raise the floor, so R-07's walk tests for a box with `getClientRects().length > 0` and a computed `visibility` other
+than `hidden` instead.
 
 ## R-19 Spec-check notes settled here
 

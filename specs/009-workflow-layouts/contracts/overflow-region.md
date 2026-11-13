@@ -1,6 +1,6 @@
 # Contract: the overflow-region module (internal)
 
-The internal module that gives any element a scroll box that is a tab stop and a named region only while it
+The internal module that gives any element a scroll box that is a tab stop and a named group (or region) only while it
 overflows, with edge state, arrow keys, focus clearance and focus handover (spec FR-001 to FR-011, FR-014; research.md
 R-02 to R-07). This feature's `ocelle-scroller` and `ocelle-workflow-board` use it. #13's `ocelle-code-block` is its
 next user.
@@ -25,7 +25,7 @@ import { OverflowRegion, overflowRegionStyles } from "./overflow-region.ts";
 
 class OcelleCodeBlock extends LitElement {
   static override styles = [css`…the element's own rules…`, overflowRegionStyles];
-  readonly #region = new OverflowRegion(this, { box: () => this.renderRoot.querySelector(".region-box") });
+  readonly #region = new OverflowRegion(this, { box: () => this.renderRoot.querySelector<HTMLElement>(".region-box") });
 
   protected override render(): unknown {
     return html`<div class="region-frame">
@@ -56,11 +56,15 @@ model inside `region-track` (the board puts its lanes row there; the code block 
 | box | `box: () => HTMLElement \| null`, an option of the constructor | the scroll box, an element in the host's shadow root, read after each render |
 | label | `setLabel(label: string \| undefined)` | the host's `label`, raw. The module trims it; empty or whitespace-only counts as none |
 | host `aria-label` | read by the module from the host attribute; the host lists `aria-label` in its `observedAttributes` and calls `requestUpdate()` on change | non-blank decides naming alone; blank counts as absent (R-01) |
+| role | `role?: "group" \| "region"`, constructor option, default `"group"` | the role the box takes while overflowing and named. The scroller and #13 use the default; the board passes `"region"` (R-01, operator decision PLAN-A11Y-SECURITY-1-006 (b)) |
 | step | `step?: number`, constructor option, default `40` | px per arrow key (R-02) |
 
 The ring room and the fade depth are not inputs. The stylesheet reads them from the tokens `--ocelle-focus-offset`,
-`--ocelle-focus-width` and `--ocelle-scroller-fade-size`, and the clearance arithmetic reads their computed px values
-from the box at the time of focus.
+`--ocelle-focus-width` and `--ocelle-scroller-fade-size`. The clearance arithmetic never parses custom-property text
+(an unregistered custom property computes to its token text, `2rem`, not px). It measures laid-out boxes at the time
+of focus: the fade depth is the inline size of a `.region-edge` element (`inline-size:
+var(--ocelle-scroller-fade-size)`), and the ring room is the track's computed `padding-inline-start`, a used px value
+(R-06, PLAN-CORRECTNESS-1-009).
 
 ## Outputs (read by the host's render; a change calls `host.requestUpdate()`)
 
@@ -68,25 +72,33 @@ from the box at the time of focus.
 |---|---|---|
 | `overflowing` | `boolean` | `scrollWidth − clientWidth > 1` (spec User Scenarios, "Overflow") |
 | `offStart`, `offEnd` | `boolean` | content off-screen more than 1 px at the inline start or end, in the box's direction |
-| `fadeStart`, `fadeEnd` | `boolean` | `offStart` or `offEnd` and not suppressed by the focus fallback (R-06); the fades and the forced-colours lines both follow these |
+| `fadeStart`, `fadeEnd` | `boolean` | `offStart` or `offEnd` and not suppressed by the focus fallback (R-06); the fades and the forced-colours lines both follow these (FR-011 lists them since the plan gate) |
 | `fadeAttribute` | `"" \| "start" \| "end" \| "both"` | the same state for the `data-fade` attribute the stylesheet selects on |
 | `name` | `string \| undefined` | the name in force: the host's non-blank `aria-label`, trimmed, else the trimmed non-blank label, else `undefined` |
 
-## Effects (on the scroll box only, except the one host effect named)
+## Effects (on the scroll box and the module's own shadow nodes only; nothing on the host)
 
-- **Overflowing:** the box has `tabindex="0"`. With a `name`, it also has `role="region"` and `aria-label` set to the
-  name. Without one it has no role and no `aria-label` (FR-010).
+- **Overflowing:** the box has `tabindex="0"`. With a `name`, it also has `role` set to the `role` option (`group` by
+  default, `region` for the board) and `aria-label` set to the name. Without one it has no role and no `aria-label`
+  (FR-010).
 - **Not overflowing:** the box has no `tabindex`, no `role` and no `aria-label` (FR-002).
-- **Arrow keys:** `ArrowLeft` and `ArrowRight` with the box as composed target are handled as R-02 says. Any other key,
-  or any key from a descendant, is not touched.
-- **Focus clearance:** on `focusin` of a descendant matching `:focus-visible`, the box scrolls by the smallest amount
-  that keeps the ring box clear of every edge that will still fade. The fallback suppresses a fade (R-06).
-- **Focus handover:** when overflow ends while the box has focus, focus moves to the first tabbable slotted element,
-  else to the host with a temporary `tabindex="-1"`. This is the only host effect; it is removed on the host's
-  `focusout`, and skipped when the page set a `tabindex` on the host (R-07).
+- **Arrow keys:** `ArrowLeft` and `ArrowRight` with the box as composed target, and with `altKey`, `ctrlKey`, `metaKey`,
+  `shiftKey` and `isComposing` all false, are handled as R-02 says. A modified arrow, any other key, or any key from a
+  descendant, is not touched: no `preventDefault`, no scroll (PLAN-A11Y-SECURITY-1-004).
+- **Focus clearance:** on `focusin` of a descendant matching `:focus-visible` (keyboard focus, script focus after
+  keyboard use, and any focus of a text-entry control), the box scrolls by the smallest amount that keeps the ring box
+  clear of every edge that will still fade. Focus on the module's own nodes is not cleared. The fallback suppresses a
+  fade; the module records the `scrollLeft` it wrote (read back after the write, so clamping is included), and the
+  suppression ends on `focusout` from the focused element or on a `scroll` whose `scrollLeft` differs from the recorded
+  value by more than 1 px. No flag is set around the write: its `scroll` event arrives in a later frame (R-06).
+- **Focus handover:** when overflow ends while the box has focus, focus moves to the first focusable slotted element,
+  found by a walk over the flattened assigned elements that descends into open shadow roots and counts
+  `delegatesFocus` hosts, skipping disabled, `inert`-ancestored and boxless candidates (R-07). When there is none,
+  `.region-frame` gets `tabindex="-1"`, is focused, and loses the attribute on its `focusout`; `document.activeElement`
+  is then the host (FR-004, operator decision PLAN-A11Y-SECURITY-1-007 (a)).
 - **Scroll writes:** every write is an instant `scrollLeft` assignment, never smooth (FR-009).
 
-The module emits no event and writes nothing else to the host.
+The module emits no event and writes nothing to the host.
 
 ## Lifecycle
 
@@ -104,22 +116,29 @@ The module emits no event and writes nothing else to the host.
 | slot content | `slotchange` |
 | edges | `scroll` |
 
-Every trigger recomputes the outputs and calls `requestUpdate()` only when an output changed. Tests wait for
-`host.updateComplete` after two animation frames.
+Every trigger recomputes the outputs and calls `requestUpdate()` only when an output changed. The state is written in
+the `ResizeObserver` callback itself, never deferred to a later frame; US1-3's test asserts it in a later-registered
+observer's callback in the same delivery (R-03). Every other test waits for `host.updateComplete` after two animation
+frames (the driver's `settle()`).
+
+For a host whose track's inline size does not follow its content (the board, whose lanes are contained), a change
+that changes only a descendant's inline size inside a slotted child changes neither the box nor the track. It is
+picked up at the next size, slot or scroll event (FR-014, operator decision PLAN-FRESH-1-006 (b)).
 
 ## Stylesheet `overflowRegionStyles`
 
 | Element | Rules |
 |---|---|
-| `.region-frame` | `position: relative` |
-| `.region-box` | `overflow-x: auto; overflow-y: hidden`; block padding of the ring room; no outline (the ring is the overlay) |
+| `.region-frame` | `position: relative`. While it holds the handover focus, on `:focus-visible`: `outline: var(--ocelle-focus-width) solid var(--ocelle-color-focus); outline-offset: calc(var(--ocelle-focus-width) * -1)` (inset), `outline-color: Highlight` in forced colours (R-07) |
+| `.region-box` | `overflow-x: auto; overflow-y: hidden`; block padding of the ring room, for every host (the board adds none of its own); no outline (the ring is the overlay); the platform's scrollbar is kept |
 | `.region-track` | `inline-size: max-content; min-inline-size: 100%; box-sizing: border-box`; inline padding of the ring room |
-| `.region-box[data-fade]` | the `mask-image` gradients per value, mirrored under `:host(:dir(rtl))`, inside `@media not (forced-colors: active)` |
+| `.region-box[data-fade]` | inside `@media not (forced-colors: active)`: `mask-image` with three layers, top to bottom the fade `linear-gradient` per value (mirrored under `:host(:dir(rtl))`), an opaque `linear-gradient(var(--ocelle-color-ink), var(--ocelle-color-ink))` and the same again; `mask-clip` and `mask-origin` `padding-box, border-box, padding-box`; `mask-composite: add, exclude`; `mask-repeat: no-repeat`. The fade covers the padding box only, and the scrollbar, outside it, stays opaque (R-05, operator decision PLAN-FRESH-1-003 (a)). Gradients pass `ocelle/token-only` after the gate change of contracts/gates.md |
 | `.region-ring` | absolutely positioned over the box, inset by the ring width, with no pointer events. Shown by `.region-box:focus-visible ~ .region-ring` with the token focus ring; `Highlight` in forced colours |
-| `.region-edge` | shown only in forced colours, as a 1 px `CanvasText` line on the side whose `fadeStart` or `fadeEnd` is set |
+| `.region-edge` | always laid out: absolutely positioned at the box's inline start (`.start`) or end (`.end`), `inline-size: var(--ocelle-scroller-fade-size)`, `box-sizing: border-box`, no pointer events, nothing painted outside forced colours; the module's fade-depth measure. In forced colours, on the side whose `fadeStart` or `fadeEnd` is set, `var(--ocelle-border-width) solid CanvasText` on its outer inline side |
 
-A host that needs a different track layout (the board's flex row) adds rules to `.region-track` in its own styles; it
-does not change the module's.
+A host that needs a different track layout (the board's flex row and its lanes' `contain: inline-size`, research.md
+R-08) adds rules to `.region-track` and its slotted children in its own styles; it does not change the module's, and it
+adds no block ring room of its own.
 
 ## Pure functions (unit-tested without layout)
 

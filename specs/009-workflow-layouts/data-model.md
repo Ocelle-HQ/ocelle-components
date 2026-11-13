@@ -10,13 +10,19 @@ change it. Sources are spec FR-001 to FR-029 and research.md.
 | `overflowing` | boolean | `scrollWidth − clientWidth > 1`; the inline ring room is part of `scrollWidth` |
 | `offStart` | boolean | `abs(scrollLeft) > 1` |
 | `offEnd` | boolean | `scrollWidth − clientWidth − abs(scrollLeft) > 1` |
-| `suppressed` | set of `start`, `end` | set by the focus fallback; cleared on `focusout` of the focused element or on a scroll the module did not make |
+| `suppressed` | set of `start`, `end` | set by the focus fallback (R-06); cleared on `focusout` of the focused element, or on a `scroll` whose `scrollLeft` differs from `written` by more than 1 px |
+| `written` | px or none | the `scrollLeft` the module last wrote, read back after the write (so clamping is included); none when nothing is suppressed |
 | `fadeStart` / `fadeEnd` | boolean | `offStart` / `offEnd` and the side not in `suppressed` |
 | `name` | string or none | the trimmed non-blank host `aria-label`, else the trimmed non-blank `label`, else none |
+| `role` | `group` or `region` | the constructor option: `group` by default (scroller, #13), `region` for the board |
 
 **Transitions.**
-- not overflowing → overflowing: the box gains its tab stop, plus the role and name when it has a name.
-- overflowing → not overflowing: the box loses all three. If the box had focus, focus is handed over (R-07).
+- not overflowing → overflowing: the box gains its tab stop, plus the role (`role`) and name when it has a name.
+- overflowing → not overflowing: the box loses all three. If the box had focus, focus is handed over (R-07): to the
+  first focusable slotted element in the flat tree, else to `.region-frame` with a temporary `tabindex="-1"`.
+- The state is written in the `ResizeObserver` callback, `slotchange` or `scroll` handler that observed the change,
+  never in a later frame (R-03). For the board, a width-only change inside a lane waits for the next such event
+  (FR-014).
 
 ## Lane
 
@@ -37,14 +43,19 @@ The lane has the group role exactly when `groupName` is set.
 | `measured` | px | the host's border-box inline size from its `ResizeObserver` |
 | `collapseAt` | px | `collapse-below` parsed (R-12), else the token parsed, else 40rem; resolved at each measurement |
 | `inspectorAt` | px | as above with `inspector-below`, the inspector token and 60rem |
-| `hasInspector` | boolean | the `inspector` slot has an assigned element |
+| `hasInspector` | boolean | the `inspector` slot has an assigned element; the slot is always rendered, so `slotchange` sees an inspector added after first render (R-11) |
 | `tier` | `three`, `two` or `one` | `one` if `narrow` or `measured < collapseAt`; else `two` if `measured < inspectorAt`, or if `hasInspector` is false (two columns without an inspector); else `three` |
 | `shown` | set of panes | `three` or `two`: list, detail, and the inspector if present. `one`: the detail and the inspector if `detail-open`, else the list |
-| `intrinsic` | { min, max } px | from the measurement pass (R-13): the one-column stack's min-content and the three-column grid's max-content |
+| `intrinsic` | { min, max } px | from the measurement pass (R-13): the one-column stack's min-content and the three-column grid's max-content; written to the instance's adopted constructed stylesheet, never to a `style` attribute |
+
+**Re-measure triggers (R-13).** The measurement pass runs on `slotchange` of any of the three slots; on a
+`ResizeObserver` notification for the host or a shown pane's wrapper; before applying every `tier` or `detail-open`
+change; and on a `MutationObserver` record (`childList`, `characterData`, `subtree`) from the assigned elements of a
+pane that is not shown, coalesced to one pass per frame.
 
 **Focus rule (R-14).** If a change of `tier` or `detail-open` hides the pane that holds `document.activeElement`,
-focus moves to the wrapper of the first shown pane after the update. At first render the same rule applies, and
-nothing else moves focus.
+the shown pane's wrapper gets `tabindex="-1"` and focus after the update, and loses the attribute on its `focusout`.
+At rest no wrapper has a `tabindex`. At first render the same rule applies, and nothing else moves focus.
 
 ## Tokens added
 
