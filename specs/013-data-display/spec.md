@@ -38,7 +38,8 @@ the source record. The plan's research has since read #531 and #535 from their v
 #523 are still unread.
 The plan's research MUST read those six issues (fetched read-only, as for triage) and record anything in them that
 changes or adds to a requirement here, in particular #531 for FR-008, #510 for FR-022 and US2, #535 for FR-007 and
-#498 for US3.
+#498 for US3. The read access for #280, #498, #510 and #523 was denied, and the operator decided at the plan gate to
+proceed without them (below); anything in them read later that changes a requirement goes to the operator.
 Spec Kitty's `sk-*` names are kitty-mission-ui roles, not names in this library.
 
 **Consumers** (constitution VI): kitty-mission-ui (Kitty Desktop and Kitty Dashboard) replaces its `.sk-facts` (34
@@ -110,6 +111,18 @@ uses them in server-rendered pages under a strict CSP.
   sweep belongs to a continuous loading episode, which ends when no indeterminate bar is connected at a frame boundary;
   a later episode gets its own sweep (FR-033, US3-15).
 
+**Operator decisions at the plan gate** (2026-11-13, human:jeroennouwsdev; `reviews/plan/operator-gate.md`):
+
+- FR-004 (SPEC-1-04 "D"), "Confirm FR-004": FR-004 stands as written and tasks are generated against it. Phase 1's
+  spike rechecks it under Lit 3.3.3 and axe-core 4.14.0, with the empty term, and stops for the operator if it fails
+  (PLAN-CORRECTNESS-1-014 (b)).
+- #10 merged on `main` (3828d2f), "Merge main, then update": `main` is merged into this branch, and the stories' light
+  and dark baselines and their `axe`, `visual` and `storybook-build` gate runs are part of each phase (FR-051,
+  SC-003).
+- Upstream inputs, "Proceed, inputs later": the kitty-mission-ui variant inventory (FR-058) stays pending and is
+  needed before the red commit of each element's phase; any gap goes to the operator. spec-kitty-design #280, #498,
+  #510 and #523 remain unread.
+
 ## Scope
 
 **In scope:** four new custom elements in `@ocelle/elements` (`ocelle-facts` with its child `ocelle-fact`,
@@ -123,10 +136,9 @@ on: the compact region's value scale (FR-008) and the pre-upgrade rule (FR-012).
 - the other five elements of #13;
 - copying text to the clipboard (constitution I; #14 and the host);
 - the eyebrow tokens (added by 011 or 012);
-- the visual baselines and the `axe` and `visual` gates themselves. Those are #10's. This mission writes the stories
-  #10's gates read and holds to #10's contributor note (`specs/006-storybook-workbench` FR-025). If #10 is on `main`
-  before this mission's last phase, that phase commits the baselines. If not, #10's own rebase picks the stories up.
-  See FR-051.
+- the `storybook-build`, `visual` and `axe` gates themselves and the pinned container. Those are #10's, merged on
+  `main`. This mission writes the stories #10's gates read, commits their baselines, and holds to #10's contributor
+  note (`specs/006-storybook-workbench` FR-025, `storybook/README.md`). See FR-051.
 - `ocelle-status-indicator` and its "never pulses an empty box" rule (#498 in #7). It is #7's (mission 012).
   `ocelle-progress` is the bar only. Which of the two a consumer uses for "busy" is recorded in this README (FR-033):
   the indeterminate bar for loading a region with no known end, the status indicator for a state.
@@ -391,7 +403,8 @@ the exceptions FR-050 and FR-054 name.
   association. Operator decision (SPEC-1-04, "D"): the plan's research measures whether this structure can be had
   cleanly with `ocelle-fact` children (Q1 b) and the consumer's content unchanged (FR-003), and reports the result to
   the operator before tasks are generated. The operator then confirms this requirement or replaces it; tasks are not
-  generated against FR-004 until then.
+  generated against FR-004 until then. Confirmed as written by the operator at the plan gate ("Confirm FR-004",
+  2026-11-13).
 - **FR-005**: Unless `layout` is set (FR-013), the element MUST lay its pairs out as a two-column grid (labels in the
   first, values in the second) while its own inline size, as laid out in two columns (not the viewport's, and never
   its stacked size), is at least a threshold, and as one column (each value directly below its label) below it. In a
@@ -532,15 +545,16 @@ the exceptions FR-050 and FR-054 name.
   rendered in light and dark. The stories are named in the plan and follow #10's contributor note
   (`specs/006-storybook-workbench` FR-025): open shadow roots, every surface inside the host, a declared hover or
   press state where one exists. Exceptions: `ocelle-fact` has no stories file of its own; its states (with and
-  without a label or value, identifier wrap) are stories in `ocelle-facts.stories.ts`, and its behaviour outside
+  without a label or value, identifier wrap) are stories in `facts.stories.ts`, and its behaviour outside
   `ocelle-facts` is proven by browser tests. The unnamed progress state (US3 scenario 11) has no story, because axe's
   `aria-progressbar-name` rule fails it by design; it is proven by a browser test only, and the plan records this
   exclusion.
-- **FR-051**: Visual baselines and the `axe` run follow #10. If #10 is on `main` when this mission's last phase runs,
-  that phase commits the baselines produced in #10's pinned container and the stories pass #10's `axe` gate with no
-  serious or critical finding. If #10 is not on `main` by then, the accessibility assertions of FR-004, FR-030 and
-  US1–US3 are proven by this mission's own browser tests (accessibility tree in Chromium), and the baselines are left
-  to #10's rebase. The plan records which applies, and it MUST be rechecked when #10 lands.
+- **FR-051**: Visual baselines and the `axe` run follow #10, merged on `main` (3828d2f). Each phase that adds stories
+  MUST commit their light and dark baselines, produced in #10's pinned container (`storybook/visual/container.json`)
+  by its baseline command, and its stories MUST pass #10's `storybook-build`, `visual` and `axe` gates, the `axe` gate
+  with no serious or critical finding and no `storybook/a11y-exceptions.json` entry unless the operator approves one.
+  The accessibility assertions axe cannot make (the progress name through ElementInternals, FR-030) are proven by this
+  mission's own browser tests (accessibility tree in Chromium).
 - **FR-052**: Browser tests MUST cover every acceptance scenario, run on the element source (in process) and on the
   built browser build on strict-CSP fixture pages, as the README's § Files and tests describes.
 - **FR-053**: Facts MUST have a reflow test at 320 px CSS width (US1 scenario 2 and 3).
@@ -572,10 +586,10 @@ the exceptions FR-050 and FR-054 name.
   kitty-mission-ui uses (183 class uses in all), an element and variant that replaces it with no `class` attribute on
   the element. Checked in review; the replacement in kitty-mission-ui itself is an outcome not gated here.
 - **SC-002**: At 320 px CSS width, every facts story's page scroll width equals the viewport width.
-- **SC-003**: Every story of the four elements reports no serious or critical axe finding by #10's `axe` gate once
-  #10 is on `main` (the unnamed progress state has no story, FR-050). Until then, this mission's own browser tests
-  prove the accessibility-tree assertions of FR-004 and FR-030 and of US1 to US3; they are not an axe run, and axe
-  runs on these stories when #10 lands.
+- **SC-003**: Every story of the four elements reports no serious or critical axe finding by #10's `axe` gate, in
+  light and dark, in the phase that adds it (the unnamed progress state has no story, FR-050). This mission's own
+  browser tests also prove the accessibility-tree assertions of FR-004 and FR-030 and of US1 to US3, which axe does
+  not fully check.
 - **SC-004**: Every foreground and non-text pair the four elements introduce passes the contrast check in light and
   dark.
 - **SC-005**: Under reduced motion, no story of the four elements has a running animation or transition.
@@ -592,6 +606,6 @@ the exceptions FR-050 and FR-054 name.
   numbers.
 - 011's eyebrow tokens are not needed here. Facts labels are not eyebrows.
 - #15 is not needed by any of the four elements: none has a scroll region.
-- #10's design (`specs/006-storybook-workbench`) is final but not merged. Stories are written to it now, and this spec's
-  evidence requirements are rechecked when it lands.
+- #10 (`specs/006-storybook-workbench`) is merged on `main` (3828d2f) and into this branch; the stories are written
+  to its merged contributor note and gates.
 - Kitty Desktop's WebKit is not measured, the same as the library's existing Engines note. Only Chromium is.

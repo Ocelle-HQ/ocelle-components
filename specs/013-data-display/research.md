@@ -3,11 +3,14 @@
 Every decision of the plan, with its reason and the alternatives. Measurements were taken in this container in
 headless Chromium 153.0.8010.12 with axe-core 4.10.2. The scripts, raw outputs and summary are in [spike/](spike/)
 (`spike/RESULTS.md`), and each can be rerun with `node <script>` once axe-core is packed into `spike/pkg/` as
-`RESULTS.md` says. #10's `axe` gate pins axe-core 4.14.0. The spike's axe results are re-run against that version in
-phase 1's spike (R-01) before the red commit; a failing recheck stops the flow for the operator (R-01).
+`RESULTS.md` says. #10's `axe` gate, merged on `main` (3828d2f), pins axe-core 4.14.0 (root `package.json`). The
+spike's axe results are re-run against that version in phase 1's spike (R-01) before the red commit; a failing
+recheck stops the flow for the operator (R-01).
 
 Squad rounds 1 to 3 (2026-11-13) changed this file: the operator's fork decisions are cited by finding ID with the
-option taken, for example "PLAN-CORRECTNESS-1-003 (a)", "PLAN-FRESH-2-001 (c)" or "PLAN-FRESH-3-001 (c)".
+option taken, for example "PLAN-CORRECTNESS-1-003 (a)", "PLAN-FRESH-2-001 (c)" or "PLAN-FRESH-3-001 (c)". The
+operator's plan-gate decisions (2026-11-13, `reviews/plan/operator-gate.md`) changed R-01 (FR-004 confirmed), R-08
+and R-09 (#10 merged) and R-11 (the inventory to follow).
 
 ## R-01 `ocelle-facts`: description list through manual slot assignment (FR-003, FR-004, FR-005)
 
@@ -89,8 +92,8 @@ root, outside the fact, so the sheet carries the fact's host attributes that con
   user-agent `display: none` before upgrade as after. The styles test includes a hidden fact (no box, `display:
   none`), and the plant "`:not([hidden])` removed" must fail it.
 
-**Operator decision pending (spec SPEC-1-04 "D").** The measurement shows FR-004 can be met as written with Q1 (b).
-The operator confirms or replaces FR-004 at the plan gate, before tasks.
+**Operator decision (spec SPEC-1-04 "D"): confirmed.** The measurement shows FR-004 can be met as written with Q1
+(b). The operator confirmed FR-004 as written at the plan gate ("Confirm FR-004", 2026-11-13).
 
 **Recheck in phase 1's spike, and what a failure does (PLAN-CORRECTNESS-1-014 (b)).** The spike runs axe-core 4.14.0
 (#10's pin) on the A5 structure built with Lit 3.3.3: `createRenderRoot` passes `slotAssignment: "manual"`, the
@@ -314,8 +317,9 @@ after the first layout.
   - **#535** asks for an identifier wrap policy, with the local stand-in "`overflow-wrap: anywhere` … on the Facts
     `dd`". FR-007's `wrap="anywhere"` on the pair applies the same keyword to that pair's value only (below).
   - **#280, #498, #510 and #523** are not in the repository and were not read: that repository is outside this
-    session's GitHub scope. The plan asks the orchestrator to fetch them read-only before the plan gate (plan
-    Decision 5); #510 bears on FR-022 and US2, #498 on US3.
+    session's GitHub scope, and the orchestrator's request for read access was denied. At the plan gate the operator
+    chose "Proceed, inputs later" (plan Decision 5): the plan proceeds without them, and anything in them read later
+    that changes a requirement goes to the operator; #510 bears on FR-022 and US2, #498 on US3.
   - The kitty-mission-ui variant inventory the README mapping needs is R-11.
 - **Wrap policy (FR-007, SPEC-2-10, PLAN-CORRECTNESS-1-015).** `ocelle-fact` has a `wrap` property, reflected and
   taking only `"anywhere"`. With it, the fact's shadow rule `:host([wrap="anywhere"]) slot { overflow-wrap: anywhere; }`
@@ -442,7 +446,7 @@ children are presentational.
 - **README.** It recommends `label` as the way to name a bar, says a host `aria-label` also names it (Host ARIA) but
   makes axe report `aria-prohibited-attr` in a consumer's own audit, a false positive of axe with ElementInternals,
   and says that axe does not check the bar's name, so a consumer's tests should.
-- When #10 lands, its `axe` gate runs on the progress stories and passes, but without testing the name.
+- #10's `axe` gate (on `main`) runs on the progress stories and passes, but without testing the name.
 
 **`value-text` (FR-031, SPEC-2-01, SPEC-2-02).** It is exposed only while the bar is determinate. An indeterminate
 bar exposes no value text, even when `value-text` is set, because there is no value to describe. When the value is
@@ -691,12 +695,24 @@ Both are additions to documented base-style behaviour (MINOR, constitution VII).
   - **progress**: determinate, zero, full, indeterminate, compact, labelled, labelled compact, value text,
     right-to-left, on a tinted ground (`ground="tinted"` on `color-inset`). The indeterminate story is captured with
     reduced motion by #10's `visual` and `axe` contexts, which gives a still, deterministic baseline.
-  - No story has a hover or press state, so none declares one (#10 FR-031).
+  - No story has a hover or press state, so none declares one (#10 FR-031: a state is declared with
+    `parameters: { ocelle: { pointer: { hover | press: "<selector>" } } }`); each variant and state is its own
+    story, and the theme global gives light and dark, so no story is written twice.
+  - Each file's meta title is `Elements/<tag>` (`Elements/ocelle-facts`, `Elements/ocelle-empty-state`,
+    `Elements/ocelle-progress`), as `icon.stories.ts` does, so the story ids, and the baseline names
+    `storybook/baselines/<story-id>.<theme>.png`, are `elements-ocelle-facts--<story>` and so on.
+  - Wrapper widths (the 300 px, shrink-to-fit, wide and 320 px wrappers, the `color-inset` ground) are set by
+    `data-story` rules in `storybook/.storybook/stories-layout.css`, as the base-style stories' layout is, with no
+    `style` attribute.
+  - Story text is Latin script, which Schibsted Grotesk draws: #10's `font` rule fails any text drawn in another
+    face, so the right-to-left stories set `dir="rtl"` on Latin content, as `icon.stories.ts`'s set does, and
+    `lang` with a non-Latin script is left to the browser tests.
   - There is no story for the unnamed progress (FR-050) or for a host `aria-label` on progress (R-05).
 - **Story test (I3).** `storybook/test/integration/elements-stories.test.ts` is extended in each phase's red commit,
   before green. It checks each new story is present in the built Storybook and renders its element in light and dark,
-  with no CSP violation and no outside request, as 005 did, and three story-level criteria (PLAN-TESTABILITY-1-010,
-  PLAN-A11Y-SECURITY-1-005): every facts story at a 320 px viewport has a page scroll width equal to the viewport
+  with no outside request, as the merged test does for 005's stories (since #10 the Storybook is served with no CSP
+  and no violation is counted; run-time CSP is proven on the element package's strict-CSP fixture pages, 006
+  FR-020, FR-023), and three story-level criteria (PLAN-TESTABILITY-1-010, PLAN-A11Y-SECURITY-1-005): every facts story at a 320 px viewport has a page scroll width equal to the viewport
   width (SC-002); every story under reduced motion has no running animation or transition (SC-005); every progressbar
   node in every story has a non-empty name. Each is paired with a positive read (the story's element rendered with a
   non-zero size; a running animation on the indeterminate story without reduced motion). The sweep lasts 4.2 s from
@@ -705,18 +721,49 @@ Both are additions to documented base-style behaviour (MINOR, constitution VII).
   reduced-motion read, which has no animation to time, is timed by the clock (`performance.now()` from the story's
   first render) and asserts in the same read that `prefers-reduced-motion: reduce` matches, so a missing emulation
   fails loudly instead of passing as "no running animation" (PLAN-FRESH-3-005, contracts/checks.md § Story test). `red.sh` records one red record per phase. The stories themselves are not tests and land in green.
-- **#10 (FR-051).** #10 is designed, not merged (`origin/claude/010-storybook-workbench`,
-  `specs/006-storybook-workbench`). The stories follow its contributor note (FR-025): open shadow roots, every surface
-  inside the host, `font: inherit` on form controls (none here), and run-time CSP proven in the element package's own
-  browser tests.
-  - **#10 on `main` before phase 4:** phase 4 merges `main` through `/ocelle-land`'s procedure, never mid-run, and
-    commits the baselines from #10's pinned container (`contracts/container.md` there). The `axe` gate then passes on
-    every new story.
-  - **#10 not on `main`:** the accessibility-tree tests stand in, as SC-003 says, and #10's rebase picks the stories
-    up.
-  - **To recheck when #10 lands:** the story list against #10's index rules (`empty`, `outside-root`,
-    `closed-shadow-root`), the axe-core 4.14.0 result on facts (R-01), and that no `a11y-exceptions.json` entry is
-    needed.
+- **#10 (FR-051, SC-003).** #10 is merged on `main` (3828d2f, `specs/006-storybook-workbench`), and `main` is merged
+  into this branch (plan gate, 2026-11-13). Read from the merged files: `storybook/README.md` (the contributor note,
+  006 FR-025), `specs/006-storybook-workbench/contracts/gates.md` and `contracts/container.md`,
+  `storybook/a11y-exceptions.json`, `storybook/visual/container.json` and `storybook/baselines/`.
+  - **Per phase.** Each phase that adds stories commits their light and dark baselines in its green commit with the
+    stories, produced by `pnpm run visual:update` in the pinned linux/amd64 container (`mcr.microsoft.com/playwright`
+    by digest, Node 26.13.0, `chromium_headless_shell-1248`; docker or podman). The command prints `baselines: wrote
+    <n> files (<added> added, <changed> changed, <removed> removed), <bytes> bytes in total`; here `<changed>` and
+    `<removed>` must be 0, since no existing story moves: `base.css`'s two new rules (R-07) only set the facts hooks
+    on the density regions, which no existing story reads, and style `ocelle-fact` children of an undefined
+    `ocelle-facts`, which no existing story renders. CI's "Visual regression" captures are the record: when they
+    differ from the local ones, the files of the job's `visual` artifact are committed (`storybook/README.md`
+    § Baselines). The phase then passes `gate:storybook-build` (`built <n> stories`),
+    `gate:visual` and `gate:axe` (`axe: <runs> story-theme runs, 0 serious or critical; …`), and `gate:plants`, whose
+    `pass-repository` plants of the three gates run on the repository's stories and baselines.
+  - **The capture and axe contexts.** Both gates open each story in light and dark at 1280 × 800, scale 1, with
+    `reducedMotion: "reduce"` (`contextOptions(theme)`), so the indeterminate progress and the panel-loading story are
+    captured and audited on the still mark, and a full-page screenshot at scroll (0, 0). axe audits the whole
+    document minus Storybook's harness, inside open shadow roots, and fails on serious or critical violations and on
+    serious or critical incomplete results (`<rule>-incomplete`).
+  - **The story list against #10's index rules.** Checked on every story of R-08's list:
+    - `empty` (no box with non-zero width and height and no text in the story root): every story renders text or a
+      box; the zero and indeterminate progress stories render the track, and the missing-label and missing-value
+      facts stories keep their other pairs;
+    - `outside-root`: no element renders outside its host, and no story appends to `<body>`;
+    - `closed-shadow-root`: every element attaches an open shadow root;
+    - `pointer-target`: no story declares a pointer state;
+    - `render-failed` and `render-timeout`: every story's render returns markup, and the elements define themselves
+      from their source modules, imported by relative path as `icon.stories.ts` does;
+    - `font`: Latin text only, in Schibsted Grotesk (values use `font-sans` with `figures`; no monospace);
+    - `network`, `io` and `nondeterministic`: the elements do no I/O, and with reduced motion no animation runs, so two
+      captures are byte-identical.
+  - **Exceptions.** No `storybook/a11y-exceptions.json` entry is needed or added: the existing entries are 006's
+    `base-styles--prose-document` nodes only; facts is clean under `definition-list` and `dlitem` (R-01, rechecked
+    with axe-core 4.14.0 in phase 1's spike); no story sets a host `aria-label` on progress, so axe's false
+    `aria-prohibited-attr` does not arise (R-05); and the unnamed progress has no story (FR-050). A serious or critical
+    finding on a story is fixed in the story or the element; an entry would need a row in this plan's Complexity
+    Tracking with the operator's approval (006 FR-029), and goes to the operator.
+  - **Contributor note.** The stories follow it: one story per variant and state, open shadow roots, every surface
+    inside the host, `font: inherit` on form controls in a shadow root (none here: the empty-state stories' action
+    buttons are slotted light-DOM content, whose font `base.css`'s `:where(button, input, select, textarea)` rule
+    sets, so their labels pass the `font` rule), and run-time CSP proven in the element package's own browser tests,
+    not in the Storybook.
 - **Mutation (#23, PLAN-TESTABILITY-1-008).** Element source under `packages/elements/src/**` is mutated in process
   under the elements-only Stryker configuration (005 R-12). A Timeout or CompileError mutant on a changed line is
   reported and passes (007's operator decisions). Stryker does not mutate a declaration inside a `css` template (005
@@ -735,7 +782,7 @@ Both are additions to documented base-style behaviour (MINOR, constitution VII).
 
 - **#15 (`ocelle-scroller`, overflow region):** not needed. None of the four elements has a scroll region. Follow-on
   2's `ocelle-code-block` needs it. No part of this mission waits for #15.
-- **#10:** a soft dependency, for baselines and axe only (R-08).
+- **#10:** merged on `main` (3828d2f) and into this branch; its gates and baselines apply to every phase (R-08).
 - **011 / 012 eyebrow tokens:** not needed (facts labels are not eyebrows).
 - **012 (#7):** the busy vocabulary sentence in the README only.
 - **014 (#14):** none. Facts values are not copy fields.
@@ -780,9 +827,11 @@ modifiers or states) and 003's copy of the spec-kitty-design issues; a repositor
 nothing else.
 
 **Input the operator supplies.** kitty-mission-ui is outside this session's GitHub scope, so the orchestrator cannot
-fetch it (plan Decision 5). The operator supplies, before the plan gate, an inventory of the three class families'
-modifiers and states as kitty-mission-ui uses them, with a count for each, naming roles only and copying no code
-(constitution VI). It is recorded here, in the table below, before the plan gate.
+fetch it (plan Decision 5). The operator supplies an inventory of the three class families' modifiers and states as
+kitty-mission-ui uses them, with a count for each, naming roles only and copying no code (constitution VI). At the
+plan gate (2026-11-13) the operator chose "Proceed, inputs later": tasks are generated now and the inventory stays
+pending. Each family's rows are recorded here, in the table below, before the red commit of its element's phase,
+since that phase's README-mapping task needs them; the phase does not take its red commit without them.
 
 | Family | Modifier or state (role name) | Uses | Element and variant | Phase |
 |---|---|---|---|---|
@@ -790,8 +839,8 @@ modifiers and states as kitty-mission-ui uses them, with a count for each, namin
 | `.sk-empty-state` | pending the operator's inventory | | | 2 |
 | `.sk-progress` | pending the operator's inventory | | | 3 |
 
-**Gaps.** A variant that no element, property or slot of this plan covers goes to the operator before the plan gate
-(or, if found later, before the red commit of its element's phase); the surface is not widened by review.
+**Gaps.** A variant that no element, property or slot of this plan covers goes to the operator before the red commit
+of its element's phase; the surface is not widened by review.
 
 **Where the mapping is written.** Each element's mapping rows (FR-058) are written in that element's phase, red
 first: the readme-test statements for the rows in the phase's red commit, the rows in its green commit (facts in

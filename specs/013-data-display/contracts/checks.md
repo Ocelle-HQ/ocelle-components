@@ -283,8 +283,9 @@ first phase that uses it:
 ## Story test (I3)
 
 `storybook/test/integration/elements-stories.test.ts` gains each phase's stories (research R-08) in that phase's red
-commit. Each new story must be present in the built index, render its element in light and dark, and have no CSP
-violation and no outside request. It also checks, on every story of the four elements (PLAN-TESTABILITY-1-010,
+commit. Each new story must be present in the built index, render its element in light and dark, and make no outside
+request. Since #10 the Storybook is served with no CSP and the test counts no violation (006 FR-020); run-time strict
+CSP is proven on the element package's fixture pages (FR-055). It also checks, on every story of the four elements (PLAN-TESTABILITY-1-010,
 PLAN-A11Y-SECURITY-1-005):
 - every facts story at a 320 px viewport: page scroll width equals the viewport width (SC-002), paired with the
   sheet's rendered inline size above 0;
@@ -324,8 +325,11 @@ PLAN-A11Y-SECURITY-1-005):
 | `manifest` | Four new declarations, regenerated and committed. |
 | `style-lint` (`token-only`) | New `css` templates and `base.css` rules. One recorded allowance (R-10): `fit-content(<percentage>)` and `minmax(0, <flex>)` in `grid-template-columns` (phase 1), `translateX(<percentage>)` in `transform` and a bare integer `animation-iteration-count` (phase 3), with unit tests in red, and the allowance, its plants and its `gates/README.md` row in green. |
 | `prefix` | New source, stories and build output: no `sk-`, no monospace. |
-| `csp` | Storybook checks on the new stories. Run-time CSP on the fixture pages. |
+| `csp` | The built output of `@ocelle/elements` (since 006 FR-020 no Storybook file is in its scope). Run-time CSP on the fixture pages. |
 | `contrast` | Unchanged: no row added (PLAN-CORRECTNESS-1-007 (b)). |
 | `mutation` | New element source, in process; Timeout and CompileError are reported and pass (#23). CSS-only behaviours are covered by plants (above). |
 | `test-lint` | New tests. |
-| `visual`, `axe`, `storybook-build` | #10's, not on `main`: see research R-08. |
+| `storybook-build` | #10's (on `main`, 3828d2f). Builds the new stories; `built <n> stories` grows by each phase's stories. |
+| `visual` | #10's. Every new story in light and dark against its baseline in `storybook/baselines/`, committed in the phase's green commit from `pnpm run visual:update` in the pinned container; no existing baseline changes (research R-08). |
+| `axe` | #10's, axe-core 4.14.0. Every new story in light and dark with no serious or critical violation or incomplete result, and no `storybook/a11y-exceptions.json` entry added (research R-08). The progress name is not checked by axe (R-05). |
+| `plants` | The `pass-repository` plants of `storybook-build`, `visual` and `axe` run on the repository's stories and baselines, the new ones included. |
