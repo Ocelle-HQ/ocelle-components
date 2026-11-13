@@ -78,6 +78,14 @@ not names of this library.
   middle click) emits nothing, as with `href`. Only plain activations emit; the host routes only those (FR-046,
   User Story 5 scenario 13).
 
+**Operator decision at spec check 3** (2026-11-13, human:jeroennouwsdev; `reviews/spec/check-3.md`):
+
+- At the spec gate: "approve after a final fix". This is the final spec fix; no further spec check follows, and the
+  plan squad reads this spec next. The fix applies the check's suggested resolution of SPEC-3-01: the remembered host
+  value (FR-010a) takes precedence in every selection a parent makes without user action, a parent with no children
+  counts as "no child is enabled" (FR-011a), and User Story 2 scenario 20 and User Story 3 scenario 17 append all
+  children at once. Notes SPEC-3-02 to SPEC-3-04 are left for the plan.
+
 **Dependency on #10 (not merged).** The Storybook workbench of #10 (branch `claude/010-storybook-workbench`,
 `specs/006-storybook-workbench`) gives the `visual` gate (baselines in a pinned container, light and dark), the `axe`
 gate (axe on every story, serious and critical findings fail) and its contributor note (006 FR-025). Its design is
@@ -309,7 +317,8 @@ walked with every key of its model, and read in the accessibility tree after eac
     it (`Tasks`) is selected, its panel is shown, it is the tab stop and has focus, `tabs.value` reads
     `"tasks"`, and no event is emitted; the same holds when `Plan` gains `disabled` instead of being removed (FR-011a).
     **Given** every tab then disabled, **Then** no tab is selected, no panel is shown, `tabs.value` reads `""` and the
-    tablist has no tab stop; enabling a tab again selects the first enabled tab, with no event. Focus and selection
+    tablist has no tab stop; enabling a tab again selects the first enabled tab (unless a remembered value names an
+    enabled tab, FR-010a and scenario 20), with no event. Focus and selection
     land on the same tab: the focus target of FR-011 and the selection target of FR-011a are the same child.
 19. **Given** tabs `Spec`, `Plan` (first render, `Spec` selected), **When** a host sets `tabs.value = "tasks"` (no
     tab has that value yet), **Then** `Spec` stays selected and its panel shown, `tabs.value` reads `"spec"`, and no
@@ -317,6 +326,12 @@ walked with every key of its model, and read in the accessibility tree after eac
     `Tasks` is selected, its panel is shown, it is the tab stop, `tabs.value` reads `"tasks"`, and no event is
     emitted (FR-010a). **Given** instead, after the set, the user selects `Plan` (one event `{ "value": "plan" }`)
     or the host sets another value, **When** `Tasks` is appended, **Then** the selection does not move to it.
+20. **Given** an empty `ocelle-tabs` (no tabs, so no tab is enabled, FR-011a), **When** a host sets
+    `tabs.value = "tasks"` and then appends the tabs `Spec`, `Plan`, `Tasks` (`value="tasks"`) and their panels in
+    one operation, **Then** `Tasks` is selected, its panel is shown, it is the tab stop, `tabs.value` reads `"tasks"`,
+    and no event is emitted (the remembered value takes precedence over the first enabled tab, FR-010a
+    "Precedence"). **Given** instead the same three tabs all disabled and `tabs.value = "tasks"` set, **When** the host
+    removes `disabled` from `Spec` and `Tasks` in one operation, **Then** `Tasks` is selected with no event.
 
 ---
 
@@ -396,6 +411,10 @@ clicked, and the joined variant is measured at widths where it fits on one row a
     `"blocked"`, and no event is emitted (FR-010a). **Given** instead, after the set, the user presses `Mine` (one
     event `{ "value": "mine" }`) or the host sets another value, **When** `Blocked` is appended, **Then** it is not
     pressed.
+17. **Given** an empty `ocelle-segmented-choice` (no segments, so no segment is enabled, FR-011a), **When** a host
+    sets `value = "blocked"` and then appends the segments `All`, `Mine`, `Blocked` (`value="blocked"`) in one
+    operation, **Then** `Blocked` is pressed and is the tab stop, `value` reads `"blocked"`, and no event is emitted
+    (the remembered value takes precedence over the first enabled segment, FR-010a "Precedence").
 
 ---
 
@@ -530,7 +549,9 @@ whose navigation is then observed (a defect that navigates for every `href` fail
   a user selection of the second exposes the second (the clicked or keyed child) as selected or pressed and reports
   the same value. The README tells hosts to keep values unique.
 - A listbox, tablist or segmented choice whose every child is disabled has no tab stop; Tab passes over it. A tablist
-  or segmented choice then has nothing selected or pressed and `value` `""` (FR-011a); tabs show no panel.
+  or segmented choice then has nothing selected or pressed and `value` `""` (FR-011a); tabs show no panel. A tablist
+  or segmented choice with no children at all is in the same state; when children are appended to it, a remembered
+  host value picks among them before the first enabled child does (FR-010a, "Precedence").
 - A listbox with no options: it is exposed as an empty named listbox and has no tab stop.
 - Setting `value` to the current value is a no-op (no event, no re-render flicker).
 - A child's text changes after render: its accessible name follows.
@@ -585,7 +606,7 @@ whose navigation is then observed (a defect that navigates for every `href` fail
   Setting it to a value some enabled child has selects the first such child in document order. Setting it to `""` or
   to a value no enabled child has: on the listbox, clears the selection (`value` reads `""`); on tabs and the
   segmented choice, keeps the current selection (`value` reads the selected child's value; on first render with no
-  selection yet, the first enabled child is selected, FR-021 and FR-027). A host set never emits an event. Setting
+  selection yet, the first enabled child is selected, FR-021 and FR-027, subject to FR-010a's precedence). A host set never emits an event. Setting
   the current value (the value `value` reads at that moment) is always a no-op on the selection, and this clause
   wins over the previous ones: even when it names a selected child that is disabled (User Story 1 scenario 18), that
   child stays selected.
@@ -599,12 +620,21 @@ whose navigation is then observed (a defect that navigates for every `href` fail
   on the next host set of any value, `""` and the current value included; that host set is then applied by itself
   under FR-010 and may be remembered in turn (User Story 1 scenario 19, User Story 2 scenario 19, User Story 3
   scenario 16). Selection moves under FR-011a do not forget it.
+  **Precedence.** Every time tabs or the segmented choice select or press a child without user action (on first
+  render under FR-021 and FR-027, after the selected or pressed child is removed or disabled under FR-011a, and when
+  a child becomes enabled while none was under FR-011a), a remembered value takes precedence: the parent picks the
+  first enabled child in document order that has the remembered value, if one is present, and forgets the value;
+  otherwise it picks the rule's own target. Children added or enabled in one operation (the same task) are taken
+  together, so the outcome does not depend on the order in which they arrive: when a host sets `value = "tasks"` on
+  an empty parent and then appends `Spec`, `Plan` and `Tasks` at once, or enables `Spec` and `Tasks` at once while
+  every child was disabled, `Tasks` is selected or pressed (User Story 2 scenario 20, User Story 3 scenario 17).
 - **FR-011**: Children added, removed or reordered after render are picked up without host action: the tree and the
   keyboard order follow the new children, and when the focused child is removed, focus moves to the next enabled
   child after it in document order, else the nearest enabled child before it; with none, focus leaves the parent as
   the browser does for a removed element (User Story 1 scenario 14, for all three parents). For tabs and the
   segmented choice, when the removed child was both focused and selected or pressed, this focus target and FR-011a's
-  selection target are the same child, so focus and selection land together (User Story 2 scenario 18, User Story 3
+  selection target are the same child, so focus and selection land together; when FR-010a's precedence makes the
+  selection target a child with the remembered value instead, focus goes to that child with the selection (User Story 2 scenario 18, User Story 3
   scenario 15). The listbox's selection outcome when its selected option is removed is User Story 1 scenario 14's
   (`value` becomes `""`); a selected option that becomes disabled stays selected (User Story 1 scenario 18).
 - **FR-011a**: Tabs and the segmented choice keep exactly one child selected or pressed whenever at least one is
@@ -612,8 +642,11 @@ whose navigation is then observed (a defect that navigates for every `href` fail
   document order is selected or pressed, else the nearest enabled child before it; it becomes the tab stop, takes
   focus if the previous child had focus, and for tabs its panel is shown; `value` reads its value; no event is
   emitted. When no child is enabled, none is selected or pressed, `value` reads `""`, tabs show no panel and there is
-  no tab stop; when a child becomes enabled again, the first enabled child is selected or pressed, with no event
-  (User Story 2 scenarios 17 and 18, User Story 3 scenario 15).
+  no tab stop; a parent with no children at all counts as "no child is enabled". When a child becomes enabled again
+  (it loses `disabled`, or it is added, including the first children appended to an empty parent), the first enabled
+  child is selected or pressed, with no event. In each of these picks a remembered value takes precedence over the
+  target named here (FR-010a, "Precedence") (User Story 2 scenarios 17, 18 and 20, User Story 3 scenarios 15 and
+  17).
 
 **Listbox (User Story 1)**
 
@@ -642,7 +675,8 @@ whose navigation is then observed (a defect that navigates for every `href` fail
   enabled tab, and Enter or Space on a focused unselected tab, select it. Each change of selection by the user emits
   one `ocelle-tabs-change` with `{ value }`; no event when the selection does not change (a click, Home, End, Enter or
   Space on the selected tab). Exactly one tab is selected whenever at least one is enabled (FR-011a): on first render
-  with no `value`, or a `value` no enabled tab has, the first enabled tab.
+  with no `value`, or a `value` no enabled tab has, the first enabled tab, unless FR-010a's remembered value names an
+  enabled tab ("Precedence").
 - **FR-021a**: The tabs handle ArrowRight, ArrowLeft, Home, End, Enter and Space, and no other key: ArrowUp,
   ArrowDown, Escape and printable keys are not handled ("Handled and unhandled keys"); Tab follows FR-023.
 - **FR-022**: The tab row wraps onto further rows when wider than its container; it never scrolls sideways.
@@ -656,7 +690,8 @@ whose navigation is then observed (a defect that navigates for every `href` fail
 - **FR-026**: `ocelle-segmented-choice` is exposed as a group (named by FR-006) of toggle buttons; each `ocelle-segment`
   as a toggle button with `pressed` true or false. It exposes no tab, tablist, option or `selected` state.
 - **FR-027**: Exactly one enabled segment is pressed whenever at least one is enabled (FR-011a): on first render with
-  no `value`, or a `value` no enabled segment has, the first enabled segment. A user cannot un-press the pressed
+  no `value`, or a `value` no enabled segment has, the first enabled segment, unless FR-010a's remembered value names
+  an enabled segment ("Precedence"). A user cannot un-press the pressed
   segment.
 - **FR-028**: Arrow keys (Right and Down forward, Left and Up back; Left and Right swapped under right-to-left) move
   focus among enabled segments with wrapping, without pressing; Home and End to the first and last. Enter, Space and a

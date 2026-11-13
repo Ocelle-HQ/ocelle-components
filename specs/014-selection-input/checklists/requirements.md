@@ -50,3 +50,9 @@
   child exists is remembered until a matching enabled child appears or the next user selection or host set (FR-010a,
   operator Q1 (b)); and a modified activation of `ocelle-link` emits nothing with or without `href` (FR-046, operator
   Q2 (b)). Each has a scenario.
+- Re-checked after spec check 3's fix (final, operator: "approve after a final fix"): a remembered host value takes
+  precedence in every selection tabs and the segmented choice make without user action (first render, FR-011a's
+  fallbacks, a child becoming enabled while none was), children added or enabled in one operation are taken together,
+  and a parent with no children counts as "no child is enabled" (FR-010a "Precedence", FR-011, FR-011a, FR-021,
+  FR-027). User Story 2 scenario 20 and User Story 3 scenario 17 append all children at once. Notes SPEC-3-02 to
+  SPEC-3-04 are left for the plan.
