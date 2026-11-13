@@ -541,28 +541,56 @@ layout's, whatever tier it shows, so a shrink-to-fit host cannot make the tier a
 - **Measurement pass.** In one task, with no paint between, it renders all panes in the three-column grid, reads the
   max-content and min-content inline sizes of the three-column grid and of the one-column stack from probe wrappers
   (`inline-size: max-content` and `min-content`), then restores the tier.
-- **When it runs (PLAN-CORRECTNESS-1-008; PLAN-FRESH-2-002 (a), operator decision).** list-detail has no track; its
-  triggers are named here and in data-model.md:
+- **When it runs (PLAN-CORRECTNESS-1-008; PLAN-FRESH-2-002 (a), PLAN-FRESH-3-001 (a), PLAN-FRESH-3-003 (b), operator
+  decisions; PLAN-FRESH-3-002).** list-detail has no track; its triggers are named here and in data-model.md:
   - `slotchange` on each of the three slots (an assigned element added or removed);
-  - a `MutationObserver` (`childList`, `characterData`, `attributes`, `subtree`) on the assigned elements of all three
-    panes, shown or hidden. A hidden pane has no box and so fires no resize, and a shown pane's wrapper is sized by its
-    grid track, not its content, so a width-only change of its content fires no resize either: a host that replaces
-    the detail's inner content (the select-a-record flow, an htmx swap), in any tier, is seen. Its records are
-    delivered as a microtask after the task that made them, before the rendering step, and the observer runs one pass
-    per delivery (a delivery batches every record of that task), so the figures are set before that frame's layout and
-    before any `ResizeObserver` delivery;
+  - a `MutationObserver` (`childList`, `characterData`, `subtree`; no `attributes`) on the assigned elements of all
+    three panes, shown or hidden. A hidden pane has no box and so fires no resize, and a shown pane's wrapper is sized
+    by its grid track, not its content, so a width-only change of its content fires no resize either: a host that
+    replaces the detail's inner content in light DOM (the select-a-record flow, an htmx swap), in any tier, is seen;
+  - the public `remeasure(): void` method, which the host calls after a change the observer cannot see (below);
   - before applying a tier or `detail-open` change that comes from a property or attribute (`narrow`, `detail-open`,
     `collapse-below`, `inspector-below`), so a pane that is about to be shown is measured with its current content.
-    The pass writes a figure only when it differs from the one in force.
+    This pass runs synchronously, in the property's update.
+
+  **Scheduling (PLAN-FRESH-3-002).** The `MutationObserver` callback, `slotchange` and `remeasure()` never run the
+  pass. Each sets a pending flag and, if no frame is requested yet, requests one animation frame; that frame callback
+  clears the flag and runs the pass, with no paint between its render, reads and restore. So the pass runs at most
+  once per frame, however many deliveries, slot changes or calls came before it. A mutation made in a task is
+  measured in the next frame's animation-frame callbacks, before that frame's layout and `ResizeObserver` delivery. A
+  mutation made inside a `ResizeObserver` or animation-frame callback is measured one frame later. The pass writes a
+  figure only when it differs from the one in force.
 
   The host's `ResizeObserver` gives `measured` only, and a tier change it causes is applied without a pass: it never
-  writes the figures. So nothing writes the sizer from inside a `ResizeObserver` delivery. Measured in squad round 2,
-  a pane `ResizeObserver` whose callback set the sizer grew a shrink-to-fit host inside the delivery, and the window
-  received "ResizeObserver loop completed with undelivered notifications." with the host's new size a frame late; and
-  a width-only widening of a shown pane's content fired no pane observation at all. Both are gone with this design.
-  **Recorded cost.** A size change with no DOM mutation in a pane, such as an image or a font loading, is not seen;
-  it is picked up at the next slot change, mutation or property-driven tier change. FR-025 states this reading since
-  the plan gate, and the README says it in the container-tier convention.
+  writes the figures. So the element never writes the sizer from inside a `ResizeObserver` delivery, whoever made the
+  mutation. Measured in squad round 2, a pane `ResizeObserver` whose callback set the sizer grew a shrink-to-fit host
+  inside the delivery, and the window received "ResizeObserver loop completed with undelivered notifications." with
+  the host's new size a frame late; and a width-only widening of a shown pane's content fired no pane observation at
+  all. Measured in squad round 3, a pass run in the `MutationObserver` callback brought the same error back when the
+  mutation was made inside a slotted element's own `ResizeObserver` callback: the callback's microtask checkpoint
+  delivers the records inside the `ResizeObserver` delivery (one column with the detail shown, the sizer above the
+  shown content: host 1192 px and the error; with the pass in an animation frame, 1192 px and no error). The frame
+  scheduling removes that case. It cannot remove one the element does not cause: in three columns, content a
+  consumer mutates inside its own `ResizeObserver` callback grows a shrink-to-fit host through CSS within the
+  delivery, and the browser reports the loop message with no pass at all (measured in round 3). The README says so.
+  A host that sets `narrow`, `detail-open` or a threshold inside its own `ResizeObserver` callback runs the
+  synchronous pass there; the README tells hosts to set them from a task.
+  **Per-pass cost (PLAN-FRESH-3-003).** Measured in squad round 3 on a three-column grid with 1000 text rows in the
+  list, a stand-in pass (max-content read, one-column min-content read, restore) took a median of 9.9 ms, 7.0 ms at
+  least and 19.3 ms at most on the refuter's machine, and more is expected on slower devices. With `attributes` not
+  observed, a selection or hover that toggles a row's `class` or `aria-selected`, htmx's request classes and a
+  reflected attribute on a slotted element run no pass. A light-DOM node or text change (an htmx swap, a ticking
+  `<time>` text) runs at most one pass per frame, whatever the host. The README's convention states this cost and the
+  trigger set.
+  **Recorded cost (operator decisions, rounds 2 and 3).** These size changes are not seen: a change with no light-DOM
+  node or text change in a pane, such as an image or a font loading; content a slotted element renders inside its own
+  shadow root (an ocelle element or a consumer's web component re-rendering from a property; a `MutationObserver`'s
+  `subtree` follows tree children, and a shadow root is not one); and a change of an attribute only (a class or a
+  style swap on pane content). They are picked up at the next slot change, light-DOM mutation, property-driven tier
+  change or `remeasure()` call, and the host calls `remeasure()` after one. Where CSS already carries the change (a
+  shown pane in three columns, whose content counts in the grid's own intrinsic size), it shows without a pass; where
+  it does not (a hidden pane, or the max-content figure while one column shows), the figures stay stale until then.
+  FR-025 states this reading since the plan gate, and the README says it in the container-tier convention.
 - **Sizer.** The two figures are applied to an internal, `aria-hidden`, zero-block-size sizer element in the shadow
   grid. Its `inline-size` is the max-content figure, capped by `max-inline-size: 100%`. The grid's `min-inline-size` is
   the min-content figure.
@@ -606,14 +634,37 @@ layout's, whatever tier it shows, so a shrink-to-fit host cannot make the tier a
   and `driver.messages()` is empty (no "ResizeObserver loop" error event). The plant is the shown-pane
   `ResizeObserver` of round 1 as the trigger: the same-height case then stays at 1073 px, and the taller case reports
   the window error.
+- **Unseen changes and `remeasure()` (PLAN-FRESH-3-001 (a), PLAN-FRESH-3-003 (b)).** In a 1196 px flex row with
+  `narrow` set (one column, the list shown, 1073 px), the detail is an element with an open shadow root (a test
+  fixture element) that renders the 30rem block. The host sets a property on it that renders a 40rem block that does
+  not wrap in its shadow root instead. In a second case, the detail holds the 30rem block in light DOM and the host
+  swaps a class on it that a fixture rule makes 40rem wide. Expected in both: the element is 1073 px wide on each of
+  ten frames after the change (the recorded cost); then the host calls `remeasure()`, and in the first frame record
+  after the call the element is 1196 px wide (1233 px shrunk to the row), still one column. Plants: `remeasure()` as a
+  no-op (both cases stay at 1073 px); `attributes` observed (the class case reaches 1196 px before the call).
+- **Mutation inside a `ResizeObserver` callback (PLAN-FRESH-3-002).** In a 1196 px flex row with `narrow` set and the
+  list shown, the detail's slotted element holds the 30rem block and, from its own `ResizeObserver`, appends a 35rem
+  block that does not wrap once it is observed with a non-zero inline size. The host sets `detail-open`. This is the
+  setting where the pass is the only writer: one column, the detail shown, the sizer above the shown content.
+  Expected: after settle the element is 1153 px wide and shows the detail in one column, and `driver.messages()` is
+  empty. Plant: the pass run in the `MutationObserver` callback (the window reports the loop error).
+- **Once per frame (PLAN-FRESH-3-002, PLAN-FRESH-3-003).** A `MutationObserver` already delivers once per task, so a
+  test of many changes in one task would pass against the old design. The counted case spans tasks: three
+  `setTimeout(0)` tasks before one frame each change the list's text, and the next frame runs one pass; a change in
+  the frame after runs one more. The count is read from a test-only pass counter in the element's internal
+  scheduling module (`src/list-detail-measure.ts`), which is not exported from the package and not in the manifest,
+  so this case runs in-process only. Plant: one pass per `MutationObserver` delivery (three passes).
 - **Frame record (PLAN-TESTABILITY-1-006).** A screenshot samples whatever frame it captures, so it cannot catch one
   leaked frame. From just before the `slotchange` (or the resize) until settle, a `requestAnimationFrame` loop and a
   `ResizeObserver` on the grid record, in every frame, the grid's column count and each pane's box. The pass condition
   is that every recorded frame shows the old or the new tier, never the measurement grid. The same record is an
-  assertion in US3-12's test, with the plant "the measurement pass split across a `requestAnimationFrame`".
-- **Spike pass condition.** US3-12's figures, the stale content case and both content-change cases hold with
-  `driver.messages()` empty, the tier is stable over ten frames, and the frame record never shows the measurement
-  grid.
+  assertion in US3-12's test, with the plant "the measurement pass split across a `requestAnimationFrame`". Since the
+  pass runs in an animation-frame callback (PLAN-FRESH-3-002), a frame's sizes are taken from the grid's
+  `ResizeObserver` delivery of that frame, after layout, not from the loop's own callback, which may run before the
+  pass's; "the first frame record after the change" means that delivery.
+- **Spike pass condition.** US3-12's figures, the stale content case, both content-change cases, the two unseen
+  cases with `remeasure()` and the `ResizeObserver` callback case hold with `driver.messages()` empty, the tier is
+  stable over ten frames, and the frame record never shows the measurement grid.
 - **If the spike fails.** It is a fork for the operator before phase 4 is implemented: relax US3-12 to "does not
   collapse to 0 px and does not alternate", dropping the exact 1073 px.
 
@@ -625,6 +676,15 @@ layout's, whatever tier it shows, so a shrink-to-fit host cannot make the tier a
   and the constructed stylesheet complies.
 - A `ResizeObserver` on each shown pane's wrapper (round 1), with the window error and the one-frame lag accepted and
   the width-only gap read into FR-025 (option (b) of PLAN-FRESH-2-002): not taken by the operator.
+- For content rendered in a slotted element's shadow root (PLAN-FRESH-3-001): a `ResizeObserver` on each assigned
+  element that only schedules the pass, option (b), which misses a hidden pane's content (no box, no resize) and a
+  width-only change in a shown pane; and recording the gap only, option (c). Not taken by the operator.
+- Running the pass in the `MutationObserver` callback and telling consumers to defer mutations made in their own
+  `ResizeObserver` callbacks (PLAN-FRESH-3-002, the lens's second remedy): it breaks the round-2 decision that the
+  element never writes in a delivery.
+- For attributes (PLAN-FRESH-3-003): an `attributeFilter` (`class`, `style`, `hidden`, `width`, `height`, `src`,
+  `colspan`), option (a), which still runs a pass on the most common list-detail mutation, a selection that toggles
+  a row's class; and all attributes with the cost recorded, option (c). Not taken by the operator.
 - A Complexity Tracking exception to constitution II for the per-instance sheets (option (b) of PLAN-FRESH-2-005):
   not taken by the operator; the plan records a reading of II instead.
 

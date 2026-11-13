@@ -82,13 +82,27 @@ again:
   fade is limited to the box's client height with a measured figure, since Chromium masks the scrollbar whatever the
   clip box (research.md R-05).
 - **list-detail re-measures on mutations, not on pane resizes** (PLAN-FRESH-2-002 (a)): a size change in a pane with
-  no DOM mutation, such as an image or a font loading, is picked up at the next trigger (FR-025, US3-12).
+  no light-DOM mutation, such as an image or a font loading, is picked up at the next trigger (FR-025, US3-12).
+  Amended at round 3: the unseen changes also include content rendered inside a slotted element's shadow root and
+  attribute-only changes, and the host calls `remeasure()` after such a change.
 - **Reduced motion and the browser's own scrolling** (PLAN-FRESH-2-003 (a)): the element itself never animates; the
   browser's keyboard scrolling of the strip from a focused slotted control is outside the element and may animate
   (FR-009, US1-11).
 - **Per-instance sheet of measured figures** (PLAN-FRESH-2-005 (a)): an element may adopt one per-instance
   constructed stylesheet holding only px figures it measured from layout; measured layout figures are read as not the
   design-value literals constitution II forbids, with no exception recorded (FR-030).
+
+**Operator decisions at plan squad round 3** (2026-11-13, `reviews/plan/round-3/refute.md`). These amend the text
+again:
+
+- **A public `remeasure()` on list-detail** (PLAN-FRESH-3-001 (a)): a `MutationObserver` does not reach a slotted
+  element's shadow root, so content an element (an ocelle element or a consumer's web component) renders there is not
+  seen. `ocelle-list-detail` gets one method, `remeasure(): void`, which the host calls after such a change. It is a
+  MINOR addition, declared in the manifest. FR-025 and the README name the unseen changes and point to it (FR-025,
+  FR-034, FR-035, US3-12).
+- **No `attributes` in the observed records** (PLAN-FRESH-3-003 (b)): the observer watches `childList`,
+  `characterData` and `subtree` only, as the round-2 option chose. An attribute-only size change is unseen, beside
+  images, fonts and shadow-rendered content, and waits for the next trigger or `remeasure()` (FR-025, US3-12).
 
 ## Consumer need
 
@@ -186,6 +200,9 @@ test, and its plan names a planted defect that makes it fail:
 | In Frame W, a rejected `collapse-below` value that would give one column if accepted (`120%`, `80vw`, `110cqi`, `700pt`, `900`, `calc(56rem)`, `var(--x)` with `--x: 56rem`, `+56rem`, `5.6e1rem`), or a token override of `120%`, does not move the threshold: two columns (US3-10, FR-025) | On a twin, an accepted value moves it: in Frame W `56rem`, `56REM`, `55.5rem`, `880px`, `55em` and `" 56rem "` give one column; in Frame N `0` and `39rem` give two | Any value the browser can resolve to a length accepted |
 | In Frame W, a rejected `inspector-below` value that would give three columns if accepted (`50%`, `40vw`, `50cqi`, `50pt`, `50`, `calc(50rem)`, `var(--y)` with `--y: 50rem`), or a token override of `50%`, keeps the inspector stacked (US3-10, FR-025) | On a twin in Frame W, `50rem` and `0` give three columns | Any value the browser can resolve to a length accepted |
 | In a shrink-to-fit host the layout does not alternate between frames (US3-12, FR-025) | It shows the expected column count for its stated content and room | An intrinsic inline size that follows the layout shown |
+| Content a slotted element renders in its shadow root, and an attribute-only change of pane content, do not change the intrinsic sizes on their own (US3-12, FR-025) | After the host calls `remeasure()`, the element shows the figure of its new content | `remeasure()` as a no-op; `attributes` observed |
+| Content a slotted element appends from its own `ResizeObserver` callback brings no "ResizeObserver loop" message (US3-12, FR-025) | After settle the element shows the figure of its new content | The pass run in the `MutationObserver` callback |
+| Mutations made in several tasks before one frame run no second measurement pass in that frame (FR-025; counted by a test-only pass counter, plan R-13) | A mutation in a later frame runs a pass in that frame | One pass per `MutationObserver` delivery |
 | Focus is not moved when it was not in the pane that is hidden (US3-6, FR-028) | When focus was in that pane, it moves to the start of the shown pane | Focus moved on every switch |
 | The page has no horizontal scroll at 320 px (US2-9, US3-9, SC-006) | Inside the same page, the overflowing board scrolls by itself | A board without its own overflow: the page then scrolls |
 
@@ -492,6 +509,16 @@ goes.
     35rem block twice as tall, or by a 35rem block of the same height, **Then** in the first frame after the change
     the element is 1153 px wide (18rem + 35rem + 19rem plus 1 px) and shows three columns, and the page reports no
     error (no "ResizeObserver loop" message).
+    **Given** the element in the 1196 px row with `narrow` set (one column, the list shown, 1073 px wide), **When** its
+    detail is an element with an open shadow root and the host sets a property on it that renders a 40rem block that
+    does not wrap in its shadow root instead of the 30rem one, or, in a second case, the host swaps a class on the
+    detail's light-DOM block that a host rule makes 40rem wide, **Then** the element stays 1073 px wide on each of ten
+    frames: neither change is seen (FR-025). **When** the host then calls `remeasure()`, **Then** in the first frame
+    after the call the element is 1196 px wide (18rem + 40rem + 19rem plus 1 px is 1233 px, shrunk to the row), still
+    in one column. **Given** the element in the 1196 px row with `narrow` set and the list shown, its detail's slotted
+    element appending a 35rem block that does not wrap from its own `ResizeObserver` callback once it is observed with
+    a non-zero inline size, **When** the host sets `detail-open`, **Then** after settle the element is 1153 px wide
+    and shows the detail in one column, and the page reports no error.
 13. **Given** `dir="rtl"`, **When** the element is drawn in three columns, **Then** the list is at the right and the
     inspector at the left, with the borders between them.
 14. **Given** the element and each pane, **When** the tree is read, **Then** the element adds no landmark or role of
@@ -706,10 +733,17 @@ goes.
   layout it shows: its max-content size is that of its three-column layout and its min-content size that of its
   one-column layout. A shrink-to-fit host therefore gives it a size from the room available and its content alone,
   it picks its layout from that size as everywhere else, and the layout does not alternate between frames while
-  nothing changes (US3-12). Its intrinsic sizes follow its slotted content when an element is added or removed or
-  when the content of any pane mutates; a size change with no DOM mutation (an image or a font loading) is picked up
-  at the next such change or at a tier change set by the host (operator decision, plan squad round 2). Two
-  thresholds apply, each exclusive (the wider layout applies at exactly the threshold):
+  nothing changes (US3-12). Its intrinsic sizes follow its slotted content when an element is added to or removed
+  from a slot, when nodes are added or removed or text changes in the light DOM of any pane (shown or hidden), at a
+  tier or `detail-open` change set by the host, and when the host calls `remeasure()`. A slot change or a light-DOM
+  mutation is measured in the next animation frame, at most once per frame, never inside a `ResizeObserver` callback:
+  a change made in a task is measured before that frame's layout, and a change made inside a `ResizeObserver` or
+  animation-frame callback one frame later. `remeasure()` schedules the same pass. These size changes are not seen
+  and are picked up at the next of these triggers: a size change with no light-DOM node or text change in a pane, such
+  as an image or a font loading, content rendered inside a slotted element's shadow root (an element re-rendering
+  from a property), and a change of an attribute only (a class or a style swap); after one the host calls
+  `remeasure()` (operator decisions, plan squad rounds 2 and 3). The element has this one public method,
+  `remeasure(): void`. Two thresholds apply, each exclusive (the wider layout applies at exactly the threshold):
   - **One column** below `collapse-below`. Default: the new token `--ocelle-list-detail-collapse`, `40rem`.
   - **Inspector stacked** under the detail below `inspector-below`. Default: the new token
     `--ocelle-list-detail-inspector-collapse`, `60rem`.
@@ -747,8 +781,8 @@ goes.
   stylesheet holding only px figures it measured from layout, never a value from an attribute, a property, a token's
   text or slotted text; list-detail's intrinsic sizes and the overflow-region module's mask size are the named cases,
   and the README's § Styles says so; operator decision, plan squad round 2), `:host([hidden]) { display: none; }`,
-  variant rules inside `@media not (forced-colors: active)`, a manifest entry with every property, attribute, slot,
-  part and CSS custom property described (none of the elements declares a CSS custom property of its own, and none
+  variant rules inside `@media not (forced-colors: active)`, a manifest entry with every property, attribute, method,
+  slot, part and CSS custom property described (none of the elements declares a CSS custom property of its own, and none
   has a CSS part unless the plan names one with its reason), and a module entry point plus inclusion in the package
   root and the browser build.
 - **FR-031**: The elements perform no I/O and make no request. Built output passes the `csp` gate, and every browser
@@ -770,7 +804,8 @@ goes.
   `@ocelle/tokens` through its token source, with their documentation rows. None is a colour, so no contrast pair is
   added. The token gates' pinned counts are updated with them.
 - **FR-034**: The README of `@ocelle/elements` documents:
-  - each element: its attributes, properties, slots, the tokens it reads, and its keyboard and tree behaviour;
+  - each element: its attributes, properties, methods (list-detail's `remeasure()`), slots, the tokens it reads, and
+    its keyboard and tree behaviour;
   - the overflow-region module's interface (FR-011), under the element conventions, as the way any element gets a
     tab stop only while it overflows;
   - the **container-tier convention**: a tier is chosen by the element's own measured inline size against a
@@ -780,9 +815,13 @@ goes.
     an override that is not an accepted form. A boolean attribute set by the host forces the narrow tier. No
     `container-type` is set on a host that may shrink to fit, and the element's intrinsic sizes do not depend on the
     tier it shows (max-content of its widest tier, min-content of its narrowest), so a shrink-to-fit host cannot make
-    the tier alternate. The intrinsic sizes are re-measured on slot changes, on content mutations and before a
-    host-set tier change, never inside a `ResizeObserver` callback, and a size change with no mutation waits for the
-    next of these. #8 and #12 follow it;
+    the tier alternate. The intrinsic sizes are re-measured on slot changes and light-DOM content mutations, at most
+    once per animation frame and never inside a `ResizeObserver` callback, before a host-set tier change, and when
+    the host calls `remeasure()`. The unseen changes (no light-DOM node or text change: images, fonts, content
+    rendered in a slotted element's shadow root, attribute-only changes) wait for the next of these, and the host
+    calls `remeasure()` after one. Content mutated inside a consumer's own `ResizeObserver` callback can still make
+    the browser report its "ResizeObserver loop" message, through layout alone, when the shown layout grows a
+    shrink-to-fit host. The convention records the cost of one pass. #8 and #12 follow it;
   - the frames of User Scenarios as the tested screen sizes;
   - the Host ARIA rule per element: for the scroller, the board and the lane a blank host `aria-label` counts as
     absent; for the icon and the brand mark it leaves the element unlabelled; list-detail takes no name (FR-010);
@@ -796,8 +835,8 @@ goes.
 
   A documentation test checks each of these items.
 - **FR-035**: The changelogs of `@ocelle/elements` and `@ocelle/tokens` name the surface this feature adds: the four
-  elements, their attributes, properties and slots, the new entry points, the container-tier convention, and the six
-  tokens. The changes are additions (MINOR).
+  elements, their attributes, properties and slots, list-detail's `remeasure()` method, the new entry points, the
+  container-tier convention, and the six tokens. The changes are additions (MINOR).
 
 ### Key Entities
 

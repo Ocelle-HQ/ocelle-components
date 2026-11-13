@@ -49,14 +49,18 @@ The lane has the group role exactly when `groupName` is set.
 | `tier` | `three`, `two` or `one` | `one` if `narrow` or `measured < collapseAt`; else `two` if `measured < inspectorAt`, or if `hasInspector` is false (two columns without an inspector); else `three` |
 | `shown` | set of panes | `three` or `two`: list, detail, and the inspector if present. `one`: the detail and the inspector if `detail-open`, else the list |
 | `intrinsic` | { min, max } px | from the measurement pass (R-13): the one-column stack's min-content and the three-column grid's max-content; written to the instance's adopted constructed stylesheet (the one per-instance sheet FR-030 allows), never to a `style` attribute |
+| `pending` | boolean | a pass is requested for the next animation frame; set by the triggers below, cleared when the frame callback runs the pass |
 
-**Re-measure triggers (R-13, PLAN-FRESH-2-002 (a)).** The measurement pass runs on `slotchange` of any of the three
-slots; on a `MutationObserver` delivery (`childList`, `characterData`, `attributes`, `subtree`) from the assigned
-elements of any pane, shown or hidden, one pass per delivery; and before applying a `tier` or `detail-open` change that
-comes from a property or attribute. It writes a figure only when it changed. The host's `ResizeObserver` updates
-`measured` and the tier only and never runs the pass, so the figures are never written inside a `ResizeObserver`
-delivery. A size change in a pane with no DOM mutation (an image or a font loading) is picked up at the next of these
-triggers (FR-025).
+**Re-measure triggers (R-13, PLAN-FRESH-2-002 (a), PLAN-FRESH-3-001 (a), PLAN-FRESH-3-002, PLAN-FRESH-3-003 (b)).**
+`slotchange` of any of the three slots, a `MutationObserver` delivery (`childList`, `characterData`, `subtree`; no
+`attributes`) from the assigned elements of any pane, shown or hidden, and a call of the public `remeasure()` each set
+`pending` and request one animation frame if none is requested; that frame callback clears `pending` and runs the pass,
+so it runs at most once per frame and never inside a `ResizeObserver` delivery. Before applying a `tier` or
+`detail-open` change that comes from a property or attribute, the pass runs synchronously. It writes a figure only when
+it changed. The host's `ResizeObserver` updates `measured` and the tier only and never runs the pass. Not seen, and
+picked up at the next of these triggers: a size change in a pane with no light-DOM node or text change (an image or a
+font loading), content rendered inside a slotted element's shadow root, and an attribute-only change; the host calls
+`remeasure()` after one (FR-025).
 
 **Focus rule (R-14).** If a change of `tier` or `detail-open` hides the pane that holds `document.activeElement`,
 the shown pane's wrapper gets `tabindex="-1"` and focus after the update, and loses the attribute on its `focusout`.

@@ -34,7 +34,8 @@ Four layout elements in `@ocelle/elements` and six tokens in `@ocelle/tokens`, o
 - **`ocelle-list-detail` (P3).** It picks three, two or one columns from its own measured width against
   `collapse-below` and `inspector-below`, whose defaults are tokens. `narrow` forces one column and `detail-open`
   chooses the pane in one column. Focus moves to the shown pane when its pane is hidden. Its intrinsic sizes do not
-  depend on the tier, so a shrink-to-fit host cannot make it alternate (spike first, R-13). This defines the
+  depend on the tier, so a shrink-to-fit host cannot make it alternate (spike first, R-13). They are re-measured at
+  most once per frame, and a public `remeasure()` covers the changes the element cannot see. This defines the
   container-tier convention that #8 and #12 reuse.
 
 The stories go through #10's `visual` and `axe` gates. Every decision is in [research.md](research.md); the surface is
@@ -86,18 +87,19 @@ twelve lanes with forty cards each updates its state within one frame of a resiz
 squad round 1's fixes: II now names the gate change, III to V and VIII the new designs and tests, IV the constructed
 stylesheet that replaces `element.style` writes. Rechecked after squad round 2's fixes: II records the reading of
 measured layout figures for the operator, III the reduced-motion scope and the handover ring overlay, IV the module's
-per-instance sheet.*
+per-instance sheet. Rechecked after squad round 3's fixes: I names list-detail's one method, VII the addition, VIII
+the new US3-12 cases and their plants.*
 
 | Principle | How this plan meets it |
 |---|---|
-| I. `ocelle-` names, no I/O, small surface, manifest | Four `ocelle-*` elements, no events, no I/O; every property, attribute and slot is in the manifest; the module is internal (contracts/overflow-region.md § Status). |
+| I. `ocelle-` names, no I/O, small surface, manifest | Four `ocelle-*` elements, no events, no I/O; every property, attribute, slot and method is in the manifest, the one method being list-detail's `remeasure()` (operator decision PLAN-FRESH-3-001 (a), R-13); the module and list-detail's scheduling module, with its test-only pass counter, are internal (contracts/overflow-region.md § Status; R-13). |
 | II. Tokens only, brand rules | Six new tokens; element CSS is `token-only`. **Reading for the operator at the plan gate (PLAN-FRESH-2-005 (a)):** list-detail's intrinsic sizes (R-13) and the overflow-region module's mask size (R-05) are px figures the element measures from layout at run time and sets through one per-instance constructed sheet; they are not the design-value literals II forbids (no colour, font, size, radius, shadow or duration is chosen by them), so this is a reading of II, not an exception, and Complexity Tracking stays empty. No such figure comes from an attribute, a property, a token's text or slotted text. FR-030 and the README's § Styles say so, and `sheets()` asserts exactly one per-instance sheet per root. The mask uses `transparent` and a token colour in `linear-gradient()`, which the `ocelle/token-only` rule learns to classify, a gate change with red-first tests and plants (R-05, contracts/gates.md). The default lane's ground is `color-sheet`, a token (R-10). No monospace: the flat title uses `--ocelle-font-sans` with tabular figures and `--ocelle-tracking-caps` (FR-021). `--ocelle-color-rule` borders are decorative only (FR-023). One radius: `radius-row` on the lane chrome. |
 | III. Accessible by construction | Tab stop and named group (the board: region) only while overflowing, so repeated chip rows add no landmarks (R-01, R-03). Arrow keys on the box with no animation under any motion setting, and modified arrows left to the platform (R-02). Token focus ring drawn outside the mask, by an overlay that also draws the handover ring (R-05, R-07); the native scrollbar kept and never faded, by a measured mask size (R-04, R-05). Focus rings of slotted controls kept whole and clear of the fades (R-04, R-06). Focus handover finds shadow-hosted controls; with none, an inner node takes focus with an inset ring (R-07). Pane wrappers focusable only while the element moves focus to them, with an inset ring in `Highlight` under forced colours (R-14). The default lane's ground differs from every main ground it sits on (R-10). Forced-colours edge lines, ring in `Highlight`, lane borders and pane borders in `CanvasText`. No ID reference crosses a shadow root: names are copied as text into the shadow node (R-01). Focus moves with the shown pane (R-14). Reduced motion: nothing the element does animates; the browser's own scroll of the strip from a focused slotted control may, which FR-009 and the README state (operator decision PLAN-FRESH-2-003 (a), R-02). Contrast: no new colour token; the colours used are checked pairs (R-10). axe over every story through #10 (R-15). |
 | IV. Strict CSP | Adopted stylesheets only. No `style` attribute in templates, in fixtures or in stories (`[data-frame]` and `[data-story]` CSS, R-15, R-17). list-detail's measured figures, and the overflow-region module's mask size, go into a per-instance constructed stylesheet adopted on the shadow root, whose rule declarations are set through the CSSOM; `element.style` is never written, because it creates a `style` attribute (R-13), and a test asserts that no shadow element carries one. The `csp` gate scans built output, and the fixture pages count violations. |
 | V. Storybook, behaviour tests | One story per variant and per state that draws different pixels, in light and dark, with baselines from #10's pinned container (R-15). States that draw the same pixels, and focus and forced-colours states (not captured by #10), are proven by tests (R-15). No events, so no payload tests. Every keyboard path is tested with real input in both harnesses (arrows with and without modifiers, Tab, Shift+Tab, focus handover, pane switch; R-17). Fades are asserted on pixels, never on `data-fade` (R-05). |
 | VI. Consumer needs, own code | spec-kitty-design #505, #506, #507, #514 and #530 are named in the spec. Nothing is ported. |
-| VII. Semantic versioning | Additions only; the changelogs name them (FR-035). |
-| VIII. Test-first, non-vacuous | Every phase is red first; the driver extension and the frames are tested too (R-17). Every "does not" outcome is paired with its positive outcome and has its plant (spec table; phases below); each pairing plant is run once and recorded in `reviews/phase-N/plants.md`, and one that does not fail its test stops the phase (R-17). Timing bounds are tested at the bound (R-03), the pointer-focus case against a twin oracle (R-06), and px figures at a 20 px root as well (R-17). Pure helpers make the layout arithmetic mutation-testable. Element source is mutated in-process under 007's stricter gate, the upgrade branch included (R-14, R-17); the gate change has its own red-first tests and gate plants (contracts/gates.md). Documentation-only items (changelog, README prose with no tested item) take the exemption, with the reason stated in review. |
+| VII. Semantic versioning | Additions only, `remeasure()` included; the changelogs name them (FR-035). |
+| VIII. Test-first, non-vacuous | Every phase is red first; the driver extension and the frames are tested too (R-17). Every "does not" outcome is paired with its positive outcome and has its plant (spec table; phases below); each pairing plant is run once and recorded in `reviews/phase-N/plants.md`, and one that does not fail its test stops the phase (R-17). Timing bounds are tested at the bound (R-03), list-detail's unseen changes, the mutation made inside a `ResizeObserver` callback and the once-per-frame pass each have a case and a plant (R-13), the pointer-focus case against a twin oracle (R-06), and px figures at a 20 px root as well (R-17). Pure helpers make the layout arithmetic mutation-testable. Element source is mutated in-process under 007's stricter gate, the upgrade branch included (R-14, R-17); the gate change has its own red-first tests and gate plants (contracts/gates.md). Documentation-only items (changelog, README prose with no tested item) take the exemption, with the reason stated in review. |
 
 ## Decisions the operator should see at the plan gate
 
@@ -116,7 +118,8 @@ per-instance sheet.*
    scroller (SPEC-2-06).
 5. **list-detail's intrinsic sizes come from a measurement pass and a per-instance constructed stylesheet** (R-13).
    This is the one risky design, and phase 4 starts with a spike. If the spike fails, the operator gets a fork: relax
-   US3-12's exact size.
+   US3-12's exact size. The pass is scheduled once per animation frame, `attributes` are not observed, and the host
+   calls the public `remeasure()` after a change the element cannot see (squad round 3).
 6. **Upgrade focus** (R-14): if a server-rendered page's focus is inside a pane that the first layout hides, focus
    moves. FR-028 and the Edge Case say so since the plan gate.
 7. **`inspector-below`** stays as the approved spec has it (SPEC-1-17; R-19).
@@ -145,6 +148,16 @@ per-instance sheet.*
 | PLAN-FRESH-2-003 | (a) FR-009 and US1-11 amended: the browser's scroll from a focused slotted control is outside the element | spec FR-009, US1-11, FR-034; R-02; phase 2 records |
 | PLAN-FRESH-2-005 | (a) one per-instance sheet of measured figures, read under II as not a design literal; no exception | spec FR-030, FR-034; R-05, R-13; Constitution Check II; phase 2 records |
 
+**Decided at squad round 3** (`reviews/plan/round-3/refute.md`, Decision column):
+
+| Finding | Decision | Where |
+|---|---|---|
+| PLAN-FRESH-3-001 | (a) a public `remeasure(): void` on list-detail; content in a slotted element's shadow root named as unseen | spec FR-025, FR-030, FR-034, FR-035, US3-12, operator decisions (round 3); R-13; data-model; contracts/elements.md; Constitution Check I, VII; phase 4 |
+| PLAN-FRESH-3-003 | (b) `attributes` dropped from the observed records; attribute-only changes named as unseen; the per-pass cost recorded | spec FR-025, FR-034, US3-12, operator decisions (round 3); R-13; data-model; contracts/elements.md; phase 4 |
+
+PLAN-FRESH-3-002 was a fix: the pass is scheduled in one animation-frame callback, at most once per frame (spec
+FR-025, FR-034, US3-12; R-13; data-model; contracts/elements.md; phase 4).
+
 ## Project Structure
 
 ### Documentation (this feature)
@@ -165,6 +178,7 @@ packages/elements/
 ├── src/
 │   ├── overflow-region.ts       # OverflowRegion controller, overflowRegionStyles, pure helpers (internal)
 │   ├── tiers.ts                 # *-below grammar and resolution, tier choice (internal; the container-tier convention)
+│   ├── list-detail-measure.ts   # per-frame pass scheduling and the test-only pass counter (internal, not exported; R-13)
 │   ├── ocelle-scroller.ts
 │   ├── ocelle-workflow-board.ts
 │   ├── ocelle-workflow-lane.ts
@@ -307,8 +321,10 @@ Every phase runs each pairing plant it names once against its test and records t
      figures (1073 px three columns in a 1196 px row; 636 px one column in a 636 px row; a dialog in a 1280 px
      viewport: three columns; a table cell in a 636 px table: one column), the stale content case (1196 px, three
      columns) and the two content-change cases (a 35rem detail, taller and same height: 1153 px in the first frame
-     record after the change, PLAN-FRESH-2-002 (a)), with `driver.messages()` empty, stable over ten frames, with the
-     frame record never showing the measurement grid. If it fails: stop and ask the operator (fork in R-13).
+     record after the change, PLAN-FRESH-2-002 (a)), the two unseen cases (1073 px until `remeasure()`, then 1196 px)
+     and the `ResizeObserver` callback case (1153 px after settle), with `driver.messages()` empty, stable over ten
+     frames, with the frame record never showing the measurement grid (R-13, PLAN-FRESH-3-001 (a), PLAN-FRESH-3-002,
+     PLAN-FRESH-3-003 (b)). If it fails: stop and ask the operator (fork in R-13).
    - **Grammar and tier choice, tests first** (`tiers.ts`, R-12). It includes `56REM` accepted and `+56rem`, `.5rem`,
      `56.rem`, `5.6e1rem` and `-0` rejected, and the token default and its fallback constants compared with the token
      source.
@@ -323,7 +339,11 @@ Every phase runs each pairing plant it names once against its test and records t
      - US3-10 (any resolvable length accepted; both attributes), asserting the 1280 px viewport for the `vw` case;
      - US3-12 (intrinsic size follows the tier; the measurement pass split across a `requestAnimationFrame`, caught
        by the frame record; the shown-pane `ResizeObserver` as the trigger, caught by the same-height case and by
-       `driver.messages()`; R-13);
+       `driver.messages()`; the shadow-content and class-swap cases with `remeasure()`, plants `remeasure()` as a
+       no-op and `attributes` observed; a slotted element appending content from its own `ResizeObserver` with the
+       detail shown in one column, plant the pass run in the `MutationObserver` callback; R-13);
+     - the once-per-frame pass (FR-025), in-process only: three tasks before one frame run one pass, read from the
+       test-only counter, plant one pass per `MutationObserver` delivery (R-13);
      - US3-15 (`:host([hidden])` removed).
 
      US3-6 adds the ring cases (keyboard, then pointer; R-14). A test asserts that no shadow element carries a
@@ -331,8 +351,11 @@ Every phase runs each pairing plant it names once against its test and records t
      case: one column in a 720 px frame, two at 16 px (R-17). The upgrade cases of R-14 run in-process in
      `test/list-detail-upgrade.test.ts` (mutated), and on a server-rendered fixture page as the built-output check.
    - **Stories, baselines and records.** The README covers the container-tier convention, checked item by item
-     (FR-034, SC-009), including its re-measure triggers and that a size change with no mutation waits for the next
-     one (FR-025, PLAN-FRESH-2-002 (a)).
+     (FR-034, SC-009), including its re-measure triggers, that the unseen changes (images, fonts, shadow-rendered
+     content, attribute-only changes) wait for the next one or for `remeasure()`, the cost of one pass, and that
+     content mutated inside a consumer's own `ResizeObserver` callback can still bring the browser's loop message
+     through layout alone (FR-025, PLAN-FRESH-2-002 (a), PLAN-FRESH-3-001 (a), PLAN-FRESH-3-002, PLAN-FRESH-3-003 (b)).
+     The manifest declares `remeasure()`, and the changelog names it (FR-035).
 5. **Polish.**
    - The README documentation test for every FR-034 item.
    - Both changelogs.

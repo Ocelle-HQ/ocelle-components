@@ -88,10 +88,12 @@ The board module does not define the lane: a host imports both, or the root.
 | `inspector-below` / `inspectorBelow` | property + attribute | `string \| undefined`, absent | no | Inspector stacked below this length; grammar below |
 | `narrow` | property + attribute | `boolean`, `false` | yes | Forces one column (FR-027) |
 | `detail-open` / `detailOpen` | property + attribute | `boolean`, `false` | yes | In one column, shows the detail instead of the list (FR-027) |
+| `remeasure()` | method | `(): void` | | Requests a measurement pass of the intrinsic sizes for the next animation frame, coalesced with any other trigger, for a change the element cannot see (content in a slotted element's shadow root, an attribute-only change, an image or a font loading; FR-025, research.md R-13) |
 | `list` | slot | | | The list pane |
 | (default) | slot | | | The detail pane |
 | `inspector` | slot | | | The optional inspector pane (FR-024) |
 
+- **Methods:** `remeasure()` only, the one method of this feature's surface (MINOR, constitution VII).
 - **Events:** none (FR-029). **Parts:** none. **CSS custom properties:** none.
 - **Tokens read:** `--ocelle-list-track-width`, `--ocelle-shell-inspector-width`, `--ocelle-list-detail-collapse`,
   `--ocelle-list-detail-inspector-collapse`, `--ocelle-color-rule`, `--ocelle-border-width`, and the focus ring tokens
@@ -118,10 +120,21 @@ The board module does not define the lane: a host imports both, or the root.
 - **Forced narrow tier.** A boolean attribute set by the host (`narrow`) forces the narrowest tier.
 - **No `container-type`.** It is never set on a host that may shrink to fit.
 - **Intrinsic sizes.** They do not depend on the tier shown: max-content is the widest tier's and min-content the
-  narrowest's (research.md R-13). They are re-measured on `slotchange`, on a `MutationObserver` delivery from any
-  pane's assigned elements, and before a tier change set by a property or attribute, and never inside a
-  `ResizeObserver` callback, whose writes would resize a shrink-to-fit host within the delivery. A size change with no
-  DOM mutation waits for the next of these (FR-025).
+  narrowest's (research.md R-13). `slotchange`, a `MutationObserver` delivery (`childList`, `characterData`,
+  `subtree`; no `attributes`) from any pane's assigned elements, and a call of the public `remeasure()` schedule one
+  pass for the next animation frame, at most one per frame. A tier change set by a property or attribute runs the
+  pass first, synchronously. Nothing writes the figures inside a `ResizeObserver` callback, whose writes would resize
+  a shrink-to-fit host within the delivery; a mutation made inside one is measured a frame later.
+- **Unseen changes.** A size change with no light-DOM node or text change in a pane (an image or a font loading),
+  content a slotted element renders in its own shadow root, and an attribute-only change wait for the next trigger;
+  the host calls `remeasure()` after one (FR-025).
+- **Cost.** One pass renders every pane in the measurement grid twice and restores it: about 10 ms (7 to 19 ms) with
+  a 1000-row list, measured in plan squad round 3. Attribute changes (a selection's `class` or `aria-selected`) run
+  none; light-DOM swaps and text changes run at most one per frame.
+- **Loop message.** Content a consumer mutates inside its own `ResizeObserver` callback can still make the browser
+  report "ResizeObserver loop completed with undelivered notifications." through layout alone, when the shown layout
+  grows a shrink-to-fit host; the element does not cause it and cannot prevent it. Hosts set `narrow`, `detail-open`
+  and the thresholds from a task, not from a `ResizeObserver` callback.
 
 ## Tokens (`@ocelle/tokens`)
 
