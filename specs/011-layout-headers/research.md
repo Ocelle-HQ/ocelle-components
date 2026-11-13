@@ -40,6 +40,26 @@ FR-012, FR-019 and FR-031 (`font-family`, `font-size`, `font-weight`, `letter-sp
 user-agent origin) and lose to the page's own rules (outer context first), which is the spec's "Slotted headings"
 rule. `--ocelle-figures` is applied with `font-variant-numeric`.
 
+**Edge margins of slotted content** (operator decision PLAN-FRESH-2-002 (a), FR-008): the elements trim the user
+agent's block margins at the edges of the content the page slots, so a `<p>` description or body and a `<ul>` section
+take the gaps and padding the spec states and no 16 px more. Each rule is a `::slotted()` rule, so a page rule still
+wins (outer context first):
+
+- section header and page header: `margin-block: 0` on `::slotted([slot="eyebrow"])` and
+  `::slotted([slot="description"])` (the heading already has `margin: 0`); the page header's description gap is the
+  description wrapper's `margin-block-start` (R-07), not the slotted element's margin;
+- card (R-08): `margin-block-start: 0` on the first body element, `::slotted(:nth-child(1 of :not([slot])))`, and
+  `margin-block-end: 0` on the last, `::slotted(:nth-last-child(1 of :not([slot])))`, so paragraphs of the body keep
+  their spacing between each other while the first starts at the header gap (or the padding edge) and the last ends
+  at the padding edge;
+- context sidebar (R-09): `margin-block: 0` on each section (one element per section); on the head and footer, the
+  first element of the slot gets `margin-block-start: 0` (`::slotted(:nth-child(1 of [slot="head"]))`, the same for
+  `footer`) and the last `margin-block-end: 0` (`:nth-last-child(1 of …)`), as in the card body;
+- the rail sets no margin rule: its items are links or `ocelle-nav-item` elements with no UA block margin.
+
+Margins between slotted elements of one part (two body paragraphs, two footer lines) are the page's. The README
+states the trim and that a page rule wins (FR-036).
+
 **Rationale**: keeps the page's heading level and outline with no ID reference across a shadow root (constitution
 III; spec Assumptions).
 
@@ -47,7 +67,9 @@ III; spec Assumptions).
 anchors would not reach it).
 
 Measure before red: the UA `h1` margin and font size are overridden by `::slotted()` in Chromium (expected by the
-cascade), and `text-transform` on a slotted heading gives the upper-cased name (already probed for spec check 1).
+cascade), and `text-transform` on a slotted heading gives the upper-cased name (already probed for spec check 1); the
+UA `p` and `ul` block margins are overridden by the edge-margin rules above, and a body or footer of two `p`
+elements keeps the margin between them (`:nth-child(1 of S)` and `:nth-last-child(1 of S)` under `::slotted()`).
 
 ## R-03 Empty slots
 
@@ -183,7 +205,9 @@ banner landmark); the band is a plain `div` (US2-1).
 its density; inside, a
 flex column with `gap` of the density (`--ocelle-space-2` regular, `--ocelle-space-4` compact) holding the `header`
 wrapper and the default-slot wrapper. A card whose header slot is empty hides its wrapper (R-03), so no gap remains
-(US1-11). `inset` swaps `background-color` to `--ocelle-color-inset`. In forced colours the border colour is left to
+(US1-11). The first and last body elements have their outer block margin trimmed (R-02, FR-008), so a `<p>Body</p>`
+starts exactly the density's gap below the header (or at the padding edge with no header) and ends at the padding
+edge (US1-7, US1-11). `inset` swaps `background-color` to `--ocelle-color-inset`. In forced colours the border colour is left to
 the system (`border-color` is forced to a system colour by the user agent) and grounds become `Canvas`; nothing
 else is needed for US1-13 beyond `forced-color-adjust: auto` (the default). The density's padding and gap rules are
 layout rules outside the forced-colours query (R-01), so a compact card keeps them in forced colours (US1-13). The card
@@ -201,11 +225,19 @@ so it sits at the block end when content is shorter, US3-3, and follows the last
 Dividers follow the content (operator decision PLAN-CORRECTNESS-1-004 (b)): each is drawn on the part before the
 free space, so in a sidebar taller than its content the free space lies between the last divider and the footer.
 
-- each section (`::slotted(:not([slot]))`, an element in the default slot) is `display: block` (a `span` or a custom
-  element such as `ocelle-section-header` is otherwise inline, and its border and negative margins would apply to its
-  line boxes only; a page rule still wins), has padding `--ocelle-space-4` and
-  `border-block-start: var(--ocelle-border-width) solid var(--ocelle-color-rule)`; the first section
-  (`::slotted(:nth-child(1 of :not([slot])))`) has none;
+- each section (`::slotted(:not([slot]):not([hidden]))`, an element in the default slot that the page has not
+  hidden) is `display: block` (a `span` or a custom element such as `ocelle-section-header` is otherwise inline, and
+  its border and negative margins would apply to its line boxes only; a page rule still wins), has padding
+  `--ocelle-space-4`, `margin-block: 0` (R-02, FR-008) and
+  `border-block-start: var(--ocelle-border-width) solid var(--ocelle-color-rule)`; the first visible section
+  (`::slotted(:nth-child(1 of :not([slot]):not([hidden])))`) has none;
+- hidden sections (PLAN-FRESH-2-001): every section rule, the first-section exception included, excludes `[hidden]`.
+  A `::slotted()` rule is an author rule of the outer context, so it beats both the user agent's `[hidden] { display:
+  none }` and a slotted custom element's own `:host([hidden])` (an inner-context rule); without the exclusion a hidden
+  `div` or `ocelle-section-header` section would be drawn as a padded, bordered block (probed in plan squad round 2:
+  51 px each). With it, a hidden section has no box, padding or divider, and when the first section is hidden the
+  first visible one has no `border-block-start` of its own, so it does not double the sections wrapper's head
+  divider. Hidden sections still count as content for slot emptiness (spec "Empty slot", R-03);
 - the sections wrapper has `border-block-start` when the head is non-empty and `border-block-end` when the footer is
   non-empty (internal classes from R-03; nothing when the default slot is empty, R-03 hides it);
 - when the default slot is empty and both head and footer are non-empty, the head wrapper has `border-block-end`
@@ -215,17 +247,22 @@ free space, so in a sidebar taller than its content the free space lies between 
   its border spans the sidebar's whole inline size and its own padding gives the content inset (FR-021, FR-022,
   US3-11).
 
-Element children with `slot=""` are not in scope: the README says sections carry no `slot` attribute. Hidden sections
-still count (spec "Empty slot").
+The head and footer content has its edge margins trimmed as R-02 states, so a `<p>` footer sits `--ocelle-space-4`
+from every side of its part. Element children with `slot=""` are not in scope: the README says sections carry no
+`slot` attribute.
 
 **Rationale**: the spec's divider placement (FR-022 as fixed for SPEC-3-01 and for PLAN-CORRECTNESS-1-004) with no
 change to the page's DOM. A percentage `min-block-size` on an inner box of an auto-height block host resolves to
 nothing (PLAN-CORRECTNESS-1-003), hence the flex host.
 
-Measure before red: `::slotted(:nth-child(1 of :not([slot])))` matches the first default-slot element when a head
-element precedes it in DOM order (`:nth-child(of S)` is Chromium 111, WebKit 9, inside the floor); negative margins on
+Measure before red: `::slotted(:nth-child(1 of :not([slot]):not([hidden])))` matches the first visible
+default-slot element when a head element precedes it in DOM order (`:nth-child(of S)` is Chromium 111, WebKit 9, inside the floor); negative margins on
 `::slotted()` elements in a padded wrapper give a full-width border, for `div`, `span` and `ocelle-section-header`
-sections; the host box fills a 600 px container and grows past a shorter one, measured in a block container, a
+sections; a hidden `div` section and a hidden `ocelle-section-header` section (whose own sheet has
+`:host([hidden]) { display: none }`) between two visible ones have no box under the `:not([hidden])` rules, with
+exactly one divider between the visible sections, and a hidden first section leaves the first visible one without a
+border of its own (`:nth-child(1 of :not([slot]):not([hidden]))`); `ul` and `p` sections take no UA margin; the host
+box fills a 600 px container and grows past a shorter one, measured in a block container, a
 flex-row container and a grid container, each with and without base.css. The page's DOM is never changed, so there is
 no script fallback that marks the first section; if the measurement fails, the operator is asked before the US3 red
 commit.
@@ -260,6 +297,25 @@ the divider and the bottom group.
   (1 px inside the border box). No `overflow` clipping is set on the rail (US4-2).
 - Orientation is pure CSS on `:host([orientation="horizontal"])`, outside the forced-colours query (R-01, US4-9); the
   template does not change with orientation, so focus, DOM order and the landmark node stay (US4-5).
+- **Item colour and stand-in items** (operator decision PLAN-FRESH-2-003 (a), FR-027): the rail sets
+  `--ocelle-color-chrome-ink` as `color` on the host and styles no item; an item takes it only when it inherits
+  colour. A plain `<a>` does not: the user agent's `a:any-link` colour beats inheritance (probed in plan squad round
+  2: `rgb(0, 0, 238)` on the light chrome, 18 px tall, axe 4.14.0 `color-contrast` and `target-size` serious). Since
+  #12's `ocelle-nav-item` does not exist yet, every rail story and fixture holds stand-in items: `<a>` elements styled
+  by a same-origin stylesheet, never a `style` attribute (strict CSP, #10's story CSP plant): `display: inline-flex;
+  align-items: center; justify-content: center; box-sizing: border-box; inline-size: var(--ocelle-size-rail-item);
+  block-size: var(--ocelle-size-rail-item); color: inherit`. In Storybook the rules sit in #10's story layout sheet
+  (`storybook/.storybook/stories-layout.css`, keyed on `[data-story]` only) or a sheet beside it, under a
+  `[data-story="rail-items"]` selector the rail stories set on their root; on the fixture pages they sit in a linked
+  same-origin fixture stylesheet under the same attribute. US4-2 asserts a slotted item's computed `color` equals
+  `--ocelle-color-chrome-ink` (and follows its token sentinel, R-13). The README states that `<a>` items need
+  `color: inherit` (or are `ocelle-nav-item` elements) and a target of at least 24 px.
+- **The README's orientation example** (operator decision PLAN-FRESH-2-005 (a), FR-026, US4-10): the page reads the
+  viewport with a media query whose bound is exclusive, `matchMedia("(width < Npx)")`, and sets `orientation` to
+  `"horizontal"` while it matches and `"vertical"` otherwise, on load and on the query's `change` event. A column- or
+  container-driven tier is #12's to build; the README says the rail does not care where the value comes from. The
+  US4-10 test runs the README's code block on the fixture page (contracts/checks.md) and sets the viewport to N and
+  N − 1 px; the plant rewrites the example's query to `(max-width: Npx)`, which turns the rail horizontal at N.
 
 **Rationale**: FR-025 as fixed; #492's exclusive-bound complaint is answered by having no threshold in the element
 (FR-026). #12 drives the rail by setting `orientation` (a reflected attribute), which a drawer or a shell query can do;
@@ -269,7 +325,9 @@ no event is needed. Sizing the host, not an inner box, makes the 52 px the box t
 Measure before red: the focus ring inside the vertical rail; the host's border box 52 px wide with a 44 px content
 box, and a horizontal rail's border box equal to its container's inline size at 320 px, each with and without
 base.css; the host 600 px tall in a 600 px block container, flex-row container and grid container; a horizontal rail
-with only bottom items has its bottom group at the inline end, in left-to-right and right-to-left.
+with only bottom items has its bottom group at the inline end, in left-to-right and right-to-left; the stand-in
+items' computed colour equals `--ocelle-color-chrome-ink` and axe 4.14.0 reports no `color-contrast` or `target-size`
+finding on them in either theme.
 
 ## R-11 Landmark naming (FR-020, FR-024, FR-028)
 
@@ -283,6 +341,19 @@ with a `label`, and removing it falls back to the `label` in internals. That is 
 `aria-label` and no second node. The element never writes, rewrites or removes the host's `aria-label`. Nothing here
 adds public surface; the manifest does not list internals.
 
+**Where the internals are held** (operator decision PLAN-FRESH-2-004 (b)): not in a `#private` field as 005's
+elements do (`readonly #internals`, `src/ocelle-icon.ts:87`, `src/ocelle-brand-mark.ts:110`), but in an own property
+keyed by a symbol described `internals`: `src/naming.ts` gains `export const internalsKey = Symbol("internals")`
+(internal; not exported from `src/index.ts` or `src/browser.ts`), and the sidebar and rail declare
+`readonly [internalsKey] = this.attachInternals()`. axe-core 4.14.0's `gather-internals` reads exactly that (own
+properties `_internals`, `internals` or `internals_`, or own symbols described `internals` or `privateInternals`), so
+axe sees the hosts' `navigation` role and its landmark rules apply to them. The field is not public surface: it is a
+symbol-keyed field with no string name, marked `@internal` (and `@ignore`) so the manifest generator omits it, and
+`test/node/manifest.test.ts` asserts that neither element's manifest entry lists a member for it, paired with
+the same entry listing `label`. The same change for 005's `ocelle-icon` and `ocelle-brand-mark` (whose `img` role axe does not see either)
+was considered: it would change 005's source and its tests, which is outside this feature's scope, so it is raised to
+the operator at the plan gate as a follow-up for those elements and 005 is not touched here.
+
 Probed for plan squad round 1 (CDP full AX tree, ignored nodes filtered; `reviews/plan/round-1/refute.md`): host
 `aria-label="Team"` with an inner `<nav>` gave `generic "Team"` plus `navigation "Team"`; `internals.role = "none"`
 gave the same (a global `aria-label` overrides `none`); the host as landmark gave `navigation "Squad"` alone,
@@ -291,20 +362,36 @@ these reads on the four US3-12 and three US4-11 cases.
 
 **Axe** (operator decision PLAN-TESTABILITY-1-007 (b)): the package scenarios assert the accessibility tree only;
 FR-028's axe clause is held by #10's `axe` gate on one story per US3-12 and US4-11 case, each rendering that landmark
-alone (R-14). axe-core 4.14.0 reads ARIA attributes and a few named internals properties, not a `#private`
-internals field, so it may not see the internals landmark at all: then `landmark-unique` does not apply, and `region`
-(moderate) may flag the slotted links as outside a landmark. `aria-prohibited-attr` does not fire on a custom-element
-host with `aria-label` (axe 4.14.0 `listProhibitedAttrs` returns none for a valid custom element name). These axe
-outcomes are measured on a probe page with the axe-core 4.14.0 of #10's branch (the root devDependency at `5f49794`)
-before the plan gate, and an adverse result (a serious or critical finding on any case) is taken to the operator at
-the plan gate; the phase-1 spike repeats the measurement against #10 as merged and records it in
-`reviews/phase-1/spike.md`.
+alone (R-14).
+
+Measured in plan squad round 2 (`reviews/plan/round-2/refute.md`, PLAN-FRESH-2-004; axe-core 4.14.0 as pinned at
+`5f49794`, #10 FR-016's tag set, `region`, `landmark-one-main` and `page-has-heading-one` off), with the internals in
+a `#private` field: axe does not see the internals landmark at all. The host gets no `landmark-unique` node, so two
+unnamed hosts on one page raise no finding; the four US3-12 and the US4-11 cases give no violation, and the hosts
+pass `aria-prohibited-attr` (axe 4.14.0 `listProhibitedAttrs` returns none for a valid custom element name) and
+`aria-allowed-attr`. `region` is one of #10's excluded rules. With a `#private` field the per-case stories could
+therefore only catch a regression that adds a node or attribute axe does flag, and could never fail on naming; that
+is why the internals move to the `internals` symbol above.
+
+With the symbol field, axe treats each host as a `navigation` landmark: the per-case stories then catch a serious or
+critical finding on the landmark itself (an ARIA attribute not allowed or prohibited on `navigation`, an invalid
+`aria-label` value, a second landmark node in the template) in either theme. They still do not check which name the
+landmark gets (the package scenarios' tree reads do, US3-12, US4-11), and `landmark-unique` is moderate, so the gate
+does not fail on two unnamed landmarks. To show that axe reads the landmark, one story per element renders an
+unnamed pair (two sidebars, two rails, neither with `label` or `aria-label`), on which axe's moderate
+`landmark-unique` note is expected on both hosts; the phase evidence records that note from the `axe` gate's report
+(or from #10's axe runner on that story, if the report omits moderate results), and the plant that moves the
+internals back into a `#private` field makes it disappear (contracts/checks.md). The symbol-field outcomes (the note
+on the pair, no serious or critical finding on the seven cases) are measured in the phase-1 spike against #10 as
+merged and recorded in `reviews/phase-1/spike.md`; an adverse result is taken to the operator before the US3 red
+commit.
 
 **Rationale**: the operator's "Follow convention" and FR-028; PLAN-A11Y-SECURITY-1-001 (both earlier options left a
 named generic host node).
 
 **Alternatives**: an inner `<nav>` with nothing on the host (option i) or with `internals.role = "none"` (option ii),
-both rejected by the probe above.
+both rejected by the probe above. Internals in a `#private` field as in 005, with the measurement recorded and the
+stories' limits stated (PLAN-FRESH-2-004 option (a), not chosen).
 
 ## R-12 Eyebrow tokens (FR-030 to FR-032)
 
@@ -376,6 +463,9 @@ on the fixture and `userEvent.tab` in process, asserting the deep active element
   level-3 heading read as 3 and not 2; a page 400 px wide read as overflowing; focus inside a shadow root read as the
   inner element; a clipped text node reported). Pure plumbing (passing a viewport size to Playwright, mounting a
   container) is exempt, with the reason recorded in the phase-1 review.
+- **Rail stand-in items** (R-10, PLAN-FRESH-2-003): the rail fixture pages link a same-origin fixture stylesheet that
+  sizes `<a>` items under `[data-story="rail-items"]` to `--ocelle-size-rail-item` squares with `color: inherit`;
+  nothing is styled through a `style` attribute, so the CSP record stays clean.
 - **Plants**: each "does not" outcome has its pair and plant listed in contracts/checks.md § Pairing plants. A plant
   is applied by 005's method (`specs/005-icons-brand-mark/reviews/phase-4/plants.md`): a working-tree edit of the
   element source, the named scenarios run through both harnesses (the browser build rebuilt with the plant), the file
@@ -391,8 +481,10 @@ one element state inside the story root, open shadow roots only, no element outs
 of these elements has hover or press behaviour). Baselines are produced by `pnpm run visual:update` in the pinned
 container and committed under `storybook/baselines/<story-id>.<theme>.png`; when a local capture and CI's disagree,
 CI's captures from the job artifact are committed (#10 FR-005). The `axe` gate runs every story in both themes;
-sidebar and rail stories each render one landmark with a distinct label, so `landmark-unique` holds whether or not
-axe sees the internals landmark (R-11). FR-028's axe clause is held here (operator decision PLAN-TESTABILITY-1-007
+sidebar and rail stories each render one landmark with a distinct label, so `landmark-unique` holds now that axe sees
+the internals landmark (R-11), except the one unnamed-pair story per element, which exists to show axe's moderate
+`landmark-unique` note (R-11). Rail stories hold the stand-in items of R-10 under `[data-story="rail-items"]`, so
+`color-contrast` and `target-size` hold on them. FR-028's axe clause is held here (operator decision PLAN-TESTABILITY-1-007
 (b)): one story per US3-12 case (host `aria-label` only, both, blank host `aria-label` with `label`, neither) and per
 US4-11 case (host `aria-label` only, both, blank with `label`), each rendering that one landmark alone.
 `storybook/test/integration/elements-stories.test.ts` (005) is extended first in each phase to the new stories: each
@@ -403,15 +495,20 @@ unbreakable `white-space: nowrap` run. #10's capture stays at 1280 × 800 px; th
 
 **Recheck when #10 lands**: before phase 1 starts, the implementer compares #10 as merged on `main` against this
 item (story file location, story id scheme, baseline path and naming, `visual:update` and gate commands, the axe rule
-set and its excluded rules, the contributor note's items) and records any difference in `reviews/phase-1/spike.md`;
-a difference that changes a task is raised to the operator before the red commit.
+set and its excluded rules, the contributor note's items, the story layout sheet and whether a story may add rules
+to it or a sheet beside it, and whether the `axe` gate's report lists moderate results) and records any difference
+in `reviews/phase-1/spike.md`; a difference that changes a task is raised to the operator before the red commit. At
+`5f49794` the `axe` gate is not implemented (`gates/bin/axe.ts` is the "not implemented (axe, phase 4)" stub), so
+the recheck confirms that #10 as merged runs axe-core on every story in both themes with FR-016's rule set; if it
+does not, FR-038 and FR-028's axe clause have no gate and the operator is asked before the phase-1 red commit.
 
 ## R-15 Engine floor (FR-039)
 
 **Decision**: the features used are inside the current floor (Chromium 120, WebKit 16.4): flexbox `gap`,
 `flex-wrap`, logical properties, `:nth-child(of S)` (Chromium 111, WebKit 9), `::slotted()`, `MutationObserver`,
 `ElementInternals` with `role` and `ariaLabel` (Chromium 90 and WebKit 16.4, inside the floor; 005 already uses
-them), `assignedSlot`. No container query, `:has()`, `:has-slotted`, `:state()` or `:host-context()`. The floor is
+them), `assignedSlot`, and, in the README's orientation example only, the media-query range syntax `(width < N)`
+(Chromium 104, WebKit 16.4). No container query, `:has()`, `:has-slotted`, `:state()` or `:host-context()`. The floor is
 unchanged; the README's Engines list is not touched.
 
 ## R-16 Shared files and siblings

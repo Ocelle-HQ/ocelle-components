@@ -14,10 +14,11 @@ own) with an eyebrow, a description and actions that wrap under the heading colu
 the actions do not fit side by side, the eyebrow on its own line above them; `ocelle-card` has a regular and a
 compact density and an inset ground, and a section header directly in its `header` slot reads that slot and compacts
 itself (no public surface, no stored flag); `ocelle-context-sidebar` is a navigation landmark on its own host, named
-through `ElementInternals`, with a head, sections and a footer, divided by full-width rules placed by `::slotted()`
-and `:nth-child(1 of :not([slot]))`; `ocelle-personal-rail` is a host navigation landmark on the dark chrome whose
+through `ElementInternals` (held where axe reads it), with a head, sections and a footer, divided by full-width rules
+placed by `::slotted()` and `:nth-child(1 of :not([slot]):not([hidden]))`, hidden sections drawing nothing; `ocelle-personal-rail` is a host navigation landmark on the dark chrome whose
 orientation the page or #12's shell sets, with no threshold of its own. Empty parts take no space
-through a shared internal slot-state controller. Stories, baselines and axe follow #10's design; implementation
+through a shared internal slot-state controller, and the user agent's margins at the edges of slotted content are
+trimmed. Stories, baselines and axe follow #10's design; implementation
 starts only after #10 is merged, and phase 1 rechecks this plan against #10 as merged. Every decision is in
 [research.md](research.md); the surface is in [contracts/elements-package.md](contracts/elements-package.md) and the
 checks in [contracts/checks.md](contracts/checks.md).
@@ -53,15 +54,15 @@ per variant and state plus one per landmark-naming case.
 
 ## Constitution Check
 
-*Gate: passes before Phase 0; re-checked after Phase 1 design and again after plan squad round 1's fixes
-(`reviews/plan/round-1/`) — passes, no exception.*
+*Gate: passes before Phase 0; re-checked after Phase 1 design and again after the fixes of plan squad rounds 1 and 2
+(`reviews/plan/round-1/`, `reviews/plan/round-2/`) — passes, no exception.*
 
 | Principle | How this plan meets it |
 |---|---|
 | I. Names, no I/O, small interface, manifest | Tags `ocelle-card`, `ocelle-section-header`, `ocelle-page-header`, `ocelle-context-sidebar`, `ocelle-personal-rail`. No events (checked per element, FR-002), no I/O. Interface: `density`, `inset`, `size`, `variant`, `label`, `orientation` and slots; no parts, no element custom properties (FR-007). The compact-card channel is the header reading its own assigned slot, with the card calling the inherited `requestUpdate()`: no new surface (R-05). Manifest entries generated and gated. |
 | II. Tokens only, brand rules | All values from tokens; `uppercase`, `auto`, `100%`, `50%` and `-1` inside `calc()` are allowed by `token-only` as it stands (no new allowance). The rail is on `color-chrome` in both themes. Eyebrow in Schibsted Grotesk, no monospace (FR-031). Cards use `radius-row`; no other radius. `color-rule` draws decorative dividers only, never a control boundary. |
-| III. Accessible by construction | Slotted headings keep the page's level; no ID reference crosses a shadow root (the landmark's name is a string, not a reference). The sidebar and rail hosts are the navigation landmarks through `ElementInternals` (005's `naming.ts` pattern), named by `label` or the host `aria-label` by the Host ARIA rule, with no second named node (R-11, probed in plan squad round 1). No tab stops; focus order is the page's. Borders survive forced colours (FR-003), and layout variants hold in them (FR-001 as amended). Eyebrow colour has text contrast rows on every main ground. axe through #10 on every story, including one story per US3-12 and US4-11 case. |
-| IV. Strict CSP | Adopted stylesheets; no `style` attribute or `<style>`; fixture pages under the strict header for every scenario; `csp` gate on both builds. |
+| III. Accessible by construction | Slotted headings keep the page's level; no ID reference crosses a shadow root (the landmark's name is a string, not a reference). The sidebar and rail hosts are the navigation landmarks through `ElementInternals` (005's `naming.ts` pattern), named by `label` or the host `aria-label` by the Host ARIA rule, with no second named node (R-11, probed in plan squad round 1). No tab stops; focus order is the page's. Borders survive forced colours (FR-003), and layout variants hold in them (FR-001 as amended). Eyebrow colour has text contrast rows on every main ground. axe through #10 on every story, including one story per US3-12 and US4-11 case; the hosts hold their internals under an `internals` symbol key, so axe's landmark rules see them, shown by one unnamed-pair story per element (R-11, PLAN-FRESH-2-004 (b)). Rail stories and fixtures use stand-in items that inherit chrome ink and are 40 px squares, so `color-contrast` and `target-size` hold, and the README says plain `<a>` items need `color: inherit` and a 24 px target (R-10). |
+| IV. Strict CSP | Adopted stylesheets; no `style` attribute or `<style>`; fixture pages under the strict header for every scenario; the rail's stand-in items are styled by same-origin linked stylesheets keyed on `data-story`, never a `style` attribute (R-10); `csp` gate on both builds. |
 | V. Storybook, behaviour tests | A story per variant and state, light and dark, baselines from #10's pinned container (R-14). No events to assert; keyboard paths (tab order, orientation change with focus) tested. |
 | VI. Consumer-driven, own code | Needs from #8 and spec-kitty-design #450, #492, #497, #516, #529 (`sources/README.md`); deviations listed in the spec. Nothing copied. |
 | VII. Semver | MINOR additions only: five elements, five entry points, four tokens; both CHANGELOGs. |
@@ -85,7 +86,8 @@ per variant and state plus one per landmark-naming case.
 5. **Sidebar box and dividers** (R-09; operator decision PLAN-CORRECTNESS-1-004 (b), the divider follows the
    content): a flex-column host with `min-block-size: 100%` and a growing layout container, so it fills its
    container or grows past it; sections `display: block`; each section's `border-block-start` except the first by
-   `::slotted(:nth-child(1 of :not([slot])))`, the sections wrapper's block-start and block-end borders by head and
+   `::slotted(:nth-child(1 of :not([slot]):not([hidden])))`, every section rule excluding `[hidden]` so a hidden
+   section (an `ocelle-section-header` included) draws nothing (PLAN-FRESH-2-001), the sections wrapper's block-start and block-end borders by head and
    footer state (the head's block-end border when the default slot is empty), negative inline margins for full-width
    rules around inline-padded text. The free space of a tall sidebar lies between the last divider and the footer.
    If the measurement fails, the operator is asked; the page's DOM is never changed.
@@ -94,13 +96,20 @@ per variant and state plus one per landmark-naming case.
    and the free space before the bottom group (operator decision PLAN-CORRECTNESS-1-004 (b)); a vertical rail taller
    than its container grows with its content, scrolling is the container's; horizontal: primary group wraps, bottom
    group at the inline end (also with no primary items) and at most half the inline size, divider over every row;
-   orientation is CSS only, outside the forced-colours query, so focus, DOM and layout in forced colours stay.
+   orientation is CSS only, outside the forced-colours query, so focus, DOM and layout in forced colours stay. The
+   rail styles no item: chrome ink is on the host, and stories and fixtures hold stand-in `<a>` items sized and set
+   to `color: inherit` by a same-origin stylesheet (operator decision PLAN-FRESH-2-003 (a)). The README's orientation
+   example is `matchMedia("(width < Npx)")` on the viewport (operator decision PLAN-FRESH-2-005 (a)).
 7. **Landmarks** (R-11): the host is the navigation landmark (`internals.role = "navigation"`, `internals.ariaLabel`
    from `label`), no inner `<nav>`; a host `aria-label` overrides natively and the element never writes it. axe is
    not run in the package scenarios: FR-028's axe clause is held by #10's `axe` gate on one story per US3-12 and
-   US4-11 case (operator decision PLAN-TESTABILITY-1-007 (b)). Whether axe 4.14.0 sees the internals landmark, and
-   any serious or critical finding on these hosts, is measured with #10's axe-core on a probe page and taken to the
-   operator at the plan gate if adverse.
+   US4-11 case (operator decision PLAN-TESTABILITY-1-007 (b)). Measured in plan squad round 2: axe 4.14.0 does not
+   read a `#private` internals field, so with 005's pattern it would not see these landmarks at all. By operator
+   decision PLAN-FRESH-2-004 (b) the internals are held under an own `Symbol("internals")` key (internal, off the
+   manifest), which axe reads; one unnamed-pair story per element shows axe's moderate `landmark-unique` note. This
+   departs from 005's `#internals`; the same change for `ocelle-icon` and `ocelle-brand-mark` is a follow-up for the
+   operator, not part of this feature. #10's `axe` gate is a stub at `5f49794`; the phase-1 recheck confirms it runs
+   as merged (R-14).
 8. **Eyebrow tokens** (R-12): four tokens, three of them aliases; tracking `0.08em`; contrast counts 169 / 177 / 346 /
    158 (316 required), planted summary 170, at the exact places R-12 lists. If #7 adds them first, this feature uses
    them.
@@ -116,6 +125,9 @@ per variant and state plus one per landmark-naming case.
     recorded in `reviews/phase-N/plants.md`; an uncaught declaration blocks unless recorded as equivalent.
 13. **SC-002** (R-14; operator decision PLAN-CORRECTNESS-1-009 (a)): the story test loads every new story at
     320 × 800 px and asserts no scroll and no clipped text.
+14. **Edge margins of slotted content** (R-02, FR-008; operator decision PLAN-FRESH-2-002 (a)): the elements trim
+    the UA block margins at the edges of slotted content (description, eyebrow, card body's first and last element,
+    sidebar sections, head and footer edges); margins between slotted elements and any page rule stay the page's.
 
 ## Project Structure
 
@@ -163,13 +175,17 @@ gates/test/… and gates/bin/contrast.ts # pinned contrast counts
    - the #10 recheck (R-14) against `main`, recorded in `reviews/phase-1/spike.md`, a difference that changes a task
      raised to the operator;
    - the spike, measured in this container's Chromium and recorded in the same file: R-02 (UA heading rules lose to
-     `::slotted()`), R-04 (wrap rule a–d, d being the actions aligned with the heading under an eyebrow), R-09
-     (`:nth-child(1 of :not([slot]))` under `::slotted()`, negative margins on `div`, `span` and
-     `ocelle-section-header` sections, the host box in block, flex-row and grid containers with and without
-     base.css), R-10 (focus ring inside the vertical rail, 52 / 44 px border and content box and the horizontal border
-     box at 320 px with and without base.css, the host in the three container kinds, the horizontal bottom group
-     with no primary items), R-11 (the host-as-landmark tree reads for the US3-12 and US4-11 cases, and axe 4.14.0 on
-     them against #10 as merged);
+     `::slotted()`; UA `p` and `ul` margins trimmed by the edge-margin rules, the margin between two `p` kept), R-04
+     (wrap rule a–d, d being the actions aligned with the heading under an eyebrow), R-09
+     (`:nth-child(1 of :not([slot]):not([hidden]))` under `::slotted()`, negative margins on `div`, `span` and
+     `ocelle-section-header` sections, `ul` and `p` sections, hidden `div` and `ocelle-section-header` sections and a
+     hidden first section, the host box in block, flex-row and grid containers with and without base.css), R-10
+     (focus ring inside the vertical rail, 52 / 44 px border and content box and the horizontal border box at 320 px
+     with and without base.css, the host in the three container kinds, the horizontal bottom group with no primary
+     items, the stand-in items' colour and axe `color-contrast` and `target-size`), R-11 (the host-as-landmark tree
+     reads for the US3-12 and US4-11 cases, and axe 4.14.0 against #10 as merged with the internals under the
+     `internals` symbol key: no serious or critical finding on the seven cases, the moderate `landmark-unique` note
+     on an unnamed pair);
    - not exempt: `src/slot-state.ts` with `test/slot-state.test.ts` first (empty by the spec's definition, whitespace
      text, text-data change, element added and removed), red then green;
    - not exempt, red first on a known page (R-13): the behavioural driver and command readers, namely the heading
@@ -181,7 +197,8 @@ gates/test/… and gates/bin/contrast.ts # pinned contrast counts
 2. **US1 Section header, card and eyebrow tokens** (P1): tokens first (expected tokens, contrast rows and every
    pinned count at the places R-12 lists changed first); `card-context.ts` with its unit test first
    (`inCompactCardHeader`, `notifyHeaders`); `ocelle-section-header.ts` and `ocelle-card.ts` with US1 scenarios 1–19
-   as shared bodies run by both harnesses, each "does not" with its pair and plant, plus each element's
+   as shared bodies run by both harnesses (US1-2 with `p` description and eyebrow, US1-7 and US1-11 with `p`
+   bodies, measured to the slotted element's border box, FR-008), each "does not" with its pair and plant, plus each element's
    token-sentinel scenario and no-event check (R-13); the R-05 transition scenarios (density set then removed by
    script, a header moved between the `header` slot and the body by its `slot` attribute and by DOM moves), the
    definition-order entry test `entry-card-order.test.ts` (import `ocelle-card.js`, mount, then import
@@ -192,20 +209,25 @@ gates/test/… and gates/bin/contrast.ts # pinned contrast counts
    convention paragraph (FR-001, FR-036) and the readme test's statements, red first; both CHANGELOGs (the Styles
    change as a documentation note); the style plants of R-17 for both templates. Gates include `contrast`,
    `brand-rules`, `visual`, `axe`.
-3. **US2 Page header** (P2): `ocelle-page-header.ts`, US2 scenarios 1–7 as shared bodies, its token-sentinel scenario
+3. **US2 Page header** (P2): `ocelle-page-header.ts`, US2 scenarios 1–7 as shared bodies (US2-2 with a `p`
+   description, FR-008), its token-sentinel scenario
    and no-event check; entry, exports, manifest, stories (with the 320 px pass) and baselines, README and readme
    test, CHANGELOG; style plants.
 4. **US3 Context sidebar** (P3): `ocelle-context-sidebar.ts`, US3 scenarios 1–13 as shared bodies (US3-3 with its
-   `ocelle-section-header` and `span` section variant; US3-12 reading the tree only, R-11), its token-sentinel
-   scenario and no-event check; entry, exports, manifest, stories (one landmark per story, distinct label, and one
-   story per US3-12 case rendered alone for the `axe` gate) and baselines, README and readme test, CHANGELOG; style
+   `ocelle-section-header` and `span` section variant, its `ul` and `p` section, head and footer variant and its
+   hidden-section variant; US3-12 reading the tree only, R-11), its token-sentinel scenario and no-event check; the
+   internals under `internalsKey` in `src/naming.ts` and the manifest test's no-member assertion; entry, exports,
+   manifest, stories (one landmark per story, distinct label, one story per US3-12 case rendered alone for the `axe`
+   gate, and the unnamed-pair story with its recorded `landmark-unique` note) and baselines, README and readme test, CHANGELOG; style
    plants.
 5. **US4 Personal rail** (P4): `ocelle-personal-rail.ts`, US4 scenarios 1–11 as shared bodies (US4-4 through 721,
    720, 719 and 320 px; US4-6 in both orientations; US4-9 with the horizontal rail still a row; US4-10 running the
-   README's orientation example code on the fixture page through a same-origin module; US4-11 reading the tree
-   only), its token-sentinel scenario and no-event check; entry, exports, manifest, stories (one per US4-11 case
-   rendered alone) and baselines, README (the #12 note and the orientation example) and readme test, CHANGELOG;
-   style plants.
+   README's `matchMedia("(width < Npx)")` orientation example on the fixture page through a same-origin module, the
+   viewport set to N and N − 1; US4-2 with the stand-in items' computed colour; US4-11 reading the tree only), its
+   token-sentinel scenario and no-event check; the internals under `internalsKey`; the stand-in item stylesheets
+   for the fixture pages and the stories (`[data-story="rail-items"]`); entry, exports, manifest, stories (one per
+   US4-11 case rendered alone, and the unnamed-pair story) and baselines, README (the #12 note, the orientation
+   example and the `<a>` item note) and readme test, CHANGELOG; style plants.
 
 Each phase is folded after its approval (`/ocelle-run` step 4.3). Element source of each phase is mutation-tested with
 the phase base, and its `css` templates are covered by the style plants of R-17. Phase 5 is separable: if the operator splits the rail off (triage 011), phases 1–4 stand alone.

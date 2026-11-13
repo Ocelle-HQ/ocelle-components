@@ -5,8 +5,8 @@
 | Project | Files | Mutated |
 |---|---|---|
 | `elements` | `test/<element>.test.ts` (in process, shared bodies from `test/scenarios/<element>.ts`), `test/slot-state.test.ts`, `test/card-context.test.ts`, `test/commands.test.ts` (the new readers, R-13), `test/entry-<element>.test.ts`, `test/entry-card-order.test.ts` (definition order, R-05), `test/entry-root.test.ts` | yes, under `stryker.elements.config.json` |
-| `elements-browser` | `test/browser/<element>.test.ts` on strict-CSP fixture pages of the browser build, including the mixed-copy card page (R-05) and the README orientation example page (US4-10) | no |
-| `elements-node` | `test/node/readme.test.ts` (FR-036 statements, including the amended Styles paragraph), `test/node/manifest.test.ts` | yes, default configuration |
+| `elements-browser` | `test/browser/<element>.test.ts` on strict-CSP fixture pages of the browser build, including the mixed-copy card page (R-05), the README orientation example page (US4-10) and the rail pages' linked same-origin stand-in item stylesheet (R-10) | no |
+| `elements-node` | `test/node/readme.test.ts` (FR-036 statements, including the amended Styles paragraph), `test/node/manifest.test.ts` (including no member for the sidebar's and rail's internals key, R-11) | yes, default configuration |
 | `elements-build` | `test/build/build.test.ts`, `test/build/pack.test.ts` (new `dist/<tag>.js` files) | no |
 
 Mutation scope follows 005 decision 16: `packages/elements/src/**` is the changed source; test code, fixture suites
@@ -47,7 +47,12 @@ element's box and every clipping ancestor, paired with the element rendering its
 PLAN-CORRECTNESS-1-009 (a)). Plant: a story whose slotted text is an unbreakable `white-space: nowrap` run.
 
 The stories include one per case of US3-12 (four) and of US4-11 (three), each rendering that one landmark alone, so
-the `axe` gate holds FR-028's axe clause (FR-038).
+the `axe` gate holds FR-028's axe clause (FR-038), and one unnamed-pair story for the sidebar and one for the rail
+(two hosts, neither with `label` or `aria-label`). The phase evidence records axe's moderate `landmark-unique` note on
+both hosts of each pair story, from the `axe` gate's report or, if that omits moderate results, from #10's axe runner
+on that story; with the plant "internals held in a `#private` field" (research.md R-11) the note is gone. Rail
+stories set `data-story="rail-items"` on their root, and the story stylesheet sizes their stand-in `<a>` items to
+`--ocelle-size-rail-item` squares with `color: inherit` (research.md R-10); no story uses a `style` attribute.
 
 ## Pairing plants ("does not" outcomes)
 
@@ -76,13 +81,18 @@ no test hook is added to source.
 | Header moved to the body is no longer compact, and compact again when moved back (R-05) | header compact while in the `header` slot | card does not notify headers that left the slot (`previous` dropped) |
 | Definition order changes nothing (R-05; header defined after the card, and before) | header compact in both orders | header resolves its size only in its constructor, not in `willUpdate` / on connect |
 | Layout variants hold in forced colours (US1-13 compact card, US4-9 horizontal rail; FR-001) | borders and divider visible in a system colour | the layout rule moved inside `@media not (forced-colors: active)` |
-| No divider between sections in a one-section sidebar, none before the first section (US3-7, US3-3) | four dividers in US3-3 | border on the first section too (the `:nth-child(1 of :not([slot]))` rule dropped) |
+| No divider between sections in a one-section sidebar, none before the first section (US3-7, US3-3) | four dividers in US3-3 | border on the first section too (the `:nth-child(1 of :not([slot]):not([hidden]))` rule dropped) |
+| Hidden sections draw no box, padding or divider (US3-3 hidden variant, FR-022) | exactly one divider between the two visible sections, with `--ocelle-space-4` padding on both sides | `:not([hidden])` dropped from the section rules; separately, dropped from the first-section rule only (a hidden first section then leaves a double rule under the head) |
+| No UA margin on slotted `p` and `ul` content (FR-008; US1-2, US1-7, US1-11, US2-2, US3-3) | the stated gap or padding to the slotted element's border box | each reset dropped in turn: `margin-block: 0` on the section header's and page header's description and eyebrow; the card body's first-element start and last-element end resets; the sidebar sections' `margin-block: 0`; the head's and footer's edge resets |
+| Body paragraphs keep their spacing between each other (US1-7, FR-008) | the first `p` starts the density's gap below the header | `margin-block: 0` on every body element instead of the first and last |
 | Footer does not overlap the last section (US3-4) | the sidebar grows with its content | `max-block-size: 100%` on the layout container |
 | No divider for text in the sidebar default slot (US3-11) | one divider at the second section | border on the sections wrapper's text lines |
 | Rail divider absent unless both groups are non-empty (US4-6) | divider shown when both are non-empty | divider shown when either group is non-empty |
 | Rail keeps orientation at every width (US4-4) | the set orientation draws its layout | a `@media (max-width: 720px)` flip; separately, `container-type: inline-size` on the host with a `@container (max-width: 720px)` flip |
 | Orientation change keeps focus (US4-5) | layout changes on the same change | template re-rendered with new nodes per orientation |
-| README orientation example uses an exclusive bound (US4-10) | rail vertical at the bound, horizontal 1 px below | the README example rewritten to `max-width: N` (README planted; the test runs the README's code) |
+| README orientation example uses an exclusive bound (US4-10) | rail vertical at the bound, horizontal 1 px below | the README example's `matchMedia("(width < Npx)")` rewritten to `matchMedia("(max-width: Npx)")` (README planted; the test runs the README's code) |
+| Axe sees the host landmark (FR-028, FR-038, R-11) | moderate `landmark-unique` note on both hosts of the unnamed-pair story | internals held in a `#private` field instead of under `internalsKey` (note gone) |
+| Internals key not in the manifest (R-11) | the element's manifest entry lists `label` | the `@internal` tag removed from the field |
 | No horizontal scroll at 320 px (US1-14, US2-5, US3-10, US4-7) | parts stack in the stated order | `flex-wrap: nowrap` on the row / `overflow-wrap: normal` |
 | No text clipped at 320 px (Reflow, US1-14, US2-5, US3-10, US4-7) | parts stack in the stated order | `overflow: hidden` plus `white-space: nowrap` on a wrapper |
 | Blank host `aria-label` leaves no name (US3-12, US4-11) | non-empty host `aria-label` names the landmark | the element replaces a blank host `aria-label` by the `label` value |
@@ -93,4 +103,10 @@ no test hook is added to source.
 
 US4-10 reads the orientation example's code block from `packages/elements/README.md` (located as the readme test
 locates sections) and runs it on the fixture page through a same-origin module, so the README's code is what is
-measured at N and N − 1 (PLAN-TESTABILITY-1-010).
+measured at N and N − 1 (PLAN-TESTABILITY-1-010). What is resized is the viewport (operator decision PLAN-FRESH-2-005
+(a)): the example is a `matchMedia("(width < Npx)")` query, and the test sets the viewport width to N and N − 1 px
+and reads the rail's `orientation` and layout at each.
+
+US4-2 also asserts that a slotted stand-in item's computed `color` equals `--ocelle-color-chrome-ink` (read from the
+same page) and follows the chrome-ink token sentinel (research.md R-10, R-13); plant: the stand-in stylesheet's
+`color: inherit` dropped, which also shows the item in the UA link colour.
