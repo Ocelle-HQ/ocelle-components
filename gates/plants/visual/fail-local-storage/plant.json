@@ -1,0 +1,16 @@
+{
+  "expect": "fail",
+  "why": "A story that makes run-time I/O while it renders, localStorage.setItem: io on both themes, naming the call (FR-030, research.md R-14).",
+  "findings": [
+    {
+      "location": "local-storage--call/light",
+      "rule": "io",
+      "message": "localStorage.setItem"
+    },
+    {
+      "location": "local-storage--call/dark",
+      "rule": "io",
+      "message": "localStorage.setItem"
+    }
+  ]
+}

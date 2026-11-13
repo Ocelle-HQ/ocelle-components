@@ -1,0 +1,6 @@
+{
+  "expect": "error",
+  "why": "The host entry point with no container engine: exit 2 naming it (FR-009, US2 scenario 7).",
+  "cause": "no container engine: ocelle-no-such-engine not found",
+  "engine": "missing"
+}

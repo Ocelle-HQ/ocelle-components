@@ -1,4 +1,0 @@
-{
-  "expect": "pass",
-  "why": "Markup literals in storybook/scripts/ are exempt from the markup rules, because externalise.ts names the tags it moves (002 FR-023)."
-}

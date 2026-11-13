@@ -1,0 +1,16 @@
+{
+  "expect": "fail",
+  "why": "Text using a face whose source is a path not in dist: both io and font hold, and the capture's one status is font, the first in data-model.md's order (research.md R-05).",
+  "findings": [
+    {
+      "location": "font-file-missing--missing-face/light",
+      "rule": "font",
+      "message": "Plant Missing Face (error)"
+    },
+    {
+      "location": "font-file-missing--missing-face/dark",
+      "rule": "font",
+      "message": "Plant Missing Face (error)"
+    }
+  ]
+}

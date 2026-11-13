@@ -1,0 +1,15 @@
+{
+  "expect": "fail",
+  "why": "Only the :hover rule of the pass-hover-and-press stories changes: differs on both themes of the hovered story, which a capture without the hover could not show (FR-031).",
+  "findings": [
+    {
+      "location": "hover-and-press--hover/light",
+      "rule": "differs"
+    },
+    {
+      "location": "hover-and-press--hover/dark",
+      "rule": "differs"
+    }
+  ],
+  "baselinesOf": "pass-hover-and-press"
+}

@@ -1,0 +1,16 @@
+{
+  "expect": "fail",
+  "why": "A story that makes run-time I/O while it renders, a document.cookie write: io on both themes, naming the call (FR-030, research.md R-14).",
+  "findings": [
+    {
+      "location": "cookie--call/light",
+      "rule": "io",
+      "message": "cookie set"
+    },
+    {
+      "location": "cookie--call/dark",
+      "rule": "io",
+      "message": "cookie set"
+    }
+  ]
+}

@@ -1,0 +1,4 @@
+{
+  "expect": "pass",
+  "why": "The fail-input-system-font element with font: inherit on its inputs in its shadow styles passes with its baselines (FR-025, FR-027)."
+}

@@ -1,0 +1,14 @@
+{
+  "expect": "fail",
+  "why": "A story module that throws when it is loaded: render-failed on both themes, not a pixel difference (FR-004, US2 scenario 11).",
+  "findings": [
+    {
+      "location": "throws-on-load--loaded/light",
+      "rule": "render-failed"
+    },
+    {
+      "location": "throws-on-load--loaded/dark",
+      "rule": "render-failed"
+    }
+  ]
+}

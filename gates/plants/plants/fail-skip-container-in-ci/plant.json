@@ -1,0 +1,10 @@
+{
+  "expect": "fail",
+  "why": "The plants job of ci.yml passes --skip-container, so CI would not run the visual plants: the registry check fails on it (006 FR-018, research.md R-07).",
+  "findings": [
+    {
+      "location": "ci.yml",
+      "rule": "skip-container-in-ci"
+    }
+  ]
+}

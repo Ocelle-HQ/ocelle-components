@@ -1,0 +1,11 @@
+Scope: all 5 workspace projects
+✓ Lockfile at ../pnpm-lock.yaml passes supply-chain policies (verified 4m ago)
+
+devDependencies:
++ @ocelle/tokens <- ../packages/tokens
++ @storybook/html-vite 10.6.5
++ storybook 10.6.5
+
+Done in 105ms using pnpm v12.16.1
+$ pnpm run prebuild && storybook build --disable-telemetry --preview-only -c .storybook -o dist && node scripts/externalise.ts dist
+$ node scripts/swatches.ts

@@ -1,0 +1,72 @@
+schema: review-findings/v1
+complete: true
+phase: plan
+round: 3
+lens: fresh
+# Checked (scratchpad probes only, host Chromium 1243 via OCELLE_CHROMIUM_PATH, the repository's Playwright 1.64.1
+# and pngjs 7.0.0): the round-2 scroll fix under `html { scroll-behavior: smooth }` (a smooth focus scroll still in
+# progress when the first scroll check reads 0; the full-page screenshot still came out at scroll 0 with the fixed
+# element at the top and identical bytes over four runs, so no finding); hover kept through a full-page capture of a
+# 100vh-centred target (Playwright does not resize the layout viewport: target at y 375 hovered in the capture, a
+# `position: fixed; bottom: 0` bar at rows 780-799; no finding); Playwright's `--disable-dev-shm-usage` default
+# (coreBundle.js:36224, so no `--shm-size` finding); base.css `:where(button, input, select, textarea) { font:
+# inherit }`; .github/actions/setup (Playwright browsers restored for every job). Earlier rounds' refute.md, fixes and
+# verify files were read; none of the findings below repeats a settled one.
+findings:
+  - id: PLAN-FRESH-3-001
+    severity: 3
+    title: "The font check walks document text nodes only, so text drawn inside form controls (input values, placeholders, button-type inputs) in a system font passes FR-027"
+    evidence:
+      - artifact: "research.md R-05 § Decision: 'for every text node in the document's story area ... open shadow roots included, the platform fonts the DevTools protocol (CSS.getPlatformFontsForNode) reports for it'; § Where the decisions live: 'The page only collects plain data (per text node: the families CDP returned and its computed family ...)'; the unit cases list shadow-root text and per-glyph fallback, nothing for form controls"
+      - artifact: "spec.md FR-027: 'fail ... a story-theme in which any rendered text is drawn with a font face other than the vendored Schibsted Grotesk'; US2 scenario 9 the same"
+      - code: "probe (scratchpad probe1.mjs, host Chromium 1243): body with `font-family: monospace` holding `<p>para</p><input value=\"Typed value\"><input placeholder=\"Placeholder only\"><input type=button value=\"Go\"><select><option>Choice</option></select>`. A TreeWalker over document.body (SHOW_TEXT) yields only [\"para\", \"Choice\"]; CDP DOM.getDocument({depth: -1, pierce: true}) exposes user-agent shadow text nodes \"Typed value\", \"Placeholder only\" and \"Go\", and CSS.getPlatformFontsForNode reports [\"Liberation Sans\"] for each (inputs do not inherit the page font), [] for the unrendered option text"
+      - code: "packages/styles/src/base.css: `:where(button, input, select, textarea) { font: inherit; }` is a document stylesheet rule; it does not reach an <input> inside an element's open shadow root, which FR-025 makes the rule for every element"
+    claim: |
+      Text inside a form control is not a text node of the document: an <input>'s value, its placeholder and the label
+      of an `<input type=button|submit|reset>` live in the control's user-agent shadow root, which neither a page-side
+      walk nor "open shadow roots included" reaches. The probe shows the walk the plan describes sees none of them,
+      while the browser draws them in a system face (Liberation Sans here; in the container one of the image's 50
+      Ubuntu fonts). Inside an element's open shadow root (the rule FR-025 sets for every element) base.css's
+      `font: inherit` does not apply, so an <input> there renders in the UA default font unless the element's own CSS
+      fixes it. The first text-field, search or select element (#7 to #9, #12 to #16) can therefore show its value or
+      placeholder in DejaVu Sans, commit that as a baseline, and pass the `font` gate: constitution II's one type
+      family and FR-027 fail silently for exactly the text consumers type into. No planned plant or unit case
+      exercises form-control text, so nothing would show the gap.
+    remedies:
+      - "research.md R-05: collect text through CDP, not the page: `DOM.getDocument({ depth: -1, pierce: true })` and `CSS.getPlatformFontsForNode` for every non-whitespace text node of the story area, user-agent shadow roots included (attributed to their host control), so input values, placeholders and button-type input labels are checked; keep the computed family of the node's host element for the 'used face not loaded' rule. data-model.md and contracts/container.md § Per story-theme say so. Unit cases in story-checks.ts: a UA-shadow text node with a system family (finding), one with Schibsted Grotesk (none), an unrendered option text with [] (none). Plants: `visual/fail-input-system-font` (a custom element whose open shadow root holds `<input value=\"…\">` and `placeholder` with no font rule: `font` on both themes) and a pass counterpart where the element sets `font: inherit` on its input, with its baselines. The contributor note (FR-025) says an element's shadow styles must set the font of its form controls."
+  - id: PLAN-FRESH-3-002
+    severity: 3
+    title: "Run-time storage I/O is detected only through Storage.prototype methods, so named-property storage, cookies and IndexedDB pass FR-030 and constitution I"
+    evidence:
+      - artifact: "research.md R-14: 'every call, after navigation starts, of Storage.prototype getItem, setItem, removeItem, clear or key, navigator.clipboard.write or writeText, and navigator.sendBeacon, recorded by an init script'; plant `fail-local-storage` 'calls localStorage.setItem' (contracts/plants.md)"
+      - artifact: "spec.md FR-030: 'a storage read or write ... one finding (io) per story-theme'; constitution I (.specify/memory/constitution.md:15): 'Elements perform no I/O: no fetch, XHR, WebSocket, storage, clipboard writes or host APIs'"
+      - code: "probe (scratchpad probe1.mjs, host Chromium 1243): an init script wrapping Storage.prototype getItem/setItem/removeItem/clear/key, then `localStorage.k = \"v\"; localStorage[\"k2\"] = \"w\"; localStorage.k; document.cookie = \"a=b\"; indexedDB.open(\"d\")`: wrapper calls [], localStorage.length 2, document.cookie \"a=b\", the database opened. `context.storageState({ indexedDB: true })` afterwards reports the cookie, both localStorage keys and the IndexedDB database `d`"
+    claim: |
+      Web Storage's named-property access (`localStorage.key = value`, `localStorage[key]`, reads the same way) goes
+      through the Storage interface's named property handlers, not through the prototype methods, so the planned
+      recorder sees nothing; `document.cookie`, IndexedDB and the Cache API are storage the recorder does not look at at
+      all. Each is the "storage" constitution I forbids and FR-030 says fails the gate. The one planned plant uses
+      `setItem`, the only form the recorder catches, so it passes while the gap stays; an element that persists a
+      preference with `localStorage.theme = …` or a cookie reaches `main` with a green "Visual regression". Because
+      every story-theme runs in a fresh context (FR-028), storage left behind by a story is also observable after the
+      render, which the plan does not use.
+    remedies:
+      - "research.md R-14 and contracts/container.md § Per story-theme: after the render steps and before the context closes, read `context.storageState({ indexedDB: true })` and `sessionStorage.length` in the page; any cookie, localStorage or sessionStorage key or IndexedDB database not on Storybook's allow-list (the phase 1 spike records it) is `io` naming it. Extend the init script to the `document.cookie` accessor on Document.prototype, `indexedDB.open`/`deleteDatabase`, `caches.open` and `document.execCommand(\"copy\"|\"cut\")` (the last not probed here), so reads are recorded too. Pure classification in capture-plan.ts with unit cases for each kind. Plants: `visual/fail-storage-property` (`localStorage.k = \"v\"`), `visual/fail-cookie` (`document.cookie = …`) and `visual/fail-indexeddb`, each `io` on both themes. spec.md FR-030's list names cookies and IndexedDB."
+  - id: PLAN-FRESH-3-003
+    severity: 2
+    title: "The axe gate's browser context sets only the colour scheme, so it runs in Playwright's default 1280 × 720 viewport and a pointer target the 800 px rule accepts is silently not hovered"
+    evidence:
+      - artifact: "research.md R-08: 'Each story-theme gets a new context and page (FR-028) in the theme the visual gate uses (colorScheme and globals=theme:), with the same init scripts and readiness as the capture ..., and the story's pointer state applied before axe runs (R-15)'; no viewport, scale, reducedMotion, forcedColors, locale or timezone is named for axe, while R-04 names them for the capture"
+      - artifact: "spec.md FR-031: the axe gate MUST fail a story-theme whose target's box does not lie wholly inside the initial 1280 × 800 viewport; contracts/gates.md § axe `pointer-target`: 'as for visual, the target's viewport rule included'"
+      - code: "probe (scratchpad probe8.mjs, host Chromium 1243): `browser.newContext({})` gives viewport {width: 1280, height: 720}; a `:hover` target at top 740 px, height 40 px, passes a 1280 × 800 inside-viewport test, and after `page.mouse.move` to its centre its background stays blue (not hovered, no error); with `viewport: {width: 1280, height: 800}` the same steps give lime (hovered)"
+    claim: |
+      FR-031 promises that a declared state is never silently not applied, and round 2 fixed that with
+      `targetInViewport(box, 1280 × 800)`. The axe gate, however, is specified to set only the colour scheme of its
+      context, so under Playwright's default it renders in 1280 × 720: a target whose box lies between y = 720 and
+      y = 800 passes the rule, the mouse move lands outside the viewport, nothing is hovered and axe audits the
+      resting state, which is the silent failure round 2 closed for the capture. The same unspecified context leaves
+      the axe run without `reducedMotion: "reduce"`, so a story that fades content in is audited at whatever opacity
+      the transition has reached, and `color-contrast` results can change between runs of the same tree; and media
+      queries on height see a different page from the one the visual gate captures.
+    remedies:
+      - "research.md R-08: the axe context uses the capture's context options, built by the same pure function in capture-plan.ts (viewport 1280 × 800, scale 1, colorScheme, reducedMotion \"reduce\", forcedColors \"none\", locale, timezone), and `targetInViewport` takes the viewport from that function rather than a constant, so the two cannot drift. A unit test asserts the axe gate's options equal the capture's for each theme. The axe plant `fail-pointer-target-below-fold` gains a sibling `fail-hover-near-fold` (target at y 740 to 780 whose hover shows an unlabelled button: `button-name` on both themes), which passes wrongly against a 720 px context."

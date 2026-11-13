@@ -1,0 +1,7 @@
+# Squad round 2: fixes 2
+
+The unresolved row of `verify-1.md`, applied to the artifacts.
+
+| ID | Resolution | Where |
+|----|------------|-------|
+| PLAN-FRESH-2-002 | fixed | New `plant.json` key `captureAlone: true` (only `pass-second-render`; valid only for `visual` pass plants with stories of their own and no `baselinesOf`), research.md R-16, data-model.md § Plant keys, contracts/plants.md. The plant mode refuses a `captureAlone` plant without `--story` (exit 2, `<plant> is captured alone: give --story <id>`): research.md R-11 **Plant baselines**, contracts/gates.md § Plant mode, quickstart.md § 5. The plant runner never copies run 1's (full-run) captures of a `captureAlone` plant: it makes single-story-theme requests in the same root and engine (two runs) for the failing story-themes and copies those; a capture made alone that equals the committed baseline is not copied and the runner prints `captured alone matches the baseline; the full run differs (freshness)`, so committing CI's artifact can never make the plant pass on broken freshness. Which record governs is stated: CI's artifact for every `visual` pass plant, for a `captureAlone` plant CI's captures made alone, never a full-run capture (R-11 **A `captureAlone` plant is never given full-run captures**, **Freshness**; contracts/plants.md runner changes; contracts/gates.md § The registry; quickstart.md). Red-first unit tests of the copy decision and the argument refusal (R-11, R-12). plan.md Constitution Check V, structure, phase 3 and the contributor-note item. |

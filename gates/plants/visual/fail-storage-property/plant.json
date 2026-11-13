@@ -1,0 +1,16 @@
+{
+  "expect": "fail",
+  "why": "A story that makes run-time I/O while it renders, a named-property write, localStorage.k = \"v\", with no method call (research.md R-14): io on both themes, naming the call (FR-030, research.md R-14).",
+  "findings": [
+    {
+      "location": "storage-property--call/light",
+      "rule": "io",
+      "message": "localStorage set k"
+    },
+    {
+      "location": "storage-property--call/dark",
+      "rule": "io",
+      "message": "localStorage set k"
+    }
+  ]
+}

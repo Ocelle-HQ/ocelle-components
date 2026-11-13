@@ -1,0 +1,4 @@
+$ pnpm run prebuild && storybook build --disable-telemetry --preview-only -c .storybook -o dist && node scripts/externalise.ts dist
+$ node scripts/swatches.ts
+sh: 1: storybook: not found
+[ELIFECYCLE] Command failed with exit code 127.

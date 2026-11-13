@@ -1,0 +1,8 @@
+{
+  "image": "mcr.microsoft.com/playwright",
+  "digest": "sha256:ee15712262f017b8157421b212b12099146645f44b1bc5c0514cbbe6a229b1d0",
+  "platform": "linux/amd64",
+  "tag": "v1.64.1-noble",
+  "node": "26.13.0",
+  "browser": "chromium_headless_shell-1248"
+}
