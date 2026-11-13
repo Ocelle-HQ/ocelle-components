@@ -29,6 +29,8 @@ function world(): Map<string, string> {
   for (const id of gateIds) {
     for (const kind of ["fail", "pass", "error"]) files.set(`gates/plants/${id}/${kind}-x/plant.json`, kind === "fail" ? fail("a.ts:1", "r") : kind === "pass" ? pass : error);
   }
+  // Every axe plant root carries the repository's exceptions (006 research.md R-16).
+  for (const kind of ["fail", "pass", "error"]) files.set(`gates/plants/axe/${kind}-x/delta.json`, JSON.stringify({ exceptions: "repository" }));
   return files;
 }
 

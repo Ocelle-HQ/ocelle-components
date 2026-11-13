@@ -17,7 +17,7 @@ import { directoryNames, filePaths } from "../lib/entries.ts";
 import { emit, formatFinding, plural } from "../lib/findings.ts";
 import { gateKeysProblem, judgePlant, parsePlant, plantFilesProblem, storybookGates } from "../lib/plant-judge.ts";
 import type { Plant, PlantRun } from "../lib/plant-judge.ts";
-import { buildCommitRepo, buildMutationRepo, buildRepoTree, carriesConfiguration } from "../lib/plant-repo.ts";
+import { buildCommitRepo, buildMutationRepo, buildRepoTree, carriesConfiguration, parseDelta } from "../lib/plant-repo.ts";
 import { containerDecision, gateRunsAtOnce, limiter, needsEngine, otherShardSize, plantSeconds, plantShards, plantTimeNote, runPlant, shardSize } from "../lib/plant-runner.ts";
 import type { RunnerTools, VisualCopyTools } from "../lib/plant-runner.ts";
 import { checkRegistry, ciJobs, parseRegistry, plantJob, shardInPlantCheckFindings, skipContainerFindings } from "../lib/registry.ts";
@@ -80,6 +80,22 @@ function registryRun(registryText: string | undefined, workflow: string | undefi
   return { exit: findings.length > 0 ? 1 : 0, stdout: findings.map(formatFinding), stderr: [] };
 }
 
+const axeExceptionsRule = "an axe plant root holds the repository's stories and carries their exceptions";
+
+/**
+ * The problem of an axe plant's delta.json text (undefined: no delta.json), or undefined when it is valid and sets
+ * `exceptions: "repository"`: every axe plant root holds the repository's stories and so carries their exceptions
+ * (006 research.md R-16, contracts/plants.md § Plant runner changes, plan decision 14).
+ */
+function axeExceptionsProblem(text: string | undefined): string | undefined {
+  if (text === undefined) return axeExceptionsRule;
+  try {
+    return parseDelta(text).exceptions === "repository" ? undefined : axeExceptionsRule;
+  } catch (error) {
+    return (error as Error).message;
+  }
+}
+
 /** One plant directory's plant.json, or the problem line that rejects it before it runs; `gate` is whose plant it is. */
 async function loadPlant(dir: string, gate: string, tools: PlantTools): Promise<Plant | string> {
   const line = (path: string, rule: string, message: string): string => `${path}: ${gateId}: ${rule}: ${message}`;
@@ -89,6 +105,10 @@ async function loadPlant(dir: string, gate: string, tools: PlantTools): Promise<
   if (typeof plant === "string") return line(`${dir}/plant.json`, "invalid-plant", plant);
   const keys = gateKeysProblem(gate, plant);
   if (keys !== undefined) return line(`${dir}/plant.json`, "invalid-plant", keys);
+  if (gate === "axe") {
+    const exceptions = axeExceptionsProblem(await tools.read(`${dir}/delta.json`));
+    if (exceptions !== undefined) return line(`${dir}/plant.json`, "invalid-plant", exceptions);
+  }
   const files = await tools.files(dir);
   const tree = (paths: readonly string[]): string[] => paths.filter((path) => path.startsWith("tree/")).map((path) => path.slice("tree/".length));
   let named: { readonly plant: Plant | undefined; readonly tree: readonly string[] } | undefined;
