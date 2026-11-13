@@ -139,7 +139,7 @@ one inherited exception in Complexity Tracking.*
    research R-11 before the gate. A variant that no element or variant covers goes to the operator; the surface is not
    widened by review.
 8. **Squad round 2 (`reviews/plan/round-2/refute.md`).** The facts `layout` property (PLAN-FRESH-2-001 (c)), one
-   sweep per page (PLAN-FRESH-2-005 (a)) and hidden slotted parts observed (PLAN-FRESH-2-007 (a)), as decided; the
+   sweep per page (PLAN-FRESH-2-005 (a), amended to one sweep per loading episode in round 3) and hidden slotted parts observed (PLAN-FRESH-2-007 (a)), as decided; the
    spec's FR-005, FR-009, FR-013, FR-023, FR-033 and FR-058, and US1-11, US2-9 and US3-14, record them.
 9. **Squad round 3 (`reviews/plan/round-3/refute.md`).** Stacking re-decided on the cheap triggers with FR-009
    narrowed for unobserved changes (PLAN-FRESH-3-001 (c)); no fill width transition (PLAN-FRESH-3-003 (b)); one sweep

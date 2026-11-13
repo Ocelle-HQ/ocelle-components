@@ -97,9 +97,14 @@ something only the element gives:
 
 **Progress (US3).**
 - **No fill transition (US3-2, PLAN-FRESH-3-003 (b)).** US3-2 reads the fill's inline size after `settle()` (one
-  frame after the change) and asserts 75% of the track, with `animations()` on the bar empty in the same read. The
-  value-removed body reads the 40% mark the same way, with and without reduced motion. Plant: a 200 ms `inline-size`
-  transition on the fill (`--ocelle-motion-base`); US3-2 and the value-removed body must fail.
+  frame after the change) and asserts 75% of the track, with `animations()` on the bar empty in the same read (the
+  bar is determinate, so nothing may run on it). The value-removed body reads the 40% mark's inline size after
+  `settle()`, with and without reduced motion, and in the same read asserts that `animations()` on the bar holds no
+  `CSSTransition` and nothing whose target is the fill's inline size. It does not assert `animations()` empty: without
+  reduced motion the bar is indeterminate in a new loading episode, so its mark runs the sweep (a `CSSAnimation` on
+  `transform`, R-06), which is correct. Under reduced motion `animations()` is also empty (US3-5). Plant: a 200 ms
+  `inline-size` transition on the fill (`--ocelle-motion-base`); US3-2 must fail on its 75% read and on `animations()`,
+  and the value-removed body must fail on its 40% read and on the `CSSTransition`.
 - **Value properties (US3-1 to US3-4, US3-6; PLAN-TESTABILITY-1-006).** `AxNode` carries `value`, `valuemin`,
   `valuemax` and `valuetext` (§ Driver additions). Every absence assertion sits beside a presence read of the same
   property for a determinate bar in the same body.
@@ -181,7 +186,8 @@ From the spec check notes and squad round 1:
   - unset `variant` writes no attribute.
 - **progress:**
   - `value-text` ignored while indeterminate and kept when clamped (SPEC-2-02);
-  - a `value` set, then removed: the mark is 40% of the track, with and without reduced motion (PLAN-CORRECTNESS-1-005);
+  - a `value` set, then removed: the mark is 40% of the track, with and without reduced motion, and no `CSSTransition`
+    runs on the bar; the sweep animation may run without reduced motion (PLAN-CORRECTNESS-1-005, PLAN-FRESH-3-003);
   - right-to-left indeterminate: at the start of the sweep the mark is at the inline-start (right) side and moves
     towards the left; the determinate fill grows from the right (PLAN-CORRECTNESS-1-004);
   - one sweep per loading episode: US3-14, the determinate-then-indeterminate body within one task after the window,
@@ -254,7 +260,7 @@ first phase that uses it:
 | episode reset in `mount` | each harness's `mount` deletes the document's loading-episode record (R-06), so every body starts as a fresh page even when the previous body left a bar connected; its test mounts an indeterminate bar, waits past the 4.2 s window (no running animation), mounts again and asserts a running sweep | 3 |
 | `pressTab()`, `focused()` | presses Tab; returns the focused element through shadow roots | 2 |
 | `reducedMotion(mode)` | the command `emulateReducedMotion`: `page.emulateMedia({ reducedMotion })` in `emulate()`, so forced colours do not clear it; reset in each progress test file's `afterEach`; its test asserts `matchMedia` after the command, after a later `emulateForcedColors` call, and after the reset | 3 |
-| `animations(id)` | running animations and transitions on the element and its shadow subtree, with play state and end time | 3 |
+| `animations(id)` | running animations and transitions on the element and its shadow subtree, with kind (`CSSAnimation` or `CSSTransition`), target part, animated property, play state and end time | 3 |
 | AX value properties | `AxNode`, `axNodes` and `axSubtree` carry `value`, `valuemin`, `valuemax` and `valuetext`; tested on a native `<progress>` and an ElementInternals bar | 3 |
 
 ## Contrast (SC-004, PLAN-CORRECTNESS-1-007 (b))

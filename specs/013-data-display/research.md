@@ -518,9 +518,12 @@ its oracle is not weakened.
   later, and after the value was removed it still read 300 px, not the 40% mark's 160 px, with a running
   `CSSTransition` in `getAnimations()`. That contradicted US3-2's 75% read, the value-removed body and the
   after-window body. The spec words the transition "if any" (Edge Cases, Rapid value changes), and the operator chose
-  to drop it. US3-2 reads the fill at once, and with `animations()` empty, so a transition added later fails it; the
-  plant "a 200 ms `inline-size` transition on the fill" must fail US3-2 and the value-removed body (contracts/checks.md
-  § CSS-only behaviours).
+  to drop it. US3-2 reads the fill at once, and with `animations()` empty (the bar is determinate), so a transition
+  added later fails it. The value-removed body reads the 40% mark at once and asserts no `CSSTransition` on the bar,
+  not `animations()` empty: without reduced motion the bar is then indeterminate in a new loading episode and its
+  mark correctly runs the sweep, a `CSSAnimation` on `transform` that leaves the inline size at 40%. The plant "a
+  200 ms `inline-size` transition on the fill" must fail US3-2 and the value-removed body (contracts/checks.md
+  § Oracles and § CSS-only behaviours).
 
 **Indeterminate: a bounded sweep that ends on the still mark (FR-033, PLAN-A11Y-SECURITY-1-001 (a)).**
 - The mark's own geometry is the still mark: 40% wide (`inline-size: 40%`) at `inset-inline-start: 30%`, the middle

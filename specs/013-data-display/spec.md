@@ -92,7 +92,7 @@ uses them in server-rendered pages under a strict CSP.
   the element's own inline size, as laid out in two columns, and a public `layout` property lets a consumer in a
   shrink-to-fit host choose two columns or one (FR-005, FR-009, FR-013, US1-11).
 - Indeterminate motion on a page (PLAN-FRESH-2-005, (a)): the sweep is anchored to the page, so a bar replaced,
-  re-shown or made indeterminate again continues the page's one sweep instead of starting another (FR-033, US3-14).
+  re-shown or made indeterminate again continues the one sweep instead of starting another (FR-033, US3-14).
   Amended in round 3 (PLAN-FRESH-3-004 (a), below): the sweep belongs to a loading episode, not the whole page.
 - Hidden slotted parts (PLAN-FRESH-2-007, (a)): an empty-state part is present only while something assigned to its
   slot renders, and toggling `hidden` on slotted content updates the layout (FR-023, US2-9).
@@ -290,8 +290,8 @@ non-text contrast of the fill's mark against the track and the ground in light a
     main grounds, it is drawn in `--ocelle-color-control-border`. Either meets 3:1 against its ground.
 14. **Given** an indeterminate bar that is replaced by a new indeterminate bar 2 s after the first was shown (an htmx
     poll swapping the region), without reduced motion, **When** 5 s have passed since the first bar was shown, **Then**
-    no animation runs on the page's bars and the still mark shows: the page's moving mark ran for less than 5 s in
-    total (FR-033).
+    no animation runs on the page's bars and the still mark shows: the replacement continued the one loading
+    episode, whose moving mark ran for less than 5 s in total (FR-033).
 15. **Given** an indeterminate bar whose sweep has ended, and no other indeterminate bar on the page, **When** it is
     removed and, after at least one frame, a new indeterminate bar is shown (a later operation in a single-page shell),
     without reduced motion, **Then** the new bar's mark moves (a new loading episode), and its motion still ends in
@@ -487,12 +487,13 @@ the exceptions FR-050 and FR-054 name.
   that is not a finite number above 0 is treated as 100. Nothing throws.
 - **FR-033**: The indeterminate bar MUST show activity with a moving mark that uses token durations and easing. The
   motion MUST end by itself in less than 5 s in total (WCAG 2.2.2: the bar can be shown for minutes beside an
-  interactive page) and then show the still mark, with nothing running. The total is per page, not per node: a bar
-  inserted, replaced, re-shown or made indeterminate again continues the page's one sweep, which starts when the
-  first indeterminate bar is shown, and after it ends shows the still mark at once (operator decision
-  PLAN-FRESH-2-005 (a)). The page's sweep belongs to one loading episode: the episode ends when no indeterminate bar
-  is connected to the page at a frame boundary, and the next indeterminate bar after that starts a new sweep, under
-  the same bound (operator decision PLAN-FRESH-3-004 (a)). Under `prefers-reduced-motion: reduce` it MUST
+  interactive page) and then show the still mark, with nothing running. The total is per loading episode, not per
+  node and not per page. A loading episode starts when an indeterminate bar is connected while no episode is open,
+  and ends when no indeterminate bar is connected to the page at a frame boundary. Within one episode a bar
+  inserted, replaced, re-shown or made indeterminate again continues the episode's one sweep, which starts with the
+  episode, and after that sweep ends shows the still mark at once (operator decision PLAN-FRESH-2-005 (a), amended
+  by PLAN-FRESH-3-004 (a)). The next indeterminate bar after an episode ends starts a new episode with its own sweep,
+  under the same bound, on the same page (operator decision PLAN-FRESH-3-004 (a)). Under `prefers-reduced-motion: reduce` it MUST
   run no animation or transition and show the still mark at once. The still mark still reads as "in progress" (a
   partial or patterned fill, set in the plan). Operator decision PLAN-A11Y-SECURITY-1-001 (a). The loop period MAY be
   a new motion token under FR-040 if `--ocelle-motion-fast` and `--ocelle-motion-base` are too short for it; such a
