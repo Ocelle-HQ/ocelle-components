@@ -24,7 +24,7 @@ Navigation itself is observable only on the fixture harness; in-process, the sin
 | File | Project | Proves |
 |---|---|---|
 | `test/scenarios/button.ts`, `link.ts`, `busy.ts`, `action-row.ts`, `row-states.ts` | (shared bodies) | every acceptance scenario of US1 to US5 once, and every row of § Edge cases and plan decisions, with expected values written by hand (colours from `packages/tokens/test/expected.ts`; forced colours from research R-12's table, read as `resolveColour(<keyword>)`) |
-| link scenario bodies (US2-1, US2-3, US3-8, US5-1, US5-2, US5-6, decision 7) | two bodies each | an in-process body asserting the sink's record (prevented or not, button, modifiers, `href`), and a fixture body asserting real navigation and new tabs; no conditional expect |
+| link scenario bodies (US2-1, US2-3, US3-8, US5-1, US5-2, US5-6, decision 13) | two bodies each | an in-process body asserting the sink's record (prevented or not, button, modifiers, `href`), and a fixture body asserting real navigation and new tabs; no conditional expect |
 | `test/button.test.ts`, `test/action-row.test.ts` | `elements` (browser mode, mutated) | the scenario bodies and the in-process link bodies on source, light and dark, forced colours, reduced motion, `dir="rtl"`; axe after each scenario page (no serious, critical or incomplete serious/critical result, except a scenario that expects one by name) |
 | `test/browser/button.test.ts`, `test/browser/action-row.test.ts` | `elements-browser` | the same bodies on the built browser build under the strict CSP with zero violations, allowed requests only, no console message; the fixture link bodies (navigation, new tab, modifier clicks) |
 | `test/control.test.ts` | `elements` | the internal module: the mode decision table (empty, whitespace, relative, `javascript:`, `JavaScript:`, `JAVASCRIPT:x`, `java\tscript:x`, `\u0001javascript:x`, ` javascript:x` → button; `http://[` → button, no error; `data:text/html,x` → link, `href` as written), the attribute move, clearing by empty, whitespace-only and off values, removal as a no-op, the custom states, reference resolution (document, shadow root, missing ids, order), the name order including the row's internal title reference (name exactly the title with description and tags slotted; plant: name from content), the guard in every non-available state (plant: "guard limited to unavailable"), `click()` forwarding |
@@ -56,14 +56,14 @@ Each row is written in its phase's red commit, with a plant; a documentation-onl
 | `aria-current` on a button, any value | 3 | `link.ts` | each value on the inner control; no mark (box and colours unchanged) |
 | Long button label, narrow container | 2 | `button.ts` | label wraps, block size grows, minimum size holds, no overflow |
 | Row with an icon and an empty title | 5 | `action-row.ts` | `axe()` returns `button-name`; block size at least `target-min` |
-| `unavailable` and `current` (decision 10) | 6 | `row-states.ts` | `aria-current` and `aria-disabled`; title and bar in disabled ink (`GrayText` in forced colours) |
+| `unavailable` and `current` (decision 16) | 6 | `row-states.ts` | `aria-current` and `aria-disabled`; title and bar in disabled ink (`GrayText` in forced colours) |
 | `busy` and `unavailable` on a row | 6 | `row-states.ts` | `aria-busy` and `aria-disabled`; no event |
 | Very long titles and unbreakable identifiers | 5 | `action-row.ts` | US4-13 |
 | Unknown `variant`, `size`, `ground` / `layout`, `presentation` | 2 / 5 | `button.ts` / `action-row.ts` | the default's computed values, reflected as written, no error |
 | Host `role`, two package copies, no tokens stylesheet | — | documentation only | README sentences |
-| Decision 6: unavailable link has no `href` | 4, 6 | `busy.ts`, `row-states.ts` | no `href` attribute, `tabindex="0"`, focusable, role `link`, `aria-disabled` |
-| Decision 7: Alt-click on an available link row | 6 | `row-states.ts` | no event; the sink records `defaultPrevented` false with `altKey` (in-process); no navigation in the current tab (fixture) |
-| Decision 10: disabled-ink bar | 6 | `row-states.ts` | bar computed colour `disabled-ink` |
+| Decision 9: unavailable link has no `href` | 4, 6 | `busy.ts`, `row-states.ts` | no `href` attribute, `tabindex="0"`, focusable, role `link`, `aria-disabled` |
+| Decision 13: Alt-click on an available link row | 6 | `row-states.ts` | no event; the sink records `defaultPrevented` false with `altKey` (in-process); no navigation in the current tab (fixture) |
+| Decision 16: disabled-ink bar | 6 | `row-states.ts` | bar computed colour `disabled-ink` |
 | `host.click()` | 2, 4, 5 | `button.ts`, `busy.ts`, `action-row.ts` | US1-2, US1-3, US3-1, US4-1 |
 
 ## Tokens tests (`@ocelle/tokens`)

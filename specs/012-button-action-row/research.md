@@ -402,7 +402,7 @@ and fixture), and the browser commands, red first in phase 1:
   listeners, a last bubble-phase listener on `window` for `click` and `auxclick` that records `defaultPrevented`,
   `button`, the modifier flags and the target link's `href`, then calls `preventDefault()`, so the runner page never
   navigates; `navigations()` returns these records in-process. The link scenarios (US2-1, US2-3, US3-8, US5-1, US5-2,
-  US5-6 and decision 7's Alt-click) are written as two bodies each, with no conditional expect (test-lint): an
+  US5-6 and decision 13's Alt-click) are written as two bodies each, with no conditional expect (test-lint): an
   in-process body asserting the sink's record (prevented or not, which button, which modifiers, which `href`), which
   is what the mutated `elements` project runs, and a fixture body asserting real navigation (a page with a target
   route recording visits and `context.on("page")` for new tabs). In-process, these bodies cover the modifier test,
@@ -455,7 +455,7 @@ inside the inner control (`position: relative`): `position: absolute; inset-bloc
 inline-size: var(--ocelle-bar-width); background-color: var(--ocelle-color-current)`, rendered only while `current` is
 set. It lies in the row's inline padding (R-10), never behind text, and takes no layout space. Under
 `@media (forced-colors: active)` it gets `forced-color-adjust: none` and `background-color: Highlight` (`GrayText` when
-the row is unavailable, decision 10). Unavailable outside forced colours: `--ocelle-color-disabled-ink`.
+the row is unavailable, decision 16). Unavailable outside forced colours: `--ocelle-color-disabled-ink`.
 
 **Flush hover in forced colours**: a flush control's hover (and a flush row's) is an outline in `Highlight`,
 `outline-style: dashed`, `outline-width: var(--ocelle-focus-width)`, with the control's focus-ring offset; it takes no

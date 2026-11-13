@@ -219,8 +219,8 @@ green; plants measured and recorded in `reviews/phase-N/plants.md`; `gate:manife
    edge-case rows.
 6. **US5 Row states and card** (P5): link-row activation order and `preventDefault`, modifier, Alt and middle clicks
    (sink and fixture bodies), `current` and its bar (R-12's method, with hover precedence and forced colours),
-   `unavailable` (no `href` on a link row, decision 16), card layout, tags wrapping, title gap and part; stories; US5
-   scenarios 1 to 10 and this phase's edge-case rows.
+   `unavailable` (no `href` on a link row, decision 9; with `current`, decision 16), card layout, tags wrapping,
+   title gap and part; stories; US5 scenarios 1 to 10 and this phase's edge-case rows.
 7. **Workbench integration (#10)**, blocking for landing, once #10 is on `main` and merged into this branch:
    baselines in the pinned container, the axe gate on every new story, 006's integration counts and plants, the
    test-side axe module replaced by `gates/lib/axe-rules.ts`, `shardSize` lowered to 1 test-first with a CI run
