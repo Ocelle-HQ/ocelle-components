@@ -27,7 +27,19 @@ an event's `detail`, is MAJOR.
 - CSS custom property: `--ocelle-dialog-inline-size` (default `var(--ocelle-measure-reading)`).
 - Events: `ocelle-dialog-close-request` (cancelable; `detail.reason`: `"escape" | "close-button"`) and
   `ocelle-dialog-close` (`detail.reason`: `"escape" | "close-button" | "host"`).
-- Accessibility: one `dialog` node, modal, named by the label (heading level 2) or the host `aria-label`.
+- Accessibility: one `dialog` node, modal, named by the label (heading level 2) or the host `aria-label`. With a host
+  `aria-label`, the closed host is exposed as a named generic node (measured in Chromium); the README § Host ARIA
+  records it for the overlays (R-08).
+- Focus: on close, focus returns to the opener only if it is still inside the overlay or on the body; a host that
+  moves focus after `open = false` keeps its choice (R-05).
+- Platform behaviour the README states (R-02, R-03, R-05a):
+  - a slotted `<form method="dialog">` does nothing to the overlay; close it with `open = false` in the form's submit
+    handler;
+  - a slotted widget that handles Escape calls `preventDefault()`, not `stopPropagation()`; if it stops propagation,
+    a vetoed overlay can be closed by the platform on a repeated Escape, with reason `host`;
+  - removing an open overlay from the document (a move, a morph, a portal) closes it with no event and sets `open` to
+    false; the host reopens it after re-inserting it.
+- Manifest: the events, slots, parts and CSS property are declared with JSDoc on the concrete class (R-01).
 
 ### Host pattern
 
@@ -65,10 +77,17 @@ As `ocelle-dialog`, with the `ocelle-drawer-` event prefix, `"backdrop"` as an e
 - Attributes and properties: `text`, `placement` (`top` default, `bottom`, `start`, `end`; reflected), `disabled`
   (reflected), `describes` (reflected).
 - Slot: default (the trigger is the first assigned element). Part: `bubble`. Events: none.
+- Host layout: `display: contents`, so wrapping a trigger leaves its box unchanged (operator decision, R-11).
+- Triggers are buttons and links. A text field as trigger shows the bubble on any focus, by click or tap included,
+  because engines make it match `:focus-visible` (stated limit, R-12).
+- Below the Popover API (an engine under the floor) the tooltip shows nothing and throws nothing (R-10).
 - Without `describes` the bubble is hidden from assistive technology. The trigger must carry its own accessible name,
   and the text repeats it (#12's icon-only nav item, #7's ellipsised pill tag).
-- With `describes`, the tooltip adds one hidden light-DOM `span[slot="ocelle-description"]` to its host and its id to
-  the trigger's `aria-describedby`. This is supported only when the trigger is itself the focusable element.
+- With `describes`, the tooltip adds one hidden light-DOM `span[slot="description"][role="tooltip"]` to its host (text
+  set as text, never parsed; id `ocelle-tooltip-desc-<n>`, unique in the trigger's root) and its id to the trigger's
+  `aria-describedby`, keeping the host's ids. While `describes` holds it watches that attribute and re-adds its id if a
+  host re-render drops it, and moves the id when the trigger is replaced (operator decision, R-13). This is supported
+  only when the trigger is itself the focusable element.
 
 ### #7 and #12 (consumers inside their own shadow roots)
 

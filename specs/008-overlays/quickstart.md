@@ -4,9 +4,11 @@ Prerequisites: the repository installed (`pnpm run setup:offline`), Chromium as 
 frontend-missions.md`. For stories and baselines: #10 merged and its pinned container available.
 
 1. `pnpm run gate:typecheck && pnpm run gate:lint && pnpm run gate:style-lint`: all pass.
-2. `pnpm vitest run --project elements --project elements-browser`: the scenarios of
+2. `pnpm vitest run --project elements --project elements-browser --project elements-node --project elements-build`:
+   the harness self-tests, the manifest, README, entry, build and pack tests, and the scenarios of
    [contracts/checks.md § Test matrix](contracts/checks.md) pass in both harnesses.
-3. `pnpm vitest run --project tokens`: the three new tokens validate and are listed in the README and CHANGELOG.
+3. `pnpm vitest run --project tokens --project tokens-browser`: the three new tokens validate, compute to their
+   expected values in the browser, and are listed in the README and CHANGELOG.
 4. `pnpm run gate:manifest`: the committed manifest matches a regeneration.
 5. `pnpm run gate:csp && pnpm run gate:prefix && pnpm run gate:contrast && pnpm run gate:brand-rules`: all pass.
 6. `pnpm run gate:mutation`: no survivor on changed lines. Read the Timeout report lines (R-15).

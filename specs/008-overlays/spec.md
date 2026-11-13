@@ -103,17 +103,23 @@ stories pass the visual and axe gates.
    event, dispatches `ocelle-dialog-close` with `detail.reason === "host"` and returns focus to the opener.
 8. **Given** an open dialog with `label="Open project"`, **When** the accessibility tree is read, **Then** there is one
    node with role `dialog`, modal, named "Open project", and the close control is a button named by `close-label`
-   ("Close" by default) whose icon is hidden from the tree.
+   ("Close" by default) whose icon is hidden from the tree; **Given** a host `aria-label` instead of or as well as
+   `label`, **Then** while open the only named node for the overlay is the modal `dialog`, named by the host
+   `aria-label`, and the closed host's exposure is asserted as measured and documented (FR-005).
 9. **Given** a dialog in light, dark and forced-colours mode, **When** it renders, **Then** its ground, ink, border,
    radius, shadow and backdrop come from tokens (forced colours: system colours and a visible boundary), and no
    user-agent dialog border, padding, background or colour shows.
 10. **Given** a dialog whose body is taller than `--ocelle-dialog-max-block`, **When** it renders, **Then** the dialog
     is no taller than that token, the heading and footer stay visible and the body scrolls; **Given** a viewport
-    narrower than the dialog's preferred inline size, **Then** it is no wider than `--ocelle-dialog-max-inline`.
+    narrower than the dialog's preferred inline size, **Then** it is no wider than `--ocelle-dialog-max-inline`;
+    **Given** a body that overflows with nothing focusable in it, **Then** Tab reaches the body and the arrow and Page
+    keys scroll it; **Given** a 320 × 256 viewport (400 % zoom), **Then** the body keeps its minimum block size and its
+    whole content is reachable by scrolling (WCAG 1.4.10).
 11. **Given** prose with a table in the dialog body, **When** it renders, **Then** the body has a definite inline size,
     so the prose fills it rather than shrinking to fit (base styles FR-017).
 12. **Given** `prefers-reduced-motion: reduce`, **When** the dialog opens or closes, **Then** it appears and disappears
-    with no animation; without it, its entry and exit use `--ocelle-motion-base` and `--ocelle-easing-standard`.
+    with no animation, even when an ancestor sets `--ocelle-motion-base`; without it, its entry and exit use
+    `--ocelle-motion-base` and `--ocelle-easing-standard`.
 
 ---
 
@@ -186,16 +192,18 @@ pointer and keyboard. It is complete when the scenarios below pass in process an
 7. **Given** a tooltip without `describes` whose text repeats the trigger's accessible name (#12's icon-only nav item,
    #7's ellipsised pill tag), **When** the accessibility tree is read, **Then** the text is exposed once (as the
    trigger's own name) and the trigger has no accessible description from the tooltip; **Given** the same tooltip with
-   `describes`, **Then** the text is the trigger's accessible description; in both cases no ID reference crosses a
-   shadow root.
-8. **Given** a tooltip in light, dark, forced-colours mode and with reduced motion, **When** it shows, **Then** its
-   ground, ink and boundary come from tokens or system colours with contrast verified, and it appears without
-   animation under reduced motion.
+   `describes` around a trigger that is itself the focusable element (FR-029), **Then** the text is the trigger's
+   accessible description; in both cases no ID reference crosses a shadow root, and the painted bubble is hidden from
+   the tree.
+8. **Given** a tooltip in light, dark and forced-colours mode, **When** it shows, **Then** its ground, ink and
+   boundary come from tokens or system colours with contrast verified; the bubble never animates, and under reduced
+   motion the hover delay still applies (a delay is not motion).
 9. **Given** a tooltip with an empty `text`, or `disabled`, **When** the trigger is hovered or focused, **Then** no
    bubble shows.
-10. **Given** a touch-only interaction (tap), **When** the trigger is tapped (which focuses it without keyboard
-    focus), **Then** the trigger's own action runs and no bubble shows, neither on the tap nor while the trigger keeps
-    focus afterwards (the tooltip is never the only carrier).
+10. **Given** a touch-only interaction (tap) on a button or link trigger, **When** the trigger is tapped (which
+    focuses it without keyboard focus), **Then** the trigger's own action runs and no bubble shows, neither on the tap
+    nor while the trigger keeps focus afterwards (the tooltip is never the only carrier). A text-field trigger is the
+    stated exception (FR-029): it matches `:focus-visible` on any focus, so its bubble shows on a tap or click.
 11. **Given** a tooltip without `describes` whose text differs from the trigger's name only in case or spacing (name
     "Open  project", text "open project"), **When** the accessibility tree is read, **Then** the trigger has no
     accessible description from the tooltip; **Given** a tooltip with `describes` whose text equals the name exactly,
@@ -209,26 +217,43 @@ pointer and keyboard. It is complete when the scenarios below pass in process an
     a clipped and a transformed container), **When** the bubble has been placed, **Then** no element that the three
     elements render, no trigger, and no element of the host page has gained a `style` attribute, and no `<style>`
     element has been added to the document or to any shadow root (FR-047).
+14. **Given** a pill-shaped button that ellipsises in a narrow container, **When** it is wrapped in `ocelle-tooltip`,
+    **Then** its box equals its unwrapped box and it still ellipsises (the tooltip host is layout-transparent, FR-029).
+15. **Given** a shown bubble whose trigger is inside a scrolling container, including the open dialog's body, **When**
+    the container scrolls or the viewport is resized, **Then** the bubble stays beside the trigger (FR-035); under
+    `dir="rtl"` `start` and `end` and the flip are mirrored.
 
 ### Edge Cases
 
 - **Opener gone.** The element that opened a dialog or drawer is removed or disabled before it closes: focus goes to
   no removed element and nothing throws; the dialog documents where focus lands.
+- **Focus moved before the close ends.** A host that moves focus after setting `open` to false, or opens a second
+  dialog while the first is still leaving, keeps that focus: the closing overlay returns focus only while focus is
+  still inside it or on the body (FR-009). A dialog opened from inside a closing one records that one's opener.
 - **Opener in a shadow root.** The opener is a button inside another element's shadow root (#12's nav item, #7's
   button): focus returns to that inner button, not to its host only.
 - **Opened by the host without an opener.** `open` is set at first render or by a script with focus on the body:
   initial focus follows FR-007; on close, focus goes back to whatever had it at open.
 - **Removed while open.** An open dialog or drawer removed from the document leaves the page with no inert content,
-  no top-layer entry and no backdrop; no close event is required.
+  no top-layer entry and no backdrop; `open` becomes false and no close event is dispatched (FR-022).
+- **Moved while open.** An open overlay removed and re-inserted (a morph, a keyed reorder, a portal), in the same task
+  or later, is closed after the move, with `open` false and no event; the host sets `open` again to show it (operator
+  decision).
 - **Two overlays.** A dialog opened from inside an open drawer stacks above it; Escape and its close affect only the
   topmost; focus returns into the drawer.
 - **Repeated Escape with a veto.** The platform's own protection against dialogs that refuse to close (a second
   Escape without user activation closes a dialog regardless of a cancelled `cancel` event) must not close an
-  overlay whose host cancelled the request (US1 scenario 4).
+  overlay whose host cancelled the request (US1 scenario 4). The stated limit: when slotted content stops Escape's
+  propagation, the overlay never sees the key, and the platform may close it on the repeated press; that close has
+  reason `"host"` (FR-013, FR-016).
+- **Escape that slotted content uses.** An Escape that slotted content has already handled (`preventDefault()`), an
+  Escape that cancels an IME composition, and an Escape that clears a non-empty search field do not request the
+  overlay's close (FR-010).
 - **`open` toggled quickly.** Setting `open` true and false in one task, or twice while an exit animation runs,
   leaves the element in the last state set, with at most one close event per close.
-- **Form in a dialog.** A `<form method="dialog">` in slotted content does not close the element behind the host's
-  back: the element's `open`, events and focus stay consistent (FR-016).
+- **Form in a dialog.** A `<form method="dialog">` in slotted content does nothing to the element (the platform's
+  form submission does not reach a `<dialog>` in a shadow root): the element stays open, `open` stays true and no
+  event is dispatched. The documentation tells hosts to set `open` to false from their submit handler (FR-016).
 - **No focusable content.** A dialog whose body has nothing focusable focuses its close control.
 - **Tooltip trigger disabled or removed.** A shown bubble hides when its trigger is removed or disabled.
 - **Tooltip with long or no-break text.** It wraps within its maximum inline size; an unbreakable string breaks
@@ -236,6 +261,12 @@ pointer and keyboard. It is complete when the scenarios below pass in process an
 - **Tooltip trigger with no name.** The tooltip does not name a nameless trigger; the documentation says the trigger
   must carry its own name (FR-034).
 - **Several tooltips.** At most one tooltip bubble shows at a time; showing one hides any other.
+- **Tooltip trigger opens an overlay.** A bubble shown by hover on a trigger that opens a dialog or drawer hides when
+  the overlay opens and does not take the overlay's first Escape (FR-010, FR-034).
+- **Host re-renders the trigger's `aria-describedby`.** With `describes`, a host template that rewrites the trigger's
+  `aria-describedby`, or replaces the trigger, does not lose the description (FR-036).
+- **Engine without the Popover API.** Below the floor no bubble is painted and nothing throws; this is not a tooltip
+  path (Out of Scope), only the absence of a broken one.
 - **Theme change while open.** Switching `data-theme` while an overlay or bubble is shown repaints it in the new theme.
 - **Two copies of the package.** As in the elements README: the first definition wins.
 
@@ -257,43 +288,56 @@ pointer and keyboard. It is complete when the scenarios below pass in process an
   being shown: setting it shows or closes the element, and the element sets it to false whenever it closes.
 - **FR-005**: Each MUST take its accessible name from a `label` property, rendered as the visible heading inside the
   same shadow root as the `<dialog>` (no ID reference crosses a shadow root), with the elements README § Host ARIA
-  rule: a host `aria-label` names the element and decides alone. The drawer's `heading-hidden` (FR-048) hides the
-  heading visually only; the dialog has no such option.
+  rule: a host `aria-label` names the element and decides alone. The host has no role, so the closed host's exposure
+  with a host `aria-label` is measured, asserted and documented in the README § Host ARIA (operator decision). The
+  drawer's `heading-hidden` (FR-048) hides the heading visually only; the dialog has no such option.
 - **FR-006**: Each MUST render a close control: a native `<button>` holding `ocelle-icon name="close"` (decorative),
   named by a `close-label` property whose default is "Close", meeting `--ocelle-target-min` and showing the token
   focus ring.
 - **FR-007**: On open, focus MUST move to the first slotted element marked `autofocus`; else to the first focusable
   element of the body content in tree order; else to the close control.
 - **FR-008**: While open, Tab and Shift+Tab MUST move focus only among the overlay's focusable elements, wrapping at
-  the ends, and the content outside MUST be unreachable by keyboard, pointer and the accessibility tree.
+  the ends, and the content outside MUST be unreachable by keyboard, pointer and the accessibility tree. Elements
+  that are not rendered or not visible are not stops, and a radio group is one stop. Only the topmost overlay wraps.
 - **FR-009**: On every close, focus MUST return to the element (the deepest one, inside shadow roots) that had focus
-  when the overlay opened, if it is still connected and focusable.
+  when the overlay opened, if it is still connected and focusable, provided focus is then still inside the closing
+  overlay or on the body; focus the host or another overlay has moved elsewhere MUST NOT be moved. An opener inside an
+  overlay that is closing is replaced by that overlay's opener.
 - **FR-010**: Escape, while the overlay is the topmost open one and no tooltip bubble inside it is shown, MUST
-  dispatch the close request with reason `"escape"`.
+  dispatch the close request with reason `"escape"`, unless the key has already been handled (`defaultPrevented`),
+  cancels an IME composition, or clears a non-empty search field; then the overlay does nothing. Opening an overlay
+  hides any shown tooltip bubble outside it.
 - **FR-011**: Activating the close control MUST dispatch the close request with reason `"close-button"`.
 - **FR-012**: A primary-button click on the backdrop MUST dispatch `ocelle-drawer-close-request` with reason
   `"backdrop"` on the drawer and MUST do nothing on the dialog; a press that starts inside the panel and ends on the
   backdrop is not a backdrop click.
 - **FR-013**: The close request MUST be a `CustomEvent` named `ocelle-<element>-close-request`, `bubbles`, `composed`
   and `cancelable`, with `detail: { reason: "escape" | "close-button" | "backdrop" }`; when not cancelled, the element
-  closes; when cancelled, it stays open and focus stays inside, on every repetition (Edge Cases, repeated Escape).
+  closes; when cancelled, it stays open and focus stays inside, on every repetition of a request (Edge Cases,
+  repeated Escape, including its stated limit for slotted content that stops Escape's propagation).
 - **FR-014**: Every close MUST dispatch exactly one `ocelle-<element>-close` (`bubbles`, `composed`, not cancelable)
   after the element is closed and `open` is false, with `detail: { reason }` where reason is the request's reason, or
-  `"host"` when the host set `open` to false.
+  `"host"` when the host set `open` to false or the platform closed it (FR-016). Removal from the document is the one
+  close without an event (FR-022).
 - **FR-015**: Opening MUST NOT dispatch an event; the host opened it.
-- **FR-016**: A close the platform performs other than through FR-010 to FR-012 (a `<form method="dialog">` submit,
-  `close()` called on the inner dialog) MUST leave `open`, focus and the close event consistent with a close of reason
-  `"host"`, or be prevented; the plan chooses which and documents it.
+- **FR-016**: A close the platform performs other than through FR-010 to FR-012 (`close()` called on the inner dialog,
+  the platform's repeated-Escape close) MUST leave `open`, focus and the close event consistent with a close of reason
+  `"host"`. A slotted `<form method="dialog">` does not reach the inner dialog and MUST change nothing; the
+  documentation tells hosts to close the element from their submit handler.
 - **FR-017**: The overlay MUST expose slots: the default slot (body), `footer` (actions, laid out at the end of the
   panel), and parts for the panel, heading, body, footer and close control; all in the manifest.
 - **FR-018**: The body MUST scroll when the content exceeds the space left by the heading and footer, which stay
-  visible; the body is reachable by keyboard scrolling when it overflows.
+  visible; while it overflows the body is itself a Tab stop, so it is reachable by keyboard scrolling with or without
+  focusable content. The body keeps a token-derived minimum block size; when the viewport is too short for the
+  heading, footer and that minimum, the panel scrolls as a whole (WCAG 1.4.10).
 - **FR-019**: The panel's content box MUST have a definite inline size (base styles FR-017).
 - **FR-020**: Entry and exit MUST animate only with `--ocelle-motion-base` and `--ocelle-easing-standard` and MUST NOT
-  animate under `prefers-reduced-motion: reduce`.
+  animate under `prefers-reduced-motion: reduce`, whatever value a host sets on those tokens.
 - **FR-021**: In forced-colours mode the panel MUST have a visible boundary and system colours, the backdrop MUST
   not hide that boundary, and the close control MUST show a visible focus indicator.
-- **FR-022**: Removing an open overlay from the document MUST leave no inert content, top-layer entry or backdrop.
+- **FR-022**: Removing an open (or closing) overlay from the document MUST leave no inert content, top-layer entry or
+  backdrop, MUST set `open` to false and MUST dispatch no event (operator decision); re-inserted, the element is closed
+  until the host sets `open` again.
 - **FR-023**: A second overlay opened from inside an open one MUST stack above it; Escape, the close control and the
   backdrop act only on the topmost; on its close, focus returns into the overlay beneath (FR-009).
 - **FR-047** (all three elements): Positioning the bubble, and any runtime styling of the dialog, drawer or bubble,
@@ -327,7 +371,10 @@ pointer and keyboard. It is complete when the scenarios below pass in process an
 
 - **FR-029**: `ocelle-tooltip` MUST follow the element conventions (FR-001) and wrap its trigger: the trigger is the
   first element slotted into its default slot, which may be a native control or a custom element's host whose inner
-  control is focusable.
+  control is focusable (without `describes`; with it see FR-036). The host is layout-transparent (`display:
+  contents`, operator decision), so wrapping leaves the trigger's box unchanged. Triggers are buttons and links: a
+  text field matches `:focus-visible` on any focus, so around one the bubble shows on focus however it arrives, and
+  the documentation states this limit (operator decision).
 - **FR-030**: It MUST take a `text` property and attribute (the bubble's plain text), a `placement` property and
   attribute, `"top"` (default), `"bottom"`, `"start"` or `"end"` (logical under the element's direction), a
   `disabled` boolean, and a reflected `describes` boolean (default false, FR-036); an empty `text` or `disabled` shows
@@ -343,18 +390,23 @@ pointer and keyboard. It is complete when the scenarios below pass in process an
   focus and pointer do not move, and the bubble stays hidden until the pointer re-enters or keyboard focus re-enters.
 - **FR-034**: The bubble MUST be shown in the top layer through the Popover API (operator decision), above any open
   dialog or drawer and their backdrops, whole, whatever the overflow, transform or stacking context of its ancestors;
-  it MUST not take focus, MUST not be light-dismissed by a click elsewhere other than by hiding, and at most one
-  bubble MUST be shown on the page at a time.
+  it MUST not take focus, MUST not be light-dismissed (it hides only by FR-032, FR-033, FR-010's overlay opening and
+  the rules of FR-030), and at most one bubble MUST be shown on the page at a time.
 - **FR-035**: The bubble MUST be placed on its `placement` side of the trigger, offset by a space token, and flip to
-  the opposite side when it would overflow the viewport; its inline size MUST not exceed a maximum from a token, and
-  text wraps (including unbreakable strings).
+  the opposite side when it would overflow the viewport; it MUST stay beside the trigger while the trigger moves
+  (any scroll, including scrollers inside shadow roots, and resizes); its inline size MUST not exceed a maximum from a
+  token, and text wraps (including unbreakable strings).
 - **FR-036**: Assistive technology MUST get the text once, as the host states it through `describes`: without
   `describes` (the default, for text that repeats the trigger's name, as #12 and #7 use it) the text is not exposed
   to assistive technology beyond the trigger's own name, and the trigger gets no accessible description from the
-  tooltip; with `describes` the text is the trigger's accessible description. The element never compares the text
-  with the trigger's name. The bubble has role `tooltip`; no ID reference crosses a shadow root (constitution III;
-  the plan chooses light DOM, one shadow root or `ElementInternals`). The documentation tells hosts to set `describes`
-  when the text adds to the name.
+  tooltip; with `describes` the text is the trigger's accessible description. `describes` is supported only when the
+  trigger is itself the focusable element (a native control, or a custom element focusable as its host); a custom
+  element whose inner control takes focus cannot be described from outside its shadow root, and the documentation
+  says so. The element never compares the text with the trigger's name. The description node (light DOM, text set as
+  text, never parsed) has role `tooltip`; the painted bubble is hidden from the tree; no ID reference crosses a shadow
+  root (constitution III). The description survives a host re-render of the trigger's `aria-describedby` and a
+  replaced trigger (operator decision). The documentation tells hosts to set `describes` when the text adds to the
+  name.
 - **FR-037**: The tooltip MUST NOT name its trigger or carry essential information: the documentation states that the
   trigger carries its own accessible name and that the bubble only repeats or supplements what is available
   otherwise; touch input shows no bubble.
@@ -384,8 +436,8 @@ pointer and keyboard. It is complete when the scenarios below pass in process an
 - **FR-043**: Interaction tests MUST assert every event of each element with its payload and cancelability, every
   keyboard path (Tab, Shift+Tab, Escape, Enter and Space on the close control), and focus on open and on close for
   every reason (#16's focus-management tests), in process and on the strict-CSP fixture with the browser build.
-- **FR-044**: Accessibility-tree assertions MUST prove the names, roles, modality and descriptions of US1 scenario 8,
-  US2 scenario 6 and US3 scenarios 7 and 11 in Chromium.
+- **FR-044**: Accessibility-tree assertions MUST prove the names, roles, modality and descriptions of US1 scenario 8
+  (with and without a host `aria-label`, open and closed), US2 scenario 6 and US3 scenarios 7 and 11 in Chromium.
 - **FR-045**: The manifest MUST declare, for each element, every property, attribute, event (with its detail type),
   slot, part and own CSS custom property, each list stated even when empty (the tooltip's events list is empty).
 - **FR-046**: Changed source MUST pass mutation testing under mission 007's rules; timing code (the hover delay) is
@@ -408,8 +460,9 @@ pointer and keyboard. It is complete when the scenarios below pass in process an
 - **SC-001**: In 100% of the open/close paths (four close reasons for the drawer, three for the dialog, each with and
   without a cancelling host), focus after the path is where FR-007 or FR-009 says, checked by tests in process and on
   the strict-CSP fixture.
-- **SC-002**: From an open overlay, 0 Tab or Shift+Tab presses in a cycle of (focusable elements + 2) reach an element
-  outside it.
+- **SC-002**: From an open overlay with n focus stops, n + 2 Tab presses give exactly the expected wrap-around
+  sequence of stops, with no stop on the document body or outside the overlay, and the same for Shift+Tab, started
+  from the first stop, the last stop and the close control.
 - **SC-003**: Every event the three elements emit is asserted with its full payload and cancelability: 2 events per
   overlay, 0 for the tooltip, and the manifest lists exactly those.
 - **SC-004**: axe reports 0 serious or critical findings on every story of the three elements in light and dark, and
@@ -421,8 +474,8 @@ pointer and keyboard. It is complete when the scenarios below pass in process an
 - **SC-007**: No raw colour, size, duration or shadow literal appears in the three elements' styles (`style-lint`), and
   the built output passes the strict-CSP check with every scenario exercised, and after every placement, open and
   close scenario 0 elements carry a `style` attribute and 0 `<style>` elements were added (FR-047).
-- **SC-008**: With reduced motion, open and close of each overlay and the bubble's show complete with 0 ms of
-  animation.
+- **SC-008**: With reduced motion, open and close of each overlay create no animation, also when an ancestor sets
+  `--ocelle-motion-base`. (The bubble never animates, so it has no reduced-motion clause.)
 
 ## Assumptions
 
@@ -439,8 +492,8 @@ pointer and keyboard. It is complete when the scenarios below pass in process an
   feature that lands second of #14 and this one adds the composed story.
 - **Only Chromium is measured** (elements README § Engines); WebKit behaviour of the Popover API and `<dialog>` is an
   open limitation, as it is for every element.
-- **Touch** has no hover, and a tap does not give keyboard focus; the tooltip shows on hover and keyboard focus only
-  (FR-031).
+- **Touch** has no hover, and a tap on a button or link does not give keyboard focus; the tooltip shows on hover and
+  keyboard focus only (FR-031), with text-field triggers the stated exception (FR-029).
 
 ## Dependencies
 

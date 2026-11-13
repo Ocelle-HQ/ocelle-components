@@ -9,7 +9,7 @@
 | `open` | property, reflected attribute | boolean | `false` | Single source of truth (FR-004). |
 | `label` | property, attribute | string | `undefined` | Heading text and accessible name (FR-005, R-08). |
 | `closeLabel` / `close-label` | property, attribute | string | `"Close"` | The close control's name (FR-006). |
-| `aria-label` | observed host attribute | string | — | Decides the name alone when present (README § Host ARIA). Not a declared property. |
+| `aria-label` | observed host attribute | string | — | Decides the name alone when present (README § Host ARIA). Not a declared property. Kept by operator decision; asserted open and closed in the tree, limit in the README (R-08). |
 | default slot | slot | — | — | Body (FR-017). |
 | `footer` | slot | — | — | Actions. The footer is not rendered while the slot is empty. |
 | `panel`, `heading`, `body`, `footer`, `close-button` | parts | — | — | FR-017. |
@@ -22,14 +22,23 @@ shown ──(Escape | close control | backdrop [drawer])──▶ request event
       request cancelled ──▶ shown
       request not cancelled ──▶ closing(reason)
 shown ──(host: open = false)──▶ closing("host")
-shown ──(platform close: form method=dialog, inner close())──▶ closing("host")       (R-03)
-closing(reason) ──(exit animation ends or 0 ms)──▶ <dialog>.close(); focus returned; …-close {reason} ──▶ closed
+shown ──(platform close: inner close(), non-cancelable cancel)──▶ closing("host")    (R-02, R-03)
+closing(reason) ──(exit animation ends or 0 ms)──▶ <dialog>.close(); focus returned if still ours; …-close {reason} ──▶ closed
 closing ──(host: open = true)──▶ shown   (animation cancelled, no close event)       (R-06)
-any ──(disconnected)──▶ closed           (no event; no top-layer entry or inert content left; FR-022)
+any ──(disconnected)──▶ closed, open = false   (no event, no focus move; no top-layer entry or inert content left;
+                                               a close in progress ends without its …-close; FR-022, R-05a)
+closed ──(reconnected)──▶ closed         (the host sets open = true to show it again)
 ```
 
-- `opener`: the deepest active element recorded on entering `opening`. The focus target in `closing` (R-05).
+- `opener`: the deepest active element recorded on entering `opening`; if it is inside an overlay that is closing,
+  that overlay's opener (R-05). The focus target in `closing`, used only if focus is still inside the closing overlay
+  or on the body (R-05).
 - `open` is false from the first moment of `closing` (FR-004).
+- A slotted `<form method="dialog">` causes no transition (R-03).
+- **Overlay stack** (module-level, internal): the open overlays in opening order. Pushed on `showModal()`, removed when
+  the `<dialog>` closes or the host disconnects. Only the top acts on Escape and Tab (R-02, R-04). Opening an overlay
+  first hides the shown tooltip bubble, if any (R-10).
+- **Body stop**: the `body` part has `tabindex="0"` exactly while it overflows (R-04, R-18).
 
 ### Events
 
@@ -39,6 +48,8 @@ any ──(disconnected)──▶ closed           (no event; no top-layer entry
 | `ocelle-dialog-close` / `ocelle-drawer-close` | after the overlay left the top layer and focus returned | `{ reason: "escape" \| "close-button" \| "backdrop" \| "host" }` | yes | yes | no |
 
 No event is dispatched on open (FR-015).
+No event is dispatched on disconnection, even for a close in progress (R-05a, FR-022). The events are declared with
+`@fires` on each concrete class (R-01).
 
 ## `ocelle-dialog` (`src/ocelle-dialog.ts`)
 
@@ -49,8 +60,8 @@ The members of Overlay, plus:
 | `--ocelle-dialog-inline-size` | element CSS custom property | `var(--ocelle-measure-reading)` | Preferred inline size, capped by `--ocelle-dialog-max-inline` (FR-024, R-09). |
 
 Tokens read: `color-sheet`, `color-ink`, `color-overlay`, `elevation-raised`, `radius-2`, `gutter`, `space-*`,
-`dialog-max-inline`, `dialog-max-block`, `measure-reading`, `font-*`, `focus-*`, `color-focus`, `target-min`,
-`motion-base`, `easing-standard`, `size-visually-hidden` (for the drawer's `heading-hidden`).
+`dialog-max-inline`, `dialog-max-block`, `measure-reading`, `border-width`, `font-*`, `focus-*`, `color-focus`,
+`target-min`, `motion-base`, `easing-standard`, `size-visually-hidden` (for the drawer's `heading-hidden`).
 
 ## `ocelle-drawer` (`src/ocelle-drawer.ts`)
 
@@ -76,24 +87,33 @@ Tokens read, in addition to the dialog's: `drawer-inline` (new), `color-chrome`,
 | `disabled` | property, reflected attribute | boolean | `false` | No bubble. |
 | `describes` | property, reflected attribute | boolean | `false` | The text becomes the trigger's description (R-13). |
 | default slot | slot | — | — | The trigger is the first assigned element. |
-| `bubble` | part | — | — | The painted bubble (`popover="manual"`, `aria-hidden`). |
+| `bubble` | part | — | — | The painted bubble (`popover="manual"`, `aria-hidden`). Hidden by default; shown only through `:popover-open` (R-10). |
+| `:host` display | layout | `contents` | — | Operator decision: layout-transparent, so the trigger's box is unchanged (R-11). |
 | events | — | none | — | The manifest states an empty list (FR-045). |
 
 ### State
 
 ```text
-hidden ──(pointerenter on trigger, not touch)──▶ pending ──(delay elapses)──▶ shown
+hidden ──(pointer enters trigger or bubble from outside the tooltip, not touch)──▶ pending ──(delay elapses)──▶ shown
 hidden ──(focus arrives matching :focus-visible)──▶ shown
-pending ──(pointerleave)──▶ hidden
-shown ──(pointer leaves trigger and bubble, no keyboard focus)──▶ hidden
+pending ──(pointer leaves to outside the tooltip)──▶ hidden
+shown ──(pointer leaves to outside the tooltip, no keyboard focus)──▶ hidden
 shown ──(focusout, not hovered)──▶ hidden
-shown ──(Escape)──▶ dismissed ──(pointer re-enters | keyboard focus re-enters)──▶ shown
+shown ──(Escape, trigger not behind the topmost modal)──▶ dismissed ──(pointer re-enters | keyboard focus re-enters)──▶ shown
+shown ──(an overlay opens)──▶ dismissed                                               (R-10)
 shown ──(another tooltip shows | trigger removed or disabled | text empty | disabled)──▶ hidden
+any ──(no Popover API in the engine)──▶ hidden, permanently                            (R-10)
 ```
 
-- `shown` places the bubble (R-11) and re-places it on scroll and resize.
-- With `describes`, one light-DOM `span[slot="ocelle-description"][role="tooltip"][hidden]` and its id in the trigger's
-  `aria-describedby` exist while `describes` is set and `text` is not empty, whatever the state.
+- Hover is decided on the tooltip host from `pointerover`/`pointerout` and their `relatedTarget`: moving between
+  trigger and bubble stays inside the tooltip and changes nothing (R-12). The delay timer starts at the first entry
+  and is not restarted by moves between trigger and bubble.
+- `shown` places the bubble (R-11) and re-places it on any frame in which the trigger's box changed.
+- A text-field trigger matches `:focus-visible` on any focus, so focus by click or tap shows it (stated limit, R-12).
+- With `describes`, one light-DOM `span[slot="description"][role="tooltip"][hidden]` (made with `createElement`, text
+  set with `textContent`, id `ocelle-tooltip-desc-<n>` unique in the trigger's root) and its id in the trigger's
+  `aria-describedby` exist while `describes` is set and `text` is not empty, whatever the state. A `MutationObserver`
+  re-adds the id when a host write drops it, and the id moves with the trigger on `slotchange` (R-13).
 
 ## New tokens (`packages/tokens/src/source.ts`)
 
@@ -107,6 +127,6 @@ shown ──(another tooltip shows | trigger removed or disabled | text empty | 
 
 | File | Stories (each in light and dark) |
 |---|---|
-| `dialog.stories.ts` | default open; with footer actions; long scrolling body; prose with a table; Open project shape (stand-in list); long label |
+| `dialog.stories.ts` | default open; with footer actions; long scrolling body; prose with a table; Open project shape (stand-in list); long label; named by a host `aria-label` (R-08); short viewport 320 × 256 if #10 takes a per-story viewport (R-16, R-18) |
 | `drawer.stories.ts` | start; end; `rtl` start; chrome ground; chrome ground with `heading-hidden`; long scrolling body |
-| `tooltip.stories.ts` | hover top; hover bottom; hover start; hover end; flipped at the top edge; inside an open dialog; long text |
+| `tooltip.stories.ts` | hover top; hover bottom; hover start; hover end; flipped at the top edge; `rtl` hover start; `rtl` hover end; inside an open dialog; long text |
