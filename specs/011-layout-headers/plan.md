@@ -57,8 +57,9 @@ case.
 ## Constitution Check
 
 *Gate: passes before Phase 0; re-checked after Phase 1 design and again after the fixes of plan squad rounds 1, 2 and 3
-(`reviews/plan/round-1/`, `reviews/plan/round-2/`, `reviews/plan/round-3/`) and after the analysis of the tasks
-(`reviews/analysis/fixes-1.md`) — passes, no exception.*
+(`reviews/plan/round-1/`, `reviews/plan/round-2/`, `reviews/plan/round-3/`), after the analysis of the tasks
+(`reviews/analysis/fixes-1.md`) and after the phase-1 spike decision (`reviews/phase-1/spike-fixes.md`) — passes, no
+exception.*
 
 | Principle | How this plan meets it |
 |---|---|
@@ -87,8 +88,10 @@ case.
 4. **Page header ground** (R-07, SPEC-2-07/3-06): none of its own; the band shows the surface it sits on, ruled off
    below. No `<header>` in the shadow root (it would be a banner).
 5. **Sidebar box and dividers** (R-09; operator decision PLAN-CORRECTNESS-1-004 (b), the divider follows the
-   content): a flex-column host with `min-block-size: 100%` and a growing layout container, so it fills its
-   container or grows past it; sections `display: block`; each section's `border-block-start` except the first by
+   content): a flex-column host with `min-block-size: 100%` and `align-self: start` and a growing layout container,
+   so it fills its container or grows past it in a block, flex-row or grid container (operator decision at the
+   phase-1 spike, option (a): without `align-self: start` it stayed at a shorter flex-row or grid container's size;
+   a page rule on the host's `align-self` wins, stated in the README); sections `display: block`; each section's `border-block-start` except the first by
    `::slotted(:nth-child(1 of :not([slot]):not([hidden])))`, every section rule excluding `[hidden]` so a hidden
    section (an `ocelle-section-header` included) draws nothing (PLAN-FRESH-2-001); a section's padding, inline
    margins, divider and display are `!important`, as the slot convention's slotted box rules are, so a page reset
@@ -96,11 +99,13 @@ case.
    normal and the page's (operator decision PLAN-FRESH-3-002 (a)); the sections wrapper's block-start and block-end borders by head and
    footer state (the head's block-end border when the default slot is empty), negative inline margins for full-width
    rules around inline-padded text. The free space of a tall sidebar lies between the last divider and the footer.
-   If the measurement fails, the operator is asked; the page's DOM is never changed.
+   Measured in the phase-1 spike (`reviews/phase-1/spike.md`); the page's DOM is never changed.
 6. **Rail** (R-10, SPEC-2-04/2-05/3-05): the host carries the 52 px border-box size and the padding (border-box in
    every new element, R-01); `--ocelle-space-1` on each side of the divider, the divider following the primary group
    and the free space before the bottom group (operator decision PLAN-CORRECTNESS-1-004 (b)); a vertical rail taller
-   than its container grows with its content, scrolling is the container's; horizontal: primary group wraps, bottom
+   than its container grows with its content in a block, flex-row or grid container, the host being `align-self:
+   start` as the sidebar's (operator decision at the phase-1 spike, option (a); a page rule on the host's
+   `align-self` wins, stated in the README), scrolling is the container's; horizontal: primary group wraps, bottom
    group at the inline end (also with no primary items) and at most half the inline size, divider over every row;
    orientation is CSS only, outside the forced-colours query, so focus, DOM and layout in forced colours stay. The
    rail styles no item: chrome ink is on the host, and stories and fixtures hold stand-in `<a>` items sized and set
@@ -234,7 +239,8 @@ gates/test/… and gates/bin/contrast.ts # pinned contrast counts
    test, CHANGELOG; style plants.
 4. **US3 Context sidebar** (P3): `ocelle-context-sidebar.ts`, US3 scenarios 1–13 as shared bodies (US3-3 with its
    `ocelle-section-header` and `span` section variant, its `ul` and `p` section, head and footer variant, its
-   footer `<p hidden>` edge variant, its page-reset variants and its hidden-section variant; US3-12 reading the tree only, R-11), its token-sentinel scenario and no-event check; the
+   footer `<p hidden>` edge variant, its page-reset variants and its hidden-section variant; US3-4 in a block,
+   flex-row and grid container, with the 600 px flex-row and grid fill; US3-12 reading the tree only, R-11), its token-sentinel scenario and no-event check; the
    internals under `internalsKey` in `src/naming.ts` and the manifest test's no-member assertion; entry, exports,
    manifest, stories (one landmark per story, with a distinct label where the case names the landmark, one story per
    US3-12 case rendered alone for the `axe` gate) and baselines, the role probe of R-11 recorded in the phase evidence, README and readme test, CHANGELOG; style
@@ -242,7 +248,9 @@ gates/test/… and gates/bin/contrast.ts # pinned contrast counts
 5. **US4 Personal rail** (P4): `ocelle-personal-rail.ts`, US4 scenarios 1–11 as shared bodies (US4-4 through 721,
    720, 719 and 320 px; US4-6 in both orientations; US4-9 with the horizontal rail still a row; US4-10 running the
    README's `matchMedia("(width < Npx)")` orientation example on the fixture page through a same-origin module, the
-   viewport set to N and N − 1; US4-2 with the stand-in items' computed colour; US4-11 reading the tree only), its
+   viewport set to N and N − 1; US4-2 with the stand-in items' computed colour, the 600 px flex-row and grid
+   variants and the taller-than-container variant in a block, flex-row and grid container; US4-11 reading the tree
+   only), its
    token-sentinel scenario and no-event check; the internals under `internalsKey`; the stand-in item stylesheets
    for the fixture pages and the stories (`[data-story="rail-items"]`); entry, exports, manifest, stories (one per
    US4-11 case rendered alone) and baselines, the role probe of R-11 recorded in the phase evidence, README (the #12 note, the orientation
