@@ -13,3 +13,11 @@ the findings now, while implementation waits for #10's merge.
     no lanes, non-lane children, lane count updates, content changes while scrolled, and an empty list slot;
   - remove the timing goal (twelve lanes of forty cards within one frame) from the plan.
 - **C1, C2, C4, F1** and the LOW findings (A1, F3, F4, C5, C6, C7): fixed in the tasks as the report recommends.
+
+## On the re-run analysis (head 321ea0f, 2026-11-13, human:jeroennouwsdev)
+
+- **U1** (MEDIUM, the "content removed while scrolled" plant), "New plant": the case keeps its own guard, with a plant
+  only it catches: the fades and the tab stop computed from a cached `scrollLeft` instead of the clamped one.
+- **F5, F6, C8, F7** (LOW), "Fix now with U1": fixed together with U1 in one commit, with no new analysis run. F7
+  rewords the spec's one-lane edge case to "the board's inline size less its ring room on each inline side".
+- **Next**: wait for #10's merge before implementation. Retrospective notes go to `/ocelle-land`'s step 4.2.
