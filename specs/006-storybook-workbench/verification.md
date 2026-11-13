@@ -68,4 +68,6 @@ Status: **open** (operator, at merge).
 
 ## Sign-off
 
-Operator: _pending_
+Operator: jeroennouwsdev, 2026-11-13. Recorded by the orchestrator at the operator's request in the landing session
+("sign off verification.md for me"). At sign-off, items 1 and 2 were done; items 3 (the ruleset on `main`) and 4 (the
+squash-merge, by the operator) were still open.
