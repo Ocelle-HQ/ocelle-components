@@ -60,3 +60,6 @@
   sidebar spacing of SPEC-2-03, and "Approve after a final fix" after spec check 3) are recorded in the spec's header.
 - The spec is approved once spec check 3's findings are fixed; no further spec check follows, and the plan squad
   reads the spec next.
+- The operator's decision at the phase-1 spike (option (a), `align-self: start` on the sidebar's and rail's host) is
+  recorded in the spec's header and applied to FR-023, FR-025, FR-036, US3-4 and US4-2 (`reviews/phase-1/spike-fixes.md`);
+  every item above still holds.
