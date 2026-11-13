@@ -2,7 +2,7 @@ import { mkdirSync, mkdtempSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { afterEach, describe, expect, it } from "vitest";
-import { axe } from "../bin/axe.ts";
+import { axe, axeCore } from "../bin/axe.ts";
 import type { AxeTools } from "../bin/axe.ts";
 
 // The axe gate's exit 2 for "axe-core not found" (contracts/gates.md § `axe`; phase 4 review round 1, R1-02): when
@@ -75,5 +75,21 @@ describe("axe: axe-core not found (contracts/gates.md § axe)", () => {
     const env = { OCELLE_CHROMIUM_PATH: "/nowhere/chrome" };
     expect(await axe(dir, env, () => undefined, given)).toEqual({ exit: 2, cause: "axe: could not run: the planted build cause" });
     expect(asked).toEqual({ resolved: ["axe-core/axe.min.js"], loaded: ["axe-core"], builds: [[dir, env]] });
+  });
+});
+
+describe("axeCore: axe-core's script and rule options", () => {
+  it("gives the resolved script and the FR-016 rule options of the loaded metadata", () => {
+    const rules = [
+      { id: "button-name", tags: ["wcag2a"], enabled: true },
+      { id: "no-tag-off", tags: ["best-practice"], enabled: false },
+      { id: "trial", tags: ["wcag2aa", "experimental"], enabled: true },
+    ];
+    const given: AxeTools = { resolve: () => "/gate/axe.min.js", load: () => ({ _audit: { rules } }), build: () => Promise.resolve({ cause: "unused" }) };
+    expect(axeCore(given)).toEqual({ path: "/gate/axe.min.js", rules: { "button-name": { enabled: true }, "no-tag-off": { enabled: false }, trial: { enabled: false } } });
+  });
+
+  it("is undefined when axe-core's script cannot be resolved or axe-core cannot be loaded", () => {
+    expect([axeCore(tools({ resolve: false }).tools), axeCore(tools({ load: false }).tools)]).toEqual([undefined, undefined]);
   });
 });

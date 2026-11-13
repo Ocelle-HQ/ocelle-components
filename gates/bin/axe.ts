@@ -6,7 +6,8 @@
 // the outside-root check, then injects axe-core with page.addScriptTag and runs it on the story area with the FR-016
 // rules. The decisions are gates/lib/axe-rules.ts, axe-verdict.ts, a11y-exceptions.ts, story-checks.ts and
 // capture-plan.ts; this entry and the collectors of gates/lib/story-page.ts only run the browser and read files (the
-// process boundary, tested by gates/test/integration/axe.test.ts, gates/test/axe-context.test.ts and the axe plants).
+// process boundary, tested by gates/test/integration/axe.test.ts, gates/test/axe-context.test.ts and the axe plants);
+// the lookup of axe-core and the exit 2 when it is missing take injected tools, tested by gates/test/axe-gate.test.ts.
 import { readFile } from "node:fs/promises";
 import { createRequire } from "node:module";
 import { join } from "node:path";
@@ -71,30 +72,44 @@ export async function auditStoryTheme(browser: Pick<Browser, "newContext">, setu
   return work().finally(() => context.close());
 }
 
-/** axe-core's script and the FR-016 rule options from its own metadata, or undefined when axe-core is not installed. */
+/** What the gate looks up and runs outside itself: axe-core in the gate repository's node_modules, and the build. */
+export interface AxeTools {
+  /** Resolves a module of the gate repository to its file (require.resolve); throws when it is not installed. */
+  readonly resolve: (id: string) => string;
+  /** Loads a module of the gate repository (require); throws when it is not installed. */
+  readonly load: (id: string) => unknown;
+  /** Builds the root's Storybook and reads its index (the storybook-build gate's build function). */
+  readonly build: typeof buildStories;
+}
+
+/**
+ * axe-core's script and the FR-016 rule options from its own metadata, or undefined when axe-core is not installed
+ * (tested in process by gates/test/axe-gate.test.ts).
+ */
+export function axeCore(tools: AxeTools): { readonly path: string; readonly rules: AuditSetup["rules"] } | undefined {
+  let path: string;
+  let core: { readonly _audit: { readonly rules: readonly AxeRule[] } };
+  try {
+    path = tools.resolve("axe-core/axe.min.js");
+    core = tools.load("axe-core") as typeof core;
+  } catch {
+    return undefined;
+  }
+  return { path, rules: ruleOptions(ruleMeta(core._audit.rules)) };
+}
+
+/** The gate repository's axe-core and the real build. */
 // Stryker disable next-line all: process boundary, covered by gates-integration: gates/test/integration/axe.test.ts "audits the repository's 42 story-themes and exits 0, the Prose document's ten color-contrast-incomplete nodes excepted and no other result (US3 scenarios 1 and 5, FR-029)"
-function axeCore(): { readonly path: string; readonly rules: AuditSetup["rules"] } | undefined {
+function nodeTools(): AxeTools {
   // Stryker disable next-line all: process boundary, covered by gates-integration: gates/test/integration/axe.test.ts "audits the repository's 42 story-themes and exits 0, the Prose document's ten color-contrast-incomplete nodes excepted and no other result (US3 scenarios 1 and 5, FR-029)"
   const require = createRequire(join(gateRepository, "package.json"));
   // Stryker disable next-line all: process boundary, covered by gates-integration: gates/test/integration/axe.test.ts "audits the repository's 42 story-themes and exits 0, the Prose document's ten color-contrast-incomplete nodes excepted and no other result (US3 scenarios 1 and 5, FR-029)"
-  try {
-    // Stryker disable next-line all: process boundary, covered by gates-integration: gates/test/integration/axe.test.ts "audits the repository's 42 story-themes and exits 0, the Prose document's ten color-contrast-incomplete nodes excepted and no other result (US3 scenarios 1 and 5, FR-029)"
-    const path = require.resolve("axe-core/axe.min.js");
-    // Stryker disable next-line all: process boundary, covered by gates-integration: gates/test/integration/axe.test.ts "audits the repository's 42 story-themes and exits 0, the Prose document's ten color-contrast-incomplete nodes excepted and no other result (US3 scenarios 1 and 5, FR-029)"
-    const axe = require("axe-core") as { readonly _audit: { readonly rules: readonly AxeRule[] } };
-    // Stryker disable next-line all: process boundary, covered by gates-integration: gates/test/integration/axe.test.ts "audits the repository's 42 story-themes and exits 0, the Prose document's ten color-contrast-incomplete nodes excepted and no other result (US3 scenarios 1 and 5, FR-029)"
-    return { path, rules: ruleOptions(ruleMeta(axe._audit.rules)) };
-  }
-  // Stryker disable next-line all: process boundary, no test: axe-core is a root devDependency, installed wherever the gate runs
-  catch {
-    // Stryker disable next-line all: process boundary, no test: axe-core is a root devDependency, installed wherever the gate runs
-    return undefined;
-  }
+  return { resolve: (id) => require.resolve(id), load: (id): unknown => require(id), build: buildStories };
 }
 
 /** The gate on a root (contracts/gates.md § `axe`): exceptions, axe-core, the build, then every story-theme. */
 // Stryker disable next-line all: process boundary, covered by gates-integration: gates/test/integration/axe.test.ts "audits the repository's 42 story-themes and exits 0, the Prose document's ten color-contrast-incomplete nodes excepted and no other result (US3 scenarios 1 and 5, FR-029)"
-export async function axe(root: string, env: Io["env"], note: (line: string) => void): Promise<GateResult> {
+export async function axe(root: string, env: Io["env"], note: (line: string) => void, tools: AxeTools = nodeTools()): Promise<GateResult> {
   // Stryker disable next-line all: process boundary, covered by gates-integration: gates/test/integration/axe.test.ts "audits the repository's 42 story-themes and exits 0, the Prose document's ten color-contrast-incomplete nodes excepted and no other result (US3 scenarios 1 and 5, FR-029)"
   const fail = (cause: string): GateResult => ({ exit: 2, cause: `axe: could not run: ${cause}` });
   // Stryker disable next-line all: process boundary, covered by gates-integration: gates/test/integration/axe.test.ts "exits 2 naming the malformed exceptions file before it builds anything"
@@ -103,12 +118,10 @@ export async function axe(root: string, env: Io["env"], note: (line: string) => 
   if ("problem" in entries) return fail(entries.problem);
   // Stryker disable next-line all: process boundary, covered by gates-integration: gates/test/integration/axe.test.ts "audits the repository's 42 story-themes and exits 0, the Prose document's ten color-contrast-incomplete nodes excepted and no other result (US3 scenarios 1 and 5, FR-029)"
   const states = await Promise.all(entries.map(async (entry) => recordedIn(entry, await readFile(join(root, entry.plan), "utf8").catch(() => undefined))));
-  // Stryker disable next-line all: process boundary, covered by gates-integration: gates/test/integration/axe.test.ts "audits the repository's 42 story-themes and exits 0, the Prose document's ten color-contrast-incomplete nodes excepted and no other result (US3 scenarios 1 and 5, FR-029)"
-  const core = axeCore();
-  // Stryker disable next-line all: process boundary, no test: axe-core is a root devDependency, installed wherever the gate runs
+  const core = axeCore(tools);
   if (core === undefined) return fail("axe-core not found; run pnpm install");
   // Stryker disable next-line all: process boundary, covered by the axe plant error-build-fails, and by gates-integration: gates/test/integration/axe.test.ts "audits the repository's 42 story-themes and exits 0, the Prose document's ten color-contrast-incomplete nodes excepted and no other result (US3 scenarios 1 and 5, FR-029)"
-  const stories = await buildStories(root, env);
+  const stories = await tools.build(root, env);
   // Stryker disable next-line all: process boundary, covered by the axe plant error-build-fails, and by gates-integration: gates/test/integration/axe.test.ts "audits the repository's 42 story-themes and exits 0, the Prose document's ten color-contrast-incomplete nodes excepted and no other result (US3 scenarios 1 and 5, FR-029)"
   if ("cause" in stories) return fail(stories.cause);
   // Stryker disable next-line all: process boundary, covered by gates-integration: gates/test/integration/axe.test.ts "exits 2 naming the browser when OCELLE_CHROMIUM_PATH names no executable"
