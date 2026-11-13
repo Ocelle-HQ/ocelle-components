@@ -109,8 +109,9 @@ Token-only CSS with no new `token-only` allowance. No I/O. No ID reference acros
    `role="tooltip"` node to the host and an `aria-describedby` id to a native trigger. This is not supported for
    custom-element triggers whose inner control takes focus. The spec now says so (FR-029, FR-036, US3-7).
 6. **Late `:focus-visible`** (R-12): only focus that arrives while matching shows the bubble.
-7. **Story delay override** (R-16): tooltip stories set `--ocelle-tooltip-delay: 0ms` through a stories-layout class,
-   because #10 captures within two frames of the pointer move.
+7. **Story delay override** (R-16): tooltip stories wrap their markup in `<div data-story="tooltip">`, and
+   `stories-layout.css` sets `[data-story="tooltip"] { --ocelle-tooltip-delay: 0ms; }` (operator decision A at T026),
+   because #10 runs axe two frames after the pointer move and takes the screenshot at no fixed time after it.
 8. **Heading level 2**, fixed (R-08).
 
 Settled in the squad's round 1 (9 to 13 by the operator at the forks, 14 a confirmed fix):
@@ -242,7 +243,7 @@ packages/elements/
 ├── test/build/build.test.ts, test/build/pack.test.ts   # + the three dist files
 storybook/
 ├── stories/{dialog,drawer,tooltip}.stories.ts     # after #10 (R-16)
-├── .storybook/stories-layout.css  # tooltip delay override class
+├── .storybook/stories-layout.css  # tooltip delay override, [data-story="tooltip"] (R-16)
 └── baselines/…                    # after #10
 vitest.config.ts                   # elements: 1280 × 800, no touch; + elements-touch project (only *.touch.test.ts,
                                    #   same excludes as elements: not test/node, test/build, test/browser); commands (R-14)
