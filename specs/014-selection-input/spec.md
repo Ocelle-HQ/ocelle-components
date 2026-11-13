@@ -533,12 +533,16 @@ live region read from the accessibility tree and observed for mutations.
    after the request. **When** the host sets the same `status` again with no new request, **Then** the region's
    content is not mutated (a MutationObserver on the region records no mutation), paired in the same test with the
    recorded mutation of the first set.
-6. **Given** a status shown, **When** the Copy control is activated again, **Then** the status is cleared before the
-   new request event is emitted (a listener reading `field.status` during the event sees `""`, the region is empty
-   at that moment, and the accessibility tree read by that listener already holds the live region with no text,
-   FR-035), and when the listener sets the same text again the region's text goes from empty to that text again (a
-   recorded mutation, and a tree read after the set holds the text), so a host's new status is a new live-region
-   change.
+6. **Given** a status shown and a host listener that sets the same text again synchronously, inside the event,
+   **When** the Copy control is activated again, **Then** the status is cleared before the new request event is
+   emitted (the listener reading `field.status` during the event sees `""` and the region empty), no request is
+   emitted in the activation's task (a bubble-phase `click` listener on `document` sees none), and the first rendering update after the activation runs with the region empty
+   and no request emitted yet (a `requestAnimationFrame` callback registered in the activation's task, before the
+   element's handler, records the region's text and the requests so far, FR-035); the request follows that update.
+   When the listener sets the same text, the region's text goes from empty to that text again (a recorded mutation,
+   and a tree read after the set holds the text), so a host's new status is a new live-region change, and the
+   accessibility tree records the region empty before it records the text again (accessibility events, not a read
+   forced from the listener; plan research R-07).
 7. **Given** a host that sets `status` to a failure text ("Could not copy: the bridge is unavailable"), **Then** it is
    shown in the live region the same way (scenario 5); the field draws no colour or icon of its own for success or
    failure (the words are the host's).

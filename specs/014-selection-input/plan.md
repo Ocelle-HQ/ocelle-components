@@ -176,8 +176,9 @@ gate on the phase's changes → plant runs recorded in `reviews/phase-N/plants.m
    - Driver extensions, tests first (R-11): `press`, `click` with button, modifiers and count, child addressing by
      `{ parent, kind, index }`, `activeElement` through shadow roots returning that identity, `mutate` (several DOM
      steps in one task), the non-settling `resize` and `afterResizeDelivery`, `computedPart`, page scroll offset and
-     viewport size, the keydown recorder, the clipboard observer installed at every mount and fixture page, and the
-     separate `axStates` command (005's `axTree` unchanged), each with a unit test that fails before it exists.
+     viewport size, the keydown recorder, the clipboard observer installed at every mount and fixture page, the
+     separate `axStates` command (005's `axTree` unchanged), `activationRecord` and the `axUpdates` recorder of
+     `Accessibility.nodesUpdated` (R-07), each with a unit test that fails before it exists.
    - `vitest.config.ts` gains `elements-browser-file` and excludes `test/browser-file/**` from `elements`;
      `vitest.mutation.config.ts` excludes `elements-browser-file`; `gates/test/vitest-config.test.ts` first (R-09).
 2. **US1 Listbox (P1, MVP)**: `roving.ts`, `selection.ts` and `internals.ts` with in-process tests over every key,
@@ -194,9 +195,11 @@ gate on the phase's changes → plant runs recorded in `reviews/phase-N/plants.m
    internal `ResizeObserver` on the group and its segments, the shared-line technique and custom states (R-06), the
    engine-floor raise in the README; scenarios US3-1 to 19 with resize measurements after the observations'
    delivery; stories (default, joined one row and wrapped, pressed, disabled, focused, icon).
-5. **US4 Copy field (P4)**: spike R-07 (request timing against the tree); `ocelle-copy-field` (R-07)
-   with the imperative live-region text and `ocelle-icon` defined by its entry; scenarios US4-1 to 12 with the
-   clipboard observer, the live-region MutationObserver and the tree read in the listener; stories; README with the
+5. **US4 Copy field (P4)**: spike R-07 (request timing against the tree, observed through
+   `Accessibility.nodesUpdated`); `ocelle-copy-field` (R-07) with the imperative live-region text and `ocelle-icon`
+   defined by its entry; scenarios US4-1 to 12 with the clipboard observer, the live-region MutationObserver, and for
+   US4-6 a synchronous listener with the frame-order record and the tree-update history (no tree read from the
+   listener); stories; README with the
    `copy-control` surface and the future `ocelle-button` swap (FR-044).
 6. **US5 Link (P5)**: spikes R-09 and the host-exposure spike (R-08); `link-target.ts` with its in-process tests;
    `ocelle-link` (R-08); `link-target.html`; scenarios US5-1 to 14 including the navigation observations (fragments

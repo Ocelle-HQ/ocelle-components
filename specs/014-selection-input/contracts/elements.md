@@ -165,7 +165,8 @@ recorded in `reviews/phase-N/plants.md` (research R-11).
 | no tab stop for an all-disabled overflowing listbox (US1-22) | one enabled option takes focus | no `tabindex` on `part="list"` | `max-block-size` below the content |
 | no clipboard write (US4-3, SC-006) | the request event | a `navigator.clipboard.writeText` call; a `document.execCommand("copy")` call | observer installed at every mount and fixture page |
 | repeated status does not mutate the region (US4-5) | first set mutates it | setting `textContent` unconditionally; the region in the Lit template | |
-| the cleared region is in the tree when the request is dispatched (US4-6) | the host's text in the tree after its set | synchronous dispatch | the listener reads `axStates` |
+| no request before the first rendering update after activation, region empty at it (US4-6) | the request after that update; the host's text in the tree after its set | synchronous dispatch; dispatch in a microtask | synchronous listener setting the same text; `activationRecord` (R-07, R-11) |
+| the tree records the region empty before the host's text again (US4-6) | the refilled update recorded | synchronous dispatch; dispatch inside the element's own `requestAnimationFrame` callback | synchronous listener; `axUpdates` on the region fetched before activation (phase-5 spike, R-07) |
 | disabled Copy control emits nothing (US4-10) | enabled control emits | ignoring `disabled` in the click handler | |
 | the field draws no colour or icon of its own (US4-7) | the status text shown | a success colour or icon on status set | computed colours read before and after the set |
 | the text is not prevented from selection (US4-12) | the selection holds the text | `user-select: none` | pointer drag across the text |

@@ -266,11 +266,38 @@ cleared region has reached the accessibility tree, so a host that sets the same 
 produces a change a screen reader sees: the activation clears, then waits for the next rendering update to complete
 (a `requestAnimationFrame` callback followed by a task, i.e. after that frame's style, layout and accessibility
 update), then dispatches `ocelle-copy-field-request` with the text captured at activation. Each activation schedules
-its own dispatch; a disconnected element dispatches nothing; the README states the timing (FR-035). Spike in phase 5:
-in Chromium, read the accessibility tree from the listener (through the `axTree` states command, R-11) and confirm
-the region is present and empty there; if one frame plus a task is not enough, the spike measures what is, and if no
-bounded wait is, the operator decides. US4-6's test reads the tree in the listener before setting the status, and
-again after; plant: synchronous dispatch.
+its own dispatch; a disconnected element dispatches nothing; the README states the timing (FR-035).
+
+**What US4-6 observes** (verify 1 of plan round 1, PLAN-TESTABILITY-1-011). A tree read from the listener cannot
+test this: `axStates` is an asynchronous CDP command and Chromium builds the tree it returns from the DOM as it is at
+the read, so a listener that awaits a read sees the region empty under synchronous dispatch as well (the DOM is
+cleared and the host has not set yet), and awaiting makes the host's set asynchronous, which is not the case the
+decision is about. US4-6's listener is therefore synchronous: it records `field.status` and the region's text, then
+sets the same status text at once, never awaiting. The test observes the timing and the tree's history instead:
+
+- *Frame order* (every run, both harnesses). A capture-phase listener on `document` for the activating event
+  (`click`, which Enter and Space on the native button also produce) registers a `requestAnimationFrame` callback in
+  the activation's task, before the element's own handler runs. That callback records the region's text and the
+  number of requests so far; the request listener records its own entry. Asserted: the record is
+  `activation, activation end (0 requests), frame (region "", 0 requests), request (status "", region "")`, where
+  *activation end* is a bubble-phase `click` listener on `document`, which runs after the element's handler in the
+  activation's task (so no request in that task). Plants: synchronous dispatch (the request
+  comes before the frame, and the frame sees the host's text again); dispatch in a microtask (same).
+- *Tree history* (the phase-5 spike, then every run if the spike holds). The test enables CDP's `Accessibility`
+  domain, fetches the region's node before the activation (`Accessibility.nodesUpdated` reports only nodes already
+  requested) and records every `nodesUpdated` event for it until the request has been handled and the page settled.
+  Asserted: an update with the region present and empty precedes the update holding the host's text. Under
+  synchronous dispatch the DOM is cleared and refilled within one task, the next accessibility serialisation sees the
+  same text, and no empty update is recorded, so the plant fails. A second plant, dispatch inside the element's own
+  `requestAnimationFrame` callback (before that frame's style, layout and accessibility update), is caught here, not
+  by the frame order.
+
+Spike in phase 5, recorded before the red commit: in Chromium, confirm that `Accessibility.nodesUpdated` delivers the
+empty and the refilled state for the region under the designed timing and only the refilled (or no) change under
+synchronous dispatch. If one frame plus a task is not enough for the empty state to be recorded, the spike measures
+what is and R-07's timing follows it. If the events are not delivered for the region, or no bounded wait yields the
+empty update, the frame-order observation alone stays and the operator decides whether that is accepted or the
+decision is revisited (plan Decisions 7).
 
 **Native button keys.** Enter and Space activate a native `<button>` without the element calling `preventDefault()`
 on keydown, so "handled" for the Copy control is the button's own activation, not `defaultPrevented` (spec-check note
@@ -394,6 +421,12 @@ through the Vitest browser `userEvent.keyboard` (Playwright provider, trusted ev
   `ResizeObserver` registered on the target (R-06);
 - `computedPart(target, part | pseudo, property)` reading a shadow part's or a pseudo-element's computed style (R-15);
 - `scrollOffset()` of the page and `viewportSize(width, height)` (the Space and sideways-scroll pairings);
+- `activationRecord(target)`: installs US4-6's capture listener, its `requestAnimationFrame` and microtask entries
+  and the request entry (R-07), and returns the ordered record;
+- `axUpdates(target)`: enables CDP's `Accessibility` domain, fetches the target's node and records its
+  `Accessibility.nodesUpdated` events touching it or its descendants, each as the region's `{ role, live, text }`
+  (`text` the concatenated names of its static-text descendants) until stopped (R-07; its unit test is a fixed page
+  whose node is emptied in one frame and refilled in the next, against one emptied and refilled in one task);
 - the clipboard observer (below) and `axStates` (below).
 
 **Accessibility states** (PLAN-TESTABILITY-1-014). mission 005's `axTree` keeps its `{ role, name }` nodes, so 005's
