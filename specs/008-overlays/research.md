@@ -54,8 +54,8 @@ unmerged). Results marked "squad probe" were measured by the plan squad's round 
 - **Topmost** (FR-010, FR-023): a module-level stack of open overlays, internal to the package. An overlay is pushed
   when it calls `showModal()` and removed when its `<dialog>` closes or the host disconnects. An overlay acts on a
   keydown (Escape here, Tab in R-04) only when it is the top of the stack and no other close watcher is open in its
-  content (below). The stack holds only Ocelle overlays; a native popover or dialog in slotted content is found by
-  that second check. No `stopPropagation()` is called, so hosts still see the key.
+  content (below). The stack holds only Ocelle overlays; an open native popover or modal dialog in slotted content is
+  found by that second check. No `stopPropagation()` is called, so hosts still see the key.
 - **Decision**: the overlay handles Escape on `keydown` (bubble phase, on its `<dialog>`). It ignores the event, neither
   preventing it nor requesting, when any of these holds:
   - the overlay is not the top of the stack;
@@ -63,8 +63,10 @@ unmerged). Results marked "squad probe" were measured by the plan squad's round 
   - `isComposing` is true (an IME composition is cancelled by the key);
   - the target, followed to the deep active element, is a text field whose Escape has a native action: an `<input>`
     of type `search` with a non-empty value;
-  - another close watcher sits above the overlay within its content (squad round 3, PLAN-FRESH-3-002): an open
-    `popover="auto"` or `popover="hint"` element, or an open `<dialog>` other than its own, in its flat tree.
+  - another close watcher sits above the overlay within its content (squad round 3, PLAN-FRESH-3-002, narrowed in
+    fixes 2): an open (`:popover-open`) `popover="auto"` or `popover="hint"` element, or a `<dialog>` other than its
+    own that is `:modal`, in its flat tree. Only these does the platform put above the overlay on its close-watcher
+    stack; a non-modal `<dialog>` does not count (below).
   Otherwise it calls `preventDefault()` and runs the request path (FR-010, FR-013).
 - **Close watchers in slotted content** (squad round 3, PLAN-FRESH-3-002). **Measured** (squad round 3 probe, Chromium
   153): with a slotted `popover="auto"` menu open from a slotted invoker inside a shadow-root modal `<dialog>`, native
@@ -75,8 +77,17 @@ unmerged). Results marked "squad probe" were measured by the plan squad's round 
   alone, as natively), its `document` listener below does nothing, and R-04 handles no Tab (a nested native modal keeps
   its own sequential navigation). How the overlay knows is the implementer's choice, for example capture-phase
   `toggle` and `close` listeners on its `<dialog>` (these events do not bubble, but a slotted descendant's pass the
-  `<dialog>` in capture) or a check of the flat tree at keydown. The tooltip's bubble is `popover="manual"` (R-10), so
-  it is not such an element; its Escape is its own (R-12).
+  `<dialog>` in capture) followed by a check of `:popover-open` and `:modal`, or a check of the flat tree at keydown.
+  The tooltip's bubble is `popover="manual"` (R-10), so it is not such an element; its Escape is its own (R-12).
+- **Non-modal dialogs in slotted content** (squad round 3 verify 1, PLAN-FRESH-3-002). **Measured** (verify probe,
+  Chromium 153, no overlay handlers): a slotted `<dialog open>` (open by attribute), with focus inside it or on a
+  sibling button: native Escape leaves it open and fires `cancel` on the overlay's `<dialog>`, so the platform treats
+  the overlay as the top close watcher. A slotted dialog opened with `show()`: native Escape closes nothing and fires
+  no `cancel`. Neither is above the overlay, so the overlay does not stand aside for them: it handles Escape by the
+  rules above (one request with reason `escape`, the slotted dialog stays open; a host that wants it closed closes
+  it), keeps its veto on every repetition through the keydown path, and R-04 handles Tab as usual, the non-modal
+  dialog's focusable content being ordinary stops. So the body-leak repair and the veto never lapse for the life of
+  a non-modal slotted dialog.
 - **Escape inside a slotted iframe** (squad round 3, PLAN-FRESH-3-001): a key pressed in a frame's document is
   dispatched there and never reaches the parent's `<dialog>` or `document`, and the platform's close watcher of the
   parent does not see it either (squad round 3 probe: nothing recorded, the dialog stays open). So with focus inside
@@ -182,22 +193,34 @@ unmerged). Results marked "squad probe" were measured by the plan squad's round 
     media element, a delegating host) and reaches its inner stops natively from there; a closed root that does not
     delegate focus is then skipped in the reverse wrap and reached in the forward direction. The README states both
     limits (the possible extra press and the reverse wrap).
-  - **Positive `tabindex`** in slotted content: native middle moves honour it, the walk does not, so the cycle's ends
-    follow flat-tree order. The README advises against it inside an overlay.
+  - **Positive `tabindex`** (squad round 3 verify 1, PLAN-FRESH-3-001): the stop list is in the engine's sequential
+    navigation order, not raw flat-tree order (see the walk below), so "first stop" and "last stop" are the ends the
+    native moves themselves reach. **Measured** (verify probe, Chromium 153): slotted b1, b2 and b3 with
+    `tabindex="2"`, no footer: native Tab from the close control gives `b3 b1 b2 BODY close`, and Shift+Tab from b3
+    gives the close control. With ends taken from flat-tree order (b3 last) the cycle would be `close b3` in both
+    directions and b1 and b2 unreachable; with ends taken from the navigation order (b2 last) it is
+    `close b3 b1 b2 close …` forward and `close b2 b1 b3 close …` backward, every element reached. From a non-stop the
+    next (previous) stop is still found by flat-tree position, after which the presses follow the navigation order,
+    so no stop is left out of a cycle.
   The rest of the document is inert through `showModal()`. The explicit handling at the ends and from non-stops keeps
   focus out of the browser chrome and off the document body; the native middle moves keep every focusable element the
   engine reaches reachable, including content the walk cannot see into (WCAG 2.1.1). The squad probes showed Chromium
   without the wrap passes through `body` once per cycle, that Shift+Tab from a focused `<dialog>` goes to `body`
   (round 2), and that native Tab from the close control over a slotted button, a closed-shadow-root element of two
   buttons, an iframe of two buttons and a button gives `b1 xc xc fr[f1] fr[f2] b2 BODY` (round 3), so the tests
-  assert the exact sequence (SC-002), start it from non-stops too, and slot opaque content in the middle and last.
+  assert the exact sequence (SC-002), start it from non-stops too, slot opaque content in the middle and last, and
+  put a positive `tabindex` on the flat-tree last and first content stops.
 - **Body as a stop** (FR-018): while the `body` part overflows (`scrollHeight > clientHeight`, checked on a
   `ResizeObserver` of the body and its slot content and on `slotchange`), it carries `tabindex="0"`; otherwise the
   attribute is absent. The walk lists it as a stop in its place before the body's own content. So a prose-only long
   body is reachable by Tab and scrolls with the arrow and Page keys in every engine, and axe's
   `scrollable-region-focusable` is met. The body is not named; it is a plain scroller inside the named dialog.
-- A small internal module `src/focusable.ts` holds the "tabbable in flat-tree order" walk (open shadow roots and slots
-  followed). Excluded: `disabled`, `inert`, `hidden`, `tabindex="-1"`, elements with no layout box
+- A small internal module `src/focusable.ts` holds the tabbable walk (open shadow roots and slots followed). It returns
+  two orders: flat-tree order (used to place a non-stop and an opaque container) and the sequential navigation order
+  of HTML's tabindex-ordered focus navigation scopes (the overlay's shadow root, each slot and each open shadow root
+  is a scope; within a scope, elements with a positive `tabindex` come first in ascending order, ties in tree order,
+  then the rest in tree order; a nested scope's order is inserted at its owner's place). The stop list, its ends and
+  every explicit move use the navigation order (squad round 3 verify 1, PLAN-FRESH-3-001). Excluded: `disabled`, `inert`, `hidden`, `tabindex="-1"`, elements with no layout box
   (`getClientRects().length === 0`, which covers `display: none` and closed `<details>` content) and elements whose
   computed `visibility` is not `visible`. A radio group (same `name`, same form owner or tree) is one stop: its checked
   radio, or its first when none is checked.
@@ -217,8 +240,9 @@ unmerged). Results marked "squad probe" were measured by the plan squad's round 
   active element. If focus did not land on the candidate (or, for an opaque container, inside it), it tries the next
   candidate in the same direction, ending with the close control. It is mutation-tested through the overlay scenarios,
   with a scenario per exclusion, the radio group, a CSS-hidden first element, the overflowing body, a slotted
-  scroller, each non-stop start and the opaque-content rows (a closed-shadow-root element and an iframe, each in the
-  middle and last, both directions).
+  scroller, each non-stop start, the opaque-content rows (a closed-shadow-root element and an iframe, each in the
+  middle and last, both directions) and the positive-`tabindex` rows (on the flat-tree last and first content stops,
+  both directions).
 
 ## R-05 Focus return (FR-009, SPEC-1-12)
 

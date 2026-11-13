@@ -131,6 +131,13 @@ stories pass the visual and axe gates.
     repeatedly, **Then** focus reaches each inner button in its native order and never leaves the dialog, with at
     most the stated extra press and the stated reverse-wrap limit (FR-008, SC-002); **When** focus is inside the
     iframe and the user presses Escape, **Then** nothing is requested and the dialog stays open (FR-010).
+15. **Given** an open dialog whose body holds three buttons, one of them with a positive `tabindex` (the last in
+    tree order, or the first), **When** the user presses Tab or Shift+Tab repeatedly, **Then** focus reaches every
+    button in the engine's order and wraps where that order ends, never leaving the dialog (FR-008, SC-002).
+16. **Given** an open dialog holding a slotted non-modal `<dialog>` (open by attribute or by `show()`) with a button,
+    **When** the user presses Escape with focus in it or beside it, **Then** one `ocelle-dialog-close-request` with
+    `detail.reason === "escape"` is dispatched and the slotted dialog stays open; under a veto, repeated Escapes keep
+    the dialog open; Tab reaches the slotted dialog's button as an ordinary stop (FR-008, FR-010).
 
 ---
 
@@ -158,7 +165,7 @@ and event scenarios hold with the `ocelle-drawer-` event names and the scenarios
    `--ocelle-dialog-max-inline`, and its content box has a definite inline size.
 4. **Given** `ground="chrome"`, **When** it renders, **Then** the panel uses the chrome ground and chrome ink tokens in
    both themes (constitution II's personal-rail rule); the default ground is the sheet.
-5. **Given** US1 scenarios 1 to 5, 7, 8, 12, 13 and 14 with `ocelle-drawer` and its events, **Then** they hold; with
+5. **Given** US1 scenarios 1 to 5, 7, 8, 12 to 16 with `ocelle-drawer` and its events, **Then** they hold; with
    motion allowed, the panel enters from and leaves towards its own side.
 6. **Given** an open drawer with `label="Personal"`, `ground="chrome"` and `heading-hidden`, **When** it renders and
    the accessibility tree is read, **Then** no heading text is painted and the heading takes no space, the tree still
@@ -266,13 +273,15 @@ pointer and keyboard. It is complete when the scenarios below pass in process an
 - **Escape that slotted content uses.** An Escape that slotted content has already handled (`preventDefault()`), an
   Escape that cancels an IME composition, and an Escape that clears a non-empty search field do not request the
   overlay's close (FR-010). Nor does an Escape while a slotted popover menu (`popover="auto"` or `"hint"`) or a
-  native `<dialog>` shown from slotted content is open: the platform closes that menu or dialog alone, and the next
-  Escape requests the overlay's close (FR-010).
+  native `<dialog>` shown modally from slotted content is open: the platform closes that menu or dialog alone, and
+  the next Escape requests the overlay's close (FR-010). A slotted non-modal `<dialog>` (open by attribute or by
+  `show()`) is ordinary content: Escape requests the overlay's close and leaves it open (FR-010).
 - **Content the overlay cannot see into.** Slotted content with a closed shadow root, an iframe, or a video or audio
   element with controls keeps its own focusable parts reachable by Tab and Shift+Tab inside the overlay; leaving it
   past the cycle's end may cost one extra press, and a closed shadow root at the end that does not delegate focus is
   skipped by the Shift+Tab wrap and reached in the forward direction (FR-008). Escape with focus inside a slotted
-  iframe does nothing to the overlay (FR-010).
+  iframe does nothing to the overlay (FR-010). Slotted content with a positive `tabindex` is visited in the engine's
+  order, and the cycle wraps where that order ends, so no element is left out (FR-008).
 - **`open` toggled quickly.** Setting `open` true and false in one task, or twice while an exit animation runs,
   leaves the element in the last state set, with at most one close event per close. A host that sets `open` again in
   its close listener, or right after moving the element, gets an open overlay that stays open.
@@ -338,8 +347,9 @@ pointer and keyboard. It is complete when the scenarios below pass in process an
   with a closed shadow root, an iframe, media controls) stays reachable by keyboard; a move that leaves such content
   past the cycle's end and lands on the document body is brought back to the first stop, and where the engine gives
   no signal for it, the next press does so (one extra press). A Shift+Tab wrap onto such content at the end lands on
-  the content where it can take focus and otherwise on the stop before it. The documentation states the extra press
-  and the reverse-wrap limit, and that positive `tabindex` in slotted content does not decide the cycle's ends.
+  the content where it can take focus and otherwise on the stop before it. The cycle's order and its ends follow the
+  engine's sequential navigation order, positive `tabindex` in slotted content included, so every stop the engine
+  reaches is in the cycle. The documentation states the extra press and the reverse-wrap limit.
 - **FR-009**: On every close, focus MUST return to the element (the deepest one, inside shadow roots) that had focus
   when the overlay opened, if it is still connected and focusable, provided focus is then still inside the closing
   overlay or on the body; focus another overlay has taken MUST NOT be moved. An opener inside an overlay that is
@@ -347,10 +357,12 @@ pointer and keyboard. It is complete when the scenarios below pass in process an
   the documentation tells hosts to move focus elsewhere in the `…-close` listener, after the return.
 - **FR-010**: Escape, while the overlay is the topmost open one and no tooltip bubble inside it is shown, MUST
   dispatch the close request with reason `"escape"`, unless the key has already been handled (`defaultPrevented`),
-  cancels an IME composition, or clears a non-empty search field, or another close watcher is open in the overlay's
-  content (an open `popover="auto"` or `"hint"` element, such as a slotted menu, or an open native `<dialog>` other
-  than its own); then the overlay does nothing, and the platform closes that popover or dialog alone, as it does
-  outside an overlay, while Tab inside a nested native modal is left to it. With focus inside a slotted iframe,
+  cancels an IME composition, or clears a non-empty search field, or another close watcher is open above the overlay
+  in its content (an open `popover="auto"` or `"hint"` element, such as a slotted menu, or a native `<dialog>` other
+  than its own shown modally); then the overlay does nothing, and the platform closes that popover or dialog alone,
+  as it does outside an overlay, while Tab inside a nested native modal is left to it. A non-modal `<dialog>` in the
+  content (open by attribute or by `show()`) is not such a close watcher: Escape requests the overlay's close as
+  usual and leaves that dialog open, and Tab treats its content as ordinary stops. With focus inside a slotted iframe,
   Escape reaches neither the overlay nor the platform and does nothing to the overlay; the documentation states this
   limit. Opening an overlay hides any shown tooltip bubble outside it.
 - **FR-011**: Activating the close control MUST dispatch the close request with reason `"close-button"`.
@@ -518,7 +530,8 @@ pointer and keyboard. It is complete when the scenarios below pass in process an
   document body. With slotted content the overlay cannot see into (an element with a closed shadow root holding two
   buttons, an iframe holding two buttons), in the middle and at the end, every inner button is in the sequence in
   its native order in both directions, except the stated reverse-wrap limit (FR-008), and the document body appears
-  at most once per cycle, only where the stated extra press applies.
+  at most once per cycle, only where the stated extra press applies. With a positive `tabindex` on the last or the
+  first content element in tree order, the sequence is the engine's order and holds every content element.
 - **SC-003**: Every event the three elements emit is asserted with its full payload and cancelability: 2 events per
   overlay, 0 for the tooltip, and the manifest lists exactly those.
 - **SC-004**: axe reports 0 serious or critical findings on every story of the three elements in light and dark, and

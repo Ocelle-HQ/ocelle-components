@@ -47,7 +47,8 @@ closed ──(reconnected)──▶ closed         (the host sets open = true to
 - **Only `open = true` leaves `closing`**: Escape, `cancel`, the close control and the backdrop request nothing there.
 - **Overlay stack** (module-level, internal): the open overlays in opening order. Pushed on `showModal()`, removed when
   the `<dialog>` closes or the host disconnects. Only the top acts on Escape and Tab (R-02, R-04), and only while no
-  other close watcher (an open `popover="auto"`/`"hint"` element or another open `<dialog>`) is in its flat tree;
+  other close watcher above it (an open `popover="auto"`/`"hint"` element or another `<dialog>` that is `:modal`) is
+  in its flat tree (a non-modal `<dialog>` is ordinary content);
   while one is, the overlay stands aside and the platform handles the key (R-02). The top also handles Escape and Tab
   whose deep active element is the document body, from a `document` listener (R-02). Opening an overlay first hides
   the shown tooltip bubble, if any (R-10).
@@ -57,7 +58,8 @@ closed ──(reconnected)──▶ closed         (the host sets open = true to
   an opaque focus container (closed shadow host holding focus, `<iframe>`, media element with `controls`) the native
   move runs; a native move that lands on the body is repaired to the first stop, or, where the engine gives no
   signal, the next press does it (R-04).
-- **Stops**: the walk's tabbable elements, the body part while it overflows, slotted overflowing scroll containers
+- **Stops**, in the engine's sequential navigation order (positive `tabindex` first within each focus navigation
+  scope, R-04), whose first and last are the cycle's ends: the walk's tabbable elements, the body part while it overflows, slotted overflowing scroll containers
   with no tabbable descendant where the engine focuses them, `<iframe>`s and media elements with `controls`; custom
   elements whose `shadowRoot` reads null are recorded as opaque containers, tried as candidates by explicit moves
   (R-04).

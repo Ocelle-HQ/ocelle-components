@@ -65,7 +65,16 @@ modal, level. Device: the default context (`elements`, `visit()`) matches `(hove
     limit). No list holds a page element outside the overlay. A host with `delegatesFocus` in (ii) backward: its
     inner buttons are reached.
   - **Middle moves are native** (R-04): a slotted button with `tabindex="2"` between two plain buttons: the middle
-    moves follow the engine's order and the wraps follow flat-tree order, as the README states.
+    moves and the wraps follow the engine's navigation order (the stop list's order, R-04), every button once per
+    cycle, no `body`.
+  - **Positive `tabindex` at the ends** (R-04, squad round 3 verify 1): no footer, n + 2 presses each direction from
+    the close control. (i) Slotted b1, b2, b3 with `tabindex="2"` on b3 (flat-tree last): Tab gives
+    `b3 b1 b2 close b3 …`, Shift+Tab gives `b2 b1 b3 close b2 …` (the verify probe's native order `b3 b1 b2` is the
+    reference). (ii) The same with `tabindex="2"` on b1 (flat-tree first content stop) and on b3: Tab gives
+    `b1 b3 b2 close b1 …`, Shift+Tab `b2 b3 b1 close b2 …`. (iii) Case (i) with a footer of two buttons, the first
+    with `tabindex="1"`: the list is measured in Chromium in Phase 2's first dialog task and written into the row
+    before the code; it must hold every button once per cycle, no `body`, and wrap at the navigation order's ends.
+    Each list is checked against the engine's native order between the ends.
 - **Escape in a slotted iframe** (R-02, FR-010): focus on f1 inside a slotted iframe, Escape × {no veto, veto}: no
   `…-close-request`, no `cancel`, the dialog stays open and `:modal`.
 - **Long body** (FR-018): a prose-only body taller than `dialog-max-block`: panel height ≤ `dialog-max-block`, heading
@@ -92,6 +101,12 @@ modal, level. Device: the default context (`elements`, `visit()`) matches `(hove
     slotted native modal `<dialog>` with two buttons shown above the overlay from slotted content: Escape closes it
     alone with no request and no `cancel` on the overlay; before that, Tab and Shift+Tab, n + 2 presses each, keep
     `focusPath()` inside the nested dialog; a further Escape then requests the overlay's close with `escape`.
+  - **Slotted non-modal dialogs** (R-02, squad round 3 verify 1): a slotted `<dialog open>` holding a button, and
+    separately a slotted `<dialog>` opened with `show()` holding a button, each with focus on its button and with
+    focus on a sibling slotted button, × {no veto, veto then Escape twice}: each Escape gives one request with reason
+    `escape` and no `cancel` on the overlay, the slotted dialog stays open; no veto closes the overlay; under veto
+    the overlay stays open and `:modal` on every press, focus inside. Tab and Shift+Tab, n + 2 presses each: the
+    slotted dialog's button is a stop in the exact list, no `body`.
 - **Synthetic `cancel`**: a dispatched non-cancelable `cancel` followed by the inner `close()`: `…-close` with `host`;
   a cancelable `cancel` runs the request path once.
 - **Close control** by click, Enter and Space × {veto, no veto}, reason `close-button`; its box ≥ `target-min` in both
@@ -142,8 +157,8 @@ modal, level. Device: the default context (`elements`, `visit()`) matches `(hove
 ### Drawer
 
 - The dialog's rows with `ocelle-drawer-` events (initial focus, Tab cycle with its non-stop, body, scroller and
-  opaque-content starts and its native middle moves, long body, Escape and its slotted-content rows including the
-  slotted close watchers, Escape in a slotted iframe, close control, host and platform close, focus return, nested,
+  opaque-content starts, its native middle moves and positive `tabindex` at the ends, long body, Escape and its
+  slotted-content rows including the slotted close watchers and slotted non-modal dialogs, Escape in a slotted iframe, close control, host and platform close, focus return, nested,
   removed, moved, rapid toggle, input during the exit, stale native `close` event, styles, forced colours,
   accessibility tree). The dialog's "one-line body" row is not inherited; the drawer has its own below.
 - **One-line body** (R-18, PLAN-FRESH-3-003): a body of one short sentence and a footer with one button at

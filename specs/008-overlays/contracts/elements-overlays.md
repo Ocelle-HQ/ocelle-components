@@ -50,12 +50,13 @@ an event's `detail`, is MAJOR.
   - between the cycle's ends Tab moves as the engine does, so content with a closed shadow root, an iframe or media
     controls keeps its inner focusable parts reachable; leaving such content past the cycle's end can cost one extra
     press, a closed shadow root at the end that does not use `delegatesFocus` is skipped by the Shift+Tab wrap (it is
-    reached going forward), and positive `tabindex` does not decide the cycle's ends, so avoid it inside an overlay
-    (operator decision, R-04);
+    reached going forward); positive `tabindex` in slotted content is followed as the engine follows it, and the
+    cycle wraps where that order ends (operator decision, R-04);
   - Escape with focus inside a slotted iframe does nothing to the overlay (R-02);
-  - while a slotted popover (`popover="auto"` or `"hint"`, a menu) or a native `<dialog>` shown from slotted content
-    is open, Escape closes it alone, as the platform does, and the overlay requests nothing; Tab inside a nested
-    native modal is left to the platform (R-02);
+  - while a slotted popover (`popover="auto"` or `"hint"`, a menu) or a native `<dialog>` shown modally from slotted
+    content is open, Escape closes it alone, as the platform does, and the overlay requests nothing; Tab inside a
+    nested native modal is left to the platform. A slotted non-modal `<dialog>` (open attribute or `show()`) is
+    ordinary content: Escape requests the overlay's close and leaves it open, so close it yourself if needed (R-02);
   - during the exit, Escape, the close control and the backdrop request nothing; only `open = true` stops a close
     (R-02, R-06).
 - Manifest: the events, slots, parts and CSS property are declared with JSDoc on the concrete class (R-01).
