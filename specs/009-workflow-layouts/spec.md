@@ -75,6 +75,21 @@ amend the approved text:
 - **One-frame bound tested directly** (PLAN-TESTABILITY-1-004 (a)): US1-3's bound stays as written and is tested at
   that bound.
 
+**Operator decisions at plan squad round 2** (2026-11-13, `reviews/plan/round-2/refute.md`). These amend the text
+again:
+
+- **Scrollbar kept unmasked by measured geometry** (PLAN-FRESH-2-001 (a)): FR-007 stands as decided at round 1; the
+  fade is limited to the box's client height with a measured figure, since Chromium masks the scrollbar whatever the
+  clip box (research.md R-05).
+- **list-detail re-measures on mutations, not on pane resizes** (PLAN-FRESH-2-002 (a)): a size change in a pane with
+  no DOM mutation, such as an image or a font loading, is picked up at the next trigger (FR-025, US3-12).
+- **Reduced motion and the browser's own scrolling** (PLAN-FRESH-2-003 (a)): the element itself never animates; the
+  browser's keyboard scrolling of the strip from a focused slotted control is outside the element and may animate
+  (FR-009, US1-11).
+- **Per-instance sheet of measured figures** (PLAN-FRESH-2-005 (a)): an element may adopt one per-instance
+  constructed stylesheet holding only px figures it measured from layout; measured layout figures are read as not the
+  design-value literals constitution II forbids, with no exception recorded (FR-030).
+
 ## Consumer need
 
 - **Board and pipeline screens.** Kitty Desktop's board and pipeline screens build on the Spec Kitty class families
@@ -216,7 +231,8 @@ content fits. Then:
    root (a slotted element whose button is in its open shadow root, or one that delegates focus). Otherwise focus
    moves to the scroller itself: a node inside its shadow root takes focus without being in the tab order, the
    document's active element is the scroller's host, and the token focus ring shows inside the scroller's box, drawn
-   inset, in the system highlight colour in forced colours (FR-004).
+   inset, in the system highlight colour in forced colours (FR-004). The ring stays visible on all four sides when
+   the content overflows again while that node holds focus, and over a horizontal scrollbar where one is drawn.
 5. **Given** focus on an overflowing scroller, in `dir="ltr"` and in `dir="rtl"`, **When** the user presses the arrow
    key that points toward the hidden content, **Then** the strip scrolls toward it by at least 40 px per key press.
    ArrowRight moves toward the content on the right and ArrowLeft toward the content on the left, in both
@@ -242,9 +258,10 @@ content fits. Then:
 10. **Given** focus on a link inside an overflowing scroller, **When** the user presses an arrow key, **Then** the
     scroller does not take the key: the link receives it as it would without the element, and the scroller does not
     call `preventDefault` on it.
-11. **Given** `prefers-reduced-motion: reduce`, **When** the fades appear or disappear and the arrow keys scroll,
-    **Then** nothing animates. Without that preference, a fade's appearance may transition over `--ocelle-motion-fast`
-    at most.
+11. **Given** `prefers-reduced-motion: reduce`, **When** the fades appear or disappear, and the arrow keys scroll the
+    focused scroll box, **Then** nothing animates. Without that preference, a fade's appearance may transition over
+    `--ocelle-motion-fast` at most. With focus on a slotted control, an arrow key gets the browser's own scrolling
+    (US1-10), which is not the element's and may animate (FR-009; operator decision, plan squad round 2).
 12. **Given** an overflowing scroller with no `label`, or a blank one, **When** the tree and the tab order are read,
     **Then** it is still one tab stop, so its hidden content stays reachable by keyboard (WCAG 2.1.1). It has no
     group role (an unnamed group adds nothing), and it is named by nothing. The README says to always give a
@@ -471,6 +488,10 @@ goes.
     inspector's border is inside its 19rem, FR-023), and it shows three columns. **Given** the same element in a flex row the width of Frame N (636 px), **Then** it shrinks
     to 636 px and shows one column. In both cases the column count is the same on each of ten consecutive animation
     frames with no size change: the layout does not alternate. The same holds in a `<dialog>` and a table cell.
+    **When**, in the 1196 px row, the host replaces the detail's inner content inside the same slotted element by a
+    35rem block twice as tall, or by a 35rem block of the same height, **Then** in the first frame after the change
+    the element is 1153 px wide (18rem + 35rem + 19rem plus 1 px) and shows three columns, and the page reports no
+    error (no "ResizeObserver loop" message).
 13. **Given** `dir="rtl"`, **When** the element is drawn in three columns, **Then** the list is at the right and the
     inspector at the left, with the borders between them.
 14. **Given** the element and each pane, **When** the tree is read, **Then** the element adds no landmark or role of
@@ -573,8 +594,11 @@ goes.
   pointer events from the content under them, and never cover the horizontal scrollbar where one is drawn.
 - **FR-008**: In forced colours the fades are not drawn. Each edge with content off-screen shows a 1 px line in
   `CanvasText`, and an edge with nothing off-screen shows none (operator decision; US1-8).
-- **FR-009**: Under `prefers-reduced-motion: reduce` nothing of the scroller animates, and the element never sets
-  smooth scrolling. Otherwise a fade may transition over at most `--ocelle-motion-fast` (US1-11).
+- **FR-009**: Under `prefers-reduced-motion: reduce` nothing the element does animates: its fades and its own
+  scrolling of the box (FR-006, FR-001) are instant, and it never sets smooth scrolling. Otherwise a fade may
+  transition over at most `--ocelle-motion-fast`. The browser's own keyboard scrolling of the box while a slotted
+  control has focus (FR-006 leaves those keys to the browser) is outside the element and may animate; Chromium
+  animates it under reduced motion too, and the README says so (operator decision, plan squad round 2; US1-11).
 - **FR-010**: `label` (attribute and property, not reflected, `string | undefined`, default absent) names the group.
   It is trimmed, and empty or whitespace-only counts as none. A host `aria-label` on the element counts as a label and,
   when it holds a non-whitespace character, decides naming alone; an empty or whitespace-only host `aria-label`
@@ -682,8 +706,10 @@ goes.
   layout it shows: its max-content size is that of its three-column layout and its min-content size that of its
   one-column layout. A shrink-to-fit host therefore gives it a size from the room available and its content alone,
   it picks its layout from that size as everywhere else, and the layout does not alternate between frames while
-  nothing changes (US3-12). Two thresholds apply, each exclusive (the wider layout applies at exactly the
-  threshold):
+  nothing changes (US3-12). Its intrinsic sizes follow its slotted content when an element is added or removed or
+  when the content of any pane mutates; a size change with no DOM mutation (an image or a font loading) is picked up
+  at the next such change or at a tier change set by the host (operator decision, plan squad round 2). Two
+  thresholds apply, each exclusive (the wider layout applies at exactly the threshold):
   - **One column** below `collapse-below`. Default: the new token `--ocelle-list-detail-collapse`, `40rem`.
   - **Inspector stacked** under the detail below `inspector-below`. Default: the new token
     `--ocelle-list-detail-inspector-collapse`, `60rem`.
@@ -717,11 +743,14 @@ goes.
 **All four elements**
 
 - **FR-030**: Each element follows the README's element conventions (005): own module and `define`, `static
-  properties`, token-only shared `static styles`, `:host([hidden]) { display: none; }`, variant rules inside
-  `@media not (forced-colors: active)`, a manifest entry with every property, attribute, slot, part and CSS custom
-  property described (none of the elements declares a CSS custom property of its own, and none has a CSS part unless
-  the plan names one with its reason), and a module entry point plus inclusion in the package root and the browser
-  build.
+  properties`, token-only shared `static styles` (besides which an element may adopt one per-instance constructed
+  stylesheet holding only px figures it measured from layout, never a value from an attribute, a property, a token's
+  text or slotted text; list-detail's intrinsic sizes and the overflow-region module's mask size are the named cases,
+  and the README's § Styles says so; operator decision, plan squad round 2), `:host([hidden]) { display: none; }`,
+  variant rules inside `@media not (forced-colors: active)`, a manifest entry with every property, attribute, slot,
+  part and CSS custom property described (none of the elements declares a CSS custom property of its own, and none
+  has a CSS part unless the plan names one with its reason), and a module entry point plus inclusion in the package
+  root and the browser build.
 - **FR-031**: The elements perform no I/O and make no request. Built output passes the `csp` gate, and every browser
   scenario runs on the strict-CSP fixture from the browser build (US1-15, US2-13, US3-16).
 - **FR-032**: Every element has a Storybook story per variant and state, in light and dark, in
@@ -751,12 +780,18 @@ goes.
     an override that is not an accepted form. A boolean attribute set by the host forces the narrow tier. No
     `container-type` is set on a host that may shrink to fit, and the element's intrinsic sizes do not depend on the
     tier it shows (max-content of its widest tier, min-content of its narrowest), so a shrink-to-fit host cannot make
-    the tier alternate. #8 and #12 follow it;
+    the tier alternate. The intrinsic sizes are re-measured on slot changes, on content mutations and before a
+    host-set tier change, never inside a `ResizeObserver` callback, and a size change with no mutation waits for the
+    next of these. #8 and #12 follow it;
   - the frames of User Scenarios as the tested screen sizes;
   - the Host ARIA rule per element: for the scroller, the board and the lane a blank host `aria-label` counts as
     absent; for the icon and the brand mark it leaves the element unlabelled; list-detail takes no name (FR-010);
   - that an overflowing labelled scroller is a named group and the board a region, and that a scroller repeated per
     item takes a name that identifies the item;
+  - that under reduced motion the browser's own scrolling of a scroller or board from a focused slotted control may
+    still animate, which the element does not control (FR-009);
+  - that an element's styles are its shared `static styles` plus, at most, one per-instance sheet of measured px
+    figures (FR-030);
   - that WebKit is not measured.
 
   A documentation test checks each of these items.

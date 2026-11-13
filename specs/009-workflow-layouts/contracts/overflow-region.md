@@ -21,6 +21,7 @@ every element that uses it. A test-only element (`test/fixtures/overflow-host.ts
 ## Use
 
 ```ts
+import { ifDefined } from "lit/directives/if-defined.js";
 import { OverflowRegion, overflowRegionStyles } from "./overflow-region.ts";
 
 class OcelleCodeBlock extends LitElement {
@@ -29,7 +30,7 @@ class OcelleCodeBlock extends LitElement {
 
   protected override render(): unknown {
     return html`<div class="region-frame">
-      <div class="region-box" data-fade=${this.#region.fadeAttribute}>
+      <div class="region-box" data-fade=${ifDefined(this.#region.fadeAttribute)}>
         <div class="region-track"><slot></slot></div>
       </div>
       <div class="region-ring" aria-hidden="true"></div>
@@ -46,7 +47,9 @@ class OcelleCodeBlock extends LitElement {
 
 The class names `region-frame`, `region-box`, `region-track`, `region-ring` and `region-edge` are the contract between
 the module's stylesheet and the host's template. A host renders that structure once. The host may put its own content
-model inside `region-track` (the board puts its lanes row there; the code block its `<pre>`).
+model inside `region-track` (the board puts its lanes row there; the code block its `<pre>`). The `data-fade`
+binding uses `ifDefined`, so the attribute is absent when nothing fades; a plain binding of an empty string would
+leave `data-fade=""` on the box (PLAN-FRESH-2-006).
 
 ## Inputs
 
@@ -73,7 +76,7 @@ var(--ocelle-scroller-fade-size)`), and the ring room is the track's computed `p
 | `overflowing` | `boolean` | `scrollWidth − clientWidth > 1` (spec User Scenarios, "Overflow") |
 | `offStart`, `offEnd` | `boolean` | content off-screen more than 1 px at the inline start or end, in the box's direction |
 | `fadeStart`, `fadeEnd` | `boolean` | `offStart` or `offEnd` and not suppressed by the focus fallback (R-06); the fades and the forced-colours lines both follow these (FR-011 lists them since the plan gate) |
-| `fadeAttribute` | `"" \| "start" \| "end" \| "both"` | the same state for the `data-fade` attribute the stylesheet selects on |
+| `fadeAttribute` | `"start" \| "end" \| "both" \| undefined` | the same state for the `data-fade` attribute the stylesheet selects on; `undefined` when neither side fades, so the bound attribute is removed |
 | `name` | `string \| undefined` | the name in force: the host's non-blank `aria-label`, trimmed, else the trimmed non-blank label, else `undefined` |
 
 ## Effects (on the scroll box and the module's own shadow nodes only; nothing on the host)
@@ -96,23 +99,31 @@ var(--ocelle-scroller-fade-size)`), and the ring room is the track's computed `p
   `delegatesFocus` hosts, skipping disabled, `inert`-ancestored and boxless candidates (R-07). When there is none,
   `.region-frame` gets `tabindex="-1"`, is focused, and loses the attribute on its `focusout`; `document.activeElement`
   is then the host (FR-004, operator decision PLAN-A11Y-SECURITY-1-007 (a)).
-- **Scroll writes:** every write is an instant `scrollLeft` assignment, never smooth (FR-009).
+- **Scroll writes:** every write is an instant `scrollLeft` assignment, never smooth (FR-009). The browser's own
+  scrolling of the box on a key from a focused slotted control is not the module's and may animate (FR-009, R-02).
+- **Mask figures (R-05, PLAN-FRESH-2-001 (a)):** the module adopts one per-instance constructed stylesheet on the
+  host's shadow root, after the host's shared sheets, holding one rule `.region-box {}`. Whenever it writes the edge
+  state it reads the box's `clientHeight` and its scrollbar thickness (`offsetHeight − clientHeight` less the block
+  borders) and, when either changed, sets that rule's `mask-size` to `100% <clientHeight>px, 100% <thickness>px`
+  through `CSSStyleRule.style.setProperty`. It never writes `element.style` and never builds CSS text from input.
 
-The module emits no event and writes nothing to the host.
+The module emits no event and writes nothing to the host. Its per-instance sheet is the one exception to "every
+instance adopts one shared stylesheet" that FR-030 and the README name (PLAN-FRESH-2-005 (a)); a host that uses the
+module adopts no other per-instance sheet.
 
 ## Lifecycle
 
 | Hook | What the module does |
 |---|---|
-| `hostConnected` | adds its listeners (`keydown`, `focusin`, `focusout`, passive `scroll`) and starts its `ResizeObserver` |
-| `hostUpdated` | re-reads `box()`. On a new box it moves the observer and the attributes to it. It observes `box` and `box.querySelector(".region-track")`, and listens to `slotchange` on every slot inside the track |
+| `hostConnected` | adds its listeners (`keydown`, `focusin`, `focusout`, passive `scroll`), starts its `ResizeObserver`, and adopts its per-instance sheet once (appended to `shadowRoot.adoptedStyleSheets`) |
+| `hostUpdated` | re-reads `box()`. On a new box it moves the observer and the attributes to it. It observes `box` (with `{ box: "border-box" }`, so a scrollbar that appears or goes is seen) and `box.querySelector(".region-track")`, and listens to `slotchange` on every slot inside the track |
 | `hostDisconnected` | disconnects the observer and removes its listeners. The box's attributes stay as last set |
 
 **When the state updates (SPEC-1-07).**
 
 | Trigger | Source |
 |---|---|
-| size of the box or the track | the `ResizeObserver` callback, which runs before paint |
+| size of the box (border box, scrollbar included) or the track | the `ResizeObserver` callback, which runs before paint |
 | slot content | `slotchange` |
 | edges | `scroll` |
 
@@ -129,11 +140,11 @@ picked up at the next size, slot or scroll event (FR-014, operator decision PLAN
 
 | Element | Rules |
 |---|---|
-| `.region-frame` | `position: relative`. While it holds the handover focus, on `:focus-visible`: `outline: var(--ocelle-focus-width) solid var(--ocelle-color-focus); outline-offset: calc(var(--ocelle-focus-width) * -1)` (inset), `outline-color: Highlight` in forced colours (R-07) |
+| `.region-frame` | `position: relative`. No outline of its own: while it holds the handover focus, its ring is drawn by `.region-ring` (below), because the masked box, a stacking context, paints over an outline of the frame (R-07, PLAN-FRESH-2-004) |
 | `.region-box` | `overflow-x: auto; overflow-y: hidden`; block padding of the ring room, for every host (the board adds none of its own); no outline (the ring is the overlay); the platform's scrollbar is kept |
 | `.region-track` | `inline-size: max-content; min-inline-size: 100%; box-sizing: border-box`; inline padding of the ring room |
-| `.region-box[data-fade]` | inside `@media not (forced-colors: active)`: `mask-image` with three layers, top to bottom the fade `linear-gradient` per value (mirrored under `:host(:dir(rtl))`), an opaque `linear-gradient(var(--ocelle-color-ink), var(--ocelle-color-ink))` and the same again; `mask-clip` and `mask-origin` `padding-box, border-box, padding-box`; `mask-composite: add, exclude`; `mask-repeat: no-repeat`. The fade covers the padding box only, and the scrollbar, outside it, stays opaque (R-05, operator decision PLAN-FRESH-1-003 (a)). Gradients pass `ocelle/token-only` after the gate change of contracts/gates.md |
-| `.region-ring` | absolutely positioned over the box, inset by the ring width, with no pointer events. Shown by `.region-box:focus-visible ~ .region-ring` with the token focus ring; `Highlight` in forced colours |
+| `.region-box[data-fade="start"]`, `[data-fade="end"]`, `[data-fade="both"]` | inside `@media not (forced-colors: active)`, selected on the three values only, never on attribute presence: `mask-image` with two layers, the fade `linear-gradient` per value (mirrored under `:host(:dir(rtl))`) and an opaque `linear-gradient(var(--ocelle-color-ink), var(--ocelle-color-ink))`; `mask-position` block start for the fade layer and block end for the opaque one; `mask-origin: border-box`; `mask-clip: border-box`; `mask-repeat: no-repeat`; `mask-composite: add`. `mask-size` comes from the module's per-instance sheet (§ Effects, Mask figures): the fade layer is the client height, so it stops at the scrollbar, and the opaque layer is the scrollbar's thickness, so the scrollbar stays unmasked (R-05, operator decisions PLAN-FRESH-1-003 (a) and PLAN-FRESH-2-001 (a)). A `mask-clip` does not keep Chromium's mask off the scrollbar; only this geometry does. Gradients pass `ocelle/token-only` after the gate change of contracts/gates.md |
+| `.region-ring` | absolutely positioned over the box, inset by the ring width, with no pointer events. Shown by `.region-box:focus-visible ~ .region-ring` (the box's ring) and by `.region-frame:focus-visible > .region-ring` (the handover ring, R-07) with the token focus ring; `Highlight` in forced colours. It comes after the box, so it paints over the masked box |
 | `.region-edge` | always laid out: absolutely positioned at the box's inline start (`.start`) or end (`.end`), `inline-size: var(--ocelle-scroller-fade-size)`, `box-sizing: border-box`, no pointer events, nothing painted outside forced colours; the module's fade-depth measure. In forced colours, on the side whose `fadeStart` or `fadeEnd` is set, `var(--ocelle-border-width) solid CanvasText` on its outer inline side |
 
 A host that needs a different track layout (the board's flex row and its lanes' `contain: inline-size`, research.md
@@ -153,6 +164,7 @@ adds no block ring room of its own.
 - set `tabindex`, `role` or `aria-label` on the box itself;
 - handle the arrow keys on the box;
 - add a second fade or edge cue;
-- write the scroll position with smooth behaviour.
+- write the scroll position with smooth behaviour;
+- bind `data-fade` without `ifDefined`, or set the mask's size or a ring on `.region-frame` itself.
 
 Each of these is owned here.

@@ -15,6 +15,8 @@ change it. Sources are spec FR-001 to FR-029 and research.md.
 | `fadeStart` / `fadeEnd` | boolean | `offStart` / `offEnd` and the side not in `suppressed` |
 | `name` | string or none | the trimmed non-blank host `aria-label`, else the trimmed non-blank `label`, else none |
 | `role` | `group` or `region` | the constructor option: `group` by default (scroller, #13), `region` for the board |
+| `fadeAttribute` | `start`, `end`, `both` or none | from `fadeStart` / `fadeEnd`; none when neither is set, so the box has no `data-fade` attribute and no mask (PLAN-FRESH-2-006) |
+| `maskFigures` | { client, bar } px | the box's `clientHeight` and its scrollbar thickness (`offsetHeight − clientHeight` less block borders, 0 with overlay scrollbars), read whenever the state is written; set as the `mask-size` of the module's per-instance constructed stylesheet when either changed, never to a `style` attribute (R-05, PLAN-FRESH-2-001 (a)) |
 
 **Transitions.**
 - not overflowing → overflowing: the box gains its tab stop, plus the role (`role`) and name when it has a name.
@@ -46,12 +48,15 @@ The lane has the group role exactly when `groupName` is set.
 | `hasInspector` | boolean | the `inspector` slot has an assigned element; the slot is always rendered, so `slotchange` sees an inspector added after first render (R-11) |
 | `tier` | `three`, `two` or `one` | `one` if `narrow` or `measured < collapseAt`; else `two` if `measured < inspectorAt`, or if `hasInspector` is false (two columns without an inspector); else `three` |
 | `shown` | set of panes | `three` or `two`: list, detail, and the inspector if present. `one`: the detail and the inspector if `detail-open`, else the list |
-| `intrinsic` | { min, max } px | from the measurement pass (R-13): the one-column stack's min-content and the three-column grid's max-content; written to the instance's adopted constructed stylesheet, never to a `style` attribute |
+| `intrinsic` | { min, max } px | from the measurement pass (R-13): the one-column stack's min-content and the three-column grid's max-content; written to the instance's adopted constructed stylesheet (the one per-instance sheet FR-030 allows), never to a `style` attribute |
 
-**Re-measure triggers (R-13).** The measurement pass runs on `slotchange` of any of the three slots; on a
-`ResizeObserver` notification for the host or a shown pane's wrapper; before applying every `tier` or `detail-open`
-change; and on a `MutationObserver` record (`childList`, `characterData`, `subtree`) from the assigned elements of a
-pane that is not shown, coalesced to one pass per frame.
+**Re-measure triggers (R-13, PLAN-FRESH-2-002 (a)).** The measurement pass runs on `slotchange` of any of the three
+slots; on a `MutationObserver` delivery (`childList`, `characterData`, `attributes`, `subtree`) from the assigned
+elements of any pane, shown or hidden, one pass per delivery; and before applying a `tier` or `detail-open` change that
+comes from a property or attribute. It writes a figure only when it changed. The host's `ResizeObserver` updates
+`measured` and the tier only and never runs the pass, so the figures are never written inside a `ResizeObserver`
+delivery. A size change in a pane with no DOM mutation (an image or a font loading) is picked up at the next of these
+triggers (FR-025).
 
 **Focus rule (R-14).** If a change of `tier` or `detail-open` hides the pane that holds `document.activeElement`,
 the shown pane's wrapper gets `tabindex="-1"` and focus after the update, and loses the attribute on its `focusout`.

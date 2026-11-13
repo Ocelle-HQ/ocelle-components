@@ -72,8 +72,10 @@ twelve lanes with forty cards each updates its state within one frame of a resiz
 - token-only styles;
 - no I/O;
 - open shadow roots (#10);
-- measured px figures only through a per-instance constructed stylesheet adopted on the shadow root (R-13), never
-  through `element.style`, which would write a `style` attribute.
+- measured px figures only through one per-instance constructed stylesheet adopted on the shadow root (list-detail's
+  intrinsic sizes, R-13; the overflow-region module's mask size, R-05), never through `element.style`, which would
+  write a `style` attribute. FR-030 and the README's § Styles name this as the one addition to the shared
+  `static styles` (PLAN-FRESH-2-005 (a)).
 
 **Scale/Scope**: four elements, one internal module, six tokens and twenty-three stories in two themes (contracts/elements.md
 § Stories).
@@ -82,14 +84,16 @@ twelve lanes with forty cards each updates its state within one frame of a resiz
 
 *Gate: passes before Phase 0 research and again after Phase 1 design, with no Complexity Tracking row. Rechecked after
 squad round 1's fixes: II now names the gate change, III to V and VIII the new designs and tests, IV the constructed
-stylesheet that replaces `element.style` writes.*
+stylesheet that replaces `element.style` writes. Rechecked after squad round 2's fixes: II records the reading of
+measured layout figures for the operator, III the reduced-motion scope and the handover ring overlay, IV the module's
+per-instance sheet.*
 
 | Principle | How this plan meets it |
 |---|---|
 | I. `ocelle-` names, no I/O, small surface, manifest | Four `ocelle-*` elements, no events, no I/O; every property, attribute and slot is in the manifest; the module is internal (contracts/overflow-region.md § Status). |
-| II. Tokens only, brand rules | Six new tokens; element CSS is `token-only`. The mask uses `transparent` and a token colour in `linear-gradient()`, which the `ocelle/token-only` rule learns to classify, a gate change with red-first tests and plants (R-05, contracts/gates.md). The default lane's ground is `color-sheet`, a token (R-10). No monospace: the flat title uses `--ocelle-font-sans` with tabular figures and `--ocelle-tracking-caps` (FR-021). `--ocelle-color-rule` borders are decorative only (FR-023). One radius: `radius-row` on the lane chrome. |
-| III. Accessible by construction | Tab stop and named group (the board: region) only while overflowing, so repeated chip rows add no landmarks (R-01, R-03). Arrow keys with no animation under any motion setting, and modified arrows left to the platform (R-02). Token focus ring drawn outside the mask; the native scrollbar kept and never faded (R-04, R-05). Focus rings of slotted controls kept whole and clear of the fades (R-04, R-06). Focus handover finds shadow-hosted controls; with none, an inner node takes focus with an inset ring (R-07). Pane wrappers focusable only while the element moves focus to them, with an inset ring in `Highlight` under forced colours (R-14). The default lane's ground differs from every main ground it sits on (R-10). Forced-colours edge lines, ring in `Highlight`, lane borders and pane borders in `CanvasText`. No ID reference crosses a shadow root: names are copied as text into the shadow node (R-01). Focus moves with the shown pane (R-14). Reduced motion: nothing animates. Contrast: no new colour token; the colours used are checked pairs (R-10). axe over every story through #10 (R-15). |
-| IV. Strict CSP | Adopted stylesheets only. No `style` attribute in templates, in fixtures or in stories (`[data-frame]` and `[data-story]` CSS, R-15, R-17). list-detail's measured figures go into a per-instance constructed stylesheet adopted on its shadow root, whose rule declarations are set through the CSSOM; `element.style` is never written, because it creates a `style` attribute (R-13), and a test asserts that no shadow element carries one. The `csp` gate scans built output, and the fixture pages count violations. |
+| II. Tokens only, brand rules | Six new tokens; element CSS is `token-only`. **Reading for the operator at the plan gate (PLAN-FRESH-2-005 (a)):** list-detail's intrinsic sizes (R-13) and the overflow-region module's mask size (R-05) are px figures the element measures from layout at run time and sets through one per-instance constructed sheet; they are not the design-value literals II forbids (no colour, font, size, radius, shadow or duration is chosen by them), so this is a reading of II, not an exception, and Complexity Tracking stays empty. No such figure comes from an attribute, a property, a token's text or slotted text. FR-030 and the README's § Styles say so, and `sheets()` asserts exactly one per-instance sheet per root. The mask uses `transparent` and a token colour in `linear-gradient()`, which the `ocelle/token-only` rule learns to classify, a gate change with red-first tests and plants (R-05, contracts/gates.md). The default lane's ground is `color-sheet`, a token (R-10). No monospace: the flat title uses `--ocelle-font-sans` with tabular figures and `--ocelle-tracking-caps` (FR-021). `--ocelle-color-rule` borders are decorative only (FR-023). One radius: `radius-row` on the lane chrome. |
+| III. Accessible by construction | Tab stop and named group (the board: region) only while overflowing, so repeated chip rows add no landmarks (R-01, R-03). Arrow keys on the box with no animation under any motion setting, and modified arrows left to the platform (R-02). Token focus ring drawn outside the mask, by an overlay that also draws the handover ring (R-05, R-07); the native scrollbar kept and never faded, by a measured mask size (R-04, R-05). Focus rings of slotted controls kept whole and clear of the fades (R-04, R-06). Focus handover finds shadow-hosted controls; with none, an inner node takes focus with an inset ring (R-07). Pane wrappers focusable only while the element moves focus to them, with an inset ring in `Highlight` under forced colours (R-14). The default lane's ground differs from every main ground it sits on (R-10). Forced-colours edge lines, ring in `Highlight`, lane borders and pane borders in `CanvasText`. No ID reference crosses a shadow root: names are copied as text into the shadow node (R-01). Focus moves with the shown pane (R-14). Reduced motion: nothing the element does animates; the browser's own scroll of the strip from a focused slotted control may, which FR-009 and the README state (operator decision PLAN-FRESH-2-003 (a), R-02). Contrast: no new colour token; the colours used are checked pairs (R-10). axe over every story through #10 (R-15). |
+| IV. Strict CSP | Adopted stylesheets only. No `style` attribute in templates, in fixtures or in stories (`[data-frame]` and `[data-story]` CSS, R-15, R-17). list-detail's measured figures, and the overflow-region module's mask size, go into a per-instance constructed stylesheet adopted on the shadow root, whose rule declarations are set through the CSSOM; `element.style` is never written, because it creates a `style` attribute (R-13), and a test asserts that no shadow element carries one. The `csp` gate scans built output, and the fixture pages count violations. |
 | V. Storybook, behaviour tests | One story per variant and per state that draws different pixels, in light and dark, with baselines from #10's pinned container (R-15). States that draw the same pixels, and focus and forced-colours states (not captured by #10), are proven by tests (R-15). No events, so no payload tests. Every keyboard path is tested with real input in both harnesses (arrows with and without modifiers, Tab, Shift+Tab, focus handover, pane switch; R-17). Fades are asserted on pixels, never on `data-fade` (R-05). |
 | VI. Consumer needs, own code | spec-kitty-design #505, #506, #507, #514 and #530 are named in the spec. Nothing is ported. |
 | VII. Semantic versioning | Additions only; the changelogs name them (FR-035). |
@@ -102,7 +106,8 @@ stylesheet that replaces `element.style` writes.*
    through `ElementInternals` would lose the role whenever the host `aria-label` is blank, which the spec treats as
    absent.
 2. **The element handles the arrow keys itself** (R-02, measured). Chromium's own keyboard scrolling animates even
-   under reduced motion. Home, End and Page keys, and every modified arrow, are left to the browser.
+   under reduced motion. Home, End and Page keys, and every modified arrow, are left to the browser, as are keys from
+   a focused slotted control, whose browser scroll may animate (operator decision PLAN-FRESH-2-003 (a)).
 3. **Focus clearance belongs to the module and applies to focus that shows a ring** (`:focus-visible`: keyboard focus,
    and any focus of a text-entry control), not to pointer focus on a button or link (R-06). The forced-colours line
    follows the same suppression as the fade. FR-001 and FR-011 say so since the plan gate.
@@ -130,6 +135,15 @@ stylesheet that replaces `element.style` writes.*
 | PLAN-FRESH-1-003 | (a) the native scrollbar is kept, counted in the block size and never faded | spec FR-001, FR-007, US1-13; R-04, R-05 |
 | PLAN-FRESH-1-006 | (b) a width-only change inside a lane waits for the next size, slot or scroll event | spec FR-014; R-03, R-08 |
 | PLAN-TESTABILITY-1-004 | (a) US1-3's one-frame bound tested at the bound | R-03 |
+
+**Decided at squad round 2** (`reviews/plan/round-2/refute.md`, Decision column):
+
+| Finding | Decision | Where |
+|---|---|---|
+| PLAN-FRESH-2-001 | (a) FR-007 kept; the fade layer's block size is the measured client height, set in the module's per-instance sheet, so the scrollbar stays unmasked | R-03, R-04, R-05; contracts/overflow-region.md; phase 2 |
+| PLAN-FRESH-2-002 | (a) list-detail re-measures on a `MutationObserver` over every pane, never in a `ResizeObserver` callback; a size change with no mutation waits | spec FR-025, US3-12, FR-034; R-13; data-model; phase 4 |
+| PLAN-FRESH-2-003 | (a) FR-009 and US1-11 amended: the browser's scroll from a focused slotted control is outside the element | spec FR-009, US1-11, FR-034; R-02; phase 2 records |
+| PLAN-FRESH-2-005 | (a) one per-instance sheet of measured figures, read under II as not a design literal; no exception | spec FR-030, FR-034; R-05, R-13; Constitution Check II; phase 2 records |
 
 ## Project Structure
 
@@ -223,14 +237,18 @@ Every phase runs each pairing plant it names once against its test and records t
      - US1-3 (the state write moved into a `requestAnimationFrame`; asserted in a later-registered observer's
        callback, R-03);
      - US1-4 (the light-DOM-only walk, with a slotted element whose button is in its open shadow root and one that
-       delegates focus; the frame's ring rule removed, asserted inside an `overflow: hidden` container and in forced
-       colours; R-07);
+       delegates focus; the frame's ring rule removed, and the ring as an outline of the frame, asserted on pixels
+       inside an `overflow: hidden` container, at rest and after the content overflows again while the frame holds
+       focus, and `Highlight` in forced colours; R-07, PLAN-FRESH-2-004);
      - US1-5 (no modifier check: Alt+ArrowLeft, Ctrl+ArrowRight, Meta+ArrowRight and Shift+ArrowRight are not
        prevented and do not scroll; R-02);
      - US1-6 and US1-7 (both fades always; the `rtl` mirror removed; the ring overlay inside the masked box), asserted
        on pixels on `color-canvas` and `color-pane`, in both themes, `ltr` and `rtl`, never on `data-fade` (R-05);
+       US1-6 also asserts that a fitting box has no `data-fade` and a computed `mask-image` of `none` (plant:
+       `data-fade=""` bound with the mask on attribute presence; PLAN-FRESH-2-006);
      - US1-8 (both lines always), asserted on each edge element's computed border, side and box;
-     - US1-10 (`preventDefault` on every arrow key);
+     - US1-10 (`preventDefault` on every arrow key); US1-11 asserts the box-focused key and the fades only, and not
+       the browser's scroll from a focused slotted control (FR-009, R-02);
      - US1-13:
        - no ring room;
        - no fade clearance;
@@ -242,12 +260,15 @@ Every phase runs each pairing plant it names once against its test and records t
      - US1-14 (`:host([hidden])` removed).
 
      US1-5 asserts the 40 px step reached within one frame under `reducedMotion: "reduce"` and without it (R-02), and
-     that Home and End are not prevented. US1-12 asserts the exact tree of the unlabelled scroller (SPEC-1-10).
-     SC-001's fallback case is asserted on the forced-colours line too (R-06). A 20 px root case asserts the 40 px
-     clearance, and 24 px with a `calc(1rem + 4px)` fade override (R-17).
-   - **Scrollbar** (PLAN-FRESH-1-003 (a)). `test/browser/scrollbar.test.ts`, launched with
-     `ignoreDefaultArgs: ["--hide-scrollbars"]`: block size includes the scrollbar, and its pixels at a faded edge
-     equal a twin plain box's (R-04, R-05). Plant: the mask without the padding-box clip.
+     that Home and End are not prevented. `sheets()` asserts, over two scrollers, the shared sheets plus exactly one
+     per-instance sheet per root (R-13 § The conventions; PLAN-FRESH-2-005). US1-12 asserts the exact tree of the
+     unlabelled scroller (SPEC-1-10). SC-001's fallback case is asserted on the forced-colours line too (R-06). A
+     20 px root case asserts the 40 px clearance, and 24 px with a `calc(1rem + 4px)` fade override (R-17).
+   - **Scrollbar** (PLAN-FRESH-1-003 (a), PLAN-FRESH-2-001 (a)). `test/browser/scrollbar.test.ts`, launched with
+     `ignoreDefaultArgs: ["--hide-scrollbars"]`: block size includes the scrollbar; at a faded edge the scrollbar's
+     pixels equal a twin plain box's while the content just above it is faded; the scrollbar appearing (content grown
+     past the box) updates the mask size within one frame; and the handover ring shows over the scrollbar band
+     (R-04, R-05, R-07). Plant: the fade layer sized to the whole box (no measured block size).
    - **US1-16.** `test/fixtures/overflow-host.ts` and its run of scenarios 1, 3, 4 and 12.
    - **Stories.** Story test ids first, then `scroller.stories.ts`, the frame rules and the baselines through
      `visual:update`. axe through the gate.
@@ -255,7 +276,11 @@ Every phase runs each pairing plant it names once against its test and records t
      the scroller (a named group, the per-item naming guidance, the scrollbar); the module under the element
      conventions; § Host ARIA scoped per element (icon and brand mark: blank decides; scroller, board and lane: blank
      counts as absent, with R-01's reason; list-detail: no name), replacing the package-wide sentence the test pins
-     (PLAN-CORRECTNESS-1-005 (a)); the mask properties on the engine list (R-18).
+     (PLAN-CORRECTNESS-1-005 (a)); § Styles: the shared `static styles` plus at most one per-instance sheet of measured
+     px figures, never values from attributes, properties, token text or slotted text, with the module and
+     list-detail named, replacing the "one shared stylesheet" sentence the test pins (FR-030, PLAN-FRESH-2-005 (a));
+     the reduced-motion statement for keys from a focused slotted control (FR-009, PLAN-FRESH-2-003 (a)); the mask
+     properties on the engine list (R-18).
 3. **US2 `ocelle-workflow-board` and `ocelle-workflow-lane` (P2).**
    - **Count grammar, tests first** (R-09). Then US2 scenarios 1 to 15 in both harnesses, with sentence-length cards
      in US2-1, US2-3, US2-14 and US2-15, each pair with its plant:
@@ -269,7 +294,8 @@ Every phase runs each pairing plant it names once against its test and records t
      - US2-15 (no ring room);
      - US2-12 (`:host([hidden])` removed).
 
-     The board's region role is asserted on the board (the test host and the scroller cover `group`). A 20 px root
+     The board's region role is asserted on the board (the test host and the scroller cover `group`). `sheets()`
+     asserts one per-instance sheet per board root and none on the lane (R-13 § The conventions). A 20 px root
      case: lanes at 200 px, and five overflow Frame W (R-17).
    - **Plan-level test of SPEC-2-06** (R-08): wide fixed content overlaps the next lane, and, added after the first
      render as a card that grows the last lane, makes the board overflow within one frame (FR-014, R-03).
@@ -279,9 +305,10 @@ Every phase runs each pairing plant it names once against its test and records t
 4. **US3 `ocelle-list-detail` (P3).**
    - **Spike first** (R-13), recorded in `reviews/phase-4/spike.md`: the measurement pass and the sizer give US3-12's
      figures (1073 px three columns in a 1196 px row; 636 px one column in a 636 px row; a dialog in a 1280 px
-     viewport: three columns; a table cell in a 636 px table: one column) and the stale content case (1196 px, three
-     columns), stable over ten frames, with the frame record never showing the measurement grid. If it fails: stop
-     and ask the operator (fork in R-13).
+     viewport: three columns; a table cell in a 636 px table: one column), the stale content case (1196 px, three
+     columns) and the two content-change cases (a 35rem detail, taller and same height: 1153 px in the first frame
+     record after the change, PLAN-FRESH-2-002 (a)), with `driver.messages()` empty, stable over ten frames, with the
+     frame record never showing the measurement grid. If it fails: stop and ask the operator (fork in R-13).
    - **Grammar and tier choice, tests first** (`tiers.ts`, R-12). It includes `56REM` accepted and `+56rem`, `.5rem`,
      `56.rem`, `5.6e1rem` and `-0` rejected, and the token default and its fallback constants compared with the token
      source.
@@ -295,15 +322,17 @@ Every phase runs each pairing plant it names once against its test and records t
      - US3-9 (page scroll);
      - US3-10 (any resolvable length accepted; both attributes), asserting the 1280 px viewport for the `vw` case;
      - US3-12 (intrinsic size follows the tier; the measurement pass split across a `requestAnimationFrame`, caught
-       by the frame record; R-13);
+       by the frame record; the shown-pane `ResizeObserver` as the trigger, caught by the same-height case and by
+       `driver.messages()`; R-13);
      - US3-15 (`:host([hidden])` removed).
 
      US3-6 adds the ring cases (keyboard, then pointer; R-14). A test asserts that no shadow element carries a
-     `style` attribute (R-13). A 20 px root case: one column in a 720 px frame, two at 16 px (R-17). The upgrade
-     cases of R-14 run in-process in `test/list-detail-upgrade.test.ts` (mutated), and on a server-rendered fixture
-     page as the built-output check.
+     `style` attribute, and `sheets()` asserts one per-instance sheet per root over two instances (R-13). A 20 px root
+     case: one column in a 720 px frame, two at 16 px (R-17). The upgrade cases of R-14 run in-process in
+     `test/list-detail-upgrade.test.ts` (mutated), and on a server-rendered fixture page as the built-output check.
    - **Stories, baselines and records.** The README covers the container-tier convention, checked item by item
-     (FR-034, SC-009).
+     (FR-034, SC-009), including its re-measure triggers and that a size change with no mutation waits for the next
+     one (FR-025, PLAN-FRESH-2-002 (a)).
 5. **Polish.**
    - The README documentation test for every FR-034 item.
    - Both changelogs.

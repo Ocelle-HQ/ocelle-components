@@ -37,8 +37,10 @@ The board module does not define the lane: a host imports both, or the root.
   README's Host ARIA section scopes this rule to the scroller, the board and the lane.
 - **Keyboard:** it is a tab stop while overflowing. `ArrowLeft` and `ArrowRight` without a modifier scroll it 40 px with
   no animation. Modified arrows (Alt, Ctrl, Meta, Shift), arrows during composition and other keys get the browser
-  default.
-- **Scrollbar:** the platform's horizontal scrollbar is kept, counted in the block size, and never faded (FR-001).
+  default. Keys while a slotted control has focus are the browser's too, and its scroll of the strip may animate even
+  under reduced motion; the element does not control it (FR-009, research.md R-02).
+- **Scrollbar:** the platform's horizontal scrollbar is kept, counted in the block size, and never faded (FR-001); the
+  fade's block size is measured and set in the module's per-instance sheet (research.md R-05).
 
 ## `ocelle-workflow-board`
 
@@ -96,6 +98,8 @@ The board module does not define the lane: a host imports both, or the root.
   `--ocelle-focus-width` and `--ocelle-color-focus` for the pane wrappers' ring, drawn inset
   (`outline-offset: calc(var(--ocelle-focus-width) * -1)`) and `Highlight` in forced colours (research.md R-14).
 - **Widths:** the inspector's 19rem is its border box, its 1 px border included (FR-023).
+- **Styles:** shared `static styles` plus one per-instance constructed sheet holding the measured intrinsic sizes
+  (FR-030, research.md R-13).
 - **Pane focus:** no pane wrapper has a `tabindex` at rest; a wrapper gets `tabindex="-1"` only while the element moves
   focus to it, and loses it on `focusout` (FR-028, research.md R-14).
 - **Name:** none; a host `aria-label` is not used (FR-029).
@@ -114,7 +118,10 @@ The board module does not define the lane: a host imports both, or the root.
 - **Forced narrow tier.** A boolean attribute set by the host (`narrow`) forces the narrowest tier.
 - **No `container-type`.** It is never set on a host that may shrink to fit.
 - **Intrinsic sizes.** They do not depend on the tier shown: max-content is the widest tier's and min-content the
-  narrowest's (research.md R-13).
+  narrowest's (research.md R-13). They are re-measured on `slotchange`, on a `MutationObserver` delivery from any
+  pane's assigned elements, and before a tier change set by a property or attribute, and never inside a
+  `ResizeObserver` callback, whose writes would resize a shrink-to-fit host within the delivery. A size change with no
+  DOM mutation waits for the next of these (FR-025).
 
 ## Tokens (`@ocelle/tokens`)
 
