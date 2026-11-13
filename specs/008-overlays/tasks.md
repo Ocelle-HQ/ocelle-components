@@ -256,7 +256,7 @@ the driver as it was.
 - [ ] T030 [P] [US2] Write `packages/elements/test/scenarios/drawer.ts`:
   - matrix § Drawer's inherited dialog rows, reusing T015's bodies with the `ocelle-drawer` tag and event prefix (not the dialog's one-line body, long body or styles rows, whose dialog geometry contradicts FR-003, FR-025 and FR-026);
   - the drawer's own long body: panel block size equal to the viewport's (800 px, and 256 px at 320 × 256, not capped at `dialog-max-block`), each `side`, then the dialog's scrolling, Tab and `tabindex` assertions;
-  - the drawer's own styles: the UA reset, `max-inline-size` equal to `dialog-max-inline`, no block cap below the viewport, `color-overlay` backdrop, `elevation-raised` shadow, the two corner radii on the touched viewport edge 0 for each `side` × `dir`, not centred, definite body inline size, footer box present only when filled;
+  - the drawer's own styles: the UA reset, `max-inline-size` equal to `dialog-max-inline`, no block cap below the viewport, `color-overlay` backdrop, `elevation-raised` shadow, for each `side` × `dir` the two corner radii on the touched viewport edge 0 and the two on the inner edge equal to the computed `radius-2`, not centred, definite body inline size, footer box present only when filled;
   - the drawer's own one-line body (fills the column, footer at the panel's end, each `side`);
   - backdrop during the exit;
   - backdrop on each side under `ltr` and `rtl` × veto;
@@ -284,7 +284,7 @@ the driver as it was.
 - [ ] T036 [US2] `packages/elements/src/ocelle-drawer.ts`, class `OcelleDrawer extends OcelleOverlay`:
   - the `ocelle-drawer` prefix;
   - `side`, `ground` and `heading-hidden`; unknown values render as the default;
-  - logical edge placement, full block size, `inline-size: var(--ocelle-drawer-inline)` capped by `max-inline-size: var(--ocelle-dialog-max-inline)`, square on its viewport edge;
+  - logical edge placement, full block size, `inline-size: var(--ocelle-drawer-inline)` capped by `max-inline-size: var(--ocelle-dialog-max-inline)`; the two inner-edge corners `radius-2` (logical `border-*-end-radius` for `side="start"`, `border-*-start-radius` for `side="end"`) and the two viewport-edge corners 0 (FR-003, data-model § `ocelle-drawer` Shape);
   - the body fills the column, with the footer at the panel's end (R-18);
   - the chrome ground uses `color-chrome` with `color-chrome-ink`;
   - `heading-hidden` uses the visually hidden pattern with `--ocelle-size-visually-hidden`, keeps the heading in the tree, and keeps the close control at the block start;

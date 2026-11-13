@@ -185,7 +185,7 @@ modal, level. Device: the default context (`elements`, `visit()`) matches `(hove
   slotted-content rows including the slotted close watchers and slotted non-modal dialogs, Escape in a slotted iframe, close control, host and platform close, focus return, nested,
   removed, moved, rapid toggle, input during the exit, stale native `close` event, forced colours,
   accessibility tree). The dialog's "one-line body", "long body" and "styles" rows are not inherited: their expected
-  geometry (height capped at `dialog-max-block`, `radius-2`, `--ocelle-dialog-inline-size`, centred) is the dialog's
+  geometry (height capped at `dialog-max-block`, `radius-2` on all four corners, `--ocelle-dialog-inline-size`, centred) is the dialog's
   (FR-024) and contradicts FR-003, FR-025 and FR-026. The drawer has its own rows below.
 - **Long body** (FR-018, FR-025): a prose-only body taller than the viewport, each `side`: the panel's block size
   (border box) equals the viewport's block size (800 px at 1280 × 800; not capped at `dialog-max-block`) and its
@@ -196,8 +196,10 @@ modal, level. Device: the default context (`elements`, `visit()`) matches `(hove
 - **Styles** (computed, FR-003, FR-026): border, padding, margin and max sizes equal the token values (UA reset;
   `max-inline-size` equals the computed `dialog-max-inline`, and `max-block-size` sets no cap below the viewport's
   block size); background and colour as the Ground row states; `::backdrop` background is `color-overlay`; shadow
-  `elevation-raised`. Square on its viewport edge: each `side` × `dir`, the two corner radii on the edge the panel
-  touches compute to 0 (FR-003 sets no value for the other two corners, so this row does not assert them). The panel
+  `elevation-raised`. Corners (FR-003), each `side` × `dir`: the two corner radii on the edge the panel touches
+  compute to 0 and the two on its inner edge equal the computed `radius-2`. Physically: `start`/`ltr` and `end`/`rtl`
+  (panel on the left): top-left and bottom-left 0, top-right and bottom-right `radius-2`; `end`/`ltr` and
+  `start`/`rtl` (panel on the right): top-right and bottom-right 0, top-left and bottom-left `radius-2`. The panel
   is not centred: the Placement row's edge assertions hold. Body inline size definite with prose and a table (FR-019,
   US2-3). Footer slot empty: no footer box; filled: footer box at the panel's end.
 - **One-line body** (R-18, PLAN-FRESH-3-003): a body of one short sentence and a footer with one button at

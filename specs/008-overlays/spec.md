@@ -336,7 +336,8 @@ pointer and keyboard. It is complete when the scenarios below pass in process an
   the top layer and the rest of the document is inert.
 - **FR-003**: Each MUST reset the user agent's dialog border, padding, margin, background, colour and maximum sizes,
   and style the panel and the `::backdrop` only from `--ocelle-*` tokens: backdrop `--ocelle-color-overlay`, shadow
-  `--ocelle-elevation-raised`, radius `--ocelle-radius-2` (the dialog; the drawer is square on its viewport edge).
+  `--ocelle-elevation-raised`, radius `--ocelle-radius-2` (the dialog's four corners; the drawer's two corners on its inner edge, the edge facing
+  the page, take `--ocelle-radius-2` and the two on the edge against the viewport stay square, 0; operator decision).
 - **FR-004**: Each MUST expose a reflected boolean `open` property and attribute as the single source of truth for
   being shown: setting it shows or closes the element, and the element sets it to false whenever it closes.
 - **FR-005**: Each MUST take its accessible name from a `label` property, rendered as the visible heading inside the

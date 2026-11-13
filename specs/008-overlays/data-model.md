@@ -116,6 +116,11 @@ footer, and the `body` part grows to fill the space between header and footer (`
 `3 × target-min` minimum), so the footer is at the panel's block end whatever the body holds. A one-line drawer body
 is as tall as the panel minus header and footer, not 132 px.
 
+**Shape** (FR-003, operator decision): the two corners on the panel's inner edge (the edge facing the page) take
+`radius-2`; the two corners on the edge against the viewport are 0. In logical terms: `side="start"` sets
+`border-start-end-radius` and `border-end-end-radius` to `var(--ocelle-radius-2)` and `border-start-start-radius` and
+`border-end-start-radius` to 0; `side="end"` the reverse. So under `rtl` the rounded corners follow the inner edge.
+
 Tokens read, in addition to the dialog's: `drawer-inline` (new), `color-chrome`, `color-chrome-ink`,
 `color-chrome-hover`.
 
