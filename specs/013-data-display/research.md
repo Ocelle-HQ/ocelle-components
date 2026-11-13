@@ -74,7 +74,8 @@ root, outside the fact, so the sheet carries the fact's host attributes that con
   error), `ocelle-facts` and `ocelle-fact` are unknown inline elements: each value is shown as inline text, the values
   run together on one line, and no label is shown, because the label is an attribute. A server-rendered console page
   shows exactly that. The library therefore ships one recommended rule in `@ocelle/styles`' `base.css`:
-  `:where(ocelle-facts:not(:defined)) > ocelle-fact { display: block; }` (zero specificity, so any page rule wins),
+  `:where(ocelle-facts:not(:defined) > ocelle-fact) { display: block; }` (the whole selector inside `:where()`, so
+  (0,0,0) as `base.css`' header requires, and any page rule wins),
   which puts each value on its own line before upgrade. Labels still appear only after upgrade; the README says so in
   the facts section and corrects its "until then its box is empty" sentence (README line 37) for elements with
   light-DOM content. A styles test and a fixture body (an undefined sheet, then defined) prove the rule.
@@ -421,7 +422,8 @@ its oracle is not weakened.
 - **WCAG 2.2.2.** The indeterminate bar may be shown beside an interactive page for minutes, so the preload exemption
   does not apply. Three loops of 1400 ms are 4.2 s, under the 5 s of 2.2.2; with `animation-fill-mode: none` the mark
   then rests on its own geometry, the still mark, without any further motion. The bar still shows that work is going
-  on. A consumer that overrides `--ocelle-motion-base` above 1666 ms takes the sweep past 5 s; the README says so.
+  on. The total is `--ocelle-motion-base` × 7 × 3 = `--ocelle-motion-base` × 21, so a consumer that overrides
+  `--ocelle-motion-base` above 238 ms (5000 / 21) takes the sweep past 5 s; the README says so.
   The motion restarts only when the bar becomes indeterminate again (a value removed after being set).
 - `translateX(<percentage>)` and the bare integer of `animation-iteration-count` need a recorded `token-only`
   allowance (R-10, PLAN-CORRECTNESS-1-001 (a)).
@@ -492,7 +494,7 @@ moves. Every pair is checked by an existing row (R-06).
 `@ocelle/styles` changes in phase 1, in `base.css`, with tests, README and CHANGELOG:
 - the compact and regular rules of the density hook also set `--ocelle-facts-value-size` and
   `--ocelle-facts-value-line-height` (R-03, PLAN-CORRECTNESS-1-002 (b));
-- the pre-upgrade rule `:where(ocelle-facts:not(:defined)) > ocelle-fact { display: block; }` (R-01, PLAN-FRESH-1-009
+- the pre-upgrade rule `:where(ocelle-facts:not(:defined) > ocelle-fact) { display: block; }`, specificity (0,0,0) (R-01, PLAN-FRESH-1-009
   (a)).
 Both are additions to documented base-style behaviour (MINOR, constitution VII).
 

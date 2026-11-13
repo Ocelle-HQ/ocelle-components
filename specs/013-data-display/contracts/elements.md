@@ -102,7 +102,8 @@ Tokens read (README, not manifest): `font-sans`, `font-size-sm`, `font-size-fact
   between present parts, a progress bar in `visual`, the cascade note, the loading panel, and tokens read.
 - **`ocelle-progress`**: naming (`label` recommended, or a host `aria-label`; an unnamed bar is a consumer error); axe
   does not check the name, and a host `aria-label` makes axe report a false `aria-prohibited-attr` in a consumer's own
-  audit (R-05); the value rules; `value-text`; the bounded sweep (under 5 s, then the still mark, WCAG 2.2.2) and
+  audit (R-05); the value rules; `value-text`; the bounded sweep (under 5 s, then the still mark, WCAG 2.2.2; `--ocelle-motion-base` × 21 in total, so an
+  override above 238 ms takes it past 5 s) and
   reduced motion; `ground="tinted"` and which grounds need it; the busy vocabulary (FR-033); tokens read.
 - **Element conventions**: one paragraph each for slotted items (FR-056, with the container-imports-its-item rule) and
   for the identifier wrap property; the `undefined` defaults are unchanged from 005.
@@ -113,4 +114,5 @@ Tokens read (README, not manifest): `font-sans`, `font-size-sm`, `font-size-fact
   and variant, naming roles only.
 
 `@ocelle/styles`' README gains, in § Compact scale, the two facts hooks its density rules set, and a section for the
-pre-upgrade facts rule (R-07).
+pre-upgrade facts rule (R-07): `:where(ocelle-facts:not(:defined) > ocelle-fact)`, wrapped whole in `:where()` like
+every base selector, so its specificity is (0,0,0) and any page rule overrides it.
