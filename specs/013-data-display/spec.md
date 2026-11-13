@@ -33,6 +33,9 @@ operator chose option B at the triage gate, so this mission builds three of #13'
 `ocelle-code-block` to follow-on 2, which starts after #15 merges. #13 stays open until the last follow-on lands. The
 spec-kitty-design issues #13 cites (#280, #498, #510, #523, #531, #535) were not read from this session. The
 requirements below come from #13's body, the epic #1's gap table and the triage record, which is the source record.
+The plan's research MUST read those six issues (fetched read-only, as for triage) and record anything in them that
+changes or adds to a requirement here, in particular #531 for FR-008, #510 for FR-022 and US2, #535 for FR-007 and
+#498 for US3.
 Spec Kitty's `sk-*` names are kitty-mission-ui roles, not names in this library.
 
 **Consumers** (constitution VI): kitty-mission-ui (Kitty Desktop and Kitty Dashboard) replaces its `.sk-facts` (34
@@ -49,12 +52,17 @@ uses them in server-rendered pages under a strict CSP.
   `--ocelle-font-weight-*` tokens; no `--ocelle-panel-*` token is added (FR-022).
 - Flow decision I3: the story tests (the stories each phase adds) are written in that phase's red commit, before
   green, and `red.sh` keeps one red record per phase.
+- Facts semantics with `ocelle-fact` children (spec check 1, SPEC-1-04), "D: decide after measuring": Q1 (b) stands.
+  The plan's research measures, in the Chromium accessibility tree and against axe's `definition-list` and `dlitem`
+  rules, whether one clean description list can be had with `ocelle-fact` children while the consumer's content stays
+  unchanged (FR-003). The result goes back to the operator, who decides before tasks are generated whether FR-004
+  stands as written or changes (FR-004).
 
 ## Scope
 
 **In scope:** four new custom elements in `@ocelle/elements` (`ocelle-facts` with its child `ocelle-fact`,
 `ocelle-empty-state`, `ocelle-progress`). This covers their stories, tests, manifest
-entries and README sections, and any new tokens in `@ocelle/tokens` that these elements need and that no existing token
+entries and README sections (FR-001 and FR-054 say what `ocelle-fact` shares with `ocelle-facts`), and any new tokens in `@ocelle/tokens` that these elements need and that no existing token
 provides (FR-040).
 
 **Out of scope:**
@@ -67,7 +75,8 @@ provides (FR-040).
   before this mission's last phase, that phase commits the baselines. If not, #10's own rebase picks the stories up.
   See FR-051.
 - `ocelle-status-indicator` and its "never pulses an empty box" rule (#498 in #7). It is #7's (mission 012).
-  `ocelle-progress` is the bar only. Which of the two a consumer uses for "busy" is recorded in this README (FR-033).
+  `ocelle-progress` is the bar only. Which of the two a consumer uses for "busy" is recorded in this README (FR-033):
+  the indeterminate bar for loading a region with no known end, the status indicator for a state.
 
 ## User Scenarios & Testing *(mandatory)*
 
@@ -93,21 +102,28 @@ px, check the layout, the absence of horizontal overflow, the computed type of t
 2. **Given** the same element in a container narrower than the threshold, **When** it renders, **Then** each value is
    directly below its label, in one column, with no horizontal overflow of the element or the page.
 3. **Given** a value holding a 64-character identifier with no spaces, marked as an identifier (FR-007), **When** the
-   element is 320 px wide, **Then** the identifier wraps inside its value box, the grid's columns keep their widths,
-   and the page's scroll width equals the viewport width.
+   element is 320 px wide (below the threshold, FR-005), **Then** the pairs are in one column, the identifier wraps
+   inside its value box, the value box's inline size equals the element's content-box inline size, and the page's
+   scroll width equals the viewport width.
 4. **Given** the same identifier, **When** a user selects and copies the value, **Then** the copied text is the
    identifier unchanged, with no inserted characters.
 5. **Given** any value, **When** its computed style is read, **Then** its font family resolves through `--ocelle-font-sans`,
    its font size through `--ocelle-font-size-fact`, and its `font-variant-numeric` is `tabular-nums` through
    `--ocelle-figures`. No computed font family in the element is a monospace family.
 6. **Given** an `ocelle-facts` with three pairs, **When** the accessibility tree is read in Chromium, **Then** it holds
-   one description list with three terms and three definitions, each definition following its term.
+   one description list with three terms and three definitions, each definition following its term (FR-004; subject
+   to the operator's decision after the plan's measurement).
 7. **Given** a pair whose value is empty, **When** it renders, **Then** the row keeps its label and an empty value box,
    and the description list still holds that term with an empty definition.
-8. **Given** the page in dark theme or in forced colours, **When** it renders, **Then** labels and values meet the
-   text-contrast check on the facts' ground and no text disappears.
+8. **Given** the page in light or dark theme, **When** it renders, **Then** labels and values meet the text-contrast
+   check on each main ground the tokens declare (the element paints no ground of its own). **Given** forced colours,
+   **Then** every label's and value's computed text colour is a system colour (`CanvasText`, or `LinkText` for a
+   link) and none is transparent.
 9. **Given** a compact density (FR-008), **When** it renders, **Then** the row gap and the value size are those
    FR-008 names, and the stacking at the threshold still holds.
+10. **Given** a pair with no `label` (absent or empty), **When** it renders, **Then** the row keeps an empty label box
+    in the label column and its value in the value column, and the description list holds an empty term followed by
+    that value's definition (FR-003).
 
 ---
 
@@ -142,10 +158,12 @@ button stays in the tab order.
 6. **Given** a slotted button, **When** the user presses Tab, **Then** focus reaches the button with the token focus
    ring. The element adds no tab stop of its own.
 7. **Given** `variant="panel"` with an `ocelle-progress` slotted as its visual, **When** it renders, **Then** the
-   progress sits above the heading in the panel's rhythm (FR-023), and the screen reader reaches the progress before
-   the heading.
-8. **Given** dark theme or forced colours, **When** it renders, **Then** heading and body meet the text-contrast check
-   on the panel ground.
+   progress sits above the heading, separated by the panel's visual-to-heading gap (FR-021, FR-022), and the screen
+   reader reaches the progress before the heading.
+8. **Given** light or dark theme, in either variant, **When** it renders, **Then** heading and body meet the
+   text-contrast check on each main ground the tokens declare (neither variant paints a ground of its own). **Given**
+   forced colours, **Then** the heading's and body's computed text colours are system colours (`CanvasText`) and
+   neither is transparent.
 
 ---
 
@@ -178,9 +196,10 @@ non-text contrast of the fill's mark against the track and the ground in light a
    or transition runs on it, and a still mark (FR-033) still shows that work is going on.
 6. **Given** a `value` below 0, above `max`, not a number, or a `max` of 0 or less, **When** it renders, **Then** the
    element follows FR-032: the shown and exposed values are clamped or the bar falls back as stated, and nothing throws.
-7. **Given** light theme, **When** the determinate bar renders on each main ground, **Then** the filled part's
-   boundary meets 3:1 non-text contrast against the track or the ground. The fill is marked by
-   `--ocelle-color-accent-strong` or by text, never by the ochre fill alone (constitution II).
+7. **Given** light theme, **When** the bar renders on each main ground (determinate, indeterminate and the
+   reduced-motion still mark), **Then** the filled part carries an `--ocelle-color-accent-strong` mark and its boundary
+   meets 3:1 non-text contrast against the track and against the ground (FR-036). This holds with or without visible
+   text: the ochre fill is never the only mark (constitution II).
 8. **Given** forced colours, **When** it renders, **Then** the track's outline and the filled part are both visible
    in system colours.
 9. **Given** `size="compact"`, **When** it renders, **Then** the bar's block size is the compact size FR-034 names,
@@ -189,7 +208,8 @@ non-text contrast of the fill's mark against the track and the ground in light a
     progressbar's accessible name. A host `aria-label` overrides it, as in the library's Host ARIA rule.
 11. **Given** a bar with neither `label` nor a host `aria-label`, **When** the accessibility tree is read, **Then**
     the progressbar has no name: the element does not invent one. The README and the manifest description of `label`
-    say a name is required.
+    say a name is required. This state is proven by a browser test only and has no story (FR-050), since axe's
+    `aria-progressbar-name` rule fails it by design.
 
 ---
 
@@ -197,13 +217,24 @@ non-text contrast of the fill's mark against the track and the ground in light a
 
 - **Facts with no pairs.** The element renders no grid rows and exposes an empty description list, or nothing, as
   FR-010 states. It does not throw.
-- **Facts given a label without a value, or a value without a label.** The element follows FR-003's structure: a
-  missing half renders an empty box in its column, so later pairs never shift into the wrong column.
-- **Facts inside a shrink-to-fit host** (a dialog or a flex item with no inline size). The two-column threshold is
-  measured on the element's own inline size, and the element keeps an inline size in a shrink-to-fit context (003's
-  `contain: inline-size` finding: the element MUST NOT collapse to zero width).
+- **Facts given a label without a value, or a value without a label.** FR-003 states the rule: a missing half
+  renders an empty box in its column and is exposed as an empty term or an empty definition (US1 scenarios 7 and 10).
+- **`ocelle-fact` outside `ocelle-facts`.** It renders its label above its value as plain text in the facts type
+  (FR-006) and exposes both as plain text, with no term or definition role, so no stray term or definition reaches
+  the accessibility tree. It does not throw.
+- **A child of `ocelle-facts` that is not an `ocelle-fact`** (text, a raw `<dt>`, a `<div>`). It is not rendered and
+  not exposed; whitespace between pairs is ignored. Nothing throws. The README says only `ocelle-fact` children are
+  allowed.
+- **Facts inside a shrink-to-fit host** (a `<dialog>`, a popover, a float, a default flex item). The layout switch is
+  measured on the element's own inline size, and the element's inline size there is the one FR-009 states: never
+  0, and at least its widest label's or value's max-content inline size, capped by the available inline space.
 - **Facts at 200% zoom and 320 px.** One column, no horizontal scroll, no cut text (WCAG 1.4.10).
-- **Very long label.** Labels wrap between words. A label never widens the value column beyond its track.
+- **Very long label.** Labels wrap between words. The label column is sized by FR-005's rule (its widest label, up
+  to a cap), so a long label wraps inside the cap and never takes the value column's space beyond it.
+- **Long empty-state heading or body at 320 px.** Heading and body wrap between words inside the element; nothing
+  overflows the element or the page horizontally, and no text is cut.
+- **Long progress label beside a compact bar at 320 px.** The label wraps between words; the bar keeps a visible
+  inline size (the plan names its minimum from tokens); nothing overflows the element or the page horizontally.
 - **Empty-state with a slotted heading of a different element** (for example a `<p>` styled as a heading). The
   element styles the slot's content and does not change its role. The consumer owns the heading semantics.
 - **Empty-state with only actions.** Allowed. The actions keep their own names.
@@ -219,14 +250,17 @@ non-text contrast of the fill's mark against the track and the ground in light a
 
 ## Requirements *(mandatory)*
 
-### Common to the three elements
+### Common to the four elements
+
+`ocelle-fact` is one of the four elements wherever this section and the Evidence section say "each element", with
+the exceptions FR-050 and FR-054 name.
 
 - **FR-001**: Each element MUST follow the README's § Element conventions: its own module `src/<tag>.ts` with one
   `define` call, `static properties` with `declare` fields, a `@tagname` JSDoc tag, a description and `@default` for
   every public property, one `static styles` built only from `--ocelle-*` tokens, `:host([hidden]) { display: none; }`,
   variant rules inside `@media not (forced-colors: active)`, an entry in the committed `custom-elements.json`, an export
   from `src/index.ts`, and a README section.
-- **FR-002**: No element MUST require or document a `class` attribute for its look. Every variant is a property or
+- **FR-002**: An element MUST NOT require or document a `class` attribute for its look. Every variant is a property or
   attribute (spec-kitty-design#523). No `sk-` name and no monospace family MAY appear in source, styles, stories or
   build output (the `prefix` gate).
 
@@ -236,15 +270,24 @@ non-text contrast of the fill's mark against the track and the ground in light a
   label and one value per pair. Each pair is an `ocelle-fact` child element (operator decision Q1): `<ocelle-fact label="Owner">value</ocelle-fact>`,
   with the label from its `label` property and the value as its light-DOM content, which can hold inline markup (a
   link, an identifier span). `ocelle-fact` is a fourth element on the public surface, under the same conventions
-  (FR-001), and is meaningful only inside `ocelle-facts`. Whatever the structure, the content is
-  the consumer's text: the element never copies or rewrites it.
+  (FR-001), and is meaningful only inside `ocelle-facts` (outside it, and for children of `ocelle-facts` that are not
+  `ocelle-fact`, see Edge Cases). Whatever the structure, the content is the consumer's text: the element never
+  copies or rewrites it. A pair with no `label` (absent or empty) renders an empty label box and exposes an empty
+  term; a pair with no value content renders an empty value box and exposes an empty definition. Either way the
+  pair keeps its row.
 - **FR-004**: The accessibility tree MUST expose a description list whose terms are the labels and whose definitions
-  are the values, each definition after its term, in source order, measured in Chromium. No ID reference MAY cross a
-  shadow root to build this association.
+  are the values, each definition after its term, in source order, measured in Chromium, with no serious or critical
+  axe finding (including `definition-list` and `dlitem`). No ID reference MAY cross a shadow root to build this
+  association. Operator decision (SPEC-1-04, "D"): the plan's research measures whether this structure can be had
+  cleanly with `ocelle-fact` children (Q1 b) and the consumer's content unchanged (FR-003), and reports the result to
+  the operator before tasks are generated. The operator then confirms this requirement or replaces it; tasks are not
+  generated against FR-004 until then.
 - **FR-005**: The element MUST lay its pairs out as a two-column grid (labels in the first, values in the second)
-  while its own inline size is at least a threshold, and as one column (each value directly below its label) below
-  it. The threshold is a token-derived length set in the plan (a container query on the element's own inline size,
-  not the viewport). Value tracks MUST be `minmax(0, 1fr)` so content never widens them.
+  while its own inline size (not the viewport's) is at least a threshold, and as one column (each value directly
+  below its label) below it. The threshold is a token-derived length set in the plan and MUST be greater than 320 px.
+  In two columns, the label column takes the max-content inline size of the widest label, capped at a share of the
+  element's inline size that the plan sets (no more than half); longer labels wrap inside the cap. The value column
+  takes the rest, and its content never widens it.
 - **FR-006**: Values MUST use `--ocelle-font-sans`, `--ocelle-font-size-fact` and `--ocelle-figures`, in
   `--ocelle-color-ink`. Labels MUST use `--ocelle-font-sans` at a smaller step in `--ocelle-color-ink-muted` (or
   `-soft`, as the plan settles against the tokens' contrast declarations), so labels and values are distinct by more
@@ -254,10 +297,16 @@ non-text contrast of the fill's mark against the track and the ground in light a
   `data-ocelle-wrap="anywhere"` (003's base-style hook) MUST keep that behaviour inside the element. Without the
   policy, values wrap between words.
 - **FR-008**: The element MUST offer a default and a `compact` density (`density="compact"`). Compact reduces the row
-  gap to a smaller `--ocelle-space-*` step and keeps the value size at `--ocelle-font-size-fact` unless the plan shows
-  the compact screen scale (#531) asks otherwise.
-- **FR-009**: The element MUST NOT collapse to zero inline size in a shrink-to-fit host, and MUST NOT cause
-  horizontal scrolling of the page at 320 px CSS width or at 200% zoom.
+  gap to a smaller `--ocelle-space-*` step and keeps the value size at `--ocelle-font-size-fact` unless the plan's
+  reading of #531 (the compact screen scale) shows it asks otherwise, in which case the plan states the change and
+  its source.
+- **FR-009**: In a shrink-to-fit host (a `<dialog>`, a popover, a float, a default flex item), an element with at
+  least one pair MUST take an inline size that is never 0 and is at least the smaller of the available inline space
+  and the max-content inline size of its widest label or value. The element MUST NOT cause horizontal scrolling of
+  the page at 320 px CSS width or at 200% zoom. For the plan's research: a size container query is one way to switch
+  on the element's own inline size, but it applies inline-size containment, which collapses a box to 0 px in
+  shrink-to-fit hosts (`knowledge/speckit-flows/findings/frontend-missions.md` § Layout; 003 A11Y-SECURITY-1-001,
+  FRESH-2-001). The research MUST measure the chosen mechanism in each of those hosts against this requirement.
 - **FR-010**: With no pairs, the element MUST render nothing visible and throw nothing. Whether it exposes an empty
   list is set in the plan and tested.
 - **FR-011**: The element emits no event. It is not interactive and adds no tab stop. Focusable content a consumer
@@ -270,9 +319,12 @@ non-text contrast of the fill's mark against the track and the ground in light a
   level is the consumer's: the consumer slots its own heading element, and the element has no `level` property and
   never adds a heading role (the same rule as 011's page header).
 - **FR-021**: The default variant MUST lay out visual, heading, body and actions in one centred column with token gaps
-  and block padding from the `--ocelle-space-*` scale. The heading is at `--ocelle-font-weight-strong` and the body in
-  `--ocelle-color-ink-muted`, with each value named in the plan.
-- **FR-022**: `variant="panel"` MUST use a larger block padding and larger gaps than the default variant, and a
+  and block padding from the `--ocelle-space-*` scale: a visual-to-heading gap, a heading-to-body gap and a
+  body-to-actions gap. The heading is at `--ocelle-font-weight-strong` and the body in `--ocelle-color-ink-muted`,
+  with each value (padding, each gap, weight) named in the plan. Neither variant paints a ground (background) of its
+  own: it sits on its container's ground.
+- **FR-022**: `variant="panel"` MUST use a larger block padding and larger gaps (each of FR-021's three) than the
+  default variant, and a
   lighter heading weight than the default (#510). Its values come from the existing `--ocelle-space-*` and `--ocelle-font-weight-*` tokens only, with no new panel
   token (operator decision Q2); the plan names the steps.
 - **FR-023**: An empty slot MUST take no space and add no gap.
@@ -288,21 +340,28 @@ non-text contrast of the fill's mark against the track and the ground in light a
 - **FR-031**: A `value-text` property MUST set the exposed value text. Without it, the exposed value text is the
   platform's default for the value.
 - **FR-032**: Without a `value`, the bar MUST be indeterminate: no current value is exposed. A `value` that is not a
-  finite number is treated as absent. A `value` below 0 is shown and exposed as 0, and above `max` as `max`. A `max`
+  finite number is treated as absent, and so is an empty or whitespace-only `value` attribute (`value=""` is
+  indeterminate, not 0). Removing the `value` attribute, or setting the property to `null` or `undefined`, after a
+  value was set makes the bar indeterminate again. A `value` below 0 is shown and exposed as 0, and above `max` as `max`. A `max`
   that is not a finite number above 0 is treated as 100. Nothing throws.
 - **FR-033**: The indeterminate bar MUST show activity with a moving mark that uses token durations and easing. Under
   `prefers-reduced-motion: reduce` it MUST run no animation or transition and show a still mark that still reads as
-  "in progress" (a partial or patterned fill, set in the plan). The README MUST say that `ocelle-progress` is the
-  bar for work with an amount or a span, and that #7's `ocelle-status-indicator` is the busy marker for a state.
+  "in progress" (a partial or patterned fill, set in the plan). The loop period MAY be a new motion token under
+  FR-040 if `--ocelle-motion-fast` and `--ocelle-motion-base` are too short for it; such a token MUST also resolve so
+  that nothing runs under reduced motion. The README MUST say that the determinate bar is for work with a known
+  amount, the indeterminate bar is for loading a region (or running work) with no known end, and #7's
+  `ocelle-status-indicator` is the marker for a state (for example a row that is "running").
 - **FR-034**: The element MUST offer a default and a `compact` size (`size="compact"`) with block sizes from tokens,
   the compact one thinner.
 - **FR-035**: With `label` set and the boolean attribute `show-label` present (the labelled variant), the label MUST be shown
   as text above the bar (default size) or beside it (compact). A determinate bar MAY show its value text beside the
   label. Visible label and value text use `--ocelle-figures`.
 - **FR-036**: The fill MUST be `--ocelle-color-accent` on a track drawn in a token colour. In light mode the filled
-  part MUST also be marked by `--ocelle-color-accent-strong` (an edge, an outline or the fill's end) or by visible text,
-  so the filled extent meets 3:1 non-text contrast against the track and the ground on every main ground (constitution
-  II and III). The contrast check covers these pairs.
+  part (the determinate extent, the indeterminate moving mark and the reduced-motion still mark) MUST always also be
+  marked by `--ocelle-color-accent-strong` (an edge, an outline or the fill's end), so its boundary meets 3:1 non-text
+  contrast against the track and against the ground on every main ground (constitution II and III). Visible text
+  (FR-035) may be shown as well, but it does not replace the mark and waives the 3:1 rule for no variant. The
+  contrast check covers these pairs.
 - **FR-037**: In forced colours the track MUST have a visible outline and the fill MUST use a system colour distinct
   from the track.
 - **FR-038**: The fill MUST grow from the inline start, mirrored under `dir="rtl"`.
@@ -320,7 +379,11 @@ non-text contrast of the fill's mark against the track and the ground in light a
 - **FR-050**: Each element MUST have a story per variant and per state in `storybook/stories/<element>.stories.ts`,
   rendered in light and dark. The stories are named in the plan and follow #10's contributor note
   (`specs/006-storybook-workbench` FR-025): open shadow roots, every surface inside the host, a declared hover or
-  press state where one exists.
+  press state where one exists. Exceptions: `ocelle-fact` has no stories file of its own; its states (with and
+  without a label or value, identifier wrap) are stories in `ocelle-facts.stories.ts`, and its behaviour outside
+  `ocelle-facts` is proven by browser tests. The unnamed progress state (US3 scenario 11) has no story, because axe's
+  `aria-progressbar-name` rule fails it by design; it is proven by a browser test only, and the plan records this
+  exclusion.
 - **FR-051**: Visual baselines and the `axe` run follow #10. If #10 is on `main` when this mission's last phase runs,
   that phase commits the baselines produced in #10's pinned container and the stories pass #10's `axe` gate with no
   serious or critical finding. If #10 is not on `main` by then, the accessibility assertions of FR-004, FR-030 and
@@ -329,13 +392,17 @@ non-text contrast of the fill's mark against the track and the ground in light a
 - **FR-052**: Browser tests MUST cover every acceptance scenario, run on the element source (in process) and on the
   built browser build on strict-CSP fixture pages, as the README's § Files and tests describes.
 - **FR-053**: Facts MUST have a reflow test at 320 px CSS width (US1 scenario 2 and 3).
-- **FR-054**: Each element's manifest entry MUST list every public property, attribute, slot and part, and an empty
-  event list. The `manifest` gate passes.
+- **FR-054**: Each of the four elements, `ocelle-fact` included, MUST have its own manifest entry listing every public
+  property, attribute, slot and part, and an empty event list. The `manifest` gate passes. `ocelle-fact` is
+  documented in the `ocelle-facts` README section rather than a section of its own.
 - **FR-055**: The built output MUST pass the strict-CSP check.
 - **FR-056**: The README MUST record, for the follow-on missions, the conventions this mission sets: how pairs or
   items are slotted (FR-003), how the wrap policy is exposed (FR-007), and the empty-state heading rule (FR-020).
-- **FR-057**: Each package changed gets a changelog entry naming the added elements and tokens (constitution VII,
-  MINOR).
+- **FR-057**: Each package changed gets a changelog entry naming the four added elements and any added tokens
+  (constitution VII, MINOR).
+- **FR-058**: The README MUST map each kitty-mission-ui `.sk-facts`, `.sk-empty-state` and `.sk-progress` variant to
+  the element and variant that replaces it (SC-001). The mapping names the roles only and copies no code
+  (constitution VI).
 
 ### Key Entities
 
@@ -347,17 +414,21 @@ non-text contrast of the fill's mark against the track and the ground in light a
 
 ### Measurable Outcomes
 
-- **SC-001**: A kitty-mission-ui screen can replace each of its 183 uses of `.sk-facts`, `.sk-empty-state` and
-  `.sk-progress` with one of the three elements, with no `class` attribute on the element.
+- **SC-001**: The README mapping (FR-058) gives, for every `.sk-facts`, `.sk-empty-state` and `.sk-progress` variant
+  kitty-mission-ui uses (183 class uses in all), an element and variant that replaces it with no `class` attribute on
+  the element. Checked in review; the replacement in kitty-mission-ui itself is an outcome not gated here.
 - **SC-002**: At 320 px CSS width, every facts story's page scroll width equals the viewport width.
-- **SC-003**: Every story of the three elements reports no serious or critical axe finding (by #10's gate when it is
-  merged, by this mission's own accessibility-tree tests until then).
-- **SC-004**: Every foreground and non-text pair the three elements introduce passes the contrast check in light and
+- **SC-003**: Every story of the four elements reports no serious or critical axe finding by #10's `axe` gate once
+  #10 is on `main` (the unnamed progress state has no story, FR-050). Until then, this mission's own browser tests
+  prove the accessibility-tree assertions of FR-004 and FR-030 and of US1 to US3; they are not an axe run, and axe
+  runs on these stories when #10 lands.
+- **SC-004**: Every foreground and non-text pair the four elements introduce passes the contrast check in light and
   dark.
-- **SC-005**: Under reduced motion, no story of the three elements has a running animation or transition.
+- **SC-005**: Under reduced motion, no story of the four elements has a running animation or transition.
 - **SC-006**: Every acceptance scenario has at least one test that fails against the code before its phase (the
-  red/green check) and that survives mutation testing under #23's rules.
-- **SC-007**: The manifest, strict-CSP, prefix and style-lint gates pass with the three elements added.
+  red/green check), and mutation testing under #23's rules leaves no surviving mutant in the phase's changed source,
+  except mutants the review records as equivalent with the reason.
+- **SC-007**: The manifest, strict-CSP, prefix and style-lint gates pass with the four elements added.
 
 ## Assumptions
 
@@ -366,7 +437,7 @@ non-text contrast of the fill's mark against the track and the ground in light a
 - The progress bar's percentage text, when the platform computes it, is the platform's. The element does not format
   numbers.
 - 011's eyebrow tokens are not needed here. Facts labels are not eyebrows.
-- #15 is not needed by any of the three elements: none has a scroll region.
+- #15 is not needed by any of the four elements: none has a scroll region.
 - #10's design (`specs/006-storybook-workbench`) is final but not merged. Stories are written to it now, and this spec's
   evidence requirements are rechecked when it lands.
 - Kitty Desktop's WebKit is not measured, the same as the library's existing Engines note. Only Chromium is.
