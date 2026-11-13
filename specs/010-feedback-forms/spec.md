@@ -84,6 +84,23 @@ are not read (SPEC-1-09). Their `sk-*` names are kitty-mission-ui roles, not nam
   value `"true"`; any other host value is not supported (FR-022).
 - PLAN-CORRECTNESS-1-003 (a) and PLAN-FRESH-1-004 (c) are plan decisions (research R-07, R-03) with no change here.
 
+**Operator decisions at plan squad round 2** (2026-11-13, human:jeroennouwsdev; `reviews/plan/round-2/refute.md`):
+
+- PLAN-FRESH-2-001 (a): changes of a notice's text or politeness, or of a control's `error`, made less than the
+  announcement wait apart (the plan's `W`, twice Chromium's serialisation delay: 300 ms after load, 700 ms before),
+  in one task or in different tasks, announce only the final text, once. A text that is back to the last announced
+  text when the wait ends announces nothing. A text that keeps changing more often than every `W` is not announced
+  until it stops changing; the README says so (FR-008, FR-027, SC-002, User Story 1 scenario 13).
+- PLAN-FRESH-2-002 (a): for a host `role="alert"`, insertion after parsing, reveal and a change of the host role to
+  `alert` are carried by the platform's alert event for the host's node, which Chromium fires when an alert node is
+  created, unignored or given the alert role, whatever its live politeness. The notice writes no copy into a live
+  region for them, so the tree measure counts zero for them; the README says so (FR-009, User Story 1 scenario 15,
+  SC-002).
+- PLAN-FRESH-2-005 (b): an announced copy stays in the notice's or control's live region for a bounded hold of
+  several seconds (the plan names the figure), not only for the serialisation delay; the figure is not measured by the
+  tree capture, and the README says so (FR-035).
+- PLAN-FRESH-2-003 (a) is a plan decision (research R-09) with no change here.
+
 ## Consumer need
 
 - kitty-mission-ui uses the Spec Kitty notice in 28 places. Its notice draws a heading block and a gap even when no
@@ -149,13 +166,15 @@ taken after each accessibility-tree update:
 - *Insertion and reveal.* When an announcing notice is inserted, or is revealed by removing `hidden` (FR-008), or a
   form control holding a non-empty `error` is inserted or revealed (FR-027), its live region node first appears in a
   snapshot with empty text; in a later snapshot its text becomes exactly the announced text. That one change is the
-  announcement. A region that first appears already holding text (first load, `announce` or a live host role set on
+  announcement (for a `role="alert"` notice the platform's alert event carries the insertion and the reveal instead,
+  and the region stays empty, FR-009). A region that first appears already holding text (first load, `announce` or a live host role set on
   an existing notice, a reveal by an ancestor) has made no announcement. The notice's content is visible from the
   first frame in which its box is drawn, and the control's error text from the first frame in which the control is,
   and both are in the accessibility tree from then on; only the announcement may come later (by the serialisation
   delay the plan names), so no visibly empty box precedes an announcement.
 - *Once* means exactly one announcement per triggering change, counted over the whole scenario on every live region
-  node that is the notice's host or inside it, or the form control's host or inside it. "Never by two live regions"
+  node that is the notice's host or inside it, or the form control's host or inside it. Changes that follow each other
+  by less than the announcement wait are one triggering change (FR-008). "Never by two live regions"
   is measured the same way: for one triggering change, exactly one such node announces, so a live region nested in
   another live region whose text also changes counts as two announcements and fails.
 
@@ -225,23 +244,33 @@ colours and accessibility tree; insert and change announcing notices and count t
     (same politeness, same text). Both hold the same when keyboard focus is on a link slotted in the notice's body
     while the tone changes, and the link stays focused and in the accessibility tree throughout.
 13. **Given** several text changes made in one task (for example a script that sets the body three times in a row),
-    **When** they settle, **Then** only the final text is announced, once.
+    **When** they settle, **Then** only the final text is announced, once. **Given** two text changes in different
+    tasks 100 ms apart (`A` to `B`, then `B` to `C`), **Then** only `C` is announced, once (operator decision
+    PLAN-FRESH-2-001, changes less than the wait apart). **Given** a text that goes from `A` to `B` and back to `A`
+    within the wait, **Then** nothing is announced. **Given** a text change made 10 ms after a copy has been
+    announced, **Then** the earlier announcement still counts (its copy stays in the region for at least the wait),
+    and the new text is announced once after it. **Given** an announced text and no further change, **Then** the copy
+    stays in the region for the plan's hold and is then removed, which announces nothing.
 14. **Given** an announcing notice, **When** `announce` is removed, **Then** later changes are not announced; **when**
     it is set again, **Then** the current text is not announced, and the next change is.
 15. **Given** a host `role` on the notice (FR-009), **When** it renders, **Then** the host's node in the accessibility
     tree has that role, and the outcome is the one FR-009's table gives for that role with and without `announce`:
     `role="alert"` announces assertively and `role="status"` politely whatever the tone, with or without `announce`,
     at the moments FR-008 names (insertion after parsing, reveal, change) and not on first load (operator answer at
-    spec check 2); with a role that gives the host's node no live politeness (for example `note`, `region` with an
-    `aria-label`, `none`) the notice behaves as with no role. In every case each triggering change is announced by
+    spec check 2), except that for `role="alert"` the insertion after parsing, the reveal and a change of the role to
+    `alert` are carried by the platform's alert event and no live region node at or inside the host announces them
+    (count zero, with the host's node having the role `alert`; operator decision PLAN-FRESH-2-002); with a role that
+    gives the host's node no live politeness (for example `note`, `region` with an `aria-label`, `none`) the notice
+    behaves as with no role. In every case each triggering change that a live region announces is announced by
     exactly one live region node (no nested second region), and a server-rendered `role="alert"` notice is not
-    announced when the page is first parsed. **When** the host sets `role="alert"` at runtime on a connected notice
-    without `announce`, **Then** nothing is announced, and its next text change is announced assertively once;
-    **when** the host then changes the role to `status`, **Then** the current text is announced politely once, the
-    same when keyboard focus is on a link slotted in the notice's body (the link stays focused and in the
-    accessibility tree); **when** it removes the role, **Then** nothing is announced and later changes are not announced (FR-008, "Live
-    host role at runtime"). (`log` and other live roles, and a host `aria-live`, are not supported and not tested;
-    FR-009.)
+    announced when the page is first parsed. **When** the host sets `role="alert"` at runtime on a connected notice without `announce`, **Then** no
+    live region node announces (the platform's alert event reads the notice, which the tree measure does not see),
+    and its next text change is announced assertively once; **when** the host then changes the role to `status`,
+    **Then** the current text is announced politely once, the same when keyboard focus is on a link slotted in the
+    notice's body (the link stays focused and in the accessibility tree); **when** it changes the role back to
+    `alert`, **Then** no live region node announces (the platform's alert event); **when** it removes the role,
+    **Then** nothing is announced and later changes are not announced (FR-008, "Live host role at runtime"). (`log`
+    and other live roles, and a host `aria-live`, are not supported and not tested; FR-009.)
 16. **Given** forced-colours mode, **When** a notice of each tone renders, **Then** the box border and the marker are
     visible in system colours (the marker in `CanvasText`), and the text is `CanvasText` on `Canvas`.
 17. **Given** a host `hidden` attribute, **Then** the notice has no box and nothing in it is announced while hidden;
@@ -493,8 +522,14 @@ gates and the README documentation test.
 - A notice with a host `role="log"` (or another live role) or a host-written `aria-live`: not supported; the README
   says to use `announce`, `role="alert"` or `role="status"` instead (FR-009).
 - A host that adds `role="alert"` or `role="status"` at runtime to a notice without `announce`: nothing is announced
-  then; the current text is the baseline and later changes announce. Removing the role acts as removing `announce`.
-  Changing `alert` to `status` or back is a politeness change and announces the current text once (FR-008).
+  then by a live region (for `role="alert"` the platform's alert event reads the notice, FR-009); the current text is
+  the baseline and later changes announce. Removing the role acts as removing `announce`. Changing `alert` to
+  `status` is a politeness change and announces the current text once (FR-008); changing `status` to `alert` is
+  carried by the platform's alert event, not by a live region (FR-009, operator decision PLAN-FRESH-2-002).
+- A notice whose text changes again less than the announcement wait after the previous change, in the same task or
+  in a later one (a progress or count notice fed every 200 ms): the changes merge and only the final text is announced
+  once; a notice that keeps changing more often than every wait is not announced until it stops (operator decision
+  PLAN-FRESH-2-001); the README says so. The same holds for a control's `error`.
 - A notice or form control inside a hidden ancestor (a container with `hidden`, a closed `<details>`, a
   `display: none` panel) that is then shown: not a reveal; nothing is announced. Only the host's own `hidden` counts
   (FR-008, FR-027); the README says so.
@@ -587,7 +622,14 @@ gates and the README documentation test.
     each later change. It does not announce when it is part of the document as first parsed, when it re-renders for
     another reason, when it is moved within the page in one task, or when `announce` is set on an existing notice
     (the current text is then the baseline for the next change). Changes while hidden are not announced; the reveal
-    announces the text current at that moment. Several changes in one task announce the final text once.
+    announces the text current at that moment. Several changes in one task announce the final text once. By operator
+    ruling (PLAN-FRESH-2-001 (a)), so do changes in different tasks that follow each other by less than the
+    announcement wait (the plan's `W`: twice Chromium's serialisation delay, 300 ms after load, 700 ms before): the
+    announcement comes `W` after the last of them, with the text and politeness current then, and if those equal the
+    baseline at that moment nothing is announced (a text that went `A`, `B`, `A`). A notice whose text keeps changing
+    more often than every `W` is not announced until the changes stop; the README states `W` and this case. A change
+    made while an announced copy is still held is announced after that copy has been in the region for at least `W`,
+    so the earlier announcement is not lost.
   - *First load and insertion.* A notice is *part of the document as first parsed* (first load) when it is connected
     while `document.readyState` is `"loading"` (the parser inserts it, whether or not its definition is registered
     yet), or when it is upgraded by the registration of its definition (the `customElements.define` call, which
@@ -620,7 +662,7 @@ gates and the README documentation test.
   | Host role | Without `announce` | With `announce` |
   |-----------|--------------------|-----------------|
   | none, or a role that gives the host's node no live politeness (for example `note`, `region`, `none`) | No live region node at or inside the host; nothing is announced. | One live region node; politeness from the tone; announces as FR-008 says. |
-  | `alert` | Announces as FR-008 says, assertively whatever the tone: a host that writes `role="alert"` asks for announcements by the role's own meaning. | The same. |
+  | `alert` | Announces as FR-008 says, assertively whatever the tone: a host that writes `role="alert"` asks for announcements by the role's own meaning. Insertion after parsing, reveal and a change of the host role to `alert` are carried by the platform's alert event for the host's node, not by a live region (below). | The same. |
   | `status` | Announces as FR-008 says, politely whatever the tone. | The same. |
   | `log`, or any other role that gives the host's node a live politeness | Not supported. | Not supported. |
   | any role, with a host-written `aria-live`, `aria-atomic` or `aria-relevant` on `ocelle-notice` | Not supported. | Not supported. |
@@ -629,13 +671,25 @@ gates and the README documentation test.
   announce"): a host `role="alert"` or `role="status"` without `announce` behaves as `announce` with that role's
   politeness, so insertion after parsing, reveal and each change announce once, and first load never does.
 
+  *Platform alert event* (operator decision PLAN-FRESH-2-002 (a), plan research R-02). Chromium fires an alert event
+  for a node with the role `alert` when the node is created, when it stops being ignored (a reveal) and when its role
+  becomes `alert`, whatever its live politeness, and screen readers read the node's content on it. For a host
+  `role="alert"`, the insertion after parsing, the reveal and a change of the host role to `alert` (from `status`, or
+  added at runtime, with or without `announce`) are therefore carried by that event: the notice writes no copy into
+  its live region for them and takes the current text and the assertive politeness as its baseline, so the tree
+  measure counts zero announcements for them and checks that the host's node has the role `alert`. Text changes, and
+  a change of the role from `alert` to `status`, announce through the live region as FR-008 says. The alert event is
+  not seen by the tree capture and is not measured; the README names it, its source and that it is Chromium's
+  behaviour (WebKit not measured).
+
   *Not supported* means: the README tells hosts not to write these on the notice (use `announce`, or `role="alert"`
   or `role="status"`), the outcome is not specified, and no scenario tests it; the rules of this requirement and of
   SC-002 cover only the three supported rows.
 
   In every supported row, first load announces nothing (a server-rendered `role="alert"` notice included), and each
-  triggering change is announced by exactly one live region node at or inside the host: the host's role never adds a
-  second announcement of a change, and no live region node whose text changes is nested inside another one whose text
+  triggering change is announced by exactly one live region node at or inside the host, or, in the `alert` row for
+  the changes the platform's alert event carries, by none: the host's role never adds a second announcement of a
+  change, and no live region node whose text changes is nested inside another one whose text
   changes too. Without a host role the notice adds no landmark or live role to the page beyond the live region of
   FR-008.
 - **FR-010**: In forced-colours mode the box has a border of `--ocelle-border-width` (1 px) and the marker is drawn in
@@ -736,7 +790,9 @@ gates and the README documentation test.
   hiding: while the host is `hidden`, no error is announced and changes of `error` are not announced on their own;
   removing `hidden` announces the error current at that moment once, politely, if it is non-empty, as an insertion
   does (the same rule as the notice's reveal, operator answer SPEC-1-10). A control revealed through a hidden
-  ancestor announces nothing (FR-008).
+  ancestor announces nothing (FR-008). Changes of `error` that follow each other by less than the announcement wait,
+  in one task or in different tasks, announce only the final text once, compared with the baseline when the wait
+  ends, as FR-008 rules for the notice (operator decision PLAN-FRESH-2-001 (a)).
 - **FR-028**: The error text is drawn in `--ocelle-color-danger` (meeting 4.5:1 on the main grounds) with a non-colour
   mark: the control's boundary becomes `--ocelle-color-danger` and `--ocelle-bar-width` (3 px) wide instead of
   `--ocelle-border-width`, so the error state is not shown by text colour alone. Both are existing tokens; this
@@ -798,7 +854,11 @@ gates and the README documentation test.
   `"true"` is supported for host `aria-invalid`, `aria-required` and `aria-disabled`, that a host `aria-label` must
   contain the visible label text, and that a host `aria-label` and `aria-description` also stay on the host's node;
   how announcements reach the tree (a separate live region holding a copy of the text, written after the
-  serialisation delay, and the delay); the mixed-form implicit-submission case (FR-030); the
+  serialisation delay, and the delay); the announcement wait, that changes closer together than it merge and that a
+  text changing more often than it is not announced until it stops (FR-008); how long a copy is held, that the figure
+  is not measured by the tree capture, and that a browse-mode user may meet the text twice for that time; that for a
+  `role="alert"` notice the insertion, reveal and change to `alert` are read through the platform's alert event, with
+  its source (FR-009); the mixed-form implicit-submission case (FR-030); the
   not-yet-upgraded state (Edge Cases); and, for htmx hosts, that the trigger is `hx-trigger="ocelle-form-input-change"`
   or `"ocelle-form-select-change"` (or `input`), since the native `change` event does not leave the shadow root and
   htmx's default trigger for an unknown element is `click`. A documentation test checks
@@ -813,7 +873,8 @@ gates and the README documentation test.
 - **Announcement**: one change of a live region's text to a new non-empty text with a politeness (polite or
   assertive), caused by an insertion, a reveal, a text change or a politeness change of an announcing notice, or by a
   new error text of a form control after first load, or by the insertion after parsing or the reveal of a form
-  control holding an error.
+  control holding an error. For a `role="alert"` notice, the insertion, reveal and change to `alert` are carried by
+  the platform's alert event instead (FR-009), which the tree measure does not count.
 - **Form control**: a form-associated element with a name, a value, a default value, a validity, a label, a
   description, an error text and a disabled state; the input adds a type and its native constraints, the select a list
   of options and option groups read from its children.
@@ -829,7 +890,11 @@ gates and the README documentation test.
   text, re-render, move, `announce` set later, change while hidden), for each supported host role row of FR-009. In
   the no-role row a politeness change is a tone change across politeness; in the `alert` and `status` rows, where the
   tone sets no politeness, it is a runtime role change from `alert` to `status` or the reverse (FR-008, "Live host
-  role at runtime"), and setting a live role at runtime counts with "`announce` set later".
+  role at runtime"), and setting a live role at runtime counts with "`announce` set later". Changes that follow each
+  other by less than the announcement wait count as one triggering change (FR-008, operator decision
+  PLAN-FRESH-2-001). In the `alert` row, insertion, reveal and the role change from `status` to `alert` count zero
+  live-region announcements, with the host's node having the role `alert`: they are carried by the platform's alert
+  event, not by a live region (FR-009, operator decision PLAN-FRESH-2-002).
 - **SC-003**: Over all combinations of these factors: `name` present or absent, `required` with an empty and with a
   non-empty value, `disabled` set or not, inside a `fieldset disabled` or not, and the state as set, after a form
   reset and after a history restore, the form data and validity flags of each form element equal those of a native

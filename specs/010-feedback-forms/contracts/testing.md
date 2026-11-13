@@ -11,8 +11,19 @@ afterwards, nested ones included, is observed from the moment it is attached. It
 `liveCapture.startDocument(url)` (fixture pages only) enables `Debugger` and `Accessibility`, installs the same
 recorder with `Page.addScriptToEvaluateOnNewDocument` and then navigates to `url`, so the recorder sees the document
 from its first node; every first-load assertion on fixture pages uses it. `liveCapture.stop()` waits until no
-mutation has happened for `2 × 350` ms and two further rendering updates have passed, takes a final snapshot, removes
-the recorder and returns the snapshot list.
+mutation has happened for the *quiet window* and two further rendering updates have passed, takes a final snapshot
+(which closes the last state at its time), removes the recorder and returns the snapshot list.
+`liveCapture.stop({ atLeast: ms })` first waits until `ms` have passed since the capture started, then applies the
+same rule; the hold scenario (spec User Story 1 scenario 13) uses it to see the copy emptied after `H`.
+
+The quiet window is derived from the capture's own figures, not fixed (PLAN-FRESH-2-004): the largest `W`
+(`2 × D` before load) + the minimum hold (the largest `W`) + the largest `D`, so 700 + 700 + 350 = 2100 ms at
+Chromium's figures, followed by the two rendering updates. That is longer than any designed gap between two mutations
+of an announcement (a trigger to the write, `W`; a write to a deferred trigger's emptying, at most `W`; R-02), so a
+write that comes `W` after a pre-load trigger or a first load is seen and then stays current until the final snapshot,
+for longer than `D`, and counts under both rules. In process the window is computed from the test `D` that
+`test/in-process.ts` gives both the element and the capture (research R-09, PLAN-FRESH-2-003 (a)). The hold `H` is
+not part of the window: emptying a copy is not an announcement.
 
 A snapshot is `{ at: number; frame: number; lifecycle: boolean; loaded: boolean; regions: { node: string; host:
 string | null; politeness: "polite" | "assertive"; text: string }[] }`: `at` is `performance.now()` in the page,
@@ -25,7 +36,7 @@ node id), `host` the id of the nearest `ocelle-*` host at or above it, and `text
 keeps the states that satisfy `rule`, then counts by the spec's definition (a region in two consecutive kept states
 whose text changed to a non-empty text). `"rendered"` keeps a state current in at least one lifecycle snapshot;
 `"settled"` keeps a rendered state that stays current for at least `D` (150 ms when `loaded`, 350 ms otherwise;
-Chromium `ax_object_cache_impl.cc`, research R-01). Every announcement assertion states its expected count once and
+Chromium `ax_object_cache_impl.cc`, research R-01; in process the test `D` of research R-09). Every announcement assertion states its expected count once and
 checks it under both rules (`expectAnnouncements(snapshots, expected)` asserts both, with no condition).
 
 Bounds: a step that pauses more than 2000 times, or runs longer than 5000 ms, fails with the assertion "capture
@@ -57,6 +68,15 @@ it is the same code over the page's CDP session. Both harnesses share `test/live
   (first load, research R-09). The capture is armed on the container before the call.
 - `drive.readyState(value)` (in process): makes `src/live.ts`'s `readyState` read return `value` for the step
   (T002 confirms the mechanism, research R-09).
+- `drive.after(ms)`: returns `ms` after the previous step's end, measured in the page, for the scenarios with
+  changes in different tasks a set time apart (spec User Story 1 scenario 13: 100 ms apart, 10 ms after a write).
+  Scenario bodies state these times as fractions of the `W` in force (100 ms is `W / 3` after load), so the
+  in-process run with the test `D` keeps the same relation.
+- Timing (in process only): `test/in-process.ts` calls `setAnnouncerTimingForTests` of `src/live.ts` before each
+  scenario with the one test constant that also sets the capture's `D` (research R-09). Fixture pages never call it.
+- `hostRole(id)`: the role of the host's own node in the last snapshot's tree, for the `alert` cells that count zero
+  live-region announcements (spec FR-009, SC-002), so that a zero count there also checks that the host is an
+  `alert` node.
 
 ## Forms
 
@@ -110,7 +130,13 @@ the `elements-browser` project the same way. Each phase records the plant run's 
 
 | Family | Plant | Must turn red |
 |---|---|---|
-| insertion announcement | announcer created already holding the text (no empty wait) | US1-8, US1-15 `alert` and `status` insertion and reveal, US2-20 |
+| insertion announcement | announcer created already holding the text (no empty wait) | US1-8, US1-15 `status` insertion and reveal, US2-20 |
+| alert path | writes the copy for a `role="alert"` host on insertion, reveal and a change to `alert` (PLAN-FRESH-2-002) | US1-15 and the SC-002 `alert` row: insertion, reveal and `status` → `alert` (count 0) |
+| merge window | no restart: each trigger writes after its own wait | US1-13 changes in different tasks 100 ms apart (count 1) |
+| minimum hold | a trigger during the hold empties the copy at once (PLAN-FRESH-2-001) | US1-13 change 10 ms after a write (the first copy counts under `"settled"`) |
+| baseline re-check | writes at the end of the wait without comparing with the baseline | US1-13 `A`, `B`, `A` within the wait (count 0) |
+| hold | empties the copy after `W` instead of `H` (PLAN-FRESH-2-005) | US1-13 hold scenario (copy settled for `H`) |
+| first load, late write | writes exactly the pre-load `W` after first load under `drive.readyState("loading")` (PLAN-FRESH-2-004) | US1-10 under `registerFirstLoad`, under both rules |
 | short-lived empty state | text written in a microtask after the announcer appears; text written in the first animation frame | US1-8 (`"settled"` count 0) |
 | first load | the constructor's `isConnected` rule of the first draft (research R-02) | US1-8 and US2-20 for `innerHTML`, `template` and `domparser` |
 | first load | announces on first load | US1-10 under `startDocument` and `registerFirstLoad`, US2-18 |

@@ -9,7 +9,9 @@ and, for phase 5, #10 (mission 006) merged on `main` with podman or docker avail
 2. Announcements: the notice and form-control suites print the captured announcements per scenario on failure; the
    counts must equal the spec's under both the `"settled"` and the `"rendered"` rule, including every cell of the
    table-driven SC-002 matrix in the notice suite (five tones × triggers and non-triggers × the no-role, `alert` and
-   `status` rows). The capture is described in `contracts/testing.md`. `test/plants.test.ts` shows every plant red
+   `status` rows; in the `alert` row insertion, reveal and `status` → `alert` count zero and check the host's `alert`
+   role, since the platform's alert event carries them). In process the announcer runs at the test `D` and `H` of
+   research R-09; the fixture pages run at Chromium's figures. The capture is described in `contracts/testing.md`. `test/plants.test.ts` shows every plant red
    with its expected assertion message; the runs are recorded in `reviews/phase-<n>/plants.md`.
 3. Forms: the native-twin suites compare `FormData`, submissions and validity with native controls and with the
    absolute outcomes of `contracts/testing.md` § Twins (SC-003).

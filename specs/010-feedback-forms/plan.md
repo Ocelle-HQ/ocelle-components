@@ -9,14 +9,16 @@
 Three elements in `@ocelle/elements`, written on mission 005's element conventions: `ocelle-notice` (five tones, a
 heading slot that leaves no box or gap when absent, a compact size, and announcements through a separate live region
 in its shadow root that receives a copy of the text after Chromium's accessibility serialisation delay, once per
-insertion, reveal, text or politeness change and never on first load), and two
+insertion, reveal, text or politeness change, with changes closer together than the wait merged, and never on first
+load; for `role="alert"` the platform's alert event carries insertion, reveal and a change to `alert`), and two
 form-associated controls, `ocelle-form-input` and `ocelle-form-select`, on one internal base class that takes part in
 forms through `ElementInternals` (value, validity mirrored from the native control, reset, history restore, fieldset
 disabling, external labels), names the inner control without an ID reference across the shadow root, and announces a
 host-set error politely through the same announcer. Announcements are measured by a new test capture that snapshots
 Chromium's accessibility tree on every mutation of the element and tags each snapshot with rendering updates and time,
 so only states that a serialisation can hand to assistive technology count (research R-01; re-measured by the T002
-spike). The plan reflects the operator's decisions at plan squad round 1 (`reviews/plan/round-1/refute.md`). Stories, baselines and axe follow #10's
+spike). The plan reflects the operator's decisions at plan squad rounds 1 and 2 (`reviews/plan/round-1/refute.md`,
+`reviews/plan/round-2/refute.md`). Stories, baselines and axe follow #10's
 design (`specs/006-storybook-workbench`, not yet merged) and are rechecked against it when #10 lands; implementation
 starts only after #10 is on `main` (operator wave planning).
 
@@ -43,8 +45,9 @@ README's floor list. Only Chromium is measured.
 **Project Type**: library (web components)
 
 **Performance Goals**: no measurable cost beyond one `MutationObserver` per notice, per select and per control with
-external labels, and one timer per pending announcement. An announcement reaches the tree `W` after its trigger
-(300 ms after load, 700 ms before; R-02) and its copy is held for `W`.
+external labels, and one timer per pending announcement. An announcement reaches the tree `W` after its last trigger
+(300 ms after load, 700 ms before; R-02) and its copy is held for `H` (5000 ms), or until the next announcement but
+at least `W`.
 
 **Constraints**: strict CSP (`default-src 'none'; script-src 'self'; style-src 'self'`), token-only styles, no ID
 reference across a shadow root, open shadow roots (006 FR-014, FR-027).
@@ -55,19 +58,19 @@ one token-record change (ink on state grounds).
 
 ## Constitution Check
 
-*GATE: checked before Phase 0 and re-checked after Phase 1 design. Result: passes, with the one tracked exception
-below (stories before #10 is not planned: implementation waits for #10).*
+*GATE: checked before Phase 0, re-checked after Phase 1 design and after plan squad round 2's fixes (rows III and
+VIII, and I for the internal setter). Result: passes, with the one tracked exception below (stories before #10 is not planned: implementation waits for #10).*
 
 | Principle | How this plan meets it |
 |---|---|
-| I. `ocelle-` names, no I/O, small interface, manifest | Tags `ocelle-notice`, `ocelle-form-input`, `ocelle-form-select`. Events `ocelle-form-input-change`, `ocelle-form-select-change` (`bubbles`, `composed`, `{ value }`), dispatched once per commit through one guarded path (R-05); the native composed `input` is the browser's own, not emitted by the element (FR-003). No I/O. Every public member is in `contracts/elements.md` and the generated manifest, which a phase-3 generator change makes carry the base class's members and `focus()`; observed standard attributes are documented, not declared (FR-034). Importing an element module defines that element and no other (R-07). |
+| I. `ocelle-` names, no I/O, small interface, manifest | Tags `ocelle-notice`, `ocelle-form-input`, `ocelle-form-select`. Events `ocelle-form-input-change`, `ocelle-form-select-change` (`bubbles`, `composed`, `{ value }`), dispatched once per commit through one guarded path (R-05); the native composed `input` is the browser's own, not emitted by the element (FR-003). No I/O. Every public member is in `contracts/elements.md` and the generated manifest, which a phase-3 generator change makes carry the base class's members and `focus()`; observed standard attributes are documented, not declared (FR-034). Importing an element module defines that element and no other (R-07). The test-only timing setter of `src/live.ts` is internal (not exported from `index.ts` or `browser.ts`, not in the manifest) and changes no public member (R-09). |
 | II. Tokens only, brand rules | Every value is a token (contracts list them, `icon-size` for the select's indicator included); widths `--ocelle-border-width` and `--ocelle-bar-width`, no new token. `--ocelle-color-rule` never marks a control boundary (FR-025). Ink, markers and placeholder contrast computed (R-04): all pass; ink-on-state-ground records added with every count that holds the required set. No monospace. |
-| III. Accessible by construction | No ID reference crosses a shadow root: names by `aria-labelledby` and descriptions by `aria-describedby` to `hidden` spans within the control's shadow root (no duplicate reading), external labels through `ElementInternals.labels`, observed so a changed label renames the control without a focus (R-05, measured). Host ARIA reaches the inner control for `"true"`; other host values, and a host `aria-label` without the visible label text (WCAG 2.5.3), are documented as not supported; a host `aria-label` and `aria-description` also stay on the host's node, pinned by a test (operator decisions, R-05). Focus ring, target size, forced colours (the error mark's width outside the not-forced-colours block), reduced motion (no motion used), an indicator that lets clicks through. Announcements designed in through a separate atomic announcer that never hides the visible or focusable content and writes after Chromium's serialisation delay (R-02, R-06), measured on the tree at serialisable states only (R-01). axe on every story via #10. |
+| III. Accessible by construction | No ID reference crosses a shadow root: names by `aria-labelledby` and descriptions by `aria-describedby` to `hidden` spans within the control's shadow root (no duplicate reading), external labels through `ElementInternals.labels`, observed so a changed label renames the control without a focus (R-05, measured). Host ARIA reaches the inner control for `"true"`; other host values, and a host `aria-label` without the visible label text (WCAG 2.5.3), are documented as not supported; a host `aria-label` and `aria-description` also stay on the host's node, pinned by a test (operator decisions, R-05). Focus ring, target size, forced colours (the error mark's width outside the not-forced-colours block), reduced motion (no motion used), an indicator that lets clicks through. Announcements designed in through a separate atomic announcer that never hides the visible or focusable content and writes after Chromium's serialisation delay (R-02, R-06), measured on the tree at serialisable states only (R-01). A copy is never emptied before it has been current for `W`, and is held for `H` so that a slow screen reader can still fetch it; `H` is a chosen figure the capture cannot prove, stated in the README (operator decision PLAN-FRESH-2-005 (b)). For `role="alert"`, insertion, reveal and a change to `alert` rely on Chromium's alert event instead of a copy, so no change is read twice; the event is cited from Chromium's source, not measured, and named in the README with the WebKit limit (operator decision PLAN-FRESH-2-002 (a)). Changes closer together than `W` merge, and a text changing faster than `W` is not announced until it stops, by operator ruling on FR-008 (PLAN-FRESH-2-001 (a)); the README says so. axe on every story via #10. |
 | IV. Strict CSP, offline | Adopted stylesheets only; browser scenarios on strict-CSP fixture pages loading only the browser build; the `csp` gate on built output. |
 | V. Storybook, behaviour tests | A story per variant and state in light and dark with baselines from #10's pinned container (R-08); interaction tests for both events and their payloads and every keyboard path (Enter submission, Tab, arrows on number and select). |
 | VI. Consumer-driven, own code | Needs from #9, spec-kitty-design #509 and #513 (through #9's wording, operator SPEC-1-09), kitty-mission-ui's 28 notices and 2 inputs, Kitty Desktop V2's lane and log filters (#15), the Ocelle console's server-rendered forms. Written from scratch. `tel`, `password`, `number`, `min`, `max`, `step` are a stated small addition (spec Assumptions). |
 | VII. Semver | All additions (MINOR): three elements, two events, their entry points; CHANGELOG entry (FR-036). The engine floor is not raised (R-03), so no consumer loses an engine; a feature found newer than the floor goes to the operator with its semver classification before it is used. The registration flag in `src/define.ts` and the icon drawing's move are internal. |
-| VIII. Test-first, non-vacuous | Each phase red first. Announcement scenarios count announcements, under both the `"settled"` and the `"rendered"` rule, from a capture armed before the step (on a container, following shadow roots as they attach, or from navigation for first load) and bounded so a loop fails as an assertion; its reading and counting functions have per-rule unit tests and planted readings (not mutated, reason in R-09). Each assertion family has a plant, run by `test/plants.test.ts` and recorded per phase (`contracts/testing.md`). Native-twin comparisons for forms also assert an absolute expected outcome (SC-003). Source mutated in process (R-09), first load and submission included through in-process paths; Timeout and CompileError on changed lines are reported, not failing (007), and every Timeout in `src/live.ts`, `src/define.ts` and `src/form-control.ts` is reviewed one by one; survivors are blocking. |
+| VIII. Test-first, non-vacuous | Each phase red first. Announcement scenarios count announcements, under both the `"settled"` and the `"rendered"` rule, from a capture armed before the step (on a container, following shadow roots as they attach, or from navigation for first load) and bounded so a loop fails as an assertion; its reading and counting functions have per-rule unit tests and planted readings (not mutated, reason in R-09). Each assertion family has a plant, run by `test/plants.test.ts` and recorded per phase (`contracts/testing.md`). Native-twin comparisons for forms also assert an absolute expected outcome (SC-003). Source mutated in process (R-09), first load and submission included through in-process paths; Timeout and CompileError on changed lines are reported, not failing (007), and every Timeout in `src/live.ts`, `src/define.ts` and `src/form-control.ts` is reviewed one by one; survivors are blocking. In process the announcer's `D` and `H` come from a test-only setter in `src/live.ts` that only `test/in-process.ts` calls (a `test/node/` test checks this), with the capture's `D` from the same constant, so the timing is shortened for element and oracle alike and the fixture pages prove the real figures (operator decision PLAN-FRESH-2-003 (a), R-09). stop()'s quiet window is derived from `W`, the minimum hold and `D`, so a late write cannot end a zero count vacuously (PLAN-FRESH-2-004); the merge, minimum-hold, re-check, hold, alert-path and late-write plants each turn a named scenario red. |
 | Licence and supply chain | No new dependency, no new third-party asset. |
 | Workflow gates | No new gate. #10's gates (`storybook-build`, `visual`, `axe`) are used as #10 lands them. |
 
@@ -98,11 +101,26 @@ below (stories before #10 is not planned: implementation waits for #10).*
 6. **Focused-state stories** use `autofocus`; #10 has no focus parameter, so this is rechecked when #10 lands (R-08).
 7. **Announcements through a separate region** (R-02; operator decisions PLAN-FRESH-1-001 (b) and
    PLAN-A11Y-SECURITY-1-002 (a)): a copy of the text is written into a visually hidden atomic live region `W` after the
-   trigger (300 ms after load, 700 ms before) and held for `W`, so a browse-mode user may meet the text twice within
-   that window (README). The host's node is kept from being a second live region by `internals.ariaLive = "off"`,
-   measured in T002; if Chromium does not honour it, the plan stops for the operator before phase 2.
+   last trigger (300 ms after load, 700 ms before) and held for `H` (5000 ms, or until the next announcement but at
+   least `W`), so a browse-mode user may meet the text twice within that window (README; operator decision
+   PLAN-FRESH-2-005 (b), which restates the cost accepted at round 1 as `W`). The host's node is kept from being a
+   second live region by `internals.ariaLive = "off"`, measured in T002; if Chromium does not honour it, the plan
+   stops for the operator before phase 2.
 8. **Select indicator drawn in the select** (R-07; operator decision PLAN-CORRECTNESS-1-003 (a)): the convention
    "importing the module defines that element and no other" stands unchanged.
+9. **Merging and the minimum hold** (R-02; operator decision PLAN-FRESH-2-001 (a), with spec FR-008, FR-027 and
+   SC-002 amended): a trigger while waiting restarts the wait, so changes less than `W` apart in any tasks announce
+   the final text once; the text is compared with the baseline when the wait ends; a trigger during the hold empties
+   the copy only once it has been current for `W`. A text changing more often than every `W` is not announced until
+   it stops (README).
+10. **The platform alert event** (R-02; operator decision PLAN-FRESH-2-002 (a), with spec FR-009 amended): for a host
+    `role="alert"`, insertion, reveal and a change to `alert` write no copy; Chromium's alert event
+    (`ax_event_generator.cc`) carries them. Not measured by the capture; the scenarios check a zero count and the
+    host's `alert` role.
+11. **Test-only timing in process** (R-09; operator decision PLAN-FRESH-2-003 (a)): `src/live.ts` exports an internal
+    setter for `D` and `H` used only by `test/in-process.ts`; fixture pages run at the real figures. T002 measures the
+    mutation dry run and a worst-case `src/live.ts` shard, and the plan stops for the operator if a shard exceeds
+    about 7 minutes.
 
 ## Project Structure
 
@@ -172,31 +190,45 @@ it; announcement timing in one internal helper used by the notice and the base c
      `reviews/phase-1/spike.md`: that a region written after `W` counts one under both rules and one written in a
      microtask or the first animation frame counts zero under `"settled"`; that `internals.ariaLive = "off"` keeps a
      `role="alert"` host from being a live region node; that the in-process first-load path (`registerFirstLoad`) and
-     the `readyState` drive work, naming any unreachable mutant; the bounds' figures and scenario times for the Stryker
-     timeout factor; the recorded `getFullAXTree` node lists the unit tests use. Stop for the operator if the
-     in-process run or the host-role measurement fails (decisions 1 and 7).
-   - not exempt: driver additions (`insert` per way, `laterTask`, `registerFirstLoad`, `drive.readyState`, form
+     the `readyState` drive work, naming any unreachable mutant; the test `D` for the in-process run (at least two
+     rendering updates, so the microtask and first-frame plants still count zero under `"settled"`) and that the
+     setter of decision 11 changes the element's and the capture's figures together; the bounds' figures and scenario
+     times for the Stryker timeout factor; with the test `D`, the `elements` project's dry-run time and a worst-case
+     shard (60 changed lines of `src/live.ts`) against the mutation shard's 10-minute limit
+     (`.github/workflows/ci.yml:84-89`), and the fixture-page suite's time at the real figures; the recorded
+     `getFullAXTree` node lists the unit tests use. Stop for the operator if the in-process run or the host-role
+     measurement fails (decisions 1 and 7), or if a shard exceeds about 7 minutes (decision 11).
+   - not exempt: driver additions (`insert` per way, `laterTask`, `registerFirstLoad`, `drive.readyState`,
+     `drive.after`, `hostRole`, `liveCapture.stop({ atLeast })` and the derived quiet window, form
      helpers with the in-process `submit` semantics, `blur`, `click` at a point, focus path) and `serve.ts`'s no-store
      route and submission recorder, each with a test that fails without it; `test/plants.test.ts` with its row format.
    - exempt: package `exports` entries and empty registrations are not added here; each phase adds its own.
 2. **User Story 1, `ocelle-notice`** (P1, MVP): tokens contrast records (R-04) with every file that holds the required
    set (`pairs.json`, the A.8 test, the summary-count tests, the `contrast.ts` comment), red first; the notice
-   scenarios 1 to 19 (8 and 9 once per way of inserting; 12 and 15 with the focused-link variants) and the **SC-002
+   scenarios 1 to 19 (8 and 9 once per way of inserting; 12 and 15 with the focused-link variants; 13 with the
+   changes in different tasks 100 ms apart (count 1), `A`, `B`, `A` within the wait (count 0), a change 10 ms after
+   a write (the first copy counts under `"settled"`, then the new text once) and the hold (the copy settled for `H`,
+   then emptied); 15 with the `alert` cells that count zero and check the host's `alert` role) and the **SC-002
    matrix**, a table-driven scenario body with one expected count per cell (five tones × triggers insertion, reveal,
    text change, politeness change, and non-triggers first load, same text, re-render, move, `announce` set later,
    change while hidden × the no-role, `alert` and `status` rows, with the politeness change and "`announce` set later"
-   read per row as SC-002 says), no conditional assertion, red first; then the registration flag in `src/define.ts`,
-   `src/live.ts` and `src/ocelle-notice.ts`; the notice's plants (`contracts/testing.md` § Plants) run and recorded in
-   `reviews/phase-2/plants.md`; the README floor list checked against the features used (no raise planned, R-03);
-   README section (the announcer, `W` and its source, the transient double reading, the host-role limit), manifest
-   regeneration, CHANGELOG line, entry point and its entry test.
+   read per row as SC-002 says; in the `alert` row insertion, reveal and `status` → `alert` expect zero live-region
+   announcements and the host's `alert` role, as SC-002 says), no conditional assertion, red first; then the
+   registration flag in `src/define.ts`, `src/live.ts` (with the test-only timing setter and the `test/node/` check of
+   its only caller) and `src/ocelle-notice.ts`; the notice's plants (`contracts/testing.md` § Plants) run and recorded
+   in `reviews/phase-2/plants.md`; the README floor list checked against the features used (no raise planned, R-03);
+   README section (the announcer, `W` and its source, the merging of changes closer than `W` and the starvation case,
+   the hold `H` as a chosen figure not measured, the double reading for up to `H`, the platform alert event for
+   `role="alert"` with its source and the WebKit limit, the host-role limit), manifest regeneration, CHANGELOG line,
+   entry point and its entry test.
 3. **User Story 2, `ocelle-form-input`** (P2): first, test first in `test/node/manifest.test.ts`, the manifest
    generator change (PLAN-CORRECTNESS-1-004): `scripts/manifest.ts` and `custom-elements-manifest.config.mjs` analyse
    `src/form-control.ts`, fold its members into each subclass's entry and drop the internal module from the output, so
    no new kind of source path appears (FR-034, #27); `focus()` is declared (an override with a description in the base
    class, or a normalisation step); the drop list of observed standard attributes gains `role`, `hidden`, `form`,
    `aria-invalid`, `aria-required`, `aria-disabled` and `aria-description`. Then scenarios 1 to 23 (20 once per way of
-   inserting; 21 with the mixed form) and the native twins with the absolute table (SC-003), red first; then
+   inserting; 21 with the mixed form), FR-027's merge (two `error` changes 100 ms apart count 1, `A`, `B`, `A` within
+   the wait count 0) and the native twins with the absolute table (SC-003), red first; then
    `src/form-control.ts` and `src/ocelle-form-input.ts`; the form and error plants run and recorded; README "Form
    controls" section (FR-020 to FR-028 items, host ARIA `"true"` only, `aria-label` with the visible label text, the
    host's duplicate name and description, the mixed-form limitation, htmx triggers, limitations), manifest, CHANGELOG,

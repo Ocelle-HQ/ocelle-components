@@ -24,7 +24,9 @@ Chromium (`AXObjectCacheImpl::GetDeferredEventsDelay()` in
 `third_party/blink/renderer/modules/accessibility/ax_object_cache_impl.cc`, main, read 2026-11-13:
 `kDelayForDeferredUpdatesAfterPageLoad` 150 ms, `kDelayForDeferredUpdatesBeforePageLoad` 350 ms; the capture takes
 the value for the page's load state when the state began). The capture holds its own copy of these figures; it does
-not read the element's.
+not read the element's. In process both the element and the capture take a shorter test value of `D` from one
+constant in `test/in-process.ts` (operator decision PLAN-FRESH-2-003 (a), R-09); fixture pages keep Chromium's 150
+and 350 ms.
 
 `announcements(snapshots, rule)` is a pure function: it keeps, per region node, only the states that satisfy `rule`
 (`"settled"` or `"rendered"`), then counts as the spec defines (a region in two consecutive kept states whose text
@@ -73,8 +75,8 @@ announcement code, and the plan stops for an operator decision before phase 2 (f
 
 ## R-02 How the notice announces
 
-**Decision** (operator decisions PLAN-FRESH-1-001 (b) and PLAN-A11Y-SECURITY-1-002 (a)). A *separate announcer
-region*: the visible content is never inside a live region and is never hidden from the tree; a copy of the notice's
+**Decision** (operator decisions PLAN-FRESH-1-001 (b) and PLAN-A11Y-SECURITY-1-002 (a); at plan squad round 2
+PLAN-FRESH-2-001 (a), PLAN-FRESH-2-002 (a) and PLAN-FRESH-2-005 (b)). A *separate announcer region*: the visible content is never inside a live region and is never hidden from the tree; a copy of the notice's
 text is written into a persistent, visually hidden live region after Chromium's serialisation delay.
 
 Shadow structure: `<div class="box tone-<tone> size-<size>">` (R-03) > `<div part="heading">` (with
@@ -90,19 +92,49 @@ visible content, so a write into the announcer would change two live regions (FR
 therefore sets `internals.ariaLive = "off"` (an `ElementInternals` default, not a host attribute; a host-written
 `aria-live` stays unsupported, FR-009), and the announcer is the one live region node in every supported row. That
 Chromium then reports the host's node with its role and without a live politeness is measured in T002; if it does not,
-the plan stops for the operator before phase 2. What a platform's alert event does for a `role="alert"` host on
-insertion is outside the capture (README, limits).
+the plan stops for the operator before phase 2.
+
+**The platform alert event** (PLAN-FRESH-2-002 (a)). `internals.ariaLive = "off"` does not stop Chromium's alert
+event: `ui/accessibility/ax_event_generator.cc` (main, read 2026-11-13) adds `Event::ALERT` in `OnRoleChanged` when
+the new role is an alert role (line 394), in `OnIgnoredChanged` when an alert node becomes unignored (lines 416-417)
+and for a created alert node (lines 1081-1082, before the live-region branch and without consulting live
+politeness); `IsAlert` in `ax_role_properties.cc` is `kAlert` and `kAlertDialog`. Screen readers voice that event with
+the node's content, here the visible notice. A copy written for the same change would be a second reading. So, for a
+host whose role is `alert`, the element writes no copy for an insertion after parsing, a reveal or a change of the
+host role to `alert` (from `status`, or added at runtime, with or without `announce`): it cancels any pending wait
+(a held copy is emptied once it has been current for `W`, step 1 below), sets the announcer's `aria-live` to
+`assertive` and sets the baseline to the current text and `assertive`. Text changes of an `alert` notice, and a role
+change from `alert` to `status`, go through the announcer as below. The capture cannot see the event, so the
+scenarios for these cells assert a zero count and that the host's node has the role `alert` (spec FR-009, SC-002);
+the README names the event, its source lines, that it is Chromium's behaviour (WebKit not measured) and that a later
+Chromium may change it. What the event does on first load (a server-rendered `role="alert"` notice) is not measured
+either, and the README says so.
 
 **Announcing** (the `Announcer` of `src/live.ts`, shared with R-06). With `W = 2 × D` and `D` the serialisation delay
 of R-01 for the document's current load state (150 ms once `document.readyState` is `"complete"`, 350 ms before, so
-`W` is 300 ms or 700 ms; source and figures in the README), an announcement:
+`W` is 300 ms or 700 ms; source and figures in the README), and the hold `H` = 5000 ms, an announcement:
 
-1. empties the announcer if it holds a copy, and sets its `aria-live` to the current politeness;
+1. if the announcer holds a copy, waits until that copy has been current for at least `W` (the *minimum hold*), then
+   empties the announcer; sets its `aria-live` to the current politeness;
 2. waits until the announcer has been live, shown and empty for `W` (a timer; a new trigger while waiting restarts
-   the wait, so several changes in one task, or close together, write only the final text);
-3. writes the notice's text as FR-008 defines it, computed from the DOM at that moment, as the copy;
-4. holds the copy for `W` and then empties the announcer, so the copy is in the tree only while it is being
-   announced; a trigger during the hold goes back to step 1.
+   the wait, so changes less than `W` apart, in one task or in different tasks, write only the final text: spec
+   FR-008 as amended by operator decision PLAN-FRESH-2-001 (a)); a text that keeps changing more often than every
+   `W` is therefore not announced until it stops (README);
+3. when the wait ends, computes the notice's text as FR-008 defines it and the politeness from the DOM at that
+   moment and compares them with the baseline: if both are equal (a text that went `A`, `B`, `A`), it writes nothing
+   and the announcer stays empty; otherwise it writes the text as the copy and sets the baseline to that text and
+   politeness;
+4. holds the copy for `H` and then empties the announcer; a trigger during the hold goes back to step 1, so the
+   copy is emptied no earlier than `W` after it was written (more than `D`, so at least one serialisation hands it
+   to assistive technology; PLAN-FRESH-2-001's lost announcement).
+
+`H` is a bounded hold set from the assistive-technology side, not from Chromium's serialisation delay (operator
+decision PLAN-FRESH-2-005 (b)): a Windows screen reader acts on the live-region event and then fetches the region's
+text out of process, and a busy or lagging screen reader may fetch it well after the next serialisation, so a copy
+emptied after `W` could be read as empty. No figure for that latency was measured or found for this plan, and the
+capture cannot measure it; 5000 ms is chosen as "several seconds", more than fifteen times `W` after load, and the
+README records it as a chosen figure that the tests do not prove. A scenario asserts that the copy stays current
+(settled) for `H` and is then emptied (spec User Story 1 scenario 13).
 
 Every announcement is therefore the whole text written into a region that has been empty across several rendering
 updates and serialisations, with `aria-atomic="true"` (PLAN-A11Y-SECURITY-1-003: an `aria-live` div is not atomic by
@@ -143,8 +175,10 @@ computes whether the assigned elements' text content is empty after whitespace c
 `hidden` (no box, no gap: the gap is the heading part's `margin-block-end`).
 
 **Costs, re-justified against the first draft's rejection of a separate region.** The first draft rejected a separate
-region because it "reads the text twice". That cost is accepted and bounded: the copy exists only for `W` around each
-announcement, so a browse-mode user meets the text twice only within that window (README); the element computes the
+region because it "reads the text twice". That cost is accepted and bounded: the copy exists for at most `H` (5 s)
+after each announcement, or until the next announcement's step 1 (no earlier than `W`), so a browse-mode user meets
+the text twice only within that window (README; the bound was `W` before PLAN-FRESH-2-005 and is restated for the
+operator with that decision); the element computes the
 text itself, which FR-008 defines on the DOM side precisely enough to do so (spec "What 'announced' means here": for
 the content FR-008 names, the tree reading equals that text). Announcements reach the tree `W` after the trigger
 (300 ms after load). The alternative of hiding the visible content from the tree while the copy is read was rejected:
@@ -155,7 +189,11 @@ lifecycle and coalesced by the serialisation delay (PLAN-FRESH-1-001, PLAN-A11Y-
 withholding for longer than `2 × D` (operator option (a) of PLAN-FRESH-1-001, declined): reaches AT, but leaves the
 focused-link failure of PLAN-A11Y-SECURITY-1-002 and hides focusable content for 300 ms or more. A double
 `requestAnimationFrame` withhold: still inside one serialisation window. `aria-live` on the host through
-`ElementInternals.ariaLive`: the host's subtree holds the visible content, so it needs withholding too.
+`ElementInternals.ariaLive`: the host's subtree holds the visible content, so it needs withholding too. At plan squad
+round 2 the operator declined: queueing triggers so that each change in a different task is announced in turn
+(PLAN-FRESH-2-001 (b)); keeping the copy until the next announcement as the CDK `LiveAnnouncer` does by default
+(PLAN-FRESH-2-005 (a)); and keeping the copy for `role="alert"` and documenting the double reading
+(PLAN-FRESH-2-002 (b)).
 
 ## R-03 Notice styles
 
@@ -299,7 +337,8 @@ PLAN-A11Y-SECURITY-1-006, declined): departs from native accname precedence.
 announcement goes through the same `Announcer` of `src/live.ts` as the notice (R-02): a sibling
 `<div class="announcer" aria-live="polite" aria-atomic="true">` in the control's shadow root, visually hidden,
 present and empty from the first render, into which the normalised error text is written after the wait `W` and
-emptied after the hold `W`. It triggers on insertion after parsing (not a move, not first load) when `error` is
+emptied after the hold `H`, with the same restart, baseline re-check and minimum hold as R-02 (spec FR-027 as amended
+by PLAN-FRESH-2-001 (a)). It triggers on insertion after parsing (not a move, not first load) when `error` is
 non-empty, on reveal of the host when `error` is non-empty, and when `error` changes to a non-empty normalised text
 that differs from the baseline. The element normalises the error text (collapse, trim) before rendering and comparing
 it, so a whitespace-only difference changes nothing; clearing it resets the baseline to empty, cancels a pending
@@ -380,8 +419,24 @@ the request body; the in-process run is what Stryker uses for the implicit-submi
 CompileError mutant on a changed line is reported and does not fail the gate, and a survivor in new code is a blocking
 review finding unless the review records it as equivalent. Because `gates/lib/mutation/report.ts:72` counts Timeout as
 passing, every Timeout in `src/live.ts`, `src/define.ts` and `src/form-control.ts` is reviewed one by one in the phase
-review, and the capture's bounds (R-01) make a looping mutant fail as an assertion (PLAN-TESTABILITY-1-009). The
-waits `W` run in real time; the Stryker timeout factor is set from T002's measured scenario times.
+review, and the capture's bounds (R-01) make a looping mutant fail as an assertion (PLAN-TESTABILITY-1-009).
+
+**Timing in process** (operator decision PLAN-FRESH-2-003 (a)). At Chromium's figures every announcing cell costs at
+least `W` plus stop()'s quiet window (2100 ms at Chromium's figures, `contracts/testing.md`), about 2.4 s, so the SC-002 matrix
+alone would take several minutes in Stryker's dry run and again for every surviving or equivalent mutant
+(`coverageAnalysis: perTest`), against the mutation shard's 10-minute limit (`.github/workflows/ci.yml:84-89`; specs
+001 FR-013, whose records show shards at 9:49 and 670 s). `src/live.ts` therefore exports, from the internal module
+only (not from `index.ts` or `browser.ts`, not in the manifest), a test-only setter `setAnnouncerTimingForTests({
+delayLoaded, delayLoading, hold })` that replaces `D` (both load states) and `H`; `W` and the minimum hold stay
+`2 × D`. Only `test/in-process.ts` calls it, before each scenario, from one constant that also gives the capture's
+`"settled"` rule and stop()'s quiet window their in-process `D` (R-01), so the element and the oracle use the same
+figure while the oracle keeps its own copy. The test `D` is chosen in T002 and is at least two rendering updates long,
+so the microtask and first-frame plants still count zero under `"settled"`. Fixture pages never call the setter and
+run at Chromium's 150 and 350 ms and the real `H`; they are the evidence that the real figures work. A test in
+`test/node/` checks that the setter is called only from `test/in-process.ts` (no `src/` module, no fixture page). T002 measures, with
+the test `D`, the `elements` project's dry run and a worst-case shard (60 changed lines of `src/live.ts`, the largest
+entry specs 001 FR-013 allows), and the fixture-page suite at real figures; if a shard exceeds about 7 minutes, the
+plan stops for the operator before phase 2. The Stryker timeout factor is set from the same measurement.
 
 **The oracle** (PLAN-TESTABILITY-1-008). The reading `regionText()` and the counting `announcements()` are pure
 functions in `test/live-reading.ts`, unit-tested per rule (StaticText taken; `img` name taken and its descendants not

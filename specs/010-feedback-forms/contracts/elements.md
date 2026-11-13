@@ -15,8 +15,11 @@ and the browser build define all three.
 Slots: `heading`, default (body). Parts: `heading`, `body`. Events: none. CSS custom properties: none.
 Documented, not declared: host `role` (`alert`, `status` supported as live roles; `log`, other live roles and host
 `aria-live`/`aria-atomic`/`aria-relevant` not supported), host `hidden`. Announcements go through a visually hidden
-live region in the shadow root that holds a copy of the text for `W` (300 ms after load, 700 ms before) after a wait
-of `W` (research R-02); the README states both figures and their source.
+live region in the shadow root that holds a copy of the text for `H` (5000 ms, or until the next announcement but at
+least `W`) after a wait of `W` (300 ms after load, 700 ms before), which changes closer together than `W` restart
+(research R-02); for a host `role="alert"`, insertion, reveal and a change to `alert` are left to the platform's
+alert event and write no copy. The README states the figures, their sources, the starvation case and the alert event.
+`src/live.ts`'s test-only timing setter is internal and not part of this surface (research R-09).
 Tokens read: `color-<tone>`, `color-<tone>-bg`, `color-ink`, `radius-row`, `bar-width`, `border-width`, `space-1` to
 `space-4`, `font-size-subhead`, `font-size-sm`, `font-weight-strong`, `line-height-tight`, `line-height-compact`.
 
