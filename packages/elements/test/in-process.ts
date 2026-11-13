@@ -179,5 +179,6 @@ export function inProcessDriver(): Driver {
       });
     },
     messages: () => Promise.resolve([...messages]),
+    viewport: () => Promise.reject(new Error("not implemented")),
   };
 }

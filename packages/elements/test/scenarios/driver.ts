@@ -144,4 +144,11 @@ export interface Driver {
   sheets(selector: string): Promise<Sheets>;
   /** The console messages and uncaught errors the page reported since the last `mount`. */
   messages(): Promise<string[]>;
+  /**
+   * Sets the page's viewport to `width` × `height` CSS px and waits for a frame: in process the test's iframe
+   * (`vitest/browser`'s `page.viewport`, whose default is 414 × 896), on the fixture pages the page itself
+   * (`page.setViewportSize`, 1280 × 800 when the page opens). A frame scenario sets its frame's viewport before it
+   * mounts (009 research.md R-17).
+   */
+  viewport(width: number, height: number): Promise<void>;
 }
