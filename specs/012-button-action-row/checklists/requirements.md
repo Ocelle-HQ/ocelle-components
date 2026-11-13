@@ -38,3 +38,9 @@
   FR-022).
 - Source issues of spec-kitty-design (#493, #495, #501, #504 row part, #508, #518, #525, #528, #532) were not read in
   full; #7's summaries are the requirement, and the assumptions name where exact figures were inferred.
+- Spec check 1 (2026-11-13): the six blocking findings were fixed and the four operator questions answered by the
+  operator (human:jeroennouwsdev) and recorded in the spec header (FR-012, FR-031, FR-033, FR-009 and FR-037). The
+  items above were re-checked after the fixes: "not activated" now names its observables and leaves capture-phase
+  listeners out (testable); the name order follows Accessible Name 1.2 with a scenario for the conflict; row contrast
+  has its own requirement (FR-042); flush alignment, row minimum height and modifier clicks have measurable
+  scenarios. See `reviews/spec/check-1-fixes.md`.
