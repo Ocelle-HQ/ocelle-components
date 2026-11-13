@@ -150,11 +150,14 @@ Settled in the squad's round 3 (18 by the operator at the fork, 19 and 20 confir
     element is left out (squad round 3 verify 1).
 19. **Slotted close watchers** (R-02): while a slotted `popover="auto"`/`"hint"` element, a native `<dialog>` shown
     modally from slotted content, or a non-modal `<dialog>` opened with `show()` whose `closedby` state is Close
-    Request or Any is open, the overlay neither prevents nor requests on Escape and handles no Tab for a nested
-    modal; the platform closes that element alone. A slotted non-modal `<dialog>` opened by the `open` attribute, or
-    with `show()` and `closedby` absent or `none`, is not above the overlay and is ordinary content: Escape requests
-    the overlay's close and leaves it open, and Tab treats its content as ordinary stops (squad round 3 verify 1 and
-    verify 2).
+    Request or Any is open, the overlay neither prevents nor requests on Escape, and it handles no Tab while the
+    popover or the nested modal dialog is open (a non-modal dialog keeps R-04's Tab); the platform closes that
+    element alone. A slotted non-modal `<dialog>` opened by the `open` attribute, or with `show()` and `closedby`
+    absent or `none`, is not above the overlay and is ordinary content: Escape requests the overlay's close and
+    leaves it open, and Tab treats its content as ordinary stops. Because the overlay cannot tell `show()` from the
+    attribute, an attribute-opened dialog with `closedby` `closerequest` or `any` gets its first Escape through the
+    prevented cancelable `cancel` (one request), and later presses through the keydown path (squad round 3 verify 1,
+    verify 2 and verify 3).
 20. **Drawer body fills its column** (R-18): the footer sits at the panel's end; the drawer has its own one-line-body
     row instead of the dialog's 132 px one.
 

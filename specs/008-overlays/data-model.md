@@ -49,9 +49,14 @@ closed ──(reconnected)──▶ closed         (the host sets open = true to
   the `<dialog>` closes or the host disconnects. Only the top acts on Escape and Tab (R-02, R-04), and only while no
   other close watcher above it (an open `popover="auto"`/`"hint"` element, another `<dialog>` that is `:modal`, or a
   non-modal `<dialog>` opened with `show()` whose `closedBy` is `closerequest` or `any`) is in its flat tree (a
-  non-modal `<dialog>` opened by the `open` attribute, or with `closedBy` `auto`/`none`, is ordinary content);
-  while one is, the overlay stands aside on Escape and the platform handles the key, though R-04 keeps handling Tab
-  for a non-modal dialog (R-02). The top also handles Escape and Tab
+  non-modal `<dialog>` opened by the `open` attribute, or with `show()` and `closedBy` `auto`/`none`, is ordinary
+  content); while one is, the overlay stands aside on Escape and the platform handles the key, and R-04 handles no
+  Tab while a popover or modal dialog is open but keeps handling Tab for a non-modal dialog (R-02). The overlay
+  cannot tell `show()` from the `open` attribute, so it first stands aside for any open non-modal dialog with an
+  explicit `closedBy` of `closerequest` or `any`; if that press then fires a cancelable `cancel` on its own
+  `<dialog>` (the dialog was opened by the attribute), the overlay prevents it, requests once with `escape` and
+  records that dialog as no close watcher until its next `toggle` or `close`, so later presses take the keydown
+  path (R-02). The top also handles Escape and Tab
   whose deep active element is the document body, from a `document` listener (R-02). Opening an overlay first hides
   the shown tooltip bubble, if any (R-10).
 - **Tab** (hybrid, operator decision PLAN-FRESH-3-001 (a)): the top overlay handles a Tab or Shift+Tab explicitly only
