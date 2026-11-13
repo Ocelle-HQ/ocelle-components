@@ -14,7 +14,9 @@ and the browser build define all three.
 
 Slots: `heading`, default (body). Parts: `heading`, `body`. Events: none. CSS custom properties: none.
 Documented, not declared: host `role` (`alert`, `status` supported as live roles; `log`, other live roles and host
-`aria-live`/`aria-atomic`/`aria-relevant` not supported), host `hidden`.
+`aria-live`/`aria-atomic`/`aria-relevant` not supported), host `hidden`. Announcements go through a visually hidden
+live region in the shadow root that holds a copy of the text for `W` (300 ms after load, 700 ms before) after a wait
+of `W` (research R-02); the README states both figures and their source.
 Tokens read: `color-<tone>`, `color-<tone>-bg`, `color-ink`, `radius-row`, `bar-width`, `border-width`, `space-1` to
 `space-4`, `font-size-subhead`, `font-size-sm`, `font-weight-strong`, `line-height-tight`, `line-height-compact`.
 
@@ -39,9 +41,11 @@ Tokens read: `color-<tone>`, `color-<tone>-bg`, `color-ink`, `radius-row`, `bar-
 | `focus()` | method | `(options?: FocusOptions) => void` | |
 
 Parts: `label`, `control`, `description`, `error`. Slots: none. CSS custom properties: none.
-Documented, not declared: the `form` attribute, host `aria-label` (names the control), host `aria-invalid`,
-`aria-required`, `aria-disabled`, `aria-description` (combined as research R-05 says), host `aria-labelledby` and
-`aria-describedby` (not supported).
+Documented, not declared: the `form` attribute, host `aria-label` (names the control; with a visible label drawn it
+must contain the visible label text, otherwise not supported; it also stays on the host's node), host `aria-invalid`,
+`aria-required`, `aria-disabled` (combined for the value `"true"` only; any other value not supported),
+`aria-description` (added to the description; it also stays on the host's node), as research R-05 says; host
+`aria-labelledby` and `aria-describedby` (not supported).
 Tokens read: `color-sheet`, `color-control-border`, `color-ink`, `color-ink-muted`, `color-danger`, `color-focus`,
 `color-disabled-bg`, `color-disabled-ink`, `border-width`, `bar-width`, `radius-2`, `target-min`, `focus-width`,
 `focus-offset`, `font-size-sm`, `font-weight-strong`, `line-height-normal`, `space-1`, `space-2`, `space-3`.
@@ -60,7 +64,10 @@ Events: `ocelle-form-input-change`, `CustomEvent<{ value: string }>`, `bubbles`,
 
 ## `ocelle-form-select`
 
-Options from light-DOM `<option>` and `<optgroup>` children. A host `value` attribute is ignored.
+Options from light-DOM `<option>` and `<optgroup>` children. A host `value` attribute is ignored. The open-list
+indicator is drawn in the select's own shadow root from the shared set's `chevron-down` (research R-07); importing
+the module defines `ocelle-form-select` and no other element.
+Tokens read, in addition to the shared list: `icon-size` (the indicator).
 Events: `ocelle-form-select-change`, `CustomEvent<{ value: string }>`, `bubbles`, `composed`; the native composed
 `input` reaches the host.
 

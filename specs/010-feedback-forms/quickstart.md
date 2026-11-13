@@ -7,9 +7,14 @@ and, for phase 5, #10 (mission 006) merged on `main` with podman or docker avail
    `pnpm run gate:unit-tests` (projects `elements` and `elements-browser`). Expected: every scenario of
    spec User Stories 1 to 3 passes; zero CSP violations (SC-001).
 2. Announcements: the notice and form-control suites print the captured announcements per scenario on failure; the
-   counts must equal the spec's (SC-002). The capture is described in `contracts/testing.md`.
-3. Forms: the native-twin suites compare `FormData`, submissions and validity with native controls (SC-003).
-4. Tokens: `pnpm run gate:contrast` passes with ink on the five state grounds added (research R-04).
+   counts must equal the spec's under both the `"settled"` and the `"rendered"` rule, including every cell of the
+   table-driven SC-002 matrix in the notice suite (five tones × triggers and non-triggers × the no-role, `alert` and
+   `status` rows). The capture is described in `contracts/testing.md`. `test/plants.test.ts` shows every plant red
+   with its expected assertion message; the runs are recorded in `reviews/phase-<n>/plants.md`.
+3. Forms: the native-twin suites compare `FormData`, submissions and validity with native controls and with the
+   absolute outcomes of `contracts/testing.md` § Twins (SC-003).
+4. Tokens: `pnpm run gate:contrast` passes with ink on the five state grounds added in `source.ts` and `pairs.json`,
+   and the gate tests' required-set counts read 154 and 165/173/154 (research R-04).
 5. Manifest and docs: `pnpm --filter @ocelle/elements run manifest`, then `pnpm run gate:manifest`; the README test
    in `test/node/readme.test.ts` (SC-006).
 6. Built output: `pnpm --filter @ocelle/elements run build`, then `pnpm run gate:csp` and `pnpm run gate:prefix`.
