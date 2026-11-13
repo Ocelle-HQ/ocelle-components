@@ -7,10 +7,42 @@
 import type { CDPSession, Page } from "playwright";
 import type { BrowserCommandContext } from "vitest/node";
 
-/** One unignored accessibility node: its role and its computed name. */
+/** One unignored accessibility node: its role and its computed name, and its level where it has one (a heading's). */
 export interface AxNode {
   readonly role: string;
   readonly name: string;
+  readonly level?: number;
+}
+
+/** A box relative to the viewport. */
+export interface Rect {
+  readonly x: number;
+  readonly y: number;
+  readonly width: number;
+  readonly height: number;
+}
+
+/**
+ * The deep active element (011 research.md R-13): the focused element found through open shadow roots, by its local
+ * name and `id` (the empty string when it has none), with the `id` (or, without one, the local name) of each shadow
+ * host on the way to it, outermost first. With nothing focused it is the `body`.
+ */
+export interface ActiveElement {
+  readonly name: string;
+  readonly id: string;
+  readonly hosts: readonly string[];
+}
+
+/**
+ * One text node under an element (011 research.md R-13): its data, the box of its text (a `Range` over it), the
+ * ancestors in the flat tree whose computed `overflow` clips, each by its `id` or, without one, its local name, nearest
+ * first, and whether a line of the text reaches outside the padding box of one of them.
+ */
+export interface TextBox {
+  readonly text: string;
+  readonly box: Rect;
+  readonly clippers: readonly string[];
+  readonly clipped: boolean;
 }
 
 /** The forced-colours modes and the system palettes the tests emulate. */
@@ -176,5 +208,11 @@ declare module "vitest/browser" {
     axTree: (id: string, scope?: AxScope) => Promise<AxNode[]>;
     /** Emulates forced colours with a system palette, or ends the emulation with `"none"`. */
     emulateForcedColors: (mode: ForcedColors, palette?: Palette) => Promise<void>;
+    /** The scrolling width of the test frame's document (`document.scrollingElement.scrollWidth`). */
+    scrollWidth: () => Promise<number>;
+    /** The focused element of the test frame through open shadow roots. */
+    activeElement: () => Promise<ActiveElement>;
+    /** Each text node with non-whitespace data under the element with `id`, in flat-tree order. */
+    textBoxes: (id: string) => Promise<TextBox[]>;
   }
 }
