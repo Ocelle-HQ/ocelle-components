@@ -306,13 +306,17 @@ The earlier claim that the floor raise "touches no consumer today" is withdrawn:
 distribution's WebKitGTK and on macOS WKWebView, and their minimum versions are not recorded in this repository
 (README § Engines: WebKit is not measured). Before the operator takes plan decision 1, kitty-mission-ui is asked for
 its WebKitGTK and WKWebView minimums; the answer is recorded here. **Status** (analysis U1, operator decision Q2 (c),
-2026-11-13): decision 1 stays open, and the stop at T064 stays. The operator asks kitty-mission-ui for its minimums
-first. If the operator then confirms the floor, phase 4 implements the custom states (T064, T066, T067). If not, phase 4
+2026-11-13; stop placement: second analysis U1, operator decision Q3 (b)): decision 1 stays open. The operator asks
+kitty-mission-ui for its minimums first. Phase 4 stops for the answer before it starts, before T060 (task T059a), and
+the answer is recorded here. If the operator then confirms the floor, phase 4 implements the custom states (T064, T066, T067). If not, phase 4
 implements the row attributes instead (T062a, T064a, T066a, T067a), and the package floor stays Chromium 120 / WebKit
 16.4. Under the alternative, the parent writes `data-ocelle-row-start`, `data-ocelle-row-end`, `data-ocelle-first-row`
 and `data-ocelle-last-row` on segment hosts. These attributes are element-owned and overwritten on every regroup. The
 segment's own CSS reads them (`:host([data-ocelle-row-start])` and so on), and no internal method is called on the
-segment. The shared-line, focus-ring and timing rules above are the same for both designs. Only the selector that rounds
+segment. The row attributes are internal: they are not manifest attributes, not part of the public surface and not a
+styling hook (hosts must not select on them), and their names and values may change in a PATCH release. The README
+says so (T064a, T067a; contracts/elements.md § `ocelle-segmented-choice`; second analysis U2). The shared-line,
+focus-ring and timing rules above are the same for both designs. Only the selector that rounds
 the corners differs. The same request carries R-07's user-activation question (a clipboard write from the deferred copy
 request in WKWebView and WebKitGTK; PLAN-FRESH-2-004 (a)), also put to the console owners.
 
@@ -594,7 +598,8 @@ phase's red commit; the baselines are produced in the green commit (a capture of
 meaningless).
 
 **Recheck.** Phase 1's first task first merges `origin/main` (`3828d2f` or later) into the branch as a recorded merge
-commit (analysis I1, operator decision Q1 (a)), then compares this plan with #10 as merged: the gate ids, the story id
+commit (analysis I1, operator decision Q1 (a)); the implementer makes it before `base.sh 1`, as an exception to
+`/speckit-story-implement`'s step 2 for phase 1 only (second analysis I1, operator decision Q1 (b)). It then compares this plan with #10 as merged: the gate ids, the story id
 scheme, the pointer and focus parameters, the baseline command, the contributor note (006 FR-025) and
 `contracts/gates.md` / `contracts/container.md`. Differences are fixed in the plan and tasks before phase 2's red commit
 (FR-053).

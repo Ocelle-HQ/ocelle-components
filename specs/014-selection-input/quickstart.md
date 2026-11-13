@@ -1,8 +1,9 @@
 # Quickstart: validating 014
 
-Prerequisites: #10 (Storybook workbench) merged into the branch (operator decision Q3 (c)). Task T001 does this: it
-merges `origin/main` (`3828d2f` or later) as one recorded merge commit before phase 1's base, then rechecks the plan
-(operator decision Q1 (a), plan.md "How #10 reaches this branch"). Then `pnpm install --frozen-lockfile`;
+Prerequisites: #10 (Storybook workbench) merged into the branch (operator decision Q3 (c)). Task T001 does this: the
+implementer merges `origin/main` (`3828d2f` or later) as one recorded merge commit before phase 1's base (before
+`base.sh 1`, an exception to `/speckit-story-implement`'s step 2 for phase 1 only), then rechecks the plan (operator
+decisions Q1 (a) and, second analysis, Q1 (b); plan.md "How #10 reaches this branch", "Who merges, and when"). Then `pnpm install --frozen-lockfile`;
 `export OCELLE_CHROMIUM_PATH=/opt/pw-browsers/chromium-1243/chrome-linux64/chrome` in this container (CI uses
 Playwright's own Chromium). Run one heavy job at a time.
 

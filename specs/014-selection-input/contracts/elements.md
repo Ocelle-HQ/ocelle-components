@@ -98,11 +98,13 @@ and panels are not rendered.
 
 Roles `toolbar` (horizontal orientation, operator decision PLAN-A11Y-SECURITY-1-008 (a)) / `button` with
 `aria-pressed`. Custom states on segments for joined rows, set through a feature-checked internal method (R-06):
-internal, not manifest surface. This holds if the operator confirms plan decision 1. If not (the stop at T064,
-operator decision Q2 (c)), the parent writes `data-ocelle-row-start`, `data-ocelle-row-end`, `data-ocelle-first-row`
+internal, not manifest surface. This holds if the operator confirms plan decision 1. If not (the stop before phase 4, T059a;
+operator decisions Q2 (c) and, second analysis, Q3 (b)), the parent writes `data-ocelle-row-start`, `data-ocelle-row-end`, `data-ocelle-first-row`
 and `data-ocelle-last-row` on segment hosts instead. These attributes are element-owned and overwritten on every
-regroup, like the state attributes of R-01. They are not manifest attributes, and the README documents them as
-element-owned (R-06 Status).
+regroup, like the state attributes of R-01. They are internal: not manifest attributes, not part of the
+public surface (constitution I, VII) and not a styling hook, so hosts must not select or style on them, and their
+names and values may change in a PATCH release. The README documents them as element-owned and states exactly this,
+and the readme test checks it (T064a, T067a; R-06 Status; second analysis U2).
 
 ## `ocelle-copy-field`
 
@@ -197,6 +199,7 @@ recorded in `reviews/phase-N/plants.md` (research R-11).
 | an empty listbox has no tab stop (Edge Cases) | the empty listbox is exposed as a named listbox; one appended option then takes the tab stop | `tabindex="0"` on the host or `part="list"` with no options | `<ocelle-listbox label="Folders">` with no options, a real Tab from a button before it to a button after it |
 | a long child label is not truncated and the page does not scroll sideways (Edge Cases, SPEC-1-15; option, tab, segment) | the child's block size grows and its whole text is in the tree | `white-space: nowrap` or `text-overflow: ellipsis` on the child | 320 px viewport, a label longer than the parent's inline size, page scroll width read |
 | host `hidden` leaves no box and no node (Edge Cases; all five controls) | the same element without `hidden` has a box and a node | a `display` rule on `:host` that overrides `:host([hidden])` | `hidden` set on the element, then removed |
+| a disabled child shows no hover paint (Edge Cases "Hover", R-15; option, tab, segment; second analysis G1) | an enabled sibling under the pointer shows the `hover-bg` fill (and, for a joined segment, `accent-strong` lines) | a `:host(:hover)` rule with no disabled exclusion | a real pointer move onto a disabled option, tab or segment, then on an enabled sibling; computed background and, for the joined segment, the pixel run across its lines read under each |
 | a second definition does not replace the first (Edge Cases, two copies of the package; every new element) | the element defined by the first copy works as specified | `define` without the "already defined" check | a second class registered under the same tag after the first; no exception, the first class's instance still exposed |
 | a `status` attribute is not reflected after the element clears `status` (Edge Cases, FR-042) | the property reads `""` after the clear | reflecting `status` | `status` written as an attribute in the markup, then a request |
 | joined, row attributes (only if plan decision 1 is not confirmed): host-written row attributes do not stay (R-06 Status) | the measured radii per row | writing the row attributes only when absent | a host writes `data-ocelle-row-start` on a middle segment; read after the next regroup |

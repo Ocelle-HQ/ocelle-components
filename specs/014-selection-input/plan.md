@@ -11,11 +11,26 @@ of check 3, 2026-11-13).
 merged into this branch. #10 merged on `main` as `3828d2f` on 2026-11-13. This plan writes stories, baselines and axe
 against #10's final design.
 
-**How #10 reaches this branch** (analysis I1, operator decision Q1 (a)). Phase 1's first task, T001, merges
-`origin/main` (`3828d2f` or later) into `claude/014-selection-input` as one recorded merge commit
-(`git merge --no-ff --signoff origin/main`, not a rebase and not a squash). It then rechecks the plan against #10 as
-merged (FR-053, research R-12). This is the only merge of `main` during the run. `/ocelle-land` merges `main` again at
-landing, as it does for every feature.
+**How #10 reaches this branch** (analysis I1, operator decision Q1 (a); who and when: second analysis I1, operator
+decision Q1 (b)). Phase 1's first task, T001, merges `origin/main` (`3828d2f` or later) into
+`claude/014-selection-input` as one recorded merge commit (`git merge --no-ff --signoff origin/main`, not a rebase and
+not a squash). It then rechecks the plan against #10 as merged (FR-053, research R-12). This is the only merge of
+`main` during the run. `/ocelle-land` merges `main` again at landing, as it does for every feature.
+
+**Who merges, and when.** The implementer (`implementer-ivan`, delegated "implement phase 1") makes the T001 merge,
+and makes it before `/speckit-story-implement`'s step 2 (`base.sh 1`). This is an exception to that procedure's order
+for phase 1 only (operator decision Q1 (b) of the second analysis). `base.sh` writes `base.sha` only when it is absent,
+so the order decides phase 1's base: merge first, then `base.sh 1`, so `reviews/phase-1/base.sha` is the merge commit.
+The orchestrator's "implement phase 1" delegation carries this note (tasks.md, Phase 1 "Delegation note"):
+
+> Phase 1 only, exception to `/speckit-story-implement` (operator decision Q1 (b), second analysis): do T001 (1), the
+> recorded merge of `origin/main` (`git merge --no-ff --signoff origin/main`, `3828d2f` or later), before the
+> procedure's step 2. Run `base.sh 1` only after the merge commit exists, so `reviews/phase-1/base.sha` is the merge
+> commit. If `reviews/phase-1/base.sha` already exists and is not the merge commit, stop and ask. Then continue with
+> the procedure from step 2.
+
+If the merge were made after `base.sh 1`, the merge would lie inside phase 1's range: its fold would fail
+(`fold-history.sh` refuses a range with a merge) and its review diff and mutation base would cover all of #10.
 
 **The phase folds and the T001 merge.** `/ocelle-run`'s fold step (step 4.3) needs a history with no merge commits:
 `fold-history.sh` refuses a range `FB..HEAD` that contains one. So every fold base for this feature starts after the
@@ -26,9 +41,15 @@ T001 merge:
   commit. Every fold range `FB..HEAD` therefore holds no merge commit.
 - No fold rewrites or drops the merge commit. Every fold keeps it, with `origin/main`'s history under it, as the
   common base of the folded history.
-- Step 4.3.1's "no merge commits on the branch" is read for this feature as "none in the fold range". The T001 merge
-  is the operator's decision and lies below every fold base. A second merge of `main` during the run would break this,
-  and none is planned.
+- The "no merge commits" checks of the orchestrator's skills are read for this feature as "none in the fold range
+  `FB..HEAD`", which is what `fold-history.sh` checks (second analysis I2, operator decision Q2 (b) in
+  `reviews/analysis/operator-decisions.md` § "Second analysis"). This covers `/ocelle-run` step 4.3.1 ("no merge
+  commits on the branch", checked before every phase fold) and `/ocelle-land` step 8.1 ("no merge commits since the
+  PR base", checked before the landing fold). The T001 merge is the operator's decision and lies below every fold
+  base, so neither check stops on it. `/ocelle-run` step 4.3.1's "never merge `main` during a run" does not apply to
+  the T001 merge, which the operator decided. A second merge of `main` during the run would break this, and none is
+  planned. Amending both skills to state the range reading for every feature is a separate change outside this
+  feature (a follow-up for the operator), not part of these tasks.
 
 ## Summary
 
@@ -94,7 +115,7 @@ attribute, no ID reference across a shadow root, real keyboard input in tests, m
 | IV. Strict CSP, offline | Adopted stylesheets only; no `style` attribute (joined rounding through custom states, or row attributes if plan decision 1 is not confirmed, R-06); browser build under the fixture's strict CSP in every browser scenario; the `file:` scenario carries the same policy in a `<meta>` element (R-09). |
 | V. Storybook, behaviour tests | Stories per variant and state in light and dark with baselines from #10's pinned container, an icon story per child (R-12). The states with their own paint have their own stories too: hovered option, tab and segment (default and joined), the focused Copy control and the focused tab panel (FR-050; analysis C1, operator decision Q3 (a)); every event, payload and key path asserted with real input, and every paint claim read from computed styles or pixels, not from baselines alone (R-11, R-15). Stories written in the red commit (operator decision I3). |
 | VI. Consumer-driven, own code | Needs from #14 and spec-kitty-design #511, #521, #522, #527, #534 (read only as requirements, not available to this session); first consumer #16's Open project dialog, whose confirm gesture is `ocelle-listbox-activate` (operator decision PLAN-CORRECTNESS-1-018 (b)). Form association has no consumer need and stays out (spec Assumptions). Nothing copied. |
-| VII. Semver | Nine elements, six events, parts and attributes: MINOR in `@ocelle/elements`. The `copy-control` part's surface is stated as its box, accessible name and events, so the later `ocelle-button` swap is a PATCH under that stated surface (operator decision PLAN-CORRECTNESS-1-017 (a); README, FR-044). The README's module rule is amended (a parent's entry defines its children, R-16), and the engine-floor raise is documented in the README and the changelog (before 1.0.0 the surface may change; a floor raise is named as a notable change). `@ocelle/tokens`: new checked pairs only, no token change, named in its changelog (R-17). |
+| VII. Semver | Nine elements, six events, parts and attributes: MINOR in `@ocelle/elements`. The `copy-control` part's surface is stated as its box, accessible name and events, so the later `ocelle-button` swap is a PATCH under that stated surface (operator decision PLAN-CORRECTNESS-1-017 (a); README, FR-044). The README's module rule is amended (a parent's entry defines its children, R-16). If plan decision 1 is confirmed, the engine-floor raise is documented in the README and the changelog (before 1.0.0 the surface may change; a floor raise is named as a notable change); if not, the README states that the segment hosts' `data-ocelle-row-*` attributes are internal, not a styling hook, and may change in a PATCH (contracts/elements.md § `ocelle-segmented-choice`; second analysis U2). `@ocelle/tokens`: new checked pairs only, no token change, named in its changelog (R-17). |
 | VIII. Test-first, non-vacuous | Each phase red first with story tests in the red commit, after the phase's scaffold (`.claude/skills/speckit-story-implement`); every "does not" outcome paired with a named plant and a falsifiable setup (`contracts/elements.md` § Pairings), plant runs recorded in `reviews/phase-N/plants.md`; the pure modules' tests run in the in-process `elements` project, the one the elements Stryker configuration runs, so their mutants are killed there (R-13); the link's navigation decision is killed in process, not only on the unmutated fixture (R-08, R-11); timing claims measured as the platform orders them (R-06, R-07); #23's rules for timeouts. Phase 1 has one exemption-candidate task (the #10 recheck, documentation only). |
 | Workflow gates | No new gate. The constitution's merge gates as the repository defines them must pass in every phase: `typecheck`, `lint`, `test-lint`, `style-lint`, `brand-rules`, `unit-tests`, `signoff`, `pins`, `config-copies`, `manifest`, `csp`, `contrast`, `prefix`, `plants`, `mutation`, and #10's `storybook-build`, `visual` and `axe` (tasks T028; analysis G4). The Vitest configuration gains `elements-browser-file`, excluded from mutation runs, with its configuration test first (R-09). |
 
@@ -105,8 +126,9 @@ attribute, no ID reference across a shadow root, real keyboard input in tests, m
    model as R-01's states and R-03's `tabindex`, read by the segment's own CSS with no cross-element call and no floor
    raise. Open before this decision: kitty-mission-ui's WebKitGTK (Linux) and WKWebView (macOS) minimums, which this
    repository has never recorded (PLAN-FRESH-1-012); the earlier "touches no consumer" claim is withdrawn. **Still
-   open** (analysis U1, operator decision Q2 (c)). The stop at T064 stays, and the operator asks kitty-mission-ui
-   first. "Yes" to the floor: T064, T066 and T067 as written. "No": T062a, T064a, T066a and T067a replace the
+   open** (analysis U1, operator decision Q2 (c)). The operator asks kitty-mission-ui first. Phase 4 stops for this
+   decision before it starts, before T060 (stop task T059a; second analysis U1, operator decision Q3 (b)). "Yes" to
+   the floor: T064, T066 and T067 as written. "No": T062a, T064a, T066a and T067a replace the
    custom-state parts, the floor stays at Chromium 120 / WebKit 16.4, and phase 4 still has its tasks. The same
    request asks kitty-mission-ui and the console owners whether a clipboard write from the deferred copy request
    still counts as user-activated in those engines (R-07, PLAN-FRESH-2-004 (a)).
@@ -165,7 +187,7 @@ packages/elements/
 │   ├── roving.ts                  # internal keyboard mechanism and origin guard (R-04)
 │   ├── selection.ts               # internal selection model, batching, focus record (R-05, R-03)
 │   ├── link-target.ts             # internal navigation decision (R-08)
-│   ├── internals.ts               # internal symbol for internals and the row-state method (R-01, R-06)
+│   ├── internals.ts               # internal symbol for internals (R-01); the row-state method only if decision 1 is confirmed (R-06)
 │   ├── ocelle-listbox.ts, ocelle-option.ts
 │   ├── ocelle-tabs.ts, ocelle-tab.ts, ocelle-tab-panel.ts
 │   ├── ocelle-segmented-choice.ts, ocelle-segment.ts
@@ -203,13 +225,16 @@ Every phase from 2 on: scaffold (new modules with signatures and no behaviour, r
 gate on the phase's changes → plant runs recorded in `reviews/phase-N/plants.md`. Story tests are in the red commit
 (operator decision I3). Each phase's scenarios also cover, by name, the spec's Edge Cases for its elements: a child
 outside its parent, duplicate values, the empty listbox, long labels at 320 px, host `hidden`, two copies of the
-package, the name following a text change, and for the copy field a `status` set without a request and the
+package, the name following a text change, a disabled option, tab or segment under the pointer showing no hover
+paint (second analysis G1), and for the copy field a `status` set without a request and the
 unreflected `status` attribute. Each "does not" outcome among them is paired in `contracts/elements.md` § Pairings
 (analysis G1).
 
 1. **Setup**
-   - Merge `origin/main` into the branch as a recorded merge commit, before `base.sh 1` (see "The phase folds and the
-     T001 merge" above).
+   - The implementer merges `origin/main` into the branch as a recorded merge commit, before `base.sh 1`, as an
+     exception to `/speckit-story-implement`'s step 2 for phase 1 only, stated in T001 and in the phase 1 delegation
+     (see "Who merges, and when" and "The phase folds and the T001 merge" above; operator decision Q1 (b) of the
+     second analysis).
    - Recheck against #10 as merged (FR-053, R-12): compare gate ids, story id scheme, pointer/focus parameters,
      baseline command, contributor note and contracts; record in `reviews/phase-1/recheck-10.md`; fix plan and tasks
      before phase 2 (documentation; exemption with reason).
@@ -244,10 +269,12 @@ unreflected `status` attribute. Each "does not" outcome among them is paired in 
    tab panel with no focusable content included, FR-050) and the story test running #10's full rule set on them (no
    violation, no serious or critical `incomplete`; plant: `aria-labelledby` on every panel);
    the axe defect recorded in `reviews/phase-3/spike.md` for an upstream report; manifest; README.
-4. **US3 Segmented choice (P3)**: `ocelle-segmented-choice` (toolbar), `ocelle-segment`; the joined variant with the
-   internal `ResizeObserver` on the group and its segments, the shared-line technique and custom states (R-06), the
-   engine-floor raise in the README, behind the stop at T064 on plan decision 1 (if the operator does not confirm the
-   floor: element-owned row attributes, the floor unchanged, tasks T062a, T064a, T066a and T067a; R-06 Status); the
+4. **US3 Segmented choice (P3)**: the phase stops before it starts (before T060) until plan decision 1 is recorded
+   (T059a; operator decision Q3 (b) of the second analysis). `ocelle-segmented-choice` (toolbar), `ocelle-segment`;
+   the joined variant with the internal `ResizeObserver` on the group and its segments and the shared-line technique;
+   if decision 1 is confirmed, custom states (R-06) and the engine-floor raise in the README; if not, element-owned
+   row attributes documented as internal (not a styling hook, may change in a PATCH), the floor unchanged, tasks
+   T062a, T064a, T066a and T067a (R-06 Status); the
    focused segment's ring on a raised `::after`, the host not raised by focus
    (R-06); scenarios US3-1 to 19 with resize measurements after the observations' delivery, the four-sided ring read
    beside the pressed and a hovered segment, and the `accent-strong` shared-line read with a focused neighbour on
@@ -273,7 +300,7 @@ unreflected `status` attribute. Each "does not" outcome among them is paired in 
    navigates itself applies (FR-047), that hosts needing other schemes handle the event (US5-9), and FR-049's three
    statements (a modified activation keeps the browser's new tab or window; a modified activation without `href` does
    nothing; a host that wants a new window handles the event), each checked by the documentation test (analysis G2).
-7. **Polish**: README overview (nine elements, engine floor as decided at T064, module rule) and one README example
+7. **Polish**: README overview (nine elements, engine floor as decided at the phase 4 stop, T059a, module rule) and one README example
    per SC-009 use (the Open project folder picker, tabbed screens, segmented choices, in-text links, copy fields),
    checked by the documentation test, red first (analysis G3); CHANGELOG MINOR entry, the composed dialog
    + listbox story if #16 has merged (FR-054), a full gate run per quickstart.md.
@@ -281,6 +308,6 @@ unreflected `status` attribute. Each "does not" outcome among them is paired in 
 ## Complexity Tracking
 
 None. No constitution exception is needed: baselines and axe are not deferred (#10 is merged into the branch by T001
-before phase 1's base, operator decision Q1 (a)), every state with its own paint has a story (operator decision Q3
+before phase 1's base, operator decisions Q1 (a) and, second analysis, Q1 (b)), every state with its own paint has a story (operator decision Q3
 (a)), the engine-floor raise, if confirmed, follows the README's documented rule, and #5 rule 1 is met rather than
 excepted (operator decision PLAN-CORRECTNESS-1-010 (a)).
