@@ -1,0 +1,392 @@
+import { readFileSync } from "node:fs";
+import { describe, expect, it } from "vitest";
+import type { Io } from "../lib/cli.ts";
+import { formatFinding } from "../lib/findings.ts";
+import type { GateResult } from "../lib/findings.ts";
+import { buildCommand, buildEnv, buildFindings, classifyBuild, cliProblem, storybookBuild } from "../lib/storybook-build.ts";
+import type { BuildRun, BuildTools } from "../lib/storybook-build.ts";
+
+// The Storybook build gate's decisions (FR-001, FR-002, FR-017; contracts/gates.md § `storybook-build`; research.md
+// R-09), on the outputs Storybook 10.6.5 gave in the phase 1 spike (reviews/phase-1/spike.md § 1, fixtures under
+// gates/test/fixtures/storybook-build/<case>/): a failed build's findings at the file the build names, else at
+// storybook/package.json; an index error at the story file; an empty index; the CLI check before the build (the only
+// signal of missing dependencies); the build command with pnpm's dependency check turned off (operator decision on the
+// spike § 4); and the build environment with Storybook's cache below the root under test.
+const fixtures = new URL("fixtures/storybook-build/", import.meta.url);
+const text = (name: string, file: string): string => readFileSync(new URL(`${name}/${file}`, fixtures), "utf8");
+
+/** The recorded run of a spike case. */
+function recorded(name: string): BuildRun {
+  return { exitCode: Number(text(name, "exit").trim()), stdout: text(name, "stdout.txt"), stderr: text(name, "stderr.txt") };
+}
+
+const okIndex = text("ok", "index.json");
+const emptyIndex = text("empty-index", "index.json");
+
+/** A result as the lines the gate prints: findings and summary, or the cause. */
+function printed(result: GateResult): { exit: number; lines: string[] } {
+  if (result.exit === 0) return { exit: 0, lines: [result.summary] };
+  if (result.exit === 1) return { exit: 1, lines: [...result.findings.map(formatFinding), result.summary] };
+  return { exit: 2, lines: [result.cause] };
+}
+
+describe("buildFindings (spike § 1)", () => {
+  it.each([
+    {
+      name: "syntax-error",
+      line: "storybook/stories/tokens.stories.ts: storybook-build: build-error: SyntaxError: Unexpected token (26:49)",
+    },
+    {
+      name: "syntax-error-imported",
+      line: "storybook/stories/helper.ts: storybook-build: build-error: [builtin:vite-transform] Unexpected token",
+    },
+    {
+      name: "unresolved-import",
+      line: "storybook/stories/base.stories.ts: storybook-build: build-error: [UNRESOLVED_IMPORT] Could not resolve './no-such-module.ts' in stories/base.stories.ts",
+    },
+    {
+      name: "not-csf",
+      line: "storybook/stories/not-csf.stories.ts: storybook-build: index-error: NoMetaError: CSF: missing default export",
+    },
+  ])("finds exactly one finding at the file the $name build names, its message free of colour codes", ({ name, line }) => {
+    expect(buildFindings(recorded(name)).map(formatFinding)).toEqual([line]);
+  });
+
+  // CI runs 43056264356 and 43064614842 (PR #24): with TERM unset, as on the GitHub runner, or any TERM but "linux",
+  // Storybook's logger draws Unicode line marks (│, ┌, └, ◇, ●, ■, ▲) instead of the ASCII ones of the spike's
+  // fixtures (recorded with TERM=linux). Fixtures `<case>-unicode/`: the same failure kinds built with TERM unset.
+  it.each([
+    { name: "syntax-error-unicode", line: "storybook/stories/broken.stories.ts: storybook-build: build-error: SyntaxError: Unexpected token (4:49)" },
+    { name: "syntax-error-imported-unicode", line: "storybook/stories/helper.ts: storybook-build: build-error: [builtin:vite-transform] Unexpected token" },
+    {
+      name: "unresolved-import-unicode",
+      line: "storybook/stories/missing.stories.ts: storybook-build: build-error: [UNRESOLVED_IMPORT] Could not resolve './no-such-module.ts' in stories/missing.stories.ts",
+    },
+    { name: "not-csf-unicode", line: "storybook/stories/nodefault.stories.ts: storybook-build: index-error: NoMetaError: CSF: missing default export" },
+  ])("finds the same finding in the $name output, whose line marks are Unicode", ({ name, line }) => {
+    expect(buildFindings(recorded(name)).map(formatFinding)).toEqual([line]);
+  });
+
+  it("parses missing-deps-no-verify (exit 127, storybook: not found, no file named) as build-error at storybook/package.json, which is why the CLI check comes first", () => {
+    expect(buildFindings(recorded("missing-deps-no-verify")).map(formatFinding)).toEqual([
+      "storybook/package.json: storybook-build: build-error: the build failed with exit code 127 and named no file",
+    ]);
+  });
+
+  // The signal half of this case moved to classifyBuild (operator round reviews/phase-2/round-2.md O2-02, landing
+  // L1-03, FR-001, operator choice (a)): a build ended by a signal could not run (exit 2), it is no finding.
+  it("places a failed build that names no file at storybook/package.json, with its exit code", () => {
+    expect(buildFindings({ exitCode: 1, stdout: "", stderr: "" }).map(formatFinding)).toEqual([
+      "storybook/package.json: storybook-build: build-error: the build failed with exit code 1 and named no file",
+    ]);
+  });
+
+  // Operator round reviews/phase-2/round-2.md O2-01 (landing L1-02): a location whose line and column have two or more
+  // digits; the mutant `:\d:\d+` of the location pattern missed it and the finding fell back to storybook/package.json.
+  it("reads a Vite error's location whose line and column have two or more digits", () => {
+    const run: BuildRun = {
+      exitCode: 1,
+      stdout: ["x  Build failed with 1 error:", "|  [PARSE_ERROR] Expected a semicolon", "|  ╭─[ stories/b.ts:12:34 ]"].join("\n"),
+      stderr: "",
+    };
+    expect(buildFindings(run).map(formatFinding)).toEqual(["storybook/stories/b.ts: storybook-build: build-error: [PARSE_ERROR] Expected a semicolon"]);
+  });
+
+  // Operator round reviews/phase-2/round-2.md O2-03 (landing L1-07): one case per regex mutant that ended as a timeout.
+  it("strips a line mark only at the start of a line: a Vite message that ends with a mark character keeps it", () => {
+    const run: BuildRun = {
+      exitCode: 1,
+      stdout: ["[PARSE_ERROR] Error: Unexpected token |", "╭─[ stories/b.ts:2:1 ]"].join("\n"),
+      stderr: "",
+    };
+    expect(buildFindings(run).map(formatFinding)).toEqual(["storybook/stories/b.ts: storybook-build: build-error: [PARSE_ERROR] Error: Unexpected token |"]);
+  });
+
+  it("strips a line mark only before two spaces or the line end: a continuation line that begins with a mark character and one space is kept whole", () => {
+    const run: BuildRun = {
+      exitCode: 1,
+      stdout: ["[MISSING_EXPORT] Error: broken", "x is not exported by stories/helper.ts", "╭─[ stories/b.ts:2:1 ]"].join("\n"),
+      stderr: "",
+    };
+    expect(buildFindings(run).map(formatFinding)).toEqual([
+      "storybook/stories/b.ts: storybook-build: build-error: [MISSING_EXPORT] Error: broken x is not exported by stories/helper.ts",
+    ]);
+  });
+
+  it("reads an indexer error only from an Unable to index line that ends at its colon", () => {
+    const run: BuildRun = {
+      exitCode: 1,
+      stdout: ["x  Error: Unable to index ./stories/a.stories.ts: NoMetaError", "|  CSF: missing default export"].join("\n"),
+      stderr: "",
+    };
+    expect(buildFindings(run).map(formatFinding)).toEqual([
+      "storybook/package.json: storybook-build: build-error: the build failed with exit code 1 and named no file",
+    ]);
+  });
+
+  it("starts a Vite message only at a line that begins with [<code>]", () => {
+    const run: BuildRun = {
+      exitCode: 1,
+      stdout: ["|  see [docs] for details", "|  ╭─[ stories/b.ts:2:1 ]"].join("\n"),
+      stderr: "",
+    };
+    expect(buildFindings(run).map(formatFinding)).toEqual([
+      "storybook/package.json: storybook-build: build-error: the build failed with exit code 1 and named no file",
+    ]);
+  });
+
+  it("finds every error of one output, in order, each at its own file", () => {
+    const run: BuildRun = {
+      exitCode: 1,
+      stdout: `${recorded("not-csf").stdout}\n${recorded("unresolved-import").stdout}`,
+      stderr: "",
+    };
+    expect(buildFindings(run).map((finding) => formatFinding(finding).split(": ").slice(0, 3).join(": "))).toEqual([
+      "storybook/stories/not-csf.stories.ts: storybook-build: index-error",
+      "storybook/stories/base.stories.ts: storybook-build: build-error",
+    ]);
+  });
+
+  it("trims each line, joins a Vite message's lines without its blank lines, and names an indexer error the output does not hold", () => {
+    const run: BuildRun = {
+      exitCode: 1,
+      stdout: [
+        "!  Unable to index ./stories/a.stories.ts:",
+        "|  NoMetaError: CSF: missing default export   ",
+        "x  Build failed with 1 error:",
+        "|   [PARSE_ERROR] Expected a semicolon  ",
+        "|",
+        "|  after the name",
+        "|  ╭─[ stories/b.ts:2:1 ]",
+        "!  Unable to index ./stories/c.stories.ts:",
+        "",
+      ].join("\n"),
+      stderr: "",
+    };
+    expect(buildFindings(run).map(formatFinding)).toEqual([
+      "storybook/stories/a.stories.ts: storybook-build: index-error: NoMetaError: CSF: missing default export",
+      "storybook/stories/b.ts: storybook-build: build-error: [PARSE_ERROR] Expected a semicolon after the name",
+      "storybook/stories/c.stories.ts: storybook-build: index-error: the indexer named no error",
+    ]);
+  });
+
+  it("reads the indexer's error line after its Unable to index line, whatever the line prefix, and a Vite error at its ╭─[ location", () => {
+    const run: BuildRun = {
+      exitCode: 1,
+      stdout: [
+        "!  Unable to index ./stories/a.stories.ts:",
+        "",
+        "|  SyntaxError: Missing semicolon. (3:4)",
+        "x  Error: Unable to index ./stories/a.stories.ts",
+        "x  Build failed with 1 error:",
+        "|  [PARSE_ERROR] Expected a semicolon",
+        "|  ╭─[ stories/b.ts:2:1 ]",
+      ].join("\n"),
+      stderr: "",
+    };
+    expect(buildFindings(run).map(formatFinding)).toEqual([
+      "storybook/stories/a.stories.ts: storybook-build: build-error: SyntaxError: Missing semicolon. (3:4)",
+      "storybook/stories/b.ts: storybook-build: build-error: [PARSE_ERROR] Expected a semicolon",
+    ]);
+  });
+});
+
+describe("classifyBuild", () => {
+  it("passes the repository's build with the number of stories in the built index", () => {
+    expect(printed(classifyBuild(recorded("ok"), okIndex))).toEqual({ exit: 0, lines: ["storybook-build: built 12 stories"] });
+  });
+
+  it("passes a build with a type error only: the build does not type-check (pass-type-error-only)", () => {
+    expect(printed(classifyBuild(recorded("type-error-only"), okIndex))).toEqual({ exit: 0, lines: ["storybook-build: built 12 stories"] });
+  });
+
+  it("names one story in the singular", () => {
+    const one = JSON.stringify({ v: 5, entries: { "a--b": { type: "story", id: "a--b" } } });
+    expect(printed(classifyBuild({ exitCode: 0, stdout: "", stderr: "" }, one))).toEqual({ exit: 0, lines: ["storybook-build: built 1 story"] });
+  });
+
+  it("fails a successful build whose index holds no story (empty-index), and one with docs entries only", () => {
+    const docsOnly = JSON.stringify({ v: 5, entries: { "a--docs": { type: "docs", id: "a--docs" } } });
+    const expected = {
+      exit: 1,
+      lines: ["storybook/dist/index.json: storybook-build: empty-index: the built index holds no story", "storybook-build: 1 finding in 1 file"],
+    };
+    expect([printed(classifyBuild(recorded("empty-index"), emptyIndex)), printed(classifyBuild(recorded("ok"), docsOnly))]).toEqual([expected, expected]);
+  });
+
+  it("fails a failed build with its findings and a summary of findings and files, and does not read the index", () => {
+    expect(printed(classifyBuild(recorded("unresolved-import"), okIndex))).toEqual({
+      exit: 1,
+      lines: [
+        "storybook/stories/base.stories.ts: storybook-build: build-error: [UNRESOLVED_IMPORT] Could not resolve './no-such-module.ts' in stories/base.stories.ts",
+        "storybook-build: 1 finding in 1 file",
+      ],
+    });
+    const two: BuildRun = { exitCode: 1, stdout: `${recorded("not-csf").stdout}\n${recorded("unresolved-import").stdout}`, stderr: "" };
+    expect(printed(classifyBuild(two, undefined)).lines.at(-1)).toBe("storybook-build: 2 findings in 2 files");
+  });
+
+  // Operator round reviews/phase-2/round-2.md O2-02 (landing L1-03, FR-001, operator choice (a)): a configuration
+  // Storybook cannot evaluate, and a build ended by a signal, could not run (exit 2), before any finding.
+  const unreadable =
+    "storybook-build: could not run: storybook/.storybook/main.ts cannot be evaluated (SB_CORE-SERVER_0007 (MainFileEvaluationError): Storybook couldn't)";
+
+  it.each(["config-unreadable", "config-unreadable-unicode"])("could not run when Storybook cannot evaluate storybook/.storybook/main.ts (%s)", (name) => {
+    const run = recorded(name);
+    const located: BuildRun = { ...run, stdout: `|  [PARSE_ERROR] Expected a semicolon\n|  ╭─[ stories/b.ts:2:1 ]\n${run.stdout}` };
+    expect([printed(classifyBuild(run, okIndex)), printed(classifyBuild(located, okIndex))]).toEqual([
+      { exit: 2, lines: [unreadable] },
+      { exit: 2, lines: [unreadable] },
+    ]);
+  });
+
+  it("could not run when a signal ended the build, whether or not its output names a file", () => {
+    const signal = "storybook-build: could not run: the build was ended by a signal";
+    expect([
+      printed(classifyBuild({ exitCode: null, stdout: "", stderr: "" }, undefined)),
+      printed(classifyBuild({ ...recorded("unresolved-import"), exitCode: null }, undefined)),
+    ]).toEqual([
+      { exit: 2, lines: [signal] },
+      { exit: 2, lines: [signal] },
+    ]);
+  });
+
+  it("could not run when a successful build left no index, or an index it cannot read", () => {
+    expect([
+      printed(classifyBuild(recorded("ok"), undefined)),
+      printed(classifyBuild(recorded("ok"), '{"v":5}')),
+    ]).toEqual([
+      { exit: 2, lines: ["storybook-build: could not run: the build wrote no storybook/dist/index.json"] },
+      { exit: 2, lines: ["storybook-build: could not run: storybook/dist/index.json has no entries"] },
+    ]);
+  });
+});
+
+describe("cliProblem (research.md R-09: checked before the build, in this order)", () => {
+  const manifest = JSON.stringify({ name: "@ocelle/storybook", scripts: { build: "storybook build" } });
+
+  it("lets the build run when storybook/package.json has a build script and Storybook is installed", () => {
+    expect(cliProblem(manifest, true)).toBeUndefined();
+  });
+
+  it.each([
+    { name: "no storybook/package.json", packageJson: undefined, installed: true, cause: "storybook/package.json is missing; restore it from git" },
+    { name: "a storybook/package.json that is not JSON", packageJson: "{", installed: true, cause: "storybook/package.json is not valid JSON; fix it" },
+    { name: "no scripts", packageJson: "{}", installed: true, cause: "storybook/package.json has no build script" },
+    { name: "a manifest that is a list", packageJson: "[]", installed: true, cause: "storybook/package.json has no build script" },
+    { name: "scripts that are null", packageJson: '{"scripts":null}', installed: true, cause: "storybook/package.json has no build script" },
+    { name: "no build script", packageJson: '{"scripts":{"prebuild":"x"}}', installed: true, cause: "storybook/package.json has no build script" },
+    { name: "an empty build script", packageJson: '{"scripts":{"build":""}}', installed: true, cause: "storybook/package.json has no build script" },
+    { name: "a build script that is not text", packageJson: '{"scripts":{"build":1}}', installed: true, cause: "storybook/package.json has no build script" },
+    { name: "Storybook not resolvable", packageJson: manifest, installed: false, cause: "storybook is not installed; run pnpm install" },
+    { name: "both, the manifest first", packageJson: '{"scripts":{}}', installed: false, cause: "storybook/package.json has no build script" },
+  ])("stops the gate on $name", ({ packageJson, installed, cause }) => {
+    expect(cliProblem(packageJson, installed)).toBe(cause);
+  });
+});
+
+describe("buildCommand and buildEnv (research.md R-09, R-16)", () => {
+  it("runs the workspace's own build script through pnpm with its dependency check turned off (operator decision on the spike § 4)", () => {
+    expect(buildCommand()).toEqual({ command: "pnpm", args: ["--config.verify-deps-before-run=false", "--dir", "storybook", "run", "build"] });
+  });
+
+  it("sets CACHE_DIR to the root's storybook/.cache and keeps every other variable, without changing the given environment", () => {
+    const env: Io["env"] = { PATH: "/usr/bin", HOME: "/home/a", CACHE_DIR: "/elsewhere", EMPTY: undefined };
+    expect(buildEnv("/work/root", env)).toEqual({ PATH: "/usr/bin", HOME: "/home/a", CACHE_DIR: "/work/root/storybook/.cache", EMPTY: undefined });
+    expect(env.CACHE_DIR).toBe("/elsewhere");
+    expect(buildEnv("/r", {})).toEqual({ CACHE_DIR: "/r/storybook/.cache" });
+  });
+});
+
+describe("storybookBuild (the gate on a root)", () => {
+  const manifest = JSON.stringify({ scripts: { build: "storybook build" } });
+
+  interface World {
+    readonly files?: Readonly<Record<string, string>>;
+    readonly existing?: readonly string[];
+    readonly run?: BuildRun | Error;
+  }
+
+  const installed = ["storybook/node_modules/storybook/package.json", "storybook/node_modules/.bin/storybook"];
+
+  function gate(world: World): { done: Promise<GateResult>; calls: string[] } {
+    const calls: string[] = [];
+    const files = world.files ?? { "storybook/package.json": manifest, "storybook/dist/index.json": okIndex };
+    const existing = world.existing ?? installed;
+    const tools: BuildTools = {
+      read: (path) => {
+        calls.push(`read ${path}`);
+        return Promise.resolve(files[path]);
+      },
+      exists: (path) => {
+        calls.push(`exists ${path}`);
+        return Promise.resolve(existing.includes(path));
+      },
+      run: (command, args, env) => {
+        calls.push(`run ${command} ${args.join(" ")} CACHE_DIR=${String(env.CACHE_DIR)} PATH=${String(env.PATH)}`);
+        const ran = world.run ?? recorded("ok");
+        return ran instanceof Error ? Promise.reject(ran) : Promise.resolve(ran);
+      },
+    };
+    return { done: storybookBuild("/work/root", { PATH: "/usr/bin" }, tools), calls };
+  }
+
+  it("checks the workspace, builds with the command and environment, reads the built index and passes", async () => {
+    const { done, calls } = gate({});
+    expect(printed(await done)).toEqual({ exit: 0, lines: ["storybook-build: built 12 stories"] });
+    expect(calls).toEqual([
+      "read storybook/package.json",
+      "exists storybook/node_modules/storybook/package.json",
+      "exists storybook/node_modules/.bin/storybook",
+      "run pnpm --config.verify-deps-before-run=false --dir storybook run build CACHE_DIR=/work/root/storybook/.cache PATH=/usr/bin",
+      "read storybook/dist/index.json",
+    ]);
+  });
+
+  it.each([
+    { name: "the Storybook CLI's package.json", existing: [installed[1]] },
+    { name: "the Storybook CLI's bin link", existing: [installed[0]] },
+    { name: "both", existing: [] },
+  ])("could not run, and builds nothing, without $name in storybook/node_modules", async ({ existing }) => {
+    const { done, calls } = gate({ existing: existing.map(String) });
+    expect(printed(await done)).toEqual({ exit: 2, lines: ["storybook-build: could not run: storybook is not installed; run pnpm install"] });
+    expect(calls.filter((call) => call.startsWith("run ") || call.endsWith("index.json"))).toEqual([]);
+  });
+
+  it.each([
+    { name: "no storybook/package.json", files: {}, cause: "storybook-build: could not run: storybook/package.json is missing; restore it from git" },
+    { name: "no build script", files: { "storybook/package.json": '{"scripts":{}}' }, cause: "storybook-build: could not run: storybook/package.json has no build script" },
+  ])("could not run, and builds nothing, with $name", async ({ files, cause }) => {
+    const { done, calls } = gate({ files });
+    expect(printed(await done)).toEqual({ exit: 2, lines: [cause] });
+    expect(calls.filter((call) => call.startsWith("run "))).toEqual([]);
+  });
+
+  it("could not run when pnpm cannot be started", async () => {
+    const { done } = gate({ run: Object.assign(new Error("spawn pnpm ENOENT"), { code: "ENOENT" }) });
+    expect(printed(await done)).toEqual({ exit: 2, lines: ["storybook-build: could not run: pnpm could not be started (spawn pnpm ENOENT); install pnpm"] });
+  });
+
+  it("fails with the build's findings and does not read the index of a failed build", async () => {
+    const { done, calls } = gate({ run: recorded("not-csf") });
+    expect(printed(await done)).toEqual({
+      exit: 1,
+      lines: ["storybook/stories/not-csf.stories.ts: storybook-build: index-error: NoMetaError: CSF: missing default export", "storybook-build: 1 finding in 1 file"],
+    });
+    expect(calls.at(-1)?.startsWith("run ")).toBe(true);
+  });
+
+  it("could not run, and does not read the index, when Storybook cannot evaluate storybook/.storybook/main.ts", async () => {
+    const { done, calls } = gate({ run: recorded("config-unreadable") });
+    expect(printed(await done)).toEqual({
+      exit: 2,
+      lines: ["storybook-build: could not run: storybook/.storybook/main.ts cannot be evaluated (SB_CORE-SERVER_0007 (MainFileEvaluationError): Storybook couldn't)"],
+    });
+    expect(calls.at(-1)?.startsWith("run ")).toBe(true);
+  });
+
+  it("fails a successful build of an empty index", async () => {
+    const { done } = gate({ files: { "storybook/package.json": manifest, "storybook/dist/index.json": emptyIndex }, run: recorded("empty-index") });
+    expect(printed(await done).lines[0]).toBe("storybook/dist/index.json: storybook-build: empty-index: the built index holds no story");
+  });
+});

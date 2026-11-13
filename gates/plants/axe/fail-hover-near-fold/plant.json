@@ -1,0 +1,16 @@
+{
+  "expect": "fail",
+  "why": "A hover target at y = 740 to 780, inside the 1280 × 800 viewport of contextOptions and outside Playwright's default 720 px one, whose hover shows an unlabelled button: button-name on both themes (research.md R-08, R-15).",
+  "findings": [
+    {
+      "location": "hover-near-fold--hover/light",
+      "rule": "button-name",
+      "message": "critical: "
+    },
+    {
+      "location": "hover-near-fold--hover/dark",
+      "rule": "button-name",
+      "message": "critical: "
+    }
+  ]
+}

@@ -1,0 +1,16 @@
+{
+  "expect": "fail",
+  "why": "A story whose pointer.hover shows an unlabelled button: the gate applies the pointer state before axe runs, so button-name on both themes (research.md R-15).",
+  "findings": [
+    {
+      "location": "hover-reveals--hover/light",
+      "rule": "button-name",
+      "message": "critical: "
+    },
+    {
+      "location": "hover-reveals--hover/dark",
+      "rule": "button-name",
+      "message": "critical: "
+    }
+  ]
+}

@@ -82,6 +82,18 @@ jobs:
     name: Custom-elements manifest
     steps:
       - run: pnpm run gate:manifest
+  storybook-build:
+    name: Storybook build
+    steps:
+      - run: pnpm run gate:storybook-build
+  visual:
+    name: Visual regression
+    steps:
+      - run: pnpm run gate:visual -- --engine both
+  axe:
+    name: Accessibility
+    steps:
+      - run: pnpm run gate:axe
   plants:
     name: Plants
     steps:

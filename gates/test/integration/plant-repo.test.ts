@@ -1,9 +1,10 @@
 import { execFileSync } from "node:child_process";
-import { cpSync, existsSync, lstatSync, mkdirSync, readFileSync, readlinkSync, rmSync, symlinkSync } from "node:fs";
-import { join } from "node:path";
+import { cpSync, existsSync, lstatSync, mkdirSync, readdirSync, readFileSync, readlinkSync, realpathSync, rmSync, symlinkSync, writeFileSync } from "node:fs";
+import { join, relative } from "node:path";
+import { PNG } from "pngjs";
 import { afterEach, describe, expect, it } from "vitest";
 import { buildCommitRepo, buildMutationRepo, buildRepoTree } from "../../lib/plant-repo.ts";
-import { baseEnv, cleanUp, repo, tempDir } from "./workspace.ts";
+import { baseEnv, cleanUp, repo, storybookInputs, tempDir } from "./workspace.ts";
 
 // gates/lib/plant-repo.ts builds the temporary repositories of the plant job (research.md R-10, contracts/plants.md)
 // from plants under gates/test/fixtures/plant-repo/: a repo-tree with the configuration set and node_modules linked,
@@ -90,7 +91,8 @@ const allTrue = Object.fromEntries(configuration.map((file) => [file, true]));
  */
 function sourceRoot(without: readonly string[] = []): string {
   const root = tempDir("source-root");
-  const entries = [...configuration.filter((file) => file !== "packages/elements/src/index.ts"), "packages/elements/src", "gates/eslint", "gates/stylelint"];
+  // The Storybook workspace inputs too, which the configuration set holds since 006 (research.md R-16).
+  const entries = [...configuration.filter((file) => file !== "packages/elements/src/index.ts"), "packages/elements/src", "gates/eslint", "gates/stylelint", ...storybookInputs];
   for (const entry of entries.filter((path) => !without.includes(path))) cpSync(join(repo, entry), join(root, entry), { recursive: true });
   for (const file of mayBeAbsent.filter((path) => existsSync(join(repo, path)))) cpSync(join(repo, file), join(root, file));
   symlinkSync(join(repo, "node_modules"), join(root, "node_modules"), "dir");
@@ -144,6 +146,186 @@ describe("buildRepoTree", () => {
     await buildRepoTree(repo, join(fixtures, "empty-plant"), into);
     expect(copiedUnchanged(into)).toEqual(allTrue);
     expect(existsSync(join(into, "plant.json"))).toBe(false);
+  });
+});
+
+// The Storybook workspace in a plant root (006 research.md R-16, contracts/plants.md): the configuration set holds the
+// Storybook inputs, storybook/node_modules is linked to the real path of the repository's unless the plant lists it in
+// `unlinked`, and the root's storybook/a11y-exceptions.json is [] unless the tree supplies one, the repository's
+// entries (and the plan files they name) added by delta.json `exceptions: "repository"`.
+describe("buildRepoTree: the Storybook workspace (006 research.md R-16)", () => {
+  /** The text of a file of a built root, asserting first that the root holds it. */
+  const read = (dir: string, path: string): string => {
+    expect(existsSync(join(dir, path)), `${path} in ${dir}`).toBe(true);
+    return readFileSync(join(dir, path), "utf8");
+  };
+  const exceptionsFile = "storybook/a11y-exceptions.json";
+
+  /** Every file below `path` of `dir` (or `path` itself when it is a file), as paths relative to `dir`. */
+  function filesBelow(dir: string, path: string): string[] {
+    const at = join(dir, path);
+    if (!lstatSync(at).isDirectory()) return [path];
+    return readdirSync(at, { recursive: true, withFileTypes: true })
+      .filter((entry) => entry.isFile())
+      .map((entry) => relative(dir, join(entry.parentPath, entry.name)))
+      .sort();
+  }
+
+  it("copies the Storybook workspace inputs unchanged, and nothing built, generated, cached or tested", async () => {
+    const into = tempDir("repo-tree");
+    await buildRepoTree(repo, join(fixtures, "empty-plant"), into);
+    const files = storybookInputs.flatMap((path) => filesBelow(repo, path));
+    expect(files.length).toBeGreaterThan(15);
+    expect(files.filter((file) => !existsSync(join(into, file)) || !readFileSync(join(into, file)).equals(readFileSync(join(repo, file))))).toEqual([]);
+    expect(files).toEqual(storybookInputs.flatMap((path) => filesBelow(into, path)));
+  });
+
+  it("copies nothing built, generated, cached, captured or tested of the repository's Storybook", async () => {
+    const fake = tempDir("repo-tree");
+    await buildRepoTree(repo, join(fixtures, "empty-plant"), fake);
+    expect(read(fake, "storybook/package.json")).toBe(read(repo, "storybook/package.json"));
+    const outside = ["storybook/dist", "storybook/.generated", "storybook/test", "storybook/.visual", "storybook/.cache"];
+    for (const dir of outside) {
+      mkdirSync(join(fake, dir), { recursive: true });
+      writeFileSync(join(fake, dir, "x.txt"), "x");
+    }
+    const into = tempDir("repo-tree");
+    await buildRepoTree(fake, join(fixtures, "empty-plant"), into);
+    expect(outside.filter((dir) => existsSync(join(fake, dir, "x.txt")))).toEqual(outside);
+    expect(outside.filter((dir) => existsSync(join(into, dir)))).toEqual([]);
+    expect(read(into, "storybook/package.json")).toBe(read(fake, "storybook/package.json"));
+  });
+
+  it("links storybook/node_modules to the real path of the repository's, beside node_modules", async () => {
+    const into = tempDir("repo-tree");
+    await buildRepoTree(repo, join(fixtures, "empty-plant"), into);
+    expect(existsSync(join(into, "storybook/node_modules"))).toBe(true);
+    expect(lstatSync(join(into, "storybook/node_modules")).isSymbolicLink()).toBe(true);
+    expect(readlinkSync(join(into, "storybook/node_modules"))).toBe(realpathSync(join(repo, "storybook/node_modules")));
+    expect(readlinkSync(join(into, "node_modules"))).toBe(join(repo, "node_modules"));
+  });
+
+  it('removes only the storybook/node_modules link for unlinked ["storybook/node_modules"]', async () => {
+    const into = tempDir("repo-tree");
+    await buildRepoTree(repo, join(fixtures, "empty-plant"), into, { expect: "error", why: "w", cause: "c", unlinked: ["storybook/node_modules"] });
+    expect(read(into, "storybook/package.json")).toBe(read(repo, "storybook/package.json"));
+    expect(() => lstatSync(join(into, "storybook/node_modules"))).toThrow(expect.objectContaining({ code: "ENOENT" }) as Error);
+    expect(readlinkSync(join(into, "node_modules"))).toBe(join(repo, "node_modules"));
+  });
+
+  // Since 006 phase 3 the repository holds storybook/baselines/; a root built from a repository with one more baseline
+  // holds exactly the repository's files and that one.
+  it("copies storybook/baselines when the repository holds it", async () => {
+    const fake = tempDir("repo-tree");
+    await buildRepoTree(repo, join(fixtures, "exceptions-repo-plant"), fake);
+    const into = tempDir("repo-tree");
+    await buildRepoTree(fake, join(fixtures, "empty-plant"), into);
+    expect(read(into, "storybook/baselines/fixture--story.light.png")).toBe("not a png, a fixture baseline\n");
+    const repository = readdirSync(join(repo, "storybook/baselines"));
+    expect(repository).toHaveLength(42);
+    expect(readdirSync(join(into, "storybook/baselines")).sort()).toEqual([...repository, "fixture--story.light.png"].sort());
+    expect(repository.filter((name) => !readFileSync(join(into, "storybook/baselines", name)).equals(readFileSync(join(repo, "storybook/baselines", name))))).toEqual([]);
+  });
+
+  it("writes storybook/a11y-exceptions.json as [] when the tree supplies none, and keeps the tree's own", async () => {
+    const empty = tempDir("repo-tree");
+    await buildRepoTree(repo, join(fixtures, "empty-plant"), empty);
+    expect(read(empty, exceptionsFile)).toBe("[]\n");
+    const own = tempDir("repo-tree");
+    await buildRepoTree(repo, join(fixtures, "exceptions-tree-plant"), own);
+    expect(read(own, exceptionsFile)).toBe(read(fixtures, `exceptions-tree-plant/tree/${exceptionsFile}`));
+  });
+
+  it('appends the repository\'s entries after the tree\'s own for exceptions: "repository", and copies the plan files they name', async () => {
+    const fake = tempDir("repo-tree");
+    await buildRepoTree(repo, join(fixtures, "exceptions-repo-plant"), fake);
+    const into = tempDir("repo-tree");
+    await buildRepoTree(fake, join(fixtures, "exceptions-plant"), into);
+    const ownEntries = JSON.parse(read(fixtures, `exceptions-plant/tree/${exceptionsFile}`)) as unknown[];
+    const repoEntries = JSON.parse(read(fake, exceptionsFile)) as unknown[];
+    expect(repoEntries).toHaveLength(1);
+    expect(read(into, exceptionsFile)).toBe(`${JSON.stringify([...ownEntries, ...repoEntries], null, 2)}\n`);
+    expect(read(into, "specs/fixture-feature/plan.md")).toBe(read(fake, "specs/fixture-feature/plan.md"));
+    const alone = tempDir("repo-tree");
+    await buildRepoTree(fake, join(fixtures, "exceptions-only-plant"), alone);
+    expect(read(alone, exceptionsFile)).toBe(`${JSON.stringify(repoEntries, null, 2)}\n`);
+    expect(read(alone, "specs/fixture-feature/plan.md")).toBe(read(fake, "specs/fixture-feature/plan.md"));
+  });
+
+  it("does not copy the repository's entries or plan files without the key", async () => {
+    const fake = tempDir("repo-tree");
+    await buildRepoTree(repo, join(fixtures, "exceptions-repo-plant"), fake);
+    const into = tempDir("repo-tree");
+    await buildRepoTree(fake, join(fixtures, "empty-plant"), into);
+    expect([read(into, exceptionsFile), existsSync(join(into, "specs/fixture-feature/plan.md"))]).toEqual(["[]\n", false]);
+  });
+
+  it("fails to build a root whose repository's exception entries name a plan file the repository does not hold", async () => {
+    const fake = tempDir("repo-tree");
+    await buildRepoTree(repo, join(fixtures, "exceptions-missing-plan-plant"), fake);
+    await expect(buildRepoTree(fake, join(fixtures, "exceptions-only-plant"), tempDir("repo-tree"))).rejects.toThrow(
+      "a11y-exceptions.json names specs/no-such-feature/plan.md, which the repository does not hold",
+    );
+  });
+});
+
+// 006 research.md R-11 and R-16: delta.json `baselines` edits the current repository baselines when the root is made
+// (one-pixel, reencode, remove), a tree copy of a repository baseline or an edit of one the repository does not hold
+// fails the build, and `baselinesOf` gives a visual fail plant's root the baselines of the pass plant it names. The
+// repository here is a root built from this one with four small PNG baselines written into it.
+describe("buildRepoTree: baselines (006 research.md R-11, R-16)", () => {
+  /** A PNG file of a 4 × 3 image with distinct pixels, at deflate level 9. */
+  function png(seed: number): Buffer {
+    const image = new PNG({ width: 4, height: 3 });
+    for (let at = 0; at < 12; at += 1) image.data.set([(seed + at * 20) % 256, (seed * 3 + at * 9) % 256, (at * 41) % 256, 255], at * 4);
+    return PNG.sync.write(image, { colorType: 6, inputColorType: 6, bitDepth: 8, deflateLevel: 9, filterType: 4 });
+  }
+  const names = ["fixture--a.light.png", "fixture--a.dark.png", "fixture--b.light.png", "fixture--b.dark.png"];
+
+  /** A repository built from this one whose storybook/baselines/ holds the four fixture baselines besides its own. */
+  async function fakeRepository(): Promise<string> {
+    const fake = tempDir("repo-tree");
+    await buildRepoTree(repo, join(fixtures, "empty-plant"), fake);
+    mkdirSync(join(fake, "storybook/baselines"), { recursive: true });
+    names.forEach((name, at) => {
+      writeFileSync(join(fake, "storybook/baselines", name), png(at * 50 + 7));
+    });
+    return fake;
+  }
+  const pixels = (file: string): number[] => [...PNG.sync.read(readFileSync(file)).data];
+
+  it("applies one-pixel, reencode and remove to the repository's current baselines, and leaves the others as they are", async () => {
+    const fake = await fakeRepository();
+    const into = tempDir("repo-tree");
+    await buildRepoTree(fake, join(fixtures, "baselines-edit-plant"), into);
+    const at = (dir: string, name: string): string => join(dir, "storybook/baselines", name);
+    const light = { before: pixels(at(fake, names[0] ?? "")), after: pixels(at(into, names[0] ?? "")) };
+    expect(light.after.slice(0, 3)).toEqual(light.before.slice(0, 3).map((value) => 255 - value));
+    expect(light.after.slice(3)).toEqual(light.before.slice(3));
+    expect(pixels(at(into, "fixture--a.dark.png"))).toEqual(pixels(at(fake, "fixture--a.dark.png")));
+    expect(readFileSync(at(into, "fixture--a.dark.png")).equals(readFileSync(at(fake, "fixture--a.dark.png")))).toBe(false);
+    expect(existsSync(at(into, "fixture--b.light.png"))).toBe(false);
+    expect(readFileSync(at(into, "fixture--b.dark.png")).equals(readFileSync(at(fake, "fixture--b.dark.png")))).toBe(true);
+    expect(readdirSync(join(fake, "storybook/baselines")).filter((name) => !existsSync(at(into, name)))).toEqual(["fixture--b.light.png"]);
+  });
+
+  it("fails to build a plant whose tree/ holds a repository baseline, or whose edit names a file the repository does not hold", async () => {
+    const fake = await fakeRepository();
+    await expect(buildRepoTree(fake, join(fixtures, "baselines-copy-plant"), tempDir("repo-tree"))).rejects.toThrow(
+      "tree/ holds storybook/baselines/fixture--a.light.png; a plant changes a repository baseline by delta.json baselines",
+    );
+    await expect(buildRepoTree(fake, join(fixtures, "baselines-missing-plant"), tempDir("repo-tree"))).rejects.toThrow("delta.json baselines: fixture--z.light.png is not a repository baseline");
+  });
+
+  it("gives a baselinesOf plant's root the named pass plant's baselines, under its own tree/ and none of the pass plant's other files", async () => {
+    const into = tempDir("repo-tree");
+    const plant = JSON.parse(readFileSync(join(fixtures, "visual-plants/fail-of/plant.json"), "utf8")) as Parameters<typeof buildRepoTree>[3];
+    await buildRepoTree(repo, join(fixtures, "visual-plants/fail-of"), into, plant);
+    expect(readFileSync(join(into, "storybook/baselines/own--x.light.png"), "utf8")).toBe(readFileSync(join(fixtures, "visual-plants/pass-own/tree/storybook/baselines/own--x.light.png"), "utf8"));
+    expect(readFileSync(join(into, "storybook/stories/own.stories.ts"), "utf8")).toContain("<p>fail</p>");
+    const without = tempDir("repo-tree");
+    await buildRepoTree(repo, join(fixtures, "visual-plants/fail-of"), without);
+    expect(existsSync(join(without, "storybook/baselines/own--x.light.png"))).toBe(false);
   });
 });
 
@@ -288,6 +470,11 @@ describe("buildMutationRepo", () => {
       expect(linkedModules(into)).toEqual(allLinked);
       expect(baseFiles.filter((path) => path.split("/").includes("node_modules"))).toEqual([]);
       expect(copiedUnchanged(into)).toEqual(allTrue);
+      // 006 research.md R-16: the Storybook workspace is committed with the configuration set, its node_modules linked
+      // and untracked like the root's.
+      expect(baseFiles).toEqual(expect.arrayContaining(["storybook/package.json", "storybook/.storybook/main.ts", "storybook/visual/container.json", ".node-version"]));
+      expect(lstatSync(join(into, "storybook/node_modules")).isSymbolicLink()).toBe(true);
+      expect(baseFiles.filter((file) => file.includes("node_modules"))).toEqual([]);
     },
     timeout,
   );

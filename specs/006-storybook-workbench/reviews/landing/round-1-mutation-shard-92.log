@@ -1,0 +1,10 @@
+$ node gates/bin/mutation.ts --base 476602e --files gates/lib/storybook-build.ts:61-90   (exit 1, head cc5a4c1)
+gates/lib/storybook-build.ts:75: mutation: timeout: Regex: replaced by /[|!xoT•—│┌└◇●■▲](?: {2}|$)/
+gates/lib/storybook-build.ts:75: mutation: timeout: Regex: replaced by /^[|!xoT•—│┌└◇●■▲](?: |$)/
+gates/lib/storybook-build.ts:77: mutation: timeout: Regex: replaced by /Unable to index \.\/(\S+):/
+gates/lib/storybook-build.ts:79: mutation: timeout: Regex: replaced by /\[[^\]]+\] /
+gates/lib/storybook-build.ts:62: mutation: compile-error: StringLiteral: replaced by ""
+gates/lib/storybook-build.ts:84: mutation: compile-error: BlockStatement: replaced by {}
+gates/lib/storybook-build.ts:88: mutation: compile-error: ArrowFunction: replaced by () => undefined
+gates/lib/storybook-build.ts:81: mutation: Regex: Survived: replaced by /╭─\[ (\S+?):\d:\d+ \]/
+mutation: 1 finding in 1 changed file (35 mutants on changed lines; 4 timeouts, 3 compile errors, 0 zero-mutant entries)

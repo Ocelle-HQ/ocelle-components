@@ -17,3 +17,5 @@ __screenshots__/
 # Vitest browser mode's failure-screenshot attachments
 .vitest/
 *.tsbuildinfo
+storybook/.visual/
+storybook/.cache/

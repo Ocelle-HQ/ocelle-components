@@ -1,0 +1,16 @@
+{
+  "expect": "fail",
+  "why": "A story that makes run-time I/O while it renders, indexedDB.open: io on both themes, naming the call (FR-030, research.md R-14).",
+  "findings": [
+    {
+      "location": "indexed-db--call/light",
+      "rule": "io",
+      "message": "indexedDB.open ocelle-plant"
+    },
+    {
+      "location": "indexed-db--call/dark",
+      "rule": "io",
+      "message": "indexedDB.open ocelle-plant"
+    }
+  ]
+}

@@ -95,6 +95,30 @@ describe("inScope: the Storybook scripts, configuration and story render code (0
   });
 });
 
+// 006 FR-019 and research.md R-12: the capture that runs inside the container, gates/visual/capture.ts, is gate source
+// like gates/bin/ and gates/lib/, so a change to its wiring is mutation-tested (its process-boundary lines then need
+// their Stryker comments).
+describe("inScope: the capture of the visual gate (006 FR-019)", () => {
+  it("takes gates/visual/ TypeScript, the capture among it, but not its tests, stories or declarations", () => {
+    const paths = [
+      "gates/visual/capture.ts",
+      "gates/visual/sub/a.ts",
+      "gates/visual/capture.test.ts",
+      "gates/visual/test/helper.ts",
+      "gates/visual/a.stories.ts",
+      "gates/visual/a.d.ts",
+      "gates/visual/a.js",
+      "gates/visualx/a.ts",
+      "xgates/visual/a.ts",
+    ];
+    expect(paths.filter((path) => inScope(path))).toEqual(["gates/visual/capture.ts", "gates/visual/sub/a.ts"]);
+  });
+
+  it("lists gates/visual/ among the pathspecs, right after gates/lib/", () => {
+    expect(scopePathspecs.slice(2, 4)).toEqual([":(glob)gates/lib/**/*.ts", ":(glob)gates/visual/**/*.ts"]);
+  });
+});
+
 describe("changedFiles", () => {
   it("gives the added and modified lines of package and gate source, leaving out test code, stories and the rest", () => {
     expect(changedFiles(mixed)).toEqual([

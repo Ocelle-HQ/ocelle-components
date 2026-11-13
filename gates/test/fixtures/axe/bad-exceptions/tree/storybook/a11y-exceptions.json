@@ -1,0 +1,10 @@
+[
+  {
+    "story": "base-styles--prose-document",
+    "theme": "light",
+    "rule": "color-contrast-incomplete",
+    "selector": "tr:nth-child(2) > td:nth-child(12)",
+    "sunset": "the op that fixes it",
+    "plan": "specs/006-storybook-workbench/plan.md"
+  }
+]

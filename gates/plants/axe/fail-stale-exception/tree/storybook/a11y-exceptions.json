@@ -1,0 +1,11 @@
+[
+  {
+    "story": "stale--clean",
+    "theme": "light",
+    "rule": "color-contrast",
+    "selector": "#plant-clean",
+    "reason": "a planted exception",
+    "sunset": "the plant's sunset",
+    "plan": "specs/plant/plan.md"
+  }
+]

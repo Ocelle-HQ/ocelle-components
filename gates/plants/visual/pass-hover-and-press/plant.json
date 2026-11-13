@@ -1,0 +1,4 @@
+{
+  "expect": "pass",
+  "why": "Two stories, one with pointer.hover and one with pointer.press, pass with baselines that show those states (FR-031)."
+}

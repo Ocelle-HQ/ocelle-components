@@ -1,0 +1,146 @@
+schema: review-findings/v1
+complete: true
+phase: plan
+round: 1
+lens: a11y-security
+# Probes (scratchpad only, nothing in the repository): axe-core 4.14.0 fetched with `npm pack` into the scratchpad and
+# run with the repository's Playwright 1.64.1 on the host Chromium 1243 (OCELLE_CHROMIUM_PATH), context
+# "#storybook-root" as research.md R-08 plans; `docker image inspect` and `docker buildx imagetools inspect --raw` on
+# the pinned image already pulled in this sandbox.
+findings:
+  - id: PLAN-A11Y-SECURITY-1-001
+    severity: 3
+    title: "The pin check compares the engine's image Id with the manifest digest; on podman and on classic docker storage the Id is the config digest, so the check either always fails or gets loosened"
+    evidence:
+      - artifact: "research.md § R-06: \"a digest the local engine reports differently after the pull (`docker image inspect --format {{.Id}}`/`podman image inspect`) exits 2 naming the cause\"; contracts/container.md: \"compares the image the engine reports with it\"; contracts/gates.md § visual Exit 2: \"whose pulled image id differs\""
+      - code: "probe: `docker image inspect --format '{{.Id}}' mcr.microsoft.com/playwright@sha256:ee15712…b1d0` gives sha256:ee15712…b1d0 here only because this daemon uses the containerd snapshotter (`docker info`: driver-type io.containerd.snapshotter.v1); `docker buildx imagetools inspect --raw` of the same manifest gives config digest sha256:a0d7b2b49ffa0e99787a00b7ec2af46eca58020082713f002ca9f0f1cfd1a017, which is what `.Id` reports on the classic overlay2 image store and what `podman image inspect --format {{.Id}}` reports (podman's manifest digest is `.Digest`)"
+      - code: "plan.md § Environment and R-02: the docker-against-podman run happens only in CI, so the mismatch is first seen at landing, not in any local red/green run"
+    claim: |
+      The supply-chain guarantee of the pinned container rests on this check, and as specified it compares two
+      different kinds of digest. Under podman (always, in CI's `--engine both`) and under docker with the classic image
+      store, `.Id` is the image config digest, never the committed manifest digest, so every CI run of `visual`, every
+      `visual` plant and `visual:update` exits 2 "digest differs". It passes locally only by accident of this sandbox's
+      containerd store, so the unit tests and the local spike will be green and the defect surfaces in CI, where the
+      pressure is to weaken the check (compare against nothing, or accept the tag) to get the job green. Either outcome
+      breaks FR-009's first layer.
+    remedies:
+      - "Specify the check by what each engine actually reports: run and pull only by `<image>@<digest>` (the engine verifies content against the digest on pull, so the reference is the integrity check), then assert the local image's `RepoDigests` (docker) or `.Digest`/`RepoDigests` (podman) contains `<image>@<digest>` and that `.Os`/`.Architecture` are linux/amd64; record the config digest `sha256:a0d7b2b4…a017` in `container.json` as an optional second identity checked against `.Id`. Put the per-engine inspect output forms in contracts/container.md and have the unit tests of `container.ts` use both forms (containerd store and overlay2/podman) as fixtures."
+  - id: PLAN-A11Y-SECURITY-1-002
+    severity: 2
+    title: "axe cannot see inside closed shadow roots, and the empty check counts the host's box: an element with a closed root passes the axe gate vacuously"
+    evidence:
+      - artifact: "research.md § R-08: \"Context: the story root `#storybook-root`\" and \"Empty story (FR-014): … no descendant element of the root with a client rect of non-zero width and height and no non-whitespace text node\"; nothing in spec, plan or contracts mentions shadow-root mode"
+      - code: "probe (axe-core 4.14.0, host Chromium 1243, context #storybook-root): an open shadow root holding `<button></button>` gives violations [\"button-name:critical:1\"]; the same markup in a closed shadow root gives violations [] and incomplete []"
+    claim: |
+      Constitution III says axe reports no serious or critical finding on any story, and FR-014 exists so that axe on
+      nothing is not evidence. An element that attaches a closed shadow root (a plausible choice for encapsulation,
+      and nothing in the constitution forbids it) is audited as an empty box: zero violations, and the host's own box
+      defeats the empty check. Every future element story would then pass the Accessibility check without axe having
+      read a single inner node, which is exactly the silent shadow-DOM failure constitution III's rationale names.
+    remedies:
+      - "Add a finding `closed-shadow-root` to the axe gate (and the same check to the visual capture's font walk, which also only descends open roots per R-05): an init script (`page.addInitScript`) wraps `Element.prototype.attachShadow` and records every call with `mode: \"closed\"` below the story root, and any such call fails the story-theme. Add a fail plant `fail-closed-shadow-root` with an unlabelled button inside a closed root, and say in the contributor note (FR-025) that elements use open shadow roots."
+  - id: PLAN-A11Y-SECURITY-1-003
+    severity: 2
+    title: "Content an element renders outside #storybook-root (a tooltip, toast, menu or dialog moved to document.body) is never checked by axe or by the empty check"
+    evidence:
+      - artifact: "research.md § R-08 and contracts/gates.md § axe: \"Scope: … context `#storybook-root`\"; plan.md decision 3: \"axe runs on the host browser, scoped to the story root\""
+      - code: "probe (axe-core 4.14.0, context #storybook-root): page `<div id=\"storybook-root\"><p>Trigger</p></div><div role=\"tooltip\"><button></button></div>` gives violations [] — the unlabelled button outside the root is not audited"
+      - artifact: "constitution III: \"tooltips meet WCAG 1.4.13\"; spec § Consumer need: element issues #7 to #9, #12 to #17 add their stories to this harness"
+    claim: |
+      Overlay-type elements commonly append their surface to `document.body` (or a host-supplied container) so it
+      escapes overflow clipping. With the context pinned to the story root, the overlay surface, which is where the
+      labels, roles and contrast problems of tooltips and menus live, is outside every check this feature builds, and
+      the gate still reports the story as clean. The visual capture clips to the root's bounding box too (R-04), so
+      the same surface is also missing from the baselines.
+    remedies:
+      - "Run axe on the whole document with an `exclude` list of Storybook's own harness nodes (the error display, the preparing and no-preview placeholders, `#storybook-docs`), so any node a story adds anywhere is audited; and fail a story-theme (`outside-root`) when, after render, `<body>` holds element children that neither are in that harness list nor are `#storybook-root`, so a portal is either audited and captured or rejected. Add a fail plant with a body-appended unlabelled button."
+      - "Keep the root context and make portals a rule instead: the contributor note (FR-025) states that elements render every surface inside their own host (top layer via `popover`/`<dialog>` is still inside the root), and the axe gate fails `outside-root` as above, so the rule is checked, not just written."
+  - id: PLAN-A11Y-SECURITY-1-004
+    severity: 2
+    title: "Scoping axe to the story root disables the page-level rules, but FR-016 allows a disabled rule only through a recorded Complexity Tracking exception, and the plan records none"
+    evidence:
+      - artifact: "spec FR-016: \"No rule may be disabled except by a recorded exception in the plan's Complexity Tracking.\"; plan.md § Complexity Tracking: \"No new exception.\"; research.md § R-08: \"the page-level rules (`document-title`, `html-has-lang`, `landmark-one-main`, `region`, `page-has-heading-one`) about the harness document are out of its context\""
+      - code: "probe (axe-core 4.14.0) on one page: `axe.run(document)` violations [document-title, html-has-lang, image-alt, landmark-one-main, page-has-heading-one, region]; `axe.run(\"#storybook-root\")` violations [image-alt] — the page-level rules can never fire under the planned context, which is disabling them in effect"
+    claim: |
+      The plan argues the rules are about the harness, which is reasonable, but it achieves the result by a context
+      choice that hides it from FR-016's control and from the pinned rule-list test (R-08 pins the enabled rule ids,
+      which will still list these five as enabled while they cannot report). A reviewer reading the pinned list will
+      believe `region` and `landmark-one-main` are enforced on stories. The constitution says exceptions are recorded
+      with scope, rationale and sunset; this one is not.
+    remedies:
+      - "Add a Complexity Tracking row for the page-level rules (list them by id from axe 4.14.0's `pageLevel` rules plus `html-has-lang`/`html-lang-valid`/`document-title`), scoped to the Storybook harness document, with the operator's approval, and have the rule-list test pin the list of rules that are inapplicable under the story context alongside the enabled list, so an axe upgrade that adds a page-level rule shows up in review."
+  - id: PLAN-A11Y-SECURITY-1-005
+    severity: 2
+    title: "Serious `incomplete` color-contrast results become notes, and axe returns them for ordinary element patterns (a ::before background, a translucent layer), so low-contrast text passes the gate"
+    evidence:
+      - artifact: "research.md § R-08 \"Incomplete results (SPEC-2-03): axe's `incomplete` … results of any impact are notes … and do not fail the gate\"; plan.md decision 4; contracts/plants.md `pass-incomplete`"
+      - code: "probe (axe-core 4.14.0): `<p class=p style=\"color:#eee\">` on white whose background is drawn by `.p::before` gives violations [] and incomplete [\"color-contrast:serious:1\"]; `#ccc` text under an `rgb(21 19 15 / .5)` layer (the value of `--ocelle-color-overlay` light, packages/tokens/src/source.ts:95) gives violations [] and incomplete [\"color-contrast:serious:1\"]"
+      - artifact: "constitution III: \"Text and non-text contrast is verified by an automated check\"; the existing `contrast` gate (gates/bin/contrast.ts) checks token pairs, not rendered stories"
+    claim: |
+      Pseudo-element indicators, overlays and layered backgrounds are routine in the elements to come (state pills,
+      dialogs, row hover layers). In each case axe declines to decide and the gate passes; the token-pair contrast gate
+      cannot see compositions. The rendered contrast of those stories then has no automated check, contrary to
+      constitution III, and the summary's `incomplete` count is the only trace.
+    remedies:
+      - "Treat `incomplete` results of impact serious or critical as findings (`<rule>-incomplete`), clearable only by an a11y-exceptions entry with a reason (which then needs its Complexity Tracking row); moderate and minor incomplete stay notes. Change `pass-incomplete` to a fail plant and add a `pass-excepted-incomplete`."
+      - "Keep incomplete as notes (plan decision 4) but record it as an operator-approved Complexity Tracking exception to constitution III's contrast clause, scoped to axe `incomplete` results, with a sunset (for example the first element feature that renders a layered background), so the gap is decided rather than implied."
+  - id: PLAN-A11Y-SECURITY-1-006
+    severity: 2
+    title: "An a11y exception matches every node of its rule in the story-theme, so a later violation of the same rule in the same story is silently excepted"
+    evidence:
+      - artifact: "data-model.md § Exception: \"Matches every serious or critical node of that rule in that story-theme.\"; research.md § R-08: entry is `{ story, theme, rule, reason, sunset }`, no node"
+      - artifact: "spec FR-029: an exception is \"scoped to that story, theme and rule\" and the gate honours only exceptions so recorded"
+    claim: |
+      The spec's scope (story, theme, rule) was written for the existing 12 stories; the plan carries it into a file
+      every element issue will use. Once a story has an excepted `color-contrast` node, any further low-contrast node
+      added to that story later (a new state, a new label) is turned into a note, and `stale-exception` cannot catch it
+      because the entry still matches. The exception outgrows the approved defect without anyone approving it.
+    remedies:
+      - "Add a required `selector` (axe's `target` of the node, joined as the gate prints it) to each entry and match only that node; a violation of the same rule on another node stays a finding. Update data-model.md, the exception-file parser's tests and the `pass-excepted` plant, and add a fail plant where an excepted story gains a second node of the same rule."
+  - id: PLAN-A11Y-SECURITY-1-007
+    severity: 2
+    title: "After the Storybook leaves CSP scope, no planned check renders an element under the strict policy, and the static csp gate cannot see run-time style attributes or style elements"
+    evidence:
+      - artifact: "plan.md § Constitution Check IV: \"Elements remain bound to IV through their package output.\"; research.md § R-10: the run-time CSP header test and its violation collector are removed"
+      - code: "gates/bin/csp.ts:1-7: the gate parses built files and flags only static constructs (markup in string/template literals, `eval`, `new Function`); a run-time `el.setAttribute(\"style\", …)` or a `document.createElement(\"style\")` in an element or a dependency is not a finding"
+      - code: "grep for Content-Security-Policy in *.ts: only packages/tokens/test/browser/serve.ts, packages/styles/test/browser/serve.ts and storybook/test/integration/csp.test.ts; packages/elements has no run-time CSP test, and the Storybook one is the one this plan deletes"
+      - artifact: "spec FR-025 / plan US4: the contributor note's required items say nothing about CSP"
+    claim: |
+      Operator Q1 rightly takes the Storybook page out of CSP scope, but the Storybook test was also the only place a
+      rendered story was observed under the strict policy. Element issues will now write stories (the evidence the
+      constitution trusts for pixels) in a page with no CSP, and nothing tells them that run-time CSP compliance must
+      be proven elsewhere; an element that sets a style attribute at run time renders perfectly in its baseline and
+      breaks in the Ocelle console. Constitution IV states the built output runs under the policy, which the static
+      gate alone cannot establish for run-time behaviour.
+    remedies:
+      - "Add to FR-025's contributor note (and its documentation test) the rule that each element package proves run-time strict CSP in its own browser tests, served with the header and a `securitypolicyviolation` collector as packages/tokens/test/browser/serve.ts does, and record in gates/README.md that the first element feature (#17 or #7) delivers that test for `@ocelle/elements`."
+      - "Keep a CSP-independent run-time check in the render test: a `Content-Security-Policy-Report-Only` header with the strict policy and a collector that fails only on violations whose source is a package bundle (not Storybook's own inline scripts), so stories keep observing element CSP behaviour without putting the Storybook page back in CSP scope."
+  - id: PLAN-A11Y-SECURITY-1-008
+    severity: 2
+    title: "Element I/O to the same origin (fetch, XHR, WebSocket, beacon, storage) passes every planned check; only requests outside 127.0.0.1 are recorded"
+    evidence:
+      - artifact: "contracts/container.md § Per story-theme: \"route every request: `127.0.0.1` served from `dist`, anything else aborted and recorded\"; contracts/gates.md § visual `network`: \"the story requested anything outside `127.0.0.1`\"; spec FR-021: \"no request outside the origin while the stories render\""
+      - artifact: "constitution I: \"Elements perform no I/O: no fetch, XHR, WebSocket, storage, clipboard writes or host APIs.\""
+      - code: "eslint.config.ts has no rule naming fetch, XMLHttpRequest, WebSocket or localStorage (grep), so no static check covers constitution I either"
+    claim: |
+      The harness is where every element will first run, and it is already intercepting every request, yet it
+      accepts any same-origin request. An element that calls `fetch(\"/api/…\")`, opens a WebSocket to its own origin
+      or writes `localStorage` (FR-028 even anticipates stories keeping state in storage) renders, captures and
+      passes. Constitution I's no-I/O rule is exactly the kind of security property this lens covers, and this feature
+      is the cheapest place to check it at run time.
+    remedies:
+      - "Extend the capture's `network` rule (and the axe gate's routing, see -009): record every request whose `resourceType()` is fetch, xhr, websocket, eventsource or ping other than Storybook's own `index.json`/`project.json`, and every request for a path not present in `dist`; and add an init script that records calls to `Storage.prototype.setItem`, `navigator.clipboard.write*` and `navigator.sendBeacon`, reported as finding `io`. Add fail plants for a same-origin fetch and a localStorage write."
+      - "Leave run-time I/O detection to the first element feature, recorded in gates/README.md's deferred table with that feature as owner, so the gap is tracked."
+  - id: PLAN-A11Y-SECURITY-1-009
+    severity: 1
+    title: "The axe gate runs stories in the host browser with network access and no request routing"
+    evidence:
+      - artifact: "research.md § R-08: axe runs on the host browser so \"the gate stays runnable without a container engine\"; contracts/gates.md § axe names no routing and no `network` handling, unlike contracts/container.md's route-everything step"
+      - code: "contracts/plants.md `fail-network` exists for `visual` only; a story with `<img src=\"https://example.com/…\">` makes a live request from the CI runner and the contributor's machine during `gate:axe`"
+    claim: |
+      The visual gate isolates stories (`--network none` plus routing); the axe gate, which runs the same story code,
+      gives it the host's network. A story's remote resource is fetched for real during the Accessibility job and
+      locally, and remote content (an image behind text) can change axe's contrast results between runs, so the gate's
+      outcome is not a function of the tree alone.
+    remedies:
+      - "Give the axe gate the same request routing as the capture (serve `dist` on 127.0.0.1, abort and record everything else as finding `network`), sharing the routing module with `capture.ts`, and add `fail-network` to the axe plants."

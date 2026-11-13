@@ -1,0 +1,16 @@
+{
+  "expect": "fail",
+  "why": "An element that attaches a closed shadow root holding an unlabelled button, which axe cannot see: closed-shadow-root on both themes, axe not run (FR-014, US3 scenario 8).",
+  "findings": [
+    {
+      "location": "closed-shadow-root--closed/light",
+      "rule": "closed-shadow-root",
+      "message": "ocelle-plant-closed"
+    },
+    {
+      "location": "closed-shadow-root--closed/dark",
+      "rule": "closed-shadow-root",
+      "message": "ocelle-plant-closed"
+    }
+  ]
+}
