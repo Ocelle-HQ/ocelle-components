@@ -1,101 +1,110 @@
 ---
-analyzed_at: 2026-11-13T15:58:32Z
-head: efafd6b67d8d6eebb1484ed14db0ae985aa68fcc
+analyzed_at: 2026-11-13T16:23:46Z
+head: 6e748fe4dcdf57dce12e03fdf69e13cdafb9bf1c
 critical: 0
-high: 3
-medium: 5
-low: 6
+high: 2
+medium: 4
+low: 4
 coverage: 100
 ---
 
 ## Specification Analysis Report
 
-Feature: `specs/010-feedback-forms` (spec.md, plan.md, tasks.md; research.md, data-model.md, contracts/ and quickstart.md read where a task points at them), after `reviews/analysis/fixes-1.md`. Constitution 1.3.1. No `before_analyze` or `after_analyze` hooks are registered (`.specify/extensions.yml` has `hooks: {}`). All 18 findings of the previous report (head 3f46dc5) are resolved as `fixes-1.md` records; the R-04 figures were re-checked against the repository and match. The findings below are new; IDs continue the previous report's numbering.
+Feature: `specs/010-feedback-forms` (spec.md, plan.md, tasks.md; research.md, data-model.md, contracts/ and quickstart.md read where a task points at them), after `reviews/analysis/fixes-2.md`. Constitution 1.3.1. No `before_analyze` or `after_analyze` hooks are registered (`.specify/extensions.yml` has `hooks: {}`). All 14 findings of the previous report (head efafd6b) are resolved as `fixes-2.md` records. Its repository claims were re-checked and match:
+- the pinned lines `gates/test/manifest.test.ts:86,91`, `gates/test/integration/manifest.test.ts:19`, `readme.test.ts:125-131,173`, `test/node/manifest.test.ts:250` and `exports.test.ts:9-10`;
+- the story scripts' `test_pathspec`, scaffold, red and check 2/3 behaviour;
+- the root `vitest.config.ts` command registration;
+- the generator's `src/ocelle-*.ts` glob.
+
+The findings below are new; IDs continue the previous reports' numbering.
 
 | ID | Category | Severity | Location(s) | Summary | Recommendation |
 |----|----------|----------|-------------|---------|----------------|
-| C1 | Constitution Alignment | HIGH | tasks.md:71-85 (T001-T005), tasks.md:12-17; `.specify/extensions/story/story-config.yml:13` (`test_pathspec` includes `**/test/**` and `**/*.stories.ts`); `scaffold.sh` ("The commit must change no test file"); `tdd-check.sh` check 2; constitution VIII ("Red first", "Proven against the old code") | Phase 1's implementation (`test/live-reading.ts`, `test/live.ts`, `test/scenarios/driver.ts`, `test/in-process.ts`, `test/browser/driver.ts`, `test/browser/serve.ts`) is all under the test pathspec. Only the root `vitest.config.ts` is not. (1) `scaffold.sh` refuses those modules, so no scaffold is possible. T001 to T001c then fail at the red commit on a missing `test/live-reading.ts` or driver module, which VIII forbids as an import error, unless the red commit itself carries signature stubs. No task says so. (2) `tdd-check.sh` check 2 overlays every changed test-path file from HEAD onto the base, which puts the implementation itself back. Only the missing command registration in `vitest.config.ts` would make that run fail. So the pure reading tests (T001), the fixture-page driver tests (T001b) and the plants row (T001c) are never shown failing against the old code. The check passes vacuously. Phase 5 has the same structure: the stories T062-T064 match `**/*.stories.ts`, so the final-tests-on-base run (`storybook/test/integration/elements-stories.test.ts` plus the stories overlaid) will likely pass and make `tdd-check` report a failure. | State in tasks.md (and plan phase 1) how phase 1 proves VIII. For example: the red commit includes signature-only stubs of the capture, reading and driver modules (allowed, as test paths), so failures are on assertions. The review runs the final T001-T001c files against that red commit's stubs and keeps the log, as the scaffold run would. Record in phase 1's review that `tdd-check` check 2 cannot separate tests from code there. For phase 5, state how the check is expected to read, or keep the stories' red evidence by another recorded run. |
-| C2 | Constitution Alignment | HIGH | tasks.md:12-13 ("an optional `scaffold.sh`"), tasks.md:109 (T017 "not setup errors"), T035 (:142), T053 (:169); T013 (:102), T014 (:103), T014a (:104), T033 (:139), T051 (:166); constitution VIII ("not a syntax, import or setup error") | No phase names a scaffold step. Without one, the red commits of phases 2 to 4 fail on modules that do not exist yet. Examples: T014 imports `announcerDefaults` from `src/live.ts`, and the in-process wiring files import `src/ocelle-notice.ts`, `src/ocelle-form-input.ts` and `src/ocelle-form-select.ts`. That is an import error, which T017 and VIII exclude. `tdd-check.sh` check 3 exists precisely because "against the base a missing module alone makes them fail". Mission 005 used a scaffold in phases 1, 2, 4 and 5. | Add a scaffold task before each red commit of phases 2 to 4: the new `src/` modules (`live.ts` with the setter and constant signatures, the element classes, `form-control.ts`) with signatures and no behaviour, recorded by `scaffold.sh`. Name which tests fail on what against it. Alternatively, record per phase why an import failure is the missing behaviour. |
-| I7 | Inconsistency | HIGH | `gates/test/manifest.test.ts:86`, `:91` and `gates/test/integration/manifest.test.ts:19` ("manifest: 2 elements checked, no finding"); `packages/elements/test/node/readme.test.ts:125-131` (`entryRows`), `:172-173` (exact `exports` key list); tasks.md:14-16 (every test change in the red commit), T016b (:108), T034a (:141), T052a (:168), T022 (:118); research.md R-11; 005 `reviews/phase-5/notes.md` ("These pinned counts should have changed in the red commit") | Each of phases 2, 3 and 4 adds an element, an entry point and a README Entry points row. Existing tests pin those exactly: 2 elements in the manifest gate (unit and plant-tree integration), and the README Entry points table rows and `package.json` `exports` keys as an exact list. No red-commit task updates them. So the green tasks T022/T025, T039 and T056 break them, and they would have to change in green, against the tasks header and VIII. The README tasks name only "the entry point `@ocelle/elements/ocelle-notice.js`" as an item, not the exact-list assertions. R-11's "alphabetical order of tag" also does not match the existing order (`ocelle-icon` before `ocelle-brand-mark`), so the expected list cannot be written by hand without a rule. | Add to T016b, T034a and T052a (or a new red task per phase) the edits of `entryRows`, the exact `exports` list at `readme.test.ts:173`, and the "N elements checked" figures (3, 4, 5) in both manifest gate tests. State where each new entry goes in the list. Add these files to R-04-style tracking in the plan's structure tree. |
-| G9 | Coverage Gap | MEDIUM | spec FR-034 (spec.md:882-890); tasks T016a (:107), T030 (:136), T036, T039, T056 (:175); `packages/elements/test/node/manifest.test.ts:246`, `:274` (per-element precedent) | The notice's manifest entry is tested (T016a), but neither form element's entry is. T030 tests only the generator's base-class folding, `focus()` and the drop list. Nothing asserts `ocelle-form-input`'s own members: `type`, the pass-through properties with `string \| undefined` / `number \| undefined` / `boolean`, the event and its detail type, the four parts, and the empty slot and CSS-property lists. Phase 4 has no manifest test task at all for `ocelle-form-select`. `gate:manifest` checks only that the committed file matches a regeneration. | Add to T030 an `ocelle-form-input` entry test, and to phase 4's red commit an `ocelle-form-select` entry test, in the style of `manifest.test.ts:246`, covering FR-034's lists. |
-| G10 | Coverage Gap | MEDIUM | spec Edge Cases (spec.md:533-534, 551-554), FR-008 last bullet (spec.md:686-692), FR-027 (spec.md:839-840); tasks T011 (:100), T031 (:137), T050 (:165) | Some behaviour promises still have no scenario. (1) A notice, or a control holding `error`, inside a hidden ancestor (`hidden` container, closed `<details>`, `display: none`) that is then shown is not a reveal and announces nothing. That needs a count-0 cell with the positive outcome (region present, text visible) and, for `role="alert"`, the host role. (2) An `error` set while the field has focus is announced once, and set to the same text again with no clearing in between is not announced. US2-10 covers only the whitespace variant. | Add these cells to T011, T031 and (via scenario 7) T050, each zero count paired with the positive outcome it guards. |
-| G11 | Coverage Gap | MEDIUM | contracts/testing.md:155-190 (Plants); tasks T016 (:106), T034 (:140), T052 (:167) | Several plant rows name scenarios of more than one phase. These include "insertion announcement" (US2-20), "reveal baseline" (US2-22), both "first load" rows (US2-20, US2-18), "move" (US2-20), "hidden" (US2-22) and "validity" (US3-5). T016 takes every row naming US1, but those rows' US2 and US3 cells cannot run in phase 2. T034's list ("form, naming, error, host ARIA, change event, implicit submission, validity and form value") does not clearly include the US2 cells of the announcement rows. T052 lists only "option-mirroring and indicator", so the "validity" row's US3-5 cell has no task. | Say per row and cell which phase's task adds it: the US2 cells to T034 with form-input plant classes, and the US3-5 cell to T052. |
-| U4 | Underspecification | MEDIUM | tasks T011 (:100, US1-8 under `drive.readyState("interactive")`), T013 (:102), T001b (:73); contracts/testing.md:75-79 (`registerFirstLoad`, `drive.readyState` "in process") | The new `"interactive"` cell is written in the shared scenario body, but its step `drive.readyState` exists in process only. No fixture-page form is given, such as a fixture page inserting from a `DOMContentLoaded` handler under `startDocument`. T013 names only the first-load cells for the harness split. A harness check inside the body would be a conditional assertion, which test-lint forbids. T001b also lists `registerFirstLoad` and `drive.readyState` without marking them in-process only, while it marks `navigateAwayAndBack` as fixture only. | Give the cell a fixture-page step (or state that it is in process only, with how it is excluded without `skip` or a condition). Mark the in-process-only steps in T001b as the contract does. |
-| A2 | Ambiguity | MEDIUM | contracts/testing.md:80-85 (`drive.after` "returns `ms` after"); tasks T001b (:73, "no earlier than `ms`"); T011 (:100, US1-13 cells), T031 (FR-027 merge) | The merge cells depend on the gap staying below `W`: changes 100 ms (`W/3`) apart count 1; `A`, `B`, `A` within the wait count 0; a change 10 ms after a write. `drive.after` has only a lower bound. On a slow runner, or in process with a small test `W`, where a frame of jitter is a large fraction, the gap can exceed `W`. The cell then fails with a wrong count, or silently tests a different case. | Have `drive.after` return the achieved gap (in page time) and have each such cell assert the gap is below `W` (and above the stated fraction), so a late step fails as a named assertion. |
-| U5 | Underspecification | LOW | tasks T004 (:84); repository `vitest.config.ts` (root, lines 9-14 register `axTree`) | T004 registers the capture's browser commands in `packages/elements/vitest.config.ts`, a file that does not exist. `axTree` is registered in the root `vitest.config.ts`. | Change the path in T004 to `vitest.config.ts` (repository root). |
-| I8 | Inconsistency | LOW | tasks T041 (:151), T021 (:117), T024 (:121); data-model.md:21 | T041 says phase 3 "adds" `ElementInternals` with its ARIA properties, but phase 2's notice already calls `attachInternals` and sets `internals.ariaLive` (T021). T024's floor check names "the features phase 2 uses" without listing them. | Name `ElementInternals` and its `ariaLive` in T024's floor check, and say "form association and the form-associated callbacks" for phase 3. |
-| I9 | Inconsistency | LOW | tasks T010 (:99); `gates/test/contrast-required.test.ts:7` ("must equal A.8 as transcribed"); specs/002-design-tokens/spec.md:151, :316 (149 per theme with A.8) | After T010, the test that says it equals 002's Appendix A.8 holds 154 triples, while 002's spec record still says 149. The five added triples' source (010 R-04) is not named in the test. | Have T010 reword the comment at `:7` to name 010 R-04 as the source of the five added triples, so the record trail stays readable. |
-| A3 | Ambiguity | LOW | tasks.md:50 ("a mutation shard over about 7 minutes"), plan decision 11 (plan.md:129) | "About 7 minutes" is not a decidable threshold for a stop point, unlike the "over 10 minutes" stop beside it. | Give the figure exactly (for example 7:00 measured as T002 states). |
-| A4 | Ambiguity | LOW | tasks T031 (:137, "each absent reads `undefined`"); contracts/elements.md:259-261 (`readOnly` default `false`) | After listing `readOnly` as a boolean, T031 says "each absent reads `undefined`", which read literally includes `readOnly`, whose contract default is `false`. | Say "each absent string or number attribute reads `undefined`; `readOnly` reads `false`". |
-| G12 | Coverage Gap | LOW | spec FR-035 (spec.md:896-898); tasks T034a (:141), T016b (:108), T024 (:121), T041 (:151) | Two FR-035 items are asserted only for the notice (T016b), not for form controls: that only the host's own `hidden` counts as a reveal (FR-027), and that hosts load the build before swapping in controls with `error`. T024 and T041 enumerate fewer items than their red tasks (for example T041 omits host `aria-labelledby`/`aria-describedby` and the `form` attribute). | Add both control items to T034a, and make T024 and T041 refer to their red tasks' lists instead of partial copies. |
+| I10 | Inconsistency | HIGH | spec FR-001 (spec.md:587-593: "Each element follows the README's 'Element conventions'"); `packages/elements/README.md:189-196` (Host ARIA), `:233-236` (Properties); `packages/elements/test/node/readme.test.ts:33`, `:74`, `:79` (pinned fragments); contracts/elements.md:9-13, :32-48, :62-67 (defaults `"info"`, `"regular"`, `false`, `""`, `"text"`); spec FR-009 (:693-707), FR-022 item 1 (:767); tasks T016a (:136), T016b (:137), T030 (:170), T034a (:175), T050a (:205); tasks.md:27-28 (every test change in the red commit) | The README's existing conventions and Host ARIA text, pinned word for word by the README test, contradict the new elements. (1) `:33` says every public property carries `@default undefined`, while the contracts and the manifest tests T016a, T030 and T050a require other defaults. (2) `:74` says a blank host `aria-label` "decides alone" and leaves the element unlabelled, while FR-022 names the form control by a *non-empty* host `aria-label` and otherwise by its labels. (3) `:79` says "A host `role` … is not supported", while FR-009 supports `role="alert"` and `role="status"` on the notice. No red task rewords or scopes these fragments, and the tasks header puts every test change in the red commit, so the README would either state contradicting rules or change pinned text in green. No scenario covers a blank host `aria-label` on a form control. | Add to T016b the rewording of the pinned `@default` and host-`role` fragments (scoped to the elements they describe, or restated per element), and to T034a the `aria-label` fragment. Add to T031 a cell with a blank host `aria-label` and a `label` (named by the label, as FR-022 item 1 says). |
+| U6 | Underspecification | HIGH | spec FR-021 (spec.md:756-761: the input's `value` attribute is its default value), FR-034 (:882-890: "every public property and attribute"; exceptions `role`, host ARIA, `form`); contracts/elements.md:40 (`value` kind "property"), :51-55 ("Documented, not declared" omits it); data-model.md:119; tasks T030 (:170: "`value` a property only"), T038 (:183); constitution I ("the custom-elements manifest declares every public property, attribute, …") | The input's `value` attribute is public surface: US2-4 writes `value="draft"`, and it is restored on reset. No artifact says whether the manifest declares it. T030 asserts `value` as "a property only". FR-034's exception list and the contract's "documented, not declared" list do not name it. If the attribute is observed by hand, the analyzer emits an attribute with no field and no description, and the gate's "every member described" or T030's entry test then decides the outcome by accident. Left undeclared without an FR-034 exception, the manifest misses a public attribute, against constitution I. | Decide it in contracts/elements.md and FR-034. Either declare an attribute `value` (string, default `""`, described as the default value, no field) and assert it in T030, or record it beside `form` as a standard-like attribute that is documented and not declared, with the reason. Assert the choice in T030 and T034a. |
+| I11 | Inconsistency | MEDIUM | tasks.md:257-260 (Dependencies: "then phase 1's T005a or phase 5's T066 record before `tdd-check.sh` and the review"); T005a (:110, part (2) "names the failing tests of `check-final-tests-on-base.log`"; "If check 2 exits 0 … stop"); T066 (:243, same log); `.specify/extensions/story/scripts/tdd-check.sh` (writes `check-final-tests-on-base.log`) | T005a (2) and T066 read the log that `tdd-check.sh` check 2 writes, and act on its exit code. The Dependencies section orders both before `tdd-check.sh`. | Order them after `tdd-check.sh` and before the review: "green, `tdd-check.sh`, then T005a / T066, then the review". T005a (1), the run against the stubs, may stay before it. |
+| U7 | Underspecification | MEDIUM | contracts/testing.md:159-170 (a plant is "an element class derived from the real one with one defect, or a planted reading function", run through a scenario body with the tag mapping), :180-197 (merge window, minimum hold, baseline re-check, hold, first load late write, short-lived empty state, move, later task, first load rows), :184 ("shipped timing": `announcerDefaults` with `delayLoaded: 0`, must turn `test/live-timing.test.ts` red), :209 (oracle rows turn T001 unit tests red); tasks T009a (:124: `src/live.ts` scaffold exports `announcerDefaults` and the setter only), T016 (:135), T001 (:92), T001c (:95) | Most notice plants change behaviour that lives in the internal announcer and first-load/move code of `src/live.ts` and `src/define.ts`, not in the element class. No artifact names the seam a derived plant class overrides (protected hooks on the element, or an exported announcer class). "Shipped timing" plants a module constant and targets a test file, not a scenario body, so it does not fit the row format. The oracle rows need T001's unit tests to be callable with a planted reading, which T001 does not ask for. If `notice-plants.ts` imports any `src/live.ts` export the scaffold lacks, `plants.test.ts` fails at import in the red commit and at check 3, and T001c's rows fail with it. That is an import error, which VIII forbids. | State the seam in contracts/testing.md § Plants and data-model.md (what each plant overrides, and which internal exports it imports). Add those signatures to T009a's and T029a's scaffolds. Say how the shipped-timing row runs (for example a module-level override through the setter's own seam) and that T001 exports its rule bodies parameterised by the reading. |
+| U8 | Underspecification | MEDIUM | tasks T002 (:100: "a worst-case 60-line `src/live.ts` shard … stop over 7:00"), Stop-and-ask (:61-68); plan decision 11 (plan.md:127-132), phase 1 (:221-226); research R-09 (Timing in process); root `vitest.config.ts` `elements` project (`include: packages/elements/**/*.test.ts`, so `plants.test.ts` runs under Stryker) | Decision 11's 7:00 stop is measured only in T002, in phase 1. At that point `src/live.ts` does not exist (the phase 2 scaffold adds it), and neither do its scenarios, the SC-002 matrix or the plant rows that cover it and run in the mutated project. So the shard T002 measures has no defined subject, and the figure that matters is not measured again when it becomes measurable. Only the general 10-minute stop remains. | Say what T002 mutates (for example the uncommitted prototype with a 60-line synthetic `src/live.ts` and the spike scenarios). Add the 7:00 check to phase 2's phase-end `gate:mutation` run (T025), recorded in the phase review, with the same stop. |
+| C3 | Constitution Alignment | MEDIUM | tasks T061 (:235), T066 (:243), tasks.md:23-25; plan phase 5 (plan.md:329-336); `tdd-check.sh` check 2; constitution VIII ("Proven against the old code … so tests rewritten after the red step cannot pass vacuously") | In phase 5, check 2 overlays the final story files (test paths) onto the base, so only the baseline assertions fail there. The final index and render assertions of `elements-stories.test.ts` are never run against code without the stories. `red-phase.log` shows only the red version failing. Phase 1 has T005a for the same gap; phase 5 has no equivalent. The suite-level MUST is met, since check 2 fails, so this is not CRITICAL. A story change to `storybook/stories/render.ts` (not a test path) would also be missing at that base. | Add to T066 a recorded run like T005a: the final `elements-stories.test.ts` at T060's base without the three story files, with the log kept and each index and render assertion failing on an assertion. State whether phase 5 changes `render.ts`. |
+| I12 | Inconsistency | LOW | tasks T005 (:106: the `insertInteractive` page "under `packages/elements/test/fixtures/`"), T001a (:93: planted regions "under `packages/elements/test/fixtures/`"), T005a (:110: overlay of "every file under `packages/elements/test/fixtures/`"); plan.md:182; `packages/elements/test/browser/serve.ts:30,59` (serves only `test/browser/fixtures/`), `:115-122` (allowed requests) | Fixture pages are served from `test/browser/fixtures/`, not `test/fixtures/`. A page placed where T005 says would get a 404. T005a's overlay set names only `test/fixtures/`. The `insertInteractive` page's module script must also be in the page's allowed requests, or the "only allowed requests" assertion fails. | Put the fixture-page files in `packages/elements/test/browser/fixtures/` in T001a, T005, T005a and the plan's tree, and have T005 add the module script to that page's allowed list. |
+| C4 | Constitution Alignment | LOW | tasks T009a (:124: "`timing-setter.test.ts` on no caller in `test/in-process.ts`"), T014 (:132), T020a (:146); `tdd-check.sh` check 3 | Check 3 overlays the final `test/in-process.ts`, which calls the setter, onto the scaffold. So `timing-setter.test.ts` passes there, and its only evidence is the red run, a smaller case of C1's pattern. T009a lists it as failing "against" the scaffold, which holds only at the red commit. | Say in T009a that this test's evidence is `red-phase.log`, and name it in the review's reading of `check-final-tests-on-scaffold.log`. |
+| I13 | Inconsistency | LOW | tasks.md:259 ("[P] tasks of the red step touch different files"); T015/T016c (`exports.test.ts`), T016a/T016c (`test/node/manifest.test.ts`), T016b/T016c (`readme.test.ts`); T033/T034b, T030/T034b, T034a/T034b; T051/T052b, T050a/T052b, T052a/T052b | Pairs marked [P] edit the same file. | Drop [P] from T016c, T034b and T052b, or order them after the task that edits the same file. |
+| U9 | Underspecification | LOW | tasks T001c (:95: "the `elements-browser` variant for rows that need `startDocument`"); contracts/testing.md:164-165; plan.md:173; root `vitest.config.ts` (`test/browser/**` is `elements-browser`) | `test/plants.test.ts` belongs to the `elements` project. The `elements-browser` variant needs its own file under `test/browser/`, which no task or tree names. | Name it (for example `packages/elements/test/browser/plants.test.ts`) in T001c and the plan's tree. |
 
 **Coverage Summary Table:**
 
 | Requirement Key | Has Task? | Task IDs | Notes |
 |-----------------|-----------|----------|-------|
-| FR-001 element-conventions | Yes | T011, T021, T022, T025, T031, T038, T039, T050, T055, T056, T062-T065 | |
+| FR-001 element-conventions | Yes | T011, T021, T022, T025, T031, T038, T039, T050, T055, T056, T062-T065 | README conventions text vs new defaults and roles (I10) |
 | FR-002 open-shadow-font-inherit | Yes | T021, T031, T037, T050, T061 | |
 | FR-003 no-io-no-other-events | Yes | T031, T038, T050 | |
 | FR-004 notice-tone | Yes | T011, T021 | |
-| FR-005 tone-contrast | Yes | T010, T018 | A.8 record trail (I9) |
+| FR-005 tone-contrast | Yes | T010, T018 | |
 | FR-006 heading-slot-absence | Yes | T011, T016b, T021, T024 | |
 | FR-007 notice-size | Yes | T011, T021 | |
-| FR-008 announce-rules | Yes | T011, T012, T013, T019, T020, T021 | Hidden-ancestor cell (G10); `"interactive"` cell harness (U4); merge-gap bound (A2) |
-| FR-009 politeness-role-rows | Yes | T011, T012, T020, T021 | |
+| FR-008 announce-rules | Yes | T011, T012, T013, T019, T020, T021 | Plant seam into `src/live.ts` (U7) |
+| FR-009 politeness-role-rows | Yes | T011, T012, T020, T021 | README "host `role` not supported" fragment (I10) |
 | FR-010 notice-forced-colours | Yes | T011, T021 | |
 | FR-011 notice-focus-semantics | Yes | T011 | |
 | FR-020 form-association | Yes | T032, T037, T050 | |
-| FR-021 shared-attributes | Yes | T031, T037, T050 | |
-| FR-022 naming | Yes | T031, T037 | |
+| FR-021 shared-attributes | Yes | T031, T037, T050 | Input `value` attribute in the manifest (U6) |
+| FR-022 naming | Yes | T031, T037 | Blank host `aria-label` (I10) |
 | FR-023 validity | Yes | T031, T032, T037 | |
 | FR-024 events | Yes | T031, T038, T050, T055 | |
 | FR-025 size-look | Yes | T031, T038 | |
-| FR-026 parts-slots | Yes | T030, T037, T039 | Parts not asserted in the form elements' manifest entries (G9) |
-| FR-027 error-announcement | Yes | T031, T037 | Hidden ancestor, error while focused (G10) |
+| FR-026 parts-slots | Yes | T030, T037, T039, T050a | |
+| FR-027 error-announcement | Yes | T031, T037 | |
 | FR-028 error-mark | Yes | T031, T038 | |
-| FR-029 input-type-passthrough | Yes | T031, T038 | `readOnly` unset reading (A4) |
+| FR-029 input-type-passthrough | Yes | T031, T038 | |
 | FR-030 implicit-submission | Yes | T031, T032, T038 | |
 | FR-031 select-options | Yes | T050, T055 | |
 | FR-032 select-indicator | Yes | T050, T054, T055 | |
-| FR-033 stories-baselines | Yes | T060-T065 | Phase 5 red/green check (C1) |
-| FR-034 manifest | Yes | T016a, T022a, T025, T030, T036, T039, T056 | Form-input and form-select entries untested (G9); pinned element counts (I7) |
-| FR-035 readme | Yes | T016b, T024, T034a, T041, T052a, T057, T066 | Two control items (G12); Entry points exact list (I7) |
-| FR-036 changelog-engine-floor | Yes | T016b, T025, T034a, T041, T052a, T057 | Floor features of phase 2 (I8) |
-| SC-001 scenarios-both-harnesses | Yes | T011, T013, T031, T033, T050, T051 | `"interactive"` cell (U4) |
+| FR-033 stories-baselines | Yes | T060-T066 | Final index and render assertions vs old code (C3) |
+| FR-034 manifest | Yes | T016a, T022a, T025, T030, T036, T039, T050a, T056 | Input `value` attribute (U6) |
+| FR-035 readme | Yes | T016b, T024, T034a, T041, T052a, T057, T066 | Pinned convention fragments (I10) |
+| FR-036 changelog-engine-floor | Yes | T016b, T025, T034a, T041, T052a, T057 | |
+| SC-001 scenarios-both-harnesses | Yes | T011, T013, T031, T033, T050, T051 | Fixture page location (I12) |
 | SC-002 announcement-matrix | Yes | T012, T013 | |
 | SC-003 native-twins | Yes | T032, T050 | |
 | SC-004 absent-heading-zero-gap | Yes | T011 | |
 | SC-005 baselines-axe-gates | Yes | T061, T065 | |
 | SC-006 form-control-readme | Yes | T034a, T041, T066 | |
-| SC-007 mutation | Yes | T025, T041, T057, T066 (phase-end gates incl. `gate:mutation`) | |
+| SC-007 mutation | Yes | T002, T025, T041, T057, T066 (phase-end gates incl. `gate:mutation`) | 7:00 stop measured before its subject exists (U8) |
 
-**Constitution Alignment Issues:** none rated CRITICAL; no task, as written, breaks a MUST of the constitution by itself. Three HIGH findings concern Principle VIII and should be fixed before phase 1 starts:
-- C1: phase 1's code and phase 5's stories are test paths, so no scaffold is possible and the old-code check is vacuous there.
-- C2: phases 2 to 4 have no scaffold, so their red failures would be import errors.
-- I7: the pinned surface tests would have to change in green.
+**Constitution Alignment Issues:** none rated CRITICAL; no task, as written, breaks a MUST of the constitution by itself. Two findings touch a principle:
+- U6 (Principle I): if the input's `value` attribute ends up neither declared nor recorded as an exception, the manifest would miss a public attribute.
+- C3 (Principle VIII): the suite-level check 2 holds in phase 5, but the final story index and render assertions are never run against code without the stories.
 
-**Unmapped Tasks:** none. Phase 1 (T001-T005) is the test infrastructure SC-001, SC-002 and Principle VIII require; T002 is the spike of plan decisions 1, 7 and 11; T054 is a refactor serving FR-032; T060 is the R-08 recheck FR-033 requires; T066 maps FR-035 and SC-006 to their red commits.
+C4 is a smaller case of the same VIII pattern in phase 2.
+
+**Unmapped Tasks:** none.
+- Phase 1 (T001-T005a) is the test infrastructure SC-001, SC-002 and Principle VIII require; T002 is the spike of plan decisions 1, 7 and 11.
+- The scaffolds T009a, T029a and T049a serve Principle VIII for phases 2 to 4.
+- T054 is a refactor serving FR-032.
+- T060 is the R-08 recheck FR-033 requires.
+- T066 maps FR-035 and SC-006 to their red commits.
 
 **Metrics:**
 
 - Total Requirements: 35 (FR-001 to FR-011, FR-020 to FR-036, SC-001 to SC-007)
-- Total Tasks: 59
+- Total Tasks: 67
 - Coverage % (requirements with >=1 task): 100%
-- Ambiguity Count: 3 (A2, A3, A4)
+- Ambiguity Count: 0
 - Duplication Count: 0
 - Critical Issues Count: 0
 
 ## Next Actions
 
-- No CRITICAL issues. Resolve the three HIGH findings in tasks.md (and plan phase 1) before phase 1 starts:
-  - C1: say how phase 1's red commit avoids import errors (stubs in the red commit) and how its tests are shown failing against code without the capture, since `tdd-check` check 2 cannot separate them. Say how phase 5's check is read.
-  - C2: add a scaffold task, recorded by `scaffold.sh`, before the red commits of phases 2, 3 and 4.
-  - I7: put the edits of "2 elements checked" (both manifest gate tests), `entryRows` and the exact `exports` list into each phase's red commit, with the list order stated.
-- The MEDIUM findings are task edits:
-  - G9: add form-input and form-select manifest entry tests.
-  - G10: add the hidden-ancestor and error-while-focused cells.
-  - G11: assign the cross-phase plant cells.
-  - U4: give the `"interactive"` cell a fixture-page form, and mark the in-process-only driver steps.
-  - A2: bound and assert the `drive.after` gaps.
-- The LOW findings (U5, I8, I9, A3, A4, G12) are wording fixes and can go in the same pass.
-- Suggested commands: edit `tasks.md` by hand (or re-run `/speckit-tasks`) for C1, C2, I7, G9-G12, U4, U5, A2-A4. Run `/speckit-plan` refinement for C1 (phase 1 text), I7 (structure tree, R-11 order) and U4 (`contracts/testing.md` driver steps). No spec change is needed.
+- No CRITICAL issues. Resolve the two HIGH findings before phase 2 starts (phase 1 can proceed):
+  - I10: in T016b and T034a, reword or scope the pinned README fragments (`readme.test.ts:33`, `:74`, `:79`) as part of the red commits. Add the blank host `aria-label` cell to T031.
+  - U6: decide whether the manifest declares the input's `value` attribute. Record the choice in contracts/elements.md and FR-034, and assert it in T030 and T034a.
+- The MEDIUM findings are task and contract edits:
+  - I11: put T005a (2) and T066 after `tdd-check.sh`.
+  - U7: define the plant seam into `src/live.ts` and `src/define.ts`, add it to the scaffolds, and say how the shipped-timing and oracle rows run.
+  - U8: define T002's mutation subject and repeat the 7:00 check at phase 2's phase-end mutation run.
+  - C3: add a T005a-style run of the final story test at T060's base without the stories.
+- The LOW findings (I12, C4, I13, U9) are wording and path fixes and can go in the same pass.
+- Suggested commands:
+  - Edit `tasks.md` by hand (or re-run `/speckit-tasks`) for I10, I11, U7, U8, C3, C4, I12, I13 and U9.
+  - Run `/speckit-plan` refinement for U6 (contracts/elements.md, and FR-034 if the attribute is not declared), U7 (contracts/testing.md § Plants, data-model.md), U8 (decision 11) and I12 (structure tree).
+  - Change the spec only if U6 is resolved by an FR-034 exception.
