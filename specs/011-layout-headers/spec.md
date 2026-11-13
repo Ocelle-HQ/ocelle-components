@@ -48,6 +48,13 @@ the personal drawer itself stay with #12 and #16."
   rule (`packages/elements/README.md`) applies. A present host `aria-label` decides the landmark's name alone, and a
   blank one leaves the landmark unnamed even with a `label`; `label` names it only when the host has no `aria-label`
   (FR-028, US3-12, US4-11).
+- Context-sidebar spacing (spec check 2, SPEC-2-03), confirmed at the gate after spec check 3: each part (the head,
+  each section and the footer) has its own `--ocelle-space-4` padding, there is no gap between parts, each divider
+  lies between two padded parts across the sidebar's whole inline size, and text loose in the default slot gets
+  inline padding only (FR-021, FR-022, US3-3, US3-11, US3-13).
+- Spec gate after spec check 3 (2026-11-13), "Approve after a final fix": the spec is approved once the findings of
+  spec check 3 (`reviews/spec/check-3.md`) are fixed, as `reviews/spec/check-3-fixes.md` records. No further spec
+  check follows; the plan squad reads the spec next. Check 3 had no operator questions.
 
 **Constitution decision recorded by triage**: #8 and spec-kitty-design#529 ask for a "12 px mono uppercase" eyebrow.
 Constitution II says "No monospace anywhere", so the eyebrow is set in Schibsted Grotesk, uppercase and tracked
@@ -71,10 +78,10 @@ after #10 is merged, so its stories are captured and audited by those gates (FR-
 ## Consumer need
 
 - kitty-mission-ui uses the Spec Kitty card 4 times, the section header 9 times, the context sidebar 3 times, the
-  page header 8 times and the personal rail twice (#8). Each of the five has a local workaround in Kitty Desktop:
+  page header 8 times and the personal rail twice (#8). Each of the five falls short in Kitty Desktop today:
   - **Card** (spec-kitty-design#516): the only density is a roomy panel (2 px border, 16 px radius, 32 px padding,
     20 px title); dense detail screens need a compact density (1 px border, smaller padding, an 18 px title, a 16 px
-    title-to-body gap).
+    title-to-body gap). No Kitty Desktop workaround for the card is recorded, so SC-006 does not count one.
   - **Section header and context sidebar** (#497): the sidebar applies padding and gaps to empty parts and has no
     dividers or footer, while the prototype separates head, navigation and footer with rules and pins a footer (a
     progress summary) to the bottom; the section header keeps gaps for empty areas and has no flat, eyebrow-only mode
@@ -173,7 +180,9 @@ gaps, fonts and colours, and read the accessibility tree.
    (uppercase, tracked, 12 px, `--ocelle-color-eyebrow`) in both themes, the tree still holds one level-3 heading
    whose name equals "Recent" ignoring case (Chromium exposes the drawn "RECENT"; see "Upper-case text in the
    accessibility tree" above), the slotted `h3`'s text content is still "Recent", and an `eyebrow` or `description`
-   slotted into it is not rendered.
+   slotted into it is not rendered. Three such eyebrow-variant headers with two actions each, one with no `size`
+   outside a card, one with `size="compact"` and one with no `size` in a compact card's `header` slot, are drawn
+   with the same heading style, the same gap to their actions and the same block size (FR-013).
 6. **Given** a section header with `size="compact"`, and one at the default size, **When** both are measured,
    **Then** the compact heading is drawn at `--ocelle-font-size-subhead` and the default at `--ocelle-font-size-lg`,
    both at `--ocelle-font-weight-strong` in `--ocelle-font-display`, and the compact one's gaps are those of FR-011.
@@ -311,9 +320,12 @@ landmark, and reflow at 320 px.
     is no horizontal scroll and no section's text is clipped.
 11. **Given** a sidebar whose default slot holds a text node ("Loose text") between two section elements, **When** it
     is measured, **Then** the text is rendered between the two sections in document order with `--ocelle-space-4`
-    inline padding on both sides and no block padding of its own, and dividers lie only between assigned elements:
-    there is one divider between the two sections and none on either side of the text (FR-021). A default slot
-    holding only non-empty text is non-empty, so the head-to-sections and sections-to-footer dividers are drawn.
+    inline padding on both sides and no block padding of its own, and the text adds no divider of its own: there is
+    exactly one divider between the two sections, at the second section's block start, so between the text and the
+    second section, and none between the first section and the text (FR-021, FR-022). A sidebar with a head, a
+    default slot holding only non-empty text, and a footer has two dividers: the default slot is non-empty, so the
+    head-to-default-slot divider lies between the head and the text and the default-slot-to-footer divider between
+    the text and the footer.
 12. **Given** a sidebar with no `label` but `aria-label="Team"` on its host, a second with `label="Projects"` and
     `aria-label="Other"`, a third with `label="Projects"` and a blank `aria-label=""`, and a fourth with neither,
     **When** the tree is read and axe runs on the page, **Then** the first's landmark is named "Team", the second's
@@ -347,9 +359,10 @@ orientation with focus inside, and reflow at 320 px.
 1. **Given** `<ocelle-personal-rail label="Personal">` with three links in the default slot and one in `bottom`,
    **When** the tree is read, **Then** it holds one navigation landmark named "Personal" with the four links inside
    it in document order.
-2. **Given** the rail without `orientation` and with `orientation="vertical"`, **When** each is measured in both
-   themes, **Then** both lay the primary items out in a column from the block start, the bottom items in a column at
-   the block end, with one `--ocelle-border-width` divider between the groups, on the `--ocelle-color-chrome` ground
+2. **Given** the rail without `orientation` and with `orientation="vertical"`, each in a container 600 px tall,
+   **When** each is measured in both themes, **Then** both are 600 px tall and lay the primary items out in a column
+   from the block start, the bottom items in a column at the block end (the last bottom item's block end at the
+   rail's content-box block end), with one `--ocelle-border-width` divider between the groups, on the `--ocelle-color-chrome` ground
    with `--ocelle-color-chrome-ink` text, `--ocelle-shell-rail-width` (52 px) wide. With square items of
    `--ocelle-size-rail-item` (40 px) in both groups, each item lies inside the rail's content box with no overflow,
    is centred in the inline direction, and, when it has keyboard focus, its focus ring (`--ocelle-focus-width` drawn
@@ -413,8 +426,10 @@ orientation with focus inside, and reflow at 320 px.
 - A personal rail with no primary items but bottom items: the bottom group sits at the block end (vertical) or the
   inline end (horizontal), with no divider (US4-6).
 - A context sidebar whose default slot is empty but whose head and footer are filled: one divider, between head and
-  footer (US3-13). Text nodes in the sidebar's default slot are rendered but are not sections; dividers separate only
-  assigned elements (US3-11), and the README says to wrap each section in an element.
+  footer (US3-13). Text nodes in the sidebar's default slot are rendered but are not sections: they make the default
+  slot non-empty but add no divider of their own, so text between two sections leaves one divider, at the second
+  section's block start, and a slot of text alone sits between the head and footer dividers (US3-11, FR-022); the
+  README says to wrap each section in an element.
 - A section header or page header with an empty `heading` slot: the heading part adds no box or gap (US1-16, FR-005).
 - A section header or page header inside a `[data-ocelle-prose=""]` region of `@ocelle/styles`: the prose rules of
   `base.css` for `h1` to `h6` (margins, size, weight) are host-page rules, so they win over the element's slotted
@@ -477,7 +492,9 @@ orientation with focus inside, and reflow at 320 px.
   drawn at `--ocelle-font-size-sm` in `--ocelle-color-ink-muted`.
 - **FR-013**: `variant` MUST take `"default"` or `"eyebrow"`; not set (FR-006) it draws as `"default"`. In the eyebrow
   variant the slotted heading is drawn with the eyebrow style (FR-031) instead of FR-012's heading style, and the
-  `eyebrow` and `description` slots are not rendered; `actions` are. The heading's DOM text is left as the page wrote
+  `eyebrow` and `description` slots are not rendered; `actions` are. Since the eyebrow style replaces the heading
+  style and FR-011's gaps do not depend on size, `size` and a compact card's density change nothing in the eyebrow
+  variant (US1-5). The heading's DOM text is left as the page wrote
   it; its accessible name is whatever the engine derives from it (the drawn, upper-cased text in Chromium, see
   "Upper-case text in the accessibility tree"), and tests compare it with the written text ignoring case.
 
@@ -525,9 +542,15 @@ orientation with focus inside, and reflow at 320 px.
   Text assigned to the default slot is rendered in document order but is not a section: it makes the default slot
   non-empty, gets `--ocelle-space-4` inline padding and no block padding, and gets no divider of its own (US3-11).
 - **FR-022**: A `--ocelle-border-width` divider in `--ocelle-color-rule` MUST lie between each two adjacent non-empty
-  parts: head and first section, each two sections, last section and footer. Each divider lies between the two parts'
-  padding (outside both), and spans the sidebar's whole inline size. An empty part has no padding and no divider
-  (US3-3, US3-5, US3-13).
+  parts, where the parts are the head, the default slot (its sections and its text together) and the footer: one
+  between the head and the default slot, at the default slot's block start, and one between the default slot and the
+  footer, at its block end. Inside the default slot a divider lies at the block start of every section except the
+  first, whatever text lies before it, so there is one divider between each two consecutive sections. The default
+  slot's text counts toward the slot being non-empty but is never itself separated from a neighbouring section: it
+  adds no divider of its own, and a divider before a section that follows text lies between that text and the section
+  (US3-11). When the default slot is empty, one divider lies between a non-empty head and a non-empty footer (US3-13).
+  Each divider lies outside the padding of the parts on either side of it and spans the sidebar's whole inline size.
+  An empty part has no padding and no divider (US3-3, US3-5, US3-13).
 - **FR-023**: The sidebar MUST fill its container's block size when its content is shorter, with the footer at the
   block end; when its content is taller, it MUST grow with its content and the footer follows the last section
   (US3-3, US3-4). Scrolling, and the sidebar's inline size, are the container's (the shell's) concern.
@@ -594,7 +617,8 @@ orientation with focus inside, and reflow at 320 px.
   element's section contains these statements, each a test of its own:
   - every element: a usage example; each of its slots by name; each of its properties and attributes with its values
     and its "not set" look; each token it reads (FR-007); the empty-slot rule, including "remove an element from the
-    slot rather than hide it"; the Consumer-need workaround it replaces (SC-006);
+    slot rather than hide it"; for every element but the card, the Consumer-need workaround it replaces (SC-006;
+    "Consumer need" records no Kitty Desktop workaround for the card, only its missing compact density);
   - section header and page header: the slotted-heading rule (slot one heading element; the page's own heading rules
     win) and "place outside a `[data-ocelle-prose]` region";
   - section header: the eyebrow variant draws the heading upper case while its DOM text stays as written;
@@ -633,13 +657,12 @@ orientation with focus inside, and reflow at 320 px.
 - **SC-003**: The accessibility tree of every scenario holds exactly the headings the page slotted (with their
   levels) and exactly the navigation landmarks of the sidebar and rail (with their labels), and no other heading or
   landmark from the five elements.
-- **SC-004**: The `manifest`, `csp`, `prefix`, `style-lint`, `contrast`, `visual` and `axe` gates pass, with stories
+- **SC-004**: The `manifest`, `csp`, `prefix`, `style-lint`, `brand-rules`, `contrast`, `visual` and `axe` gates pass, with stories
   for every variant and state in light and dark and their baselines committed.
 - **SC-005**: Changed source has no surviving mutant that the review has not recorded as equivalent (constitution
   VIII, mission 007's mutation gate).
-- **SC-006**: Each of the five Kitty Desktop workarounds named in "Consumer need" (part-level padding and gap
-  overrides, token-painted dividers, pinned page-header font rules, personal-rail `::part` overrides, card density
-  overrides) has a matching element property, slot or default in this feature, named in the README's per-element
+- **SC-006**: Each of the four Kitty Desktop workarounds named in "Consumer need" (part-level padding and gap
+  overrides, token-painted dividers, pinned page-header font rules, personal-rail `::part` overrides) has a matching element property, slot or default in this feature, named in the README's per-element
   sections as FR-036 lists and asserted by its documentation test.
 
 ## Deviations from the upstream issues
