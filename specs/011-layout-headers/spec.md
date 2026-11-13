@@ -37,6 +37,18 @@ the personal drawer itself stay with #12 and #16."
   #529's `-0.01em` and `1.2`. The only new tokens are the eyebrow tokens (FR-030). Each deviation is listed in
   "Deviations from the upstream issues" below.
 
+**Operator decisions at the spec gate** (2026-11-12 and 2026-11-13, human:jeroennouwsdev):
+
+- Upper-case accessible name (spec check 1, SPEC-1-05), "Accept upper-case": the eyebrow-styled heading's accessible
+  name may be upper case as Chromium exposes it; its DOM text stays as the page wrote it; tests compare the name with
+  the written text ignoring case (see "Upper-case text in the accessibility tree", FR-013, FR-031, US1-5).
+- Host `aria-label` on the landmarks (spec check 1, SPEC-1-09), "Keep FR-028": a host `aria-label` on
+  `ocelle-context-sidebar` and `ocelle-personal-rail` names their navigation landmark (FR-028).
+- Precedence of host `aria-label` and `label` (spec check 2, SPEC-2-02), "Follow convention": the library's Host ARIA
+  rule (`packages/elements/README.md`) applies. A present host `aria-label` decides the landmark's name alone, and a
+  blank one leaves the landmark unnamed even with a `label`; `label` names it only when the host has no `aria-label`
+  (FR-028, US3-12, US4-11).
+
 **Constitution decision recorded by triage**: #8 and spec-kitty-design#529 ask for a "12 px mono uppercase" eyebrow.
 Constitution II says "No monospace anywhere", so the eyebrow is set in Schibsted Grotesk, uppercase and tracked
 (FR-030, FR-031).
@@ -46,7 +58,7 @@ Constitution II says "No monospace anywhere", so the eyebrow is set in Schibsted
 runs</h3>` slotted into a shadow root whose adopted stylesheet sets `::slotted([slot=heading]) { text-transform:
 uppercase }` is exposed as a heading named "RECENT RUNS", and its static text and inline text boxes are "RECENT RUNS"
 too; a light-DOM `h3` upper-cased by an inline style gives the same. Chromium therefore names a CSS upper-cased heading
-by its drawn, upper-cased text. This feature accepts that: the eyebrow is drawn upper-cased, its accessible name in
+by its drawn, upper-cased text. This feature accepts that (operator decision "Accept upper-case", above): the eyebrow is drawn upper-cased, its accessible name in
 Chromium is the drawn text, and its DOM text stays as the page wrote it (FR-031, US1-5). The name and the visible text
 then agree; no other technique, which would change the page's own DOM or the eyebrow's look, is used. Tests compare the
 name with the written text ignoring case, so they hold in an engine that exposes the written text instead.
@@ -175,8 +187,12 @@ gaps, fonts and colours, and read the accessibility tree.
 9. **Given** a compact card whose slotted section header has `size="regular"` set by the page, **When** it is
    measured, **Then** the section header is drawn at the default size: the header's own `size` wins over the card's
    density. The same with `size="compact"` on a section header in a regular card draws it compact.
-10. **Given** a card with `inset`, in each density, **When** it is measured in both themes, **Then** its ground is
-    `--ocelle-color-inset`, and its padding, gap, border and radius are those of its density.
+10. **Given** a card with `inset` written as `<ocelle-card inset>` (empty value), a second with `inset="inset"`, a
+    third whose page sets `card.inset = true` from script, each in each density, and a card without `inset`, **When**
+    they are measured in both themes, **Then** the three inset cards' ground is `--ocelle-color-inset` and their
+    padding, gap, border and radius are those of their density, while the card without `inset` is on
+    `--ocelle-color-sheet`; the third carries a reflected `inset` attribute, and removing the attribute from any of
+    them draws it on `--ocelle-color-sheet` (FR-006, FR-016).
 11. **Given** a card with no header (nothing in the `header` slot) and one with a header, **When** both are measured,
     **Then** the first one's body starts at its padding edge with no header gap, while the second has the gap of
     scenario 7 or 8.
@@ -203,6 +219,11 @@ gaps, fonts and colours, and read the accessibility tree.
     the same two section headers outside any card, **When** they are measured, **Then** the two in the compact card are
     drawn at the compact size (an empty or invalid `size` is no `size`, so the card decides) and the two outside a card
     at the default size; each keeps the attribute value the page wrote.
+18. **Given** a compact card whose body holds a card with no `density` whose `header` slot holds a section header, a
+    section header in the compact card's body, and a section header inside a `div` assigned to the compact card's
+    `header` slot, none with `size`, **When** they are measured, **Then** all three section headers are drawn at the
+    default size: only a section header assigned to a compact card's own `header` slot takes the compact size
+    (FR-017), and the inner card draws at its own (regular) density.
 
 ---
 
@@ -269,8 +290,10 @@ landmark, and reflow at 320 px.
 3. **Given** a sidebar with a head, three sections (each an element in the default slot) and a footer, in a container
    600 px tall, **When** it is measured in both themes, **Then** its ground is `--ocelle-color-rail`, a
    `--ocelle-border-width` divider in `--ocelle-color-rule` lies between the head and the first section, between each
-   two sections and between the last section and the footer (four dividers), and the footer's block end is at the
-   container's block end.
+   two sections and between the last section and the footer (four dividers), each divider spans the sidebar's whole
+   inline size, the head, each section and the footer each have `--ocelle-space-4` between their content and every
+   side of their part (so each divider has `--ocelle-space-4` of padding on both sides and there is no other gap
+   between parts), and the footer's block end is at the container's block end (FR-021, FR-022).
 4. **Given** the same sidebar in a container shorter than its content, **When** it is measured, **Then** the footer
    follows the last section (it does not overlap it) and the sidebar's block size is its content's.
 5. **Given** sidebars on one page with no footer, with no head, and with both, **When** they are measured, **Then**
@@ -287,18 +310,21 @@ landmark, and reflow at 320 px.
 10. **Given** the sidebar at 320 px wide (its container the full viewport), **When** the page reflows, **Then** there
     is no horizontal scroll and no section's text is clipped.
 11. **Given** a sidebar whose default slot holds a text node ("Loose text") between two section elements, **When** it
-    is measured, **Then** the text is rendered between the two sections in document order, and dividers lie only
-    between assigned elements: there is one divider between the two sections and none on either side of the text
-    (FR-021). A default slot holding only non-empty text is non-empty, so the head-to-sections and
-    sections-to-footer dividers are drawn.
+    is measured, **Then** the text is rendered between the two sections in document order with `--ocelle-space-4`
+    inline padding on both sides and no block padding of its own, and dividers lie only between assigned elements:
+    there is one divider between the two sections and none on either side of the text (FR-021). A default slot
+    holding only non-empty text is non-empty, so the head-to-sections and sections-to-footer dividers are drawn.
 12. **Given** a sidebar with no `label` but `aria-label="Team"` on its host, a second with `label="Projects"` and
-    `aria-label="Other"`, and a third with neither, **When** the tree is read and axe runs on the page, **Then** the
-    first's landmark is named "Team", the second's "Projects" (`label` wins), the third's landmark has no name, each
-    page holds exactly one navigation landmark per sidebar, and axe reports no serious or critical finding caused by
-    the host's `aria-label` (FR-028).
+    `aria-label="Other"`, a third with `label="Projects"` and a blank `aria-label=""`, and a fourth with neither,
+    **When** the tree is read and axe runs on the page, **Then** the first's landmark is named "Team", the second's
+    "Other" (the host `aria-label` decides alone), the third's landmark has no name (a blank host `aria-label` leaves
+    it unnamed even with a `label`), the fourth's has no name, the page holds exactly one navigation landmark per
+    sidebar, and axe reports no serious or critical finding caused by the host's `aria-label`; **When** script then
+    removes `aria-label` from the second and third, **Then** both landmarks are named "Projects" (FR-028).
 13. **Given** a sidebar with a head and a footer and an empty default slot, beside one with a head, one section and
     a footer, **When** both are measured, **Then** the first has exactly one divider, between head and footer, and no
-    padding for the empty sections, while the second has two.
+    padding for the empty sections (head and footer padding meet at that divider), while the second has two and its
+    section has `--ocelle-space-4` padding on every side.
 
 ---
 
@@ -356,24 +382,32 @@ orientation with focus inside, and reflow at 320 px.
 10. **Given** a page that sets `orientation` from its own query with an exclusive bound, as the README shows
     (vertical while its column is at least the bound, horizontal below), **When** the column is exactly at the bound,
     **Then** the rail is vertical, and 1 px below it horizontal.
-11. **Given** a rail with no `label` but `aria-label="Personal"` on its host, and one with both `label="Me"` and
-    `aria-label="Other"`, **When** the tree is read and axe runs on the page, **Then** the landmarks are named
-    "Personal" and "Me", and axe reports no serious or critical finding caused by the host's `aria-label` (FR-028).
+11. **Given** a rail with no `label` but `aria-label="Personal"` on its host, one with both `label="Me"` and
+    `aria-label="Other"`, and one with `label="Me"` and a blank `aria-label=""`, **When** the tree is read and axe runs
+    on the page, **Then** the landmarks are named "Personal" and "Other" and the third is unnamed, the page holds one
+    navigation landmark per rail, and axe reports no serious or critical finding caused by the host's `aria-label`;
+    **When** script then removes `aria-label` from the second and third, **Then** both are named "Me" (FR-028).
 
 ### Edge Cases
 
-- A heading slot that holds no heading element (plain text or a `span`): the element draws it with the heading
-  styles but adds no heading node; the tree has no heading, as the page wrote it. The README says to slot a heading
-  element.
+- A heading slot that holds no heading element (for example a `span slot="heading"`): the element draws it with the
+  heading styles but adds no heading node; the tree has no heading, as the page wrote it. The README says to slot a
+  heading element. Text written directly in a section header or page header is not rendered, since neither has a
+  default slot.
 - Two elements in one `heading` slot: both are rendered in order; the README says to slot one.
 - An eyebrow-only section header with actions: the actions are rendered at the inline end; the eyebrow and
   description slots are not rendered (US1-5).
-- A card nested in a card: the inner card's ground and density are its own; `inset` is the way to mark the nesting.
+- A card nested in a card: the inner card's ground and density are its own, so a card with no `density` inside a
+  compact card is regular and its section header is drawn at the default size (US1-18); `inset` is the way to mark
+  the nesting.
+- A section header in a compact card's body, or nested inside another element in its `header` slot: not assigned to
+  the card's `header` slot, so drawn at its own size, regular when `size` is not set (FR-017, US1-18).
 - A section header outside a card, with `size="compact"`: drawn compact (US1-6).
 - A compact card whose header slot holds something other than a section header: the card's density changes only its
   own padding and gap.
-- A context sidebar or personal rail without `label`, or with an empty or whitespace-only `label`: the navigation
-  landmark is present with no name, unless the host carries a non-empty `aria-label`, which then names it (FR-028,
+- A context sidebar or personal rail without `label`, or with an empty or whitespace-only `label`, and no host
+  `aria-label`: the navigation landmark is present with no name. A host `aria-label` decides the name alone when
+  present, so a non-empty one names the landmark and a blank one leaves it unnamed even with a `label` (FR-028,
   US3-12, US4-11); the README says to always set a distinct `label`, since axe's landmark rules flag two unnamed
   navigation landmarks.
 - A personal rail with no primary items but bottom items: the bottom group sits at the block end (vertical) or the
@@ -416,9 +450,11 @@ orientation with focus inside, and reflow at 320 px.
 - **FR-006**: Attributes that select a variant (`density`, `inset`, `size`, `variant`, `orientation`) MUST reflect
   between property and attribute once the page sets them; `label` MUST NOT be reflected. A property's default is
   "not set" (the README convention's `@default undefined`): the element gives it no initial value, writes no
-  attribute on upgrade, and draws the look the requirements below name as the default. An absent, empty or
-  invalid attribute value (one outside the property's list) MUST behave as "not set"; the element keeps the value the
-  page wrote and does not rewrite it.
+  attribute on upgrade, and draws the look the requirements below name as the default. For the enumerated
+  attributes (`density`, `size`, `variant`, `orientation`), an absent, empty or invalid attribute value (one outside
+  the property's list) MUST behave as "not set"; the element keeps the value the page wrote and does not rewrite it.
+  `inset` is a boolean attribute: present, with any value (the empty string included, as in `<ocelle-card inset>` and
+  as reflection writes it), means inset; absent means not inset (FR-016, US1-10).
 - **FR-007**: The five elements MUST declare no CSS parts and no element CSS custom properties in this release; the
   manifest states each list empty. They read the tokens named in FR-010 to FR-031 by inheritance, and the README names
   them.
@@ -452,12 +488,14 @@ orientation with focus inside, and reflow at 320 px.
   `--ocelle-border-width` border in `--ocelle-color-rule`, `--ocelle-radius-row` corners and the `--ocelle-color-sheet`
   ground. Regular has padding `--ocelle-space-7` and a header-to-body gap of `--ocelle-space-2`; compact has padding
   `--ocelle-space-5` and a gap of `--ocelle-space-4`.
-- **FR-016**: `inset` (boolean) MUST draw the card on `--ocelle-color-inset` instead of `--ocelle-color-sheet`,
+- **FR-016**: `inset` (boolean, FR-006: present with any value is inset) MUST draw the card on `--ocelle-color-inset` instead of `--ocelle-color-sheet`,
   changing nothing else. In forced-colours mode both grounds become the system background, so an inset card draws
   like a regular one; this is accepted, because `inset` carries no information the nesting does not (US1-13).
 - **FR-017**: In a compact card, a section header assigned to the `header` slot MUST be drawn at its compact size
   unless the section header has its own valid `size` attribute (`"regular"` or `"compact"`), which wins; a section
-  header with an absent, empty or invalid `size` takes the card's density (US1-8, US1-9, US1-17).
+  header with an absent, empty or invalid `size` takes the card's density (US1-8, US1-9, US1-17). A section header
+  that is not itself assigned to a compact card's `header` slot (in its body, nested inside another element in the
+  `header` slot, or in a card nested in it) is drawn at its own size, regular when `size` is not set (US1-18).
 - **FR-018**: The card MUST expose no role or landmark of its own; a page that needs a region or an article wraps or
   labels its content itself, as the README says.
 
@@ -477,22 +515,27 @@ orientation with focus inside, and reflow at 320 px.
 
 **Context sidebar**
 
-- **FR-020**: `ocelle-context-sidebar` MUST expose one navigation landmark named by `label` (US3-1, US3-2), holding
+- **FR-020**: `ocelle-context-sidebar` MUST expose one navigation landmark named by `label` or a host `aria-label`
+  (FR-028; US3-1, US3-2), holding
   everything the page slots into it, on `--ocelle-color-rail`.
 - **FR-021**: It MUST have the slots `head`, a default slot (each assigned element is one section) and `footer`,
-  stacked in that order. Each non-empty part has padding `--ocelle-space-4` on every side. Text assigned to the
-  default slot is rendered in document order but is not a section: it makes the default slot non-empty and gets no
-  divider of its own (US3-11).
+  stacked in that order. The parts that are padded are the head, each section (each element assigned to the default
+  slot, not the default slot's region as a whole) and the footer: each non-empty one has padding `--ocelle-space-4`
+  on every side. There is no gap between parts: two adjacent padded parts meet at the divider between them (FR-022).
+  Text assigned to the default slot is rendered in document order but is not a section: it makes the default slot
+  non-empty, gets `--ocelle-space-4` inline padding and no block padding, and gets no divider of its own (US3-11).
 - **FR-022**: A `--ocelle-border-width` divider in `--ocelle-color-rule` MUST lie between each two adjacent non-empty
-  parts: head and first section, each two sections, last section and footer. An empty part has no padding and no
-  divider (US3-5).
+  parts: head and first section, each two sections, last section and footer. Each divider lies between the two parts'
+  padding (outside both), and spans the sidebar's whole inline size. An empty part has no padding and no divider
+  (US3-3, US3-5, US3-13).
 - **FR-023**: The sidebar MUST fill its container's block size when its content is shorter, with the footer at the
   block end; when its content is taller, it MUST grow with its content and the footer follows the last section
   (US3-3, US3-4). Scrolling, and the sidebar's inline size, are the container's (the shell's) concern.
 
 **Personal rail**
 
-- **FR-024**: `ocelle-personal-rail` MUST expose one navigation landmark named by `label`, with its items inside it in
+- **FR-024**: `ocelle-personal-rail` MUST expose one navigation landmark named by `label` or a host `aria-label`
+  (FR-028), with its items inside it in
   document order, on `--ocelle-color-chrome` with `--ocelle-color-chrome-ink` text in both themes (constitution II).
 - **FR-025**: It MUST have a default slot (primary items) and a `bottom` slot, and `orientation` with `"vertical"`
   (not set, FR-006, it is vertical) and `"horizontal"`, laid out as US4-2 and US4-3, with a `--ocelle-space-1` gap
@@ -513,10 +556,13 @@ orientation with focus inside, and reflow at 320 px.
 - **FR-027**: The rail MUST NOT size or style its items beyond the gap, their centring across the rail and the
   chrome ink colour they inherit; item size and density are the items' own (#12's `ocelle-nav-item`, expected at
   `--ocelle-size-rail-item`).
-- **FR-028**: For the sidebar and the rail, a non-empty `aria-label` on the host MUST name the navigation landmark
-  when `label` is not set, empty or whitespace only, and `label` wins when both are set (constitution III: a name set
-  on the host reaches the landmark). The page still holds one navigation landmark per element, and the host's
-  `aria-label` MUST NOT cause an axe serious or critical finding (US3-12, US4-11). The README recommends `label`.
+- **FR-028**: For the sidebar and the rail, the landmark's name MUST follow the README's Host ARIA rule (operator
+  decisions "Keep FR-028" and "Follow convention"; constitution III: a name set on the host reaches the landmark). A
+  host `aria-label`, when present, decides the name alone: a non-empty one is the name even when `label` is set, and
+  a blank one leaves the landmark unnamed even with a `label`. `label` names the landmark only when the host has no
+  `aria-label`; removing the host `aria-label` falls back to `label`. The page still holds one navigation landmark
+  per element, and the host's `aria-label` MUST NOT cause an axe serious or critical finding (US3-12, US4-11). The
+  README recommends `label`.
 
 **Tokens**
 
@@ -554,8 +600,8 @@ orientation with focus inside, and reflow at 320 px.
   - section header: the eyebrow variant draws the heading upper case while its DOM text stays as written;
   - card: the compact card sets a slotted section header's size unless the header has a valid `size`; the card has
     no role, and a page that needs a region or article adds it;
-  - sidebar and rail: "set a distinct `label`", and that a host `aria-label` names the landmark when `label` is not
-    set;
+  - sidebar and rail: "set a distinct `label`", and that a host `aria-label` decides the landmark's name alone when
+    present (a blank one leaves it unnamed even with a `label`), with `label` used only when the host has none;
   - sidebar: wrap each section in an element;
   - rail: the orientation example of US4-10 with an exclusive bound (`width < N`), and that items are sized by
     themselves (`--ocelle-size-rail-item`).
@@ -571,8 +617,10 @@ orientation with focus inside, and reflow at 320 px.
 - **Slot part**: a named region of an element (heading, eyebrow, description, actions, header, body, head, section,
   footer, bottom) that holds the page's own light-DOM content; it is empty or filled (Empty slot, above).
 - **Variant attribute**: a reflected attribute that selects one look (`density`, `inset`, `size`, `variant`,
-  `orientation`); not set by default, and an absent, empty or invalid value draws its default look (FR-006).
-- **Landmark label**: the `label` property of the sidebar and rail, the accessible name of their navigation landmark.
+  `orientation`); not set by default. For the enumerated ones an absent, empty or invalid value draws the default
+  look; `inset` is a boolean, present with any value meaning inset (FR-006).
+- **Landmark label**: the `label` property of the sidebar and rail, the accessible name of their navigation landmark
+  when the host has no `aria-label` (FR-028).
 - **Eyebrow tokens**: the four tokens of FR-030 that make up the eyebrow style of FR-031.
 
 ## Success Criteria *(mandatory)*
