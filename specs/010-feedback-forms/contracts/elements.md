@@ -14,7 +14,7 @@ and the browser build define all three.
 
 Slots: `heading`, default (body). Parts: `heading`, `body`. Events: none. CSS custom properties: none.
 Documented, not declared: host `role` (`alert`, `status` supported as live roles; `log`, other live roles and host
-`aria-live`/`aria-atomic`/`aria-relevant` not supported), host `aria-hidden="false"` (not supported, FR-009), host `hidden`. Announcements go through a visually hidden
+`aria-live`/`aria-atomic`/`aria-relevant` not supported), host `aria-hidden="false"` and `aria-hidden="true"` (not supported, FR-009; hide the notice with `hidden`), host `hidden`. Announcements go through a visually hidden
 live region in the shadow root that holds a copy of the text for `H` (5000 ms, or until the next announcement but at
 least `W`) after a wait of `W` (300 ms after load, 700 ms before), which changes closer together than `W` restart
 (research R-02); for a host `role="alert"`, insertion, reveal and a change to `alert` are left to the platform's
@@ -50,13 +50,15 @@ Tokens read: `color-<tone>`, `color-<tone>-bg`, `color-ink`, `radius-row`, `bar-
 | `focus()` | method | `(options?: FocusOptions) => void` | |
 
 Parts: `label`, `control`, `description`, `error`. Slots: none. CSS custom properties: none.
-Documented, not declared: the `form` attribute, host `aria-label` (names the control when it is not blank; a blank
+Documented, not declared: the `form` attribute, host `aria-label` (names the control when it is not blank, with
+whitespace collapsed and trimmed; a blank
 one, empty or whitespace only, is skipped and the labels and `label` name the control, FR-022; with a visible label
-drawn it must contain the visible label text, otherwise not supported; it also stays on the host's node), host `aria-invalid`,
+drawn it must contain the visible label text, otherwise not supported; it also stays on the host's node as written,
+so hosts pass it trimmed), host `aria-invalid`,
 `aria-required`, `aria-disabled` (combined for the value `"true"` only; any other value not supported),
 `aria-description` (added to the description; it also stays on the host's node), as research R-05 says; host
-`aria-labelledby` and `aria-describedby` (not supported); host `role` and `aria-hidden="false"` (not supported,
-FR-022).
+`aria-labelledby` and `aria-describedby` (not supported); host `role`, `aria-hidden="false"` and `aria-hidden="true"`
+(not supported, FR-022; hide a control with `hidden`).
 Tokens read: `color-sheet`, `color-control-border`, `color-ink`, `color-ink-muted`, `color-danger`, `color-focus`,
 `color-disabled-bg`, `color-disabled-ink`, `border-width`, `bar-width`, `radius-2`, `target-min`, `focus-width`,
 `focus-offset`, `font-size-sm`, `font-weight-strong`, `line-height-normal`, `space-1`, `space-2`, `space-3`.

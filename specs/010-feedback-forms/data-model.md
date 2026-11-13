@@ -120,7 +120,7 @@ the baseline, except a change to `alert`, which takes the alert path whatever th
 | dirty | private | set by user edit or script `value`; cleared on reset |
 | form disabled | private | from `formDisabledCallback` (fieldset) |
 | effective disabled | private | `disabled` or form disabled |
-| computed name | private | FR-022 order: a non-blank host `aria-label` (a blank one, empty or whitespace only, is skipped); else labels' text then `label` |
+| computed name | private | FR-022 order: a non-blank host `aria-label`, whitespace collapsed and trimmed (a blank one, empty or whitespace only, is skipped); else labels' text then `label` |
 | computed description | private | description, host `aria-description`, error (non-empty parts, in that order) |
 | invalid for AT | private | `error` non-empty or host `aria-invalid="true"`; sets the class `invalid` on the control (R-05) |
 | required for AT, disabled for AT | private | `required` or host `aria-required="true"`; `aria-disabled` when host `aria-disabled="true"`. Host values other than `"true"` change nothing (not supported, FR-022) |

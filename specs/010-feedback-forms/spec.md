@@ -377,7 +377,9 @@ validity, events and the accessibility tree.
     `label="Lane title"` and the external label, **Then** the field is named "Title Lane title, filter"; **given** a
     host `aria-label="Search lanes"` and `aria-description="Filters the board"`, **Then** the textbox is named "Search lanes"
     and described by "Filters the board", and the host's own node is a generic with the same name and description
-    (as Chromium exposes it; the test pins both nodes, operator decision PLAN-A11Y-SECURITY-1-005);
+    (as Chromium exposes it; the test pins both nodes, operator decision PLAN-A11Y-SECURITY-1-005); **given** a host
+    `aria-label=" Title "` (surrounding spaces) without `label` and without an external label, **Then** the field is
+    named exactly "Title" and the host's own node is named " Title ", the attribute as written (FR-022);
     **given** a host `aria-labelledby` naming an element in the page and no other source, **Then** the
     field has no accessible name (FR-022).
 14. **Given** keyboard use, **When** the user tabs, **Then** the field takes focus once (the host is not a second tab
@@ -593,7 +595,8 @@ gates and the README documentation test.
   never rewrites it, and only the property reads the default (`tone="bogus"` stays in the attribute while `tone`
   reads `"info"`). Where the README's convention text was written for mission 005's two elements and does not fit
   the new ones (every property's `@default undefined`, against the defaults of FR-021 and `contracts/elements.md`;
-  a blank host `aria-label` deciding alone, against FR-022; a host `role` not supported, against FR-009), the README
+  a blank host `aria-label` deciding alone, against FR-022; a host `role` not supported, against FR-009; a host
+  `aria-hidden="true"` hiding the element, against FR-009 and FR-022), the README
   restates it so that it covers each new element, in the phase that adds the element; what it says of 005's elements
   is unchanged.
 - **FR-002**: Every element attaches an open shadow root and renders every surface inside its own host (006 FR-014,
@@ -707,6 +710,7 @@ gates and the README documentation test.
   | `log`, or any other role that gives the host's node a live politeness | Not supported. | Not supported. |
   | any role, with a host-written `aria-live`, `aria-atomic` or `aria-relevant` on `ocelle-notice` | Not supported. | Not supported. |
   | any role, with a host-written `aria-hidden="false"` on `ocelle-notice` | Not supported. | Not supported. |
+  | any role, with a host-written `aria-hidden="true"` on `ocelle-notice` | Not supported: hide the notice with its `hidden` attribute (US1 scenario 17). | Not supported, as without `announce`. |
 
   The `alert` and `status` rows are an operator decision (operator answer at spec check 2, "Keep: role implies
   announce"): a host `role="alert"` or `role="status"` without `announce` behaves as `announce` with that role's
@@ -736,8 +740,11 @@ gates and the README documentation test.
   README names it, its source and that it is Chromium's behaviour (WebKit not measured).
 
   *Not supported* means: the README tells hosts not to write these on the notice (use `announce`, or `role="alert"`
-  or `role="status"`), the outcome is not specified, and no scenario tests it; the rules of this requirement and of
-  SC-002 cover only the three supported rows.
+  or `role="status"`; to hide the notice, its `hidden` attribute), the outcome is not specified, and no scenario tests
+  it; the rules of FR-008, of this requirement and of SC-002 cover only the three supported rows. A host
+  `aria-hidden="true"` is not given 005's outcome for its elements (the element hidden): it would hide the notice's
+  slotted links, which stay focusable (FR-011; axe `aria-hidden-focus`), and FR-008 counts only the host's own
+  `hidden` as hiding.
 
   In every supported row, first load announces nothing (a server-rendered `role="alert"` notice included), and each
   triggering change is announced by exactly one live region node at or inside the host, or, in the `alert` row for
@@ -771,7 +778,8 @@ gates and the README documentation test.
 - **FR-022**: Naming: the inner control's accessible name is, in this order of precedence (constitution III: ARIA
   set on a host reaches the inner control):
   1. a non-empty host `aria-label` (one that is neither empty nor whitespace only, as accessible-name computation
-     treats it; a blank one is skipped and the next item names the control): its text, alone, whatever else is set. When a visible label is drawn (the
+     treats it; a blank one is skipped and the next item names the control): its text, alone, with whitespace
+     collapsed and trimmed as in item 2, whatever else is set. When a visible label is drawn (the
      `label` text or an external `<label>`), the `aria-label` must contain the visible label text (WCAG 2.2 SC 2.5.3);
      the README says so, and a host `aria-label` that does not contain it while a visible label is drawn is not
      supported (operator decision PLAN-A11Y-SECURITY-1-006);
@@ -786,7 +794,11 @@ gates and the README documentation test.
   control is not supported, as on mission 005's elements: they would give the host's node a role or a hiding of its
   own rather than reach the inner control, so they are not ARIA state of the kind constitution III forwards; the
   README says not to set them and to name the control with `label`, a `<label>` or `aria-label`; the outcome is not
-  specified and no scenario tests it.
+  specified and no scenario tests it. A host `aria-hidden="true"` on a form control is not supported either: 005's
+  outcome for its elements (the element hidden) does not fit, since the inner control stays focusable through
+  `delegatesFocus` and a focusable control hidden from assistive technology fails WCAG 2.2 SC 4.1.2 (axe
+  `aria-hidden-focus`); the README says not to set it and to hide the control with a host `hidden` attribute; the
+  outcome is not specified and no scenario tests it.
 
   Other ARIA states and properties a server template may write on the host (`aria-invalid`, `aria-required`,
   `aria-disabled`, `aria-description`) must reach the inner control and must not stay as a second, differing state
@@ -799,6 +811,10 @@ gates and the README documentation test.
   PLAN-CORRECTNESS-1-006, User Story 2 scenario 23). A host `aria-label` and `aria-description` stay on the host
   (the element does not rewrite host attributes), so the host's node carries the same name and description as the
   control beside it; the README says so and a test pins the tree (operator decision PLAN-A11Y-SECURITY-1-005).
+  Chromium names the host's node from the `aria-label` as written, surrounding spaces included (005 README § Host
+  ARIA), while the control's name is item 1's collapsed and trimmed text, so the two names are the same only for an
+  `aria-label` passed trimmed with single spaces; the README tells hosts to pass it so, as 005 does, and User Story 2
+  scenario 13 pins both names for an `aria-label` with surrounding spaces.
 - **FR-023**: Validity mirrors the inner control's native constraint validation (`required`, `type`, `minlength`,
   `maxlength`, `pattern`, `min`, `max`, `step` for the input; `required` for the select): the host's validity flags
   and message equal those of the inner control, and `reportValidity()` focuses the inner control and makes the
@@ -913,8 +929,10 @@ gates and the README documentation test.
   anchor, the `email` keyboard hint, `password` masking, the select's list opening); that form controls are not
   supported on state grounds (FR-025); how host ARIA attributes combine with the element's own (FR-022), that only
   `"true"` is supported for host `aria-invalid`, `aria-required` and `aria-disabled`, that a host `aria-label` must
-  contain the visible label text, that a host `role` or `aria-hidden="false"` on a form control is not supported
-  (FR-022), and that a host `aria-label` and `aria-description` also stay on the host's node;
+  contain the visible label text, that a host `role` or `aria-hidden` (`"true"` or `"false"`) on a form control is not
+  supported and a host `hidden` attribute hides one (FR-022), that a host `aria-label` and `aria-description` also
+  stay on the host's node, and that the control's name is a host `aria-label` collapsed and trimmed while the host's
+  node keeps it as written, so hosts pass it trimmed (FR-022);
   how announcements reach the tree (a separate live region holding a copy of the text, written after the
   serialisation delay, and the delay); the announcement wait, that changes closer together than it merge and that a
   text changing more often than it is not announced until it stops (FR-008); how long a copy is held, that the figure
