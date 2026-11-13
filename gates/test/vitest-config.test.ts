@@ -43,10 +43,10 @@ function inProject(project: Project, path: string): boolean {
 
 describe("vitest.mutation.config.ts", () => {
   // 005 research.md R-12: elements is mutated by stryker.elements.config.json; elements-build and elements-browser
-  // start tools or Chromium; elements-node stays.
-  const notMutated = ["tokens-browser", "styles-browser", "elements", "elements-build", "elements-browser", "storybook-integration", "gates-integration"];
+  // start tools or Chromium; elements-node stays. 008 research.md R-14: elements-touch is mutated with elements.
+  const notMutated = ["tokens-browser", "styles-browser", "elements", "elements-touch", "elements-build", "elements-browser", "storybook-integration", "gates-integration"];
 
-  it("excludes exactly tokens-browser, styles-browser, elements, elements-build, elements-browser, storybook-integration and gates-integration from the projects of vitest.config.ts, and splits tokens", () => {
+  it("excludes exactly tokens-browser, styles-browser, elements, elements-touch, elements-build, elements-browser, storybook-integration and gates-integration from the projects of vitest.config.ts, and splits tokens", () => {
     expect(all.map((project) => project.name).filter((name) => !kept.some((project) => project.name === name))).toEqual(notMutated);
     // 007 research.md R-05 (lever 1): the mutation configuration splits tokens in two, source-table.test.ts alone in
     // tokens-source-table and the rest in tokens; every other kept project is unchanged. This replaces the plain
@@ -64,9 +64,10 @@ describe("vitest.mutation.config.ts", () => {
 });
 
 describe("vitest.mutation.elements.config.ts and stryker.elements.config.json (005 research.md R-12)", () => {
-  it("holds exactly the elements project of vitest.config.ts", () => {
-    expect(keptElements).toEqual(all.filter((project) => project.name === "elements"));
-    expect(keptElements.map((project) => project.name)).toEqual(["elements"]);
+  // 008 research.md R-14: the in-process touch rows kill mutants too, so elements-touch is mutated with elements.
+  it("holds exactly the elements and elements-touch projects of vitest.config.ts", () => {
+    expect(keptElements).toEqual(all.filter((project) => project.name === "elements" || project.name === "elements-touch"));
+    expect(keptElements.map((project) => project.name)).toEqual(["elements", "elements-touch"]);
   });
 
   it("is stryker.config.json with its own Vitest config and its own report file", () => {
@@ -110,6 +111,41 @@ describe("the Vitest projects", () => {
     expect(ownersOf("packages/elements/test/browser/x.test.ts")).toEqual(["elements-browser"]);
     expect(ownersOf("packages/elements/test/x.test.ts")).toEqual(["elements"]);
     expect(ownersOf("packages/elements/test/scenarios/x.test.ts")).toEqual(["elements"]);
+  });
+
+  // 008 research.md R-14: the in-process touch rows `test/*.touch.test.ts` run in elements-touch only, with the
+  // elements project's excludes, so a fixture, node or build file named *.touch.test.ts stays in its own project.
+  it("put an in-process touch test in elements-touch only, and a fixture, node or build touch test in its own project only", () => {
+    const ownersOf = (path: string) => all.filter((project) => inProject(project, path)).map((project) => project.name);
+    expect({
+      inProcess: ownersOf("packages/elements/test/x.touch.test.ts"),
+      fixture: ownersOf("packages/elements/test/browser/x.touch.test.ts"),
+      node: ownersOf("packages/elements/test/node/x.touch.test.ts"),
+      build: ownersOf("packages/elements/test/build/x.touch.test.ts"),
+    }).toEqual({ inProcess: ["elements-touch"], fixture: ["elements-browser"], node: ["elements-node"], build: ["elements-build"] });
+    expect(all.find((project) => project.name === "elements-touch")?.exclude).toEqual(all.find((project) => project.name === "elements")?.exclude.filter((glob) => glob !== "packages/elements/test/*.touch.test.ts"));
+  });
+
+  // 008 research.md R-14: both browser-mode element projects run at the fixture's 1280 × 800, elements as a mouse
+  // device and elements-touch in a context with hasTouch; both register the same commands.
+  it("run elements and elements-touch in browser mode at 1280 × 800, only elements-touch with hasTouch, with the same commands", () => {
+    const browser = (name: string) => {
+      const project = (base.test?.projects ?? []).find((each) => (each as { test?: { name?: unknown } }).test?.name === name) as
+        | { test?: { browser?: { enabled?: boolean; viewport?: unknown; provider?: { options?: { contextOptions?: { hasTouch?: boolean } } }; commands?: Record<string, unknown> } } }
+        | undefined;
+      const options = project?.test?.browser;
+      return {
+        enabled: options?.enabled,
+        viewport: options?.viewport,
+        hasTouch: options?.provider?.options?.contextOptions?.hasTouch === true,
+        commands: Object.keys(options?.commands ?? {}).sort(),
+      };
+    };
+    const commands = ["axTree", "emulateForcedColors", "emulateReducedMotion", "pointerPath", "touchTap"];
+    expect({ elements: browser("elements"), touch: browser("elements-touch") }).toEqual({
+      elements: { enabled: true, viewport: { width: 1280, height: 800 }, hasTouch: false, commands },
+      touch: { enabled: true, viewport: { width: 1280, height: 800 }, hasTouch: true, commands },
+    });
   });
 
   it("run elements-node, elements-build and elements-browser in node, on exactly their own directory", () => {
