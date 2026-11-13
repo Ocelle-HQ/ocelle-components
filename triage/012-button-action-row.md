@@ -7,7 +7,9 @@ in_scope: [7]
 out_of_scope: [1, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 23]
 semver: minor
 spec_prompt: "Build the action controls of issue #7 (triage/012-button-action-row.md) in @ocelle/elements on mission 005's element conventions and slot convention, spec directory specs/012-button-action-row: ocelle-button (variant, size, label, disabled, busy, href rendering a link, click; ARIA passthrough of aria-expanded, aria-controls and aria-current to the inner control with no ID reference crossing a shadow root (spec-kitty-design#501); slotted icons through the icon slot (#496, #509); a compact inline padding for breadcrumb items that #12 consumes (#518); a compact text scale, a quiet bordered variant, a 44 px minimum target from --ocelle-target-min and a busy spinner that does not overlap the label and respects reduced motion (#532)) and ocelle-action-row (row-id, layout, presentation, ocelle-action-row-activate carrying the row id, aria-busy; flush presentation, compact navigation density, no zero width when shrink-wrapped (#493); route mode with aria-current page or true (#495); an unavailable state with a visual and assistive-technology cue (#504); card layout with word wrapping only in tags, a title gap, a trailing slot for the arrow-end icon (#508); hover border and surface from tokens (#525); a label property or forwarded aria-labelledby (#528)); one shared answer for link versus button, disabled versus unavailable and name passthrough that later controls (#12, #14) follow; each element meeting #7's Done-when checklist; ocelle-pill-tag, ocelle-status-indicator and ocelle-metric stay in #7 for a later status mission."
-status: proposed
+status: approved
+decided_by: "human:jeroennouwsdev"
+decided_at: 2026-11-13T18:29:42Z
 ---
 
 # Triage 012: Action controls of #7, `ocelle-button` and `ocelle-action-row`
