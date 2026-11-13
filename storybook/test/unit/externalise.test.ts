@@ -6,12 +6,12 @@ import { afterEach, describe, expect, it } from "vitest";
 import { scanMarkup } from "../../../gates/bin/csp.ts";
 import { externalise, externaliseDir } from "../../scripts/externalise.ts";
 
-// The Storybook post-build step (FR-023, research.md R-10, reviews/phase-3/spike.md step 2; T033): every inline
-// <script> moves to a same-origin file referenced by src, every <style> element to a file referenced by <link>, and
-// every style attribute becomes a data-ocelle-style attribute whose declarations move to a linked stylesheet, so no
-// inline script, style element or style attribute remains. File names are `inline-<first 16 hex digits of the
-// SHA-256 of the text>.<js|css>`, beside the HTML entry, so that relative imports in a moved module keep working.
-// An external script is left as it is.
+// The Storybook post-build step, cut down to <style> elements (006 research.md R-10, plan decision 5; operator decision
+// on PLAN-FRESH-1-009, option (a)): every <style> element of a built HTML entry moves to a same-origin file referenced
+// by a <link>, so Storybook's multi-line vendor monospace stack stays out of the HTML the prefix gate reads. The
+// Storybook is not a CSP target any more (006 FR-020), so inline <script> elements and style attributes stay as they
+// are, and no `inline-<hash>.js` file is written. File names are `inline-<first 16 hex digits of the SHA-256 of the
+// text>.css`, beside the HTML entry.
 const hash = (text: string): string => createHash("sha256").update(text).digest("hex").slice(0, 16);
 
 const dirs: string[] = [];
@@ -20,21 +20,16 @@ afterEach(() => {
 });
 
 describe("externalise", () => {
-  it("moves an inline classic script to a file referenced by src", () => {
-    const code = "\n      window.CONFIG_TYPE = 'PRODUCTION';\n    ";
-    const result = externalise(`<head>\n<script>${code}</script>\n</head>`);
-    expect(result).toEqual({
-      html: `<head>\n<script src="./inline-${hash(code)}.js"></script>\n</head>`,
-      files: [{ name: `inline-${hash(code)}.js`, text: code }],
-    });
+  it("leaves an inline classic script and an inline module script in the HTML as they are, writing no file", () => {
+    const html = "<head>\n<script>\n      window.CONFIG_TYPE = 'PRODUCTION';\n    </script>\n</head><body><script type=\"module\" data-x=\"1\">import './x.js';</script></body>";
+    expect(externalise(html)).toEqual({ html, files: [] });
   });
 
-  it("moves an inline module script, keeping its type and its other attributes", () => {
-    const code = "import './sb-manager/runtime.js';";
-    const result = externalise(`<body><script type="module" data-x="1">${code}</script></body>`);
-    expect(result).toEqual({
-      html: `<body><script type="module" data-x="1" src="./inline-${hash(code)}.js"></script></body>`,
-      files: [{ name: `inline-${hash(code)}.js`, text: code }],
+  it("moves the <style> after an inline script, Storybook's multi-line monospace stack, to a file referenced by a <link>, leaving the script inline", () => {
+    const rules = "\n  code {\n    font-family:\n      ui-monospace, Menlo, Monaco,\n      monospace;\n  }\n";
+    expect(externalise(`<head><script>a();</script><style>${rules}</style></head>`)).toEqual({
+      html: `<head><script>a();</script><link rel="stylesheet" href="./inline-${hash(rules)}.css"></head>`,
+      files: [{ name: `inline-${hash(rules)}.css`, text: rules }],
     });
   });
 
@@ -47,80 +42,65 @@ describe("externalise", () => {
     });
   });
 
-  it("replaces style attributes by data-ocelle-style and moves their declarations to one stylesheet linked in the head", () => {
-    const red = "color: red; max-width: 70ch";
-    const blue = 'font-family: "A b"';
-    const sheet = `[data-ocelle-style="${hash(red)}"] { ${red} }\n[data-ocelle-style="${hash(blue)}"] { ${blue} }\n`;
-    const result = externalise(`<html><head><title>t</title></head><body><p style="${red}">a</p><p class="x" style='${blue}'>b</p><i style="${red}"></i></body></html>`);
-    expect(result).toEqual({
-      html:
-        `<html><head><title>t</title><link rel="stylesheet" href="./inline-${hash(sheet)}.css"></head><body>` +
-        `<p data-ocelle-style="${hash(red)}">a</p><p class="x" data-ocelle-style="${hash(blue)}">b</p><i data-ocelle-style="${hash(red)}"></i></body></html>`,
-      files: [{ name: `inline-${hash(sheet)}.css`, text: sheet }],
+  it("leaves style attributes as they are, while moving a <style> beside them", () => {
+    const html = '<html><head><title>t</title><style>a{}</style></head><body><p style="color: red">a</p></body></html>';
+    expect(externalise(html)).toEqual({
+      html: `<html><head><title>t</title><link rel="stylesheet" href="./inline-${hash("a{}")}.css"></head><body><p style="color: red">a</p></body></html>`,
+      files: [{ name: `inline-${hash("a{}")}.css`, text: "a{}" }],
     });
   });
 
-  it("leaves an external script and a <link> as they are while moving the inline script beside them", () => {
-    const external = '<script type="module" crossorigin src="./assets/iframe.js"></script><link rel="stylesheet" href="./tokens.css">';
-    const result = externalise(`<head>${external}<script>x();</script></head>`);
-    expect(result).toEqual({
-      html: `<head>${external}<script src="./inline-${hash("x();")}.js"></script></head>`,
-      files: [{ name: `inline-${hash("x();")}.js`, text: "x();" }],
+  it("reads markup inside an inline script as script text, not as a <style> to move", () => {
+    const html = "<script>el.innerHTML = `<style>a{}</style>`;</script><style>b{}</style>";
+    expect(externalise(html)).toEqual({
+      html: `<script>el.innerHTML = \`<style>a{}</style>\`;</script><link rel="stylesheet" href="./inline-${hash("b{}")}.css">`,
+      files: [{ name: `inline-${hash("b{}")}.css`, text: "b{}" }],
     });
   });
 
-  it("reads markup inside a moved script as script text, not as tags", () => {
-    const code = "el.innerHTML = `<p style=\"color: red\">x</p><style>a{}</style>`;";
-    const result = externalise(`<script>${code}</script><p>after</p>`);
+  it("writes one file for two <style> elements with the same text, and keeps the links in document order around an inline script", () => {
+    const one = "a{}";
+    const two = "b{}";
+    const result = externalise(`<style>${one}</style><script>x();</script><style>${two}</style><style>${one}</style>`);
     expect(result).toEqual({
-      html: `<script src="./inline-${hash(code)}.js"></script><p>after</p>`,
-      files: [{ name: `inline-${hash(code)}.js`, text: code }],
-    });
-  });
-
-  it("writes one file for two inline scripts with the same text, and keeps them in document order", () => {
-    const one = "a();";
-    const two = "b();";
-    const result = externalise(`<script>${one}</script><script>${two}</script><script>${one}</script>`);
-    expect(result).toEqual({
-      html: `<script src="./inline-${hash(one)}.js"></script><script src="./inline-${hash(two)}.js"></script><script src="./inline-${hash(one)}.js"></script>`,
+      html: `<link rel="stylesheet" href="./inline-${hash(one)}.css"><script>x();</script><link rel="stylesheet" href="./inline-${hash(two)}.css"><link rel="stylesheet" href="./inline-${hash(one)}.css">`,
       files: [
-        { name: `inline-${hash(one)}.js`, text: one },
-        { name: `inline-${hash(two)}.js`, text: two },
+        { name: `inline-${hash(one)}.css`, text: one },
+        { name: `inline-${hash(two)}.css`, text: two },
       ],
     });
   });
 
-  it("leaves output that the csp gate's markup rules find nothing in", () => {
+  it("leaves output in which the csp gate's markup rules find the inline scripts and the style attribute, and no <style> element", () => {
     const html =
       "<!doctype html>\n<html>\n<head>\n<style>@font-face { font-family: X; }</style>\n<script>window.a = 1;</script>\n</head>\n" +
       '<body>\n<div style="display: none"></div>\n<script type="module">import "./x.js";</script>\n</body>\n</html>\n';
     expect(scanMarkup("storybook/dist/x.html", html, 1).map((finding) => finding.rule)).toEqual(["style-element", "inline-script", "style-attribute", "inline-script"]);
-    expect(scanMarkup("storybook/dist/x.html", externalise(html).html, 1)).toEqual([]);
+    expect(scanMarkup("storybook/dist/x.html", externalise(html).html, 1).map((finding) => finding.rule)).toEqual(["inline-script", "style-attribute", "inline-script"]);
   });
 });
 
 describe("externaliseDir", () => {
-  it("rewrites every .html directly inside the directory and writes the moved files beside it", () => {
+  it("rewrites every .html directly inside the directory and writes the moved stylesheets beside it, scripts left inline", () => {
     const dir = mkdtempSync(join(tmpdir(), "ocelle-storybook-externalise-"));
     dirs.push(dir);
     mkdirSync(join(dir, "sub"));
-    writeFileSync(join(dir, "iframe.html"), "<script>a();</script>");
+    writeFileSync(join(dir, "iframe.html"), "<script>a();</script><style>a{}</style>");
     writeFileSync(join(dir, "index.html"), "<style>b{}</style>");
-    writeFileSync(join(dir, "sub", "c.html"), "<script>c();</script>");
-    writeFileSync(join(dir, "d.js"), "<script>d();</script>");
+    writeFileSync(join(dir, "sub", "c.html"), "<style>c{}</style>");
+    writeFileSync(join(dir, "d.js"), "<style>d{}</style>");
     externaliseDir(dir);
-    expect(readFileSync(join(dir, "iframe.html"), "utf8")).toBe(`<script src="./inline-${hash("a();")}.js"></script>`);
+    expect(readFileSync(join(dir, "iframe.html"), "utf8")).toBe(`<script>a();</script><link rel="stylesheet" href="./inline-${hash("a{}")}.css">`);
     expect(readFileSync(join(dir, "index.html"), "utf8")).toBe(`<link rel="stylesheet" href="./inline-${hash("b{}")}.css">`);
-    expect(readFileSync(join(dir, `inline-${hash("a();")}.js`), "utf8")).toBe("a();");
+    expect(readFileSync(join(dir, `inline-${hash("a{}")}.css`), "utf8")).toBe("a{}");
     expect(readFileSync(join(dir, `inline-${hash("b{}")}.css`), "utf8")).toBe("b{}");
-    expect(readFileSync(join(dir, "sub", "c.html"), "utf8")).toBe("<script>c();</script>");
-    expect(readFileSync(join(dir, "d.js"), "utf8")).toBe("<script>d();</script>");
-    expect(readdirSync(dir).sort()).toEqual(["d.js", "iframe.html", `inline-${hash("a();")}.js`, `inline-${hash("b{}")}.css`, "index.html", "sub"].sort());
+    expect(readFileSync(join(dir, "sub", "c.html"), "utf8")).toBe("<style>c{}</style>");
+    expect(readFileSync(join(dir, "d.js"), "utf8")).toBe("<style>d{}</style>");
+    expect(readdirSync(dir).sort()).toEqual(["d.js", "iframe.html", `inline-${hash("a{}")}.css`, `inline-${hash("b{}")}.css`, "index.html", "sub"].sort());
   });
 });
 
-describe("externalise: attributes, text states and the head (added: mutation run)", () => {
+describe("externalise: attributes and text states (added: mutation run)", () => {
   it("escapes & and \" in the attributes a <link> keeps, and keeps them all in order", () => {
     const rules = "a{}";
     const result = externalise(`<style media='screen and (x: "a&b")' id="s">${rules}</style>`);
@@ -133,12 +113,5 @@ describe("externalise: attributes, text states and the head (added: mutation run
       html: `<head><link rel="stylesheet" href="./inline-${hash(rules)}.css"></head>`,
       files: [{ name: `inline-${hash(rules)}.css`, text: rules }],
     });
-  });
-
-  it("links the style-attribute stylesheet before a </head> written with whitespace, and at the start without one", () => {
-    const sheet = `[data-ocelle-style="${hash("a: b")}"] { a: b }\n`;
-    const link = `<link rel="stylesheet" href="./inline-${hash(sheet)}.css">`;
-    expect(externalise('<head></head\n><p style="a: b"></p>').html).toBe(`<head>${link}</head\n><p data-ocelle-style="${hash("a: b")}"></p>`);
-    expect(externalise('<p style="a: b"></p>').html).toBe(`${link}<p data-ocelle-style="${hash("a: b")}"></p>`);
   });
 });

@@ -216,3 +216,15 @@ describe("ci.yml visual and plants jobs (006 FR-017, FR-018)", () => {
     ]);
   });
 });
+
+// 006 FR-020 (research.md R-10; spec § Assumptions, "Build in other jobs"): the `csp` job builds the packages only,
+// since the gate reads no Storybook file; the `prefix` job still builds the whole workspace, Storybook included, since
+// the prefix gate reads the HTML entries storybook/dist/*.html (FR-022).
+describe("ci.yml csp and prefix jobs (006 FR-020, FR-022)", () => {
+  const steps = (id: string): string[] => job(id).filter((line) => line.startsWith("      - run: "));
+
+  it("builds the packages only before the csp gate, and the whole workspace before the prefix gate", () => {
+    expect(steps("csp")).toEqual(['      - run: pnpm --filter "./packages/*" -r build && pnpm run gate:csp']);
+    expect(steps("prefix")).toEqual(["      - run: pnpm -r build && pnpm run gate:prefix"]);
+  });
+});

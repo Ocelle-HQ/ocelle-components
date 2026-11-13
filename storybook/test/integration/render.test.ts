@@ -1,4 +1,4 @@
-import { existsSync, readFileSync } from "node:fs";
+import { existsSync, readdirSync, readFileSync } from "node:fs";
 import { createServer } from "node:http";
 import type { Server } from "node:http";
 import type { AddressInfo } from "node:net";
@@ -6,27 +6,27 @@ import { extname, join, normalize } from "node:path";
 import { chromium } from "playwright";
 import type { Browser, Page } from "playwright";
 import { afterAll, beforeAll, describe, expect, inject, it } from "vitest";
+import { scanMarkup } from "../../../gates/bin/csp.ts";
 import { monospaceFamilies } from "../../../gates/bin/prefix.ts";
 import { expectedTokens, inTheme } from "../../../packages/tokens/test/expected.ts";
 import type { Group } from "../../../packages/tokens/test/expected.ts";
 
-// The built Storybook under the Storybook page's CSP (FR-023, US1 scenarios 11 and 13; research.md R-10, R-03;
-// reviews/phase-3/spike.md; T036). The global setup (setup.ts) built it into a temporary directory under the
-// no-network preload: the build made no network access, and the preload's control recorded its one connection. The
-// build runs the package's own build command (setup.ts reads it from package.json), so it ships the preview only:
-// the spike found that the manager UI cannot run under this CSP (its Emotion and React <style> elements), and the
-// operator decided (R1-01, 2026-11-04) that the preview is the Storybook page and the build ships no manager UI (no
-// index.html, sb-manager/ or sb-addons/; its control: the preview's iframe.html is there). The test serves the whole
-// build with the header, which has no frame-src (R-10), and opens the preview (iframe.html) and nothing else: the
-// server records every HTML document it serves, and the last test asserts that each was iframe.html. The collector
-// (addInitScript, which the page's CSP does not govern) must report nothing on a story, then exactly the one
-// violation of a <style> element the control adds to it; then each group story, in light and dark (the theme global
-// sets data-theme on the preview's <html>), reports zero violations and zero requests outside the origin, and lists
-// exactly its group's tokens with their value in that theme (Appendix A, expected.ts). The monospace check walks
-// every element of the page, open shadow roots included, for a computed font-family naming a family of the prefix
-// gate's list; its control element (styled through the CSSOM, which CSP does not govern) must be reported exactly
-// once, and after it is removed nothing may be.
-const policy = "default-src 'none'; script-src 'self'; style-src 'self'; font-src 'self'; connect-src 'self'";
+// The built Storybook, rendered (006 FR-021, US4 scenario 2; research.md R-10; was 002's csp.test.ts, T036). The
+// Storybook is not a CSP target (006 FR-020, operator decision Q1 (a)): the test serves the build with no CSP header
+// and counts no CSP violation, and the build keeps Storybook's inline <script> elements in iframe.html (the
+// externaliser moves <style> elements only, so no `inline-<hash>.js` file is written; plan decision 5). Each element
+// package proves run-time strict CSP in its own browser tests. Kept, each with its control: the global setup
+// (setup.ts) built the Storybook into a temporary directory under the no-network preload, so the build made no network
+// access, and the preload's control recorded its one connection; the build runs the package's own build command
+// (setup.ts reads it from package.json), so it ships the preview only (002 R1-01): no index.html, sb-manager/ or
+// sb-addons/, and its control, the preview's iframe.html, is there. The test opens the preview (iframe.html) and
+// nothing else: the server records every HTML document it serves, and the last test asserts that each was
+// iframe.html. Each group story, in light and dark (the theme global sets data-theme on the preview's <html>), makes
+// zero requests outside the origin (the recorder's control: a request a story makes to another origin is recorded)
+// and lists exactly its group's tokens with their value in that theme (Appendix A,
+// expected.ts). The monospace check walks every element of the page, open shadow roots included, for a computed
+// font-family naming a family of the prefix gate's list; its control element must be reported exactly once, and
+// after it is removed nothing may be.
 const types: Readonly<Record<string, string>> = {
   ".html": "text/html; charset=utf-8",
   ".js": "text/javascript; charset=utf-8",
@@ -62,11 +62,11 @@ beforeAll(async () => {
       if (path.startsWith("..")) throw new Error("outside the served directory");
       body = readFileSync(join(built.out, path));
     } catch {
-      response.writeHead(404, { "Content-Security-Policy": policy }).end();
+      response.writeHead(404).end();
       return;
     }
     if (extname(path) === ".html") documents.push(path);
-    response.writeHead(200, { "Content-Type": types[extname(path)] ?? "application/octet-stream", "Content-Security-Policy": policy }).end(body);
+    response.writeHead(200, { "Content-Type": types[extname(path)] ?? "application/octet-stream" }).end(body);
   });
   await new Promise<void>((resolve) => server?.listen(0, "127.0.0.1", resolve));
   origin = `http://127.0.0.1:${String((server.address() as AddressInfo).port)}`;
@@ -86,7 +86,6 @@ afterAll(async () => {
 
 interface Visit {
   readonly page: Page;
-  readonly header: string | undefined;
   readonly outside: readonly string[];
 }
 
@@ -94,27 +93,16 @@ interface Visit {
 async function open(query: string, rendered = "#storybook-root dt"): Promise<Visit> {
   if (browser === undefined) throw new Error("the suite did not start");
   const page = await browser.newPage();
-  await page.addInitScript(() => {
-    const list: { directive: string; blocked: string }[] = [];
-    Object.defineProperty(window, "__ocelleViolations", { value: list });
-    document.addEventListener("securitypolicyviolation", (event) => {
-      list.push({ directive: event.violatedDirective, blocked: event.blockedURI });
-    });
-  });
   const outside: string[] = [];
   page.on("request", (request) => {
     if (!request.url().startsWith(`${origin}/`)) outside.push(request.url());
   });
-  const response = await page.goto(`${origin}/iframe.html?${query}`, { waitUntil: "load" });
+  await page.goto(`${origin}/iframe.html?${query}`, { waitUntil: "load" });
   // Waits for the story to render, but not past 10 s: a story that never renders is reported by the assertions on
-  // the violations and the rows, not by a timeout.
+  // the rows and the hooks, not by a timeout.
   await page.waitForSelector(rendered, { state: "attached", timeout: 10_000 }).catch(() => undefined);
   await page.waitForTimeout(250);
-  return { page, header: response?.headers()["content-security-policy"], outside };
-}
-
-function violations(page: Page): Promise<{ directive: string; blocked: string }[]> {
-  return page.evaluate(() => [...((window as unknown as { __ocelleViolations?: { directive: string; blocked: string }[] }).__ocelleViolations ?? [])]);
+  return { page, outside };
 }
 
 /** Every element of the page, open shadow roots included, whose computed font-family names a monospace family. */
@@ -150,29 +138,34 @@ describe("the Storybook build", () => {
     expect(existsSync(join(built.out, "iframe.html"))).toBe(true);
     expect(["index.html", "sb-manager", "sb-addons"].filter((entry) => existsSync(join(built.out, entry)))).toEqual([]);
   });
+
+  // Its red is taken from the build output under test (PLAN-TESTABILITY-1-005): the old build script's externaliser
+  // moved every inline script to an `inline-<hash>.js` file.
+  it("keeps Storybook's inline <script> elements in iframe.html, with no <style> element or style attribute, and writes no inline-<hash>.js but its moved stylesheets", () => {
+    const rules = scanMarkup("storybook/dist/iframe.html", readFileSync(join(built.out, "iframe.html"), "utf8"), 1).map((finding) => finding.rule);
+    expect([...new Set(rules)]).toEqual(["inline-script"]);
+    const files = readdirSync(built.out);
+    expect(files.filter((file) => /^inline-[0-9a-f]{16}\.js$/.test(file))).toEqual([]);
+    expect(files.filter((file) => /^inline-[0-9a-f]{16}\.css$/.test(file)).length).toBeGreaterThan(0);
+  });
 });
 
-describe("the Storybook page under its CSP", { timeout: 60_000 }, () => {
-  it("serves the header, and the collector reports exactly the one violation of a <style> element added to a story", async () => {
+describe("the Storybook page", { timeout: 60_000 }, () => {
+  it("records a request outside the origin made from a story: the recorder's control", async () => {
     const control = await open("id=tokens--colour&viewMode=story&globals=theme:light");
-    expect(control.header).toBe(policy);
-    expect(await violations(control.page)).toEqual([]);
+    await control.page.route("http://192.0.2.1/**", (route) => route.abort());
     await control.page.evaluate(() => {
-      const style = document.createElement("style");
-      style.textContent = "body { margin: 0; }";
-      document.head.append(style);
+      void fetch("http://192.0.2.1/ocelle-control").catch(() => undefined);
     });
     await control.page.waitForTimeout(250);
-    expect(await violations(control.page)).toEqual([{ directive: "style-src-elem", blocked: "inline" }]);
+    expect(control.outside).toEqual(["http://192.0.2.1/ocelle-control"]);
     await control.page.close();
   });
 
   for (const [id, group] of groups) {
     for (const theme of ["light", "dark"] as const) {
-      it(`tokens--${id} in ${theme}: the header, no violation, no request outside the origin, exactly its tokens, no monospace`, async () => {
-        const { page, header, outside } = await open(`id=tokens--${id}&viewMode=story&globals=theme:${theme}`);
-        expect(header).toBe(policy);
-        expect(await violations(page)).toEqual([]);
+      it(`tokens--${id} in ${theme}: no request outside the origin, exactly its tokens, no monospace`, async () => {
+        const { page, outside } = await open(`id=tokens--${id}&viewMode=story&globals=theme:${theme}`);
         expect(outside).toEqual([]);
         expect(await page.evaluate(() => document.documentElement.dataset.theme)).toBe(theme);
         expect(await page.evaluate(() => getComputedStyle(document.documentElement).getPropertyValue("--ocelle-color-canvas").trim())).toBe(theme === "light" ? "#F1EEE8" : "#15130F");
@@ -190,7 +183,6 @@ describe("the Storybook page under its CSP", { timeout: 60_000 }, () => {
           document.getElementById("ocelle-monospace-control")?.remove();
         });
         expect(await monospace(page)).toEqual([]);
-        expect(await violations(page)).toEqual([]);
         await page.close();
       });
     }
@@ -201,10 +193,8 @@ describe("the Storybook page under its CSP", { timeout: 60_000 }, () => {
   // styled by base.css alone: Schibsted Grotesk with tabular figures, and no element of the page is monospace. The
   // root's color-scheme follows the theme global, which only base.css applies.
   for (const theme of ["light", "dark"] as const) {
-    it(`base-styles--base-page in ${theme}: the header, no violation, no request outside the origin, base.css applied, no monospace`, async () => {
-      const { page, header, outside } = await open(`id=base-styles--base-page&viewMode=story&globals=theme:${theme}`, '#storybook-root [data-story="base"]');
-      expect(header).toBe(policy);
-      expect(await violations(page)).toEqual([]);
+    it(`base-styles--base-page in ${theme}: no request outside the origin, base.css applied, no monospace`, async () => {
+      const { page, outside } = await open(`id=base-styles--base-page&viewMode=story&globals=theme:${theme}`, '#storybook-root [data-story="base"]');
       expect(outside).toEqual([]);
       expect(await page.evaluate(() => document.querySelectorAll('#storybook-root [data-story="base"] code').length)).toBe(1);
       expect(
@@ -229,7 +219,6 @@ describe("the Storybook page under its CSP", { timeout: 60_000 }, () => {
         document.getElementById("ocelle-monospace-control")?.remove();
       });
       expect(await monospace(page)).toEqual([]);
-      expect(await violations(page)).toEqual([]);
       await page.close();
     });
   }
@@ -239,10 +228,8 @@ describe("the Storybook page under its CSP", { timeout: 60_000 }, () => {
   // figures at 14 px in ink-muted, and the ink variant in ink (002 Appendix A).
   const compactInks = { light: { ink: "rgb(21, 19, 15)", muted: "rgb(94, 88, 79)" }, dark: { ink: "rgb(237, 233, 225)", muted: "rgb(163, 157, 146)" } } as const;
   for (const theme of ["light", "dark"] as const) {
-    it(`base-styles--compact-screen in ${theme}: the header, no violation, no request outside the origin, the compact and value hooks applied, no monospace`, async () => {
-      const { page, header, outside } = await open(`id=base-styles--compact-screen&viewMode=story&globals=theme:${theme}`, '#storybook-root [data-story="compact"]');
-      expect(header).toBe(policy);
-      expect(await violations(page)).toEqual([]);
+    it(`base-styles--compact-screen in ${theme}: no request outside the origin, the compact and value hooks applied, no monospace`, async () => {
+      const { page, outside } = await open(`id=base-styles--compact-screen&viewMode=story&globals=theme:${theme}`, '#storybook-root [data-story="compact"]');
       expect(outside).toEqual([]);
       expect(
         await page.evaluate(() => {
@@ -274,7 +261,6 @@ describe("the Storybook page under its CSP", { timeout: 60_000 }, () => {
         document.getElementById("ocelle-monospace-control")?.remove();
       });
       expect(await monospace(page)).toEqual([]);
-      expect(await violations(page)).toEqual([]);
       await page.close();
     });
   }
@@ -284,10 +270,8 @@ describe("the Storybook page under its CSP", { timeout: 60_000 }, () => {
   // header cells at 12 px in Schibsted Grotesk with tabular figures, and the link underlined in the link colour.
   const proseLinks = { light: "rgb(132, 86, 13)", dark: "rgb(224, 162, 58)" } as const;
   for (const theme of ["light", "dark"] as const) {
-    it(`base-styles--prose-document in ${theme}: the header, no violation, no request outside the origin, the prose hook applied, no monospace`, async () => {
-      const { page, header, outside } = await open(`id=base-styles--prose-document&viewMode=story&globals=theme:${theme}`, '#storybook-root [data-story="prose"]');
-      expect(header).toBe(policy);
-      expect(await violations(page)).toEqual([]);
+    it(`base-styles--prose-document in ${theme}: no request outside the origin, the prose hook applied, no monospace`, async () => {
+      const { page, outside } = await open(`id=base-styles--prose-document&viewMode=story&globals=theme:${theme}`, '#storybook-root [data-story="prose"]');
       expect(outside).toEqual([]);
       expect(
         await page.evaluate(() => {
@@ -320,7 +304,6 @@ describe("the Storybook page under its CSP", { timeout: 60_000 }, () => {
         document.getElementById("ocelle-monospace-control")?.remove();
       });
       expect(await monospace(page)).toEqual([]);
-      expect(await violations(page)).toEqual([]);
       await page.close();
     });
   }
@@ -330,10 +313,8 @@ describe("the Storybook page under its CSP", { timeout: 60_000 }, () => {
   // than one line and its column is as wide as the short text's (within 1 px); in the paragraph, combined with the
   // value hook, it is Schibsted Grotesk with tabular figures.
   for (const theme of ["light", "dark"] as const) {
-    it(`base-styles--identifier-wrap in ${theme}: the header, no violation, no request outside the origin, the identifier-wrap hook applied, no monospace`, async () => {
-      const { page, header, outside } = await open(`id=base-styles--identifier-wrap&viewMode=story&globals=theme:${theme}`, '#storybook-root [data-story="wrap"]');
-      expect(header).toBe(policy);
-      expect(await violations(page)).toEqual([]);
+    it(`base-styles--identifier-wrap in ${theme}: no request outside the origin, the identifier-wrap hook applied, no monospace`, async () => {
+      const { page, outside } = await open(`id=base-styles--identifier-wrap&viewMode=story&globals=theme:${theme}`, '#storybook-root [data-story="wrap"]');
       expect(outside).toEqual([]);
       const found = await page.evaluate(() => {
         const cells = [...document.querySelectorAll('#storybook-root [data-story="wrap-grid"] > *')];
@@ -365,7 +346,6 @@ describe("the Storybook page under its CSP", { timeout: 60_000 }, () => {
         document.getElementById("ocelle-monospace-control")?.remove();
       });
       expect(await monospace(page)).toEqual([]);
-      expect(await violations(page)).toEqual([]);
       await page.close();
     });
   }
