@@ -333,7 +333,11 @@ those two elements and states the form controls' rule (tasks T034a, T041).
 
 A host `aria-label` keeps its precedence (operator decision PLAN-A11Y-SECURITY-1-006 (b)): the README requires it to
 contain the visible label text when a visible label is drawn (WCAG 2.2 SC 2.5.3) and lists any other combination as
-not supported; US2 scenario 13 tests an `aria-label` that holds the visible text.
+not supported; US2 scenario 13 tests an `aria-label` that holds the visible text. The name span holds the host
+`aria-label` with whitespace collapsed and trimmed, as for the labels' text, so the control's name does not depend
+on how Chromium treats spaces in a referenced hidden node; Chromium names the host's node from the attribute as
+written, surrounding spaces included (README § Host ARIA), so the README tells hosts to pass it trimmed with single
+spaces, as 005 does, and US2 scenario 13 pins both names for `aria-label=" Title "` (FR-022; analysis A5).
 
 **Description** (FR-022, FR-027): `aria-describedby` on the inner control lists, in order, the description part, a
 `hidden` span holding a host `aria-description` (hidden for the same reason as the name span, PLAN-FRESH-1-005), and
