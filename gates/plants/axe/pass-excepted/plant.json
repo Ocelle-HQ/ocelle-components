@@ -1,0 +1,4 @@
+{
+  "expect": "pass",
+  "why": "A story with a serious color-contrast violation, its exception entry per theme (with its selector) and a plan in tree/ whose Complexity Tracking holds the rows: excepted, a note (FR-029, US3 scenario 9)."
+}

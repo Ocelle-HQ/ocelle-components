@@ -95,6 +95,14 @@ async function resolveKey(location: string, path: string, key: string, view: Tre
 }
 
 /**
+ * Whether a finding's location is a keyed location to resolve: it holds `#`, and it is not the axe gate's location of
+ * an exception entry, `storybook/a11y-exceptions.json#<index>` (006 contracts/gates.md § `axe`), which is literal.
+ */
+function isKeyed(location: string): boolean {
+  return location.includes("#") && !location.startsWith("storybook/a11y-exceptions.json#");
+}
+
+/**
  * The expected findings with every keyed location (`<path>#<key>`, 002 contracts/gates.md § Keyed locations)
  * resolved to `<path>:<line>` in the built tree; throws naming a key that resolves to no line or, for a token or pair
  * key, to two.
@@ -102,11 +110,11 @@ async function resolveKey(location: string, path: string, key: string, view: Tre
 export async function resolveLocations(findings: readonly ExpectedFinding[], view: TreeView): Promise<ExpectedFinding[]> {
   const resolved: ExpectedFinding[] = [];
   for (const finding of findings) {
-    const at = finding.location.indexOf("#");
-    if (at === -1) {
+    if (!isKeyed(finding.location)) {
       resolved.push(finding);
       continue;
     }
+    const at = finding.location.indexOf("#");
     const path = finding.location.slice(0, at);
     const line = await resolveKey(finding.location, path, finding.location.slice(at + 1), view);
     resolved.push({ ...finding, location: `${path}:${String(line)}` });
@@ -169,7 +177,7 @@ export async function runPlant(tools: RunnerTools, root: string, gate: Gate, pat
     const commits = built.commits === undefined ? {} : { commits: built.commits };
     const findings = plant.findings ?? [];
     const view: TreeView = { read: (file) => tools.read(join(into, file)), stylesheet: () => tools.stylesheet(into) };
-    const expected = findings.some((finding) => finding.location.includes("#"))
+    const expected = findings.some((finding) => isKeyed(finding.location))
       ? {
           expected: await resolveLocations(findings, view).catch((error: unknown) => {
             throw new Error(`${path}: ${errorText(error)}`, { cause: error });

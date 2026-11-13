@@ -11,8 +11,9 @@ import { existsSync } from "node:fs";
 import type { BrowserContext, CDPSession, Page } from "playwright";
 import { classifyRequest, contextOptions, ioCalls, leftStorage, parsePointer, pointerProblem, readiness, readinessTimeout, scrollAction, storyPath } from "./capture-plan.ts";
 import type { Conditions, RecordedCall, Signal } from "./capture-plan.ts";
+import type { AxeResults } from "./axe-verdict.ts";
 import { closedShadowHosts, fontProblems, storyTextNodes } from "./story-checks.ts";
-import type { CdpNode, ShadowCall, TextNode } from "./story-checks.ts";
+import type { BodyChild, CdpNode, RootNode, ShadowCall, TextNode } from "./story-checks.ts";
 import { servedFile } from "./storybook-serve.ts";
 import type { Theme } from "./visual-verdict.ts";
 
@@ -460,4 +461,83 @@ export async function conditionsAfterRender(page: Page, context: BrowserContext,
   const storage = await storageIo(page, context);
   // Stryker disable next-line all: process boundary, covered by the visual plants pass-hover-and-press, fail-network and fail-local-storage
   return { closedShadowRoot, ...(pointerTarget === undefined ? {} : { pointerTarget }), font, network: requests.network, io: [...requests.io, ...storage] };
+}
+
+// The axe gate's collection (FR-014; research.md R-08): the story root's nodes with their client rects for the empty
+// check, the body's element children for the outside-root check, and axe's results on the story area.
+/** The story root's child nodes with their client rects, open shadow roots included (research.md R-08). */
+// Stryker disable next-line all: process boundary, covered by the axe plants fail-empty and fail-no-box, and by gates-integration: gates/test/integration/axe.test.ts "audits the repository's 42 story-themes and exits 0, the Prose document's ten color-contrast-incomplete nodes excepted and no other result (US3 scenarios 1 and 5, FR-029)"
+export async function rootNodes(page: Page): Promise<RootNode[]> {
+  // Stryker disable next-line all: process boundary, covered by gates-integration: gates/test/integration/axe.test.ts "audits the repository's 42 story-themes and exits 0, the Prose document's ten color-contrast-incomplete nodes excepted and no other result (US3 scenarios 1 and 5, FR-029)"
+  return page.evaluate(() => {
+    // Stryker disable next-line all: process boundary, covered by gates-integration: gates/test/integration/axe.test.ts "audits the repository's 42 story-themes and exits 0, the Prose document's ten color-contrast-incomplete nodes excepted and no other result (US3 scenarios 1 and 5, FR-029)"
+    const sizes = (list: DOMRectList): { width: number; height: number }[] => [...list].map((rect) => ({ width: rect.width, height: rect.height }));
+    // Stryker disable next-line all: process boundary, covered by gates-integration: gates/test/integration/axe.test.ts "audits the repository's 42 story-themes and exits 0, the Prose document's ten color-contrast-incomplete nodes excepted and no other result (US3 scenarios 1 and 5, FR-029)"
+    type Collected = { text: string; rects: { width: number; height: number }[] } | { rects: { width: number; height: number }[]; children: Collected[]; shadow?: Collected[] };
+    // Stryker disable next-line all: process boundary, covered by gates-integration: gates/test/integration/axe.test.ts "audits the repository's 42 story-themes and exits 0, the Prose document's ten color-contrast-incomplete nodes excepted and no other result (US3 scenarios 1 and 5, FR-029)"
+    const walk = (nodes: NodeList): Collected[] =>
+      // Stryker disable next-line all: process boundary, covered by gates-integration: gates/test/integration/axe.test.ts "audits the repository's 42 story-themes and exits 0, the Prose document's ten color-contrast-incomplete nodes excepted and no other result (US3 scenarios 1 and 5, FR-029)"
+      [...nodes].flatMap((node): Collected[] => {
+        // Stryker disable next-line all: process boundary, covered by gates-integration: gates/test/integration/axe.test.ts "audits the repository's 42 story-themes and exits 0, the Prose document's ten color-contrast-incomplete nodes excepted and no other result (US3 scenarios 1 and 5, FR-029)"
+        if (node instanceof Text) {
+          // Stryker disable next-line all: process boundary, covered by gates-integration: gates/test/integration/axe.test.ts "audits the repository's 42 story-themes and exits 0, the Prose document's ten color-contrast-incomplete nodes excepted and no other result (US3 scenarios 1 and 5, FR-029)"
+          const range = document.createRange();
+          // Stryker disable next-line all: process boundary, covered by gates-integration: gates/test/integration/axe.test.ts "audits the repository's 42 story-themes and exits 0, the Prose document's ten color-contrast-incomplete nodes excepted and no other result (US3 scenarios 1 and 5, FR-029)"
+          range.selectNodeContents(node);
+          // Stryker disable next-line all: process boundary, covered by gates-integration: gates/test/integration/axe.test.ts "audits the repository's 42 story-themes and exits 0, the Prose document's ten color-contrast-incomplete nodes excepted and no other result (US3 scenarios 1 and 5, FR-029)"
+          return [{ text: node.data, rects: sizes(range.getClientRects()) }];
+        }
+        // Stryker disable next-line all: process boundary, covered by gates-integration: gates/test/integration/axe.test.ts "audits the repository's 42 story-themes and exits 0, the Prose document's ten color-contrast-incomplete nodes excepted and no other result (US3 scenarios 1 and 5, FR-029)"
+        if (!(node instanceof Element)) return [];
+        // Stryker disable next-line all: process boundary, covered by gates-integration: gates/test/integration/axe.test.ts "audits the repository's 42 story-themes and exits 0, the Prose document's ten color-contrast-incomplete nodes excepted and no other result (US3 scenarios 1 and 5, FR-029)"
+        const children = walk(node.childNodes);
+        // Stryker disable next-line all: process boundary, covered by gates-integration: gates/test/integration/axe.test.ts "audits the repository's 42 story-themes and exits 0, the Prose document's ten color-contrast-incomplete nodes excepted and no other result (US3 scenarios 1 and 5, FR-029)"
+        const rects = sizes(node.getClientRects());
+        // Stryker disable next-line all: process boundary, covered by gates-integration: gates/test/integration/axe.test.ts "audits the repository's 42 story-themes and exits 0, the Prose document's ten color-contrast-incomplete nodes excepted and no other result (US3 scenarios 1 and 5, FR-029)"
+        return [node.shadowRoot === null ? { rects, children } : { rects, children, shadow: walk(node.shadowRoot.childNodes) }];
+      });
+    // Stryker disable next-line all: process boundary, covered by gates-integration: gates/test/integration/axe.test.ts "audits the repository's 42 story-themes and exits 0, the Prose document's ten color-contrast-incomplete nodes excepted and no other result (US3 scenarios 1 and 5, FR-029)"
+    const root = document.getElementById("storybook-root");
+    // Stryker disable next-line all: process boundary, covered by gates-integration: gates/test/integration/axe.test.ts "audits the repository's 42 story-themes and exits 0, the Prose document's ten color-contrast-incomplete nodes excepted and no other result (US3 scenarios 1 and 5, FR-029)"
+    return root === null ? [] : walk(root.childNodes);
+  });
+}
+
+/** The body's element children: tag, id and classes (research.md R-08). */
+// Stryker disable next-line all: process boundary, covered by the axe plant fail-outside-root, and by gates-integration: gates/test/integration/axe.test.ts "audits the repository's 42 story-themes and exits 0, the Prose document's ten color-contrast-incomplete nodes excepted and no other result (US3 scenarios 1 and 5, FR-029)"
+export async function bodyChildren(page: Page): Promise<BodyChild[]> {
+  // Stryker disable next-line all: process boundary, covered by gates-integration: gates/test/integration/axe.test.ts "audits the repository's 42 story-themes and exits 0, the Prose document's ten color-contrast-incomplete nodes excepted and no other result (US3 scenarios 1 and 5, FR-029)"
+  return page.evaluate(() => [...document.body.children].map((element) => ({ tag: element.localName, id: element.id, classes: [...element.classList] })));
+}
+
+/** Injects axe-core's script and runs it on the context with the rules: its violations and incomplete results (research.md R-08). */
+// Stryker disable next-line all: process boundary, covered by gates-integration: gates/test/integration/axe.test.ts "audits the repository's 42 story-themes and exits 0, the Prose document's ten color-contrast-incomplete nodes excepted and no other result (US3 scenarios 1 and 5, FR-029)"
+export async function runAxe(page: Page, axePath: string, context: unknown, rules: Readonly<Record<string, { readonly enabled: boolean }>>): Promise<AxeResults> {
+  // Stryker disable next-line all: process boundary, covered by gates-integration: gates/test/integration/axe.test.ts "audits the repository's 42 story-themes and exits 0, the Prose document's ten color-contrast-incomplete nodes excepted and no other result (US3 scenarios 1 and 5, FR-029)"
+  await page.addScriptTag({ path: axePath });
+  // Stryker disable next-line all: process boundary, covered by gates-integration: gates/test/integration/axe.test.ts "audits the repository's 42 story-themes and exits 0, the Prose document's ten color-contrast-incomplete nodes excepted and no other result (US3 scenarios 1 and 5, FR-029)"
+  return page.evaluate(
+    // Stryker disable next-line all: process boundary, covered by gates-integration: gates/test/integration/axe.test.ts "audits the repository's 42 story-themes and exits 0, the Prose document's ten color-contrast-incomplete nodes excepted and no other result (US3 scenarios 1 and 5, FR-029)"
+    async ({ context, rules }) => {
+      // Stryker disable next-line all: process boundary, covered by gates-integration: gates/test/integration/axe.test.ts "audits the repository's 42 story-themes and exits 0, the Prose document's ten color-contrast-incomplete nodes excepted and no other result (US3 scenarios 1 and 5, FR-029)"
+      interface Result {
+        // Stryker disable next-line all: process boundary, covered by gates-integration: gates/test/integration/axe.test.ts "audits the repository's 42 story-themes and exits 0, the Prose document's ten color-contrast-incomplete nodes excepted and no other result (US3 scenarios 1 and 5, FR-029)"
+        readonly id: string;
+        // Stryker disable next-line all: process boundary, covered by gates-integration: gates/test/integration/axe.test.ts "audits the repository's 42 story-themes and exits 0, the Prose document's ten color-contrast-incomplete nodes excepted and no other result (US3 scenarios 1 and 5, FR-029)"
+        readonly impact?: string | null;
+        // Stryker disable next-line all: process boundary, covered by gates-integration: gates/test/integration/axe.test.ts "audits the repository's 42 story-themes and exits 0, the Prose document's ten color-contrast-incomplete nodes excepted and no other result (US3 scenarios 1 and 5, FR-029)"
+        readonly nodes: readonly { readonly target: (string | string[])[]; readonly impact?: string | null }[];
+      }
+      // Stryker disable next-line all: process boundary, covered by gates-integration: gates/test/integration/axe.test.ts "audits the repository's 42 story-themes and exits 0, the Prose document's ten color-contrast-incomplete nodes excepted and no other result (US3 scenarios 1 and 5, FR-029)"
+      const axe = (window as unknown as { axe: { run: (context: unknown, options: unknown) => Promise<{ violations: Result[]; incomplete: Result[] }> } }).axe;
+      // Stryker disable next-line all: process boundary, covered by gates-integration: gates/test/integration/axe.test.ts "audits the repository's 42 story-themes and exits 0, the Prose document's ten color-contrast-incomplete nodes excepted and no other result (US3 scenarios 1 and 5, FR-029)"
+      const results = await axe.run(context, { rules, resultTypes: ["violations", "incomplete"] });
+      // Stryker disable next-line all: process boundary, covered by gates-integration: gates/test/integration/axe.test.ts "audits the repository's 42 story-themes and exits 0, the Prose document's ten color-contrast-incomplete nodes excepted and no other result (US3 scenarios 1 and 5, FR-029)"
+      const plain = (list: readonly Result[]): Result[] => list.map((result) => ({ id: result.id, impact: result.impact ?? null, nodes: result.nodes.map((node) => ({ target: node.target, impact: node.impact ?? null })) }));
+      // Stryker disable next-line all: process boundary, covered by gates-integration: gates/test/integration/axe.test.ts "audits the repository's 42 story-themes and exits 0, the Prose document's ten color-contrast-incomplete nodes excepted and no other result (US3 scenarios 1 and 5, FR-029)"
+      return { violations: plain(results.violations), incomplete: plain(results.incomplete) };
+    },
+    // Stryker disable next-line all: process boundary, covered by gates-integration: gates/test/integration/axe.test.ts "audits the repository's 42 story-themes and exits 0, the Prose document's ten color-contrast-incomplete nodes excepted and no other result (US3 scenarios 1 and 5, FR-029)"
+    { context, rules },
+  );
 }

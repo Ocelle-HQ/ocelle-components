@@ -1,0 +1,16 @@
+{
+  "expect": "fail",
+  "why": "Text over a background image (a gradient of two tokens): the story's only serious result is a color-contrast incomplete, a finding in both themes (FR-013, US3 scenario 2; the phase 1 spike's candidate, § 8).",
+  "findings": [
+    {
+      "location": "incomplete--over-image/light",
+      "rule": "color-contrast-incomplete",
+      "message": "serious: div[data-candidate=\"image\"]"
+    },
+    {
+      "location": "incomplete--over-image/dark",
+      "rule": "color-contrast-incomplete",
+      "message": "serious: div[data-candidate=\"image\"]"
+    }
+  ]
+}

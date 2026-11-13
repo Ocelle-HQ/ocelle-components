@@ -1,0 +1,10 @@
+[
+  {
+    "story": "clean--text",
+    "theme": "light",
+    "rule": "color-contrast",
+    "selector": "p",
+    "sunset": "the plant's sunset",
+    "plan": "specs/plant/plan.md"
+  }
+]

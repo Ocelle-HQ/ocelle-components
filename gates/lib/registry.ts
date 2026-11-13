@@ -36,9 +36,10 @@ export const fr020: readonly string[] = [
   "brand-rules",
   // 005 FR-009: the custom-elements manifest gate.
   "manifest",
-  // 006 FR-017: the Storybook build gate and the visual regression gate.
+  // 006 FR-017: the Storybook build gate, the visual regression gate and the accessibility gate.
   "storybook-build",
   "visual",
+  "axe",
 ];
 
 /** The id of the plant job in ci.yml; it is not a gate. */
