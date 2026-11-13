@@ -8,17 +8,18 @@ import type { Browser, Page } from "playwright";
 import { afterAll, beforeAll, describe, expect, inject, it } from "vitest";
 
 // The element stories in the built Storybook (005 US1 scenario 13, FR-019; research.md R-14; analysis G4 and L14;
-// T020a). The global setup (setup.ts) built the Storybook; this test serves it under the Storybook page's CSP, as
-// 002's csp.test.ts does, and opens each `ocelle-icon` story of phase 2 (close, labelled and unknown name) in the
-// preview in light and in dark. Each story renders its `ocelle-icon` with the story's `name` and `label`, the element
-// is defined and draws for a known name and not for the unknown one, the page records zero CSP violations and no
+// T020a). The global setup (setup.ts) built the Storybook; this test serves it, as render.test.ts does, and opens
+// each `ocelle-icon` story of phase 2 (close, labelled and unknown name) in the preview in light and in dark. Since
+// 006 (FR-020, FR-021; research.md R-10) the Storybook is not a CSP target: it is served with no CSP header and no
+// violation is counted, its inline scripts staying in iframe.html; the elements prove run-time strict CSP in their own
+// strict-CSP fixture. Each story renders its `ocelle-icon` with the story's `name` and `label`, the element
+// is defined and draws for a known name and not for the unknown one, the page makes no
 // request outside the origin, and the story renders with the base stylesheet as every story does: preview-head.html
 // links base.css, and the root's `color-scheme` follows the theme global, which only base.css applies (US1-13's base
 // stylesheet clause, analysis L14). Phase 3 adds the grid of the thirteen names, left to right and right to left
 // (T035a; US1-13's "every icon in the set"), phase 5 the mark's stories (T056a; US4 scenario 11): main ground, chrome,
 // mono and labelled, each rendering its `ocelle-brand-mark` with the story's `ground`, `tone` and `label`, drawn, in
-// light and dark, with no violation and no request outside the origin.
-const policy = "default-src 'none'; script-src 'self'; style-src 'self'; font-src 'self'; connect-src 'self'";
+// light and dark, with no request outside the origin.
 const types: Readonly<Record<string, string>> = {
   ".html": "text/html; charset=utf-8",
   ".js": "text/javascript; charset=utf-8",
@@ -41,10 +42,10 @@ beforeAll(async () => {
       if (path.startsWith("..")) throw new Error("outside the served directory");
       body = readFileSync(join(built.out, path));
     } catch {
-      response.writeHead(404, { "Content-Security-Policy": policy }).end();
+      response.writeHead(404).end();
       return;
     }
-    response.writeHead(200, { "Content-Type": types[extname(path)] ?? "application/octet-stream", "Content-Security-Policy": policy }).end(body);
+    response.writeHead(200, { "Content-Type": types[extname(path)] ?? "application/octet-stream" }).end(body);
   });
   await new Promise<void>((resolve) => server?.listen(0, "127.0.0.1", resolve));
   origin = `http://127.0.0.1:${String((server.address() as AddressInfo).port)}`;
@@ -62,17 +63,10 @@ afterAll(async () => {
   });
 });
 
-/** Opens a story in the preview with the violation collector and the outside-request recorder installed. */
+/** Opens a story in the preview with the outside-request recorder installed. */
 async function open(id: string, theme: "light" | "dark", element = "ocelle-icon"): Promise<{ readonly page: Page; readonly outside: readonly string[] }> {
   if (browser === undefined) throw new Error("the suite did not start");
   const page = await browser.newPage();
-  await page.addInitScript(() => {
-    const list: { directive: string; blocked: string }[] = [];
-    Object.defineProperty(window, "__ocelleViolations", { value: list });
-    document.addEventListener("securitypolicyviolation", (event) => {
-      list.push({ directive: event.violatedDirective, blocked: event.blockedURI });
-    });
-  });
   const outside: string[] = [];
   page.on("request", (request) => {
     if (!request.url().startsWith(`${origin}/`)) outside.push(request.url());
@@ -86,7 +80,7 @@ async function open(id: string, theme: "light" | "dark", element = "ocelle-icon"
   return { page, outside };
 }
 
-/** What the story's page shows: its theme, the base stylesheet, its icons and the collector's violations. */
+/** What the story's page shows: its theme, the base stylesheet and its icons. */
 function observe(page: Page): Promise<unknown> {
   return page.evaluate(() => ({
     theme: document.documentElement.dataset.theme,
@@ -100,7 +94,6 @@ function observe(page: Page): Promise<unknown> {
       label: icon.getAttribute("label"),
       drawn: icon.shadowRoot?.querySelector("svg") !== null && icon.shadowRoot !== null,
     })),
-    violations: (window as unknown as { __ocelleViolations?: unknown[] }).__ocelleViolations ?? [],
   }));
 }
 
@@ -119,14 +112,13 @@ const stories = [
 describe("the ocelle-icon stories in the built Storybook (US1-13, FR-019)", { timeout: 60_000 }, () => {
   for (const { id, icons } of stories) {
     for (const theme of ["light", "dark"] as const) {
-      it(`${id} in ${theme}: renders its ocelle-icon with the story's name and label, with base.css applied, no violation and no request outside the origin`, async () => {
+      it(`${id} in ${theme}: renders its ocelle-icon with the story's name and label, with base.css applied and no request outside the origin`, async () => {
         const { page, outside } = await open(id, theme);
         expect({ ...((await observe(page)) as object), outside }).toEqual({
           theme,
           base: { linked: true, scheme: theme },
           defined: true,
           icons,
-          violations: [],
           outside: [],
         });
         await page.close();
@@ -135,7 +127,7 @@ describe("the ocelle-icon stories in the built Storybook (US1-13, FR-019)", { ti
   }
 });
 
-/** What a mark story's page shows: its theme, the base stylesheet, its marks and the collector's violations. */
+/** What a mark story's page shows: its theme, the base stylesheet and its marks. */
 function observeMarks(page: Page): Promise<unknown> {
   return page.evaluate(() => ({
     theme: document.documentElement.dataset.theme,
@@ -150,7 +142,6 @@ function observeMarks(page: Page): Promise<unknown> {
       label: mark.getAttribute("label"),
       drawn: [...(mark.shadowRoot?.querySelectorAll("svg path, svg ellipse") ?? [])].map((part) => part.localName),
     })),
-    violations: (window as unknown as { __ocelleViolations?: unknown[] }).__ocelleViolations ?? [],
   }));
 }
 
@@ -167,14 +158,13 @@ const markStories = [
 describe("the ocelle-brand-mark stories in the built Storybook (US4-11, FR-019)", { timeout: 60_000 }, () => {
   for (const { id, marks } of markStories) {
     for (const theme of ["light", "dark"] as const) {
-      it(`${id} in ${theme}: renders its ocelle-brand-mark with the story's ground, tone and label, drawn, with base.css applied, no violation and no request outside the origin`, async () => {
+      it(`${id} in ${theme}: renders its ocelle-brand-mark with the story's ground, tone and label, drawn, with base.css applied and no request outside the origin`, async () => {
         const { page, outside } = await open(id, theme, "ocelle-brand-mark");
         expect({ ...((await observeMarks(page)) as object), outside }).toEqual({
           theme,
           base: { linked: true, scheme: theme },
           defined: true,
           marks,
-          violations: [],
           outside: [],
         });
         await page.close();
