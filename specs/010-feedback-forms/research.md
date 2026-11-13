@@ -77,7 +77,7 @@ announcement code, and the plan stops for an operator decision before phase 2 (f
 ## R-02 How the notice announces
 
 **Decision** (operator decisions PLAN-FRESH-1-001 (b) and PLAN-A11Y-SECURITY-1-002 (a); at plan squad round 2
-PLAN-FRESH-2-001 (a), PLAN-FRESH-2-002 (a) and PLAN-FRESH-2-005 (b)). A *separate announcer region*: the visible content is never inside a live region and is never hidden from the tree; a copy of the notice's
+PLAN-FRESH-2-001 (a), PLAN-FRESH-2-002 (a) and PLAN-FRESH-2-005 (b); at round 3 PLAN-FRESH-3-002 (b)). A *separate announcer region*: the visible content is never inside a live region and is never hidden from the tree; a copy of the notice's
 text is written into a persistent, visually hidden live region after Chromium's serialisation delay.
 
 Shadow structure: `<div class="box tone-<tone> size-<size>">` (R-03) > `<div part="heading">` (with
@@ -104,8 +104,30 @@ the node's content, here the visible notice. A copy written for the same change 
 host whose role is `alert`, the element writes no copy for an insertion after parsing, a reveal or a change of the
 host role to `alert` (from `status`, or added at runtime, with or without `announce`): it cancels any pending wait
 (a held copy is emptied once it has been current for `W`, step 1 below), sets the announcer's `aria-live` to
-`assertive` and sets the baseline to the current text and `assertive`. Text changes of an `alert` notice, and a role
-change from `alert` to `status`, go through the announcer as below. The capture cannot see the event, so the
+`assertive`, and takes the baseline at the end of the current task (operator decision PLAN-FRESH-3-002 (b)): it marks
+the baseline pending and posts a message on the module's `MessageChannel` (the one the move detection uses); the
+handler runs in a later task, after the current task's `MutationObserver` records are delivered, and sets the
+baseline to the text and politeness current then. Until it runs, light-DOM mutations start no wait. So the common
+`host.append(n); n.textContent = msg`, reveal-then-fill and role-then-fill in one task are read once, by the alert
+event, which reads the node at the next serialisation (at least `D` after the task, R-01), and no copy follows. A
+baseline taken synchronously would hold the text from before the fill, the microtask observer would see a
+difference and write a copy `W` later: a double reading. The cost, accepted by the operator and stated in FR-009 and
+the README: a change made in a later task but before that serialisation (less than `D` after the trigger) is read
+twice, by the alert event and by the copy, since the element cannot know when the serialisation happened; the README
+tells hosts to set the text before, or in the same task as, the insertion, reveal or role change. The declined
+alternatives were a `W` window after the trigger in which changes only move the baseline (option (a), a change after
+the serialisation and before the window's end read by neither) and keeping the synchronous baseline with the double
+reading documented (option (c)). Text changes of an `alert` notice, and a role change from `alert` to `status`, go
+through the announcer as below.
+
+The event does not depend on what made the node created or unignored (PLAN-FRESH-3-003): `OnIgnoredChanged` adds
+`Event::ALERT` for any alert node that becomes unignored (lines 416-417) and `OnAtomicUpdateFinished` for any alert
+node created in the update (lines 1081-1082). A `role="alert"` notice inside a hidden ancestor (a container with
+`hidden`, a closed `<details>`, a `display: none` panel) that is then shown is created or unignored too, so Chromium
+reads it, although the element sees no change and writes no copy; the `status` and `announce` rows are not
+announced in that case. The spec's hidden-ancestor rule (FR-008) and the README say so: read for `alert`, by the
+platform event, Chromium only and not measured; not announced for the other rows. The capture counts zero
+live-region announcements for it in every row, which for the `alert` row says nothing about the event. The capture cannot see the event, so the
 scenarios for these cells assert a zero count and that the host's node has the role `alert` (spec FR-009, SC-002);
 the README names the event, its source lines, that it is Chromium's behaviour (WebKit not measured) and that a later
 Chromium may change it. What the event does on first load (a server-rendered `role="alert"` notice) is not measured
@@ -122,9 +144,13 @@ of R-01 for the document's current load state (150 ms once `document.readyState`
    FR-008 as amended by operator decision PLAN-FRESH-2-001 (a)); a text that keeps changing more often than every
    `W` is therefore not announced until it stops (README);
 3. when the wait ends, computes the notice's text as FR-008 defines it and the politeness from the DOM at that
-   moment and compares them with the baseline: if both are equal (a text that went `A`, `B`, `A`), it writes nothing
-   and the announcer stays empty; otherwise it writes the text as the copy and sets the baseline to that text and
-   politeness;
+   moment and compares them with the baseline: if both are equal (a text that went `A`, `B`, `A`), or the text is
+   empty, it writes nothing and the announcer stays empty; otherwise it writes the text as the copy and sets the
+   baseline to that text and politeness. An insertion or a reveal sets the baseline to none before its wait
+   (PLAN-FRESH-3-001), so a wait that includes one always writes the current non-empty text and only the cancel
+   triggers stop it; the comparison can drop only a wait made of changes alone. Without that reset, a notice first
+   loaded hidden (baseline: its text) or announced, hidden and revealed with the same text would compute text equal to
+   the baseline on reveal and write nothing, against spec US1-17 and SC-002;
 4. holds the copy for `H` and then empties the announcer; a trigger during the hold goes back to step 1, so the
    copy is emptied no earlier than `W` after it was written (more than `D`, so at least one serialisation hands it
    to assistive technology; PLAN-FRESH-2-001's lost announcement).
@@ -148,8 +174,9 @@ content withholding).
 **Triggers.** Insertion after parsing (not a move, not first load), reveal (the host's `hidden` removed), and a change
 by FR-008's rule: a light-DOM `MutationObserver` (childList, characterData, attributes, subtree) and the heading
 `slotchange`, together with `tone` and host `role` changes, recompute the text and politeness and compare them with
-the baseline (the last announced text and politeness, or those current when the notice began announcing). `announce`
-set, or a live role set on a notice that was not live, only sets the baseline. While the host is `hidden` the
+the baseline (the last announced text and politeness, or those current when the notice began announcing; none from
+an insertion or a reveal until the next write). `announce` set, or a live role set on a notice that was not live,
+only sets the baseline. While the host is `hidden` the
 announcer stays empty and a pending announcement is cancelled; the reveal triggers with the text current then. A
 notice that stops being live cancels any pending announcement and empties the announcer.
 
@@ -339,7 +366,9 @@ announcement goes through the same `Announcer` of `src/live.ts` as the notice (R
 `<div class="announcer" aria-live="polite" aria-atomic="true">` in the control's shadow root, visually hidden,
 present and empty from the first render, into which the normalised error text is written after the wait `W` and
 emptied after the hold `H`, with the same restart, baseline re-check and minimum hold as R-02 (spec FR-027 as amended
-by PLAN-FRESH-2-001 (a)). It triggers on insertion after parsing (not a move, not first load) when `error` is
+by PLAN-FRESH-2-001 (a)); as there, an insertion or a reveal sets the error baseline to none before its wait, so the
+re-check never drops it (PLAN-FRESH-3-001, spec US2-22: a control first loaded hidden with an `error`, or one whose
+error was announced and which was hidden and revealed with the same error, announces it once). It triggers on insertion after parsing (not a move, not first load) when `error` is
 non-empty, on reveal of the host when `error` is non-empty, and when `error` changes to a non-empty normalised text
 that differs from the baseline. The element normalises the error text (collapse, trim) before rendering and comparing
 it, so a whitespace-only difference changes nothing; clearing it resets the baseline to empty, cancels a pending
@@ -428,8 +457,8 @@ alone would take several minutes in Stryker's dry run and again for every surviv
 (`coverageAnalysis: perTest`), against the mutation shard's 10-minute limit (`.github/workflows/ci.yml:84-89`; specs
 001 FR-013, whose records show shards at 9:49 and 670 s). `src/live.ts` therefore exports, from the internal module
 only (not from `index.ts` or `browser.ts`, not in the manifest), a test-only setter `setAnnouncerTimingForTests({
-delayLoaded, delayLoading, hold })` that replaces `D` (both load states) and `H`; `W` and the minimum hold stay
-`2 × D`. Only `test/in-process.ts` calls it, before each scenario, from one constant that also gives the capture's
+delayLoaded, delayLoading, hold })` that replaces `D` (both load states) and `H` and returns the timing it replaced;
+`W` and the minimum hold stay `2 × D`. Only `test/in-process.ts` calls it, before each scenario, from one constant that also gives the capture's
 `"settled"` rule and stop()'s quiet window their in-process `D` (R-01), so the element and the oracle use the same
 figure while the oracle keeps its own copy. The test `D` is chosen in T002 and is at least two rendering updates long,
 so the microtask and first-frame plants still count zero under `"settled"`. Fixture pages never call the setter and
@@ -438,6 +467,23 @@ run at Chromium's 150 and 350 ms and the real `H`; they are the evidence that th
 the test `D`, the `elements` project's dry run and a worst-case shard (60 changed lines of `src/live.ts`, the largest
 entry specs 001 FR-013 allows), and the fixture-page suite at real figures; if a shard exceeds about 7 minutes, the
 plan stops for the operator before phase 2. The Stryker timeout factor is set from the same measurement.
+
+**The shipped figures under mutation** (operator decision PLAN-FRESH-3-004 (a)). Because every in-process scenario
+replaces `D` and `H` first, no scenario reads the shipped figures, and the mutation gate runs only the in-process
+configuration (`gates/bin/mutation.ts:71-74`) and fails on both `Survived` and `NoCoverage`
+(`gates/lib/mutation/report.ts:71`); the fixture pages that run at the real figures kill no mutant. The mutants are
+not equivalent (`D = 0` gives `W = 0`, the coalesced write PLAN-FRESH-1-001 removed). So the defaults are one
+internal constant of `src/live.ts`, `announcerDefaults = { delayLoaded: 150, delayLoading: 350, hold: 5000 }` (not
+exported from `index.ts` or `browser.ts`, not in the manifest), from which the timing in force starts, and
+`test/in-process.ts` keeps the value its first `setAnnouncerTimingForTests` call of the file returns (Vitest gives
+each test file its own module instance; T002 confirms). An in-process test, `test/live-timing.test.ts` in the
+`elements` project, asserts that this value and `announcerDefaults` each deep-equal `{ delayLoaded: 150,
+delayLoading: 350, hold: 5000 }`, written as literals in the test, not imported. It kills `150 → 0`, `350 → 0`, `5000
+→ 0` (and any other change of those literals), the constant's object literal emptied, the timing in force not
+started from the constant, and the setter's return value mutated. The literals sit in module-level code, which
+Stryker treats as static mutants and runs against every test, so `coverageAnalysis: perTest` does not leave them
+NoCoverage. The test does not call the setter itself, so the `test/node/` caller check stands. The declined
+alternative was a Stryker disable comment on those lines naming the fixture-page scenarios (option (b)).
 
 **The oracle** (PLAN-TESTABILITY-1-008). The reading `regionText()` and the counting `announcements()` are pure
 functions in `test/live-reading.ts`, unit-tested per rule (StaticText taken; `img` name taken and its descendants not

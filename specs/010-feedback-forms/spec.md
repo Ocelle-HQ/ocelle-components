@@ -101,6 +101,15 @@ are not read (SPEC-1-09). Their `sk-*` names are kitty-mission-ui roles, not nam
   tree capture, and the README says so (FR-035).
 - PLAN-FRESH-2-003 (a) is a plan decision (research R-09) with no change here.
 
+**Operator decisions at plan squad round 3** (2026-11-13, human:jeroennouwsdev; `reviews/plan/round-3/refute.md`):
+
+- PLAN-FRESH-3-002 (b): for a host `role="alert"`, the notice takes the baseline for an insertion, reveal or change
+  of the role to `alert` at the end of the current task, so text set in the same task (`host.append(n);
+  n.textContent = msg`, reveal then fill, role then fill) is read once, by the platform's alert event. A change made
+  in a later task but before Chromium's next serialisation (less than the serialisation delay after the trigger) is
+  read twice; the README says so and tells hosts to set the text first (FR-008, FR-009, User Story 1 scenario 15).
+- PLAN-FRESH-3-004 (a) is a plan decision (research R-09) with no change here.
+
 ## Consumer need
 
 - kitty-mission-ui uses the Spec Kitty notice in 28 places. Its notice draws a heading block and a gap even when no
@@ -269,14 +278,19 @@ colours and accessibility tree; insert and change announcing notices and count t
     **Then** the current text is announced politely once, the same when keyboard focus is on a link slotted in the
     notice's body (the link stays focused and in the accessibility tree); **when** it changes the role back to
     `alert`, **Then** no live region node announces (the platform's alert event); **when** it removes the role,
-    **Then** nothing is announced and later changes are not announced (FR-008, "Live host role at runtime"). (`log`
-    and other live roles, and a host `aria-live`, are not supported and not tested; FR-009.)
+    **Then** nothing is announced and later changes are not announced (FR-008, "Live host role at runtime"). **Given**
+    a `role="alert"` notice whose text is set in the same task after it is inserted (`host.append(n);
+    n.textContent = msg`), after its `hidden` is removed, or after its role is set to `alert`, **Then** no live region
+    node announces, in each of the three cases, and the host's node has the role `alert` (operator decision
+    PLAN-FRESH-3-002 (b)). (`log` and other live roles, and a host `aria-live`, are not supported and not tested;
+    FR-009.)
 16. **Given** forced-colours mode, **When** a notice of each tone renders, **Then** the box border and the marker are
     visible in system colours (the marker in `CanvasText`), and the text is `CanvasText` on `Canvas`.
 17. **Given** a host `hidden` attribute, **Then** the notice has no box and nothing in it is announced while hidden;
     **when** the host removes `hidden` from an announcing notice (inserted hidden, or part of the page as first loaded
-    and hidden), **Then** its current text is announced once, as for an insertion (operator answer SPEC-1-10); text
-    changes made while hidden are not announced on their own, only the text current at the reveal is.
+    and hidden, or announced, then hidden and revealed with the same text), **Then** its current text is announced
+    once, as for an insertion (operator answer SPEC-1-10; plan review PLAN-FRESH-3-001); text changes made while
+    hidden are not announced on their own, only the text current at the reveal is.
 18. **Given** a notice with slotted inline content (a link, an `ocelle-icon`), **When** it
     renders, **Then** the content keeps its own semantics in the accessibility tree (the link stays a link, focusable
     by Tab) and inherits the notice's text colour.
@@ -401,9 +415,10 @@ validity, events and the accessibility tree.
     Enter in the native input, **Then** the form submits, because the browser does not count the custom element as a
     blocking field (FR-030; the README lists this under its limitations).
 22. **Given** a control with a host `hidden` attribute and `error="Title is taken"` (inserted hidden, or part of the
-    page as first loaded and hidden), **Then** nothing is announced while it is hidden, and an `error` change while
+    page as first loaded and hidden, or announced, then hidden with the same `error`), **Then** nothing is announced while it is hidden, and an `error` change while
     hidden is not announced on its own; **When** the host removes `hidden`, **Then** the `error` current at that
-    moment, if non-empty, is announced politely once, as for an insertion (FR-027); a control without `error` announces
+    moment, if non-empty, is announced politely once, as for an insertion, whatever it last announced (FR-027; plan
+    review PLAN-FRESH-3-001); a control without `error` announces
     nothing when revealed.
 23. **Given** a host `aria-invalid="false"` with `error="Title is taken"`, a host `aria-required="false"` with
     `required`, and a host `aria-disabled="false"` with `disabled`, each on its own control, **Then** the inner
@@ -531,8 +546,9 @@ gates and the README documentation test.
   once; a notice that keeps changing more often than every wait is not announced until it stops (operator decision
   PLAN-FRESH-2-001); the README says so. The same holds for a control's `error`.
 - A notice or form control inside a hidden ancestor (a container with `hidden`, a closed `<details>`, a
-  `display: none` panel) that is then shown: not a reveal; nothing is announced. Only the host's own `hidden` counts
-  (FR-008, FR-027); the README says so.
+  `display: none` panel) that is then shown: not a reveal; no live region announces. Only the host's own `hidden`
+  counts (FR-008, FR-027). A `role="alert"` notice shown this way is read by Chromium's alert event all the same
+  (FR-008, FR-009; not measured); the README says so.
 - An announcing notice or a form control with `error` that an htmx swap or a script inserts before the browser build
   has loaded: it is in the document when the definition is registered and is upgraded by that registration, so it
   counts as first load and announces nothing (FR-008); the README tells hosts to load the build before such swaps. A
@@ -616,7 +632,9 @@ gates and the README documentation test.
     removed, text data changed, an attribute changed) after which the notice's text or its politeness (FR-009) differs
     from the last text and politeness it announced or, if it has not announced, from those it had when it began
     announcing. A mutation that leaves both unchanged (an `href` change, the same text set again, a re-render) is not
-    a change.
+    a change. This comparison applies to changes only: an insertion or a reveal announces the current text whatever
+    the notice last announced, so a notice announced, hidden and then revealed with the same text announces it again
+    (plan review PLAN-FRESH-3-001).
   - With `announce` and while the notice is shown (not `hidden`), the notice announces its text once: when it is
     inserted into a document that has finished parsing, when `hidden` is removed (operator answer SPEC-1-10), and on
     each later change. It does not announce when it is part of the document as first parsed, when it re-renders for
@@ -643,14 +661,16 @@ gates and the README documentation test.
     announcing notices, since a notice upgraded by the registration does not announce.
   - *Live host role at runtime.* Setting a host `role` of `alert` or `status` on a connected notice without
     `announce` acts as setting `announce` later: the notice's current text and the role's politeness become the
-    baseline and nothing is announced. Removing that role (or replacing it with a role that gives no live politeness)
+    baseline and nothing is announced (for `alert`, the text current at the end of the task, as FR-009's *Platform
+    alert event* says). Removing that role (or replacing it with a role that gives no live politeness)
     from a notice without `announce` acts as removing `announce`. Changing the host role from `alert` to `status`, or
     adding a `status` role to or removing a live role from a notice with `announce`, is a change by the rule above
     when the politeness it gives differs from the baseline's, and then announces the current text once with the new
     politeness; when the politeness stays the same it announces nothing. A change of the host role to `alert` (from
     `status`, or added on a notice with `announce`) is the exception: it is carried by the platform's alert event for
     the host's node (FR-009, *Platform alert event*, operator decision PLAN-FRESH-2-002 (a)), so the notice writes no
-    copy into its live region, takes the current text and the assertive politeness as its baseline, and the tree
+    copy into its live region, takes the text and politeness current at the end of the task as its baseline
+    (operator decision PLAN-FRESH-3-002 (b)), and the tree
     measure counts zero live-region announcements for it, whether or not the politeness differs from the baseline's
     (a `danger` notice with `announce` that gets `role="alert"` included).
   - Without `announce`, with no host `role` or a host role that gives the host's node no live politeness, and with no
@@ -658,7 +678,11 @@ gates and the README documentation test.
     node and announces nothing. FR-009's unsupported rows are outside this rule.
   - Only the host's own `hidden` attribute counts as hiding and revealing for this requirement. A notice inside a
     hidden ancestor (a container with `hidden`, a closed `<details>`, a `display: none` panel) that is then shown
-    enters the tree already holding text and is not announced; the README says so.
+    enters the tree already holding text and is not announced by its live region. For a host `role="alert"`,
+    Chromium's alert event reads it all the same: the event fires whenever an alert node is created or stops being
+    ignored, whatever made it so (`ui/accessibility/ax_event_generator.cc` lines 416-417 and 1081-1082; FR-009). So a
+    revealed-by-ancestor notice is read in the `alert` row (Chromium only, not measured) and not announced in the
+    other rows; the README says so (plan review PLAN-FRESH-3-003).
 - **FR-009**: Politeness: `assertive` for `warning` and `danger`, `polite` for `info`, `success` and `neutral`. A host
   `role` attribute is the host's role as written (the "role override") and is the role of the host's node in the
   accessibility tree. The outcome for each combination, measured as "What 'announced' means here" says:
@@ -680,11 +704,17 @@ gates and the README documentation test.
   becomes `alert`, whatever its live politeness, and screen readers read the node's content on it. For a host
   `role="alert"`, the insertion after parsing, the reveal and a change of the host role to `alert` (from `status`, or
   added at runtime, with or without `announce`) are therefore carried by that event: the notice writes no copy into
-  its live region for them and takes the current text and the assertive politeness as its baseline, so the tree
-  measure counts zero announcements for them and checks that the host's node has the role `alert`. Text changes, and
-  a change of the role from `alert` to `status`, announce through the live region as FR-008 says. The alert event is
-  not seen by the tree capture and is not measured; the README names it, its source and that it is Chromium's
-  behaviour (WebKit not measured).
+  its live region for them and takes the text and politeness current at the end of the task as its baseline, so the
+  tree measure counts zero announcements for them and checks that the host's node has the role `alert`. Text set in
+  the same task as the insertion, reveal or role change (inserting the notice and then filling it, revealing then
+  filling, setting the role then filling) is part of that reading and is not announced again (operator decision
+  PLAN-FRESH-3-002 (b)). A change made in a later task but before Chromium's next serialisation (less than the
+  serialisation delay after the trigger) is read twice, once by the alert event and once by the live region, since the
+  element cannot know when the serialisation happens; the README says so and tells hosts to set the text before, or
+  in the same task as, the insertion, reveal or role change. Text changes, and a change of the role from `alert` to
+  `status`, announce through the live region as FR-008 says. The event also fires when the notice is shown by a
+  hidden ancestor (FR-008, last bullet). The alert event is not seen by the tree capture and is not measured; the
+  README names it, its source and that it is Chromium's behaviour (WebKit not measured).
 
   *Not supported* means: the README tells hosts not to write these on the notice (use `announce`, or `role="alert"`
   or `role="status"`), the outcome is not specified, and no scenario tests it; the rules of this requirement and of
@@ -793,7 +823,7 @@ gates and the README documentation test.
   the baseline to empty, so `"A"`, then `""`, then `"A"` announces "A" twice. Only the host's own `hidden` counts as
   hiding: while the host is `hidden`, no error is announced and changes of `error` are not announced on their own;
   removing `hidden` announces the error current at that moment once, politely, if it is non-empty, as an insertion
-  does (the same rule as the notice's reveal, operator answer SPEC-1-10). A control revealed through a hidden
+  does, whatever the control last announced (the same rule as the notice's reveal, operator answer SPEC-1-10). A control revealed through a hidden
   ancestor announces nothing (FR-008). Changes of `error` that follow each other by less than the announcement wait,
   in one task or in different tasks, announce only the final text once, compared with the baseline when the wait
   ends, as FR-008 rules for the notice (operator decision PLAN-FRESH-2-001 (a)).
@@ -862,7 +892,9 @@ gates and the README documentation test.
   text changing more often than it is not announced until it stops (FR-008); how long a copy is held, that the figure
   is not measured by the tree capture, and that a browse-mode user may meet the text twice for that time; that for a
   `role="alert"` notice the insertion, reveal and change to `alert` are read through the platform's alert event, with
-  its source (FR-009); the mixed-form implicit-submission case (FR-030); the
+  its source (FR-009), that text set in the same task is part of that reading while a change in a later task before
+  the next serialisation is read twice, so hosts set the text first (FR-009), and that the event also reads a
+  `role="alert"` notice shown by a hidden ancestor, which the other rows do not announce (FR-008); the mixed-form implicit-submission case (FR-030); the
   not-yet-upgraded state (Edge Cases); and, for htmx hosts, that the trigger is `hx-trigger="ocelle-form-input-change"`
   or `"ocelle-form-select-change"` (or `input`), since the native `change` event does not leave the shadow root and
   htmx's default trigger for an unknown element is `click`. A documentation test checks
@@ -898,7 +930,9 @@ gates and the README documentation test.
   other by less than the announcement wait count as one triggering change (FR-008, operator decision
   PLAN-FRESH-2-001). In the `alert` row, insertion, reveal and the role change from `status` to `alert` count zero
   live-region announcements, with the host's node having the role `alert`: they are carried by the platform's alert
-  event, not by a live region (FR-009, operator decision PLAN-FRESH-2-002).
+  event, not by a live region (FR-009, operator decision PLAN-FRESH-2-002), and so do they with the text set in the
+  same task after the trigger (operator decision PLAN-FRESH-3-002). A reveal counts one whatever the notice last
+  announced: first loaded hidden and revealed, and announced, hidden and revealed with the same text (PLAN-FRESH-3-001).
 - **SC-003**: Over all combinations of these factors: `name` present or absent, `required` with an empty and with a
   non-empty value, `disabled` set or not, inside a `fieldset disabled` or not, and the state as set, after a form
   reset and after a history restore, the form data and validity flags of each form element equal those of a native

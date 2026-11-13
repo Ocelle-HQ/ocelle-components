@@ -78,6 +78,10 @@ it is the same code over the page's CDP session. Both harnesses share `test/live
   in-process run with the test `D` keeps the same relation.
 - Timing (in process only): `test/in-process.ts` calls `setAnnouncerTimingForTests` of `src/live.ts` before each
   scenario with the one test constant that also sets the capture's `D` (research R-09). Fixture pages never call it.
+  It keeps the timing its first call in the test file returned (the shipped `announcerDefaults`) and exposes it
+  read-only; `test/live-timing.test.ts` asserts that value and `announcerDefaults` against the literals
+  `{ delayLoaded: 150, delayLoading: 350, hold: 5000 }`, so the shipped figures' mutants are killed in process
+  (operator decision PLAN-FRESH-3-004 (a)). That test does not call the setter.
 - `hostRole(id)`: the `role` of the entry with `host` equal to `id` in the `hosts` list of the last snapshot
   `liveCapture.stop()` returned (the final snapshot, taken after the quiet window), for the `alert` cells that count zero
   live-region announcements (spec FR-009, SC-002), so that a zero count there also checks that the host is an
@@ -137,9 +141,12 @@ the `elements-browser` project the same way. Each phase records the plant run's 
 |---|---|---|
 | insertion announcement | announcer created already holding the text (no empty wait) | US1-8, US1-15 `status` insertion and reveal, US2-20 |
 | alert path | writes the copy for a `role="alert"` host on insertion, reveal and a change to `alert` (PLAN-FRESH-2-002) | US1-15 and the SC-002 `alert` row: insertion, reveal and `status` → `alert` (count 0) |
+| alert baseline | the alert path takes the baseline synchronously, at the DOM operation (PLAN-FRESH-3-002 (b)) | US1-15 `alert` cells with the text set in the same task after insertion, after reveal and after the role change (count 0) |
 | merge window | no restart: each trigger writes after its own wait | US1-13 changes in different tasks 100 ms apart (count 1) |
 | minimum hold | a trigger during the hold empties the copy at once (PLAN-FRESH-2-001) | US1-13 change 10 ms after a write (the first copy counts under `"settled"`) |
 | baseline re-check | writes at the end of the wait without comparing with the baseline | US1-13 `A`, `B`, `A` within the wait (count 0) |
+| reveal baseline | the re-check also applies to insertion and reveal (the baseline not set to none, PLAN-FRESH-3-001) | US1-8, US1-17 and US2-22 (first loaded hidden then revealed; announced, hidden and revealed with the same text; count 1) |
+| shipped timing | `announcerDefaults` with `delayLoaded: 0`; the timing in force not started from the constant | `test/live-timing.test.ts` |
 | hold | empties the copy after `W` instead of `H` (PLAN-FRESH-2-005) | US1-13 hold scenario (copy settled for `H`) |
 | first load, late write | writes exactly the pre-load `W` after first load under `drive.readyState("loading")` (PLAN-FRESH-2-004) | US1-10 under `registerFirstLoad`, under both rules |
 | short-lived empty state | text written in a microtask after the announcer appears; text written in the first animation frame | US1-8 (`"settled"` count 0) |
