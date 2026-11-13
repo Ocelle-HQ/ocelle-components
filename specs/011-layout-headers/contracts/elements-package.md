@@ -14,7 +14,8 @@ package README and the CHANGELOG, or in `tokens.css` and the `@ocelle/tokens` CH
 | `@ocelle/elements/ocelle-personal-rail.js` | `dist/ocelle-personal-rail.js` | `ocelle-personal-rail` |
 
 `@ocelle/elements` (the package root) and `@ocelle/elements/browser.js` also define all five. `ocelle-card.js` does
-not define `ocelle-section-header`: a page that slots one imports both (R-05 works whichever is defined first).
+not define `ocelle-section-header`: a page that slots one imports both. The compact size works whichever is defined
+first, and when the two come from different copies of the package (research.md R-05, the pull model).
 
 ## Elements
 
@@ -50,8 +51,9 @@ Slots: `heading`, `eyebrow`, `description`, `actions`. Events, parts, CSS custom
 |---|---|---|---|---|
 | `label` | property only (not reflected; attribute `label` read) | `string \| undefined` | `undefined` | Names the navigation landmark when the host has no `aria-label` |
 
-Slots: `head`, default (sections, one element each), `footer`. Events, parts, CSS custom properties: none. Observes
-the host's `aria-label` (not listed in the manifest, as in 005).
+Slots: `head`, default (sections, one element each), `footer`. Events, parts, CSS custom properties: none. The host
+is the navigation landmark (through `ElementInternals`, not listed in the manifest, as in 005); a host `aria-label`
+names it as the README's Host ARIA rule says, and the element never writes it.
 
 ### `ocelle-personal-rail` (class `OcellePersonalRail`)
 
@@ -60,8 +62,8 @@ the host's `aria-label` (not listed in the manifest, as in 005).
 | `label` | property only (not reflected; attribute `label` read) | `string \| undefined` | `undefined` | Names the navigation landmark when the host has no `aria-label` |
 | `orientation` / `orientation` | property, attribute (reflected) | `"vertical" \| "horizontal" \| undefined` | `undefined` | Layout direction, set by the page or a shell; not set is vertical; the element never changes it itself |
 
-Slots: default (primary items), `bottom`. Events, parts, CSS custom properties: none. Observes the host's
-`aria-label`.
+Slots: default (primary items), `bottom`. Events, parts, CSS custom properties: none. The host is the navigation
+landmark, named as for the sidebar.
 
 **For #12**: the rail's whole interface for a shell or drawer is `orientation` (and `label`). A shell that wants
 the rail horizontal inside the personal drawer and vertical in its column sets `orientation` from its own tier,
@@ -73,6 +75,8 @@ with an exclusive bound in its own query. Anything more (events, an item density
 (values in [../data-model.md](../data-model.md)).
 
 ## Tokens each element reads (documented, not declared)
+
+This table is the single list the readme test checks and the token-sentinel scenarios override (research.md R-13).
 
 | Element | Tokens |
 |---|---|

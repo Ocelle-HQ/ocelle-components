@@ -9,7 +9,7 @@ docker) for the visual gate. Run one heavy job at a time.
    tokens.
 2. Element tests: `pnpm exec vitest run --project elements --project elements-node --project elements-build
    --project elements-browser` → all pass (contracts/checks.md § Package tests); `pnpm exec vitest run --project
-   storybook-integration` → the story test passes.
+   storybook-integration` → the story test passes, including its 320 × 800 px pass over every new story (SC-002).
 3. Manifest: `pnpm --filter @ocelle/elements run manifest && git diff --exit-code packages/elements/custom-elements.json`;
    `pnpm run gate:manifest` → exit 0.
 4. Token gates: `pnpm run gate:contrast` → "169 pairs checked in light, 177 in dark (158 required per theme)";
@@ -18,3 +18,5 @@ docker) for the visual gate. Run one heavy job at a time.
 6. Storybook (from #10): `pnpm run gate:storybook-build`, `pnpm run gate:visual`, `pnpm run gate:axe` → exit 0, with
    the new baselines under `storybook/baselines/`.
 7. Mutation: `pnpm run gate:mutation -- --base <phase base>` → no survivor without a recorded reason.
+8. Style plants: `reviews/phase-N/plants.md` records, for every declaration of the phase's new `css` templates, the
+   scenario that failed when it was neutralised, or the reason it is equivalent (research.md R-17).

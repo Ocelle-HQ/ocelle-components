@@ -56,6 +56,17 @@ the personal drawer itself stay with #12 and #16."
   spec check 3 (`reviews/spec/check-3.md`) are fixed, as `reviews/spec/check-3-fixes.md` records. No further spec
   check follows; the plan squad reads the spec next. Check 3 had no operator questions.
 
+**Operator decisions in plan squad round 1** (2026-11-13, human:jeroennouwsdev; `reviews/plan/round-1/refute.md`):
+
+- Pinned footer and bottom group (PLAN-CORRECTNESS-1-004), "the divider follows the content": a divider stays with
+  the content before it, and when the sidebar or a vertical rail is taller than its content, the free space lies
+  between that divider and the footer or bottom group pinned at the block end (FR-022, FR-023, FR-025, US3-3, US4-2).
+- Every story at 320 px (PLAN-CORRECTNESS-1-009), "test every story": SC-002 stands and the story test checks it.
+- Axe on the landmarks (PLAN-TESTABILITY-1-007), "the `axe` gate": FR-028's axe clause is checked by #10's `axe` gate
+  on one story per US3-12 and US4-11 case; the package scenarios read the accessibility tree only (FR-028, FR-038).
+- The card-to-header channel (PLAN-CORRECTNESS-1-007, "pull model") and declaration-level style plants
+  (PLAN-TESTABILITY-1-001) are plan decisions; see `plan.md`.
+
 **Constitution decision recorded by triage**: #8 and spec-kitty-design#529 ask for a "12 px mono uppercase" eyebrow.
 Constitution II says "No monospace anywhere", so the eyebrow is set in Schibsted Grotesk, uppercase and tracked
 (FR-030, FR-031).
@@ -132,6 +143,10 @@ removing content updates the layout without the host page doing anything else.
 **Reading the accessibility tree.** As in mission 005, every accessibility-tree outcome is read from Chromium's full
 accessibility tree with ignored nodes filtered out, and every element whose tree is read carries an `id`.
 
+**Measuring an element.** An element's size and position ("the sidebar is 600 px tall", "the rail is 52 px wide",
+"the footer's block end is at the container's block end") are those of its host's border box, the box the page and
+#12's shell place; a part's position is that of its slotted content or its divider as the scenario names it.
+
 **Reflow.** "Reflows at 320 px" means: at a viewport of 320 × 800 px, with the stated content, the document's
 scrolling width is at most 320 px (no horizontal scroll), no text is clipped (every slotted text node's box lies
 inside its element's box), and the stated parts stack in the stated order.
@@ -165,8 +180,9 @@ gaps, fonts and colours, and read the accessibility tree.
    After upgrade the section header carries no `size` or `variant` attribute that the page did not write (FR-006).
 2. **Given** a section header with a heading, an eyebrow (`<span slot="eyebrow">Mission</span>`), a description
    and two buttons in `actions`, **When** it is laid out at 1280 px in left-to-right and in right-to-left, **Then** the
-   eyebrow is above the heading, the description under it, the actions at the inline end on the heading's first line,
-   and the eyebrow is drawn with the eyebrow tokens (FR-031) in both themes.
+   eyebrow is above the heading, the description under it, the actions at the inline end on the heading's first line
+   with their block start at the heading's block start (not the eyebrow's), and the eyebrow is drawn with the eyebrow
+   tokens (FR-031) in both themes.
 3. **Given** two section headers on one page, one with only a heading and one with heading, eyebrow, description and
    actions, **When** both are laid out, **Then** the first one's block size equals its heading's block size (no
    padding, gap or margin for its empty eyebrow, description and actions), while the second has the gaps of FR-011
@@ -213,7 +229,8 @@ gaps, fonts and colours, and read the accessibility tree.
     the slotted heading, eyebrow and description are drawn in a system text colour on a system background, and the
     inset card draws with the same ground, border and text colours as the regular card. That last outcome is accepted:
     `inset` marks only that a card is nested, which the nesting itself already shows, so losing the sunken ground in
-    forced colours loses no information (FR-016).
+    forced colours loses no information (FR-016). A compact card in forced-colours mode keeps the compact padding and
+    gap of scenario 8 and its slotted section header the compact size: layout variants hold in forced colours (FR-001).
 14. **Given** a compact card with a section header whose heading is a 60-character run with no break opportunity and
     two actions, **When** the page reflows at 320 px, **Then** there is no horizontal scroll, the heading wraps inside
     the card, and the actions move under the heading column, `--ocelle-space-2` below it, at its inline start, rather
@@ -233,6 +250,10 @@ gaps, fonts and colours, and read the accessibility tree.
     `header` slot, none with `size`, **When** they are measured, **Then** all three section headers are drawn at the
     default size: only a section header assigned to a compact card's own `header` slot takes the compact size
     (FR-017), and the inner card draws at its own (regular) density.
+19. **Given** cards in each density, with and without `inset`, each with a section header holding an `h2` in its
+    `header` slot and one more of each without a header, **When** the tree is read, **Then** each card's subtree holds
+    only its slotted content (the `h2` heading where there is one, and the body's own nodes): the card adds no
+    region, article, group or other node of its own (FR-018).
 
 ---
 
@@ -302,7 +323,11 @@ landmark, and reflow at 320 px.
    two sections and between the last section and the footer (four dividers), each divider spans the sidebar's whole
    inline size, the head, each section and the footer each have `--ocelle-space-4` between their content and every
    side of their part (so each divider has `--ocelle-space-4` of padding on both sides and there is no other gap
-   between parts), and the footer's block end is at the container's block end (FR-021, FR-022).
+   between parts, apart from the free space below), and the footer's block end is at the container's block end. The
+   divider between the last section and the footer lies at the last section's padding edge, and the free space the
+   sidebar fills lies between that divider and the footer's padding (the divider follows the content; FR-021, FR-022,
+   FR-023). The same holds when the three sections are `ocelle-section-header` elements and `span` elements: each
+   section's padding and divider are as above and each divider spans the sidebar's whole inline size.
 4. **Given** the same sidebar in a container shorter than its content, **When** it is measured, **Then** the footer
    follows the last section (it does not overlap it) and the sidebar's block size is its content's.
 5. **Given** sidebars on one page with no footer, with no head, and with both, **When** they are measured, **Then**
@@ -328,11 +353,13 @@ landmark, and reflow at 320 px.
     the text and the footer.
 12. **Given** a sidebar with no `label` but `aria-label="Team"` on its host, a second with `label="Projects"` and
     `aria-label="Other"`, a third with `label="Projects"` and a blank `aria-label=""`, and a fourth with neither,
-    **When** the tree is read and axe runs on the page, **Then** the first's landmark is named "Team", the second's
-    "Other" (the host `aria-label` decides alone), the third's landmark has no name (a blank host `aria-label` leaves
-    it unnamed even with a `label`), the fourth's has no name, the page holds exactly one navigation landmark per
-    sidebar, and axe reports no serious or critical finding caused by the host's `aria-label`; **When** script then
-    removes `aria-label` from the second and third, **Then** both landmarks are named "Projects" (FR-028).
+    **When** the tree is read, **Then** the first's landmark is named "Team", the second's "Other" (the host
+    `aria-label` decides alone), the third's landmark has no name (a blank host `aria-label` leaves it unnamed even
+    with a `label`), the fourth's has no name, the page holds exactly one navigation landmark per sidebar, no other
+    node in the tree carries a landmark's name, and each host keeps the `aria-label` value the page wrote; **When**
+    script then removes `aria-label` from the second and third, **Then** both landmarks are named "Projects". Each of
+    the four cases is also a story of its own, rendered alone, on which the `axe` gate reports no serious or critical
+    finding (FR-028, FR-038).
 13. **Given** a sidebar with a head and a footer and an empty default slot, beside one with a head, one section and
     a footer, **When** both are measured, **Then** the first has exactly one divider, between head and footer, and no
     padding for the empty sections (head and footer padding meet at that divider), while the second has two and its
@@ -362,7 +389,9 @@ orientation with focus inside, and reflow at 320 px.
 2. **Given** the rail without `orientation` and with `orientation="vertical"`, each in a container 600 px tall,
    **When** each is measured in both themes, **Then** both are 600 px tall and lay the primary items out in a column
    from the block start, the bottom items in a column at the block end (the last bottom item's block end at the
-   rail's content-box block end), with one `--ocelle-border-width` divider between the groups, on the `--ocelle-color-chrome` ground
+   rail's content-box block end), with one `--ocelle-border-width` divider between the groups, `--ocelle-space-1`
+   after the last primary item (the divider follows the content; the free space lies between the divider and the
+   bottom group, FR-025), on the `--ocelle-color-chrome` ground
    with `--ocelle-color-chrome-ink` text, `--ocelle-shell-rail-width` (52 px) wide. With square items of
    `--ocelle-size-rail-item` (40 px) in both groups, each item lies inside the rail's content box with no overflow,
    is centred in the inline direction, and, when it has keyboard focus, its focus ring (`--ocelle-focus-width` drawn
@@ -391,15 +420,18 @@ orientation with focus inside, and reflow at 320 px.
 8. **Given** `orientation="sideways"` (a value outside the list), **When** the rail is measured, **Then** it is laid
    out vertically, as with no `orientation`.
 9. **Given** the rail in forced-colours mode, **When** it is drawn, **Then** the divider is visible in a system
-   colour.
+   colour, and a rail with `orientation="horizontal"` is still laid out as a row as in scenario 3 (layout variants
+   hold in forced colours, FR-001).
 10. **Given** a page that sets `orientation` from its own query with an exclusive bound, as the README shows
     (vertical while its column is at least the bound, horizontal below), **When** the column is exactly at the bound,
     **Then** the rail is vertical, and 1 px below it horizontal.
 11. **Given** a rail with no `label` but `aria-label="Personal"` on its host, one with both `label="Me"` and
-    `aria-label="Other"`, and one with `label="Me"` and a blank `aria-label=""`, **When** the tree is read and axe runs
-    on the page, **Then** the landmarks are named "Personal" and "Other" and the third is unnamed, the page holds one
-    navigation landmark per rail, and axe reports no serious or critical finding caused by the host's `aria-label`;
-    **When** script then removes `aria-label` from the second and third, **Then** both are named "Me" (FR-028).
+    `aria-label="Other"`, and one with `label="Me"` and a blank `aria-label=""`, **When** the tree is read, **Then**
+    the landmarks are named "Personal" and "Other" and the third is unnamed, the page holds one navigation landmark
+    per rail, no other node in the tree carries a landmark's name, and each host keeps the `aria-label` value the page
+    wrote; **When** script then removes `aria-label` from the second and third, **Then** both are named "Me". Each of
+    the three cases is also a story of its own, rendered alone, on which the `axe` gate reports no serious or
+    critical finding (FR-028, FR-038).
 
 ### Edge Cases
 
@@ -451,8 +483,11 @@ orientation with focus inside, and reflow at 320 px.
 - **FR-001**: The feature MUST add five elements to `@ocelle/elements`, `ocelle-card`, `ocelle-section-header`,
   `ocelle-page-header`, `ocelle-context-sidebar` and `ocelle-personal-rail`, each written by the README's element
   conventions (module and registration, `static properties` with descriptions and defaults, token-only static styles
-  with `:host([hidden])`, variant rules inside `@media not (forced-colors: active)`), each with its own entry point
-  beside the existing ones and defined by the package root and the browser build.
+  with `:host([hidden])`, variant rules that set colours or grounds inside `@media not (forced-colors: active)`), each
+  with its own entry point beside the existing ones and defined by the package root and the browser build. Variant
+  rules that set layout only (size, padding, gap, direction, wrapping) stay outside that query, so a compact or
+  horizontal variant keeps its layout in forced colours (US1-13, US4-9); this feature amends the README's Styles
+  convention to say so (FR-036).
 - **FR-002**: None of the five elements emits an event, performs I/O, creates a heading, or adds a tab stop; their
   content is the page's slotted light DOM, in the order the page wrote it.
 - **FR-003**: Every layout position MUST use logical directions (inline start and end, block start and end), so
@@ -477,10 +512,12 @@ orientation with focus inside, and reflow at 320 px.
 **Section header**
 
 - **FR-010**: `ocelle-section-header` MUST have the slots `heading`, `eyebrow`, `description` and `actions`, laid out
-  as US1-2: eyebrow above the heading, description below it (together, the heading column), and the actions at the
-  inline end with their block start at the heading's block start. When the heading column, at the inline size of
-  its longest word, and the actions do not fit side by side, the actions move under the heading column, at its
-  inline start, `--ocelle-space-2` below it; a word longer than the line then wraps within itself (US1-14).
+  as US1-2: eyebrow above the heading and the actions, description below the heading (heading and description
+  together, the heading column), and the actions at the inline end with their block start at the heading's block
+  start. When the heading column, at the inline size of its longest word, and the actions do not fit side by side,
+  the actions move under the heading column, at its inline start, `--ocelle-space-2` below it; a word longer than the
+  line then wraps within itself (US1-14). The eyebrow spans the element's inline size on its own line and its words
+  take no part in that side-by-side test.
 - **FR-011**: Between non-empty parts the section header MUST use a `--ocelle-space-1` gap between eyebrow and
   heading and between heading and description, and a `--ocelle-space-4` gap between the heading column and the
   actions; at `size="compact"` the gaps are the same and only the heading's size changes (FR-012). It MUST have no
@@ -514,7 +551,7 @@ orientation with focus inside, and reflow at 320 px.
   that is not itself assigned to a compact card's `header` slot (in its body, nested inside another element in the
   `header` slot, or in a card nested in it) is drawn at its own size, regular when `size` is not set (US1-18).
 - **FR-018**: The card MUST expose no role or landmark of its own; a page that needs a region or an article wraps or
-  labels its content itself, as the README says.
+  labels its content itself, as the README says (US1-19).
 
 **Page header**
 
@@ -548,12 +585,17 @@ orientation with focus inside, and reflow at 320 px.
   first, whatever text lies before it, so there is one divider between each two consecutive sections. The default
   slot's text counts toward the slot being non-empty but is never itself separated from a neighbouring section: it
   adds no divider of its own, and a divider before a section that follows text lies between that text and the section
-  (US3-11). When the default slot is empty, one divider lies between a non-empty head and a non-empty footer (US3-13).
-  Each divider lies outside the padding of the parts on either side of it and spans the sidebar's whole inline size.
-  An empty part has no padding and no divider (US3-3, US3-5, US3-13).
+  (US3-11). When the default slot is empty, one divider lies between a non-empty head and a non-empty footer (US3-13),
+  at the head's block end. Each divider lies outside the padding of the parts on either side of it and spans the
+  sidebar's whole inline size. An empty part has no padding and no divider (US3-3, US3-5, US3-13). Each section is
+  laid out as a block whatever its element (a `span` or a custom element included), unless the page's own rule sets
+  its display (US3-3).
 - **FR-023**: The sidebar MUST fill its container's block size when its content is shorter, with the footer at the
   block end; when its content is taller, it MUST grow with its content and the footer follows the last section
-  (US3-3, US3-4). Scrolling, and the sidebar's inline size, are the container's (the shell's) concern.
+  (US3-3, US3-4). The divider follows the content: when the sidebar is taller than its content, the free space lies
+  between the last divider before the footer and the footer itself, so that divider stays at the padding edge of the
+  part before it (operator decision, plan squad round 1). Scrolling, and the sidebar's inline size, are the
+  container's (the shell's) concern.
 
 **Personal rail**
 
@@ -567,7 +609,10 @@ orientation with focus inside, and reflow at 320 px.
   when both are non-empty. Items are centred across the rail. A vertical rail is
   `--ocelle-shell-rail-width` wide (52 px, leaving a 44 px content box, `--ocelle-target-min`, so a
   `--ocelle-size-rail-item` item fits with room for its focus ring, US4-2) and fills its container's block size; its
-  divider runs in the inline direction across the content box. A horizontal rail fills its container's inline size;
+  divider runs in the inline direction across the content box, `--ocelle-space-1` after the primary group, and when
+  the rail is taller than its content the free space lies between the divider and the bottom group (the divider
+  follows the content, operator decision in plan squad round 1); a vertical rail taller than its container grows
+  with its content and scrolling is the container's. A horizontal rail fills its container's inline size;
   its bottom group sits at the inline end of the first row and is as wide as its items on one row, up to half the
   rail's content inline size, beyond which its own items wrap; the primary group takes the rest of the inline size
   from the inline start and wraps its items onto further rows; the divider runs in the block direction between the
@@ -584,8 +629,10 @@ orientation with focus inside, and reflow at 320 px.
   host `aria-label`, when present, decides the name alone: a non-empty one is the name even when `label` is set, and
   a blank one leaves the landmark unnamed even with a `label`. `label` names the landmark only when the host has no
   `aria-label`; removing the host `aria-label` falls back to `label`. The page still holds one navigation landmark
-  per element, and the host's `aria-label` MUST NOT cause an axe serious or critical finding (US3-12, US4-11). The
-  README recommends `label`.
+  per element and no other node carrying its name, and the element never writes, rewrites or removes the host's
+  `aria-label` (US3-12, US4-11). The host's `aria-label` MUST NOT cause an axe serious or critical finding, as the
+  `axe` gate checks on one story per case of US3-12 and US4-11, each rendered alone (FR-038). The README recommends
+  `label`.
 
 **Tokens**
 
@@ -619,6 +666,8 @@ orientation with focus inside, and reflow at 320 px.
     and its "not set" look; each token it reads (FR-007); the empty-slot rule, including "remove an element from the
     slot rather than hide it"; for every element but the card, the Consumer-need workaround it replaces (SC-006;
     "Consumer need" records no Kitty Desktop workaround for the card, only its missing compact density);
+  - the element conventions' Styles paragraph (once, not per element): variant rules that set colours or grounds go
+    inside `@media not (forced-colors: active)`, layout-only variant rules outside it (FR-001);
   - section header and page header: the slotted-heading rule (slot one heading element; the page's own heading rules
     win) and "place outside a `[data-ocelle-prose]` region";
   - section header: the eyebrow variant draws the heading upper case while its DOM text stays as written;
@@ -632,7 +681,8 @@ orientation with focus inside, and reflow at 320 px.
 - **FR-037**: Every story of these elements MUST have committed visual baselines in light and dark, produced as #10's
   contributor note says, and the `visual` gate MUST pass.
 - **FR-038**: The `axe` gate MUST report no serious or critical finding on any story of these elements in either
-  theme.
+  theme. The stories include one per case of US3-12 and US4-11, each rendering that one landmark alone, so this gate
+  holds FR-028's axe clause.
 - **FR-039**: The engine floor MUST NOT be raised by this feature unless the plan records the feature that raises it
   and the README's "Engines" list is updated.
 
@@ -653,7 +703,8 @@ orientation with focus inside, and reflow at 320 px.
 
 - **SC-001**: All acceptance scenarios of the four user stories pass on the strict-CSP fixture pages of the browser
   build and in process on the element source.
-- **SC-002**: At 320 px, every story of the five elements has no horizontal scroll and no clipped text (FR-004).
+- **SC-002**: At 320 px, every story of the five elements has no horizontal scroll and no clipped text (FR-004), as
+  the story test checks on every story at 320 × 800 px.
 - **SC-003**: The accessibility tree of every scenario holds exactly the headings the page slotted (with their
   levels) and exactly the navigation landmarks of the sidebar and rail (with their labels), and no other heading or
   landmark from the five elements.
