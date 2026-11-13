@@ -637,14 +637,16 @@ unmerged). Results marked "squad probe" were measured by the plan squad's round 
 - The phase reviews read the 007 report lines. Any Timeout on this feature's changed lines is named in the review with
   its cause, and a test is added that kills it by assertion where possible.
 
-## R-16 Stories against #10 (FR-042) — recheck when #10 lands
+## R-16 Stories against #10 (FR-042) — rechecked against merged `main` (T026)
 
-From `specs/006-storybook-workbench` on its branch (design final, unmerged):
+Rechecked (T026) against #10 as merged into `claude/016-overlays` (merge commit `588d5a7`); operator decisions of
+2026-11-13 at the T026 gate (A to D below). Paths are of the merged tree.
 
-- **Capture context** (`gates/lib/capture-plan.ts`): 1280 × 800, `reducedMotion: "reduce"`,
-  `animations: "disabled"`, full page. Top-layer content inside `#storybook-root` is in the capture (FR-012; plant
-  `pass-overflow-and-popover`). Elements must use open shadow roots and render every surface inside their own host
-  (FR-014, FR-027); the overlays and the bubble do.
+- **Capture context** (`gates/lib/capture-plan.ts:47-60`): 1280 × 800 at scale 1, `reducedMotion: "reduce"`,
+  `forcedColors: "none"`, the theme as `colorScheme`, en-GB and UTC; the screenshot is full page with
+  `animations: "disabled"` and `caret: "hide"`. The axe gate uses the same context (`gates/gates.json:137`). Top-layer
+  content inside `#storybook-root` is in the capture (FR-012; plant `pass-overflow-and-popover`). Elements must use
+  open shadow roots and render every surface inside their own host (FR-014, FR-027); the overlays and the bubble do.
 - **Captures are not the evidence for behaviour**: they run with animations off and without forced colours, so motion,
   forced colours, sizes and geometry are asserted by the test matrix (contracts/checks.md), not by baselines
   (constitution VIII).
@@ -652,25 +654,57 @@ From `specs/006-storybook-workbench` on its branch (design final, unmerged):
   the capture (after `STORY_RENDERED`, `fonts.ready` and two frames) holds the open dialog. No play function exists or
   is needed.
 - **Shown tooltip**: 006 FR-031's pointer state `parameters: { ocelle: { pointer: { hover: "<selector>" } } }` moves
-  the mouse onto the trigger. The trigger must lie wholly inside 1280 × 800 at scroll (0, 0). The capture follows
-  within two frames, before a 500 ms delay would fire, so the tooltip stories override `--ocelle-tooltip-delay` to
-  `0ms` with a class rule in `storybook/.storybook/stories-layout.css` (no `style` attribute in story markup). With
-  0 ms the bubble shows in the same task as the `pointerover` (R-15). One hover state per story, so there is one story
-  per placement.
+  the mouse onto the centre of the trigger. The selector must match exactly one element, and the gate's Playwright
+  locator looks inside open shadow roots too, so a story uses an id or data attribute, never a bare tag
+  (`storybook/README.md:13-15`; `gates/lib/story-page.ts:343`). The trigger must lie wholly inside 1280 × 800 at
+  scroll (0, 0). axe runs two frames after the `fonts.ready` that follows the pointer move (`gates/bin/axe.ts:55-69`),
+  and the screenshot comes later still, after the font and I/O checks, at no fixed time
+  (`gates/lib/story-page.ts:449-457`; `gates/visual/capture.ts:72`). A 500 ms delay would therefore leave the bubble
+  out of axe and make the two captures differ (`visual:update` then writes nothing, README:33-36). So (operator
+  decision A) tooltip stories wrap their markup in `<div data-story="tooltip">`, and
+  `storybook/.storybook/stories-layout.css` sets `[data-story="tooltip"] { --ocelle-tooltip-delay: 0ms; }`. That
+  file's convention is data-story selectors only, no class and no `style` attribute (stories-layout.css:2-3); the
+  wrapper also gets the shared `[data-story]` padding (lines 5-7). The element reads the inherited value on its host
+  (R-15). With 0 ms the bubble shows in the same task as the `pointerover` (R-15). One hover state per story, so there
+  is one story per placement.
 - **Focus-shown tooltip**: 006 has no focus state, so no story shows the bubble by focus. Focus behaviour is proven by
   the interaction tests (FR-043).
-- **Short viewport**: the 320 × 256 case (FR-018, WCAG 1.4.10) is a matrix row in both harnesses. A story at that
-  size is added only if #10's capture plan takes a per-story viewport (part of the recheck); otherwise the row is the
-  evidence.
-- **axe**: runs on the same context. Overlays name themselves (R-08); one dialog story names itself by a host
-  `aria-label` (R-08). The tooltip's description node is `hidden`. No `a11y-exceptions.json` entry is planned.
+- **Short viewport**: the 320 × 256 case (FR-018, WCAG 1.4.10) is a matrix row in both harnesses. #10's capture plan
+  has one viewport for every story (`capture-plan.ts:47-49`; `storybook/.storybook/main.ts:49` `viewport: false`), so
+  no story is written at that size; the matrix rows are the evidence.
+- **axe**: runs on the same context. The rule set is `gates/lib/axe-rules.ts:17-39` (every default rule and the
+  wcag2a, wcag2aa, wcag21a, wcag21aa and wcag22aa rules, less experimental and harness-document rules). Serious and
+  critical incomplete results are findings as `<rule>-incomplete` (`gates/lib/axe-verdict.ts:3-4`). An entry in
+  `storybook/a11y-exceptions.json` is honoured only with a matching row in 008 plan.md § Complexity Tracking
+  (`gates/lib/a11y-exceptions.ts:1-6`). Overlays name themselves (R-08); one dialog story names itself by a host
+  `aria-label` (R-08). The tooltip's description node is `hidden`. No exception entry is planned. Text clipped at a
+  scroll edge gives `color-contrast-incomplete` (`elmPartiallyObscured`), as base.css's prose table does
+  (`storybook/a11y-exceptions.json:1-91`), so (operator decision C) the long-scrolling-body and prose-with-a-table
+  dialog stories are designed so no text is clipped at a scroll edge (a table narrow enough for the panel; body
+  content whose scroll edge does not cut a line of text in the capture). If T029 still measures a
+  `color-contrast-incomplete` node, stop for the operator.
 - **Baselines**: `storybook/baselines/<story-id>.<theme>.png`, produced by `pnpm run visual:update` in the pinned
-  container. CI's captures win over local ones (006 FR-005). Each new story and theme needs its baseline.
-- **Contributor note**: `storybook/README.md` (006 FR-025) is followed. Nothing in this feature changes it.
-- **Recheck when #10 lands**: before the story tasks run, compare these facts with merged `main`: the parameter shape,
-  the capture context (and whether a story can set its viewport), the baseline path and command, the stories-layout
-  stylesheet, the axe rule set and exceptions file, and the story-index test. Then update this section and the tasks
-  in one commit. Implementation waits for #10 (operator).
+  container (README:32-36). CI's captures win over local ones (006 FR-005): CI's files are taken from the `visual`
+  artifact of the "Visual regression" job (README:41-43). Each new story and theme needs its baseline.
+- **Story tests**: `storybook/test/integration/elements-stories.test.ts`, one `describe` per element, using its
+  `open(id, theme, "<tag>")`. The Storybook is not a CSP target (that file's lines 13-15); CSP stays proven in each
+  element's strict-CSP fixture (README:26-28). Its pages use Playwright's default 720 px viewport, so the tooltip
+  test opens its pages at 1280 × 800 with `reducedMotion: "reduce"`. The pointer parameter's shape and its target's
+  position are proven by `gate:visual` and `gate:axe` (`pointer-target`), not by the test (element story modules
+  import element source and cannot load in the node `storybook` unit project).
+- **Story counts** (operator decision D): 006's gate tests and a plant name the repository's stories by hand (006
+  tasks.md T046r, T046s): `gates/test/integration/storybook-build.test.ts:55` (`built 21 stories`),
+  `gates/test/integration/axe.test.ts:52,56` and `gates/test/integration/visual.test.ts:116,120,139` (42
+  story-themes), and the `differs` lines of `gates/plants/visual/fail-token-changed/plant.json` (one per light
+  story-theme that shows `color-ink`). Each story phase updates them by hand: the count tests in the phase's red
+  commit, the plant lines with the baselines (measured in the pinned container, as 006 T046s did), then
+  `gate:plants`. With data-model § Stories the counts are 29 stories and 58 story-themes after Phase 2, 35 and 70
+  after Phase 3, 44 and 88 after Phase 4, from today's 21 and 42; after any merge of `main` they are counted again
+  (R-17).
+- **Contributor note**: `storybook/README.md` (006 FR-025) is followed: open shadow roots (README:20-21), every
+  surface inside the host, the light-DOM `describes` span included (22-23), `font: inherit` on any shadow form
+  control with text (24-25; the overlays' close control holds only an icon), and CSP proven in the elements'
+  strict-CSP fixtures, not the Storybook (26-28). This feature does not change it.
 
 ## R-17 Shared files with parallel missions
 
@@ -678,6 +712,11 @@ From `specs/006-storybook-workbench` on its branch (design final, unmerged):
   `custom-elements.json`, `README.md`, `test/node/readme.test.ts`, `test/build/build.test.ts`,
   `test/build/pack.test.ts`, `CHANGELOG.md`, `vitest.config.ts`, `storybook/.storybook/*` and
   `packages/tokens/src/source.ts` with `test/expected.ts` are also touched by 009 to 011 (#15, #9, #8).
+- The story counts of R-16 are shared too (operator decision D at T026): `gates/test/integration/storybook-build.test.ts`,
+  `gates/test/integration/axe.test.ts`, `gates/test/integration/visual.test.ts` and
+  `gates/plants/visual/fail-token-changed/plant.json` name the repository's stories by hand, and every mission that adds
+  stories changes them. After each merge of `main` they are counted again from the merged story files (never read from
+  a gate's output), and the `fail-token-changed` lines measured again for any new light story-theme.
 - Conflicts are resolved by merging `main` into `claude/016-overlays`, never by rebasing. After a merge, the manifest
   is regenerated (`pnpm --filter @ocelle/elements run manifest`) rather than hand-merged, and the export-key list is
   re-sorted.

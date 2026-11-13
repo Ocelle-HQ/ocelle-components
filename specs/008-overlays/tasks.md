@@ -127,7 +127,7 @@ the driver as it was.
 
 ### Story recheck (after #10 is merged; before the red commit)
 
-- [ ] T026 [US1] R-16 recheck against merged `main`, before any story test is written (so before T020's red commit, which holds T027). Compare #10's merged state with research R-16 and update R-16 and tasks T027 to T029, T038 to T040 and T050 to T052 in one commit of `research.md` and `tasks.md` only:
+- [X] T026 [US1] R-16 recheck against merged `main`, before any story test is written (so before T020's red commit, which holds T027). Compare #10's merged state with research R-16 and update R-16 and tasks T027 to T029, T038 to T040 and T050 to T052 in one commit of `research.md` and `tasks.md` only (done against merge `588d5a7`; operator decisions A to D of 2026-11-13 widened the commit to R-17, T049, T051, data-model § Stories and plan decision 7):
   - the pointer-state parameter shape;
   - the capture context (viewport, reduced motion, animations);
   - the top-layer capture;
@@ -178,7 +178,7 @@ the driver as it was.
   - the section with the tokens read (data-model § `ocelle-dialog`);
   - the host pattern;
   - the R-02, R-03, R-04, R-05 and R-08 statements: the stated limits, focus moves in the `…-close` listener, the `method="dialog"` advice, a label being required, and the closed-host `aria-label` behaviour.
-- [ ] T027 [P] [US1] Red, in the test file the recheck names (today `storybook/test/integration/elements-stories.test.ts`): the dialog stories of data-model § Stories exist in light and dark, each renders an open, modal `ocelle-dialog`, and there are zero CSP violations. Part of T020's red commit; T026 first.
+- [ ] T027 [P] [US1] Red, in `storybook/test/integration/elements-stories.test.ts` (`open(id, theme, "ocelle-dialog")`): the dialog stories of data-model § Stories exist in light and dark, each renders an open, modal `ocelle-dialog` with base.css applied and no request outside the origin (the Storybook is not a CSP target, R-16). The red commit also holds the story-count updates of R-16 (operator decision D), written by hand from the story files: `gates/test/integration/storybook-build.test.ts` (`built 29 stories`), `gates/test/integration/axe.test.ts` and `gates/test/integration/visual.test.ts` (58 story-themes), counted again after any merge of `main` (R-17). Part of T020's red commit; T026 first.
 - [ ] T020 [US1] Make the red commit of T015 to T019 and T027 (test files only). `red.sh 2 phase` must show each failing because `ocelle-dialog` is undefined, its entry, manifest or README section is missing, or the dialog stories are missing.
 
 ### Implementation (green)
@@ -234,8 +234,8 @@ the driver as it was.
 
 ### Stories (green, after T025)
 
-- [ ] T028 [US1] Green: `storybook/stories/dialog.stories.ts` with the stories of data-model § Stories. The 320 × 256 story is written only if the recheck found per-story viewports.
-- [ ] T029 [US1] Produce the baselines in the pinned container (`pnpm run visual:update`), then run `gate:storybook-build`, `gate:visual` and `gate:axe`. Commit the baselines. CI's captures win over local ones (006 FR-005).
+- [ ] T028 [US1] Green: `storybook/stories/dialog.stories.ts` with the stories of data-model § Stories (no 320 × 256 story: #10 has no per-story viewport, R-16). The long-scrolling-body and prose-with-a-table stories are designed so no text is clipped at a scroll edge (a table narrow enough for the panel; no line of text cut by the body's scroll edge in the capture; R-16, operator decision C).
+- [ ] T029 [US1] Produce the baselines in the pinned container (`pnpm run visual:update`), then run `gate:storybook-build` (`built 29 stories`), `gate:visual` and `gate:axe`. If `gate:axe` reports any `color-contrast-incomplete` node, stop for the operator (R-16, decision C); no exception entry is added without that decision. Commit the baselines. CI's captures win over local ones (006 FR-005): take the files of the `visual` artifact. Then add a `differs` line to `gates/plants/visual/fail-token-changed/plant.json` for each new light story-theme that shows `color-ink`, measured in the pinned container as 006 T046s did (R-16), commit it with the baselines, and run `gate:plants`.
 
 **Checkpoint**: `tdd-check.sh 2` reports `pass`.
 
@@ -275,7 +275,7 @@ the driver as it was.
 
   Add the dist files to the build and pack tests, and the README drawer fragments to `readme.test.ts`, including #12's personal-drawer example.
 - [ ] T033 [P] [US2] Tokens: add the `drawer-inline` row (group `shell`, value `var(--ocelle-shell-sidebar-width)`, ref `["shell-sidebar-width"]`) to `packages/tokens/test/expected.ts`. Add the computed value 20rem to the `tokens-browser` value tests, and the token to the tokens README and CHANGELOG checks (`test/readme.test.ts`).
-- [ ] T038 [P] [US2] Red, in the test file T026 names: the drawer stories of data-model § Stories exist in light and dark and each renders an open `ocelle-drawer`. Part of T034's red commit.
+- [ ] T038 [P] [US2] Red, in `storybook/test/integration/elements-stories.test.ts` (`open(id, theme, "ocelle-drawer")`): the drawer stories of data-model § Stories exist in light and dark and each renders an open `ocelle-drawer` with base.css applied and no request outside the origin. The red commit also holds the story-count updates of R-16 (operator decision D), written by hand from the story files: `gates/test/integration/storybook-build.test.ts` (`built 35 stories`), `gates/test/integration/axe.test.ts` and `gates/test/integration/visual.test.ts` (70 story-themes), counted again after any merge of `main` (R-17). Part of T034's red commit.
 - [ ] T034 [US2] Make the red commit of T030 to T033 and T038. `red.sh 3 phase` must show each failing for the missing element, token or stories.
 
 ### Implementation (green)
@@ -296,7 +296,7 @@ the driver as it was.
 ### Stories (green, after T037)
 
 - [ ] T039 [US2] Green: `storybook/stories/drawer.stories.ts`.
-- [ ] T040 [US2] Produce the baselines; run `gate:storybook-build`, `gate:visual` and `gate:axe`; commit the baselines.
+- [ ] T040 [US2] Produce the baselines; run `gate:storybook-build` (`built 35 stories`), `gate:visual` and `gate:axe`; commit the baselines. Then add a `differs` line to `gates/plants/visual/fail-token-changed/plant.json` for each new light story-theme that shows `color-ink`, measured in the pinned container as 006 T046s did (R-16), commit it with the baselines, and run `gate:plants`.
 
 **Checkpoint**: `tdd-check.sh 3` reports `pass`.
 
@@ -342,7 +342,7 @@ the visual and axe gates (after #10).
   - change the § Engines floor line (pinned at `:65`) to "Chromium 120+ and WebKit 17+", with the Popover API (Chromium 114, WebKit 17) as the newest feature;
   - add the tooltip section fragments: the tokens read; the stated limits (text-field triggers, custom-element triggers with `describes`, touch); and #7's and #12's usage.
 - [ ] T045 [P] [US3] Tokens: add the `tooltip-delay` row (group `motion`, `500ms`) and the `tooltip-max-inline` row (group `size`, `18rem`) to `packages/tokens/test/expected.ts`, and the computed values to `tokens-browser`. Test that the reduced-motion block still sets only `motion-fast` and `motion-base`, so `tooltip-delay` is not zeroed (brand rule (f)). Add the README and CHANGELOG checks.
-- [ ] T050 [P] [US3] Red, in the test file T026 names: the tooltip stories of data-model § Stories exist in light and dark, each declares one hover pointer state on a trigger wholly inside 1280 × 800, and its bubble is `:popover-open` in the capture. Part of T046's red commit.
+- [ ] T050 [P] [US3] Red, in `storybook/test/integration/elements-stories.test.ts`: the tooltip stories of data-model § Stories exist in light and dark. In a page with viewport 1280 × 800 and `reducedMotion: "reduce"`, the mouse moves to the centre of each story's trigger (the selector, written by hand, that the story's `parameters.ocelle.pointer.hover` names: an id or data attribute, R-16); that box lies wholly inside 1280 × 800, and after `fonts.ready` and two frames the bubble is `:popover-open`. The parameter itself is proven by `gate:visual` and `gate:axe` (`pointer-target`) at T052. The red commit also holds the story-count updates of R-16 (operator decision D), written by hand from the story files: `gates/test/integration/storybook-build.test.ts` (`built 44 stories`), `gates/test/integration/axe.test.ts` and `gates/test/integration/visual.test.ts` (88 story-themes), counted again after any merge of `main` (R-17). Part of T046's red commit.
 - [ ] T046 [US3] Make the red commit of T041 to T045 and T050. `red.sh 4 phase` must show each failing for the missing element, token, floor text or stories.
 
 ### Implementation (green)
@@ -374,14 +374,14 @@ the visual and axe gates (after #10).
   - the regenerated manifest;
   - the README tooltip section, and § Engines raised to WebKit 17;
   - CHANGELOG entries for `@ocelle/elements` (`ocelle-tooltip` and the floor) and `@ocelle/tokens`;
-  - `storybook/.storybook/stories-layout.css`: the tooltip delay override class (`--ocelle-tooltip-delay: 0ms`, R-16), or the place the recheck named.
+  - `storybook/.storybook/stories-layout.css`: the rule `[data-story="tooltip"] { --ocelle-tooltip-delay: 0ms; }` (R-16, operator decision A), with a comment in the file's style.
 
   Run the suites green, including `elements-touch`, then the gates as in T037.
 
 ### Stories (green, after T049)
 
-- [ ] T051 [US3] Green: `storybook/stories/tooltip.stories.ts`, using the delay override class.
-- [ ] T052 [US3] Produce the baselines; run `gate:storybook-build`, `gate:visual` and `gate:axe`; commit the baselines.
+- [ ] T051 [US3] Green: `storybook/stories/tooltip.stories.ts`, each story's markup inside `<div data-story="tooltip">` (the delay override, R-16), each pointer selector an id or data attribute matching exactly one element.
+- [ ] T052 [US3] Produce the baselines; run `gate:storybook-build` (`built 44 stories`), `gate:visual` and `gate:axe`; commit the baselines. Then add a `differs` line to `gates/plants/visual/fail-token-changed/plant.json` for each new light story-theme that shows `color-ink`, measured in the pinned container as 006 T046s did (R-16), commit it with the baselines, and run `gate:plants`.
 
 ### Record (FR-041)
 

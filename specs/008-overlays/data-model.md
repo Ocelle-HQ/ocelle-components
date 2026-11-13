@@ -170,10 +170,10 @@ any ──(no Popover API in the engine)──▶ hidden, permanently           
 | `tooltip-delay` | motion | `500ms` | — |
 | `tooltip-max-inline` | size | `18rem` | — |
 
-## Stories (`storybook/stories/`, against #10 — recheck when it lands)
+## Stories (`storybook/stories/`, against #10 — rechecked against merged `main`, T026)
 
 | File | Stories (each in light and dark) |
 |---|---|
-| `dialog.stories.ts` | default open; one-line confirmation body (132 px minimum, R-18); with footer actions; long scrolling body; prose with a table; Open project shape (stand-in list); long label; named by a host `aria-label` (R-08); short viewport 320 × 256 if #10 takes a per-story viewport (R-16, R-18) |
+| `dialog.stories.ts` | default open; one-line confirmation body (132 px minimum, R-18); with footer actions; long scrolling body; prose with a table (these two with no text clipped at a scroll edge, R-16); Open project shape (stand-in list); long label; named by a host `aria-label` (R-08) |
 | `drawer.stories.ts` | start; end; `rtl` start; chrome ground; chrome ground with `heading-hidden`; long scrolling body |
 | `tooltip.stories.ts` | hover top; hover bottom; hover start; hover end; flipped at the top edge; `rtl` hover start; `rtl` hover end; inside an open dialog; long text |
