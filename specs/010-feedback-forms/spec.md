@@ -282,7 +282,10 @@ colours and accessibility tree; insert and change announcing notices and count t
     a `role="alert"` notice whose text is set in the same task after it is inserted (`host.append(n);
     n.textContent = msg`), after its `hidden` is removed, or after its role is set to `alert`, **Then** no live region
     node announces, in each of the three cases, and the host's node has the role `alert` (operator decision
-    PLAN-FRESH-3-002 (b)). (`log` and other live roles, and a host `aria-live`, are not supported and not tested;
+    PLAN-FRESH-3-002 (b)); the same when the host changes its `tone` in that task after the insertion (count 0).
+    **Given** a `role="alert"` notice inserted, or revealed, and changed to `role="status"` in the same task, **Then**
+    its current text is announced politely once and the host's node has the role `status` (FR-009, *Platform alert
+    event*). (`log` and other live roles, and a host `aria-live`, are not supported and not tested;
     FR-009.)
 16. **Given** forced-colours mode, **When** a notice of each tone renders, **Then** the box border and the marker are
     visible in system colours (the marker in `CanvasText`), and the text is `CanvasText` on `Canvas`.
@@ -672,7 +675,9 @@ gates and the README documentation test.
     copy into its live region, takes the text and politeness current at the end of the task as its baseline
     (operator decision PLAN-FRESH-3-002 (b)), and the tree
     measure counts zero live-region announcements for it, whether or not the politeness differs from the baseline's
-    (a `danger` notice with `announce` that gets `role="alert"` included).
+    (a `danger` notice with `announce` that gets `role="alert"` included). Until the end of that task, a text or
+    `tone` change is part of the alert reading, and a change from `alert` to `status` acts as FR-009's *Platform alert
+    event* says.
   - Without `announce`, with no host `role` or a host role that gives the host's node no live politeness, and with no
     host `aria-live`, `aria-atomic` or `aria-relevant` (the first row of FR-009's table), the notice has no live region
     node and announces nothing. FR-009's unsupported rows are outside this rule.
@@ -711,8 +716,14 @@ gates and the README documentation test.
   PLAN-FRESH-3-002 (b)). A change made in a later task but before Chromium's next serialisation (less than the
   serialisation delay after the trigger) is read twice, once by the alert event and once by the live region, since the
   element cannot know when the serialisation happens; the README says so and tells hosts to set the text before, or
-  in the same task as, the insertion, reveal or role change. Text changes, and a change of the role from `alert` to
-  `status`, announce through the live region as FR-008 says. The event also fires when the notice is shown by a
+  in the same task as, the insertion, reveal or role change. A `tone` change in that same task is part of the same
+  reading (the role fixes the politeness) and announces nothing. A change of the role from `alert` to `status` (or the
+  role removed from a notice with `announce`) in that same task means the platform never sees the `alert` role and
+  fires no alert event, so the notice acts as if the trigger had happened under the new role: an insertion or a
+  reveal announces the current text once with the new politeness, a change to `alert` and back announces only if the
+  text or the politeness differs from what was last announced, and a role set on a notice that was not live
+  announces nothing (plan squad round 3, verify 1). Text changes after that task, and a later change of the role from
+  `alert` to `status`, announce through the live region as FR-008 says. The event also fires when the notice is shown by a
   hidden ancestor (FR-008, last bullet). The alert event is not seen by the tree capture and is not measured; the
   README names it, its source and that it is Chromium's behaviour (WebKit not measured).
 

@@ -107,7 +107,9 @@ host role to `alert` (from `status`, or added at runtime, with or without `annou
 `assertive`, and takes the baseline at the end of the current task (operator decision PLAN-FRESH-3-002 (b)): it marks
 the baseline pending and posts a message on the module's `MessageChannel` (the one the move detection uses); the
 handler runs in a later task, after the current task's `MutationObserver` records are delivered, and sets the
-baseline to the text and politeness current then. Until it runs, light-DOM mutations start no wait. So the common
+baseline to the text and politeness current then. Until it runs, light-DOM mutations and `tone` changes start no
+wait (data-model.md gives every other row for these events the condition that no alert baseline is pending, so each
+event matches one row). So the common
 `host.append(n); n.textContent = msg`, reveal-then-fill and role-then-fill in one task are read once, by the alert
 event, which reads the node at the next serialisation (at least `D` after the task, R-01), and no copy follows. A
 baseline taken synchronously would hold the text from before the fill, the microtask observer would see a
@@ -117,8 +119,14 @@ twice, by the alert event and by the copy, since the element cannot know when th
 tells hosts to set the text before, or in the same task as, the insertion, reveal or role change. The declined
 alternatives were a `W` window after the trigger in which changes only move the baseline (option (a), a change after
 the serialisation and before the window's end read by neither) and keeping the synchronous baseline with the double
-reading documented (option (c)). Text changes of an `alert` notice, and a role change from `alert` to `status`, go
-through the announcer as below.
+reading documented (option (c)). A role change away from `alert` that keeps the notice live (to `status`, or the
+role removed from a notice with `announce`) before the end-of-task step has run clears the pending baseline and
+acts as the trigger would have under the new role, since Chromium has not serialised the `alert` role yet and fires
+no alert event: an insertion or a reveal announces the current text with the new politeness (baseline none), a
+change to `alert` compares the text and politeness with the baseline from before it, and a role set on a notice that
+was not live takes the current text and politeness as the baseline and announces nothing (plan squad round 3
+verify 1). The pending marker records which of these triggers set it. Text changes of an `alert` notice once the
+step has run, and a role change from `alert` to `status` after it, go through the announcer as below.
 
 The event does not depend on what made the node created or unignored (PLAN-FRESH-3-003): `OnIgnoredChanged` adds
 `Event::ALERT` for any alert node that becomes unignored (lines 416-417) and `OnAtomicUpdateFinished` for any alert
