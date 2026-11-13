@@ -18,7 +18,8 @@ Documented, not declared: host `role` (`alert`, `status` supported as live roles
 live region in the shadow root that holds a copy of the text for `H` (5000 ms, or until the next announcement but at
 least `W`) after a wait of `W` (300 ms after load, 700 ms before), which changes closer together than `W` restart
 (research R-02); for a host `role="alert"`, insertion, reveal and a change to `alert` are left to the platform's
-alert event and write no copy, with the baseline taken at the end of the task (text set in the same task is read once;
+alert event and write no copy, with the baseline taken at the end of the task (text or a `tone` set in the same task is read once,
+and a change back to `status` in that task announces as a `status` notice would;
 a change in a later task before the next serialisation is read twice). The README states the figures, their sources,
 the starvation case, the alert event and that it also reads a `role="alert"` notice shown by a hidden ancestor.
 `src/live.ts`'s test-only timing setter and its `announcerDefaults` constant are internal and not part of this

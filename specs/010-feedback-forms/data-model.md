@@ -20,7 +20,7 @@ states. Public members are in `contracts/elements.md`; the reasons are in `resea
 | announcer `aria-live` | private | `polite` / `assertive` / `off` | the politeness while live, else `off` (R-02) |
 | host `ariaLive` | `ElementInternals` default | `off` | always `off`, so a host role `alert` or `status` adds no second live region (R-02; measured in T002) |
 | baseline | private | text and politeness, or none | the last announced text and politeness, or those current when the notice began announcing (first load, `announce` or a live role set later, the alert path); none from an insertion or a reveal until the next write, so the end-of-wait re-check never drops an insertion or a reveal (PLAN-FRESH-3-001) |
-| alert baseline pending | private | true / false | set by the alert path; cleared in the next task (the move-detection `MessageChannel` task), which sets the baseline (PLAN-FRESH-3-002 (b)) |
+| alert baseline pending | private | none / `insertion or reveal` / `role change` / `became live` | the trigger that set it: the alert path (an insertion or a reveal, or a change of the host role to `alert`) or the "not live before" row for `alert`; reset to none by the end-of-task step in the next task (the move-detection `MessageChannel` task), which sets the baseline, by the cancel rows, and by a role change away from `alert` that leaves the notice live (PLAN-FRESH-3-002 (b), verify 1) |
 | announcer state | private | `empty` / `waiting` / `holding` | `waiting`: empty and live, a timer of `W` running; `holding`: the copy written at a recorded time, emptied after `H`, or by a trigger once it has been current for at least `W` (R-02) |
 | first load | private, set once | true / false | constructed during the registration's `customElements.define` call (flag in `src/define.ts`), or connected while `document.readyState === "loading"` (R-02) |
 | moving | private | true / false | set on disconnect, cleared in a later task (R-02) |
@@ -44,14 +44,18 @@ returns the timing it replaced (R-09, PLAN-FRESH-2-003 (a), PLAN-FRESH-3-004 (a)
 | `hidden` set | — | cancel; announcer `empty` |
 | `hidden` removed | live, host role not `alert` | baseline := none; announce |
 | `hidden` removed | host role `alert` | alert path |
-| `announce` set, or role set to `alert`/`status` | the notice was not live before (no `announce` and no live role) | none; baseline := current text and politeness; for `alert`, Chromium's alert event reads the notice (not measured, README), so the baseline is taken at the end of the task as on the alert path (alert baseline pending, PLAN-FRESH-3-002 (b)) |
+| `announce` set, or role set to `alert`/`status` | the notice was not live before (no `announce` and no live role) | none; baseline := current text and politeness; for `alert`, Chromium's alert event reads the notice (not measured, README), so the baseline is taken at the end of the task as on the alert path (alert baseline pending := `became live`, PLAN-FRESH-3-002 (b)) |
 | host role changed to `alert` (from `status`, or added on a notice with `announce`) | not `hidden` | alert path (whether or not the politeness differs from the baseline) |
-| live role removed on a notice with `announce`, or changed from `alert` to `status`, or `status` added on a notice with `announce` | the notice stays live, not `hidden`, politeness differs from the baseline | announce with the new politeness |
-| live role removed on a notice with `announce`, or changed from `alert` to `status`, or `status` added on a notice with `announce` | the notice stays live, politeness equals the baseline | none |
-| `tone` changes | live, not `hidden`, politeness differs from the baseline | announce with the new politeness |
-| light-DOM mutation | alert baseline pending | none (the end-of-task step takes the text as the baseline) |
-| light-DOM mutation | live, not `hidden`, text differs from the baseline | announce |
-| light-DOM mutation | text and politeness equal the baseline (an `href` change, the same text again, a re-render) | none |
+| live role removed on a notice with `announce`, or changed from `alert` to `status`, or `status` added on a notice with `announce` | the notice stays live, not `hidden`, alert baseline pending is none, politeness differs from the baseline | announce with the new politeness |
+| live role removed on a notice with `announce`, or changed from `alert` to `status`, or `status` added on a notice with `announce` | the notice stays live, alert baseline pending is none, politeness equals the baseline | none |
+| live role removed on a notice with `announce`, or changed from `alert` to `status` | alert baseline pending is `insertion or reveal` | alert baseline pending := none; baseline := none; announce with the new politeness (no alert event fires, *Alert path*) |
+| live role removed on a notice with `announce`, or changed from `alert` to `status` | alert baseline pending is `role change` | alert baseline pending := none; if the text or the politeness differs from the baseline (still the one from before the change to `alert`), announce with the new politeness; otherwise none |
+| live role removed on a notice with `announce`, or changed from `alert` to `status` | alert baseline pending is `became live` | alert baseline pending := none; baseline := current text and politeness; none (as the "not live before" row for the role or `announce` that remains) |
+| `tone` changes | alert baseline pending is not none | none (the `alert` role fixes the politeness as `assertive`; the end-of-task step takes it) |
+| `tone` changes | live, not `hidden`, alert baseline pending is none, politeness differs from the baseline | announce with the new politeness |
+| light-DOM mutation | alert baseline pending is not none | none (the end-of-task step takes the text as the baseline) |
+| light-DOM mutation | live, not `hidden`, alert baseline pending is none, text differs from the baseline | announce |
+| light-DOM mutation | alert baseline pending is none, text and politeness equal the baseline (an `href` change, the same text again, a re-render) | none |
 | `announce` set or removed while a live role stays | the notice stays live; the role sets the politeness (FR-009), so it equals the baseline | none |
 | `announce` removed with no live role, or the live role removed (or replaced by a role with no live politeness) on a notice without `announce` | the notice stops being live | cancel; announcer `empty` and `aria-live="off"` |
 
@@ -70,11 +74,22 @@ can end on the baseline.
 
 *Alert path* (PLAN-FRESH-2-002 (a), PLAN-FRESH-3-002 (b); R-02 § The platform alert event): cancel any pending wait
 (a held copy is emptied once it has been current for `W`), set the announcer's `aria-live` to `assertive`, set *alert
-baseline pending* and post the end-of-task step on the module's `MessageChannel`. The step runs in a later task, after
-the current task's `MutationObserver` records are delivered; it clears the flag and sets the baseline to the text and
-politeness current then. Until it runs, light-DOM mutations and `tone` changes start no wait, so text set in the same
-task as the insertion, reveal or role change (`host.append(n); n.textContent = msg`) is part of the alert reading and
-is not written as a copy. The cancel rows (`hidden` set, removal, the notice stops being live) also clear the flag. No
+baseline pending* to the trigger (`insertion or reveal`, or `role change`), and post the end-of-task step on the
+module's `MessageChannel`. For an insertion or a reveal the baseline is set to none at once (PLAN-FRESH-3-001); for a
+role change it stays as it was. The step runs in a later task, after the current task's `MutationObserver` records
+are delivered; it resets the field to none and sets the baseline to the text and politeness current then. Until it
+runs, light-DOM mutations and `tone` changes match only their "alert baseline pending is not none" rows and start no
+wait, so text (or a tone) set in the same task as the insertion, reveal or role change (`host.append(n);
+n.textContent = msg`) is part of the alert reading and is not written as a copy. The other rows for these events
+carry the condition "alert baseline pending is none", so each event matches one row only. The cancel rows (`hidden`
+set, removal, the notice stops being live) also reset the field. A role change away from `alert` that leaves the
+notice live (to `status`, or the role removed from a notice with `announce`) while the field is set resets it and
+acts as the trigger would have acted under the new role: Chromium has not yet serialised the `alert` role (the
+serialisation comes at least `D` after the task, R-01, and the step runs in the next task), so no alert event reads
+the notice. After an insertion or a reveal, the baseline is none and the notice announces with the new politeness;
+after a role change to `alert`, the text and politeness are compared with the baseline from before that change, as
+for any role change that keeps the notice live; after the "not live before" row, the current text and politeness
+become the baseline and nothing is announced. No
 copy is written: Chromium's alert event for the host's node, which fires on creation, unignoring and a role change to
 `alert` at the next serialisation, carries the reading. A change made in a later task but before that serialisation
 (less than `D` after the trigger) is read twice, by the alert event and by the copy; the README says so (spec FR-009).
