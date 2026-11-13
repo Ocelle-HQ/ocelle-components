@@ -1,0 +1,279 @@
+# Tasks: Action Controls, `ocelle-button` and `ocelle-action-row`
+
+**Input**: design documents in `specs/012-button-action-row/`, as approved at the plan gate on 2026-11-13 after three
+plan-squad rounds (`reviews/plan/round-1..3/`):
+- spec.md (FR-001 to FR-056, SC-001 to SC-007; US1-1..17, US2-1..14, US3-1..11, US4-1..17, US5-1..12; edge cases);
+- plan.md, with decisions 1 to 25 and the phase list;
+- research.md, R-01 to R-16;
+- data-model.md;
+- contracts/elements-package.md and contracts/checks.md (§ Edge cases and plan decisions maps every edge case and plan
+  decision to a phase, a scenario file and an observable);
+- quickstart.md.
+
+**Tests**: required. Constitution Principle VIII applies to every phase. The phase flow is `base.sh`, an optional
+`scaffold.sh`, **one red commit of test files only** proven by `red.sh` (one red record per phase; operator decision
+I3: the phase's story tests are in that red commit, before green), then green, `tdd-check.sh` and an independent
+review. Expected values are written by hand from the spec, the data model and research: colours from
+`packages/tokens/test/expected.ts` by token name, forced colours from research R-12's table read as
+`resolveColour(<keyword>)`, never from the source under test.
+
+The guard rules:
+- A "does not" assertion never stands alone: it shares its test with the positive assertion it guards.
+- Each guard is proven able to fail by its named plant (contracts/checks.md), run once by the implementer and
+  recorded in `reviews/phase-N/plants.md`.
+- A plant that does not make its guard fail stops the phase (stop-and-ask).
+- Clicks on `aria-disabled` or disabled controls are sent with `force: true` (R-06), so "not activated" tests always
+  send a click.
+
+**Shared scenario bodies** (R-11): every browser scenario is written once in `packages/elements/test/scenarios/*.ts`
+against the driver and run by two harnesses: in-process (`elements`, element source, mutated) and on the strict-CSP
+fixture (`elements-browser`, the built browser build, not mutated). Link scenarios have two bodies each: an
+in-process body on the navigation sink's records and a fixture body on real navigation and new tabs (no conditional
+expect). Fixture runs also assert zero CSP violations, only allowed requests and no console message.
+
+**Feature 006 per phase** (006 merged at 37dd501): a phase that adds stories commits their baselines
+(`pnpm run visual:update` under docker in the pinned container; CI's artifact committed when local and CI differ),
+runs `gate:storybook-build`, `gate:visual` and `gate:axe` (0 serious or critical results), updates the pinned story
+counts in `gates/test/integration/{storybook-build,visual,axe,plant-repo}.test.ts` **red first** (exact summary lines
+written by hand), and extends the `fail-token-changed` (`gates/plants/visual/fail-token-changed/plant.json`, the
+phase's light story-themes that show `color-ink`, measured) and `fail-empty-index` plants.
+
+**Environment**: Node 22 in this container, 26.13.0 in CI. Every browser run sets
+`OCELLE_CHROMIUM_PATH=/opt/pw-browsers/chromium-1243/chrome-linux64/chrome`; Stryker and plant runs alias the
+browsers directory as `knowledge/speckit-flows/findings/frontend-missions.md` § Browser path describes. One heavy job
+(browser suites, mutation, plants, visual) at a time. Never `git stash`.
+
+**Organization**: phase 1 is Setup (test harness and shard size); phases 2 to 6 are User Stories 1 to 5, one review
+unit each, folded after approval (`/ocelle-run` step 4.3). Records (README, CHANGELOG, stories, baselines, plants)
+belong to the phase whose behaviour they describe. There is no polish phase.
+
+**Stop-and-ask points** (the implementer records the question in the phase review and does not work around it):
+- a proposed token value (`color-accent-hover`, `color-active-bg`, `color-chrome-active`) or any new required pair
+  below threshold in `gate:contrast --print` (research R-08);
+- a needed new `style-lint` allowance;
+- a spike outcome that contradicts the plan (T014, T030, T060);
+- a plant that does not bite;
+- any mutation shard over 10 minutes; any Plants shard near 10 minutes (phase 6's CI run).
+
+## Format: `[ID] [P?] [Story] Description`
+
+- **[P]**: can run in parallel (different files, no dependency on an unfinished task)
+- **[Story]**: the user story of the task (US1 to US5)
+- Paths are relative to the repository root.
+
+---
+
+## Phase 1: Setup — test harness and shard size
+
+**Purpose**: the driver, commands and fixture support every later phase needs (R-11), and the plant shard size that
+the new stories require (R-13, decision 15). No element behaviour.
+
+**Independent Test**: the harness unit tests pass in both harnesses on plain pages; `plantShards` gives size 1 for the
+repository; `tdd-check.sh 1` reports `pass`.
+
+### Tests (red, one commit)
+
+- [ ] T001 [P] `packages/elements/test/harness/interaction.test.ts` (in-process) and `packages/elements/test/browser/harness.test.ts` (fixture): on a plain page with a native `<button>` and `<a href>`: `focus`, `press("Enter"|" ", modifiers?)`, `click(id, { inner?, modifiers?, button? })` with `force: true`, `hover`, `pointerDown`/`pointerUp`, `tabOrder()` and `tabOrder({ reverse: true })` (Shift+Tab), `activeInner(id)`; hovered vs unhovered and pressed vs unpressed native button read through `computed(id, property, inner?)` (R-11)
+- [ ] T002 [P] `packages/elements/test/harness/events.test.ts` and its fixture twin: the recorder on element, ancestors, `document`, `window` records `type`, `at`, `target`, `isTrusted`, `bubbles`, `composed`, `cancelable`, `defaultPrevented`, `detail` and a per-dispatch `serial`; two dispatches give two serials, one dispatch one serial seen at every listener with its target there; `preventNext(type)` makes the next record `defaultPrevented` true
+- [ ] T003 [P] `packages/elements/test/harness/navigation.test.ts`: the in-process navigation sink records a plain click and a Ctrl-click on a link with `defaultPrevented` false, a prevented click with `defaultPrevented` true, `auxclick` with `button: 1`, the modifier flags and the `href`, and the runner never navigates; the fixture twin (`test/browser/harness.test.ts`) asserts a real navigation to `link-target.html` and a new tab recorded by `context.on("page")`
+- [ ] T004 [P] `packages/elements/test/harness/ax.test.ts` and fixture twin: `ax(id)` returns `role`, `name`, `description`, `disabled`, `expanded`, `pressed`, `hasPopup`, `busy`, `focusable` and `controls` (ids) for native controls carrying those states; `current(id)` reads `aria-current` from the DOM (CDP does not report it); `reducedMotion("reduce")` makes `matchMedia("(prefers-reduced-motion: reduce)")` true and `"no-preference"` false again
+- [ ] T005 [P] `packages/elements/test/harness/axe.test.ts` and fixture twin: the driver's `axe()` uses `ruleMeta` and `ruleOptions` imported from `gates/lib/axe-rules.ts` and returns `button-name` for an unnamed `<button>` and no `region` result on a landmark-less page (006's exclusions apply); on the fixture `axe.min.js` is served same-origin under the strict CSP with zero violations
+- [ ] T006 [P] `gates/test/plant-runner.test.ts`: `plantShards` of the repository's plant list gives size-1 visual and axe shards (one story per shard) and the other plants at 80 (R-13)
+
+### Implementation
+
+- [ ] T007 `packages/elements/test/scenarios/driver.ts`: the `Driver` interface gains the methods of T001 to T005 (contracts/checks.md § Test harness)
+- [ ] T008 `packages/elements/test/commands.ts`, `packages/elements/test/in-process.ts` (the navigation sink: last bubble-phase `click` and `auxclick` listener on `window` recording, then preventing), `packages/elements/test/browser/driver.ts`, `packages/elements/test/browser/serve.ts` (serve `axe.min.js` from `node_modules/axe-core`; `context.on("page")`), `packages/elements/test/browser/fixtures/{button,action-row,link-target}.html` (`link-target.html` records visits)
+- [ ] T009 `vitest.config.ts`: the `elements` project's browser commands `press`, `hover`, `pointer`, `emulateReducedMotion`, `axe`
+- [ ] T010 `gates/lib/plant-runner.ts`: `shardSize` 3 → 1 (`gates/lib/plant-runner.ts:269`)
+- [ ] T011 `gates/README.md` (approved shard sizes: 1; the split count at size 1, 76 stories by 006's model, for the operator's approval at this phase's review; size 1 is the last lever; about 24 stories of headroom after this feature; about 10.8 Plants runner-hours per CI run at 52 stories against about 4 today) and the Complexity Tracking row of `specs/006-storybook-workbench/plan.md` updated with the same facts (R-13, decision 15)
+- [ ] T012 Write `specs/012-button-action-row/reviews/phase-1/tdd-exempt.md` for the documentation part (T011) and record in `reviews/phase-1/notes.md` the two operator questions for this phase's review: approval of the split count 76 at size 1, and opening a triage record for a plant design whose shard time does not grow with the story count, before the next element mission (PLAN-FRESH-3-003 (a))
+- [ ] T013 Run `pnpm run gate:test-lint`, `gate:typecheck`, then `gate:plants` (one at a time) and `gate:mutation -- --base <phase base>` (`gates/lib/plant-runner.ts`)
+
+**Checkpoint**: `tdd-check.sh 1` reports `pass`.
+
+---
+
+## Phase 2: User Story 1 - `ocelle-button` (Priority: P1) 🎯 MVP
+
+**Goal**: US1-1 to US1-17 and this phase's rows of contracts/checks.md § Edge cases and plan decisions; FR-001 to
+FR-003 (button mode, disabled), FR-006 (label and content), FR-007, FR-009 to FR-014, FR-018 to FR-020, FR-022;
+the tokens of R-08 items 1, 3, 4, 4a, 5; button stories with baselines and the axe gate. Button mode only (link mode
+is phase 3, busy phase 4).
+
+**Independent Test**: `<ocelle-button>Save</ocelle-button>` on the strict-CSP fixture is one `button` node named
+"Save", one tab stop, clicked by pointer, Enter and Space with one `click` serial at the host; disabled gives none;
+`gate:contrast`, `gate:manifest`, `gate:visual` and `gate:axe` pass.
+
+### Spike (first)
+
+- [ ] T014 [US1] Spike, scratch files only, recorded in `specs/012-button-action-row/reviews/phase-2/spike.md`: a story whose wrapper focuses an inner `<button>` from `connectedCallback` captured by 006's harness: does the inner control match `:focus-visible` (it decides whether the focus story shows the ring, research R-13)
+
+### Tests (red, one commit)
+
+- [ ] T015 [P] [US1] `packages/elements/test/slot.test.ts`: a non-icon element in the default, `description` or `tags` slot of a control adopting `iconSlotStyles` keeps its own box; `icon` and `trailing` slotted icons keep `--ocelle-icon-size` (plant: unscoped `::slotted(*)`) (R-10)
+- [ ] T016 [P] [US1] `packages/elements/test/scenarios/button.ts`: US1-1 to US1-17 as shared bodies, with the hand-written expected values of spec and research R-08 (variant × state × ground tables, `ground` absent, `accent-low`, `inset`, `hover-bg`, `state`, `chrome`; sizes default ≥ `target-min` both dimensions and compact ≥ `space-6`; `flush` alignment within 0.5 px in ltr and rtl, with an icon and a one-character label, at the inline start; the flush-hover exception list per theme; focus ring longhands on `:focus-visible`; forced colours per R-12's table; the long-label edge case; unknown `variant`, `size`, `ground` values; empty label and no icon → `axe()` exactly `button-name`; `host.click()` on enabled and disabled; stretched host US1-15; restyled host US1-17 under the three page rules with outside points asserted outside the inner box first; changing-surface US1-16); each "does not" paired and its plant named
+- [ ] T017 [P] [US1] `packages/elements/test/control.test.ts` (button-mode part): `delegatesFocus` focuses the inner control; `click()` forwarding; the host guard stops a click whose composed path misses the inner control in every state (plant: no host listener); disabled stops activation; name order: `label` (trimmed; whitespace-only is none) then content, slotted icons never contribute
+- [ ] T018 [P] [US1] `packages/elements/test/button.test.ts` (in-process over T016, light and dark, forced colours, `dir="rtl"`, `axe()` after each page) and `packages/elements/test/browser/button.test.ts` (fixture over T016, CSP, requests, console); `packages/elements/test/entry-button.test.ts` (importing `src/ocelle-button.ts` defines only `ocelle-button`); `entry-root.test.ts` and `exports.test.ts` extended (`OcelleButton`)
+- [ ] T019 [P] [US1] `packages/tokens/test/expected.ts` (hand-written `color-hover-border` = `var(--ocelle-color-ink)`, `color-accent-hover` `#D9A23F`, `color-active-bg` light `#D3CCBF` dark `#3A342B`, `color-chrome-active` `#3A342B`), `packages/tokens/test/browser/values.test.ts`, the tokens README and CHANGELOG tests; `gates/test/contrast-pairs.test.ts`, `gates/test/contrast.test.ts`, `gates/test/integration/plants-robustness.test.ts`, `gates/test/integration/token-gates.test.ts`: the pinned counts with the new required rows of R-08 items 1, 3, 4a and 5 (`color-ink` += state grounds and `active-bg`; `color-accent-strong` += canvas, sheet, pane, panel, inspector, rail, chrome, chrome-hover; `color-on-accent` += `accent-hover`; `color-chrome-ink` += `chrome-active`; `color-disabled-ink` += chrome grounds, exempt; `color-hover-border` on main, state grounds and `active-bg`)
+- [ ] T020 [P] [US1] `packages/elements/test/build/build.test.ts`, `test/build/pack.test.ts` (dist and packed `ocelle-button.js`), `packages/elements/test/node/manifest.test.ts` (`ocelle-button` entry: `variant`, `size`, `flush`, `ground` (incl. `chrome`), `label`, `disabled`; slots default and `icon`; part `control`; no event; 005's entries unchanged), `packages/elements/test/node/readme.test.ts` (control conventions 1 (with the filled host), 3 (disabled half), 5 (label-in-name), 7; form note; flush-hover note with its exception list; flush clipping note (`focus-offset` + `focus-width`); changing-surface `ground` rule; chrome look (`secondary` like `quiet`); a host may restyle `display` and size, with the host guard's limits; the `ocelle-button` section; CHANGELOG lines; no planning IDs)
+- [ ] T021 [P] [US1] Story tests: `storybook/test/integration/elements-stories.test.ts` gains the button story ids of this phase (variants × states, sizes, flush, icon, icon-only, disabled, `ground` values incl. chrome and the changing surface, rtl, hover and press declared with `parameters.ocelle.pointer`, focus if T014 allows), each present and rendering in light and dark; `gates/test/integration/{storybook-build,visual,axe,plant-repo}.test.ts` the new pinned counts
+
+### Implementation (green)
+
+- [ ] T022 [US1] `packages/elements/src/icon-slot.ts`: size rules scoped to the `icon` and `trailing` slots; `.icon-slot[hidden] { display: none; }`
+- [ ] T023 [US1] `packages/tokens/src/source.ts`: the four new colour tokens and the declared grounds of T019 (R-08); `packages/tokens/contrast/pairs.json` rows with figures from `pnpm run gate:contrast --print` (stop-and-ask if any is below threshold); tokens README and CHANGELOG
+- [ ] T024 [US1] `packages/elements/src/control.ts` (button mode only): one inner `<button type="button">` with part `control` in an open shadow root with `delegatesFocus`; `click()` forwarded to the inner control; the host guard (`click` and `auxclick` listeners registered in the constructor, stopping events whose composed path misses the inner control and every event while not available; R-06, decision 23); `controlStyles` (focus ring longhands, forced colours per R-12's table, disabled look, `.icon-slot[hidden]`)
+- [ ] T025 [US1] `packages/elements/src/ocelle-button.ts`: `static override properties` (`variant`, `size`, `flush`, `ground` reflected; `label` not reflected; `disabled` reflected), `@tagname`/`@default`/descriptions, `:host { display: inline-grid }` with the inner control the single stretched item, `:host([hidden])`, variant rules inside `@media not (forced-colors: active)`, the state and ground tables of R-08 items 3, 4, 4a, 5, sizes of R-09, `flush` start alignment, `font: inherit`, the icon slot by mission 005's convention, `define("ocelle-button", …)`, `HTMLElementTagNameMap`; `src/index.ts` re-export
+- [ ] T026 [US1] `packages/elements/package.json` export `./ocelle-button.js`; regenerate and commit `packages/elements/custom-elements.json`
+- [ ] T027 [US1] `packages/elements/README.md` and `packages/elements/CHANGELOG.md` with the statements of T020
+- [ ] T028 [US1] `storybook/stories/button.stories.ts` with the stories of T021; `fail-empty-index` tree gains an empty `button.stories.ts`; `fail-token-changed` extended with the measured light story-themes; baselines `storybook/baselines/elements-ocelle-button--*.{light,dark}.png` by `pnpm run visual:update`
+- [ ] T029 [US1] Run each plant of T015 to T018 once and record in `specs/012-button-action-row/reviews/phase-2/plants.md`; run `gate:manifest`, `gate:style-lint`, `gate:contrast`, `gate:csp`, `gate:prefix`, `gate:pins`, `gate:test-lint`, `gate:storybook-build`, `gate:visual`, `gate:axe`, then `gate:plants` and `gate:mutation -- --base <phase base>` (one at a time)
+
+**Checkpoint**: `tdd-check.sh 2` reports `pass`; the button alone serves #14's copy control.
+
+---
+
+## Phase 3: User Story 2 - Link mode and ARIA passthrough (Priority: P2)
+
+**Goal**: US2-1 to US2-14 and this phase's rows of § Edge cases and plan decisions; FR-002 (link mode), FR-003
+(disabled link), FR-004 to FR-006, FR-009 (moved attributes, `aria-haspopup`, `aria-pressed`, `title`, mirrors,
+custom states), FR-021, FR-053; engine floor Chromium 135 and WebKit 17.4; link stories with baselines and axe.
+
+**Independent Test**: `<ocelle-button href="/projects">` on the fixture is one `link` node that navigates on click and
+Enter and opens a new tab on Ctrl-click; `aria-expanded="true"` set on the host is gone from the host and reported on
+the inner control; `aria-controls` relates to the light-DOM panel; a clone keeps the moved name.
+
+### Spike (first)
+
+- [ ] T030 [US2] Spike, recorded in `specs/012-button-action-row/reviews/phase-3/spike.md`: element reflection (`ariaControlsElements`, `ariaLabelledByElements`, `ariaDescribedByElements`) on this Chromium and the README floor claims (Chromium 135, WebKit 16.4 for reflection, 17.4 for custom states, from release notes or compat data); moving an attribute present before upgrade and set later; whether analyzer 0.11.0 emits `cssStates` from JSDoc
+
+### Tests (red, one commit)
+
+- [ ] T031 [P] [US2] `packages/elements/test/scenarios/link.ts`: US2-1 to US2-14 as shared bodies; link bodies twice (in-process sink records; fixture navigation and new tabs); clearing by `""`, whitespace-only and `"false"`, `removeAttribute` after a move a no-op; `aria-haspopup`, `aria-pressed`, `title` moved; custom states `:state(expanded)`, `:state(pressed)`, `:state(current)` on the host; mirrors `data-ocelle-moved-*` (US2-13: `outerHTML` and `cloneNode(true)` keep the name; morph case: the test applies idiomorph's attribute sync with the unchanged server markup then copies through `innerHTML`; a removed and an overwritten mirror read their stored values again); several ids in order, missing skipped; referenced element added later; `aria-current` any value with no mark; the `href` edge cases; plants: no mirror, mirror not restored, `title` not moved
+- [ ] T032 [P] [US2] `packages/elements/test/control.test.ts` (link part): the mode table (empty, whitespace, relative, `javascript:`, `JavaScript:`, `JAVASCRIPT:x`, `java\tscript:x`, `\u0001javascript:x`, ` javascript:x` → button; `http://[` → button, no error; `data:text/html,x` → link with `href` as written); disabled link without `href`, `role="link"`, `aria-disabled`, not focusable; `noopener` when `target="_blank"` and no `rel`; the move, references in document and shadow root, other shadow root unresolved, name order `aria-labelledby` > `aria-label` > `label` > content; mirrors restored with own writes ignored
+- [ ] T033 [P] [US2] `packages/elements/test/button.test.ts` and `test/browser/button.test.ts` run `link.ts`; `packages/elements/test/node/manifest.test.ts`: every moved attribute and `title` declared with a description, each mirror declared, custom states, and the normaliser keeps a declared standard attribute and drops an undeclared one (R-15); `test/node/readme.test.ts`: conventions 2, 4 (per-stack recipes, mirrors, custom states, restore after a morph), 6, the `data:`/`vbscript:` note, 005's elements keep their `aria-label` rule, engines Chromium 135 and WebKit 17.4 with the feature behind each figure, the htmx morph sentence
+- [ ] T034 [P] [US2] Story tests: `elements-stories.test.ts` gains the link stories (link, link disabled, `target="_blank"`, expanded, current, pressed); the four pinned story counts
+
+### Implementation (green)
+
+- [ ] T035 [US2] `packages/elements/src/control.ts`: link mode by the URL parser (unparseable → button), `javascript:` rule, inner `<a>`; disabled link without `href`; `noopener`; the attribute move for the lists of FR-009 (with `aria-haspopup`, `aria-pressed`, `title`), clearing, removal a no-op, mirrors `data-ocelle-moved-<attribute>` read at upgrade and restored when removed or changed (own writes ignored), references by element reflection resolved in `getRootNode()`, custom states through `ElementInternals.states`
+- [ ] T036 [US2] `packages/elements/src/ocelle-button.ts`: `href`, `target`, `rel`, `download` reflected; observed moved attributes and mirrors
+- [ ] T037 [US2] `packages/elements/scripts/manifest.ts` (normaliser keeps declared standard attributes); JSDoc for the moved attributes, mirrors and custom states; regenerate `custom-elements.json`
+- [ ] T038 [US2] `packages/elements/README.md` and `CHANGELOG.md` with the statements of T033
+- [ ] T039 [US2] `storybook/stories/button.stories.ts` link stories; baselines; `fail-token-changed` extended
+- [ ] T040 [US2] Plants of T031 to T033 recorded in `reviews/phase-3/plants.md`; gates as T029, then plants and mutation
+
+**Checkpoint**: `tdd-check.sh 3` reports `pass`; with phase 2 this serves #12's `href` crumbs.
+
+---
+
+## Phase 4: User Story 3 - Busy (Priority: P3)
+
+**Goal**: US3-1 to US3-11 and this phase's rows of § Edge cases and plan decisions; FR-003 (unavailable), FR-015 to
+FR-017; tokens `motion-spin` and `motion-turn`; busy stories with baselines and axe.
+
+**Independent Test**: a focused button set `busy` keeps focus, reports `aria-busy` and `aria-disabled`, shows a spinner
+in the icon place without changing size, sends no click by pointer, Enter, Space or a restyled-host click, and the
+spinner is still under reduced motion and ends within 4.8 s.
+
+### Tests (red, one commit)
+
+- [ ] T041 [P] [US3] `packages/elements/test/scenarios/busy.ts`: US3-1 to US3-11 as shared bodies; spinner box replaces the icon (equal button box) or sits before the label without intersecting it; `animation-name` `none` under reduced motion with the arc still painted; the animation's duration 4.8 s and iteration count giving six turns; forced colours `currentColor` system colour; busy link (no `href`, `tabindex="0"`, focusable, `role="link"`, decision 9) not activated by plain, Ctrl, Meta, Shift, Alt or middle click or Enter (sink and fixture bodies); both `disabled` and `busy`; `busy` removed while the pointer is down; `host.click()` while busy; stretched (US3-10) and restyled (US3-11) busy host; plants: guard limited to unavailable, spinner over the label, `animation: none` rule removed
+- [ ] T042 [P] [US3] `packages/tokens/test/expected.ts` (`motion-spin` 800 ms, 0 ms under reduced motion; `motion-turn` `1turn`), `test/browser/values.test.ts`, `packages/tokens/test/generate.test.ts` (the reduced-motion block holds exactly `motion-fast`, `motion-base`, `motion-spin`: a stricter replacement of "exactly two", reason recorded in `reviews/phase-4/notes.md`), tokens README and CHANGELOG tests
+- [ ] T043 [P] [US3] `packages/elements/test/button.test.ts` and `test/browser/button.test.ts` run `busy.ts` (with `reducedMotion`); `test/node/readme.test.ts`: busy on the button is unavailable, the 4.8 s stop, the 833 ms limit for an override of `--ocelle-motion-spin`
+- [ ] T044 [P] [US3] Story tests: `elements-stories.test.ts` gains the busy stories (busy, busy with icon, busy link, busy compact); the four pinned story counts
+
+### Implementation (green)
+
+- [ ] T045 [US3] `packages/tokens/src/source.ts` (`motion-spin`, `motion-turn`) and `packages/tokens/src/generate.ts` (reduced-motion block from the motion durations); tokens README and CHANGELOG
+- [ ] T046 [US3] `packages/elements/src/spinner.ts`: inline SVG arc, `stroke="currentColor"`, `aria-hidden="true"`, rotation `calc(var(--ocelle-motion-turn) * 6)` over `calc(var(--ocelle-motion-spin) * 6)`, ending still; `animation: none` under `prefers-reduced-motion: reduce`
+- [ ] T047 [US3] `packages/elements/src/control.ts`: the unavailable state (guard on `click` and `auxclick`, `aria-disabled`, unavailable link without `href` and with `tabindex="0"`); `packages/elements/src/ocelle-button.ts`: `busy` reflected, `aria-busy`, the icon wrapper hidden and the spinner in its place, `disabled` wins
+- [ ] T048 [US3] README, CHANGELOG, busy stories and baselines; `custom-elements.json` regenerated
+- [ ] T049 [US3] Plants recorded in `reviews/phase-4/plants.md`; gates as T029 (with `gate:contrast` unchanged), then plants and mutation (expect Timeout mutants on the spinner and guard: reported, pass, listed in the review, R-14)
+
+**Checkpoint**: `tdd-check.sh 4` reports `pass`.
+
+---
+
+## Phase 5: User Story 4 - `ocelle-action-row` (Priority: P4)
+
+**Goal**: US4-1 to US4-17, the row-layout wrap (check-3 note SPEC-3-04) and this phase's rows of § Edge cases and plan
+decisions; FR-030 to FR-036, FR-038 (row layout part), FR-040 to FR-042; token `focus-offset-inset` and the
+`color-ink-soft` grounds; row stories with baselines and axe.
+
+**Independent Test**: a row on the fixture is one `button` node named exactly its title, described by its description
+then tags; click, Enter and Space each give one `ocelle-action-row-activate` with `{ rowId }`, bubbling, composed,
+cancelable; it is at least `target-min` high, never 0 wide, and wraps its tags-and-trailing group as a whole.
+
+### Tests (red, one commit)
+
+- [ ] T050 [P] [US4] `packages/elements/test/scenarios/action-row.ts`: US4-1 to US4-17 as shared bodies; the event's flags, `detail`, one serial per activation from pointer, Enter and Space, `rowId` `""` when absent; name exactly the title with description and tags slotted (plant: name from content); description = description then tags text, host `aria-describedby` wins; empty and whitespace-only `<span slot="description">` (description stays the moved `title`, then "Due Friday" after text is written; the empty span takes no space and adds no gap; plants: raw assigned elements referenced, no `MutationObserver`, wrappers hidden from the raw assigned elements); `busy` does not block activation; flush and default presentations; minimum height in each presentation and layout; min-content width in shrink-wrapping containers; long unbreakable title (`overflow-wrap: anywhere`) stays within its container; row-layout wrap of the tags-and-trailing group; hover tables incl. the flush exception list; inside focus ring four sides on a non-current row (plant: no ring); `ground` incl. `chrome` (US4-17); `host.click()`; stretched row US4-15; mirrors and `title` on the row (with the morph step); empty title with an icon → `axe()` exactly `button-name`; unknown `layout`, `presentation`
+- [ ] T051 [P] [US4] `packages/elements/test/action-row.test.ts` and `test/browser/action-row.test.ts` over T050; `packages/elements/test/entry-action-row.test.ts`; `entry-root.test.ts`, `exports.test.ts` extended (`OcelleActionRow`)
+- [ ] T052 [P] [US4] `packages/tokens/test/expected.ts` (`focus-offset-inset` = `calc(-1 * (var(--ocelle-focus-offset) + var(--ocelle-focus-width)))`, −5 px), browser values test; contrast counts for `color-ink-soft` += state grounds and the row's hover-border and `chrome` rows (R-08 item 2); tokens README and CHANGELOG tests
+- [ ] T053 [P] [US4] `test/build/build.test.ts`, `test/build/pack.test.ts`, `test/node/manifest.test.ts` (`ocelle-action-row`: properties of FR-030, slots, parts `control`, `title`, `description`, `tags`, event with `detail` type, moved attributes, mirrors), `test/node/readme.test.ts` (the `ocelle-action-row` section, row conventions, CHANGELOG)
+- [ ] T054 [P] [US4] Story tests: `elements-stories.test.ts` gains the row stories (default, flush, card-free row with all slots, busy, hover default and flush, rtl, chrome); the four pinned story counts
+
+### Implementation (green)
+
+- [ ] T055 [US4] `packages/tokens/src/source.ts` (`focus-offset-inset`; `color-ink-soft` grounds) and `pairs.json` rows (figures from `gate:contrast --print`); tokens README and CHANGELOG
+- [ ] T056 [US4] `packages/elements/src/ocelle-action-row.ts`: properties of data-model § `ocelle-action-row`; `:host { display: grid; min-inline-size: min-content }` with the inner control the single stretched item; button mode and link mode from `control.ts`; the activate event dispatched on an available click (Enter and Space through the native button); internal title wrapper as the name reference (cleared when a higher name source is present); description elements from slots with non-whitespace text (`slotchange` and a `MutationObserver` on light children); wrappers hidden when empty; presentations, row layout and wrap, `overflow-wrap: anywhere` on title and description, minimum height, inline padding `space-3`, hover with `color-hover-border`, `ground` incl. `chrome`, inside focus ring with `--ocelle-focus-offset-inset`, `color-ink-soft` description; `define`, `HTMLElementTagNameMap`; `src/index.ts` re-export
+- [ ] T057 [US4] `packages/elements/package.json` export `./ocelle-action-row.js`; `custom-elements.json` regenerated; README and CHANGELOG
+- [ ] T058 [US4] `storybook/stories/action-row.stories.ts`; `fail-empty-index` tree gains an empty `action-row.stories.ts`; `fail-token-changed` extended; baselines
+- [ ] T059 [US4] Plants recorded in `reviews/phase-5/plants.md`; gates as T029, then plants and mutation
+
+**Checkpoint**: `tdd-check.sh 5` reports `pass`.
+
+---
+
+## Phase 6: User Story 5 - Row states and the card layout (Priority: P5)
+
+**Goal**: US5-1 to US5-12 and this phase's rows of § Edge cases and plan decisions; FR-033 (link rows), FR-037,
+FR-038 (card), FR-039, FR-041; decisions 9, 13, 16, 21, 23 on rows; stories with baselines and axe; the CI run at the
+full story count.
+
+**Independent Test**: a link row dispatches its event before navigating and a listener's `preventDefault()` stops the
+navigation; modifier, Alt and middle clicks dispatch nothing and keep the browser's default; `current="page"` reports
+`aria-current="page"` and draws the bar apart from the focus ring; an unavailable row stays focusable and does
+nothing.
+
+### Spike (first)
+
+- [ ] T060 [US5] Spike, recorded in `specs/012-button-action-row/reviews/phase-6/spike.md`: for button-mode and link-mode rows under the page rules `display: block`, `display: flex; width: 100%` and `display: block; height: 90px`, list by hand which test points lie outside the inner control's box (decision 23); the bar's measured place (7 to 10 px from the border edge) on a focused current row in ltr and rtl
+
+### Tests (red, one commit)
+
+- [ ] T061 [P] [US5] `packages/elements/test/scenarios/row-states.ts`: US5-1 to US5-12 as shared bodies; event before navigation and `preventDefault()` cancelling it (sink and fixture bodies); Ctrl, Meta, Shift, Alt and middle clicks: no event, default kept (decision 13); `current` `page`/`true` and other values absent; the current mark with hover precedence, on chrome (`chrome-hover` surface), forced colours; ring band, gap and bar read apart on a focused current row in ltr and rtl (plants: bar at `inset-inline-start: 0`; bar at the ring's inner edge); `unavailable` on button and link rows (no `href`, `tabindex="0"`, decision 9), not activated by any click or key, disabled ink and `GrayText`; `unavailable` with `current` (bar in disabled ink, decision 16); `busy` with `unavailable`; `current` on a button-mode row; card layout (title line with trailing at its end, description, tags wrapping only between tags, a tag wider than the card may break), title gap `space-1` and part `title`, `arrow-end` in the trailing slot mirrored under rtl; stretched unavailable row and restyled rows US5-6 and US5-12 from the spike's list (plant: no host listener)
+- [ ] T062 [P] [US5] `packages/elements/test/action-row.test.ts` and `test/browser/action-row.test.ts` run `row-states.ts`; `test/node/manifest.test.ts` and `readme.test.ts` for `current`, `unavailable`, `layout="card"` and the card README lines
+- [ ] T063 [P] [US5] Story tests: `elements-stories.test.ts` gains the state stories (current page, current hovered, current focused, unavailable, unavailable current, link row, card, card with many tags, card rtl, chrome current); the four pinned story counts
+
+### Implementation (green)
+
+- [ ] T064 [US5] `packages/elements/src/ocelle-action-row.ts`: link-row activation order and `preventDefault` on the originating click, modifier and middle clicks ignored, `current` with `aria-current` and the bar (R-12's method, 7 to 10 px from the border edge), `unavailable` via `control.ts`, card layout and tags wrapping, part `title`
+- [ ] T065 [US5] README, CHANGELOG, `custom-elements.json` regenerated; state and card stories and baselines; `fail-token-changed` extended
+- [ ] T066 [US5] Plants recorded in `reviews/phase-6/plants.md`; gates as T029, then plants and mutation
+- [ ] T067 [US5] Push the branch and record in `reviews/phase-6/ci-run.md` a CI run at the full story count with every Plants shard's time (each under 10 minutes) and the run's total (R-13); a shard near 10 minutes is a stop-and-ask
+
+**Checkpoint**: `tdd-check.sh 6` reports `pass`.
+
+---
+
+## Dependencies & Execution Order
+
+- Phase 1 → Phase 2 → Phase 3 → Phase 4 → Phase 5 → Phase 6; each needs the previous (the harness, then
+  `control.ts` grows: button mode, link mode and the move, unavailable, the row, row states).
+- Within a phase: spike first where there is one; the red commit holds every test task of the phase (one `red.sh`
+  record); implementation in the listed order; the plants-and-gates task last.
+- Phase 2 alone serves #14's copy control; #12 needs phase 3 as well.
+
+## Parallel Opportunities
+
+- Within each red commit, the test tasks marked [P] touch different files and can be written in parallel.
+- Token tasks (T019, T042, T052) are independent of the element test files of their phase.
+- Heavy runs (browser suites, visual, mutation, plants) are never parallel in this container.
+
+## Implementation Strategy
+
+MVP is phase 2 (the button) on top of phase 1. Each later phase is a complete, reviewable increment; fold each phase
+after approval. The pill tag, status indicator and metric are out of this mission (the later status mission builds the
+pill tag's tooltip on #16's `ocelle-tooltip` and needs #16 merged first).
