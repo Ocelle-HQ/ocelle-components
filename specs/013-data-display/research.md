@@ -4,18 +4,29 @@ Every decision of the plan, with its reason and the alternatives. Measurements w
 headless Chromium 153.0.8010.12 with axe-core 4.10.2. The scripts, raw outputs and summary are in [spike/](spike/)
 (`spike/RESULTS.md`), and each can be rerun with `node <script>` once axe-core is packed into `spike/pkg/` as
 `RESULTS.md` says. #10's `axe` gate pins axe-core 4.14.0. The spike's axe results are re-run against that version in
-phase 1's spike (R-01) before the red commit.
+phase 1's spike (R-01) before the red commit; a failing recheck stops the flow for the operator (R-01).
+
+Squad round 1 (2026-11-13) changed this file: the operator's fork decisions are cited by finding ID with the option
+taken, for example "PLAN-CORRECTNESS-1-003 (a)".
 
 ## R-01 `ocelle-facts`: description list through manual slot assignment (FR-003, FR-004, FR-005)
 
 **Decision.**
 - `ocelle-facts` attaches an open shadow root with `slotAssignment: "manual"` and renders one `<dl part="list">`.
-  For each `ocelle-fact` child, in source order, it renders `<dt part="label">${child.label}</dt><dd
+  For each pair (below), in source order, it renders `<dt part="label" lang=… dir=…>${child.label}</dt><dd
   part="value"><slot></slot></dd>`, then assigns that child to that `<dd>`'s slot with `slot.assign(child)`.
 - The `ocelle-fact` shadow root, inside `ocelle-facts`, is one `<slot>`, so its own light-DOM content (the value) is
   shown in the `<dd>` unchanged.
 - No `slot` attribute is added to the consumer's markup and no content is copied. The label text is the `label`
   property, which the consumer gave as data.
+
+**Which children are pairs (PLAN-A11Y-SECURITY-1-003).** A pair is an `ocelle-fact` child that has no `hidden`
+attribute and no `aria-hidden="true"`. A hidden fact gets no `<dt>`, no `<dd>` and no assignment: no row, no term, no
+definition, as README § Host ARIA says of a host `hidden` ("no box and no node"). The label lives in the sheet's shadow
+root, outside the fact, so the sheet carries the fact's host attributes that concern the label:
+- `lang` and `dir` of the fact are copied onto its `<dt>` (WCAG 3.1.2 Language of Parts; a label in another script
+  keeps its direction). Absent on the fact, absent on the `<dt>`.
+- `hidden` and `aria-hidden="true"` remove the pair as above. `aria-hidden` with any other value is ignored.
 
 **Measured** (spike A5):
 - Chromium's tree is `DescriptionList > term "Owner", definition "Ada", term …, definition …`, with term and
@@ -34,76 +45,136 @@ phase 1's spike (R-01) before the red commit.
 - **A2c**: `associationlist` (ARIA 1.3 draft). Chromium shows generic nodes, and axe reports `aria-roles` (critical).
 
 **Consequences (FR-003, edge cases, SPEC-2-06).**
-- `ocelle-facts` keeps its rendering current with a `MutationObserver` on its own `childList` and on the `label`
-  attribute of its children (`subtree: true`, `attributeFilter: ["label"]`). With manual assignment there is no
-  `slotchange` for an unassigned child.
+- `ocelle-facts` keeps its rendering current with one `MutationObserver` on itself: `childList: true`, `subtree: true`,
+  `attributes: true`, `attributeFilter: ["label", "hidden", "aria-hidden", "lang", "dir"]`. With manual assignment
+  there is no `slotchange` for an unassigned child. `subtree` is needed to see the children's attributes; the callback
+  re-renders only for a `childList` record on the host itself or an attribute record whose target's `parentElement` is
+  the host, so attributes inside a value (a `lang` on a value's `<span>`) cause no re-render.
 - `ocelle-fact`'s `label` property reflects to its attribute (`reflect: true`), so a property-only change reaches the
-  observer.
+  observer. Reflection of an unset property writes nothing (PLAN-CORRECTNESS-1-011 (a), contracts/elements.md).
 - Children that are not `ocelle-fact` (text, a raw `<dt>`, a `<div>`) are never assigned, so they are neither rendered
   nor exposed. Whitespace text nodes are ignored the same way. Nothing throws.
-- With no `ocelle-fact` child, `ocelle-facts` renders no `<dl>` (FR-010): nothing visible and nothing exposed. An
-  empty `<dl>` is valid but says nothing, and "nothing" gives one rule for the empty case.
+- With no pair, `ocelle-facts` renders no `<dl>` (FR-010): nothing visible and nothing exposed. An empty `<dl>` is
+  valid but says nothing, and "nothing" gives one rule for the empty case.
 - **`ocelle-fact` outside `ocelle-facts`** (`this.parentElement?.localName !== "ocelle-facts"`) renders `<span
   part="label">${label}</span><slot></slot>` as two blocks, with no term or definition role (edge case). A
   `MutationObserver` cannot see a re-parenting, so `ocelle-fact` decides in `connectedCallback`. Moving a fact into or
-  out of `ocelle-facts` disconnects and reconnects it, which runs that decision again.
+  out of `ocelle-facts` disconnects and reconnects it, which runs that decision again and re-renders; a body moves a
+  fact in and out (PLAN-TESTABILITY-1-014, contracts/checks.md).
 - **Missing halves** (FR-003): a `label` that is absent or empty renders an empty `<dt>`, exposed as an empty term. A
   fact with no content renders an empty `<dd>` (an empty definition). Each pair keeps its row because the grid cells
-  always exist. To be confirmed in phase 1's spike: whether Chromium still exposes an empty `<dt>` as a term node.
-  If it does not, US1-10's assertion becomes "the definition follows its (empty) row" and the plan's reading goes to
-  review.
+  always exist. A probe found a light-DOM empty `<dt>` exposed as a term node in Chromium 153; phase 1's spike measures
+  it in the A5 shadow structure under Lit.
+- **Module dependency (PLAN-CORRECTNESS-1-012 (a)).** `ocelle-facts.ts` imports `ocelle-fact.ts`, so importing the
+  sheet defines both. This is a new convention, stated in README § Element conventions in phase 1: a container module
+  imports its item element and no other element. A readme-test statement and a build test (`dist/ocelle-facts.js`
+  imports `./ocelle-fact.js` and no other element module; every other per-element module imports none) prove it.
+  Follow-on 1's containers (timeline, chain) copy it.
+- **Before upgrade (PLAN-FRESH-1-009 (a)).** Until the module runs (a deferred module, a slow network, a script
+  error), `ocelle-facts` and `ocelle-fact` are unknown inline elements: each value is shown as inline text, the values
+  run together on one line, and no label is shown, because the label is an attribute. A server-rendered console page
+  shows exactly that. The library therefore ships one recommended rule in `@ocelle/styles`' `base.css`:
+  `:where(ocelle-facts:not(:defined)) > ocelle-fact { display: block; }` (zero specificity, so any page rule wins),
+  which puts each value on its own line before upgrade. Labels still appear only after upgrade; the README says so in
+  the facts section and corrects its "until then its box is empty" sentence (README line 37) for elements with
+  light-DOM content. A styles test and a fixture body (an undefined sheet, then defined) prove the rule.
 
 **Operator decision pending (spec SPEC-1-04 "D").** The measurement shows FR-004 can be met as written with Q1 (b).
 The operator confirms or replaces FR-004 at the plan gate, before tasks.
 
-**Recheck in phase 1's spike:** axe-core 4.14.0 (#10's pin) on the A5 structure, and the A5 structure built with Lit.
-Lit's `createRenderRoot` must pass `slotAssignment: "manual"`, and its template must render the `<slot>` elements
-whose assignment the element then sets in `updated()`.
+**Recheck in phase 1's spike, and what a failure does (PLAN-CORRECTNESS-1-014 (b)).** The spike runs axe-core 4.14.0
+(#10's pin) on the A5 structure built with Lit 3.3.3: `createRenderRoot` passes `slotAssignment: "manual"`, the
+template renders the `<slot>` elements, and the element sets their assignment in `updated()`. It also reads whether an
+empty `<dt>` stays a term node in that structure. Any failing result (an axe `definition-list` or `dlitem` violation, a
+tree that is not `DescriptionList > term, definition, …`, or an empty term pruned from the tree) stops the flow for
+the operator before the red commit. FR-003, FR-004 and US1-10 are the operator's to change; review does not reword
+them. Whatever the operator decides, US1-6, US1-7 and US1-10 keep an accessibility-tree oracle (contracts/checks.md).
 
-## R-02 `ocelle-facts`: stacking on its own inline size without containment (FR-005, FR-009)
+## R-02 `ocelle-facts`: stacking on the space available, without containment (FR-005, FR-009)
 
 **Problem.** A size container query on the host needs `container-type: inline-size`. The spike (C) measured that host
 at 0 px inline size inside a `showModal()` dialog and inside a default flex item. This is the collapse FR-009 forbids,
 and the same as 003's finding. A flex-wrap row per pair never collapses, but it loses the shared label column FR-005
-requires (each pair is its own flex line), and it stacks in a shrink-to-fit dialog even when there is room. A plain
-grid keeps the column and never collapses, but cannot stack without a query.
+requires (each pair is its own flex line). A plain grid keeps the column and never collapses, but cannot stack without
+a query.
 
-**Decision.** The grid is plain, with no containment. The element switches between two columns and one column with a
-`ResizeObserver` on its own box, which needs no containment.
+**What round 1 found in the first design (PLAN-CORRECTNESS-1-003, PLAN-FRESH-1-001).** The first design compared the
+host's own resolved inline size with the threshold. In a shrink-to-fit host that size is the sheet's max-content,
+which depends on the sheet's state: two-column max-content can be above the threshold while stacked max-content is
+below it. Reproduced: in a default flex item the sheet is 227 px and stacked at 360 px, and stays 227 px and stacked
+after widening to 1200 px; a short sheet ("Owner / Ada Lovelace") stacks in a dialog at 1200 px. The layout depended on
+history, and a short sheet stacked with ample room. The earlier rejection of flex-wrap for "stacking in a dialog with
+room" applied to that design as well; flex-wrap is rejected only because it loses the shared column.
+
+**Decision (PLAN-CORRECTNESS-1-003 (a)).** The grid is plain, with no containment. The element switches between two
+columns and one column on a state-independent measure: **the inline space available to the sheet**, compared with the
+threshold.
+- **Available inline space.** In a block container the sheet fills its container, and the available space is its own
+  content-box inline size. In a shrink-to-fit host (dialog, popover, float, default flex item) it is the space that
+  host offers the sheet, not the sheet's resolved size: the inline size the sheet would take if it filled that space.
+  It never depends on whether the sheet is stacked, so the same content in the same space gives one layout from any
+  history.
+- **Rule.** Two columns when the available inline space is at least the threshold; one column below it. FR-009 still
+  holds: the sheet's own resolved size in a shrink-to-fit host is its max-content (two-column or stacked), capped by
+  the available space, never 0.
+- **Mechanism, chosen in phase 1's spike.** The spike measures, in each shrink-to-fit host, candidates for reading the
+  available space without a feedback from the sheet's state, and picks the first that meets the rule:
+  1. a `ResizeObserver` on the host and on the nearest ancestor whose inline size does not depend on its content
+     (found by walking up through `parentElement` and shadow hosts), the available space being that ancestor's
+     content-box inline size less the host's inline margins;
+  2. a measurement pass inside the observer callback: the `<dl>` is laid out two-column with `inline-size` filling its
+     containing block, the host's inline size is read, and the state is set before paint.
+  The decision is made in the callback, not in `render()`, so a Lit update loop cannot oscillate. If no candidate
+  meets the rule in every host of FR-009, the spike's result goes to the operator before the red commit (FR-005 and
+  FR-009 are the operator's).
 - **Threshold.** It comes from a hook, `--ocelle-facts-stack-below`, set by default in `:host` to
   `calc(var(--ocelle-shell-sidebar-width) + var(--ocelle-space-10))`, which is 24rem (384 px at the default root size,
   more than 320 px as FR-005 requires).
-- **Probe.** The element resolves the hook to pixels through a probe: an empty `<div part="probe" aria-hidden="true">`
-  in the shadow root with `inline-size: var(--ocelle-facts-stack-below); block-size: 0; visibility: hidden; position:
-  absolute`, observed by the same `ResizeObserver`.
-- **Rule.** When the host's content-box inline size is below the probe's, the element sets an internal `stacked`
-  state, which is a class on the `<dl>`, not a host attribute, so it is not public surface. The `<dl>` then becomes one
-  column, `minmax(0, 1fr)`, with each value below its label.
-- **Why this holds in a shrink-to-fit host.** Without containment, the host's max-content inline size is the
-  two-column grid's (the widest label plus the widest value, capped by the available space), so it is never 0
-  (FR-009). If that width is below the threshold the element stacks, and its stacked max-content is no wider, so the
-  state is stable: there is no oscillation.
+- **Probes (PLAN-A11Y-SECURITY-1-004).** The element resolves the threshold to pixels through two probes inside a
+  holder: `<div class="probes" aria-hidden="true">` with `position: absolute; inline-size: 0; block-size: 0;
+  overflow: visible; visibility: hidden`, holding a hook probe `<div class="probe">` at `inline-size:
+  var(--ocelle-facts-stack-below)` and a default probe at the token default. Both probes are `position: absolute;
+  block-size: 0`, and the host is `position: relative`. Because the holder is 0 wide, a percentage hook resolves to
+  0, and a hook invalid at computed-value time gives `auto`, which is also 0 for an empty absolutely positioned box.
+  **When the hook probe measures 0 or a non-finite value, the element uses the default probe's measure.** The hook
+  takes an absolute length only; the README says so, and that a percentage, 0 or an invalid value falls back to
+  24rem.
+- **Zero block size is a requirement.** The probes and their holder take no block size, so they add no scrollable
+  overflow: an absolutely positioned 384 px probe with `block-size: 0` leaves the page's scroll width at 320 px, but the
+  same probe with `block-size: 1px` gives 392 px (measured, Chromium 153). A body asserts the page scroll width at
+  320 px with the probes present, and a plant (`block-size: 1px` on the probe) must fail it.
+- **State.** The `stacked` state is a class on the `<dl>`, not a host attribute, and the probes carry classes, not
+  parts, so neither is public surface. The `<dl>` then becomes one column, `minmax(0, 1fr)`, with each value below
+  its label.
 - **Why a hook rather than a constant.** `--ocelle-facts-stack-below` is the element's own hook (README § Element
   conventions: `--ocelle-<element>-<property>`). A consumer with a wider inspector can lower it. It is declared in the
   manifest's CSS custom properties.
 
 **Alternatives rejected.**
 - A container query on the host (the collapse above).
-- A container query on a consumer's container: it needs the consumer to set one up, and FR-005 says the element's
-  own inline size.
+- A container query on a consumer's container: it needs the consumer to set one up.
 - A media query: viewport size, which FR-005 excludes.
 - `contain-intrinsic-inline-size` with a fixed length: the element's width in a dialog would be that length, not its
   content's max-content, and it fails FR-009 for long values.
 - Flex-wrap per pair: it loses the shared column.
+- The host's own resolved inline size (the first design): history-dependent in shrink-to-fit hosts, as above.
 
-**Before first layout.** The first `ResizeObserver` callback runs before paint on connection, so there is no visible
-two-column frame at 320 px. US1-2 and US1-3 read the layout after `updateComplete` and one animation frame. The
-`stacked` decision is made in the callback, not in `render()`, so a Lit update loop cannot oscillate.
+**When the layout is read (PLAN-TESTABILITY-1-003).** `settle()` in `test/in-process.ts` waits for `updateComplete`
+and one `requestAnimationFrame`. Animation-frame callbacks run before layout and before `ResizeObserver` delivery in
+the same frame, and the `stacked` class is set in the observer callback and followed by a Lit update, so one frame
+reads the pre-decision layout. The facts bodies therefore wait with a layout settle: after `updateComplete`, the driver
+polls once per animation frame until two consecutive frames give the same host and `<dl>` geometry and the element's
+`updateComplete` is resolved, failing the body after 10 frames. Phase 1's spike measures the number of frames this
+takes in both harnesses, and the "probe removed" plant is run with this wait in place, so it fails on the layout and
+not on timing. A body resizes the host from 600 px to 300 px and back to 600 px, so the observer path runs after the
+first layout.
 
 **To measure in phase 1's spike**, before the red commit:
-- the host's inline size in a `showModal()` dialog, a popover, a float and a default flex item, against FR-009's
-  bound;
-- the stacked state at 300 px and the two-column state at 600 px;
+- the available-space mechanism (above) in a `showModal()` dialog, a popover, a float and a default flex item: the
+  host's inline size against FR-009's bound, a short sheet in a dialog at 1280 px (two columns), and a sheet loaded at
+  360 px then widened to 1200 px (two columns after widening, the same as loaded wide);
+- the stacked state at 300 px and the two-column state at 600 px, and the layout-settle wait in both harnesses;
+- the probes with an invalid hook, a percentage hook and a 0 hook at 320 px (stacked);
 - right-to-left mirroring of the columns (SPEC-2-08).
 
 ## R-03 `ocelle-facts`: grid, type and density (FR-005 to FR-008)
@@ -111,23 +182,52 @@ two-column frame at 320 px. US1-2 and US1-3 read the layout after `updateComplet
 - **Columns.** `<dl>` is `display: grid; grid-template-columns: fit-content(50%) minmax(0, 1fr)`. The label column is
   the widest label's max-content, capped at 50%, and longer labels wrap between words inside the cap. The value column
   takes the rest and is never widened by content. Spike A5 measured both: 176 px for the widest normal label in 600 px,
-  and 300 px (the cap) for a very long label. `minmax(auto, 50%)` was rejected because it always gives 50%.
+  and 300 px (the cap) for a very long label. `minmax(auto, 50%)` was rejected because it always gives 50%. Both
+  functions need a recorded `token-only` allowance (R-10, PLAN-CORRECTNESS-1-001 (a)).
 - **Gaps.** Column gap `--ocelle-space-4`. Row gap `--ocelle-space-3`, or `--ocelle-space-1` with
   `density="compact"`. When stacked, a pair's label-to-value gap is `--ocelle-space-1` and the gap between pairs is
   the row gap. `<dt>` and `<dd>` have no margins (`margin: 0`).
 - **Type.**
   - Labels: `--ocelle-font-sans`, `--ocelle-font-size-sm`, `--ocelle-font-weight-medium`, `--ocelle-color-ink-muted`
-    (declared text on every main ground). Labels differ from values by size and weight, not only colour.
-  - Values: `--ocelle-font-sans`, `--ocelle-font-size-fact`, `--ocelle-font-weight-regular`, `--ocelle-color-ink`,
-    `font-variant-numeric: var(--ocelle-figures)`, `line-height: var(--ocelle-line-height-normal)`.
-  - Compact density keeps `--ocelle-font-size-fact` (FR-008).
-- **Upstream issues (SPEC-1-12).** The spec-kitty-design issues #280, #498, #510, #523, #531 and #535 could not be
-  read from this session. That repository is outside this session's GitHub scope, `gh api` is denied, and GraphQL
-  returns 403. The plan uses #13's text and the epic's gap table, as the triage record did. FR-008's #531 clause
-  therefore keeps the spec's default (value size unchanged in compact). The plan gate lists this for the operator.
-- **Wrap policy (FR-007, SPEC-2-10).** `ocelle-fact` has a `wrap` property, reflected and taking only `"anywhere"`.
-  With it, the fact's `:host` sets `overflow-wrap: anywhere`, which the value content inherits. The label is rendered
-  by `ocelle-facts` in its own `<dt>`, outside the fact, so it never takes the policy. A value element holding
+    (declared text on every main ground). Labels set no line height of their own: they take the sheet's, which is the
+    surrounding text's. Labels differ from values by size and weight, not only colour.
+  - Values: `--ocelle-font-sans`, `font-size: var(--ocelle-facts-value-size, var(--ocelle-font-size-fact))`,
+    `--ocelle-font-weight-regular`, `--ocelle-color-ink`, `font-variant-numeric: var(--ocelle-figures)`,
+    `line-height: var(--ocelle-facts-value-line-height, var(--ocelle-line-height-normal))`. The two hooks are the
+    element's own (below); unset, values are at `--ocelle-font-size-fact` and `--ocelle-line-height-normal`.
+- **Compact (FR-008, PLAN-CORRECTNESS-1-002 (b)).** Two switches, each doing one thing:
+  - The sheet's own `density="compact"` only tightens the gaps (row gap `--ocelle-space-1`). It does not change the
+    value size or line height.
+  - Inside a `data-ocelle-density="compact"` region (003's compact scale, the answer to #531), values take the
+    region's size and line height: `--ocelle-font-size-sm` (14 px) at `--ocelle-line-height-compact` (1.5). The
+    mechanism is inheritance of the two hooks: `@ocelle/styles`' compact rule (`[data-ocelle-density="compact"]`)
+    also sets `--ocelle-facts-value-size: var(--ocelle-font-size-sm)` and `--ocelle-facts-value-line-height:
+    var(--ocelle-line-height-compact)`, and its regular rule sets them back to `--ocelle-font-size-fact` and
+    `--ocelle-line-height-normal`. Custom properties inherit through the flat tree, so the nearest region wins
+    (a regular region nested in a compact one restores the default), which a descendant selector could not do without
+    `@scope` (above the engine floor). Shadow CSS cannot see the region's attribute in WebKit (`:host-context()` is not
+    supported there), so the region must pass the scale by inheritance.
+  - Labels are at `--ocelle-font-size-sm` in both, and take the region's line height by inheritance.
+  - Colour stays `--ocelle-color-ink` (FR-006). #531's muted value colour is 003's `data-ocelle-value=""`, which a
+    consumer can still put on a value's own element; the sheet does not adopt it.
+  - Source: #531 (below). A body puts a sheet inside a compact region and asserts the values' computed size (14 px)
+    and line height (1.5), and a nested regular region restoring 17 px and 1.45.
+- **Upstream issues (SPEC-1-12, PLAN-CORRECTNESS-1-002).** Two of the six spec-kitty-design issues are in this
+  repository, copied verbatim on 2026-11-09 in `specs/003-base-styles/sources/spec-kitty-design-issues.md`:
+  - **#531** asks for a compact screen scale (14 px at a 1.5 line height) and a value text style ("mono face, small
+    size, muted or body colour") for, among others, fact values. 003 shipped it as `data-ocelle-density="compact"` and
+    `data-ocelle-value` (packages/styles/README.md § Compact scale). FR-008 follows it inside a compact region (above);
+    mono is excluded by constitution II.
+  - **#535** asks for an identifier wrap policy, with the local stand-in "`overflow-wrap: anywhere` … on the Facts
+    `dd`". FR-007's `wrap="anywhere"` on the pair applies the same keyword to that pair's value only (below).
+  - **#280, #498, #510 and #523** are not in the repository and were not read: that repository is outside this
+    session's GitHub scope. The plan asks the orchestrator to fetch them read-only before the plan gate (plan
+    Decision 5); #510 bears on FR-022 and US2, #498 on US3.
+- **Wrap policy (FR-007, SPEC-2-10, PLAN-CORRECTNESS-1-015).** `ocelle-fact` has a `wrap` property, reflected and
+  taking only `"anywhere"`. With it, the fact's shadow rule `:host([wrap="anywhere"]) slot { overflow-wrap: anywhere; }`
+  sets the policy on the value's slot, which the value content inherits through the flat tree. The label never takes
+  it: inside `ocelle-facts` the label is the sheet's `<dt>`, outside the fact; outside `ocelle-facts` the label is
+  the fact's `<span part="label">`, a sibling of the slot, not inside it. A value element holding
   `data-ocelle-wrap="anywhere"` keeps 003's base-style behaviour, because it is light DOM styled by `base.css`.
   Without either, values wrap between words (`overflow-wrap: normal`). Copying gives the text unchanged (US1-4):
   nothing is inserted.
@@ -144,21 +244,43 @@ two-column frame at 320 px. US1-2 and US1-3 read the layout after `updateComplet
   name="visual"></slot></div>`, `<div class="heading"><slot name="heading"></slot></div>`, `<div class="text"><slot>
   </slot></div>` and `<div class="actions"><slot name="actions"></slot></div>`. None of these wrappers has a role:
   they are generic and ignored. There is no heading, landmark, live region or tab stop.
-- **Empty slots (FR-023, SPEC-2-06).** Each wrapper is `display: none` while its slot has no assigned nodes,
-  whitespace-only text included. This is tracked by a `slotchange` listener per slot into internal state, so the
-  column's `gap` adds no space for an absent part. Filling or emptying a slot later updates it.
+- **Present parts (FR-023, SPEC-2-06).** A part is present while its slot has assigned nodes that are not
+  whitespace-only text. This is tracked by a `slotchange` listener per slot into internal state (`has.visual`,
+  `has.heading`, `has.text`, `has.actions`). An absent part's wrapper is `display: none`. Filling or emptying a slot
+  later updates it.
+- **Gaps between present parts (FR-021, FR-023, PLAN-CORRECTNESS-1-009).** The column has no `gap`. Each present part
+  except the last present one carries a `margin-block-end`, chosen by that part (the previous present part of the
+  pair); the last present part has none, and no part has a `margin-block-start`. So the first present part starts at
+  the block padding edge, the last ends at it, and an absent part adds nothing. The element marks the last present
+  wrapper with an internal class from the `has` flags. Every pair that can become adjacent has a named gap:
+
+  | Adjacent pair (upper, lower) | Default | Panel |
+  |---|---|---|
+  | visual, heading | `--ocelle-space-3` | `--ocelle-space-5` |
+  | visual, text | `--ocelle-space-3` | `--ocelle-space-5` |
+  | visual, actions | `--ocelle-space-3` | `--ocelle-space-5` |
+  | heading, text | `--ocelle-space-2` | `--ocelle-space-3` |
+  | heading, actions | `--ocelle-space-2` | `--ocelle-space-3` |
+  | text, actions | `--ocelle-space-4` | `--ocelle-space-6` |
+
 - **Default variant (FR-021).**
-  - Centred column (`text-align: center`, `align-items: center`), block padding `--ocelle-space-6`.
-  - Gaps: visual to heading `--ocelle-space-3`, heading to text `--ocelle-space-2`, text to actions `--ocelle-space-4`.
-    These are per-wrapper `margin-block-start`, not one `gap`, so each gap can differ.
+  - Centred column (`display: flex; flex-direction: column; align-items: center; text-align: center`), block padding
+    `--ocelle-space-6`.
+  - Gaps as in the table.
   - Heading: `::slotted([slot="heading"])` at `--ocelle-font-size-lg`, `--ocelle-font-weight-strong`,
     `--ocelle-color-ink`, `margin: 0`.
   - Text: `--ocelle-color-ink-muted`, `--ocelle-font-size-md`, with the measure capped by `--ocelle-measure-reading`.
 - **Panel variant (FR-022, operator Q2: existing tokens).**
   - Block padding `--ocelle-space-10`.
-  - Gaps `--ocelle-space-5`, `--ocelle-space-3` and `--ocelle-space-6`.
+  - Gaps as in the table.
   - Heading at `--ocelle-font-weight-medium` (500, lighter than 600). The heading size stays `--ocelle-font-size-lg`.
   - Each gap is larger than the default's and the weight is lighter, which is the order the spec fixes.
+- **A progress bar in `visual` (FR-021, US2-7, PLAN-FRESH-1-005 (a)).** The visual wrapper spans the column
+  (`align-self: stretch`) and centres its content (`display: flex; flex-direction: column; align-items: center`), so
+  an icon stays centred. A slotted `ocelle-progress` is as wide as the column, capped at the reading measure:
+  `::slotted(ocelle-progress) { inline-size: 100%; max-inline-size: var(--ocelle-measure-reading); }`. Without this the
+  centred column shrinks the bar to its 12ch minimum (a 96 px stub in a 600 px panel, measured). US2-7 asserts the
+  bar's inline size equals the smaller of the column's content-box inline size and `--ocelle-measure-reading`.
 - **Actions (SPEC-2-07).** The actions wrapper is `display: flex; flex-wrap: wrap; justify-content: center; gap:
   var(--ocelle-space-2)`. Several buttons wrap at 320 px without horizontal overflow.
 - **Ground.** Neither variant paints a background (FR-021). It sits on its container's ground.
@@ -167,20 +289,21 @@ two-column frame at 320 px. US1-2 and US1-3 read the layout after `updateComplet
   zero-specificity `:where()`), so outside prose the element's rules apply. The README says a page rule on the slotted
   heading wins, by design: the consumer owns its heading. This is not `!important` (unlike the icon slot), because
   overriding a heading's look is a legitimate consumer need.
-- **Loading panel (US2-7).** An `ocelle-progress` slotted as `visual` is a block in the column. The README's mapping
-  gives `.sk-empty-state` loading as `variant="panel"` with an indeterminate `ocelle-progress` in `visual`.
+- **Loading panel (US2-7).** The README's mapping gives `.sk-empty-state` loading as `variant="panel"` with an
+  indeterminate `ocelle-progress` in `visual`.
 
 ## R-05 `ocelle-progress`: ElementInternals progressbar (FR-030 to FR-032)
 
 **Decision.** The host is the progressbar, through `ElementInternals` (spike B3):
 - `internals.role = "progressbar"`;
-- `internals.ariaValueMin = "0"`, `ariaValueMax = String(max)`;
-- `ariaValueNow = String(clamped value)`, or `null` when indeterminate;
-- `ariaValueText` = `value-text` when determinate and set, else `null`;
+- `internals.ariaValueMin = "0"`, `ariaValueMax = String(effective max)` (PLAN-CORRECTNESS-1-015: never the raw
+  `max`, so an invalid or non-positive `max` exposes 100);
+- `ariaValueNow = String(effective value)`, or `null` when indeterminate;
+- `ariaValueText` = `value-text` when determinate and not empty, else `null`;
 - `ariaLabel = label || null`.
 
 The shadow root draws the track and fill as `<div part="track"><div part="fill"></div></div>`, plus, with
-`show-label`, `<span part="label">` and `<span part="value-text">` (R-07). It has no role of its own: progressbar
+`show-label`, `<span part="label">` and `<span part="value-text">` (R-06). It has no role of its own: progressbar
 children are presentational.
 
 **Measured** (spike B3):
@@ -198,31 +321,46 @@ children are presentational.
 - **B2, `role="progressbar"` div in the shadow root.** The same host-label problem as B1.
 
 **Costs of B3, recorded.**
-- axe does not see ElementInternals roles. It cannot check the bar's name on any story (no rule applies), and a story
-  that sets a host `aria-label` gets a false `aria-prohibited-attr`.
+- axe does not see ElementInternals roles. It cannot check the bar's name on any story (no rule applies), and a
+  host `aria-label` gets a false `aria-prohibited-attr` (serious), in this library's stories and in consumers' own axe
+  runs.
 - So the name, value, min, max and indeterminate state are proven by this mission's accessibility-tree tests in both
   harnesses (US3-1 to US3-4, US3-10, US3-11), not by axe.
+- **Every story is checked for a name (PLAN-A11Y-SECURITY-1-005).** The story test reads the accessibility tree of
+  every story and asserts that each progressbar node in it has a non-empty name: the progress stories and the
+  empty-state panel-loading story, and any later story holding a bar. A plant (one story's `label` removed) must fail
+  it.
 - No story sets a host `aria-label`. The host-label override (US3-10) is a browser test only, beside the unnamed state
   (US3-11, FR-050). This keeps #10's `axe` gate free of a false positive with no exception entry.
-- When #10 lands, its `axe` gate runs on the progress stories and passes, but without testing the name. The README
-  says so.
+- **README.** It recommends `label` as the way to name a bar, says a host `aria-label` also names it (Host ARIA) but
+  makes axe report `aria-prohibited-attr` in a consumer's own audit, a false positive of axe with ElementInternals,
+  and says that axe does not check the bar's name, so a consumer's tests should.
+- When #10 lands, its `axe` gate runs on the progress stories and passes, but without testing the name.
 
 **`value-text` (FR-031, SPEC-2-01, SPEC-2-02).** It is exposed only while the bar is determinate. An indeterminate
 bar exposes no value text, even when `value-text` is set, because there is no value to describe. When the value is
 clamped, `value-text` is still exposed as given (the consumer's words). The element never formats numbers. Without
 `value-text`, Chromium computes the value text (the percentage) itself.
 
+**Reading the value properties (PLAN-TESTABILITY-1-006).** `AxNode` in `test/commands.ts` carries role and name only.
+It is extended, in both harnesses, with `value`, `valuemin`, `valuemax` and `valuetext`, read from the platform's
+accessibility tree, with its own test in `test/commands.test.ts` (a native `<progress>` and an ElementInternals bar,
+each read present and absent). Every absence assertion (US3-4's "no current value", value text ignored while
+indeterminate) sits in a body that also reads the same property present for a determinate bar.
+
 **Measuring `valuetext`.** CDP's `Accessibility.getFullAXTree` returned an empty `valuetext` in every case, including
-a light-DOM control (spike B). Phase 3's spike picks another oracle before the red commit: Playwright's
-`locator.ariaSnapshot()`, CDP `Accessibility.getPartialAXTree` on the node, or the `aria-valuetext` reflection read
-from `internals`. A reflection read is not an oracle of exposure, so it is used only if both platform reads fail, and
-review is told.
+a light-DOM control (spike B). Phase 3's spike picks a platform oracle before the red commit: Playwright's
+`locator.ariaSnapshot()` or CDP `Accessibility.getPartialAXTree` on the node. The `aria-valuetext` reflection read
+from `internals` is not an oracle of exposure and is not used (constitution VIII: an assertion on the unit's own state
+is no stand-in). If neither platform read exposes the value text, US3-3 goes to the operator before the red commit;
+its oracle is not weakened.
 
 **Value parsing (FR-032).**
-- `value` and `max` are properties of type `Number | null` with custom attribute converters.
-  - An absent, empty or whitespace-only attribute, or a property set to `null` or `undefined`, gives `null`
+- `value` and `max` are properties of type `number | undefined` (contracts/elements.md) with custom attribute
+  converters.
+  - An absent, empty or whitespace-only attribute, or a property set to `undefined` or `null`, gives no value
     (indeterminate).
-  - A non-finite number (`NaN`, `"abc"`, `Infinity`) gives `null`.
+  - A non-finite number (`NaN`, `"abc"`, `Infinity`) gives no value.
 - The effective max is `max` when finite and above 0, else 100.
 - The effective value is `min(max(value, 0), effective max)`.
 - Nothing throws: the converters never throw, and `render()` reads only the effective values.
@@ -230,72 +368,103 @@ review is told.
 ## R-06 `ocelle-progress`: look, motion and contrast (FR-033 to FR-038)
 
 **Track.**
+- `position: relative; overflow: clip` (PLAN-CORRECTNESS-1-006): the moving mark is never painted outside the track,
+  and it adds no scrollable overflow to the element or the page. Without the clip a 40% mark at the end of its sweep
+  gives a 320 px page a scroll width of 403 px (measured).
 - `block-size: var(--ocelle-space-2)` (8 px). With `size="compact"`, `--ocelle-space-1` (4 px).
 - `background-color: var(--ocelle-color-inset)`, `border-radius: var(--ocelle-radius-1)`.
-- `box-shadow: 0 0 0 var(--ocelle-border-width) var(--ocelle-color-control-border)`, which is an outline drawn outside
-  the box so it takes no layout space. Zero is a permitted raw value.
-- `min-inline-size: var(--ocelle-measure-cell)`, so a compact bar beside a long label keeps a visible length
-  (edge case).
+- **Boundary (FR-036, PLAN-A11Y-SECURITY-1-002 (a)).** `box-shadow: 0 0 0 var(--ocelle-border-width)
+  var(--ocelle-color-control-border)`, an outline drawn outside the box that takes no layout space and is not clipped
+  by the track's own `overflow`. Zero is a permitted raw value. `color-control-border` is declared and checked at 3:1
+  or more on canvas, sheet, pane, panel, inspector and rail only. On `color-inset`, `color-accent-low`,
+  `color-hover-bg` and the five state grounds it is below 3:1 (2.80 to 3.21 light, 2.88 to 3.56 dark; `pairs.json`
+  rows marked excluded under "#5 rule 1 extended"), and on those grounds the library draws boundaries in
+  `color-accent-strong`. `ocelle-progress` follows that rule: with `ground="tinted"` the boundary is
+  `var(--ocelle-color-accent-strong)`, which is declared and checked on all of them (4.11 to 4.71 light, 6.13 to 7.56
+  dark) and, as `color-focus`, on every main ground. The README says which `ground` to use: the default on canvas,
+  sheet, pane, panel, inspector and rail; `tinted` on inset, accent-low, hover-bg and the state grounds, and on a bar
+  in a row that can be hovered or selected (its ground changes to hover-bg or accent-low). The `ground` variant rule
+  sits inside `@media not (forced-colors: active)`.
+- The track fills the host's inline size, with `min-inline-size: var(--ocelle-measure-cell)`, so a compact bar beside
+  a long label keeps a visible length (edge case).
 
 **Fill.**
-- `background-color: var(--ocelle-color-accent)` with `box-shadow: inset 0 0 0 var(--ocelle-border-width)
-  var(--ocelle-color-accent-strong)`. This gives the `accent-strong` mark on every edge of the filled part, in both
-  themes and in every variant (FR-036, SPEC-2-03).
+- `position: absolute; inset-block: 0; inset-inline-start: 0`, `background-color: var(--ocelle-color-accent)` with
+  `box-shadow: inset 0 0 0 var(--ocelle-border-width) var(--ocelle-color-accent-strong)`. This gives the
+  `accent-strong` mark on every edge of the filled part, in both themes and in every variant (FR-036, SPEC-2-03).
+- **Direction (FR-038, PLAN-CORRECTNESS-1-004).** One mirroring mechanism, logical properties, with no `scale`
+  anywhere: `inset-inline-start` puts the fill and the marks at the inline start, which is the right edge under
+  `dir="rtl"`, and the indeterminate sweep uses a direction-specific keyframes rule (below). The first design mirrored
+  twice (a logical inset and `scale: -1 1` on the track): reproduced, the RTL mark at `translateX(-100%)` sat at
+  [160, 320] of a 400 px track, mid-track.
 - The determinate fill's inline size is set in `updated()` through the CSSOM:
   ``fill.style.inlineSize = `${fraction * 100}%` ``. A CSSOM write is not a `style-src` violation under the strict CSP
   (only parsed `style` attributes and `<style>` elements are), so the template keeps no `style` attribute (constitution
   IV, README § Element conventions). The fraction is `effective value / effective max`. The browser-build fixture
   tests assert zero CSP violations with a determinate bar on the page.
-- The fill grows from the inline start: `inset-inline-start: 0`, mirrored under `dir="rtl"` (FR-038).
+- **Leaving the determinate state (PLAN-CORRECTNESS-1-005).** Whenever the bar is not determinate, `updated()` calls
+  `fill.style.removeProperty("inline-size")`, so the stylesheet's 40% mark applies. An inline declaration beats the
+  stylesheet, and without the removal a bar whose value is removed (FR-032) would keep the last fraction as its mark.
 - A width transition uses `--ocelle-motion-base` and `--ocelle-easing-standard`, which is 0 ms under reduced motion
   through the tokens.
 
-**Contrast.** The mark is `accent-strong`, computed from the token values:
-
-| Mark against | Light | Dark |
-|---|---|---|
-| the track (`color-inset`) | 4.11 | 6.28 |
-| canvas, panel, inspector | 4.80 | 8.30 |
-| sheet | 5.33 | 7.44 |
-| pane | 5.56 | 7.78 |
-| rail | 4.43 | 7.78 |
-| accent-low | 4.31 | 6.13 |
-
-Every pair is ≥ 3:1. The `accent-strong` token already declares non-text contrast on `color-inset` and
-`color-accent-low`. This plan adds its rows on canvas, sheet, pane, panel, inspector and rail, in both themes, to
-`packages/tokens/contrast/pairs.json` and to the token's declared grounds, so the contrast gate checks them (12 rows,
-SC-004).
-
-**Track boundary (SPEC-2-03).** `color-control-border` is ≥ 3:1 on the six declared grounds (3.02 to 3.79 light,
-3.50 to 3.90 dark: already declared and checked). On `color-inset` and `color-accent-low` grounds it is 2.80 and 2.94
-(light) and 2.95 and 2.88 (dark).
-- The spec requires 3:1 for the filled part only (FR-036), not the track.
-- The track's end marks the maximum, which is also exposed as `aria-valuemax`, and the fill is the information.
-- The README says a bar on an inset or accent-low ground has a track boundary below 3:1, and that the filled part
-  still meets it.
-- This is no constitution exception: III's contrast rule is checked on the pairs the spec requires.
-
-**Forced colours (FR-037).** Inside `@media (forced-colors: active)`:
-- the track has `outline: var(--ocelle-border-width) solid CanvasText` and `background-color: Canvas`;
-- the fill has `background-color: Highlight` and `forced-color-adjust: none` on the fill only, so `Highlight` survives;
-- the moving and still marks use the same rule.
-
-**Indeterminate (FR-033).**
-- The fill becomes a mark 40% wide (`inline-size: 40%`), animated with `transform: translateX()` from `-100%` to
-  `250%`, with `animation-duration: calc(var(--ocelle-motion-base) * 7)` (1400 ms), `--ocelle-easing-standard` and
-  `infinite`.
-- `translateX` is mirrored under `:dir(rtl)` with `scale: -1 1` on the track. Both are allowed by the lint: `scale -1`
-  since 005, `%` and numbers inside `calc()` since 001.
+**Indeterminate: a bounded sweep that ends on the still mark (FR-033, PLAN-A11Y-SECURITY-1-001 (a)).**
+- The mark's own geometry is the still mark: 40% wide (`inline-size: 40%`) at `inset-inline-start: 30%`, the middle
+  of the track (30% to 70%). It reads as "in progress" and cannot be mistaken for a determinate fill, which always
+  starts at the inline start. It keeps the `accent-strong` edge.
+- The sweep is an animation on top of that geometry: `transform: translateX(-175%)` to `translateX(175%)` (the mark
+  enters fully from the inline-start side, [-40%, 0], and leaves fully at the inline-end side, [100%, 140%], clipped by
+  the track), `animation-duration: calc(var(--ocelle-motion-base) * 7)` (1400 ms), `--ocelle-easing-standard`,
+  `animation-iteration-count: 3` and `animation-fill-mode: none`. Under `:host(:dir(rtl))` the mark uses a second
+  keyframes rule with the signs swapped (`175%` to `-175%`), so the sweep runs from the inline start (right) to the
+  inline end.
+- **WCAG 2.2.2.** The indeterminate bar may be shown beside an interactive page for minutes, so the preload exemption
+  does not apply. Three loops of 1400 ms are 4.2 s, under the 5 s of 2.2.2; with `animation-fill-mode: none` the mark
+  then rests on its own geometry, the still mark, without any further motion. The bar still shows that work is going
+  on. A consumer that overrides `--ocelle-motion-base` above 1666 ms takes the sweep past 5 s; the README says so.
+  The motion restarts only when the bar becomes indeterminate again (a value removed after being set).
+- `translateX(<percentage>)` and the bare integer of `animation-iteration-count` need a recorded `token-only`
+  allowance (R-10, PLAN-CORRECTNESS-1-001 (a)).
 - No new motion token is needed: `calc()` with a number factor on a token passes `token-only`, and it resolves to 0 ms
   under reduced motion because `--ocelle-motion-base` does (FR-040: no new token where an existing one fits).
 
-**Reduced motion.** Inside `@media (prefers-reduced-motion: reduce)` the mark has `animation: none` and is parked at
-`inset-inline-start: 30%`, 40% wide: a still segment in the middle of the track. It reads as "in progress" and cannot
-be mistaken for a determinate fill, which always starts at the inline start. The mark keeps the `accent-strong` edge.
+**Reduced motion.** `generate.ts` sets `--ocelle-motion-base` to `0ms` under reduced motion, so the sweep's duration and
+active duration are already 0 and the mark rests on the still mark. Inside `@media (prefers-reduced-motion: reduce)`
+the mark also has `animation: none`, which changes only the computed `animation-name`: removing it is an equivalent
+change, not a plant (PLAN-TESTABILITY-1-009). The behaviour that can regress is the still mark's geometry: its plant
+is "the still-mark inset removed" (`inset-inline-start: 30%` deleted), which US3-5 and US3-12 must fail on.
 
-**Labelled variant (FR-035).**
+**Contrast (FR-036, SC-004, PLAN-CORRECTNESS-1-007 (b)).** The mark is `accent-strong`. Every pair it makes is already
+declared and checked in `packages/tokens/contrast/pairs.json`:
+
+| Mark against | Light | Dark | Row in `pairs.json` |
+|---|---|---|---|
+| the track (`color-inset`) | 4.11 | 6.28 | `color-accent-strong` on `color-inset` |
+| canvas, panel, inspector | 4.80 | 8.30 | `color-focus` on each |
+| sheet | 5.33 | 7.44 | `color-focus` on `color-sheet` |
+| pane | 5.56 | 7.78 | `color-focus` on `color-pane` |
+| rail | 4.43 | 7.78 | `color-focus` on `color-rail` |
+| accent-low | 4.31 | 6.13 | `color-accent-strong` on `color-accent-low` |
+| hover-bg and the state grounds | 4.11 to 4.71 | 6.74 to 7.56 | `color-accent-strong` on each |
+
+`color-focus` is `var(--ocelle-color-accent-strong)` with `ref: ["color-accent-strong"]` in `source.ts`, so its rows
+check the same colour on canvas, sheet, pane, panel, inspector and rail. No row is added and `@ocelle/tokens` does not
+change. The pairing test (contracts/checks.md § Contrast) ties the shipped progress stylesheet to these rows: the
+mark and edge token is `color-accent-strong`, `color-focus`'s `ref` is `color-accent-strong` in both themes, the
+track's ground token is `color-inset`, and the boundary tokens are `color-control-border` (default) and
+`color-accent-strong` (`ground="tinted"`), each on the grounds its rows declare.
+
+**Forced colours (FR-037, PLAN-A11Y-SECURITY-1-006).** Inside `@media (forced-colors: active)`:
+- the track has `outline: var(--ocelle-border-width) solid CanvasText` and `background-color: Canvas` (its
+  `box-shadow` is forced to none: the track keeps `forced-color-adjust: auto`);
+- the fill has `background-color: Highlight`, `forced-color-adjust: none` on the fill only, so `Highlight` survives,
+  and `box-shadow: none`, because `forced-color-adjust: none` keeps author box shadows and the `accent-strong` edge
+  would otherwise be painted inside the user's palette;
+- the moving and still marks use the same rule.
+
+**Labelled variant (FR-035, PLAN-CORRECTNESS-1-015).**
 - With `label` and `show-label`, a row above the bar (default size) or beside it (compact) shows `<span part="label">`
-  in `--ocelle-color-ink` at `--ocelle-font-size-sm`.
+  in `--ocelle-color-ink` at `--ocelle-font-size-sm` with `font-variant-numeric: var(--ocelle-figures)`.
 - When determinate and `value-text` is set, `<span part="value-text">` follows in `--ocelle-color-ink-muted` with
   `--ocelle-figures`.
 - Both are `aria-hidden="true"`, because the host already carries the name and value text, and the visible text must
@@ -307,17 +476,25 @@ be mistaken for a determinate fill, which always starts at the inline start. The
 **Busy vocabulary (FR-033).** This goes in the README, as the spec words it. #7's status indicator is coordinated
 through 012's spec. Nothing here depends on it.
 
-## R-07 Tokens (FR-040)
+## R-07 Tokens and base styles (FR-040, FR-008, FR-012)
 
 No new token.
 - The panel rhythm uses existing tokens (operator Q2).
-- The progress track uses `color-inset`, `color-control-border`, `space-2`, `space-1`, `radius-1` and `measure-cell`.
+- The progress track uses `color-inset`, `color-control-border`, `color-accent-strong`, `space-2`, `space-1`,
+  `radius-1` and `measure-cell`.
 - The loop period is `calc(var(--ocelle-motion-base) * 7)`.
-- The facts threshold is the hook `--ocelle-facts-stack-below`, which defaults to existing tokens.
+- The facts threshold is the hook `--ocelle-facts-stack-below`, which defaults to existing tokens; the value scale is
+  the hooks `--ocelle-facts-value-size` and `--ocelle-facts-value-line-height`, which default to existing tokens.
 
-`@ocelle/tokens` changes only in its contrast declarations: the 12 new `accent-strong` rows in `pairs.json` and the
-token record's declared grounds. That is a test-data change, not a surface change: no token is added or renamed. The
-tokens CHANGELOG gets an entry saying the contrast coverage was extended.
+`@ocelle/tokens` does not change (PLAN-CORRECTNESS-1-007 (b)): no contrast row, no declared ground and no pinned count
+moves. Every pair is checked by an existing row (R-06).
+
+`@ocelle/styles` changes in phase 1, in `base.css`, with tests, README and CHANGELOG:
+- the compact and regular rules of the density hook also set `--ocelle-facts-value-size` and
+  `--ocelle-facts-value-line-height` (R-03, PLAN-CORRECTNESS-1-002 (b));
+- the pre-upgrade rule `:where(ocelle-facts:not(:defined)) > ocelle-fact { display: block; }` (R-01, PLAN-FRESH-1-009
+  (a)).
+Both are additions to documented base-style behaviour (MINOR, constitution VII).
 
 ## R-08 Test harnesses, stories and #10 (FR-050 to FR-055, I3)
 
@@ -325,22 +502,38 @@ tokens CHANGELOG gets an entry saying the contrast coverage was extended.
   - Scenario bodies live in `test/scenarios/facts.ts`, `empty-state.ts` and `progress.ts`, and run in process in the
     `elements` project (the one Stryker mutates) and on the built browser build on strict-CSP fixture pages
     (`test/browser/*.test.ts`).
-  - The browser commands `axTree` and `emulateForcedColors` already exist. One is added: `emulateReducedMotion`, which
-    sets `prefers-reduced-motion` through CDP `Emulation.setEmulatedMedia`, with a unit test.
+  - The browser commands `axTree` and `emulateForcedColors` already exist.
+  - **Reduced motion (PLAN-CORRECTNESS-1-013).** Every `page.emulateMedia` call in Playwright 1.64 sends
+    `Emulation.setEmulatedMedia` with all four features, `prefers-reduced-motion` as `""` unless Playwright's own
+    `reducedMotion` is set; `emulate()` in `test/commands.ts` calls `page.emulateMedia` for forced colours, so a reduced
+    motion set over raw CDP would be cleared. The new command `emulateReducedMotion` therefore calls
+    `page.emulateMedia({ reducedMotion })` in the same `emulate()` helper. The shared driver
+    (`test/scenarios/driver.ts`) gains `reducedMotion(mode)`, implemented in `test/in-process.ts` and
+    `test/browser/driver.ts`. Each progress test file resets it in `afterEach`. Its test in `test/commands.test.ts`
+    asserts `matchMedia("(prefers-reduced-motion: reduce)").matches` after the command, still after an
+    `emulateForcedColors` call, and false after the reset.
+  - **Other driver additions (PLAN-TESTABILITY-1-013).** The driver has no viewport resize, page scroll width, Tab
+    press, focused-element read, copy, running-animation read or AX value properties, and `test/browser/serve.ts` fixes
+    the viewport at 1280 × 800. Each is added to the driver interface and both harnesses, with its own test (contracts
+    /checks.md § Driver additions).
 - **Stories.** In `storybook/stories/<element>.stories.ts`, in light and dark (#10's harness captures both):
   - **facts**: default, compact, stacked (a 300 px wrapper), identifier wrap, missing label, missing value, link in
-    value, right-to-left;
+    value, right-to-left, inside a compact region;
   - **empty-state**: default, panel, panel loading (with an indeterminate `ocelle-progress`), heading only, actions
     only, several actions at 320 px;
   - **progress**: determinate, zero, full, indeterminate, compact, labelled, labelled compact, value text,
-    right-to-left. The indeterminate story is captured with reduced motion by #10's `visual` and `axe` contexts, which
-    gives a still, deterministic baseline.
+    right-to-left, on a tinted ground (`ground="tinted"` on `color-inset`). The indeterminate story is captured with
+    reduced motion by #10's `visual` and `axe` contexts, which gives a still, deterministic baseline.
   - No story has a hover or press state, so none declares one (#10 FR-031).
   - There is no story for the unnamed progress (FR-050) or for a host `aria-label` on progress (R-05).
 - **Story test (I3).** `storybook/test/integration/elements-stories.test.ts` is extended in each phase's red commit,
   before green. It checks each new story is present in the built Storybook and renders its element in light and dark,
-  with no CSP violation and no outside request, as 005 did. `red.sh` records one red record per phase. The stories
-  themselves are not tests and land in green.
+  with no CSP violation and no outside request, as 005 did, and three story-level criteria (PLAN-TESTABILITY-1-010,
+  PLAN-A11Y-SECURITY-1-005): every facts story at a 320 px viewport has a page scroll width equal to the viewport
+  width (SC-002); every story under reduced motion has no running animation or transition (SC-005); every progressbar
+  node in every story has a non-empty name. Each is paired with a positive read (the story's element rendered with a
+  non-zero size; a running animation on the indeterminate story without reduced motion). `red.sh` records one red
+  record per phase. The stories themselves are not tests and land in green.
 - **#10 (FR-051).** #10 is designed, not merged (`origin/claude/010-storybook-workbench`,
   `specs/006-storybook-workbench`). The stories follow its contributor note (FR-025): open shadow roots, every surface
   inside the host, `font: inherit` on form controls (none here), and run-time CSP proven in the element package's own
@@ -353,14 +546,18 @@ tokens CHANGELOG gets an entry saying the contrast coverage was extended.
   - **To recheck when #10 lands:** the story list against #10's index rules (`empty`, `outside-root`,
     `closed-shadow-root`), the axe-core 4.14.0 result on facts (R-01), and that no `a11y-exceptions.json` entry is
     needed.
-- **Mutation (#23).** Element source under `packages/elements/src/**` is mutated in process under the elements-only
-  Stryker configuration (005 R-12). A Timeout or CompileError mutant on a changed line is reported and passes
-  (007's operator decisions). The indeterminate animation is CSS text inside a `css` template, so it gives Stryker
-  string mutants that the computed-style assertions kill (the animation name, duration and none under reduced motion).
+- **Mutation (#23, PLAN-TESTABILITY-1-008).** Element source under `packages/elements/src/**` is mutated in process
+  under the elements-only Stryker configuration (005 R-12). A Timeout or CompileError mutant on a changed line is
+  reported and passes (007's operator decisions). Stryker does not mutate a declaration inside a `css` template (005
+  `reviews/phase-4/round-1.md` R1-03), so mutation testing gives no evidence on the grid, gaps, padding, weights,
+  right-to-left, forced-colours, clip, still-mark or animation rules. Each CSS-only behaviour therefore has a named
+  plant, or a stated reason why its expected value differs from the browser default and from the other variant
+  (contracts/checks.md § CSS-only behaviours).
 - **Engines.** ElementInternals ARIA reflection (`role`, `ariaValueNow`, …) is already used by `ocelle-icon`.
   `slotAssignment: "manual"` and `HTMLSlotElement.assign()` are Chromium 86 and WebKit 16.4. `ResizeObserver` is older
-  than both. `fit-content()` in grid tracks is older than both. The floor (Chromium 120, WebKit 16.4) does not rise.
-  The README's Engines list adds manual slot assignment with its figures.
+  than both. `fit-content()` in grid tracks is older than both. `overflow: clip` is Chromium 90 and WebKit 16. The
+  floor (Chromium 120, WebKit 16.4) does not rise. The README's Engines list adds manual slot assignment with its
+  figures.
 
 ## R-09 Wave dependencies
 
@@ -370,3 +567,34 @@ tokens CHANGELOG gets an entry saying the contrast coverage was extended.
 - **011 / 012 eyebrow tokens:** not needed (facts labels are not eyebrows).
 - **012 (#7):** the busy vocabulary sentence in the README only.
 - **014 (#14):** none. Facts values are not copy fields.
+
+## R-10 `token-only` allowance (PLAN-CORRECTNESS-1-001 (a))
+
+`gates/stylelint/token-only.ts` `functionRaw()` reports every function other than `var()` and `calc()` as raw, and a
+unitless number is raw outside the properties of its `unitless` set. The facts grid and the progress sweep need four
+values it rejects today, and no existing element uses them. Redesigning around them was rejected by the operator
+(option (a)). The gate gains one recorded allowance, as narrow as the values:
+
+| Value | Where it is allowed | Used by |
+|---|---|---|
+| `fit-content(<percentage>)` | a track of `grid-template-columns` | R-03 label column |
+| `minmax(0, <flex>)` (an `fr` value) | a track of `grid-template-columns` | R-02, R-03 value column |
+| `translateX(<percentage>)` | `transform`, in a rule or in `@keyframes` | R-06 sweep |
+| a bare positive integer | `animation-iteration-count` | R-06 bounded sweep (PLAN-A11Y-SECURITY-1-001 (a)) |
+
+Anything else stays raw: `fit-content(200px)`, `minmax(auto, 50%)`, `minmax(0, 200px)`, `translateX(8px)`,
+`translateY(…)`, a percentage translate in any other property, and `animation-iteration-count: 2.5`. (`infinite` is an
+identifier and was already allowed; the sweep does not use it.)
+- **Test-first.** The unit tests in `gates/test/token-only.test.ts` (each allowed form passes, each neighbour above
+  fails) are in the red commit of the phase that first needs the value: the two grid functions in phase 1, the
+  translate and the iteration count in phase 3. The allowance in `token-only.ts`, its comment and its plant
+  directories land in green, since `gates/plants/**` is not under the red commit's `test_pathspec`.
+- **Plants** (constitution VIII, gates proven): `gates/plants/style-lint/pass-grid-fit-content`,
+  `fail-fit-content-length`, `fail-minmax-auto` (phase 1); `pass-translate-percentage`, `fail-translate-length`,
+  `pass-iteration-count`, `fail-iteration-count-fraction` (phase 3).
+- **Documentation.** The `style-lint` row of `gates/README.md` lists the allowance and its plants, with its
+  `gates-readme.test.ts` statements in the same red commit, and contracts/checks.md § Gates touched records it.
+- **Names the gate checks.** The same gate rejects a `var(--ocelle-…)` reference that is neither a token nor a custom
+  property `custom-elements.json` declares. The three facts hooks are declared in the manifest (contracts/elements.md),
+  and `base.css` sets two of them as custom-property declarations, so the regenerated manifest lands in the same green
+  commit as the `base.css` change.
