@@ -6,7 +6,7 @@ No new gate. The existing gates cover this feature as follows.
 |---|---|
 | `typecheck`, `lint`, `test-lint` | As for every element. |
 | `style-lint` (`token-only`) | The three elements' `css` templates use only tokens, `var()`/`calc()`, `%`, keywords and system colours (forced colours). No new allowance is planned. |
-| `unit-tests` | `elements` (in process, mutated) and `elements-browser` (strict-CSP fixture, built browser build) run the shared scenarios; `elements-touch` (in process with `hasTouch`, mutated) runs only the touch rows, and the fixture runs them in a separate touch context (R-14). `elements-node` runs the manifest and README tests, `elements-build` the build and pack tests. `tokens` and `tokens-browser` cover the three new tokens. |
+| `unit-tests` | `elements` (in process, mutated) and `elements-browser` (strict-CSP fixture, built browser build) run the shared scenarios; `elements-touch` (in process with `hasTouch`, mutated, same excludes as `elements`) runs only the in-process touch rows `test/*.touch.test.ts`, and `elements-browser` runs the fixture touch rows `test/browser/*.touch.test.ts` in a separate touch context (R-14). `elements-node` runs the manifest and README tests, `elements-build` the build and pack tests. `tokens` and `tokens-browser` cover the three new tokens. |
 | `mutation` | Changed lines in `packages/elements/src/**` (elements-only config, which runs the `elements` and `elements-touch` projects) and `packages/tokens/src/source.ts` (default config). Timeout and CompileError mutants are report lines (007). R-15 aims for zero Timeouts. |
 | `csp` | Built output: no inline style, `style` attribute or string timers. FR-047's run-time "no `style` attribute" is proven by the scenarios (`styleAttributes()`), since the `csp` gate cannot see CSSOM writes. |
 | `prefix` | No `sk-` names, no monospace. |
@@ -153,7 +153,7 @@ modal, level. Device: the default context (`elements`, `visit()`) matches `(hove
   hides the bubble only, the second requests the dialog's close (SC-005).
 - **Trigger opens an overlay**: hover a trigger past the delay, click it to open a dialog, and the same for a drawer:
   the bubble is hidden when the overlay opens and one Escape requests the overlay's close.
-- **Touch** (touch context only: `*.touch.test.ts` in `elements-touch` and on `visit(…, { touch: true })`, R-14):
+- **Touch** (touch context only: `test/*.touch.test.ts` in `elements-touch` and `test/browser/*.touch.test.ts` in `elements-browser` on `visit(…, { touch: true })`, R-14):
   `touchTap()` on a button trigger: the trigger's action runs, no bubble on the tap or while it keeps focus.
 - **Empty `text`**, **`disabled`**: no bubble on hover or focus. Trigger becomes `disabled` while shown: hidden.
   Trigger removed while shown: hidden.

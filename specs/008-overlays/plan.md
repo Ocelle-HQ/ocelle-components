@@ -195,7 +195,8 @@ packages/elements/
 ├── test/tooltip-no-popover.test.ts                # in process, Popover API removed (R-10)
 ├── test/browser/driver.ts         # fixture driver implementation of the additions
 ├── test/browser/serve.ts          # visit(…, { touch: true }): a separate hasTouch context for the touch rows only
-├── test/*.touch.test.ts, test/browser/*.touch.test.ts   # the touch rows (R-14)
+├── test/*.touch.test.ts           # in-process touch rows: elements-touch only (R-14)
+├── test/browser/*.touch.test.ts   # fixture touch rows: elements-browser only, touch context (R-14)
 ├── test/browser/{dialog,drawer,tooltip,harness}.test.ts   # strict-CSP fixture
 ├── test/browser/fixtures/{overlays,tooltip}.html
 ├── test/commands.ts               # + emulateReducedMotion, pointerPath, touchTap; axTree with description, modal, level
@@ -209,7 +210,8 @@ storybook/
 ├── stories/{dialog,drawer,tooltip}.stories.ts     # after #10 (R-16)
 ├── .storybook/stories-layout.css  # tooltip delay override class
 └── baselines/…                    # after #10
-vitest.config.ts                   # elements: 1280 × 800, no touch; + elements-touch project; commands (R-14)
+vitest.config.ts                   # elements: 1280 × 800, no touch; + elements-touch project (only *.touch.test.ts,
+                                   #   same excludes as elements: not test/node, test/build, test/browser); commands (R-14)
 vitest.mutation.elements.config.ts # takes elements and elements-touch (R-14)
 ```
 

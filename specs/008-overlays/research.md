@@ -467,8 +467,12 @@ unmerged). Results marked "squad probe" were measured by the plan squad's round 
     `maxTouchPoints` 1. Every element test of 005 and the siblings keeps running as a mouse device.
   - **Touch only where the touch rows run**: a new project `elements-touch`, the same browser-mode Chromium at
     1280 × 800 with `hasTouch` in its context options, includes only `packages/elements/test/**/*.touch.test.ts`
-    (the touch rows of checks § Tooltip), which the `elements` project excludes. `vitest.mutation.elements.config.ts`
-    takes both projects, so the touch rows still kill mutants. `touchTap` is used only there.
+    (the in-process touch rows of checks § Tooltip), which the `elements` project excludes. It has the same excludes
+    as `elements` (`test/node/**`, `test/build/**` and `test/browser/**`, `vitest.config.ts:76`; squad round 2 verify
+    1, PLAN-FRESH-2-007), so the fixture's `test/browser/*.touch.test.ts` stay in `elements-browser` only (Node,
+    its global setup, not mutated) and are never collected by this browser-mode, mutated project.
+    `vitest.mutation.elements.config.ts` takes both projects, so the in-process touch rows still kill mutants.
+    `touchTap` is used only there.
 - **Strict-CSP fixture**: new pages `overlays.html` and `tooltip.html`, with real input through `page.keyboard`,
   `page.mouse` and `page.touchscreen`. `serve.ts`'s `visit()` keeps its default context (no touch) and gains an option
   `{ touch: true }` that creates a separate context with `hasTouch: true`, used only by the touch rows'
