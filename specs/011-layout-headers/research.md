@@ -235,10 +235,11 @@ renders no role and attaches no internals role (FR-018, US1-19).
 ## R-09 Context sidebar box and dividers (FR-020 to FR-023)
 
 **Decision**: the host is the navigation landmark (R-11) and the box the page places:
-`:host { display: flex; flex-direction: column; min-block-size: 100%; box-sizing: border-box; background-color:
-var(--ocelle-color-rail) }`. Its shadow root holds one layout container `div` (`display: flex; flex-direction:
-column; flex: 1 0 auto`), so the sidebar fills a container with a definite block size when its content is shorter and
-grows with its content when it is taller (FR-023, US3-3, US3-4), with three wrappers: head (padding
+`:host { display: flex; flex-direction: column; min-block-size: 100%; align-self: start; box-sizing: border-box;
+background-color: var(--ocelle-color-rail) }`. Its shadow root holds one layout container `div` (`display: flex;
+flex-direction: column; flex: 1 0 auto`), so the sidebar fills a container with a definite block size when its content
+is shorter and grows with its content when it is taller (FR-023, US3-3, US3-4), in a block, flex-row or grid container
+(`align-self: start`, operator decision at the phase-1 spike, below), with three wrappers: head (padding
 `--ocelle-space-4`), sections (the default slot) and footer (padding `--ocelle-space-4`, `margin-block-start: auto`
 so it sits at the block end when content is shorter, US3-3, and follows the last section when taller, US3-4).
 Dividers follow the content (operator decision PLAN-CORRECTNESS-1-004 (b)): each is drawn on the part before the
@@ -287,9 +288,24 @@ The head and footer content has its edge margins trimmed as R-02 states (first a
 ones skipped), so a `<p>` footer sits `--ocelle-space-4` from every side of its part, also beside a `<p hidden>`. Element children with `slot=""` are not in scope: the README says sections carry no
 `slot` attribute.
 
+- **Stretching containers** (operator decision at the phase-1 spike, option (a); `reviews/phase-1/spike.md` § R-09
+  item 6 and § Stop-and-ask): without `align-self`, the host fills a 600 px container in a block, flex-row and grid
+  container but grows past a shorter one in the block container only. In a single-line flex row of definite block
+  size, the default `align-self: stretch` sets the item's block size to the line's whatever its content; in a grid of
+  definite block size, the item with `min-block-size: 100%` stays at the container's size. Measured with
+  `align-self: start` on the host: `600px` in a 600 px container and the content's size (713 to 786 px) in a 100 px
+  container, in all three kinds, with and without base.css. `align-self: start` is a normal declaration on `:host`, an
+  inner-context rule, so a page rule on the host's `align-self` wins (outer context, CSS Cascade 5 § Context); the
+  README says so (FR-036), and a page that stretches the host in a flex row or grid of definite block size gets the
+  container's size back. It has no effect in a block container. In a flex-column container the cross axis is the
+  inline axis, so the host is sized to its content inline rather than stretched; the sidebar's inline size is the
+  container's concern (FR-023) and this case was not measured. The declaration is covered by US3-4's flex-row and
+  grid variants (contracts/checks.md § Pairing plants, the US3-4 row) and by its R-17 style plant.
+
 **Rationale**: the spec's divider placement (FR-022 as fixed for SPEC-3-01 and for PLAN-CORRECTNESS-1-004) with no
 change to the page's DOM. A percentage `min-block-size` on an inner box of an auto-height block host resolves to
-nothing (PLAN-CORRECTNESS-1-003), hence the flex host.
+nothing (PLAN-CORRECTNESS-1-003), hence the flex host. `align-self: start` makes the growth hold in the flex-row and
+grid containers #12's shell is likely to use, with no change to the page's DOM and no script.
 
 Measure before red: `::slotted(:nth-child(1 of :not([slot]):not([hidden])))` matches the first visible
 default-slot element when a head element precedes it in DOM order (`:nth-child(of S)` is Chromium 111, WebKit 9, inside the floor); negative margins on
@@ -304,13 +320,16 @@ dropped they do not, as probed in plan squad round 3); the host
 box fills a 600 px container and grows past a shorter one, measured in a block container, a
 flex-row container and a grid container, each with and without base.css. The page's DOM is never changed, so there is
 no script fallback that marks the first section; if the measurement fails, the operator is asked before the US3 red
-commit.
+commit. Measured in the phase-1 spike: every item holds except the host's growth past a shorter flex-row or grid
+container, which failed without `align-self` and holds with `align-self: start` (operator decision, option (a),
+above).
 
 ## R-10 Personal rail layout (FR-024 to FR-027; SPEC-2-04, SPEC-2-05, SPEC-3-05)
 
 **Decision**: the host is the navigation landmark (R-11) and carries the rail's size, padding and ground:
-`:host { display: flex; flex-direction: column; box-sizing: border-box; background-color: var(--ocelle-color-chrome);
-color: var(--ocelle-color-chrome-ink) }`. Its shadow root holds one layout container `div` (`display: flex;
+`:host { display: flex; flex-direction: column; align-self: start; box-sizing: border-box; background-color:
+var(--ocelle-color-chrome); color: var(--ocelle-color-chrome-ink) }` (`align-self: start`: operator decision at the
+phase-1 spike, option (a), as R-09). Its shadow root holds one layout container `div` (`display: flex;
 gap: var(--ocelle-space-1); flex: 1 0 auto`) with three children: the primary wrapper, a divider `div` (decorative,
 `aria-hidden="true"`, shown only when both groups are non-empty) and the bottom wrapper. The container's `gap` is
 `--ocelle-space-1`, which is also the gap on each side of the divider (SPEC-2-04). Dividers follow the content
@@ -324,8 +343,16 @@ the divider and the bottom group.
   wrapper has `margin-block-start: auto`; the divider is `border-block-start` across the content box. **Taller content
   than its container** (SPEC-2-05): the rail grows with its content (`min-block-size: 100%`, no `max-block-size`, no
   overflow clipping), as the sidebar does (FR-023); scrolling is the container's (#12's), stated in the README.
+  Without `align-self`, the spike (`reviews/phase-1/spike.md` § R-10 item 4) measured a 677 px rail in a 100 px
+  container growing in a block container only and staying `100px` in a flex row and a grid, its bottom group outside
+  the host's box, with and without base.css, for R-09's cause. With `align-self: start` on the host it grows to
+  `677px` in all three and still fills a 600 px container (operator decision, option (a)); a page rule on the host's
+  `align-self` wins (outer context), stated in the README (FR-036). US4-2's flex-row and grid variants, and its
+  taller-than-container variant in the three kinds, hold it (contracts/checks.md § Pairing plants).
 - **Horizontal**: on the host, `inline-size: 100%; min-block-size: auto; padding: var(--ocelle-space-2)`, so its
-  border box equals its container's inline size (border-box, R-01); the container is `flex-direction: row`; the
+  border box equals its container's inline size (border-box, R-01) whatever `align-self` does (in a flex row or grid
+  `align-self: start` gives it its content's block size rather than the line's or area's; in a flex column its
+  explicit `inline-size: 100%` sets the inline size, which `align-self` does not change; not measured); the container is `flex-direction: row`; the
   primary wrapper is `flex: 1 1 0; display: flex; flex-wrap: wrap; gap: var(--ocelle-space-1)`; the bottom wrapper is
   `flex: 0 1 auto; max-inline-size: 50%; margin-inline-start: auto; display: flex; flex-wrap: wrap; align-self:
   flex-start; justify-content: flex-end`, so it sits at the inline end also when the primary wrapper is hidden
@@ -363,7 +390,9 @@ no event is needed. Sizing the host, not an inner box, makes the 52 px the box t
 
 Measure before red: the focus ring inside the vertical rail; the host's border box 52 px wide with a 44 px content
 box, and a horizontal rail's border box equal to its container's inline size at 320 px, each with and without
-base.css; the host 600 px tall in a 600 px block container, flex-row container and grid container; a horizontal rail
+base.css; the host 600 px tall in a 600 px block container, flex-row container and grid container, and a rail taller
+than a 100 px container growing with its content in the same three kinds (measured in the phase-1 spike: holds with
+`align-self: start` only, above); a horizontal rail
 with only bottom items has its bottom group at the inline end, in left-to-right and right-to-left; the stand-in
 items' computed colour equals `--ocelle-color-chrome-ink` and axe 4.14.0 reports no `color-contrast` or `target-size`
 finding on them in either theme.
