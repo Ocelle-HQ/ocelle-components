@@ -54,7 +54,7 @@
     "command": "pnpm run gate:csp",
     "plantCommand": "node gates/bin/csp.ts --root {root}",
     "plantForm": "repo-tree",
-    "scope": "built output of the three packages (packages/*/dist/); since 002 FR-023 the Storybook inputs before bundling (storybook/stories/, .storybook/, scripts/, .generated/; .ts parsed as TypeScript, markup literals in storybook/scripts/ exempt) and the HTML entries storybook/dist/*.html, not the bundles (narrows SPEC-1-05; the run-time CSP test covers the bundles)"
+    "scope": "built output of the three packages only (packages/*/dist/), with no exception; since 006 FR-020 no Storybook file (the Storybook is not a CSP target)"
   },
   {
     "id": "prefix",
@@ -62,7 +62,7 @@
     "command": "pnpm run gate:prefix",
     "plantCommand": "node gates/bin/prefix.ts --root {root}",
     "plantForm": "repo-tree",
-    "scope": "package source, test code and built output of the three packages; since 002 FR-023 the Storybook workspace's source, tests, generated stylesheets and the HTML entries storybook/dist/*.html, not the bundles"
+    "scope": "package source, test code and built output of the three packages; since 002 FR-023 (unchanged by 006 FR-022) the Storybook workspace's source, tests, generated stylesheets and the HTML entries storybook/dist/*.html, not the bundles; font declarations matched across lines (006 research.md R-10)"
   },
   {
     "id": "config-copies",

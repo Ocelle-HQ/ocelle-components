@@ -25,8 +25,10 @@ describe("externalise", () => {
     expect(externalise(html)).toEqual({ html, files: [] });
   });
 
-  it("moves the <style> after an inline script, Storybook's multi-line monospace stack, to a file referenced by a <link>, leaving the script inline", () => {
-    const rules = "\n  code {\n    font-family:\n      ui-monospace, Menlo, Monaco,\n      monospace;\n  }\n";
+  // The stylesheet has the shape of Storybook's vendor stack (a `font-family:` whose families follow on later lines);
+  // its families are sans-serif ones, since this file is in the prefix gate's Storybook scope.
+  it("moves the <style> after an inline script, a font stack over several lines, to a file referenced by a <link>, leaving the script inline", () => {
+    const rules = "\n  code {\n    font-family:\n      ui-sans-serif, Arial,\n      sans-serif;\n  }\n";
     expect(externalise(`<head><script>a();</script><style>${rules}</style></head>`)).toEqual({
       html: `<head><script>a();</script><link rel="stylesheet" href="./inline-${hash(rules)}.css"></head>`,
       files: [{ name: `inline-${hash(rules)}.css`, text: rules }],

@@ -408,8 +408,8 @@ makes every GitHub-side check and records each result, with its evidence (comman
 | Exception | Why needed | Scope and sunset |
 |---|---|---|
 | Phase 1 bootstrap without a red step (`tdd-exempt.md`, no red commit) | No test runner exists before it, so no test can fail first | Exactly phase 1: install, the three package skeletons, the plain wiring of the test and setup commands, and the two story configuration values. All behaviour is in phase 2 and later, red first. Ends with phase 1. |
-| Storybook build, visual regression and axe gates absent | Owned by #10 (triage 001) | `gates/README.md` lists them; sunset when #10 merges |
+| Storybook build, visual regression and axe gates absent | Owned by #10 (triage 001) | `gates/README.md` lists them; sunset when #10 merges. **Closed by feature 006 (#10, `specs/006-storybook-workbench/`)**: the `storybook-build`, `visual` and `axe` gates exist, with their plants and the required checks Storybook build, Visual regression and Accessibility |
 | Contrast gate absent | Needs tokens; owned by #5 | Sunset when #5 merges |
-| Custom-elements manifest gate absent | No element exists | Sunset with the first element feature (#7) or #10 |
+| Custom-elements manifest gate absent | No element exists | Sunset with the first element feature (#17 or #7) (sunset rewritten by feature 006, operator decision 2026-11-13, 006 plan.md decision 32) |
 | CSP gate does not check remote loads | Constitution IV's no-network rule needs an element bundle to check | Sunset with the first element feature |
 | Mutation testing of browser-mode element source unverified | No element source exists | Verified by the first element feature |
