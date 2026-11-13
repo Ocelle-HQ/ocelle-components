@@ -1018,9 +1018,9 @@ gates and the README documentation test.
   hides not-yet-upgraded elements (Edge Cases).
 - Chromium exposes a single native select as a combobox; scenarios name Chromium's roles. WebKit's roles, form
   association and live-region behaviour in shadow roots are not measured (README, Engines).
-- #10 (mission 006) lands on `main` before this feature's implementation starts (operator wave planning); its design is
-  read from branch `claude/010-storybook-workbench`, `specs/006-storybook-workbench` (spec FR-025, contracts/gates.md,
-  contracts/container.md) and must be rechecked when #10 lands.
+- #10 (mission 006) is on `main` (3828d2f) before this feature's implementation starts (operator wave planning); its
+  design is read from `main`, `specs/006-storybook-workbench` (spec FR-025, contracts/gates.md, contracts/container.md),
+  and was rechecked against research R-08 on 2026-11-13 (`reviews/phase-5/recheck.md`).
 - Parallel missions (#16 as 008, #15 as 009, #8 as 011) edit `packages/elements/src/index.ts`,
   `custom-elements.json` and the Storybook configuration; conflicts are resolved by merging `main`, never by rebasing.
 - spec-kitty-design#509, #513 and ADR-0078 were not read. The operator confirmed at spec check 1 that #9's wording is
