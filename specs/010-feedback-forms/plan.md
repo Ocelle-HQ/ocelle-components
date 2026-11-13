@@ -101,7 +101,10 @@ VIII, and I for the internal setter), after round 3's fixes (rows I, III and VII
    and does not announce. Since plan squad round 1 (PLAN-CORRECTNESS-1-001), "first load" is "connected while the
    document is loading, or upgraded by the registration of the definition", so an htmx swap after the build has
    loaded announces (spec FR-008).
-6. **Focused-state stories** use `autofocus`; #10 has no focus parameter, so this is rechecked when #10 lands (R-08).
+6. **Focused-state stories** focus the element by script after render (a wrapper element in the story file whose
+   `connectedCallback` calls `.focus()`), the pattern #10's plant `pass-focus-below-fold` proves keeps focus and hides
+   the caret; #10 has no focus parameter and does not prove `autofocus`. Whether the select's `:focus-visible` ring
+   shows after a programmatic focus is measured when its stories are written; if not, stop for the operator (R-08).
 7. **Announcements through a separate region** (R-02; operator decisions PLAN-FRESH-1-001 (b) and
    PLAN-A11Y-SECURITY-1-002 (a)): a copy of the text is written into a visually hidden atomic live region `W` after the
    last trigger (300 ms after load, 700 ms before) and held for `H` (5000 ms, or until the next announcement but at
@@ -374,10 +377,11 @@ it; announcement timing in one internal helper used by the notice and the base c
 Each phase ends with `pnpm run gate:unit-tests`, `gate:typecheck`, `gate:lint`, `gate:style-lint`, `gate:manifest`,
 `gate:csp`, `gate:prefix`, `gate:contrast`, `gate:test-lint` and `gate:mutation` green on the branch.
 
-**Recheck when #10 lands** (FR-033, operator wave planning): this plan's story, baseline and axe items are written
-against `specs/006-storybook-workbench` on branch `claude/010-storybook-workbench` (spec FR-025, FR-031,
-`contracts/gates.md`, `contracts/container.md`). When #10 is merged, research R-08's comparison is done before phase 5,
-and any difference is a recorded plan change.
+**Recheck when #10 landed** (FR-033, operator wave planning): #10 is on `main` (3828d2f) and this plan's story,
+baseline and axe items follow `specs/006-storybook-workbench` as merged there (spec FR-025, FR-031,
+`contracts/gates.md`, `contracts/container.md`). Research R-08's comparison was done on 2026-11-13 against 3828d2f
+(`reviews/phase-5/recheck.md`): everything matched except the focused-state mechanism, changed by operator decision
+from `autofocus` to a focus by script after render (decision 6). A later difference is a recorded plan change.
 
 **Merges** (R-11): shared files with missions 008, 009 and 011 (`src/index.ts`, `src/browser.ts`, `package.json`
 exports, `custom-elements.json`, the README element list, Storybook configuration) are reconciled by merging `main`,

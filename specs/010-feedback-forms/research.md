@@ -454,20 +454,30 @@ scenario 8); the native select gets `appearance: none` so only one indicator sho
 
 ## R-08 Stories, baselines and axe against #10's design (FR-033)
 
-**Decision.** Stories follow `specs/006-storybook-workbench` on branch `claude/010-storybook-workbench`: one CSF file per
+**Decision.** Stories follow `specs/006-storybook-workbench` as merged on `main` with #10 (3828d2f): one CSF file per
 element in `storybook/stories/` (`notice.stories.ts`, `form-input.stories.ts`, `form-select.stories.ts`), rendered
 through `storybook/stories/render.ts` without inline styles, both themes captured by the harness, baselines at
 `storybook/baselines/<story-id>.<theme>.png` produced with `pnpm run visual:update` in the pinned container, hover
-declared with the story pointer parameter (006 FR-031). The **focused** states (US4 scenario 1) use a story that renders
-the element with `autofocus` on the host (a form-associated element with `delegatesFocus` focuses its inner control);
-whether #10's capture keeps that focus is re-measured when #10 lands (006 has no focus parameter; FR-031 covers hover
-and press only). If it does not, the plan is rechecked with the operator before the stories phase. The announcing-notice
-story shows the notice as rendered (announcement is behaviour, tested in the browser scenarios, not in a pixel).
+declared with the story pointer parameter `parameters: { ocelle: { pointer: { hover: "<selector>" } } }` (press as
+`press`; 006 FR-031). The **focused** states (US4 scenario 1) focus the element by script after render, the pattern of
+#10's plant `gates/plants/visual/pass-focus-below-fold`: the story file defines a small wrapper element whose
+`connectedCallback` calls `.focus()` on the form element it holds (a form-associated element with `delegatesFocus`
+focuses its inner control), so no file outside the story file changes. #10 proves that a focus set this way is kept
+by the capture and its caret hidden (006 research R-04, the plant above); it does not use `autofocus`, so this entry
+no longer does. Whether the select's `:focus-visible` ring shows after a programmatic focus is not measured by #10; it
+is measured when the select's stories are written (T064), and if the ring does not show the implementer **stops for
+the operator** before committing the select's focused baselines. The announcing-notice story shows the notice as
+rendered (announcement is behaviour, tested in the browser scenarios, not in a pixel).
 
-**Recheck when #10 lands (FR-033).** Before phase 5 starts, the implementer compares #10's merged contributor note,
-`contracts/gates.md` and `contracts/container.md` with this entry (story location, render helper, pointer parameter,
-baseline naming and command, the `closed-shadow-root`, `font` and `outside-root` rules). A difference that changes a
-task is a plan change, made by the planner and recorded, before the stories are written.
+**Recheck when #10 landed (FR-033), done 2026-11-13.** #10 is on `main` (3828d2f) and merged into this branch
+(8c53b7a). Its merged contributor note (`storybook/README.md`), `gates/lib/story-page.ts`, `specs/006-storybook-workbench`
+(research R-04, `contracts/gates.md`, `contracts/container.md`) and the plant `pass-focus-below-fold` were compared
+with this entry: story location, render helper, pointer parameter, baseline naming and command, and the
+`closed-shadow-root`, `outside-root` and `font` rules match. One detail differed: this entry made focused states with
+`autofocus`, while #10 proves kept focus and a hidden caret only for a story that focuses by script after render. By
+operator decision (2026-11-13) the focused states now use that pattern (above); no phase 5 task ID changes. The
+result is recorded in `reviews/phase-5/recheck.md`. T060 still merges `main` before `base.sh 5`; if #10's harness
+files changed on `main` after 3828d2f, it repeats this comparison for those changes and appends it to the same file.
 
 ## R-09 Tests and mutation (constitution VIII; mission 007)
 
