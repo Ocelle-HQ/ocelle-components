@@ -50,13 +50,15 @@ mutation only.
 **Constraints**: strict CSP; token-only styles; no `sk-` names, no monospace; no I/O; no change to the page's DOM;
 one heavy job at a time.
 
-**Scale/Scope**: 5 elements, 4 tokens, 18 contrast rows, 2 internal modules, about 70 acceptance scenarios, stories
-per variant and state plus one per landmark-naming case.
+**Scale/Scope**: 5 elements, 4 tokens, 18 contrast rows, 2 internal modules, 51 acceptance scenarios (US1 19, US2 8,
+US3 13, US4 11; several run in more than one variant), stories per variant and state plus one per landmark-naming
+case.
 
 ## Constitution Check
 
 *Gate: passes before Phase 0; re-checked after Phase 1 design and again after the fixes of plan squad rounds 1, 2 and 3
-(`reviews/plan/round-1/`, `reviews/plan/round-2/`, `reviews/plan/round-3/`) — passes, no exception.*
+(`reviews/plan/round-1/`, `reviews/plan/round-2/`, `reviews/plan/round-3/`) and after the analysis of the tasks
+(`reviews/analysis/fixes-1.md`) — passes, no exception.*
 
 | Principle | How this plan meets it |
 |---|---|
@@ -67,7 +69,7 @@ per variant and state plus one per landmark-naming case.
 | V. Storybook, behaviour tests | A story per variant and state, light and dark, baselines from #10's pinned container (R-14). No events to assert; keyboard paths (tab order, orientation change with focus) tested. |
 | VI. Consumer-driven, own code | Needs from #8 and spec-kitty-design #450, #492, #497, #516, #529 (`sources/README.md`); deviations listed in the spec. Nothing copied. |
 | VII. Semver | MINOR additions only: five elements, five entry points, four tokens; both CHANGELOGs. |
-| VIII. Test-first, non-vacuous | Red first per phase, including the driver's behavioural readers (R-13); every "does not" outcome paired with a positive one and a named plant applied by 005's working-tree method (contracts/checks.md); token-sentinel scenarios so a wrong token fails (R-13); scenario bodies shared so the mutated in-process run covers the script logic, mutation scope as 005 decision 16; the `css` templates, which Stryker mutates at most whole, are covered by declaration-level style plants per phase, an uncaught declaration blocking unless recorded as equivalent (R-17). Spike findings are measured before the red commits that depend on them. |
+| VIII. Test-first, non-vacuous | Red first per phase, including the driver's behavioural readers (R-13); every "does not" outcome paired with a positive one and a named plant applied by 005's working-tree method (contracts/checks.md); token-sentinel scenarios so a wrong token fails (R-13); scenario bodies shared so the mutated in-process run covers the script logic, mutation scope as 005 decision 16, every phase that changes source mutation-tested with its own phase base, phase 1 included (`src/slot-state.ts`); the `css` templates, which Stryker mutates at most whole, are covered by declaration-level style plants per phase, an uncaught declaration blocking unless recorded as equivalent (R-17). Spike findings are measured before the red commits that depend on them. |
 | Workflow gates | No gate added. `contrast` counts change at the places R-12 lists. #10's three gates join every phase's gate set once merged. |
 
 ## Decisions the operator should see at the plan gate
@@ -164,15 +166,18 @@ packages/elements/
 ├── src/ocelle-card.ts, ocelle-section-header.ts, ocelle-page-header.ts,
 │   ocelle-context-sidebar.ts, ocelle-personal-rail.ts
 ├── src/slot-state.ts, card-context.ts  # internal
+├── src/naming.ts                       # existing; gains internalsKey (phase 4, R-11)
 ├── src/index.ts, browser.ts            # shared with siblings
 ├── package.json (exports), custom-elements.json, README.md, CHANGELOG.md
 └── test/
     ├── scenarios/<element>.ts, scenarios/driver.ts, <element>.test.ts, slot-state.test.ts,
     │   card-context.test.ts, commands.ts, commands.test.ts, entry-<element>.test.ts,
-    │   entry-card-order.test.ts, entry-root.test.ts
-    ├── browser/<element>.test.ts, browser/fixtures/ (incl. the mixed-copy card page, the README example page)
+    │   entry-card-order.test.ts, entry-root.test.ts, exports.test.ts, in-process.ts
+    ├── browser/<element>.test.ts, browser/driver.ts, browser/fixtures/ (incl. the mixed-copy card page, the README
+    │   example page, rail-items.css)
     ├── node/readme.test.ts, node/manifest.test.ts
     └── build/build.test.ts, build/pack.test.ts
+vitest.config.ts                      # browser commands of the new readers (phase 1)
 storybook/
 ├── stories/<element>.stories.ts
 ├── baselines/<story-id>.<theme>.png  # #10's layout
@@ -204,6 +209,7 @@ gates/test/… and gates/bin/contrast.ts # pinned contrast counts
    - not exempt, red first on a known page (R-13): the behavioural driver and command readers, namely the heading
      level in `axNodes` (`AxNode.level`, `test/commands.ts`, tested in `test/commands.test.ts`), the document's scroll
      width, the deep active element and the text-node boxes with clipping ancestors;
+   - checkpoint gates `typecheck`, `lint`, `test-lint`, `test` and `mutation` (phase base, over `src/slot-state.ts`);
    - exempt, as plumbing, with the reason recorded in the phase-1 review: DOM append, remove and text-data change of
      light DOM, Tab presses, viewport and container size, the `driver.rules` token overrides, fixture page templates
      for the five elements (`dir` already exists, `driver.ts:111`).
@@ -230,8 +236,8 @@ gates/test/… and gates/bin/contrast.ts # pinned contrast counts
    `ocelle-section-header` and `span` section variant, its `ul` and `p` section, head and footer variant, its
    footer `<p hidden>` edge variant, its page-reset variants and its hidden-section variant; US3-12 reading the tree only, R-11), its token-sentinel scenario and no-event check; the
    internals under `internalsKey` in `src/naming.ts` and the manifest test's no-member assertion; entry, exports,
-   manifest, stories (one landmark per story, distinct label, one story per US3-12 case rendered alone for the `axe`
-   gate) and baselines, the role probe of R-11 recorded in the phase evidence, README and readme test, CHANGELOG; style
+   manifest, stories (one landmark per story, with a distinct label where the case names the landmark, one story per
+   US3-12 case rendered alone for the `axe` gate) and baselines, the role probe of R-11 recorded in the phase evidence, README and readme test, CHANGELOG; style
    plants.
 5. **US4 Personal rail** (P4): `ocelle-personal-rail.ts`, US4 scenarios 1–11 as shared bodies (US4-4 through 721,
    720, 719 and 320 px; US4-6 in both orientations; US4-9 with the horizontal rail still a row; US4-10 running the
@@ -242,8 +248,16 @@ gates/test/… and gates/bin/contrast.ts # pinned contrast counts
    US4-11 case rendered alone) and baselines, the role probe of R-11 recorded in the phase evidence, README (the #12 note, the orientation
    example and the `<a>` item note) and readme test, CHANGELOG; style plants.
 
-Each phase is folded after its approval (`/ocelle-run` step 4.3). Element source of each phase is mutation-tested with
-the phase base, and its `css` templates are covered by the style plants of R-17. Phase 5 is separable: if the operator splits the rail off (triage 011), phases 1–4 stand alone.
+Each phase is folded after its approval (`/ocelle-run` step 4.3). The changed source of each phase
+(`packages/elements/src/**`) is mutation-tested with the phase base at the phase checkpoint: `src/slot-state.ts` in
+phase 1, whose checkpoint runs `typecheck`, `lint`, `test-lint`, `test` and `mutation`; the elements,
+`card-context.ts` and `naming.ts` in the phase that changes them. The tests that pin the package's element lists
+(`test/exports.test.ts`, the readme test's Entry points rows and `exports` keys, the manifest test's module paths,
+the build and pack lists, `entry-root.test.ts`) are re-listed at each phase base and changed in that phase's red
+commit, and each phase's README task adds its Entry points row. Each phase's `css` templates are covered by the
+style plants of R-17. Phase 5 is separable: if the operator splits the rail off (triage 011), phases 1–4 stand alone.
+Phase 5 uses `internalsKey`, which phase 4 adds to `src/naming.ts`; if phase 4 is deferred or runs after phase 5,
+that change moves into phase 5 (tasks.md T036).
 
 ## Complexity Tracking
 

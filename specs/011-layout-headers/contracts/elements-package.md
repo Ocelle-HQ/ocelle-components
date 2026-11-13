@@ -13,6 +13,10 @@ package README and the CHANGELOG, or in `tokens.css` and the `@ocelle/tokens` CH
 | `@ocelle/elements/ocelle-context-sidebar.js` | `dist/ocelle-context-sidebar.js` | `ocelle-context-sidebar` |
 | `@ocelle/elements/ocelle-personal-rail.js` | `dist/ocelle-personal-rail.js` | `ocelle-personal-rail` |
 
+Each entry is a key of `package.json` `exports` and a row of the README's Entry points table, added in the phase of
+its element after the existing element entries and before `./browser.js`, in this table's order; the readme test
+pins the table rows and the `exports` keys (tasks.md T016a, T028a, T035a, T043a).
+
 `@ocelle/elements` (the package root) and `@ocelle/elements/browser.js` also define all five. `ocelle-card.js` does
 not define `ocelle-section-header`: a page that slots one imports both. The compact size works whichever is defined
 first, and when the two come from different copies of the package (research.md R-05, the pull model).

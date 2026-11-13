@@ -4,7 +4,7 @@
 
 **Created**: 2026-11-12
 
-**Status**: Draft
+**Status**: Approved at the spec gate (2026-11-13; plan.md)
 
 **Input**: User description: "Build the layout and header elements of issue #8 (triage/011-layout-headers.md) in
 @ocelle/elements, following the element conventions of mission 005: ocelle-card (inset, slotted content, a compact
@@ -28,7 +28,7 @@ the personal drawer itself stay with #12 and #16."
 **Operator decisions while specifying** (2026-11-12, human:jeroennouwsdev):
 
 - Card `inset`, "Well ground (Recommended)": an inset card is drawn sunken on `--ocelle-color-inset`, for a card
-  nested inside another surface; its padding and density are unchanged (FR-004).
+  nested inside another surface; its padding and density are unchanged (FR-016).
 - Context sidebar landmark, "navigation (Recommended)": the sidebar is one navigation landmark named by `label`; its
   head and footer sit inside it (FR-020).
 - Upstream values against the token set, "Existing tokens (Recommended)": the compact card takes
@@ -759,7 +759,11 @@ orientation with focus inside, and reflow at 320 px.
     and its "not set" look; each token it reads (FR-007); for every element but the rail, that it trims the edge
     margins of slotted content and that a page rule wins (FR-008); the empty-slot rule, including "remove an element from the
     slot rather than hide it"; for every element but the card, the Consumer-need workaround it replaces (SC-006;
-    "Consumer need" records no Kitty Desktop workaround for the card, only its missing compact density);
+    "Consumer need" records no Kitty Desktop workaround for the card, only its missing compact density). The four
+    workarounds map to the elements as "Consumer need" and its expected outcomes describe them: section header, part-level padding and gap
+    overrides; page header, pinned page-header font rules; context sidebar, part-level padding and gap overrides and
+    token-painted dividers; personal rail, personal-rail `::part` overrides. A workaround shared by two elements is
+    stated in each one's section;
   - the element conventions' Styles paragraph (once, not per element): variant rules that set colours or grounds go
     inside `@media not (forced-colors: active)`, layout-only variant rules outside it (FR-001);
   - section header and page header: the slotted-heading rule (slot one heading element; the page's own heading rules
