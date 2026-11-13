@@ -101,13 +101,13 @@ modal, level. Device: the default context (`elements`, `visit()`) matches `(hove
     slotted native modal `<dialog>` with two buttons shown above the overlay from slotted content: Escape closes it
     alone with no request and no `cancel` on the overlay; before that, Tab and Shift+Tab, n + 2 presses each, keep
     `focusPath()` inside the nested dialog; a further Escape then requests the overlay's close with `escape`.
-  - **Slotted non-modal dialogs** (R-02, squad round 3 verify 1 to verify 4; all cases run without user activation,
+  - **Slotted non-modal dialogs** (R-02, squad round 3 verify 1 to verify 5; all cases run without user activation,
     as probed, each × {no veto, veto then Escape twice} and, where not stated otherwise, with focus on the slotted
     dialog's button and with focus on a sibling slotted button):
     - *Open before the overlay, keydown path*: a slotted `<dialog open>` in the parsed markup holding a button, with
       `closedby` absent, `"auto"`, `"none"`, `"closerequest"` and `"any"`; and a slotted `<dialog closedby="any">`
-      opened with `show()` before the overlay opens (natively its first Escape would fire a non-cancelable `cancel`
-      on the overlay's `<dialog>`). Each Escape gives one request with reason `escape` and no `cancel` on the
+      opened with `show()` before the overlay opens (natively an Escape can fire a non-cancelable `cancel` on the
+      overlay's `<dialog>` there, R-02). Each Escape gives one request with reason `escape` and no `cancel` on the
       overlay's `<dialog>`; the slotted dialog stays open on every press; no veto closes the overlay; under veto the
       overlay stays open and `:modal` on every press, focus inside.
     - *Opened after the overlay, absorbed natively*: a slotted `<dialog>` opened after the overlay's `showModal()`
@@ -119,10 +119,14 @@ modal, level. Device: the default context (`elements`, `visit()`) matches `(hove
       with no `…-close-request` and no `cancel` on the overlay, the overlay stays open and `:modal`; the second
       Escape requests with reason `escape` (then closes without a veto, stays open with focus inside under veto).
     - *Re-opened after the overlay*: a parsed `<dialog open closedby="any">` (the first case), closed with `close()`
-      and opened again with `setAttribute('open', '')` while the overlay is open, and separately one whose `open`
-      attribute is removed and set again: the first Escape after the reopen closes that dialog alone with no
-      request and no `cancel` on the overlay (it now counts as opened after the overlay); the next Escape requests
-      with reason `escape`.
+      and opened again with `setAttribute('open', '')` while the overlay is open: the first Escape after the reopen
+      closes that dialog alone with no request and no `cancel` on the overlay (it now counts as opened after the
+      overlay); the next Escape requests with reason `escape`.
+    - *Re-opened by the attribute alone* (the stated limit of R-02): a parsed `<dialog open closedby="any">` whose
+      `open` attribute is removed and set again while the overlay is open (no `toggle` or `close` fires): it stays
+      ordinary content, with the assertions of the first case (each Escape gives one request with reason `escape`
+      and no `cancel`, the slotted dialog stays open on every press, under veto the overlay stays open and
+      `:modal`).
     For every non-modal case in this row, Tab and Shift+Tab, n + 2 presses each: the slotted dialog's button is a
     stop in the exact list, no `body`. Where the engine lacks the `closedBy` property the `closedby` cases other
     than absent are skipped. The fallback of R-02 (an open dialog moved into an open overlay) has no row; its limit
