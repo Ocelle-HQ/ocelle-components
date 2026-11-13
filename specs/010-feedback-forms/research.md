@@ -13,7 +13,8 @@ it reads `Accessibility.getFullAXTree`, extracts every live region node at or in
 node whose `live` property is `polite` or `assertive`), computes each region's text with the pure reading function
 `regionText(nodes, region)` (the spec's reading: StaticText and `img` names in tree order, an `img`'s descendants not
 visited, other names skipped, inline text boxes skipped, ignored nodes contributing nothing, whitespace collapsed and
-trimmed), appends the snapshot, and resumes.
+trimmed), records the role of each `ocelle-*` host's own node from the same tree (for `hostRole`, contracts/testing.md,
+PLAN-FRESH-2-002), appends the snapshot, and resumes.
 
 Each snapshot is tagged with the time (`performance.now()` in the page) and a rendering-update counter. The recorder
 also runs a test-side frame hook: a `requestAnimationFrame` callback that posts a `MessageChannel` message, whose

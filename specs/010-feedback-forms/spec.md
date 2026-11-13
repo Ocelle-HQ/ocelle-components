@@ -644,11 +644,15 @@ gates and the README documentation test.
   - *Live host role at runtime.* Setting a host `role` of `alert` or `status` on a connected notice without
     `announce` acts as setting `announce` later: the notice's current text and the role's politeness become the
     baseline and nothing is announced. Removing that role (or replacing it with a role that gives no live politeness)
-    from a notice without `announce` acts as removing `announce`. Changing the host role from `alert` to `status` or
-    the reverse, or adding or removing a live role on a notice with `announce`, is a change by the rule above when the
-    politeness it gives differs from the baseline's, and then announces the current text once with the new
-    politeness; when the politeness stays the same (a `danger` notice with `announce` that gets `role="alert"`) it
-    announces nothing.
+    from a notice without `announce` acts as removing `announce`. Changing the host role from `alert` to `status`, or
+    adding a `status` role to or removing a live role from a notice with `announce`, is a change by the rule above
+    when the politeness it gives differs from the baseline's, and then announces the current text once with the new
+    politeness; when the politeness stays the same it announces nothing. A change of the host role to `alert` (from
+    `status`, or added on a notice with `announce`) is the exception: it is carried by the platform's alert event for
+    the host's node (FR-009, *Platform alert event*, operator decision PLAN-FRESH-2-002 (a)), so the notice writes no
+    copy into its live region, takes the current text and the assertive politeness as its baseline, and the tree
+    measure counts zero live-region announcements for it, whether or not the politeness differs from the baseline's
+    (a `danger` notice with `announce` that gets `role="alert"` included).
   - Without `announce`, with no host `role` or a host role that gives the host's node no live politeness, and with no
     host `aria-live`, `aria-atomic` or `aria-relevant` (the first row of FR-009's table), the notice has no live region
     node and announces nothing. FR-009's unsupported rows are outside this rule.

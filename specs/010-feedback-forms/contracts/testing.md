@@ -26,11 +26,15 @@ for longer than `D`, and counts under both rules. In process the window is compu
 not part of the window: emptying a copy is not an announcement.
 
 A snapshot is `{ at: number; frame: number; lifecycle: boolean; loaded: boolean; regions: { node: string; host:
-string | null; politeness: "polite" | "assertive"; text: string }[] }`: `at` is `performance.now()` in the page,
+string | null; politeness: "polite" | "assertive"; text: string }[]; hosts: { host: string; role: string }[] }`: `at` is `performance.now()` in the page,
 `frame` the count of rendering updates seen so far, `lifecycle` whether the snapshot was taken by the post-lifecycle
 frame hook (a `requestAnimationFrame` callback posting a `MessageChannel` message) rather than at a mutation pause,
 `loaded` whether `document.readyState` was `"complete"`, `node` a stable key of the region's DOM node (its backend
 node id), `host` the id of the nearest `ocelle-*` host at or above it, and `text` the reading of `regionText()`.
+`hosts` lists every `ocelle-*` host with an id inside the watched container, read from the same
+`Accessibility.getFullAXTree` result as `regions`: `host` its id and `role` the `role` value of the host's own node in
+that tree (`"none"` when the node is ignored). `announcements()` does not read `hosts`; only `hostRole(id)` does
+(PLAN-FRESH-2-002).
 
 `announcements(snapshots, rule)` is a pure function returning `{ text, politeness, node, host }[]`. Per region node it
 keeps the states that satisfy `rule`, then counts by the spec's definition (a region in two consecutive kept states
@@ -74,7 +78,8 @@ it is the same code over the page's CDP session. Both harnesses share `test/live
   in-process run with the test `D` keeps the same relation.
 - Timing (in process only): `test/in-process.ts` calls `setAnnouncerTimingForTests` of `src/live.ts` before each
   scenario with the one test constant that also sets the capture's `D` (research R-09). Fixture pages never call it.
-- `hostRole(id)`: the role of the host's own node in the last snapshot's tree, for the `alert` cells that count zero
+- `hostRole(id)`: the `role` of the entry with `host` equal to `id` in the `hosts` list of the last snapshot
+  `liveCapture.stop()` returned (the final snapshot, taken after the quiet window), for the `alert` cells that count zero
   live-region announcements (spec FR-009, SC-002), so that a zero count there also checks that the host is an
   `alert` node.
 
