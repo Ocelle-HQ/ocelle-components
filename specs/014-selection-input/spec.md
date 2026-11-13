@@ -86,6 +86,33 @@ not names of this library.
   counts as "no child is enabled" (FR-011a), and User Story 2 scenario 20 and User Story 3 scenario 17 append all
   children at once. Notes SPEC-3-02 to SPEC-3-04 are left for the plan.
 
+**Operator decisions at plan squad round 1** (2026-11-13, human:jeroennouwsdev;
+`reviews/plan/round-1/refute.md`, Decision column). Applied to this spec where they change an outcome; the rest are
+recorded in the plan:
+
+- PLAN-CORRECTNESS-1-004 (a): a disabled child keeps `tabindex="-1"`: it stays focusable, the roving keys skip it,
+  and a focused child that becomes disabled keeps focus (User Story 1 scenario 18).
+- PLAN-CORRECTNESS-1-010 (a): the lines that bound the pressed segment of the joined variant, and the line between
+  the copy field's text and its Copy control, are drawn in `--ocelle-color-accent-strong` at `--ocelle-border-width`
+  (#5 rule 1: a control on `accent-low` or `inset` is bordered with `accent-strong`); colour change only (User Story 3
+  scenario 9, User Story 4 scenario 9, FR-029, FR-037).
+- PLAN-CORRECTNESS-1-011 (b): the selected bars stay on the main grounds; `@ocelle/tokens`' pair list gains the
+  non-text pairs of `color-accent-strong` on the main grounds (FR-058).
+- PLAN-CORRECTNESS-1-014 (a): children added or enabled "in one operation" means in one microtask checkpoint
+  (FR-010a).
+- PLAN-CORRECTNESS-1-015 (a): a parent's module defines its children and the copy field's module defines
+  `ocelle-icon`, so one import is enough (FR-001).
+- PLAN-CORRECTNESS-1-017 (a): the `copy-control` part guarantees its box, its accessible name and its events only;
+  under that stated surface the later swap to `ocelle-button` is a PATCH (FR-038, FR-044).
+- PLAN-CORRECTNESS-1-018 (b): `ocelle-listbox-activate` with `{ value }` on Enter on the selected option and on a
+  double-click on an option, so a host can confirm a choice (FR-014a, User Story 1 scenario 20).
+- PLAN-A11Y-SECURITY-1-008 (a): the segmented choice is exposed as a horizontal toolbar of toggle buttons (FR-026,
+  User Story 3 scenario 1).
+- PLAN-TESTABILITY-1-011 (a): the copy field dispatches its request after the cleared live region has reached the
+  accessibility tree (FR-035, User Story 4 scenario 6).
+- PLAN-FRESH-1-001 (a): the new elements keep their `ElementInternals` where axe-core reads it (plan research R-01);
+  no outcome of this spec changes.
+
 **Dependency on #10 (not merged).** The Storybook workbench of #10 (branch `claude/010-storybook-workbench`,
 `specs/006-storybook-workbench`) gives the `visual` gate (baselines in a pinned container, light and dark), the `axe`
 gate (axe on every story, serious and critical findings fail) and its contributor note (006 FR-025). Its design is
@@ -202,8 +229,10 @@ read after each key.
    edge), and exactly one `ocelle-listbox-change` is emitted with `detail` `{ "value": "gamma" }`.
 6. **Given** `gamma` selected and focus on `delta`, **When** Space is pressed, **Then** `delta` is selected, `gamma` is
    not, and one `ocelle-listbox-change` with `{ "value": "delta" }` is emitted; the page did not scroll from Space.
-7. **Given** `delta` selected and focused, **When** Enter or Space is pressed again, **Then** `delta` stays selected
-   and no event is emitted (paired with scenario 6's event in the same test).
+7. **Given** `delta` selected and focused, **When** Space is pressed again, **Then** `delta` stays selected and no
+   event is emitted; **When** Enter is pressed, **Then** `delta` stays selected, no `ocelle-listbox-change` is
+   emitted, and one `ocelle-listbox-activate` with `{ "value": "delta" }` is (scenario 20). Paired with scenario 6's
+   change event in the same test.
 8. **Given** the listbox with `beta` selected, **When** the user tabs out and back in, **Then** focus lands on `beta`
    (the selected option is the tab stop); with no selected option, on the option that last had focus, or the first.
 9. **Given** the listbox, **When** `epsilon` is clicked, **Then** `epsilon` is selected and focused and one
@@ -233,16 +262,19 @@ read after each key.
     `Highlight` colour on its inline-start edge, and unselected options show none; the focused option shows the focus
     ring in forced colours.
 16. **Given** a listbox taller than its container's `max-block-size`, **When** focus moves with ArrowDown or End to an
-    option outside the visible part, **Then** the listbox scrolls so the focused option is fully visible.
+    option outside the visible part, **Then** the listbox scrolls so the focused option is fully visible, and the
+    focus ring of the focused option (the first, the last and one scrolled to) lies wholly inside the listbox's
+    scrolling box, not clipped on any side.
 17. **Given** options `alpha`, `beta`, `gamma` written with no `value` (or `value=""`), **When** `beta` is clicked,
     **Then** one `ocelle-listbox-change` with `{ "value": "1" }` is emitted and the listbox's `value` is `"1"` (each
     option's default value is its zero-based index among the listbox's options, as a string: FR-009); setting
     `listbox.value = "2"` then selects `gamma`, and `listbox.value = ""` clears the selection.
 18. **Given** `gamma` selected, **When** `gamma` gains `disabled`, **Then** it stays selected and `value` stays
     `"gamma"`, but it is no longer the tab stop (FR-016) and Enter, Space and clicks cannot select it again once
-    another option is selected; no event is emitted. **When** a host then sets `listbox.value = "gamma"` (the current
-    value, naming the disabled selected option), **Then** nothing changes: `gamma` stays selected, `value` reads
-    `"gamma"`, and no event is emitted (setting the current value is always a no-op on the selection, FR-010).
+    another option is selected; no event is emitted. If `gamma` had focus, it keeps focus (a disabled option stays
+    focusable; the arrows, Home and End skip it), and Enter on it emits no `ocelle-listbox-activate`. **When** a host
+    then sets `listbox.value = "gamma"` (the current value, naming the disabled selected option), **Then** nothing
+    changes: `gamma` stays selected, `value` reads `"gamma"`, and no event is emitted (setting the current value is always a no-op on the selection, FR-010).
 19. **Given** a listbox with options `alpha` and `beta`, none selected, **When** a host sets `listbox.value = "delta"`
     (no option has that value yet), **Then** no option is selected and `value` reads `""`; **When** the host then
     appends `<ocelle-option value="delta">`, **Then** `delta` is selected and is the tab stop, `value` reads
@@ -251,6 +283,23 @@ read after each key.
     `value = "beta"`, **When** `delta` is then appended, **Then** `delta` is not selected (the remembered value was
     forgotten) and no further event is emitted. The same holds when the matching option exists but is disabled and
     later loses `disabled`: it is then selected, with no event.
+20. **Given** `beta` selected and focused, **When** Enter is pressed, **Then** exactly one `ocelle-listbox-activate`
+    is emitted with `detail` `{ "value": "beta" }` and no `ocelle-listbox-change`; **When** the user double-clicks
+    `delta` (not selected), **Then** the first click selects it (one `ocelle-listbox-change` with
+    `{ "value": "delta" }`) and the double-click emits one `ocelle-listbox-activate` with `{ "value": "delta" }`, in
+    that order. Enter on a focused option that is not selected selects it and emits no activate event; a
+    double-click on a disabled option emits nothing (paired with the activate events in the same test). The
+    activate event is not cancelable (FR-002, FR-014a).
+21. **Given** `alpha`, `beta` (selected and focused), `gamma`, **When** a host moves `beta` after `gamma`
+    (`listbox.insertBefore(beta, null)` or `append(beta)`), or re-inserts it at its own position, **Then** `beta`
+    still has focus, is still selected and is the tab stop, the keyboard order is `alpha`, `gamma`, `beta`, and no
+    event is emitted (paired with the focus read).
+22. **Given** a listbox with a `max-block-size` smaller than its content and every option disabled, **When** the user
+    presses Tab from a button before it, **Then** focus goes to the button after it: neither the listbox nor its
+    scrolling box is a tab stop (paired with the same listbox with one enabled option, which takes focus).
+23. **Given** an option with `<ocelle-icon slot="icon" name="folder">`, **Then** the icon sits before the text as the
+    slot convention of mission 005 places and sizes it, adds nothing to the option's name, and the selected paint of
+    the option is unchanged by it.
 
 ---
 
@@ -272,7 +321,8 @@ walked with every key of its model, and read in the accessibility tree after eac
    `"tasks"`) and three panels, **When** the page loads, **Then** the tree exposes a tablist named "Mission views"
    with three tabs in order, the first selected, and one tabpanel whose name is "Spec" (named by its tab), holding
    the first panel's content; the other panels are hidden (no box, no node). The selected tab is exposed as
-   controlling its panel.
+   controlling its panel. The tabpanel is not inside the tablist: no tabpanel, and nothing in a panel, has the
+   tablist as an ancestor in the tree, and the tablist's only children of an interactive role are the three tabs.
 2. **Given** focus on `Spec`, **When** ArrowRight is pressed, **Then** focus and selection move to `Plan`, its panel
    is shown and named "Plan", the `Spec` panel is hidden, and exactly one `ocelle-tabs-change` is emitted with `detail`
    `{ "value": "plan" }`.
@@ -288,8 +338,9 @@ walked with every key of its model, and read in the accessibility tree after eac
    exposed as a disabled tab.
 8. **Given** a host sets `tabs.value = "tasks"`, **Then** `Tasks` and its panel are selected and shown and no event is
    emitted (paired with the shown panel).
-9. **Given** more tabs than panels or more panels than tabs, **Then** the extra tabs or panels are not exposed and the
-   README says the two lists pair by order; no error is thrown.
+9. **Given** more tabs than panels or more panels than tabs, **Then** the extra tabs or panels are not rendered: no
+   box, no node, not focusable and not clickable (the arrows, Home and End skip an unpaired tab); the README says the
+   two lists pair by order; no error is thrown (paired with the paired tabs exposed in the same test).
 10. **Given** the tabs are wider than their container, **Then** the tab row wraps onto further rows inside the
     element's box and the page does not scroll sideways at a 320 px viewport; the arrows still follow document order.
 11. **Given** each state, **Then** the selected tab shows the selected paint (a bar on its block-end edge), the
@@ -332,6 +383,21 @@ walked with every key of its model, and read in the accessibility tree after eac
     and no event is emitted (the remembered value takes precedence over the first enabled tab, FR-010a
     "Precedence"). **Given** instead the same three tabs all disabled and `tabs.value = "tasks"` set, **When** the host
     removes `disabled` from `Spec` and `Tasks` in one operation, **Then** `Tasks` is selected with no event.
+21. **Given** the selected `Plan` panel holding a `<button>`, a text `<input>` and an `ocelle-segmented-choice`,
+    **When** Enter and Space are pressed on the button, **Then** the button is activated (its click runs) and the
+    tabs handle neither key; **When** ArrowLeft, Home and End are pressed in the text input, **Then** the caret moves
+    and each keydown reaches a `document` listener with `defaultPrevented` false; **When**
+    ArrowRight is pressed on a segment, **Then** focus moves to the next segment only. In every case `Plan` stays
+    selected and its panel shown, and no `ocelle-tabs-change` is emitted. Paired in the same test with ArrowRight on
+    a tab, which moves focus and selection.
+22. **Given** the selected panel holding only an `ocelle-link` (whose focusable anchor is inside its shadow root),
+    **When** Tab is pressed on the selected tab, **Then** focus goes to the link and the panel itself is not a tab
+    stop; **Given** a panel holding one `<button>`, **When** the host removes the button after render, **Then** Tab
+    from the selected tab focuses the panel itself, which shows the focus ring; adding a button back makes the panel
+    no longer a stop.
+23. **Given** a tab with `<ocelle-icon slot="icon" name="folder">`, **Then** the icon sits before the text as the slot
+    convention places and sizes it, adds nothing to the tab's name or its panel's name, and the selected paint of the
+    tab is unchanged by it.
 
 ---
 
@@ -352,8 +418,9 @@ clicked, and the joined variant is measured at widths where it fits on one row a
 
 1. **Given** `<ocelle-segmented-choice label="Lane filter" value="all">` with segments `All`, `Mine`, `Blocked`,
    `Done` (`value="all"`, `"mine"`, `"blocked"`, `"done"`), **When** the page loads, **Then** the tree exposes a
-   group named "Lane filter" holding four toggle buttons, `All` pressed and the others not pressed; only `All` is in
-   the tab order. No tab, tablist, option or `aria-selected` is exposed (distinct from tabs).
+   toolbar named "Lane filter" with horizontal orientation, holding four toggle buttons, `All` pressed and the others
+   not pressed; only `All` is in the tab order. No tab, tablist, option or `aria-selected` is exposed (distinct from
+   tabs).
 2. **Given** focus on `All`, **When** ArrowRight is pressed, **Then** focus moves to `Mine` and nothing else changes:
    `All` stays pressed and no event is emitted (paired with the focus move).
 3. **Given** focus on `Mine`, **When** Enter or Space is pressed, **Then** `Mine` is pressed, `All` is not, the group's
@@ -374,8 +441,10 @@ clicked, and the joined variant is measured at widths where it fits on one row a
    `--ocelle-color-accent-strong`).
 9. **Given** `joined`, `All` pressed and a width where all four segments fit on one row, **Then** the segments touch
    with no gap; every boundary line of the group, between neighbours and around the outside, is one
-   `--ocelle-border-width` wide in `--ocelle-color-control-border`, including the lines on both sides of the pressed
-   `All` (the line between `All` and `Mine` is one line, not two, and not widened); only the first segment has rounded
+   `--ocelle-border-width` wide, in `--ocelle-color-control-border` except the lines that bound the pressed `All`,
+   which are in `--ocelle-color-accent-strong` (#5 rule 1: a control on `accent-low` is bordered with `accent-strong`)
+   and still one `--ocelle-border-width` wide (the line between `All` and `Mine` is one line, not two, and not
+   widened, in `accent-strong`); only the first segment has rounded
    start corners and only the last has rounded end corners, and the inner corners are square. The pressed segment's
    paint in the joined variant is its fill `--ocelle-color-accent-low` and a bar of `--ocelle-bar-width` in
    `--ocelle-color-accent-strong` along its block-end edge, drawn inside its box above the shared boundary line, so
@@ -385,9 +454,14 @@ clicked, and the joined variant is measured at widths where it fits on one row a
     `Done` on row 2), **Then** each row is rounded on its own: `All` has rounded start corners, `Blocked` rounded end
     corners, and `Done` (alone on row 2) rounded corners on both ends; no host script or observer is involved. The
     rows touch, and the boundary between row 1 and row 2 is one shared line of `--ocelle-border-width`, as between
-    neighbours in a row. When the container is widened to fit one row, the rounding returns to scenario 9's: measured
-    by awaiting one `requestAnimationFrame` after the resize, then reading the segments' computed corner radii. The
-    element's DOM never gains a `style` attribute (constitution IV; paired with the measured radii).
+    neighbours in a row. When the container is widened to fit one row, the rounding returns to scenario 9's within
+    the frame that renders the resize. Measured as follows: the container is resized in an ordinary task that does
+    not wait for a frame; the test then waits until that frame's resize observations have been delivered (a
+    `ResizeObserver` the test registers on the group after the element has rendered, whose callback runs after the
+    element's own in the same delivery, or two `requestAnimationFrame` callbacks) and reads the segments' computed
+    corner radii there. (Animation-frame callbacks run before a frame's resize observations are delivered, so one
+    `requestAnimationFrame` alone reads the previous rounding.) The element's DOM never gains a `style` attribute
+    (constitution IV; paired with the measured radii).
 11. **Given** forced-colours mode, **Then** every segment's boundary is visible in a system colour (the `joined` shared
     borders included), and the pressed segment shows a `Highlight` edge of `--ocelle-bar-width` (in the joined
     variant, on its block-end edge inside its box, as in scenario 9).
@@ -415,6 +489,14 @@ clicked, and the joined variant is measured at widths where it fits on one row a
     sets `value = "blocked"` and then appends the segments `All`, `Mine`, `Blocked` (`value="blocked"`) in one
     operation, **Then** `Blocked` is pressed and is the tab stop, `value` reads `"blocked"`, and no event is emitted
     (the remembered value takes precedence over the first enabled segment, FR-010a "Precedence").
+18. **Given** `joined` and a container width at which the group wraps to two rows (`All`, `Mine`, `Blocked` on row 1,
+    `Done` on row 2), **When** the host changes `Mine`'s text so that `Blocked` no longer fits on row 1, at the same
+    container width and the same group block size (two rows: `All`, `Mine` and `Blocked`, `Done`), **Then** `Mine`
+    has rounded end corners, `Blocked` rounded start corners and `Done` rounded end corners, measured as in scenario
+    10.
+19. **Given** a segment with `<ocelle-icon slot="icon" name="folder">`, **Then** the icon sits before the text as the
+    slot convention places and sizes it, adds nothing to the segment's name, and the pressed paint of the segment is
+    unchanged by it.
 
 ---
 
@@ -452,16 +534,20 @@ live region read from the accessibility tree and observed for mutations.
    content is not mutated (a MutationObserver on the region records no mutation), paired in the same test with the
    recorded mutation of the first set.
 6. **Given** a status shown, **When** the Copy control is activated again, **Then** the status is cleared before the
-   new request event is emitted (a listener reading `field.status` during the event sees `""`, and the region is
-   empty at that moment), and when the listener sets the same text again the region's text goes from empty to that
-   text again (a recorded mutation), so a host's new status is a new live-region change.
+   new request event is emitted (a listener reading `field.status` during the event sees `""`, the region is empty
+   at that moment, and the accessibility tree read by that listener already holds the live region with no text,
+   FR-035), and when the listener sets the same text again the region's text goes from empty to that text again (a
+   recorded mutation, and a tree read after the set holds the text), so a host's new status is a new live-region
+   change.
 7. **Given** a host that sets `status` to a failure text ("Could not copy: the bridge is unavailable"), **Then** it is
    shown in the live region the same way (scenario 5); the field draws no colour or icon of its own for success or
    failure (the words are the host's).
 8. **Given** `copy-label="Copy command"`, **Then** the Copy control is named "Copy command"; without it, "Copy". A host
    `aria-label` on the copy field names the field's group, not the control.
-9. **Given** the Copy control, **Then** its box is at least `--ocelle-target-min` in both dimensions, it shares the
-   field's border on its inline-start side (flush: no gap and no double border between text and control), it shows
+9. **Given** the Copy control, **Then** its box is at least `--ocelle-target-min` in both dimensions, it sits flush
+   against the text on its inline-start side with one line of `--ocelle-border-width` between them, drawn in
+   `--ocelle-color-accent-strong` because the text's ground is `--ocelle-color-inset` (#5 rule 1 extended; no gap and
+   no double line between text and control), it shows
    the token focus ring when focused, and its CSS part is `copy-control`.
 10. **Given** `value` empty or missing, **Then** the Copy control is disabled (exposed as disabled) and activating it
     emits nothing; paired with the enabled case in the same test.
@@ -488,7 +574,10 @@ means: the top-level document's URL becomes U, the marker is gone (a new documen
 target page's own content is present. "The page does not navigate" means: after the activation's event and the end of
 the task that dispatched it, the URL is unchanged, the marker is still present, and no `securitypolicyviolation`
 event, dialog or console error occurred; it is paired in the same test with a later activation of scenario 4's link,
-whose navigation is then observed (a defect that navigates for every `href` fails the first half).
+whose navigation is then observed (a defect that navigates for every `href` fails the first half). A same-document
+navigation (an `href` that resolves to the document's own URL with a fragment) loads no new document: "the page
+navigates to the fragment F" means the URL's fragment becomes F and the marker is still present; "it does not
+navigate" means the URL, its fragment included, is unchanged (scenario 14).
 
 **Acceptance Scenarios**:
 
@@ -511,6 +600,8 @@ whose navigation is then observed (a defect that navigates for every `href` fail
 7. **Given** forced-colours mode, **Then** the link is drawn in the system `LinkText` colour, underlined, and the focus
    ring is visible.
 8. **Given** a host `aria-label` on the link, **Then** it is the link's name; the link's own text is the name otherwise.
+   In both cases the paragraph holds exactly one named node for the link (the link itself): no second node, generic
+   or other, carries the host `aria-label`.
 9. **Given** an `href` whose URL, resolved against the document base, has a protocol other than `http:`, `https:` or
    the document's own protocol: `javascript:alert(1)`, the whitespace-padded `" javascript:alert(1)"`,
    `"java<TAB>script:alert(1)"` (a tab character inside the scheme) and `data:text/html,x`, **When** each is
@@ -520,9 +611,12 @@ whose navigation is then observed (a defect that navigates for every `href` fail
 10. **Given** a protocol-relative `href` naming the fixture's own host (`//<fixture host>/link-target.html`), **When**
     activated, **Then** the event carries that `href` as written and the page navigates to the link target page (it
     resolves to the document's `http:` protocol).
-11. **Given** the fixture page with `<base href="kitty-app://app/">` and `<ocelle-link href="x">`, **When** activated,
-    **Then** the event carries `{ "href": "x" }` and the page does not navigate: the resolved protocol `kitty-app:` is
-    neither `http:`, `https:` nor the document's own `http:` (paired with scenario 4's navigation).
+11. **Given** the fixture page, after the element has loaded, given `<base href="kitty-app://app/">` (inserted then,
+    so the page's own script, styles and font still load; `document.baseURI` reads `kitty-app://app/`) and
+    `<ocelle-link href="x">`, **When** activated, **Then** the event carries `{ "href": "x" }` and the page does not
+    navigate: the resolved protocol `kitty-app:` is neither `http:`, `https:` nor the document's own `http:`. The base
+    is then removed (`document.baseURI` reads the fixture's URL again) and scenario 4's link is activated, whose
+    navigation is observed (the pair).
 12. **Given** a copy of the fixture page opened from a `file:` URL, standing in for a webview whose document protocol
     is neither `http:` nor `https:` (Kitty Desktop's custom scheme), with the same policy given by a `<meta>` element
     and a `link-target.html` beside it, **When** `<ocelle-link href="link-target.html">` is activated, **Then** the
@@ -538,6 +632,13 @@ whose navigation is then observed (a defect that navigates for every `href` fail
     clicked with the middle button, **Then** no `ocelle-link-activate` is emitted and the page does not navigate,
     as with `href` (operator decision Q2 (b) at spec check 2); paired in the same test with a plain click's event
     `{ "href": null }`.
+14. **Given** a paragraph with an element `id="section-2"` lower in the page and `<ocelle-link href="#section-2">`,
+    **When** it is activated by Enter or a plain click with no listener cancelling, **Then** one
+    `ocelle-link-activate` with `{ "href": "#section-2" }` is emitted first, then the page navigates to the fragment
+    `section-2` ("Observing navigation": the URL's fragment becomes `section-2`, the marker stays). **Given** a
+    listener that cancels the event, **When** it is activated, **Then** the fragment is unchanged (paired with the
+    navigation in the same test). An empty `href=""` is an `href` (it resolves to the document's own URL): the event
+    carries `{ "href": "" }` and, uncancelled, the document is navigated to itself.
 
 ---
 
@@ -553,17 +654,27 @@ whose navigation is then observed (a defect that navigates for every `href` fail
   or segmented choice with no children at all is in the same state; when children are appended to it, a remembered
   host value picks among them before the first enabled child does (FR-010a, "Precedence").
 - A listbox with no options: it is exposed as an empty named listbox and has no tab stop.
-- Setting `value` to the current value is a no-op (no event, no re-render flicker).
+- Setting `value` to the current value is a no-op: no event, and no attribute or child of the parent or of its
+  children is mutated (a MutationObserver over the parent's subtree records nothing for that set).
 - A child's text changes after render: its accessible name follows.
+- A child whose text is longer than the parent's inline size (an option, a tab or a segment at a 320 px viewport):
+  the text wraps inside the child, which grows in block size; nothing is truncated and the page does not scroll
+  sideways.
+- Hover: an enabled option, tab or segment under the pointer is filled `--ocelle-color-hover-bg`; a hovered
+  segment's own boundary lines are then drawn in `--ocelle-color-accent-strong` (#5 rule 1 extended to `hover-bg`),
+  still one `--ocelle-border-width` wide. Disabled children show no hover paint.
+- A parent has no `disabled` of its own; a host disables every child to disable the whole control.
 - The copy field's `value` changes while a `status` is shown: the status is cleared.
 - `status` set when no request was made (a host reporting proactively): it is shown in the live region like any status.
 - First render with both `value` and `status` written: the status is shown in the live region; setting `value` at
   first render is not a change and clears nothing. When the element clears `status` (FR-042), the property reads `""`;
   a `status` attribute the host wrote stays as written (not reflected) and is read again only when it changes.
-- The joined segmented choice inside a container that resizes continuously (a drag): rounding follows within one frame
-  after each resize, with no layout loop and no console error.
-- Reduced motion: none of these elements animates selection or focus changes beyond the token durations, which drop
-  to 0 ms under reduced motion.
+- The joined segmented choice inside a container that resizes continuously (a drag): rounding follows within the
+  frame that renders each resize (measured as User Story 3 scenario 10 says), with no layout loop and no console
+  error (a `ResizeObserver` loop error included).
+- Motion: none of these elements animates. No element declares a transition or an animation, so selection, focus
+  and hover changes are immediate in every motion setting (each child's, the copy control's and the link's computed
+  `transition-duration` is `0s`).
 - Host `hidden` removes any of these elements (no box, no node), as in mission 005's convention.
 - Two copies of the package on one page: the first definition wins (mission 005's `define`), for every new element.
 
@@ -577,10 +688,14 @@ whose navigation is then observed (a defect that navigates for every `href` fail
   `ocelle-tab`, `ocelle-tab-panel`, `ocelle-segmented-choice`, `ocelle-segment`, `ocelle-copy-field` and
   `ocelle-link`, each written to mission 005's element conventions (module per element with its own entry point,
   `define`, `static properties` and `declare` fields, token-only shared static styles, `:host([hidden])`, variant rules
-  inside `@media not (forced-colors: active)`) and included in the browser build.
+  inside `@media not (forced-colors: active)`) and included in the browser build. Importing a parent's entry point
+  also defines its children (`ocelle-listbox` defines `ocelle-option`; `ocelle-tabs` defines `ocelle-tab` and
+  `ocelle-tab-panel`; `ocelle-segmented-choice` defines `ocelle-segment`), and importing `ocelle-copy-field`'s
+  defines `ocelle-icon`, so one import is enough for each control (operator decision PLAN-CORRECTNESS-1-015 (a)).
 - **FR-002**: Every event is a `CustomEvent` named `ocelle-<element>-<action>`, `bubbles: true`, `composed: true`, with
   exactly the `detail` its user story states. Events fire on user action only, never on a property or attribute set
-  by the host. Only `ocelle-link-activate` is cancelable.
+  by the host. Only `ocelle-link-activate` is cancelable. A parent's `value` already reads the new value when its
+  `-change` event is dispatched.
 - **FR-003**: The elements perform no I/O: no clipboard read or write, no storage, no network request, no navigation
   other than `ocelle-link`'s with an `href` (FR-047).
 - **FR-004**: The roles, states, tab order and associations of a parent and its children are set by the elements
@@ -624,8 +739,11 @@ whose navigation is then observed (a defect that navigates for every `href` fail
   render under FR-021 and FR-027, after the selected or pressed child is removed or disabled under FR-011a, and when
   a child becomes enabled while none was under FR-011a), a remembered value takes precedence: the parent picks the
   first enabled child in document order that has the remembered value, if one is present, and forgets the value;
-  otherwise it picks the rule's own target. Children added or enabled in one operation (the same task) are taken
-  together, so the outcome does not depend on the order in which they arrive: when a host sets `value = "tasks"` on
+  otherwise it picks the rule's own target. Children added or enabled in one operation (synchronously, before the
+  next microtask checkpoint; operator decision PLAN-CORRECTNESS-1-014 (a)) are taken together, so the outcome does
+  not depend on the order in which they arrive; changes separated by an `await` are separate operations. A host set
+  of `value` decides on the children present at the moment of the set, those appended just before it in the same
+  operation included. When a host sets `value = "tasks"` on
   an empty parent and then appends `Spec`, `Plan` and `Tasks` at once, or enables `Spec` and `Tasks` at once while
   every child was disabled, `Tasks` is selected or pressed (User Story 2 scenario 20, User Story 3 scenario 17).
 - **FR-011**: Children added, removed or reordered after render are picked up without host action: the tree and the
@@ -656,6 +774,11 @@ whose navigation is then observed (a defect that navigates for every `href` fail
   the first and last enabled option; focus moves only, selection does not follow focus.
 - **FR-014**: Enter, Space and a click select the focused or clicked enabled option and emit
   `ocelle-listbox-change` with `{ value }`, unless it was already selected. Space does not scroll the page.
+- **FR-014a**: Enter on the focused option when it is selected and enabled, and a double-click on an enabled option,
+  emit `ocelle-listbox-activate` with `{ value }` (the option's value), not cancelable, so a host can confirm the
+  choice without listening to keys (operator decision PLAN-CORRECTNESS-1-018 (b); the folder picker of #527). The
+  double-click's first click selects the option under FR-014 first, so the change event, if any, comes before the
+  activate event. Space never activates; a disabled option never does (User Story 1 scenarios 7, 18 and 20).
 - **FR-015**: The listbox handles ArrowDown, ArrowUp, Home, End, Enter and Space, and no other key: Escape, Tab,
   ArrowLeft, ArrowRight and printable keys (no typeahead) are not handled ("Handled and unhandled keys").
 - **FR-016**: The tab stop is the selected option if enabled, else the last focused enabled option, else the first
@@ -667,8 +790,9 @@ whose navigation is then observed (a defect that navigates for every `href` fail
 **Tabs (User Story 2)**
 
 - **FR-019**: `ocelle-tabs` is exposed as a tablist (named by FR-006), each `ocelle-tab` as a tab, and the panel of the
-  selected tab as a tabpanel named by that tab; the selected tab is exposed as controlling that panel. Tabs and panels
-  pair by order; unpaired extras are not exposed.
+  selected tab as a tabpanel named by that tab; the selected tab is exposed as controlling that panel. The tabpanel
+  is beside the tablist, never inside it. Tabs and panels pair by order; unpaired extras are not rendered (no box, no
+  node, not focusable, not clickable). Keys pressed inside a panel's content are not the tabs' keys (FR-021a).
 - **FR-020**: Each tab's `value` defaults as FR-009 states for every child (its zero-based index as a string).
 - **FR-021**: ArrowRight and ArrowLeft move focus and selection to the next and previous enabled tab in visual order
   (reversed under right-to-left), wrapping at the ends; Home and End to the first and last enabled tab. A click on an
@@ -678,17 +802,24 @@ whose navigation is then observed (a defect that navigates for every `href` fail
   with no `value`, or a `value` no enabled tab has, the first enabled tab, unless FR-010a's remembered value names an
   enabled tab ("Precedence").
 - **FR-021a**: The tabs handle ArrowRight, ArrowLeft, Home, End, Enter and Space, and no other key: ArrowUp,
-  ArrowDown, Escape and printable keys are not handled ("Handled and unhandled keys"); Tab follows FR-023.
+  ArrowDown, Escape and printable keys are not handled ("Handled and unhandled keys"); Tab follows FR-023. Only keys
+  pressed on a tab itself are the tabs' keys: a key pressed on anything inside a panel, or already handled by a
+  nested control, is left alone (User Story 2 scenario 21). The same holds for the listbox and the segmented choice
+  and their children's content.
 - **FR-022**: The tab row wraps onto further rows when wider than its container; it never scrolls sideways.
 - **FR-023**: Only the selected tab is in the tab order; from it, Tab moves into the selected panel (its first
-  focusable descendant, or the panel itself, which is then focusable and shows the focus ring).
+  focusable descendant, or the panel itself, which is then focusable and shows the focus ring). Whether the panel
+  holds a focusable descendant counts elements focusable through a shadow root (such as `ocelle-link`) and follows
+  changes to the panel's content after render (User Story 2 scenario 22).
 - **FR-024**: Unselected panels have no box and no accessibility node.
 - **FR-025**: The selected tab's bar sits on its block-end edge.
 
 **Segmented choice (User Story 3)**
 
-- **FR-026**: `ocelle-segmented-choice` is exposed as a group (named by FR-006) of toggle buttons; each `ocelle-segment`
-  as a toggle button with `pressed` true or false. It exposes no tab, tablist, option or `selected` state.
+- **FR-026**: `ocelle-segmented-choice` is exposed as a toolbar (named by FR-006, horizontal orientation) of toggle
+  buttons, the ARIA pattern whose keyboard model is one tab stop and arrow keys (operator decision
+  PLAN-A11Y-SECURITY-1-008 (a)); each `ocelle-segment` as a toggle button with `pressed` true or false. It exposes no
+  tab, tablist, option or `selected` state.
 - **FR-027**: Exactly one enabled segment is pressed whenever at least one is enabled (FR-011a): on first render with
   no `value`, or a `value` no enabled segment has, the first enabled segment, unless FR-010a's remembered value names
   an enabled segment ("Precedence"). A user cannot un-press the pressed
@@ -700,10 +831,13 @@ whose navigation is then observed (a defect that navigates for every `href` fail
   (Space never scrolls the page), and no other key: Escape and printable keys are not handled ("Handled and unhandled
   keys"); Tab leaves the group.
 - **FR-029**: The `joined` attribute (boolean, reflected) gives the joined variant of User Story 3 scenarios 9 and 10:
-  touching segments and rows, one shared border line of `--ocelle-border-width` in `--ocelle-color-control-border`
-  between neighbours and between rows (the pressed segment's lines included), rounded outer corners only at the start
+  touching segments and rows, one shared border line of `--ocelle-border-width` between neighbours and between rows,
+  in `--ocelle-color-control-border` except the lines that bound the pressed segment (and a hovered one), which are
+  in `--ocelle-color-accent-strong` at the same width (#5 rule 1; operator decision PLAN-CORRECTNESS-1-010 (a)),
+  rounded outer corners only at the start
   of each row's first segment and the end of each row's last segment, recomputed by the element itself when it wraps
-  or unwraps, without a `style` attribute and without host code. In the joined variant the pressed segment is painted
+  or unwraps (the group resizing, or a segment's size or the child list changing at the same group size), without a
+  `style` attribute and without host code. In the joined variant the pressed segment is painted
   with the fill `--ocelle-color-accent-low` and a bar of `--ocelle-bar-width` in `--ocelle-color-accent-strong` (in
   forced colours, `Highlight`) along its block-end edge inside its box; the bar neither widens a shared line nor
   changes the segment's outer size. The default variant's pressed paint is User Story 3 scenario 8's.
@@ -718,14 +852,25 @@ whose navigation is then observed (a defect that navigates for every `href` fail
 - **FR-033**: The Copy control is a native button in the field's shadow root (operator decision Q1 (c)), styled from
   tokens, showing `ocelle-icon name="copy"` through the slot convention, decorative.
 - **FR-034**: The Copy control is named by `copy-label` (attribute and property, not reflected, trimmed), default
-  "Copy"; a host `aria-label` on the field names the field, which is exposed as a group.
-- **FR-035**: Activating the Copy control (click, Enter, Space) clears `status`, then emits
-  `ocelle-copy-field-request` with `{ text }`, the exact `value`. It never writes or reads the clipboard.
+  "Copy"; a host `aria-label` on the field names the field, which is exposed as a group. Without a host
+  `aria-label` it is still exposed as a group, unnamed, holding the text and the Copy control; the README tells hosts
+  to name it.
+- **FR-035**: Activating the Copy control (click, Enter, Space) clears `status` at once, then, once the emptied live
+  region has been rendered into the accessibility tree (after the next rendering update, so a screen reader sees
+  the clear before the host's new text; operator decision PLAN-TESTABILITY-1-011 (a)), emits
+  `ocelle-copy-field-request` with `{ text }`, the exact `value` at the moment of activation. Each activation emits
+  one request; an element disconnected before the dispatch emits nothing. The README states this timing. It never
+  writes or reads the clipboard.
 - **FR-036**: With an empty or missing `value`, the Copy control is disabled and emits nothing.
-- **FR-037**: The Copy control sits flush at the field's inline end: it shares the field's border, with no gap and no
-  double line, and is at least `--ocelle-target-min` in both dimensions.
+- **FR-037**: The Copy control sits flush at the field's inline end: it shares the field's outer border, with no gap
+  and no double line; the one line between the text (on `--ocelle-color-inset`) and the control is
+  `--ocelle-border-width` in `--ocelle-color-accent-strong` (#5 rule 1 extended; operator decision
+  PLAN-CORRECTNESS-1-010 (a)). The control is at least `--ocelle-target-min` in both dimensions.
 - **FR-038**: The field's CSS parts are `value` (the text) and `copy-control` (the Copy control); they are public
-  surface and stay when the control becomes `ocelle-button` (FR-044).
+  surface and stay when the control becomes `ocelle-button` (FR-044). What `copy-control` guarantees is its box (its
+  position, size and the rules a host sets on it), its accessible name and the events its activation leads to; which
+  element carries the part (a native `<button>` today), and so which pseudo-classes and inner borders it has, is not
+  part of that surface (operator decision PLAN-CORRECTNESS-1-017 (a)).
 - **FR-039**: In forced colours the field's and the control's boundaries are drawn in system colours.
 - **FR-040**: The field's text is exposed to assistive technology as static text inside the field's group, before the
   Copy control in reading order.
@@ -740,8 +885,9 @@ whose navigation is then observed (a defect that navigates for every `href` fail
   icon of its own. A `status` attribute the host wrote stays as written and is read again only when it changes (Edge
   Cases).
 - **FR-043**: The field emits nothing and changes no `status` on its own other than FR-042's clearing.
-- **FR-044**: The README states that the Copy control will become `ocelle-button` in a later op once #7 merges, and
-  that its part name, accessible name and events stay, so the swap is a PATCH.
+- **FR-044**: The README states that the Copy control will become `ocelle-button` in a later op once #7 merges, what
+  the `copy-control` part guarantees (FR-038: its box, its accessible name and its events, not the element behind
+  it), and that these stay, so the swap is a PATCH under that stated surface.
 
 **Link (User Story 5)**
 
@@ -760,7 +906,11 @@ whose navigation is then observed (a defect that navigates for every `href` fail
   protocol is `http:`, `https:`, or equal to the document's own protocol (operator decision Q1 (b)). The check is on
   the resolved URL, never on the written string, so leading spaces or tabs and newlines inside a scheme do not bypass
   it. Any other protocol (for example `javascript:`, `data:`, or a custom scheme that is not the document's) is never
-  navigated by the element (User Story 5 scenarios 4 and 9 to 12).
+  navigated by the element (User Story 5 scenarios 4 and 9 to 12). The `href` is resolved and checked at each
+  activation, against the document base URL and protocol of that moment. An empty `href` counts as an `href`; a
+  fragment `href` naming the same document navigates within it (User Story 5 scenario 14). The README states that
+  `detail.href` is the attribute as written and not validated, and that a host that navigates itself applies the same
+  resolved-protocol check.
 - **FR-048**: The focus ring follows each line fragment when the link wraps (FR-007).
 - **FR-049**: `ocelle-link` has no `target`, `download` or `rel` handling in this feature; the README says that a
   user's modified activation keeps the browser's new tab or window (FR-046), that a modified activation of a link
@@ -773,7 +923,9 @@ whose navigation is then observed (a defect that navigates for every `href` fail
   selection, a selected option, a disabled option, focused option, a scrolling listbox), tabs (first selected, another
   selected, a disabled tab, wrapped rows, focused tab), segmented choice (default and joined, one row and wrapped,
   pressed, disabled, focused), copy field (short, wrapped long command, with a status, empty/disabled), link (in a
-  paragraph, wrapped across lines, focused, with a hover state declared per 006 FR-031).
+  paragraph, wrapped across lines, focused, with a hover state declared per 006 FR-031); and one story each for an
+  option, a tab and a segment with an `icon` (User Story 1 scenario 23, User Story 2 scenario 23, User Story 3
+  scenario 19).
 - **FR-051**: The `axe` gate reports no serious or critical finding on any of these stories in either theme, with no
   new entry in `storybook/a11y-exceptions.json`.
 - **FR-052**: The stories and the tests that read them are written in each phase's red commit, before the green
@@ -800,7 +952,12 @@ whose navigation is then observed (a defect that navigates for every `href` fail
   with the link target page allowed for User Story 5 only; User Story 5 scenario 12 runs on a `file:` copy of the
   fixture with the same policy in a `<meta>` element).
 - **FR-058**: `@ocelle/elements`' changelog names the nine new elements as a MINOR change. A new token, if the plan
-  needs one, is added through `@ocelle/tokens`' validation and contrast pairs and named in its changelog.
+  needs one, is added through `@ocelle/tokens`' validation and contrast pairs and named in its changelog. The
+  selected bars in `--ocelle-color-accent-strong` sit on the main grounds, so `@ocelle/tokens`' pair list gains the
+  non-text pairs of `color-accent-strong` on `color-canvas`, `color-sheet`, `color-pane`, `color-panel`,
+  `color-inspector` and `color-rail` in both themes, checked by the contrast gate and named in `@ocelle/tokens`'
+  changelog (operator decision PLAN-CORRECTNESS-1-011 (b)); an element pairs check fails on any colour pair an
+  element of this feature paints that is not a `checked` pair.
 - **FR-059**: Every keyboard path of every element has an interaction test driven by real key input ("Real input
   only" above), and every emitted event and its payload is asserted.
 
@@ -822,7 +979,7 @@ whose navigation is then observed (a defect that navigates for every `href` fail
   arrows each pattern leaves alone), has at least one test driven by real input whose outcome is read from focus, the
   keydown's `defaultPrevented` and the accessibility tree; 100% of the scenarios above pass in Chromium on the
   strict-CSP fixture.
-- **SC-002**: 100% of emitted events (five event names) are asserted with their exact payload, and every "emits
+- **SC-002**: 100% of emitted events (six event names) are asserted with their exact payload, and every "emits
   nothing" outcome is paired with a positive outcome in the same test.
 - **SC-003**: No page in this feature's tests or stories has an id reference crossing a shadow root, and none needs a
   host-written id or `aria-*` on a child: checked by reading the accessibility tree of a page whose children carry none.
@@ -855,6 +1012,9 @@ whose navigation is then observed (a defect that navigates for every `href` fail
   consumers.
 - The copy field's text is plain text; a host that needs a digest in groups of four formats `value` itself.
 - New tokens are not expected: `color-accent-low`, `color-accent-strong`, `bar-width`, `border-width`, `focus-*`,
-  `target-min`, `radius-2`, `color-link*`, `color-inset` and `color-control-border` exist. If the plan finds one is
-  needed, it spans `@ocelle/tokens` and is a plan decision recorded in Complexity Tracking or the plan.
+  `target-min`, `radius-2`, `color-link*`, `color-inset`, `color-hover-bg` and `color-control-border` exist. If the
+  plan finds one is needed, it spans `@ocelle/tokens` and is a plan decision recorded in Complexity Tracking or the
+  plan. New contrast pairs of existing tokens are added to `@ocelle/tokens` (FR-058).
+- Out of scope as well: form association (a `name` and a submitted value); no consumer need of this feature asks for
+  it (plan squad round 1, PLAN-FRESH-1-010, refuted).
 - Only Chromium is measured; WebKit stays an open limitation.
