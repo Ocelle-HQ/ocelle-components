@@ -43,4 +43,12 @@
   recorded in the spec's header and applied to US1-5 and FR-013. The check's notes are folded in too: host
   `aria-label` (FR-028), wrapped-action gaps and alignment (FR-010, FR-019), more empty-part scenarios, the prose
   region edge case, and the README statements the documentation test asserts (FR-036).
+- Spec check 2's blocking findings are resolved in the spec (`reviews/spec/check-2-fixes.md`): `inset` is a boolean
+  whose presence, the empty value included, means inset, and the "empty or invalid is not set" rule covers only the
+  enumerated attributes (FR-006, FR-016, US1-10); the landmark name follows the README's Host ARIA rule, a present
+  host `aria-label` deciding alone (FR-028, US3-12, US4-11, FR-036, Edge Cases); the sidebar pads the head, each
+  section and the footer, with dividers between padded parts and no other gap (FR-021, FR-022, US3-3, US3-11,
+  US3-13). Notes SPEC-2-06 (US1-18, FR-017) and SPEC-2-08 (Edge Cases) are folded in too.
+- The operator's answers at the spec gate (upper-case accessible name, keeping FR-028, Host ARIA precedence) are
+  recorded in the spec's header.
 - The spec check (`/speckit-squad-spec-check`) reads the spec on its own next.
