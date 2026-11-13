@@ -68,6 +68,16 @@ not names of this library.
 - Q3 (SPEC-1-09) (c): implementation of this feature waits for #10 (Storybook workbench) to merge, as ruled for
   mission 008. The design phases (spec, plan, tasks) proceed now (FR-053, SC-007, "Dependency on #10" below).
 
+**Operator decisions at spec check 2** (2026-11-13, human:jeroennouwsdev; `reviews/spec/check-2.md`):
+
+- Q1 (SPEC-2-03) (b): a parent remembers the last value a host set. When a matching enabled child appears, the
+  parent selects it, with no event. Until then the listbox's `value` reads `""`, and tabs and the segmented choice
+  show their current or first enabled child. The parent forgets the remembered value on the next user selection or
+  host set (FR-010a; User Story 1 scenario 19, User Story 2 scenario 19, User Story 3 scenario 16).
+- Q2 (SPEC-2-04) (b): for `ocelle-link` without `href`, every modified activation (Ctrl, Meta or Shift held, or a
+  middle click) emits nothing, as with `href`. Only plain activations emit; the host routes only those (FR-046,
+  User Story 5 scenario 13).
+
 **Dependency on #10 (not merged).** The Storybook workbench of #10 (branch `claude/010-storybook-workbench`,
 `specs/006-storybook-workbench`) gives the `visual` gate (baselines in a pinned container, light and dark), the `axe`
 gate (axe on every story, serious and critical findings fail) and its contributor note (006 FR-025). Its design is
@@ -196,7 +206,8 @@ read after each key.
 11. **Given** a host sets `listbox.value = "delta"` (property) or `value="delta"` (attribute), **Then** `delta` is
     exposed as selected and becomes the tab stop, and no event is emitted (paired with the exposed selection).
     A `value` that names no enabled option, and `value = ""`, leave every option unselected and `value` reads `""`;
-    no event is emitted (paired with the earlier exposed selection of `delta` in the same test).
+    no event is emitted (paired with the earlier exposed selection of `delta` in the same test). A non-empty such
+    value is remembered until a matching option appears (FR-010a, scenario 19).
 12. **Given** focus in the listbox, **When** Escape, Tab, ArrowLeft, ArrowRight or a letter key is pressed, **Then**
     the listbox handles none of them ("Handled and unhandled keys" above): Escape's keydown reaches a `document`
     listener with `defaultPrevented` false (so a containing dialog can close), Tab moves focus out, and ArrowLeft,
@@ -206,8 +217,10 @@ read after each key.
     named "Recent folders" (host ARIA decides, as in mission 005's Host ARIA rules); without either, it is unnamed,
     and the README says a host must name it. No `aria-labelledby` from outside is needed or supported.
 14. **Given** options added, removed or reordered after first render, **Then** the tree and the keyboard order follow
-    the new children; if the focused option is removed, focus moves to the option now at its index (or the last), and
-    if the selected option is removed, `value` becomes `""` and no event is emitted.
+    the new children; if the focused option is removed, focus moves to the next enabled option after it in document
+    order, else the nearest enabled option before it (FR-011); if the selected option is removed, `value` becomes
+    `""` and no event is emitted. For example, with `alpha`, `beta` (focused), `gamma` (disabled), `delta`, removing
+    `beta` moves focus to `delta`.
 15. **Given** forced-colours mode, **When** `gamma` is selected, **Then** `gamma` shows a selected edge in the system
     `Highlight` colour on its inline-start edge, and unselected options show none; the focused option shows the focus
     ring in forced colours.
@@ -219,7 +232,17 @@ read after each key.
     `listbox.value = "2"` then selects `gamma`, and `listbox.value = ""` clears the selection.
 18. **Given** `gamma` selected, **When** `gamma` gains `disabled`, **Then** it stays selected and `value` stays
     `"gamma"`, but it is no longer the tab stop (FR-016) and Enter, Space and clicks cannot select it again once
-    another option is selected; no event is emitted.
+    another option is selected; no event is emitted. **When** a host then sets `listbox.value = "gamma"` (the current
+    value, naming the disabled selected option), **Then** nothing changes: `gamma` stays selected, `value` reads
+    `"gamma"`, and no event is emitted (setting the current value is always a no-op on the selection, FR-010).
+19. **Given** a listbox with options `alpha` and `beta`, none selected, **When** a host sets `listbox.value = "delta"`
+    (no option has that value yet), **Then** no option is selected and `value` reads `""`; **When** the host then
+    appends `<ocelle-option value="delta">`, **Then** `delta` is selected and is the tab stop, `value` reads
+    `"delta"`, and no event is emitted (paired with the exposed selection; FR-010a). **Given** instead, after the set
+    of `"delta"`, the user clicks `alpha` (one event `{ "value": "alpha" }`), or the host sets `value = ""` or
+    `value = "beta"`, **When** `delta` is then appended, **Then** `delta` is not selected (the remembered value was
+    forgotten) and no further event is emitted. The same holds when the matching option exists but is disabled and
+    later loses `disabled`: it is then selected, with no event.
 
 ---
 
@@ -286,7 +309,14 @@ walked with every key of its model, and read in the accessibility tree after eac
     it (`Tasks`) is selected, its panel is shown, it is the tab stop and has focus, `tabs.value` reads
     `"tasks"`, and no event is emitted; the same holds when `Plan` gains `disabled` instead of being removed (FR-011a).
     **Given** every tab then disabled, **Then** no tab is selected, no panel is shown, `tabs.value` reads `""` and the
-    tablist has no tab stop; enabling a tab again selects the first enabled tab, with no event.
+    tablist has no tab stop; enabling a tab again selects the first enabled tab, with no event. Focus and selection
+    land on the same tab: the focus target of FR-011 and the selection target of FR-011a are the same child.
+19. **Given** tabs `Spec`, `Plan` (first render, `Spec` selected), **When** a host sets `tabs.value = "tasks"` (no
+    tab has that value yet), **Then** `Spec` stays selected and its panel shown, `tabs.value` reads `"spec"`, and no
+    event is emitted; **When** the host then appends a `Tasks` tab with `value="tasks"` and its panel, **Then**
+    `Tasks` is selected, its panel is shown, it is the tab stop, `tabs.value` reads `"tasks"`, and no event is
+    emitted (FR-010a). **Given** instead, after the set, the user selects `Plan` (one event `{ "value": "plan" }`)
+    or the host sets another value, **When** `Tasks` is appended, **Then** the selection does not move to it.
 
 ---
 
@@ -360,6 +390,12 @@ clicked, and the joined variant is measured at widths where it fits on one row a
     is pressed and is the tab stop (and takes focus if `Mine` had it), `value` reads `"blocked"`, and no event is
     emitted (FR-011a). **Given** every segment disabled, **Then** none is pressed, `value` reads `""` and the group
     has no tab stop.
+16. **Given** segments `All`, `Mine` with `All` pressed, **When** a host sets `value = "blocked"` (no segment has
+    that value yet), **Then** `All` stays pressed, `value` reads `"all"`, and no event is emitted; **When** the host
+    then appends `<ocelle-segment value="blocked">`, **Then** `Blocked` is pressed and is the tab stop, `value` reads
+    `"blocked"`, and no event is emitted (FR-010a). **Given** instead, after the set, the user presses `Mine` (one
+    event `{ "value": "mine" }`) or the host sets another value, **When** `Blocked` is appended, **Then** it is not
+    pressed.
 
 ---
 
@@ -478,9 +514,11 @@ whose navigation is then observed (a defect that navigates for every `href` fail
     (click or Enter), or clicked with the middle button, **Then** no `ocelle-link-activate` is emitted, the
     activating event's default is not prevented by the element (read by a `window` listener in the bubble phase),
     and the page itself does not navigate in place; the browser's own behaviour (new tab or window) is kept. Paired
-    in the same test with a plain click's event. An activation with only Alt held is a plain activation. Without
-    `href`, Ctrl, Meta or Shift held on a click or Enter is a plain activation (it emits, as there is no browser
-    behaviour to keep), and a middle-button click emits nothing.
+    in the same test with a plain click's event. An activation with only Alt held is a plain activation. **Given**
+    `<ocelle-link>` without `href`, **When** it is activated with Ctrl, Meta (Cmd) or Shift held (click or Enter), or
+    clicked with the middle button, **Then** no `ocelle-link-activate` is emitted and the page does not navigate,
+    as with `href` (operator decision Q2 (b) at spec check 2); paired in the same test with a plain click's event
+    `{ "href": null }`.
 
 ---
 
@@ -547,13 +585,28 @@ whose navigation is then observed (a defect that navigates for every `href` fail
   Setting it to a value some enabled child has selects the first such child in document order. Setting it to `""` or
   to a value no enabled child has: on the listbox, clears the selection (`value` reads `""`); on tabs and the
   segmented choice, keeps the current selection (`value` reads the selected child's value; on first render with no
-  selection yet, the first enabled child is selected, FR-021 and FR-027). A host set never emits an event, and setting
-  the current value changes nothing.
+  selection yet, the first enabled child is selected, FR-021 and FR-027). A host set never emits an event. Setting
+  the current value (the value `value` reads at that moment) is always a no-op on the selection, and this clause
+  wins over the previous ones: even when it names a selected child that is disabled (User Story 1 scenario 18), that
+  child stays selected.
+- **FR-010a**: A parent remembers the last non-empty value a host set (by attribute or property) that no enabled
+  child had at the time of the set (operator decision Q1 (b) at spec check 2). While it is remembered, the listbox's
+  `value` reads `""`, and tabs and the segmented choice keep their current selection (or, on first render, the first
+  enabled child), as FR-010 states. When a child with that value becomes enabled and present (it is added, its
+  `value` changes to it, it moves in, or it loses `disabled`), the parent selects or presses the first such child in
+  document order, as a host set would: it becomes the tab stop, for tabs its panel is shown, `value` reads it, and no
+  event is emitted. The parent then forgets the remembered value. It also forgets it on the next user selection and
+  on the next host set of any value, `""` and the current value included; that host set is then applied by itself
+  under FR-010 and may be remembered in turn (User Story 1 scenario 19, User Story 2 scenario 19, User Story 3
+  scenario 16). Selection moves under FR-011a do not forget it.
 - **FR-011**: Children added, removed or reordered after render are picked up without host action: the tree and the
-  keyboard order follow the new children, and when the focused child is removed, focus moves to the enabled child now
-  at its index, else the last enabled child (User Story 1 scenario 14, for all three parents). The listbox's
-  selection outcome when its selected option is removed is User Story 1 scenario 14's (`value` becomes `""`); a
-  selected option that becomes disabled stays selected (User Story 1 scenario 18).
+  keyboard order follow the new children, and when the focused child is removed, focus moves to the next enabled
+  child after it in document order, else the nearest enabled child before it; with none, focus leaves the parent as
+  the browser does for a removed element (User Story 1 scenario 14, for all three parents). For tabs and the
+  segmented choice, when the removed child was both focused and selected or pressed, this focus target and FR-011a's
+  selection target are the same child, so focus and selection land together (User Story 2 scenario 18, User Story 3
+  scenario 15). The listbox's selection outcome when its selected option is removed is User Story 1 scenario 14's
+  (`value` becomes `""`); a selected option that becomes disabled stays selected (User Story 1 scenario 18).
 - **FR-011a**: Tabs and the segmented choice keep exactly one child selected or pressed whenever at least one is
   enabled. When the selected or pressed child is removed or becomes disabled, the next enabled child after it in
   document order is selected or pressed, else the nearest enabled child before it; it becomes the tab stop, takes
@@ -664,8 +717,9 @@ whose navigation is then observed (a defect that navigates for every `href` fail
   `ocelle-link-activate` with `{ href }`: the `href` attribute as written, or `null` without one. With `href`, a
   modified activation (Ctrl, Meta or Shift held on a click or Enter, or a middle-button click) emits no event, and
   the element does not prevent its default, so the browser's own behaviour (new tab or window) is kept (operator
-  decision Q2 (a); User Story 5 scenario 13). An activation with only Alt held is a plain activation. Without `href`,
-  Ctrl, Meta or Shift held is a plain activation and a middle-button click emits nothing.
+  decision Q2 (a); User Story 5 scenario 13). Without `href`, every modified activation likewise emits no event
+  (operator decision Q2 (b) at spec check 2): only plain activations emit, and a host routes only those. An
+  activation with only Alt held is a plain activation.
 - **FR-047**: Without `href` it never navigates. With `href`, after the event, unless the event's default was
   prevented, it navigates to the `href` resolved against the document base URL, and only when the resolved URL's
   protocol is `http:`, `https:`, or equal to the document's own protocol (operator decision Q1 (b)). The check is on
@@ -674,8 +728,8 @@ whose navigation is then observed (a defect that navigates for every `href` fail
   navigated by the element (User Story 5 scenarios 4 and 9 to 12).
 - **FR-048**: The focus ring follows each line fragment when the link wraps (FR-007).
 - **FR-049**: `ocelle-link` has no `target`, `download` or `rel` handling in this feature; the README says that a
-  user's modified activation keeps the browser's new tab or window (FR-046), and that a host that wants to open a new
-  window itself handles the event.
+  user's modified activation keeps the browser's new tab or window (FR-046), that a modified activation of a link
+  without `href` does nothing, and that a host that wants to open a new window itself handles the event.
 
 **Stories, baselines, axe (on #10's design; implementation after #10 merges)**
 

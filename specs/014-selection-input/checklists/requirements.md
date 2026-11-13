@@ -44,3 +44,9 @@
   Q2 (a)) and the link target page allowed on the fixture for User Story 5 are stated and testable. The positive
   case of the document-protocol rule rests on a `file:` copy of the fixture (User Story 5 scenario 12), which the plan
   confirms the test runner can open.
+- Re-checked after spec check 2's fixes: one focus target when the focused child is removed, the same for all three
+  parents and equal to FR-011a's selection target in tabs and the segmented choice (FR-011); setting the current
+  value is always a no-op on the selection, also for a disabled selected option (FR-010); a value set before its
+  child exists is remembered until a matching enabled child appears or the next user selection or host set (FR-010a,
+  operator Q1 (b)); and a modified activation of `ocelle-link` emits nothing with or without `href` (FR-046, operator
+  Q2 (b)). Each has a scenario.
