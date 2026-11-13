@@ -307,7 +307,9 @@ it; announcement timing in one internal helper used by the notice and the base c
    other rows' silence, the host-role limit), its assertions and the CHANGELOG line's in `test/node/readme.test.ts`
    in the red commit (analysis I3, U2), with the README's pinned convention fragments that the notice contradicts
    restated in that red commit and the README text in green (the `@default undefined` rule, now a `@default` with the
-   value the property reads on every property that can be set; the host-`role` sentence, now scoped to `ocelle-icon`
+   value the property reads on every property that can be set; the host-`aria-label` sentences
+   (`readme.test.ts:74-76`) scoped to `ocelle-icon` and `ocelle-brand-mark`, analysis I14; the host-`role` sentence,
+   now scoped to `ocelle-icon`
    and `ocelle-brand-mark`, with the notice's roles and `aria-hidden="false"` not supported in its section; the host
    `aria-hidden="true"` and `hidden` sentences scoped likewise, with a host `aria-hidden="true"` on the notice not
    supported and `hidden` named instead, FR-009; analysis I10, I15, U10, U11), manifest regeneration, CHANGELOG line, entry point and its entry
@@ -338,12 +340,12 @@ it; announcement timing in one internal helper used by the notice and the base c
    host's duplicate name and description, the mixed-form limitation, htmx triggers, limitations) with its assertions
    and the CHANGELOG line's in the red commit; the engine floor checked against the features this phase adds
    (form association and the form-associated callbacks, `delegatesFocus`; `ElementInternals` itself is phase 2's) and
-   recorded (analysis G8, I8); the README's Host ARIA sentences on a host `aria-label` (`readme.test.ts:74-76`) scoped
-   to `ocelle-icon` and `ocelle-brand-mark`, with the form controls' rule (a blank one is skipped, FR-022) and their
+   recorded (analysis G8, I8); beside the Host ARIA sentences phase 2 scoped to `ocelle-icon` and
+   `ocelle-brand-mark`, the form controls' rule for a host `aria-label` (a blank one is skipped, FR-022) and their
    host `role`, `aria-hidden="false"` and `aria-hidden="true"` not supported (`hidden` named instead), the control's
    name taking a host `aria-label` collapsed and trimmed while the host's node keeps it as written (pass it trimmed;
    US2 scenario 13's cell), and the declared `value` attribute stated, each fragment in the red commit (analysis
-   I10, I14, U6, U10, U11, A5); manifest, CHANGELOG, entry point and its
+   I10, U6, U10, U11, A5); manifest, CHANGELOG, entry point and its
    entry test; at the phase-end `gate:mutation`, every shard holding a `src/live.ts` or `src/form-control.ts` entry
    timed, a shard over 7:00 a stop (decision 11; analysis U8).
 4. **User Story 3, `ocelle-form-select`** (P3): a scaffold first (`src/ocelle-form-select.ts`, the class without
