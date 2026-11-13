@@ -1,0 +1,5 @@
+{
+  "expect": "error",
+  "why": "A pin that names the tag's multi-platform index (its digest recorded by the phase 1 spike) instead of the linux/amd64 manifest: exit 2 (FR-007, research.md R-06).",
+  "cause": "the pin names an index"
+}

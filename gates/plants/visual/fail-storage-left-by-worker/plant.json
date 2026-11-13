@@ -1,0 +1,16 @@
+{
+  "expect": "fail",
+  "why": "A story whose loader starts a dedicated worker from a Blob URL that opens the IndexedDB database ocelle-left, and resolves when the worker reports it open: init scripts do not run in workers, so the recorder sees no call and only the storage-state read finds the database (research.md R-14's backstop; analysis C1): io on both themes.",
+  "findings": [
+    {
+      "location": "storage-left-by-worker--worker/light",
+      "rule": "io",
+      "message": "indexedDB ocelle-left left when the render ends"
+    },
+    {
+      "location": "storage-left-by-worker--worker/dark",
+      "rule": "io",
+      "message": "indexedDB ocelle-left left when the render ends"
+    }
+  ]
+}

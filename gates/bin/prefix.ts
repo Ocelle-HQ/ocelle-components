@@ -2,7 +2,8 @@
 // (every text file below `packages/<name>/`, without installed dependencies, Markdown, source maps and binaries), a
 // name that starts with `sk-` or `--sk-` at a name boundary (case-insensitive) and a monospace font family in a font
 // declaration (`font`, `font-family`, including the `@font-face` descriptor) are findings, one per line and rule.
-// A covered file that is not valid UTF-8 is exit 2. Since 002 (FR-023, research.md R-10) the scope also holds the
+// A declaration is matched across line breaks, up to its `;` or `}`, and reported at the line where it starts (006
+// research.md R-10). A covered file that is not valid UTF-8 is exit 2. Since 002 (FR-023, research.md R-10) the scope also holds the
 // Storybook workspace: its source (`.storybook/`, `stories/`, `scripts/`, `test/` and its other text files), its
 // generated stylesheets (`.generated/`) and the top-level HTML entries of its build output (`dist/*.html`), not
 // installed packages and not the bundles under `storybook/dist/`, which the run-time test of the Storybook covers.
@@ -26,7 +27,7 @@ const gate = "prefix";
 const covered = /\.(?:ts|mts|cts|js|mjs|cjs|css|html|svg|json)$/;
 /** `sk-` not preceded by a letter, digit, `_` or `-`, and `--sk-` not preceded by a letter, digit or `_` (R-12). */
 const names = /(?<![A-Za-z0-9_-])sk-[A-Za-z0-9_-]*|(?<![A-Za-z0-9_])--sk-[A-Za-z0-9_-]*/gi;
-/** A font declaration and its value, up to the end of the declaration or the line. */
+/** A font declaration and its value, up to its terminating `;` or `}` (or the end of the text), across line breaks. */
 const fontDeclarations = /(?<![\w-])font(?:-family)?\s*:([^;{}]*)/gi;
 /** FR-022's monospace families, longest first, so `Courier New` is one match and not `Courier`. */
 export const monospaceFamilies: readonly string[] = [
@@ -63,18 +64,34 @@ export function isCovered(path: string): boolean {
   return (/^packages\/[^/]+\/./.test(path) || storybook.test(path)) && !path.split("/").includes("node_modules") && covered.test(path);
 }
 
+/**
+ * The monospace families of each line's font declarations, by the line where each declaration starts (1-based). A
+ * declaration runs to its terminating `;` or `}` across line breaks (006 research.md R-10).
+ */
+function monospaceByLine(text: string): Map<number, string[]> {
+  const byLine = new Map<number, string[]>();
+  for (const declaration of text.matchAll(fontDeclarations)) {
+    const families = declaration[1]?.match(monospace) ?? [];
+    if (families.length === 0) continue;
+    const line = (text.slice(0, declaration.index).match(/\n/g)?.length ?? 0) + 1;
+    byLine.set(line, [...(byLine.get(line) ?? []), ...families]);
+  }
+  return byLine;
+}
+
 /** The `sk-` name and monospace findings in one file's text. */
 export function scanText(path: string, text: string): Finding[] {
   const found: Finding[] = [];
+  const mono = monospaceByLine(text);
   text.split("\n").forEach((content, index) => {
     const line = index + 1;
     const forbidden = content.match(names);
     if (forbidden !== null) {
       found.push({ location: { path, line }, gate, rule: "sk-name", message: `forbidden name ${[...new Set(forbidden)].join(", ")}; use the ocelle- prefix (FR-022)` });
     }
-    const mono = [...content.matchAll(fontDeclarations)].flatMap((declaration) => declaration[1]?.match(monospace) ?? []);
-    if (mono.length > 0) {
-      found.push({ location: { path, line }, gate, rule: "monospace", message: `monospace font family ${[...new Set(mono)].join(", ")} in a font declaration (FR-022)` });
+    const families = mono.get(line);
+    if (families !== undefined) {
+      found.push({ location: { path, line }, gate, rule: "monospace", message: `monospace font family ${[...new Set(families)].join(", ")} in a font declaration (FR-022)` });
     }
   });
   return found;

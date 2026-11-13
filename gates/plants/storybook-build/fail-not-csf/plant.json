@@ -1,0 +1,5 @@
+{
+  "expect": "fail",
+  "why": "A story file without a default export is not valid CSF: the indexer cannot read it, and the finding names the file (FR-001, US1 scenario 3).",
+  "findings": [{ "location": "storybook/stories/nodefault.stories.ts", "rule": "index-error", "message": "NoMetaError: CSF: missing default export" }]
+}

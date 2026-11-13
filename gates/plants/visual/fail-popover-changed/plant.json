@@ -1,0 +1,15 @@
+{
+  "expect": "fail",
+  "why": "Only the text of the open top-layer popover changes: differs on both themes, so top-layer content is compared (FR-012; analysis G3).",
+  "findings": [
+    {
+      "location": "overflow-and-popover--surfaces/light",
+      "rule": "differs"
+    },
+    {
+      "location": "overflow-and-popover--surfaces/dark",
+      "rule": "differs"
+    }
+  ],
+  "baselinesOf": "pass-overflow-and-popover"
+}

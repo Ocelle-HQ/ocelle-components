@@ -1,5 +1,21 @@
+import { PNG } from "pngjs";
 import { describe, expect, it } from "vitest";
-import { applyPairChanges, carriesConfiguration, checkWrapper, configurationSet, mayBeAbsent, nodeModulesLinks, overridesText, parseCommits, parseDelta, treeProblems } from "../lib/plant-repo.ts";
+import {
+  applyPairChanges,
+  carriesConfiguration,
+  checkWrapper,
+  configurationSet,
+  editBaseline,
+  exceptionPlans,
+  mayBeAbsent,
+  moduleLinks,
+  nodeModulesLinks,
+  overridesText,
+  parseCommits,
+  parseDelta,
+  rootExceptions,
+  treeProblems,
+} from "../lib/plant-repo.ts";
 
 // The pure parts of gates/lib/plant-repo.ts (research.md R-10, contracts/plants.md): the configuration set copied
 // into every temporary repository, the configuration a plant must not carry, and the records of commits.txt.
@@ -32,19 +48,159 @@ describe("configurationSet", () => {
       "packages/elements/scripts/manifest.ts",
       "packages/elements/custom-elements-manifest.config.mjs",
       "packages/elements/custom-elements.json",
+      // The Storybook workspace inputs a plant root holds since 006 (research.md R-16): the Node pin, the base
+      // stylesheet and the fonts the stories read, and the workspace's manifest, configuration, scripts, stories,
+      // baselines and container pin; never dist/, .generated/, .visual/, .cache/, test/ or node_modules/.
+      ".node-version",
+      "packages/styles/src/base.css",
+      "packages/tokens/fonts",
+      "storybook/package.json",
+      "storybook/.storybook",
+      "storybook/scripts",
+      "storybook/stories",
+      "storybook/baselines",
+      "storybook/visual/container.json",
     ]);
+  });
+
+  it("holds no built, generated, cached or installed Storybook directory, and not the exceptions file (made per root)", () => {
+    const set = configurationSet([]);
+    const outside = ["storybook/dist", "storybook/.generated", "storybook/.visual", "storybook/.cache", "storybook/node_modules", "storybook/test", "storybook/a11y-exceptions.json", "storybook"];
+    expect(outside.filter((path) => set.includes(path))).toEqual([]);
+    expect(set.filter((path) => path.startsWith("storybook/"))).toHaveLength(6);
   });
 
   // 005 research.md R-12: the element files the manifest gate and the element plants read; until the manifest
   // generator lands (phase 2), its script, configuration and manifest may be absent and are then not copied.
-  it("lets only the manifest script, its configuration and the manifest be absent from the repository", () => {
+  // 006 research.md R-16: storybook/baselines may be absent too, before the first baselines are committed.
+  it("lets only the manifest script, its configuration, the manifest and storybook/baselines be absent from the repository", () => {
     const set = configurationSet(["packages/tokens", "packages/elements"]);
     expect(set.filter((path) => mayBeAbsent(path))).toEqual([
       "packages/elements/scripts/manifest.ts",
       "packages/elements/custom-elements-manifest.config.mjs",
       "packages/elements/custom-elements.json",
+      "storybook/baselines",
     ]);
     expect([mayBeAbsent("packages/elements/src"), mayBeAbsent("packages/elements/package.json"), mayBeAbsent("custom-elements.json")]).toEqual([false, false, false]);
+  });
+});
+
+// The node_modules links of a plant root (research.md R-16): the root's node_modules and storybook/node_modules, the
+// latter left out when the plant lists it in plant.json `unlinked` (the error-missing-dependencies plant).
+describe("moduleLinks", () => {
+  it("links node_modules and storybook/node_modules by default", () => {
+    expect([moduleLinks(undefined), moduleLinks([])]).toEqual([
+      ["node_modules", "storybook/node_modules"],
+      ["node_modules", "storybook/node_modules"],
+    ]);
+  });
+
+  it('leaves out only storybook/node_modules for unlinked ["storybook/node_modules"]', () => {
+    expect(moduleLinks(["storybook/node_modules"])).toEqual(["node_modules"]);
+  });
+});
+
+// The plan files the repository's exception entries name (research.md R-16, data-model.md § Exception): copied into an
+// axe plant root with `exceptions: "repository"`, so the entries stay honoured there.
+describe("exceptionPlans", () => {
+  const entry = (plan: unknown, story = "a--b"): Record<string, unknown> => ({
+    story,
+    theme: "light",
+    rule: "color-contrast-incomplete",
+    selector: "td",
+    reason: "r",
+    sunset: "s",
+    plan,
+  });
+
+  it("names no plan for no entries", () => {
+    expect(exceptionPlans("[]")).toEqual([]);
+  });
+
+  it("names a plan once for two entries that name it, and each plan in the order of first naming", () => {
+    const text = JSON.stringify([entry("specs/006-x/plan.md"), entry("specs/006-x/plan.md", "c--d"), entry("specs/001-y/plan.md")]);
+    expect(exceptionPlans(text)).toEqual(["specs/006-x/plan.md", "specs/001-y/plan.md"]);
+  });
+
+  it.each([
+    { name: "an absolute plan path", text: JSON.stringify([entry("/etc/plan.md")]), problem: /^a11y-exceptions\.json#0: plan \/etc\/plan\.md is not a path inside the root$/ },
+    { name: "a plan path leaving the root", text: JSON.stringify([entry("specs/../../plan.md")]), problem: /^a11y-exceptions\.json#0: plan specs\/\.\.\/\.\.\/plan\.md is not a path inside the root$/ },
+    { name: "a plan path that is the parent", text: JSON.stringify([entry("specs/x/plan.md"), entry("..")]), problem: /^a11y-exceptions\.json#1: plan \.\. is not a path inside the root$/ },
+    { name: "text that is not JSON", text: "[", problem: /^a11y-exceptions\.json is not valid JSON/ },
+    { name: "a file that is not a list", text: "{}", problem: /^a11y-exceptions\.json is not a list of exception entries$/ },
+    { name: "an entry that is not an object", text: "[1]", problem: /^a11y-exceptions\.json#0 names no plan$/ },
+    { name: "an entry without plan", text: JSON.stringify([{ story: "a--b" }]), problem: /^a11y-exceptions\.json#0 names no plan$/ },
+    { name: "an entry with an empty plan", text: JSON.stringify([entry("specs/x/plan.md"), entry("")]), problem: /^a11y-exceptions\.json#1 names no plan$/ },
+    { name: "an entry whose plan is not text", text: JSON.stringify([entry(3)]), problem: /^a11y-exceptions\.json#0 names no plan$/ },
+  ])("fails the plant run on $name", ({ text, problem }) => {
+    expect(() => exceptionPlans(text)).toThrow(problem);
+  });
+
+  it("keeps the JSON error of a file that is not JSON as the cause", () => {
+    const error = (() => {
+      try {
+        exceptionPlans("[");
+        return undefined;
+      } catch (thrown) {
+        return thrown as Error;
+      }
+    })();
+    expect(error?.cause).toBeInstanceOf(SyntaxError);
+  });
+
+  it("accepts a plan path that only starts with two dots", () => {
+    expect(exceptionPlans(JSON.stringify([entry("..plans/plan.md")]))).toEqual(["..plans/plan.md"]);
+  });
+});
+
+// A plant root's storybook/a11y-exceptions.json (research.md R-16, data-model.md § Plant delta keys): [] unless the
+// tree supplies one; with `exceptions: "repository"` the tree's entries, then the repository's, so a plant's own
+// `#<index>` locations do not move.
+describe("rootExceptions", () => {
+  const own = { story: "p--own", theme: "dark", rule: "button-name", selector: "button", reason: "r", sunset: "s", plan: "specs/p/plan.md" };
+  const repoEntry = { story: "base-styles--prose-document", theme: "light", rule: "color-contrast-incomplete", selector: "td", reason: "q", sunset: "t", plan: "specs/006/plan.md" };
+
+  it("is an empty list when neither the tree nor the key supplies entries", () => {
+    expect(rootExceptions(undefined, undefined)).toBe("[]\n");
+  });
+
+  it("keeps the tree's file byte for byte without the key", () => {
+    const tree = '[ {"story":"x"} ]';
+    expect(rootExceptions(tree, undefined)).toBe(tree);
+  });
+
+  it("appends the repository's entries after the tree's own, two-space JSON with a final newline", () => {
+    const merged = rootExceptions(JSON.stringify([own]), JSON.stringify([repoEntry]));
+    expect(merged).toBe(`${JSON.stringify([own, repoEntry], null, 2)}\n`);
+  });
+
+  it("holds the repository's entries alone when the tree supplies none", () => {
+    expect(rootExceptions(undefined, JSON.stringify([repoEntry]))).toBe(`${JSON.stringify([repoEntry], null, 2)}\n`);
+    expect(rootExceptions(undefined, "[]")).toBe("[]\n");
+  });
+
+  it.each([
+    { name: "a tree file that is not JSON", tree: "[", repository: "[]", problem: /^the plant's storybook\/a11y-exceptions\.json is not a JSON list$/ },
+    { name: "a tree file that is not a list", tree: "{}", repository: "[]", problem: /^the plant's storybook\/a11y-exceptions\.json is not a JSON list$/ },
+    { name: "a repository file that is not JSON", tree: undefined, repository: "[", problem: /^the repository's storybook\/a11y-exceptions\.json is not a JSON list$/ },
+    { name: "a repository file that is not a list", tree: "[]", repository: "null", problem: /^the repository's storybook\/a11y-exceptions\.json is not a JSON list$/ },
+  ])("fails the plant run on $name with the key", ({ tree, repository, problem }) => {
+    expect(() => rootExceptions(tree, repository)).toThrow(problem);
+  });
+
+  it("keeps the JSON error of a file that is not JSON as the cause", () => {
+    const causes = [
+      ["[", "[]"],
+      [undefined, "["],
+    ].map(([tree, repository]) => {
+      try {
+        rootExceptions(tree, String(repository));
+        return undefined;
+      } catch (thrown) {
+        return (thrown as Error).cause;
+      }
+    });
+    expect(causes.map((cause) => cause instanceof SyntaxError)).toEqual([true, true]);
   });
 });
 
@@ -158,6 +314,7 @@ describe("parseDelta", () => {
     expect(parseDelta('{"pairsList":"not-json"}')).toEqual({ pairsList: "not-json" });
     expect(parseDelta('{"tokens":[],"pairsList":"empty","generator":"wrapped"}')).toEqual({ tokens: [], pairsList: "empty", generator: "wrapped" });
     expect(parseDelta("{}")).toEqual({});
+    expect(parseDelta('{"exceptions":"repository"}')).toEqual({ exceptions: "repository" });
   });
 
   // 005 research.md R-06, R-12: the committed custom-elements manifest is in the configuration set, so the manifest
@@ -199,6 +356,10 @@ describe("parseDelta", () => {
     { text: '{"pairsText":"[]\\n"}', problem: /^delta\.json: unknown key pairsText$/ },
     { text: '{"pairsList":"empty","pairsText":"[]\\n"}', problem: /^delta\.json: unknown key pairsText$/ },
     { text: '{"generator":"real"}', problem: /^delta\.json: generator must be "wrapped"$/ },
+    // exceptions is closed (research.md R-16): only "repository".
+    { text: '{"exceptions":"plant"}', problem: /^delta\.json: exceptions must be "repository"$/ },
+    { text: '{"exceptions":true}', problem: /^delta\.json: exceptions must be "repository"$/ },
+    { text: '{"exceptions":["repository"]}', problem: /^delta\.json: exceptions must be "repository"$/ },
     { text: '{"manifest":"missing"}', problem: /^delta\.json: manifest must be "absent"$/ },
     { text: '{"manifest":true}', problem: /^delta\.json: manifest must be "absent"$/ },
     { text: '{"manifest":null}', problem: /^delta\.json: manifest must be "absent"$/ },
@@ -211,11 +372,11 @@ describe("treeProblems", () => {
   const src = "packages/tokens/src";
 
   it("accepts a tree of other files, and none", () => {
-    expect([treeProblems(["packages/elements/src/x.ts"], undefined), treeProblems([], { tokens: [] })]).toEqual([[], []]);
+    expect([treeProblems(["packages/elements/src/x.ts"], undefined, []), treeProblems([], { tokens: [] }, [])]).toEqual([[], []]);
   });
 
   it("rejects the token source and the pair list in tree/, whatever the delta", () => {
-    expect(treeProblems([`${src}/source.ts`, "packages/tokens/contrast/pairs.json"], { generator: "wrapped" })).toEqual([
+    expect(treeProblems([`${src}/source.ts`, "packages/tokens/contrast/pairs.json"], { generator: "wrapped" }, [])).toEqual([
       "tree/ holds packages/tokens/src/source.ts; a plant changes the token source by delta.json tokens",
       "tree/ holds packages/tokens/contrast/pairs.json; a plant changes the pair list by delta.json pairs",
       'delta.json sets generator "wrapped" but tree/ holds no packages/tokens/src/generate.ts',
@@ -223,21 +384,106 @@ describe("treeProblems", () => {
   });
 
   it("accepts generate.ts only with a wrapped generator, and needs it then", () => {
-    expect(treeProblems([`${src}/generate.ts`], undefined)).toEqual(['tree/ holds packages/tokens/src/generate.ts without generator "wrapped" in delta.json']);
-    expect(treeProblems([`${src}/generate.ts`], {})).toEqual(['tree/ holds packages/tokens/src/generate.ts without generator "wrapped" in delta.json']);
-    expect(treeProblems([`${src}/generate.ts`], { generator: "wrapped" })).toEqual([]);
-    expect(treeProblems([], { generator: "wrapped" })).toEqual(['delta.json sets generator "wrapped" but tree/ holds no packages/tokens/src/generate.ts']);
+    expect(treeProblems([`${src}/generate.ts`], undefined, [])).toEqual(['tree/ holds packages/tokens/src/generate.ts without generator "wrapped" in delta.json']);
+    expect(treeProblems([`${src}/generate.ts`], {}, [])).toEqual(['tree/ holds packages/tokens/src/generate.ts without generator "wrapped" in delta.json']);
+    expect(treeProblems([`${src}/generate.ts`], { generator: "wrapped" }, [])).toEqual([]);
+    expect(treeProblems([], { generator: "wrapped" }, [])).toEqual(['delta.json sets generator "wrapped" but tree/ holds no packages/tokens/src/generate.ts']);
   });
 
   it('rejects the committed manifest in tree/ when the delta removes it, and accepts it otherwise (005 R-06)', () => {
     const manifest = "packages/elements/custom-elements.json";
-    expect([treeProblems([manifest], undefined), treeProblems([manifest], {}), treeProblems(["packages/elements/src/x.ts"], { manifest: "absent" })]).toEqual([[], [], []]);
-    expect(treeProblems([manifest], { manifest: "absent" })).toEqual([`tree/ holds ${manifest} and delta.json removes it with manifest "absent"`]);
+    expect([treeProblems([manifest], undefined, []), treeProblems([manifest], {}, []), treeProblems(["packages/elements/src/x.ts"], { manifest: "absent" }, [])]).toEqual([[], [], []]);
+    expect(treeProblems([manifest], { manifest: "absent" }, [])).toEqual([`tree/ holds ${manifest} and delta.json removes it with manifest "absent"`]);
   });
 
   it("accepts overrides.ts only when the delta has no tokens part", () => {
-    expect([treeProblems([`${src}/overrides.ts`], undefined), treeProblems([`${src}/overrides.ts`], { pairs: [] })]).toEqual([[], []]);
-    expect(treeProblems([`${src}/overrides.ts`], { tokens: [] })).toEqual(["tree/ holds packages/tokens/src/overrides.ts and delta.json has tokens; one of them sets the overrides"]);
+    expect([treeProblems([`${src}/overrides.ts`], undefined, []), treeProblems([`${src}/overrides.ts`], { pairs: [] }, [])]).toEqual([[], []]);
+    expect(treeProblems([`${src}/overrides.ts`], { tokens: [] }, [])).toEqual(["tree/ holds packages/tokens/src/overrides.ts and delta.json has tokens; one of them sets the overrides"]);
+  });
+});
+
+// 006 research.md R-11 (PLAN-FRESH-2-003): a plant edits or removes a repository baseline by delta.json `baselines`,
+// applied to the current file, and never holds a copy of one in its tree/.
+describe("parseDelta: baselines (006 research.md R-11)", () => {
+  it("reads a list of baseline edits, one-pixel, reencode and remove", () => {
+    const baselines = [
+      { file: "tokens--colour.light.png", edit: "one-pixel" },
+      { file: "tokens--colour.dark.png", edit: "reencode" },
+      { file: "tokens--type.light.png", edit: "remove" },
+    ];
+    expect(parseDelta(JSON.stringify({ baselines }))).toEqual({ baselines });
+    expect(parseDelta('{"baselines":[]}')).toEqual({ baselines: [] });
+  });
+
+  it.each([
+    { text: '{"baselines":{}}', problem: /^delta\.json: baselines must be a list of baseline edits$/ },
+    { text: '{"baselines":[{"file":"a--b.light.png","edit":"blur"}]}', problem: /^delta\.json: baselines\[0\] is not a baseline edit \(a file and one-pixel, reencode or remove\)$/ },
+    { text: '{"baselines":[{"file":"a--b.light.png","edit":"remove"},{"edit":"remove"}]}', problem: /^delta\.json: baselines\[1\] is not a baseline edit/ },
+    { text: '{"baselines":[{"file":"","edit":"remove"}]}', problem: /^delta\.json: baselines\[0\] is not a baseline edit/ },
+    { text: '{"baselines":[{"file":1,"edit":"remove"}]}', problem: /^delta\.json: baselines\[0\] is not a baseline edit/ },
+    { text: '{"baselines":[{"file":"a--b.light.png","edit":"remove","extra":1}]}', problem: /^delta\.json: baselines\[0\] is not a baseline edit/ },
+    { text: '{"baselines":["a--b.light.png"]}', problem: /^delta\.json: baselines\[0\] is not a baseline edit/ },
+    { text: '{"baselines":[{"file":"a--b.light.png","edit":"remove"},{"file":"a--b.light.png","edit":"one-pixel"}]}', problem: /^delta\.json: baselines lists a--b\.light\.png twice$/ },
+  ])("rejects $text", ({ text, problem }) => {
+    expect(() => parseDelta(text)).toThrow(problem);
+  });
+});
+
+describe("treeProblems: repository baselines (006 research.md R-11)", () => {
+  const repository = ["tokens--colour.light.png", "tokens--colour.dark.png"];
+
+  it("refuses a tree/ file under storybook/baselines/ whose name the repository's storybook/baselines/ holds", () => {
+    expect(treeProblems(["storybook/baselines/tokens--colour.dark.png", "storybook/baselines/own--a.light.png", "storybook/stories/own.stories.ts"], undefined, repository)).toEqual([
+      "tree/ holds storybook/baselines/tokens--colour.dark.png; a plant changes a repository baseline by delta.json baselines",
+    ]);
+    expect(treeProblems(["storybook/baselines/own--a.light.png", "x/storybook/baselines/tokens--colour.dark.png"], undefined, repository)).toEqual([]);
+  });
+
+  it("refuses a delta.json baseline edit of a file the repository does not hold", () => {
+    expect(treeProblems([], { baselines: [{ file: "tokens--colour.light.png", edit: "one-pixel" }, { file: "gone--story.light.png", edit: "remove" }] }, repository)).toEqual([
+      "delta.json baselines: gone--story.light.png is not a repository baseline",
+    ]);
+    expect(treeProblems([], { baselines: [{ file: "tokens--colour.light.png", edit: "remove" }] }, [])).toEqual(["delta.json baselines: tokens--colour.light.png is not a repository baseline"]);
+  });
+});
+
+describe("editBaseline (006 research.md R-11)", () => {
+  /** A PNG file of a 3 × 2 image with distinct pixels, written by pngjs with the given options. */
+  function source(options: Record<string, number>): Buffer {
+    const png = new PNG({ width: 3, height: 2 });
+    for (let at = 0; at < 6; at += 1) png.data.set([at * 40, 200 - at * 30, (at * 77) % 256, 255], at * 4);
+    return PNG.sync.write(png, options);
+  }
+  const pixels = (file: Uint8Array): number[][] => {
+    const data = PNG.sync.read(Buffer.from(file)).data;
+    return Array.from({ length: data.length / 4 }, (_, at) => [...data.subarray(at * 4, at * 4 + 4)]);
+  };
+
+  it("one-pixel: inverts the RGB channels of the pixel at (0, 0) only, alpha kept", () => {
+    const before = pixels(source({ deflateLevel: 6 }));
+    const after = pixels(editBaseline(source({ deflateLevel: 6 }), "one-pixel"));
+    expect(after[0]).toEqual([255, 55, 255, 255]);
+    expect(before[0]).toEqual([0, 200, 0, 255]);
+    expect(after.slice(1)).toEqual(before.slice(1));
+  });
+
+  it("one-pixel: writes the normalised encoding (RGBA, deflate level 9, filter 4)", () => {
+    const edited = editBaseline(source({ deflateLevel: 1 }), "one-pixel");
+    const png = PNG.sync.read(edited);
+    expect(edited.equals(PNG.sync.write(png, { colorType: 6, inputColorType: 6, bitDepth: 8, deflateLevel: 9, filterType: 4 }))).toBe(true);
+  });
+
+  it("reencode: the same pixels in other bytes (deflate level 1, zlib's default strategy)", () => {
+    const normalised = source({ colorType: 6, inputColorType: 6, bitDepth: 8, deflateLevel: 9, filterType: 4 });
+    const edited = editBaseline(normalised, "reencode");
+    expect(pixels(edited)).toEqual(pixels(normalised));
+    expect(edited.equals(normalised)).toBe(false);
+    expect(edited.equals(PNG.sync.write(PNG.sync.read(normalised), { colorType: 6, inputColorType: 6, bitDepth: 8, deflateLevel: 1, deflateStrategy: 0, filterType: 4 }))).toBe(true);
+  });
+
+  it("reencode: refuses a baseline it would write with the same bytes", () => {
+    const levelOne = source({ colorType: 6, inputColorType: 6, bitDepth: 8, deflateLevel: 1, deflateStrategy: 0, filterType: 4 });
+    expect(() => editBaseline(levelOne, "reencode")).toThrow("delta.json baselines: reencode gives the baseline's own bytes");
   });
 });
 

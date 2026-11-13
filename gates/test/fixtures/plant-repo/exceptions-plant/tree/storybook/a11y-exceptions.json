@@ -1,0 +1,11 @@
+[
+  {
+    "story": "plant--own",
+    "theme": "dark",
+    "rule": "button-name",
+    "selector": "button",
+    "reason": "the plant's own exception",
+    "sunset": "the plant's sunset",
+    "plan": "specs/plant/plan.md"
+  }
+]

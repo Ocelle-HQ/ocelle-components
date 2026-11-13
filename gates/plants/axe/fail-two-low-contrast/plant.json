@@ -1,0 +1,26 @@
+{
+  "expect": "fail",
+  "why": "Two text nodes in the decorative rule colour on the canvas, below 4.5:1 in both themes: color-contrast (serious) once per node, two findings in each theme (FR-013, US3 scenario 2; the phase 1 spike's candidate, § 8).",
+  "findings": [
+    {
+      "location": "two-low-contrast--faint/light",
+      "rule": "color-contrast",
+      "message": "serious: p[data-candidate=\"low\"]:nth-child(1)"
+    },
+    {
+      "location": "two-low-contrast--faint/light",
+      "rule": "color-contrast",
+      "message": "serious: p[data-candidate=\"low\"]:nth-child(2)"
+    },
+    {
+      "location": "two-low-contrast--faint/dark",
+      "rule": "color-contrast",
+      "message": "serious: p[data-candidate=\"low\"]:nth-child(1)"
+    },
+    {
+      "location": "two-low-contrast--faint/dark",
+      "rule": "color-contrast",
+      "message": "serious: p[data-candidate=\"low\"]:nth-child(2)"
+    }
+  ]
+}
