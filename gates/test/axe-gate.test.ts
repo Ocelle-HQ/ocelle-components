@@ -78,6 +78,18 @@ describe("axe: axe-core not found (contracts/gates.md § axe)", () => {
   });
 });
 
+describe("axe: an exception entry whose plan is not a feature plan (phase 4 review round 3, O3-01)", () => {
+  it("exits 2 naming the entry before any build", async () => {
+    const { tools: given, asked } = tools();
+    const dir = root();
+    const entry = { story: "clean--text", theme: "light", rule: "color-contrast", selector: "p", reason: "a reason", sunset: "a sunset", plan: "storybook/notes.md" };
+    writeFileSync(join(dir, "storybook/a11y-exceptions.json"), JSON.stringify([entry]));
+    writeFileSync(join(dir, "storybook/notes.md"), "## Complexity Tracking\n\n| `clean--text` | `light` | `color-contrast` | `p` | a reason | operator | a sunset |\n");
+    expect(await axe(dir, {}, () => undefined, given)).toEqual({ exit: 2, cause: "axe: could not run: storybook/a11y-exceptions.json#0: plan must be a feature plan, specs/<feature>/plan.md" });
+    expect(asked.builds).toEqual([]);
+  });
+});
+
 describe("axeCore: axe-core's script and rule options", () => {
   it("gives the resolved script and the FR-016 rule options of the loaded metadata", () => {
     const rules = [
