@@ -51,9 +51,14 @@ empty for `W` (a new trigger while waiting restarts the wait); then write the te
 copy, set the baseline to that text and politeness, hold the copy for `W` and empty the announcer. A trigger while
 holding starts again from the first step. The visible content is never hidden from the accessibility tree.
 
-Each event matches exactly one row (plan review PLAN-CORRECTNESS-1-007): a role change on a notice without
-`announce` is either the "not live before" row (role added) or the "stops being live" row (role removed), and only a
-role change that leaves the notice live (spec FR-008, "Live host role at runtime") is compared with the baseline.
+Each event matches at most one row; an event that matches no row changes nothing: no announcement, no
+cancellation, and the baseline stays as it is (plan review PLAN-CORRECTNESS-1-007). Examples: a `tone` change
+whose politeness equals the baseline (`success` → `info`, both polite), a light-DOM mutation on a notice that is not
+live or is `hidden`, and a role change that keeps a `hidden` notice live with a different politeness. A `hidden`
+notice is announced when `hidden` is removed, with the text and politeness current at that moment. A role change on
+a notice without `announce` is either the "not live before" row (role added) or the "stops being live" row (role
+removed). Only a role change that leaves the notice live (spec FR-008, "Live host role at runtime") is compared with
+the baseline.
 
 ## Form control (shared: `ocelle-form-input`, `ocelle-form-select`)
 
