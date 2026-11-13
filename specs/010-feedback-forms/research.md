@@ -495,8 +495,9 @@ so the microtask and first-frame plants still count zero under `"settled"`. Fixt
 run at Chromium's 150 and 350 ms and the real `H`; they are the evidence that the real figures work. A test in
 `test/node/` checks that the setter is called only from `test/in-process.ts` (no `src/` module, no fixture page). T002 measures, with
 the test `D`, the `elements` project's dry run and a worst-case shard (60 changed lines of `src/live.ts`, the largest
-entry specs 001 FR-013 allows), and the fixture-page suite at real figures; if a shard exceeds about 7 minutes, the
-plan stops for the operator before phase 2. The Stryker timeout factor is set from the same measurement.
+entry specs 001 FR-013 allows), and the fixture-page suite at real figures; if a shard's `gate:mutation` run takes over
+7:00 (420 s) wall-clock, measured from the command's start to its exit in this container, the plan stops for the
+operator before phase 2 (analysis A3). The Stryker timeout factor is set from the same measurement.
 
 **The shipped figures under mutation** (operator decision PLAN-FRESH-3-004 (a)). Because every in-process scenario
 replaces `D` and `H` first, no scenario reads the shipped figures, and the mutation gate runs only the in-process
@@ -540,7 +541,18 @@ elements are not in their form's data.
 ## R-11 Parallel missions and merges
 
 **Decision.** `packages/elements/src/index.ts`, `src/browser.ts`, `package.json` exports, `custom-elements.json`, the
-README's element list and the Storybook configuration are shared with missions 008, 009 and 011. Each phase adds its
-lines in alphabetical order of tag to reduce conflicts. Conflicts are resolved by merging `main` (never rebasing) at
+README's element list and the Storybook configuration are shared with missions 008, 009 and 011. The order of new
+entries is fixed so the tests that pin these lists exactly can be written by hand (analysis I7; the earlier
+"alphabetical order of tag" did not match the files, where `ocelle-icon` comes before `ocelle-brand-mark`):
+`package.json` `exports` keys and the README's Entry points rows take each new element's entry after the last element
+entry and before `./browser.js`, in the order the elements are added (notice in phase 2, input in phase 3, select in
+phase 4); `src/index.ts` re-exports and the manifest's modules follow code-point order of name and path (the
+generator sorts the modules, and a module namespace object lists the root's export names in code-unit order). The
+tests that pin them (`gates/test/manifest.test.ts:86,91` and `gates/test/integration/manifest.test.ts:19`, "N elements
+checked", 2 today; `packages/elements/test/node/readme.test.ts:125-131,173`; `test/node/manifest.test.ts:250`;
+`test/exports.test.ts:9-10`) change in each phase's red commit (T016c, T034b, T052b). An element of another mission
+that reaches `main` before a phase starts keeps its place, the phase's entry goes after it, and the differing
+starting value is a stop-and-ask point of tasks.md; one that lands later is reconciled in the merge below, with the
+pinned lists updated in the merge commit and recorded in the landing review. Conflicts are resolved by merging `main` (never rebasing) at
 landing, then regenerating `custom-elements.json` with `pnpm --filter @ocelle/elements run manifest` rather than
 hand-merging it.
