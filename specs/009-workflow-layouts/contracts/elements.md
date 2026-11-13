@@ -36,9 +36,10 @@ The board module does not define the lane: a host imports both, or the root.
 - **Host ARIA:** a non-blank host `aria-label` decides the name alone; a blank one counts as absent (FR-010). The
   README's Host ARIA section scopes this rule to the scroller, the board and the lane.
 - **Keyboard:** it is a tab stop while overflowing. `ArrowLeft` and `ArrowRight` without a modifier scroll it 40 px with
-  no animation. Modified arrows (Alt, Ctrl, Meta, Shift), arrows during composition and other keys get the browser
-  default. Keys while a slotted control has focus are the browser's too, and its scroll of the strip may animate even
-  under reduced motion; the element does not control it (FR-009, research.md R-02).
+  no animation. Modified arrows (Alt, Ctrl, Meta, Shift) and other keys get the browser default; the box is not
+  editable, so no composition reaches it (research.md R-02). Keys while a slotted control has focus are the browser's
+  too, and its scroll of the strip may animate even under reduced motion; the element does not control it (FR-009,
+  research.md R-02).
 - **Scrollbar:** the platform's horizontal scrollbar is kept, counted in the block size, and never faded (FR-001); the
   fade's block size is measured and set in the module's per-instance sheet (research.md R-05).
 
@@ -54,8 +55,9 @@ The board module does not define the lane: a host imports both, or the root.
   `--ocelle-space-3`.
 - **Tree and keyboard:** as the scroller (it uses the same module), except that the named overflowing box is a
   `region` landmark, not a `group` (FR-014).
-- **Layout:** every slotted child has `contain: inline-size`, so its intrinsic inline size is the lane minimum whatever
-  it holds (research.md R-08).
+- **Layout:** every slotted child, a lane or not, has `contain: inline-size` through the board's `::slotted(*)`, so its
+  intrinsic inline size is the lane minimum whatever it holds; the lane sets no containment of its own (research.md
+  R-08, analysis F1).
 - **Ground:** none of its own; it goes on a main ground (research.md R-10).
 
 ## `ocelle-workflow-lane`

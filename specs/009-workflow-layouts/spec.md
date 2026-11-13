@@ -104,6 +104,19 @@ again:
   `characterData` and `subtree` only, as the round-2 option chose. An attribute-only size change is unseen, beside
   images, fonts and shadow-rendered content, and waits for the next trigger or `remeasure()` (FR-025, US3-12).
 
+**Operator decisions after the analysis of the tasks** (2026-11-13, `analysis-report.md`,
+`reviews/analysis/operator-decisions.md`). These amend the text again:
+
+- **No composition clause** (B1 (b)): a text composition cannot start on the non-editable scroll box, so the clause
+  "or during text composition" is removed from US1-5 and FR-006, and the module checks no `isComposing`. The reason
+  is recorded in research.md R-02 (FR-006, US1-5).
+- **FR-032 takes the 23 stories** (F2): board right-to-left, lane flat without count and list-detail right-to-left
+  are added, so SC-007 and the story tests check one set (FR-032).
+- **Edge cases tested** (C3): each outcome of Edge Cases "Many lanes", "One lane, or no lanes", "Non-lane children of
+  a board", "Lane count updates", "Content changes while scrolled" and "list-detail with an empty list slot" has a
+  browser case, paired where it is a "does not" (the pairing table). The plan's timing goal for twelve lanes of forty
+  cards is dropped.
+
 ## Consumer need
 
 - **Board and pipeline screens.** Kitty Desktop's board and pipeline screens build on the Spec Kitty class families
@@ -189,10 +202,14 @@ test, and its plan names a planted defect that makes it fail:
 | A focused slotted control's focus ring is not clipped by the scroll box, at the inline start, the inline end and both block edges, in a fitting and in an overflowing scroller (US1-13, FR-001) | The scroller still does not scroll in the block direction, and its block size is its content's plus the ring room on each side | A scroll box with no room for the ring: no padding, so the ring is cut at its edges |
 | A focused slotted control is not left under a fade (US1-13, FR-001) | At every step of the tab walk, each edge with content off-screen still shows its fade | A control scrolled into view with no clearance for the fade |
 | Arrow keys on a focused descendant are not taken by the scroller (US1-10, FR-006) | With focus on the scroller itself, the same key scrolls it | A key handler on the host that calls `preventDefault` and scrolls for every arrow key |
-| A board that fits Frame W does not scroll, is not a tab stop and has no region (US2-1, FR-016) | The same board in Frame N overflows, is a tab stop and is a named region | A board that always applies its region role and tab stop |
+| A board that fits Frame W does not scroll, is not a tab stop and has no region (US2-1, FR-015) | The same board in Frame N overflows, is a tab stop and is a named region | A board that always applies its region role and tab stop |
 | A lane's visible title and count add no second text to the tree (US2-5, FR-019) | The lane's group is named "<title>, <count>" | The visible title not hidden from the tree, so "Ready 3" is read again inside the group |
 | A lane without `count` shows no count and has no comma in its name (US2-6, FR-018) | A twin with `count="0"` shows "0" and is named "<title>, 0" | The count rendered as "0" when absent |
 | An untitled lane without a count has no group role and no name, and an untitled lane with a count has no comma in its name (US2-6, FR-019) | A titled twin is a group named "<title>, <count>"; the untitled twin with `count="3"` is a group named "3" | The group role and the ", " separator always applied |
+| A board with no lanes does not overflow, is not a tab stop and adds no node (Edge Cases "One lane, or no lanes", FR-013) | A twin board with five lanes in Frame N on the same page is a tab stop and a named region | A board that always applies its region role and tab stop |
+| A non-lane child of a board does not widen for content wider than its share (Edge Cases "Non-lane children of a board", FR-013) | It and the lanes beside it are equal within 1 px, each at least `--ocelle-lane-min-width` | The inline-size containment on the lane host only, not in the board's `::slotted(*)` |
+| A change of a lane's `count` or `count-label` adds no live region and no announcement node (Edge Cases "Lane count updates", FR-018, FR-019) | The visible count and the group's name show the new value | An `aria-live` region on the lane's header |
+| After content is removed while scrolled to the end, no fade remains at the clamped end, and a board that then fits keeps no tab stop and no region (Edge Cases "Content changes while scrolled", FR-002, FR-007) | While it still overflows, the start fade shows at the clamped position | The state not recomputed on `slotchange` or on the track's resize |
 | A lane does not widen for content wider than its share (US2-14, FR-013) | In the same board, the nested overflowing scroller in that lane is a tab stop, and all lanes are equal within 1 px | A lane whose minimum inline size is its content's min-content (the flex default); a lane whose content feeds the board's intrinsic size (no inline-size containment) |
 | A focused card in a `flat` lane at the board's edges is not clipped by the board's scroll box (US2-15, FR-014) | The board does not scroll in the block direction, and in Frame W it still does not overflow | A board scroll box with no room for the ring |
 | In two columns, `detail-open` hides nothing (US3-4, FR-027) | In one column, the same attribute shows the detail and hides the list | `detail-open` applied in every layout |
@@ -254,8 +271,8 @@ content fits. Then:
    key that points toward the hidden content, **Then** the strip scrolls toward it by at least 40 px per key press.
    ArrowRight moves toward the content on the right and ArrowLeft toward the content on the left, in both
    directions. The page itself does not scroll. **When** an arrow key is pressed with Alt, Ctrl, Meta or Shift held,
-   or during text composition, **Then** the scroller does not take it: it does not call `preventDefault` and does
-   not change the scroll position, so the browser's own shortcut (Alt+ArrowLeft goes back) applies.
+   **Then** the scroller does not take it: it does not call `preventDefault` and does not change the scroll position,
+   so the browser's own shortcut (Alt+ArrowLeft goes back) applies.
 6. **Given** an overflowing scroller at its inline start, **When** it is drawn, **Then** a fade shows at its
    inline-end edge and none at its inline-start edge. **When** it is scrolled to the middle, **Then** both edges fade.
    **When** it is scrolled to the end, **Then** only the inline-start edge fades. Under `dir="rtl"` the sides follow
@@ -612,8 +629,9 @@ goes.
 - **FR-006**: While the scroll box has focus, ArrowLeft and ArrowRight scroll it toward the content in that visual
   direction by at least 40 px per press, in both writing directions, and the page does not scroll. The browser's own
   scrolling of a focused scroll box may provide this. Keys pressed while a slotted element has focus are not handled
-  by the scroller, nor are arrow keys pressed with Alt, Ctrl, Meta or Shift held or during text composition: those
-  get the browser's default (US1-5, US1-10).
+  by the scroller, nor are arrow keys pressed with Alt, Ctrl, Meta or Shift held: those get the browser's default
+  (US1-5, US1-10). The scroll box is not editable, so no text composition can start on it; composition keys come from
+  an editable slotted element, whose keys the scroller does not handle (operator decision after the analysis).
 - **FR-007**: Each inline edge with content off-screen on its side shows a fade `--ocelle-scroller-fade-size` deep
   (new token, `var(--ocelle-space-7)`, 2rem) that fades the content toward transparency. An edge with nothing
   off-screen shows none, and a fade that would cover a focused slotted control is not drawn as FR-001 says. The fades
@@ -687,9 +705,9 @@ goes.
   "Scroller or board inside a shrink-to-fit host").
 - **FR-015**: A new token `--ocelle-lane-min-width` is `10rem` (operator decision). Five lanes at that width with four
   `--ocelle-space-3` gaps need 848 px, and 858 px with the board's inline ring room (FR-014, 5 px on each side),
-  which fits Frame W's 876 px (SC-003).
-- **FR-016**: In Frame W a board of five lanes does not overflow, and in Frame N it does. Both are tested (US2-1,
-  US2-2).
+  which fits Frame W's 876 px (SC-003). In Frame W a board of five lanes therefore does not overflow, and in Frame N
+  it does. Both are tested (US2-1, US2-2).
+- **FR-016**: Folded into FR-015 (analysis A1). The ID is kept so that earlier references stay valid.
 - **FR-017**: `variant` (attribute and property, reflected, `"flat" | undefined`, default absent) selects the lane's
   look. The default draws the lane chrome of US2-4. `flat` draws none of it, with the title style of US2-7. Any other
   value gives the default. Variant rules sit inside `@media not (forced-colors: active)` (005's conventions), and in
@@ -791,10 +809,13 @@ goes.
   `storybook/stories/<element>.stories.ts`:
   - **scroller**: fits; overflowing at start; overflowing in the middle; overflowing at the end; right-to-left;
     unlabelled;
-  - **board**: five lanes as in Frame W; five lanes in a narrow frame, overflowing; one lane; no lanes;
-  - **lane**: default with count; default without count; flat with count; long title; untitled with count;
+  - **board**: five lanes as in Frame W; five lanes in a narrow frame, overflowing; one lane; no lanes; right-to-left;
+  - **lane**: default with count; default without count; flat with count; flat without count; long title; untitled
+    with count;
   - **list-detail**: three columns; two columns with the inspector stacked; one column with the list; one column
-    with the detail; no inspector.
+    with the detail; no inspector; right-to-left.
+
+  These are the 23 stories of `contracts/elements.md` § Stories (operator decision after the analysis).
 
   The frames are sized inside the story, so each story is at a fixed size within #10's 1280 × 800 capture viewport.
   Their visual baselines and axe runs come from #10's `visual` and `axe` gates, as merged (Assumptions, "#10"). A

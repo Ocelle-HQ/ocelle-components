@@ -85,9 +85,10 @@ var(--ocelle-scroller-fade-size)`), and the ring room is the track's computed `p
   default, `region` for the board) and `aria-label` set to the name. Without one it has no role and no `aria-label`
   (FR-010).
 - **Not overflowing:** the box has no `tabindex`, no `role` and no `aria-label` (FR-002).
-- **Arrow keys:** `ArrowLeft` and `ArrowRight` with the box as composed target, and with `altKey`, `ctrlKey`, `metaKey`,
-  `shiftKey` and `isComposing` all false, are handled as R-02 says. A modified arrow, any other key, or any key from a
-  descendant, is not touched: no `preventDefault`, no scroll (PLAN-A11Y-SECURITY-1-004).
+- **Arrow keys:** `ArrowLeft` and `ArrowRight` with the box as composed target, and with `altKey`, `ctrlKey`, `metaKey`
+  and `shiftKey` all false, are handled as R-02 says. No `isComposing` is read: the box is not editable, so no
+  composition reaches it (R-02, analysis B1 (b)). A modified arrow, any other key, or any key from a descendant, is
+  not touched: no `preventDefault`, no scroll (PLAN-A11Y-SECURITY-1-004).
 - **Focus clearance:** on `focusin` of a descendant matching `:focus-visible` (keyboard focus, script focus after
   keyboard use, and any focus of a text-entry control), the box scrolls by the smallest amount that keeps the ring box
   clear of every edge that will still fade. Focus on the module's own nodes is not cleared. The fallback suppresses a

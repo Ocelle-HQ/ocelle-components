@@ -10,6 +10,9 @@
 - contracts/overflow-region.md, contracts/elements.md and contracts/gates.md;
 - quickstart.md.
 
+Amended after the analysis (`analysis-report.md`; operator decisions in `reviews/analysis/operator-decisions.md`;
+fixes in `reviews/analysis/fixes-1.md`). No task ID changed.
+
 **Tests**: required. Constitution Principle VIII applies to every phase. The phase flow is:
 
 1. `base.sh`, then an optional `scaffold.sh`;
@@ -222,6 +225,8 @@ Its fitting twin is none of these. `ocelle-test-overflow-host` passes US1-1, US1
     - Home and End are not prevented.
     - Alt+ArrowLeft, Ctrl+ArrowRight, Meta+ArrowRight and Shift+ArrowRight are not prevented and do not scroll.
     - Plant: no modifier check (R-02).
+    - No composition case: the box is not editable, so no composition reaches it, and the module reads no
+      `isComposing` (R-02, analysis B1 (b)).
   - **US1-6 and US1-7:** the fades, asserted on pixels on `color-canvas` and `color-pane`, in both themes, `ltr` and
     `rtl`, never on `data-fade`.
     - A fitting box has no `data-fade` and a computed `mask-image` of `none`.
@@ -240,8 +245,9 @@ Its fitting twin is none of these. `ocelle-test-overflow-host` passes US1-1, US1
     - `aria-label=" "` counts as absent (FR-010).
   - **US1-13:** the ring room and the tab walk through twelve links, forward and back, in `ltr` and `rtl`.
     - Every ring box lies clear of each fading edge, while each edge with content off-screen still fades.
-    - The wide-button fallback is held over at least two animation frames, then restored by a wheel scroll and by an
-      arrow key on the box. Plant: the synchronous flag (R-06, PLAN-A11Y-SECURITY-1-001).
+    - The wide-button fallback is held over at least two animation frames, then restored by a wheel scroll, by an
+      arrow key on the box, and when focus leaves the button (`focusout`, with Tab to the next control): the fade
+      shows again on that side. Plant: the synchronous flag (R-06, PLAN-A11Y-SECURITY-1-001).
     - Pointer focus is compared with a twin plain `overflow-x: auto` box, with the Tab case paired in the same test.
       Plant: clearance on every `focusin`.
     - A text input is cleared on a click, while a button is not moved.
@@ -254,8 +260,9 @@ Its fitting twin is none of these. `ocelle-test-overflow-host` passes US1-1, US1
     element (R-17).
   - **Sheets:** over two scrollers, `sheets()` shows the shared sheets plus exactly one per-instance sheet per root
     (R-13, PLAN-FRESH-2-005 (a)).
-- [ ] T014 [P] [US1] `packages/elements/test/scroller.test.ts` (in-process over T013) and
+- [ ] T014 [US1] `packages/elements/test/scroller.test.ts` (in-process over T013) and
   `packages/elements/test/browser/scroller.test.ts` (fixture over T013, plus US1-15's request and console checks).
+  It follows T013, whose bodies it runs.
 - [ ] T015 [P] [US1] `packages/elements/test/fixtures/overflow-host.ts`: the test-only `ocelle-test-overflow-host`.
   It is built on `OverflowRegion` with its own scroll-box markup and the default `group` role, and ships in no
   package. Add `packages/elements/test/overflow-host.test.ts`, which runs US1-1, US1-3, US1-4 and US1-12 from T013
@@ -275,7 +282,9 @@ Its fitting twin is none of these. `ocelle-test-overflow-host` passes US1-1, US1
   (contracts/elements.md).
 - [ ] T019 [P] [US1] `packages/elements/test/node/readme.test.ts`, one assertion per statement:
   - § `ocelle-scroller`: the attribute, the slot and the tokens read; the tree (a named `group` while overflowing);
-    the keyboard; the scrollbar; the guidance to give repeated scrollers an item-specific name;
+    the keyboard; the scrollbar; the guidance to give repeated scrollers an item-specific name; in a shrink-to-fit
+    host (a default flex item, a dialog, a table cell), give the scroller a definite or maximum inline size so that it
+    scrolls (spec Edge Cases, "Scroller or board inside a shrink-to-fit host");
   - § Element conventions: the overflow-region module's interface (inputs, outputs, effects, lifecycle, the
     stylesheet class names, what a later element must not do);
   - § Host ARIA, scoped per element. Icon and brand mark: a blank host `aria-label` decides. Scroller, board and
@@ -306,7 +315,7 @@ Its fitting twin is none of these. `ocelle-test-overflow-host` passes US1-1, US1
     (`"start" | "end" | "both" | undefined`), `name`;
   - effects on the box: `tabindex`, `role`, `aria-label`;
   - arrow keys: unmodified `ArrowLeft` and `ArrowRight` with the box as composed target, an instant `scrollLeft`
-    assignment, `preventDefault`;
+    assignment, `preventDefault`; no `isComposing` check (R-02, analysis B1 (b));
   - clearance on `focusin` of a `:focus-visible` descendant (`composedPath()[0]`), with the suppression cleared on
     `focusout` or on a `scroll` whose `scrollLeft` differs from the `written` value by more than 1 px;
   - handover to the first focusable element in the flat tree (a box check through `getClientRects()` and
@@ -373,10 +382,17 @@ Its fitting twin is none of these. `ocelle-test-overflow-host` passes US1-1, US1
 - [ ] T032 [US2] `packages/elements/test/scenarios/board.ts` and `scenarios/lane.ts`: US2 scenarios 1 to 15 as shared
   bodies, each frame at its viewport. US2-1, US2-3, US2-14 and US2-15 use sentence-length card text. Pairs and plants:
   - **US2-1:** Frame W, no overflow and no region, vs. Frame N, a tab stop and one `region` named by `label`.
-    Plants: always region; lane `contain: inline-size` removed (R-08).
+    Plants: always region; the board's `::slotted(*)` `contain: inline-size` removed (R-08).
+  - **US2-2:** in Frame N, the board is one tab stop and one `region` named by `label`, and the page has no horizontal
+    scroll. With the board focused, in `ltr`, ArrowRight moves `scrollLeft` toward the hidden end in 40 px steps until
+    the end is reached, and ArrowLeft back; Alt+ArrowLeft and Shift+ArrowRight are not prevented and do not scroll.
+    The board's fades are asserted on pixels: at the start only the inline-end side fades, in the middle both, at the
+    end only the inline-start side (SC-002, US1-5, US1-6). Plant: no modifier check (as US1-5).
   - **US2-3:** equal shares within 1 px, `--ocelle-space-3` gaps.
-  - **US2-4:** the lane chrome. Its computed ground is `color-sheet` and differs from `color-canvas`, `color-panel`
-    and `color-inspector` in both themes. Plant: the lane ground set to `color-panel` (R-10).
+  - **US2-4:** the lane chrome. Its computed ground is `color-sheet` and differs from `color-canvas`, `color-panel`,
+    `color-inspector` and `color-pane` in both themes. The title's computed style is `--ocelle-font-size-sm`,
+    `--ocelle-font-weight-strong` and `--ocelle-color-ink`; the count follows it in `--ocelle-color-ink-muted` with
+    `tabular-nums`. Plant: the lane ground set to `color-panel` (R-10).
   - **US2-5:** one `group` named "Ready, 3", and no further node with the title or count text. Plant: the visible
     title not hidden from the tree.
   - **US2-6:** every count and title case of the spec, including host `aria-label`. Plants: count "0" when absent;
@@ -386,7 +402,10 @@ Its fitting twin is none of these. `ocelle-test-overflow-host` passes US1-1, US1
   - **US2-8:** title wrapping.
   - **US2-9:** at 320 px the page has no horizontal scroll while the board scrolls. Plant: a board without its own
     overflow, so the page scrolls.
-  - **US2-10:** right to left.
+  - **US2-10:** right to left. The first lane is at the right and the count follows the title inline. In Frame N
+    with the board focused under `dir="rtl"`, ArrowLeft reaches the hidden end in 40 px steps and ArrowRight comes
+    back, modified arrows are not prevented, and the fades are mirrored: at the start only the left side fades
+    (SC-002, US1-5, US1-6).
   - **US2-11:** forced colours. A default lane has a 1 px `CanvasText` border; a flat lane has none.
   - **US2-12:** a hidden board and a hidden lane. Plant: `:host([hidden])` removed.
   - **US2-13:** fixture checks.
@@ -398,6 +417,25 @@ Its fitting twin is none of these. `ocelle-test-overflow-host` passes US1-1, US1
     grows the last lane, it makes the board overflow within one frame (FR-014).
   - **20 px root case:** lanes at 200 px, so five overflow Frame W (1070 px > 876 px; R-17).
   - **Sheets:** `sheets()` shows one per-instance sheet per board root and none on the lane.
+  - **Edge cases** (spec Edge Cases; analysis C3), one assertion each, paired as the spec table says:
+    - **Many lanes:** twelve lanes in Frame W are each at least 160 px wide, and the board overflows and is a tab
+      stop while the page has no horizontal scroll.
+    - **One lane:** one lane in Frame W is the board's inline size less the ring room on each side (866 px, within
+      1 px), and the board does not overflow.
+    - **No lanes:** an empty board in Frame N draws a box, does not overflow, is not a tab stop and adds no node,
+      beside a twin with five lanes in Frame N that is a tab stop and a named `region`. Plant: always region.
+    - **Non-lane children:** five children in Frame W, three lanes and two `div`s, each `div` holding a sentence wider
+      on one line than its share: all five are equal within 1 px and at least 160 px, and the board does not
+      overflow. Plant: `contain: inline-size` on the lane host only, not in the board's `::slotted(*)` (R-08,
+      analysis F1).
+    - **Lane count updates:** on a lane with `label="Ready"` and `count="3"`, setting `count` to 4, then
+      `count-label` to "4 work packages", updates the visible count ("4") and the group's name ("Ready, 4", then
+      "Ready, 4 work packages"); the lane's tree has no `aria-live` attribute and no `status`, `alert` or `log` node.
+      Plant: `aria-live="polite"` on the header.
+    - **Content changes while scrolled:** five lanes in Frame N scrolled to the end; removing one lane leaves the
+      board overflowing at the clamped end, with the start fade and no end fade (on pixels); removing two more makes
+      it fit, with no tab stop, no region and no fade. Plant: the state not recomputed on `slotchange` or on the
+      track's resize.
 - [ ] T033 [P] [US2] `packages/elements/test/workflow-board.test.ts` and `workflow-lane.test.ts` (in-process over
   T032), and `packages/elements/test/browser/workflow-board.test.ts` (fixture over T032).
 - [ ] T034 [P] [US2] `packages/elements/test/entry-workflow-board.test.ts`: the module defines `ocelle-workflow-board`
@@ -420,11 +458,13 @@ Its fitting twin is none of these. `ocelle-test-overflow-host` passes US1-1, US1
 - [ ] T038 [US2] `packages/elements/src/ocelle-workflow-lane.ts`: `label`, `count` (an attribute converter per R-09),
   `count-label`, and `variant` (reflected); the group wrapper with its name; the `aria-hidden` header; the content
   slot. Styles: the `color-sheet` ground, `--ocelle-radius-row` and `--ocelle-space-3` padding for the default
-  variant; the flat title style; `contain: inline-size` on the host; `overflow-wrap: anywhere`; `::slotted(*)` with
+  variant; the flat title style; no inline-size containment of its own (the board's `::slotted(*)` gives it, R-08);
+  `overflow-wrap: anywhere`; `::slotted(*)` with
   `max-inline-size: 100%`; the forced-colours border with `--ocelle-border-width`; `:host([hidden])`.
 - [ ] T039 [US2] `packages/elements/src/ocelle-workflow-board.ts`: `OverflowRegion` with `role: "region"`. The track as
   a flex row with `gap: var(--ocelle-space-3)`, `align-items: stretch` and `min-inline-size: 100%`. `::slotted(*)` with
-  `flex: 1 1 var(--ocelle-lane-min-width)` and `min-inline-size: var(--ocelle-lane-min-width)`. The block ring room
+  `flex: 1 1 var(--ocelle-lane-min-width)`, `min-inline-size: var(--ocelle-lane-min-width)` and `contain: inline-size`,
+  so every child, a lane or not, is contained (R-08, contracts/elements.md, analysis F1). The block ring room
   is placed once, as contracts/overflow-region.md places it (R-04, R-08). `:host([hidden])`.
 - [ ] T040 [US2] `index.ts` and `browser.ts` define and export both elements. `package.json` gets the exports
   `./ocelle-workflow-board.js` and `./ocelle-workflow-lane.js`. Regenerate `custom-elements.json`.
@@ -489,14 +529,20 @@ with three columns.
   at its viewport. Pairs and plants:
   - **US3-1, US3-2, US3-3:** the tracks, the 1 px `color-rule` borders, and the inspector width including its border
     (1073 px, PLAN-CORRECTNESS-1-003 (a)).
+  - **US3-1 and US3-2 in forced colours** (FR-023, spec Assumptions "Forced colours and axe"; analysis C1): under
+    emulated forced colours, each border between adjacent panes is 1 px in `CanvasText`, side by side in Frame R and
+    stacked between the detail and the inspector in Frame W. Plant: the border rule placed inside
+    `@media not (forced-colors: active)`.
   - **US3-4:** `detail-open` in two columns hides nothing. Plant: `detail-open` applied in every tier.
   - **US3-5:** `narrow`.
   - **US3-6:** keyboard focus in the list, then the host sets `detail-open` from a task: focus moves to the detail
     pane, which shows the ring. After a click, the ring is absent. Removing `detail-open` moves focus back. With focus
     outside, or in the pane that stays, focus is not moved. At rest no wrapper has a `tabindex`, and the tree shows no
     focusable wrapper. A click on pane text does not focus a wrapper. The ring is drawn inset inside an
-    `overflow: hidden` container in Frame N, with `Highlight` in forced colours. Plants: focus moved on every switch;
-    wrappers focusable at all times; the default outset ring (R-14, PLAN-A11Y-SECURITY-1-003 and 1-005).
+    `overflow: hidden` container in Frame N, with `Highlight` in forced colours. After the switch, `press("Tab")`
+    lands on the detail's first focusable element, and the detail wrapper then has no `tabindex` (analysis C4).
+    Plants: focus moved on every switch; wrappers focusable at all times; the default outset ring (R-14,
+    PLAN-A11Y-SECURITY-1-003 and 1-005).
   - **US3-7:** narrowing with focus in the detail.
   - **US3-8:** no inspector, then an inspector added after the first render, then removed again. Plants: the
     inspector always rendered; the slot rendered only when an inspector is present (R-11).
@@ -518,6 +564,9 @@ with three columns.
   - **20 px root case:** one column in a 720 px frame, two at 16 px.
   - **Style and sheets:** no shadow element carries a `style` attribute, and `sheets()` shows one per-instance sheet
     per root over two instances.
+  - **Edge case "list-detail with an empty list slot"** (analysis C3): with nothing in the `list` slot, in Frame R,
+    the list pane is still 288 px wide and the detail takes the rest; with an empty default slot the detail column
+    still shows, empty, at its width.
 - [ ] T048 [P] [US3] `packages/elements/test/list-detail-pass.test.ts` (in-process only): the once-per-frame pass.
   - Three `setTimeout(0)` tasks each make a light-DOM change in a pane, before one animation frame, and the test-only
     counter of `src/list-detail-measure.ts` reads exactly one pass.
@@ -529,8 +578,9 @@ with three columns.
   R-14. Focus inside the list of an un-upgraded one-column element with `detail-open` moves to the detail at upgrade.
   Focus in the pane that stays shown is not moved. Also add the server-rendered fixture page for the same two cases in
   `packages/elements/test/browser/list-detail.test.ts`.
-- [ ] T050 [P] [US3] `packages/elements/test/list-detail.test.ts` (in-process over T047) and
-  `packages/elements/test/browser/list-detail.test.ts` (fixture over T047).
+- [ ] T050 [US3] `packages/elements/test/list-detail.test.ts` (in-process over T047) and
+  `packages/elements/test/browser/list-detail.test.ts` (fixture over T047). It follows T047, whose bodies it runs, and
+  T049, which writes the same browser file.
 - [ ] T051 [P] [US3] `packages/elements/test/entry-list-detail.test.ts`. Extend `entry-root.test.ts` and
   `exports.test.ts`. In `node/manifest.test.ts`, the list-detail entry has:
   - `collapse-below`/`collapseBelow` and `inspector-below`/`inspectorBelow` (`string | undefined`, not reflected);
@@ -552,7 +602,7 @@ with three columns.
     - the re-measure triggers;
     - that the unseen changes (images, fonts, shadow-rendered content, attribute-only changes) wait for the next
       trigger or for `remeasure()`;
-    - the cost of one pass (median 9.9 ms with 1000 rows);
+    - the cost of one pass, in contracts/elements.md's wording: about 10 ms (7 to 19 ms) with a 1000-row list;
     - that content mutated inside a consumer's own `ResizeObserver` callback can still bring the browser's loop message
       through layout alone;
     - and that hosts set `narrow`, `detail-open` and the `*-below` thresholds from a task, not from a `ResizeObserver`
@@ -574,7 +624,8 @@ with three columns.
   - the host `ResizeObserver` measures and chooses the tier only;
   - the shadow grid with `data-tier` and the three panes, with the `inspector` slot always rendered and
     `hasInspector` taken from `slotchange`;
-  - borders with `--ocelle-border-width` and `--ocelle-color-rule`;
+  - borders with `--ocelle-border-width` and `--ocelle-color-rule`, the border rule outside
+    `@media not (forced-colors: active)` so the borders stay in `CanvasText` under forced colours (FR-023);
   - the focus rule with a temporary `tabindex="-1"` on the shown pane's wrapper, removed on `focusout`;
   - the inset ring on `:focus-visible`, `Highlight` in forced colours;
   - the upgrade rule;
@@ -644,9 +695,10 @@ reports `pass`.
 ## Parallel Opportunities
 
 - Phase 1: T003, T004 and T005 (different packages).
-- Phase 2: T010, T011, T012 and T015 to T020 are separate files. T013 is the shared body that T014 runs.
+- Phase 2: T010, T011, T012 and T015 to T020 are separate files. T013 is the shared body that T014 runs, so T014
+  follows T013.
 - Phase 3: T031 and T033 to T037.
-- Phase 4: T046, T048, T049 and T051 to T053.
+- Phase 4: T046, T048, T049 and T051 to T053. T050 follows T047 (its bodies) and T049 (the same browser file).
 - Never in parallel: browser suites, mutation, plants and `visual:update` (one heavy job at a time).
 
 ## Implementation Strategy

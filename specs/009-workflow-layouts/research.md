@@ -58,10 +58,10 @@ the operator.
 
 **Decision.** The overflow-region module handles `ArrowLeft` and `ArrowRight` itself, only when the keydown's
 composed target is the scroll box and no modifier is involved: `altKey`, `ctrlKey`, `metaKey` and `shiftKey` are all
-false and `isComposing` is false (PLAN-A11Y-SECURITY-1-004). A modified arrow is left to the browser untouched:
-Alt+ArrowLeft and Alt+ArrowRight are history navigation in Chrome on Windows and Linux, Ctrl, Alt and Meta arrows are
-word-jump and assistive-technology keys, and Shift+Arrow has no scroll meaning the spec asks for, so the simplest rule
-is to leave it to the browser too. For a handled key the module:
+false (PLAN-A11Y-SECURITY-1-004). It reads no `isComposing` (below, "Composition"). A modified arrow is left to the
+browser untouched: Alt+ArrowLeft and Alt+ArrowRight are history navigation in Chrome on Windows and Linux, Ctrl,
+Alt and Meta arrows are word-jump and assistive-technology keys, and Shift+Arrow has no scroll meaning the spec asks
+for, so the simplest rule is to leave it to the browser too. For a handled key the module:
 
 - it calls `preventDefault`;
 - it moves `scrollLeft` by 40 px in the key's visual direction with an instant assignment, so no browser smooth
@@ -73,6 +73,18 @@ the browser's default applies, and the element does not call `preventDefault` on
 scroll result. US1-5's test also presses Alt+ArrowLeft, Ctrl+ArrowRight, Meta+ArrowRight and Shift+ArrowRight on the
 focused box, with real input, and asserts that none is default-prevented and that `scrollLeft` does not change. Its
 plant is a handler with no modifier check.
+
+**Composition (analysis B1, operator decision (b)).** A text composition (IME) starts only on an editable focus
+target: a text `input`, a `textarea` or an editing host. The scroll box is a `div` in the element's shadow root with
+no `contenteditable`, and an editing host in the light DOM does not make shadow content editable, so focus on the box
+cannot start a composition and a keydown whose composed target is the box always has `isComposing` false. Keys pressed
+during a composition in a slotted text control have that control as their composed target, and the module already
+leaves them untouched (US1-10). An `isComposing` check would therefore never change an outcome: its removal is an
+equivalent mutant, and no test can tell it apart. The operator chose to drop the check and the clause rather than keep
+a guard that cannot be tested (constitution V and VIII): US1-5 and FR-006 no longer name composition, and
+contracts/overflow-region.md handles the unmodified arrows on the box with no `isComposing` condition. Option (a), a
+driver composition method (CDP `Input.imeSetComposition`) and a US1-5 case, was not taken: it would compose on a
+target that real input cannot reach.
 
 **Why (measured).** Chromium's own arrow-key scrolling of a focused scroll box is 40 px, but animated: `scrollLeft`
 was 0 right after the key press and 40 after 300 ms, also in a context with `reducedMotion: "reduce"`. Under reduced
@@ -378,7 +390,9 @@ edges; not taken by the operator.
   fitting board's lanes share the box minus the ring room.
 - **Lanes.** `::slotted(*)` gets `flex: 1 1 var(--ocelle-lane-min-width); min-inline-size: var(--ocelle-lane-min-width);
   contain: inline-size`. Every child has the same basis and minimum, so the shares are equal (FR-013), and no child
-  takes its min-content as its minimum.
+  takes its min-content as its minimum. The containment is the board's, on every slotted child, so a non-lane child
+  is contained like a lane; the lane sets none of its own (analysis F1). The Edge Case "Non-lane children of a
+  board" has its own case, with sentence text in a `div` child, whose plant is the containment on the lane host only.
 - **Why the containment (PLAN-CORRECTNESS-1-001, measured by the squad).** The track keeps the module's
   `inline-size: max-content`, so its inline-end ring room always follows the last lane. A row flex container's
   max-content is the sum of its items' max-content contributions, not their flex bases, and `min-inline-size` only
@@ -392,8 +406,8 @@ edges; not taken by the operator.
   nested scroller's and a capped image's min-content contributions still widen the lanes (1108 px and 1098 px), and
   an `auto` track loses the inline-end ring room in Frame N.
 - **Test content.** US2-1, US2-3, US2-14 and US2-15 use cards whose text is a sentence wider on one line than a lane's
-  share, as the spec's US2-1 now says. US2-14's plants are "min-content minimum" and "a lane without inline-size
-  containment"; the second makes US2-1 fail in Frame W.
+  share, as the spec's US2-1 now says. US2-14's plants are "min-content minimum" and "the board's
+  `::slotted(*)` without inline-size containment"; the second makes US2-1 fail in Frame W.
 
 **Check (FR-015).** Five lanes need 5 × 160 + 4 × 12 = 848 px plus 2 × 5 px of ring room, 858 px, which is less than
 Frame W's 876 px. In Frame N (636 px) they overflow. At a 20 px root (R-17) the lanes are 200 px and five need

@@ -65,8 +65,9 @@ floor does not move (R-18).
 
 **Project Type**: library (web components) in a pnpm workspace.
 
-**Performance Goals**: one `ResizeObserver` per element instance. Updates only when an output changes. A board of
-twelve lanes with forty cards each updates its state within one frame of a resize.
+**Performance Goals**: one `ResizeObserver` per element instance. Updates only when an output changes. No timing goal
+beyond the spec's one-frame bounds (the twelve-lane, forty-card goal was dropped by the operator after the analysis,
+C3).
 
 **Constraints**:
 - strict CSP with no exception;
@@ -88,7 +89,11 @@ squad round 1's fixes: II now names the gate change, III to V and VIII the new d
 stylesheet that replaces `element.style` writes. Rechecked after squad round 2's fixes: II records the reading of
 measured layout figures for the operator, III the reduced-motion scope and the handover ring overlay, IV the module's
 per-instance sheet. Rechecked after squad round 3's fixes: I names list-detail's one method, VII the addition, VIII
-the new US3-12 cases and their plants.*
+the new US3-12 cases and their plants. Rechecked after the analysis fixes (`analysis-report.md`,
+`reviews/analysis/operator-decisions.md`): III and V lose the untestable composition clause with the module's
+`isComposing` check (B1 (b), R-02), so every keyboard path left has a test, the board's arrow keys and Tab after a pane
+switch included; VIII gains the edge-case pairs and their plants and the forced-colours pane-border case. No
+principle's verdict changes, and Complexity Tracking stays empty.*
 
 | Principle | How this plan meets it |
 |---|---|
@@ -157,6 +162,17 @@ the new US3-12 cases and their plants.*
 
 PLAN-FRESH-3-002 was a fix: the pass is scheduled in one animation-frame callback, at most once per frame (spec
 FR-025, FR-034, US3-12; R-13; data-model; contracts/elements.md; phase 4).
+
+**Decided after the analysis of the tasks** (`analysis-report.md`; `reviews/analysis/operator-decisions.md`):
+
+| Finding | Decision | Where |
+|---|---|---|
+| B1 | (b) composition cannot reach the non-editable box: the clause and the `isComposing` check are removed, the reason recorded | spec US1-5, FR-006, operator decisions; R-02; contracts/overflow-region.md, contracts/elements.md |
+| F2 | FR-032 takes the contract's 23 stories | spec FR-032, operator decisions |
+| C3 | each spec edge case gets a browser case, paired where it is a "does not"; the twelve-lane timing goal is dropped | spec pairing table, operator decisions; Performance Goals; phases 3 and 4 |
+
+The other findings (C1, C2, C4, F1, A1, F3, F4, C5, C6, C7) are fixed as the report recommends (tasks.md; F1 also in
+R-08 and contracts/elements.md; A1 in spec FR-015 and FR-016).
 
 ## Project Structure
 
@@ -266,8 +282,8 @@ Every phase runs each pairing plant it names once against its test and records t
      - US1-13:
        - no ring room;
        - no fade clearance;
-       - the wide-button fallback, held over at least two animation frames, and restored by a wheel scroll and by an
-         arrow key on the box (plant: the synchronous flag, R-06);
+       - the wide-button fallback, held over at least two animation frames, and restored by a wheel scroll, by an
+         arrow key on the box and when focus leaves the button (plant: the synchronous flag, R-06);
        - pointer focus against a twin plain `overflow-x: auto` box, with the Tab case paired in the same test (plant:
          clearance on every `focusin`, R-06);
        - the text input cleared on a click while a button is not moved (R-06);
@@ -287,7 +303,8 @@ Every phase runs each pairing plant it names once against its test and records t
    - **Stories.** Story test ids first, then `scroller.stories.ts`, the frame rules and the baselines through
      `visual:update`. axe through the gate.
    - **Records.** Manifest, entry point, `index.ts`, `browser.ts`, changelog. README, red first in `readme.test.ts`:
-     the scroller (a named group, the per-item naming guidance, the scrollbar); the module under the element
+     the scroller (a named group, the per-item naming guidance, the scrollbar, a definite or maximum inline size in a
+     shrink-to-fit host); the module under the element
      conventions; § Host ARIA scoped per element (icon and brand mark: blank decides; scroller, board and lane: blank
      counts as absent, with R-01's reason; list-detail: no name), replacing the package-wide sentence the test pins
      (PLAN-CORRECTNESS-1-005 (a)); § Styles: the shared `static styles` plus at most one per-instance sheet of measured
@@ -298,15 +315,24 @@ Every phase runs each pairing plant it names once against its test and records t
 3. **US2 `ocelle-workflow-board` and `ocelle-workflow-lane` (P2).**
    - **Count grammar, tests first** (R-09). Then US2 scenarios 1 to 15 in both harnesses, with sentence-length cards
      in US2-1, US2-3, US2-14 and US2-15, each pair with its plant:
-     - US2-1 (always region; lane containment removed, R-08);
-     - US2-4 (the lane ground set to `color-panel`: its computed ground no longer differs from canvas, panel and
-       inspector in both themes, R-10);
+     - US2-1 (always region; the board's `::slotted(*)` containment removed, R-08);
+     - US2-2 and US2-10: ArrowRight and ArrowLeft reach the board's hidden end in 40 px steps in `ltr` and `rtl`,
+       modified arrows are not prevented, and the board's fades show on the sides with content off-screen (SC-002);
+     - US2-4 (the lane ground set to `color-panel`: its computed ground no longer differs from canvas, panel,
+       inspector and pane in both themes, R-10), with the title's and the count's computed type and colour;
      - US2-5 (visible title not hidden);
      - US2-6 (count "0" when absent; separator always);
      - US2-9 (a board without its own overflow: the page scrolls at 320 px);
-     - US2-14 (min-content minimum; a lane without inline-size containment), with `base.css` (R-08);
+     - US2-14 (min-content minimum; the board's `::slotted(*)` without inline-size containment), with `base.css`
+       (R-08);
      - US2-15 (no ring room);
-     - US2-12 (`:host([hidden])` removed).
+     - US2-12 (`:host([hidden])` removed);
+     - the edge cases (C3): many lanes (twelve in Frame W keep the minimum and the board scrolls); one lane (full
+       inline size less the ring room); no lanes (paired with a five-lane twin in Frame N; plant: always region);
+       non-lane children (a `div` child with sentence text is equal to the lanes; plant: containment on the lane host
+       only, F1); lane count updates (the visible count and the name follow; no live region; plant: `aria-live` on the
+       header); content removed while scrolled to the end (the fades and the tab stop follow the clamped position;
+       plant: the state not recomputed on `slotchange` or the track's resize).
 
      The board's region role is asserted on the board (the test host and the scroller cover `group`). `sheets()`
      asserts one per-instance sheet per board root and none on the lane (R-13 § The conventions). A 20 px root
@@ -330,9 +356,13 @@ Every phase runs each pairing plant it names once against its test and records t
      source.
    - **Scenarios.** US3 scenarios 1 to 16 in both harnesses, each frame at its viewport, each pair with its plant:
      - US3-4 (`detail-open` in every tier);
+     - US3-1 and US3-2 in forced colours: the pane borders in `CanvasText`, side by side and stacked (plant: the
+       border rule inside `@media not (forced-colors: active)`; FR-023, C1);
      - US3-6 (focus moved on every switch; wrappers focusable at all times, with the tree at rest and a click on pane
        text; the default outset ring, in Frame N inside an `overflow: hidden` container, and `Highlight` in forced
-       colours; R-14);
+       colours; after the switch the next Tab reaches the detail's first focusable element and the wrapper has no
+       `tabindex`; R-14);
+     - the edge case "list-detail with an empty list slot": the list track keeps 288 px in Frame R (C3);
      - US3-8 (inspector always rendered; the slot rendered only when an inspector is present, with an inspector
        added after the first render and removed again; R-11);
      - US3-9 (page scroll);
