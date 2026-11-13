@@ -1,0 +1,15 @@
+{
+  "expect": "fail",
+  "why": "Only the :active rule of the pressed story changes: differs on both themes of the pressed story (FR-031; analysis G4).",
+  "findings": [
+    {
+      "location": "hover-and-press--press/light",
+      "rule": "differs"
+    },
+    {
+      "location": "hover-and-press--press/dark",
+      "rule": "differs"
+    }
+  ],
+  "baselinesOf": "pass-hover-and-press"
+}

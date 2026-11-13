@@ -15,6 +15,7 @@ export const scope = [
   ":(glob)packages/*/**/*.ts",
   ":(glob)gates/bin/**/*.ts",
   ":(glob)gates/lib/**/*.ts",
+  ":(glob)gates/visual/**/*.ts",
   ":(glob)gates/eslint/**/*.ts",
   ":(glob)gates/stylelint/**/*.ts",
   ":(glob)storybook/scripts/**/*.ts",

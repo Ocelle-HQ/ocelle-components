@@ -1,10 +1,10 @@
-import { cpSync, readdirSync, readFileSync, symlinkSync, writeFileSync } from "node:fs";
+import { cpSync, readdirSync, readFileSync, realpathSync, symlinkSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 import { afterEach, describe, expect, it } from "vitest";
 import { applyOverrides, resolve } from "../../../packages/tokens/src/generate.ts";
 import { records } from "../../../packages/tokens/src/source.ts";
 import { contrastRatio } from "../../lib/wcag.ts";
-import { baseEnv, cleanUp, repo, runGate, tempDir } from "./workspace.ts";
+import { baseEnv, cleanUp, repo, runGate, storybookInputs, tempDir } from "./workspace.ts";
 
 // The contrast and brand-rules plants are robust to neighbouring changes (002 contracts/gates.md § Configuration set,
 // *Plant deltas* and *Keyed locations*; PLAN-FRESH-3-003): a copy of the repository's token source and pair list is
@@ -47,6 +47,8 @@ const copied = [
   pairsPath,
   // The element source of the configuration set (005 research.md R-12).
   "packages/elements/src",
+  // The Storybook workspace inputs of the configuration set (006 research.md R-16).
+  ...storybookInputs,
 ];
 
 interface Entry {
@@ -141,6 +143,7 @@ function changedRoot(variant: Variant): string {
   const root = tempDir("plants-robust");
   for (const path of copied) cpSync(join(repo, path), join(root, path), { recursive: true });
   symlinkSync(join(repo, "node_modules"), join(root, "node_modules"), "dir");
+  symlinkSync(realpathSync(join(repo, "storybook/node_modules")), join(root, "storybook/node_modules"), "dir");
   writeFileSync(join(root, sourcePath), variant.source);
   writeFileSync(join(root, pairsPath), pairsText(variant.pairs));
   return root;
@@ -150,18 +153,30 @@ const otherGates = (JSON.parse(readFileSync(join(repo, "gates/gates.json"), "utf
   .map((gate) => gate.id)
   .filter((id) => id !== "contrast" && id !== "brand-rules");
 const missing = otherGates.flatMap((id) => ["fail", "pass", "error"].map((kind) => `gates/plants/${id}: plants: missing-plant: gate ${id} has no ${kind} plant`));
+/** The plant directories of the two gates and of the registry, as `<gate>/<case>`. */
+function plantNames(): string[] {
+  return ["contrast", "brand-rules", "plants"].flatMap((dir) =>
+    readdirSync(join(repo, "gates/plants", dir), { withFileTypes: true })
+      .filter((entry) => entry.isDirectory())
+      .map((entry) => `${dir}/${entry.name}`),
+  );
+}
+
 /** The number of plant directories of the two gates and of the registry. */
 function plantCount(): number {
-  return ["contrast", "brand-rules", "plants"]
-    .map((dir) => readdirSync(join(repo, "gates/plants", dir), { withFileTypes: true }).filter((entry) => entry.isDirectory()).length)
-    .reduce((a, b) => a + b, 0);
+  return plantNames().length;
+}
+
+/** Plan decision 24: the stderr lines of the plant times, their seconds written `<s>`, sorted. */
+function times(stderr: readonly string[]): string[] {
+  return stderr.map((line) => line.replace(/^(note: plant time: [a-z0-9-]+\/[a-z0-9-]+): \d+\.\d s$/, "$1: <s> s")).sort();
 }
 
 afterEach(cleanUp);
 
 describe("contrast and brand-rules plants under neighbouring changes", () => {
   it("has the two gates' plants and the registry's", () => {
-    expect({ others: otherGates.length, plants: plantCount() }).toEqual({ others: 12, plants: 31 });
+    expect({ others: otherGates.length, plants: plantCount() }).toEqual({ others: 15, plants: 35 });
   });
 
   it.each([
@@ -176,10 +191,10 @@ describe("contrast and brand-rules plants under neighbouring changes", () => {
       const gate = await runGate("gates/bin/contrast.ts", ["--root", root], { cwd: root, env: baseEnv() });
       expect({ code: gate.code, stdout: gate.stdout }).toEqual({ code: 0, stdout: [variant.summary] });
       const job = await runGate("gates/bin/plants.ts", ["--root", root], { cwd: root, env: baseEnv() });
-      expect({ code: job.code, stdout: job.stdout, stderr: job.stderr }).toEqual({
+      expect({ code: job.code, stdout: job.stdout, stderr: times(job.stderr) }).toEqual({
         code: 1,
         stdout: [...missing, `plants: ${String(missing.length)} problems in ${String(plantCount())} plants`],
-        stderr: [],
+        stderr: plantNames().map((plant) => `note: plant time: ${plant}: <s> s`).sort(),
       });
     },
     timeout,

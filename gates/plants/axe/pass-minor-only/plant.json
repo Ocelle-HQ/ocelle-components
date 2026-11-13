@@ -1,0 +1,4 @@
+{
+  "expect": "pass",
+  "why": "A story whose only violation is of moderate impact (heading-order): a note, not a finding (FR-013, US3 scenario 3)."
+}

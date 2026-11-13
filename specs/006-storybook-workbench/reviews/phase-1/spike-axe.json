@@ -1,0 +1,661 @@
+{
+ "axe": "4.14.0",
+ "enabledRules": [
+  "accesskeys",
+  "area-alt",
+  "aria-allowed-attr",
+  "aria-allowed-role",
+  "aria-braille-equivalent",
+  "aria-command-name",
+  "aria-conditional-attr",
+  "aria-deprecated-role",
+  "aria-dialog-name",
+  "aria-hidden-body",
+  "aria-hidden-focus",
+  "aria-input-field-name",
+  "aria-meter-name",
+  "aria-progressbar-name",
+  "aria-prohibited-attr",
+  "aria-required-attr",
+  "aria-required-children",
+  "aria-required-parent",
+  "aria-roledescription",
+  "aria-roles",
+  "aria-tab-name",
+  "aria-text",
+  "aria-toggle-field-name",
+  "aria-tooltip-name",
+  "aria-treeitem-name",
+  "aria-valid-attr-value",
+  "aria-valid-attr",
+  "audio-caption",
+  "autocomplete-valid",
+  "avoid-inline-spacing",
+  "blink",
+  "button-name",
+  "color-contrast",
+  "definition-list",
+  "dlitem",
+  "duplicate-id-aria",
+  "empty-heading",
+  "empty-table-header",
+  "form-field-multiple-labels",
+  "frame-focusable-content",
+  "frame-tested",
+  "frame-title-unique",
+  "frame-title",
+  "heading-order",
+  "image-alt",
+  "image-redundant-alt",
+  "input-button-name",
+  "input-image-alt",
+  "label-content-name-mismatch",
+  "label-title-only",
+  "label",
+  "landmark-banner-is-top-level",
+  "landmark-contentinfo-is-top-level",
+  "landmark-main-is-top-level",
+  "landmark-no-duplicate-banner",
+  "landmark-no-duplicate-contentinfo",
+  "landmark-no-duplicate-main",
+  "landmark-unique",
+  "link-in-text-block",
+  "link-name",
+  "list",
+  "listitem",
+  "marquee",
+  "meta-refresh",
+  "meta-viewport-large",
+  "meta-viewport",
+  "nested-interactive",
+  "no-autoplay-audio",
+  "object-alt",
+  "presentation-role-conflict",
+  "role-img-alt",
+  "scope-attr-valid",
+  "scrollable-region-focusable",
+  "select-name",
+  "server-side-image-map",
+  "skip-link",
+  "summary-name",
+  "svg-img-alt",
+  "tabindex",
+  "table-duplicate-name",
+  "target-size",
+  "td-headers-attr",
+  "th-has-data-cells",
+  "valid-lang",
+  "video-caption"
+ ],
+ "documentElementRules": [
+  {
+   "id": "bypass",
+   "selector": "html:not(html *)",
+   "tags": [
+    "cat.keyboard",
+    "wcag2a",
+    "wcag241",
+    "section508",
+    "section508.22.o",
+    "TTv5",
+    "TT9.a",
+    "EN-301-549",
+    "EN-9.2.4.1",
+    "RGAAv4",
+    "RGAA-12.7.1"
+   ]
+  },
+  {
+   "id": "css-orientation-lock",
+   "selector": "html:not(html *)",
+   "tags": [
+    "cat.structure",
+    "wcag134",
+    "wcag21aa",
+    "EN-301-549",
+    "EN-9.1.3.4",
+    "RGAAv4",
+    "RGAA-13.9.1",
+    "experimental"
+   ]
+  },
+  {
+   "id": "document-title",
+   "selector": "html:not(html *)",
+   "tags": [
+    "cat.text-alternatives",
+    "wcag2a",
+    "wcag242",
+    "TTv5",
+    "TT12.a",
+    "EN-301-549",
+    "EN-9.2.4.2",
+    "ACT",
+    "RGAAv4",
+    "RGAA-8.5.1"
+   ]
+  },
+  {
+   "id": "frame-focusable-content",
+   "selector": "html:not(html *)",
+   "tags": [
+    "cat.keyboard",
+    "wcag2a",
+    "wcag211",
+    "TTv5",
+    "TT4.a",
+    "EN-301-549",
+    "EN-9.2.1.1",
+    "RGAAv4",
+    "RGAA-7.3.2"
+   ]
+  },
+  {
+   "id": "frame-tested",
+   "selector": "html:not(html *), frame, iframe",
+   "tags": [
+    "cat.structure",
+    "best-practice",
+    "review-item"
+   ]
+  },
+  {
+   "id": "html-has-lang",
+   "selector": "html:not(html *)",
+   "tags": [
+    "cat.language",
+    "wcag2a",
+    "wcag311",
+    "TTv5",
+    "TT11.a",
+    "EN-301-549",
+    "EN-9.3.1.1",
+    "ACT",
+    "RGAAv4",
+    "RGAA-8.3.1"
+   ]
+  },
+  {
+   "id": "html-lang-valid",
+   "selector": "html[lang]:not([lang=\"\"]):not(html *), html[xml\\:lang]:not([xml\\:lang=\"\"]):not(html *)",
+   "tags": [
+    "cat.language",
+    "wcag2a",
+    "wcag311",
+    "TTv5",
+    "TT11.a",
+    "EN-301-549",
+    "EN-9.3.1.1",
+    "ACT",
+    "RGAAv4",
+    "RGAA-8.4.1"
+   ]
+  },
+  {
+   "id": "html-xml-lang-mismatch",
+   "selector": "html[lang][xml\\:lang]:not(html *)",
+   "tags": [
+    "cat.language",
+    "wcag2a",
+    "wcag311",
+    "EN-301-549",
+    "EN-9.3.1.1",
+    "ACT",
+    "RGAAv4",
+    "RGAA-8.3.1"
+   ]
+  },
+  {
+   "id": "landmark-one-main",
+   "selector": "html:not(html *)",
+   "tags": [
+    "cat.semantics",
+    "best-practice"
+   ]
+  },
+  {
+   "id": "page-has-heading-one",
+   "selector": "html:not(html *)",
+   "tags": [
+    "cat.semantics",
+    "best-practice"
+   ]
+  }
+ ],
+ "results": [
+  {
+   "story": "base-styles--base-page",
+   "theme": "light",
+   "violations": [],
+   "incomplete": [],
+   "outsideRoot": [
+    "div#scripts-root"
+   ]
+  },
+  {
+   "story": "base-styles--base-page",
+   "theme": "dark",
+   "violations": [],
+   "incomplete": [],
+   "outsideRoot": [
+    "div#scripts-root"
+   ]
+  },
+  {
+   "story": "base-styles--compact-screen",
+   "theme": "light",
+   "violations": [],
+   "incomplete": [],
+   "outsideRoot": [
+    "div#scripts-root"
+   ]
+  },
+  {
+   "story": "base-styles--compact-screen",
+   "theme": "dark",
+   "violations": [],
+   "incomplete": [],
+   "outsideRoot": [
+    "div#scripts-root"
+   ]
+  },
+  {
+   "story": "base-styles--prose-document",
+   "theme": "light",
+   "violations": [
+    {
+     "rule": "scrollable-region-focusable",
+     "impact": "serious",
+     "target": [
+      "table:nth-child(12)"
+     ],
+     "any": [
+      "focusable-content",
+      "focusable-element"
+     ]
+    }
+   ],
+   "incomplete": [
+    {
+     "rule": "color-contrast",
+     "impact": "serious",
+     "target": [
+      "table:nth-child(12) > thead > tr > th:nth-child(12)"
+     ],
+     "any": [
+      "elmPartiallyObscured"
+     ]
+    },
+    {
+     "rule": "color-contrast",
+     "impact": "serious",
+     "target": [
+      "table:nth-child(12) > tbody > tr:nth-child(1) > td:nth-child(12)"
+     ],
+     "any": [
+      "elmPartiallyObscured"
+     ]
+    },
+    {
+     "rule": "color-contrast",
+     "impact": "serious",
+     "target": [
+      "tr:nth-child(2) > td:nth-child(12)"
+     ],
+     "any": [
+      "elmPartiallyObscured"
+     ]
+    },
+    {
+     "rule": "color-contrast",
+     "impact": "serious",
+     "target": [
+      "table:nth-child(14) > thead > tr > th:nth-child(12)"
+     ],
+     "any": [
+      "elmPartiallyObscured"
+     ]
+    },
+    {
+     "rule": "color-contrast",
+     "impact": "serious",
+     "target": [
+      "table:nth-child(14) > tbody > tr > td:nth-child(12)"
+     ],
+     "any": [
+      "elmPartiallyObscured"
+     ]
+    }
+   ],
+   "outsideRoot": [
+    "div#scripts-root"
+   ]
+  },
+  {
+   "story": "base-styles--prose-document",
+   "theme": "dark",
+   "violations": [
+    {
+     "rule": "scrollable-region-focusable",
+     "impact": "serious",
+     "target": [
+      "table:nth-child(12)"
+     ],
+     "any": [
+      "focusable-content",
+      "focusable-element"
+     ]
+    }
+   ],
+   "incomplete": [
+    {
+     "rule": "color-contrast",
+     "impact": "serious",
+     "target": [
+      "table:nth-child(12) > thead > tr > th:nth-child(12)"
+     ],
+     "any": [
+      "elmPartiallyObscured"
+     ]
+    },
+    {
+     "rule": "color-contrast",
+     "impact": "serious",
+     "target": [
+      "table:nth-child(12) > tbody > tr:nth-child(1) > td:nth-child(12)"
+     ],
+     "any": [
+      "elmPartiallyObscured"
+     ]
+    },
+    {
+     "rule": "color-contrast",
+     "impact": "serious",
+     "target": [
+      "tr:nth-child(2) > td:nth-child(12)"
+     ],
+     "any": [
+      "elmPartiallyObscured"
+     ]
+    },
+    {
+     "rule": "color-contrast",
+     "impact": "serious",
+     "target": [
+      "table:nth-child(14) > thead > tr > th:nth-child(12)"
+     ],
+     "any": [
+      "elmPartiallyObscured"
+     ]
+    },
+    {
+     "rule": "color-contrast",
+     "impact": "serious",
+     "target": [
+      "table:nth-child(14) > tbody > tr > td:nth-child(12)"
+     ],
+     "any": [
+      "elmPartiallyObscured"
+     ]
+    }
+   ],
+   "outsideRoot": [
+    "div#scripts-root"
+   ]
+  },
+  {
+   "story": "base-styles--identifier-wrap",
+   "theme": "light",
+   "violations": [],
+   "incomplete": [],
+   "outsideRoot": [
+    "div#scripts-root"
+   ]
+  },
+  {
+   "story": "base-styles--identifier-wrap",
+   "theme": "dark",
+   "violations": [],
+   "incomplete": [],
+   "outsideRoot": [
+    "div#scripts-root"
+   ]
+  },
+  {
+   "story": "candidates--two-low-contrast",
+   "theme": "light",
+   "violations": [
+    {
+     "rule": "color-contrast",
+     "impact": "serious",
+     "target": [
+      "p[data-candidate=\"low\"]:nth-child(1)"
+     ],
+     "any": [
+      "color-contrast"
+     ]
+    },
+    {
+     "rule": "color-contrast",
+     "impact": "serious",
+     "target": [
+      "p[data-candidate=\"low\"]:nth-child(2)"
+     ],
+     "any": [
+      "color-contrast"
+     ]
+    }
+   ],
+   "incomplete": [],
+   "outsideRoot": []
+  },
+  {
+   "story": "candidates--two-low-contrast",
+   "theme": "dark",
+   "violations": [
+    {
+     "rule": "color-contrast",
+     "impact": "serious",
+     "target": [
+      "p[data-candidate=\"low\"]:nth-child(1)"
+     ],
+     "any": [
+      "color-contrast"
+     ]
+    },
+    {
+     "rule": "color-contrast",
+     "impact": "serious",
+     "target": [
+      "p[data-candidate=\"low\"]:nth-child(2)"
+     ],
+     "any": [
+      "color-contrast"
+     ]
+    }
+   ],
+   "incomplete": [],
+   "outsideRoot": []
+  },
+  {
+   "story": "candidates--text-over-image",
+   "theme": "light",
+   "violations": [],
+   "incomplete": [
+    {
+     "rule": "color-contrast",
+     "impact": "serious",
+     "target": [
+      "div[data-candidate=\"image\"]"
+     ],
+     "any": [
+      "bgGradient"
+     ]
+    }
+   ],
+   "outsideRoot": []
+  },
+  {
+   "story": "candidates--text-over-image",
+   "theme": "dark",
+   "violations": [],
+   "incomplete": [
+    {
+     "rule": "color-contrast",
+     "impact": "serious",
+     "target": [
+      "div[data-candidate=\"image\"]"
+     ],
+     "any": [
+      "bgGradient"
+     ]
+    }
+   ],
+   "outsideRoot": []
+  },
+  {
+   "story": "tokens--colour",
+   "theme": "light",
+   "violations": [],
+   "incomplete": [],
+   "outsideRoot": [
+    "div#scripts-root"
+   ]
+  },
+  {
+   "story": "tokens--colour",
+   "theme": "dark",
+   "violations": [],
+   "incomplete": [],
+   "outsideRoot": [
+    "div#scripts-root"
+   ]
+  },
+  {
+   "story": "tokens--type",
+   "theme": "light",
+   "violations": [],
+   "incomplete": [],
+   "outsideRoot": [
+    "div#scripts-root"
+   ]
+  },
+  {
+   "story": "tokens--type",
+   "theme": "dark",
+   "violations": [],
+   "incomplete": [],
+   "outsideRoot": [
+    "div#scripts-root"
+   ]
+  },
+  {
+   "story": "tokens--space",
+   "theme": "light",
+   "violations": [],
+   "incomplete": [],
+   "outsideRoot": [
+    "div#scripts-root"
+   ]
+  },
+  {
+   "story": "tokens--space",
+   "theme": "dark",
+   "violations": [],
+   "incomplete": [],
+   "outsideRoot": [
+    "div#scripts-root"
+   ]
+  },
+  {
+   "story": "tokens--shape",
+   "theme": "light",
+   "violations": [],
+   "incomplete": [],
+   "outsideRoot": [
+    "div#scripts-root"
+   ]
+  },
+  {
+   "story": "tokens--shape",
+   "theme": "dark",
+   "violations": [],
+   "incomplete": [],
+   "outsideRoot": [
+    "div#scripts-root"
+   ]
+  },
+  {
+   "story": "tokens--size",
+   "theme": "light",
+   "violations": [],
+   "incomplete": [],
+   "outsideRoot": [
+    "div#scripts-root"
+   ]
+  },
+  {
+   "story": "tokens--size",
+   "theme": "dark",
+   "violations": [],
+   "incomplete": [],
+   "outsideRoot": [
+    "div#scripts-root"
+   ]
+  },
+  {
+   "story": "tokens--shell",
+   "theme": "light",
+   "violations": [],
+   "incomplete": [],
+   "outsideRoot": [
+    "div#scripts-root"
+   ]
+  },
+  {
+   "story": "tokens--shell",
+   "theme": "dark",
+   "violations": [],
+   "incomplete": [],
+   "outsideRoot": [
+    "div#scripts-root"
+   ]
+  },
+  {
+   "story": "tokens--elevation",
+   "theme": "light",
+   "violations": [],
+   "incomplete": [],
+   "outsideRoot": [
+    "div#scripts-root"
+   ]
+  },
+  {
+   "story": "tokens--elevation",
+   "theme": "dark",
+   "violations": [],
+   "incomplete": [],
+   "outsideRoot": [
+    "div#scripts-root"
+   ]
+  },
+  {
+   "story": "tokens--motion",
+   "theme": "light",
+   "violations": [],
+   "incomplete": [],
+   "outsideRoot": [
+    "div#scripts-root"
+   ]
+  },
+  {
+   "story": "tokens--motion",
+   "theme": "dark",
+   "violations": [],
+   "incomplete": [],
+   "outsideRoot": [
+    "div#scripts-root"
+   ]
+  }
+ ]
+}

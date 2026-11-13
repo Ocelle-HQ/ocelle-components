@@ -1,0 +1,377 @@
+{
+ "container": {
+  "browserVersion": "156.0.8078.80",
+  "node": "v26.13.0",
+  "platform": "linux",
+  "arch": "x64"
+ },
+ "faces": [
+  "Nunito Sans 400 italic: unloaded",
+  "Nunito Sans 400 normal: unloaded",
+  "Nunito Sans 700 italic: unloaded",
+  "Nunito Sans 700 normal: unloaded",
+  "Schibsted Grotesk 400 900 normal: loaded"
+ ],
+ "captures": [
+  {
+   "story": "base-styles--base-page",
+   "theme": "light",
+   "signal": "storyRendered",
+   "width": 1280,
+   "height": 800,
+   "bytes": 81557,
+   "sha256Run1": "d8474eb7cc1390fc6b2068ad409060d6bdd4c3ceee02d1708b6206b3112085d7",
+   "sha256Run2": "d8474eb7cc1390fc6b2068ad409060d6bdd4c3ceee02d1708b6206b3112085d7",
+   "families": {
+    "Schibsted Grotesk": 447
+   },
+   "fallbackTextNodes": 0,
+   "colorInkLightChanged": true
+  },
+  {
+   "story": "base-styles--base-page",
+   "theme": "dark",
+   "signal": "storyRendered",
+   "width": 1280,
+   "height": 800,
+   "bytes": 84596,
+   "sha256Run1": "6bc58984c962fa0c8c9cad244c9ab6d8f54f4b2b8f2968f8198d00bd4ea7118c",
+   "sha256Run2": "6bc58984c962fa0c8c9cad244c9ab6d8f54f4b2b8f2968f8198d00bd4ea7118c",
+   "families": {
+    "Schibsted Grotesk": 447
+   },
+   "fallbackTextNodes": 0,
+   "colorInkLightChanged": false
+  },
+  {
+   "story": "base-styles--compact-screen",
+   "theme": "light",
+   "signal": "storyRendered",
+   "width": 1280,
+   "height": 800,
+   "bytes": 57292,
+   "sha256Run1": "eb3b98ed46f230d332b750db1198754c3db6d2fa70378727f93f63463dc86457",
+   "sha256Run2": "eb3b98ed46f230d332b750db1198754c3db6d2fa70378727f93f63463dc86457",
+   "families": {
+    "Schibsted Grotesk": 331
+   },
+   "fallbackTextNodes": 0,
+   "colorInkLightChanged": true
+  },
+  {
+   "story": "base-styles--compact-screen",
+   "theme": "dark",
+   "signal": "storyRendered",
+   "width": 1280,
+   "height": 800,
+   "bytes": 59426,
+   "sha256Run1": "0964b06140917e07816f964d3e3f6e50cb3e18aae410d9a3a5aba09bcada12c9",
+   "sha256Run2": "0964b06140917e07816f964d3e3f6e50cb3e18aae410d9a3a5aba09bcada12c9",
+   "families": {
+    "Schibsted Grotesk": 331
+   },
+   "fallbackTextNodes": 0,
+   "colorInkLightChanged": false
+  },
+  {
+   "story": "base-styles--prose-document",
+   "theme": "light",
+   "signal": "storyRendered",
+   "width": 1280,
+   "height": 1083,
+   "bytes": 196069,
+   "sha256Run1": "d9c5b298f585bd24501648b5508689e959bccb5e01c10f820106bf914e8c785a",
+   "sha256Run2": "d9c5b298f585bd24501648b5508689e959bccb5e01c10f820106bf914e8c785a",
+   "families": {
+    "Schibsted Grotesk": 1106
+   },
+   "fallbackTextNodes": 0,
+   "colorInkLightChanged": true
+  },
+  {
+   "story": "base-styles--prose-document",
+   "theme": "dark",
+   "signal": "storyRendered",
+   "width": 1280,
+   "height": 1083,
+   "bytes": 201126,
+   "sha256Run1": "c9779b23d5f1b8f0b429ca9e5b1501b90027fb35c7e2a23f8ec59f8836750bca",
+   "sha256Run2": "c9779b23d5f1b8f0b429ca9e5b1501b90027fb35c7e2a23f8ec59f8836750bca",
+   "families": {
+    "Schibsted Grotesk": 1106
+   },
+   "fallbackTextNodes": 0,
+   "colorInkLightChanged": false
+  },
+  {
+   "story": "base-styles--identifier-wrap",
+   "theme": "light",
+   "signal": "storyRendered",
+   "width": 1280,
+   "height": 800,
+   "bytes": 100869,
+   "sha256Run1": "2cbe5fe88ec932a3982e448ba99100f96dfb7e84a226a0edca0b092537ead38d",
+   "sha256Run2": "2cbe5fe88ec932a3982e448ba99100f96dfb7e84a226a0edca0b092537ead38d",
+   "families": {
+    "Schibsted Grotesk": 466
+   },
+   "fallbackTextNodes": 0,
+   "colorInkLightChanged": true
+  },
+  {
+   "story": "base-styles--identifier-wrap",
+   "theme": "dark",
+   "signal": "storyRendered",
+   "width": 1280,
+   "height": 800,
+   "bytes": 104814,
+   "sha256Run1": "0d95d2c5d3de085d2e1dd4f163e96a99ea50998a9d44d054f5cfdc363044e96a",
+   "sha256Run2": "0d95d2c5d3de085d2e1dd4f163e96a99ea50998a9d44d054f5cfdc363044e96a",
+   "families": {
+    "Schibsted Grotesk": 466
+   },
+   "fallbackTextNodes": 0,
+   "colorInkLightChanged": false
+  },
+  {
+   "story": "tokens--colour",
+   "theme": "light",
+   "signal": "storyRendered",
+   "width": 1280,
+   "height": 1919,
+   "bytes": 219007,
+   "sha256Run1": "e607c7a2f6ae0e14477382a1f1123c768c9b4583c5256c11bf58875783c7b72d",
+   "sha256Run2": "e607c7a2f6ae0e14477382a1f1123c768c9b4583c5256c11bf58875783c7b72d",
+   "families": {
+    "Schibsted Grotesk": 1202
+   },
+   "fallbackTextNodes": 0,
+   "colorInkLightChanged": true
+  },
+  {
+   "story": "tokens--colour",
+   "theme": "dark",
+   "signal": "storyRendered",
+   "width": 1280,
+   "height": 1919,
+   "bytes": 232580,
+   "sha256Run1": "aaa3e317b29d247693255e21e9717fc8b2f6498b135f1fb98a15a10cb3bd314f",
+   "sha256Run2": "aaa3e317b29d247693255e21e9717fc8b2f6498b135f1fb98a15a10cb3bd314f",
+   "families": {
+    "Schibsted Grotesk": 1199
+   },
+   "fallbackTextNodes": 0,
+   "colorInkLightChanged": false
+  },
+  {
+   "story": "tokens--type",
+   "theme": "light",
+   "signal": "storyRendered",
+   "width": 1280,
+   "height": 1038,
+   "bytes": 124565,
+   "sha256Run1": "d50cd39a759f9369f6e8bb586f8edff03a83401aaa2ad78717c0d6ce64c3e43d",
+   "sha256Run2": "d50cd39a759f9369f6e8bb586f8edff03a83401aaa2ad78717c0d6ce64c3e43d",
+   "families": {
+    "Schibsted Grotesk": 741
+   },
+   "fallbackTextNodes": 0,
+   "colorInkLightChanged": true
+  },
+  {
+   "story": "tokens--type",
+   "theme": "dark",
+   "signal": "storyRendered",
+   "width": 1280,
+   "height": 1038,
+   "bytes": 129736,
+   "sha256Run1": "edbf9203745d6163420e5a60328f3eeceb39e4637f32052d8eb7fe82a57ba25d",
+   "sha256Run2": "edbf9203745d6163420e5a60328f3eeceb39e4637f32052d8eb7fe82a57ba25d",
+   "families": {
+    "Schibsted Grotesk": 741
+   },
+   "fallbackTextNodes": 0,
+   "colorInkLightChanged": false
+  },
+  {
+   "story": "tokens--space",
+   "theme": "light",
+   "signal": "storyRendered",
+   "width": 1280,
+   "height": 800,
+   "bytes": 47270,
+   "sha256Run1": "75792f7593fcb15d06a04ef8b46c39a8bae33b14d00e43a49135c8ab8db2ce6e",
+   "sha256Run2": "75792f7593fcb15d06a04ef8b46c39a8bae33b14d00e43a49135c8ab8db2ce6e",
+   "families": {
+    "Schibsted Grotesk": 235
+   },
+   "fallbackTextNodes": 0,
+   "colorInkLightChanged": true
+  },
+  {
+   "story": "tokens--space",
+   "theme": "dark",
+   "signal": "storyRendered",
+   "width": 1280,
+   "height": 800,
+   "bytes": 48750,
+   "sha256Run1": "9cf5471f5e6743758857e1c2394e054407269af2b87d5036f27e3773d04adbad",
+   "sha256Run2": "9cf5471f5e6743758857e1c2394e054407269af2b87d5036f27e3773d04adbad",
+   "families": {
+    "Schibsted Grotesk": 235
+   },
+   "fallbackTextNodes": 0,
+   "colorInkLightChanged": false
+  },
+  {
+   "story": "tokens--shape",
+   "theme": "light",
+   "signal": "storyRendered",
+   "width": 1280,
+   "height": 800,
+   "bytes": 44411,
+   "sha256Run1": "a86b87017a7e0e14bd32e8a3633d5c94361559b7c8dc051c2dce56f8b5493a00",
+   "sha256Run2": "a86b87017a7e0e14bd32e8a3633d5c94361559b7c8dc051c2dce56f8b5493a00",
+   "families": {
+    "Schibsted Grotesk": 226
+   },
+   "fallbackTextNodes": 0,
+   "colorInkLightChanged": true
+  },
+  {
+   "story": "tokens--shape",
+   "theme": "dark",
+   "signal": "storyRendered",
+   "width": 1280,
+   "height": 800,
+   "bytes": 46087,
+   "sha256Run1": "9ac6f9703c2f3d711bc5d2f3364eb0d86103bca958ce38c633f7b6c7dce0f201",
+   "sha256Run2": "9ac6f9703c2f3d711bc5d2f3364eb0d86103bca958ce38c633f7b6c7dce0f201",
+   "families": {
+    "Schibsted Grotesk": 226
+   },
+   "fallbackTextNodes": 0,
+   "colorInkLightChanged": false
+  },
+  {
+   "story": "tokens--size",
+   "theme": "light",
+   "signal": "storyRendered",
+   "width": 1280,
+   "height": 800,
+   "bytes": 35882,
+   "sha256Run1": "fbb8d3215b166d91a9b74c21d2474ce784322f72558442bb9846574650570624",
+   "sha256Run2": "fbb8d3215b166d91a9b74c21d2474ce784322f72558442bb9846574650570624",
+   "families": {
+    "Schibsted Grotesk": 186
+   },
+   "fallbackTextNodes": 0,
+   "colorInkLightChanged": true
+  },
+  {
+   "story": "tokens--size",
+   "theme": "dark",
+   "signal": "storyRendered",
+   "width": 1280,
+   "height": 800,
+   "bytes": 36928,
+   "sha256Run1": "e68d3fc26091623f7d68a8a72cc05df2f008af39dda827710d711b2507bda87c",
+   "sha256Run2": "e68d3fc26091623f7d68a8a72cc05df2f008af39dda827710d711b2507bda87c",
+   "families": {
+    "Schibsted Grotesk": 186
+   },
+   "fallbackTextNodes": 0,
+   "colorInkLightChanged": false
+  },
+  {
+   "story": "tokens--shell",
+   "theme": "light",
+   "signal": "storyRendered",
+   "width": 1280,
+   "height": 899,
+   "bytes": 105384,
+   "sha256Run1": "f595eef4b9ffe3f0bb0525fc1bb423fcd663cbc7dabb3dd8d892c87e09014705",
+   "sha256Run2": "f595eef4b9ffe3f0bb0525fc1bb423fcd663cbc7dabb3dd8d892c87e09014705",
+   "families": {
+    "Schibsted Grotesk": 605
+   },
+   "fallbackTextNodes": 0,
+   "colorInkLightChanged": true
+  },
+  {
+   "story": "tokens--shell",
+   "theme": "dark",
+   "signal": "storyRendered",
+   "width": 1280,
+   "height": 899,
+   "bytes": 109482,
+   "sha256Run1": "094243e5783dd6f559c9225d3b021545fc0bc15aa723ff2d12eac32e207e9d89",
+   "sha256Run2": "094243e5783dd6f559c9225d3b021545fc0bc15aa723ff2d12eac32e207e9d89",
+   "families": {
+    "Schibsted Grotesk": 605
+   },
+   "fallbackTextNodes": 0,
+   "colorInkLightChanged": false
+  },
+  {
+   "story": "tokens--elevation",
+   "theme": "light",
+   "signal": "storyRendered",
+   "width": 1280,
+   "height": 800,
+   "bytes": 60152,
+   "sha256Run1": "8e3c3aa03cbc5db1f6b9ec0ed4f3517c68d55adefd09cde7cab10f343975ed8d",
+   "sha256Run2": "8e3c3aa03cbc5db1f6b9ec0ed4f3517c68d55adefd09cde7cab10f343975ed8d",
+   "families": {
+    "Schibsted Grotesk": 326
+   },
+   "fallbackTextNodes": 0,
+   "colorInkLightChanged": true
+  },
+  {
+   "story": "tokens--elevation",
+   "theme": "dark",
+   "signal": "storyRendered",
+   "width": 1280,
+   "height": 800,
+   "bytes": 39481,
+   "sha256Run1": "ddea41801ae9a1f4e231c739b115ab0cbdc343b07e347d6c059bf82eca223d24",
+   "sha256Run2": "ddea41801ae9a1f4e231c739b115ab0cbdc343b07e347d6c059bf82eca223d24",
+   "families": {
+    "Schibsted Grotesk": 187
+   },
+   "fallbackTextNodes": 0,
+   "colorInkLightChanged": false
+  },
+  {
+   "story": "tokens--motion",
+   "theme": "light",
+   "signal": "storyRendered",
+   "width": 1280,
+   "height": 800,
+   "bytes": 24090,
+   "sha256Run1": "7049432de1a046b76c3faac03196dba639cfad2d3391f5806a3e0400b204102b",
+   "sha256Run2": "7049432de1a046b76c3faac03196dba639cfad2d3391f5806a3e0400b204102b",
+   "families": {
+    "Schibsted Grotesk": 104
+   },
+   "fallbackTextNodes": 0,
+   "colorInkLightChanged": true
+  },
+  {
+   "story": "tokens--motion",
+   "theme": "dark",
+   "signal": "storyRendered",
+   "width": 1280,
+   "height": 800,
+   "bytes": 24901,
+   "sha256Run1": "79c7fc94e590c13e5ca4e56c8544b8c2829a65f2dfc85db2b379e595ff9ee58f",
+   "sha256Run2": "79c7fc94e590c13e5ca4e56c8544b8c2829a65f2dfc85db2b379e595ff9ee58f",
+   "families": {
+    "Schibsted Grotesk": 104
+   },
+   "fallbackTextNodes": 0,
+   "colorInkLightChanged": false
+  }
+ ]
+}

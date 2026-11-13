@@ -1,0 +1,5 @@
+{
+  "expect": "error",
+  "why": "storybook/package.json has no build script: the gate cannot run the workspace's own build (FR-001, research.md R-09).",
+  "cause": "storybook-build: could not run: storybook/package.json has no build script"
+}

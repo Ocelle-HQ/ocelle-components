@@ -1,0 +1,4 @@
+{
+  "expect": "pass",
+  "why": "The fail-open-shadow-unlabelled story with an exception entry per theme whose selector is ocelle-plant-open >>> button, and the plan rows: excepted (FR-029, research.md R-08)."
+}

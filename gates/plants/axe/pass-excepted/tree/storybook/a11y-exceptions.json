@@ -1,0 +1,20 @@
+[
+  {
+    "story": "excepted--faint",
+    "theme": "light",
+    "rule": "color-contrast",
+    "selector": "#plant-faint",
+    "reason": "a planted exception",
+    "sunset": "the plant's sunset",
+    "plan": "specs/plant/plan.md"
+  },
+  {
+    "story": "excepted--faint",
+    "theme": "dark",
+    "rule": "color-contrast",
+    "selector": "#plant-faint",
+    "reason": "a planted exception",
+    "sunset": "the plant's sunset",
+    "plan": "specs/plant/plan.md"
+  }
+]

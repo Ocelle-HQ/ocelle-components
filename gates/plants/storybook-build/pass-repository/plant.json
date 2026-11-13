@@ -1,0 +1,4 @@
+{
+  "expect": "pass",
+  "why": "The repository's stories build, and the summary names their number (FR-001, FR-002, US1 scenario 1)."
+}

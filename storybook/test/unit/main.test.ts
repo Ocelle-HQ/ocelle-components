@@ -1,3 +1,4 @@
+import { fileURLToPath } from "node:url";
 import { describe, expect, it } from "vitest";
 import config from "../../.storybook/main.ts";
 
@@ -22,5 +23,14 @@ describe("main.ts", () => {
       controls: false,
       interactions: false,
     });
+  });
+
+  // research.md R-16 (specs/006-storybook-workbench): every build of a root writes Vite's cache only below that root's
+  // ignored storybook/.cache/, never into the storybook/node_modules a plant root shares with the repository.
+  it("sets Vite's cacheDir to storybook/.cache/vite beside this configuration, and keeps the rest of the Vite configuration", async () => {
+    const viteFinal = config.viteFinal as unknown as (vite: Record<string, unknown>, options: unknown) => Promise<Record<string, unknown>> | Record<string, unknown>;
+    expect(typeof viteFinal).toBe("function");
+    const vite = await viteFinal({ root: "/r", cacheDir: "/r/node_modules/.vite" }, {});
+    expect(vite).toEqual({ root: "/r", cacheDir: fileURLToPath(new URL("../../.cache/vite", import.meta.url)) });
   });
 });

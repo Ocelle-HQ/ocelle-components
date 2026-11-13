@@ -1,0 +1,10 @@
+{
+  "expect": "fail",
+  "why": "The same pixels in other bytes (the current tokens--colour.dark.png re-encoded at deflate level 1): the comparison is on bytes, with no tolerance (US2 scenario 3).",
+  "findings": [
+    {
+      "location": "tokens--colour/dark",
+      "rule": "differs"
+    }
+  ]
+}
