@@ -62,18 +62,18 @@ one token-record change (ink on state grounds).
 
 *GATE: checked before Phase 0, re-checked after Phase 1 design, after plan squad round 2's fixes (rows III and
 VIII, and I for the internal setter), after round 3's fixes (rows I, III and VIII) and after the analysis fixes
-(`reviews/analysis/fixes-1.md` and `fixes-2.md`; row VIII). Result: passes, with the one tracked exception below (stories before #10 is not planned: implementation waits for #10).*
+(`reviews/analysis/fixes-1.md`, `fixes-2.md` and `fixes-3.md`; rows I and VIII). Result: passes, with the one tracked exception below (stories before #10 is not planned: implementation waits for #10).*
 
 | Principle | How this plan meets it |
 |---|---|
-| I. `ocelle-` names, no I/O, small interface, manifest | Tags `ocelle-notice`, `ocelle-form-input`, `ocelle-form-select`. Events `ocelle-form-input-change`, `ocelle-form-select-change` (`bubbles`, `composed`, `{ value }`), dispatched once per commit through one guarded path (R-05); the native composed `input` is the browser's own, not emitted by the element (FR-003). No I/O. Every public member is in `contracts/elements.md` and the generated manifest, which a phase-3 generator change makes carry the base class's members and `focus()`; observed standard attributes are documented, not declared (FR-034). Importing an element module defines that element and no other (R-07). The test-only timing setter of `src/live.ts` and its `announcerDefaults` constant are internal (not exported from `index.ts` or `browser.ts`, not in the manifest) and change no public member (R-09). |
+| I. `ocelle-` names, no I/O, small interface, manifest | Tags `ocelle-notice`, `ocelle-form-input`, `ocelle-form-select`. Events `ocelle-form-input-change`, `ocelle-form-select-change` (`bubbles`, `composed`, `{ value }`), dispatched once per commit through one guarded path (R-05); the native composed `input` is the browser's own, not emitted by the element (FR-003). No I/O. Every public member is in `contracts/elements.md` and the generated manifest, which a phase-3 generator change makes carry the base class's members and `focus()`; observed standard attributes are documented, not declared (FR-034); the input's `value` attribute, its default value with no property of its own, is declared as an attribute with type, default and description, so no exception to this principle is needed (FR-034, research R-05 § Manifest; analysis U6). The protected methods the test plants override (`contracts/testing.md` § Plants, Seams) are not public members; the generator drops them (analysis U7). Importing an element module defines that element and no other (R-07). The test-only timing setter of `src/live.ts` and its `announcerDefaults` constant are internal (not exported from `index.ts` or `browser.ts`, not in the manifest) and change no public member (R-09). |
 | II. Tokens only, brand rules | Every value is a token (contracts list them, `icon-size` for the select's indicator included); widths `--ocelle-border-width` and `--ocelle-bar-width`, no new token. `--ocelle-color-rule` never marks a control boundary (FR-025). Ink, markers and placeholder contrast computed (R-04): all pass; ink-on-state-ground records added with every count that holds the required set. No monospace. |
 | III. Accessible by construction | No ID reference crosses a shadow root: names by `aria-labelledby` and descriptions by `aria-describedby` to `hidden` spans within the control's shadow root (no duplicate reading), external labels through `ElementInternals.labels`, observed so a changed label renames the control without a focus (R-05, measured). Host ARIA reaches the inner control for `"true"`; other host values, and a host `aria-label` without the visible label text (WCAG 2.5.3), are documented as not supported; a host `aria-label` and `aria-description` also stay on the host's node, pinned by a test (operator decisions, R-05). Focus ring, target size, forced colours (the error mark's width outside the not-forced-colours block), reduced motion (no motion used), an indicator that lets clicks through. Announcements designed in through a separate atomic announcer that never hides the visible or focusable content and writes after Chromium's serialisation delay (R-02, R-06), measured on the tree at serialisable states only (R-01). A copy is never emptied before it has been current for `W`, and is held for `H` so that a slow screen reader can still fetch it; `H` is a chosen figure the capture cannot prove, stated in the README (operator decision PLAN-FRESH-2-005 (b)). For `role="alert"`, insertion, reveal and a change to `alert` rely on Chromium's alert event instead of a copy, so no change is read twice; the event is cited from Chromium's source, not measured, and named in the README with the WebKit limit (operator decision PLAN-FRESH-2-002 (a)). The alert path takes its baseline at the end of the task, so text or a `tone` set in the same task as the trigger is read once, by the event, and a change back to `status` in that task announces as a `status` notice would, since no alert event fires (round 3 verify 1); a change in a later task before the next serialisation is read twice, a cost the operator accepted and the README states with the advice to set the text first (operator decision PLAN-FRESH-3-002 (b)). The README and FR-008 also say that the event reads a `role="alert"` notice shown by a hidden ancestor, which the other rows do not announce (PLAN-FRESH-3-003). An insertion or a reveal resets the baseline, so the end-of-wait re-check never drops it (PLAN-FRESH-3-001). Changes closer together than `W` merge, and a text changing faster than `W` is not announced until it stops, by operator ruling on FR-008 (PLAN-FRESH-2-001 (a)); the README says so. axe on every story via #10. |
 | IV. Strict CSP, offline | Adopted stylesheets only; browser scenarios on strict-CSP fixture pages loading only the browser build; the `csp` gate on built output. |
 | V. Storybook, behaviour tests | A story per variant and state in light and dark with baselines from #10's pinned container (R-08); interaction tests for both events and their payloads and every keyboard path (Enter submission, Tab, arrows on number and select). |
 | VI. Consumer-driven, own code | Needs from #9, spec-kitty-design #509 and #513 (through #9's wording, operator SPEC-1-09), kitty-mission-ui's 28 notices and 2 inputs, Kitty Desktop V2's lane and log filters (#15), the Ocelle console's server-rendered forms. Written from scratch. `tel`, `password`, `number`, `min`, `max`, `step` are a stated small addition (spec Assumptions). |
 | VII. Semver | All additions (MINOR): three elements, two events, their entry points; CHANGELOG entry (FR-036). The engine floor is not raised (R-03), so no consumer loses an engine; a feature found newer than the floor goes to the operator with its semver classification before it is used. The registration flag in `src/define.ts` and the icon drawing's move are internal. |
-| VIII. Test-first, non-vacuous | Each phase red first. Announcement scenarios count announcements, under both the `"settled"` and the `"rendered"` rule, from a capture armed before the step (on a container, following shadow roots as they attach, or from navigation for first load) and bounded so a loop fails as an assertion; its reading and counting functions have per-rule unit tests and planted readings (not mutated, reason in R-09). Each assertion family has a plant, run by `test/plants.test.ts` and recorded per phase (`contracts/testing.md`). Native-twin comparisons for forms also assert an absolute expected outcome (SC-003). Source mutated in process (R-09), first load and submission included through in-process paths; Timeout and CompileError on changed lines are reported, not failing (007), and every Timeout in `src/live.ts`, `src/define.ts` and `src/form-control.ts` is reviewed one by one; survivors are blocking. In process the announcer's `D` and `H` come from a test-only setter in `src/live.ts` that only `test/in-process.ts` calls (a `test/node/` test checks this), with the capture's `D` from the same constant, so the timing is shortened for element and oracle alike and the fixture pages prove the real figures (operator decision PLAN-FRESH-2-003 (a), R-09); the shipped figures are one internal constant that an in-process test asserts, with the timing the setter first replaced, against the spec's 150, 350 and 5000 ms, so their mutants are killed in process (operator decision PLAN-FRESH-3-004 (a)). stop()'s quiet window is derived from `W`, the minimum hold and `D`, so a late write cannot end a zero count vacuously (PLAN-FRESH-2-004); the merge, minimum-hold, re-check, reveal-baseline, hold, alert-path, alert-baseline and late-write plants each turn a named scenario red. Every test change of a phase is in its red commit: the gate tests' contrast counts (the `pairs.json` rows are green records), and the README and CHANGELOG documentation assertions of the phase that writes each item, so phase 5 adds none and only maps them; the oracle's node lists are recorded before the red commit and not replaced afterwards (analysis I1, I3, I6, U2). The pinned element lists and counts (the manifest gate's "N elements checked", the README's Entry points rows, the exact `exports` keys, the manifest's module paths, the root's export names) change in the red commit of the phase that adds the element (analysis I7). Red failures are never import errors (analysis C1, C2): phases 2 to 4 commit a scaffold of their new `src/` modules, recorded by `scaffold.sh`, before the red commit, so `tdd-check.sh` check 3 runs the final tests against it; phase 1's new modules are test paths, which `scaffold.sh` refuses and check 2 overlays onto the base, so its red commit carries signature-only stubs and the final tests are run against those stubs and the log kept (`reviews/phase-1/red-evidence.md`); phase 5 merges `main` before its base and its story test also asserts the committed baselines, the phase's only output outside the test pathspec, so check 2 fails on them and the review records that reading. |
+| VIII. Test-first, non-vacuous | Each phase red first. Announcement scenarios count announcements, under both the `"settled"` and the `"rendered"` rule, from a capture armed before the step (on a container, following shadow roots as they attach, or from navigation for first load) and bounded so a loop fails as an assertion; its reading and counting functions have per-rule unit tests and planted readings (not mutated, reason in R-09). Each assertion family has a plant, run by `test/plants.test.ts` and recorded per phase (`contracts/testing.md`). Native-twin comparisons for forms also assert an absolute expected outcome (SC-003). Source mutated in process (R-09), first load and submission included through in-process paths; Timeout and CompileError on changed lines are reported, not failing (007), and every Timeout in `src/live.ts`, `src/define.ts` and `src/form-control.ts` is reviewed one by one; survivors are blocking. In process the announcer's `D` and `H` come from a test-only setter in `src/live.ts` that only `test/in-process.ts` calls (a `test/node/` test checks this), with the capture's `D` from the same constant, so the timing is shortened for element and oracle alike and the fixture pages prove the real figures (operator decision PLAN-FRESH-2-003 (a), R-09); the shipped figures are one internal constant that an in-process test asserts, with the timing the setter first replaced, against the spec's 150, 350 and 5000 ms, so their mutants are killed in process (operator decision PLAN-FRESH-3-004 (a)). stop()'s quiet window is derived from `W`, the minimum hold and `D`, so a late write cannot end a zero count vacuously (PLAN-FRESH-2-004); the merge, minimum-hold, re-check, reveal-baseline, hold, alert-path, alert-baseline and late-write plants each turn a named scenario red. Every test change of a phase is in its red commit: the gate tests' contrast counts (the `pairs.json` rows are green records), and the README and CHANGELOG documentation assertions of the phase that writes each item, so phase 5 adds none and only maps them; the oracle's node lists are recorded before the red commit and not replaced afterwards (analysis I1, I3, I6, U2). The pinned element lists and counts (the manifest gate's "N elements checked", the README's Entry points rows, the exact `exports` keys, the manifest's module paths, the root's export names) change in the red commit of the phase that adds the element (analysis I7). Red failures are never import errors (analysis C1, C2): phases 2 to 4 commit a scaffold of their new `src/` modules, recorded by `scaffold.sh`, before the red commit, so `tdd-check.sh` check 3 runs the final tests against it; phase 1's new modules are test paths, which `scaffold.sh` refuses and check 2 overlays onto the base, so its red commit carries signature-only stubs and the final tests are run against those stubs and the log kept (`reviews/phase-1/red-evidence.md`); phase 5 merges `main` before its base and its story test also asserts the committed baselines, the phase's only output outside the test pathspec, so check 2 fails on them and the review records that reading; and since check 2 there overlays the stories too, the final story test is also run, recorded, against T060's base without the stories, every assertion it adds failing (analysis C3). A test that passes at `tdd-check.sh` check 3 because the final test infrastructure is overlaid (phase 2's `timing-setter.test.ts`) has its red run as its evidence, and the review names it (analysis C4). The README's pinned convention fragments that the new elements contradict are restated in the red commit of the phase that adds the element, not dropped (analysis I10). |
 | Licence and supply chain | No new dependency, no new third-party asset. |
 | Workflow gates | No new gate. #10's gates (`storybook-build`, `visual`, `axe`) are used as #10 lands them. |
 
@@ -126,8 +126,11 @@ VIII, and I for the internal setter), after round 3's fixes (rows I, III and VII
     (README). The event also reads a `role="alert"` notice shown by a hidden ancestor (PLAN-FRESH-3-003, spec FR-008).
 11. **Test-only timing in process** (R-09; operator decision PLAN-FRESH-2-003 (a)): `src/live.ts` exports an internal
     setter for `D` and `H` used only by `test/in-process.ts`; fixture pages run at the real figures. T002 measures the
-    mutation dry run and a worst-case `src/live.ts` shard, and the plan stops for the operator if a shard's `gate:mutation`
-    run takes over 7:00 (420 s) wall-clock as T002 measures it (analysis A3). The shipped figures are the internal constant `announcerDefaults`; the setter returns the timing
+    mutation dry run and a shard of one 30-line entry of a draft `src/live.ts` (uncommitted, driven by an uncommitted
+    spike test through the capture; research R-09; analysis U8), and the plan stops for the operator if that
+    `gate:mutation` run takes over 7:00 (420 s) wall-clock (analysis A3). The same check is repeated on the real
+    shards that hold `src/live.ts` at phase 2's end (T025) and `src/live.ts` or `src/form-control.ts` at phase 3's
+    end (T041), with the same stop. The shipped figures are the internal constant `announcerDefaults`; the setter returns the timing
     it replaced, and `test/live-timing.test.ts` asserts both against 150, 350 and 5000 ms, so the figures' mutants are
     killed in process (operator decision PLAN-FRESH-3-004 (a), R-09).
 
@@ -158,34 +161,40 @@ packages/elements/
 │   ├── ocelle-form-input.ts      # new element
 │   ├── ocelle-form-select.ts     # new element (chevron-down: data from icons.ts, drawn by icon-svg.ts, R-07)
 │   ├── form-control.ts           # internal base class (R-05, R-06)
-│   ├── live.ts                   # internal: first load, move, announcer (R-02, R-06)
+│   ├── live.ts                   # internal: first load, move, the Announcer class (R-02, R-06; plant seam, R-09)
 │   ├── define.ts                 # existing: gains the registration flag (R-02)
 │   ├── ocelle-icon.ts, icon-svg.ts  # the icon drawing moved to an internal module both elements use; data stays in icons.ts (R-07)
 │   ├── index.ts, browser.ts      # re-export and define (shared with 008, 009, 011)
 ├── test/
 │   ├── live.ts                   # live-region capture shared by both harnesses (R-01)
 │   ├── live-reading.ts           # pure regionText() and announcements() (R-01, R-09)
-│   ├── live.test.ts              # unit tests of the reading and counting, on recorded trees
+│   ├── live-rules.ts             # the reading's unit-test cases, taking the reading as a parameter (U7)
+│   ├── live.test.ts              # runs live-rules.ts with live-reading.ts, on recorded trees
+│   ├── live-timing-check.ts      # checkShippedTiming(defaults, firstReturn), run by live-timing.test.ts and a plant row (U7)
 │   ├── live-timing.test.ts       # in process: shipped announcer figures (R-09, PLAN-FRESH-3-004)
 │   ├── in-process-timing.test.ts # in process: capture D and element timing from one constant (R-09)
 │   ├── live-capture.test.ts, browser/live-capture.test.ts  # the capture in each harness (phase 1)
 │   ├── driver.test.ts, browser/driver.test.ts              # the driver steps in each harness (phase 1)
 │   ├── plants.test.ts            # runs each plant against its scenario body (contracts/testing.md)
+│   ├── browser/plants.test.ts    # plant rows under startDocument, elements-browser project (U9)
+│   ├── browser/plants-entry.ts, browser/global-setup.ts  # plant classes bundled into ocelle-plants.js (phase 2)
 │   ├── scenarios/{notice,form-input,form-select}.ts
 │   ├── scenarios/notice-matrix.ts   # the SC-002 matrix, table-driven
 │   ├── scenarios/form-twins.ts      # native twins with the absolute table (contracts/testing.md § Twins)
 │   ├── scenarios/driver.ts, in-process.ts, browser/driver.ts  # existing driver, extended (phase 1; timing call phase 2)
 │   ├── {notice,form-input,form-select}.test.ts           # in process
 │   ├── browser/{notice,form-input,form-select}.test.ts   # strict-CSP fixture pages
-│   ├── browser/serve.ts          # no-store route, submission recorder, insertInteractive page route
+│   ├── browser/serve.ts          # no-store route, submission recorder; ocelle-plants.js in its built files (phase 2)
+│   ├── browser/fixtures/         # served fixture pages: planted-region pages, the insertInteractive page and its
+│   │                             # DOMContentLoaded script, the capture-loop page and script (phase 1; I12)
 │   ├── fixtures/ax/              # recorded getFullAXTree node lists for the reading's unit tests (R-09)
-│   ├── fixtures/                 # also the insertInteractive fixture page and its DOMContentLoaded script (phase 1)
-│   ├── fixtures/{notice,form-input,form-select}-plants.ts  # plants (contracts/testing.md)
+│   ├── fixtures/live-regions.ts, live-loop.ts, reading-plants.ts  # in-process planted regions, looping element, planted readings (phase 1)
+│   ├── fixtures/{notice,form-input,form-select}-plants.ts  # plants (contracts/testing.md § Plants, Seams)
 │   ├── entry-{notice,form-input,form-select}.test.ts  # each entry defines its own tag only
 │   ├── exports.test.ts           # existing: the root's exact export names (pinned list, analysis I7; red)
 │   └── node/readme.test.ts, manifest.test.ts, timing-setter.test.ts  # timing-setter: only in-process.ts calls the setter;
 │                                 # readme: entryRows and the exact exports keys; manifest: module paths (pinned lists, I7; red)
-├── scripts/manifest.ts, custom-elements-manifest.config.mjs  # base-class members, focus(), observed attributes (phase 3)
+├── scripts/manifest.ts, custom-elements-manifest.config.mjs  # base-class members, focus(), observed attributes, the input's declared value attribute (phase 3)
 ├── custom-elements.json, README.md, CHANGELOG.md, package.json (exports)
 packages/tokens/src/source.ts     # ink contrast grounds and the count comment (R-04; green)
 packages/tokens/contrast/pairs.json  # ten ink-on-state-ground rows (R-04; green)
@@ -209,7 +218,8 @@ it; announcement timing in one internal helper used by the notice and the base c
      commands in the repository root's `vitest.config.ts`), tests first: the per-rule unit tests of `regionText()` and `announcements()`
      (both keeping rules, vacuous cases) and the planted readings; container arming with the `attachShadow` patch, the
      document mode, the frame hook and the bounds, each with a test that fails without it. Then a spike task T002 that
-     runs the capture in both harnesses on test-only planted regions (`test/fixtures/`) and records in
+     runs the capture in both harnesses on test-only planted regions (in process from `test/fixtures/`, on fixture pages
+     as pages under `test/browser/fixtures/`, the directory `test/browser/serve.ts` serves; analysis I12) and records in
      `reviews/phase-1/spike.md`: that a region written after `W` counts one under both rules and one written in a
      microtask or the first animation frame counts zero under `"settled"`; that `internals.ariaLive = "off"` keeps a
      `role="alert"` host from being a live region node; that the in-process first-load path (`registerFirstLoad`) and
@@ -218,8 +228,10 @@ it; announcement timing in one internal helper used by the notice and the base c
      setter of decision 11 changes the element's and the capture's figures together, returns the timing it replaced,
      and that each test file gets its own `src/live.ts` module instance (so the first call returns
      `announcerDefaults`); the bounds' figures and scenario
-     times for the Stryker timeout factor; with the test `D`, the `elements` project's dry-run time and a worst-case
-     shard (60 changed lines of `src/live.ts`) against the mutation shard's 10-minute limit
+     times for the Stryker timeout factor; with the test `D`, the `elements` project's dry-run time and a shard of one
+     30-line entry (the largest the shard plan cuts, `gates/lib/mutation/shards.ts:43`) of an uncommitted draft
+     `src/live.ts`, driven by an uncommitted spike test through the capture (research R-09; analysis U8), against the
+     mutation shard's 10-minute limit
      (`.github/workflows/ci.yml:84-89`), and the fixture-page suite's time at the real figures; the comparison of
      the unit tests' `getFullAXTree` node lists with a re-recording (below). Stop for the operator if the in-process run or the host-role
      measurement fails (decisions 1 and 7), or if a shard's `gate:mutation` run takes over 7:00 (420 s)
@@ -238,13 +250,16 @@ it; announcement timing in one internal helper used by the notice and the base c
      whose expected value is a stub's neutral value pairs it with a non-neutral one). After green, the final test
      files are run against the red commit's stubs, as check 3 runs them against a scaffold, and the log is kept;
      `reviews/phase-1/red-evidence.md` records it with the reading of check 2 (not evidence here; a zero exit stops
-     for the operator) (T005a).
+     for the operator), written after `tdd-check.sh` has run, since it reads that run's log (T005a; analysis I11).
    - not exempt: driver additions (`insert` per way, `laterTask`, `registerFirstLoad`, `drive.readyState`,
      `drive.after` returning the gap it achieved and the `W` in force that scenario bodies state times against (analysis A2),
      `insertInteractive` in both harnesses (in process through `drive.readyState`, on fixture pages from a
      `DOMContentLoaded` handler under `startDocument`; analysis U4), `hostRole`, `liveCapture.stop({ atLeast })` and the derived quiet window, form
      helpers with the in-process `submit` semantics, `blur`, `click` at a point, focus path) and `serve.ts`'s no-store
-     route and submission recorder, each with a test that fails without it; `test/plants.test.ts` with its row format.
+     route and submission recorder, each with a test that fails without it; `test/plants.test.ts` and
+     `test/browser/plants.test.ts` (rows under `startDocument`, the `elements-browser` project; analysis U9) with their
+     row format; the reading's unit-test cases written once, taking the reading as a parameter, in
+     `test/live-rules.ts`, so the planted-reading rows run the same cases (analysis U7).
    - exempt: package `exports` entries and empty registrations are not added here; each phase adds its own.
 2. **User Story 1, `ocelle-notice`** (P1, MVP): first the scaffold, recorded by `scaffold.sh`: `src/live.ts`
    (`announcerDefaults` with a neutral value, the setter returning it) and `src/ocelle-notice.ts` (the class, not
@@ -290,7 +305,13 @@ it; announcement timing in one internal helper used by the notice and the base c
    later-task change before the next serialisation and the advice to set the text first, the same-task change back to `status`, the alert event's reading
    of a `role="alert"` notice shown by a hidden ancestor (`ax_event_generator.cc` 416-417, 1081-1082) against the
    other rows' silence, the host-role limit), its assertions and the CHANGELOG line's in `test/node/readme.test.ts`
-   in the red commit (analysis I3, U2), manifest regeneration, CHANGELOG line, entry point and its entry test.
+   in the red commit (analysis I3, U2), with the README's pinned convention fragments that the notice contradicts
+   restated in that red commit and the README text in green (the `@default undefined` rule, now a `@default` with the
+   value the property reads; the host-`role` sentence, now scoped to `ocelle-icon` and `ocelle-brand-mark`, with the
+   notice's roles in its section; analysis I10), manifest regeneration, CHANGELOG line, entry point and its entry
+   test; the plant seams of `contracts/testing.md` § Plants (the scaffold exports `Announcer`; analysis U7); and, at
+   the phase-end `gate:mutation`, every shard holding a `src/live.ts` entry timed, a shard over 7:00 a stop
+   (decision 11; analysis U8).
 3. **User Story 2, `ocelle-form-input`** (P2): a scaffold first (`src/form-control.ts` and `src/ocelle-form-input.ts`,
    classes without members, not defined; analysis C2) and the pinned lists and counts in the red commit (4 elements;
    analysis I7); then, test first in `test/node/manifest.test.ts`, the manifest
@@ -300,7 +321,8 @@ it; announcement timing in one internal helper used by the notice and the base c
    class, or a normalisation step); the drop list of observed standard attributes gains `form`, `aria-invalid`,
    `aria-required`, `aria-disabled` and `aria-description` (`role` and `hidden` were added in phase 2), and the
    `ocelle-form-input` entry with every FR-034 member, its event and detail type, its four parts and its empty slot
-   and CSS-property lists (analysis G9). Then scenarios 1 to 23 (20 once per way of
+   and CSS-property lists (analysis G9), including the `value` attribute declared without a field (type `string`,
+   default `""`, a description; research R-05 § Manifest; analysis U6). Then scenarios 1 to 23 (20 once per way of
    inserting; 21 with the mixed form; 22 with first loaded hidden then revealed, and announced, hidden and revealed
    with the same `error`, count 1 each, PLAN-FRESH-3-001), an `error` set while the field has focus (count 1, then
    the same text again count 0) and a control with `error` shown through a hidden ancestor (count 0; analysis G10),
@@ -314,8 +336,11 @@ it; announcement timing in one internal helper used by the notice and the base c
    host's duplicate name and description, the mixed-form limitation, htmx triggers, limitations) with its assertions
    and the CHANGELOG line's in the red commit; the engine floor checked against the features this phase adds
    (form association and the form-associated callbacks, `delegatesFocus`; `ElementInternals` itself is phase 2's) and
-   recorded (analysis G8, I8); manifest,
-   CHANGELOG, entry point and its entry test.
+   recorded (analysis G8, I8); the README's Host ARIA sentence on a blank host `aria-label` scoped to `ocelle-icon`
+   and `ocelle-brand-mark`, with the form controls' rule (a blank one is skipped, FR-022), and the declared `value`
+   attribute stated, each fragment in the red commit (analysis I10, U6); manifest, CHANGELOG, entry point and its
+   entry test; at the phase-end `gate:mutation`, every shard holding a `src/live.ts` or `src/form-control.ts` entry
+   timed, a shard over 7:00 a stop (decision 11; analysis U8).
 4. **User Story 3, `ocelle-form-select`** (P3): a scaffold first (`src/ocelle-form-select.ts`, the class without
    members, not defined; analysis C2) and the pinned lists and counts in the red commit (5 elements; analysis I7);
    the `ocelle-form-select` manifest entry tested red first as the input's (analysis G9); scenarios 1 to 9 and the shared ones of scenario 7 red first, with the
@@ -331,7 +356,11 @@ it; announcement timing in one internal helper used by the notice and the base c
    Stories for every state of User Story 4 scenario 1 with the story test red first in
    `storybook/test/integration/elements-stories.test.ts`, which also asserts each new story's committed light and
    dark baselines; the stories are test paths (no scaffold), so `tdd-check.sh` check 2 fails on the missing baselines
-   alone, and the review records that reading with the red log as the stories' evidence (analysis C1); baselines from the pinned container; `visual` and `axe` gates
+   alone, and the review records that reading with the red log as the stories' evidence (analysis C1); the final
+   story test is also run against T060's base with no story file, its log kept and every assertion it adds failing
+   (analysis C3); phase 5 changes no file outside the three story files, the story test and the baselines
+   (`storybook/stories/render.ts`, not a test path, stays as the base has it; a story that needs it changed is a
+   stop for the operator); baselines from the pinned container; `visual` and `axe` gates
    green; the README documentation test checked complete (SC-006): every item of FR-035 and SC-006 mapped to its
    assertion and the phase 2 to 4 red commit that showed it failing, with no assertion added in phase 5 (analysis U2). The engine floor is not raised (decision 2).
 

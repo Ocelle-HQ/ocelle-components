@@ -568,7 +568,8 @@ gates and the README documentation test.
   and is not validated. The README says so and tells hosts how to hide undefined elements with a rule in their own
   stylesheet; whether the base stylesheet ships such a rule is settled by the plan.
 - Both `label` and an external `<label for>`: the field's name is the external label text, then the `label` text,
-  joined by one space (FR-022). A host `aria-label` overrides both.
+  joined by one space (FR-022). A host `aria-label` overrides both, unless it is blank (empty or whitespace only),
+  in which case the labels name the field as if it were absent.
 - A host `aria-labelledby`: not supported (it would cross the shadow root); it does not name the control, and the
   README says to use `label` or `aria-label`.
 - A host `aria-describedby` pointing at an element in the page: not supported (it would cross the shadow root); the
@@ -590,7 +591,11 @@ gates and the README documentation test.
   builds (module and browser), and the browser scenarios run in process and on strict-CSP fixture pages. An
   unknown value of an enumerated attribute (`tone`, `size`, `type`) is kept in the attribute as written; the element
   never rewrites it, and only the property reads the default (`tone="bogus"` stays in the attribute while `tone`
-  reads `"info"`).
+  reads `"info"`). Where the README's convention text was written for mission 005's two elements and does not fit
+  the new ones (every property's `@default undefined`, against the defaults of FR-021 and `contracts/elements.md`;
+  a blank host `aria-label` deciding alone, against FR-022; a host `role` not supported, against FR-009), the README
+  restates it so that it covers each new element, in the phase that adds the element; what it says of 005's elements
+  is unchanged.
 - **FR-002**: Every element attaches an open shadow root and renders every surface inside its own host (006 FR-014,
   FR-027). Styles of form controls inside the shadow root set `font: inherit` (006 FR-025).
 - **FR-003**: Elements perform no I/O and emit no event other than those named in FR-024; the native
@@ -764,7 +769,8 @@ gates and the README documentation test.
   separate tab stop.
 - **FR-022**: Naming: the inner control's accessible name is, in this order of precedence (constitution III: ARIA
   set on a host reaches the inner control):
-  1. a non-empty host `aria-label`: its text, alone, whatever else is set. When a visible label is drawn (the
+  1. a non-empty host `aria-label` (one that is neither empty nor whitespace only, as accessible-name computation
+     treats it; a blank one is skipped and the next item names the control): its text, alone, whatever else is set. When a visible label is drawn (the
      `label` text or an external `<label>`), the `aria-label` must contain the visible label text (WCAG 2.2 SC 2.5.3);
      the README says so, and a host `aria-label` that does not contain it while a visible label is drawn is not
      supported (operator decision PLAN-A11Y-SECURITY-1-006);
@@ -887,7 +893,10 @@ gates and the README documentation test.
   `focus()` (FR-021). Standard attributes the elements observe without a property of the same meaning (`role` on the
   notice; `aria-label` and the other host ARIA attributes of FR-022 on the form elements; the `form` attribute, whose
   like-named property is the read-only owning form, as on a native control) are not declared as attributes, as the
-  conventions say, and the README documents them. The manifest adds no new kind of source path (#27).
+  conventions say, and the README documents them. The input's `value` attribute is not one of them: it is the
+  element's own attribute, the default value of FR-021, with no property of its own (the `value` property is the
+  current value), and the manifest declares it as an attribute with its type (`string`), default (`""`) and
+  description. The manifest adds no new kind of source path (#27).
 - **FR-035**: The README gets one section per element and a "Form controls" section (FR-020 to FR-028), names the tokens
   each element reads, defines what "announced" covers in the tests (accessibility tree, not a screen reader), and
   states the WebKit limitation for form association, `ElementInternals` and live regions and that restore by autofill

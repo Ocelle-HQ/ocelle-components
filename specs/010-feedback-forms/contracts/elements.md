@@ -22,8 +22,10 @@ alert event and write no copy, with the baseline taken at the end of the task (t
 and a change back to `status` in that task announces as a `status` notice would;
 a change in a later task before the next serialisation is read twice). The README states the figures, their sources,
 the starvation case, the alert event and that it also reads a `role="alert"` notice shown by a hidden ancestor.
-`src/live.ts`'s test-only timing setter and its `announcerDefaults` constant are internal and not part of this
-surface (research R-09).
+`src/live.ts`'s test-only timing setter, its `announcerDefaults` constant and its `Announcer` class are internal and
+not part of this surface (research R-09). The elements' protected methods, which the test plants override
+(`contracts/testing.md` § Plants, Seams), are not public members either: the generator drops non-public members
+(`packages/elements/scripts/manifest.ts:66-68` and `:72`, `isPublic`), and the README documents no subclassing.
 Tokens read: `color-<tone>`, `color-<tone>-bg`, `color-ink`, `radius-row`, `bar-width`, `border-width`, `space-1` to
 `space-4`, `font-size-subhead`, `font-size-sm`, `font-weight-strong`, `line-height-tight`, `line-height-compact`.
 
@@ -37,7 +39,7 @@ Tokens read: `color-<tone>`, `color-<tone>-bg`, `color-ink`, `radius-row`, `bar-
 | `error` | attribute + property, reflected | `string` | `""` |
 | `required` | boolean attribute + property, reflected | `boolean` | `false` |
 | `disabled` | boolean attribute + property, reflected | `boolean` | `false` |
-| `value` | property | `string` | `""` (input: the `value` attribute) |
+| `value` | property, not reflected, no attribute of its own | `string` | `""` (input: the default value, the `value` attribute below) |
 | `form` | read-only property | `HTMLFormElement \| null` | |
 | `labels` | read-only property | `NodeList` | |
 | `validity` | read-only property | `ValidityState` | |
@@ -48,8 +50,9 @@ Tokens read: `color-<tone>`, `color-<tone>-bg`, `color-ink`, `radius-row`, `bar-
 | `focus()` | method | `(options?: FocusOptions) => void` | |
 
 Parts: `label`, `control`, `description`, `error`. Slots: none. CSS custom properties: none.
-Documented, not declared: the `form` attribute, host `aria-label` (names the control; with a visible label drawn it
-must contain the visible label text, otherwise not supported; it also stays on the host's node), host `aria-invalid`,
+Documented, not declared: the `form` attribute, host `aria-label` (names the control when it is not blank; a blank
+one, empty or whitespace only, is skipped and the labels and `label` name the control, FR-022; with a visible label
+drawn it must contain the visible label text, otherwise not supported; it also stays on the host's node), host `aria-invalid`,
 `aria-required`, `aria-disabled` (combined for the value `"true"` only; any other value not supported),
 `aria-description` (added to the description; it also stays on the host's node), as research R-05 says; host
 `aria-labelledby` and `aria-describedby` (not supported).
@@ -65,6 +68,15 @@ Tokens read: `color-sheet`, `color-control-border`, `color-ink`, `color-ink-mute
 | `placeholder`, `autocomplete`, `inputMode` (`inputmode`), `pattern`, `min`, `max`, `step` | attribute + property, reflected | `string \| undefined` | unset: `undefined`, and the inner field has no such attribute |
 | `readOnly` (`readonly`) | boolean attribute + property, reflected | `boolean` | `false` |
 | `minLength` (`minlength`), `maxLength` (`maxlength`) | attribute + property, reflected | `number \| undefined` | unset: `undefined`, the inner field has no such attribute and the length is not limited |
+| `value` (attribute) | attribute only, declared, no field | `string` | `""` |
+
+The `value` attribute is the input's default value (FR-021): restored on reset, and it sets the current value while
+the value is not dirty. It has no property of its own (no `defaultValue`; the `value` property is the current value),
+so it is not one of the standard attributes FR-034 leaves undeclared: the manifest declares it as an attribute with
+type `string`, default `""`, a description and no `fieldName` (constitution I; analysis U6). In the source it is
+observed by hand and declared by the class JSDoc tag `@attribute {string} [value=""] - <description>`; the generator
+makes one described attribute entry of it (research R-05 § Manifest). The select has no `value` attribute and its
+entry declares none.
 
 An unknown `type` stays in the attribute as written while the property reads `"text"` (FR-001). No `defaultValue`
 property (FR-021). "Unset" reads `undefined`, as 005's optional attributes do (`ocelle-icon`'s `label`), so no

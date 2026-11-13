@@ -154,7 +154,24 @@ politeness; an insertion or a reveal sets the error baseline to none, so the re-
 `type` (reflected; an unknown value stays in the attribute and reads `text`), `placeholder`, `readOnly` (boolean),
 `autocomplete`, `inputMode`, `minLength`, `maxLength` (numbers, absent = no limit), `pattern`, `min`, `max`, `step`
 (strings): passed to the inner `<input>`. An absent one reads `undefined` and the inner `<input>` has no such
-attribute (contracts/elements.md). No `defaultValue` property.
+attribute (contracts/elements.md). No `defaultValue` property. The `value` attribute (the default value above) is
+observed by hand, has no property of its own, and is declared in the manifest as an attribute with type `string`,
+default `""` and a description, without `fieldName` (FR-034; research R-05 § Manifest; analysis U6).
+
+## Plant seams (test only)
+
+The state above is held so that a test plant can change one rule (`contracts/testing.md` § Plants, Seams; research
+R-09; analysis U7). Each rule a plant changes is a protected method, never a `#` private one:
+- the announcer's steps (the wait and its restart, the write, the minimum hold, the hold `H`, the end-of-wait re-check
+  against the baseline, the baseline's normalisation) are protected methods of the internal `Announcer` class of
+  `src/live.ts`, and the notice and the form-control base class create theirs through a protected `createAnnouncer()`;
+- the first-load and move queries (the registration flag of `src/define.ts`, `readyState`, the move flag) are
+  protected methods of the element that read `src/live.ts`;
+- the triggers of the announcement transitions, the alert path and its pending marker, the politeness, the host
+  `ariaLive`, the name, description, value, validity, change-event and option steps are protected methods of the
+  element or of its base class.
+
+Protected members are not public surface, and the generator drops them from the manifest.
 
 ## Select-only fields (`ocelle-form-select`)
 
