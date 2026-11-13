@@ -1,0 +1,224 @@
+schema: review-findings/v1
+complete: true
+phase: plan
+round: 1
+lens: testability
+findings:
+  - id: PLAN-TESTABILITY-1-001
+    severity: 3
+    title: "gates/visual/capture.ts is outside the mutation gate's scope, so the capture's behaviour is never mutation-tested (FR-019)"
+    evidence:
+      - artifact: "plan.md § Project Structure: 'visual/capture.ts  # runs inside the container'; § Constitution Check VIII: 'Every pure module is mutation-tested. Process boundaries carry Stryker disable comments'; research.md R-12 lists unit-tested pure modules, none of them the capture"
+      - code: "gates/lib/mutation/ranges.ts:26-41 scopePathspecs holds gates/bin/**, gates/lib/**, gates/eslint/**, gates/stylelint/** and storybook paths; no gates/visual/**. A change to gates/visual/capture.ts produces no mutant at all."
+      - code: "vitest.mutation.config.ts excludes gates-integration, the only project R-12 gives the container tests, so even if the path were added every capture mutant would be NoCoverage"
+    claim: |
+      FR-019 requires the new gates' own source to be covered by the mutation gate. The capture is where most of the
+      visual gate's behaviour lives: the refusal checks (platform, arch, Node version, pin, browser directory), the
+      context options (viewport, scale, colorScheme, reducedMotion, locale, timezone), the readiness sequence, request
+      routing (127.0.0.1 served, everything else aborted and recorded), the status per story-theme, the clip and the
+      re-encoding. Placed in gates/visual/, none of it is mutated; even if moved into scope, it would only be covered by
+      the excluded integration project. A mutant that drops reducedMotion, widens the route allow-list or skips a
+      refusal check would go unseen, which is exactly the vacuous-gate risk Principle VIII names.
+    remedies:
+      - "Plan: move every decision of the capture into pure modules under gates/lib/ (for example gates/lib/capture-plan.ts: refusal predicate over an injected {platform, arch, version, env, exists, resolvedExecutable}; context options builder; route classifier; result-entry builder) with node unit tests, so capture.ts is only the Playwright and fs wiring, carrying `Stryker disable` comments that name its integration test; and add `:(glob)gates/visual/**/*.ts` to scopePathspecs (red first in gates/test/mutation-ranges.test.ts) so the wiring is at least in scope."
+  - id: PLAN-TESTABILITY-1-002
+    severity: 3
+    title: "The capture's refusal outside the pinned image is proven by one breaking plant that exercises only one of its five checks"
+    evidence:
+      - artifact: "research.md R-06: the capture exits 2 unless platform linux, arch x64, Node = .node-version, OCELLE_VISUAL_PIN = digest, /ms-playwright/chromium-<build> exists and is what Playwright resolves; 'The breaking plant runs the gate with --engine host on the runner, where /ms-playwright and the pin variable are absent.'"
+      - artifact: "contracts/plants.md § visual: only error-host (cause 'not the pinned container') proves this layer"
+      - artifact: "research.md R-06: 'host ... can never produce a capture' — no test or plant states how this is enforced"
+    claim: |
+      On the ubuntu-24.04 runner the platform, arch and Node checks all pass, so error-host fails on whichever of the
+      pin variable or the /ms-playwright check comes first, and its cause substring 'not the pinned container' is shared
+      by all five checks. An implementation that checks only the environment variable (which the host entry point
+      itself sets with -e) passes the plant; so does one that drops the arch or the browser-directory check. The
+      spec's US2 scenario 7 second sentence ('with a browser build other than the pinned one, exits 2') has no test that
+      can fail. And the claim that `--engine host` can never produce a capture rests on the host lacking /ms-playwright
+      (a contributor with PLAYWRIGHT_BROWSERS_PATH=/ms-playwright and the variable exported would get one); nothing
+      tests it.
+    remedies:
+      - "Plan: specify the refusal as a pure predicate (see 001) with one unit test per check, each varying only that check and asserting the exit-2 cause names it (e.g. 'not the pinned container: arch arm64, expected x64'); make each cause name its check so plants and tests can tell them apart; and make `--engine host` refuse in the host entry point itself before spawning (unit-tested), so 'host never captures' does not depend on the host machine's layout."
+  - id: PLAN-TESTABILITY-1-003
+    severity: 3
+    title: "The in-page predicates (empty root, font walk, render failure, readiness) have no in-process test, so they are either unmutated or NoCoverage"
+    evidence:
+      - artifact: "research.md R-08 'Empty story (FR-014): evaluated in the page before axe runs'; R-05 'the capture walks every text node below the story root, open shadow roots included, and asks ... CSS.getPlatformFontsForNode'; R-08 'Render failure: ... sb-show-errordisplay'"
+      - artifact: "research.md R-12: unit tests cover 'index parsing, build output parsing, comparison and finding lists, container argument building and pin checks, axe result mapping, exception file parsing, the rule list' — none of the in-page logic"
+      - code: "vitest.mutation.config.ts: gates-integration and every browser project are excluded from Stryker's run"
+    claim: |
+      FR-014's definition of empty (no descendant with a non-zero box and no non-whitespace text), FR-027's 'every text
+      node, shadow roots included, every family must be Schibsted Grotesk', and the render-failure test are behaviour.
+      As planned they run as functions passed to page.evaluate or as CDP calls in gates/bin or the capture, reached only
+      by gates-integration and plants. The plan's rule ('process boundaries carry Stryker disable') would let them be
+      disabled as a boundary, or leave them NoCoverage. Mutants such as 'width > 0 || height > 0' for '&&', skipping
+      shadow roots, or accepting a family that merely starts with 'Schibsted' survive every planned test (the plants
+      cover one shape each).
+    remedies:
+      - "Plan: write the decisions as pure functions over plain data (empty: a list of {width, height} boxes and text strings; font: the list of family names CDP returned per node, plus the FontFace statuses; render failure: the body class list), unit-tested in node and mutated; keep only the DOM/CDP collection in page.evaluate under a Stryker-disable comment naming the integration test; and add unit cases for whitespace-only text, zero-width-but-tall boxes, shadow-root text and a per-glyph fallback family."
+      - "Alternatively, run the in-page collectors in a browser Vitest project (as packages/elements does) and state in the plan which project kills their mutants."
+  - id: PLAN-TESTABILITY-1-004
+    severity: 3
+    title: "The pulled-image digest check compares `{{.Id}}`, whose meaning differs by engine and image store; the local evidence cannot fail where CI would"
+    evidence:
+      - artifact: "research.md R-06: 'a digest the local engine reports differently after the pull (docker image inspect --format {{.Id}}/podman image inspect) exits 2'"
+      - code: "probe in this sandbox: `docker info` reports driver-type io.containerd.snapshotter.v1 (Docker 29.9.2); `docker image inspect --format '{{.Id}} {{json .RepoDigests}}' mcr.microsoft.com/playwright@sha256:ee15712…b1d0` printed Id = sha256:ee15712…b1d0, i.e. the manifest digest. With the classic overlay2 image store and with podman, .Id is the image config digest (podman without the sha256: prefix), which never equals a manifest digest."
+    claim: |
+      Every local test and plant of the pin check runs on a store where Id happens to equal the manifest digest, so the
+      check passes here; on a runner or contributor machine with the classic docker store, or under podman, the same
+      code exits 2 on the correct image (or, if 'fixed' by comparing loosely, accepts a wrong one). The behaviour that
+      matters cannot be shown red-first in this environment, and no unit test is planned with real inspect outputs of
+      the other stores. The first evidence would be the landing CI run, after every phase is approved.
+    remedies:
+      - "Plan/contracts: define the check on RepoDigests (the pulled image must list `<image>@<digest>`) plus Architecture/Os = amd64/linux, parse the engine's inspect JSON in a pure function, and unit-test it on recorded inspect outputs of docker with the containerd store, docker with overlay2, and podman (fixtures captured once and committed), including a mismatching digest and an arm64 image."
+  - id: PLAN-TESTABILITY-1-005
+    severity: 3
+    title: "The planned red for render.test.ts asserts the test's own server, so it cannot fail against the old code"
+    evidence:
+      - artifact: "plan.md § Phases 5: 'red first: the render test asserts no CSP header is sent and no Content-Security-Policy meta is present, which fails against the old test server'"
+      - code: "storybook/test/integration/csp.test.ts:65 and :69: the Content-Security-Policy header is written by the test file's own http server (response.writeHead(..., { 'Content-Security-Policy': policy })), not by any product code"
+    claim: |
+      Principle VIII's red is the new test run against the code as it was. The new test file carries its own server
+      without the header, so against the old product code the 'no CSP header' assertion passes; the 'old test server'
+      is not part of the code under test. The proof-against-old-code check would find this unit vacuous, or the role
+      would satisfy it with an assertion about the test's own fixture. The real behaviour change of this unit is the
+      build: the externaliser step leaves the build script, so storybook/dist/*.html keeps Storybook's inline scripts and
+      no externalised inline-*.js/.css files are emitted.
+    remedies:
+      - "Plan: make the red an assertion on the build output under test, e.g. the render test's global-setup build produces iframe.html that contains Storybook's inline <script> (and no `inline-<hash>.js` file in dist/) — this fails against the old build script with the externaliser — and drop 'no CSP header' as a red claim (it may remain as a non-red statement of the server); or declare the server change exempt with the reason, and take the red from the build."
+  - id: PLAN-TESTABILITY-1-006
+    severity: 3
+    title: "FR-012 (content below the fold is captured) has no plant or test that can fail"
+    evidence:
+      - artifact: "spec FR-012, Edge Cases 'A story is larger than the capture viewport'; research.md R-04 'fullPage capture with a clip, so content below the fold is included'"
+      - artifact: "contracts/plants.md § visual: no plant has a story taller than 800 px; fail-token-changed changes color-ink, which appears in the upper part of the stories it touches"
+    claim: |
+      An implementation that clips to the viewport (or forgets fullPage, so Playwright clamps the clip to the
+      viewport) produces deterministic, self-consistent baselines; every planned plant still passes, because the
+      baselines are generated by the same capture. Nothing distinguishes a correct full-root capture from a truncated
+      one.
+    remedies:
+      - "contracts/plants.md: add `fail-below-fold` — a story whose root is taller than the viewport (e.g. 2000 px) with its baselines, and a tree change that alters only an element below y = 800: expect `differs` on both themes; plus a unit test that the clip passed to screenshot equals the root's full bounding box when it exceeds the viewport, and an integration assertion that the captured PNG's height equals the root's height."
+  - id: PLAN-TESTABILITY-1-007
+    severity: 3
+    title: "pass-second-render cannot fail on the bug it targets (FR-028): its baselines are produced by the code under test"
+    evidence:
+      - artifact: "contracts/plants.md: 'pass-second-render | pass | a story that changes its markup on its second render in a page, with its baselines'; research.md R-04 'passes because each capture has a fresh page'"
+      - artifact: "spec US2 scenario 10: 'each theme's capture equals the capture of that story rendered fresh in that theme'"
+    claim: |
+      If the capture reused one page across story-themes, the story's second render would be captured
+      deterministically in run 1 and run 2 alike, and visual:update (the same code) would write that state as the
+      plant's baseline; the plant then passes. The plan names no independent reference for 'rendered fresh', so the
+      plant proves determinism, not freshness. The same applies to the axe gate's FR-028 claim, which has no plant.
+    remedies:
+      - "Plan: make the plant's reference independent of the full run — e.g. the story renders a visibly different state (a coloured block) on any render after the first, and the plant's committed baselines are the first-render images produced by a single-story-theme request (one story, one theme per run), stated as how the plant's baselines are made; or replace the pass plant by an integration test that captures the story alone in each theme and asserts byte equality with the captures of the full request, and turn the plant into a fail plant whose tree changes the story's first-render state."
+      - "For axe: add a plant whose violation appears only on a second render (e.g. a button loses its label after the first render) and expect pass, with the same independent reference."
+  - id: PLAN-TESTABILITY-1-008
+    severity: 3
+    title: "Nothing fails if CI's Visual regression job stops requiring both engines (SC-002, FR-026)"
+    evidence:
+      - artifact: "contracts/gates.md § visual: CI command `pnpm run gate:visual -- --engine both`; default `--engine auto`; exit 0 summary may say 'docker only: no cross-engine comparison'"
+      - artifact: "research.md R-07: the registry check fails only when the plants job contains `--skip-container`"
+      - code: "gates/test/ci-workflow.test.ts already pins exact ci.yml job lines for the mutation jobs; the plan names no such test for the visual, axe, storybook-build or plants jobs"
+    claim: |
+      SC-002 says every Visual regression run in CI compares docker against podman. If the job's `--engine both` is
+      dropped (or the plants job's OCELLE_VISUAL_ENGINE=both is changed to auto), the gate falls back to one engine,
+      passes, and only a summary line says so. The registry guard targets one flag in one job. The cross-engine proof
+      is therefore a configuration claim with no test that can fail.
+    remedies:
+      - "Plan: add to gates/test/ci-workflow.test.ts (red first) exact-line assertions that the visual job runs `gate:visual -- --engine both`, the plants job sets OCELLE_VISUAL_ENGINE=both and never passes --skip-container, and the visual job uploads storybook/.visual/ on failure; or make the registry check cover the engine requirement too and give it a plant (e.g. `fail-visual-job-engine-auto`)."
+      - "Alternatively, make the gate read a CI marker (e.g. `CI=true`) and require both engines itself, unit-tested, so a workflow edit cannot downgrade it."
+  - id: PLAN-TESTABILITY-1-009
+    severity: 2
+    title: "FR-018's 'exit 2 naming each visual plant not run' has no specified mechanism and no plant or test"
+    evidence:
+      - artifact: "research.md R-07: 'Without the option and with no engine, the visual plants are run and exit 2 for \"no container engine\", which the plant job reports as plants not run, naming each, and exits 2.'"
+      - code: "gates/lib/plant-judge.ts:186-207: a fail plant with exit 2 is judged 'expected exit 1 ..., got exit 2' (a plant failure), and error plants match any stderr line containing their cause; nothing classifies a run as 'not run'"
+    claim: |
+      With no engine, fail and pass visual plants exit 2 and the current judge reports them as wrong results, not as
+      'not run'; error-host (which needs no engine) passes. The plan does not say how plants.ts tells 'no engine' from
+      a gate that is broken, so the FR-018 behaviour ('never reports them as passed', 'exit 2 naming each') cannot be
+      tested red-first as written, and a plausible implementation (matching the cause text) would also swallow a real
+      regression whose cause line happens to mention the engine.
+    remedies:
+      - "Plan/contracts: define the rule (e.g. plants.ts probes the engine once before the visual plants; when none is available it runs no visual plant, prints `plants: not run (no container engine): <plant>` per plant and exits 2), keep it in a pure function in plant-runner.ts with unit tests, and add an integration test that runs gate:plants with PATH lacking docker and podman and asserts exit 2 and one line per visual plant."
+  - id: PLAN-TESTABILITY-1-010
+    severity: 2
+    title: "Every podman-specific behaviour is first observable at landing; the plan states no red-first route or exemption for it"
+    evidence:
+      - artifact: "plan.md decision 2 'podman is not available ... the docker-against-podman comparison happens only in CI'; decision 7 'confirmed by CI with podman at landing'; research.md R-03 '--userns=keep-id'"
+      - artifact: "spec Assumptions: 'How the plan proves a red-first visual change in this environment is the plan's to state'"
+      - code: "probe: podman is not installed in this sandbox (task environment); R-02 confirms it is not in the apt sources"
+    claim: |
+      The podman run arguments, rootless writes into the bind-mounted storybook/.visual/run-<n> (keep-id and SELinux/
+      permission behaviour), podman's image inspect parsing, and cross-engine byte equality are behaviour this
+      feature adds; in this environment they can only be unit-tested as argument lists (assertions on what is built,
+      not on what podman does). Their first test that can fail is the landing CI run, after all four phases have been
+      approved and folded. The plan neither records this as a limitation nor schedules a CI run before phase 3's
+      approval.
+    remedies:
+      - "Plan: state explicitly which podman behaviours are proven only in CI, and require phase 3's review to hold a CI run of the branch (Visual regression and Plants jobs with --engine both) before approval, with the operator pushing the branch; if that is not possible, record it as a Complexity Tracking exception with landing as its sunset."
+  - id: PLAN-TESTABILITY-1-011
+    severity: 2
+    title: "SC-006 ('one pixel in one story in one theme is exactly one finding') maps to no plant or test"
+    evidence:
+      - artifact: "spec SC-006; contracts/plants.md fail-token-changed: 'differs on every story-theme that shows it (listed exactly after phase 3's spike)'; fail-same-pixels-other-bytes changes bytes, not pixels"
+    claim: |
+      The only pixel-changing plant changes a token that touches several story-themes, so it cannot show that a
+      one-pixel change in one story-theme yields exactly one finding (and not, for example, two because the
+      comparison or the diff image path also emits one). The success criterion has no test that can fail.
+    remedies:
+      - "contracts/plants.md: add `fail-one-pixel` — one baseline of one story-theme with one pixel changed (written as a valid normalised PNG): expect exactly one `differs` finding at that `<story-id>/<theme>`; plus a unit test of png.ts/visual-verdict.ts on two fixture images differing in one pixel, asserting one finding and a diff image with exactly one marked pixel."
+  - id: PLAN-TESTABILITY-1-012
+    severity: 2
+    title: "The FR-016 rule-set test pins the module's own output, a snapshot that cannot show the selection rule is right"
+    evidence:
+      - artifact: "research.md R-08: 'A unit test pins the resulting rule id list for 4.14.0, so an axe upgrade shows its rule changes in review'"
+      - artifact: "constitution VIII: 'Forbidden: ... snapshots as the only assertion of behaviour'"
+    claim: |
+      A hard-coded list taken from running axe-rules.ts records whatever the code selected; if the selection is wrong
+      (best-practice rules dropped, a wcag22aa rule not enabled, an experimental rule enabled) the list is wrong in the
+      same way and the test passes. Mutants of the selection logic are killed only by the list, which was generated by
+      the code being mutated.
+    remedies:
+      - "Plan: test the selection on fixture rule metadata in node (a default-enabled best-practice rule kept; a non-default rule tagged wcag22aa enabled; a non-default rule with no listed tag left off; an experimental-tagged rule disabled even when tagged wcag2a), and keep the 4.14.0 list as a second assertion whose expected values are derived independently (from axe-core's own rule metadata files in node_modules, read by the test) rather than pasted from the module's output."
+  - id: PLAN-TESTABILITY-1-013
+    severity: 2
+    title: "The baseline command's 'write nothing' safety rule has no pure module and no unit test"
+    evidence:
+      - artifact: "contracts/gates.md § visual:update: 'Writes nothing and exits 1 when any render-failed, font, network or nondeterministic result exists ... Otherwise writes every baseline whose bytes changed, deletes stray ones'"
+      - artifact: "research.md R-12: the baseline command is tested only in gates-integration 'against the real container'; plan § Source Code lists gates/bin/baselines.ts and no lib module for it"
+      - code: "vitest.mutation.config.ts excludes gates-integration; gates/bin/** is in mutation scope (ranges.ts:28), so baselines.ts's decisions would be NoCoverage"
+    claim: |
+      FR-008's guarantee that a nondeterministic or wrong-font capture never becomes a baseline is the property that
+      keeps the visual gate honest; as planned it lives in a bin entry reached only by container integration tests,
+      and the update command has no plants (it is not a gate). Mutants that write before checking, or skip the stray
+      deletion, are NoCoverage, which the mutation gate reports as findings, or get disabled.
+    remedies:
+      - "Plan: put the update decision in a pure function (e.g. gates/lib/visual-verdict.ts `updatePlan(results, baselines) -> {write, remove} | {refuse: findings}`) with unit tests for each refusing status, for a mix of one bad and many good story-themes (nothing written), for unchanged bytes (not rewritten) and for stray deletion; baselines.ts only applies the plan."
+  - id: PLAN-TESTABILITY-1-014
+    severity: 2
+    title: "Determinism-fix plants and the font 'not loaded' branch have no control that fails without them"
+    evidence:
+      - artifact: "contracts/plants.md: pass-animation-and-caret (pass) is the only plant for US2 scenario 8; fail-other-font covers a non-Schibsted family only; FR-027 and R-05 also fail a face whose status is not 'loaded'"
+      - code: "node_modules/.pnpm/playwright-core@1.64.1/node_modules/playwright-core/types/types.d.ts:13656-13658: screenshot `caret` 'Defaults to \"hide\"' — the planned caret fix is Playwright's default, so the caret half of the plant passes with or without the fix"
+    claim: |
+      A pass plant shows no false positive; it does not show the fix is what makes it pass. The caret case passes by
+      default; a CSS animation captured twice at close times may also match by chance, so removing `animations:
+      "disabled"`/reducedMotion need not turn the plant red. The FR-027 'font not loaded' branch has no plant at all,
+      so an implementation that ignores FontFace status passes every planned test.
+    remedies:
+      - "Plan: unit-test the capture options builder (see 001) for each determinism option, and add a control for the animation plant (an integration test with the options off that shows two captures differ, kept beside the pass plant); state that caret 'hide' is Playwright's default and is set explicitly so a Playwright default change is caught by the options test."
+      - "contracts/plants.md: add `fail-font-not-loaded` (a story that declares and uses an @font-face whose source never loads under the route rules, or a FontFace left 'loading'): expect `font` on both themes."
+  - id: PLAN-TESTABILITY-1-015
+    severity: 1
+    title: "The container.json pin test's planned red is a missing-file error, not the missing behaviour"
+    evidence:
+      - artifact: "plan.md § Phases 1: 'storybook/visual/container.json, with the pin test written first and shown red (it fails while the file is absent)'"
+      - artifact: "constitution VIII: the red failure 'MUST be the missing behaviour, not a syntax, import or setup error'"
+    claim: |
+      Reading an absent file throws ENOENT at readFileSync, which is the kind of setup error Principle VIII says a red
+      must not be; the assertions tying node to .node-version and browser to playwright-core/browsers.json never run in
+      the red.
+    remedies:
+      - "Plan: have the test assert `existsSync(container.json)` as its first expectation (or catch only to return undefined and assert on it), so the red is an assertion failure, and add a second red case with a deliberately wrong pin in a fixture copy to show the node and browser assertions fail."

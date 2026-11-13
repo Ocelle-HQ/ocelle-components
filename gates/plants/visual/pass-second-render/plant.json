@@ -1,0 +1,5 @@
+{
+  "expect": "pass",
+  "why": "A story that shows a coloured block on any render after the first in a page passes: every story-theme is captured in a fresh page (FR-028). Its baselines are made only by single-story-theme requests (captureAlone; visual:update -- --plant visual/pass-second-render --story second-render--block), never by a full run (research.md R-11).",
+  "captureAlone": true
+}

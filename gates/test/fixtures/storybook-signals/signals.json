@@ -1,0 +1,705 @@
+{
+ "spike-module--module-throws/light": {
+  "signals": [
+   {
+    "signal": "storyMissing",
+    "arg": "spike-module--module-throws"
+   },
+   {
+    "signal": "sb-show-errordisplay"
+   }
+  ],
+  "bodyClass": "sb-show-errordisplay",
+  "bodyChildren": [
+   {
+    "tag": "div",
+    "class": "sb-preparing-story sb-wrapper"
+   },
+   {
+    "tag": "div",
+    "class": "sb-preparing-docs sb-wrapper"
+   },
+   {
+    "tag": "div",
+    "class": "sb-nopreview sb-wrapper"
+   },
+   {
+    "tag": "div",
+    "class": "sb-errordisplay sb-wrapper"
+   },
+   {
+    "tag": "div",
+    "id": "storybook-root"
+   },
+   {
+    "tag": "div",
+    "id": "storybook-docs"
+   },
+   {
+    "tag": "script"
+   }
+  ],
+  "currentStoryId": "spike-module--module-throws",
+  "ocelleParameters": null,
+  "storybookIo": [
+   {
+    "kind": "fetch",
+    "detail": "./index.json"
+   }
+  ],
+  "requests": [
+   {
+    "type": "document",
+    "url": "/iframe.html?id=spike-module--module-throws&viewMode=story&globals=theme:light"
+   },
+   {
+    "type": "fetch",
+    "url": "/index.json"
+   },
+   {
+    "type": "font",
+    "url": "/fonts/SchibstedGrotesk-wght.woff2"
+   },
+   {
+    "type": "font",
+    "url": "/sb-common-assets/nunito-sans-bold.woff2"
+   },
+   {
+    "type": "font",
+    "url": "/sb-common-assets/nunito-sans-regular.woff2"
+   },
+   {
+    "type": "script",
+    "url": "/assets/*"
+   },
+   {
+    "type": "script",
+    "url": "/inline-b9d578bdc06acfe0.js"
+   },
+   {
+    "type": "script",
+    "url": "/inline-d692b055048f6d2d.js"
+   },
+   {
+    "type": "script",
+    "url": "/inline-f6e1fa97120c919f.js"
+   },
+   {
+    "type": "script",
+    "url": "/vite-inject-mocker-entry.js"
+   },
+   {
+    "type": "stylesheet",
+    "url": "/assets/*"
+   },
+   {
+    "type": "stylesheet",
+    "url": "/base.css"
+   },
+   {
+    "type": "stylesheet",
+    "url": "/inline-1847ef560f040914.css"
+   },
+   {
+    "type": "stylesheet",
+    "url": "/inline-e1b9d593f682e853.css"
+   },
+   {
+    "type": "stylesheet",
+    "url": "/swatches.css"
+   },
+   {
+    "type": "stylesheet",
+    "url": "/tokens.css"
+   }
+  ],
+  "storageState": {
+   "cookies": 0,
+   "origins": []
+  },
+  "sessionStorage": []
+ },
+ "spike--render-throws/light": {
+  "signals": [
+   {
+    "signal": "storyThrewException",
+    "arg": "render throws on purpose"
+   },
+   {
+    "signal": "sb-show-errordisplay"
+   }
+  ],
+  "bodyClass": "sb-main-padded sb-show-errordisplay",
+  "bodyChildren": [
+   {
+    "tag": "div",
+    "class": "sb-preparing-story sb-wrapper"
+   },
+   {
+    "tag": "div",
+    "class": "sb-preparing-docs sb-wrapper"
+   },
+   {
+    "tag": "div",
+    "class": "sb-nopreview sb-wrapper"
+   },
+   {
+    "tag": "div",
+    "class": "sb-errordisplay sb-wrapper"
+   },
+   {
+    "tag": "div",
+    "id": "storybook-root"
+   },
+   {
+    "tag": "div",
+    "id": "storybook-docs"
+   },
+   {
+    "tag": "script"
+   }
+  ],
+  "currentStoryId": "spike--render-throws",
+  "ocelleParameters": null,
+  "storybookIo": [
+   {
+    "kind": "fetch",
+    "detail": "./index.json"
+   }
+  ],
+  "requests": [
+   {
+    "type": "document",
+    "url": "/iframe.html?id=spike--render-throws&viewMode=story&globals=theme:light"
+   },
+   {
+    "type": "fetch",
+    "url": "/index.json"
+   },
+   {
+    "type": "font",
+    "url": "/fonts/SchibstedGrotesk-wght.woff2"
+   },
+   {
+    "type": "font",
+    "url": "/sb-common-assets/nunito-sans-bold.woff2"
+   },
+   {
+    "type": "font",
+    "url": "/sb-common-assets/nunito-sans-regular.woff2"
+   },
+   {
+    "type": "script",
+    "url": "/assets/*"
+   },
+   {
+    "type": "script",
+    "url": "/inline-b9d578bdc06acfe0.js"
+   },
+   {
+    "type": "script",
+    "url": "/inline-d692b055048f6d2d.js"
+   },
+   {
+    "type": "script",
+    "url": "/inline-f6e1fa97120c919f.js"
+   },
+   {
+    "type": "script",
+    "url": "/vite-inject-mocker-entry.js"
+   },
+   {
+    "type": "stylesheet",
+    "url": "/assets/*"
+   },
+   {
+    "type": "stylesheet",
+    "url": "/base.css"
+   },
+   {
+    "type": "stylesheet",
+    "url": "/inline-1847ef560f040914.css"
+   },
+   {
+    "type": "stylesheet",
+    "url": "/inline-e1b9d593f682e853.css"
+   },
+   {
+    "type": "stylesheet",
+    "url": "/swatches.css"
+   },
+   {
+    "type": "stylesheet",
+    "url": "/tokens.css"
+   }
+  ],
+  "storageState": {
+   "cookies": 0,
+   "origins": []
+  },
+  "sessionStorage": []
+ },
+ "no-such--story/light": {
+  "signals": [
+   {
+    "signal": "storyMissing",
+    "arg": "no-such--story"
+   },
+   {
+    "signal": "sb-show-errordisplay"
+   }
+  ],
+  "bodyClass": "sb-show-errordisplay",
+  "bodyChildren": [
+   {
+    "tag": "div",
+    "class": "sb-preparing-story sb-wrapper"
+   },
+   {
+    "tag": "div",
+    "class": "sb-preparing-docs sb-wrapper"
+   },
+   {
+    "tag": "div",
+    "class": "sb-nopreview sb-wrapper"
+   },
+   {
+    "tag": "div",
+    "class": "sb-errordisplay sb-wrapper"
+   },
+   {
+    "tag": "div",
+    "id": "storybook-root"
+   },
+   {
+    "tag": "div",
+    "id": "storybook-docs"
+   },
+   {
+    "tag": "script"
+   }
+  ],
+  "currentStoryId": null,
+  "ocelleParameters": null,
+  "storybookIo": [
+   {
+    "kind": "fetch",
+    "detail": "./index.json"
+   }
+  ],
+  "requests": [
+   {
+    "type": "document",
+    "url": "/iframe.html?id=no-such--story&viewMode=story&globals=theme:light"
+   },
+   {
+    "type": "fetch",
+    "url": "/index.json"
+   },
+   {
+    "type": "font",
+    "url": "/fonts/SchibstedGrotesk-wght.woff2"
+   },
+   {
+    "type": "font",
+    "url": "/sb-common-assets/nunito-sans-bold.woff2"
+   },
+   {
+    "type": "font",
+    "url": "/sb-common-assets/nunito-sans-regular.woff2"
+   },
+   {
+    "type": "script",
+    "url": "/assets/*"
+   },
+   {
+    "type": "script",
+    "url": "/inline-b9d578bdc06acfe0.js"
+   },
+   {
+    "type": "script",
+    "url": "/inline-d692b055048f6d2d.js"
+   },
+   {
+    "type": "script",
+    "url": "/inline-f6e1fa97120c919f.js"
+   },
+   {
+    "type": "script",
+    "url": "/vite-inject-mocker-entry.js"
+   },
+   {
+    "type": "stylesheet",
+    "url": "/assets/*"
+   },
+   {
+    "type": "stylesheet",
+    "url": "/base.css"
+   },
+   {
+    "type": "stylesheet",
+    "url": "/inline-1847ef560f040914.css"
+   },
+   {
+    "type": "stylesheet",
+    "url": "/inline-e1b9d593f682e853.css"
+   },
+   {
+    "type": "stylesheet",
+    "url": "/swatches.css"
+   },
+   {
+    "type": "stylesheet",
+    "url": "/tokens.css"
+   }
+  ],
+  "storageState": {
+   "cookies": 0,
+   "origins": []
+  },
+  "sessionStorage": []
+ },
+ "spike--fine/light": {
+  "signals": [
+   {
+    "signal": "storyRendered",
+    "arg": "spike--fine"
+   }
+  ],
+  "bodyClass": "sb-main-padded sb-show-main",
+  "bodyChildren": [
+   {
+    "tag": "div",
+    "class": "sb-preparing-story sb-wrapper"
+   },
+   {
+    "tag": "div",
+    "class": "sb-preparing-docs sb-wrapper"
+   },
+   {
+    "tag": "div",
+    "class": "sb-nopreview sb-wrapper"
+   },
+   {
+    "tag": "div",
+    "class": "sb-errordisplay sb-wrapper"
+   },
+   {
+    "tag": "div",
+    "id": "storybook-root"
+   },
+   {
+    "tag": "div",
+    "id": "storybook-docs"
+   },
+   {
+    "tag": "script"
+   }
+  ],
+  "currentStoryId": "spike--fine",
+  "ocelleParameters": {
+   "pointer": {
+    "hover": ".target"
+   }
+  },
+  "storybookIo": [
+   {
+    "kind": "fetch",
+    "detail": "./index.json"
+   }
+  ],
+  "requests": [
+   {
+    "type": "document",
+    "url": "/iframe.html?id=spike--fine&viewMode=story&globals=theme:light"
+   },
+   {
+    "type": "fetch",
+    "url": "/index.json"
+   },
+   {
+    "type": "font",
+    "url": "/fonts/SchibstedGrotesk-wght.woff2"
+   },
+   {
+    "type": "script",
+    "url": "/assets/*"
+   },
+   {
+    "type": "script",
+    "url": "/inline-b9d578bdc06acfe0.js"
+   },
+   {
+    "type": "script",
+    "url": "/inline-d692b055048f6d2d.js"
+   },
+   {
+    "type": "script",
+    "url": "/inline-f6e1fa97120c919f.js"
+   },
+   {
+    "type": "script",
+    "url": "/vite-inject-mocker-entry.js"
+   },
+   {
+    "type": "stylesheet",
+    "url": "/assets/*"
+   },
+   {
+    "type": "stylesheet",
+    "url": "/base.css"
+   },
+   {
+    "type": "stylesheet",
+    "url": "/inline-1847ef560f040914.css"
+   },
+   {
+    "type": "stylesheet",
+    "url": "/inline-e1b9d593f682e853.css"
+   },
+   {
+    "type": "stylesheet",
+    "url": "/swatches.css"
+   },
+   {
+    "type": "stylesheet",
+    "url": "/tokens.css"
+   }
+  ],
+  "storageState": {
+   "cookies": 0,
+   "origins": []
+  },
+  "sessionStorage": []
+ },
+ "spike--copies/light": {
+  "signals": [
+   {
+    "signal": "storyRendered",
+    "arg": "spike--copies"
+   }
+  ],
+  "bodyClass": "sb-main-padded sb-show-main",
+  "bodyChildren": [
+   {
+    "tag": "div",
+    "class": "sb-preparing-story sb-wrapper"
+   },
+   {
+    "tag": "div",
+    "class": "sb-preparing-docs sb-wrapper"
+   },
+   {
+    "tag": "div",
+    "class": "sb-nopreview sb-wrapper"
+   },
+   {
+    "tag": "div",
+    "class": "sb-errordisplay sb-wrapper"
+   },
+   {
+    "tag": "div",
+    "id": "storybook-root"
+   },
+   {
+    "tag": "div",
+    "id": "storybook-docs"
+   },
+   {
+    "tag": "script"
+   }
+  ],
+  "currentStoryId": "spike--copies",
+  "ocelleParameters": null,
+  "storybookIo": [
+   {
+    "kind": "fetch",
+    "detail": "./index.json"
+   },
+   {
+    "kind": "execCommand",
+    "detail": "copy"
+   },
+   {
+    "kind": "execCommand",
+    "detail": "cut"
+   }
+  ],
+  "requests": [
+   {
+    "type": "document",
+    "url": "/iframe.html?id=spike--copies&viewMode=story&globals=theme:light"
+   },
+   {
+    "type": "fetch",
+    "url": "/index.json"
+   },
+   {
+    "type": "font",
+    "url": "/fonts/SchibstedGrotesk-wght.woff2"
+   },
+   {
+    "type": "script",
+    "url": "/assets/*"
+   },
+   {
+    "type": "script",
+    "url": "/inline-b9d578bdc06acfe0.js"
+   },
+   {
+    "type": "script",
+    "url": "/inline-d692b055048f6d2d.js"
+   },
+   {
+    "type": "script",
+    "url": "/inline-f6e1fa97120c919f.js"
+   },
+   {
+    "type": "script",
+    "url": "/vite-inject-mocker-entry.js"
+   },
+   {
+    "type": "stylesheet",
+    "url": "/assets/*"
+   },
+   {
+    "type": "stylesheet",
+    "url": "/base.css"
+   },
+   {
+    "type": "stylesheet",
+    "url": "/inline-1847ef560f040914.css"
+   },
+   {
+    "type": "stylesheet",
+    "url": "/inline-e1b9d593f682e853.css"
+   },
+   {
+    "type": "stylesheet",
+    "url": "/swatches.css"
+   },
+   {
+    "type": "stylesheet",
+    "url": "/tokens.css"
+   }
+  ],
+  "storageState": {
+   "cookies": 0,
+   "origins": []
+  },
+  "sessionStorage": []
+ },
+ "tokens--colour/light": {
+  "signals": [
+   {
+    "signal": "storyRendered",
+    "arg": "tokens--colour"
+   }
+  ],
+  "bodyClass": "sb-main-padded sb-show-main",
+  "bodyChildren": [
+   {
+    "tag": "div",
+    "class": "sb-preparing-story sb-wrapper"
+   },
+   {
+    "tag": "div",
+    "class": "sb-preparing-docs sb-wrapper"
+   },
+   {
+    "tag": "div",
+    "class": "sb-nopreview sb-wrapper"
+   },
+   {
+    "tag": "div",
+    "class": "sb-errordisplay sb-wrapper"
+   },
+   {
+    "tag": "div",
+    "id": "storybook-root"
+   },
+   {
+    "tag": "div",
+    "id": "storybook-docs"
+   },
+   {
+    "tag": "script"
+   },
+   {
+    "tag": "div",
+    "id": "scripts-root"
+   }
+  ],
+  "currentStoryId": "tokens--colour",
+  "ocelleParameters": null,
+  "storybookIo": [
+   {
+    "kind": "fetch",
+    "detail": "./index.json"
+   }
+  ],
+  "requests": [
+   {
+    "type": "document",
+    "url": "/iframe.html?id=tokens--colour&viewMode=story&globals=theme:light"
+   },
+   {
+    "type": "fetch",
+    "url": "/index.json"
+   },
+   {
+    "type": "font",
+    "url": "/fonts/SchibstedGrotesk-wght.woff2"
+   },
+   {
+    "type": "script",
+    "url": "/assets/*"
+   },
+   {
+    "type": "script",
+    "url": "/inline-b9d578bdc06acfe0.js"
+   },
+   {
+    "type": "script",
+    "url": "/inline-d692b055048f6d2d.js"
+   },
+   {
+    "type": "script",
+    "url": "/inline-f6e1fa97120c919f.js"
+   },
+   {
+    "type": "script",
+    "url": "/vite-inject-mocker-entry.js"
+   },
+   {
+    "type": "stylesheet",
+    "url": "/assets/*"
+   },
+   {
+    "type": "stylesheet",
+    "url": "/base.css"
+   },
+   {
+    "type": "stylesheet",
+    "url": "/inline-1847ef560f040914.css"
+   },
+   {
+    "type": "stylesheet",
+    "url": "/inline-e1b9d593f682e853.css"
+   },
+   {
+    "type": "stylesheet",
+    "url": "/swatches.css"
+   },
+   {
+    "type": "stylesheet",
+    "url": "/tokens.css"
+   }
+  ],
+  "storageState": {
+   "cookies": 0,
+   "origins": []
+  },
+  "sessionStorage": []
+ }
+}

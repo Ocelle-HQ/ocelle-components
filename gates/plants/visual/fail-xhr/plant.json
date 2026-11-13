@@ -1,0 +1,16 @@
+{
+  "expect": "fail",
+  "why": "A story that makes run-time I/O while it renders, an XMLHttpRequest for /api/items (analysis C1): io on both themes, naming the call (FR-030, research.md R-14).",
+  "findings": [
+    {
+      "location": "xhr--call/light",
+      "rule": "io",
+      "message": "xhr /api/items"
+    },
+    {
+      "location": "xhr--call/dark",
+      "rule": "io",
+      "message": "xhr /api/items"
+    }
+  ]
+}

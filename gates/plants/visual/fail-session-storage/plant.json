@@ -1,0 +1,16 @@
+{
+  "expect": "fail",
+  "why": "A story that makes run-time I/O while it renders, sessionStorage.setItem (analysis C1): io on both themes, naming the call (FR-030, research.md R-14).",
+  "findings": [
+    {
+      "location": "session-storage--call/light",
+      "rule": "io",
+      "message": "sessionStorage.setItem"
+    },
+    {
+      "location": "session-storage--call/dark",
+      "rule": "io",
+      "message": "sessionStorage.setItem"
+    }
+  ]
+}

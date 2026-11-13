@@ -1,0 +1,10 @@
+{
+  "expect": "fail",
+  "why": "A baseline whose story is not in the index (FR-004, US2 scenario 5).",
+  "findings": [
+    {
+      "location": "storybook/baselines/gone--story.light.png",
+      "rule": "stray-baseline"
+    }
+  ]
+}

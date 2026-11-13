@@ -1,0 +1,10 @@
+{
+  "expect": "fail",
+  "why": "The plants job of ci.yml, the Plants check, runs gate:plants -- --shard 1, so it would judge one shard only: the registry check fails on it (plan decision 23, research.md R-07).",
+  "findings": [
+    {
+      "location": "ci.yml",
+      "rule": "shard-in-plant-check"
+    }
+  ]
+}

@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import type { Plant } from "../lib/plant-judge.ts";
-import { errorText, gateRunsAtOnce, limiter, outputLines, plantValues, resolveLocations, runPlant } from "../lib/plant-runner.ts";
+import { aloneDecision, containerDecision, engineValue, errorText, failedOwn, gateRunsAtOnce, keptPlantDir, limiter, needsEngine, outputLines, otherShardSize, plantShards, plantTimeNote, plantValues, resolveLocations, runPlant, shardSize } from "../lib/plant-runner.ts";
 import type { BuiltRepo, RunnerTools, TreeView } from "../lib/plant-runner.ts";
 import type { Gate, PlantForm } from "../lib/registry.ts";
 import type { ToolRun } from "../lib/spawn.ts";
@@ -145,6 +145,20 @@ describe("runPlant", () => {
     const { tools } = recorder({}, output, cause);
     const error = await runPlant(tools, "/repo", gate("lint", "repo-tree", "node x.ts --root {root}"), "p", fail).catch((thrown: unknown) => thrown);
     expect([(error as Error).message, (error as Error).cause]).toEqual(["p: cannot build its temporary repository (x)", cause]);
+  });
+
+  // 006 research.md R-16: the builder reads the plant's plant.json keys that shape its root (`unlinked`).
+  it("hands the plant's parsed plant.json to the builder, so its unlinked key reaches the plant root", async () => {
+    const { tools } = recorder({}, { exitCode: 2, stdout: "", stderr: "storybook-build: could not run: x\n" });
+    const specs: unknown[] = [];
+    const repoTree = tools.build["repo-tree"];
+    const spy: RunnerTools = {
+      ...tools,
+      build: { ...tools.build, "repo-tree": (plant, into, spec) => (specs.push(spec), repoTree(plant, into, spec)) },
+    };
+    const plant: Plant = { expect: "error", why: "w", cause: "x", unlinked: ["storybook/node_modules"] };
+    await runPlant(spy, "/repo", gate("storybook-build", "repo-tree", "node gates/bin/storybook-build.ts --root {root}"), "gates/plants/storybook-build/error-x", plant);
+    expect(specs).toEqual([plant]);
   });
 
   it("removes the directory when the gate process cannot start", async () => {
@@ -330,6 +344,21 @@ describe("resolveLocations", () => {
     await expect(resolveLocations([{ location, rule: "r" }], view())).rejects.toThrow(`keyed location ${location} ${problem}`);
   });
 
+  // 006 contracts/gates.md § `axe`: the axe gate locates an exception entry's finding at
+  // storybook/a11y-exceptions.json#<index>, a location of its own, not a key to resolve.
+  it("hands on storybook/a11y-exceptions.json#<index> unchanged, reading nothing", async () => {
+    const reads: string[] = [];
+    const recording: TreeView = {
+      read: (path) => {
+        reads.push(path);
+        return Promise.resolve(undefined);
+      },
+      stylesheet: () => Promise.resolve(""),
+    };
+    const found = await resolveLocations([{ location: "storybook/a11y-exceptions.json#0", rule: "stale-exception" }, { location: "storybook/a11y-exceptions.json#12", rule: "r" }], recording);
+    expect({ found, reads }).toEqual({ found: [{ location: "storybook/a11y-exceptions.json#0", rule: "stale-exception" }, { location: "storybook/a11y-exceptions.json#12", rule: "r" }], reads: [] });
+  });
+
   it("fails naming the key when the file is not in the tree", async () => {
     const empty: TreeView = { read: () => Promise.resolve(undefined), stylesheet: () => Promise.resolve("") };
     await expect(resolveLocations([{ location: "packages/tokens/src/source.ts#color-ink", rule: "r" }], empty)).rejects.toThrow(
@@ -397,6 +426,14 @@ describe("runPlant: keyed locations", () => {
     });
   });
 
+  it("hands on no expected findings and reads nothing for an axe plant whose findings are at storybook/a11y-exceptions.json#<index>", async () => {
+    const { tools, calls } = keyed();
+    const axe = gate("axe", "repo-tree", "node gates/bin/axe.ts --root {root}");
+    const plant: Plant = { expect: "fail", why: "w", findings: [{ location: "storybook/a11y-exceptions.json#0", rule: "stale-exception" }] };
+    const run = await runPlant(tools, "/repo", axe, "gates/plants/axe/fail-x", plant);
+    expect({ expected: "expected" in run, calls: calls.filter((call) => call.startsWith("read") || call.startsWith("stylesheet")) }).toEqual({ expected: false, calls: [] });
+  });
+
   it("names the plant and the key when a key does not resolve, and removes the directory", async () => {
     const { tools, calls } = keyed();
     const plant: Plant = { expect: "fail", why: "w", findings: [{ location: "packages/tokens/src/source.ts#color-nope", rule: "r" }] };
@@ -407,5 +444,300 @@ describe("runPlant: keyed locations", () => {
     const error = await runPlant(tools, "/repo", contrast, "p", plant).catch((thrown: unknown) => thrown);
     expect((error as Error).cause).toBeInstanceOf(Error);
     expect(((error as Error).cause as Error).message).toBe("keyed location packages/tokens/src/source.ts#color-nope resolves to no line");
+  });
+});
+
+// 006 research.md R-06, R-07 and R-11 (contracts/plants.md § Plant runner changes): a visual plant's `{engine}`, which
+// plants need a container engine and what the job does with them, and the copy of a failing visual pass plant's
+// captures in tree layout (run 1's, or for a captureAlone plant captures made alone, never run 1's).
+const pass: Plant = { expect: "pass", why: "w" };
+const visualGate = gate("visual", "repo-tree", "node gates/bin/visual.ts --root {root} --engine {engine}");
+
+describe("engineValue", () => {
+  it("is the plant's engine, else $OCELLE_VISUAL_ENGINE, else both; missing is the engine name ocelle-no-such-engine", () => {
+    expect(engineValue({ ...pass, engine: "host" }, { OCELLE_VISUAL_ENGINE: "auto" })).toBe("host");
+    expect(engineValue({ ...pass, engine: "both" }, { OCELLE_VISUAL_ENGINE: "auto" })).toBe("both");
+    expect(engineValue({ ...pass, engine: "missing" }, {})).toBe("ocelle-no-such-engine");
+    expect(engineValue(pass, { OCELLE_VISUAL_ENGINE: "auto" })).toBe("auto");
+    expect(engineValue(pass, { OCELLE_VISUAL_ENGINE: "" })).toBe("both");
+    expect(engineValue(pass, {})).toBe("both");
+  });
+});
+
+describe("runPlant: {engine}", () => {
+  it("fills {engine} from the plant and the job's environment, and leaves other commands as they are", async () => {
+    const commands: string[] = [];
+    for (const [plant, env] of [
+      [pass, { OCELLE_VISUAL_ENGINE: "auto" }],
+      [{ ...pass, engine: "missing" }, { OCELLE_VISUAL_ENGINE: "auto" }],
+      [pass, undefined],
+    ] as const) {
+      const { tools, calls } = recorder({}, { exitCode: 0, stdout: "", stderr: "" });
+      await runPlant(env === undefined ? tools : { ...tools, env }, "/repo", visualGate, "gates/plants/visual/pass-x", plant);
+      commands.push(...calls.filter((call) => call.startsWith("run ")));
+    }
+    expect(commands).toEqual([
+      "run /opt/node/bin/node gates/bin/visual.ts --root /tmp/ocelle-plant-visual-1 --engine auto",
+      "run /opt/node/bin/node gates/bin/visual.ts --root /tmp/ocelle-plant-visual-1 --engine ocelle-no-such-engine",
+      "run /opt/node/bin/node gates/bin/visual.ts --root /tmp/ocelle-plant-visual-1 --engine both",
+    ]);
+  });
+});
+
+describe("needsEngine and containerDecision (006 research.md R-07)", () => {
+  it("needs an engine for a visual plant whose engine is not host or missing, for no other gate", () => {
+    expect([needsEngine("visual", pass), needsEngine("visual", { ...pass, engine: "both" }), needsEngine("visual", { ...pass, engine: "host" }), needsEngine("visual", { ...pass, engine: "missing" }), needsEngine("axe", pass)]).toEqual([
+      true,
+      true,
+      false,
+      false,
+      false,
+    ]);
+  });
+
+  it("skips every visual plant with --skip-container, does not run one that needs a missing engine, and runs the rest", () => {
+    const host: Plant = { ...pass, engine: "host" };
+    expect([
+      containerDecision("visual", pass, { skipContainer: true, engines: true }),
+      containerDecision("visual", host, { skipContainer: true, engines: false }),
+      containerDecision("lint", pass, { skipContainer: true, engines: false }),
+      containerDecision("visual", pass, { skipContainer: false, engines: false }),
+      containerDecision("visual", host, { skipContainer: false, engines: false }),
+      containerDecision("visual", pass, { skipContainer: false, engines: true }),
+      containerDecision("storybook-build", pass, { skipContainer: false, engines: false }),
+    ]).toEqual(["skip", "skip", "run", "not-run", "run", "run", "run"]);
+  });
+});
+
+describe("failedOwn, keptPlantDir and aloneDecision (006 research.md R-11)", () => {
+  it("takes the differs and missing-baseline story-themes of the plant's own stories from the gate's output, in order", () => {
+    const stdout = [
+      "second--a/light: visual: differs: the capture differs from its baseline second--a.light.png",
+      "second--a/dark: visual: missing-baseline: no baseline second--a.dark.png",
+      "tokens--colour/light: visual: differs: the capture differs from its baseline tokens--colour.light.png",
+      "second--b/light: visual: nondeterministic: run 1 and run 2 differ",
+      "second--b/dark: axe: differs: m",
+      "storybook/baselines/second--c.light.png: visual: stray-baseline: the baseline names no story-theme of the index",
+      "visual: 5 findings in 30 story-themes (docker only: no cross-engine comparison)",
+    ];
+    expect(failedOwn(stdout, ["second--a", "second--b"])).toEqual([
+      { story: "second--a", theme: "light" },
+      { story: "second--a", theme: "dark" },
+    ]);
+    expect(failedOwn(stdout, ["second"])).toEqual([]);
+    expect(failedOwn(["note second--ab/light: visual: differs: m", "second--ab/dark: visual: differs: m"], ["second--ab"])).toEqual([{ story: "second--ab", theme: "dark" }]);
+  });
+
+  it("keeps a plant's captures at storybook/.visual/plants/<plant path>/tree/storybook/baselines/", () => {
+    expect(keptPlantDir("gates/plants/visual/pass-below-fold")).toBe("storybook/.visual/plants/gates/plants/visual/pass-below-fold/tree/storybook/baselines");
+  });
+
+  it("copies a capture made alone unless it equals the committed baseline, which gives the freshness line", () => {
+    const at = { story: "second--render", theme: "dark" } as const;
+    expect(aloneDecision("gates/plants/visual/pass-second-render", at, Uint8Array.from([1, 2]), Uint8Array.from([1, 2]))).toEqual({
+      line: "plants: visual/pass-second-render: second--render/dark: captured alone matches the baseline; the full run differs (freshness)",
+    });
+    expect(aloneDecision("gates/plants/visual/pass-second-render", at, Uint8Array.from([1, 2]), Uint8Array.from([1, 3]))).toEqual({ copy: true });
+    expect(aloneDecision("gates/plants/visual/pass-second-render", at, Uint8Array.from([1, 2]), Uint8Array.from([1, 2, 0]))).toEqual({ copy: true });
+    expect(aloneDecision("gates/plants/visual/pass-second-render", at, Uint8Array.from([1, 2]), undefined)).toEqual({ copy: true });
+  });
+});
+
+describe("runPlant: the captures of a failing visual pass plant (006 research.md R-11)", () => {
+  const failing: ToolRun = {
+    exitCode: 1,
+    stdout: ["own--a/light: visual: differs: m", "own--a/dark: visual: missing-baseline: m", "tokens--colour/light: visual: differs: m", "visual: 3 findings in 26 story-themes (docker+podman)"].join("\n"),
+    stderr: "",
+  };
+  const into = "/tmp/ocelle-plant-visual-1";
+
+  /** The recorder's tools with visual copy tools that log each call; captures made alone are `alone` by story-theme. */
+  function withVisual(ran: ToolRun, alone: Readonly<Record<string, Uint8Array>> = {}, committed: Readonly<Record<string, Uint8Array>> = {}): Recorder {
+    const { tools, calls } = recorder({}, ran);
+    const visual = {
+      own: (root: string, plant: string) => {
+        calls.push(`own ${root} ${plant}`);
+        return Promise.resolve(["own--a", "own--b"]);
+      },
+      copy: (from: string, to: string) => {
+        calls.push(`copy ${from} ${to}`);
+        return Promise.resolve();
+      },
+      captureAlone: (root: string, at: { readonly story: string; readonly theme: string }) => {
+        calls.push(`alone ${root} ${at.story}/${at.theme}`);
+        return Promise.resolve(alone[`${at.story}/${at.theme}`]);
+      },
+      readBytes: (path: string) => {
+        calls.push(`readBytes ${path}`);
+        return Promise.resolve(committed[path]);
+      },
+      write: (path: string, bytes: Uint8Array) => {
+        calls.push(`write ${path} ${String(bytes.length)}`);
+        return Promise.resolve();
+      },
+      note: (line: string) => {
+        calls.push(`note ${line}`);
+      },
+    };
+    const withCopy: RunnerTools = { ...tools, visual };
+    return { tools: withCopy, calls };
+  }
+
+  it("copies run 1's captures of the failing own story-themes in tree layout, before the root is removed", async () => {
+    const { tools, calls } = withVisual(failing);
+    await runPlant(tools, "/repo", visualGate, "gates/plants/visual/pass-x", pass);
+    const kept = "/repo/storybook/.visual/plants/gates/plants/visual/pass-x/tree/storybook/baselines";
+    expect(calls.slice(3)).toEqual([
+      `own ${into} /repo/gates/plants/visual/pass-x`,
+      `copy ${into}/storybook/.visual/baselines/own--a.light.png ${kept}/own--a.light.png`,
+      `copy ${into}/storybook/.visual/baselines/own--a.dark.png ${kept}/own--a.dark.png`,
+      `removeDir ${into}`,
+    ]);
+  });
+
+  it("for a captureAlone plant copies none of run 1's captures: captures alone, copies one that differs, and names one equal to the baseline", async () => {
+    const committed = "/repo/gates/plants/visual/pass-second-render/tree/storybook/baselines";
+    const { tools, calls } = withVisual(failing, { "own--a/light": Uint8Array.from([1, 2, 3]), "own--a/dark": Uint8Array.from([4, 5]) }, { [`${committed}/own--a.dark.png`]: Uint8Array.from([4, 5]) });
+    await runPlant(tools, "/repo", visualGate, "gates/plants/visual/pass-second-render", { ...pass, captureAlone: true });
+    const kept = "/repo/storybook/.visual/plants/gates/plants/visual/pass-second-render/tree/storybook/baselines";
+    expect(calls.slice(3)).toEqual([
+      `own ${into} /repo/gates/plants/visual/pass-second-render`,
+      `alone ${into} own--a/light`,
+      `readBytes ${committed}/own--a.light.png`,
+      `write ${kept}/own--a.light.png 3`,
+      `alone ${into} own--a/dark`,
+      `readBytes ${committed}/own--a.dark.png`,
+      "note plants: visual/pass-second-render: own--a/dark: captured alone matches the baseline; the full run differs (freshness)",
+      `removeDir ${into}`,
+    ]);
+    expect(calls.some((call) => call.startsWith("copy "))).toBe(false);
+  });
+
+  it("copies nothing for a capture made alone that did not capture (a refusing status or the runs differing)", async () => {
+    const { tools, calls } = withVisual(failing);
+    await runPlant(tools, "/repo", visualGate, "gates/plants/visual/pass-second-render", { ...pass, captureAlone: true });
+    expect(calls.filter((call) => /^(?:copy|write|note|readBytes) /.test(call))).toEqual([]);
+  });
+
+  it("copies nothing for a passing visual plant, a fail plant, another gate's pass plant, or without the copy tools", async () => {
+    for (const [run, plant, on] of [
+      [{ exitCode: 0, stdout: "visual: 26 captures match their baselines (docker+podman)", stderr: "" }, pass, visualGate],
+      [failing, { expect: "fail", why: "w", findings: [{ location: "own--a/light", rule: "differs" }] }, visualGate],
+      [failing, pass, gate("axe", "repo-tree", "node gates/bin/axe.ts --root {root}")],
+      // CI run 43056264356 (PR #24): a pass plant whose gate could not run (exit 2) built no Storybook, so there are no
+      // captures to keep; reading its index stopped the whole plant job.
+      [{ exitCode: 2, stdout: "", stderr: "visual: could not run: the image cannot be obtained: x\n" }, pass, visualGate],
+    ] as const) {
+      const { tools, calls } = withVisual(run);
+      await runPlant(tools, "/repo", on, "gates/plants/visual/pass-x", plant);
+      expect(calls.filter((call) => !/^(?:tempDir|build|run|removeDir) /.test(call))).toEqual([]);
+    }
+    const { tools, calls } = recorder({}, failing);
+    await runPlant(tools, "/repo", visualGate, "gates/plants/visual/pass-x", pass);
+    expect(calls.at(-1)).toBe(`removeDir ${into}`);
+  });
+});
+
+// Plan decisions 23 and 24 (operator decisions 2026-11-11, "In phase 3 now" and "Measure first"; contracts/plants.md
+// § Shards, § Plant runner changes): the partition of the plants into shards, and the note of a plant's time.
+describe("plantShards and shardSize (plan decision 23)", () => {
+  const registry = ["plants/fail-gate-without-entry", "plants/fail-gate-without-job", "plants/pass-matching"];
+  const lint = ["lint/error-a", "lint/fail-b", "lint/fail-c", "lint/pass-d", "lint/pass-e"];
+  const storybook = ["storybook-build/fail-x", "storybook-build/pass-y"];
+  const visual = Array.from({ length: 17 }, (_, index) => `visual/case-${String(index + 1).padStart(2, "0")}`);
+  const axe = Array.from({ length: 9 }, (_, index) => `axe/case-${String(index + 1)}`);
+  // The visual and axe plants out of name order, and before the others, to show both orders are the shards' own.
+  const shuffled = (list: readonly string[]): string[] => [...list].reverse();
+
+  // Plan decision 30 ("Split its plants"): an otherSize of 80 gives one shard of the other plants here, and that shard
+  // holds them sorted by <gate>/<case>, no longer in their input order.
+  it("puts the registry's and the other gates' plants in shard 1, sorted, then the visual plants by name in groups of the size", () => {
+    expect(plantShards([...shuffled(visual), ...registry, ...lint, ...storybook], 8, 80)).toEqual([
+      [...lint, ...registry, ...storybook],
+      visual.slice(0, 8),
+      visual.slice(8, 16),
+      visual.slice(16),
+    ]);
+  });
+
+  it("adds the axe plants after the visual ones the same way, and gives one shard without visual or axe plants", () => {
+    const shards = plantShards([...shuffled(axe), ...registry, ...shuffled(visual), ...lint], 8, 80);
+    expect(shards).toEqual([[...lint, ...registry], visual.slice(0, 8), visual.slice(8, 16), visual.slice(16), axe.slice(0, 8), axe.slice(8)]);
+    expect(plantShards([...registry, ...lint, ...storybook], 8, 80)).toEqual([[...lint, ...registry, ...storybook]]);
+    expect(plantShards([...registry, ...visual.slice(0, 3)], 2, 80)).toEqual([registry, visual.slice(0, 2), visual.slice(2, 3)]);
+  });
+
+  it("puts every plant in exactly one shard", () => {
+    const all = [...registry, ...lint, ...storybook, ...visual, ...axe];
+    expect(plantShards(all, 8, 80).flat().sort()).toEqual([...all].sort());
+  });
+
+  // Plan decision 30 (operator decision 2026-11-12, "Split its plants"; contracts/plants.md § Shards): the other plants
+  // sorted by <gate>/<case> and dealt in turn over max(1, ceil(n / otherSize)) shards, before the visual plants.
+  it("deals the 10 other plants in turn over 3 shards at otherSize 4, the 17 visual plants at size 8 following as shards 4 to 6", () => {
+    expect(plantShards([...shuffled(visual), ...registry, ...lint, ...storybook], 8, 4)).toEqual([
+      ["lint/error-a", "lint/pass-d", "plants/fail-gate-without-job", "storybook-build/pass-y"],
+      ["lint/fail-b", "lint/pass-e", "plants/pass-matching"],
+      ["lint/fail-c", "plants/fail-gate-without-entry", "storybook-build/fail-x"],
+      visual.slice(0, 8),
+      visual.slice(8, 16),
+      visual.slice(16),
+    ]);
+  });
+
+  it("deals the 10 other plants over 2 shards of 5 at otherSize 5", () => {
+    expect(plantShards([...registry, ...lint, ...storybook], 8, 5)).toEqual([
+      ["lint/error-a", "lint/fail-c", "lint/pass-e", "plants/fail-gate-without-job", "storybook-build/fail-x"],
+      ["lint/fail-b", "lint/pass-d", "plants/fail-gate-without-entry", "plants/pass-matching", "storybook-build/pass-y"],
+    ]);
+  });
+
+  it("keeps the 10 other plants in one shard, sorted, at otherSize 10 or more", () => {
+    for (const otherSize of [10, 11, 80]) {
+      expect(plantShards([...storybook, ...registry, ...lint, ...visual.slice(0, 2)], 8, otherSize)).toEqual([[...lint, ...registry, ...storybook], visual.slice(0, 2)]);
+    }
+  });
+
+  it("gives the same partition for the input reversed or shuffled", () => {
+    const all = [...registry, ...lint, ...storybook, ...visual, ...axe];
+    const interleaved = all.filter((_, index) => index % 2 === 1).concat(all.filter((_, index) => index % 2 === 0).reverse());
+    const sorted = plantShards([...all].sort(), 8, 4);
+    expect(sorted.slice(0, 3)).toEqual([
+      ["lint/error-a", "lint/pass-d", "plants/fail-gate-without-job", "storybook-build/pass-y"],
+      ["lint/fail-b", "lint/pass-e", "plants/pass-matching"],
+      ["lint/fail-c", "plants/fail-gate-without-entry", "storybook-build/fail-x"],
+    ]);
+    expect(plantShards([...all].reverse(), 8, 4)).toEqual(sorted);
+    expect(plantShards(interleaved, 8, 4)).toEqual(sorted);
+  });
+
+  it("puts every plant in exactly one shard, the other plants' shards differing in size by at most one", () => {
+    const all = [...registry, ...lint, ...storybook, ...visual, ...axe];
+    for (const otherSize of [1, 2, 3, 4, 5, 6, 7, 9, 10]) {
+      const shards = plantShards(all, 8, otherSize);
+      const others = shards.slice(0, Math.ceil(10 / otherSize));
+      expect(shards.flat().sort()).toEqual([...all].sort());
+      expect(others.flat().sort()).toEqual([...registry, ...lint, ...storybook].sort());
+      expect(Math.max(...others.map((shard) => shard.length)) - Math.min(...others.map((shard) => shard.length))).toBeLessThanOrEqual(1);
+    }
+  });
+
+  it("is 80 for the other plants in the repository, by plan decision 30", () => {
+    expect(otherShardSize).toBe(80);
+  });
+
+  // Plan decision 30 (operator's answer to tasks.md T046l, "A' size 3"): the approved size, no longer the measuring
+  // run's provisional 4.
+  it("is 3 in the repository, approved by plan decision 30", () => {
+    expect(shardSize).toBe(3);
+  });
+});
+
+describe("plantTimeNote (plan decision 24)", () => {
+  it("names the plant and its seconds with one decimal", () => {
+    expect(plantTimeNote("visual/error-host", 1250)).toBe("note: plant time: visual/error-host: 1.3 s");
+    expect(plantTimeNote("plants/pass-matching", 41_660)).toBe("note: plant time: plants/pass-matching: 41.7 s");
+    expect(plantTimeNote("lint/fail-b", 0)).toBe("note: plant time: lint/fail-b: 0.0 s");
+    expect(plantTimeNote("lint/fail-b", 1249)).toBe("note: plant time: lint/fail-b: 1.2 s");
   });
 });

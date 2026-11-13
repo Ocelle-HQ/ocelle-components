@@ -1,0 +1,14 @@
+{
+  "expect": "fail",
+  "why": "Text drawn in a face other than Schibsted Grotesk (font-family: serif): font on both themes (FR-027, US2 scenario 9).",
+  "findings": [
+    {
+      "location": "other-font--serif/light",
+      "rule": "font"
+    },
+    {
+      "location": "other-font--serif/dark",
+      "rule": "font"
+    }
+  ]
+}

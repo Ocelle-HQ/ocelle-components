@@ -1,0 +1,15 @@
+{
+  "expect": "fail",
+  "why": "Only the overflowing child of the pass-overflow-and-popover story changes: differs on both themes, so content outside the root's box is compared (FR-012).",
+  "findings": [
+    {
+      "location": "overflow-and-popover--surfaces/light",
+      "rule": "differs"
+    },
+    {
+      "location": "overflow-and-popover--surfaces/dark",
+      "rule": "differs"
+    }
+  ],
+  "baselinesOf": "pass-overflow-and-popover"
+}

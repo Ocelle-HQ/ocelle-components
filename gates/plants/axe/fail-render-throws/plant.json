@@ -1,0 +1,16 @@
+{
+  "expect": "fail",
+  "why": "A story whose render function throws: render-failed on both themes (FR-014, US3 scenario 6).",
+  "findings": [
+    {
+      "location": "render-throws--thrown/light",
+      "rule": "render-failed",
+      "message": "STORY_THREW_EXCEPTION"
+    },
+    {
+      "location": "render-throws--thrown/dark",
+      "rule": "render-failed",
+      "message": "STORY_THREW_EXCEPTION"
+    }
+  ]
+}

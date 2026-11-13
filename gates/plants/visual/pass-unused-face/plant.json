@@ -1,0 +1,4 @@
+{
+  "expect": "pass",
+  "why": "A story that declares a second @font-face no text uses passes with its baselines: a declared but unused face is not a finding (FR-027, research.md R-05)."
+}

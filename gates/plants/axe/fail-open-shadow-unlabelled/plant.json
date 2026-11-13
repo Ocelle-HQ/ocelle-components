@@ -1,0 +1,16 @@
+{
+  "expect": "fail",
+  "why": "A custom element whose open shadow root holds an unlabelled button: button-name (critical) on both themes at its >>> selector, so the context reaches into open shadow roots (research.md R-08).",
+  "findings": [
+    {
+      "location": "open-shadow--unlabelled/light",
+      "rule": "button-name",
+      "message": "critical: ocelle-plant-open >>> button"
+    },
+    {
+      "location": "open-shadow--unlabelled/dark",
+      "rule": "button-name",
+      "message": "critical: ocelle-plant-open >>> button"
+    }
+  ]
+}

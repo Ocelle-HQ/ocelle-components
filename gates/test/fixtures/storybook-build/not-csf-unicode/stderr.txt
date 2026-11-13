@@ -1,0 +1,3 @@
+$ pnpm run prebuild && storybook build --disable-telemetry --preview-only -c .storybook -o dist && node scripts/externalise.ts dist
+$ node scripts/swatches.ts
+[ELIFECYCLE] Command failed with exit code 1.
