@@ -11,11 +11,13 @@ from properties and moved host attributes, and the transitions the tests cover.
 |---|---|---|
 | `mode` | `href` | `link` when `href.trim() !== ""`, `new URL(href, document.baseURI)` succeeds and its `protocol` is not `javascript:`; else `button`. A parse failure is caught: button mode, no error, no `href` rendered. `data:` and `vbscript:` are link mode, left to the host (R-02) |
 | `moved` | host attributes listed per element | a private map attribute → string; set when the host sets the attribute (then the host attribute is removed); an empty or whitespace-only value deletes the entry; any other value is stored as written; a later `removeAttribute` on the host fires nothing and changes nothing (R-03) |
+| `mirrors` | `moved` | for each entry, the host attribute `data-ocelle-moved-<attribute>` = the stored value as written; deleting an entry removes its mirror; at `connectedCallback`, a mirror whose attribute the host does not set is read back into `moved` (a host attribute present wins and rewrites the mirror); a later change to a mirror is not observed (R-03, PLAN-FRESH-2-002) |
 | `states` | `moved` (button only) | `ElementInternals.states`: `expanded` ⇔ `moved["aria-expanded"] === "true"`; `pressed` ⇔ `moved["aria-pressed"] === "true"`; `current` ⇔ `moved["aria-current"]` present and not `"false"` (R-03) |
 | `references` | `moved["aria-controls" \| "aria-labelledby" \| "aria-describedby"]` | ids split on whitespace, looked up in `getRootNode()`, missing ids skipped, order kept; resolved on set and on `connectedCallback` (R-04) |
 | `nameSource` | `references.labelledby`, `moved["aria-label"]`, `label`, content | first present wins: labelledby elements, then the moved `aria-label` (as written), then the trimmed non-empty `label`, else content. Content: the button's inner control content; for the row, the inner control's `ariaLabelledByElements` = its own shadow `[part=title]` wrapper. Whenever a higher source is present, the internal reference is replaced (labelledby) or cleared (`aria-label`, `label`) (R-05) |
 | `state` | `disabled`, `busy` (button) / `unavailable`, `busy` (row) | `disabled` → disabled; else button `busy` or row `unavailable` → unavailable; else available. Row `busy` does not change `state` |
-| `ground` | `ground` attribute | absent or unknown → main (bordered variants and the default row use `control-border`); `accent-low`, `inset`, `hover-bg`, `state` → `accent-strong` (R-08) |
+| `ground` | `ground` attribute | absent or unknown → main (bordered variants and the default row use `control-border`); `accent-low`, `inset`, `hover-bg`, `state` → `accent-strong` (R-08); `chrome` → the chrome look of R-08 item 4a (`chrome-ink` text, `chrome-muted` border, `chrome-hover` hover, `chrome-active` active, `chrome-ink` hover border) |
+| layout | host `display` | button `inline-grid`, row `grid` with `min-inline-size: min-content`; the inner control is the single grid item, stretched in both axes, so its box equals the host's (R-01, PLAN-FRESH-2-001) |
 
 States and what each guarantees:
 
@@ -42,7 +44,7 @@ at `click` time.
 | `variant` | `variant` | `"primary" \| "secondary" \| "quiet"` | `undefined` (renders `secondary`) | yes |
 | `size` | `size` | `"default" \| "compact"` | `undefined` (renders `default`) | yes |
 | `flush` | `flush` | `boolean` | `false` | yes |
-| `ground` | `ground` | `"accent-low" \| "inset" \| "hover-bg" \| "state"` | `undefined` (main grounds) | yes |
+| `ground` | `ground` | `"accent-low" \| "inset" \| "hover-bg" \| "state" \| "chrome"` | `undefined` (main grounds) | yes |
 | `label` | `label` | `string \| undefined` | `undefined` | no |
 | `disabled` | `disabled` | `boolean` | `false` | yes |
 | `busy` | `busy` | `boolean` | `false` | yes |
@@ -53,11 +55,12 @@ at `click` time.
 
 Moved host attributes (declared in the manifest with `@attr`, R-15): `aria-expanded`, `aria-controls`,
 `aria-current`, `aria-haspopup`, `aria-pressed` (applied in button mode only), `aria-label`, `aria-labelledby`,
-`aria-describedby`. Custom states: `expanded`, `pressed`, `current`. Unknown `variant`, `size` or `ground` values
-render the default and are reflected as written. `rel` in link mode: the host's value, or `noopener` when
+`aria-describedby`, `title`; each with its mirror `data-ocelle-moved-<attribute>` (nine, declared). Custom states:
+`expanded`, `pressed`, `current`. Unknown `variant`, `size` or `ground` values render the default and are reflected
+as written. `rel` in link mode: the host's value, or `noopener` when
 `target="_blank"` and `rel` is absent (FR-021). `click()`: forwards to the inner control.
 
-Look per state (outside forced colours; R-08 item 3): idle, hover and active as R-08's table; disabled
+Look per state (outside forced colours; R-08 items 3 and 4a): idle, hover and active as R-08's tables; disabled
 `disabled-bg`/`disabled-ink`; busy keeps the variant's look and shows the spinner (one 4.8 s run of six turns, then
 the still arc; `animation: none` under reduced motion; R-07).
 
@@ -69,7 +72,7 @@ the still arc; `animation: none` under reduced motion; R-07).
 | `label` | `label` | `string \| undefined` | `undefined` | no |
 | `layout` | `layout` | `"row" \| "card"` | `undefined` (renders `row`) | yes |
 | `presentation` | `presentation` | `"default" \| "flush"` | `undefined` (renders `default`) | yes |
-| `ground` | `ground` | `"accent-low" \| "inset" \| "hover-bg" \| "state"` | `undefined` (main grounds) | yes |
+| `ground` | `ground` | `"accent-low" \| "inset" \| "hover-bg" \| "state" \| "chrome"` | `undefined` (main grounds) | yes |
 | `href` | `href` | `string \| undefined` | `undefined` | yes |
 | `target` | `target` | `string \| undefined` | `undefined` | yes |
 | `rel` | `rel` | `string \| undefined` | `undefined` | yes |
@@ -77,8 +80,8 @@ the still arc; `animation: none` under reduced motion; R-07).
 | `unavailable` | `unavailable` | `boolean` | `false` | yes |
 | `busy` | `busy` | `boolean` | `false` | yes |
 
-Moved host attributes (declared with `@attr`): `aria-label`, `aria-labelledby`, `aria-describedby`. `click()`:
-forwards to the inner control.
+Moved host attributes (declared with `@attr`): `aria-label`, `aria-labelledby`, `aria-describedby`, `title`; each with
+its mirror `data-ocelle-moved-<attribute>` (four, declared). `click()`: forwards to the inner control.
 
 Name: per `nameSource`; with no host name and no `label`, the title wrapper `[part=title]` (so the description and the
 tags never join the name).
@@ -88,12 +91,15 @@ otherwise the elements assigned to the `description` slot, then those of the `ta
 text nodes slotted directly are wrapped by nothing and so do not count: hosts slot elements, documented), recomputed on
 `slotchange` (FR-034).
 
-Drawing (R-10, R-12): inline padding `space-3` (`default`) or `space-2` (`flush`) in every state; title and description
-wrappers `overflow-wrap: anywhere`, description and tags ink `color-ink-soft`; the current bar a shadow
-`<span class="bar">`, absolutely positioned at the inline start in the padding, `bar-width` wide,
+Drawing (R-10, R-12): inline padding `space-3` in both presentations and every state; title and description
+wrappers `overflow-wrap: anywhere`, description and tags ink `color-ink-soft` (`chrome-muted` with `ground="chrome"`);
+focus ring inside the row (`outline-offset: var(--ocelle-focus-offset-inset)`), its band 2 to 5 px inside the border
+edge; the current bar a shadow `<span class="bar">`, absolutely positioned in the inline padding 7 to 10 px inside the
+border edge (`inset-inline-start: calc(var(--ocelle-focus-width) + 2 * var(--ocelle-focus-offset))`, less
+`--ocelle-border-width` on a default row), so a gap of the row's surface separates it from the ring, `bar-width` wide,
 `color-current` (`disabled-ink` when unavailable; `Highlight`/`GrayText` with `forced-color-adjust: none` under forced
-colours); focus ring inside the row (`outline-offset: var(--ocelle-focus-offset-inset)`); flush hover under forced
-colours a dashed `Highlight` outline.
+colours); current surface `accent-low` (`chrome-hover` with `ground="chrome"`); flush hover under forced colours a
+dashed `Highlight` outline.
 
 ### Event `ocelle-action-row-activate`
 
@@ -109,11 +115,14 @@ and `row.click()` produce); never on `auxclick`. In link mode, `preventDefault()
 |---|---|---|
 | `color-ink` | grounds += the five state grounds, `color-active-bg` | text, +6 |
 | `color-ink-soft` | grounds += the five state grounds | text, +5 |
-| `color-accent-strong` | grounds += canvas, sheet, pane, panel, inspector, rail | non-text, +6 |
+| `color-accent-strong` | grounds += canvas, sheet, pane, panel, inspector, rail, chrome, chrome-hover | non-text, +8 |
+| `color-chrome-ink` | grounds += `color-chrome-active` | text, +1 |
+| `color-disabled-ink` | grounds += chrome, chrome-hover | text (exempt), +2 |
 | `color-on-accent` | grounds += `color-accent-hover` | text, +1 |
 | `color-hover-border` (new) | `var(--ocelle-color-ink)`, ref `color-ink` | non-text on main, state grounds, `active-bg`: +15 |
 | `color-accent-hover` (new) | proposed `#D9A23F` (both themes), the primary's hover fill | ground of `on-accent` |
 | `color-active-bg` (new) | proposed light `#D3CCBF`, dark `#3A342B`, the pressed surface | ground of `ink` |
+| `color-chrome-active` (new) | proposed `#3A342B` (both themes), the pressed surface on chrome (R-08 item 4a) | ground of `chrome-ink` |
 | `motion-spin` (new) | `800ms`, `0ms` under reduced motion (generator: every motion duration) | none |
 | `motion-turn` (new) | `1turn`, unchanged under reduced motion | none |
 | `focus-offset-inset` (new) | `calc(-1 * (var(--ocelle-focus-offset) + var(--ocelle-focus-width)))`, ref `focus-offset`, `focus-width` | none |

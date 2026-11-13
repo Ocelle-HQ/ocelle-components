@@ -60,7 +60,7 @@ option (a) each):
 - Spinner angle (PLAN-CORRECTNESS-1-004): a public angle token, `--ocelle-motion-turn` (FR-017).
 - Manifest (PLAN-CORRECTNESS-1-006): the moved attributes are declared in the manifest with descriptions (FR-053).
 - Landing (PLAN-CORRECTNESS-1-010): this feature lands only after #10, with the story baselines and axe gate before
-  landing (FR-050).
+  landing (FR-050). Satisfied: #10 is on `main` and merged into this branch (round 2, below).
 - Moved list (PLAN-A11Y-SECURITY-1-004): the button also moves `aria-haspopup` and `aria-pressed` (FR-009).
 - Unavailable links (PLAN-A11Y-SECURITY-1-005): an unavailable link renders no `href` and stays focusable (FR-003).
 - Row focus ring (PLAN-A11Y-SECURITY-1-006): drawn inside the row (FR-041).
@@ -73,6 +73,23 @@ option (a) each):
 - Styling hooks (PLAN-FRESH-1-009): the button exposes moved states as custom states (FR-004).
 - Grounds (PLAN-TESTABILITY-1-003): a reflected `ground` attribute on both elements selects the border colour
   (FR-018, FR-042).
+
+**Operator decisions at the plan squad, round 2** (2026-11-13, human:jeroennouwsdev; `reviews/plan/round-2/refute.md`):
+
+- Stretched hosts (PLAN-FRESH-2-001, (a)): the inner control fills the host in both axes, so a host stretched by a
+  flex row or a grid has no area outside the control; a button stretched by a flex row grows tall (FR-001).
+- Copies of the live DOM (PLAN-FRESH-2-002, (a)): each moved value is mirrored into an element-owned host attribute
+  `data-ocelle-moved-<attribute>` and read back at upgrade, so `cloneNode`, `innerHTML` round trips and htmx's history
+  snapshot keep names and states (FR-004).
+- Chrome (PLAN-FRESH-2-003, (a)): `ground="chrome"` on both elements, for #12's top-bar menu button and other controls
+  on the chrome grounds (FR-018, FR-042).
+- Current bar and focus ring (PLAN-FRESH-2-005, (b)): the two marks stay distinct; the bar is drawn inline-end of the
+  ring's band with a gap (FR-037, FR-041).
+- Host `title` (PLAN-FRESH-2-006, (a)): `title` is moved onto the inner control like the listed ARIA attributes
+  (FR-009, FR-030).
+- Feature 006 merged (operator decision, 2026-11-13): #10 is on `main` (3828d2f) and `main` is merged into this branch
+  (37dd501). Stories, baselines and the story-level axe gate are planned against 006 as it is on this branch and are
+  done in each phase that adds stories, not in a later phase; nothing in this feature waits for #10 any more (FR-050).
 
 **Issues**: #7, in part (triage record `triage/012-button-action-row.md`, approved by the operator on 2026-11-13).
 This feature builds the two action controls of #7. `ocelle-pill-tag`, `ocelle-status-indicator` and `ocelle-metric`
@@ -121,7 +138,14 @@ capture-phase listeners on ancestors run before the element can stop it. The REA
 
 **Grounds.** The *main grounds* are the tokens `--ocelle-color-canvas`, `-sheet`, `-pane`, `-panel`, `-inspector`,
 `-rail`, `-inset`, `-accent-low` and `-hover-bg` (the `main` group of the token source); the *state grounds* are
-`--ocelle-color-danger-bg`, `-warning-bg`, `-success-bg`, `-info-bg` and `-neutral-bg`.
+`--ocelle-color-danger-bg`, `-warning-bg`, `-success-bg`, `-info-bg` and `-neutral-bg`; the *chrome grounds* are
+`--ocelle-color-chrome` and `--ocelle-color-chrome-hover` (the top bar, icon rail and personal rail, dark in both
+themes, constitution II).
+
+**Stretched host.** A host is *stretched* when its layout makes it larger than its content: a flex row's items stretch
+in the block axis (`align-items` defaults to `stretch`) and grid items stretch in both axes. Scenarios that click
+"4 px inside the host's bottom edge" place the element so stretched (in a `display: flex` row beside a taller
+sibling, and in a two-column grid whose other cell is taller).
 
 ### User Story 1 - `ocelle-button` (Priority: P1)
 
@@ -147,12 +171,15 @@ activate it by pointer, Enter and Space; read its accessibility-tree node and it
 3. **Given** `disabled`, **When** it is clicked or Enter or Space is pressed on it, or the host calls its `click()`
    method, **Then** it is not activated (no `click` reaches a bubble-phase listener on the element or its ancestors),
    the button is not in the tab order (Tab and Shift+Tab), and the accessibility tree reports it disabled.
-4. **Given** each `variant` value (FR-010), **When** rendered on each main ground and each state ground, **Then** its
-   colours come only from `--ocelle-*` tokens, its label meets text contrast and its boundary meets non-text contrast
-   (where it has a boundary) in both themes, as the contrast check proves.
+4. **Given** each `variant` value (FR-010), **When** rendered on each main ground and each state ground, and with
+   `ground="chrome"` on each chrome ground, **Then** its colours come only from `--ocelle-*` tokens, its label meets
+   text contrast and its boundary meets non-text contrast (where it has a boundary) in both themes, as the contrast
+   check proves.
 5. **Given** `variant="quiet"`, **When** rendered, **Then** it has a visible border from `--ocelle-color-control-border`
    and no fill; **Given** also `ground="accent-low"`, `"inset"`, `"hover-bg"` or `"state"` (FR-018), **Then** the
-   border is `--ocelle-color-accent-strong`.
+   border is `--ocelle-color-accent-strong`; **Given** `ground="chrome"` on `--ocelle-color-chrome` and on
+   `--ocelle-color-chrome-hover`, **Then** the border is `--ocelle-color-chrome-muted` and the label
+   `--ocelle-color-chrome-ink`.
 6. **Given** each `size` value (FR-011), **When** rendered, **Then** its minimum size and text scale are those
    of FR-011; `size="compact"` uses the compact text scale.
 7. **Given** `size="default"` with a one-character label or an icon only, **When** rendered, **Then** both its block
@@ -178,12 +205,23 @@ activate it by pointer, Enter and Space; read its accessibility-tree node and it
     and minimum target are those of its `size`.
 13. **Given** `flush` on each `variant`, **When** rendered, **Then** it has no border and no fill (its computed border
     width is 0 and its background is transparent), its label uses `--ocelle-color-ink` and meets text contrast on
-    each main ground; on hover its surface becomes `--ocelle-color-hover-bg`, and keyboard focus shows the token focus
-    ring.
+    each main ground (with `ground="chrome"`, `--ocelle-color-chrome-ink` on each chrome ground); on hover its surface
+    becomes `--ocelle-color-hover-bg` (`--ocelle-color-chrome-hover` with `ground="chrome"`), and keyboard focus shows
+    the token focus ring.
 14. **Given** each `variant` (and `flush`), **When** a pointer hovers it and then presses it, **Then** its hover look
     and its active look each differ from the idle look and from each other, by the tokens of FR-019 (the computed
-    fill and border of each state equal the hand-written token values), on each main ground, except a `flush` hover
-    on the `inset` and `hover-bg` grounds in light, where the hover fill equals the ground (FR-019).
+    fill and border of each state equal the hand-written token values), on each main ground and, with
+    `ground="chrome"`, on each chrome ground, except a `flush` hover on the grounds where the hover fill equals the
+    ground: the `hover-bg` ground in both themes, the `inset` ground in light, and the `chrome-hover` ground
+    (`ground="chrome"`) in both themes (FR-019). The test writes that exception list by hand per theme, so a change to
+    the flush hover token still fails on every other ground.
+15. **Given** a stretched host (see "Stretched host") of an available button and of a disabled button, **When**
+    rendered, **Then** the inner control's box equals the host's box in both axes; **When** a pointer clicks 4 px
+    inside the host's bottom edge, **Then** the available button delivers exactly one `click` (one serial) and the
+    disabled one is not activated (FR-001, FR-003).
+16. **Given** `variant="quiet"` with `ground="hover-bg"`, **When** placed on `--ocelle-color-canvas` and on
+    `--ocelle-color-hover-bg` (a host row whose surface changes on hover), **Then** the border is
+    `--ocelle-color-accent-strong` on both and meets 3:1 on both, as the contrast check proves (FR-018).
 
 ---
 
@@ -198,8 +236,9 @@ control, without the developer knowing about the shadow root.
 consumers work around today. It also fixes the passthrough rule every later control inherits.
 
 **Independent Test**: render a button with `href`, with and without `disabled`; set each passthrough attribute on the
-host, change it, clear it with the empty or off value, and remove it from the host after the move (which changes
-nothing); read the accessibility tree, the host's custom states and the navigation result.
+host, change it, clear it with the empty or off value, remove it from the host after the move (which changes
+nothing) and copy the element from the live DOM; read the accessibility tree, the host's custom states and the
+navigation result.
 
 **Acceptance Scenarios**:
 
@@ -237,6 +276,17 @@ nothing); read the accessibility tree, the host's custom states and the navigati
 12. **Given** `aria-expanded="true"`, `aria-pressed="true"` or `aria-current="page"` moved from the host, **When** a host
     style rule uses `ocelle-button:state(expanded)`, `:state(pressed)` or `:state(current)`, **Then** it matches;
     after the off value or `""` is set, it no longer matches (FR-004).
+13. **Given** `aria-label="Close"` and `aria-current="page"` moved from the host, **When** a copy is made from the live
+    DOM, by parsing the host's `outerHTML` into a new container and by `cloneNode(true)`, **Then** each copy's inner
+    control is named "Close" and reports `aria-current="page"`, the copy matches `:state(current)`, and neither copy
+    has an `aria-label` or `aria-current` host attribute; the original host carries
+    `data-ocelle-moved-aria-label="Close"` and `data-ocelle-moved-aria-current="page"`; after `aria-current="false"`
+    the mirror reads `"false"`, and after `aria-label=""` the `aria-label` mirror is gone (FR-004).
+14. **Given** `title="Close dialog"` on the host of `<ocelle-button>Save</ocelle-button>`, **When** the tree is read,
+    **Then** there is one node, the button named "Save" with the description "Close dialog", no `generic` node for
+    the host, and the host has no `title` attribute; **Given** an icon-only button with `title="Close"` and no other
+    name, **Then** it is named "Close" (Accessible Name 1.2); setting `title=""` removes it from the inner control
+    (FR-004, FR-009).
 
 ---
 
@@ -275,6 +325,8 @@ pointer and keyboard; read the tree, the layout boxes and the animation under ea
    role `link`, and reports busy and unavailable as in scenario 3.
 9. **Given** `busy` with motion allowed, **When** the spinner's animation is read, **Then** it runs once for at most
    5 s (six turns of `--ocelle-motion-spin`) and then shows the same still arc as under reduced motion (FR-017).
+10. **Given** a busy button with a stretched host, **When** a pointer clicks 4 px inside the host's bottom edge,
+    **Then** it is not activated (FR-001, FR-003).
 
 ---
 
@@ -316,7 +368,10 @@ the event and its payload, the accessibility tree and the boxes in a shrink-wrap
    0.
 8. **Given** a `default`-presentation row, **When** a pointer hovers it, **Then** its surface and its border change to
    the hover tokens (FR-036); in forced-colours mode the hover keeps a visible system-colour border. **Given** a
-   `flush` row, **When** a pointer hovers it, **Then** only its surface changes, to `--ocelle-color-hover-bg`; no
+   `flush` row, **When** a pointer hovers it, **Then** only its surface changes, to `--ocelle-color-hover-bg`
+   (`--ocelle-color-chrome-hover` with `ground="chrome"`), except on the grounds where that fill equals the ground
+   (the `hover-bg` ground in both themes, the `inset` ground in light, the `chrome-hover` ground in both themes;
+   FR-019), where it shows no change; no
    border appears and no part of the row moves or changes size; in forced-colours mode the hover is visible in a
    system colour, again without moving or resizing any part of the row. **Given** a row with `current` set (either
    presentation), **When** a pointer hovers it, **Then** its surface stays `--ocelle-color-accent-low` and the
@@ -324,7 +379,9 @@ the event and its payload, the accessibility tree and the boxes in a shrink-wrap
    a `flush` current row shows no hover change.
 9. **Given** focus on a row by keyboard, **Then** the token focus ring is drawn inside the row's edge around the whole
    row, and it is visible on all four sides also when the rows sit edge to edge (static or positioned) in a container
-   with `overflow: auto` (FR-041).
+   with `overflow: auto` (FR-041). The four-side check runs on a row without `current` (so no bar can supply ring
+   pixels) and again on a row with `current`, where the ring's inline-start band and the bar are read separately
+   (US5-4).
 10. **Given** a host listener that calls `preventDefault()` on the event, **When** a focused button-mode row is
     activated by click, Enter or Space, **Then** the listener sees `event.defaultPrevented` become `true`, the event is
     dispatched exactly once, there is no navigation, no other `ocelle-*` event is dispatched, and focus stays on the
@@ -342,6 +399,19 @@ the event and its payload, the accessibility tree and the boxes in a shrink-wrap
     the container's (FR-040).
 14. **Given** a row with slotted description and tag elements, **When** rendered, **Then** each slotted element's box
     fits its text (it is not sized as an icon); only the `icon` and `trailing` slots size their elements as icons.
+15. **Given** two `layout="card"` rows in a two-column grid, the second with a title that wraps so its cell is taller,
+    and a row stretched in a `display: flex` row beside a taller sibling, **When** rendered, **Then** each row's inner
+    control is as tall as its host (both cards' inner boxes as tall as their grid cells); **When** a pointer clicks 4 px
+    inside the shorter card's host bottom edge, **Then** exactly one `ocelle-action-row-activate` event is dispatched
+    (FR-001).
+16. **Given** `title="Open the mission"` on a row's host, **When** the tree is read, **Then** the row is one node, the
+    host has no `title` attribute and no `generic` node appears for it; with no slotted description or tags the row's
+    description is "Open the mission"; with a slotted description the description stays the slots' text (Accessible
+    Name 1.2 uses `title` for the description only when nothing else describes the control) (FR-030).
+17. **Given** `ground="chrome"` on a `default` row on `--ocelle-color-chrome`, **When** rendered and hovered, **Then**
+    its title uses `--ocelle-color-chrome-ink`, its description and tags `--ocelle-color-chrome-muted`, it has no fill
+    and a `--ocelle-color-chrome-muted` border; on hover its surface becomes `--ocelle-color-chrome-hover` and its
+    border `--ocelle-color-chrome-ink` (FR-036, FR-042).
 
 ---
 
@@ -369,9 +439,12 @@ tree, the navigation result and the line boxes of the tags.
 3. **Given** a link row with `current="page"`, **When** the tree is read, **Then** the inner link reports
    `aria-current="page"`; with `current="true"` it reports `aria-current="true"`; with no `current` it reports none.
 4. **Given** `current` set, **When** rendered, **Then** the row shows the current mark: an `--ocelle-color-accent-low`
-   surface and a bar at the row's inline start (the left edge in left-to-right text, the right edge under
-   `dir="rtl"`), `--ocelle-bar-width` wide, the row's full block size, in `--ocelle-color-current`; never ochre fill
-   alone on a light ground (constitution II); in forced colours the bar stays visible in `Highlight`. The full
+   surface and a bar at the row's inline start (the left side in left-to-right text, the right side under
+   `dir="rtl"`), `--ocelle-bar-width` wide, the row's full block size, in `--ocelle-color-current`, drawn inline-end
+   of the focus ring's band with a gap of `--ocelle-focus-offset` (FR-037); never ochre fill alone on a light ground
+   (constitution II); in forced colours the bar stays visible in `Highlight`. **Given** also keyboard focus on that
+   row, **Then** the ring's inline-start band, the gap (the row's surface colour) and the bar are each read at their
+   own position, so the ring shows on all four sides and the bar stays a separate mark. The full
    mark (surface and bar) is drawn in both presentations; on a `flush` row it adds no border. Setting or removing
    `current` moves and resizes no content box, and axe reports no `color-contrast` incomplete result on a current
    row. **When** a pointer
@@ -381,7 +454,8 @@ tree, the navigation result and the line boxes of the tags.
    `aria-disabled="true"`, stays in the tab order, and its accessible description (the description and tags text of
    FR-034, if any) is unchanged; a link row's inner link has no `href` and is still a focusable node of role `link`.
 6. **Given** an unavailable row, **When** it is clicked or Enter or Space is pressed, or (a link row) it is clicked
-   with Ctrl, Meta, Shift or Alt held or middle-clicked, or the host calls its `click()` method, **Then** it is not
+   with Ctrl, Meta, Shift or Alt held or middle-clicked, or the host calls its `click()` method, or (a stretched host)
+   a pointer clicks 4 px inside the host's bottom edge, **Then** it is not
    activated: no `ocelle-action-row-activate` event
    is dispatched, a link row navigates nowhere (not in the current tab, not in a new tab or window), and no `click`
    reaches a bubble-phase listener on the element or its ancestors.
@@ -396,6 +470,9 @@ tree, the navigation result and the line boxes of the tags.
 10. **Given** `<ocelle-icon slot="trailing" name="arrow-end">` in a row, **When** rendered, **Then** the arrow follows
     the slot convention's `trailing` slot (end side, `--ocelle-icon-size`, mirrored under `dir="rtl"`), stays
     decorative, and in card layout sits at the inline end of the title line.
+11. **Given** `current="page"` and `ground="chrome"` on a row on `--ocelle-color-chrome`, **When** rendered and
+    hovered, **Then** its surface is `--ocelle-color-chrome-hover` (not `--ocelle-color-accent-low`, a light surface in
+    light), the bar is drawn as in scenario 4, and hovering changes neither (FR-037).
 
 ---
 
@@ -442,6 +519,22 @@ tree, the navigation result and the line boxes of the tags.
   host and axe flags it; documented.
 - **A synthetic click dispatched on the host** (`dispatchEvent(new MouseEvent("click"))`): outside the guarantees;
   `click()` is the supported way (documented).
+- **A container whose surface changes** (a host's list or table row that takes `hover-bg` on hover, or `accent-low`
+  when selected) holding a bordered button: the host sets `ground` for the changed surface statically (`hover-bg` or
+  `accent-low`); `--ocelle-color-accent-strong` meets 3:1 on every main ground, so the border holds in both states
+  (FR-018, US1-16). The README states the rule.
+- **Copies of the live DOM** (`cloneNode(true)`, `innerHTML` or `outerHTML` round trips, htmx's history snapshot): the
+  moved values travel in the element's `data-ocelle-moved-*` mirror attributes and are read back at upgrade (FR-004,
+  US2-13). A host that edits or removes a mirror attribute is unsupported (documented).
+- **A host stretched by its layout** (a flex row, a grid cell): the inner control fills it, so every point of the host
+  is the control; a button stretched by a flex row grows to the row's height (FR-001; a host that does not want that
+  sets `align-self` on the element).
+- **A flush button at the edge of a clipping container** (`overflow` other than `visible`, as a breadcrumb trail may
+  be): the button's focus ring is drawn outside it, so the container keeps at least `--ocelle-focus-offset` +
+  `--ocelle-focus-width` of unclipped space around it (for example `padding-inline` of that size with a matching
+  negative margin); the README and the #12 hand-off state it (FR-012).
+- **A host override of `--ocelle-motion-spin`**: the 5 s limit of FR-017 holds for the default value; an override
+  keeps one turn at or below 833 ms (six turns within 5 s); the README states it.
 - **Two copies of the package on one page**: mission 005's rule applies (first definition wins).
 - **The host page has no `@ocelle/tokens` stylesheet**: documented, as for mission 005's elements; the controls are
   then unstyled but still operable.
@@ -455,7 +548,9 @@ tree, the navigation result and the line boxes of the tags.
 - **FR-001**: Each element renders exactly one focusable inner control in its open shadow root: a native `<button
   type="button">` in button mode and a native `<a>` in link mode. The host element itself is never focusable and
   never carries a role. The element's `focus()` focuses the inner control and its `click()` clicks the inner control,
-  so a click started by `click()` gets the same guarantees as any other click (FR-003).
+  so a click started by `click()` gets the same guarantees as any other click (FR-003). The inner control fills the
+  host's box in both axes, so a host stretched by its layout (a flex row, a grid cell) has no area outside the inner
+  control and every pointer click on the host reaches the inner control (operator decision, PLAN-FRESH-2-001).
 - **FR-002**: **Link versus button.** An element is in link mode exactly when it has a non-empty `href` that parses as
   a URL (against the document's base URL) whose scheme, as the URL parser reads it, is not `javascript:`; otherwise it
   is in button mode, with no error for an `href` that does not parse. `data:` and `vbscript:` URLs are link mode and
@@ -472,20 +567,26 @@ tree, the navigation result and the line boxes of the tags.
   states; the element gives no guarantee about them. The button's `busy` and the row's `unavailable` are unavailable
   states. In link mode "not activated" covers modifier clicks and the middle click too, so a disabled or unavailable
   link opens no new tab or window either.
-- **FR-004**: **ARIA passthrough.** The ARIA attributes this spec lists for an element, set on the host, reach the
-  inner control and update whenever the host sets them again. The element **moves** each one: it applies the value to
+- **FR-004**: **ARIA passthrough.** The ARIA attributes (and `title`) this spec lists for an element, set on the host,
+  reach the inner control and update whenever the host sets them again. The element **moves** each one: it applies the value to
   the inner control and removes the attribute from the host, so an accessibility tree shows the state once, on the
   inner control, and axe reports no serious or critical finding (and no "needs review" result) caused by them
   (operator decision at planning, 2026-11-13). Reading the attribute back from the host gives `null` after the move.
   To clear a moved state a host sets an empty or whitespace-only value (`aria-controls=""`, `aria-labelledby=""`,
-  `aria-describedby=""`, `aria-label=""`; an empty or whitespace-only `aria-label` clears it, and the name falls back
-  to `label`, then content) or the ARIA "off" value (`aria-expanded="false"` reports collapsed; `aria-current="false"`
+  `aria-describedby=""`, `aria-label=""`, `title=""`; an empty or whitespace-only `aria-label` clears it, and the name
+  falls back to `label`, then content) or the ARIA "off" value (`aria-expanded="false"` reports collapsed; `aria-current="false"`
   clears the current state; `aria-pressed="false"` reports not pressed). Any other value is applied as written.
   `removeAttribute` on an attribute already moved, and so a framework binding that becomes `undefined` or `null`,
   changes nothing (operator decision, PLAN-CORRECTNESS-1-001); the README states this and gives one recipe per stack
   (React, Lit, Svelte, htmx and Thymeleaf) that binds the off value. Because host attribute selectors no longer match
   a moved state, the button exposes custom states (`:state(expanded)`, `:state(pressed)`, `:state(current)`) a host
-  styles from (operator decision, PLAN-FRESH-1-009). This rule is this feature's own; mission 005's host `aria-label`
+  styles from (operator decision, PLAN-FRESH-1-009). So that a copy made from the live DOM (`cloneNode(true)`,
+  `innerHTML` or `outerHTML`, htmx's history snapshot) keeps the moved values, the element mirrors each stored value
+  into a host attribute it owns, `data-ocelle-moved-<attribute>` (for example `data-ocelle-moved-aria-label`), removes
+  the mirror when the value is cleared, and at upgrade reads a mirror back as the stored value of an attribute the
+  host does not set; a host attribute set at upgrade wins over its mirror. The mirrors are not ARIA, so they add
+  nothing to the accessibility tree; hosts do not write or remove them (README) (operator decision,
+  PLAN-FRESH-2-002). This rule is this feature's own; mission 005's host `aria-label`
   rule for `ocelle-icon` and `ocelle-brand-mark` is unchanged, and the README says the two differ.
 - **FR-005**: **ID references never cross a shadow root.** An ID-reference attribute set on the host
   (`aria-controls`, `aria-labelledby`, `aria-describedby`) is resolved by id in the host's own tree (its document or
@@ -516,7 +617,9 @@ tree, the navigation result and the line boxes of the tags.
   `flush`, `ground`, `label`, `disabled`, `busy`, `href`, `target`, `rel`, `download` (FR-010 to FR-021); the
   passthrough attributes `aria-expanded`, `aria-controls`, `aria-current`, `aria-haspopup`, `aria-pressed` (button
   mode only; not allowed on a link), `aria-label`, `aria-labelledby`, `aria-describedby` (operator decision,
-  PLAN-A11Y-SECURITY-1-004); the custom states `expanded`, `pressed`, `current` (FR-004); the `focus()` and `click()`
+  PLAN-A11Y-SECURITY-1-004) and `title` (the native tooltip, and the description or name fallback of Accessible Name
+  1.2, on the inner control; operator decision, PLAN-FRESH-2-006), with their `data-ocelle-moved-*` mirror attributes
+  (FR-004); the custom states `expanded`, `pressed`, `current` (FR-004); the `focus()` and `click()`
   methods (FR-001); the default slot (the label) and the `icon` slot; the native `click` event; and the CSS part
   `control` (the inner control). It emits no `ocelle-*` event. `aria-current` is passed through with any value and draws no visual mark
   (operator decision, SPEC-1-10). This interface is what #12 and #14 consume; changing it after release is a
@@ -536,7 +639,10 @@ tree, the navigation result and the line boxes of the tags.
   the content is narrower than the minimum size (the free space falls at the inline end), so the
   inline-start edge of the label (or, with an icon, of the icon) equals that of surrounding text within 0.5 CSS px
   (US1 scenario 12). It changes neither the block size nor the minimum size of its `size`. This is the compact
-  breadcrumb padding #12 consumes (#518).
+  breadcrumb padding #12 consumes (#518). The button's focus ring is drawn outside it (FR-020), so a container that
+  clips (`overflow` other than `visible`) and holds a flush button at its edge keeps at least `--ocelle-focus-offset`
+  + `--ocelle-focus-width` of unclipped space around it (for example `padding-inline` of that size with a matching
+  negative margin); the README's flush note and the #12 hand-off state it.
 - **FR-013**: `label` (attribute and property, not reflected) names the inner control (FR-006), trimmed; empty or
   whitespace-only counts as none.
 - **FR-014**: `disabled` (boolean, reflected) applies FR-003's disabled behaviour.
@@ -549,21 +655,33 @@ tree, the navigation result and the line boxes of the tags.
   (`currentColor`; the system colour in forced colours), animated with a duration and an angle from motion tokens,
   and still and visible under `prefers-reduced-motion: reduce`. Its animation stops within 5 seconds and then shows
   the same still mark (WCAG 2.2.2; operator decision, PLAN-A11Y-SECURITY-1-009); a host with long-running work that
-  wants continuous motion uses its own pausable indicator (README).
+  wants continuous motion uses its own pausable indicator (README). The 5 s limit holds for the default value of the
+  turn-duration token; a host that overrides it keeps one turn at or below 833 ms (six turns within 5 s), which the
+  README states.
 - **FR-018**: Variant colours come from tokens; a bordered variant's border uses `--ocelle-color-control-border` on
   the grounds `canvas`, `sheet`, `pane`, `panel`, `inspector` and `rail`, and `--ocelle-color-accent-strong` on
   `accent-low`, `inset`, `hover-bg` and the state grounds (#5 rule 1). Since an element cannot see its ancestor's
-  colour, the host states the ground with the reflected `ground` attribute (`accent-low`, `inset`, `hover-bg` or
-  `state`; absent or unknown means the six other main grounds) (operator decision, PLAN-TESTABILITY-1-003); `--ocelle-color-rule` is never a control
-  boundary (constitution II). On each main ground and state ground, every variant (and `flush`) and state pair
+  colour, the host states the ground with the reflected `ground` attribute (`accent-low`, `inset`, `hover-bg`,
+  `state`, or `chrome` below; absent or unknown means the six other main grounds) (operator decision, PLAN-TESTABILITY-1-003); `--ocelle-color-rule` is never a control
+  boundary (constitution II). On a container whose surface changes (a host row that takes `hover-bg` on hover or
+  `accent-low` when selected), the host sets `ground` for the changed surface statically, which is safe because
+  `--ocelle-color-accent-strong` meets 3:1 on every main ground; the README states it. `ground="chrome"` places the
+  control on the chrome grounds (operator decision, PLAN-FRESH-2-003): label `--ocelle-color-chrome-ink`, the
+  bordered variants' idle border `--ocelle-color-chrome-muted` and no fill (so `secondary` looks like `quiet` there),
+  the primary as on every ground (`accent` fill, `accent-strong` border), hover surface
+  `--ocelle-color-chrome-hover`, active surface a chrome active-surface token, and hover and active border
+  `--ocelle-color-chrome-ink`. On each main ground and state ground, and with `ground="chrome"` on each chrome ground,
+  every variant (and `flush`) and state pair
   (enabled, hover, active, focus, disabled, busy) meets WCAG 2.2 AA text and non-text contrast in both themes, except
   disabled text, which is exempt (WCAG 1.4.3), and the contrast check covers each pair.
 - **FR-019**: Hover and active states change surface and border through tokens, and each differs from the idle state
   and from the other (operator decision, PLAN-FRESH-1-007): a hovered or pressed bordered variant's border becomes a
   hover-border token; the primary's fill changes to a hover fill token on hover and back to the accent fill when
   pressed; `secondary` and `quiet` fill with `--ocelle-color-hover-bg` on hover and an active-surface token when
-  pressed; a `flush` button changes its surface only (hover, then active surface). Where the hover surface equals the
-  ground (a `flush` control on `inset` or `hover-bg` in light) the hover shows no change, which the README states;
+  pressed; a `flush` button changes its surface only (hover, then active surface); with `ground="chrome"` the chrome
+  tokens of FR-018 take these roles. Where the hover surface equals the ground, a `flush` control's hover shows no
+  change: on the `hover-bg` ground in both themes, on the `inset` ground in light (where `inset` and `hover-bg` are
+  the same value), and on the `chrome-hover` ground with `ground="chrome"` in both themes; the README states it;
   there is no hover-only information.
 - **FR-020**: Keyboard focus shows the token focus ring on the inner control (`:focus-visible`), visible in both themes
   and forced colours.
@@ -581,7 +699,8 @@ tree, the navigation result and the line boxes of the tags.
 
 - **FR-030**: The public interface of `ocelle-action-row` is exactly: the properties and attributes `row-id`
   (`rowId`), `label`, `layout`, `presentation`, `ground`, `href`, `target`, `rel`, `current`, `unavailable`, `busy`
-  (FR-031 to FR-040, FR-042); the passthrough attributes `aria-label`, `aria-labelledby`, `aria-describedby`; the
+  (FR-031 to FR-040, FR-042); the passthrough attributes `aria-label`, `aria-labelledby`, `aria-describedby` and
+  `title` (operator decision, PLAN-FRESH-2-006), with their `data-ocelle-moved-*` mirror attributes (FR-004); the
   `focus()` and `click()` methods (FR-001); the slots default (title), `icon`, `description`, `tags`, `trailing`; the
   event `ocelle-action-row-activate`; and the CSS parts `control`, `title`, `description`, `tags`. Changing it after
   release is a MAJOR change. `row-id`, `layout`, `presentation`, `ground`, `href`, `target`, `rel`, `current`,
@@ -619,11 +738,14 @@ tree, the navigation result and the line boxes of the tags.
   (FR-031). The current mark takes precedence over the hover surface: a row with `current` set keeps its
   `--ocelle-color-accent-low` surface and its bar on hover, so only a `default` current row's border changes and a
   `flush` current row shows no hover change. Both are `--ocelle-*` tokens a host can override on an ancestor (#525). If no fitting hover-border token
-  exists, it is added to `@ocelle/tokens` with its contrast pair in the contrast check.
+  exists, it is added to `@ocelle/tokens` with its contrast pair in the contrast check. With `ground="chrome"` the
+  hover surface is `--ocelle-color-chrome-hover` and the hover border `--ocelle-color-chrome-ink` (FR-018).
 - **FR-037**: `current` (reflected) is `page` or `true`; it sets `aria-current` with that value on the inner control
   and shows the current mark of story 5 scenario 4 (an `--ocelle-color-accent-low` surface and an inline-start bar of
-  `--ocelle-bar-width` in `--ocelle-color-current`), which stays on hover (FR-036). Any other value is treated as
-  absent.
+  `--ocelle-bar-width` in `--ocelle-color-current`), which stays on hover (FR-036). The bar is drawn inline-end of the
+  focus ring's band (FR-041) with a gap of `--ocelle-focus-offset`, so on a focused current row the ring and the bar
+  stay two distinct marks (operator decision, PLAN-FRESH-2-005). With `ground="chrome"` the current surface is
+  `--ocelle-color-chrome-hover` (US5-11). Any other value is treated as absent.
 - **FR-038**: In card layout, the gap between the title line and what follows is a token-based value (an existing
   `--ocelle-space-*` token or a new `--ocelle-*` token), and the title is the CSS part `title` so a host can adjust it.
   Tags wrap only between slotted tags; text inside a tag is not broken inside a word. Slotted description and tag
@@ -635,11 +757,15 @@ tree, the navigation result and the line boxes of the tags.
   not fit, so a long unbreakable identifier never makes the row wider than its container.
 - **FR-041**: Hover, focus, current and unavailable are visible in forced colours by system colours, without moving or
   resizing any part of the row, and the focus ring is drawn inside the row's edge around the whole row, so a scroll
-  container's edge or an adjacent row never clips or covers it (operator decision, PLAN-A11Y-SECURITY-1-006).
+  container's edge or an adjacent row never clips or covers it (operator decision, PLAN-A11Y-SECURITY-1-006); the
+  current bar never overlaps the ring (FR-037).
 - **FR-042**: **Row contrast.** A `default`-presentation row's border is a control boundary: it uses
   `--ocelle-color-control-border` on `canvas`, `sheet`, `pane`, `panel`, `inspector` and `rail`, and
   `--ocelle-color-accent-strong` on `accent-low`, `inset`, `hover-bg` and the state grounds (#5 rule 1), selected by the
-  `ground` attribute as for the button (FR-018); it is never `--ocelle-color-rule` (constitution II). In both themes, and on each main ground and state ground the row is placed
+  `ground` attribute as for the button (FR-018); it is never `--ocelle-color-rule` (constitution II). With
+  `ground="chrome"` the default row has no fill (the chrome shows), a `--ocelle-color-chrome-muted` border, its title
+  in `--ocelle-color-chrome-ink` and its description and tags in `--ocelle-color-chrome-muted` (US4-17). In both
+  themes, and on each main ground and state ground (and each chrome ground with `ground="chrome"`) the row is placed
   on, these pairs meet WCAG 2.2 AA non-text contrast (3:1), and the contrast check covers each: the default border
   against the ground; the hover border (FR-036, `default` presentation only) against `--ocelle-color-hover-bg`,
   `--ocelle-color-accent-low` (a hovered current row) and the ground; the current bar (`--ocelle-color-current`, both presentations) against `--ocelle-color-accent-low`; the
@@ -653,18 +779,19 @@ tree, the navigation result and the line boxes of the tags.
 
 - **FR-050**: Each element has a Storybook story per variant and per state (every value of every enumerated property,
   disabled, busy, unavailable, current, link mode, with and without icon and trailing, `dir="rtl"`), in light and
-  dark, with a committed visual baseline produced in the pinned container, in the harness of feature 006 (#10). This
-  feature lands only after #10 is on `main`, with the baselines and the story-level axe run done before it lands
-  (operator decision, PLAN-CORRECTNESS-1-010); while it is developed on its branch before #10 merges, feature 001's
-  "gates absent" exception applies to its stories, recorded in the plan's Complexity Tracking with the sunset "before
-  this feature lands".
+  dark, with a committed visual baseline produced in the pinned container, in the harness of feature 006 (#10), which
+  is on `main` (3828d2f) and merged into this branch (37dd501). Each phase that adds stories commits their baselines
+  and passes the `storybook-build`, `visual` and `axe` gates on them in that phase (operator decision, 2026-11-13;
+  round 1's "lands only after #10", PLAN-CORRECTNESS-1-010, is satisfied). No story of this feature is ever without a
+  baseline or an axe run, so no exception is recorded for them.
 - **FR-051**: Interaction tests assert every event each element emits and its payload: the button's `click` (and its
   absence when disabled or busy) and the row's `ocelle-action-row-activate` with `bubbles`, `composed`, `cancelable`
   and `detail`, from pointer and every keyboard path.
 - **FR-052**: Keyboard paths (Tab, Shift+Tab, Enter, Space) and the accessibility tree (role, name, description,
   states) are tested for every state, and axe reports no serious or critical finding on any story or test page.
 - **FR-053**: The custom-elements manifest lists every public property, attribute (the passthrough attributes
-  included, each with a description; operator decision, PLAN-CORRECTNESS-1-006), event (with its `detail` type),
+  and `title` and their `data-ocelle-moved-*` mirrors included, each with a description; operator decisions,
+  PLAN-CORRECTNESS-1-006, PLAN-FRESH-2-002, PLAN-FRESH-2-006), event (with its `detail` type),
   slot, CSS part and custom state of both elements, and the `manifest` gate passes.
 - **FR-054**: The built output (module build and browser build) passes the strict-CSP check, and the browser build
   defines both elements.
@@ -688,15 +815,17 @@ tree, the navigation result and the line boxes of the tags.
 - **SC-001**: Every acceptance scenario of the five user stories passes in the automated tests, in light and dark.
 - **SC-002**: In every test page and story of both elements, axe reports 0 serious and 0 critical findings.
 - **SC-003**: Every variant, size, presentation and state of both elements (FR-018, FR-042) passes the contrast check
-  in both themes, on each main ground and state ground (disabled and unavailable text and borders exempt).
+  in both themes, on each main ground and state ground, and with `ground="chrome"` on each chrome ground (disabled and
+  unavailable text and borders exempt).
 - **SC-004**: Each element shows exactly one accessibility-tree node and one tab stop per instance (zero tab stops when
   disabled) in every story.
 - **SC-005**: Activating an available row (busy or not) by pointer or keyboard produces exactly one event with the
   row's id, 100% of the time across the interaction tests; activating a disabled or busy `ocelle-button`, or an
   unavailable `ocelle-action-row`, produces no `click` reaching a bubble-phase listener and no event, and in link mode
   no navigation by any click (plain, modifier or middle).
-- **SC-006**: A host can build #12's breadcrumb item (flush, compact) and #14's copy control from `ocelle-button`'s
-  documented interface alone, with no style of its own beyond token overrides.
+- **SC-006**: A host can build #12's breadcrumb item (flush, compact), #12's top-bar menu button (`ground="chrome"`,
+  `aria-haspopup`, `aria-expanded`) and #14's copy control from `ocelle-button`'s documented interface alone, with no
+  style of its own beyond token overrides.
 - **SC-007**: The manifest, strict-CSP, prefix, style-lint and mutation gates pass with the two elements added.
 
 ## Assumptions
@@ -718,7 +847,8 @@ tree, the navigation result and the line boxes of the tags.
   harness (#10) are out of scope.
 - `ocelle-link` (#14) is a text-styled link; `ocelle-button` with `href` is a link styled as a button. They do not
   overlap: use `ocelle-link` inside running text, `ocelle-button href` where an action-shaped link is wanted.
-- The Storybook workbench of feature 006 (branch `claude/010-storybook-workbench`) is the harness stories target; its
-  design is final but not merged, and the stories, baselines and axe plan must be rechecked when it lands. This
-  feature waits for it to land (FR-050).
+- The Storybook workbench of feature 006 (#10) is the harness stories target. It is on `main` (3828d2f) and merged
+  into this branch (37dd501); the stories, baselines and the story-level axe gate are planned against it as it is on
+  this branch (`specs/006-storybook-workbench`, `storybook/`, `gates/`), and nothing in this feature waits for it any
+  more (FR-050).
 - Development runs on Node 22 with `OCELLE_CHROMIUM_PATH` set; only Chromium is measured.

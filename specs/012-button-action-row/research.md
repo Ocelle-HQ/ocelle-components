@@ -1,22 +1,24 @@
 # Research: Action Controls, `ocelle-button` and `ocelle-action-row`
 
-**Feature**: [spec.md](spec.md) | **Plan**: [plan.md](plan.md) | **Date**: 2026-11-13 (squad round 1 fixes applied the
-same day)
+**Feature**: [spec.md](spec.md) | **Plan**: [plan.md](plan.md) | **Date**: 2026-11-13 (squad rounds 1 and 2 fixes, and
+the merge of feature 006 into this branch, applied the same day)
 
 Measurements were taken on 2026-11-13 in this container with Chromium 153.0.8010.12
 (`/opt/pw-browsers/chromium-1243/chrome-linux64/chrome`, the build `OCELLE_CHROMIUM_PATH` points at here; the pinned
 Playwright 1.64.1 expects build 1248, which CI installs) through the CDP Accessibility domain, and axe-core on the same
 pages. The experiment scripts are not part of the repository; each finding below states what was measured. WebKit is
 not available here and is not measured (an open limitation, as in mission 005); WebKit release figures come from
-MDN's browser-compat-data 8.1.9 (read 2026-11-13). Squad round 1's findings are cited by id
-(`reviews/plan/round-1/refute.md`).
+MDN's browser-compat-data 8.1.9 (read 2026-11-13). Squad findings are cited by id (`reviews/plan/round-1/refute.md`,
+`reviews/plan/round-2/refute.md`).
 
 ## R-01 Element structure: one inner control, with `delegatesFocus`
 
 **Decision**: each element renders, in an open shadow root attached with `delegatesFocus: true`, exactly one native
 `<button type="button">` (button mode) or `<a>` (link mode) with the CSS part `control`, laid out by mission 005's slot
-convention (`icon-row`, `iconSlotStyles`). The host is `display: inline-block` (button) or `display: block` (row) and
-gets no tabindex and no role. `ocelle-button.focus()` and `ocelle-action-row.focus()` focus the inner control (a host,
+convention (`icon-row`, `iconSlotStyles`). The host is `display: inline-grid` (button) or `display: grid` (row, with
+`min-inline-size: min-content`, R-10), and the inner control is its single grid item, stretched in both axes (the
+default `justify-self` and `align-self` of a grid item), so the inner control always fills the host's box
+(PLAN-FRESH-2-001 (a)). The host gets no tabindex and no role. `ocelle-button.focus()` and `ocelle-action-row.focus()` focus the inner control (a host,
 and #16's dialog returning focus to its opener, call it). Each element overrides `click()` to call the inner control's
 `click()` (R-06, PLAN-FRESH-1-003).
 
@@ -27,7 +29,19 @@ shadow DOM retargeting), so a host's `focusout` and `:focus-within` work either 
 inner control, `:focus-visible` follows the last interaction mode, and it does nothing when the inner button is
 disabled, which is the wanted result (a disabled control takes no focus).
 
-**Alternatives**: no `delegatesFocus` (rejected: `host.focus()` would do nothing); a light-DOM inner control (rejected:
+**The host fills, measured (PLAN-FRESH-2-001)**: with an `inline-block` host around a flex `<button>`, a `display:
+flex` row beside a 120 px sibling stretches the host to 120 px while the inner button keeps 44 px; a pointer click 5 px
+above the host's bottom edge reached a `document` listener with the host as target, so the guard on the inner control
+never ran and a disabled button delivered a click. Two `display: block` row hosts in a two-column grid behave the
+same way in the block axis (the stretched host's lower area dispatched nothing). With the host a grid container and
+the inner control its stretched item, the inner control takes the host's size in both axes, so no point of the host
+lies outside the control. A button stretched by a flex row therefore grows to the row's height (its content stays
+centred, R-09); a host that does not want that sets `align-self` on the element. The scenarios US1-15, US3-10,
+US4-15 and US5-6 (stretched case) click 4 px inside the host's bottom edge, each with a plant restoring
+`inline-block` or `block`.
+
+**Alternatives**: the button refusing the stretch with `align-self: center` (round 2 option (b), not chosen); no
+`delegatesFocus` (rejected: `host.focus()` would do nothing); a light-DOM inner control (rejected:
 the host page's CSS would style it, against constitution II's token-only rule and mission 005's conventions);
 `ElementInternals` with `role="button"` on a focusable host (rejected: link mode needs a real `<a>` for modifier
 clicks and drag, which a host role cannot give).
@@ -70,15 +84,18 @@ to open an item that cannot be opened now).
 
 **Decision**: the attributes FR-009 and FR-030 list are observed: on the button `aria-expanded`, `aria-controls`,
 `aria-current`, `aria-haspopup`, `aria-pressed`, `aria-label`, `aria-labelledby`, `aria-describedby`
-(`aria-haspopup` and `aria-pressed` added by PLAN-A11Y-SECURITY-1-004 (a), for #12's menu button and toggle buttons);
-on the row `aria-label`, `aria-labelledby`, `aria-describedby`. When one is set on the host, the element stores the
+(`aria-haspopup` and `aria-pressed` added by PLAN-A11Y-SECURITY-1-004 (a), for #12's menu button and toggle buttons)
+and `title`; on the row `aria-label`, `aria-labelledby`, `aria-describedby` and `title` (`title` added by
+PLAN-FRESH-2-006 (a)). When one is set on the host, the element stores the
 value in a private field, removes the attribute from the host, and renders the stored value onto the inner control
 (non-reference attributes as attributes; ID references through element reflection, R-04). A value that is empty or
 whitespace only clears the stored value (the inner control loses the attribute; for `aria-label` the name falls back to
 `label`, then content). Any other value is stored and applied as written, untrimmed. The element's own removal arrives
 as `attributeChangedCallback` with `null` and is ignored; since a host's later `removeAttribute` on an attribute
 already moved fires nothing (the attribute is absent), **removal is a no-op**. A value present in the markup before
-upgrade is moved at `connectedCallback`. `aria-pressed` is applied in button mode only (it is not allowed on role
+upgrade is moved at `connectedCallback`. `title` is rendered on the inner control as the `title` attribute: the native
+tooltip, and per Accessible Name 1.2 the description when nothing else describes the control (the row's slotted
+description and tags, or a moved `aria-describedby`, take precedence) or the name when nothing else names it. `aria-pressed` is applied in button mode only (it is not allowed on role
 `link`); it stays stored and is applied when the mode becomes button. Any other `aria-*` on the host is not supported:
 it stays on the host, and axe flags it (stated in the README; adding one to the list is a MINOR change a consumer
 asks for).
@@ -109,10 +126,28 @@ bind the off value instead. The README gives one recipe per stack:
 | React | `aria-current={active ? "page" : "false"}`, `aria-expanded={open ? "true" : "false"}`, `aria-controls={open ? "panel" : ""}` | `undefined` or `null` |
 | Lit | `aria-current=${active ? "page" : "false"}` (an attribute binding with a string) | `nothing`, `ifDefined(undefined)` |
 | Svelte | `aria-current={active ? "page" : "false"}` | `undefined`, `null` |
-| htmx, Thymeleaf | render the attribute with the off value (`th:attr="aria-current=${active} ? 'page' : 'false'"`); a swap that replaces the element moves the new element's attributes at upgrade | omitting the attribute on an element that is updated in place |
+| htmx, Thymeleaf | render the attribute with the off value (`th:attr="aria-current=${active} ? 'page' : 'false'"`); a swap that replaces the element moves the new element's attributes at upgrade; htmx's history restore keeps the moved values through the mirrors (below) | omitting the attribute on an element that is updated in place; writing a `data-ocelle-moved-*` attribute |
 
 ARIA reflection properties on the host (`host.ariaExpanded = "true"`) set the attribute and are moved the same way;
 setting one to `null` removes the (absent) attribute and changes nothing, as `removeAttribute` does.
+
+**Mirrors for copies of the live DOM (PLAN-FRESH-2-002 (a))**: a private field does not survive serialisation.
+Measured by the lens: an element that stores a host `aria-label` privately and removes the attribute serialises as
+`<x-c></x-c>` through its parent's `innerHTML` and through `cloneNode(true).outerHTML`. htmx's history support (on by
+default) snapshots the live `innerHTML` before a boosted navigation and swaps it back on Back, and list templating by
+cloning, drag previews and print copies copy the live DOM the same way; each copy would upgrade unnamed and without
+its states. So whenever the element stores a moved value it also writes it, as written, to a host attribute it owns:
+`data-ocelle-moved-<attribute>` (`data-ocelle-moved-aria-label`, `data-ocelle-moved-aria-current`,
+`data-ocelle-moved-title`, and so on, one per moved attribute). Clearing a value (empty or whitespace only) removes
+its mirror. At `connectedCallback`, for each listed attribute the host does not set, a mirror present on the host is
+read back as the stored value (and applied, and its custom state set); a host attribute present at upgrade wins and
+rewrites the mirror. One attribute per moved name was chosen over one attribute holding all pairs: no encoding to
+parse, each value readable in the DOM inspector, and the prefix gate's `ocelle` names hold. The mirrors are not ARIA,
+so the accessibility tree and axe ignore them; `getAttribute("aria-label")` on the host still returns `null`. Hosts do
+not write or remove mirrors (README); a mirror changed by the host after upgrade is not observed. The mirrors are
+public attributes of the element and are declared in the manifest (R-15; a MINOR addition). US2-13 re-creates a
+button from `outerHTML` and from `cloneNode(true)` after moving `aria-label` and `aria-current` (plant: no mirror);
+a row case does the same for `aria-label` (phase 5).
 
 **Styling hooks (PLAN-FRESH-1-009 (a))**: since a host selector `ocelle-button[aria-expanded="true"]` no longer
 matches, the button exposes the moved states as custom states through `ElementInternals.states`: `expanded` while the
@@ -124,7 +159,10 @@ and WebKit 17.4 (MDN browser-compat-data 8.1.9), which raises the README's WebKi
 **Alternatives**: keep on host with recorded axe exceptions (rejected by the operator at planning and again in round 1,
 option (d)); element properties instead of host ARIA (rejected by the operator: rewrites #501's ask); clearable
 reflected properties beside the moved ARIA, or overriding the ARIAMixin accessors (round 1 options (b) and (c),
-not chosen).
+not chosen); documenting that live-DOM copies lose moved ARIA and steering hosts to `label` and off the htmx history
+cache (round 2 option (b), not chosen); declaring a host `title` unsupported (round 2 PLAN-FRESH-2-006 option (b), not
+chosen: measured, a host `title` names the role-less host, `generic "Close dialog"` beside `button "Save"`, the
+second named node the move removes, and axe raises nothing).
 
 ## R-04 ID references by element reflection; engine floor
 
@@ -241,7 +279,9 @@ takes it: `@keyframes ocelle-spin { to { rotate: calc(var(--ocelle-motion-turn) 
 `animation-iteration-count` left at its initial value 1, no `animation-fill-mode`. It turns six times and ends on the
 start pose, the same still arc the reduced-motion state shows; a busy state that lasts longer shows the still arc.
 No count literal is needed. The README says so, and a host with long-running work that wants continuous motion uses
-its own pausable indicator.
+its own pausable indicator. Since the duration is six times a token a host may override, the limit holds for the
+default value only: the README states that an override of `--ocelle-motion-spin` keeps one turn at or below 833 ms
+(six turns within 5 s), and `readme.test.ts` asserts the sentence (PLAN-FRESH-2-008).
 
 **Reduced motion**: under `prefers-reduced-motion: reduce` the element sets `animation: none` (measured:
 `animation-name` computes `none`), and `--ocelle-motion-spin` is `0ms` there (two independent mechanisms, each tested:
@@ -302,8 +342,11 @@ chosen); arguing the spinner essential under Understanding 2.2.2 (round 1 option
    | row `flush` | no fill, no border | fill `hover-bg` | as hover |
 
    Each state differs from idle and from the other on every ground, except that a `flush` control's hover fill
-   (`hover-bg`) equals the `inset` and `hover-bg` grounds in light; there, hover carries no information (FR-019: no
-   hover-only information), the focus ring and the active fill still show, and the README says so. A current row keeps
+   (`hover-bg`) equals the ground on the `hover-bg` ground in both themes (the same token) and on the `inset` ground in
+   light (light `inset` and `hover-bg` are both #E2DDD3; dark `inset` #302B23 differs) (PLAN-FRESH-2-004), and, with
+   `ground="chrome"`, its fill `chrome-hover` equals the `chrome-hover` ground in both themes; there, hover carries no
+   information (FR-019: no hover-only information), the focus ring and the active fill still show, and the README says
+   so. US1-14 and US4-8 write this exception list by hand per theme. A current row keeps
    its `accent-low` surface on hover (FR-036). The proposed values are confirmed by `gate:contrast --print` in phase
    2; if any required pair is below threshold the phase stops and asks the operator.
 4. **Border by ground (PLAN-TESTABILITY-1-003 (a))**: an element cannot see its ancestor's colour, so both elements
@@ -312,6 +355,45 @@ chosen); arguing the spinner essential under Understanding 2.2.2 (round 1 option
    the default row use `--ocelle-color-control-border`; `ground="accent-low"`, `"inset"`, `"hover-bg"` or `"state"`
    selects `--ocelle-color-accent-strong` (#5 rule 1). Tests set the attribute per ground and read the hand-written
    expected token; a plant that ignores the attribute fails them.
+
+   **Changing surfaces (PLAN-FRESH-2-007)**: `ground` is static, but `hover-bg` and `accent-low` are surfaces a host's
+   row takes on hover or selection. Computed: `control-border` light #8A8276 on light `hover-bg` is 2.80:1 and on light
+   `accent-low` 2.94:1, dark #7A7264 on dark `accent-low` 2.88:1, all below 3:1. The rule (FR-018, README): on a
+   container whose surface changes, the host sets `ground` for the changed surface statically (`hover-bg` or
+   `accent-low`). It is safe because item 5 declares `accent-strong` on every main ground (computed 4.80:1 on light
+   canvas, 8.30:1 on dark canvas), so the border meets 3:1 before and during the change. US1-16 and a story render a
+   quiet button with `ground="hover-bg"` on canvas and on `hover-bg`; both pairs are already required rows (item 5 and
+   `accent-strong`'s declared grounds), so no new row is added.
+4a. **Chrome (PLAN-FRESH-2-003 (a))**: `ground="chrome"` on both elements, for #12's top-bar menu button and any control
+   on the chrome grounds (`color-chrome`, `color-chrome-hover`; constitution II puts the top bar, icon rail and personal
+   rail on them in both themes). Light `color-ink` on light `color-chrome` is 1.00:1 (both #15130F), so the main look
+   cannot be reused. With `ground="chrome"`:
+
+   | Variant | Idle | Hover | Active (pointer down) |
+   |---|---|---|---|
+   | `primary` | fill `accent`, border `accent-strong`, text `on-accent` | fill `accent-hover`, border `chrome-ink` | fill `accent`, border `chrome-ink` |
+   | `secondary`, `quiet` | no fill, border `chrome-muted`, text `chrome-ink` | fill `chrome-hover`, border `chrome-ink` | fill `chrome-active`, border `chrome-ink` |
+   | `flush` (any variant) | no fill, no border, text `chrome-ink` | fill `chrome-hover` | fill `chrome-active` |
+   | disabled | as on the main grounds for `primary`; otherwise no fill, text and border `disabled-ink` | — | — |
+   | row `default` | no fill, border `chrome-muted`, title `chrome-ink`, description and tags `chrome-muted` | fill `chrome-hover`, border `chrome-ink` | as hover |
+   | row `flush` | no fill, no border, as above | fill `chrome-hover` | as hover |
+   | row `current` | surface `chrome-hover`, bar `current` | unchanged (border `chrome-ink` on a default row) | — |
+
+   `secondary` has no fill on chrome (a `sheet` fill would carry `ink` text, 1.00:1 territory on light chrome), so it
+   looks like `quiet` there; the README says so. `color-hover-border` (an alias of `ink`) cannot serve on chrome (light
+   1.00:1), and `color-chrome-ink` fits as the hover border (no new hover-border token). The active surface needs a
+   new token, `--ocelle-color-chrome-active` (proposed `#3A342B` in both themes, group colour, a ground): computed 1.51
+   (light) and 1.59 (dark) against `chrome` and 1.36 and 1.30 against `chrome-hover`, so it differs from both, and
+   `chrome-ink` on it is 10.17:1. The current row's surface on chrome is `chrome-hover`, not `accent-low` (a light
+   surface in light) or `chrome-active` (the bar, `accent-strong`, falls below 3:1 on it in light); `color-current`
+   and `color-focus` are already declared on the chrome grounds. Computed figures: `chrome-ink` 15.32 and 13.84:1 light,
+   16.15 and 13.26:1 dark on `chrome` and `chrome-hover`; `chrome-muted` 6.89 and 6.22:1 light, 7.26 and 5.96:1 dark;
+   `accent-strong` 3.34 and 3.01:1 light, 8.75 and 7.18:1 dark (the same pairs as the focus ring's, already passing);
+   `disabled-ink` 3.37 and 3.04:1 light, 5.35 and 4.39:1 dark (exempt). Declared grounds added: `color-chrome-ink`
+   += `color-chrome-active`; `color-accent-strong` += `color-chrome`, `color-chrome-hover`; `color-disabled-ink` +=
+   `color-chrome`, `color-chrome-hover` (exempt rows). Focus ring and forced colours are unchanged. US1-4, US1-5,
+   US1-13, US1-14, US4-17 and US5-11 cover chrome; the `chrome-active` value is confirmed by `gate:contrast --print`
+   in phase 2 under the same stop-and-ask rule as the other proposed values.
 5. **Primary border** (check-2 note SPEC-2-06): `primary` fills with `--ocelle-color-accent` and `on-accent` text,
    with an `--ocelle-color-accent-strong` border on every ground. Measured from the token values: the ochre fill
    against the light main grounds is 2.37 (rail) to 2.98 (pane), below 3:1, so in light mode the fill cannot be the
@@ -330,8 +412,9 @@ chosen); arguing the spinner essential under Understanding 2.2.2 (round 1 option
     `--ocelle-focus-offset-inset` (R-12).
 
 New required contrast rows, per theme (figures from `gate:contrast --print`): `color-ink` +6, `color-ink-soft` +5,
-`color-accent-strong` +6, `color-on-accent` +1, `color-hover-border` +15: 33 per theme, 66 in all. The pinned counts
-change first.
+`color-accent-strong` +8 (six main grounds, two chrome grounds), `color-on-accent` +1, `color-hover-border` +15,
+`color-chrome-ink` +1, `color-disabled-ink` +2 (exempt): 38 per theme, 76 in all. The pinned counts change first
+(the chrome rows in phase 2, with the button's chrome look).
 
 Every new or changed token goes through `source.ts`, `test/expected.ts` (hand-written), the tokens browser values
 test, `pairs.json`, the tokens README and CHANGELOG, as mission 003 did; `motion-spin` also through `generate.ts`
@@ -341,7 +424,8 @@ test, `pairs.json`, the tokens README and CHANGELOG, as mission 003 did; `motion
 
 **Decision**: `size="default"`: `min-block-size` and `min-inline-size` `var(--ocelle-target-min)`, font
 `--ocelle-font-size-md`, `padding-inline: var(--ocelle-space-4)`; the inner control is a flex box that centres the
-slot convention's `icon-row` (which carries no block padding of its own beyond the convention's). `size="compact"`:
+slot convention's `icon-row` (which carries no block padding of its own beyond the convention's), and it fills the
+host (R-01), so in a stretched host its content stays centred in the block axis. `size="compact"`:
 font `--ocelle-font-size-sm`, line height `--ocelle-line-height-compact`, `padding-inline: var(--ocelle-space-2)`,
 `min-block-size` and `min-inline-size` `var(--ocelle-space-6)` (1.5 rem, 24 px). `flush`: `padding-inline: 0`, no
 border, transparent background, minimum sizes of its `size` unchanged, and the inner control uses
@@ -358,14 +442,18 @@ var(--ocelle-target-min)` in every presentation and layout (SPEC-1-08).
 **Decision**: the row's inner control is a flex container (`row` layout: `flex-wrap: wrap`, the icon/title/description
 group `flex: 1 1 auto` with `min-inline-size: min-content`, the tags-and-trailing group `flex: 0 0 auto` wrapping as a
 whole, FR-032; `card` layout: a two-row grid, title line with trailing at its end, then description, then tags). Its
-inline padding is `--ocelle-space-3` (`default`) or `--ocelle-space-2` (`flush`), both wider than
-`--ocelle-bar-width`, in every state, so the current bar (R-12) is never behind text and toggling `current` moves no
-content box. The title wrapper (part `title`) and the description wrapper set `overflow-wrap: anywhere` in both
+inline padding is `--ocelle-space-3` in both presentations and every state (the `flush` row's was `--ocelle-space-2`
+before PLAN-FRESH-2-005 (b)): the focus ring's band (2 to 5 px inside the border edge), the gap and the current bar
+(7 to 10 px inside the border edge, R-12) all lie in it, so the bar is never behind text and toggling `current`
+moves no content box. The flush row's compact density is its block padding (`--ocelle-space-1`) and text scale
+(FR-031), which stay. The title wrapper (part `title`) and the description wrapper set `overflow-wrap: anywhere` in both
 layouts (PLAN-CORRECTNESS-1-011): a long unbreakable identifier wraps inside the row, and the min-content width stays
 at least one character, so FR-040 still holds. The tags slot's container is `display: flex; flex-wrap: wrap; gap:
 var(--ocelle-space-1)` and each slotted tag gets `::slotted(*) { overflow-wrap: normal; word-break: normal; }` so a
 tag never breaks inside a word, except a tag wider than the card, which gets `max-inline-size: 100%` and
-`overflow-wrap: anywhere` (US5-8). The host is `display: block; min-inline-size: min-content` (FR-040).
+`overflow-wrap: anywhere` (US5-8). The host is `display: grid; min-inline-size: min-content` with the inner control as
+its single stretched item (R-01; FR-040): a grid container is block-level, so it stretches inline in a block parent
+as `display: block` did, and the inner control follows the host's block size in a grid of cards (US4-15).
 
 The slot convention's size rules are scoped to the icon slots (PLAN-A11Y-SECURITY-1-002): `src/icon-slot.ts` has an
 unscoped `::slotted(*)` that sets inline and block size to the icon size, `max-inline-size: none` and `flex: none`, all
@@ -414,15 +502,17 @@ and fixture), and the browser commands, red first in phase 1:
 - `emulateReducedMotion("reduce" | "no-preference")` beside `emulateForcedColors`, reset after each test (mission 005
   finding: in-process tests share one page);
 - `axe(scope?)`: runs axe-core in the page and returns serious and critical violations and incomplete results. Its
-  rule selection is a test-side module, `packages/elements/test/axe-rules.ts`, holding 006's exact selection
-  (PLAN-TESTABILITY-1-008): every rule axe enables by default and every rule tagged `wcag2a`, `wcag2aa`, `wcag21a`,
-  `wcag21aa` or `wcag22aa`, less the rules tagged `experimental` and the eight harness-document rules (`bypass`,
+  rule selection is 006's own (PLAN-TESTABILITY-1-008), imported from `gates/lib/axe-rules.ts`, which is on this
+  branch since the merge of #10 (37dd501): `ruleMeta` over axe-core's rule objects and `ruleOptions` for `axe.run`, as
+  `gates/bin/axe.ts` does (every rule axe enables by default and every rule tagged `wcag2a`, `wcag2aa`, `wcag21a`,
+  `wcag21aa` or `wcag22aa`, less the rules tagged `experimental` and the eight harness-document rules `bypass`,
   `document-title`, `html-has-lang`, `html-lang-valid`, `html-xml-lang-mismatch`, `landmark-one-main`,
-  `page-has-heading-one`, `region`), as `gates/lib/axe-rules.ts` on `origin/claude/010-storybook-workbench` defines
-  it. A phase 1 unit test pins it: an unnamed button gives `button-name`, and a landmark-less test page gives no
-  `region`. Phase 7 replaces the module with the import from `gates/lib/axe-rules.ts` (a listed task). `axe-core`
-  **4.14.0** is a root devDependency, the version 006 pins (so the lockfile converges when #10 lands), loaded
-  in-process by import and on the fixture by serving the file under the strict CSP (`script-src 'self'`).
+  `page-has-heading-one`, `region`). The module is pure and imports only `gates/lib/story-checks.ts` (which imports
+  nothing), so it loads in the browser-mode tests as `packages/styles/test/browser/*.test.ts` already load
+  `gates/bin/prefix.ts`; no test-side copy is written. A phase 1 unit test proves the driver uses it: an unnamed button
+  gives `button-name`, and a landmark-less test page gives no `region`. `axe-core` **4.14.0** is already a root
+  devDependency, exact (006 added it; `package.json`, `pnpm-lock.yaml`), so this feature adds no dependency; it is
+  loaded in-process by import and on the fixture by serving the file under the strict CSP (`script-src 'self'`).
 
 Every new driver method and command gets a unit test against a plain test page, red first (the commands are test
 infrastructure but have behaviour): hovered and unhovered, pressed and unpressed native buttons; Tab and Shift+Tab
@@ -445,15 +535,39 @@ row the ring is drawn **inside** (PLAN-A11Y-SECURITY-1-006 (a)): `outline-offset
 a new token `calc(-1 * (var(--ocelle-focus-offset) + var(--ocelle-focus-width)))` (-5 px; `ref: ["focus-offset",
 "focus-width"]`, group shape), so the ring is never clipped by a scroll container's edge nor covered by the next row
 (measured by the lens: an outer ring in an `overflow: auto` list loses both inline sides, and a positioned next row
-covers its block-end side). Scenarios place rows in an `overflow: auto` list, edge to edge and positioned, and read
-ring pixels on all four sides of the focused row. The former README padding note is dropped.
+covers its block-end side). The ring's band is 2 to 5 px inside the row's border edge. Scenarios place rows in an
+`overflow: auto` list, edge to edge and positioned, and read ring pixels on all four sides of a focused row without
+`current` (plant: no ring), so no bar pixel can stand in for the ring; the current-row case is below. The former
+README padding note is dropped.
+
+**The button's ring and clipping containers (PLAN-FRESH-2-009)**: the button keeps its ring outside; an inside ring is
+not viable on a zero-padding flush button (it would cover the label). A flush button sits at its container's
+inline-start edge (FR-012), so a container that clips (`overflow` other than `visible`) and has no room there would
+cut the ring's inline-start side. The README's flush note and the contract's #12 hand-off state that such a container
+keeps at least `--ocelle-focus-offset` + `--ocelle-focus-width` (5 px) of unclipped space around the button (for
+example `padding-inline` of that size with a matching negative margin); `readme.test.ts` asserts the sentence.
 
 **Current bar (PLAN-A11Y-SECURITY-1-007)**: in forced colours, backgrounds are forced to `Canvas` and `box-shadow` to
 none (lens probe), a border would move the flush row's content (FR-031), and a pseudo-element painted behind text
 draws axe's serious `color-contrast` incomplete (006 research). The bar is therefore a shadow `<span class="bar">`
-inside the inner control (`position: relative`): `position: absolute; inset-block: 0; inset-inline-start: 0;
-inline-size: var(--ocelle-bar-width); background-color: var(--ocelle-color-current)`, rendered only while `current` is
-set. It lies in the row's inline padding (R-10), never behind text, and takes no layout space. Under
+inside the inner control (`position: relative`): `position: absolute; inset-block: 0; inline-size:
+var(--ocelle-bar-width); background-color: var(--ocelle-color-current)`, rendered only while `current` is set. It
+lies in the row's inline padding (R-10), never behind text, and takes no layout space.
+
+**Bar and ring distinct (PLAN-FRESH-2-005 (b))**: `color-focus` and `color-current` are both `accent-strong`. With the
+bar at `inset-inline-start: 0` it occupied 1 to 4 px inside the border edge (0 to 3 px on a flush row), overlapping
+the ring's band (2 to 5 px), so on a focused current row the ring's inline-start side merged with the bar. The bar now
+starts one focus offset inline-end of the ring's inner edge: 7 px inside the border edge, from
+`calc(var(--ocelle-focus-width) + 2 * var(--ocelle-focus-offset))`; since the absolute box is placed from the padding
+edge, the default row subtracts its border (`calc(var(--ocelle-focus-width) + 2 * var(--ocelle-focus-offset) -
+var(--ocelle-border-width))`) and the flush row (no border) does not. The bar spans 7 to 10 px, the gap of 5 to 7 px
+shows the row's surface (`accent-low`, or `chrome-hover` on chrome; `Canvas` in forced colours), and content starts
+at 12 px (flush) or 13 px (default, border included) with the row's `--ocelle-space-3` inline padding (R-10). Placing
+the bar exactly at the ring's inner edge (round 2's wording) would leave the two same-coloured bands touching, one
+6 px band, so the gap is part of keeping them distinct. Scenarios on a focused current row read the ring's
+inline-start band, the gap (the surface colour) and the bar band at their own positions, plus the ring on the other
+three sides, in left-to-right and `dir="rtl"`; plants: the bar at `inset-inline-start: 0` (overlap), and the bar at
+the ring's inner edge (no gap). An unfocused current row shows the bar 7 px in from its edge, the README says so. Under
 `@media (forced-colors: active)` it gets `forced-color-adjust: none` and `background-color: Highlight` (`GrayText` when
 the row is unavailable, decision 16). Unavailable outside forced colours: `--ocelle-color-disabled-ink`.
 
@@ -484,30 +598,61 @@ checks run on a link-mode control (`LinkText`) and a disabled one (`GrayText`) t
 **Decision**: stories in `storybook/stories/button.stories.ts` and `storybook/stories/action-row.stories.ts` (title
 `Elements/ocelle-button`, `Elements/ocelle-action-row`), one export per variant and state as FR-050 lists, right-to-
 left as separate stories with `dir="rtl"` in their markup (006 has no direction axis), hover and press declared with
-`parameters.ocelle.pointer` (one per story, a selector that matches exactly one element, inside 1280 × 800 at scroll
-0, 0), focus by a wrapper that focuses programmatically (006 has no focus parameter; whether `:focus-visible` then
-shows is measured in phase 2 before the focus story is written). Inner controls set `font: inherit` (006's `font`
-check). Forced colours are not captured by 006; they stay in the element tests. Stories that name a control with
-visible text follow R-05's label-in-name rule. Story tests (operator decision I3) are written in each phase's red
-commit: the existing `storybook/test/integration/elements-stories.test.ts` is extended with the new story ids, red
-first, each story rendering its elements in light and dark.
+`parameters.ocelle.pointer` (`{ hover: <selector> }` or `{ press: <selector> }`, one per story, a selector that
+matches exactly one element, inside 1280 × 800 at scroll 0, 0), focus by a wrapper that focuses programmatically (006
+has no focus parameter; whether `:focus-visible` then shows is measured in phase 2 before the focus story is
+written). 006 captures and audits with `reducedMotion: "reduce"` (`gates/lib/capture-plan.ts:48`), so a busy story
+shows the still arc and its baseline is deterministic. Inner controls set `font: inherit` (006's `font` check).
+Forced colours are not captured by 006; they stay in the element tests. Stories that name a control with visible text
+follow R-05's label-in-name rule. Round 2 adds stories for `ground="chrome"` (button and row, on a chrome-ground
+wrapper) and for a quiet button with `ground="hover-bg"` on canvas and on `hover-bg` (PLAN-FRESH-2-007): about 31
+stories in all. Story tests (operator decision I3) are written in each phase's red commit: the existing
+`storybook/test/integration/elements-stories.test.ts` is extended with the new story ids, red first, each story
+rendering its elements in light and dark; 006 removed that file's CSP checks (the Storybook is not a CSP target) and
+none is added.
 
-**012 lands only after #10 (PLAN-CORRECTNESS-1-010 (a))**: phase 7 is a blocking part of 012's landing. 012 waits for
-#10 to be on `main`; the branch takes it at landing (`/ocelle-land` merges main) and phase 7 does the 006 work:
-baselines produced in the pinned container (`pnpm run visual:update`, CI's job artifact committed when local and CI
-captures differ), the axe gate on every new story, the hard-coded story counts in four integration tests
-(`storybook-build`, `visual`, `axe`, `plant-repo`), the `fail-token-changed` and `fail-empty-index` plants, the axe
-rule module replaced by the import (R-11), and the shard budget. 006's Complexity Tracking requires lowering
-`shardSize` (3, `gates/lib/plant-runner.ts:269`) before the repository has 25 stories. Main has 21 and this feature
-adds about 28 (s ≈ 49). By 006's measured model (387 + size × 1.377 × (2s + 2) s per `visual` shard), a shard takes
-about 800 s at size 3, 662 s at size 2 and 525 s at size 1, so only **size 1** stays under 10 minutes. The cost: the
-`visual` and `axe` plants go from shards of 3 to one plant per shard, roughly three times as many shards (about 16 to
-about 48 at 006's 19 shards for 21 stories, plus the non-visual shards), each with the fixed part of about 387 s; the
-total Plants CI time grows accordingly. Phase 7 lowers `shardSize` to 1 test-first (its `plantShards` test) and
-records a CI run showing every Plants shard under 10 minutes and the run's total; a shard near 10 minutes is a
-stop-and-ask. The CSP checks that 006 removes from `elements-stories.test.ts` are not added to the new stories' tests.
-Until phase 7, during development, the new stories have no baselines and no story axe run (Complexity Tracking, closed
-before landing). **This section must be rechecked when #10 lands** (operator instruction).
+**Feature 006 is merged (operator decision, 2026-11-13)**: #10 is on `main` (3828d2f) and `main` is merged into this
+branch (37dd501), so this design is checked against 006 as it is here (`specs/006-storybook-workbench`, `storybook/`,
+`gates/`), and nothing waits for #10. Round 1's arrangement (PLAN-CORRECTNESS-1-010 (a): land only after #10, with a
+phase 7 doing the 006 work) is satisfied and replaced: **each phase that adds stories does the 006 work for them**.
+
+Checked against the merged code, what this design relies on is as the branch design had it: `gates/lib/axe-rules.ts`
+(the rule selection, R-11); `axe-core` 4.14.0, exact, in the root `package.json`; `shardSize` 3 and `otherShardSize`
+80 (`gates/lib/plant-runner.ts:269`, `:275`); 21 stories and 42 baselines, pinned in
+`gates/test/integration/storybook-build.test.ts:55` ("built 21 stories"), `visual.test.ts:116-139` (42
+story-themes), `axe.test.ts:52-56` (42 story-theme runs, 10 notes, 10 excepted) and `plant-repo.test.ts:225` (42
+baseline files); the `fail-token-changed` plant's list of light story-themes that show `color-ink`; the
+`fail-empty-index` plant's tree, which replaces each repository story file by name; the pointer parameter
+(`gates/lib/capture-plan.ts:200`); the capture context (1280 × 800, reduced motion, no forced colours). What changed at
+006's landing, after the branch design was read: an entry of `storybook/a11y-exceptions.json` must name a feature plan
+`specs/<feature>/plan.md` as its `plan` (006 landing review L1-04), the CI `visual` command gained
+`--remove-docker-image`, `storybook-build` exits 2 when `storybook/.storybook/main.ts` cannot be evaluated, and the
+deferred `@ocelle/elements` CSP row is dropped (005 delivered it). None of these changes this design; this feature
+plans no axe exception, and one found would stop the phase and go to the operator as a Complexity Tracking row in
+this plan with `plan: specs/012-button-action-row/plan.md`.
+
+**Per phase**: in the red commit, the phase's story test entries and the pinned story counts (the four tests above)
+take the new totals, written by hand. In the green commit, the story files; baselines made with `pnpm run
+visual:update` under docker in the pinned container (CI confirms the bytes under docker and podman; CI's job artifact
+is committed when they differ, 006 decision 7); the `fail-token-changed` plant gains the phase's new light
+story-themes that show `color-ink`, measured in the pinned container as 006 decision 29 measured mission 005's; the
+`fail-empty-index` tree gains an empty copy of a new story file (`button.stories.ts` in phase 2,
+`action-row.stories.ts` in phase 5). The phase's checks run `gate:storybook-build`, `gate:visual` and `gate:axe` on the
+repository (one heavy job at a time), with the exact summary lines the tests pin.
+
+**Shard budget**: 006's Complexity Tracking row "Plant roots hold every repository story" approves `size` 3 up to its
+split count, **25 stories**, and names as its sunset the change that lowers `size` before the repository holds 25.
+`main` has 21 and phase 2's button stories alone pass 25, so **phase 1** lowers `shardSize` to **1**, test-first (the
+`plantShards` test of the repository's size, `gates/test/plant-runner.test.ts:732`, and `gates/README.md`'s "80 and 3
+are approved"), before any story is added. By 006's measured model (387 + size × 1.377 × (2s + 2) s per `visual`
+shard), at s ≈ 52 a shard takes about 825 s at size 3, 679 s at size 2 and 533 s at size 1, so only size 1 stays
+under 10 minutes. The cost: the 48 `visual` and 25 `axe` plants go from 25 shards (16 + 9) to 73, plus the 3
+non-visual shards, each with the fixed part of about 387 s; the total Plants CI time grows accordingly. At size 1 the
+model's split count is **76 stories** (387 + 1.377 × (2s + 2) ≤ 600 s; 72 at the record's slowest 1.457 s). Phase 1
+updates 006's row (scope `size` 1, sunset the split count at size 1) and puts that split count to the operator for
+approval at phase 1's review, as 006 decision 30 did for 25. Each CI run of the branch shows the Plants shards; phase
+6's review records a run at the full story count with every shard's time and the run's total; a shard near 10
+minutes is a stop-and-ask.
 
 ## R-14 Mutation testing
 
@@ -527,17 +672,20 @@ with a reason. Entries are at most 30 changed lines (007 FR-014). Token source c
 **Decision** (PLAN-CORRECTNESS-1-006 (a)): `packages/elements/scripts/manifest.ts:38` drops `aria-label` from every
 element's attributes (`standardAttributes`), and the manifest gate reports `no-description` for any undescribed
 member. The moved attributes are public (FR-009, FR-030, FR-053, constitution I), so each element declares each one
-with a JSDoc `@attr` and a description, as it declares `ground`. The normaliser changes to drop a standard attribute
+with a JSDoc `@attr` and a description, as it declares `ground`; so are `title` (PLAN-FRESH-2-006) and the
+`data-ocelle-moved-*` mirrors (R-03, PLAN-FRESH-2-002): nine mirrors on the button, four on the row, each described as
+element-owned (hosts do not write them). The normaliser changes to drop a standard attribute
 only when the element does not declare it with a description (005's `ocelle-icon` and `ocelle-brand-mark`, whose
 manifest entries stay byte-identical); a declared one is kept. The button's custom states are declared with
 `@cssstate` (the manifest's `cssStates`); phase 3 checks that `@custom-elements-manifest/analyzer` 0.11.0 emits them,
 and if it does not, the normaliser adds them from the element's JSDoc. `scripts/manifest.ts` and its tests
-(`test/node/manifest.test.ts`) are in the plan, test-first: 005's entries unchanged, 012's moved attributes present
-and described, the custom states present.
+(`test/node/manifest.test.ts`) are in the plan, test-first: 005's entries unchanged, 012's moved attributes, `title`
+and the mirrors present and described, the custom states present.
 
 ## R-16 Out of scope reminders
 
 The pill tag (and its tooltip from #16's `ocelle-tooltip`, `specs/008-overlays` on `claude/016-overlays`) moved to
 the later status mission; its implementation needs #16 merged first. Nothing in this feature depends on #16.
 `ocelle-button`'s public interface (contracts/elements-package.md) is what #12 (flush, compact breadcrumb items, link
-mode, `aria-current`, the menu button's `aria-haspopup`) and #14 (a flush Copy control) consume.
+mode, `aria-current`; the top-bar menu button's `aria-haspopup`, `aria-expanded` and `ground="chrome"`, R-08 item 4a)
+and #14 (a flush Copy control) consume.

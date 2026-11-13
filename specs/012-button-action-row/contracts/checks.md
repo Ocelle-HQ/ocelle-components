@@ -10,12 +10,13 @@ reduced-motion, navigation-sink and axe support.
 | `packages/elements/test/scenarios/driver.ts` | `Driver` gains `focus`, `press(key, modifiers?)`, `click(id, { inner?, modifiers?, button? })` (always `force: true`, R-06), `hover(id, { inner? })`, `pointerDown(id, { inner? })`, `pointerUp(id)`, `tabOrder({ reverse? })` (Tab, or Shift+Tab), `activeInner(id)`, `events(id, types)` / `takeEvents()`, `preventNext(type)`, `navigations()`, `reducedMotion(mode)`, `axe(scope?)`; `computed(id, property, inner?)` reads a shadow element by selector when `inner` is given; `ax(id)` returns role, name, description, disabled, expanded, pressed, hasPopup, busy, focusable and `controls` (ids); `current(id)` reads the inner control's `aria-current` (CDP does not report it, measured) |
 | event recorder | bubble-phase listeners on the element, its ancestors, `document` and `window`; each record: `type`, `at`, `target` (as seen at that listener), `isTrusted`, `bubbles`, `composed`, `cancelable`, `defaultPrevented`, `detail`, and a per-dispatch `serial` (R-11) |
 | `packages/elements/test/in-process.ts` | the **navigation sink**: a last bubble-phase listener on `window` for `click` and `auxclick` that records `defaultPrevented`, `button`, the modifier flags and the link's `href`, then prevents, so the runner never navigates; `navigations()` returns its records (R-11) |
-| `packages/elements/test/axe-rules.ts` | 006's rule selection, test-side: default rules plus `wcag2a`, `wcag2aa`, `wcag21a`, `wcag21aa`, `wcag22aa`, less `experimental` and the eight harness-document rules; replaced in phase 7 by the import from `gates/lib/axe-rules.ts` |
+| axe rule selection | imported from `gates/lib/axe-rules.ts` (006, on this branch since 37dd501): `ruleMeta` and `ruleOptions`, as `gates/bin/axe.ts` uses them; no test-side copy (R-11) |
 | `packages/elements/test/commands.ts`, `test/browser/driver.ts` | the commands and both drivers for the methods above; in-process `axe` imports `axe-core`; the fixture serves `axe.min.js` from `node_modules/axe-core` same-origin under the strict CSP |
 | `packages/elements/test/browser/serve.ts`, `fixtures/*.html` | new pages `button.html`, `action-row.html`, `link-target.html` (records visits), `axe.js` served; `context.on("page")` records new tabs |
 | `vitest.config.ts` | `elements` project commands gain `press`, `hover`, `pointer`, `emulateReducedMotion`, `axe` (Vitest browser commands) |
-| `packages/elements/test/harness/*.test.ts` | unit tests of each new driver method on plain test pages (a native button and link), in both harnesses, each "does not" result paired with a positive one: hovered and unhovered, pressed and unpressed native buttons (`computed` with `inner`); Tab and Shift+Tab orders; two dispatches give two serials and one dispatch one serial with its target at each listener; the sink records a plain and a Ctrl-click with `defaultPrevented` false and a prevented one true; the axe module gives `button-name` for an unnamed button and no `region` on a landmark-less page |
-| root `package.json`, lockfile | `axe-core` 4.14.0 (devDependency, exact; the version #10 pins; release age satisfied) |
+| `packages/elements/test/harness/*.test.ts` | unit tests of each new driver method on plain test pages (a native button and link), in both harnesses, each "does not" result paired with a positive one: hovered and unhovered, pressed and unpressed native buttons (`computed` with `inner`); Tab and Shift+Tab orders; two dispatches give two serials and one dispatch one serial with its target at each listener; the sink records a plain and a Ctrl-click with `defaultPrevented` false and a prevented one true; the driver's `axe` (006's selection) gives `button-name` for an unnamed button and no `region` on a landmark-less page |
+| root `package.json`, lockfile | unchanged: `axe-core` 4.14.0 is already an exact root devDependency (006) |
+| `gates/lib/plant-runner.ts`, `gates/test/plant-runner.test.ts`, `gates/README.md` | `shardSize` 3 → 1, red first in the `plantShards` test of the repository's size; the README's approved sizes; 006's Complexity Tracking row updated (size 1, split count 76 for the operator's approval) (R-13) |
 
 Navigation itself is observable only on the fixture harness; in-process, the sink's records are the observable.
 
@@ -30,7 +31,7 @@ Navigation itself is observable only on the fixture harness; in-process, the sin
 | `test/control.test.ts` | `elements` | the internal module: the mode decision table (empty, whitespace, relative, `javascript:`, `JavaScript:`, `JAVASCRIPT:x`, `java\tscript:x`, `\u0001javascript:x`, ` javascript:x` → button; `http://[` → button, no error; `data:text/html,x` → link, `href` as written), the attribute move, clearing by empty, whitespace-only and off values, removal as a no-op, the custom states, reference resolution (document, shadow root, missing ids, order), the name order including the row's internal title reference (name exactly the title with description and tags slotted; plant: name from content), the guard in every non-available state (plant: "guard limited to unavailable"), `click()` forwarding |
 | `test/slot.test.ts` | `elements` | a non-icon element in the default slot of a control that adopts `iconSlotStyles` keeps its own box (plant: the unscoped `::slotted(*)`) |
 | `test/entry-button.test.ts`, `test/entry-action-row.test.ts` | `elements` | each module defines only its tag; `entry-root.test.ts` and `exports.test.ts` extended |
-| `test/build/build.test.ts`, `test/build/pack.test.ts`, `test/node/manifest.test.ts`, `test/node/readme.test.ts` | as before | the new files, imports, manifest entries (every moved attribute declared with a description, `ground`, the custom states; 005's entries unchanged), README sections (control conventions, the two elements, engines floor Chromium 135 and WebKit 17.4, moved-ARIA note with the per-stack recipes, custom states, label-in-name rule, `data:`/`vbscript:` note, the spinner's 4.8 s, the flush-hover note, the synthetic-dispatch note, form note, 005's elements keep their `aria-label` rule) and CHANGELOG lines |
+| `test/build/build.test.ts`, `test/build/pack.test.ts`, `test/node/manifest.test.ts`, `test/node/readme.test.ts` | as before | the new files, imports, manifest entries (every moved attribute and `title` declared with a description, each `data-ocelle-moved-*` mirror declared, `ground` with `chrome`, the custom states; 005's entries unchanged), README sections (control conventions, the two elements, engines floor Chromium 135 and WebKit 17.4, moved-ARIA note with the per-stack recipes, custom states, the mirrors (hosts do not write them; copies keep moved values), `title` moved, label-in-name rule, `data:`/`vbscript:` note, the spinner's 4.8 s and the 833 ms limit for an override of `--ocelle-motion-spin`, the flush-hover note with its exception list (`hover-bg` both themes, `inset` light, `chrome-hover` both themes), the flush note's clipping-container space (`focus-offset` + `focus-width`), the changing-surface `ground` rule, the chrome look (`secondary` like `quiet`), the current bar's place inside the ring, a stretched button growing to its row, the synthetic-dispatch note, form note, 005's elements keep their `aria-label` rule) and CHANGELOG lines |
 | `scripts/manifest.ts` tests (`test/node/manifest.test.ts`) | node | the normaliser keeps a standard attribute an element declares with a description and drops an undeclared one (R-15) |
 
 Each "does not" assertion (no event, no click, no navigation, no new tab, no gap, no border, not moved, no `href`) has
@@ -65,15 +66,24 @@ Each row is written in its phase's red commit, with a plant; a documentation-onl
 | Decision 13: Alt-click on an available link row | 6 | `row-states.ts` | no event; the sink records `defaultPrevented` false with `altKey` (in-process); no navigation in the current tab (fixture) |
 | Decision 16: disabled-ink bar | 6 | `row-states.ts` | bar computed colour `disabled-ink` |
 | `host.click()` | 2, 4, 5 | `button.ts`, `busy.ts`, `action-row.ts` | US1-2, US1-3, US3-1, US4-1 |
+| Stretched host (decision 18) | 2, 4, 5, 6 | `button.ts`, `busy.ts`, `action-row.ts`, `row-states.ts` | US1-15 (available: one click serial; disabled: none), US3-10, US4-15 (inner boxes equal their grid cells; one activate event), US5-6 (unavailable stretched row: none); each with the plant restoring `inline-block` (button) or `block` (row) |
+| Mirrors of moved values (decision 19) | 3, 5 | `link.ts`, `action-row.ts` | US2-13 (button, `outerHTML` and `cloneNode(true)`); the row re-created the same way keeps its `aria-label` name; plant: no mirror |
+| Host `title` moved (decision 22) | 3, 5 | `link.ts`, `action-row.ts` | US2-14, US4-16: one AX node, host without `title`, description (or name) from it; plant: `title` not moved |
+| `ground="chrome"` (decision 20) | 2, 5, 6 | `button.ts`, `action-row.ts`, `row-states.ts` | US1-4, US1-5, US1-13, US1-14 on `chrome` and `chrome-hover`; US4-17; US5-11; plant: `chrome` treated as unknown |
+| Changing surface (decision 7) | 2 | `button.ts` | US1-16: border `accent-strong` on canvas and on `hover-bg`; plant: `hover-bg` ground ignored |
+| Flush hover exception (decision 6) | 2, 5 | `button.ts`, `action-row.ts` | US1-14 and US4-8 with the hand-written per-theme list; plant: the flush hover token changed (fails on every other ground) |
+| Ring and bar distinct (decision 21) | 5, 6 | `action-row.ts`, `row-states.ts` | US4-9 four sides on a non-current row (plant: no ring); US5-4 focused current row: ring band, gap and bar band read apart, in ltr and rtl (plants: bar at `inset-inline-start: 0`; bar at the ring's inner edge) |
+| Flush button in a clipping container; spinner token override | — | documentation only | README sentences (`readme.test.ts`) |
 
 ## Tokens tests (`@ocelle/tokens`)
 
 `test/expected.ts` (hand-written entries for `color-hover-border`, `color-accent-hover`, `color-active-bg`,
-`motion-spin`, `motion-turn`, `focus-offset-inset`, and `motion-spin` 0 ms under reduced motion),
+`color-chrome-active`, `motion-spin`, `motion-turn`, `focus-offset-inset`, and `motion-spin` 0 ms under reduced
+motion),
 `test/browser/values.test.ts`, `test/generate.test.ts` (the reduced-motion block: exactly the motion durations
 `motion-fast`, `motion-base`, `motion-spin`, a stricter replacement of "exactly two", recorded with its reason;
 `motion-turn` unchanged), the README and CHANGELOG tests; `contrast/pairs.json` gains the rows of research.md R-08
-with figures from `gate:contrast --print`; the pinned contrast counts in `gates/test/contrast-pairs.test.ts`,
+(38 per theme, the chrome rows included) with figures from `gate:contrast --print`; the pinned contrast counts in `gates/test/contrast-pairs.test.ts`,
 `gates/test/contrast.test.ts`, `gates/test/integration/plants-robustness.test.ts` and
 `gates/test/integration/token-gates.test.ts` change first.
 
@@ -81,28 +91,32 @@ with figures from `gate:contrast --print`; the pinned contrast counts in `gates/
 
 `storybook/test/integration/elements-stories.test.ts` is extended **in each phase's red commit** with that phase's
 story ids, each present in the built Storybook and rendering its elements in light and dark; the story files follow
-in the green commit. No CSP-violation assertion is added for the new stories (006 removes them).
+in the green commit. No CSP-violation assertion is added for the new stories (006 removed them).
 
 ## Gates touched
 
 | Gate | Effect |
 |---|---|
-| `manifest` | two new elements in `custom-elements.json` (regenerated, committed), moved attributes declared and described |
-| `style-lint` | new element CSS, tokens only; no new allowance (the spinner's angle is a token, its factor a number inside `calc()`); a needed one stops the phase and goes to the squad |
+| `manifest` | two new elements in `custom-elements.json` (regenerated, committed), moved attributes, `title` and the mirrors declared and described |
+| `style-lint` | new element CSS, tokens only; no new allowance (the spinner's angle is a token, its factor a number inside `calc()`; the bar's offset a `calc()` of tokens); a needed one stops the phase and goes to the squad |
 | `contrast` | new rows (R-08) |
 | `csp`, `prefix` | new built files and stories |
-| `pins` | `axe-core` 4.14.0 exact |
-| `mutation` | `src/control.ts`, `src/spinner.ts`, `src/ocelle-button.ts`, `src/ocelle-action-row.ts`, `src/icon-slot.ts` under `stryker.elements.config.json`; `packages/tokens/src/source.ts`, `packages/tokens/src/generate.ts` and `packages/elements/scripts/manifest.ts` under the default config; 007 verdicts (Timeout and CompileError reported, pass) |
+| `storybook-build`, `visual`, `axe` | every phase that adds stories: the new stories built, captured against their committed baselines and audited with 0 serious or critical results; the pinned counts in their integration tests and `plant-repo.test.ts` updated red first |
+| `plants` | `shardSize` 1 (phase 1); `fail-token-changed` and `fail-empty-index` extended per phase |
+| `mutation` | `src/control.ts`, `src/spinner.ts`, `src/ocelle-button.ts`, `src/ocelle-action-row.ts`, `src/icon-slot.ts` under `stryker.elements.config.json`; `packages/tokens/src/source.ts`, `packages/tokens/src/generate.ts` and `packages/elements/scripts/manifest.ts` under the default config; `gates/lib/plant-runner.ts` (the `shardSize` constant) under the default config; 007 verdicts (Timeout and CompileError reported, pass) |
 | `test-lint` | all new tests |
 
-## With #10 (phase 7, blocking for landing; recheck when #10 lands)
+## Feature 006 work, per phase (006 merged into this branch at 37dd501)
 
-`storybook/baselines/elements-ocelle-button--*.{light,dark}.png` and `elements-ocelle-action-row--*`, produced in the
-pinned container; the axe gate on every new story; the story counts in `storybook-build`, `visual`, `axe` and
-`plant-repo` integration tests; `fail-token-changed` and `fail-empty-index` plants extended;
-`packages/elements/test/axe-rules.ts` replaced by the import from `gates/lib/axe-rules.ts`; `shardSize` lowered to 1
-in `gates/lib/plant-runner.ts`, test-first, with a CI run showing every Plants shard under 10 minutes and the run's
-total time recorded (research R-13).
+Each phase that adds stories (2 to 6): `storybook/baselines/elements-ocelle-button--*.{light,dark}.png` or
+`elements-ocelle-action-row--*` for its stories, made with `pnpm run visual:update` under docker in the pinned
+container (CI confirms under docker and podman; CI's artifact committed when they differ); `gate:axe` with 0 serious
+or critical results on every new story; the story counts in the `storybook-build`, `visual`, `axe` and `plant-repo`
+integration tests (exact summary lines, written by hand); `fail-token-changed` extended with the phase's measured
+light story-themes that show `color-ink`; `fail-empty-index`'s tree gains an empty `button.stories.ts` (phase 2) and
+`action-row.stories.ts` (phase 5). Phase 1: `shardSize` lowered to 1, test-first, before any story is added (research
+R-13). Phase 6's review records a CI run at the full story count with every Plants shard under 10 minutes and the
+run's total time; a shard near 10 minutes is a stop-and-ask.
 
 ## Mutation scope
 
