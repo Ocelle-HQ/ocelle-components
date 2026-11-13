@@ -706,6 +706,7 @@ gates and the README documentation test.
   | `status` | Announces as FR-008 says, politely whatever the tone. | The same. |
   | `log`, or any other role that gives the host's node a live politeness | Not supported. | Not supported. |
   | any role, with a host-written `aria-live`, `aria-atomic` or `aria-relevant` on `ocelle-notice` | Not supported. | Not supported. |
+  | any role, with a host-written `aria-hidden="false"` on `ocelle-notice` | Not supported. | Not supported. |
 
   The `alert` and `status` rows are an operator decision (operator answer at spec check 2, "Keep: role implies
   announce"): a host `role="alert"` or `role="status"` without `announce` behaves as `announce` with that role's
@@ -781,7 +782,11 @@ gates and the README documentation test.
 
   A host `aria-labelledby` is not supported (it would reference across the shadow root): it does not name the
   control, and the README says to use `label` or `aria-label`. The `description` is the control's accessible
-  description; a host `aria-describedby` is not supported (README).
+  description; a host `aria-describedby` is not supported (README). A host `role` or `aria-hidden="false"` on a form
+  control is not supported, as on mission 005's elements: they would give the host's node a role or a hiding of its
+  own rather than reach the inner control, so they are not ARIA state of the kind constitution III forwards; the
+  README says not to set them and to name the control with `label`, a `<label>` or `aria-label`; the outcome is not
+  specified and no scenario tests it.
 
   Other ARIA states and properties a server template may write on the host (`aria-invalid`, `aria-required`,
   `aria-disabled`, `aria-description`) must reach the inner control and must not stay as a second, differing state
@@ -908,7 +913,8 @@ gates and the README documentation test.
   anchor, the `email` keyboard hint, `password` masking, the select's list opening); that form controls are not
   supported on state grounds (FR-025); how host ARIA attributes combine with the element's own (FR-022), that only
   `"true"` is supported for host `aria-invalid`, `aria-required` and `aria-disabled`, that a host `aria-label` must
-  contain the visible label text, and that a host `aria-label` and `aria-description` also stay on the host's node;
+  contain the visible label text, that a host `role` or `aria-hidden="false"` on a form control is not supported
+  (FR-022), and that a host `aria-label` and `aria-description` also stay on the host's node;
   how announcements reach the tree (a separate live region holding a copy of the text, written after the
   serialisation delay, and the delay); the announcement wait, that changes closer together than it merge and that a
   text changing more often than it is not announced until it stops (FR-008); how long a copy is held, that the figure

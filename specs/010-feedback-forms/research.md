@@ -587,7 +587,9 @@ in Vitest and the typecheck gate runs at phase end. The shipped-timing row plant
 `test/live-timing.test.ts` runs its assertions through `checkShippedTiming(defaults, firstReturn)` of
 `packages/elements/test/live-timing-check.ts`, and the row calls that check with a copy of `announcerDefaults` whose
 `delayLoaded` is 0, and again with a first return that differs from the constant. Each call must throw the check's
-assertion message.
+assertion message. The row first calls the check unplanted, with the real `announcerDefaults` and the real first
+return, and that call must not throw: against the scaffold's neutral constant and the stub's `undefined` it throws,
+so the row fails before green, as the oracle row does on its unplanted cases (analysis C5).
 
 ## R-10 Undefined elements (spec Edge Cases)
 
