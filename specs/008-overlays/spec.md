@@ -227,9 +227,12 @@ pointer and keyboard. It is complete when the scenarios below pass in process an
 
 - **Opener gone.** The element that opened a dialog or drawer is removed or disabled before it closes: focus goes to
   no removed element and nothing throws; the dialog documents where focus lands.
-- **Focus moved before the close ends.** A host that moves focus after setting `open` to false, or opens a second
-  dialog while the first is still leaving, keeps that focus: the closing overlay returns focus only while focus is
-  still inside it or on the body (FR-009). A dialog opened from inside a closing one records that one's opener.
+- **Focus moved before the close ends.** A second dialog opened while the first is still leaving keeps focus: the
+  closing overlay returns focus only while focus is still inside it or on the body (FR-009). A dialog opened from
+  inside a closing one records that one's opener. The closing overlay stays modal until its exit ends, so the page
+  behind it is inert: a host `focus()` on page content during the exit has no effect, and focus then returns to the
+  opener. A host that wants focus elsewhere moves it in the `…-close` listener, which runs after focus returned and
+  keeps that choice.
 - **Opener in a shadow root.** The opener is a button inside another element's shadow root (#12's nav item, #7's
   button): focus returns to that inner button, not to its host only.
 - **Opened by the host without an opener.** `open` is set at first render or by a script with focus on the body:
@@ -301,8 +304,9 @@ pointer and keyboard. It is complete when the scenarios below pass in process an
   that are not rendered or not visible are not stops, and a radio group is one stop. Only the topmost overlay wraps.
 - **FR-009**: On every close, focus MUST return to the element (the deepest one, inside shadow roots) that had focus
   when the overlay opened, if it is still connected and focusable, provided focus is then still inside the closing
-  overlay or on the body; focus the host or another overlay has moved elsewhere MUST NOT be moved. An opener inside an
-  overlay that is closing is replaced by that overlay's opener.
+  overlay or on the body; focus another overlay has taken MUST NOT be moved. An opener inside an overlay that is
+  closing is replaced by that overlay's opener. The page behind a closing overlay stays inert until its exit ends, so
+  the documentation tells hosts to move focus elsewhere in the `…-close` listener, after the return.
 - **FR-010**: Escape, while the overlay is the topmost open one and no tooltip bubble inside it is shown, MUST
   dispatch the close request with reason `"escape"`, unless the key has already been handled (`defaultPrevented`),
   cancels an IME composition, or clears a non-empty search field; then the overlay does nothing. Opening an overlay
@@ -409,7 +413,7 @@ pointer and keyboard. It is complete when the scenarios below pass in process an
   name.
 - **FR-037**: The tooltip MUST NOT name its trigger or carry essential information: the documentation states that the
   trigger carries its own accessible name and that the bubble only repeats or supplements what is available
-  otherwise; touch input shows no bubble.
+  otherwise; touch input shows no bubble, except on a text-field trigger, which shows it on any focus (FR-029).
 
 **Tokens and engines**
 

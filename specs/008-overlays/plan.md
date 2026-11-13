@@ -116,7 +116,8 @@ Settled in the squad's round 1 (9 to 13 by the operator at the forks, 14 a confi
     host reopens it after a move.
 13. **`aria-describedby` kept** (R-13): with `describes`, a `MutationObserver` re-adds the tooltip's id when a host
     re-render drops it, and the id follows a replaced trigger.
-14. **Focus return only while focus is the overlay's** (R-05): a host or follow-up dialog that moved focus keeps it.
+14. **Focus return only while focus is the overlay's** (R-05): a follow-up dialog that took focus keeps it. A host
+    moves focus in the `…-close` listener, after the return; a move to the inert page during the exit has no effect.
 
 ## Risks
 

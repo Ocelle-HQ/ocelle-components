@@ -63,8 +63,10 @@ pointer type; `viewport()` at 1280 × 800; `emulateReducedMotion` set and reset;
   disabled before close (body, nothing thrown, no console message); opener made inert (body); opened with focus on
   the body (returns to body); opener a custom element's inner button removed while its host stays (body).
 - **Focus return is conditional** (motion on): (a) close A and open B in one task: focus stays in B when A's exit
-  ends; closing B returns focus to the page control that opened A; (b) set `open = false` then focus another page
-  control during the exit: the element does not move focus.
+  ends; closing B returns focus to the page control that opened A; (b) set `open = false` and focus another page
+  control in the `…-close` listener: focus stays on that control (`focusPath()` read after the event and after the
+  next frame); (c) set `open = false` then call `focus()` on another page control during the exit: focus does not
+  move there (the page is inert) and lands on the opener when the exit ends.
 - **Nested** (dialog slotted inside an open drawer): one Escape gives exactly one request event, on the dialog; the
   drawer stays open and `:modal`; focus returns into the drawer. Tab in the dialog never runs the drawer's wrap. A
   dialog opened from the drawer whose opener is removed before close: focus on the drawer's initial target.
@@ -124,7 +126,7 @@ pointer type; `viewport()` at 1280 × 800; `emulateReducedMotion` set and reset;
   hides the bubble only, the second requests the dialog's close (SC-005).
 - **Trigger opens an overlay**: hover a trigger past the delay, click it to open a dialog, and the same for a drawer:
   the bubble is hidden when the overlay opens and one Escape requests the overlay's close.
-- **Touch**: `touchTap()` on the trigger: the trigger's action runs, no bubble on the tap or while it keeps focus.
+- **Touch**: `touchTap()` on a button trigger: the trigger's action runs, no bubble on the tap or while it keeps focus.
 - **Empty `text`**, **`disabled`**: no bubble on hover or focus. Trigger becomes `disabled` while shown: hidden.
   Trigger removed while shown: hidden.
 - **Slot change**: the slotted trigger replaced: the new trigger shows the bubble; the old one gets no bubble, no

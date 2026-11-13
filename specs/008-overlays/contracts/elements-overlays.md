@@ -30,8 +30,10 @@ an event's `detail`, is MAJOR.
 - Accessibility: one `dialog` node, modal, named by the label (heading level 2) or the host `aria-label`. With a host
   `aria-label`, the closed host is exposed as a named generic node (measured in Chromium); the README § Host ARIA
   records it for the overlays (R-08).
-- Focus: on close, focus returns to the opener only if it is still inside the overlay or on the body; a host that
-  moves focus after `open = false` keeps its choice (R-05).
+- Focus: on close, focus returns to the opener only if it is still inside the overlay or on the body; focus another
+  overlay has taken is kept. The page is inert until the exit ends, so a host moves focus elsewhere in the `…-close`
+  listener, which runs after the return and keeps its choice; a move to page content during the exit has no effect
+  (R-05).
 - Platform behaviour the README states (R-02, R-03, R-05a):
   - a slotted `<form method="dialog">` does nothing to the overlay; close it with `open = false` in the form's submit
     handler;

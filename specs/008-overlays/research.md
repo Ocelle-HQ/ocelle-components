@@ -119,9 +119,12 @@ unmerged). Results marked "squad probe" were measured by the plan squad's round 
   `shadowRoot.activeElement`). If that element is inside an overlay that is closing (its exit is running), the overlay
   records that overlay's own opener instead.
 - **Only when focus is still ours**: on close, focus is moved only if the deep active element is inside the closing
-  overlay or is the document body. If the host (or a follow-up overlay) has moved focus elsewhere, the overlay leaves
-  it there. The README tells hosts that a focus move after a close belongs in the `…-close` listener or anywhere after
-  `open = false`; either is respected.
+  overlay or is the document body. If a follow-up overlay has taken focus, the overlay leaves it there.
+- **Host focus moves** (verify 1): the `<dialog>` stays modal until the exit ends (R-06), so the rest of the page is
+  inert during the exit and a host `focus()` on page content then does nothing; focus stays in the closing overlay
+  and is returned to the opener. `…-close` is dispatched after the return (R-06), so a focus move in that listener
+  is final. The README says: move focus after a close in the `…-close` listener; a move to page content between
+  `open = false` and `…-close` has no effect while motion runs.
 - **Where**: the opener if it is still connected, not `disabled` and not inside an inert subtree. Otherwise:
   - if an overlay beneath is still open, focus goes to that overlay's initial focus target (R-04);
   - else focus goes to the document body (`document.activeElement === document.body`), with nothing thrown.
@@ -319,7 +322,8 @@ unmerged). Results marked "squad probe" were measured by the plan squad's round 
   listener is removed on hide. After Escape the bubble stays hidden until the pointer re-enters the trigger or
   bubble, or keyboard focus re-enters. FR-032's "stays while" is read with this exception (SPEC-2-02).
 - **Touch**: `pointerType === "touch"` never starts a show. A tap's focus on a button or link does not match
-  `:focus-visible`.
+  `:focus-visible`. A tap on a text-field trigger focuses it with `:focus-visible`, so its bubble shows (the stated
+  exception above; spec FR-029, FR-037).
 - **Delay**: read from the computed `--ocelle-tooltip-delay` on the trigger (the host has no box but computes custom
   properties as usual) when the timer starts (`setTimeout` with a function; the `csp` gate's `pass-function-timer`
   plant allows it).
