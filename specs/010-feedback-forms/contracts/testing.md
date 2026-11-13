@@ -47,7 +47,9 @@ Bounds: a step that pauses more than 2000 times, or runs longer than 5000 ms, fa
 exceeded …", so a looping element or mutant ends as a failed test, not a Timeout (research R-09). The figures are
 re-measured in T002.
 
-`regionText(nodes, region)` and `announcements()` live in `test/live-reading.ts` and have unit tests of their own.
+`regionText(nodes, region)` and `announcements()` live in `test/live-reading.ts` and have unit tests of their own,
+written as cases that take the reading as a parameter in `test/live-rules.ts` and run by `test/live.test.ts`, so a
+plant row can run the same case with a planted reading (§ Plants, Seams; analysis U7).
 The reading rules run on `getFullAXTree` node lists in `test/fixtures/ax/`, recorded before the red commit (T001) by
 a throwaway Playwright script against the pre-installed Chromium on planted regions (script not committed; each
 fixture's header comment names the Chromium version and the planted markup); the T002 spike re-records them with the
@@ -84,7 +86,10 @@ it is the same code over the page's CDP session. Both harnesses share `test/live
   `drive.readyState("interactive")` and `insert(containerId, markup, "innerHTML")`. On fixture pages:
   `liveCapture.startDocument` of a fixture page that loads the browser build and then a same-origin module script
   whose `DOMContentLoaded` listener inserts the markup of a `<template>` in the page and records `performance.now()`
-  (module scripts run before `DOMContentLoaded`, so the definition is registered first). A shared scenario body calls
+  (module scripts run before `DOMContentLoaded`, so the definition is registered first). The page and its script
+  are files under `packages/elements/test/browser/fixtures/`, the directory `test/browser/serve.ts` serves
+  (`:30`, `:59`), and the script is among the page's allowed requests (`serve.ts:115-122`), so the fixture run's
+  "only allowed requests" assertion holds (analysis I12). A shared scenario body calls
   it once, with no harness condition; US1-8's `"interactive"` cell uses it. `registerFirstLoad` and
   `drive.readyState` stay in process only and are not called by a shared body's cell that runs on fixture pages.
 - `drive.after(ms)`: returns no earlier than `ms` after the previous step's end, measured in the page, and resolves
@@ -157,13 +162,38 @@ the `form="other"` and outside-any-form rows included (analysis G2).
 ## Plants
 
 Each assertion family has a planted defect that turns it red (PLAN-TESTABILITY-1-007). A plant is a test fixture under
-`test/fixtures/` (an element class derived from the real one with one defect, or a planted reading function), not
-shipped. `test/plants.test.ts` (the `elements` project) holds one row per plant: the plant, the scenario body it runs,
-and the assertion message the run must fail with. Each row registers the plant under its own tag, runs the named
-scenario body with the driver's tag mapping (the scenario's tag replaced by the plant's), and asserts that the body
-rejects with that message; a plant whose scenario passes fails the row. Rows that need the document capture run in
-the `elements-browser` project the same way. Each phase records the plant run's output in
-`specs/010-feedback-forms/reviews/phase-<n>/plants.md`, as 005 did in `reviews/phase-4/plants.md`.
+`packages/elements/test/fixtures/` (an element class derived from the real one with one defect, a planted reading
+function, or planted timing values), not shipped. `packages/elements/test/plants.test.ts` (the `elements` project)
+holds one row per plant: the plant, the scenario body it runs, and the assertion message the run must fail with. Each
+row registers the plant under its own tag, runs the named scenario body with the driver's tag mapping (the scenario's
+tag replaced by the plant's), and asserts that the body rejects with that message; a plant whose scenario passes fails
+the row. Rows and cells whose scenario runs under `liveCapture.startDocument` (fixture pages only) are in
+`packages/elements/test/browser/plants.test.ts` (the `elements-browser` project, which takes `test/browser/**`; root
+`vitest.config.ts`), in the same row format (analysis U9). Its plant classes reach the fixture pages as the test host
+does: `packages/elements/test/browser/global-setup.ts` bundles them, with Lit, from an entry that defines each plant
+under its tag (`packages/elements/test/browser/plants-entry.ts`) into `ocelle-plants.js`. `test/browser/serve.ts`'s
+built-file list serves that bundle, and only the plant rows' pages allow it. T001c starts that file with the capture-bounds row's
+fixture-page cell (the looping element of `packages/elements/test/browser/fixtures/capture-loop.html` and its plain
+same-origin script `capture-loop.js`); T016 adds the bundle with the first notice plant row that needs it. Each
+phase records the plant run's output in `specs/010-feedback-forms/reviews/phase-<n>/plants.md`, as 005 did in
+`reviews/phase-4/plants.md`.
+
+**Seams** (analysis U7; research R-09 § Plant seams). What each kind of plant overrides, and what it imports:
+
+| Plant kind | Families | Overrides | Imports |
+|---|---|---|---|
+| element class | alert path, alert baseline, alert pending tone, alert pending role, alert step after reset, politeness, politeness baseline, hidden, nested region, host-role region, heading gap, host ARIA, naming, change event, implicit submission, form value, validity, option mirroring, indicator | a protected method of the element or of its base class (a trigger handler, the politeness, the render or the static styles, the internals setup, the name, value, validity or option step) | the element class from its `src/ocelle-*.ts` module |
+| announcer | insertion announcement, merge window, minimum hold, baseline re-check, reveal baseline, hold, first load late write, short-lived empty state, text baseline, error baseline | the element's protected `createAnnouncer()`, returning a class derived from `Announcer` with one protected step overridden (the wait, the write, the hold, the re-check, the baseline) | `Announcer` from `src/live.ts`, and the element class |
+| first load and move | first load (constructor `isConnected` rule), first load (announces on first load), move, later task | the element's protected first-load or move query, which reads `src/live.ts` and the registration flag of `src/define.ts` | the element class |
+| timing values | shipped timing | no class: the row calls `checkShippedTiming(defaults, firstReturn)` of `packages/elements/test/live-timing-check.ts`, the check `test/live-timing.test.ts` runs, with `{ ...announcerDefaults, delayLoaded: 0 }` and the real first return, then with the real `announcerDefaults` and a first return other than the constant; each call must throw the check's message | `announcerDefaults` from `src/live.ts` |
+| planted reading | oracle reading | no class: the row runs the named case of `packages/elements/test/live-rules.ts` with a planted `{ regionText, announcements }` from `packages/elements/test/fixtures/reading-plants.ts` | `test/live-rules.ts` |
+| capture | capture bounds | no class of the library: a test-only element that mutates its own attribute in a loop (`packages/elements/test/fixtures/live-loop.ts` in process; `packages/elements/test/browser/fixtures/capture-loop.html` with its plain script `capture-loop.js` on fixture pages) | nothing from `src/` |
+
+The scaffolds give every module export these imports name (T009a: `Announcer`, `announcerDefaults`,
+`setAnnouncerTimingForTests`, `OcelleNotice`; T029a: `OcelleFormInput`; T049a: `OcelleFormSelect`), so the plant
+fixtures load at the scaffold and at the red commit and each row fails on its assertion, not on an import. The
+protected methods' names are fixed by the red commit's plant fixtures and declared in green; a plant overriding a
+method the scaffold lacks still loads, since Vitest runs the tests untyped and the typecheck gate runs at phase end.
 
 The last column names the task that adds each row or cell (analysis G11): the capture and oracle rows are T001c's
 (phase 1); the US1, SC-002 and `live-timing` cells T016's (phase 2), with notice plants; the US2 cells T034's (phase 3), with plant classes derived
@@ -181,7 +211,7 @@ from `ocelle-form-input`; the US3 cells T052's (phase 4), with plant classes der
 | minimum hold | a trigger during the hold empties the copy at once (PLAN-FRESH-2-001) | US1-13 change 10 ms after a write (the first copy counts under `"settled"`) | T016 |
 | baseline re-check | writes at the end of the wait without comparing with the baseline | US1-13 `A`, `B`, `A` within the wait (count 0) | T016 |
 | reveal baseline | the re-check also applies to insertion and reveal (the baseline not set to none, PLAN-FRESH-3-001) | US1-8, US1-17 and US2-22 (first loaded hidden then revealed; announced, hidden and revealed with the same text; count 1) | US1 cells T016; US2-22 T034 |
-| shipped timing | `announcerDefaults` with `delayLoaded: 0`; the timing in force not started from the constant | `test/live-timing.test.ts` | T016 |
+| shipped timing | `announcerDefaults` with `delayLoaded: 0`; the timing in force not started from the constant (planted values, Seams) | `checkShippedTiming` of `test/live-timing-check.ts`, the assertions `test/live-timing.test.ts` runs | T016 |
 | hold | empties the copy after `W` instead of `H` (PLAN-FRESH-2-005) | US1-13 hold scenario (copy settled for `H`) | T016 |
 | first load, late write | writes exactly the pre-load `W` after first load under `drive.readyState("loading")` (PLAN-FRESH-2-004) | US1-10 under `registerFirstLoad`, under both rules | T016 |
 | short-lived empty state | text written in a microtask after the announcer appears; text written in the first animation frame | US1-8 (`"settled"` count 0) | T016 |
@@ -206,7 +236,7 @@ from `ocelle-form-input`; the US3 cells T052's (phase 4), with plant classes der
 | option mirroring | the option observer misses `characterData` | US3-4 | T052 |
 | indicator | indicator without `pointer-events: none` | US3-8 | T052 |
 | capture bounds | an element that mutates its own attribute in a loop | the bound's assertion, not a timeout | T001c |
-| oracle reading | takes a link's own name; visits an `img`'s descendants; ignores the keeping rule | the named `test/live-reading.ts` unit tests | T001c |
+| oracle reading | takes a link's own name; visits an `img`'s descendants; ignores the keeping rule | the named cases of `test/live-rules.ts`, which `test/live.test.ts` runs as the unit tests of `test/live-reading.ts` | T001c |
 
 Families without a plant (styles measured on computed tokens, forced colours, focus ring, keyboard steps of the native
 controls) have no partially working element before their phase: their red-first run against the code without the

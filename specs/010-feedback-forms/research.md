@@ -325,7 +325,11 @@ attribute change, on `focusin`, and when an external label's subtree changes: a 
 characterData, subtree) observes each element of `internals.labels`, and the observed set is refreshed on connect, on
 `focusin` and on each recompute (PLAN-A11Y-SECURITY-1-007), so a changed label text renames the control without a
 focus. A label associated later (a new `<label for>`) is picked up at the next refresh (README). A host
-`aria-labelledby` is ignored (README).
+`aria-labelledby` is ignored (README). A blank host `aria-label` (empty or whitespace only) is skipped, as
+accessible-name computation skips one (accname 1.2, step 2D), so the labels' text then `label` name the control
+(FR-022 item 1; analysis I10). This differs from 005's `ocelle-icon` and `ocelle-brand-mark`, where a blank host
+`aria-label` decides alone and leaves the element unlabelled (README § Host ARIA); the README scopes that sentence to
+those two elements and states the form controls' rule (tasks T034a, T041).
 
 A host `aria-label` keeps its precedence (operator decision PLAN-A11Y-SECURITY-1-006 (b)): the README requires it to
 contain the visible label text when a visible label is drawn (WCAG 2.2 SC 2.5.3) and lists any other combination as
@@ -376,6 +380,27 @@ normalised `error` (R-03's rule; a whitespace-only `error` sets nothing). The ru
 stays in forced colours; inside that block the boundary colour is `--ocelle-color-danger`, and in forced colours it is
 the FR-025 system colour (`CanvasText`, as the normal boundary's `ButtonBorder` or `CanvasText`), with the error text
 in `CanvasText`. US2 scenario 15 measures the width in forced colours.
+
+**Manifest of the input's `value` attribute** (FR-021, FR-034; constitution I; analysis U6). The `value` attribute is
+the input's default value and has no property of its own: the Lit property `value` (the current value) is declared
+with `attribute: false`, and the input adds `"value"` to `observedAttributes` and applies it by the dirtiness rule.
+It is declared in the manifest, not left undeclared beside `form`: declaring it needs no exception to constitution I,
+and nothing in the repository stands in the way. The normaliser keeps an attribute with no `fieldName`
+(`packages/elements/scripts/manifest.ts:74-75`: an attribute is dropped only when it is in the standard-attribute
+list or names a field that is not public); the gate asks of each attribute only a non-empty description
+(`gates/bin/manifest.ts:96-106`, `no-description`); the analyzer turns each name of an `observedAttributes` getter
+into an attribute entry, with no description (005 `reviews/phase-2/spike.md` § 2, the `aria-label` entry). The
+description, type and default come from the class JSDoc tag `@attribute {string} [value=""] - <description>`, the
+analyzer's class-level attribute tag. What this container cannot show is how analyzer 0.11.0 (not installed here)
+combines that tag with the bare `observedAttributes` entry of the same name, and whether it takes the default from the
+tag's `[value=""]`. T036 runs the generator on the input and records the raw output in `reviews/phase-3/`. If it gives
+one described entry with type and default, nothing more is needed. If it gives two entries, or one without the
+default, the normaliser merges a declaration's attributes of the same name, the described one winning, and takes the
+default from the same tag. That is a normalisation of the analyzer's output from the element's own source, as the
+`IconName` expansion is, and not a new kind of source path (#27). Only if neither yields the entry T030 asserts does
+the phase stop for the operator. The alternative, recording the attribute beside `form` as documented and not
+declared, would need an exception to constitution I: `form`'s like-named property is the owning form, whereas the
+`value` attribute is the element's own surface and has nothing else to declare it.
 
 **Alternatives.** Light-DOM control: rejected by the operator (spec). Delegating to a hidden light-DOM `<input>` that
 the element creates: rewrites host children. `aria-label` on the inner control instead of `aria-labelledby`: works,
@@ -494,10 +519,25 @@ chosen in T002 and is at least two rendering updates long,
 so the microtask and first-frame plants still count zero under `"settled"`. Fixture pages never call the setter and
 run at Chromium's 150 and 350 ms and the real `H`; they are the evidence that the real figures work. A test in
 `test/node/` checks that the setter is called only from `test/in-process.ts` (no `src/` module, no fixture page). T002 measures, with
-the test `D`, the `elements` project's dry run and a worst-case shard (60 changed lines of `src/live.ts`, the largest
-entry specs 001 FR-013 allows), and the fixture-page suite at real figures; if a shard's `gate:mutation` run takes over
-7:00 (420 s) wall-clock, measured from the command's start to its exit in this container, the plan stops for the
-operator before phase 2 (analysis A3). The Stryker timeout factor is set from the same measurement.
+the test `D`, the `elements` project's dry run, a shard of `src/live.ts` and the fixture-page suite at real figures.
+**The shard T002 measures** (analysis U8): `src/live.ts` does not exist in phase 1, so its subject is a draft. It is
+an uncommitted `packages/elements/src/live.ts` holding the announcer of R-02 as T020 will write it (the wait restarted
+by each trigger, the write, the minimum hold, the hold `H`, the baseline re-check, `announcerDefaults` and the
+setter), at least 30 changed lines. It is driven by an uncommitted spike test in the `elements` project
+(`packages/elements/test/spike-live.test.ts`) through the capture at the test `D`, with insertion, change, merge and
+hide cells on a test-only host that uses the draft. The draft is made visible to `git diff` with
+`git add --intent-to-add`, since the gate reads `git diff <base>` (`gates/bin/mutation.ts:142`) and that leaves out
+untracked files. One 30-line entry of it is then run as a shard of its own:
+`pnpm run gate:mutation -- --base <HEAD> --files packages/elements/src/live.ts:<start>-<end>`. Thirty lines is the
+largest entry the shard plan cuts since 007 FR-014 (`gates/lib/mutation/shards.ts:43`); the 60 lines of 001 FR-013,
+which an earlier draft of this entry named, no longer apply. Afterwards the draft and the spike test are removed and
+the index reset. If that run takes over 7:00 (420 s) wall-clock, measured from the command's start to its exit in this
+container, the plan stops for the operator before phase 2 (analysis A3). The Stryker timeout factor is set from the
+same measurement. Because a real shard holds up to 10 entries and 250 lines (`shards.ts:44-45`) and the draft is not
+the final code, the same 7:00 check is repeated where it becomes measurable. At phase 2's end (T025), every shard of
+the `--plan` output that holds a `src/live.ts` entry is run and timed in the same way. At phase 3's end (T041), every
+shard that holds a `src/live.ts` or `src/form-control.ts` entry is, since the error announcer runs on the same timing.
+Each time is recorded in the phase review, and a shard over 7:00 stops the phase for the operator.
 
 **The shipped figures under mutation** (operator decision PLAN-FRESH-3-004 (a)). Because every in-process scenario
 replaces `D` and `H` first, no scenario reads the shipped figures, and the mutation gate runs only the in-process
@@ -529,7 +569,25 @@ replaced or edited after the red commit (analysis I6). They are not mutated: the
 and gate source and runs the elements configuration on `packages/elements/src/` only (`gates/bin/mutation.ts:71-74`),
 and extending its selection to test code would be a gate change this plan does not make. Instead each rule has a
 planted reading (a reading that takes a link's name, one that visits an `img`'s descendants, one that ignores the
-settle rule) that must turn a named unit test red (`contracts/testing.md` § Plants).
+settle rule) that must turn a named unit test red (`contracts/testing.md` § Plants). For this the unit tests'
+cases are written once as bodies taking the reading (`{ regionText, announcements }`) in
+`packages/elements/test/live-rules.ts`; `test/live.test.ts` runs them with `test/live-reading.ts` and
+`test/plants.test.ts` with a planted reading (analysis U7).
+
+**Plant seams** (analysis U7; `contracts/testing.md` § Plants, Seams). Most notice and form plants change behaviour
+that lives in the announcer and in the first-load and move rules, not in the element's template. So every planted
+behaviour sits behind a protected method, which a plant class derived from the real element overrides: a method of
+the element (`OcelleNotice`, the base class of `src/form-control.ts`, `OcelleFormInput`, `OcelleFormSelect`), or of the internal `Announcer`
+class of `src/live.ts`, which the element obtains through its protected `createAnnouncer()`. Protected members are
+not in the manifest (`scripts/manifest.ts:66-68`, `:72`) and are not public surface. The plant fixtures import only
+module exports that the phase's scaffold already has (`Announcer`, `announcerDefaults`, `setAnnouncerTimingForTests`,
+the element classes; `define` exists), so `test/plants.test.ts` loads at the scaffold and at the red commit, and each
+row fails on its assertion. A plant overriding a method the scaffold lacks still loads, since the tests run untyped
+in Vitest and the typecheck gate runs at phase end. The shipped-timing row plants values, not a class:
+`test/live-timing.test.ts` runs its assertions through `checkShippedTiming(defaults, firstReturn)` of
+`packages/elements/test/live-timing-check.ts`, and the row calls that check with a copy of `announcerDefaults` whose
+`delayLoaded` is 0, and again with a first return that differs from the constant. Each call must throw the check's
+assertion message.
 
 ## R-10 Undefined elements (spec Edge Cases)
 
