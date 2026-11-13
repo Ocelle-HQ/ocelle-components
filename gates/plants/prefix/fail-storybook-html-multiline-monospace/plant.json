@@ -1,0 +1,11 @@
+{
+  "expect": "fail",
+  "why": "An HTML entry of the Storybook build output with an inline <style> whose font-family value ends in monospace on the next line: the declaration is matched across lines and reported at the line where it starts (006 research.md R-10).",
+  "findings": [
+    {
+      "location": "storybook/dist/iframe.html:6",
+      "rule": "monospace",
+      "message": "monospace"
+    }
+  ]
+}

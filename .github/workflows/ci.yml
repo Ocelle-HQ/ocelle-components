@@ -1,7 +1,7 @@
 # Pull-request CI (FR-020, contracts/ci-checks.md, research.md R-16): one job per gate, each a separately named check,
 # plus the plant job (FR-025). The gate job ids are the gate ids of gates/gates.json and the FR-020 list of
 # gates/lib/registry.ts; the plant job checks that the three sets match (research.md R-10). The ruleset on main
-# requires the fourteen check names (gates/README.md).
+# requires the eighteen check names (gates/README.md).
 #
 # Security (research.md R-16): a read-only token at the top level and no other permission anywhere, every checkout
 # with persist-credentials: false, no secret, every action pinned by commit SHA. Every job runs the shared setup of
@@ -129,7 +129,7 @@ jobs:
         with:
           persist-credentials: false
       - uses: ./.github/actions/setup
-      - run: pnpm -r build && pnpm run gate:csp
+      - run: pnpm --filter "./packages/*" -r build && pnpm run gate:csp
   prefix:
     name: Prefix
     runs-on: ubuntu-24.04
