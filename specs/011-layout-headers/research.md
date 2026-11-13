@@ -12,11 +12,22 @@ them: `src/ocelle-card.ts`, `src/ocelle-section-header.ts`, `src/ocelle-page-hea
 `src/ocelle-context-sidebar.ts`, `src/ocelle-personal-rail.ts`, each ending in one `define()` call, each exported from
 `src/index.ts` and defined by `src/browser.ts`; entry points `@ocelle/elements/<tag>.js` in `package.json` `exports`
 (public surface, contracts/elements-package.md). Internal modules beside them: `src/slot-state.ts` (R-03) and
-`src/card-context.ts` (R-05). Styles are one `css` template per element; variant rules sit inside
-`@media not (forced-colors: active)` only where a forced-colours rule must reach them (grounds); layout rules do not
-depend on forced colours and stay outside.
+`src/card-context.ts` (R-05). Styles are one `css` template per element; variant rules that set colours or grounds
+sit inside `@media not (forced-colors: active)`, and layout-only variant rules (size, padding, gap, direction,
+wrapping) stay outside it, so a compact density, a compact size and a horizontal rail keep their layout in forced
+colours (FR-001 as amended in plan squad round 1, US1-13, US4-9). Phase 2 amends the README's Styles paragraph to
+that rule, with a readme-test statement written red first and a documentation note in the `@ocelle/elements`
+CHANGELOG (FR-036).
 
-**Rationale**: FR-001; the README says a later element follows these rules without a design question.
+**Box sizing**: `packages/styles/src/base.css`'s `:where(*) { box-sizing: border-box }` is a document rule and
+does not reach a shadow tree (as `packages/styles/test/readme.test.ts:46-48` states), and a page may not link
+base.css at all. Every host or shadow-tree box of these elements that has a size (`inline-size`, `block-size`, a
+`min-` or `max-` size) together with padding or a border sets `box-sizing: border-box` in its own rule, so the sizes
+the spec states are border-box sizes with or without base.css. Each element states its host display: `block` for the
+section header, page header and card; `flex` (a column) for the sidebar and rail (R-09, R-10).
+
+**Rationale**: FR-001; the README says a later element follows these rules without a design question. Applying
+FR-001's original wording to layout variants would revert them to the default layout in forced colours.
 
 **Alternatives**: one module for all five (rejected: an entry point defines one element).
 
@@ -59,45 +70,85 @@ surface the manifest must list).
 
 ## R-04 Section header layout (FR-010, FR-011)
 
-**Decision**: the shadow root holds a row container (`display: flex; flex-wrap: wrap; column-gap:
-var(--ocelle-space-4); row-gap: var(--ocelle-space-2); align-items: flex-start`) with two children: the heading
-column (`display: flex; flex-direction: column; gap: var(--ocelle-space-1); flex: 1 1 min-content; min-inline-size:
-0`) holding the eyebrow, heading and description wrappers, and the actions wrapper (`flex: 0 0 auto; display: flex;
-flex-wrap: wrap; gap: var(--ocelle-space-2)`). Text wraps with `overflow-wrap: break-word`, so a word's min-content is
-the whole word (the column wraps the actions under it only when its longest word and the actions do not fit side by
-side) and a word longer than the line still breaks inside itself once the column is on its own line. The page header
-uses the same structure with its own padding and rule (R-07).
+**Decision**: the host is `:host { display: block }` (a custom element is inline by default, and the card and the
+sidebar place section headers as blocks). The shadow root holds an outer column (`display: flex; flex-direction:
+column; gap: var(--ocelle-space-1)`) with two children: the eyebrow wrapper, on a line of its own across the element's
+inline size, and the row container (`display: flex; flex-wrap: wrap; column-gap: var(--ocelle-space-4); row-gap:
+var(--ocelle-space-2); align-items: flex-start`). The row has two children: the heading column (`display: flex;
+flex-direction: column; gap: var(--ocelle-space-1); flex: 1 1 min-content; min-inline-size: 0`) holding the heading
+and description wrappers, and the actions wrapper (`flex: 0 0 auto; display: flex; flex-wrap: wrap; gap:
+var(--ocelle-space-2)`). The eyebrow is therefore outside the row: the actions' block start is the heading's (FR-010,
+US1-2), and the eyebrow's words take no part in the side-by-side test. When the eyebrow slot is empty its wrapper is
+`display: none` (R-03), so the outer gap collapses. In the eyebrow variant the eyebrow and description wrappers are
+not rendered. Text wraps with `overflow-wrap: break-word`, so a word's min-content is the whole word (the column wraps
+the actions under it only when its longest word and the actions do not fit side by side) and a word longer than the
+line still breaks inside itself once the column is on its own line. The page header uses the same structure with its
+own padding and rule (R-07).
 
-**Rationale**: FR-010's rule and US1-14, US2-5. With an empty heading column side the wrappers are `display: none`
-(R-03), so no gap remains.
+**Rationale**: FR-010's rule and US1-2, US1-14, US2-2, US2-5 (PLAN-CORRECTNESS-1-001: with the eyebrow inside the
+heading column, the actions aligned with the eyebrow, 22 px above the heading). With an empty part the wrappers are
+`display: none` (R-03), so no gap remains.
 
 Measure before red: `flex-basis: min-content` with `min-inline-size: 0` and `overflow-wrap: break-word` gives (a) the
 actions beside the heading when the longest word plus actions fit, (b) the actions under the column when they do
-not, and (c) a 60-character run broken inside the column at 320 px with no horizontal overflow. Fallback if (a)–(c)
-fail: a grid with `grid-template-columns: minmax(min-content, 1fr) auto` and a container-free wrap rule decided in the
+not, (c) a 60-character run broken inside the column at 320 px with no horizontal overflow, and (d) with an eyebrow,
+the actions' block start equal to the heading's block start, in both the section header and the page header. Fallback
+if (a)–(d) fail: a grid with `grid-template-columns: minmax(min-content, 1fr) auto` and a container-free wrap rule decided in the
 spike and recorded as a plan amendment at the phase-1 review.
 
 ## R-05 How a compact card reaches a slotted section header (SPEC-2-10, FR-007, FR-017)
 
-**Decision**: an internal module, `src/card-context.ts`, holds a module-private `WeakMap<SectionHeader, boolean>`
-setter and getter. The card, on its `header` slot's `slotchange` and whenever its `density` changes, calls
-`setCardCompact(header, compact)` for every `ocelle-section-header` among `slot.assignedElements()` (directly
-assigned only: FR-017 and US1-18) and `setCardCompact(header, false)` for those that left the slot since the last
-read. The section header keeps the value in a Lit `state` field and resolves its size as: its own `size` when valid
-(`"regular"` or `"compact"`), else compact when the card flag is set, else regular. No CSS custom property, part,
-attribute or public property carries it, so FR-007's empty lists hold and the `style-lint` rule's unknown-`--ocelle-*`
-check is untouched.
+**Decision** (operator decision PLAN-CORRECTNESS-1-007 (a), the pull model): the section header works out for itself
+whether it sits in a compact card's `header` slot, from the DOM, and the card only tells directly assigned headers to
+look again. An internal module, `src/card-context.ts`, holds two functions and no state:
+
+- `inCompactCardHeader(header)`: true when `header.assignedSlot` is a slot named `header` whose root is the open
+  shadow root of a host with `localName` `ocelle-card` and a `density` attribute equal to `"compact"` (the value
+  the card's own `:host([density="compact"])` rule keys on, so an empty or invalid `density` is regular here too).
+  Only a header assigned to that slot itself has it as `assignedSlot`, so a header in the body, nested in an element
+  in the `header` slot, or in an inner card is not compacted (FR-017, US1-18).
+- `notifyHeaders(slot, previous)`: calls `requestUpdate()` on every element with `localName`
+  `ocelle-section-header` that has a `requestUpdate` method (an upgraded element) among `slot.assignedElements()`
+  and among `previous` (the headers notified last time, so one that left the slot is also told), and returns the
+  current set.
+
+The card calls `notifyHeaders` on its `header` slot's `slotchange` and in `updated()` when `density` changed. The
+section header resolves its size in `willUpdate`: its own `size` when valid (`"regular"` or `"compact"`), else
+compact when `inCompactCardHeader(this)`, else regular; it also calls `requestUpdate()` in `connectedCallback`, so a
+header moved in the DOM re-reads its slot. The card never imports the header's class (it matches by `localName`), so
+`ocelle-card.js` still does not define `ocelle-section-header`.
+
+Paths this covers (PLAN-CORRECTNESS-1-007, PLAN-TESTABILITY-1-009):
+
+- **Definition order**: a header upgraded after the card's first `slotchange` resolves in its own first update; a
+  header defined before the card is notified by the card's first `slotchange` once the card upgrades.
+- **Moves**: a header whose `slot` attribute changes or that is moved out of the card is in `previous` at the next
+  `slotchange` and re-resolves; one moved in by DOM insertion also re-resolves on connect. No flag is stored, so none
+  can be stale.
+- **Two copies on a page**: nothing is module-private; the header reads the DOM and the card's notice is the
+  `requestUpdate()` every Lit element has, so a card and a header defined by different copies (for example the card
+  by a bundle of `@ocelle/elements/ocelle-card.js`, the header by the browser build) still agree. The one limit: a
+  header of a copy that does not answer `requestUpdate()` is not notified and re-resolves only at its next own update
+  (connect or attribute change); every Lit copy answers it, and the README states the limit.
+
+No CSS custom property, part, attribute, public property or stored flag carries it, so FR-007's empty lists hold and
+the `style-lint` rule's unknown-`--ocelle-*` check is untouched.
 
 **Rationale**: `:host-context()` is not in WebKit; an element hook custom property would be public surface that
 FR-007 excludes; a CSS custom property inherited from the card would also reach a header nested in the card's body
-(US1-18 forbids that).
+(US1-18 forbids that). A pushed, module-private flag (the earlier design) broke across copies and needed upgrade and
+leave paths of its own.
 
 **Alternatives**: `--ocelle-card-header-size` declared in the manifest (rejected by FR-007, and it would reach nested
-headers); `:host-context(ocelle-card[density=compact])` (Chromium only).
+headers); `:host-context(ocelle-card[density=compact])` (Chromium only); a shared `Symbol.for` key or a `globalThis`
+registry (option (b), not chosen); the module-private `WeakMap` with a mixed-copy page left uncompacted (option (c),
+not chosen).
 
-Two copies on a page (README § Two copies on a page): the first definition wins, so a card and header from one copy
-share one `WeakMap`; the browser build and a module-build bundle each carry their own module, and the elements on the
-page are the first copy's, so they still share one. No test is added for a mixed page beyond 005's.
+Tests (phase 2, contracts/checks.md): density set and then removed by script (header compact, then regular); a header
+moved from the `header` slot to the body by its `slot` attribute and back, and moved out of the card by DOM removal
+and back; entry tests that import `ocelle-card.js`, mount, then import `ocelle-section-header.js`, and the reverse
+order; a fixture page that loads a named same-origin test bundle of the module build's `ocelle-card.js` before the
+browser build, so the card and the header come from different copies.
 
 ## R-06 Variant attributes and "not set" (FR-006)
 
@@ -107,7 +158,7 @@ page are the first copy's, so they still share one. No test is added for a mixed
 `:host([variant="eyebrow"])`), so an empty or invalid value matches no rule and draws the default look without
 the element rewriting it (US1-17, US4-8). `inset` is `type: Boolean, reflect: true`, styled by `:host([inset])`,
 so `inset=""` and `inset="inset"` both draw inset (US1-10). The section header's size that the card can override
-(R-05) is resolved in script, since it needs the card flag: the header sets an internal class `compact` on its row
+(R-05) is resolved in script, since it depends on the slot the header is assigned to: the header sets an internal class `compact` on its row
 container when the resolved size is compact, and its stylesheet keys the heading size on that class.
 
 **Rationale**: FR-006, FR-012, FR-017; no attribute churn on upgrade.
@@ -118,7 +169,8 @@ container when the resolved size is compact, and its stylesheet keys the heading
 and `border-block-end: var(--ocelle-border-width) solid var(--ocelle-color-rule)`; it paints **no ground of its own**
 (`background: none`): the band shows the surface it sits on (the page canvas or a pane). The description wrapper
 carries `margin-block-start: var(--ocelle-space-1)` and the column has no other gap between heading and description;
-the eyebrow-to-heading gap is `--ocelle-space-1`. The actions follow R-04's wrap rule, `--ocelle-space-2` under the
+the eyebrow-to-heading gap is the outer column's `--ocelle-space-1` (R-04: the eyebrow sits above the row, so the
+actions' block start is the heading's, US2-2). The host also sets `box-sizing: border-box` (R-01). The actions follow R-04's wrap rule, `--ocelle-space-2` under the
 column. The `<header>` element is not used in the shadow root (a `header` not inside sectioning content maps to a
 banner landmark); the band is a plain `div` (US2-1).
 
@@ -127,28 +179,37 @@ banner landmark); the band is a plain `div` (US2-1).
 
 ## R-08 Card (FR-014 to FR-018)
 
-**Decision**: the host is `display: block` with the border, radius, ground and padding of its density; inside, a
+**Decision**: the host is `display: block; box-sizing: border-box` with the border, radius, ground and padding of
+its density; inside, a
 flex column with `gap` of the density (`--ocelle-space-2` regular, `--ocelle-space-4` compact) holding the `header`
 wrapper and the default-slot wrapper. A card whose header slot is empty hides its wrapper (R-03), so no gap remains
 (US1-11). `inset` swaps `background-color` to `--ocelle-color-inset`. In forced colours the border colour is left to
 the system (`border-color` is forced to a system colour by the user agent) and grounds become `Canvas`; nothing
-else is needed for US1-13 beyond `forced-color-adjust: auto` (the default). The card renders no role.
+else is needed for US1-13 beyond `forced-color-adjust: auto` (the default). The density's padding and gap rules are
+layout rules outside the forced-colours query (R-01), so a compact card keeps them in forced colours (US1-13). The card
+renders no role and attaches no internals role (FR-018, US1-19).
 
-## R-09 Context sidebar dividers (FR-020 to FR-023)
+## R-09 Context sidebar box and dividers (FR-020 to FR-023)
 
-**Decision**: the shadow root holds `<nav aria-label=…>` (R-11) as a flex column filling the host
-(`display: flex; flex-direction: column; min-block-size: 100%`), with three wrappers: head (padding
+**Decision**: the host is the navigation landmark (R-11) and the box the page places:
+`:host { display: flex; flex-direction: column; min-block-size: 100%; box-sizing: border-box; background-color:
+var(--ocelle-color-rail) }`. Its shadow root holds one layout container `div` (`display: flex; flex-direction:
+column; flex: 1 0 auto`), so the sidebar fills a container with a definite block size when its content is shorter and
+grows with its content when it is taller (FR-023, US3-3, US3-4), with three wrappers: head (padding
 `--ocelle-space-4`), sections (the default slot) and footer (padding `--ocelle-space-4`, `margin-block-start: auto`
 so it sits at the block end when content is shorter, US3-3, and follows the last section when taller, US3-4).
-Dividers:
+Dividers follow the content (operator decision PLAN-CORRECTNESS-1-004 (b)): each is drawn on the part before the
+free space, so in a sidebar taller than its content the free space lies between the last divider and the footer.
 
-- each section (`::slotted(:not([slot]))`, an element in the default slot) has padding `--ocelle-space-4` and
+- each section (`::slotted(:not([slot]))`, an element in the default slot) is `display: block` (a `span` or a custom
+  element such as `ocelle-section-header` is otherwise inline, and its border and negative margins would apply to its
+  line boxes only; a page rule still wins), has padding `--ocelle-space-4` and
   `border-block-start: var(--ocelle-border-width) solid var(--ocelle-color-rule)`; the first section
   (`::slotted(:nth-child(1 of :not([slot])))`) has none;
 - the sections wrapper has `border-block-start` when the head is non-empty and `border-block-end` when the footer is
   non-empty (internal classes from R-03; nothing when the default slot is empty, R-03 hides it);
-- when the default slot is empty and both head and footer are non-empty, the footer wrapper has
-  `border-block-start` (US3-13);
+- when the default slot is empty and both head and footer are non-empty, the head wrapper has `border-block-end`
+  (US3-13), the same side of the free space as the sections wrapper's `border-block-end` in US3-3;
 - text in the default slot: the sections wrapper has inline padding `--ocelle-space-4` and no block padding; each
   section takes negative inline margins equal to that padding (`margin-inline: calc(-1 * var(--ocelle-space-4))`) so
   its border spans the sidebar's whole inline size and its own padding gives the content inset (FR-021, FR-022,
@@ -157,59 +218,93 @@ Dividers:
 Element children with `slot=""` are not in scope: the README says sections carry no `slot` attribute. Hidden sections
 still count (spec "Empty slot").
 
-**Rationale**: the spec's divider placement (FR-022 as fixed for SPEC-3-01) with no change to the page's DOM.
+**Rationale**: the spec's divider placement (FR-022 as fixed for SPEC-3-01 and for PLAN-CORRECTNESS-1-004) with no
+change to the page's DOM. A percentage `min-block-size` on an inner box of an auto-height block host resolves to
+nothing (PLAN-CORRECTNESS-1-003), hence the flex host.
 
 Measure before red: `::slotted(:nth-child(1 of :not([slot])))` matches the first default-slot element when a head
 element precedes it in DOM order (`:nth-child(of S)` is Chromium 111, WebKit 9, inside the floor); negative margins on
-`::slotted()` elements in a padded wrapper give a full-width border. The page's DOM is never changed, so there is no
-script fallback that marks the first section; if the measurement fails, the operator is asked before the US3 red
+`::slotted()` elements in a padded wrapper give a full-width border, for `div`, `span` and `ocelle-section-header`
+sections; the host box fills a 600 px container and grows past a shorter one, measured in a block container, a
+flex-row container and a grid container, each with and without base.css. The page's DOM is never changed, so there is
+no script fallback that marks the first section; if the measurement fails, the operator is asked before the US3 red
 commit.
 
 ## R-10 Personal rail layout (FR-024 to FR-027; SPEC-2-04, SPEC-2-05, SPEC-3-05)
 
-**Decision**: `<nav aria-label=…>` as a flex container filling the host, with three children: the primary wrapper,
-a divider `div` (decorative, `aria-hidden="true"`, shown only when both groups are non-empty) and the bottom
-wrapper. The nav's `gap` is `--ocelle-space-1`, which is also the gap on each side of the divider (SPEC-2-04).
+**Decision**: the host is the navigation landmark (R-11) and carries the rail's size, padding and ground:
+`:host { display: flex; flex-direction: column; box-sizing: border-box; background-color: var(--ocelle-color-chrome);
+color: var(--ocelle-color-chrome-ink) }`. Its shadow root holds one layout container `div` (`display: flex;
+gap: var(--ocelle-space-1); flex: 1 0 auto`) with three children: the primary wrapper, a divider `div` (decorative,
+`aria-hidden="true"`, shown only when both groups are non-empty) and the bottom wrapper. The container's `gap` is
+`--ocelle-space-1`, which is also the gap on each side of the divider (SPEC-2-04). Dividers follow the content
+(operator decision PLAN-CORRECTNESS-1-004 (b)): in a vertical rail taller than its items, the free space lies between
+the divider and the bottom group.
 
-- **Vertical** (default): `flex-direction: column; inline-size: var(--ocelle-shell-rail-width); min-block-size:
-  100%; padding-block: var(--ocelle-space-2); padding-inline: var(--ocelle-space-1)`; groups are columns with
-  `align-items: center; gap: var(--ocelle-space-1)`; the bottom wrapper has `margin-block-start: auto`; the divider is
-  `border-block-start` across the content box. **Taller content than its container** (SPEC-2-05): the rail grows
-  with its content (`min-block-size: 100%`, no `max-block-size`, no overflow clipping), as the sidebar does (FR-023);
-  scrolling is the container's (#12's), stated in the README.
-- **Horizontal**: `flex-direction: row; inline-size: 100%; padding: var(--ocelle-space-2)`; the primary wrapper is
-  `flex: 1 1 0; display: flex; flex-wrap: wrap; gap: var(--ocelle-space-1)`; the bottom wrapper is `flex: 0 1 auto;
-  max-inline-size: 50%; display: flex; flex-wrap: wrap; align-self: flex-start; justify-content: flex-end`; the
-  divider is `align-self: stretch; border-inline-start` over the rail's content block size (every row, US4-7). Items
-  are centred in the block direction within their row (`align-items: center`).
+- **Vertical** (default): on the host, `inline-size: var(--ocelle-shell-rail-width); min-block-size: 100%;
+  padding-block: var(--ocelle-space-2); padding-inline: var(--ocelle-space-1)`, so the host's border box is 52 px wide
+  with a 44 px content box, and 600 px tall in a 600 px container, padding included (border-box, R-01); the container
+  is `flex-direction: column`; groups are columns with `align-items: center; gap: var(--ocelle-space-1)`; the bottom
+  wrapper has `margin-block-start: auto`; the divider is `border-block-start` across the content box. **Taller content
+  than its container** (SPEC-2-05): the rail grows with its content (`min-block-size: 100%`, no `max-block-size`, no
+  overflow clipping), as the sidebar does (FR-023); scrolling is the container's (#12's), stated in the README.
+- **Horizontal**: on the host, `inline-size: 100%; min-block-size: auto; padding: var(--ocelle-space-2)`, so its
+  border box equals its container's inline size (border-box, R-01); the container is `flex-direction: row`; the
+  primary wrapper is `flex: 1 1 0; display: flex; flex-wrap: wrap; gap: var(--ocelle-space-1)`; the bottom wrapper is
+  `flex: 0 1 auto; max-inline-size: 50%; margin-inline-start: auto; display: flex; flex-wrap: wrap; align-self:
+  flex-start; justify-content: flex-end`, so it sits at the inline end also when the primary wrapper is hidden
+  (US4-6, PLAN-CORRECTNESS-1-005); the divider is `align-self: stretch; border-inline-start` over the rail's content
+  block size (every row, US4-7). Items are centred in the block direction within their row (`align-items: center`).
 - The focus ring fits: the vertical content box is 44 px, a 40 px item leaves 2 px each side; the ring is drawn
   `--ocelle-focus-offset` + `--ocelle-focus-width` = 5 px outside the item, i.e. 3 px into the 4 px inline padding
   (1 px inside the border box). No `overflow` clipping is set on the rail (US4-2).
-- Orientation is pure CSS on `:host([orientation="horizontal"])`; the template does not change with orientation, so
-  focus, DOM order and the landmark node stay (US4-5).
+- Orientation is pure CSS on `:host([orientation="horizontal"])`, outside the forced-colours query (R-01, US4-9); the
+  template does not change with orientation, so focus, DOM order and the landmark node stay (US4-5).
 
 **Rationale**: FR-025 as fixed; #492's exclusive-bound complaint is answered by having no threshold in the element
 (FR-026). #12 drives the rail by setting `orientation` (a reflected attribute), which a drawer or a shell query can do;
-no event is needed.
+no event is needed. Sizing the host, not an inner box, makes the 52 px the box the page and #12's shell place
+(PLAN-CORRECTNESS-1-002, PLAN-CORRECTNESS-1-003).
+
+Measure before red: the focus ring inside the vertical rail; the host's border box 52 px wide with a 44 px content
+box, and a horizontal rail's border box equal to its container's inline size at 320 px, each with and without
+base.css; the host 600 px tall in a 600 px block container, flex-row container and grid container; a horizontal rail
+with only bottom items has its bottom group at the inline end, in left-to-right and right-to-left.
 
 ## R-11 Landmark naming (FR-020, FR-024, FR-028)
 
-**Decision**: the sidebar and rail render `<nav>` in the shadow root with `aria-label` bound to the resolved name:
-the host's `aria-label` attribute when present (a blank one yields an unnamed nav: the nav gets no `aria-label`),
-else `label` (none when empty or whitespace). The host observes `aria-label` through `observedAttributes`, not a
-declared property, as 005's elements do, so the manifest does not list it. The element never rewrites or removes the
-page's `aria-label` on the host.
+**Decision**: the host itself is the navigation landmark, as 005's `naming.ts` pattern makes the host the `img`:
+the sidebar and rail call `attachInternals()` and set `internals.role = "navigation"` and `internals.ariaLabel =
+accessibleName(this.label, null) ?? null` (`src/naming.ts`: the trimmed `label` when non-empty, else no name),
+updated whenever `label` changes. There is no `<nav>` in the shadow root; the layout container is a plain `div`
+(R-09, R-10). A host `aria-label` attribute, when present, overrides the internals name natively (ARIA attributes win
+over `ElementInternals` default semantics): a non-empty one names the landmark, a blank one leaves it unnamed even
+with a `label`, and removing it falls back to the `label` in internals. That is FR-028's rule with no observation of
+`aria-label` and no second node. The element never writes, rewrites or removes the host's `aria-label`. Nothing here
+adds public surface; the manifest does not list internals.
 
-What the host itself exposes is measured before red: with `aria-label="Team"` on a custom-element host with an `id`
-and no role, (a) does Chromium's full AX tree expose a second node named "Team" for the host besides the nav, and
-(b) does axe 4.14.0 report a serious or critical finding (for example `aria-prohibited-attr`) on the host? Two options
-are measured: (i) nothing on the host; (ii) `ElementInternals` with `internals.role = "none"` on the host. The first
-option that gives exactly one navigation landmark with the expected name, no other node carrying the name, and no
-serious or critical axe finding in all four US3-12 cases is used; it is recorded in `reviews/phase-1/spike.md` and
-the README's section for these elements. Neither option adds public surface. If neither passes, the operator is asked
-before the US3 red commit.
+Probed for plan squad round 1 (CDP full AX tree, ignored nodes filtered; `reviews/plan/round-1/refute.md`): host
+`aria-label="Team"` with an inner `<nav>` gave `generic "Team"` plus `navigation "Team"`; `internals.role = "none"`
+gave the same (a global `aria-label` overrides `none`); the host as landmark gave `navigation "Squad"` alone,
+`navigation "Other"` with `aria-label="Other"` and `navigation ""` with `aria-label=""`. The phase-1 spike repeats
+these reads on the four US3-12 and three US4-11 cases.
 
-**Rationale**: the operator's "Follow convention" and FR-028's axe clause.
+**Axe** (operator decision PLAN-TESTABILITY-1-007 (b)): the package scenarios assert the accessibility tree only;
+FR-028's axe clause is held by #10's `axe` gate on one story per US3-12 and US4-11 case, each rendering that landmark
+alone (R-14). axe-core 4.14.0 reads ARIA attributes and a few named internals properties, not a `#private`
+internals field, so it may not see the internals landmark at all: then `landmark-unique` does not apply, and `region`
+(moderate) may flag the slotted links as outside a landmark. `aria-prohibited-attr` does not fire on a custom-element
+host with `aria-label` (axe 4.14.0 `listProhibitedAttrs` returns none for a valid custom element name). These axe
+outcomes are measured on a probe page with the axe-core 4.14.0 of #10's branch (the root devDependency at `5f49794`)
+before the plan gate, and an adverse result (a serious or critical finding on any case) is taken to the operator at
+the plan gate; the phase-1 spike repeats the measurement against #10 as merged and records it in
+`reviews/phase-1/spike.md`.
+
+**Rationale**: the operator's "Follow convention" and FR-028; PLAN-A11Y-SECURITY-1-001 (both earlier options left a
+named generic host node).
+
+**Alternatives**: an inner `<nav>` with nothing on the host (option i) or with `internals.role = "none"` (option ii),
+both rejected by the probe above.
 
 ## R-12 Eyebrow tokens (FR-030 to FR-032)
 
@@ -217,27 +312,75 @@ before the US3 red commit.
 size-xs)`, `ref: ["font-size-xs"]`), `font-weight-eyebrow` (`var(--ocelle-font-weight-strong)`), `tracking-eyebrow`
 (`0.08em`); colour group: `color-eyebrow` (`{ light: "var(--ocelle-color-ink-muted)", dark: … }`, `ref` both themes,
 `contrast: { kind: "text", grounds: main }`). Contrast: 9 new rows per theme in `pairs.json`; pinned counts change
-from 160 light / 168 dark / 328 entries / 149 required per theme to 169 / 177 / 346 / 158, in every test and comment
-that pins them (`gates/test/contrast-pairs.test.ts`, `gates/test/contrast-required.test.ts`, `gates/bin/contrast.ts`,
-`gates/test/integration/token-gates.test.ts`, `gates/test/integration/plants-robustness.test.ts`, and any other found
-by `grep -rn "160\|168\|328\|149\|298"` in `gates/`); `packages/tokens/test/expected.ts` gains the four tokens; the
-`token-only` named-token count (`gates/test/token-only-parts.test.ts`, 148) follows. The `brand-rules` gate's rules
-are unaffected (no monospace, no radius, no chrome) and it runs in the phase's gate set.
+from 160 light / 168 dark / 328 entries / 149 required per theme (298 in all) to 169 / 177 / 346 / 158 (316 in all),
+and the planted extra row's summary from 161 to 170 light. Each is changed first, at these places (as at base
+`fcc55fc`; the phase-2 task re-reads them):
+
+| File | Lines | Change |
+|---|---|---|
+| `gates/test/contrast-pairs.test.ts` | 5 (comment), 59, 61 | 160 / 168 → 169 / 177 |
+| `gates/test/contrast-pairs.test.ts` | 63, 67 | 328 → 346 |
+| `gates/test/contrast-required.test.ts` | 7 (comment), 58, 59, 63 | 149 → 158 |
+| `gates/test/contrast-required.test.ts` | 67, 69, 70 | 298 → 316 |
+| `gates/test/contrast-required.test.ts` | 13-46, the hand-transcribed A.8 table | `color-eyebrow` added to the first row's text foregrounds on `main` |
+| `gates/test/contrast.test.ts` | 80, 81 | 160 / 168 / 149 → 169 / 177 / 158 |
+| `gates/test/integration/plants-robustness.test.ts` | 116, 128 | 160 / 168 / 149 → 169 / 177 / 158 |
+| `gates/test/integration/plants-robustness.test.ts` | 122 | 161 / 168 / 149 → 170 / 177 / 158 |
+| `gates/test/integration/token-gates.test.ts` | 6 (comment), 27 | 298 → 316 |
+| `gates/test/integration/token-gates.test.ts` | 13, 16 | 160 / 168 / 149 → 169 / 177 / 158 |
+| `gates/bin/contrast.ts` | 116 (comment) | 160 / 168 / 149 → 169 / 177 / 158 |
+| `packages/tokens/src/source.ts` | 4 (comment) | 149 → 158 |
+
+`packages/tokens/test/expected.ts` gains the four tokens. The `token-only` rule's named-colour list
+(`gates/test/token-only-parts.test.ts:27-28`, the 148 CSS Color 4 named colours) does not depend on the token set
+and does not change. The `brand-rules` gate's rules are unaffected (no monospace, no radius, no chrome) and it runs in
+the phase's gate set.
 
 **Rationale**: FR-030's aliases keep one source of truth for the eyebrow's size, weight and colour, while #7 can use
-the same names. `0.08em` is the spec's assumption.
+the same names. `0.08em` is the spec's assumption. A list of exact places, not a grep, because the numbers also
+occur in unrelated tests (for example `gates/test/mutation-shards.test.ts:86-88`).
 
-## R-13 Tests: harnesses, fixtures and pairing plants
+## R-13 Tests: harnesses, fixtures, readers and pairing plants
 
 **Decision**: as 005: shared scenario bodies in `packages/elements/test/scenarios/<element>.ts` against the driver,
 run in process by `test/<element>.test.ts` (mutated) and on strict-CSP fixture pages by
 `test/browser/<element>.test.ts` (browser build). Measurements read computed styles against the token values read
 from the same page (never literals), boxes by `getBoundingClientRect`, the AX tree by the `axTree` command, forced
-colours by `emulateForcedColors`. Right-to-left runs set `dir="rtl"` on `<html>`. Reflow at 320 px sets the viewport
-and asserts `document.scrollingElement.scrollWidth <= 320` together with the positive stacking outcome. Each "does
-not" outcome has its pair and plant listed in contracts/checks.md § Pairing plants. Keyboard: Playwright `Tab` presses
-on the fixture and `userEvent.tab` in process, asserting `document.activeElement` (deep, through shadow roots) per
-press.
+colours by `emulateForcedColors`. Right-to-left runs set `dir="rtl"` on `<html>`. Keyboard: Playwright `Tab` presses
+on the fixture and `userEvent.tab` in process, asserting the deep active element (through shadow roots) per press.
+
+- **Reflow** at 320 px sets the viewport and asserts, together with the positive stacking outcome, that
+  `document.scrollingElement.scrollWidth <= 320` and that no text is clipped: for each slotted text node, a `Range`
+  over it gives client rects that lie inside the border box of the element it is slotted into and inside every
+  ancestor (in the flat tree) whose computed `overflow` clips. Plant: `overflow: hidden` plus `white-space: nowrap` on
+  a wrapper, which keeps the scroll width green and fails the text-box assertion.
+- **Token sentinels** (PLAN-TESTABILITY-1-002): several tokens share values (`font-display` is
+  `var(--ocelle-font-sans)`, `color-chrome-ink` and `color-chrome-muted` agree, the eyebrow aliases equal their
+  targets), so a comparison against resolved values cannot tell a wrong token from the right one. Each element has a
+  token-sentinel scenario: through `driver.rules`, each token in contracts/elements-package.md § Tokens each element
+  reads is overridden on `:root` with a distinct sentinel value of its type, and the computed style that reads it is
+  asserted to follow; with the overrides removed the element draws its default again. The list of tokens comes from
+  the same table the readme test checks, so the README list, FR-007 and the element's real reads cannot drift.
+- **Card tree** (FR-018, US1-19): a card in each density, with and without `inset` and header, read from the AX tree:
+  its subtree holds only the slotted content, paired with the slotted `h2` being present; plant: a `role="region"`
+  wrapper in the template.
+- **No event** (FR-002): each element's scenarios spy on `dispatchEvent` of the host and of every node in its shadow
+  root, and listen on the host in the capture phase for every event type, across mount, slot changes and attribute
+  changes; they assert that the element dispatched nothing, paired with the positive outcome of the same step (the
+  layout change); plant: a `this.dispatchEvent(new Event("change"))` on slot change.
+- **Driver and command additions** (phase 1, PLAN-TESTABILITY-1-006): DOM append, remove and text-data change of light
+  DOM; Tab presses and the deep active element; viewport size and a container's inline and block size; the document's
+  scroll width; text-node boxes and clipping ancestors; the heading level in `axNodes` (`AxNode` in
+  `test/commands.ts` gains `level`). The behavioural readers (AX level, scroll width, deep active element, text
+  boxes) are red first: a test in `test/commands.test.ts` or a driver test on a known page, each able to fail (a
+  level-3 heading read as 3 and not 2; a page 400 px wide read as overflowing; focus inside a shadow root read as the
+  inner element; a clipped text node reported). Pure plumbing (passing a viewport size to Playwright, mounting a
+  container) is exempt, with the reason recorded in the phase-1 review.
+- **Plants**: each "does not" outcome has its pair and plant listed in contracts/checks.md § Pairing plants. A plant
+  is applied by 005's method (`specs/005-icons-brand-mark/reviews/phase-4/plants.md`): a working-tree edit of the
+  element source, the named scenarios run through both harnesses (the browser build rebuilt with the plant), the file
+  restored, and the result recorded in `reviews/phase-N/plants.md` with the scenarios that failed in each harness. No
+  plant is committed and no test hook is added to source.
 
 ## R-14 Stories, baselines and axe against #10 (FR-033, FR-037, FR-038)
 
@@ -247,9 +390,16 @@ contracts/container.md). One story file per element, `storybook/stories/<element
 one element state inside the story root, open shadow roots only, no element outside the root, no pointer state (none
 of these elements has hover or press behaviour). Baselines are produced by `pnpm run visual:update` in the pinned
 container and committed under `storybook/baselines/<story-id>.<theme>.png`; when a local capture and CI's disagree,
-CI's captures from the job artifact are committed (#10 FR-005). The `axe` gate runs every story in both themes; axe's
-`landmark-unique` rule means sidebar and rail stories each render one landmark with a distinct label.
-`storybook/test/integration/elements-stories.test.ts` (005) is extended first in each phase to the new stories.
+CI's captures from the job artifact are committed (#10 FR-005). The `axe` gate runs every story in both themes;
+sidebar and rail stories each render one landmark with a distinct label, so `landmark-unique` holds whether or not
+axe sees the internals landmark (R-11). FR-028's axe clause is held here (operator decision PLAN-TESTABILITY-1-007
+(b)): one story per US3-12 case (host `aria-label` only, both, blank host `aria-label` with `label`, neither) and per
+US4-11 case (host `aria-label` only, both, blank with `label`), each rendering that one landmark alone.
+`storybook/test/integration/elements-stories.test.ts` (005) is extended first in each phase to the new stories: each
+present in the built Storybook and rendering its element in light and dark, and, for SC-002 (operator decision
+PLAN-CORRECTNESS-1-009 (a)), each loaded at 320 × 800 px with `scrollingElement.scrollWidth <= 320` and the text-box
+rule of R-13, paired with the element rendering its slotted content; plant: a story whose slotted text is an
+unbreakable `white-space: nowrap` run. #10's capture stays at 1280 × 800 px; the 320 px pass is the story test's.
 
 **Recheck when #10 lands**: before phase 1 starts, the implementer compares #10 as merged on `main` against this
 item (story file location, story id scheme, baseline path and naming, `visual:update` and gate commands, the axe rule
@@ -260,8 +410,9 @@ a difference that changes a task is raised to the operator before the red commit
 
 **Decision**: the features used are inside the current floor (Chromium 120, WebKit 16.4): flexbox `gap`,
 `flex-wrap`, logical properties, `:nth-child(of S)` (Chromium 111, WebKit 9), `::slotted()`, `MutationObserver`,
-`WeakMap`. No container query, `:has()`, `:has-slotted`, `:state()` or `:host-context()`. The floor is unchanged; the
-README's Engines list is not touched.
+`ElementInternals` with `role` and `ariaLabel` (Chromium 90 and WebKit 16.4, inside the floor; 005 already uses
+them), `assignedSlot`. No container query, `:has()`, `:has-slotted`, `:state()` or `:host-context()`. The floor is
+unchanged; the README's Engines list is not touched.
 
 ## R-16 Shared files and siblings
 
@@ -271,3 +422,22 @@ the README, the CHANGELOG and `storybook/test/integration/elements-stories.test.
 (`/ocelle-land`); `custom-elements.json` is regenerated after the merge, never hand-merged. No phase merges `main`
 during the run (`/ocelle-run` step 4.3). #7 may land the eyebrow tokens first: if so, phase 1 uses them and drops its
 token task, recorded at the phase-1 review.
+
+## R-17 Declaration-level style plants (constitution VIII, SC-005)
+
+**Decision** (operator decision PLAN-TESTABILITY-1-001 (a)): nearly all of this feature's behaviour is static
+declarations in one `css` template per element, which Stryker mutates at most as one string-literal mutant per
+template, and which CI's 30-line shards (`gates/lib/mutation/shards.ts:12-14`) leave unmutated when the template
+spans a cut. So each phase adds a style-plant step to its evidence: for every declaration in the phase's new `css`
+templates, the declaration is neutralised (deleted, or set to its initial value where deletion changes nothing
+visible) in the working tree, both harnesses run that element's scenarios (the browser build rebuilt), the file is
+restored, and `reviews/phase-N/plants.md` records the scenario that failed in each harness. A declaration that no
+scenario catches is a blocking finding of the phase review unless the review records it as equivalent with a reason
+(for example a declaration whose value equals the inherited or initial value in every case the spec names). Nothing is committed and no test hook is added to source. Stryker still runs on the changed
+source as 005 decision 16 says, and covers the script logic (slot state, card context, size resolution, naming).
+
+**Rationale**: Principle VIII requires every behaviour to be held by a test that can fail; for CSS the declaration
+plant is the only per-declaration evidence.
+
+**Alternatives**: a traceability table from each declaration to its scenario plus a Complexity Tracking exception
+(option (b), not chosen).
