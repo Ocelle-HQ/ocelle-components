@@ -83,13 +83,16 @@ describe("gates/README.md (002 FR-022)", () => {
     ]);
   });
 
-  it("has no Contrast check, Custom-elements manifest check or Storybook gate row in Deferred gates, and names the first element feature (#17 or #7) for the @ocelle/elements run-time strict-CSP browser test (006 FR-023)", () => {
-    const deferred = rows(section("Deferred gates (FR-026)"));
-    expect(deferred).toEqual([
+  it("has no Contrast check, Custom-elements manifest check, Storybook gate or @ocelle/elements run-time strict-CSP row in Deferred gates, and says mission 005 (#17) delivered that test in packages/elements/test/browser/serve.ts (006 FR-023, plan decision 33)", () => {
+    const text = section("Deferred gates (FR-026)");
+    expect(rows(text)).toEqual([
       ["Gate", "Delivered by"],
       ["Remote loads in built output (constitution IV, beyond FR-021)", "the first element feature"],
-      ["`@ocelle/elements` run-time strict-CSP browser test (constitution IV; the Storybook is not a CSP target since 006)", "the first element feature (#17 or #7)"],
     ]);
+    const prose = text.replace(/\s+/g, " ");
+    expect(prose).toContain("mission 005 (#17)");
+    expect(prose).toContain("`packages/elements/test/browser/serve.ts`");
+    expect(readme).not.toContain("(#17 or #7)");
   });
 
   it("describes the delta.json plant form and keyed locations", () => {
@@ -110,7 +113,7 @@ describe("gates/README.md (006 FR-023)", () => {
 
   it.each([
     { id: "storybook-build", check: "Storybook build", command: "`pnpm run gate:storybook-build`" },
-    { id: "visual", check: "Visual regression", command: "`pnpm run gate:visual -- --engine both`" },
+    { id: "visual", check: "Visual regression", command: "`pnpm run gate:visual -- --engine both --remove-docker-image`" },
     { id: "axe", check: "Accessibility", command: "`pnpm run gate:axe`" },
   ])("lists $id in The gates with its check, its command and every plant of gates/plants/$id/", ({ id, check, command }) => {
     expect(row(id)?.slice(0, 3)).toEqual([`\`${id}\``, check, command]);
