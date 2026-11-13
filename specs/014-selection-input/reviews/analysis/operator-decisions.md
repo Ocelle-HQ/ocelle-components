@@ -11,3 +11,14 @@ Recorded by the orchestrator, 2026-11-13, human:jeroennouwsdev; answers to the q
 - **Q2 (U1): (c).** Keep the stop at T064; ask kitty-mission-ui for its WebKitGTK and WKWebView minimums first.
 - **Q3 (C1): (a).** Add the hover stories (option, tab, segment default and joined), the focused Copy control and the
   focused tab panel to FR-050 and the story tasks.
+
+## Second analysis (`analysis-report.md` of 2026-11-13T23:46:01Z)
+
+- **Q1 (I1): (b).** The implementer makes the T001 merge of `origin/main`, as T001 says, and does it before the
+  procedure's step 2 (`base.sh 1`), as an exception to `/speckit-story-implement` for phase 1 only. T001 and the
+  phase 1 delegation both state this, so phase 1's `base.sha` is the merge commit.
+- **Q2 (I2): (b).** For this feature, `/ocelle-run` step 4.3's "no merge commits on the branch" and `/ocelle-land`
+  step 8.1's "no merge commits since the PR base" mean "none in the fold range `FB..HEAD`", which is what
+  `fold-history.sh` checks. Both skills are also to be amended to state that range reading for every feature, as a
+  separate change outside this feature (follow-up for the operator).
+- **Q3 (U1): (b).** Phase 4 stops for plan decision 1 (engine floor) before it starts, before T060.
