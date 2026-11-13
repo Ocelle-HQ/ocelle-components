@@ -101,12 +101,17 @@ modal, level. Device: the default context (`elements`, `visit()`) matches `(hove
     slotted native modal `<dialog>` with two buttons shown above the overlay from slotted content: Escape closes it
     alone with no request and no `cancel` on the overlay; before that, Tab and Shift+Tab, n + 2 presses each, keep
     `focusPath()` inside the nested dialog; a further Escape then requests the overlay's close with `escape`.
-  - **Slotted non-modal dialogs** (R-02, squad round 3 verify 1): a slotted `<dialog open>` holding a button, and
-    separately a slotted `<dialog>` opened with `show()` holding a button, each with focus on its button and with
-    focus on a sibling slotted button, × {no veto, veto then Escape twice}: each Escape gives one request with reason
-    `escape` and no `cancel` on the overlay, the slotted dialog stays open; no veto closes the overlay; under veto
-    the overlay stays open and `:modal` on every press, focus inside. Tab and Shift+Tab, n + 2 presses each: the
-    slotted dialog's button is a stop in the exact list, no `body`.
+  - **Slotted non-modal dialogs** (R-02, squad round 3 verify 1 and verify 2): a slotted `<dialog open>` holding a
+    button (any `closedby`), and separately a slotted `<dialog>` opened with `show()` holding a button with `closedby`
+    absent and with `closedby="none"`, each with focus on its button and with focus on a sibling slotted button,
+    × {no veto, veto then Escape twice}: each Escape gives one request with reason `escape` and no `cancel` on the
+    overlay, the slotted dialog stays open; no veto closes the overlay; under veto the overlay stays open and `:modal`
+    on every press, focus inside. Tab and Shift+Tab, n + 2 presses each: the slotted dialog's button is a stop in the
+    exact list, no `body`. Separately a slotted `<dialog>` opened with `show()` and `closedby="closerequest"`, and with
+    `closedby="any"`, holding a button, focus inside: the first Escape closes that dialog alone (`open` false) with no
+    `…-close-request` and no `cancel` on the overlay, the overlay stays open and `:modal`; the second Escape requests
+    with reason `escape` (then closes without a veto, stays open with focus inside under veto). Where the engine lacks
+    the `closedBy` property these `closedby` cases are skipped.
 - **Synthetic `cancel`**: a dispatched non-cancelable `cancel` followed by the inner `close()`: `…-close` with `host`;
   a cancelable `cancel` runs the request path once.
 - **Close control** by click, Enter and Space × {veto, no veto}, reason `close-button`; its box ≥ `target-min` in both

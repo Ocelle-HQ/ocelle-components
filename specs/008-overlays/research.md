@@ -54,8 +54,9 @@ unmerged). Results marked "squad probe" were measured by the plan squad's round 
 - **Topmost** (FR-010, FR-023): a module-level stack of open overlays, internal to the package. An overlay is pushed
   when it calls `showModal()` and removed when its `<dialog>` closes or the host disconnects. An overlay acts on a
   keydown (Escape here, Tab in R-04) only when it is the top of the stack and no other close watcher is open in its
-  content (below). The stack holds only Ocelle overlays; an open native popover or modal dialog in slotted content is
-  found by that second check. No `stopPropagation()` is called, so hosts still see the key.
+  content (below; for Tab, only an open popover or modal dialog counts). The stack holds only Ocelle overlays; an
+  open native popover, modal dialog or close-watcher non-modal dialog in slotted content is found by that second
+  check. No `stopPropagation()` is called, so hosts still see the key.
 - **Decision**: the overlay handles Escape on `keydown` (bubble phase, on its `<dialog>`). It ignores the event, neither
   preventing it nor requesting, when any of these holds:
   - the overlay is not the top of the stack;
@@ -64,9 +65,14 @@ unmerged). Results marked "squad probe" were measured by the plan squad's round 
   - the target, followed to the deep active element, is a text field whose Escape has a native action: an `<input>`
     of type `search` with a non-empty value;
   - another close watcher sits above the overlay within its content (squad round 3, PLAN-FRESH-3-002, narrowed in
-    fixes 2): an open (`:popover-open`) `popover="auto"` or `popover="hint"` element, or a `<dialog>` other than its
-    own that is `:modal`, in its flat tree. Only these does the platform put above the overlay on its close-watcher
-    stack; a non-modal `<dialog>` does not count (below).
+    fixes 2, widened in fixes 3): in its flat tree, an open (`:popover-open`) `popover="auto"` or `popover="hint"`
+    element, a `<dialog>` other than its own that is `:modal`, or an open non-modal `<dialog>` whose `closedBy` is
+    `closerequest` or `any` (an explicit `closedby` attribute; read only where the engine has the `closedBy`
+    property, Chromium 134 and later, so elsewhere this case never matches) and that has not been recorded as no
+    close watcher (below). The platform puts a popover, a modal dialog and a non-modal dialog opened with `show()`
+    whose `closedby` state is Close Request or Any above the overlay on its close-watcher stack and closes it alone on
+    Escape; a non-modal dialog opened by the `open` attribute, or opened with `show()` with `closedby` absent or
+    `none`, is not on that stack (below).
   Otherwise it calls `preventDefault()` and runs the request path (FR-010, FR-013).
 - **Close watchers in slotted content** (squad round 3, PLAN-FRESH-3-002). **Measured** (squad round 3 probe, Chromium
   153): with a slotted `popover="auto"` menu open from a slotted invoker inside a shadow-root modal `<dialog>`, native
@@ -77,17 +83,32 @@ unmerged). Results marked "squad probe" were measured by the plan squad's round 
   alone, as natively), its `document` listener below does nothing, and R-04 handles no Tab (a nested native modal keeps
   its own sequential navigation). How the overlay knows is the implementer's choice, for example capture-phase
   `toggle` and `close` listeners on its `<dialog>` (these events do not bubble, but a slotted descendant's pass the
-  `<dialog>` in capture) followed by a check of `:popover-open` and `:modal`, or a check of the flat tree at keydown.
-  The tooltip's bubble is `popover="manual"` (R-10), so it is not such an element; its Escape is its own (R-12).
-- **Non-modal dialogs in slotted content** (squad round 3 verify 1, PLAN-FRESH-3-002). **Measured** (verify probe,
-  Chromium 153, no overlay handlers): a slotted `<dialog open>` (open by attribute), with focus inside it or on a
-  sibling button: native Escape leaves it open and fires `cancel` on the overlay's `<dialog>`, so the platform treats
-  the overlay as the top close watcher. A slotted dialog opened with `show()`: native Escape closes nothing and fires
-  no `cancel`. Neither is above the overlay, so the overlay does not stand aside for them: it handles Escape by the
-  rules above (one request with reason `escape`, the slotted dialog stays open; a host that wants it closed closes
-  it), keeps its veto on every repetition through the keydown path, and R-04 handles Tab as usual, the non-modal
-  dialog's focusable content being ordinary stops. So the body-leak repair and the veto never lapse for the life of
-  a non-modal slotted dialog.
+  `<dialog>` in capture) followed by a check of `:popover-open`, `:modal`, `open` and `closedBy`, or a check of the
+  flat tree at keydown. For a non-modal dialog the stand-aside covers Escape only: the platform keeps no focus trap
+  for it, so R-04 goes on handling Tab, its focusable content being ordinary stops. A slotted dialog's own `cancel`
+  and `close` do not bubble and never run the overlay's `cancel` path (a capture-phase listener checks that the
+  target is the overlay's own `<dialog>`). The tooltip's bubble is `popover="manual"` (R-10), so it is not such an element; its Escape is its own (R-12).
+- **Non-modal dialogs in slotted content** (squad round 3 verify 1 and verify 2, PLAN-FRESH-3-002). **Measured**
+  (verify probes v3 and v4, Chromium 153, no overlay handlers):
+  - a slotted `<dialog open>` (open by attribute), whatever its `closedby`, with focus inside it or on a sibling
+    button: native Escape leaves it open and fires `cancel` on the overlay's `<dialog>`, so the platform treats the
+    overlay as the top close watcher;
+  - a slotted dialog opened with `show()` with `closedby` absent or `none`: native Escape closes nothing and fires no
+    `cancel` on the overlay (the press is absorbed, the overlay is not reached);
+  - a slotted dialog opened with `show()` with `closedby="closerequest"` or `"any"`: native Escape closes that dialog
+    alone and fires no `cancel` on the overlay, exactly as for a popover.
+  The third is a close watcher above the overlay and the overlay stands aside for it (the fifth exception above).
+  The first two are not; for them the overlay handles Escape by the rules above (one request with reason `escape`,
+  the slotted dialog stays open; a host that wants it closed closes it), keeps its veto on every repetition through
+  the keydown path, and R-04 handles Tab as usual. The overlay cannot see whether an open dialog with an explicit
+  `closedby` of `closerequest` or `any` was opened by `show()` or by the attribute, so it stands aside for both at
+  first. When it has stood aside for such a dialog and the same press then fires a cancelable `cancel` on its own
+  `<dialog>` (the dialog was opened by the attribute and is no close watcher), the `cancel` path below prevents it
+  and requests once with reason `escape`, and the overlay records that dialog as no close watcher until the
+  dialog's next `toggle` or `close` event (capture phase). Later presses then take the keydown path, so the veto
+  holds on every repetition there too: the first press's `cancel` is the first without activation and is
+  cancelable. So the body-leak repair and the veto never lapse for the life of a non-modal slotted dialog, and a
+  dialog the platform would close alone is closed alone.
 - **Escape inside a slotted iframe** (squad round 3, PLAN-FRESH-3-001): a key pressed in a frame's document is
   dispatched there and never reaches the parent's `<dialog>` or `document`, and the platform's close watcher of the
   parent does not see it either (squad round 3 probe: nothing recorded, the dialog stays open). So with focus inside
@@ -115,15 +136,17 @@ unmerged). Results marked "squad probe" were measured by the plan squad's round 
   one request and one `…-close` (FR-014).
 - **`cancel`**: the overlay listens to `cancel` on its `<dialog>`.
   - A **cancelable** `cancel` (a press the keydown path did not handle, for example because a slotted control stopped
-    its propagation) is prevented and, in `shown` only, runs the request path once, with reason `escape`.
+    its propagation, or because the overlay stood aside for an attribute-opened dialog with `closedby`, above) is
+    prevented and, in `shown` only, runs the request path once, with reason `escape`.
   - A **non-cancelable** `cancel` cannot be vetoed (`preventDefault()` has no effect). It is a platform close: the
     overlay lets it happen and handles the resulting `close` as R-03 does, with reason `host`.
   - So the veto holds on every repetition of an Escape that reaches the overlay's keydown (US1-4). When slotted
     content stops Escape's propagation, the platform's repeated-Escape rule can close a vetoed overlay on the second
     press, with reason `host`. The README states this limit and tells widgets inside an overlay to call
     `preventDefault()` rather than `stopPropagation()` for an Escape they handle.
-- **Not used**: `closedby` and `requestClose()` (Chromium 134 / WebKit 26 and Chromium 134 / WebKit 18.4: above the
-  floor); the plan keeps the floor at what the tooltip needs (R-10). A capture-phase handler is not used either: it
+- **Not used**: `closedby` and `requestClose()` on the overlay's own `<dialog>` (Chromium 134 / WebKit 26 and
+  Chromium 134 / WebKit 18.4: above the floor); the plan keeps the floor at what the tooltip needs (R-10). The
+  `closedBy` of a slotted dialog is only read, where present, for the stand-aside above. A capture-phase handler is not used either: it
   would run before slotted widgets and take their Escape.
 
 ## R-03 Platform-initiated closes (FR-016)
