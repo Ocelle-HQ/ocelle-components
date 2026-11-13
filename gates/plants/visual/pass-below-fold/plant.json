@@ -1,0 +1,4 @@
+{
+  "expect": "pass",
+  "why": "A story whose root is 2000 px tall passes with its baselines: the capture is the whole page (FR-012)."
+}

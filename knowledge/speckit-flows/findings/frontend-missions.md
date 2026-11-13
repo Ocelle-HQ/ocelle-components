@@ -77,6 +77,7 @@ pitfalls up front. Each entry names where it was found. New entries are added as
     - The CI half (480 s per `gate:mutation` step) is measured at landing.
 - **`scope-check.sh` exits 0 on `ok: false`.** `scope-check.sh … && git push` does not stop a push. Fix: exit 1 on
   `ok: false`.
+- **006 (visual and axe gates)**: the visual and plants gates need a container engine. The cloud container has docker but no podman, so local runs use `OCELLE_VISUAL_ENGINE=docker`, and dockerd dies with every container restart (restart it as root). Run plant shards one at a time so a restart loses at most one shard.
 
 # Browser and CSS pitfalls (found by measuring, each cost a squad or review round)
 
@@ -166,6 +167,8 @@ pitfalls up front. Each entry names where it was found. New entries are added as
   project. (005 R-12)
 - Mixing both Stryker configurations in one CI shard runs Stryker twice. Watch that shard against the 10-minute
   limit (005 landing; every shard of run 43188981994 finished within 6:42).
+- **006 L1-02**: under CI load a surviving mutant can show as a Timeout, which counts as detected. When a mutation shard reports timeouts on changed lines, re-run that range locally before trusting it.
+- **006 L1-04**: an allowlist entry that points to a justification must be checked for the exact form of that pointer (`specs/<feature>/plan.md`), not just for staying inside the repository; the review found a `plan` that pointed to any file.
 
 # Candidates for a frontend profile or lens
 

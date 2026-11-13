@@ -88,7 +88,7 @@ describe("the Vitest projects", () => {
     expect(notOne).toEqual({});
     expect(testFiles).toContain("packages/tokens/test/browser/themes.test.ts");
     expect(owners["packages/tokens/test/browser/themes.test.ts"]).toEqual(["tokens-browser"]);
-    expect(owners["storybook/test/integration/csp.test.ts"]).toEqual(["storybook-integration"]);
+    expect(owners["storybook/test/integration/render.test.ts"]).toEqual(["storybook-integration"]);
     expect(owners["storybook/test/unit/swatches.test.ts"]).toEqual(["storybook"]);
   });
 

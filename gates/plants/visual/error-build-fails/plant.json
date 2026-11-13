@@ -1,0 +1,5 @@
+{
+  "expect": "error",
+  "why": "A story with a syntax error: the Storybook build fails and the gate cannot run (research.md R-03).",
+  "cause": "the Storybook build failed"
+}

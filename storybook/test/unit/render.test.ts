@@ -217,10 +217,10 @@ describe("renderFamily(\"prose\")", () => {
         "<pre><code>line &lt;1&gt;\n  line 2</code></pre>" +
         "<hr>" +
         "<h5>Table &lt;h5&gt;</h5>" +
-        "<table><caption>Cap &amp; &lt;c&gt;</caption><thead><tr><th>H1 &lt;</th><th>H2 &quot;</th></tr></thead>" +
+        '<table tabindex="0"><caption>Cap &amp; &lt;c&gt;</caption><thead><tr><th>H1 &lt;</th><th>H2 &quot;</th></tr></thead>' +
         "<tbody><tr><td>a&amp;</td><td>b</td></tr><tr><td>c</td><td>d&gt;</td></tr></tbody></table>" +
         "<h6>Linked &lt;h6&gt;</h6>" +
-        "<table><thead><tr><th>K &amp; k</th><th>V</th></tr></thead>" +
+        '<table tabindex="0"><thead><tr><th>K &amp; k</th><th>V</th></tr></thead>' +
         '<tbody><tr><td><a href="#prose-document">k&lt;1&gt;</a></td><td>v1</td></tr><tr><td>k2</td><td>v2</td></tr></tbody></table>' +
         "</article>",
     );
@@ -247,6 +247,10 @@ describe("renderFamily(\"prose\")", () => {
     const columns = tables.map((table) => elements(table.childNodes).filter((element) => element.tagName === "th").length);
     expect(columns).toEqual([12, 12]);
     expect(tables.map((table) => elements(table.childNodes).filter((element) => element.tagName === "a").length)).toEqual([0, 1]);
+    // FR-029, operator decision on the phase 1 spike § 7 ("tabindex + exceptions"): every table, its own horizontal
+    // scroll box under base.css, is focusable, as packages/styles/README.md tells WebKit hosts to do; this clears axe's
+    // scrollable-region-focusable on the wide table that holds no link.
+    expect(tables.map((table) => table.attrs)).toEqual([[{ name: "tabindex", value: "0" }], [{ name: "tabindex", value: "0" }]]);
     expect(all.filter((element) => element.attrs.some((attribute) => attribute.name === "style" || attribute.name === "class"))).toEqual([]);
     expect(all.filter((element) => ["h1", "h2", "h3", "h4", "h5", "h6", "a", "code", "pre", "caption", "th", "td"].includes(element.tagName) && element.childNodes.length === 0)).toEqual([]);
   });

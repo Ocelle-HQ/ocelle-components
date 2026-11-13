@@ -29,6 +29,21 @@ export function workspace(fixture: string, repoFiles: readonly string[], linkMod
   return dir;
 }
 
+/**
+ * The Storybook workspace inputs of a plant root's configuration set (006 research.md R-16), for tests that build a
+ * repository root of their own for the plant job.
+ */
+export const storybookInputs: readonly string[] = [
+  ".node-version",
+  "packages/styles/src/base.css",
+  "packages/tokens/fonts",
+  "storybook/package.json",
+  "storybook/.storybook",
+  "storybook/scripts",
+  "storybook/stories",
+  "storybook/visual/container.json",
+];
+
 export function cleanUp(): void {
   for (const dir of made.splice(0)) rmSync(dir, { recursive: true, force: true });
 }

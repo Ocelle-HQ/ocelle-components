@@ -1,0 +1,965 @@
+# Research: Storybook workbench and visual regression baselines
+
+Feature: `specs/006-storybook-workbench` · Plan: [plan.md](plan.md) · Date: 2026-11-10
+
+Facts marked **measured** were measured in this sandbox on 2026-11-10 by the plan session or by the plan squad's rounds
+1 and 2 (reviews/plan/round-1/, reviews/plan/round-2/); the rest are decisions with their reasons. Spec check 2's plan notes (SPEC-2-01 to
+SPEC-2-08) are answered where marked. Everything still to be measured is measured by the **one spike of phase 1**
+(plan § Phases), recorded in `reviews/phase-1/spike.md`; no later phase has a spike of its own.
+
+## R-01 The pinned container: Microsoft's published Playwright image, by its linux/amd64 digest (SPEC-2-08)
+
+**Decision.** The pinned container is `mcr.microsoft.com/playwright:v1.64.1-noble`, used only by the digest of its
+linux/amd64 image manifest, `sha256:ee15712262f017b8157421b212b12099146645f44b1bc5c0514cbbe6a229b1d0`, committed in
+`storybook/visual/container.json` with the platform `linux/amd64`, the image name, the tag it was taken from (for
+humans only, never used to pull), the Node version and the browser build the capture launches (R-04). No image is
+built or published by this repository, so no registry, token or repository setting is needed.
+
+**Measured.**
+- The tag resolves to a multi-platform index with two manifests: linux/amd64 `sha256:ee15712…b1d0` and linux/arm64
+  `sha256:f609973e…6197`. FR-007 forbids the index; the amd64 manifest digest is pulled directly. The phase 1 spike
+  records the index digest itself, which the `error-index-pin` plant uses.
+- The amd64 manifest's config digest is `sha256:a0d7b2b49ffa0e99787a00b7ec2af46eca58020082713f002ca9f0f1cfd1a017`.
+- `docker pull mcr.microsoft.com/playwright@sha256:ee15712…b1d0` works through this sandbox's proxy.
+- Size: the manifest's layers total **0.99 GB compressed** (what a pull transfers), and the unpacked image is
+  **3.61 GB** in one engine's store (`docker images`).
+- The image holds Node `v26.13.0` (the repository's `.node-version`), `/ms-playwright/chromium-1248` and
+  `/ms-playwright/chromium_headless_shell-1248` (the builds Playwright 1.64.1 expects; browser version
+  156.0.8078.80), and 50 font files from the Ubuntu packages. It holds no `playwright` npm package; the capture uses
+  the repository's own (R-03).
+
+**Alternatives.** A Dockerfile in this repository built on each run: the bytes then depend on the apt mirrors at build
+time, so it is not pinned. An image this repository publishes to GHCR: pinned, but it needs a registry, write
+permissions and a publish workflow, which are operator settings (SPEC-2-08). Using the tag: not immutable.
+
+## R-02 Container engines here and in CI; what only CI can prove
+
+**Measured.** This sandbox has `dockerd`, `containerd` and `runc` installed but not running. Started as root
+(`dockerd &`), the daemon comes up (containerd image store, `docker info` driver-type
+`io.containerd.snapshotter.v1`; cgroup v1) and runs containers, `--network none` included. Podman is not installed and
+is not in the apt sources. So locally only docker can be used, and only after starting the daemon; every profile that
+runs the container must start it first (plan § Environment).
+
+**Decision.** GitHub's `ubuntu-24.04` runners carry both docker (daemon running) and podman (rootless). In CI the gate
+itself requires both engines (R-06, "CI requires both engines"); the CI jobs also pass `--engine both`.
+
+**What only CI proves, and when (operator decision on PLAN-TESTABILITY-1-010, option (a)).** These behaviours of this
+feature cannot fail in this sandbox, since podman is absent:
+- podman's run arguments (`--userns=keep-id`) and its rootless writes into the bind-mounted
+  `storybook/.visual/run-<n>/`;
+- the parsing of podman's `image inspect` output and of the raw manifest skopeo reads for podman's pin check (R-06;
+  `manifest inspect` until the operator decision of 2026-11-11), whose unit tests use fixtures until a real output is
+  recorded, and the presence of skopeo on the runner;
+- byte equality between a docker capture and a podman capture (FR-026, SC-002).
+Phase 3's review therefore holds a **CI run of the branch** in which the "Visual regression" and "Plants" jobs ran
+under both engines, with their logs, the podman inspect outputs and skopeo's raw manifest output (which then replace
+any written fixture). The
+operator pushes the branch for it (agents never push); phase 3 is not approved without that run. Landing confirms it
+again but is no longer the first evidence.
+
+**The pin record (operator decision 2026-11-11, "Add the CI step", human:jeroennouwsdev).** CI run 43072665056 (head
+`07c97ef`) passed under both engines, but the gates print their summary lines only, so its log holds none of these
+outputs and the fixtures could not be replaced. The "Visual regression" job therefore gains one step after the gate
+step (which it follows only when the gate passed, so podman holds the pin): it reads `<image>@<digest>` from
+`storybook/visual/container.json`, writes `skopeo --version` to `skopeo-version.txt`, `skopeo inspect --raw
+docker://<image>@<digest>` to `skopeo-inspect-raw-manifest.json` and `podman image inspect <image>@<digest>` to
+`podman-inspect.json` in `$RUNNER_TEMP/pin-record/`, and uploads that directory as the artifact `pin-record` with
+`actions/upload-artifact` pinned by SHA. The gate's own output stays as its contract says. The step stays in the job:
+it costs seconds, and it records the runner's real outputs again whenever the pin or the runner image moves. The
+podman fixture and skopeo's manifest fixture are then replaced from the artifact, test-first if the bytes differ
+(tasks.md T046f, T046g).
+
+**The tag read (operator decision 2026-11-12, "Add the tag read", human:jeroennouwsdev).** The step above read no
+index, so `skopeo-inspect-raw-index.json` could not be replaced. The step therefore also reads the tag's index,
+`skopeo inspect --raw docker://<image>:<tag>` with `<image>` and `tag` from `storybook/visual/container.json`, and
+writes it to `skopeo-inspect-raw-index.json` in the same `pin-record` artifact; T046f replaces that fixture too,
+test-first. The tag is only read, never pulled or run (container.md § `container.json`). A tag's index can be pushed
+again, so the recorded bytes are that day's index, not the spike's; the fixture's tests read only its `mediaType`.
+
+**Other hosts' CPUs (operator decision on PLAN-FRESH-1-006, option (a)).** FR-026's two captures run on one CPU, and
+Chromium's rasteriser (Skia) picks SIMD code paths at run time by CPU feature level, so a contributor's machine
+(another x86 generation, or an arm64 host emulating amd64) may produce bytes CI does not. That equality is stated, not
+measured. **CI is therefore the producer of record**: on `missing-baseline` and `differs` the "Visual regression" job
+uploads run 1's captures in baseline layout (R-11), and the contributor note says to commit those files when a local
+run and CI disagree. `pnpm run visual:update` stays the local command for iterating.
+
+## R-03 What runs inside the container, and what is mounted (SPEC-2-05, SPEC-2-06)
+
+**Decision.**
+- The **Storybook is built on the host**, by the same build function the `storybook-build` gate uses (R-09), into
+  `storybook/dist/` of the root under test. The build output is plain HTML, JavaScript, CSS, fonts and JSON, so it
+  does not depend on the host's platform. A failed build makes `visual` and `axe` exit 2 with the cause "the Storybook
+  build failed; run pnpm run gate:storybook-build" (breaking plants for both gates).
+- The container runs only the **capture script** of the **gate's own repository**, `<repo>/gates/visual/capture.ts`
+  (`<repo>` resolved from the gate's `import.meta.url`), never a file of the root under test, which for a plant or a
+  fixture tree holds no `gates/` at all. It runs with Node 26's type stripping, which needs no build step, and imports
+  only pure-JavaScript code: the repository's `gates/lib/` modules, `playwright` (`playwright-core` carries no native
+  binary; the browsers come from the image's `/ms-playwright`) and `pngjs`, all resolved from `<repo>`. So a
+  `node_modules` installed on an arm64 host works inside the amd64 container.
+- **Mounts**: the gate's repository `<repo>`, read-only, at its own absolute path (its `node_modules` included); the
+  root under test `<root>`, read-only, at its own path, when it is not `<repo>`; and one writable directory, the
+  capture output under the root (`<root>/storybook/.visual/run-<n>/`). The working directory is `<repo>`. The capture
+  reads only `<root>/storybook/dist/` and the request, and writes only the output directory.
+- **Users and file ownership (SPEC-2-06)**: under docker the container runs `--user <uid>:<gid>` of the host user,
+  so files it writes belong to that user; under podman, rootless, `--userns=keep-id` does the same. "Without root"
+  means the contributor runs no command as root; membership of the `docker` group is the usual docker setup and is
+  allowed. `HOME` is set to a directory inside the writable mount.
+
+**Measured.** With the repository mounted read-only at its own path, the repository's Playwright 1.64.1 launches the
+image's Chromium 1248 (headless shell) under `--network none`; the same page captured twice in one container, in two
+containers, and with `--user 1000:1000` and as root gave the same SHA-256 (`db312a98…`), 6010 bytes, every time.
+
+## R-04 Determinism and extent of a capture (FR-006, FR-012, FR-026; SPEC-2-01)
+
+**Decision.** Each capture is made in a new browser context and page (FR-028), with the browser launched headless
+without a channel, which runs **`chromium_headless_shell-1248`** (playwright-core 1.64.1's `getExecutableName`
+resolves `chromium-headless-shell` for a headless launch without a channel; this is the launch the determinism
+measurement of R-03 used). The context has:
+- viewport 1280 × 800, device scale factor 1, `colorScheme` light or dark matching the theme, `reducedMotion:
+  "reduce"`, `forcedColors: "none"`, locale `en-GB`, timezone `UTC`;
+- init scripts installed before navigation: the readiness recorder (below), the closed-shadow-root recorder (R-05)
+  and the I/O recorder (R-14);
+- the story opened at `iframe.html?id=<id>&viewMode=story&globals=theme:<theme>` (the theme global the preview
+  already reads), served by a local HTTP server inside the container on `127.0.0.1`.
+
+**Readiness.** Storybook 10.6.5 emits `STORY_RENDERED` only when a story completes; a story whose render throws
+emits `STORY_THREW_EXCEPTION`, an errored load `STORY_ERRORED`, an unknown id `STORY_MISSING`, and the error display
+sets the class `sb-show-errordisplay` on `<body>`. The readiness recorder is an init script that subscribes to the
+preview's channel as soon as it exists and observes `<body>`'s class, so no event that fires early is missed, and
+records the **first** of these five signals. The capture waits for it with a timeout of **15 s per story-theme**; the
+signals and the timeout map to statuses in a pure function: `STORY_RENDERED` → go on; the four failure signals →
+`render-failed` (message names the signal); no signal within the timeout → `render-timeout`, a finding, never exit 2.
+After `STORY_RENDERED`: the scroll check (below), the pointer state if the story declares one (R-15), then
+`document.fonts.ready`, then two animation frames. The phase 1 spike records the signals for a module that throws, a render that throws and a missing
+id, and becomes the classifier's fixtures.
+
+**Extent (operator decision on PLAN-FRESH-1-008, option (a)).** The screenshot is the **full page** at the fixed
+viewport width: `fullPage: true`, no clip, so its height is the document's scroll height. Content below the fold,
+content that overflows the story root (an absolutely positioned tooltip, an outer shadow) and top-layer content (a
+`<dialog>` or `popover`) are all inside the capture (FR-012). Screenshot options: `animations: "disabled"` and `caret:
+"hide"`; `"hide"` is Playwright's default and is set explicitly, so the options test catches a change of the default.
+
+**Scroll position (operator decision on PLAN-FRESH-2-001, option (a)).** Playwright's mouse coordinates are viewport
+coordinates, and a full-page screenshot of a scrolled page draws `position: fixed`, `sticky` and viewport-relative
+top-layer content at the scroll offset (**measured** by the plan squad's round 2: `elementHandle.hover()` on a target
+at y = 1500 left the page at scrollY 1125 and moved a `position: fixed; top: 0` element to y = 1130 of the capture).
+So every capture is taken at scroll position (0, 0), an input the capture fixes (FR-006): **before the pointer step
+and again just before the screenshot** the page's `scrollX` and `scrollY` are read, and when either is not 0
+`window.scrollTo(0, 0)` is applied and the capture continues (a story that focuses or `scrollIntoView`s an element
+below the fold is therefore captured from the top, its focus kept). The pointer step never scrolls: it uses
+`page.mouse`, never `elementHandle.hover()`, and its target must lie inside the initial viewport (R-15). The axe gate
+applies the same check before its pointer step.
+
+**Encoding.** The PNG is decoded and re-encoded by `pngjs` with fixed options (RGBA, 8 bits, deflate level 9, filter
+type fixed), no ancillary chunk, so no timestamp, gamma or text chunk can enter the file. The baseline file is exactly
+these bytes.
+
+**Two captures and the baseline (SPEC-2-01).** Every story-theme is captured in run 1 and run 2. When their bytes
+differ, the gate reports one `nondeterministic` finding for that story-theme and does **not** compare it with its
+baseline (one finding, not two); otherwise run 1's bytes are compared with the baseline. The baseline command
+writes nothing at all when any story-theme is nondeterministic.
+
+**Where the decisions live (PLAN-TESTABILITY-1-001, -003, -014).** The context options (`contextOptions(theme)`,
+which the axe gate uses too, R-08), the screenshot options, the
+readiness classification, the request classification, the scroll decision (`scrollAction(scrollX, scrollY)`: none at
+(0, 0), reset otherwise; unit cases (0, 0), (0, 1125) and (40, 0)) and the capture status (R-05, PLAN-FRESH-2-006) are
+pure functions in `gates/lib/capture-plan.ts`, unit-tested in node: one test per determinism option (viewport, scale, colour scheme, reduced motion, forced colours, locale,
+timezone, `fullPage` without clip, `animations`, `caret`), each failing when only that option is dropped. The
+animation fix also has a control: an integration test captures the `pass-animation-and-caret` story twice with
+`reducedMotion` and `animations` left at Playwright's defaults and asserts the two captures differ, beside the plant
+that shows they agree with the options set.
+
+**Plants.** A random value in a story (`Math.random()` in its markup) is nondeterministic (fail); a running CSS
+animation and a focused text field are deterministic after the fixes above (pass); a story that changes its markup
+on a second render in the same page passes because each capture has a fresh page (pass, FR-028; its reference is
+independent of the full run, R-11); a story taller than the viewport passes with its baselines (`pass-below-fold`) and fails when only content below
+y = 800 changes (`fail-below-fold`); a story with an overflowing child and a top-layer popover passes, and fails when
+only the overflow changes; a story that focuses a text field below the fold and holds a `position: fixed; top: 0`
+element passes with baselines showing that element at the top of the page (`pass-focus-below-fold`, so a capture
+taken at the scroll offset differs from them).
+
+## R-05 Fonts and closed shadow roots (FR-027)
+
+**Decision.** After readiness, the capture collects, for every non-whitespace text node in the document's story area
+(the whole document minus Storybook's harness nodes, R-08 Terms; not only the story root), open shadow roots and
+user-agent shadow roots included, the platform fonts the DevTools protocol (`CSS.getPlatformFontsForNode`) reports for
+it. The text nodes are found through the DevTools protocol, not by a walk in the page: `DOM.getDocument({ depth: -1,
+pierce: true })` over a CDP session of the page (`context.newCDPSession(page)`). **Form-control text
+(PLAN-FRESH-3-001).** An `<input>`'s value, its placeholder and the label of an `<input type=button|submit|reset>`
+are text nodes of the control's user-agent shadow root, which a page-side walk does not reach (**measured** by the
+plan squad's round 3 on host Chromium 1243: a `TreeWalker` over `<body>` saw none of them, CDP with `pierce: true`
+reached each, and `CSS.getPlatformFontsForNode` reported `Liberation Sans` for each under a page whose body font was
+set, since a control does not inherit the page font without a rule). base.css's `:where(button, input, select,
+textarea) { font: inherit }` is a document rule and does not reach a control inside an element's open shadow root
+(FR-025), so such text is exactly what an element can draw in a system face. A text node in a user-agent shadow root
+is attributed to its **host control** (the `<input>`, `<textarea>` or `<select>` whose shadow root holds it): the
+host decides whether the text lies in the story area, and its computed family, for the faces-not-loaded rule below,
+is the host element's. The finding names the families found, as for any text. Text that is not rendered (an `<option>` of a closed `<select>`) gets `[]` from CDP and is not a finding.
+Every family must be `Schibsted Grotesk`
+exactly (the face `@ocelle/tokens` vendors as `SchibstedGrotesk-wght.woff2` and declares as `font-family: "Schibsted
+Grotesk"`); any other family, including a per-glyph fallback, gives one `font` finding per story-theme naming the
+families found, and no capture of that story-theme is compared or written.
+
+**Faces not loaded (PLAN-CORRECTNESS-1-005).** `document.fonts` holds every face the page declares, and a declared
+face no text uses stays `unloaded` after `document.fonts.ready` (measured: Storybook's preview head declares four
+Nunito Sans faces that stay `unloaded` on every story). So a face is a `font` finding only when, at capture time, its
+status is `loading` or `error`, or it is a face of a family the story's text uses (the families of the computed
+`font-family` of the collected text nodes) and its status is not `loaded`. Declared but unused faces are not findings.
+
+**Closed shadow roots (PLAN-A11Y-SECURITY-1-002).** axe cannot enter a closed shadow root. The font collection's CDP
+traversal does reach one (checked while applying round 3's fixes, host Chromium 1243), but the rule stays one rule for
+both gates, since axe cannot audit the text there (FR-014, FR-027). An init
+script wraps `Element.prototype.attachShadow` before navigation and records every call with `mode: "closed"` on an
+element of the story area. Any such call gives the finding `closed-shadow-root` (naming the host element's tag) in
+the visual gate and in the axe gate (R-08), and no capture of that story-theme is compared or written. The contributor
+note says elements use open shadow roots (FR-025).
+
+**Where the decisions live (PLAN-TESTABILITY-1-003).** The collection gathers only plain data (per text node, from
+CDP: the families CDP returned, whether it lies in a user-agent shadow root, and the computed family of the node's
+parent element or, for user-agent shadow text, of its host control; from the page: the `FontFace` list with family and
+status and the recorded `attachShadow` calls). The decisions are pure functions in `gates/lib/story-checks.ts`,
+unit-tested in node with: shadow-root text, a per-glyph fallback family, a family that only starts with `Schibsted`
+(`Schibsted Grotesk Fallback`), a user-agent shadow text node with a system family (a finding naming the family), a
+user-agent shadow text node with `Schibsted Grotesk` (none), an unrendered option text with `[]` (none), an unused
+`unloaded` face (not a finding), a used face still `loading`, a face in `error`, and a closed and an open
+`attachShadow` call. The collection code carries `Stryker disable` comments naming its integration test.
+
+**Plants (PLAN-FRESH-3-001).** `visual/fail-input-system-font`: a custom element whose open shadow root holds an
+`<input value="…">` and an `<input placeholder="…">` with no font rule: `font` on both themes. `visual/pass-input-font`:
+the same element setting `font: inherit` on its inputs in its shadow styles, with its baselines. The contributor note
+(FR-025) says an element's shadow styles must set the font of its form controls (`font: inherit`), since the document's
+base.css rule does not reach them.
+
+**One status per capture (PLAN-FRESH-2-006).** A capture writes one `status` per story-theme (contracts/container.md),
+yet one story-theme can meet several: a face whose source is a path not in `dist` is both `io` (R-14, FR-030) and, its
+face ending in `error`, `font`; a face loaded from another origin is both `network` and `font`. The capture records
+every condition it meets and chooses its one status by the order of data-model.md § Verdict per story-theme, steps 1
+to 7 (`render-failed`, `render-timeout`, `closed-shadow-root`, `pointer-target`, `font`, `network`, `io`), the same
+order the host applies across the two runs. The choice is a pure function `captureStatus(conditions)` in
+`gates/lib/capture-plan.ts`, unit-tested with `font` and `io` both present (→ `font`), `network` and `font` both
+present (→ `font`), `network` and `io` (→ `network`), and one condition alone; its message lists the chosen
+condition's details only. The plant `fail-font-not-loaded` isolates `font`: its face's source is a file in `dist`
+holding bytes that are not font data, so the face ends in `error` with no `io`; the plant `fail-font-file-missing`
+names a path not in `dist` and expects the winner, `font`.
+
+**To be measured (phase 1 spike).** Whether any of the 12 existing stories draws a glyph Schibsted Grotesk lacks
+(for example an arrow or a dash in a story label). Any such story is fixed in its story file (FR-029 by analogy);
+the font rule is not relaxed.
+
+## R-06 The host entry point and its engines (FR-009, FR-018, FR-026)
+
+**Decision.** `gates/bin/visual.ts` (gate) and `gates/bin/baselines.ts` (baseline command) share one host module,
+`gates/lib/container.ts`:
+- `--engine <docker|podman|both|auto|host>`, default `auto`. `auto` uses docker when `docker info` succeeds, else
+  podman, else exits 2 "no container engine (docker or podman) is available"; run 1 and run 2 then use that engine.
+  `both` runs run 1 under docker and run 2 under podman and exits 2 naming the one that is missing. Any other engine
+  name is looked up on `PATH` as an executable and exits 2 "no container engine: <name> not found" when absent.
+  `host` runs the capture script directly on the host without a container: it exists only so the capture's own
+  refusal can be proven (below). The host entry point turns any exit 0 of a `host` run into exit 2 "the host engine
+  never produces a capture", so `host` cannot produce a capture whatever the host machine holds.
+- **CI requires both engines (operator decision on PLAN-TESTABILITY-1-008, option (b)).** When the environment
+  variable `CI` or `GITHUB_ACTIONS` is `true`, the entry point resolves `auto` to `both`, and exits 2 "in CI the
+  visual gate runs under both docker and podman" for any engine choice that would run every capture under one engine
+  (`docker`, `podman`, or another name found on `PATH`). `both` is unchanged; `host` (which never captures) and a name
+  not found keep their own causes, so the breaking plants behave the same in CI. The rule is a pure function
+  `resolveEngine(choice, env, available)`, unit-tested for every choice with and without each variable. A workflow edit
+  that drops `--engine both` or sets `OCELLE_VISUAL_ENGINE=auto` therefore cannot downgrade CI to one engine.
+  Integration tests that are not about this rule spawn the gate with `CI` and `GITHUB_ACTIONS` removed from its
+  environment.
+- **The pin check (PLAN-CORRECTNESS-1-003).** Before starting a run, the entry point checks the committed pin
+  (`container.json`, contracts/container.md) and the image the engine holds:
+  1. the reference is `<image>@<digest>` with a digest of the form `sha256:<64 hex>`; a tag is exit 2 "not pinned by
+     digest";
+  2. the pinned reference's media type, read from the registry (`docker buildx imagetools inspect --raw
+     <image>@<digest>` under docker; `skopeo inspect --raw docker://<image>@<digest>` under podman), is an image
+     manifest; an image index or manifest list is exit 2 "the pin names an index, not the linux/amd64 manifest". When
+     a resolved engine is podman and `skopeo` is not found on `PATH`, the gate exits 2 "the pin check under podman
+     needs skopeo: skopeo not found" before the pin check of any engine (so `both` pulls nothing first); the check is
+     a pure function of the resolved engines and the tools found, unit-tested;
+  3. the image is pulled and run only by `<image>@<digest>` with `--platform linux/amd64` (the engine verifies the
+     content against the digest on pull);
+  4. after the pull, the engine's `image inspect` must list `<image>@<digest>` in `RepoDigests` (docker, both image
+     stores; podman also reports it as `.Digest`), and report `Os` `linux` and `Architecture` `amd64`; otherwise exit
+     2 naming the field. `.Id` is **not** compared: it is the manifest digest on docker's containerd image store and
+     the config digest (`sha256:a0d7b2b4…a017`) on docker's classic store and on podman.
+  The inspect outputs are parsed by pure functions unit-tested on recorded outputs of docker with the containerd
+  store (recorded here), docker with the classic overlay2 store and podman (fixtures written from the engines'
+  documented formats until phase 3's CI run records real ones, R-02), each with a matching case, a mismatching
+  digest, an arm64 image and an index media type. Skopeo's raw manifests are, until that run records them, copies of
+  the raw manifests docker recorded here (the registry's bytes, whichever tool reads them).
+- **The media type under podman (operator decision 2026-11-11, "skopeo inspect --raw").** CI run 43064614842 (head
+  `056a6bb`, job "Visual regression", `--engine both`) exited 2 at step 2 under podman: `podman manifest inspect`
+  refuses a single image manifest ("Treating single images as manifest lists is not implemented"), and the pin is one
+  by design (step 2 itself rejects an index). Options weighed: skopeo, which reads any manifest raw; or pulling first
+  and reading the media type from podman's store, which would need step 3 before step 2 and does not read the
+  registry. The operator chose skopeo for podman. Docker keeps `buildx imagetools inspect --raw`: in the same run its
+  three steps passed before podman's, and the spike recorded its raw output for this pin. The cost is a host tool:
+  skopeo must be installed wherever the gate runs under podman. GitHub's `ubuntu-24.04` runner image is expected to
+  carry it beside podman; phase 3's CI run confirms that (`skopeo --version` in its log), and a runner without it is
+  a stop-and-ask, since installing it in the workflow is a CI change the operator decides. (CI run 43072665056 passed
+  under podman, so skopeo was found; its version is recorded by the `pin-record` artifact of R-02 from the next run.)
+- **When each engine's pin check runs (operator decision 2026-11-11, "Apply now"; R-07).** Steps 2 to 4 run under an
+  engine just before that engine's first run, not for every engine before the build: under `both`, docker's check,
+  the build and run 1, then (with `--remove-docker-image`) the removal of docker's copy, then podman's check and run
+  2. The reference form (step 1), the skopeo check and the option's check still run before any engine command.
+- The run arguments (contracts/container.md): `run --rm --platform linux/amd64 --network none --user <uid>:<gid>`
+  (docker) or `--userns=keep-id` (podman), the mounts of R-03, `-e OCELLE_VISUAL_PIN=<digest>`, the image by digest,
+  and `node <repo>/gates/visual/capture.ts <request.json>`. The argument builder is unit-tested with root equal to the
+  repository and root different from it (the plant and fixture case).
+- **The capture refuses outside the pinned image** (FR-009, second layer): it exits 2 with "not the pinned
+  container: <check>" unless all hold, each check with its own cause text:
+  - `platform`: `process.platform` is `linux` ("platform darwin, expected linux");
+  - `arch`: `process.arch` is `x64` ("arch arm64, expected x64");
+  - `node`: `process.version` is `v` + `.node-version` ("node v22.…, expected v26.13.0");
+  - `pin`: `OCELLE_VISUAL_PIN` equals the digest in `container.json` ("pin variable absent" or "pin variable
+    differs");
+  - `browser`: `/ms-playwright/<browser>` exists for the browser build `container.json` names
+    (`chromium_headless_shell-1248`), and the executable Playwright resolves for the headless launch lies in that
+    directory ("browser <resolved path>, expected /ms-playwright/chromium_headless_shell-1248").
+  The refusal is a pure predicate in `gates/lib/capture-plan.ts` over injected facts (`platform`, `arch`, `version`,
+  the environment, a directory-exists function, the resolved executable), with one unit test per check that varies
+  only that check and asserts the cause names it (PLAN-TESTABILITY-1-002). The breaking plant `error-host` runs the gate
+  with `--engine host` on the runner, where the pin variable and `/ms-playwright` are absent.
+
+**How a plant presents its engine.** `plant.json` gains an optional key `engine`, allowed only for plants of the
+`visual` gate, with one of the values `both`, `host` or `missing`; the plant runner substitutes it for `{engine}` in
+the gate's plant command (`node gates/bin/visual.ts --root {root} --engine {engine}`), else
+`$OCELLE_VISUAL_ENGINE`, else `both`. `missing` becomes the engine name `ocelle-no-such-engine`, so the gate's real
+lookup fails. Like `base`, it is an input presented to the gate, not gate configuration; the plant-judge tests cover
+the new key.
+
+## R-07 Plants without a container, the registry guard, and the cost (FR-018)
+
+**Decision.**
+- `gate:plants` gains `--skip-container`: it runs every plant except the `visual` plants, prints
+  `plants: skipped (no container): <plant>` on stderr for each, ends its summary with "partial run: N visual plants not
+  run", and exits by the others' result. The registry check fails when any step of the `plants` job of
+  `.github/workflows/ci.yml` contains `--skip-container`; the registry plant `fail-skip-container-in-ci` proves it.
+- **No engine, without the option (PLAN-TESTABILITY-1-009).** Before the `visual` plants, `plants.ts` probes for an
+  engine once, with the same resolution the gate uses for the engine the plants will be given
+  (`$OCELLE_VISUAL_ENGINE`, else `both`; `resolveEngine`, R-06). When the probe finds the engines missing, it runs no
+  `visual` plant, prints `plants: not run (no container engine): <plant>` on stderr for each, and exits 2 after the
+  other plants, whatever their result, so the run is never reported as passed. The plants whose `engine` key is `host`
+  or `missing` need no engine and still run. The decision (which plants run, which are not run, the exit) is a pure
+  function in `gates/lib/plant-runner.ts` with unit tests; an integration test runs `gate:plants` with `PATH` holding
+  neither docker nor podman and asserts exit 2 and one `not run` line per `visual` plant that needs an engine.
+- **Plants that build the Storybook run one at a time.** `plants.ts` runs plants concurrently today; the plants of
+  `storybook-build`, `visual` and `axe` each run a Storybook build (and the `visual` ones two container runs), so the
+  plant runner runs those three gates' plants one after another, after the others (the one-heavy-job rule, and no
+  two builds writing at once through the shared `storybook/node_modules` link, R-16).
+
+**CI cost.** Each `visual` plant builds the Storybook (2.2 s measured here for 12 stories) and captures twice. The
+`Plants` and `Visual regression` jobs each pull the image under both engines: about **1 GB transferred per pull**, and
+**3.6 GB unpacked in each engine's store**, so about 7.2 GB of disk beside the checkout and the pnpm store. Phase 3's
+review records the `Plants` job's time and the runner's free disk after both pulls (`df -h /` in a job step). If the
+disk runs short, the `Visual regression` job prunes the docker copy (`docker image rm`) after run 1, before the podman
+pull, and the `Plants` job first removes the runner's unused preinstalled toolsets; when the job's time nears the
+30-minute mark, the `visual` plants are moved to a matrix job, which needs a registry change and so is the operator's.
+
+**Measured by CI run 43072665056 (head `07c97ef`, reviews/phase-3/ci-run.md).** The Plants gate took 37 min 13 s for
+241 plants with 12 repository stories, past the 30-minute mark; both visual jobs ended with 4.2G free (95% used). The
+log holds no time per plant, so the time per `visual` plant (about 43 s, about 1.8 s per story-theme) is an estimate.
+The operator decided on 2026-11-11 (human:jeroennouwsdev):
+
+- **The disk measures now ("Apply now").** Both measures above are taken in phase 3, whatever the next run's disk:
+  - *The docker copy in "Visual regression".* The gate gains `--remove-docker-image` (gate only; not the plant
+    command, not `visual:update`). With it, after run 1 under docker the gate removes docker's copy
+    (`docker image rm <image>@<digest>`) before podman's pull. That needs the pin checks to move: today both engines'
+    pin checks (media type, pull, identity) run before the build and run 1, so podman's pull comes before run 1 and
+    docker's copy cannot go before it without run 1 then pulling it again, outside the identity check. The order of a
+    run becomes: engine resolution, the skopeo check and the option's check, the pin check under run 1's engine, the
+    build, run 1, the removal, the pin check under run 2's engine (when it is another engine), run 2, the verdicts
+    (contracts/gates.md § `visual`; the order is a pure function `runSteps`, unit-tested). **Neither guarantee is
+    weakened**: each engine's pin check still passes before any capture under that engine, so every capture comes
+    from an image whose digest, media type, `Os` and `Architecture` were checked in that engine's store; run 1's
+    captures are read back from run 1's directory before the removal, which touches only docker's image store; run 2
+    runs from podman's own pull. A podman pin failure now ends the run with the same exit 2 cause, after run 1 rather
+    than before it (the cost of a wasted run 1, not a weaker check). The option is refused, exit 2
+    `--remove-docker-image needs both engines (docker for run 1, podman for run 2)`, unless the resolved engines are
+    docker then podman, checked before any engine command; a failed removal is a stderr note
+    `note: docker's copy of the pinned image was not removed: <last stderr line>` and the run goes on (the job's
+    `df -h /` shows the effect). Locally nobody passes it, so a contributor's docker copy stays. The Plants shards
+    keep both copies: every `visual` plant runs the gate with both engines, and removing docker's copy per plant would
+    pull it again for each.
+  - *Toolsets in the Plants shards.* Each Plants shard job (below) first removes the runner's preinstalled toolsets
+    the repository never uses (`/usr/local/lib/android`, `/usr/share/dotnet`, `/opt/ghc`, `/usr/local/.ghcup`,
+    `/opt/hostedtoolcache/CodeQL`) and prints `df -h /`; nothing the setup action, docker, podman or skopeo uses is
+    among them (Node comes from `/opt/hostedtoolcache/node`, kept).
+- **The Plants job is split in phase 3 ("In phase 3 now")**, before phase 4 adds the `axe` plants, as below.
+- **Time per plant before the split count ("Measure first")**: the 9-story count the run's estimate gave is not
+  approved; the plant job prints each plant's time (below) and the count is derived from the next run.
+
+**The split (operator decision 2026-11-11, "In phase 3 now").** Shapes weighed:
+1. a matrix on the `plants` job itself: GitHub names the checks `Plants (1)` and so on, so the required check
+   "Plants" is never reported and the `main` ruleset (the operator's) would have to change, again whenever the shard
+   count does;
+2. shard jobs plus a "Plants" job that passes when every shard job passed, as "Mutation testing" does: the ruleset is
+   unchanged, but that every plant was judged rests on the workflow text (a matrix that lists fewer shards passes);
+3. shard jobs plus a "Plants" job that **recomputes the partition** from the repository and accepts only one report
+   per shard, each holding exactly that shard's plants, all as expected.
+
+Chosen: **3**. It keeps the required check "Plants" (no ruleset change) and keeps every guarantee of the single job
+without resting on the workflow text, as the CI rule of R-06 does for the engines; its cost over 2 is one small
+artifact per shard and one download. The jobs (contracts/gates.md § The registry):
+- `plants-plan` ("Plants plan"): `pnpm --silent run gate:plants -- --plan` prints the shard numbers as JSON
+  (`[1,2,…,n]`), so the shard count follows the plants with no workflow edit (as `mutation-plan` does);
+- `plants-shard` ("Plants shard", matrix over the plan's numbers, `fail-fast: false`): removes the unused toolsets,
+  runs `pnpm run gate:plants -- --shard <k>` with `OCELLE_VISUAL_ENGINE=both`, prints `df -h /` always, uploads its
+  report `storybook/.visual/plant-shards/<k>.json` always (artifact `plant-shard-<k>`) and
+  `storybook/.visual/plants/` on failure (artifact `plants-<k>`);
+- `plants` ("Plants", the required check, `needs` both, `if: always()`): downloads the `plant-shard-*` artifacts into
+  `storybook/.visual/plant-shards/` and runs `pnpm run gate:plants -- --verdict storybook/.visual/plant-shards`.
+
+The partition is a pure function `plantShards(plants, size)` of the plant list (unit-tested): shard 1 holds every
+plant of a gate other than `visual` and `axe`, the `storybook-build` plants among them, and the registry's plants;
+then the `visual` plants, sorted by name, in consecutive groups of at most `size`; then the `axe` plants the same way.
+Every plant is in exactly one shard. `size` is **8, provisional**: at the run's estimate a shard of 8 `visual` plants
+takes about 6 minutes of plants plus setup and both pulls, under the 10-minute goal of a new job, and stays far below
+30 minutes even if the estimate is off by three times, so the run that measures the times cannot itself fail on time.
+The value is derived again from the measured times (tasks.md T046h) and approved with the split count; phase 4's run
+does the same for the `axe` groups. Each shard pulls the image under both engines (about 2 GB transferred, 7.2 GB
+unpacked), so more shards cost runner time and transfer; that is the trade the derived `size` weighs.
+
+**Since plan decision 30** (operator decisions 2026-11-12, on CI run 43242674392 at 21 stories):
+- `size` is 3, approved, with the toolset removal kept (A'). The split count is 25 stories.
+- The non-visual plants are no longer all in shard 1. Shard 1 took 12 min 34 s with 232 plants, and no `size`
+  changes it. They are sorted by `<gate>/<case>` and dealt in turn over ⌈n / 80⌉ shards, which is 3 at 232 plants.
+  Dealing in turn spreads each gate's plants, since plants of one gate cost alike and gates differ widely.
+- The plan has 19 shards (contracts/plants.md § Shards).
+
+What each guarantee of the single job rests on after the split:
+- **every plant judged**: `--verdict` recomputes `plantShards` on the checked-out tree and exits 2 naming each shard
+  `1..n` with no report (`shard <k> of <n> reported no result`), a report whose `of` is not `n`, and a report whose
+  plants are not exactly that shard's (`shard <k> judged other plants than the partition gives it: <plant>`); a report
+  with a skipped or not-run plant is exit 2 as the single run is. Its findings are the plants not as expected, printed
+  from the reports as the single run prints them, and it runs the structural checks of the whole set (unknown gate,
+  a gate without a fail, pass or breaking plant, an invalid `plant.json`), which a shard does not;
+- **under both engines**: unchanged. Each shard sets `OCELLE_VISUAL_ENGINE=both`, and the gate itself refuses a single
+  engine in CI (R-06), so a `visual` plant run in CI under one engine is not as expected;
+- **the registry check**: runs in `--verdict` on the repository's `gates.json` and `ci.yml`. `plants-plan` and
+  `plants-shard` are the plant job's helper jobs, not gate jobs; `skip-container-in-ci` covers every step of the three
+  plant jobs; a new rule `shard-in-plant-check` fails when a step of the `plants` job passes `--shard` or `--plan`,
+  since the required check would then judge one shard or none (registry plants `fail-skip-container-in-shard`,
+  `fail-shard-in-plant-check`, `pass-split-plant-jobs`);
+- **artifacts on failure**: each shard uploads its own `storybook/.visual/plants/` as `plants-<k>` (artifact names must
+  differ within a run).
+`gate:plants` without `--plan`, `--shard` or `--verdict` is unchanged: it runs and judges every plant in one process
+(locally, and any job that runs it so).
+
+**The time of each plant (operator decision 2026-11-11, "Measure first").** `gate:plants` prints, on stderr, one note
+per plant after judging it, `note: plant time: <gate>/<case>: <seconds> s` (seconds with one decimal, from the start of
+the plant's root to its judgement), in every mode; the stdout summary line is unchanged. Plants of the non-Storybook
+gates run at once, so their times overlap; the Storybook plants run one at a time, so theirs are the plant's own. Each
+shard report holds the same times. The time per story-theme of a plant is its time over its root's story-themes (the
+repository's 24 plus two per story of its own), and the split count is derived from those (tasks.md T046h).
+
+**Plant cost grows with the repository's stories (operator decision on PLAN-FRESH-2-007, option (b)).** Plant roots
+keep every repository story (R-16), so each Storybook plant builds and captures (visual: twice) or audits all of them,
+and the Plants job's time grows with plants × stories (**measured** by the plan squad's round 2: 424 to 661 ms per
+story-theme on the host Chromium; the 12 repository stories alone are roughly 10 to 15 minutes of a serial job with
+about 30 visual and 20 axe plants). The rule is kept and its growth is recorded: phase 3's review measures, from the
+CI run of the branch (R-02), the Plants job's time per story-theme for `visual` plants (two container runs) and for
+`axe` plants, and from it sets the **split count**, the number of repository stories at which the serial Plants job
+would pass 30 minutes. The count is recorded, with the operator's approval, in the plan's Complexity Tracking row
+"Plant roots hold every repository story", whose sunset is the op that splits the Plants job (a matrix, the operator's
+registry change) before the repository reaches that count. The element issues (#7 to #9, #12 to #17) check the count
+when they add stories. **Since the operator's decisions of 2026-11-11** the split is phase 3's (above), not a later
+op's, and the count changes meaning: the **split count** is now the number of repository stories at which one Plants
+shard of the approved `size` would pass 10 minutes, derived with `size` from the per-plant times of the first run with
+the split (tasks.md T046h) and recorded with the operator's approval in the same row, whose sunset becomes the change
+that lowers `size` (with its test) before the repository holds that count. A consequence of the rule: `fail-token-changed`'s exact list names every story-theme that
+shows `color-ink` (light), so a pull request that adds such a story updates that list in the same change; the plant
+then fails loudly with the unexpected `differs` until it does, and never passes vacuously.
+
+## R-08 axe: where it runs, on what, with which rules (FR-013 to FR-016; SPEC-2-02, SPEC-2-03, SPEC-2-04)
+
+**Decision.**
+- axe runs on the **host** browser (Playwright's default headless Chromium 1248 in CI, `OCELLE_CHROMIUM_PATH`
+  locally), not in the container: its results do not need to be byte-stable, and the gate stays runnable without a
+  container engine.
+- `axe-core` 4.14.0 is pinned exactly as a root devDependency (released 2026-10-05, older than the 7-day release
+  age; no dependencies). It is injected with `page.addScriptTag({ path })`; with the Storybook no longer under a CSP
+  (FR-020, FR-021) nothing blocks it.
+- Each story-theme gets a new context and page (FR-028) in the theme the visual gate uses (`globals=theme:`), with
+  the same init scripts and readiness as the capture (R-04: `render-failed`, `render-timeout`), and the story's
+  pointer state applied before axe runs (R-15). **The context options are the capture's (PLAN-FRESH-3-003)**: both
+  gates take them from one pure function of the theme in `gates/lib/capture-plan.ts`, `contextOptions(theme)`
+  (viewport 1280 × 800, device scale factor 1, `colorScheme` = theme, `reducedMotion: "reduce"`, `forcedColors:
+  "none"`, locale `en-GB`, timezone `UTC`, R-04), so the axe run sees the page the capture sees. Without it the
+  context would be Playwright's default 1280 × 720 (**measured** by the plan squad's round 3: a `:hover` target at
+  y = 740 to 780, inside the 800 px rule, was not hovered after `page.mouse.move`, with no error, and was hovered with
+  `viewport: 1280 × 800`), and a transition could be audited mid-way. A unit test asserts that the options the axe gate
+  passes to `browser.newContext` equal the capture's for each theme.
+- **Context (operator decision on PLAN-A11Y-SECURITY-1-003, option (a)).** axe runs on the **whole document**, with an
+  `exclude` list of Storybook's own harness nodes (the error display, the "preparing" and "no preview" placeholders,
+  `#storybook-docs`; the phase 1 spike records the exact list from Storybook 10.6.5's preview), so any node a story adds
+  anywhere is audited. **Terms (PLAN-A11Y-SECURITY-1-003).** The *story area* is the whole document minus those harness
+  nodes (open shadow roots included); it is what axe audits, what the font collection (R-05, user-agent shadow roots of form controls included) collects, where the
+  closed-shadow-root recorder (R-05) counts calls and where a pointer selector (R-15) resolves, so a surface appended to
+  `<body>` is inside the story area. The *story root* is `#storybook-root` and its descendants (open shadow roots
+  included); only the empty check below and the `outside-root` check use it. After readiness, every element child of
+  `<body>` that is neither `#storybook-root`, nor a harness node, nor a non-rendered element (`script`, `style`, `link`,
+  `template`, `noscript`) is a finding `outside-root` (one per element, naming its tag), so a story that renders a
+  surface outside its root (a portal to `document.body`) fails even though axe audits it. Top-layer elements inside the
+  root (`<dialog>`, `popover`) are inside the root. The decision is a pure function over the collected list of body
+  children. The contributor note says elements render every surface inside their own host (FR-025).
+- **Rules (FR-016; operator decision on PLAN-CORRECTNESS-1-010, option (a)).** `axe.getRules()` lists every rule; the
+  run enables every rule axe enables by default and every rule tagged `wcag2a`, `wcag2aa`, `wcag21a`, `wcag21aa` or
+  `wcag22aa`, and disables every rule tagged `experimental`, except the **harness-document rules**, which judge the
+  preview document Storybook supplies rather than the story, and are not run: for axe-core 4.14.0 `bypass`,
+  `document-title`, `html-has-lang`, `html-lang-valid`, `html-xml-lang-mismatch`, `landmark-one-main`,
+  `page-has-heading-one` (rules whose selector is the document element, `html…:not(html *)`) and `region` (all page
+  content inside landmarks; a component story is not a page). Of the other rules whose selector is the document
+  element, `css-orientation-lock` is tagged `experimental` in axe-core 4.14.0 and so is left off by the experimental
+  rule above (PLAN-CORRECTNESS-1-010, verify 1), not kept; `frame-focusable-content` and `frame-tested` judge content
+  a story brings and stay. The spec names this list in FR-016 (spec delta of this round).
+- **Rule tests (PLAN-TESTABILITY-1-012).** The selection is a pure function over rule metadata (`id`, `tags`, `enabled`,
+  `selector`), tested on fixture metadata: a default-enabled best-practice rule kept; a rule not enabled by default and
+  tagged `wcag22aa` enabled; a rule not enabled by default with none of the listed tags left off; a rule tagged both
+  `experimental` and `wcag2a` disabled; a harness-document rule left off. A second test reads axe-core 4.14.0's own rule
+  metadata from `node_modules/axe-core` (not the module's output) and derives from it, independently, the expected
+  enabled list and the list of rules whose selector is the document element; it asserts the module's enabled list equals
+  the derived one, and that every document-element rule is either a harness-document rule, tagged `experimental` (for
+  4.14.0 `css-orientation-lock`), or in the named list of rules that stay (`frame-focusable-content`, `frame-tested`),
+  so an axe upgrade that adds a rule of either kind fails the test until it is sorted.
+- **Output (SPEC-2-02)**: findings on stdout in the gate format, one per node:
+  `<story-id>/<theme>: axe: <rule>: <impact>: <selector>`; the stdout summary is one line on exit 0 and exit 1, as
+  every gate. Notes go to **stderr**, one per node, `note: <story-id>/<theme>: <rule-id>: <impact>: <selector>`, so
+  the plant judge, which reads findings from stdout only (`gates/lib/plant-judge.ts`), never confuses them.
+- **The printed selector (PLAN-FRESH-2-005).** axe-core 4.14.0's `NodeResult.target` is an `UnlabelledFrameSelector`,
+  an array with one entry per frame level; an entry is a string (light DOM) or, for a node inside shadow roots, an
+  array of strings, one per shadow level from the document down (`axe.d.ts` lines 48 to 54, 169). `<selector>` is
+  printed by a pure function `printSelector(target)` in `gates/lib/axe-verdict.ts`: the shadow levels of an entry are
+  joined by ` >>> ` (for example `ocelle-button >>> button`), and frame levels, which no story is expected to have,
+  are joined by ` >>frame>> ` so they are never merged into one level. Nothing else is changed: a selector holding a
+  `|` (an attribute selector such as `[lang|="en"]`) is printed as it is. Unit cases: a light-DOM target, a one-level
+  and a two-level shadow target, two frame levels, and a selector holding a `|`. `String(target)` (a comma list that
+  reads as a CSS selector list) and printing the host alone (which merges distinct nodes) both fail these cases.
+- **Incomplete results (SPEC-2-03; operator decision on PLAN-A11Y-SECURITY-1-005, option (a)).** axe's `incomplete`
+  (needs review) results of impact `serious` or `critical` are **findings**, one per node, with the rule
+  `<axe rule id>-incomplete` (for example `color-contrast-incomplete`): ordinary patterns (text over a `::before`
+  background, text under a translucent overlay token) give a serious `color-contrast` incomplete, and the `contrast`
+  gate checks token pairs only, so rendered compositions would otherwise have no contrast check (constitution III).
+  Such a finding is cleared only by an exception (below). Incomplete results of impact `moderate` or `minor` are
+  notes, `note: … incomplete …`. Plan gate decision 4 changes accordingly.
+- **Exceptions (SPEC-2-04, FR-029; operator decisions on PLAN-A11Y-SECURITY-1-006 and PLAN-CORRECTNESS-1-009,
+  option (a) each).** `storybook/a11y-exceptions.json`, committed in phase 4 with the ten entries of the Prose
+  document story (below; `[]` otherwise). Each entry is `{ "story", "theme", "rule",
+  "selector", "reason", "sunset", "plan" }`, all non-empty strings, `theme` `light` or `dark`, `rule` an axe rule id
+  or `<axe rule id>-incomplete`, `selector` the node's selector exactly as the gate prints it (`printSelector`, above), `plan` the
+  repository-relative path of the plan whose Complexity Tracking records the exception. An entry matches only the one
+  node of that rule with that selector in that story-theme; another node of the same rule stays a finding. The gate
+  honours an entry only when the `plan` file exists in the root under test and its `## Complexity Tracking` section
+  holds a table row naming the same story, theme, rule and selector (each in backticks; a `|` of the selector is
+  written `\|` in the row, since a Markdown table cell cannot hold a bare `|`, and the pairing unescapes it) and the
+  entry's sunset;
+  otherwise the entry gives the finding `unrecorded-exception` at `storybook/a11y-exceptions.json#<index>` and the node
+  stays a finding. An honoured entry turns its node into a note `note: … excepted (<reason>)`; an entry that matches
+  no node is a finding `stale-exception` (so an exception ends when its cause does); a malformed file is exit 2. The
+  parsing, matching and the Complexity Tracking pairing are pure functions in `gates/lib/a11y-exceptions.ts`
+  (unit-tested on plan texts with and without the row, with a row differing in each field, with the row outside
+  the Complexity Tracking section, with a ` >>> ` selector, and with a selector holding a `|` written `\|` in the row).
+  Plants: an honoured exception, an honoured incomplete exception and an honoured exception of a node inside an open
+  shadow root (pass), a stale exception, an unrecorded exception and an excepted story with a second node of the same
+  rule (fail), a malformed file (breaking). How plant roots get the repository's entries: R-16.
+- **The existing stories' results (phase 1 spike § 7; operator decision 2026-11-10, "tabindex + exceptions").** 22 of
+  the 24 story-themes have no serious or critical result. `base-styles--prose-document`, in each theme, has one
+  serious violation, `scrollable-region-focusable` at `table:nth-child(12)` (base.css makes a prose table its own
+  horizontal scroll box, `display: block; overflow-x: auto`, and that wide table holds nothing focusable), and five
+  serious `color-contrast` incomplete results, reason `elmPartiallyObscured`, on the twelfth column of both wide
+  tables, clipped by the scroll box. The violation is fixed in the story's render code: `storybook/stories/render.ts`
+  gives the story's wide tables `tabindex="0"`, as `packages/styles/README.md` § For Markdown renderers tells WebKit
+  hosts to do; this makes the scroll box focusable and draws nothing until it is focused, so the captures are
+  expected not to change (phase 4 runs `gate:visual` after the fix to show it). The incomplete results stay as long as a table overflows, and their fix is a change to base.css's table
+  scroll box (003 surface), so they are ten per-node exceptions (5 selectors × 2 themes), each a Complexity Tracking
+  row in plan.md and an entry of `storybook/a11y-exceptions.json` naming that plan. Their selectors are the spike's,
+  measured on host Chromium 1243 before the `tabindex` fix; phase 4 re-measures them after it, and a selector that
+  moves, a result that disappears or a new one is a stop-and-ask (the rows are the operator's approval of those
+  exact nodes).
+- **Inside open shadow roots (PLAN-FRESH-2-005).** FR-025 sends every element into open shadow roots, so the consumers'
+  findings are shadow-DOM nodes. The fail plant `fail-open-shadow-unlabelled` holds a custom element whose open shadow
+  root holds an unlabelled `<button>`: `button-name` (critical) on both themes, at the ` >>> ` selector. It fails if the
+  context's include and exclude construction stops axe at shadow boundaries. The pass plant `pass-excepted-shadow`
+  excepts that node by its ` >>> ` selector with its plan row.
+- **Empty story (FR-014)**: no element of the story root (`#storybook-root` and its descendants, open shadow roots
+  included; not the story area) other than the root itself has a client rect of non-zero width and height, and no
+  non-whitespace text node exists there → finding `empty`, and axe is not run. The page collects the boxes and texts;
+  the decision is a pure function in `gates/lib/story-checks.ts` with unit cases for whitespace-only text, a zero-width
+  but tall box, a zero-height but wide box, text only inside an open shadow root, and an empty root.
+- **Closed shadow roots**: `closed-shadow-root` as in R-05; axe is not run on that story-theme, since it cannot see
+  inside.
+- **Render failure**: as in R-04's readiness (`render-failed` or `render-timeout`); the gate runs no axe on it.
+
+## R-09 The Storybook build gate (FR-001, FR-002)
+
+**Decision.** `gates/bin/storybook-build.ts` runs the workspace's own build,
+`pnpm --config.verify-deps-before-run=false --dir storybook run build`, in the root under test (operator decision on
+the phase 1 spike § 4, 2026-11-10, "flag in the build fn"). The flag is passed by the build function only; the
+repository's pnpm configuration (`pnpm-workspace.yaml`, `.npmrc`) is not changed, so `pnpm run` elsewhere keeps pnpm's
+default. **Why (measured, spike § 4):** pnpm 12.16.1 checks the install before `run` (`verify-deps-before-run`, unset
+in this repository) and, in a root other than the repository, re-links the workspace through the plant root's
+`node_modules` links: it rewrites the `.bin` shims of the repository's `node_modules/.bin`, `storybook/node_modules/.bin`
+and `node_modules/.pnpm/*/node_modules/*/node_modules/.bin`, and `node_modules/.pnpm-workspace-state-v1.json`, with
+the plant root's path in them, with or without the caches moved. With the flag the build writes nothing under the
+repository's `node_modules` or `storybook/node_modules`, and its output is unchanged. Before building, it checks, in
+this order, each an exit 2 with its cause:
+1. `storybook/package.json` exists and has a `build` script ("storybook/package.json has no build script");
+2. the Storybook CLI resolves from the Storybook workspace (`storybook/node_modules/storybook/package.json` and
+   `storybook/node_modules/.bin/storybook`, PLAN-CORRECTNESS-1-007): "storybook is not installed; run pnpm install".
+   **This check is the only signal of missing dependencies** (measured, spike § 1): without the flag, pnpm reinstalls
+   a missing `storybook/node_modules` before the script runs and the build passes (exit 0, no failure at all, and the
+   repository's `node_modules` rewritten); with the flag, the script's shell fails `storybook: not found` (exit 127),
+   which names no file and would be parsed as a `build-error` (exit 1), contrary to US1 scenario 5. So
+   `error-missing-dependencies` is judged by this check, never by the build's output;
+3. `pnpm` is found (a spawn error).
+The command's arguments (the flag, `--dir storybook`, `run build`) are a pure function of the build function,
+unit-tested with the environment below.
+The build function runs the script with `CACHE_DIR=<root>/storybook/.cache` added to its environment
+(PLAN-FRESH-2-008): Storybook 10.6.5's own file cache (`resolvePathInStorybookCache`, `cache("storybook")` in
+`storybook/dist/_node-chunks/chunk-VR6EPSNI.js`) reads `CACHE_DIR` and otherwise writes below
+`storybook/node_modules/.cache/storybook/` (**measured** by the plan squad's round 2: two telemetry cache files written
+there by a build, telemetry disabled). With Vite's `cacheDir` (R-16), every build of a root writes its caches only
+below that root's `storybook/.cache/` (ignored). The environment the build function passes is a pure function of the
+root, unit-tested (it sets `CACHE_DIR` to the root's directory and keeps the rest).
+The packages need no build first: the Storybook reads `packages/tokens/src/`, `packages/tokens/fonts/` and
+`packages/styles/src/base.css` (storybook/scripts/swatches.ts, storybook/stories/render.ts, tokens.stories.ts), never a
+package's `dist/` (PLAN-CORRECTNESS-1-011), so none of the three gates' commands builds the packages.
+
+Output is parsed into findings by a pure module, `gates/lib/storybook-build.ts`:
+- a Vite/esbuild syntax error or an unresolved import names the file: finding `<file>: storybook-build: build-error:
+  <first line of the error>`;
+- an indexer error names the file: `<file>: storybook-build: index-error: <message>`;
+- a successful build whose `dist/index.json` holds no entry of type `story`: `storybook/dist/index.json:
+  storybook-build: empty-index: …`;
+- a failed build whose output names no file: one finding at `storybook/package.json` with rule `build-error`.
+The exact output forms of Storybook 10.6.5 are captured in the phase 1 spike and become fixtures of the parser's unit
+tests. Exit 0 prints `storybook-build: built <n> stories`.
+
+**The breaking plants (operator decision on PLAN-CORRECTNESS-1-007, option (a)).** FR-017's "missing dependencies"
+breaking plant stays: `error-missing-dependencies` is a plant whose root has no `storybook/node_modules` link (the
+`unlinked` plant key, R-16), and the gate exits 2 "storybook is not installed; run pnpm install". `error-no-build-script`
+stays as a second breaking plant for check 1. The earlier plan decision 6 ("no build script" instead of "missing
+dependencies") is dropped, and FR-017 needs no change.
+
+## R-10 The CSP retarget (FR-020, FR-021, FR-022), the externaliser and the prefix scan
+
+**Decision.**
+- `gates/bin/csp.ts` drops every Storybook input from its scope; its Storybook plants (`fail-storybook-*`,
+  `pass-storybook-*`, `error-storybook-unparsable-ts`) are removed, and one pass plant, `pass-storybook-out-of-scope`,
+  holds an inline script in `storybook/dist/index.html` and a `style` attribute in a story's markup: the gate passes
+  (US4 scenario 1). The `csp` job builds the packages only (`pnpm --filter "./packages/*" -r build`).
+- **The externaliser is cut down to `<style>` only (operator decision on PLAN-FRESH-1-009, option (a)).** Storybook's
+  preview head holds a vendor stylesheet whose `font-family:` declaration ends in `monospace` over three lines
+  (`base-preview-head.html:219-221`). If it stayed inline it would land in `storybook/dist/iframe.html`, which `prefix`
+  covers (FR-022), and pass only because prefix matches line by line. So `storybook/scripts/externalise.ts` keeps moving
+  each inline `<style>` element of `storybook/dist/*.html` to an external `inline-<hash>.css` file linked in its place,
+  and no longer touches `<script>` elements: inline scripts stay in the HTML (nothing needs them out, the Storybook is
+  not a CSP target). Its unit test is changed red first: a `<script>` stays inline, a `<style>` is moved. Storybook's
+  vendor stylesheet thus stays out of the scanned HTML, as it is today.
+- **Prefix matches declarations across lines.** So that the HTML scan has no line-break blind spot, the prefix gate
+  matches a `font`/`font-family` declaration up to its terminating `;` or `}` across line breaks, reporting the line
+  where the declaration starts. Red first: the prefix plant `fail-storybook-html-multiline-monospace` (a
+  `storybook/dist/iframe.html` with an inline `<style>` whose `font-family:` value ends in `monospace` on the next line)
+  and a unit case in the prefix tests. The prefix `pass-repository` plant shows the repository still passes.
+- `storybook/test/integration/csp.test.ts` becomes `storybook/test/integration/render.test.ts`: no CSP header, no
+  violation collector and its control; it keeps preview-only (with its control, `iframe.html` present), the
+  no-network preload of the build and no request outside the origin while each story renders, the monospace walk
+  with its control, and each token story's token list in both themes. **Its red (PLAN-TESTABILITY-1-005)** is taken
+  from the build output under test, not from the test's own server: the render test's build must give a
+  `storybook/dist/iframe.html` that holds Storybook's inline `<script>` elements and a `dist/` with no
+  `inline-<hash>.js` file, and still no inline `<style>` element. Against the old build script (externaliser moving
+  scripts too) this fails. That the test's server sends no CSP header is a statement of the test, not a red claim.
+- The mutation gate's Storybook scope is unchanged: `storybook/scripts/externalise.ts` stays in it, with its smaller
+  behaviour.
+
+**Elements' run-time CSP (PLAN-A11Y-SECURITY-1-007; corrected 2026-11-13, plan.md decision 33).** The removed CSP
+header test was the only place a rendered story was observed under the strict policy. Mission 005 (#17), merged into
+this branch in `39763c7`, already gives `packages/elements` its run-time strict-CSP browser test:
+`packages/elements/test/browser/serve.ts` serves every element page with constitution IV's header and a
+`securitypolicyviolation` collector, as `packages/tokens/test/browser/serve.ts` does. So `gates/README.md`'s deferred
+table holds no row for it, and the contributor note (FR-025) says each element package proves run-time strict CSP in
+its own browser tests, not in the Storybook. (Before this correction the text said `packages/elements` had no
+run-time CSP test yet and that the deferred table gained a row naming the first element feature (#17 or #7); phase 5
+built that row, and the landing drops it.) The Storybook page is not brought back under a CSP
+(operator Q1).
+
+**Alternative.** Removing the externaliser entirely: the vendor monospace stack then sits in a prefix-covered file
+(operator chose to keep a cut-down externaliser instead).
+
+## R-11 Baselines: location, names, command, CI artifact (FR-005, FR-008, FR-010, FR-011)
+
+**Decision.** `storybook/baselines/<story-id>.<theme>.png`, for example `storybook/baselines/tokens--colour.dark.png`.
+Story ids are Storybook's (`[a-z0-9-]` and `--`), so the name is unambiguous. `pnpm run visual:update` runs
+`gates/bin/baselines.ts`: the same two runs as the gate, then it applies an **update plan**: when no story-theme has a
+refusing status, it writes every baseline that is new or whose bytes changed, removes stray ones, and prints
+`baselines: wrote <n> files (<added> added, <changed> changed, <removed> removed), <bytes> bytes in total`, where a
+baseline written for a story-theme that had none before is `added`, one written over an existing baseline is
+`changed`, and `<n>` = `<added>` + `<changed>` (operator decision 2026-11-11; contracts/gates.md § `visual:update`);
+otherwise it writes nothing and exits 1.
+
+**The update plan (PLAN-TESTABILITY-1-013)** is a pure function `updatePlan(results, baselines)` in
+`gates/lib/visual-verdict.ts` returning either `{ write, remove }` or `{ refuse: findings }`, unit-tested for each
+refusing status (`render-failed`, `render-timeout`, `closed-shadow-root`, `pointer-target`, `font`, `network`, `io`,
+`nondeterministic`), for one refusing story-theme among many good ones (nothing written), for unchanged bytes (not
+rewritten), for a story-theme with no baseline (written, counted as added) and for stray deletion. `baselines.ts` only applies the plan.
+
+**Local output and the CI artifact.** Differing captures, diff images (differing pixels in magenta, the rest dimmed)
+and the captures of nondeterministic story-themes go to `storybook/.visual/` (ignored). In addition, for every
+`missing-baseline` and `differs` story-theme, run 1's capture is written to `storybook/.visual/baselines/<story-id>.
+<theme>.png`, in baseline layout. The "Visual regression" job uploads `storybook/.visual/` as an artifact on failure
+(`actions/upload-artifact`, pinned by SHA); the contributor note says to copy the files of its `baselines/` folder into
+`storybook/baselines/` (and delete the stray files the job names) when a local run and CI disagree (R-02, CI is the
+producer of record). The 24 baselines are expected around 0.5 to 2 MB in total; phase 3 records the figure.
+
+**Plant baselines (PLAN-FRESH-2-002).** The `visual` pass plants that hold stories of their own carry those stories'
+baselines in their `tree/storybook/baselines/`: `pass-unused-face`, `pass-animation-and-caret`, `pass-second-render`,
+`pass-overflow-and-popover`, `pass-hover-and-press`, `pass-below-fold` and `pass-focus-below-fold`. They are produced
+by the baseline command's **plant mode**, `pnpm run visual:update -- --plant visual/<name> [--story <id>]`
+(contracts/gates.md):
+- it materialises the plant root with `gates/lib/plant-repo.ts` exactly as the plant job does, then runs the same
+  engine resolution, pin check, build and two runs on that root;
+- its capture requests hold only the plant's **own stories**: the story entries of the built index whose
+  `importPath` is a story file of the plant's `tree/` (the repository's stories in the root are not captured);
+- with `--story <id>` (one of the plant's own stories) it makes one single-story-theme request per theme, holding
+  only that story and that theme, and writes only that story's two baselines; `pass-second-render`'s baselines are
+  made this way (Freshness, below). Its `plant.json` carries the key `captureAlone: true` (R-16), and for a plant with
+  that key the plant mode requires `--story`: without it the command exits 2 (`<plant> is captured alone: give --story
+  <id>`), since a request holding a story in both themes, or after other stories, is not a single-story-theme request;
+- it applies `updatePlan` to those story-themes and writes into `gates/plants/visual/<name>/tree/storybook/baselines/`
+  (and removes the stray files there); nothing is written when any of them has a refusing status;
+- it exits 2 naming the cause for a gate other than `visual`, a plant that does not exist, a plant with no story of
+  its own, a plant with the key `baselinesOf` ("its baselines are those of <plant>"), a `--story` that is not one
+  of the plant's own stories, and a `captureAlone` plant without `--story`.
+The fail plants that compare a changed story with the baselines of the unchanged one hold no PNG of their own: the
+plant key `baselinesOf` (R-16) names the pass plant whose baselines their root receives (`fail-below-fold` ←
+`pass-below-fold`, `fail-overflow-changed` and `fail-popover-changed` ← `pass-overflow-and-popover`,
+`fail-hover-style-changed` and `fail-press-style-changed` ← `pass-hover-and-press`), so regenerating the pass plant keeps them current. **CI is the producer of record for plant
+baselines too** (decision 7): when a `visual` pass plant fails with `differs` or `missing-baseline` on story-themes of
+its own stories, the plant runner copies run 1's captures of those story-themes from the plant root's
+`storybook/.visual/baselines/` to `storybook/.visual/plants/gates/plants/visual/<name>/tree/storybook/baselines/` of the
+repository (ignored), and the `plants` job uploads `storybook/.visual/plants/` with `actions/upload-artifact` (pinned by
+SHA) when it fails, beside the Visual regression job's artifact. The artifact is in tree layout, so its files are
+committed at the same paths; the contributor note says so, and says that a change that moves a plant story's pixels (a
+token value, `base.css`, a pin move) regenerates the affected plants with the plant mode or commits CI's files.
+**A `captureAlone` plant is never given full-run captures (PLAN-FRESH-2-002, verify 1).** In the plant job
+`pass-second-render`'s root holds every repository story (R-16), so run 1's captures of its story come from exactly the
+full run its reference must be independent of; copying them would let a broken freshness pass once committed. So for a
+`captureAlone` plant the runner copies nothing from run 1. Instead, in the same plant root, with the same build and
+the same engine as run 1, it makes the plant mode's single-story-theme requests (one request per failing story-theme
+of the plant's own stories, holding only that story and that theme, two runs) and copies those captures to the same
+tree-layout path, for each story-theme whose two runs agree and carry no refusing status. A story-theme whose capture
+made alone equals the committed baseline is not copied; the runner prints `plants: visual/<name>: <story-id>/<theme>:
+captured alone matches the baseline; the full run differs (freshness)` and the plant keeps failing, which is the
+freshness failure FR-028 asks for. **Which record governs:** when local and CI bytes differ, CI's artifact governs for
+every `visual` pass plant (decision 7); for a `captureAlone` plant that record is CI's single-story-theme captures, and
+no full-run capture, local or CI, is ever a baseline of it. The contributor note says so. The
+argument parsing (the `captureAlone` refusal included), the own-story selection (from `importPath`), the request plan
+(`--story` included) and the destination paths are pure functions in `gates/lib/visual-verdict.ts`; the plant
+runner's copy decision (which files, from run 1 or from captures made alone, to where, and the not-copied case of a
+capture made alone that equals the baseline) is a pure function in `gates/lib/plant-runner.ts`; both are unit-tested,
+the `captureAlone` cases red first: run 1's captures of a `captureAlone` plant are never chosen, an equal capture made
+alone is not copied and yields the freshness line, a differing one is copied. An integration test runs
+`--plant visual/pass-unused-face` with one of the plant's baselines deleted and asserts that it is written back with
+the bytes it had (`1 changed`) and the plant's other files are untouched.
+
+**One pixel is one finding (SC-006, PLAN-TESTABILITY-1-011).** `png.ts` and `visual-verdict.ts` are unit-tested on two
+fixture images that differ in exactly one pixel: one `differs` finding, and a diff image with exactly one marked pixel.
+The plant `fail-one-pixel` changes one pixel of one repository baseline and expects exactly one `differs` finding at
+that story-theme.
+
+**Edited repository baselines are generated, not stored (PLAN-FRESH-2-003).** A stored copy of a repository baseline
+with one pixel changed (or re-encoded) stops differing in one pixel the moment the story or a token it shows changes
+and the repository's baselines are regenerated; the plant still gets its one `differs` and proves nothing about
+SC-006 or bytes against pixels. So `fail-one-pixel`, `fail-same-pixels-other-bytes` and `fail-missing-baseline` hold no
+PNG: their `delta.json` gains the optional key `baselines`, a list of `{ "file": "<story-id>.<theme>.png", "edit":
+"one-pixel" | "reencode" | "remove" }`, that `plant-repo.ts` applies to the **current** repository baseline when it
+materialises the root (R-16): `one-pixel` inverts the RGB channels of the pixel at (0, 0) and writes the image with
+`png.ts`'s normalised encoding; `reencode` decodes the file and encodes the same pixels at deflate level 1 instead of
+9, and is an error of the plant run when the bytes come out equal; `remove` deletes the file from the root (the one
+way a plant removes part of the configuration set). A `file` the repository's `storybook/baselines/` does not hold, a
+duplicate `file` or an unknown edit is an error of the plant run, and `treeProblems` refuses a plant `tree/` file under
+`storybook/baselines/` whose name the repository's `storybook/baselines/` also holds ("a plant changes a repository
+baseline by delta.json baselines"). Red first in `gates/test/plant-repo.test.ts`: `one-pixel` decodes to an image
+differing from the source in exactly that pixel; `reencode` decodes to the same pixels and differs in bytes; `remove`
+leaves no file; each refusal of the parser and of `treeProblems`.
+
+**Freshness has an independent reference (FR-028, PLAN-TESTABILITY-1-007).** The `pass-second-render` story shows a
+visibly different state (a coloured block) on any render after the first in a page. Its committed baselines are made
+by single-story-theme requests (a capture request holding only that story and one theme; the plant mode's `--story`,
+above), not by a full run: its `captureAlone` key makes the plant mode refuse it without `--story`, and the plant
+runner's CI artifact for it holds captures made alone, never run 1's (Plant baselines, above). In
+addition, an integration test captures that story alone in each theme and asserts byte equality with its captures
+from a full request in which it comes after other stories. The axe counterpart is the pass plant `pass-second-render`
+of the axe gate, whose story loses a button's label on any render after the first.
+
+## R-12 Test projects and mutation (FR-019)
+
+**Decision.**
+- `gates` (node): unit tests of every pure module: index parsing, build output parsing and CLI resolution, comparison,
+  verdicts and the update plan, PNG normalisation and the diff image, container argument building, engine resolution
+  and the pin and inspect parsers, the capture plan (refusal predicate, context and screenshot options, readiness
+  classification, request and I/O classification, pointer parameter and target box, scroll decision, capture status
+  precedence), the build environment (`CACHE_DIR`), the plant mode's arguments, own-story selection and request plan,
+  the story checks (empty, fonts, closed shadow roots, outside-root), axe rule selection, result mapping and the
+  printed selector, exception parsing, matching and plan pairing (escaped `|` included), the plant-root changes
+  (`baselines` edits, `baselinesOf`, `captureAlone`, the exceptions file and its plan files, `treeProblems`), and the plant runner's
+  not-run, serial and capture-copy decisions (the `captureAlone` source included). These kill the mutants of the new source.
+- `gates-integration` (node, real processes): the `storybook-build` gate on fixture trees; the `axe` gate on fixture
+  Storybooks with the host browser; the `visual` gate and the baseline command against the real container; the
+  freshness and animation-control tests (R-04, R-11); the PNG height of a capture of a story taller than the viewport
+  equals the document's scroll height; `gate:plants` with no engine on `PATH` (R-07); the plant mode regenerating one
+  plant's baseline (R-11); a plant-root build that leaves the repository's `storybook/node_modules` and root
+  `node_modules` unchanged (R-16). The container tests need docker:
+  in CI the `Unit tests` job's runner has it; locally the daemon is started first. They never skip (constitution
+  VIII): with no engine they fail with the gate's exit 2 cause.
+- **The capture script is wiring only (PLAN-TESTABILITY-1-001).** Every decision of the capture lives in
+  `gates/lib/` (`capture-plan.ts`, `story-checks.ts`, `visual-verdict.ts`, `png.ts`); `gates/visual/capture.ts` only
+  launches the browser, collects page data and writes files, and each such line carries the repository's
+  `// Stryker disable next-line all: process boundary, covered by …` comment naming its integration test, as in
+  `gates/lib/plant-repo.ts`. The page collection code shared by the capture and the axe gate
+  (`gates/lib/story-page.ts`) is wiring in the same way.
+- **The mutation scope gains `gates/visual/`.** `gates/lib/mutation/ranges.ts` adds `:(glob)gates/visual/**/*.ts` to
+  `scopePathspecs` and `visual` to its `source` pattern, red first in `gates/test/mutation-ranges.test.ts`, so a change
+  to the capture's wiring is in scope like any gate source (its disabled lines then need their comments).
+
+## R-13 Collisions with the parallel features
+
+`#17` may add stories and change `storybook/.storybook/`. Whichever feature lands second merges `main`, reruns
+`pnpm run visual:update` (or takes CI's captures, R-11) and commits the new baselines with a pull request description
+that says why. `#20` changes `packages/tokens/src/source.ts` without changing token values, so token baselines are
+unaffected.
+
+## R-14 Run-time I/O of a story (constitution I; operator decision on PLAN-A11Y-SECURITY-1-008, option (a))
+
+**Decision.** The capture already routes every request. Beyond `network` (any request outside `127.0.0.1`, aborted and
+recorded), the visual gate records **run-time I/O** as the finding `io`, one per story-theme naming each call or URL:
+- every same-origin request whose Playwright `resourceType()` is `fetch`, `xhr`, `websocket`, `eventsource` or `ping`,
+  other than Storybook's own requests (the allow-list holds `index.json` and `project.json` as the phase 1 spike finds
+  them, and nothing else), and every same-origin request for a path that is not a file of `dist`;
+- every storage, clipboard or beacon operation after navigation starts, recorded by an init script
+  (PLAN-FRESH-3-002):
+  - Web Storage **by method**: `Storage.prototype` `getItem`, `setItem`, `removeItem`, `clear` and `key`;
+  - Web Storage **by named property** (`localStorage.k = "v"`, `localStorage.k`, `delete localStorage.k`), which goes
+    through the Storage interface's named property handlers and never calls a prototype method (**measured** by the
+    plan squad's round 3: the method wrap recorded nothing for these): the `localStorage` and `sessionStorage`
+    getters on `window` are redefined to return a `Proxy` of the real object whose `get`, `set`, `has` and
+    `deleteProperty` traps record each access to a key that is not a `Storage.prototype` member (re-probed in round 3:
+    it records `set:k` and `get:k`), and whose `get` of a method returns the recorded method bound to the real
+    object;
+  - cookies: the `document.cookie` accessor on `Document.prototype`, get and set;
+  - IndexedDB: `IDBFactory.prototype` `open` and `deleteDatabase`; the Cache API: `CacheStorage.prototype` `open`,
+    `has`, `delete`, `keys` and `match`;
+  - the clipboard: `navigator.clipboard.write` and `writeText`, and `document.execCommand` with `"copy"` or `"cut"`
+    (not probed; the spike confirms the wrap records it);
+  - `navigator.sendBeacon`.
+  Storybook's own storage use, if the spike finds any, is allowed by its exact kind and key (or database or cache
+  name) in the same allow-list.
+- **storage left behind (a backstop for writes)**: after the render steps and the font check, before the screenshot
+  and while the context is open, the capture reads `context.storageState({ indexedDB: true })` and, in the page,
+  `sessionStorage.length` and its keys (session storage is not in `storageState`); every cookie, `localStorage` or
+  `sessionStorage` key and IndexedDB database not on the allow-list is `io` naming its kind and name. Each story-theme
+  has a fresh context (FR-028), so anything there is the story's. A write the recorder missed is still caught; a read
+  of nothing leaves no state, which is why the recorder covers reads.
+The request classification, the recorded-call classification, the storage-state classification and the allow-list
+are pure functions in `gates/lib/capture-plan.ts`, unit-tested (each resource type, Storybook's own files, a missing
+path; for each kind (method call, named-property get, set and delete, cookie get and set, IndexedDB open and delete,
+Cache API call, `execCommand` copy and cut, clipboard and beacon) an allowed and a disallowed case; a storage state
+with a cookie, a `localStorage` key, a `sessionStorage` key and an IndexedDB database, each a finding, and the
+allow-listed entries and an empty state, none). Fail plants: a story that fetches a same-origin path
+(`fail-same-origin-fetch`), a story that calls `localStorage.setItem` (`fail-local-storage`), a story that writes
+`localStorage.k = "v"` (`fail-storage-property`), a story that sets `document.cookie` (`fail-cookie`) and a story
+that opens an IndexedDB database (`fail-indexeddb`), and, for the kinds that otherwise had only unit tests (analysis C1, operator decision 2026-11-10/11), `fail-xhr`, `fail-websocket`, `fail-session-storage`, `fail-cache-api`, `fail-clipboard-write`, `fail-exec-copy`, `fail-beacon` and `fail-storage-left-by-worker` (a worker's IndexedDB write that the recorder cannot see and only the storage-state read catches; contracts/plants.md § `visual`), each `io` on both themes. When a story-theme is also `font` or `network`, the capture's one status follows the order of
+R-05's `captureStatus` (`font`, then `network`, then `io`). The baseline command refuses on `io`. The axe gate does not repeat the check: a story with I/O
+fails the required "Visual regression" check.
+
+## R-15 Pointer states (operator decision on PLAN-FRESH-1-010, option (a))
+
+**Decision.** `:hover` and `:active` match only real pointer input, so a story can declare one pointer state in its
+parameters: `parameters: { ocelle: { pointer: { hover: "<selector>" } } }` or `{ press: "<selector>" }`, the selector
+resolved in the story area (open shadow roots pierced, as Playwright's CSS selectors do). After `STORY_RENDERED` the
+capture and the axe gate read the parameter from the preview's current story (the access path is recorded by the
+phase 1 spike), the page is at scroll position (0, 0) (R-04: reset if a story scrolled it), and the target's
+bounding box is read; then `hover` moves the mouse (`page.mouse.move`, viewport coordinates, never the scrolling
+`elementHandle.hover()`) to the centre of the element, and `press` also holds the primary button down (`mouse.down()`
+without `up`). Fonts and two animation frames follow, then the capture or axe run. A parameter that is malformed,
+names both states or names a selector matching no element or more than one gives the finding `pointer-target`.
+**The target must lie inside the initial viewport (operator decision on PLAN-FRESH-2-001, option (a)).** A mouse move
+to a point outside the 1280 × 800 viewport hovers nothing and raises nothing (**measured** by the plan squad's round 2:
+a `:hover` target at y = 1500 stayed in its resting colour, scrollY 0, no error), so FR-031 would fail silently. A
+target whose box is not wholly inside (0, 0)-(1280, 800) at scroll (0, 0), or has no box, gives `pointer-target` with
+the message `<hover|press>: target outside the viewport: <selector>`. The parameter parsing and the target decisions
+(matches, and `targetInViewport(box, viewport)`, its `viewport` taken from `contextOptions(theme).viewport`, never a
+constant, so the rule and the context the capture and the axe gate open cannot drift, R-08) are pure functions in
+`gates/lib/capture-plan.ts` with unit tests: a box inside, a box touching the edges, a box partly outside on the right, a box below the fold, and no box. Plants: `pass-hover-and-press` (two stories, one hovered, one pressed, with their baselines),
+`fail-hover-style-changed` (the tree changes only the `:hover` rule: `differs` on both themes, which a capture without
+the hover could not show), `fail-press-style-changed` (the tree changes only the press story's `:active` rule: `differs`
+on both themes; analysis G4), `fail-pointer-target-missing` (`pointer-target` on both themes),
+`fail-pointer-target-below-fold` (a `pointer.hover` target at y = 1500 of a 2000 px story: `pointer-target` on both
+themes), and in the axe gate `fail-hover-reveals-unlabelled` (an unlabelled button shown only on hover: `button-name` on
+both themes) and `fail-pointer-target-below-fold` (the same story: `pointer-target` on both themes, axe not run), and
+`fail-hover-near-fold` (a `pointer.hover` target at y = 740 to 780 whose hover shows an unlabelled button:
+`button-name` on both themes; it would pass wrongly against a 720 px context, PLAN-FRESH-3-003). The
+scroll reset has its own pass plant, `pass-focus-below-fold` (R-04). The
+contributor note documents the parameter (FR-025).
+
+## R-16 Plant roots that hold a Storybook (PLAN-CORRECTNESS-1-001)
+
+**Decision.** Every plant of the three gates builds the Storybook in a repo-tree plant root, which today holds none of
+it. `gates/lib/plant-repo.ts` changes, test-first in `gates/test/plant-repo.test.ts` and its integration test:
+- `configurationSet` adds `.node-version`, `packages/styles/src/base.css`, `packages/tokens/fonts/` and the Storybook
+  workspace: `storybook/package.json`, `storybook/.storybook/`, `storybook/scripts/`, `storybook/stories/`,
+  `storybook/baselines/` and `storybook/visual/container.json` (never `dist/`, `.generated/`, `.visual/`, `.cache/` or
+  `node_modules/`). `storybook/a11y-exceptions.json` is not in it: the root's exceptions file is made as below. This
+  changes the configuration set of every existing repo-tree plant;
+  the existing plants' expectations are rerun in the phase that makes the change, and any that shifts is recorded.
+- Besides the root `node_modules`, it links `<root>/storybook/node_modules` to the real path of the repository's
+  `storybook/node_modules`, unless the plant's `plant.json` lists it in the new optional key `unlinked` (a list whose
+  only allowed value is `"storybook/node_modules"`, valid for plants of `storybook-build`, `visual` and `axe`). Like
+  `engine`, `unlinked` presents an input (dependencies not installed), not gate configuration.
+- Workspace links inside `storybook/node_modules` (`@ocelle/tokens`) resolve to the repository's packages, not the
+  plant's; the stories read the plant's packages through relative paths (as today), so a plant's token change is seen.
+- **Caches and pnpm's dependency check.** So that builds in different roots never write into the shared
+  `storybook/node_modules` or the root `node_modules`, the Storybook configuration sets Vite's `cacheDir` to
+  `storybook/.cache/vite` of the root being built, the build function sets `CACHE_DIR=<root>/storybook/.cache` for
+  Storybook's own file cache (R-09, PLAN-FRESH-2-008), both below the ignored `storybook/.cache/`, and the build
+  function runs pnpm with `--config.verify-deps-before-run=false` (R-09; operator decision on the phase 1 spike § 4,
+  2026-11-10). The spike measured that moving both caches is not enough: pnpm's check before `run` rewrote 256 entries
+  of the repository's `node_modules` (shims under `storybook/node_modules/.bin` among them) through the plant root's
+  links, and with the flag a build wrote nothing there (spike § 4). An integration test builds a plant root and
+  asserts that no file below the repository's `storybook/node_modules` **or its root `node_modules`** was added,
+  removed or changed (path, size and modification time listed before and after, as the spike did). With the
+  Storybook plants run one at a time (R-07), no two builds run at once; in CI each Plants shard is its own runner with
+  its own checkout, so this holds per shard (operator decision 2026-11-11, "In phase 3 now", R-07).
+- A plant's `tree/` story files replace or add to `storybook/stories/`; a plant that needs fewer stories replaces the
+  story files it keeps and removes none of the configuration set, so every plant root holds every repository story
+  (operator decision on PLAN-FRESH-2-007, option (b); the cost and its sunset: R-07). The one removal is a `delta.json`
+  `baselines` edit `remove` (R-11). The split of the Plants job (R-07, 2026-11-11) spreads that cost over shards and
+  leaves the plant roots as they are: a shard's plant root is built exactly as the single job's was.
+- **Repository baselines a plant edits** are generated from the current files by the `delta.json` key `baselines`, and
+  `treeProblems` refuses a tree copy of one (R-11, PLAN-FRESH-2-003).
+- **`baselinesOf` (PLAN-FRESH-2-002).** `plant.json` gains the optional key `baselinesOf`, valid only for `visual`
+  `fail` plants: the name of a `visual` `pass` plant whose `tree/storybook/baselines/` is copied into the root before
+  the plant's own `tree/` is laid over it. The plant is invalid when the named plant does not exist, is not a `visual`
+  pass plant, holds no baselines, itself has `baselinesOf`, or when the plant's own `tree/` holds a file under
+  `storybook/baselines/`.
+- **`captureAlone` (PLAN-FRESH-2-002, verify 1).** `plant.json` gains the optional key `captureAlone`, whose only
+  value is `true`, valid only for `visual` `pass` plants with stories of their own and without `baselinesOf`
+  (`pass-second-render`): its baselines are made only by single-story-theme requests, in the plant mode (`--story`
+  required) and in the plant runner's CI artifact (R-11). Any other value or plant makes the plant invalid.
+- **The exceptions file of a plant root (operator decision on PLAN-FRESH-2-004, option (b)).** The repository's
+  exception entries name plan files under `specs/` that a plant root does not hold, so copying the file alone would
+  turn every entry into `unrecorded-exception` and its node into a finding in every axe plant. So a plant root's
+  `storybook/a11y-exceptions.json` is `[]` unless the plant's `tree/` supplies one, and the repository's entries reach
+  a root only through the `delta.json` key `exceptions: "repository"`: `plant-repo.ts` then writes the root's file as
+  the tree's entries (or none) followed by the repository's entries, so a plant's own `#<index>` locations do not
+  move, and copies into the root every `plan` file the repository's entries name. `pass-repository` of the axe gate
+  sets it and so checks the repository's exceptions honoured with their plan rows. **The repository's excepted nodes in
+  the other axe plants** (the rule option (b) leaves to be set): every axe plant root holds the repository's stories
+  (PLAN-FRESH-2-007 (b)), so every axe plant sets `exceptions: "repository"` as well, and the plant judge makes an axe
+  plant without it invalid ("an axe plant root holds the repository's stories and carries their exceptions"); the
+  plants of `storybook-build` and `visual`, which read no exceptions, get `[]`. A `pass-excepted` style plant thus keeps
+  the repository's entries beside its own. The plan-path list is a pure function `exceptionPlans(text)` with unit
+  tests: no entries, two entries naming one plan (one path), an absolute path or one leaving the root (an error of the
+  plant run), a malformed file (an error of the plant run); a named plan file missing from the repository is an error
+  of the plant run. An integration test materialises the axe `pass-repository` root against a fixture exceptions file
+  with one entry and asserts the root holds the entry and its plan file.

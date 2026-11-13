@@ -1,0 +1,4 @@
+{
+  "expect": "pass",
+  "why": "The repository's stories and baselines pass (Storybook's own unused Nunito Sans faces are declared, not findings; FR-003, US2 scenario 1)."
+}
