@@ -1,0 +1,10 @@
+{
+  "expect": "fail",
+  "why": "A story-theme with no baseline never passes (FR-004, US2 scenario 4).",
+  "findings": [
+    {
+      "location": "tokens--colour/light",
+      "rule": "missing-baseline"
+    }
+  ]
+}

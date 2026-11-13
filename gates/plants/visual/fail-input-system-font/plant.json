@@ -1,0 +1,14 @@
+{
+  "expect": "fail",
+  "why": "Form-control text in a user-agent shadow root (an input's value and placeholder inside an element's open shadow root, no font rule) is drawn in a system face: font on both themes (FR-027, research.md R-05).",
+  "findings": [
+    {
+      "location": "input-system-font--fields/light",
+      "rule": "font"
+    },
+    {
+      "location": "input-system-font--fields/dark",
+      "rule": "font"
+    }
+  ]
+}

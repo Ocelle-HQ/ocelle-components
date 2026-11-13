@@ -1,0 +1,5 @@
+{
+  "expect": "error",
+  "why": "An exception entry whose plan is storybook/notes.md, a file with a Complexity Tracking row naming the entry: only a feature plan, specs/<feature>/plan.md, may record an exception, so the gate cannot run (data-model.md § Exception; phase 4 review round 3, O3-01).",
+  "cause": "a11y-exceptions.json#0: plan must be a feature plan, specs/<feature>/plan.md"
+}

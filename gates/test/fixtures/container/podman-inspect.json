@@ -1,0 +1,166 @@
+[
+     {
+          "Id": "a0d7b2b49ffa0e99787a00b7ec2af46eca58020082713f002ca9f0f1cfd1a017",
+          "Digest": "sha256:ee15712262f017b8157421b212b12099146645f44b1bc5c0514cbbe6a229b1d0",
+          "RepoTags": [],
+          "RepoDigests": [
+               "mcr.microsoft.com/playwright@sha256:ee15712262f017b8157421b212b12099146645f44b1bc5c0514cbbe6a229b1d0"
+          ],
+          "Parent": "",
+          "Comment": "",
+          "Created": "2026-11-01T17:56:25.121997414Z",
+          "Config": {
+               "Env": [
+                    "PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin",
+                    "LANG=C.UTF-8",
+                    "LC_ALL=C.UTF-8",
+                    "PLAYWRIGHT_BROWSERS_PATH=/ms-playwright"
+               ],
+               "Cmd": [
+                    "/bin/bash"
+               ],
+               "Labels": {
+                    "org.opencontainers.image.version": "24.04"
+               }
+          },
+          "Version": "",
+          "Author": "",
+          "Architecture": "amd64",
+          "Os": "linux",
+          "Size": 2874311956,
+          "VirtualSize": 2874311956,
+          "GraphDriver": {
+               "Name": "overlay",
+               "Data": {
+                    "LowerDir": "/home/runner/.local/share/containers/storage/overlay/7eb7cd508efd7fc12045f4a7d1dc89a98d2e25ba7ad3903714c301bccd6ab0df/diff:/home/runner/.local/share/containers/storage/overlay/f99de2d1de62e1c6cc662bc57fa63720b1388787869866ee73fd1ed9bffd6c15/diff:/home/runner/.local/share/containers/storage/overlay/5b3fb295bca6192e5cd207a7eafefd37986ef862db4725b2758fa945e9716e1f/diff:/home/runner/.local/share/containers/storage/overlay/9e429c792a7c6e47855af0e725f8348447c94dcdf5b0606bd3ed4e2663378e77/diff:/home/runner/.local/share/containers/storage/overlay/2b4b96e3fbd61b5eb0761244a5694573a39e525c90ebddd6c783e5f7a811cd67/diff:/home/runner/.local/share/containers/storage/overlay/bec87777bc2fb2edcdf9af11df1531469e7df911309c1413082b18fcb8610278/diff",
+                    "UpperDir": "/home/runner/.local/share/containers/storage/overlay/9db24849f747314064556b9a380141da8fd340325a805cd4484beadf92e05868/diff",
+                    "WorkDir": "/home/runner/.local/share/containers/storage/overlay/9db24849f747314064556b9a380141da8fd340325a805cd4484beadf92e05868/work"
+               }
+          },
+          "RootFS": {
+               "Type": "layers",
+               "Layers": [
+                    "sha256:bec87777bc2fb2edcdf9af11df1531469e7df911309c1413082b18fcb8610278",
+                    "sha256:1590c449306a9032a32c49afeac5e4c7cae86197c4a7dd95c095c3ae220a7f07",
+                    "sha256:c8a795d9cdbc02d20daf1ecac5377667d61d63392fbe5bdbba94cc79a4cf3fe9",
+                    "sha256:89e210c351d8ddaa3c7a6132e19a5aaf27ec837371dd94f0698dfa4c1e5aef3d",
+                    "sha256:ea03ac3d8e487159afdc9d45b9a8d3f4035418655881b896cc34fa2e464c27fc",
+                    "sha256:16f77d0178dafdf603cd05f8464e39df636665b2b028e18e0b95bfbee5ecacd5",
+                    "sha256:d8597d6a5431eca9c1082ade19c2b7cdef69fbaaae43f0b67fbbd25f3a35c2bb"
+               ]
+          },
+          "Labels": {
+               "org.opencontainers.image.version": "24.04"
+          },
+          "Annotations": {},
+          "ManifestType": "application/vnd.oci.image.manifest.v1+json",
+          "User": "",
+          "History": [
+               {
+                    "created": "2026-10-25T14:17:45.134994061Z",
+                    "created_by": "/bin/sh -c #(nop)  ARG RELEASE",
+                    "empty_layer": true
+               },
+               {
+                    "created": "2026-10-25T14:17:45.174235109Z",
+                    "created_by": "/bin/sh -c #(nop)  ARG LAUNCHPAD_BUILD_ARCH",
+                    "empty_layer": true
+               },
+               {
+                    "created": "2026-10-25T14:17:45.213100118Z",
+                    "created_by": "/bin/sh -c #(nop)  LABEL org.opencontainers.image.version=24.04",
+                    "empty_layer": true
+               },
+               {
+                    "created": "2026-10-25T14:17:47.432058459Z",
+                    "created_by": "/bin/sh -c #(nop) ADD file:eed88e94d6aa7c9da62836e137f889e03988c1a6b237b0cedb6ca666dfaa98ea in / "
+               },
+               {
+                    "created": "2026-10-25T14:17:47.841356155Z",
+                    "created_by": "/bin/sh -c #(nop)  CMD [\"/bin/bash\"]",
+                    "empty_layer": true
+               },
+               {
+                    "created": "2026-11-01T17:53:06.889890342Z",
+                    "created_by": "ARG DEBIAN_FRONTEND=noninteractive",
+                    "comment": "buildkit.dockerfile.v0",
+                    "empty_layer": true
+               },
+               {
+                    "created": "2026-11-01T17:53:06.889890342Z",
+                    "created_by": "ARG TZ=America/Los_Angeles",
+                    "comment": "buildkit.dockerfile.v0",
+                    "empty_layer": true
+               },
+               {
+                    "created": "2026-11-01T17:53:06.889890342Z",
+                    "created_by": "ARG DOCKER_IMAGE_NAME_TEMPLATE=mcr.microsoft.com/playwright:v%version%-noble",
+                    "comment": "buildkit.dockerfile.v0",
+                    "empty_layer": true
+               },
+               {
+                    "created": "2026-11-01T17:53:06.889890342Z",
+                    "created_by": "ARG NODE_VERSION=26 # autogenerated via ./update-playwright-node.mjs",
+                    "comment": "buildkit.dockerfile.v0",
+                    "empty_layer": true
+               },
+               {
+                    "created": "2026-11-01T17:53:06.889890342Z",
+                    "created_by": "ARG UBUNTU_MIRROR_PREFIX=azure.",
+                    "comment": "buildkit.dockerfile.v0",
+                    "empty_layer": true
+               },
+               {
+                    "created": "2026-11-01T17:53:06.889890342Z",
+                    "created_by": "ENV LANG=C.UTF-8",
+                    "comment": "buildkit.dockerfile.v0",
+                    "empty_layer": true
+               },
+               {
+                    "created": "2026-11-01T17:53:06.889890342Z",
+                    "created_by": "ENV LC_ALL=C.UTF-8",
+                    "comment": "buildkit.dockerfile.v0",
+                    "empty_layer": true
+               },
+               {
+                    "created": "2026-11-01T17:53:06.889890342Z",
+                    "created_by": "RUN |9 DEBIAN_FRONTEND=noninteractive TZ=America/Los_Angeles DOCKER_IMAGE_NAME_TEMPLATE=mcr.microsoft.com/playwright:v%version%-noble NODE_VERSION=26 #= autogenerated= via= ./update-playwright-node.mjs= UBUNTU_MIRROR_PREFIX=azure. /bin/sh -c find /etc/apt -type f \\( -name '*.list' -o -name '*.sources' \\)       -exec sed -i \"s|http://archive.ubuntu.com|http://${UBUNTU_MIRROR_PREFIX}archive.ubuntu.com|g; s|http://ports.ubuntu.com|http://${UBUNTU_MIRROR_PREFIX}ports.ubuntu.com|g\" {} + &&     apt-get update &&     apt-get install -y curl wget gpg ca-certificates &&     mkdir -p /etc/apt/keyrings &&     curl -sL https://deb.nodesource.com/gpgkey/nodesource-repo.gpg.key | gpg --dearmor -o /etc/apt/keyrings/nodesource.gpg &&     echo \"deb [signed-by=/etc/apt/keyrings/nodesource.gpg] https://deb.nodesource.com/node_${NODE_VERSION}.x nodistro main\" >> /etc/apt/sources.list.d/nodesource.list &&     apt-get update &&     apt-get install -y nodejs &&     apt-get install -y --no-install-recommends git openssh-client zstd &&     npm install -g yarn &&     rm -rf /var/lib/apt/lists/* &&     adduser pwuser # buildkit",
+                    "comment": "buildkit.dockerfile.v0"
+               },
+               {
+                    "created": "2026-11-01T17:53:06.889890342Z",
+                    "created_by": "ENV PLAYWRIGHT_BROWSERS_PATH=/ms-playwright",
+                    "comment": "buildkit.dockerfile.v0",
+                    "empty_layer": true
+               },
+               {
+                    "created": "2026-11-01T17:53:07.053261383Z",
+                    "created_by": "COPY ./playwright-core.tar.gz /tmp/playwright-core.tar.gz # buildkit",
+                    "comment": "buildkit.dockerfile.v0"
+               },
+               {
+                    "created": "2026-11-01T17:56:03.889001092Z",
+                    "created_by": "RUN |9 DEBIAN_FRONTEND=noninteractive TZ=America/Los_Angeles DOCKER_IMAGE_NAME_TEMPLATE=mcr.microsoft.com/playwright:v%version%-noble NODE_VERSION=26 #= autogenerated= via= ./update-playwright-node.mjs= UBUNTU_MIRROR_PREFIX=azure. /bin/sh -c install -d -m 777 /ms-playwright /ms-playwright/.links &&     mkdir /ms-playwright-agent &&     cd /ms-playwright-agent && npm init -y &&     npm i /tmp/playwright-core.tar.gz &&     npm exec --no -- playwright-core mark-docker-image \"${DOCKER_IMAGE_NAME_TEMPLATE}\" &&     npm exec --no -- playwright-core install-deps &&     rm -rf /var/lib/apt/lists/* # buildkit",
+                    "comment": "buildkit.dockerfile.v0"
+               },
+               {
+                    "created": "2026-11-01T17:56:14.249368722Z",
+                    "created_by": "RUN |9 DEBIAN_FRONTEND=noninteractive TZ=America/Los_Angeles DOCKER_IMAGE_NAME_TEMPLATE=mcr.microsoft.com/playwright:v%version%-noble NODE_VERSION=26 #= autogenerated= via= ./update-playwright-node.mjs= UBUNTU_MIRROR_PREFIX=azure. /bin/sh -c cd /ms-playwright-agent &&     npm exec --no -- playwright-core install chromium &&     chmod -R 777 /ms-playwright/chromium-* /ms-playwright/chromium_headless_shell-* /ms-playwright/ffmpeg-* # buildkit",
+                    "comment": "buildkit.dockerfile.v0"
+               },
+               {
+                    "created": "2026-11-01T17:56:19.949192363Z",
+                    "created_by": "RUN |9 DEBIAN_FRONTEND=noninteractive TZ=America/Los_Angeles DOCKER_IMAGE_NAME_TEMPLATE=mcr.microsoft.com/playwright:v%version%-noble NODE_VERSION=26 #= autogenerated= via= ./update-playwright-node.mjs= UBUNTU_MIRROR_PREFIX=azure. /bin/sh -c cd /ms-playwright-agent &&     npm exec --no -- playwright-core install firefox &&     chmod -R 777 /ms-playwright/firefox-* # buildkit",
+                    "comment": "buildkit.dockerfile.v0"
+               },
+               {
+                    "created": "2026-11-01T17:56:25.121997414Z",
+                    "created_by": "RUN |9 DEBIAN_FRONTEND=noninteractive TZ=America/Los_Angeles DOCKER_IMAGE_NAME_TEMPLATE=mcr.microsoft.com/playwright:v%version%-noble NODE_VERSION=26 #= autogenerated= via= ./update-playwright-node.mjs= UBUNTU_MIRROR_PREFIX=azure. /bin/sh -c cd /ms-playwright-agent &&     npm exec --no -- playwright-core install webkit &&     rm /tmp/playwright-core.tar.gz &&     rm -rf /ms-playwright-agent &&     rm -rf ~/.npm/ &&     chmod -R 777 /ms-playwright/webkit-* # buildkit",
+                    "comment": "buildkit.dockerfile.v0"
+               }
+          ],
+          "NamesHistory": [
+               "mcr.microsoft.com/playwright@sha256:ee15712262f017b8157421b212b12099146645f44b1bc5c0514cbbe6a229b1d0"
+          ]
+     }
+]

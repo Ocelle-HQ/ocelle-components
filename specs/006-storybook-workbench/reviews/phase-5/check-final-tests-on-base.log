@@ -1,0 +1,85 @@
+Scope: all 5 workspace projects
+✓ Lockfile passes supply-chain policies (verified 1d ago)
+Lockfile is up to date, resolution step is skipped
+Packages are hard linked from the content-addressable store to the virtual store.
+  Content-addressable store is at: /root/.local/share/pnpm/store/v11
+  Virtual store is at:             node_modules/.pnpm
+Packages: +502
+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+Progress: resolved 502, reused 502, downloaded 0, added 502, done
+.../node_modules/rs-module-lexer postinstall$ node postinstall.js
+.../node_modules/rs-module-lexer postinstall: Done
+
+devDependencies:
++ @custom-elements-manifest/analyzer 0.11.0
++ @eslint/js 10.0.1
++ @stryker-mutator/core 10.1.1
++ @stryker-mutator/typescript-checker 10.1.1
++ @stryker-mutator/vitest-runner 10.1.1
++ @types/node 26.6.5
++ @vitest/browser-playwright 5.0.5
++ @vitest/eslint-plugin 1.6.28
++ axe-core 4.14.0
++ eslint 10.13.0
++ jiti 2.7.0
++ parse5 8.0.1
++ playwright 1.64.1
++ pngjs 7.0.0
++ postcss 8.5.31
++ postcss-lit 1.4.1
++ postcss-selector-parser 7.1.7
++ postcss-value-parser 4.2.0
++ stylelint 17.16.0
++ typescript 6.0.3
++ typescript-eslint 8.72.0
++ vite 8.3.5
++ vitest 5.0.5
+
+Done in 413ms using pnpm v12.16.1
+$ node gates/bin/setup-offline.ts
+setup: installed offline; Chromium at /opt/pw-browsers/chromium-1243/chrome-linux64/chrome
+$ node gates/bin/test.ts
+storybook/test/unit/externalise.test.ts:23: unit-tests: externalise leaves an inline classic script and an inline module script in the HTML as they are, writing no file: AssertionError: expected { …(2) } to deeply equal { …(2) }
+storybook/test/unit/externalise.test.ts:30: unit-tests: externalise moves the <style> after an inline script, a font stack over several lines, to a file referenced by a <link>, leaving the script inline: AssertionError: expected { …(2) } to deeply equal { …(2) }
+storybook/test/unit/externalise.test.ts:47: unit-tests: externalise leaves style attributes as they are, while moving a <style> beside them: AssertionError: expected { …(2) } to deeply equal { …(2) }
+storybook/test/unit/externalise.test.ts:55: unit-tests: externalise reads markup inside an inline script as script text, not as a <style> to move: AssertionError: expected { …(2) } to deeply equal { …(2) }
+storybook/test/unit/externalise.test.ts:63: unit-tests: externalise writes one file for two <style> elements with the same text, and keeps the links in document order around an inline script: AssertionError: expected { …(2) } to deeply equal { …(2) }
+storybook/test/unit/externalise.test.ts:76: unit-tests: externalise leaves output in which the csp gate's markup rules find the inline scripts and the style attribute, and no <style> element: AssertionError: expected [] to deeply equal [ 'inline-script', …(2) ]
+storybook/test/unit/externalise.test.ts:86: unit-tests: externaliseDir rewrites every .html directly inside the directory and writes the moved stylesheets beside it, scripts left inline: AssertionError: expected '<script src="./inline-3952c415947cf68…' to be '<script>a();</script><link rel="style…' // Object.is equality
+storybook/test/unit/readme.test.ts:53: unit-tests: storybook/README.md, the contributor note (006 FR-025, SC-005) holds every item of FR-025 and plan.md § Phases 5: AssertionError: expected [ …(19) ] to deeply equal []
+storybook/test/integration/render.test.ts:144: unit-tests: the Storybook build keeps Storybook's inline <script> elements in iframe.html, with no <style> element or style attribute, and writes no inline-<hash>.js but its moved stylesheets: AssertionError: expected [] to deeply equal [ 'inline-script' ]
+gates/test/integration/storybook-build.test.ts:93: unit-tests: storybook-build gate (gates/bin/storybook-build.ts) exits 2 and prints no finding when Storybook cannot evaluate storybook/.storybook/main.ts: AssertionError: expected { code: 1, stdout: [ …(2) ], …(1) } to deeply equal { code: 2, stdout: [], …(1) }
+gates/test/a11y-exceptions.test.ts:87: unit-tests: parseExceptions (data-model.md § Exception) refuses the plan storybook/notes.md, which is not a feature plan: AssertionError: expected [ { …(7) } ] to deeply equal { Object (problem) }
+gates/test/a11y-exceptions.test.ts:87: unit-tests: parseExceptions (data-model.md § Exception) refuses the plan plan.md, which is not a feature plan: AssertionError: expected [ { …(7) } ] to deeply equal { Object (problem) }
+gates/test/a11y-exceptions.test.ts:87: unit-tests: parseExceptions (data-model.md § Exception) refuses the plan specs/plan.md, which is not a feature plan: AssertionError: expected [ { …(7) } ] to deeply equal { Object (problem) }
+gates/test/a11y-exceptions.test.ts:87: unit-tests: parseExceptions (data-model.md § Exception) refuses the plan specs/a/b/plan.md, which is not a feature plan: AssertionError: expected [ { …(7) } ] to deeply equal { Object (problem) }
+gates/test/a11y-exceptions.test.ts:87: unit-tests: parseExceptions (data-model.md § Exception) refuses the plan specs/a/plan.md.bak, which is not a feature plan: AssertionError: expected [ { …(7) } ] to deeply equal { Object (problem) }
+gates/test/a11y-exceptions.test.ts:87: unit-tests: parseExceptions (data-model.md § Exception) refuses the plan specs/a/notes.md, which is not a feature plan: AssertionError: expected [ { …(7) } ] to deeply equal { Object (problem) }
+gates/test/a11y-exceptions.test.ts:87: unit-tests: parseExceptions (data-model.md § Exception) refuses the plan ./specs/a/plan.md, which is not a feature plan: AssertionError: expected [ { …(7) } ] to deeply equal { Object (problem) }
+gates/test/a11y-exceptions.test.ts:87: unit-tests: parseExceptions (data-model.md § Exception) refuses the plan specs/./plan.md, which is not a feature plan: AssertionError: expected [ { …(7) } ] to deeply equal { Object (problem) }
+gates/test/a11y-exceptions.test.ts:87: unit-tests: parseExceptions (data-model.md § Exception) refuses the plan specs/../plan.md, which is not a feature plan: AssertionError: expected [ { …(7) } ] to deeply equal { Object (problem) }
+gates/test/a11y-exceptions.test.ts:87: unit-tests: parseExceptions (data-model.md § Exception) refuses the plan specs/a/../b/plan.md, which is not a feature plan: AssertionError: expected [ { …(7) } ] to deeply equal { Object (problem) }
+gates/test/axe-gate.test.ts:82: unit-tests: axe: an exception entry whose plan is not a feature plan (phase 4 review round 3, O3-01) exits 2 naming the entry before any build: AssertionError: expected { exit: 2, …(1) } to deeply equal { exit: 2, …(1) }
+gates/test/ci-workflow.test.ts:226: unit-tests: ci.yml csp and prefix jobs (006 FR-020, FR-022) builds the packages only before the csp gate, and the whole workspace before the prefix gate: AssertionError: expected [ Array(1) ] to deeply equal [ Array(1) ]
+gates/test/csp.test.ts:226: unit-tests: the Storybook is outside the scope (006 FR-020) selects no file below storybook/, and still the packages' built output: AssertionError: expected [ …(12) ] to deeply equal []
+gates/test/csp.test.ts:248: unit-tests: the Storybook is outside the scope (006 FR-020) reports nothing for an inline script in storybook/dist/index.html and a style attribute in a story, and both in a package's dist/: AssertionError: expected { exit: 1, …(2) } to deeply equal { exit: 1, …(2) }
+gates/test/gates-readme.test.ts:60: unit-tests: gates/README.md (002 FR-022) requires eighteen checks on main: main's fifteen and Storybook build, Visual regression and Accessibility (006 FR-023, plan decision 31): AssertionError: expected '\n## Required checks on `main`\n\nThe…' to contain 'requires exactly these eighteen checks'
+gates/test/gates-readme.test.ts:86: unit-tests: gates/README.md (002 FR-022) has no Contrast check, Custom-elements manifest check, Storybook gate or @ocelle/elements run-time strict-CSP row in Deferred gates, and says mission 005 (#17) delivered that test in packages/elements/test/browser/serve.ts (006 FR-023, plan decision 33): AssertionError: expected [ [ 'Gate', 'Delivered by' ], …(4) ] to deeply equal [ Array(2) ]
+gates/test/gates-readme.test.ts:118: unit-tests: gates/README.md (006 FR-023) lists storybook-build in The gates with its check, its command and every plant of gates/plants/storybook-build/: AssertionError: expected undefined to deeply equal [ '`storybook-build`', …(2) ]
+gates/test/gates-readme.test.ts:118: unit-tests: gates/README.md (006 FR-023) lists visual in The gates with its check, its command and every plant of gates/plants/visual/: AssertionError: expected undefined to deeply equal [ '`visual`', …(2) ]
+gates/test/gates-readme.test.ts:118: unit-tests: gates/README.md (006 FR-023) lists axe in The gates with its check, its command and every plant of gates/plants/axe/: AssertionError: expected undefined to deeply equal [ '`axe`', 'Accessibility', …(1) ]
+gates/test/gates-readme.test.ts:124: unit-tests: gates/README.md (006 FR-023) gives csp the packages' built output only, with pass-storybook-out-of-scope and none of the removed Storybook plants: AssertionError: expected [ '`csp`', 'Content security', …(2) ] to deeply equal [ '`csp`', 'Content security', …(2) ]
+gates/test/gates-readme.test.ts:145: unit-tests: gates/README.md (006 FR-023) gives prefix the multi-line monospace plant of a Storybook HTML entry: AssertionError: expected '`<sk-button>`, `<SK-Button>`, `--sk-c…' to contain '`fail-storybook-html-multiline-monosp…'
+gates/test/gates-readme.test.ts:149: unit-tests: gates/README.md (006 FR-023) names the first element feature (#17) in the manifest row: AssertionError: expected 'since 005 (FR-009): the committed `pa…' to contain 'since 005 (#17, the first element fea…'
+gates/test/gates-readme.test.ts:153: unit-tests: gates/README.md (006 FR-023) keeps the Storybook scope of prefix and drops the Storybook CSP scope and 002's two exceptions: AssertionError: expected '' to contain '`storybook/dist/*.html`'
+gates/test/prefix.test.ts:103: unit-tests: scanText: a font declaration across lines (006 R-10) finds a font-family whose value ends in monospace on the next line, as one finding at the line where it starts: AssertionError: expected [] to deeply equal [ { location: { …(2) }, …(3) } ]
+gates/test/prefix.test.ts:107: unit-tests: scanText: a font declaration across lines (006 R-10) names every family of a declaration over three lines in one finding at its first line: AssertionError: expected [] to deeply equal [ { location: { …(2) }, …(3) } ]
+gates/test/prefix.test.ts:112: unit-tests: scanText: a font declaration across lines (006 R-10) ends a declaration at its } as at its ;, and reports a later declaration at its own line: AssertionError: expected [] to deeply equal [ { location: { …(2) }, …(3) } ]
+gates/test/prefix.test.ts:121: unit-tests: scanText: a font declaration across lines (006 R-10) keeps sk- names per line beside a declaration across lines: AssertionError: expected [ { location: { …(2) }, …(3) } ] to deeply equal [ { location: { …(2) }, …(3) }, …(1) ]
+gates/test/registry.test.ts:175: unit-tests: the repository's registry (002 FR-020) registers visual as a repo-tree gate with the check Visual regression, its plant command taking {engine}: AssertionError: expected { id: 'visual', …(4) } to deeply equal { id: 'visual', …(4) }
+gates/test/storybook-build.test.ts:234: unit-tests: classifyBuild could not run when Storybook cannot evaluate storybook/.storybook/main.ts (config-unreadable): AssertionError: expected [ { exit: 1, lines: [ …(2) ] }, …(1) ] to deeply equal [ Array(2) ]
+gates/test/storybook-build.test.ts:234: unit-tests: classifyBuild could not run when Storybook cannot evaluate storybook/.storybook/main.ts (config-unreadable-unicode): AssertionError: expected [ { exit: 1, lines: [ …(2) ] }, …(1) ] to deeply equal [ Array(2) ]
+gates/test/storybook-build.test.ts:243: unit-tests: classifyBuild could not run when a signal ended the build, whether or not its output names a file: AssertionError: expected [ { exit: 1, lines: [ …(2) ] }, …(1) ] to deeply equal [ Array(2) ]
+gates/test/storybook-build.test.ts:379: unit-tests: storybookBuild (the gate on a root) could not run, and does not read the index, when Storybook cannot evaluate storybook/.storybook/main.ts: AssertionError: expected { exit: 1, lines: [ …(2) ] } to deeply equal { exit: 2, …(1) }
+unit-tests: 42 of 3140 tests failed
+[ELIFECYCLE] Test failed. See above for more details.

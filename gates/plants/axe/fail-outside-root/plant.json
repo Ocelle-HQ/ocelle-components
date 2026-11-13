@@ -1,0 +1,26 @@
+{
+  "expect": "fail",
+  "why": "A story that appends an unlabelled button to document.body: outside-root names it, and axe, which audits the whole story area, finds its button-name, on both themes (FR-014, US3 scenario 8).",
+  "findings": [
+    {
+      "location": "outside-root--portal/light",
+      "rule": "outside-root",
+      "message": "button"
+    },
+    {
+      "location": "outside-root--portal/dark",
+      "rule": "outside-root",
+      "message": "button"
+    },
+    {
+      "location": "outside-root--portal/light",
+      "rule": "button-name",
+      "message": "critical: #plant-portal"
+    },
+    {
+      "location": "outside-root--portal/dark",
+      "rule": "button-name",
+      "message": "critical: #plant-portal"
+    }
+  ]
+}

@@ -114,5 +114,29 @@
     "plantCommand": "node gates/bin/manifest.ts --root {root}",
     "plantForm": "repo-tree",
     "scope": "files"
+  },
+  {
+    "id": "storybook-build",
+    "check": "Storybook build",
+    "command": "pnpm run gate:storybook-build",
+    "plantCommand": "node gates/bin/storybook-build.ts --root {root}",
+    "plantForm": "repo-tree",
+    "scope": "files"
+  },
+  {
+    "id": "visual",
+    "check": "Visual regression",
+    "command": "pnpm run gate:visual -- --engine both",
+    "plantCommand": "node gates/bin/visual.ts --root {root} --engine {engine}",
+    "plantForm": "repo-tree",
+    "scope": "files"
+  },
+  {
+    "id": "axe",
+    "check": "Accessibility",
+    "command": "pnpm run gate:axe",
+    "plantCommand": "node gates/bin/axe.ts --root {root}",
+    "plantForm": "repo-tree",
+    "scope": "files"
   }
 ]

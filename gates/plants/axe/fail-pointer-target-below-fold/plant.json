@@ -1,0 +1,16 @@
+{
+  "expect": "fail",
+  "why": "The story of the visual plant of that name, whose hover target lies below the 1280 × 800 viewport: pointer-target on both themes, axe not run (research.md R-15).",
+  "findings": [
+    {
+      "location": "pointer-target-below-fold--hover/light",
+      "rule": "pointer-target",
+      "message": "hover: target outside the viewport: .plant-low"
+    },
+    {
+      "location": "pointer-target-below-fold--hover/dark",
+      "rule": "pointer-target",
+      "message": "hover: target outside the viewport: .plant-low"
+    }
+  ]
+}

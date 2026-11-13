@@ -35,8 +35,8 @@ export function writeGenerated(out: string, fonts: string, tokens: readonly Toke
   if (existsSync(fonts)) cpSync(fonts, join(out, "fonts"), { recursive: true });
 }
 
-// Stryker disable next-line all: process boundary, covered by storybook-integration: storybook/test/integration/setup.ts runs it before the build that csp.test.ts serves
+// Stryker disable next-line all: process boundary, covered by storybook-integration: storybook/test/integration/setup.ts runs it before the build that render.test.ts serves
 if (import.meta.main) {
-  // Stryker disable next-line all: process boundary, covered by storybook-integration: storybook/test/integration/setup.ts runs it before the build that csp.test.ts serves
+  // Stryker disable next-line all: process boundary, covered by storybook-integration: storybook/test/integration/setup.ts runs it before the build that render.test.ts serves
   writeGenerated(fileURLToPath(new URL("../.generated", import.meta.url)), fileURLToPath(new URL("../../packages/tokens/fonts", import.meta.url)), source, fileURLToPath(new URL("../../packages/styles/src/base.css", import.meta.url)));
 }

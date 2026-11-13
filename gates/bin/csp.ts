@@ -6,13 +6,9 @@
 // `new Function`, `Function()` and `setTimeout`/`setInterval` with a string argument are findings. A JavaScript file
 // that does not parse is exit 2. CSS files are read and counted; no FR-021 construct can occur in them.
 //
-// Since 002 (FR-023, research.md R-10; operator decisions PLAN-FRESH-1-001 (a), PLAN-FRESH-2-001 (a),
-// PLAN-FRESH-3-001 (a)) the scope also holds this repository's Storybook inputs before bundling (`storybook/stories/`,
-// `.storybook/`, `scripts/`, `.generated/`) and the top-level HTML entries of its build output as externalise.ts
-// leaves them (`storybook/dist/*.html`); the bundles under `storybook/dist/` are left to the Storybook's run-time CSP
-// test. Their `.ts` files are parsed as TypeScript (`ScriptKind.TS`) and get the dynamic-code rules and the markup
-// rules on their literals, as built JavaScript does; in `storybook/scripts/` the markup rules do not apply to
-// literals, because the externaliser names the tags it moves. A `.ts` file that does not parse is exit 2.
+// 002 (FR-023) had widened the scope to this repository's Storybook inputs and the HTML entries of its build output.
+// Since 006 (FR-020, research.md R-10; operator decision Q1 (a)) the Storybook is not a CSP target and the scope is
+// the packages' built output again, with no exception: no file below `storybook/` is read.
 import { readdir, readFile } from "node:fs/promises";
 import { join } from "node:path";
 import { Tokenizer, TokenizerMode } from "parse5";
@@ -44,20 +40,9 @@ const textModes = new Map([
   ["title", TokenizerMode.RCDATA],
 ]);
 
-/** The Storybook inputs before bundling (002 FR-023): `.ts`, `.js`, `.css` and `.html` below these directories. */
-const storybookInputs = /^storybook\/(?:stories|\.storybook|scripts|\.generated)\/.+\.(?:ts|js|css|html)$/;
-/** The HTML entries of the Storybook build output, as externalise.ts leaves them. */
-const storybookEntries = /^storybook\/dist\/[^/]+\.html$/;
-/** The directory of Storybook inputs whose literals the markup rules skip: the externaliser names the tags it moves. */
-const markupExempt = "storybook/scripts/";
-
-/**
- * Whether a repository path is a file the gate checks: built output, `packages/<name>/dist/**` with `.js`, `.css` or
- * `.html`; and the Storybook inputs and HTML entries of 002 FR-023, outside installed packages.
- */
+/** Whether a repository path is built output the gate checks: `packages/<name>/dist/**` with `.js`, `.css` or `.html`. */
 export function isBuiltOutput(path: string): boolean {
-  if (/^packages\/[^/]+\/dist\/.+\.(?:js|css|html)$/.test(path)) return true;
-  return (storybookInputs.test(path) || storybookEntries.test(path)) && !path.split("/").includes("node_modules");
+  return /^packages\/[^/]+\/dist\/.+\.(?:js|css|html)$/.test(path);
 }
 
 function finding(path: string, line: number, rule: string, message: string): Finding {
@@ -194,15 +179,11 @@ function dynamicCode(node: ts.Node, path: string, line: number): Finding | undef
   return undefined;
 }
 
-/**
- * Findings in a script: dynamic code, and markup in its string and template literals unless `markup` is false. A
- * `.ts` file is parsed as TypeScript, any other as JavaScript.
- */
-export function scanScript(file: OutputFile, markup = true): ScriptScan {
+/** Findings in a built JavaScript file: dynamic code, and markup in its string and template literals. */
+export function scanScript(file: OutputFile): ScriptScan {
   const diagnostics = ts.transpileModule(file.text, { fileName: file.path, reportDiagnostics: true }).diagnostics ?? [];
   const syntax = diagnostics[0];
-  const kind = file.path.endsWith(".ts") ? ts.ScriptKind.TS : ts.ScriptKind.JS;
-  const source = ts.createSourceFile(file.path, file.text, ts.ScriptTarget.Latest, undefined, kind);
+  const source = ts.createSourceFile(file.path, file.text, ts.ScriptTarget.Latest, undefined, ts.ScriptKind.JS);
   if (syntax !== undefined) {
     const line = source.getLineAndCharacterOfPosition(syntax.start ?? 0).line + 1;
     // Stryker disable next-line StringLiteral: equivalent, the parser's syntax diagnostics are single messages, not chains, so the separator is never used
@@ -215,11 +196,11 @@ export function scanScript(file: OutputFile, markup = true): ScriptScan {
     const dynamic = dynamicCode(node, file.path, lineOf(node.getStart(source)));
     if (dynamic !== undefined) found.push(dynamic);
     // Stryker disable next-line StringLiteral: equivalent, a string without "<" holds no tag, so scanning it finds nothing; the check only skips the work
-    if (markup && ts.isStringLiteral(node) && node.text.includes("<")) {
+    if (ts.isStringLiteral(node) && node.text.includes("<")) {
       found.push(...scanMarkup(file.path, node.text, lineOf(node.getStart(source))));
     }
     // Stryker disable next-line StringLiteral: equivalent, a template without "<" holds no tag, so scanning it finds nothing; the check only skips the work
-    if (markup && (ts.isTemplateExpression(node) || ts.isNoSubstitutionTemplateLiteral(node)) && node.getText(source).includes("<")) {
+    if ((ts.isTemplateExpression(node) || ts.isNoSubstitutionTemplateLiteral(node)) && node.getText(source).includes("<")) {
       const { text, starts } = templateParts(node, source);
       found.push(...markupFindings(file.path, text, (offset) => lineOf(sourceOffset(starts, offset))));
     }
@@ -236,9 +217,9 @@ export function checkOutput(files: readonly OutputFile[]): GateResult {
   for (const file of files) {
     let found: readonly Finding[] = [];
     if (file.path.endsWith(".html")) found = scanMarkup(file.path, file.text, 1);
-    if (file.path.endsWith(".js") || file.path.endsWith(".ts")) {
-      const scan = scanScript(file, !file.path.startsWith(markupExempt));
-      if ("cause" in scan) return { exit: 2, cause: `${gate}: could not run: ${scan.cause}; ${file.path.startsWith("packages/") ? "fix the build output" : "fix the file"}` };
+    if (file.path.endsWith(".js")) {
+      const scan = scanScript(file);
+      if ("cause" in scan) return { exit: 2, cause: `${gate}: could not run: ${scan.cause}; fix the build output` };
       found = scan.findings;
     }
     if (found.length > 0) withFindings += 1;
@@ -250,7 +231,7 @@ export function checkOutput(files: readonly OutputFile[]): GateResult {
   return { exit: 0, summary: `${gate}: ${plural(files.length, "file")} checked, no finding` };
 }
 
-/** The files the gate checks (built output, Storybook inputs and HTML entries), by repository path, sorted. */
+/** The built output files the gate checks, by repository path, sorted. */
 export function selectOutput(paths: readonly string[]): string[] {
   return paths.filter((path) => isBuiltOutput(path)).sort();
 }
@@ -260,10 +241,8 @@ export async function run(argv: readonly string[], io: Io): Promise<number> {
   const context = parseArgs(argv, io.cwd);
   // Stryker disable next-line all: process boundary, covered by gates-integration: gates/test/integration/gates-root.test.ts "csp --root <tmp> exits 1 with exactly the defect's finding at its repository path"
   const entries = await readdir(join(context.root, "packages"), { recursive: true, withFileTypes: true }).catch(() => []);
-  // Stryker disable next-line all: process boundary, covered by gate:plants: gates/plants/csp/fail-storybook-* (findings in storybook/ under --root)
-  const storybookFiles = await readdir(join(context.root, "storybook"), { recursive: true, withFileTypes: true }).catch(() => []);
   // Stryker disable next-line all: process boundary, covered by gates-integration: gates/test/integration/gates-root.test.ts "csp --root <tmp> exits 1 with exactly the defect's finding at its repository path"
-  const selected = selectOutput(filePaths([...entries, ...storybookFiles], context.root));
+  const selected = selectOutput(filePaths(entries, context.root));
   // Stryker disable next-line all: process boundary, covered by gates-integration: gates/test/integration/gates-root.test.ts "csp --root <tmp> exits 1 with exactly the defect's finding at its repository path"
   const files = await Promise.all(selected.map(async (path) => ({ path, text: await readFile(join(context.root, path), "utf8") })));
   return emit(checkOutput(files), io.out, io.err);

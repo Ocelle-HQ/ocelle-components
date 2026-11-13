@@ -1,0 +1,14 @@
+{
+  "expect": "fail",
+  "why": "A story whose pixels vary between renders by an input the capture does not fix (Math.random() in its markup): nondeterministic on both themes, before any baseline comparison (FR-026).",
+  "findings": [
+    {
+      "location": "random--value/light",
+      "rule": "nondeterministic"
+    },
+    {
+      "location": "random--value/dark",
+      "rule": "nondeterministic"
+    }
+  ]
+}
