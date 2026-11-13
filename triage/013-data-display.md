@@ -219,3 +219,10 @@ other issues are out of scope as listed in the table.
   `@ocelle/tokens`.
 - **Measurement shows description-list semantics cannot survive the shadow boundary** without a child element: facts
   gains `ocelle-fact`. Still MINOR, but one more element to record in the spec.
+
+## Operator decision at the triage gate
+
+- **Q1. The split:** option **B**, three missions, chosen by the operator at the triage gate (2026-11-13).
+  Mission 013 builds `ocelle-facts`, `ocelle-empty-state` and `ocelle-progress`. Follow-on 1 builds the data table,
+  event timeline and evidence chain. Follow-on 2 builds the disclosure and code block, after #15 merges. #13 stays
+  open until the last follow-on lands.
