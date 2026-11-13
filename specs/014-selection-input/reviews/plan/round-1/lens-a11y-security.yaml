@@ -1,0 +1,176 @@
+schema: review-findings/v1
+complete: true
+phase: plan
+round: 1
+lens: a11y-security
+# Probe used below ("the Chromium probe"): a throwaway page and a CDP script in the session scratchpad, run on
+# /opt/pw-browsers/chromium-1243 headless, reading Accessibility.getFullAXTree and sending trusted keys with
+# Input.dispatchKeyEvent. The page builds the plan's designs with plain custom elements (ElementInternals roles,
+# a manual-slot shadow root for tabs, a delegatesFocus link shadow root). Nothing in the repository was changed.
+findings:
+  - id: PLAN-A11Y-SECURITY-1-001
+    severity: 4
+    title: "Role tablist on the ocelle-tabs host puts every tabpanel inside the tablist"
+    evidence:
+      - artifact: "research.md § R-01: 'Every parent and child sets its role through ElementInternals ... tablist, tab, tabpanel'; contracts/elements.md § ocelle-tabs: 'renders two shadow containers: part=\"tablist\" with <slot name=\"tab\"> and part=\"panels\" with the default slot'"
+      - artifact: "spec.md FR-019 and US2-1: the tree exposes a tablist with three tabs and 'one tabpanel'; FR-051: axe reports no serious or critical finding"
+      - code: "Chromium probe: host with internals.role='tablist', shadow <div part=tablist><slot name=tab></div><div part=panels><slot></div>, tabs and panels manually assigned. AX tree: 'tabpanel  ancestors= generic < tablist:Mission views < RootWebArea', and the panel's textbox likewise sits under the tablist."
+      - code: "006 FR-016 (origin/claude/010-storybook-workbench): the axe rule set is every default rule plus wcag2a..wcag22aa; aria-required-children (default, impact critical) reports a tablist whose owned elements include a non-tab role."
+    claim: |
+      The host's light-DOM children are always below the host in the flat tree, so a tablist role on the
+      ocelle-tabs host makes the panels, and everything in them, children of the tablist. A screen reader
+      announces the panel content as part of the tab list, the tablist owns roles it may not own (ARIA 1.2:
+      tablist owns only tab), and axe's aria-required-children reports it as critical on every tabs story, so
+      FR-051 and SC-007 cannot pass. The plan's own tree outcome (US2-1: a tablist with three tabs, and a tabpanel
+      beside it) is unreachable with this role placement.
+    remedies:
+      - "R-01 and contracts/elements.md: the ocelle-tabs host gets no role (or internals role none/generic); the shadow container part=\"tablist\" carries role=\"tablist\" and the name from label or the host aria-label (forwarded, as R-08 does for the link, and observed so a later change follows), so the tabs (slotted into it) are its only owned elements and the panels are siblings of the tablist. Add US2-1's tree check that no tabpanel has a tablist ancestor, with the plant 'tablist role on the host'."
+
+  - id: PLAN-A11Y-SECURITY-1-002
+    severity: 4
+    title: "The roving controller handles keys from anything inside the parent, so Enter, Space, arrows, Home and End die in tab panels"
+    evidence:
+      - artifact: "research.md § R-04: the RovingController 'listens to keydown on the parent host (the child's keydown is composed and bubbles to it), calls target, moves focus, calls preventDefault() only for handled keys'; no filter on the event target or on defaultPrevented"
+      - artifact: "spec.md FR-021a: the tabs handle ArrowRight, ArrowLeft, Home, End, Enter and Space; FR-023: Tab moves into the panel's focusable content"
+      - code: "Chromium probe: a keydown listener on the tabs host that preventDefaults Enter/Space/ArrowLeft/Home/End, a <button> and a <textarea> in the selected panel. Trusted Enter on the button: click count 0; trusted Enter in the textarea: value stays \"\"; listener saw 'Enter@inpanel', 'Enter@ta'."
+    claim: |
+      The panels are light-DOM children of ocelle-tabs, so every keydown from their content bubbles to the tabs
+      host. As designed, the controller would act on it: Enter and Space on a button or link in a panel are
+      prevented (the control cannot be activated from the keyboard), Enter in a textarea inserts nothing, and
+      ArrowLeft, ArrowRight, Home and End inside a text field move the tab selection instead of the caret, switching
+      the panel out from under the user. Nested composites double-handle: a segmented choice or listbox in a tab
+      panel handles ArrowRight or Home, and the same keydown then also moves the tabs. This breaks WCAG 2.1.1 for
+      any content in a panel and contradicts the spec's "Handled and unhandled keys" (the tabs would handle keys
+      that were not pressed on a tab).
+    remedies:
+      - "R-04 and data-model.md § Roving input: the controller acts only when the keydown's target is one of the parent's own child entries (the tab, option or segment host itself, not a descendant of it and not a panel), and ignores an event whose defaultPrevented is already true. Add scenarios: Enter on a button inside the selected panel activates it and the tabs emit nothing; ArrowLeft in a text input in a panel moves the caret and not the selection; ArrowRight in a segmented choice inside a panel moves only the segments. Plant: the controller without the target check."
+
+  - id: PLAN-A11Y-SECURITY-1-003
+    severity: 3
+    title: "ocelle-link without href (or with a refused href) cannot be activated with Enter"
+    evidence:
+      - artifact: "research.md § R-08: 'Without href, or with a disallowed one, the anchor has no href, role=\"link\" and tabindex=\"0\" ... A plain activation (primary click or Enter, Alt alone allowed) is intercepted on the anchor: the element calls preventDefault() on the native click'"
+      - artifact: "spec.md US5-2 (Enter on a link without href emits { href: null }) and US5-9, US5-11 (Enter on a refused href emits the event)"
+      - code: "Chromium probe: <a role=\"link\" tabindex=\"0\"> without href in a delegatesFocus shadow root, focused (shadowRoot.activeElement is A), trusted Enter: click listener count 0."
+    claim: |
+      An anchor without href has no activation behaviour, so Enter fires no click; only an <a href> turns Enter
+      into a click. The plan's single interception point (the native click) therefore misses every keyboard
+      activation in exactly the cases the consumer needs most: the routing link without href (Kitty Desktop's
+      in-app links, #522) and the refused-protocol link. Keyboard users cannot follow those links (WCAG 2.1.1);
+      constitution III requires the full keyboard model. The plan also leaves undefined whether that Enter keydown
+      is 'handled' (defaultPrevented) and whether a modified Enter (Ctrl/Meta/Shift) on a no-href link is ignored
+      (US5-13).
+    remedies:
+      - "R-08: when the anchor has no href, the element handles a keydown Enter on the anchor itself (not repeat-guarded only by click), with the modifier rule of FR-046 (Ctrl, Meta or Shift held: nothing; Alt alone: plain), and states whether it calls preventDefault on that keydown. Contracts § Pairings: add the plant 'activation only on the native click', which US5-2's Enter case and US5-9's Enter case must fail."
+
+  - id: PLAN-A11Y-SECURITY-1-004
+    severity: 3
+    title: "Joined pressed segment is a control on accent-low bordered with control-border, a pair the token contract excludes (2.94:1 / 2.88:1)"
+    evidence:
+      - artifact: "spec.md US3-9 and FR-029: in the joined variant every boundary line, 'including the lines on both sides of the pressed All', is --ocelle-border-width in --ocelle-color-control-border; the pressed segment's fill is --ocelle-color-accent-low"
+      - artifact: "plan.md § Constitution Check II: 'Ochre fill never alone ... No control boundary drawn against color-inset (R-07)'; nothing about accent-low"
+      - code: "packages/tokens/contrast/pairs.json:35: control-border on color-accent-low, light, 2.9, status 'excluded', reason '#5 rule 1: a control on color-accent-low is bordered with color-accent-strong'; packages/tokens/src/source.ts:50 the same rule; probe (WCAG luminance): control-border/accent-low 2.94:1 light, 2.88:1 dark"
+    claim: |
+      In the joined variant the pressed segment sits on its own accent-low fill and its boundary on the shared
+      sides is control-border, below 3:1 in both themes and expressly excluded by #5 rule 1 (a control on
+      accent-low is bordered with accent-strong). The block-end bar in accent-strong covers one edge only. The
+      contrast gate checks token pairs, not element CSS, so this would ship unflagged and contradict the brand rule
+      the constitution (II) says is checked. The default variant avoids it (accent-strong border, US3-8); the
+      joined one does not. The same applies to any hover paint on hover-bg that keeps a control-border line
+      (pairs.json:37, 2.80:1), which the plan does not state for options, tabs or segments.
+    remedies:
+      - "Raise to the operator as a spec change (FR-029/US3-9): in the joined variant the pressed segment's own boundary is drawn in accent-strong at border-width (replacing, not doubling, the shared line on its sides), keeping one line width; plan states the hover paint of every child and that no control-border line borders hover-bg or accent-low."
+      - "Keep the spec's lines and record a constitution II exception in Complexity Tracking with the operator's approval and the measured figures, arguing the pressed segment is identified by its accent-strong bar and fill, not its boundary."
+
+  - id: PLAN-A11Y-SECURITY-1-005
+    severity: 2
+    title: "The plan does not say how the selected bars are drawn; a box-shadow or background bar vanishes in forced colours"
+    evidence:
+      - artifact: "research.md § R-01 and R-06 name the selectors (:host([aria-selected=\"true\"]), :state(...)) but not the drawing technique; spec.md US3-9 and FR-029: the joined bar is 'drawn inside its box above the shared boundary line ... the bar neither widens a shared line nor changes the segment's outer size', which points at an inset box-shadow or a pseudo-element background"
+      - code: "Chromium probe: an element with 'box-shadow: inset 0 -3px 0 #8F5E0F' under Emulation forced-colors active: getComputedStyle(...).boxShadow is 'none'. Forced colours also replaces background colours of a pseudo-element bar with Canvas unless forced-color-adjust is none."
+    claim: |
+      The forced-colours Highlight edge is a constitution III requirement (and US1-15, US2-11, US3-11). The
+      techniques that satisfy the joined variant's 'no size change' constraint in normal colours (inset box-shadow,
+      background bar) are exactly the ones forced colours erase, so the plan leaves the most likely implementation
+      broken in forced colours and the gap is found only at green. The forced-colours rule set (system colours per
+      element, forced-color-adjust) is a design decision for each of the three bars and the copy field's
+      boundaries, not an implementation detail.
+    remedies:
+      - "research.md: add an entry stating, per element, how the selected bar is drawn in normal and forced colours (for example a border or outline edge, or an ::after bar with 'forced-color-adjust: none; background: Highlight' inside '@media (forced-colors: active)'), and which system colours draw boundaries (ButtonBorder/CanvasText) and the focus ring; name the plant 'bar as box-shadow only' for US1-15, US2-11 and US3-11."
+
+  - id: PLAN-A11Y-SECURITY-1-006
+    severity: 2
+    title: "Forwarding the link's host aria-label leaves a second named generic node around the link"
+    evidence:
+      - artifact: "research.md § R-08: 'Host aria-label is forwarded to the anchor'; contracts/elements.md § ocelle-link: 'Host aria-label forwarded to the anchor (R-08)'; the host's own role is not stated"
+      - code: "Chromium probe: <x-link aria-label=\"Mission log\"> (no internals role) with a shadow <a> carrying the forwarded aria-label. AX tree: 'generic \"Mission log\" < paragraph' containing 'link \"Mission log\"'."
+      - artifact: "spec.md § Reading the accessibility tree: 'Exposed as ... and no other interactive descendant'; US5-8"
+    claim: |
+      Chromium exposes the host as a generic node named by the host aria-label, wrapping the link with the same
+      name; naming is prohibited on generic, some screen readers read the name twice, and the inline text of the
+      paragraph gains an extra named node. Mission 005 avoided this for icons by giving the host the role itself
+      (naming.ts expose). The plan does not say what the link host exposes, so US5-8 can pass ("the link is named")
+      while the tree carries a stray named node.
+    remedies:
+      - "R-08: state the host's exposure when a host aria-label is present (for example internals.role set so the host is the link, or the name moved into internals and the host kept unnamed, after a probe of both) and add to US5-8's test that the paragraph holds exactly one named node for the link."
+
+  - id: PLAN-A11Y-SECURITY-1-007
+    severity: 2
+    title: "Listbox scroll container clips the option focus ring"
+    evidence:
+      - artifact: "contracts/elements.md § ocelle-listbox: part 'list' is 'the scroll container (FR-017)'; research.md § R-03: the ring is ':host(:focus-visible)' with the focus tokens"
+      - code: "packages/tokens/src/source.ts:162-163: focus-width 3px, focus-offset 2px; an outline drawn 5px outside a full-width option is clipped by an ancestor with overflow other than visible"
+    claim: |
+      Options fill the list's inline size, so a ring drawn outside the option (positive offset) is cut off on both
+      inline sides, and at the top of the first and the bottom of the last visible option, whenever part=list
+      scrolls (US1-16, the 'scrolling listbox' story). The constitution requires the token focus ring and US1-15
+      requires it in forced colours; a clipped ring can fall below WCAG 2.4.7/2.4.13 visibility. The same applies
+      to tabs if the row container ever clips.
+    remedies:
+      - "R-03: state that the scroll container has inline and block padding of at least focus-width + focus-offset (or that options draw the ring inset with a negative offset inside a scroll container), and add a measurement to US1-16 that the ring of the first, last and scrolled-to option is fully inside the container's clip."
+
+  - id: PLAN-A11Y-SECURITY-1-008
+    severity: 2
+    title: "Segmented choice exposed as role group gives no cue that its single tab stop hides arrow navigation"
+    evidence:
+      - artifact: "research.md § R-01: segmented choice role 'group'; segments role 'button' with aria-pressed; R-04: one tab stop, arrows between segments; spec.md FR-026"
+      - artifact: "WAI-ARIA 1.2: toolbar is the composite role for 'a collection of commonly used function buttons' with arrow-key navigation and a single tab stop; group is a generic container with no keyboard model (WAI-ARIA APG, Toolbar pattern)"
+    claim: |
+      A screen-reader user tabbing through the page meets one toggle button ('All, toggle button, pressed') and
+      Tab then leaves the group; nothing tells them that Mine, Blocked and Done exist or that arrows reach them,
+      because group implies no navigation model. Constitution III asks for 'the full keyboard model of their ARIA
+      pattern'; a group with roving tabindex is not an ARIA pattern. The toolbar role is the pattern that means
+      exactly this (one stop, arrows, toggle buttons inside) and keeps #14's aria-pressed requirement.
+    remedies:
+      - "Raise to the operator as a spec change of FR-026/US3-1: the segmented choice is exposed as a toolbar (named by FR-006, aria-orientation horizontal) of toggle buttons; the plan's key map (R-04) already matches the toolbar pattern."
+      - "Keep role group and drop roving tabindex for segments: every enabled segment is a tab stop, arrows stay as an extra; spec change to US3-1 and FR-028."
+
+  - id: PLAN-A11Y-SECURITY-1-009
+    severity: 2
+    title: "Panel focusability by a selector query misses shadow-hosted focusables and later content changes"
+    evidence:
+      - artifact: "research.md § R-03: 'The selected tab's panel is focusable (tabIndex 0) only when it holds no focusable descendant, measured on each update with a focusable-selector query on its light-DOM content (FR-023)'"
+      - code: "Chromium probe: the focusable element of an ocelle-link-like host is the <a> inside its delegatesFocus shadow root; a light-DOM selector query (a[href], button, [tabindex], ...) does not match the host, and option/segment hosts get their tabindex from their parent only after its update"
+    claim: |
+      A panel holding only ocelle-link elements (or another library composite, or a custom element with
+      delegatesFocus) would be judged empty and given tabindex 0, adding a stop; a panel whose content is added
+      or changed after the tabs' last update (htmx swaps into a panel are the console's normal case) keeps a
+      stale tabindex, so it is either an extra stop or, with focusable content removed, a panel that Tab cannot
+      reach (FR-023, WCAG 2.1.1). 'Each update' of ocelle-tabs is not triggered by changes inside a panel.
+    remedies:
+      - "R-03: define focusability as 'the panel contains an element that is focusable in the sequential order', including hosts whose shadow root delegates focus and elements with tabIndex >= 0 reached through open shadow roots, and re-measure on a subtree MutationObserver of the selected panel (childList, attributes tabindex/disabled/href); add scenarios: a panel holding only ocelle-link is not itself a tab stop; a panel whose button is removed after render becomes one."
+
+  - id: PLAN-A11Y-SECURITY-1-010
+    severity: 2
+    title: "ocelle-link-activate carries the unvalidated href; the plan gives hosts no warning that it may be javascript:"
+    evidence:
+      - artifact: "spec.md FR-046 and US5-9: the event carries 'the href attribute as written', including 'javascript:alert(1)' and 'data:text/html,x'; FR-047 filters only the element's own navigation"
+      - artifact: "research.md § R-08 and data-model.md § Link state: 'resolved' and 'allowed' are internal; the README content for the link (FR-056) lists only 'hosts that need other schemes handle the event'"
+    claim: |
+      The library's own navigation is safe, but the documented host pattern (cancel the event, route the href
+      itself) hands the host the raw string. A host that does 'location.href = e.detail.href' or puts it into an
+      <a href> re-opens exactly the javascript:/data: hole the element closed, and a router that resolves it with
+      its own base may disagree with the element's check. The library chose to forward attacker-shaped input; the
+      security note belongs in the plan's README content and doc test.
+    remedies:
+      - "plan/R-08: the README link section states that detail.href is the attribute as written and unvalidated, that the element refuses javascript:, data: and foreign schemes for its own navigation, and that a host that navigates itself must apply the same resolved-protocol check; the documentation test (FR-056) checks that sentence."

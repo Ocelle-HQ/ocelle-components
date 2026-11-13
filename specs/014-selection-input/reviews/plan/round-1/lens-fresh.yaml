@@ -1,0 +1,259 @@
+schema: review-findings/v1
+complete: true
+phase: plan
+round: 1
+lens: fresh
+# What was checked (beyond the feature's artifacts and the constitution):
+# - packages/elements/src/ocelle-icon.ts:87 and ocelle-brand-mark.ts:110 (internals held in an ES private field),
+#   packages/elements/README.md:204-224 (engines, "importing the module defines that element and no other"),
+#   packages/elements/package.json (per-element exports).
+# - axe-core 4.14.0 (the version #10 pins), downloaded from the npm registry into the session scratchpad and read:
+#   _getElementInternals (axe.js:23868-23925), implicitRole2 (axe.js:21020-21032), ariaAllowedAttrEvaluate
+#   (axe.js:32563-32650), rule aria-allowed-attr impact critical (axe.js:36654-36656), aria-required-children
+#   selector '[role]' (4.10.0 axe.js:30903-30906).
+# - #10's design (origin/claude/010-storybook-workbench specs/006-storybook-workbench: no handling of element
+#   internals in the axe gate) and #16's (origin/claude/016-overlays specs/008-overlays spec.md FR-007/FR-008,
+#   research.md:202-283 focus walk and Chromium's keyboard-focusable scrollers).
+# - HTML "update the rendering" order (animation frame callbacks run before style/layout and before resize
+#   observations are broadcast), HTML focus fixup on removal, manual slot assignment semantics.
+# A headless-Chromium axe probe was attempted and refused by the session's permission system; the axe findings rest
+# on reading axe-core's source.
+findings:
+  - id: PLAN-FRESH-1-001
+    severity: 3
+    title: "axe 4.14 cannot see roles set through a private #internals field, so every focusable option, tab and segment host carrying aria-selected or aria-pressed is a critical aria-allowed-attr violation"
+    evidence:
+      - artifact: "research.md § R-01 (line 9): 'Every parent and child sets its role through ElementInternals (internals.role), as mission 005's naming.ts does ... aria-selected=\"true|false\" on options and tabs, aria-pressed=\"true|false\" on segments' written as host attributes"
+      - artifact: "spec.md FR-051: 'The axe gate reports no serious or critical finding on any of these stories in either theme, with no new entry in storybook/a11y-exceptions.json'"
+      - code: "packages/elements/src/ocelle-icon.ts:87 'readonly #internals = this.attachInternals();' (mission 005's convention keeps internals in an ES private field)"
+      - code: "axe-core 4.14.0 axe.js:23868-23893: _getElementInternals finds internals only from globalThis._elementInternals, or an own non-getter property named '_internals', 'internals' or 'internals_', or an own symbol described 'internals'/'privateInternals'; an ES #private field is invisible to it"
+      - code: "axe-core 4.14.0 axe.js:32563-32650: ariaAllowedAttrEvaluate takes the role from get_role (internals role only if found); with role null, aria-selected / aria-pressed are not global attributes, and since the host is focusable (tabindex 0 or -1) the result is false (violation), not incomplete; rule aria-allowed-attr has impact 'critical' (axe.js:36654-36656)"
+      - code: "specs/006-storybook-workbench (git show origin/claude/010-storybook-workbench) spec/plan/research: no mention of ElementInternals or axe's externalAPIs.getElementInternals; the gate runs stock axe on the story"
+    claim: |
+      The plan's single most load-bearing a11y decision (roles in internals, states as host attributes) meets an axe
+      gate that cannot read the roles. To axe 4.14 an `ocelle-option` host with `tabindex="-1"` and
+      `aria-selected="false"` is a focusable element with no role carrying a role-specific attribute: aria-allowed-attr,
+      critical, one node per option, tab and segment, in every listbox, tabs and segmented-choice story, in both
+      themes. FR-051 forbids both the failure and an exception entry, so every phase from 2 to 4 cannot land as
+      designed, and the defect only shows at green when the baselines and axe run. The accessibility tree in Chromium
+      is right; only the gate's view is wrong, which is exactly the kind of gap the plan must resolve before tasks.
+    remedies:
+      - "Keep internals where axe looks: each new element (and the shared base if one is planned) stores its internals in an own data property named `internals` (or an own symbol described `internals`), documented in research R-01 as the reason; add to phase 2's red commit a story test that runs the axe gate's rule set on a listbox story and asserts no aria-allowed-attr finding (the plant: the private-field form)."
+      - "Write the role as a `role` attribute on child hosts too (the parent already writes aria-selected/aria-pressed/aria-disabled/tabindex there per R-01), so axe and the engine read the same attribute; state in R-01 and the README that child-host `role` is element-owned, like the states."
+      - "Have #10's axe gate (or this feature's stories) register element internals with axe through `axe.setup`/externalAPIs; this changes #10's design and needs the operator because #10 is final."
+
+  - id: PLAN-FRESH-1-002
+    severity: 3
+    title: "ocelle-tabs carries role tablist on its host, which also holds the tab panels, so every panel and its content is inside the tablist"
+    evidence:
+      - artifact: "research.md § R-01 (line 9): roles through internals.role: 'listbox, option, tablist, tab, tabpanel, group ..., button'; ocelle-tabs is the parent, so its host is the tablist"
+      - artifact: "contracts/elements.md § ocelle-tabs: 'ocelle-tabs renders two shadow containers: part=\"tablist\" with <slot name=\"tab\"> and part=\"panels\" with the default slot'; both containers are in the host's shadow root, so in the flat tree the panels are descendants of the host"
+      - artifact: "spec.md US2-1: 'the tree exposes a tablist named \"Mission views\" with three tabs in order, the first selected, and one tabpanel ...'"
+      - code: "axe-core 4.10/4.14 standards: tablist requiredOwned / owned.all: ['tab'] (4.10 axe.js:11246-11251, 22353-22360); aria-required-children only runs on '[role]' (axe.js:30905), so an internals role is not checked and the gate will not catch this"
+    claim: |
+      With the tablist role on the host, Chromium's tree is tablist > [tab, tab, tab, tabpanel > panel content]. ARIA
+      allows only tabs to be owned by a tablist; the panel and every control inside it (forms, nested lists) are
+      announced as part of the tab list, list-position counts and tablist navigation in screen readers include the
+      panel, and the "tablist named X ... and one tabpanel" of US2-1 is read with the panel inside the tablist. axe
+      will not report it (the rule keys on a role attribute), so no gate stops it: it ships wrong. The listbox and
+      segmented choice do not have this problem because their hosts hold only their children.
+    remedies:
+      - "Put the tablist role on the shadow `part=\"tablist\"` container (role and name set there from `label` / the host `aria-label`, as R-08 does for the link's anchor), and give the ocelle-tabs host no role (or `group` only if the operator wants a named region); state in R-01, the contract and data-model that the host is not the tablist; add a scenario reading that the tabpanel is a sibling of the tablist, not its descendant (plant: tablist role on the host)."
+
+  - id: PLAN-FRESH-1-003
+    severity: 3
+    title: "The roving keydown listener on the parent host also receives keys from tab-panel content and nested composites, and nothing filters them"
+    evidence:
+      - artifact: "research.md § R-04 (line 67): RovingController 'listens to keydown on the parent host (the child's keydown is composed and bubbles to it), calls target, moves focus, calls preventDefault() only for handled keys'"
+      - artifact: "contracts/elements.md § ocelle-tabs: panels are children of ocelle-tabs (default slot), so a keydown in any panel descendant bubbles to the ocelle-tabs host"
+      - artifact: "spec.md US2 scenarios 1-20: no scenario presses a key inside a panel (a text input, a nested ocelle-listbox, ocelle-segmented-choice or ocelle-tabs); FR-021a lists only the tabs' handled keys"
+    claim: |
+      As written, ArrowLeft, ArrowRight, Home and End typed in a text field inside a tab panel reach the ocelle-tabs
+      host, are mapped by `target`, switch the selected tab (selection follows focus), move focus away from the field
+      and are `preventDefault`ed, so the caret never moves and the user is thrown to another tab. The same happens for
+      a nested segmented choice or tabs in a panel (both handle ArrowLeft/Right), and Home/End pressed in a nested
+      listbox. Every planned scenario presses keys only on children, so an implementation without a target filter
+      passes all tests and mutation (no test can kill the missing condition). Panels holding forms and filters are
+      the normal case for kitty-mission-ui's tabbed screens.
+    remedies:
+      - "R-04: the controller acts only when the event's composed path's first element of the parent's child kind is a direct child of this parent and is the event target's owner (the keydown came from the child itself, not from content inside a panel or a nested parent), and ignores events already `defaultPrevented`; add scenarios to US2 (and the node tests of roving.ts' entry guard): ArrowRight, Home and End in a text input inside the selected panel change no tab, keep the caret behaviour (`defaultPrevented` false) and emit nothing, paired with ArrowRight on a tab; a nested ocelle-segmented-choice in a panel moves only its own focus (plant: no target filter)."
+
+  - id: PLAN-FRESH-1-004
+    severity: 3
+    title: "The joined variant's ResizeObserver delivers after animation-frame callbacks, so US3-10's 'await one requestAnimationFrame, then read the radii' reads stale radii in the in-process harness"
+    evidence:
+      - artifact: "research.md § R-06 (line 98): 'The callback runs before paint of the next frame, so the spec's \"await one requestAnimationFrame\" measurement holds.'"
+      - artifact: "spec.md US3-10 (lines 388-389): 'measured by awaiting one requestAnimationFrame after the resize, then reading the segments' computed corner radii'"
+      - artifact: "research.md § R-11: scenario bodies are shared and run in process ('elements', mutated by Stryker) and on the fixture"
+      - code: "HTML Standard, 'update the rendering': the animation frame callbacks run first; style and layout are updated and active resize observations gathered and broadcast after them, then paint. A promise resolved in a rAF callback continues at that callback's microtask checkpoint, before the frame's ResizeObserver callbacks."
+    claim: |
+      'Before paint' is true but irrelevant: the measurement reads in the rAF continuation, which runs before the
+      ResizeObserver of the same frame. In process (one JS realm, `await new Promise(requestAnimationFrame)` then
+      `getComputedStyle`), the radii are the pre-resize ones and US3-10 fails against a correct implementation; on
+      the fixture, two separate `page.evaluate` round trips happen to let the frame finish, so the same scenario
+      body passes there. Either the in-process test fails at green and gets loosened (constitution VIII forbids),
+      or the harnesses disagree. The plan rests a design decision on a wrong timing claim.
+    remedies:
+      - "Change the measurement (spec US3-10 and the edge case on continuous resize, plus R-06) to: after the resize, await two animation frames (or one rAF followed by a ResizeObserver delivery on the group observed by the test), then read the radii; state the HTML ordering in R-06 and keep one scenario body for both harnesses."
+      - "Keep the one-frame wording but make the element compute rows synchronously in a rAF it schedules itself from the observer (still a frame late) only if the operator accepts a one-frame stale rounding during drags; record it in R-06."
+
+  - id: PLAN-FRESH-1-005
+    severity: 2
+    title: "Rows can re-wrap without the group's box changing size, and the shared-line technique is unspecified, so the observer can miss changes or loop"
+    evidence:
+      - artifact: "research.md § R-06 (line 94): the joined choice 'observes its own box with a ResizeObserver ... on each callback groups segments into rows by their offsetTop'; only corner rounding is keyed on row-start/row-end/first-row/last-row states"
+      - artifact: "spec.md FR-029 'one shared border line ... between neighbours and between rows ... recomputed by the element itself when it wraps or unwraps'; Edge Cases 'rounding follows within one frame after each resize, with no layout loop and no console error'"
+    claim: |
+      Which segment starts row 2 depends on segment widths, not only on the group's size: the vendored font finishing
+      its load, a segment's text or icon changing, a segment being added, removed or reordered can move the row break
+      while the group keeps the same inline and block size (still two rows, different split), so no observation fires
+      and the rounding stays on the wrong segments. Separately, the plan does not say how 'one shared line between
+      neighbours and between rows' is drawn; the usual techniques (negative inline/block margins, or dropping the
+      start border of a non-first segment) depend on the row position, and if the row states change margins or
+      borders, they change segment widths and can move the row break again, producing ResizeObserver loop errors that
+      the edge case forbids.
+    remedies:
+      - "R-06: observe every segment as well as the group (and recompute on the selection model's child-list batch), and state the shared-line technique as one that does not depend on the row states (for example every segment draws only its block-start and inline-start borders plus a group-level end/bottom edge, or an outline-based line), so the states change only border radii, which do not affect layout; add a scenario where a segment's text grows so the split moves without the group resizing (plant: observing the group only)."
+
+  - id: PLAN-FRESH-1-006
+    severity: 3
+    title: "Per-element entry points define one tag, but parents depend on their children's classes; the plan does not cover an undefined, late or other-version child"
+    evidence:
+      - code: "packages/elements/README.md:229 'importing the module defines that element and no other, and importing the package root defines every element'"
+      - artifact: "plan.md § Phases phase 2 'entry points'; quickstart.md step 1 lists one dist module per element; nothing says whether ocelle-listbox.js imports ocelle-option.js"
+      - artifact: "research.md § R-01: the child sets its own role through its internals; § R-06: the parent sets custom states 'on each segment through its internals' (a cross-element private API); data-model.md § Child entry: the child's value default is what 'the child's value property reads'"
+      - code: "packages/elements/README.md § Two copies on a page: two versions on one page, first definition wins per tag"
+    claim: |
+      A host that imports `@ocelle/elements/ocelle-listbox.js` alone (the documented per-element use) gets a listbox
+      whose options are undefined elements: no option role (it is set by the child), no `value` property default, no
+      focus ring styles; the parent writes tabindex and aria-selected on unknown elements and the tree shows a listbox
+      of generic text. When the child is defined later (a second import, browser build order), nothing re-runs. For
+      the segmented choice, calling into a segment's internals for row states throws on an un-upgraded or
+      other-version segment. With two copies on a page, ocelle-segmented-choice from one version can drive
+      ocelle-segment from another through a private method that changed. None of these states is covered by a
+      scenario or a decision.
+    remedies:
+      - "Decide and record in the plan and README: each parent module imports its child modules (ocelle-listbox.js defines ocelle-option, ocelle-tabs.js defines ocelle-tab and ocelle-tab-panel, ocelle-segmented-choice.js defines ocelle-segment), amending the README rule for composites; the parent awaits `customElements.whenDefined` for its child tags before its first selection pass; the cross-element calls go through attributes or a versioned, feature-checked method; add entry tests that importing only the parent entry yields a working listbox (plant: parent entry not importing the child)."
+      - "Keep one tag per module and require hosts to import children; then the parent must handle undefined children (wait for whenDefined, re-run on upgrade) and the README says so; add a scenario that defines ocelle-option after ocelle-listbox has rendered."
+
+  - id: PLAN-FRESH-1-007
+    severity: 2
+    title: "Manual slot assignment in ocelle-tabs disables automatic assignment and slotchange for children the host appends, which R-05's child list relies on"
+    evidence:
+      - artifact: "contracts/elements.md:45 'the element assigns each ocelle-tab to the tab slot through manual slot assignment (slotAssignment: \"manual\")' and panels in 'the default slot'"
+      - artifact: "research.md § R-05 (line 82): 'the child list (from the default slot's slotchange plus a MutationObserver on the children's value and disabled attributes)'"
+      - code: "DOM Standard / HTML: with slotAssignment 'manual' a slot's assigned nodes are only those given to slot.assign(); no slot (the default one included) receives children automatically, and appending a child to the host fires no slotchange until the element assigns it"
+    claim: |
+      With a manual shadow root, panels are not assigned to the default slot unless the element assigns them, and an
+      appended tab or panel fires no slotchange, so the shared selection model never learns of it: US2-19, US2-20 and
+      FR-011 fail for tabs only, while the listbox and segmented choice (named slots) work. The fix also gives a
+      cheaper FR-024: assign only the selected panel and leave the others unassigned (no box, no node), which the
+      contract does not say.
+    remedies:
+      - "R-05 and the contract: the child list for every parent comes from a MutationObserver on the host's childList (plus value and disabled attributes), not from slotchange; ocelle-tabs assigns tabs to the tab slot and only the selected, paired panel to the panel slot on each batch; add a tabs scenario where a tab and its panel are appended after first render (US2-19 already covers it once the source is right)."
+
+  - id: PLAN-FRESH-1-008
+    severity: 2
+    title: "An anchor without href does not fire click on Enter, so intercepting only the click misses US5-2's Enter activation"
+    evidence:
+      - artifact: "research.md § R-08 (line 137): 'Without href, or with a disallowed one, the anchor has no href, role=\"link\" and tabindex=\"0\" ... A plain activation (primary click or Enter, Alt alone allowed) is intercepted on the anchor: the element calls preventDefault() on the native click'"
+      - artifact: "spec.md US5-2: '<ocelle-link> focused, When Enter is pressed, Then one ocelle-link-activate is emitted with detail { \"href\": null }'; US5-9 and US5-11 (disallowed and custom-scheme hrefs) also need Enter to emit"
+      - code: "HTML Standard: the a element has activation behaviour (Enter synthesises a click) only when it has an href; an <a> without href with role=link and tabindex=0 receives keydown Enter and no click"
+    claim: |
+      For the no-href link and every disallowed href (javascript:, data:, kitty-app: under a base), the anchor has no
+      href, so Enter produces no click and the click interceptor never runs: no event, against US5-2, 9 and 11. The
+      plan must add a keydown path for Enter on those anchors, and then decide handled/unhandled (preventDefault on
+      that Enter) and the modified-Enter rule of FR-046 there too; none is stated.
+    remedies:
+      - "R-08: when the anchor has no href, handle keydown Enter itself (plain only, per FR-046's modifier rule; Alt counts as plain), dispatch the same event, and state whether that keydown is preventDefaulted; add US5-2's Enter on no-href and US5-9's Enter on a disallowed href to the scenario list with a plant (click-only interception)."
+
+  - id: PLAN-FRESH-1-009
+    severity: 2
+    title: "'A reorder keeps focus' is not something a mutation batch can do: removing the node drops focus at once, and the model has no focus record"
+    evidence:
+      - artifact: "research.md § R-14 (line 210): 'a reorder is a move, not a remove: the moved child keeps focus and selection (the MutationObserver batch sees the same node removed and re-added in one task ... the model treats a node present before and after the batch as kept)'"
+      - artifact: "data-model.md:23 'lastFocused | listbox tab stop fallback (FR-016)' and :39 'batch: child moved ... keeps focus and selection'"
+      - code: "HTML Standard focus fixup: when the focused element is removed from the document, focus moves to the viewport/body synchronously; reinserting the node does not refocus it (insertBefore/append of a connected node is remove + insert; only moveBefore preserves focus)"
+    claim: |
+      By the time the observer's batch runs, `document.activeElement` is the body; treating the moved node as 'kept'
+      keeps the selection but not focus. FR-011's focus rule for a removed child has the same gap: after removal the
+      element can no longer ask which child had focus unless it recorded it (a focusin/focusout record per parent),
+      which the data model does not have (lastFocused is a listbox-only tab-stop fallback). A keyed Svelte list or an
+      htmx morph reorders exactly this way, so a keyboard user loses focus on every reorder.
+    remedies:
+      - "data-model and R-05/R-14: track the focused child per parent (focusin/focusout on the host, kept across a batch); in the batch, a node present before and after that had focus is refocused (focus({ focusVisible }) only if the focus is still on body or on nothing inside the parent), and a removed focused child moves focus per FR-011; add a node test for the transition and a scenario that reorders the focused option with insertBefore and reads activeElement (plant: no refocus)."
+
+  - id: PLAN-FRESH-1-010
+    severity: 2
+    title: "No form participation: the console's server-rendered forms cannot submit a listbox, tabs or segmented-choice value"
+    evidence:
+      - artifact: "spec.md § User Scenarios: users include 'the Ocelle console's server-rendered pages under the strict CSP, which load the browser build'; Out of scope names multi-select, typeahead, popup listbox, but not form association"
+      - artifact: "contracts/elements.md: no `name` attribute, no form value for ocelle-listbox or ocelle-segmented-choice; research.md R-01 to R-05 do not consider formAssociated"
+      - code: "constitution I: data in through properties and attributes; the console runs Thymeleaf and htmx (constitution I's host list) where a filter or choice is submitted as a form field"
+    claim: |
+      A segmented filter or a single-choice list in a server-rendered page is a form field. Without
+      `static formAssociated` and `internals.setFormValue`, the console must ship its own script to copy the value
+      into a hidden input on each `-change` event, which is exactly the consumer-side wiring the library exists to
+      remove (constitution VI), and the strict CSP makes that script a separate file. The spec neither provides it nor
+      lists it as out of scope, so the gap is silent.
+    remedies:
+      - "Make ocelle-listbox and ocelle-segmented-choice form-associated (`name`, value submitted through internals.setFormValue, form reset restoring the initial value, `disabled` via formDisabledCallback), a MINOR addition; add scenarios submitting a form on the strict-CSP fixture."
+      - "List form association as out of scope in the spec's Assumptions with the reason, and record it as a follow-up issue for the console."
+
+  - id: PLAN-FRESH-1-011
+    severity: 2
+    title: "The folder picker has no 'confirm' gesture: Enter on the selected option is swallowed with no event, and there is no activation event for double-click"
+    evidence:
+      - artifact: "spec.md § Consumer need: the Open project dialog's folder picker is 'a single-select list the user moves through with the keyboard and confirms'"
+      - artifact: "spec.md US1-7: Enter on the selected option emits no event; FR-015: the listbox handles Enter (preventDefault)"
+      - artifact: "spec.md § Assumptions: '#511, #521, #522, #527 and #534 were not readable ... If the spec check or plan ... finds a further need ..., that need is raised to the operator'"
+    claim: |
+      In a folder picker the usual confirm is Enter on the chosen folder or a double-click. Here Enter on an already
+      selected option is handled (defaultPrevented true) and emits nothing, so a host keydown listener that honours
+      defaultPrevented ignores it, and a `<form method=\"dialog\">` default button is not triggered. The consumer must
+      add its own keydown and dblclick handling on options, the kind of hand-rolled key handling #527 complains of.
+      #527 was not read; the plan does not raise this to the operator as the spec's assumption requires.
+    remedies:
+      - "Raise to the operator at the plan gate: add `ocelle-listbox-activate` with `{ value }` (Enter on the selected option, double-click on an option), or record that confirmation is the dialog's action button only and the README says so."
+
+  - id: PLAN-FRESH-1-012
+    severity: 2
+    title: "The engine-floor raise is justified by an argument the plan contradicts elsewhere and by an unmeasured claim about Kitty Desktop's webview"
+    evidence:
+      - artifact: "research.md § R-06 (lines 104-106): data-ocelle-row-* attributes 'rejected because those attributes become de facto public surface a host can see and set, and the floor raise touches no consumer today (Kitty Desktop's webview and current Chromium are above it)'"
+      - artifact: "research.md § R-01, R-02, R-03: the parents already write aria-selected, aria-pressed, aria-disabled, tabindex, id, aria-controls and aria-labelledby on child hosts, which a host can equally see and set"
+      - code: "packages/elements/README.md:221-222 'Only Chromium is measured. WebKit (Kitty Desktop on macOS and Linux) is not'; specs/003-base-styles/spec.md:721 treats the Tauri webview's engine as unstated"
+    claim: |
+      The rejection reason applies equally to the design the plan adopts for every other state, so it does not
+      discriminate; and on Linux Kitty Desktop runs on the distribution's WebKitGTK, whose version this repository
+      has never recorded, so 'touches no consumer' is not evidence. The operator is asked to choose a floor raise for
+      the whole package on that basis. (Row attributes would also be read by the shared-line CSS of PLAN-FRESH-1-005
+      without a cross-element private call, PLAN-FRESH-1-006.)
+    remedies:
+      - "Rewrite R-06's comparison on the real trade-off (custom states: no host-visible attributes, private cross-element call, floor raise for all elements; element-owned row attributes: same model as R-01's states, no floor raise, documented as element-owned) and drop or source the consumer claim (ask kitty-mission-ui for its WebKitGTK and WKWebView minimums) before the operator decides."
+
+  - id: PLAN-FRESH-1-013
+    severity: 1
+    title: "A listbox whose options are all disabled and that overflows becomes a tab stop through Chromium's keyboard-focusable scrollers"
+    evidence:
+      - artifact: "contracts/elements.md § ocelle-listbox: part 'list' is the scroll container (FR-017); spec.md Edge Cases: 'A listbox ... whose every child is disabled has no tab stop; Tab passes over it'"
+      - code: "specs/008-overlays research.md:274-281 (origin/claude/016-overlays): Chromium 130 and later make an overflowing scroller with no focusable descendant keyboard-focusable; 008's focus walk lists such a scroller as a stop"
+    claim: |
+      With every option disabled (no tabindex), the overflowing `part=\"list\"` has no focusable descendant, so
+      Chromium puts it in the tab order: an unnamed stop, against the edge case, and an extra stop in #16's dialog
+      cycle. Nothing in the plan sets a tabindex on the scroller.
+    remedies:
+      - "R-03: the list part carries `tabindex=\"-1\"` (an explicit tabindex turns off the automatic scroller focus) or the scroll container is the host itself; add the all-disabled overflowing case to US1's scenarios (plant: no tabindex on the scroller)."
+
+  - id: PLAN-FRESH-1-014
+    severity: 1
+    title: "The data model trims child values; the spec does not"
+    evidence:
+      - artifact: "data-model.md:11 'value | string | value attribute, trimmed; blank → index as string'"
+      - artifact: "spec.md FR-009: only a 'missing or blank' value is defaulted; the event and parent value report the child's value; FR-006 and FR-034 say 'trimmed' where trimming is meant"
+    claim: |
+      With `value=\" a\"`, the plan reports `\"a\"` in events and `listbox.value`, while the reflected `option.value`
+      reads `\" a\"` and a host set of `\" a\"` matches nothing. The spec states trimming explicitly where it wants it,
+      so this is an unrecorded behaviour change that the tests (written from the spec) will not cover.
+    remedies:
+      - "data-model: take the attribute as written (only blank defaults), or add trimming to FR-009 through the operator; either way state it in the README and add one scenario."
