@@ -734,6 +734,26 @@ function factsExtras(): FactsScenario[] {
       expected: { labelColumn: 300, lines: true, wraps: "normal", valueStart: 300 + space4, valueWidth: 300 - space4, shared: true },
     },
     {
+      name: "An unbroken 64-character value without wrap in a 600 px two-column sheet does not widen the value column: the column ends at the sheet's edge after the label column and the gap, a short pair shares it, and the value overflows its box (FR-005, FR-009 as qualified)",
+      run: async (driver) => {
+        await mount(driver, `<div class="w600">${sheet("s", [fact("Identifier", `<span id="value">${identifier}</span>`), fact("Owner", "Ada")], ' layout="columns"')}</div>`);
+        const layout = await settled(driver, "s");
+        const host = await driver.box("s");
+        const terms = await driver.boxes("s", "dt");
+        const values = await driver.boxes("s", "dd");
+        const value = await driver.box("value");
+        return {
+          layout,
+          valueEnd: Math.round(((values[0]?.x ?? 0) + (values[0]?.width ?? 0) - (host.x + host.width)) * 100) / 100,
+          gap: Math.round(((values[0]?.x ?? 0) - ((terms[0]?.x ?? 0) + (terms[0]?.width ?? 0))) * 100) / 100,
+          labelUnderHalf: (terms[0]?.width ?? 300) < 300,
+          shared: close(values[1]?.x ?? -1, values[0]?.x ?? -2) && close(values[1]?.width ?? -1, values[0]?.width ?? -2),
+          overflows: value.width > (values[0]?.width ?? Infinity),
+        };
+      },
+      expected: { layout: "columns", valueEnd: 0, gap: space4, labelUnderHalf: true, shared: true, overflows: true },
+    },
+    {
       name: "Dynamic: a fact added, one removed, one moved to the end and a label changed each re-render the list in source order (FR-003, SPEC-2-06)",
       run: async (driver) => {
         await mount(driver, `${sheet("s", [fact("A", "1", ' id="a"'), fact("B", "2", ' id="b"')])}<div id="spare">${fact("C", "3", ' id="c"')}</div>`);
