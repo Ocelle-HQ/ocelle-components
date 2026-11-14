@@ -247,7 +247,7 @@ describe("generate(root) on the repository's element source", () => {
     const manifest = await generate(repo);
     const modules = manifest.modules as { path: string; declarations: Record<string, unknown>[] }[];
     expect(manifest.schemaVersion).toBe("1.0.0");
-    expect(modules.map((module) => module.path)).toEqual(["src/ocelle-brand-mark.ts", "src/ocelle-card.ts", "src/ocelle-icon.ts", "src/ocelle-section-header.ts"]);
+    expect(modules.map((module) => module.path)).toEqual(["src/ocelle-brand-mark.ts", "src/ocelle-card.ts", "src/ocelle-icon.ts", "src/ocelle-page-header.ts", "src/ocelle-section-header.ts"]);
     const [icon] = modules.find((module) => module.path === "src/ocelle-icon.ts")?.declarations ?? [];
     expect(icon).toMatchObject({
       kind: "class",
@@ -317,6 +317,17 @@ describe("generate(root) on the repository's element source", () => {
       { name: "size", fieldName: "size", type: { text: '"regular" | "compact" | undefined' }, default: "undefined", described: true },
       { name: "variant", fieldName: "variant", type: { text: '"default" | "eyebrow" | undefined' }, default: "undefined", described: true },
     ]);
+    expect(described(header?.slots)).toEqual(["heading", "eyebrow", "description", "actions"].map((name) => ({ name, described: true })));
+  });
+
+  it('declares ocelle-page-header with its tag name and class, size ("regular" | "compact" | undefined), reflected, with the default undefined, the slots heading, eyebrow, description and actions, and no event, part or CSS property (011 FR-019, FR-034; T027)', async () => {
+    const modules = (await generate(repo)).modules as { path: string; declarations: Record<string, unknown>[] }[];
+    const [header] = modules.find((module) => module.path === "src/ocelle-page-header.ts")?.declarations ?? [];
+    expect(header).toMatchObject({ kind: "class", name: "OcellePageHeader", tagName: "ocelle-page-header", customElement: true, events: [], cssParts: [], cssProperties: [] });
+    expect(described(header?.members)).toEqual([
+      { kind: "field", name: "size", privacy: "public", type: { text: '"regular" | "compact" | undefined' }, default: "undefined", attribute: "size", reflects: true, described: true },
+    ]);
+    expect(described(header?.attributes)).toEqual([{ name: "size", fieldName: "size", type: { text: '"regular" | "compact" | undefined' }, default: "undefined", described: true }]);
     expect(described(header?.slots)).toEqual(["heading", "eyebrow", "description", "actions"].map((name) => ({ name, described: true })));
   });
 

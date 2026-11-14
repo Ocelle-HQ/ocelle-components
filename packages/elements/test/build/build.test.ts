@@ -41,21 +41,23 @@ describe("the module build (dist/*.js)", () => {
     const own = (specifier: string): boolean => specifier.startsWith("./") && files.includes(specifier.slice(2));
     const lit = (specifier: string): boolean => specifier === "lit" || specifier.startsWith("lit/");
     expect({
-      files: files.filter((name) => ["index.js", "ocelle-icon.js", "ocelle-brand-mark.js", "ocelle-card.js", "ocelle-section-header.js", "browser.js"].includes(name)),
+      files: files.filter((name) => ["index.js", "ocelle-icon.js", "ocelle-brand-mark.js", "ocelle-card.js", "ocelle-section-header.js", "ocelle-page-header.js", "browser.js"].includes(name)),
       outside: imported.filter(({ specifier }) => !own(specifier) && !lit(specifier)),
       litImported: imported.some(({ specifier }) => lit(specifier)),
       rootImportsIcon: imported.some(({ name, specifier }) => name === "index.js" && specifier === "./ocelle-icon.js"),
       rootImportsMark: imported.some(({ name, specifier }) => name === "index.js" && specifier === "./ocelle-brand-mark.js"),
       rootImportsCard: imported.some(({ name, specifier }) => name === "index.js" && specifier === "./ocelle-card.js"),
       rootImportsHeader: imported.some(({ name, specifier }) => name === "index.js" && specifier === "./ocelle-section-header.js"),
+      rootImportsPageHeader: imported.some(({ name, specifier }) => name === "index.js" && specifier === "./ocelle-page-header.js"),
     }).toEqual({
-      files: ["browser.js", "index.js", "ocelle-brand-mark.js", "ocelle-card.js", "ocelle-icon.js", "ocelle-section-header.js"],
+      files: ["browser.js", "index.js", "ocelle-brand-mark.js", "ocelle-card.js", "ocelle-icon.js", "ocelle-page-header.js", "ocelle-section-header.js"],
       outside: [],
       litImported: true,
       rootImportsIcon: true,
       rootImportsMark: true,
       rootImportsCard: true,
       rootImportsHeader: true,
+      rootImportsPageHeader: true,
     });
   });
 
@@ -111,10 +113,23 @@ describe("the module build's 011 element modules", () => {
   });
 });
 
+// 011 phase 3 (FR-001, contracts/elements-package.md § Entry points; T027): the page header's module imports lit, the
+// registration helper and the slot state, and neither the package root, the card context nor another element's module.
+describe("the module build's page-header module", () => {
+  it("dist/ocelle-page-header.js imports lit, the registration helper and the slot state, and neither the package root, the card context nor another element", () => {
+    const imported = specifiers(existsSync(join(dist, "ocelle-page-header.js")) ? readFileSync(join(dist, "ocelle-page-header.js"), "utf8") : "");
+    expect({
+      lit: imported.includes("lit"),
+      own: imported.filter((specifier) => specifier.startsWith("./")),
+      outside: imported.filter((specifier) => !specifier.startsWith("./") && specifier !== "lit" && !specifier.startsWith("lit/")),
+    }).toEqual({ lit: true, own: ["./define.js", "./slot-state.js"], outside: [] });
+  });
+});
+
 describe("the browser build (dist/browser/ocelle-elements.js)", () => {
   const text = (): string => (existsSync(browserBuild) ? readFileSync(browserBuild, "utf8") : "");
 
-  it("is self-contained: it defines ocelle-icon, ocelle-brand-mark, ocelle-card and ocelle-section-header, with no import statement and no dynamic import", () => {
+  it("is self-contained: it defines ocelle-icon, ocelle-brand-mark, ocelle-card, ocelle-section-header and ocelle-page-header, with no import statement and no dynamic import", () => {
     const code = text();
     expect({
       exists: code !== "",
@@ -122,9 +137,10 @@ describe("the browser build (dist/browser/ocelle-elements.js)", () => {
       definesMark: code.includes('"ocelle-brand-mark"'),
       definesCard: code.includes('"ocelle-card"'),
       definesHeader: code.includes('"ocelle-section-header"'),
+      definesPageHeader: code.includes('"ocelle-page-header"'),
       specifiers: specifiers(code),
       dynamicImport: /\bimport\s*\(/.test(code),
-    }).toEqual({ exists: true, definesIcon: true, definesMark: true, definesCard: true, definesHeader: true, specifiers: [], dynamicImport: false });
+    }).toEqual({ exists: true, definesIcon: true, definesMark: true, definesCard: true, definesHeader: true, definesPageHeader: true, specifiers: [], dynamicImport: false });
   });
 
   it("holds Lit's production build at the locked versions, not its development build, no ssr-dom-shim and no console call", () => {
