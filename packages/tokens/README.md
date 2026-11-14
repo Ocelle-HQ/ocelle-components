@@ -52,6 +52,17 @@ group, `--ocelle-measure-reading` (`68ch`) holds prose paragraphs, list items an
 the inline size of the nearest query container: a prose table is one, so it caps the table's caption at the table's
 visible width. Without a query container, `100cqi` falls back to the small viewport's inline size.
 
+### Tokens for the controls
+
+Some colour tokens exist for the controls of `@ocelle/elements` (`ocelle-button`, mission 012): their hover and
+pressed states. `--ocelle-color-hover-border` is the border of a hovered or pressed bordered control:
+`--ocelle-color-ink` unless a host overrides it on an ancestor. `--ocelle-color-accent-hover` is the hover fill of a
+primary control, with `--ocelle-color-on-accent` text on it. `--ocelle-color-active-bg` is the pressed surface of a
+secondary, quiet or flush control on the main and state grounds. `--ocelle-color-chrome-active` is the pressed surface
+of a control on the chrome grounds, with `--ocelle-color-chrome-ink` text on it. The contrast check covers each with
+the grounds it is used on, and `color-accent-strong`, the primary control's border, on every main, state and chrome
+ground.
+
 ### Forced colours
 
 The tokens never override the system palette in forced colours: the stylesheet has no `forced-color-adjust: none`,

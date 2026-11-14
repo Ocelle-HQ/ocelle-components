@@ -55,3 +55,9 @@ nothing loads from a CDN, and two new merge checks (Contrast, Brand rules) keep 
   - elevation: `--ocelle-elevation-sheet`, `--ocelle-elevation-raised`, `--ocelle-elevation-row`,
     `--ocelle-elevation-seg`, `--ocelle-elevation-bar`
   - motion: `--ocelle-motion-fast`, `--ocelle-motion-base`, `--ocelle-easing-standard`
+- The control tokens of `@ocelle/elements`' `ocelle-button` (mission 012), in the colour group:
+  `--ocelle-color-hover-border` (the border of a hovered or pressed bordered control, `--ocelle-color-ink` unless
+  overridden), `--ocelle-color-accent-hover` (a primary control's hover fill), `--ocelle-color-active-bg` (the pressed
+  surface of a secondary, quiet or flush control) and `--ocelle-color-chrome-active` (the pressed surface on the
+  chrome grounds); their contrast pairs, and `color-accent-strong` declared on every main and chrome ground, join the
+  contrast check.

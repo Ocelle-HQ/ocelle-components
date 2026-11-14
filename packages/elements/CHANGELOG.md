@@ -27,3 +27,15 @@ entry points and the browser build's file path (constitution VII).
 - `@ocelle/tokens` as a peer dependency (`workspace:0.0.0`); the elements read its tokens.
 - `lit` 3.3.3 as the runtime dependency of the module build.
 - `NOTICE` in the package, with the trademark note for "Ocelle" and the rosette mark.
+- `ocelle-button`, a native button in the Ocelle look (mission 012): one inner `<button type="button">` with the part
+  `control`, focused by the element's `focus()` and clicked by its `click()`; its properties `variant`, `size`, `flush`
+  and `ground` (reflected), `label` and `disabled` (reflected); the default slot (the label) and the `icon` slot; the
+  event `ocelle-button-activate` (`CustomEvent`, bubbles, composed, cancelable, `detail` `{}`), dispatched before each
+  `click`; hover and pressed looks from the new token `--ocelle-color-hover-border` and its siblings of
+  `@ocelle/tokens`; not a form control.
+- The entry point `@ocelle/elements/ocelle-button.js` (defines `ocelle-button` only); the package root and the browser
+  build define `ocelle-button` too.
+- In the README, the control conventions that later controls follow: one inner control that fills its host, the host
+  guard, the disabled state, the name order and the primary action.
+- The slot convention's size rules now apply to the `icon` and `trailing` slots only, so an element in a control's
+  other slots keeps its own box; `ocelle-icon` and `ocelle-brand-mark` render as before.

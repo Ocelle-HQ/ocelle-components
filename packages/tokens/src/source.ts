@@ -1,7 +1,7 @@
 // The token source (FR-008, research.md R-01, data-model.md § Token): every token of spec Appendix A as a record, in
 // the order of its tables. Each record's use (Appendix A's "Use" column) is the comment beside it, not data
 // (PLAN-TESTABILITY-1-003 (a)). A derived token (FR-002) writes its source as var(--ocelle-<name>) and lists it in
-// `ref`; a foreground colour carries its contrast kind and intended grounds (A.8: 149 required pairs per theme).
+// `ref`; a foreground colour carries its contrast kind and intended grounds (A.8: 149 required pairs per theme, 182 with 012's).
 // `source` is the records with the overrides of overrides.ts applied; the generator, the build and the gates read it.
 // No type assertion wraps the records or the ground lists (`as const`, `satisfies`): Stryker does not mutate inside
 // one, so the values would go untested (op 004). `tokenRecords` keeps the names literal and checks each record instead.
@@ -40,7 +40,13 @@ export const records = tokenRecords([
   { name: "color-inspector", group: "colour", value: { light: "#F1EEE8", dark: "#15130F" } }, // right inspector, ruled off
   { name: "color-rail", group: "colour", value: { light: "#E9E5DD", dark: "#1C1A15" } }, // context sidebar
   { name: "color-inset", group: "colour", value: { light: "#E2DDD3", dark: "#302B23" } }, // wells, digest backgrounds
-  { name: "color-ink", group: "colour", value: { light: "#15130F", dark: "#EDE9E1" }, contrast: { kind: "text", grounds: main } }, // body text
+  // body text; on the state grounds and the pressed surface of a control too (012 research.md R-08 item 1)
+  {
+    name: "color-ink",
+    group: "colour",
+    value: { light: "#15130F", dark: "#EDE9E1" },
+    contrast: { kind: "text", grounds: [...main, ...stateGrounds, "color-active-bg"] },
+  },
   // secondary headings
   { name: "color-ink-soft", group: "colour", value: { light: "#3F3A33", dark: "#CFC9BE" }, contrast: { kind: "text", grounds: main } },
   // muted text
@@ -55,20 +61,35 @@ export const records = tokenRecords([
     contrast: { kind: "non-text", grounds: ["color-canvas", "color-sheet", "color-pane", "color-panel", "color-inspector", "color-rail"] },
   },
   { name: "color-chrome", group: "colour", value: { light: "#15130F", dark: "#0D0C0A" } }, // top bar, icon rail, personal rail
-  { name: "color-chrome-ink", group: "colour", value: { light: "#EDE9E1", dark: "#EDE9E1" }, contrast: { kind: "text", grounds: chrome } }, // on chrome
+  // on chrome, and on the pressed surface of a control there (012 research.md R-08 item 4a)
+  {
+    name: "color-chrome-ink",
+    group: "colour",
+    value: { light: "#EDE9E1", dark: "#EDE9E1" },
+    contrast: { kind: "text", grounds: [...chrome, "color-chrome-active"] },
+  },
   { name: "color-chrome-muted", group: "colour", value: { light: "#A39D92", dark: "#A39D92" }, contrast: { kind: "text", grounds: chrome } }, // on chrome
   // on chrome; light #211D18 replaces #5's #2A261F so the focus ring meets 3:1 on it (research.md R-04, SPEC-2-01)
   { name: "color-chrome-hover", group: "colour", value: { light: "#211D18", dark: "#24211B" } },
+  // the pressed surface of a control on chrome (012 research.md R-08 item 4a, plan decision 20)
+  { name: "color-chrome-active", group: "colour", value: { light: "#3A342B", dark: "#3A342B" } },
   { name: "color-accent", group: "colour", value: { light: "#C68A1E", dark: "#C68A1E" } }, // ochre fill
-  // black on the ochre fill
-  { name: "color-on-accent", group: "colour", value: { light: "#15130F", dark: "#15130F" }, contrast: { kind: "text", grounds: ["color-accent"] } },
+  { name: "color-accent-hover", group: "colour", value: { light: "#D9A23F", dark: "#D9A23F" } }, // the primary control's hover fill (012)
+  // black on the ochre fill and on its hover fill
+  {
+    name: "color-on-accent",
+    group: "colour",
+    value: { light: "#15130F", dark: "#15130F" },
+    contrast: { kind: "text", grounds: ["color-accent", "color-accent-hover"] },
+  },
   { name: "color-accent-low", group: "colour", value: { light: "#F1E1C0", dark: "#3A2B10" } }, // selected rows, current nav
-  // current bar, focus ring; the border of a control on accent-low, inset, hover-bg and the state grounds (#5 rule 1, extended)
+  // current bar, focus ring; the border of a control on accent-low, inset, hover-bg and the state grounds (#5 rule 1,
+  // extended), and the primary control's border on every ground, chrome included (012 research.md R-08 items 4a, 5)
   {
     name: "color-accent-strong",
     group: "colour",
     value: { light: "#8F5E0F", dark: "#E0A23A" },
-    contrast: { kind: "non-text", grounds: ["color-accent-low", "color-inset", "color-hover-bg", ...stateGrounds] },
+    contrast: { kind: "non-text", grounds: [...main, ...stateGrounds, ...chrome] },
   },
   // focus ring
   {
@@ -91,12 +112,21 @@ export const records = tokenRecords([
   // links on hover
   { name: "color-link-hover", group: "colour", value: { light: "#15130F", dark: "#F7F4EE" }, contrast: { kind: "text", grounds: main } },
   { name: "color-hover-bg", group: "colour", value: { light: "#E2DDD3", dark: "#2A261F" } }, // hovered rows and controls
+  // the border of a hovered or pressed bordered control, color-ink unless a host overrides it (012 research.md R-08 item 3, #525)
+  {
+    name: "color-hover-border",
+    group: "colour",
+    value: { light: "var(--ocelle-color-ink)", dark: "var(--ocelle-color-ink)" },
+    ref: { light: ["color-ink"], dark: ["color-ink"] },
+    contrast: { kind: "non-text", grounds: [...main, ...stateGrounds, "color-active-bg"] },
+  },
+  { name: "color-active-bg", group: "colour", value: { light: "#D3CCBF", dark: "#3A342B" } }, // pressed secondary, quiet and flush controls (012)
   // disabled text; exempt from the threshold (WCAG 1.4.3, FR-017)
   {
     name: "color-disabled-ink",
     group: "colour",
     value: { light: "#6F685D", dark: "#8C8579" },
-    contrast: { kind: "text", grounds: [...main, "color-disabled-bg"], exempt: true },
+    contrast: { kind: "text", grounds: [...main, "color-disabled-bg", ...chrome], exempt: true },
   },
   { name: "color-disabled-bg", group: "colour", value: { light: "#E6E1D8", dark: "#2A261F" } }, // disabled controls
   { name: "color-overlay", group: "colour", value: { light: "rgb(21 19 15 / 0.5)", dark: "rgb(0 0 0 / 0.65)" } }, // dialog backdrop
