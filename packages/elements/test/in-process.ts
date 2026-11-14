@@ -239,5 +239,15 @@ export function inProcessDriver(): Driver {
       const tree = (of: Element | ShadowRoot): TreeNode[] => [...of.children].map((child) => ({ name: child.localName, children: tree(child) }));
       return Promise.resolve(start === null ? [] : tree(start));
     },
+    pressTab: async () => {
+      await userEvent.tab();
+      await settle();
+    },
+    focused: () => {
+      let current = document.activeElement;
+      while (current?.shadowRoot?.activeElement !== null && current?.shadowRoot?.activeElement !== undefined) current = current.shadowRoot.activeElement;
+      if (current === null || current === document.body) return Promise.resolve(null);
+      return Promise.resolve(current.id === "" ? `<${current.localName}>` : current.id);
+    },
   };
 }

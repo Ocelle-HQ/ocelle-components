@@ -238,15 +238,15 @@ function observeFacts(page: Page): Promise<unknown> {
 }
 
 /** Opens a story on a fresh page with its own viewport width and reduced-motion setting. */
-async function openWith(id: string, options: { readonly width: number; readonly reducedMotion: "reduce" | "no-preference" }): Promise<Page> {
+async function openWith(id: string, options: { readonly width: number; readonly reducedMotion: "reduce" | "no-preference" }, element = "ocelle-facts"): Promise<Page> {
   if (browser === undefined) throw new Error("the suite did not start");
   const page = await browser.newPage({ viewport: { width: options.width, height: 800 }, reducedMotion: options.reducedMotion });
   await page.goto(`${origin}/iframe.html?id=${id}&viewMode=story&globals=theme:light`, { waitUntil: "load" });
-  await page.waitForSelector("#storybook-root ocelle-facts", { state: "attached", timeout: 10_000 }).catch(() => undefined);
-  await page.evaluate(async () => {
-    await Promise.all([...document.querySelectorAll("#storybook-root ocelle-facts")].map((each) => (each as unknown as { updateComplete?: Promise<unknown> }).updateComplete ?? Promise.resolve()));
+  await page.waitForSelector(`#storybook-root ${element}`, { state: "attached", timeout: 10_000 }).catch(() => undefined);
+  await page.evaluate(async (element) => {
+    await Promise.all([...document.querySelectorAll(`#storybook-root ${element}`)].map((each) => (each as unknown as { updateComplete?: Promise<unknown> }).updateComplete ?? Promise.resolve()));
     (window as unknown as { firstRender: number }).firstRender = performance.now();
-  });
+  }, element);
   return page;
 }
 
@@ -279,6 +279,84 @@ describe("the ocelle-facts stories in the built Storybook (013 US1, I3)", { time
           reduce: matchMedia("(prefers-reduced-motion: reduce)").matches,
           running: document.getAnimations().filter((animation) => animation.playState === "running").length,
           rendered: [...document.querySelectorAll("#storybook-root ocelle-facts")].some((sheet) => (sheet.shadowRoot?.querySelectorAll("dt").length ?? 0) > 0),
+        };
+      });
+      await page.close();
+      expect(observed).toEqual({ timing: "inside the first iteration", reduce: true, running: 0, rendered: true });
+    });
+  }
+});
+
+// 013 phase 2 (I3; research.md R-08; contracts/checks.md § Story test; tasks.md T027): the `ocelle-empty-state`
+// stories but the panel loading one, which phase 3 adds with `ocelle-progress`. Each renders its empty states in light
+// and dark, defined, each with the story's `variant` and the elements the story slots in each of its slots, assigned
+// there, with base.css applied and no request outside the origin. Each story under reduced motion, on a fresh load
+// timed by the clock from its first render (within 1400 ms) and with `prefers-reduced-motion: reduce` matching, has no
+// running animation or transition (SC-005); no empty-state story of this phase animates, so this read is paired with
+// the `matchMedia` assertion only, until the indeterminate progress story of phase 3 brings the animation positive.
+
+/** What one story's empty state must show: its variant and the number of elements assigned to each of its slots. */
+interface State {
+  readonly variant: string | null;
+  readonly slots: { readonly visual: number; readonly eyebrow: number; readonly heading: number; readonly body: number; readonly actions: number };
+}
+
+const stateOf = (slots: Partial<State["slots"]>, variant: string | null = null): State => ({ variant, slots: { visual: 0, eyebrow: 0, heading: 0, body: 0, actions: 0, ...slots } });
+
+const emptyStateStories: readonly { readonly id: string; readonly states: readonly State[] }[] = [
+  { id: "elements-ocelle-empty-state--default", states: [stateOf({ visual: 1, heading: 1, body: 1, actions: 1 })] },
+  { id: "elements-ocelle-empty-state--panel", states: [stateOf({ visual: 1, heading: 1, body: 1, actions: 1 }, "panel")] },
+  { id: "elements-ocelle-empty-state--heading-only", states: [stateOf({ heading: 1 })] },
+  { id: "elements-ocelle-empty-state--actions-only", states: [stateOf({ actions: 1 })] },
+  { id: "elements-ocelle-empty-state--several-actions-narrow", states: [stateOf({ heading: 1, body: 1, actions: 4 })] },
+  { id: "elements-ocelle-empty-state--refusal-with-eyebrow", states: [stateOf({ eyebrow: 1, heading: 1, body: 2, actions: 1 })] },
+  { id: "elements-ocelle-empty-state--several-body-paragraphs", states: [stateOf({ heading: 1, body: 3, actions: 1 })] },
+];
+
+/** What an empty-state story's page shows: its theme, the base stylesheet and its empty states. */
+function observeEmptyStates(page: Page): Promise<unknown> {
+  return page.evaluate(() => ({
+    theme: document.documentElement.dataset.theme,
+    base: {
+      linked: [...document.querySelectorAll<HTMLLinkElement>('link[rel="stylesheet"]')].some((link) => link.href.endsWith("/base.css") && link.sheet !== null),
+      scheme: getComputedStyle(document.documentElement).colorScheme,
+    },
+    defined: customElements.get("ocelle-empty-state") !== undefined,
+    states: [...document.querySelectorAll("#storybook-root ocelle-empty-state")].map((state) => {
+      const assigned = (selector: string): number => (state.shadowRoot?.querySelector<HTMLSlotElement>(selector)?.assignedElements().length ?? 0);
+      return {
+        variant: state.getAttribute("variant"),
+        slots: {
+          visual: assigned('slot[name="visual"]'),
+          eyebrow: assigned('slot[name="eyebrow"]'),
+          heading: assigned('slot[name="heading"]'),
+          body: assigned("slot:not([name])"),
+          actions: assigned('slot[name="actions"]'),
+        },
+      };
+    }),
+  }));
+}
+
+describe("the ocelle-empty-state stories in the built Storybook (013 US2, I3)", { timeout: 60_000 }, () => {
+  for (const { id, states } of emptyStateStories) {
+    for (const theme of ["light", "dark"] as const) {
+      it(`${id} in ${theme}: renders its empty states with the story's variant and its slotted elements assigned, with base.css applied and no request outside the origin`, async () => {
+        const { page, outside } = await open(id, theme, "ocelle-empty-state");
+        expect({ ...((await observeEmptyStates(page)) as object), outside }).toEqual({ theme, base: { linked: true, scheme: theme }, defined: true, states, outside: [] });
+        await page.close();
+      });
+    }
+
+    it(`${id} under reduced motion: within 1400 ms of its first render, with prefers-reduced-motion: reduce matching, no animation or transition runs (SC-005)`, async () => {
+      const page = await openWith(id, { width: 1280, reducedMotion: "reduce" }, "ocelle-empty-state");
+      const observed = await page.evaluate(() => {
+        const elapsed = performance.now() - (window as unknown as { firstRender: number }).firstRender;
+        return {
+          timing: elapsed < 1400 ? "inside the first iteration" : "read outside the first iteration",
+          reduce: matchMedia("(prefers-reduced-motion: reduce)").matches,
+          running: document.getAnimations().filter((animation) => animation.playState === "running").length,
+          rendered: [...document.querySelectorAll("#storybook-root ocelle-empty-state")].some((state) => state.shadowRoot?.querySelector('[part="body"]') !== null && state.shadowRoot !== null),
         };
       });
       await page.close();

@@ -114,19 +114,44 @@ describe("the module build of ocelle-facts and ocelle-fact (013)", () => {
   });
 });
 
+// 013 phase 2 (T025; contracts/elements.md § Modules and exports; research.md R-04): dist/ocelle-empty-state.js imports
+// no element module, and its shipped stylesheet spans a slotted `ocelle-progress` across the column up to the reading
+// measure, the rule phase 2's stand-in cannot reach (its plant runs in phase 3 against the real bar).
+describe("the module build of ocelle-empty-state (013)", () => {
+  const read = (name: string): string => (existsSync(join(dist, name)) ? readFileSync(join(dist, name), "utf8") : "");
+
+  it("dist/ocelle-empty-state.js imports lit and the registration helper, and no element module nor the root", () => {
+    const imported = specifiers(read("ocelle-empty-state.js"));
+    expect({
+      lit: imported.includes("lit"),
+      define: imported.includes("./define.js"),
+      root: imported.includes("./index.js"),
+      elements: imported.filter((specifier) => specifier.startsWith("./ocelle-")),
+    }).toEqual({ lit: true, define: true, root: false, elements: [] });
+  });
+
+  it("dist/ocelle-empty-state.js ships ::slotted(ocelle-progress) with inline-size 100% and max-inline-size var(--ocelle-measure-reading)", () => {
+    const code = read("ocelle-empty-state.js").replace(/\s+/g, " ");
+    expect({
+      rule: /::slotted\(ocelle-progress\) \{ inline-size: 100%; max-inline-size: var\(--ocelle-measure-reading\);? \}/.test(code),
+    }).toEqual({ rule: true });
+  });
+});
+
 describe("the browser build (dist/browser/ocelle-elements.js)", () => {
   const text = (): string => (existsSync(browserBuild) ? readFileSync(browserBuild, "utf8") : "");
 
-  it("is self-contained: it defines ocelle-icon, ocelle-brand-mark, ocelle-facts and ocelle-fact, with no import statement and no dynamic import", () => {
+  it("is self-contained: it defines ocelle-icon, ocelle-brand-mark, ocelle-facts, ocelle-fact and ocelle-empty-state, with no import statement and no dynamic import", () => {
     const code = text();
     expect({
       exists: code !== "",
       definesIcon: code.includes('"ocelle-icon"'),
       definesMark: code.includes('"ocelle-brand-mark"'),
       definesFacts: code.includes('"ocelle-facts"') && code.includes('"ocelle-fact"'),
+      definesEmptyState: code.includes('"ocelle-empty-state"'),
       specifiers: specifiers(code),
       dynamicImport: /\bimport\s*\(/.test(code),
-    }).toEqual({ exists: true, definesIcon: true, definesMark: true, definesFacts: true, specifiers: [], dynamicImport: false });
+    }).toEqual({ exists: true, definesIcon: true, definesMark: true, definesFacts: true, definesEmptyState: true, specifiers: [], dynamicImport: false });
   });
 
   it("holds Lit's production build at the locked versions, not its development build, no ssr-dom-shim and no console call", () => {

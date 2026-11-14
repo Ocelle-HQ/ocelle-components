@@ -187,4 +187,12 @@ export interface Driver {
   styles(id: string, inner: string | null, properties: readonly string[]): Promise<Record<string, string>[]>;
   /** The element children, as a tree, of the first element matching `inner` in the shadow root of the element with `id` (of the shadow root itself when `inner` is null); empty when there is none. */
   structure(id: string, inner: string | null): Promise<TreeNode[]>;
+  // The additions of 013 phase 2 (contracts/checks.md § Driver additions; tasks.md T023).
+  /** Presses Tab, as a user does, and waits for every element to render. */
+  pressTab(): Promise<void>;
+  /**
+   * The focused element, followed through open shadow roots to the innermost one: its `id`, or `<local name>` when it
+   * has none; null when nothing on the page has focus (the body).
+   */
+  focused(): Promise<string | null>;
 }

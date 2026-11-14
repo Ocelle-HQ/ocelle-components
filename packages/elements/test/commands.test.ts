@@ -68,6 +68,19 @@ describe("axTree(id)", () => {
   });
 });
 
+describe("axTree(id, \"subtree\") heading levels (013 US2-1, US2-2)", () => {
+  it("gives each heading its level, from the element the page wrote, and no level to a paragraph or a button", async () => {
+    document.body.innerHTML = '<div id="block"><h1>One</h1><h3>Three</h3><p>Text</p><button>Go</button><div role="heading" aria-level="5">Five</div></div>';
+    expect((await commands.axTree("block", "subtree")).filter((node) => node.role !== "StaticText" && node.role !== "generic")).toEqual([
+      { role: "heading", name: "One", level: 1 },
+      { role: "heading", name: "Three", level: 3 },
+      { role: "paragraph", name: "" },
+      { role: "button", name: "Go" },
+      { role: "heading", name: "Five", level: 5 },
+    ]);
+  });
+});
+
 describe("emulateForcedColors(mode, palette)", () => {
   it('makes (forced-colors: active) and the palette match, and "none" ends it', async () => {
     const before = matchMedia("(forced-colors: active)").matches;
