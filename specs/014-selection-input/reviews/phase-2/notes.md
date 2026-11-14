@@ -88,3 +88,18 @@ counts that `gates/test/integration/visual.test.ts` and `gates/test/integration/
 The operator chose option (a): the twelve `color-contrast-incomplete` nodes of the scrolling listbox story are entries
 of `storybook/a11y-exceptions.json`, each with its row in plan.md's Complexity Tracking. `gate:axe` exits 0 with 22
 notes, all excepted (the Prose document's ten and these twelve).
+
+## The gate run (T028)
+
+Run one at a time on `f06a493` with `OCELLE_CHROMIUM_PATH=/opt/pw-browsers/chromium-1243/chrome-linux64/chrome`:
+typecheck, lint, test-lint, style-lint, brand-rules, pins, config-copies, contrast (166 light, 174 dark, 155 required
+per theme), manifest (4 elements), csp, prefix, storybook-build (28 stories), unit-tests (3444 tests in 150 files),
+visual (56 captures match, docker only), axe (56 story-theme runs, 22 notes all excepted), plants (301 plants of 17
+gates and the registry, every plant as expected) and `mutation -- --base 4980f66` (613 mutants on the changed lines,
+none surviving, 10 equivalent records) each exit 0. `gate:plants` was run with `OCELLE_VISUAL_ENGINE=docker`: its
+default engine choice `both` needs podman as well, which this session has not, so without it the 46 visual plants are
+not run; this is the same docker-only limit as the `visual` gate's.
+
+`gate:signoff -- --range 4980f66..HEAD` reports two findings, on `cd034d1` and `50ff132`, the orchestrator's
+operator-decision commits, which carry no Signed-off-by line; every commit of this phase's implementation is signed off
+(`gate:signoff -- --range a01cd1f..HEAD`: no finding). Rewriting those two commits is outside the implementer's role.
