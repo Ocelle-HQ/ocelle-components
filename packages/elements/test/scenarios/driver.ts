@@ -169,4 +169,25 @@ export interface Driver {
   scrollWidth(): Promise<number>;
   /** Each text node under the element with `id`, its box and its clipping ancestors (test/commands.ts `readTextBoxes`). */
   textBoxes(id: string): Promise<TextBox[]>;
+  // Event recording and DOM moves of 011 research.md R-05, R-13 (phase 2).
+  /**
+   * Starts recording every event dispatched by script (`EventTarget.prototype.dispatchEvent`, which a custom element's
+   * own `dispatchEvent` calls) whose target is an element with one of `ids` or a node in the shadow tree of one, and
+   * every event that reaches one of those elements in the capture phase for the types in `heardTypes`. It records
+   * until `heard`, across `mount`, so it may be called before the elements exist.
+   */
+  listen(ids: readonly string[]): Promise<void>;
+  /** Stops the recording `listen` started and returns what it recorded, as `<id>: <type>` in dispatch order. */
+  heard(): Promise<string[]>;
+  /**
+   * Moves the element with `id` (the same node, not a copy) to the end of the children of the element with `parent`,
+   * and waits for every element to render.
+   */
+  move(id: string, parent: string): Promise<void>;
 }
+
+/**
+ * The event types `listen` also hears in the capture phase on the elements themselves: those an element could emit
+ * for a slot or attribute change, and the library's own prefix is covered by the dispatch record.
+ */
+export const heardTypes: readonly string[] = ["change", "input", "select", "toggle", "slotchange", "click", "focus", "blur", "load", "error"];

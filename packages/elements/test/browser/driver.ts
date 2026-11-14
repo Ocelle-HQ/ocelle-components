@@ -9,6 +9,7 @@ import { inflateSync } from "node:zlib";
 import type { Page } from "playwright";
 import { axNodes, axSubtree, emulate, readActiveElement, readScrollWidth, readTextBoxes } from "../commands.ts";
 import { decodePng } from "../pixels.ts";
+import { heardTypes } from "../scenarios/driver.ts";
 import type { Bounds, Box, Driver, Drawing, Paint, Part, Placement, Sheets } from "../scenarios/driver.ts";
 
 /**
@@ -251,5 +252,61 @@ export function fixtureDriver(page: Page, log: readonly string[], withBase = fal
     },
     scrollWidth: () => readScrollWidth(page.mainFrame()),
     textBoxes: (id) => readTextBoxes(page.mainFrame(), id),
+    // The recorder lives on the page (a property of `window` that no page script reads), as in-process.ts's does.
+    listen: async (ids) => {
+      await page.evaluate(({ ids, types }) => {
+        interface Listening {
+          readonly records: string[];
+          readonly stop: () => void;
+        }
+        const holder = window as unknown as { ocelleListening?: Listening };
+        holder.ocelleListening?.stop();
+        const watched = new Set(ids);
+        const host = (node: unknown): string | undefined => {
+          for (let at = node instanceof Node ? node : null; at !== null; ) {
+            if (at instanceof Element && watched.has(at.id)) return at.id;
+            const root = at.getRootNode();
+            at = root instanceof ShadowRoot ? root.host : null;
+          }
+          return undefined;
+        };
+        const records: string[] = [];
+        const original = Object.getOwnPropertyDescriptor(EventTarget.prototype, "dispatchEvent")?.value as (this: EventTarget, event: Event) => boolean;
+        EventTarget.prototype.dispatchEvent = function (this: EventTarget, event: Event): boolean {
+          const id = host(this);
+          if (id !== undefined) records.push(`${id}: ${event.type}`);
+          return original.call(this, event);
+        };
+        const capture = (event: Event): void => {
+          const id = event.composedPath().map(host).find((each) => each !== undefined);
+          if (id !== undefined) records.push(`${id}: ${event.type}`);
+        };
+        for (const type of types) window.addEventListener(type, capture, true);
+        holder.ocelleListening = {
+          records,
+          stop: () => {
+            EventTarget.prototype.dispatchEvent = original;
+            for (const type of types) window.removeEventListener(type, capture, true);
+          },
+        };
+      }, { ids, types: heardTypes });
+    },
+    heard: () =>
+      page.evaluate(() => {
+        const holder = window as unknown as { ocelleListening?: { readonly records: string[]; readonly stop: () => void } };
+        const records = [...(holder.ocelleListening?.records ?? [])];
+        holder.ocelleListening?.stop();
+        delete holder.ocelleListening;
+        return records;
+      }),
+    move: async (id, parent) => {
+      await page.evaluate(({ id, parent }) => {
+        const element = document.getElementById(id);
+        const into = document.getElementById(parent);
+        if (element === null || into === null) throw new Error(`no #${id} or #${parent} on the page`);
+        into.append(element);
+      }, { id, parent });
+      await settle(page);
+    },
   };
 }
