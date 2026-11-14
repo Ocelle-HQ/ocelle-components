@@ -53,6 +53,12 @@ describe("axStates(target, scope)", () => {
     });
   });
 
+  it("gives a node's unignored ancestors, nearest first, with \"ancestors\" (014 phase 3): a tab's tablist, and no tablist above a tabpanel beside it", async () => {
+    document.body.innerHTML = '<main aria-label="Area"><div role="tablist" aria-label="Views"><div role="tab" id="t" aria-selected="true">One</div></div><div role="tabpanel" id="p" aria-label="One">x</div></main>';
+    const roles = async (id: string): Promise<string[]> => (await commands.axStates(id, "ancestors")).map((node) => (node.role === "RootWebArea" ? node.role : `${node.role} ${node.name}`));
+    expect({ tab: await roles("t"), panel: await roles("p") }).toEqual({ tab: ["tablist Views", "main Area", "RootWebArea"], panel: ["main Area", "RootWebArea"] });
+  });
+
   it("leaves axTree's nodes exactly { role, name } for the same buttons", async () => {
     document.body.innerHTML = '<button id="on" aria-pressed="true">Bold</button><button id="c" aria-controls="panel" disabled>Show</button><div id="panel" role="region" aria-label="Panel">x</div>';
     expect({ on: await commands.axTree("on"), c: await commands.axTree("c"), states: await commands.axStates("on") }).toEqual({

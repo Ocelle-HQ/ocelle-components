@@ -274,3 +274,95 @@ describe("the ocelle-listbox stories in the built Storybook (014 FR-050, FR-051)
     }
   }
 });
+
+/**
+ * Runs axe-core on a story page with the axe gate's full rule set and context, as `axeViolations` does, and returns each
+ * violation's and each incomplete result's rule id and impact (014 FR-051, research.md R-02: the gate counts a serious or
+ * critical incomplete as a finding).
+ */
+async function axeResults(page: Page): Promise<{ readonly violations: { readonly id: string; readonly impact: string | null }[]; readonly incomplete: { readonly id: string; readonly impact: string | null }[] }> {
+  await page.addScriptTag({ content: axeScript });
+  const rules = await page.evaluate(() => (window as unknown as { axe: { _audit: { rules: AxeRule[] } } }).axe._audit.rules.map((rule) => ({ id: rule.id, tags: [...rule.tags], enabled: rule.enabled, ...(rule.selector === undefined ? {} : { selector: rule.selector }) })));
+  const options = { rules: ruleOptions(ruleMeta(rules)), context: axeContext() };
+  return page.evaluate(async ({ rules, context }) => {
+    interface Result {
+      id: string;
+      impact?: string | null;
+    }
+    const axe = (window as unknown as { axe: { run: (context: unknown, options: unknown) => Promise<{ violations: Result[]; incomplete: Result[] }> } }).axe;
+    const results = await axe.run(context, { rules, resultTypes: ["violations", "incomplete"] });
+    const project = (each: Result): { id: string; impact: string | null } => ({ id: each.id, impact: each.impact ?? null });
+    return { violations: results.violations.map(project), incomplete: results.incomplete.map(project) };
+  }, options);
+}
+
+/** What a tabs story's page shows: its theme, whether the three elements are defined, its tabs and their panels. */
+function observeTabs(page: Page): Promise<unknown> {
+  return page.evaluate(() => {
+    let active: Element | null = document.activeElement;
+    while (active?.shadowRoot?.activeElement) active = active.shadowRoot.activeElement;
+    return {
+      theme: document.documentElement.dataset.theme,
+      defined: ["ocelle-tabs", "ocelle-tab", "ocelle-tab-panel"].map((tag) => customElements.get(tag) !== undefined),
+      tabs: [...document.querySelectorAll("#storybook-root ocelle-tabs")].map((tabs) => {
+        const children = [...tabs.children];
+        return {
+          value: (tabs as unknown as { value?: unknown }).value,
+          rows: new Set(children.filter((child) => child.localName === "ocelle-tab").map((child) => Math.round(child.getBoundingClientRect().y))).size,
+          tabs: children
+            .filter((child) => child.localName === "ocelle-tab")
+            .map((child) => ({ text: child.textContent.trim(), selected: child.getAttribute("aria-selected"), disabled: child.getAttribute("aria-disabled") === "true", focused: child === active })),
+          panels: children.filter((child) => child.localName === "ocelle-tab-panel").map((child) => ({ shown: child.getClientRects().length > 0, focused: child === active })),
+        };
+      }),
+    };
+  });
+}
+
+/** The tabs of `names`: `selected` the selected one, `disabled` the disabled one, `focused` the focused one. */
+function viewTabs(names: readonly string[], selected: string, disabled = "", focused = ""): unknown[] {
+  return names.map((text) => ({ text, selected: text === selected ? "true" : "false", disabled: text === disabled, focused: text === focused }));
+}
+
+/** The panels of `count` tabs: the `shown`-th shown, the `focused`-th focused. */
+function viewPanels(count: number, shown: number, focused = -1): unknown[] {
+  return Array.from({ length: count }, (_, index) => ({ shown: index === shown, focused: index === focused }));
+}
+
+const missionViews = ["Spec", "Plan", "Tasks"];
+const wrappedViews = ["Specification", "Planning", "Research", "Contracts", "Quickstart", "Tasks"];
+
+// The tabs stories (014 FR-050, FR-051; research.md R-01, R-02, R-12; T045): each story renders its tabs with the
+// states the tabs write and only the selected tab's panel shown, in light and dark, and axe with the axe gate's full
+// rule set reports no violation and no serious or critical incomplete (plant: `aria-labelledby` on every panel, which
+// makes axe-core 4.14.0's color-contrast throw on the tabs whose panel is unassigned, reviews/phase-3/spike.md). The
+// wrapped story's tabs lie on more than one row; the focus stories' targets have focus after their `play`.
+const tabsStories = [
+  { id: "elements-ocelle-tabs--first-selected", tabs: [{ value: "spec", rows: 1, tabs: viewTabs(missionViews, "Spec"), panels: viewPanels(3, 0) }] },
+  { id: "elements-ocelle-tabs--another-selected", tabs: [{ value: "plan", rows: 1, tabs: viewTabs(missionViews, "Plan"), panels: viewPanels(3, 1) }] },
+  { id: "elements-ocelle-tabs--disabled-tab", tabs: [{ value: "spec", rows: 1, tabs: viewTabs(missionViews, "Spec", "Plan"), panels: viewPanels(3, 0) }] },
+  { id: "elements-ocelle-tabs--wrapped-rows", tabs: [{ value: "research", rows: 2, tabs: viewTabs(wrappedViews, "Research"), panels: viewPanels(6, 2) }] },
+  { id: "elements-ocelle-tabs--focused-tab", tabs: [{ value: "spec", rows: 1, tabs: viewTabs(missionViews, "Spec", "", "Plan"), panels: viewPanels(3, 0) }] },
+  { id: "elements-ocelle-tabs--hovered-tab", tabs: [{ value: "spec", rows: 1, tabs: viewTabs(missionViews, "Spec"), panels: viewPanels(3, 0) }] },
+  { id: "elements-ocelle-tabs--focused-tab-panel", tabs: [{ value: "plan", rows: 1, tabs: viewTabs(missionViews, "Plan"), panels: viewPanels(3, 1, 1) }] },
+  { id: "elements-ocelle-tabs--tab-with-icon", tabs: [{ value: "files", rows: 1, tabs: viewTabs(["Files", "Search"], "Files"), panels: viewPanels(2, 0) }] },
+] as const;
+
+describe("the ocelle-tabs stories in the built Storybook (014 FR-050, FR-051)", { timeout: 60_000 }, () => {
+  for (const { id, tabs } of tabsStories) {
+    for (const theme of ["light", "dark"] as const) {
+      it(`${id} in ${theme}: renders its tabs with the states the tabs write and the selected panel shown, and axe's full rule set reports no violation and no serious or critical incomplete`, async () => {
+        const { page, outside } = await open(id, theme, "ocelle-tab");
+        const observed = await observeTabs(page);
+        const results = await axeResults(page);
+        expect({
+          observed,
+          violations: results.violations,
+          incomplete: results.incomplete.filter((each) => each.impact === "serious" || each.impact === "critical"),
+          outside,
+        }).toEqual({ observed: { theme, defined: [true, true, true], tabs }, violations: [], incomplete: [], outside: [] });
+        await page.close();
+      });
+    }
+  }
+});

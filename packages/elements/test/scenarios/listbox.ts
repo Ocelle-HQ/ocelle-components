@@ -300,6 +300,23 @@ function afterChangeAndSet({ change, value }: ChangeAndSet): unknown {
 }
 
 export const listboxScenarios: readonly ListboxScenario[] = [
+  ...(["remove", "move"] as const).map(
+    (change): ListboxScenario => ({
+      // Found in phase 3 (reviews/phase-3/notes.md): the observer's callback, queued by an earlier mutation in the task,
+      // runs before the focus record's `focusout` microtask. Plant: the observer's batch ignoring the focus record.
+      name: `R-03: a host that ${change === "remove" ? "removes delta and then the focused beta" : "moves alpha and then the focused beta to the end"} in one task ${change === "remove" ? "moves focus to gamma, the next enabled option (FR-011)" : "keeps focus on beta"}, as when the focused option's change comes first`,
+      fixture: true,
+      run: async (driver, inPage) => {
+        await mount(driver, inPage, page(options(["alpha", "beta", "gamma", "delta"])));
+        await inPage(recordEvents, null);
+        await driver.focus(opt(1));
+        await driver.mutate("lb", change === "remove" ? [{ remove: 3 }, { remove: 1 }] : [{ move: 0, before: "end" }, { move: 0, before: "end" }]);
+        await inPage(frames, undefined);
+        return { focus: await driver.activeElement(), tree: await tree(driver), events: await inPage(recordedEvents, null) };
+      },
+      expected: change === "remove" ? { focus: opt(1), tree: exposed("Folders", ["alpha", "gamma"]), events: [] } : { focus: opt(3), tree: exposed("Folders", ["gamma", "delta", "alpha", "beta"]), events: [] },
+    }),
+  ),
   ...changesAndSets.map(
     (how): ListboxScenario => ({
       // Review round 1, R1-01. Mutant: the value setter taking the pending records without the focus record (the
