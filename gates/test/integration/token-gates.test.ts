@@ -10,10 +10,10 @@ afterEach(cleanUp);
 
 describe("contrast and brand-rules on the repository", () => {
   it(
-    "contrast --root <repo> checks 160 pairs in light and 168 in dark, 149 required per theme",
+    "contrast --root <repo> checks 166 pairs in light and 174 in dark, 155 required per theme (014 R-17)",
     async () => {
       const ran = await runGate("gates/bin/contrast.ts", ["--root", repo], { cwd: tempDir("cwd"), env: baseEnv() });
-      expect(ran).toEqual({ code: 0, stdout: ["contrast: 160 pairs checked in light, 168 in dark (149 required per theme)"], stderr: [] });
+      expect(ran).toEqual({ code: 0, stdout: ["contrast: 166 pairs checked in light, 174 in dark (155 required per theme)"], stderr: [] });
     },
     timeout,
   );

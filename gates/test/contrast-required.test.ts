@@ -4,8 +4,8 @@ import { requiredPairs } from "../lib/token-source.ts";
 import type { RequiredPair } from "../lib/token-source.ts";
 
 // The required pair set (002 FR-016, spec Appendix A.8, research.md R-07, PLAN-TESTABILITY-1-002): derived from the
-// intended grounds of the real token source, it must equal A.8 as transcribed by hand below, 149 (fg, bg, kind)
-// triples per theme. Removing a ground from source.ts, or a mutant doing so, fails this test even though the gate
+// intended grounds of the real token source, it must equal A.8 as transcribed by hand below, with 014's six
+// `color-accent-strong` non-text pairs on the main grounds (research.md R-17), 155 (fg, bg, kind) triples per theme. Removing a ground from source.ts, or a mutant doing so, fails this test even though the gate
 // would still pass on a pair list that lacks the pair.
 const main = ["color-canvas", "color-sheet", "color-pane", "color-panel", "color-inspector", "color-rail", "color-inset", "color-accent-low", "color-hover-bg"];
 const stateGrounds = ["color-danger-bg", "color-warning-bg", "color-success-bg", "color-info-bg", "color-neutral-bg"];
@@ -44,6 +44,8 @@ const a8: readonly (readonly [readonly string[], "text" | "non-text", readonly s
   [["color-control-border"], "non-text", ["color-canvas", "color-sheet", "color-pane", "color-panel", "color-inspector", "color-rail"]],
   [["color-accent-strong"], "non-text", ["color-accent-low", "color-inset", "color-hover-bg"]],
   [["color-accent-strong"], "non-text", stateGrounds],
+  // 014 research.md R-17: the selected bars of the listbox, tabs and segmented choice on the main grounds.
+  [["color-accent-strong"], "non-text", ["color-canvas", "color-sheet", "color-pane", "color-panel", "color-inspector", "color-rail"]],
 ];
 
 function triples(pairs: readonly { fg: string; bg: string; kind: string }[]): string[] {
@@ -55,19 +57,19 @@ const expected = triples(a8.flatMap(([fgs, kind, grounds]) => fgs.flatMap((fg) =
 describe("requiredPairs on the real token source (spec A.8)", () => {
   const inTheme = (theme: string): RequiredPair[] => requiredPairs(source).filter((pair) => pair.theme === theme);
 
-  it("is the 149 triples of A.8 in light", () => {
-    expect(expected).toHaveLength(149);
+  it("is the 155 triples of A.8 and R-17 in light", () => {
+    expect(expected).toHaveLength(155);
     expect(triples(inTheme("light"))).toEqual(expected);
   });
 
-  it("is the 149 triples of A.8 in dark", () => {
+  it("is the 155 triples of A.8 and R-17 in dark", () => {
     expect(triples(inTheme("dark"))).toEqual(expected);
   });
 
-  it("holds 298 pairs, each once", () => {
+  it("holds 310 pairs, each once", () => {
     const required = requiredPairs(source);
-    expect(new Set(required.map((pair) => `${pair.theme} ${pair.fg} ${pair.bg} ${pair.kind}`)).size).toBe(298);
-    expect(required).toHaveLength(298);
+    expect(new Set(required.map((pair) => `${pair.theme} ${pair.fg} ${pair.bg} ${pair.kind}`)).size).toBe(310);
+    expect(required).toHaveLength(310);
   });
 });
 

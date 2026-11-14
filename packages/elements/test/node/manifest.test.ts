@@ -242,12 +242,50 @@ describe("serialise(manifest)", () => {
 const unionOfTheSet =
   '"chevron-start" | "chevron-end" | "chevron-up" | "chevron-down" | "arrow-start" | "arrow-end" | "menu" | "close" | "folder" | "file" | "search" | "table" | "copy" | undefined';
 
+type Described = Record<string, unknown>;
+
+/** Whether an entry has a non-empty description. */
+const hasDescription = (entry: Described): boolean => typeof entry.description === "string" && entry.description !== "";
+
+/** Entries sorted by name. */
+const byName = <T extends Described>(entries: readonly T[]): T[] => [...entries].sort((a, b) => String(a.name).localeCompare(String(b.name)));
+
+/**
+ * The element declaration of one module of the repository's manifest, projected to what contracts/elements.md states:
+ * each public member's type, attribute, whether it reflects and its default, each attribute's field, each event's
+ * detail type, the slot, part and CSS property names, and whether each has a description; lists sorted by name.
+ */
+async function declared(path: string): Promise<unknown> {
+  const manifest = await generate(repo);
+  const modules = manifest.modules as { path: string; declarations: Described[] }[];
+  const [element] = modules.find((module) => module.path === path)?.declarations ?? [];
+  if (element === undefined) return undefined;
+  const list = (key: string): Described[] => byName((element[key] ?? []) as Described[]);
+  return {
+    name: element.name,
+    tagName: element.tagName,
+    members: list("members").map((member) => ({
+      name: member.name,
+      type: (member.type as { text?: unknown } | undefined)?.text,
+      attribute: member.attribute,
+      reflects: member.reflects === true,
+      default: member.default,
+      described: hasDescription(member),
+    })),
+    attributes: list("attributes").map((attribute) => ({ name: attribute.name, fieldName: attribute.fieldName, described: hasDescription(attribute) })),
+    events: list("events").map((event) => ({ name: event.name, type: (event.type as { text?: unknown } | undefined)?.text, described: hasDescription(event) })),
+    slots: list("slots").map((slot) => ({ name: slot.name, described: hasDescription(slot) })),
+    cssParts: list("cssParts").map((part) => ({ name: part.name, described: hasDescription(part) })),
+    cssProperties: list("cssProperties").map((property) => property.name),
+  };
+}
+
 describe("generate(root) on the repository's element source", () => {
   it("declares ocelle-icon with its tag name, class, name (the union of the thirteen names) and label with types, defaults and attributes, name reflected and label not, and no slot, event, part or CSS property (US1 scenario 11, US2 scenario 1)", async () => {
     const manifest = await generate(repo);
     const modules = manifest.modules as { path: string; declarations: Record<string, unknown>[] }[];
     expect(manifest.schemaVersion).toBe("1.0.0");
-    expect(modules.map((module) => module.path)).toEqual(["src/ocelle-brand-mark.ts", "src/ocelle-icon.ts"]);
+    expect(modules.map((module) => module.path)).toEqual(["src/ocelle-brand-mark.ts", "src/ocelle-icon.ts", "src/ocelle-listbox.ts", "src/ocelle-option.ts"]);
     const [icon] = modules.find((module) => module.path === "src/ocelle-icon.ts")?.declarations ?? [];
     expect(icon).toMatchObject({
       kind: "class",
@@ -297,6 +335,52 @@ describe("generate(root) on the repository's element source", () => {
       { name: "tone", fieldName: "tone", type: { text: '"mono" | undefined' }, default: "undefined", described: true },
       { name: "label", fieldName: "label", type: { text: "string | undefined" }, default: "undefined", described: true },
     ]);
+  });
+
+  it("declares ocelle-listbox per contracts/elements.md: value (string, not reflected, default empty) and label, the change and activate events with their { value } detail, the default slot and the list part (014 FR-055)", async () => {
+    const listbox = await declared("src/ocelle-listbox.ts");
+    expect(listbox).toEqual({
+      name: "OcelleListbox",
+      tagName: "ocelle-listbox",
+      members: [
+        { name: "label", type: "string | undefined", attribute: "label", reflects: false, default: "undefined", described: true },
+        { name: "value", type: "string", attribute: "value", reflects: false, default: '""', described: true },
+      ],
+      attributes: [
+        { name: "label", fieldName: "label", described: true },
+        { name: "value", fieldName: "value", described: true },
+      ],
+      events: [
+        { name: "ocelle-listbox-activate", type: "CustomEvent<{ value: string }>", described: true },
+        { name: "ocelle-listbox-change", type: "CustomEvent<{ value: string }>", described: true },
+      ],
+      slots: [{ name: "", described: true }],
+      cssParts: [{ name: "list", described: true }],
+      cssProperties: [],
+    });
+  });
+
+  it("declares ocelle-option per contracts/elements.md: value (string, reflected) and disabled (boolean, reflected, default false), the default and icon slots, no event, part or CSS property (014 FR-055)", async () => {
+    const option = await declared("src/ocelle-option.ts");
+    expect(option).toEqual({
+      name: "OcelleOption",
+      tagName: "ocelle-option",
+      members: [
+        { name: "disabled", type: "boolean", attribute: "disabled", reflects: true, default: "false", described: true },
+        { name: "value", type: "string", attribute: "value", reflects: true, default: expect.any(String) as unknown, described: true },
+      ],
+      attributes: [
+        { name: "disabled", fieldName: "disabled", described: true },
+        { name: "value", fieldName: "value", described: true },
+      ],
+      events: [],
+      slots: [
+        { name: "", described: true },
+        { name: "icon", described: true },
+      ],
+      cssParts: [],
+      cssProperties: [],
+    });
   });
 
   it("rejects a root without an element module, naming the directory", async () => {
