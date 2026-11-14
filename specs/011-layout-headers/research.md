@@ -317,8 +317,15 @@ ones skipped), so a `<p>` footer sits `--ocelle-space-4` from every side of its 
   inner-context rule, so a page rule on the host's `align-self` wins (outer context, CSS Cascade 5 § Context); the
   README says so (FR-036), and a page that stretches the host in a flex row or grid of definite block size gets the
   container's size back. It has no effect in a block container. In a flex-column container the cross axis is the
-  inline axis, so the host is sized to its content inline rather than stretched; the sidebar's inline size is the
-  container's concern (FR-023) and this case was not measured. The declaration is covered by US3-4's flex-row and
+  inline axis, so the host is sized to its content inline rather than stretched; phase 4 measured it
+  (`reviews/phase-4/flex-column-probe.log`, 800 px containers): the sidebar is 800 px wide in a block and a grid
+  container but 95 px (its content's) in a flex column and a flex row, 800 px in a flex column with a page rule
+  `align-self: stretch` on the host (not in a flex row, where it acts on the block axis) or with content wider than
+  the container, and 600 px tall in every case. The sidebar's inline size
+  is the container's concern (FR-023); the README says that in a flex row or a flex column the container sets it (an
+  `inline-size`, a `flex` value, a grid track) and that in a flex column `align-self: stretch` on the host also gives
+  it the container's inline size (FR-036, operator decisions 6 and 7 of
+  `reviews/operator-decisions-implementation.md`). The declaration is covered by US3-4's flex-row and
   grid variants (contracts/checks.md § Pairing plants, the US3-4 row) and by its R-17 style plant.
 
 **Rationale**: the spec's divider placement (FR-022 as fixed for SPEC-3-01 and for PLAN-CORRECTNESS-1-004) with no
