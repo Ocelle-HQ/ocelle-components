@@ -14,7 +14,7 @@ import baseText from "../../styles/src/base.css?raw";
 import { css } from "../../tokens/src/generate.ts";
 import { source } from "../../tokens/src/source.ts";
 import { decodePng } from "./pixels.ts";
-import type { Box, Driver, Drawing, Paint, Part, Placement, Sheets } from "./scenarios/driver.ts";
+import type { Box, Driver, Drawing, Paint, Part, Placement, Sheets, Target } from "./scenarios/driver.ts";
 
 function sheet(text: string): CSSStyleSheet {
   const made = new CSSStyleSheet();
@@ -30,6 +30,15 @@ function element(id: string): HTMLElement {
   if (found === null) throw new Error(`no #${id} on the page`);
   return found;
 }
+
+/** The element a target names; child targets are not implemented yet (014 T006). */
+function resolve(target: Target): HTMLElement {
+  if (typeof target === "string") return element(target);
+  throw new Error("child targets: not implemented");
+}
+
+/** A driver method not implemented yet (014 T006). */
+const notImplemented = (name: string) => (): Promise<never> => Promise.reject(new Error(`${name}: not implemented`));
 
 /** Waits until every `ocelle-*` element of the page has rendered, then for a frame. */
 async function settle(): Promise<void> {
@@ -89,12 +98,12 @@ export function inProcessDriver(): Driver {
       document.adoptedStyleSheets = [...document.adoptedStyleSheets, sheet(rules)];
       await settle();
     },
-    box: (id, inner) => {
-      const host = element(id);
-      const target = inner === undefined ? host : host.shadowRoot?.querySelector(inner);
-      if (target === null || target === undefined) return Promise.resolve(absent);
-      const rect = target.getBoundingClientRect();
-      return Promise.resolve({ x: rect.x, y: rect.y, width: rect.width, height: rect.height, display: getComputedStyle(target).display });
+    box: (target, inner) => {
+      const host = resolve(target);
+      const measured = inner === undefined ? host : host.shadowRoot?.querySelector(inner);
+      if (measured === null || measured === undefined) return Promise.resolve(absent);
+      const rect = measured.getBoundingClientRect();
+      return Promise.resolve({ x: rect.x, y: rect.y, width: rect.width, height: rect.height, display: getComputedStyle(measured).display });
     },
     lines: (id) => Promise.resolve([...element(id).getClientRects()].map((rect) => ({ x: rect.x, y: rect.y, width: rect.width, height: rect.height }))),
     drawing: (id) => {
@@ -148,7 +157,7 @@ export function inProcessDriver(): Driver {
       const rect = svg.getBoundingClientRect();
       return Promise.resolve({ scaleX: round(matrix.a), scaleY: round(matrix.d), offsetX: round(matrix.e - rect.x), offsetY: round(matrix.f - rect.y) });
     },
-    computed: (id, property) => Promise.resolve(getComputedStyle(element(id)).getPropertyValue(property)),
+    computed: (target, property) => Promise.resolve(getComputedStyle(resolve(target)).getPropertyValue(property)),
     resolveColour: (value) => {
       const probe = document.createElement("span");
       probe.style.color = value;
@@ -179,5 +188,20 @@ export function inProcessDriver(): Driver {
       });
     },
     messages: () => Promise.resolve([...messages]),
+    focus: notImplemented("focus"),
+    press: notImplemented("press"),
+    click: notImplemented("click"),
+    activeElement: notImplemented("activeElement"),
+    mutate: notImplemented("mutate"),
+    resize: notImplemented("resize"),
+    afterResizeDelivery: notImplemented("afterResizeDelivery"),
+    computedPart: notImplemented("computedPart"),
+    scrollOffset: notImplemented("scrollOffset"),
+    viewportSize: notImplemented("viewportSize"),
+    keydownRecord: notImplemented("keydownRecord"),
+    clipboardCalls: notImplemented("clipboardCalls"),
+    activationRecord: notImplemented("activationRecord"),
+    axStates: notImplemented("axStates"),
+    axUpdates: notImplemented("axUpdates"),
   };
 }

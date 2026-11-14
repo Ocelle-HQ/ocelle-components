@@ -13,6 +13,38 @@ export interface AxNode {
   readonly name: string;
 }
 
+/**
+ * What a driver command acts on (014 research.md R-11): an element's `id`, or the `index`-th element child of tag `kind`
+ * of the element with id `parent` (the parent's own children, not its shadow root's).
+ */
+export type Target = string | { readonly parent: string; readonly kind: string; readonly index: number };
+
+/**
+ * One unignored accessibility node with its states (014 research.md R-11, PLAN-TESTABILITY-1-014): its role and name,
+ * and each of `selected`, `pressed`, `disabled`, `orientation`, `live` and `controls` that Chromium reports for it;
+ * `controls` as the controlled nodes' roles and names. 005's `AxNode` stays `{ role, name }`.
+ */
+export interface AxState {
+  readonly role: string;
+  readonly name: string;
+  readonly selected?: boolean;
+  readonly pressed?: boolean | "mixed";
+  readonly disabled?: boolean;
+  readonly orientation?: string;
+  readonly live?: string;
+  readonly controls?: readonly AxNode[];
+}
+
+/**
+ * One `Accessibility.nodesUpdated` update of a node of a recorded subtree (014 research.md R-07, R-11): its role, its
+ * `live` politeness (empty when it has none) and its text, the names of its static-text descendants joined.
+ */
+export interface AxUpdate {
+  readonly role: string;
+  readonly live: string;
+  readonly text: string;
+}
+
 /** The forced-colours modes and the system palettes the tests emulate. */
 export type ForcedColors = "active" | "none";
 export type Palette = "light" | "dark";
@@ -162,6 +194,19 @@ export async function axTree(context: BrowserCommandContext, id: string, scope: 
   }
 }
 
+/** Not implemented yet (014 T006, T007). */
+const notYet = (name: string): Promise<never> => Promise.reject(new Error(`${name}: not implemented`));
+
+/** The unignored accessibility nodes of `target` with their states (`AxState`); `scope` as for `axTree`. Not implemented yet. */
+export function axStatesOf(_session: CDPSession, _target: Target, _scope: AxScope = "element", _frameId?: string): Promise<AxState[]> {
+  return notYet("axStatesOf");
+}
+
+/** Starts recording the `Accessibility.nodesUpdated` updates of `target` and its descendants. Not implemented yet. */
+export function recordAxUpdates(_session: CDPSession, _target: Target, _frameId?: string): Promise<() => Promise<AxUpdate[]>> {
+  return notYet("recordAxUpdates");
+}
+
 /** The `emulateForcedColors(mode, palette)` browser command (registered in vitest.config.ts). */
 export async function emulateForcedColors(context: BrowserCommandContext, mode: ForcedColors, palette?: Palette): Promise<void> {
   await emulate(context.page, mode, palette);
@@ -176,5 +221,11 @@ declare module "vitest/browser" {
     axTree: (id: string, scope?: AxScope) => Promise<AxNode[]>;
     /** Emulates forced colours with a system palette, or ends the emulation with `"none"`. */
     emulateForcedColors: (mode: ForcedColors, palette?: Palette) => Promise<void>;
+    /** The unignored accessibility nodes of `target` with their states, of its own and shadow subtree or with `"subtree"` its accessibility subtree. */
+    axStates: (target: Target, scope?: AxScope) => Promise<AxState[]>;
+    /** Starts recording the accessibility tree updates of `target` and its descendants. */
+    axUpdatesStart: (target: Target) => Promise<void>;
+    /** Stops the recording and returns its updates. */
+    axUpdatesStop: () => Promise<AxUpdate[]>;
   }
 }

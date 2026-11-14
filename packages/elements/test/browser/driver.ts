@@ -9,7 +9,16 @@ import { inflateSync } from "node:zlib";
 import type { Page } from "playwright";
 import { axNodes, axSubtree, emulate } from "../commands.ts";
 import { decodePng } from "../pixels.ts";
-import type { Bounds, Box, Driver, Drawing, Paint, Part, Placement, Sheets } from "../scenarios/driver.ts";
+import type { Bounds, Box, Driver, Drawing, Paint, Part, Placement, Sheets, Target } from "../scenarios/driver.ts";
+
+/** The id a target names; child targets are not implemented yet (014 T006). */
+function idOf(target: Target): string {
+  if (typeof target === "string") return target;
+  throw new Error("child targets: not implemented");
+}
+
+/** A driver method not implemented yet (014 T006). */
+const notImplemented = (name: string) => (): Promise<never> => Promise.reject(new Error(`${name}: not implemented`));
 
 /**
  * Waits in the page until every `ocelle-*` element has rendered and the fonts the page uses have loaded (a font that
@@ -78,15 +87,15 @@ export function fixtureDriver(page: Page, log: readonly string[], withBase = fal
         if (element === null) throw new Error(`no #${id} on the page`);
         return [...element.getClientRects()].map((rect) => ({ x: rect.x, y: rect.y, width: rect.width, height: rect.height }));
       }, id),
-    box: (id, inner) =>
+    box: (target, inner) =>
       page.evaluate(({ id, inner }): Box => {
         const host = document.getElementById(id);
         if (host === null) throw new Error(`no #${id} on the page`);
-        const target = inner === undefined ? host : host.shadowRoot?.querySelector(inner);
-        if (target === null || target === undefined) return { x: 0, y: 0, width: 0, height: 0, display: "absent" };
-        const rect = target.getBoundingClientRect();
-        return { x: rect.x, y: rect.y, width: rect.width, height: rect.height, display: getComputedStyle(target).display };
-      }, { id, inner }),
+        const measured = inner === undefined ? host : host.shadowRoot?.querySelector(inner);
+        if (measured === null || measured === undefined) return { x: 0, y: 0, width: 0, height: 0, display: "absent" };
+        const rect = measured.getBoundingClientRect();
+        return { x: rect.x, y: rect.y, width: rect.width, height: rect.height, display: getComputedStyle(measured).display };
+      }, { id: idOf(target), inner }),
     drawing: (id) =>
       page.evaluate((id): Drawing => {
         const host = document.getElementById(id);
@@ -149,12 +158,12 @@ export function fixtureDriver(page: Page, log: readonly string[], withBase = fal
         const round = (value: number): number => Math.round(value * 1000) / 1000;
         return { scaleX: round(matrix.a), scaleY: round(matrix.d), offsetX: round(matrix.e - rect.x), offsetY: round(matrix.f - rect.y) };
       }, id),
-    computed: (id, property) =>
+    computed: (target, property) =>
       page.evaluate(({ id, property }) => {
         const element = document.getElementById(id);
         if (element === null) throw new Error(`no #${id} on the page`);
         return getComputedStyle(element).getPropertyValue(property);
-      }, { id, property }),
+      }, { id: idOf(target), property }),
     resolveColour: (value) =>
       page.evaluate((value) => {
         const probe = document.createElement("span");
@@ -203,5 +212,20 @@ export function fixtureDriver(page: Page, log: readonly string[], withBase = fal
         };
       }, selector),
     messages: () => Promise.resolve(log.slice(since)),
+    focus: notImplemented("focus"),
+    press: notImplemented("press"),
+    click: notImplemented("click"),
+    activeElement: notImplemented("activeElement"),
+    mutate: notImplemented("mutate"),
+    resize: notImplemented("resize"),
+    afterResizeDelivery: notImplemented("afterResizeDelivery"),
+    computedPart: notImplemented("computedPart"),
+    scrollOffset: notImplemented("scrollOffset"),
+    viewportSize: notImplemented("viewportSize"),
+    keydownRecord: notImplemented("keydownRecord"),
+    clipboardCalls: notImplemented("clipboardCalls"),
+    activationRecord: notImplemented("activationRecord"),
+    axStates: notImplemented("axStates"),
+    axUpdates: notImplemented("axUpdates"),
   };
 }
