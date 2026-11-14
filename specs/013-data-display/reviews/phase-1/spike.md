@@ -216,3 +216,87 @@ almost every shrink-to-fit host and in block containers (§ 3). Options:
 
 Until the operator answers, T001 and T001a stay open (the narrowing of § 5 is also still to be copied into research
 R-02), and the scaffold, red and green steps of phase 1 do not start.
+
+## 9. Resumption after the operator's decisions (T001b)
+
+Run on 2026-11-14 after the operator's decisions (`operator-spike-decisions.md`: "(a) Defer + 2-frame wait", "Widen
+the margin"), in the same container, browsers and stand-ins as §§ 1 to 8, with the observer's pass deferred to a
+`requestAnimationFrame` scheduled in the `ResizeObserver` callback (the other triggers synchronous) and the layout wait
+polling at least 2 frames before it compares. Scratch files only, in the session scratchpad; nothing of them is
+committed. The in-process runs used a temporary test file in `packages/elements/test/`, deleted after the run.
+
+### Round 3 content for the 16 px margin
+
+Two-column sizes at the 384 px default threshold; the margin asks for at most 368 px where one column is expected and
+at least 400 px where two are. Candidates measured in the fixture harness (Schibsted Grotesk, loaded), two-column
+max-content with the labels "Created by op" / "Id" / "Created by operator":
+
+| Value | "Created by op" | "Id" | "Created by operator" |
+|---|---|---|---|
+| "Ada Lovelace and Charles Babbage" (pre-margin) | 386.1 | 307.3 | 426.4 |
+| "Ada Lovelace and Charles P. Babbage" | 403.3 | 324.5 | 443.6 |
+| "Ada Lovelace and Charles Babbage Sr" | 407.7 | 328.9 | 448.0 |
+| "Ada Lovelace and Sir Charles Babbage" | 411.9 | 333.1 | 452.2 |
+| "Ada Lovelace and Charles Babbage, UK" | 417.6 | 338.8 | 457.9 |
+| **"Ada Lovelace and Charles Babbage FRS"** | **421.3** | **342.5** | **461.6** |
+| "Ada Lovelace and Charles Babbage, London" | 453.2 | 374.4 | 493.5 |
+
+**Chosen content** (one value for widen, relabel and US1-18, so the bodies share it):
+
+| Case | Content | Expected one column (≤ 368) | Expected two columns (≥ 400) | Fixture harness | In-process harness |
+|---|---|---|---|---|---|
+| widen (dialog, 360 → 1200 px) | "Created by op" / "Ada Lovelace and Charles Babbage FRS" | measure at 360 px: 322 (dialog) | after the widen and fresh at 1200 px | 322 → 421.3, fresh 421.3 | 322 → 432.8, fresh 432.8 |
+| relabel (dialog, 1280 px) | "Id" → "Created by operator" / "Ada Lovelace and Charles Babbage FRS" | before: 342.5 | after and fresh | 342.5 → 461.6, fresh 461.6 | 351.1 → 472.9 |
+| value text in place (dialog, 1280 px) | label "Created by the operator on duty today"; value "Ada" → "Ada Lovelace and Babbage" (unchanged from § 4) | before: 298 | after and fresh | 298 → 479.7, fresh 479.7 | 302.9 → 490.7 |
+
+The stacked max-content of the widen and relabel sheet is 313.1 px; the value-text sheet's stacked size stays the
+label's (250.6 px fixture, 255.2 px in process) before and after, so only the `characterData` trigger can re-decide.
+The in-process harness draws the text in the fallback face (its token sheet has no `@font-face`), and its sizes meet
+the margin too (the closest is the relabel case before the change, 351.1 px, 16.9 px under 368).
+
+**US1-18 (grid)** with "Created by op" / "Ada Lovelace and Charles Babbage FRS" and "Status" / "Running": in a dialog
+loaded at 360 px, one column at a measure of 322 px (below T); widened to 1280 px, four columns at 1242 px, as a fresh
+load at 1280 px (four columns, 1242 px, at least 2 × T = 768 px). No further lengthening is needed.
+
+**The plant with the new content** (extra triggers removed, no pass in `updated()`, pass deferred): the widen case stays
+stacked at 313.1 px (measure 322), and the relabel case stays stacked at 313.1 px (measure 342.5), so the plant still
+bites; without the plant both flip to two columns (421.3 and 461.6 px).
+
+### The deferred pass: no loop error, the same layouts
+
+Every case of §§ 2 to 7 re-run with the new content, in the fixture harness, once with the synchronous pass and once
+deferred with the 2-frame wait:
+- **Loop error.** Synchronous pass: the error on 20 of the case runs of §§ 4 to 7 and in 10 host runs of § 2. Deferred:
+  none in any case or host (`window` `error` events counted in the page).
+- **Layouts.** Every layout and size of the deferred runs equals the synchronous pass's (one difference of 1 px in a
+  rounded right-to-left read, 547 vs 548 px, which is rounding of the same layout). Every host of § 2: loaded at 360 px
+  stacked (dialog 322, popover 346, float and flex item 360, table cell 296.7, flex row 200, grid track 68.5 measure),
+  widened to 1200 px two columns at 421.3 px as a fresh load, except the 400 px fixed-sibling row (stacked 200 px in
+  both). The grid (§ 7) counts and the unobserved cases (§ 5) are unchanged.
+- **One change with the new content (§ 5).** The two-column CSS grid `auto` track case now agrees with a fresh load:
+  the new stacked size (313.1 px) is wider than the 300 px the track gets beside the 300 px neighbour, so removing the
+  neighbour resizes the host and the observer re-decides (two columns, 421.3 px, as fresh). With the pre-margin
+  content (stacked 277.9 px, which fits beside the neighbour) it differs, as § 5 recorded. The narrowing stands as
+  recorded in R-02: it depends on whether the stacked sheet fits in the track's space beside the neighbour, which the
+  consumer's content decides. The grid case (1000 px, neighbour removed) still differs: two columns at 642.2 px against
+  four columns at 1000 px fresh.
+
+### The layout wait's frame count
+
+- **Fixture harness (Playwright):** with the deferred pass and the 2-frame minimum, every wait in §§ 2 to 7 returned
+  after 2 frames.
+- **In-process harness (Vitest browser mode 5.0.5, the `elements` project):** the flips of the T006a test (block 600 →
+  300 → 600 px, the dialog widen 360 → 1200 px, the hook 15rem → 40rem → 15rem at 450 px, the grid 300 → 600 → 800 px),
+  the relabel, the value-text change and the 300 → 290 px pass, each read with the wait:
+  - deferred pass, 2-frame minimum: every layout equal to the synchronous pass's; the wait returned after 2 or 3 frames
+    (14 waits: 2, 3, 3, 3, 2, 2, 2, 2, 3, 3, 2, 3, 3, 2); no loop error;
+  - deferred pass, comparing from the first frame: stale reads in the block 300 px step, the hook 40rem step, the
+    grid 600 px step and the 290 px step (the pre-decision layout), as the fixture harness showed in § 3;
+  - synchronous pass: the loop error on 11 of the flips, and the harness reports each as `console.error: Error:
+    ResizeObserver loop completed with undelivered notifications.` (the `@vitest/browser` error catcher) and, through
+    the in-process driver's `window` `error` listener, as `error: ResizeObserver loop completed with undelivered
+    notifications.`. So T006a's recorder (capture-phase `window` `error` events and `console.error` calls) sees it.
+
+**Outcome.** No stop-and-ask point of T001b is reached: the chosen content meets the 16 px margin in both harnesses'
+fonts, the deferred pass raises no loop error and gives the synchronous pass's layouts after the 2-frame wait. T001,
+T001a and T001b are done; the phase continues with the scaffold.

@@ -371,7 +371,13 @@ are run with this wait in place, so they fail on the layout and not on timing. A
   The implementer chooses the content (lengthening the value or the label as needed; relabel, 307.3 → 426.4 px, and
   value text, 298 → 479.7 px, already meet it as measured), re-measures every case in the harness's fonts and records
   the content and its sizes in `reviews/phase-1/spike.md` and here, before the red commit; the bodies (and US1-18,
-  which uses the same content) use that content;
+  which uses the same content) use that content. **Chosen (T001b, `reviews/phase-1/spike.md` § 9):** the value
+  "Ada Lovelace and Charles Babbage FRS" for widen, relabel and US1-18. Widen ("Created by op"): measure 322 px in the
+  dialog at 360 px, 421.3 px after the widen and fresh at 1200 px (in process, fallback face: 322 → 432.8 px).
+  Relabel ("Id" → "Created by operator"): 342.5 → 461.6 px (in process 351.1 → 472.9 px). Value text, unchanged
+  (label "Created by the operator on duty today", value "Ada" → "Ada Lovelace and Babbage"): 298 → 479.7 px (in
+  process 302.9 → 490.7 px). US1-18 with "Status" / "Running" added: one column at 360 px (measure 322 px), four
+  columns at 1242 px at 1280 px. The plant (extra triggers removed) keeps widen and relabel stacked;
 - the unobserved cases of § Changes the pass does not observe, each against a fresh load, to name the narrowing;
 - the 300 px sheet resized to 290 px, stacked after the pass (PLAN-FRESH-3-002);
 - the stacked and two-column states at 300 px and 600 px, `layout="columns"` at 320 px with no page overflow, and the
@@ -382,10 +388,13 @@ are run with this wait in place, so they fail on the layout and not on timing. A
 - right-to-left mirroring of the columns (SPEC-2-08).
 
 Measured on 2026-11-14 (`reviews/phase-1/spike.md`); the loop error and the round 3 margin were decided by the operator
-the same day (`reviews/phase-1/operator-spike-decisions.md`), and the unobserved case is copied above. Still to
-measure and record when the phase resumes, before the scaffold: the round 3 content re-chosen and re-measured for the
-16 px margin, the deferred pass's results with that content, and the layout-settle wait's frame count in the
-in-process harness.
+the same day (`reviews/phase-1/operator-spike-decisions.md`), and the unobserved case is copied above. Measured when
+the phase resumed (T001b, `reviews/phase-1/spike.md` § 9): the round 3 content above; with the deferred pass no loop
+error in any case and every layout equal to the synchronous pass's after the 2-frame wait; the wait returns after 2
+frames in the fixture harness and 2 or 3 in the in-process harness, which logs the synchronous pass's loop error as
+`console.error`. With the chosen content the two-column CSS grid `auto` track case agrees with a fresh load, because
+its stacked size (313.1 px) does not fit beside the 300 px neighbour, so the host resizes; the narrowing stays for
+content whose stacked sheet fits there (the pre-margin content), and the grid case still differs.
 
 ## R-03 `ocelle-facts`: grid, type and density (FR-005 to FR-008, FR-014)
 

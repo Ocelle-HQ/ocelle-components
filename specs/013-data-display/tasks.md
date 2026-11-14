@@ -122,7 +122,7 @@ order 1 → 2 → 3 → 4:
 
 ### Spike (first)
 
-- [ ] T001 [US1] Spike before the scaffold, scratch files only, recorded in `specs/013-data-display/reviews/phase-1/spike.md`. Every item is per plan § Phases 1 and research R-01/R-02:
+- [X] T001 [US1] Spike before the scaffold, scratch files only, recorded in `specs/013-data-display/reviews/phase-1/spike.md`. Every item is per plan § Phases 1 and research R-01/R-02:
   - the A5 structure built with Lit 3.3.3 (`createRenderRoot` with `slotAssignment: "manual"`, `slot.assign()` in `updated()`): the Chromium AX tree, axe-core 4.14.0 (`definition-list`, `dlitem`, full run) and whether an empty `<dt>` stays a term node;
   - the two-column measure with its probes, in a `showModal()` dialog, a popover, a float, a default flex item, a flex row with a 400 px fixed sibling, a grid `auto` track and a table cell:
     - FR-009's bound;
@@ -139,12 +139,12 @@ order 1 → 2 → 3 → 4:
 
   Any failing FR-004 result or unexplained state dependence stops for the operator.
 
-- [ ] T001a [US1] Spike items for the input decisions, scratch files only, recorded in `specs/013-data-display/reviews/phase-1/spike.md` (research R-01 § The grid layout's structure, R-02 § The grid layout's column count and § A sheet as a `1fr` grid item):
+- [X] T001a [US1] Spike items for the input decisions, scratch files only, recorded in `specs/013-data-display/reviews/phase-1/spike.md` (research R-01 § The grid layout's structure, R-02 § The grid layout's column count and § A sheet as a `1fr` grid item):
   - the grid structure: the shadow `<dl>` with each pair in a `<div>` group (`<div><dt></dt><dd><slot></slot></dd></div>`), built with Lit 3.3.3 and manual assignment; the Chromium AX tree (one description list, each definition after its term, the groups ignored or generic), axe-core 4.14.0 (`definition-list`, `dlitem`, full run) and an empty `<dt>` in a group. Any failure stops for the operator (IQ-05 (b));
   - the grid measure as laid out in four columns, in the hosts of T001 and in 300, 600, 800 and 1280 px block containers (one, two, four, four columns), the US1-18 widen case in a dialog with the content T001 fixes (lengthened if its four-column size at 1280 px is below 2 × T or its size at 360 px is not below T), a hook changed at a fixed width moving both points, and whether a flip raises the `ResizeObserver` loop error; the unobserved changes of T001 for the grid, each against a fresh load;
   - the `1fr` grid item (IQ-02 (a)): a sheet with a long unbroken value as the item of a `1fr` grid track at 320 and 600 px, with and without `min-inline-size: 0` on the host, recording the track's and the page's overflow.
 
-- [ ] T001b [US1] Spike resumption after the operator's spike decisions (`specs/013-data-display/reviews/phase-1/operator-spike-decisions.md`), scratch files only, before the scaffold, recorded in `specs/013-data-display/reviews/phase-1/spike.md` and research R-02 (§ To measure, Margin):
+- [X] T001b [US1] Spike resumption after the operator's spike decisions (`specs/013-data-display/reviews/phase-1/operator-spike-decisions.md`), scratch files only, before the scaffold, recorded in `specs/013-data-display/reviews/phase-1/spike.md` and research R-02 (§ To measure, Margin):
   - choose the round 3 content (widen, relabel, value text) so that each two-column size is at most 368 px where the body expects one column and at least 400 px where it expects two (16 px either side of the 384 px threshold), lengthening the value or label of "Created by op" / "Ada Lovelace and Charles Babbage" as needed; re-measure each case in the harness's fonts against a fresh load, with the plant (extra triggers removed) still keeping the widen and relabel cases stacked;
   - check the same content for US1-18 in the grid (four-column size at 1280 px at least 2 × T, size at 360 px below T);
   - with the observer's pass deferred one animation frame: no loop error and the same layouts as recorded in §§ 2 to 7, with the layout wait polling at least 2 frames before it compares;
