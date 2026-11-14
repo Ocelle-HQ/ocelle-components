@@ -120,8 +120,7 @@ export class OcelleListbox extends LitElement {
   }
 
   set value(value: string) {
-    this.#model.set(value);
-    this.#apply(null);
+    this.#apply(this.#model.set(value, focusLeft()));
   }
 
   override attributeChangedCallback(name: string, old: string | null, value: string | null): void {
@@ -219,7 +218,7 @@ export class OcelleListbox extends LitElement {
     if (option === null) return;
     if (this.#model.focusOut(option, event.relatedTarget)) {
       queueMicrotask(() => {
-        this.#apply(this.#model.afterBlur(document.activeElement === document.body));
+        this.#apply(this.#model.afterBlur(focusLeft()));
       });
     }
   };
@@ -239,6 +238,13 @@ export class OcelleListbox extends LitElement {
     const option = this.#optionOf(event);
     if (option !== null && !this.#isDisabled(option)) this.#emit("activate", option.value);
   };
+}
+
+/** Whether focus has left for nowhere: `document.activeElement` is the body or null (research R-03). */
+function focusLeft(): boolean {
+  const active = document.activeElement;
+  // Stryker disable next-line ConditionalExpression,LogicalOperator: equivalent in Chromium, which reports the body, never null, when nothing has focus (review round 1, R1-03); kept for engines that report null
+  return active === null || active === document.body;
 }
 
 /** Sets the element's role through its internals. */

@@ -212,11 +212,18 @@ export class SelectionModel<T> {
     return tabStop(this.#state, this.#entries, this.#record.lastFocused);
   }
 
-  /** A host set of `value`, after the pending records are taken and processed as a batch. */
-  set(value: string): void {
-    this.#source.take();
-    this.#process(this.#record.focused);
+  /**
+   * A host set of `value`, after the pending records are taken and processed as a batch. The taken records feed the
+   * focus record as the `focusout` microtask's would (`focusLeft` as there), since that microtask then finds none: a
+   * focused child removed or moved in the task of the set gives the child to focus, which is returned (review round 1,
+   * R1-01).
+   */
+  set(value: string, focusLeft = false): T | null {
+    const { record, hadFocus } = takeBlurred(this.#record, this.#source.take().flat(), focusLeft);
+    this.#record = record;
+    const focus = this.#process(hadFocus ?? record.focused);
     this.#state = hostSet(this.#kind, this.#state, this.#entries, value);
+    return focus;
   }
 
   /** A user selection; true when the parent emits its change event. */
