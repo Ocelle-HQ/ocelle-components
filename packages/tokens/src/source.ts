@@ -140,6 +140,7 @@ export const records = tokenRecords([
   { name: "font-weight-strong", group: "type", value: "600" },
   { name: "font-weight-display", group: "type", value: "800" },
   { name: "tracking-display", group: "type", value: "-0.03em" }, // display letter spacing
+  { name: "tracking-caps", group: "type", value: "0.06em" }, // small uppercase labels: the flat lane's title (009), #8's eyebrow
 
   // A.3 Space, shape, size (theme-independent)
   { name: "space-1", group: "space", value: "0.25rem" },
@@ -153,6 +154,8 @@ export const records = tokenRecords([
   { name: "space-9", group: "space", value: "3rem" },
   { name: "space-10", group: "space", value: "4rem" },
   { name: "gutter", group: "space", value: "var(--ocelle-space-4)", ref: ["space-4"] }, // page and dialog gutter
+  // the scroller's fade depth and focus clearance (009)
+  { name: "scroller-fade-size", group: "space", value: "var(--ocelle-space-7)", ref: ["space-7"] },
   { name: "radius-1", group: "shape", value: "2px" }, // small marks: dots, focus corners
   { name: "radius-2", group: "shape", value: "4px" }, // the one general radius
   { name: "radius-row", group: "shape", value: "6px" }, // rows and cards
@@ -194,6 +197,10 @@ export const records = tokenRecords([
   { name: "dialog-max-block", group: "shell", value: "calc(100dvh - 2 * var(--ocelle-gutter))", ref: ["gutter"] },
   // decision bar
   { name: "bar-block-narrow", group: "shell", value: "calc(2 * var(--ocelle-target-min) + 3 * var(--ocelle-space-2))", ref: ["target-min", "space-2"] },
+  { name: "lane-min-width", group: "shell", value: "10rem" }, // a board lane's minimum and flex basis (009)
+  { name: "list-track-width", group: "shell", value: "18rem" }, // list-detail's list pane (009)
+  { name: "list-detail-collapse", group: "shell", value: "40rem" }, // list-detail's default collapse-below (009)
+  { name: "list-detail-inspector-collapse", group: "shell", value: "60rem" }, // list-detail's default inspector-below (009)
 
   // A.5 Elevation (theme-dependent) and motion (theme-independent); light shadows and ring widths from the console
   // prototype (research.md R-05)

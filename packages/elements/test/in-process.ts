@@ -6,11 +6,14 @@
 // go through the `axTree` and `emulateForcedColors` browser commands (vitest.config.ts, test/commands.ts). Console
 // messages are recorded from each mount on; Lit's development build, which Vite resolves here, warns once at import,
 // before any mount, so the console outcome of FR-016 on the built output is the fixture's (test/browser/).
+// Since 009 (research.md R-17) every mount also adopts test/fixtures/frames.css, the one source of the tested frames,
+// after the token and base sheets, and `viewport()` resizes the test's iframe through `page.viewport`.
 /// <reference types="vite/client" />
 import type { LitElement } from "lit";
 import { vi } from "vitest";
 import { commands, page } from "vitest/browser";
 import baseText from "../../styles/src/base.css?raw";
+import framesText from "./fixtures/frames.css?raw";
 import { css } from "../../tokens/src/generate.ts";
 import { source } from "../../tokens/src/source.ts";
 import { decodePng } from "./pixels.ts";
@@ -24,6 +27,7 @@ function sheet(text: string): CSSStyleSheet {
 
 const tokens = sheet(css(source).replace(/@font-face\s*\{[^}]*\}/g, ""));
 const base = sheet(baseText);
+const frames = sheet(framesText);
 
 function element(id: string): HTMLElement {
   const found = document.getElementById(id);
@@ -65,7 +69,7 @@ window.addEventListener("error", (event) => {
 export function inProcessDriver(): Driver {
   return {
     mount: async (markup, options = {}) => {
-      document.adoptedStyleSheets = options.base === true ? [tokens, base] : [tokens];
+      document.adoptedStyleSheets = options.base === true ? [tokens, base, frames] : [tokens, frames];
       messages.length = 0;
       document.documentElement.removeAttribute("data-theme");
       document.body.innerHTML = markup;
@@ -179,6 +183,9 @@ export function inProcessDriver(): Driver {
       });
     },
     messages: () => Promise.resolve([...messages]),
-    viewport: () => Promise.reject(new Error("not implemented")),
+    viewport: async (width, height) => {
+      await page.viewport(width, height);
+      await settle();
+    },
   };
 }

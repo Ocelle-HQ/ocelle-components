@@ -203,6 +203,9 @@ export function fixtureDriver(page: Page, log: readonly string[], withBase = fal
         };
       }, selector),
     messages: () => Promise.resolve(log.slice(since)),
-    viewport: () => Promise.reject(new Error("not implemented")),
+    viewport: async (width, height) => {
+      await page.setViewportSize({ width, height });
+      await settle(page);
+    },
   };
 }

@@ -114,7 +114,7 @@ not work around it:
 
 ### Tests (red, one commit)
 
-- [ ] T003 [P] `packages/tokens/test/` (the existing source-table and generated-output tests) asserts the six new
+- [X] T003 [P] `packages/tokens/test/` (the existing source-table and generated-output tests) asserts the six new
   records and values:
   - `lane-min-width` `10rem`, group `shell`;
   - `list-track-width` `18rem`, `shell`;
@@ -125,10 +125,10 @@ not work around it:
 
   It also asserts that `tokens.css` and the documentation rows name each of the six, and that the token and gates
   tests pin the new counts (R-16, FR-033).
-- [ ] T004 [P] A token test that `color-sheet` differs from `color-canvas`, `color-panel`, `color-inspector` and
+- [X] T004 [P] A token test that `color-sheet` differs from `color-canvas`, `color-panel`, `color-inspector` and
   `color-pane` in light and in dark (R-10, PLAN-CORRECTNESS-1-011 (b)), in
   `packages/tokens/test/source-table.test.ts` or beside it.
-- [ ] T005 [P] Frame tests in `packages/elements/test/frames.test.ts` (in-process) and
+- [X] T005 [P] Frame tests in `packages/elements/test/frames.test.ts` (in-process) and
   `packages/elements/test/browser/frames.test.ts` (fixture). In each harness, set the frame's viewport with
   `driver.viewport()`, mount a `[data-frame]` box, and assert its measured inline size:
   - W at 1280: 876 px;
@@ -142,16 +142,16 @@ not work around it:
 
 ### Implementation (green)
 
-- [ ] T006 `packages/tokens/src/source.ts`: the six records of T003, as plain records (never `as const`). Then
+- [X] T006 `packages/tokens/src/source.ts`: the six records of T003, as plain records (never `as const`). Then
   regenerate the tokens output and docs, and update the pinned counts in the token and gates tests where the tests
   read them.
-- [ ] T007 `driver.viewport()` in `packages/elements/test/scenarios/driver.ts` (interface),
+- [X] T007 `driver.viewport()` in `packages/elements/test/scenarios/driver.ts` (interface),
   `packages/elements/test/in-process.ts` (through `vitest/browser`'s `page.viewport`) and
   `packages/elements/test/browser/driver.ts` (through `page.setViewportSize`); R-17.
-- [ ] T008 `packages/elements/test/fixtures/frames.css` is the one frame source: `[data-frame="W"]` 876 px,
+- [X] T008 `packages/elements/test/fixtures/frames.css` is the one frame source: `[data-frame="W"]` 876 px,
   `[data-frame="R"]` 1196 px, `[data-frame="N"]` 636 px, `[data-frame="S"]` 288 px. The in-process driver adopts it as
   text through `driver.rules()`, and the fixture pages link it same-origin. No `style` attribute anywhere (R-17).
-- [ ] T009 Write `specs/009-workflow-layouts/reviews/phase-1/tdd-exempt.md`: T001 and T002 are records with no
+- [X] T009 Write `specs/009-workflow-layouts/reviews/phase-1/tdd-exempt.md`: T001 and T002 are records with no
   behaviour; T003 to T005 are the red commit for T006 to T008.
 
 **Checkpoint**: `tdd-check.sh 1` reports `pass`; `pnpm run gate:contrast` and `gate:brand-rules` pass.

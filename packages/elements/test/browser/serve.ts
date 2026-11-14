@@ -1,7 +1,8 @@
 // The strict-CSP fixture of the element suites (005 spec § The strict-CSP fixture; research.md R-11, T015). Each suite
 // writes into a temporary directory what a host serves: the fixture pages of fixtures/, `tokens.css` from the token
 // generator (the current source, never a pre-built dist/) with the vendored fonts it loads by relative URL, `base.css`
-// copied from packages/styles/src (linked only by the pages that say so), and the files the global setup built
+// copied from packages/styles/src (linked only by the pages that say so), `frames.css` copied from test/fixtures (009's
+// tested frames, R-17; linked only by the pages that say so), and the files the global setup built
 // (global-setup.ts): the browser build `ocelle-elements.js`, US1 scenario 10's `bundle-a.js` and `bundle-b.js` and User
 // Story 3's test host's file `ocelle-test-host.js`. It serves them on 127.0.0.1 with `Content-Security-Policy:
 // default-src 'none'; script-src 'self'; style-src 'self'; font-src 'self'` on every response. Every page is opened
@@ -30,6 +31,8 @@ export const policy = "default-src 'none'; script-src 'self'; style-src 'self'; 
 const fixtures = fileURLToPath(new URL("./fixtures", import.meta.url));
 const baseSheet = fileURLToPath(new URL("../../../styles/src/base.css", import.meta.url));
 const fonts = fileURLToPath(new URL("../../../tokens/fonts", import.meta.url));
+/** The one source of 009's tested frames (research.md R-17), served as `frames.css` for the pages that link it. */
+const framesSheet = fileURLToPath(new URL("../fixtures/frames.css", import.meta.url));
 
 /** The built files each page may load, by served name, and where the global setup put them. */
 const builtFiles: Readonly<Record<string, string>> = {
@@ -59,6 +62,7 @@ export async function serve(built: Built | undefined): Promise<Served> {
   cpSync(fixtures, dir, { recursive: true });
   writeFileSync(join(dir, "tokens.css"), css(source));
   cpSync(baseSheet, join(dir, "base.css"));
+  cpSync(framesSheet, join(dir, "frames.css"));
   if (existsSync(fonts)) cpSync(fonts, join(dir, "fonts"), { recursive: true });
   if (built !== undefined && "dir" in built) {
     for (const [name, path] of Object.entries(builtFiles)) if (existsSync(join(built.dir, path))) cpSync(join(built.dir, path), join(dir, name));
@@ -114,7 +118,7 @@ export interface Visit {
  * same-origin.
  */
 function allowed(origin: string, page: string, scripts: readonly string[]): (url: string) => boolean {
-  const paths = new Set([page, "tokens.css", "base.css", ...scripts]);
+  const paths = new Set([page, "tokens.css", "base.css", "frames.css", ...scripts]);
   return (url) => {
     if (!url.startsWith(`${origin}/`)) return false;
     const path = new URL(url).pathname.slice(1);

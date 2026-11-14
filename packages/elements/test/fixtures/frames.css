@@ -1,0 +1,27 @@
+/*
+ * The tested frames of 009 (spec § Frames; research.md R-17, PLAN-TESTABILITY-1-008): the one frame source. The
+ * in-process driver adopts this file's text on every mount (test/in-process.ts), the fixture pages link it same-origin
+ * as `frames.css` (test/browser/serve.ts), and storybook/.storybook/stories-layout.css holds a copy that phase 2's story
+ * test compares with it. Each frame is an attribute selector, never a class or a `style` attribute. Sizes in px, as
+ * the spec gives them; test/frames.test.ts and test/browser/frames.test.ts measure each at its viewport.
+ */
+
+/* Frame W: the 1280 px window beside a context sidebar, its content cell, 1280 - 52 - 320 - 32. */
+[data-frame="W"] {
+  inline-size: 876px;
+}
+
+/* Frame R: the 1280 px window with the rail only, 1280 - 52 - 32. */
+[data-frame="R"] {
+  inline-size: 1196px;
+}
+
+/* Frame N: the narrow tier at a 720 px viewport, 720 - 52 - 32. */
+[data-frame="N"] {
+  inline-size: 636px;
+}
+
+/* Frame S: the 320 px reflow width, 320 - 32. */
+[data-frame="S"] {
+  inline-size: 288px;
+}
