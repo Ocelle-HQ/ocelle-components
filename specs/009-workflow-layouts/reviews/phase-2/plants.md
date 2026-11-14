@@ -31,6 +31,8 @@ names).
 | S15 | US1-13 wide button (T013) | the synchronous flag: `#writing` set around the module's own `scrollTo`, and the suppression dropped on any `scroll` while it is false | `elements packages/elements/test/scroller.test.ts`: 1 failed, 21 passed (22); fails: US1-13: a focused button wider than the… |
 | S16 | US1-13 pointer focus (T013) | clearance on every `focusin`: the `:focus-visible` check removed | `elements packages/elements/test/scroller.test.ts`: 1 failed, 21 passed (22); fails: US1-13: a button clicked half under the… |
 | S17 | US1-14 (T013) | `:host([hidden]) { display: none; }` removed from `ocelle-scroller` | `elements packages/elements/test/scroller.test.ts`: 1 failed, 21 passed (22); fails: US1-14: a hidden scroller has no box, n… |
+| L1 | `test/scroller-lifecycle.test.ts` (a guard added in green, below) | `hostConnected` does not follow the box again when the host connects again | `elements packages/elements/test/scroller-lifecycle.test.ts`: 1 failed (1); fails: ocelle-scroller moved to another place of the page follows its box after it is connected again |
+| L2 | the same test | the per-instance sheet adopted on every connect (the `includes` check removed) | `elements packages/elements/test/scroller-lifecycle.test.ts`: 1 failed (1); fails: the same test (four sheets per root) |
 
 ## Guards that pass before the phase
 
@@ -39,6 +41,11 @@ names).
   their proof that they can fail.
 - **D1, D2.** `messages()` and `sheets()` are 005's driver methods; their T010 tests pass in the red commit. D1 and D2
   are their proof that they can fail.
+- **L1, L2.** `test/scroller-lifecycle.test.ts` was added after the green implementation: a scroller moved to another
+  place of the page (disconnected and connected again) follows its box there, scrolls one 40 px step per key and keeps
+  one per-instance sheet. No red test covered the module's reconnect path (`hostConnected` with a known box, and the
+  sheet adopted once), so it is a guard on the green code, and L1 and L2 are its proof that it can fail. It fails on the
+  phase base too (no `ocelle-scroller` there).
 
 ## The scrollbar plant of T016
 
