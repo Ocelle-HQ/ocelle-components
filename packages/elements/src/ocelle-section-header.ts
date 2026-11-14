@@ -5,12 +5,14 @@
 // description) and the actions wrapper, so the actions' block start is the heading's and the eyebrow's words take
 // no part in the side-by-side test (R-04). The heading column's basis is its min-content (its longest word), so the
 // actions wrap under it, `--ocelle-space-2` below, only when that word and the actions do not fit side by side, and a
-// word longer than the line then breaks inside itself. The heading column is never hidden, so the actions stay at
-// the inline end with no heading. The actions wrapper keeps the initial `flex: 0 1 auto` (not R-04's `0 0 auto`): on
-// a line of its own and wider than it, it shrinks to the line and its actions wrap onto further lines rather than
-// overflow (FR-004). Each slot's wrapper, and the row when it holds nothing, is `display: none` while empty
-// (src/slot-state.ts, R-03), so an empty part takes no gap. The UA block margins at the edges of the slotted eyebrow
-// and description are trimmed by normal `::slotted()` rules, which a page rule beats (FR-008).
+// word longer than the line then breaks inside itself. The heading column is hidden while it shows nothing (no
+// heading, and no description or the eyebrow variant), so it takes no line and no gap when the actions wrap; the
+// actions then keep the inline end by `margin-inline-start: auto` (FR-005, FR-010). The actions wrapper keeps the
+// initial `flex: 0 1 auto` (not R-04's `0 0 auto`): on a line of its own and wider than it, it shrinks to the line
+// and its actions wrap onto further lines rather than overflow (FR-004). Each slot's wrapper, and the row when it
+// holds nothing, is `display: none` while empty (src/slot-state.ts, R-03), so an empty part takes no gap. The UA
+// block margins at the edges of the slotted eyebrow and description are trimmed by normal `::slotted()` rules, which
+// a page rule beats (FR-008).
 //
 // `size` and `variant` are reflected with no initial value (R-06). The size is resolved before each update: the
 // header's own valid `size`, else compact when it is assigned to a compact card's own `header` slot
@@ -82,6 +84,10 @@ export class OcelleSectionHeader extends LitElement {
       display: flex;
       flex-wrap: wrap;
       gap: var(--ocelle-space-2);
+    }
+
+    .heading-column.empty + .actions {
+      margin-inline-start: auto;
     }
 
     .empty {
@@ -172,13 +178,14 @@ export class OcelleSectionHeader extends LitElement {
   protected override render(): unknown {
     const eyebrow = this.variant === "eyebrow";
     const empty = (name: string): boolean => this.#slots.empty(name);
-    // The heading column is never hidden: it takes the free inline size, so the actions stay at the inline end with no
-    // heading. The row is hidden when it holds nothing, so an eyebrow alone takes no gap under it.
+    // The heading column is hidden while it shows nothing, so actions that do not fit beside an empty column take no
+    // second line. The row is hidden when it holds nothing, so an eyebrow alone takes no gap under it.
+    const column = empty("heading") && (eyebrow || empty("description"));
     const row = empty("heading") && empty("description") && empty("actions");
     return html`<div class="column">
       ${eyebrow ? nothing : html`<div class=${hidden(empty("eyebrow"))}><slot name="eyebrow"></slot></div>`}
       <div class=${row ? "row empty" : this.#compact ? "row compact" : "row"}>
-        <div class="heading-column">
+        <div class=${column ? "heading-column empty" : "heading-column"}>
           <div class=${hidden(empty("heading"))}><slot name="heading"></slot></div>
           ${eyebrow ? nothing : html`<div class=${hidden(empty("description"))}><slot name="description"></slot></div>`}
         </div>
