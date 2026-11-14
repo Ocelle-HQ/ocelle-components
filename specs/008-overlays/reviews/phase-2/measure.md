@@ -120,3 +120,59 @@ written into contracts/checks.md § Dialog "Opaque content" and "Positive `tabin
 
 Every list holds its row's updated rules: no `body` in (i) and (iii), at most one in (ii) forward (the iframe only),
 every inner button reached once per cycle in reverse native order in (ii) backward, and no sentinel in any list.
+
+## The repeated-Escape limit with a vetoing host (R-02, operator decision 2 (b): investigate first)
+
+Question: the matrix row "Escape with slotted content", a slotted control that stops Escape's propagation, veto then
+Escape twice, expects the second Escape to close the dialog with reason `host` (the platform's non-cancelable
+`cancel`). In the phase 2 runs the second `cancel` was sometimes cancelable again, so the veto held. Hypothesis to
+test (coordinator): `cancel` is cancelable only after a user activation since the last cancel was allowed, so a click
+or a non-Escape key between the presses makes it cancelable again.
+
+Set-up: Chromium 153.0.8010.12, both harnesses (in process, `elements` project, one page per test file; fixture,
+`overlays.html` with the browser build, one page per test file), scratch test files outside the commit. Each variant
+mounts afresh in the same page: `ocelle-dialog` with a slotted `stopper` button (a keydown listener that stops
+Escape's propagation) and a slotted `other` button, opened by a click on the page's opener or by a script `focus()` of
+it and `open`; a host listener cancels every `ocelle-dialog-close-request`; focus on `stopper`; 300 ms; Escape; 300 ms;
+then the thing between; Escape; 400 ms. Recorded: the inner `<dialog>`'s `cancel` (`cancelable`) and `close`, the
+dialog's events, and `navigator.userActivation` (`isActive`/`hasBeenActive`) before each press. Variant 0 runs first
+in its page; variants 1 to 7 follow it in the same page:
+
+| Variant | In process | Fixture |
+|---|---|---|
+| 0, first in the page: click-open, a click between | `cancel:true, cancel:true` (veto holds twice) | — |
+| 0, first in the page: script-open, page never activated (`false/false`) | `cancel:true, cancel:false`, close `host` | `cancel:true, cancel:true` (page already `true/true` on load) |
+| 0, first in the page: a plain native `<dialog>` (no overlay), click-open, `cancel` vetoed | `cancel:true, cancel:true` | `cancel:true, cancel:true` |
+| 1, first in the page when variant 0 is absent: click-open, nothing between | `cancel:true, cancel:true` | `cancel:true, cancel:true` |
+| 1 and 2 after another sequence: click-open, nothing between | `cancel:true, cancel:false`, close `host` | the same |
+| 3, script-open after 5.5 s idle, nothing between | `cancel:true, cancel:false`, close `host` | the same |
+| 4, script-open after 5.5 s idle, a click on `other` between | `cancel:true, cancel:false`, close `host` | the same |
+| 5, script-open after 5.5 s idle, the key `a` on `other` between | `cancel:true, cancel:false`, close `host` | the same |
+| 6, click-open, 5.5 s between | `cancel:true, cancel:false`, close `host` | the same |
+| 7, click-open, a click on `other` between | `cancel:true, cancel:false`, close `host` | the same |
+
+Findings:
+- **The hypothesis does not hold.** A click or a non-Escape key between the two presses never made the second
+  `cancel` cancelable (variants 4, 5 and 7 in both harnesses), and neither did a 5.5 s pause (variant 6).
+  `navigator.userActivation.isActive` reads true after each Escape press in these harnesses, so the presses themselves
+  count as activation here, yet the second `cancel` is not cancelable.
+- **What decides it is the first vetoed cancel sequence of a document.** The first time in a page that a `cancel` is
+  vetoed, after the document had a user activation, the next `cancel` is cancelable as well. Every later sequence in
+  the same page gives `cancel:true` then `cancel:false`, and the platform closes the dialog: the overlay reports it
+  with reason `host`. The one in-process case without it is a page that had no activation at all before the first
+  press. A plain native `<dialog>` with no overlay shows the same first-sequence behaviour, so this is the platform's,
+  not the overlay's. (R-02's probe `probe2.cjs` measured `cancel:true, cancel:false` in its first sequence; it pressed
+  with no pause and no other step between the click and the presses, so the conditions differ; not pursued further.)
+- So the stated limit holds as written ("can close"): a vetoed dialog whose slotted control stops Escape's
+  propagation is closed with reason `host` on the repeated press, except in the first such sequence of a page, where
+  the platform lets the veto hold once more.
+
+A row that is deterministic in both harnesses (measured: the plain-dialog warm-up followed by variant 1, in each
+harness): in the same page and before the row's own presses, run one vetoed Escape sequence on a stand-in, for
+example a plain slotted-free native `<dialog>` with a stop-propagation button, shown with `showModal()` after a click,
+its `cancel` vetoed, and Escape pressed twice (it ends closed or open; its result is not asserted). Then mount the
+row: click the opener, open, stopper with the stop-propagation listener, host veto, focus on the stopper, Escape:
+one `…-close-request` with reason `escape` and the dialog open and `:modal`; Escape again with nothing between:
+`…-close` with reason `host`, focus on the opener. The case where the veto holds on the second press cannot be made
+deterministic by input between the presses (the hypothesis's second case was not observed); it occurs only as the
+first sequence of a page.
