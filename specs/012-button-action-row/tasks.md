@@ -91,7 +91,7 @@ repository; `tdd-check.sh 1` reports `pass`.
 - [X] T010 `gates/lib/plant-runner.ts`: `shardSize` 3 → 1 (`gates/lib/plant-runner.ts:269`)
 - [X] T011 `gates/README.md` (approved shard sizes: 1; the split count at size 1, 76 stories by 006's model, for the operator's approval at this phase's review; size 1 is the last lever; about 18 stories of headroom after this feature; about 11.2 Plants runner-hours per CI run at 58 stories against about 4 today) and the Complexity Tracking row of `specs/006-storybook-workbench/plan.md` updated with the same facts (R-13, decision 15)
 - [X] T012 Write `specs/012-button-action-row/reviews/phase-1/tdd-exempt.md` for the documentation part (T011) and record in `reviews/phase-1/notes.md` the two operator questions for this phase's review: approval of the split count 76 at size 1, and opening a triage record for a plant design whose shard time does not grow with the story count, before the next element mission (PLAN-FRESH-3-003 (a))
-- [ ] T013 Run `pnpm run gate:test-lint`, `gate:typecheck`, then `gate:plants` (one at a time) and `gate:mutation -- --base <phase base>` (`gates/lib/plant-runner.ts`)
+- [X] T013 Run `pnpm run gate:test-lint`, `gate:typecheck`, then `gate:plants` (one at a time) and `gate:mutation -- --base <phase base>` (`gates/lib/plant-runner.ts`)
 
 **Checkpoint**: `tdd-check.sh 1` reports `pass`.
 

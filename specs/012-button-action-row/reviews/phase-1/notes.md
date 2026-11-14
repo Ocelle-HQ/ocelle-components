@@ -57,3 +57,22 @@ configuration counts as test files, so `tdd-check.sh`'s "final tests against the
 There the in-process harness tests still fail (the base `vitest.config.ts` has no `press`, `hover`, `pointer`,
 `emulateReducedMotion`, `axe` or `axState` command) and the shard tests fail (`shardSize` 3); the fixture harness
 tests, whose code is all test-side, may pass on the base with the overlay.
+
+## Checks run (T013), 2026-11-14, Node 22.23.4, Chromium 153 (`OCELLE_CHROMIUM_PATH`), one at a time
+
+- `pnpm run gate:test-lint`: `test-lint: 181 files checked, no finding`.
+- `pnpm run gate:typecheck`: `typecheck: no type error in the files of tsconfig.json`.
+- `pnpm run gate:lint`: `lint: 271 files checked, no finding`; `gate:config-copies`, `gate:csp`, `gate:prefix` pass.
+- `pnpm test` at the green commit: `unit-tests: 3153 tests passed in 144 files`.
+- `pnpm run gate:mutation -- --base 0efc2f72bfd57b33dabe5496070eb1fb0d6e61fb` (scratchpad `PLAYWRIGHT_BROWSERS_PATH`
+  alias): exit 0, `gates/lib/plant-runner.ts: mutation: zero-mutants: no mutant on the changed lines` (the changed
+  line is the numeric literal `shardSize = 1`, which Stryker does not mutate; only its doc comment changed beside it);
+  `0 mutants on the changed lines of 1 file`. No element source changed in this phase.
+- `pnpm run gate:plants -- --plan`: 76 shards (3 of the other plants, 48 `visual`, 25 `axe`).
+- `pnpm run gate:plants` (single run, `OCELLE_VISUAL_ENGINE=docker`, about 75 minutes): 300 of 301 plants as expected;
+  `unit-tests/fail-elements-chromium` exited 2 (`Vitest reported errors outside tests: Failed to run the test
+  .../packages/elements/test/x.test.ts`, 83.6 s, while the single run judged the other gates' plants at once) instead
+  of 1 with its finding. Re-run: the plant's tree alone gives exit 1 with exactly its finding (`AssertionError:
+  browser brands: Chromium, Not_A Brand ...`), and `gate:plants -- --shard 3` (the shard that holds it at size 1)
+  prints `plants: shard 3 of 76: 76 plants judged, every plant as expected` (that plant 15.0 s). Read as load in the
+  single run, not this phase's change; the reviewer may want CI's shard 3.
