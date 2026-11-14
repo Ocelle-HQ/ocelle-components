@@ -105,7 +105,8 @@ export class OcelleNotice extends LitElement {
       padding: 0;
       border: 0;
       overflow: hidden;
-      clip-path: inset(50%);
+      color: transparent;
+      forced-color-adjust: none;
       white-space: nowrap;
     }
 

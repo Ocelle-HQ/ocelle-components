@@ -220,7 +220,7 @@ export class Announcer {
   /** Whether the reading at the end of the wait is written: not empty, and not equal to the baseline. */
   protected recheck(text: string, politeness: Politeness): boolean {
     if (text === "") return false;
-    return this.baseline === null || this.baseline.text !== text || this.baseline.politeness !== politeness;
+    return this.baseline?.text !== text || this.baseline.politeness !== politeness;
   }
 
   /** Writes `text` as the copy, makes it the baseline and holds it. */

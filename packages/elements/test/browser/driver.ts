@@ -301,7 +301,7 @@ export function fixtureDriver(page: Page, log: readonly string[], withBase = fal
         const removed = (holder.ocelleRemoved ??= new Map<string, Element>());
         const byId = (id: string): Element => {
           const found = document.getElementById(id) ?? removed.get(id);
-          if (found === undefined || found === null) throw new Error(`no #${id} on the page`);
+          if (found === undefined) throw new Error(`no #${id} on the page`);
           return found;
         };
         for (const operation of operations) {
