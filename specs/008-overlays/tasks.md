@@ -239,7 +239,7 @@ the driver as it was.
   - regenerate `packages/elements/custom-elements.json` (`pnpm --filter @ocelle/elements run manifest`); first apply T013's fallback as decided (R-01): `packages/elements/scripts/manifest.ts` reads every `src/ocelle-*.ts` and `src/overlay.ts` and nothing else, and removes the `src/overlay.ts` module from its output, so T018 passes;
   - write the README `ocelle-dialog` section and the intro line (T019);
   - add the CHANGELOG "Added" entry for `ocelle-dialog`.
-- [ ] T025 [US1] Run the T015 to T019 suites green in both harnesses. Then run, one at a time: `gate:typecheck`, `gate:lint`, `gate:style-lint`, `gate:test-lint`, `gate:manifest`, `gate:csp`, `gate:prefix`, and `gate:mutation -- --base <phase base>`. Record every Timeout report line with its cause in `reviews/phase-2/notes.md`, and add an assertion that kills it where possible (R-15).
+- [X] T025 [US1] Run the T015 to T019 suites green in both harnesses. Then run, one at a time: `gate:typecheck`, `gate:lint`, `gate:style-lint`, `gate:test-lint`, `gate:manifest`, `gate:csp`, `gate:prefix`, and `gate:mutation -- --base <phase base>`. Record every Timeout report line with its cause in `reviews/phase-2/notes.md`, and add an assertion that kills it where possible (R-15).
 
 ### Stories (green, after T025)
 

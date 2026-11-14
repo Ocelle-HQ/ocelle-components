@@ -1,4 +1,4 @@
-$ node gates/bin/mutation.ts -- --base cc18f844faa15f01bcb6dc64f9f89f1f9d0d612e
+$ node gates/bin/mutation.ts -- --base cc18f84 --files gates/bin/axe.ts,gates/bin/visual.ts,gates/lib/story-page.ts,gates/lib/storybook-serve.ts,gates/lib/visual-host.ts,gates/visual/capture.ts,packages/elements/scripts/manifest.ts,packages/elements/src/focusable.ts,packages/elements/src/index.ts,packages/elements/src/ocelle-dialog.ts
 gates/bin/axe.ts:44: mutation: record: all: process boundary, covered by gates-integration: gates/test/integration/axe.test.ts "audits the repository's 58 story-themes and exits 0, the Prose document's ten color-contrast-incomplete nodes excepted and no other result (US3 scenarios 1 and 5, FR-029)"
 gates/bin/axe.ts:46: mutation: record: all: process boundary, covered by gates-integration: gates/test/integration/axe.test.ts "audits the repository's 58 story-themes and exits 0, the Prose document's ten color-contrast-incomplete nodes excepted and no other result (US3 scenarios 1 and 5, FR-029)"
 gates/bin/axe.ts:48: mutation: record: all: process boundary, covered by gates-integration: gates/test/integration/axe.test.ts "audits the repository's 58 story-themes and exits 0, the Prose document's ten color-contrast-incomplete nodes excepted and no other result (US3 scenarios 1 and 5, FR-029)"
@@ -276,341 +276,119 @@ gates/visual/capture.ts:119: mutation: record: all: process boundary, covered by
 gates/visual/capture.ts:121: mutation: record: all: process boundary, covered by gates-integration: gates/test/integration/visual.test.ts "captures the repository's 58 story-themes twice under docker and exits 0 naming them and the engine (US2 scenario 1)"
 gates/visual/capture.ts:123: mutation: record: all: process boundary, covered by gates-integration: gates/test/integration/visual.test.ts "captures the repository's 58 story-themes twice under docker and exits 0 naming them and the engine (US2 scenario 1)"
 gates/visual/capture.ts:125: mutation: record: all: process boundary, covered by gates-integration: gates/test/integration/visual.test.ts "captures the repository's 58 story-themes twice under docker and exits 0 naming them and the engine (US2 scenario 1)"
-packages/elements/src/overlay.ts:84: mutation: record: ObjectLiteral: equivalent, {} gives Lit's default options, which are type String's (attribute "label", the default converter, not reflected)
-packages/elements/src/focusable.ts:39: mutation: timeout: ConditionalExpression: replaced by true
-packages/elements/src/focusable.ts:48: mutation: timeout: ConditionalExpression: replaced by false
-packages/elements/src/focusable.ts:48: mutation: timeout: LogicalOperator: replaced by element.localName === "video" || element.localName === "audio" || element.hasAttribute("controls")
-packages/elements/src/focusable.ts:48: mutation: timeout: ConditionalExpression: replaced by true
-packages/elements/src/focusable.ts:48: mutation: timeout: ConditionalExpression: replaced by false
-packages/elements/src/focusable.ts:48: mutation: timeout: StringLiteral: replaced by ""
-packages/elements/src/focusable.ts:48: mutation: timeout: ConditionalExpression: replaced by false
-packages/elements/src/focusable.ts:48: mutation: timeout: EqualityOperator: replaced by element.localName !== "audio"
-packages/elements/src/focusable.ts:48: mutation: timeout: StringLiteral: replaced by ""
-packages/elements/src/focusable.ts:53: mutation: timeout: ConditionalExpression: replaced by true
-packages/elements/src/focusable.ts:53: mutation: timeout: LogicalOperator: replaced by element.getClientRects().length > 0 || getComputedStyle(element).visibility === "visible"
-packages/elements/src/focusable.ts:53: mutation: timeout: ConditionalExpression: replaced by true
-packages/elements/src/focusable.ts:53: mutation: timeout: EqualityOperator: replaced by element.getClientRects().length >= 0
-packages/elements/src/focusable.ts:53: mutation: timeout: ConditionalExpression: replaced by true
-packages/elements/src/focusable.ts:58: mutation: timeout: ConditionalExpression: replaced by false
-packages/elements/src/focusable.ts:59: mutation: timeout: ConditionalExpression: replaced by false
-packages/elements/src/focusable.ts:59: mutation: timeout: LogicalOperator: replaced by element.localName === "iframe" && isMedia(element)
-packages/elements/src/focusable.ts:59: mutation: timeout: ConditionalExpression: replaced by false
-packages/elements/src/focusable.ts:59: mutation: timeout: StringLiteral: replaced by ""
-packages/elements/src/focusable.ts:60: mutation: timeout: ConditionalExpression: replaced by false
-packages/elements/src/focusable.ts:60: mutation: timeout: ConditionalExpression: replaced by false
-packages/elements/src/focusable.ts:60: mutation: timeout: StringLiteral: replaced by ""
-packages/elements/src/focusable.ts:60: mutation: timeout: ConditionalExpression: replaced by false
-packages/elements/src/focusable.ts:60: mutation: timeout: StringLiteral: replaced by ""
-packages/elements/src/focusable.ts:61: mutation: timeout: ConditionalExpression: replaced by false
-packages/elements/src/focusable.ts:61: mutation: timeout: ConditionalExpression: replaced by true
-packages/elements/src/focusable.ts:61: mutation: timeout: EqualityOperator: replaced by element.localName !== "input"
-packages/elements/src/focusable.ts:61: mutation: timeout: StringLiteral: replaced by ""
-packages/elements/src/focusable.ts:67: mutation: timeout: ConditionalExpression: replaced by false
-packages/elements/src/focusable.ts:67: mutation: timeout: StringLiteral: replaced by ""
-packages/elements/src/focusable.ts:67: mutation: timeout: BooleanLiteral: replaced by true
-packages/elements/src/focusable.ts:69: mutation: timeout: ConditionalExpression: replaced by true
-packages/elements/src/focusable.ts:69: mutation: timeout: ConditionalExpression: replaced by false
-packages/elements/src/focusable.ts:69: mutation: timeout: EqualityOperator: replaced by value !== "scroll"
-packages/elements/src/focusable.ts:69: mutation: timeout: StringLiteral: replaced by ""
-packages/elements/src/focusable.ts:70: mutation: timeout: LogicalOperator: replaced by scrolls(style.overflowX) || element.scrollWidth > element.clientWidth
-packages/elements/src/focusable.ts:70: mutation: timeout: ConditionalExpression: replaced by false
-packages/elements/src/focusable.ts:70: mutation: timeout: LogicalOperator: replaced by scrolls(style.overflowY) || element.scrollHeight > element.clientHeight
-packages/elements/src/focusable.ts:77: mutation: timeout: ConditionalExpression: replaced by true
-packages/elements/src/focusable.ts:77: mutation: timeout: EqualityOperator: replaced by assigned.length >= 0
-packages/elements/src/focusable.ts:79: mutation: timeout: ArrayDeclaration: replaced by []
-packages/elements/src/focusable.ts:97: mutation: timeout: ConditionalExpression: replaced by false
-packages/elements/src/focusable.ts:97: mutation: timeout: BooleanLiteral: replaced by element instanceof SVGElement
-packages/elements/src/focusable.ts:98: mutation: timeout: ConditionalExpression: replaced by false
-packages/elements/src/focusable.ts:98: mutation: timeout: LogicalOperator: replaced by element.hasAttribute("inert") && element.hasAttribute("hidden")
-packages/elements/src/focusable.ts:98: mutation: timeout: StringLiteral: replaced by ""
-packages/elements/src/focusable.ts:98: mutation: timeout: StringLiteral: replaced by ""
-packages/elements/src/focusable.ts:98: mutation: timeout: BooleanLiteral: replaced by true
-packages/elements/src/focusable.ts:128: mutation: timeout: BooleanLiteral: replaced by false
-packages/elements/src/focusable.ts:131: mutation: timeout: ConditionalExpression: replaced by false
-packages/elements/src/focusable.ts:131: mutation: timeout: LogicalOperator: replaced by html.localName === "iframe" && isMedia(html)
-packages/elements/src/focusable.ts:131: mutation: timeout: ConditionalExpression: replaced by false
-packages/elements/src/focusable.ts:131: mutation: timeout: StringLiteral: replaced by ""
-packages/elements/src/focusable.ts:133: mutation: timeout: ConditionalExpression: replaced by true
-packages/elements/src/focusable.ts:133: mutation: timeout: ConditionalExpression: replaced by false
-packages/elements/src/focusable.ts:133: mutation: timeout: EqualityOperator: replaced by element.shadowRoot === null
-packages/elements/src/focusable.ts:136: mutation: timeout: CallExpression: replaced by ;
-packages/elements/src/focusable.ts:140: mutation: timeout: LogicalOperator: replaced by visit(child, inner) && inside
-packages/elements/src/focusable.ts:141: mutation: timeout: ConditionalExpression: replaced by true
-packages/elements/src/focusable.ts:151: mutation: timeout: ConditionalExpression: replaced by false
-packages/elements/src/focusable.ts:151: mutation: timeout: LogicalOperator: replaced by holds && inside
-packages/elements/src/focusable.ts:154: mutation: timeout: ArrayDeclaration: replaced by []
-packages/elements/src/focusable.ts:170: mutation: timeout: MethodExpression: replaced by scope.filter(each => each.tabIndex > 0)
-packages/elements/src/focusable.ts:170: mutation: timeout: ConditionalExpression: replaced by true
-packages/elements/src/focusable.ts:170: mutation: timeout: EqualityOperator: replaced by each.tabIndex >= 0
-packages/elements/src/focusable.ts:179: mutation: timeout: ConditionalExpression: replaced by false
-packages/elements/src/focusable.ts:179: mutation: timeout: ConditionalExpression: replaced by false
-packages/elements/src/overlay.ts:35: mutation: timeout: EqualityOperator: replaced by each !== ancestor
-packages/elements/src/overlay.ts:41: mutation: timeout: ConditionalExpression: replaced by false
-packages/elements/src/overlay.ts:52: mutation: timeout: CallExpression: replaced by ;
-packages/elements/src/overlay.ts:64: mutation: timeout: BooleanLiteral: replaced by closedByKnown
-packages/elements/src/overlay.ts:64: mutation: timeout: ConditionalExpression: replaced by true
-packages/elements/src/overlay.ts:64: mutation: timeout: ConditionalExpression: replaced by false
-packages/elements/src/overlay.ts:65: mutation: timeout: MethodExpression: replaced by (dialog.getAttribute("closedby") ?? "").toUpperCase()
-packages/elements/src/overlay.ts:65: mutation: timeout: StringLiteral: replaced by ""
-packages/elements/src/overlay.ts:65: mutation: timeout: StringLiteral: replaced by "Stryker was here!"
-packages/elements/src/overlay.ts:66: mutation: timeout: ConditionalExpression: replaced by true
-packages/elements/src/overlay.ts:66: mutation: timeout: ConditionalExpression: replaced by false
-packages/elements/src/overlay.ts:66: mutation: timeout: ConditionalExpression: replaced by false
-packages/elements/src/overlay.ts:66: mutation: timeout: StringLiteral: replaced by ""
-packages/elements/src/overlay.ts:66: mutation: timeout: ConditionalExpression: replaced by false
-packages/elements/src/overlay.ts:66: mutation: timeout: EqualityOperator: replaced by value !== "any"
-packages/elements/src/overlay.ts:66: mutation: timeout: StringLiteral: replaced by ""
-packages/elements/src/overlay.ts:71: mutation: timeout: MethodExpression: replaced by value
-packages/elements/src/overlay.ts:73: mutation: timeout: ConditionalExpression: replaced by true
-packages/elements/src/overlay.ts:73: mutation: timeout: ConditionalExpression: replaced by false
-packages/elements/src/overlay.ts:74: mutation: timeout: StringLiteral: replaced by ""
-packages/elements/src/overlay.ts:91: mutation: timeout: StringLiteral: replaced by ""
-packages/elements/src/overlay.ts:252: mutation: timeout: StringLiteral: replaced by ""
-packages/elements/src/overlay.ts:262: mutation: timeout: BooleanLiteral: replaced by true
-packages/elements/src/overlay.ts:263: mutation: timeout: BooleanLiteral: replaced by true
-packages/elements/src/overlay.ts:269: mutation: timeout: StringLiteral: replaced by ""
-packages/elements/src/overlay.ts:291: mutation: timeout: CallExpression: replaced by ;
-packages/elements/src/overlay.ts:296: mutation: timeout: ConditionalExpression: replaced by true
-packages/elements/src/overlay.ts:296: mutation: timeout: ConditionalExpression: replaced by false
-packages/elements/src/overlay.ts:296: mutation: timeout: EqualityOperator: replaced by this.querySelector(':scope > [slot="footer"]') === null
-packages/elements/src/overlay.ts:296: mutation: timeout: StringLiteral: replaced by ""
-packages/elements/src/overlay.ts:299: mutation: timeout: BlockStatement: replaced by {}
-packages/elements/src/overlay.ts:300: mutation: timeout: CallExpression: replaced by ;
-packages/elements/src/overlay.ts:302: mutation: timeout: ConditionalExpression: replaced by false
-packages/elements/src/overlay.ts:302: mutation: timeout: EqualityOperator: replaced by this.#state !== "closed"
-packages/elements/src/overlay.ts:306: mutation: timeout: BooleanLiteral: replaced by false
-packages/elements/src/overlay.ts:306: mutation: timeout: BlockStatement: replaced by {}
-packages/elements/src/overlay.ts:307: mutation: timeout: AssignmentOperator: replaced by this.#ownCloses -= 1
-packages/elements/src/overlay.ts:308: mutation: timeout: CallExpression: replaced by ;
-packages/elements/src/overlay.ts:310: mutation: timeout: CallExpression: replaced by ;
-packages/elements/src/overlay.ts:313: mutation: timeout: BooleanLiteral: replaced by true
-packages/elements/src/overlay.ts:317: mutation: timeout: StringLiteral: replaced by ""
-packages/elements/src/overlay.ts:318: mutation: timeout: StringLiteral: replaced by ""
-packages/elements/src/overlay.ts:321: mutation: timeout: StringLiteral: replaced by ""
-packages/elements/src/overlay.ts:322: mutation: timeout: ConditionalExpression: replaced by true
-packages/elements/src/overlay.ts:322: mutation: timeout: ConditionalExpression: replaced by false
-packages/elements/src/overlay.ts:322: mutation: timeout: LogicalOperator: replaced by named || name !== undefined
-packages/elements/src/overlay.ts:325: mutation: timeout: ObjectLiteral: replaced by {}
-packages/elements/src/overlay.ts:326: mutation: timeout: BlockStatement: replaced by {}
-packages/elements/src/overlay.ts:327: mutation: timeout: CallExpression: replaced by ;
-packages/elements/src/overlay.ts:329: mutation: timeout: BooleanLiteral: replaced by false
-packages/elements/src/overlay.ts:331: mutation: timeout: ObjectLiteral: replaced by {}
-packages/elements/src/overlay.ts:332: mutation: timeout: BlockStatement: replaced by {}
-packages/elements/src/overlay.ts:333: mutation: timeout: CallExpression: replaced by ;
-packages/elements/src/overlay.ts:335: mutation: timeout: BooleanLiteral: replaced by false
-packages/elements/src/overlay.ts:341: mutation: timeout: BooleanLiteral: replaced by false
-packages/elements/src/overlay.ts:343: mutation: timeout: LogicalOperator: replaced by this.label && ""
-packages/elements/src/overlay.ts:346: mutation: timeout: BlockStatement: replaced by {}
-packages/elements/src/overlay.ts:349: mutation: timeout: BlockStatement: replaced by {}
-packages/elements/src/overlay.ts:350: mutation: timeout: CallExpression: replaced by ;
-packages/elements/src/overlay.ts:352: mutation: timeout: CallExpression: replaced by ;
-packages/elements/src/overlay.ts:353: mutation: timeout: CallExpression: replaced by ;
-packages/elements/src/overlay.ts:357: mutation: timeout: ConditionalExpression: replaced by false
-packages/elements/src/overlay.ts:358: mutation: timeout: ConditionalExpression: replaced by true
-packages/elements/src/overlay.ts:359: mutation: timeout: ConditionalExpression: replaced by false
-packages/elements/src/overlay.ts:360: mutation: timeout: ConditionalExpression: replaced by false
-packages/elements/src/overlay.ts:360: mutation: timeout: BooleanLiteral: replaced by this.open
-packages/elements/src/overlay.ts:360: mutation: timeout: ConditionalExpression: replaced by false
-packages/elements/src/overlay.ts:360: mutation: timeout: ConditionalExpression: replaced by false
-packages/elements/src/overlay.ts:366: mutation: timeout: ConditionalExpression: replaced by true
-packages/elements/src/overlay.ts:371: mutation: timeout: ConditionalExpression: replaced by false
-packages/elements/src/overlay.ts:373: mutation: timeout: ConditionalExpression: replaced by true
-packages/elements/src/overlay.ts:387: mutation: timeout: ConditionalExpression: replaced by true
-packages/elements/src/overlay.ts:396: mutation: timeout: BlockStatement: replaced by {}
-packages/elements/src/overlay.ts:397: mutation: timeout: CallExpression: replaced by ;
-packages/elements/src/overlay.ts:399: mutation: timeout: BooleanLiteral: replaced by false
-packages/elements/src/overlay.ts:399: mutation: timeout: BlockStatement: replaced by {}
-packages/elements/src/overlay.ts:400: mutation: timeout: ConditionalExpression: replaced by true
-packages/elements/src/overlay.ts:400: mutation: timeout: ConditionalExpression: replaced by false
-packages/elements/src/overlay.ts:400: mutation: timeout: EqualityOperator: replaced by this.#state !== "opening"
-packages/elements/src/overlay.ts:432: mutation: timeout: ArrayDeclaration: replaced by []
-packages/elements/src/overlay.ts:439: mutation: timeout: ConditionalExpression: replaced by true
-packages/elements/src/overlay.ts:439: mutation: timeout: BooleanLiteral: replaced by false
-packages/elements/src/overlay.ts:457: mutation: timeout: ConditionalExpression: replaced by true
-packages/elements/src/overlay.ts:467: mutation: timeout: BooleanLiteral: replaced by true
-packages/elements/src/overlay.ts:468: mutation: timeout: ConditionalExpression: replaced by true
-packages/elements/src/overlay.ts:476: mutation: timeout: ConditionalExpression: replaced by true
-packages/elements/src/overlay.ts:476: mutation: timeout: ConditionalExpression: replaced by false
-packages/elements/src/overlay.ts:478: mutation: timeout: AssignmentOperator: replaced by this.#ownCloses -= 1
-packages/elements/src/overlay.ts:481: mutation: timeout: CallExpression: replaced by ;
-packages/elements/src/overlay.ts:483: mutation: timeout: CallExpression: replaced by ;
-packages/elements/src/overlay.ts:488: mutation: timeout: BlockStatement: replaced by {}
-packages/elements/src/overlay.ts:490: mutation: timeout: ConditionalExpression: replaced by true
-packages/elements/src/overlay.ts:490: mutation: timeout: ConditionalExpression: replaced by false
-packages/elements/src/overlay.ts:490: mutation: timeout: EqualityOperator: replaced by index > 0
-packages/elements/src/overlay.ts:490: mutation: timeout: EqualityOperator: replaced by index < 0
-packages/elements/src/overlay.ts:491: mutation: timeout: BooleanLiteral: replaced by true
-packages/elements/src/overlay.ts:492: mutation: timeout: CallExpression: replaced by ;
-packages/elements/src/overlay.ts:495: mutation: timeout: BlockStatement: replaced by {}
-packages/elements/src/overlay.ts:498: mutation: timeout: BooleanLiteral: replaced by ours
-packages/elements/src/overlay.ts:505: mutation: timeout: CallExpression: replaced by ;
-packages/elements/src/overlay.ts:522: mutation: timeout: ArrayDeclaration: replaced by []
-packages/elements/src/overlay.ts:522: mutation: timeout: ObjectLiteral: replaced by {}
-packages/elements/src/overlay.ts:522: mutation: timeout: ObjectLiteral: replaced by {}
-packages/elements/src/overlay.ts:522: mutation: timeout: ArrayDeclaration: replaced by []
-packages/elements/src/overlay.ts:522: mutation: timeout: ObjectLiteral: replaced by {}
-packages/elements/src/overlay.ts:522: mutation: timeout: ObjectLiteral: replaced by {}
-packages/elements/src/overlay.ts:529: mutation: timeout: StringLiteral: replaced by ""
-packages/elements/src/overlay.ts:530: mutation: timeout: StringLiteral: replaced by ""
-packages/elements/src/overlay.ts:531: mutation: timeout: ConditionalExpression: replaced by false
-packages/elements/src/overlay.ts:531: mutation: timeout: EqualityOperator: replaced by duration < 0
-packages/elements/src/overlay.ts:531: mutation: timeout: EqualityOperator: replaced by duration > 0
-packages/elements/src/overlay.ts:535: mutation: timeout: LogicalOperator: replaced by style.getPropertyValue("--ocelle-easing-standard").trim() && "linear"
-packages/elements/src/overlay.ts:535: mutation: timeout: MethodExpression: replaced by style.getPropertyValue("--ocelle-easing-standard")
-packages/elements/src/overlay.ts:535: mutation: timeout: StringLiteral: replaced by ""
-packages/elements/src/overlay.ts:536: mutation: timeout: ObjectLiteral: replaced by {}
-packages/elements/src/overlay.ts:539: mutation: timeout: ConditionalExpression: replaced by false
-packages/elements/src/overlay.ts:556: mutation: timeout: BooleanLiteral: replaced by false
-packages/elements/src/overlay.ts:560: mutation: timeout: ConditionalExpression: replaced by false
-packages/elements/src/overlay.ts:567: mutation: timeout: ConditionalExpression: replaced by false
-packages/elements/src/overlay.ts:574: mutation: timeout: BooleanLiteral: replaced by true
-packages/elements/src/overlay.ts:585: mutation: timeout: MethodExpression: replaced by this.#dialogs()
-packages/elements/src/overlay.ts:596: mutation: timeout: ConditionalExpression: replaced by false
-packages/elements/src/overlay.ts:597: mutation: timeout: MethodExpression: replaced by (each.getAttribute("popover") ?? "").toUpperCase()
-packages/elements/src/overlay.ts:597: mutation: timeout: StringLiteral: replaced by ""
-packages/elements/src/overlay.ts:597: mutation: timeout: StringLiteral: replaced by "Stryker was here!"
-packages/elements/src/overlay.ts:598: mutation: timeout: LogicalOperator: replaced by each.hasAttribute("popover") && popover !== "manual" || each.matches(":popover-open")
-packages/elements/src/overlay.ts:598: mutation: timeout: ConditionalExpression: replaced by true
-packages/elements/src/overlay.ts:598: mutation: timeout: LogicalOperator: replaced by each.hasAttribute("popover") || popover !== "manual"
-packages/elements/src/overlay.ts:600: mutation: timeout: BooleanLiteral: replaced by tab
-packages/elements/src/overlay.ts:600: mutation: timeout: BlockStatement: replaced by {}
-packages/elements/src/overlay.ts:602: mutation: timeout: BooleanLiteral: replaced by false
-packages/elements/src/overlay.ts:621: mutation: timeout: ConditionalExpression: replaced by false
-packages/elements/src/overlay.ts:625: mutation: timeout: ConditionalExpression: replaced by false
-packages/elements/src/overlay.ts:625: mutation: timeout: BlockStatement: replaced by {}
-packages/elements/src/overlay.ts:626: mutation: timeout: AssignmentOperator: replaced by this.#ownCloses += 1
-packages/elements/src/overlay.ts:645: mutation: timeout: BlockStatement: replaced by {}
-packages/elements/src/overlay.ts:647: mutation: timeout: ConditionalExpression: replaced by true
-packages/elements/src/overlay.ts:647: mutation: timeout: EqualityOperator: replaced by target === this.#dialog
-packages/elements/src/overlay.ts:647: mutation: timeout: ConditionalExpression: replaced by true
-packages/elements/src/overlay.ts:647: mutation: timeout: EqualityOperator: replaced by (event as ToggleEvent).oldState !== "open"
-packages/elements/src/overlay.ts:647: mutation: timeout: StringLiteral: replaced by ""
-packages/elements/src/overlay.ts:658: mutation: timeout: ConditionalExpression: replaced by true
-packages/elements/src/overlay.ts:658: mutation: timeout: ConditionalExpression: replaced by true
-packages/elements/src/overlay.ts:662: mutation: timeout: BooleanLiteral: replaced by false
-packages/elements/src/overlay.ts:664: mutation: timeout: MethodExpression: replaced by order
-packages/elements/src/overlay.ts:664: mutation: timeout: ConditionalExpression: replaced by true
-packages/elements/src/overlay.ts:675: mutation: timeout: ConditionalExpression: replaced by false
-packages/elements/src/overlay.ts:677: mutation: timeout: ConditionalExpression: replaced by false
-packages/elements/src/overlay.ts:680: mutation: timeout: ConditionalExpression: replaced by true
-packages/elements/src/overlay.ts:708: mutation: timeout: ConditionalExpression: replaced by false
-packages/elements/src/overlay.ts:718: mutation: timeout: BlockStatement: replaced by {}
-packages/elements/src/overlay.ts:719: mutation: timeout: CallExpression: replaced by ;
-packages/elements/src/overlay.ts:720: mutation: timeout: CallExpression: replaced by ;
-packages/elements/src/overlay.ts:730: mutation: timeout: BlockStatement: replaced by {}
-packages/elements/src/overlay.ts:734: mutation: timeout: CallExpression: replaced by ;
-packages/elements/src/overlay.ts:742: mutation: timeout: ConditionalExpression: replaced by false
-packages/elements/src/overlay.ts:758: mutation: timeout: LogicalOperator: replaced by index < pa.length && index < pb.length || pa[index] === pb[index]
-packages/elements/src/overlay.ts:758: mutation: timeout: AssignmentOperator: replaced by index -= 1
-packages/elements/scripts/manifest.ts:124: mutation: compile-error: ArrayDeclaration: replaced by []
-packages/elements/scripts/manifest.ts:125: mutation: compile-error: ArrowFunction: replaced by () => undefined
-packages/elements/scripts/manifest.ts:125: mutation: compile-error: StringLiteral: replaced by ""
-packages/elements/scripts/manifest.ts:126: mutation: compile-error: ObjectLiteral: replaced by {}
+packages/elements/scripts/manifest.ts:121: mutation: record: ArrayDeclaration: equivalent, a missing directory then lists one name, "Stryker was here", which is neither an ocelle-*.ts module nor overlay.ts, so nothing is read and the generator rejects as with none (T025)
+packages/elements/src/focusable.ts:145: mutation: record: ConditionalExpression: equivalent, a stop that also scrolls without a tabindex (a textarea) would be listed twice, side by side, which changes neither end of the cycle nor any explicit move (T025, reviews/phase-2/notes.md)
+packages/elements/src/focusable.ts:167: mutation: record: ConditionalExpression: equivalent, the scopes without the radio give -1, and an assignment at -1 adds a property, no entry, which no array method reads (T025, reviews/phase-2/notes.md)
+packages/elements/scripts/manifest.ts:125: mutation: compile-error: ArrayDeclaration: replaced by []
+packages/elements/scripts/manifest.ts:126: mutation: compile-error: ArrowFunction: replaced by () => undefined
+packages/elements/scripts/manifest.ts:126: mutation: compile-error: StringLiteral: replaced by ""
+packages/elements/scripts/manifest.ts:127: mutation: compile-error: ObjectLiteral: replaced by {}
 packages/elements/src/focusable.ts:38: mutation: compile-error: BlockStatement: replaced by {}
 packages/elements/src/focusable.ts:43: mutation: compile-error: BlockStatement: replaced by {}
 packages/elements/src/focusable.ts:47: mutation: compile-error: BlockStatement: replaced by {}
-packages/elements/src/focusable.ts:48: mutation: compile-error: LogicalOperator: replaced by element.localName === "video" && element.localName === "audio"
-packages/elements/src/focusable.ts:48: mutation: compile-error: EqualityOperator: replaced by element.localName !== "video"
 packages/elements/src/focusable.ts:52: mutation: compile-error: BlockStatement: replaced by {}
-packages/elements/src/focusable.ts:57: mutation: compile-error: BlockStatement: replaced by {}
-packages/elements/src/focusable.ts:59: mutation: compile-error: EqualityOperator: replaced by element.localName !== "iframe"
-packages/elements/src/focusable.ts:60: mutation: compile-error: LogicalOperator: replaced by element.localName === "a" && element.localName === "area"
-packages/elements/src/focusable.ts:60: mutation: compile-error: EqualityOperator: replaced by element.localName !== "a"
-packages/elements/src/focusable.ts:66: mutation: compile-error: BlockStatement: replaced by {}
-packages/elements/src/focusable.ts:69: mutation: compile-error: ArrowFunction: replaced by () => undefined
-packages/elements/src/focusable.ts:69: mutation: compile-error: LogicalOperator: replaced by value === "auto" && value === "scroll"
-packages/elements/src/focusable.ts:69: mutation: compile-error: EqualityOperator: replaced by value !== "auto"
-packages/elements/src/focusable.ts:74: mutation: compile-error: BlockStatement: replaced by {}
-packages/elements/src/focusable.ts:75: mutation: compile-error: ConditionalExpression: replaced by true
-packages/elements/src/focusable.ts:75: mutation: compile-error: ConditionalExpression: replaced by false
+packages/elements/src/focusable.ts:62: mutation: compile-error: BlockStatement: replaced by {}
+packages/elements/src/focusable.ts:70: mutation: compile-error: BlockStatement: replaced by {}
+packages/elements/src/focusable.ts:73: mutation: compile-error: ArrowFunction: replaced by () => undefined
+packages/elements/src/focusable.ts:73: mutation: compile-error: LogicalOperator: replaced by value === "auto" && value === "scroll"
+packages/elements/src/focusable.ts:73: mutation: compile-error: EqualityOperator: replaced by value !== "auto"
+packages/elements/src/focusable.ts:78: mutation: compile-error: BlockStatement: replaced by {}
 packages/elements/src/focusable.ts:79: mutation: compile-error: ConditionalExpression: replaced by true
 packages/elements/src/focusable.ts:79: mutation: compile-error: ConditionalExpression: replaced by false
-packages/elements/src/focusable.ts:79: mutation: compile-error: LogicalOperator: replaced by node instanceof Element || node.shadowRoot !== null
-packages/elements/src/focusable.ts:79: mutation: compile-error: ConditionalExpression: replaced by true
-packages/elements/src/focusable.ts:79: mutation: compile-error: EqualityOperator: replaced by node.shadowRoot === null
-packages/elements/src/focusable.ts:84: mutation: compile-error: BlockStatement: replaced by {}
-packages/elements/src/focusable.ts:92: mutation: compile-error: BlockStatement: replaced by {}
-packages/elements/src/focusable.ts:93: mutation: compile-error: ArrayDeclaration: replaced by ["Stryker was here"]
-packages/elements/src/focusable.ts:94: mutation: compile-error: ArrayDeclaration: replaced by ["Stryker was here"]
+packages/elements/src/focusable.ts:83: mutation: compile-error: ConditionalExpression: replaced by true
+packages/elements/src/focusable.ts:83: mutation: compile-error: ConditionalExpression: replaced by false
+packages/elements/src/focusable.ts:83: mutation: compile-error: EqualityOperator: replaced by node.shadowRoot === null
+packages/elements/src/focusable.ts:88: mutation: compile-error: BlockStatement: replaced by {}
 packages/elements/src/focusable.ts:96: mutation: compile-error: BlockStatement: replaced by {}
-packages/elements/src/focusable.ts:97: mutation: compile-error: ConditionalExpression: replaced by true
-packages/elements/src/focusable.ts:98: mutation: compile-error: ConditionalExpression: replaced by true
-packages/elements/src/focusable.ts:102: mutation: compile-error: ConditionalExpression: replaced by true
-packages/elements/src/focusable.ts:102: mutation: compile-error: ConditionalExpression: replaced by false
-packages/elements/src/focusable.ts:102: mutation: compile-error: LogicalOperator: replaced by html !== undefined || isOpaque(html)
-packages/elements/src/focusable.ts:102: mutation: compile-error: ConditionalExpression: replaced by true
-packages/elements/src/focusable.ts:102: mutation: compile-error: EqualityOperator: replaced by html === undefined
-packages/elements/src/focusable.ts:103: mutation: compile-error: ObjectLiteral: replaced by {}
-packages/elements/src/focusable.ts:103: mutation: compile-error: StringLiteral: replaced by ""
-packages/elements/src/focusable.ts:105: mutation: compile-error: ObjectLiteral: replaced by {}
-packages/elements/src/focusable.ts:106: mutation: compile-error: ConditionalExpression: replaced by true
-packages/elements/src/focusable.ts:106: mutation: compile-error: ConditionalExpression: replaced by false
-packages/elements/src/focusable.ts:106: mutation: compile-error: LogicalOperator: replaced by html !== undefined && sequential(html) || rendered(html)
-packages/elements/src/focusable.ts:106: mutation: compile-error: ConditionalExpression: replaced by true
-packages/elements/src/focusable.ts:106: mutation: compile-error: LogicalOperator: replaced by html !== undefined || sequential(html)
-packages/elements/src/focusable.ts:106: mutation: compile-error: ConditionalExpression: replaced by true
-packages/elements/src/focusable.ts:106: mutation: compile-error: EqualityOperator: replaced by html === undefined
-packages/elements/src/focusable.ts:107: mutation: compile-error: ConditionalExpression: replaced by true
-packages/elements/src/focusable.ts:107: mutation: compile-error: ConditionalExpression: replaced by false
-packages/elements/src/focusable.ts:107: mutation: compile-error: LogicalOperator: replaced by html instanceof HTMLInputElement && html.type === "radio" || html.name !== ""
-packages/elements/src/focusable.ts:107: mutation: compile-error: ConditionalExpression: replaced by true
-packages/elements/src/focusable.ts:107: mutation: compile-error: LogicalOperator: replaced by html instanceof HTMLInputElement || html.type === "radio"
-packages/elements/src/focusable.ts:112: mutation: compile-error: ConditionalExpression: replaced by true
-packages/elements/src/focusable.ts:112: mutation: compile-error: ConditionalExpression: replaced by false
-packages/elements/src/focusable.ts:112: mutation: compile-error: EqualityOperator: replaced by first !== undefined
-packages/elements/src/focusable.ts:113: mutation: compile-error: ObjectLiteral: replaced by {}
-packages/elements/src/focusable.ts:113: mutation: compile-error: StringLiteral: replaced by ""
-packages/elements/src/focusable.ts:115: mutation: compile-error: ObjectLiteral: replaced by {}
-packages/elements/src/focusable.ts:116: mutation: compile-error: ConditionalExpression: replaced by false
+packages/elements/src/focusable.ts:97: mutation: compile-error: ArrayDeclaration: replaced by ["Stryker was here"]
+packages/elements/src/focusable.ts:98: mutation: compile-error: ArrayDeclaration: replaced by ["Stryker was here"]
+packages/elements/src/focusable.ts:100: mutation: compile-error: BlockStatement: replaced by {}
+packages/elements/src/focusable.ts:103: mutation: compile-error: ConditionalExpression: replaced by true
+packages/elements/src/focusable.ts:108: mutation: compile-error: ConditionalExpression: replaced by true
+packages/elements/src/focusable.ts:108: mutation: compile-error: ConditionalExpression: replaced by false
+packages/elements/src/focusable.ts:108: mutation: compile-error: LogicalOperator: replaced by html !== undefined || isOpaque(html)
+packages/elements/src/focusable.ts:108: mutation: compile-error: ConditionalExpression: replaced by true
+packages/elements/src/focusable.ts:108: mutation: compile-error: EqualityOperator: replaced by html === undefined
+packages/elements/src/focusable.ts:110: mutation: compile-error: ObjectLiteral: replaced by {}
+packages/elements/src/focusable.ts:110: mutation: compile-error: StringLiteral: replaced by ""
+packages/elements/src/focusable.ts:112: mutation: compile-error: ObjectLiteral: replaced by {}
+packages/elements/src/focusable.ts:113: mutation: compile-error: ConditionalExpression: replaced by true
+packages/elements/src/focusable.ts:113: mutation: compile-error: ConditionalExpression: replaced by false
+packages/elements/src/focusable.ts:113: mutation: compile-error: LogicalOperator: replaced by html !== undefined && sequential(html) || rendered(html)
+packages/elements/src/focusable.ts:113: mutation: compile-error: ConditionalExpression: replaced by true
+packages/elements/src/focusable.ts:113: mutation: compile-error: LogicalOperator: replaced by html !== undefined || sequential(html)
+packages/elements/src/focusable.ts:113: mutation: compile-error: ConditionalExpression: replaced by true
+packages/elements/src/focusable.ts:113: mutation: compile-error: EqualityOperator: replaced by html === undefined
+packages/elements/src/focusable.ts:114: mutation: compile-error: ConditionalExpression: replaced by true
+packages/elements/src/focusable.ts:114: mutation: compile-error: ConditionalExpression: replaced by false
+packages/elements/src/focusable.ts:114: mutation: compile-error: LogicalOperator: replaced by html instanceof HTMLInputElement && html.type === "radio" || html.name !== ""
+packages/elements/src/focusable.ts:114: mutation: compile-error: ConditionalExpression: replaced by true
+packages/elements/src/focusable.ts:114: mutation: compile-error: LogicalOperator: replaced by html instanceof HTMLInputElement || html.type === "radio"
+packages/elements/src/focusable.ts:118: mutation: compile-error: ConditionalExpression: replaced by true
+packages/elements/src/focusable.ts:118: mutation: compile-error: ConditionalExpression: replaced by false
+packages/elements/src/focusable.ts:118: mutation: compile-error: EqualityOperator: replaced by first !== undefined
 packages/elements/src/focusable.ts:119: mutation: compile-error: ObjectLiteral: replaced by {}
 packages/elements/src/focusable.ts:119: mutation: compile-error: StringLiteral: replaced by ""
-packages/elements/src/focusable.ts:125: mutation: compile-error: ObjectLiteral: replaced by {}
-packages/elements/src/focusable.ts:125: mutation: compile-error: StringLiteral: replaced by ""
-packages/elements/src/focusable.ts:127: mutation: compile-error: ObjectLiteral: replaced by {}
-packages/elements/src/focusable.ts:131: mutation: compile-error: ConditionalExpression: replaced by true
-packages/elements/src/focusable.ts:131: mutation: compile-error: LogicalOperator: replaced by html !== undefined || html.localName === "iframe" || isMedia(html)
-packages/elements/src/focusable.ts:131: mutation: compile-error: ConditionalExpression: replaced by true
-packages/elements/src/focusable.ts:131: mutation: compile-error: EqualityOperator: replaced by html === undefined
-packages/elements/src/focusable.ts:134: mutation: compile-error: ArrayDeclaration: replaced by ["Stryker was here"]
-packages/elements/src/focusable.ts:137: mutation: compile-error: ObjectLiteral: replaced by {}
-packages/elements/src/focusable.ts:141: mutation: compile-error: ConditionalExpression: replaced by true
-packages/elements/src/focusable.ts:141: mutation: compile-error: ConditionalExpression: replaced by false
-packages/elements/src/focusable.ts:141: mutation: compile-error: LogicalOperator: replaced by !holds && !inside && html !== undefined && !isOpaque(html) && rendered(html) || scroller(html)
-packages/elements/src/focusable.ts:141: mutation: compile-error: ConditionalExpression: replaced by true
-packages/elements/src/focusable.ts:141: mutation: compile-error: LogicalOperator: replaced by !holds && !inside && html !== undefined && !isOpaque(html) || rendered(html)
-packages/elements/src/focusable.ts:141: mutation: compile-error: ConditionalExpression: replaced by true
-packages/elements/src/focusable.ts:141: mutation: compile-error: LogicalOperator: replaced by !holds && !inside && html !== undefined || !isOpaque(html)
-packages/elements/src/focusable.ts:141: mutation: compile-error: ConditionalExpression: replaced by true
-packages/elements/src/focusable.ts:141: mutation: compile-error: LogicalOperator: replaced by !holds && !inside || html !== undefined
-packages/elements/src/focusable.ts:141: mutation: compile-error: LogicalOperator: replaced by !holds || !inside
-packages/elements/src/focusable.ts:141: mutation: compile-error: ConditionalExpression: replaced by true
-packages/elements/src/focusable.ts:141: mutation: compile-error: EqualityOperator: replaced by html === undefined
-packages/elements/src/focusable.ts:142: mutation: compile-error: ObjectLiteral: replaced by {}
-packages/elements/src/focusable.ts:142: mutation: compile-error: StringLiteral: replaced by ""
-packages/elements/src/focusable.ts:145: mutation: compile-error: LogicalOperator: replaced by scope.find(each => each.scope === inner) && {} as Entry
-packages/elements/src/focusable.ts:146: mutation: compile-error: ObjectLiteral: replaced by {}
-packages/elements/src/focusable.ts:147: mutation: compile-error: CallExpression: replaced by ;
-packages/elements/src/focusable.ts:153: mutation: compile-error: ArrayDeclaration: replaced by ["Stryker was here"]
-packages/elements/src/focusable.ts:157: mutation: compile-error: ObjectLiteral: replaced by {}
-packages/elements/src/focusable.ts:163: mutation: compile-error: OptionalChaining: replaced by each.candidate.element
-packages/elements/src/focusable.ts:164: mutation: compile-error: ObjectLiteral: replaced by {}
-packages/elements/src/focusable.ts:169: mutation: compile-error: BlockStatement: replaced by {}
-packages/elements/src/focusable.ts:170: mutation: compile-error: MethodExpression: replaced by scope
-packages/elements/src/focusable.ts:170: mutation: compile-error: ArrowFunction: replaced by () => undefined
-packages/elements/src/focusable.ts:172: mutation: compile-error: ArrayDeclaration: replaced by []
-packages/elements/src/focusable.ts:172: mutation: compile-error: ArrowFunction: replaced by () => undefined
-packages/elements/src/focusable.ts:172: mutation: compile-error: ConditionalExpression: replaced by true
-packages/elements/src/focusable.ts:172: mutation: compile-error: ConditionalExpression: replaced by false
-packages/elements/src/focusable.ts:172: mutation: compile-error: EqualityOperator: replaced by each.scope === undefined
-packages/elements/src/focusable.ts:172: mutation: compile-error: ConditionalExpression: replaced by true
-packages/elements/src/focusable.ts:172: mutation: compile-error: ConditionalExpression: replaced by false
-packages/elements/src/focusable.ts:172: mutation: compile-error: EqualityOperator: replaced by each.candidate === undefined
-packages/elements/src/focusable.ts:172: mutation: compile-error: ArrayDeclaration: replaced by ["Stryker was here"]
+packages/elements/src/focusable.ts:121: mutation: compile-error: ObjectLiteral: replaced by {}
+packages/elements/src/focusable.ts:122: mutation: compile-error: ConditionalExpression: replaced by false
+packages/elements/src/focusable.ts:124: mutation: compile-error: ObjectLiteral: replaced by {}
+packages/elements/src/focusable.ts:124: mutation: compile-error: StringLiteral: replaced by ""
+packages/elements/src/focusable.ts:130: mutation: compile-error: ObjectLiteral: replaced by {}
+packages/elements/src/focusable.ts:130: mutation: compile-error: StringLiteral: replaced by ""
+packages/elements/src/focusable.ts:132: mutation: compile-error: ObjectLiteral: replaced by {}
+packages/elements/src/focusable.ts:138: mutation: compile-error: ArrayDeclaration: replaced by ["Stryker was here"]
+packages/elements/src/focusable.ts:141: mutation: compile-error: ObjectLiteral: replaced by {}
+packages/elements/src/focusable.ts:146: mutation: compile-error: LogicalOperator: replaced by !holds && !inside && html !== undefined && !isOpaque(html) && rendered(html) || scroller(html)
+packages/elements/src/focusable.ts:146: mutation: compile-error: LogicalOperator: replaced by !holds && !inside && html !== undefined && !isOpaque(html) || rendered(html)
+packages/elements/src/focusable.ts:146: mutation: compile-error: LogicalOperator: replaced by !holds && !inside && html !== undefined || !isOpaque(html)
+packages/elements/src/focusable.ts:146: mutation: compile-error: LogicalOperator: replaced by !holds && !inside || html !== undefined
+packages/elements/src/focusable.ts:146: mutation: compile-error: LogicalOperator: replaced by !holds || !inside
+packages/elements/src/focusable.ts:146: mutation: compile-error: EqualityOperator: replaced by html === undefined
+packages/elements/src/focusable.ts:148: mutation: compile-error: ObjectLiteral: replaced by {}
+packages/elements/src/focusable.ts:148: mutation: compile-error: StringLiteral: replaced by ""
+packages/elements/src/focusable.ts:150: mutation: compile-error: ObjectLiteral: replaced by {}
+packages/elements/src/focusable.ts:155: mutation: compile-error: ArrayDeclaration: replaced by ["Stryker was here"]
+packages/elements/src/focusable.ts:158: mutation: compile-error: ArrayDeclaration: replaced by ["Stryker was here"]
+packages/elements/src/focusable.ts:160: mutation: compile-error: ObjectLiteral: replaced by {}
+packages/elements/src/focusable.ts:166: mutation: compile-error: OptionalChaining: replaced by each.candidate.element
+packages/elements/src/focusable.ts:168: mutation: compile-error: ObjectLiteral: replaced by {}
 packages/elements/src/focusable.ts:176: mutation: compile-error: BlockStatement: replaced by {}
+packages/elements/src/focusable.ts:177: mutation: compile-error: ArrowFunction: replaced by () => undefined
+packages/elements/src/focusable.ts:178: mutation: compile-error: ArrayDeclaration: replaced by []
+packages/elements/src/focusable.ts:178: mutation: compile-error: ArrowFunction: replaced by () => undefined
+packages/elements/src/focusable.ts:178: mutation: compile-error: ArrowFunction: replaced by () => undefined
+packages/elements/src/focusable.ts:178: mutation: compile-error: ConditionalExpression: replaced by true
 packages/elements/src/focusable.ts:178: mutation: compile-error: ConditionalExpression: replaced by false
-packages/elements/src/focusable.ts:178: mutation: compile-error: EqualityOperator: replaced by active?.shadowRoot?.activeElement == null
-packages/elements/src/focusable.ts:178: mutation: compile-error: OptionalChaining: replaced by active?.shadowRoot.activeElement
-packages/elements/src/focusable.ts:178: mutation: compile-error: OptionalChaining: replaced by active.shadowRoot
+packages/elements/src/focusable.ts:178: mutation: compile-error: EqualityOperator: replaced by each.scope === undefined
+packages/elements/src/focusable.ts:178: mutation: compile-error: ConditionalExpression: replaced by true
+packages/elements/src/focusable.ts:178: mutation: compile-error: ConditionalExpression: replaced by false
+packages/elements/src/focusable.ts:178: mutation: compile-error: EqualityOperator: replaced by each.candidate === undefined
+packages/elements/src/focusable.ts:178: mutation: compile-error: ArrayDeclaration: replaced by ["Stryker was here"]
+packages/elements/src/focusable.ts:182: mutation: compile-error: BlockStatement: replaced by {}
+packages/elements/src/focusable.ts:184: mutation: compile-error: ConditionalExpression: replaced by false
+packages/elements/src/focusable.ts:184: mutation: compile-error: EqualityOperator: replaced by active?.shadowRoot?.activeElement == null
+packages/elements/src/focusable.ts:184: mutation: compile-error: OptionalChaining: replaced by active?.shadowRoot.activeElement
+packages/elements/src/focusable.ts:184: mutation: compile-error: OptionalChaining: replaced by active.shadowRoot
+gates/bin/axe.ts: mutation: zero-mutants: no mutant on the changed lines
+gates/bin/visual.ts: mutation: zero-mutants: no mutant on the changed lines
+gates/lib/story-page.ts: mutation: zero-mutants: no mutant on the changed lines
+gates/lib/storybook-serve.ts: mutation: zero-mutants: no mutant on the changed lines
+gates/lib/visual-host.ts: mutation: zero-mutants: no mutant on the changed lines
+gates/visual/capture.ts: mutation: zero-mutants: no mutant on the changed lines
+packages/elements/src/index.ts: mutation: zero-mutants: no mutant on the changed lines
+mutation: 290 mutants on the changed lines of 10 files, none survived; 0 timeouts, 90 compile errors, 7 zero-mutant entries; 280 equivalent records
+$ node gates/bin/mutation.ts -- --base cc18f84 --files packages/elements/src/overlay.ts:1-446
+packages/elements/src/overlay.ts:76: mutation: record: EqualityOperator: equivalent, a duration of exactly 0 ms runs nothing either way, no animation or one that ends at the next frame, before any observation (T025, reviews/phase-2/notes.md)
+packages/elements/src/overlay.ts:87: mutation: record: ObjectLiteral: equivalent, {} gives Lit's default options, which are type String's (attribute "label", the default converter, not reflected)
+packages/elements/src/overlay.ts:270: mutation: record: BooleanLiteral: equivalent, measured before any key reaches the panel: by the body's resize observer when it gets its box at showModal() (T025, reviews/phase-2/notes.md)
+packages/elements/src/overlay.ts:304: mutation: record: CallExpression: equivalent, Lit's own disconnection serves reactive controllers and async directives, and the overlays use neither (T025, reviews/phase-2/notes.md)
+packages/elements/src/overlay.ts:323: mutation: record: ConditionalExpression, LogicalOperator: equivalent, an aria-label given as well while the heading labels the panel (aria-labelledby wins), or an empty one where the host's is blank, gives the same name (T025, reviews/phase-2/notes.md)
+packages/elements/src/overlay.ts:335: mutation: record: BooleanLiteral: equivalent, without capture the slotted dialogs' close events are not seen, and their toggles leave the below record (T025, reviews/phase-2/notes.md)
+packages/elements/src/overlay.ts:339: mutation: record: BlockStatement: equivalent, every close of a slotted dialog also fires its close event, which leaves the below record first (T025, reviews/phase-2/notes.md)
+packages/elements/src/overlay.ts:341: mutation: record: CallExpression: equivalent, every close of a slotted dialog also fires its close event, which leaves the below record first (T025, reviews/phase-2/notes.md)
+packages/elements/src/overlay.ts:344: mutation: record: BooleanLiteral: equivalent, without capture the slotted dialogs' toggles are not seen, and their close events leave the record (T025, reviews/phase-2/notes.md)
+packages/elements/src/overlay.ts:398: mutation: record: BlockStatement: equivalent, opening and shown are handled alike everywhere: each check names both (T025, reviews/phase-2/notes.md)
+packages/elements/src/overlay.ts:400: mutation: record: ConditionalExpression, EqualityOperator: equivalent, opening and shown are handled alike everywhere: each check names both (T025, reviews/phase-2/notes.md)
 packages/elements/src/overlay.ts:20: mutation: compile-error: ArrayDeclaration: replaced by ["Stryker was here"]
 packages/elements/src/overlay.ts:23: mutation: compile-error: BlockStatement: replaced by {}
 packages/elements/src/overlay.ts:28: mutation: compile-error: BlockStatement: replaced by {}
@@ -631,461 +409,246 @@ packages/elements/src/overlay.ts:51: mutation: compile-error: ConditionalExpress
 packages/elements/src/overlay.ts:51: mutation: compile-error: ConditionalExpression: replaced by false
 packages/elements/src/overlay.ts:51: mutation: compile-error: EqualityOperator: replaced by child.shadowRoot === null
 packages/elements/src/overlay.ts:51: mutation: compile-error: CallExpression: replaced by ;
-packages/elements/src/overlay.ts:63: mutation: compile-error: BlockStatement: replaced by {}
-packages/elements/src/overlay.ts:65: mutation: compile-error: LogicalOperator: replaced by dialog.getAttribute("closedby") && ""
-packages/elements/src/overlay.ts:66: mutation: compile-error: LogicalOperator: replaced by value === "closerequest" && value === "any"
-packages/elements/src/overlay.ts:66: mutation: compile-error: EqualityOperator: replaced by value !== "closerequest"
-packages/elements/src/overlay.ts:70: mutation: compile-error: BlockStatement: replaced by {}
-packages/elements/src/overlay.ts:90: mutation: compile-error: BlockStatement: replaced by {}
-packages/elements/src/overlay.ts:254: mutation: compile-error: StringLiteral: replaced by ""
-packages/elements/src/overlay.ts:255: mutation: compile-error: StringLiteral: replaced by ""
-packages/elements/src/overlay.ts:273: mutation: compile-error: BlockStatement: replaced by {}
-packages/elements/src/overlay.ts:277: mutation: compile-error: BlockStatement: replaced by {}
-packages/elements/src/overlay.ts:281: mutation: compile-error: BlockStatement: replaced by {}
-packages/elements/src/overlay.ts:285: mutation: compile-error: BlockStatement: replaced by {}
-packages/elements/src/overlay.ts:302: mutation: compile-error: ConditionalExpression: replaced by true
-packages/elements/src/overlay.ts:302: mutation: compile-error: StringLiteral: replaced by ""
-packages/elements/src/overlay.ts:303: mutation: compile-error: OptionalChaining: replaced by this.#animation.cancel
-packages/elements/src/overlay.ts:306: mutation: compile-error: ConditionalExpression: replaced by true
-packages/elements/src/overlay.ts:306: mutation: compile-error: ConditionalExpression: replaced by false
-packages/elements/src/overlay.ts:306: mutation: compile-error: EqualityOperator: replaced by dialog?.open !== true
-packages/elements/src/overlay.ts:306: mutation: compile-error: OptionalChaining: replaced by dialog.open
-packages/elements/src/overlay.ts:312: mutation: compile-error: StringLiteral: replaced by ""
-packages/elements/src/overlay.ts:316: mutation: compile-error: BlockStatement: replaced by {}
-packages/elements/src/overlay.ts:348: mutation: compile-error: ConditionalExpression: replaced by true
-packages/elements/src/overlay.ts:348: mutation: compile-error: ConditionalExpression: replaced by false
-packages/elements/src/overlay.ts:348: mutation: compile-error: EqualityOperator: replaced by body !== null
-packages/elements/src/overlay.ts:357: mutation: compile-error: StringLiteral: replaced by ""
-packages/elements/src/overlay.ts:358: mutation: compile-error: StringLiteral: replaced by ""
-packages/elements/src/overlay.ts:358: mutation: compile-error: CallExpression: replaced by ;
-packages/elements/src/overlay.ts:359: mutation: compile-error: StringLiteral: replaced by ""
-packages/elements/src/overlay.ts:359: mutation: compile-error: CallExpression: replaced by ;
-packages/elements/src/overlay.ts:360: mutation: compile-error: LogicalOperator: replaced by this.#state === "opening" && this.#state === "shown"
-packages/elements/src/overlay.ts:360: mutation: compile-error: EqualityOperator: replaced by this.#state !== "opening"
-packages/elements/src/overlay.ts:360: mutation: compile-error: StringLiteral: replaced by ""
-packages/elements/src/overlay.ts:360: mutation: compile-error: StringLiteral: replaced by ""
-packages/elements/src/overlay.ts:360: mutation: compile-error: StringLiteral: replaced by ""
-packages/elements/src/overlay.ts:373: mutation: compile-error: StringLiteral: replaced by ""
-packages/elements/src/overlay.ts:374: mutation: compile-error: StringLiteral: replaced by ""
-packages/elements/src/overlay.ts:381: mutation: compile-error: ConditionalExpression: replaced by true
-packages/elements/src/overlay.ts:381: mutation: compile-error: ConditionalExpression: replaced by false
-packages/elements/src/overlay.ts:381: mutation: compile-error: LogicalOperator: replaced by dialog === null && !this.isConnected
-packages/elements/src/overlay.ts:381: mutation: compile-error: ConditionalExpression: replaced by false
-packages/elements/src/overlay.ts:381: mutation: compile-error: EqualityOperator: replaced by dialog !== null
-packages/elements/src/overlay.ts:383: mutation: compile-error: LogicalOperator: replaced by opener !== null && overlay.#state === "closing" || within(opener, overlay)
-packages/elements/src/overlay.ts:383: mutation: compile-error: ConditionalExpression: replaced by true
-packages/elements/src/overlay.ts:383: mutation: compile-error: LogicalOperator: replaced by opener !== null || overlay.#state === "closing"
-packages/elements/src/overlay.ts:383: mutation: compile-error: ConditionalExpression: replaced by true
-packages/elements/src/overlay.ts:383: mutation: compile-error: EqualityOperator: replaced by opener === null
-packages/elements/src/overlay.ts:383: mutation: compile-error: StringLiteral: replaced by ""
-packages/elements/src/overlay.ts:387: mutation: compile-error: ConditionalExpression: replaced by false
-packages/elements/src/overlay.ts:394: mutation: compile-error: StringLiteral: replaced by ""
-packages/elements/src/overlay.ts:400: mutation: compile-error: StringLiteral: replaced by ""
-packages/elements/src/overlay.ts:400: mutation: compile-error: StringLiteral: replaced by ""
-packages/elements/src/overlay.ts:405: mutation: compile-error: OptionalChaining: replaced by this.#animation.cancel
-packages/elements/src/overlay.ts:407: mutation: compile-error: StringLiteral: replaced by ""
-packages/elements/src/overlay.ts:411: mutation: compile-error: BlockStatement: replaced by {}
-packages/elements/src/overlay.ts:413: mutation: compile-error: LogicalOperator: replaced by slot?.assignedElements() && []
-packages/elements/src/overlay.ts:413: mutation: compile-error: OptionalChaining: replaced by slot.assignedElements
-packages/elements/src/overlay.ts:413: mutation: compile-error: ArrayDeclaration: replaced by ["Stryker was here"]
+packages/elements/src/overlay.ts:64: mutation: compile-error: BlockStatement: replaced by {}
+packages/elements/src/overlay.ts:65: mutation: compile-error: LogicalOperator: replaced by dialog.closedBy === "closerequest" && dialog.closedBy === "any"
+packages/elements/src/overlay.ts:65: mutation: compile-error: EqualityOperator: replaced by dialog.closedBy !== "closerequest"
+packages/elements/src/overlay.ts:69: mutation: compile-error: BlockStatement: replaced by {}
+packages/elements/src/overlay.ts:75: mutation: compile-error: BlockStatement: replaced by {}
+packages/elements/src/overlay.ts:93: mutation: compile-error: BlockStatement: replaced by {}
+packages/elements/src/overlay.ts:263: mutation: compile-error: StringLiteral: replaced by ""
+packages/elements/src/overlay.ts:264: mutation: compile-error: StringLiteral: replaced by ""
+packages/elements/src/overlay.ts:282: mutation: compile-error: BlockStatement: replaced by {}
+packages/elements/src/overlay.ts:286: mutation: compile-error: BlockStatement: replaced by {}
+packages/elements/src/overlay.ts:290: mutation: compile-error: BlockStatement: replaced by {}
+packages/elements/src/overlay.ts:294: mutation: compile-error: BlockStatement: replaced by {}
+packages/elements/src/overlay.ts:307: mutation: compile-error: StringLiteral: replaced by ""
+packages/elements/src/overlay.ts:308: mutation: compile-error: OptionalChaining: replaced by this.#animation.cancel
+packages/elements/src/overlay.ts:313: mutation: compile-error: StringLiteral: replaced by ""
+packages/elements/src/overlay.ts:317: mutation: compile-error: BlockStatement: replaced by {}
+packages/elements/src/overlay.ts:353: mutation: compile-error: ConditionalExpression: replaced by true
+packages/elements/src/overlay.ts:353: mutation: compile-error: ConditionalExpression: replaced by false
+packages/elements/src/overlay.ts:353: mutation: compile-error: EqualityOperator: replaced by body !== null
+packages/elements/src/overlay.ts:363: mutation: compile-error: StringLiteral: replaced by ""
+packages/elements/src/overlay.ts:363: mutation: compile-error: CallExpression: replaced by ;
+packages/elements/src/overlay.ts:364: mutation: compile-error: StringLiteral: replaced by ""
+packages/elements/src/overlay.ts:364: mutation: compile-error: CallExpression: replaced by ;
+packages/elements/src/overlay.ts:365: mutation: compile-error: LogicalOperator: replaced by this.#state === "opening" && this.#state === "shown"
+packages/elements/src/overlay.ts:365: mutation: compile-error: EqualityOperator: replaced by this.#state !== "opening"
+packages/elements/src/overlay.ts:365: mutation: compile-error: StringLiteral: replaced by ""
+packages/elements/src/overlay.ts:365: mutation: compile-error: StringLiteral: replaced by ""
+packages/elements/src/overlay.ts:365: mutation: compile-error: StringLiteral: replaced by ""
+packages/elements/src/overlay.ts:376: mutation: compile-error: StringLiteral: replaced by ""
+packages/elements/src/overlay.ts:377: mutation: compile-error: StringLiteral: replaced by ""
+packages/elements/src/overlay.ts:384: mutation: compile-error: ConditionalExpression: replaced by true
+packages/elements/src/overlay.ts:384: mutation: compile-error: ConditionalExpression: replaced by false
+packages/elements/src/overlay.ts:384: mutation: compile-error: LogicalOperator: replaced by dialog === null && !this.isConnected
+packages/elements/src/overlay.ts:384: mutation: compile-error: ConditionalExpression: replaced by false
+packages/elements/src/overlay.ts:384: mutation: compile-error: EqualityOperator: replaced by dialog !== null
+packages/elements/src/overlay.ts:386: mutation: compile-error: LogicalOperator: replaced by opener !== null && overlay.#state === "closing" || within(opener, overlay)
+packages/elements/src/overlay.ts:386: mutation: compile-error: ConditionalExpression: replaced by true
+packages/elements/src/overlay.ts:386: mutation: compile-error: LogicalOperator: replaced by opener !== null || overlay.#state === "closing"
+packages/elements/src/overlay.ts:386: mutation: compile-error: ConditionalExpression: replaced by true
+packages/elements/src/overlay.ts:386: mutation: compile-error: EqualityOperator: replaced by opener === null
+packages/elements/src/overlay.ts:386: mutation: compile-error: StringLiteral: replaced by ""
+packages/elements/src/overlay.ts:396: mutation: compile-error: StringLiteral: replaced by ""
+packages/elements/src/overlay.ts:401: mutation: compile-error: StringLiteral: replaced by ""
+packages/elements/src/overlay.ts:401: mutation: compile-error: StringLiteral: replaced by ""
+packages/elements/src/overlay.ts:406: mutation: compile-error: OptionalChaining: replaced by this.#animation.cancel
+packages/elements/src/overlay.ts:408: mutation: compile-error: StringLiteral: replaced by ""
+packages/elements/src/overlay.ts:412: mutation: compile-error: BlockStatement: replaced by {}
+packages/elements/src/overlay.ts:414: mutation: compile-error: LogicalOperator: replaced by slot?.assignedElements() && []
+packages/elements/src/overlay.ts:414: mutation: compile-error: OptionalChaining: replaced by slot.assignedElements
 packages/elements/src/overlay.ts:414: mutation: compile-error: ArrayDeclaration: replaced by ["Stryker was here"]
-packages/elements/src/overlay.ts:416: mutation: compile-error: ArrayDeclaration: replaced by []
-packages/elements/src/overlay.ts:416: mutation: compile-error: ConditionalExpression: replaced by true
-packages/elements/src/overlay.ts:416: mutation: compile-error: ConditionalExpression: replaced by false
-packages/elements/src/overlay.ts:416: mutation: compile-error: LogicalOperator: replaced by each instanceof HTMLElement || each.hasAttribute("autofocus")
-packages/elements/src/overlay.ts:416: mutation: compile-error: CallExpression: replaced by ;
-packages/elements/src/overlay.ts:417: mutation: compile-error: ConditionalExpression: replaced by true
-packages/elements/src/overlay.ts:417: mutation: compile-error: ConditionalExpression: replaced by false
-packages/elements/src/overlay.ts:417: mutation: compile-error: EqualityOperator: replaced by element.shadowRoot === null
+packages/elements/src/overlay.ts:415: mutation: compile-error: ArrayDeclaration: replaced by ["Stryker was here"]
+packages/elements/src/overlay.ts:417: mutation: compile-error: ArrayDeclaration: replaced by []
 packages/elements/src/overlay.ts:417: mutation: compile-error: ConditionalExpression: replaced by true
 packages/elements/src/overlay.ts:417: mutation: compile-error: ConditionalExpression: replaced by false
 packages/elements/src/overlay.ts:417: mutation: compile-error: LogicalOperator: replaced by each instanceof HTMLElement || each.hasAttribute("autofocus")
 packages/elements/src/overlay.ts:417: mutation: compile-error: CallExpression: replaced by ;
-packages/elements/src/overlay.ts:420: mutation: compile-error: ConditionalExpression: replaced by true
-packages/elements/src/overlay.ts:420: mutation: compile-error: ConditionalExpression: replaced by false
-packages/elements/src/overlay.ts:420: mutation: compile-error: EqualityOperator: replaced by body !== null
-packages/elements/src/overlay.ts:420: mutation: compile-error: ArrayDeclaration: replaced by ["Stryker was here"]
-packages/elements/src/overlay.ts:420: mutation: compile-error: ArrowFunction: replaced by () => undefined
-packages/elements/src/overlay.ts:425: mutation: compile-error: BlockStatement: replaced by {}
-packages/elements/src/overlay.ts:432: mutation: compile-error: ConditionalExpression: replaced by true
-packages/elements/src/overlay.ts:432: mutation: compile-error: ConditionalExpression: replaced by false
-packages/elements/src/overlay.ts:432: mutation: compile-error: EqualityOperator: replaced by close !== null
-packages/elements/src/overlay.ts:432: mutation: compile-error: ArrayDeclaration: replaced by ["Stryker was here"]
-packages/elements/src/overlay.ts:436: mutation: compile-error: BlockStatement: replaced by {}
-packages/elements/src/overlay.ts:444: mutation: compile-error: BlockStatement: replaced by {}
-packages/elements/src/overlay.ts:446: mutation: compile-error: ConditionalExpression: replaced by true
-packages/elements/src/overlay.ts:447: mutation: compile-error: ConditionalExpression: replaced by false
-packages/elements/src/overlay.ts:448: mutation: compile-error: ConditionalExpression: replaced by false
-packages/elements/src/overlay.ts:448: mutation: compile-error: EqualityOperator: replaced by each === null
-packages/elements/src/overlay.ts:448: mutation: compile-error: LogicalOperator: replaced by each.shadowRoot?.activeElement && null
-packages/elements/src/overlay.ts:448: mutation: compile-error: OptionalChaining: replaced by each.shadowRoot.activeElement
-packages/elements/src/overlay.ts:448: mutation: compile-error: ConditionalExpression: replaced by true
-packages/elements/src/overlay.ts:457: mutation: compile-error: LogicalOperator: replaced by this.#state === "opening" && this.#state === "shown"
-packages/elements/src/overlay.ts:457: mutation: compile-error: EqualityOperator: replaced by this.#state !== "opening"
-packages/elements/src/overlay.ts:457: mutation: compile-error: StringLiteral: replaced by ""
-packages/elements/src/overlay.ts:457: mutation: compile-error: StringLiteral: replaced by ""
-packages/elements/src/overlay.ts:457: mutation: compile-error: CallExpression: replaced by ;
-packages/elements/src/overlay.ts:462: mutation: compile-error: StringLiteral: replaced by ""
-packages/elements/src/overlay.ts:464: mutation: compile-error: OptionalChaining: replaced by this.#animation.cancel
-packages/elements/src/overlay.ts:468: mutation: compile-error: StringLiteral: replaced by ""
-packages/elements/src/overlay.ts:476: mutation: compile-error: LogicalOperator: replaced by before === null && within(before, this)
-packages/elements/src/overlay.ts:476: mutation: compile-error: ConditionalExpression: replaced by false
-packages/elements/src/overlay.ts:476: mutation: compile-error: EqualityOperator: replaced by before !== null
-packages/elements/src/overlay.ts:477: mutation: compile-error: ConditionalExpression: replaced by true
-packages/elements/src/overlay.ts:477: mutation: compile-error: ConditionalExpression: replaced by false
-packages/elements/src/overlay.ts:477: mutation: compile-error: LogicalOperator: replaced by closeDialog || dialog?.open === true
-packages/elements/src/overlay.ts:477: mutation: compile-error: ConditionalExpression: replaced by true
-packages/elements/src/overlay.ts:477: mutation: compile-error: EqualityOperator: replaced by dialog?.open !== true
-packages/elements/src/overlay.ts:477: mutation: compile-error: OptionalChaining: replaced by dialog.open
-packages/elements/src/overlay.ts:482: mutation: compile-error: StringLiteral: replaced by ""
-packages/elements/src/overlay.ts:490: mutation: compile-error: CallExpression: replaced by ;
-packages/elements/src/overlay.ts:498: mutation: compile-error: ConditionalExpression: replaced by true
-packages/elements/src/overlay.ts:498: mutation: compile-error: ConditionalExpression: replaced by false
-packages/elements/src/overlay.ts:500: mutation: compile-error: ConditionalExpression: replaced by true
-packages/elements/src/overlay.ts:500: mutation: compile-error: ConditionalExpression: replaced by false
-packages/elements/src/overlay.ts:500: mutation: compile-error: LogicalOperator: replaced by before instanceof HTMLElement && before.isConnected || deepActive() !== before
-packages/elements/src/overlay.ts:500: mutation: compile-error: ConditionalExpression: replaced by true
-packages/elements/src/overlay.ts:500: mutation: compile-error: LogicalOperator: replaced by before instanceof HTMLElement || before.isConnected
-packages/elements/src/overlay.ts:500: mutation: compile-error: CallExpression: replaced by ;
+packages/elements/src/overlay.ts:418: mutation: compile-error: ConditionalExpression: replaced by true
+packages/elements/src/overlay.ts:418: mutation: compile-error: ConditionalExpression: replaced by false
+packages/elements/src/overlay.ts:418: mutation: compile-error: EqualityOperator: replaced by element.shadowRoot === null
+packages/elements/src/overlay.ts:418: mutation: compile-error: ConditionalExpression: replaced by true
+packages/elements/src/overlay.ts:418: mutation: compile-error: ConditionalExpression: replaced by false
+packages/elements/src/overlay.ts:418: mutation: compile-error: LogicalOperator: replaced by each instanceof HTMLElement || each.hasAttribute("autofocus")
+packages/elements/src/overlay.ts:418: mutation: compile-error: CallExpression: replaced by ;
+packages/elements/src/overlay.ts:421: mutation: compile-error: ConditionalExpression: replaced by true
+packages/elements/src/overlay.ts:421: mutation: compile-error: ConditionalExpression: replaced by false
+packages/elements/src/overlay.ts:421: mutation: compile-error: EqualityOperator: replaced by body !== null
+packages/elements/src/overlay.ts:421: mutation: compile-error: ArrayDeclaration: replaced by ["Stryker was here"]
+packages/elements/src/overlay.ts:421: mutation: compile-error: ArrowFunction: replaced by () => undefined
+packages/elements/src/overlay.ts:426: mutation: compile-error: BlockStatement: replaced by {}
+packages/elements/src/overlay.ts:433: mutation: compile-error: ConditionalExpression: replaced by true
+packages/elements/src/overlay.ts:433: mutation: compile-error: ConditionalExpression: replaced by false
+packages/elements/src/overlay.ts:433: mutation: compile-error: EqualityOperator: replaced by close !== null
+packages/elements/src/overlay.ts:433: mutation: compile-error: ArrayDeclaration: replaced by ["Stryker was here"]
+mutation: 249 mutants on the changed lines of 1 file, none survived; 0 timeouts, 93 compile errors, 0 zero-mutant entries; 11 equivalent records
+$ node gates/bin/mutation.ts -- --base cc18f84 --files packages/elements/src/overlay.ts:447-790
+packages/elements/src/overlay.ts:486: mutation: record: AssignmentOperator: equivalent, a count that goes down lets the queued event through to the next check, which ignores it as well: the dialog is open again (a reopen) or the overlay is closed (T025, reviews/phase-2/notes.md)
+packages/elements/src/overlay.ts:624: mutation: record: CallExpression: equivalent, the toggle with oldState open of the same close leaves the below record as well (T025, reviews/phase-2/notes.md)
+packages/elements/src/overlay.ts:628: mutation: record: ConditionalExpression, BlockStatement: equivalent, an own event let through is ignored by the next check or the state, as the count would (T025, reviews/phase-2/notes.md)
+packages/elements/src/overlay.ts:654: mutation: record: BlockStatement: equivalent, every close of a slotted dialog also fires its close event, which leaves the below record (T025, reviews/phase-2/notes.md)
+packages/elements/src/overlay.ts:657: mutation: record: ConditionalExpression, LogicalOperator, EqualityOperator: equivalent, the panel is never in the below record and deleting any other target changes nothing (T025, reviews/phase-2/notes.md)
+packages/elements/src/overlay.ts:659: mutation: record: ConditionalExpression, EqualityOperator, StringLiteral: equivalent, a toggle that never matches leaves the record to the close event of the same close, and a dialog wrongly taken out of it on its opening toggle is put back by the cancel fallback on the next Escape, with the same request (T025, reviews/phase-2/notes.md)
+packages/elements/src/overlay.ts:694: mutation: record: ConditionalExpression: equivalent, the native backward move from the end sentinel also reaches the last candidate in navigation order, as every Shift+Tab wrap row measures; R-04 keeps the explicit move where the last candidate is a stop (T025, reviews/phase-2/notes.md)
+packages/elements/src/overlay.ts:770: mutation: record: ConditionalExpression, BooleanLiteral: equivalent, every call compares the active element, which is no candidate there, with a candidate; the test only ends the walk of one element against itself, which a mutant of the walk or of the stop test brings about (T025, reviews/phase-2/notes.md)
+packages/elements/src/overlay.ts:774: mutation: timeout: CallExpression: replaced by ;
+packages/elements/src/overlay.ts:780: mutation: timeout: AssignmentOperator: replaced by index -= 1
+packages/elements/src/overlay.ts:451: mutation: compile-error: LogicalOperator: replaced by this.#state === "opening" && this.#state === "shown"
+packages/elements/src/overlay.ts:451: mutation: compile-error: EqualityOperator: replaced by this.#state !== "opening"
+packages/elements/src/overlay.ts:451: mutation: compile-error: StringLiteral: replaced by ""
+packages/elements/src/overlay.ts:451: mutation: compile-error: StringLiteral: replaced by ""
+packages/elements/src/overlay.ts:451: mutation: compile-error: CallExpression: replaced by ;
+packages/elements/src/overlay.ts:456: mutation: compile-error: StringLiteral: replaced by ""
+packages/elements/src/overlay.ts:458: mutation: compile-error: OptionalChaining: replaced by this.#animation.cancel
+packages/elements/src/overlay.ts:471: mutation: compile-error: LogicalOperator: replaced by before === null && within(before, this)
+packages/elements/src/overlay.ts:471: mutation: compile-error: ConditionalExpression: replaced by false
+packages/elements/src/overlay.ts:471: mutation: compile-error: EqualityOperator: replaced by before !== null
+packages/elements/src/overlay.ts:474: mutation: compile-error: StringLiteral: replaced by ""
+packages/elements/src/overlay.ts:485: mutation: compile-error: ConditionalExpression: replaced by true
+packages/elements/src/overlay.ts:485: mutation: compile-error: ConditionalExpression: replaced by false
+packages/elements/src/overlay.ts:485: mutation: compile-error: EqualityOperator: replaced by dialog?.open === true
+packages/elements/src/overlay.ts:485: mutation: compile-error: OptionalChaining: replaced by dialog.open
 packages/elements/src/overlay.ts:503: mutation: compile-error: ConditionalExpression: replaced by true
-packages/elements/src/overlay.ts:503: mutation: compile-error: ConditionalExpression: replaced by false
-packages/elements/src/overlay.ts:503: mutation: compile-error: LogicalOperator: replaced by opener instanceof HTMLElement && opener.isConnected && !opener.matches(":disabled") || !inert(opener)
-packages/elements/src/overlay.ts:503: mutation: compile-error: ConditionalExpression: replaced by true
-packages/elements/src/overlay.ts:503: mutation: compile-error: LogicalOperator: replaced by opener instanceof HTMLElement && opener.isConnected || !opener.matches(":disabled")
-packages/elements/src/overlay.ts:503: mutation: compile-error: ConditionalExpression: replaced by true
-packages/elements/src/overlay.ts:503: mutation: compile-error: LogicalOperator: replaced by opener instanceof HTMLElement || opener.isConnected
 packages/elements/src/overlay.ts:504: mutation: compile-error: ConditionalExpression: replaced by true
 packages/elements/src/overlay.ts:504: mutation: compile-error: ConditionalExpression: replaced by false
-packages/elements/src/overlay.ts:509: mutation: compile-error: ConditionalExpression: replaced by true
-packages/elements/src/overlay.ts:509: mutation: compile-error: ConditionalExpression: replaced by false
-packages/elements/src/overlay.ts:509: mutation: compile-error: EqualityOperator: replaced by beneath !== undefined
+packages/elements/src/overlay.ts:504: mutation: compile-error: LogicalOperator: replaced by opener instanceof HTMLElement && opener.isConnected && !opener.matches(":disabled") || !inert(opener)
+packages/elements/src/overlay.ts:504: mutation: compile-error: ConditionalExpression: replaced by true
+packages/elements/src/overlay.ts:504: mutation: compile-error: LogicalOperator: replaced by opener instanceof HTMLElement && opener.isConnected || !opener.matches(":disabled")
+packages/elements/src/overlay.ts:504: mutation: compile-error: ConditionalExpression: replaced by true
+packages/elements/src/overlay.ts:504: mutation: compile-error: LogicalOperator: replaced by opener instanceof HTMLElement || opener.isConnected
+packages/elements/src/overlay.ts:505: mutation: compile-error: ConditionalExpression: replaced by true
+packages/elements/src/overlay.ts:505: mutation: compile-error: ConditionalExpression: replaced by false
 packages/elements/src/overlay.ts:510: mutation: compile-error: ConditionalExpression: replaced by true
 packages/elements/src/overlay.ts:510: mutation: compile-error: ConditionalExpression: replaced by false
-packages/elements/src/overlay.ts:510: mutation: compile-error: EqualityOperator: replaced by target === null
-packages/elements/src/overlay.ts:515: mutation: compile-error: ConditionalExpression: replaced by true
-packages/elements/src/overlay.ts:515: mutation: compile-error: ConditionalExpression: replaced by false
-packages/elements/src/overlay.ts:515: mutation: compile-error: CallExpression: replaced by ;
-packages/elements/src/overlay.ts:521: mutation: compile-error: BlockStatement: replaced by {}
-packages/elements/src/overlay.ts:531: mutation: compile-error: ConditionalExpression: replaced by true
-packages/elements/src/overlay.ts:531: mutation: compile-error: ConditionalExpression: replaced by false
-packages/elements/src/overlay.ts:531: mutation: compile-error: LogicalOperator: replaced by (dialog === null || reduced) && duration <= 0
-packages/elements/src/overlay.ts:531: mutation: compile-error: ConditionalExpression: replaced by false
-packages/elements/src/overlay.ts:531: mutation: compile-error: LogicalOperator: replaced by dialog === null && reduced
-packages/elements/src/overlay.ts:531: mutation: compile-error: ConditionalExpression: replaced by false
-packages/elements/src/overlay.ts:531: mutation: compile-error: EqualityOperator: replaced by dialog !== null
-packages/elements/src/overlay.ts:531: mutation: compile-error: BlockStatement: replaced by {}
-packages/elements/src/overlay.ts:535: mutation: compile-error: ConditionalExpression: replaced by true
-packages/elements/src/overlay.ts:535: mutation: compile-error: ConditionalExpression: replaced by false
-packages/elements/src/overlay.ts:548: mutation: compile-error: LogicalOperator: replaced by this.#state === "opening" && this.#state === "shown"
-packages/elements/src/overlay.ts:548: mutation: compile-error: EqualityOperator: replaced by this.#state !== "opening"
-packages/elements/src/overlay.ts:548: mutation: compile-error: StringLiteral: replaced by ""
-packages/elements/src/overlay.ts:548: mutation: compile-error: StringLiteral: replaced by ""
-packages/elements/src/overlay.ts:548: mutation: compile-error: StringLiteral: replaced by ""
-packages/elements/src/overlay.ts:561: mutation: compile-error: EqualityOperator: replaced by event.key !== "Escape"
-packages/elements/src/overlay.ts:561: mutation: compile-error: CallExpression: replaced by ;
-packages/elements/src/overlay.ts:562: mutation: compile-error: CallExpression: replaced by ;
-packages/elements/src/overlay.ts:567: mutation: compile-error: ConditionalExpression: replaced by true
-packages/elements/src/overlay.ts:567: mutation: compile-error: StringLiteral: replaced by ""
-packages/elements/src/overlay.ts:571: mutation: compile-error: ConditionalExpression: replaced by true
-packages/elements/src/overlay.ts:573: mutation: compile-error: LogicalOperator: replaced by active instanceof HTMLInputElement && active.type === "search" || active.value !== ""
+packages/elements/src/overlay.ts:510: mutation: compile-error: EqualityOperator: replaced by beneath !== undefined
+packages/elements/src/overlay.ts:511: mutation: compile-error: ConditionalExpression: replaced by true
+packages/elements/src/overlay.ts:511: mutation: compile-error: ConditionalExpression: replaced by false
+packages/elements/src/overlay.ts:511: mutation: compile-error: EqualityOperator: replaced by target === null
+packages/elements/src/overlay.ts:516: mutation: compile-error: ConditionalExpression: replaced by true
+packages/elements/src/overlay.ts:516: mutation: compile-error: ConditionalExpression: replaced by false
+packages/elements/src/overlay.ts:516: mutation: compile-error: CallExpression: replaced by ;
+packages/elements/src/overlay.ts:522: mutation: compile-error: BlockStatement: replaced by {}
+packages/elements/src/overlay.ts:532: mutation: compile-error: ConditionalExpression: replaced by true
+packages/elements/src/overlay.ts:532: mutation: compile-error: ConditionalExpression: replaced by false
+packages/elements/src/overlay.ts:532: mutation: compile-error: LogicalOperator: replaced by (dialog === null || reduced) && still(duration)
+packages/elements/src/overlay.ts:532: mutation: compile-error: ConditionalExpression: replaced by false
+packages/elements/src/overlay.ts:532: mutation: compile-error: LogicalOperator: replaced by dialog === null && reduced
+packages/elements/src/overlay.ts:532: mutation: compile-error: ConditionalExpression: replaced by false
+packages/elements/src/overlay.ts:532: mutation: compile-error: EqualityOperator: replaced by dialog !== null
+packages/elements/src/overlay.ts:532: mutation: compile-error: BlockStatement: replaced by {}
+packages/elements/src/overlay.ts:536: mutation: compile-error: ConditionalExpression: replaced by true
+packages/elements/src/overlay.ts:536: mutation: compile-error: ConditionalExpression: replaced by false
+packages/elements/src/overlay.ts:549: mutation: compile-error: LogicalOperator: replaced by this.#state === "opening" && this.#state === "shown"
+packages/elements/src/overlay.ts:549: mutation: compile-error: EqualityOperator: replaced by this.#state !== "opening"
+packages/elements/src/overlay.ts:549: mutation: compile-error: StringLiteral: replaced by ""
+packages/elements/src/overlay.ts:549: mutation: compile-error: StringLiteral: replaced by ""
+packages/elements/src/overlay.ts:549: mutation: compile-error: StringLiteral: replaced by ""
+packages/elements/src/overlay.ts:558: mutation: compile-error: CallExpression: replaced by ;
+packages/elements/src/overlay.ts:567: mutation: compile-error: EqualityOperator: replaced by event.key !== "Escape"
+packages/elements/src/overlay.ts:567: mutation: compile-error: CallExpression: replaced by ;
+packages/elements/src/overlay.ts:568: mutation: compile-error: CallExpression: replaced by ;
 packages/elements/src/overlay.ts:573: mutation: compile-error: ConditionalExpression: replaced by true
-packages/elements/src/overlay.ts:573: mutation: compile-error: LogicalOperator: replaced by active instanceof HTMLInputElement || active.type === "search"
-packages/elements/src/overlay.ts:576: mutation: compile-error: StringLiteral: replaced by ""
-packages/elements/src/overlay.ts:580: mutation: compile-error: BlockStatement: replaced by {}
-packages/elements/src/overlay.ts:581: mutation: compile-error: MethodExpression: replaced by descendants(this)
-packages/elements/src/overlay.ts:581: mutation: compile-error: ArrowFunction: replaced by () => undefined
-packages/elements/src/overlay.ts:584: mutation: compile-error: BlockStatement: replaced by {}
-packages/elements/src/overlay.ts:593: mutation: compile-error: BlockStatement: replaced by {}
-packages/elements/src/overlay.ts:596: mutation: compile-error: ConditionalExpression: replaced by true
-packages/elements/src/overlay.ts:597: mutation: compile-error: LogicalOperator: replaced by each.getAttribute("popover") && ""
+packages/elements/src/overlay.ts:573: mutation: compile-error: StringLiteral: replaced by ""
+packages/elements/src/overlay.ts:577: mutation: compile-error: ConditionalExpression: replaced by true
+packages/elements/src/overlay.ts:579: mutation: compile-error: LogicalOperator: replaced by active instanceof HTMLInputElement && active.type === "search" || active.value !== ""
+packages/elements/src/overlay.ts:579: mutation: compile-error: ConditionalExpression: replaced by true
+packages/elements/src/overlay.ts:579: mutation: compile-error: LogicalOperator: replaced by active instanceof HTMLInputElement || active.type === "search"
+packages/elements/src/overlay.ts:582: mutation: compile-error: StringLiteral: replaced by ""
+packages/elements/src/overlay.ts:586: mutation: compile-error: BlockStatement: replaced by {}
+packages/elements/src/overlay.ts:587: mutation: compile-error: MethodExpression: replaced by descendants(this)
+packages/elements/src/overlay.ts:587: mutation: compile-error: ArrowFunction: replaced by () => undefined
+packages/elements/src/overlay.ts:595: mutation: compile-error: BlockStatement: replaced by {}
+packages/elements/src/overlay.ts:598: mutation: compile-error: BooleanLiteral: replaced by each instanceof HTMLElement
 packages/elements/src/overlay.ts:598: mutation: compile-error: ConditionalExpression: replaced by true
+packages/elements/src/overlay.ts:598: mutation: compile-error: ConditionalExpression: replaced by false
 packages/elements/src/overlay.ts:599: mutation: compile-error: ConditionalExpression: replaced by true
 packages/elements/src/overlay.ts:600: mutation: compile-error: ConditionalExpression: replaced by true
-packages/elements/src/overlay.ts:600: mutation: compile-error: ConditionalExpression: replaced by false
-packages/elements/src/overlay.ts:600: mutation: compile-error: LogicalOperator: replaced by !tab && each instanceof HTMLDialogElement && each.open && !this.#below.has(each) || closesOnRequest(each)
-packages/elements/src/overlay.ts:600: mutation: compile-error: ConditionalExpression: replaced by true
-packages/elements/src/overlay.ts:600: mutation: compile-error: LogicalOperator: replaced by !tab && each instanceof HTMLDialogElement && each.open || !this.#below.has(each)
-packages/elements/src/overlay.ts:600: mutation: compile-error: ConditionalExpression: replaced by true
-packages/elements/src/overlay.ts:600: mutation: compile-error: LogicalOperator: replaced by !tab && each instanceof HTMLDialogElement || each.open
-packages/elements/src/overlay.ts:600: mutation: compile-error: ConditionalExpression: replaced by true
-packages/elements/src/overlay.ts:600: mutation: compile-error: LogicalOperator: replaced by !tab || each instanceof HTMLDialogElement
-packages/elements/src/overlay.ts:609: mutation: compile-error: ConditionalExpression: replaced by true
-packages/elements/src/overlay.ts:611: mutation: compile-error: ConditionalExpression: replaced by true
-packages/elements/src/overlay.ts:613: mutation: compile-error: ConditionalExpression: replaced by true
-packages/elements/src/overlay.ts:613: mutation: compile-error: LogicalOperator: replaced by this.#state !== "opening" || this.#state !== "shown"
-packages/elements/src/overlay.ts:613: mutation: compile-error: EqualityOperator: replaced by this.#state === "opening"
-packages/elements/src/overlay.ts:613: mutation: compile-error: StringLiteral: replaced by ""
-packages/elements/src/overlay.ts:613: mutation: compile-error: StringLiteral: replaced by ""
+packages/elements/src/overlay.ts:601: mutation: compile-error: ConditionalExpression: replaced by true
+packages/elements/src/overlay.ts:601: mutation: compile-error: ConditionalExpression: replaced by false
+packages/elements/src/overlay.ts:601: mutation: compile-error: LogicalOperator: replaced by !tab && each instanceof HTMLDialogElement && each.open && !this.#below.has(each) || closesOnRequest(each)
+packages/elements/src/overlay.ts:601: mutation: compile-error: ConditionalExpression: replaced by true
+packages/elements/src/overlay.ts:601: mutation: compile-error: LogicalOperator: replaced by !tab && each instanceof HTMLDialogElement && each.open || !this.#below.has(each)
+packages/elements/src/overlay.ts:601: mutation: compile-error: ConditionalExpression: replaced by true
+packages/elements/src/overlay.ts:601: mutation: compile-error: LogicalOperator: replaced by !tab && each instanceof HTMLDialogElement || each.open
+packages/elements/src/overlay.ts:601: mutation: compile-error: ConditionalExpression: replaced by true
+packages/elements/src/overlay.ts:601: mutation: compile-error: LogicalOperator: replaced by !tab || each instanceof HTMLDialogElement
+packages/elements/src/overlay.ts:610: mutation: compile-error: ConditionalExpression: replaced by true
+packages/elements/src/overlay.ts:612: mutation: compile-error: ConditionalExpression: replaced by true
 packages/elements/src/overlay.ts:614: mutation: compile-error: ConditionalExpression: replaced by true
-packages/elements/src/overlay.ts:614: mutation: compile-error: ConditionalExpression: replaced by false
-packages/elements/src/overlay.ts:614: mutation: compile-error: EqualityOperator: replaced by this.#asideFor === null
-packages/elements/src/overlay.ts:614: mutation: compile-error: CallExpression: replaced by ;
-packages/elements/src/overlay.ts:616: mutation: compile-error: StringLiteral: replaced by ""
-packages/elements/src/overlay.ts:621: mutation: compile-error: ConditionalExpression: replaced by true
-packages/elements/src/overlay.ts:621: mutation: compile-error: ConditionalExpression: replaced by false
-packages/elements/src/overlay.ts:621: mutation: compile-error: LogicalOperator: replaced by dialog === null && event.target !== dialog
-packages/elements/src/overlay.ts:621: mutation: compile-error: ConditionalExpression: replaced by false
-packages/elements/src/overlay.ts:621: mutation: compile-error: EqualityOperator: replaced by dialog !== null
-packages/elements/src/overlay.ts:621: mutation: compile-error: BlockStatement: replaced by {}
-packages/elements/src/overlay.ts:622: mutation: compile-error: ConditionalExpression: replaced by true
-packages/elements/src/overlay.ts:622: mutation: compile-error: ConditionalExpression: replaced by false
-packages/elements/src/overlay.ts:622: mutation: compile-error: CallExpression: replaced by ;
-packages/elements/src/overlay.ts:625: mutation: compile-error: ConditionalExpression: replaced by true
-packages/elements/src/overlay.ts:630: mutation: compile-error: LogicalOperator: replaced by this.#state === "opening" && this.#state === "shown"
-packages/elements/src/overlay.ts:630: mutation: compile-error: EqualityOperator: replaced by this.#state !== "opening"
-packages/elements/src/overlay.ts:630: mutation: compile-error: StringLiteral: replaced by ""
-packages/elements/src/overlay.ts:630: mutation: compile-error: EqualityOperator: replaced by this.#state !== "shown"
-packages/elements/src/overlay.ts:630: mutation: compile-error: StringLiteral: replaced by ""
-packages/elements/src/overlay.ts:632: mutation: compile-error: StringLiteral: replaced by ""
-packages/elements/src/overlay.ts:633: mutation: compile-error: StringLiteral: replaced by ""
-packages/elements/src/overlay.ts:634: mutation: compile-error: OptionalChaining: replaced by this.#animation.cancel
+packages/elements/src/overlay.ts:614: mutation: compile-error: LogicalOperator: replaced by this.#state !== "opening" || this.#state !== "shown"
+packages/elements/src/overlay.ts:614: mutation: compile-error: EqualityOperator: replaced by this.#state === "opening"
+packages/elements/src/overlay.ts:614: mutation: compile-error: StringLiteral: replaced by ""
+packages/elements/src/overlay.ts:614: mutation: compile-error: StringLiteral: replaced by ""
+packages/elements/src/overlay.ts:615: mutation: compile-error: ConditionalExpression: replaced by true
+packages/elements/src/overlay.ts:615: mutation: compile-error: ConditionalExpression: replaced by false
+packages/elements/src/overlay.ts:615: mutation: compile-error: EqualityOperator: replaced by this.#asideFor === null
+packages/elements/src/overlay.ts:615: mutation: compile-error: CallExpression: replaced by ;
+packages/elements/src/overlay.ts:617: mutation: compile-error: StringLiteral: replaced by ""
+packages/elements/src/overlay.ts:635: mutation: compile-error: LogicalOperator: replaced by this.#state === "opening" && this.#state === "shown"
+packages/elements/src/overlay.ts:635: mutation: compile-error: EqualityOperator: replaced by this.#state !== "opening"
+packages/elements/src/overlay.ts:635: mutation: compile-error: StringLiteral: replaced by ""
+packages/elements/src/overlay.ts:635: mutation: compile-error: EqualityOperator: replaced by this.#state !== "shown"
+packages/elements/src/overlay.ts:635: mutation: compile-error: StringLiteral: replaced by ""
+packages/elements/src/overlay.ts:637: mutation: compile-error: StringLiteral: replaced by ""
 packages/elements/src/overlay.ts:638: mutation: compile-error: StringLiteral: replaced by ""
 packages/elements/src/overlay.ts:639: mutation: compile-error: OptionalChaining: replaced by this.#animation.cancel
-packages/elements/src/overlay.ts:647: mutation: compile-error: ConditionalExpression: replaced by true
-packages/elements/src/overlay.ts:647: mutation: compile-error: ConditionalExpression: replaced by false
-packages/elements/src/overlay.ts:647: mutation: compile-error: LogicalOperator: replaced by target instanceof HTMLDialogElement && target !== this.#dialog || (event as ToggleEvent).oldState === "open"
-packages/elements/src/overlay.ts:647: mutation: compile-error: ConditionalExpression: replaced by true
-packages/elements/src/overlay.ts:647: mutation: compile-error: LogicalOperator: replaced by target instanceof HTMLDialogElement || target !== this.#dialog
-packages/elements/src/overlay.ts:647: mutation: compile-error: CallExpression: replaced by ;
-packages/elements/src/overlay.ts:653: mutation: compile-error: BlockStatement: replaced by {}
-packages/elements/src/overlay.ts:655: mutation: compile-error: ConditionalExpression: replaced by true
-packages/elements/src/overlay.ts:655: mutation: compile-error: ConditionalExpression: replaced by false
-packages/elements/src/overlay.ts:655: mutation: compile-error: EqualityOperator: replaced by dialog !== null
-packages/elements/src/overlay.ts:655: mutation: compile-error: ObjectLiteral: replaced by {}
-packages/elements/src/overlay.ts:655: mutation: compile-error: ArrayDeclaration: replaced by ["Stryker was here"]
-packages/elements/src/overlay.ts:655: mutation: compile-error: ArrayDeclaration: replaced by ["Stryker was here"]
-packages/elements/src/overlay.ts:658: mutation: compile-error: ObjectLiteral: replaced by {}
-packages/elements/src/overlay.ts:658: mutation: compile-error: MethodExpression: replaced by flat
-packages/elements/src/overlay.ts:658: mutation: compile-error: MethodExpression: replaced by order
-packages/elements/src/overlay.ts:662: mutation: compile-error: ConditionalExpression: replaced by true
-packages/elements/src/overlay.ts:664: mutation: compile-error: StringLiteral: replaced by ""
-packages/elements/src/overlay.ts:667: mutation: compile-error: ConditionalExpression: replaced by true
-packages/elements/src/overlay.ts:667: mutation: compile-error: ConditionalExpression: replaced by false
-packages/elements/src/overlay.ts:667: mutation: compile-error: LogicalOperator: replaced by first === undefined && last === undefined
-packages/elements/src/overlay.ts:667: mutation: compile-error: ConditionalExpression: replaced by false
-packages/elements/src/overlay.ts:667: mutation: compile-error: EqualityOperator: replaced by first !== undefined
-packages/elements/src/overlay.ts:667: mutation: compile-error: ConditionalExpression: replaced by false
-packages/elements/src/overlay.ts:667: mutation: compile-error: EqualityOperator: replaced by last !== undefined
-packages/elements/src/overlay.ts:670: mutation: compile-error: ConditionalExpression: replaced by true
-packages/elements/src/overlay.ts:670: mutation: compile-error: ConditionalExpression: replaced by false
-packages/elements/src/overlay.ts:670: mutation: compile-error: LogicalOperator: replaced by fromBody && active === null
-packages/elements/src/overlay.ts:670: mutation: compile-error: ConditionalExpression: replaced by false
-packages/elements/src/overlay.ts:670: mutation: compile-error: EqualityOperator: replaced by active !== null
-packages/elements/src/overlay.ts:670: mutation: compile-error: BlockStatement: replaced by {}
-packages/elements/src/overlay.ts:672: mutation: compile-error: ArrowFunction: replaced by () => undefined
-packages/elements/src/overlay.ts:675: mutation: compile-error: ConditionalExpression: replaced by true
-packages/elements/src/overlay.ts:677: mutation: compile-error: ConditionalExpression: replaced by true
-packages/elements/src/overlay.ts:678: mutation: compile-error: ConditionalExpression: replaced by true
-packages/elements/src/overlay.ts:678: mutation: compile-error: ConditionalExpression: replaced by false
-packages/elements/src/overlay.ts:680: mutation: compile-error: LogicalOperator: replaced by end !== undefined || isOpaqueContent(end.element)
-packages/elements/src/overlay.ts:680: mutation: compile-error: ConditionalExpression: replaced by true
-packages/elements/src/overlay.ts:680: mutation: compile-error: EqualityOperator: replaced by end === undefined
-packages/elements/src/overlay.ts:682: mutation: compile-error: OptionalChaining: replaced by this.#sentinel.focus
-packages/elements/src/overlay.ts:686: mutation: compile-error: ArrayDeclaration: replaced by []
-packages/elements/src/overlay.ts:686: mutation: compile-error: ArrowFunction: replaced by () => undefined
-packages/elements/src/overlay.ts:689: mutation: compile-error: ConditionalExpression: replaced by true
-packages/elements/src/overlay.ts:689: mutation: compile-error: ConditionalExpression: replaced by false
-packages/elements/src/overlay.ts:693: mutation: compile-error: ArrowFunction: replaced by () => undefined
-packages/elements/src/overlay.ts:696: mutation: compile-error: ConditionalExpression: replaced by true
-packages/elements/src/overlay.ts:699: mutation: compile-error: ArrowFunction: replaced by () => undefined
-packages/elements/src/overlay.ts:708: mutation: compile-error: LogicalOperator: replaced by (event.relatedTarget !== null || !(event.target instanceof Element)) && !isOpaqueContent(event.target)
-packages/elements/src/overlay.ts:708: mutation: compile-error: ConditionalExpression: replaced by false
-packages/elements/src/overlay.ts:708: mutation: compile-error: LogicalOperator: replaced by event.relatedTarget !== null && !(event.target instanceof Element)
-packages/elements/src/overlay.ts:708: mutation: compile-error: BooleanLiteral: replaced by event.target instanceof Element
-packages/elements/src/overlay.ts:710: mutation: compile-error: EqualityOperator: replaced by this.#state !== "closed"
-packages/elements/src/overlay.ts:710: mutation: compile-error: StringLiteral: replaced by ""
-packages/elements/src/overlay.ts:710: mutation: compile-error: StringLiteral: replaced by ""
-packages/elements/src/overlay.ts:711: mutation: compile-error: StringLiteral: replaced by ""
-packages/elements/src/overlay.ts:712: mutation: compile-error: OptionalChaining: replaced by first.element
-packages/elements/src/overlay.ts:733: mutation: compile-error: ConditionalExpression: replaced by true
-packages/elements/src/overlay.ts:733: mutation: compile-error: ConditionalExpression: replaced by false
-packages/elements/src/overlay.ts:733: mutation: compile-error: LogicalOperator: replaced by slot === null && observer === undefined
-packages/elements/src/overlay.ts:733: mutation: compile-error: ConditionalExpression: replaced by false
-packages/elements/src/overlay.ts:733: mutation: compile-error: EqualityOperator: replaced by slot !== null
-packages/elements/src/overlay.ts:733: mutation: compile-error: ConditionalExpression: replaced by false
-packages/elements/src/overlay.ts:733: mutation: compile-error: EqualityOperator: replaced by observer !== undefined
-packages/elements/src/overlay.ts:740: mutation: compile-error: ConditionalExpression: replaced by true
-packages/elements/src/overlay.ts:740: mutation: compile-error: ConditionalExpression: replaced by false
-packages/elements/src/overlay.ts:740: mutation: compile-error: EqualityOperator: replaced by body !== null
-packages/elements/src/overlay.ts:749: mutation: compile-error: BlockStatement: replaced by {}
-packages/elements/src/overlay.ts:750: mutation: compile-error: BlockStatement: replaced by {}
-packages/elements/src/overlay.ts:751: mutation: compile-error: ArrayDeclaration: replaced by ["Stryker was here"]
-packages/elements/src/overlay.ts:752: mutation: compile-error: ConditionalExpression: replaced by false
-packages/elements/src/overlay.ts:752: mutation: compile-error: EqualityOperator: replaced by each === null
-packages/elements/src/overlay.ts:759: mutation: compile-error: ConditionalExpression: replaced by true
-packages/elements/src/overlay.ts:760: mutation: compile-error: ConditionalExpression: replaced by true
-packages/elements/src/overlay.ts:764: mutation: compile-error: ConditionalExpression: replaced by true
-packages/elements/src/overlay.ts:764: mutation: compile-error: EqualityOperator: replaced by x !== undefined
-packages/elements/src/overlay.ts:764: mutation: compile-error: EqualityOperator: replaced by y !== undefined
-packages/elements/src/overlay.ts:765: mutation: compile-error: ConditionalExpression: replaced by true
-packages/elements/src/overlay.ts:765: mutation: compile-error: ConditionalExpression: replaced by false
-packages/elements/src/overlay.ts:765: mutation: compile-error: EqualityOperator: replaced by parent !== undefined
-packages/elements/src/overlay.ts:765: mutation: compile-error: ArrayDeclaration: replaced by ["Stryker was here"]
-packages/elements/src/overlay.ts:770: mutation: compile-error: BlockStatement: replaced by {}
-packages/elements/src/overlay.ts:771: mutation: compile-error: ConditionalExpression: replaced by true
-packages/elements/src/overlay.ts:771: mutation: compile-error: ConditionalExpression: replaced by false
-packages/elements/src/overlay.ts:771: mutation: compile-error: LogicalOperator: replaced by node instanceof Element || node.assignedSlot !== null
-packages/elements/src/overlay.ts:772: mutation: compile-error: ConditionalExpression: replaced by true
-packages/elements/src/overlay.ts:772: mutation: compile-error: ConditionalExpression: replaced by false
-packages/elements/src/overlay.ts:776: mutation: compile-error: BlockStatement: replaced by {}
-packages/elements/src/overlay.ts:777: mutation: compile-error: ConditionalExpression: replaced by true
-packages/elements/src/overlay.ts:777: mutation: compile-error: ConditionalExpression: replaced by false
-packages/elements/src/overlay.ts:779: mutation: compile-error: ConditionalExpression: replaced by true
-packages/elements/src/overlay.ts:781: mutation: compile-error: ConditionalExpression: replaced by true
-packages/elements/src/overlay.ts:781: mutation: compile-error: ConditionalExpression: replaced by false
-packages/elements/src/overlay.ts:781: mutation: compile-error: LogicalOperator: replaced by node instanceof Element || node.shadowRoot !== null
-packages/elements/src/overlay.ts:781: mutation: compile-error: ConditionalExpression: replaced by true
-packages/elements/src/overlay.ts:781: mutation: compile-error: EqualityOperator: replaced by node.shadowRoot === null
-packages/elements/src/overlay.ts:782: mutation: compile-error: ConditionalExpression: replaced by true
-packages/elements/src/overlay.ts:782: mutation: compile-error: ConditionalExpression: replaced by false
-packages/elements/src/overlay.ts:782: mutation: compile-error: LogicalOperator: replaced by node instanceof Element && node instanceof Document
-packages/elements/src/overlay.ts:782: mutation: compile-error: ArrayDeclaration: replaced by ["Stryker was here"]
-gates/bin/axe.ts: mutation: zero-mutants: no mutant on the changed lines
-gates/bin/visual.ts: mutation: zero-mutants: no mutant on the changed lines
-gates/lib/story-page.ts: mutation: zero-mutants: no mutant on the changed lines
-gates/lib/storybook-serve.ts: mutation: zero-mutants: no mutant on the changed lines
-gates/lib/visual-host.ts: mutation: zero-mutants: no mutant on the changed lines
-gates/visual/capture.ts: mutation: zero-mutants: no mutant on the changed lines
-packages/elements/src/index.ts: mutation: zero-mutants: no mutant on the changed lines
-packages/elements/scripts/manifest.ts:121: mutation: ArrayDeclaration: Survived: replaced by ["Stryker was here"]
-packages/elements/src/focusable.ts:48: mutation: StringLiteral: NoCoverage: replaced by ""
-packages/elements/src/focusable.ts:58: mutation: BooleanLiteral: NoCoverage: replaced by true
-packages/elements/src/focusable.ts:60: mutation: StringLiteral: NoCoverage: replaced by ""
-packages/elements/src/focusable.ts:60: mutation: BooleanLiteral: NoCoverage: replaced by element.hasAttribute("href")
-packages/elements/src/focusable.ts:60: mutation: ConditionalExpression: NoCoverage: replaced by true
-packages/elements/src/focusable.ts:60: mutation: ConditionalExpression: NoCoverage: replaced by false
-packages/elements/src/focusable.ts:60: mutation: LogicalOperator: NoCoverage: replaced by element.hasAttribute("tabindex") || element.tabIndex >= 0
-packages/elements/src/focusable.ts:60: mutation: StringLiteral: NoCoverage: replaced by ""
-packages/elements/src/focusable.ts:60: mutation: ConditionalExpression: NoCoverage: replaced by true
-packages/elements/src/focusable.ts:60: mutation: EqualityOperator: NoCoverage: replaced by element.tabIndex > 0
-packages/elements/src/focusable.ts:60: mutation: EqualityOperator: NoCoverage: replaced by element.tabIndex < 0
-packages/elements/src/focusable.ts:61: mutation: BooleanLiteral: NoCoverage: replaced by true
-packages/elements/src/focusable.ts:70: mutation: ConditionalExpression: NoCoverage: replaced by true
-packages/elements/src/focusable.ts:70: mutation: EqualityOperator: NoCoverage: replaced by element.scrollHeight >= element.clientHeight
-packages/elements/src/focusable.ts:70: mutation: EqualityOperator: NoCoverage: replaced by element.scrollHeight <= element.clientHeight
-packages/elements/src/focusable.ts:77: mutation: ArrayDeclaration: NoCoverage: replaced by []
-packages/elements/src/focusable.ts:97: mutation: BooleanLiteral: NoCoverage: replaced by true
-packages/elements/src/focusable.ts:155: mutation: ArrayDeclaration: NoCoverage: replaced by []
-packages/elements/src/focusable.ts:61: mutation: StringLiteral: Survived: replaced by ""
-packages/elements/src/focusable.ts:70: mutation: ConditionalExpression: Survived: replaced by true
-packages/elements/src/focusable.ts:70: mutation: EqualityOperator: Survived: replaced by element.scrollWidth >= element.clientWidth
-packages/elements/src/focusable.ts:85: mutation: ConditionalExpression: Survived: replaced by true
-packages/elements/src/focusable.ts:85: mutation: LogicalOperator: Survived: replaced by other.name === radio.name && other.form === radio.form || other.getRootNode() === radio.getRootNode()
-packages/elements/src/focusable.ts:85: mutation: ConditionalExpression: Survived: replaced by true
-packages/elements/src/focusable.ts:85: mutation: LogicalOperator: Survived: replaced by other.name === radio.name || other.form === radio.form
-packages/elements/src/focusable.ts:85: mutation: ConditionalExpression: Survived: replaced by true
-packages/elements/src/focusable.ts:85: mutation: ConditionalExpression: Survived: replaced by true
-packages/elements/src/focusable.ts:85: mutation: ConditionalExpression: Survived: replaced by true
-packages/elements/src/focusable.ts:105: mutation: StringLiteral: Survived: replaced by ""
-packages/elements/src/focusable.ts:107: mutation: ConditionalExpression: Survived: replaced by true
-packages/elements/src/focusable.ts:107: mutation: ConditionalExpression: Survived: replaced by true
-packages/elements/src/focusable.ts:107: mutation: StringLiteral: Survived: replaced by "Stryker was here!"
-packages/elements/src/focusable.ts:110: mutation: ArrowFunction: Survived: replaced by () => undefined
-packages/elements/src/focusable.ts:116: mutation: ConditionalExpression: Survived: replaced by true
-packages/elements/src/focusable.ts:118: mutation: ConditionalExpression: Survived: replaced by true
-packages/elements/src/focusable.ts:120: mutation: ConditionalExpression: Survived: replaced by true
-packages/elements/src/focusable.ts:121: mutation: CallExpression: Survived: replaced by ;
-packages/elements/src/focusable.ts:123: mutation: BooleanLiteral: Survived: replaced by false
-packages/elements/src/focusable.ts:143: mutation: CallExpression: Survived: replaced by ;
-packages/elements/src/focusable.ts:145: mutation: ArrowFunction: Survived: replaced by () => undefined
-packages/elements/src/focusable.ts:145: mutation: ConditionalExpression: Survived: replaced by false
-packages/elements/src/focusable.ts:147: mutation: ConditionalExpression: Survived: replaced by false
-packages/elements/src/focusable.ts:147: mutation: EqualityOperator: Survived: replaced by index > 0
-packages/elements/src/focusable.ts:149: mutation: BooleanLiteral: Survived: replaced by false
-packages/elements/src/focusable.ts:161: mutation: BlockStatement: Survived: replaced by {}
-packages/elements/src/focusable.ts:162: mutation: BlockStatement: Survived: replaced by {}
-packages/elements/src/focusable.ts:163: mutation: ArrowFunction: Survived: replaced by () => undefined
-packages/elements/src/focusable.ts:163: mutation: ConditionalExpression: Survived: replaced by false
-packages/elements/src/focusable.ts:164: mutation: ConditionalExpression: Survived: replaced by true
-packages/elements/src/focusable.ts:164: mutation: ConditionalExpression: Survived: replaced by false
-packages/elements/src/focusable.ts:164: mutation: EqualityOperator: Survived: replaced by index > 0
-packages/elements/src/focusable.ts:164: mutation: EqualityOperator: Survived: replaced by index < 0
-packages/elements/src/focusable.ts:170: mutation: ArithmeticOperator: Survived: replaced by a.tabIndex + b.tabIndex
-packages/elements/src/overlay.ts:64: mutation: BooleanLiteral: NoCoverage: replaced by true
-packages/elements/src/overlay.ts:74: mutation: MethodExpression: NoCoverage: replaced by text.startsWith("s")
-packages/elements/src/overlay.ts:74: mutation: StringLiteral: NoCoverage: replaced by ""
-packages/elements/src/overlay.ts:74: mutation: ArithmeticOperator: NoCoverage: replaced by number / 1000
-packages/elements/src/overlay.ts:387: mutation: BlockStatement: NoCoverage: replaced by {}
-packages/elements/src/overlay.ts:388: mutation: AssignmentOperator: NoCoverage: replaced by this.#ownCloses -= 1
-packages/elements/src/overlay.ts:389: mutation: CallExpression: NoCoverage: replaced by ;
-packages/elements/src/overlay.ts:441: mutation: BooleanLiteral: NoCoverage: replaced by true
-packages/elements/src/overlay.ts:447: mutation: BlockStatement: NoCoverage: replaced by {}
-packages/elements/src/overlay.ts:447: mutation: ConditionalExpression: NoCoverage: replaced by true
-packages/elements/src/overlay.ts:448: mutation: BooleanLiteral: NoCoverage: replaced by false
-packages/elements/src/overlay.ts:448: mutation: ConditionalExpression: NoCoverage: replaced by false
-packages/elements/src/overlay.ts:448: mutation: EqualityOperator: NoCoverage: replaced by each !== target
-packages/elements/src/overlay.ts:450: mutation: BooleanLiteral: NoCoverage: replaced by true
-packages/elements/src/overlay.ts:535: mutation: StringLiteral: NoCoverage: replaced by ""
-packages/elements/src/overlay.ts:638: mutation: ConditionalExpression: NoCoverage: replaced by true
-packages/elements/src/overlay.ts:638: mutation: ConditionalExpression: NoCoverage: replaced by false
-packages/elements/src/overlay.ts:638: mutation: EqualityOperator: NoCoverage: replaced by this.#state !== "closing"
-packages/elements/src/overlay.ts:638: mutation: BlockStatement: NoCoverage: replaced by {}
-packages/elements/src/overlay.ts:641: mutation: BooleanLiteral: NoCoverage: replaced by true
-packages/elements/src/overlay.ts:36: mutation: BooleanLiteral: Survived: replaced by true
-packages/elements/src/overlay.ts:727: mutation: CallExpression: NoCoverage: replaced by ;
-packages/elements/src/overlay.ts:764: mutation: BooleanLiteral: NoCoverage: replaced by true
-packages/elements/src/overlay.ts:779: mutation: ArrayDeclaration: NoCoverage: replaced by []
-packages/elements/src/overlay.ts:781: mutation: ArrayDeclaration: NoCoverage: replaced by []
-packages/elements/src/overlay.ts:322: mutation: ConditionalExpression: Survived: replaced by true
-packages/elements/src/overlay.ts:343: mutation: StringLiteral: Survived: replaced by "Stryker was here!"
-packages/elements/src/overlay.ts:359: mutation: ConditionalExpression: Survived: replaced by true
-packages/elements/src/overlay.ts:417: mutation: StringLiteral: Survived: replaced by ""
-packages/elements/src/overlay.ts:426: mutation: ConditionalExpression: Survived: replaced by true
-packages/elements/src/overlay.ts:426: mutation: EqualityOperator: Survived: replaced by each.getClientRects().length >= 0
-packages/elements/src/overlay.ts:498: mutation: BlockStatement: Survived: replaced by {}
-packages/elements/src/overlay.ts:500: mutation: EqualityOperator: Survived: replaced by deepActive() === before
-packages/elements/src/overlay.ts:500: mutation: ConditionalExpression: Survived: replaced by true
-packages/elements/src/overlay.ts:548: mutation: ConditionalExpression: Survived: replaced by false
-packages/elements/src/overlay.ts:573: mutation: ConditionalExpression: Survived: replaced by true
-packages/elements/src/overlay.ts:573: mutation: ConditionalExpression: Survived: replaced by true
-packages/elements/src/overlay.ts:573: mutation: StringLiteral: Survived: replaced by "Stryker was here!"
-packages/elements/src/overlay.ts:598: mutation: ConditionalExpression: Survived: replaced by true
-packages/elements/src/overlay.ts:598: mutation: StringLiteral: Survived: replaced by ""
-packages/elements/src/overlay.ts:598: mutation: StringLiteral: Survived: replaced by ""
-packages/elements/src/overlay.ts:609: mutation: ConditionalExpression: Survived: replaced by false
-packages/elements/src/overlay.ts:613: mutation: ConditionalExpression: Survived: replaced by false
-packages/elements/src/overlay.ts:629: mutation: ConditionalExpression: Survived: replaced by false
-packages/elements/src/overlay.ts:630: mutation: ConditionalExpression: Survived: replaced by true
-packages/elements/src/overlay.ts:637: mutation: BooleanLiteral: Survived: replaced by true
-packages/elements/src/overlay.ts:701: mutation: MethodExpression: Survived: replaced by elements
-packages/elements/src/overlay.ts:710: mutation: ConditionalExpression: Survived: replaced by false
-packages/elements/src/overlay.ts:710: mutation: LogicalOperator: Survived: replaced by (stack.at(-1) !== this || this.#state === "closed" || this.#state === "closing") && deepActive() !== null
-packages/elements/src/overlay.ts:710: mutation: ConditionalExpression: Survived: replaced by false
-packages/elements/src/overlay.ts:710: mutation: LogicalOperator: Survived: replaced by (stack.at(-1) !== this || this.#state === "closed") && this.#state === "closing"
-packages/elements/src/overlay.ts:710: mutation: ConditionalExpression: Survived: replaced by false
-packages/elements/src/overlay.ts:710: mutation: ConditionalExpression: Survived: replaced by false
-packages/elements/src/overlay.ts:710: mutation: LogicalOperator: Survived: replaced by stack.at(-1) !== this && this.#state === "closed"
-packages/elements/src/overlay.ts:710: mutation: ConditionalExpression: Survived: replaced by false
-packages/elements/src/overlay.ts:710: mutation: ConditionalExpression: Survived: replaced by false
-packages/elements/src/overlay.ts:710: mutation: ConditionalExpression: Survived: replaced by false
-packages/elements/src/overlay.ts:711: mutation: ConditionalExpression: Survived: replaced by true
-packages/elements/src/overlay.ts:724: mutation: ConditionalExpression: Survived: replaced by true
-packages/elements/src/overlay.ts:723: mutation: BlockStatement: Survived: replaced by {}
-packages/elements/src/overlay.ts:724: mutation: EqualityOperator: Survived: replaced by (event.target as HTMLSlotElement).assignedNodes().length >= 0
-packages/elements/src/overlay.ts:725: mutation: ConditionalExpression: Survived: replaced by true
-packages/elements/src/overlay.ts:725: mutation: ConditionalExpression: Survived: replaced by false
-packages/elements/src/overlay.ts:725: mutation: EqualityOperator: Survived: replaced by filled !== this.#footer
-packages/elements/src/overlay.ts:758: mutation: ConditionalExpression: Survived: replaced by true
-packages/elements/src/overlay.ts:758: mutation: LogicalOperator: Survived: replaced by index < pa.length || index < pb.length
-packages/elements/src/overlay.ts:758: mutation: ConditionalExpression: Survived: replaced by true
-packages/elements/src/overlay.ts:758: mutation: ConditionalExpression: Survived: replaced by true
-packages/elements/src/overlay.ts:758: mutation: EqualityOperator: Survived: replaced by index <= pa.length
-packages/elements/src/overlay.ts:759: mutation: ConditionalExpression: Survived: replaced by true
-packages/elements/src/overlay.ts:758: mutation: EqualityOperator: Survived: replaced by index <= pb.length
-packages/elements/src/overlay.ts:759: mutation: ConditionalExpression: Survived: replaced by false
-packages/elements/src/overlay.ts:759: mutation: EqualityOperator: Survived: replaced by index >= pb.length
-packages/elements/src/overlay.ts:759: mutation: EqualityOperator: Survived: replaced by index <= pb.length
-packages/elements/src/overlay.ts:764: mutation: ConditionalExpression: Survived: replaced by false
-packages/elements/src/overlay.ts:764: mutation: ConditionalExpression: Survived: replaced by false
-packages/elements/src/overlay.ts:759: mutation: ConditionalExpression: Survived: replaced by false
-packages/elements/src/overlay.ts:764: mutation: ConditionalExpression: Survived: replaced by false
-packages/elements/src/overlay.ts:766: mutation: EqualityOperator: Survived: replaced by siblings.indexOf(x as Element) <= siblings.indexOf(y as Element)
-packages/elements/src/overlay.ts:764: mutation: LogicalOperator: Survived: replaced by x === undefined && y === undefined
-packages/elements/src/overlay.ts:760: mutation: BooleanLiteral: Survived: replaced by true
-packages/elements/src/overlay.ts:760: mutation: ConditionalExpression: Survived: replaced by false
-packages/elements/src/overlay.ts:779: mutation: EqualityOperator: Survived: replaced by assigned.length >= 0
-packages/elements/src/overlay.ts:782: mutation: ArrayDeclaration: Survived: replaced by []
-packages/elements/src/overlay.ts:771: mutation: ConditionalExpression: Survived: replaced by true
-mutation: 139 findings in 11 changed files (1232 mutants on changed lines; 225 timeouts, 438 compile errors, 7 zero-mutant entries)
-[ELIFECYCLE] Command failed with exit code 1.
-EXIT 1
+packages/elements/src/overlay.ts:643: mutation: compile-error: StringLiteral: replaced by ""
+packages/elements/src/overlay.ts:644: mutation: compile-error: OptionalChaining: replaced by this.#animation.cancel
+packages/elements/src/overlay.ts:658: mutation: compile-error: BooleanLiteral: replaced by target instanceof HTMLDialogElement
+packages/elements/src/overlay.ts:660: mutation: compile-error: CallExpression: replaced by ;
+packages/elements/src/overlay.ts:666: mutation: compile-error: BlockStatement: replaced by {}
+packages/elements/src/overlay.ts:668: mutation: compile-error: ConditionalExpression: replaced by true
+packages/elements/src/overlay.ts:668: mutation: compile-error: ConditionalExpression: replaced by false
+packages/elements/src/overlay.ts:668: mutation: compile-error: EqualityOperator: replaced by dialog !== null
+packages/elements/src/overlay.ts:668: mutation: compile-error: ObjectLiteral: replaced by {}
+packages/elements/src/overlay.ts:668: mutation: compile-error: ArrayDeclaration: replaced by ["Stryker was here"]
+packages/elements/src/overlay.ts:668: mutation: compile-error: ArrayDeclaration: replaced by ["Stryker was here"]
+packages/elements/src/overlay.ts:679: mutation: compile-error: ConditionalExpression: replaced by true
+packages/elements/src/overlay.ts:683: mutation: compile-error: ConditionalExpression: replaced by true
+packages/elements/src/overlay.ts:683: mutation: compile-error: ConditionalExpression: replaced by false
+packages/elements/src/overlay.ts:683: mutation: compile-error: LogicalOperator: replaced by first === undefined && last === undefined
+packages/elements/src/overlay.ts:683: mutation: compile-error: ConditionalExpression: replaced by false
+packages/elements/src/overlay.ts:683: mutation: compile-error: EqualityOperator: replaced by first !== undefined
+packages/elements/src/overlay.ts:683: mutation: compile-error: ConditionalExpression: replaced by false
+packages/elements/src/overlay.ts:683: mutation: compile-error: EqualityOperator: replaced by last !== undefined
+packages/elements/src/overlay.ts:686: mutation: compile-error: ConditionalExpression: replaced by true
+packages/elements/src/overlay.ts:686: mutation: compile-error: ConditionalExpression: replaced by false
+packages/elements/src/overlay.ts:686: mutation: compile-error: EqualityOperator: replaced by active !== null
+packages/elements/src/overlay.ts:686: mutation: compile-error: BlockStatement: replaced by {}
+packages/elements/src/overlay.ts:688: mutation: compile-error: ArrowFunction: replaced by () => undefined
+packages/elements/src/overlay.ts:692: mutation: compile-error: ConditionalExpression: replaced by true
+packages/elements/src/overlay.ts:693: mutation: compile-error: ConditionalExpression: replaced by true
+packages/elements/src/overlay.ts:693: mutation: compile-error: ConditionalExpression: replaced by false
+packages/elements/src/overlay.ts:697: mutation: compile-error: OptionalChaining: replaced by this.#sentinel.focus
+packages/elements/src/overlay.ts:701: mutation: compile-error: ArrayDeclaration: replaced by []
+packages/elements/src/overlay.ts:701: mutation: compile-error: ArrowFunction: replaced by () => undefined
+packages/elements/src/overlay.ts:704: mutation: compile-error: ConditionalExpression: replaced by true
+packages/elements/src/overlay.ts:706: mutation: compile-error: ArrowFunction: replaced by () => undefined
+packages/elements/src/overlay.ts:709: mutation: compile-error: ConditionalExpression: replaced by true
+packages/elements/src/overlay.ts:712: mutation: compile-error: ArrowFunction: replaced by () => undefined
+packages/elements/src/overlay.ts:726: mutation: compile-error: LogicalOperator: replaced by !(event.target instanceof Element) && !isOpaqueContent(event.target)
+packages/elements/src/overlay.ts:726: mutation: compile-error: BooleanLiteral: replaced by event.target instanceof Element
+packages/elements/src/overlay.ts:728: mutation: compile-error: OptionalChaining: replaced by this.#close.focus
+packages/elements/src/overlay.ts:747: mutation: compile-error: ConditionalExpression: replaced by true
+packages/elements/src/overlay.ts:747: mutation: compile-error: ConditionalExpression: replaced by false
+packages/elements/src/overlay.ts:747: mutation: compile-error: LogicalOperator: replaced by slot === null && observer === undefined
+packages/elements/src/overlay.ts:747: mutation: compile-error: ConditionalExpression: replaced by false
+packages/elements/src/overlay.ts:747: mutation: compile-error: EqualityOperator: replaced by slot !== null
+packages/elements/src/overlay.ts:747: mutation: compile-error: ConditionalExpression: replaced by false
+packages/elements/src/overlay.ts:747: mutation: compile-error: EqualityOperator: replaced by observer !== undefined
+packages/elements/src/overlay.ts:757: mutation: compile-error: ConditionalExpression: replaced by true
+packages/elements/src/overlay.ts:757: mutation: compile-error: ConditionalExpression: replaced by false
+packages/elements/src/overlay.ts:757: mutation: compile-error: EqualityOperator: replaced by body !== null
+packages/elements/src/overlay.ts:769: mutation: compile-error: BlockStatement: replaced by {}
+packages/elements/src/overlay.ts:772: mutation: compile-error: BlockStatement: replaced by {}
+packages/elements/src/overlay.ts:773: mutation: compile-error: ArrayDeclaration: replaced by ["Stryker was here"]
+packages/elements/src/overlay.ts:774: mutation: compile-error: ConditionalExpression: replaced by false
+packages/elements/src/overlay.ts:774: mutation: compile-error: EqualityOperator: replaced by each === null
+packages/elements/src/overlay.ts:786: mutation: compile-error: BlockStatement: replaced by {}
+packages/elements/src/overlay.ts:787: mutation: compile-error: ConditionalExpression: replaced by true
+packages/elements/src/overlay.ts:787: mutation: compile-error: ConditionalExpression: replaced by false
+packages/elements/src/overlay.ts:787: mutation: compile-error: LogicalOperator: replaced by node instanceof Element || node.assignedSlot !== null
+packages/elements/src/overlay.ts:788: mutation: compile-error: ConditionalExpression: replaced by true
+packages/elements/src/overlay.ts:788: mutation: compile-error: ConditionalExpression: replaced by false
+mutation: 394 mutants on the changed lines of 1 file, none survived; 2 timeouts, 157 compile errors, 0 zero-mutant entries; 8 equivalent records
