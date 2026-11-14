@@ -24,7 +24,7 @@ import { readScrollWidth, readTextBoxes } from "../../../packages/elements/test/
 // decision PLAN-CORRECTNESS-1-009 (a)) adds the section-header and card stories: each renders its elements with their
 // slotted content in light and dark, and, loaded at 320 × 800 px, the document does not scroll horizontally and no
 // slotted text node is clipped (packages/elements/test/commands.ts `readTextBoxes`), beside the same content rendered.
-// Phase 3 (T028) adds the page-header stories, with the same checks.
+// Phase 3 (T028) adds the page-header stories, with the same checks, and phase 4 (T035) the context-sidebar stories.
 const types: Readonly<Record<string, string>> = {
   ".html": "text/html; charset=utf-8",
   ".js": "text/javascript; charset=utf-8",
@@ -204,6 +204,20 @@ const layoutStories = [
   })),
   { id: "elements-ocelle-page-header--empty-heading", tag: "ocelle-page-header", count: 1, texts: ["Workspace", "A page header whose heading slot is empty.", "Import", "New mission"] },
   { id: "elements-ocelle-page-header--long-heading", tag: "ocelle-page-header", count: 1, texts: ["Workspace", `Missions${"x".repeat(60)}end`, "An unbroken heading wraps inside the band.", "Import", "New mission", "Export"] },
+  // 011 phase 4 (T035; US3, FR-033, FR-038): the context-sidebar stories, each rendering one sidebar, the four naming
+  // cases of US3-12 included, each rendered alone.
+  ...["full", "host-aria-label", "label-and-host-aria-label", "blank-host-aria-label", "unnamed"].map((name) => ({
+    id: `elements-ocelle-context-sidebar--${name}`,
+    tag: "ocelle-context-sidebar",
+    count: 1,
+    texts: ["Kitty team", "Missions", "Runs", "Projects", "Six members, two away this week.", "3 of 5 missions done"],
+  })),
+  { id: "elements-ocelle-context-sidebar--no-head", tag: "ocelle-context-sidebar", count: 1, texts: ["Missions", "Runs", "Projects", "Six members, two away this week.", "3 of 5 missions done"] },
+  { id: "elements-ocelle-context-sidebar--no-footer", tag: "ocelle-context-sidebar", count: 1, texts: ["Kitty team", "Missions", "Runs", "Projects", "Six members, two away this week."] },
+  { id: "elements-ocelle-context-sidebar--one-section", tag: "ocelle-context-sidebar", count: 1, texts: ["Kitty team", "Missions", "Runs", "3 of 5 missions done"] },
+  { id: "elements-ocelle-context-sidebar--text-in-the-slot", tag: "ocelle-context-sidebar", count: 1, texts: ["Kitty team", "Missions", "Runs", "Loose text between two sections", "Six members, two away this week.", "3 of 5 missions done"] },
+  { id: "elements-ocelle-context-sidebar--empty-sections", tag: "ocelle-context-sidebar", count: 1, texts: ["Kitty team", "3 of 5 missions done"] },
+  { id: "elements-ocelle-context-sidebar--hidden-sections", tag: "ocelle-context-sidebar", count: 1, texts: ["Kitty team", "Missions", "Runs", "A hidden section.", "Six members, two away this week.", "3 of 5 missions done"] },
 ] as const;
 
 /** What a layout story's page shows: its theme, its elements, each defined and upgraded, and the slotted text it draws. */
@@ -217,7 +231,7 @@ async function observeLayout(page: Page, tag: string): Promise<unknown> {
   return { ...shown, texts };
 }
 
-describe("the ocelle-section-header, ocelle-card and ocelle-page-header stories in the built Storybook (011 US1, US2, FR-033)", { timeout: 60_000 }, () => {
+describe("the ocelle-section-header, ocelle-card, ocelle-page-header and ocelle-context-sidebar stories in the built Storybook (011 US1, US2, US3, FR-033)", { timeout: 60_000 }, () => {
   for (const { id, tag, count, texts } of layoutStories) {
     for (const theme of ["light", "dark"] as const) {
       it(`${id} in ${theme}: renders its ${tag} elements with their slotted content, with no request outside the origin`, async () => {
