@@ -429,7 +429,9 @@ chosen); arguing the spinner essential under Understanding 2.2.2 (round 1 option
 
    Each state differs from idle and from the other on every ground, except that a `flush` control's hover fill
    (`hover-bg`) equals the ground on the `hover-bg` ground in both themes (the same token) and on the `inset` ground in
-   light (light `inset` and `hover-bg` are both #E2DDD3; dark `inset` #302B23 differs) (PLAN-FRESH-2-004), and, with
+   light (light `inset` and `hover-bg` are both #E2DDD3; dark `inset` #302B23 differs) (PLAN-FRESH-2-004), and on the
+   `neutral-bg` ground in dark (dark `neutral-bg` and `hover-bg` are both #2A261F; light `neutral-bg` #E6E1D8 differs;
+   operator decision at phase 2, missed by the first list), and, with
    `ground="chrome"`, its fill `chrome-hover` equals the `chrome-hover` ground in both themes; there, hover carries no
    information (FR-019: no hover-only information), the focus ring and the active fill still show, and the README says
    so. US1-14 and US4-8 write this exception list by hand per theme. A current row keeps
@@ -748,7 +750,8 @@ model's split count is **76 stories** (387 + 1.377 × (2s + 2) ≤ 600 s; 72 at 
 updates 006's row (scope `size` 1, sunset the split count at size 1) and puts that split count to the operator for
 approval at phase 1's review, as 006 decision 30 did for 25. Each CI run of the branch shows the Plants shards; phase
 6's review records a run at the full story count with every shard's time and the run's total; a shard near 10
-minutes is a stop-and-ask.
+minutes is a stop-and-ask (corrected at phase 2: at about 72 stories about 588 s is expected and accepted, so a shard
+at or over 10 minutes is the stop-and-ask; see "Corrected story count" below).
 
 **Size 1 is the last lever (PLAN-FRESH-3-003 (a))**: `plantShards` keeps each `visual` plant whole, so `size` 1 is its
 floor; nothing below it remains, and at size 1 a shard's time still grows with every repository story because each
@@ -764,6 +767,15 @@ Complexity Tracking row as it updates it (size 1 the last lever, the headroom, t
 record for a plant design whose shard time does not grow with the repository's story count (for example `visual`
 plants that capture only the story-themes their changed inputs can affect), to be decided before the next element
 mission starts. This feature does not change its own story count for it (round 3 option (b), not chosen).
+
+**Corrected story count (operator decision at phase 2, 2026-11-14, "proceed and note")**: the stories phases 2 to 6
+list bring the repository to about **72**, not about 58 (about 51 added, not about 37). The list is kept. By the
+model above a size-1 `visual` shard takes 387 + 1.377 × 146 ≈ 588 s at 72 stories (387 + 1.457 × 146 ≈ 600 s at the
+record's slowest rate), so the headroom to the split count of 76 is about **4 stories**, none at the slowest rate:
+the plant headroom is nearly gone. The 73 `visual` and `axe` shards take about 73 × 588 s ≈ 42,900 s, about
+**11.9 runner-hours** per CI run, plus the 3 non-visual shards. The operator opens the triage record for a plant
+design whose shard time does not grow with the story count when this feature lands. Phase 6's CI run (T067) expects
+shards of about 588 s; a shard at or over 10 minutes is a stop-and-ask.
 
 ## R-14 Mutation testing
 

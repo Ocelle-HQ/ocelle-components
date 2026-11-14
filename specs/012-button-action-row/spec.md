@@ -121,6 +121,20 @@ option (a) each):
 - Alt-click on a link row (plan decision 13, closing check-3 note SPEC-3-02): Alt counts as a modifier, like Ctrl,
   Meta and Shift in the decision on SPEC-1-09 above (FR-033, US5-2).
 
+**Operator decisions at phase 2** (2026-11-14, human:jeroennouwsdev; the phase 2 implementer's stop-and-ask):
+
+- Flush hover on dark `neutral-bg`, "(a) add to the exception list": dark `--ocelle-color-neutral-bg` is `#2A261F`,
+  the same value as dark `--ocelle-color-hover-bg`, so a `flush` control's hover shows no change on it; the
+  `neutral-bg` ground in dark joins the hand-written exception list (FR-019, US1-14, US4-8). No token or design
+  change.
+- Accessibility-tree node count, "reword": Chromium shows the `ocelle-button` host as an unnamed `generic` node next
+  to the inner control. A scenario's "one node" means exactly one node that has a role other than `generic` or has a
+  name; the host's unnamed `generic` node is allowed, a named `generic` node for the host is not (US1-1, US2-1,
+  US3-14, US4-16, US5-1).
+- Story count, "proceed and note": phases 2 to 6 bring the repository to about 72 stories, not about 58; the story
+  list is kept, the plan's estimate and shard headroom are corrected (plan decision 15, research R-13), and a triage
+  record for a plant design whose shard time does not grow with the story count is opened when this feature lands.
+
 **Issues**: #7, in part (triage record `triage/012-button-action-row.md`, approved by the operator on 2026-11-13).
 This feature builds the two action controls of #7. `ocelle-pill-tag`, `ocelle-status-indicator` and `ocelle-metric`
 stay in #7 for a later status mission. The body of #7 (read on 2026-11-13) is the source of the requirements below.
@@ -207,7 +221,9 @@ activate it by pointer, Enter and Space; read its accessibility-tree node and it
 **Acceptance Scenarios**:
 
 1. **Given** `<ocelle-button>Save</ocelle-button>`, **When** the accessibility tree is read, **Then** there is exactly
-   one node for it, role `button`, name "Save", and it is in the tab order once.
+   one node for it that has a role (other than `generic`) or a name, role `button`, name "Save", and it is in the tab
+   order once; the host may show as an unnamed `generic` node beside it (Chromium does), which is allowed, and no
+   `generic` node for the host has a name.
 2. **Given** the button, **When** it is clicked, or focused and Enter or Space is pressed, or the host calls its
    `click()` method, **Then** the host receives exactly one `click` event (one dispatch) whose target is the
    `ocelle-button` element at every listener, and exactly one `ocelle-button-activate` event (one dispatch, its
@@ -259,7 +275,8 @@ activate it by pointer, Enter and Space; read its accessibility-tree node and it
     and its active look each differ from the idle look and from each other, by the tokens of FR-019 (the computed
     fill and border of each state equal the hand-written token values), on each main ground and, with
     `ground="chrome"`, on each chrome ground, except a `flush` hover on the grounds where the hover fill equals the
-    ground: the `hover-bg` ground in both themes, the `inset` ground in light, and the `chrome-hover` ground
+    ground: the `hover-bg` ground in both themes, the `inset` ground in light, the `neutral-bg` ground in dark, and
+    the `chrome-hover` ground
     (`ground="chrome"`) in both themes (FR-019). The test writes that exception list by hand per theme, so a change to
     the flush hover token still fails on every other ground.
 15. **Given** a stretched host (see "Stretched host") of an available button and of a disabled button, **When**
@@ -302,7 +319,7 @@ the host's custom states, the mirrors and the navigation result.
 **Acceptance Scenarios**:
 
 1. **Given** `<ocelle-button href="/projects">Projects</ocelle-button>`, **When** the accessibility tree is read,
-   **Then** there is one node, role `link`, name "Projects", and activating it with a click or Enter dispatches one
+   **Then** there is one node with a role or a name (as in US1-1), role `link`, name "Projects", and activating it with a click or Enter dispatches one
    `ocelle-button-activate` (as in US1-2) and then, unless a listener called `preventDefault()` on it, navigates to
    `/projects`; when a listener prevented it, it does not navigate. Space does not activate it (native link
    behaviour). **When** it is clicked with Ctrl, Meta, Shift or Alt held, or middle-clicked, **Then** no
@@ -353,8 +370,8 @@ the host's custom states, the mirrors and the navigation result.
     **When** the host removes a mirror or writes another value into it, **Then** the mirror reads its stored value
     again (FR-004).
 14. **Given** `title="Close dialog"` on the host of `<ocelle-button>Save</ocelle-button>`, **When** the tree is read,
-    **Then** there is one node, the button named "Save" with the description "Close dialog", no `generic` node for
-    the host, and the host has no `title` attribute; **Given** an icon-only button with `title="Close"` and no other
+    **Then** there is one node with a role or a name (as in US1-1), the button named "Save" with the description
+    "Close dialog", no named `generic` node for the host (an unnamed one is allowed), and the host has no `title` attribute; **Given** an icon-only button with `title="Close"` and no other
     name, **Then** it is named "Close" (Accessible Name 1.2); setting `title=""` removes it from the inner control
     (FR-004, FR-009).
 
@@ -446,7 +463,8 @@ the event and its payload, the accessibility tree and the boxes in a shrink-wrap
    the hover tokens (FR-036); in forced-colours mode the hover keeps a visible system-colour border. **Given** a
    `flush` row, **When** a pointer hovers it, **Then** only its surface changes, to `--ocelle-color-hover-bg`
    (`--ocelle-color-chrome-hover` with `ground="chrome"`), except on the grounds where that fill equals the ground
-   (the `hover-bg` ground in both themes, the `inset` ground in light, the `chrome-hover` ground in both themes;
+   (the `hover-bg` ground in both themes, the `inset` ground in light, the `neutral-bg` ground in dark, the
+   `chrome-hover` ground in both themes;
    FR-019), where it shows no change; no
    border appears and no part of the row moves or changes size; in forced-colours mode the hover is visible in a
    system colour, again without moving or resizing any part of the row. **Given** a row with `current` set (either
@@ -480,8 +498,9 @@ the event and its payload, the accessibility tree and the boxes in a shrink-wrap
     control is as tall as its host (both cards' inner boxes as tall as their grid cells); **When** a pointer clicks 4 px
     inside the shorter card's host bottom edge, **Then** exactly one `ocelle-action-row-activate` event is dispatched
     (FR-001).
-16. **Given** `title="Open the mission"` on a row's host, **When** the tree is read, **Then** the row is one node, the
-    host has no `title` attribute and no `generic` node appears for it; with no slotted description or tags the row's
+16. **Given** `title="Open the mission"` on a row's host, **When** the tree is read, **Then** the row is one node with a
+    role or a name (as in US1-1), the host has no `title` attribute and no named `generic` node appears for it (an
+    unnamed one is allowed); with no slotted description or tags the row's
     description is "Open the mission"; with a slotted description the description stays the slots' text (Accessible
     Name 1.2 uses `title` for the description only when nothing else describes the control) (FR-030); with an empty
     `<span slot="description"></span>` (or one holding only whitespace) and no tags the description is still "Open the
@@ -514,7 +533,7 @@ tree, the navigation result and the line boxes of the tags.
 **Acceptance Scenarios**:
 
 1. **Given** `<ocelle-action-row href="/missions/42" row-id="m-42">`, **When** the tree is read, **Then** the row is
-   one node of role `link`; **When** it is clicked or Enter is pressed, **Then** `ocelle-action-row-activate` is
+   one node with a role or a name (as in US1-1), of role `link`; **When** it is clicked or Enter is pressed, **Then** `ocelle-action-row-activate` is
    dispatched first with `{ rowId: "m-42" }` and, unless a listener called `preventDefault()`, the browser navigates to
    `/missions/42`; when a listener prevented it, it does not navigate. Space does not activate a link row.
 2. **Given** a link row, **When** it is clicked with Ctrl, Meta, Shift or Alt held, or middle-clicked, **Then** no
@@ -794,7 +813,8 @@ tree, the navigation result and the line boxes of the tags.
   pressed; a `flush` button changes its surface only (hover, then active surface); with `ground="chrome"` the chrome
   tokens of FR-018 take these roles. Where the hover surface equals the ground, a `flush` control's hover shows no
   change: on the `hover-bg` ground in both themes, on the `inset` ground in light (where `inset` and `hover-bg` are
-  the same value), and on the `chrome-hover` ground with `ground="chrome"` in both themes; the README states it;
+  the same value), on the `neutral-bg` ground in dark (where `neutral-bg` and `hover-bg` are the same value), and on
+  the `chrome-hover` ground with `ground="chrome"` in both themes; the README states it;
   there is no hover-only information.
 - **FR-020**: Keyboard focus shows the token focus ring on the inner control (`:focus-visible`), visible in both themes
   and forced colours.

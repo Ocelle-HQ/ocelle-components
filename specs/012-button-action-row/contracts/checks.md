@@ -33,7 +33,7 @@ Navigation itself is observable only on the fixture harness; in-process, the sin
 | `test/entry-button.test.ts`, `test/entry-action-row.test.ts` | `elements` | each module defines only its tag; `entry-root.test.ts` and `exports.test.ts` extended |
 | `test/build/build.test.ts`, `test/build/pack.test.ts`, `test/node/manifest.test.ts`, `test/node/readme.test.ts` | as before | the new files, imports, manifest entries (every moved attribute and `title` declared with a description, each `data-ocelle-moved-*` mirror declared, `ground` with `chrome`, the custom states, the event `ocelle-button-activate` with its `detail` type, no `type`, `name`, `value` or `form` attribute on `ocelle-button` (FR-022); 005's entries unchanged), README sections (control conventions, the button's activate event, the markup of the three consumer compositions equal to the markup `link.ts` renders (plant: a README snippet that differs; decision 28), the two elements, engines floor Chromium 135 and WebKit 17.4, moved-ARIA note with the per-stack recipes, custom states, the mirrors (hosts do not write them; copies keep moved values; the element restores them after a morphing swap),
 a host may restyle `display` and size (the host guard and its limits: capture-phase listeners and listeners added
-before upgrade), `title` moved, label-in-name rule, `data:`/`vbscript:` note, the spinner's 4.8 s and the 833 ms limit for an override of `--ocelle-motion-spin`, the flush-hover note with its exception list (`hover-bg` both themes, `inset` light, `chrome-hover` both themes), the flush note's clipping-container space (`focus-offset` + `focus-width`), the changing-surface `ground` rule, the chrome look (`secondary` like `quiet`), the current bar's place inside the ring, a stretched button growing to its row, the synthetic-dispatch note, form note, 005's elements keep their `aria-label` rule) and CHANGELOG lines |
+before upgrade), `title` moved, label-in-name rule, `data:`/`vbscript:` note, the spinner's 4.8 s and the 833 ms limit for an override of `--ocelle-motion-spin`, the flush-hover note with its exception list (`hover-bg` both themes, `inset` light, `neutral-bg` dark, `chrome-hover` both themes), the flush note's clipping-container space (`focus-offset` + `focus-width`), the changing-surface `ground` rule, the chrome look (`secondary` like `quiet`), the current bar's place inside the ring, a stretched button growing to its row, the synthetic-dispatch note, form note, 005's elements keep their `aria-label` rule) and CHANGELOG lines |
 | `scripts/manifest.ts` tests (`test/node/manifest.test.ts`) | node | the normaliser keeps a standard attribute an element declares with a description and drops an undeclared one (R-15) |
 
 Each "does not" assertion (no event, no click, no navigation, no new tab, no gap, no border, not moved, no `href`) has
@@ -131,7 +131,10 @@ light story-themes that show `color-ink`; `fail-empty-index`'s tree gains an emp
 `action-row.stories.ts` (phase 5). Phase 1: `shardSize` lowered to 1, test-first, before any story is added (research
 R-13); size 1 is the last lever, so phase 1's review also asks the operator to open a triage record for a plant
 design whose shard time does not grow with the story count, before the next element mission (PLAN-FRESH-3-003). Phase 6's review records a CI run at the full story count with every Plants shard under 10 minutes and the
-run's total time; a shard near 10 minutes is a stop-and-ask.
+run's total time; a shard at or over 10 minutes is a stop-and-ask (about 588 s per shard is expected at about 72
+stories and accepted, operator decision at phase 2; research R-13). Phase 6 corrects `gates/README.md`'s and 006's
+row's figures to about 72 stories, about 4 stories of headroom and about 11.9 runner-hours (T068); the operator
+opens the plant-design triage record when this feature lands.
 
 ## Mutation scope
 

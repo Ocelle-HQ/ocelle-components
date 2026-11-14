@@ -73,7 +73,8 @@ behaviour unmeasured (open limitation).
 one heavy job at a time in this container.
 
 **Scale/Scope**: 2 elements, 2 internal modules, 1 changed internal module (`icon-slot.ts`), 7 new tokens, 6 tokens
-with new grounds (76 new contrast rows, 4 of them exempt), about 37 stories (from 21 to about 58 in the repository),
+with new grounds (76 new contrast rows, 4 of them exempt), about 51 stories (from 21 to about 72 in the repository; the first estimate, about 58, was low, operator decision at
+phase 2),
 1 gate constant (`shardSize`).
 
 ## Constitution Check
@@ -118,7 +119,8 @@ with new grounds (76 new contrast rows, 4 of them exempt), about 37 stories (fro
    scope).
 6. **Hover and active** (R-08 item 3, round 2 fix PLAN-FRESH-2-004): every variant has a hover and an active look
    distinct from idle and from each other; the one exception is a flush control's hover where the fill equals the
-   ground: the `hover-bg` ground in both themes, the `inset` ground in light, and the `chrome-hover` ground with
+   ground: the `hover-bg` ground in both themes, the `inset` ground in light, the `neutral-bg` ground in dark (dark
+   `neutral-bg` and `hover-bg` are both `#2A261F`; operator decision at phase 2), and the `chrome-hover` ground with
    `ground="chrome"` in both themes (documented; hover carries no information). US1-14 and US4-8 list it by hand per
    theme.
 7. **`ground` attribute** (R-08 item 4, round 1 fork PLAN-TESTABILITY-1-003 (a), round 2 fix PLAN-FRESH-2-007): both
@@ -156,7 +158,15 @@ with new grounds (76 new contrast rows, 4 of them exempt), about 37 stories (fro
     remain, fewer than this feature adds, and the Plants job costs about 11.2 runner-hours per CI run (73 shards of
     about 550 s, plus 3 non-visual shards; about 4 runner-hours today). Phase 1 writes these facts into 006's row and
     `gates/README.md`, and phase 1's review asks the operator to open a triage record for a plant design whose shard
-    time does not grow with the repository's story count, before the next element mission starts. Checked against the merged code: nothing this design relies on differs from the branch design
+    time does not grow with the repository's story count, before the next element mission starts.
+    **Corrected at phase 2** (operator decision 2026-11-14, "proceed and note"): phases 2 to 6 bring the repository to
+    about **72 stories**, not about 58, and the story list is kept. By the same model a `visual` shard then takes about
+    588 s (about 600 s at the record's slowest 1.457 s per capture), so the headroom to the split count of 76 is about
+    **4 stories** (none at the slowest rate): the plant headroom is nearly gone. The Plants job costs about
+    11.9 runner-hours per CI run (73 shards of about 588 s, plus 3 non-visual shards). The operator opens the triage
+    record for a plant design whose shard time does not grow with the story count when this feature lands; the next
+    element mission cannot add stories under the current design. Phase 6 corrects the figures in `gates/README.md` and
+    006's row (T068). Checked against the merged code: nothing this design relies on differs from the branch design
     (R-13 lists what changed at 006's landing and why none of it matters here).
 16. **Unavailable current row** (check-3 note SPEC-3-07): the unavailable look wins (disabled ink, no hover), and the
     current bar stays drawn (in disabled ink) so the position in the list is still visible; `aria-current` stays.
@@ -298,7 +308,8 @@ one at a time.
    `plantShards` test of the repository's size, with `gates/README.md`'s approved sizes and 006's Complexity Tracking
    row (size 1; the split count at size 1, 76 stories by 006's model, for the operator's approval at this phase's
    review; size 1 the last lever, about 18 stories of headroom after this feature and about 11.2 Plants runner-hours
-   per CI run at 58 stories, also in `gates/README.md`). This phase's review asks the operator to open a triage record
+   per CI run at 58 stories, also in `gates/README.md`; corrected at phase 2 to about 72 stories, about 4 stories of
+   headroom and about 11.9 runner-hours, decision 15). This phase's review asks the operator to open a triage record
    for a plant design whose shard time does not grow with the story count, before the next element mission
    (R-13, decision 15).
 2. **US1 `ocelle-button`** (P1, MVP): `icon-slot.ts` scoping (with its `slot.test.ts` case) first; `control.ts`
@@ -374,4 +385,5 @@ baselines and runs the `axe` gate on them (decision 15, operator decision 2026-1
 006's own row ("Plant roots hold every repository story") is met in phase 1 (R-13); it is the last setting that
 can meet it, so phase 1's update of that row records the headroom and runner time and phase 1's review asks the
 operator for a triage record on a plant design that does not grow with the story count (decision 15,
-PLAN-FRESH-3-003).
+PLAN-FRESH-3-003). At phase 2 the estimate was corrected to about 72 stories, leaving about 4 stories of headroom to
+the split count of 76; the operator opens that triage record when this feature lands (decision 15).
