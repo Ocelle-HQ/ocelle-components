@@ -58,3 +58,15 @@ commit after it:
   descendant that is not an option, the controller's `hostDisconnected` (a duplicate listener finds the key handled),
   the `focusVisible` option of the keyboard focus move (Chromium's heuristic shows the ring anyway), and the
   `behind` list of a wrapping move (read only after every child ahead was found disabled).
+
+## Open question for the operator: the scrolling listbox story and the `axe` gate
+
+`gate:axe` reports 12 findings, all on `elements-ocelle-listbox--scrolling-listbox` (6 per theme): a serious
+`color-contrast-incomplete` on each option scrolled out of the list part (`epsilon` to `kappa`). axe-core 4.14.0 gives
+`elmPartiallyObscured` for text clipped by a scroll container: it treats only `overflow: hidden` ancestors as hiding
+content, so text an `overflow: auto` scroller clips is "partially obscured" and its contrast "cannot be determined".
+Every other story, both themes, has no finding. FR-050 asks for a scrolling listbox story; FR-051 forbids a serious
+finding and a new entry in `storybook/a11y-exceptions.json`. The same findings make `gates/test/integration/axe.test.ts`'s
+two repository runs and the `axe` gate plants run on the repository fail (`gate:plants`, which also cannot run its 46
+visual plants without a container engine). The story test (`storybook-integration`) passes: it asserts no serious
+violation, not incompletes. Phase 2 stops here for the decision; T028 stays open.
