@@ -187,6 +187,9 @@ export const expectedTokens: readonly ExpectedToken[] = [
   plain("measure-container", "shell", "100cqi", width(1000)),
   derived("dialog-max-inline", "shell", "calc(100vw - 2 * var(--ocelle-gutter))", "calc(100vw - 2 * 1rem)", ["gutter"], width(1248)),
   derived("dialog-max-block", "shell", "calc(100dvh - 2 * var(--ocelle-gutter))", "calc(100dvh - 2 * 1rem)", ["gutter"], width(768)),
+  // 008 (data-model.md § New tokens, research.md R-09): the drawer's inline size, the sidebar's width, which #12's
+  // personal drawer replaces at narrow widths (spec-kitty-design#450).
+  derived("drawer-inline", "shell", "var(--ocelle-shell-sidebar-width)", "20rem", ["shell-sidebar-width"], width(320)),
   derived(
     "bar-block-narrow",
     "shell",

@@ -277,7 +277,7 @@ describe("generate(root) on the repository's element source", () => {
     const manifest = await generate(repo);
     const modules = manifest.modules as { path: string; declarations: Record<string, unknown>[] }[];
     expect(manifest.schemaVersion).toBe("1.0.0");
-    expect(modules.map((module) => module.path)).toEqual(["src/ocelle-brand-mark.ts", "src/ocelle-dialog.ts", "src/ocelle-icon.ts"]);
+    expect(modules.map((module) => module.path)).toEqual(["src/ocelle-brand-mark.ts", "src/ocelle-dialog.ts", "src/ocelle-drawer.ts", "src/ocelle-icon.ts"]);
     const [icon] = modules.find((module) => module.path === "src/ocelle-icon.ts")?.declarations ?? [];
     expect(icon).toMatchObject({
       kind: "class",
@@ -362,6 +362,45 @@ describe("generate(root) on the repository's element source", () => {
     expect(described(dialog?.cssProperties)).toEqual([{ name: "--ocelle-dialog-inline-size", described: true }]);
   });
 
+  // 008 tasks.md T032 (FR-045, SC-003; research.md R-01): the drawer's entry lists its own side, ground and
+  // headingHidden, then the members it inherits from the overlays' internal base with inheritedFrom, as T018 asserts for
+  // the dialog; its JSDoc lists exactly, with the reason backdrop; no CSS property (no --ocelle-dialog-inline-size).
+  it('declares ocelle-drawer with side ("start" | "end", default "start"), ground ("sheet" | "chrome", default "sheet") and headingHidden / heading-hidden (default false), reflected, then open, label and closeLabel inherited from OcelleOverlay, its two events with their detail types, two slots, five parts and no CSS property, each described', async () => {
+    const manifest = await generate(repo);
+    const modules = manifest.modules as { path: string; declarations: Record<string, unknown>[] }[];
+    const [drawer] = modules.find((module) => module.path === "src/ocelle-drawer.ts")?.declarations ?? [];
+    const described = (list: unknown): Record<string, unknown>[] =>
+      ((list ?? []) as Record<string, unknown>[]).map(({ description, ...rest }) => ({ ...rest, described: typeof description === "string" && description !== "" }));
+    const from = { name: "OcelleOverlay", module: "src/overlay.ts" };
+    expect({ kind: drawer?.kind, name: drawer?.name, tagName: drawer?.tagName, customElement: drawer?.customElement }).toEqual({ kind: "class", name: "OcelleDrawer", tagName: "ocelle-drawer", customElement: true });
+    expect(described(drawer?.members)).toEqual([
+      { kind: "field", name: "side", privacy: "public", type: { text: '"start" | "end"' }, default: '"start"', attribute: "side", reflects: true, described: true },
+      { kind: "field", name: "ground", privacy: "public", type: { text: '"sheet" | "chrome"' }, default: '"sheet"', attribute: "ground", reflects: true, described: true },
+      { kind: "field", name: "headingHidden", privacy: "public", type: { text: "boolean" }, default: "false", attribute: "heading-hidden", reflects: true, described: true },
+      { kind: "field", name: "open", privacy: "public", type: { text: "boolean" }, default: "false", attribute: "open", reflects: true, inheritedFrom: from, described: true },
+      { kind: "field", name: "label", privacy: "public", type: { text: "string | undefined" }, default: "undefined", attribute: "label", inheritedFrom: from, described: true },
+      { kind: "field", name: "closeLabel", privacy: "public", type: { text: "string" }, default: '"Close"', attribute: "close-label", inheritedFrom: from, described: true },
+    ]);
+    expect(described(drawer?.attributes)).toEqual([
+      { name: "side", fieldName: "side", type: { text: '"start" | "end"' }, default: '"start"', described: true },
+      { name: "ground", fieldName: "ground", type: { text: '"sheet" | "chrome"' }, default: '"sheet"', described: true },
+      { name: "heading-hidden", fieldName: "headingHidden", type: { text: "boolean" }, default: "false", described: true },
+      { name: "open", fieldName: "open", type: { text: "boolean" }, default: "false", inheritedFrom: from, described: true },
+      { name: "label", fieldName: "label", type: { text: "string | undefined" }, default: "undefined", inheritedFrom: from, described: true },
+      { name: "close-label", fieldName: "closeLabel", type: { text: "string" }, default: '"Close"', inheritedFrom: from, described: true },
+    ]);
+    expect(described(drawer?.events)).toEqual([
+      { name: "ocelle-drawer-close-request", type: { text: 'CustomEvent<{ reason: "escape" | "close-button" | "backdrop" }>' }, described: true },
+      { name: "ocelle-drawer-close", type: { text: 'CustomEvent<{ reason: "escape" | "close-button" | "backdrop" | "host" }>' }, described: true },
+    ]);
+    expect(described(drawer?.slots)).toEqual([
+      { name: "", described: true },
+      { name: "footer", described: true },
+    ]);
+    expect(described(drawer?.cssParts)).toEqual(["panel", "heading", "body", "footer", "close-button"].map((name) => ({ name, described: true })));
+    expect(described(drawer?.cssProperties)).toEqual([]);
+  });
+
   it("publishes no src/overlay.ts module and no OcelleOverlay declaration, in generate(root)'s output and in the committed custom-elements.json", async () => {
     const committed = JSON.parse(readFileSync(join(repo, "packages/elements/custom-elements.json"), "utf8")) as Json;
     const internal = (manifest: Json): unknown => {
@@ -370,11 +409,12 @@ describe("generate(root) on the repository's element source", () => {
         modules: modules.map((module) => module.path).filter((path) => path === "src/overlay.ts"),
         declarations: modules.flatMap((module) => ((module.declarations ?? []) as Json[]).map((each) => each.name)).filter((name) => name === "OcelleOverlay"),
         dialog: modules.some((module) => module.path === "src/ocelle-dialog.ts"),
+        drawer: modules.some((module) => module.path === "src/ocelle-drawer.ts"),
       };
     };
     expect({ generated: internal(await generate(repo)), committed: internal(committed) }).toEqual({
-      generated: { modules: [], declarations: [], dialog: true },
-      committed: { modules: [], declarations: [], dialog: true },
+      generated: { modules: [], declarations: [], dialog: true, drawer: true },
+      committed: { modules: [], declarations: [], dialog: true, drawer: true },
     });
   });
 

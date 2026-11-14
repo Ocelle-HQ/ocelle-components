@@ -109,6 +109,14 @@ describe("used values under the six theme conditions", { timeout: 60_000 }, () =
     await page.close();
     expect([values["dialog-max-inline"], values["dialog-max-block"], values["target-min"]]).toEqual([1248, 768, 44]);
   });
+
+  // 008 (tasks.md T033): the drawer's inline size is the sidebar's, 20rem, at the 16px root.
+  it("the drawer's inline size, --ocelle-drawer-inline, is 320px (20rem) at 1280 × 800", async () => {
+    const page = await open("light");
+    const values = await read(page, "light");
+    await page.close();
+    expect(values["drawer-inline"]).toBe(320);
+  });
 });
 
 describe("reduced motion (FR-007, US1 scenario 7)", { timeout: 60_000 }, () => {
