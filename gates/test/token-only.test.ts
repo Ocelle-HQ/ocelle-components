@@ -855,6 +855,8 @@ describe("rawValues: the grid-template-columns allowance (013 R-10)", () => {
     { value: "fit-content(33.3%)" },
     { value: "minmax(0, 1fr) minmax(0, 1fr) minmax(0, 1fr) minmax(0, 1fr)" },
     { value: "minmax(0, 1fr) minmax(0, 1fr)" },
+    { value: "minmax(0, /* the value column */ 1fr)" },
+    { value: "fit-content(/* the label column */ 50%)" },
   ])("grid-template-columns: $value is token-only (only the control 4px after it is raw)", ({ value }) => {
     expect({ value: rawValues("grid-template-columns", value), control: rawValues("grid-template-columns", `${value} 4px`), upper: rawValues("GRID-TEMPLATE-COLUMNS", value) }).toEqual({ value: [], control: ["4px"], upper: [] });
   });
@@ -874,6 +876,8 @@ describe("rawValues: the grid-template-columns allowance (013 R-10)", () => {
     { value: "minmax(0, fit-content(50%))", raw: ["minmax(0, fit-content(50%))"] },
     { value: "repeat(4, minmax(0, 1fr))", raw: ["repeat(4, minmax(0, 1fr))"] },
     { value: "fit-content(50%) minmax(0, 200px)", raw: ["minmax(0, 200px)"] },
+    { value: "max(0, 1fr)", raw: ["max(0, 1fr)"] },
+    { value: "minmax(0 / 1fr)", raw: ["minmax(0 / 1fr)"] },
   ])("grid-template-columns: $value is raw: $raw, while fit-content(50%) minmax(0, 1fr) passes", ({ value, raw }) => {
     expect({ value: rawValues("grid-template-columns", value), allowed: rawValues("grid-template-columns", allowed) }).toEqual({ value: raw, allowed: [] });
   });
