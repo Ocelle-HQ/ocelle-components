@@ -1,0 +1,4 @@
+# History fold phase-1 of claude/015-workflow-layouts: old commit -> new commit (pre-fold head kept as refs/ocelle/prefold/phase-1/claude/015-workflow-layouts, f4d5fae292a1381364cebe5767cc1df11f19b15c).
+6afbb9de20112226603426b0b58081fbb6498576 7391c5ed0a3bf28fa599463519ca924fc8e897dc
+b47541be04116b17b5d6be342fda7f3f4c2fb1d5 28229c82b916454ce754025422b3b1713acbe409
+f4d5fae292a1381364cebe5767cc1df11f19b15c f8f8ae723d59181b7a2e67d05c11aed7e3deb08e
