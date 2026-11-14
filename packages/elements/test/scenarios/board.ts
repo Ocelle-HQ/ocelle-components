@@ -230,15 +230,26 @@ const linkLanes = Array.from({ length: 5 }, (_, index) =>
   ),
 ).join("");
 
+/**
+ * The cards US2-15 focuses by Tab, then by Shift+Tab: the first card of the first lane, the first and last card of the
+ * middle lane and the last card of the last lane. In Frame N each walk also reaches a card in a lane partly off-screen
+ * when it takes focus (operator decision P2, reviews/phase-3/operator-decisions.md): `l3c0` by Tab after `l2c2` (lane 3
+ * spans 521 to 681 px of the content while the box shows 0 to 636 px), and `l1c2` by Shift+Tab after `l2c0` from the end
+ * (lane 1 spans 177 to 337 px while the box is scrolled to its 222 px end). Chromium's own focus scrolling alone leaves
+ * each of them under a fade with 5 px of its ring cut, so only the module's clearance passes them.
+ */
+const forwardCards = (frame: Frame): string[] => (frame === "N" ? ["l0c0", "l2c0", "l2c2", "l3c0", "l4c2"] : ["l0c0", "l2c0", "l2c2", "l4c2"]);
+const backwardCards = (frame: Frame): string[] => (frame === "N" ? ["l4c2", "l2c2", "l2c0", "l1c2", "l0c0"] : ["l4c2", "l2c2", "l2c0", "l0c0"]);
+
 /** US2-15 in one frame: each named card focused by Tab, then by Shift+Tab, and the board's block scroll and overflow. */
 async function cardRings(driver: Driver, frame: Frame): Promise<unknown> {
   await page(driver, frame, `${before}${board("b", linkLanes, ' label="Workflow"', frame)}${after}`);
   const steps: unknown[] = [];
-  for (const target of ["l0c0", "l2c0", "l2c2", "l4c2"]) {
+  for (const target of forwardCards(frame)) {
     await driver.tabWalk("before", target);
     steps.push(await cardStep(driver, "b", target));
   }
-  for (const target of ["l4c2", "l2c2", "l2c0", "l0c0"]) {
+  for (const target of backwardCards(frame)) {
     await driver.tabWalk("after", target, true);
     steps.push(await cardStep(driver, "b", target));
   }
@@ -250,8 +261,13 @@ async function cardRings(driver: Driver, frame: Frame): Promise<unknown> {
   };
 }
 
-const cardRingsExpected = (overflowing: boolean): unknown => ({
-  steps: ["l0c0", "l2c0", "l2c2", "l4c2", "l4c2", "l2c2", "l2c0", "l0c0"].map((active) => ({ active, inside: true, clear: true, fades: true })),
+const cardRingsExpected = (frame: Frame, overflowing: boolean): unknown => ({
+  steps: (frame === "N" ? ["l0c0", "l2c0", "l2c2", "l3c0", "l4c2", "l4c2", "l2c2", "l2c0", "l1c2", "l0c0"] : ["l0c0", "l2c0", "l2c2", "l4c2", "l4c2", "l2c2", "l2c0", "l0c0"]).map((active) => ({
+    active,
+    inside: true,
+    clear: true,
+    fades: true,
+  })),
   blockScroll: 0,
   overflowY: "hidden",
   overflowing,
@@ -447,14 +463,14 @@ export const boardScenarios: readonly BoardScenario[] = [
     name: "US2-15: in Frame W five flat lanes of block-link cards keep every keyboard-focused card's ring whole inside the board, which neither scrolls in the block direction nor overflows (FR-014)",
     base: false,
     run: (driver) => cardRings(driver, "W"),
-    expected: cardRingsExpected(false),
+    expected: cardRingsExpected("W", false),
   },
   {
     // Plants: no ring room; no fade clearance (a card in a lane partly off-screen is then left under a fade).
     name: "US2-15: in Frame N each keyboard-focused card, by Tab and by Shift+Tab, is scrolled into view with its whole ring inside the board and clear of the fades, the fades stay on exactly the off-screen sides, and the board does not scroll in the block direction (FR-001, FR-014)",
     base: false,
     run: (driver) => cardRings(driver, "N"),
-    expected: cardRingsExpected(true),
+    expected: cardRingsExpected("N", true),
   },
   {
     // The fixed blocks are descendants inside a card, not slotted children: a slotted child is capped at the lane's
