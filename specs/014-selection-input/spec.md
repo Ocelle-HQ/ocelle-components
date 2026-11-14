@@ -119,13 +119,12 @@ gate (axe on every story, serious and critical findings fail) and its contributo
 final but not merged. This spec writes the stories, baselines and axe outcomes against that design (FR-050 to FR-053).
 By the operator's decision at spec check 1 (Q3 (c)), the design phases (spec, plan, tasks) proceed now and
 implementation of this feature starts only after #10 has merged; the plan's story, baseline and axe tasks are then
-rechecked against #10 as merged before the first phase is implemented. No phase lands with its stories or axe
-results pending. By the operator's decision of 2026-11-14 (`reviews/phase-1/operator-decisions.md`), the sessions that
-implement this feature have no container engine, so #10's pinned container cannot run there: no visual baseline
-(including the shared token-story baselines) is committed during implementation. The `visual` gate and the light and
-dark baselines of every story are a recorded known gap of each phase, closed at landing (`/ocelle-land`) with
-baselines produced from CI's pinned-container captures. Container-engine tests that also fail at the phase base are
-environment-only, not a red/green or review finding.
+rechecked against #10 as merged before the first phase is implemented. No phase lands with its stories, baselines or
+axe results pending. By the operator's decision of 2026-11-14 during phase 2 (`reviews/phase-2/operator-decisions.md`,
+which replaces the baseline gap decision in `reviews/phase-1/operator-decisions.md`), the baselines are produced from
+phase 2 on in #10's pinned container under docker (`pnpm run visual:update`) and checked with `pnpm run gate:visual`.
+No podman cross-engine check is possible in these sessions; each phase records that note, and CI confirms the
+baselines when the feature lands (FR-053).
 
 ## Consumer need
 
@@ -939,19 +938,26 @@ navigate" means the URL, its fragment included, is unchanged (scenario 14).
   focused, hovered); and one story each for an option, a tab and a segment with an `icon` (User Story 1 scenario 23,
   User Story 2 scenario 23, User Story 3 scenario 19). Every hover story declares its hover state with 006 FR-031's
   pointer parameter, and every hover and focus story is a state story under constitution V.
-- **FR-051**: The `axe` gate reports no serious or critical finding on any of these stories in either theme, with no
-  new entry in `storybook/a11y-exceptions.json`.
+- **FR-051**: The `axe` gate reports no serious or critical finding on any of these stories in either theme. Exactly
+  one exception is allowed (operator decision 2026-11-14, `reviews/phase-2/operator-decisions.md`, option (a)): entries
+  in `storybook/a11y-exceptions.json` for the options of `elements-ocelle-listbox--scrolling-listbox` that the list's
+  `overflow: auto` container clips (`epsilon` to `kappa`), in light and dark, for which axe-core 4.14.0 reports a
+  serious `color-contrast-incomplete` (`elmPartiallyObscured`: it treats only `overflow: hidden` as hiding content).
+  The entries take the same form as #10's Prose document entries: one per node, each naming this feature's plan,
+  whose Complexity Tracking holds its row. No other story of this feature adds an exception entry.
 - **FR-052**: The stories and the tests that read them are written in each phase's red commit, before the green
   commit (operator decision I3).
 - **FR-053**: Implementation of this feature starts only after #10 has merged (operator decision Q3 (c)); the spec,
   plan and tasks are written before. Before the first phase is implemented, the plan's story, baseline and axe tasks
   are rechecked against #10 as merged (its gates, contributor note 006 FR-025, `contracts/gates.md`,
-  `contracts/container.md`). Every phase lands with its stories and a passing `axe` gate; neither is recorded as
-  pending #10. By the operator's decision of 2026-11-14, no visual baseline (including the shared token-story
-  baselines) is committed during implementation: each phase records the `visual` gate and its stories' light and dark
-  baselines as a known gap, and the baselines are committed at landing (`/ocelle-land`), produced from CI's
-  pinned-container captures, before the feature's pull request merges. Container-engine tests that also fail at the
-  phase base are environment-only, not a red/green or review finding.
+  `contracts/container.md`). Every phase lands with its stories, committed light and dark baselines and a passing
+  `axe` gate; none is recorded as pending #10. By the operator's decision of 2026-11-14 during phase 2
+  (`reviews/phase-2/operator-decisions.md`, which replaces the phase 1 gap decision), the baselines, the shared
+  token-story baselines that change included, are produced from phase 2 on in #10's pinned container under docker
+  (`pnpm run visual:update`) and checked with `pnpm run gate:visual` in each phase. Each phase records that no podman
+  cross-engine check was possible in the session; CI's `visual` gate confirms the baselines when the feature lands
+  (`/ocelle-land`). Baseline PNGs that conflict after a merge are regenerated with `pnpm run visual:update`, never
+  hand-picked.
 - **FR-054**: If #16 (mission 008) has merged before this feature lands, this feature adds the composed story of an
   `ocelle-dialog` holding an `ocelle-listbox` (008 spec: "the feature that lands second adds the composed story");
   otherwise 008 does.
@@ -1007,10 +1013,10 @@ navigate" means the URL, its fragment included, is unchanged (scenario 14).
 - **SC-006**: Zero clipboard calls by any element across all tests; the copy outcome text the host sets appears
   exactly once in the accessibility tree, inside one polite live region, and the region's content changes from empty
   to that text once per request and not on a repeated set of the same text (User Story 4 scenarios 5 and 6).
-- **SC-007**: The `axe` gate reports 0 serious or critical findings on every story when each phase lands, and every
-  story has committed light and dark baselines, produced from CI's pinned-container captures, when the feature lands
-  (`/ocelle-land`); until then the baselines and the `visual` gate are a recorded known gap (operator decision
-  2026-11-14; implementation starts after #10 has merged, FR-053).
+- **SC-007**: Every story has committed light and dark baselines, produced in the pinned container under docker and
+  matched by the `visual` gate, and the `axe` gate reports 0 serious or critical findings on them (other than the one
+  exception FR-051 allows) when each phase lands; CI confirms the baselines when the feature lands (operator decision
+  2026-11-14, `reviews/phase-2/operator-decisions.md`; implementation starts after #10 has merged, FR-053).
 - **SC-008**: The manifest, CSP, prefix, style-lint, contrast and mutation gates pass; every surviving mutant in new
   code is killed or recorded as equivalent with a reason.
 - **SC-009**: kitty-mission-ui can build its Open project folder picker, its tabbed screens, its 15 segmented choices,

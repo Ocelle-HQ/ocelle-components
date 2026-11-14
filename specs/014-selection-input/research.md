@@ -581,7 +581,7 @@ document URL.
 setup that makes it falsifiable. Each phase's review runs every plant of the phase and records, per plant, the test
 that failed on it in `reviews/phase-N/plants.md` (as 005's phases did).
 
-## R-12 Stories, baselines and axe on #10 (recheck when #10 merges; implementation waits for it; baselines at landing)
+## R-12 Stories, baselines and axe on #10 (recheck when #10 merges; implementation waits for it; baselines under docker from phase 2)
 
 **Decision.** One stories file per control, `storybook/stories/<control>.stories.ts` (listbox, tabs,
 segmented-choice, copy-field, link), covering its children (FR-050; the files carry no `ocelle-` prefix, like the
@@ -595,17 +595,25 @@ parameter: the hovered link, option and tab, and the hovered segment in the defa
 `hover-bg` fill, and the joined segment's `accent-strong` lines). These hover and focus stories give each state of
 R-15 that has its own paint a baseline (constitution V; analysis C1, operator decision Q3 (a)). Per operator decision
 I3, the stories and the story test (`storybook/test/integration/elements-stories.test.ts`, extended) are written in the
-phase's red commit. The baselines are not produced in the green commit: see the amendment below.
+phase's red commit; the baselines are produced in the phase's green commits (a capture of a story that does not
+render yet is meaningless).
 
-**Amendment: baselines at landing** (operator decision 2026-11-14, `reviews/phase-1/operator-decisions.md`; FR-053,
-SC-007). The implementing sessions have no docker or podman, so `visual:update` and the `visual` gate cannot run in
-#10's pinned container there. No visual baseline (including the shared token-story baselines) is committed during
-implementation, and no phase runs the `visual` gate; each phase's review records the gap. At `/ocelle-land` the
-baselines of every story named above (and any shared baseline that changes) are produced from CI's pinned-container
-captures and committed under `storybook/baselines/`, and the `visual` gate passes before the pull request merges.
-Container-engine tests that also fail at the phase base are environment-only, not a red/green or review finding. The
-stories, the story test in the red commit and the `axe` gate in every phase are unchanged. Not chosen: capturing
-outside the pinned container (pixels would differ from CI's and the baselines would be replaced at landing anyway).
+**Amendment: baselines under docker from phase 2** (operator decision 2026-11-14 during phase 2,
+`reviews/phase-2/operator-decisions.md`, which replaces the baseline gap decision of `reviews/phase-1/operator-decisions.md`;
+FR-053, SC-007). From phase 2 on, the baselines of every story named above, and any shared baseline (the token stories
+included) that changes, are produced in #10's pinned container under docker (`pnpm run visual:update`), committed
+under `storybook/baselines/` and checked with `pnpm run gate:visual` in the phase. Phase 2, which had recorded the
+earlier gap in T027, produces its baselines in T027a. No podman cross-engine check is possible in these sessions;
+each phase records that note, and CI's `visual` gate (both engines) confirms the baselines when the feature lands.
+Baseline PNGs that conflict after a merge are regenerated with `pnpm run visual:update`, never hand-picked. Not chosen:
+leaving every baseline to landing (the phase 1 gap decision, replaced).
+
+**Amendment: one axe exception** (operator decision 2026-11-14, `reviews/phase-2/operator-decisions.md`, option (a);
+FR-051). axe-core 4.14.0 gives `elmPartiallyObscured` for text an `overflow: auto` scroller clips (it treats only
+`overflow: hidden` ancestors as hiding content), so the options of `elements-ocelle-listbox--scrolling-listbox`
+scrolled out of the list part (`epsilon` to `kappa`) each have a serious `color-contrast-incomplete` in both themes.
+They are excepted node by node in `storybook/a11y-exceptions.json`, in the form of #10's Prose document entries, with
+their rows in the plan's Complexity Tracking (T027b). No other story adds an exception.
 
 **Recheck.** Phase 1's first task first merges `origin/main` (`3828d2f` or later) into the branch as a recorded merge
 commit (analysis I1, operator decision Q1 (a)); the implementer makes it before `base.sh 1`, as an exception to
