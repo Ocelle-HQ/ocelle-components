@@ -291,7 +291,7 @@ export class OcelleNotice extends LitElement {
 
   /** Whether the heading is present: its elements' text content is not empty or whitespace only (FR-006). */
   protected headingPresent(): boolean {
-    return collapse(this.headings().map((heading) => heading.textContent).join(" ")) !== "";
+    return collapse(this.headings().map((heading) => heading.textContent).join("")) !== "";
   }
 
   /** The notice's text as FR-008 defines it, heading then body, before whitespace is collapsed. */
@@ -408,7 +408,7 @@ export class OcelleNotice extends LitElement {
     }
     if (before === after || this.hidden) return;
     if (after === "alert") this.alertPath("role");
-    else if (before === "alert" && this.pending !== "none") this.leaveAlert();
+    else if (this.pending !== "none") this.leaveAlert();
     else if (!this.announcer.samePoliteness(this.politeness())) this.announcer.trigger(false);
   }
 
@@ -484,6 +484,7 @@ export class OcelleNotice extends LitElement {
   }
 
   protected override updated(changed: PropertyValues): void {
+    // Stryker disable next-line CallExpression: equivalent, LitElement's updated() does nothing
     super.updated(changed);
     this.syncLive();
   }

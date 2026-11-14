@@ -107,6 +107,11 @@ describe("the text a notice announces (FR-008)", () => {
     ).resolves.toBe("One Two Body end");
   });
 
+  it("leaves out a heading of two whitespace-only elements, whose part is hidden (FR-006)", async () => {
+    const text = await written('<ocelle-notice id="n" announce><b slot="heading"> </b><b slot="heading"> </b>Body</ocelle-notice>');
+    expect({ text, hidden: notice().shadowRoot?.querySelector('[part="heading"]')?.hasAttribute("hidden") }).toEqual({ text: "Body", hidden: true });
+  });
+
   it("reads an ocelle-icon's label property, or its label attribute when the property is not a string, or nothing", async () => {
     const inserted = await insert(
       '<ocelle-notice id="n" announce><ocelle-icon id="a" name="arrow-end" label="Attr"></ocelle-icon><ocelle-icon id="b" name="arrow-end" label="Kept"></ocelle-icon><ocelle-icon name="arrow-end"></ocelle-icon>end</ocelle-notice>',
@@ -251,6 +256,38 @@ describe("announce set and removed", () => {
 });
 
 describe("the host role changed (US1-15)", () => {
+  it("from status to alert empties a held copy once it has been current for W", async () => {
+    const inserted = await holding('role="status"', "Saved");
+    vi.advanceTimersByTime(10);
+    inserted.setAttribute("role", "alert");
+    await endOfTask();
+    vi.advanceTimersByTime(W - 10);
+    expect({ live: live(inserted), copy: copy(inserted) }).toEqual({ live: "assertive", copy: "" });
+  });
+
+  it("removed and set back within W, the politeness back to the baseline's, writes nothing at the end of the wait", async () => {
+    const inserted = await holding('announce tone="danger" role="status"', "Failed");
+    vi.advanceTimersByTime(H);
+    inserted.removeAttribute("role");
+    await endOfTask();
+    vi.advanceTimersByTime(W / 2);
+    inserted.setAttribute("role", "status");
+    await endOfTask();
+    vi.advanceTimersByTime(10 * W);
+    expect({ live: live(inserted), copy: copy(inserted) }).toEqual({ live: "polite", copy: "" });
+  });
+
+  it("from alert to note on an announcing notice, the politeness unchanged and the alert baseline taken, does not restart a running wait", async () => {
+    const inserted = await insert('<ocelle-notice id="n" announce tone="danger" role="alert">A</ocelle-notice>');
+    inserted.textContent = "B";
+    await endOfTask();
+    vi.advanceTimersByTime(W / 2);
+    inserted.setAttribute("role", "note");
+    await endOfTask();
+    vi.advanceTimersByTime(W / 2);
+    expect({ live: live(inserted), copy: copy(inserted) }).toEqual({ live: "assertive", copy: "B" });
+  });
+
   it("to status takes the baseline then: a change back to the text it had before announcing is announced", async () => {
     const inserted = await insert('<ocelle-notice id="n">A</ocelle-notice>');
     inserted.textContent = "B";
@@ -380,6 +417,18 @@ describe("a role=\"alert\" notice inserted (US1-15)", () => {
 });
 
 describe("the tone changed (US1-12)", () => {
+  it("changed and changed back within W, the politeness back to the baseline's, writes nothing at the end of the wait", async () => {
+    const inserted = await holding("announce", "Saved");
+    vi.advanceTimersByTime(H);
+    inserted.tone = "danger";
+    await endOfTask();
+    vi.advanceTimersByTime(W / 2);
+    inserted.tone = "info";
+    await endOfTask();
+    vi.advanceTimersByTime(10 * W);
+    expect({ live: live(inserted), copy: copy(inserted) }).toEqual({ live: "polite", copy: "" });
+  });
+
   it("on a notice that does not announce writes nothing", async () => {
     const inserted = await insert('<ocelle-notice id="n">Saved</ocelle-notice>');
     inserted.tone = "danger";
@@ -395,6 +444,41 @@ describe("the tone changed (US1-12)", () => {
     await endOfTask();
     vi.advanceTimersByTime(W / 2);
     inserted.tone = "success";
+    await endOfTask();
+    vi.advanceTimersByTime(W / 2);
+    expect(copy(inserted)).toBe("B");
+  });
+});
+
+describe("a light-DOM change (US1-11)", () => {
+  it("of a text node's data is announced", async () => {
+    const inserted = await holding("announce", "Saved");
+    vi.advanceTimersByTime(H);
+    const text = inserted.firstChild as Text;
+    text.data = "Changed";
+    await endOfTask();
+    vi.advanceTimersByTime(W);
+    expect(copy(inserted)).toBe("Changed");
+  });
+
+  it("of a descendant's attribute that changes the text is announced", async () => {
+    const inserted = await holding("announce", '<span id="s">Saved</span> now');
+    vi.advanceTimersByTime(H);
+    notice("s").setAttribute("aria-hidden", "true");
+    await endOfTask();
+    vi.advanceTimersByTime(W);
+    expect(copy(inserted)).toBe("now");
+  });
+});
+
+describe("the size changed", () => {
+  it("on an announcing notice during a wait leaves the wait and its baseline alone", async () => {
+    const inserted = await holding("announce", "A");
+    vi.advanceTimersByTime(H);
+    inserted.textContent = "B";
+    await endOfTask();
+    vi.advanceTimersByTime(W / 2);
+    inserted.size = "compact";
     await endOfTask();
     vi.advanceTimersByTime(W / 2);
     expect(copy(inserted)).toBe("B");
