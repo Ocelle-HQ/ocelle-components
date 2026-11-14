@@ -9,3 +9,8 @@ Recorded by the orchestrator, 2026-11-14, human:jeroennouwsdev.
   element writes no host attribute (mission 005's rule stands). FR-006 is amended for the tabs only; the listbox and the
   segmented choice keep the host `aria-label` path. Options (a), moving the attribute off the host, and (b), accepting
   two named nodes, were declined.
+
+- **Constitution III exception approved.** Not forwarding a host `aria-label` on `ocelle-tabs` is an exception to
+  constitution III ("ARIA state set on a host ... an accessible name ... reaches the real inner control"). The operator
+  approves it as recorded in plan.md's Complexity Tracking: scope `ocelle-tabs` only; sunset, the op that forwards a
+  host `aria-label` with exactly one named node and no host attribute written.
