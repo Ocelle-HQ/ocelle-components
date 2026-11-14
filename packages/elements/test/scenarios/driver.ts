@@ -82,10 +82,21 @@ export interface Target {
   readonly inner?: string;
 }
 
-/** A click (012 research.md R-06, R-11): always sent with `force: true`, so a click on an unusable control is sent. */
+/** A point relative to the top-left corner of an element's border box, in CSS pixels. */
+export interface Point {
+  readonly x: number;
+  readonly y: number;
+}
+
+/**
+ * A click (012 research.md R-06, R-11): always sent with `force: true`, so a click on an unusable control is sent; at
+ * the element's centre, or at `position` from its top-left corner (012 phase 2: the stretched and restyled hosts of
+ * US1-15 and US1-17 are clicked 4 px inside an edge).
+ */
 export interface ClickOptions extends Target {
   readonly modifiers?: readonly Modifier[];
   readonly button?: MouseButton;
+  readonly position?: Point;
 }
 
 /**
@@ -239,8 +250,16 @@ export interface Driver {
   focus(id: string): Promise<void>;
   /** Presses `key` (Playwright's key names; `" "` is Space) through the browser's keyboard, `modifiers` held. */
   press(key: string, modifiers?: readonly Modifier[]): Promise<void>;
-  /** Clicks the element with `id` (or its shadow element `inner`) at its centre with the mouse, with `force: true`. */
+  /**
+   * Clicks the element with `id` (or its shadow element `inner`) with the mouse, with `force: true`, at its centre or at
+   * `options.position`.
+   */
   click(id: string, options?: ClickOptions): Promise<void>;
+  /**
+   * Calls the element's own `click()` method in the page, as a host's script does (012 phase 2: US1-2, US1-3), and
+   * waits for every element to render.
+   */
+  callClick(id: string): Promise<void>;
   /** Moves the mouse to the centre of the element with `id` (or its shadow element `inner`). */
   hover(id: string, options?: Target): Promise<void>;
   /** Moves the mouse to the element with `id` (or its shadow element `inner`) and presses the left button there. */

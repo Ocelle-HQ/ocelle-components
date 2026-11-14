@@ -196,6 +196,33 @@ export const interactionScenarios: readonly HarnessScenario[] = [
       after: "rgb(6, 6, 6)",
     },
   },
+  // 012 phase 2 (US1-2, US1-3, US1-15, US1-17): a click at a position, and the element's own click().
+  {
+    name: "click(id, { position }) clicks at that point of the element's box: inside a 100 × 100 box, 10 px in lands on the 20 × 20 button there, 4 px inside the bottom-right corner on the box",
+    host: false,
+    run: async (driver) => {
+      await driver.mount('<div id="box"><button id="corner" type="button">C</button></div>');
+      await driver.rules("#box { inline-size: 100px; block-size: 100px; } #corner { display: block; inline-size: 20px; block-size: 20px; margin: 0; padding: 0; }");
+      await driver.events("corner", ["click"]);
+      await driver.click("box", { position: { x: 10, y: 10 } });
+      await driver.click("box", { position: { x: 96, y: 96 } });
+      return (await driver.takeEvents()).filter((record) => record.at === "div#box").map((record) => record.target);
+    },
+    expected: ["button#corner", "div#box"],
+  },
+  {
+    name: "callClick(id) calls the element's own click(): an enabled native button gets one untrusted click, a disabled one none",
+    host: false,
+    run: async (driver) => {
+      await driver.mount(buttons);
+      for (const id of ["plain", "off"]) await driver.events(id, ["click"]);
+      await driver.callClick("off");
+      await driver.callClick("plain");
+      const records = await driver.takeEvents();
+      return { off: typesAt(records, "button#off"), plain: records.filter((record) => record.at === "button#plain").map((record) => ({ type: record.type, isTrusted: record.isTrusted })) };
+    },
+    expected: { off: [], plain: [{ type: "click", isTrusted: false }] },
+  },
 ];
 
 /** The event recorder (T002): records at the element, its ancestors, `document` and `window`, a serial per dispatch, `preventNext`. */

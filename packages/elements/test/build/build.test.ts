@@ -16,7 +16,9 @@ import { buildPackage, elements } from "./package-build.ts";
 // - from phase 5 (T055; US4 scenario 4, the stylesheet as shipped; analysis L5): the pairing check of
 //   test/node/brand-pairs-check.ts on the `css` template of the built dist/ocelle-brand-mark.js finds exactly FR-026's
 //   tokens per variant and every FR-026 pair checked in pairs.json, and dist/ocelle-brand-mark.js imports neither the
-//   package root nor ocelle-icon.js.
+//   package root nor ocelle-icon.js;
+// - 012 (tasks.md T020): dist/ocelle-button.js, imported by the root and importing no other element, and the browser
+//   build defining `ocelle-button`.
 const dist = join(elements, "dist");
 const browserBuild = join(dist, "browser", "ocelle-elements.js");
 
@@ -46,7 +48,20 @@ describe("the module build (dist/*.js)", () => {
       litImported: imported.some(({ specifier }) => lit(specifier)),
       rootImportsIcon: imported.some(({ name, specifier }) => name === "index.js" && specifier === "./ocelle-icon.js"),
       rootImportsMark: imported.some(({ name, specifier }) => name === "index.js" && specifier === "./ocelle-brand-mark.js"),
-    }).toEqual({ files: ["browser.js", "index.js", "ocelle-brand-mark.js", "ocelle-icon.js"], outside: [], litImported: true, rootImportsIcon: true, rootImportsMark: true });
+      rootImportsButton: imported.some(({ name, specifier }) => name === "index.js" && specifier === "./ocelle-button.js"),
+    }).toEqual({ files: ["browser.js", "index.js", "ocelle-brand-mark.js", "ocelle-button.js", "ocelle-icon.js"], outside: [], litImported: true, rootImportsIcon: true, rootImportsMark: true, rootImportsButton: true });
+  });
+
+  it("dist/ocelle-button.js imports lit, the registration helper and the internal control and slot modules, but neither the package root nor another element (012 tasks.md T020)", () => {
+    const imported = specifiers(existsSync(join(dist, "ocelle-button.js")) ? readFileSync(join(dist, "ocelle-button.js"), "utf8") : "");
+    expect({
+      lit: imported.includes("lit"),
+      define: imported.includes("./define.js"),
+      control: imported.includes("./control.js"),
+      iconSlot: imported.includes("./icon-slot.js"),
+      root: imported.includes("./index.js"),
+      elements: imported.filter((specifier) => specifier.startsWith("./ocelle-")),
+    }).toEqual({ lit: true, define: true, control: true, iconSlot: true, root: false, elements: [] });
   });
 
   it("dist/ocelle-brand-mark.js imports lit and the registration helper, but neither the package root nor ocelle-icon.js (US1-17)", () => {
@@ -80,15 +95,16 @@ describe("the module build (dist/*.js)", () => {
 describe("the browser build (dist/browser/ocelle-elements.js)", () => {
   const text = (): string => (existsSync(browserBuild) ? readFileSync(browserBuild, "utf8") : "");
 
-  it("is self-contained: it defines ocelle-icon and ocelle-brand-mark, with no import statement and no dynamic import", () => {
+  it("is self-contained: it defines ocelle-icon, ocelle-brand-mark and ocelle-button, with no import statement and no dynamic import", () => {
     const code = text();
     expect({
       exists: code !== "",
       definesIcon: code.includes('"ocelle-icon"'),
       definesMark: code.includes('"ocelle-brand-mark"'),
+      definesButton: code.includes('"ocelle-button"'),
       specifiers: specifiers(code),
       dynamicImport: /\bimport\s*\(/.test(code),
-    }).toEqual({ exists: true, definesIcon: true, definesMark: true, specifiers: [], dynamicImport: false });
+    }).toEqual({ exists: true, definesIcon: true, definesMark: true, definesButton: true, specifiers: [], dynamicImport: false });
   });
 
   it("holds Lit's production build at the locked versions, not its development build, no ssr-dom-shim and no console call", () => {

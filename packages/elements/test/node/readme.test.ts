@@ -24,6 +24,11 @@ function read(file: string): string {
 }
 const flat = (text: string): string => text.replace(/\s+/g, " ");
 
+/** A control convention: its bold title, then its first rule. */
+function convention(title: string, rule: string): string {
+  return `**${title}.** ${rule}`;
+}
+
 const fragments = [
   // module and registration (FR-002, R-02)
   "Each element lives in its own module, `src/<tag>.ts`, which ends with one `define(\"<tag>\", <Class>)` call: importing the module defines that element and no other, and importing the package root defines every element",
@@ -117,6 +122,39 @@ const fragments = [
   // the mark's licence and the trademark note (FR-029, FR-030, US4 scenario 10)
   "The mark is the project's own drawing of the Ocelle rosette, redrawn from the geometry of Ocelle's app icon, under Apache-2.0",
   "\"Ocelle\" and the rosette mark are trademarks of their owner. The Apache-2.0 licence grants no right to use them (section 6 of the licence); they may be used only to refer to Ocelle",
+  // 012 (tasks.md T020; contracts/elements-package.md § Control conventions, § ocelle-button): the control conventions
+  // that later controls follow, conventions 1 (one inner control, the filled host, the host guard and its limits), 3
+  // (the disabled half), 5 (the name order, label in name) and 7 (primary action), and the ocelle-button section
+  convention("One inner control", "Each control renders exactly one native `<button type=\"button\">` in an open shadow root attached with `delegatesFocus`; the host has no role and no tabindex"),
+  "`element.focus()` focuses the inner control, and `element.click()` clicks it, so a click started by `click()` gets the same guarantees as any other click",
+  "A click dispatched on the host with `dispatchEvent` is outside the guarantees: it does not pass through the inner control, so the element stops it",
+  "The host is a grid container (`inline-grid` for `ocelle-button`) and the inner control its single stretched item, so the inner control fills the host when a flex row or a grid stretches it; a stretched button grows to the row's height (set `align-self` on the element to avoid it)",
+  "A host may restyle the element's `display` and size: the element also listens for `click` and `auxclick` on the host from its constructor and stops any that did not pass through the inner control, in every state, so host area outside the inner control never activates it",
+  "Capture-phase listeners, and listeners added to the element before it is upgraded, are outside that guarantee: they run before the element's own listener",
+  convention("Disabled", "`disabled` means the control cannot be used here at all: the inner control is out of the tab order, reported disabled and not activated"),
+  "Not activated means: no `ocelle-*` event and no `click` reaching a bubble-phase listener on the element or its ancestors (up to `document` and `window`); capture-phase listeners are outside it",
+  convention("Name order", "The inner control's name is the element's `label` (trimmed; empty or whitespace-only counts as none), and otherwise the element's content; slotted icons never contribute"),
+  "When a control's content is visible, its `label` contains the visible text, ideally at its start, so a user who speaks a control's visible name reaches it (label in name)",
+  convention("Primary action", "A primary action uses `size=\"default\"` (44 × 44 px minimum); `variant=\"primary\"` is a look, not what makes an action primary"),
+  // the ocelle-button section (FR-009 to FR-014, FR-018 to FR-020, FR-022, FR-023)
+  "`variant` (attribute and property, reflected): `primary` (filled), `secondary` (the default; bordered on a surface) or `quiet` (bordered, no fill); any other value renders `secondary`",
+  "`size` (attribute and property, reflected): `default` (the default; at least `--ocelle-target-min`, 44 px, in both dimensions) or `compact` (the compact text scale, `--ocelle-font-size-sm` and `--ocelle-line-height-compact`, and at least 24 px in both dimensions); any other value renders `default`",
+  "`flush` (boolean attribute and property, reflected): no inline padding, no border and no fill, the label in `--ocelle-color-ink`, and the content at the box's inline start, so its label (or icon) lines up with the text around it; the minimum block and inline size of its `size` stay",
+  "`ground` (attribute and property, reflected): the ground the button sits on, since an element cannot see its ancestor's colour. `accent-low`, `inset`, `hover-bg` or `state` (any of the state grounds) gives a bordered variant an `--ocelle-color-accent-strong` border; absent or any other value means the main grounds `color-canvas`, `color-sheet`, `color-pane`, `color-panel`, `color-inspector` and `color-rail`, with an `--ocelle-color-control-border` border",
+  "`ground=\"chrome\"` is for the chrome grounds (`color-chrome`, `color-chrome-hover`): the label is `--ocelle-color-chrome-ink`, a bordered variant has an `--ocelle-color-chrome-muted` border and no fill, so `secondary` looks like `quiet` there; hover fills with `--ocelle-color-chrome-hover`, pressed with `--ocelle-color-chrome-active`, and both turn the border `--ocelle-color-chrome-ink`; the primary looks as on every ground",
+  "On a container whose surface changes (a list or table row that takes `color-hover-bg` on hover, or `color-accent-low` when selected), set `ground` for the changed surface statically (`hover-bg` or `accent-low`): `--ocelle-color-accent-strong` meets 3:1 on every main ground, so the border holds in both states",
+  "`label` (attribute and property, not reflected): the accessible name, trimmed; empty or whitespace-only counts as none",
+  "`disabled` (boolean attribute and property, reflected): the disabled state of the control conventions",
+  "Each activation that delivers a `click` (a pointer click, Enter or Space, the element's `click()`) also dispatches `ocelle-button-activate` from the element: a `CustomEvent` with `bubbles: true`, `composed: true`, `cancelable: true` and `detail` `{}`, dispatched before the `click` reaches any bubble-phase listener on the element or its ancestors",
+  "Calling `preventDefault()` on it cancels the `click`'s default action; a button has none, so the `click` is still delivered, with `defaultPrevented` `true`",
+  "A disabled button dispatches neither event",
+  "Hover and pressed change the surface and the border: a bordered variant's border becomes `--ocelle-color-hover-border`; the primary fills with `--ocelle-color-accent-hover` on hover and `--ocelle-color-accent` when pressed; `secondary` and `quiet` fill with `--ocelle-color-hover-bg` on hover and `--ocelle-color-active-bg` when pressed; a flush button changes its surface only",
+  "A flush button's hover fill is `--ocelle-color-hover-bg`, so its hover shows no change where the ground has that colour: on `color-hover-bg` in both themes, on `color-inset` in light, on `color-neutral-bg` in dark, and with `ground=\"chrome\"` on `color-chrome-hover` in both themes; hover carries no information there, and focus and pressed still show",
+  "The focus ring is drawn outside the button: a container that clips (`overflow` other than `visible`) and holds a flush button at its edge keeps at least `--ocelle-focus-offset` + `--ocelle-focus-width` of unclipped space around it, for example `padding-inline` of that size with a matching negative margin",
+  "Keyboard focus shows the token focus ring on the inner control (`--ocelle-color-focus`, `--ocelle-focus-width`, `--ocelle-focus-offset`); a pointer click does not",
+  "In forced colours the label and border are `ButtonText`, hover and pressed borders and the focus ring `Highlight`, a flush button's hover and pressed a dashed `Highlight` outline, and a disabled button `GrayText`",
+  "`ocelle-button` does not take part in forms: its inner control is always `type=\"button\"`, so activating it inside a `<form>` neither submits nor resets the form, and it has no `type`, `name`, `value` or `form` attribute. A host that submits from it calls `form.requestSubmit()` in its click handler",
+  "A long label wraps between words inside the button, which grows in block size; it is never truncated",
   // two copies on a page (FR-006, Edge Cases)
   "Two copies of the package on one page, two versions or the browser build beside a bundle of the module build, cannot both define an element: the first definition wins and the second import throws nothing",
 ];
@@ -126,6 +164,7 @@ const entryRows = [
   "| `@ocelle/elements` | `dist/index.js` | every element; for hosts with a bundler |",
   "| `@ocelle/elements/ocelle-icon.js` | `dist/ocelle-icon.js` | `ocelle-icon` only; for hosts with a bundler |",
   "| `@ocelle/elements/ocelle-brand-mark.js` | `dist/ocelle-brand-mark.js` | `ocelle-brand-mark` only; for hosts with a bundler |",
+  "| `@ocelle/elements/ocelle-button.js` | `dist/ocelle-button.js` | `ocelle-button` only; for hosts with a bundler |",
   "| `@ocelle/elements/browser.js` | `dist/browser/ocelle-elements.js` | every element, Lit inside; for hosts without a bundler |",
   "| `@ocelle/elements/custom-elements.json` | `custom-elements.json` | the manifest, also named by the `customElements` field |",
 ];
@@ -170,7 +209,7 @@ describe("packages/elements/README.md", () => {
   it("lists exactly the entry points of package.json's exports in its Entry points table (FR-002)", () => {
     const manifest = JSON.parse(read("package.json")) as { exports?: Record<string, string> };
     expect(tableRows(read("README.md"), "Entry points")).toEqual(entryRows);
-    expect(Object.keys(manifest.exports ?? {})).toEqual([".", "./ocelle-icon.js", "./ocelle-brand-mark.js", "./browser.js", "./custom-elements.json"]);
+    expect(Object.keys(manifest.exports ?? {})).toEqual([".", "./ocelle-icon.js", "./ocelle-brand-mark.js", "./ocelle-button.js", "./browser.js", "./custom-elements.json"]);
   });
 
   it("lists the thirteen names of the set, whether each mirrors and the consumer need it meets, in its Icons table (US2-1, FR-018, SC-007)", () => {
@@ -202,6 +241,13 @@ describe("packages/elements/CHANGELOG.md", () => {
     "`@ocelle/elements/ocelle-brand-mark.js`",
     "`ground` and `tone` (reflected) and `label`",
     "the slot convention for icons in controls",
+    // 012 (tasks.md T020)
+    "`ocelle-button`",
+    "`@ocelle/elements/ocelle-button.js`",
+    "`ocelle-button-activate`",
+    "`variant`, `size`, `flush` and `ground` (reflected), `label` and `disabled` (reflected)",
+    "the control conventions",
+    "`--ocelle-color-hover-border`",
     ...["chevron-start", "chevron-end", "chevron-up", "chevron-down", "arrow-start", "arrow-end", "menu", "close", "folder", "file", "search", "table", "copy"].map((name) => `\`${name}\``),
   ])("names %s under Unreleased / Added (constitution VII, FR-031, SC-008)", (surface) => {
     expect(added).toContain(surface);

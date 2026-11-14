@@ -82,7 +82,11 @@ export const expectedTokens: readonly ExpectedToken[] = [
   colour("color-chrome-ink", "#EDE9E1", "#EDE9E1"),
   colour("color-chrome-muted", "#A39D92", "#A39D92"),
   colour("color-chrome-hover", "#211D18", "#24211B"),
+  // 012 (research.md R-08 item 4a, plan decision 20): the pressed surface of a control on the chrome grounds.
+  colour("color-chrome-active", "#3A342B", "#3A342B"),
   colour("color-accent", "#C68A1E", "#C68A1E"),
+  // 012 (research.md R-08 item 3): the primary button's hover fill.
+  colour("color-accent-hover", "#D9A23F", "#D9A23F"),
   colour("color-on-accent", "#15130F", "#15130F"),
   colour("color-accent-low", "#F1E1C0", "#3A2B10"),
   colour("color-accent-strong", "#8F5E0F", "#E0A23A"),
@@ -91,6 +95,10 @@ export const expectedTokens: readonly ExpectedToken[] = [
   colour("color-link", "#84560D", "#E0A23A"),
   colour("color-link-hover", "#15130F", "#F7F4EE"),
   colour("color-hover-bg", "#E2DDD3", "#2A261F"),
+  // 012 (research.md R-08 item 3, #525): the border of a hovered or pressed bordered control, an alias of color-ink a
+  // host overrides on an ancestor; and the pressed surface of secondary, quiet and flush controls.
+  derivedColour("color-hover-border", "color-ink", "#15130F", "#EDE9E1"),
+  colour("color-active-bg", "#D3CCBF", "#3A342B"),
   colour("color-disabled-ink", "#6F685D", "#8C8579"),
   colour("color-disabled-bg", "#E6E1D8", "#2A261F"),
   colour("color-overlay", "rgb(21 19 15 / 0.5)", "rgb(0 0 0 / 0.65)"),

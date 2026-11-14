@@ -5,7 +5,8 @@ import { expectedTokens, excludedNames } from "./expected.ts";
 // The package documentation (research.md R-15, contracts/token-package.md § Host contract, FR-025): the README states
 // the host contract (load once, the theme rule, the color-scheme hand-off to #6, forced colours and the box-shadow
 // caveat, the rendered brand rules, and from phase 4 the font's CSP allowance `font-src 'self'`, FR-012), and the
-// changelog's "Unreleased" section lists every token under "Added".
+// changelog's "Unreleased" section lists every token under "Added". 012 (research.md R-08) adds the roles of the four
+// control colour tokens.
 // Whitespace is normalised, so a fragment may wrap across lines.
 /** A package file's text; empty while it does not exist, so each assertion below reports what is missing. */
 function read(file: string): string {
@@ -43,6 +44,11 @@ const fragments = [
   "Digests are shown in groups of four",
   "In light mode the ochre fill is never the only mark of a state",
   "A control drawn on `color-accent-low`, `color-inset`, `color-hover-bg`, `color-danger-bg`, `color-warning-bg`, `color-success-bg`, `color-info-bg` or `color-neutral-bg` is bordered with `color-accent-strong`",
+  // 012 (research.md R-08 items 3 and 4a): the hover and active tokens of the controls
+  "`--ocelle-color-hover-border` is the border of a hovered or pressed bordered control: `--ocelle-color-ink` unless a host overrides it on an ancestor",
+  "`--ocelle-color-accent-hover` is the hover fill of a primary control, with `--ocelle-color-on-accent` text on it",
+  "`--ocelle-color-active-bg` is the pressed surface of a secondary, quiet or flush control on the main and state grounds",
+  "`--ocelle-color-chrome-active` is the pressed surface of a control on the chrome grounds, with `--ocelle-color-chrome-ink` text on it",
 ];
 
 describe("packages/tokens/README.md", () => {
