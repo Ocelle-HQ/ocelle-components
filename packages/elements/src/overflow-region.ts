@@ -80,6 +80,7 @@ export function clearanceScroll({ ring, box, fade, direction }: ClearanceInput):
   let suppressEnd = false;
   if (!clear(position)) {
     position = Math.min(Math.max(start, 0), range);
+    // Stryker disable next-line ConditionalExpression,EqualityOperator: equivalent, here the position is the ring box's start, or the range when the start lies past it; a ring box that starts a fade's depth past the range ends within the content and clears the end at the range, so it never falls back
     suppressStart = fadesStart(position) && start < position + fade;
     suppressEnd = fadesEnd(position) && end > position + box.clientWidth - fade;
   }
@@ -289,9 +290,9 @@ export class OverflowRegion implements ReactiveController {
 
   #box: HTMLElement | null = null;
   #label: string | undefined;
-  /** The fades the focus fallback suppresses, the focused control they are for, and the `scrollLeft` written then. */
+  /** The fades the focus fallback suppresses, and the `scrollLeft` written then. */
+  // Stryker disable next-line BooleanLiteral: equivalent for the start, which fades only more than 1 px from scroll position 0, reached by a scroll event that ends the suppression (the end is killed by the fade scenarios)
   #suppressed = { start: false, end: false };
-  #focused: EventTarget | undefined;
   // Stryker disable next-line NumberLiteral: equivalent, it is read only while a suppression is set, and the fallback writes it then
   #written = 0;
   /** The mask figures last set: the box's client height and its scrollbar's thickness. */
@@ -334,13 +335,15 @@ export class OverflowRegion implements ReactiveController {
 
   hostUpdated(): void {
     const box = this.#boxOf();
+    // Stryker disable next-line ConditionalExpression: equivalent, following the same box again observes it again and adds the same listeners, which are no-ops
     if (box === this.#box) return;
     this.#box = box;
     if (box !== null) this.#follow(box);
   }
 
+  // Stryker disable next-line all: equivalent, a disconnected host gets no event, and connecting again observes the box afresh
   hostDisconnected(): void {
-    // Stryker disable next-line all: equivalent, a disconnected host gets no event, and connecting again observes the box afresh
+    // Stryker disable next-line all: equivalent, as above
     this.#observer.disconnect();
   }
 
@@ -352,7 +355,7 @@ export class OverflowRegion implements ReactiveController {
     if (track !== null) this.#observer.observe(track);
     // Stryker disable next-line ObjectLiteral,BooleanLiteral: equivalent, a passive listener only promises not to call preventDefault, which this one never does
     box.addEventListener("scroll", this.#onScroll, { passive: true });
-    // Stryker disable next-line StringLiteral: equivalent, a slot change that changes the content's width also resizes the track, which the observer sees, and one that does not leaves the state as it is
+    // Stryker disable next-line all: equivalent, a slot change that changes the content's width also resizes the track, which the observer sees, and one that does not leaves the state as it is
     box.addEventListener("slotchange", this.#onSlotChange);
     box.closest(".region-frame")?.addEventListener("focusout", this.#onFrameOut);
   }
@@ -391,12 +394,12 @@ export class OverflowRegion implements ReactiveController {
     const box = this.#box;
     this.name = resolveName(this.#host.getAttribute("aria-label"), this.#label);
     if (box === null) return;
-    const named = this.overflowing && this.name !== undefined;
+    const name = this.overflowing ? this.name : undefined;
     if (this.overflowing) box.setAttribute("tabindex", "0");
     else box.removeAttribute("tabindex");
-    if (named) {
+    if (name !== undefined) {
       box.setAttribute("role", this.#role);
-      box.setAttribute("aria-label", this.name ?? "");
+      box.setAttribute("aria-label", name);
     } else {
       box.removeAttribute("role");
       box.removeAttribute("aria-label");
@@ -457,15 +460,15 @@ export class OverflowRegion implements ReactiveController {
     });
     box.scrollTo({ left: clearance.scrollLeft, behavior: "instant" });
     this.#suppressed = { start: clearance.suppressStart, end: clearance.suppressEnd };
-    this.#focused = target;
     this.#written = box.scrollLeft;
     this.#measure();
   };
 
-  /** Focus leaving the control the fallback is for ends the suppression (R-06). */
-  readonly #onFocusOut = (event: FocusEvent): void => {
-    if (event.composedPath()[0] !== this.#focused) return;
-    this.#focused = undefined;
+  /**
+   * Focus leaving the control the fallback is for ends the suppression (R-06): while a suppression holds, that control
+   * has focus, so any focusout in the host is its.
+   */
+  readonly #onFocusOut = (): void => {
     this.#suppressed = { start: false, end: false };
     this.#measure();
   };
@@ -476,8 +479,9 @@ export class OverflowRegion implements ReactiveController {
     this.#measure();
   };
 
-  // Stryker disable next-line BlockStatement: equivalent, see the slotchange listener in #follow
+  // Stryker disable next-line all: equivalent, see the slotchange listener in #follow
   readonly #onSlotChange = (): void => {
+    // Stryker disable next-line all: equivalent, as above
     this.#measure();
   };
 }

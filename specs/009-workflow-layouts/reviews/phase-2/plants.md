@@ -47,6 +47,28 @@ names).
   sheet adopted once), so it is a guard on the green code, and L1 and L2 are its proof that it can fail. It fails on the
   phase base too (no `ocelle-scroller` there).
 
+## Guards
+
+The first `gate:mutation -- --base 247991d` run left 63 mutants alive, on paths no red test reached. Each was either
+covered by a guard added after the green implementation, in `fd3f397`, whose surviving mutants are its proof that it
+can fail (they are its plants, run by Stryker), or shown equivalent and simplified away or marked with a
+`Stryker disable` comment that gives the reason:
+
+| Guard | Test | Mutants it kills (first run, `overflow-region.ts` unless named) |
+|---|---|---|
+| clearanceScroll at its bounds (twelve cases) | `test/overflow-region.test.ts` | the comparisons and arithmetic of lines 71 to 84: `>` / `>=` at 1 px from either end and at a fade's edge, `- fade` / `+ fade`, `range - 1` / `range + 1`, `end <= endRoom(position)` / `true`, the suppression conditions |
+| a label set by property renames the group | `scrollerGuards` (both harnesses) | `this.#apply()` in `setLabel` |
+| overflow ending with focus outside moves no focus | `scrollerGuards` | `focused` / `true` in `#measure` |
+| keyboard focus on the box does not scroll it | `scrollerGuards` | `target === box` / `false` in `#onFocusIn` |
+| the suppression ends when focus leaves the strip, holds over 1 px, ends on 2 px; a wide button focused by script where it sits is suppressed at once | `scrollerGuards` | the `#onFocusOut` body, `> 1` / `>= 1` in `#onScroll`, `this.#measure()` in `#onFocusIn` |
+| a unitless number inside `linear-gradient()` is raw | `gates/test/token-only.test.ts` | `token-only.ts:146` `false` / `true` (the gradient's arguments read as inside `calc()`) |
+| `driver.focus(target)`, the script focus the last guard needs | `test/driver.test.ts`, `test/browser/driver.test.ts` | (driver; not mutated) |
+
+The final run (`gate:mutation -- --base 247991d` on the green head): 432 mutants on the changed lines of 4 files, none
+survived; 0 timeouts, 130 compile errors, 1 zero-mutant entry (`src/index.ts`, an export line); 20 equivalent records,
+each with its reason in the source. The whole run took about 10 minutes on this machine for all 18 CI shards together,
+so no shard comes near the 10-minute stop-and-ask bound.
+
 ## The scrollbar plant of T016
 
 Not in this table: it is the stop-and-ask point of T030 (see `stop-and-ask.md`).
