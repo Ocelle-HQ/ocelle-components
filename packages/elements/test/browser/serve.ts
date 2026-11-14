@@ -50,6 +50,8 @@ const types: Readonly<Record<string, string>> = {
 export interface Served {
   /** `http://127.0.0.1:<port>`. */
   readonly origin: string;
+  /** The bodies of the form submissions (`POST /submit`) the server received, in order. */
+  readonly submissions: () => readonly string[];
   readonly close: () => Promise<void>;
 }
 
@@ -63,8 +65,23 @@ export async function serve(built: Built | undefined): Promise<Served> {
   if (built !== undefined && "dir" in built) {
     for (const [name, path] of Object.entries(builtFiles)) if (existsSync(join(built.dir, path))) cpSync(join(built.dir, path), join(dir, name));
   }
+  const submissions: string[] = [];
   const server = createServer((request, response) => {
-    const path = normalize(new URL(request.url ?? "/", "http://localhost").pathname).replace(/^[/\\]+/, "");
+    const route = normalize(new URL(request.url ?? "/", "http://localhost").pathname).replace(/^[/\\]+/, "");
+    // The submission recorder (specs/010-feedback-forms contracts/testing.md § Forms): a form posted to /submit is
+    // recorded and answered 204, so the page stays where it is.
+    if (request.method === "POST" && route === "submit") {
+      const chunks: Buffer[] = [];
+      request.on("data", (chunk: Buffer) => chunks.push(chunk));
+      request.on("end", () => {
+        submissions.push(Buffer.concat(chunks).toString("utf8"));
+        response.writeHead(204, { "Content-Security-Policy": policy }).end();
+      });
+      return;
+    }
+    // The no-store route: `no-store/<path>` serves `<path>` with `Cache-Control: no-store` (history restore).
+    const noStore = route.startsWith("no-store/");
+    const path = noStore ? route.slice("no-store/".length) : route;
     let body: Buffer;
     try {
       if (path.startsWith("..")) throw new Error("outside the served directory");
@@ -73,12 +90,14 @@ export async function serve(built: Built | undefined): Promise<Served> {
       response.writeHead(404, { "Content-Security-Policy": policy }).end();
       return;
     }
-    response.writeHead(200, { "Content-Type": types[extname(path)] ?? "application/octet-stream", "Content-Security-Policy": policy }).end(body);
+    const headers = { "Content-Type": types[extname(path)] ?? "application/octet-stream", "Content-Security-Policy": policy };
+    response.writeHead(200, noStore ? { ...headers, "Cache-Control": "no-store" } : headers).end(body);
   });
   await new Promise<void>((resolve) => server.listen(0, "127.0.0.1", resolve));
   const { port } = server.address() as AddressInfo;
   return {
     origin: `http://127.0.0.1:${String(port)}`,
+    submissions: () => [...submissions],
     close: async () => {
       await new Promise<void>((resolve) => server.close(() => {
         resolve();

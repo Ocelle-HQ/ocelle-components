@@ -1,4 +1,4 @@
-import type { Browser } from "playwright";
+import type { Browser, Page } from "playwright";
 import { afterAll, beforeAll, describe, expect, inject, it } from "vitest";
 import type { InsertHow } from "../scenarios/driver.ts";
 import { fixtureDriver } from "./driver.ts";
@@ -32,6 +32,34 @@ async function open(page = "live.html", allowed: readonly string[] = scripts): P
   return { visit: opened, driver: fixtureDriver(opened.page, opened.log, false, served) };
 }
 
+/**
+ * Marks each later `evaluate` call of the page in the page: `"start"` when the call's function starts and `"end"`
+ * when it has finished, pushed onto `globalThis.ocelleMarks` once a test has set it; at the first start a rendering
+ * update is asked for that pushes `"step frame"`. The marks are added through the function's source, which Playwright
+ * sends over the DevTools protocol like any `evaluate` (as test/live.ts `runInTasks` does), so the strict CSP sees no
+ * script of its own. Returns the page's `evaluate` as it was, unmarked, for the test's own reads.
+ */
+function marked(page: Page): Page["evaluate"] {
+  const evaluate = page.evaluate.bind(page) as (fn: unknown, arg?: unknown) => Promise<unknown>;
+  (page as unknown as { evaluate: (fn: unknown, arg?: unknown) => Promise<unknown> }).evaluate = (fn, arg) => {
+    if (typeof fn !== "function") return evaluate(fn, arg);
+    const source = `async (arg) => {
+      const marks = globalThis.ocelleMarks;
+      if (marks !== undefined && !marks.includes("start")) requestAnimationFrame(() => marks.push("step frame"));
+      marks?.push("start");
+      try {
+        return await (${String(fn)})(arg);
+      } finally {
+        marks?.push("end");
+      }
+    }`;
+    const wrapped = (): void => undefined;
+    wrapped.toString = () => source;
+    return evaluate(wrapped, arg);
+  };
+  return evaluate as Page["evaluate"];
+}
+
 describe("the driver steps on the strict-CSP fixture pages", { timeout: 60_000 }, () => {
   const markup = '<ocelle-test-probe id="p" data-x="1"><span>child</span> text</ocelle-test-probe>';
   it.each([
@@ -50,24 +78,33 @@ describe("the driver steps on the strict-CSP fixture pages", { timeout: 60_000 }
     expect({ seen, recorded: await page.finish() }).toEqual({ seen: { html: markup, upgraded: true, connected, document: true }, recorded: clean });
   });
 
-  it("laterTask() returns after a message posted before it and a rendering update", async () => {
-    const { visit: page, driver } = await open();
+  // The page records when the step's own page work started and ended (`marked`), so the assertion is on the page's
+  // order at the step's return, not on a later read: two CDP round trips leave the page time to run the message and the
+  // frame whatever the step did (review phase-1 round-1 R1-01). A rendering update is asked for when the step's page
+  // work starts, so the step must also span a rendering update of its own, posted after the previous step (contract).
+  it("laterTask() returns after a message posted before it and a rendering update of its own", async () => {
+    if (browser === undefined || served === undefined) throw new Error("the suite did not start");
+    const page = await visit(browser, served.origin, "live.html", scripts);
+    const evaluate = marked(page.page);
+    const driver = fixtureDriver(page.page, page.log, false, served);
     await driver.mount('<main id="c"><span id="s"></span></main>');
-    await page.page.evaluate(() => {
-      const order: string[] = [];
+    await evaluate(() => {
+      const marks: string[] = [];
       const channel = new MessageChannel();
-      channel.port1.onmessage = () => order.push("message");
+      channel.port1.onmessage = () => marks.push("message");
       document.getElementById("s")?.remove();
       channel.port2.postMessage(0);
-      requestAnimationFrame(() => order.push("frame"));
-      (globalThis as unknown as { order: string[] }).order = order;
+      requestAnimationFrame(() => marks.push("frame"));
+      (globalThis as unknown as { ocelleMarks: string[] }).ocelleMarks = marks;
     });
     await driver.laterTask();
-    const order = await page.page.evaluate(() => {
-      const order = (globalThis as unknown as { order: string[] }).order;
-      return [...order];
-    });
-    expect({ before: [...order].sort(), recorded: await page.finish() }).toEqual({ before: ["frame", "message"], recorded: clean });
+    const marks = await evaluate(() => [...(globalThis as unknown as { ocelleMarks: string[] }).ocelleMarks]);
+    const end = marks.lastIndexOf("end");
+    expect({
+      before: end < 0 ? null : marks.slice(0, end).filter((mark) => mark !== "start" && mark !== "end").sort(),
+      returned: end < 0 ? null : marks.slice(end),
+      recorded: await page.finish(),
+    }).toEqual({ before: ["frame", "message", "step frame"], returned: ["end"], recorded: clean });
   });
 
   it("insertInteractive(containerId, markup) inserts from a DOMContentLoaded handler under startDocument, the element defined by the browser build", async () => {

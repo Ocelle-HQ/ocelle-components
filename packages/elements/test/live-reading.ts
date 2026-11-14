@@ -4,8 +4,7 @@
 // keeps, per region node, the region states that satisfy a keeping rule and counts the announcements among them;
 // `expectAnnouncements` asserts one expected list under both rules. The unit tests are the cases of live-rules.ts,
 // run by live.test.ts.
-//
-// Phase 1 red commit (T001d): signature-only stubs; T003 implements them.
+import { expect } from "vitest";
 
 /** A value of the accessibility protocol (`AXValue`): only `value` is read. */
 export interface AxValue {
@@ -94,11 +93,95 @@ export interface Delays {
  */
 export const chromiumDelays: Delays = { loaded: 150, loading: 350 };
 
-/** The text of the live region with accessibility node id `region` in `nodes` (stub: the empty text). */
-export const regionText: (nodes: readonly AxRecord[], region: string) => string = () => "";
+/** A protocol value as text: a string as it is, anything else as the empty string. */
+function text(value: unknown): string {
+  return typeof value === "string" ? value : "";
+}
 
-/** The announcements in `snapshots` under `rule`, with `D` from `delays` (stub: none). */
-export const announcements: (snapshots: readonly Snapshot[], rule: Rule, delays?: Delays) => Announcement[] = () => [];
+/**
+ * The text of the live region with accessibility node id `region` in `nodes`: its descendants in tree order, the name
+ * of each non-ignored StaticText node and of each non-ignored `img` node (Chromium's role `image`) taken, an `img`'s
+ * descendants not visited, every other name skipped (a link's name is not taken, its StaticText children are), inline
+ * text boxes skipped, ignored nodes contributing nothing; each taken name counts as if surrounded by a space and the
+ * result has whitespace collapsed and trimmed.
+ */
+export function regionText(nodes: readonly AxRecord[], region: string): string {
+  const byId = new Map(nodes.map((node) => [node.nodeId, node]));
+  const taken: string[] = [];
+  const visit = (id: string): void => {
+    const node = byId.get(id);
+    if (node === undefined) return;
+    const role = text(node.role?.value);
+    if (role === "InlineTextBox") return;
+    if (!node.ignored && (role === "StaticText" || role === "image" || role === "img")) {
+      taken.push(text(node.name?.value));
+      return;
+    }
+    for (const child of node.childIds ?? []) visit(child);
+  };
+  for (const child of byId.get(region)?.childIds ?? []) visit(child);
+  return ` ${taken.join(" ")} `.replace(/\s+/g, " ").trim();
+}
 
-/** Asserts that `snapshots` hold exactly `expected` under both rules, with `D` from `delays` (stub: asserts nothing). */
-export const expectAnnouncements: (snapshots: readonly Snapshot[], expected: readonly Expected[], delays?: Delays) => void = () => undefined;
+interface State {
+  readonly region: Region | null;
+  readonly start: number;
+  readonly end: number;
+}
+
+const same = (a: Region | null, b: Region | null): boolean =>
+  a === null || b === null ? a === b : a.text === b.text && a.politeness === b.politeness && a.host === b.host;
+
+/** The states of region `node` over `snapshots`: maximal runs of snapshots in which it is equal, or absent. */
+function statesOf(snapshots: readonly Snapshot[], node: string): State[] {
+  const states: State[] = [];
+  let start = 0;
+  for (let index = 1; index <= snapshots.length; index += 1) {
+    const before = snapshots[start]?.regions.find((each) => each.node === node) ?? null;
+    const now = index < snapshots.length ? (snapshots[index]?.regions.find((each) => each.node === node) ?? null) : undefined;
+    if (now === undefined || !same(before, now)) {
+      states.push({ region: before, start, end: index });
+      start = index;
+    }
+  }
+  return states;
+}
+
+/** Whether `state` satisfies `rule`: current in a lifecycle snapshot, and for `"settled"` for at least `D`. */
+function kept(snapshots: readonly Snapshot[], state: State, rule: Rule, delays: Delays): boolean {
+  const run = snapshots.slice(state.start, state.end);
+  const rendered = run.some((snapshot) => snapshot.lifecycle);
+  if (rule === "rendered") return rendered;
+  const first = snapshots[state.start];
+  const last = snapshots[Math.min(state.end, snapshots.length - 1)];
+  if (first === undefined || last === undefined) return false;
+  const delay = first.loaded ? delays.loaded : delays.loading;
+  return rendered && last.at - first.at >= delay;
+}
+
+/**
+ * The announcements in `snapshots` under `rule`: per region node, the states that satisfy the rule are kept, and each
+ * two consecutive kept states in which the region is present and whose text changed to a non-empty text are one
+ * announcement, with the later state's text, politeness and host. In the order they happened.
+ */
+export function announcements(snapshots: readonly Snapshot[], rule: Rule, delays: Delays = chromiumDelays): Announcement[] {
+  const nodes = [...new Set(snapshots.flatMap((snapshot) => snapshot.regions.map((region) => region.node)))];
+  const found: { readonly at: number; readonly announcement: Announcement }[] = [];
+  for (const node of nodes) {
+    const states = statesOf(snapshots, node).filter((state) => kept(snapshots, state, rule, delays));
+    for (let index = 1; index < states.length; index += 1) {
+      const before = states[index - 1]?.region ?? null;
+      const after = states[index];
+      const region = after?.region ?? null;
+      if (after === undefined || before === null || region === null || region.text === "" || region.text === before.text) continue;
+      found.push({ at: after.start, announcement: { text: region.text, politeness: region.politeness, node, host: region.host } });
+    }
+  }
+  return found.sort((a, b) => a.at - b.at).map((each) => each.announcement);
+}
+
+/** Asserts that `snapshots` hold exactly `expected` (text, politeness and host, in order) under both rules. */
+export function expectAnnouncements(snapshots: readonly Snapshot[], expected: readonly Expected[], delays: Delays = chromiumDelays): void {
+  const project = (rule: Rule): Expected[] => announcements(snapshots, rule, delays).map(({ text, politeness, host }) => ({ text, politeness, host }));
+  expect({ settled: project("settled"), rendered: project("rendered") }).toEqual({ settled: expected, rendered: expected });
+}
