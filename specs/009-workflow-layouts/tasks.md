@@ -199,7 +199,7 @@ Its fitting twin is none of these. `ocelle-test-overflow-host` passes US1-1, US1
 - [X] T012 [P] [US1] `packages/elements/test/overflow-region.test.ts` (in-process, pure helpers):
   - `edgeState(scrollLeft, scrollWidth, clientWidth)`: the 1 px tolerance on each side and the negative `scrollLeft`
     under `rtl`;
-  - `clearanceScroll({ ring, box, fade, fadeStart, fadeEnd, direction })` in LTR and RTL, for three controls:
+  - `clearanceScroll({ ring, box, fade, direction })` (the sides that still fade are worked out from the new position) in LTR and RTL, for three controls:
     - one that fits with clearance: its ring box ends at least the fade depth from each edge that still fades;
     - one wider than the box less two fade depths: aligned at the inline start, with the covering side suppressed;
     - one wider than the box: aligned at the inline start, both suppressed;
