@@ -1,5 +1,5 @@
 Scope: all 5 workspace projects
-✓ Lockfile passes supply-chain policies (verified 7h ago)
+✓ Lockfile passes supply-chain policies (verified 13h ago)
 Lockfile is up to date, resolution step is skipped
 Packages are hard linked from the content-addressable store to the virtual store.
   Content-addressable store is at: /root/.local/share/pnpm/store/v11
@@ -35,7 +35,7 @@ devDependencies:
 + vite 8.3.5
 + vitest 5.0.5
 
-Done in 779ms using pnpm v12.16.1
+Done in 349ms using pnpm v12.16.1
 $ node gates/bin/setup-offline.ts
 setup: installed offline; Chromium at /opt/pw-browsers/chromium-1243/chrome-linux64/chrome
 $ node gates/bin/test.ts
@@ -107,11 +107,9 @@ gates/test/integration/plants-robustness.test.ts:186: unit-tests: contrast and b
 gates/test/integration/plants-robustness.test.ts:186: unit-tests: contrast and brand-rules plants under neighbouring changes (3) the light color-danger changed: the change is consistent, and every plant keeps its outcome: AssertionError: expected { code: +0, …(1) } to deeply equal { code: +0, …(1) }
 gates/test/integration/token-gates.test.ts:12: unit-tests: contrast and brand-rules on the repository contrast --root <repo> checks 169 pairs in light and 177 in dark, 158 required per theme: AssertionError: expected { code: +0, …(2) } to deeply equal { code: +0, …(2) }
 gates/test/integration/token-gates.test.ts:21: unit-tests: contrast and brand-rules on the repository contrast --print lists every required pair with its ratio: AssertionError: expected { code: +0, lines: 298, …(2) } to deeply equal { code: +0, lines: 316, …(2) }
-gates/test/integration/visual.test.ts:115: unit-tests: visual gate (gates/bin/visual.ts) captures the repository's 66 story-themes twice under docker and exits 0 naming them and the engine (US2 scenario 1): AssertionError: expected { code: 2, stdout: [], …(1) } to deeply equal { code: +0, …(2) }
-gates/test/integration/visual.test.ts:126: unit-tests: visual gate (gates/bin/visual.ts) keeps the capture, its diff image and run 1 in baseline layout for differs and missing-baseline, and nothing for any other story-theme (FR-005, analysis G2): AssertionError: expected { code: 2, findings: [], …(1) } to deeply equal { code: 1, findings: [ …(2) ], …(1) }
+gates/test/integration/visual.test.ts:115: unit-tests: visual gate (gates/bin/visual.ts) captures the repository's 66 story-themes twice under docker and exits 0 naming them and the engine (US2 scenario 1): AssertionError: expected { code: 1, stdout: [ …(25) ], …(1) } to deeply equal { code: +0, …(2) }
+gates/test/integration/visual.test.ts:126: unit-tests: visual gate (gates/bin/visual.ts) keeps the capture, its diff image and run 1 in baseline layout for differs and missing-baseline, and nothing for any other story-theme (FR-005, analysis G2): AssertionError: expected { code: 1, findings: [ …(26) ], …(1) } to deeply equal { code: 1, findings: [ …(2) ], …(1) }
 gates/test/integration/visual.test.ts:239: unit-tests: baseline command (gates/bin/baselines.ts) writes nothing on an unchanged tree and says so (FR-008, analysis G1): AssertionError: expected 42 to be 66 // Object.is equality
-gates/test/integration/visual.test.ts:251: unit-tests: baseline command (gates/bin/baselines.ts) the plant mode writes a deleted baseline of a plant back with the bytes it had, and touches no other file (research.md R-11): AssertionError: expected { code: 2, stdout: [], …(1) } to deeply equal { code: +0, …(2) }
-gates/test/integration/visual.test.ts:271: unit-tests: capture (gates/visual/capture.ts in the pinned container) captures a story alone byte for byte as in a full run after other stories (freshness, FR-028), and a 2000 px story 2000 px tall (FR-012): AssertionError: expected { code: 1, …(1) } to deeply equal { code: +0, stderr: '' }
 gates/test/integration/vitest-mutation-config.test.ts:147: unit-tests: vitest.mutation.config.ts under Stryker's runner options starts source-table.test.ts first, then every other project in one group in Vitest's default order: AssertionError: expected 1 to be greater than 1
 packages/tokens/test/index.test.ts:11: unit-tests: @ocelle/tokens exports tokenNames: exactly the names of Appendix A, none of A.6: AssertionError: expected [ 'bar-block-narrow', …(114) ] to deeply equal [ 'bar-block-narrow', …(118) ]
 packages/tokens/test/index.test.ts:16: unit-tests: @ocelle/tokens exports tokens: the JSON export of the source: AssertionError: expected [ Array(115) ] to have a length of 119 but got 115
@@ -265,5 +263,5 @@ packages/elements/test/section-header.test.ts:23: unit-tests: ocelle-section-hea
 packages/elements/test/section-header.test.ts:23: unit-tests: ocelle-section-header, in process (011 US1) FR-004, many actions at 320 px: six act…: AssertionError: expected { Object (scrollWidth, clipped, ...) } to deeply equal { Object (scrollWidth, clipped, ...) }
 packages/elements/test/section-header.test.ts:23: unit-tests: ocelle-section-header, in process (011 US1) a hidden host (FR-001, Edge Cases): a s…: AssertionError: expected { …(2) } to deeply equal { …(2) }
 packages/elements/test/section-header.test.ts:23: unit-tests: ocelle-section-header, in process (011 US1) no event (FR-002): mounting, filling an…: AssertionError: expected { heard: [], changed: [ true, …(3) ] } to deeply equal { heard: [], changed: [ true, …(3) ] }
-unit-tests: 226 of 3302 tests failed
+unit-tests: 224 of 3302 tests failed
 [ELIFECYCLE] Test failed. See above for more details.
