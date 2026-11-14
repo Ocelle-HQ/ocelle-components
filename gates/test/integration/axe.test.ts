@@ -47,13 +47,25 @@ const excepted: readonly string[] = (["light", "dark"] as const).flatMap((theme)
   ].map(([selector, reason]) => `note: base-styles--prose-document/${theme}: color-contrast-incomplete: serious: ${String(selector)} excepted (${String(reason)})`),
 );
 
+/**
+ * The twelve excepted notes of the scrolling listbox story (014 plan.md § Complexity Tracking, FR-051, operator decision
+ * 2026-11-14 option (a)): the options the list part's `overflow: auto` box clips, in run order, after the Prose
+ * document's.
+ */
+const clipped = "option clipped by the list part's `overflow: auto` scroll box (`elmPartiallyObscured`)";
+const listboxExcepted: readonly string[] = (["light", "dark"] as const).flatMap((theme) =>
+  ["epsilon", "zeta", "eta", "theta", "iota", "kappa"].map(
+    (value) => `note: elements-ocelle-listbox--scrolling-listbox/${theme}: color-contrast-incomplete: serious: ocelle-option[value="${value}"] >>> .label excepted (${clipped})`,
+  ),
+);
+
 describe("axe gate (gates/bin/axe.ts)", () => {
   it(
-    "audits the repository's 56 story-themes and exits 0, the Prose document's ten color-contrast-incomplete nodes excepted and no other result (US3 scenarios 1 and 5, FR-029)",
+    "audits the repository's 56 story-themes and exits 0, the Prose document's ten and the scrolling listbox story's twelve color-contrast-incomplete nodes excepted and no other result (US3 scenarios 1 and 5, FR-029; 014 FR-051)",
     async () => {
       const at = await root("repository");
       const ran = await gate(at);
-      expect(ran).toEqual({ code: 0, stdout: ["axe: 56 story-theme runs, 0 serious or critical; 10 notes (0 incomplete, 10 excepted)"], stderr: excepted });
+      expect(ran).toEqual({ code: 0, stdout: ["axe: 56 story-theme runs, 0 serious or critical; 22 notes (0 incomplete, 22 excepted)"], stderr: [...excepted, ...listboxExcepted] });
     },
     timeout,
   );
@@ -66,7 +78,7 @@ describe("axe gate (gates/bin/axe.ts)", () => {
       expect(ran).toEqual({
         code: 1,
         stdout: ["unlabelled--button/light: axe: button-name: critical: #plant-unlabelled", "unlabelled--button/dark: axe: button-name: critical: #plant-unlabelled", "axe: 2 findings in 58 story-theme runs"],
-        stderr: excepted,
+        stderr: [...excepted, ...listboxExcepted],
       });
     },
     timeout,

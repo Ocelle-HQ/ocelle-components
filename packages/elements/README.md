@@ -1,8 +1,8 @@
 # @ocelle/elements
 
 The Ocelle web components: standards-based custom elements (Lit 3) that work in any page, a server-rendered page
-under a strict Content Security Policy, a Svelte shell or a desktop webview. This release has two elements:
-`ocelle-icon`, with a set of thirteen icons, and `ocelle-brand-mark`, the Ocelle rosette.
+under a strict Content Security Policy, a Svelte shell or a desktop webview. This release has `ocelle-icon`, with a set
+of thirteen icons, `ocelle-brand-mark`, the Ocelle rosette, and `ocelle-listbox` with its `ocelle-option` children.
 
 ## Entry points
 
@@ -11,6 +11,8 @@ under a strict Content Security Policy, a Svelte shell or a desktop webview. Thi
 | `@ocelle/elements` | `dist/index.js` | every element; for hosts with a bundler |
 | `@ocelle/elements/ocelle-icon.js` | `dist/ocelle-icon.js` | `ocelle-icon` only; for hosts with a bundler |
 | `@ocelle/elements/ocelle-brand-mark.js` | `dist/ocelle-brand-mark.js` | `ocelle-brand-mark` only; for hosts with a bundler |
+| `@ocelle/elements/ocelle-listbox.js` | `dist/ocelle-listbox.js` | `ocelle-listbox` and `ocelle-option`; for hosts with a bundler |
+| `@ocelle/elements/ocelle-option.js` | `dist/ocelle-option.js` | `ocelle-option` only; for hosts with a bundler |
 | `@ocelle/elements/browser.js` | `dist/browser/ocelle-elements.js` | every element, Lit inside; for hosts without a bundler |
 | `@ocelle/elements/custom-elements.json` | `custom-elements.json` | the manifest, also named by the `customElements` field |
 
@@ -131,6 +133,66 @@ In forced colours the ring and the spot are painted in `currentColor` in every v
 context. On the light main grounds the ochre spot measures 2.6:1: the ring carries the mark, and a host that needs
 every part at 3:1 uses `tone="mono"`. `ocelle-brand-mark` has no slot, event, CSS part or CSS custom property.
 
+## `ocelle-listbox`
+
+`ocelle-listbox` is a single-select listbox of `ocelle-option` children: the host writes the options as its children,
+in the page's own markup, and reads the selected value from the listbox. The options stay in the page's tree beside
+each other, so the listbox needs no id reference and the host writes no ARIA attribute of its own.
+
+```html
+<ocelle-listbox label="Folders">
+  <ocelle-option value="alpha"><ocelle-icon slot="icon" name="folder"></ocelle-icon>alpha</ocelle-option>
+  <ocelle-option value="beta">beta</ocelle-option>
+</ocelle-listbox>
+```
+
+`value` (attribute and property, not reflected): the selected option's value, `""` when none. Setting it to a value an
+enabled option has selects the first such option; setting it to `""` or to a value no enabled option has clears the
+selection. A host set never emits an event, and setting the current value changes nothing. A non-empty `value` that
+no enabled option has is remembered until an option with that value appears or is enabled, which is then selected,
+with no event; the next user selection or host set forgets it.
+
+`label` (attribute and property, not reflected): the listbox's accessible name, trimmed; a host `aria-label` decides
+over it. Without either the listbox is unnamed: a host must name it.
+
+`ocelle-listbox-change` with `detail` `{ value }`: the user selected another option with Enter, Space or a click;
+`value` already reads the new value when it is dispatched. `ocelle-listbox-activate` with `detail` `{ value }`: the
+user confirmed an option, with Enter on the selected option or a double-click on an enabled option (whose first click
+selects it, so its change event comes first); not cancelable. A host confirms the choice by listening to it, for
+example to open a folder. Both events bubble and are composed.
+
+Keys, on an option: ArrowDown and ArrowUp move focus to the next and previous enabled option without wrapping, Home and
+End to the first and last; selection does not follow focus. Enter and Space select the focused option. The listbox
+handles no other key: Escape, Tab, ArrowLeft, ArrowRight and letters (there is no typeahead) reach the page unhandled.
+The listbox is one tab stop: the selected option when it is enabled, else the option that last had focus, else the
+first enabled option. Disabled options are skipped by the keys and the tab stop but stay focusable, so a focused option
+that becomes disabled keeps focus.
+
+`ocelle-option`: `value` (attribute and property, reflected) and `disabled` (boolean, reflected). An option with no
+`value`, or a blank one, has its index among the listbox's options as its value, as a string; the default is not
+written to the attribute. An option's `icon` slot takes a leading icon by the slot convention; the icon adds nothing to
+the option's name. An `ocelle-option` is only meaningful inside an `ocelle-listbox`: outside one it has no role and no
+tab stop.
+
+Options added, removed or reordered after render are followed; when the focused option is removed, focus moves to the
+next enabled option after it, else the nearest one before it; when the selected option is removed, `value` becomes
+`""` with no event. A moved option keeps its selection and its focus. The listbox writes `aria-selected`,
+`aria-disabled` and `tabindex` on its options; a host's own values of these on an option are overwritten. Keep option
+values unique: a host set selects the first option with the value. A listbox has no `disabled` of its own; disable
+every option to disable it. A listbox whose every option is disabled, or with no option, has no tab stop.
+
+The scroll container is the part `list`: a host that limits the listbox's height sets `max-block-size` on
+`ocelle-listbox`, and the focused option is scrolled into view with its focus ring inside the list. Each option is at
+least `--ocelle-target-min` high and its label wraps; a hovered enabled option is filled `--ocelle-color-hover-bg`.
+The selected option shows a bar of `--ocelle-bar-width` in `--ocelle-color-accent-strong` on its inline-start edge, and
+`Highlight` in forced colours; the listbox is for the main grounds. A keyboard-focused option shows the token focus
+ring on all four sides, above its neighbours.
+
+`ocelle-listbox` and `ocelle-option` read the tokens `--ocelle-color-ink`, `--ocelle-color-hover-bg`,
+`--ocelle-color-accent-strong`, `--ocelle-color-disabled-ink`, `--ocelle-color-focus`, `--ocelle-focus-width`,
+`--ocelle-focus-offset`, `--ocelle-bar-width`, `--ocelle-target-min`, `--ocelle-space-2`, `--ocelle-space-3` and
+`--ocelle-icon-size`.
+
 ## Slot convention
 
 A control that shows icons follows one slot convention: an `icon` slot before its label and, where it has an end icon
@@ -226,7 +288,7 @@ Every element of this library is written the same way, so a later element follow
 question.
 
 **Module and registration.** Each element lives in its own module, `src/<tag>.ts`, which ends with one
-`define("<tag>", <Class>)` call: importing the module defines that element and no other, and importing the package root
+`define("<tag>", <Class>)` call: importing the module defines that element and the elements it renders or owns as children, and importing the package root
 defines every element. `define` (`src/define.ts`, internal) defines a tag only while it is free: a second definition of
 the same tag does nothing and throws nothing. The module exports the class and declares it in
 `HTMLElementTagNameMap`; `src/index.ts` re-exports it.

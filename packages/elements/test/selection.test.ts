@@ -129,6 +129,11 @@ describe("fallback(before, after, node): FR-011's focus target and FR-011a's sel
     expect(fallback(folders, [], "g")).toBeNull();
   });
 
+  it("places a disabled node still present by the children after the batch: moved and disabled in one batch, the next enabled child is the one after it now (mutation run, phase 2)", () => {
+    const after = [e("d", "delta"), e("g", "gamma", true), e("a", "alpha"), e("b", "beta"), e("p", "epsilon")];
+    expect([fallback(folders, after, "g"), fallback(folders, [e("d", "delta"), e("a", "alpha"), e("g", "gamma", true)], "g")]).toEqual(["a", "a"]);
+  });
+
   it("is null for a node that was never a child, beside a child's fallback", () => {
     expect([fallback(folders, folders, "x"), fallback(folders, folders, "b")]).toEqual([null, "g"]);
   });
@@ -208,6 +213,18 @@ describe("batch: tabs and segments (FR-011a and FR-010a's Precedence; US2-17 to 
     expect([batch(kind, none, [], [e("s", "spec", true), e("p", "plan")], null), batch(kind, picked("p"), tabs, [e("s", "spec", true), e("t", "tasks", true)], null)]).toEqual([
       { state: picked("p"), focus: null },
       { state: none, focus: null },
+    ]);
+  });
+
+  it.each(["tabs", "segments"] as const)("%s: a focused selected child keeps focus when it and every other child become disabled, and focus is left alone when it is removed with none left (mutation run, phase 2)", (kind) => {
+    expect([
+      batch(kind, picked("p"), tabs, [e("s", "spec", true), e("p", "plan", true), e("t", "tasks", true)], "p"),
+      batch(kind, picked("p"), tabs, [e("s", "spec", true), e("t", "tasks", true)], "p"),
+      batch(kind, picked("p"), tabs, [e("s", "spec"), e("t", "tasks", true)], "p"),
+    ]).toEqual([
+      { state: none, focus: "p" },
+      { state: none, focus: null },
+      { state: picked("s"), focus: "s" },
     ]);
   });
 

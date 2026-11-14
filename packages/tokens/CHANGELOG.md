@@ -55,3 +55,6 @@ nothing loads from a CDN, and two new merge checks (Contrast, Brand rules) keep 
   - elevation: `--ocelle-elevation-sheet`, `--ocelle-elevation-raised`, `--ocelle-elevation-row`,
     `--ocelle-elevation-seg`, `--ocelle-elevation-bar`
   - motion: `--ocelle-motion-fast`, `--ocelle-motion-base`, `--ocelle-easing-standard`
+- The contrast pair list checks `color-accent-strong` as a non-text colour on `color-canvas`, `color-sheet`,
+  `color-pane`, `color-panel`, `color-inspector` and `color-rail` in both themes, for the selected bars of the
+  selection elements of `@ocelle/elements`; no token name or value changes.

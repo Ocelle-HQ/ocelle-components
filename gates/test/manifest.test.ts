@@ -83,12 +83,12 @@ function stale(message: string): Finding {
 
 describe("manifest gate on a root", () => {
   it("exits 0 on the repository: the committed manifest matches the source and every member is described", async () => {
-    expect(await gate(repo)).toEqual({ code: 0, out: ["manifest: 2 elements checked, no finding"], err: [] });
+    expect(await gate(repo)).toEqual({ code: 0, out: ["manifest: 4 elements checked, no finding"], err: [] });
   });
 
   it("exits 0 when the committed manifest only orders its keys differently (pass-reordered)", async () => {
     const dir = root({ [manifestPath]: `${JSON.stringify(reversed(committed()), null, 2)}\n` });
-    expect(await gate(dir)).toEqual({ code: 0, out: ["manifest: 2 elements checked, no finding"], err: [] });
+    expect(await gate(dir)).toEqual({ code: 0, out: ["manifest: 4 elements checked, no finding"], err: [] });
   });
 
   it("reports the label attribute lost from the committed manifest as one stale finding naming ocelle-icon and the attribute (fail-lost-attribute)", async () => {
