@@ -326,7 +326,6 @@ export class OverflowRegion implements ReactiveController {
   hostConnected(): void {
     const root = this.#host.shadowRoot;
     if (root !== null && !root.adoptedStyleSheets.includes(this.#sheet)) root.adoptedStyleSheets = [...root.adoptedStyleSheets, this.#sheet];
-    // Adding the same listener again is a no-op, so a host that connects again keeps one of each.
     this.#host.addEventListener("keydown", this.#onKey);
     this.#host.addEventListener("focusin", this.#onFocusIn);
     this.#host.addEventListener("focusout", this.#onFocusOut);
@@ -341,10 +340,16 @@ export class OverflowRegion implements ReactiveController {
     if (box !== null) this.#follow(box);
   }
 
-  // Stryker disable next-line all: equivalent, a disconnected host gets no event, and connecting again observes the box afresh
+  // Stryker disable next-line all: equivalent, a disconnected host gets no event, and connecting again observes the box afresh and adds the same listeners, which adding again would leave single anyway
   hostDisconnected(): void {
     // Stryker disable next-line all: equivalent, as above
     this.#observer.disconnect();
+    // Stryker disable next-line all: equivalent, as above
+    this.#host.removeEventListener("keydown", this.#onKey);
+    // Stryker disable next-line all: equivalent, as above
+    this.#host.removeEventListener("focusin", this.#onFocusIn);
+    // Stryker disable next-line all: equivalent, as above
+    this.#host.removeEventListener("focusout", this.#onFocusOut);
   }
 
   /** Observes the box (its border box, so a scrollbar that comes or goes is seen) and its track, and listens to it. */
