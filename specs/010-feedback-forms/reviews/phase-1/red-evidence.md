@@ -177,5 +177,70 @@ The failing tests, per test file (85):
 
 ## (2) How `tdd-check.sh` reads in phase 1
 
-Open: this part is written after `tdd-check.sh` has run and before the review, since it reads that run's
-`check-final-tests-on-base.log` and exit code (tasks.md T005a; analysis I11). It has not run yet.
+Written after `tdd-check.sh 1` ran (commit `8bbb990`, run with
+`OCELLE_CHROMIUM_PATH=/opt/pw-browsers/chromium-1243/chrome-linux64/chrome`) and before the review; it reads that
+run's `tdd-check.json`, `check-final-tests-on-base.log` and `check-head.log` (tasks.md T005a; analysis I11).
+
+- Base: `2635c1d706a3eb10ad7c3aac782cf7112b6c0956` (`base.sha`); head of the run: `e31416e`.
+- **Check 1** re-runs the red commit `306bd2b` (the T001d stubs): exit 1 (`check-red-phase.log`, the same failures
+  as `red-phase.log`).
+- **Check 2** overlays every phase file under the test pathspec (`**/*.test.ts`, `**/*.spec.ts`, `**/test/**`,
+  `**/*.stories.ts`) onto the base. In this phase that includes the capture and driver code itself
+  (`test/live-reading.ts`, `test/live.ts`, the driver files, `test/in-process.ts`, `test/browser/serve.ts`), so
+  the only phase change missing there is the `liveStart` and `liveStop` browser command registration in the root
+  `vitest.config.ts` (T004, not a test path; the base's config registers `axTree` and `emulateForcedColors` only).
+  `final_tests_on_base_exit` is **1** (non-zero), "18 of 3197 tests failed". The stop condition of T005a (check 2
+  exits 0) is **not** met.
+- **Check 3** (scaffold): none in this phase (`final_tests_on_scaffold_exit: null`).
+- **Head**: `head_exit` 1, "5 of 3197 tests failed" (`check-head.log`): only the 5 visual-gate tests below. This
+  is the sole problem the run reports ("tests fail at HEAD"), and the reason its status is `fail`.
+
+### The failures of `check-final-tests-on-base.log`
+
+**Environment-only (fail at the base and at HEAD alike; 5).** `gates/test/integration/visual.test.ts`, lines 115,
+126, 239, 251 and 271 (visual gate captures under docker; differs and missing-baseline layout; baseline command on an
+unchanged tree; baseline plant mode; the capture in the pinned container). They exit 2 or 1 because this session
+has no container engine. The same five fail, with the same messages, in `check-head.log` and in
+`check-final-tests-on-stubs.log`. They are no part of this phase and no evidence for or against it (operator
+decision relayed 2026-11-14: container-engine tests that also fail at the base are environment-only).
+
+**Phase evidence (fail at the base, pass at HEAD; 13).** Every one fails with `TypeError: commands.liveStart is not
+a function` (in the plants row, as the message of the `toThrow` it asserts): the in-process capture is reached
+through the browser command that only T004's `vitest.config.ts` registers.
+
+| File | Line | Test |
+|---|---|---|
+| `packages/elements/test/driver.test.ts` | 60 | registerFirstLoad(containerId, markup, base) mounts the markup with a fresh tag, arms the capture, then defines the tag so the registration upgrades the elements |
+| `packages/elements/test/driver.test.ts` | 79 | registerFirstLoad(containerId, markup, base) takes a new tag each time |
+| `packages/elements/test/driver.test.ts` | 91 | readyState(value) makes document.readyState read the value until the next mount, and the capture reads it too |
+| `packages/elements/test/driver.test.ts` | 112 | insertInteractive(containerId, markup) arms the capture, then inserts while readyState is interactive with the element defined, and returns the insertion's time |
+| `packages/elements/test/driver.test.ts` | 159 | hostRole(id) reads the role of a host in the final snapshot of the last capture |
+| `packages/elements/test/live-capture.test.ts` | 47 | liveCapture in process observes the container's subtree: a region added and written W later counts one under both rules; a region outside is not read |
+| `packages/elements/test/live-capture.test.ts` | 65 | liveCapture in process observes the shadow roots in the container when it is armed: a text set and cleared within a task is seen at a mutation pause |
+| `packages/elements/test/live-capture.test.ts` | 80 | liveCapture in process observes shadow roots attached after it is armed, nested ones included (the attachShadow patch) |
+| `packages/elements/test/live-capture.test.ts` | 98 | liveCapture in process takes snapshots with at, frame, lifecycle, loaded, regions and hosts; lifecycle snapshots count the rendering updates |
+| `packages/elements/test/live-capture.test.ts` | 121 | liveCapture in process stop() waits the quiet window (the largest W + the minimum hold + the largest D) after the last mutation, then two rendering updates |
+| `packages/elements/test/live-capture.test.ts` | 134 | liveCapture in process stop({ atLeast }) first waits until atLeast has passed since the capture started |
+| `packages/elements/test/live-capture.test.ts` | 145 | liveCapture in process a capture over an element that mutates in a loop ends with "capture exceeded …", not a timeout |
+| `packages/elements/test/plants.test.ts` | 72 | plants (elements project) capture bounds: an element that mutates its own attribute … turns a capture over the container (in process) red (`expected [Function] to throw error matching /^capture exceeded / but got 'commands.liveStart is not a function'`) |
+
+Everything else of the phase passes at the base under the overlay, as expected: the reading tests
+(`packages/elements/test/live.test.ts`), the fixture-page tests (`packages/elements/test/browser/live-capture.test.ts`,
+`packages/elements/test/browser/driver.test.ts`, `packages/elements/test/browser/plants.test.ts`), the in-process
+driver tests that do not arm the capture, and the oracle reading rows of `packages/elements/test/plants.test.ts`.
+
+One reading note for the reviewer: T005a expects "the plants tests pass there". The one plants row that fails at
+the base is the in-process capture-bounds row, which runs the in-process capture and so fails on the same unknown
+command as the capture tests, for the same reason. The other plants rows pass there. No test was changed for this.
+
+### What check 2 is and is not
+
+Check 2 is **not** evidence for T001 to T001c in this phase. Its overlay carries the phase's own capture, reading
+and driver code onto the base, so the reading, fixture-page and most plants tests pass there by construction, and
+the 13 that fail do so only because one command registration outside the test pathspec is missing, not because the
+behaviour they test is missing. The evidence for T001 to T001c is part (1) above
+(`check-final-tests-on-stubs.log`: exit 1, all 85 tests failing on an assertion) and the red log (`red-phase.log`,
+re-run as `check-red-phase.log`).
+
+The run's `fail` status comes only from the 5 environment-only visual-gate tests at HEAD; no phase test fails at
+HEAD.
