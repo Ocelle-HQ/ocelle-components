@@ -9,3 +9,14 @@
   plant of T016 once, as written in stop-and-ask.md, and restores the file byte for byte. If the plant bites, the
   implementer records it in `plants.md`, ticks T030 and phase 2 goes to review. If it does not bite, the phase stops
   again with that result.
+- **E1** (end of the run, relayed by the wave-1 orchestrator and confirmed by the operator), "Confirm": when the last
+  phase is accepted (review approved, folded, pushed), 009 sends the orchestrator one message starting "ALL PHASES
+  DONE" with:
+  - the branch head SHA;
+  - a 3 to 6 line summary;
+  - the issue it closes;
+  - the known gaps;
+  - what a reviewer must know.
+
+  The orchestrator opens the pull request as a draft and sends its number. This session then runs `/ocelle-land <PR>`.
+  009 still opens no pull request itself, and the operator merges.
