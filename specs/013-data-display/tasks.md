@@ -393,11 +393,11 @@ order 1 → 2 → 3 → 4:
   - `packages/elements/README.md`: the `ocelle-empty-state` section and the `.sk-empty-state` mapping rows;
   - `packages/elements/CHANGELOG.md` entry.
 - [X] T033a [US2] `packages/elements/README.md`: the empty-state statements of T026a (the `eyebrow` slot, the body spacing and its inline-content note, the panel heading, the consumer's card, the focusable loading heading) and the updated `.sk-empty-state` mapping rows of research R-11; the `packages/elements/CHANGELOG.md` entry names the `eyebrow` slot.
-- [ ] T034 [US2] Checks:
+- [X] T034 [US2] Checks:
   1. Run the empty-state plants once: the "last present part has no margin" rule removed and the `hidden` observer removed. Record them in `reviews/phase-2/plants.md`. The `::slotted(ocelle-progress)` plant is not run here: the stand-in is not an `ocelle-progress`, so the rule cannot match it; it runs in T052 against the real bar.
   2. Run `gate:manifest`, `gate:style-lint`, `gate:csp`, `gate:prefix`, `gate:test-lint`, `gate:contrast` (unchanged; US2-8 relies on the existing text rows), `gate:storybook-build`, `gate:visual`, `gate:axe`, `gate:plants`, then `gate:mutation -- --base <phase base>`, and record the summary lines.
 
-- [ ] T034a [US2] Run the empty-state plants for the input decisions once, with T034's step 1 (contracts/checks.md § CSS-only behaviours: the eyebrow type rule removed, the eyebrow's heading-dependent class ignored, the body `margin-block: 0` removed, the body gap removed), and record them in `specs/013-data-display/reviews/phase-2/plants.md`.
+- [X] T034a [US2] Run the empty-state plants for the input decisions once, with T034's step 1 (contracts/checks.md § CSS-only behaviours: the eyebrow type rule removed, the eyebrow's heading-dependent class ignored, the body `margin-block: 0` removed, the body gap removed), and record them in `specs/013-data-display/reviews/phase-2/plants.md`.
 
 **Checkpoint**: `tdd-check.sh 2` reports `pass`.
 

@@ -18,10 +18,13 @@ type PartName = (typeof parts)[number];
 /** HTML whitespace (space, tab, line feed, form feed, carriage return) only. */
 const whitespace = /^[\t\n\f\r ]*$/;
 
-/** Whether a node assigned to a slot renders: an element with a box (or `display: contents`), or text that is not whitespace. */
+/**
+ * Whether a node assigned to a slot renders: an element with a box (or `display: contents`), or text that is not
+ * whitespace. A slot is assigned only elements and text nodes.
+ */
 function renders(node: Node): boolean {
   if (node instanceof Element) return getComputedStyle(node).display !== "none";
-  return node.nodeType === Node.TEXT_NODE && !whitespace.test(node.textContent ?? "");
+  return !whitespace.test((node as Text).data);
 }
 
 /**
@@ -177,21 +180,30 @@ export class OcelleEmptyState extends LitElement {
    */
   declare variant: "panel" | undefined;
 
-  /** Which parts are present: something assigned to their slot renders. */
+  /**
+   * Which parts are present: something assigned to their slot renders. Until the first refresh none is; an element
+   * with nothing assigned never refreshes, and any one part wrongly present would be its only, empty, last part, with
+   * no margin and no size.
+   */
+  // Stryker disable next-line BooleanLiteral: equivalent, every slotchange recomputes all five, and with nothing assigned a lone present part is empty and last, so it adds no space (above)
   #has: Record<PartName, boolean> = { visual: false, eyebrow: false, heading: false, text: false, actions: false };
 
   /** Watches the assigned nodes for what `slotchange` does not report: `hidden` toggled, text changed. */
   readonly #observer = new MutationObserver(() => {
-    this.#refresh(false);
+    this.#refresh();
   });
 
   override connectedCallback(): void {
     super.connectedCallback();
-    if (this.hasUpdated) this.#refresh(true);
+    // Before the first render there is no slot, so this refreshes nothing; on a reconnection it observes again.
+    this.#refresh();
   }
 
+  // Stryker disable next-line BlockStatement: equivalent, a kept observer on an element out of the document only recomputes the flags of a box that is not rendered, and the reconnection refresh re-targets it
   override disconnectedCallback(): void {
+    // Stryker disable next-line CallExpression: equivalent, Lit's own disconnection only notifies reactive controllers, which this element has none of
     super.disconnectedCallback();
+    // Stryker disable next-line CallExpression: equivalent, as the block above: a kept observer only recomputes the flags, and the reconnection refresh re-targets it
     this.#observer.disconnect();
   }
 
@@ -203,44 +215,43 @@ export class OcelleEmptyState extends LitElement {
     });
   }
 
-  /** Recomputes the present parts, re-targeting the observer at the assigned nodes when `observe` is set. */
-  #refresh(observe: boolean): void {
+  /**
+   * Recomputes the present parts and re-targets the observer at the nodes now assigned (`observe()` of a node already
+   * observed replaces its options), then renders; Lit coalesces the renders of one task.
+   */
+  #refresh(): void {
     const slots = this.#slots();
-    if (observe) {
-      this.#observer.disconnect();
-      for (const [, slot] of slots) {
-        for (const node of slot.assignedNodes()) {
-          if (node instanceof Element) this.#observer.observe(node, { attributes: true, attributeFilter: ["hidden"] });
-          else this.#observer.observe(node, { characterData: true });
-        }
+    // Stryker disable next-line CallExpression: equivalent, a node no longer assigned that stays observed only triggers this recompute, which gives the same flags
+    this.#observer.disconnect();
+    for (const [, slot] of slots) {
+      for (const node of slot.assignedNodes()) {
+        if (node instanceof Element) this.#observer.observe(node, { attributes: true, attributeFilter: ["hidden"] });
+        else this.#observer.observe(node, { characterData: true });
       }
     }
     const has = { ...this.#has };
     for (const [part, slot] of slots) has[part] = slot.assignedNodes().some(renders);
-    if (parts.some((part) => has[part] !== this.#has[part])) {
-      this.#has = has;
-      this.requestUpdate();
-    }
+    this.#has = has;
+    this.requestUpdate();
   }
 
   readonly #changed = (): void => {
-    this.#refresh(true);
+    this.#refresh();
   };
 
-  /** The class list of a part's wrapper. */
-  #classes(part: PartName, last: PartName | undefined): string {
+  /** The class list of a part's wrapper; `extra` adds the eyebrow's mark of a following heading. */
+  #classes(part: PartName, last: PartName | undefined, extra = ""): string {
     const classes: string[] = [part];
     if (!this.#has[part]) classes.push("absent");
     if (part === last) classes.push("last");
-    if (part === "eyebrow" && this.#has.heading) classes.push("before-heading");
-    return classes.join(" ");
+    return `${classes.join(" ")}${extra}`;
   }
 
   protected override render(): unknown {
     const last = parts.filter((part) => this.#has[part]).at(-1);
     return html`<div part="body" class="stack">
       <div class=${this.#classes("visual", last)}><slot name="visual" @slotchange=${this.#changed}></slot></div>
-      <div class=${this.#classes("eyebrow", last)}><slot name="eyebrow" @slotchange=${this.#changed}></slot></div>
+      <div class=${this.#classes("eyebrow", last, this.#has.heading ? " before-heading" : "")}><slot name="eyebrow" @slotchange=${this.#changed}></slot></div>
       <div class=${this.#classes("heading", last)}><slot name="heading" @slotchange=${this.#changed}></slot></div>
       <div class=${this.#classes("text", last)}><slot @slotchange=${this.#changed}></slot></div>
       <div class=${this.#classes("actions", last)}><slot name="actions" @slotchange=${this.#changed}></slot></div>

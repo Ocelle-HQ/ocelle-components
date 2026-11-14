@@ -66,3 +66,34 @@ that change in phase 2 (no phase 2 task touches `scenarios/facts.ts`), so it was
 present): `baselines: wrote 14 files (14 added, 0 changed, 0 removed), 393907 bytes in total` (7 stories, light and
 dark). No podman cross-engine check was possible in this container. CI's "Visual regression" captures stay the
 record (`storybook/README.md` § Baselines).
+
+## T034 step 2: gate runs
+
+Run on the green tree (`OCELLE_CHROMIUM_PATH` set to Chromium 1243, `OCELLE_VISUAL_ENGINE=docker`):
+
+- `gate:manifest`: `manifest: 5 elements checked, no finding`
+- `gate:style-lint`: `style-lint: 15 files checked, no finding`
+- `gate:csp`: `csp: 13 files checked, no finding`
+- `gate:prefix`: `prefix: 227 files checked, no finding`
+- `gate:test-lint`: `test-lint: 194 files checked, no finding`
+- `gate:contrast`: `contrast: 160 pairs checked in light, 168 in dark (149 required per theme)` (unchanged)
+- `gate:storybook-build`: `storybook-build: built 50 stories`
+- `gate:visual`: `visual: 100 captures match their baselines (docker only: no cross-engine comparison)`
+- `gate:axe`: `axe: 100 story-theme runs, 0 serious or critical; 10 notes (0 incomplete, 10 excepted)` (no
+  `storybook/a11y-exceptions.json` entry added)
+- `gate:plants` (docker only; the gate's default `both` also needs podman, which this container lacks):
+  `plants: 304 plants of 17 gates and the registry judged, every plant as expected`
+- `gate:mutation -- --base bb27aa5`: the first run left 20 survivors (`22 findings`, two of them no-coverage). Two
+  bodies were added for those with observable behaviour (test commit after green): an element with no child, and
+  runs of several whitespace characters around a heading; an element moved out and back that still observes its
+  slotted content. The rest were removed by simplifying the source without changing its behaviour (the observer is
+  always re-targeted on a refresh, the reconnection refresh has no guard, the render is requested on every refresh,
+  the text test has no node-type condition, the eyebrow's heading mark is computed only for the eyebrow) or recorded
+  as equivalent with the reason (5 `Stryker disable next-line` records: the initial `false` flags, the disconnection
+  block and its two calls, the observer's `disconnect()` before re-targeting). Final: `mutation: 81 mutants on the
+  changed lines of 2 files, none survived; 2 timeouts, 16 compile errors, 1 zero-mutant entry; 5 equivalent records`.
+- `gate:typecheck`, `gate:lint`: no finding; `pnpm test`: `unit-tests: 3536 tests passed in 148 files`.
+
+## Left open
+
+Nothing in phase 2.
