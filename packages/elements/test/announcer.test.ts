@@ -170,6 +170,19 @@ describe("the hold", () => {
     expect({ atTrigger, beforeMinimum, atMinimum, written: copy(announcer) }).toEqual({ atTrigger: "A", beforeMinimum: "A", atMinimum: "", written: "B" });
   });
 
+  it("holds a copy written after a trigger during the previous hold for its own H, the previous hold's end left out", () => {
+    const announcer = holding("A");
+    vi.advanceTimersByTime(10);
+    read("B");
+    announcer.trigger(false);
+    vi.advanceTimersByTime(2 * W);
+    const written = copy(announcer);
+    vi.advanceTimersByTime(H - 2 * W);
+    const atFirstH = copy(announcer);
+    vi.advanceTimersByTime(2 * W);
+    expect({ written, atFirstH, atOwnH: copy(announcer) }).toEqual({ written: "B", atFirstH: "B", atOwnH: "" });
+  });
+
   it("empties the copy at the trigger once it has been current for exactly W", () => {
     const announcer = holding("A");
     vi.advanceTimersByTime(W);

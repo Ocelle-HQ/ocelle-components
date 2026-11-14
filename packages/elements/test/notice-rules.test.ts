@@ -150,8 +150,11 @@ describe("the properties (contracts/elements.md)", () => {
     inserted.tone = "warning";
     (inserted as unknown as { tone: string | null }).tone = null;
     await endOfTask();
+    const before = { records: [...records], tone: inserted.getAttribute("tone"), size: inserted.getAttribute("size") };
+    (inserted as unknown as { size: string | null }).size = null;
+    await endOfTask();
     observer.disconnect();
-    expect({ records, tone: inserted.getAttribute("tone"), size: inserted.getAttribute("size") }).toEqual({ records: ["size", "tone", "tone"], tone: null, size: "regular" });
+    expect({ before, size: inserted.getAttribute("size") }).toEqual({ before: { records: ["size", "tone", "tone"], tone: null, size: "regular" }, size: null });
   });
 });
 

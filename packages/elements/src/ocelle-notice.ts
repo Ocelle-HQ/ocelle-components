@@ -60,15 +60,26 @@ export class OcelleNotice extends LitElement {
     // The accessors below are the properties' own and set the attribute themselves; `useDefault` keeps Lit from
     // writing the read default into the attribute at the first update, so an unknown value stays as written.
     // Stryker disable next-line ObjectLiteral: equivalent, {} has Lit wrap the element's own accessors, which write the attribute themselves, and reflect nothing; the wrapper's extra update request repeats the one the attribute change makes
-    tone: { reflect: true, noAccessor: true, useDefault: true },
-    // Stryker disable next-line ObjectLiteral: equivalent, as for tone
-    size: { reflect: true, noAccessor: true, useDefault: true },
-    announce: {
-      type: Boolean,
+    tone: {
       // Stryker disable next-line BooleanLiteral: equivalent, Lit reflects a property only when it is set through Lit's accessor, which noAccessor leaves out; the setter writes the attribute itself
       reflect: true,
       noAccessor: true,
-      // Stryker disable next-line BooleanLiteral: equivalent, Lit records and uses a default only for a property change that reaches requestUpdate with the property's name, which noAccessor leaves out and the element's own requestUpdate() calls never pass; and the Boolean converter never gives null
+      useDefault: true,
+    },
+    // Stryker disable next-line ObjectLiteral: equivalent, as for tone
+    size: {
+      // Stryker disable next-line BooleanLiteral: equivalent, as for tone
+      reflect: true,
+      noAccessor: true,
+      useDefault: true,
+    },
+    announce: {
+      type: Boolean,
+      // Stryker disable next-line BooleanLiteral: equivalent, as for tone
+      reflect: true,
+      // Stryker disable next-line BooleanLiteral: equivalent, Lit's wrapper of the setter reflects the Boolean the getter reads, which is the attribute's presence the setter has just written
+      noAccessor: true,
+      // Stryker disable next-line BooleanLiteral: equivalent, Lit falls back to the default only when the converter gives null or undefined for an attribute, and the Boolean converter gives false for a removed one
       useDefault: true,
     },
   };

@@ -204,6 +204,7 @@ export class Announcer {
 
   /** Step 3: the end of the wait, the re-check against the baseline, then the write or nothing. */
   protected end(): void {
+    // Stryker disable next-line CallExpression: equivalent, the announcer calls end() only from the wait's own timer, which has fired
     this.stop();
     this.phase = "empty";
     const { text, politeness } = this.read();
@@ -228,7 +229,7 @@ export class Announcer {
 
   /** Step 4: holds the copy for `H`, then empties the region. */
   protected hold(): void {
-    // Stryker disable next-line CallExpression: equivalent, the announcer calls hold() only from write(), which only end() calls after it has stopped the timer
+    // Stryker disable next-line CallExpression: equivalent, the announcer calls hold() only from write(), which only end() calls, from the wait's own timer, which has fired
     this.stop();
     this.timer = setTimeout(() => {
       this.release();
