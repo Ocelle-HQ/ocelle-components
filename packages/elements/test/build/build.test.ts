@@ -41,7 +41,7 @@ describe("the module build (dist/*.js)", () => {
     const own = (specifier: string): boolean => specifier.startsWith("./") && files.includes(specifier.slice(2));
     const lit = (specifier: string): boolean => specifier === "lit" || specifier.startsWith("lit/");
     expect({
-      files: files.filter((name) => ["index.js", "ocelle-icon.js", "ocelle-brand-mark.js", "ocelle-card.js", "ocelle-section-header.js", "ocelle-page-header.js", "browser.js"].includes(name)),
+      files: files.filter((name) => ["index.js", "ocelle-icon.js", "ocelle-brand-mark.js", "ocelle-card.js", "ocelle-section-header.js", "ocelle-page-header.js", "ocelle-context-sidebar.js", "browser.js"].includes(name)),
       outside: imported.filter(({ specifier }) => !own(specifier) && !lit(specifier)),
       litImported: imported.some(({ specifier }) => lit(specifier)),
       rootImportsIcon: imported.some(({ name, specifier }) => name === "index.js" && specifier === "./ocelle-icon.js"),
@@ -49,8 +49,9 @@ describe("the module build (dist/*.js)", () => {
       rootImportsCard: imported.some(({ name, specifier }) => name === "index.js" && specifier === "./ocelle-card.js"),
       rootImportsHeader: imported.some(({ name, specifier }) => name === "index.js" && specifier === "./ocelle-section-header.js"),
       rootImportsPageHeader: imported.some(({ name, specifier }) => name === "index.js" && specifier === "./ocelle-page-header.js"),
+      rootImportsSidebar: imported.some(({ name, specifier }) => name === "index.js" && specifier === "./ocelle-context-sidebar.js"),
     }).toEqual({
-      files: ["browser.js", "index.js", "ocelle-brand-mark.js", "ocelle-card.js", "ocelle-icon.js", "ocelle-page-header.js", "ocelle-section-header.js"],
+      files: ["browser.js", "index.js", "ocelle-brand-mark.js", "ocelle-card.js", "ocelle-context-sidebar.js", "ocelle-icon.js", "ocelle-page-header.js", "ocelle-section-header.js"],
       outside: [],
       litImported: true,
       rootImportsIcon: true,
@@ -58,6 +59,7 @@ describe("the module build (dist/*.js)", () => {
       rootImportsCard: true,
       rootImportsHeader: true,
       rootImportsPageHeader: true,
+      rootImportsSidebar: true,
     });
   });
 
@@ -126,10 +128,24 @@ describe("the module build's page-header module", () => {
   });
 });
 
+// 011 phase 4 (FR-001, contracts/elements-package.md § Entry points; T034): the context sidebar's module imports lit,
+// the registration helper, the naming module (its internals key and accessible name) and the slot state, and neither
+// the package root, the card context nor another element's module.
+describe("the module build's context-sidebar module", () => {
+  it("dist/ocelle-context-sidebar.js imports lit, the registration helper, the naming module and the slot state, and neither the package root, the card context nor another element", () => {
+    const imported = specifiers(existsSync(join(dist, "ocelle-context-sidebar.js")) ? readFileSync(join(dist, "ocelle-context-sidebar.js"), "utf8") : "");
+    expect({
+      lit: imported.includes("lit"),
+      own: imported.filter((specifier) => specifier.startsWith("./")),
+      outside: imported.filter((specifier) => !specifier.startsWith("./") && specifier !== "lit" && !specifier.startsWith("lit/")),
+    }).toEqual({ lit: true, own: ["./define.js", "./naming.js", "./slot-state.js"], outside: [] });
+  });
+});
+
 describe("the browser build (dist/browser/ocelle-elements.js)", () => {
   const text = (): string => (existsSync(browserBuild) ? readFileSync(browserBuild, "utf8") : "");
 
-  it("is self-contained: it defines ocelle-icon, ocelle-brand-mark, ocelle-card, ocelle-section-header and ocelle-page-header, with no import statement and no dynamic import", () => {
+  it("is self-contained: it defines ocelle-icon, ocelle-brand-mark, ocelle-card, ocelle-section-header, ocelle-page-header and ocelle-context-sidebar, with no import statement and no dynamic import", () => {
     const code = text();
     expect({
       exists: code !== "",
@@ -138,9 +154,10 @@ describe("the browser build (dist/browser/ocelle-elements.js)", () => {
       definesCard: code.includes('"ocelle-card"'),
       definesHeader: code.includes('"ocelle-section-header"'),
       definesPageHeader: code.includes('"ocelle-page-header"'),
+      definesSidebar: code.includes('"ocelle-context-sidebar"'),
       specifiers: specifiers(code),
       dynamicImport: /\bimport\s*\(/.test(code),
-    }).toEqual({ exists: true, definesIcon: true, definesMark: true, definesCard: true, definesHeader: true, definesPageHeader: true, specifiers: [], dynamicImport: false });
+    }).toEqual({ exists: true, definesIcon: true, definesMark: true, definesCard: true, definesHeader: true, definesPageHeader: true, definesSidebar: true, specifiers: [], dynamicImport: false });
   });
 
   it("holds Lit's production build at the locked versions, not its development build, no ssr-dom-shim and no console call", () => {
