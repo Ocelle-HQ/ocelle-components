@@ -44,3 +44,27 @@ At `2070cc8`: `gate:typecheck`, `gate:lint`, `gate:style-lint`, `gate:test-lint`
 (podman is absent from this container; dockerd running) and stopped by the implementer's 30-minute time limit after
 248 plant timings (all twelve manifest plants among them), before its verdict: no result is recorded for it, and it is
 to be re-run with T025. `gate:mutation` (the plan and the `src/live.ts` shard timings) was not started.
+
+## Follow-up: after decision (b) (2026-11-14)
+
+The operator chose (b) (decision-stop-1.md). In `56764b0` the `elements` project of the root `vitest.config.ts` has
+`fileParallelism: false`: its files, the in-process timing files among them (`notice.test.ts`, `plants.test.ts`,
+`live-capture.test.ts`, `in-process-timing.test.ts`, `driver.test.ts`, `live-timing.test.ts`), run one at a time. The
+setting is on the whole project rather than on a separate project, so no test file changes project and the mutation
+configurations (`vitest.mutation.elements.config.ts` takes the `elements` project by name) and their checks
+(`gates/test/vitest-config.test.ts`) are unchanged. T002's `timing` (`D` = 50 ms, `W` = 100 ms, `H` = 500 ms) and every
+gap bound are unchanged.
+
+**Re-measured as T002 did**, under the full `pnpm run gate:unit-tests` (every project, 4 CPUs, Chromium 153 build 1243),
+with an uncommitted probe file in the `elements` project (removed afterwards, nothing committed): 50 runs, each a
+mount, a capture started, a notice inserted (`innerHTML`), then `after(W / 3)` and `after(W)`, the overshoot being the
+returned gap minus `ms`.
+
+| Run | `after(W / 3)` overshoot | `after(W)` overshoot | Runs at `2W/3` (66.7 ms) or more | Gate |
+|---|---|---|---|---|
+| probe file alone (`--project elements`) | largest 7.9 ms, mean 3.8 ms | largest 8.3 ms, mean 2.7 ms | 0 of 100 | (not the gate) |
+| `gate:unit-tests`, run 1 (9:01 wall-clock) | largest 10.5 ms, mean 4.1 ms | largest 13.4 ms, mean 2.9 ms | 0 of 100 | "3456 tests passed in 152 files" |
+| `gate:unit-tests`, run 2 (9:05 wall-clock) | largest 7.1 ms, mean 3.9 ms | largest 7.4 ms, mean 2.4 ms | 0 of 100 | "3456 tests passed in 152 files" |
+
+The largest overshoot under the full suite is **13.4 ms**, below `2W/3` = 66.7 ms, and the gate passes with no timing
+failure (3456 = the suite's 3455 tests and the probe). Stop 1 is resolved; no second stop.
