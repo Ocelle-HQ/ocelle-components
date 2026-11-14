@@ -2322,6 +2322,40 @@ const t025Rows = [
     { removed: "body", focus: "dlgb[button]", layer: ["dlg[dialog]", "dlgb[dialog]"] },
   ),
   row(
+    "A closed dialog removed and re-inserted while another is open, then opened over it: Tab from the body in it gives its first stop, the one beneath does nothing (R-02, R-05a)",
+    async (driver) => {
+      await driver.mount(twoDialogs);
+      await open(driver);
+      await act(driver, { op: "seq", ops: [{ op: "remove", id: "dlgb" }, { op: "reinsert", id: "dlgb" }] });
+      await driver.setAttribute("dlgb", "open", "");
+      await act(driver, { op: "remove", id: "bb1" });
+      const removed = await driver.focusPath();
+      await driver.press("Tab");
+      return { removed, focus: await driver.focusPath() };
+    },
+    { removed: "body", focus: "dlgb[button]" },
+  ),
+  row(
+    "Body (FR-018, R-18): the viewport shrinks to 1280 × 256, the content keeps its size and the body its width, and the body that now overflows becomes a Tab stop",
+    async (driver) => {
+      try {
+        await driver.mount(page('<p>Line 1 of a body.</p><p>Line 2 of a body.</p><p>Line 3 of a body.</p><p>Line 4 of a body.</p><p>Line 5 of a body.</p>', { footer: shortFooter }));
+        await open(driver);
+        const before = (await inspect(driver, "dlg", '[part="body"]')).attributes.tabindex ?? null;
+        await driver.setViewport(1280, 256);
+        let after: string | undefined;
+        for (const start = Date.now(); after === undefined && Date.now() - start < 1000; ) {
+          await pause(20);
+          after = (await inspect(driver, "dlg", '[part="body"]')).attributes.tabindex;
+        }
+        return { before, after: after ?? null };
+      } finally {
+        await driver.setViewport(1280, 800);
+      }
+    },
+    { before: null, after: "0" },
+  ),
+  row(
     "A closed dialog removed while another is open: the open one still handles Tab from the body (R-02, R-05a)",
     async (driver) => {
       await driver.mount(twoDialogs);
