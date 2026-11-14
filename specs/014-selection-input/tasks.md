@@ -190,7 +190,7 @@ unselected panel node; the tabs stories pass #10's full axe rule set.
 
 ### Spikes (first)
 
-- [ ] T040 [US2] Spikes recorded in `specs/014-selection-input/reviews/phase-3/spike.md`: R-02 generated ids vs ARIA element reflection in Chromium; the tabs host with a host `aria-label` exposes exactly one named node (R-01); axe 4.14's `color-contrast` incomplete on unassigned panels with `aria-labelledby`, for an upstream report (PLAN-FRESH-2-002); stop-and-ask per the list above
+- [X] T040 [US2] Spikes recorded in `specs/014-selection-input/reviews/phase-3/spike.md`: R-02 generated ids vs ARIA element reflection in Chromium; the tabs host with a host `aria-label` exposes exactly one named node (R-01); axe 4.14's `color-contrast` incomplete on unassigned panels with `aria-labelledby`, for an upstream report (PLAN-FRESH-2-002); stop-and-ask per the list above
 
 ### Scaffold
 
