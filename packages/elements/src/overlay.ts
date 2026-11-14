@@ -314,12 +314,14 @@ export class OcelleOverlay extends LitElement {
   }
 
   protected override render(): unknown {
+    // Without a host `aria-label` the heading names the panel; `aria-labelledby` wins over the `aria-label` the
+    // trimmed label then also gives it, so the name is the heading's either way (R-08).
     const named = this.hasAttribute("aria-label");
     const name = accessibleName(this.label, this.getAttribute("aria-label"));
     return html`<dialog
       part="panel"
       aria-labelledby=${named ? nothing : "heading"}
-      aria-label=${named && name !== undefined ? name : nothing}
+      aria-label=${name ?? nothing}
       @keydown=${this.#onKeydown}
       @cancel=${this.#onCancel}
       @close=${{
@@ -694,12 +696,13 @@ export class OcelleOverlay extends LitElement {
   /**
    * R-04's repair: a native move out of opaque content that lands on the body goes to the first stop, the close
    * control (the header comes first in the panel, and a positive `tabindex` orders only within its own scope). A
-   * closed overlay has left the stack.
+   * closed overlay has left the stack; during the exit the repair moves focus within the panel, which the end of the
+   * close returns to the opener as it would from the body.
    */
   #onFocusout(event: FocusEvent): void {
     if (event.relatedTarget !== null || !(event.target instanceof Element) || !isOpaqueContent(event.target)) return;
     setTimeout(() => {
-      if (stack.at(-1) !== this || this.#state === "closing" || deepActive() !== null) return;
+      if (stack.at(-1) !== this || deepActive() !== null) return;
       this.#close?.focus();
     }, 0);
   }
