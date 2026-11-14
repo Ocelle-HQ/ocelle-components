@@ -147,3 +147,14 @@ plant changes of the green commit (reviews/phase-2/notes.md § Gate plants chang
 `contrast/text-below-threshold` (the eyebrow rows' figure mismatches), six `manifest/fail-undescribed-*` plants and
 `manifest/pass-reordered` (their manifest copies stale with the two new elements) and
 `storybook-build/fail-empty-index` (the new story files left the index non-empty).
+
+## Review round 1 fix (R1-02)
+
+The fix for R1-02 adds one rule and one class binding to `src/ocelle-section-header.ts`. They were planted with the
+same method and the same suites, on the fix code with the `fix-1` red commit's tests (`9fea5fa`), on 2026-11-14 in
+this container. A control run with no plant (a comment line changed) failed no test in either harness.
+
+| Plant | In process (`elements`) | Fixture (`elements-browser`) |
+|---|---|---|
+| `section-header: .heading-column.empty + .actions { margin-inline-start: auto; }` removed | 2: FR-005, FR-010; FR-005, FR-010, narrow | 2: FR-005, FR-010; FR-005, FR-010, narrow |
+| pairing (FR-005, an empty part adds no line or gap): the heading column never hidden (`class="heading-column"` always) | 1: FR-005, FR-010, narrow | 1: FR-005, FR-010, narrow |
