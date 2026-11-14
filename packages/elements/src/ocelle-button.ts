@@ -276,8 +276,9 @@ export class OcelleButton extends LitElement {
   #labelled = false;
 
   /**
-   * Rereads the label when text inside the element changes, which fires no `slotchange`. It observes the element for
-   * its lifetime: an observer holds its target only weakly, so it needs no disconnecting.
+   * Rereads the label when text inside the element changes, which fires no `slotchange`: a text node's data, or text
+   * inserted into or removed from a slotted element (a child-list change inside it, review R2-01). It observes the
+   * element for its lifetime: an observer holds its target only weakly, so it needs no disconnecting.
    */
   readonly #text = new MutationObserver(() => {
     this.#readLabel();
@@ -288,7 +289,7 @@ export class OcelleButton extends LitElement {
     this.flush = false;
     this.disabled = false;
     guardHost(this, () => this.#control(), () => !this.disabled);
-    this.#text.observe(this, { characterData: true, subtree: true });
+    this.#text.observe(this, { characterData: true, childList: true, subtree: true });
   }
 
   /**
