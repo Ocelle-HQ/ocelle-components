@@ -1,9 +1,9 @@
 # @ocelle/elements
 
 The Ocelle web components: standards-based custom elements (Lit 3) that work in any page, a server-rendered page
-under a strict Content Security Policy, a Svelte shell or a desktop webview. This release has four elements:
+under a strict Content Security Policy, a Svelte shell or a desktop webview. This release has five elements:
 `ocelle-icon`, with a set of thirteen icons, `ocelle-brand-mark`, the Ocelle rosette, and the layout elements
-`ocelle-section-header` and `ocelle-card`.
+`ocelle-section-header`, `ocelle-card` and `ocelle-page-header`.
 
 ## Entry points
 
@@ -14,6 +14,7 @@ under a strict Content Security Policy, a Svelte shell or a desktop webview. Thi
 | `@ocelle/elements/ocelle-brand-mark.js` | `dist/ocelle-brand-mark.js` | `ocelle-brand-mark` only; for hosts with a bundler |
 | `@ocelle/elements/ocelle-card.js` | `dist/ocelle-card.js` | `ocelle-card` only; for hosts with a bundler |
 | `@ocelle/elements/ocelle-section-header.js` | `dist/ocelle-section-header.js` | `ocelle-section-header` only; for hosts with a bundler |
+| `@ocelle/elements/ocelle-page-header.js` | `dist/ocelle-page-header.js` | `ocelle-page-header` only; for hosts with a bundler |
 | `@ocelle/elements/browser.js` | `dist/browser/ocelle-elements.js` | every element, Lit inside; for hosts without a bundler |
 | `@ocelle/elements/custom-elements.json` | `custom-elements.json` | the manifest, also named by the `customElements` field |
 
@@ -247,6 +248,67 @@ assigned to it and every text assigned to it is whitespace; an assigned element 
 
 In forced colours the card's border is drawn in a system colour, and a compact card keeps its padding, gap and compact
 header. `ocelle-card` has no event, CSS part or CSS custom property, and adds no tab stop.
+
+## `ocelle-page-header`
+
+```html
+<ocelle-page-header size="compact">
+  <span slot="eyebrow">Workspace</span>
+  <h1 slot="heading">Missions</h1>
+  <p slot="description">Every mission of the workspace, newest first.</p>
+  <button slot="actions" type="button">New mission</button>
+</ocelle-page-header>
+```
+
+`ocelle-page-header` starts a screen: a band holding an optional eyebrow naming the area, the screen's title, an
+optional subtitle and the screen's actions, ruled off below. The page header creates no heading of its own: slot one
+heading element (`h1` to `h6`) in `heading`, usually the screen's `h1`, and its level is the page's. The page's own
+rules for that heading win over the header's styles. Place the page header outside a `[data-ocelle-prose]` region: the
+prose rules of `@ocelle/styles` for `h1` to `h6` are page rules, so they win over the header's heading style.
+
+- `heading` (slot): the page's heading element, the screen's title, drawn in `--ocelle-font-display` at
+  `--ocelle-font-weight-display`, `--ocelle-tracking-display`, `--ocelle-line-height-tight` and `--ocelle-color-ink`,
+  at `--ocelle-font-size-2xl`, or at `--ocelle-font-size-xl` at the compact size, with no margin.
+- `eyebrow` (slot): a short label above the heading naming the area, on a line of its own, drawn with the eyebrow style
+  at both sizes: `--ocelle-font-sans` at `--ocelle-font-size-eyebrow`, `--ocelle-font-weight-eyebrow`,
+  `--ocelle-tracking-eyebrow` and `--ocelle-line-height-normal`, in `--ocelle-color-eyebrow`, upper case, with
+  `--ocelle-figures`.
+- `description` (slot): a subtitle under the heading, at `--ocelle-font-size-md` in `--ocelle-color-ink-soft`,
+  `--ocelle-space-1` below the heading.
+- `actions` (slot): the screen's controls at the inline end of the heading's first line, their block start at the
+  heading's, `--ocelle-space-4` from it. When the heading's longest word and the actions do not fit side by side, the
+  actions move under the description, or under the heading when there is none, `--ocelle-space-2` below it, at its
+  inline start, and a word longer than the line wraps inside itself.
+
+The band has block padding `--ocelle-space-4`, inline padding `--ocelle-space-6` and a `--ocelle-border-width` rule in
+`--ocelle-color-rule` along its block end. The gaps are `--ocelle-space-1` between eyebrow and heading and
+`--ocelle-space-2` between two actions. The page header has no ground of its own: the band shows the surface it sits on,
+the page canvas or a pane.
+
+- `size` (attribute and property, reflected): `regular` or `compact`. Not set, or any other value, draws regular, the
+  heading at `--ocelle-font-size-2xl`. `compact` draws the heading at `--ocelle-font-size-xl` (24 px), for dense
+  screens; everything else stays the same.
+
+`ocelle-page-header` reads the tokens `--ocelle-font-display`, `--ocelle-font-sans`, `--ocelle-font-size-2xl`,
+`--ocelle-font-size-xl`, `--ocelle-font-size-md`, `--ocelle-font-weight-display`, `--ocelle-tracking-display`,
+`--ocelle-line-height-tight`, `--ocelle-line-height-normal`, `--ocelle-color-ink`, `--ocelle-color-ink-soft`,
+`--ocelle-color-rule`, `--ocelle-border-width`, `--ocelle-space-1`, `--ocelle-space-2`, `--ocelle-space-4`,
+`--ocelle-space-6`, `--ocelle-figures`, `--ocelle-font-size-eyebrow`, `--ocelle-font-weight-eyebrow`,
+`--ocelle-tracking-eyebrow` and `--ocelle-color-eyebrow`.
+
+The page header trims the block margins of its slotted eyebrow and description, so a `p` description sits
+`--ocelle-space-1` under the heading; a page rule that sets those margins wins.
+
+An empty slot of the page header takes no space: no box, gap or margin. A slot is empty when no element is assigned to
+it and every text assigned to it is whitespace; an assigned element counts as content even when it is `hidden`, so
+remove an element from the slot rather than hide it. The layout follows the slots' content as it changes.
+
+The page header replaces the pinned page-header font rules Kitty Desktop sets on its page headers: the title, eyebrow
+and subtitle fonts and the band are the header's own, at either size.
+
+In forced colours the rule under the band is drawn in a system colour, and a compact header keeps its compact title.
+`ocelle-page-header` has no event, CSS part or CSS custom property, adds no tab stop, and exposes no heading, banner or
+other landmark of its own.
 
 ## Slot convention
 
