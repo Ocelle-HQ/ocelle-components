@@ -281,7 +281,7 @@ export const boardScenarios: readonly BoardScenario[] = [
     name: "US2-2: in Frame N the board is one tab stop and one region named by its label, the page has no horizontal scroll, ArrowRight on the focused board scrolls 40 px per press to the hidden end and ArrowLeft back, prevented also at the extent, the modified arrows are neither prevented nor scroll, and the fades show on pixels only on the sides with lanes off-screen (FR-014, SC-002, SC-003)",
     base: false,
     run: async (driver) => {
-      await page(driver, "N", `${before}${board("b", lanes("l"))}${board("f", solidLanes("f"), ' label="Strips"', "N", ' data-ground="canvas"')}${after}`);
+      await page(driver, "N", `${before}${board("b", lanes("l"), ' label="Workflow"', "N")}${board("f", solidLanes("f"), ' label="Strips"', "N", ' data-ground="canvas"')}${after}`);
       return {
         walk: await driver.tabWalk("before", "after"),
         state: await boardState(driver, "b"),
@@ -457,6 +457,8 @@ export const boardScenarios: readonly BoardScenario[] = [
     expected: cardRingsExpected(true),
   },
   {
+    // The fixed blocks are descendants inside a card, not slotted children: a slotted child is capped at the lane's
+    // content width (FR-013), so only a descendant of fixed inline size cannot shrink.
     name: "SPEC-2-06: a fixed 400 px block in the first lane overlaps the next lane without making the Frame W board overflow, and a card with one added to the last lane after the first render makes the board a tab stop and a region in the observer callback that sees the lane grow (FR-013, FR-014)",
     base: false,
     run: async (driver) => {
@@ -466,11 +468,11 @@ export const boardScenarios: readonly BoardScenario[] = [
         board(
           "b",
           [
-            lane("l0", ' label="Backlog" count="1"', `${card()}<div id="fx" class="fixed"></div>`),
+            lane("l0", ' label="Backlog" count="1"', `${card()}<div><div id="fx" class="fixed"></div></div>`),
             lane("l1", ' label="Ready" count="2"'),
             lane("l2", ' label="In progress" count="3"'),
             lane("l3", ' label="In review" count="4"'),
-            lane("l4", ' label="Done" count="5"', `${card()}<div id="late" class="fixed tall" slot="none"></div>`),
+            lane("l4", ' label="Done" count="5"', `${card()}<div id="late" slot="none"><div class="fixed tall"></div></div>`),
           ].join(""),
         ),
       );

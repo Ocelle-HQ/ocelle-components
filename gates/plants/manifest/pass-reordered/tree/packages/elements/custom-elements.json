@@ -242,6 +242,187 @@
       ],
       "kind": "javascript-module",
       "path": "src/ocelle-scroller.ts"
+    },
+    {
+      "path": "src/ocelle-workflow-board.ts",
+      "kind": "javascript-module",
+      "exports": [
+        {
+          "name": "OcelleWorkflowBoard",
+          "kind": "js",
+          "declaration": {
+            "name": "OcelleWorkflowBoard",
+            "module": "src/ocelle-workflow-board.ts"
+          }
+        }
+      ],
+      "declarations": [
+        {
+          "tagName": "ocelle-workflow-board",
+          "superclass": {
+            "package": "lit",
+            "name": "LitElement"
+          },
+          "slots": [
+            {
+              "name": "",
+              "description": "The lanes; any child is laid out as a lane."
+            }
+          ],
+          "name": "OcelleWorkflowBoard",
+          "members": [
+            {
+              "type": {
+                "text": "string | undefined"
+              },
+              "privacy": "public",
+              "name": "label",
+              "kind": "field",
+              "description": "The name of the board's region while it overflows, trimmed; empty or whitespace-only counts as none, and without\none an overflowing board is a tab stop with no role. Not reflected.",
+              "default": "undefined",
+              "attribute": "label"
+            }
+          ],
+          "kind": "class",
+          "events": [],
+          "description": "A row of lanes that scrolls inside itself, and is a tab stop and a named region, only while the lanes' minimum\nwidths exceed its size.",
+          "customElement": true,
+          "cssProperties": [],
+          "cssParts": [],
+          "attributes": [
+            {
+              "type": {
+                "text": "string | undefined"
+              },
+              "name": "label",
+              "fieldName": "label",
+              "description": "The name of the board's region while it overflows, trimmed; empty or whitespace-only counts as none, and without\none an overflowing board is a tab stop with no role. Not reflected.",
+              "default": "undefined"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "path": "src/ocelle-workflow-lane.ts",
+      "kind": "javascript-module",
+      "exports": [
+        {
+          "name": "OcelleWorkflowLane",
+          "kind": "js",
+          "declaration": {
+            "name": "OcelleWorkflowLane",
+            "module": "src/ocelle-workflow-lane.ts"
+          }
+        }
+      ],
+      "declarations": [
+        {
+          "tagName": "ocelle-workflow-lane",
+          "superclass": {
+            "package": "lit",
+            "name": "LitElement"
+          },
+          "slots": [
+            {
+              "name": "",
+              "description": "The lane's content."
+            }
+          ],
+          "name": "OcelleWorkflowLane",
+          "members": [
+            {
+              "type": {
+                "text": "string | undefined"
+              },
+              "privacy": "public",
+              "name": "label",
+              "kind": "field",
+              "description": "The lane's title, shown and used as its name, trimmed; empty or whitespace-only counts as absent, and no title is\nshown. Not reflected.",
+              "default": "undefined",
+              "attribute": "label"
+            },
+            {
+              "type": {
+                "text": "number | undefined"
+              },
+              "privacy": "public",
+              "name": "count",
+              "kind": "field",
+              "description": "The count shown after the title with tabular figures, and named after it: a whole number of 0 or more. The\nattribute counts when, after trimming, it is decimal digits alone, at most `Number.MAX_SAFE_INTEGER`; the\nproperty when it is a safe integer of 0 or more; anything else counts as absent. Not reflected.",
+              "default": "undefined",
+              "attribute": "count"
+            },
+            {
+              "type": {
+                "text": "string | undefined"
+              },
+              "privacy": "public",
+              "name": "countLabel",
+              "kind": "field",
+              "description": "The count's text in the lane's name, such as \"3 work packages\", trimmed; the visible count still shows the\nnumber. Used only while a count is shown. Not reflected.",
+              "default": "undefined",
+              "attribute": "count-label"
+            },
+            {
+              "type": {
+                "text": "\"flat\" | undefined"
+              },
+              "reflects": true,
+              "privacy": "public",
+              "name": "variant",
+              "kind": "field",
+              "description": "`flat` drops the lane's ground, corners and padding and sets the title and count in small uppercase; absent or any\nother value draws the default lane chrome. Reflected.",
+              "default": "undefined",
+              "attribute": "variant"
+            }
+          ],
+          "kind": "class",
+          "events": [],
+          "description": "A column of a workflow board with an optional title and count, exposed as one group named by them.",
+          "customElement": true,
+          "cssProperties": [],
+          "cssParts": [],
+          "attributes": [
+            {
+              "type": {
+                "text": "string | undefined"
+              },
+              "name": "label",
+              "fieldName": "label",
+              "description": "The lane's title, shown and used as its name, trimmed; empty or whitespace-only counts as absent, and no title is\nshown. Not reflected.",
+              "default": "undefined"
+            },
+            {
+              "type": {
+                "text": "number | undefined"
+              },
+              "name": "count",
+              "fieldName": "count",
+              "description": "The count shown after the title with tabular figures, and named after it: a whole number of 0 or more. The\nattribute counts when, after trimming, it is decimal digits alone, at most `Number.MAX_SAFE_INTEGER`; the\nproperty when it is a safe integer of 0 or more; anything else counts as absent. Not reflected.",
+              "default": "undefined"
+            },
+            {
+              "type": {
+                "text": "string | undefined"
+              },
+              "name": "count-label",
+              "fieldName": "countLabel",
+              "description": "The count's text in the lane's name, such as \"3 work packages\", trimmed; the visible count still shows the\nnumber. Used only while a count is shown. Not reflected.",
+              "default": "undefined"
+            },
+            {
+              "type": {
+                "text": "\"flat\" | undefined"
+              },
+              "name": "variant",
+              "fieldName": "variant",
+              "description": "`flat` drops the lane's ground, corners and padding and sets the title and count in small uppercase; absent or any\nother value draws the default lane chrome. Reflected.",
+              "default": "undefined"
+            }
+          ]
+        }
+      ]
     }
   ]
 }

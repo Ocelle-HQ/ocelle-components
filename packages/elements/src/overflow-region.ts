@@ -360,7 +360,9 @@ export class OverflowRegion implements ReactiveController {
     if (track !== null) this.#observer.observe(track);
     // Stryker disable next-line ObjectLiteral,BooleanLiteral: equivalent, a passive listener only promises not to call preventDefault, which this one never does
     box.addEventListener("scroll", this.#onScroll, { passive: true });
-    // Stryker disable next-line all: equivalent, a slot change that changes the content's width also resizes the track, which the observer sees, and one that does not leaves the state as it is
+    // A slot change is load-bearing for a host whose track does not follow its content, such as the board, whose
+    // children are contained: a child assigned there whose fixed content reaches past the box changes neither the box's
+    // nor the track's size (009 phase 2 review R1-03).
     box.addEventListener("slotchange", this.#onSlotChange);
     box.closest(".region-frame")?.addEventListener("focusout", this.#onFrameOut);
   }
@@ -484,9 +486,8 @@ export class OverflowRegion implements ReactiveController {
     this.#measure();
   };
 
-  // Stryker disable next-line all: equivalent, see the slotchange listener in #follow
+  /** A slot change in the track: the content may now reach past the box with neither the box nor the track resized. */
   readonly #onSlotChange = (): void => {
-    // Stryker disable next-line all: equivalent, as above
     this.#measure();
   };
 }
