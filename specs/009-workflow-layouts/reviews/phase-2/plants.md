@@ -2,7 +2,9 @@
 
 Each plant was applied to the working tree on top of the green implementation (`077efe2`), its tests
 run, and every file it touched restored byte for byte (compared with the bytes read before the change) before the next
-plant. Nothing planted was committed. The runner applied each plant as an exact text replacement and ran the named
+plant. Nothing planted was committed. S4, S5 and S9 change the ring rule, which `46c5742` gave a `display: block`
+(the overlay is laid out only while it shows a ring, for axe); they were run again on `46c5742` with that rule, with
+the same results as on `077efe2`. The runner applied each plant as an exact text replacement and ran the named
 Vitest project and file with `OCELLE_CHROMIUM_PATH` set; the output is summarised below (Vitest truncates long test
 names).
 
