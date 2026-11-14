@@ -1,0 +1,1 @@
+{"phase":"1","status":"fail","base":"767c09779ea8e58c52d6f8f1182b2015ae74b821","head":"8b8d6d75f4f5fb31f31d16ad5aae3ce2fa5cd3fa","red_commits":[{"label":"phase","sha":"c983351130ca3eed516ae4605a5a581b1f2fe108","exit_code":1}],"final_tests_on_base_exit":2,"final_tests_on_scaffold_exit":1,"head_exit":1,"problems":["tests fail at HEAD"]}

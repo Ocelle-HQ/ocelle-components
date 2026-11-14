@@ -4,10 +4,10 @@
 // (test/browser/*.test.ts, the `elements-browser` project). Every method reads or acts on the page by element `id`;
 // nothing in a body depends on which harness runs it. Elements inside a shadow root are reached by a selector in the
 // element's shadow root.
-import type { AxNode, ForcedColors, Palette } from "../commands.ts";
+import type { ActiveElement, AxNode, ForcedColors, Palette, TextBox } from "../commands.ts";
 import type { Pixels } from "../pixels.ts";
 
-export type { AxNode, ForcedColors, Palette } from "../commands.ts";
+export type { ActiveElement, AxNode, ForcedColors, Palette, TextBox } from "../commands.ts";
 export type { Pixels } from "../pixels.ts";
 
 /** An element's border box, relative to the viewport, and its computed `display`. */
@@ -144,4 +144,29 @@ export interface Driver {
   sheets(selector: string): Promise<Sheets>;
   /** The console messages and uncaught errors the page reported since the last `mount`. */
   messages(): Promise<string[]>;
+  // Light DOM, keyboard and size plumbing, and the document readers of 011 research.md R-13 (T006, T007).
+  /** Appends `markup` (no `style` attribute) to the light DOM of the element with `id`, after its children, and waits for every element to render. */
+  append(id: string, markup: string): Promise<void>;
+  /** Removes the element with `id` from the page and waits for every element to render. */
+  remove(id: string): Promise<void>;
+  /**
+   * Sets the data of the `index`-th text-node child (counting text nodes only, from 0) of the element with `id`, and
+   * waits for every element to render.
+   */
+  textData(id: string, index: number, data: string): Promise<void>;
+  /** Presses Tab, or Shift+Tab with `shift`, and waits for every element to render. */
+  tab(shift?: boolean): Promise<void>;
+  /** The focused element through open shadow roots, with the hosts on its path (test/commands.ts `readActiveElement`). */
+  activeElement(): Promise<ActiveElement>;
+  /** Sets the viewport to `width` × `height` CSS px and waits for every element to render; it stays until set again. */
+  viewport(width: number, height: number): Promise<void>;
+  /**
+   * Sets the `inline-size` and `block-size` of the element with `id` (a container) through the CSSOM, in px; null
+   * removes the value. Waits for every element to render.
+   */
+  size(id: string, inline: number | null, block: number | null): Promise<void>;
+  /** The document's scrolling width (test/commands.ts `readScrollWidth`). */
+  scrollWidth(): Promise<number>;
+  /** Each text node under the element with `id`, its box and its clipping ancestors (test/commands.ts `readTextBoxes`). */
+  textBoxes(id: string): Promise<TextBox[]>;
 }
