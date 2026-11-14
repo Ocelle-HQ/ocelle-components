@@ -1,0 +1,5 @@
+# History fold phase-1 of claude/013-data-display: old commit -> new commit (pre-fold head kept as refs/ocelle/prefold/phase-1/claude/013-data-display, 4ff2c578ec273a50f44ed43289115c8d02c63575).
+eb3dff44e228640e85adf4c976ab93f2553a8d8d bf82dacf16a916a4fe4fea125bbb4265db6db642
+b244f4bdd6a23f020037df2157b3c82b60ece61d 5dbab1dc57b4e07970fa830f81c0da12ca900da0
+935ac40a02cd2590edd98ba13d649a30bffbed1f a77da1d8ef9fcb3562b67baeeacbdddb0a044bd3
+4ff2c578ec273a50f44ed43289115c8d02c63575 9fc5225dc35ea83c85185679f06ec126e0d2a71a
