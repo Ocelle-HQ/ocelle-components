@@ -75,6 +75,9 @@ export const expectedTokens: readonly ExpectedToken[] = [
   colour("color-ink", "#15130F", "#EDE9E1"),
   colour("color-ink-soft", "#3F3A33", "#CFC9BE"),
   colour("color-ink-muted", "#5E584F", "#A39D92"),
+  // 011 (FR-030, research.md R-12, data-model.md § Tokens added): the eyebrow colour, an alias of the muted ink in both
+  // themes, with a text contrast entry on every main ground (User Story 1, FR-032).
+  derivedColour("color-eyebrow", "color-ink-muted", "#5E584F", "#A39D92"),
   colour("color-rule", "#D9D3C7", "#3A342B"),
   colour("color-rule-strong", "#B9B1A2", "#4D463A"),
   colour("color-control-border", "#8A8276", "#7A7264"),
@@ -131,6 +134,11 @@ export const expectedTokens: readonly ExpectedToken[] = [
   plain("font-weight-strong", "type", "600", { property: "font-weight", used: "600" }),
   plain("font-weight-display", "type", "800", { property: "font-weight", used: "800" }),
   plain("tracking-display", "type", "-0.03em", { property: "letter-spacing", used: -0.48 }),
+  // 011 (FR-030, research.md R-12, data-model.md § Tokens added): the eyebrow's size and weight, aliases of the 12 px
+  // size and the strong weight, and its letter spacing, 0.08em of the probe's 16 px (User Story 1, FR-031).
+  derived("font-size-eyebrow", "type", "var(--ocelle-font-size-xs)", "0.75rem", ["font-size-xs"], { property: "font-size", used: "12px" }),
+  derived("font-weight-eyebrow", "type", "var(--ocelle-font-weight-strong)", "600", ["font-weight-strong"], { property: "font-weight", used: "600" }),
+  plain("tracking-eyebrow", "type", "0.08em", { property: "letter-spacing", used: 1.28 }),
 
   // A.3 Space, shape, size
   plain("space-1", "space", "0.25rem", width(4)),

@@ -14,6 +14,7 @@ import baseText from "../../styles/src/base.css?raw";
 import { css } from "../../tokens/src/generate.ts";
 import { source } from "../../tokens/src/source.ts";
 import { decodePng } from "./pixels.ts";
+import { heardTypes } from "./scenarios/driver.ts";
 import type { Box, Driver, Drawing, Paint, Part, Placement, Sheets } from "./scenarios/driver.ts";
 
 function sheet(text: string): CSSStyleSheet {
@@ -61,6 +62,43 @@ for (const method of ["log", "info", "warn", "error", "debug"] as const) {
 window.addEventListener("error", (event) => {
   messages.push(`error: ${event.message}`);
 });
+
+/** The `id` of the element with one of `ids` that `node` is, or whose shadow tree holds it, or undefined. */
+function recordedHost(node: unknown, ids: ReadonlySet<string>): string | undefined {
+  for (let at = node instanceof Node ? node : null; at !== null; ) {
+    if (at instanceof Element && ids.has(at.id)) return at.id;
+    const root = at.getRootNode();
+    at = root instanceof ShadowRoot ? root.host : null;
+  }
+  return undefined;
+}
+
+/** What `listen` installed: the records, and how to remove it. */
+let listening: { readonly records: string[]; readonly stop: () => void } | undefined;
+
+function listen(ids: readonly string[]): void {
+  listening?.stop();
+  const watched = new Set(ids);
+  const records: string[] = [];
+  const original = Object.getOwnPropertyDescriptor(EventTarget.prototype, "dispatchEvent")?.value as (this: EventTarget, event: Event) => boolean;
+  EventTarget.prototype.dispatchEvent = function (this: EventTarget, event: Event): boolean {
+    const id = recordedHost(this, watched);
+    if (id !== undefined) records.push(`${id}: ${event.type}`);
+    return original.call(this, event);
+  };
+  const capture = (event: Event): void => {
+    const id = event.composedPath().map((node) => recordedHost(node, watched)).find((each) => each !== undefined);
+    if (id !== undefined) records.push(`${id}: ${event.type}`);
+  };
+  for (const type of heardTypes) window.addEventListener(type, capture, true);
+  listening = {
+    records,
+    stop: () => {
+      EventTarget.prototype.dispatchEvent = original;
+      for (const type of heardTypes) window.removeEventListener(type, capture, true);
+    },
+  };
+}
 
 export function inProcessDriver(): Driver {
   return {
@@ -212,5 +250,19 @@ export function inProcessDriver(): Driver {
     },
     scrollWidth: () => commands.scrollWidth(),
     textBoxes: (id) => commands.textBoxes(id),
+    listen: (ids) => {
+      listen(ids);
+      return Promise.resolve();
+    },
+    heard: () => {
+      const records = listening?.records ?? [];
+      listening?.stop();
+      listening = undefined;
+      return Promise.resolve([...records]);
+    },
+    move: async (id, parent) => {
+      element(parent).append(element(id));
+      await settle();
+    },
   };
 }
