@@ -576,6 +576,38 @@ export const buttonScenarios: readonly Scenario[] = [
   ...(["default", "compact"] as const).flatMap((size) =>
     (["ltr", "rtl"] as const).map(
       (direction): Scenario => ({
+        name: `US1-7, US1-8, icon-only (${size}, ${direction}): with no label content (none, or only whitespace around the icon) the slotted icon is centred in the inner control within 0.5 px, adding no gap; a label moved into the default slot brings the ${String(gap)} px gap back and moving it out again centres the icon; a flush icon-only button still starts its icon at the control's inline start (review R1-01; research.md R-09; FR-011, FR-012)`,
+        run: async (driver) => {
+          const sized = ` size="${size}"`;
+          await driver.mount(
+            `<div dir="${direction}"><p><ocelle-button id="b"${sized} label="Close"><ocelle-icon id="b-icon" slot="icon" name="close"></ocelle-icon></ocelle-button></p>` +
+              `<p><ocelle-button id="s"${sized} label="Close">\n  <ocelle-icon id="s-icon" slot="icon" name="close"></ocelle-icon>\n</ocelle-button></p>` +
+              `<p><ocelle-button id="m"${sized} label="Close"><ocelle-icon id="m-icon" slot="icon" name="close"></ocelle-icon><span id="m-label" slot="aside">Close</span></ocelle-button></p>` +
+              `<p><ocelle-button id="f"${sized} flush label="Close"><ocelle-icon id="f-icon" slot="icon" name="close"></ocelle-icon></ocelle-button></p></div>`,
+          );
+          const centred = async (id: string): Promise<boolean> => {
+            const [glyph, inner] = [await driver.box(`${id}-icon`), await driver.box(id, control)];
+            return Math.abs(glyph.x + glyph.width / 2 - (inner.x + inner.width / 2)) <= 0.5;
+          };
+          const iconOnly = { plain: await centred("b"), whitespace: await centred("s"), moved: await centred("m") };
+          await driver.setAttribute("m-label", "slot", null);
+          const glyph = await driver.box("m-icon");
+          const [text] = await driver.lines("m-label");
+          const start = text ?? { x: 0, y: 0, width: 0, height: 0 };
+          const labelled = tenth(direction === "ltr" ? start.x - (glyph.x + glyph.width) : glyph.x - (start.x + start.width));
+          await driver.setAttribute("m-label", "slot", "aside");
+          const again = await centred("m");
+          const [flushIcon, flushInner] = [await driver.box("f-icon"), await driver.box("f", control)];
+          const edge = (box: Box): number => (direction === "ltr" ? box.x : box.x + box.width);
+          return { iconOnly, labelled, again, flushStart: Math.abs(edge(flushIcon) - edge(flushInner)) <= 0.5, axe: await severe(driver) };
+        },
+        expected: { iconOnly: { plain: true, whitespace: true, moved: true }, labelled: gap, again: true, flushStart: true, axe: [] },
+      }),
+    ),
+  ),
+  ...(["default", "compact"] as const).flatMap((size) =>
+    (["ltr", "rtl"] as const).map(
+      (direction): Scenario => ({
         name: `US1-12 (${size}, ${direction}): a flush button with a label, an icon and a label, an icon only and a one-character label, at the start of a line under a heading, starts its label (or icon) within 0.5 px of the heading's text, keeping its size's minimum block and inline size (FR-012)`,
         run: async (driver) => {
           const found: Record<string, unknown> = {};
