@@ -106,6 +106,50 @@ describe("ocelle-button's icon gap follows the label text", () => {
     expect({ empty: layout(empty), texted: layout(texted).margin }).toEqual({ empty: { margin: "0px", centred: true }, texted: "8px" });
   });
 
+  // Review round 2, R2-01 (FR-031's scenario, spec.md:456-458): text written into, or removed from, a slotted element
+  // is a child-list change inside it; the default slot's assignment is unchanged, so it fires no `slotchange`.
+  it("brings the gap back when text is written into an empty slotted element (a text node, textContent, a nested element) and centres the icon again when it is removed", async () => {
+    await driver.mount(
+      '<ocelle-button id="n" label="Close"><ocelle-icon slot="icon" name="close"></ocelle-icon><span></span></ocelle-button>' +
+        '<ocelle-button id="c" label="Close"><ocelle-icon slot="icon" name="close"></ocelle-icon><span></span></ocelle-button>' +
+        '<ocelle-button id="d" label="Close"><ocelle-icon slot="icon" name="close"></ocelle-icon><span><b></b></span></ocelle-button>',
+    );
+    const hosts = ["n", "c", "d"].map((id) => {
+      const host = document.getElementById(id);
+      if (host === null) throw new Error(`no #${id}`);
+      return host as HTMLElementTagNameMap["ocelle-button"];
+    });
+    const [node, content, nested] = hosts as [HTMLElementTagNameMap["ocelle-button"], HTMLElementTagNameMap["ocelle-button"], HTMLElementTagNameMap["ocelle-button"]];
+    const span = (host: HTMLElement): HTMLElement => {
+      const found = host.querySelector("span");
+      if (found === null) throw new Error("no span");
+      return found;
+    };
+    const deep = span(nested).querySelector("b");
+    if (deep === null) throw new Error("no nested element");
+    const settle = async (): Promise<void> => {
+      await frame();
+      await Promise.all(hosts.map((host) => host.updateComplete));
+      await frame();
+    };
+    await settle();
+    const before = hosts.map(layout);
+    const inserted = document.createTextNode("Close");
+    span(node).append(inserted);
+    span(content).textContent = "Close";
+    const deepText = document.createTextNode("Close");
+    deep.append(deepText);
+    await settle();
+    const written = hosts.map((host) => layout(host).margin);
+    inserted.remove();
+    span(content).textContent = "";
+    deepText.remove();
+    await settle();
+    const removed = hosts.map(layout);
+    const centred = { margin: "0px", centred: true };
+    expect({ before, written, removed }).toEqual({ before: [centred, centred, centred], written: ["8px", "8px", "8px"], removed: [centred, centred, centred] });
+  });
+
   it("reads a label forwarded through another shadow root's slot (the flattened assignment): a forwarded text keeps the gap, none centres the icon", async () => {
     await driver.mount('<div id="t">Close</div><div id="e"></div>');
     const forward = (id: string): HTMLElementTagNameMap["ocelle-button"] => {
