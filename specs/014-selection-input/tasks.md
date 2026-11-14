@@ -65,6 +65,8 @@ lines are reports, not findings; entries are at most 30 changed lines.
   has a null `relatedTarget`).
 - **T040 spikes (phase 3)**: the tabs host with a host `aria-label` exposes more or fewer than one named node (R-01,
   plan decision 7); generated ids do not give "tab controls panel" and "panel named by tab" in Chromium's tree (R-02).
+  The first held and is decided (`reviews/phase-3/operator-decisions.md`): `ocelle-tabs` is named from `label` only,
+  a host `aria-label` is not forwarded (FR-006's tabs exception, US2-24); the second did not hold.
 - **T060 measurement (phase 4)**: the joined rounding is not settled after the `ResizeObserver` delivery the driver
   waits for, or a resize loop warning appears (R-06).
 - **T075 spike (phase 5)**: `Accessibility.nodesUpdated` does not deliver the empty-region update (only the
@@ -178,7 +180,8 @@ with every key, selected and activated; tree, focus, paint and events are read a
 
 ## Phase 3: User Story 2 - Switch between panels with real tabs: `ocelle-tabs` (Priority: P2)
 
-**Goal**: US2 scenarios 1 to 23; FR-019 to FR-025 with FR-021a; tablist on the shadow part, manual slot assignment,
+**Goal**: US2 scenarios 1 to 24; FR-019 to FR-025 with FR-021a; tablist on the shadow part named from `label` only
+(FR-006's tabs exception), manual slot assignment,
 generated ids (R-02), `aria-labelledby` on the assigned panel only.
 
 **Independent Test**: on the strict-CSP fixture, three tabs and panels are walked with every key, keys typed in a
@@ -195,16 +198,16 @@ unselected panel node; the tabs stories pass #10's full axe rule set.
 
 ### Tests (red, one commit)
 
-- [ ] T042 [P] [US2] `packages/elements/test/scenarios/tabs.ts`: US2-1 to US2-23 with pairings (unselected panels have no node, no id reference across a shadow root, keys from panel content not handled, Enter/Space on the selected tab silent), the selected bar on the block-end edge, the focused tab's raised ring read. The spec's Edge Cases for tabs, by name (analysis G1): an `ocelle-tab` and an `ocelle-tab-panel` outside `ocelle-tabs` (no role, no tab stop); two tabs with the same value (a host set selects the first; a user selection of the second exposes the second and reports the same value); a long tab label at 320 px (wraps, the tab grows, nothing truncated, no sideways scroll); host `hidden` on the tabs (no box, no node); a second definition of each of the three tags (the first wins, nothing thrown); the tab's accessible name and the panel's name following a text change; a disabled tab under the pointer shows no hover paint (no `hover-bg` fill), paired with an enabled sibling's `hover-bg` fill under the pointer (contracts § Pairings, plant: a `:host(:hover)` rule with no disabled exclusion; second analysis G1)
+- [ ] T042 [P] [US2] `packages/elements/test/scenarios/tabs.ts`: US2-1 to US2-24 with pairings (a host `aria-label` on `ocelle-tabs`, written at first render and changed after, does not name the tablist and stays as the host wrote it, paired with the tablist named from `label`, plant: forwarding the host `aria-label` to `part="tablist"` (US2-24, contracts § Pairings); unselected panels have no node, no id reference across a shadow root, keys from panel content not handled, Enter/Space on the selected tab silent), the selected bar on the block-end edge, the focused tab's raised ring read. The spec's Edge Cases for tabs, by name (analysis G1): an `ocelle-tab` and an `ocelle-tab-panel` outside `ocelle-tabs` (no role, no tab stop); two tabs with the same value (a host set selects the first; a user selection of the second exposes the second and reports the same value); a long tab label at 320 px (wraps, the tab grows, nothing truncated, no sideways scroll); host `hidden` on the tabs (no box, no node); a second definition of each of the three tags (the first wins, nothing thrown); the tab's accessible name and the panel's name following a text change; a disabled tab under the pointer shows no hover paint (no `hover-bg` fill), paired with an enabled sibling's `hover-bg` fill under the pointer (contracts § Pairings, plant: a `:host(:hover)` rule with no disabled exclusion; second analysis G1)
 - [ ] T043 [P] [US2] `packages/elements/test/tabs.test.ts`, `packages/elements/test/browser/tabs.test.ts`, `packages/elements/test/browser/fixtures/tabs.html` (children with no host-written id or `aria-*`, SC-003)
 - [ ] T044 [P] [US2] `packages/elements/test/entry-ocelle-tabs.test.ts` (defines tab and panel too), `entry-ocelle-tab.test.ts`, `entry-ocelle-tab-panel.test.ts`; `entry-root.test.ts`
-- [ ] T045 [P] [US2] `storybook/stories/tabs.stories.ts` (first selected, another selected, disabled tab, wrapped rows, focused tab, hovered tab via #10's pointer parameter, focused tab panel with no focusable content (the panel is the tab stop, US2-6), tab with icon; FR-050) and the story test: #10's full rule set on the tabs stories, no violation and no serious or critical `incomplete` (plant: `aria-labelledby` on every panel); `selection-pairs.test.ts` and `readme.test.ts` gain the tabs
+- [ ] T045 [P] [US2] `storybook/stories/tabs.stories.ts` (first selected, another selected, disabled tab, wrapped rows, focused tab, hovered tab via #10's pointer parameter, focused tab panel with no focusable content (the panel is the tab stop, US2-6), tab with icon; FR-050) and the story test: #10's full rule set on the tabs stories, no violation and no serious or critical `incomplete` (plant: `aria-labelledby` on every panel); `selection-pairs.test.ts` and `readme.test.ts` gain the tabs, including the statement that the tabs are named with `label` and a host `aria-label` does not name the tablist (FR-006's tabs exception)
 - [ ] T046 [US2] `red.sh 3`
 
 ### Implementation (green)
 
-- [ ] T047 [US2] `packages/elements/src/ocelle-tab.ts`, `ocelle-tab-panel.ts`, `ocelle-tabs.ts`: `role="tablist"` on `part="tablist"` with the forwarded name, manual slot assignment per batch, generated ids, `aria-controls` on every paired tab, `aria-labelledby` on the assigned panel only, panel focusability observer (R-03), wrapped rows (FR-022), raised `::after` ring with the host unraised (R-06)
-- [ ] T048 [US2] Manifest; README tabs section; CHANGELOG
+- [ ] T047 [US2] `packages/elements/src/ocelle-tab.ts`, `ocelle-tab-panel.ts`, `ocelle-tabs.ts`: `role="tablist"` on `part="tablist"` named from `label` only (no host `aria-label` read, forwarded or in `observedAttributes`; no host attribute written; FR-006's tabs exception, R-01), manual slot assignment per batch, generated ids, `aria-controls` on every paired tab, `aria-labelledby` on the assigned panel only, panel focusability observer (R-03), wrapped rows (FR-022), raised `::after` ring with the host unraised (R-06)
+- [ ] T048 [US2] Manifest; README tabs section (name the tabs with `label`; a host `aria-label` does not name the tablist); CHANGELOG
 - [ ] T049 [US2] Baselines for the tabs stories with `pnpm run visual:update` in #10's pinned container under docker (`storybook/baselines/`), with any shared baseline (the token stories included) that changes, inspected and committed with the reason in the commit message; move the story-theme counts of `gates/test/integration/visual.test.ts` and add the new light stories that show `color-ink` to `gates/plants/visual/fail-token-changed/plant.json`; record in `reviews/phase-3/notes.md` that no podman cross-engine check was possible and CI confirms the baselines at landing (operator decision 2026-11-14, `reviews/phase-2/operator-decisions.md`; FR-053, SC-007)
 - [ ] T050 [US2] Plants recorded in `reviews/phase-3/plants.md`; the gates of T028 one at a time
 

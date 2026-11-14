@@ -22,13 +22,27 @@ FR-008), which #14 asks for in words ("paint keyed on `aria-selected`", "paint k
 **`ocelle-tabs` is not the tablist** (PLAN-A11Y-SECURITY-1-001). Its panels are light-DOM children of its host, so a
 tablist role on the host would put every tabpanel and its content inside the tablist in the flat tree (ARIA: a
 tablist owns only tabs; Chromium probe in the lens). The host has no role. The shadow container `part="tablist"`
-carries `role="tablist"` and its name: `aria-label` set from `label` (trimmed, blank as none) or from the host's
-`aria-label`, which the element observes (`observedAttributes`) so a later change follows; a present host
-`aria-label` decides alone (FR-006). The tabs are slotted into that container, so they are its only owned elements,
-and the panel container is its sibling. The host keeps no name of its own in the tree: phase 3's spike probes the
-host's exposure with a host `aria-label` and requires exactly one named node (the tablist), with the same candidates
-and fallback as the link host (R-08). US2-1 reads that no tabpanel has a tablist ancestor; plant: the tablist role on
-the host.
+carries `role="tablist"` and its name: `aria-label` set from `label` only (trimmed, blank as none; FR-006's tabs
+exception, operator decision during phase 3). The element does not read, forward or observe the host's `aria-label`
+(no `observedAttributes` entry for it on `ocelle-tabs`) and writes no attribute on its host (mission 005's rule). The
+tabs are slotted into that container, so they are its only owned elements, and the panel container is its sibling.
+With `label` alone the tree has exactly one named node, the tablist (generic "" → tablist "Mission views", phase 3
+spike): the "exactly one named node" holds because the element never forwards a host `aria-label`, so it never adds a
+second name. A host `aria-label` a page writes anyway stays on the host and is the page's own attribute; it does not
+name the tablist (US2-24; plant: forwarding the host `aria-label` to `part="tablist"`, written at first render or
+after). US2-1 reads that no tabpanel has a tablist ancestor; plant: the tablist role on the host.
+
+**Spike result and decision (T040, `reviews/phase-3/spike.md`; `reviews/phase-3/operator-decisions.md`).** Chromium
+153 names a role-less host from its `aria-label`, so the forwarded design gave two named nodes (a generic and the
+tablist, both "Mission views"). Internals role `none` or `presentation`, `:host { display: contents }` and their
+combination kept the named generic; not forwarding left the tablist unnamed; a host role `group` or `tablist` broke
+US2-1. The only form with one named node, the element moving the host's `aria-label` onto the tablist and removing it
+from the host, breaks mission 005's rule that an element never writes its host's attributes. The operator chose
+option (c): `ocelle-tabs` is named from `label` only and its README says so; options (a), moving the attribute, and
+(b), accepting two named nodes, were declined. The listbox and the segmented choice, whose role is on the host
+itself, keep the host `aria-label` path of FR-006. That not forwarding a host `aria-label` is an exception to
+constitution III's "ARIA state set on a host (… an accessible name) reaches the real inner control" is recorded in
+plan.md Complexity Tracking.
 
 **Where internals are kept** (operator decision PLAN-FRESH-1-001 (a)). axe-core 4.14.0, the version #10's `axe` gate
 pins, finds an element's internals only through `globalThis._elementInternals`, own properties `_internals`,

@@ -16,7 +16,8 @@ R-08) work on. None of it is public surface except what `contracts/elements.md` 
 `part="tablist"` and only the selected tab's paired panel to the slot in `part="panels"`, on each batch (manual slot
 assignment); unpaired tabs and panels are assigned nowhere and are not in the roving list (FR-019, SPEC-1-25). Every
 paired tab carries `aria-controls`; only the assigned panel carries `aria-labelledby`, removed when it is unassigned
-(R-02, PLAN-FRESH-2-002).
+(R-02, PLAN-FRESH-2-002). The tablist's name is not part of this model: `part="tablist"` takes its `aria-label`
+from the tabs' `label` only; a host `aria-label` on `ocelle-tabs` is not an input (FR-006's tabs exception, R-01).
 
 ## Selection state (per parent)
 
