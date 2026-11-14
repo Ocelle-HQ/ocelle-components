@@ -9,7 +9,7 @@
 /// <reference types="vite/client" />
 import type { LitElement } from "lit";
 import { vi } from "vitest";
-import { commands, page } from "vitest/browser";
+import { commands, page, userEvent } from "vitest/browser";
 import baseText from "../../styles/src/base.css?raw";
 import { css } from "../../tokens/src/generate.ts";
 import { source } from "../../tokens/src/source.ts";
@@ -179,5 +179,38 @@ export function inProcessDriver(): Driver {
       });
     },
     messages: () => Promise.resolve([...messages]),
+    append: async (id, markup) => {
+      element(id).insertAdjacentHTML("beforeend", markup);
+      await settle();
+    },
+    remove: async (id) => {
+      element(id).remove();
+      await settle();
+    },
+    textData: async (id, index, data) => {
+      const text = [...element(id).childNodes].filter((node) => node.nodeType === Node.TEXT_NODE)[index];
+      if (text === undefined) throw new Error(`#${id} has no text node ${String(index)}`);
+      (text as Text).data = data;
+      await settle();
+    },
+    tab: async (shift = false) => {
+      await userEvent.tab({ shift });
+      await settle();
+    },
+    activeElement: () => commands.activeElement(),
+    viewport: async (width, height) => {
+      await page.viewport(width, height);
+      await settle();
+    },
+    size: async (id, inline, block) => {
+      const style = element(id).style;
+      for (const [property, value] of [["inline-size", inline], ["block-size", block]] as const) {
+        if (value === null) style.removeProperty(property);
+        else style.setProperty(property, `${String(value)}px`);
+      }
+      await settle();
+    },
+    scrollWidth: () => commands.scrollWidth(),
+    textBoxes: (id) => commands.textBoxes(id),
   };
 }

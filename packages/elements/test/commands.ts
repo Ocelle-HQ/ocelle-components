@@ -1,10 +1,13 @@
 // The accessibility-tree reader and the forced-colours emulation of the element tests (005 research.md R-11, R-13;
-// reviews/phase-2/spike.md § 3). `axNodes` reads Chromium's full accessibility tree over CDP and keeps the unignored
+// reviews/phase-2/spike.md § 3), and the document readers of 011 research.md R-13 (scroll width, deep active element,
+// text boxes), each a self-contained `evaluate` on a Playwright frame, so both harnesses use the same reader: the
+// in-process project through the browser commands `scrollWidth`, `activeElement` and `textBoxes`, the fixture suites
+// on their page's main frame. `axNodes` reads Chromium's full accessibility tree over CDP and keeps the unignored
 // nodes of the element with an `id` and of its shadow roots' subtrees (not its light-DOM children), so both
 // harnesses read the tree the same way: the in-process `elements` project through the Vitest browser commands
 // `axTree` and `emulateForcedColors` below (registered in vitest.config.ts), the fixture suites through a Playwright
 // CDP session on their page.
-import type { CDPSession, Page } from "playwright";
+import type { CDPSession, Frame, Page } from "playwright";
 import type { BrowserCommandContext } from "vitest/node";
 
 /** One unignored accessibility node: its role and its computed name, and its level where it has one (a heading's). */
@@ -65,6 +68,7 @@ interface RawAxNode {
   readonly backendDOMNodeId?: number;
   readonly role?: { readonly value?: unknown };
   readonly name?: { readonly value?: unknown };
+  readonly properties?: readonly { readonly name: string; readonly value?: { readonly value?: unknown } }[];
 }
 
 interface FrameTree {
@@ -75,6 +79,13 @@ interface FrameTree {
 /** A protocol value as text: a string as it is, anything else as the empty string. */
 function text(value: unknown): string {
   return typeof value === "string" ? value : "";
+}
+
+/** The node's role and name, and its `level` property when it has a numeric one (a heading's, 011 research.md R-13). */
+function axNode(node: RawAxNode): AxNode {
+  const level = node.properties?.find((property) => property.name === "level")?.value?.value;
+  const found = { role: text(node.role?.value), name: text(node.name?.value) };
+  return typeof level === "number" ? { ...found, level } : found;
 }
 
 function inner(node: DomNode): readonly DomNode[] {
@@ -122,7 +133,7 @@ export async function axNodes(session: CDPSession, id: string, frameId?: string)
   const { nodes } = (await session.send("Accessibility.getFullAXTree", params)) as { nodes: readonly RawAxNode[] };
   return nodes
     .filter((node) => !node.ignored && node.backendDOMNodeId !== undefined && ids.has(node.backendDOMNodeId))
-    .map((node) => ({ role: text(node.role?.value), name: text(node.name?.value) }));
+    .map(axNode);
 }
 
 /**
@@ -142,8 +153,7 @@ export async function axSubtree(session: CDPSession, id: string, frameId?: strin
   const start = nodes.find((node) => node.backendDOMNodeId === element.backendNodeId);
   const found: AxNode[] = [];
   const walk = (node: RawAxNode): void => {
-    const role = text(node.role?.value);
-    if (!node.ignored && role !== "InlineTextBox") found.push({ role, name: text(node.name?.value) });
+    if (!node.ignored && text(node.role?.value) !== "InlineTextBox") found.push(axNode(node));
     for (const child of node.childIds ?? []) {
       const next = byNodeId.get(child);
       if (next !== undefined) walk(next);
@@ -192,6 +202,96 @@ export async function axTree(context: BrowserCommandContext, id: string, scope: 
   } finally {
     await session.detach();
   }
+}
+
+/** The scrolling width of `frame`'s document (`document.scrollingElement.scrollWidth`; 011 research.md R-13). */
+export function readScrollWidth(frame: Frame): Promise<number> {
+  return frame.evaluate(() => (document.scrollingElement ?? document.documentElement).scrollWidth);
+}
+
+/** The deep active element of `frame`'s document (ActiveElement; 011 research.md R-13). */
+export function readActiveElement(frame: Frame): Promise<ActiveElement> {
+  return frame.evaluate((): ActiveElement => {
+    const hosts: string[] = [];
+    let active = document.activeElement ?? document.body;
+    while (active.shadowRoot?.activeElement != null) {
+      hosts.push(active.id === "" ? active.localName : active.id);
+      active = active.shadowRoot.activeElement;
+    }
+    return { name: active.localName, id: active.id, hosts };
+  });
+}
+
+/**
+ * Each text node with non-whitespace data under the element with `id` in `frame`'s document (TextBox; 011
+ * research.md R-13), in flat-tree order: the element's shadow root stands for its children, and a slot in a shadow root
+ * for its assigned nodes (its fallback content when none is assigned), so light-DOM text that no slot takes is not
+ * read. A text's clipping ancestors are found up the flat tree (a node's assigned slot, else its parent, a shadow
+ * root's host) as the elements whose computed `overflow-x` or `overflow-y` is not `visible`; a text is clipped when one
+ * of its client rects reaches more than 0.5 px outside the padding box of one of them.
+ */
+export function readTextBoxes(frame: Frame, id: string): Promise<TextBox[]> {
+  return frame.evaluate((id): TextBox[] => {
+    const element = document.getElementById(id);
+    if (element === null) throw new Error(`no #${id} on the page`);
+    const texts: Text[] = [];
+    const walk = (node: Node): void => {
+      if (node.nodeType === Node.TEXT_NODE) {
+        if ((node as Text).data.trim() !== "") texts.push(node as Text);
+        return;
+      }
+      let children: readonly Node[] = [...node.childNodes];
+      if (node instanceof Element && node.shadowRoot !== null) children = [...node.shadowRoot.childNodes];
+      else if (node instanceof HTMLSlotElement && node.getRootNode() instanceof ShadowRoot && node.assignedNodes().length > 0) children = node.assignedNodes();
+      for (const child of children) walk(child);
+    };
+    walk(element);
+    const parentOf = (node: Node): Node | null => {
+      const parent = (node as Element | Text).assignedSlot ?? node.parentNode;
+      return parent instanceof ShadowRoot ? parent.host : parent;
+    };
+    return texts.map((node) => {
+      const range = document.createRange();
+      range.selectNodeContents(node);
+      const whole = range.getBoundingClientRect();
+      const rects = [...range.getClientRects()];
+      const clippers: Element[] = [];
+      for (let at = parentOf(node); at !== null; at = parentOf(at)) {
+        if (!(at instanceof Element)) continue;
+        const style = getComputedStyle(at);
+        if (style.overflowX !== "visible" || style.overflowY !== "visible") clippers.push(at);
+      }
+      const clipped = clippers.some((clipper) => {
+        const outer = clipper.getBoundingClientRect();
+        const left = outer.left + clipper.clientLeft;
+        const top = outer.top + clipper.clientTop;
+        const right = left + clipper.clientWidth;
+        const bottom = top + clipper.clientHeight;
+        return rects.some((rect) => rect.left < left - 0.5 || rect.top < top - 0.5 || rect.right > right + 0.5 || rect.bottom > bottom + 0.5);
+      });
+      return {
+        text: node.data,
+        box: { x: whole.x, y: whole.y, width: whole.width, height: whole.height },
+        clippers: clippers.map((clipper) => (clipper.id === "" ? clipper.localName : clipper.id)),
+        clipped,
+      };
+    });
+  }, id);
+}
+
+/** The `scrollWidth()` browser command (registered in vitest.config.ts): `readScrollWidth` on the test's frame. */
+export async function scrollWidth(context: BrowserCommandContext): Promise<number> {
+  return readScrollWidth(await context.frame());
+}
+
+/** The `activeElement()` browser command (registered in vitest.config.ts): `readActiveElement` on the test's frame. */
+export async function activeElement(context: BrowserCommandContext): Promise<ActiveElement> {
+  return readActiveElement(await context.frame());
+}
+
+/** The `textBoxes(id)` browser command (registered in vitest.config.ts): `readTextBoxes` on the test's frame. */
+export async function textBoxes(context: BrowserCommandContext, id: string): Promise<TextBox[]> {
+  return readTextBoxes(await context.frame(), id);
 }
 
 /** The `emulateForcedColors(mode, palette)` browser command (registered in vitest.config.ts). */

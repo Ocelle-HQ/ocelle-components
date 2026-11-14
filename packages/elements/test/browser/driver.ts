@@ -7,7 +7,7 @@
 // (`<page>-base.html`), so `mount` with `base` must be called on such a page.
 import { inflateSync } from "node:zlib";
 import type { Page } from "playwright";
-import { axNodes, axSubtree, emulate } from "../commands.ts";
+import { axNodes, axSubtree, emulate, readActiveElement, readScrollWidth, readTextBoxes } from "../commands.ts";
 import { decodePng } from "../pixels.ts";
 import type { Bounds, Box, Driver, Drawing, Paint, Part, Placement, Sheets } from "../scenarios/driver.ts";
 
@@ -203,5 +203,53 @@ export function fixtureDriver(page: Page, log: readonly string[], withBase = fal
         };
       }, selector),
     messages: () => Promise.resolve(log.slice(since)),
+    append: async (id, markup) => {
+      await page.evaluate(({ id, markup }) => {
+        const element = document.getElementById(id);
+        if (element === null) throw new Error(`no #${id} on the page`);
+        element.insertAdjacentHTML("beforeend", markup);
+      }, { id, markup });
+      await settle(page);
+    },
+    remove: async (id) => {
+      await page.evaluate((id) => {
+        const element = document.getElementById(id);
+        if (element === null) throw new Error(`no #${id} on the page`);
+        element.remove();
+      }, id);
+      await settle(page);
+    },
+    textData: async (id, index, data) => {
+      await page.evaluate(({ id, index, data }) => {
+        const element = document.getElementById(id);
+        if (element === null) throw new Error(`no #${id} on the page`);
+        const text = [...element.childNodes].filter((node) => node.nodeType === Node.TEXT_NODE)[index];
+        if (text === undefined) throw new Error(`#${id} has no text node ${String(index)}`);
+        (text as Text).data = data;
+      }, { id, index, data });
+      await settle(page);
+    },
+    tab: async (shift = false) => {
+      await page.keyboard.press(shift ? "Shift+Tab" : "Tab");
+      await settle(page);
+    },
+    activeElement: () => readActiveElement(page.mainFrame()),
+    viewport: async (width, height) => {
+      await page.setViewportSize({ width, height });
+      await settle(page);
+    },
+    size: async (id, inline, block) => {
+      await page.evaluate(({ id, inline, block }) => {
+        const element = document.getElementById(id);
+        if (element === null) throw new Error(`no #${id} on the page`);
+        for (const [property, value] of [["inline-size", inline], ["block-size", block]] as const) {
+          if (value === null) element.style.removeProperty(property);
+          else element.style.setProperty(property, `${String(value)}px`);
+        }
+      }, { id, inline, block });
+      await settle(page);
+    },
+    scrollWidth: () => readScrollWidth(page.mainFrame()),
+    textBoxes: (id) => readTextBoxes(page.mainFrame(), id),
   };
 }
