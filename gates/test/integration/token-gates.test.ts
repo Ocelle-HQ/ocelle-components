@@ -3,17 +3,17 @@ import { baseEnv, cleanUp, repo, runGate, tempDir } from "./workspace.ts";
 
 // The contrast and brand-rules gates as processes on the repository (002 US3 independent test, FR-021; contracts/gates.md
 // § `contrast`, § `brand-rules`): `--root <repo>` from another working directory, each exits 0 with its one summary
-// line, and the contrast gate's --print lists the 298 required pairs with four-decimal ratios.
+// line, and the contrast gate's --print lists the 308 required pairs with four-decimal ratios.
 const timeout = 60_000;
 
 afterEach(cleanUp);
 
 describe("contrast and brand-rules on the repository", () => {
   it(
-    "contrast --root <repo> checks 160 pairs in light and 168 in dark, 149 required per theme",
+    "contrast --root <repo> checks 165 pairs in light and 173 in dark, 154 required per theme",
     async () => {
       const ran = await runGate("gates/bin/contrast.ts", ["--root", repo], { cwd: tempDir("cwd"), env: baseEnv() });
-      expect(ran).toEqual({ code: 0, stdout: ["contrast: 160 pairs checked in light, 168 in dark (149 required per theme)"], stderr: [] });
+      expect(ran).toEqual({ code: 0, stdout: ["contrast: 165 pairs checked in light, 173 in dark (154 required per theme)"], stderr: [] });
     },
     timeout,
   );
@@ -24,7 +24,7 @@ describe("contrast and brand-rules on the repository", () => {
       const ran = await runGate("gates/bin/contrast.ts", ["--root", repo, "--print"], { cwd: tempDir("cwd"), env: baseEnv() });
       expect({ code: ran.code, lines: ran.stdout.length, first: ran.stdout[0], stderr: ran.stderr }).toEqual({
         code: 0,
-        lines: 298,
+        lines: 308,
         first: "light color-ink on color-canvas (text): 16.0215",
         stderr: [],
       });

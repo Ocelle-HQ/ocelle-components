@@ -4,7 +4,7 @@
 // keeps, per region node, the region states that satisfy a keeping rule and counts the announcements among them;
 // `expectAnnouncements` asserts one expected list under both rules. The unit tests are the cases of live-rules.ts,
 // run by live.test.ts.
-import { expect } from "vitest";
+import { assert } from "vitest";
 
 /** A value of the accessibility protocol (`AXValue`): only `value` is read. */
 export interface AxValue {
@@ -180,8 +180,11 @@ export function announcements(snapshots: readonly Snapshot[], rule: Rule, delays
   return found.sort((a, b) => a.at - b.at).map((each) => each.announcement);
 }
 
-/** Asserts that `snapshots` hold exactly `expected` (text, politeness and host, in order) under both rules. */
-export function expectAnnouncements(snapshots: readonly Snapshot[], expected: readonly Expected[], delays: Delays = chromiumDelays): void {
+/**
+ * Asserts that `snapshots` hold exactly `expected` (text, politeness and host, in order) under both rules; `message`,
+ * when given, names the assertion in its failure (the plant rows match on it).
+ */
+export function expectAnnouncements(snapshots: readonly Snapshot[], expected: readonly Expected[], delays: Delays = chromiumDelays, message?: string): void {
   const project = (rule: Rule): Expected[] => announcements(snapshots, rule, delays).map(({ text, politeness, host }) => ({ text, politeness, host }));
-  expect({ settled: project("settled"), rendered: project("rendered") }).toEqual({ settled: expected, rendered: expected });
+  assert.deepEqual({ settled: project("settled"), rendered: project("rendered") }, { settled: expected, rendered: expected }, message);
 }

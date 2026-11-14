@@ -247,7 +247,7 @@ describe("generate(root) on the repository's element source", () => {
     const manifest = await generate(repo);
     const modules = manifest.modules as { path: string; declarations: Record<string, unknown>[] }[];
     expect(manifest.schemaVersion).toBe("1.0.0");
-    expect(modules.map((module) => module.path)).toEqual(["src/ocelle-brand-mark.ts", "src/ocelle-icon.ts"]);
+    expect(modules.map((module) => module.path)).toEqual(["src/ocelle-brand-mark.ts", "src/ocelle-icon.ts", "src/ocelle-notice.ts"]);
     const [icon] = modules.find((module) => module.path === "src/ocelle-icon.ts")?.declarations ?? [];
     expect(icon).toMatchObject({
       kind: "class",
@@ -296,6 +296,38 @@ describe("generate(root) on the repository's element source", () => {
       { name: "ground", fieldName: "ground", type: { text: '"chrome" | undefined' }, default: "undefined", described: true },
       { name: "tone", fieldName: "tone", type: { text: '"mono" | undefined' }, default: "undefined", described: true },
       { name: "label", fieldName: "label", type: { text: "string | undefined" }, default: "undefined", described: true },
+    ]);
+  });
+
+  it('declares ocelle-notice with its tag name, class, tone, size and announce with the types and defaults of contracts/elements.md, all reflected, the slots heading and default, the parts heading and body, no event and no CSS property, and neither role nor hidden as an attribute (specs/010-feedback-forms FR-034; analysis I2)', async () => {
+    const manifest = await generate(repo);
+    const modules = manifest.modules as { path: string; declarations: Record<string, unknown>[] }[];
+    const [notice] = modules.find((module) => module.path === "src/ocelle-notice.ts")?.declarations ?? [];
+    const described = (list: unknown): Record<string, unknown>[] =>
+      ((list ?? []) as Record<string, unknown>[]).map(({ description, ...rest }) => ({ ...rest, described: typeof description === "string" && description !== "" }));
+    expect(notice).toMatchObject({ kind: "class", name: "OcelleNotice", tagName: "ocelle-notice", customElement: true, events: [], cssProperties: [] });
+    expect({ slots: described(notice?.slots), parts: described(notice?.cssParts) }).toEqual({
+      slots: [
+        { name: "heading", described: true },
+        { name: "", described: true },
+      ],
+      parts: [
+        { name: "heading", described: true },
+        { name: "body", described: true },
+      ],
+    });
+    const tones = '"info" | "success" | "warning" | "danger" | "neutral"';
+    const sizes = '"regular" | "compact"';
+    expect(described(notice?.members)).toEqual([
+      { kind: "field", name: "tone", privacy: "public", type: { text: tones }, default: '"info"', attribute: "tone", reflects: true, described: true },
+      { kind: "field", name: "size", privacy: "public", type: { text: sizes }, default: '"regular"', attribute: "size", reflects: true, described: true },
+      { kind: "field", name: "announce", privacy: "public", type: { text: "boolean" }, default: "false", attribute: "announce", reflects: true, described: true },
+    ]);
+    // The exact list: the observed standard attributes `role` and `hidden` are not declared (FR-034).
+    expect(described(notice?.attributes)).toEqual([
+      { name: "tone", fieldName: "tone", type: { text: tones }, default: '"info"', described: true },
+      { name: "size", fieldName: "size", type: { text: sizes }, default: '"regular"', described: true },
+      { name: "announce", fieldName: "announce", type: { text: "boolean" }, default: "false", described: true },
     ]);
   });
 

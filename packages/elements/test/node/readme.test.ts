@@ -30,7 +30,8 @@ const fragments = [
   "`define` (`src/define.ts`, internal) defines a tag only while it is free: a second definition of the same tag does nothing and throws nothing.",
   // static properties and the JSDoc tags (R-01, R-02, R-06)
   "Elements declare their reactive properties with `static override properties = { … }` and `declare` fields, not decorators",
-  "Every element class carries the JSDoc tag `@tagname <tag>`, and every public property a description and `@default undefined`: the manifest takes the tag name and the defaults from them",
+  // restated for the notice's defaults (specs/010-feedback-forms FR-001; analysis I10, I15)
+  "Every element class carries the JSDoc tag `@tagname <tag>`, every public property a description, and every public property that can be set a `@default` tag with the value the property reads before anything sets it, `@default undefined` for an optional one: the manifest takes the tag name and the defaults from them",
   "An element that observes a standard attribute such as `aria-label` adds it to `observedAttributes` without declaring a property, so the manifest does not list it",
   // styles (FR-003, R-03, R-04, R-09)
   "An element's styles are one `css` tagged template assigned to `static styles`, built only from `--ocelle-*` tokens and the values the `style-lint` gate allows, so every instance adopts one shared stylesheet",
@@ -70,13 +71,16 @@ const fragments = [
   "Constructable stylesheets (`adoptedStyleSheets`): Chromium 73, WebKit 16.4",
   "An element that uses a feature newer than the floor raises the floor in this section, the one list of the floor features, and records the feature in its own feature's research",
   "Only Chromium is measured. WebKit (Kitty Desktop on macOS and Linux) is not: its accessibility tree, forced colours and mirroring are an open limitation",
-  // host ARIA (FR-034, PLAN-A11Y-SECURITY-1-002 (a), 1-003 (a))
-  "A host `aria-label` names the element as `label` does, and when present it decides alone: a blank host `aria-label` leaves the element unlabelled even with a `label`",
-  "When both are set, the host `aria-label` is the name; removing it falls back to `label`",
-  "Chromium uses a host `aria-label` as written, surrounding spaces included, so pass it trimmed; the element never rewrites it",
-  "A host `aria-hidden=\"true\"` hides the element, labelled or not",
-  "A host `hidden` attribute removes the element: no box and no node, labelled or not",
-  "A host `role` or `aria-hidden=\"false\"` is not supported: name the element with `label` or `aria-label` instead",
+  // host ARIA (FR-034, PLAN-A11Y-SECURITY-1-002 (a), 1-003 (a)), scoped to 005's two elements beside the notice's rules
+  // (specs/010-feedback-forms FR-001, FR-009; analysis I10, I14, U10, U11)
+  "On `ocelle-icon` and `ocelle-brand-mark`, a host `aria-label` names the element as `label` does, and when present it decides alone: a blank host `aria-label` leaves the element unlabelled even with a `label`",
+  "On `ocelle-icon` and `ocelle-brand-mark`, when both are set, the host `aria-label` is the name; removing it falls back to `label`",
+  "On `ocelle-icon` and `ocelle-brand-mark`, Chromium uses a host `aria-label` as written, surrounding spaces included, so pass it trimmed; the element never rewrites it",
+  "On `ocelle-icon` and `ocelle-brand-mark`, a host `aria-hidden=\"true\"` hides the element, labelled or not",
+  "On `ocelle-icon` and `ocelle-brand-mark`, a host `hidden` attribute removes the element: no box and no node, labelled or not",
+  "On `ocelle-notice` a host `aria-hidden=\"true\"` is not supported: hide the notice with a host `hidden` attribute, which gives it no box and announces nothing while it is set",
+  "On `ocelle-icon` and `ocelle-brand-mark`, a host `role` or `aria-hidden=\"false\"` is not supported: name the element with `label` or `aria-label` instead",
+  "`ocelle-notice` takes a host `role` as its section says: `alert` and `status` make it announce, a role that gives its node no live politeness leaves it as without a role, and `log`, other live roles and a host `aria-live`, `aria-atomic`, `aria-relevant` or `aria-hidden=\"false\"` are not supported",
   // the icon set (FR-017, FR-018, FR-029, US2 scenarios 1 and 5)
   "`name` (attribute and property, reflected): the icon's name, exactly as listed in Icons",
   "Every drawing is the project's own, on a 24-unit grid with one stroke width, round caps and joins, painted only in `currentColor`",
@@ -117,6 +121,38 @@ const fragments = [
   // the mark's licence and the trademark note (FR-029, FR-030, US4 scenario 10)
   "The mark is the project's own drawing of the Ocelle rosette, redrawn from the geometry of Ocelle's app icon, under Apache-2.0",
   "\"Ocelle\" and the rosette mark are trademarks of their owner. The Apache-2.0 licence grants no right to use them (section 6 of the licence); they may be used only to refer to Ocelle",
+  // ocelle-notice (specs/010-feedback-forms FR-004 to FR-011, FR-035; research.md R-02, R-03; T016b)
+  "`ocelle-notice` shows a message about a state or result in a box whose look follows its tone, with an optional heading, in the regular or the compact size",
+  "`tone` (attribute and property, reflected): `info` (the default), `success`, `warning`, `danger` or `neutral`; any other value behaves as `info` and the property reads `\"info\"`, while the attribute keeps the value as written",
+  "`size` (attribute and property, reflected): `regular` (the default) or `compact`; any other value behaves as `regular` and the property reads `\"regular\"`, while the attribute keeps the value as written",
+  "`announce` (boolean attribute and property, reflected): the notice announces its text once, politely for `info`, `success` and `neutral` and assertively for `warning` and `danger`",
+  "Slots: `heading` (optional; only elements are assigned to it) and the default slot, the body. CSS parts: `heading` and `body`. The notice has no event and no CSS custom property of its own",
+  "`ocelle-notice` reads the tokens `--ocelle-color-<tone>`, `--ocelle-color-<tone>-bg`, `--ocelle-color-ink`, `--ocelle-radius-row`, `--ocelle-bar-width`, `--ocelle-border-width`, `--ocelle-space-1` to `--ocelle-space-4`, `--ocelle-font-size-subhead`, `--ocelle-font-size-sm`, `--ocelle-font-weight-strong`, `--ocelle-line-height-tight` and `--ocelle-line-height-compact`",
+  "The heading is absent when no element is assigned to the `heading` slot or the text content of its elements is empty or whitespace only: it then draws no box and leaves no gap",
+  "The rule reads text content only, so a heading whose only content is an `ocelle-icon` or an `img` is absent, and a heading whose only text is inside an `aria-hidden=\"true\"` element is drawn but adds nothing to the announced text",
+  "The announced text is the heading text, then the body text, joined by one space: the text nodes, the `label` of an `ocelle-icon` and the `alt` of an `img`, skipping elements with `hidden` or `aria-hidden=\"true\"` and `script`, `style` and `template` elements",
+  "For other slotted content (an element with `role=\"img\"` and an `aria-label`, an `svg`, CSS-generated content, content hidden by a host rule without `hidden`) the announced text is not specified",
+  "\"Announced\" in this library's tests means a change of a live region's text in Chromium's accessibility tree, read from the states that Chromium can hand to assistive technology; no screen reader runs in the tests",
+  "The notice announces through a separate live region in its shadow root, visually hidden and atomic, that never holds the visible content: a copy of the text is written into it `W` after the last trigger",
+  "`W` is twice Chromium's accessibility serialisation delay, 150 ms once `document.readyState` is `\"complete\"` and 350 ms before (`AXObjectCacheImpl::GetDeferredEventsDelay()` in `ax_object_cache_impl.cc`), so 300 ms after load and 700 ms before",
+  "Changes closer together than `W`, in one task or in different tasks, merge: only the final text is announced, once, and a text that is back to the last announced text when the wait ends announces nothing",
+  "A text that keeps changing more often than every `W` is not announced until it stops changing",
+  "A copy is held for `H`, 5000 ms, or until the next announcement but at least `W`, and then removed",
+  "`H` is a chosen figure, not measured: the tests cannot see when a screen reader fetches the text",
+  "For up to `H` a browse-mode user may meet the text twice, in the notice and in the copy",
+  "For a host `role=\"alert\"`, the insertion, the reveal and a change of the role to `alert` write no copy: Chromium's alert event for the host's node reads the notice (`ui/accessibility/ax_event_generator.cc`, lines 394, 416-417 and 1081-1082)",
+  "The alert event is Chromium's behaviour and is not measured; WebKit is not measured, and its live regions in shadow roots are an open limitation",
+  "Text or a `tone` set in the same task as that insertion, reveal or role change is part of the alert reading and is not announced again",
+  "A change made in a later task but before Chromium's next serialisation is read twice, by the alert event and by the copy, so set the text before, or in the same task as, the insertion, reveal or role change",
+  "A notice inserted or revealed as `role=\"alert\"` and changed to `role=\"status\"` in the same task announces its text politely once, as a `status` notice would, since no alert event fires",
+  "Only the host's own `hidden` attribute hides and reveals the notice: removing it announces the current text once, as an insertion does, and changes while hidden are not announced",
+  "A notice shown by a hidden ancestor (a container with `hidden`, a closed `<details>`, a `display: none` panel) is not announced by its live region; a `role=\"alert\"` notice shown that way is read by Chromium's alert event all the same",
+  "A host `role=\"alert\"` announces assertively and `role=\"status\"` politely whatever the tone, with or without `announce`; with a role that gives the host's node no live politeness, such as `note`, `region` or `none`, the notice behaves as with no role",
+  "A notice that is part of the page as first loaded is not announced: one connected while `document.readyState` is `\"loading\"`, or upgraded by the registration of the definition",
+  "A notice inserted after the build has loaded is announced, however it is inserted (`innerHTML`, a `<template>`, a `DOMParser` document, an htmx swap or `document.createElement`)",
+  "Load the build before any swap or script inserts announcing notices: a notice upgraded by the registration does not announce",
+  "Setting `announce`, or a host `role` of `alert` or `status`, on an existing notice announces nothing: its current text is the baseline for the next change",
+  "Moving a notice within the page in one task, or a re-render, announces nothing",
   // two copies on a page (FR-006, Edge Cases)
   "Two copies of the package on one page, two versions or the browser build beside a bundle of the module build, cannot both define an element: the first definition wins and the second import throws nothing",
 ];
@@ -126,6 +162,7 @@ const entryRows = [
   "| `@ocelle/elements` | `dist/index.js` | every element; for hosts with a bundler |",
   "| `@ocelle/elements/ocelle-icon.js` | `dist/ocelle-icon.js` | `ocelle-icon` only; for hosts with a bundler |",
   "| `@ocelle/elements/ocelle-brand-mark.js` | `dist/ocelle-brand-mark.js` | `ocelle-brand-mark` only; for hosts with a bundler |",
+  "| `@ocelle/elements/ocelle-notice.js` | `dist/ocelle-notice.js` | `ocelle-notice` only; for hosts with a bundler |",
   "| `@ocelle/elements/browser.js` | `dist/browser/ocelle-elements.js` | every element, Lit inside; for hosts without a bundler |",
   "| `@ocelle/elements/custom-elements.json` | `custom-elements.json` | the manifest, also named by the `customElements` field |",
 ];
@@ -170,7 +207,7 @@ describe("packages/elements/README.md", () => {
   it("lists exactly the entry points of package.json's exports in its Entry points table (FR-002)", () => {
     const manifest = JSON.parse(read("package.json")) as { exports?: Record<string, string> };
     expect(tableRows(read("README.md"), "Entry points")).toEqual(entryRows);
-    expect(Object.keys(manifest.exports ?? {})).toEqual([".", "./ocelle-icon.js", "./ocelle-brand-mark.js", "./browser.js", "./custom-elements.json"]);
+    expect(Object.keys(manifest.exports ?? {})).toEqual([".", "./ocelle-icon.js", "./ocelle-brand-mark.js", "./ocelle-notice.js", "./browser.js", "./custom-elements.json"]);
   });
 
   it("lists the thirteen names of the set, whether each mirrors and the consumer need it meets, in its Icons table (US2-1, FR-018, SC-007)", () => {
@@ -202,6 +239,11 @@ describe("packages/elements/CHANGELOG.md", () => {
     "`@ocelle/elements/ocelle-brand-mark.js`",
     "`ground` and `tone` (reflected) and `label`",
     "the slot convention for icons in controls",
+    // ocelle-notice (specs/010-feedback-forms FR-036; T016b)
+    "`ocelle-notice`",
+    "`@ocelle/elements/ocelle-notice.js`",
+    "`tone`, `size` and `announce` (reflected)",
+    "the slots `heading` and the default slot (the body), the CSS parts `heading` and `body`, and no event",
     ...["chevron-start", "chevron-end", "chevron-up", "chevron-down", "arrow-start", "arrow-end", "menu", "close", "folder", "file", "search", "table", "copy"].map((name) => `\`${name}\``),
   ])("names %s under Unreleased / Added (constitution VII, FR-031, SC-008)", (surface) => {
     expect(added).toContain(surface);

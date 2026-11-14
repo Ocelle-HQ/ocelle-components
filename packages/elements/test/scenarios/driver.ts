@@ -96,6 +96,22 @@ export interface Waits {
   readonly loading: number;
 }
 
+/**
+ * One DOM operation of a `batch` step (specs/010-feedback-forms phase 2): `insert` appends `markup` to the container by
+ * fragment parsing (`insertAdjacentHTML("beforeend", …)`), `text` replaces the element's children with one text node
+ * (`textContent`), `attribute` sets an attribute (null removes it), `property` sets a property, `move` appends the
+ * element to another container (a removal and an insertion in one operation; an element a `remove` removed is found
+ * by its id too), `remove` removes it, `focus` focuses it.
+ */
+export type Operation =
+  | { readonly op: "insert"; readonly container: string; readonly markup: string }
+  | { readonly op: "text"; readonly id: string; readonly text: string }
+  | { readonly op: "attribute"; readonly id: string; readonly name: string; readonly value: string | null }
+  | { readonly op: "property"; readonly id: string; readonly name: string; readonly value: string | boolean | null }
+  | { readonly op: "move"; readonly id: string; readonly to: string }
+  | { readonly op: "remove"; readonly id: string }
+  | { readonly op: "focus"; readonly id: string };
+
 export interface MountOptions {
   /** Links `@ocelle/styles`' `base.css` (after `tokens.css`) on the page. */
   readonly base?: boolean;
@@ -190,6 +206,31 @@ export interface Driver {
   after(ms: number): Promise<number>;
   /** The announcement wait `W` in force for both load states, against which scenario bodies state their times. */
   readonly W: Waits;
+  /** The announcer's hold `H` in force, in milliseconds (specs/010-feedback-forms research.md R-02). */
+  readonly H: number;
+  /**
+   * Runs `operations` in order in one task of the page, then waits until every `ocelle-*` element has rendered, so
+   * several changes of one step are changes "in one task" (specs/010-feedback-forms US1 scenarios 13 and 15).
+   */
+  batch(operations: readonly Operation[]): Promise<void>;
+  /** A property of the element with `id`, as the page reads it (a string, number, boolean or null; anything else as null). */
+  property(id: string, name: string): Promise<unknown>;
+  /** The computed value of a CSS property of the first element matching `inner` in the shadow root of `id`, or "" without one. */
+  computedIn(id: string, inner: string, property: string): Promise<string>;
+  /** The content box (border and padding removed) of the first element matching `inner` in the shadow root of `id`. */
+  contentBox(id: string, inner: string): Promise<Bounds>;
+  /**
+   * Puts `markup` into the container as part of the page as first loaded, its literal tag `ocelle-first-load` replaced
+   * by `tag`, with the capture armed from before: in process the elements are upgraded by the registration of a fresh
+   * subclass of `tag`'s class (`registerFirstLoad`); on fixture pages the page is navigated afresh (`startDocument`)
+   * and its parser writes the markup, which the build loaded after it upgrades.
+   */
+  firstLoad(containerId: string, markup: string, tag: string): Promise<void>;
+  /**
+   * Defines `tag` once more as a second copy of the package would: through the guarded registration, with another
+   * class; the first definition stays (Edge Cases, two copies).
+   */
+  defineSecond(tag: string): Promise<void>;
   /** The role of host `id` in the final snapshot of the last capture `liveCapture.stop()` returned. */
   hostRole(id: string): Promise<string>;
   /** The entries of `new FormData(form)` of the form with `formId`. */
