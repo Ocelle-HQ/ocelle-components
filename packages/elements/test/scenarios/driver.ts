@@ -5,9 +5,11 @@
 // nothing in a body depends on which harness runs it. Elements inside a shadow root are reached by a selector in the
 // element's shadow root.
 import type { AxNode, ForcedColors, Palette } from "../commands.ts";
+import type { DocumentCapture, LiveCapture } from "../live.ts";
 import type { Pixels } from "../pixels.ts";
 
 export type { AxNode, ForcedColors, Palette } from "../commands.ts";
+export type { DocumentCapture, LiveCapture, Snapshot, StopOptions } from "../live.ts";
 export type { Pixels } from "../pixels.ts";
 
 /** An element's border box, relative to the viewport, and its computed `display`. */
@@ -69,6 +71,29 @@ export interface Sheets {
   readonly distinct: number;
   /** The number of `<style>` elements inside the shadow roots. */
   readonly styleElements: number;
+}
+
+/**
+ * How `insert` puts markup into a container (specs/010-feedback-forms contracts/testing.md § Driver steps):
+ * `innerHTML` (the container's `innerHTML` set to the markup), `template` (a `<template>`'s content cloned and
+ * appended), `domparser` (the body nodes of a `DOMParser` document adopted and appended), `createElement` (the
+ * elements built with `document.createElement`, their attributes and children set before insertion, then appended).
+ */
+export type InsertHow = "innerHTML" | "template" | "domparser" | "createElement";
+
+/** A point in an element's border box, from its top left corner, in CSS pixels. */
+export interface Point {
+  readonly x: number;
+  readonly y: number;
+}
+
+/** Form entries as `[name, value]` pairs, in order (a file's value is its name). */
+export type Entries = readonly (readonly [string, string])[];
+
+/** The announcement wait `W` in force, by the document's load state, in milliseconds. */
+export interface Waits {
+  readonly loaded: number;
+  readonly loading: number;
 }
 
 export interface MountOptions {
@@ -144,4 +169,69 @@ export interface Driver {
   sheets(selector: string): Promise<Sheets>;
   /** The console messages and uncaught errors the page reported since the last `mount`. */
   messages(): Promise<string[]>;
+  /** The live-region capture (contracts/testing.md § Live-region capture). */
+  readonly liveCapture: LiveCapture;
+  /** Puts `markup` into the element with `containerId` the way `how` says. */
+  insert(containerId: string, markup: string, how: InsertHow): Promise<void>;
+  /**
+   * Returns after a `MessageChannel` round trip of its own, posted after the previous step, and one rendering update,
+   * so a removal and an insertion separated by it are in different tasks.
+   */
+  laterTask(): Promise<void>;
+  /**
+   * Inserts `markup` into the element with `containerId` while `document.readyState` is `"interactive"`, with the
+   * elements already defined, the capture armed before the insertion; returns the insertion's page time.
+   */
+  insertInteractive(containerId: string, markup: string): Promise<number>;
+  /**
+   * Returns no earlier than `ms` after the previous step's end, measured in the page, with the gap it achieved in page
+   * milliseconds (from the previous step's end to its own return).
+   */
+  after(ms: number): Promise<number>;
+  /** The announcement wait `W` in force for both load states, against which scenario bodies state their times. */
+  readonly W: Waits;
+  /** The role of host `id` in the final snapshot of the last capture `liveCapture.stop()` returned. */
+  hostRole(id: string): Promise<string>;
+  /** The entries of `new FormData(form)` of the form with `formId`. */
+  formData(formId: string): Promise<Entries>;
+  /**
+   * Submits the form with `formId` through its own submitter (its first submit button, or `requestSubmit()` when it
+   * has none), or, after a key step, takes the submission that step made; returns the submitted entries, or null when
+   * nothing was submitted.
+   */
+  submit(formId: string): Promise<Entries | null>;
+  /** Resets the form with `formId`. */
+  reset(formId: string): Promise<void>;
+  /** Focuses the element with `id` and types `text` with the keyboard. */
+  type(id: string, text: string): Promise<void>;
+  /** Focuses the element with `id` and presses `key` (a key name, such as `Enter`). */
+  press(id: string, key: string): Promise<void>;
+  /** Moves focus away from the focused element. */
+  blur(): Promise<void>;
+  /** A pointer click at the point `at` of the border box of the element with `id`. */
+  click(id: string, at: Point): Promise<void>;
+  /** The focused element through shadow roots, outermost first, each as `localName` or `localName#id`. */
+  focusPath(): Promise<string[]>;
+}
+
+/** The in-process driver: the shared steps and the steps only the element source can take. */
+export interface InProcessDriver extends Driver {
+  /**
+   * Mounts `markup` into the element with `containerId`, the literal tag `ocelle-first-load` replaced by a fresh
+   * test-only tag, arms the capture on the container, then defines the fresh tag as `class extends base {}` through
+   * `define` of src/define.ts, so the elements are upgraded by the registration (first load). Returns the fresh tag.
+   */
+  registerFirstLoad(containerId: string, markup: string, base: CustomElementConstructor): Promise<string>;
+  /** Makes `document.readyState` read `value` until the next `mount` or the next call (null: the real value). */
+  readyState(value: DocumentReadyState | null): Promise<void>;
+}
+
+/** The fixture driver: the shared steps, the document mode of the capture and history navigation. */
+export interface FixtureDriver extends Driver {
+  readonly liveCapture: DocumentCapture;
+  /**
+   * Navigates away from the page (a page served with `Cache-Control: no-store`) and back through history; returns
+   * the `persisted` flag of the `pageshow` event of the page shown again.
+   */
+  navigateAwayAndBack(): Promise<boolean>;
 }
