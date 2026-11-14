@@ -21,5 +21,6 @@ describe("pnpm pack of @ocelle/elements", () => {
     expect(packed).toContain("dist/ocelle-brand-mark.js");
     expect(packed).toContain("dist/ocelle-card.js");
     expect(packed).toContain("dist/ocelle-section-header.js");
+    expect(packed).toContain("dist/ocelle-page-header.js");
   });
 });
