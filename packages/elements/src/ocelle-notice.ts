@@ -26,7 +26,7 @@ type Pending = "none" | "insertion" | "role" | "live";
 
 /** A host role that makes the notice announce, or null: the first token of the role attribute (FR-009). */
 function liveRoleOf(role: string | null): "alert" | "status" | null {
-  const first = (role ?? "").trim().split(/\s+/)[0]?.toLowerCase();
+  const first = (role ?? "").trim().split(/\s/)[0]?.toLowerCase();
   return first === "alert" || first === "status" ? first : null;
 }
 
@@ -59,9 +59,18 @@ export class OcelleNotice extends LitElement {
   static override properties = {
     // The accessors below are the properties' own and set the attribute themselves; `useDefault` keeps Lit from
     // writing the read default into the attribute at the first update, so an unknown value stays as written.
+    // Stryker disable next-line ObjectLiteral: equivalent, {} has Lit wrap the element's own accessors, which write the attribute themselves, and reflect nothing; the wrapper's extra update request repeats the one the attribute change makes
     tone: { reflect: true, noAccessor: true, useDefault: true },
+    // Stryker disable next-line ObjectLiteral: equivalent, as for tone
     size: { reflect: true, noAccessor: true, useDefault: true },
-    announce: { type: Boolean, reflect: true, noAccessor: true, useDefault: true },
+    announce: {
+      type: Boolean,
+      // Stryker disable next-line BooleanLiteral: equivalent, Lit reflects a property only when it is set through Lit's accessor, which noAccessor leaves out; the setter writes the attribute itself
+      reflect: true,
+      noAccessor: true,
+      // Stryker disable next-line BooleanLiteral: equivalent, Lit records and uses a default only for a property change that reaches requestUpdate with the property's name, which noAccessor leaves out and the element's own requestUpdate() calls never pass; and the Boolean converter never gives null
+      useDefault: true,
+    },
   };
 
   /** `role` and `hidden` are observed, not properties (FR-034): they change what the notice announces. */
@@ -335,7 +344,6 @@ export class OcelleNotice extends LitElement {
     else if (name === "role") this.onRole(old);
     else if (name === "tone") this.onTone();
     else if (name === "announce") this.onAnnounce();
-    this.syncLive();
   }
 
   /** Light-DOM mutations (the host's own attributes left out): the heading's layout and the text change. */
@@ -353,7 +361,6 @@ export class OcelleNotice extends LitElement {
     }
     const first = !this.#connected;
     this.#connected = true;
-    this.syncLive();
     if (first && this.isFirstLoad()) {
       this.announcer.takeBaseline();
       return;
@@ -407,9 +414,9 @@ export class OcelleNotice extends LitElement {
     else this.stopLive();
   }
 
-  /** A light-DOM change: announced when it changes the text, unless the alert baseline is pending. */
+  /** A light-DOM change: announced when it changes the text (while the alert baseline is pending, the wait's re-check drops it). */
   protected onContent(): void {
-    if (this.pending !== "none" || !this.#connected || !this.isLive() || this.hidden) return;
+    if (!this.#connected || !this.isLive() || this.hidden) return;
     if (!this.announcer.sameText(this.text())) this.announcer.trigger(false);
   }
 
@@ -427,10 +434,13 @@ export class OcelleNotice extends LitElement {
     this.announcer.cancel();
   }
 
-  /** The alert path: no copy, the baseline taken at the end of the task (R-02). */
+  /**
+   * The alert path: no copy, the baseline taken at the end of the task (R-02). An insertion or a reveal leaves the
+   * baseline as it is: the end-of-task step replaces it before any wait started in the task can end, and a change away
+   * from `alert` in the same task triggers as an insertion, which sets it to none.
+   */
   protected alertPath(trigger: "insertion" | "role"): void {
     this.announcer.alert();
-    if (trigger === "insertion") this.announcer.clearBaseline();
     this.pending = trigger;
     this.postAlertStep();
   }
@@ -449,13 +459,17 @@ export class OcelleNotice extends LitElement {
     this.announcer.takeBaseline();
   }
 
-  /** A change away from `alert` that keeps the notice live while the alert baseline is pending. */
+  /**
+   * A change away from `alert` that keeps the notice live while the alert baseline is pending: an insertion's trigger,
+   * the baseline taken for a notice that became live as `alert`, or after a role change a trigger whose re-check drops
+   * it when neither the text nor the politeness changed.
+   */
   protected leaveAlert(): void {
     const pending = this.pending;
     this.pending = "none";
     if (pending === "insertion") this.announcer.trigger(true);
     else if (pending === "live") this.announcer.takeBaseline();
-    else if (!this.announcer.sameText(this.text()) || !this.announcer.samePoliteness(this.politeness())) this.announcer.trigger(false);
+    else this.announcer.trigger(false);
   }
 
   protected override updated(changed: PropertyValues): void {

@@ -83,7 +83,8 @@ export class Announcer {
   /** The last written text (normalised) and politeness, or those current when announcing began; null for none. */
   protected baseline: Reading | null = null;
   protected phase: Phase = "empty";
-  /** Whether a wait is to start once a held copy has been emptied. */
+  /** Whether a wait is to start once a held copy has been emptied: set by the trigger or the alert that releases it. */
+  // Stryker disable next-line BooleanLiteral: equivalent, released() reads waitNext only after the trigger() or alert() that called releaseHeld() has set it
   protected waitNext = false;
   /** When the current copy was written (`performance.now()`). */
   protected writtenAt = 0;
@@ -106,11 +107,6 @@ export class Announcer {
   /** The baseline becomes the current text and politeness. */
   takeBaseline(): void {
     this.setBaseline(this.read());
-  }
-
-  /** The baseline becomes none (an insertion or a reveal), so the end of the wait writes the current text. */
-  clearBaseline(): void {
-    this.forget();
   }
 
   /** Whether `text`, normalised, is the baseline's text. */
@@ -144,7 +140,6 @@ export class Announcer {
 
   /** Cancels any pending announcement and empties the region at once. */
   cancel(): void {
-    this.waitNext = false;
     this.release();
   }
 
@@ -200,7 +195,6 @@ export class Announcer {
 
   /** Step 2: starts, or restarts, the wait of `W` with the region empty. */
   protected wait(): void {
-    this.waitNext = false;
     this.stop();
     this.phase = "waiting";
     this.timer = setTimeout(() => {
@@ -234,6 +228,7 @@ export class Announcer {
 
   /** Step 4: holds the copy for `H`, then empties the region. */
   protected hold(): void {
+    // Stryker disable next-line CallExpression: equivalent, the announcer calls hold() only from write(), which only end() calls after it has stopped the timer
     this.stop();
     this.timer = setTimeout(() => {
       this.release();
