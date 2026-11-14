@@ -116,7 +116,10 @@ modal, level. Device: the default context (`elements`, `visit()`) matches `(hove
   asserted), because the platform may let the veto hold on both presses in a page's first vetoed sequence. Then, with
   the opener clicked and the dialog open: the first Escape gives exactly one `…-close-request` with reason `escape`,
   and the dialog stays open and `:modal`; the second Escape, with nothing in between, gives `…-close` with reason
-  `host` (the stated limit), and focus returns to the opener. A slotted control that calls `preventDefault()` on Escape: no request,
+  `host` (the stated limit), and focus returns to the opener. This case runs on a page of its own in each harness
+  (in process its own test file, on the fixture a fresh page per test), since after other rows in the same page the
+  platform's second `cancel` was measured to stay cancelable despite the warm-up (`reviews/phase-2/notes.md` § Green).
+  A slotted control that calls `preventDefault()` on Escape: no request,
   the dialog stays open. A slotted `<input type=search>` with a value: Escape clears the value, no request, open. An
   Escape with `isComposing`: no request.
   - **Slotted close watchers** (R-02, PLAN-FRESH-3-002): a slotted `popover="auto"` menu opened by a click on its
@@ -164,7 +167,8 @@ modal, level. Device: the default context (`elements`, `visit()`) matches `(hove
   a cancelable `cancel` runs the request path once.
 - **Close control** by click, Enter and Space × {veto, no veto}, reason `close-button`; its box ≥ `target-min` in both
   axes; the focus ring from the focus tokens when focused by keyboard.
-- **Backdrop click**: nothing dispatched, still open.
+- **Backdrop click**: nothing dispatched, still open; focus is on the inner `<dialog>` (`focusPath()` `dlg[dialog]`,
+  measured in Phase 2: the click moves focus to the clicked `<dialog>`).
 - **Host close** (`open = false`): reason `host`, no request.
 - **Platform close**: inner `close()` through the shadow root: reason `host`, `open` false, focus returned. A slotted
   `<form method="dialog">` submitted: nothing happens (open, `open` true, no event, R-03).
@@ -182,6 +186,18 @@ modal, level. Device: the default context (`elements`, `visit()`) matches `(hove
   inner dialog never runs the outer's wrap. An inner dialog whose opener (a button in the outer) is removed before
   close: focus on the outer dialog's initial target. Phase 3 (T031) adds the same assertions with the outer overlay an
   open `ocelle-drawer` (the dialog slotted inside it, the edge case "Two overlays"); the dialog-in-dialog case stays.
+  - **Backdrop click over an open drawer** (Phase 3, T031; FR-012, FR-023, R-07): with the dialog open above the
+    drawer (`side="start"`, `ltr`, both recorded), a primary click on the dialog's backdrop at a point outside both
+    panels' border boxes, and at a point inside the drawer panel's border box but outside the dialog's. The click's
+    path passes through the drawer's slot and its inner `<dialog>`, so the drawer's backdrop handler sees it. Each
+    point, × {drawer host veto, no veto}: no `ocelle-drawer-close-request`, no `ocelle-drawer-close` and no
+    `ocelle-dialog-*` event; both hosts keep `open` true, both inner dialogs are open and `:modal`, and `topLayer()`
+    lists the drawer then the dialog. Focus: Phase 2 measured that a backdrop click moves focus to the clicked
+    overlay's inner `<dialog>` (§ Dialog "Backdrop click": its Phase 2 row expects `focusPath()` `dlg[dialog]`,
+    and passes in both harnesses), so here `focusPath()` reads the dialog's inner `<dialog>` (inside the drawer, not on
+    the drawer's own `<dialog>` and not the body). Then one Escape gives exactly one `ocelle-dialog-close-request`
+    with reason `escape` and, without a veto, `ocelle-dialog-close` with focus on the drawer's button that opened
+    the dialog; the drawer dispatches nothing and stays open and `:modal`.
 - **Open at first render** (edge case "Opened by the host without an opener", FR-007, FR-009): (a) `open` in the
   mounted markup, so the attribute is set before the element upgrades (both harnesses), with focus on the body: the
   dialog is shown modally (`open` true, the inner dialog `:modal`, one `topLayer()` entry), initial focus per FR-007
@@ -226,11 +242,30 @@ modal, level. Device: the default context (`elements`, `visit()`) matches `(hove
 
 ### Drawer
 
-- The dialog's rows with `ocelle-drawer-` events (initial focus, Tab cycle with its non-stop, body, scroller and
-  opaque-content starts and the end sentinel, its native middle moves and positive `tabindex` at the ends, Escape and its
-  slotted-content rows including the slotted close watchers and slotted non-modal dialogs, Escape in a slotted iframe, close control, host and platform close, focus return, nested, open at first render (in process
-  `test/drawer-upgrade.test.ts`, on the fixture `overlays-upgrade.html`), removed, moved, rapid toggle, input during the exit, stale native `close` event, forced colours,
-  accessibility tree). The dialog's "one-line body", "long body" and "styles" rows are not inherited: their expected
+- The dialog's rows with `ocelle-drawer-` events and the `ocelle-drawer` tag:
+  - initial focus;
+  - the Tab cycle with its non-stop, body, scroller and opaque-content starts, its native middle moves and positive
+    `tabindex` at the ends;
+  - the end sentinel row (the sentinel is the panel's last child, after the footer; every assertion of § Dialog "End
+    sentinel", its absence from the tree in the accessibility-tree row);
+  - Escape × veto and its slotted-content rows, including the slotted close watchers and slotted non-modal dialogs;
+    the veto-then-Escape-twice case with slotted content runs its warm-up and on a page of its own in each harness
+    (in process `test/drawer-repeated-escape.test.ts`), as § Dialog "Escape with slotted content" states;
+  - Escape in a slotted iframe;
+  - synthetic `cancel` (the `cancel` handling is the shared base's, R-02, so it holds for the drawer as well:
+    non-cancelable `cancel` then the inner `close()` gives `ocelle-drawer-close` with `host`, a cancelable `cancel`
+    runs the request path once);
+  - close control, host close, platform close and the `method="dialog"` form;
+  - focus return and conditional focus return (a), (b), (c);
+  - nested;
+  - open at first render, (a) and (b) (the before-definition case in process in `test/drawer-upgrade.test.ts`, which
+    imports `src/ocelle-drawer.ts` only after the mount, and on the fixture page `overlays-upgrade.html`; focus back on
+    the page button);
+  - removed, moved, rapid toggle, input during the exit, stale native `close` event;
+  - forced colours;
+  - accessibility tree, including the host `aria-label` open and closed and no node for the end sentinel.
+
+  The dialog's "one-line body", "long body" and "styles" rows are not inherited: their expected
   geometry (height capped at `dialog-max-block`, `radius-2` on all four corners, `--ocelle-dialog-inline-size`, centred) is the dialog's
   (FR-024) and contradicts FR-003, FR-025 and FR-026. The drawer has its own rows below.
 - **Long body** (FR-018, FR-025): a prose-only body taller than the viewport, each `side`: the panel's block size

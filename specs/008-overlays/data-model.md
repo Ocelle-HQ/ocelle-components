@@ -105,9 +105,11 @@ The members of Overlay, plus:
 |---|---|---|---|
 | `--ocelle-dialog-inline-size` | element CSS custom property | `var(--ocelle-measure-reading)` | Preferred inline size, capped by `--ocelle-dialog-max-inline` (FR-024, R-09). |
 
-Tokens read: `color-sheet`, `color-ink`, `color-overlay`, `elevation-raised`, `radius-2`, `gutter`, `space-*`,
-`dialog-max-inline`, `dialog-max-block`, `measure-reading`, `border-width`, `font-*`, `focus-*`, `color-focus`,
-`target-min`, `motion-base`, `easing-standard`, `size-visually-hidden` (for the drawer's `heading-hidden`).
+Tokens read (as the README states them, Phase 2): `color-sheet`, `color-ink`, `color-overlay`, `elevation-raised`,
+`radius-2`, `border-width`, `dialog-max-inline`, `dialog-max-block` (which reads `gutter`), `measure-reading`,
+`font-sans`, `font-size-md`, `font-size-lg`, `font-weight-strong`, `line-height-normal`, `line-height-tight`,
+`space-2`, `space-3`, `space-4`, `space-6`, `target-min`, `focus-width`, `focus-offset`, `color-focus`, `motion-base`,
+`easing-standard`, and the close icon's `icon-size`.
 
 ## `ocelle-drawer` (`src/ocelle-drawer.ts`)
 
@@ -131,8 +133,14 @@ is as tall as the panel minus header and footer, not 132 px.
 `border-start-end-radius` and `border-end-end-radius` to `var(--ocelle-radius-2)` and `border-start-start-radius` and
 `border-end-start-radius` to 0; `side="end"` the reverse. So under `rtl` the rounded corners follow the inner edge.
 
-Tokens read, in addition to the dialog's: `drawer-inline` (new), `color-chrome`, `color-chrome-ink`,
-`color-chrome-hover`.
+Tokens read (the README's sentence, T032): the dialog's, less `dialog-max-block` (the drawer has no block cap) and
+`measure-reading` (no `--ocelle-dialog-inline-size`), plus `drawer-inline` (new), `color-chrome` and
+`color-chrome-ink` (`ground="chrome"`, FR-027) and `size-visually-hidden` (`heading-hidden`, FR-048). In full:
+`color-sheet`, `color-ink`, `color-overlay`, `color-chrome`, `color-chrome-ink`, `elevation-raised`, `radius-2`,
+`border-width`, `drawer-inline`, `dialog-max-inline`, `font-sans`, `font-size-md`, `font-size-lg`,
+`font-weight-strong`, `line-height-normal`, `line-height-tight`, `space-2`, `space-3`, `space-4`, `space-6`,
+`target-min`, `size-visually-hidden`, `focus-width`, `focus-offset`, `color-focus`, `motion-base`, `easing-standard`,
+and the close icon's `icon-size`. `color-chrome-hover` is not read: no requirement gives the drawer a hover state.
 
 ## `ocelle-tooltip` (`src/ocelle-tooltip.ts`)
 
