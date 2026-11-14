@@ -153,7 +153,9 @@ export function walk(root: Element): Walk {
     return holds || inside;
   };
   const top: Entry[] = [];
-  const scopes: Entry[][] = [top];
+  // The nested scopes, where a radio group can be: the walks start at the panel and at the body part, whose own
+  // children (the header, body and footer parts, the end sentinel; the default slot) are no radio buttons.
+  const scopes: Entry[][] = [];
   for (const child of flatChildren(root)) visit(child, top);
   return { flat, order: ordered(top) };
 }
@@ -162,6 +164,7 @@ export function walk(root: Element): Walk {
 function replace(scopes: readonly Entry[][], element: Element, candidate: Candidate): void {
   for (const scope of scopes) {
     const index = scope.findIndex((each) => each.candidate?.element === element);
+    // Stryker disable next-line ConditionalExpression: equivalent, the scopes without the radio give -1, and an assignment at -1 adds a property, no entry, which no array method reads (T025, reviews/phase-2/notes.md)
     if (index >= 0) scope[index] = { tabIndex: candidate.element.tabIndex, candidate };
   }
 }
@@ -179,5 +182,5 @@ function ordered(scope: readonly Entry[]): Candidate[] {
 export function deepActive(): Element | null {
   let active = document.activeElement;
   while (active?.shadowRoot?.activeElement != null) active = active.shadowRoot.activeElement;
-  return active === null || active === document.body ? null : active;
+  return active === document.body ? null : active;
 }
