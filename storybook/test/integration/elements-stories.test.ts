@@ -19,7 +19,9 @@ import { afterAll, beforeAll, describe, expect, inject, it } from "vitest";
 // stylesheet clause, analysis L14). Phase 3 adds the grid of the thirteen names, left to right and right to left
 // (T035a; US1-13's "every icon in the set"), phase 5 the mark's stories (T056a; US4 scenario 11): main ground, chrome,
 // mono and labelled, each rendering its `ocelle-brand-mark` with the story's `ground`, `tone` and `label`, drawn, in
-// light and dark, with no request outside the origin.
+// light and dark, with no request outside the origin. 008 (tasks.md T027; data-model.md § Stories) adds the dialog's
+// stories: each renders one open, modal `ocelle-dialog` (its inner `<dialog>` open and `:modal`) with the story's
+// `label` or host `aria-label`, in light and dark, with base.css applied and no request outside the origin.
 const types: Readonly<Record<string, string>> = {
   ".html": "text/html; charset=utf-8",
   ".js": "text/javascript; charset=utf-8",
@@ -165,6 +167,54 @@ describe("the ocelle-brand-mark stories in the built Storybook (US4-11, FR-019)"
           base: { linked: true, scheme: theme },
           defined: true,
           marks,
+          outside: [],
+        });
+        await page.close();
+      });
+    }
+  }
+});
+
+/** What a dialog story's page shows: its theme, the base stylesheet and its dialogs. */
+function observeDialogs(page: Page): Promise<unknown> {
+  return page.evaluate(() => ({
+    theme: document.documentElement.dataset.theme,
+    base: {
+      linked: [...document.querySelectorAll<HTMLLinkElement>('link[rel="stylesheet"]')].some((link) => link.href.endsWith("/base.css") && link.sheet !== null),
+      scheme: getComputedStyle(document.documentElement).colorScheme,
+    },
+    defined: customElements.get("ocelle-dialog") !== undefined,
+    dialogs: [...document.querySelectorAll("#storybook-root ocelle-dialog")].map((dialog) => {
+      const panel = dialog.shadowRoot?.querySelector("dialog") ?? null;
+      return { label: dialog.getAttribute("label"), ariaLabel: dialog.getAttribute("aria-label"), open: dialog.hasAttribute("open"), shown: panel?.open === true, modal: panel?.matches(":modal") === true };
+    }),
+  }));
+}
+
+/** An open, modal dialog with `label` (and a host `aria-label` when given). */
+const shownDialog = (label: string | null, ariaLabel: string | null = null): unknown => ({ label, ariaLabel, open: true, shown: true, modal: true });
+
+const dialogStories = [
+  { id: "elements-ocelle-dialog--default", dialogs: [shownDialog("Open project")] },
+  { id: "elements-ocelle-dialog--one-line-confirmation", dialogs: [shownDialog("Delete project")] },
+  { id: "elements-ocelle-dialog--with-footer-actions", dialogs: [shownDialog("Rename project")] },
+  { id: "elements-ocelle-dialog--long-scrolling-body", dialogs: [shownDialog("Licence")] },
+  { id: "elements-ocelle-dialog--prose-with-a-table", dialogs: [shownDialog("Mission summary")] },
+  { id: "elements-ocelle-dialog--open-project", dialogs: [shownDialog("Open project")] },
+  { id: "elements-ocelle-dialog--long-label", dialogs: [shownDialog("Move the selected artifacts of this mission to another project of the workspace")] },
+  { id: "elements-ocelle-dialog--host-aria-label", dialogs: [shownDialog(null, "Settings")] },
+] as const;
+
+describe("the ocelle-dialog stories in the built Storybook (008 FR-042)", { timeout: 60_000 }, () => {
+  for (const { id, dialogs } of dialogStories) {
+    for (const theme of ["light", "dark"] as const) {
+      it(`${id} in ${theme}: renders an open, modal ocelle-dialog with the story's label, with base.css applied and no request outside the origin`, async () => {
+        const { page, outside } = await open(id, theme, "ocelle-dialog");
+        expect({ ...((await observeDialogs(page)) as object), outside }).toEqual({
+          theme,
+          base: { linked: true, scheme: theme },
+          defined: true,
+          dialogs,
           outside: [],
         });
         await page.close();
