@@ -113,6 +113,16 @@ recorded in the plan:
 - PLAN-FRESH-1-001 (a): the new elements keep their `ElementInternals` where axe-core reads it (plan research R-01);
   no outcome of this spec changes.
 
+**Operator decision during phase 3** (2026-11-14, human:jeroennouwsdev; `reviews/phase-3/operator-decisions.md`, on
+the T040 spike in `reviews/phase-3/spike.md`):
+
+- Tabs are named from `label` only (the spike's option (c)). With a host `aria-label`, Chromium names the role-less
+  tabs host as a generic around the tablist in every measured host form, so a forwarded host `aria-label` always
+  gives two named nodes. `ocelle-tabs` therefore takes its accessible name from `label` only: a host `aria-label` is
+  not forwarded to the tablist, the element writes no attribute on its host, and the README tells hosts to name the
+  tabs with `label` (FR-006, FR-019, User Story 2 scenario 24). The listbox and the segmented choice keep the host
+  `aria-label` path. Options (a), moving the attribute off the host, and (b), accepting two named nodes, were declined.
+
 **Dependency on #10 (not merged).** The Storybook workbench of #10 (branch `claude/010-storybook-workbench`,
 `specs/006-storybook-workbench`) gives the `visual` gate (baselines in a pinned container, light and dark), the `axe`
 gate (axe on every story, serious and critical findings fail) and its contributor note (006 FR-025). Its design is
@@ -402,6 +412,13 @@ walked with every key of its model, and read in the accessibility tree after eac
 23. **Given** a tab with `<ocelle-icon slot="icon" name="folder">`, **Then** the icon sits before the text as the slot
     convention places and sizes it, adds nothing to the tab's name or its panel's name, and the selected paint of the
     tab is unchanged by it.
+24. **Given** `<ocelle-tabs label="Mission views" aria-label="Recent views">`, **Then** the tablist is named
+    "Mission views" (from `label`; FR-006's tabs exception), and no tablist, tab or tabpanel is named "Recent views";
+    **When** the host then sets its `aria-label` to "Other views", **Then** the tablist is still named
+    "Mission views". **Given** a host `aria-label="Recent views"` and no `label`, **Then** the tablist is unnamed.
+    In each case the host's `aria-label` reads as the host wrote it (the element writes no host attribute). The README
+    tells hosts to name the tabs with `label`. Paired with scenario 1's tablist named "Mission views" from `label`
+    alone, in the same test.
 
 ---
 
@@ -713,7 +730,10 @@ navigate" means the URL, its fragment included, is unchanged (scenario 14).
   map of each pattern, skipping disabled children, the tab stop on the selected child); it is not public surface.
 - **FR-006**: Every parent takes its accessible name from `label` (attribute and property, not reflected, trimmed;
   blank counts as none) or a host `aria-label`, under mission 005's Host ARIA rules (a present host `aria-label` decides
-  alone).
+  alone). Exception, for `ocelle-tabs` only (operator decision during phase 3): the tabs take their name from `label`
+  only. A host `aria-label` on `ocelle-tabs`, written before or after first render, is not forwarded and does not name
+  the tablist; the element writes no attribute on its host, and the README tells hosts to name the tabs with `label`
+  (User Story 2 scenario 24). The listbox and the segmented choice follow the rule above.
 - **FR-007**: Every interactive child shows the token focus ring (`--ocelle-focus-width`, `--ocelle-color-focus`,
   `--ocelle-focus-offset`) when focused by keyboard, in both themes and in forced colours.
 - **FR-008**: The selected or pressed state is painted as "Selected-state paint" above defines, keyed on the exposed
@@ -797,7 +817,7 @@ navigate" means the URL, its fragment included, is unchanged (scenario 14).
 
 **Tabs (User Story 2)**
 
-- **FR-019**: `ocelle-tabs` is exposed as a tablist (named by FR-006), each `ocelle-tab` as a tab, and the panel of the
+- **FR-019**: `ocelle-tabs` is exposed as a tablist (named by FR-006 from `label` only, FR-006's tabs exception), each `ocelle-tab` as a tab, and the panel of the
   selected tab as a tabpanel named by that tab; the selected tab is exposed as controlling that panel. The tabpanel
   is beside the tablist, never inside it. Tabs and panels pair by order; unpaired extras are not rendered (no box, no
   node, not focusable, not clickable). Keys pressed inside a panel's content are not the tabs' keys (FR-021a).

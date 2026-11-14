@@ -59,7 +59,7 @@ option keeps `tabindex="-1"`). Selected bar on the inline-start edge (FR-018, R-
 | Element | Kind | Name | Type | Default |
 |---|---|---|---|---|
 | `ocelle-tabs` | property / attribute | `value` | string (not reflected) | first enabled tab's value |
-| `ocelle-tabs` | property / attribute | `label` | string (not reflected) | `undefined` |
+| `ocelle-tabs` | property / attribute | `label` | string (not reflected) | `undefined`; the tabs' only name source, trimmed (FR-006's tabs exception) |
 | `ocelle-tabs` | event | `ocelle-tabs-change` | `{ value: string }` | |
 | `ocelle-tabs` | slot | (default) | | `ocelle-tab` and `ocelle-tab-panel` children, in any interleaving |
 | `ocelle-tabs` | parts | `tablist`, `panels` | | |
@@ -76,7 +76,10 @@ option keeps `tabindex="-1"`). Selected bar on the inline-start edge (FR-018, R-
 `part="panels"` each hold one slot, and on each child batch the element assigns the paired tabs to the first and only
 the selected tab's paired panel to the second (research R-05). A host writes no `slot` attribute (it would be
 ignored); the manifest declares only the default slot, as the host sees it. The host has no role; `part="tablist"`
-carries `role="tablist"` and its name from `label` or the host's `aria-label` (R-01). Roles `tab` / `tabpanel` on the
+carries `role="tablist"` and its name from `label` only (R-01; FR-006's tabs exception, operator decision during
+phase 3). A host `aria-label` on `ocelle-tabs` is not forwarded, not observed and does not name the tablist; the
+element writes no attribute on its host. The README's tabs section says to name the tabs with `label` (not a host
+`aria-label`), and the documentation test checks it (US2-24). Roles `tab` / `tabpanel` on the
 children; `aria-selected`, `aria-disabled`, `tabindex` and generated ids on the children, `aria-controls` on every
 paired tab, `aria-labelledby` on the assigned (selected) panel only, removed when a panel is unassigned (R-02, R-03). Selected bar on the tab's block-end edge (FR-025). The tab row wraps (FR-022). Unpaired tabs
 and panels are not rendered.
@@ -160,6 +163,7 @@ recorded in `reviews/phase-N/plants.md` (research R-11).
 | unselected panels have no node (US2-1, FR-024) | the selected panel is exposed and named | hiding panels with `visibility` only | |
 | no axe violation and no serious or critical `incomplete` on the tabs stories (FR-051, PLAN-FRESH-2-002) | the selected panel is named by its tab | `aria-labelledby` on every panel | #10's full rule set on every tabs story, both themes |
 | no tabpanel inside the tablist (US2-1) | tablist with three tabs exposed | the tablist role on the host | |
+| a host `aria-label` on `ocelle-tabs` does not name the tablist (US2-24, FR-006's tabs exception) | the tablist named "Mission views" from `label` (US2-1) | forwarding the host `aria-label` to `part="tablist"` (at first render or on a later change) | host `aria-label="Recent views"` beside `label="Mission views"`, then changed after render; and a host `aria-label` with no `label` (tablist unnamed) |
 | unpaired tabs and panels not rendered, no error (US2-9) | the paired tabs exposed | assigning every tab to the tablist slot | four tabs, three panels; console read |
 | the panel is not a stop when it holds a shadow-delegating focusable (US2-22) | the panel is a stop once its button is removed | a light-DOM selector query at tabs updates only | `ocelle-link` alone in a panel |
 | no id reference crosses a shadow root (US2-12, SC-003) | tab controls its panel | the panel id rendered inside the tabs' shadow root | children without ids |

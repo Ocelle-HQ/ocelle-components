@@ -1,0 +1,16 @@
+# Operator decisions during phase 3 (014)
+
+Recorded by the orchestrator, 2026-11-14, human:jeroennouwsdev.
+
+- **Tabs name from `label` only (option c of the T040 spike, reviews/phase-3/spike.md).** A host `aria-label` on
+  `ocelle-tabs` leaves a named generic host around the named tablist in every measured host form, so R-01's "exactly
+  one named node" cannot hold while it is forwarded. `ocelle-tabs` therefore takes its accessible name from `label`
+  only: a host `aria-label` is not forwarded to the tablist, and the element's documentation says to use `label`. The
+  element writes no host attribute (mission 005's rule stands). FR-006 is amended for the tabs only; the listbox and the
+  segmented choice keep the host `aria-label` path. Options (a), moving the attribute off the host, and (b), accepting
+  two named nodes, were declined.
+
+- **Constitution III exception approved.** Not forwarding a host `aria-label` on `ocelle-tabs` is an exception to
+  constitution III ("ARIA state set on a host ... an accessible name ... reaches the real inner control"). The operator
+  approves it as recorded in plan.md's Complexity Tracking: scope `ocelle-tabs` only; sunset, the op that forwards a
+  host `aria-label` with exactly one named node and no host attribute written.
