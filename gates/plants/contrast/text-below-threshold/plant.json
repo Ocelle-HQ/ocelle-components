@@ -1,6 +1,6 @@
 {
   "expect": "fail",
-  "why": "Light color-ink-muted at #6B655A, its recorded figures updated, is 4.27:1 on color-inset and color-hover-bg and 4.48:1 on color-accent-low, below 4.5:1 (US3 scenario 2); its other grounds stay at or above it.",
+  "why": "Light color-ink-muted at #6B655A, its recorded figures and those of its alias color-eyebrow updated, is 4.27:1 on color-inset and color-hover-bg and 4.48:1 on color-accent-low, below 4.5:1 (US3 scenario 2), and so is color-eyebrow (011); their other grounds stay at or above it.",
   "findings": [
     {
       "location": "packages/tokens/contrast/pairs.json#light/color-ink-muted/color-inset",
@@ -14,6 +14,21 @@
     },
     {
       "location": "packages/tokens/contrast/pairs.json#light/color-ink-muted/color-hover-bg",
+      "rule": "below-threshold",
+      "message": "4.2696:1"
+    },
+    {
+      "location": "packages/tokens/contrast/pairs.json#light/color-eyebrow/color-inset",
+      "rule": "below-threshold",
+      "message": "4.2696:1 is below the text threshold of 4.5:1"
+    },
+    {
+      "location": "packages/tokens/contrast/pairs.json#light/color-eyebrow/color-accent-low",
+      "rule": "below-threshold",
+      "message": "4.4772:1"
+    },
+    {
+      "location": "packages/tokens/contrast/pairs.json#light/color-eyebrow/color-hover-bg",
       "rule": "below-threshold",
       "message": "4.2696:1"
     }

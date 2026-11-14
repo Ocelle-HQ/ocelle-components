@@ -100,20 +100,74 @@
     {
       "declarations": [
         {
-          "attributes": [],
+          "attributes": [
+            {
+              "default": "undefined",
+              "description": "The card's density: `regular` or `compact`, whose padding and header-to-body gap are smaller and which draws a\nsection header in its `header` slot at the compact size. Not set, or any other value, draws regular. Reflected.",
+              "fieldName": "density",
+              "name": "density",
+              "type": {
+                "text": "\"regular\" | \"compact\" | undefined"
+              }
+            },
+            {
+              "default": "undefined",
+              "description": "Draws the card on the inset ground, for a card nested inside another surface; present with any value is inset.\nChanges nothing else. Reflected.",
+              "fieldName": "inset",
+              "name": "inset",
+              "type": {
+                "text": "boolean | undefined"
+              }
+            }
+          ],
           "cssParts": [],
           "cssProperties": [],
           "customElement": true,
-          "description": "A card: a header slot above its body.",
+          "description": "A card: a header slot above its body, in a regular or compact density, on the sheet or the inset ground.",
           "events": [],
           "kind": "class",
-          "members": [],
+          "members": [
+            {
+              "attribute": "density",
+              "default": "undefined",
+              "description": "The card's density: `regular` or `compact`, whose padding and header-to-body gap are smaller and which draws a\nsection header in its `header` slot at the compact size. Not set, or any other value, draws regular. Reflected.",
+              "kind": "field",
+              "name": "density",
+              "privacy": "public",
+              "reflects": true,
+              "type": {
+                "text": "\"regular\" | \"compact\" | undefined"
+              }
+            },
+            {
+              "attribute": "inset",
+              "default": "undefined",
+              "description": "Draws the card on the inset ground, for a card nested inside another surface; present with any value is inset.\nChanges nothing else. Reflected.",
+              "kind": "field",
+              "name": "inset",
+              "privacy": "public",
+              "reflects": true,
+              "type": {
+                "text": "boolean | undefined"
+              }
+            }
+          ],
           "name": "OcelleCard",
-          "slots": [],
+          "slots": [
+            {
+              "description": "The card's header, usually an `ocelle-section-header`, which a compact card draws at its compact size.",
+              "name": "header"
+            },
+            {
+              "description": "The card's body.",
+              "name": ""
+            }
+          ],
           "superclass": {
             "name": "LitElement",
             "package": "lit"
-          }
+          },
+          "tagName": "ocelle-card"
         }
       ],
       "exports": [
@@ -216,20 +270,82 @@
     {
       "declarations": [
         {
-          "attributes": [],
+          "attributes": [
+            {
+              "default": "undefined",
+              "description": "The heading's size: `regular` or `compact`. Not set, or any other value, draws regular, or compact when the\nheader is in a compact card's `header` slot; a valid value wins over the card. No effect in the eyebrow variant.\nReflected.",
+              "fieldName": "size",
+              "name": "size",
+              "type": {
+                "text": "\"regular\" | \"compact\" | undefined"
+              }
+            },
+            {
+              "default": "undefined",
+              "description": "`eyebrow` draws the heading with the eyebrow style and renders neither the eyebrow nor the description slot;\n`default`, not set or any other value draws the default heading style. Reflected.",
+              "fieldName": "variant",
+              "name": "variant",
+              "type": {
+                "text": "\"default\" | \"eyebrow\" | undefined"
+              }
+            }
+          ],
           "cssParts": [],
           "cssProperties": [],
           "customElement": true,
-          "description": "A section header around a heading the page slots.",
+          "description": "A section header around a heading the page slots: an optional eyebrow above, a description under the heading and\nactions at its inline end.",
           "events": [],
           "kind": "class",
-          "members": [],
+          "members": [
+            {
+              "attribute": "size",
+              "default": "undefined",
+              "description": "The heading's size: `regular` or `compact`. Not set, or any other value, draws regular, or compact when the\nheader is in a compact card's `header` slot; a valid value wins over the card. No effect in the eyebrow variant.\nReflected.",
+              "kind": "field",
+              "name": "size",
+              "privacy": "public",
+              "reflects": true,
+              "type": {
+                "text": "\"regular\" | \"compact\" | undefined"
+              }
+            },
+            {
+              "attribute": "variant",
+              "default": "undefined",
+              "description": "`eyebrow` draws the heading with the eyebrow style and renders neither the eyebrow nor the description slot;\n`default`, not set or any other value draws the default heading style. Reflected.",
+              "kind": "field",
+              "name": "variant",
+              "privacy": "public",
+              "reflects": true,
+              "type": {
+                "text": "\"default\" | \"eyebrow\" | undefined"
+              }
+            }
+          ],
           "name": "OcelleSectionHeader",
-          "slots": [],
+          "slots": [
+            {
+              "description": "The page's own heading element (`h1` to `h6`), drawn with the header's heading style; its level is the page's.",
+              "name": "heading"
+            },
+            {
+              "description": "A short label above the heading, drawn with the eyebrow style; not rendered in the eyebrow variant.",
+              "name": "eyebrow"
+            },
+            {
+              "description": "Supporting text under the heading; not rendered in the eyebrow variant.",
+              "name": "description"
+            },
+            {
+              "description": "Controls at the inline end of the heading's first line, wrapping under the heading when they do not fit beside it.",
+              "name": "actions"
+            }
+          ],
           "superclass": {
             "name": "LitElement",
             "package": "lit"
-          }
+          },
+          "tagName": "ocelle-section-header"
         }
       ],
       "exports": [
