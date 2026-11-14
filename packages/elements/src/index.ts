@@ -2,4 +2,6 @@
 // `ocelle-brand-mark`, and exports their classes.
 export { OcelleBrandMark } from "./ocelle-brand-mark.ts";
 export { OcelleIcon } from "./ocelle-icon.ts";
+export { OcelleListbox } from "./ocelle-listbox.ts";
+export { OcelleOption } from "./ocelle-option.ts";
 export type { IconName } from "./ocelle-icon.ts";
