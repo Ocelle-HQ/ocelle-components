@@ -36,6 +36,11 @@ Rules for every scenario:
 - **Bounded waits.** Every wait is a bounded poll (at most 1 000 ms) that fails with a message, never an unbounded
   wait (R-15).
 - **"Does not" outcomes.** A "does not" assertion shares its test with the positive outcome it guards.
+- **Full test names** (from Phase 3 on; settled in Phase 2). Each runner names each test by its row's full name
+  (`for … it(name, …)`), never by a `$name` interpolation, which Vitest shortens to 40 characters, so rows of a shared
+  prefix would share one test id for Stryker's coverage and filter and one name in reports
+  (`reviews/phase-2/notes.md` § Mutation). The dialog's fixture runner still uses `$name` (review phase 2 R1-02,
+  optional).
 
 **Environment**:
 - Node 22 in this container, 26.13.0 in CI. Browser runs set `OCELLE_CHROMIUM_PATH` as
@@ -263,9 +268,14 @@ the driver as it was.
 ### Tests (red, one commit)
 
 - [ ] T030 [P] [US2] Write `packages/elements/test/scenarios/drawer.ts`:
-  - matrix § Drawer's inherited dialog rows, reusing T015's bodies with the `ocelle-drawer` tag and event prefix (not the dialog's one-line body, long body or styles rows, whose dialog geometry contradicts FR-003, FR-025 and FR-026);
+  - matrix § Drawer's inherited dialog rows, reusing T015's bodies with the `ocelle-drawer` tag and event prefix (not the dialog's one-line body, long body or styles rows, whose dialog geometry contradicts FR-003, FR-025 and FR-026), every row of that list, among them:
+    - the end sentinel row (the sentinel is the panel's last child, after the footer; no list holds it, its attributes and zero block size, no node in the tree);
+    - synthetic `cancel` (the shared base's `cancel` handling, R-02: reason `host` for a non-cancelable `cancel` then the inner `close()`, one request for a cancelable one);
+    - Escape with slotted content, whose veto-then-Escape-twice case runs T015's warm-up on a stand-in native `<dialog>` first, in the same page (operator decision, 2026-11-14, R-02), and is exported apart from the other rows so it runs on a page of its own (T031);
+    - open at first render (a) and (b), the (b) case run by `test/drawer-upgrade.test.ts` (T031);
+    - the accessibility tree with the host `aria-label` open and closed;
   - the drawer's own long body: panel block size equal to the viewport's (800 px, and 256 px at 320 × 256, not capped at `dialog-max-block`), each `side`, then the dialog's scrolling, Tab and `tabindex` assertions;
-  - the drawer's own styles: the UA reset, `max-inline-size` equal to `dialog-max-inline`, no block cap below the viewport, `color-overlay` backdrop, `elevation-raised` shadow, for each `side` × `dir` the two corner radii on the touched viewport edge 0 and the two on the inner edge equal to the computed `radius-2`, not centred, definite body inline size, footer box present only when filled;
+  - the drawer's own styles: the UA reset, `max-inline-size` equal to `dialog-max-inline`, no block cap below the viewport, `color-overlay` backdrop, `elevation-raised` shadow, for each of the four `side` × `dir` cases the four physical corner radii written out (FR-003, matrix § Drawer "Styles": `start`/`ltr` and `end`/`rtl` top-left and bottom-left 0, top-right and bottom-right the computed `radius-2`; `end`/`ltr` and `start`/`rtl` the reverse), not centred, definite body inline size, footer box present only when filled;
   - the drawer's own one-line body (fills the column, footer at the panel's end, each `side`);
   - backdrop during the exit;
   - backdrop on each side under `ltr` and `rtl` × veto;
@@ -275,16 +285,27 @@ the driver as it was.
   - motion `translate` sign by side and direction;
   - `ground`;
   - `heading-hidden`.
-- [ ] T031 [P] [US2] Write the runners `packages/elements/test/drawer.test.ts` and `packages/elements/test/browser/drawer.test.ts`. Write `packages/elements/test/drawer-upgrade.test.ts` (in process) for the inherited open-at-first-render row's before-definition case, and run it on `overlays-upgrade.html` from `test/browser/drawer.test.ts`. In `test/scenarios/dialog.ts`, add to the nested row the case with an open `ocelle-drawer` as the outer overlay (the dialog slotted inside it); the dialog-in-dialog case stays.
-- [ ] T032 [P] [US2] Write `packages/elements/test/entry-drawer.test.ts` and update the exports test keys. The `manifest.test.ts` entry for `ocelle-drawer` must list:
-  - the dialog's members, the inherited `open`, `label` and `closeLabel` with `inheritedFrom` naming `OcelleOverlay` (R-01);
-  - `side` (`"start" | "end"`, default `"start"`, reflected), `ground` (`"sheet" | "chrome"`, default `"sheet"`, reflected), `headingHidden`/`heading-hidden` (boolean, default `false`, reflected);
-  - the events with the extra reason `"backdrop"`;
-  - no `--ocelle-dialog-inline-size`.
+- [ ] T031 [P] [US2] Write the runners over T030, each test named by its row's full name (Rules § Full test names):
+  - `packages/elements/test/drawer.test.ts` (in process) and `packages/elements/test/browser/drawer.test.ts` (fixture `overlays.html`);
+  - `packages/elements/test/drawer-repeated-escape.test.ts` (in process): the veto-then-Escape-twice case with slotted content, warm-up included, alone in its file so it runs on a page of its own, as `test/dialog-repeated-escape.test.ts` does; on the fixture it runs from `test/browser/drawer.test.ts`, which visits a fresh page per test;
+  - `packages/elements/test/drawer-upgrade.test.ts` (in process) for the inherited open-at-first-render row's before-definition case: the markup (a page button and `<ocelle-drawer open>` with two slotted buttons) mounted while `ocelle-drawer` is undefined and the page button focused, then `src/ocelle-drawer.ts` imported; after upgrade shown modally with initial focus on the first slotted button, no event on open, `open = false` gives reason `host` and focus back on the page button. On the fixture the same case runs on `overlays-upgrade.html` from `test/browser/drawer.test.ts` (the test adds `ocelle-elements.js` by URL as a module script).
 
-  Add the dist files to the build and pack tests, and the README drawer fragments to `readme.test.ts`, including #12's personal-drawer example.
+  In `test/scenarios/dialog.ts`, add to the nested row the cases with an open `ocelle-drawer` as the outer overlay (the dialog slotted inside it); the dialog-in-dialog case stays:
+  - the nested row's assertions (one Escape, one request on the dialog, the drawer dispatches nothing and stays open and `:modal`, focus back on the drawer's button that opened the dialog; Tab never runs the drawer's wrap; the opener removed);
+  - the backdrop click over the open drawer (matrix § Dialog "Nested", "Backdrop click over an open drawer"; FR-012, FR-023, R-07): a primary click on the dialog's backdrop outside both panels, and inside the drawer panel's border box but outside the dialog's, each × {drawer host veto, no veto}: no `ocelle-drawer-close-request`, no `ocelle-drawer-close` and no `ocelle-dialog-*` event; both overlays stay open (`open` true, both inner dialogs open and `:modal`, `topLayer()` the drawer then the dialog); `focusPath()` reads the dialog's inner `<dialog>`, as Phase 2 measured for a backdrop click (matrix § Dialog "Backdrop click"); then one Escape gives exactly one `ocelle-dialog-close-request` with reason `escape` and `ocelle-dialog-close` with focus on the drawer's opener button, and the drawer still dispatches nothing.
+- [ ] T032 [P] [US2] Write `packages/elements/test/entry-drawer.test.ts` and update the exports test keys. The `manifest.test.ts` entry for `ocelle-drawer` must list:
+  - the dialog's members: `open` (reflected, default `false`), `label`, `closeLabel`/`close-label` (default "Close"), the slots default and `footer`, the parts `panel`, `heading`, `body`, `footer`, `close-button`;
+  - `open`, `label` and `closeLabel` (and their attributes) with `inheritedFrom: { name: "OcelleOverlay", module: "src/overlay.ts" }`, as T018 asserts for the dialog; the published manifest (the committed `custom-elements.json` and `generate(root)`'s output) still has no `src/overlay.ts` module and no declaration named `OcelleOverlay` (operator decision, 2026-11-14, R-01);
+  - `side` (`"start" | "end"`, default `"start"`, reflected), `ground` (`"sheet" | "chrome"`, default `"sheet"`, reflected), `headingHidden`/`heading-hidden` (boolean, default `false`, reflected), these three with no `inheritedFrom`;
+  - the events `ocelle-drawer-close-request` (detail `{ reason: "escape" | "close-button" | "backdrop" }`) and `ocelle-drawer-close` (detail `{ reason: "escape" | "close-button" | "backdrop" | "host" }`);
+  - no `--ocelle-dialog-inline-size` and no other CSS property;
+  - every member with a description (SC-003, R-01).
+
+  The manifest gate's repository counts go from 3 to 4 elements (`manifest: 4 elements checked, no finding`) in `gates/test/manifest.test.ts` (both repository runs) and `gates/test/integration/manifest.test.ts`, written by hand (a count test outside R-16's list; review phase 2 Test quality).
+
+  Add `ocelle-drawer.js` to the dist file lists in the build and pack tests. Add the README drawer fragments to `readme.test.ts`, including #12's personal-drawer example and the tokens sentence of data-model § `ocelle-drawer`, in the dialog's sentence form: "`ocelle-drawer` reads the tokens `--ocelle-color-sheet`, `--ocelle-color-ink`, `--ocelle-color-overlay`, `--ocelle-color-chrome`, `--ocelle-color-chrome-ink`, `--ocelle-elevation-raised`, `--ocelle-radius-2`, `--ocelle-border-width`, `--ocelle-drawer-inline`, `--ocelle-dialog-max-inline`, `--ocelle-font-sans`, `--ocelle-font-size-md`, `--ocelle-font-size-lg`, `--ocelle-font-weight-strong`, `--ocelle-line-height-normal`, `--ocelle-line-height-tight`, `--ocelle-space-2`, `--ocelle-space-3`, `--ocelle-space-4`, `--ocelle-space-6`, `--ocelle-target-min`, `--ocelle-size-visually-hidden`, `--ocelle-focus-width`, `--ocelle-focus-offset`, `--ocelle-color-focus`, `--ocelle-motion-base` and `--ocelle-easing-standard`, and its close icon `--ocelle-icon-size`" (no `--ocelle-dialog-max-block` and no `--ocelle-measure-reading`: the drawer has no block cap and no `--ocelle-dialog-inline-size`).
 - [ ] T033 [P] [US2] Tokens: add the `drawer-inline` row (group `shell`, value `var(--ocelle-shell-sidebar-width)`, ref `["shell-sidebar-width"]`) to `packages/tokens/test/expected.ts`. Add the computed value 20rem to the `tokens-browser` value tests, and the token to the tokens README and CHANGELOG checks (`test/readme.test.ts`).
-- [ ] T038 [P] [US2] Red, in `storybook/test/integration/elements-stories.test.ts` (`open(id, theme, "ocelle-drawer")`): the drawer stories of data-model § Stories exist in light and dark and each renders an open `ocelle-drawer` with base.css applied and no request outside the origin. The red commit also holds the story-count updates of R-16 (operator decision D), written by hand from the story files: `gates/test/integration/storybook-build.test.ts` (`built 35 stories`), `gates/test/integration/axe.test.ts` and `gates/test/integration/visual.test.ts` (70 story-themes), counted again after any merge of `main` (R-17). Part of T034's red commit.
+- [ ] T038 [P] [US2] Red, in `storybook/test/integration/elements-stories.test.ts` (`open(id, theme, "ocelle-drawer")`): the drawer stories of data-model § Stories exist in light and dark and each renders an open `ocelle-drawer` with base.css applied and no request outside the origin. The red commit also holds the story-count updates of R-16 (operator decision D), written by hand from the story files: `gates/test/integration/storybook-build.test.ts` (`built 35 stories`), `gates/test/integration/axe.test.ts` and `gates/test/integration/visual.test.ts` (70 story-themes), counted again after any merge of `main` (R-17). It also holds the count tests outside R-16's list that follow from the same story files (review phase 2 Test quality, from Phase 2's 58): the axe gate's unlabelled-button plant run in `gates/test/integration/axe.test.ts` (`axe: 2 findings in 72 story-theme runs`, the repository's 70 and the plant's 2) and the repository's baseline files in `gates/test/integration/plant-repo.test.ts` (`toHaveLength(70)`). Part of T034's red commit.
 - [ ] T034 [US2] Make the red commit of T030 to T033 and T038. `red.sh 3 phase` must show each failing for the missing element, token or stories.
 
 ### Implementation (green)
@@ -293,7 +314,7 @@ the driver as it was.
 - [ ] T036 [US2] `packages/elements/src/ocelle-drawer.ts`, class `OcelleDrawer extends OcelleOverlay`:
   - the `ocelle-drawer` prefix;
   - `side`, `ground` and `heading-hidden`; unknown values render as the default;
-  - logical edge placement, full block size, `inline-size: var(--ocelle-drawer-inline)` capped by `max-inline-size: var(--ocelle-dialog-max-inline)`; the two inner-edge corners `radius-2` (logical `border-*-end-radius` for `side="start"`, `border-*-start-radius` for `side="end"`) and the two viewport-edge corners 0 (FR-003, data-model § `ocelle-drawer` Shape);
+  - logical edge placement, full block size, `inline-size: var(--ocelle-drawer-inline)` capped by `max-inline-size: var(--ocelle-dialog-max-inline)`; the two inner-edge corners `radius-2` (logical `border-*-end-radius` for `side="start"`, `border-*-start-radius` for `side="end"`) and the two viewport-edge corners 0 (FR-003, data-model § `ocelle-drawer` Shape), so each of the four `side` × `dir` cases gives the physical corners T030's styles row asserts;
   - the body fills the column, with the footer at the panel's end (R-18);
   - the chrome ground uses `color-chrome` with `color-chrome-ink`;
   - `heading-hidden` uses the visually hidden pattern with `--ocelle-size-visually-hidden`, keeps the heading in the tree, and keeps the close control at the block start;
@@ -305,7 +326,7 @@ the driver as it was.
 ### Stories (green, after T037)
 
 - [ ] T039 [US2] Green: `storybook/stories/drawer.stories.ts`.
-- [ ] T040 [US2] Produce the baselines; run `gate:storybook-build` (`built 35 stories`), `gate:visual` and `gate:axe`; commit the baselines. Then add a `differs` line to `gates/plants/visual/fail-token-changed/plant.json` for each new light story-theme that shows `color-ink`, measured in the pinned container as 006 T046s did (R-16), commit it with the baselines, and run `gate:plants`.
+- [ ] T040 [US2] Produce the baselines; run `gate:storybook-build` (`built 35 stories`), `gate:visual` (70 captures match) and `gate:axe` (70 story-theme runs, 0 serious or critical); commit the baselines (70 files in `storybook/baselines/`, so T038's `plant-repo.test.ts` count passes, and the axe plant run gives 72). Then add a `differs` line to `gates/plants/visual/fail-token-changed/plant.json` for each new light story-theme that shows `color-ink`, measured in the pinned container as 006 T046s did (R-16), commit it with the baselines, and run `gate:plants`.
 
 **Checkpoint**: `tdd-check.sh 3` reports `pass`.
 
