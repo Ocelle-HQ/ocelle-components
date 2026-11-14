@@ -65,20 +65,20 @@ const ids = (prefix: string, count: number): string[] => Array.from({ length: co
 const boxOf = (id: string): Target => ({ id, inner: ".region-box" });
 
 /** The box's tab stop, role and name, from the shadow root's elements (null when absent). */
-async function boxAttributes(driver: Driver, id: string): Promise<Record<string, string | null>> {
+export async function boxAttributes(driver: Driver, id: string): Promise<Record<string, string | null>> {
   const box = (await driver.elements(id)).find((part: Part) => part.attributes.class?.split(" ").includes("region-box"));
   const of = (name: string): string | null => box?.attributes[name] ?? null;
   return { tabindex: of("tabindex"), role: of("role"), "aria-label": of("aria-label") };
 }
 
 /** An attribute of the first shadow element with `className` (null when absent or when there is no such element). */
-async function shadowAttribute(driver: Driver, id: string, className: string, name: string): Promise<string | null> {
+export async function shadowAttribute(driver: Driver, id: string, className: string, name: string): Promise<string | null> {
   const part = (await driver.elements(id)).find((each: Part) => each.attributes.class?.split(" ").includes(className));
   return part?.attributes[name] ?? null;
 }
 
 /** One reading of a target, through a frame record that is stopped at once. */
-async function readOnce(driver: Driver, target: Target, property: string): Promise<string> {
+export async function readOnce(driver: Driver, target: Target, property: string): Promise<string> {
   const record = await (await driver.frameRecord(target, { property })).stop();
   return record[0] ?? "";
 }
@@ -99,14 +99,14 @@ async function linkCount(driver: Driver, id: string): Promise<number> {
 // ---------------------------------------------------------------------------------------------------------------
 // Pixels (research.md R-05: fades are asserted on pixels, never on `data-fade`).
 
-type Rgb = readonly [number, number, number];
+export type Rgb = readonly [number, number, number];
 
-function at(image: Pixels, x: number, y: number): Rgb {
+export function at(image: Pixels, x: number, y: number): Rgb {
   const index = (Math.round(y) * image.width + Math.round(x)) * 4;
   return [image.data[index] ?? 0, image.data[index + 1] ?? 0, image.data[index + 2] ?? 0];
 }
 
-function rgb(text: string): Rgb {
+export function rgb(text: string): Rgb {
   const [r = 0, g = 0, b = 0] = (text.match(/\d+(\.\d+)?/g) ?? []).map(Number);
   return [r, g, b];
 }
@@ -114,7 +114,7 @@ function rgb(text: string): Rgb {
 const content: Rgb = [0, 0, 255];
 
 /** Whether two colours are within `tolerance` in every channel. */
-function near(a: Rgb, b: Rgb, tolerance = 8): boolean {
+export function near(a: Rgb, b: Rgb, tolerance = 8): boolean {
   return a.every((channel, index) => Math.abs(channel - (b[index] ?? 0)) <= tolerance);
 }
 
@@ -142,7 +142,7 @@ function edge(image: Pixels, y: number, side: "left" | "right", ground: Rgb): st
 }
 
 /** The two inline edges of the strip `id` on its middle row. */
-async function edges(driver: Driver, id: string, ground: Rgb): Promise<{ left: string; right: string }> {
+export async function edges(driver: Driver, id: string, ground: Rgb): Promise<{ left: string; right: string }> {
   const image = await driver.pixels(id);
   const y = Math.floor(image.height / 2);
   return { left: edge(image, y, "left", ground), right: edge(image, y, "right", ground) };
@@ -152,20 +152,20 @@ async function edges(driver: Driver, id: string, ground: Rgb): Promise<{ left: s
  * Whether the token focus ring is drawn inset on each side of the host `id`'s box, in `colour`: a pixel inside the
  * 3 px ring band at the middle of the left, right, top and bottom sides.
  */
-async function ringSides(driver: Driver, id: string, colour: Rgb): Promise<boolean[]> {
+export async function ringSides(driver: Driver, id: string, colour: Rgb): Promise<boolean[]> {
   const image = await driver.pixels(id);
   const [w, h] = [image.width, image.height];
   return [at(image, 1, h / 2), at(image, w - 2, h / 2), at(image, w / 2, 1), at(image, w / 2, h - 2)].map((pixel) => near(pixel, colour));
 }
 
-const focusColour = (theme: Palette): Rgb => rgb(tokenColour("color-focus", theme));
+export const focusColour = (theme: Palette): Rgb => rgb(tokenColour("color-focus", theme));
 
 /**
  * The colour a forced-colours ring in `Highlight` paints over `Canvas`: Chromium's emulated light palette gives
  * `Highlight` as a translucent colour (`rgba(5, 0, 73, 0.8)`), and everything under the ring is `Canvas` in forced
  * colours, so the painted pixel is the one composited over `Canvas`.
  */
-async function highlightOnCanvas(driver: Driver): Promise<Rgb> {
+export async function highlightOnCanvas(driver: Driver): Promise<Rgb> {
   const parts = (await driver.resolveColour("Highlight")).match(/[\d.]+/g)?.map(Number) ?? [];
   const [r = 0, g = 0, b = 0, alpha = 1] = parts;
   const canvas = rgb(await driver.resolveColour("Canvas"));
@@ -176,17 +176,17 @@ async function highlightOnCanvas(driver: Driver): Promise<Rgb> {
 // Geometry.
 
 /** A ring box: a border box grown by the ring room on each side. */
-function ringOf(box: Box): { left: number; right: number; top: number; bottom: number } {
+export function ringOf(box: Box): { left: number; right: number; top: number; bottom: number } {
   return { left: box.x - room, right: box.x + box.width + room, top: box.y - room, bottom: box.y + box.height + room };
 }
 
 /** Whether a ring box lies inside the scroll box (half a px of tolerance for layout rounding). */
-function inside(ring: ReturnType<typeof ringOf>, box: Box): boolean {
+export function inside(ring: ReturnType<typeof ringOf>, box: Box): boolean {
   return ring.left >= box.x - 0.5 && ring.right <= box.x + box.width + 0.5 && ring.top >= box.y - 0.5 && ring.bottom <= box.y + box.height + 0.5;
 }
 
 /** The `data-fade` value the box should carry for its scroll state (the module's output, checked here for SC-001). */
-function fadeFor(scrollLeft: number, track: Box, box: Box): string | null {
+export function fadeFor(scrollLeft: number, track: Box, box: Box): string | null {
   const start = Math.abs(scrollLeft) > 1;
   const end = track.width - box.width - Math.abs(scrollLeft) > 1;
   if (start && end) return "both";
@@ -455,7 +455,7 @@ const fadesExpected = {
 };
 
 /** Each edge element's drawn sides and colour, and its box against the scroll box (US1-8). */
-async function edgeLines(driver: Driver, id: string): Promise<unknown> {
+export async function edgeLines(driver: Driver, id: string): Promise<unknown> {
   const box = await driver.box(id, ".region-box");
   const out: Record<string, unknown> = {};
   for (const name of ["start", "end"] as const) {
