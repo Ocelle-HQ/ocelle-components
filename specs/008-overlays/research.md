@@ -31,11 +31,25 @@ unmerged). Results marked "squad probe" were measured by the plan squad's round 
     names from a subclass prefix, which the analyzer cannot read, so the tags are the events' only source.
     `ocelle-tooltip.ts` carries `@slot` (default) and `@csspart bubble`, and states no `@fires`, so its events list
     is empty (FR-045).
-  - Phase 2's first task measures whether the analyzer lists the base's inherited properties on each subclass with
-    their descriptions while the base is outside the filter. If it does, nothing else changes. If it does not, the
-    filter must change: `scripts/manifest.ts` and `test/node/manifest.test.ts` are then changed files, the pinned test
-    is replaced by a stricter one ("reads every `src/ocelle-*.ts` and `src/overlay.ts`, and nothing else"), red first,
-    with the reason recorded (constitution VIII).
+  - **Measured** (T013, `reviews/phase-2/measure.md`, a run of the repository's `generate(root)` on a scratch
+    root): with the filter as it is, a subclass of a base in `src/overlay.ts` has `members: []` and
+    `attributes: []`; the inherited `open`, `label` and `closeLabel` are missing, and the superclass is recorded as
+    `{ module: "/src/overlay.ts", name: "OcelleOverlay" }`. With `overlay.ts` analysed too, the subclass lists the three
+    members and their attributes with descriptions, defaults and `inheritedFrom: { name: "OcelleOverlay", module:
+    "src/overlay.ts" }`, and the base appears as its own module with a `customElement: true` declaration and no
+    `tagName`. The JSDoc lists (events, slots, parts, CSS property) are complete either way.
+  - **Decision** (operator decision "analyse, then drop it", decided by the operator, 2026-11-14; R-01's fallback,
+    taken): `scripts/manifest.ts` reads every `src/ocelle-*.ts` and `src/overlay.ts`, and nothing else of `src/`, so
+    `ocelle-dialog` and `ocelle-drawer` carry `open`, `label` and `closeLabel` (and their attributes) with
+    `inheritedFrom` naming `OcelleOverlay` in `src/overlay.ts`. The generator then removes the module `src/overlay.ts`
+    (and with it the `OcelleOverlay` declaration) from the published `custom-elements.json`, so no internal base is a
+    manifest entry; the subclasses' `superclass` and `inheritedFrom` references are kept as the analyzer writes them.
+    `scripts/manifest.ts` and `test/node/manifest.test.ts` are changed files: the pinned test "reads every
+    `src/ocelle-*.ts`, its modules in path order, and nothing else of `src/`" is replaced by a stricter one, red first
+    (T018, in T020's red commit; the generator change in T024), with the reason recorded (constitution VIII): the
+    generator reads every `src/ocelle-*.ts` and `src/overlay.ts` and nothing else (a subclass in `ocelle-*.ts` of a
+    base in `overlay.ts` gets the base's members with `inheritedFrom`; one of a base in any other `src/` file does
+    not), and the published modules are the `src/ocelle-*.ts` ones only, in path order, with no `src/overlay.ts` module and no `OcelleOverlay` declaration.
   - A manifest test asserts, per overlay, exactly two events with their detail types, the two slots, the five parts
     and (dialog) the one CSS property, and for the tooltip one slot, one part and an empty events list (SC-003).
 - **Alternatives**: a mixin (the analyzer's mixin support is weaker and the type surface noisier); two copies
@@ -83,7 +97,13 @@ unmerged). Results marked "squad probe" were measured by the plan squad's round 
   the overlay behaves the same way. The platform's close-watcher stack already orders these, so while such an element
   is open the overlay stands aside: its Escape keydown neither prevents nor requests (the platform closes that element
   alone, as natively), its `document` listener below does nothing, and R-04 handles no Tab (a nested native modal keeps
-  its own sequential navigation). How the overlay knows is the implementer's choice, for example capture-phase
+  its own sequential navigation). **Measured** (phase 2, Chromium 153; operator decision 2026-11-14 keeps this design):
+  with a slotted native modal `<dialog>` holding two buttons n1 and n2 shown above the overlay and focus on n1, n + 2
+  presses give `focusPath()` lists `n2 body n1 n2` for Tab and `body n2 n1 body` for Shift+Tab. Focus passes through
+  the document body at the nested dialog's ends; the page's content and the overlay's own stops are never reached.
+  That is the platform's behaviour, stated as such (US1 scenario 13), not a containment the overlay guarantees, and
+  neither R-04's repair nor the `document` body path below acts on those `body` entries while the nested modal is
+  open. How the overlay knows is the implementer's choice, for example capture-phase
   `toggle` and `close` listeners on its `<dialog>` (these events do not bubble, but a slotted descendant's pass the
   `<dialog>` in capture) followed by a check of `:popover-open`, `:modal`, `open` and `closedBy`, or a check of the
   flat tree at keydown; for a non-modal dialog the opening order also counts (below). For a non-modal dialog the stand-aside covers Escape only: the platform keeps no focus trap
@@ -167,6 +187,15 @@ unmerged). Results marked "squad probe" were measured by the plan squad's round 
     content stops Escape's propagation, the platform's repeated-Escape rule can close a vetoed overlay on the second
     press, with reason `host`. The README states this limit and tells widgets inside an overlay to call
     `preventDefault()` rather than `stopPropagation()` for an Escape they handle.
+  - **Measured** (phase 2, `reviews/phase-2/measure.md`, section "The repeated-Escape limit with a vetoing host",
+    Chromium 153, both harnesses; operator decision, 2026-11-14): the first vetoed cancel sequence in a page, after
+    the document had a user activation, lets the veto hold on both presses (`cancel:true, cancel:true`); a plain
+    native `<dialog>` with no overlay does the same, so this is the platform's. Every later sequence in the same page
+    gives `cancel:true, cancel:false`, and the platform closes the dialog (reason `host`). A click, a non-Escape key
+    or a 5.5 s pause between the presses changes nothing. The limit stays "can close"; the README adds that the
+    first vetoed sequence in a page may hold the veto on a second press as well. The check (contracts/checks.md,
+    "Escape with slotted content") therefore first runs one unasserted warm-up sequence on a stand-in native
+    `<dialog>` in the same page, which makes the row's second press close with `host` in both harnesses.
 - **Not used**: `closedby` and `requestClose()` on the overlay's own `<dialog>` (Chromium 134 / WebKit 26 and
   Chromium 134 / WebKit 18.4: above the floor); the plan keeps the floor at what the tooltip needs (R-10). The
   `closedBy` of a slotted dialog is only read, where present, for the stand-aside above. A capture-phase handler is not used either: it
@@ -213,7 +242,8 @@ unmerged). Results marked "squad probe" were measured by the plan squad's round 
     or starts off it:
     - focus on the last stop with Tab, or on the first stop (the close control) with Shift+Tab: the wrap, to the
       first (last) stop, unless an opaque container (below) lies after the last stop in flat-tree order, in which
-      case a Tab from the last stop is a middle press;
+      case a Tab from the last stop is a middle press, and a Shift+Tab from the first stop is the **sentinel wrap**
+      (below), the one handled press that calls no `preventDefault()`;
     - focus inside the overlay's own open tree on no stop (the `<dialog>` itself after a click on prose, padding or
       the heading; the panel; a slotted `tabindex="-1"` element focused by script; a focused element inside a
       scroller): the first stop or opaque container after it in flat-tree order (the last before it), wrapping;
@@ -225,7 +255,8 @@ unmerged). Results marked "squad probe" were measured by the plan squad's round 
     an iframe never reaches the parent document and is native anyway.
   - **Repair**: when a native move the overlay let run lands on the document body, the overlay moves focus to the first
     stop. Only a forward move can fall off the cycle this way, since the close control is always the first stop and a
-    Shift+Tab from it is handled. The mechanism is the implementer's choice (for example `focusout` inside the
+    Shift+Tab from it is handled (the sentinel wrap's native move starts at the panel's end and runs backward, into
+    the overlay's content). The mechanism is the implementer's choice (for example `focusout` inside the
     overlay with no related target, and focus leaving a slotted frame), measured in Phase 2's first dialog task. Where
     the engine reports no event for focus leaving opaque content, focus stays on the body until the next press, which
     goes to the first stop through R-02's body path: one extra press, which the README states. A removed focused
@@ -234,11 +265,28 @@ unmerged). Results marked "squad probe" were measured by the plan squad's round 
     `controls` as stops, and records every custom element whose `shadowRoot` reads null (a closed root, or none: the
     walk cannot tell, and the light content of either is walked as usual) as an opaque container in its tree
     position. Explicit moves treat an opaque container as a candidate: `focus()` on it, and "Focus checked" moves on
-    when focus does not land (a closed host without `delegatesFocus` that is not itself focusable). So a Shift+Tab
-    wrap onto opaque content at the cycle's end lands on the container where it is focusable (a frame's document, a
-    media element, a delegating host) and reaches its inner stops natively from there; a closed root that does not
-    delegate focus is then skipped in the reverse wrap and reached in the forward direction. The README states both
-    limits (the possible extra press and the reverse wrap).
+    when focus does not land (a closed host without `delegatesFocus` that is not itself focusable). The README states
+    the one limit left, the possible extra press.
+  - **Sentinel wrap** (operator decision, option (b) of `reviews/phase-2/measure.md`, decided by the operator,
+    2026-11-14; replaces the round 3 reverse wrap, which called `focus()` on the opaque container and so entered a
+    delegating host at its first inner button and skipped a closed root without `delegatesFocus`): when the last
+    candidate of the cycle in navigation order is an opaque container, a Shift+Tab from the first stop moves focus to
+    the overlay's **end sentinel** and lets the native move run (no `preventDefault()`), so the engine enters the
+    content from its end. The sentinel is an empty element, the last child of the `<dialog part="panel">` in the
+    overlay's shadow root (after the footer), with `tabindex="-1"` (focusable by script, never a sequential stop, so
+    no Tab or Shift+Tab reaches it natively and the walk does not record it), `aria-hidden="true"`, no content, no
+    `aria-label` and no role, and no visible box (zero block size, nothing painted, no effect on the panel's
+    layout). It is not part of the public surface (no part, no slot). Focus is on it only inside that one keydown:
+    the native move takes focus off it in the same press. Should it ever hold focus after a press (a script focusing it), it is a non-stop of the
+    overlay's own tree and the next press follows the non-stop rule above. axe's `aria-hidden-focus` passes, since
+    the sentinel is not tabbable.
+    **Measured** (T014 stand-in, `reviews/phase-2/measure.md`, Chromium 153, Shift+Tab n + 2 from the close control):
+    (ii) closed host last, with and without `delegatesFocus`: `xc[c2] xc[c1] b1 close xc[c2] xc[c1] b1`; (ii) iframe
+    last: `fr[f2] fr[f1] b1 close fr[f2] fr[f1] b1`; (i) and (iii) unchanged. So every inner focusable element of
+    opaque content at the end is reached in both directions, and the reverse-wrap limit is gone. Media elements with
+    `controls` at the end follow the same rule (not measured). The forward direction is unchanged: leaving a closed
+    host at the end is repaired with no extra press; leaving a slotted iframe at the end gives the engine no signal,
+    so one `body` entry (the stated extra press) remains.
   - **Positive `tabindex`** (squad round 3 verify 1, PLAN-FRESH-3-001): the stop list is in the engine's sequential
     navigation order, not raw flat-tree order (see the walk below), so "first stop" and "last stop" are the ends the
     native moves themselves reach. **Measured** (verify probe, Chromium 153): slotted b1, b2 and b3 with
@@ -680,9 +728,17 @@ Rechecked (T026) against #10 as merged into `claude/016-overlays` (merge commit 
   `aria-label` (R-08). The tooltip's description node is `hidden`. No exception entry is planned. Text clipped at a
   scroll edge gives `color-contrast-incomplete` (`elmPartiallyObscured`), as base.css's prose table does
   (`storybook/a11y-exceptions.json:1-91`), so (operator decision C) the long-scrolling-body and prose-with-a-table
-  dialog stories are designed so no text is clipped at a scroll edge (a table narrow enough for the panel; body
-  content whose scroll edge does not cut a line of text in the capture). If T029 still measures a
-  `color-contrast-incomplete` node, stop for the operator.
+  dialog stories are designed so no text is clipped at a scroll edge (a table narrow enough for the panel; for the
+  long body, see below). **Measured at T029** (phase 2): on the long-scrolling-body story axe reports
+  `color-contrast-incomplete` (`elmPartiallyObscured`) for whichever paragraph's box lies across the body's scroll
+  edge inside the 800 px viewport, so spacing the paragraphs does not remove it. **Decision** (operator, 2026-11-14):
+  the story places a block without text across that scroll edge, an empty `<div data-story="dialog-scroll-edge">` in
+  the slotted body between two paragraphs, styled only by a `[data-story="dialog-scroll-edge"]` rule in
+  `storybook/.storybook/stories-layout.css` (layout only: a block size large enough that the body's scroll edge in
+  the 1280 × 800 capture falls inside it; no text, no role, no name, no `style` attribute), so no paragraph's box
+  crosses the edge. No entry is added to `storybook/a11y-exceptions.json` and no Complexity Tracking row; the axe gate
+  expectation stays zero serious or critical findings. If T029 still measures a `color-contrast-incomplete` node
+  after that, stop for the operator.
 - **Baselines**: `storybook/baselines/<story-id>.<theme>.png`, produced by `pnpm run visual:update` in the pinned
   container (README:32-36). CI's captures win over local ones (006 FR-005): CI's files are taken from the `visual`
   artifact of the "Visual regression" job (README:41-43). Each new story and theme needs its baseline.

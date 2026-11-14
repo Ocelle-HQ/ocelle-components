@@ -43,6 +43,27 @@ sources of the requirements below. `#450` and `#503` are spec-kitty/spec-kitty-d
   the accessible name and the close control but hides the heading visually, so #12 can use it for the personal drawer.
   `ocelle-dialog` always shows its heading (FR-005, FR-048, US2 scenario 6).
 
+**Operator decisions in Phase 2** (decided by the operator, 2026-11-14; evidence `reviews/phase-2/measure.md`):
+
+- Reverse focus wrap, option (b): a Shift+Tab wrap from the first stop onto focusable content the overlay cannot see
+  into at the cycle's end enters that content from its end, so every inner focusable element of it is reached in both
+  directions. The former reverse-wrap limit is removed (FR-008, SC-002, US1 scenario 14). Whatever the overlay adds to
+  do this is never announced, named or reachable by Tab (FR-008).
+- Manifest, "analyse, then drop it": the published manifest lists the properties and attributes each overlay inherits
+  from the shared internal base, marked as inherited, and lists no internal base of its own (FR-045, research R-01).
+- Tab inside a slotted native modal `<dialog>`, keep the design: while it is open, Tab and Shift+Tab stay the
+  platform's (FR-010). The measured sequence, which passes through the document body, is stated in US1 scenario 13
+  as platform behaviour, not as a containment the overlay guarantees.
+- axe on the long-scrolling-body dialog story: the story places a block without text across the body's scroll edge,
+  so no paragraph is partly hidden there, laid out by the storybook's story layout stylesheet; no axe exception is
+  added (FR-042, research R-16).
+- Repeated Escape when slotted content stops Escape's propagation (evidence: `reviews/phase-2/measure.md`, section
+  "The repeated-Escape limit with a vetoing host"): the stated limit stays "can close". The platform fact is added:
+  the first vetoed cancel sequence in a page may hold the veto on a second press as well (measured in Chromium for an
+  overlay and for a plain native `<dialog>` alike; input between the presses changes nothing). The check of this case
+  first runs one unasserted vetoed sequence on a stand-in native `<dialog>` in the same page, so its second press
+  closes the overlay with reason `"host"` in every harness (Edge Cases, repeated Escape; research R-02).
+
 ## Consumer need
 
 - **Why the elements exist (#16, spec-kitty-design#503).** "Spec Kitty has no overlay primitives, so consumers cannot
@@ -125,11 +146,14 @@ stories pass the visual and axe gates.
     modal `<dialog>` shown from slotted content, **When** the user presses Escape, **Then** that menu or dialog closes
     alone, no `ocelle-dialog-close-request` is dispatched and the dialog stays open; **When** the user presses Escape
     again, **Then** the dialog's close is requested with `detail.reason === "escape"`; while the nested native dialog
-    is open, Tab stays inside it (FR-010).
+    is open, Tab and Shift+Tab are left to the platform (FR-010): with that dialog holding two buttons n1 and n2 and
+    focus on n1, Chromium 153 gives the focus sequence `n2 body n1 n2` for Tab and `body n2 n1 body` for Shift+Tab
+    (`body`: the document body), so neither the page's content nor the dialog's own controls are reached. This is
+    the platform's behaviour as measured, not a containment the dialog guarantees.
 14. **Given** an open dialog whose body holds, between two buttons or as its last content, an element with a closed
     shadow root holding two buttons, or an iframe holding two buttons, **When** the user presses Tab or Shift+Tab
     repeatedly, **Then** focus reaches each inner button in its native order and never leaves the dialog, with at
-    most the stated extra press and the stated reverse-wrap limit (FR-008, SC-002); **When** focus is inside the
+    most the stated extra press (FR-008, SC-002); **When** focus is inside the
     iframe and the user presses Escape, **Then** nothing is requested and the dialog stays open (FR-010).
 15. **Given** an open dialog whose body holds three buttons, one of them with a positive `tabindex` (the last in
     tree order, or the first), **When** the user presses Tab or Shift+Tab repeatedly, **Then** focus reaches every
@@ -275,7 +299,8 @@ pointer and keyboard. It is complete when the scenarios below pass in process an
   Escape without user activation closes a dialog regardless of a cancelled `cancel` event) must not close an
   overlay whose host cancelled the request (US1 scenario 4). The stated limit: when slotted content stops Escape's
   propagation, the overlay never sees the key, and the platform may close it on the repeated press; that close has
-  reason `"host"` (FR-013, FR-016).
+  reason `"host"` (FR-013, FR-016). A platform fact, not a guarantee: the first vetoed cancel sequence in a page may
+  hold the veto on a second press as well, so the close comes in a later sequence.
 - **Escape that slotted content uses.** An Escape that slotted content has already handled (`preventDefault()`), an
   Escape that cancels an IME composition, and an Escape that clears a non-empty search field do not request the
   overlay's close (FR-010). Nor does an Escape while a slotted popover menu (`popover="auto"` or `"hint"`) or a
@@ -292,8 +317,9 @@ pointer and keyboard. It is complete when the scenarios below pass in process an
   the documentation states.
 - **Content the overlay cannot see into.** Slotted content with a closed shadow root, an iframe, or a video or audio
   element with controls keeps its own focusable parts reachable by Tab and Shift+Tab inside the overlay; leaving it
-  past the cycle's end may cost one extra press, and a closed shadow root at the end that does not delegate focus is
-  skipped by the Shift+Tab wrap and reached in the forward direction (FR-008). Escape with focus inside a slotted
+  past the cycle's end may cost one extra press where the engine gives no signal (an iframe), and a Shift+Tab wrap
+  onto such content at the cycle's end enters it from its end, so its focusable parts are reached in reverse native
+  order whether or not it can take focus itself (FR-008). Escape with focus inside a slotted
   iframe does nothing to the overlay (FR-010). Slotted content with a positive `tabindex` is visited in the engine's
   order, and the cycle wraps where that order ends, so no element is left out (FR-008).
 - **`open` toggled quickly.** Setting `open` true and false in one task, or twice while an exit animation runs,
@@ -361,10 +387,13 @@ pointer and keyboard. It is complete when the scenarios below pass in process an
   move focus as the engine does (operator decision), so focusable content the overlay cannot see into (an element
   with a closed shadow root, an iframe, media controls) stays reachable by keyboard; a move that leaves such content
   past the cycle's end and lands on the document body is brought back to the first stop, and where the engine gives
-  no signal for it, the next press does so (one extra press). A Shift+Tab wrap onto such content at the end lands on
-  the content where it can take focus and otherwise on the stop before it. The cycle's order and its ends follow the
+  no signal for it, the next press does so (one extra press). A Shift+Tab wrap from the first stop onto such content
+  at the cycle's end enters it from its end, as the engine's own backward move into it does, so its inner focusable
+  elements are reached in reverse native order whether or not the content can take focus itself (operator decision,
+  2026-11-14). Anything the overlay adds to make that wrap is not a Tab stop, has no accessible name, is absent from
+  the accessibility tree and never keeps focus after the press. The cycle's order and its ends follow the
   engine's sequential navigation order, positive `tabindex` in slotted content included, so every stop the engine
-  reaches is in the cycle. The documentation states the extra press and the reverse-wrap limit.
+  reaches is in the cycle. The documentation states the extra press.
 - **FR-009**: On every close, focus MUST return to the element (the deepest one, inside shadow roots) that had focus
   when the overlay opened, if it is still connected and focusable, provided focus is then still inside the closing
   overlay or on the body; focus another overlay has taken MUST NOT be moved. An opener inside an overlay that is
@@ -376,7 +405,9 @@ pointer and keyboard. It is complete when the scenarios below pass in process an
   in its content (an open `popover="auto"` or `"hint"` element, such as a slotted menu, a native `<dialog>` other
   than its own shown modally, or a non-modal `<dialog>` opened after the overlay, by `show()` or by the `open`
   attribute, whose `closedby` state is Close Request or Any); then the overlay does nothing, and the platform closes
-  that popover or dialog alone, as it does outside an overlay, while Tab inside a nested native modal is left to it.
+  that popover or dialog alone, as it does outside an overlay, while Tab inside a nested native modal is left to it
+  (the platform's sequence, which can pass through the document body, is stated in US1 scenario 13; the overlay
+  guarantees no containment there).
   A non-modal `<dialog>` already open when the overlay opened, whatever its `closedby`, or opened after it with
   `closedby` absent, `auto` or `none`, is not such a close watcher: Escape requests the overlay's close as usual on
   every press and leaves that dialog open, and Tab treats the content of any non-modal dialog as ordinary stops. With focus inside a slotted iframe,
@@ -521,6 +552,8 @@ pointer and keyboard. It is complete when the scenarios below pass in process an
   (with and without a host `aria-label`, open and closed), US2 scenario 6 and US3 scenarios 7 and 11 in Chromium.
 - **FR-045**: The manifest MUST declare, for each element, every property, attribute, event (with its detail type),
   slot, part and own CSS custom property, each list stated even when empty (the tooltip's events list is empty).
+  Members an element inherits from a shared internal base are declared on the element and marked as inherited; the
+  internal base itself is not a published entry (operator decision, 2026-11-14).
 - **FR-046**: Changed source MUST pass mutation testing under mission 007's rules; timing code (the hover delay) is
   tested so its mutants are killed rather than left to time out.
 
@@ -546,7 +579,7 @@ pointer and keyboard. It is complete when the scenarios below pass in process an
   from the first stop, the last stop, the close control, the dialog itself (after a click on its text) and the
   document body. With slotted content the overlay cannot see into (an element with a closed shadow root holding two
   buttons, an iframe holding two buttons), in the middle and at the end, every inner button is in the sequence in
-  its native order in both directions, except the stated reverse-wrap limit (FR-008), and the document body appears
+  its native order in both directions, and the document body appears
   at most once per cycle, only where the stated extra press applies. With a positive `tabindex` on the last or the
   first content element in tree order, the sequence is the engine's order and holds every content element.
 - **SC-003**: Every event the three elements emit is asserted with its full payload and cancelability: 2 events per

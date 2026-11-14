@@ -83,9 +83,9 @@ Token-only CSS with no new `token-only` allowance. No I/O. No ID reference acros
 
 | Principle | How this plan meets it |
 |---|---|
-| I. Names, events, no I/O, manifest | Tags `ocelle-dialog`, `ocelle-drawer`, `ocelle-tooltip`. Events `ocelle-dialog-close-request`, `ocelle-dialog-close` and the drawer pair, all `bubbles` and `composed`, with typed `detail`. The tooltip has no events. No I/O and no console output. Every property, attribute, event, slot, part and own CSS custom property is in the generated manifest, inherited members included, through JSDoc on each concrete class (R-01). The tooltip's unrendered slot is `description`, a plain name (R-13). The describes span is written with `textContent` (R-13). |
+| I. Names, events, no I/O, manifest | Tags `ocelle-dialog`, `ocelle-drawer`, `ocelle-tooltip`. Events `ocelle-dialog-close-request`, `ocelle-dialog-close` and the drawer pair, all `bubbles` and `composed`, with typed `detail`. The tooltip has no events. No I/O and no console output. Every property, attribute, event, slot, part and own CSS custom property is in the generated manifest, inherited members included (with `inheritedFrom`; the analyzer reads `src/overlay.ts` too, and the generator drops that module from the published manifest, operator decision, 2026-11-14), and JSDoc on each concrete class (R-01). The tooltip's unrendered slot is `description`, a plain name (R-13). The describes span is written with `textContent` (R-13). |
 | II. Tokens only | Static CSS only from tokens through `var()`/`calc()`, with no new lint allowance. Runtime numbers (bubble coordinates, WAAPI keyframes of `%` and opacity) are not element CSS literals (R-06, R-11). The bubble uses existing chrome colour pairs, so contrast is already checked. Only the dialog surfaces use `elevation-raised` (#5). The dialog's radius is `radius-2`; the drawer's two inner-edge corners are `radius-2` and its two viewport-edge corners are 0 (FR-003). No monospace. |
-| III. Accessible | Modal `<dialog>` named in one shadow root (R-08). Full keyboard model: Tab cycle, Escape, Enter and Space on the close control. The topmost overlay handles Tab at the cycle's ends, from a non-stop and from the body, so the cycle holds there, and leaves middle moves native, so slotted content with closed shadow roots, iframes and media controls stays keyboard-reachable (WCAG 2.1.1); the stop list follows the engine's navigation order, positive `tabindex` included, so the ends never cut off a slotted element; slotted scrollers are stops; the extra press and reverse-wrap limits are stated (R-04). Escape and Tab are left to a slotted popover or modal native dialog while it is open, as the platform orders them; a non-modal slotted dialog opened after the overlay (by `show()` or the `open` attribute) whose `closedby` state is Close Request or Any has its Escape left to the platform too, while any other non-modal slotted dialog (one already open when the overlay opened, or one with `closedby` absent, `auto` or `none`) keeps the overlay's Escape handling, so the veto holds on every press, and every non-modal dialog keeps the overlay's Tab handling (R-02). The close control meets `target-min` with the focus ring. WCAG 1.4.13 holds: the bubble is dismissable, hoverable and persistent (R-11, R-12). No ID reference crosses a shadow root (R-13). Reduced motion gives no animation, by the media query as well as the tokens (R-06). Forced colours: a `CanvasText` panel border, `Canvas` backdrop and an outline focus ring (R-09). The overflowing body is a Tab stop and keeps a minimum block size at 320 × 256 (R-04, R-18). Nested overlays act only when topmost (R-02). Host `aria-label` asserted open and closed and under axe (R-08). axe runs on every story (R-16). |
+| III. Accessible | Modal `<dialog>` named in one shadow root (R-08). Full keyboard model: Tab cycle, Escape, Enter and Space on the close control. The topmost overlay handles Tab at the cycle's ends, from a non-stop and from the body, so the cycle holds there, and leaves middle moves native, so slotted content with closed shadow roots, iframes and media controls stays keyboard-reachable (WCAG 2.1.1); the stop list follows the engine's navigation order, positive `tabindex` included, so the ends never cut off a slotted element; slotted scrollers are stops; a Shift+Tab wrap onto opaque content at the end enters it from its end through an end sentinel that is not a Tab stop, unnamed and `aria-hidden` (operator decision, 2026-11-14), so every inner element is reached in both directions; the extra press is stated (R-04). Escape and Tab are left to a slotted popover or modal native dialog while it is open, as the platform orders them; a non-modal slotted dialog opened after the overlay (by `show()` or the `open` attribute) whose `closedby` state is Close Request or Any has its Escape left to the platform too, while any other non-modal slotted dialog (one already open when the overlay opened, or one with `closedby` absent, `auto` or `none`) keeps the overlay's Escape handling, so the veto holds on every press, and every non-modal dialog keeps the overlay's Tab handling (R-02). The close control meets `target-min` with the focus ring. WCAG 1.4.13 holds: the bubble is dismissable, hoverable and persistent (R-11, R-12). No ID reference crosses a shadow root (R-13). Reduced motion gives no animation, by the media query as well as the tokens (R-06). Forced colours: a `CanvasText` panel border, `Canvas` backdrop and an outline focus ring (R-09). The overflowing body is a Tab stop and keeps a minimum block size at 320 × 256 (R-04, R-18). Nested overlays act only when topmost (R-02). Host `aria-label` asserted open and closed and under axe (R-08). axe runs on every story (R-16). |
 | IV. Strict CSP | Adopted stylesheets only. The placement sheet is constructable (R-11). WAAPI sets no attribute (R-06). Timers take functions. Every scenario also runs on the strict-CSP fixture, and FR-047's counts run after each one. |
 | V. Storybook and behaviour | A story per variant and state in both themes (data-model § Stories), written against #10 (R-16). Interaction tests cover every event, payload, keyboard path and focus outcome (checks § Test matrix). |
 | VI. Consumers | #16's consumers: the Open project dialog, #12's personal drawer, kitty-mission-ui flyouts, #12's nav-item bubble and #7's pill-tag ellipsis (contract § consumers). Own code. |
@@ -104,7 +104,8 @@ Token-only CSS with no new `token-only` allowance. No I/O. No ID reference acros
 4. **Platform closes** (R-02, R-03): inner `close()` and a non-cancelable `cancel` close with reason `host`. A slotted
    `method="dialog"` form does nothing to the overlay (measured); the README tells hosts to set `open = false` from
    their submit handler. A slotted widget that stops Escape's propagation can let the platform close a vetoed overlay
-   on a repeated Escape, with reason `host` (stated limit).
+   on a repeated Escape, with reason `host` (stated limit); the first vetoed sequence in a page may hold the veto on a
+   second press as well (platform, measured; decision 23).
 5. **Tooltip semantics** (R-13): the painted bubble is always `aria-hidden`. `describes` adds a hidden light-DOM
    `role="tooltip"` node to the host and an `aria-describedby` id to a native trigger. This is not supported for
    custom-element triggers whose inner control takes focus. The spec now says so (FR-029, FR-036, US3-7).
@@ -112,6 +113,9 @@ Token-only CSS with no new `token-only` allowance. No I/O. No ID reference acros
 7. **Story delay override** (R-16): tooltip stories wrap their markup in `<div data-story="tooltip">`, and
    `stories-layout.css` sets `[data-story="tooltip"] { --ocelle-tooltip-delay: 0ms; }` (operator decision A at T026),
    because #10 runs axe two frames after the pointer move and takes the screenshot at no fixed time after it.
+   The long-scrolling-body dialog story places an empty `<div data-story="dialog-scroll-edge">` across the body's
+   scroll edge, sized by a `[data-story="dialog-scroll-edge"]` rule in the same file, so no paragraph is partly
+   hidden there and axe stays clean with no exception (operator decision, 2026-11-14, measured at T029).
 8. **Heading level 2**, fixed (R-08).
 
 Settled in the squad's round 1 (9 to 13 by the operator at the forks, 14 a confirmed fix):
@@ -145,15 +149,18 @@ Settled in the squad's round 3 (18 by the operator at the fork, 19 and 20 confir
     topmost overlay handles a Tab explicitly only at the cycle's ends, from a non-stop of its own tree and from the
     body; middle moves and moves from opaque content (closed shadow roots, iframes, media controls) are native, and a
     native move that lands on the body is repaired to the first stop. Stated limits in FR-008 and the README: a
-    possible extra press when leaving opaque content at the end, a closed root without `delegatesFocus` skipped by
-    the Shift+Tab wrap, and Escape inside a slotted iframe doing nothing (FR-010). The stop list follows the engine's
+    possible extra press when leaving opaque content at the end, and Escape inside a slotted iframe doing nothing
+    (FR-010). The round 3 reverse-wrap limit is gone (decision 21). The stop list follows the engine's
     sequential navigation order (positive `tabindex` included), so the ends are where native moves end and no slotted
     element is left out (squad round 3 verify 1).
 19. **Slotted close watchers** (R-02): while a slotted `popover="auto"`/`"hint"` element, a native `<dialog>` shown
     modally from slotted content, or a non-modal `<dialog>` opened after the overlay's `showModal()` (by `show()` or
     by the `open` attribute) whose `closedby` state is Close Request or Any is open, the overlay neither prevents nor
     requests on Escape, and it handles no Tab while the popover or the nested modal dialog is open (a non-modal
-    dialog keeps R-04's Tab); the platform closes that element alone. The platform's outcome for a non-modal dialog
+    dialog keeps R-04's Tab); the platform closes that element alone. Inside the nested modal the platform's Tab
+    order passes through the document body (measured, Chromium 153: `n2 body n1 n2` for Tab and `body n2 n1 body` for
+    Shift+Tab from n1); the overlay keeps this design and states it as platform behaviour, not a containment it
+    guarantees (operator decision, 2026-11-14). The platform's outcome for a non-modal dialog
     depends on opening order, not on the method (verify probes v6 to v9): a slotted non-modal `<dialog>` already open
     when the overlay opened, whatever its `closedby`, or opened after it with `closedby` absent, `auto` or `none`, is
     not above the overlay and is ordinary content: Escape requests the overlay's close on every press through the
@@ -165,6 +172,23 @@ Settled in the squad's round 3 (18 by the operator at the fork, 19 and 20 confir
 20. **Drawer body fills its column** (R-18): the footer sits at the panel's end; the drawer has its own one-line-body
     row instead of the dialog's 132 px one.
 
+Settled in Phase 2 by the operator (decided by the operator, 2026-11-14; evidence `reviews/phase-2/measure.md`,
+`reviews/analysis/fixes-4.md`):
+
+21. **Sentinel wrap** (R-04, option (b)): when the cycle's last candidate is opaque content, a Shift+Tab from the
+    first stop focuses an end sentinel (`tabindex="-1"`, `aria-hidden="true"`, no name, last in the panel) and lets
+    the native move run, so a closed host (with or without `delegatesFocus`) or an iframe at the end is entered from
+    its end. The reverse-wrap limit is removed from FR-008, SC-002, the README and the Opaque content row.
+22. **Manifest, analyse then drop** (R-01): `scripts/manifest.ts` reads every `src/ocelle-*.ts` and `src/overlay.ts`
+    and nothing else, so the overlays list inherited members with `inheritedFrom`; the `src/overlay.ts` module is
+    then removed from the published manifest. The pinned `test/node/manifest.test.ts` rule is replaced, red first.
+23. **Repeated Escape, first sequence of a page** (R-02, operator decision, 2026-11-14): in Chromium the first vetoed
+    cancel sequence in a page holds the veto on both presses (a plain native `<dialog>` too); every later sequence
+    closes on the second press, and input between the presses changes nothing. The README keeps "can close" and adds
+    that the first vetoed sequence in a page may hold the veto on a second press as well. The matrix row "Escape with
+    slotted content" (veto then Escape twice) first runs one unasserted warm-up sequence on a stand-in native
+    `<dialog>` in the same page, then asserts the `escape` request and the `host` close (T015, T019).
+
 ## Risks
 
 - **#10 not merged**: the story, baseline and axe tasks are written against its branch. The tasks' first step for those
@@ -174,19 +198,20 @@ Settled in the squad's round 3 (18 by the operator at the fork, 19 and 20 confir
 - **Linux webview below WebKit 17**: no bubble shows. The static sheet hides the bubble by default and shows it only
   through `:popover-open`, and the element does nothing when `showPopover` is absent, so nothing is painted inline and
   nothing throws (R-10). Names are unaffected.
-- **Manifest inheritance** (R-01): measured in phase 2's first task. Events, slots, parts and the CSS property come
-  from JSDoc on each concrete class regardless. If inherited properties are missing, the fallback changes
-  `scripts/manifest.ts`'s module filter and replaces the pinned `test/node/manifest.test.ts` rule with a stricter one,
-  red first.
+- **Manifest inheritance** (R-01): measured in T013: inherited properties are missing while the base is outside the
+  filter. Taken (decision 22): the filter reads `src/overlay.ts` too and the generator drops that module from the
+  published manifest; the pinned `test/node/manifest.test.ts` rule is replaced with a stricter one, red first.
 - **Scrollers below Chromium 130 and in WebKit** (R-04): a slotted overflowing scroller with nothing focusable
   inside is not focusable there, so it is skipped by the cycle and reachable by keyboard only as the engine allows
   outside an overlay. Only Chromium 153 is measured.
 - **Opaque slotted content** (R-04, R-02): how the engine signals focus leaving a slotted iframe or closed shadow root
   for the body is measured in Phase 2's first dialog task, which also writes the exact opaque-content `focusPath()`
-  lists into the rows; where no signal exists the stated extra press applies. Escape inside a slotted iframe does
-  nothing to the overlay (stated limit).
+  lists into the rows; where no signal exists the stated extra press applies. Measured (T014): a closed host signals
+  (a `focusout` with no related target, then the body focused), a slotted iframe does not, so the extra press applies
+  to the iframe only. Escape inside a slotted iframe does nothing to the overlay (stated limit).
 - **Slotted widgets that stop Escape** (R-02): a vetoed overlay can then close on a repeated Escape with reason
-  `host`. Stated in the README; #14's listbox should call `preventDefault()` instead.
+  `host`, except that the first vetoed sequence in a page may hold the veto on a second press as well (decision 23).
+  Stated in the README; #14's listbox should call `preventDefault()` instead.
 - **Parallel siblings** (R-17): merge conflicts in shared files are resolved by merging `main`, then regenerating the
   manifest.
 
@@ -220,7 +245,7 @@ packages/elements/
 ├── custom-elements.json           # regenerated
 ├── README.md                      # three element sections, § Engines (WebKit 17), tokens read
 ├── CHANGELOG.md
-├── scripts/manifest.ts            # only if R-01's measurement needs the base analysed (then red test first)
+├── scripts/manifest.ts            # reads src/ocelle-*.ts and src/overlay.ts, drops src/overlay.ts from the output (R-01; red test first)
 ├── test/scenarios/driver.ts       # + input, pointer path, touch, focus, motion, events with state, animations,
 │                                  #   top layer, viewport, style counts (R-14)
 ├── test/scenarios/{dialog,drawer,tooltip}.ts
@@ -239,12 +264,12 @@ packages/elements/
 ├── test/commands.test.ts          # + the new commands
 ├── test/entry-{dialog,drawer,tooltip}.test.ts     # each entry defines its tag (+ ocelle-icon for the overlays)
 ├── test/exports.test.ts           # export keys
-├── test/node/manifest.test.ts     # + per-entry events, slots, parts, CSS property (R-01)
+├── test/node/manifest.test.ts     # + per-entry events, slots, parts, CSS property; inherited members; the stricter read rule (R-01)
 ├── test/node/readme.test.ts       # + Engines floor WebKit 17, intro line, three element sections, tokens read
 ├── test/build/build.test.ts, test/build/pack.test.ts   # + the three dist files
 storybook/
 ├── stories/{dialog,drawer,tooltip}.stories.ts     # after #10 (R-16)
-├── .storybook/stories-layout.css  # tooltip delay override, [data-story="tooltip"] (R-16)
+├── .storybook/stories-layout.css  # [data-story="tooltip"] delay override, [data-story="dialog-scroll-edge"] block (R-16)
 └── baselines/…                    # after #10
 vitest.config.ts                   # elements: 1280 × 800, no touch; + elements-touch project (only *.touch.test.ts,
                                    #   same excludes as elements: not test/node, test/build, test/browser); commands (R-14)

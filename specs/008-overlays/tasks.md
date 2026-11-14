@@ -118,12 +118,14 @@ the driver as it was.
   - Use a scratch subclass outside the repository; do not commit scratch code.
   - Record the outcome in `specs/008-overlays/reviews/phase-2/measure.md`.
   - If inherited members are missing, the fallback is to widen `packages/elements/scripts/manifest.ts`'s module filter and replace the pinned rule in `test/node/manifest.test.ts:205`, red first, inside this phase.
+  - Outcome (measured, `reviews/phase-2/measure.md`): inherited members are missing. Operator decision "analyse, then drop it" (decided by the operator, 2026-11-14, R-01): the fallback is taken, and the generator also removes the `src/overlay.ts` module from the published manifest. The red test is in T018, the generator change in T024.
 - [ ] T014 [US1] In Chromium, measure the exact `focusPath()` lists for the matrix rows that research left to measurement. Write them into `specs/008-overlays/contracts/checks.md` before any code, in a commit of that file and `reviews/phase-2/measure.md` only. The rows:
   - § Dialog "Opaque content", cases (i) and (ii), both directions, with and without `delegatesFocus`;
   - "Positive `tabindex` at the ends", case (iii);
   - whether the engine signals focus leaving a slotted iframe or closed root for the body (R-04's repair; Risks "Opaque slotted content").
 
   Each list must meet the rules the row states. If one cannot, stop and ask the operator.
+  - Operator decision (decided by the operator, 2026-11-14, R-04): the (ii) backward lists are taken with the sentinel wrap (option (b) of `measure.md`): closed host with and without `delegatesFocus` `xc[c2] xc[c1] b1 close xc[c2] xc[c1] b1`, iframe `fr[f2] fr[f1] b1 close fr[f2] fr[f1] b1`; the (i), (ii) forward and (iii) lists are the hybrid stand-in's lists of `measure.md`. Write them into the row against its updated rules (every inner button reached backward in (ii), no sentinel in any list).
 
 ### Story recheck (after #10 is merged; before the red commit)
 
@@ -141,12 +143,12 @@ the driver as it was.
 
 - [ ] T015 [P] [US1] Write the shared bodies for matrix § Dialog in `packages/elements/test/scenarios/dialog.ts`, every row:
   - open and initial focus;
-  - the Tab cycle with its non-stop, body, scroller, opaque-content, native-middle and positive-`tabindex` rows (exact lists, n + 2 presses, both directions);
+  - the Tab cycle with its non-stop, body, scroller, opaque-content, end-sentinel, native-middle and positive-`tabindex` rows (exact lists, n + 2 presses, both directions);
   - Escape in a slotted iframe;
   - long body and the 320 × 256 viewport;
   - one-line body (132 px);
   - Escape × veto, including after a click on body prose and with focus on the body;
-  - Escape with slotted content, slotted close watchers and slotted non-modal dialogs (every case of the row);
+  - Escape with slotted content, slotted close watchers and slotted non-modal dialogs (every case of the row); the veto-then-Escape-twice case first runs, in the same page, one unasserted warm-up sequence on a stand-in native `<dialog>` (`showModal()` after a click, a focused button that stops Escape's propagation, `cancel` vetoed, Escape twice), then asserts one `…-close-request` with reason `escape` with the dialog open and `:modal`, and on the second Escape `…-close` with reason `host` and focus on the opener (operator decision, 2026-11-14, R-02);
   - synthetic `cancel`;
   - the close control (click, Enter, Space; target size; focus ring);
   - backdrop click (nothing);
@@ -162,7 +164,7 @@ the driver as it was.
   - motion read from `animations()`;
   - computed styles and sizes: the panel's computed `inline-size` equals the computed `--ocelle-dialog-inline-size` at 1280 × 800 and the computed `dialog-max-inline` (288 px) at the capped 320 × 800;
   - forced colours, both palettes;
-  - accessibility tree, including the host `aria-label` open and closed.
+  - accessibility tree, including the host `aria-label` open and closed and no node for the end sentinel.
 
   Event rows read the state at dispatch from `record()`, and every row ends with the FR-047 counts.
 - [ ] T016 [P] [US1] Write the runners `packages/elements/test/dialog.test.ts` (in process) and `packages/elements/test/browser/dialog.test.ts` (fixture `overlays.html`) over T015. For the before-definition case of the open-at-first-render row: `packages/elements/test/dialog-upgrade.test.ts` (in process, imports `src/ocelle-dialog.ts` only after the mount) and the fixture page `packages/elements/test/browser/fixtures/overlays-upgrade.html` (like `overlays.html` but loading no element script; the test adds `ocelle-elements.js` by URL as a module script), run from `test/browser/dialog.test.ts`.
@@ -173,15 +175,19 @@ the driver as it was.
   - slots default and `footer`;
   - parts `panel`, `heading`, `body`, `footer`, `close-button`;
   - CSS property `--ocelle-dialog-inline-size`;
-  - every member with a description (SC-003, R-01).
+  - every member with a description (SC-003, R-01);
+  - `open`, `label` and `closeLabel` (and their attributes) with `inheritedFrom: { name: "OcelleOverlay", module: "src/overlay.ts" }`, and the published manifest (the committed `custom-elements.json` and `generate(root)`'s output) has no `src/overlay.ts` module and no declaration named `OcelleOverlay` (operator decision, 2026-11-14, R-01).
+
+  Replace the pinned test "reads every src/ocelle-*.ts, its modules in path order, and nothing else of src/" (`test/node/manifest.test.ts:205`) with "reads every src/ocelle-*.ts and src/overlay.ts, and nothing else": on a scratch root with `src/ocelle-zeta.ts`, `src/ocelle-alpha.ts` (a subclass of a base in `src/overlay.ts`), `src/ocelle-beta.ts` (a subclass of a base in `src/helper.ts`), `src/overlay.ts`, `src/helper.ts` and `src/ocelle-alpha.test.js`, the published modules are exactly `src/ocelle-alpha.ts`, `src/ocelle-beta.ts`, `src/ocelle-zeta.ts` in path order (no `src/overlay.ts`, no `src/helper.ts`, no test file); `ocelle-alpha` lists the base's members with `inheritedFrom` naming `src/overlay.ts`; `ocelle-beta` lists none of its base's members (R-01, constitution VIII: the reason is recorded in the test's comment).
 - [ ] T019 [P] [US1] Add `ocelle-dialog.js` to the dist file lists in `packages/elements/test/build/build.test.ts` and `test/build/pack.test.ts`. Add the `ocelle-dialog` README fragments to `packages/elements/test/node/readme.test.ts`:
   - the intro line naming the element;
   - the section with the tokens read (data-model § `ocelle-dialog`);
   - the host pattern;
-  - the R-02, R-03, R-04, R-05 and R-08 statements: the stated limits, focus moves in the `…-close` listener, the `method="dialog"` advice, a label being required, and the closed-host `aria-label` behaviour;
-  - where focus lands when the opener is gone (edge case "Opener gone", R-05): the opener while it is connected, not `disabled` and not inert; otherwise the initial focus target of the overlay beneath, if one is open; otherwise the document body.
+  - the R-02, R-03, R-04, R-05 and R-08 statements: the stated limits (the repeated-Escape one keeps "can close" and adds that the first vetoed sequence in a page may hold the veto on a second press as well, contract § Platform behaviour), focus moves in the `…-close` listener, the `method="dialog"` advice, a label being required, and the closed-host `aria-label` behaviour;
+  - where focus lands when the opener is gone (edge case "Opener gone", R-05): the opener while it is connected, not `disabled` and not inert; otherwise the initial focus target of the overlay beneath, if one is open; otherwise the document body;
+  - the opaque-content Tab statement (R-04, contract § Platform behaviour): Tab and Shift+Tab reach the inner focusable parts of content with a closed shadow root, an iframe or media controls in both directions, Shift+Tab from the close control entering such content at the dialog's end from its end, with or without `delegatesFocus`; and leaving a slotted iframe past the cycle's end with Tab can cost one extra press. The test also asserts the README states no reverse-wrap limit (no sentence that a closed shadow root is skipped by the Shift+Tab wrap).
 - [ ] T027 [P] [US1] Red, in `storybook/test/integration/elements-stories.test.ts` (`open(id, theme, "ocelle-dialog")`): the dialog stories of data-model § Stories exist in light and dark, each renders an open, modal `ocelle-dialog` with base.css applied and no request outside the origin (the Storybook is not a CSP target, R-16). The red commit also holds the story-count updates of R-16 (operator decision D), written by hand from the story files: `gates/test/integration/storybook-build.test.ts` (`built 29 stories`), `gates/test/integration/axe.test.ts` and `gates/test/integration/visual.test.ts` (58 story-themes), counted again after any merge of `main` (R-17). Part of T020's red commit; T026 first.
-- [ ] T020 [US1] Make the red commit of T015 to T019 and T027 (test files only). `red.sh 2 phase` must show each failing because `ocelle-dialog` is undefined, its entry, manifest or README section is missing, or the dialog stories are missing.
+- [ ] T020 [US1] Make the red commit of T015 to T019 and T027 (test files only). `red.sh 2 phase` must show each failing because `ocelle-dialog` is undefined, its entry, manifest or README section is missing, the generator does not yet read `src/overlay.ts` or still publishes it, or the dialog stories are missing.
 
 ### Implementation (green)
 
@@ -197,7 +203,7 @@ the driver as it was.
   - custom elements whose `shadowRoot` reads null are tried as stops when the overlay moves focus.
 - [ ] T022 [US1] `packages/elements/src/overlay.ts`, the internal base `OcelleOverlay` (no tag), per R-01 to R-08 and R-18:
   - **Rendering and properties**:
-    - the shadow root renders `<dialog part="panel">` with a header holding `<h2 part="heading" id="heading">`, the close `<button part="close-button">` with `ocelle-icon name="close"` and the `close-label`, the body `<div part="body">` with the default slot, and `<footer part="footer">` with the `footer` slot, not rendered while the slot is empty;
+    - the shadow root renders `<dialog part="panel">` with a header holding `<h2 part="heading" id="heading">`, the close `<button part="close-button">` with `ocelle-icon name="close"` and the `close-label`, the body `<div part="body">` with the default slot, and `<footer part="footer">` with the `footer` slot, not rendered while the slot is empty, then the end sentinel as the panel's last child (`tabindex="-1"`, `aria-hidden="true"`, empty, no name, no role, no part, zero block size; R-04);
     - properties `open` (reflected), `label` and `closeLabel` (`close-label`, default "Close"); `aria-label` is observed, and the name follows `naming.ts`'s `accessibleName` (R-08).
   - **Open and close**:
     - `showModal()` on `open`, with explicit initial focus (R-04);
@@ -208,7 +214,8 @@ the driver as it was.
     - the keydown Escape path on the `<dialog>`, plus the topmost overlay's `document` listener for Escape and Tab with focus on the body;
     - the exceptions: Escape already handled by slotted content, `isComposing`, a search field with a value, slotted close watchers by the below record taken at `showModal()`;
     - the cancelable-`cancel` fallback; a non-cancelable `cancel` closes with reason `host` (R-02);
-    - the hybrid Tab handling: explicit moves only at the ends, from a non-stop and from the body; native middle moves; a move that lands on the body is repaired to the first stop; no Tab handling while a slotted popover or nested modal dialog is open (R-04).
+    - the hybrid Tab handling: explicit moves only at the ends, from a non-stop and from the body; native middle moves; a move that lands on the body is repaired to the first stop; no Tab handling while a slotted popover or nested modal dialog is open (R-04);
+    - the sentinel wrap: when the cycle's last candidate is an opaque container, Shift+Tab from the first stop focuses the end sentinel and calls no `preventDefault()`, so the native move enters the content from its end (operator decision, 2026-11-14, R-04).
   - **Events**:
     - `…-close-request` is cancelable, `…-close` is not; both bubble and are composed;
     - close order: `open` false, then the exit animation, then `<dialog>.close()`, then focus returned, then `…-close` (R-06);
@@ -229,15 +236,15 @@ the driver as it was.
 - [ ] T024 [US1] Packaging and docs:
   - export `OcelleDialog` from `packages/elements/src/index.ts`;
   - add the `./ocelle-dialog.js` entry point to `packages/elements/package.json` `exports`;
-  - regenerate `packages/elements/custom-elements.json` (`pnpm --filter @ocelle/elements run manifest`); apply T013's fallback if the measurement required it;
+  - regenerate `packages/elements/custom-elements.json` (`pnpm --filter @ocelle/elements run manifest`); first apply T013's fallback as decided (R-01): `packages/elements/scripts/manifest.ts` reads every `src/ocelle-*.ts` and `src/overlay.ts` and nothing else, and removes the `src/overlay.ts` module from its output, so T018 passes;
   - write the README `ocelle-dialog` section and the intro line (T019);
   - add the CHANGELOG "Added" entry for `ocelle-dialog`.
 - [ ] T025 [US1] Run the T015 to T019 suites green in both harnesses. Then run, one at a time: `gate:typecheck`, `gate:lint`, `gate:style-lint`, `gate:test-lint`, `gate:manifest`, `gate:csp`, `gate:prefix`, and `gate:mutation -- --base <phase base>`. Record every Timeout report line with its cause in `reviews/phase-2/notes.md`, and add an assertion that kills it where possible (R-15).
 
 ### Stories (green, after T025)
 
-- [ ] T028 [US1] Green: `storybook/stories/dialog.stories.ts` with the stories of data-model § Stories (no 320 × 256 story: #10 has no per-story viewport, R-16). The long-scrolling-body and prose-with-a-table stories are designed so no text is clipped at a scroll edge (a table narrow enough for the panel; no line of text cut by the body's scroll edge in the capture; R-16, operator decision C).
-- [ ] T029 [US1] Produce the baselines in the pinned container (`pnpm run visual:update`), then run `gate:storybook-build` (`built 29 stories`), `gate:visual` and `gate:axe`. If `gate:axe` reports any `color-contrast-incomplete` node, stop for the operator (R-16, decision C); no exception entry is added without that decision. Commit the baselines. CI's captures win over local ones (006 FR-005): take the files of the `visual` artifact. Then add a `differs` line to `gates/plants/visual/fail-token-changed/plant.json` for each new light story-theme that shows `color-ink`, measured in the pinned container as 006 T046s did (R-16), commit it with the baselines, and run `gate:plants`.
+- [ ] T028 [US1] Green: `storybook/stories/dialog.stories.ts` with the stories of data-model § Stories (no 320 × 256 story: #10 has no per-story viewport, R-16). The long-scrolling-body and prose-with-a-table stories are designed so no text is clipped at a scroll edge (a table narrow enough for the panel; R-16, operator decision C). The long-scrolling-body story places an empty `<div data-story="dialog-scroll-edge">` in the slotted body between two paragraphs, across the body's scroll edge in the 1280 × 800 capture, so no paragraph's box crosses that edge (operator decision, 2026-11-14, measured at T029); it is laid out only by a `[data-story="dialog-scroll-edge"]` rule (block size) added to `storybook/.storybook/stories-layout.css` with a comment in the file's style: no text, no role, no name, no `style` attribute, no exception entry (R-16).
+- [ ] T029 [US1] Produce the baselines in the pinned container (`pnpm run visual:update`), then run `gate:storybook-build` (`built 29 stories`), `gate:visual` and `gate:axe`. The axe expectation is zero serious or critical findings with no entry added to `storybook/a11y-exceptions.json`: the long-scrolling-body story's `color-contrast-incomplete` (`elmPartiallyObscured`, whichever paragraph's box sat across the body's scroll edge inside the 800 px viewport) is removed by T028's `dialog-scroll-edge` block (R-16, operator decision 2026-11-14). If `gate:axe` still reports any `color-contrast-incomplete` node, stop for the operator (R-16, decision C); no exception entry is added without that decision. Commit the baselines. CI's captures win over local ones (006 FR-005): take the files of the `visual` artifact. Then add a `differs` line to `gates/plants/visual/fail-token-changed/plant.json` for each new light story-theme that shows `color-ink`, measured in the pinned container as 006 T046s did (R-16), commit it with the baselines, and run `gate:plants`.
 
 **Checkpoint**: `tdd-check.sh 2` reports `pass`.
 
@@ -270,7 +277,7 @@ the driver as it was.
   - `heading-hidden`.
 - [ ] T031 [P] [US2] Write the runners `packages/elements/test/drawer.test.ts` and `packages/elements/test/browser/drawer.test.ts`. Write `packages/elements/test/drawer-upgrade.test.ts` (in process) for the inherited open-at-first-render row's before-definition case, and run it on `overlays-upgrade.html` from `test/browser/drawer.test.ts`. In `test/scenarios/dialog.ts`, add to the nested row the case with an open `ocelle-drawer` as the outer overlay (the dialog slotted inside it); the dialog-in-dialog case stays.
 - [ ] T032 [P] [US2] Write `packages/elements/test/entry-drawer.test.ts` and update the exports test keys. The `manifest.test.ts` entry for `ocelle-drawer` must list:
-  - the dialog's members;
+  - the dialog's members, the inherited `open`, `label` and `closeLabel` with `inheritedFrom` naming `OcelleOverlay` (R-01);
   - `side` (`"start" | "end"`, default `"start"`, reflected), `ground` (`"sheet" | "chrome"`, default `"sheet"`, reflected), `headingHidden`/`heading-hidden` (boolean, default `false`, reflected);
   - the events with the extra reason `"backdrop"`;
   - no `--ocelle-dialog-inline-size`.
