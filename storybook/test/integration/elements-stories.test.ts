@@ -25,7 +25,11 @@ import { afterAll, beforeAll, describe, expect, inject, it } from "vitest";
 // story's markup (the light DOM it renders, not the elements' shadow trees) and no request outside the origin; and the
 // `[data-frame]` rules of storybook/.storybook/stories-layout.css, which are a copy of the one frame source,
 // packages/elements/test/fixtures/frames.css. No CSP violation is counted: the Storybook is not a CSP target (006
-// FR-020), strict CSP is proved in the elements-browser fixtures.
+// FR-020), strict CSP is proved in the elements-browser fixtures. Since 009 phase 3 (T037): the five
+// `ocelle-workflow-board` and six `ocelle-workflow-lane` stories of contracts/elements.md § Stories, each in light and
+// dark rendering its boards (defined, with the story's label, direction, lanes, tab stop, region and scroll position)
+// or its lane (with the story's title, count and variant, and its group's name), with no `style` attribute and no class
+// on the story's markup and no request outside the origin.
 const types: Readonly<Record<string, string>> = {
   ".html": "text/html; charset=utf-8",
   ".js": "text/javascript; charset=utf-8",
@@ -216,6 +220,97 @@ describe("the ocelle-scroller stories in the built Storybook (009 FR-032, T020)"
       it(`${id} in ${theme}: renders its ocelle-scroller with the story's label, direction and scroll position, with no style attribute or class on its markup and no request outside the origin`, async () => {
         const { page, outside } = await open(id, theme, "ocelle-scroller");
         expect({ ...((await observeScrollers(page)) as object), outside }).toEqual({ theme, defined: true, styled: [], scrollers, outside: [] });
+        await page.close();
+      });
+    }
+  }
+});
+
+/** What a board or lane story's page shows: its theme, its boards' and lanes' state, and any style attribute or class on its markup. */
+function observeWorkflow(page: Page, element: string): Promise<unknown> {
+  return page.evaluate((element) => {
+    const root = document.getElementById("storybook-root");
+    const markup = [...(root?.querySelectorAll("*") ?? [])];
+    return {
+      theme: document.documentElement.dataset.theme,
+      defined: customElements.get(element) !== undefined,
+      styled: markup.filter((element) => element.hasAttribute("style") || element.hasAttribute("class")).map((element) => element.localName),
+      boards: [...(root?.querySelectorAll("ocelle-workflow-board") ?? [])].map((board) => {
+        const box = board.shadowRoot?.querySelector<HTMLElement>(".region-box");
+        const at = Math.abs(box?.scrollLeft ?? 0);
+        const room = (box?.scrollWidth ?? 0) - (box?.clientWidth ?? 0);
+        const position = room <= 1 ? "fits" : at <= 1 ? "start" : room - at <= 1 ? "end" : "middle";
+        return {
+          label: board.getAttribute("label"),
+          direction: getComputedStyle(board).direction,
+          lanes: board.querySelectorAll(":scope > ocelle-workflow-lane").length,
+          tabStop: box?.getAttribute("tabindex") === "0",
+          role: box?.getAttribute("role") ?? null,
+          position,
+        };
+      }),
+      lanes: [...(root?.querySelectorAll("ocelle-workflow-lane") ?? [])]
+        .filter((lane) => lane.parentElement?.localName !== "ocelle-workflow-board")
+        .map((lane) => ({
+          label: lane.getAttribute("label"),
+          count: lane.getAttribute("count"),
+          variant: lane.getAttribute("variant"),
+          group: lane.shadowRoot?.querySelector('[role="group"]')?.getAttribute("aria-label") ?? null,
+        })),
+    };
+  }, element);
+}
+
+const workflowBoard = (lanes: number, position: string, extra: Record<string, unknown> = {}): Record<string, unknown> => ({
+  label: "Workflow",
+  direction: "ltr",
+  lanes,
+  tabStop: position !== "fits",
+  role: position === "fits" ? null : "region",
+  position,
+  ...extra,
+});
+
+const boardStories = [
+  { id: "elements-ocelle-workflow-board--five-lanes", boards: [workflowBoard(5, "fits")] },
+  { id: "elements-ocelle-workflow-board--five-lanes-narrow", boards: [workflowBoard(5, "start")] },
+  { id: "elements-ocelle-workflow-board--one-lane", boards: [workflowBoard(1, "fits")] },
+  { id: "elements-ocelle-workflow-board--no-lanes", boards: [workflowBoard(0, "fits")] },
+  { id: "elements-ocelle-workflow-board--right-to-left", boards: [workflowBoard(5, "start", { direction: "rtl" })] },
+] as const;
+
+describe("the ocelle-workflow-board stories in the built Storybook (009 FR-032, T037)", { timeout: 60_000 }, () => {
+  for (const { id, boards } of boardStories) {
+    for (const theme of ["light", "dark"] as const) {
+      it(`${id} in ${theme}: renders its ocelle-workflow-board with the story's label, direction, lanes and scroll position, with no style attribute or class on its markup and no request outside the origin`, async () => {
+        const { page, outside } = await open(id, theme, "ocelle-workflow-board");
+        expect({ ...((await observeWorkflow(page, "ocelle-workflow-board")) as object), outside }).toEqual({ theme, defined: true, styled: [], boards, lanes: [], outside: [] });
+        await page.close();
+      });
+    }
+  }
+});
+
+const workflowLane = (label: string | null, count: string | null, variant: string | null, group: string): Record<string, unknown> => ({ label, count, variant, group });
+
+const laneStories = [
+  { id: "elements-ocelle-workflow-lane--default-with-count", lanes: [workflowLane("Ready", "3", null, "Ready, 3")] },
+  { id: "elements-ocelle-workflow-lane--default-without-count", lanes: [workflowLane("Ready", null, null, "Ready")] },
+  { id: "elements-ocelle-workflow-lane--flat-with-count", lanes: [workflowLane("Ready", "3", "flat", "Ready, 3")] },
+  { id: "elements-ocelle-workflow-lane--flat-without-count", lanes: [workflowLane("Ready", null, "flat", "Ready")] },
+  {
+    id: "elements-ocelle-workflow-lane--long-title",
+    lanes: [workflowLane("Waiting for review by the operator and the squad", "12", null, "Waiting for review by the operator and the squad, 12")],
+  },
+  { id: "elements-ocelle-workflow-lane--untitled-with-count", lanes: [workflowLane(null, "3", null, "3")] },
+] as const;
+
+describe("the ocelle-workflow-lane stories in the built Storybook (009 FR-032, T037)", { timeout: 60_000 }, () => {
+  for (const { id, lanes } of laneStories) {
+    for (const theme of ["light", "dark"] as const) {
+      it(`${id} in ${theme}: renders its ocelle-workflow-lane with the story's title, count and variant and its group's name, with no style attribute or class on its markup and no request outside the origin`, async () => {
+        const { page, outside } = await open(id, theme, "ocelle-workflow-lane");
+        expect({ ...((await observeWorkflow(page, "ocelle-workflow-lane")) as object), outside }).toEqual({ theme, defined: true, styled: [], boards: [], lanes, outside: [] });
         await page.close();
       });
     }

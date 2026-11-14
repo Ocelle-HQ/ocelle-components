@@ -247,7 +247,7 @@ describe("generate(root) on the repository's element source", () => {
     const manifest = await generate(repo);
     const modules = manifest.modules as { path: string; declarations: Record<string, unknown>[] }[];
     expect(manifest.schemaVersion).toBe("1.0.0");
-    expect(modules.map((module) => module.path)).toEqual(["src/ocelle-brand-mark.ts", "src/ocelle-icon.ts", "src/ocelle-scroller.ts"]);
+    expect(modules.map((module) => module.path)).toEqual(["src/ocelle-brand-mark.ts", "src/ocelle-icon.ts", "src/ocelle-scroller.ts", "src/ocelle-workflow-board.ts", "src/ocelle-workflow-lane.ts"]);
     const [icon] = modules.find((module) => module.path === "src/ocelle-icon.ts")?.declarations ?? [];
     expect(icon).toMatchObject({
       kind: "class",
@@ -309,6 +309,40 @@ describe("generate(root) on the repository's element source", () => {
     expect(described(scroller?.members)).toEqual([{ kind: "field", name: "label", privacy: "public", type: { text: "string | undefined" }, default: "undefined", attribute: "label", described: true }]);
     expect(described(scroller?.attributes)).toEqual([{ name: "label", fieldName: "label", type: { text: "string | undefined" }, default: "undefined", described: true }]);
     expect(described(scroller?.slots)).toEqual([{ name: "", described: true }]);
+  });
+
+  it("declares ocelle-workflow-board with its tag name, class, label (string | undefined, not reflected, described), one default slot, described, and no event, part or CSS property (009 contracts/elements.md, T035)", async () => {
+    const manifest = await generate(repo);
+    const modules = manifest.modules as { path: string; declarations: Record<string, unknown>[] }[];
+    const [board] = modules.find((module) => module.path === "src/ocelle-workflow-board.ts")?.declarations ?? [];
+    expect(board).toMatchObject({ kind: "class", name: "OcelleWorkflowBoard", tagName: "ocelle-workflow-board", customElement: true, events: [], cssParts: [], cssProperties: [] });
+    const described = (list: unknown): Record<string, unknown>[] =>
+      ((list ?? []) as Record<string, unknown>[]).map(({ description, ...rest }) => ({ ...rest, described: typeof description === "string" && description !== "" }));
+    expect(described(board?.members)).toEqual([{ kind: "field", name: "label", privacy: "public", type: { text: "string | undefined" }, default: "undefined", attribute: "label", described: true }]);
+    expect(described(board?.attributes)).toEqual([{ name: "label", fieldName: "label", type: { text: "string | undefined" }, default: "undefined", described: true }]);
+    expect(described(board?.slots)).toEqual([{ name: "", described: true }]);
+  });
+
+  it('declares ocelle-workflow-lane with its tag name, class, label (string | undefined), count (number | undefined), count-label / countLabel (string | undefined), not reflected, and variant ("flat" | undefined), reflected, each described with the default undefined, one default slot, described, and no event, part or CSS property (009 contracts/elements.md, T035)', async () => {
+    const manifest = await generate(repo);
+    const modules = manifest.modules as { path: string; declarations: Record<string, unknown>[] }[];
+    const [lane] = modules.find((module) => module.path === "src/ocelle-workflow-lane.ts")?.declarations ?? [];
+    expect(lane).toMatchObject({ kind: "class", name: "OcelleWorkflowLane", tagName: "ocelle-workflow-lane", customElement: true, events: [], cssParts: [], cssProperties: [] });
+    const described = (list: unknown): Record<string, unknown>[] =>
+      ((list ?? []) as Record<string, unknown>[]).map(({ description, ...rest }) => ({ ...rest, described: typeof description === "string" && description !== "" }));
+    expect(described(lane?.members)).toEqual([
+      { kind: "field", name: "label", privacy: "public", type: { text: "string | undefined" }, default: "undefined", attribute: "label", described: true },
+      { kind: "field", name: "count", privacy: "public", type: { text: "number | undefined" }, default: "undefined", attribute: "count", described: true },
+      { kind: "field", name: "countLabel", privacy: "public", type: { text: "string | undefined" }, default: "undefined", attribute: "count-label", described: true },
+      { kind: "field", name: "variant", privacy: "public", type: { text: '"flat" | undefined' }, default: "undefined", attribute: "variant", reflects: true, described: true },
+    ]);
+    expect(described(lane?.attributes)).toEqual([
+      { name: "label", fieldName: "label", type: { text: "string | undefined" }, default: "undefined", described: true },
+      { name: "count", fieldName: "count", type: { text: "number | undefined" }, default: "undefined", described: true },
+      { name: "count-label", fieldName: "countLabel", type: { text: "string | undefined" }, default: "undefined", described: true },
+      { name: "variant", fieldName: "variant", type: { text: '"flat" | undefined' }, default: "undefined", described: true },
+    ]);
+    expect(described(lane?.slots)).toEqual([{ name: "", described: true }]);
   });
 
   it("rejects a root without an element module, naming the directory", async () => {

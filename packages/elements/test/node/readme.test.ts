@@ -20,7 +20,11 @@ import { describe, expect, it } from "vitest";
 // T029): `ocelle-scroller` (its attribute, slot, tokens, tree, keyboard, handover, fades, clearance, scrollbar, naming
 // guidance, shrink-to-fit hosts and reduced motion), the overflow-region module's interface under the element
 // conventions, the Host ARIA rule scoped per element, the styles rule with the per-instance sheet, the mask properties
-// in the engine floor, its entry point, and its CHANGELOG entries.
+// in the engine floor, its entry point, and its CHANGELOG entries. Since 009 phase 3 (T036, T043):
+// `ocelle-workflow-board` (its layout, attribute, slot, tokens, tree, lane content, ground, wide content, nested images,
+// shrink-to-fit hosts and the width-only change) and `ocelle-workflow-lane` (its attributes, the name rule with no
+// built-in word, the hidden visible text, no live region, the `color-sheet` ground, the flat variant, its tokens and
+// the title wrapping), their entry points and their CHANGELOG entries.
 /** A file's text, relative to the package; empty while it does not exist, so each assertion reports what is missing. */
 function read(file: string): string {
   const url = new URL(`../../${file}`, import.meta.url);
@@ -152,6 +156,36 @@ const fragments = [
   "In a shrink-to-fit host (a default flex item, a dialog, a table cell) the scroller takes its content's size and does not overflow, so the page may scroll sideways instead: give the scroller a definite or maximum inline size there so that it scrolls",
   "Under reduced motion nothing the scroller does animates. The browser's own scrolling of the strip on a key pressed while a slotted control has focus is not the scroller's and may animate, also under reduced motion; the element does not control it",
   "`ocelle-scroller` has no event, CSS part or CSS custom property",
+  // ocelle-workflow-board (009 FR-012 to FR-016, FR-034; contracts/elements.md § `ocelle-workflow-board`; Edge Cases;
+  // research.md R-08, R-10; T036)
+  "`ocelle-workflow-board` lays its children out in one row in the inline direction, `--ocelle-space-3` apart: each child takes at least `--ocelle-lane-min-width` and the children share any extra space equally; when their minimum widths exceed its size, the board scrolls inside itself",
+  "`label` (attribute and property, not reflected): the name of the board's region while it overflows, trimmed; empty or whitespace-only counts as none",
+  "It has one default slot, the lanes",
+  "`ocelle-workflow-board` reads the tokens `--ocelle-lane-min-width`, `--ocelle-space-3`, `--ocelle-focus-offset`, `--ocelle-focus-width`, `--ocelle-color-focus`, `--ocelle-scroller-fade-size`, `--ocelle-color-ink` (as a mask colour only) and `--ocelle-border-width` (the forced-colours edge line)",
+  "While it overflows and has a name, the board is one `region` landmark with that name, holding its lanes. Otherwise its tree, keyboard, focus, fades and scrollbar are those of `ocelle-scroller`, through the same overflow-region module",
+  "A board holds lanes. Any other child is laid out as a lane: it takes the same minimum and the same equal share",
+  "No content widens a lane past its share: text wraps, and a word wider than the lane breaks inside it. Content that cannot shrink, such as an element of fixed inline size, is not clipped: it overflows its lane over the next one, and when it reaches past the board's end the board scrolls. Put wide content, such as a row of chips, in an `ocelle-scroller`",
+  "`base.css` caps images nested in a card at the lane's width; a host without it caps them itself",
+  "The board paints no ground of its own: put it, and its flat lanes, on a main ground",
+  "In a shrink-to-fit host (a default flex item, a dialog, a table cell) the board takes its lanes' minimum widths and gaps and does not overflow, so the page may scroll sideways instead: give the board a definite or maximum inline size there so that it scrolls",
+  "A change inside a lane that changes only the inline size of a descendant, and neither the board's size nor a lane's, is picked up at the board's next size, slot or scroll event",
+  "`ocelle-workflow-board` has no event, CSS part or CSS custom property",
+  // ocelle-workflow-lane (009 FR-017 to FR-021, FR-034; contracts/elements.md § `ocelle-workflow-lane`; research.md
+  // R-09, R-10; T036)
+  "`ocelle-workflow-lane` is a column of a board with an optional title, an optional count and a variant. It has one default slot, the lane's content",
+  "`label` (attribute and property, not reflected): the lane's title, shown and used as its name, trimmed; empty or whitespace-only counts as absent, and no title is shown",
+  "`count` (attribute and property, not reflected): a whole number of 0 or more, shown after the title with tabular figures as plain digits (`03` shows 3). The attribute counts only when, after trimming, it is decimal digits alone, at most `Number.MAX_SAFE_INTEGER`; the property, when it is a safe integer of 0 or more; anything else counts as absent",
+  "`count-label` (attribute, and property `countLabel`, not reflected): the count's text in the name, trimmed, such as \"3 work packages\"; the visible count still shows the number",
+  "`variant` (attribute and property, reflected): `flat` drops the lane's ground, corners and padding and sets the title and count in small uppercase; any other value gives the default",
+  "The lane is one `group` named by its title, then \", \" and the `count-label` or the count when a count is shown (\"Ready, 3\"); without a title, by the count's text alone; without a shown count, by the title alone. With neither it adds no role and no name. A non-blank host `aria-label` names the group alone",
+  "No word is added to the name in any language: a host that wants words passes them in `count-label`",
+  "The visible title and count are hidden from the accessibility tree, so the name is not read twice",
+  "The lane is not a live region: a change of `count` or `count-label` updates the visible count and the name, and is not announced",
+  "The default lane's ground is `--ocelle-color-sheet`, which differs from `--ocelle-color-canvas`, `--ocelle-color-panel`, `--ocelle-color-inspector` and `--ocelle-color-pane` in both themes, with `--ocelle-radius-row` corners and `--ocelle-space-3` padding; its title is `--ocelle-font-size-sm` at `--ocelle-font-weight-strong` in `--ocelle-color-ink`, and its count follows in `--ocelle-color-ink-muted`. In forced colours it draws a 1 px `CanvasText` border",
+  "The flat lane has no ground, corners or padding of its own: its cards sit on the board's ground. Its title and count are `--ocelle-font-size-xs` at `--ocelle-font-weight-strong` in `--ocelle-color-ink-soft`, uppercase, spaced by `--ocelle-tracking-caps`, in `--ocelle-font-sans` with tabular figures. In forced colours it draws no border",
+  "`ocelle-workflow-lane` reads the tokens `--ocelle-color-sheet`, `--ocelle-radius-row`, `--ocelle-space-3`, `--ocelle-font-size-sm`, `--ocelle-font-size-xs`, `--ocelle-font-weight-strong`, `--ocelle-color-ink`, `--ocelle-color-ink-soft`, `--ocelle-color-ink-muted`, `--ocelle-tracking-caps`, `--ocelle-font-sans`, `--ocelle-figures` and `--ocelle-border-width`; the board gives it `--ocelle-lane-min-width`",
+  "A long title wraps between words, and a word wider than the lane breaks inside it; the lane does not widen for it, and the count stays visible",
+  "`ocelle-workflow-lane` has no event, CSS part or CSS custom property",
   // two copies on a page (FR-006, Edge Cases)
   "Two copies of the package on one page, two versions or the browser build beside a bundle of the module build, cannot both define an element: the first definition wins and the second import throws nothing",
 ];
@@ -162,6 +196,8 @@ const entryRows = [
   "| `@ocelle/elements/ocelle-icon.js` | `dist/ocelle-icon.js` | `ocelle-icon` only; for hosts with a bundler |",
   "| `@ocelle/elements/ocelle-brand-mark.js` | `dist/ocelle-brand-mark.js` | `ocelle-brand-mark` only; for hosts with a bundler |",
   "| `@ocelle/elements/ocelle-scroller.js` | `dist/ocelle-scroller.js` | `ocelle-scroller` only; for hosts with a bundler |",
+  "| `@ocelle/elements/ocelle-workflow-board.js` | `dist/ocelle-workflow-board.js` | `ocelle-workflow-board` only, not the lane; for hosts with a bundler |",
+  "| `@ocelle/elements/ocelle-workflow-lane.js` | `dist/ocelle-workflow-lane.js` | `ocelle-workflow-lane` only; for hosts with a bundler |",
   "| `@ocelle/elements/browser.js` | `dist/browser/ocelle-elements.js` | every element, Lit inside; for hosts without a bundler |",
   "| `@ocelle/elements/custom-elements.json` | `custom-elements.json` | the manifest, also named by the `customElements` field |",
 ];
@@ -206,7 +242,7 @@ describe("packages/elements/README.md", () => {
   it("lists exactly the entry points of package.json's exports in its Entry points table (FR-002)", () => {
     const manifest = JSON.parse(read("package.json")) as { exports?: Record<string, string> };
     expect(tableRows(read("README.md"), "Entry points")).toEqual(entryRows);
-    expect(Object.keys(manifest.exports ?? {})).toEqual([".", "./ocelle-icon.js", "./ocelle-brand-mark.js", "./ocelle-scroller.js", "./browser.js", "./custom-elements.json"]);
+    expect(Object.keys(manifest.exports ?? {})).toEqual([".", "./ocelle-icon.js", "./ocelle-brand-mark.js", "./ocelle-scroller.js", "./ocelle-workflow-board.js", "./ocelle-workflow-lane.js", "./browser.js", "./custom-elements.json"]);
   });
 
   it("lists the thirteen names of the set, whether each mirrors and the consumer need it meets, in its Icons table (US2-1, FR-018, SC-007)", () => {
@@ -242,6 +278,12 @@ describe("packages/elements/CHANGELOG.md", () => {
     "`ocelle-scroller`",
     "`@ocelle/elements/ocelle-scroller.js`",
     "the overflow-region module convention",
+    // since 009 phase 3 (T043, FR-035)
+    "`ocelle-workflow-board`",
+    "`ocelle-workflow-lane`",
+    "`@ocelle/elements/ocelle-workflow-board.js`",
+    "`@ocelle/elements/ocelle-workflow-lane.js`",
+    "`label`, `count`, `count-label` and `variant` (reflected)",
     ...["chevron-start", "chevron-end", "chevron-up", "chevron-down", "arrow-start", "arrow-end", "menu", "close", "folder", "file", "search", "table", "copy"].map((name) => `\`${name}\``),
   ])("names %s under Unreleased / Added (constitution VII, FR-031, SC-008)", (surface) => {
     expect(added).toContain(surface);
