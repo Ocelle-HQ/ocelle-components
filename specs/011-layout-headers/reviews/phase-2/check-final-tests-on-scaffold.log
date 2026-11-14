@@ -1,5 +1,5 @@
 Scope: all 5 workspace projects
-✓ Lockfile passes supply-chain policies (verified 6h ago)
+✓ Lockfile passes supply-chain policies (verified 8h ago)
 Lockfile is up to date, resolution step is skipped
 Packages are hard linked from the content-addressable store to the virtual store.
   Content-addressable store is at: /root/.local/share/pnpm/store/v11
@@ -35,7 +35,7 @@ devDependencies:
 + vite 8.3.5
 + vitest 5.0.5
 
-Done in 554ms using pnpm v12.16.1
+Done in 718ms using pnpm v12.16.1
 $ node gates/bin/setup-offline.ts
 setup: installed offline; Chromium at /opt/pw-browsers/chromium-1243/chrome-linux64/chrome
 $ node gates/bin/test.ts
@@ -200,6 +200,7 @@ packages/elements/test/browser/section-header.test.ts:33: unit-tests: ocelle-sec
 packages/elements/test/browser/section-header.test.ts:33: unit-tests: ocelle-section-header on the strict-CSP fixture with the browser build (011 US1) US1-14: at 320 px a compact card's head…: AssertionError: expected { observed: { …(6) }, …(1) } to deeply equal { observed: { …(6) }, …(1) }
 packages/elements/test/browser/section-header.test.ts:33: unit-tests: ocelle-section-header on the strict-CSP fixture with the browser build (011 US1) US1-16: a header with an eyebrow, a des…: AssertionError: expected { observed: { …(2) }, …(1) } to deeply equal { observed: { …(2) }, …(1) }
 packages/elements/test/browser/section-header.test.ts:33: unit-tests: ocelle-section-header on the strict-CSP fixture with the browser build (011 US1) FR-005, FR-010: a header with an eyebro…: AssertionError: expected { observed: { …(4) }, …(1) } to deeply equal { observed: { …(4) }, …(1) }
+packages/elements/test/browser/section-header.test.ts:33: unit-tests: ocelle-section-header on the strict-CSP fixture with the browser build (011 US1) FR-005, FR-010, narrow (phase 2 review …: AssertionError: expected { …(2) } to deeply equal { …(2) }
 packages/elements/test/browser/section-header.test.ts:33: unit-tests: ocelle-section-header on the strict-CSP fixture with the browser build (011 US1) US1-17, outside a card: size="" and siz…: AssertionError: expected { observed: { …(4) }, …(1) } to deeply equal { observed: { …(4) }, …(1) }
 packages/elements/test/browser/section-header.test.ts:33: unit-tests: ocelle-section-header on the strict-CSP fixture with the browser build (011 US1) FR-006, variant: variant="" and variant…: AssertionError: expected { observed: { …(4) }, …(1) } to deeply equal { observed: { …(4) }, …(1) }
 packages/elements/test/browser/section-header.test.ts:33: unit-tests: ocelle-section-header on the strict-CSP fixture with the browser build (011 US1) token sentinels (research.md R-13): wit…: AssertionError: expected { observed: { …(2) }, …(1) } to deeply equal { observed: { …(2) }, …(1) }
@@ -259,11 +260,12 @@ packages/elements/test/section-header.test.ts:23: unit-tests: ocelle-section-hea
 packages/elements/test/section-header.test.ts:23: unit-tests: ocelle-section-header, in process (011 US1) US1-14: at 320 px a compact card's head…: AssertionError: expected { scrollWidth: false, …(5) } to deeply equal { Object (scrollWidth, clipped, ...) }
 packages/elements/test/section-header.test.ts:23: unit-tests: ocelle-section-header, in process (011 US1) US1-16: a header with an eyebrow, a des…: AssertionError: expected { empty: { …(2) }, full: { …(3) } } to deeply equal { empty: { …(2) }, full: { …(3) } }
 packages/elements/test/section-header.test.ts:23: unit-tests: ocelle-section-header, in process (011 US1) FR-005, FR-010: a header with an eyebro…: AssertionError: expected { labelled: { …(2) }, …(3) } to deeply equal { labelled: { …(2) }, …(3) }
+packages/elements/test/section-header.test.ts:23: unit-tests: ocelle-section-header, in process (011 US1) FR-005, FR-010, narrow (phase 2 review …: AssertionError: expected { only: { top: -1, …(3) }, …(3) } to deeply equal { only: { top: +0, …(3) }, …(3) }
 packages/elements/test/section-header.test.ts:23: unit-tests: ocelle-section-header, in process (011 US1) US1-17, outside a card: size="" and siz…: AssertionError: expected { …(4) } to deeply equal { …(4) }
 packages/elements/test/section-header.test.ts:23: unit-tests: ocelle-section-header, in process (011 US1) FR-006, variant: variant="" and variant…: AssertionError: expected { …(4) } to deeply equal { …(4) }
 packages/elements/test/section-header.test.ts:23: unit-tests: ocelle-section-header, in process (011 US1) token sentinels (research.md R-13): wit…: AssertionError: expected { sentinel: { …(5) }, …(1) } to deeply equal { sentinel: { …(5) }, …(1) }
 packages/elements/test/section-header.test.ts:23: unit-tests: ocelle-section-header, in process (011 US1) FR-004, many actions at 320 px: six act…: AssertionError: expected { Object (scrollWidth, clipped, ...) } to deeply equal { Object (scrollWidth, clipped, ...) }
 packages/elements/test/section-header.test.ts:23: unit-tests: ocelle-section-header, in process (011 US1) a hidden host (FR-001, Edge Cases): a s…: AssertionError: expected { …(2) } to deeply equal { …(2) }
 packages/elements/test/section-header.test.ts:23: unit-tests: ocelle-section-header, in process (011 US1) no event (FR-002): mounting, filling an…: AssertionError: expected { heard: [], changed: [ true, …(3) ] } to deeply equal { heard: [], changed: [ true, …(3) ] }
-unit-tests: 226 of 3302 tests failed
+unit-tests: 228 of 3304 tests failed
 [ELIFECYCLE] Test failed. See above for more details.
