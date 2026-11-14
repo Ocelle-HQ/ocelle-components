@@ -93,6 +93,7 @@ pitfalls up front. Each entry names where it was found. New entries are added as
   `revert-layer` reproduces "the rule is missing". (003 CORRECTNESS-1-009)
 - Setting `font-size` on `<html>` rescales every `rem` token (`--ocelle-target-min` 44 px becomes 38.5 px). Never
   set the root size from a hook. (003 SPEC-1-01)
+- **Forced colours flatten borders and backgrounds** (012 R-07, R-12): a transparent border segment computes to the system colour (a border spinner becomes a full ring) and backgrounds become `Canvas`, so a bar or hover drawn as a background vanishes; draw such marks as SVG strokes in `currentColor` or with forced-colours rules of their own.
 
 ## Values and custom properties
 
@@ -115,6 +116,8 @@ pitfalls up front. Each entry names where it was found. New entries are added as
   caption is longer than the box. (003 A11Y-SECURITY-1-005, FRESH-2-002)
 - Long inline code, bare URLs and `pre` lines break WCAG 1.4.10 at 320 px unless they have
   `overflow-wrap: anywhere` and `pre-wrap`. (003 SPEC-1-09, SPEC-2-02)
+- **A page rule beats `:host` display** (012 PLAN-FRESH-3-001): `display: block` or a fixed height set on the element leaves host area outside the inner control, and a click there reaches `document` with the host as target. Guard on the host, not only by layout.
+- **`min-inline-size: min-content` and long identifiers** (012 PLAN-CORRECTNESS-1-011): with `overflow-wrap: break-word` a long unbreakable title still widens the row past its container; `overflow-wrap: anywhere` keeps it inside.
 
 ## Accessibility behaviour (Chromium)
 
@@ -139,6 +142,10 @@ pitfalls up front. Each entry names where it was found. New entries are added as
 - Wide tables in a screen scroll box lose columns when printed (8 of 12 on A4). Decide print up front. (003 FRESH-3-002)
 - State layout constraints by their cause ("not sized from its content"), not as a closed list of layouts: every
   list the squad wrote missed cases (drawers, non-modal dialogs, table cells, start-aligned items). (003 FRESH-3-003)
+- **Host ARIA stays visible** (012 planning, Chromium 153): a custom element host without a role that keeps `aria-label` or `aria-labelledby` is a named `generic` node beside its inner control; axe gives `aria-allowed-attr` (critical) and `aria-prohibited-attr` (serious) as "needs review", which 006's axe gate fails. An `ElementInternals` role of `none` or `presentation` changes neither. Move such attributes onto the inner control.
+- **Element reflection crosses into the light tree only** (012 R-04): `ariaControlsElements`, `ariaLabelledByElements` and `ariaDescribedByElements` on an inner control relate to light-DOM elements (shadow-including ancestors) but not to elements in a sibling shadow root; Chrome 135 shipped them, Safari 16.4. `ariaOwnsElements` does not exist.
+- **CDP never reports `aria-current`**, even on a light-DOM link: read it from the DOM.
+- **Clicks on unusable controls** (012 R-06): a disabled native `<button>` delivers only `pointerdown` to ancestors; an `aria-disabled` control gets the click, so stop it with `preventDefault()` and `stopImmediatePropagation()` on `click` and `auxclick` (a middle click fires only `auxclick`); capture-phase listeners still see it. Playwright refuses to click an `aria-disabled` element unless `force: true`, so a "not activated" test without it sends no click and passes vacuously.
 
 ## CSP
 
