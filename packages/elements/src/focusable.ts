@@ -53,12 +53,15 @@ function rendered(element: Element): boolean {
   return element.getClientRects().length > 0 && getComputedStyle(element).visibility === "visible";
 }
 
-/** Whether `element` is focusable by sequential navigation, apart from being rendered. */
+/**
+ * Whether `element` is focusable by sequential navigation, apart from being rendered. An `<a>` without `href` and a
+ * media element without `controls` read a `tabIndex` of 0 yet are stops only with a `tabindex` attribute (an
+ * `<input type="hidden">` and an `<area>` have no layout box, so they are never rendered stops).
+ */
 function sequential(element: HTMLElement): boolean {
   if (element.matches(":disabled")) return false;
   if (element.localName === "iframe" || isMedia(element)) return true;
-  if ((element.localName === "a" || element.localName === "area") && !element.hasAttribute("href")) return element.hasAttribute("tabindex") && element.tabIndex >= 0;
-  if (element.localName === "input" && (element as HTMLInputElement).type === "hidden") return false;
+  if ((element.localName === "a" && !element.hasAttribute("href")) || element instanceof HTMLMediaElement) return element.hasAttribute("tabindex") && element.tabIndex >= 0;
   return element.tabIndex >= 0;
 }
 
@@ -71,12 +74,12 @@ function scroller(element: HTMLElement): boolean {
 }
 
 /** The children of `node` in the flat tree: a slot's assigned elements (or its fallback), a host's shadow root's. */
-function flatChildren(node: Element | ShadowRoot): Element[] {
+export function flatChildren(node: Element): Element[] {
   if (node instanceof HTMLSlotElement) {
     const assigned = node.assignedElements();
     return assigned.length > 0 ? assigned : [...node.children];
   }
-  if (node instanceof Element && node.shadowRoot !== null) return [...node.shadowRoot.children];
+  if (node.shadowRoot !== null) return [...node.shadowRoot.children];
   return [...node.children];
 }
 
@@ -86,10 +89,10 @@ function sameGroup(radio: HTMLInputElement, other: HTMLInputElement): boolean {
 }
 
 /**
- * Walks `root` (an element or a shadow root, itself not a candidate): its candidates in flat-tree order and in the
- * engine's sequential navigation order.
+ * Walks `root` (an element, itself not a candidate): its candidates in flat-tree order and in the engine's sequential
+ * navigation order.
  */
-export function walk(root: Element | ShadowRoot): Walk {
+export function walk(root: Element): Walk {
   const flat: Candidate[] = [];
   const radios: HTMLInputElement[] = [];
   /** Visits `element` and its flat subtree into `scope`; returns whether it holds a stop. */
@@ -99,25 +102,25 @@ export function walk(root: Element | ShadowRoot): Walk {
     const html = element instanceof HTMLElement ? element : undefined;
     let holds = false;
     const at = flat.length;
+    const mark = scope.length;
     if (html !== undefined && isOpaque(html)) {
+      // A host without a `tabindex` reads -1, which orders as 0 does: with the rest, in tree order.
       const candidate: Candidate = { element: html, kind: "opaque" };
       flat.push(candidate);
-      scope.push({ tabIndex: html.hasAttribute("tabindex") ? html.tabIndex : 0, candidate });
+      scope.push({ tabIndex: html.tabIndex, candidate });
     } else if (html !== undefined && sequential(html) && rendered(html)) {
       if (html instanceof HTMLInputElement && html.type === "radio" && html.name !== "") {
         const group = radios.filter((each) => sameGroup(html, each));
         radios.push(html);
-        const chosen = group.find((each) => each.checked);
         const [first] = group;
         if (first === undefined) {
           const candidate: Candidate = { element: html, kind: "stop" };
           flat.push(candidate);
           scope.push({ tabIndex: html.tabIndex, candidate });
-        } else if (chosen === undefined && html.checked) {
-          // This radio is the group's checked one: it takes the place of the group's first.
-          const index = flat.findIndex((each) => each.element === first);
+        } else if (html.checked) {
+          // This radio is the group's checked one (a group has one at most): it takes the place of the group's first.
           const candidate: Candidate = { element: html, kind: "stop" };
-          if (index >= 0) flat[index] = candidate;
+          flat[flat.findIndex((each) => each.element === first)] = candidate;
           replace(scopes, first, candidate);
         }
         holds = true;
@@ -139,21 +142,17 @@ export function walk(root: Element | ShadowRoot): Walk {
     let inside = false;
     for (const child of flatChildren(element)) inside = visit(child, inner) || inside;
     if (!holds && !inside && html !== undefined && !isOpaque(html) && rendered(html) && scroller(html)) {
+      // Before its subtree, in both orders: its nested scope, if it opened one, and any opaque container inside it.
       const candidate: Candidate = { element: html, kind: "stop" };
       flat.splice(at, 0, candidate);
-      // Before its own (empty) nested scope, if it opened one.
-      const index = scope.indexOf(scope.find((each) => each.scope === inner) ?? ({} as Entry));
-      const entry: Entry = { tabIndex: 0, candidate };
-      if (index >= 0) scope.splice(index, 0, entry);
-      else scope.push(entry);
+      scope.splice(mark, 0, { tabIndex: 0, candidate });
       holds = true;
     }
     return holds || inside;
   };
   const top: Entry[] = [];
   const scopes: Entry[][] = [top];
-  const start = root instanceof ShadowRoot ? [...root.children] : flatChildren(root);
-  for (const child of start) visit(child, top);
+  for (const child of flatChildren(root)) visit(child, top);
   return { flat, order: ordered(top) };
 }
 

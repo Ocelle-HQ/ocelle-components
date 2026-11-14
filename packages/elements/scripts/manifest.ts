@@ -118,6 +118,7 @@ export function iconNames(text: string): string[] {
 
 export function generate(root: string): Promise<Manifest> {
   const dir = join(root, sourceDir);
+  // Stryker disable next-line ArrayDeclaration: equivalent, a missing directory then lists one name, "Stryker was here", which is neither an ocelle-*.ts module nor overlay.ts, so nothing is read and the generator rejects as with none (T025)
   const names = existsSync(dir) ? readdirSync(dir) : [];
   const files = names.filter((name) => element.test(name));
   if (files.length === 0) return Promise.reject(new Error(`no element module ${sourceDir}/ocelle-*.ts under ${root}`));

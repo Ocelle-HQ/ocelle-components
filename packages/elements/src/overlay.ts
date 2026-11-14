@@ -6,7 +6,7 @@
 // Internal, not an entry point, and no tag: `ocelle-dialog` (and later `ocelle-drawer`) extend it.
 import { LitElement, css, html, nothing } from "lit";
 import type { CSSResultGroup, PropertyValues } from "lit";
-import { deepActive, isOpaqueContent, walk } from "./focusable.ts";
+import { deepActive, flatChildren, isOpaqueContent, walk } from "./focusable.ts";
 import type { Candidate } from "./focusable.ts";
 import { accessibleName } from "./naming.ts";
 import "./ocelle-icon.ts";
@@ -56,14 +56,13 @@ function descendants(root: Element | ShadowRoot): Element[] {
   return found;
 }
 
-/** Whether the engine has the `closedBy` property of dialogs (Chromium 134 and later). */
-const closedByKnown = "closedBy" in HTMLDialogElement.prototype;
-
-/** Whether a non-modal `<dialog>` closes on a close request by its `closedby` attribute (Close Request or Any). */
+/**
+ * Whether a non-modal `<dialog>` closes on a close request by its computed closed-by state (Close Request or Any), as
+ * its `closedBy` property reads it, in lower case (Chromium 134 and later); an engine without `closedby` (WebKit 17)
+ * reads undefined there, and its non-modal dialogs do not close on a close request.
+ */
 function closesOnRequest(dialog: HTMLDialogElement): boolean {
-  if (!closedByKnown) return false;
-  const value = (dialog.getAttribute("closedby") ?? "").toLowerCase();
-  return value === "closerequest" || value === "any";
+  return dialog.closedBy === "closerequest" || dialog.closedBy === "any";
 }
 
 /** Reads a duration such as `200ms` or `0.2s` in milliseconds; 0 when it is not one. */
@@ -260,7 +259,6 @@ export class OcelleOverlay extends LitElement {
   #state: State = "closed";
   #reason: CloseReason = "host";
   #opener: Element | null = null;
-  #ownCloses = 0;
   #animation: Animation | undefined;
   #below = new Set<HTMLDialogElement>();
   #asideFor: HTMLDialogElement | null = null;
@@ -308,11 +306,7 @@ export class OcelleOverlay extends LitElement {
     if (this.#state === "closed") return;
     this.#animation?.cancel();
     this.#animation = undefined;
-    const dialog = this.#dialog;
-    if (dialog?.open === true) {
-      this.#ownCloses += 1;
-      dialog.close();
-    }
+    this.#dialog?.close();
     this.#leave();
     this.#opener = null;
     this.#state = "closed";
@@ -390,10 +384,8 @@ export class OcelleOverlay extends LitElement {
     this.#opener = opener;
     this.#below = new Set(this.#nonModal().filter((each) => each.open));
     this.#asideFor = null;
-    if (dialog.open) {
-      this.#ownCloses += 1;
-      dialog.close();
-    }
+    // Shown non-modally through the shadow root, it could not be shown modally; its stale close event is ignored.
+    dialog.close();
     dialog.showModal();
     stack.push(this);
     OcelleOverlay.#syncTop();
@@ -471,22 +463,21 @@ export class OcelleOverlay extends LitElement {
     this.#animation = undefined;
     this.open = false;
     this.#animate(false, () => {
-      if (this.#state === "closing") this.#finish(true);
+      if (this.#state === "closing") this.#finish();
     });
   }
 
-  /** Ends a close: the inner `close()` when `closeDialog`, focus returned while it is ours, then `…-close` (R-05, R-06). */
-  #finish(closeDialog: boolean): void {
-    const dialog = this.#dialog;
+  /**
+   * Ends a close: the inner `close()` (nothing when the platform closed it), focus returned while it is ours, then
+   * `…-close` (R-05, R-06). The `close` event the inner `close()` queues finds the dialog closed, or open again.
+   */
+  #finish(): void {
     const before = deepActive();
     const ours = before === null || within(before, this);
-    if (closeDialog && dialog?.open === true) {
-      this.#ownCloses += 1;
-      dialog.close();
-    }
+    this.#dialog?.close();
     this.#leave();
     this.#state = "closed";
-    this.#returnFocus(ours, before);
+    this.#returnFocus(ours);
     dispatch(this, `${this.eventPrefix}-close`, this.#reason, false);
   }
 
@@ -498,14 +489,11 @@ export class OcelleOverlay extends LitElement {
     OcelleOverlay.#syncTop();
   }
 
-  #returnFocus(ours: boolean, before: Element | null): void {
+  #returnFocus(ours: boolean): void {
     const opener = this.#opener;
     this.#opener = null;
-    if (!ours) {
-      // Focus another overlay took is kept, also if the engine moved it when the dialog closed.
-      if (before instanceof HTMLElement && before.isConnected && deepActive() !== before) before.focus();
-      return;
-    }
+    // Focus another overlay took is kept: the inner close() moves focus only from inside the dialog.
+    if (!ours) return;
     const valid = opener instanceof HTMLElement && opener.isConnected && !opener.matches(":disabled") && !inert(opener);
     if (valid) {
       opener.focus();
@@ -600,8 +588,7 @@ export class OcelleOverlay extends LitElement {
     const content = descendants(this);
     for (const each of content) {
       if (!(each instanceof HTMLElement)) continue;
-      const popover = (each.getAttribute("popover") ?? "").toLowerCase();
-      if (each.hasAttribute("popover") && popover !== "manual" && each.matches(":popover-open")) return true;
+      if (each.matches(":popover-open") && each.popover !== "manual") return true;
       if (each instanceof HTMLDialogElement && each.matches(":modal")) return true;
       if (!tab && each instanceof HTMLDialogElement && each.open && !this.#below.has(each) && closesOnRequest(each)) {
         this.#asideFor = each;
@@ -628,10 +615,7 @@ export class OcelleOverlay extends LitElement {
       if (event.target instanceof HTMLDialogElement) this.#below.delete(event.target);
       return;
     }
-    if (this.#ownCloses > 0) {
-      this.#ownCloses -= 1;
-      return;
-    }
+    // A stale event: the dialog closed by the overlay or the platform is open again.
     if (dialog.open) return;
     if (this.#state === "opening" || this.#state === "shown") {
       // A platform close (R-03): reason host, nothing to close.
@@ -640,11 +624,11 @@ export class OcelleOverlay extends LitElement {
       this.#animation?.cancel();
       this.#animation = undefined;
       this.open = false;
-      this.#finish(false);
+      this.#finish();
     } else if (this.#state === "closing") {
       this.#animation?.cancel();
       this.#animation = undefined;
-      this.#finish(false);
+      this.#finish();
     }
   }
 
@@ -678,7 +662,6 @@ export class OcelleOverlay extends LitElement {
       this.#tryFocus((back ? [...order].reverse() : order).map((each) => each.element));
       return;
     }
-    if (!within(active, this)) return;
     // Focus in opaque content: the engine moves it (R-04).
     if (isOpaqueContent(active)) return;
     if (back && active === first.element) {
@@ -703,19 +686,21 @@ export class OcelleOverlay extends LitElement {
     // From a non-stop of the overlay's own tree: the next (previous) candidate by flat-tree position, wrapping.
     event.preventDefault();
     const elements = flat.map((each) => each.element);
-    const after = elements.filter((each) => (back ? before(each, active) : before(active, each)));
-    const rest = elements.filter((each) => !after.includes(each));
-    const tries = back ? [...after.reverse(), ...rest.reverse()] : [...after, ...rest];
-    this.#tryFocus(tries);
+    const later = elements.filter((each) => before(active, each));
+    const earlier = elements.filter((each) => !later.includes(each));
+    this.#tryFocus(back ? [...earlier.reverse(), ...later.reverse()] : [...later, ...earlier]);
   }
 
-  /** R-04's repair: a native move out of opaque content that lands on the body goes to the first stop. */
+  /**
+   * R-04's repair: a native move out of opaque content that lands on the body goes to the first stop, the close
+   * control (the header comes first in the panel, and a positive `tabindex` orders only within its own scope). A
+   * closed overlay has left the stack.
+   */
   #onFocusout(event: FocusEvent): void {
     if (event.relatedTarget !== null || !(event.target instanceof Element) || !isOpaqueContent(event.target)) return;
     setTimeout(() => {
-      if (stack.at(-1) !== this || this.#state === "closed" || this.#state === "closing" || deepActive() !== null) return;
-      const first = this.#candidates().order.find((each) => each.kind === "stop");
-      first?.element.focus();
+      if (stack.at(-1) !== this || this.#state === "closing" || deepActive() !== null) return;
+      this.#close?.focus();
     }, 0);
   }
 
@@ -751,7 +736,12 @@ export class OcelleOverlay extends LitElement {
   }
 }
 
-/** Whether `a` comes before `b` in the flat tree (document position, through shadow roots and slots). */
+/**
+ * Whether `a` comes before `b` (another element of the same document) in the flat tree, through shadow roots and
+ * slots: an ancestor comes before its descendants. Below the elements' last common flat-tree ancestor, which is an
+ * element (the root element is common to both), the one whose branch is the earlier flat child comes first; the
+ * branch of an ancestor ends there, at no child (-1).
+ */
 function before(a: Element, b: Element): boolean {
   const pathOf = (element: Element): Node[] => {
     const path: Node[] = [];
@@ -761,15 +751,9 @@ function before(a: Element, b: Element): boolean {
   const pa = pathOf(a);
   const pb = pathOf(b);
   let index = 0;
-  while (index < pa.length && index < pb.length && pa[index] === pb[index]) index += 1;
-  if (index === pa.length) return index < pb.length;
-  if (index === pb.length) return false;
-  const x = pa[index];
-  const y = pb[index];
-  const parent = pa[index - 1];
-  if (x === undefined || y === undefined) return false;
-  const siblings = parent === undefined ? [] : flatKids(parent);
-  return siblings.indexOf(x as Element) < siblings.indexOf(y as Element);
+  while (pa[index] === pb[index]) index += 1;
+  const siblings: readonly (Node | undefined)[] = flatChildren(pa[index - 1] as Element);
+  return siblings.indexOf(pa[index]) < siblings.indexOf(pb[index]);
 }
 
 /** The parent of `node` in the flat tree: its assigned slot, or its parent, or its shadow root's host. */
@@ -777,13 +761,4 @@ function flatParent(node: Node): Node | null {
   if (node instanceof Element && node.assignedSlot !== null) return node.assignedSlot;
   if (node.parentNode instanceof ShadowRoot) return node.parentNode.host;
   return node.parentNode;
-}
-
-function flatKids(node: Node): Element[] {
-  if (node instanceof HTMLSlotElement) {
-    const assigned = node.assignedElements();
-    return assigned.length > 0 ? assigned : [...node.children];
-  }
-  if (node instanceof Element && node.shadowRoot !== null) return [...node.shadowRoot.children];
-  return node instanceof Element || node instanceof Document ? [...node.children] : [];
 }
