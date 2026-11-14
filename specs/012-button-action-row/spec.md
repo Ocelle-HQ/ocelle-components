@@ -108,6 +108,19 @@ option (a) each):
   none of its assigned elements has non-whitespace text; an empty slot neither describes the row nor takes space
   (FR-031, FR-034).
 
+**Operator decision after the analysis** (2026-11-14, human:jeroennouwsdev; `analysis-report.md` C1, recorded in
+`reviews/analysis/fixes-1.md`):
+
+- Button event (C1), "(a) add activate event": `ocelle-button` also dispatches `ocelle-button-activate` (`bubbles:
+  true`, `composed: true`) on every activation that delivers a `click`, so the button's user intent goes out as an
+  `ocelle-*` event (constitution I) beside the native `click` (FR-009, FR-023). Settled with it, to match
+  `ocelle-action-row-activate` and the control conventions: the event is `cancelable: true` and `preventDefault()` on
+  it cancels the click's default action (in link mode, the navigation); its `detail` is an empty object `{}`, since
+  the button carries no value and the event's target identifies it; and in link mode a click with Ctrl, Meta, Shift
+  or Alt held dispatches no `ocelle-button-activate`, as on a link row (FR-033).
+- Alt-click on a link row (plan decision 13, closing check-3 note SPEC-3-02): Alt counts as a modifier, like Ctrl,
+  Meta and Shift in the decision on SPEC-1-09 above (FR-033, US5-2).
+
 **Issues**: #7, in part (triage record `triage/012-button-action-row.md`, approved by the operator on 2026-11-13).
 This feature builds the two action controls of #7. `ocelle-pill-tag`, `ocelle-status-indicator` and `ocelle-metric`
 stay in #7 for a later status mission. The body of #7 (read on 2026-11-13) is the source of the requirements below.
@@ -181,8 +194,8 @@ clicks the inner control's centre as the positive case.
 
 A host developer places `<ocelle-button>Save</ocelle-button>` in a page and gets a native-behaving button in the
 Ocelle look: a choice of variants and sizes, a disabled state, a slotted icon before the label, the token focus ring,
-and a click that reaches the host as an ordinary `click` event. A keyboard user and a screen-reader user meet a
-normal button.
+and a click that reaches the host as an ordinary `click` event, announced first as an `ocelle-button-activate` event.
+A keyboard user and a screen-reader user meet a normal button.
 
 **Why this priority**: the button is the most used primitive (37 uses), it blocks #12 (breadcrumb padding) and may
 be used by #14, and it carries the control conventions the action row and later controls follow. Landing it alone is
@@ -197,10 +210,14 @@ activate it by pointer, Enter and Space; read its accessibility-tree node and it
    one node for it, role `button`, name "Save", and it is in the tab order once.
 2. **Given** the button, **When** it is clicked, or focused and Enter or Space is pressed, or the host calls its
    `click()` method, **Then** the host receives exactly one `click` event (one dispatch) whose target is the
-   `ocelle-button` element at every listener, and no `ocelle-*` event is dispatched.
+   `ocelle-button` element at every listener, and exactly one `ocelle-button-activate` event (one dispatch, its
+   target the element at every listener) with `bubbles: true`, `composed: true`, `cancelable: true` and `detail` `{}`,
+   dispatched before that `click` reaches any bubble-phase listener on the element or its ancestors; no other
+   `ocelle-*` event is dispatched (FR-023).
 3. **Given** `disabled`, **When** it is clicked or Enter or Space is pressed on it, or the host calls its `click()`
-   method, **Then** it is not activated (no `click` reaches a bubble-phase listener on the element or its ancestors),
-   the button is not in the tab order (Tab and Shift+Tab), and the accessibility tree reports it disabled.
+   method, **Then** it is not activated (no `click` reaches a bubble-phase listener on the element or its ancestors,
+   and no `ocelle-button-activate` is dispatched), the button is not in the tab order (Tab and Shift+Tab), and the
+   accessibility tree reports it disabled.
 4. **Given** each `variant` value (FR-010), **When** rendered on each main ground and each state ground, and with
    `ground="chrome"` on each chrome ground, **Then** its colours come only from `--ocelle-*` tokens, its label meets
    text contrast and its boundary meets non-text contrast (where it has a boundary) in both themes, as the contrast
@@ -247,15 +264,23 @@ activate it by pointer, Enter and Space; read its accessibility-tree node and it
     the flush hover token still fails on every other ground.
 15. **Given** a stretched host (see "Stretched host") of an available button and of a disabled button, **When**
     rendered, **Then** the inner control's box equals the host's box in both axes; **When** a pointer clicks 4 px
-    inside the host's bottom edge, **Then** the available button delivers exactly one `click` (one serial) and the
-    disabled one is not activated (FR-001, FR-003).
+    inside the host's bottom edge, **Then** the available button delivers exactly one `click` (one serial) and one
+    `ocelle-button-activate`, and the disabled one is not activated (FR-001, FR-003, FR-023).
 16. **Given** `variant="quiet"` with `ground="hover-bg"`, **When** placed on `--ocelle-color-canvas` and on
     `--ocelle-color-hover-bg` (a host row whose surface changes on hover), **Then** the border is
     `--ocelle-color-accent-strong` on both and meets 3:1 on both, as the contrast check proves (FR-018).
 17. **Given** a restyled host (see "Restyled host") of an available button and of a disabled button, under each of
     the three page rules, **When** a pointer clicks each outside point, **Then** neither button is activated (no `click` reaches a bubble-phase listener on the element or its
-    ancestors); **When** a pointer clicks the inner control's centre, **Then** the available button delivers exactly
-    one `click` (one serial) whose target is the element, and the disabled one is not activated (FR-001, FR-003).
+    ancestors, and no `ocelle-button-activate`); **When** a pointer clicks the inner control's centre, **Then** the
+    available button delivers exactly one `click` (one serial) whose target is the element and one
+    `ocelle-button-activate`, and the disabled one is not activated (FR-001, FR-003, FR-023).
+18. **Given** a host listener that calls `preventDefault()` on `ocelle-button-activate`, **When** a focused button is
+    activated by click, Enter or Space, **Then** the listener sees `event.defaultPrevented` become `true`, the event is
+    dispatched exactly once, the `click` is still delivered exactly once with `defaultPrevented` `true` (a button has
+    no default action to cancel), and focus stays on the button (FR-023).
+19. **Given** the button inside a `<form>` with a `submit` and a `reset` listener on the form, **When** it is clicked,
+    or focused and Enter or Space is pressed, **Then** each activation delivers exactly one `click` and one
+    `ocelle-button-activate`, and the form receives no `submit` and no `reset` event (FR-022).
 
 ---
 
@@ -277,8 +302,12 @@ the host's custom states, the mirrors and the navigation result.
 **Acceptance Scenarios**:
 
 1. **Given** `<ocelle-button href="/projects">Projects</ocelle-button>`, **When** the accessibility tree is read,
-   **Then** there is one node, role `link`, name "Projects", and activating it with a click or Enter navigates to
-   `/projects`; Space does not activate it (native link behaviour).
+   **Then** there is one node, role `link`, name "Projects", and activating it with a click or Enter dispatches one
+   `ocelle-button-activate` (as in US1-2) and then, unless a listener called `preventDefault()` on it, navigates to
+   `/projects`; when a listener prevented it, it does not navigate. Space does not activate it (native link
+   behaviour). **When** it is clicked with Ctrl, Meta, Shift or Alt held, or middle-clicked, **Then** no
+   `ocelle-button-activate` is dispatched and the browser's default for that click (a new tab or window, or a
+   download) is not prevented (FR-023).
 2. **Given** a link-mode button, **When** `target` or `rel` or `download` is set on the host (FR-021), **Then** the
    inner link has the same value.
 3. **Given** a link-mode button with `disabled`, **When** rendered, **Then** it has no navigable target, is not in the
@@ -346,7 +375,9 @@ pointer and keyboard; read the tree, the layout boxes and the animation under ea
 **Acceptance Scenarios**:
 
 1. **Given** a button with `busy`, **When** it is clicked or Enter or Space is pressed, or the host calls its `click()`
-   method, **Then** it is not activated (no `click` reaches a bubble-phase listener on the element or its ancestors).
+   method, **Then** it is not activated (no `click` reaches a bubble-phase listener on the element or its ancestors,
+   and no `ocelle-button-activate` is dispatched); after `busy` is removed, the same activation delivers one `click`
+   and one `ocelle-button-activate`.
 2. **Given** a focused button, **When** `busy` is set and later removed, **Then** focus stays on it throughout and it
    stays in the tab order.
 3. **Given** `busy`, **When** the tree is read, **Then** the inner control reports busy (`aria-busy="true"`) and
@@ -460,6 +491,11 @@ the event and its payload, the accessibility tree and the boxes in a shrink-wrap
     its title uses `--ocelle-color-chrome-ink`, its description and tags `--ocelle-color-chrome-muted`, it has no fill
     and a `--ocelle-color-chrome-muted` border; on hover its surface becomes `--ocelle-color-chrome-hover` and its
     border `--ocelle-color-chrome-ink` (FR-036, FR-042).
+18. **Given** a `layout="row"` row with an icon, a title, a description, two tags and a trailing icon, **When** its
+    container is wide enough for all of them on one line, **Then** they share one line; **When** the container is
+    narrower than that line but wider than the icon, title and description together, **Then** the tags and the
+    trailing icon move together to a second line (both start below the first line's boxes and share one line), and
+    the icon, title and description stay on the first line (FR-032).
 
 ---
 
@@ -481,9 +517,9 @@ tree, the navigation result and the line boxes of the tags.
    one node of role `link`; **When** it is clicked or Enter is pressed, **Then** `ocelle-action-row-activate` is
    dispatched first with `{ rowId: "m-42" }` and, unless a listener called `preventDefault()`, the browser navigates to
    `/missions/42`; when a listener prevented it, it does not navigate. Space does not activate a link row.
-2. **Given** a link row, **When** it is clicked with Ctrl, Meta or Shift held, or middle-clicked, **Then** no
-   `ocelle-action-row-activate` event is dispatched and the browser's default for that click (a new tab or window)
-   is not prevented (FR-033).
+2. **Given** a link row, **When** it is clicked with Ctrl, Meta, Shift or Alt held, or middle-clicked, **Then** no
+   `ocelle-action-row-activate` event is dispatched and the browser's default for that click (a new tab or window,
+   or a download on an Alt-click) is not prevented (FR-033).
 3. **Given** a link row with `current="page"`, **When** the tree is read, **Then** the inner link reports
    `aria-current="page"`; with `current="true"` it reports `aria-current="true"`; with no `current` it reports none.
 4. **Given** `current` set, **When** rendered, **Then** the row shows the current mark: an `--ocelle-color-accent-low`
@@ -589,20 +625,14 @@ tree, the navigation result and the line boxes of the tags.
   is the control; a button stretched by a flex row grows to the row's height (FR-001; a host that does not want that
   sets `align-self` on the element).
 - **A host restyled by a page rule** (`ocelle-button { display: block }`, a full-width utility class,
-  `display: flex; width: 100%`, a fixed `height`): supported. The page rule outranks the element's `:host` styles, so
-  the host may have area outside the inner control; a click there does not pass through the inner control and the
-  element's host listener stops it in every state (not activated, FR-001, FR-003); a click on the inner control
-  behaves as usual (US1-17, US3-11, US5-6, US5-12). The README states that a host may restyle `display` and size.
+  `display: flex; width: 100%`, a fixed `height`): supported; FR-001 states the rule (US1-17, US3-11, US5-6, US5-12).
 - **An empty `description` or `tags` element** (`<span slot="description"></span>`, as a server template renders a
   null value, or one holding only whitespace): the slot counts as empty (FR-034): it contributes nothing to the
   description, so a moved `title` still describes the row, and it takes no space and adds no gap (FR-031); writing
   text into the element later makes the slot non-empty without a `slotchange` (US4-6, US4-16).
 - **A flush button at the edge of a clipping container** (`overflow` other than `visible`, as a breadcrumb trail may
-  be): the button's focus ring is drawn outside it, so the container keeps at least `--ocelle-focus-offset` +
-  `--ocelle-focus-width` of unclipped space around it (for example `padding-inline` of that size with a matching
-  negative margin); the README and the #12 hand-off state it (FR-012).
-- **A host override of `--ocelle-motion-spin`**: the 5 s limit of FR-017 holds for the default value; an override
-  keeps one turn at or below 833 ms (six turns within 5 s); the README states it.
+  be): FR-012 states the space the container keeps for the focus ring.
+- **A host override of `--ocelle-motion-spin`**: FR-017 states the limit an override keeps.
 - **Two copies of the package on one page**: mission 005's rule applies (first definition wins).
 - **The host page has no `@ocelle/tokens` stylesheet**: documented, as for mission 005's elements; the controls are
   then unstyled but still operable.
@@ -682,7 +712,8 @@ tree, the navigation result and the line boxes of the tags.
   manifest, stories, files and tests) and slot convention, and their styles use only `--ocelle-*` tokens and the
   values the `style-lint` gate allows.
 - **FR-008**: The package README gains a "Control conventions" section stating FR-001 to FR-006 as rules later
-  controls follow, and a section per element with its public interface (FR-009 for the button, FR-030 for the row).
+  controls follow, and a section per element with its public interface (FR-009 for the button, FR-030 for the row);
+  the button's section also gives the markup of the three consumer controls of SC-006.
   The conventions section also states: what "not activated" guarantees and that capture-phase listeners (and
   listeners added to the element before upgrade) are outside it; that a host may restyle an element's `display` and
   size without losing it (FR-001); what `busy` means on each element (unavailable on the button, FR-015; "content updating" without blocking
@@ -701,8 +732,9 @@ tree, the navigation result and the line boxes of the tags.
   PLAN-A11Y-SECURITY-1-004) and `title` (the native tooltip, and the description or name fallback of Accessible Name
   1.2, on the inner control; operator decision, PLAN-FRESH-2-006), with their `data-ocelle-moved-*` mirror attributes
   (FR-004); the custom states `expanded`, `pressed`, `current` (FR-004); the `focus()` and `click()`
-  methods (FR-001); the default slot (the label) and the `icon` slot; the native `click` event; and the CSS part
-  `control` (the inner control). It emits no `ocelle-*` event. `aria-current` is passed through with any value and draws no visual mark
+  methods (FR-001); the default slot (the label) and the `icon` slot; the native `click` event and the event
+  `ocelle-button-activate` (FR-023; operator decision C1 (a), 2026-11-14); and the CSS part `control` (the inner
+  control). `aria-current` is passed through with any value and draws no visual mark
   (operator decision, SPEC-1-10). This interface is what #12 and #14 consume; changing it after release is a
   MAJOR change (constitution VII).
 - **FR-010**: `variant` (attribute and property, reflected) is one of `primary` (filled), `secondary` (the default;
@@ -771,10 +803,22 @@ tree, the navigation result and the line boxes of the tags.
   have no effect. With `target="_blank"` and no `rel`, the inner link gets `rel="noopener"`; the same rule applies to
   link-mode rows (FR-030).
 - **FR-022**: The button does not take part in forms: its inner control is always `type="button"`, activating it
-  inside a `<form>` neither submits nor resets that form, and it has no `type`, `name`, `value` or `form` attribute.
+  inside a `<form>` neither submits nor resets that form (US1-19), and it has no `type`, `name`, `value` or `form`
+  attribute.
   The README states this and shows a host submitting from its click handler with `form.requestSubmit()`.
   Form-associated buttons may come later with #9's form-control convention as a MINOR addition (operator decision,
   2026-11-13).
+- **FR-023**: **Activate event.** Each activation of an available button that delivers a `click` to the host (a
+  pointer click, Enter or Space in button mode, Enter in link mode, the element's `click()`) also dispatches one
+  `ocelle-button-activate` `CustomEvent` from the host with `bubbles: true`, `composed: true`, `cancelable: true` and
+  `detail` `{}` (an empty object: the button carries no value, and the event's target identifies it). It is dispatched
+  before that `click` reaches any bubble-phase listener on the host or its ancestors (capture-phase listeners see the
+  `click` first, as under "Not activated"). Calling `preventDefault()` on it cancels the `click`'s default action: in
+  link mode there is no navigation; in button mode the `click` is still delivered, with `defaultPrevented` `true`. In
+  link mode, as on a link row (FR-033), a click with Ctrl, Meta, Shift or Alt held dispatches no
+  `ocelle-button-activate`: its `click` is delivered and the browser's default (a new tab or window, or a download)
+  happens; a middle click delivers no `click` and dispatches nothing. A button that is not activated (FR-003)
+  dispatches neither event (operator decision C1 (a), 2026-11-14).
 
 **`ocelle-action-row`**
 
@@ -801,12 +845,13 @@ tree, the navigation result and the line boxes of the tags.
 - **FR-032**: `layout` (reflected) is `row` (the default: icon, title and description, tags and trailing on one line;
   when the line cannot hold its content, the tags and trailing group moves as a whole to a second line, and the icon,
   title and description stay on the first) or `card` (icon and title on the first line with trailing at its
-  end; description, then tags below).
+  end; description, then tags below) (US4-18).
 - **FR-033**: Activation (click, Enter, and Space in button mode) dispatches one `ocelle-action-row-activate`
   `CustomEvent` from the host with `bubbles: true`, `composed: true`, `cancelable: true` and `detail: { rowId: string
   }` (the current `row-id`, `""` when absent). In link mode the event is dispatched before navigation, and calling
-  `preventDefault()` on it cancels the navigation. In link mode a click with Ctrl, Meta or Shift held, or a middle
-  click, dispatches no event and the browser's default (a new tab or window) happens (operator decision, SPEC-1-09);
+  `preventDefault()` on it cancels the navigation. In link mode a click with Ctrl, Meta, Shift or Alt held, or a
+  middle click, dispatches no event and the browser's default (a new tab or window, or a download on an Alt-click)
+  happens (operator decision, SPEC-1-09; Alt, plan decision 13);
   this applies only to a row that is not unavailable. An unavailable row is not activated by any click or key (FR-003)
   and dispatches nothing; a modifier click or middle click on an unavailable link row opens no new tab or window.
 - **FR-034**: The row's accessible name follows FR-006 (the title slot as content: with no host name and no `label`,
@@ -870,9 +915,11 @@ tree, the navigation result and the line boxes of the tags.
   and passes the `storybook-build`, `visual` and `axe` gates on them in that phase (operator decision, 2026-11-13;
   round 1's "lands only after #10", PLAN-CORRECTNESS-1-010, is satisfied). No story of this feature is ever without a
   baseline or an axe run, so no exception is recorded for them.
-- **FR-051**: Interaction tests assert every event each element emits and its payload: the button's `click` (and its
-  absence when disabled or busy) and the row's `ocelle-action-row-activate` with `bubbles`, `composed`, `cancelable`
-  and `detail`, from pointer and every keyboard path.
+- **FR-051**: Interaction tests assert every event each element emits and its payload: the button's `click` and
+  `ocelle-button-activate` (the latter with `bubbles`, `composed`, `cancelable` and `detail`, its order before the
+  `click` and its cancel path; both absent when disabled or busy, and the activate event absent on a modifier click of
+  a link-mode button) and the row's `ocelle-action-row-activate` with `bubbles`, `composed`, `cancelable` and
+  `detail`, from pointer and every keyboard path.
 - **FR-052**: Keyboard paths (Tab, Shift+Tab, Enter, Space) and the accessibility tree (role, name, description,
   states) are tested for every state, and axe reports no serious or critical finding on any story or test page.
 - **FR-053**: The custom-elements manifest lists every public property, attribute (the passthrough attributes
@@ -890,7 +937,8 @@ tree, the navigation result and the line boxes of the tags.
 - **Inner control**: the one native `<button>` or `<a>` an element renders; carries role, name, description, states
   and focus.
 - **Control state**: enabled, disabled, unavailable (busy button, unavailable row), busy (row), current.
-- **Activate event** (`ocelle-action-row-activate`): payload `{ rowId: string }`; bubbling, composed, cancelable.
+- **Activate events**: `ocelle-action-row-activate`, payload `{ rowId: string }`, and `ocelle-button-activate`, payload
+  `{}`; each bubbling, composed, cancelable.
 - **Row parts**: title (default slot; the accessible name), icon, description and tags (together the accessible
   description, FR-034), trailing.
 
@@ -904,14 +952,19 @@ tree, the navigation result and the line boxes of the tags.
   in both themes, on each main ground and state ground, and with `ground="chrome"` on each chrome ground (disabled and
   unavailable text and borders exempt).
 - **SC-004**: Each element shows exactly one accessibility-tree node and one tab stop per instance (zero tab stops when
-  disabled) in every story.
+  disabled) on every scenario page of the interaction tests.
 - **SC-005**: Activating an available row (busy or not) by pointer or keyboard produces exactly one event with the
-  row's id, 100% of the time across the interaction tests; activating a disabled or busy `ocelle-button`, or an
-  unavailable `ocelle-action-row`, produces no `click` reaching a bubble-phase listener and no event, and in link mode
-  no navigation by any click (plain, modifier or middle).
-- **SC-006**: A host can build #12's breadcrumb item (flush, compact), #12's top-bar menu button (`ground="chrome"`,
-  `aria-haspopup`, `aria-expanded`) and #14's copy control from `ocelle-button`'s documented interface alone, with no
-  style of its own beyond token overrides.
+  row's id, and activating an available `ocelle-button` by a plain click or a key produces exactly one `click` and one
+  `ocelle-button-activate`, 100% of the time across the interaction tests; activating a disabled or busy `ocelle-button`, or an unavailable
+  `ocelle-action-row`, produces no `click` reaching a bubble-phase listener and no event, and in link mode no
+  navigation by any click (plain, modifier or middle).
+- **SC-006**: A host can build #12's breadcrumb item (flush, compact, link mode, `aria-current`), #12's top-bar menu
+  button (`ground="chrome"`, `aria-haspopup`, `aria-expanded`) and #14's copy control from `ocelle-button`'s
+  documented interface alone, with no style of its own beyond token overrides: the package README gives each of the
+  three as markup, and an interaction test renders exactly that markup on a page with no style that targets the
+  elements (the menu button's container takes the chrome ground) and finds each one's role, name and states, its
+  target size, and its look (the breadcrumb item's flush alignment, the menu button's chrome colours) as FR-009 to
+  FR-023 state.
 - **SC-007**: The manifest, strict-CSP, prefix, style-lint and mutation gates pass with the two elements added.
 
 ## Assumptions

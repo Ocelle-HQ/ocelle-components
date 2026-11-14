@@ -7,7 +7,8 @@
 fix, 2026-11-13; one operator decision at planning added to its header and FR-004; squad rounds 1, 2 and 3's fixes
 and the operator's fork decisions of 2026-11-13 applied to the spec and every design artifact, `reviews/plan/round-1/`,
 `reviews/plan/round-2/`, `reviews/plan/round-3/`; feature 006 (#10) merged into this branch at 37dd501, operator
-decision 2026-11-13).
+decision 2026-11-13; the analysis after `/speckit-tasks` and the operator's decision on its C1 of 2026-11-14 applied
+to the spec and every design artifact, `reviews/analysis/fixes-1.md`).
 
 ## Summary
 
@@ -17,7 +18,8 @@ variants (primary, secondary, quiet) with designed hover and active states, two 
 compact at least 24 × 24 px), `flush` for #12's breadcrumbs (content at the inline start), a `ground` attribute that
 selects the border colour on accent-low, inset, hover-bg and state grounds and a chrome look for the top bar, a
 `label`, `disabled`, and `busy` with an SVG spinner in the icon position that turns for 4.8 s and stops (and does not
-move under reduced motion). Each host is a grid container whose inner control fills it, so a stretched host has no
+move under reduced motion). Each activation that delivers a `click` also dispatches `ocelle-button-activate`
+(bubbling, composed, cancelable, `detail` `{}`; decision 26). Each host is a grid container whose inner control fills it, so a stretched host has no
 area outside the control, and a host listener stops any click that did not pass through the inner control, so a page
 that restyles the element's `display` or size opens no bypass either.
 `ocelle-action-row` renders the same kind of inner control as a row or a card, with icon, title, description, tags and
@@ -71,7 +73,7 @@ behaviour unmeasured (open limitation).
 one heavy job at a time in this container.
 
 **Scale/Scope**: 2 elements, 2 internal modules, 1 changed internal module (`icon-slot.ts`), 7 new tokens, 6 tokens
-with new grounds (76 new contrast rows, 4 of them exempt), about 31 stories (from 21 to about 52 in the repository),
+with new grounds (76 new contrast rows, 4 of them exempt), about 37 stories (from 21 to about 58 in the repository),
 1 gate constant (`shardSize`).
 
 ## Constitution Check
@@ -80,16 +82,16 @@ with new grounds (76 new contrast rows, 4 of them exempt), about 31 stories (fro
 
 | Principle | How this plan meets it |
 |---|---|
-| I. Names, events, no I/O, small interface, manifest | Tags `ocelle-button`, `ocelle-action-row`; event `ocelle-action-row-activate`, `bubbles` and `composed` (and `cancelable`); the button emits only the native `click`. No I/O: navigation is the native link's. Interfaces in contracts/elements-package.md; every property, attribute (the moved ARIA attributes, `title` and the element-owned `data-ocelle-moved-*` mirrors included, with descriptions, R-15), slot, part, custom state and the event's `detail` type in the manifest (FR-053). |
+| I. Names, events, no I/O, small interface, manifest | Tags `ocelle-button`, `ocelle-action-row`; events `ocelle-action-row-activate` and `ocelle-button-activate`, each `bubbles` and `composed` (and `cancelable`); the button dispatches its activate event beside the native `click`, so each element's user intent goes out as an `ocelle-*` event (operator decision C1 (a), 2026-11-14, decision 26). No I/O: navigation is the native link's. Interfaces in contracts/elements-package.md; every property, attribute (the moved ARIA attributes, `title` and the element-owned `data-ocelle-moved-*` mirrors included, with descriptions, R-15), slot, part, custom state and the event's `detail` type in the manifest (FR-053). |
 | II. Tokens only, brand rules | Element CSS from tokens only, no new lint allowance: the spinner's angle is the new `motion-turn` token and its factor a number inside `calc()` (R-07). `--ocelle-color-rule` never a boundary; control borders per #5 rule 1, selected by the `ground` attribute; controls on the top bar and rails use the dark chrome tokens through `ground="chrome"` (R-08 item 4a); the primary button keeps an `accent-strong` border because the ochre fill measures 2.37 to 2.98:1 on light grounds (R-08), so ochre fill is never the only mark; one radius (`radius-2` button, `radius-row` row); no monospace; `font: inherit` on inner controls. |
 | III. Accessible by construction | One inner control that fills its host, and a host guard that stops any click not passing through it, so neither a stretched host nor a page rule on the element's `display` or size leaves an area that bypasses the guard (R-01); host ARIA and `title` moved onto it, so the state appears once and axe has nothing to review on the host, and mirrored so copies of the live DOM keep it, with mirrors restored after a morphing swap (R-03); the row's description references only slotted elements with text, so an empty slotted element neither hides a moved `title` nor takes space (R-04); ID references never cross a shadow root (R-04); name order per Accessible Name 1.2, the row named by its title only (R-05), label-in-name stated (WCAG 2.5.3); keyboard: native button (Enter, Space) and link (Enter) behaviour, no composite pattern to roam; Tab and Shift+Tab tested; token focus ring on `:focus-visible`, drawn inside a row so scroll containers and adjacent rows cannot clip or cover it, with the current bar apart from it (R-12), and a documented clearance for a flush button in a clipping container; default size and every row meet `--ocelle-target-min`, compact meets 24 px (WCAG 2.5.8); the spinner runs 4.8 s and stops (WCAG 2.2.2) and does not move under reduced motion (R-07); forced colours: a system colour per element and state, the current bar and flush hover drawn so they survive (R-12); contrast rows for every pair, hover and active included, on the main, state and chrome grounds (R-08); axe in the element tests (006's rule selection, imported) and the `axe` gate on every story in the phase that adds it (R-13). |
 | IV. Strict CSP, offline | Adopted stylesheets only; the spinner is inline SVG with presentation attributes; no `javascript:` URL rendered, decided by the URL parser (R-02); every scenario also runs on the strict-CSP fixture with zero violations; axe on the fixture is served same-origin. |
-| V. Storybook, behaviour tests | A story per variant and state in light and dark (R-13), each with a committed baseline made in the pinned container in the phase that adds it (006 is on this branch); interaction tests assert the `click` and the activate event with every flag, the target at every listener and one dispatch serial, from pointer, `click()` and every keyboard path (FR-051). |
+| V. Storybook, behaviour tests | A story per variant and state in light and dark (R-13), each with a committed baseline made in the pinned container in the phase that adds it (006 is on this branch); a focus story for each element, by programmatic focus or, failing that, `focus({ focusVisible: true })` (decision 27); interaction tests assert the `click` and both activate events with every flag, the target at every listener and one dispatch serial, from pointer, `click()` and every keyboard path (FR-051). |
 | VI. Consumer-driven, own code | Needs from #7 and spec-kitty-design #493, #495, #496, #501, #504, #508, #509, #518, #525, #528, #532; consumers #12 (breadcrumb items, and its top-bar menu button with `aria-haspopup` and `ground="chrome"`, so it is not hand-rolled) and #14. Nothing copied from Spec Kitty. |
 | VII. Semver | Additions only (MINOR): two elements, two entry points, an event, seven tokens, declared grounds, custom states, the mirror attributes; changelog entries in both packages (FR-055). Raising the engine floor (Chromium 135, WebKit 17.4) is documented in the README's engines section and the CHANGELOG; before 1.0.0 it needs no major bump. The `icon-slot.ts` scoping changes no output of 005's elements. |
 | VIII. Test-first, non-vacuous | Each phase starts with one red commit holding its scenario bodies, harness tests, node/build tests and story test (I3), recorded by `red.sh`; each "does not" paired with a positive assertion and a measured plant; every spec edge case and plan decision has a scenario row (contracts/checks.md); clicks on `aria-disabled` controls sent with `force: true` (R-06); link mode covered in-process by the navigation sink, so its mutants are not NoCoverage; `generate.test.ts`'s "exactly two" becomes "exactly the motion durations", recorded as a stricter replacement; element source mutated under the elements config, token, generator and manifest-script source under the default config, with 007's verdicts (R-14). |
 | Licence and supply chain | No new dependency: `axe-core` 4.14.0 (MPL-2.0, dev only, not shipped) is already pinned by 006 and is reused by the element tests. |
-| Workflow gates | No new gate; the touched gates are listed in contracts/checks.md. Phase 1 lowers 006's plant `shardSize` to 1 before the repository reaches 006's split count of 25 stories (006's Complexity Tracking sunset), test-first; the new split count at size 1 goes to the operator at phase 1's review, with the facts that size 1 is the last lever (about 24 stories of headroom after this feature) and the Plants runner time it costs (about 10.8 runner-hours per CI run at 52 stories), and a request to open a triage record for a plant design whose shard time does not grow with the story count before the next element mission; phase 6 records a CI run with every Plants shard under 10 minutes (R-13). |
+| Workflow gates | No new gate; the touched gates are listed in contracts/checks.md. Phase 1 lowers 006's plant `shardSize` to 1 before the repository reaches 006's split count of 25 stories (006's Complexity Tracking sunset), test-first; the new split count at size 1 goes to the operator at phase 1's review, with the facts that size 1 is the last lever (about 18 stories of headroom after this feature) and the Plants runner time it costs (about 11.2 runner-hours per CI run at 58 stories), and a request to open a triage record for a plant design whose shard time does not grow with the story count before the next element mission; phase 6 records a CI run with every Plants shard under 10 minutes (R-13). |
 
 ## Decisions the operator should see at the plan gate
 
@@ -136,7 +138,9 @@ with new grounds (76 new contrast rows, 4 of them exempt), about 31 stories (fro
 12. **Row focus ring inside** (R-12): drawn with `--ocelle-focus-offset-inset`; the README padding note is dropped.
     The button's ring stays outside; a clipping container holding a flush button at its edge keeps `focus-offset` +
     `focus-width` of unclipped space (README flush note, contract hand-off to #12; round 2 fix PLAN-FRESH-2-009).
-13. **Alt-click** on an available link row counts as a modifier click (no event; check-3 note SPEC-3-02).
+13. **Alt-click** on an available link row counts as a modifier click (no event; check-3 note SPEC-3-02), and so it
+    does on an available link-mode button (no `ocelle-button-activate`, decision 26). Spec FR-033 and US5-2 (and
+    FR-023 and US2-1) list Alt since analysis fixes 1.
 14. **axe in the element tests** (R-11): `axe-core` 4.14.0 (pinned by 006) with 006's rule selection imported from
     `gates/lib/axe-rules.ts`; no test-side copy and no new dependency.
 15. **Feature 006 is merged; its work is done per phase** (R-13; operator decision 2026-11-13, replacing round 1 fork
@@ -144,13 +148,13 @@ with new grounds (76 new contrast rows, 4 of them exempt), about 31 stories (fro
     that adds stories commits their baselines (pinned container), passes the `storybook-build`, `visual` and `axe`
     gates on them, and updates 006's pinned story counts and the `fail-token-changed` and `fail-empty-index` plants.
     Phase 1 lowers `shardSize` from 3 to 1 before any story is added: 006's approved split count is 25 stories, main
-    has 21, and at about 52 only size 1 keeps a `visual` shard under 10 minutes (about 533 s by 006's model; 679 s at
+    has 21, and at about 58 only size 1 keeps a `visual` shard under 10 minutes (about 550 s by 006's model; 712 s at
     size 2). The 48 `visual` and 25 `axe` plants then take 73 shards instead of 25, each with about 387 s of fixed cost.
     The split count at size 1 (76 stories by the model) goes to the operator at phase 1's review with 006's Complexity
     Tracking row. Size 1 is the last lever (round 3 fork PLAN-FRESH-3-003 (a)): `plantShards` cannot go lower and a
-    size-1 shard still grows with every story, so after this feature (about 52 stories) about 24 stories of headroom
-    remain, fewer than this feature adds, and the Plants job costs about 10.8 runner-hours per CI run (73 shards of
-    about 533 s, plus 3 non-visual shards; about 4 runner-hours today). Phase 1 writes these facts into 006's row and
+    size-1 shard still grows with every story, so after this feature (about 58 stories) about 18 stories of headroom
+    remain, fewer than this feature adds, and the Plants job costs about 11.2 runner-hours per CI run (73 shards of
+    about 550 s, plus 3 non-visual shards; about 4 runner-hours today). Phase 1 writes these facts into 006's row and
     `gates/README.md`, and phase 1's review asks the operator to open a triage record for a plant design whose shard
     time does not grow with the repository's story count, before the next element mission starts. Checked against the merged code: nothing this design relies on differs from the branch design
     (R-13 lists what changed at 006's landing and why none of it matters here).
@@ -197,6 +201,34 @@ with new grounds (76 new contrast rows, 4 of them exempt), about 31 stories (fro
     (`null` when none, so a moved `title` describes the row), and an empty slot's wrapper is hidden. Recomputed on
     `slotchange` and by a `MutationObserver` on the host's light children (text written into a slotted span fires no
     `slotchange`). US4-6 and US4-16 gain empty-span cases.
+26. **The button's activate event** (operator decision C1 (a), 2026-11-14; analysis fixes 1): constitution I asks for
+    user intents as `ocelle-*` CustomEvents, so besides the native `click` the button dispatches
+    `new CustomEvent("ocelle-button-activate", { bubbles: true, composed: true, cancelable: true, detail: {} })` from
+    the host on each `click` that passes the inner control while available, from the element's listener on the inner
+    control, after the guard (R-06), so it precedes the `click` at every bubble-phase listener on the host and its
+    ancestors. `preventDefault()` on it → `preventDefault()` on the originating `click` (link mode: no navigation;
+    button mode: the `click` is still delivered, `defaultPrevented` true). In link mode a click with Ctrl, Meta, Shift
+    or Alt held dispatches no activate event (the row's rule, decision 13); `auxclick` never does. The cancelable flag
+    and the cancel path match `ocelle-action-row-activate`; `detail` is `{}` because the button carries no value and
+    the target identifies it (an object, as every `ocelle-*` event's `detail` is). Spec FR-009, FR-023, FR-051,
+    US1-2, US1-3, US1-15, US1-17, US1-18, US2-1, US3-1, SC-005; manifest event with its `detail` type (FR-053); plants:
+    no activate event, activate event on a modifier click, cancel not forwarded to the `click`. No Complexity Tracking
+    row is needed.
+27. **Focus stories** (analysis fixes 1, G2): 006 has no focus parameter, so a focus story's wrapper focuses the
+    element programmatically. Measured here (Chromium 153, a scratch page with no user input): a plain `focus()` on a
+    `delegatesFocus` host gives the inner control `:focus-visible`, and `host.focus({ focusVisible: true })` is
+    forwarded to the inner control and forces it (`focusVisible: false` suppresses it). Phase 2's spike (T014)
+    measures both in 006's pinned capture. The story uses plain `focus()` when it shows the ring in the capture, and
+    `focus({ focusVisible: true })` otherwise; both are story code, inside 006's mechanisms, so the button focus story
+    and the row focus stories (a non-current row in phase 5, a current row in phase 6) are written either way. Only
+    when neither shows the ring in the pinned capture does the phase stop and ask (an exception would then need a
+    Complexity Tracking row approved by the operator).
+28. **Consumer compositions** (analysis fixes 1, U1; SC-006): the README's `ocelle-button` section gives the markup of
+    #12's breadcrumb item, #12's top-bar menu button and #14's copy control; phase 3's `link.ts` renders exactly that
+    markup on a page with no style that targets the elements (the menu button's container takes the chrome ground) and asserts each one's role, name, states, target size and look (flush
+    alignment; chrome colours), and `readme.test.ts` asserts that the README's markup is the markup the scenario
+    renders (plant: a README snippet that differs). No story is added for them, so the shard headroom of decision 15
+    is not spent on them.
 
 ## Project Structure
 
@@ -265,8 +297,8 @@ one at a time.
    from the `axe-core` 006 pinned). `shardSize` lowered from 3 to 1 in `gates/lib/plant-runner.ts`, red first in the
    `plantShards` test of the repository's size, with `gates/README.md`'s approved sizes and 006's Complexity Tracking
    row (size 1; the split count at size 1, 76 stories by 006's model, for the operator's approval at this phase's
-   review; size 1 the last lever, about 24 stories of headroom after this feature and about 10.8 Plants runner-hours
-   per CI run at 52 stories, also in `gates/README.md`). This phase's review asks the operator to open a triage record
+   review; size 1 the last lever, about 18 stories of headroom after this feature and about 11.2 Plants runner-hours
+   per CI run at 58 stories, also in `gates/README.md`). This phase's review asks the operator to open a triage record
    for a plant design whose shard time does not grow with the story count, before the next element mission
    (R-13, decision 15).
 2. **US1 `ocelle-button`** (P1, MVP): `icon-slot.ts` scoping (with its `slot.test.ts` case) first; `control.ts`
@@ -274,31 +306,37 @@ one at a time.
    focus ring, forced colours per R-12's table and `.icon-slot[hidden]`), `ocelle-button.ts` (the `inline-grid` host
    filled by the inner control,
    variants with hover and active, sizes, flush at the inline start, `ground` with `chrome`, label, disabled, icon
-   slot), the tokens `color-hover-border`, `color-accent-hover`, `color-active-bg`, `color-chrome-active` and the
+   slot, the `ocelle-button-activate` event of decision 26 with its cancel path in button mode), the tokens `color-hover-border`, `color-accent-hover`, `color-active-bg`, `color-chrome-active` and the
    grounds for `color-ink`, `color-accent-strong`, `color-on-accent`, `color-chrome-ink` and `color-disabled-ink` with
    their contrast rows (counts first), entry point, manifest (`ground`), README (element conventions → control
-   conventions 1 (with the filled host), 3 (disabled half), 5 (with label-in-name), 7; the form note; the flush-hover
+   conventions 1 (with the filled host), 3 (disabled half), 5 (with label-in-name), 7; the activate event; the form note; the flush-hover
    note with its exception list; the flush clipping note; the changing-surface `ground` rule; the chrome look; a host
    may restyle `display` and size, with the host guard's limits),
-   CHANGELOGs, button stories (US1 states, chrome, the changing surface; a spike first measures whether a
-   programmatically focused story shows `:focus-visible`) with their baselines and the axe gate, US1 scenarios 1 to
-   17 and this phase's edge-case rows.
+   CHANGELOGs, button stories (US1 states, chrome, the changing surface, focus; a spike first measures whether a
+   programmatically focused story shows `:focus-visible` with plain `focus()` and with `focus({ focusVisible: true })`,
+   decision 27) with their baselines and the axe gate, US1 scenarios 1 to 19 (US1-18 the cancelled activate event,
+   US1-19 the form; manifest: the activate event declared, no `type`, `name`, `value` or `form` attribute) and this
+   phase's edge-case rows.
 3. **US2 Link mode and ARIA passthrough** (P2): spike first (element reflection on the engine-floor claim; the move
    at upgrade and on later sets; whether analyzer 0.11.0 emits `cssStates`); `control.ts` link mode by the URL parser
    (unparseable → button), `javascript:` rule, `noopener`, disabled link without `href` and with the guard, attribute
    move with clearing and removal as a no-op, `title`, the `data-ocelle-moved-*` mirrors read back at upgrade and
    restored when removed or changed (decision 24),
-   `aria-haspopup` and `aria-pressed`, custom states, references, name order; `scripts/manifest.ts` and the moved
+   `aria-haspopup` and `aria-pressed`, custom states, references, name order; the link-mode activate event (cancel →
+   no navigation; no activate event on a Ctrl, Meta, Shift or Alt click, decision 26); `scripts/manifest.ts` and the moved
    attributes and mirrors declared; README conventions 2, 4 (with the per-stack recipes, the mirrors and custom
    states), 6, the `data:`/`vbscript:` note, 005's elements keep their rule, engines floor Chromium 135 and WebKit
-   17.4, the htmx row's morph sentence; link stories with their baselines and the axe gate; US2 scenarios 1 to 14
-   (US2-13 with its morph case; in-process sink bodies and
-   fixture navigation bodies) and this phase's edge-case rows.
+   17.4, the htmx row's morph sentence, the three consumer compositions of decision 28; link stories with their
+   baselines and the axe gate; US2 scenarios 1 to 14
+   (US2-1 with the activate event and modifier clicks, US2-13 with its morph case; in-process sink bodies and
+   fixture navigation bodies), link mode's forced colours and its look equal to button mode's (FR-002, US1-11), the
+   consumer compositions (SC-006) and this phase's edge-case rows.
 4. **US3 Busy** (P3): the unavailable half of the guard, the unavailable link without `href` and with
    `tabindex="0"`, `spinner.ts` (six turns, 4.8 s), the `motion-spin` and `motion-turn` tokens with `generate.ts`'s
    reduced-motion block from the motion durations (tokens and generator tests first), reduced-motion and
    forced-colours rules, the README's 833 ms note for a spin override; busy stories with their baselines and the axe
-   gate; US3 scenarios 1 to 11 (US3-11 the restyled busy button) and this phase's edge-case rows.
+   gate; US3 scenarios 1 to 11 (US3-11 the restyled busy button; no `ocelle-button-activate` while busy, one after
+   `busy` is removed) and this phase's edge-case rows.
 5. **US4 `ocelle-action-row`** (P4): `ocelle-action-row.ts` on `control.ts` (the `grid` host filled by the inner
    control, button mode, link mode for activation, `click()`), the activate event, the name from the title wrapper,
    the description from slots with text only and the slot emptiness of decision 25 (`slotchange` and a
@@ -307,14 +345,15 @@ one at a time.
    `overflow-wrap: anywhere` on title and description, min-content width, minimum height, inline padding `space-3`
    in both presentations, hover with `color-hover-border`, `ground` with `chrome`, the focus ring inside with the
    `focus-offset-inset` token, `color-ink-soft` grounds (token tests and contrast rows first); entry point, manifest,
-   README, CHANGELOG; row stories with their baselines and the axe gate; US4 scenarios 1 to 17, the row-layout wrap
-   (check-3 note SPEC-3-04) and this phase's edge-case rows.
+   README, CHANGELOG; row stories (with the `ground` values `accent-low`, `inset`, `hover-bg` and `state`, and a focused
+   non-current row, decision 27) with their baselines and the axe gate; US4 scenarios 1 to 18 (US4-18 the row-layout
+   wrap, check-3 note SPEC-3-04) and this phase's edge-case rows.
 6. **US5 Row states and card** (P5): link-row activation order and `preventDefault`, modifier, Alt and middle clicks
    (sink and fixture bodies), `current` and its bar apart from the ring (R-12's method, with hover precedence, forced
    colours and the chrome surface), `unavailable` (no `href` on a link row, decision 9; with `current`, decision 16;
    a stretched unavailable row), the restyled rows (decision 23; a spike first lists by hand which outside points
    lie outside the inner control per mode and page rule), card layout, tags wrapping, title gap and part; stories
-   with their baselines and the axe gate; US5 scenarios 1 to 12 and this phase's edge-case rows. The phase's review records a CI run of the branch
+   (with `current="true"`) with their baselines and the axe gate; US5 scenarios 1 to 12 and this phase's edge-case rows. The phase's review records a CI run of the branch
    at the full story count with every Plants shard's time (each under 10 minutes) and the run's total (R-13).
 
 **Out of this mission**: `ocelle-pill-tag` and its ellipsis tooltip moved to the later status mission with

@@ -3,7 +3,7 @@
 This is the public interface the manifest, the README and the CHANGELOG state. It is what #12 (breadcrumb items:
 `flush`, `size="compact"`, link mode, `aria-current`; its top-bar menu button: `aria-haspopup`, `aria-expanded`,
 `ground="chrome"`) and #14 (a flush Copy control) consume (§ Hand-off to #12 and #14). Removing or renaming any item after 1.0.0, or
-changing the event's payload, is a MAJOR change (constitution VII).
+changing an event's payload, is a MAJOR change (constitution VII).
 
 ## Entry points (added)
 
@@ -92,6 +92,7 @@ changing the event's payload, is a MAJOR change (constitution VII).
 | method | `click()` | | | clicks the inner control |
 | slot | (default) | | | the label |
 | slot | `icon` | | | one icon before the label (mission 005 slot convention); hidden while busy (the spinner runs six turns in 4.8 s, then stays still; with a host override of `--ocelle-motion-spin`, one turn must stay at or below 833 ms to keep the 5 s limit) |
+| event | `ocelle-button-activate` | `CustomEvent<Record<string, never>>` (`detail` `{}`), bubbles, composed, cancelable | | one per activation that delivers a `click`, dispatched before that `click` reaches any bubble-phase listener on the host or its ancestors; not on a Ctrl, Meta, Shift or Alt click of a link-mode button, nor on a middle click; `preventDefault()` cancels the `click`'s default action (a link-mode button's navigation; in button mode the `click` is still delivered, `defaultPrevented` true); not dispatched when not activated (operator decision C1 (a), 2026-11-14) |
 | event | `click` (native) | `MouseEvent` | | target is the host; not delivered when not activated |
 | CSS part | `control` | | | the inner `<button>` or `<a>` |
 | CSS custom properties | none | | | reads tokens only (README lists them) |
@@ -144,6 +145,10 @@ angle) and `--ocelle-focus-offset-inset` (the negative offset that draws a focus
 grounds (no value change).
 
 ## Hand-off to #12 and #14
+
+The README's `ocelle-button` section gives the markup of each of the three controls below, and a phase 3 scenario
+renders exactly that markup with no style that targets the elements (SC-006). A consumer listens for
+`ocelle-button-activate` (or the native `click`) on each.
 
 - **Breadcrumb items (#12)**: `flush`, `size="compact"`, link mode, `aria-current`. The button's focus ring is drawn
   outside it, so a trail that clips (`overflow` other than `visible`) keeps at least `--ocelle-focus-offset` +

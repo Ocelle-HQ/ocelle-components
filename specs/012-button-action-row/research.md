@@ -301,6 +301,23 @@ ignores clicks with `ctrlKey`, `metaKey`, `shiftKey` or `altKey` and dispatches 
 Alt is treated as a modifier, closing check-3 note SPEC-3-02: Chromium may download on Alt-click, which is the
 browser's default the operator chose to leave alone).
 
+**The button's activate event** (operator decision C1 (a), 2026-11-14; plan decision 26): the button's own activation
+listener on the inner control runs after the guard and only when the control is available, as the row's does. On each
+`click` it dispatches `new CustomEvent("ocelle-button-activate", { bubbles: true, composed: true, cancelable: true,
+detail: {} })` from the host, except, in link mode, a click with `ctrlKey`, `metaKey`, `shiftKey` or `altKey` (the
+row's rule above); it never dispatches for `auxclick`. A listener on the inner control runs before any listener on
+the host or its ancestors in the bubble phase (the composed path runs from the inner control through the shadow root
+to the host), so the activate event, dispatched synchronously there, precedes the `click` at every bubble-phase
+listener outside the shadow root; the recorder (R-11) shows the order by its records. When a listener called
+`preventDefault()` on it, the element calls `preventDefault()` on the originating `click`: in link mode the navigation
+is cancelled (measured above: `preventDefault()` in a `click` listener stops navigation for plain clicks and Enter);
+in button mode the `click` goes on to the host's listeners with `defaultPrevented` true, since a `type="button"` has
+no default action. Cancelable and the cancel path match `ocelle-action-row-activate`; `detail` is the empty object
+because the button carries no value and the target identifies it. Alternatives: a non-cancelable event (rejected: a
+host could not cancel a link-mode button's navigation from the `ocelle-*` event, as it can a row's); `detail: null`
+(rejected: every other `ocelle-*` event's `detail` is an object); dispatching on modifier clicks too (rejected: the
+row's rule, decision 13, and a cancel there would suppress the new tab the user asked for).
+
 **`host.click()`** (PLAN-FRESH-1-003): `HTMLElement.prototype.click()` on the host dispatches a synthetic click at the
 host that never passes through the inner control, so neither the native `disabled` check nor the guard would see it,
 and a row would neither dispatch its event nor navigate. Both elements override `click()` to call the inner control's
@@ -673,12 +690,19 @@ left as separate stories with `dir="rtl"` in their markup (006 has no direction 
 `parameters.ocelle.pointer` (`{ hover: <selector> }` or `{ press: <selector> }`, one per story, a selector that
 matches exactly one element, inside 1280 × 800 at scroll 0, 0), focus by a wrapper that focuses programmatically (006
 has no focus parameter; whether `:focus-visible` then shows is measured in phase 2 before the focus story is
-written). 006 captures and audits with `reducedMotion: "reduce"` (`gates/lib/capture-plan.ts:48`), so a busy story
+written). **Fallback** (analysis fixes 1, G2; plan decision 27): measured here on a scratch page with no user input
+(Chromium 153), a plain `focus()` on a `delegatesFocus` host gives the inner control `:focus-visible`, and
+`host.focus({ focusVisible: true })` is forwarded to the inner control and forces `:focus-visible` (`focusVisible:
+false` suppresses it, so the option is honoured). Phase 2's spike measures both in 006's pinned capture; the focus
+stories use plain `focus()` where it shows the ring there and `focus({ focusVisible: true })` otherwise, both story
+code inside 006's mechanisms. The focus stories are the button's (phase 2), a focused non-current row (phase 5) and a
+focused current row (phase 6). Only if neither shows the ring in the pinned capture does the phase stop and ask. 006 captures and audits with `reducedMotion: "reduce"` (`gates/lib/capture-plan.ts:48`), so a busy story
 shows the still arc and its baseline is deterministic. Inner controls set `font: inherit` (006's `font` check).
 Forced colours are not captured by 006; they stay in the element tests. Stories that name a control with visible text
 follow R-05's label-in-name rule. Round 2 adds stories for `ground="chrome"` (button and row, on a chrome-ground
-wrapper) and for a quiet button with `ground="hover-bg"` on canvas and on `hover-bg` (PLAN-FRESH-2-007): about 31
-stories in all. Story tests (operator decision I3) are written in each phase's red commit: the existing
+wrapper) and for a quiet button with `ground="hover-bg"` on canvas and on `hover-bg` (PLAN-FRESH-2-007). Analysis
+fixes 1 adds the row's `ground` stories (`accent-low`, `inset`, `hover-bg`, `state`; G1), a `current="true"` row (G1)
+and a focused non-current row (G2): about 37 stories in all. Story tests (operator decision I3) are written in each phase's red commit: the existing
 `storybook/test/integration/elements-stories.test.ts` is extended with the new story ids, red first, each story
 rendering its elements in light and dark; 006 removed that file's CSP checks (the Storybook is not a CSP target) and
 none is added.
@@ -717,7 +741,7 @@ split count, **25 stories**, and names as its sunset the change that lowers `siz
 `main` has 21 and phase 2's button stories alone pass 25, so **phase 1** lowers `shardSize` to **1**, test-first (the
 `plantShards` test of the repository's size, `gates/test/plant-runner.test.ts:732`, and `gates/README.md`'s "80 and 3
 are approved"), before any story is added. By 006's measured model (387 + size × 1.377 × (2s + 2) s per `visual`
-shard), at s ≈ 52 a shard takes about 825 s at size 3, 679 s at size 2 and 533 s at size 1, so only size 1 stays
+shard), at s ≈ 58 a shard takes about 875 s at size 3, 712 s at size 2 and 550 s at size 1, so only size 1 stays
 under 10 minutes. The cost: the 48 `visual` and 25 `axe` plants go from 25 shards (16 + 9) to 73, plus the 3
 non-visual shards, each with the fixed part of about 387 s; the total Plants CI time grows accordingly. At size 1 the
 model's split count is **76 stories** (387 + 1.377 × (2s + 2) ≤ 600 s; 72 at the record's slowest 1.457 s). Phase 1
@@ -728,11 +752,11 @@ minutes is a stop-and-ask.
 
 **Size 1 is the last lever (PLAN-FRESH-3-003 (a))**: `plantShards` keeps each `visual` plant whole, so `size` 1 is its
 floor; nothing below it remains, and at size 1 a shard's time still grows with every repository story because each
-`visual` plant captures them all. Recomputed from the same model: 533 s at 52 stories and 599 s at 76, so after this
-feature (about 52 stories) the headroom is about **24 stories**, fewer than the about 31 this feature alone adds; the
+`visual` plant captures them all. Recomputed from the same model: 550 s at 58 stories and 599 s at 76, so after this
+feature (about 58 stories) the headroom is about **18 stories**, fewer than the about 37 this feature alone adds; the
 next element mission (the status mission, or #12's breadcrumbs and top bar) will pass the split count with no setting
-left to lower, and that mission would be blocked on a gate redesign. The cost accepted here: at 52 stories the 73
-`visual` and `axe` shards take about 73 × 533 s ≈ 38,900 s, about **10.8 runner-hours** per CI run (taking the
+left to lower, and that mission would be blocked on a gate redesign. The cost accepted here: at 58 stories the 73
+`visual` and `axe` shards take about 73 × 550 s ≈ 40,150 s, about **11.2 runner-hours** per CI run (taking the
 `visual` model for every shard, an upper bound for the `axe` shards), plus the 3 non-visual shards, against 25 such
 shards, about 25 × 569 s ≈ 14,200 s or about 4 runner-hours, at 21 stories and size 3 today. Phase 1 writes these facts into 006's
 Complexity Tracking row as it updates it (size 1 the last lever, the headroom, the runner time) and into
@@ -752,7 +776,8 @@ killed; CompileError is invalid; Timeout and CompileError are reported and still
 click handler); they pass by that decision but are listed in the phase review. Equivalent mutants are recorded inline
 with a reason. Entries are at most 30 changed lines (007 FR-014). Token source changes (`packages/tokens/src/source.ts`,
 `packages/tokens/src/generate.ts`) are mutated under the default configuration with the tokens tests;
-`packages/elements/scripts/manifest.ts` likewise with its tests.
+`packages/elements/scripts/manifest.ts` likewise with its tests. Phase 1's `gates/lib/plant-runner.ts` (the
+`shardSize` constant) is mutated under the default configuration with `gates/test/plant-runner.test.ts`.
 
 ## R-15 Manifest of the moved attributes and states
 

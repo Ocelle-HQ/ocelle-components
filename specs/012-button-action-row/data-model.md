@@ -23,7 +23,7 @@ States and what each guarantees:
 
 | State | Tab order | AX | Inner link (link mode) | Activation |
 |---|---|---|---|---|
-| available | in, once | role per mode, name, description, passed states | `<a href>` with `target`, `rel`, `download` | button: `click` reaches host listeners; row: one `ocelle-action-row-activate` |
+| available | in, once | role per mode, name, description, passed states | `<a href>` with `target`, `rel`, `download` | button: one `ocelle-button-activate`, then the `click` reaches host listeners; row: one `ocelle-action-row-activate` (neither activate event on a Ctrl, Meta, Shift or Alt click in link mode) |
 | unavailable | in, once | `aria-disabled="true"` (+ `aria-busy="true"` for a busy button) | `<a role="link" tabindex="0" aria-disabled="true">`, no `href` | not activated: the guard |
 | disabled (button only) | out | disabled (`<button disabled>`, or the link below) | `<a role="link" aria-disabled="true">`, no `href`, no `tabindex` | not activated: native `disabled` (button mode) and the guard |
 
@@ -66,6 +66,17 @@ as written. `rel` in link mode: the host's value, or `noopener` when
 Look per state (outside forced colours; R-08 items 3 and 4a): idle, hover and active as R-08's tables; disabled
 `disabled-bg`/`disabled-ink`; busy keeps the variant's look and shows the spinner (one 4.8 s run of six turns, then
 the still arc; `animation: none` under reduced motion; R-07).
+
+### Event `ocelle-button-activate`
+
+`new CustomEvent("ocelle-button-activate", { bubbles: true, composed: true, cancelable: true, detail: {} })` dispatched
+from the host (operator decision C1 (a), 2026-11-14; plan decision 26). Dispatched on: a `click` on the available inner
+control, from the element's listener on the inner control after the guard, so before the `click` reaches any
+bubble-phase listener on the host or its ancestors; in link mode only a click with no modifier key (Ctrl, Meta, Shift,
+Alt); any click in button mode, which Enter, Space and `button.click()` produce; never on `auxclick`. A
+`preventDefault()` by a listener → the element calls `preventDefault()` on the originating `click` (link mode: no
+navigation; button mode: the `click` is still delivered, `defaultPrevented` true). Not dispatched in the disabled or
+unavailable state (the guard stops the `click` first). Manifest: `CustomEvent<Record<string, never>>`.
 
 ## `ocelle-action-row`
 
