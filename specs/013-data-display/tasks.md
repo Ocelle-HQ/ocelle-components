@@ -153,7 +153,7 @@ order 1 → 2 → 3 → 4:
 
 ### Scaffold
 
-- [ ] T002 [US1] Scaffold commit (no behaviour, constitution VIII exemption stated in the phase review), recorded by `.specify/extensions/story/scripts/scaffold.sh 1`:
+- [X] T002 [US1] Scaffold commit (no behaviour, constitution VIII exemption stated in the phase review), recorded by `.specify/extensions/story/scripts/scaffold.sh 1`:
   - `packages/elements/src/ocelle-fact.ts` and `packages/elements/src/ocelle-facts.ts`, each with `define`, `@tagname`, the declared properties of contracts/elements.md (`label`, `wrap`; `density`, `layout`), each `| undefined` with `@default undefined`, and an empty `render()`;
   - `ocelle-facts.ts` imports `./ocelle-fact.ts` (PLAN-CORRECTNESS-1-012 (a));
   - exports in `packages/elements/src/index.ts`, `src/browser.ts` and `packages/elements/package.json` `exports` (`./ocelle-facts.js`, `./ocelle-fact.js`);

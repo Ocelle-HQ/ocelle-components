@@ -839,3 +839,63 @@ describe("the ocelle/token-only plugin with the lineHeight: \"token\" option: O2
     ]);
   });
 });
+
+// The grid allowance of 013 (research.md R-10, PLAN-CORRECTNESS-1-001 (a); tasks.md T008, T008a): in
+// `grid-template-columns` only, a track may be `fit-content(<percentage>)` (the facts label column, capped) or
+// `minmax(0, <flex>)` (the value column, and each of the grid layout's four tracks written out). Any other argument,
+// any other property, a nested function and `repeat()` stay raw. Each finding shares its test with the allowed value
+// it guards, so the allowance and its limits are seen together.
+describe("rawValues: the grid-template-columns allowance (013 R-10)", () => {
+  const allowed = "fit-content(50%) minmax(0, 1fr)";
+
+  it.each([
+    { value: "fit-content(50%) minmax(0, 1fr)" },
+    { value: "minmax(0, 1fr)" },
+    { value: "minmax(0, 2.5fr)" },
+    { value: "fit-content(33.3%)" },
+    { value: "minmax(0, 1fr) minmax(0, 1fr) minmax(0, 1fr) minmax(0, 1fr)" },
+    { value: "minmax(0, 1fr) minmax(0, 1fr)" },
+  ])("grid-template-columns: $value is token-only (only the control 4px after it is raw)", ({ value }) => {
+    expect({ value: rawValues("grid-template-columns", value), control: rawValues("grid-template-columns", `${value} 4px`), upper: rawValues("GRID-TEMPLATE-COLUMNS", value) }).toEqual({ value: [], control: ["4px"], upper: [] });
+  });
+
+  it.each([
+    { value: "fit-content(200px)", raw: ["fit-content(200px)"] },
+    { value: "fit-content(0)", raw: ["fit-content(0)"] },
+    { value: "fit-content(50%, 1fr)", raw: ["fit-content(50%, 1fr)"] },
+    { value: "minmax(auto, 50%)", raw: ["minmax(auto, 50%)"] },
+    { value: "minmax(0, 200px)", raw: ["minmax(0, 200px)"] },
+    { value: "minmax(0, 50%)", raw: ["minmax(0, 50%)"] },
+    { value: "minmax(1px, 1fr)", raw: ["minmax(1px, 1fr)"] },
+    { value: "minmax(0, 1fr, 2fr)", raw: ["minmax(0, 1fr, 2fr)"] },
+    { value: "minmax(0, calc(1fr))", raw: ["minmax(0, calc(1fr))"] },
+    { value: "fit-content(calc(50%))", raw: ["fit-content(calc(50%))"] },
+    { value: "fit-content(var(--ocelle-space-4))", raw: ["fit-content(var(--ocelle-space-4))"] },
+    { value: "minmax(0, fit-content(50%))", raw: ["minmax(0, fit-content(50%))"] },
+    { value: "repeat(4, minmax(0, 1fr))", raw: ["repeat(4, minmax(0, 1fr))"] },
+    { value: "fit-content(50%) minmax(0, 200px)", raw: ["minmax(0, 200px)"] },
+  ])("grid-template-columns: $value is raw: $raw, while fit-content(50%) minmax(0, 1fr) passes", ({ value, raw }) => {
+    expect({ value: rawValues("grid-template-columns", value), allowed: rawValues("grid-template-columns", allowed) }).toEqual({ value: raw, allowed: [] });
+  });
+
+  it.each([
+    { property: "grid-template-rows", value: "minmax(0, 1fr)" },
+    { property: "grid-template-rows", value: "fit-content(50%)" },
+    { property: "grid-auto-columns", value: "minmax(0, 1fr)" },
+    { property: "width", value: "fit-content(50%)" },
+    { property: "inline-size", value: "minmax(0, 1fr)" },
+    { property: "grid-template", value: "minmax(0, 1fr) / fit-content(50%)" },
+  ])("$property: $value stays raw in any other property, while grid-template-columns passes it", ({ property, value }) => {
+    expect({ other: rawValues(property, value).length > 0, columns: rawValues("grid-template-columns", allowed) }).toEqual({ other: true, columns: [] });
+  });
+
+  it("reports the facts tracks of an element template not at all, and fit-content(200px) and repeat() at their lines", async () => {
+    const code =
+      "const css = String.raw;\nexport const styles = css`\n  dl {\n    grid-template-columns: fit-content(50%) minmax(0, 1fr);\n  }\n  .grid {\n    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr) minmax(0, 1fr) minmax(0, 1fr);\n  }\n  .bad {\n    grid-template-columns: fit-content(200px);\n  }\n  .worse {\n    grid-template-columns: repeat(4, minmax(0, 1fr));\n  }\n`;\n";
+    const { results } = await stylelint.lint({ code, codeFilename: "x.ts", config: { plugins: [plugin], rules: { [ruleName]: true }, customSyntax: "postcss-lit" } });
+    expect(results[0]?.warnings.map(({ line, text }) => ({ line, text }))).toEqual([
+      { line: 10, text: "grid-template-columns: raw fit-content(200px); use a --ocelle-* token (FR-024) (ocelle/token-only)" },
+      { line: 13, text: "grid-template-columns: raw repeat(4, minmax(0, 1fr)); use a --ocelle-* token (FR-024) (ocelle/token-only)" },
+    ]);
+  });
+});

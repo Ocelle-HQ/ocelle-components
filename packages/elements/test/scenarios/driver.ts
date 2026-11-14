@@ -71,6 +71,12 @@ export interface Sheets {
   readonly styleElements: number;
 }
 
+/** One element of a shadow root's element tree: its local name and its element children (`structure`). */
+export interface TreeNode {
+  readonly name: string;
+  readonly children: readonly TreeNode[];
+}
+
 export interface MountOptions {
   /** Links `@ocelle/styles`' `base.css` (after `tokens.css`) on the page. */
   readonly base?: boolean;
@@ -144,4 +150,41 @@ export interface Driver {
   sheets(selector: string): Promise<Sheets>;
   /** The console messages and uncaught errors the page reported since the last `mount`. */
   messages(): Promise<string[]>;
+  // The additions of 013 phase 1 (contracts/checks.md § Driver additions; tasks.md T003).
+  /** Sets the page's viewport to `width` × `height` CSS px and waits for every element to render. */
+  viewport(width: number, height: number): Promise<void>;
+  /** The document element's scroll width. */
+  scrollWidth(): Promise<number>;
+  /**
+   * The layout-settle wait (013 research.md R-02; operator decision "(a) Defer + 2-frame wait"): waits for every
+   * `ocelle-*` element's update, then reads the border box of the element with `id` and of the first `dl` of its shadow
+   * root once per animation frame, each read after the frame's rendering (so after its `ResizeObserver` delivery), and
+   * returns the number of frames waited once two consecutive frames give the same geometry with no update pending,
+   * comparing from the second frame on; it rejects after 10 frames.
+   */
+  layout(id: string): Promise<number>;
+  /**
+   * Selects the rendered text of the element with `id` (its light-DOM content), performs a user copy (the platform's
+   * copy shortcut) and returns the `text/plain` the copy put on the clipboard, read from the `clipboardData` of a user
+   * paste into a scratch text field; the copy event's own `clipboardData` is empty while it is dispatched.
+   */
+  copy(id: string): Promise<string>;
+  /** Appends the element with `id` to the element with `parentId`, or to the body when it is null, and waits for every element to render. */
+  move(id: string, parentId: string | null): Promise<void>;
+  /**
+   * Sets the data of the first text node child of the element with `id` (a `characterData` change, not a `childList`
+   * one) and waits for every element to render.
+   */
+  text(id: string, value: string): Promise<void>;
+  /** Opens the `dialog` with `id` as a modal (`showModal()`) or the popover with `id` (`showPopover()`), and waits for every element to render. */
+  open(id: string): Promise<void>;
+  /** The border boxes of every element matching `inner` in the shadow root of the element with `id`, in tree order. */
+  boxes(id: string, inner: string): Promise<Box[]>;
+  /**
+   * The computed values of `properties` of every element matching `inner` in the shadow root of the element with `id`
+   * (of the element itself when `inner` is null), in tree order, each a record by property name.
+   */
+  styles(id: string, inner: string | null, properties: readonly string[]): Promise<Record<string, string>[]>;
+  /** The element children, as a tree, of the first element matching `inner` in the shadow root of the element with `id` (of the shadow root itself when `inner` is null); empty when there is none. */
+  structure(id: string, inner: string | null): Promise<TreeNode[]>;
 }

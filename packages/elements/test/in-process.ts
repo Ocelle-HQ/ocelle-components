@@ -9,12 +9,13 @@
 /// <reference types="vite/client" />
 import type { LitElement } from "lit";
 import { vi } from "vitest";
-import { commands, page } from "vitest/browser";
+import { commands, page, userEvent } from "vitest/browser";
 import baseText from "../../styles/src/base.css?raw";
 import { css } from "../../tokens/src/generate.ts";
 import { source } from "../../tokens/src/source.ts";
+import { layoutWait } from "./layout-wait.ts";
 import { decodePng } from "./pixels.ts";
-import type { Box, Driver, Drawing, Paint, Part, Placement, Sheets } from "./scenarios/driver.ts";
+import type { Box, Driver, Drawing, Paint, Part, Placement, Sheets, TreeNode } from "./scenarios/driver.ts";
 
 function sheet(text: string): CSSStyleSheet {
   const made = new CSSStyleSheet();
@@ -179,5 +180,64 @@ export function inProcessDriver(): Driver {
       });
     },
     messages: () => Promise.resolve([...messages]),
+    viewport: async (width, height) => {
+      await page.viewport(width, height);
+      await settle();
+    },
+    scrollWidth: () => Promise.resolve(document.documentElement.scrollWidth),
+    layout: (id) => layoutWait(id),
+    copy: async (id) => {
+      const range = document.createRange();
+      range.selectNodeContents(element(id));
+      const selection = getSelection();
+      selection?.removeAllRanges();
+      selection?.addRange(range);
+      await userEvent.copy();
+      const field = document.createElement("textarea");
+      document.body.append(field);
+      let pasted = "";
+      field.addEventListener("paste", (event) => {
+        pasted = event.clipboardData?.getData("text/plain") ?? "";
+      });
+      field.focus();
+      await userEvent.paste();
+      field.remove();
+      getSelection()?.removeAllRanges();
+      return pasted;
+    },
+    move: async (id, parentId) => {
+      (parentId === null ? document.body : element(parentId)).append(element(id));
+      await settle();
+    },
+    text: async (id, value) => {
+      const node = [...element(id).childNodes].find((child) => child.nodeType === Node.TEXT_NODE);
+      if (node === undefined) throw new Error(`no text node in #${id}`);
+      (node as Text).data = value;
+      await settle();
+    },
+    open: async (id) => {
+      const target = element(id);
+      if (target instanceof HTMLDialogElement) target.showModal();
+      else target.showPopover();
+      await settle();
+    },
+    boxes: (id, inner) =>
+      Promise.resolve(
+        [...(element(id).shadowRoot?.querySelectorAll(inner) ?? [])].map((each) => {
+          const rect = each.getBoundingClientRect();
+          return { x: rect.x, y: rect.y, width: rect.width, height: rect.height, display: getComputedStyle(each).display };
+        }),
+      ),
+    styles: (id, inner, properties) => {
+      const host = element(id);
+      const targets = inner === null ? [host] : [...(host.shadowRoot?.querySelectorAll(inner) ?? [])];
+      return Promise.resolve(targets.map((each) => Object.fromEntries(properties.map((property) => [property, getComputedStyle(each).getPropertyValue(property)]))));
+    },
+    structure: (id, inner) => {
+      const root = element(id).shadowRoot;
+      const start = inner === null ? root : (root?.querySelector(inner) ?? null);
+      const tree = (of: Element | ShadowRoot): TreeNode[] => [...of.children].map((child) => ({ name: child.localName, children: tree(child) }));
+      return Promise.resolve(start === null ? [] : tree(start));
+    },
   };
 }

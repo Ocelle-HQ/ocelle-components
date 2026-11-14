@@ -8,8 +8,9 @@
 import { inflateSync } from "node:zlib";
 import type { Page } from "playwright";
 import { axNodes, axSubtree, emulate } from "../commands.ts";
+import { layoutWait } from "../layout-wait.ts";
 import { decodePng } from "../pixels.ts";
-import type { Bounds, Box, Driver, Drawing, Paint, Part, Placement, Sheets } from "../scenarios/driver.ts";
+import type { Bounds, Box, Driver, Drawing, Paint, Part, Placement, Sheets, TreeNode } from "../scenarios/driver.ts";
 
 /**
  * Waits in the page until every `ocelle-*` element has rendered and the fonts the page uses have loaded (a font that
@@ -203,5 +204,86 @@ export function fixtureDriver(page: Page, log: readonly string[], withBase = fal
         };
       }, selector),
     messages: () => Promise.resolve(log.slice(since)),
+    viewport: async (width, height) => {
+      await page.setViewportSize({ width, height });
+      await settle(page);
+    },
+    scrollWidth: () => page.evaluate(() => document.documentElement.scrollWidth),
+    layout: (id) => page.evaluate(layoutWait, id),
+    copy: async (id) => {
+      await page.evaluate((id) => {
+        const element = document.getElementById(id);
+        if (element === null) throw new Error(`no #${id} on the page`);
+        const range = document.createRange();
+        range.selectNodeContents(element);
+        const selection = getSelection();
+        selection?.removeAllRanges();
+        selection?.addRange(range);
+      }, id);
+      await page.keyboard.press("ControlOrMeta+C");
+      await page.evaluate(() => {
+        const field = document.createElement("textarea");
+        field.id = "ocelle-driver-paste";
+        document.body.append(field);
+        field.addEventListener("paste", (event) => {
+          field.dataset.pasted = event.clipboardData?.getData("text/plain") ?? "";
+        });
+        field.focus();
+      });
+      await page.keyboard.press("ControlOrMeta+V");
+      return page.evaluate(() => {
+        const field = document.getElementById("ocelle-driver-paste");
+        const pasted = field?.dataset.pasted ?? "";
+        field?.remove();
+        getSelection()?.removeAllRanges();
+        return pasted;
+      });
+    },
+    move: async (id, parentId) => {
+      await page.evaluate(({ id, parentId }) => {
+        const element = document.getElementById(id);
+        const parent = parentId === null ? document.body : document.getElementById(parentId);
+        if (element === null || parent === null) throw new Error(`no #${id} or #${String(parentId)} on the page`);
+        parent.append(element);
+      }, { id, parentId });
+      await settle(page);
+    },
+    text: async (id, value) => {
+      await page.evaluate(({ id, value }) => {
+        const node = [...(document.getElementById(id)?.childNodes ?? [])].find((child) => child.nodeType === Node.TEXT_NODE);
+        if (node === undefined) throw new Error(`no text node in #${id}`);
+        (node as Text).data = value;
+      }, { id, value });
+      await settle(page);
+    },
+    open: async (id) => {
+      await page.evaluate((id) => {
+        const target = document.getElementById(id);
+        if (target === null) throw new Error(`no #${id} on the page`);
+        if (target instanceof HTMLDialogElement) target.showModal();
+        else target.showPopover();
+      }, id);
+      await settle(page);
+    },
+    boxes: (id, inner) =>
+      page.evaluate(({ id, inner }): Box[] =>
+        [...(document.getElementById(id)?.shadowRoot?.querySelectorAll(inner) ?? [])].map((each) => {
+          const rect = each.getBoundingClientRect();
+          return { x: rect.x, y: rect.y, width: rect.width, height: rect.height, display: getComputedStyle(each).display };
+        }), { id, inner }),
+    styles: (id, inner, properties) =>
+      page.evaluate(({ id, inner, properties }) => {
+        const host = document.getElementById(id);
+        if (host === null) throw new Error(`no #${id} on the page`);
+        const targets = inner === null ? [host] : [...(host.shadowRoot?.querySelectorAll(inner) ?? [])];
+        return targets.map((each) => Object.fromEntries(properties.map((property) => [property, getComputedStyle(each).getPropertyValue(property)])));
+      }, { id, inner, properties }),
+    structure: (id, inner) =>
+      page.evaluate(({ id, inner }): TreeNode[] => {
+        const root = document.getElementById(id)?.shadowRoot ?? null;
+        const start = inner === null ? root : (root?.querySelector(inner) ?? null);
+        const tree = (of: Element | ShadowRoot): TreeNode[] => [...of.children].map((child) => ({ name: child.localName, children: tree(child) }));
+        return start === null ? [] : tree(start);
+      }, { id, inner }),
   };
 }

@@ -247,7 +247,7 @@ describe("generate(root) on the repository's element source", () => {
     const manifest = await generate(repo);
     const modules = manifest.modules as { path: string; declarations: Record<string, unknown>[] }[];
     expect(manifest.schemaVersion).toBe("1.0.0");
-    expect(modules.map((module) => module.path)).toEqual(["src/ocelle-brand-mark.ts", "src/ocelle-icon.ts"]);
+    expect(modules.map((module) => module.path)).toEqual(["src/ocelle-brand-mark.ts", "src/ocelle-fact.ts", "src/ocelle-facts.ts", "src/ocelle-icon.ts"]);
     const [icon] = modules.find((module) => module.path === "src/ocelle-icon.ts")?.declarations ?? [];
     expect(icon).toMatchObject({
       kind: "class",
@@ -297,6 +297,45 @@ describe("generate(root) on the repository's element source", () => {
       { name: "tone", fieldName: "tone", type: { text: '"mono" | undefined' }, default: "undefined", described: true },
       { name: "label", fieldName: "label", type: { text: "string | undefined" }, default: "undefined", described: true },
     ]);
+  });
+
+  // 013 (T017; contracts/elements.md § `ocelle-facts`, § `ocelle-fact`): every list stated, every member described.
+  it('declares ocelle-facts with density ("compact" | undefined) and layout ("columns" | "stacked" | "grid" | undefined), reflected, its default slot, the parts list, label and value, and its three CSS properties, each described', async () => {
+    const manifest = await generate(repo);
+    const modules = manifest.modules as { path: string; declarations: Record<string, unknown>[] }[];
+    const [facts] = modules.find((module) => module.path === "src/ocelle-facts.ts")?.declarations ?? [];
+    const named = (list: unknown): unknown => ((list ?? []) as Record<string, unknown>[]).map(({ name, description }) => ({ name, described: typeof description === "string" && description !== "" }));
+    const described = (list: unknown): Record<string, unknown>[] =>
+      ((list ?? []) as Record<string, unknown>[]).map(({ description, ...rest }) => ({ ...rest, described: typeof description === "string" && description !== "" }));
+    expect({ kind: facts?.kind, name: facts?.name, tagName: facts?.tagName, customElement: facts?.customElement, events: facts?.events }).toEqual({ kind: "class", name: "OcelleFacts", tagName: "ocelle-facts", customElement: true, events: [] });
+    expect(described(facts?.members)).toEqual([
+      { kind: "field", name: "density", privacy: "public", type: { text: '"compact" | undefined' }, default: "undefined", attribute: "density", reflects: true, described: true },
+      { kind: "field", name: "layout", privacy: "public", type: { text: '"columns" | "stacked" | "grid" | undefined' }, default: "undefined", attribute: "layout", reflects: true, described: true },
+    ]);
+    expect({ slots: named(facts?.slots), parts: named(facts?.cssParts), properties: named(facts?.cssProperties) }).toEqual({
+      slots: [{ name: "", described: true }],
+      parts: [{ name: "list", described: true }, { name: "label", described: true }, { name: "value", described: true }],
+      properties: [{ name: "--ocelle-facts-stack-below", described: true }, { name: "--ocelle-facts-value-size", described: true }, { name: "--ocelle-facts-value-line-height", described: true }],
+    });
+  });
+
+  it("declares ocelle-fact with label (string | undefined) and wrap (\"anywhere\" | undefined), reflected, its default slot, the part label and the two value hooks, each described", async () => {
+    const manifest = await generate(repo);
+    const modules = manifest.modules as { path: string; declarations: Record<string, unknown>[] }[];
+    const [fact] = modules.find((module) => module.path === "src/ocelle-fact.ts")?.declarations ?? [];
+    const named = (list: unknown): unknown => ((list ?? []) as Record<string, unknown>[]).map(({ name, description }) => ({ name, described: typeof description === "string" && description !== "" }));
+    const described = (list: unknown): Record<string, unknown>[] =>
+      ((list ?? []) as Record<string, unknown>[]).map(({ description, ...rest }) => ({ ...rest, described: typeof description === "string" && description !== "" }));
+    expect({ name: fact?.name, tagName: fact?.tagName, events: fact?.events }).toEqual({ name: "OcelleFact", tagName: "ocelle-fact", events: [] });
+    expect(described(fact?.members)).toEqual([
+      { kind: "field", name: "label", privacy: "public", type: { text: "string | undefined" }, default: "undefined", attribute: "label", reflects: true, described: true },
+      { kind: "field", name: "wrap", privacy: "public", type: { text: '"anywhere" | undefined' }, default: "undefined", attribute: "wrap", reflects: true, described: true },
+    ]);
+    expect({ slots: named(fact?.slots), parts: named(fact?.cssParts), properties: named(fact?.cssProperties) }).toEqual({
+      slots: [{ name: "", described: true }],
+      parts: [{ name: "label", described: true }],
+      properties: [{ name: "--ocelle-facts-value-size", described: true }, { name: "--ocelle-facts-value-line-height", described: true }],
+    });
   });
 
   it("rejects a root without an element module, naming the directory", async () => {
