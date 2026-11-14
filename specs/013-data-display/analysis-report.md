@@ -1,123 +1,113 @@
 ---
-analyzed_at: 2026-11-13T23:25:59Z
-head: 3bf2ccfd970b6ffcfedd6505eb5b780f6262e414
-critical: 1
+analyzed_at: 2026-11-14T00:25:27Z
+head: d221dd581ec3ac455d38c7056d242749e070fd44
+critical: 0
 high: 1
-medium: 8
-low: 8
+medium: 5
+low: 6
 coverage: 100
 ---
 
 ## Specification Analysis Report
 
-Feature: `specs/013-data-display` (spec.md, plan.md, tasks.md, research.md, data-model.md, contracts/elements.md,
-contracts/checks.md, quickstart.md), checked against constitution 1.3.1. No extension hooks are registered
-(`.specify/extensions.yml` has `hooks: {}`).
+Feature: `specs/013-data-display`. This is the second analysis after tasks. It reads spec.md, plan.md, tasks.md, research.md, data-model.md, contracts/elements.md, contracts/checks.md and quickstart.md against constitution 1.3.1, after two changes: the resolution of the first analysis (`reviews/analysis/fixes-1.md`) and the operator's input decisions IQ-01 to IQ-15 (commit 5ff7abe; `reviews/analysis/inputs-decisions.md`, including the two decisions recorded in d221dd5). No extension hooks are registered (`.specify/extensions.yml` has `hooks: {}`).
+
+All 18 findings of the previous report (C1, I1, U1, U2, G1 to G9, A1, I2 to I5) are resolved as `fixes-1.md` records them. The Complexity Tracking row, the role-keyed mapping statements, the R-11 inventory steps (T002a, T022a and T036a, now done) and the added bodies and plants are all present in the artifacts. The findings below are new, and they come from the input decisions.
 
 | ID | Category | Severity | Location(s) | Summary | Recommendation |
 |----|----------|----------|-------------|---------|----------------|
-| C1 | Constitution Alignment | CRITICAL | plan.md:108, plan.md:366-376; spec.md:544-551 (FR-050); research.md:444-445, 710; constitution.md:79-80, 202-203 | Constitution V requires a story per variant and per state. Three supported states have no story: the unnamed progress (US3-11), the host-`aria-label` progress (US3-10), and `ocelle-fact` outside `ocelle-facts`. Plan Constitution Check V calls the first two "excepted", but Complexity Tracking says "No exception", and the host-`aria-label` exclusion is not in spec FR-050 at all (only R-05). The constitution requires every exception to a principle to have a Complexity Tracking row with scope, rationale and a sunset condition, plus the operator's approval. | Add a Complexity Tracking row that covers the three story-less states, giving scope, rationale (axe `aria-progressbar-name` by design; axe false `aria-prohibited-attr` with ElementInternals; standalone fact proven by browser tests) and a sunset (for example, when axe reads ElementInternals ARIA), and get the operator's approval. Alternatively, the operator rules explicitly that these are not "states" in Principle V's sense. Extend FR-050 to name the host-`aria-label` exclusion. |
-| I1 | Inconsistency | HIGH | tasks.md:172 (T010), 269 (T026), 374 (T043); contracts/elements.md:126-128; gates/bin/prefix.ts:1-2, 29, 64; spec.md:385-386 (FR-002) | The README-mapping statements for FR-058 go into `packages/elements/test/node/readme.test.ts` in each red commit and name `.sk-facts`, `.sk-empty-state` and `.sk-progress`. The `prefix` gate scans test code below `packages/<name>/` (Markdown excluded), and its regex matches `sk-` after a `.`, so these statements fail `gate:prefix` in T021, T034 and T052. FR-002 also forbids `sk-` names in source. No existing test names an `sk-` string. Building the string indirectly would get around the gate rather than satisfy it. | Before phase 1's red commit, the operator or planner decides how the mapping is proven: for example, a recorded and planted `prefix` scope rule for README-statement tests, mapping statements that name roles without the `sk-` string, or SC-001 checked in review only (as T054 already does). Record the decision in plan/research R-11 and contracts/checks.md § Gates touched. |
-| U1 | Underspecification | MEDIUM | research.md:837-841 (R-11 table, all "pending"); tasks.md:58-59, 172, 269, 374; plan.md:139-149 | The kitty-mission-ui inventory that FR-058 and SC-001 need is still pending. No task records it in R-11 or names who does. T010, T026 and T043, and therefore the red commits T012, T028 and T045, cannot start without it. | Add a task (or a named operator step) before T010 that records the `.sk-facts` rows in R-11, and the same before T026 and T043. Treat the inventory as a known blocker for T012. |
-| G1 | Coverage Gap | MEDIUM | spec.md:451-452 (FR-010), 316-317 (edge case); research.md:63; data-model.md:66; tasks.md:190 (T014); contracts/checks.md:141-177 | FR-010 says the no-pairs exposure "is set in the plan and tested". The plan sets it (no `<dl>`) and T014 implements it, but no body in T004/T005 or checks.md § Extra scenario bodies renders a sheet with no pairs, or asserts that nothing throws and nothing is exposed. | Add a no-pairs body to T005 and checks.md: nothing visible, no list in the AX tree, no exception. Pair it with a positive (one pair added gives a list). |
-| G2 | Coverage Gap | MEDIUM | tasks.md:217 (T021 plant `fit-content(50%)`→`auto`); contracts/checks.md:208 ("long-label body"); spec.md:341-342 (edge case "Very long label"), 418-419 (FR-005) | The plant for the 50% label-column cap needs a "long-label body", which checks.md names, but neither T004 nor T005 lists that body. Without it the plant has no guard to fail, and the "Very long label" edge case is untested. | Add the long-label body to T005 (label column equals 50% of the sheet, label wraps inside it, value column keeps the rest) and to checks.md § Extra scenario bodies. |
-| G3 | Coverage Gap | MEDIUM | spec.md:289-290 (US3-9), 518-520 (FR-035); contracts/checks.md:228; tasks.md:340 (T038 "US3-9 checks 8 px and 4 px") | US3-9 also requires the visible label to sit above the bar at the default size and beside it at compact size (FR-035). The oracle and T038 assert only the block sizes. FR-052 requires every acceptance scenario to be covered. | Extend the US3-9 oracle (checks.md and T038): with `show-label`, the label's box is above the track at the default size and on the same line at compact size, both in one body. |
-| G4 | Coverage Gap | MEDIUM | spec.md:421-424 (FR-006); research.md:288-290; contracts/checks.md:218; tasks.md:123-130 | FR-006's label rules (`--ocelle-font-sans` at a smaller step, `ink-muted`, distinct from values by size or weight) have no assertion. US1-5 and the CSS-only table cover values only. Stryker does not mutate `css` templates, so nothing guards the label type. | Add label type to the US1-5 body, or add a separate body: computed size `--ocelle-font-size-sm`, weight `--ocelle-font-weight-medium`, colour `--ocelle-color-ink-muted`, each different from the value's in the same body. |
-| G5 | Coverage Gap | MEDIUM | spec.md:345-346 (edge case); research.md:499-500, 642-643; contracts/checks.md:187-199 | Edge case "Long progress label beside a compact bar at 320 px": the bar keeps `min-inline-size: var(--ocelle-measure-cell)` and nothing overflows. No body, plant or story covers it. | Add a progress body at a 320 px viewport with a long label, `size="compact"` and `show-label`: track inline size at least the `measure-cell` value, page scroll width equal to the viewport width. Add a plant that removes `min-inline-size`. |
-| U2 | Underspecification | MEDIUM | tasks.md:255 (T024), 293 (T034); plan.md:308-309 | Phase 2 tests US2-7 with "a plain stand-in element", yet T034 runs the plant "`::slotted(ocelle-progress)` rule removed against the stand-in". That rule matches only an element named `ocelle-progress`. A stand-in with any other tag cannot be affected, so the plant cannot bite and the phase stops. | State in T024 and plan § Phases that the stand-in is an undefined `<ocelle-progress>` element with a fixed intrinsic width, or move this plant to phase 3 only (T052 already lists it). |
-| A1 | Ambiguity | MEDIUM | plan.md:105 (Constitution Check II); research.md:486, 653; constitution.md:38-39; packages/tokens/README.md:79-80 | Constitution II says "One radius (`--ocelle-radius-2`, 4 px)", with `radius-row` for rows and cards and pill for state pills, and does not mention `radius-1`. The progress track uses `--ocelle-radius-1`. The token package's README (part of the token contract) and the brand-rules radius set do allow `radius-1` for "small marks". Whether an 8 px-high progress track counts as a small mark is not argued anywhere. | Record in R-06 why the track is a "small mark" under the token contract's `radius-1` rule, or use `--ocelle-radius-2`. If the constitution's wording should list `radius-1`, change it through `/speckit-constitution`. |
-| G6 | Coverage Gap | LOW | spec.md:343-344 (edge case); contracts/checks.md:178-186; tasks.md:259 | Edge case "Long empty-state heading or body at 320 px" has no body. Only "several actions at 320 px" is tested. | Extend the 320 px empty-state body with a long heading and a long body: no page overflow, and the text wraps between words. |
-| G7 | Coverage Gap | LOW | spec.md:533 (FR-039); tasks.md:332-352 | FR-039 says progress "adds no tab stop", but no progress body asserts it. (FR-011 and FR-024 have their tab-stop bodies.) | Add a Tab assertion to a progress body (focus passes over the bar to a following button), paired with that positive. |
-| G8 | Coverage Gap | LOW | spec.md:496-499 (FR-032); research.md:465-468; tasks.md:332-352 | FR-032's `value=""` and whitespace-only cases (indeterminate, not 0), and the property set to `null`, are implemented (T046) but not named in T038 or checks.md. US3-6 lists only below 0, above max, NaN and `max` ≤ 0. | Name these cases in the US3-6 body or the value-removed body. |
-| G9 | Coverage Gap | LOW | tasks.md:173 (T011), 270 (T027); contracts/checks.md:292-293 | In phases 1 and 2 the SC-005 reduced-motion story check on facts and empty-state stories has no positive animation read, because the indeterminate progress story arrives in phase 3. Only the `matchMedia` assertion pairs it. Elements that never animate pass trivially until then. | Note in T011 and T027 that the animation positive arrives in T044, or pair the check earlier with a story-test fixture that animates. |
-| I2 | Inconsistency | LOW | tasks.md:218 (T021), 294 (T034), 423 (T052); quickstart.md step 5; constitution.md:196-201 | `gate:contrast` is in phase 3's check list and quickstart step 5 but not in phases 1 and 2, although US1-8 and US2-8 rely on the existing text rows. | Add `gate:contrast` (expected unchanged) to T021 and T034. |
-| I3 | Inconsistency | LOW | spec.md:38-42, 178-180 | Stale wording. The spec still says "The plan's research MUST read those six issues", although the operator waived four of them ("Proceed, inputs later"). US1-6 still says "subject to the operator's decision after the plan's measurement", although FR-004 was confirmed at the plan gate. | Reword both to reflect the recorded operator decisions. |
-| I4 | Inconsistency | LOW | plan.md:115-161 | "Decisions the operator should see" are numbered 1-5, 8, 9, 6, 7. | Renumber in document order. |
-| I5 | Inconsistency | LOW | plan.md:35-36; contracts/elements.md:85; spec.md:300, 527-528 | The plan summary and the `ground` manifest description say "hover", while the spec, R-06 and Decision 4 say "hover-bg". | Use `hover-bg` throughout, as in the token name. |
+| I1 | Inconsistency | HIGH | spec.md:577-578 (FR-009), 592-593 (FR-013), 438-442 (edge case "Grid layout with long labels or values"); reviews/analysis/inputs-decisions.md:29-31; research.md:365-367 (R-03) | FR-009 says without condition that the element "MUST NOT cause horizontal scrolling of the page at 320 px CSS width or at 200% zoom". FR-013 says every `layout` value keeps that rule. But the new edge case, R-03 and the operator's "Grid limits: Accept, README states" decision all say an unbroken value without `wrap="anywhere"` overflows its cell. Its visible overflow then widens the page's scrollable area. Values in the two-column and stacked layouts behave the same way: they wrap only between words without the policy. So the MUST is conditional in fact, but not in text. US1-3, US1-16 and SC-002 test it only with the policy. A reviewer can fail the phase against FR-009 as written. | Qualify FR-009, and FR-013 by reference, as the operator decided: "no horizontal page scroll for content that wraps between words or carries the wrap policy (FR-007); an unbroken value without the policy can overflow its value box or cell, and the README tells consumers to set the policy on machine values". Then FR-009, FR-013, FR-014 and the edge case say the same thing. |
+| I2 | Inconsistency | MEDIUM | spec.md:330-333 (US2-11), 639-641 (FR-026); contracts/elements.md:73; research.md:474-476 (R-04); data-model.md:114; tasks.md:321 (T024a) | Terminology drift with a test consequence. The spec calls the default-slot area the "body part" ("the first paragraph starts at the body part's block start"). The public surface has a part named `body`, but that part is the whole centred column (`<div part="body" class="stack">`, contracts/elements.md "The centred column"), and the default slot sits in the internal `.text` wrapper. Read against `::part(body)`, US2-11's oracle is false: a heading and the block padding come before the first paragraph. T024a copies the ambiguous wording. | Rename the spec's term ("the body", "the default-slot area" or "the text part") in FR-026, US2-11 and T024a. Say that the oracle reads the `.text` wrapper's box, or the first and last slotted element's edges, not `part="body"`. Alternatively rename the public part, which is a surface change for the operator. |
+| I3 | Inconsistency | MEDIUM | spec.md:760-762 (SC-001), 736-746 (FR-058); research.md:1074, 1096, 1100 (R-11) and the "Consumer's" rows | SC-001 requires "for every `.sk-facts`, `.sk-empty-state` and `.sk-progress` variant … an element and variant that replaces it". R-11, which carries the operator's decisions, maps three variants to "Not this mission": facts value mono, empty-state inline and empty-state card dashed. It maps many others to "Consumer's" (a remedy outside the element). FR-058 allows such rows ("a variant no element or variant covers goes to the operator"). SC-001's wording does not, so T054's review check cannot pass as SC-001 is written. | Reword SC-001: every inventoried variant has a mapping row that names the element and variant, or the consumer's remedy, or "not this mission" with the operator's decision. Leave FR-058 as it is. |
+| G1 | Coverage Gap | MEDIUM | spec.md:633-638 (FR-025: "between the visual and the heading"); research.md:494-511 (R-04 gap table: visual→eyebrow, eyebrow→text); tasks.md:319-322 (T024a); contracts/checks.md:258-259 | No body puts a visual and an eyebrow in one element, so nothing checks that the eyebrow sits below the visual, in layout or in accessibility-tree order, or that the visual→eyebrow gap applies. No body has an eyebrow followed by body text without a heading, so the eyebrow→text gap (`space-2`, panel `space-3`) is untested. US2-10, "eyebrow only" and "eyebrow plus actions" all have no visual and no eyebrow→text pair. If the template put the eyebrow above the visual, every planned test would still pass. | Add a body to T024a and checks.md § Extra scenario bodies: a visual, an eyebrow, a heading and a body in markup out of order. Assert the order visual, eyebrow, heading in the column and in the accessibility tree, and the visual→eyebrow gap in both variants. Add an eyebrow plus body text with no heading, asserting the eyebrow→text gap. |
+| G2 | Coverage Gap | MEDIUM | spec.md:602-606 (FR-014: spacing from `--ocelle-space-*`, no ground, divider or border); research.md:355-367 (R-03: column gap `space-4`, label-to-value `space-1`); contracts/checks.md:107-120, 281-334 (§ CSS-only behaviours); tasks.md:161-170 (T004a) | The CSS-only table has rows for the grid tracks, the cell, the compact row gap and right-to-left. It has none for the grid's label-to-value gap (`space-1` as a `<dt>` margin), its column gap value (`space-4`) or FR-014's "paints no ground, divider or border". US1-13's oracle needs only the `<dt>` block end "at or above" the `<dd>` block start, so removing the margin passes. Stryker does not mutate `css` templates, and the plan's own rule (PLAN-TESTABILITY-1-008) needs a plant or a stated reason for each CSS-only behaviour. | Add the label-to-value gap and the column gap as exact token values to US1-13's geometry oracle. Add a read of the sheet's background and borders (transparent, none) beside a non-default value on a sibling, or record a reason. Add the rows to § CSS-only behaviours, and a plant for the `<dt>` margin. |
+| U1 | Underspecification | LOW | reviews/analysis/inputs-decisions.md:29-31 ("A grid sheet in a shrink-to-fit host is four cells wide unless given an inline size"); research.md:261-262 (R-02); tasks.md:213 (T010a); spec.md:594-606 (FR-014), 566-577 (FR-009) | In a shrink-to-fit host a grid sheet takes four tracks as wide as its widest cell, which makes a dialog wide even with one or two pairs. The operator accepted this and said the README says so. T010a asserts the statement, but no spec text records the behaviour or the README duty. FR-009 lists the README's duties for the other layouts only. | Add one sentence to FR-014 or to the edge case "Grid layout with few or many facts": in a shrink-to-fit host the grid sheet is four tracks wide, and the README tells consumers to give it an inline size. |
+| G3 | Coverage Gap | LOW | spec.md:463-466 (edge case "Empty-state body with inline content"); research.md:536-541 (R-04 Body); tasks.md:319-322 | The edge case says each run of assigned text in the default slot becomes its own block, so text, a link and more text placed directly in the slot stack as three lines. This changes how consumers' current markup looks. Only a README statement (T026a) covers it, and no body asserts it. | Add to US2-11's body, or to a body of its own, a default slot holding "text `<a>` text": three block boxes separated by `--ocelle-space-2`. Pair it with a single `<p>` holding the same content on one line box. |
+| G4 | Coverage Gap | LOW | research.md:910-911 (R-08 progress stories: "labelled, labelled compact, value text"); spec.md:674-678 (FR-035); constitution.md:79-80 | IQ-13 (b) adds a visible layout: the value text at the inline end of the label row, at the default size and in compact. R-08 does not say whether the "value text" story uses `show-label`, or whether any compact story shows value text. Without that, the new look has no baseline (Principle V: a story per variant and per state). | In R-08 and T049, state that the "value text" story is labelled (`show-label`) at the default size and that "labelled compact" carries `value-text`, or add those two stories. |
+| I4 | Inconsistency | LOW | tasks.md:563 (Implementation strategy); spec.md:205; research.md R-11 ("Corrected counts") | The tasks' MVP line says phase 1 "replaces 34 `.sk-facts` uses". 34 is the raw text-match count, and the spec and R-11 give 8 rendered uses. | Change it to "8 rendered uses (34 text matches)". |
+| I5 | Inconsistency | LOW | tasks.md:98-104 (Phase 1 Independent Test) | The phase 1 Goal now includes US1-13 to US1-19, but its Independent Test still covers only the two-column and stacked layouts. Quickstart step 2 and plan § Phases name the grid. | Add a `layout="grid"` check to the Independent Test, for example four cells at 1280 px, one at 320 px and one description list. |
+| A1 | Ambiguity | LOW | spec.md:199, 537 (FR-005 "two-column grid"), 429-431 ("grid parent"), 414 ("grid `auto` track"); tasks.md:245 (T014 "Grid `fit-content(50%) minmax(0, 1fr)`"); spec.md:594 (FR-014 `layout="grid"`) | "Grid" now names three things: the CSS grid every layout uses (the "two-column grid"), a consumer's grid parent, and the public `layout="grid"` value. T014's "Grid `fit-content(50%) …`" (the two-column tracks) sits next to T014a's `layout="grid"`, which invites misreading during implementation. | Use "the grid layout" or `layout="grid"` only for the value. Use "two-column tracks" in T014 and "two-column layout" in FR-005 and US1. |
 
 **Coverage Summary Table:**
 
 | Requirement Key | Has Task? | Task IDs | Notes |
 |-----------------|-----------|----------|-------|
 | FR-001 conventions | Yes | T002, T013, T014, T017, T020, T022, T029, T036, T046 | |
-| FR-002 no class, no `sk-` | Yes | T021, T034, T052 (`gate:prefix`) | See I1 |
+| FR-002 no class, no `sk-` | Yes | T010, T021, T026, T034, T043, T052 | Role-keyed mapping statements (decision I1) |
 | FR-003 pairs as `ocelle-fact` | Yes | T004, T005, T013, T014 | |
-| FR-004 description list | Yes | T001, T004, T014 | Spike recheck before red |
+| FR-004 description list | Yes | T001, T001a, T004, T004a, T014, T014a | Grid groups measured in T001a, stop for the operator on failure |
 | FR-005 stacking threshold | Yes | T001, T004, T005, T014 | |
-| FR-006 value and label type | Partial | T004 (US1-5), T014 | Labels untested (G4) |
-| FR-007 wrap policy | Yes | T004, T005, T013 | |
-| FR-008 density | Yes | T005, T009, T014, T016 | |
-| FR-009 shrink-to-fit, no h-scroll | Yes | T001, T004, T005, T014 | |
-| FR-010 no pairs | Yes | T014 | No body (G1) |
-| FR-011 no event, no tab stop | Yes | T004 | |
+| FR-006 value and label type | Yes | T004 (US1-5 with label type), T014 | |
+| FR-007 wrap policy | Yes | T004, T004a, T005, T010a, T013 | |
+| FR-008 density | Yes | T004a, T005, T009, T014, T016 | |
+| FR-009 shrink-to-fit, no h-scroll | Yes | T001, T001a, T004, T005, T014, T014a | See I1 |
+| FR-010 no pairs | Yes | T005, T014 | |
+| FR-011 no event, no tab stop | Yes | T004, T004a (US1-19) | |
 | FR-012 pre-upgrade rule | Yes | T009, T016 | |
-| FR-013 `layout` | Yes | T004, T014 | |
-| FR-020 slots, heading rule | Yes | T024, T029 | |
+| FR-013 `layout` | Yes | T004, T004a, T014, T017 | See I1 |
+| FR-014 grid layout | Yes | T001a, T004a, T008a, T010a, T014a, T018a, T020a, T021a | See G2, U1 |
+| FR-020 slots, heading rule | Yes | T024, T024a, T029, T029a, T030 | |
 | FR-021 default rhythm | Yes | T024, T029, T039 | |
-| FR-022 panel variant | Yes | T024, T029 | |
-| FR-023 empty and hidden slots | Yes | T024, T029 | |
+| FR-022 panel variant | Yes | T024, T024a, T029 | |
+| FR-023 empty and hidden slots | Yes | T024, T024a, T029, T029a | |
 | FR-024 no landmark, no tab stop | Yes | T024 | |
+| FR-025 eyebrow slot | Yes | T024a, T026a, T029a, T031a, T033a, T034a | Order below the visual and eyebrow→text gap untested (G1) |
+| FR-026 body spacing | Yes | T024a, T026a, T029a, T031a, T034a | See I2, G3 |
 | FR-030 one progressbar, name | Yes | T037, T038, T046 | |
-| FR-031 `value-text` | Yes | T035, T038, T046 | Oracle depends on T035 |
-| FR-032 value rules | Yes | T038, T046 | Empty-attribute cases unnamed (G8) |
+| FR-031 `value-text` | Yes | T035, T038, T046 | |
+| FR-032 value rules | Yes | T038, T046 | |
 | FR-033 bounded sweep, episodes | Yes | T037, T038, T043, T044, T046 | |
 | FR-034 sizes | Yes | T038, T046 | |
-| FR-035 labelled variant | Partial | T038 (US3-10), T046 | Position untested (G3) |
+| FR-035 labelled variant, value text row | Yes | T038, T038a, T046, T046a, T052a | Baseline coverage unclear (G4) |
 | FR-036 contrast marks | Yes | T038, T041, T046 | |
 | FR-037 forced colours | Yes | T038, T046 | |
 | FR-038 right-to-left | Yes | T038, T046 | |
-| FR-039 no event, no tab stop | Yes | T038 (US3-2) | Tab stop unasserted (G7) |
+| FR-039 no slot, no tab stop, README | Yes | T038, T038a, T043a, T046a, T051a, T052a | |
 | FR-040 tokens only when needed | Yes | T041, T052 | No token added (R-07) |
-| FR-050 stories | Yes | T018, T031, T049 | See C1 |
+| FR-050 stories | Yes | T018, T018a, T031, T031a, T049 | Recorded exception (Complexity Tracking) |
 | FR-051 baselines and #10 gates | Yes | T019, T021, T032, T034, T050, T052, T055 | |
 | FR-052 both harnesses | Yes | T006, T025, T040 | |
-| FR-053 320 px reflow | Yes | T004, T011 | |
+| FR-053 320 px reflow | Yes | T004, T004a, T011 | |
 | FR-054 manifest | Yes | T017, T030, T048 | |
 | FR-055 strict CSP | Yes | T006, T021, T034, T052 | |
 | FR-056 README conventions | Yes | T010, T020, T026, T033 | |
-| FR-057 changelog | Yes | T016, T020, T033, T051, T053 | |
-| FR-058 README mapping | Yes | T010, T020, T026, T033, T043, T051, T054 | Blocked on R-11 (U1); see I1 |
-| SC-001 mapping covers inventory | Yes | T054 | Blocked on R-11 (U1) |
-| SC-002 320 px stories | Yes | T011 | |
+| FR-057 changelog | Yes | T016, T020, T020a, T033, T033a, T051, T053, T053a | |
+| FR-058 README mapping | Yes | T010, T010a, T020, T020a, T026, T026a, T033, T033a, T043, T043a, T051, T051a, T054 | |
+| SC-001 mapping covers inventory | Yes | T054 | See I3 |
+| SC-002 320 px stories | Yes | T011 | Grid stories included |
 | SC-003 axe on stories | Yes | T021, T034, T052, T055 | |
-| SC-004 contrast | Yes | T041, T052 | See I2 |
-| SC-005 reduced motion stories | Yes | T011, T027, T044 | See G9 |
-| SC-006 red/green, mutation | Yes | T012, T028, T045, T021, T034, T052 | |
+| SC-004 contrast | Yes | T021, T034, T041, T052 | |
+| SC-005 reduced motion stories | Yes | T011, T027, T044 | |
+| SC-006 red/green, mutation | Yes | T012, T021, T028, T034, T045, T052 | |
 | SC-007 gates pass | Yes | T021, T034, T052 | |
 
-**Constitution Alignment Issues:**
+**Constitution Alignment Issues:** none.
 
-- C1 (Principle V and the Complexity Tracking rule of Development Workflow): the story-less states are an unrecorded
-  exception. The fix is a record and an operator decision, not a design change.
-- A1 (Principle II, radius) is reported as an ambiguity, not a violation. The token contract, which Principle II makes
-  binding, allows `radius-1` for small marks.
-- No other conflict found. Principles I, III, IV, VI, VII and VIII are met by the plan as written: no I/O, no events,
-  no cross-root ID reference, CSSOM width writes under strict CSP, red-first phases with scaffolds and plants, and
-  mutation testing.
+- Principle V: the one exception, the three story-less states, is now a Complexity Tracking row with scope, rationale, a sunset and the operator's approval (tasks gate, C1). The grid layout, the eyebrow and the several-paragraph body have stories (R-08, T018a, T031a). G4 asks only that R-08 state which story carries the value-text row.
+- Principle VII: the two surface additions (`layout="grid"`, the `eyebrow` slot) were chosen by the operator and are listed as MINOR, with changelog tasks (T020a, T033a, T053a).
+- Principle II: the eyebrow is sans with existing tokens and no monospace, `ink-muted` is a declared text row on every main ground, and the grid's four tracks fall under the recorded R-10 allowance (T008a proves it).
+- Principles I, III, IV, VI and VIII hold. The grid adds no part, slot or hook. FR-004 holds in the grid, with a spike stop. The fallback text is neither shown nor exposed. The new behaviour (T004a, T024a, T038a) is red first, and its plants are T021a, T034a and T052a.
 
-**Unmapped Tasks:** none. T001 and T035 (spikes), T002, T022 and T036 (scaffolds), and T053 to T055 (exempt
-documentation and gate runs) each serve named requirements or decisions.
+**Unmapped Tasks:** none. The spikes (T001, T001a, T035), the scaffolds (T002, T022, T036), the inventory steps (T002a, T022a, T036a, done) and phase 4's exempt tasks (T053, T053a, T054, T055) each serve named requirements or decisions.
 
 **Metrics:**
 
-- Total Requirements: 45 (38 FR, 7 SC)
-- Total Tasks: 55
-- Coverage % (requirements with >=1 task): 100% (45/45; FR-006 and FR-035 only partly tested)
+- Total Requirements: 48 (41 FR, 7 SC)
+- Total Tasks: 78 (55 numbered, 23 suffixed)
+- Coverage % (requirements with >=1 task): 100% (48/48)
 - Ambiguity Count: 1
 - Duplication Count: 0
-- Critical Issues Count: 1
+- Critical Issues Count: 0
 
 ## Next Actions
 
-- **Resolve C1 before `/speckit-implement`.** Add a Complexity Tracking row in plan.md for the three story-less states,
-  with scope, rationale and a sunset, and get the operator's approval (or the operator's explicit ruling that they are
-  not Principle V states). Extend FR-050 for the host-`aria-label` state.
-- **Resolve I1 before phase 1's red commit (T012).** The operator or planner decides how the FR-058 mapping is proven
-  without `sk-` strings in test code, or how the `prefix` gate treats them. Then update tasks T010, T026 and T043 and
-  contracts/checks.md.
-- **Supply the R-11 inventory (U1).** The `.sk-facts` rows are needed before T010/T012. Add a task or named step that
-  records each family's rows.
-- **Edit tasks.md and contracts/checks.md for the medium coverage gaps:** G1 (no pairs), G2 (long label), G3 (label
-  position), G4 (label type), G5 (compact bar at 320 px) and U2 (stand-in tag). Run `/speckit-tasks` again, or edit the
-  files by hand, after the plan and contract edits. A1 needs one sentence in R-06, or a change to `radius-2`.
-- The low findings (G6 to G9, I2 to I5) can be folded into the same edits. None of them blocks implementation.
+- No critical issue blocks `/speckit-implement`.
+- **Resolve I1 before phase 1's red commit (T012).** Qualify FR-009 and FR-013 as the operator's "Grid limits" decision already states, so that no reviewer fails a layout on an unbroken value without the wrap policy. This is a spec wording edit only: the bodies already assert with the policy.
+- **Edit the spec and tasks for the medium findings:**
+  - I2: rename the "body part" in FR-026, US2-11 and T024a, or say which box the oracle reads.
+  - I3: reword SC-001 so that "consumer's" and "not this mission" rows count.
+  - G1: add the visual-plus-eyebrow and eyebrow-plus-text bodies to T024a and contracts/checks.md.
+  - G2: add the grid's label-to-value gap, column gap and no-ground or border reads to US1-13, with rows in § CSS-only behaviours.
+
+  Edit spec.md, tasks.md and contracts/checks.md by hand, or run `/speckit-tasks` again after the spec edits.
+- The low findings (U1, G3, G4, I4, I5, A1) can be folded into the same edits. None of them blocks implementation.
