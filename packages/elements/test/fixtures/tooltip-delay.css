@@ -1,0 +1,5 @@
+/* The test delay of the tooltip scenarios (008 research.md R-15): 300 ms, which no motion token equals, so a read of
+   the wrong token fails; linked on the strict-CSP fixture pages, adopted in process (test/in-process.ts). */
+:root {
+  --ocelle-tooltip-delay: 300ms;
+}
