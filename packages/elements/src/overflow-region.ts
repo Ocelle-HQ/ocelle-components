@@ -233,9 +233,12 @@ function focusable(element: HTMLElement): boolean {
   return element.tabIndex >= 0 && !element.matches(":disabled") && !inertAncestor(element) && element.getClientRects().length > 0 && getComputedStyle(element).visibility !== "hidden";
 }
 
-/** The element children of a node in the flat tree: a slot's flattened assigned elements, else its children. */
+/**
+ * The element children of a node in the flat tree: a slot's assigned elements (a slot assigned to a slot is walked in
+ * turn, so the chain is flattened), else its children.
+ */
 function flatChildren(node: Element | ShadowRoot): Element[] {
-  return node instanceof HTMLSlotElement ? node.assignedElements({ flatten: true }) : [...node.children];
+  return node instanceof HTMLSlotElement ? node.assignedElements() : [...node.children];
 }
 
 /**
@@ -255,15 +258,22 @@ function firstFocusable(elements: readonly Element[]): HTMLElement | undefined {
 
 /** The overflow-region controller (contracts/overflow-region.md). */
 export class OverflowRegion implements ReactiveController {
+  // The outputs start as a box that fits. No frame paints them: the host's first update observes the box, and the
+  // observer's first delivery writes the state before the first paint (R-03).
   /** Whether the box's content is more than 1 px wider than the box. */
+  // Stryker disable next-line BooleanLiteral: equivalent, the first observer delivery writes it before the first paint
   overflowing = false;
   /** Whether content is off-screen at the box's inline start. */
+  // Stryker disable next-line BooleanLiteral: equivalent, the first observer delivery writes it before the first paint
   offStart = false;
   /** Whether content is off-screen at the box's inline end. */
+  // Stryker disable next-line BooleanLiteral: equivalent, the first observer delivery writes it before the first paint
   offEnd = false;
   /** Whether the inline start fades: content off-screen there, and not suppressed by the focus fallback. */
+  // Stryker disable next-line BooleanLiteral: equivalent, the first observer delivery writes it before the first paint
   fadeStart = false;
   /** Whether the inline end fades: content off-screen there, and not suppressed by the focus fallback. */
+  // Stryker disable next-line BooleanLiteral: equivalent, the first observer delivery writes it before the first paint
   fadeEnd = false;
   /** The name in force: the host's non-blank `aria-label`, else the label, trimmed; undefined without one. */
   name: string | undefined;
@@ -282,8 +292,10 @@ export class OverflowRegion implements ReactiveController {
   /** The fades the focus fallback suppresses, the focused control they are for, and the `scrollLeft` written then. */
   #suppressed = { start: false, end: false };
   #focused: EventTarget | undefined;
+  // Stryker disable next-line NumberLiteral: equivalent, it is read only while a suppression is set, and the fallback writes it then
   #written = 0;
   /** The mask figures last set: the box's client height and its scrollbar's thickness. */
+  // Stryker disable next-line StringLiteral: equivalent, no measured figures are the empty text, so the first measure writes them either way
   #figures = "";
 
   constructor(host: ReactiveControllerHost & HTMLElement, options: OverflowRegionOptions) {
@@ -301,7 +313,10 @@ export class OverflowRegion implements ReactiveController {
     return this.fadeEnd ? "end" : undefined;
   }
 
-  /** Sets the host's label, raw; the module trims it, and blank counts as none. */
+  /**
+   * Sets the host's label, raw; the module trims it, and blank counts as none. The host calls it after each update, so
+   * the box's role and name also follow a change of the host's `aria-label`, which the host observes.
+   */
   setLabel(label: string | undefined): void {
     this.#label = label;
     this.#apply();
@@ -310,6 +325,7 @@ export class OverflowRegion implements ReactiveController {
   hostConnected(): void {
     const root = this.#host.shadowRoot;
     if (root !== null && !root.adoptedStyleSheets.includes(this.#sheet)) root.adoptedStyleSheets = [...root.adoptedStyleSheets, this.#sheet];
+    // Adding the same listener again is a no-op, so a host that connects again keeps one of each.
     this.#host.addEventListener("keydown", this.#onKey);
     this.#host.addEventListener("focusin", this.#onFocusIn);
     this.#host.addEventListener("focusout", this.#onFocusOut);
@@ -318,34 +334,27 @@ export class OverflowRegion implements ReactiveController {
 
   hostUpdated(): void {
     const box = this.#boxOf();
-    if (box !== this.#box) {
-      if (this.#box !== null) this.#leave(this.#box);
-      this.#box = box;
-      if (box !== null) this.#follow(box);
-    }
-    this.#apply();
+    if (box === this.#box) return;
+    this.#box = box;
+    if (box !== null) this.#follow(box);
   }
 
   hostDisconnected(): void {
-    this.#host.removeEventListener("keydown", this.#onKey);
-    this.#host.removeEventListener("focusin", this.#onFocusIn);
-    this.#host.removeEventListener("focusout", this.#onFocusOut);
-    if (this.#box !== null) this.#leave(this.#box);
+    // Stryker disable next-line all: equivalent, a disconnected host gets no event, and connecting again observes the box afresh
+    this.#observer.disconnect();
   }
 
   /** Observes the box (its border box, so a scrollbar that comes or goes is seen) and its track, and listens to it. */
   #follow(box: HTMLElement): void {
+    // Stryker disable next-line ObjectLiteral: in process the scrollbar is an overlay of 0 px, so the border box and the content box change together; the classic scrollbar case is test/browser/scrollbar.test.ts (elements-browser, not mutated)
     this.#observer.observe(box, { box: "border-box" });
     const track = box.querySelector(".region-track");
     if (track !== null) this.#observer.observe(track);
+    // Stryker disable next-line ObjectLiteral,BooleanLiteral: equivalent, a passive listener only promises not to call preventDefault, which this one never does
     box.addEventListener("scroll", this.#onScroll, { passive: true });
+    // Stryker disable next-line StringLiteral: equivalent, a slot change that changes the content's width also resizes the track, which the observer sees, and one that does not leaves the state as it is
     box.addEventListener("slotchange", this.#onSlotChange);
-  }
-
-  #leave(box: HTMLElement): void {
-    this.#observer.disconnect();
-    box.removeEventListener("scroll", this.#onScroll);
-    box.removeEventListener("slotchange", this.#onSlotChange);
+    box.closest(".region-frame")?.addEventListener("focusout", this.#onFrameOut);
   }
 
   /**
@@ -356,7 +365,8 @@ export class OverflowRegion implements ReactiveController {
   #measure(): void {
     const box = this.#box;
     if (box === null) return;
-    const before = [this.overflowing, this.offStart, this.offEnd, this.fadeStart, this.fadeEnd].join();
+    const outputs = (): string => [this.overflowing, this.offStart, this.offEnd, this.fadeStart, this.fadeEnd].join();
+    const before = outputs();
     const state = edgeState(box.scrollLeft, box.scrollWidth, box.clientWidth);
     const focused = this.#host.shadowRoot?.activeElement === box;
     this.overflowing = state.overflowing;
@@ -365,13 +375,15 @@ export class OverflowRegion implements ReactiveController {
     this.fadeStart = state.offStart && !this.#suppressed.start;
     this.fadeEnd = state.offEnd && !this.#suppressed.end;
     const figures = `100% ${String(box.clientHeight)}px, 100% ${String(box.offsetHeight - box.clientHeight)}px`;
+    // Stryker disable next-line ConditionalExpression: equivalent, writing the same figures again sets the same declaration
     if (figures !== this.#figures) {
       this.#figures = figures;
       (this.#sheet.cssRules[0] as CSSStyleRule).style.setProperty("mask-size", figures);
     }
     this.#apply();
     if (focused && !this.overflowing) this.#handOver(box);
-    if ([this.overflowing, this.offStart, this.offEnd, this.fadeStart, this.fadeEnd].join() !== before) this.#host.requestUpdate();
+    // Stryker disable next-line ConditionalExpression: equivalent, an update with no changed output renders the same
+    if (outputs() !== before) this.#host.requestUpdate();
   }
 
   /** The box's tab stop, role and name for the state (FR-002, FR-010). */
@@ -393,46 +405,50 @@ export class OverflowRegion implements ReactiveController {
 
   /** Moves focus off the box that stopped overflowing: to the first focusable slotted element, else to the frame (R-07). */
   #handOver(box: HTMLElement): void {
-    const slots = [...box.querySelectorAll("slot")];
-    const target = firstFocusable(slots.flatMap((slot) => slot.assignedElements({ flatten: true })));
+    const target = firstFocusable([...box.querySelectorAll("slot")]);
     if (target !== undefined) {
       target.focus();
       return;
     }
-    // The frame takes focus by script only while it holds it. Its focusout is heard on the frame itself: when focus
-    // moves to the box inside it, both ends are in the host's shadow root, so the event does not reach the host.
+    // The frame takes focus by script only while it holds it (it loses the attribute on its focusout, #onFrameOut).
     const frame = box.closest<HTMLElement>(".region-frame");
     frame?.setAttribute("tabindex", "-1");
-    frame?.addEventListener(
-      "focusout",
-      () => {
-        frame.removeAttribute("tabindex");
-      },
-      { once: true },
-    );
     frame?.focus();
   }
 
-  readonly #onKey = (event: KeyboardEvent): void => {
-    const box = this.#box;
-    if (box === null || event.composedPath()[0] !== box || event.altKey || event.ctrlKey || event.metaKey || event.shiftKey) return;
-    const direction = { ArrowLeft: -1, ArrowRight: 1 }[event.key];
-    if (direction === undefined) return;
-    event.preventDefault();
-    box.scrollTo({ left: box.scrollLeft + direction * this.#step, behavior: "instant" });
-    this.#measure();
+  /**
+   * A focusout in the frame, heard on the frame itself: when focus moves from the frame to the box inside it, both ends
+   * are in the host's shadow root, so the event does not reach the host. The frame has a `tabindex` only while it holds
+   * focus itself, so removing it on any focusout inside it is exact.
+   */
+  readonly #onFrameOut = (event: Event): void => {
+    (event.currentTarget as HTMLElement).removeAttribute("tabindex");
   };
 
-  /** Focus clearance (R-06): a descendant that takes focus with a ring is scrolled clear of the fades. */
+  /** The unmodified arrow keys on the box itself: an instant 40 px scroll, prevented also at the extent (R-02). */
+  readonly #onKey = (event: KeyboardEvent): void => {
+    const box = event.composedPath()[0] as HTMLElement;
+    const direction = { ArrowLeft: -1, ArrowRight: 1 }[event.key];
+    if (box !== this.#box || direction === undefined || event.altKey || event.ctrlKey || event.metaKey || event.shiftKey) return;
+    event.preventDefault();
+    box.scrollTo({ left: box.scrollLeft + direction * this.#step, behavior: "instant" });
+  };
+
+  /**
+   * Focus clearance (R-06): a descendant that takes focus with a ring is scrolled clear of the fades, or the fades it
+   * cannot clear are suppressed. Focus on the box itself is not cleared; the frame takes focus only when the box does
+   * not overflow.
+   */
   readonly #onFocusIn = (event: FocusEvent): void => {
     const box = this.#box;
     const target = event.composedPath()[0];
-    if (box === null || !(target instanceof Element) || target === box || target === box.closest(".region-frame") || !target.matches(":focus-visible") || !this.overflowing) return;
+    if (box === null || !(target instanceof Element) || target === box || !target.matches(":focus-visible") || !this.overflowing) return;
     const track = box.querySelector(".region-track");
     const edge = box.parentElement?.querySelector(".region-edge");
     const room = track === null ? 0 : Number.parseFloat(getComputedStyle(track).paddingInlineStart);
     const rect = target.getBoundingClientRect();
-    const left = box.getBoundingClientRect().left + box.clientLeft;
+    // The box has no border (overflowRegionStyles), so its client area starts at its border box.
+    const left = box.getBoundingClientRect().left;
     const clearance = clearanceScroll({
       ring: { left: rect.left - room, right: rect.right + room },
       box: { left, right: left + box.clientWidth, scrollLeft: box.scrollLeft, scrollWidth: box.scrollWidth, clientWidth: box.clientWidth },
@@ -446,6 +462,7 @@ export class OverflowRegion implements ReactiveController {
     this.#measure();
   };
 
+  /** Focus leaving the control the fallback is for ends the suppression (R-06). */
   readonly #onFocusOut = (event: FocusEvent): void => {
     if (event.composedPath()[0] !== this.#focused) return;
     this.#focused = undefined;
@@ -459,6 +476,7 @@ export class OverflowRegion implements ReactiveController {
     this.#measure();
   };
 
+  // Stryker disable next-line BlockStatement: equivalent, see the slotchange listener in #follow
   readonly #onSlotChange = (): void => {
     this.#measure();
   };

@@ -203,6 +203,11 @@ export interface Driver {
    * `activeElement()` after each press, `to` included; at most 40 presses.
    */
   tabWalk(from: string, to: string, backward?: boolean): Promise<string[]>;
+  /**
+   * Focuses the target by script (`focus()`), then settles. Chromium's `:focus-visible` follows the last input: after
+   * keyboard input the target matches it, after a pointer click it does not.
+   */
+  focus(target: Target): Promise<void>;
   /** The target's `scrollLeft`. */
   scrollLeft(target: Target): Promise<number>;
   /** Sets the target's `scrollLeft` with an instant scroll, then settles. */

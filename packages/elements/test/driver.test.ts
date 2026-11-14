@@ -139,6 +139,20 @@ describe("the in-process driver", () => {
     ]);
   });
 
+  it("focus(target) focuses a light-DOM and a shadow target by script, matching :focus-visible after keyboard input and not after a pointer click", async () => {
+    await driver.mount('<button id="a" type="button">A</button><button id="b" type="button">B</button><driver-host id="h"></driver-host>');
+    document.getElementById("a")?.focus();
+    await driver.press("Tab");
+    await driver.focus({ id: "h", inner: ".inner" });
+    const afterKeys = { active: await driver.activeElement(), visible: document.getElementById("h")?.shadowRoot?.activeElement?.matches(":focus-visible") };
+    await driver.click("a", { x: 2, y: 2 });
+    await driver.focus("b");
+    expect([afterKeys, { active: await driver.activeElement(), visible: document.activeElement?.matches(":focus-visible") }]).toEqual([
+      { active: "h >> button.inner", visible: true },
+      { active: "b", visible: false },
+    ]);
+  });
+
   it("scrollLeft(target) reads and setScrollLeft(target, value) writes an instant scroll, on a light-DOM box with smooth scroll-behavior and on a shadow box", async () => {
     await driver.mount('<div id="box"><div id="wide"></div></div><driver-host id="h"></driver-host>');
     await driver.rules("#box { inline-size: 200px; overflow-x: auto; scroll-behavior: smooth; } #wide { inline-size: 1000px; block-size: 20px; }");

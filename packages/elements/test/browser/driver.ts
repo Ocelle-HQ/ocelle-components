@@ -283,6 +283,15 @@ export function fixtureDriver(page: Page, log: readonly string[], withBase = fal
       await settle(page);
       return walked;
     },
+    focus: async (target) => {
+      await page.evaluate(({ target }) => {
+        const host = document.getElementById(typeof target === "string" ? target : target.id);
+        const element = typeof target === "string" ? host : host?.shadowRoot?.querySelector<HTMLElement>(target.inner);
+        if (element === null || element === undefined) throw new Error(`no target ${JSON.stringify(target)} on the page`);
+        element.focus();
+      }, { target });
+      await settle(page);
+    },
     scrollLeft: (target) => page.evaluate(({ target }) => {
       const host = document.getElementById(typeof target === "string" ? target : target.id);
       const element = typeof target === "string" ? host : host?.shadowRoot?.querySelector(target.inner);

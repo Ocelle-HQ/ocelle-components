@@ -85,3 +85,25 @@ describe("resolveName(hostAriaLabel, label)", () => {
     expect(resolveName(host, own)).toBe(name);
   });
 });
+
+// Guards added after the green implementation (reviews/phase-2/plants.md § Guards): the bounds of R-06's rule, which
+// the first mutation run showed no case above reached. In ltr on the same strip; the surviving mutants of
+// clearanceScroll are their proof that they can fail.
+describe("clearanceScroll at its bounds", () => {
+  it.each([
+    { label: "1 px from the start the start does not fade: a ring box 10 px in stays", ring: [10, 100], at: 1, to: 1, ...fits },
+    { label: "1 px from the start, a ring box at the box's start stays", ring: [1, 91], at: 1, to: 1, ...fits },
+    { label: "a ring box whose fade clearance would leave 1 px goes to the start", ring: [33, 123], at: 200, to: 0, ...fits },
+    { label: "1 px from the end the end does not fade: a ring box ending at the box's end stays", ring: [927, 1017], at: 717, to: 717, ...fits },
+    { label: "a ring box ending under the end fade but inside the box moves until it ends 32 px from the end", ring: [200, 290], at: 0, to: 22, ...fits },
+    { label: "a ring box well inside both fades stays", ring: [150, 200], at: 0, to: 0, ...fits },
+    { label: "a ring box whose clearance lands 1 px from the end goes to the end", ring: [895, 985], at: 600, to: 718, ...fits },
+    { label: "a ring box whose clearance lands half a px past the range goes to the end", ring: [896.5, 986.5], at: 600, to: 718, ...fits },
+    { label: "a 280 px ring box moved toward the start that then reaches under the end fade: aligned at the start, both suppressed", ring: [100, 380], at: 200, to: 100, suppressStart: true, suppressEnd: true },
+    { label: "a 340 px ring box at the content's start: at the start, where the start does not fade, the end suppressed", ring: [0, 340], at: 300, to: 0, suppressStart: false, suppressEnd: true },
+    { label: "a ring box of the box less one fade, aligned at the start, ends where the end fade starts: only the start suppressed", ring: [400, 668], at: 300, to: 400, suppressStart: true, suppressEnd: false },
+    { label: "a ring box as wide as the box, aligned at the start, reaches under the end fade: both suppressed", ring: [400, 700], at: 300, to: 400, suppressStart: true, suppressEnd: true },
+  ])("$label", ({ ring: [start = 0, end = 0], at, to, suppressStart, suppressEnd }) => {
+    expect(clearanceScroll({ ring: ring(start, end, at, "ltr"), box: box(at), fade: 32, direction: "ltr" })).toEqual({ scrollLeft: to, suppressStart, suppressEnd });
+  });
+});

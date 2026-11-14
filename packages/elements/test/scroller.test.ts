@@ -2,7 +2,7 @@ import { afterEach, describe, expect, it } from "vitest";
 import "../src/ocelle-scroller.ts";
 import "./fixtures/shadow-controls.ts";
 import { inProcessDriver } from "./in-process.ts";
-import { scrollerScenarios } from "./scenarios/scroller.ts";
+import { scrollerGuards, scrollerScenarios } from "./scenarios/scroller.ts";
 
 // User Story 1's browser scenarios for `ocelle-scroller` and the overflow-region module, in process on the element
 // source (009 research.md R-17, T014): the shared bodies of scenarios/scroller.ts on the in-process driver, so
@@ -16,7 +16,7 @@ afterEach(async () => {
 });
 
 describe("ocelle-scroller, in process (US1)", { timeout: 60_000 }, () => {
-  it.each(scrollerScenarios)("$name", async ({ run, expected }) => {
+  it.each([...scrollerScenarios, ...scrollerGuards])("$name", async ({ run, expected }) => {
     expect(await run(driver)).toEqual(expected);
   });
 });

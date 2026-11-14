@@ -267,6 +267,10 @@ export function inProcessDriver(): Driver {
       await settle();
       return walked;
     },
+    focus: async (target) => {
+      resolve(target).focus();
+      await settle();
+    },
     scrollLeft: (target) => Promise.resolve(resolve(target).scrollLeft),
     setScrollLeft: async (target, value) => {
       resolve(target).scrollTo({ left: value, behavior: "instant" });
