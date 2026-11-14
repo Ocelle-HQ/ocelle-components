@@ -218,7 +218,7 @@ export class SelectionModel<T> {
    * focused child removed or moved in the task of the set gives the child to focus, which is returned (review round 1,
    * R1-01).
    */
-  set(value: string, focusLeft = false): T | null {
+  set(value: string, focusLeft: boolean): T | null {
     const { record, hadFocus } = takeBlurred(this.#record, this.#source.take().flat(), focusLeft);
     this.#record = record;
     const focus = this.#process(hadFocus ?? record.focused);

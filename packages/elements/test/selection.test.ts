@@ -308,7 +308,7 @@ describe("SelectionModel: batching, the value setter and the focus record over a
     const children = source(folders);
     const model = new SelectionModel<string>("listbox", children);
     expect(model.batch()).toBeNull();
-    model.set("gamma");
+    model.set("gamma", false);
     expect({ entries: model.entries, selected: model.selected, value: model.value, stop: model.tabStop(), remembered: model.remembered }).toEqual({
       entries: folders,
       selected: "g",
@@ -324,7 +324,7 @@ describe("SelectionModel: batching, the value setter and the focus record over a
     model.batch();
     children.live = [e("a", "alpha"), e("b", "beta"), e("d", "delta")];
     children.pending = [[]];
-    model.set("delta");
+    model.set("delta", false);
     expect({ selected: model.selected, value: model.value, remembered: model.remembered, entries: model.entries.length, pending: children.pending }).toEqual({ selected: "d", value: "delta", remembered: null, entries: 3, pending: [] });
   });
 
@@ -332,7 +332,7 @@ describe("SelectionModel: batching, the value setter and the focus record over a
     const children = source([e("a", "alpha"), e("b", "beta")]);
     const model = new SelectionModel<string>("listbox", children);
     model.batch();
-    model.set("delta");
+    model.set("delta", false);
     const remembered = { value: model.value, remembered: model.remembered };
     children.live = [...children.live, e("d", "delta")];
     model.batch();
@@ -343,7 +343,7 @@ describe("SelectionModel: batching, the value setter and the focus record over a
     const children = source([]);
     const model = new SelectionModel<string>("tabs", children);
     model.batch();
-    model.set("tasks");
+    model.set("tasks", false);
     children.live = [e("s", "spec"), e("p", "plan"), e("t", "tasks")];
     model.batch();
     expect({ selected: model.selected, value: model.value }).toEqual({ selected: "t", value: "tasks" });
@@ -353,7 +353,7 @@ describe("SelectionModel: batching, the value setter and the focus record over a
     const children = source([e("a", "alpha"), e("b", "beta", true), e("g", "gamma")]);
     const model = new SelectionModel<string>("listbox", children);
     model.batch();
-    model.set("zeta");
+    model.set("zeta", false);
     expect([model.select("a"), model.remembered, model.select("a"), model.select("b"), model.selected]).toEqual([true, null, false, false, "a"]);
   });
 
@@ -377,7 +377,7 @@ describe("SelectionModel: batching, the value setter and the focus record over a
     const moved = source(three);
     const model = new SelectionModel<string>("listbox", moved);
     model.batch();
-    model.set("beta");
+    model.set("beta", false);
     model.focusIn("b");
     model.focusOut("b", null);
     moved.live = [e("a", "alpha"), e("g", "gamma"), e("b", "beta")];
@@ -428,7 +428,7 @@ describe("SelectionModel: batching, the value setter and the focus record over a
       const children = source(three);
       const model = new SelectionModel<string>("listbox", children);
       model.batch();
-      model.set("alpha");
+      model.set("alpha", false);
       model.focusIn("b");
       model.focusOut("b", null);
       children.live = [...live];
@@ -449,7 +449,7 @@ describe("SelectionModel: batching, the value setter and the focus record over a
     const children = source(folders);
     const model = new SelectionModel<string>("listbox", children);
     model.batch();
-    model.set("gamma");
+    model.set("gamma", false);
     model.focusIn("g");
     children.live = [e("a", "alpha"), e("b", "beta"), e("g", "gamma", true), e("d", "delta"), e("p", "epsilon")];
     expect([model.batch(), model.selected, model.value, model.tabStop()]).toEqual(["g", "g", "gamma", "a"]);
