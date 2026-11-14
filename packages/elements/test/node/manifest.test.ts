@@ -247,7 +247,7 @@ describe("generate(root) on the repository's element source", () => {
     const manifest = await generate(repo);
     const modules = manifest.modules as { path: string; declarations: Record<string, unknown>[] }[];
     expect(manifest.schemaVersion).toBe("1.0.0");
-    expect(modules.map((module) => module.path)).toEqual(["src/ocelle-brand-mark.ts", "src/ocelle-card.ts", "src/ocelle-icon.ts", "src/ocelle-page-header.ts", "src/ocelle-section-header.ts"]);
+    expect(modules.map((module) => module.path)).toEqual(["src/ocelle-brand-mark.ts", "src/ocelle-card.ts", "src/ocelle-context-sidebar.ts", "src/ocelle-icon.ts", "src/ocelle-page-header.ts", "src/ocelle-section-header.ts"]);
     const [icon] = modules.find((module) => module.path === "src/ocelle-icon.ts")?.declarations ?? [];
     expect(icon).toMatchObject({
       kind: "class",
@@ -347,6 +347,22 @@ describe("generate(root) on the repository's element source", () => {
       { name: "header", described: true },
       { name: "", described: true },
     ]);
+  });
+
+  it("declares ocelle-context-sidebar with its tag name and class, label (string | undefined), not reflected, with the default undefined, the slots head, the default slot and footer, no event, part or CSS property, and no member for its internals key (011 FR-020, FR-021, FR-034; research.md R-11; T034)", async () => {
+    const modules = (await generate(repo)).modules as { path: string; declarations: Record<string, unknown>[] }[];
+    const [sidebar] = modules.find((module) => module.path === "src/ocelle-context-sidebar.ts")?.declarations ?? [];
+    expect(sidebar).toMatchObject({ kind: "class", name: "OcelleContextSidebar", tagName: "ocelle-context-sidebar", customElement: true, events: [], cssParts: [], cssProperties: [] });
+    const members = described(sidebar?.members);
+    expect({
+      members,
+      internals: members.filter((member) => JSON.stringify(member).toLowerCase().includes("internals")),
+    }).toEqual({
+      members: [{ kind: "field", name: "label", privacy: "public", type: { text: "string | undefined" }, default: "undefined", attribute: "label", described: true }],
+      internals: [],
+    });
+    expect(described(sidebar?.attributes)).toEqual([{ name: "label", fieldName: "label", type: { text: "string | undefined" }, default: "undefined", described: true }]);
+    expect(described(sidebar?.slots)).toEqual(["head", "", "footer"].map((name) => ({ name, described: true })));
   });
 
   it("rejects a root without an element module, naming the directory", async () => {
