@@ -1,6 +1,6 @@
 {
   "expect": "fail",
-  "why": "A changed token value (color-ink, light) changes every story-theme that shows it: differs on the twenty light story-themes measured in the pinned container (FR-004, US2 scenario 2), the twelve the phase 1 spike listed and the eight of mission 005's stories that show color-ink (all but elements-ocelle-brand-mark--chrome, measured for plan decision 29), and none in dark. A story added later that shows color-ink in light adds its line here (research.md R-07).",
+  "why": "A changed token value (color-ink, light) changes every story-theme that shows it: differs on the twenty-seven light story-themes measured in the pinned container (FR-004, US2 scenario 2), the twelve the phase 1 spike listed, the eight of mission 005's stories that show color-ink (all but elements-ocelle-brand-mark--chrome, measured for plan decision 29) and the seven listbox stories of 014 (every option's text is color-ink), and none in dark. A story added later that shows color-ink in light adds its line here (research.md R-07).",
   "findings": [
     {
       "location": "base-styles--base-page/light",
@@ -48,6 +48,34 @@
     },
     {
       "location": "elements-ocelle-icon--set-right-to-left/light",
+      "rule": "differs"
+    },
+    {
+      "location": "elements-ocelle-listbox--no-selection/light",
+      "rule": "differs"
+    },
+    {
+      "location": "elements-ocelle-listbox--selected/light",
+      "rule": "differs"
+    },
+    {
+      "location": "elements-ocelle-listbox--disabled-option/light",
+      "rule": "differs"
+    },
+    {
+      "location": "elements-ocelle-listbox--focused-option/light",
+      "rule": "differs"
+    },
+    {
+      "location": "elements-ocelle-listbox--hovered-option/light",
+      "rule": "differs"
+    },
+    {
+      "location": "elements-ocelle-listbox--scrolling-listbox/light",
+      "rule": "differs"
+    },
+    {
+      "location": "elements-ocelle-listbox--option-with-icon/light",
       "rule": "differs"
     },
     {

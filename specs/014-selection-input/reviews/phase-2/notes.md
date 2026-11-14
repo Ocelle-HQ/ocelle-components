@@ -70,3 +70,21 @@ finding and a new entry in `storybook/a11y-exceptions.json`. The same findings m
 two repository runs and the `axe` gate plants run on the repository fail (`gate:plants`, which also cannot run its 46
 visual plants without a container engine). The story test (`storybook-integration`) passes: it asserts no serious
 violation, not incompletes. Phase 2 stops here for the decision; T028 stays open.
+
+## Baselines under docker (T027a; replaces the known gap above)
+
+By the operator's decision of 2026-11-14 (`reviews/phase-2/operator-decisions.md`), phase 2's baselines were produced
+in #10's pinned container (`mcr.microsoft.com/playwright@sha256:ee15712262f017b8157421b212b12099146645f44b1bc5c0514cbbe6a229b1d0`)
+under docker with `pnpm run visual:update`: 14 files added (the seven listbox stories, light and dark), no shared
+baseline changed or removed, the token stories included. `pnpm run gate:visual` then reported "56 captures match their
+baselines (docker only: no cross-engine comparison)". No podman cross-engine check was possible in this session (no
+podman); CI's `visual` gate, which runs both engines, confirms the baselines at landing. The story-theme and baseline
+counts that `gates/test/integration/visual.test.ts` and `gates/test/integration/plant-repo.test.ts` pin moved from 42 to
+56, and the seven light listbox stories, each showing its options' `color-ink` text, joined the findings of the
+`visual/fail-token-changed` plant and its note. The container-engine tests of `visual.test.ts` now run and pass.
+
+## The axe exception (T027b; answers the open question above)
+
+The operator chose option (a): the twelve `color-contrast-incomplete` nodes of the scrolling listbox story are entries
+of `storybook/a11y-exceptions.json`, each with its row in plan.md's Complexity Tracking. `gate:axe` exits 0 with 22
+notes, all excepted (the Prose document's ten and these twelve).
