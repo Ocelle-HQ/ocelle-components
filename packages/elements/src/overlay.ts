@@ -338,6 +338,7 @@ export class OcelleOverlay extends LitElement {
       @toggle=${{
         // Stryker disable next-line BlockStatement: equivalent, every close of a slotted dialog also fires its close event, which leaves the below record first (T025, reviews/phase-2/notes.md)
         handleEvent: (event: Event) => {
+          // Stryker disable next-line CallExpression: equivalent, every close of a slotted dialog also fires its close event, which leaves the below record first (T025, reviews/phase-2/notes.md)
           this.#onToggle(event);
         },
         // Stryker disable next-line BooleanLiteral: equivalent, without capture the slotted dialogs' toggles are not seen, and their close events leave the record (T025, reviews/phase-2/notes.md)
@@ -353,8 +354,8 @@ export class OcelleOverlay extends LitElement {
     this.#observer = new ResizeObserver(() => {
       this.#measure();
     });
+    // The content is observed from the default slot's first slotchange on, which fires after this first update.
     this.#observer.observe(body);
-    this.#observeContent();
   }
 
   /** The state follows `open` (FR-004); in any other combination there is nothing to do. */
