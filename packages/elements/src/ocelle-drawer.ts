@@ -105,7 +105,7 @@ export class OcelleDrawer extends OcelleOverlay {
 
   protected override readonly eventPrefix: string = "ocelle-drawer";
 
-  /** Whether the current press began with the primary button outside the panel's border box, on the backdrop (R-07). */
+  /** Whether the last press began with the primary button outside the panel's border box, on the backdrop (R-07). */
   #pressedOutside = false;
 
   constructor() {
@@ -113,13 +113,13 @@ export class OcelleDrawer extends OcelleOverlay {
     this.side = "start";
     this.ground = "sheet";
     this.headingHidden = false;
-  }
-
-  protected override firstUpdated(): void {
-    super.firstUpdated();
-    const panel = this.renderRoot.querySelector("dialog");
-    panel?.addEventListener("pointerdown", this.#onPointerdown);
-    panel?.addEventListener("click", this.#onClick);
+    this.addEventListener("pointerdown", (event) => {
+      this.#pressedOutside = event.button === 0 && event.isPrimary && this.#outside(event);
+    });
+    // A `click` comes from the primary button, after its own press.
+    this.addEventListener("click", (event) => {
+      if (this.#pressedOutside && this.#outside(event)) this.requestClose("backdrop");
+    });
   }
 
   /** The slide from the drawer's own edge (FR-028): the start edge, the end edge with `side="end"`, mirrored under `rtl`. */
@@ -130,27 +130,17 @@ export class OcelleDrawer extends OcelleOverlay {
     return entering ? [away, home] : [home, away];
   }
 
-  #onPointerdown = (event: PointerEvent): void => {
-    this.#pressedOutside = event.button === 0 && event.isPrimary && outside(event);
-  };
-
   /**
-   * A backdrop click (R-07): pressed and clicked with the primary button outside the panel's border box, the target the
-   * panel itself; a click on a slotted overlay's backdrop reaches the panel with that overlay's host as its target.
+   * Whether a pointer event is on the backdrop (R-07): its target, before retargeting, is the panel itself, and it
+   * lies outside the panel's border box, the half-open area [left, right) × [top, bottom) of its pixels. A press or
+   * click on a slotted overlay's backdrop has that overlay's `<dialog>` as its target.
    */
-  #onClick = (event: MouseEvent): void => {
-    const pressed = this.#pressedOutside;
-    this.#pressedOutside = false;
-    if (pressed && event.button === 0 && outside(event)) this.requestClose("backdrop");
-  };
-}
-
-/** Whether a pointer event on the panel lies outside its border box with the panel as its target: the backdrop. */
-function outside(event: MouseEvent): boolean {
-  const panel = event.currentTarget as HTMLDialogElement;
-  if (event.target !== panel) return false;
-  const box = panel.getBoundingClientRect();
-  return event.clientX < box.left || event.clientX > box.right || event.clientY < box.top || event.clientY > box.bottom;
+  #outside(event: MouseEvent): boolean {
+    const panel = this.renderRoot.querySelector("dialog");
+    if (event.composedPath()[0] !== panel) return false;
+    const box = panel.getBoundingClientRect();
+    return event.clientX < box.left || event.clientX >= box.right || event.clientY < box.top || event.clientY >= box.bottom;
+  }
 }
 
 define("ocelle-drawer", OcelleDrawer);
