@@ -201,16 +201,46 @@ function root(files: Readonly<Record<string, string>>): string {
 const element = (tag: string): string =>
   `import { LitElement } from "lit";\n\n/**\n * An element.\n *\n * @tagname ${tag}\n */\nexport class E extends LitElement {\n  static override properties = { name: {} };\n\n  /**\n   * A name.\n   *\n   * @default undefined\n   */\n  declare name: IconName | undefined;\n}\n`;
 
+/** A base class in `file`: the properties `open` (Boolean, reflected) and `label`, each described. */
+const base = (name: string): string =>
+  `import { LitElement } from "lit";\n\n/** A base. */\nexport class ${name} extends LitElement {\n  static override properties = { open: { type: Boolean, reflect: true }, label: { type: String } };\n\n  /**\n   * Whether it is open.\n   *\n   * @default false\n   */\n  declare open: boolean;\n\n  /**\n   * The label.\n   *\n   * @default undefined\n   */\n  declare label: string | undefined;\n}\n`;
+
+/** An element class `name` with the tag `tag`, a subclass of `base` imported from `module`. */
+const subclass = (tag: string, name: string, base: string, module: string): string =>
+  `import { ${base} } from "./${module}";\n\n/**\n * An element.\n *\n * @tagname ${tag}\n */\nexport class ${name} extends ${base} {}\n`;
+
 describe("generate(root) on other element sources", () => {
-  it("reads every src/ocelle-*.ts, its modules in path order, and nothing else of src/", async () => {
+  // 008 research.md R-01, operator decision "analyse, then drop it" (2026-11-14): this replaces the pinned rule
+  // "reads every src/ocelle-*.ts, its modules in path order, and nothing else of src/" with a stricter one. The
+  // generator must read src/overlay.ts too, so an element's members inherited from the overlays' internal base are
+  // listed with inheritedFrom, while a base in any other file of src/ (helper.ts) is still not read, and no internal
+  // module is published: the published modules are the src/ocelle-*.ts ones only, in path order (constitution VIII:
+  // the reason for replacing a pinned test, recorded here).
+  it("reads every src/ocelle-*.ts and src/overlay.ts, and nothing else: a base in overlay.ts gives inherited members, one in helper.ts does not; the published modules are the ocelle-* ones only, in path order", async () => {
     const dir = root({
       "packages/elements/src/ocelle-zeta.ts": element("ocelle-zeta"),
-      "packages/elements/src/ocelle-alpha.ts": element("ocelle-alpha"),
-      "packages/elements/src/helper.ts": element("ocelle-helper"),
+      "packages/elements/src/ocelle-alpha.ts": subclass("ocelle-alpha", "Alpha", "OcelleOverlay", "overlay.ts"),
+      "packages/elements/src/ocelle-beta.ts": subclass("ocelle-beta", "Beta", "HelperBase", "helper.ts"),
+      "packages/elements/src/overlay.ts": base("OcelleOverlay"),
+      "packages/elements/src/helper.ts": base("HelperBase"),
       "packages/elements/src/ocelle-alpha.test.js": element("ocelle-test"),
     });
-    const modules = (await generate(dir)).modules as Json[];
-    expect(modules.map((module) => module.path)).toEqual(["src/ocelle-alpha.ts", "src/ocelle-zeta.ts"]);
+    const manifest = await generate(dir);
+    const modules = manifest.modules as Json[];
+    const of = (path: string): Json => declaration({ modules: modules.filter((module) => module.path === path) });
+    const inherited = (entry: Json, list: "members" | "attributes"): unknown[] => ((entry[list] ?? []) as Json[]).map((each) => [each.name, each.inheritedFrom ?? null]);
+    const from = { name: "OcelleOverlay", module: "src/overlay.ts" };
+    expect({
+      paths: modules.map((module) => module.path),
+      declarations: modules.flatMap((module) => ((module.declarations ?? []) as Json[]).map((each) => each.name)),
+      alpha: { members: inherited(of("src/ocelle-alpha.ts"), "members"), attributes: inherited(of("src/ocelle-alpha.ts"), "attributes") },
+      beta: { members: inherited(of("src/ocelle-beta.ts"), "members"), attributes: inherited(of("src/ocelle-beta.ts"), "attributes") },
+    }).toEqual({
+      paths: ["src/ocelle-alpha.ts", "src/ocelle-beta.ts", "src/ocelle-zeta.ts"],
+      declarations: ["Alpha", "Beta", "E"],
+      alpha: { members: [["open", from], ["label", from]], attributes: [["open", from], ["label", from]] },
+      beta: { members: [], attributes: [] },
+    });
   });
 
   it("leaves IconName unexpanded without src/icons.ts", async () => {
@@ -247,7 +277,7 @@ describe("generate(root) on the repository's element source", () => {
     const manifest = await generate(repo);
     const modules = manifest.modules as { path: string; declarations: Record<string, unknown>[] }[];
     expect(manifest.schemaVersion).toBe("1.0.0");
-    expect(modules.map((module) => module.path)).toEqual(["src/ocelle-brand-mark.ts", "src/ocelle-icon.ts"]);
+    expect(modules.map((module) => module.path)).toEqual(["src/ocelle-brand-mark.ts", "src/ocelle-dialog.ts", "src/ocelle-icon.ts"]);
     const [icon] = modules.find((module) => module.path === "src/ocelle-icon.ts")?.declarations ?? [];
     expect(icon).toMatchObject({
       kind: "class",
@@ -297,6 +327,55 @@ describe("generate(root) on the repository's element source", () => {
       { name: "tone", fieldName: "tone", type: { text: '"mono" | undefined' }, default: "undefined", described: true },
       { name: "label", fieldName: "label", type: { text: "string | undefined" }, default: "undefined", described: true },
     ]);
+  });
+
+  // 008 tasks.md T018 (FR-045, SC-003; research.md R-01, operator decision "analyse, then drop it", 2026-11-14): the
+  // dialog's entry lists the members it inherits from the overlays' internal base with inheritedFrom, its own JSDoc
+  // lists exactly, every member described; the published manifest holds no internal base.
+  it("declares ocelle-dialog with open (reflected, default false), label and closeLabel / close-label (default \"Close\") inherited from OcelleOverlay, its two events with their detail types, two slots, five parts and one CSS property, each described", async () => {
+    const manifest = await generate(repo);
+    const modules = manifest.modules as { path: string; declarations: Record<string, unknown>[] }[];
+    const [dialog] = modules.find((module) => module.path === "src/ocelle-dialog.ts")?.declarations ?? [];
+    const described = (list: unknown): Record<string, unknown>[] =>
+      ((list ?? []) as Record<string, unknown>[]).map(({ description, ...rest }) => ({ ...rest, described: typeof description === "string" && description !== "" }));
+    const from = { name: "OcelleOverlay", module: "src/overlay.ts" };
+    expect({ kind: dialog?.kind, name: dialog?.name, tagName: dialog?.tagName, customElement: dialog?.customElement }).toEqual({ kind: "class", name: "OcelleDialog", tagName: "ocelle-dialog", customElement: true });
+    expect(described(dialog?.members)).toEqual([
+      { kind: "field", name: "open", privacy: "public", type: { text: "boolean" }, default: "false", attribute: "open", reflects: true, inheritedFrom: from, described: true },
+      { kind: "field", name: "label", privacy: "public", type: { text: "string | undefined" }, default: "undefined", attribute: "label", inheritedFrom: from, described: true },
+      { kind: "field", name: "closeLabel", privacy: "public", type: { text: "string" }, default: '"Close"', attribute: "close-label", inheritedFrom: from, described: true },
+    ]);
+    expect(described(dialog?.attributes)).toEqual([
+      { name: "open", fieldName: "open", type: { text: "boolean" }, default: "false", inheritedFrom: from, described: true },
+      { name: "label", fieldName: "label", type: { text: "string | undefined" }, default: "undefined", inheritedFrom: from, described: true },
+      { name: "close-label", fieldName: "closeLabel", type: { text: "string" }, default: '"Close"', inheritedFrom: from, described: true },
+    ]);
+    expect(described(dialog?.events)).toEqual([
+      { name: "ocelle-dialog-close-request", type: { text: 'CustomEvent<{ reason: "escape" | "close-button" }>' }, described: true },
+      { name: "ocelle-dialog-close", type: { text: 'CustomEvent<{ reason: "escape" | "close-button" | "host" }>' }, described: true },
+    ]);
+    expect(described(dialog?.slots)).toEqual([
+      { name: "", described: true },
+      { name: "footer", described: true },
+    ]);
+    expect(described(dialog?.cssParts)).toEqual(["panel", "heading", "body", "footer", "close-button"].map((name) => ({ name, described: true })));
+    expect(described(dialog?.cssProperties)).toEqual([{ name: "--ocelle-dialog-inline-size", described: true }]);
+  });
+
+  it("publishes no src/overlay.ts module and no OcelleOverlay declaration, in generate(root)'s output and in the committed custom-elements.json", async () => {
+    const committed = JSON.parse(readFileSync(join(repo, "packages/elements/custom-elements.json"), "utf8")) as Json;
+    const internal = (manifest: Json): unknown => {
+      const modules = (manifest.modules ?? []) as Json[];
+      return {
+        modules: modules.map((module) => module.path).filter((path) => path === "src/overlay.ts"),
+        declarations: modules.flatMap((module) => ((module.declarations ?? []) as Json[]).map((each) => each.name)).filter((name) => name === "OcelleOverlay"),
+        dialog: modules.some((module) => module.path === "src/ocelle-dialog.ts"),
+      };
+    };
+    expect({ generated: internal(await generate(repo)), committed: internal(committed) }).toEqual({
+      generated: { modules: [], declarations: [], dialog: true },
+      committed: { modules: [], declarations: [], dialog: true },
+    });
   });
 
   it("rejects a root without an element module, naming the directory", async () => {
