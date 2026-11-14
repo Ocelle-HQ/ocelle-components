@@ -415,6 +415,36 @@ describe("SelectionModel: batching, the value setter and the focus record over a
     ]);
   });
 
+  it("R1-01: the value setter feeds the records it takes to the focus record: a removed or moved focused child gives the focus target when focus left, and the later afterBlur has nothing left", () => {
+    const three = [e("a", "alpha"), e("b", "beta"), e("g", "gamma")];
+    const outcomes: unknown[] = [];
+    for (const [live, value, focusLeft] of [
+      [[e("a", "alpha"), e("g", "gamma")], "gamma", true],
+      [[e("a", "alpha"), e("g", "gamma")], "alpha", true],
+      [[e("a", "alpha"), e("g", "gamma"), e("b", "beta")], "gamma", true],
+      [[e("a", "alpha"), e("g", "gamma"), e("b", "beta")], "alpha", true],
+      [[e("a", "alpha"), e("g", "gamma"), e("b", "beta")], "gamma", false],
+    ] as const) {
+      const children = source(three);
+      const model = new SelectionModel<string>("listbox", children);
+      model.batch();
+      model.set("alpha");
+      model.focusIn("b");
+      model.focusOut("b", null);
+      children.live = [...live];
+      children.pending = [["b"]];
+      const focus = model.set(value, focusLeft);
+      outcomes.push({ focus, selected: model.selected, blurred: model.record.blurred, later: model.afterBlur(true) });
+    }
+    expect(outcomes).toEqual([
+      { focus: "g", selected: "g", blurred: null, later: null },
+      { focus: "g", selected: "a", blurred: null, later: null },
+      { focus: "b", selected: "g", blurred: null, later: null },
+      { focus: "b", selected: "a", blurred: null, later: null },
+      { focus: null, selected: "g", blurred: null, later: null },
+    ]);
+  });
+
   it("batch keeps focus on a focused option that becomes disabled (PLAN-CORRECTNESS-1-004 (a)), and the tab stop leaves it", () => {
     const children = source(folders);
     const model = new SelectionModel<string>("listbox", children);
