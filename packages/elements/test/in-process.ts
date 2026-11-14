@@ -11,13 +11,13 @@
 /// <reference types="vite/client" />
 import type { LitElement } from "lit";
 import { vi } from "vitest";
-import { commands, page } from "vitest/browser";
+import { commands, page, userEvent } from "vitest/browser";
 import baseText from "../../styles/src/base.css?raw";
 import framesText from "./fixtures/frames.css?raw";
 import { css } from "../../tokens/src/generate.ts";
 import { source } from "../../tokens/src/source.ts";
 import { decodePng } from "./pixels.ts";
-import type { Box, Driver, Drawing, Paint, Part, Placement, Sheets } from "./scenarios/driver.ts";
+import type { Box, Driver, Drawing, Paint, Part, Placement, Reading, Sheets, Target } from "./scenarios/driver.ts";
 
 function sheet(text: string): CSSStyleSheet {
   const made = new CSSStyleSheet();
@@ -35,12 +35,66 @@ function element(id: string): HTMLElement {
   return found;
 }
 
-/** Waits until every `ocelle-*` element of the page has rendered, then for a frame. */
+const nextFrame = (): Promise<unknown> => new Promise((resolve) => requestAnimationFrame(resolve));
+
+/**
+ * Waits two animation frames, then until every `ocelle-*` element of the page has rendered (009 research.md R-17, the
+ * overflow-region contract's rule: a `ResizeObserver` delivery of the first frame and the update it requests are seen).
+ */
 async function settle(): Promise<void> {
+  await nextFrame();
+  await nextFrame();
   const elements = [...document.querySelectorAll("*")].filter((each) => each.localName.startsWith("ocelle-"));
   await Promise.all(elements.map((each) => (each as Partial<LitElement>).updateComplete ?? Promise.resolve(true)));
-  await new Promise((resolve) => requestAnimationFrame(resolve));
 }
+
+/** The element of a target: the element with the id, or the first match of `inner` in its shadow root. */
+function resolve(target: Target): HTMLElement {
+  if (typeof target === "string") return element(target);
+  const found = element(target.id).shadowRoot?.querySelector<HTMLElement>(target.inner);
+  if (found === null || found === undefined) throw new Error(`no ${target.inner} in the shadow root of #${target.id}`);
+  return found;
+}
+
+/** A key or chord (`Shift+Tab`, `Ctrl+ArrowRight`) in user-event's keyboard syntax, modifiers held around the key. */
+function chord(key: string): string {
+  const parts = key.split("+").map((part) => (part === "Ctrl" ? "Control" : part));
+  const pressed = parts.pop() ?? "";
+  return `${parts.map((part) => `{${part}>}`).join("")}{${pressed}}${parts.reverse().map((part) => `{/${part}}`).join("")}`;
+}
+
+/** One level of the deep active element: its id, or its local name and classes. */
+function describe(node: Element): string {
+  return node.id !== "" ? node.id : [node.localName, ...node.classList].join(".");
+}
+
+/** The deep active element, each level from the document down through shadow roots, joined by " >> ". */
+function deepActive(): string {
+  const levels: string[] = [];
+  let active: Element | null = document.activeElement;
+  while (active !== null) {
+    levels.push(describe(active));
+    active = active.shadowRoot?.activeElement ?? null;
+  }
+  return levels.join(" >> ");
+}
+
+/** A frame record's reading of an element, as text. */
+function reading(subject: HTMLElement, read: Reading): string {
+  if ("property" in read) return String((subject as unknown as Record<string, unknown>)[read.property]);
+  if ("computed" in read) return getComputedStyle(subject).getPropertyValue(read.computed);
+  return String(subject.getAttribute(read.attribute));
+}
+
+/** The last keydown the window saw since the last mount (`lastKeyPrevented`). */
+let lastKey: KeyboardEvent | undefined;
+window.addEventListener(
+  "keydown",
+  (event) => {
+    lastKey = event;
+  },
+  true,
+);
 
 const round = (value: number): number => Math.round(value * 1000) / 1000;
 
@@ -71,6 +125,7 @@ export function inProcessDriver(): Driver {
     mount: async (markup, options = {}) => {
       document.adoptedStyleSheets = options.base === true ? [tokens, base, frames] : [tokens, frames];
       messages.length = 0;
+      lastKey = undefined;
       document.documentElement.removeAttribute("data-theme");
       document.body.innerHTML = markup;
       await settle();
@@ -152,7 +207,7 @@ export function inProcessDriver(): Driver {
       const rect = svg.getBoundingClientRect();
       return Promise.resolve({ scaleX: round(matrix.a), scaleY: round(matrix.d), offsetX: round(matrix.e - rect.x), offsetY: round(matrix.f - rect.y) });
     },
-    computed: (target, property) => (typeof target === "string" ? Promise.resolve(getComputedStyle(element(target)).getPropertyValue(property)) : Promise.reject(new Error("not implemented"))),
+    computed: (target, property) => Promise.resolve(getComputedStyle(resolve(target)).getPropertyValue(property)),
     resolveColour: (value) => {
       const probe = document.createElement("span");
       probe.style.color = value;
@@ -187,16 +242,69 @@ export function inProcessDriver(): Driver {
       await page.viewport(width, height);
       await settle();
     },
-    press: () => Promise.reject(new Error("not implemented")),
-    click: () => Promise.reject(new Error("not implemented")),
-    wheel: () => Promise.reject(new Error("not implemented")),
-    activeElement: () => Promise.reject(new Error("not implemented")),
-    tabWalk: () => Promise.reject(new Error("not implemented")),
-    scrollLeft: () => Promise.reject(new Error("not implemented")),
-    setScrollLeft: () => Promise.reject(new Error("not implemented")),
-    lastKeyPrevented: () => Promise.reject(new Error("not implemented")),
-    reducedMotion: () => Promise.reject(new Error("not implemented")),
-    frameRecord: () => Promise.reject(new Error("not implemented")),
-    settle: () => Promise.reject(new Error("not implemented")),
+    press: async (key) => {
+      await userEvent.keyboard(chord(key));
+      await settle();
+    },
+    click: async (target, point) => {
+      const rect = resolve(target).getBoundingClientRect();
+      const root = document.documentElement.getBoundingClientRect();
+      await userEvent.click(document.documentElement, { position: { x: rect.left - root.left + point.x, y: rect.top - root.top + point.y }, force: true });
+      await settle();
+    },
+    wheel: async (target, deltaX) => {
+      await userEvent.wheel(resolve(target), { delta: { x: deltaX } });
+      await settle();
+    },
+    activeElement: () => Promise.resolve(deepActive()),
+    tabWalk: async (from, to, backward = false) => {
+      element(from).focus();
+      const walked: string[] = [];
+      for (let step = 0; step < 40 && walked.at(-1) !== to; step++) {
+        await userEvent.keyboard(chord(backward ? "Shift+Tab" : "Tab"));
+        walked.push(deepActive());
+      }
+      await settle();
+      return walked;
+    },
+    scrollLeft: (target) => Promise.resolve(resolve(target).scrollLeft),
+    setScrollLeft: async (target, value) => {
+      resolve(target).scrollTo({ left: value, behavior: "instant" });
+      await settle();
+    },
+    lastKeyPrevented: () => Promise.resolve(lastKey?.defaultPrevented ?? false),
+    reducedMotion: async (on) => {
+      await commands.emulateReducedMotion(on);
+      await settle();
+    },
+    frameRecord: async (target, read) => {
+      const subject = resolve(target);
+      const source = read.of === undefined ? subject : resolve(read.of);
+      const record = [reading(source, read)];
+      const onKey = (): void => {
+        record.push("keydown");
+      };
+      window.addEventListener("keydown", onKey, true);
+      const observer = new ResizeObserver(() => record.push(`resize: ${reading(source, read)}`));
+      observer.observe(subject, { box: "border-box" });
+      let frame = 0;
+      const loop = (): void => {
+        record.push(reading(source, read));
+        frame = requestAnimationFrame(loop);
+      };
+      frame = requestAnimationFrame(loop);
+      await nextFrame();
+      await nextFrame();
+      return {
+        stop: async () => {
+          await settle();
+          cancelAnimationFrame(frame);
+          observer.disconnect();
+          window.removeEventListener("keydown", onKey, true);
+          return record;
+        },
+      };
+    },
+    settle,
   };
 }

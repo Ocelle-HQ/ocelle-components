@@ -13,7 +13,9 @@
 // R-03, R-08) `scale` takes only the bare numbers -1 and 1, and any function in its value is raw; and (R-03, R-10) the
 // unit `lh` passes only as `1lh`, as the whole value or, inside `calc()`, once per expression as an operand of `+` or
 // `-` in an expression that references an `--ocelle-*` token, a group that holds only `1lh` counting as that `1lh`
-// (OP4-01); and (R-03, R-09) `aspect-ratio` takes only the bare number 1 as its whole value.
+// (OP4-01); and (R-03, R-09) `aspect-ratio` takes only the bare number 1 as its whole value. Since 009 (contracts/gates.md
+// § `style-lint`, research.md R-05) the arguments of `linear-gradient()` are classified as at the top level of a value;
+// every other gradient function stays raw whole.
 import stylelint from "stylelint";
 import type { Rule } from "stylelint";
 import valueParser from "postcss-value-parser";
@@ -128,8 +130,11 @@ function admittedLine(calc: valueParser.FunctionNode): Node | undefined {
 }
 
 /**
- * The raw parts of a function: a var() fallback and calc() operands are checked; any other function is raw. `line`
- * is the `1lh` the enclosing calc() expression admits; an outermost calc() works out its own.
+ * The raw parts of a function: a var() fallback and calc() operands are checked; since 009 (contracts/gates.md
+ * § `style-lint`, research.md R-05) the arguments of `linear-gradient()` are classified as at the top level of a value,
+ * so its direction keywords, `transparent` and `%` stops pass, its commas are dividers, var() and calc() inside it are
+ * checked as everywhere and any other function inside it is raw whole; any other function is raw. `line` is the `1lh`
+ * the enclosing calc() expression admits; an outermost calc() works out its own.
  */
 function functionRaw(node: valueParser.FunctionNode, property: string, inCalc: boolean, line: Node | undefined): string[] {
   const name = node.value.toLowerCase();
@@ -138,10 +143,11 @@ function functionRaw(node: valueParser.FunctionNode, property: string, inCalc: b
     return comma === -1 ? [] : classify(node.nodes.slice(comma + 1), property, inCalc);
   }
   if (name === "calc" || (name === "" && inCalc)) return classify(node.nodes, property, true, inCalc ? line : admittedLine(node));
+  if (name === "linear-gradient") return classify(node.nodes, property, false, undefined, true);
   return [valueParser.stringify(node)];
 }
 
-function classify(nodes: readonly Node[], property: string, inCalc: boolean, line?: Node): string[] {
+function classify(nodes: readonly Node[], property: string, inCalc: boolean, line?: Node, inGradient = false): string[] {
   const raw: string[] = [];
   for (const node of nodes) {
     if (node.type === "word") {
@@ -149,7 +155,8 @@ function classify(nodes: readonly Node[], property: string, inCalc: boolean, lin
     } else if (node.type === "string") {
       if (isFont(property)) raw.push(valueParser.stringify(node));
     } else if (node.type === "function") {
-      raw.push(...functionRaw(node, property, inCalc, line));
+      // A gradient's arguments are classified once: a gradient nested in a gradient is raw whole.
+      raw.push(...(inGradient && node.value.toLowerCase() === "linear-gradient" ? [valueParser.stringify(node)] : functionRaw(node, property, inCalc, line)));
     } else if (node.type === "unicode-range") {
       raw.push(node.value);
     }

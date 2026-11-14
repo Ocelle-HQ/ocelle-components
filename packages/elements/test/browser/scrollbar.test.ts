@@ -42,6 +42,9 @@ function started(): { readonly browser: Browser; readonly origin: string } {
   return { browser, origin: served.origin };
 }
 
+/** The scripts scroller.html loads: the browser build and the test-only slotted controls. */
+const scripts = ["ocelle-elements.js", "ocelle-test-controls.js"];
+
 const rules = [
   '[data-test="strip"] { inline-size: 300px; background-color: var(--ocelle-color-canvas); }',
   ".item { display: inline-block; inline-size: 80px; block-size: 24px; margin-inline-end: 4px; vertical-align: top; }",
@@ -73,7 +76,7 @@ const rgb = (text: string): number[] => (text.match(/\d+/g) ?? []).map(Number);
 describe("ocelle-scroller with the platform's classic scrollbar (US1-4, US1-7, US1-13)", { timeout: 120_000 }, () => {
   it("the block size is the content's plus the ring room on each side plus the measured scrollbar, with the ring room above the scrollbar (FR-001)", async () => {
     const { browser, origin } = started();
-    const page = await visit(browser, origin, "scroller.html");
+    const page = await visit(browser, origin, "scroller.html", scripts);
     const driver = fixtureDriver(page.page, page.log);
     await driver.mount(`<div data-test="strip"><ocelle-scroller id="s" label="Strip">${Array.from({ length: 12 }, (_, i) => `<a id="k${String(i)}" class="item" href="#k">k</a>`).join("")}</ocelle-scroller></div>`);
     await driver.rules(rules);
@@ -94,7 +97,7 @@ describe("ocelle-scroller with the platform's classic scrollbar (US1-4, US1-7, U
 
   it("at a faded edge the scrollbar's pixels equal a twin plain box's, while the content just above the scrollbar is faded (FR-007)", async () => {
     const { browser, origin } = started();
-    const page = await visit(browser, origin, "scroller.html");
+    const page = await visit(browser, origin, "scroller.html", scripts);
     const driver = fixtureDriver(page.page, page.log);
     await driver.mount('<div data-test="strip"><ocelle-scroller id="s" label="Strip"><span class="solid"></span></ocelle-scroller></div><div id="twin" class="twin"><div class="twin-track"><span class="solid"></span></div></div>');
     await driver.rules(rules);
@@ -120,7 +123,7 @@ describe("ocelle-scroller with the platform's classic scrollbar (US1-4, US1-7, U
 
   it("when the scrollbar appears, the mask's size follows in the observer delivery that sees it: the fade layer the client height, the opaque layer the scrollbar (R-05)", async () => {
     const { browser, origin } = started();
-    const page = await visit(browser, origin, "scroller.html");
+    const page = await visit(browser, origin, "scroller.html", scripts);
     const driver = fixtureDriver(page.page, page.log);
     await driver.mount('<div data-test="strip"><ocelle-scroller id="s" label="Strip"><span id="w" class="item"></span></ocelle-scroller></div>');
     await driver.rules(rules);
@@ -134,14 +137,16 @@ describe("ocelle-scroller with the platform's classic scrollbar (US1-4, US1-7, U
     });
     const [client = 0, thickness = 0] = bar;
     expect({ observed: { thickness: thickness > 0, sizes }, recorded: await page.finish() }).toEqual({
-      observed: { thickness: true, sizes: [`resize: 100% ${String(client)}px, 100% 0px`, `resize: 100% ${String(client)}px, 100% ${String(thickness)}px`] },
+      // While nothing fades the box has one mask layer, `none`, and Chromium gives the computed mask-size one size
+      // per layer; once it overflows, the two layers' sizes.
+      observed: { thickness: true, sizes: [`resize: 100% ${String(client)}px`, `resize: 100% ${String(client)}px, 100% ${String(thickness)}px`] },
       recorded: clean,
     });
   });
 
   it("the frame's handover ring shows over the scrollbar band once the content overflows again (US1-4, R-07)", async () => {
     const { browser, origin } = started();
-    const page = await visit(browser, origin, "scroller.html");
+    const page = await visit(browser, origin, "scroller.html", scripts);
     const driver = fixtureDriver(page.page, page.log);
     await driver.mount('<button id="before" type="button">before</button><div data-test="strip"><ocelle-scroller id="s" label="Strip"><span id="w" class="solid"></span></ocelle-scroller></div>');
     await driver.rules(rules);

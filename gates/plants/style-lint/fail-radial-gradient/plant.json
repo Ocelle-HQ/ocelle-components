@@ -1,0 +1,11 @@
+{
+  "expect": "fail",
+  "why": "radial-gradient() stays raw whole: only linear-gradient() has its arguments classified (009 contracts/gates.md § style-lint).",
+  "findings": [
+    {
+      "location": "packages/elements/src/x.ts:6",
+      "rule": "ocelle/token-only",
+      "message": "radial-gradient(transparent, var(--ocelle-color-ink))"
+    }
+  ]
+}

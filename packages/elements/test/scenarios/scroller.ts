@@ -160,6 +160,18 @@ async function ringSides(driver: Driver, id: string, colour: Rgb): Promise<boole
 
 const focusColour = (theme: Palette): Rgb => rgb(tokenColour("color-focus", theme));
 
+/**
+ * The colour a forced-colours ring in `Highlight` paints over `Canvas`: Chromium's emulated light palette gives
+ * `Highlight` as a translucent colour (`rgba(5, 0, 73, 0.8)`), and everything under the ring is `Canvas` in forced
+ * colours, so the painted pixel is the one composited over `Canvas`.
+ */
+async function highlightOnCanvas(driver: Driver): Promise<Rgb> {
+  const parts = (await driver.resolveColour("Highlight")).match(/[\d.]+/g)?.map(Number) ?? [];
+  const [r = 0, g = 0, b = 0, alpha = 1] = parts;
+  const canvas = rgb(await driver.resolveColour("Canvas"));
+  return [r, g, b].map((channel, index) => Math.round(channel * alpha + (canvas[index] ?? 0) * (1 - alpha))) as unknown as Rgb;
+}
+
 // ---------------------------------------------------------------------------------------------------------------
 // Geometry.
 
@@ -271,7 +283,8 @@ export function regionScenarios(region: Region): Scenario[] {
           await driver.style("w", "inline-size", "100px");
           return { active: await driver.activeElement(), box: (await boxAttributes(driver, "s")).tabindex, frame: await shadowAttribute(driver, "s", "region-frame", "tabindex") };
         };
-        const skipped = '<button id="disabled" class="item" type="button" disabled>d</button><span inert><a id="inert" class="item" href="#inert">i</a></span><a id="gone" class="item" href="#gone" hidden>g</a><a id="unseen" class="item invisible" href="#unseen">u</a>';
+        // The hidden link carries no `.item` class: that rule's `display` would beat the user-agent `[hidden]` rule.
+        const skipped = '<button id="disabled" class="item" type="button" disabled>d</button><span inert><a id="inert" class="item" href="#inert">i</a></span><a id="gone" href="#gone" hidden>g</a><a id="unseen" class="item invisible" href="#unseen">u</a>';
         const observed: Record<string, unknown> = {
           link: await handover(`${skipped}${link("k")}`),
           shadow: await handover('<test-shadow-button id="sb"></test-shadow-button>'),
@@ -282,8 +295,7 @@ export function regionScenarios(region: Region): Scenario[] {
         await driver.style("w", "inline-size", "1000px");
         const again = { active: await driver.activeElement(), box: (await boxAttributes(driver, "s")).tabindex, ring: await ringSides(driver, "s", focusColour("light")) };
         await driver.forcedColors("active", "light");
-        const highlight = rgb(await driver.resolveColour("Highlight"));
-        const forced = await ringSides(driver, "s", highlight);
+        const forced = await ringSides(driver, "s", await highlightOnCanvas(driver));
         await driver.forcedColors("none");
         await driver.press("Tab");
         return { ...observed, rest, again, forced, left: { active: await driver.activeElement(), frame: await shadowAttribute(driver, "s", "region-frame", "tabindex") } };
@@ -551,7 +563,7 @@ export const scrollerScenarios: readonly Scenario[] = [
       await driver.forcedColors("active", "light");
       await driver.click("before", { x: 2, y: 2 });
       await focusBox(driver, "s");
-      const forced = await ringSides(driver, "s", rgb(await driver.resolveColour("Highlight")));
+      const forced = await ringSides(driver, "s", await highlightOnCanvas(driver));
       await driver.forcedColors("none");
       return { keyboard, clicked, forced };
     },

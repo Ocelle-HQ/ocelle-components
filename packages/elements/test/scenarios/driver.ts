@@ -95,8 +95,8 @@ export interface FrameRecorder {
   /**
    * Settles (`settle`), stops recording and returns the record: the reading at the start, then, in order, `"keydown"`
    * for each keydown the window saw, the reading in each animation frame, and `"resize: <reading>"` in each callback of
-   * a `ResizeObserver` the record registers on the target when it starts (so it runs after the observers the page
-   * registered before, in the same delivery).
+   * a `ResizeObserver` the record registers on the target's border box when it starts (so it runs after the observers
+   * the page registered before, in the same delivery, and sees a scrollbar that comes or goes).
    */
   stop(): Promise<string[]>;
 }
