@@ -147,9 +147,24 @@ modal, level. Device: the default context (`elements`, `visit()`) matches `(hove
   control in the `…-close` listener: focus stays on that control (`focusPath()` read after the event and after the
   next frame); (c) set `open = false` then call `focus()` on another page control during the exit: focus does not
   move there (the page is inert) and lands on the opener when the exit ends.
-- **Nested** (dialog slotted inside an open drawer): one Escape gives exactly one request event, on the dialog; the
-  drawer stays open and `:modal`; focus returns into the drawer. Tab in the dialog never runs the drawer's wrap. A
-  dialog opened from the drawer whose opener is removed before close: focus on the drawer's initial target.
+- **Nested** (Phase 2: an inner `ocelle-dialog` slotted inside an open outer `ocelle-dialog`, both real elements, so
+  the row runs in both harnesses): one Escape gives exactly one request event, on the inner dialog; the outer dialog
+  stays open and `:modal`; focus returns into the outer dialog, to the button that opened the inner one. Tab in the
+  inner dialog never runs the outer's wrap. An inner dialog whose opener (a button in the outer) is removed before
+  close: focus on the outer dialog's initial target. Phase 3 (T031) adds the same assertions with the outer overlay an
+  open `ocelle-drawer` (the dialog slotted inside it, the edge case "Two overlays"); the dialog-in-dialog case stays.
+- **Open at first render** (edge case "Opened by the host without an opener", FR-007, FR-009): (a) `open` in the
+  mounted markup, so the attribute is set before the element upgrades (both harnesses), with focus on the body: the
+  dialog is shown modally (`open` true, the inner dialog `:modal`, one `topLayer()` entry), initial focus per FR-007
+  (one case with a slotted `autofocus` button, one with only plain slotted buttons: the first of them, one with no
+  focusable content: the close control); `open = false`: reason `host` and focus on the body. (b) `open` set before
+  the element is defined: the markup (a page button and `<ocelle-dialog open>` with two slotted buttons) is mounted
+  while `ocelle-dialog` is undefined and the page button is focused; then the definition is loaded (in process
+  `test/dialog-upgrade.test.ts`, which imports `src/ocelle-dialog.ts` only after the mount; on the fixture the page
+  `overlays-upgrade.html`, which loads no element script until the test adds `ocelle-elements.js` by URL as a
+  module script, which `script-src 'self'` allows): after upgrade the dialog is shown modally with initial focus on
+  the first slotted button, no event is dispatched on open, and `open = false` gives reason `host` with focus back on
+  the page button.
 - **Removed while open**: no inert content, no top-layer entry, no backdrop; `open` false, no event.
 - **Moved while open** (operator decision, R-05a): open, remove, re-insert in the same task, and in a later task:
   `open` false, the dialog not `:modal` and not open, the page not inert, no event, FR-047 counts; then `open = true`
@@ -167,10 +182,11 @@ modal, level. Device: the default context (`elements`, `visit()`) matches `(hove
   `--ocelle-motion-base` and easing equal to the computed `--ocelle-easing-standard`. Under reduced motion no
   animation is created, also when an ancestor sets `--ocelle-motion-base: 200ms` (R-06).
 - **Styles** (computed): border, padding, margin, background, colour and max sizes equal the token values (UA reset);
-  `::backdrop` background is `color-overlay`; radius `radius-2`; shadow `elevation-raised`. Sizes: uncapped (1280 wide:
-  inline size equals the computed `--ocelle-dialog-inline-size`) and capped (a viewport narrower than that: width ≤
-  `dialog-max-inline`). Body inline size definite with prose and a table (FR-019). Footer slot empty: no footer box;
-  filled: footer box at the panel's end.
+  `::backdrop` background is `color-overlay`; radius `radius-2`; shadow `elevation-raised`. Sizes, read as the panel's
+  computed `inline-size`: uncapped (1280 × 800: equals the computed `--ocelle-dialog-inline-size`) and capped
+  (320 × 800, where the preferred `measure-reading` exceeds the cap: equals the computed `dialog-max-inline`, 288 px,
+  so the cap is shown to apply and a panel collapsed below it fails). Body inline size definite with prose and a
+  table (FR-019). Footer slot empty: no footer box; filled: footer box at the panel's end.
 - **Forced colours** (`emulateForcedColors`, both palettes): panel border visible in `CanvasText`, panel ground
   `Canvas`, close control focus indicator visible (outline), backdrop does not cover the border.
 - **Accessibility tree**: one modal `dialog` named by `label`, heading level 2, close control a button named by
@@ -182,8 +198,8 @@ modal, level. Device: the default context (`elements`, `visit()`) matches `(hove
 
 - The dialog's rows with `ocelle-drawer-` events (initial focus, Tab cycle with its non-stop, body, scroller and
   opaque-content starts, its native middle moves and positive `tabindex` at the ends, Escape and its
-  slotted-content rows including the slotted close watchers and slotted non-modal dialogs, Escape in a slotted iframe, close control, host and platform close, focus return, nested,
-  removed, moved, rapid toggle, input during the exit, stale native `close` event, forced colours,
+  slotted-content rows including the slotted close watchers and slotted non-modal dialogs, Escape in a slotted iframe, close control, host and platform close, focus return, nested, open at first render (in process
+  `test/drawer-upgrade.test.ts`, on the fixture `overlays-upgrade.html`), removed, moved, rapid toggle, input during the exit, stale native `close` event, forced colours,
   accessibility tree). The dialog's "one-line body", "long body" and "styles" rows are not inherited: their expected
   geometry (height capped at `dialog-max-block`, `radius-2` on all four corners, `--ocelle-dialog-inline-size`, centred) is the dialog's
   (FR-024) and contradicts FR-003, FR-025 and FR-026. The drawer has its own rows below.
@@ -215,9 +231,10 @@ modal, level. Device: the default context (`elements`, `visit()`) matches `(hove
   nothing; a press inside released on the backdrop: nothing; a press on the backdrop released inside: nothing; a
   secondary-button click on the backdrop: nothing.
 - **Placement**: `side` × `dir`: panel against the expected physical edge, full viewport block size.
-- **Size** (FR-026): uncapped (1280 wide): inline size equals the computed `--ocelle-drawer-inline`; capped (a
-  viewport narrower than `--ocelle-drawer-inline` plus two gutters): width ≤ `dialog-max-inline`. With
-  `--ocelle-dialog-inline-size: 40rem` set on the host the inline size is unchanged (the drawer has no such hook).
+- **Size** (FR-026), read as the panel's computed `inline-size`: uncapped (1280 × 800): equals the computed
+  `--ocelle-drawer-inline`; capped (320 × 800, where `drawer-inline` exceeds the cap): equals the computed
+  `dialog-max-inline`, 288 px, each `side`. With `--ocelle-dialog-inline-size: 40rem` set on the host the inline
+  size is unchanged (the drawer has no such hook).
 - **Motion**: `side` × `dir`: the entry `translate` keyframe starts at the sign that moves the panel in from its own
   edge, the exit ends there; duration and easing from the tokens; none under reduced motion.
 - **Ground**: `ground="chrome"` computes chrome ground and ink; the default the sheet.
