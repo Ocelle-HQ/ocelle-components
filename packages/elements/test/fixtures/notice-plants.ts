@@ -120,13 +120,6 @@ class AlertBaselineNow extends OcelleNotice {
   }
 }
 
-/** Alert pending tone: a `tone` change while the alert baseline is pending takes the ordinary `tone` row. */
-class AlertPendingTone extends OcelleNotice {
-  protected override onTone(): void {
-    if (this.isLive() && !this.hidden) this.announcer.trigger(false);
-  }
-}
-
 /** Alert pending role: a change from `alert` to `status` while the alert baseline is pending leaves the marker set. */
 class AlertPendingRole extends OcelleNotice {
   protected override leaveAlert(): void {
@@ -229,7 +222,6 @@ export const noticePlants: Readonly<Record<string, CustomElementConstructor>> = 
   "ocelle-plant-raw-baseline": withAnnouncer(RawBaseline),
   "ocelle-plant-alert-copies": AlertCopies,
   "ocelle-plant-alert-baseline-now": AlertBaselineNow,
-  "ocelle-plant-alert-pending-tone": AlertPendingTone,
   "ocelle-plant-alert-pending-role": AlertPendingRole,
   "ocelle-plant-alert-step-after-reset": AlertStepAfterReset,
   "ocelle-plant-always-polite": AlwaysPolite,

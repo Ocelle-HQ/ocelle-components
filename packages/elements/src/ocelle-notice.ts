@@ -388,9 +388,9 @@ export class OcelleNotice extends LitElement {
     else if (!this.announcer.samePoliteness(this.politeness())) this.announcer.trigger(false);
   }
 
-  /** A `tone` change: announced when it changes the politeness, unless the alert baseline is pending. */
+  /** A `tone` change: announced when it changes the politeness (while the alert baseline is pending, the wait's re-check drops it). */
   protected onTone(): void {
-    if (this.pending !== "none" || !this.isLive() || this.hidden) return;
+    if (!this.isLive() || this.hidden) return;
     if (!this.announcer.samePoliteness(this.politeness())) this.announcer.trigger(false);
   }
 
