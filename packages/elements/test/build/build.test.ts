@@ -77,18 +77,56 @@ describe("the module build (dist/*.js)", () => {
   });
 });
 
+// 013 (T007; contracts/elements.md § Modules and exports, PLAN-CORRECTNESS-1-012 (a)): the container import rule. A
+// container module imports its item element and no other element: dist/ocelle-facts.js imports ./ocelle-fact.js and
+// no other element module, and dist/ocelle-fact.js imports none; the sheet's shipped stylesheet holds its two-column
+// tracks (R-03) and the threshold's default (R-02).
+describe("the module build of ocelle-facts and ocelle-fact (013)", () => {
+  const read = (name: string): string => (existsSync(join(dist, name)) ? readFileSync(join(dist, name), "utf8") : "");
+
+  it("dist/ocelle-facts.js imports lit, the registration helper and ./ocelle-fact.js, and no other element module nor the root", () => {
+    const imported = specifiers(read("ocelle-facts.js"));
+    expect({
+      lit: imported.includes("lit"),
+      define: imported.includes("./define.js"),
+      root: imported.includes("./index.js"),
+      elements: imported.filter((specifier) => specifier.startsWith("./ocelle-")),
+    }).toEqual({ lit: true, define: true, root: false, elements: ["./ocelle-fact.js"] });
+  });
+
+  it("dist/ocelle-fact.js imports lit and the registration helper, and no element module nor the root", () => {
+    const imported = specifiers(read("ocelle-fact.js"));
+    expect({
+      lit: imported.includes("lit"),
+      define: imported.includes("./define.js"),
+      root: imported.includes("./index.js"),
+      elements: imported.filter((specifier) => specifier.startsWith("./ocelle-")),
+    }).toEqual({ lit: true, define: true, root: false, elements: [] });
+  });
+
+  it("dist/ocelle-facts.js ships the two-column tracks fit-content(50%) minmax(0, 1fr), the four grid tracks and the threshold's default calc(var(--ocelle-space-10) * 6)", () => {
+    const code = read("ocelle-facts.js").replace(/\s+/g, " ");
+    expect({
+      columns: code.includes("grid-template-columns: fit-content(50%) minmax(0, 1fr)"),
+      grid: code.includes("grid-template-columns: minmax(0, 1fr) minmax(0, 1fr) minmax(0, 1fr) minmax(0, 1fr)"),
+      threshold: code.includes("calc(var(--ocelle-space-10) * 6)"),
+    }).toEqual({ columns: true, grid: true, threshold: true });
+  });
+});
+
 describe("the browser build (dist/browser/ocelle-elements.js)", () => {
   const text = (): string => (existsSync(browserBuild) ? readFileSync(browserBuild, "utf8") : "");
 
-  it("is self-contained: it defines ocelle-icon and ocelle-brand-mark, with no import statement and no dynamic import", () => {
+  it("is self-contained: it defines ocelle-icon, ocelle-brand-mark, ocelle-facts and ocelle-fact, with no import statement and no dynamic import", () => {
     const code = text();
     expect({
       exists: code !== "",
       definesIcon: code.includes('"ocelle-icon"'),
       definesMark: code.includes('"ocelle-brand-mark"'),
+      definesFacts: code.includes('"ocelle-facts"') && code.includes('"ocelle-fact"'),
       specifiers: specifiers(code),
       dynamicImport: /\bimport\s*\(/.test(code),
-    }).toEqual({ exists: true, definesIcon: true, definesMark: true, specifiers: [], dynamicImport: false });
+    }).toEqual({ exists: true, definesIcon: true, definesMark: true, definesFacts: true, specifiers: [], dynamicImport: false });
   });
 
   it("holds Lit's production build at the locked versions, not its development build, no ssr-dom-shim and no console call", () => {

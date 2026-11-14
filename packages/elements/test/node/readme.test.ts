@@ -26,7 +26,8 @@ const flat = (text: string): string => text.replace(/\s+/g, " ");
 
 const fragments = [
   // module and registration (FR-002, R-02)
-  "Each element lives in its own module, `src/<tag>.ts`, which ends with one `define(\"<tag>\", <Class>)` call: importing the module defines that element and no other, and importing the package root defines every element",
+  // 013 phase 1 (T010, PLAN-CORRECTNESS-1-012 (a)): the container exception to "no other"
+  "Each element lives in its own module, `src/<tag>.ts`, which ends with one `define(\"<tag>\", <Class>)` call: importing the module defines that element and no other, except that a container module also imports its item element, and importing the package root defines every element",
   "`define` (`src/define.ts`, internal) defines a tag only while it is free: a second definition of the same tag does nothing and throws nothing.",
   // static properties and the JSDoc tags (R-01, R-02, R-06)
   "Elements declare their reactive properties with `static override properties = { … }` and `declare` fields, not decorators",
@@ -117,6 +118,31 @@ const fragments = [
   // the mark's licence and the trademark note (FR-029, FR-030, US4 scenario 10)
   "The mark is the project's own drawing of the Ocelle rosette, redrawn from the geometry of Ocelle's app icon, under Apache-2.0",
   "\"Ocelle\" and the rosette mark are trademarks of their owner. The Apache-2.0 licence grants no right to use them (section 6 of the licence); they may be used only to refer to Ocelle",
+  // ocelle-facts and ocelle-fact (013 FR-003 to FR-014, FR-056; research.md R-01 to R-03, R-07; tasks.md T010, T010a)
+  "`ocelle-facts` shows label and value pairs as one description list: each pair is an `ocelle-fact` child, its label the `label` attribute and its value the fact's content, which the sheet never copies or rewrites",
+  "With `layout` unset the sheet is two columns while its own inline size, as laid out in two columns, is at least `--ocelle-facts-stack-below`, and one column, each value below its label, below it",
+  "`--ocelle-facts-stack-below` takes an absolute length; a percentage, 0 or an invalid value falls back to the default, `calc(var(--ocelle-space-10) * 6)` (24rem)",
+  "`layout=\"columns\"` keeps two columns and `layout=\"stacked\"` one column at any size; any other value acts as unset",
+  "In a shrink-to-fit host (a dialog, a popover, a float, a flex item) the two-column size is the content's own, so a sheet with short content stacks even where the host has room: set `layout` or give the sheet an inline size",
+  "The sheet re-decides when it is resized, when the threshold changes, when its pairs or their content change (value text included) and when the window is resized",
+  "It does not observe every change of the space it is offered: in a consumer's CSS grid `auto` track whose neighbour can be removed, the layout may stay as it was; set `layout` or give the sheet an inline size there (for `layout=\"grid\"`, an inline size)",
+  "Only `ocelle-fact` children are pairs: other children, and facts with `hidden` or `aria-hidden=\"true\"`, are neither shown nor exposed; `lang` and `dir` on a fact apply to its label",
+  "`wrap=\"anywhere\"` on a fact breaks a long identifier in its value anywhere; the label keeps word wrapping, and copying gives the value unchanged",
+  "Digests are the consumer's text: the sheet does not group or rewrite them",
+  "`density=\"compact\"` tightens the row gap and changes no type; in a `data-ocelle-density=\"compact\"` region of `@ocelle/styles` the values take the region's size and line height through `--ocelle-facts-value-size` and `--ocelle-facts-value-line-height`",
+  "Before the elements are defined, `@ocelle/styles` shows each value on its own line and a hidden fact stays hidden; labels appear only after upgrade",
+  "`ocelle-facts` reads the tokens `--ocelle-font-sans`, `--ocelle-font-size-sm`, `--ocelle-font-size-fact`, `--ocelle-font-weight-medium`, `--ocelle-font-weight-regular`, `--ocelle-color-ink`, `--ocelle-color-ink-muted`, `--ocelle-figures`, `--ocelle-line-height-normal`, `--ocelle-space-1`, `--ocelle-space-3`, `--ocelle-space-4` and `--ocelle-space-10`",
+  "A container element renders its items' structure in its own shadow root and assigns each item there by manual slot assignment; its items are its direct children of one item element, and its module imports that item element",
+  "An element written in the HTML before the script loads upgrades when it does; until then an element without light-DOM content has an empty box, and one with light-DOM content shows that content as plain inline text",
+  "Manual slot assignment (`slotAssignment: \"manual\"`, `HTMLSlotElement.assign()`): Chromium 86, WebKit 16.4",
+  "`layout=\"grid\"` shows each pair as a cell, its label above its value: four columns from twice `--ocelle-facts-stack-below`, two from it, one below it, as one description list",
+  "In a shrink-to-fit host a grid sheet is four tracks wide, each as wide as its widest cell: give it an inline size there",
+  "Set `wrap=\"anywhere\"` on machine values in a grid cell",
+  "In every layout an unbroken value without `wrap=\"anywhere\"` can overflow its value box or cell, so machine values take `wrap=\"anywhere\"`",
+  "Do not set `grid-template-columns` through `ocelle-facts::part(list)`: it overrides every layout",
+  "In a consumer's CSS grid, set `min-inline-size: 0` on the `ocelle-facts` host, so a long value cannot widen the track",
+  "Labels are at weight 500 (`--ocelle-font-weight-medium`); `ocelle-facts::part(label)` sets another weight",
+  "The sheet never truncates a value: `break-word`, break-anywhere and an ellipsis all map to `wrap=\"anywhere\"`, with the full value shown",
   // two copies on a page (FR-006, Edge Cases)
   "Two copies of the package on one page, two versions or the browser build beside a bundle of the module build, cannot both define an element: the first definition wins and the second import throws nothing",
 ];
@@ -126,6 +152,8 @@ const entryRows = [
   "| `@ocelle/elements` | `dist/index.js` | every element; for hosts with a bundler |",
   "| `@ocelle/elements/ocelle-icon.js` | `dist/ocelle-icon.js` | `ocelle-icon` only; for hosts with a bundler |",
   "| `@ocelle/elements/ocelle-brand-mark.js` | `dist/ocelle-brand-mark.js` | `ocelle-brand-mark` only; for hosts with a bundler |",
+  "| `@ocelle/elements/ocelle-facts.js` | `dist/ocelle-facts.js` | `ocelle-facts` and its item `ocelle-fact`; for hosts with a bundler |",
+  "| `@ocelle/elements/ocelle-fact.js` | `dist/ocelle-fact.js` | `ocelle-fact` only; for hosts with a bundler |",
   "| `@ocelle/elements/browser.js` | `dist/browser/ocelle-elements.js` | every element, Lit inside; for hosts without a bundler |",
   "| `@ocelle/elements/custom-elements.json` | `custom-elements.json` | the manifest, also named by the `customElements` field |",
 ];
@@ -151,6 +179,30 @@ const iconRows = [
   "| `copy` | no | the copy field's control (#14) |",
 ];
 
+/**
+ * The facts rows of the README's kitty-mission-ui mapping (013 FR-058, SC-001; research.md R-11, the facts family's
+ * inventory; operator decision I1): each role name with the element and variant that covers it, exactly. The class
+ * family column is not read, so no class-family name appears in this test.
+ */
+const factsMapping: readonly (readonly [string, string])[] = [
+  ["facts stacked", "`ocelle-facts` with `layout` unset (it stacks below the threshold) or `layout=\"stacked\"`; in a consumer's CSS grid, `min-inline-size: 0` on the host"],
+  ["facts two-col", "`ocelle-facts` with `layout=\"columns\"`, or unset at or above the threshold; drop the track override and do not restyle the columns through `::part(list)`"],
+  ["facts compact", "`ocelle-facts density=\"compact\"`"],
+  ["facts term", "`ocelle-fact`'s `label`, rendered as the sheet's term (`part=\"label\"`)"],
+  ["facts term regular", "consumer's: `ocelle-facts::part(label)` with `font-weight: var(--ocelle-font-weight-regular)`"],
+  ["facts value mono", "not supported: no monospace; values are sans with tabular figures, the small size through `--ocelle-facts-value-size` or a compact region"],
+  ["facts value wrap", "`ocelle-fact wrap=\"anywhere\"`"],
+  ["facts value ellipsis", "`ocelle-fact wrap=\"anywhere\"`, with the full value shown (no truncation)"],
+  ["facts value identifier", "`ocelle-fact wrap=\"anywhere\"`, or a value element with `data-ocelle-wrap=\"anywhere\"`"],
+  ["facts value tooltip", "consumer's: a `title` on its own value content, optional with the full value shown"],
+  ["facts value pill", "consumer's: pills are inline content in the fact's value"],
+  ["facts value action", "consumer's: a button in the value keeps its own tab stop"],
+  ["facts row optional", "consumer's: leave the `ocelle-fact` out or set `hidden` on it"],
+  ["facts group heading", "consumer's: the heading stays outside the sheet"],
+  ["facts group omitted", "consumer's: leave the sheet out or render an `ocelle-empty-state`; a sheet with no pairs renders nothing"],
+  ["facts workspace marker", "consumer's: a `data-*` attribute on the `ocelle-facts` host"],
+];
+
 /** The table rows of one `##` section of the README, as written, without the header and the separator rows. */
 function tableRows(text: string, heading: string): string[] {
   const section = new RegExp(`^## ${heading}\\n([\\s\\S]*?)(?=^## |(?![\\s\\S]))`, "m").exec(text)?.[1] ?? "";
@@ -170,11 +222,16 @@ describe("packages/elements/README.md", () => {
   it("lists exactly the entry points of package.json's exports in its Entry points table (FR-002)", () => {
     const manifest = JSON.parse(read("package.json")) as { exports?: Record<string, string> };
     expect(tableRows(read("README.md"), "Entry points")).toEqual(entryRows);
-    expect(Object.keys(manifest.exports ?? {})).toEqual([".", "./ocelle-icon.js", "./ocelle-brand-mark.js", "./browser.js", "./custom-elements.json"]);
+    expect(Object.keys(manifest.exports ?? {})).toEqual([".", "./ocelle-icon.js", "./ocelle-brand-mark.js", "./ocelle-facts.js", "./ocelle-fact.js", "./browser.js", "./custom-elements.json"]);
   });
 
   it("lists the thirteen names of the set, whether each mirrors and the consumer need it meets, in its Icons table (US2-1, FR-018, SC-007)", () => {
     expect(tableRows(read("README.md"), "Icons")).toEqual(iconRows);
+  });
+
+  it.each(factsMapping)("maps the role %s to its element and variant in the kitty-mission-ui mapping (013 FR-058)", (role, covered) => {
+    const row = tableRows(read("README.md"), "Mapping from kitty-mission-ui").map((line) => line.slice(2, -2).split(" | ")).find((cells) => cells[1] === role);
+    expect(row?.[2]).toBe(covered);
   });
 
   it("names the @ocelle/tokens peer dependency of package.json", () => {
@@ -202,6 +259,11 @@ describe("packages/elements/CHANGELOG.md", () => {
     "`@ocelle/elements/ocelle-brand-mark.js`",
     "`ground` and `tone` (reflected) and `label`",
     "the slot convention for icons in controls",
+    "`ocelle-facts`",
+    "`ocelle-fact`",
+    "`@ocelle/elements/ocelle-facts.js`",
+    "`@ocelle/elements/ocelle-fact.js`",
+    "`layout=\"grid\"`",
     ...["chevron-start", "chevron-end", "chevron-up", "chevron-down", "arrow-start", "arrow-end", "menu", "close", "folder", "file", "search", "table", "copy"].map((name) => `\`${name}\``),
   ])("names %s under Unreleased / Added (constitution VII, FR-031, SC-008)", (surface) => {
     expect(added).toContain(surface);

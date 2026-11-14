@@ -172,3 +172,117 @@ describe("the ocelle-brand-mark stories in the built Storybook (US4-11, FR-019)"
     }
   }
 });
+
+// 013 phase 1 (I3; research.md R-08; contracts/checks.md § Story test; tasks.md T011): the `ocelle-facts` stories. Each
+// renders its sheets in light and dark, defined, each `ocelle-facts` with the story's `layout`, `density` and `dir`,
+// its `ocelle-fact` children and one rendered term per visible fact, with base.css applied and no request outside the
+// origin. Each story at a 320 px viewport has a page scroll width of 320, beside a sheet whose inline size is above 0
+// (SC-002). Each story under reduced motion, on a fresh load timed by the clock from its first render (within
+// 1400 ms) and with `prefers-reduced-motion: reduce` matching, has no running animation or transition (SC-005); no
+// facts story animates, so this read is paired with the `matchMedia` assertion only, until the indeterminate progress
+// story of phase 3 brings the animation positive (contracts/checks.md § Story test).
+
+/** What one story's sheet must show: its attributes, its fact children and the terms it renders. */
+interface Sheet {
+  readonly layout: string | null;
+  readonly density: string | null;
+  readonly dir: string | null;
+  readonly facts: number;
+  readonly terms: number;
+}
+
+const sheetOf = (facts: number, attributes: Partial<Sheet> = {}, terms = facts): Sheet => ({ layout: null, density: null, dir: null, facts, terms, ...attributes });
+
+const factsStories: readonly { readonly id: string; readonly sheets: readonly Sheet[] }[] = [
+  { id: "elements-ocelle-facts--default", sheets: [sheetOf(5)] },
+  { id: "elements-ocelle-facts--compact", sheets: [sheetOf(3, { density: "compact" })] },
+  { id: "elements-ocelle-facts--stacked", sheets: [sheetOf(3)] },
+  { id: "elements-ocelle-facts--columns-shrink-to-fit", sheets: [sheetOf(2, { layout: "columns" })] },
+  { id: "elements-ocelle-facts--stacked-wide", sheets: [sheetOf(3, { layout: "stacked" })] },
+  { id: "elements-ocelle-facts--identifier-wrap", sheets: [sheetOf(2)] },
+  { id: "elements-ocelle-facts--missing-label", sheets: [sheetOf(3)] },
+  { id: "elements-ocelle-facts--missing-value", sheets: [sheetOf(3)] },
+  { id: "elements-ocelle-facts--link-in-value", sheets: [sheetOf(2)] },
+  { id: "elements-ocelle-facts--right-to-left", sheets: [sheetOf(3, { dir: "rtl" })] },
+  { id: "elements-ocelle-facts--compact-region", sheets: [sheetOf(3)] },
+  { id: "elements-ocelle-facts--grid-strip", sheets: [sheetOf(4, { layout: "grid" })] },
+  { id: "elements-ocelle-facts--grid-two-columns", sheets: [sheetOf(4, { layout: "grid" })] },
+  { id: "elements-ocelle-facts--grid-one-column", sheets: [sheetOf(4, { layout: "grid" })] },
+  { id: "elements-ocelle-facts--grid-one-fact", sheets: [sheetOf(1, { layout: "grid" })] },
+  { id: "elements-ocelle-facts--grid-three-facts", sheets: [sheetOf(3, { layout: "grid" })] },
+  { id: "elements-ocelle-facts--grid-eight-facts", sheets: [sheetOf(8, { layout: "grid" })] },
+  { id: "elements-ocelle-facts--grid-long-label-and-identifier", sheets: [sheetOf(4, { layout: "grid" })] },
+  { id: "elements-ocelle-facts--grid-link-and-status", sheets: [sheetOf(3, { layout: "grid" })] },
+  { id: "elements-ocelle-facts--grid-unavailable-value", sheets: [sheetOf(3, { layout: "grid" })] },
+  { id: "elements-ocelle-facts--grid-compact", sheets: [sheetOf(4, { layout: "grid", density: "compact" })] },
+  { id: "elements-ocelle-facts--grid-right-to-left", sheets: [sheetOf(4, { layout: "grid", dir: "rtl" })] },
+];
+
+/** What a facts story's page shows: its theme, the base stylesheet and its sheets. */
+function observeFacts(page: Page): Promise<unknown> {
+  return page.evaluate(() => ({
+    theme: document.documentElement.dataset.theme,
+    base: {
+      linked: [...document.querySelectorAll<HTMLLinkElement>('link[rel="stylesheet"]')].some((link) => link.href.endsWith("/base.css") && link.sheet !== null),
+      scheme: getComputedStyle(document.documentElement).colorScheme,
+    },
+    defined: customElements.get("ocelle-facts") !== undefined && customElements.get("ocelle-fact") !== undefined,
+    sheets: [...document.querySelectorAll("#storybook-root ocelle-facts")].map((sheet) => ({
+      layout: sheet.getAttribute("layout"),
+      density: sheet.getAttribute("density"),
+      dir: sheet.getAttribute("dir"),
+      facts: sheet.querySelectorAll(":scope > ocelle-fact").length,
+      terms: sheet.shadowRoot?.querySelectorAll("dt").length ?? 0,
+    })),
+  }));
+}
+
+/** Opens a story on a fresh page with its own viewport width and reduced-motion setting. */
+async function openWith(id: string, options: { readonly width: number; readonly reducedMotion: "reduce" | "no-preference" }): Promise<Page> {
+  if (browser === undefined) throw new Error("the suite did not start");
+  const page = await browser.newPage({ viewport: { width: options.width, height: 800 }, reducedMotion: options.reducedMotion });
+  await page.goto(`${origin}/iframe.html?id=${id}&viewMode=story&globals=theme:light`, { waitUntil: "load" });
+  await page.waitForSelector("#storybook-root ocelle-facts", { state: "attached", timeout: 10_000 }).catch(() => undefined);
+  await page.evaluate(async () => {
+    await Promise.all([...document.querySelectorAll("#storybook-root ocelle-facts")].map((each) => (each as unknown as { updateComplete?: Promise<unknown> }).updateComplete ?? Promise.resolve()));
+    (window as unknown as { firstRender: number }).firstRender = performance.now();
+  });
+  return page;
+}
+
+describe("the ocelle-facts stories in the built Storybook (013 US1, I3)", { timeout: 60_000 }, () => {
+  for (const { id, sheets } of factsStories) {
+    for (const theme of ["light", "dark"] as const) {
+      it(`${id} in ${theme}: renders its sheets with the story's layout, density and dir, one term per fact, with base.css applied and no request outside the origin`, async () => {
+        const { page, outside } = await open(id, theme, "ocelle-facts");
+        expect({ ...((await observeFacts(page)) as object), outside }).toEqual({ theme, base: { linked: true, scheme: theme }, defined: true, sheets, outside: [] });
+        await page.close();
+      });
+    }
+
+    it(`${id} at a 320 px viewport: the page scroll width is 320, beside a sheet wider than 0 (SC-002)`, async () => {
+      const page = await openWith(id, { width: 320, reducedMotion: "no-preference" });
+      const observed = await page.evaluate(() => ({
+        scrollWidth: document.documentElement.scrollWidth,
+        sized: [...document.querySelectorAll("#storybook-root ocelle-facts")].some((sheet) => sheet.getBoundingClientRect().width > 0 && (sheet.shadowRoot?.querySelector("dl")?.getBoundingClientRect().width ?? 0) > 0),
+      }));
+      await page.close();
+      expect(observed).toEqual({ scrollWidth: 320, sized: true });
+    });
+
+    it(`${id} under reduced motion: within 1400 ms of its first render, with prefers-reduced-motion: reduce matching, no animation or transition runs (SC-005)`, async () => {
+      const page = await openWith(id, { width: 1280, reducedMotion: "reduce" });
+      const observed = await page.evaluate(() => {
+        const elapsed = performance.now() - (window as unknown as { firstRender: number }).firstRender;
+        return {
+          timing: elapsed < 1400 ? "inside the first iteration" : "read outside the first iteration",
+          reduce: matchMedia("(prefers-reduced-motion: reduce)").matches,
+          running: document.getAnimations().filter((animation) => animation.playState === "running").length,
+          rendered: [...document.querySelectorAll("#storybook-root ocelle-facts")].some((sheet) => (sheet.shadowRoot?.querySelectorAll("dt").length ?? 0) > 0),
+        };
+      });
+      await page.close();
+      expect(observed).toEqual({ timing: "inside the first iteration", reduce: true, running: 0, rendered: true });
+    });
+  }
+});
