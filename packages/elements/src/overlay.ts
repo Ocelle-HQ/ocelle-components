@@ -761,12 +761,14 @@ export class OcelleOverlay extends LitElement {
 }
 
 /**
- * Whether `a` comes before `b` (another element of the same document) in the flat tree, through shadow roots and
+ * Whether `a` comes before `b` (an element of the same document; not itself) in the flat tree, through shadow roots and
  * slots: an ancestor comes before its descendants. Below the elements' last common flat-tree ancestor, which is an
  * element (the root element is common to both), `a` comes first when `b`'s branch is among the flat children after
  * `a`'s; the branch of an ancestor ends there, at no child (index -1), so every child comes after it.
  */
 function before(a: Element, b: Element): boolean {
+  // Stryker disable next-line ConditionalExpression, BooleanLiteral: equivalent, every call compares the active element, which is no candidate there, with a candidate; the test only ends the walk of one element against itself, which a mutant of the walk or of the stop test brings about (T025, reviews/phase-2/notes.md)
+  if (a === b) return false;
   const pathOf = (element: Element): Node[] => {
     const path: Node[] = [];
     for (let each: Node | null = element; each !== null; each = flatParent(each)) path.unshift(each);
