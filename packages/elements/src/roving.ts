@@ -11,7 +11,7 @@
 //   tab panel's content, a control inside a child, a nested parent's children); it acts only on a keydown whose target
 //   is one of its own children itself and whose default no nested control has prevented.
 // `RovingController`, a Lit reactive controller each parent owns, listens to `keydown` on the host, applies the filter,
-// asks the parent on Enter and Space, moves focus for a move, and prevents the default of the keys it handles only;
+// asks the parent on Enter and Space, moves focus for a move (and tells a parent whose selection follows focus), and prevents the default of the keys it handles only;
 // it never stops propagation, so a containing dialog still receives Escape.
 import type { ReactiveController, ReactiveControllerHost } from "lit";
 
@@ -74,6 +74,8 @@ export interface RovingOptions {
   readonly enabled: (child: HTMLElement) => boolean;
   /** Enter or Space on a child. */
   readonly choose: (child: HTMLElement, key: "Enter" | " ") => void;
+  /** After a move (an arrow key, Home or End) focused `child`: the tabs select it, as selection follows focus there. */
+  readonly moved?: (child: HTMLElement) => void;
 }
 
 /** The parent's keydown handling: the origin filter, the key map and the focus move. */
@@ -110,7 +112,11 @@ export class RovingController implements ReactiveController {
     if (index === null) return;
     event.preventDefault();
     // Focus scrolls the child into view, its scroll margin included (FR-017).
+    // `target` returns an index of `children` (equivalent to drop the guard; it only narrows the type).
+    const next = children[index];
+    if (next === undefined) return;
     // Stryker disable next-line ObjectLiteral,BooleanLiteral: equivalent in Chromium, whose focus heuristic shows the ring after a keyboard-driven focus() anyway
-    children[index]?.focus({ focusVisible: true });
+    next.focus({ focusVisible: true });
+    this.#options.moved?.(next);
   };
 }

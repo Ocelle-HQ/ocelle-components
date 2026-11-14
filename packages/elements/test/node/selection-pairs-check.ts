@@ -2,7 +2,7 @@
 // a stylesheet text, shared by test/node/selection-pairs.test.ts (the source templates, in process) and
 // test/build/build.test.ts (the `css` templates of the built modules, the stylesheets as shipped). It reads, outside
 // forced colours, the colour tokens a stylesheet paints in each role: `text` (`color`), `fill` (`background` on the
-// host or a part), `bar` (`background` of the `::before` bar), `ring` (the border of the `::after` focus ring) and
+// host or a part), `bar` (`background` or, since 014 phase 3, a border of the `::before` bar), `ring` (the border of the `::after` focus ring) and
 // `line` (a border or an outline of the host or a part), and lists every pair of the element's R-15 rows that is not a
 // `checked` row of packages/tokens/contrast/pairs.json in both themes, `color-disabled-ink` exempt (WCAG 1.4.3). The
 // rows below are transcribed by hand from R-15's table, never read from the element source or from pairs.json.
@@ -99,7 +99,7 @@ function roleOf(selector: string, property: string): Role | undefined {
   const pseudo = /::(before|after)\s*$/.exec(selector.trim())?.[1];
   if (property === "color") return pseudo === undefined ? "text" : undefined;
   if (property === "background" || property === "background-color") return pseudo === "before" ? "bar" : pseudo === "after" ? undefined : "fill";
-  if (/^(border|outline)(-|$)/.test(property)) return pseudo === "after" ? "ring" : pseudo === "before" ? undefined : "line";
+  if (/^(border|outline)(-|$)/.test(property)) return pseudo === "after" ? "ring" : pseudo === "before" ? "bar" : "line";
   return undefined;
 }
 

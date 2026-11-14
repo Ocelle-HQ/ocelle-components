@@ -23,6 +23,15 @@ entry points and the browser build's file path (constitution VII).
 - Entry points `@ocelle/elements/ocelle-listbox.js` (defines `ocelle-listbox` and `ocelle-option`) and
   `@ocelle/elements/ocelle-option.js` (defines `ocelle-option` only). A parent element's module now also defines the
   elements it owns as children.
+- `ocelle-tabs`, a tablist of `ocelle-tab` children with their `ocelle-tab-panel` panels paired by order, with one
+  tab stop, selection following focus on ArrowRight, ArrowLeft, Home and End (wrapping), Enter, Space and pointer
+  selection, the tab-to-panel association written in the page's own scope, and the tab row wrapping onto rows; its
+  properties `value` and `label` (its only name source: a host `aria-label` does not name the tablist), its parts
+  `tablist` and `panels`, and its event `ocelle-tabs-change` with `detail` `{ value }`.
+- `ocelle-tab`, a tab of the tabs, with its properties `value` and `disabled` (reflected) and its `icon` slot; and
+  `ocelle-tab-panel`, a panel of the tabs, shown while its tab is selected.
+- Entry points `@ocelle/elements/ocelle-tabs.js` (defines `ocelle-tabs`, `ocelle-tab` and `ocelle-tab-panel`),
+  `@ocelle/elements/ocelle-tab.js` and `@ocelle/elements/ocelle-tab-panel.js` (each defines its element only).
 - In the README, the slot convention for icons in controls that later controls follow: the `icon` and `trailing`
   slots, their size, alignment, gap and colour rules and the naming rule.
 - Entry points: `@ocelle/elements` (the package root, defines every element), `@ocelle/elements/ocelle-icon.js`

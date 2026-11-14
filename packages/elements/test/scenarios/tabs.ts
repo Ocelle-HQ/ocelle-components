@@ -190,23 +190,30 @@ async function controls(driver: Driver, target: Target): Promise<unknown> {
   return node?.controls ?? [];
 }
 
-/** The selected bar of a tab: the `::before` content, and with content its block size, block-end and inline offsets and colour. */
+/**
+ * The selected bar of a tab: the `::before` content, and with content the thickness and colour of its block-end edge,
+ * its block-end and inline offsets and its background. The bar is that pseudo-element's block-end border, not its
+ * background (changed after the red run, reviews/phase-3/notes.md): the bar is still read as exactly `--ocelle-bar-width`
+ * thick in its colour, on the block-end edge across the whole tab, and with no background.
+ */
 async function bar(driver: Driver, target: Target): Promise<unknown> {
   const content = await driver.computedPart(target, "::before", "content");
   if (content === "none" || content === "normal") return { content: "none" };
   return {
     content,
-    block: await driver.computedPart(target, "::before", "block-size"),
+    block: await driver.computedPart(target, "::before", "border-block-end-width"),
     end: await driver.computedPart(target, "::before", "inset-block-end"),
     start: await driver.computedPart(target, "::before", "inset-inline-start"),
     inlineEnd: await driver.computedPart(target, "::before", "inset-inline-end"),
+    colour: await driver.computedPart(target, "::before", "border-block-end-color"),
+    style: await driver.computedPart(target, "::before", "border-block-end-style"),
     background: await driver.computedPart(target, "::before", "background-color"),
   };
 }
 
 /** The bar FR-025 and R-15 give a selected tab: 3 px on its block-end edge, the full inline size, in `colour`. */
 function selectedBar(colour: string): unknown {
-  return { content: '""', block: "3px", end: "0px", start: "0px", inlineEnd: "0px", background: colour };
+  return { content: '""', block: "3px", end: "0px", start: "0px", inlineEnd: "0px", colour, style: "solid", background: "rgba(0, 0, 0, 0)" };
 }
 const noBar = { content: "none" };
 

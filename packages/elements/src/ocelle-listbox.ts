@@ -79,12 +79,12 @@ export class OcelleListbox extends LitElement {
   declare label: string | undefined;
 
   readonly #internals = attachInternalsTo(this);
-  readonly #observer = new MutationObserver(() => {
-    this.#apply(this.#model.batch());
+  readonly #observer = new MutationObserver((records) => {
+    this.#apply(this.#model.delivered(removedOf(records), focusLeft()));
   });
   readonly #model = new SelectionModel<OcelleOption>("listbox", {
     read: () => this.#options().map((node, index): Entry<OcelleOption> => ({ node, value: childValue(node.getAttribute("value"), index), disabled: node.hasAttribute("disabled") })),
-    take: () => this.#observer.takeRecords().map((record) => [...record.removedNodes].filter((node): node is OcelleOption => node instanceof OcelleOption)),
+    take: () => removedOf(this.#observer.takeRecords()),
   });
   /** The options this listbox wrote attributes on, so it can remove them from an option that leaves. */
   #owned = new Set<OcelleOption>();
@@ -238,6 +238,11 @@ export class OcelleListbox extends LitElement {
     const option = this.#optionOf(event);
     if (option !== null && !this.#isDisabled(option)) this.#emit("activate", option.value);
   };
+}
+
+/** The options each record removed, one list per record. */
+function removedOf(records: readonly MutationRecord[]): OcelleOption[][] {
+  return records.map((record) => [...record.removedNodes].filter((node): node is OcelleOption => node instanceof OcelleOption));
 }
 
 /** Whether focus has left for nowhere: `document.activeElement` is the body or null (research R-03). */

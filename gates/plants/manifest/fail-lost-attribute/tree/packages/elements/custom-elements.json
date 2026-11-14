@@ -357,6 +357,227 @@
       ],
       "kind": "javascript-module",
       "path": "src/ocelle-option.ts"
+    },
+    {
+      "declarations": [
+        {
+          "attributes": [],
+          "cssParts": [],
+          "cssProperties": [],
+          "customElement": true,
+          "description": "A panel of an `ocelle-tabs`: its content is shown while the tab at the same place among the tabs is selected.",
+          "events": [],
+          "kind": "class",
+          "members": [],
+          "name": "OcelleTabPanel",
+          "slots": [
+            {
+              "description": "The panel's content.",
+              "name": ""
+            }
+          ],
+          "superclass": {
+            "name": "LitElement",
+            "package": "lit"
+          },
+          "tagName": "ocelle-tab-panel"
+        }
+      ],
+      "exports": [
+        {
+          "declaration": {
+            "module": "src/ocelle-tab-panel.ts",
+            "name": "OcelleTabPanel"
+          },
+          "kind": "js",
+          "name": "OcelleTabPanel"
+        }
+      ],
+      "kind": "javascript-module",
+      "path": "src/ocelle-tab-panel.ts"
+    },
+    {
+      "declarations": [
+        {
+          "attributes": [
+            {
+              "default": "false",
+              "description": "Whether the tab is disabled: it cannot be selected, the keys skip it, and it stays focusable, so a focused tab that\nbecomes disabled keeps focus until the selection moves. Reflected.",
+              "fieldName": "disabled",
+              "name": "disabled",
+              "type": {
+                "text": "boolean"
+              }
+            },
+            {
+              "default": "the tab's index, as a string",
+              "description": "The tab's value, reported by the tabs' `value` and events: the `value` attribute as written (not trimmed), or, when\nit is missing or blank, the tab's index among its parent's tabs, as a string, which is not written to the\nattribute. Reflected.",
+              "fieldName": "value",
+              "name": "value",
+              "type": {
+                "text": "string"
+              }
+            }
+          ],
+          "cssParts": [],
+          "cssProperties": [],
+          "customElement": true,
+          "description": "A tab of an `ocelle-tabs`: its content is its label, with an optional leading icon; it pairs with the panel at the\nsame place among the tabs' panels.",
+          "events": [],
+          "kind": "class",
+          "members": [
+            {
+              "attribute": "disabled",
+              "default": "false",
+              "description": "Whether the tab is disabled: it cannot be selected, the keys skip it, and it stays focusable, so a focused tab that\nbecomes disabled keeps focus until the selection moves. Reflected.",
+              "kind": "field",
+              "name": "disabled",
+              "privacy": "public",
+              "reflects": true,
+              "type": {
+                "text": "boolean"
+              }
+            },
+            {
+              "attribute": "value",
+              "default": "the tab's index, as a string",
+              "description": "The tab's value, reported by the tabs' `value` and events: the `value` attribute as written (not trimmed), or, when\nit is missing or blank, the tab's index among its parent's tabs, as a string, which is not written to the\nattribute. Reflected.",
+              "kind": "field",
+              "name": "value",
+              "privacy": "public",
+              "reflects": true,
+              "type": {
+                "text": "string"
+              }
+            }
+          ],
+          "name": "OcelleTab",
+          "slots": [
+            {
+              "description": "The tab's label.",
+              "name": ""
+            },
+            {
+              "description": "A leading icon, by the slot convention; it adds nothing to the tab's name.",
+              "name": "icon"
+            }
+          ],
+          "superclass": {
+            "name": "LitElement",
+            "package": "lit"
+          },
+          "tagName": "ocelle-tab"
+        }
+      ],
+      "exports": [
+        {
+          "declaration": {
+            "module": "src/ocelle-tab.ts",
+            "name": "OcelleTab"
+          },
+          "kind": "js",
+          "name": "OcelleTab"
+        }
+      ],
+      "kind": "javascript-module",
+      "path": "src/ocelle-tab.ts"
+    },
+    {
+      "declarations": [
+        {
+          "attributes": [
+            {
+              "default": "undefined",
+              "description": "The tablist's accessible name, trimmed; empty or whitespace-only counts as none. The tabs' only name source: a host\n`aria-label` does not name the tablist. Not reflected.",
+              "fieldName": "label",
+              "name": "label",
+              "type": {
+                "text": "string | undefined"
+              }
+            },
+            {
+              "default": "the first enabled tab's value",
+              "description": "The selected tab's value; `\"\"` only while no tab is enabled. Setting it selects the first enabled tab with the\nvalue; `\"\"` or a value no enabled tab has keeps the selection, and a non-empty such value is remembered until a tab\nwith it appears or is enabled. A set never emits an event; setting the current value changes nothing. Not\nreflected.",
+              "fieldName": "value",
+              "name": "value",
+              "type": {
+                "text": "string"
+              }
+            }
+          ],
+          "cssParts": [
+            {
+              "description": "The row of the tabs, which wraps onto further rows.",
+              "name": "tablist"
+            },
+            {
+              "description": "The container of the shown panel, beside the tablist.",
+              "name": "panels"
+            }
+          ],
+          "cssProperties": [],
+          "customElement": true,
+          "description": "A tablist of `ocelle-tab` children and their `ocelle-tab-panel` panels, paired by order; one tab stop, keyboard and\npointer selection, selection following focus.",
+          "events": [
+            {
+              "description": "The user selected another tab (an arrow key, Home, End, Enter, Space or a click); `value` already reads it.",
+              "name": "ocelle-tabs-change",
+              "type": {
+                "text": "CustomEvent<{ value: string }>"
+              }
+            }
+          ],
+          "kind": "class",
+          "members": [
+            {
+              "attribute": "label",
+              "default": "undefined",
+              "description": "The tablist's accessible name, trimmed; empty or whitespace-only counts as none. The tabs' only name source: a host\n`aria-label` does not name the tablist. Not reflected.",
+              "kind": "field",
+              "name": "label",
+              "privacy": "public",
+              "type": {
+                "text": "string | undefined"
+              }
+            },
+            {
+              "attribute": "value",
+              "default": "the first enabled tab's value",
+              "description": "The selected tab's value; `\"\"` only while no tab is enabled. Setting it selects the first enabled tab with the\nvalue; `\"\"` or a value no enabled tab has keeps the selection, and a non-empty such value is remembered until a tab\nwith it appears or is enabled. A set never emits an event; setting the current value changes nothing. Not\nreflected.",
+              "kind": "field",
+              "name": "value",
+              "privacy": "public",
+              "type": {
+                "text": "string"
+              }
+            }
+          ],
+          "name": "OcelleTabs",
+          "slots": [
+            {
+              "description": "The `ocelle-tab` and `ocelle-tab-panel` children, in any interleaving; they pair by order among their kind.",
+              "name": ""
+            }
+          ],
+          "superclass": {
+            "name": "LitElement",
+            "package": "lit"
+          },
+          "tagName": "ocelle-tabs"
+        }
+      ],
+      "exports": [
+        {
+          "declaration": {
+            "module": "src/ocelle-tabs.ts",
+            "name": "OcelleTabs"
+          },
+          "kind": "js",
+          "name": "OcelleTabs"
+        }
+      ],
+      "kind": "javascript-module",
+      "path": "src/ocelle-tabs.ts"
     }
   ],
   "readme": "",
