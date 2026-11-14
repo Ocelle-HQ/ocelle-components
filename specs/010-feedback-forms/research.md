@@ -110,9 +110,11 @@ handler runs in a later task, after the current task's `MutationObserver` record
 baseline is still pending, clears the marker and sets the baseline to the text and politeness current then; if the
 marker was cleared before it runs (by a cancel, or by a role change away from `alert`, below), it does nothing, so
 it cannot overwrite the baseline that clearing left or make the re-check of the wait it started drop the write
-(plan squad round 3 verify 2). Until it runs, light-DOM mutations and `tone` changes start no
-wait (data-model.md gives every other row for these events the condition that no alert baseline is pending, so each
-event matches one row). So the common
+(plan squad round 3 verify 2). Until it runs, light-DOM mutations start no wait (data-model.md gives every other
+row for them the condition that no alert baseline is pending, so each mutation matches one row). A `tone` change
+needs no such row (phase 2 design change 1): it takes the ordinary `tone` row, and the wait that row starts ends
+after the step has taken the baseline, with the `assertive` politeness the `alert` role gives whatever the tone, so
+the re-check drops it. So the common
 `host.append(n); n.textContent = msg`, reveal-then-fill and role-then-fill in one task are read once, by the alert
 event, which reads the node at the next serialisation (at least `D` after the task, R-01), and no copy follows. A
 baseline taken synchronously would hold the text from before the fill, the microtask observer would see a

@@ -51,8 +51,7 @@ returns the timing it replaced (R-09, PLAN-FRESH-2-003 (a), PLAN-FRESH-3-004 (a)
 | live role removed on a notice with `announce`, or changed from `alert` to `status` | alert baseline pending is `insertion or reveal` | alert baseline pending := none; baseline := none; announce with the new politeness (no alert event fires, *Alert path*) |
 | live role removed on a notice with `announce`, or changed from `alert` to `status` | alert baseline pending is `role change` | alert baseline pending := none; if the text or the politeness differs from the baseline (still the one from before the change to `alert`), announce with the new politeness; otherwise none |
 | live role removed on a notice with `announce`, or changed from `alert` to `status` | alert baseline pending is `became live` | alert baseline pending := none; baseline := current text and politeness; none (as the "not live before" row for the role or `announce` that remains) |
-| `tone` changes | alert baseline pending is not none | none (the `alert` role fixes the politeness as `assertive`; the end-of-task step takes it) |
-| `tone` changes | live, not `hidden`, alert baseline pending is none, politeness differs from the baseline | announce with the new politeness |
+| `tone` changes | live, not `hidden`, politeness differs from the baseline | announce with the new politeness (while the alert baseline is pending, the end-of-wait re-check drops it, *Alert path*; phase 2 design change 1) |
 | light-DOM mutation | alert baseline pending is not none | none (the end-of-task step takes the text as the baseline) |
 | light-DOM mutation | live, not `hidden`, alert baseline pending is none, text differs from the baseline | announce |
 | light-DOM mutation | alert baseline pending is none, text and politeness equal the baseline (an `href` change, the same text again, a re-render) | none |
@@ -84,10 +83,17 @@ are, so the wait's re-check compares with the baseline that reset left (none aft
 with the text the wait is about to write (round 3 verify 2). A new trigger before the step runs sets the field
 again and posts its own step; the first step to run takes the baseline and the later one finds none and does
 nothing, which is the same result since both run after the same task's records. Until it
-runs, light-DOM mutations and `tone` changes match only their "alert baseline pending is not none" rows and start no
-wait, so text (or a tone) set in the same task as the insertion, reveal or role change (`host.append(n);
-n.textContent = msg`) is part of the alert reading and is not written as a copy. The other rows for these events
-carry the condition "alert baseline pending is none", so each event matches one row only. The cancel rows (`hidden`
+runs, light-DOM mutations match only their "alert baseline pending is not none" row and start no wait, so text set
+in the same task as the insertion, reveal or role change (`host.append(n); n.textContent = msg`) is part of the
+alert reading and is not written as a copy. The other light-DOM-mutation rows carry the condition "alert baseline
+pending is none", so each mutation matches one row only. A `tone` change has no pending row (phase 2 design change
+1): while the field is set it takes the one ordinary `tone` row, so it still matches at most one row, and the wait
+that row starts cannot write. The step runs one `MessageChannel` task after the trigger, before any wait of `W`
+started in that task can end, and takes the baseline with the politeness `assertive` that the `alert` role gives
+whatever the tone; the wait's re-check then finds the text and politeness equal to that baseline and writes nothing,
+so a tone set in the same task is part of the alert reading too. If a role change away from `alert` resets the field
+first, the step does nothing and the wait's re-check compares with the baseline that row left, as for any wait (an
+announce by that row restarts the wait). The cancel rows (`hidden`
 set, removal, the notice stops being live) also reset the field. A role change away from `alert` that leaves the
 notice live (to `status`, or the role removed from a notice with `announce`) while the field is set resets it and
 acts as the trigger would have acted under the new role: Chromium has not yet serialised the `alert` role (the
