@@ -1,5 +1,5 @@
 Scope: all 5 workspace projects
-✓ Lockfile passes supply-chain policies (verified 52m ago)
+✓ Lockfile passes supply-chain policies (verified 1h ago)
 Lockfile is up to date, resolution step is skipped
 Packages are hard linked from the content-addressable store to the virtual store.
   Content-addressable store is at: /root/.local/share/pnpm/store/v11
@@ -35,9 +35,9 @@ devDependencies:
 + vite 8.3.5
 + vitest 5.0.5
 
-Done in 622ms using pnpm v12.16.1
+Done in 445ms using pnpm v12.16.1
 $ node gates/bin/setup-offline.ts
 setup: installed offline; Chromium at /opt/pw-browsers/chromium-1243/chrome-linux64/chrome
 $ node gates/bin/test.ts
-unit-tests: could not run: packages/elements/test/slot-state.test.ts failed to load: Failed to import test file /tmp/tmp.brw2vikt0O/packages/elements/test/slot-state.test.ts
+unit-tests: could not run: packages/elements/test/slot-state.test.ts failed to load: Failed to import test file /tmp/tmp.Z9DWl5G2NP/packages/elements/test/slot-state.test.ts
 [ELIFECYCLE] Test failed. See above for more details.
