@@ -1,0 +1,3 @@
+# History fold phase-1 of claude/007-actions-status: old commit -> new commit (pre-fold head kept as refs/ocelle/prefold/phase-1/claude/007-actions-status, 3a083635140469c6c9d0ed540c2618c1953e8616).
+cbc9fc25759b65dd084cd1bbcd1c63a422591403 970c5d077310358a1d92c54035627487fe04ca58
+3a083635140469c6c9d0ed540c2618c1953e8616 e27128159dd6e6b82a14b89d7b23ca850dc3e014
