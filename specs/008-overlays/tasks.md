@@ -148,7 +148,7 @@ the driver as it was.
   - long body and the 320 × 256 viewport;
   - one-line body (132 px);
   - Escape × veto, including after a click on body prose and with focus on the body;
-  - Escape with slotted content, slotted close watchers and slotted non-modal dialogs (every case of the row);
+  - Escape with slotted content, slotted close watchers and slotted non-modal dialogs (every case of the row); the veto-then-Escape-twice case first runs, in the same page, one unasserted warm-up sequence on a stand-in native `<dialog>` (`showModal()` after a click, a focused button that stops Escape's propagation, `cancel` vetoed, Escape twice), then asserts one `…-close-request` with reason `escape` with the dialog open and `:modal`, and on the second Escape `…-close` with reason `host` and focus on the opener (operator decision, 2026-11-14, R-02);
   - synthetic `cancel`;
   - the close control (click, Enter, Space; target size; focus ring);
   - backdrop click (nothing);
@@ -183,7 +183,7 @@ the driver as it was.
   - the intro line naming the element;
   - the section with the tokens read (data-model § `ocelle-dialog`);
   - the host pattern;
-  - the R-02, R-03, R-04, R-05 and R-08 statements: the stated limits, focus moves in the `…-close` listener, the `method="dialog"` advice, a label being required, and the closed-host `aria-label` behaviour;
+  - the R-02, R-03, R-04, R-05 and R-08 statements: the stated limits (the repeated-Escape one keeps "can close" and adds that the first vetoed sequence in a page may hold the veto on a second press as well, contract § Platform behaviour), focus moves in the `…-close` listener, the `method="dialog"` advice, a label being required, and the closed-host `aria-label` behaviour;
   - where focus lands when the opener is gone (edge case "Opener gone", R-05): the opener while it is connected, not `disabled` and not inert; otherwise the initial focus target of the overlay beneath, if one is open; otherwise the document body;
   - the opaque-content Tab statement (R-04, contract § Platform behaviour): Tab and Shift+Tab reach the inner focusable parts of content with a closed shadow root, an iframe or media controls in both directions, Shift+Tab from the close control entering such content at the dialog's end from its end, with or without `delegatesFocus`; and leaving a slotted iframe past the cycle's end with Tab can cost one extra press. The test also asserts the README states no reverse-wrap limit (no sentence that a closed shadow root is skipped by the Shift+Tab wrap).
 - [ ] T027 [P] [US1] Red, in `storybook/test/integration/elements-stories.test.ts` (`open(id, theme, "ocelle-dialog")`): the dialog stories of data-model § Stories exist in light and dark, each renders an open, modal `ocelle-dialog` with base.css applied and no request outside the origin (the Storybook is not a CSP target, R-16). The red commit also holds the story-count updates of R-16 (operator decision D), written by hand from the story files: `gates/test/integration/storybook-build.test.ts` (`built 29 stories`), `gates/test/integration/axe.test.ts` and `gates/test/integration/visual.test.ts` (58 story-themes), counted again after any merge of `main` (R-17). Part of T020's red commit; T026 first.

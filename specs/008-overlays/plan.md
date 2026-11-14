@@ -104,7 +104,8 @@ Token-only CSS with no new `token-only` allowance. No I/O. No ID reference acros
 4. **Platform closes** (R-02, R-03): inner `close()` and a non-cancelable `cancel` close with reason `host`. A slotted
    `method="dialog"` form does nothing to the overlay (measured); the README tells hosts to set `open = false` from
    their submit handler. A slotted widget that stops Escape's propagation can let the platform close a vetoed overlay
-   on a repeated Escape, with reason `host` (stated limit).
+   on a repeated Escape, with reason `host` (stated limit); the first vetoed sequence in a page may hold the veto on a
+   second press as well (platform, measured; decision 23).
 5. **Tooltip semantics** (R-13): the painted bubble is always `aria-hidden`. `describes` adds a hidden light-DOM
    `role="tooltip"` node to the host and an `aria-describedby` id to a native trigger. This is not supported for
    custom-element triggers whose inner control takes focus. The spec now says so (FR-029, FR-036, US3-7).
@@ -181,6 +182,12 @@ Settled in Phase 2 by the operator (decided by the operator, 2026-11-14; evidenc
 22. **Manifest, analyse then drop** (R-01): `scripts/manifest.ts` reads every `src/ocelle-*.ts` and `src/overlay.ts`
     and nothing else, so the overlays list inherited members with `inheritedFrom`; the `src/overlay.ts` module is
     then removed from the published manifest. The pinned `test/node/manifest.test.ts` rule is replaced, red first.
+23. **Repeated Escape, first sequence of a page** (R-02, operator decision, 2026-11-14): in Chromium the first vetoed
+    cancel sequence in a page holds the veto on both presses (a plain native `<dialog>` too); every later sequence
+    closes on the second press, and input between the presses changes nothing. The README keeps "can close" and adds
+    that the first vetoed sequence in a page may hold the veto on a second press as well. The matrix row "Escape with
+    slotted content" (veto then Escape twice) first runs one unasserted warm-up sequence on a stand-in native
+    `<dialog>` in the same page, then asserts the `escape` request and the `host` close (T015, T019).
 
 ## Risks
 
@@ -203,7 +210,8 @@ Settled in Phase 2 by the operator (decided by the operator, 2026-11-14; evidenc
   (a `focusout` with no related target, then the body focused), a slotted iframe does not, so the extra press applies
   to the iframe only. Escape inside a slotted iframe does nothing to the overlay (stated limit).
 - **Slotted widgets that stop Escape** (R-02): a vetoed overlay can then close on a repeated Escape with reason
-  `host`. Stated in the README; #14's listbox should call `preventDefault()` instead.
+  `host`, except that the first vetoed sequence in a page may hold the veto on a second press as well (decision 23).
+  Stated in the README; #14's listbox should call `preventDefault()` instead.
 - **Parallel siblings** (R-17): merge conflicts in shared files are resolved by merging `main`, then regenerating the
   manifest.
 

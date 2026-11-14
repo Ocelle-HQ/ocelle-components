@@ -109,8 +109,14 @@ modal, level. Device: the default context (`elements`, `visit()`) matches `(hove
   `<dialog>`), after that click and a Shift+Tab, and after the host removed a focused slotted button (focus on the
   body): one request per press, never a `cancel:false` close, open with focus inside under veto (R-02, R-04).
 - **Escape with slotted content**: a focused slotted control that stops Escape's propagation × {no veto, veto, veto
-  then Escape twice}: no veto closes with `escape`; veto keeps it open on the first press; the second press closes
-  with reason `host` (the stated limit, R-02). A slotted control that calls `preventDefault()` on Escape: no request,
+  then Escape twice}: no veto closes with `escape`; veto keeps it open on the first press. Veto then Escape twice
+  (operator decision, 2026-11-14, R-02; both harnesses): in the same page and before its own presses, the case runs
+  one unasserted warm-up sequence on a stand-in native `<dialog>` (opened with `showModal()` after a click, holding a
+  button that stops Escape's propagation and has focus, its `cancel` vetoed, Escape pressed twice; its result is not
+  asserted), because the platform may let the veto hold on both presses in a page's first vetoed sequence. Then, with
+  the opener clicked and the dialog open: the first Escape gives exactly one `…-close-request` with reason `escape`,
+  and the dialog stays open and `:modal`; the second Escape, with nothing in between, gives `…-close` with reason
+  `host` (the stated limit), and focus returns to the opener. A slotted control that calls `preventDefault()` on Escape: no request,
   the dialog stays open. A slotted `<input type=search>` with a value: Escape clears the value, no request, open. An
   Escape with `isComposing`: no request.
   - **Slotted close watchers** (R-02, PLAN-FRESH-3-002): a slotted `popover="auto"` menu opened by a click on its

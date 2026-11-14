@@ -57,6 +57,12 @@ sources of the requirements below. `#450` and `#503` are spec-kitty/spec-kitty-d
 - axe on the long-scrolling-body dialog story: the story places a block without text across the body's scroll edge,
   so no paragraph is partly hidden there, laid out by the storybook's story layout stylesheet; no axe exception is
   added (FR-042, research R-16).
+- Repeated Escape when slotted content stops Escape's propagation (evidence: `reviews/phase-2/measure.md`, section
+  "The repeated-Escape limit with a vetoing host"): the stated limit stays "can close". The platform fact is added:
+  the first vetoed cancel sequence in a page may hold the veto on a second press as well (measured in Chromium for an
+  overlay and for a plain native `<dialog>` alike; input between the presses changes nothing). The check of this case
+  first runs one unasserted vetoed sequence on a stand-in native `<dialog>` in the same page, so its second press
+  closes the overlay with reason `"host"` in every harness (Edge Cases, repeated Escape; research R-02).
 
 ## Consumer need
 
@@ -293,7 +299,8 @@ pointer and keyboard. It is complete when the scenarios below pass in process an
   Escape without user activation closes a dialog regardless of a cancelled `cancel` event) must not close an
   overlay whose host cancelled the request (US1 scenario 4). The stated limit: when slotted content stops Escape's
   propagation, the overlay never sees the key, and the platform may close it on the repeated press; that close has
-  reason `"host"` (FR-013, FR-016).
+  reason `"host"` (FR-013, FR-016). A platform fact, not a guarantee: the first vetoed cancel sequence in a page may
+  hold the veto on a second press as well, so the close comes in a later sequence.
 - **Escape that slotted content uses.** An Escape that slotted content has already handled (`preventDefault()`), an
   Escape that cancels an IME composition, and an Escape that clears a non-empty search field do not request the
   overlay's close (FR-010). Nor does an Escape while a slotted popover menu (`popover="auto"` or `"hint"`) or a

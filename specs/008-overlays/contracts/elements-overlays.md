@@ -38,7 +38,8 @@ an event's `detail`, is MAJOR.
   - a slotted `<form method="dialog">` does nothing to the overlay; close it with `open = false` in the form's submit
     handler;
   - a slotted widget that handles Escape calls `preventDefault()`, not `stopPropagation()`; if it stops propagation,
-    a vetoed overlay can be closed by the platform on a repeated Escape, with reason `host`;
+    a vetoed overlay can be closed by the platform on a repeated Escape, with reason `host`; the first vetoed sequence
+    in a page may hold the veto on a second press as well (the platform's, operator decision, 2026-11-14);
   - removing an open overlay from the document (a move, a morph, a portal) closes it with no event and sets `open` to
     false; the host reopens it after re-inserting it (also in the same task; a reopen there, or in the `…-close`
     listener, stays open, R-03);

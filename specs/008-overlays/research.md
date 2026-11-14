@@ -187,6 +187,15 @@ unmerged). Results marked "squad probe" were measured by the plan squad's round 
     content stops Escape's propagation, the platform's repeated-Escape rule can close a vetoed overlay on the second
     press, with reason `host`. The README states this limit and tells widgets inside an overlay to call
     `preventDefault()` rather than `stopPropagation()` for an Escape they handle.
+  - **Measured** (phase 2, `reviews/phase-2/measure.md`, section "The repeated-Escape limit with a vetoing host",
+    Chromium 153, both harnesses; operator decision, 2026-11-14): the first vetoed cancel sequence in a page, after
+    the document had a user activation, lets the veto hold on both presses (`cancel:true, cancel:true`); a plain
+    native `<dialog>` with no overlay does the same, so this is the platform's. Every later sequence in the same page
+    gives `cancel:true, cancel:false`, and the platform closes the dialog (reason `host`). A click, a non-Escape key
+    or a 5.5 s pause between the presses changes nothing. The limit stays "can close"; the README adds that the
+    first vetoed sequence in a page may hold the veto on a second press as well. The check (contracts/checks.md,
+    "Escape with slotted content") therefore first runs one unasserted warm-up sequence on a stand-in native
+    `<dialog>` in the same page, which makes the row's second press close with `host` in both harnesses.
 - **Not used**: `closedby` and `requestClose()` on the overlay's own `<dialog>` (Chromium 134 / WebKit 26 and
   Chromium 134 / WebKit 18.4: above the floor); the plan keeps the floor at what the tooltip needs (R-10). The
   `closedBy` of a slotted dialog is only read, where present, for the stand-aside above. A capture-phase handler is not used either: it
