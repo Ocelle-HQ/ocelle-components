@@ -189,12 +189,18 @@ export type PointerAction = "hover" | "click" | "down" | "up";
 
 /**
  * Moves `page`'s mouse to the centre of the element with `id` in `frame` (or its shadow element `inner`), Playwright's
- * actionability checks skipped (`force: true`, 012 research.md R-06), and clicks, presses or releases there.
+ * actionability checks skipped (`force: true`, 012 research.md R-06), and clicks, presses or releases there; a click
+ * lands at `options.position` from the element's top-left corner when given.
  */
 export async function pointer(page: Page, frame: Frame, action: PointerAction, id: string, options: ClickOptions = {}): Promise<void> {
   const target = locate(frame, id, options.inner);
   if (action === "click") {
-    await target.click({ force: true, ...(options.modifiers === undefined ? {} : { modifiers: [...options.modifiers] }), ...(options.button === undefined ? {} : { button: options.button }) });
+    await target.click({
+      force: true,
+      ...(options.modifiers === undefined ? {} : { modifiers: [...options.modifiers] }),
+      ...(options.button === undefined ? {} : { button: options.button }),
+      ...(options.position === undefined ? {} : { position: { x: options.position.x, y: options.position.y } }),
+    });
     return;
   }
   await target.hover({ force: true });

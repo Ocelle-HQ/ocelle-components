@@ -247,7 +247,7 @@ describe("generate(root) on the repository's element source", () => {
     const manifest = await generate(repo);
     const modules = manifest.modules as { path: string; declarations: Record<string, unknown>[] }[];
     expect(manifest.schemaVersion).toBe("1.0.0");
-    expect(modules.map((module) => module.path)).toEqual(["src/ocelle-brand-mark.ts", "src/ocelle-icon.ts"]);
+    expect(modules.map((module) => module.path)).toEqual(["src/ocelle-brand-mark.ts", "src/ocelle-button.ts", "src/ocelle-icon.ts"]);
     const [icon] = modules.find((module) => module.path === "src/ocelle-icon.ts")?.declarations ?? [];
     expect(icon).toMatchObject({
       kind: "class",
@@ -297,6 +297,54 @@ describe("generate(root) on the repository's element source", () => {
       { name: "tone", fieldName: "tone", type: { text: '"mono" | undefined' }, default: "undefined", described: true },
       { name: "label", fieldName: "label", type: { text: "string | undefined" }, default: "undefined", described: true },
     ]);
+  });
+
+  it('declares ocelle-button with its tag name, class, variant, size, flush, ground (with "chrome"), label and disabled, the click() method, the default and icon slots, the part control and the event ocelle-button-activate with its detail type, each described (012 FR-009, FR-053; contracts/elements-package.md § ocelle-button)', async () => {
+    const manifest = await generate(repo);
+    const modules = manifest.modules as { path: string; declarations: Record<string, unknown>[] }[];
+    const [button] = modules.find((module) => module.path === "src/ocelle-button.ts")?.declarations ?? [];
+    expect(button).toMatchObject({ kind: "class", name: "OcelleButton", tagName: "ocelle-button", customElement: true, cssProperties: [] });
+    const described = (list: unknown): Record<string, unknown>[] =>
+      ((list ?? []) as Record<string, unknown>[]).map(({ description, ...rest }) => ({ ...rest, described: typeof description === "string" && description !== "" }));
+    const variant = '"primary" | "secondary" | "quiet" | undefined';
+    const size = '"default" | "compact" | undefined';
+    const ground = '"accent-low" | "inset" | "hover-bg" | "state" | "chrome" | undefined';
+    expect(described(button?.members)).toEqual([
+      { kind: "field", name: "variant", privacy: "public", type: { text: variant }, default: "undefined", attribute: "variant", reflects: true, described: true },
+      { kind: "field", name: "size", privacy: "public", type: { text: size }, default: "undefined", attribute: "size", reflects: true, described: true },
+      { kind: "field", name: "flush", privacy: "public", type: { text: "boolean" }, default: "false", attribute: "flush", reflects: true, described: true },
+      { kind: "field", name: "ground", privacy: "public", type: { text: ground }, default: "undefined", attribute: "ground", reflects: true, described: true },
+      { kind: "field", name: "label", privacy: "public", type: { text: "string | undefined" }, default: "undefined", attribute: "label", described: true },
+      { kind: "field", name: "disabled", privacy: "public", type: { text: "boolean" }, default: "false", attribute: "disabled", reflects: true, described: true },
+      { kind: "method", name: "click", return: { type: { text: "void" } }, described: true },
+    ]);
+    expect(described(button?.attributes)).toEqual([
+      { name: "variant", fieldName: "variant", type: { text: variant }, default: "undefined", described: true },
+      { name: "size", fieldName: "size", type: { text: size }, default: "undefined", described: true },
+      { name: "flush", fieldName: "flush", type: { text: "boolean" }, default: "false", described: true },
+      { name: "ground", fieldName: "ground", type: { text: ground }, default: "undefined", described: true },
+      { name: "label", fieldName: "label", type: { text: "string | undefined" }, default: "undefined", described: true },
+      { name: "disabled", fieldName: "disabled", type: { text: "boolean" }, default: "false", described: true },
+    ]);
+    expect(described(button?.slots)).toEqual([
+      { name: "", described: true },
+      { name: "icon", described: true },
+    ]);
+    expect(described(button?.cssParts)).toEqual([{ name: "control", described: true }]);
+    expect(described(button?.events)).toEqual([{ name: "ocelle-button-activate", type: { text: "CustomEvent<Record<string, never>>" }, described: true }]);
+  });
+
+  it("gives ocelle-button no attribute named type, name, value or form, beside its variant attribute (012 FR-022)", async () => {
+    const manifest = await generate(repo);
+    const modules = manifest.modules as { path: string; declarations: Record<string, unknown>[] }[];
+    const [button] = modules.find((module) => module.path === "src/ocelle-button.ts")?.declarations ?? [];
+    const names = ((button?.attributes ?? []) as Record<string, unknown>[]).map((attribute) => attribute.name);
+    const members = ((button?.members ?? []) as Record<string, unknown>[]).map((member) => member.name);
+    expect({ variant: names.includes("variant"), form: names.filter((name) => ["type", "name", "value", "form"].includes(String(name))), formMembers: members.filter((name) => ["type", "name", "value", "form"].includes(String(name))) }).toEqual({
+      variant: true,
+      form: [],
+      formMembers: [],
+    });
   });
 
   it("rejects a root without an element module, naming the directory", async () => {

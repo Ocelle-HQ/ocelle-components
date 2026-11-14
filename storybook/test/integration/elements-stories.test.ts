@@ -172,3 +172,95 @@ describe("the ocelle-brand-mark stories in the built Storybook (US4-11, FR-019)"
     }
   }
 });
+
+// 012 phase 2 (tasks.md T021; research.md R-13; plan decision 27; spike reviews/phase-2/spike.md): the
+// `ocelle-button` stories, one per variant, size and state of User Story 1 in button mode (variants, compact, flush,
+// icon, icon only, disabled, hover and press by the pointer parameter, focus by a wrapper that calls the button's
+// plain `focus()`, the `ground` values with chrome and the changing surface, right to left), each rendering its
+// buttons with the story's attributes, each button's inner control rendered, in light and dark, with base.css applied
+// and no request outside the origin; the focused story's one button holds focus in its inner control.
+
+/** One button of a story: the attributes it carries and whether its inner control is rendered. */
+interface ButtonSeen {
+  readonly variant: string | null;
+  readonly size: string | null;
+  readonly flush: boolean;
+  readonly ground: string | null;
+  readonly disabled: boolean;
+  readonly label: string | null;
+  readonly rendered: boolean;
+}
+
+/** What a button story's page shows: its theme, the base stylesheet, its buttons and how many hold focus. */
+function observeButtons(page: Page): Promise<unknown> {
+  return page.evaluate(() => ({
+    theme: document.documentElement.dataset.theme,
+    base: {
+      linked: [...document.querySelectorAll<HTMLLinkElement>('link[rel="stylesheet"]')].some((link) => link.href.endsWith("/base.css") && link.sheet !== null),
+      scheme: getComputedStyle(document.documentElement).colorScheme,
+    },
+    defined: customElements.get("ocelle-button") !== undefined,
+    buttons: [...document.querySelectorAll("#storybook-root ocelle-button")].map((button) => ({
+      variant: button.getAttribute("variant"),
+      size: button.getAttribute("size"),
+      flush: button.hasAttribute("flush"),
+      ground: button.getAttribute("ground"),
+      disabled: button.hasAttribute("disabled"),
+      label: button.getAttribute("label"),
+      rendered: button.shadowRoot?.querySelectorAll('button[part="control"]').length === 1,
+    })),
+    focused: [...document.querySelectorAll("#storybook-root ocelle-button")].filter((button) => button.shadowRoot?.activeElement?.getAttribute("part") === "control").length,
+  }));
+}
+
+/** A button of a story with the attributes given, the others absent. */
+function seen(attributes: Partial<ButtonSeen> = {}): ButtonSeen {
+  return { variant: null, size: null, flush: false, ground: null, disabled: false, label: null, rendered: true, ...attributes };
+}
+
+const variants = [seen({ variant: "primary" }), seen({ variant: "secondary" }), seen({ variant: "quiet" })];
+
+const buttonStories: readonly { readonly id: string; readonly buttons: readonly ButtonSeen[]; readonly focused?: number }[] = [
+  { id: "elements-ocelle-button--secondary", buttons: [seen()] },
+  { id: "elements-ocelle-button--primary", buttons: [seen({ variant: "primary" })] },
+  { id: "elements-ocelle-button--quiet", buttons: [seen({ variant: "quiet" })] },
+  { id: "elements-ocelle-button--compact", buttons: variants.map((each) => ({ ...each, size: "compact" })) },
+  { id: "elements-ocelle-button--flush", buttons: [seen({ flush: true }), seen({ flush: true, size: "compact" })] },
+  { id: "elements-ocelle-button--icon", buttons: variants },
+  { id: "elements-ocelle-button--icon-only", buttons: [seen({ variant: "quiet", label: "Close" }), seen({ variant: "quiet", size: "compact", label: "Close" })] },
+  { id: "elements-ocelle-button--disabled", buttons: [...variants.map((each) => ({ ...each, disabled: true })), seen({ flush: true, disabled: true })] },
+  { id: "elements-ocelle-button--primary-hovered", buttons: [seen({ variant: "primary" })] },
+  { id: "elements-ocelle-button--secondary-hovered", buttons: [seen()] },
+  { id: "elements-ocelle-button--flush-hovered", buttons: [seen({ flush: true })] },
+  { id: "elements-ocelle-button--secondary-pressed", buttons: [seen()] },
+  { id: "elements-ocelle-button--focused", buttons: [seen()], focused: 1 },
+  {
+    id: "elements-ocelle-button--grounds",
+    buttons: ["accent-low", "inset", "hover-bg", "state"].flatMap((ground) => [seen({ ground }), seen({ variant: "quiet", ground })]),
+  },
+  {
+    id: "elements-ocelle-button--chrome",
+    buttons: [0, 1].flatMap(() => [seen({ variant: "primary", ground: "chrome" }), seen({ ground: "chrome" }), seen({ variant: "quiet", ground: "chrome" }), seen({ flush: true, ground: "chrome" })]),
+  },
+  { id: "elements-ocelle-button--changing-surface", buttons: [seen({ variant: "quiet", ground: "hover-bg" }), seen({ variant: "quiet", ground: "hover-bg" })] },
+  { id: "elements-ocelle-button--right-to-left", buttons: [seen(), seen({ flush: true })] },
+];
+
+describe("the ocelle-button stories in the built Storybook (012 US1, FR-050)", { timeout: 60_000 }, () => {
+  for (const { id, buttons, focused } of buttonStories) {
+    for (const theme of ["light", "dark"] as const) {
+      it(`${id} in ${theme}: renders its ocelle-button elements with the story's attributes, each inner control rendered, with base.css applied and no request outside the origin`, async () => {
+        const { page, outside } = await open(id, theme, "ocelle-button");
+        expect({ ...((await observeButtons(page)) as object), outside }).toEqual({
+          theme,
+          base: { linked: true, scheme: theme },
+          defined: true,
+          buttons,
+          focused: focused ?? 0,
+          outside: [],
+        });
+        await page.close();
+      });
+    }
+  }
+});

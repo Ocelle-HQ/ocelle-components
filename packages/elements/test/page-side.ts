@@ -99,6 +99,13 @@ export function preventNextEvent(type: string): void {
   });
 }
 
+/** Calls the element `id`'s own `click()` method (012 phase 2). */
+export function clickElement(id: string): void {
+  const element = document.getElementById(id);
+  if (element === null) throw new Error(`no #${id} on the page`);
+  element.click();
+}
+
 /** Focuses the element `id`. */
 export function focusElement(id: string): void {
   const element = document.getElementById(id);

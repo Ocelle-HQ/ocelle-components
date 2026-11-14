@@ -20,7 +20,7 @@ import { commands, page } from "vitest/browser";
 import baseText from "../../styles/src/base.css?raw";
 import { css } from "../../tokens/src/generate.ts";
 import { source } from "../../tokens/src/source.ts";
-import { activeInnerOf, activePath, computedOf, currentOf, endOrder, focusElement, preventNextEvent, recordEvents, resetPage, sentinelId, startOrder, takeRecords } from "./page-side.ts";
+import { activeInnerOf, activePath, clickElement, computedOf, currentOf, endOrder, focusElement, preventNextEvent, recordEvents, resetPage, sentinelId, startOrder, takeRecords } from "./page-side.ts";
 import { decodePng } from "./pixels.ts";
 import type { Box, Driver, Drawing, NavigationRecord, Paint, Part, Placement, Sheets } from "./scenarios/driver.ts";
 
@@ -228,6 +228,10 @@ export function inProcessDriver(): Driver {
     press: (key, modifiers) => commands.press(key, modifiers),
     click: async (id, options) => {
       await commands.pointer("click", id, options);
+      await settle();
+    },
+    callClick: async (id) => {
+      clickElement(id);
       await settle();
     },
     hover: async (id, options) => {

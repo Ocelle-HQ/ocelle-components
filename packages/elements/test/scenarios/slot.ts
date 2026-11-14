@@ -373,6 +373,37 @@ function scenarios(base: boolean): SlotScenario[] {
         gaps: [gap, gap],
       },
     },
+    {
+      // 012 (research.md R-10, PLAN-A11Y-SECURITY-1-002; tasks.md T015): the size rules are scoped to the icon slots. A
+      // block element in the default slot, and one in each of the test host's `description` and `tags` slots, keeps its
+      // own box: as wide as its twin's text and one 24 px line high, not the 20 px icon square; the icons in the `icon`
+      // and `trailing` slots stay the icon size. Plant: the unscoped `::slotted(*)` of 005.
+      name: `012 R-10, ${page}: a block element in the default, description or tags slot keeps its own box (its text's width, one line high) while the icon and trailing slots' icons stay the icon size`,
+      run: async (driver) => {
+        const block = (id: string, slot: string, text: string): string => `<div id="${id}"${slot === "" ? "" : ` slot="${slot}"`}>${text}</div>`;
+        const content = [
+          '<ocelle-icon id="lead" slot="icon" name="folder"></ocelle-icon>',
+          block("in-default", "", "Open the project"),
+          block("in-description", "description", "Due on Friday"),
+          block("in-tags", "tags", "Blocked"),
+          '<ocelle-icon id="trail" slot="trailing" name="arrow-end"></ocelle-icon>',
+        ].join("");
+        await mount(driver, `<div><ocelle-test-host id="host">${content}</ocelle-test-host></div><p><span id="twin-default">Open the project</span> <span id="twin-description">Due on Friday</span> <span id="twin-tags">Blocked</span></p>`);
+        await driver.rules("#host, p { font-size: 16px; line-height: 24px; }");
+        const own = async (id: string): Promise<unknown> => {
+          const [box, twin] = [await driver.box(`in-${id}`), await driver.box(`twin-${id}`)];
+          return { width: Math.abs(box.width - twin.width) <= 0.5, height: tenth(box.height) };
+        };
+        const [lead, trail] = [await driver.box("lead"), await driver.box("trail")];
+        return { default: await own("default"), description: await own("description"), tags: await own("tags"), icons: [lead.width, lead.height, trail.width, trail.height] };
+      },
+      expected: {
+        default: { width: true, height: 24 },
+        description: { width: true, height: 24 },
+        tags: { width: true, height: 24 },
+        icons: [icon, icon, icon, icon],
+      },
+    },
   ];
   return list.map((scenario) => ({ ...scenario, base }));
 }

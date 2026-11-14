@@ -16,7 +16,7 @@
 import { inflateSync } from "node:zlib";
 import type { Page } from "playwright";
 import { audit, axNodes, axeSetup, axStateOf, axSubtree, emulate, emulateMotion, pointer, press } from "../commands.ts";
-import { activeInnerOf, activePath, computedOf, currentOf, endOrder, focusElement, preventNextEvent, recordEvents, resetPage, sentinelId, startOrder, takeRecords } from "../page-side.ts";
+import { activeInnerOf, activePath, clickElement, computedOf, currentOf, endOrder, focusElement, preventNextEvent, recordEvents, resetPage, sentinelId, startOrder, takeRecords } from "../page-side.ts";
 import { decodePng } from "../pixels.ts";
 import type { Bounds, Box, Driver, Drawing, Paint, Part, Placement, Sheets } from "../scenarios/driver.ts";
 
@@ -215,6 +215,10 @@ export function fixtureDriver(page: Page, log: readonly string[], withBase = fal
     press: (key, modifiers) => press(page, key, modifiers),
     click: async (id, options) => {
       await pointer(page, page.mainFrame(), "click", id, options);
+      await settle(page);
+    },
+    callClick: async (id) => {
+      await page.evaluate(clickElement, id);
       await settle(page);
     },
     hover: async (id, options) => {
