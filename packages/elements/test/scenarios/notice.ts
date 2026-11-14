@@ -107,10 +107,23 @@ async function insertion(driver: Driver, markup: string, how: InsertHow = "inner
   return driver.liveCapture.stop();
 }
 
-/** Mounts the page as first loaded with `markup` (the capture armed from before), runs `steps` and stops the capture. */
+/**
+ * Waits the pre-load `W` after a first load. A region's first state begins before the load ends, when the capture's
+ * `D` is the pre-load one, and a write `W` (after load) after a trigger right after the load would end that state
+ * before it had been kept for that `D`, so no write there could count under `"settled"`.
+ */
+export async function pastFirstLoad(driver: Driver): Promise<void> {
+  expectGap(await driver.after(driver.W.loading), driver.W.loading, 2 * driver.W.loading, "the wait after the first load");
+}
+
+/**
+ * Mounts the page as first loaded with `markup` (the capture armed from before), waits the pre-load `W`, runs `steps`
+ * and stops the capture.
+ */
 async function loaded(driver: Driver, tag: string, markup: string, steps: () => Promise<void> = () => Promise.resolve()): Promise<Snapshot[]> {
   await driver.mount('<main id="c"></main>');
   await driver.firstLoad("c", markup, tag);
+  await pastFirstLoad(driver);
   await steps();
   return driver.liveCapture.stop();
 }
@@ -454,9 +467,11 @@ export const noticeScenarios: readonly NoticeScenario[] = [
     run: async (driver, tag) => {
       await driver.mount('<main id="c"></main>');
       await driver.firstLoad("c", fl('id="n" announce', "A"), tag);
+      await pastFirstLoad(driver);
       await driver.batch([{ op: "text", id: "n", text: "B" }]);
-      // `stop` first waits for the hold to have passed since the capture started: W to the write, H, and W more.
-      const snapshots = await driver.liveCapture.stop({ atLeast: 2 * driver.W.loaded + driver.H });
+      // `stop` first waits for the hold to have passed since the capture started: the wait after the first load (below
+      // twice the pre-load W), W to the write, H, and W more.
+      const snapshots = await driver.liveCapture.stop({ atLeast: 2 * driver.W.loading + 2 * driver.W.loaded + driver.H });
       const text = (snapshot: Snapshot | undefined): string | undefined => snapshot?.regions.find((region) => region.host === "n")?.text;
       const from = snapshots.findIndex((snapshot) => text(snapshot) === "B");
       const until = snapshots.findIndex((snapshot, index) => index > from && text(snapshot) === "");

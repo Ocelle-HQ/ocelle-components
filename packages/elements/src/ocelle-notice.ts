@@ -225,10 +225,15 @@ export class OcelleNotice extends LitElement {
     this.toggleAttribute("announce", value);
   }
 
-  /** Sets attribute `name` to `value` when it differs from the value the property reads; null or undefined removes it. */
+  /**
+   * Sets attribute `name` to `value`; null or undefined removes it. Nothing is written when the attribute already holds
+   * the value (Lit sets the property from each attribute change, so a write there would recurse), nor when the
+   * attribute is absent and the value is the one the property reads.
+   */
   private reflect(name: string, value: string | null | undefined, current: string): void {
+    const attribute = this.getAttribute(name);
     if (value === null || value === undefined) this.removeAttribute(name);
-    else if (value !== current) this.setAttribute(name, value);
+    else if (value !== attribute && (attribute !== null || value !== current)) this.setAttribute(name, value);
   }
 
   /** Sets up the internals: `ariaLive` off, so a host `role` of `alert` or `status` adds no live region (R-02). */
