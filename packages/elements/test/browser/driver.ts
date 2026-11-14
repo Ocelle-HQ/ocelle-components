@@ -149,12 +149,15 @@ export function fixtureDriver(page: Page, log: readonly string[], withBase = fal
         const round = (value: number): number => Math.round(value * 1000) / 1000;
         return { scaleX: round(matrix.a), scaleY: round(matrix.d), offsetX: round(matrix.e - rect.x), offsetY: round(matrix.f - rect.y) };
       }, id),
-    computed: (id, property) =>
-      page.evaluate(({ id, property }) => {
+    computed: (target, property) => {
+      if (typeof target !== "string") return Promise.reject(new Error("not implemented"));
+      const id = target;
+      return page.evaluate(({ id, property }) => {
         const element = document.getElementById(id);
         if (element === null) throw new Error(`no #${id} on the page`);
         return getComputedStyle(element).getPropertyValue(property);
-      }, { id, property }),
+      }, { id, property });
+    },
     resolveColour: (value) =>
       page.evaluate((value) => {
         const probe = document.createElement("span");
@@ -207,5 +210,16 @@ export function fixtureDriver(page: Page, log: readonly string[], withBase = fal
       await page.setViewportSize({ width, height });
       await settle(page);
     },
+    press: () => Promise.reject(new Error("not implemented")),
+    click: () => Promise.reject(new Error("not implemented")),
+    wheel: () => Promise.reject(new Error("not implemented")),
+    activeElement: () => Promise.reject(new Error("not implemented")),
+    tabWalk: () => Promise.reject(new Error("not implemented")),
+    scrollLeft: () => Promise.reject(new Error("not implemented")),
+    setScrollLeft: () => Promise.reject(new Error("not implemented")),
+    lastKeyPrevented: () => Promise.reject(new Error("not implemented")),
+    reducedMotion: () => Promise.reject(new Error("not implemented")),
+    frameRecord: () => Promise.reject(new Error("not implemented")),
+    settle: () => Promise.reject(new Error("not implemented")),
   };
 }

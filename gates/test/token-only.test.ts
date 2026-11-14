@@ -839,3 +839,57 @@ describe("the ocelle/token-only plugin with the lineHeight: \"token\" option: O2
     ]);
   });
 });
+
+// Since 009 (contracts/gates.md § `style-lint`; research.md R-05; operator decision PLAN-CORRECTNESS-1-002 (a); T011):
+// inside `linear-gradient()` (its name matched ASCII case-insensitively) the arguments are classified as at the top
+// level of a value: each word by the allow-list (direction keywords, `transparent` and `%` stops pass; a hex colour, a
+// named colour, a raw length and an angle are raw), `var()` and `calc()` as everywhere, the commas between stops as
+// dividers, and any other nested function raw whole. Every other gradient function stays raw whole, and the unknown
+// token check applies inside the gradient as everywhere. Every row of the contract's table.
+describe("rawValues: linear-gradient() arguments are classified", () => {
+  it.each([
+    { value: "linear-gradient(to right, transparent, var(--ocelle-color-ink) var(--ocelle-scroller-fade-size))", raw: [] },
+    { value: "linear-gradient(to left, var(--ocelle-color-ink) calc(100% - var(--ocelle-scroller-fade-size)), transparent)", raw: [] },
+    { value: "linear-gradient(var(--ocelle-color-ink), var(--ocelle-color-ink))", raw: [] },
+    { value: "LINEAR-GRADIENT(to bottom, transparent, var(--ocelle-color-ink) 50%)", raw: [] },
+    { value: "linear-gradient(to right, #000, transparent)", raw: ["#000"] },
+    { value: "linear-gradient(45deg, transparent, var(--ocelle-color-ink))", raw: ["45deg"] },
+    { value: "linear-gradient(to right, transparent, var(--ocelle-color-ink) 2rem)", raw: ["2rem"] },
+    { value: "linear-gradient(to right, transparent, black)", raw: ["black"] },
+    { value: "linear-gradient(to right, rgb(0 0 0), transparent)", raw: ["rgb(0 0 0)"] },
+    { value: "linear-gradient(to right, transparent, var(--ocelle-color-ink, #000))", raw: ["#000"] },
+    { value: "linear-gradient(to right, transparent, var(--ocelle-color-ink) calc(var(--ocelle-scroller-fade-size) + 4px))", raw: ["4px"] },
+    { value: "linear-gradient(to right, linear-gradient(transparent, var(--ocelle-color-ink)), transparent)", raw: ["linear-gradient(transparent, var(--ocelle-color-ink))"] },
+    { value: "radial-gradient(transparent, var(--ocelle-color-ink))", raw: ["radial-gradient(transparent, var(--ocelle-color-ink))"] },
+    { value: "repeating-linear-gradient(transparent, var(--ocelle-color-ink))", raw: ["repeating-linear-gradient(transparent, var(--ocelle-color-ink))"] },
+    { value: "conic-gradient(transparent, var(--ocelle-color-ink))", raw: ["conic-gradient(transparent, var(--ocelle-color-ink))"] },
+  ])("mask-image: $value is raw: $raw", ({ value, raw }) => {
+    expect(rawValues("mask-image", value)).toEqual(raw);
+  });
+
+  it("classifies two gradient layers of one value each, and the comma between the layers is a divider", () => {
+    expect(rawValues("mask-image", "linear-gradient(to right, transparent, var(--ocelle-color-ink) var(--ocelle-scroller-fade-size)), linear-gradient(var(--ocelle-color-ink), var(--ocelle-color-ink))")).toEqual([]);
+    expect(rawValues("mask-image", "linear-gradient(to right, transparent, var(--ocelle-color-ink)), linear-gradient(red, var(--ocelle-color-ink))")).toEqual(["red"]);
+  });
+});
+
+describe("ocelle/token-only: inside linear-gradient()", () => {
+  const lists = { tokens: ["--ocelle-color-ink", "--ocelle-scroller-fade-size"], elementProperties: [] };
+  async function warnings(code: string): Promise<{ line: number; text: string }[]> {
+    const { results } = await stylelint.lint({ code, config: { plugins: [plugin], rules: { [ruleName]: [true, lists] } } });
+    return (results[0]?.warnings ?? []).map(({ line, text }) => ({ line, text }));
+  }
+
+  it("accepts the token-only gradients and reports a misspelt token inside a gradient, and nothing else", async () => {
+    const code =
+      ".box {\n  mask-image: linear-gradient(to right, transparent, var(--ocelle-color-ink) var(--ocelle-scroller-fade-size)), linear-gradient(var(--ocelle-color-ink), var(--ocelle-color-ink));\n" +
+      "  mask-image: linear-gradient(to right, transparent, var(--ocelle-colr-ink));\n}\n";
+    expect(await warnings(code)).toEqual([{ line: 3, text: "unknown token --ocelle-colr-ink (ocelle/token-only)" }]);
+  });
+
+  it("reports a raw value inside a gradient once per declaration, with its raw parts", async () => {
+    expect(await warnings(".box {\n  mask-image: linear-gradient(45deg, #000, var(--ocelle-color-ink) 2rem);\n}\n")).toEqual([
+      { line: 2, text: "mask-image: raw 45deg, #000, 2rem; use a --ocelle-* token (FR-024) (ocelle/token-only)" },
+    ]);
+  });
+});

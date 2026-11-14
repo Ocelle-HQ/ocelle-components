@@ -1,4 +1,4 @@
-import { readFileSync } from "node:fs";
+import { existsSync, readFileSync } from "node:fs";
 import { createServer } from "node:http";
 import type { Server } from "node:http";
 import type { AddressInfo } from "node:net";
@@ -19,7 +19,13 @@ import { afterAll, beforeAll, describe, expect, inject, it } from "vitest";
 // stylesheet clause, analysis L14). Phase 3 adds the grid of the thirteen names, left to right and right to left
 // (T035a; US1-13's "every icon in the set"), phase 5 the mark's stories (T056a; US4 scenario 11): main ground, chrome,
 // mono and labelled, each rendering its `ocelle-brand-mark` with the story's `ground`, `tone` and `label`, drawn, in
-// light and dark, with no request outside the origin.
+// light and dark, with no request outside the origin. Since 009 phase 2 (T020; research.md R-15, R-17): the six
+// `ocelle-scroller` stories of contracts/elements.md § Stories, each in light and dark rendering its scrollers (defined,
+// with the story's label, direction, tab stop and scroll position), with no `style` attribute and no class on the
+// story's markup (the light DOM it renders, not the elements' shadow trees) and no request outside the origin; and the
+// `[data-frame]` rules of storybook/.storybook/stories-layout.css, which are a copy of the one frame source,
+// packages/elements/test/fixtures/frames.css. No CSP violation is counted: the Storybook is not a CSP target (006
+// FR-020), strict CSP is proved in the elements-browser fixtures.
 const types: Readonly<Record<string, string>> = {
   ".html": "text/html; charset=utf-8",
   ".js": "text/javascript; charset=utf-8",
@@ -171,4 +177,72 @@ describe("the ocelle-brand-mark stories in the built Storybook (US4-11, FR-019)"
       });
     }
   }
+});
+
+/** What a scroller story's page shows: its theme, its scrollers' state, and any style attribute or class on its markup. */
+function observeScrollers(page: Page): Promise<unknown> {
+  return page.evaluate(() => {
+    const root = document.getElementById("storybook-root");
+    const markup = [...(root?.querySelectorAll("*") ?? [])];
+    return {
+      theme: document.documentElement.dataset.theme,
+      defined: customElements.get("ocelle-scroller") !== undefined,
+      styled: markup.filter((element) => element.hasAttribute("style") || element.hasAttribute("class")).map((element) => element.localName),
+      scrollers: [...(root?.querySelectorAll("ocelle-scroller") ?? [])].map((scroller) => {
+        const box = scroller.shadowRoot?.querySelector<HTMLElement>(".region-box");
+        const at = Math.abs(box?.scrollLeft ?? 0);
+        const room = (box?.scrollWidth ?? 0) - (box?.clientWidth ?? 0);
+        const position = room <= 1 ? "fits" : at <= 1 ? "start" : room - at <= 1 ? "end" : "middle";
+        return { label: scroller.getAttribute("label"), direction: getComputedStyle(scroller).direction, tabStop: box?.getAttribute("tabindex") === "0", role: box?.getAttribute("role") ?? null, position };
+      }),
+    };
+  });
+}
+
+const scroller = (position: string, extra: Record<string, unknown> = {}): Record<string, unknown> => ({ label: "Filters", direction: "ltr", tabStop: position !== "fits", role: position === "fits" ? null : "group", position, ...extra });
+
+const scrollerStories = [
+  { id: "elements-ocelle-scroller--fits", scrollers: [scroller("fits")] },
+  { id: "elements-ocelle-scroller--overflowing-at-start", scrollers: [scroller("start")] },
+  { id: "elements-ocelle-scroller--overflowing-in-the-middle", scrollers: [scroller("middle")] },
+  { id: "elements-ocelle-scroller--overflowing-at-the-end", scrollers: [scroller("end")] },
+  { id: "elements-ocelle-scroller--right-to-left", scrollers: [scroller("start", { direction: "rtl" })] },
+  { id: "elements-ocelle-scroller--unlabelled", scrollers: [scroller("start", { label: null, role: null })] },
+] as const;
+
+describe("the ocelle-scroller stories in the built Storybook (009 FR-032, T020)", { timeout: 60_000 }, () => {
+  for (const { id, scrollers } of scrollerStories) {
+    for (const theme of ["light", "dark"] as const) {
+      it(`${id} in ${theme}: renders its ocelle-scroller with the story's label, direction and scroll position, with no style attribute or class on its markup and no request outside the origin`, async () => {
+        const { page, outside } = await open(id, theme, "ocelle-scroller");
+        expect({ ...((await observeScrollers(page)) as object), outside }).toEqual({ theme, defined: true, styled: [], scrollers, outside: [] });
+        await page.close();
+      });
+    }
+  }
+});
+
+/** A file of the repository, relative to storybook/, or "" when it does not exist. */
+function repositoryFile(path: string): string {
+  const url = new URL(`../../${path}`, import.meta.url);
+  return existsSync(url) ? readFileSync(url, "utf8") : "";
+}
+
+/** The `[data-frame="…"] { … }` rules of a stylesheet, each with its whitespace collapsed, in order. */
+function frameRules(text: string): string[] {
+  const withoutComments = text.replace(/\/\*[\s\S]*?\*\//g, "");
+  return [...withoutComments.matchAll(/\[data-frame="[^"]*"\]\s*\{[^}]*\}/g)].map((match) => match[0].replace(/\s+/g, " ").trim());
+}
+
+describe("the story frames (009 research.md R-15, R-17; T020)", () => {
+  it("storybook/.storybook/stories-layout.css holds the [data-frame] rules of packages/elements/test/fixtures/frames.css, exactly, in order", () => {
+    const source = frameRules(repositoryFile("../packages/elements/test/fixtures/frames.css"));
+    expect(source).toEqual([
+      '[data-frame="W"] { inline-size: 876px; }',
+      '[data-frame="R"] { inline-size: 1196px; }',
+      '[data-frame="N"] { inline-size: 636px; }',
+      '[data-frame="S"] { inline-size: 288px; }',
+    ]);
+    expect(frameRules(repositoryFile(".storybook/stories-layout.css"))).toEqual(source);
+  });
 });

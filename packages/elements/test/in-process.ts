@@ -152,7 +152,7 @@ export function inProcessDriver(): Driver {
       const rect = svg.getBoundingClientRect();
       return Promise.resolve({ scaleX: round(matrix.a), scaleY: round(matrix.d), offsetX: round(matrix.e - rect.x), offsetY: round(matrix.f - rect.y) });
     },
-    computed: (id, property) => Promise.resolve(getComputedStyle(element(id)).getPropertyValue(property)),
+    computed: (target, property) => (typeof target === "string" ? Promise.resolve(getComputedStyle(element(target)).getPropertyValue(property)) : Promise.reject(new Error("not implemented"))),
     resolveColour: (value) => {
       const probe = document.createElement("span");
       probe.style.color = value;
@@ -187,5 +187,16 @@ export function inProcessDriver(): Driver {
       await page.viewport(width, height);
       await settle();
     },
+    press: () => Promise.reject(new Error("not implemented")),
+    click: () => Promise.reject(new Error("not implemented")),
+    wheel: () => Promise.reject(new Error("not implemented")),
+    activeElement: () => Promise.reject(new Error("not implemented")),
+    tabWalk: () => Promise.reject(new Error("not implemented")),
+    scrollLeft: () => Promise.reject(new Error("not implemented")),
+    setScrollLeft: () => Promise.reject(new Error("not implemented")),
+    lastKeyPrevented: () => Promise.reject(new Error("not implemented")),
+    reducedMotion: () => Promise.reject(new Error("not implemented")),
+    frameRecord: () => Promise.reject(new Error("not implemented")),
+    settle: () => Promise.reject(new Error("not implemented")),
   };
 }

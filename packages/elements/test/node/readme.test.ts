@@ -16,7 +16,11 @@ import { describe, expect, it } from "vitest";
 // `viewBox` rule and the lint's `1lh` limit) and the naming rule (T045, SC-007). Phase 5 adds the mark (T056): its
 // variants and grounds, the tokens it reads, its box and the percentage-height rule, forced colours, the light-mode
 // spot, behaviour without `tokens.css`, its entry point, its licence sentence and the trademark note of FR-030 (in the
-// README and in the repository's `NOTICE`), and the CHANGELOG's final surface list (FR-031).
+// README and in the repository's `NOTICE`), and the CHANGELOG's final surface list (FR-031). Since 009 phase 2 (T019,
+// T029): `ocelle-scroller` (its attribute, slot, tokens, tree, keyboard, handover, fades, clearance, scrollbar, naming
+// guidance, shrink-to-fit hosts and reduced motion), the overflow-region module's interface under the element
+// conventions, the Host ARIA rule scoped per element, the styles rule with the per-instance sheet, the mask properties
+// in the engine floor, its entry point, and its CHANGELOG entries.
 /** A file's text, relative to the package; empty while it does not exist, so each assertion reports what is missing. */
 function read(file: string): string {
   const url = new URL(`../../${file}`, import.meta.url);
@@ -33,7 +37,10 @@ const fragments = [
   "Every element class carries the JSDoc tag `@tagname <tag>`, and every public property a description and `@default undefined`: the manifest takes the tag name and the defaults from them",
   "An element that observes a standard attribute such as `aria-label` adds it to `observedAttributes` without declaring a property, so the manifest does not list it",
   // styles (FR-003, R-03, R-04, R-09)
-  "An element's styles are one `css` tagged template assigned to `static styles`, built only from `--ocelle-*` tokens and the values the `style-lint` gate allows, so every instance adopts one shared stylesheet",
+  // since 009 (T019, FR-030): the shared sheets and at most one per-instance sheet of measured figures, replacing "one
+  // shared stylesheet"
+  "An element's styles are its shared `static styles`, one or more `css` tagged templates built only from `--ocelle-*` tokens and the values the `style-lint` gate allows, which every instance adopts, plus at most one per-instance constructed stylesheet that holds only px figures the element measured from layout",
+  "The per-instance sheet never holds a value from an attribute, a property, a token's text or slotted text, and it is written through `CSSStyleRule.style`, never through an element's `style`: the overflow-region module's mask size and `ocelle-list-detail`'s intrinsic sizes are its two uses",
   "No template has a `style` attribute or a `<style>` element",
   "Every element's styles hold `:host([hidden]) { display: none; }` beside its `:host` display rule, which would otherwise beat the user-agent `[hidden]` rule.",
   "Variant rules go inside `@media not (forced-colors: active)`, so a forced-colours rule never has to outrank a variant selector",
@@ -70,8 +77,13 @@ const fragments = [
   "Constructable stylesheets (`adoptedStyleSheets`): Chromium 73, WebKit 16.4",
   "An element that uses a feature newer than the floor raises the floor in this section, the one list of the floor features, and records the feature in its own feature's research",
   "Only Chromium is measured. WebKit (Kitty Desktop on macOS and Linux) is not: its accessibility tree, forced colours and mirroring are an open limitation",
+  // since 009 (T019, R-18)
+  "`mask-image`, and `mask-size`, `mask-position`, `mask-origin`, `mask-clip`, `mask-repeat` and `mask-composite`, unprefixed: Chromium 120, WebKit 15.4",
   // host ARIA (FR-034, PLAN-A11Y-SECURITY-1-002 (a), 1-003 (a))
-  "A host `aria-label` names the element as `label` does, and when present it decides alone: a blank host `aria-label` leaves the element unlabelled even with a `label`",
+  // since 009 (T019, PLAN-CORRECTNESS-1-005 (a)): the rule scoped per element, replacing the package-wide sentence
+  "A host `aria-label` names the element as `label` does. For `ocelle-icon` and `ocelle-brand-mark`, when present it decides alone: a blank host `aria-label` leaves the element unlabelled even with a `label`",
+  "For `ocelle-scroller`, `ocelle-workflow-board` and `ocelle-workflow-lane` a blank host `aria-label` counts as absent, so `label` still names the element: Chromium names a host from a present `aria-label` and does not fall back from a blank one, so these elements put their role and name on a node in their shadow root, named by the host's non-blank `aria-label`, trimmed, or else by `label`",
+  "`ocelle-list-detail` takes no name: a host `aria-label` is not used",
   "When both are set, the host `aria-label` is the name; removing it falls back to `label`",
   "Chromium uses a host `aria-label` as written, surrounding spaces included, so pass it trimmed; the element never rewrites it",
   "A host `aria-hidden=\"true\"` hides the element, labelled or not",
@@ -117,6 +129,29 @@ const fragments = [
   // the mark's licence and the trademark note (FR-029, FR-030, US4 scenario 10)
   "The mark is the project's own drawing of the Ocelle rosette, redrawn from the geometry of Ocelle's app icon, under Apache-2.0",
   "\"Ocelle\" and the rosette mark are trademarks of their owner. The Apache-2.0 licence grants no right to use them (section 6 of the licence); they may be used only to refer to Ocelle",
+  // the overflow-region module, under the element conventions (009 FR-011, FR-034; contracts/overflow-region.md; T019)
+  "The overflow-region module (`src/overflow-region.ts`, internal) gives an element a scroll box that is a tab stop and a named group, or region, only while it overflows: `ocelle-scroller` uses it, and so does any later element with a scroll region",
+  "Inputs: the host element (`new OverflowRegion(host, { box, role, step })`), `box`, a function that returns the scroll box in the host's shadow root, `role`, `\"group\"` by default or `\"region\"`, `step`, 40 px by default, and the label through `setLabel(label)`; the host lists `aria-label` in `observedAttributes` and re-renders on its change",
+  "Outputs, read by the host's render: `overflowing`, `offStart`, `offEnd`, `fadeStart`, `fadeEnd`, `fadeAttribute` (`\"start\"`, `\"end\"`, `\"both\"` or undefined) and `name`; the module requests an update when one changes",
+  "Effects, on the scroll box and the module's own shadow nodes only, never on the host: the box's `tabindex`, `role` and `aria-label`, the arrow keys on the box, the focus clearance of slotted controls and the focus handover when overflow ends",
+  "Lifecycle: it adds its listeners and its `ResizeObserver` when the host connects, follows the box after each update, and stops when the host disconnects; it emits no event",
+  "The host renders `.region-frame` holding `.region-box` (with `data-fade` bound through `ifDefined`), whose `.region-track` holds the content, then `.region-ring` and two `.region-edge` elements (`start`, `end`), all but the box `aria-hidden`, and adds `overflowRegionStyles` to its `static styles`",
+  "An element that uses the module does not set `tabindex`, `role` or `aria-label` on the box, handle the arrow keys on it, add a second fade or edge cue, scroll it smoothly, bind `data-fade` without `ifDefined`, or set the mask's size or a ring on `.region-frame` itself",
+  // ocelle-scroller (009 FR-001 to FR-010, FR-034; contracts/elements.md § `ocelle-scroller`; Edge Cases; T019)
+  "`ocelle-scroller` lays out its slotted content in one box that scrolls in the inline direction only; it is a tab stop and a named group only while its content overflows",
+  "`label` (attribute and property, not reflected): the name of the scroller's group while it overflows, trimmed; empty or whitespace-only counts as none",
+  "It has one default slot, the strip's content",
+  "`ocelle-scroller` reads the tokens `--ocelle-focus-offset`, `--ocelle-focus-width`, `--ocelle-color-focus`, `--ocelle-scroller-fade-size`, `--ocelle-color-ink` (as a mask colour only) and `--ocelle-border-width` (the forced-colours edge line)",
+  "While it overflows and has a name, the scroller is one `group` node with that name, holding its content; it is not a landmark. While it overflows without a name it is a tab stop with no role and no name. While its content fits it adds no tab stop and no role, beyond the `generic` node the host gets from an `id` or a host `aria-label`",
+  "While it overflows, the scroller is a tab stop before its content. `ArrowLeft` and `ArrowRight` on the focused scroller, without a modifier, scroll it 40 px with no animation; `Home`, `End`, arrows with Alt, Ctrl, Meta or Shift, and every key pressed while a slotted control has focus get the browser's default",
+  "When the content stops overflowing while the scroller has focus, focus moves to its first focusable slotted element, also inside a slotted element's open shadow root, and otherwise to the scroller itself, which shows the focus ring inside its box",
+  "Each inline edge with content off-screen fades the content toward transparency over `--ocelle-scroller-fade-size`; in forced colours it shows a 1 px `CanvasText` line instead",
+  "A slotted control focused with a focus ring is scrolled into view with its ring, at least the fade depth from each edge that fades; a control too wide for that keeps the fade off the side it would cover until focus leaves it or the box is scrolled",
+  "The platform's horizontal scrollbar is kept: where it takes space it adds its thickness to the scroller's block size, and it is never faded",
+  "Always give a scroller a `label`. A scroller repeated per item takes a name that identifies the item, such as \"Tags of WP-12\", not the same name on every card",
+  "In a shrink-to-fit host (a default flex item, a dialog, a table cell) the scroller takes its content's size and does not overflow, so the page may scroll sideways instead: give the scroller a definite or maximum inline size there so that it scrolls",
+  "Under reduced motion nothing the scroller does animates. The browser's own scrolling of the strip on a key pressed while a slotted control has focus is not the scroller's and may animate, also under reduced motion; the element does not control it",
+  "`ocelle-scroller` has no event, CSS part or CSS custom property",
   // two copies on a page (FR-006, Edge Cases)
   "Two copies of the package on one page, two versions or the browser build beside a bundle of the module build, cannot both define an element: the first definition wins and the second import throws nothing",
 ];
@@ -126,6 +161,7 @@ const entryRows = [
   "| `@ocelle/elements` | `dist/index.js` | every element; for hosts with a bundler |",
   "| `@ocelle/elements/ocelle-icon.js` | `dist/ocelle-icon.js` | `ocelle-icon` only; for hosts with a bundler |",
   "| `@ocelle/elements/ocelle-brand-mark.js` | `dist/ocelle-brand-mark.js` | `ocelle-brand-mark` only; for hosts with a bundler |",
+  "| `@ocelle/elements/ocelle-scroller.js` | `dist/ocelle-scroller.js` | `ocelle-scroller` only; for hosts with a bundler |",
   "| `@ocelle/elements/browser.js` | `dist/browser/ocelle-elements.js` | every element, Lit inside; for hosts without a bundler |",
   "| `@ocelle/elements/custom-elements.json` | `custom-elements.json` | the manifest, also named by the `customElements` field |",
 ];
@@ -170,7 +206,7 @@ describe("packages/elements/README.md", () => {
   it("lists exactly the entry points of package.json's exports in its Entry points table (FR-002)", () => {
     const manifest = JSON.parse(read("package.json")) as { exports?: Record<string, string> };
     expect(tableRows(read("README.md"), "Entry points")).toEqual(entryRows);
-    expect(Object.keys(manifest.exports ?? {})).toEqual([".", "./ocelle-icon.js", "./ocelle-brand-mark.js", "./browser.js", "./custom-elements.json"]);
+    expect(Object.keys(manifest.exports ?? {})).toEqual([".", "./ocelle-icon.js", "./ocelle-brand-mark.js", "./ocelle-scroller.js", "./browser.js", "./custom-elements.json"]);
   });
 
   it("lists the thirteen names of the set, whether each mirrors and the consumer need it meets, in its Icons table (US2-1, FR-018, SC-007)", () => {
@@ -202,6 +238,10 @@ describe("packages/elements/CHANGELOG.md", () => {
     "`@ocelle/elements/ocelle-brand-mark.js`",
     "`ground` and `tone` (reflected) and `label`",
     "the slot convention for icons in controls",
+    // since 009 (T029, FR-035)
+    "`ocelle-scroller`",
+    "`@ocelle/elements/ocelle-scroller.js`",
+    "the overflow-region module convention",
     ...["chevron-start", "chevron-end", "chevron-up", "chevron-down", "arrow-start", "arrow-end", "menu", "close", "folder", "file", "search", "table", "copy"].map((name) => `\`${name}\``),
   ])("names %s under Unreleased / Added (constitution VII, FR-031, SC-008)", (surface) => {
     expect(added).toContain(surface);
