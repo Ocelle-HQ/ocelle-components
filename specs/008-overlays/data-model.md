@@ -4,6 +4,10 @@
 
 ## Overlay (internal base `OcelleOverlay`, `src/overlay.ts`)
 
+The members below are listed in the manifest on `ocelle-dialog` and `ocelle-drawer` with `inheritedFrom` naming
+`OcelleOverlay` (`src/overlay.ts`); the base itself is not a module or declaration of the published manifest
+(operator decision "analyse, then drop it", 2026-11-14, R-01).
+
 | Member | Kind | Type / values | Default | Notes |
 |---|---|---|---|---|
 | `open` | property, reflected attribute | boolean | `false` | Single source of truth (FR-004). |
@@ -66,7 +70,13 @@ closed ──(reconnected)──▶ closed         (the host sets open = true to
   after the deep active element's flat-tree position) and from the body (first or last stop). From a middle stop or
   an opaque focus container (closed shadow host holding focus, `<iframe>`, media element with `controls`) the native
   move runs; a native move that lands on the body is repaired to the first stop, or, where the engine gives no
-  signal, the next press does it (R-04).
+  signal, the next press does it (R-04). When the cycle's last candidate in navigation order is an opaque container,
+  the Shift+Tab wrap from the first stop focuses the end sentinel and lets the native move run, so the content is
+  entered from its end (sentinel wrap, operator decision, 2026-11-14, R-04).
+- **End sentinel** (internal, not public surface): an empty element, last child of the `<dialog part="panel">` after
+  the footer, `tabindex="-1"`, `aria-hidden="true"`, no content, no accessible name, no role, no part, no visible
+  box (zero block size). Never a sequential stop and never in the stop list; absent from the accessibility tree; focused only within a
+  sentinel-wrap keydown, whose native move takes focus off it (R-04).
 - **Stops**, in the engine's sequential navigation order (positive `tabindex` first within each focus navigation
   scope, R-04), whose first and last are the cycle's ends: the walk's tabbable elements, the body part while it overflows, slotted overflowing scroll containers
   with no tabbable descendant where the engine focuses them, `<iframe>`s and media elements with `controls`; custom

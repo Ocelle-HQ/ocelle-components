@@ -12,7 +12,7 @@ No new gate. The existing gates cover this feature as follows.
 | `prefix` | No `sk-` names, no monospace. |
 | `contrast` | No new colour pairs: the bubble uses `color-chrome-ink` on `color-chrome`, already checked. |
 | `brand-rules` | Rule (f) is unchanged: `tooltip-delay` is not zeroed under reduced motion (R-09). |
-| `manifest` | The three new entries are generated and committed. `no-description` covers every new member. A manifest test asserts each entry's events (two per overlay with detail types, none for the tooltip), slots, parts and CSS property (R-01, SC-003). |
+| `manifest` | The three new entries are generated and committed. `no-description` covers every new member. A manifest test asserts each entry's events (two per overlay with detail types, none for the tooltip), slots, parts and CSS property (R-01, SC-003). The generator reads every `src/ocelle-*.ts` and `src/overlay.ts` and nothing else; `ocelle-dialog` and `ocelle-drawer` list `open`, `label` and `closeLabel` with `inheritedFrom` naming `OcelleOverlay`, and the published manifest has no `src/overlay.ts` module and no `OcelleOverlay` declaration (operator decision, 2026-11-14, R-01). |
 | `storybook-build`, `visual`, `axe` (from #10) | The stories of data-model § Stories, with baselines in light and dark and axe clean. **Recheck when #10 lands** (research R-16). Baselines are not the evidence for motion, forced colours or geometry; the matrix below is. |
 
 ## Test matrix (FR-043, SC-001, SC-002, SPEC-1-09, SPEC-1-11, SPEC-2-04)
@@ -60,10 +60,17 @@ modal, level. Device: the default context (`elements`, `visit()`) matches `(hove
     into the rows before the code (the round 3 probe's native list for (i), `b1 xc xc fr[f1] fr[f2] b2`, is the
     reference). Each list must hold: in (i), both directions, every inner button appears once per cycle in native
     order and there is no `body` entry; in (ii) forward, every inner button appears in order, followed by the close
-    control, with at most one `body` entry (the stated extra press, R-04's repair); in (ii) backward, the iframe's
-    inner buttons are reached from the frame and the closed root is skipped by the wrap (the stated reverse-wrap
-    limit). No list holds a page element outside the overlay. A host with `delegatesFocus` in (ii) backward: its
-    inner buttons are reached.
+    control, with at most one `body` entry (the stated extra press, R-04's repair; measured only for the iframe); in
+    (ii) backward (the sentinel wrap, operator decision, 2026-11-14, R-04), every inner button of the closed host,
+    with and without `delegatesFocus`, and of the iframe appears once per cycle in reverse native order, entered from
+    its end, followed by b1 and the close control, with no `body` entry and no bare frame entry (measured with the
+    stand-in: `xc[c2] xc[c1] b1 close xc[c2] xc[c1] b1`, `fr[f2] fr[f1] b1 close fr[f2] fr[f1] b1`). No list holds a
+    page element outside the overlay, and no list holds the end sentinel.
+  - **End sentinel** (R-04, FR-008): in each (ii) backward case, after every press `focusPath()` does not end on the
+    sentinel; with the overlay open, the sentinel has `tabindex="-1"`, `aria-hidden="true"`, no text, no
+    `aria-label` and no role, and a box of zero block size (`getBoundingClientRect().height` 0, nothing painted); its absence from
+    the accessibility tree is asserted in the accessibility-tree row. Native Tab and Shift+Tab never reach it: in
+    the (i), (ii) forward and positive-`tabindex` rows, and in the basic Tab cycle, no list holds it.
   - **Middle moves are native** (R-04): a slotted button with `tabindex="2"` between two plain buttons: the middle
     moves and the wraps follow the engine's navigation order (the stop list's order, R-04), every button once per
     cycle, no `body`.
@@ -190,14 +197,15 @@ modal, level. Device: the default context (`elements`, `visit()`) matches `(hove
 - **Forced colours** (`emulateForcedColors`, both palettes): panel border visible in `CanvasText`, panel ground
   `Canvas`, close control focus indicator visible (outline), backdrop does not cover the border.
 - **Accessibility tree**: one modal `dialog` named by `label`, heading level 2, close control a button named by
-  `close-label`, icon hidden. Host `aria-label` (with and without `label`): while open exactly one named node for the
+  `close-label`, icon hidden, and no node for the end sentinel (no unnamed or extra node under the dialog, R-04).
+  Host `aria-label` (with and without `label`): while open exactly one named node for the
   overlay, the modal dialog, named by the host `aria-label`; while closed the host as measured (a named `generic`),
   recorded in the README § Host ARIA (R-08).
 
 ### Drawer
 
 - The dialog's rows with `ocelle-drawer-` events (initial focus, Tab cycle with its non-stop, body, scroller and
-  opaque-content starts, its native middle moves and positive `tabindex` at the ends, Escape and its
+  opaque-content starts and the end sentinel, its native middle moves and positive `tabindex` at the ends, Escape and its
   slotted-content rows including the slotted close watchers and slotted non-modal dialogs, Escape in a slotted iframe, close control, host and platform close, focus return, nested, open at first render (in process
   `test/drawer-upgrade.test.ts`, on the fixture `overlays-upgrade.html`), removed, moved, rapid toggle, input during the exit, stale native `close` event, forced colours,
   accessibility tree). The dialog's "one-line body", "long body" and "styles" rows are not inherited: their expected

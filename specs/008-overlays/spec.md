@@ -43,6 +43,15 @@ sources of the requirements below. `#450` and `#503` are spec-kitty/spec-kitty-d
   the accessible name and the close control but hides the heading visually, so #12 can use it for the personal drawer.
   `ocelle-dialog` always shows its heading (FR-005, FR-048, US2 scenario 6).
 
+**Operator decisions in Phase 2** (decided by the operator, 2026-11-14; evidence `reviews/phase-2/measure.md`):
+
+- Reverse focus wrap, option (b): a Shift+Tab wrap from the first stop onto focusable content the overlay cannot see
+  into at the cycle's end enters that content from its end, so every inner focusable element of it is reached in both
+  directions. The former reverse-wrap limit is removed (FR-008, SC-002, US1 scenario 14). Whatever the overlay adds to
+  do this is never announced, named or reachable by Tab (FR-008).
+- Manifest, "analyse, then drop it": the published manifest lists the properties and attributes each overlay inherits
+  from the shared internal base, marked as inherited, and lists no internal base of its own (FR-045, research R-01).
+
 ## Consumer need
 
 - **Why the elements exist (#16, spec-kitty-design#503).** "Spec Kitty has no overlay primitives, so consumers cannot
@@ -129,7 +138,7 @@ stories pass the visual and axe gates.
 14. **Given** an open dialog whose body holds, between two buttons or as its last content, an element with a closed
     shadow root holding two buttons, or an iframe holding two buttons, **When** the user presses Tab or Shift+Tab
     repeatedly, **Then** focus reaches each inner button in its native order and never leaves the dialog, with at
-    most the stated extra press and the stated reverse-wrap limit (FR-008, SC-002); **When** focus is inside the
+    most the stated extra press (FR-008, SC-002); **When** focus is inside the
     iframe and the user presses Escape, **Then** nothing is requested and the dialog stays open (FR-010).
 15. **Given** an open dialog whose body holds three buttons, one of them with a positive `tabindex` (the last in
     tree order, or the first), **When** the user presses Tab or Shift+Tab repeatedly, **Then** focus reaches every
@@ -361,10 +370,13 @@ pointer and keyboard. It is complete when the scenarios below pass in process an
   move focus as the engine does (operator decision), so focusable content the overlay cannot see into (an element
   with a closed shadow root, an iframe, media controls) stays reachable by keyboard; a move that leaves such content
   past the cycle's end and lands on the document body is brought back to the first stop, and where the engine gives
-  no signal for it, the next press does so (one extra press). A Shift+Tab wrap onto such content at the end lands on
-  the content where it can take focus and otherwise on the stop before it. The cycle's order and its ends follow the
+  no signal for it, the next press does so (one extra press). A Shift+Tab wrap from the first stop onto such content
+  at the cycle's end enters it from its end, as the engine's own backward move into it does, so its inner focusable
+  elements are reached in reverse native order whether or not the content can take focus itself (operator decision,
+  2026-11-14). Anything the overlay adds to make that wrap is not a Tab stop, has no accessible name, is absent from
+  the accessibility tree and never keeps focus after the press. The cycle's order and its ends follow the
   engine's sequential navigation order, positive `tabindex` in slotted content included, so every stop the engine
-  reaches is in the cycle. The documentation states the extra press and the reverse-wrap limit.
+  reaches is in the cycle. The documentation states the extra press.
 - **FR-009**: On every close, focus MUST return to the element (the deepest one, inside shadow roots) that had focus
   when the overlay opened, if it is still connected and focusable, provided focus is then still inside the closing
   overlay or on the body; focus another overlay has taken MUST NOT be moved. An opener inside an overlay that is
@@ -521,6 +533,8 @@ pointer and keyboard. It is complete when the scenarios below pass in process an
   (with and without a host `aria-label`, open and closed), US2 scenario 6 and US3 scenarios 7 and 11 in Chromium.
 - **FR-045**: The manifest MUST declare, for each element, every property, attribute, event (with its detail type),
   slot, part and own CSS custom property, each list stated even when empty (the tooltip's events list is empty).
+  Members an element inherits from a shared internal base are declared on the element and marked as inherited; the
+  internal base itself is not a published entry (operator decision, 2026-11-14).
 - **FR-046**: Changed source MUST pass mutation testing under mission 007's rules; timing code (the hover delay) is
   tested so its mutants are killed rather than left to time out.
 
@@ -546,7 +560,7 @@ pointer and keyboard. It is complete when the scenarios below pass in process an
   from the first stop, the last stop, the close control, the dialog itself (after a click on its text) and the
   document body. With slotted content the overlay cannot see into (an element with a closed shadow root holding two
   buttons, an iframe holding two buttons), in the middle and at the end, every inner button is in the sequence in
-  its native order in both directions, except the stated reverse-wrap limit (FR-008), and the document body appears
+  its native order in both directions, and the document body appears
   at most once per cycle, only where the stated extra press applies. With a positive `tabindex` on the last or the
   first content element in tree order, the sequence is the engine's order and holds every content element.
 - **SC-003**: Every event the three elements emit is asserted with its full payload and cancelability: 2 events per

@@ -31,11 +31,25 @@ unmerged). Results marked "squad probe" were measured by the plan squad's round 
     names from a subclass prefix, which the analyzer cannot read, so the tags are the events' only source.
     `ocelle-tooltip.ts` carries `@slot` (default) and `@csspart bubble`, and states no `@fires`, so its events list
     is empty (FR-045).
-  - Phase 2's first task measures whether the analyzer lists the base's inherited properties on each subclass with
-    their descriptions while the base is outside the filter. If it does, nothing else changes. If it does not, the
-    filter must change: `scripts/manifest.ts` and `test/node/manifest.test.ts` are then changed files, the pinned test
-    is replaced by a stricter one ("reads every `src/ocelle-*.ts` and `src/overlay.ts`, and nothing else"), red first,
-    with the reason recorded (constitution VIII).
+  - **Measured** (T013, `reviews/phase-2/measure.md`, a run of the repository's `generate(root)` on a scratch
+    root): with the filter as it is, a subclass of a base in `src/overlay.ts` has `members: []` and
+    `attributes: []`; the inherited `open`, `label` and `closeLabel` are missing, and the superclass is recorded as
+    `{ module: "/src/overlay.ts", name: "OcelleOverlay" }`. With `overlay.ts` analysed too, the subclass lists the three
+    members and their attributes with descriptions, defaults and `inheritedFrom: { name: "OcelleOverlay", module:
+    "src/overlay.ts" }`, and the base appears as its own module with a `customElement: true` declaration and no
+    `tagName`. The JSDoc lists (events, slots, parts, CSS property) are complete either way.
+  - **Decision** (operator decision "analyse, then drop it", decided by the operator, 2026-11-14; R-01's fallback,
+    taken): `scripts/manifest.ts` reads every `src/ocelle-*.ts` and `src/overlay.ts`, and nothing else of `src/`, so
+    `ocelle-dialog` and `ocelle-drawer` carry `open`, `label` and `closeLabel` (and their attributes) with
+    `inheritedFrom` naming `OcelleOverlay` in `src/overlay.ts`. The generator then removes the module `src/overlay.ts`
+    (and with it the `OcelleOverlay` declaration) from the published `custom-elements.json`, so no internal base is a
+    manifest entry; the subclasses' `superclass` and `inheritedFrom` references are kept as the analyzer writes them.
+    `scripts/manifest.ts` and `test/node/manifest.test.ts` are changed files: the pinned test "reads every
+    `src/ocelle-*.ts`, its modules in path order, and nothing else of `src/`" is replaced by a stricter one, red first
+    (T018, in T020's red commit; the generator change in T024), with the reason recorded (constitution VIII): the
+    generator reads every `src/ocelle-*.ts` and `src/overlay.ts` and nothing else (a subclass in `ocelle-*.ts` of a
+    base in `overlay.ts` gets the base's members with `inheritedFrom`; one of a base in any other `src/` file does
+    not), and the published modules are the `src/ocelle-*.ts` ones only, in path order, with no `src/overlay.ts` module and no `OcelleOverlay` declaration.
   - A manifest test asserts, per overlay, exactly two events with their detail types, the two slots, the five parts
     and (dialog) the one CSS property, and for the tooltip one slot, one part and an empty events list (SC-003).
 - **Alternatives**: a mixin (the analyzer's mixin support is weaker and the type surface noisier); two copies
@@ -213,7 +227,8 @@ unmerged). Results marked "squad probe" were measured by the plan squad's round 
     or starts off it:
     - focus on the last stop with Tab, or on the first stop (the close control) with Shift+Tab: the wrap, to the
       first (last) stop, unless an opaque container (below) lies after the last stop in flat-tree order, in which
-      case a Tab from the last stop is a middle press;
+      case a Tab from the last stop is a middle press, and a Shift+Tab from the first stop is the **sentinel wrap**
+      (below), the one handled press that calls no `preventDefault()`;
     - focus inside the overlay's own open tree on no stop (the `<dialog>` itself after a click on prose, padding or
       the heading; the panel; a slotted `tabindex="-1"` element focused by script; a focused element inside a
       scroller): the first stop or opaque container after it in flat-tree order (the last before it), wrapping;
@@ -225,7 +240,8 @@ unmerged). Results marked "squad probe" were measured by the plan squad's round 
     an iframe never reaches the parent document and is native anyway.
   - **Repair**: when a native move the overlay let run lands on the document body, the overlay moves focus to the first
     stop. Only a forward move can fall off the cycle this way, since the close control is always the first stop and a
-    Shift+Tab from it is handled. The mechanism is the implementer's choice (for example `focusout` inside the
+    Shift+Tab from it is handled (the sentinel wrap's native move starts at the panel's end and runs backward, into
+    the overlay's content). The mechanism is the implementer's choice (for example `focusout` inside the
     overlay with no related target, and focus leaving a slotted frame), measured in Phase 2's first dialog task. Where
     the engine reports no event for focus leaving opaque content, focus stays on the body until the next press, which
     goes to the first stop through R-02's body path: one extra press, which the README states. A removed focused
@@ -234,11 +250,28 @@ unmerged). Results marked "squad probe" were measured by the plan squad's round 
     `controls` as stops, and records every custom element whose `shadowRoot` reads null (a closed root, or none: the
     walk cannot tell, and the light content of either is walked as usual) as an opaque container in its tree
     position. Explicit moves treat an opaque container as a candidate: `focus()` on it, and "Focus checked" moves on
-    when focus does not land (a closed host without `delegatesFocus` that is not itself focusable). So a Shift+Tab
-    wrap onto opaque content at the cycle's end lands on the container where it is focusable (a frame's document, a
-    media element, a delegating host) and reaches its inner stops natively from there; a closed root that does not
-    delegate focus is then skipped in the reverse wrap and reached in the forward direction. The README states both
-    limits (the possible extra press and the reverse wrap).
+    when focus does not land (a closed host without `delegatesFocus` that is not itself focusable). The README states
+    the one limit left, the possible extra press.
+  - **Sentinel wrap** (operator decision, option (b) of `reviews/phase-2/measure.md`, decided by the operator,
+    2026-11-14; replaces the round 3 reverse wrap, which called `focus()` on the opaque container and so entered a
+    delegating host at its first inner button and skipped a closed root without `delegatesFocus`): when the last
+    candidate of the cycle in navigation order is an opaque container, a Shift+Tab from the first stop moves focus to
+    the overlay's **end sentinel** and lets the native move run (no `preventDefault()`), so the engine enters the
+    content from its end. The sentinel is an empty element, the last child of the `<dialog part="panel">` in the
+    overlay's shadow root (after the footer), with `tabindex="-1"` (focusable by script, never a sequential stop, so
+    no Tab or Shift+Tab reaches it natively and the walk does not record it), `aria-hidden="true"`, no content, no
+    `aria-label` and no role, and no visible box (zero block size, nothing painted, no effect on the panel's
+    layout). It is not part of the public surface (no part, no slot). Focus is on it only inside that one keydown:
+    the native move takes focus off it in the same press. Should it ever hold focus after a press (a script focusing it), it is a non-stop of the
+    overlay's own tree and the next press follows the non-stop rule above. axe's `aria-hidden-focus` passes, since
+    the sentinel is not tabbable.
+    **Measured** (T014 stand-in, `reviews/phase-2/measure.md`, Chromium 153, Shift+Tab n + 2 from the close control):
+    (ii) closed host last, with and without `delegatesFocus`: `xc[c2] xc[c1] b1 close xc[c2] xc[c1] b1`; (ii) iframe
+    last: `fr[f2] fr[f1] b1 close fr[f2] fr[f1] b1`; (i) and (iii) unchanged. So every inner focusable element of
+    opaque content at the end is reached in both directions, and the reverse-wrap limit is gone. Media elements with
+    `controls` at the end follow the same rule (not measured). The forward direction is unchanged: leaving a closed
+    host at the end is repaired with no extra press; leaving a slotted iframe at the end gives the engine no signal,
+    so one `body` entry (the stated extra press) remains.
   - **Positive `tabindex`** (squad round 3 verify 1, PLAN-FRESH-3-001): the stop list is in the engine's sequential
     navigation order, not raw flat-tree order (see the walk below), so "first stop" and "last stop" are the ends the
     native moves themselves reach. **Measured** (verify probe, Chromium 153): slotted b1, b2 and b3 with
