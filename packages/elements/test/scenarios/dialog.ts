@@ -630,6 +630,27 @@ const opaquePairRows = cycleRows("Tab cycle with opaque content: a closed shadow
   },
 ]);
 
+const opaqueMoreRows = cycleRows("Tab cycle with opaque content at the end (US1-14, FR-008, R-04)", [
+  {
+    label: "an audio element with controls last: its two controls reached in both directions",
+    content: '<button id="b1">B1</button><audio id="au" controls></audio>',
+    start: "close",
+    n: 4,
+    presses: 7,
+    tab: "b1 au au dlg[button] b1 au au",
+    shift: "au au b1 dlg[button] au au b1",
+  },
+  {
+    label: "a closed shadow root before a tabindex=1 button: the root last in the navigation order",
+    content: `${closedHost("ocelle-test-closed")}<button id="b1" tabindex="1">B1</button>`,
+    start: "close",
+    n: 4,
+    presses: 7,
+    tab: "b1 xc[c1] xc[c2] dlg[button] b1 xc[c1] xc[c2]",
+    shift: "xc[c2] xc[c1] b1 dlg[button] xc[c2] xc[c1] b1",
+  },
+]);
+
 const sentinelRows = [
   ...[
     ["a closed shadow root", closedHost("ocelle-test-closed")],
@@ -2037,6 +2058,116 @@ const entryExitRows = [
   ),
 ];
 
+const lifecycleRows = [
+  row(
+    "Removed in the close-request listener, no veto: no close event, the dialog neither open nor :modal (FR-014, FR-022)",
+    async (driver) => {
+      await driver.mount(page(basic));
+      await open(driver);
+      await act(driver, { op: "on", id: "dlg", event: requestName, then: [{ op: "remove", id: "dlg" }] });
+      await driver.press("Escape");
+      const recorded = await after(driver);
+      return { recorded, property: ((await act(driver, { op: "inspect", id: "dlg" })) as Inspected).open, layer: await driver.topLayer() };
+    },
+    { recorded: [request("escape", "b1")], property: false, layer: [] },
+  ),
+  row(
+    "After the close, focus on the body: Escape and Tab on the page dispatch nothing more, and Tab moves natively past the closed dialog from the opener, the last focused element (FR-013, R-02)",
+    async (driver) => {
+      await driver.mount(page(basic));
+      await open(driver);
+      await driver.press("Escape");
+      await events(driver, 2);
+      await act(driver, { op: "blur" });
+      await driver.press("Escape");
+      await driver.press("Tab");
+      return { recorded: (await after(driver)).map((each) => each.type), focus: await driver.focusPath() };
+    },
+    { recorded: [requestName, closeName], focus: "after" },
+  ),
+  row(
+    "Nested: after the inner dialog closed, the outer handles Tab from the body again: a focused outer button the host removes, then Tab, gives the outer's first stop (R-02, R-04)",
+    async (driver) => {
+      await openNested(driver);
+      await driver.press("Escape");
+      await events(driver, 2);
+      const back = await driver.focusPath();
+      await act(driver, { op: "seq", ops: [{ op: "focus", id: "ob" }, { op: "remove", id: "ob" }] });
+      const removed = await driver.focusPath();
+      await driver.press("Tab");
+      return { back, removed, focus: await driver.focusPath() };
+    },
+    { back: "oi", removed: "body", focus: "dlg[button]" },
+  ),
+  row(
+    "Motion: an ancestor sets --ocelle-motion-base to a negative duration, -200ms: no animation on open or close, the whole close in one update, no console message (FR-020, R-06)",
+    async (driver) => {
+      await driver.mount(`<div id="wrap">${page(basic)}</div>`);
+      await driver.rules("#wrap { --ocelle-motion-base: -200ms; }");
+      await open(driver);
+      const entry = await driver.animations("dlg", "dialog");
+      await driver.press("Escape");
+      const exit = await driver.animations("dlg", "dialog");
+      return { entry, exit, recorded: await driver.recorded(), messages: await driver.messages() };
+    },
+    { entry: [], exit: [], recorded: [request("escape", "b1"), closeEvent("escape", "opener")], messages: [] },
+  ),
+];
+
+/** Polls the body part's `tabindex` until it is gone, at most 1 000 ms; returns the last reading. */
+async function bodyTabindexGone(driver: Driver): Promise<string | null> {
+  let tabindex: string | undefined = (await inspect(driver, "dlg", '[part="body"]')).attributes.tabindex;
+  for (const start = Date.now(); tabindex !== undefined && Date.now() - start < 1000; ) {
+    await pause(20);
+    tabindex = (await inspect(driver, "dlg", '[part="body"]')).attributes.tabindex;
+  }
+  return tabindex ?? null;
+}
+
+/** The footer of the short-viewport rows, which holds the body at its minimum block size at 320 × 256. */
+const shortFooter = '<button id="f1">F1</button><button id="f2">Second action</button>';
+const shortBodyRows = [
+  row(
+    "Short viewport 320 × 256 (FR-018, R-18): the body held at its minimum block size becomes a Tab stop when the host adds content that overflows it, and stops being one when the host shortens that content",
+    async (driver) => {
+      await driver.setViewport(320, 256);
+      try {
+        // The long paragraph is assigned to no slot until the host takes its slot attribute away.
+        await driver.mount(page(`<p id="line">One line.</p><p id="long" slot="later">${"A long paragraph that overflows the body at its minimum block size. ".repeat(12)}</p>`, { footer: shortFooter }));
+        await open(driver);
+        const before = await inspect(driver, "dlg", '[part="body"]');
+        await act(driver, { op: "attr", id: "long", name: "slot", value: null });
+        let added: string | undefined;
+        for (const start = Date.now(); added === undefined && Date.now() - start < 1000; ) {
+          await pause(20);
+          added = (await inspect(driver, "dlg", '[part="body"]')).attributes.tabindex;
+        }
+        await act(driver, { op: "set", id: "long", name: "textContent", value: "Short." });
+        return { before: { height: before.height, tabindex: before.attributes.tabindex ?? null }, added: added ?? null, shortened: await bodyTabindexGone(driver) };
+      } finally {
+        await driver.setViewport(1280, 800);
+      }
+    },
+    { before: { height: bodyMinimum, tabindex: null }, added: "0", shortened: null },
+  ),
+  row(
+    "Short viewport 320 × 256 (FR-018, R-18): the body held at its minimum block size stops being a Tab stop when the host shortens the one paragraph that overflowed it",
+    async (driver) => {
+      await driver.setViewport(320, 256);
+      try {
+        await driver.mount(page(`<p id="long">${"A long paragraph that overflows the body at its minimum block size. ".repeat(12)}</p>`, { footer: shortFooter }));
+        await open(driver);
+        const before = await inspect(driver, "dlg", '[part="body"]');
+        await act(driver, { op: "set", id: "long", name: "textContent", value: "Short." });
+        return { before: { height: before.height, tabindex: before.attributes.tabindex }, after: await bodyTabindexGone(driver) };
+      } finally {
+        await driver.setViewport(1280, 800);
+      }
+    },
+    { before: { height: bodyMinimum, tabindex: "0" }, after: null },
+  ),
+];
+
 const unitlessMotionRows = [
   row(
     "Motion: an ancestor sets --ocelle-motion-base without a unit, 300, which is no duration: no animation on open or close, the whole close in one update (FR-020, R-06)",
@@ -2167,6 +2298,7 @@ export const dialogScenarios: readonly DialogScenario[] = [
   ...scrollerRows,
   ...opaqueRows,
   ...opaquePairRows,
+  ...opaqueMoreRows,
   ...sentinelRows,
   ...middleRows,
   ...positiveRows,
@@ -2200,6 +2332,8 @@ export const dialogScenarios: readonly DialogScenario[] = [
   ...treeRows,
   ...fieldEscapeRows,
   ...entryExitRows,
+  ...lifecycleRows,
+  ...shortBodyRows,
   ...unitlessMotionRows,
   ...footerSlotRows,
   ...moreReturnRows,
