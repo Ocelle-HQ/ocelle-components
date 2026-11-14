@@ -1,5 +1,5 @@
 Scope: all 5 workspace projects
-✓ Lockfile passes supply-chain policies (verified 15h ago)
+✓ Lockfile passes supply-chain policies (verified 17h ago)
 Lockfile is up to date, resolution step is skipped
 Packages are hard linked from the content-addressable store to the virtual store.
   Content-addressable store is at: /root/.local/share/pnpm/store/v11
@@ -35,7 +35,7 @@ devDependencies:
 + vite 8.3.5
 + vitest 5.0.5
 
-Done in 232ms using pnpm v12.16.1
+Done in 259ms using pnpm v12.16.1
 $ node gates/bin/setup-offline.ts
 setup: installed offline; Chromium at /opt/pw-browsers/chromium-1248/chrome-linux64/chrome
 $ node gates/bin/test.ts
@@ -279,7 +279,8 @@ packages/elements/test/button.test.ts:34: unit-tests: ocelle-button's reflected 
 packages/elements/test/button.test.ts:54: unit-tests: ocelle-button's reflected properties reads the flush and disabled attributes as booleans, and variant, size and ground as strings: AssertionError: expected { flush: undefined, …(4) } to deeply equal { flush: true, disabled: true, …(3) }
 packages/elements/test/button.test.ts:80: unit-tests: ocelle-button's icon gap follows the label text drops the gap while the default slot's only text is whitespace and brings it back when text is written into that text node, and drops it when the text is emptied again: Error: no icon or inner control
 packages/elements/test/button.test.ts:99: unit-tests: ocelle-button's icon gap follows the label text treats a slotted element with no text as no label (the icon is centred), and one with text as a label (the gap stays): Error: no icon or inner control
-packages/elements/test/button.test.ts:109: unit-tests: ocelle-button's icon gap follows the label text reads a label forwarded through another shadow root's slot (the flattened assignment): a forwarded text keeps the gap, none centres the icon: Error: no icon or inner control
+packages/elements/test/button.test.ts:111: unit-tests: ocelle-button's icon gap follows the label text brings the gap back when text is written into an empty slotted element (a text node, textContent, a nested element) and centres the icon again when it is removed: Error: no icon or inner control
+packages/elements/test/button.test.ts:153: unit-tests: ocelle-button's icon gap follows the label text reads a label forwarded through another shadow root's slot (the flattened assignment): a forwarded text keeps the gap, none centres the icon: Error: no icon or inner control
 packages/elements/test/control.test.ts:51: unit-tests: src/control.ts: one inner control in an open shadow root with delegatesFocus renders one native <button type="button"> with the part control, focused by the host's focus() while document.activeElement stays the host: Error: no #b with an inner control
 packages/elements/test/control.test.ts:67: unit-tests: src/control.ts: one inner control in an open shadow root with delegatesFocus a disabled inner control takes no focus from the host's focus(): Error: no #b with an inner control
 packages/elements/test/control.test.ts:77: unit-tests: src/control.ts: click() is forwarded to the inner control the host's click() clicks the inner control: its click passes through the inner control and reaches document with the host as target, once: Error: no #b with an inner control
@@ -298,5 +299,5 @@ packages/elements/test/entry-root.test.ts:9: unit-tests: importing src/index.ts 
 packages/elements/test/exports.test.ts:7: unit-tests: @ocelle/elements root exports exports OcelleBrandMark, OcelleButton and OcelleIcon and nothing else: AssertionError: expected [ 'OcelleBrandMark', 'OcelleIcon' ] to deeply equal [ 'OcelleBrandMark', …(2) ]
 packages/elements/test/slot.test.ts:20: unit-tests: the slot convention on ocelle-test-host, in process (US3) 012 R-10, without base.css: a block ele…: AssertionError: expected { …(4) } to deeply equal { Object (default, description, ...) }
 packages/elements/test/slot.test.ts:20: unit-tests: the slot convention on ocelle-test-host, in process (US3) 012 R-10, with base.css: a block elemen…: AssertionError: expected { …(4) } to deeply equal { Object (default, description, ...) }
-unit-tests: 259 of 3359 tests failed
+unit-tests: 260 of 3360 tests failed
 [ELIFECYCLE] Test failed. See above for more details.
