@@ -5,7 +5,8 @@
 // (global-setup.ts): the browser build `ocelle-elements.js`, US1 scenario 10's `bundle-a.js` and `bundle-b.js` and User
 // Story 3's test host's file `ocelle-test-host.js`. It serves them on 127.0.0.1 with `Content-Security-Policy:
 // default-src 'none'; script-src 'self'; style-src 'self'; font-src 'self'` on every response. Every page is opened
-// in a fresh context with the recorders installed before navigation, none of them a page script or a request: CSP
+// in a fresh context with the recorders installed before navigation, none of them a page script or a request (since
+// 014 also the driver's page side, test/page-helpers.ts, with the clipboard observer): CSP
 // violations through 002's `addInitScript` collector
 // (packages/tokens/test/browser/serve.ts), requests and their responses through Playwright's `request` and
 // `response` events, and console messages and uncaught errors through its `console` and `pageerror` events.
@@ -20,6 +21,7 @@ import { css } from "../../../tokens/src/generate.ts";
 import { source } from "../../../tokens/src/source.ts";
 import { collectViolations, violations } from "../../../tokens/test/browser/serve.ts";
 import type { Violation } from "../../../tokens/test/browser/serve.ts";
+import { installPageHelpers } from "../page-helpers.ts";
 import type { Built } from "./global-setup.ts";
 
 export { launch } from "../../../tokens/test/browser/serve.ts";
@@ -137,6 +139,9 @@ export async function visit(browser: Browser, origin: string, page: string, scri
   opened.on("console", (message) => log.push(`console.${message.type()}: ${message.text()}`));
   opened.on("pageerror", (error) => log.push(`error: ${error.message}`));
   await collectViolations(opened);
+  // The driver's page side (014 research.md R-11): the target resolver, the keydown recorder and the clipboard observer,
+  // on every page of the fixture before any page script runs (test/page-helpers.ts).
+  await context.addInitScript(installPageHelpers);
   await opened.goto(`${origin}/${page}`, { waitUntil: "load" });
   const isAllowed = allowed(origin, page, scripts);
   return {
