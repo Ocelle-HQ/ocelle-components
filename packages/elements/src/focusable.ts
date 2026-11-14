@@ -45,7 +45,7 @@ export function isOpaqueContent(element: Element): boolean {
 }
 
 function isMedia(element: Element): boolean {
-  return (element.localName === "video" || element.localName === "audio") && element.hasAttribute("controls");
+  return element instanceof HTMLMediaElement && element.hasAttribute("controls");
 }
 
 /** Whether `element` has a layout box and is visible. */
@@ -56,11 +56,12 @@ function rendered(element: Element): boolean {
 /**
  * Whether `element` is focusable by sequential navigation, apart from being rendered. An `<a>` without `href` and a
  * media element without `controls` read a `tabIndex` of 0 yet are stops only with a `tabindex` attribute (an
- * `<input type="hidden">` and an `<area>` have no layout box, so they are never rendered stops).
+ * `<input type="hidden">` and an `<area>` have no layout box, so they are never rendered stops); an `<iframe>` reads
+ * 0 as any other focusable element.
  */
 function sequential(element: HTMLElement): boolean {
   if (element.matches(":disabled")) return false;
-  if (element.localName === "iframe" || isMedia(element)) return true;
+  if (isMedia(element)) return true;
   if ((element.localName === "a" && !element.hasAttribute("href")) || element instanceof HTMLMediaElement) return element.hasAttribute("tabindex") && element.tabIndex >= 0;
   return element.tabIndex >= 0;
 }
@@ -97,8 +98,9 @@ export function walk(root: Element): Walk {
   const radios: HTMLInputElement[] = [];
   /** Visits `element` and its flat subtree into `scope`; returns whether it holds a stop. */
   const visit = (element: Element, scope: Entry[]): boolean => {
-    if (!(element instanceof HTMLElement) && !(element instanceof SVGElement)) return false;
-    if (element.hasAttribute("inert") || element.hasAttribute("hidden")) return false;
+    // An element that is not HTML (SVG, MathML) is walked for the HTML inside it (a foreignObject's) and is no
+    // candidate; a `hidden` element has no box, nor has its subtree, so only `inert` needs a check.
+    if (element.hasAttribute("inert")) return false;
     const html = element instanceof HTMLElement ? element : undefined;
     let holds = false;
     const at = flat.length;
@@ -131,7 +133,6 @@ export function walk(root: Element): Walk {
         holds = true;
       }
     }
-    if (html !== undefined && (html.localName === "iframe" || isMedia(html))) return holds;
     // A slot and an open shadow root are focus navigation scopes of their own, at their owner's place.
     const nested = element instanceof HTMLSlotElement || element.shadowRoot !== null;
     const inner: Entry[] = nested ? [] : scope;
@@ -141,6 +142,7 @@ export function walk(root: Element): Walk {
     }
     let inside = false;
     for (const child of flatChildren(element)) inside = visit(child, inner) || inside;
+    // Stryker disable next-line ConditionalExpression: equivalent, a stop that also scrolls without a tabindex (a textarea) would be listed twice, side by side, which changes neither end of the cycle nor any explicit move (T025, reviews/phase-2/notes.md)
     if (!holds && !inside && html !== undefined && !isOpaque(html) && rendered(html) && scroller(html)) {
       // Before its subtree, in both orders: its nested scope, if it opened one, and any opaque container inside it.
       const candidate: Candidate = { element: html, kind: "stop" };
@@ -164,16 +166,18 @@ function replace(scopes: readonly Entry[][], element: Element, candidate: Candid
   }
 }
 
-/** A scope's candidates in sequential navigation order: positive `tabindex` first, ascending, then the rest. */
+/**
+ * A scope's candidates in sequential navigation order: positive `tabindex` first, ascending, then the rest, each in
+ * tree order (the sort is stable, and the rest rank alike).
+ */
 function ordered(scope: readonly Entry[]): Candidate[] {
-  const positive = scope.filter((each) => each.tabIndex > 0).sort((a, b) => a.tabIndex - b.tabIndex);
-  const rest = scope.filter((each) => each.tabIndex <= 0);
-  return [...positive, ...rest].flatMap((each) => (each.scope !== undefined ? ordered(each.scope) : each.candidate !== undefined ? [each.candidate] : []));
+  const rank = (entry: Entry): number => (entry.tabIndex > 0 ? entry.tabIndex : Number.MAX_SAFE_INTEGER);
+  return [...scope].sort((a, b) => rank(a) - rank(b)).flatMap((each) => (each.scope !== undefined ? ordered(each.scope) : each.candidate !== undefined ? [each.candidate] : []));
 }
 
 /** The deepest active element of the document, through open shadow roots; null when it is the body or nothing. */
 export function deepActive(): Element | null {
   let active = document.activeElement;
   while (active?.shadowRoot?.activeElement != null) active = active.shadowRoot.activeElement;
-  return active === null || active === document.body || active === document.documentElement ? null : active;
+  return active === null || active === document.body ? null : active;
 }

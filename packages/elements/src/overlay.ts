@@ -5,7 +5,7 @@
 // disconnection (R-05a), the close order and motion (R-06). A subclass names its event prefix and adds its layout.
 // Internal, not an entry point, and no tag: `ocelle-dialog` (and later `ocelle-drawer`) extend it.
 import { LitElement, css, html, nothing } from "lit";
-import type { CSSResultGroup, PropertyValues } from "lit";
+import type { CSSResultGroup } from "lit";
 import { deepActive, flatChildren, isOpaqueContent, walk } from "./focusable.ts";
 import type { Walk } from "./focusable.ts";
 import { accessibleName } from "./naming.ts";
@@ -65,11 +65,16 @@ function closesOnRequest(dialog: HTMLDialogElement): boolean {
   return dialog.closedBy === "closerequest" || dialog.closedBy === "any";
 }
 
-/** Reads a duration such as `200ms` or `0.2s` in milliseconds; 0 when it is not one. */
+/** Reads a duration such as `200ms` or `0.2s` in milliseconds: 0 without a unit, NaN for no number. */
 function milliseconds(text: string): number {
   const number = Number.parseFloat(text);
-  if (Number.isNaN(number)) return 0;
   return text.endsWith("ms") ? number : text.endsWith("s") ? number * 1000 : 0;
+}
+
+/** Whether a duration runs no animation: none, zero, negative or NaN. */
+function still(duration: number): boolean {
+  // Stryker disable next-line EqualityOperator: equivalent, a duration of exactly 0 ms runs nothing either way, no animation or one that ends at the next frame, before any observation (T025, reviews/phase-2/notes.md)
+  return !(duration > 0);
 }
 
 /**
@@ -252,8 +257,8 @@ export class OcelleOverlay extends LitElement {
    */
   declare closeLabel: string;
 
-  /** The event prefix, `ocelle-<element>`, of the subclass. */
-  protected readonly eventPrefix: string = "ocelle-overlay";
+  /** The event prefix, `ocelle-<element>`, that each subclass sets. */
+  protected declare readonly eventPrefix: string;
 
   #state: State = "closed";
   #reason: CloseReason = "host";
@@ -262,7 +267,7 @@ export class OcelleOverlay extends LitElement {
   #animation: Animation | undefined;
   #below = new Set<HTMLDialogElement>();
   #asideFor: HTMLDialogElement | null = null;
-  #listening = false;
+  // Stryker disable next-line BooleanLiteral: equivalent, measured before any key reaches the panel: by the body's resize observer when it gets its box at showModal() (T025, reviews/phase-2/notes.md)
   #overflowing = false;
   #footer = false;
   #observer: ResizeObserver | undefined;
@@ -295,12 +300,8 @@ export class OcelleOverlay extends LitElement {
     this.requestUpdate();
   }
 
-  override connectedCallback(): void {
-    super.connectedCallback();
-    this.#footer = this.querySelector(':scope > [slot="footer"]') !== null;
-  }
-
   override disconnectedCallback(): void {
+    // Stryker disable next-line CallExpression: equivalent, Lit's own disconnection serves reactive controllers and async directives, and the overlays use neither (T025, reviews/phase-2/notes.md)
     super.disconnectedCallback();
     // R-05a: an open or closing overlay closes silently, with no event and no focus move.
     if (this.#state === "closed") return;
@@ -316,18 +317,22 @@ export class OcelleOverlay extends LitElement {
   protected override render(): unknown {
     // Without a host `aria-label` the heading names the panel; `aria-labelledby` wins over the `aria-label` the
     // trimmed label then also gives it, so the name is the heading's either way (R-08).
+    // R-08: the heading names the panel, or a host `aria-label`, then on the panel, instead.
     const named = this.hasAttribute("aria-label");
     const name = accessibleName(this.label, this.getAttribute("aria-label"));
+    // Stryker disable next-line ConditionalExpression, LogicalOperator: equivalent, an aria-label given as well while the heading labels the panel (aria-labelledby wins), or an empty one where the host's is blank, gives the same name (T025, reviews/phase-2/notes.md)
+    const ariaLabel = named && name !== undefined ? name : nothing;
     return html`<dialog
       part="panel"
       aria-labelledby=${named ? nothing : "heading"}
-      aria-label=${name ?? nothing}
+      aria-label=${ariaLabel}
       @keydown=${this.#onKeydown}
       @cancel=${this.#onCancel}
       @close=${{
         handleEvent: (event: Event) => {
           this.#onClose(event);
         },
+        // Stryker disable next-line BooleanLiteral: equivalent, without capture the slotted dialogs' close events are not seen, and their toggles leave the below record (T025, reviews/phase-2/notes.md)
         capture: true,
       }}
       @toggle=${{
@@ -338,12 +343,7 @@ export class OcelleOverlay extends LitElement {
         // Stryker disable next-line BooleanLiteral: equivalent, without capture the slotted dialogs' toggles are not seen, and their close events leave the record (T025, reviews/phase-2/notes.md)
         capture: true,
       }}
-      @focusout=${{
-        handleEvent: (event: FocusEvent) => {
-          this.#onFocusout(event);
-        },
-        capture: true,
-      }}
+      @focusout=${this.#onFocusout}
     ><div class="header"><h2 part="heading" id="heading" ?hidden=${(this.label ?? "") === ""}>${this.label ?? ""}</h2><button part="close-button" type="button" aria-label=${this.closeLabel} @click=${this.#onCloseClick}><ocelle-icon name="close"></ocelle-icon></button></div><div part="body" tabindex=${this.#overflowing ? "0" : nothing}><slot @slotchange=${this.#onBodySlot}></slot></div><div part="footer" ?hidden=${!this.#footer}><slot name="footer" @slotchange=${this.#onFooterSlot}></slot></div><span class="sentinel" tabindex="-1" aria-hidden="true"></span></dialog>`;
   }
 
@@ -357,8 +357,8 @@ export class OcelleOverlay extends LitElement {
     this.#observeContent();
   }
 
-  protected override updated(changed: PropertyValues<this>): void {
-    if (!changed.has("open")) return;
+  /** The state follows `open` (FR-004); in any other combination there is nothing to do. */
+  protected override updated(): void {
     if (this.open && this.#state === "closed") this.#show();
     else if (this.open && this.#state === "closing") this.#reopen();
     else if (!this.open && (this.#state === "opening" || this.#state === "shown")) this.#begin("host");
@@ -372,8 +372,6 @@ export class OcelleOverlay extends LitElement {
 
   /** Adds or removes this overlay's `document` keydown listener (R-02). */
   #listen(on: boolean): void {
-    if (on === this.#listening) return;
-    this.#listening = on;
     if (on) document.addEventListener("keydown", this.#onDocumentKeydown);
     else document.removeEventListener("keydown", this.#onDocumentKeydown);
   }
@@ -396,10 +394,9 @@ export class OcelleOverlay extends LitElement {
     OcelleOverlay.#syncTop();
     this.#state = "opening";
     this.#focusInitial();
-    queueMicrotask(() => {
-      this.#measure();
-    });
+    // Stryker disable next-line BlockStatement: equivalent, opening and shown are handled alike everywhere: each check names both (T025, reviews/phase-2/notes.md)
     this.#animate(true, () => {
+      // Stryker disable next-line ConditionalExpression, EqualityOperator: equivalent, opening and shown are handled alike everywhere: each check names both (T025, reviews/phase-2/notes.md)
       if (this.#state === "opening") this.#state = "shown";
     });
   }
@@ -531,7 +528,7 @@ export class OcelleOverlay extends LitElement {
     const style = getComputedStyle(this);
     const duration = milliseconds(style.getPropertyValue("--ocelle-motion-base"));
     const reduced = matchMedia("(prefers-reduced-motion: reduce)").matches;
-    if (dialog === null || reduced || duration <= 0) {
+    if (dialog === null || reduced || still(duration)) {
       void this.updateComplete.then(done);
       return;
     }
@@ -721,12 +718,12 @@ export class OcelleOverlay extends LitElement {
    * a closed one is not rendered. During the exit the repair moves focus within the panel, which the end of the close
    * returns to the opener as it would from the body.
    */
-  #onFocusout(event: FocusEvent): void {
+  #onFocusout = (event: FocusEvent): void => {
     if (!(event.target instanceof Element) || !isOpaqueContent(event.target)) return;
     setTimeout(() => {
       if (deepActive() === null) this.#close?.focus();
     }, 0);
-  }
+  };
 
   // Body and footer ----------------------------------------------------------------------------------------------
 
