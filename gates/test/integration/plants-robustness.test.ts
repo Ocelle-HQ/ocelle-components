@@ -115,19 +115,19 @@ function variants(): Variant[] {
       name: "(1) the neighbour color-ink-soft changed in light",
       source: relit(realSource, "color-ink-soft", "#3F3A33", "#403B34"),
       pairs: refigured(realPairs, "color-ink-soft", "#403B34"),
-      summary: "contrast: 160 pairs checked in light, 168 in dark (149 required per theme)",
+      summary: "contrast: 165 pairs checked in light, 173 in dark (154 required per theme)",
     },
     {
       name: "(2) a token inserted before color-ink-soft and a pair inserted first",
       source: inserted.join("\n"),
       pairs: [first, ...realPairs],
-      summary: "contrast: 161 pairs checked in light, 168 in dark (149 required per theme)",
+      summary: "contrast: 166 pairs checked in light, 173 in dark (154 required per theme)",
     },
     {
       name: "(3) the light color-danger changed",
       source: relit(realSource, "color-danger", "#A8322C", "#A5302A"),
       pairs: refigured(realPairs, "color-danger", "#A5302A"),
-      summary: "contrast: 160 pairs checked in light, 168 in dark (149 required per theme)",
+      summary: "contrast: 165 pairs checked in light, 173 in dark (154 required per theme)",
     },
   ];
 }

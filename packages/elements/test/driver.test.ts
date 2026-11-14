@@ -1,5 +1,5 @@
 import { afterEach, describe, expect, it } from "vitest";
-import { FirstLoadBase, OcelleTestProbe } from "./fixtures/live-regions.ts";
+import { FirstLoadBase, OcelleTestProbe, OcelleTestRegion } from "./fixtures/live-regions.ts";
 import { inProcessDriver, timing } from "./in-process.ts";
 import type { InsertHow } from "./scenarios/driver.ts";
 
@@ -147,6 +147,10 @@ describe("after(ms) and the W in force", () => {
     expect(after - before).toBeLessThan(gap - 40);
   });
 
+  it("the H in force is the hold of the in-process timing constant (specs/010-feedback-forms phase 2)", () => {
+    expect(driver.H).toBe(timing.hold);
+  });
+
   it("the W in force is 2 × D of the in-process timing constant, a D of at least two rendering updates and under Chromium's 150 ms", () => {
     expect(driver.W).toEqual({ loaded: 2 * timing.delayLoaded, loading: 2 * timing.delayLoading });
     expect(timing.delayLoaded).toBeGreaterThanOrEqual(34);
@@ -260,5 +264,82 @@ describe("forms", () => {
     const empty = await driver.focusPath();
     byId("f").focus();
     expect({ empty, field: await driver.focusPath() }).toEqual({ empty: [], field: ["ocelle-test-field#f", "input"] });
+  });
+});
+
+// The phase 2 steps (specs/010-feedback-forms T011): `batch`, `property`, `computedIn`, `contentBox`, `firstLoad` and
+// `defineSecond`, each on test-only elements and plain markup, so each test fails without its step.
+describe("the phase 2 steps", () => {
+  it("batch(operations) runs every operation in order in one task: one MutationObserver delivery holds all their records", async () => {
+    await driver.mount('<main id="c"><span id="s">old</span><input id="i"><div id="from"><b id="m">moved</b></div><div id="to"></div><i id="r">gone</i></main>');
+    const deliveries: number[] = [];
+    const observer = new MutationObserver((records) => deliveries.push(records.length));
+    observer.observe(byId("c"), { childList: true, characterData: true, attributes: true, subtree: true });
+    await driver.batch([
+      { op: "insert", container: "c", markup: '<p id="new">fresh</p>' },
+      { op: "text", id: "s", text: "new" },
+      { op: "attribute", id: "s", name: "data-x", value: "1" },
+      { op: "property", id: "i", name: "value", value: "typed" },
+      { op: "move", id: "m", to: "to" },
+      { op: "remove", id: "r" },
+      { op: "focus", id: "i" },
+    ]);
+    observer.disconnect();
+    expect({
+      deliveries,
+      inserted: document.getElementById("new")?.textContent ?? null,
+      text: byId("s").textContent,
+      attribute: byId("s").getAttribute("data-x"),
+      value: (byId("i") as HTMLInputElement).value,
+      moved: byId("m").parentElement?.id ?? null,
+      removed: document.getElementById("r"),
+      focused: document.activeElement?.id ?? null,
+    }).toEqual({ deliveries: [6], inserted: "fresh", text: "new", attribute: "1", value: "typed", moved: "to", removed: null, focused: "i" });
+  });
+
+  it("property(id, name) reads a property as the page has it", async () => {
+    await driver.mount('<input id="i" value="x" type="checkbox" checked>');
+    expect([await driver.property("i", "value"), await driver.property("i", "checked"), await driver.property("i", "tabIndex")]).toEqual(["x", true, 0]);
+  });
+
+  it("computedIn(id, inner, property) reads a computed value in the element's shadow root, and \"\" without the element", async () => {
+    await driver.mount('<ocelle-test-region id="r"></ocelle-test-region>');
+    expect([await driver.computedIn("r", "div", "display"), await driver.computedIn("r", "p", "display")]).toEqual(["block", ""]);
+  });
+
+  it("contentBox(id, inner) is the shadow element's border box less its borders and padding", async () => {
+    await driver.mount('<ocelle-test-field id="f"></ocelle-test-field>');
+    const box = await driver.box("f", "input");
+    const input = byId("f").shadowRoot?.querySelector("input");
+    const style = input === null || input === undefined ? null : getComputedStyle(input);
+    const px = (property: string): number => Number.parseFloat(style?.getPropertyValue(property) ?? "0");
+    const content = await driver.contentBox("f", "input");
+    expect(content).toEqual({
+      x: box.x + px("border-left-width") + px("padding-left"),
+      y: box.y + px("border-top-width") + px("padding-top"),
+      width: box.width - px("border-left-width") - px("padding-left") - px("padding-right") - px("border-right-width"),
+      height: box.height - px("border-top-width") - px("padding-top") - px("padding-bottom") - px("border-bottom-width"),
+    });
+    expect(content.width).toBeGreaterThan(0);
+  });
+
+  it("firstLoad(containerId, markup, tag) mounts the markup with a fresh subclass of tag's class upgraded by its registration, the capture armed", async () => {
+    await driver.mount('<main id="c"></main>');
+    await driver.firstLoad("c", '<ocelle-first-load id="f"></ocelle-first-load>', "ocelle-test-probe");
+    const found = document.getElementById("f");
+    const snapshots = await driver.liveCapture.stop();
+    expect({
+      upgraded: found instanceof OcelleTestProbe,
+      fresh: found?.localName.startsWith("ocelle-first-load-") ?? false,
+      connected: found instanceof OcelleTestProbe && found.constructedConnected,
+      captured: snapshots.length > 0,
+    }).toEqual({ upgraded: true, fresh: true, connected: true, captured: true });
+  });
+
+  it("defineSecond(tag) defines a free tag and leaves a defined tag's first class in place without throwing", async () => {
+    const unused = `ocelle-test-second-${String(Math.round(performance.now()))}`;
+    await driver.defineSecond(unused);
+    await driver.defineSecond("ocelle-test-region");
+    expect({ defined: customElements.get(unused) !== undefined, kept: customElements.get("ocelle-test-region") === OcelleTestRegion }).toEqual({ defined: true, kept: true });
   });
 });
