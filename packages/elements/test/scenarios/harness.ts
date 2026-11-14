@@ -30,7 +30,10 @@ export interface HarnessScenario {
  * - `ocelle-harness-nest`: an open shadow root holding `ocelle-harness-inner`, whose own open shadow root holds
  *   `<span class="target">`. `act`: `write` sets the span's `color` through the CSSOM; `write-remove` does so and
  *   removes the `style` attribute again at once; `style` appends a `<style>` to the inner root; `style-remove`
- *   appends one and removes it at once.
+ *   appends one and removes it at once; `detached` creates a `<span>`, sets its `color` through the CSSOM while it is
+ *   detached and then appends it to the inner root; `fragment` clones a template holding
+ *   `<p><i>One</i><b>Two</b></p>`, sets the `color` of the clone's `<i>` and `<b>` through the CSSOM while the clone
+ *   is a detached fragment (as Lit commits a first render) and then appends the fragment to the inner root.
  * - `ocelle-harness-overlay`: an `open` property (false) and an open shadow root holding
  *   `<dialog><button id="in">`. `act`: `modal` shows the dialog modally and sets `open`; `announce` sets `open`, shows
  *   the dialog modally, focuses the button, dispatches `ocelle-harness-request` (cancelable, detail
@@ -84,6 +87,18 @@ export function defineStandIns(): void {
           const added = document.createElement("style");
           inner.append(added);
           if (act === "style-remove") added.remove();
+        }
+        if (act === "detached") {
+          const span = document.createElement("span");
+          span.style.color = "rgb(1, 2, 3)";
+          inner.append(span);
+        }
+        if (act === "fragment") {
+          const template = document.createElement("template");
+          template.innerHTML = "<p><i>One</i><b>Two</b></p>";
+          const fragment = template.content.cloneNode(true) as DocumentFragment;
+          for (const part of fragment.querySelectorAll<HTMLElement>("i, b")) part.style.color = "rgb(1, 2, 3)";
+          inner.append(fragment);
         }
       }
     },
@@ -234,6 +249,26 @@ export const harnessScenarios: readonly HarnessScenario[] = [
       return { mounted, nested, light, probe, remounted, transient: await driver.styleAttributes() };
     },
     expected: { mounted: 0, nested: 1, light: 2, probe: 2, remounted: 0, transient: 1 },
+  },
+  {
+    name: "styleAttributes(): an element given a CSSOM style write while detached and then appended into a nested shadow root is counted",
+    run: async (driver) => {
+      await driver.mount('<ocelle-harness-nest id="nest"></ocelle-harness-nest>');
+      const mounted = await driver.styleAttributes();
+      await driver.setAttribute("nest", "act", "detached");
+      return { mounted, appended: await driver.styleAttributes() };
+    },
+    expected: { mounted: 0, appended: 1 },
+  },
+  {
+    name: "styleAttributes(): a cloned template fragment whose descendants are styled through the CSSOM before it is appended into a nested shadow root counts each styled descendant",
+    run: async (driver) => {
+      await driver.mount('<ocelle-harness-nest id="nest"></ocelle-harness-nest>');
+      const mounted = await driver.styleAttributes();
+      await driver.setAttribute("nest", "act", "fragment");
+      return { mounted, committed: await driver.styleAttributes() };
+    },
+    expected: { mounted: 0, committed: 2 },
   },
   {
     name: "styleElements(): a <style> added to a shadow root attached after mount is counted, and one added and removed again at once is counted",
