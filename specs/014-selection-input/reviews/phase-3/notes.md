@@ -71,3 +71,31 @@ Both the listbox and the tabs use it.
   the rules that pass: `aria-allowed-attr`, `aria-allowed-role`, `aria-required-children`, `aria-valid-attr-value` and
   `color-contrast`. The violation and incomplete lists stay empty.
 - `test/selection.test.ts`: a `SelectionModel.delivered` case, added with the method, which did not exist at red.
+
+## The mutation gate (T050)
+
+The first run of `pnpm run gate:mutation -- --base 83a6f8b` on the green commit reported 53 findings in
+`src/ocelle-tab.ts` and `src/ocelle-tabs.ts`. The commit after the green one handles them:
+
+- **Killed by new bodies in `test/scenarios/tabs.ts`**, run in both harnesses:
+  - the tab's `disabled` and `value` properties, and the default that counts tabs only;
+  - a tab's `value` attribute changed to the remembered value;
+  - a tab and panel prepended (generated ids stay unique, and a panel no longer shown loses its tabindex);
+  - the shown panel's focusable measure through each attribute the panel observer follows, and the anchor, editing
+    host, disabled, hidden, unslotted and slotted cases;
+  - a disabled tab that leaves the tabs;
+  - "a move does not steal focus back";
+  - a host that focuses elsewhere while it removes the focused tab;
+  - tabs whose `focusin` and `focusout` stop propagating;
+  - a `SelectionModel.delivered` case in `test/selection.test.ts`.
+- **Removed by simplifying the source**: the anchor rule now covers `a` only, and an editing host is counted (Chromium
+  reads `tabIndex` 0 for an anchor without `href` and -1 for an editing host); a WeakMap entry's deletion was dropped.
+- **Recorded as equivalent**, each with a `Stryker disable next-line` comment giving the reason:
+  - the tab's `value` attribute handling (Lit's own path writes the same attribute back);
+  - the per-document counter counting down (the numbers stay distinct);
+  - observing the shown panel again;
+  - leaving an old panel observed (the callback measures the shown panel only);
+  - the panel observer's `childList` and `disabled` (the host's own observer follows both in the whole subtree);
+  - the `false` passed for a shadow root's children (no shadow host is their parent).
+
+The final run is recorded in the gate run below.

@@ -40,7 +40,14 @@ import type { Entry } from "./selection.ts";
 const written = ["aria-selected", "aria-disabled", "aria-controls", "aria-labelledby", "tabindex"];
 
 /** The attributes of a panel's content that change whether it holds a focusable (R-03). */
-const focusability = ["tabindex", "disabled", "href", "hidden", "contenteditable"];
+const focusability = [
+  "tabindex",
+  // Stryker disable next-line StringLiteral: equivalent, the host's own observer follows `disabled` in the whole subtree
+  "disabled",
+  "href",
+  "hidden",
+  "contenteditable",
+];
 
 /** The per-document number of the next tabs, for the ids they generate. */
 let count = 0;
@@ -95,6 +102,7 @@ export class OcelleTabs extends LitElement {
    */
   declare label: string | undefined;
 
+  // Stryker disable next-line AssignmentOperator: equivalent, counting down gives every tabs on the page a distinct number too
   readonly #number = (count += 1);
   /** The ids the tabs generated, per child, so a child's own id is never touched. */
   readonly #generated = new WeakMap<Element, string>();
@@ -198,7 +206,6 @@ export class OcelleTabs extends LitElement {
   #release(element: Element): void {
     for (const name of written) element.removeAttribute(name);
     if (element.id === this.#generated.get(element)) element.removeAttribute("id");
-    this.#generated.delete(element);
   }
 
   /** Writes the states and the association where they differ, shows the selected panel, then moves focus to `focus`. */
@@ -237,9 +244,19 @@ export class OcelleTabs extends LitElement {
     const [tablist, panels] = (this.renderRoot as ShadowRoot | undefined)?.querySelectorAll("slot") ?? [];
     tablist?.assign(...this.#model.entries.map((entry) => entry.node));
     panels?.assign(...(panel === null ? [] : [panel]));
+    // Stryker disable next-line ConditionalExpression: equivalent, observing the shown panel again changes nothing
     if (panel !== this.#shown) {
+      // Stryker disable next-line CallExpression: equivalent, the observer's callback measures the shown panel only, so an old panel still observed changes nothing
       this.#panelObserver.disconnect();
-      if (panel !== null) this.#panelObserver.observe(panel, { childList: true, subtree: true, attributes: true, attributeFilter: focusability });
+      if (panel !== null) {
+        this.#panelObserver.observe(panel, {
+          // Stryker disable next-line BooleanLiteral: equivalent, the host's own observer (`childList` with `subtree`) already follows the panel's child lists
+          childList: true,
+          subtree: true,
+          attributes: true,
+          attributeFilter: focusability,
+        });
+      }
       this.#shown = panel;
     }
     this.#measure();
@@ -317,13 +334,17 @@ function focusLeft(): boolean {
 }
 
 /**
- * Whether `element` is in the sequential focus order by itself: a non-negative tab index, not disabled, and an anchor
- * only with `href`. Read from attributes, not from layout: a panel's content may not
- * be rendered yet when the tabs measure it (its own shadow root renders in a later microtask).
+ * Whether `element` is in the sequential focus order by itself: not disabled; an editing host with no `tabindex` (its
+ * `tabIndex` reads -1 in Chromium, yet Tab reaches it); not an anchor without `href` or `tabindex` (whose `tabIndex`
+ * reads 0 in Chromium, yet Tab passes it); else a non-negative tab index. Read from the element, not from layout: a
+ * panel's content may not be rendered yet when the tabs measure it (its own shadow root renders in a later microtask).
  */
 function sequential(element: HTMLElement): boolean {
-  if (element.tabIndex < 0 || element.matches(":disabled")) return false;
-  return !((element.localName === "a" || element.localName === "area") && !element.hasAttribute("href") && !element.hasAttribute("tabindex"));
+  if (element.matches(":disabled")) return false;
+  const tabindex = element.hasAttribute("tabindex");
+  if (element.isContentEditable && !tabindex) return true;
+  if (element.localName === "a" && !element.hasAttribute("href") && !tabindex) return false;
+  return element.tabIndex >= 0;
 }
 
 /**
@@ -336,6 +357,7 @@ function holdsFocusable(parent: Element | ShadowRoot, panel = true): boolean {
     if (child.hasAttribute("hidden")) continue;
     if (!panel && parent instanceof Element && parent.shadowRoot !== null && child.assignedSlot === null) continue;
     if (child instanceof HTMLElement && sequential(child)) return true;
+    // Stryker disable next-line BooleanLiteral: equivalent, the children of a shadow root have no shadow host as their parent, so the slot check never applies to them
     if (child.shadowRoot !== null && holdsFocusable(child.shadowRoot, false)) return true;
     if (holdsFocusable(child, false)) return true;
   }
