@@ -270,6 +270,79 @@
       ]
     },
     {
+      "path": "src/ocelle-page-header.ts",
+      "kind": "javascript-module",
+      "exports": [
+        {
+          "name": "OcellePageHeader",
+          "kind": "js",
+          "declaration": {
+            "name": "OcellePageHeader",
+            "module": "src/ocelle-page-header.ts"
+          }
+        }
+      ],
+      "declarations": [
+        {
+          "tagName": "ocelle-page-header",
+          "superclass": {
+            "package": "lit",
+            "name": "LitElement"
+          },
+          "slots": [
+            {
+              "name": "heading",
+              "description": "The page's own heading element (`h1` to `h6`, usually the screen's `h1`), drawn with the display style; its level is the page's."
+            },
+            {
+              "name": "eyebrow",
+              "description": "A short label above the heading naming the area, drawn with the eyebrow style."
+            },
+            {
+              "name": "description",
+              "description": "A subtitle under the heading."
+            },
+            {
+              "name": "actions",
+              "description": "The screen's controls at the inline end of the heading's first line, wrapping under the description when they do not fit beside the heading."
+            }
+          ],
+          "name": "OcellePageHeader",
+          "members": [
+            {
+              "type": {
+                "text": "\"regular\" | \"compact\" | undefined"
+              },
+              "reflects": true,
+              "privacy": "public",
+              "name": "size",
+              "kind": "field",
+              "description": "The heading's size: `regular` or `compact`. Not set, or any other value, draws regular, the heading at\n`--ocelle-font-size-2xl`; `compact` draws it at `--ocelle-font-size-xl`. Reflected.",
+              "default": "undefined",
+              "attribute": "size"
+            }
+          ],
+          "kind": "class",
+          "events": [],
+          "description": "A screen's page header: a band around a heading the page slots, with an optional eyebrow above, a description under\nthe heading and actions at its inline end, ruled off below.",
+          "customElement": true,
+          "cssProperties": [],
+          "cssParts": [],
+          "attributes": [
+            {
+              "type": {
+                "text": "\"regular\" | \"compact\" | undefined"
+              },
+              "name": "size",
+              "fieldName": "size",
+              "description": "The heading's size: `regular` or `compact`. Not set, or any other value, draws regular, the heading at\n`--ocelle-font-size-2xl`; `compact` draws it at `--ocelle-font-size-xl`. Reflected.",
+              "default": "undefined"
+            }
+          ]
+        }
+      ]
+    },
+    {
       "path": "src/ocelle-section-header.ts",
       "kind": "javascript-module",
       "exports": [
