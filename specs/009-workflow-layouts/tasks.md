@@ -483,7 +483,7 @@ Its fitting twin is none of these. `ocelle-test-overflow-host` passes US1-1, US1
   sentence-length text.
 - [X] T042 [US2] Produce the baselines with `visual:update` and confirm them in CI, as in T028. Run `gate:axe`.
 - [X] T043 [US2] README sections of T036, and the changelog entries for the two elements and their entry points.
-- [ ] T044 [US2] Run each pairing plant of T032 once and record them in
+- [X] T044 [US2] Run each pairing plant of T032 once and record them in
   `specs/009-workflow-layouts/reviews/phase-3/plants.md`. Then run the gates as in T030.
 
 **Checkpoint**: `tdd-check.sh 3` reports `pass`; the review approves.
