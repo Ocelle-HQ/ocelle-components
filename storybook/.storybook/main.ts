@@ -3,7 +3,12 @@
 // (scripts/swatches.ts: the token and swatch stylesheets and the fonts) as the static directory. Telemetry is off,
 // so the build makes no network request; the core addons whose preview code injects <style> elements are off, so
 // the preview, the Storybook page, runs under `style-src 'self'`.
+import { fileURLToPath } from "node:url";
 import type { StorybookConfig } from "@storybook/html-vite";
+
+// Vite's cache of the root being built, below its ignored storybook/.cache/ (specs/006-storybook-workbench research.md
+// R-16): never in the storybook/node_modules a plant root shares with the repository.
+const cacheDir = fileURLToPath(new URL("../.cache/vite", import.meta.url));
 
 const config: StorybookConfig = {
   framework: { name: "@storybook/html-vite", options: {} },
@@ -20,6 +25,7 @@ const config: StorybookConfig = {
     controls: false,
     interactions: false,
   },
+  viteFinal: (vite) => ({ ...vite, cacheDir }),
 };
 
 export default config;

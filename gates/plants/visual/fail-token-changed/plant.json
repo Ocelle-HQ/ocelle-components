@@ -1,0 +1,86 @@
+{
+  "expect": "fail",
+  "why": "A changed token value (color-ink, light) changes every story-theme that shows it: differs on the twenty light story-themes measured in the pinned container (FR-004, US2 scenario 2), the twelve the phase 1 spike listed and the eight of mission 005's stories that show color-ink (all but elements-ocelle-brand-mark--chrome, measured for plan decision 29), and none in dark. A story added later that shows color-ink in light adds its line here (research.md R-07).",
+  "findings": [
+    {
+      "location": "base-styles--base-page/light",
+      "rule": "differs"
+    },
+    {
+      "location": "base-styles--compact-screen/light",
+      "rule": "differs"
+    },
+    {
+      "location": "base-styles--prose-document/light",
+      "rule": "differs"
+    },
+    {
+      "location": "base-styles--identifier-wrap/light",
+      "rule": "differs"
+    },
+    {
+      "location": "elements-ocelle-brand-mark--main-ground/light",
+      "rule": "differs"
+    },
+    {
+      "location": "elements-ocelle-brand-mark--mono/light",
+      "rule": "differs"
+    },
+    {
+      "location": "elements-ocelle-brand-mark--labelled/light",
+      "rule": "differs"
+    },
+    {
+      "location": "elements-ocelle-icon--close/light",
+      "rule": "differs"
+    },
+    {
+      "location": "elements-ocelle-icon--labelled/light",
+      "rule": "differs"
+    },
+    {
+      "location": "elements-ocelle-icon--unknown-name/light",
+      "rule": "differs"
+    },
+    {
+      "location": "elements-ocelle-icon--set/light",
+      "rule": "differs"
+    },
+    {
+      "location": "elements-ocelle-icon--set-right-to-left/light",
+      "rule": "differs"
+    },
+    {
+      "location": "tokens--colour/light",
+      "rule": "differs"
+    },
+    {
+      "location": "tokens--type/light",
+      "rule": "differs"
+    },
+    {
+      "location": "tokens--space/light",
+      "rule": "differs"
+    },
+    {
+      "location": "tokens--shape/light",
+      "rule": "differs"
+    },
+    {
+      "location": "tokens--size/light",
+      "rule": "differs"
+    },
+    {
+      "location": "tokens--shell/light",
+      "rule": "differs"
+    },
+    {
+      "location": "tokens--elevation/light",
+      "rule": "differs"
+    },
+    {
+      "location": "tokens--motion/light",
+      "rule": "differs"
+    }
+  ]
+}

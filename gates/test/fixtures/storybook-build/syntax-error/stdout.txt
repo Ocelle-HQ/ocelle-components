@@ -1,0 +1,54 @@
+
+T  Building storybook v10.6.5
+|
+o  Cleaning outputDir: dist
+|
+o  Loading presets
+|
+•  Building open services..
+|
+•  Building preview..
+|  Vite vite v8.3.5 building client environment for production...
+|
+!  🚨 Unable to index ./stories/tokens.stories.ts:
+|  SyntaxError: Unexpected token (26:49)
+|  at constructor
+|  (file:///work/repo/node_modules/.pnpm/storybook@10.6.5_react@19.3.1/node_modules/storybook/dist/_node-chunks/chunk-XUG57B3N.js:12167:21)
+|  at Parser.raise
+|  (file:///work/repo/node_modules/.pnpm/storybook@10.6.5_react@19.3.1/node_modules/storybook/dist/_node-chunks/chunk-XUG57B3N.js:16360:71)
+|  at Parser.unexpected
+|  (file:///work/repo/node_modules/.pnpm/storybook@10.6.5_react@19.3.1/node_modules/storybook/dist/_node-chunks/chunk-XUG57B3N.js:16377:20)
+|  at Parser.parseExprAtom
+|  (file:///work/repo/node_modules/.pnpm/storybook@10.6.5_react@19.3.1/node_modules/storybook/dist/_node-chunks/chunk-XUG57B3N.js:19376:26)
+|  at Parser.parseExprAtom
+|  (file:///work/repo/node_modules/.pnpm/storybook@10.6.5_react@19.3.1/node_modules/storybook/dist/_node-chunks/chunk-XUG57B3N.js:15092:181)
+|  at Parser.parseExprSubscripts
+|  (file:///work/repo/node_modules/.pnpm/storybook@10.6.5_react@19.3.1/node_modules/storybook/dist/_node-chunks/chunk-XUG57B3N.js:19169:105)
+|  at Parser.parseUpdate
+|  (file:///work/repo/node_modules/.pnpm/storybook@10.6.5_react@19.3.1/node_modules/storybook/dist/_node-chunks/chunk-XUG57B3N.js:19160:57)
+|  at Parser.parseMaybeUnary
+|  (file:///work/repo/node_modules/.pnpm/storybook@10.6.5_react@19.3.1/node_modules/storybook/dist/_node-chunks/chunk-XUG57B3N.js:19145:25)
+|  at Parser.parseMaybeUnary
+|  (file:///work/repo/node_modules/.pnpm/storybook@10.6.5_react@19.3.1/node_modules/storybook/dist/_node-chunks/chunk-XUG57B3N.js:18370:95)
+|  at Parser.parseMaybeUnaryOrPrivate
+|  (file:///work/repo/node_modules/.pnpm/storybook@10.6.5_react@19.3.1/node_modules/storybook/dist/_node-chunks/chunk-XUG57B3N.js:19053:65)
+|
+x  Error: Unable to index ./stories/tokens.stories.ts
+|  at _StoryIndexGenerator.getIndexAndStats
+|  (file:///work/repo/node_modules/.pnpm/storybook@10.6.5_react@19.3.1/node_modules/storybook/dist/core-server/index.js:17054:15)
+|  at async _StoryIndexGenerator.getIndex
+|  (file:///work/repo/node_modules/.pnpm/storybook@10.6.5_react@19.3.1/node_modules/storybook/dist/core-server/index.js:17043:13)
+|  at async writeIndexJson
+|  (file:///work/repo/node_modules/.pnpm/storybook@10.6.5_react@19.3.1/node_modules/storybook/dist/core-server/index.js:7405:20)
+|  at async Promise.all (index 4)
+|  at async buildStaticStandalone
+|  (file:///work/repo/node_modules/.pnpm/storybook@10.6.5_react@19.3.1/node_modules/storybook/dist/core-server/index.js:7603:7)
+|  at async withTelemetry
+|  (file:///work/repo/node_modules/.pnpm/storybook@10.6.5_react@19.3.1/node_modules/storybook/dist/_node-chunks/chunk-AZLAKLIP.js:142:12)
+|  at async build
+|  (file:///work/repo/node_modules/.pnpm/storybook@10.6.5_react@19.3.1/node_modules/storybook/dist/bin/core.js:4821:3)
+|  at async _Command.<anonymous>
+|  (file:///work/repo/node_modules/.pnpm/storybook@10.6.5_react@19.3.1/node_modules/storybook/dist/bin/core.js:5003:7)
+|
+—  Storybook exited with an error
+

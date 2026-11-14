@@ -1,0 +1,56 @@
+
+[90m┌[39m  Building storybook v10.6.5
+[90m│[39m
+[32m◇[39m  Cleaning outputDir: [36mdist[39m
+[90m│[39m
+[32m◇[39m  Loading presets
+[90m│[39m
+[34m●[39m  Building open services..
+[90m│[39m
+[34m●[39m  Building preview..
+[90m│[39m  [43mVite[49m [36mvite v8.3.5 [32mbuilding client environment for production...[36m[39m
+[90m│[39m
+[33m▲[39m  🚨 Unable to index ./stories/nodefault.stories.ts:
+[90m│[39m  NoMetaError: CSF: missing default export
+[90m│[39m  /work/root/storybook/stories/nodefault.stories.ts
+[90m│[39m  (line 1, col 0)
+
+[90m│[39m  More info: ]8;;https://storybook.js.org/docs/writing-stories?ref=error#default-exporthttps://storybook.js.org/docs/writing-stories?ref=error#...]8;;
+[90m│[39m  at CsfFile.parse
+[90m│[39m  (file:///work/repo/node_modules/.pnpm/storybook@10.6.5_react@19.3.1/node_modules/storybook/dist/_node-chunks/chunk-FRYV2VFJ.js:545:13)
+[90m│[39m  at Object.createIndex
+[90m│[39m  (file:///work/repo/node_modules/.pnpm/storybook@10.6.5_react@19.3.1/node_modules/storybook/dist/core-server/presets/common-preset.js:2232:154)
+[90m│[39m  at async _StoryIndexGenerator.extractStories
+[90m│[39m  (file:///work/repo/node_modules/.pnpm/storybook@10.6.5_react@19.3.1/node_modules/storybook/dist/core-server/index.js:16873:23)
+[90m│[39m  at async
+[90m│[39m  file:///work/repo/node_modules/.pnpm/storybook@10.6.5_react@19.3.1/node_modules/storybook/dist/core-server/index.js:16794:39
+[90m│[39m  at async Promise.all (index 1)
+[90m│[39m  at async Promise.all (index 0)
+[90m│[39m  at async _StoryIndexGenerator.updateExtracted
+[90m│[39m  (file:///work/repo/node_modules/.pnpm/storybook@10.6.5_react@19.3.1/node_modules/storybook/dist/core-server/index.js:16782:5)
+[90m│[39m  at async _StoryIndexGenerator.ensureExtracted
+[90m│[39m  (file:///work/repo/node_modules/.pnpm/storybook@10.6.5_react@19.3.1/node_modules/storybook/dist/core-server/index.js:16817:5)
+[90m│[39m  at async _StoryIndexGenerator.initialize
+[90m│[39m  (file:///work/repo/node_modules/.pnpm/storybook@10.6.5_react@19.3.1/node_modules/storybook/dist/core-server/index.js:16778:5)
+[90m│[39m  at async
+[90m│[39m  file:///work/repo/node_modules/.pnpm/storybook@10.6.5_react@19.3.1/node_modules/storybook/dist/core-server/presets/common-preset.js:2347:10
+[90m│[39m
+[31m■[39m  Error: Unable to index ./stories/nodefault.stories.ts
+[90m│[39m  at _StoryIndexGenerator.getIndexAndStats
+[90m│[39m  (file:///work/repo/node_modules/.pnpm/storybook@10.6.5_react@19.3.1/node_modules/storybook/dist/core-server/index.js:17054:15)
+[90m│[39m  at async _StoryIndexGenerator.getIndex
+[90m│[39m  (file:///work/repo/node_modules/.pnpm/storybook@10.6.5_react@19.3.1/node_modules/storybook/dist/core-server/index.js:17043:13)
+[90m│[39m  at async writeIndexJson
+[90m│[39m  (file:///work/repo/node_modules/.pnpm/storybook@10.6.5_react@19.3.1/node_modules/storybook/dist/core-server/index.js:7405:20)
+[90m│[39m  at async Promise.all (index 4)
+[90m│[39m  at async buildStaticStandalone
+[90m│[39m  (file:///work/repo/node_modules/.pnpm/storybook@10.6.5_react@19.3.1/node_modules/storybook/dist/core-server/index.js:7603:7)
+[90m│[39m  at async withTelemetry
+[90m│[39m  (file:///work/repo/node_modules/.pnpm/storybook@10.6.5_react@19.3.1/node_modules/storybook/dist/_node-chunks/chunk-AZLAKLIP.js:142:12)
+[90m│[39m  at async build
+[90m│[39m  (file:///work/repo/node_modules/.pnpm/storybook@10.6.5_react@19.3.1/node_modules/storybook/dist/bin/core.js:4821:3)
+[90m│[39m  at async _Command.<anonymous>
+[90m│[39m  (file:///work/repo/node_modules/.pnpm/storybook@10.6.5_react@19.3.1/node_modules/storybook/dist/bin/core.js:5003:7)
+[90m│[39m
+[90m└[39m  Storybook exited with an error
+

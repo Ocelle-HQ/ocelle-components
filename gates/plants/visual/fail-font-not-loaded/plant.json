@@ -1,0 +1,16 @@
+{
+  "expect": "fail",
+  "why": "Text using a face whose source is a file of dist that is not font data (index.json): the face ends in error with no io, font on both themes (FR-027).",
+  "findings": [
+    {
+      "location": "font-not-loaded--broken-face/light",
+      "rule": "font",
+      "message": "Plant Face (error)"
+    },
+    {
+      "location": "font-not-loaded--broken-face/dark",
+      "rule": "font",
+      "message": "Plant Face (error)"
+    }
+  ]
+}

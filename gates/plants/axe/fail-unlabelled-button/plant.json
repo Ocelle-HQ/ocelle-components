@@ -1,0 +1,16 @@
+{
+  "expect": "fail",
+  "why": "A button with no accessible name: button-name (critical), one node in each theme (FR-013, US3 scenario 2).",
+  "findings": [
+    {
+      "location": "unlabelled-button--button/light",
+      "rule": "button-name",
+      "message": "critical: "
+    },
+    {
+      "location": "unlabelled-button--button/dark",
+      "rule": "button-name",
+      "message": "critical: "
+    }
+  ]
+}

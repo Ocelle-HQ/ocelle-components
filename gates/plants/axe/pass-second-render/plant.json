@@ -1,0 +1,4 @@
+{
+  "expect": "pass",
+  "why": "A story whose button loses its label on any render after the first in a page: every story-theme is audited in a fresh page (FR-028)."
+}

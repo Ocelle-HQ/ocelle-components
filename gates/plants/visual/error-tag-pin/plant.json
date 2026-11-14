@@ -1,0 +1,5 @@
+{
+  "expect": "error",
+  "why": "A pin that names a tag instead of a digest: exit 2 before any pull (FR-007, research.md R-06).",
+  "cause": "not pinned by digest"
+}

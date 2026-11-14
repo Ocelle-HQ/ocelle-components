@@ -1,0 +1,16 @@
+{
+  "expect": "fail",
+  "why": "A pointer.hover selector that matches no element: pointer-target on both themes, so a state is never silently not applied (FR-031).",
+  "findings": [
+    {
+      "location": "pointer-target-missing--hover/light",
+      "rule": "pointer-target",
+      "message": "hover: no element matches .plant-absent"
+    },
+    {
+      "location": "pointer-target-missing--hover/dark",
+      "rule": "pointer-target",
+      "message": "hover: no element matches .plant-absent"
+    }
+  ]
+}

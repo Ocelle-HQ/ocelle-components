@@ -1,0 +1,155 @@
+schema: review-findings/v1
+complete: true
+phase: plan
+round: 1
+lens: correctness
+findings:
+  - id: PLAN-CORRECTNESS-1-001
+    severity: 4
+    title: "repo-tree plants do not contain the Storybook workspace, so none of the 34 new plants can behave as contracts/plants.md expects"
+    evidence:
+      - artifact: "contracts/plants.md § intro: 'Story files in a plant's tree/ replace or add to storybook/stories/; a plant that needs fewer stories replaces the story files it keeps and removes none of the configuration set'; plants pass-repository ('the repository's stories and baselines'), fail-token-changed ('a delta.json token change of color-ink'), fail-empty-index ('a stories glob ...'); plan.md § Source Code lists plant changes only in bin/plants.ts, lib/plant-judge.ts, lib/plant-runner.ts (no plant-repo.ts change)"
+      - code: "gates/lib/plant-repo.ts:29-63: configurationSet() is the root config files, packages/*/package.json and tsconfig.json, gates/eslint, gates/stylelint and the four token source files; copyConfiguration (line ~318) links only <repo>/node_modules. Nothing under storybook/ is copied (no .storybook/, stories/, scripts/swatches.ts, package.json, baselines/, visual/container.json), nor .node-version, packages/styles/src/base.css or packages/tokens/fonts/"
+      - code: "storybook/node_modules is a separate pnpm workspace directory holding the only `storybook` bin (storybook/node_modules/.bin/storybook); `ls node_modules/.bin | grep storybook` is empty, so a plant root without storybook/node_modules cannot run `pnpm --dir storybook run build`"
+      - code: "storybook/scripts/swatches.ts:21 `if (existsSync(fonts)) cpSync(...)`: without packages/tokens/fonts in the plant root the font is silently absent and every story would draw fallback faces"
+    claim: |
+      Every storybook-build, visual and axe plant is a repo-tree plant whose gate builds the Storybook in the plant
+      root. The plant builder copies none of the Storybook workspace, its own node_modules, the files swatches.ts
+      reads (base.css, the fonts), the baselines, the pin or .node-version. Each plant would therefore exit 2 (no
+      build script / storybook not found) instead of its expected result, pass plants included; the plan cannot
+      deliver FR-017, FR-018 or SC-003 as written, and it does not list the plant-repo.ts change that would fix it.
+    remedies:
+      - "Extend the repo-tree configuration set in plan.md § Source Code, research.md and contracts/plants.md: copy storybook/ (excluding dist/, .generated/, .visual/, node_modules), packages/styles/src/base.css, packages/tokens/fonts/, .node-version, and link storybook/node_modules (real path) beside node_modules; state that this changes the configuration set of every existing repo-tree plant and add the plant-repo.test.ts cases that prove it (test-first)."
+  - id: PLAN-CORRECTNESS-1-002
+    severity: 3
+    title: "The capture script is run from the root under test, which for a plant holds no gates/visual/capture.ts and is the only source tree mounted"
+    evidence:
+      - artifact: "contracts/container.md § Run arguments: '-v <root>:<root>:ro', '-v <real node_modules>...', '-w <root>', 'node gates/visual/capture.ts <root>/storybook/.visual/run-<n>/request.json'"
+      - code: "gates/lib/plant-repo.ts configurationSet(): gates/bin, gates/lib and any gates/visual are not copied into a plant root; gates.json plantCommand form 'node gates/bin/<gate>.ts --root {root}' runs the gate from the repository, not from the root"
+    claim: |
+      For the repository run, <root> is the repository and the script exists. For every visual plant (and the
+      gates-integration fixture trees) <root> is a temporary directory, so `node gates/visual/capture.ts` inside the
+      container finds no file and the run exits 2; the gate's own code is never mounted. The capture's imports of
+      playwright and pngjs also resolve from the script's location, which must be the repository's tree.
+    remedies:
+      - "Mount the gate's own repository (the directory of gates/visual/capture.ts, resolved from import.meta.url) read-only at its own path and run `node <repo>/gates/visual/capture.ts`, keeping <root> only as the build and output location; unit-test the argument builder for root != repository."
+  - id: PLAN-CORRECTNESS-1-003
+    severity: 3
+    title: "Verifying the pulled image by `image inspect {{.Id}}` fails under podman and docker's classic store, and cannot tell a manifest digest from an index digest"
+    evidence:
+      - artifact: "research.md R-06: 'a digest the local engine reports differently after the pull (`docker image inspect --format {{.Id}}`/`podman image inspect`) exits 2'; contracts/gates.md exit 2 'a pin that is a tag, an index, ... or whose pulled image id differs'"
+      - code: "probe: `docker buildx imagetools inspect --raw mcr.microsoft.com/playwright@sha256:ee15712…b1d0` gives config digest sha256:a0d7b2b49ffa0e99787a00b7ec2af46eca58020082713f002ca9f0f1cfd1a017. In this sandbox (docker 29.9.2, containerd snapshotter) `{{.Id}}` is sha256:ee15712…b1d0 only because the containerd image store reports the pulled descriptor; podman's and docker's classic overlay2 store's .Id is the image config digest (a0d7b2b4…), and the manifest digest is in .Digest / .RepoDigests"
+    claim: |
+      The plan measured the check only on the containerd image store. On podman (which every CI run uses for run 2,
+      FR-026) and on any docker with the classic store, .Id is the config digest, so the gate would exit 2 'image id
+      differs' on every run and the "Visual regression" check could never pass. Conversely, under the containerd
+      store a pin holding the index digest also yields an .Id equal to the pin, so 'not an index' is not detected by
+      this check at all, though FR-007 forbids an index.
+    remedies:
+      - "Verify by manifest digest, not image id: for docker `{{json .RepoDigests}}` (or .Descriptor where present) and for podman `{{.Digest}}`/`.RepoDigests` must contain <image>@<digest>; and detect an index by its media type (`docker buildx imagetools inspect --raw` / `podman manifest inspect` before pull, or .Descriptor.mediaType), or alternatively also pin the config digest in container.json and compare .Id with it. State the per-engine commands in contracts/container.md and unit-test both outputs."
+  - id: PLAN-CORRECTNESS-1-004
+    severity: 3
+    title: "The browser-pin check names chromium-1248, but Playwright's headless launch runs chromium_headless_shell-1248"
+    evidence:
+      - artifact: "contracts/container.md § The capture's checks: '/ms-playwright/<browser> exists and is the directory of the executable Playwright resolves' with container.json 'browser': 'chromium-1248'; research.md R-06 the same"
+      - code: "node_modules/.pnpm/playwright-core@1.64.1/.../lib/coreBundle.js:44791-44796 getExecutableName: `return options.headless ? \"chromium-headless-shell\" : \"chromium\"`; probe in the pinned image: /ms-playwright holds both chromium-1248 and chromium_headless_shell-1248"
+    claim: |
+      A headless capture launches chrome-headless-shell from chromium_headless_shell-1248. If the check compares
+      that with /ms-playwright/chromium-1248 it fails on every run (exit 2 always); if it uses
+      chromium.executablePath() (the full Chromium) it passes while checking a binary that is not launched, so
+      FR-009's 'the browser it would launch is not the pinned build' is not actually checked.
+    remedies:
+      - "Name the launched browser explicitly: either pin `chromium_headless_shell-1248` and check the headless-shell executable, or launch with `channel: \"chromium\"` (new headless in the full build) and check chromium-1248; record the choice in research.md R-04/R-06 and derive the expected directory from playwright-core/browsers.json in the pin test."
+  - id: PLAN-CORRECTNESS-1-005
+    severity: 3
+    title: "The 'face not loaded' rule fires on every story: Storybook's preview declares four Nunito Sans faces that stay 'unloaded'"
+    evidence:
+      - artifact: "research.md R-05: 'A face listed in document.fonts for the page whose status is not loaded when the capture is taken gives the same finding'"
+      - code: "storybook/dist/inline-e1b9d593f682e853.css (Storybook's base-preview-head.html, moved out of iframe.html): four @font-face 'Nunito Sans' rules; probe on host Chromium 1243: after document.fonts.ready, document.fonts lists ['Schibsted Grotesk:loaded', 'Nunito Sans:unloaded'] for a declared but unused face"
+    claim: |
+      FontFace.status stays 'unloaded' for any declared face no text uses; document.fonts.ready does not load it.
+      Every story-theme of the preview would get a `font` finding naming Nunito Sans, so the visual gate fails on
+      main and the baseline command writes nothing (FR-008, FR-027), and fail-other-font would not be the only
+      failing plant.
+    remedies:
+      - "Restrict the loading check to faces that can draw the story's text: a face whose status is 'loading' or 'error', or a face of a family the CDP walk reports (or that the story root's computed font-family names) that is not 'loaded'; unused 'unloaded' faces are not findings. State it in R-05 and add a pass plant (the repository's stories with Storybook's own faces declared) to prove it."
+  - id: PLAN-CORRECTNESS-1-006
+    severity: 3
+    title: "Readiness waits for STORY_RENDERED, which Storybook does not emit when a story's render throws or its module fails, so render-failed is never reached"
+    evidence:
+      - artifact: "contracts/container.md § Per story-theme: 'wait for storyRendered, document.fonts.ready, two frames → render-failure check (body.sb-show-errordisplay)'; research.md R-04 'readiness: Storybook's storyRendered signal (the STORY_RENDERED channel event)'"
+      - code: "storybook 10.6.5 dist/preview/runtime.js:35769-35795: STORY_RENDERED is emitted only in the 'completed' phase; the catch path sets phase 'errored', calls showException and emits only STORY_FINISHED (status 'error'); renderException (line ~37178) emits STORY_THREW_EXCEPTION and shows the error display"
+    claim: |
+      For the render-failed plants (fail-throws-on-load in visual and axe) and US2 scenario 11 / US3 scenario 6, the
+      capture and the axe gate would wait on an event that never comes, so they time out (an exit 2 or a hang)
+      instead of reporting `render-failed`; the plan names no timeout or alternative signal.
+    remedies:
+      - "Wait for STORY_FINISHED (emitted on success and failure) or for the first of STORY_RENDERED / STORY_THREW_EXCEPTION / STORY_ERRORED / body.sb-show-errordisplay, with a stated timeout that is itself a render-failed or exit-2 cause; fix R-04, R-08 and contracts/container.md, and have the spike record the events for both failure kinds."
+  - id: PLAN-CORRECTNESS-1-007
+    severity: 3
+    title: "Missing Storybook dependencies would be reported as a build-error (exit 1), not exit 2, and the 'spec delta' rests on a wrong premise"
+    evidence:
+      - artifact: "research.md R-09: 'A plant cannot present missing dependencies: its node_modules is a symlink to the repository's ... the missing-tool path (pnpm or storybook not found) is covered by a unit test of the spawn error mapping'; plan decision 6 changes FR-017's breaking plant to 'no build script'; contracts/gates.md 'a failed build whose output names no file: one finding at storybook/package.json with rule build-error'"
+      - artifact: "spec.md US1 scenario 5: 'Given the Storybook dependencies are not installed ... exits 2 naming the missing tool and how to install it'; FR-001 exit 2 'tool missing'"
+      - code: "storybook/package.json build script runs `storybook build` through pnpm; storybook/node_modules/.bin/storybook is the only storybook bin (root node_modules/.bin has none), and plant-repo.ts links only root node_modules. When storybook is absent, pnpm itself spawns fine and the script's shell exits 127 'storybook: not found': no spawn error occurs"
+    claim: |
+      The spawn-error mapping only sees pnpm missing. With dependencies not installed, the gate runs pnpm, the
+      script fails without naming a file, and the plan's parser turns it into a build-error finding at
+      storybook/package.json (exit 1), contradicting US1 scenario 5 and FR-001. And the plan's reason for the
+      spec delta is false: a repo-tree plant lacks storybook/node_modules today, so 'missing dependencies' is
+      exactly what a plant presents unless the configuration set links it (PLAN-CORRECTNESS-1-001).
+    remedies:
+      - "Before building, resolve the Storybook CLI from the storybook workspace (storybook/node_modules/storybook/package.json or .bin/storybook) and exit 2 'storybook is not installed; run pnpm install' when absent; keep FR-017's 'missing dependencies' breaking plant (a plant flag that omits the storybook/node_modules link) and drop decision 6, or keep 'no build script' as an extra breaking plant."
+  - id: PLAN-CORRECTNESS-1-008
+    severity: 3
+    title: "gates/visual/capture.ts is outside the mutation gate's scope, contrary to FR-019"
+    evidence:
+      - artifact: "spec.md FR-019: 'The new gates' own source MUST be covered by the mutation gate as other gate source is'; plan.md § Source Code places the capture at gates/visual/capture.ts; R-12 lists only the pure modules and process-boundary comments"
+      - code: "gates/lib/mutation/ranges.ts:26-41 scopePathspecs holds gates/bin, gates/lib, gates/eslint, gates/stylelint only, and the `source` regex (line 43) `gates\\/(?:bin|lib|eslint|stylelint)`; a change to gates/visual/ is never mutated"
+    claim: |
+      The capture holds real decisions (the pin refusal checks, the request routing and network recording, the
+      font walk, the readiness sequence, the PNG normalisation call), and the mutation gate would never see a
+      change to it. FR-019 and constitution VIII ('Changed source is mutation-tested') are not met, and no
+      ranges.ts change is planned.
+    remedies:
+      - "Either move the capture's decisions into gates/lib/ (pure modules, mutation-tested) and keep gates/visual/capture.ts a thin process boundary with Stryker-disable comments, or add gates/visual/ to scopePathspecs and the source regex in ranges.ts with its unit test; list the change in plan.md § Source Code."
+  - id: PLAN-CORRECTNESS-1-009
+    severity: 2
+    title: "The axe gate honours any entry of a11y-exceptions.json, though FR-029 says it honours only exceptions recorded in the plan"
+    evidence:
+      - artifact: "spec.md FR-029: 'recorded in the plan's Complexity Tracking as an exception ... with the operator's approval ... and the gate honours only exceptions so recorded'"
+      - artifact: "research.md R-08 Exceptions: 'Each entry must have its row in this plan's Complexity Tracking with the operator's approval; the phase review checks that pairing, since no gate reads the plan'"
+    claim: |
+      Spec and plan disagree: under the plan, a contributor can silence a serious or critical finding by adding a
+      JSON entry, and only a human review notices the missing Complexity Tracking row. The spec makes the gate
+      the enforcement point.
+    remedies:
+      - "Make the gate (or a unit test over the committed file) check that every a11y-exceptions.json entry has a sunset naming a feature or op whose plan's Complexity Tracking table holds a row with the same story, theme and rule, and fail otherwise."
+      - "Amend FR-029 to say the pairing with Complexity Tracking is checked at review and landing, not by the gate (an operator choice)."
+  - id: PLAN-CORRECTNESS-1-010
+    severity: 2
+    title: "Scoping axe to #storybook-root stops the page-level rules from ever running, which FR-016 forbids unless recorded as an exception"
+    evidence:
+      - artifact: "spec.md FR-016: 'every rule the pinned axe-core enables by default ... No rule may be disabled except by a recorded exception in the plan's Complexity Tracking'"
+      - artifact: "research.md R-08 Context: 'the page-level rules (document-title, html-has-lang, landmark-one-main, region, page-has-heading-one) about the harness document are out of its context'; plan decision 3; plan.md Constitution Check 'No new exception'"
+    claim: |
+      The rule list is pinned, but these rules can never apply, so they are disabled in effect while the plan
+      records no exception and the spec says nothing about the context. Either the spec or the Complexity
+      Tracking table has to say so, or the gate passes FR-016 only on paper.
+    remedies:
+      - "Add to FR-016 (spec delta for the operator) that axe's context is the story root and that rules about the harness document are inapplicable there, naming them; keep the pinned list test."
+      - "Record the context scoping as an exception row in Complexity Tracking with its rules and a sunset (operator approval)."
+  - id: PLAN-CORRECTNESS-1-011
+    severity: 1
+    title: "Inconsistent spike phases, a wrong build prerequisite and a stale spec assumption"
+    evidence:
+      - artifact: "plan.md § Phases 1: the spike is 'recorded in reviews/phase-1/spike.md'; research.md R-05 'To be measured (phase 3 spike)', R-08 'Phase 4's spike confirms the class', R-09 'captured in phase 2's spike'"
+      - artifact: "research.md R-09: 'The packages the Storybook reads (@ocelle/tokens, @ocelle/styles) are built by the job beforehand'; contracts/gates.md commands prefix every gate with `pnpm --filter \"./packages/*\" -r build`"
+      - code: "storybook/scripts/swatches.ts:11-27 and storybook/stories/*.ts import packages/tokens/src/generate.ts and source.ts and copy packages/styles/src/base.css and packages/tokens/fonts: the Storybook reads sources, never packages/*/dist"
+      - artifact: "spec.md § Assumptions 'Container in this environment': 'no container engine running, and may not pull images ... Baselines for this feature are therefore produced and checked in CI' vs plan decisions 2 and 7 (docker works here; baselines produced locally)"
+    claim: |
+      Tasks generated from these artifacts would schedule the spike in four different phases; the packages build
+      step is described as a prerequisite it is not (so plants need it to be nothing); and the spec's assumption no
+      longer matches the plan.
+    remedies:
+      - "Point R-05, R-08, R-09 and contracts/plants.md at the phase 1 spike; say the packages build is not needed by the Storybook (or drop it from the gate commands); update the spec's container assumption to the measured state."

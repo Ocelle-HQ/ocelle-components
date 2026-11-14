@@ -1,0 +1,16 @@
+{
+  "expect": "fail",
+  "why": "A story that makes run-time I/O while it renders, a WebSocket to the origin (analysis C1): io on both themes, naming the call (FR-030, research.md R-14).",
+  "findings": [
+    {
+      "location": "web-socket--call/light",
+      "rule": "io",
+      "message": "websocket /socket"
+    },
+    {
+      "location": "web-socket--call/dark",
+      "rule": "io",
+      "message": "websocket /socket"
+    }
+  ]
+}

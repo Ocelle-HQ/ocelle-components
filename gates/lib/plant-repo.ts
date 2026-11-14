@@ -3,19 +3,24 @@
 // `commit-repo` builds a git history from a plant's commits.txt on an empty signed-off base commit, and
 // `mutation-repo` commits the configuration set with the plant's `base/`, then its `head/`. node_modules is linked from
 // the repository in each. A repo-tree plant may state its change of the token source, the pair list or the generator
-// in a delta.json, by key (002 contracts/gates.md § Configuration set, *Plant deltas*). The decisions
-// (configurationSet, packagePaths, carriesConfiguration, parseCommits, recordsOf, parentRecords, identityEnv,
-// baseCommit, ignoreMissing, parseDelta, treeProblems, checkWrapper, applyPairChanges, overridesText) are pure and
-// tested in process (gates/test/plant-repo.test.ts); the builders only copy and write files and run git with their
-// results (the process boundary, tested by gates/test/integration/plant-repo.test.ts).
+// in a delta.json, by key (002 contracts/gates.md § Configuration set, *Plant deltas*). Since 006 (research.md R-16)
+// the configuration set holds the Storybook workspace, storybook/node_modules is linked as well (unless plant.json
+// lists it in `unlinked`), and a repo-tree root gets its own storybook/a11y-exceptions.json (with the repository's
+// entries and their plan files for delta.json `exceptions: "repository"`). The decisions (configurationSet,
+// packagePaths, carriesConfiguration, parseCommits, recordsOf, parentRecords, identityEnv, baseCommit, ignoreMissing,
+// parseDelta, treeProblems, moduleLinks, exceptionPlans, rootExceptions, checkWrapper, applyPairChanges,
+// overridesText) are pure and tested in process (gates/test/plant-repo.test.ts); the builders only copy and write
+// files and run git with their results (the process boundary, tested by gates/test/integration/plant-repo.test.ts).
 import { execFile } from "node:child_process";
 import { existsSync } from "node:fs";
-import { cp, mkdir, readdir, readFile, rename, rm, symlink, writeFile } from "node:fs/promises";
-import { basename, join } from "node:path";
+import { cp, mkdir, readdir, readFile, realpath, rename, rm, symlink, writeFile } from "node:fs/promises";
+import { basename, dirname, join, posix } from "node:path";
 import { pathToFileURL } from "node:url";
 import { promisify } from "node:util";
 import type { TokenOverride } from "../../packages/tokens/src/generate.ts";
 import { directoryNames, filePaths } from "./entries.ts";
+import type { Plant } from "./plant-judge.ts";
+import { decode, encode } from "./png.ts";
 
 /** One record of a commit plant's commits.txt. */
 export interface CommitSpec {
@@ -67,6 +72,26 @@ const optionalElementFiles = [
   "packages/elements/custom-elements.json",
 ];
 
+/**
+ * The Storybook workspace inputs (006 research.md R-16): the Node pin, the base stylesheet and the fonts the stories
+ * read, and the workspace's manifest, configuration, scripts, stories, baselines and container pin; never its dist/,
+ * .generated/, .visual/, .cache/, test/ or node_modules/. Its exceptions file is made per root (rootExceptions).
+ */
+const storybookFiles = [
+  ".node-version",
+  "packages/styles/src/base.css",
+  "packages/tokens/fonts",
+  "storybook/package.json",
+  "storybook/.storybook",
+  "storybook/scripts",
+  "storybook/stories",
+  "storybook/baselines",
+  "storybook/visual/container.json",
+];
+
+/** The parts of the configuration set a repository may not hold yet: copied when present. */
+const optionalConfiguration = new Set(["storybook/baselines"]);
+
 /** The configuration set copied into every temporary repository: these root files, plus per package dir. */
 export function configurationSet(packageDirs: readonly string[]): string[] {
   return [
@@ -77,12 +102,13 @@ export function configurationSet(packageDirs: readonly string[]): string[] {
     ...tokenFiles,
     ...elementFiles,
     ...optionalElementFiles,
+    ...storybookFiles,
   ];
 }
 
 /** Whether a configuration-set entry may be absent from the repository, and is then not copied (005 research.md R-12). */
 export function mayBeAbsent(path: string): boolean {
-  return optionalElementFiles.includes(path);
+  return optionalElementFiles.includes(path) || optionalConfiguration.has(path);
 }
 
 /**
@@ -209,6 +235,10 @@ export interface Delta {
    */
   readonly pairsList?: PairsList;
   readonly generator?: "wrapped";
+  /** The repository's exception entries and the plan files they name, added to the root's (006 research.md R-16). */
+  readonly exceptions?: "repository";
+  /** Edits of repository baselines, applied to the current files when the root is made (006 research.md R-11). */
+  readonly baselines?: readonly BaselineEdit[];
   /**
    * Removes the committed custom-elements manifest, which the configuration set copies, for the manifest gate's
    * breaking plant break-missing (005 research.md R-06, R-12): closed, its one value is "absent".
@@ -237,7 +267,14 @@ function isPairChange(value: unknown): boolean {
   return "set" in value ? isObject(value.set) && !("remove" in value) : value.remove === true;
 }
 
-const deltaKeys = new Set(["tokens", "pairs", "pairsList", "generator", "manifest"]);
+const deltaKeys = new Set(["tokens", "pairs", "pairsList", "generator", "manifest", "exceptions", "baselines"]);
+const baselineEdits = ["one-pixel", "reencode", "remove"];
+
+/** Whether a value is one baseline edit: exactly a non-empty `file` and a known `edit`. */
+function isBaselineEdit(value: unknown): boolean {
+  if (!isObject(value) || Object.keys(value).length !== 2) return false;
+  return typeof value.file === "string" && value.file !== "" && baselineEdits.includes(String(value.edit));
+}
 
 /** The delta of a delta.json text; throws naming the problem. */
 export function parseDelta(text: string): Delta {
@@ -267,6 +304,16 @@ export function parseDelta(text: string): Delta {
   if (pairs !== undefined && pairsList !== undefined) throw new Error("delta.json: pairs and pairsList exclude each other");
   if (generator !== undefined && generator !== "wrapped") throw new Error('delta.json: generator must be "wrapped"');
   if (manifest !== undefined && manifest !== "absent") throw new Error('delta.json: manifest must be "absent"');
+  if (value.exceptions !== undefined && value.exceptions !== "repository") throw new Error('delta.json: exceptions must be "repository"');
+  const { baselines } = value;
+  if (baselines !== undefined) {
+    if (!Array.isArray(baselines)) throw new Error("delta.json: baselines must be a list of baseline edits");
+    const bad = baselines.findIndex((item) => !isBaselineEdit(item));
+    if (bad !== -1) throw new Error(`delta.json: baselines[${String(bad)}] is not a baseline edit (a file and one-pixel, reencode or remove)`);
+    const files = (baselines as BaselineEdit[]).map((item) => item.file);
+    const twice = files.find((file, index) => files.indexOf(file) !== index);
+    if (twice !== undefined) throw new Error(`delta.json: baselines lists ${twice} twice`);
+  }
   return value;
 }
 
@@ -274,10 +321,13 @@ const sourceFile = "packages/tokens/src/source.ts";
 const overridesFile = "packages/tokens/src/overrides.ts";
 const generatorFile = "packages/tokens/src/generate.ts";
 const pairsFile = "packages/tokens/contrast/pairs.json";
+// Stryker disable next-line StringLiteral: process boundary, read only by the builders; covered by gates-integration: gates/test/integration/plant-repo.test.ts "buildRepoTree: the Storybook workspace (006 research.md R-16) writes storybook/a11y-exceptions.json as [] when the tree supplies none, and keeps the tree's own"
+const exceptionsFile = "storybook/a11y-exceptions.json";
+const baselinesDir = "storybook/baselines";
 const manifestFile = "packages/elements/custom-elements.json";
 
 /** The problems of a plant's tree/ (paths relative to it) against its delta: files a plant changes only by delta. */
-export function treeProblems(treePaths: readonly string[], delta: Delta | undefined): string[] {
+export function treeProblems(treePaths: readonly string[], delta: Delta | undefined, repositoryBaselines: readonly string[]): string[] {
   const holds = new Set(treePaths);
   const problems: string[] = [];
   if (holds.has(sourceFile)) problems.push(`tree/ holds ${sourceFile}; a plant changes the token source by delta.json tokens`);
@@ -288,8 +338,88 @@ export function treeProblems(treePaths: readonly string[], delta: Delta | undefi
   if (holds.has(overridesFile) && delta?.tokens !== undefined) {
     problems.push(`tree/ holds ${overridesFile} and delta.json has tokens; one of them sets the overrides`);
   }
+  for (const name of repositoryBaselines) {
+    const path = `${baselinesDir}/${name}`;
+    if (holds.has(path)) problems.push(`tree/ holds ${path}; a plant changes a repository baseline by delta.json baselines`);
+  }
+  for (const { file } of delta?.baselines ?? []) {
+    if (!repositoryBaselines.includes(file)) problems.push(`delta.json baselines: ${file} is not a repository baseline`);
+  }
   if (holds.has(manifestFile) && delta?.manifest === "absent") problems.push(`tree/ holds ${manifestFile} and delta.json removes it with manifest "absent"`);
   return problems;
+}
+
+/** The node_modules links of a plant root (paths relative to it), without the ones the plant lists as unlinked. */
+export function moduleLinks(unlinked: readonly string[] | undefined): string[] {
+  const links = ["node_modules", "storybook/node_modules"];
+  return unlinked === undefined ? links : links.filter((link) => !unlinked.includes(link));
+}
+
+/** The entries of an a11y-exceptions.json text, or throws naming whose file it is when it is not a JSON list. */
+function exceptionEntries(text: string, whose: string): unknown[] {
+  let value: unknown;
+  try {
+    value = JSON.parse(text);
+  } catch (error) {
+    throw new Error(`${whose} storybook/a11y-exceptions.json is not a JSON list`, { cause: error });
+  }
+  if (!Array.isArray(value)) throw new Error(`${whose} storybook/a11y-exceptions.json is not a JSON list`);
+  return value;
+}
+
+/** The plan files the entries of an a11y-exceptions.json text name, each once, in order; throws naming the problem. */
+export function exceptionPlans(text: string): string[] {
+  let value: unknown;
+  try {
+    value = JSON.parse(text);
+  } catch (error) {
+    throw new Error(`a11y-exceptions.json is not valid JSON (${error instanceof Error ? error.message : String(error)})`, { cause: error });
+  }
+  if (!Array.isArray(value)) throw new Error("a11y-exceptions.json is not a list of exception entries");
+  const plans: string[] = [];
+  for (const [index, entry] of (value as unknown[]).entries()) {
+    const plan = isObject(entry) ? entry.plan : undefined;
+    const at = `a11y-exceptions.json#${String(index)}`;
+    if (typeof plan !== "string" || plan === "") throw new Error(`${at} names no plan`);
+    const inside = posix.normalize(plan);
+    if (posix.isAbsolute(plan) || inside === ".." || inside.startsWith("../")) throw new Error(`${at}: plan ${plan} is not a path inside the root`);
+    if (!plans.includes(plan)) plans.push(plan);
+  }
+  return plans;
+}
+
+/**
+ * The text of a plant root's storybook/a11y-exceptions.json from the tree's file (undefined: none) and, for
+ * `exceptions: "repository"`, the repository's file (undefined: the key is not set): the tree's file as it is, or
+ * `[]`, without the key; with it the tree's entries, then the repository's, so a plant's own `#<index>` locations do
+ * not move.
+ */
+export function rootExceptions(tree: string | undefined, repository: string | undefined): string {
+  if (repository === undefined) return tree ?? "[]\n";
+  const own = tree === undefined ? [] : exceptionEntries(tree, "the plant's");
+  return `${JSON.stringify([...own, ...exceptionEntries(repository, "the repository's")], null, 2)}\n`;
+}
+
+/** An edit of a repository baseline by a plant's delta.json `baselines` (006 research.md R-11). */
+export interface BaselineEdit {
+  readonly file: string;
+  readonly edit: "one-pixel" | "reencode" | "remove";
+}
+
+/**
+ * A repository baseline's bytes after a `one-pixel` edit (the RGB channels of the pixel at (0, 0) inverted, written
+ * normalised) or a `reencode` (the same pixels at deflate level 1; throws when the bytes come out equal).
+ */
+export function editBaseline(bytes: Uint8Array, edit: "one-pixel" | "reencode"): Buffer {
+  const image = decode(bytes);
+  if (edit === "reencode") {
+    const reencoded = encode(image, 1);
+    if (reencoded.equals(Buffer.from(bytes))) throw new Error("delta.json baselines: reencode gives the baseline's own bytes");
+    return reencoded;
+  }
+  const data = Uint8Array.from(image.data);
+  for (let channel = 0; channel < 3; channel += 1) data[channel] = 255 - Number(data[channel]);
+  return encode({ ...image, data });
 }
 
 /** Throws unless a plant's generate.ts re-exports the real generator, `./generate.real.ts`. */
@@ -356,17 +486,17 @@ async function git(dir: string, args: readonly string[], env: Record<string, str
 
 /**
  * Copies the configuration set of `repo` into `into` (an entry that may be absent is skipped when it is) and links
- * `repo`'s node_modules there: the root's and each package's own that exists.
+ * `repo`'s node_modules there: the root's, each package's own that exists, and storybook/node_modules unless unlinked.
  */
 // Stryker disable next-line all: process boundary, covered by gates-integration: gates/test/integration/plant-repo.test.ts "buildRepoTree copies the configuration set unchanged, lays tree/ over it at repository paths, and links node_modules"
-async function copyConfiguration(repo: string, into: string): Promise<void> {
+async function copyConfiguration(repo: string, into: string, unlinked?: readonly string[]): Promise<void> {
   // Stryker disable next-line all: process boundary, covered by gates-integration: gates/test/integration/plant-repo.test.ts "buildRepoTree copies the configuration set unchanged, lays tree/ over it at repository paths, and links node_modules"
   const packages = packagePaths(directoryNames(await readdir(join(repo, "packages"), { withFileTypes: true })));
   // Stryker disable next-line all: process boundary, covered by gates-integration: gates/test/integration/plant-repo.test.ts "buildRepoTree copies the configuration set unchanged, lays tree/ over it at repository paths, and links node_modules"
   for (const path of configurationSet(packages)) {
     // Stryker disable next-line all: process boundary, covered by gates-integration: gates/test/integration/plant-repo.test.ts "buildRepoTree copies the configuration set unchanged, lays tree/ over it at repository paths, and links node_modules"
     const copied = cp(join(repo, path), join(into, path), { recursive: true });
-    // Stryker disable next-line all: process boundary, covered by gates-integration: gates/test/integration/plant-repo.test.ts "rejects building from a repository root without %s, naming it" and "builds from a repository root without the element files that may be absent, leaving them out"
+    // Stryker disable next-line all: process boundary, covered by gates-integration: gates/test/integration/plant-repo.test.ts "rejects building from a repository root without %s, naming it" and "builds from a repository root without the element files that may be absent, leaving them out", and "buildRepoTree: the Storybook workspace (006 research.md R-16) copies storybook/baselines when the repository holds it"
     await (mayBeAbsent(path) ? copied.catch(ignoreMissing) : copied);
   }
   // Stryker disable next-line all: process boundary, covered by gates-integration: gates/test/integration/plant-repo.test.ts "buildRepoTree copies the configuration set unchanged, lays tree/ over it at repository paths, and links node_modules"
@@ -375,6 +505,14 @@ async function copyConfiguration(repo: string, into: string): Promise<void> {
     if (path !== "node_modules" && !existsSync(join(repo, path))) continue;
     // Stryker disable next-line all: process boundary, covered by gates-integration: gates/test/integration/plant-repo.test.ts "buildRepoTree copies the configuration set unchanged, lays tree/ over it at repository paths, and links node_modules"
     await symlink(join(repo, path), join(into, path), "dir");
+  }
+  // The Storybook workspace's node_modules, by its real path, unless the plant lists it as unlinked (006 research.md R-16).
+  // Stryker disable next-line all: process boundary, covered by gates-integration: gates/test/integration/plant-repo.test.ts "buildRepoTree: the Storybook workspace (006 research.md R-16) removes only the storybook/node_modules link for unlinked ["storybook/node_modules"]"
+  for (const path of moduleLinks(unlinked).filter((link) => link !== "node_modules")) {
+    // Stryker disable next-line all: process boundary, covered by gates-integration: gates/test/integration/plant-repo.test.ts "buildRepoTree: the Storybook workspace (006 research.md R-16) links storybook/node_modules to the real path of the repository's, beside node_modules"
+    const target = (await realpath(join(repo, path)).catch(ignoreMissing)) ?? join(repo, path);
+    // Stryker disable next-line all: process boundary, covered by gates-integration: gates/test/integration/plant-repo.test.ts "buildRepoTree: the Storybook workspace (006 research.md R-16) links storybook/node_modules to the real path of the repository's, beside node_modules"
+    await symlink(target, join(into, path), "dir");
   }
 }
 
@@ -385,9 +523,9 @@ async function layOver(plant: string, part: string, into: string): Promise<void>
   await cp(join(plant, part), into, { recursive: true }).catch(ignoreMissing);
 }
 
-/** The plant's delta.json, if it has one, checked against its tree/ (the plant job's check of the plant's files). */
+/** The plant's delta.json, if it has one, checked against its tree/ and the repository's baselines (the plant job's check of the plant's files). */
 // Stryker disable next-line all: process boundary, covered by gates-integration: gates/test/integration/plant-repo.test.ts "copies the configuration set unchanged, lays tree/ over it at repository paths, and links node_modules"
-async function readDelta(plant: string): Promise<Delta | undefined> {
+async function readDelta(plant: string, repositoryBaselines: readonly string[]): Promise<Delta | undefined> {
   // Stryker disable next-line all: process boundary, covered by gates-integration: gates/test/integration/plant-repo.test.ts "copies the configuration set unchanged, lays tree/ over it at repository paths, and links node_modules"
   const text = await readFile(join(plant, "delta.json"), "utf8").catch(ignoreMissing);
   // Stryker disable next-line all: process boundary, covered by gates-integration: gates/test/integration/plant-repo.test.ts "fails to build $plant, naming the key or file"
@@ -395,7 +533,7 @@ async function readDelta(plant: string): Promise<Delta | undefined> {
   // Stryker disable next-line all: process boundary, covered by gates-integration: gates/test/integration/plant-repo.test.ts "copies the configuration set unchanged, lays tree/ over it at repository paths, and links node_modules"
   const tree = join(plant, "tree");
   // Stryker disable next-line all: process boundary, covered by gates-integration: gates/test/integration/plant-repo.test.ts "copies the configuration set unchanged, lays tree/ over it at repository paths, and links node_modules"
-  const problems = treeProblems(filePaths(await readdir(tree, { recursive: true, withFileTypes: true }).catch(() => []), tree), delta);
+  const problems = treeProblems(filePaths(await readdir(tree, { recursive: true, withFileTypes: true }).catch(() => []), tree), delta, repositoryBaselines);
   // Stryker disable next-line all: process boundary, covered by gates-integration: gates/test/integration/plant-repo.test.ts "fails to build $plant, naming the key or file"
   if (problems.length > 0) throw new Error(problems.join("; "));
   // Stryker disable next-line all: process boundary, covered by gates-integration: gates/test/integration/plant-repo.test.ts "copies the configuration set unchanged, lays tree/ over it at repository paths, and links node_modules"
@@ -428,21 +566,62 @@ async function applyDelta(delta: Delta, into: string): Promise<void> {
   if (delta.pairsList !== undefined) await writeFile(join(into, pairsFile), pairsListTexts[delta.pairsList]);
 }
 
+/** Applies one delta.json `baselines` edit to a baseline file of the root: rewritten edited, or removed. */
+// Stryker disable next-line all: process boundary, covered by gates-integration: gates/test/integration/plant-repo.test.ts "buildRepoTree: baselines (006 research.md R-11, R-16) applies one-pixel, reencode and remove to the repository's current baselines, and leaves the others as they are"
+async function applyBaselineEdit(file: string, edit: BaselineEdit["edit"]): Promise<void> {
+  // Stryker disable next-line all: process boundary, covered by gates-integration: gates/test/integration/plant-repo.test.ts "buildRepoTree: baselines (006 research.md R-11, R-16) applies one-pixel, reencode and remove to the repository's current baselines, and leaves the others as they are"
+  if (edit === "remove") return rm(file);
+  // Stryker disable next-line all: process boundary, covered by gates-integration: gates/test/integration/plant-repo.test.ts "buildRepoTree: baselines (006 research.md R-11, R-16) applies one-pixel, reencode and remove to the repository's current baselines, and leaves the others as they are"
+  await writeFile(file, editBaseline(await readFile(file), edit));
+}
+
+/** The repository's exception entries, for `exceptions: "repository"`, with the plan files they name copied into `into`. */
+// Stryker disable next-line all: process boundary, covered by gates-integration: gates/test/integration/plant-repo.test.ts "buildRepoTree: the Storybook workspace (006 research.md R-16) appends the repository's entries after the tree's own for exceptions: "repository", and copies the plan files they name"
+async function repositoryExceptions(repo: string, into: string): Promise<string> {
+  // Stryker disable next-line all: process boundary, covered by gates-integration: gates/test/integration/plant-repo.test.ts "buildRepoTree: the Storybook workspace (006 research.md R-16) appends the repository's entries after the tree's own for exceptions: "repository", and copies the plan files they name"
+  const text = (await readFile(join(repo, exceptionsFile), "utf8").catch(ignoreMissing)) ?? "[]";
+  // Stryker disable next-line all: process boundary, covered by gates-integration: gates/test/integration/plant-repo.test.ts "buildRepoTree: the Storybook workspace (006 research.md R-16) appends the repository's entries after the tree's own for exceptions: "repository", and copies the plan files they name"
+  for (const plan of exceptionPlans(text)) {
+    // Stryker disable next-line all: process boundary, covered by gates-integration: gates/test/integration/plant-repo.test.ts "buildRepoTree: the Storybook workspace (006 research.md R-16) appends the repository's entries after the tree's own for exceptions: "repository", and copies the plan files they name"
+    await cp(join(repo, plan), join(into, plan)).catch((error: unknown) => {
+      // Stryker disable next-line all: process boundary, covered by gates-integration: gates/test/integration/plant-repo.test.ts "buildRepoTree: the Storybook workspace (006 research.md R-16) fails to build a root whose repository's exception entries name a plan file the repository does not hold"
+      if ((error as { code?: unknown } | null)?.code !== "ENOENT") throw error;
+      // Stryker disable next-line all: process boundary, covered by gates-integration: gates/test/integration/plant-repo.test.ts "buildRepoTree: the Storybook workspace (006 research.md R-16) fails to build a root whose repository's exception entries name a plan file the repository does not hold"
+      throw new Error(`a11y-exceptions.json names ${plan}, which the repository does not hold`, { cause: error });
+    });
+  }
+  // Stryker disable next-line all: process boundary, covered by gates-integration: gates/test/integration/plant-repo.test.ts "buildRepoTree: the Storybook workspace (006 research.md R-16) appends the repository's entries after the tree's own for exceptions: "repository", and copies the plan files they name"
+  return text;
+}
+
 /**
- * Lays the configuration set of `repo` and the plant's `tree/` into `into`, links `repo`'s node_modules, and applies
- * the plant's delta.json (002 contracts/gates.md § Configuration set, *Plant deltas*): for `generator: "wrapped"` the
- * real generator moves to generate.real.ts before tree/ places the wrapper.
+ * Lays the configuration set of `repo` and the plant's `tree/` into `into`, links `repo`'s node_modules and
+ * storybook/node_modules (but the ones its plant.json `unlinked` lists), writes the root's storybook/a11y-exceptions.json, and
+ * applies the plant's delta.json (002 contracts/gates.md § Configuration set, *Plant deltas*): for `generator:
+ * "wrapped"` the real generator moves to generate.real.ts before tree/ places the wrapper; for `exceptions:
+ * "repository"` the repository's plan files are copied before tree/ is laid over them, and its entries follow the
+ * tree's (006 research.md R-16).
  */
 // Stryker disable next-line all: process boundary, covered by gates-integration: gates/test/integration/plant-repo.test.ts "copies the configuration set unchanged, lays tree/ over it at repository paths, and links node_modules"
-export async function buildRepoTree(repo: string, plant: string, into: string): Promise<void> {
+export async function buildRepoTree(repo: string, plant: string, into: string, spec?: Plant): Promise<void> {
   // Stryker disable next-line all: process boundary, covered by gates-integration: gates/test/integration/plant-repo.test.ts "copies the configuration set unchanged, lays tree/ over it at repository paths, and links node_modules"
-  await copyConfiguration(repo, into);
+  await copyConfiguration(repo, into, spec?.unlinked);
+  // Stryker disable next-line all: process boundary, covered by gates-integration: gates/test/integration/plant-repo.test.ts "buildRepoTree: baselines (006 research.md R-11, R-16) applies one-pixel, reencode and remove to the repository's current baselines, and leaves the others as they are"
+  const repositoryBaselines = await readdir(join(repo, baselinesDir)).catch(() => []);
   // Stryker disable next-line all: process boundary, covered by gates-integration: gates/test/integration/plant-repo.test.ts "copies the configuration set unchanged, lays tree/ over it at repository paths, and links node_modules"
-  const delta = await readDelta(plant);
+  const delta = await readDelta(plant, repositoryBaselines);
+  // Stryker disable next-line all: process boundary, covered by gates-integration: gates/test/integration/plant-repo.test.ts "buildRepoTree: baselines (006 research.md R-11, R-16) applies one-pixel, reencode and remove to the repository's current baselines, and leaves the others as they are"
+  for (const edit of delta?.baselines ?? []) await applyBaselineEdit(join(into, baselinesDir, edit.file), edit.edit);
+  // Stryker disable next-line all: process boundary, covered by gates-integration: gates/test/integration/plant-repo.test.ts "buildRepoTree: baselines (006 research.md R-11, R-16) gives a baselinesOf plant's root the named pass plant's baselines, under its own tree/ and none of the pass plant's other files"
+  if (spec?.baselinesOf !== undefined) await cp(join(dirname(plant), spec.baselinesOf, "tree", baselinesDir), join(into, baselinesDir), { recursive: true });
+  // Stryker disable next-line all: process boundary, covered by gates-integration: gates/test/integration/plant-repo.test.ts "buildRepoTree: the Storybook workspace (006 research.md R-16) appends the repository's entries after the tree's own for exceptions: "repository", and copies the plan files they name"
+  const repository = delta?.exceptions === "repository" ? await repositoryExceptions(repo, into) : undefined;
   // Stryker disable next-line all: process boundary, covered by gates-integration: gates/test/integration/plant-repo.test.ts "moves the real generator to generate.real.ts and places the plant's wrapper for generator wrapped (and not without a delta)"
   if (delta?.generator === "wrapped") await rename(join(into, generatorFile), join(into, "packages/tokens/src/generate.real.ts"));
   // Stryker disable next-line all: process boundary, covered by gates-integration: gates/test/integration/plant-repo.test.ts "copies the configuration set unchanged, lays tree/ over it at repository paths, and links node_modules"
   await layOver(plant, "tree", into);
+  // Stryker disable next-line all: process boundary, covered by gates-integration: gates/test/integration/plant-repo.test.ts "buildRepoTree: the Storybook workspace (006 research.md R-16) writes storybook/a11y-exceptions.json as [] when the tree supplies none, and keeps the tree's own"
+  await writeFile(join(into, exceptionsFile), rootExceptions(await readFile(join(into, exceptionsFile), "utf8").catch(ignoreMissing), repository));
   // Stryker disable next-line all: process boundary, covered by gates-integration: gates/test/integration/plant-repo.test.ts "writes the delta's token overrides as overrides.ts and applies its pair changes by key, one entry per line"
   if (delta !== undefined) await applyDelta(delta, into);
 }

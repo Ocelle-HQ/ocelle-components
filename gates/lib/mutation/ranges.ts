@@ -20,13 +20,15 @@ export interface ChangedFile {
 }
 
 /**
- * FR-028's package source TypeScript and gate source, and 002's Storybook scripts, configuration and story render code
- * (storybook/stories/ without the story files; phase 3 review round 1, R1-02), as git pathspecs.
+ * FR-028's package source TypeScript and gate source (006 FR-019: the capture of the visual gate, gates/visual/,
+ * included), and 002's Storybook scripts, configuration and story render code (storybook/stories/ without the story
+ * files; phase 3 review round 1, R1-02), as git pathspecs.
  */
 export const scopePathspecs: readonly string[] = [
   ":(glob)packages/*/**/*.ts",
   ":(glob)gates/bin/**/*.ts",
   ":(glob)gates/lib/**/*.ts",
+  ":(glob)gates/visual/**/*.ts",
   ":(glob)gates/eslint/**/*.ts",
   ":(glob)gates/stylelint/**/*.ts",
   ":(glob)storybook/scripts/**/*.ts",
@@ -40,7 +42,7 @@ export const scopePathspecs: readonly string[] = [
   ":(exclude,glob)packages/*/dist/**",
 ];
 
-const source = /^(?:packages\/[^/]+|gates\/(?:bin|lib|eslint|stylelint)|storybook\/(?:scripts|\.storybook|stories))\/.+(?<!\.test|\.spec|\.stories|\.d)\.ts$/s;
+const source = /^(?:packages\/[^/]+|gates\/(?:bin|lib|visual|eslint|stylelint)|storybook\/(?:scripts|\.storybook|stories))\/.+(?<!\.test|\.spec|\.stories|\.d)\.ts$/s;
 const excluded = /\/test\/|^packages\/[^/]+\/dist\//;
 const hunk = /^@@ -\d+(?:,\d+)? \+(\d+)(?:,(\d+))? @@/;
 
