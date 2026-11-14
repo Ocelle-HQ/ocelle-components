@@ -1,5 +1,5 @@
 Scope: all 5 workspace projects
-✓ Lockfile passes supply-chain policies (verified 4h ago)
+✓ Lockfile passes supply-chain policies (verified 9h ago)
 Lockfile is up to date, resolution step is skipped
 Packages are hard linked from the content-addressable store to the virtual store.
   Content-addressable store is at: /root/.local/share/pnpm/store/v11
@@ -35,15 +35,10 @@ devDependencies:
 + vite 8.3.5
 + vitest 5.0.5
 
-Done in 544ms using pnpm v12.16.1
+Done in 352ms using pnpm v12.16.1
 $ node gates/bin/setup-offline.ts
 setup: installed offline; Chromium at /opt/pw-browsers/chromium-1243/chrome-linux64/chrome
 $ node gates/bin/test.ts
-gates/test/integration/visual.test.ts:115: unit-tests: visual gate (gates/bin/visual.ts) captures the repository's 42 story-themes twice under docker and exits 0 naming them and the engine (US2 scenario 1): AssertionError: expected { code: 2, stdout: [], …(1) } to deeply equal { code: +0, …(2) }
-gates/test/integration/visual.test.ts:126: unit-tests: visual gate (gates/bin/visual.ts) keeps the capture, its diff image and run 1 in baseline layout for differs and missing-baseline, and nothing for any other story-theme (FR-005, analysis G2): AssertionError: expected { code: 2, findings: [], …(1) } to deeply equal { code: 1, findings: [ …(2) ], …(1) }
-gates/test/integration/visual.test.ts:239: unit-tests: baseline command (gates/bin/baselines.ts) writes nothing on an unchanged tree and says so (FR-008, analysis G1): AssertionError: expected { code: 2, stdout: [], …(1) } to deeply equal { code: +0, …(2) }
-gates/test/integration/visual.test.ts:251: unit-tests: baseline command (gates/bin/baselines.ts) the plant mode writes a deleted baseline of a plant back with the bytes it had, and touches no other file (research.md R-11): AssertionError: expected { code: 2, stdout: [], …(1) } to deeply equal { code: +0, …(2) }
-gates/test/integration/visual.test.ts:271: unit-tests: capture (gates/visual/capture.ts in the pinned container) captures a story alone byte for byte as in a full run after other stories (freshness, FR-028), and a 2000 px story 2000 px tall (FR-012): AssertionError: expected { code: 1, …(1) } to deeply equal { code: +0, stderr: '' }
 packages/elements/test/driver.test.ts:60: unit-tests: registerFirstLoad(containerId, markup, base) mounts the markup with a fresh tag, arms the capture, then defines the tag so the registration upgrades the elements: TypeError: commands.liveStart is not a function
 packages/elements/test/driver.test.ts:79: unit-tests: registerFirstLoad(containerId, markup, base) takes a new tag each time: TypeError: commands.liveStart is not a function
 packages/elements/test/driver.test.ts:91: unit-tests: readyState(value) makes document.readyState read the value until the next mount, and the capture reads it too: TypeError: commands.liveStart is not a function
@@ -57,5 +52,5 @@ packages/elements/test/live-capture.test.ts:121: unit-tests: liveCapture in proc
 packages/elements/test/live-capture.test.ts:134: unit-tests: liveCapture in process stop({ atLeast }) first waits until atLeast has passed since the capture started: TypeError: commands.liveStart is not a function
 packages/elements/test/live-capture.test.ts:145: unit-tests: liveCapture in process a capture over an element that mutates in a loop ends with "capture exceeded …", not a timeout: TypeError: commands.liveStart is not a function
 packages/elements/test/plants.test.ts:72: unit-tests: plants (elements project) capture bounds: an element that mutates its own attribu… turns a capture over the container (in proces… red: Error: expected [Function] to throw error matching /^capture exceeded / but got 'commands.liveStart is not a function'
-unit-tests: 18 of 3197 tests failed
+unit-tests: 13 of 3197 tests failed
 [ELIFECYCLE] Test failed. See above for more details.
