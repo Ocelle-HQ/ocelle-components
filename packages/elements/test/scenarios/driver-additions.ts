@@ -10,6 +10,8 @@
 // - `copy` returns the text a user copy put on the clipboard, unchanged (a U+200B in it is kept, so the US1-4 plant
 //   that inserts one is seen);
 // - `text` makes a `characterData` change, not a `childList` one.
+// Phase 2 (tasks.md T023) adds `pressTab` and `focused`: Tab moves focus in the page's sequential order, into a shadow
+// root and out of it, and `focused` names the innermost focused element through shadow roots, or null on the body.
 import type { Scenario } from "./icon.ts";
 
 /**
@@ -18,7 +20,8 @@ import type { Scenario } from "./icon.ts";
  *   animation frame scheduled from the callback, and removes it below;
  * - `ocelle-test-restless`: toggles `data-wide` on every animation frame while connected;
  * - `ocelle-test-recorder`: records the types of the mutation records of its own subtree in `data-records`;
- * - `ocelle-test-shadow`: an open shadow root holding `<dl><dt>Term</dt><dd><slot></slot></dd></dl>`.
+ * - `ocelle-test-shadow`: an open shadow root holding `<dl><dt>Term</dt><dd><slot></slot></dd></dl>`;
+ * - `ocelle-test-focus`: an open shadow root holding `<button id="inner">Inner</button>` and an unnamed `<button>`.
  */
 export function defineDriverHelpers(): void {
   if (customElements.get("ocelle-test-deferred") !== undefined) return;
@@ -73,6 +76,16 @@ export function defineDriverHelpers(): void {
         super();
         const root = this.attachShadow({ mode: "open" });
         root.innerHTML = "<dl><dt>Term</dt><dd><slot></slot></dd></dl>";
+      }
+    },
+  );
+  customElements.define(
+    "ocelle-test-focus",
+    class extends HTMLElement {
+      constructor() {
+        super();
+        const root = this.attachShadow({ mode: "open" });
+        root.innerHTML = '<button id="inner">Inner</button><button>Unnamed</button>';
       }
     },
   );
@@ -193,5 +206,18 @@ export const driverAdditionScenarios: readonly Scenario[] = [
       styles: [{ display: "block", "margin-inline-start": "0px" }, { display: "block", "margin-inline-start": "40px" }],
       host: [{ display: "inline" }],
     },
+  },
+  {
+    name: "pressTab and focused: nothing is focused at first; Tab moves through a button, into a shadow root's two buttons (the second without an id) and on to a link, each read through the shadow root",
+    run: async (driver) => {
+      await driver.mount('<button id="first">First</button><ocelle-test-focus id="host"></ocelle-test-focus><p>Text</p><a id="link" href="#link">Link</a>');
+      const sequence: (string | null)[] = [await driver.focused()];
+      for (let press = 0; press < 4; press += 1) {
+        await driver.pressTab();
+        sequence.push(await driver.focused());
+      }
+      return sequence;
+    },
+    expected: [null, "first", "inner", "<button>", "link"],
   },
 ];

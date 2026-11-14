@@ -247,7 +247,7 @@ describe("generate(root) on the repository's element source", () => {
     const manifest = await generate(repo);
     const modules = manifest.modules as { path: string; declarations: Record<string, unknown>[] }[];
     expect(manifest.schemaVersion).toBe("1.0.0");
-    expect(modules.map((module) => module.path)).toEqual(["src/ocelle-brand-mark.ts", "src/ocelle-fact.ts", "src/ocelle-facts.ts", "src/ocelle-icon.ts"]);
+    expect(modules.map((module) => module.path)).toEqual(["src/ocelle-brand-mark.ts", "src/ocelle-empty-state.ts", "src/ocelle-fact.ts", "src/ocelle-facts.ts", "src/ocelle-icon.ts"]);
     const [icon] = modules.find((module) => module.path === "src/ocelle-icon.ts")?.declarations ?? [];
     expect(icon).toMatchObject({
       kind: "class",
@@ -316,6 +316,32 @@ describe("generate(root) on the repository's element source", () => {
       slots: [{ name: "", described: true }],
       parts: [{ name: "list", described: true }, { name: "label", described: true }, { name: "value", described: true }],
       properties: [{ name: "--ocelle-facts-stack-below", described: true }, { name: "--ocelle-facts-value-size", described: true }, { name: "--ocelle-facts-value-line-height", described: true }],
+    });
+  });
+
+  // 013 (T030; contracts/elements.md § `ocelle-empty-state`): every list stated, every member described.
+  it('declares ocelle-empty-state with variant ("panel" | undefined), reflected, the slots visual, eyebrow, heading, default and actions, the part body, and no event or CSS property, each described', async () => {
+    const manifest = await generate(repo);
+    const modules = manifest.modules as { path: string; declarations: Record<string, unknown>[] }[];
+    const [state] = modules.find((module) => module.path === "src/ocelle-empty-state.ts")?.declarations ?? [];
+    const named = (list: unknown): unknown => ((list ?? []) as Record<string, unknown>[]).map(({ name, description }) => ({ name, described: typeof description === "string" && description !== "" }));
+    const described = (list: unknown): Record<string, unknown>[] =>
+      ((list ?? []) as Record<string, unknown>[]).map(({ description, ...rest }) => ({ ...rest, described: typeof description === "string" && description !== "" }));
+    expect({ kind: state?.kind, name: state?.name, tagName: state?.tagName, customElement: state?.customElement, events: state?.events }).toEqual({ kind: "class", name: "OcelleEmptyState", tagName: "ocelle-empty-state", customElement: true, events: [] });
+    expect(described(state?.members)).toEqual([
+      { kind: "field", name: "variant", privacy: "public", type: { text: '"panel" | undefined' }, default: "undefined", attribute: "variant", reflects: true, described: true },
+    ]);
+    expect(described(state?.attributes)).toEqual([{ name: "variant", fieldName: "variant", type: { text: '"panel" | undefined' }, default: "undefined", described: true }]);
+    expect({ slots: named(state?.slots), parts: named(state?.cssParts), properties: state?.cssProperties }).toEqual({
+      slots: [
+        { name: "visual", described: true },
+        { name: "eyebrow", described: true },
+        { name: "heading", described: true },
+        { name: "", described: true },
+        { name: "actions", described: true },
+      ],
+      parts: [{ name: "body", described: true }],
+      properties: [],
     });
   });
 

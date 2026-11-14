@@ -285,5 +285,16 @@ export function fixtureDriver(page: Page, log: readonly string[], withBase = fal
         const tree = (of: Element | ShadowRoot): TreeNode[] => [...of.children].map((child) => ({ name: child.localName, children: tree(child) }));
         return start === null ? [] : tree(start);
       }, { id, inner }),
+    pressTab: async () => {
+      await page.keyboard.press("Tab");
+      await settle(page);
+    },
+    focused: () =>
+      page.evaluate(() => {
+        let current = document.activeElement;
+        while (current?.shadowRoot?.activeElement !== null && current?.shadowRoot?.activeElement !== undefined) current = current.shadowRoot.activeElement;
+        if (current === null || current === document.body) return null;
+        return current.id === "" ? `<${current.localName}>` : current.id;
+      }),
   };
 }

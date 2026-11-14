@@ -7,10 +7,11 @@
 import type { CDPSession, Page } from "playwright";
 import type { BrowserCommandContext } from "vitest/node";
 
-/** One unignored accessibility node: its role and its computed name. */
+/** One unignored accessibility node: its role and its computed name, and for a heading its level (013 US2-1, US2-2). */
 export interface AxNode {
   readonly role: string;
   readonly name: string;
+  readonly level?: number;
 }
 
 /** The forced-colours modes and the system palettes the tests emulate. */
@@ -33,6 +34,7 @@ interface RawAxNode {
   readonly backendDOMNodeId?: number;
   readonly role?: { readonly value?: unknown };
   readonly name?: { readonly value?: unknown };
+  readonly properties?: readonly { readonly name: string; readonly value?: { readonly value?: unknown } }[];
 }
 
 interface FrameTree {
@@ -43,6 +45,13 @@ interface FrameTree {
 /** A protocol value as text: a string as it is, anything else as the empty string. */
 function text(value: unknown): string {
   return typeof value === "string" ? value : "";
+}
+
+/** A node as the readers report it: role and name, and a heading's `level` property (013 US2-1, US2-2). */
+function reported(node: RawAxNode): AxNode {
+  const role = text(node.role?.value);
+  const level = node.properties?.find((property) => property.name === "level")?.value?.value;
+  return role === "heading" && typeof level === "number" ? { role, name: text(node.name?.value), level } : { role, name: text(node.name?.value) };
 }
 
 function inner(node: DomNode): readonly DomNode[] {
@@ -90,7 +99,7 @@ export async function axNodes(session: CDPSession, id: string, frameId?: string)
   const { nodes } = (await session.send("Accessibility.getFullAXTree", params)) as { nodes: readonly RawAxNode[] };
   return nodes
     .filter((node) => !node.ignored && node.backendDOMNodeId !== undefined && ids.has(node.backendDOMNodeId))
-    .map((node) => ({ role: text(node.role?.value), name: text(node.name?.value) }));
+    .map(reported);
 }
 
 /**
@@ -111,7 +120,7 @@ export async function axSubtree(session: CDPSession, id: string, frameId?: strin
   const found: AxNode[] = [];
   const walk = (node: RawAxNode): void => {
     const role = text(node.role?.value);
-    if (!node.ignored && role !== "InlineTextBox") found.push({ role, name: text(node.name?.value) });
+    if (!node.ignored && role !== "InlineTextBox") found.push(reported(node));
     for (const child of node.childIds ?? []) {
       const next = byNodeId.get(child);
       if (next !== undefined) walk(next);

@@ -143,6 +143,22 @@ const fragments = [
   "In a consumer's CSS grid, set `min-inline-size: 0` on the `ocelle-facts` host, so a long value cannot widen the track",
   "Labels are at weight 500 (`--ocelle-font-weight-medium`); `ocelle-facts::part(label)` sets another weight",
   "The sheet never truncates a value: `break-word`, break-anywhere and an ellipsis all map to `wrap=\"anywhere\"`, with the full value shown",
+  // ocelle-empty-state (013 FR-020 to FR-026, FR-056; research.md R-04; tasks.md T026, T026a)
+  "`ocelle-empty-state` shows an empty or loading panel: the consumer's own heading, body and actions in one centred column. The heading level is the consumer's: slot your own heading element in `heading`; the element has no `level` property and never adds a heading, landmark, live region or tab stop of its own",
+  "Slots: `visual` (an icon or an `ocelle-progress`, above the heading), `eyebrow` (a short line above the heading), `heading` (the consumer's heading element), the default slot (the body) and `actions` (buttons or links, which wrap when narrow); `part=\"body\"` is the centred column, with its padding and every slot in it",
+  "`variant=\"panel\"` fills a list or inspector panel: block padding `--ocelle-space-10` instead of `--ocelle-space-6`, larger gaps between parts, and the heading at weight 500 (`--ocelle-font-weight-medium`) instead of 600 (`--ocelle-font-weight-strong`); any other value acts as unset",
+  "The first present part starts at the block padding and the last ends at it. Between two present parts the gap is set by the upper one: after the visual `--ocelle-space-3` (panel `--ocelle-space-5`), after the heading `--ocelle-space-2` (panel `--ocelle-space-3`), after the body `--ocelle-space-4` (panel `--ocelle-space-6`)",
+  "A part is present while something slotted in it renders: an empty slot, or one holding only elements with `hidden` or only whitespace, takes no space and adds no gap. Hide slotted content with `hidden` or remove it: content hidden by a class or a style rule is not observed",
+  "An `ocelle-progress` in `visual` spans the column, up to `--ocelle-measure-reading`, in both variants; an icon stays centred",
+  "The element styles slotted content through `::slotted()`, which beats the user-agent styles but not a page's own rules: a page rule on the slotted heading, eyebrow or body content wins, by design, since the consumer owns its content",
+  "The loading panel is `variant=\"panel\"` with an indeterminate `ocelle-progress` in `visual`",
+  "`ocelle-empty-state` reads the tokens `--ocelle-font-sans`, `--ocelle-font-size-xs`, `--ocelle-font-size-md`, `--ocelle-font-size-lg`, `--ocelle-font-weight-medium`, `--ocelle-font-weight-strong`, `--ocelle-color-ink`, `--ocelle-color-ink-muted`, `--ocelle-measure-reading`, `--ocelle-space-1`, `--ocelle-space-2`, `--ocelle-space-3`, `--ocelle-space-4`, `--ocelle-space-5`, `--ocelle-space-6` and `--ocelle-space-10`",
+  "The `eyebrow` slot holds a short line above the heading (a `<p>`, for example \"Refused\"), not a heading: the element shows it in `--ocelle-font-sans` at `--ocelle-font-size-xs`, weight 500, `--ocelle-color-ink-muted`, in upper case, and adds no role to it",
+  "The eyebrow sits `--ocelle-space-1` above a heading (panel `--ocelle-space-2`); with no heading it is `--ocelle-space-2` above the body or the actions (panel `--ocelle-space-3`)",
+  "The element sets the block margins of the body's elements to 0 and separates the body's children by `--ocelle-space-2`, in both variants: each slotted element, and each run of slotted text, is a block of its own, so text meant to flow as one paragraph with a link or an identifier inside it goes in one `<p>`. A page rule that sets margins on the slotted body content wins over the reset",
+  "The panel heading is at weight 500, lighter than the default's 600, following the text of spec-kitty-design#510; a heading that was bold in a consumer's card becomes 500",
+  "Neither variant paints a ground, a border or a busy look: the element sits on its container's ground. A card around it (fill, radius, padding, a dashed or busy-keyed border) is the consumer's own; the dashed refusal card belongs to the panel-paint family of spec-kitty-design#509, not to this element",
+  "A screen that moves focus to a loading block slots its own `<h2 tabindex=\"-1\">` in `heading`, with the bar in `visual`, and focuses the heading; do not put a `role` or `tabindex` on the `ocelle-progress` host",
   // two copies on a page (FR-006, Edge Cases)
   "Two copies of the package on one page, two versions or the browser build beside a bundle of the module build, cannot both define an element: the first definition wins and the second import throws nothing",
 ];
@@ -154,6 +170,7 @@ const entryRows = [
   "| `@ocelle/elements/ocelle-brand-mark.js` | `dist/ocelle-brand-mark.js` | `ocelle-brand-mark` only; for hosts with a bundler |",
   "| `@ocelle/elements/ocelle-facts.js` | `dist/ocelle-facts.js` | `ocelle-facts` and its item `ocelle-fact`; for hosts with a bundler |",
   "| `@ocelle/elements/ocelle-fact.js` | `dist/ocelle-fact.js` | `ocelle-fact` only; for hosts with a bundler |",
+  "| `@ocelle/elements/ocelle-empty-state.js` | `dist/ocelle-empty-state.js` | `ocelle-empty-state` only; for hosts with a bundler |",
   "| `@ocelle/elements/browser.js` | `dist/browser/ocelle-elements.js` | every element, Lit inside; for hosts without a bundler |",
   "| `@ocelle/elements/custom-elements.json` | `custom-elements.json` | the manifest, also named by the `customElements` field |",
 ];
@@ -203,6 +220,34 @@ const factsMapping: readonly (readonly [string, string])[] = [
   ["facts workspace marker", "consumer's: a `data-*` attribute on the `ocelle-facts` host"],
 ];
 
+/**
+ * The empty-state rows of the README's kitty-mission-ui mapping (013 FR-058, SC-001; research.md R-11, the empty-state
+ * family's inventory; operator decisions I1, IQ-06 to IQ-11): each role name with the element and variant or the
+ * consumer's remedy that covers it, exactly. The class family column is not read, so no class-family name appears in
+ * this test.
+ */
+const emptyStateMapping: readonly (readonly [string, string])[] = [
+  ["empty-state panel", "`ocelle-empty-state variant=\"panel\"`, the heading at 500 and the larger rhythm, with no chrome of its own; the state wrapper and its `aria-busy` stay the consumer's"],
+  ["empty-state regional", "`ocelle-empty-state`, default variant, with only the default slot"],
+  ["empty-state refusal", "`ocelle-empty-state` with the eyebrow in the `eyebrow` slot, an `<h1>` in `heading`, the sentence and the path (with `data-ocelle-wrap=\"anywhere\"`) in the body, and an action; the dashed card is not this element's"],
+  ["empty-state heading h1", "the consumer's `<h1>` in the `heading` slot"],
+  ["empty-state heading h2", "the consumer's `<h2>` in the `heading` slot"],
+  ["empty-state heading paragraph", "the consumer's `<p>` in the `heading` slot; a bar named by it takes its text as `label`"],
+  ["empty-state no heading", "the `heading` slot left empty: a loading panel with `ocelle-progress` in `visual`, or a body-only notice"],
+  ["empty-state body multiple", "both paragraphs in the default slot: their margins are reset and they are `--ocelle-space-2` apart"],
+  ["empty-state body optional", "the default slot filled or left empty"],
+  ["empty-state action", "the `actions` slot; the element gives the gap above it, so drop the consumer's own top margin"],
+  ["empty-state action wrapper", "the `actions` slot"],
+  ["empty-state inline", "not this mission: no left-aligned inline variant"],
+  ["empty-state busy", "an indeterminate `ocelle-progress size=\"compact\"` in `visual`; `aria-busy` stays on the consumer's wrapper, and a busy look is the consumer's card"],
+  ["empty-state message", "consumer's: its own dashed card around an `ocelle-empty-state` (default variant)"],
+  ["empty-state card", "consumer's: its own card (fill, radius, inline padding, busy-keyed border) around `ocelle-empty-state variant=\"panel\"`, whose heading is at 500"],
+  ["empty-state card dashed", "not this mission: panel and card paint, spec-kitty-design#509"],
+  ["empty-state ops card", "consumer's: as the card, its own card around the element, the heading at the element's weight"],
+  ["empty-state identifier", "consumer's: the value in the body with `data-ocelle-wrap=\"anywhere\"` and its own `title`; no monospace"],
+  ["empty-state focus target", "consumer's: `tabindex=\"-1\"` on its slotted heading; for a loading block, its `<h2 tabindex=\"-1\">` in `heading` with the bar in `visual`"],
+];
+
 /** The table rows of one `##` section of the README, as written, without the header and the separator rows. */
 function tableRows(text: string, heading: string): string[] {
   const section = new RegExp(`^## ${heading}\\n([\\s\\S]*?)(?=^## |(?![\\s\\S]))`, "m").exec(text)?.[1] ?? "";
@@ -222,7 +267,7 @@ describe("packages/elements/README.md", () => {
   it("lists exactly the entry points of package.json's exports in its Entry points table (FR-002)", () => {
     const manifest = JSON.parse(read("package.json")) as { exports?: Record<string, string> };
     expect(tableRows(read("README.md"), "Entry points")).toEqual(entryRows);
-    expect(Object.keys(manifest.exports ?? {})).toEqual([".", "./ocelle-icon.js", "./ocelle-brand-mark.js", "./ocelle-facts.js", "./ocelle-fact.js", "./browser.js", "./custom-elements.json"]);
+    expect(Object.keys(manifest.exports ?? {})).toEqual([".", "./ocelle-icon.js", "./ocelle-brand-mark.js", "./ocelle-facts.js", "./ocelle-fact.js", "./ocelle-empty-state.js", "./browser.js", "./custom-elements.json"]);
   });
 
   it("lists the thirteen names of the set, whether each mirrors and the consumer need it meets, in its Icons table (US2-1, FR-018, SC-007)", () => {
@@ -230,6 +275,11 @@ describe("packages/elements/README.md", () => {
   });
 
   it.each(factsMapping)("maps the role %s to its element and variant in the kitty-mission-ui mapping (013 FR-058)", (role, covered) => {
+    const row = tableRows(read("README.md"), "Mapping from kitty-mission-ui").map((line) => line.slice(2, -2).split(" | ")).find((cells) => cells[1] === role);
+    expect(row?.[2]).toBe(covered);
+  });
+
+  it.each(emptyStateMapping)("maps the role %s to its element and variant or the consumer's remedy in the kitty-mission-ui mapping (013 FR-058)", (role, covered) => {
     const row = tableRows(read("README.md"), "Mapping from kitty-mission-ui").map((line) => line.slice(2, -2).split(" | ")).find((cells) => cells[1] === role);
     expect(row?.[2]).toBe(covered);
   });
@@ -264,6 +314,10 @@ describe("packages/elements/CHANGELOG.md", () => {
     "`@ocelle/elements/ocelle-facts.js`",
     "`@ocelle/elements/ocelle-fact.js`",
     "`layout=\"grid\"`",
+    "`ocelle-empty-state`",
+    "`@ocelle/elements/ocelle-empty-state.js`",
+    "`variant=\"panel\"`",
+    "the `eyebrow` slot",
     ...["chevron-start", "chevron-end", "chevron-up", "chevron-down", "arrow-start", "arrow-end", "menu", "close", "folder", "file", "search", "table", "copy"].map((name) => `\`${name}\``),
   ])("names %s under Unreleased / Added (constitution VII, FR-031, SC-008)", (surface) => {
     expect(added).toContain(surface);
