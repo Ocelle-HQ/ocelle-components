@@ -738,6 +738,7 @@ const stopRows = cycleRows("Tab cycle: what is a stop, at the cycle's ends (FR-0
     shift: "p3 p1 dlg[button] p3 p1",
   },
   { label: "an <a> without href last, not a stop", content: '<button id="b1">B1</button><a id="na">No link</a>', start: "close", n: 2, tab: "b1 dlg[button] b1 dlg[button]", shift: "b1 dlg[button] b1 dlg[button]" },
+  { label: "an <a> without href with tabindex=-1 last, not a stop", content: '<button id="b1">B1</button><a id="nt" tabindex="-1">Not a stop</a>', start: "close", n: 2, tab: "b1 dlg[button] b1 dlg[button]", shift: "b1 dlg[button] b1 dlg[button]" },
   { label: "a disabled button last, not a stop", content: '<button id="b1">B1</button><button id="d1" disabled>Off</button>', start: "close", n: 2, tab: "b1 dlg[button] b1 dlg[button]", shift: "b1 dlg[button] b1 dlg[button]" },
   { label: "a video without controls last, not a stop", content: '<button id="b1">B1</button><video id="nv"></video>', start: "close", n: 2, tab: "b1 dlg[button] b1 dlg[button]", shift: "b1 dlg[button] b1 dlg[button]" },
   {
@@ -748,6 +749,15 @@ const stopRows = cycleRows("Tab cycle: what is a stop, at the cycle's ends (FR-0
     n: 3,
     tab: "b1 sy dlg[button] b1 sy",
     shift: "sy b1 dlg[button] sy b1",
+  },
+  {
+    label: "a vertical scroller holding prose and a MathML formula, last",
+    content: `<button id="b1">B1</button><div id="sm">${tallProse("m")}<math><mi>x</mi><mo>=</mo><mn>1</mn></math></div>`,
+    rules: "#sm { overflow-y: auto; block-size: 40px; }",
+    start: "close",
+    n: 3,
+    tab: "b1 sm dlg[button] b1 sm",
+    shift: "sm b1 dlg[button] sm b1",
   },
   { label: "a block with overflow: auto that does not overflow, last, not a stop", content: '<button id="b1">B1</button><div id="nx">Short.</div>', rules: "#nx { overflow: auto; }", start: "close", n: 2, tab: "b1 dlg[button] b1 dlg[button]", shift: "b1 dlg[button] b1 dlg[button]" },
   {
