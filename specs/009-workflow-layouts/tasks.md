@@ -351,7 +351,7 @@ Its fitting twin is none of these. `ocelle-test-overflow-host` passes US1-1, US1
 - [X] T029 [US1] `packages/elements/README.md` with the statements of T019, and `packages/elements/CHANGELOG.md`:
   `ocelle-scroller`, its entry point, the module convention, and the `style-lint` gradient change in
   `gates/README.md`'s history if it keeps one.
-- [ ] T030 [US1] Run each pairing plant of T011, T013, T015 and T016 once. Record them in
+- [X] T030 [US1] Run each pairing plant of T011, T013, T015 and T016 once. Record them in
   `specs/009-workflow-layouts/reviews/phase-2/plants.md`. The scrollbar plant of T016 is a stop-and-ask point. Then
   run, one at a time: `pnpm run gate:style-lint`, `gate:csp`, `gate:prefix`, `gate:manifest`, `gate:plants`, and
   `gate:mutation -- --base <phase base>`.

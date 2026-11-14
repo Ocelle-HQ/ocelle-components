@@ -69,6 +69,17 @@ survived; 0 timeouts, 130 compile errors, 1 zero-mutant entry (`src/index.ts`, a
 each with its reason in the source. The whole run took about 10 minutes on this machine for all 18 CI shards together,
 so no shard comes near the 10-minute stop-and-ask bound.
 
-## The scrollbar plant of T016
+## The scrollbar plant of T016 (B1)
 
-Not in this table: it is the stop-and-ask point of T030 (see `stop-and-ask.md`).
+The stop-and-ask point of T030 (`stop-and-ask.md`); run once after the operator's decision P1
+(`operator-decisions.md`), on `74735fe`. The plant: in `#measure` of `packages/elements/src/overflow-region.ts`,
+``const figures = `100% ${String(box.clientHeight)}px, 100% ${String(box.offsetHeight - box.clientHeight)}px`;``
+replaced by ``const figures = `100% ${String(box.offsetHeight)}px, 100% 0px`;`` (the fade layer sized to the whole
+box, no measured block size). The file was restored with `git checkout` and checked with `git diff --exit-code`.
+
+| # | Test | Plant | Result |
+|---|---|---|---|
+| B1 | T016 `test/browser/scrollbar.test.ts` (Chromium without `--hide-scrollbars`, a classic 15 px scrollbar) | the fade layer sized to the whole box | `elements-browser packages/elements/test/browser/scrollbar.test.ts`: 2 failed, 2 passed (4); fails: "at a faded edge the scrollbar's pixels equal a twin plain box's…" (`bandDiffers` 25 pixels over 32/255 in the scrollbar band, at the start and in the middle, where 0 is expected: the fade now covers the scrollbar) and "when the scrollbar appears, the mask's size follows…" (`resize: 100% 49px, 100% 0px` where `100% 34px, 100% 15px` is expected). The block-size and handover-ring cases pass, as they do not read the mask's size. |
+
+The plant bites: Chromium fades the scrollbar when the fade layer covers it, and the measured two-layer geometry
+keeps it unmasked. The phase continues (P1).
