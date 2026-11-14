@@ -6,13 +6,19 @@ make its guard fail stops the phase. The phase stopped here: T044 stays open.
 ## Where the phase stands
 
 - The red commit (`ecaf46f`) is recorded by `red.sh 3 phase` (tests only, red, exit 1). The green commit (`2b4bca9`)
-  implements T038 to T043. In process and on the strict-CSP fixture, every board and lane scenario passes (20 board and
-  8 lane bodies in process, the same 28 on the fixture).
+  implements T038 to T043, and `12ebc36` adds the guards for the mutants that survived the first mutation run. In process and on the strict-CSP fixture, every board and lane scenario passes (20 board and
+  8 lane bodies, plus 3 guards, in process, and the same 31 on the fixture).
 - Sixteen of the seventeen pairing plants of T032 were run once and bite (`plants.md`: B1 to B12, B14 to B17). B17 is
   the guard the phase 2 review's R1-03 asked for: the overflow-region module's `slotchange` listener is not equivalent
   for the board.
 - **B13** (no fade clearance: the module neither scrolls a focused card nor suppresses a fade) does **not** bite. US2-15
   in Frame N passes with it, 20 of 20 board bodies.
+- The gates of T044 (as in T030) were run one at a time on the green implementation (`12ebc36`): `gate:style-lint`
+  (17 files), `gate:csp` (12 files), `gate:prefix` (237 files) and `gate:manifest` (5 elements) report no finding;
+  `gate:mutation -- --base 6f92f5f` passes (105 mutants on the changed lines, none survived, after the guards of
+  `plants.md` § Guards); `gate:plants` with `OCELLE_VISUAL_ENGINE=docker` judged 306 plants as expected. Also:
+  `gate:visual` (76 captures match), `gate:axe` (76 runs, 0 serious or critical), `gate:storybook-build` (38 stories),
+  `gate:typecheck`, `gate:lint`, `gate:test-lint` and `pnpm test`. T044 is not ticked: B13 is its open item.
 
 ## Why B13 does not bite
 
