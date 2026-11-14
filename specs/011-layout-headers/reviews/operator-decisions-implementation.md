@@ -27,3 +27,7 @@ Recorded by the orchestrator; each is the operator's answer (human:jeroennouwsde
    baseline PNG, neither side is taken: the merge is finished, the affected baselines are regenerated in the pinned
    container and committed in the merge. The five container-engine tests of `gates/test/integration/visual.test.ts`
    are re-run with the engine and are expected to pass.
+5. **2026-11-14, research.md R-04 after phase 2** (phase 2 reviews R1-04, R2-03, R3-02): "Planner amends R-04".
+   Before phase 3, the planner corrects R-04 (and R-07 where it repeats it) to the section header as built: the
+   actions wrapper keeps `flex: 0 1 auto` (FR-004 at 320 px), and the actions take `margin-inline-start: auto` when
+   the empty heading column is hidden (FR-005, FR-010). No requirement changes.
