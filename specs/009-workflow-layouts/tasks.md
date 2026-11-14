@@ -176,7 +176,7 @@ Its fitting twin is none of these. `ocelle-test-overflow-host` passes US1-1, US1
 
 ### Tests (red, one commit)
 
-- [ ] T010 [P] [US1] Driver methods, tests first, in `packages/elements/test/driver.test.ts` (R-17). Each method is
+- [X] T010 [P] [US1] Driver methods, tests first, in `packages/elements/test/driver.test.ts` (R-17). Each method is
   proven against a plain fixture in both harnesses:
   - `press(key)` with `Tab`, `Shift+Tab`, `ArrowLeft`, `ArrowRight`, `Home`, `End`, `Alt+ArrowLeft`, `Ctrl+ArrowRight`,
     `Meta+ArrowRight` and `Shift+ArrowRight`, as real input only;
@@ -191,12 +191,12 @@ Its fitting twin is none of these. `ocelle-test-overflow-host` passes US1-1, US1
   - `settle()`: `updateComplete` after two animation frames;
   - `messages()`;
   - `sheets()`.
-- [ ] T011 [P] [US1] `gates/test/token-only.test.ts` (and `token-only-parts.test.ts` if `rawValues` changes): every row
+- [X] T011 [P] [US1] `gates/test/token-only.test.ts` (and `token-only-parts.test.ts` if `rawValues` changes): every row
   of the contracts/gates.md table, red against the current rule. The three token-only gradients pass. `#000`, `45deg`,
   `2rem`, `black` and `rgb(0 0 0)` inside a gradient are each raw. `radial-gradient()` and
   `repeating-linear-gradient()` are raw whole. The `var(--ocelle-…)` name check applies inside a gradient
   (PLAN-CORRECTNESS-1-002 (a)).
-- [ ] T012 [P] [US1] `packages/elements/test/overflow-region.test.ts` (in-process, pure helpers):
+- [X] T012 [P] [US1] `packages/elements/test/overflow-region.test.ts` (in-process, pure helpers):
   - `edgeState(scrollLeft, scrollWidth, clientWidth)`: the 1 px tolerance on each side and the negative `scrollLeft`
     under `rtl`;
   - `clearanceScroll({ ring, box, fade, fadeStart, fadeEnd, direction })` in LTR and RTL, for three controls:
@@ -205,7 +205,7 @@ Its fitting twin is none of these. `ocelle-test-overflow-host` passes US1-1, US1
     - one wider than the box: aligned at the inline start, both suppressed;
   - `resolveName(hostAriaLabel, label)`: a non-blank host label wins, trimmed; a blank host label falls back to the
     trimmed label; a blank label gives none (R-01, R-06, FR-010).
-- [ ] T013 [US1] `packages/elements/test/scenarios/scroller.ts`: US1 scenarios 1 to 16 as shared bodies with real
+- [X] T013 [US1] `packages/elements/test/scenarios/scroller.ts`: US1 scenarios 1 to 16 as shared bodies with real
   input. Each "does not" is paired as the spec table says, with the plant named in the body's comment:
   - **US1-1:** a fitting scroller vs. its overflowing twin, a tab stop and one `group` named "Filters". Plant:
     `tabindex` and role set whatever the overflow.
@@ -260,14 +260,14 @@ Its fitting twin is none of these. `ocelle-test-overflow-host` passes US1-1, US1
     element (R-17).
   - **Sheets:** over two scrollers, `sheets()` shows the shared sheets plus exactly one per-instance sheet per root
     (R-13, PLAN-FRESH-2-005 (a)).
-- [ ] T014 [US1] `packages/elements/test/scroller.test.ts` (in-process over T013) and
+- [X] T014 [US1] `packages/elements/test/scroller.test.ts` (in-process over T013) and
   `packages/elements/test/browser/scroller.test.ts` (fixture over T013, plus US1-15's request and console checks).
   It follows T013, whose bodies it runs.
-- [ ] T015 [P] [US1] `packages/elements/test/fixtures/overflow-host.ts`: the test-only `ocelle-test-overflow-host`.
+- [X] T015 [P] [US1] `packages/elements/test/fixtures/overflow-host.ts`: the test-only `ocelle-test-overflow-host`.
   It is built on `OverflowRegion` with its own scroll-box markup and the default `group` role, and ships in no
   package. Add `packages/elements/test/overflow-host.test.ts`, which runs US1-1, US1-3, US1-4 and US1-12 from T013
   against it (US1-16, SC-008).
-- [ ] T016 [P] [US1] `packages/elements/test/browser/scrollbar.test.ts`, launched with
+- [X] T016 [P] [US1] `packages/elements/test/browser/scrollbar.test.ts`, launched with
   `ignoreDefaultArgs: ["--hide-scrollbars"]`:
   - the block size includes the scrollbar;
   - at a faded edge the scrollbar's pixels equal a twin plain box's, while the content just above is faded;
@@ -275,12 +275,12 @@ Its fitting twin is none of these. `ocelle-test-overflow-host` passes US1-1, US1
   - the handover ring shows over the scrollbar band.
 
   Plant: the fade layer sized to the whole box (R-04, R-05, PLAN-FRESH-1-003 (a), PLAN-FRESH-2-001 (a)).
-- [ ] T017 [P] [US1] `packages/elements/test/entry-scroller.test.ts`: importing `../src/ocelle-scroller.ts` defines
+- [X] T017 [P] [US1] `packages/elements/test/entry-scroller.test.ts`: importing `../src/ocelle-scroller.ts` defines
   `ocelle-scroller` and no other new element. Extend `entry-root.test.ts` and `exports.test.ts` to `ocelle-scroller`.
-- [ ] T018 [P] [US1] `packages/elements/test/node/manifest.test.ts`: the `ocelle-scroller` entry has `label`
+- [X] T018 [P] [US1] `packages/elements/test/node/manifest.test.ts`: the `ocelle-scroller` entry has `label`
   (`string | undefined`, not reflected, described), one default slot, and no events, parts or CSS custom properties
   (contracts/elements.md).
-- [ ] T019 [P] [US1] `packages/elements/test/node/readme.test.ts`, one assertion per statement:
+- [X] T019 [P] [US1] `packages/elements/test/node/readme.test.ts`, one assertion per statement:
   - § `ocelle-scroller`: the attribute, the slot and the tokens read; the tree (a named `group` while overflowing);
     the keyboard; the scrollbar; the guidance to give repeated scrollers an item-specific name; in a shrink-to-fit
     host (a default flex item, a dialog, a table cell), give the scroller a definite or maximum inline size so that it
@@ -295,7 +295,7 @@ Its fitting twin is none of these. `ocelle-test-overflow-host` passes US1-1, US1
     replaces the "one shared stylesheet" sentence (FR-030, PLAN-FRESH-2-005 (a)).
   - the reduced-motion statement for keys pressed while a slotted control has focus (FR-009, PLAN-FRESH-2-003 (a));
   - § Engines: the mask properties with their figures (R-18).
-- [ ] T020 [P] [US1] `storybook/test/integration/elements-stories.test.ts`: the six scroller stories of
+- [X] T020 [P] [US1] `storybook/test/integration/elements-stories.test.ts`: the six scroller stories of
   contracts/elements.md § Stories are in the built Storybook, and each, in light and dark, renders `ocelle-scroller`,
   with no `style` attribute and no class on the story's markup (the light DOM it renders) and no request outside the
   origin. The test also checks that the `[data-frame]` rules in `storybook/.storybook/stories-layout.css` are a copy
@@ -304,14 +304,14 @@ Its fitting twin is none of these. `ocelle-test-overflow-host` passes US1-1, US1
 
 ### Implementation (green)
 
-- [ ] T021 [US1] The driver methods of T010 in `packages/elements/test/scenarios/driver.ts`,
+- [X] T021 [US1] The driver methods of T010 in `packages/elements/test/scenarios/driver.ts`,
   `packages/elements/test/in-process.ts` and `packages/elements/test/browser/driver.ts`. Use real input through
   `vitest/browser`'s `userEvent` in-process and through Playwright's `page.keyboard` and `page.mouse` on the fixture
   pages, never synthetic events (R-17). This is test infrastructure that T010 tests, so it is not exempt.
-- [ ] T022 [US1] `gates/stylelint/token-only.ts`: classify `linear-gradient()` arguments as contracts/gates.md says.
+- [X] T022 [US1] `gates/stylelint/token-only.ts`: classify `linear-gradient()` arguments as contracts/gates.md says.
   Add the plants of contracts/gates.md under `gates/plants/style-lint/` and the `gates/README.md` row
   (PLAN-CORRECTNESS-1-002 (a)). Done before T023's styles.
-- [ ] T023 [US1] `packages/elements/src/overflow-region.ts`, exactly as contracts/overflow-region.md defines it:
+- [X] T023 [US1] `packages/elements/src/overflow-region.ts`, exactly as contracts/overflow-region.md defines it:
   - the `OverflowRegion` controller, with the `box()` and `role` options (`group` by default) and the `step` of 40;
   - `setLabel`, and the observed host `aria-label`;
   - outputs: `overflowing`, `offStart`, `offEnd`, `fadeStart`, `fadeEnd`, `fadeAttribute`
@@ -328,18 +328,18 @@ Its fitting twin is none of these. `ocelle-test-overflow-host` passes US1-1, US1
   - the pure helpers of T012;
   - `overflowRegionStyles`, with the mask layers sized from measured px figures in one per-instance constructed
     stylesheet (R-05, R-13).
-- [ ] T024 [US1] `packages/elements/src/ocelle-scroller.ts`:
+- [X] T024 [US1] `packages/elements/src/ocelle-scroller.ts`:
   - `static override properties` with `label`; `observedAttributes` plus `aria-label`; `@tagname`/`@default` JSDoc;
   - the contract's template (`region-frame`, `region-box` with `data-fade` bound through `ifDefined`, `region-track`
     holding the default slot, `region-ring`, two `region-edge` elements, all `aria-hidden` except the box);
   - `static styles` = its own rules plus `overflowRegionStyles`, including `:host([hidden]) { display: none; }`, and
     the variant and mask rules inside `@media not (forced-colors: active)`;
   - `define("ocelle-scroller", …)`.
-- [ ] T025 [US1] `packages/elements/src/index.ts` and `src/browser.ts` export and define `ocelle-scroller`.
+- [X] T025 [US1] `packages/elements/src/index.ts` and `src/browser.ts` export and define `ocelle-scroller`.
   `packages/elements/package.json` gets the export `./ocelle-scroller.js`.
-- [ ] T026 [US1] Regenerate and commit `packages/elements/custom-elements.json`
+- [X] T026 [US1] Regenerate and commit `packages/elements/custom-elements.json`
   (`pnpm --filter @ocelle/elements run manifest`).
-- [ ] T027 [US1] `storybook/stories/scroller.stories.ts`: Fits; Overflowing at start; Overflowing in the middle;
+- [X] T027 [US1] `storybook/stories/scroller.stories.ts`: Fits; Overflowing at start; Overflowing in the middle;
   Overflowing at the end; Right to left; Unlabelled. Frames use `data-frame` and `[data-story]` rules in
   `storybook/.storybook/stories-layout.css`; the `[data-frame]` rules there are a copy of `frames.css`, checked by
   T020's test. No `style` attribute and no class anywhere. The mid-scroll and end stories set
@@ -348,7 +348,7 @@ Its fitting twin is none of these. `ocelle-test-overflow-host` passes US1-1, US1
   and dark, committed under `storybook/baselines/`. Confirm them by a CI run of the branch, and commit CI's artifact
   files when they differ (#10 FR-005). Run `pnpm run gate:axe`: 0 serious or critical, nothing in
   `a11y-exceptions.json`.
-- [ ] T029 [US1] `packages/elements/README.md` with the statements of T019, and `packages/elements/CHANGELOG.md`:
+- [X] T029 [US1] `packages/elements/README.md` with the statements of T019, and `packages/elements/CHANGELOG.md`:
   `ocelle-scroller`, its entry point, the module convention, and the `style-lint` gradient change in
   `gates/README.md`'s history if it keeps one.
 - [ ] T030 [US1] Run each pairing plant of T011, T013, T015 and T016 once. Record them in
