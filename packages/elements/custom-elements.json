@@ -100,6 +100,38 @@
     {
       "declarations": [
         {
+          "attributes": [],
+          "cssParts": [],
+          "cssProperties": [],
+          "customElement": true,
+          "description": "A card: a header slot above its body.",
+          "events": [],
+          "kind": "class",
+          "members": [],
+          "name": "OcelleCard",
+          "slots": [],
+          "superclass": {
+            "name": "LitElement",
+            "package": "lit"
+          }
+        }
+      ],
+      "exports": [
+        {
+          "declaration": {
+            "module": "src/ocelle-card.ts",
+            "name": "OcelleCard"
+          },
+          "kind": "js",
+          "name": "OcelleCard"
+        }
+      ],
+      "kind": "javascript-module",
+      "path": "src/ocelle-card.ts"
+    },
+    {
+      "declarations": [
+        {
           "attributes": [
             {
               "default": "undefined",
@@ -180,6 +212,38 @@
       ],
       "kind": "javascript-module",
       "path": "src/ocelle-icon.ts"
+    },
+    {
+      "declarations": [
+        {
+          "attributes": [],
+          "cssParts": [],
+          "cssProperties": [],
+          "customElement": true,
+          "description": "A section header around a heading the page slots.",
+          "events": [],
+          "kind": "class",
+          "members": [],
+          "name": "OcelleSectionHeader",
+          "slots": [],
+          "superclass": {
+            "name": "LitElement",
+            "package": "lit"
+          }
+        }
+      ],
+      "exports": [
+        {
+          "declaration": {
+            "module": "src/ocelle-section-header.ts",
+            "name": "OcelleSectionHeader"
+          },
+          "kind": "js",
+          "name": "OcelleSectionHeader"
+        }
+      ],
+      "kind": "javascript-module",
+      "path": "src/ocelle-section-header.ts"
     }
   ],
   "readme": "",
