@@ -745,31 +745,6 @@ const slottedEscapeRows = [
     { recorded: [request("escape", "stopper"), closeEvent("escape", "opener")], state: gone },
   ),
   row(
-    "Escape with slotted content: a control that stops Escape's propagation, veto, after a warm-up: open on the first press, the second closes with reason host (the stated limit, R-02)",
-    async (driver) => {
-      // The warm-up (operator decision 2026-11-14, R-02; reviews/phase-2/measure.md): in Chromium the first vetoed
-      // cancel sequence in a page holds the veto on a second press as well, a plain native <dialog> too, so one such
-      // sequence runs first on a stand-in, in this page; its outcome is not asserted.
-      await driver.mount('<button id="wopener">Open</button><dialog id="wd"><button id="ws">Stops Escape</button></dialog><ocelle-test-act id="act"></ocelle-test-act>');
-      await driver.click("wopener");
-      await act(driver, { op: "call", id: "wd", method: "showModal" });
-      await act(driver, { op: "escape", id: "ws", mode: "stop" });
-      await act(driver, { op: "veto", id: "wd", event: "cancel" });
-      await act(driver, { op: "focus", id: "ws" });
-      await presses(driver, 2, false, "Escape");
-      await driver.mount(page('<button id="stopper">Stops Escape</button>'));
-      await open(driver);
-      await act(driver, { op: "escape", id: "stopper", mode: "stop" });
-      await act(driver, { op: "veto", id: "dlg", event: requestName });
-      await pause(300);
-      await driver.press("Escape");
-      const first = { recorded: await after(driver), state: await state(driver) };
-      await driver.press("Escape");
-      return { first, recorded: await events(driver, 2), state: await state(driver) };
-    },
-    { first: { recorded: [request("escape", "stopper")], state: shown }, recorded: [request("escape", "stopper"), closeEvent("host", "opener")], state: gone },
-  ),
-  row(
     "Escape with slotted content: a slotted control that calls preventDefault() on Escape: no request, the dialog stays open (FR-010)",
     async (driver) => {
       await driver.mount(page('<button id="preventer">Prevents Escape</button>'));
@@ -1732,6 +1707,40 @@ const treeRows = [
     ),
   ),
 ];
+
+/**
+ * The veto-then-Escape-twice case of the stop-propagation row (operator decision 2026-11-14, R-02; reviews/phase-2/
+ * measure.md), kept out of `dialogScenarios` so that each harness runs it in a page of its own: whether the platform's
+ * second `cancel` is cancelable depends on the page's history of user activations and vetoed cancels (measured in
+ * Chromium 153), so after the many rows of the in-process page the veto can hold on the second press however the row
+ * warms up. On a fresh page, the warm-up below and then the row are deterministic in both harnesses: the fixture gives
+ * every row a page of its own, and the in-process harness runs this one in test/dialog-repeated-escape.test.ts.
+ */
+export const repeatedEscapeScenario: DialogScenario = row(
+    "Escape with slotted content: a control that stops Escape's propagation, veto, after a warm-up: open on the first press, the second closes with reason host (the stated limit, R-02)",
+    async (driver) => {
+      // The warm-up (operator decision 2026-11-14, R-02; reviews/phase-2/measure.md): in Chromium the first vetoed
+      // cancel sequence in a page holds the veto on a second press as well, a plain native <dialog> too, so one such
+      // sequence runs first on a stand-in, in this page; its outcome is not asserted.
+      await driver.mount('<button id="wopener">Open</button><dialog id="wd"><button id="ws">Stops Escape</button></dialog><ocelle-test-act id="act"></ocelle-test-act>');
+      await driver.click("wopener");
+      await act(driver, { op: "call", id: "wd", method: "showModal" });
+      await act(driver, { op: "escape", id: "ws", mode: "stop" });
+      await act(driver, { op: "veto", id: "wd", event: "cancel" });
+      await act(driver, { op: "focus", id: "ws" });
+      await presses(driver, 2, false, "Escape");
+      await driver.mount(page('<button id="stopper">Stops Escape</button>'));
+      await open(driver);
+      await act(driver, { op: "escape", id: "stopper", mode: "stop" });
+      await act(driver, { op: "veto", id: "dlg", event: requestName });
+      await pause(300);
+      await driver.press("Escape");
+      const first = { recorded: await after(driver), state: await state(driver) };
+      await driver.press("Escape");
+      return { first, recorded: await events(driver, 2), state: await state(driver) };
+    },
+    { first: { recorded: [request("escape", "stopper")], state: shown }, recorded: [request("escape", "stopper"), closeEvent("host", "opener")], state: gone },
+  );
 
 /** Every row of matrix § Dialog. */
 export const dialogScenarios: readonly DialogScenario[] = [

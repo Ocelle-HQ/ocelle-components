@@ -1,12 +1,13 @@
 import type { Browser } from "playwright";
 import { afterAll, beforeAll, describe, expect, inject, it } from "vitest";
-import { afterUpgrade, beforeUpgrade, defineDialogStandIns, dialogScenarios, upgradeExpected, upgradeMarkup } from "../scenarios/dialog.ts";
+import { afterUpgrade, beforeUpgrade, defineDialogStandIns, dialogScenarios, repeatedEscapeScenario, upgradeExpected, upgradeMarkup } from "../scenarios/dialog.ts";
 import { fixtureDriver } from "./driver.ts";
 import { clean, launch, serve, visit } from "./serve.ts";
 import type { Served } from "./serve.ts";
 
 // User Story 1's browser scenarios for `ocelle-dialog` on the strict-CSP fixture with the built browser build (008
-// tasks.md T016): every shared body of scenarios/dialog.ts (contracts/checks.md § Dialog) on its own page
+// tasks.md T016): every shared body of scenarios/dialog.ts (contracts/checks.md § Dialog), the repeated-Escape case
+// included, on its own page
 // `overlays.html`, with the stand-ins defined in the page through the DevTools protocol, which the page's policy does
 // not govern. Every test asserts the recorders beside the body's outcome: zero CSP violations, only allowed requests,
 // no failed request and no console message or uncaught error. Then the before-definition case of the
@@ -32,7 +33,7 @@ function started(): { readonly browser: Browser; readonly origin: string } {
 }
 
 describe("ocelle-dialog on the strict-CSP fixture with the browser build (US1)", { timeout: 60_000 }, () => {
-  it.each(dialogScenarios)("$name", async ({ run, expected }) => {
+  it.each([...dialogScenarios, repeatedEscapeScenario])("$name", async ({ run, expected }) => {
     const { browser, origin } = started();
     const page = await visit(browser, origin, "overlays.html");
     await page.page.evaluate(defineDialogStandIns);

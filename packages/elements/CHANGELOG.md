@@ -15,6 +15,12 @@ entry points and the browser build's file path (constitution VII).
 - `ocelle-brand-mark`, the Ocelle rosette drawn inline from tokens at the `--ocelle-icon-size` token, for the main
   grounds, the chrome (`ground="chrome"`) or in one colour (`tone="mono"`), decorative unless a `label` or a host
   `aria-label` names it; its properties `ground` and `tone` (reflected) and `label`.
+- `ocelle-dialog`, a modal dialog on a native `<dialog>` shown in the top layer, styled from tokens, with focus moved in
+  on open and returned on close, a Tab cycle, Escape and a close control that ask the host first; its properties
+  `open` (reflected), `label` and `close-label`, its default and `footer` slots, its parts `panel`, `heading`, `body`,
+  `footer` and `close-button`, its CSS custom property `--ocelle-dialog-inline-size`, and its events
+  `ocelle-dialog-close-request` (cancelable) and `ocelle-dialog-close`. Entry point
+  `@ocelle/elements/ocelle-dialog.js` (defines `ocelle-dialog` and the `ocelle-icon` it renders).
 - In the README, the slot convention for icons in controls that later controls follow: the `icon` and `trailing`
   slots, their size, alignment, gap and colour rules and the naming rule.
 - Entry points: `@ocelle/elements` (the package root, defines every element), `@ocelle/elements/ocelle-icon.js`
