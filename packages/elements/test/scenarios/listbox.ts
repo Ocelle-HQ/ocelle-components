@@ -256,7 +256,67 @@ const rerenders: readonly (Rerender & { readonly input: "Tab" | "click" })[] = (
   (["move", "remove"] as const).flatMap((what) => (["microtask", "frame"] as const).map((when) => ({ input, what, when }))),
 );
 
+/** How a host changes the focused option and sets `value` in one task (review round 1, R1-01). */
+interface ChangeAndSet {
+  readonly change: "remove" | "move" | "reinsert";
+  readonly by: "property" | "attribute";
+  readonly value: "gamma" | "alpha";
+}
+
+/**
+ * In one task: removes the option `beta` of `#lb`, moves it to the end or re-inserts it in its place, then sets the
+ * listbox's `value` by property or by attribute.
+ */
+function changeAndSet(how: ChangeAndSet): void {
+  const listbox = document.getElementById("lb") as (HTMLElement & { value: string }) | null;
+  const beta = listbox?.querySelector('ocelle-option[value="beta"]');
+  if (listbox === null || beta === null || beta === undefined) return;
+  if (how.change === "remove") beta.remove();
+  else if (how.change === "move") listbox.append(beta);
+  else {
+    const next = beta.nextSibling;
+    beta.remove();
+    listbox.insertBefore(beta, next);
+  }
+  if (how.by === "property") listbox.value = how.value;
+  else listbox.setAttribute("value", how.value);
+}
+
+const changesAndSets: readonly ChangeAndSet[] = (["remove", "move", "reinsert"] as const).flatMap((change) =>
+  (["property", "attribute"] as const).flatMap((by) => (["gamma", "alpha"] as const).map((value) => ({ change, by, value }))),
+);
+
+/** What R1-01's bodies must observe: focus, selection and tab stop as without the set, and no event. */
+function afterChangeAndSet({ change, value }: ChangeAndSet): unknown {
+  const names = change === "remove" ? ["alpha", "gamma", "delta"] : change === "move" ? ["alpha", "gamma", "delta", "beta"] : ["alpha", "beta", "gamma", "delta"];
+  const selected = names.indexOf(value);
+  return {
+    focus: opt(change === "remove" ? 1 : names.indexOf("beta")),
+    tree: exposed("Folders", names, selected),
+    tabindexes: names.map((_, index) => (index === selected ? "0" : "-1")),
+    value,
+    events: [],
+  };
+}
+
 export const listboxScenarios: readonly ListboxScenario[] = [
+  ...changesAndSets.map(
+    (how): ListboxScenario => ({
+      // Review round 1, R1-01. Mutant: the value setter taking the pending records without the focus record (the
+      // focused option's removal or move then leaves focus on the body).
+      name: `R1-01: a host that ${how.change === "remove" ? "removes" : how.change === "move" ? "moves to the end" : "re-inserts in place"} the focused beta and sets value to ${how.value === "alpha" ? "the current alpha" : "gamma"} by ${how.by} in the same task leaves focus ${how.change === "remove" ? "on the next enabled option (FR-011)" : "on beta (R-03)"}, the selection and tab stop on the set value, and emits nothing, as without the set`,
+      fixture: true,
+      run: async (driver, inPage) => {
+        await mount(driver, inPage, page(options(["alpha", "beta", "gamma", "delta"]), 'label="Folders" value="alpha"'));
+        await inPage(recordEvents, null);
+        await driver.focus(opt(1));
+        await inPage(changeAndSet, how);
+        await inPage(frames, undefined);
+        return { focus: await driver.activeElement(), tree: await tree(driver), tabindexes: await inPage(tabindexes, "lb"), value: await inPage(valueOf, "lb"), events: await inPage(recordedEvents, null) };
+      },
+      expected: afterChangeAndSet(how),
+    }),
+  ),
   {
     // Plants: no role or name through internals; every option at tabindex 0; no tab stop.
     name: "US1-1: a listbox named Folders with five options, none selected, one tab stop on the first: Tab focuses alpha, Tab again leaves to the button after it (FR-012, FR-016)",
