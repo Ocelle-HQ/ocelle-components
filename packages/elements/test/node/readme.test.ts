@@ -36,7 +36,9 @@ const fragments = [
   "An element's styles are one `css` tagged template assigned to `static styles`, built only from `--ocelle-*` tokens and the values the `style-lint` gate allows, so every instance adopts one shared stylesheet",
   "No template has a `style` attribute or a `<style>` element",
   "Every element's styles hold `:host([hidden]) { display: none; }` beside its `:host` display rule, which would otherwise beat the user-agent `[hidden]` rule.",
-  "Variant rules go inside `@media not (forced-colors: active)`, so a forced-colours rule never has to outrank a variant selector",
+  // amended by 011 (FR-001, FR-036; research.md R-01): colour and ground variants inside the query, layout-only ones outside
+  "Variant rules that set colours or grounds go inside `@media not (forced-colors: active)`, so a forced-colours rule never has to outrank a variant selector",
+  "Variant rules that set layout only (size, padding, gap, direction, wrapping) stay outside it, so a compact or horizontal variant keeps its layout in forced colours",
   // the manifest and the token rule (FR-007, FR-009)
   "`custom-elements.json` is generated from the element source by `pnpm --filter @ocelle/elements run manifest` and committed; the `manifest` gate fails when it differs from a regeneration or when a public member has no description",
   "It declares, for every element, its tag name, its class, every public property and attribute with type, default and description, and its events, slots, CSS parts and CSS custom properties, each list stated even when empty",
@@ -117,6 +119,39 @@ const fragments = [
   // the mark's licence and the trademark note (FR-029, FR-030, US4 scenario 10)
   "The mark is the project's own drawing of the Ocelle rosette, redrawn from the geometry of Ocelle's app icon, under Apache-2.0",
   "\"Ocelle\" and the rosette mark are trademarks of their owner. The Apache-2.0 licence grants no right to use them (section 6 of the licence); they may be used only to refer to Ocelle",
+  // ocelle-section-header (011 FR-036, FR-010 to FR-013, FR-031, SC-006; contracts/elements-package.md § Tokens each element reads)
+  '<ocelle-section-header> <span slot="eyebrow">Mission</span> <h2 slot="heading">Runs</h2> <p slot="description">Every run of the mission, newest first.</p> <button slot="actions" type="button">New run</button> </ocelle-section-header>',
+  "It creates no heading of its own: slot one heading element (`h1` to `h6`) in `heading`, and its level is the page's. The page's own rules for that heading win over the header's styles.",
+  "Place the header outside a `[data-ocelle-prose]` region: the prose rules of `@ocelle/styles` for `h1` to `h6` are page rules, so they win over the header's heading style.",
+  "`heading` (slot): the page's heading element, drawn in `--ocelle-font-display` at `--ocelle-font-weight-strong`, `--ocelle-line-height-tight` and `--ocelle-color-ink`, at `--ocelle-font-size-lg`, or at `--ocelle-font-size-subhead` at the compact size, with no margin.",
+  "`eyebrow` (slot): a short label above the heading, on a line of its own, drawn with the eyebrow style: `--ocelle-font-sans` at `--ocelle-font-size-eyebrow`, `--ocelle-font-weight-eyebrow`, `--ocelle-tracking-eyebrow` and `--ocelle-line-height-normal`, in `--ocelle-color-eyebrow`, upper case, with `--ocelle-figures`.",
+  "`description` (slot): supporting text under the heading, at `--ocelle-font-size-sm` in `--ocelle-color-ink-muted`.",
+  "`actions` (slot): controls at the inline end of the heading's first line, their block start at the heading's. When the heading's longest word and the actions do not fit side by side, the actions move under the heading, `--ocelle-space-2` below it, at its inline start, and a word longer than the line wraps inside itself.",
+  "The gaps are `--ocelle-space-1` between eyebrow and heading and between heading and description, `--ocelle-space-4` between the heading and the actions, and `--ocelle-space-2` between two actions; the header has no padding of its own.",
+  "`size` (attribute and property, reflected): `regular` or `compact`. Not set, or any other value, draws the heading regular, at `--ocelle-font-size-lg`, or compact in a compact `ocelle-card`'s `header` slot. `compact` draws it at `--ocelle-font-size-subhead`; the gaps stay the same.",
+  "`variant` (attribute and property, reflected): `default` or `eyebrow`. Not set, or any other value, draws as `default`. `eyebrow` draws the heading with the eyebrow style, for a heading used as a label above a list, and renders neither the `eyebrow` nor the `description` slot; `actions` stay. `size` and a compact card change nothing in the eyebrow variant.",
+  "The eyebrow variant draws the heading upper case while its DOM text stays as written",
+  "`ocelle-section-header` reads the tokens `--ocelle-font-display`, `--ocelle-font-sans`, `--ocelle-font-size-lg`, `--ocelle-font-size-subhead`, `--ocelle-font-size-sm`, `--ocelle-font-weight-strong`, `--ocelle-line-height-tight`, `--ocelle-line-height-normal`, `--ocelle-color-ink`, `--ocelle-color-ink-muted`, `--ocelle-space-1`, `--ocelle-space-2`, `--ocelle-space-4`, `--ocelle-figures`, `--ocelle-font-size-eyebrow`, `--ocelle-font-weight-eyebrow`, `--ocelle-tracking-eyebrow` and `--ocelle-color-eyebrow`.",
+  "The section header trims the block margins of its slotted eyebrow and description, so a `p` description sits `--ocelle-space-1` under the heading; a page rule that sets those margins wins.",
+  "An empty slot of the section header takes no space: no box, gap or margin. A slot is empty when no element is assigned to it and every text assigned to it is whitespace; an assigned element counts as content even when it is `hidden`, so remove an element from the slot rather than hide it.",
+  "The section header replaces the part-level padding and gap overrides Kitty Desktop sets on its section headers",
+  "`ocelle-section-header` has no event, CSS part or CSS custom property, and adds no tab stop.",
+  // ocelle-card (011 FR-036, FR-014 to FR-018; contracts/elements-package.md § Tokens each element reads)
+  '<ocelle-card density="compact"> <ocelle-section-header slot="header"><h2 slot="heading">Runs</h2></ocelle-section-header> <p>Twelve runs this week.</p> </ocelle-card>',
+  "`header` (slot): the card's header, usually an `ocelle-section-header`.",
+  "The default slot: the card's body.",
+  "`density` (attribute and property, reflected): `regular` or `compact`. Not set, or any other value, draws regular: padding `--ocelle-space-7` and a `--ocelle-space-2` gap between header and body. `compact` has padding `--ocelle-space-5` and a `--ocelle-space-4` gap.",
+  "`inset` (boolean attribute and property, reflected): present with any value, the empty string included, draws the card on `--ocelle-color-inset`, for a card nested inside another surface, and changes nothing else. Absent, the card is on `--ocelle-color-sheet`.",
+  "A compact card draws an `ocelle-section-header` in its `header` slot at the compact size, unless the header has a valid `size` of its own (`regular` or `compact`), which wins; a header with an empty or invalid `size` takes the card's density.",
+  "Only a header assigned to the card's own `header` slot is compacted: one in its body, inside another element in the `header` slot, or in a card nested in it keeps its own size.",
+  "`@ocelle/elements/ocelle-card.js` does not define `ocelle-section-header`: a page that slots one imports both.",
+  "a header of a copy that does not answer Lit's `requestUpdate()` learns of a density change only at its own next update",
+  "The card has no role: it adds no region, article or group, and a page that needs a region or an article adds it",
+  "`ocelle-card` reads the tokens `--ocelle-border-width`, `--ocelle-color-rule`, `--ocelle-radius-row`, `--ocelle-color-sheet`, `--ocelle-color-inset`, `--ocelle-space-2`, `--ocelle-space-4`, `--ocelle-space-5` and `--ocelle-space-7`.",
+  "The card trims the block-start margin of the first visible body element and the block-end margin of the last, skipping a `hidden` element at either edge, so a `p` body starts at the header gap and ends at the padding edge. The margins between body elements are the page's, and a page rule that sets the trimmed margins wins.",
+  "An empty slot of the card takes no space: a card with no header has no header gap. A slot is empty when no element is assigned to it and every text assigned to it is whitespace; an assigned element counts as content even when it is `hidden`, so remove an element from the slot rather than hide it.",
+  "In forced colours the card's border is drawn in a system colour, and a compact card keeps its padding, gap and compact header.",
+  "`ocelle-card` has no event, CSS part or CSS custom property, and adds no tab stop.",
   // two copies on a page (FR-006, Edge Cases)
   "Two copies of the package on one page, two versions or the browser build beside a bundle of the module build, cannot both define an element: the first definition wins and the second import throws nothing",
 ];
@@ -126,6 +161,8 @@ const entryRows = [
   "| `@ocelle/elements` | `dist/index.js` | every element; for hosts with a bundler |",
   "| `@ocelle/elements/ocelle-icon.js` | `dist/ocelle-icon.js` | `ocelle-icon` only; for hosts with a bundler |",
   "| `@ocelle/elements/ocelle-brand-mark.js` | `dist/ocelle-brand-mark.js` | `ocelle-brand-mark` only; for hosts with a bundler |",
+  "| `@ocelle/elements/ocelle-card.js` | `dist/ocelle-card.js` | `ocelle-card` only; for hosts with a bundler |",
+  "| `@ocelle/elements/ocelle-section-header.js` | `dist/ocelle-section-header.js` | `ocelle-section-header` only; for hosts with a bundler |",
   "| `@ocelle/elements/browser.js` | `dist/browser/ocelle-elements.js` | every element, Lit inside; for hosts without a bundler |",
   "| `@ocelle/elements/custom-elements.json` | `custom-elements.json` | the manifest, also named by the `customElements` field |",
 ];
@@ -170,7 +207,7 @@ describe("packages/elements/README.md", () => {
   it("lists exactly the entry points of package.json's exports in its Entry points table (FR-002)", () => {
     const manifest = JSON.parse(read("package.json")) as { exports?: Record<string, string> };
     expect(tableRows(read("README.md"), "Entry points")).toEqual(entryRows);
-    expect(Object.keys(manifest.exports ?? {})).toEqual([".", "./ocelle-icon.js", "./ocelle-brand-mark.js", "./browser.js", "./custom-elements.json"]);
+    expect(Object.keys(manifest.exports ?? {})).toEqual([".", "./ocelle-icon.js", "./ocelle-brand-mark.js", "./ocelle-card.js", "./ocelle-section-header.js", "./browser.js", "./custom-elements.json"]);
   });
 
   it("lists the thirteen names of the set, whether each mirrors and the consumer need it meets, in its Icons table (US2-1, FR-018, SC-007)", () => {
@@ -202,6 +239,15 @@ describe("packages/elements/CHANGELOG.md", () => {
     "`@ocelle/elements/ocelle-brand-mark.js`",
     "`ground` and `tone` (reflected) and `label`",
     "the slot convention for icons in controls",
+    // 011 (FR-036): the two layout elements, their entry points and properties, and the eyebrow tokens they read
+    "`ocelle-section-header`",
+    "`ocelle-card`",
+    "`@ocelle/elements/ocelle-section-header.js`",
+    "`@ocelle/elements/ocelle-card.js`",
+    "`size` and `variant` (reflected)",
+    "`density` and `inset` (reflected)",
+    "`--ocelle-font-size-eyebrow`, `--ocelle-font-weight-eyebrow`, `--ocelle-tracking-eyebrow` and `--ocelle-color-eyebrow`",
+    "variant rules that set colours or grounds go inside `@media not (forced-colors: active)`, and layout-only variant rules stay outside it",
     ...["chevron-start", "chevron-end", "chevron-up", "chevron-down", "arrow-start", "arrow-end", "menu", "close", "folder", "file", "search", "table", "copy"].map((name) => `\`${name}\``),
   ])("names %s under Unreleased / Added (constitution VII, FR-031, SC-008)", (surface) => {
     expect(added).toContain(surface);

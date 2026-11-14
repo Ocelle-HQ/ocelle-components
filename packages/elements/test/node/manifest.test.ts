@@ -247,7 +247,7 @@ describe("generate(root) on the repository's element source", () => {
     const manifest = await generate(repo);
     const modules = manifest.modules as { path: string; declarations: Record<string, unknown>[] }[];
     expect(manifest.schemaVersion).toBe("1.0.0");
-    expect(modules.map((module) => module.path)).toEqual(["src/ocelle-brand-mark.ts", "src/ocelle-icon.ts"]);
+    expect(modules.map((module) => module.path)).toEqual(["src/ocelle-brand-mark.ts", "src/ocelle-card.ts", "src/ocelle-icon.ts", "src/ocelle-section-header.ts"]);
     const [icon] = modules.find((module) => module.path === "src/ocelle-icon.ts")?.declarations ?? [];
     expect(icon).toMatchObject({
       kind: "class",
@@ -296,6 +296,45 @@ describe("generate(root) on the repository's element source", () => {
       { name: "ground", fieldName: "ground", type: { text: '"chrome" | undefined' }, default: "undefined", described: true },
       { name: "tone", fieldName: "tone", type: { text: '"mono" | undefined' }, default: "undefined", described: true },
       { name: "label", fieldName: "label", type: { text: "string | undefined" }, default: "undefined", described: true },
+    ]);
+  });
+
+  // 011 (FR-006, FR-007, FR-034; contracts/elements-package.md § Elements; T015): the section header and the card, each
+  // with its reflected variant properties, typed and defaulting to not set, its slots, and empty event, part and CSS
+  // property lists.
+  const described = (list: unknown): Record<string, unknown>[] =>
+    ((list ?? []) as Record<string, unknown>[]).map(({ description, ...rest }) => ({ ...rest, described: typeof description === "string" && description !== "" }));
+
+  it('declares ocelle-section-header with its tag name and class, size ("regular" | "compact" | undefined) and variant ("default" | "eyebrow" | undefined), reflected, each with the default undefined, the slots heading, eyebrow, description and actions, and no event, part or CSS property (FR-034)', async () => {
+    const modules = (await generate(repo)).modules as { path: string; declarations: Record<string, unknown>[] }[];
+    const [header] = modules.find((module) => module.path === "src/ocelle-section-header.ts")?.declarations ?? [];
+    expect(header).toMatchObject({ kind: "class", name: "OcelleSectionHeader", tagName: "ocelle-section-header", customElement: true, events: [], cssParts: [], cssProperties: [] });
+    expect(described(header?.members)).toEqual([
+      { kind: "field", name: "size", privacy: "public", type: { text: '"regular" | "compact" | undefined' }, default: "undefined", attribute: "size", reflects: true, described: true },
+      { kind: "field", name: "variant", privacy: "public", type: { text: '"default" | "eyebrow" | undefined' }, default: "undefined", attribute: "variant", reflects: true, described: true },
+    ]);
+    expect(described(header?.attributes)).toEqual([
+      { name: "size", fieldName: "size", type: { text: '"regular" | "compact" | undefined' }, default: "undefined", described: true },
+      { name: "variant", fieldName: "variant", type: { text: '"default" | "eyebrow" | undefined' }, default: "undefined", described: true },
+    ]);
+    expect(described(header?.slots)).toEqual(["heading", "eyebrow", "description", "actions"].map((name) => ({ name, described: true })));
+  });
+
+  it('declares ocelle-card with its tag name and class, density ("regular" | "compact" | undefined) and inset (boolean | undefined), reflected, each with the default undefined, the slots header and the default slot, and no event, part or CSS property (FR-034)', async () => {
+    const modules = (await generate(repo)).modules as { path: string; declarations: Record<string, unknown>[] }[];
+    const [card] = modules.find((module) => module.path === "src/ocelle-card.ts")?.declarations ?? [];
+    expect(card).toMatchObject({ kind: "class", name: "OcelleCard", tagName: "ocelle-card", customElement: true, events: [], cssParts: [], cssProperties: [] });
+    expect(described(card?.members)).toEqual([
+      { kind: "field", name: "density", privacy: "public", type: { text: '"regular" | "compact" | undefined' }, default: "undefined", attribute: "density", reflects: true, described: true },
+      { kind: "field", name: "inset", privacy: "public", type: { text: "boolean | undefined" }, default: "undefined", attribute: "inset", reflects: true, described: true },
+    ]);
+    expect(described(card?.attributes)).toEqual([
+      { name: "density", fieldName: "density", type: { text: '"regular" | "compact" | undefined' }, default: "undefined", described: true },
+      { name: "inset", fieldName: "inset", type: { text: "boolean | undefined" }, default: "undefined", described: true },
+    ]);
+    expect(described(card?.slots)).toEqual([
+      { name: "header", described: true },
+      { name: "", described: true },
     ]);
   });
 
