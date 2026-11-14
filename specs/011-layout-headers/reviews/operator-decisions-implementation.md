@@ -31,3 +31,11 @@ Recorded by the orchestrator; each is the operator's answer (human:jeroennouwsde
    Before phase 3, the planner corrects R-04 (and R-07 where it repeats it) to the section header as built: the
    actions wrapper keeps `flex: 0 1 auto` (FR-004 at 320 px), and the actions take `margin-inline-start: auto` when
    the empty heading column is hidden (FR-005, FR-010). No requirement changes.
+6. **2026-11-14, the sidebar in a flex-column container** (decision 1's measurement, phase 4,
+   `reviews/phase-4/flex-column-probe.log`): with `align-self: start` the sidebar fills a block or grid container
+   but takes its content's inline size in a flex column (95 of 800 px); a page rule `align-self: stretch` on the host
+   gives the full inline size; block size and the footer at the block end hold everywhere, and no US3 scenario
+   changes. "README statement": `align-self: start` stays. The planner adds one statement to FR-036's README list
+   for the sidebar, with its assertion in T035: in a flex column or flex row the container or the page sets the
+   sidebar's inline size (an `inline-size`, a `flex` value, a grid track, or `align-self: stretch` on the host).
+   No scenario is added.
