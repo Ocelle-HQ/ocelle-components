@@ -1,8 +1,9 @@
 # @ocelle/elements
 
 The Ocelle web components: standards-based custom elements (Lit 3) that work in any page, a server-rendered page
-under a strict Content Security Policy, a Svelte shell or a desktop webview. This release has two elements:
-`ocelle-icon`, with a set of thirteen icons, and `ocelle-brand-mark`, the Ocelle rosette.
+under a strict Content Security Policy, a Svelte shell or a desktop webview. This release has three elements:
+`ocelle-icon`, with a set of thirteen icons, `ocelle-brand-mark`, the Ocelle rosette, and `ocelle-notice`, a message
+box that can announce itself.
 
 ## Entry points
 
@@ -11,6 +12,7 @@ under a strict Content Security Policy, a Svelte shell or a desktop webview. Thi
 | `@ocelle/elements` | `dist/index.js` | every element; for hosts with a bundler |
 | `@ocelle/elements/ocelle-icon.js` | `dist/ocelle-icon.js` | `ocelle-icon` only; for hosts with a bundler |
 | `@ocelle/elements/ocelle-brand-mark.js` | `dist/ocelle-brand-mark.js` | `ocelle-brand-mark` only; for hosts with a bundler |
+| `@ocelle/elements/ocelle-notice.js` | `dist/ocelle-notice.js` | `ocelle-notice` only; for hosts with a bundler |
 | `@ocelle/elements/browser.js` | `dist/browser/ocelle-elements.js` | every element, Lit inside; for hosts without a bundler |
 | `@ocelle/elements/custom-elements.json` | `custom-elements.json` | the manifest, also named by the `customElements` field |
 
@@ -131,6 +133,96 @@ In forced colours the ring and the spot are painted in `currentColor` in every v
 context. On the light main grounds the ochre spot measures 2.6:1: the ring carries the mark, and a host that needs
 every part at 3:1 uses `tone="mono"`. `ocelle-brand-mark` has no slot, event, CSS part or CSS custom property.
 
+## `ocelle-notice`
+
+```html
+<ocelle-notice tone="success">Saved.</ocelle-notice>
+<ocelle-notice tone="danger" announce>
+  <span slot="heading">Run failed</span>
+  The lane stopped at step 3. <a href="/runs/7">View run 7</a>
+</ocelle-notice>
+<ocelle-notice size="compact" tone="warning">Disk almost full.</ocelle-notice>
+```
+
+`ocelle-notice` shows a message about a state or result in a box whose look follows its tone, with an optional
+heading, in the regular or the compact size.
+
+- `tone` (attribute and property, reflected): `info` (the default), `success`, `warning`, `danger` or `neutral`; any
+  other value behaves as `info` and the property reads `"info"`, while the attribute keeps the value as written. The
+  box's ground is `--ocelle-color-<tone>-bg`, with a bar of `--ocelle-bar-width` in `--ocelle-color-<tone>` along its
+  inline-start edge, so the ground is never the only mark of the tone; the text is `--ocelle-color-ink`.
+- `size` (attribute and property, reflected): `regular` (the default) or `compact`; any other value behaves as
+  `regular` and the property reads `"regular"`, while the attribute keeps the value as written. The compact size sets
+  the text in `--ocelle-font-size-sm` and `--ocelle-line-height-compact`, the scale of the base styles' compact density,
+  with a smaller padding.
+- `announce` (boolean attribute and property, reflected): the notice announces its text once, politely for `info`,
+  `success` and `neutral` and assertively for `warning` and `danger`.
+
+Slots: `heading` (optional; only elements are assigned to it) and the default slot, the body. CSS parts: `heading` and
+`body`. The notice has no event and no CSS custom property of its own. `ocelle-notice` reads the tokens
+`--ocelle-color-<tone>`, `--ocelle-color-<tone>-bg`, `--ocelle-color-ink`, `--ocelle-radius-row`,
+`--ocelle-bar-width`, `--ocelle-border-width`, `--ocelle-space-1` to `--ocelle-space-4`, `--ocelle-font-size-subhead`,
+`--ocelle-font-size-sm`, `--ocelle-font-weight-strong`, `--ocelle-line-height-tight` and
+`--ocelle-line-height-compact`. Slotted content keeps its own semantics and focus: the notice sets no `tabindex` and
+traps no focus. Long unbroken text wraps inside the box at any character. In forced colours the box has a border of
+`--ocelle-border-width` in `CanvasText`, the bar in `CanvasText` too, and the text is `CanvasText` on `Canvas`.
+
+**Heading.** The heading is absent when no element is assigned to the `heading` slot or the text content of its
+elements is empty or whitespace only: it then draws no box and leaves no gap, so a server template can write
+`<span slot="heading"></span>` for a null heading. The rule reads text content only, so a heading whose only content is
+an `ocelle-icon` or an `img` is absent, and a heading whose only text is inside an `aria-hidden="true"` element is drawn
+but adds nothing to the announced text. A present heading is drawn above the body at `--ocelle-font-weight-strong`, in
+`--ocelle-font-size-subhead` and `--ocelle-line-height-tight` with a gap of `--ocelle-space-2` (compact:
+`--ocelle-font-size-sm`, `--ocelle-line-height-compact`, `--ocelle-space-1`).
+
+**Announced text.** The announced text is the heading text, then the body text, joined by one space: the text nodes, the
+`label` of an `ocelle-icon` and the `alt` of an `img`, skipping elements with `hidden` or `aria-hidden="true"` and
+`script`, `style` and `template` elements. Other accessible names (`title`, a slotted element's `aria-label`) do not
+count. For other slotted content (an element with `role="img"` and an `aria-label`, an `svg`, CSS-generated content,
+content hidden by a host rule without `hidden`) the announced text is not specified.
+
+**When it announces.** "Announced" in this library's tests means a change of a live region's text in Chromium's
+accessibility tree, read from the states that Chromium can hand to assistive technology; no screen reader runs in the
+tests. With `announce`, a notice announces its text when it is inserted after the page has loaded, when its `hidden`
+is removed, and on each change of its text or of its politeness. A notice that is part of the page as first loaded is
+not announced: one connected while `document.readyState` is `"loading"`, or upgraded by the registration of the
+definition. A notice inserted after the build has loaded is announced, however it is inserted (`innerHTML`, a
+`<template>`, a `DOMParser` document, an htmx swap or `document.createElement`). Load the build before any swap or
+script inserts announcing notices: a notice upgraded by the registration does not announce. Setting `announce`, or a
+host `role` of `alert` or `status`, on an existing notice announces nothing: its current text is the baseline for the
+next change. Moving a notice within the page in one task, or a re-render, announces nothing; the same text set again,
+or a change of whitespace only, is no change. Removing `announce` stops the announcements.
+
+**How it announces.** The notice announces through a separate live region in its shadow root, visually hidden and
+atomic, that never holds the visible content: a copy of the text is written into it `W` after the last trigger. `W` is
+twice Chromium's accessibility serialisation delay, 150 ms once `document.readyState` is `"complete"` and 350 ms before
+(`AXObjectCacheImpl::GetDeferredEventsDelay()` in `ax_object_cache_impl.cc`), so 300 ms after load and 700 ms before;
+the region is empty for that time first, so a screen reader is handed the whole text as a change. Changes closer
+together than `W`, in one task or in different tasks, merge: only the final text is announced, once, and a text that
+is back to the last announced text when the wait ends announces nothing. A text that keeps changing more often than
+every `W` is not announced until it stops changing. A copy is held for `H`, 5000 ms, or until the next announcement but
+at least `W`, and then removed. `H` is a chosen figure, not measured: the tests cannot see when a screen reader fetches
+the text. For up to `H` a browse-mode user may meet the text twice, in the notice and in the copy.
+
+**Host roles.** A host `role="alert"` announces assertively and `role="status"` politely whatever the tone, with or
+without `announce`; with a role that gives the host's node no live politeness, such as `note`, `region` or `none`, the
+notice behaves as with no role. The host's node keeps the role and is never a second live region. For a host
+`role="alert"`, the insertion, the reveal and a change of the role to `alert` write no copy: Chromium's alert event for
+the host's node reads the notice (`ui/accessibility/ax_event_generator.cc`, lines 394, 416-417 and 1081-1082). The alert
+event is Chromium's behaviour and is not measured; WebKit is not measured, and its live regions in shadow roots are an
+open limitation. What the event does for a `role="alert"` notice of the page as first loaded is not measured either,
+and a later Chromium may change it. Text or a `tone` set in the same task as that insertion, reveal or role change is
+part of the alert reading and is not announced again. A change made in a later task but before Chromium's next
+serialisation is read twice, by the alert event and by the copy, so set the text before, or in the same task as, the
+insertion, reveal or role change. A notice inserted or revealed as `role="alert"` and changed to `role="status"` in the
+same task announces its text politely once, as a `status` notice would, since no alert event fires. Later text changes
+of a `role="alert"` notice announce assertively through the copy.
+
+**Hiding.** Only the host's own `hidden` attribute hides and reveals the notice: removing it announces the current
+text once, as an insertion does, and changes while hidden are not announced. A notice shown by a hidden ancestor (a
+container with `hidden`, a closed `<details>`, a `display: none` panel) is not announced by its live region; a
+`role="alert"` notice shown that way is read by Chromium's alert event all the same.
+
 ## Slot convention
 
 A control that shows icons follows one slot convention: an `icon` slot before its label and, where it has an end icon
@@ -186,14 +278,20 @@ package; the controls of later features follow it.
 
 ## Host ARIA
 
-A host `aria-label` names the element as `label` does, and when present it decides alone: a blank host `aria-label`
-leaves the element unlabelled even with a `label`. When both are set, the host `aria-label` is the name; removing it
-falls back to `label`. Chromium uses a host `aria-label` as written, surrounding spaces included, so pass it trimmed;
-the element never rewrites it. An unknown icon name exposes nothing, named or not.
+On `ocelle-icon` and `ocelle-brand-mark`, a host `aria-label` names the element as `label` does, and when present it
+decides alone: a blank host `aria-label` leaves the element unlabelled even with a `label`. On `ocelle-icon` and
+`ocelle-brand-mark`, when both are set, the host `aria-label` is the name; removing it falls back to `label`. On
+`ocelle-icon` and `ocelle-brand-mark`, Chromium uses a host `aria-label` as written, surrounding spaces included, so
+pass it trimmed; the element never rewrites it. An unknown icon name exposes nothing, named or not.
 
-A host `aria-hidden="true"` hides the element, labelled or not. A host `hidden` attribute removes the element: no box
-and no node, labelled or not. A host `role` or `aria-hidden="false"` is not supported: name the element with `label` or
-`aria-label` instead.
+On `ocelle-icon` and `ocelle-brand-mark`, a host `aria-hidden="true"` hides the element, labelled or not. On
+`ocelle-icon` and `ocelle-brand-mark`, a host `hidden` attribute removes the element: no box and no node, labelled or
+not. On `ocelle-notice` a host `aria-hidden="true"` is not supported: hide the notice with a host `hidden` attribute,
+which gives it no box and announces nothing while it is set. On `ocelle-icon` and `ocelle-brand-mark`, a host `role` or
+`aria-hidden="false"` is not supported: name the element with `label` or `aria-label` instead. `ocelle-notice` takes a
+host `role` as its section says: `alert` and `status` make it announce, a role that gives its node no live politeness
+leaves it as without a role, and `log`, other live roles and a host `aria-live`, `aria-atomic`, `aria-relevant` or
+`aria-hidden="false"` are not supported.
 
 ## Two copies on a page
 
@@ -232,8 +330,10 @@ the same tag does nothing and throws nothing. The module exports the class and d
 `HTMLElementTagNameMap`; `src/index.ts` re-exports it.
 
 **Properties.** Elements declare their reactive properties with `static override properties = { … }` and `declare`
-fields, not decorators. Every element class carries the JSDoc tag `@tagname <tag>`, and every public property a
-description and `@default undefined`: the manifest takes the tag name and the defaults from them. An element that
+fields, not decorators. Every element class carries the JSDoc tag `@tagname <tag>`, every public property a
+description, and every public property that can be set a `@default` tag with the value the property reads before
+anything sets it, `@default undefined` for an optional one: the manifest takes the tag name and the defaults from them.
+An element that
 observes a standard attribute such as `aria-label` adds it to `observedAttributes` without declaring a property, so
 the manifest does not list it.
 

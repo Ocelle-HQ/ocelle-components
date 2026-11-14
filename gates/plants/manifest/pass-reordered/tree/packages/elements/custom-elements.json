@@ -182,6 +182,122 @@
           ]
         }
       ]
+    },
+    {
+      "path": "src/ocelle-notice.ts",
+      "kind": "javascript-module",
+      "exports": [
+        {
+          "name": "OcelleNotice",
+          "kind": "js",
+          "declaration": {
+            "name": "OcelleNotice",
+            "module": "src/ocelle-notice.ts"
+          }
+        }
+      ],
+      "declarations": [
+        {
+          "tagName": "ocelle-notice",
+          "superclass": {
+            "package": "lit",
+            "name": "LitElement"
+          },
+          "slots": [
+            {
+              "name": "heading",
+              "description": "The heading, optional; only elements are assigned to it, and it is absent when their text content is empty or whitespace only."
+            },
+            {
+              "name": "",
+              "description": "The body."
+            }
+          ],
+          "name": "OcelleNotice",
+          "members": [
+            {
+              "type": {
+                "text": "\"info\" | \"success\" | \"warning\" | \"danger\" | \"neutral\""
+              },
+              "reflects": true,
+              "privacy": "public",
+              "name": "tone",
+              "kind": "field",
+              "description": "The tone: `info`, `success`, `warning`, `danger` or `neutral`; any other value behaves as `info` and the property\nreads `\"info\"`, while the attribute keeps the value as written. Reflected.",
+              "default": "\"info\"",
+              "attribute": "tone"
+            },
+            {
+              "type": {
+                "text": "\"regular\" | \"compact\""
+              },
+              "reflects": true,
+              "privacy": "public",
+              "name": "size",
+              "kind": "field",
+              "description": "The size: `regular` or `compact`; any other value behaves as `regular` and the property reads `\"regular\"`, while\nthe attribute keeps the value as written. Reflected.",
+              "default": "\"regular\"",
+              "attribute": "size"
+            },
+            {
+              "type": {
+                "text": "boolean"
+              },
+              "reflects": true,
+              "privacy": "public",
+              "name": "announce",
+              "kind": "field",
+              "description": "Whether the notice announces its text once on insertion after parsing, on reveal and on each change, politely\nfor `info`, `success` and `neutral` and assertively for `warning` and `danger`. Reflected.",
+              "default": "false",
+              "attribute": "announce"
+            }
+          ],
+          "kind": "class",
+          "events": [],
+          "description": "A message about a state or result in a box whose look follows its tone, with an optional heading, in the regular or\nthe compact size, announced once by assistive technology when `announce` is set.",
+          "customElement": true,
+          "cssProperties": [],
+          "cssParts": [
+            {
+              "name": "heading",
+              "description": "The heading's box, not drawn when the heading is absent."
+            },
+            {
+              "name": "body",
+              "description": "The body's box."
+            }
+          ],
+          "attributes": [
+            {
+              "type": {
+                "text": "\"info\" | \"success\" | \"warning\" | \"danger\" | \"neutral\""
+              },
+              "name": "tone",
+              "fieldName": "tone",
+              "description": "The tone: `info`, `success`, `warning`, `danger` or `neutral`; any other value behaves as `info` and the property\nreads `\"info\"`, while the attribute keeps the value as written. Reflected.",
+              "default": "\"info\""
+            },
+            {
+              "type": {
+                "text": "\"regular\" | \"compact\""
+              },
+              "name": "size",
+              "fieldName": "size",
+              "description": "The size: `regular` or `compact`; any other value behaves as `regular` and the property reads `\"regular\"`, while\nthe attribute keeps the value as written. Reflected.",
+              "default": "\"regular\""
+            },
+            {
+              "type": {
+                "text": "boolean"
+              },
+              "name": "announce",
+              "fieldName": "announce",
+              "description": "Whether the notice announces its text once on insertion after parsing, on reveal and on each change, politely\nfor `info`, `success` and `neutral` and assertively for `warning` and `danger`. Reflected.",
+              "default": "false"
+            }
+          ]
+        }
+      ]
     }
   ]
 }
