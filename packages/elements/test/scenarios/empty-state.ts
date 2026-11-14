@@ -389,6 +389,40 @@ export const emptyStateScenarios: readonly EmptyStateScenario[] = [
     },
   },
   {
+    name: "No content and formatting whitespace: an element with no child is its block padding only (space-6 twice, panel space-10 twice), and runs of several whitespace characters (line breaks and indentation) around a heading make no text part (FR-023)",
+    run: async (driver) => {
+      await mount(
+        driver,
+        '<div class="w600">' +
+          '<ocelle-empty-state id="none"></ocelle-empty-state>' +
+          '<ocelle-empty-state id="panel" variant="panel"></ocelle-empty-state>' +
+          '<ocelle-empty-state id="w">\n      <h2 slot="heading" id="wh">No missions yet</h2>\n    \t</ocelle-empty-state>' +
+          "</div>",
+      );
+      return {
+        none: round((await driver.box("none")).height),
+        panel: round((await driver.box("panel")).height),
+        formatted: await column(driver, "w", ["wh"]),
+      };
+    },
+    expected: { none: 2 * pad.default, panel: 2 * pad.panel, formatted: spaced(pad.default, []) },
+  },
+  {
+    name: "Moved after render: an empty state moved out of its container and back still observes its slotted content, so removing hidden from its action shows it at the body-to-actions gap (FR-023)",
+    run: async (driver) => {
+      await mount(
+        driver,
+        '<div class="w600" id="holder"><ocelle-empty-state id="e"><h2 slot="heading" id="h">No missions yet</h2><p id="p">Missions you create appear here.</p><button slot="actions" id="b" type="button" hidden>Create mission</button></ocelle-empty-state></div><div class="w600" id="other"></div>',
+      );
+      const before = await column(driver, "e", ["h", "p"]);
+      await driver.move("e", "other");
+      await driver.move("e", "holder");
+      await driver.setAttribute("b", "hidden", null);
+      return { before, shown: await column(driver, "e", ["h", "p", "b"]) };
+    },
+    expected: { before: spaced(pad.default, [gap.default.heading]), shown: spaced(pad.default, [gap.default.heading, gap.default.text]) },
+  },
+  {
     name: "Slots filled and emptied after first render: an action and a body paragraph assigned after render each take their gap, and each removed again leaves the heading at the block padding (FR-023)",
     run: async (driver) => {
       await mount(
