@@ -63,3 +63,6 @@
 - The operator's decision at the phase-1 spike (option (a), `align-self: start` on the sidebar's and rail's host) is
   recorded in the spec's header and applied to FR-023, FR-025, FR-036, US3-4 and US4-2 (`reviews/phase-1/spike-fixes.md`);
   every item above still holds.
+- The operator's decision in phase 4 (decision 6 of `reviews/operator-decisions-implementation.md`, "README
+  statement": `align-self: start` stays) is recorded in the spec's header and adds one sidebar statement to FR-036,
+  that in a flex column or flex row the container or the page sets the sidebar's inline size; no scenario changes.
