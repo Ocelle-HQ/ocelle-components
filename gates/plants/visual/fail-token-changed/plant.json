@@ -1,6 +1,6 @@
 {
   "expect": "fail",
-  "why": "A changed token value (color-ink, light) changes every story-theme that shows it: differs on the twenty light story-themes measured in the pinned container (FR-004, US2 scenario 2), the twelve the phase 1 spike listed and the eight of mission 005's stories that show color-ink (all but elements-ocelle-brand-mark--chrome, measured for plan decision 29), and none in dark. A story added later that shows color-ink in light adds its line here (research.md R-07).",
+  "why": "A changed token value (color-ink, light) changes every story-theme that shows it: differs on the thirty-four light story-themes measured in the pinned container (FR-004, US2 scenario 2), the twelve the phase 1 spike listed and the eight of mission 005's stories that show color-ink (all but elements-ocelle-brand-mark--chrome, measured for plan decision 29), the fourteen of 012's ocelle-button stories that show color-ink (all but primary, disabled and chrome, measured in the pinned container at phase 2), and none in dark. A story added later that shows color-ink in light adds its line here (research.md R-07).",
   "findings": [
     {
       "location": "base-styles--base-page/light",
@@ -80,6 +80,62 @@
     },
     {
       "location": "tokens--motion/light",
+      "rule": "differs"
+    },
+    {
+      "location": "elements-ocelle-button--secondary/light",
+      "rule": "differs"
+    },
+    {
+      "location": "elements-ocelle-button--quiet/light",
+      "rule": "differs"
+    },
+    {
+      "location": "elements-ocelle-button--compact/light",
+      "rule": "differs"
+    },
+    {
+      "location": "elements-ocelle-button--flush/light",
+      "rule": "differs"
+    },
+    {
+      "location": "elements-ocelle-button--icon/light",
+      "rule": "differs"
+    },
+    {
+      "location": "elements-ocelle-button--icon-only/light",
+      "rule": "differs"
+    },
+    {
+      "location": "elements-ocelle-button--primary-hovered/light",
+      "rule": "differs"
+    },
+    {
+      "location": "elements-ocelle-button--secondary-hovered/light",
+      "rule": "differs"
+    },
+    {
+      "location": "elements-ocelle-button--flush-hovered/light",
+      "rule": "differs"
+    },
+    {
+      "location": "elements-ocelle-button--secondary-pressed/light",
+      "rule": "differs"
+    },
+    {
+      "location": "elements-ocelle-button--focused/light",
+      "rule": "differs"
+    },
+    {
+      "location": "elements-ocelle-button--grounds/light",
+      "rule": "differs"
+    },
+    {
+      "location": "elements-ocelle-button--changing-surface/light",
+      "rule": "differs"
+    },
+    {
+      "location": "elements-ocelle-button--right-to-left/light",
       "rule": "differs"
     }
   ]

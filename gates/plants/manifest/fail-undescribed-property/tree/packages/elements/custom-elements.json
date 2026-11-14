@@ -103,6 +103,198 @@
           "attributes": [
             {
               "default": "undefined",
+              "description": "The look: `primary` (filled), `secondary` (bordered on a surface) or `quiet` (bordered, no fill); absent or any\nother value renders `secondary`. Reflected.",
+              "fieldName": "variant",
+              "name": "variant",
+              "type": {
+                "text": "\"primary\" | \"secondary\" | \"quiet\" | undefined"
+              }
+            },
+            {
+              "default": "undefined",
+              "description": "`default` (at least `--ocelle-target-min` in both dimensions) or `compact` (the compact text scale, at least 24 px\nin both dimensions); absent or any other value renders `default`. Reflected.",
+              "fieldName": "size",
+              "name": "size",
+              "type": {
+                "text": "\"default\" | \"compact\" | undefined"
+              }
+            },
+            {
+              "default": "false",
+              "description": "No inline padding, no border and no fill: a text-like control whose content starts at its inline start, with only\nits hover surface and focus ring. Reflected.",
+              "fieldName": "flush",
+              "name": "flush",
+              "type": {
+                "text": "boolean"
+              }
+            },
+            {
+              "default": "undefined",
+              "description": "The ground the button sits on: `accent-low`, `inset`, `hover-bg` or `state` (a state ground) give a bordered\nvariant an `--ocelle-color-accent-strong` border; `chrome` gives the chrome look for the chrome grounds; absent or\nany other value means the other main grounds. Reflected.",
+              "fieldName": "ground",
+              "name": "ground",
+              "type": {
+                "text": "\"accent-low\" | \"inset\" | \"hover-bg\" | \"state\" | \"chrome\" | undefined"
+              }
+            },
+            {
+              "default": "undefined",
+              "description": "The accessible name of the button, trimmed; empty or whitespace-only counts as none, and the name is then the\ncontent. Not reflected.",
+              "fieldName": "label",
+              "name": "label",
+              "type": {
+                "text": "string | undefined"
+              }
+            },
+            {
+              "default": "false",
+              "description": "Disabled: out of the tab order, reported disabled and not activated (no `click`, no `ocelle-button-activate`).\nReflected.",
+              "fieldName": "disabled",
+              "name": "disabled",
+              "type": {
+                "text": "boolean"
+              }
+            }
+          ],
+          "cssParts": [
+            {
+              "description": "The inner `<button>`.",
+              "name": "control"
+            }
+          ],
+          "cssProperties": [],
+          "customElement": true,
+          "description": "A native button in the Ocelle look: three variants, two sizes, a flush look, the ground it sits on, a label, a\ndisabled state and an icon slot.",
+          "events": [
+            {
+              "description": "Dispatched from the element on each activation that delivers a `click` (a pointer click, Enter or Space, `click()`), before the `click` reaches any bubble-phase listener on the element or its ancestors; bubbles, composed and cancelable, `detail` `{}`. Calling `preventDefault()` on it cancels the click's default action (the `click` is still delivered). A disabled button dispatches neither.",
+              "name": "ocelle-button-activate",
+              "type": {
+                "text": "CustomEvent<Record<string, never>>"
+              }
+            }
+          ],
+          "kind": "class",
+          "members": [
+            {
+              "attribute": "variant",
+              "default": "undefined",
+              "description": "The look: `primary` (filled), `secondary` (bordered on a surface) or `quiet` (bordered, no fill); absent or any\nother value renders `secondary`. Reflected.",
+              "kind": "field",
+              "name": "variant",
+              "privacy": "public",
+              "reflects": true,
+              "type": {
+                "text": "\"primary\" | \"secondary\" | \"quiet\" | undefined"
+              }
+            },
+            {
+              "attribute": "size",
+              "default": "undefined",
+              "description": "`default` (at least `--ocelle-target-min` in both dimensions) or `compact` (the compact text scale, at least 24 px\nin both dimensions); absent or any other value renders `default`. Reflected.",
+              "kind": "field",
+              "name": "size",
+              "privacy": "public",
+              "reflects": true,
+              "type": {
+                "text": "\"default\" | \"compact\" | undefined"
+              }
+            },
+            {
+              "attribute": "flush",
+              "default": "false",
+              "description": "No inline padding, no border and no fill: a text-like control whose content starts at its inline start, with only\nits hover surface and focus ring. Reflected.",
+              "kind": "field",
+              "name": "flush",
+              "privacy": "public",
+              "reflects": true,
+              "type": {
+                "text": "boolean"
+              }
+            },
+            {
+              "attribute": "ground",
+              "default": "undefined",
+              "description": "The ground the button sits on: `accent-low`, `inset`, `hover-bg` or `state` (a state ground) give a bordered\nvariant an `--ocelle-color-accent-strong` border; `chrome` gives the chrome look for the chrome grounds; absent or\nany other value means the other main grounds. Reflected.",
+              "kind": "field",
+              "name": "ground",
+              "privacy": "public",
+              "reflects": true,
+              "type": {
+                "text": "\"accent-low\" | \"inset\" | \"hover-bg\" | \"state\" | \"chrome\" | undefined"
+              }
+            },
+            {
+              "attribute": "label",
+              "default": "undefined",
+              "description": "The accessible name of the button, trimmed; empty or whitespace-only counts as none, and the name is then the\ncontent. Not reflected.",
+              "kind": "field",
+              "name": "label",
+              "privacy": "public",
+              "type": {
+                "text": "string | undefined"
+              }
+            },
+            {
+              "attribute": "disabled",
+              "default": "false",
+              "description": "Disabled: out of the tab order, reported disabled and not activated (no `click`, no `ocelle-button-activate`).\nReflected.",
+              "kind": "field",
+              "name": "disabled",
+              "privacy": "public",
+              "reflects": true,
+              "type": {
+                "text": "boolean"
+              }
+            },
+            {
+              "description": "Clicks the inner control, so the click passes through it and is guarded like any other: a disabled button ignores\nit.",
+              "kind": "method",
+              "name": "click",
+              "return": {
+                "type": {
+                  "text": "void"
+                }
+              }
+            }
+          ],
+          "name": "OcelleButton",
+          "slots": [
+            {
+              "description": "The label.",
+              "name": ""
+            },
+            {
+              "description": "One icon before the label (the slot convention): `--ocelle-icon-size` square, decorative.",
+              "name": "icon"
+            }
+          ],
+          "superclass": {
+            "name": "LitElement",
+            "package": "lit"
+          },
+          "tagName": "ocelle-button"
+        }
+      ],
+      "exports": [
+        {
+          "declaration": {
+            "module": "src/ocelle-button.ts",
+            "name": "OcelleButton"
+          },
+          "kind": "js",
+          "name": "OcelleButton"
+        }
+      ],
+      "kind": "javascript-module",
+      "path": "src/ocelle-button.ts"
+    },
+    {
+      "declarations": [
+        {
+          "attributes": [
+            {
+              "default": "undefined",
               "description": "The icon's name, one of the set; any other value draws nothing and keeps the box. Reflected.",
               "fieldName": "name",
               "name": "name",

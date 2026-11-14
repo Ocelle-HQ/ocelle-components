@@ -1,8 +1,9 @@
 # @ocelle/elements
 
 The Ocelle web components: standards-based custom elements (Lit 3) that work in any page, a server-rendered page
-under a strict Content Security Policy, a Svelte shell or a desktop webview. This release has two elements:
-`ocelle-icon`, with a set of thirteen icons, and `ocelle-brand-mark`, the Ocelle rosette.
+under a strict Content Security Policy, a Svelte shell or a desktop webview. This release has three elements:
+`ocelle-icon`, with a set of thirteen icons, `ocelle-brand-mark`, the Ocelle rosette, and `ocelle-button`, the first
+control, which follows the control conventions below.
 
 ## Entry points
 
@@ -11,6 +12,7 @@ under a strict Content Security Policy, a Svelte shell or a desktop webview. Thi
 | `@ocelle/elements` | `dist/index.js` | every element; for hosts with a bundler |
 | `@ocelle/elements/ocelle-icon.js` | `dist/ocelle-icon.js` | `ocelle-icon` only; for hosts with a bundler |
 | `@ocelle/elements/ocelle-brand-mark.js` | `dist/ocelle-brand-mark.js` | `ocelle-brand-mark` only; for hosts with a bundler |
+| `@ocelle/elements/ocelle-button.js` | `dist/ocelle-button.js` | `ocelle-button` only; for hosts with a bundler |
 | `@ocelle/elements/browser.js` | `dist/browser/ocelle-elements.js` | every element, Lit inside; for hosts without a bundler |
 | `@ocelle/elements/custom-elements.json` | `custom-elements.json` | the manifest, also named by the `customElements` field |
 
@@ -130,6 +132,122 @@ back to the SVG default size, 300 × 300 px.
 In forced colours the ring and the spot are painted in `currentColor` in every variant, the system colour of their
 context. On the light main grounds the ochre spot measures 2.6:1: the ring carries the mark, and a host that needs
 every part at 3:1 uses `tone="mono"`. `ocelle-brand-mark` has no slot, event, CSS part or CSS custom property.
+
+## `ocelle-button`
+
+```html
+<ocelle-button>Save</ocelle-button>
+<ocelle-button variant="primary"><ocelle-icon slot="icon" name="folder"></ocelle-icon>Open project</ocelle-button>
+<ocelle-button variant="quiet" size="compact" label="Close"><ocelle-icon slot="icon" name="close"></ocelle-icon></ocelle-button>
+<ocelle-button flush size="compact">Projects</ocelle-button>
+<ocelle-button variant="quiet" ground="inset">Retry</ocelle-button>
+<ocelle-button variant="quiet" ground="chrome">Menu</ocelle-button>
+```
+
+`ocelle-button` is a native button in the Ocelle look. It follows the control conventions below: one inner
+`<button type="button">`, the part `control`, in its shadow root; a keyboard user and a screen-reader user meet a normal
+button.
+
+- `variant` (attribute and property, reflected): `primary` (filled), `secondary` (the default; bordered on a surface)
+  or `quiet` (bordered, no fill); any other value renders `secondary`.
+- `size` (attribute and property, reflected): `default` (the default; at least `--ocelle-target-min`, 44 px, in both
+  dimensions) or `compact` (the compact text scale, `--ocelle-font-size-sm` and `--ocelle-line-height-compact`, and at
+  least 24 px in both dimensions); any other value renders `default`.
+- `flush` (boolean attribute and property, reflected): no inline padding, no border and no fill, the label in
+  `--ocelle-color-ink`, and the content at the box's inline start, so its label (or icon) lines up with the text around
+  it; the minimum block and inline size of its `size` stay.
+- `ground` (attribute and property, reflected): the ground the button sits on, since an element cannot see its
+  ancestor's colour. `accent-low`, `inset`, `hover-bg` or `state` (any of the state grounds) gives a bordered variant an
+  `--ocelle-color-accent-strong` border; absent or any other value means the main grounds `color-canvas`,
+  `color-sheet`, `color-pane`, `color-panel`, `color-inspector` and `color-rail`, with an
+  `--ocelle-color-control-border` border. `ground="chrome"` is for the chrome grounds (`color-chrome`,
+  `color-chrome-hover`): the label is `--ocelle-color-chrome-ink`, a bordered variant has an
+  `--ocelle-color-chrome-muted` border and no fill, so `secondary` looks like `quiet` there; hover fills with
+  `--ocelle-color-chrome-hover`, pressed with `--ocelle-color-chrome-active`, and both turn the border
+  `--ocelle-color-chrome-ink`; the primary looks as on every ground.
+- `label` (attribute and property, not reflected): the accessible name, trimmed; empty or whitespace-only counts as
+  none.
+- `disabled` (boolean attribute and property, reflected): the disabled state of the control conventions.
+- The default slot is the label; the `icon` slot holds one icon before it (the slot convention).
+
+On a container whose surface changes (a list or table row that takes `color-hover-bg` on hover, or `color-accent-low`
+when selected), set `ground` for the changed surface statically (`hover-bg` or `accent-low`):
+`--ocelle-color-accent-strong` meets 3:1 on every main ground, so the border holds in both states.
+
+**Activation.** Each activation that delivers a `click` (a pointer click, Enter or Space, the element's `click()`) also
+dispatches `ocelle-button-activate` from the element: a `CustomEvent` with `bubbles: true`, `composed: true`,
+`cancelable: true` and `detail` `{}`, dispatched before the `click` reaches any bubble-phase listener on the element or
+its ancestors. Its target is the element, which identifies the button. Calling `preventDefault()` on it cancels the
+`click`'s default action; a button has none, so the `click` is still delivered, with `defaultPrevented` `true`. A
+disabled button dispatches neither event. The `click` reaches the host as an ordinary `click` event whose target is the
+element.
+
+**Looks.** Hover and pressed change the surface and the border: a bordered variant's border becomes
+`--ocelle-color-hover-border`; the primary fills with `--ocelle-color-accent-hover` on hover and `--ocelle-color-accent`
+when pressed; `secondary` and `quiet` fill with `--ocelle-color-hover-bg` on hover and `--ocelle-color-active-bg` when
+pressed; a flush button changes its surface only. The primary always has an `--ocelle-color-accent-strong` border,
+since the ochre fill alone is no boundary on the light grounds. A disabled button has `--ocelle-color-disabled-ink`
+text and border, on `--ocelle-color-disabled-bg` where its variant has a fill.
+
+A flush button's hover fill is `--ocelle-color-hover-bg`, so its hover shows no change where the ground has that
+colour: on `color-hover-bg` in both themes, on `color-inset` in light, on `color-neutral-bg` in dark, and with `ground="chrome"` on
+`color-chrome-hover` in both themes; hover carries no information there, and focus and pressed still show.
+
+Keyboard focus shows the token focus ring on the inner control (`--ocelle-color-focus`, `--ocelle-focus-width`,
+`--ocelle-focus-offset`); a pointer click does not. The focus ring is drawn outside the button: a container that clips
+(`overflow` other than `visible`) and holds a flush button at its edge keeps at least `--ocelle-focus-offset` +
+`--ocelle-focus-width` of unclipped space around it, for example `padding-inline` of that size with a matching negative
+margin. In forced colours the label and border are `ButtonText`, hover and pressed borders and the focus ring
+`Highlight`, a flush button's hover and pressed a dashed `Highlight` outline, and a disabled button `GrayText`.
+
+A long label wraps between words inside the button, which grows in block size; it is never truncated. A single word
+wider than the button breaks inside the word.
+
+**Forms.** `ocelle-button` does not take part in forms: its inner control is always `type="button"`, so activating it
+inside a `<form>` neither submits nor resets the form, and it has no `type`, `name`, `value` or `form` attribute. A host
+that submits from it calls `form.requestSubmit()` in its click handler:
+
+```js
+button.addEventListener("click", () => form.requestSubmit());
+```
+
+`ocelle-button` reads the tokens `--ocelle-target-min`, `--ocelle-space-2`, `--ocelle-space-4`, `--ocelle-space-6`,
+`--ocelle-border-width`, `--ocelle-radius-2`, `--ocelle-font-size-md`, `--ocelle-font-size-sm`,
+`--ocelle-line-height-normal`, `--ocelle-line-height-compact`, `--ocelle-icon-size`, the focus tokens
+`--ocelle-color-focus`, `--ocelle-focus-width` and `--ocelle-focus-offset`, and the colour tokens named above
+(`--ocelle-color-sheet`, `--ocelle-color-ink`, `--ocelle-color-control-border`, `--ocelle-color-accent`,
+`--ocelle-color-on-accent`, `--ocelle-color-accent-strong`, `--ocelle-color-accent-hover`,
+`--ocelle-color-hover-bg`, `--ocelle-color-hover-border`, `--ocelle-color-active-bg`, `--ocelle-color-chrome-ink`,
+`--ocelle-color-chrome-muted`, `--ocelle-color-chrome-hover`, `--ocelle-color-chrome-active`,
+`--ocelle-color-disabled-bg`, `--ocelle-color-disabled-ink`). It has no CSS custom property of its own.
+
+## Control conventions
+
+Every control of this library (`ocelle-button`, and the action row, navigation items, copy control and form controls
+after it) follows these rules.
+
+1. **One inner control.** Each control renders exactly one native `<button type="button">` in an open shadow root
+   attached with `delegatesFocus`; the host has no role and no tabindex. `element.focus()` focuses the inner control,
+   and `element.click()` clicks it, so a click started by `click()` gets the same guarantees as any other click. A
+   click dispatched on the host with `dispatchEvent` is outside the guarantees: it does not pass through the inner
+   control, so the element stops it. The host is a grid container (`inline-grid` for `ocelle-button`) and the inner
+   control its single stretched item, so the inner control fills the host when a flex row or a grid stretches it; a
+   stretched button grows to the row's height (set `align-self` on the element to avoid it). A host may restyle the
+   element's `display` and size: the element also listens for `click` and `auxclick` on the host from its constructor
+   and stops any that did not pass through the inner control, in every state, so host area outside the inner control
+   never activates it. Capture-phase listeners, and listeners added to the element before it is upgraded, are outside
+   that guarantee: they run before the element's own listener.
+2. **Disabled.** `disabled` means the control cannot be used here at all: the inner control is out of the tab order,
+   reported disabled and not activated. Not activated means: no `ocelle-*` event and no `click` reaching a
+   bubble-phase listener on the element or its ancestors (up to `document` and `window`); capture-phase listeners are
+   outside it.
+3. **Name order.** The inner control's name is the element's `label` (trimmed; empty or whitespace-only counts as
+   none), and otherwise the element's content; slotted icons never contribute. When a control's content is visible,
+   its `label` contains the visible text, ideally at its start, so a user who speaks a control's visible name reaches
+   it (label in name). A control with no text, no `label` and no icon has no accessible name: a host mistake that axe
+   reports; the element adds no fallback text.
+4. **Primary action.** A primary action uses `size="default"` (44 × 44 px minimum); `variant="primary"` is a look, not
+   what makes an action primary.
 
 ## Slot convention
 
