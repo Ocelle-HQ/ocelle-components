@@ -432,22 +432,15 @@ export class OcelleOverlay extends LitElement {
     this.#tryFocus([...this.#initialTargets(), ...(close === null ? [] : [close])]);
   }
 
-  /** Focuses the first of `targets` that takes focus (Focus checked, R-04); true when one did. */
-  #tryFocus(targets: readonly HTMLElement[]): boolean {
+  /**
+   * Focuses the first of `targets` that takes focus (Focus checked, R-04): the deep active element is then the target,
+   * opaque content included, whose shadow root reads null, so the deep active element stops at it.
+   */
+  #tryFocus(targets: readonly HTMLElement[]): void {
     for (const target of targets) {
       target.focus();
-      if (this.#landed(target)) return true;
+      if (deepActive() === target) return;
     }
-    return false;
-  }
-
-  #landed(target: HTMLElement): boolean {
-    const active = deepActive();
-    if (active === target) return true;
-    if (isOpaqueContent(target)) {
-      for (let each: Element | null = document.activeElement; each !== null; each = each.shadowRoot?.activeElement ?? null) if (each === target) return true;
-    }
-    return false;
   }
 
   // Closing ------------------------------------------------------------------------------------------------------
@@ -695,15 +688,15 @@ export class OcelleOverlay extends LitElement {
 
   /**
    * R-04's repair: a native move out of opaque content that lands on the body goes to the first stop, the close
-   * control (the header comes first in the panel, and a positive `tabindex` orders only within its own scope). A
-   * closed overlay has left the stack; during the exit the repair moves focus within the panel, which the end of the
-   * close returns to the opener as it would from the body.
+   * control (the header comes first in the panel, and a positive `tabindex` orders only within its own scope). Only
+   * the top overlay's close control takes that focus: an overlay beneath is inert under the top one's modal panel, and
+   * a closed one is not rendered. During the exit the repair moves focus within the panel, which the end of the close
+   * returns to the opener as it would from the body.
    */
   #onFocusout(event: FocusEvent): void {
     if (event.relatedTarget !== null || !(event.target instanceof Element) || !isOpaqueContent(event.target)) return;
     setTimeout(() => {
-      if (stack.at(-1) !== this || deepActive() !== null) return;
-      this.#close?.focus();
+      if (deepActive() === null) this.#close?.focus();
     }, 0);
   }
 
@@ -715,9 +708,7 @@ export class OcelleOverlay extends LitElement {
   };
 
   #onFooterSlot = (event: Event): void => {
-    const filled = (event.target as HTMLSlotElement).assignedNodes().length > 0;
-    if (filled === this.#footer) return;
-    this.#footer = filled;
+    this.#footer = (event.target as HTMLSlotElement).assignedNodes().length > 0;
     this.requestUpdate();
   };
 
@@ -742,8 +733,8 @@ export class OcelleOverlay extends LitElement {
 /**
  * Whether `a` comes before `b` (another element of the same document) in the flat tree, through shadow roots and
  * slots: an ancestor comes before its descendants. Below the elements' last common flat-tree ancestor, which is an
- * element (the root element is common to both), the one whose branch is the earlier flat child comes first; the
- * branch of an ancestor ends there, at no child (-1).
+ * element (the root element is common to both), `a` comes first when `b`'s branch is among the flat children after
+ * `a`'s; the branch of an ancestor ends there, at no child (index -1), so every child comes after it.
  */
 function before(a: Element, b: Element): boolean {
   const pathOf = (element: Element): Node[] => {
@@ -756,7 +747,7 @@ function before(a: Element, b: Element): boolean {
   let index = 0;
   while (pa[index] === pb[index]) index += 1;
   const siblings: readonly (Node | undefined)[] = flatChildren(pa[index - 1] as Element);
-  return siblings.indexOf(pa[index]) < siblings.indexOf(pb[index]);
+  return siblings.slice(siblings.indexOf(pa[index]) + 1).includes(pb[index]);
 }
 
 /** The parent of `node` in the flat tree: its assigned slot, or its parent, or its shadow root's host. */
