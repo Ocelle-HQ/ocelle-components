@@ -137,22 +137,28 @@ export const overflowRegionStyles = css`
   .region-ring,
   .region-edge {
     position: absolute;
-    inset-block: 0;
+    inset-block-start: 0;
     pointer-events: none;
   }
 
+  /* The ring overlay is laid out only while it shows a ring, so at rest it overlaps no content. */
   .region-ring {
+    display: none;
+    inset-block-end: 0;
     inset-inline: 0;
   }
 
   .region-box:focus-visible ~ .region-ring,
   .region-frame:focus-visible > .region-ring {
+    display: block;
     outline: var(--ocelle-focus-width) solid var(--ocelle-color-focus);
     outline-offset: calc(var(--ocelle-focus-width) * -1);
   }
 
+  /* The edges measure the fade depth with their inline size; they take the box's block size only to draw a line. */
   .region-edge {
     inline-size: var(--ocelle-scroller-fade-size);
+    block-size: 0;
     box-sizing: border-box;
   }
 
@@ -193,6 +199,10 @@ export const overflowRegionStyles = css`
   }
 
   @media (forced-colors: active) {
+    .region-edge {
+      block-size: 100%;
+    }
+
     .region-box:focus-visible ~ .region-ring,
     .region-frame:focus-visible > .region-ring {
       outline-color: Highlight;

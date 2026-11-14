@@ -344,7 +344,7 @@ Its fitting twin is none of these. `ocelle-test-overflow-host` passes US1-1, US1
   `storybook/.storybook/stories-layout.css`; the `[data-frame]` rules there are a copy of `frames.css`, checked by
   T020's test. No `style` attribute and no class anywhere. The mid-scroll and end stories set
   `scrollLeft` after `updateComplete` in their render (R-15).
-- [ ] T028 [US1] Baselines: `pnpm run visual:update` in the pinned container under docker for the six stories in light
+- [X] T028 [US1] Baselines: `pnpm run visual:update` in the pinned container under docker for the six stories in light
   and dark, committed under `storybook/baselines/`. Confirm them by a CI run of the branch, and commit CI's artifact
   files when they differ (#10 FR-005). Run `pnpm run gate:axe`: 0 serious or critical, nothing in
   `a11y-exceptions.json`.
