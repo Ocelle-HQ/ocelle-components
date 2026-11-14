@@ -14,3 +14,10 @@ Analysis: `specs/013-data-display/analysis-report.md` (1 critical, 1 high, 8 med
   compact", without any `sk-` string in test code.
 - **Tasks gate:** approve, on the condition that the planner resolves C1, I1 and the medium and low findings with these
   answers before implementation.
+
+## Second tasks gate (2026-11-14, human:jeroennouwsdev)
+
+After the input decisions, the second analysis (`analysis-report.md`, head d221dd5) found 0 critical, 1 high, 5
+medium and 6 low, with coverage at 100. Decision: "approve + fix all". The planner fixes I1, the five medium findings
+(I2, I3, G1, G2) and the six low findings before implementation. The fixes are
+wording and added test bodies only, with no new surface. The flow then stops before implementation.
