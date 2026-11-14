@@ -36,13 +36,16 @@ describe("ocelle-listbox and ocelle-option on the strict-CSP fixture with the br
     expect(scenarios.length).toBeGreaterThan(30);
   });
 
-  it.each(scenarios)("$name", async ({ run, expected }) => {
-    const { browser, origin } = started();
-    const page = await visit(browser, origin, "listbox.html");
-    const inPage: InPage = (fn, arg) => page.page.evaluate(fn as (arg: unknown) => never, arg);
-    const driver = fixtureDriver(page.page, page.log);
-    const observed = await run(driver, inPage);
-    const clipboard = await driver.clipboardCalls();
-    expect({ observed, clipboard, recorded: await page.finish() }).toEqual({ observed: expected, clipboard: [], recorded: clean });
-  });
+  // One `it` per body under its full name (`it.each`'s "$name" shortens a long name to 40 characters).
+  for (const { name, run, expected } of scenarios) {
+    it(name, async () => {
+      const { browser, origin } = started();
+      const page = await visit(browser, origin, "listbox.html");
+      const inPage: InPage = (fn, arg) => page.page.evaluate(fn as (arg: unknown) => never, arg);
+      const driver = fixtureDriver(page.page, page.log);
+      const observed = await run(driver, inPage);
+      const clipboard = await driver.clipboardCalls();
+      expect({ observed, clipboard, recorded: await page.finish() }).toEqual({ observed: expected, clipboard: [], recorded: clean });
+    });
+  }
 });

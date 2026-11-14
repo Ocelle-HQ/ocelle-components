@@ -15,6 +15,14 @@ entry points and the browser build's file path (constitution VII).
 - `ocelle-brand-mark`, the Ocelle rosette drawn inline from tokens at the `--ocelle-icon-size` token, for the main
   grounds, the chrome (`ground="chrome"`) or in one colour (`tone="mono"`), decorative unless a `label` or a host
   `aria-label` names it; its properties `ground` and `tone` (reflected) and `label`.
+- `ocelle-listbox`, a single-select listbox of `ocelle-option` children with one tab stop, the keys ArrowUp,
+  ArrowDown, Home, End, Enter and Space, and pointer selection; its properties `value` and `label`, its part `list`,
+  and its events `ocelle-listbox-change` (a user selection) and `ocelle-listbox-activate` (Enter on the selected
+  option or a double-click), each with `detail` `{ value }`.
+- `ocelle-option`, an option of the listbox, with its properties `value` and `disabled` (reflected) and its `icon` slot.
+- Entry points `@ocelle/elements/ocelle-listbox.js` (defines `ocelle-listbox` and `ocelle-option`) and
+  `@ocelle/elements/ocelle-option.js` (defines `ocelle-option` only). A parent element's module now also defines the
+  elements it owns as children.
 - In the README, the slot convention for icons in controls that later controls follow: the `icon` and `trailing`
   slots, their size, alignment, gap and colour rules and the naming rule.
 - Entry points: `@ocelle/elements` (the package root, defines every element), `@ocelle/elements/ocelle-icon.js`

@@ -41,7 +41,7 @@ export const HoveredOption: StoryObj = {
   parameters: { ocelle: { pointer: { hover: "#target" } } },
 };
 
-export const Scrolling: StoryObj = {
+export const ScrollingListbox: StoryObj = {
   name: "Scrolling listbox",
   render: () =>
     `<div data-story="listbox-scrolling"><ocelle-listbox label="Folders" value="delta">${["alpha", "beta", "gamma", "delta", "epsilon", "zeta", "eta", "theta", "iota", "kappa"].map((name) => `<ocelle-option value="${name}">${name}</ocelle-option>`).join("")}</ocelle-listbox></div>`,

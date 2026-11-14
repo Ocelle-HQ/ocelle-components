@@ -21,10 +21,14 @@ afterEach(async () => {
 });
 
 describe("ocelle-listbox and ocelle-option, in process (US1)", () => {
-  it.each(listboxScenarios)("$name", async ({ run, expected }) => {
-    const observed = await run(driver, inPage);
-    expect({ observed, clipboard: await driver.clipboardCalls() }).toEqual({ observed: expected, clipboard: [] });
-  });
+  // One `it` per body under its full name (`it.each`'s "$name" shortens a long name to 40 characters, which made the
+  // eight re-render bodies share one name and hid the scenario from `-t`).
+  for (const { name, run, expected } of listboxScenarios) {
+    it(name, async () => {
+      const observed = await run(driver, inPage);
+      expect({ observed, clipboard: await driver.clipboardCalls() }).toEqual({ observed: expected, clipboard: [] });
+    });
+  }
 
   it("Edge Cases, two copies of the package: a second definition of ocelle-listbox and ocelle-option throws nothing and the first classes stay, their listbox exposed and selecting", async () => {
     const thrown: unknown[] = [];

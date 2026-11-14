@@ -182,6 +182,192 @@
           ]
         }
       ]
+    },
+    {
+      "path": "src/ocelle-listbox.ts",
+      "kind": "javascript-module",
+      "exports": [
+        {
+          "name": "OcelleListbox",
+          "kind": "js",
+          "declaration": {
+            "name": "OcelleListbox",
+            "module": "src/ocelle-listbox.ts"
+          }
+        }
+      ],
+      "declarations": [
+        {
+          "tagName": "ocelle-listbox",
+          "superclass": {
+            "package": "lit",
+            "name": "LitElement"
+          },
+          "slots": [
+            {
+              "name": "",
+              "description": "The `ocelle-option` children."
+            }
+          ],
+          "name": "OcelleListbox",
+          "members": [
+            {
+              "type": {
+                "text": "string | undefined"
+              },
+              "privacy": "public",
+              "name": "label",
+              "kind": "field",
+              "description": "The listbox's accessible name, trimmed; empty or whitespace-only counts as none, and a host `aria-label` decides\nover it. Not reflected.",
+              "default": "undefined",
+              "attribute": "label"
+            },
+            {
+              "type": {
+                "text": "string"
+              },
+              "privacy": "public",
+              "name": "value",
+              "kind": "field",
+              "description": "The selected option's value, `\"\"` when none. Setting it selects the first enabled option with the value; `\"\"` or a\nvalue no enabled option has clears the selection, and a non-empty such value is remembered until an option with it\nappears or is enabled. A set never emits an event; setting the current value changes nothing. Not reflected.",
+              "default": "\"\"",
+              "attribute": "value"
+            }
+          ],
+          "kind": "class",
+          "events": [
+            {
+              "type": {
+                "text": "CustomEvent<{ value: string }>"
+              },
+              "name": "ocelle-listbox-change",
+              "description": "The user selected another option (Enter, Space or a click); `value` already reads it."
+            },
+            {
+              "type": {
+                "text": "CustomEvent<{ value: string }>"
+              },
+              "name": "ocelle-listbox-activate",
+              "description": "The user confirmed an option: Enter on the selected enabled option, or a double-click on an enabled option. Not cancelable."
+            }
+          ],
+          "description": "A single-select listbox of `ocelle-option` children, one tab stop, keyboard and pointer selection.",
+          "customElement": true,
+          "cssProperties": [],
+          "cssParts": [
+            {
+              "name": "list",
+              "description": "The scroll container of the options; a host limits the listbox's height with `max-block-size` on the listbox."
+            }
+          ],
+          "attributes": [
+            {
+              "type": {
+                "text": "string | undefined"
+              },
+              "name": "label",
+              "fieldName": "label",
+              "description": "The listbox's accessible name, trimmed; empty or whitespace-only counts as none, and a host `aria-label` decides\nover it. Not reflected.",
+              "default": "undefined"
+            },
+            {
+              "type": {
+                "text": "string"
+              },
+              "name": "value",
+              "fieldName": "value",
+              "description": "The selected option's value, `\"\"` when none. Setting it selects the first enabled option with the value; `\"\"` or a\nvalue no enabled option has clears the selection, and a non-empty such value is remembered until an option with it\nappears or is enabled. A set never emits an event; setting the current value changes nothing. Not reflected.",
+              "default": "\"\""
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "path": "src/ocelle-option.ts",
+      "kind": "javascript-module",
+      "exports": [
+        {
+          "name": "OcelleOption",
+          "kind": "js",
+          "declaration": {
+            "name": "OcelleOption",
+            "module": "src/ocelle-option.ts"
+          }
+        }
+      ],
+      "declarations": [
+        {
+          "tagName": "ocelle-option",
+          "superclass": {
+            "package": "lit",
+            "name": "LitElement"
+          },
+          "slots": [
+            {
+              "name": "",
+              "description": "The option's label."
+            },
+            {
+              "name": "icon",
+              "description": "A leading icon, by the slot convention; it adds nothing to the option's name."
+            }
+          ],
+          "name": "OcelleOption",
+          "members": [
+            {
+              "type": {
+                "text": "boolean"
+              },
+              "reflects": true,
+              "privacy": "public",
+              "name": "disabled",
+              "kind": "field",
+              "description": "Whether the option is disabled: it cannot be selected, the keys and the tab stop skip it, and it stays focusable,\nso a focused option that becomes disabled keeps focus. Reflected.",
+              "default": "false",
+              "attribute": "disabled"
+            },
+            {
+              "type": {
+                "text": "string"
+              },
+              "reflects": true,
+              "privacy": "public",
+              "name": "value",
+              "kind": "field",
+              "description": "The option's value, reported by the listbox's `value` and events: the `value` attribute as written (not trimmed),\nor, when it is missing or blank, the option's index among its parent's options, as a string, which is not written\nto the attribute. Reflected.",
+              "default": "the option's index, as a string",
+              "attribute": "value"
+            }
+          ],
+          "kind": "class",
+          "events": [],
+          "description": "An option of an `ocelle-listbox`: its content is its label, with an optional leading icon.",
+          "customElement": true,
+          "cssProperties": [],
+          "cssParts": [],
+          "attributes": [
+            {
+              "type": {
+                "text": "boolean"
+              },
+              "name": "disabled",
+              "fieldName": "disabled",
+              "description": "Whether the option is disabled: it cannot be selected, the keys and the tab stop skip it, and it stays focusable,\nso a focused option that becomes disabled keeps focus. Reflected.",
+              "default": "false"
+            },
+            {
+              "type": {
+                "text": "string"
+              },
+              "name": "value",
+              "fieldName": "value",
+              "description": "The option's value, reported by the listbox's `value` and events: the `value` attribute as written (not trimmed),\nor, when it is missing or blank, the option's index among its parent's options, as a string, which is not written\nto the attribute. Reflected.",
+              "default": "the option's index, as a string"
+            }
+          ]
+        }
+      ]
     }
   ]
 }

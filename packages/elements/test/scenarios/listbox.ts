@@ -1022,15 +1022,25 @@ export const listboxScenarios: readonly ListboxScenario[] = [
     expected: { first: exposed("Folders", ["alpha", "beta"]), renamed: exposed("Folders", ["omega", "beta"]) },
   },
   {
-    // Plant: the value setter deciding on the cached child list (delta, appended in the same task, then not selected).
-    name: "R-05: an option appended and value set to it in the same task are one operation: the option is selected through the direct path, with no event",
+    // Plant: the value setter deciding on the cached child list (delta, appended in the same task, is then selected only
+    // later, through the remembered value, so `value` read in that task is still empty). Made stricter after the plant
+    // run (reviews/phase-2/plants.md): the value is also read in the task of the append and the set.
+    name: "R-05: an option appended and value set to it in the same task are one operation: the option is selected through the direct path, value reads it in that task, with no event",
     fixture: true,
     run: async (driver, inPage) => {
       await mount(driver, inPage, page(options(["alpha", "beta"])));
       await inPage(recordEvents, null);
       await driver.mutate("lb", [{ append: '<ocelle-option value="delta">delta</ocelle-option>' }, { property: "value", value: "delta" }]);
-      return { tree: await tree(driver), value: await inPage(valueOf, "lb"), events: await inPage(recordedEvents, null) };
+      const later = { tree: await tree(driver), value: await inPage(valueOf, "lb"), events: await inPage(recordedEvents, null) };
+      await mount(driver, inPage, page(options(["alpha", "beta"])));
+      const inTask = await inPage(() => {
+        const listbox = document.getElementById("lb") as (HTMLElement & { value: string }) | null;
+        listbox?.insertAdjacentHTML("beforeend", '<ocelle-option value="delta">delta</ocelle-option>');
+        if (listbox !== null) listbox.value = "delta";
+        return [listbox?.value ?? null, listbox?.lastElementChild?.getAttribute("aria-selected") ?? null];
+      }, null);
+      return { later, inTask };
     },
-    expected: { tree: exposed("Folders", ["alpha", "beta", "delta"], 2), value: "delta", events: [] },
+    expected: { later: { tree: exposed("Folders", ["alpha", "beta", "delta"], 2), value: "delta", events: [] }, inTask: ["delta", "true"] },
   },
 ];
