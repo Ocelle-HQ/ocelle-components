@@ -8,6 +8,8 @@
     "./ocelle-icon.js": "./dist/ocelle-icon.js",
     "./ocelle-brand-mark.js": "./dist/ocelle-brand-mark.js",
     "./ocelle-scroller.js": "./dist/ocelle-scroller.js",
+    "./ocelle-workflow-board.js": "./dist/ocelle-workflow-board.js",
+    "./ocelle-workflow-lane.js": "./dist/ocelle-workflow-lane.js",
     "./browser.js": "./dist/browser/ocelle-elements.js",
     "./custom-elements.json": "./custom-elements.json"
   },

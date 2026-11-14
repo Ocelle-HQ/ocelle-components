@@ -1,9 +1,10 @@
 # @ocelle/elements
 
 The Ocelle web components: standards-based custom elements (Lit 3) that work in any page, a server-rendered page
-under a strict Content Security Policy, a Svelte shell or a desktop webview. This release has three elements:
-`ocelle-icon`, with a set of thirteen icons, `ocelle-brand-mark`, the Ocelle rosette, and `ocelle-scroller`, a
-horizontal strip that is a tab stop only while it overflows.
+under a strict Content Security Policy, a Svelte shell or a desktop webview. This release has five elements:
+`ocelle-icon`, with a set of thirteen icons, `ocelle-brand-mark`, the Ocelle rosette, `ocelle-scroller`, a
+horizontal strip that is a tab stop only while it overflows, and `ocelle-workflow-board` with its
+`ocelle-workflow-lane`s, a row of lanes that scrolls inside itself when it is narrower than they are.
 
 ## Entry points
 
@@ -13,6 +14,8 @@ horizontal strip that is a tab stop only while it overflows.
 | `@ocelle/elements/ocelle-icon.js` | `dist/ocelle-icon.js` | `ocelle-icon` only; for hosts with a bundler |
 | `@ocelle/elements/ocelle-brand-mark.js` | `dist/ocelle-brand-mark.js` | `ocelle-brand-mark` only; for hosts with a bundler |
 | `@ocelle/elements/ocelle-scroller.js` | `dist/ocelle-scroller.js` | `ocelle-scroller` only; for hosts with a bundler |
+| `@ocelle/elements/ocelle-workflow-board.js` | `dist/ocelle-workflow-board.js` | `ocelle-workflow-board` only, not the lane; for hosts with a bundler |
+| `@ocelle/elements/ocelle-workflow-lane.js` | `dist/ocelle-workflow-lane.js` | `ocelle-workflow-lane` only; for hosts with a bundler |
 | `@ocelle/elements/browser.js` | `dist/browser/ocelle-elements.js` | every element, Lit inside; for hosts without a bundler |
 | `@ocelle/elements/custom-elements.json` | `custom-elements.json` | the manifest, also named by the `customElements` field |
 
@@ -221,6 +224,74 @@ and a named group only while its content overflows. It has one default slot, the
   size and does not overflow, so the page may scroll sideways instead: give the scroller a definite or maximum inline
   size there so that it scrolls.
 - `ocelle-scroller` has no event, CSS part or CSS custom property.
+
+## `ocelle-workflow-board`
+
+`ocelle-workflow-board` lays its children out in one row in the inline direction, `--ocelle-space-3` apart: each child
+takes at least `--ocelle-lane-min-width` and the children share any extra space equally; when their minimum widths
+exceed its size, the board scrolls inside itself. It has one default slot, the lanes.
+
+- `label` (attribute and property, not reflected): the name of the board's region while it overflows, trimmed; empty
+  or whitespace-only counts as none.
+- **Tokens.** `ocelle-workflow-board` reads the tokens `--ocelle-lane-min-width`, `--ocelle-space-3`,
+  `--ocelle-focus-offset`, `--ocelle-focus-width`, `--ocelle-color-focus`, `--ocelle-scroller-fade-size`,
+  `--ocelle-color-ink` (as a mask colour only) and `--ocelle-border-width` (the forced-colours edge line).
+- **Tree, keyboard and focus.** While it overflows and has a name, the board is one `region` landmark with that name,
+  holding its lanes. Otherwise its tree, keyboard, focus, fades and scrollbar are those of `ocelle-scroller`, through
+  the same overflow-region module.
+- **Lanes.** A board holds lanes. Any other child is laid out as a lane: it takes the same minimum and the same equal
+  share.
+- **Content.** No content widens a lane past its share: text wraps, and a word wider than the lane breaks inside it.
+  Content that cannot shrink, such as an element of fixed inline size, is not clipped: it overflows its lane over the
+  next one, and when it reaches past the board's end the board scrolls. Put wide content, such as a row of chips, in
+  an `ocelle-scroller`. `base.css` caps images nested in a card at the lane's width; a host without it caps them
+  itself.
+- **Ground.** The board paints no ground of its own: put it, and its flat lanes, on a main ground.
+- **Sizing.** In a shrink-to-fit host (a default flex item, a dialog, a table cell) the board takes its lanes' minimum
+  widths and gaps and does not overflow, so the page may scroll sideways instead: give the board a definite or maximum
+  inline size there so that it scrolls.
+- **Updates.** The board follows changes of its own size, of a lane's size and of its children. A change inside a
+  lane that changes only the inline size of a descendant, and neither the board's size nor a lane's, is picked up at
+  the board's next size, slot or scroll event.
+- `ocelle-workflow-board` has no event, CSS part or CSS custom property.
+
+## `ocelle-workflow-lane`
+
+`ocelle-workflow-lane` is a column of a board with an optional title, an optional count and a variant. It has one
+default slot, the lane's content, such as cards.
+
+- `label` (attribute and property, not reflected): the lane's title, shown and used as its name, trimmed; empty or
+  whitespace-only counts as absent, and no title is shown.
+- `count` (attribute and property, not reflected): a whole number of 0 or more, shown after the title with tabular
+  figures as plain digits (`03` shows 3). The attribute counts only when, after trimming, it is decimal digits alone,
+  at most `Number.MAX_SAFE_INTEGER`; the property, when it is a safe integer of 0 or more; anything else counts as
+  absent.
+- `count-label` (attribute, and property `countLabel`, not reflected): the count's text in the name, trimmed, such as
+  "3 work packages"; the visible count still shows the number.
+- `variant` (attribute and property, reflected): `flat` drops the lane's ground, corners and padding and sets the title
+  and count in small uppercase; any other value gives the default.
+- **Tree.** The lane is one `group` named by its title, then ", " and the `count-label` or the count when a count is
+  shown ("Ready, 3"); without a title, by the count's text alone; without a shown count, by the title alone. With
+  neither it adds no role and no name. A non-blank host `aria-label` names the group alone. No word is added to the
+  name in any language: a host that wants words passes them in `count-label`. The visible title and count are hidden
+  from the accessibility tree, so the name is not read twice. The lane is not a live region: a change of `count` or
+  `count-label` updates the visible count and the name, and is not announced.
+- **Default.** The default lane's ground is `--ocelle-color-sheet`, which differs from `--ocelle-color-canvas`,
+  `--ocelle-color-panel`, `--ocelle-color-inspector` and `--ocelle-color-pane` in both themes, with
+  `--ocelle-radius-row` corners and `--ocelle-space-3` padding; its title is `--ocelle-font-size-sm` at
+  `--ocelle-font-weight-strong` in `--ocelle-color-ink`, and its count follows in `--ocelle-color-ink-muted`. In forced
+  colours it draws a 1 px `CanvasText` border.
+- **Flat.** The flat lane has no ground, corners or padding of its own: its cards sit on the board's ground. Its title
+  and count are `--ocelle-font-size-xs` at `--ocelle-font-weight-strong` in `--ocelle-color-ink-soft`, uppercase,
+  spaced by `--ocelle-tracking-caps`, in `--ocelle-font-sans` with tabular figures. In forced colours it draws no
+  border.
+- **Tokens.** `ocelle-workflow-lane` reads the tokens `--ocelle-color-sheet`, `--ocelle-radius-row`,
+  `--ocelle-space-3`, `--ocelle-font-size-sm`, `--ocelle-font-size-xs`, `--ocelle-font-weight-strong`,
+  `--ocelle-color-ink`, `--ocelle-color-ink-soft`, `--ocelle-color-ink-muted`, `--ocelle-tracking-caps`,
+  `--ocelle-font-sans`, `--ocelle-figures` and `--ocelle-border-width`; the board gives it `--ocelle-lane-min-width`.
+- **Title.** A long title wraps between words, and a word wider than the lane breaks inside it; the lane does not
+  widen for it, and the count stays visible.
+- `ocelle-workflow-lane` has no event, CSS part or CSS custom property.
 
 ## Host ARIA
 

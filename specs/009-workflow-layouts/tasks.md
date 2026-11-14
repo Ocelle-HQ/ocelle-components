@@ -374,7 +374,7 @@ Its fitting twin is none of these. `ocelle-test-overflow-host` passes US1-1, US1
 
 ### Tests (red, one commit)
 
-- [ ] T031 [P] [US2] `packages/elements/test/lane-count.test.ts` (in-process, pure): the count grammar of R-09.
+- [X] T031 [P] [US2] `packages/elements/test/lane-count.test.ts` (in-process, pure): the count grammar of R-09.
   - Attribute values accepted: `"3"`, `" 3 "` and `"03"` (shown as "3").
   - Attribute values rejected: `"+3"`, `"3e0"`, `"3.0"`, `"-1"`, `"2.5"`, `"abc"`, `""`, and a value above
     `Number.MAX_SAFE_INTEGER`.
@@ -382,7 +382,7 @@ Its fitting twin is none of these. `ocelle-test-overflow-host` passes US1-1, US1
   - The name function: `"Ready, 3"`; `"Ready, 3 work packages"`; `"3"` and `"3 work packages"` without a title;
     `"Ready"` without a count; none with neither. A non-blank host `aria-label` wins, and a blank one counts as
     absent (FR-018, FR-019).
-- [ ] T032 [US2] `packages/elements/test/scenarios/board.ts` and `scenarios/lane.ts`: US2 scenarios 1 to 15 as shared
+- [X] T032 [US2] `packages/elements/test/scenarios/board.ts` and `scenarios/lane.ts`: US2 scenarios 1 to 15 as shared
   bodies, each frame at its viewport. US2-1, US2-3, US2-14 and US2-15 use sentence-length card text. Pairs and plants:
   - **US2-1:** Frame W, no overflow and no region, vs. Frame N, a tab stop and one `region` named by `label`.
     Plants: always region; the board's `::slotted(*)` `contain: inline-size` removed (R-08).
@@ -441,49 +441,49 @@ Its fitting twin is none of these. `ocelle-test-overflow-host` passes US1-1, US1
       it fit, with no tab stop, no region and no fade. Plant: the fades and the tab stop computed from a cached
       `scrollLeft` (the value read before the removal) instead of the clamped one (analysis U1). The state not
       recomputed on `slotchange` or the track's resize is US1-3's plant, which the clamp's `scroll` would mask here.
-- [ ] T033 [US2] `packages/elements/test/workflow-board.test.ts` and `workflow-lane.test.ts` (in-process over
+- [X] T033 [US2] `packages/elements/test/workflow-board.test.ts` and `workflow-lane.test.ts` (in-process over
   T032), and `packages/elements/test/browser/workflow-board.test.ts` (fixture over T032). It follows T032, whose
   bodies it runs.
-- [ ] T034 [P] [US2] `packages/elements/test/entry-workflow-board.test.ts`: the module defines `ocelle-workflow-board`
+- [X] T034 [P] [US2] `packages/elements/test/entry-workflow-board.test.ts`: the module defines `ocelle-workflow-board`
   and not the lane. `entry-workflow-lane.test.ts`: it defines `ocelle-workflow-lane` only. Extend `entry-root.test.ts`
   and `exports.test.ts`.
-- [ ] T035 [P] [US2] `packages/elements/test/node/manifest.test.ts`: the board entry (`label`, default slot) and the
+- [X] T035 [P] [US2] `packages/elements/test/node/manifest.test.ts`: the board entry (`label`, default slot) and the
   lane entry (`label`; `count` `number | undefined`; `count-label`/`countLabel`; `variant` `"flat" | undefined`,
   reflected; default slot). Neither has events, parts or CSS custom properties.
-- [ ] T036 [P] [US2] `packages/elements/test/node/readme.test.ts`:
+- [X] T036 [P] [US2] `packages/elements/test/node/readme.test.ts`:
   - § `ocelle-workflow-board`: its slot and tokens; a board holds lanes (Edge Cases "Non-lane children of a
     board", analysis C8); the board paints no ground and goes on a main ground; wrap wide content in an
     `ocelle-scroller`; `base.css` caps nested images; a shrink-to-fit host needs a definite inline size;
     a width-only change inside a lane is picked up at the next size, slot or scroll event (FR-014, PLAN-FRESH-1-006 (b)).
   - § `ocelle-workflow-lane`: its attributes, the name rule with no built-in words, the `color-sheet` ground, and
     the flat variant.
-- [ ] T037 [P] [US2] `storybook/test/integration/elements-stories.test.ts`: the five board and six lane stories of
+- [X] T037 [P] [US2] `storybook/test/integration/elements-stories.test.ts`: the five board and six lane stories of
   contracts/elements.md § Stories, each rendering in light and dark with no `style` attribute and no class on the
   story's markup and no request outside the origin, as in T020 (no CSP count, R-15).
 
 ### Implementation (green)
 
-- [ ] T038 [US2] `packages/elements/src/ocelle-workflow-lane.ts`: `label`, `count` (an attribute converter per R-09),
+- [X] T038 [US2] `packages/elements/src/ocelle-workflow-lane.ts`: `label`, `count` (an attribute converter per R-09),
   `count-label`, and `variant` (reflected); the group wrapper with its name; the `aria-hidden` header; the content
   slot. Styles: the `color-sheet` ground, `--ocelle-radius-row` and `--ocelle-space-3` padding for the default
   variant; the flat title style; no inline-size containment of its own (the board's `::slotted(*)` gives it, R-08);
   `overflow-wrap: anywhere`; `::slotted(*)` with
   `max-inline-size: 100%`; the forced-colours border with `--ocelle-border-width`; `:host([hidden])`.
-- [ ] T039 [US2] `packages/elements/src/ocelle-workflow-board.ts`: `OverflowRegion` with `role: "region"`. The track as
+- [X] T039 [US2] `packages/elements/src/ocelle-workflow-board.ts`: `OverflowRegion` with `role: "region"`. The track as
   a flex row with `gap: var(--ocelle-space-3)`, `align-items: stretch` and `min-inline-size: 100%`. `::slotted(*)` with
   `flex: 1 1 var(--ocelle-lane-min-width)`, `min-inline-size: var(--ocelle-lane-min-width)` and `contain: inline-size`,
   so every child, a lane or not, is contained (R-08, contracts/elements.md, analysis F1). The block ring room
   is placed once, as contracts/overflow-region.md places it (R-04, R-08). `:host([hidden])`.
-- [ ] T040 [US2] `index.ts` and `browser.ts` define and export both elements. `package.json` gets the exports
+- [X] T040 [US2] `index.ts` and `browser.ts` define and export both elements. `package.json` gets the exports
   `./ocelle-workflow-board.js` and `./ocelle-workflow-lane.js`. Regenerate `custom-elements.json`.
-- [ ] T041 [US2] `storybook/stories/workflow-board.stories.ts` (Five lanes; Five lanes, narrow; One lane; No lanes;
+- [X] T041 [US2] `storybook/stories/workflow-board.stories.ts` (Five lanes; Five lanes, narrow; One lane; No lanes;
   Right to left) and `workflow-lane.stories.ts` (Default with count; Default without count; Flat with count; Flat
   without count; Long title; Untitled with count), on `color-canvas`. Frames come from the copy of `frames.css` in
   `stories-layout.css` (T027), and the cards use
   sentence-length text.
-- [ ] T042 [US2] Produce the baselines with `visual:update` and confirm them in CI, as in T028. Run `gate:axe`.
-- [ ] T043 [US2] README sections of T036, and the changelog entries for the two elements and their entry points.
-- [ ] T044 [US2] Run each pairing plant of T032 once and record them in
+- [X] T042 [US2] Produce the baselines with `visual:update` and confirm them in CI, as in T028. Run `gate:axe`.
+- [X] T043 [US2] README sections of T036, and the changelog entries for the two elements and their entry points.
+- [X] T044 [US2] Run each pairing plant of T032 once and record them in
   `specs/009-workflow-layouts/reviews/phase-3/plants.md`. Then run the gates as in T030.
 
 **Checkpoint**: `tdd-check.sh 3` reports `pass`; the review approves.

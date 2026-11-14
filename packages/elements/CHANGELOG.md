@@ -20,12 +20,20 @@ entry points and the browser build's file path (constitution VII).
 - `ocelle-scroller`, a horizontal strip that scrolls in the inline direction and is a tab stop, and with a `label` a
   named group, only while its content overflows, with fades on the sides with content off-screen, arrow-key scrolling
   and focus handling; its property `label` and its default slot; its entry point `@ocelle/elements/ocelle-scroller.js`.
+- `ocelle-workflow-board`, a row of lanes that scrolls inside itself, and is a tab stop and, with a `label`, a named
+  region, only while the lanes' minimum widths exceed its size; its property `label` and its default slot; its entry
+  point `@ocelle/elements/ocelle-workflow-board.js`, which does not define the lane.
+- `ocelle-workflow-lane`, a column of a board with a title and a count, exposed as one group named by them, in a
+  default variant with a sheet ground or a `flat` variant; its properties `label`, `count`, `count-label` and `variant`
+  (reflected) and its default slot; its entry point `@ocelle/elements/ocelle-workflow-lane.js`.
 - In the README, the overflow-region module convention: the internal module's inputs, outputs, effects, lifecycle and
   structure, which any later element with a scroll region uses; the Host ARIA rule stated per element; and the styles
   rule that allows one per-instance stylesheet of measured figures.
 - Entry points: `@ocelle/elements` (the package root, defines every element), `@ocelle/elements/ocelle-icon.js`
   (defines `ocelle-icon` only), `@ocelle/elements/ocelle-brand-mark.js` (defines `ocelle-brand-mark` only),
   `@ocelle/elements/ocelle-scroller.js` (defines `ocelle-scroller` only),
+  `@ocelle/elements/ocelle-workflow-board.js` (defines `ocelle-workflow-board` only),
+  `@ocelle/elements/ocelle-workflow-lane.js` (defines `ocelle-workflow-lane` only),
   `@ocelle/elements/browser.js` (the browser build) and `@ocelle/elements/custom-elements.json` (the manifest, also
   named by the `customElements` field).
 - The browser build's file, `dist/browser/ocelle-elements.js`: Lit inside, imports nothing, for hosts without a
