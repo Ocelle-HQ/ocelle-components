@@ -867,15 +867,17 @@ function factsExtras(): FactsScenario[] {
         await driver.setAttribute("a", "aria-hidden", "true");
         const hidden = await list(driver, "s");
         await driver.setAttribute("a", "aria-hidden", null);
+        const terms = async (): Promise<unknown> => (await driver.elements("s")).filter((each) => each.name === "dt").map((each) => ({ lang: each.attributes.lang ?? null, dir: each.attributes.dir ?? null }));
         await driver.setAttribute("b", "lang", "fr");
+        const lang = await terms();
         await driver.setAttribute("b", "dir", "rtl");
-        const terms = (await driver.elements("s")).filter((each) => each.name === "dt").map((each) => ({ lang: each.attributes.lang ?? null, dir: each.attributes.dir ?? null }));
-        return { hidden, shown: await list(driver, "s"), terms };
+        return { hidden, shown: await list(driver, "s"), lang, dir: await terms() };
       },
       expected: {
         hidden: listOf([["Status", "Running"]]),
         shown: listOf([["Owner", "Ada"], ["Status", "Running"]]),
-        terms: [{ lang: null, dir: null }, { lang: "fr", dir: "rtl" }],
+        lang: [{ lang: null, dir: null }, { lang: "fr", dir: null }],
+        dir: [{ lang: null, dir: null }, { lang: "fr", dir: "rtl" }],
       },
     },
     {
