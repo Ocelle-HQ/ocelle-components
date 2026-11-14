@@ -1,6 +1,8 @@
 import { afterEach, describe, expect, it } from "vitest";
 import { commands } from "vitest/browser";
 import "../src/ocelle-dialog.ts";
+// The nested rows with an open ocelle-drawer as the outer overlay (008 tasks.md T031) need the drawer too.
+import "../src/ocelle-drawer.ts";
 import { inProcessDriver } from "./in-process.ts";
 import { defineDialogStandIns, dialogScenarios } from "./scenarios/dialog.ts";
 

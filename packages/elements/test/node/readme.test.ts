@@ -127,6 +127,7 @@ const entryRows = [
   "| `@ocelle/elements/ocelle-icon.js` | `dist/ocelle-icon.js` | `ocelle-icon` only; for hosts with a bundler |",
   "| `@ocelle/elements/ocelle-brand-mark.js` | `dist/ocelle-brand-mark.js` | `ocelle-brand-mark` only; for hosts with a bundler |",
   "| `@ocelle/elements/ocelle-dialog.js` | `dist/ocelle-dialog.js` | `ocelle-dialog` and the `ocelle-icon` it renders; for hosts with a bundler |",
+  "| `@ocelle/elements/ocelle-drawer.js` | `dist/ocelle-drawer.js` | `ocelle-drawer` and the `ocelle-icon` it renders; for hosts with a bundler |",
   "| `@ocelle/elements/browser.js` | `dist/browser/ocelle-elements.js` | every element, Lit inside; for hosts without a bundler |",
   "| `@ocelle/elements/custom-elements.json` | `custom-elements.json` | the manifest, also named by the `customElements` field |",
 ];
@@ -171,7 +172,7 @@ describe("packages/elements/README.md", () => {
   it("lists exactly the entry points of package.json's exports in its Entry points table (FR-002)", () => {
     const manifest = JSON.parse(read("package.json")) as { exports?: Record<string, string> };
     expect(tableRows(read("README.md"), "Entry points")).toEqual(entryRows);
-    expect(Object.keys(manifest.exports ?? {})).toEqual([".", "./ocelle-icon.js", "./ocelle-brand-mark.js", "./ocelle-dialog.js", "./browser.js", "./custom-elements.json"]);
+    expect(Object.keys(manifest.exports ?? {})).toEqual([".", "./ocelle-icon.js", "./ocelle-brand-mark.js", "./ocelle-dialog.js", "./ocelle-drawer.js", "./browser.js", "./custom-elements.json"]);
   });
 
   it("lists the thirteen names of the set, whether each mirrors and the consumer need it meets, in its Icons table (US2-1, FR-018, SC-007)", () => {
@@ -265,6 +266,64 @@ describe("packages/elements/README.md: ocelle-dialog (008)", () => {
   });
 });
 
+/**
+ * The `ocelle-drawer` section and the statements about it (008 tasks.md T032; contracts/elements-overlays.md
+ * § `ocelle-drawer`; research.md R-07, R-08, R-18; data-model.md § `ocelle-drawer`): what it is, its own surface, what
+ * it shares with the dialog, the backdrop, its size, shape and motion, the tokens it reads in the dialog's sentence
+ * form, and #12's personal-drawer example.
+ */
+const drawerFragments = [
+  // the element and its surface
+  "`ocelle-drawer` shows its content modally in a full-height panel against the inline start or end edge of the viewport, in a native `<dialog>`: the page behind is inert to pointer, keyboard and the accessibility tree until it closes",
+  "It has the focus, Escape, close control and event model of `ocelle-dialog`, with the `ocelle-drawer-` events, and a click on the backdrop asks to close it",
+  "`open`, `label` and `close-label`, the slots and the parts are those of `ocelle-dialog`",
+  "`side` (attribute and property, reflected): `start` (the default) or `end`, the inline edge of the viewport in the drawer's direction, so `start` is the left edge under `dir=\"ltr\"` and the right edge under `dir=\"rtl\"`",
+  "`ground` (attribute and property, reflected): `sheet` (the default) or `chrome`, the chrome ground `--ocelle-color-chrome` with `--ocelle-color-chrome-ink` in both themes",
+  "Any other value of `side` or `ground` gives the default",
+  "`heading-hidden` (attribute; property `headingHidden`, reflected): the heading is not painted and takes no space, but stays in the accessibility tree as the drawer's level-2 heading, and the drawer's accessible name is unchanged; the close control stays visible, focusable and in its place at the panel's block start",
+  "Events: `ocelle-drawer-close-request` (cancelable; `detail.reason` is `\"escape\"`, `\"close-button\"` or `\"backdrop\"`) when the user asks to close it, and `ocelle-drawer-close` (`detail.reason` is the request's reason, or `\"host\"` when the host set `open` to false or the platform closed it) once it has left the top layer and focus has returned; both bubble and are composed, and opening dispatches nothing",
+  "Cancelling `ocelle-drawer-close-request` keeps the drawer open, with focus inside, on every repetition",
+  // the backdrop (R-07)
+  "A primary-button click on the backdrop asks to close the drawer with reason `\"backdrop\"`; a press that starts in the panel and ends on the backdrop, or starts on the backdrop and ends in the panel, a click inside the panel and a secondary-button click do nothing",
+  "A click on the backdrop of an `ocelle-dialog` opened over the drawer closes neither",
+  // size, shape, layout, motion (FR-003, FR-018, FR-026, FR-028)
+  "The drawer is as wide as `--ocelle-drawer-inline` (the sidebar width), never wider than `--ocelle-dialog-max-inline`, and as tall as the viewport; it has no `--ocelle-dialog-inline-size`",
+  "The two corners on the panel's inner edge, the edge facing the page, are rounded with `--ocelle-radius-2`; the two against the viewport's edge are square",
+  "The body fills the panel between the header and the footer, so the footer sits at the panel's end",
+  "The drawer slides in from its own edge and back out over `--ocelle-motion-base` with `--ocelle-easing-standard`, mirrored under `dir=\"rtl\"`, and not at all under `prefers-reduced-motion: reduce`, whatever an ancestor sets on those tokens",
+  // the tokens it reads (data-model § `ocelle-drawer`)
+  "`ocelle-drawer` reads the tokens `--ocelle-color-sheet`, `--ocelle-color-ink`, `--ocelle-color-overlay`, `--ocelle-color-chrome`, `--ocelle-color-chrome-ink`, `--ocelle-elevation-raised`, `--ocelle-radius-2`, `--ocelle-border-width`, `--ocelle-drawer-inline`, `--ocelle-dialog-max-inline`, `--ocelle-font-sans`, `--ocelle-font-size-md`, `--ocelle-font-size-lg`, `--ocelle-font-weight-strong`, `--ocelle-line-height-normal`, `--ocelle-line-height-tight`, `--ocelle-space-2`, `--ocelle-space-3`, `--ocelle-space-4`, `--ocelle-space-6`, `--ocelle-target-min`, `--ocelle-size-visually-hidden`, `--ocelle-focus-width`, `--ocelle-focus-offset`, `--ocelle-color-focus`, `--ocelle-motion-base` and `--ocelle-easing-standard`, and its close icon `--ocelle-icon-size`",
+  // #12's personal drawer
+  '<ocelle-drawer label="Personal" ground="chrome" heading-hidden side="start">',
+  "#12's personal drawer: the chrome ground, a heading kept for the accessibility tree only, and the personal rail as its body",
+  // host ARIA for the overlays (R-08)
+  "With a host `aria-label`, an open `ocelle-drawer` exposes one named node, its modal dialog, named by the host `aria-label`; while it is closed, Chromium exposes the host itself as a named generic node",
+];
+
+describe("packages/elements/README.md: ocelle-drawer (008)", () => {
+  const text = read("README.md");
+  const readme = flat(text);
+
+  it.each(drawerFragments)("states: %s", (fragment) => {
+    expect(readme).toContain(flat(fragment));
+  });
+
+  it("names ocelle-drawer in its intro, before the first section", () => {
+    expect(flat(text.split(/^## /m)[0] ?? "")).toContain("`ocelle-drawer`, a modal side drawer");
+  });
+
+  it("has an `ocelle-drawer` section", () => {
+    expect(text).toMatch(/^## `ocelle-drawer`$/m);
+  });
+
+  // data-model § `ocelle-drawer`: the drawer has no block cap and no --ocelle-dialog-inline-size, so its tokens
+  // sentence names neither --ocelle-dialog-max-block nor --ocelle-measure-reading, nor --ocelle-color-chrome-hover.
+  it("names no --ocelle-dialog-max-block, --ocelle-measure-reading or --ocelle-color-chrome-hover in its tokens sentence", () => {
+    const sentence = /`ocelle-drawer` reads the tokens [^.]*/.exec(readme)?.[0] ?? "";
+    expect({ found: sentence !== "", excluded: ["--ocelle-dialog-max-block", "--ocelle-measure-reading", "--ocelle-color-chrome-hover"].filter((name) => sentence.includes(`\`${name}\``)) }).toEqual({ found: true, excluded: [] });
+  });
+});
+
 describe("packages/elements/CHANGELOG.md", () => {
   const changelog = read("CHANGELOG.md");
   const unreleased = /^## Unreleased\n([\s\S]*?)(?=^## |(?![\s\S]))/m.exec(changelog)?.[1] ?? "";
@@ -289,6 +348,12 @@ describe("packages/elements/CHANGELOG.md", () => {
     "`ocelle-dialog-close`",
     "`--ocelle-dialog-inline-size`",
     "`open` (reflected), `label` and `close-label`",
+    // 008 (T032, T037): the drawer's surface
+    "`ocelle-drawer`",
+    "`@ocelle/elements/ocelle-drawer.js`",
+    "`ocelle-drawer-close-request`",
+    "`ocelle-drawer-close`",
+    "`side`, `ground` and `heading-hidden` (reflected)",
     ...["chevron-start", "chevron-end", "chevron-up", "chevron-down", "arrow-start", "arrow-end", "menu", "close", "folder", "file", "search", "table", "copy"].map((name) => `\`${name}\``),
   ])("names %s under Unreleased / Added (constitution VII, FR-031, SC-008)", (surface) => {
     expect(added).toContain(surface);

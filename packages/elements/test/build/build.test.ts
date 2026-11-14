@@ -41,13 +41,14 @@ describe("the module build (dist/*.js)", () => {
     const own = (specifier: string): boolean => specifier.startsWith("./") && files.includes(specifier.slice(2));
     const lit = (specifier: string): boolean => specifier === "lit" || specifier.startsWith("lit/");
     expect({
-      files: files.filter((name) => ["index.js", "ocelle-icon.js", "ocelle-brand-mark.js", "ocelle-dialog.js", "browser.js"].includes(name)),
+      files: files.filter((name) => ["index.js", "ocelle-icon.js", "ocelle-brand-mark.js", "ocelle-dialog.js", "ocelle-drawer.js", "browser.js"].includes(name)),
       outside: imported.filter(({ specifier }) => !own(specifier) && !lit(specifier)),
       litImported: imported.some(({ specifier }) => lit(specifier)),
       rootImportsIcon: imported.some(({ name, specifier }) => name === "index.js" && specifier === "./ocelle-icon.js"),
       rootImportsMark: imported.some(({ name, specifier }) => name === "index.js" && specifier === "./ocelle-brand-mark.js"),
       rootImportsDialog: imported.some(({ name, specifier }) => name === "index.js" && specifier === "./ocelle-dialog.js"),
-    }).toEqual({ files: ["browser.js", "index.js", "ocelle-brand-mark.js", "ocelle-dialog.js", "ocelle-icon.js"], outside: [], litImported: true, rootImportsIcon: true, rootImportsMark: true, rootImportsDialog: true });
+      rootImportsDrawer: imported.some(({ name, specifier }) => name === "index.js" && specifier === "./ocelle-drawer.js"),
+    }).toEqual({ files: ["browser.js", "index.js", "ocelle-brand-mark.js", "ocelle-dialog.js", "ocelle-drawer.js", "ocelle-icon.js"], outside: [], litImported: true, rootImportsIcon: true, rootImportsMark: true, rootImportsDialog: true, rootImportsDrawer: true });
   });
 
   it("dist/ocelle-brand-mark.js imports lit and the registration helper, but neither the package root nor ocelle-icon.js (US1-17)", () => {
@@ -82,6 +83,19 @@ describe("the module build (dist/*.js)", () => {
     }).toEqual({ lit: true, define: true, base: true, root: false, icon: true });
   });
 
+  // 008 tasks.md T032: the drawer's module imports Lit, the registration helper and the overlays' internal base, not
+  // the package root and not the dialog's module.
+  it("dist/ocelle-drawer.js imports lit, the registration helper and ./overlay.js, neither the package root nor ./ocelle-dialog.js", () => {
+    const drawer = specifiers(existsSync(join(dist, "ocelle-drawer.js")) ? readFileSync(join(dist, "ocelle-drawer.js"), "utf8") : "");
+    expect({
+      lit: drawer.includes("lit"),
+      define: drawer.includes("./define.js"),
+      base: drawer.includes("./overlay.js"),
+      root: drawer.includes("./index.js"),
+      dialog: drawer.includes("./ocelle-dialog.js"),
+    }).toEqual({ lit: true, define: true, base: true, root: false, dialog: false });
+  });
+
   it("dist/ocelle-icon.js imports lit and the registration helper, but neither the package root nor another element", () => {
     const imported = specifiers(existsSync(join(dist, "ocelle-icon.js")) ? readFileSync(join(dist, "ocelle-icon.js"), "utf8") : "");
     expect({
@@ -96,16 +110,17 @@ describe("the module build (dist/*.js)", () => {
 describe("the browser build (dist/browser/ocelle-elements.js)", () => {
   const text = (): string => (existsSync(browserBuild) ? readFileSync(browserBuild, "utf8") : "");
 
-  it("is self-contained: it defines ocelle-icon, ocelle-brand-mark and ocelle-dialog, with no import statement and no dynamic import", () => {
+  it("is self-contained: it defines ocelle-icon, ocelle-brand-mark, ocelle-dialog and ocelle-drawer, with no import statement and no dynamic import", () => {
     const code = text();
     expect({
       exists: code !== "",
       definesIcon: code.includes('"ocelle-icon"'),
       definesMark: code.includes('"ocelle-brand-mark"'),
       definesDialog: code.includes('"ocelle-dialog"'),
+      definesDrawer: code.includes('"ocelle-drawer"'),
       specifiers: specifiers(code),
       dynamicImport: /\bimport\s*\(/.test(code),
-    }).toEqual({ exists: true, definesIcon: true, definesMark: true, definesDialog: true, specifiers: [], dynamicImport: false });
+    }).toEqual({ exists: true, definesIcon: true, definesMark: true, definesDialog: true, definesDrawer: true, specifiers: [], dynamicImport: false });
   });
 
   it("holds Lit's production build at the locked versions, not its development build, no ssr-dom-shim and no console call", () => {
