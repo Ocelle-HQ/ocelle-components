@@ -1,6 +1,6 @@
 {
   "expect": "fail",
-  "why": "A changed token value (color-ink, light) changes every story-theme that shows it: differs on the twenty light story-themes measured in the pinned container (FR-004, US2 scenario 2), the twelve the phase 1 spike listed and the eight of mission 005's stories that show color-ink (all but elements-ocelle-brand-mark--chrome, measured for plan decision 29), and none in dark. A story added later that shows color-ink in light adds its line here (research.md R-07).",
+  "why": "A changed token value (color-ink, light) changes every story-theme that shows it: differs on the twenty-eight light story-themes measured in the pinned container (FR-004, US2 scenario 2), the twelve the phase 1 spike listed, the eight of mission 005's stories that show color-ink (all but elements-ocelle-brand-mark--chrome, measured for plan decision 29) and the eight ocelle-dialog stories of mission 008 (measured in phase 2, R-16), and none in dark. A story added later that shows color-ink in light adds its line here (research.md R-07).",
   "findings": [
     {
       "location": "base-styles--base-page/light",
@@ -28,6 +28,38 @@
     },
     {
       "location": "elements-ocelle-brand-mark--labelled/light",
+      "rule": "differs"
+    },
+    {
+      "location": "elements-ocelle-dialog--default/light",
+      "rule": "differs"
+    },
+    {
+      "location": "elements-ocelle-dialog--one-line-confirmation/light",
+      "rule": "differs"
+    },
+    {
+      "location": "elements-ocelle-dialog--with-footer-actions/light",
+      "rule": "differs"
+    },
+    {
+      "location": "elements-ocelle-dialog--long-scrolling-body/light",
+      "rule": "differs"
+    },
+    {
+      "location": "elements-ocelle-dialog--prose-with-a-table/light",
+      "rule": "differs"
+    },
+    {
+      "location": "elements-ocelle-dialog--open-project/light",
+      "rule": "differs"
+    },
+    {
+      "location": "elements-ocelle-dialog--long-label/light",
+      "rule": "differs"
+    },
+    {
+      "location": "elements-ocelle-dialog--host-aria-label/light",
       "rule": "differs"
     },
     {
