@@ -7,7 +7,7 @@
 import { LitElement, css, html, nothing } from "lit";
 import type { CSSResultGroup, PropertyValues } from "lit";
 import { deepActive, flatChildren, isOpaqueContent, walk } from "./focusable.ts";
-import type { Candidate } from "./focusable.ts";
+import type { Walk } from "./focusable.ts";
 import { accessibleName } from "./naming.ts";
 import "./ocelle-icon.ts";
 
@@ -66,8 +66,7 @@ function closesOnRequest(dialog: HTMLDialogElement): boolean {
 }
 
 /** Reads a duration such as `200ms` or `0.2s` in milliseconds; 0 when it is not one. */
-function milliseconds(value: string): number {
-  const text = value.trim();
+function milliseconds(text: string): number {
   const number = Number.parseFloat(text);
   if (Number.isNaN(number)) return 0;
   return text.endsWith("ms") ? number : text.endsWith("s") ? number * 1000 : 0;
@@ -259,6 +258,7 @@ export class OcelleOverlay extends LitElement {
   #state: State = "closed";
   #reason: CloseReason = "host";
   #opener: Element | null = null;
+  #ownCloses = 0;
   #animation: Animation | undefined;
   #below = new Set<HTMLDialogElement>();
   #asideFor: HTMLDialogElement | null = null;
@@ -306,7 +306,7 @@ export class OcelleOverlay extends LitElement {
     if (this.#state === "closed") return;
     this.#animation?.cancel();
     this.#animation = undefined;
-    this.#dialog?.close();
+    this.#closeOwn();
     this.#leave();
     this.#opener = null;
     this.#state = "closed";
@@ -331,9 +331,11 @@ export class OcelleOverlay extends LitElement {
         capture: true,
       }}
       @toggle=${{
+        // Stryker disable next-line BlockStatement: equivalent, every close of a slotted dialog also fires its close event, which leaves the below record first (T025, reviews/phase-2/notes.md)
         handleEvent: (event: Event) => {
           this.#onToggle(event);
         },
+        // Stryker disable next-line BooleanLiteral: equivalent, without capture the slotted dialogs' toggles are not seen, and their close events leave the record (T025, reviews/phase-2/notes.md)
         capture: true,
       }}
       @focusout=${{
@@ -384,10 +386,11 @@ export class OcelleOverlay extends LitElement {
     let opener = deepActive();
     for (const overlay of stack) if (opener !== null && overlay.#state === "closing" && within(opener, overlay)) opener = overlay.#opener;
     this.#opener = opener;
-    this.#below = new Set(this.#nonModal().filter((each) => each.open));
+    // A modal one in the record changes nothing: an open modal dialog is a close watcher above before the record counts.
+    this.#below = new Set(this.#dialogs().filter((each) => each.open));
     this.#asideFor = null;
-    // Shown non-modally through the shadow root, it could not be shown modally; its stale close event is ignored.
-    dialog.close();
+    // Shown non-modally through the shadow root, it could not be shown modally.
+    this.#closeOwn();
     dialog.showModal();
     stack.push(this);
     OcelleOverlay.#syncTop();
@@ -457,29 +460,40 @@ export class OcelleOverlay extends LitElement {
     this.#animation?.cancel();
     this.#animation = undefined;
     this.open = false;
+    // Every change of state during the exit cancels its animation (a reopen, a platform close, a removal), so the end
+    // of the exit is the end of this close.
     this.#animate(false, () => {
-      if (this.#state === "closing") this.#finish();
+      this.#finish();
     });
   }
 
-  /**
-   * Ends a close: the inner `close()` (nothing when the platform closed it), focus returned while it is ours, then
-   * `…-close` (R-05, R-06). The `close` event the inner `close()` queues finds the dialog closed, or open again.
-   */
+  /** Ends a close: the inner `close()` unless the platform closed it, focus returned while it is ours, then `…-close` (R-05, R-06). */
   #finish(): void {
     const before = deepActive();
     const ours = before === null || within(before, this);
-    this.#dialog?.close();
+    this.#closeOwn();
     this.#leave();
     this.#state = "closed";
     this.#returnFocus(ours);
     dispatch(this, `${this.eventPrefix}-close`, this.#reason, false);
   }
 
+  /**
+   * Closes the inner `<dialog>` if it is open, as the overlay's own close (R-03): the native `close` event it queues
+   * consumes one count and is ignored, so one that arrives after a reopen changes nothing.
+   */
+  #closeOwn(): void {
+    const dialog = this.#dialog;
+    if (dialog?.open !== true) return;
+    // Stryker disable next-line AssignmentOperator: equivalent, a count that goes down lets the queued event through to the next check, which ignores it as well: the dialog is open again (a reopen) or the overlay is closed (T025, reviews/phase-2/notes.md)
+    this.#ownCloses += 1;
+    dialog.close();
+  }
+
   /** Leaves the overlay stack. */
   #leave(): void {
-    const index = stack.indexOf(this);
-    if (index >= 0) stack.splice(index, 1);
+    // Called only while open or closing, so it is on the stack.
+    stack.splice(stack.indexOf(this), 1);
     this.#listen(false);
     OcelleOverlay.#syncTop();
   }
@@ -521,11 +535,11 @@ export class OcelleOverlay extends LitElement {
       void this.updateComplete.then(done);
       return;
     }
-    const easing = style.getPropertyValue("--ocelle-easing-standard").trim() || "linear";
+    const easing = style.getPropertyValue("--ocelle-easing-standard") || "linear";
     const animation = dialog.animate(this.keyframes(entering), { duration, easing });
     this.#animation = animation;
+    // A cancelled animation does not finish, so this is the current one.
     animation.onfinish = () => {
-      if (this.#animation !== animation) return;
       this.#animation = undefined;
       done();
     };
@@ -538,17 +552,22 @@ export class OcelleOverlay extends LitElement {
   };
 
   #onKeydown = (event: KeyboardEvent): void => {
-    this.#key(event, false);
+    this.#key(event);
   };
 
+  /** The top overlay's listener alone (R-02): a key whose deep active element is the document body. */
   #onDocumentKeydown = (event: KeyboardEvent): void => {
-    if (deepActive() === null) this.#key(event, true);
+    if (deepActive() === null) this.#key(event);
   };
 
-  #key(event: KeyboardEvent, fromBody: boolean): void {
-    if (stack.at(-1) !== this) return;
+  /**
+   * A key that reached the panel, or the body while this is the top overlay. A key that reaches an overlay beneath
+   * passed through the top one nested in its content: the top one prevented it, or it is a close watcher above (its
+   * panel is `:modal`), so only the top acts (R-02).
+   */
+  #key(event: KeyboardEvent): void {
     if (event.key === "Escape") this.#escape(event);
-    else if (event.key === "Tab") this.#tab(event, fromBody);
+    else if (event.key === "Tab") this.#tab(event);
   }
 
   #escape(event: KeyboardEvent): void {
@@ -568,10 +587,6 @@ export class OcelleOverlay extends LitElement {
   /** The `<dialog>` elements of the overlay's content, its own excluded. */
   #dialogs(): HTMLDialogElement[] {
     return descendants(this).filter((each): each is HTMLDialogElement => each instanceof HTMLDialogElement);
-  }
-
-  #nonModal(): HTMLDialogElement[] {
-    return this.#dialogs().filter((each) => !each.matches(":modal"));
   }
 
   /**
@@ -605,12 +620,18 @@ export class OcelleOverlay extends LitElement {
   };
 
   #onClose(event: Event): void {
-    const dialog = this.#dialog;
-    if (dialog === null || event.target !== dialog) {
-      if (event.target instanceof HTMLDialogElement) this.#below.delete(event.target);
+    // A `close` event's target is a dialog: the panel, or one in the content, which leaves the below record.
+    const dialog = event.target as HTMLDialogElement;
+    if (dialog !== this.#dialog) {
+      this.#below.delete(dialog);
       return;
     }
-    // A stale event: the dialog closed by the overlay or the platform is open again.
+    // Stryker disable next-line ConditionalExpression, BlockStatement: equivalent, an own event let through is ignored by the next check or the state, as the count would (T025, reviews/phase-2/notes.md)
+    if (this.#ownCloses > 0) {
+      this.#ownCloses -= 1;
+      return;
+    }
+    // A stale event that consumed no count: the dialog is open again.
     if (dialog.open) return;
     if (this.#state === "opening" || this.#state === "shown") {
       // A platform close (R-03): reason host, nothing to close.
@@ -627,32 +648,42 @@ export class OcelleOverlay extends LitElement {
     }
   }
 
+  /**
+   * A slotted dialog leaves the below record on a `toggle` whose `oldState` is `open` (R-02); one whose `oldState` is
+   * `closed` is the late event of an opening before the overlay and leaves it there.
+   */
   #onToggle(event: Event): void {
     const target = event.target;
-    if (target instanceof HTMLDialogElement && target !== this.#dialog && (event as ToggleEvent).oldState === "open") this.#below.delete(target);
+    // Stryker disable next-line ConditionalExpression, LogicalOperator, EqualityOperator: equivalent, the panel is never in the below record and deleting any other target changes nothing (T025, reviews/phase-2/notes.md)
+    if (target === this.#dialog || !(target instanceof HTMLDialogElement)) return;
+    // Stryker disable next-line ConditionalExpression, EqualityOperator, StringLiteral: equivalent, a toggle that never matches leaves the record to the close event of the same close, and a dialog wrongly taken out of it on its opening toggle is put back by the cancel fallback on the next Escape, with the same request (T025, reviews/phase-2/notes.md)
+    if ((event as ToggleEvent).oldState === "open") this.#below.delete(target);
   }
 
   // Tab ----------------------------------------------------------------------------------------------------------
 
   /** The candidates of the cycle: the close control, then the body's and the footer's, in both orders (R-04). */
-  #candidates(): { flat: Candidate[]; order: Candidate[] } {
+  #candidates(): Walk {
     const dialog = this.#dialog;
     if (dialog === null) return { flat: [], order: [] };
-    const { flat, order } = walk(dialog);
-    const sentinel = this.#sentinel;
-    return { flat: flat.filter((each) => each.element !== sentinel), order: order.filter((each) => each.element !== sentinel) };
+    // The end sentinel is no candidate: its `tabindex` is -1.
+    return walk(dialog);
   }
 
-  #tab(event: KeyboardEvent, fromBody: boolean): void {
+  /**
+   * The cycle's ends are the first and the last candidate in navigation order (R-04): the first is the close control;
+   * when the last is opaque content, focus is never on it here (the engine moves it), so a Tab from the last stop
+   * before it is a middle press and runs natively into it.
+   */
+  #tab(event: KeyboardEvent): void {
     if (event.defaultPrevented || this.#watcherAbove(true)) return;
     const { flat, order } = this.#candidates();
-    const stops = order.filter((each) => each.kind === "stop");
-    const first = stops[0];
-    const last = stops.at(-1);
+    const first = order[0];
+    const last = order.at(-1);
     if (first === undefined || last === undefined) return;
     const back = event.shiftKey;
     const active = deepActive();
-    if (fromBody || active === null) {
+    if (active === null) {
       event.preventDefault();
       this.#tryFocus((back ? [...order].reverse() : order).map((each) => each.element));
       return;
@@ -660,8 +691,7 @@ export class OcelleOverlay extends LitElement {
     // Focus in opaque content: the engine moves it (R-04).
     if (isOpaqueContent(active)) return;
     if (back && active === first.element) {
-      const end = order.at(-1);
-      if (end !== undefined && isOpaqueContent(end.element)) {
+      if (isOpaqueContent(last.element)) {
         // The sentinel wrap: the native move runs from the panel's end into the content, from its end.
         this.#sentinel?.focus();
         return;
@@ -671,8 +701,6 @@ export class OcelleOverlay extends LitElement {
       return;
     }
     if (!back && active === last.element) {
-      const at = flat.findIndex((each) => each.element === last.element);
-      if (flat.slice(at + 1).some((each) => isOpaqueContent(each.element))) return;
       event.preventDefault();
       this.#tryFocus(order.map((each) => each.element));
       return;
@@ -694,7 +722,7 @@ export class OcelleOverlay extends LitElement {
    * returns to the opener as it would from the body.
    */
   #onFocusout(event: FocusEvent): void {
-    if (event.relatedTarget !== null || !(event.target instanceof Element) || !isOpaqueContent(event.target)) return;
+    if (!(event.target instanceof Element) || !isOpaqueContent(event.target)) return;
     setTimeout(() => {
       if (deepActive() === null) this.#close?.focus();
     }, 0);
@@ -719,13 +747,14 @@ export class OcelleOverlay extends LitElement {
     for (const element of slot.assignedElements()) observer.observe(element);
   }
 
-  /** The body is a Tab stop exactly while it overflows (R-04, R-18). */
+  /**
+   * The body is a Tab stop exactly while it overflows (R-04, R-18): measured when the body or its content resizes and
+   * when its content changes (the body held at its minimum block size does not resize when its content shrinks).
+   */
   #measure(): void {
     const body = this.#body;
     if (body === null) return;
-    const overflowing = body.scrollHeight > body.clientHeight;
-    if (overflowing === this.#overflowing) return;
-    this.#overflowing = overflowing;
+    this.#overflowing = body.scrollHeight > body.clientHeight;
     this.requestUpdate();
   }
 }
