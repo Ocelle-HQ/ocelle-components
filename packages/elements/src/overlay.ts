@@ -145,15 +145,21 @@ export class OcelleOverlay extends LitElement {
       overflow-wrap: anywhere;
     }
 
+    [part="heading"][hidden] {
+      display: none;
+    }
+
     [part="close-button"] {
       display: inline-flex;
       flex: none;
+      margin-inline-start: auto;
       align-items: center;
       justify-content: center;
       box-sizing: border-box;
       inline-size: var(--ocelle-target-min);
       block-size: var(--ocelle-target-min);
-      margin: 0;
+      margin-block: 0;
+      margin-inline-end: 0;
       padding: 0;
       border: 0;
       border-radius: var(--ocelle-radius-2);
@@ -340,7 +346,7 @@ export class OcelleOverlay extends LitElement {
         },
         capture: true,
       }}
-    ><div class="header"><h2 part="heading" id="heading">${this.label ?? ""}</h2><button part="close-button" type="button" aria-label=${this.closeLabel} @click=${this.#onCloseClick}><ocelle-icon name="close"></ocelle-icon></button></div><div part="body" tabindex=${this.#overflowing ? "0" : nothing}><slot @slotchange=${this.#onBodySlot}></slot></div><div part="footer" ?hidden=${!this.#footer}><slot name="footer" @slotchange=${this.#onFooterSlot}></slot></div><span class="sentinel" tabindex="-1" aria-hidden="true"></span></dialog>`;
+    ><div class="header"><h2 part="heading" id="heading" ?hidden=${(this.label ?? "") === ""}>${this.label ?? ""}</h2><button part="close-button" type="button" aria-label=${this.closeLabel} @click=${this.#onCloseClick}><ocelle-icon name="close"></ocelle-icon></button></div><div part="body" tabindex=${this.#overflowing ? "0" : nothing}><slot @slotchange=${this.#onBodySlot}></slot></div><div part="footer" ?hidden=${!this.#footer}><slot name="footer" @slotchange=${this.#onFooterSlot}></slot></div><span class="sentinel" tabindex="-1" aria-hidden="true"></span></dialog>`;
   }
 
   protected override firstUpdated(): void {
