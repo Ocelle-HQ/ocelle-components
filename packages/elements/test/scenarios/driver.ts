@@ -71,6 +71,36 @@ export interface Sheets {
   readonly styleElements: number;
 }
 
+/**
+ * An element the input and scroll methods act on: the element with an `id`, or the first element matching `inner` in
+ * that element's shadow root (009 research.md R-17).
+ */
+export type Target = string | { readonly id: string; readonly inner: string };
+
+/** A point in an element's border box, in CSS px from its top-left corner. */
+export interface Point {
+  readonly x: number;
+  readonly y: number;
+}
+
+/**
+ * What a frame record reads each time it records (009 research.md R-17): a DOM property (`scrollLeft`, `clientHeight`),
+ * a computed CSS property (`mask-image`) or an attribute (`tabindex`), as text (an absent attribute reads `"null"`), of
+ * the record's target or, with `of`, of another element.
+ */
+export type Reading = ({ readonly property: string } | { readonly computed: string } | { readonly attribute: string }) & { readonly of?: Target };
+
+/** A running frame record (`frameRecord`). */
+export interface FrameRecorder {
+  /**
+   * Settles (`settle`), stops recording and returns the record: the reading at the start, then, in order, `"keydown"`
+   * for each keydown the window saw, the reading in each animation frame, and `"resize: <reading>"` in each callback of
+   * a `ResizeObserver` the record registers on the target when it starts (so it runs after the observers the page
+   * registered before, in the same delivery).
+   */
+  stop(): Promise<string[]>;
+}
+
 export interface MountOptions {
   /** Links `@ocelle/styles`' `base.css` (after `tokens.css`) on the page. */
   readonly base?: boolean;
@@ -121,8 +151,8 @@ export interface Driver {
   placement(id: string): Promise<Placement>;
   /** The placement of the drawing of the light-DOM `svg` with `id` (its own screen CTM) in that `svg`'s own box. */
   ownPlacement(id: string): Promise<Placement>;
-  /** The computed value of a CSS property of the element with `id`. */
-  computed(id: string, property: string): Promise<string>;
+  /** The computed value of a CSS property of the target (since 009 a shadow target too). */
+  computed(target: Target, property: string): Promise<string>;
   /** The computed `color` a probe element takes from the CSS colour `value` (a system colour, say). */
   resolveColour(value: string): Promise<string>;
   /** The unignored accessibility nodes of the element with `id` and of its shadow subtree. */
@@ -151,4 +181,41 @@ export interface Driver {
    * mounts (009 research.md R-17).
    */
   viewport(width: number, height: number): Promise<void>;
+  /**
+   * Presses a key or a chord with real keyboard input, never a dispatched event (`:focus-visible` follows real input
+   * only), then settles: `Tab`, `Shift+Tab`, `ArrowLeft`, `ArrowRight`, `Home`, `End`, `Alt+ArrowLeft`,
+   * `Ctrl+ArrowRight`, `Meta+ArrowRight`, `Shift+ArrowRight` (009 research.md R-17).
+   */
+  press(key: string): Promise<void>;
+  /** A real pointer click at `point` of the target's border box, then a settle. */
+  click(target: Target, point: Point): Promise<void>;
+  /** A real wheel event over the centre of the target's border box, `deltaX` CSS px to the right, then a settle. */
+  wheel(target: Target, deltaX: number): Promise<void>;
+  /**
+   * The deep active element: from `document.activeElement` down through each shadow root's active element, each level
+   * as its `id`, or as its local name and its classes (`div.region-box`) when it has none, joined by `" >> "`
+   * (`"s1 >> div.region-box"`, `"l3"`, `"body"`).
+   */
+  activeElement(): Promise<string>;
+  /**
+   * Focuses the element with id `from` by script, then presses `Tab` (or `Shift+Tab` when `backward`) until the deep
+   * active element is `to` (an id, or a deep active element as `activeElement()` names it), and returns
+   * `activeElement()` after each press, `to` included; at most 40 presses.
+   */
+  tabWalk(from: string, to: string, backward?: boolean): Promise<string[]>;
+  /** The target's `scrollLeft`. */
+  scrollLeft(target: Target): Promise<number>;
+  /** Sets the target's `scrollLeft` with an instant scroll, then settles. */
+  setScrollLeft(target: Target, value: number): Promise<void>;
+  /** Whether the last keydown the window saw since the last `mount` was default-prevented; false when there was none. */
+  lastKeyPrevented(): Promise<boolean>;
+  /** Emulates `prefers-reduced-motion: reduce` (`on`), or `no-preference`, beside `forcedColors()`. */
+  reducedMotion(on: boolean): Promise<void>;
+  /**
+   * Starts a frame record of `read` on the target (009 research.md R-13, R-17), and returns after two animation frames,
+   * once the record's `ResizeObserver` has delivered its first observation of the target.
+   */
+  frameRecord(target: Target, read: Reading): Promise<FrameRecorder>;
+  /** Waits two animation frames, then until every `ocelle-*` element of the page has rendered (`updateComplete`). */
+  settle(): Promise<void>;
 }

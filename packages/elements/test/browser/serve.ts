@@ -3,8 +3,9 @@
 // generator (the current source, never a pre-built dist/) with the vendored fonts it loads by relative URL, `base.css`
 // copied from packages/styles/src (linked only by the pages that say so), `frames.css` copied from test/fixtures (009's
 // tested frames, R-17; linked only by the pages that say so), and the files the global setup built
-// (global-setup.ts): the browser build `ocelle-elements.js`, US1 scenario 10's `bundle-a.js` and `bundle-b.js` and User
-// Story 3's test host's file `ocelle-test-host.js`. It serves them on 127.0.0.1 with `Content-Security-Policy:
+// (global-setup.ts): the browser build `ocelle-elements.js`, US1 scenario 10's `bundle-a.js` and `bundle-b.js`, User
+// Story 3's test host's file `ocelle-test-host.js` and, since 009, the test-only slotted controls
+// `ocelle-test-controls.js`. It serves them on 127.0.0.1 with `Content-Security-Policy:
 // default-src 'none'; script-src 'self'; style-src 'self'; font-src 'self'` on every response. Every page is opened
 // in a fresh context with the recorders installed before navigation, none of them a page script or a request: CSP
 // violations through 002's `addInitScript` collector
@@ -40,6 +41,7 @@ const builtFiles: Readonly<Record<string, string>> = {
   "bundle-a.js": "bundles/bundle-a.js",
   "bundle-b.js": "bundles/bundle-b.js",
   "ocelle-test-host.js": "test-host/ocelle-test-host.js",
+  "ocelle-test-controls.js": "test-controls/ocelle-test-controls.js",
 };
 
 const types: Readonly<Record<string, string>> = {

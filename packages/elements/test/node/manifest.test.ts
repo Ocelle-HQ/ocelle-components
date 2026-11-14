@@ -247,7 +247,7 @@ describe("generate(root) on the repository's element source", () => {
     const manifest = await generate(repo);
     const modules = manifest.modules as { path: string; declarations: Record<string, unknown>[] }[];
     expect(manifest.schemaVersion).toBe("1.0.0");
-    expect(modules.map((module) => module.path)).toEqual(["src/ocelle-brand-mark.ts", "src/ocelle-icon.ts"]);
+    expect(modules.map((module) => module.path)).toEqual(["src/ocelle-brand-mark.ts", "src/ocelle-icon.ts", "src/ocelle-scroller.ts"]);
     const [icon] = modules.find((module) => module.path === "src/ocelle-icon.ts")?.declarations ?? [];
     expect(icon).toMatchObject({
       kind: "class",
@@ -297,6 +297,18 @@ describe("generate(root) on the repository's element source", () => {
       { name: "tone", fieldName: "tone", type: { text: '"mono" | undefined' }, default: "undefined", described: true },
       { name: "label", fieldName: "label", type: { text: "string | undefined" }, default: "undefined", described: true },
     ]);
+  });
+
+  it("declares ocelle-scroller with its tag name, class, label (string | undefined, not reflected, described), one default slot, described, and no event, part or CSS property (009 contracts/elements.md, T018)", async () => {
+    const manifest = await generate(repo);
+    const modules = manifest.modules as { path: string; declarations: Record<string, unknown>[] }[];
+    const [scroller] = modules.find((module) => module.path === "src/ocelle-scroller.ts")?.declarations ?? [];
+    expect(scroller).toMatchObject({ kind: "class", name: "OcelleScroller", tagName: "ocelle-scroller", customElement: true, events: [], cssParts: [], cssProperties: [] });
+    const described = (list: unknown): Record<string, unknown>[] =>
+      ((list ?? []) as Record<string, unknown>[]).map(({ description, ...rest }) => ({ ...rest, described: typeof description === "string" && description !== "" }));
+    expect(described(scroller?.members)).toEqual([{ kind: "field", name: "label", privacy: "public", type: { text: "string | undefined" }, default: "undefined", attribute: "label", described: true }]);
+    expect(described(scroller?.attributes)).toEqual([{ name: "label", fieldName: "label", type: { text: "string | undefined" }, default: "undefined", described: true }]);
+    expect(described(scroller?.slots)).toEqual([{ name: "", described: true }]);
   });
 
   it("rejects a root without an element module, naming the directory", async () => {

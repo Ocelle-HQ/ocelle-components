@@ -167,6 +167,19 @@ export async function emulateForcedColors(context: BrowserCommandContext, mode: 
   await emulate(context.page, mode, palette);
 }
 
+/**
+ * Emulates `prefers-reduced-motion: reduce` (`on`) or `no-preference` (009 research.md R-17). Playwright keeps the
+ * other emulated media features (forced colours, the colour scheme) as they are.
+ */
+export async function emulateMotion(page: Page, on: boolean): Promise<void> {
+  await page.emulateMedia({ reducedMotion: on ? "reduce" : "no-preference" });
+}
+
+/** The `emulateReducedMotion(on)` browser command (registered in vitest.config.ts). */
+export async function emulateReducedMotion(context: BrowserCommandContext, on: boolean): Promise<void> {
+  await emulateMotion(context.page, on);
+}
+
 declare module "vitest/browser" {
   interface BrowserCommands {
     /**
@@ -176,5 +189,7 @@ declare module "vitest/browser" {
     axTree: (id: string, scope?: AxScope) => Promise<AxNode[]>;
     /** Emulates forced colours with a system palette, or ends the emulation with `"none"`. */
     emulateForcedColors: (mode: ForcedColors, palette?: Palette) => Promise<void>;
+    /** Emulates `prefers-reduced-motion: reduce`, or `no-preference` when `on` is false. */
+    emulateReducedMotion: (on: boolean) => Promise<void>;
   }
 }
