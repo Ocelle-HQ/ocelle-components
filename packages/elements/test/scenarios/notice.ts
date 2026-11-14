@@ -78,8 +78,11 @@ export function used(token: string): number | string {
   return value;
 }
 
-/** A token's used length as computed CSS text (`12px`). */
-export const px = (token: string): string => `${String(used(token))}px`;
+/** A token's used length as computed CSS text (`12px`); a used value the table writes as text (`14px`) as it is. */
+export function px(token: string): string {
+  const value = used(token);
+  return typeof value === "number" ? `${String(value)}px` : value;
+}
 
 /** A unitless line-height token times a font size in pixels, as computed CSS text. */
 function lineHeight(token: string, fontSize: string): string {
@@ -497,6 +500,8 @@ export const noticeScenarios: readonly NoticeScenario[] = [
     name: 'US1-15 status text change: a text change of a role="status" notice is announced once by exactly one live region node (no nested or host region)',
     run: async (driver, tag) => {
       const snapshots = await loaded(driver, tag, fl('id="n" role="status"', '<span id="t">Saving</span>'), async () => {
+        // The first text is current for longer than D first, so a second region holding the content would count.
+        await settleAnnouncement(driver);
         await driver.batch([{ op: "text", id: "t", text: "Saved" }]);
       });
       announced(driver, snapshots, [polite("Saved")], "US1-15 status text change: announcements");

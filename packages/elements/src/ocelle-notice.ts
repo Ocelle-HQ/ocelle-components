@@ -25,7 +25,7 @@ const tones: readonly string[] = ["info", "success", "warning", "danger", "neutr
 type Pending = "none" | "insertion" | "role" | "live";
 
 /** A host role that makes the notice announce, or null: the first token of the role attribute (FR-009). */
-function liveRole(role: string | null): "alert" | "status" | null {
+function liveRoleOf(role: string | null): "alert" | "status" | null {
   const first = (role ?? "").trim().split(/\s+/)[0]?.toLowerCase();
   return first === "alert" || first === "status" ? first : null;
 }
@@ -57,9 +57,11 @@ function textOf(node: Node): string {
  */
 export class OcelleNotice extends LitElement {
   static override properties = {
-    tone: { reflect: true, noAccessor: true },
-    size: { reflect: true, noAccessor: true },
-    announce: { type: Boolean, reflect: true, noAccessor: true },
+    // The accessors below are the properties' own and set the attribute themselves; `useDefault` keeps Lit from
+    // writing the read default into the attribute at the first update, so an unknown value stays as written.
+    tone: { reflect: true, noAccessor: true, useDefault: true },
+    size: { reflect: true, noAccessor: true, useDefault: true },
+    announce: { type: Boolean, reflect: true, noAccessor: true, useDefault: true },
   };
 
   /** `role` and `hidden` are observed, not properties (FR-034): they change what the notice announces. */
@@ -192,7 +194,7 @@ export class OcelleNotice extends LitElement {
   }
 
   set tone(value: "info" | "success" | "warning" | "danger" | "neutral") {
-    this.reflect("tone", value);
+    this.reflect("tone", value, this.tone);
   }
 
   /**
@@ -206,7 +208,7 @@ export class OcelleNotice extends LitElement {
   }
 
   set size(value: "regular" | "compact") {
-    this.reflect("size", value);
+    this.reflect("size", value, this.size);
   }
 
   /**
@@ -223,10 +225,10 @@ export class OcelleNotice extends LitElement {
     this.toggleAttribute("announce", value);
   }
 
-  /** Sets attribute `name` to `value` (null or undefined removes it) when it differs. */
-  private reflect(name: string, value: string | null | undefined): void {
+  /** Sets attribute `name` to `value` when it differs from the value the property reads; null or undefined removes it. */
+  private reflect(name: string, value: string | null | undefined, current: string): void {
     if (value === null || value === undefined) this.removeAttribute(name);
-    else if (this.getAttribute(name) !== value) this.setAttribute(name, value);
+    else if (value !== current) this.setAttribute(name, value);
   }
 
   /** Sets up the internals: `ariaLive` off, so a host `role` of `alert` or `status` adds no live region (R-02). */
@@ -240,18 +242,18 @@ export class OcelleNotice extends LitElement {
   }
 
   /** The host role that makes the notice announce, or null. */
-  protected role(): "alert" | "status" | null {
-    return liveRole(this.getAttribute("role"));
+  protected liveRole(): "alert" | "status" | null {
+    return liveRoleOf(this.getAttribute("role"));
   }
 
   /** Whether the notice announces: `announce`, or a host role `alert` or `status`. */
   protected isLive(): boolean {
-    return this.announce || this.role() !== null;
+    return this.announce || this.liveRole() !== null;
   }
 
   /** The politeness: assertive for a host `alert`, polite for `status`, else by the tone (FR-009). */
   protected politeness(): Politeness {
-    const role = this.role();
+    const role = this.liveRole();
     if (role !== null) return role === "alert" ? "assertive" : "polite";
     return this.tone === "warning" || this.tone === "danger" ? "assertive" : "polite";
   }
@@ -351,7 +353,7 @@ export class OcelleNotice extends LitElement {
       return;
     }
     if (!this.isLive() || this.hidden) return;
-    if (this.role() === "alert") this.alertPath("insertion");
+    if (this.liveRole() === "alert") this.alertPath("insertion");
     else this.announcer.trigger(true);
   }
 
@@ -363,14 +365,14 @@ export class OcelleNotice extends LitElement {
       return;
     }
     if (!this.isLive()) return;
-    if (this.role() === "alert") this.alertPath("insertion");
+    if (this.liveRole() === "alert") this.alertPath("insertion");
     else this.announcer.trigger(true);
   }
 
   /** A change of the host role from `previous`. */
   protected onRole(previous: string | null): void {
-    const before = liveRole(previous);
-    const after = this.role();
+    const before = liveRoleOf(previous);
+    const after = this.liveRole();
     const wasLive = this.announce || before !== null;
     if (!wasLive) {
       if (after !== null) this.becameLive();
@@ -394,7 +396,7 @@ export class OcelleNotice extends LitElement {
 
   /** `announce` set or removed: becoming live takes the baseline, stopping cancels; a live role decides alone. */
   protected onAnnounce(): void {
-    if (this.role() !== null) return;
+    if (this.liveRole() !== null) return;
     if (this.announce) this.becameLive();
     else this.stopLive();
   }
@@ -408,7 +410,7 @@ export class OcelleNotice extends LitElement {
   /** The notice began announcing: the baseline is the current text, at the end of the task for `alert`. */
   protected becameLive(): void {
     this.announcer.takeBaseline();
-    if (this.role() !== "alert") return;
+    if (this.liveRole() !== "alert") return;
     this.pending = "live";
     this.postAlertStep();
   }
