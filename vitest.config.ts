@@ -9,9 +9,25 @@ interface ElementCommands {
   readonly axTree: (context: BrowserCommandContext, id: string, scope?: "element" | "subtree") => Promise<unknown>;
   readonly emulateForcedColors: (context: BrowserCommandContext, mode: "active" | "none", palette?: "light" | "dark") => Promise<void>;
 }
+// The live-region capture's commands (specs/010-feedback-forms contracts/testing.md § Live-region capture;
+// packages/elements/test/live.ts), loaded as the element commands are, when a command runs.
+interface LiveDelays {
+  readonly loaded: number;
+  readonly loading: number;
+}
+interface LiveCommands {
+  readonly liveStart: (context: BrowserCommandContext, containerId: string, delays: LiveDelays) => Promise<void>;
+  readonly liveStop: (context: BrowserCommandContext, options?: { readonly atLeast?: number }) => Promise<unknown>;
+}
 const elementCommandsUrl = new URL("./packages/elements/test/commands.ts", import.meta.url).href;
 const elementCommands = async (): Promise<ElementCommands> => (await import(elementCommandsUrl)) as ElementCommands;
 const axTree: BrowserCommand<[id: string, scope?: "element" | "subtree"]> = async (context, id, scope) => (await elementCommands()).axTree(context, id, scope);
+const liveCommandsUrl = new URL("./packages/elements/test/live.ts", import.meta.url).href;
+const liveCommands = async (): Promise<LiveCommands> => (await import(liveCommandsUrl)) as LiveCommands;
+const liveStart: BrowserCommand<[containerId: string, delays: LiveDelays]> = async (context, containerId, delays) => {
+  await (await liveCommands()).liveStart(context, containerId, delays);
+};
+const liveStop: BrowserCommand<[options?: { readonly atLeast?: number }]> = async (context, options) => (await liveCommands()).liveStop(context, options);
 const emulateForcedColors: BrowserCommand<[mode: "active" | "none", palette?: "light" | "dark"]> = async (context, mode, palette) => {
   await (await elementCommands()).emulateForcedColors(context, mode, palette);
 };
@@ -79,7 +95,7 @@ export default defineConfig({
             provider: playwright({ launchOptions }),
             headless: true,
             instances: [{ browser: "chromium" }],
-            commands: { axTree, emulateForcedColors },
+            commands: { axTree, emulateForcedColors, liveStart, liveStop },
           },
         },
       },
