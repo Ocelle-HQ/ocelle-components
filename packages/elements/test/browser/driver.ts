@@ -8,8 +8,10 @@
 import { inflateSync } from "node:zlib";
 import type { Page } from "playwright";
 import { axNodes, axSubtree, emulate } from "../commands.ts";
+import { fixtureCapture } from "../live.ts";
 import { decodePng } from "../pixels.ts";
-import type { Bounds, Box, Driver, Drawing, Paint, Part, Placement, Sheets } from "../scenarios/driver.ts";
+import type { Bounds, Box, Drawing, FixtureDriver, Paint, Part, Placement, Sheets } from "../scenarios/driver.ts";
+import type { Served } from "./serve.ts";
 
 /**
  * Waits in the page until every `ocelle-*` element has rendered and the fonts the page uses have loaded (a font that
@@ -24,9 +26,14 @@ function settle(page: Page): Promise<void> {
   });
 }
 
-/** The driver of `page`; `log` is the page's console and error record, `withBase` whether the page links base.css. */
-export function fixtureDriver(page: Page, log: readonly string[], withBase = false): Driver {
+/**
+ * The driver of `page`; `log` is the page's console and error record, `withBase` whether the page links base.css,
+ * `served` the fixture server (its submission recorder answers `submit`).
+ */
+export function fixtureDriver(page: Page, log: readonly string[], withBase = false, served?: Served): FixtureDriver {
   let since = log.length;
+  if (served === undefined) since = log.length;
+  const capture = fixtureCapture(page);
   return {
     mount: async (markup, options = {}) => {
       if ((options.base === true) !== withBase) throw new Error(`mount ${options.base === true ? "with" : "without"} base.css on a page ${withBase ? "with" : "without"} it`);
@@ -203,5 +210,27 @@ export function fixtureDriver(page: Page, log: readonly string[], withBase = fal
         };
       }, selector),
     messages: () => Promise.resolve(log.slice(since)),
+    // Phase 1 red commit (T001d): the new steps as signature-only stubs, each resolving with a neutral value; T004 and
+    // T005 implement them.
+    liveCapture: {
+      start: (containerId) => capture.start(containerId),
+      startDocument: (url) => capture.startDocument(url),
+      stop: (options) => capture.stop(options),
+    },
+    insert: () => Promise.resolve(),
+    laterTask: () => Promise.resolve(),
+    insertInteractive: () => Promise.resolve(0),
+    after: () => Promise.resolve(0),
+    W: { loaded: 0, loading: 0 },
+    hostRole: () => Promise.resolve("none"),
+    formData: () => Promise.resolve([]),
+    submit: () => Promise.resolve(null),
+    reset: () => Promise.resolve(),
+    type: () => Promise.resolve(),
+    press: () => Promise.resolve(),
+    blur: () => Promise.resolve(),
+    click: () => Promise.resolve(),
+    focusPath: () => Promise.resolve([]),
+    navigateAwayAndBack: () => Promise.resolve(false),
   };
 }
