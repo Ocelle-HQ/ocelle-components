@@ -35,10 +35,8 @@ export class ListDetailMeasure {
   constructor(grid: () => HTMLElement | null) {
     this.#grid = grid;
     this.sheet.replaceSync(".sizer {} .grid {}");
-    const [sizer, gridRule] = [...this.sheet.cssRules] as CSSStyleRule[];
-    if (sizer === undefined || gridRule === undefined) throw new Error("list-detail: the figure rules are missing");
-    this.#sizerRule = sizer;
-    this.#gridRule = gridRule;
+    this.#sizerRule = this.sheet.cssRules.item(0) as CSSStyleRule;
+    this.#gridRule = this.sheet.cssRules.item(1) as CSSStyleRule;
   }
 
   /** Observes the light DOM of `elements` (the assigned elements of every pane), in place of what it observed before. */
@@ -61,17 +59,19 @@ export class ListDetailMeasure {
     const grid = this.#grid();
     if (grid === null) return;
     passes += 1;
-    const tier = grid.getAttribute("data-tier");
+    // The element renders the grid with its tier, so the attribute is always there to restore.
+    const tier = String(grid.getAttribute("data-tier"));
     grid.setAttribute("data-tier", "max");
     const max = grid.getBoundingClientRect().width;
     grid.setAttribute("data-tier", "min");
     const min = grid.getBoundingClientRect().width;
-    if (tier === null) grid.removeAttribute("data-tier");
-    else grid.setAttribute("data-tier", tier);
+    grid.setAttribute("data-tier", tier);
+    // Stryker disable next-line ConditionalExpression: equivalent, writing the figure in force again changes no style
     if (max !== this.#max) {
       this.#max = max;
       this.#sizerRule.style.setProperty("inline-size", `${String(max)}px`);
     }
+    // Stryker disable next-line ConditionalExpression: equivalent, writing the figure in force again changes no style
     if (min !== this.#min) {
       this.#min = min;
       this.#gridRule.style.setProperty("min-inline-size", `${String(min)}px`);

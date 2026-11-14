@@ -43,6 +43,8 @@ const rules = [
   ".wide > .w30 { inline-size: 40rem; }",
   ".row { display: flex; inline-size: 1196px; }",
   ".row-n { display: flex; inline-size: 636px; }",
+  ".row-s { display: flex; inline-size: 200px; }",
+  ".half { transform: scale(0.5); transform-origin: 0 0; }",
   ".dialog { max-inline-size: var(--ocelle-dialog-max-inline); }",
   ".table-n { inline-size: 636px; }",
   ".clip { overflow: hidden; }",
@@ -721,5 +723,80 @@ export const listDetailScenarios: readonly ListDetailScenario[] = [
       return { noList: await panes(driver, "e1"), noDetail: await panes(driver, "e2") };
     },
     expected: { noList: threeR, noDetail: threeR },
+  },
+];
+
+// ---------------------------------------------------------------------------------------------------------------
+// Guards added after the green implementation, on paths no red scenario reached (the mutants of the element's inline
+// padding and borders, its first inspector state and the measured min-content figure that survived the first mutation
+// run; reviews/phase-4/plants.md § Guards). The surviving mutants are their proof that they can fail.
+
+export const listDetailGuards: readonly ListDetailScenario[] = [
+  {
+    name: "US3 guard: the tier follows the element's border-box inline size: with 20 px inline padding and 2 px inline borders on the host in Frame W (876 px border box, 832 px content box), collapse-below 876px gives two columns and 877px one (FR-025)",
+    base: false,
+    run: async (driver) => {
+      await page(driver, "W", `${framed("e", "W", ' collapse-below="876px"')}${framed("f", "W", ' collapse-below="877px"')}`, {
+        extra: "#e, #f { padding-inline: 20px; border-inline: 2px solid; }",
+      });
+      return { e: await layout(driver, "e"), f: await layout(driver, "f"), width: (await driver.box("e")).width };
+    },
+    expected: { e: "two", f: "one: list", width: 876 },
+  },
+  {
+    name: "US3 guard: an empty list-detail in Frame R, with nothing slotted, draws the list track (288 px) and the detail (908 px) and no inspector track (FR-024)",
+    base: false,
+    run: async (driver) => {
+      await page(driver, "R", framed("e", "R", "", ""));
+      return panes(driver, "e");
+    },
+    expected: { list: pane(0, 288), detail: pane(288, 908), inspector: null, stacked: false },
+  },
+  {
+    name: "US3 guard: in a 200 px row the element is as wide as its one-column min-content, the 30rem detail block (480 px), and shows one column (FR-025)",
+    base: false,
+    run: async (driver) => {
+      await page(driver, "R", `<div class="row-s">${listDetail("s", "", sized("s"))}</div>`);
+      return { width: Math.round((await driver.box("s")).width), layout: await layout(driver, "s") };
+    },
+    expected: { width: 480, layout: "one: list" },
+  },
+  {
+    name: "US3 guard: the tier follows the element's layout size, not its transformed box: in Frame R scaled by half, it shows three columns, also after the host sets detail-open (FR-025)",
+    base: false,
+    run: async (driver) => {
+      await page(driver, "R", framed("t", "R", "", undefined, ' class="half"'));
+      const first = await layout(driver, "t");
+      await driver.setAttribute("t", "detail-open", "");
+      return { first, open: await layout(driver, "t"), box: Math.round((await driver.box("t")).width) };
+    },
+    expected: { first: "three", open: "three", box: 598 },
+  },
+  {
+    name: "US3 guard: a host-set tier change measures first: in the 1196 px row with narrow, after an unseen class swap makes the detail block 40rem, removing narrow shows three columns at 1196 px, the 40rem block measured before the new tier is applied (FR-025)",
+    base: false,
+    run: async (driver) => {
+      await page(driver, "R", `<div class="row">${listDetail("s", " narrow", sized("s", '<div id="s-detail"><div class="w30"></div></div>'))}</div>`);
+      await driver.setAttribute("s-detail", "class", "wide");
+      const unseen = Math.round((await driver.box("s")).width);
+      await driver.setAttribute("s", "narrow", null);
+      return { unseen, width: Math.round((await driver.box("s")).width), layout: await layout(driver, "s") };
+    },
+    expected: { unseen: 1073, width: 1196, layout: "three" },
+  },
+  {
+    name: "US3 guard: with focus on a pane itself, which took it at a switch, the next switch moves it on: removing detail-open moves focus from the detail pane to the list pane, and setting it again from the list pane to the detail pane (FR-028)",
+    base: false,
+    run: async (driver) => {
+      await page(driver, "N", `${before}${framed("n", "N")}`);
+      await driver.tabWalk("before", "n-l0");
+      await driver.setAttribute("n", "detail-open", "");
+      const moved = await driver.activeElement();
+      await driver.setAttribute("n", "detail-open", null);
+      const back = { active: await driver.activeElement(), tabindex: await wrapperTabindex(driver, "n") };
+      await driver.setAttribute("n", "detail-open", "");
+      return { moved, back, again: { active: await driver.activeElement(), tabindex: await wrapperTabindex(driver, "n") } };
+    },
+    expected: { moved: "n >> div.pane.detail", back: { active: "n >> div.pane.list", tabindex: ["-1", null, null] }, again: { active: "n >> div.pane.detail", tabindex: [null, "-1", null] } },
   },
 ];

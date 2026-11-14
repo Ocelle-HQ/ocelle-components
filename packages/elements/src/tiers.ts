@@ -29,10 +29,12 @@ const grammar = /^(?:0|([0-9]+(?:\.[0-9]+)?)(px|rem|em))$/i;
 
 /** The length a `*-below` value gives after trimming ASCII whitespace, or none when it is not an accepted form. */
 export function parseLength(value: string | null | undefined): Length | undefined {
+  // Stryker disable next-line StringLiteral: equivalent, any text the grammar rejects gives none, as an absent value does
   const match = grammar.exec((value ?? "").replace(ascii, ""));
   if (match === null) return undefined;
   const [, number, unit] = match;
-  if (number === undefined || unit === undefined) return { value: 0, unit: "px" };
+  // The unitless 0 matches neither group.
+  if (unit === undefined) return { value: 0, unit: "px" };
   return { value: Number(number), unit: unit.toLowerCase() as Length["unit"] };
 }
 

@@ -20,6 +20,9 @@ import { ListDetailMeasure } from "./list-detail-measure.ts";
 import { chooseTier, publishedCollapse, publishedInspectorCollapse, shownPanes, threshold } from "./tiers.ts";
 import type { Pane, Tier } from "./tiers.ts";
 
+/** The pane of each slot name; a child with another slot name is in no pane. */
+const paneOfSlot: Readonly<Record<string, Pane | undefined>> = { "": "detail", list: "list", inspector: "inspector" };
+
 /** The properties whose change runs the pass synchronously before the tier is applied (research.md R-13). */
 const hostSet = ["narrow", "detailOpen", "collapseBelow", "inspectorBelow"] as const;
 
@@ -188,16 +191,18 @@ export class OcelleListDetail extends LitElement {
 
   readonly #measure = new ListDetailMeasure(() => this.renderRoot.querySelector<HTMLElement>(".grid"));
   readonly #resize = new ResizeObserver((entries) => {
-    const probe = entries.at(-1)?.borderBoxSize[0]?.inlineSize;
+    const probe = entries.at(-1)?.contentBoxSize[0]?.inlineSize;
     if (probe === undefined) return;
     const style = getComputedStyle(this);
     const edges = ["padding-inline-start", "padding-inline-end", "border-inline-start-width", "border-inline-end-width"].reduce((sum, name) => sum + Number.parseFloat(style.getPropertyValue(name)), 0);
     const size = probe + edges;
+    // Stryker disable next-line ConditionalExpression: equivalent, an update with the size in force chooses the same tier
     if (size === this.#measured) return;
     this.#measured = size;
     this.requestUpdate();
   });
   #measured = 0;
+  // Stryker disable next-line BooleanLiteral: equivalent, connectedCallback reads the inspector slot before the first render
   #hasInspector = false;
   #tier: Tier = "one";
   #shown: readonly Pane[] = ["list", "detail", "inspector"];
@@ -220,15 +225,14 @@ export class OcelleListDetail extends LitElement {
 
   override connectedCallback(): void {
     super.connectedCallback();
-    if (this.hasUpdated) {
-      const probe = this.renderRoot.querySelector(".probe");
-      if (probe !== null) this.#resize.observe(probe, { box: "border-box" });
-      this.#observeSlots();
-    }
+    // Before the first render the shadow root holds no probe and no slot yet; firstUpdated observes them then.
+    this.#observeShadow();
   }
 
   override disconnectedCallback(): void {
+    // Stryker disable next-line CallExpression: equivalent, Lit's own disconnection only tells controllers and async directives, and the element has neither
     super.disconnectedCallback();
+    // Stryker disable next-line CallExpression: equivalent, a detached probe reports no size to choose a tier from, and connecting observes it again
     this.#resize.disconnect();
     this.#measure.disconnect();
   }
@@ -264,15 +268,15 @@ export class OcelleListDetail extends LitElement {
   }
 
   protected override firstUpdated(): void {
-    const probe = this.renderRoot.querySelector(".probe");
-    if (probe !== null) this.#resize.observe(probe, { box: "border-box" });
+    this.#observeShadow();
   }
 
   protected override updated(): void {
     const target = this.#focusTo;
     this.#focusTo = undefined;
+    // Stryker disable next-line ConditionalExpression: equivalent, ".pane.undefined" matches no wrapper, so nothing is focused either way
     if (target === undefined) return;
-    const pane = this.renderRoot.querySelector<HTMLElement>(`.${target}`);
+    const pane = this.renderRoot.querySelector<HTMLElement>(`.pane.${target}`);
     if (pane === null) return;
     pane.setAttribute("tabindex", "-1");
     pane.focus();
@@ -282,16 +286,12 @@ export class OcelleListDetail extends LitElement {
   #focusedPane(): Pane | undefined {
     const active = document.activeElement;
     if (active === null) return undefined;
-    if (active === this) {
-      const inner = this.shadowRoot?.activeElement?.closest(".pane");
-      return inner === null || inner === undefined ? undefined : this.#paneOf(inner);
-    }
+    if (active === this) return this.#paneOf(this.shadowRoot?.activeElement?.closest(".pane") ?? null);
     if (!this.contains(active)) return undefined;
     let child: Element = active;
     while (child.parentElement !== this && child.parentElement !== null) child = child.parentElement;
-    const slot = child.getAttribute("slot") ?? "";
-    if (slot === "") return "detail";
-    return slot === "list" || slot === "inspector" ? slot : undefined;
+    // The pane a child of the host is slotted into, by its slot attribute: known before the first render assigns it.
+    return paneOfSlot[child.getAttribute("slot") ?? ""];
   }
 
   #paneOf(wrapper: Element | null): Pane | undefined {
@@ -299,9 +299,9 @@ export class OcelleListDetail extends LitElement {
     return (["list", "detail", "inspector"] as const).find((pane) => wrapper.classList.contains(pane));
   }
 
+  /** A wrapper loses the `tabindex` it took for a focus move when focus leaves it (a focusout inside it finds none). */
   readonly #rest = (event: FocusEvent): void => {
-    const pane = event.currentTarget as HTMLElement;
-    if (event.composedPath()[0] === pane) pane.removeAttribute("tabindex");
+    (event.currentTarget as HTMLElement).removeAttribute("tabindex");
   };
 
   readonly #slotChanged = (): void => {
@@ -309,15 +309,19 @@ export class OcelleListDetail extends LitElement {
     this.#measure.schedule();
   };
 
+  /** Observes the probe's size and the slotted elements, once the shadow root holds them. */
+  #observeShadow(): void {
+    const probe = this.renderRoot.querySelector(".probe");
+    if (probe !== null) this.#resize.observe(probe);
+    this.#observeSlots();
+  }
+
   #observeSlots(): void {
     const slots = [...this.renderRoot.querySelectorAll("slot")];
     this.#measure.observe(slots.flatMap((slot) => slot.assignedElements()));
     const inspector = slots.find((slot) => slot.name === "inspector");
-    const has = (inspector?.assignedElements().length ?? 0) > 0;
-    if (has !== this.#hasInspector) {
-      this.#hasInspector = has;
-      this.requestUpdate();
-    }
+    this.#hasInspector = (inspector?.assignedElements().length ?? 0) > 0;
+    this.requestUpdate();
   }
 }
 

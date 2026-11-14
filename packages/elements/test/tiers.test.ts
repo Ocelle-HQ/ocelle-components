@@ -16,6 +16,7 @@ describe("parseLength(value)", () => {
     { value: "0rem", length: { value: 0, unit: "rem" } },
     { value: "56rem", length: { value: 56, unit: "rem" } },
     { value: "55.5rem", length: { value: 55.5, unit: "rem" } },
+    { value: "55.25rem", length: { value: 55.25, unit: "rem" } },
     { value: "880px", length: { value: 880, unit: "px" } },
     { value: "55em", length: { value: 55, unit: "em" } },
     { value: "56REM", length: { value: 56, unit: "rem" } },

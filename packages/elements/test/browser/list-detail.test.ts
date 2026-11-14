@@ -1,6 +1,6 @@
 import type { Browser, Page } from "playwright";
 import { afterAll, beforeAll, describe, expect, inject, it } from "vitest";
-import { listDetailScenarios } from "../scenarios/list-detail.ts";
+import { listDetailGuards, listDetailScenarios } from "../scenarios/list-detail.ts";
 import { fixtureDriver } from "./driver.ts";
 import { clean, launch, serve, visit } from "./serve.ts";
 import type { Served } from "./serve.ts";
@@ -34,7 +34,7 @@ function started(): { readonly browser: Browser; readonly origin: string } {
 }
 
 describe("ocelle-list-detail on the strict-CSP fixture with the browser build (US3)", { timeout: 120_000 }, () => {
-  it.each(listDetailScenarios)("$name", async ({ run, expected, base }) => {
+  it.each([...listDetailScenarios, ...listDetailGuards])("$name", async ({ run, expected, base }) => {
     const { browser, origin } = started();
     const page = await visit(browser, origin, base ? "list-detail-base.html" : "list-detail.html", ["ocelle-elements.js", "ocelle-test-list-detail.js"]);
     const observed = await run(fixtureDriver(page.page, page.log, base));
