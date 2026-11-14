@@ -43,7 +43,7 @@ describe("the module build (dist/*.js)", () => {
     const own = (specifier: string): boolean => specifier.startsWith("./") && files.includes(specifier.slice(2));
     const lit = (specifier: string): boolean => specifier === "lit" || specifier.startsWith("lit/");
     expect({
-      files: files.filter((name) => ["index.js", "ocelle-icon.js", "ocelle-brand-mark.js", "browser.js"].includes(name)),
+      files: files.filter((name) => ["index.js", "ocelle-icon.js", "ocelle-brand-mark.js", "ocelle-button.js", "browser.js"].includes(name)),
       outside: imported.filter(({ specifier }) => !own(specifier) && !lit(specifier)),
       litImported: imported.some(({ specifier }) => lit(specifier)),
       rootImportsIcon: imported.some(({ name, specifier }) => name === "index.js" && specifier === "./ocelle-icon.js"),
