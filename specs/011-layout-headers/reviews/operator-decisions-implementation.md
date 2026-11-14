@@ -14,3 +14,7 @@ Recorded by the orchestrator; each is the operator's answer (human:jeroennouwsde
    Each phase's red/green check failing only on the five container-engine tests of
    `gates/test/integration/visual.test.ts` goes to the operator as an accept, as phase 1 did
    (`reviews/phase-1/operator-accepted.md`).
+3. **2026-11-14, token and element baselines across a merge of main** (standing rule relayed by the orchestrator):
+   "Apply it at landing". A baseline PNG that conflicts in a merge of main is left out, the merge is finished, and
+   the gap is recorded. The token stories' baselines (`tokens--colour`, `tokens--type`, which list the eyebrow
+   tokens) and the new elements' baselines are regenerated from CI's captures at `/ocelle-land`, under decision 2.

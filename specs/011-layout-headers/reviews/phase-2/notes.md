@@ -39,3 +39,46 @@ The R-12 contrast counts were re-read at the base and are at the places R-12 lis
   ground variant rules inside the query, layout-only variant rules outside), which assert more.
 - The driver gains `listen`, `heard` and `move` (test plumbing for the no-event check of R-13 and the DOM moves of
   R-05), in both harnesses; the readers they forward to are the DOM's own.
+- R-04 gives the actions wrapper `flex: 0 0 auto`. With it, six actions at 320 px stay on one line and overflow the
+  header (the red test "FR-004, many actions at 320 px" fails on it). The wrapper keeps the initial `flex: 0 1 auto`
+  instead: on a line of its own and wider than it, it shrinks to the line and its actions wrap, `--ocelle-space-2`
+  apart. Side by side with the heading nothing changes, since the row wraps before any item shrinks. The source
+  comment of `src/ocelle-section-header.ts` says so; research.md is not changed here.
+- The slotted heading, eyebrow and description are `display: block` (a normal `::slotted()` rule that a page rule
+  beats), so that a `span` eyebrow's border box is its line and the gaps of FR-011 hold when they are measured to the
+  slotted element's border box, as US1-2 asks.
+
+- The heading column is never hidden, so a header with an eyebrow and actions but no heading or description keeps its
+  actions at the inline end (FR-010); the row is hidden when heading, description and actions are all empty, so an
+  eyebrow alone takes no gap under it (FR-005). The wrappers of the unstyled slot parts carry only the `empty` class,
+  so no class name exists that no rule reads.
+- The first mutation run of the green code (`gate:mutation -- --base 296e02d`) had survivors that no test covered: an
+  empty card body, an eyebrow-and-description header, an eyebrow-and-actions header, and the header's
+  `requestUpdate()` on connection (a card copy that never notifies). The tests for them were added to the red commit
+  (amended before the green commit, red.sh run again), and the code changed as the two items above say; the second
+  run has no survivor and one equivalent record (`#compact`'s initial value, set by `willUpdate` before every render).
+
+## Left open
+
+- **T023, baselines part** (operator decision 2 of `reviews/operator-decisions-implementation.md`, "Baselines at
+  landing"): the twelve stories (`storybook/stories/section-header.stories.ts`, `storybook/stories/card.stories.ts`)
+  are written and pass the story test, the 320 px pass and the `axe` gate (66 story-themes, run here). Their visual
+  baselines are not produced: there is no docker or podman in this container. T023 stays open until the baselines come
+  from CI's captures at `/ocelle-land`.
+- The `visual` gate's plant `gates/plants/visual/fail-token-changed` lists every light story-theme that shows
+  `color-ink` and says that a later story adds its line there. The new stories very likely show it (their headings
+  are in `--ocelle-color-ink`), but which story-themes differ can only be measured in the pinned container, so the
+  plant's list is not changed here. It is part of the same open item: `gate:plants` judges the visual plants only
+  where a container engine runs, and the list is updated when the baselines are produced.
+- The token stories' baselines (`tokens--colour.*.png`, `tokens--type.*.png`) change with the four new tokens, since
+  those stories list every token of their group. They are refreshed with the same CI captures.
+
+## Gate plants changed by the new tokens and elements (part of the green commit)
+
+- `gates/plants/contrast/text-below-threshold`: the plant changes `color-ink-muted`, and `color-eyebrow` is its alias,
+  so the eyebrow rows get the same recorded figures and the same three below-threshold findings.
+- `gates/plants/manifest/{fail-lost-attribute,fail-undescribed-*,pass-reordered}`: their copies of the committed
+  manifest regenerated with the two new elements (the same derivation as before: the repository's manifest with the
+  plant's source, minus the icon's `label` attribute, or with its keys reversed).
+- `gates/plants/storybook-build/fail-empty-index`: the two new story files replaced by story files with no story
+  export, as the plant does for the other four.

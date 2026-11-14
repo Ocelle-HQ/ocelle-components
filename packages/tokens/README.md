@@ -52,6 +52,15 @@ group, `--ocelle-measure-reading` (`68ch`) holds prose paragraphs, list items an
 the inline size of the nearest query container: a prose table is one, so it caps the table's caption at the table's
 visible width. Without a query container, `100cqi` falls back to the small viewport's inline size.
 
+### Eyebrow tokens
+
+An eyebrow is the small upper-case label above a heading, or a heading drawn as such a label above a list. Four tokens
+give every eyebrow one look: `--ocelle-font-size-eyebrow` (the `--ocelle-font-size-xs` size, 12 px),
+`--ocelle-font-weight-eyebrow` (the `--ocelle-font-weight-strong` weight), `--ocelle-tracking-eyebrow` (`0.08em`, the
+same in both themes) and `--ocelle-color-eyebrow` (the `--ocelle-color-ink-muted` colour in both themes, checked as
+text on every main ground). The three aliases follow their source token. An eyebrow is set in `--ocelle-font-sans`
+with `--ocelle-figures`, never in a monospace family; `@ocelle/elements` draws it upper case with these tokens.
+
 ### Forced colours
 
 The tokens never override the system palette in forced colours: the stylesheet has no `forced-color-adjust: none`,
