@@ -5,8 +5,9 @@
 //
 // - FR-047's counts are a delta from the last `reset()` (each `mount`), taken by one MutationObserver over the document
 //   and every shadow root, open or closed, including roots attached later (`Element.prototype.attachShadow` is wrapped
-//   at install): every element whose `style` attribute is written and every `<style>` element added is remembered, so
-//   a write removed again is still counted. Elements the driver writes itself (`ignore`, the colour probe of
+//   at install): every element whose `style` attribute is written, every element (or descendant of one) that carries a
+//   `style` attribute when it is added, and every `<style>` element added is remembered, so a write removed again is
+//   still counted. Elements the driver writes itself (`ignore`, the colour probe of
 //   `resolveColour`) are left out.
 // - The top layer's order is kept from the synchronous `beforetoggle` events of dialogs and popovers, listened to in
 //   the capture phase on the document and every shadow root; an open element the probe did not see open is placed
@@ -59,6 +60,10 @@ export function installProbe(): void {
         const element = node as Element;
         if (element.localName === "style") added.add(element);
         for (const inside of element.querySelectorAll("style")) added.add(inside);
+        // A write made while the element was detached (Lit's first render commits into a detached fragment) gives no
+        // attribute record, so an element that carries `style` when it is added counts, and so does each descendant.
+        if (element.hasAttribute("style") && !ignored.has(element)) styled.add(element);
+        for (const inside of element.querySelectorAll("[style]")) if (!ignored.has(inside)) styled.add(inside);
       }
     }
   };
