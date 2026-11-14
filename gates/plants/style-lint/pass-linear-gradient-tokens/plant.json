@@ -1,0 +1,4 @@
+{
+  "expect": "pass",
+  "why": "A linear-gradient() of tokens, direction keywords and transparent (mask-image: linear-gradient(to right, transparent, var(--ocelle-color-ink) var(--ocelle-scroller-fade-size))) is allowed: its arguments are classified as at the top level of a value (009 contracts/gates.md § style-lint, research.md R-05)."
+}

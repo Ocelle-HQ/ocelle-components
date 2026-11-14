@@ -1,6 +1,6 @@
 import type { Browser } from "playwright";
 import { afterAll, beforeAll, describe, expect, inject, it } from "vitest";
-import { scrollerScenarios } from "../scenarios/scroller.ts";
+import { scrollerGuards, scrollerScenarios } from "../scenarios/scroller.ts";
 import { fixtureDriver } from "./driver.ts";
 import { clean, launch, serve, visit } from "./serve.ts";
 import type { Served } from "./serve.ts";
@@ -31,7 +31,7 @@ function started(): { readonly browser: Browser; readonly origin: string } {
 }
 
 describe("ocelle-scroller on the strict-CSP fixture with the browser build (US1)", { timeout: 120_000 }, () => {
-  it.each(scrollerScenarios)("$name", async ({ run, expected }) => {
+  it.each([...scrollerScenarios, ...scrollerGuards])("$name", async ({ run, expected }) => {
     const { browser, origin } = started();
     const page = await visit(browser, origin, "scroller.html", ["ocelle-elements.js", "ocelle-test-controls.js"]);
     const observed = await run(fixtureDriver(page.page, page.log));

@@ -182,6 +182,66 @@
           ]
         }
       ]
+    },
+    {
+      "declarations": [
+        {
+          "attributes": [
+            {
+              "default": "undefined",
+              "description": "The name of the strip's group while it overflows, trimmed; empty or whitespace-only counts as none, and without one\nan overflowing strip is a tab stop with no role. Not reflected.",
+              "fieldName": "label",
+              "name": "label",
+              "type": {
+                "text": "string | undefined"
+              }
+            }
+          ],
+          "cssParts": [],
+          "cssProperties": [],
+          "customElement": true,
+          "description": "A horizontal strip that scrolls in the inline direction and is a tab stop and a named group only while it overflows.",
+          "events": [],
+          "kind": "class",
+          "members": [
+            {
+              "attribute": "label",
+              "default": "undefined",
+              "description": "The name of the strip's group while it overflows, trimmed; empty or whitespace-only counts as none, and without one\nan overflowing strip is a tab stop with no role. Not reflected.",
+              "kind": "field",
+              "name": "label",
+              "privacy": "public",
+              "type": {
+                "text": "string | undefined"
+              }
+            }
+          ],
+          "name": "OcelleScroller",
+          "slots": [
+            {
+              "description": "The strip's content.",
+              "name": ""
+            }
+          ],
+          "superclass": {
+            "name": "LitElement",
+            "package": "lit"
+          },
+          "tagName": "ocelle-scroller"
+        }
+      ],
+      "exports": [
+        {
+          "declaration": {
+            "module": "src/ocelle-scroller.ts",
+            "name": "OcelleScroller"
+          },
+          "kind": "js",
+          "name": "OcelleScroller"
+        }
+      ],
+      "kind": "javascript-module",
+      "path": "src/ocelle-scroller.ts"
     }
   ]
 }

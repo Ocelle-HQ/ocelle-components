@@ -119,7 +119,8 @@ taken by the operator; it would take keys a slotted widget may own.
   inline size (content size). A change to slotted content changes the track's size
   even when no assigned element's own size changes, such as text deep in light DOM or an element added inside a slotted
   container.
-- **Slot.** `slotchange` on the default slot (items added or removed).
+- **Slot.** `slotchange` (items added or removed), heard on the scroll box: it bubbles from the default slot, and from
+  any other slot inside the track, up to the box.
 - **Scroll.** A passive `scroll` listener for the edge state.
 
 **Overflow** = `scrollWidth − clientWidth > 1`. With `scrollLeft` (negative under `rtl` in Chromium, as the standard
@@ -206,8 +207,9 @@ engine's scrollable-overflow rules. Padding of a track element is ordinary conte
   - the fade layer (the per-value gradient above) at the block start, `mask-size: 100% <client>px`, where `<client>` is
     the box's `clientHeight`, which excludes the scrollbar;
   - an opaque layer (`linear-gradient(var(--ocelle-color-ink), var(--ocelle-color-ink))`) at the block end,
-    `mask-size: 100% <bar>px`, where `<bar>` is the scrollbar's thickness, `offsetHeight − clientHeight` less the
-    box's block borders (0 px with overlay scrollbars, so the fade layer then covers the whole box).
+    `mask-size: 100% <bar>px`, where `<bar>` is the scrollbar's thickness, `offsetHeight − clientHeight`; the
+    module's stylesheet sets `.region-box { border: 0 }`, so there are no block borders to subtract (0 px with overlay
+    scrollbars, so the fade layer then covers the whole box).
 
   The images, positions, origins, clips, repeat and composite are in the shared `overflowRegionStyles`. The two
   `mask-size` figures are measured layout figures, so they are set in the module's own per-instance constructed

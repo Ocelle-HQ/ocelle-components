@@ -863,6 +863,9 @@ describe("rawValues: linear-gradient() arguments are classified", () => {
     { value: "radial-gradient(transparent, var(--ocelle-color-ink))", raw: ["radial-gradient(transparent, var(--ocelle-color-ink))"] },
     { value: "repeating-linear-gradient(transparent, var(--ocelle-color-ink))", raw: ["repeating-linear-gradient(transparent, var(--ocelle-color-ink))"] },
     { value: "conic-gradient(transparent, var(--ocelle-color-ink))", raw: ["conic-gradient(transparent, var(--ocelle-color-ink))"] },
+    // A guard added after the green change (its surviving mutant, the arguments read as inside calc(), is its proof): a
+    // unitless number in a gradient is raw, as at the top level of a value.
+    { value: "linear-gradient(to right, transparent, var(--ocelle-color-ink) 2)", raw: ["2"] },
   ])("mask-image: $value is raw: $raw", ({ value, raw }) => {
     expect(rawValues("mask-image", value)).toEqual(raw);
   });

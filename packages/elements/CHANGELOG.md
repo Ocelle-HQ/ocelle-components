@@ -17,8 +17,15 @@ entry points and the browser build's file path (constitution VII).
   `aria-label` names it; its properties `ground` and `tone` (reflected) and `label`.
 - In the README, the slot convention for icons in controls that later controls follow: the `icon` and `trailing`
   slots, their size, alignment, gap and colour rules and the naming rule.
+- `ocelle-scroller`, a horizontal strip that scrolls in the inline direction and is a tab stop, and with a `label` a
+  named group, only while its content overflows, with fades on the sides with content off-screen, arrow-key scrolling
+  and focus handling; its property `label` and its default slot; its entry point `@ocelle/elements/ocelle-scroller.js`.
+- In the README, the overflow-region module convention: the internal module's inputs, outputs, effects, lifecycle and
+  structure, which any later element with a scroll region uses; the Host ARIA rule stated per element; and the styles
+  rule that allows one per-instance stylesheet of measured figures.
 - Entry points: `@ocelle/elements` (the package root, defines every element), `@ocelle/elements/ocelle-icon.js`
   (defines `ocelle-icon` only), `@ocelle/elements/ocelle-brand-mark.js` (defines `ocelle-brand-mark` only),
+  `@ocelle/elements/ocelle-scroller.js` (defines `ocelle-scroller` only),
   `@ocelle/elements/browser.js` (the browser build) and `@ocelle/elements/custom-elements.json` (the manifest, also
   named by the `customElements` field).
 - The browser build's file, `dist/browser/ocelle-elements.js`: Lit inside, imports nothing, for hosts without a

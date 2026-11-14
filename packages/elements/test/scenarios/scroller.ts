@@ -160,6 +160,18 @@ async function ringSides(driver: Driver, id: string, colour: Rgb): Promise<boole
 
 const focusColour = (theme: Palette): Rgb => rgb(tokenColour("color-focus", theme));
 
+/**
+ * The colour a forced-colours ring in `Highlight` paints over `Canvas`: Chromium's emulated light palette gives
+ * `Highlight` as a translucent colour (`rgba(5, 0, 73, 0.8)`), and everything under the ring is `Canvas` in forced
+ * colours, so the painted pixel is the one composited over `Canvas`.
+ */
+async function highlightOnCanvas(driver: Driver): Promise<Rgb> {
+  const parts = (await driver.resolveColour("Highlight")).match(/[\d.]+/g)?.map(Number) ?? [];
+  const [r = 0, g = 0, b = 0, alpha = 1] = parts;
+  const canvas = rgb(await driver.resolveColour("Canvas"));
+  return [r, g, b].map((channel, index) => Math.round(channel * alpha + (canvas[index] ?? 0) * (1 - alpha))) as unknown as Rgb;
+}
+
 // ---------------------------------------------------------------------------------------------------------------
 // Geometry.
 
@@ -271,7 +283,8 @@ export function regionScenarios(region: Region): Scenario[] {
           await driver.style("w", "inline-size", "100px");
           return { active: await driver.activeElement(), box: (await boxAttributes(driver, "s")).tabindex, frame: await shadowAttribute(driver, "s", "region-frame", "tabindex") };
         };
-        const skipped = '<button id="disabled" class="item" type="button" disabled>d</button><span inert><a id="inert" class="item" href="#inert">i</a></span><a id="gone" class="item" href="#gone" hidden>g</a><a id="unseen" class="item invisible" href="#unseen">u</a>';
+        // The hidden link carries no `.item` class: that rule's `display` would beat the user-agent `[hidden]` rule.
+        const skipped = '<button id="disabled" class="item" type="button" disabled>d</button><span inert><a id="inert" class="item" href="#inert">i</a></span><a id="gone" href="#gone" hidden>g</a><a id="unseen" class="item invisible" href="#unseen">u</a>';
         const observed: Record<string, unknown> = {
           link: await handover(`${skipped}${link("k")}`),
           shadow: await handover('<test-shadow-button id="sb"></test-shadow-button>'),
@@ -282,8 +295,7 @@ export function regionScenarios(region: Region): Scenario[] {
         await driver.style("w", "inline-size", "1000px");
         const again = { active: await driver.activeElement(), box: (await boxAttributes(driver, "s")).tabindex, ring: await ringSides(driver, "s", focusColour("light")) };
         await driver.forcedColors("active", "light");
-        const highlight = rgb(await driver.resolveColour("Highlight"));
-        const forced = await ringSides(driver, "s", highlight);
+        const forced = await ringSides(driver, "s", await highlightOnCanvas(driver));
         await driver.forcedColors("none");
         await driver.press("Tab");
         return { ...observed, rest, again, forced, left: { active: await driver.activeElement(), frame: await shadowAttribute(driver, "s", "region-frame", "tabindex") } };
@@ -551,7 +563,7 @@ export const scrollerScenarios: readonly Scenario[] = [
       await driver.forcedColors("active", "light");
       await driver.click("before", { x: 2, y: 2 });
       await focusBox(driver, "s");
-      const forced = await ringSides(driver, "s", rgb(await driver.resolveColour("Highlight")));
+      const forced = await ringSides(driver, "s", await highlightOnCanvas(driver));
       await driver.forcedColors("none");
       return { keyboard, clicked, forced };
     },
@@ -782,5 +794,76 @@ export const scrollerScenarios: readonly Scenario[] = [
     },
     // `static styles` is the element's own sheet and `overflowRegionStyles`: two shared, one per instance (R-05, R-13).
     expected: { sheets: { elements: 2, perRoot: [3], distinct: 4, styleElements: 0 }, styled: 0 },
+  },
+];
+
+// ---------------------------------------------------------------------------------------------------------------
+// Guards added after the green implementation, on paths no red scenario reached (the mutants of the module's
+// lifecycle and focus code that survived the first mutation run; reviews/phase-2/plants.md § Guards). The surviving
+// mutants are their proof that they can fail.
+
+const wideRow = `${links("k", 6)}<button id="wide" class="wide" type="button">wide</button>${links("m", 6)}`;
+
+export const scrollerGuards: readonly Scenario[] = [
+  {
+    name: "US1 guard: a label set by property on an overflowing scroller renames its group at once, and a blank one leaves a tab stop with no role (FR-010)",
+    run: async (driver) => {
+      await page(driver, strip("s", links("k", 12)));
+      await driver.setProperty("s", "label", "Tags of WP-12");
+      const renamed = await boxAttributes(driver, "s");
+      await driver.setProperty("s", "label", " ");
+      return { renamed, blank: await boxAttributes(driver, "s") };
+    },
+    expected: { renamed: { tabindex: "0", role: "group", "aria-label": "Tags of WP-12" }, blank: { tabindex: "0", role: null, "aria-label": null } },
+  },
+  {
+    name: "US1 guard: overflow that ends while focus is outside the strip moves no focus, beside a twin whose focused box hands focus over (FR-004)",
+    run: async (driver) => {
+      await page(driver, `${before}${strip("s", '<span id="w" class="solid"></span><a id="k" class="item" href="#k">k</a>')}`);
+      await driver.click("before", { x: 2, y: 2 });
+      await driver.style("w", "inline-size", "100px");
+      const outside = await driver.activeElement();
+      await driver.style("w", "inline-size", "1000px");
+      await focusBox(driver, "s");
+      await driver.style("w", "inline-size", "100px");
+      return { outside, inside: await driver.activeElement() };
+    },
+    expected: { outside: "before", inside: "k" },
+  },
+  {
+    name: "US1 guard: focusing the box by keyboard does not scroll it, while a link focused by keyboard is cleared (FR-001)",
+    run: async (driver) => {
+      await page(driver, `${before}${strip("s", links("k", 12))}`);
+      await driver.setScrollLeft(boxOf("s"), 300);
+      await focusBox(driver, "s");
+      const box = await driver.scrollLeft(boxOf("s"));
+      await driver.press("Tab");
+      return { box, link: await driver.scrollLeft(boxOf("s")) };
+    },
+    // Link 0's ring box ends at 90 px: clearing it from 300 px scrolls to the start.
+    expected: { box: 300, link: 0 },
+  },
+  {
+    name: "US1 guard: the fallback's suppression ends when focus leaves the strip, holds over a scroll of 1 px and ends on one of 2 px, and a wide button focused by script where it already sits is suppressed at once (FR-001, R-06)",
+    run: async (driver) => {
+      await page(driver, `${before}${strip("s", wideRow, ' label="Filters"', ' data-ground="canvas"')}`);
+      const fade = (): Promise<string | null> => shadowAttribute(driver, "s", "region-box", "data-fade");
+      await driver.tabWalk("before", "wide");
+      const focused = await fade();
+      await driver.click("before", { x: 2, y: 2 });
+      const left = await fade();
+      await driver.tabWalk("before", "wide");
+      await driver.wheel("s", 1);
+      const oneDifferent = [await driver.scrollLeft(boxOf("s")), await fade()];
+      await driver.wheel("s", 1);
+      const twoDifferent = [await driver.scrollLeft(boxOf("s")), await fade()];
+      await driver.tabWalk("before", "s >> div.region-box");
+      await driver.setScrollLeft(boxOf("s"), 504);
+      await driver.focus("wide");
+      return { focused, left, oneDifferent, twoDifferent, script: [await driver.scrollLeft(boxOf("s")), await fade()] };
+    },
+    // The wide button's ring box starts at 504 px of the content (six links of 84 px); aligned there it is suppressed
+    // at the start ("end" only); a wheel of 1 px leaves the box within 1 px of where the module wrote it.
+    expected: { focused: "end", left: "both", oneDifferent: [505, "end"], twoDifferent: [506, "both"], script: [504, "end"] },
   },
 ];

@@ -1,8 +1,9 @@
 # @ocelle/elements
 
 The Ocelle web components: standards-based custom elements (Lit 3) that work in any page, a server-rendered page
-under a strict Content Security Policy, a Svelte shell or a desktop webview. This release has two elements:
-`ocelle-icon`, with a set of thirteen icons, and `ocelle-brand-mark`, the Ocelle rosette.
+under a strict Content Security Policy, a Svelte shell or a desktop webview. This release has three elements:
+`ocelle-icon`, with a set of thirteen icons, `ocelle-brand-mark`, the Ocelle rosette, and `ocelle-scroller`, a
+horizontal strip that is a tab stop only while it overflows.
 
 ## Entry points
 
@@ -11,6 +12,7 @@ under a strict Content Security Policy, a Svelte shell or a desktop webview. Thi
 | `@ocelle/elements` | `dist/index.js` | every element; for hosts with a bundler |
 | `@ocelle/elements/ocelle-icon.js` | `dist/ocelle-icon.js` | `ocelle-icon` only; for hosts with a bundler |
 | `@ocelle/elements/ocelle-brand-mark.js` | `dist/ocelle-brand-mark.js` | `ocelle-brand-mark` only; for hosts with a bundler |
+| `@ocelle/elements/ocelle-scroller.js` | `dist/ocelle-scroller.js` | `ocelle-scroller` only; for hosts with a bundler |
 | `@ocelle/elements/browser.js` | `dist/browser/ocelle-elements.js` | every element, Lit inside; for hosts without a bundler |
 | `@ocelle/elements/custom-elements.json` | `custom-elements.json` | the manifest, also named by the `customElements` field |
 
@@ -184,11 +186,51 @@ A host then slots its icons with no size of its own (here into `ocelle-button`, 
 The convention is proven on a test-only host, `ocelle-test-host` (`test/fixtures/test-host.ts`), which ships in no
 package; the controls of later features follow it.
 
+## `ocelle-scroller`
+
+`ocelle-scroller` lays out its slotted content in one box that scrolls in the inline direction only; it is a tab stop
+and a named group only while its content overflows. It has one default slot, the strip's content.
+
+- `label` (attribute and property, not reflected): the name of the scroller's group while it overflows, trimmed; empty
+  or whitespace-only counts as none.
+- **Tokens.** `ocelle-scroller` reads the tokens `--ocelle-focus-offset`, `--ocelle-focus-width`,
+  `--ocelle-color-focus`, `--ocelle-scroller-fade-size`, `--ocelle-color-ink` (as a mask colour only) and
+  `--ocelle-border-width` (the forced-colours edge line).
+- **Tree.** While it overflows and has a name, the scroller is one `group` node with that name, holding its content; it
+  is not a landmark. While it overflows without a name it is a tab stop with no role and no name. While its content
+  fits it adds no tab stop and no role, beyond the `generic` node the host gets from an `id` or a host `aria-label`.
+- **Keyboard.** While it overflows, the scroller is a tab stop before its content. `ArrowLeft` and `ArrowRight` on the
+  focused scroller, without a modifier, scroll it 40 px with no animation; `Home`, `End`, arrows with Alt, Ctrl, Meta
+  or Shift, and every key pressed while a slotted control has focus get the browser's default.
+- **Focus.** When the content stops overflowing while the scroller has focus, focus moves to its first focusable
+  slotted element, also inside a slotted element's open shadow root, and otherwise to the scroller itself, which shows
+  the focus ring inside its box. A slotted control focused with a focus ring is scrolled into view with its ring, at
+  least the fade depth from each edge that fades; a control too wide for that keeps the fade off the side it would
+  cover until focus leaves it or the box is scrolled.
+- **Fades.** Each inline edge with content off-screen fades the content toward transparency over
+  `--ocelle-scroller-fade-size`; in forced colours it shows a 1 px `CanvasText` line instead. The fades follow the
+  inline direction and are correct on every main ground in both themes.
+- **Scrollbar.** The platform's horizontal scrollbar is kept: where it takes space it adds its thickness to the
+  scroller's block size, and it is never faded. The box keeps the ring room of its slotted controls on every side.
+- **Motion.** Under reduced motion nothing the scroller does animates. The browser's own scrolling of the strip on a
+  key pressed while a slotted control has focus is not the scroller's and may animate, also under reduced motion; the
+  element does not control it.
+- **Naming.** Always give a scroller a `label`. A scroller repeated per item takes a name that identifies the item, such
+  as "Tags of WP-12", not the same name on every card.
+- **Sizing.** In a shrink-to-fit host (a default flex item, a dialog, a table cell) the scroller takes its content's
+  size and does not overflow, so the page may scroll sideways instead: give the scroller a definite or maximum inline
+  size there so that it scrolls.
+- `ocelle-scroller` has no event, CSS part or CSS custom property.
+
 ## Host ARIA
 
-A host `aria-label` names the element as `label` does, and when present it decides alone: a blank host `aria-label`
-leaves the element unlabelled even with a `label`. When both are set, the host `aria-label` is the name; removing it
-falls back to `label`. Chromium uses a host `aria-label` as written, surrounding spaces included, so pass it trimmed;
+A host `aria-label` names the element as `label` does. For `ocelle-icon` and `ocelle-brand-mark`, when present it
+decides alone: a blank host `aria-label` leaves the element unlabelled even with a `label`. For `ocelle-scroller`,
+`ocelle-workflow-board` and `ocelle-workflow-lane` a blank host `aria-label` counts as absent, so `label` still names
+the element: Chromium names a host from a present `aria-label` and does not fall back from a blank one, so these
+elements put their role and name on a node in their shadow root, named by the host's non-blank `aria-label`, trimmed,
+or else by `label`. `ocelle-list-detail` takes no name: a host `aria-label` is not used. When both are set, the host
+`aria-label` is the name; removing it falls back to `label`. Chromium uses a host `aria-label` as written, surrounding spaces included, so pass it trimmed;
 the element never rewrites it. An unknown icon name exposes nothing, named or not.
 
 A host `aria-hidden="true"` hides the element, labelled or not. A host `hidden` attribute removes the element: no box
@@ -212,7 +254,9 @@ newest feature the elements use:
 - The `lh` unit: Chromium 109 (the slot convention);
 - The `scale` property: Chromium 104 (the mirroring);
 - Constructable stylesheets (`adoptedStyleSheets`): Chromium 73, WebKit 16.4 (every element's styles; below it Lit
-  falls back to `<style>` elements, which the strict CSP blocks).
+  falls back to `<style>` elements, which the strict CSP blocks);
+- `mask-image`, and `mask-size`, `mask-position`, `mask-origin`, `mask-clip`, `mask-repeat` and `mask-composite`,
+  unprefixed: Chromium 120, WebKit 15.4 (the scroller's fades).
 
 An element that uses a feature newer than the floor raises the floor in this section, the one list of the floor
 features, and records the feature in its own feature's research.
@@ -237,8 +281,12 @@ description and `@default undefined`: the manifest takes the tag name and the de
 observes a standard attribute such as `aria-label` adds it to `observedAttributes` without declaring a property, so
 the manifest does not list it.
 
-**Styles.** An element's styles are one `css` tagged template assigned to `static styles`, built only from `--ocelle-*`
-tokens and the values the `style-lint` gate allows, so every instance adopts one shared stylesheet. No template has a
+**Styles.** An element's styles are its shared `static styles`, one or more `css` tagged templates built only from
+`--ocelle-*` tokens and the values the `style-lint` gate allows, which every instance adopts, plus at most one
+per-instance constructed stylesheet that holds only px figures the element measured from layout. The per-instance sheet
+never holds a value from an attribute, a property, a token's text or slotted text, and it is written through
+`CSSStyleRule.style`, never through an element's `style`: the overflow-region module's mask size and
+`ocelle-list-detail`'s intrinsic sizes are its two uses. No template has a
 `style` attribute or a `<style>` element. Every element's styles hold `:host([hidden]) { display: none; }` beside its
 `:host` display rule, which would otherwise beat the user-agent `[hidden]` rule. Variant rules go inside
 `@media not (forced-colors: active)`, so a forced-colours rule never has to outrank a variant selector.
@@ -261,6 +309,31 @@ written once in `test/scenarios/` against a driver and run twice, in process on 
 (the `elements` project, which Stryker mutates) and on the built browser build on strict-CSP fixture pages by
 `test/browser/*.test.ts` (the `elements-browser` project). Node tests of the generator, the configuration and this
 README are in `test/node/`; tests that run the build or `pnpm pack` are in `test/build/`.
+
+**Overflow region.** The overflow-region module (`src/overflow-region.ts`, internal) gives an element a scroll box that
+is a tab stop and a named group, or region, only while it overflows: `ocelle-scroller` uses it, and so does any later
+element with a scroll region. Its interface:
+
+- Inputs: the host element (`new OverflowRegion(host, { box, role, step })`), `box`, a function that returns the
+  scroll box in the host's shadow root, `role`, `"group"` by default or `"region"`, `step`, 40 px by default, and the
+  label through `setLabel(label)`; the host lists `aria-label` in `observedAttributes` and re-renders on its change.
+- Outputs, read by the host's render: `overflowing`, `offStart`, `offEnd`, `fadeStart`, `fadeEnd`, `fadeAttribute`
+  (`"start"`, `"end"`, `"both"` or undefined) and `name`; the module requests an update when one changes.
+- Effects, on the scroll box and the module's own shadow nodes only, never on the host: the box's `tabindex`, `role`
+  and `aria-label`, the arrow keys on the box, the focus clearance of slotted controls and the focus handover when
+  overflow ends.
+- Lifecycle: it adds its listeners and its `ResizeObserver` when the host connects, follows the box after each update,
+  and stops when the host disconnects; it emits no event.
+- Structure. The host renders `.region-frame` holding `.region-box` (with `data-fade` bound through `ifDefined`), whose
+  `.region-track` holds the content, then `.region-ring` and two `.region-edge` elements (`start`, `end`), all but the
+  box `aria-hidden`, and adds `overflowRegionStyles` to its `static styles`. The host may put its own content model
+  inside `.region-track`, and add rules for the track and its slotted children in its own styles.
+- An element that uses the module does not set `tabindex`, `role` or `aria-label` on the box, handle the arrow keys on
+  it, add a second fade or edge cue, scroll it smoothly, bind `data-fade` without `ifDefined`, or set the mask's size or
+  a ring on `.region-frame` itself.
+
+The module is proven on a test-only host, `ocelle-test-overflow-host` (`test/fixtures/overflow-host.ts`), which ships
+in no package.
 
 ## Licence
 

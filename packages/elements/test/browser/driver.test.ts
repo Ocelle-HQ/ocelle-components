@@ -215,6 +215,27 @@ describe("the fixture driver", { timeout: 60_000 }, () => {
     });
   });
 
+  it("focus(target) focuses a light-DOM and a shadow target by script, matching :focus-visible after keyboard input and not after a pointer click", async () => {
+    const page = await open();
+    const driver = fixtureDriver(page.page, page.log);
+    await defineHost(page.page);
+    await driver.mount('<button id="a" type="button">A</button><button id="b" type="button">B</button><driver-host id="h"></driver-host>');
+    await page.page.evaluate(() => document.getElementById("a")?.focus());
+    await driver.press("Tab");
+    await driver.focus({ id: "h", inner: ".inner" });
+    const afterKeys = { active: await driver.activeElement(), visible: await page.page.evaluate(() => document.getElementById("h")?.shadowRoot?.activeElement?.matches(":focus-visible")) };
+    await driver.click("a", { x: 2, y: 2 });
+    await driver.focus("b");
+    const afterClick = { active: await driver.activeElement(), visible: await page.page.evaluate(() => document.activeElement?.matches(":focus-visible")) };
+    expect({ observed: [afterKeys, afterClick], recorded: await page.finish() }).toEqual({
+      observed: [
+        { active: "h >> button.inner", visible: true },
+        { active: "b", visible: false },
+      ],
+      recorded: clean,
+    });
+  });
+
   it("scrollLeft(target) reads and setScrollLeft(target, value) writes an instant scroll, on a light-DOM box with smooth scroll-behavior and on a shadow box", async () => {
     const page = await open();
     const driver = fixtureDriver(page.page, page.log);

@@ -95,8 +95,8 @@ export interface FrameRecorder {
   /**
    * Settles (`settle`), stops recording and returns the record: the reading at the start, then, in order, `"keydown"`
    * for each keydown the window saw, the reading in each animation frame, and `"resize: <reading>"` in each callback of
-   * a `ResizeObserver` the record registers on the target when it starts (so it runs after the observers the page
-   * registered before, in the same delivery).
+   * a `ResizeObserver` the record registers on the target's border box when it starts (so it runs after the observers
+   * the page registered before, in the same delivery, and sees a scrollbar that comes or goes).
    */
   stop(): Promise<string[]>;
 }
@@ -203,6 +203,11 @@ export interface Driver {
    * `activeElement()` after each press, `to` included; at most 40 presses.
    */
   tabWalk(from: string, to: string, backward?: boolean): Promise<string[]>;
+  /**
+   * Focuses the target by script (`focus()`), then settles. Chromium's `:focus-visible` follows the last input: after
+   * keyboard input the target matches it, after a pointer click it does not.
+   */
+  focus(target: Target): Promise<void>;
   /** The target's `scrollLeft`. */
   scrollLeft(target: Target): Promise<number>;
   /** Sets the target's `scrollLeft` with an instant scroll, then settles. */

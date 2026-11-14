@@ -1,0 +1,11 @@
+{
+  "expect": "fail",
+  "why": "A hex colour inside linear-gradient() (mask-image: linear-gradient(to right, #000, transparent)) is raw: the gradient's arguments are classified as at the top level of a value (009 contracts/gates.md § style-lint).",
+  "findings": [
+    {
+      "location": "packages/elements/src/x.ts:6",
+      "rule": "ocelle/token-only",
+      "message": "#000"
+    }
+  ]
+}
