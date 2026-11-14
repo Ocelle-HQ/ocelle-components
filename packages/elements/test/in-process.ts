@@ -13,8 +13,19 @@ import { commands, page } from "vitest/browser";
 import baseText from "../../styles/src/base.css?raw";
 import { css } from "../../tokens/src/generate.ts";
 import { source } from "../../tokens/src/source.ts";
+import type { Delays } from "./live-reading.ts";
 import { decodePng } from "./pixels.ts";
-import type { Box, Driver, Drawing, Paint, Part, Placement, Sheets } from "./scenarios/driver.ts";
+import type { Box, Drawing, InProcessDriver, Paint, Part, Placement, Sheets } from "./scenarios/driver.ts";
+
+/**
+ * The one timing constant of the in-process run (specs/010-feedback-forms research R-09, contracts/testing.md
+ * § Timing): the serialisation delay `D` for both load states and the hold `H`, in milliseconds. Phase 1 red commit
+ * (T001d): the neutral value; T005 sets the test `D` of T002.
+ */
+export const timing = { delayLoaded: 0, delayLoading: 0, hold: 0 } as const;
+
+/** The capture's delays in process: `D` of `timing`. */
+export const delays: Delays = { loaded: timing.delayLoaded, loading: timing.delayLoading };
 
 function sheet(text: string): CSSStyleSheet {
   const made = new CSSStyleSheet();
@@ -62,7 +73,7 @@ window.addEventListener("error", (event) => {
   messages.push(`error: ${event.message}`);
 });
 
-export function inProcessDriver(): Driver {
+export function inProcessDriver(): InProcessDriver {
   return {
     mount: async (markup, options = {}) => {
       document.adoptedStyleSheets = options.base === true ? [tokens, base] : [tokens];
@@ -179,5 +190,27 @@ export function inProcessDriver(): Driver {
       });
     },
     messages: () => Promise.resolve([...messages]),
+    // Phase 1 red commit (T001d): the new steps as signature-only stubs, each resolving with a neutral value; T004 and
+    // T005 implement them.
+    liveCapture: {
+      start: () => Promise.resolve(),
+      stop: () => Promise.resolve([]),
+    },
+    insert: () => Promise.resolve(),
+    laterTask: () => Promise.resolve(),
+    insertInteractive: () => Promise.resolve(0),
+    after: () => Promise.resolve(0),
+    W: { loaded: 0, loading: 0 },
+    hostRole: () => Promise.resolve("none"),
+    formData: () => Promise.resolve([]),
+    submit: () => Promise.resolve(null),
+    reset: () => Promise.resolve(),
+    type: () => Promise.resolve(),
+    press: () => Promise.resolve(),
+    blur: () => Promise.resolve(),
+    click: () => Promise.resolve(),
+    focusPath: () => Promise.resolve([]),
+    registerFirstLoad: () => Promise.resolve(""),
+    readyState: () => Promise.resolve(),
   };
 }
