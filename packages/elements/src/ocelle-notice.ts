@@ -399,7 +399,7 @@ export class OcelleNotice extends LitElement {
     const after = this.liveRole();
     const wasLive = this.announce || before !== null;
     if (!wasLive) {
-      if (after !== null) this.becameLive();
+      this.becameLive();
       return;
     }
     if (!this.isLive()) {
@@ -431,7 +431,7 @@ export class OcelleNotice extends LitElement {
     if (!this.announcer.sameText(this.text())) this.announcer.trigger(false);
   }
 
-  /** The notice began announcing: the baseline is the current text, at the end of the task for `alert`. */
+  /** The notice began announcing (or stays silent after a role change, its baseline then unread): the current text, at the end of the task for `alert`. */
   protected becameLive(): void {
     this.announcer.takeBaseline();
     if (this.liveRole() !== "alert") return;

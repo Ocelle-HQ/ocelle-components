@@ -227,6 +227,18 @@ describe("hidden (FR-010)", () => {
 });
 
 describe("announce set and removed", () => {
+  it("set again to the value it holds during a wait leaves the wait and its baseline alone", async () => {
+    const inserted = await holding("announce", "A");
+    vi.advanceTimersByTime(H);
+    inserted.textContent = "B";
+    await endOfTask();
+    vi.advanceTimersByTime(W / 2);
+    inserted.setAttribute("announce", "");
+    await endOfTask();
+    vi.advanceTimersByTime(W / 2);
+    expect(copy(inserted)).toBe("B");
+  });
+
   it("removed empties the held copy at once", async () => {
     const inserted = await holding("announce", "Saved");
     vi.advanceTimersByTime(10);
@@ -256,6 +268,17 @@ describe("announce set and removed", () => {
 });
 
 describe("the host role changed (US1-15)", () => {
+  it("from alert to another role list starting with alert during a wait leaves the wait alone", async () => {
+    const inserted = await insert('<ocelle-notice id="n" role="alert">A</ocelle-notice>');
+    inserted.textContent = "B";
+    await endOfTask();
+    vi.advanceTimersByTime(W / 2);
+    inserted.setAttribute("role", "alert note");
+    await endOfTask();
+    vi.advanceTimersByTime(W / 2);
+    expect({ live: live(inserted), copy: copy(inserted) }).toEqual({ live: "assertive", copy: "B" });
+  });
+
   it("from status to alert empties a held copy once it has been current for W", async () => {
     const inserted = await holding('role="status"', "Saved");
     vi.advanceTimersByTime(10);
@@ -451,6 +474,18 @@ describe("the tone changed (US1-12)", () => {
 });
 
 describe("a light-DOM change (US1-11)", () => {
+  it("that leaves the text as it is does not restart a running wait", async () => {
+    const inserted = await holding("announce", "Saved");
+    vi.advanceTimersByTime(H);
+    inserted.tone = "danger";
+    await endOfTask();
+    vi.advanceTimersByTime(W / 2);
+    inserted.insertAdjacentHTML("beforeend", "<span hidden>not read</span>");
+    await endOfTask();
+    vi.advanceTimersByTime(W / 2);
+    expect({ live: live(inserted), copy: copy(inserted) }).toEqual({ live: "assertive", copy: "Saved" });
+  });
+
   it("of a text node's data is announced", async () => {
     const inserted = await holding("announce", "Saved");
     vi.advanceTimersByTime(H);
