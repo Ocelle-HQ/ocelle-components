@@ -1,0 +1,133 @@
+Scope: all 5 workspace projects
+✓ Lockfile passes supply-chain policies (verified 3h ago)
+Lockfile is up to date, resolution step is skipped
+Packages are hard linked from the content-addressable store to the virtual store.
+  Content-addressable store is at: /root/.local/share/pnpm/store/v11
+  Virtual store is at:             node_modules/.pnpm
+Packages: +502
+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+Progress: resolved 502, reused 502, downloaded 0, added 502, done
+.../node_modules/rs-module-lexer postinstall$ node postinstall.js
+.../node_modules/rs-module-lexer postinstall: Done
+
+devDependencies:
++ @custom-elements-manifest/analyzer 0.11.0
++ @eslint/js 10.0.1
++ @stryker-mutator/core 10.1.1
++ @stryker-mutator/typescript-checker 10.1.1
++ @stryker-mutator/vitest-runner 10.1.1
++ @types/node 26.6.5
++ @vitest/browser-playwright 5.0.5
++ @vitest/eslint-plugin 1.6.28
++ axe-core 4.14.0
++ eslint 10.13.0
++ jiti 2.7.0
++ parse5 8.0.1
++ playwright 1.64.1
++ pngjs 7.0.0
++ postcss 8.5.31
++ postcss-lit 1.4.1
++ postcss-selector-parser 7.1.7
++ postcss-value-parser 4.2.0
++ stylelint 17.16.0
++ typescript 6.0.3
++ typescript-eslint 8.72.0
++ vite 8.3.5
++ vitest 5.0.5
+
+Done in 283ms using pnpm v12.16.1
+$ node gates/bin/setup-offline.ts
+setup: installed offline; Chromium at /opt/pw-browsers/chromium-1243/chrome-linux64/chrome
+$ node gates/bin/test.ts
+gates/test/integration/visual.test.ts:115: unit-tests: visual gate (gates/bin/visual.ts) captures the repository's 42 story-themes twice under docker and exits 0 naming them and the engine (US2 scenario 1): AssertionError: expected { code: 2, stdout: [], …(1) } to deeply equal { code: +0, …(2) }
+gates/test/integration/visual.test.ts:126: unit-tests: visual gate (gates/bin/visual.ts) keeps the capture, its diff image and run 1 in baseline layout for differs and missing-baseline, and nothing for any other story-theme (FR-005, analysis G2): AssertionError: expected { code: 2, findings: [], …(1) } to deeply equal { code: 1, findings: [ …(2) ], …(1) }
+gates/test/integration/visual.test.ts:239: unit-tests: baseline command (gates/bin/baselines.ts) writes nothing on an unchanged tree and says so (FR-008, analysis G1): AssertionError: expected { code: 2, stdout: [], …(1) } to deeply equal { code: +0, …(2) }
+gates/test/integration/visual.test.ts:251: unit-tests: baseline command (gates/bin/baselines.ts) the plant mode writes a deleted baseline of a plant back with the bytes it had, and touches no other file (research.md R-11): AssertionError: expected { code: 2, stdout: [], …(1) } to deeply equal { code: +0, …(2) }
+gates/test/integration/visual.test.ts:271: unit-tests: capture (gates/visual/capture.ts in the pinned container) captures a story alone byte for byte as in a full run after other stories (freshness, FR-028), and a 2000 px story 2000 px tall (FR-012): AssertionError: expected { code: 1, …(1) } to deeply equal { code: +0, stderr: '' }
+packages/elements/test/browser/driver.test.ts:42: unit-tests: the driver steps on the strict-CSP fixture pages insert with innerHTML puts the markup into the container, the element constructed connected: true: AssertionError: expected { seen: { html: '', …(3) }, …(1) } to deeply equal { seen: { …(4) }, recorded: { …(4) } }
+packages/elements/test/browser/driver.test.ts:42: unit-tests: the driver steps on the strict-CSP fixture pages insert with template puts the markup into the container, the element constructed connected: true: AssertionError: expected { seen: { html: '', …(3) }, …(1) } to deeply equal { seen: { …(4) }, recorded: { …(4) } }
+packages/elements/test/browser/driver.test.ts:42: unit-tests: the driver steps on the strict-CSP fixture pages insert with domparser puts the markup into the container, the element constructed connected: true: AssertionError: expected { seen: { html: '', …(3) }, …(1) } to deeply equal { seen: { …(4) }, recorded: { …(4) } }
+packages/elements/test/browser/driver.test.ts:42: unit-tests: the driver steps on the strict-CSP fixture pages insert with createElement puts the markup into the container, the element constructed connected: false: AssertionError: expected { seen: { html: '', …(3) }, …(1) } to deeply equal { seen: { …(4) }, recorded: { …(4) } }
+packages/elements/test/browser/driver.test.ts:53: unit-tests: the driver steps on the strict-CSP fixture pages laterTask() returns after a message posted before it and a rendering update: AssertionError: expected { before: [ 'message' ], …(1) } to deeply equal { Object (before, recorded) }
+packages/elements/test/browser/driver.test.ts:73: unit-tests: the driver steps on the strict-CSP fixture pages insertInteractive(containerId, markup) inserts from a DOMContentLoaded handler under startDocument, the element defined by the browser build: AssertionError: expected { inserted: undefined, …(2) } to deeply equal { inserted: { …(5) }, …(2) }
+packages/elements/test/browser/driver.test.ts:86: unit-tests: the driver steps on the strict-CSP fixture pages after(ms) returns no earlier than ms after the previous step's end, with the gap measured in the page: AssertionError: expected { atLeast: false, matches: true, …(1) } to deeply equal { atLeast: true, matches: true, …(1) }
+packages/elements/test/browser/driver.test.ts:95: unit-tests: the driver steps on the strict-CSP fixture pages the W in force is Chromium's: 300 ms loaded, 700 ms loading: AssertionError: expected { Object (W, recorded) } to deeply equal { …(2) }
+packages/elements/test/browser/driver.test.ts:100: unit-tests: the driver steps on the strict-CSP fixture pages hostRole(id) reads the role of a host in the final snapshot of the last capture: AssertionError: expected { roles: [ 'none', 'none' ], …(1) } to deeply equal { roles: [ 'alert', 'status' ], …(1) }
+packages/elements/test/browser/driver.test.ts:112: unit-tests: the driver steps on the strict-CSP fixture pages forms formData(formId) returns the form's entries: AssertionError: expected { data: [], recorded: { …(4) } } to deeply equal { data: [ …(2) ], recorded: { …(4) } }
+packages/elements/test/browser/driver.test.ts:124: unit-tests: the driver steps on the strict-CSP fixture pages forms submit(formId) submits through the form's submitter and returns the request body the server received: AssertionError: expected { submitted: null, url: true, …(1) } to deeply equal { Object (submitted, url, ...) }
+packages/elements/test/browser/driver.test.ts:139: unit-tests: the driver steps on the strict-CSP fixture pages forms submit(formId) returns null when no request arrives (a required field empty): AssertionError: expected { empty: null, filled: null, …(1) } to deeply equal { empty: null, …(2) }
+packages/elements/test/browser/driver.test.ts:154: unit-tests: the driver steps on the strict-CSP fixture pages forms after a key step, submit(formId) takes that step's submission, or null when it made none: AssertionError: expected { one: null, two: null, …(1) } to deeply equal { …(3) }
+packages/elements/test/browser/driver.test.ts:164: unit-tests: the driver steps on the strict-CSP fixture pages forms reset(formId) resets the form: AssertionError: expected { value: 'Fix lane', …(1) } to deeply equal { value: 'draft', recorded: { …(4) } }
+packages/elements/test/browser/driver.test.ts:172: unit-tests: the driver steps on the strict-CSP fixture pages forms type(id, text) focuses the control and types the text key by key: AssertionError: expected { seen: { value: '', …(2) }, …(1) } to deeply equal { seen: { …(3) }, recorded: { …(4) } }
+packages/elements/test/browser/driver.test.ts:190: unit-tests: the driver steps on the strict-CSP fixture pages forms press(id, key) focuses the element and presses the key: AssertionError: expected { seen: { keys: [], …(2) }, …(1) } to deeply equal { seen: { …(3) }, recorded: { …(4) } }
+packages/elements/test/browser/driver.test.ts:208: unit-tests: the driver steps on the strict-CSP fixture pages forms blur() moves focus away from the focused element, through shadow roots: AssertionError: expected { focused: 'f', seen: { …(2) }, …(1) } to deeply equal { focused: 'f', seen: { …(2) }, …(1) }
+packages/elements/test/browser/driver.test.ts:224: unit-tests: the driver steps on the strict-CSP fixture pages forms click(id, at) clicks at that point of the element's box: AssertionError: expected { points: [], recorded: { …(4) } } to deeply equal { points: [ { x: 150, y: 30 } ], …(1) }
+packages/elements/test/browser/driver.test.ts:241: unit-tests: the driver steps on the strict-CSP fixture pages forms focusPath() lists the focused element through shadow roots: AssertionError: expected { empty: [], field: [], …(1) } to deeply equal { empty: [], field: [ …(2) ], …(1) }
+packages/elements/test/browser/driver.test.ts:249: unit-tests: the driver steps on the strict-CSP fixture pages forms navigateAwayAndBack() on a no-store route shows the page again from the network and returns pageshow.persisted: AssertionError: expected { Object (status, cacheControl) } to deeply equal { status: 200, …(1) }
+packages/elements/test/browser/live-capture.test.ts:45: unit-tests: liveCapture on the strict-CSP fixture pages observes the container's subtree: a region added and written W later counts one under both rules; a region outside is not read: AssertionError: expected { paused: false, lifecycle: false } to deeply equal { paused: true, lifecycle: true }
+packages/elements/test/browser/live-capture.test.ts:66: unit-tests: liveCapture on the strict-CSP fixture pages observes the shadow roots in the container when it is armed: a text set and cleared within a task is seen at a mutation pause: AssertionError: expected { paused: false, …(3) } to deeply equal { Object (paused, lifecycle, ...) }
+packages/elements/test/browser/live-capture.test.ts:85: unit-tests: liveCapture on the strict-CSP fixture pages observes shadow roots attached after it is armed, nested ones included (the attachShadow patch): AssertionError: expected { paused: false, …(2) } to deeply equal { paused: true, …(2) }
+packages/elements/test/browser/live-capture.test.ts:106: unit-tests: liveCapture on the strict-CSP fixture pages takes snapshots with at, frame, lifecycle, loaded, regions and hosts; lifecycle snapshots count the rendering updates: AssertionError: expected 0 to be greater than or equal to 3
+packages/elements/test/browser/live-capture.test.ts:132: unit-tests: liveCapture on the strict-CSP fixture pages startDocument(url) sees the document from its first node: the region parsed late is absent from the first snapshot and appears holding its text: AssertionError: expected { first: [ 'no snapshot' ], …(3) } to deeply equal { first: [], loading: true, …(2) }
+packages/elements/test/browser/live-capture.test.ts:147: unit-tests: liveCapture on the strict-CSP fixture pages stop() waits the quiet window (700 + 700 + 350 ms) after the last mutation, then two rendering updates: AssertionError: expected { waited: false, bounded: false, …(2) } to deeply equal { waited: true, bounded: true, …(2) }
+packages/elements/test/browser/live-capture.test.ts:166: unit-tests: liveCapture on the strict-CSP fixture pages stop({ atLeast }) first waits until atLeast has passed since the capture started: AssertionError: expected { waited: false, bounded: false, …(1) } to deeply equal { waited: true, bounded: true, …(1) }
+packages/elements/test/browser/live-capture.test.ts:176: unit-tests: liveCapture on the strict-CSP fixture pages a capture over an element that mutates in a loop ends with "capture exceeded …", not a timeout: Error: promise resolved "[]" instead of rejecting
+packages/elements/test/browser/plants.test.ts:69: unit-tests: plants (elements-browser project) capture bounds: an element that mutates its own attribu… turns a capture over the container (fixture p… red: Error: promise resolved "[]" instead of rejecting
+packages/elements/test/driver.test.ts:29: unit-tests: insert(containerId, markup, how) innerHTML puts the markup into the container, the element constructed connected: true: AssertionError: expected { html: '', upgraded: false, …(2) } to deeply equal { …(4) }
+packages/elements/test/driver.test.ts:29: unit-tests: insert(containerId, markup, how) template puts the markup into the container, the element constructed connected: true: AssertionError: expected { html: '', upgraded: false, …(2) } to deeply equal { …(4) }
+packages/elements/test/driver.test.ts:29: unit-tests: insert(containerId, markup, how) domparser puts the markup into the container, the element constructed connected: true: AssertionError: expected { html: '', upgraded: false, …(2) } to deeply equal { …(4) }
+packages/elements/test/driver.test.ts:29: unit-tests: insert(containerId, markup, how) createElement puts the markup into the container, the element constructed connected: false: AssertionError: expected { html: '', upgraded: false, …(2) } to deeply equal { …(4) }
+packages/elements/test/driver.test.ts:43: unit-tests: laterTask() returns after a message posted before it and a rendering update, so a removal and an insertion are in different tasks: AssertionError: expected [ 'insert' ] to deeply equal [ 'frame', 'message' ]
+packages/elements/test/driver.test.ts:60: unit-tests: registerFirstLoad(containerId, markup, base) mounts the markup with a fresh tag, arms the capture, then defines the tag so the registration upgrades the elements: AssertionError: expected { fresh: false, …(2) } to deeply equal { Object (fresh, names, ...) }
+packages/elements/test/driver.test.ts:79: unit-tests: registerFirstLoad(containerId, markup, base) takes a new tag each time: AssertionError: expected { defined: [ false, false ], …(1) } to deeply equal { Object (defined, same) }
+packages/elements/test/driver.test.ts:91: unit-tests: readyState(value) makes document.readyState read the value until the next mount, and the capture reads it too: AssertionError: expected { Object (during, loaded, ...) } to deeply equal { during: 'loading', …(2) }
+packages/elements/test/driver.test.ts:102: unit-tests: readyState(value) null gives the real value back: AssertionError: expected [ 'complete', 'complete' ] to deeply equal [ 'interactive', 'complete' ]
+packages/elements/test/driver.test.ts:112: unit-tests: insertInteractive(containerId, markup) arms the capture, then inserts while readyState is interactive with the element defined, and returns the insertion's time: AssertionError: expected { readyState: undefined, …(2) } to deeply equal { readyState: 'interactive', …(2) }
+packages/elements/test/driver.test.ts:131: unit-tests: after(ms) and the W in force returns no earlier than ms after the previous step's end, with the gap it achieved in page milliseconds: AssertionError: expected 0 to be greater than or equal to 100
+packages/elements/test/driver.test.ts:140: unit-tests: after(ms) and the W in force measures from the end of the step before it, not from its own call: AssertionError: expected 0 to be greater than or equal to 100
+packages/elements/test/driver.test.ts:150: unit-tests: after(ms) and the W in force the W in force is 2 × D of the in-process timing constant, a D of at least two rendering updates and under Chromium's 150 ms: AssertionError: expected 0 to be greater than or equal to 34
+packages/elements/test/driver.test.ts:159: unit-tests: hostRole(id) reads the role of a host in the final snapshot of the last capture: AssertionError: expected [ 'none', 'none' ] to deeply equal [ 'alert', 'status' ]
+packages/elements/test/driver.test.ts:171: unit-tests: forms formData(formId) returns the form's entries: AssertionError: expected [] to deeply equal [ Array(2) ]
+packages/elements/test/driver.test.ts:179: unit-tests: forms submit(formId) submits through the form's submitter and returns the entries with the submitter's: AssertionError: expected null to deeply equal [ [ 'title', 'draft' ], …(2) ]
+packages/elements/test/driver.test.ts:189: unit-tests: forms submit(formId) returns null when no submit event fires (a required field empty): AssertionError: expected { empty: null, filled: null } to deeply equal { empty: null, …(1) }
+packages/elements/test/driver.test.ts:202: unit-tests: forms after a key step, submit(formId) takes that step's submission, or null when it made none: AssertionError: expected { one: null, two: null } to deeply equal { …(2) }
+packages/elements/test/driver.test.ts:211: unit-tests: forms reset(formId) resets the form: AssertionError: expected 'Fix lane' to be 'draft' // Object.is equality
+packages/elements/test/driver.test.ts:218: unit-tests: forms type(id, text) focuses the control and types the text key by key: AssertionError: expected { value: '', inputs: +0, focused: '' } to deeply equal { value: 'Fix {lane}', …(2) }
+packages/elements/test/driver.test.ts:226: unit-tests: forms press(id, key) focuses the element and presses the key: AssertionError: expected { keys: [], value: 'ab', focused: '' } to deeply equal { keys: [ 'End', 'Backspace' ], …(2) }
+packages/elements/test/driver.test.ts:235: unit-tests: forms blur() moves focus away from the focused element, through shadow roots: AssertionError: expected { focused: 'f', blurred: [], …(1) } to deeply equal { focused: 'f', …(2) }
+packages/elements/test/driver.test.ts:246: unit-tests: forms click(id, at) clicks at that point of the element's box: AssertionError: expected [] to deeply equal [ { x: 150, y: 30 } ]
+packages/elements/test/driver.test.ts:258: unit-tests: forms focusPath() lists the focused element through shadow roots: AssertionError: expected { empty: [], field: [] } to deeply equal { empty: [], field: [ …(2) ] }
+packages/elements/test/live-capture.test.ts:47: unit-tests: liveCapture in process observes the container's subtree: a region added and written W later counts one under both rules; a region outside is not read: AssertionError: expected { paused: [], lifecycle: [] } to deeply equal { paused: ArrayContaining{…}, …(1) }
+packages/elements/test/live-capture.test.ts:65: unit-tests: liveCapture in process observes the shadow roots in the container when it is armed: a text set and cleared within a task is seen at a mutation pause: AssertionError: expected { paused: [], lifecycle: [] } to deeply equal { …(2) }
+packages/elements/test/live-capture.test.ts:80: unit-tests: liveCapture in process observes shadow roots attached after it is armed, nested ones included (the attachShadow patch): AssertionError: expected [] to include 'Saved'
+packages/elements/test/live-capture.test.ts:98: unit-tests: liveCapture in process takes snapshots with at, frame, lifecycle, loaded, regions and hosts; lifecycle snapshots count the rendering updates: AssertionError: expected 0 to be greater than or equal to 3
+packages/elements/test/live-capture.test.ts:121: unit-tests: liveCapture in process stop() waits the quiet window (the largest W + the minimum hold + the largest D) after the last mutation, then two rendering updates: AssertionError: expected NaN to be greater than or equal to 0
+packages/elements/test/live-capture.test.ts:134: unit-tests: liveCapture in process stop({ atLeast }) first waits until atLeast has passed since the capture started: AssertionError: expected NaN to be greater than or equal to 500
+packages/elements/test/live-capture.test.ts:145: unit-tests: liveCapture in process a capture over an element that mutates in a loop ends with "capture exceeded …", not a timeout: Error: promise resolved "[]" instead of rejecting
+packages/elements/test/live.test.ts:12: unit-tests: the live-region reading (regionText, announcements) StaticText taken: AssertionError: expected [Function] to not throw an error but 'AssertionError: expected \'\' to be \…' was thrown
+packages/elements/test/live.test.ts:12: unit-tests: the live-region reading (regionText, announcements) an img's name taken and its descendants…: AssertionError: expected [Function] to not throw an error but 'AssertionError: expected \'\' to be \…' was thrown
+packages/elements/test/live.test.ts:12: unit-tests: the live-region reading (regionText, announcements) a link's own name skipped and its Stati…: AssertionError: expected [Function] to not throw an error but 'AssertionError: expected \'\' to be \…' was thrown
+packages/elements/test/live.test.ts:12: unit-tests: the live-region reading (regionText, announcements) inline text boxes skipped: AssertionError: expected [Function] to not throw an error but 'AssertionError: expected \'\' to be \…' was thrown
+packages/elements/test/live.test.ts:12: unit-tests: the live-region reading (regionText, announcements) an ignored subtree contributes nothing: AssertionError: expected [Function] to not throw an error but 'AssertionError: expected \'\' to be \…' was thrown
+packages/elements/test/live.test.ts:12: unit-tests: the live-region reading (regionText, announcements) whitespace collapsed and trimmed, each …: AssertionError: expected [Function] to not throw an error but 'AssertionError: expected \'\' to be \…' was thrown
+packages/elements/test/live.test.ts:12: unit-tests: the live-region reading (regionText, announcements) a nested region's text is in its own an…: AssertionError: expected [Function] to not throw an error but 'AssertionError: expected [ \'\', \'\'…' was thrown
+packages/elements/test/live.test.ts:12: unit-tests: the live-region reading (regionText, announcements) a state set and cleared in one task is …: AssertionError: expected [Function] to not throw an error but 'AssertionError: expected { Object (fl…' was thrown
+packages/elements/test/live.test.ts:12: unit-tests: the live-region reading (regionText, announcements) a state cleared in the first animation …: AssertionError: expected [Function] to not throw an error but 'AssertionError: expected { frame: { s…' was thrown
+packages/elements/test/live.test.ts:12: unit-tests: the live-region reading (regionText, announcements) a state shorter than D is rendered but …: AssertionError: expected [Function] to not throw an error but 'AssertionError: expected { short: { s…' was thrown
+packages/elements/test/live.test.ts:12: unit-tests: the live-region reading (regionText, announcements) D is 350 ms while the page loads and th…: AssertionError: expected [Function] to not throw an error but 'AssertionError: expected { loading: […' was thrown
+packages/elements/test/live.test.ts:12: unit-tests: the live-region reading (regionText, announcements) a region whose text never changes count…: AssertionError: expected [Function] to not throw an error but 'AssertionError: expected { still: { s…' was thrown
+packages/elements/test/live.test.ts:12: unit-tests: the live-region reading (regionText, announcements) a region that appears holding text coun…: AssertionError: expected [Function] to not throw an error but 'AssertionError: expected { Object (ap…' was thrown
+packages/elements/test/live.test.ts:12: unit-tests: the live-region reading (regionText, announcements) a nested region pair whose texts both c…: AssertionError: expected [Function] to not throw an error but 'AssertionError: expected { settled: […' was thrown
+packages/elements/test/live.test.ts:45: unit-tests: expectAnnouncements asserts the expected list under both rules: a list only one rule gives fails, either way: AssertionError: expected [Function] to throw an error
+packages/elements/test/live.test.ts:55: unit-tests: expectAnnouncements passes when both rules give the expected list: AssertionError: expected [Function] to throw an error
+packages/elements/test/live.test.ts:69: unit-tests: expectAnnouncements fails on twice: AssertionError: expected [Function] to throw an error
+packages/elements/test/live.test.ts:69: unit-tests: expectAnnouncements fails on another text: AssertionError: expected [Function] to throw an error
+packages/elements/test/live.test.ts:69: unit-tests: expectAnnouncements fails on another politeness: AssertionError: expected [Function] to throw an error
+packages/elements/test/live.test.ts:69: unit-tests: expectAnnouncements fails on another host: AssertionError: expected [Function] to throw an error
+packages/elements/test/live.test.ts:76: unit-tests: expectAnnouncements uses the delays it is given for the settled rule: AssertionError: expected [Function] to throw an error
+packages/elements/test/plants.test.ts:72: unit-tests: plants (elements project) oracle reading: takes a link's own name turns a link's own name skipped and its Stati… red: Error: expected [Function] to throw error matching /expected 'Open Report link the report…/ but got 'expected \'\' to be \'Open the report…'
+packages/elements/test/plants.test.ts:72: unit-tests: plants (elements project) oracle reading: visits an img's descendants turns an img's name taken and its descendants… red: Error: expected [Function] to throw error matching /expected 'Disk full Star inner now' t…/ but got 'expected \'\' to be \'Disk full Star …'
+packages/elements/test/plants.test.ts:72: unit-tests: plants (elements project) oracle reading: ignores the keeping rule turns a state set and cleared in one task is … red: Error: promise rejected "AssertionError: expected { Object (flicke… { …(4) }" instead of resolving
+packages/elements/test/plants.test.ts:72: unit-tests: plants (elements project) capture bounds: an element that mutates its own attribu… turns a capture over the container (in proces… red: Error: promise resolved "[]" instead of rejecting
+unit-tests: 90 of 3197 tests failed
+[ELIFECYCLE] Test failed. See above for more details.
