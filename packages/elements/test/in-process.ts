@@ -9,20 +9,22 @@
 /// <reference types="vite/client" />
 import type { LitElement } from "lit";
 import { vi } from "vitest";
-import { commands, page } from "vitest/browser";
+import { commands, page, userEvent } from "vitest/browser";
 import baseText from "../../styles/src/base.css?raw";
 import { css } from "../../tokens/src/generate.ts";
 import { source } from "../../tokens/src/source.ts";
-import type { Delays } from "./live-reading.ts";
+import { define } from "../src/define.ts";
+import type { Delays, Snapshot } from "./live-reading.ts";
 import { decodePng } from "./pixels.ts";
-import type { Box, Drawing, InProcessDriver, Paint, Part, Placement, Sheets } from "./scenarios/driver.ts";
+import type { Box, Drawing, Entries, InProcessDriver, InsertHow, Paint, Part, Placement, Sheets } from "./scenarios/driver.ts";
 
 /**
  * The one timing constant of the in-process run (specs/010-feedback-forms research R-09, contracts/testing.md
- * § Timing): the serialisation delay `D` for both load states and the hold `H`, in milliseconds. Phase 1 red commit
- * (T001d): the neutral value; T005 sets the test `D` of T002.
+ * § Timing; chosen in T002, reviews/phase-1/spike.md § Timing): the serialisation delay `D` for both load states and the hold `H`, in milliseconds. The
+ * capture takes its `D` from it (`delays`); from phase 2 on (T020a) the element takes it through
+ * `setAnnouncerTimingForTests` of src/live.ts. `D` is at least two rendering updates long and below Chromium's 150 ms.
  */
-export const timing = { delayLoaded: 0, delayLoading: 0, hold: 0 } as const;
+export const timing = { delayLoaded: 50, delayLoading: 50, hold: 500 } as const;
 
 /** The capture's delays in process: `D` of `timing`. */
 export const delays: Delays = { loaded: timing.delayLoaded, loading: timing.delayLoading };
@@ -73,9 +75,78 @@ window.addEventListener("error", (event) => {
   messages.push(`error: ${event.message}`);
 });
 
+/** The submissions recorded since the last `mount`, by form id (a capture-phase listener that prevents the unload). */
+const submissions = new Map<string, Entries>();
+document.addEventListener(
+  "submit",
+  (event) => {
+    const form = event.target as HTMLFormElement;
+    const { submitter } = event;
+    const data = submitter === null ? new FormData(form) : new FormData(form, submitter);
+    submissions.set(form.id, [...data].map(([name, value]) => [name, typeof value === "string" ? value : value.name] as const));
+    event.preventDefault();
+  },
+  true,
+);
+
+function form(id: string): HTMLFormElement {
+  const found = element(id);
+  if (!(found instanceof HTMLFormElement)) throw new Error(`#${id} is not a form`);
+  return found;
+}
+
+function entries(data: FormData): Entries {
+  return [...data].map(([name, value]) => [name, typeof value === "string" ? value : value.name] as const);
+}
+
+/** A task of its own after a `MessageChannel` round trip, then one rendering update. */
+async function laterTask(): Promise<void> {
+  await new Promise<void>((resolve) => {
+    const channel = new MessageChannel();
+    channel.port1.onmessage = () => {
+      channel.port1.close();
+      resolve();
+    };
+    channel.port2.postMessage(0);
+  });
+  await new Promise((resolve) => requestAnimationFrame(resolve));
+}
+
+/** The elements of `markup`, built with `document.createElement` and their attributes and children set. */
+function built(markup: string): Node[] {
+  const parsed = document.createElement("template");
+  parsed.innerHTML = markup;
+  const copy = (node: Node): Node => {
+    if (node instanceof Element) {
+      const made = document.createElement(node.localName);
+      for (const attribute of node.attributes) made.setAttribute(attribute.name, attribute.value);
+      for (const child of node.childNodes) made.append(copy(child));
+      return made;
+    }
+    return document.createTextNode(node.textContent ?? "");
+  };
+  return [...parsed.content.childNodes].map(copy);
+}
+
+/** The keyboard syntax of `text` typed as it is (`{` and `[` doubled). */
+const typed = (text: string): string => text.replace(/[{[]/g, (char) => char + char);
+
+let fresh = 0;
+let readyState: { mockRestore: () => void } | undefined;
+
+function restoreReadyState(): void {
+  readyState?.mockRestore();
+  readyState = undefined;
+}
 export function inProcessDriver(): InProcessDriver {
-  return {
+  let lastEnd = performance.now();
+  let last: readonly Snapshot[] = [];
+  let keyed = false;
+  const driver: InProcessDriver = {
     mount: async (markup, options = {}) => {
+      restoreReadyState();
+      submissions.clear();
+      keyed = false;
       document.adoptedStyleSheets = options.base === true ? [tokens, base] : [tokens];
       messages.length = 0;
       document.documentElement.removeAttribute("data-theme");
@@ -190,27 +261,129 @@ export function inProcessDriver(): InProcessDriver {
       });
     },
     messages: () => Promise.resolve([...messages]),
-    // Phase 1 red commit (T001d): the new steps as signature-only stubs, each resolving with a neutral value; T004 and
-    // T005 implement them.
     liveCapture: {
-      start: () => Promise.resolve(),
-      stop: () => Promise.resolve([]),
+      start: (containerId) => commands.liveStart(containerId, delays),
+      stop: async (options) => {
+        last = await commands.liveStop(options);
+        return [...last];
+      },
     },
-    insert: () => Promise.resolve(),
-    laterTask: () => Promise.resolve(),
-    insertInteractive: () => Promise.resolve(0),
-    after: () => Promise.resolve(0),
-    W: { loaded: 0, loading: 0 },
-    hostRole: () => Promise.resolve("none"),
-    formData: () => Promise.resolve([]),
-    submit: () => Promise.resolve(null),
-    reset: () => Promise.resolve(),
-    type: () => Promise.resolve(),
-    press: () => Promise.resolve(),
-    blur: () => Promise.resolve(),
-    click: () => Promise.resolve(),
-    focusPath: () => Promise.resolve([]),
-    registerFirstLoad: () => Promise.resolve(""),
-    readyState: () => Promise.resolve(),
+    insert: async (containerId, markup, how: InsertHow) => {
+      const container = element(containerId);
+      if (how === "innerHTML") container.innerHTML = markup;
+      else if (how === "template") {
+        const template = document.createElement("template");
+        template.innerHTML = markup;
+        container.append(template.content.cloneNode(true));
+      } else if (how === "domparser") {
+        const parsed = new DOMParser().parseFromString(`<!doctype html><body>${markup}`, "text/html");
+        container.append(...[...parsed.body.childNodes].map((node) => document.adoptNode(node)));
+      } else container.append(...built(markup));
+      await settle();
+    },
+    laterTask,
+    insertInteractive: async (containerId, markup) => {
+      await driver.liveCapture.start(containerId);
+      await driver.readyState("interactive");
+      const at = performance.now();
+      element(containerId).innerHTML = markup;
+      await settle();
+      return at;
+    },
+    after: async (ms) => {
+      const from = lastEnd;
+      while (performance.now() < from + ms) await new Promise((resolve) => setTimeout(resolve, from + ms - performance.now()));
+      return performance.now() - from;
+    },
+    W: { loaded: 2 * timing.delayLoaded, loading: 2 * timing.delayLoading },
+    hostRole: (id) => Promise.resolve(last.at(-1)?.hosts.find((host) => host.host === id)?.role ?? "none"),
+    formData: (formId) => Promise.resolve(entries(new FormData(form(formId)))),
+    submit: async (formId) => {
+      const target = form(formId);
+      if (!keyed) {
+        const submitter = target.querySelector<HTMLElement>("button:not([type]), button[type=submit], input[type=submit]");
+        if (submitter === null) target.requestSubmit();
+        else submitter.click();
+      }
+      keyed = false;
+      await laterTask();
+      const submitted = submissions.get(formId) ?? null;
+      submissions.delete(formId);
+      return submitted;
+    },
+    reset: async (formId) => {
+      form(formId).reset();
+      await settle();
+    },
+    type: async (id, text) => {
+      element(id).focus();
+      await userEvent.keyboard(typed(text));
+      await settle();
+    },
+    press: async (id, key) => {
+      element(id).focus();
+      keyed = true;
+      await userEvent.keyboard(`{${key}}`);
+      await settle();
+    },
+    blur: async () => {
+      let active = document.activeElement;
+      while (active?.shadowRoot?.activeElement) active = active.shadowRoot.activeElement;
+      (active as HTMLElement | null)?.blur();
+      await settle();
+    },
+    click: async (id, at) => {
+      // Playwright's position is from the padding box; `at` is from the border box.
+      const target = element(id);
+      await userEvent.click(target, { position: { x: at.x - target.clientLeft, y: at.y - target.clientTop } });
+      await settle();
+    },
+    focusPath: () => {
+      const path: string[] = [];
+      let active: Element | null = document.activeElement;
+      while (active !== null && active !== document.body) {
+        path.push(active.id === "" ? active.localName : `${active.localName}#${active.id}`);
+        active = active.shadowRoot?.activeElement ?? null;
+      }
+      return Promise.resolve(path);
+    },
+    registerFirstLoad: async (containerId, markup, base) => {
+      fresh += 1;
+      const tag = `ocelle-first-load-${String(fresh)}-${String(Math.round(performance.now()))}`;
+      element(containerId).innerHTML = markup.replaceAll("ocelle-first-load", tag);
+      await driver.liveCapture.start(containerId);
+      define(tag, class extends (base as typeof HTMLElement) {});
+      await settle();
+      return tag;
+    },
+    readyState: (value) => {
+      restoreReadyState();
+      if (value !== null) readyState = vi.spyOn(document, "readyState", "get").mockReturnValue(value);
+      return Promise.resolve();
+    },
   };
+  // Every step ends at its own page time, from which `after` measures.
+  for (const [name, step] of Object.entries(driver)) {
+    if (typeof step !== "function") continue;
+    (driver as unknown as Record<string, unknown>)[name] = async (...args: unknown[]) => {
+      try {
+        return await (step as (...args: unknown[]) => Promise<unknown>)(...args);
+      } finally {
+        lastEnd = performance.now();
+      }
+    };
+  }
+  const live = driver.liveCapture as unknown as Record<string, (...args: unknown[]) => Promise<unknown>>;
+  for (const name of ["start", "stop"]) {
+    const step = live[name];
+    if (step === undefined) continue;
+    live[name] = async (...args: unknown[]) => {
+      try {
+        return await step(...args);
+      } finally {
+        lastEnd = performance.now();
+      }
+    };
+  }
+  return driver;
 }

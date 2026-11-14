@@ -9,8 +9,9 @@ import { inflateSync } from "node:zlib";
 import type { Page } from "playwright";
 import { axNodes, axSubtree, emulate } from "../commands.ts";
 import { fixtureCapture } from "../live.ts";
+import type { Snapshot } from "../live-reading.ts";
 import { decodePng } from "../pixels.ts";
-import type { Bounds, Box, Drawing, FixtureDriver, Paint, Part, Placement, Sheets } from "../scenarios/driver.ts";
+import type { Bounds, Box, Drawing, Entries, FixtureDriver, InsertHow, Paint, Part, Placement, Sheets } from "../scenarios/driver.ts";
 import type { Served } from "./serve.ts";
 
 /**
@@ -26,18 +27,56 @@ function settle(page: Page): Promise<void> {
   });
 }
 
+/** The page's time now. */
+const now = (page: Page): Promise<number> => page.evaluate(() => performance.now());
+
+/** Inserts `markup` into the element with `containerId` in the page, as `insert` says for `how`. */
+function insertIn(page: Page, containerId: string, markup: string, how: InsertHow): Promise<void> {
+  return page.evaluate(({ containerId, markup, how }) => {
+    const container = document.getElementById(containerId);
+    if (container === null) throw new Error(`no #${containerId} on the page`);
+    if (how === "innerHTML") container.innerHTML = markup;
+    else if (how === "template") {
+      const template = document.createElement("template");
+      template.innerHTML = markup;
+      container.append(template.content.cloneNode(true));
+    } else if (how === "domparser") {
+      const parsed = new DOMParser().parseFromString(`<!doctype html><body>${markup}`, "text/html");
+      container.append(...[...parsed.body.childNodes].map((node) => document.adoptNode(node)));
+    } else {
+      const parsed = document.createElement("template");
+      parsed.innerHTML = markup;
+      const copy = (node: Node): Node => {
+        if (node instanceof Element) {
+          const made = document.createElement(node.localName);
+          for (const attribute of node.attributes) made.setAttribute(attribute.name, attribute.value);
+          for (const child of node.childNodes) made.append(copy(child));
+          return made;
+        }
+        return document.createTextNode(node.textContent ?? "");
+      };
+      container.append(...[...parsed.content.childNodes].map(copy));
+    }
+  }, { containerId, markup, how });
+}
+
 /**
  * The driver of `page`; `log` is the page's console and error record, `withBase` whether the page links base.css,
  * `served` the fixture server (its submission recorder answers `submit`).
  */
 export function fixtureDriver(page: Page, log: readonly string[], withBase = false, served?: Served): FixtureDriver {
   let since = log.length;
-  if (served === undefined) since = log.length;
+  let lastEnd = 0;
+  let last: readonly Snapshot[] = [];
+  let keyed = false;
+  let seen = served?.submissions().length ?? 0;
   const capture = fixtureCapture(page);
-  return {
+  const driver: FixtureDriver = {
     mount: async (markup, options = {}) => {
       if ((options.base === true) !== withBase) throw new Error(`mount ${options.base === true ? "with" : "without"} base.css on a page ${withBase ? "with" : "without"} it`);
       since = log.length;
+      keyed = false;
+      seen = served?.submissions().length ?? 0;
       await page.evaluate((html) => {
         document.adoptedStyleSheets = [];
         document.documentElement.removeAttribute("data-theme");
@@ -210,27 +249,150 @@ export function fixtureDriver(page: Page, log: readonly string[], withBase = fal
         };
       }, selector),
     messages: () => Promise.resolve(log.slice(since)),
-    // Phase 1 red commit (T001d): the new steps as signature-only stubs, each resolving with a neutral value; T004 and
-    // T005 implement them.
     liveCapture: {
       start: (containerId) => capture.start(containerId),
-      startDocument: (url) => capture.startDocument(url),
-      stop: (options) => capture.stop(options),
+      startDocument: (url) => capture.startDocument(new URL(url, page.url()).href),
+      stop: async (options) => {
+        last = await capture.stop(options);
+        return [...last];
+      },
     },
-    insert: () => Promise.resolve(),
-    laterTask: () => Promise.resolve(),
-    insertInteractive: () => Promise.resolve(0),
-    after: () => Promise.resolve(0),
-    W: { loaded: 0, loading: 0 },
-    hostRole: () => Promise.resolve("none"),
-    formData: () => Promise.resolve([]),
-    submit: () => Promise.resolve(null),
-    reset: () => Promise.resolve(),
-    type: () => Promise.resolve(),
-    press: () => Promise.resolve(),
-    blur: () => Promise.resolve(),
-    click: () => Promise.resolve(),
-    focusPath: () => Promise.resolve([]),
-    navigateAwayAndBack: () => Promise.resolve(false),
+    insert: async (containerId, markup, how) => {
+      await insertIn(page, containerId, markup, how);
+      await settle(page);
+    },
+    laterTask: async () => {
+      await page.evaluate(async () => {
+        await new Promise<void>((resolve) => {
+          const channel = new MessageChannel();
+          channel.port1.onmessage = () => {
+            channel.port1.close();
+            resolve();
+          };
+          channel.port2.postMessage(0);
+        });
+        await new Promise((resolve) => requestAnimationFrame(resolve));
+      });
+    },
+    insertInteractive: async (containerId, markup) => {
+      // The page's module script inserts the markup from its DOMContentLoaded listener (fixtures/interactive.js).
+      await page.addInitScript((insertion) => {
+        (globalThis as unknown as { ocelleInteractive: unknown }).ocelleInteractive = insertion;
+      }, { container: containerId, markup });
+      await driver.liveCapture.startDocument("interactive.html");
+      return page.evaluate(() => {
+        const inserted = (globalThis as unknown as { ocelleInserted?: { at: number } }).ocelleInserted;
+        if (inserted === undefined) throw new Error("interactive.html inserted nothing");
+        return inserted.at;
+      });
+    },
+    after: (ms) =>
+      page.evaluate(async ({ from, ms }) => {
+        while (performance.now() < from + ms) await new Promise((resolve) => setTimeout(resolve, from + ms - performance.now()));
+        return performance.now() - from;
+      }, { from: lastEnd, ms }),
+    W: { loaded: 300, loading: 700 },
+    hostRole: (id) => Promise.resolve(last.at(-1)?.hosts.find((host) => host.host === id)?.role ?? "none"),
+    formData: (formId) =>
+      page.evaluate((formId) => {
+        const form = document.getElementById(formId);
+        if (!(form instanceof HTMLFormElement)) throw new Error(`#${formId} is not a form`);
+        return [...new FormData(form)].map(([name, value]) => [name, typeof value === "string" ? value : value.name] as [string, string]);
+      }, formId),
+    submit: async (formId) => {
+      if (served === undefined) throw new Error("submit: the driver has no fixture server");
+      if (!keyed) {
+        await page.evaluate((formId) => {
+          const form = document.getElementById(formId);
+          if (!(form instanceof HTMLFormElement)) throw new Error(`#${formId} is not a form`);
+          const submitter = form.querySelector<HTMLElement>("button:not([type]), button[type=submit], input[type=submit]");
+          if (submitter === null) form.requestSubmit();
+          else submitter.click();
+        }, formId);
+      }
+      keyed = false;
+      const deadline = Date.now() + 1000;
+      while (served.submissions().length <= seen && Date.now() < deadline) await new Promise((resolve) => setTimeout(resolve, 20));
+      const body = served.submissions()[seen];
+      seen = served.submissions().length;
+      return body === undefined ? null : ([...new URLSearchParams(body)] as Entries);
+    },
+    reset: async (formId) => {
+      await page.evaluate((formId) => {
+        const form = document.getElementById(formId);
+        if (!(form instanceof HTMLFormElement)) throw new Error(`#${formId} is not a form`);
+        form.reset();
+      }, formId);
+      await settle(page);
+    },
+    type: async (id, text) => {
+      await page.evaluate((id) => document.getElementById(id)?.focus(), id);
+      await page.keyboard.type(text);
+      await settle(page);
+    },
+    press: async (id, key) => {
+      await page.evaluate((id) => document.getElementById(id)?.focus(), id);
+      keyed = true;
+      await page.keyboard.press(key);
+      await settle(page);
+    },
+    blur: async () => {
+      await page.evaluate(() => {
+        let active = document.activeElement;
+        while (active?.shadowRoot?.activeElement) active = active.shadowRoot.activeElement;
+        (active as HTMLElement | null)?.blur();
+      });
+      await settle(page);
+    },
+    click: async (id, at) => {
+      const box = await page.evaluate((id) => {
+        const element = document.getElementById(id);
+        if (element === null) throw new Error(`no #${id} on the page`);
+        const rect = element.getBoundingClientRect();
+        return { x: rect.x, y: rect.y };
+      }, id);
+      await page.mouse.click(box.x + at.x, box.y + at.y);
+      await settle(page);
+    },
+    focusPath: () =>
+      page.evaluate(() => {
+        const path: string[] = [];
+        let active: Element | null = document.activeElement;
+        while (active !== null && active !== document.body) {
+          path.push(active.id === "" ? active.localName : `${active.localName}#${active.id}`);
+          active = active.shadowRoot?.activeElement ?? null;
+        }
+        return path;
+      }),
+    navigateAwayAndBack: async () => {
+      const record = (): void => {
+        addEventListener("pageshow", (event) => {
+          (globalThis as unknown as { ocellePageshow: boolean }).ocellePageshow = event.persisted;
+        });
+      };
+      await page.addInitScript(record);
+      await page.evaluate(record);
+      await page.goto("about:blank");
+      await page.goBack({ waitUntil: "load" });
+      return page.evaluate(() => (globalThis as unknown as { ocellePageshow?: boolean }).ocellePageshow === true);
+    },
   };
+  // Every step ends at its own page time, from which `after` measures.
+  const step = <T extends (...args: never[]) => Promise<unknown>>(run: T): T =>
+    (async (...args: Parameters<T>) => {
+      try {
+        return await run(...args);
+      } finally {
+        lastEnd = await now(page).catch(() => lastEnd);
+      }
+    }) as T;
+  for (const [name, run] of Object.entries(driver)) {
+    if (typeof run === "function") (driver as unknown as Record<string, unknown>)[name] = step(run as (...args: never[]) => Promise<unknown>);
+  }
+  const live = driver.liveCapture as unknown as Record<string, (...args: never[]) => Promise<unknown>>;
+  for (const name of ["start", "startDocument", "stop"]) {
+    const run = live[name];
+    if (run !== undefined) live[name] = step(run);
+  }
+  return driver;
 }
