@@ -185,6 +185,19 @@ describe("first load and removal (R-02)", () => {
     expect({ live: live(inserted), copy: copy(inserted) }).toEqual({ live: "polite", copy: "" });
   });
 
+  it("a first load takes the baseline at the connection: a later change that leaves the text as it is writes nothing", async () => {
+    vi.spyOn(document, "readyState", "get").mockReturnValue("loading");
+    const made = document.createElement("ocelle-notice");
+    made.toggleAttribute("announce", true);
+    made.textContent = "Saved";
+    container.append(made);
+    await endOfTask();
+    made.insertAdjacentHTML("beforeend", "<span hidden>not read</span>");
+    await endOfTask();
+    vi.advanceTimersByTime(10 * W);
+    expect({ live: live(made), copy: copy(made) }).toEqual({ live: "polite", copy: "" });
+  });
+
   it("removed and not put back in the same task, the copy is emptied in the next task; moved, it stays", async () => {
     container.innerHTML = '<ocelle-notice id="m" announce>Moved</ocelle-notice><ocelle-notice id="r" announce>Removed</ocelle-notice>';
     await endOfTask();
