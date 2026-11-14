@@ -18,8 +18,13 @@ afterEach(async () => {
   await commands.emulateForcedColors("none");
 });
 
+// Each test is named by its row's full name: Vitest shortens a `$name` interpolation to 40 characters, which gave
+// dozens of rows one name, so Stryker's per-test coverage and its test filter (by name) ran every row of a shared
+// prefix within the time budget of one (reviews/phase-2/notes.md § Mutation, T025).
 describe("ocelle-dialog, in process (US1)", { timeout: 30_000 }, () => {
-  it.each(dialogScenarios)("$name", async ({ run, expected }) => {
-    expect(await run(driver)).toEqual(expected);
-  });
+  for (const { name, run, expected } of dialogScenarios) {
+    it(name, async () => {
+      expect(await run(driver)).toEqual(expected);
+    });
+  }
 });

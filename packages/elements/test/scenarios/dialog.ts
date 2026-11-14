@@ -617,6 +617,19 @@ const opaqueRows = cycleRows("Tab cycle with opaque content (US1-14, SC-002, R-0
   { label: "(ii) an iframe last, no footer (one body entry: the stated extra press)", content: `<button id="b1">B1</button>${frame}`, start: "close", n: 4, presses: 7, tab: "b1 fr[f1] fr[f2] body dlg[button] b1 fr[f1]", shift: "fr[f2] fr[f1] b1 dlg[button] fr[f2] fr[f1] b1" },
 ]);
 
+// The native move from a closed host into an iframe ends the host's focus with no related target, as a move to the
+// body does; focus is in the frame, so R-04's repair leaves it there.
+const opaquePairRows = cycleRows("Tab cycle with opaque content: a closed shadow root before an iframe (R-04)", [
+  {
+    label: "between two buttons",
+    content: `<button id="b1">B1</button>${closedHost("ocelle-test-closed")}${frame}<button id="b2">B2</button>`,
+    start: "close",
+    n: 7,
+    tab: "b1 xc[c1] xc[c2] fr[f1] fr[f2] b2 dlg[button] b1 xc[c1]",
+    shift: "b2 fr[f2] fr[f1] xc[c2] xc[c1] b1 dlg[button] b2 fr[f2]",
+  },
+]);
+
 const sentinelRows = [
   ...[
     ["a closed shadow root", closedHost("ocelle-test-closed")],
@@ -1863,38 +1876,42 @@ const treeRows = [
 
 const fieldEscapeRows = [
   row(
-    "Escape with slotted content: a slotted text field with a value: one request with escape, the close, the value kept (FR-010: only a search field is cleared)",
+    "Escape with slotted content: a slotted text field with a value: one request with escape, no cancel, the close, the value kept (FR-010: only a search field is cleared)",
     async (driver) => {
       await driver.mount(page('<input type="text" id="tx" aria-label="Name" value="abc">'));
       await open(driver);
+      await watchPanel(driver);
       await driver.press("Escape");
-      return { recorded: await events(driver, 2), value: (await inspect(driver, "tx")).value, state: await state(driver) };
+      return { recorded: await events(driver, 2), log: await logAfter(driver), value: (await inspect(driver, "tx")).value, state: await state(driver) };
     },
-    { recorded: [request("escape", "tx"), closeEvent("escape", "opener")], value: "abc", state: gone },
+    { recorded: [request("escape", "tx"), closeEvent("escape", "opener")], log: ["close:false"], value: "abc", state: gone },
   ),
   row(
-    "Escape with slotted content: an empty slotted search field: one request with escape, the close (FR-010: only a non-empty search field takes Escape)",
+    "Escape with slotted content: an empty slotted search field: one request with escape, no cancel, the close (FR-010: only a non-empty search field takes Escape)",
     async (driver) => {
       await driver.mount(page('<input type="search" id="find" aria-label="Find">'));
       await open(driver);
+      await watchPanel(driver);
       await driver.press("Escape");
-      return { recorded: await events(driver, 2), state: await state(driver) };
+      return { recorded: await events(driver, 2), log: await logAfter(driver), state: await state(driver) };
     },
-    { recorded: [request("escape", "find"), closeEvent("escape", "opener")], state: gone },
+    { recorded: [request("escape", "find"), closeEvent("escape", "opener")], log: ["close:false"], state: gone },
   ),
   row(
-    'Slotted close watchers: a shown slotted popover="manual" is not one: Escape requests with escape and the dialog closes, the popover left open (FR-010)',
+    'Slotted close watchers: a shown slotted popover="manual" is not one: Escape requests with escape, no cancel, and the dialog closes, the popover left open (FR-010)',
     async (driver) => {
       await driver.mount(page(menu("manual")));
       await open(driver);
+      await watchPanel(driver);
       await driver.click("inv");
       const before = { focus: await driver.focusPath(), open: (await inspect(driver, "menu")).popoverOpen };
       await driver.press("Escape");
       const recorded = await events(driver, 2);
+      const log = await logAfter(driver);
       const panel = await inspect(driver, "dlg", "dialog");
-      return { before, recorded, dialog: { open: (await driver.attribute("dlg", "open")) !== null, modal: panel.modal }, menuOpen: (await inspect(driver, "menu")).popoverOpen };
+      return { before, recorded, log, dialog: { open: (await driver.attribute("dlg", "open")) !== null, modal: panel.modal }, menuOpen: (await inspect(driver, "menu")).popoverOpen };
     },
-    { before: { focus: "inv", open: true }, recorded: [request("escape", "inv"), closeEvent("escape", "opener")], dialog: { open: false, modal: false }, menuOpen: true },
+    { before: { focus: "inv", open: true }, recorded: [request("escape", "inv"), closeEvent("escape", "opener")], log: ["close:false"], dialog: { open: false, modal: false }, menuOpen: true },
   ),
 ];
 
@@ -1909,6 +1926,43 @@ const entryExitRows = [
       return { entering, recorded: await events(driver, 2), state: await state(driver), focus: await driver.focusPath() };
     },
     { entering: ["running"], recorded: [request("close-button", "b1"), closeEvent("close-button", "opener")], state: gone, focus: "opener" },
+  ),
+  row(
+    "Close control activated after the entry ended, motion on: the request and the close carry close-button, focus back on the opener (FR-011, FR-013)",
+    async (driver) => {
+      await driver.mount(page(basic));
+      await open(driver);
+      await pause(300);
+      const entering = await driver.animations("dlg", "dialog");
+      await act(driver, { op: "call", id: "dlg", inner: close, method: "click" });
+      return { entering, recorded: await events(driver, 2), state: await state(driver), focus: await driver.focusPath() };
+    },
+    { entering: [], recorded: [request("close-button", "b1"), closeEvent("close-button", "opener")], state: gone, focus: "opener" },
+  ),
+  row(
+    "Platform close during a 1 000 ms exit: the inner close() through the shadow root ends the close at once: the exit animation cancelled and the close, with reason escape, within 300 ms (FR-014, FR-016, R-03, R-06)",
+    async (driver) => {
+      await driver.mount(`<div id="wrap">${page(basic)}</div>`);
+      await driver.rules("#wrap { --ocelle-motion-base: 1000ms; }");
+      await open(driver);
+      await pause(1100);
+      await driver.press("Escape");
+      const exiting = (await driver.animations("dlg", "dialog")).map((each) => each.playState);
+      await act(driver, { op: "call", id: "dlg", inner: "dialog", method: "close" });
+      await pause(300);
+      return { exiting, recorded: await driver.recorded(), animations: await driver.animations("dlg", "dialog"), state: await state(driver), focus: await driver.focusPath() };
+    },
+    { exiting: ["running"], recorded: [request("escape", "b1"), closeEvent("escape", "opener")], animations: [], state: gone, focus: "opener" },
+  ),
+  row(
+    "Motion: an ancestor sets --ocelle-easing-standard to initial (no value): the entry runs with linear easing over --ocelle-motion-base (FR-020, R-06)",
+    async (driver) => {
+      await driver.mount(`<div id="wrap">${page(basic)}</div>`);
+      await driver.rules("#wrap { --ocelle-easing-standard: initial; }");
+      await open(driver);
+      return { entry: (await driver.animations("dlg", "dialog")).map(({ duration, easing }) => ({ duration, easing })) };
+    },
+    { entry: [{ duration: motionBase, easing: "linear" }] },
   ),
   row(
     "Input during the exit, motion on: a cancelable cancel dispatched on the inner dialog during the exit requests nothing more: one request and one close (FR-013, FR-014)",
@@ -1980,6 +2034,22 @@ const entryExitRows = [
       return { entry, exit, recorded: await events(driver, 2) };
     },
     { entry: [300], exit: [300], recorded: [request("escape", "b1"), closeEvent("escape", "opener")] },
+  ),
+];
+
+const unitlessMotionRows = [
+  row(
+    "Motion: an ancestor sets --ocelle-motion-base without a unit, 300, which is no duration: no animation on open or close, the whole close in one update (FR-020, R-06)",
+    async (driver) => {
+      await driver.mount(`<div id="wrap">${page(basic)}</div>`);
+      await driver.rules("#wrap { --ocelle-motion-base: 300; }");
+      await open(driver);
+      const entry = await driver.animations("dlg", "dialog");
+      await driver.press("Escape");
+      const exit = await driver.animations("dlg", "dialog");
+      return { entry, exit, recorded: await driver.recorded() };
+    },
+    { entry: [], exit: [], recorded: [request("escape", "b1"), closeEvent("escape", "opener")] },
   ),
 ];
 
@@ -2096,6 +2166,7 @@ export const dialogScenarios: readonly DialogScenario[] = [
   ...bodyStartRows,
   ...scrollerRows,
   ...opaqueRows,
+  ...opaquePairRows,
   ...sentinelRows,
   ...middleRows,
   ...positiveRows,
@@ -2129,6 +2200,7 @@ export const dialogScenarios: readonly DialogScenario[] = [
   ...treeRows,
   ...fieldEscapeRows,
   ...entryExitRows,
+  ...unitlessMotionRows,
   ...footerSlotRows,
   ...moreReturnRows,
   ...unnamedRows,
