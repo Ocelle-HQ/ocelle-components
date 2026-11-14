@@ -35,7 +35,7 @@ devDependencies:
 + vite 8.3.5
 + vitest 5.0.5
 
-Done in 283ms using pnpm v12.16.1
+Done in 251ms using pnpm v12.16.1
 $ node gates/bin/setup-offline.ts
 setup: installed offline; Chromium at /opt/pw-browsers/chromium-1243/chrome-linux64/chrome
 $ node gates/bin/test.ts
@@ -48,9 +48,8 @@ packages/elements/test/browser/driver.test.ts:42: unit-tests: the driver steps o
 packages/elements/test/browser/driver.test.ts:42: unit-tests: the driver steps on the strict-CSP fixture pages insert with template puts the markup into the container, the element constructed connected: true: AssertionError: expected { seen: { html: '', …(3) }, …(1) } to deeply equal { seen: { …(4) }, recorded: { …(4) } }
 packages/elements/test/browser/driver.test.ts:42: unit-tests: the driver steps on the strict-CSP fixture pages insert with domparser puts the markup into the container, the element constructed connected: true: AssertionError: expected { seen: { html: '', …(3) }, …(1) } to deeply equal { seen: { …(4) }, recorded: { …(4) } }
 packages/elements/test/browser/driver.test.ts:42: unit-tests: the driver steps on the strict-CSP fixture pages insert with createElement puts the markup into the container, the element constructed connected: false: AssertionError: expected { seen: { html: '', …(3) }, …(1) } to deeply equal { seen: { …(4) }, recorded: { …(4) } }
-packages/elements/test/browser/driver.test.ts:53: unit-tests: the driver steps on the strict-CSP fixture pages laterTask() returns after a message posted before it and a rendering update: AssertionError: expected { before: [ 'message' ], …(1) } to deeply equal { Object (before, recorded) }
 packages/elements/test/browser/driver.test.ts:73: unit-tests: the driver steps on the strict-CSP fixture pages insertInteractive(containerId, markup) inserts from a DOMContentLoaded handler under startDocument, the element defined by the browser build: AssertionError: expected { inserted: undefined, …(2) } to deeply equal { inserted: { …(5) }, …(2) }
-packages/elements/test/browser/driver.test.ts:86: unit-tests: the driver steps on the strict-CSP fixture pages after(ms) returns no earlier than ms after the previous step's end, with the gap measured in the page: AssertionError: expected { atLeast: false, matches: true, …(1) } to deeply equal { atLeast: true, matches: true, …(1) }
+packages/elements/test/browser/driver.test.ts:86: unit-tests: the driver steps on the strict-CSP fixture pages after(ms) returns no earlier than ms after the previous step's end, with the gap measured in the page: AssertionError: expected { Object (atLeast, matches, ...) } to deeply equal { atLeast: true, matches: true, …(1) }
 packages/elements/test/browser/driver.test.ts:95: unit-tests: the driver steps on the strict-CSP fixture pages the W in force is Chromium's: 300 ms loaded, 700 ms loading: AssertionError: expected { Object (W, recorded) } to deeply equal { …(2) }
 packages/elements/test/browser/driver.test.ts:100: unit-tests: the driver steps on the strict-CSP fixture pages hostRole(id) reads the role of a host in the final snapshot of the last capture: AssertionError: expected { roles: [ 'none', 'none' ], …(1) } to deeply equal { roles: [ 'alert', 'status' ], …(1) }
 packages/elements/test/browser/driver.test.ts:112: unit-tests: the driver steps on the strict-CSP fixture pages forms formData(formId) returns the form's entries: AssertionError: expected { data: [], recorded: { …(4) } } to deeply equal { data: [ …(2) ], recorded: { …(4) } }
@@ -129,5 +128,5 @@ packages/elements/test/plants.test.ts:72: unit-tests: plants (elements project) 
 packages/elements/test/plants.test.ts:72: unit-tests: plants (elements project) oracle reading: visits an img's descendants turns an img's name taken and its descendants… red: Error: expected [Function] to throw error matching /expected 'Disk full Star inner now' t…/ but got 'expected \'\' to be \'Disk full Star …'
 packages/elements/test/plants.test.ts:72: unit-tests: plants (elements project) oracle reading: ignores the keeping rule turns a state set and cleared in one task is … red: Error: promise rejected "AssertionError: expected { Object (flicke… { …(4) }" instead of resolving
 packages/elements/test/plants.test.ts:72: unit-tests: plants (elements project) capture bounds: an element that mutates its own attribu… turns a capture over the container (in proces… red: Error: promise resolved "[]" instead of rejecting
-unit-tests: 90 of 3197 tests failed
+unit-tests: 89 of 3197 tests failed
 [ELIFECYCLE] Test failed. See above for more details.
