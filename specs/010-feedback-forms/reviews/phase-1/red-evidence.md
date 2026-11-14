@@ -21,7 +21,12 @@ overlays it onto the base (tasks.md, Tests). This file records the evidence the 
   tests of T001 to T001c, each on an assertion, and the 5 visual-gate tests of
   `gates/test/integration/visual.test.ts` (lines 115, 126, 239, 251, 271), which fail in this container because it
   has no docker, as they do at the phase base and on green.
-- Every test of T001 to T001c fails there; none passes. The four `Error: promise resolved "[]" instead of rejecting`
+- Every test of T001 to T001c fails there; none passes. Review round 1 (R1-01) showed that this held for the
+  fixture-page `laterTask()` test only because the timing worked out: it read the page's order in a second
+  `evaluate` after the step, and two CDP round trips can give the page time to run the message and the frame
+  whatever the step did, so under load it passed the no-op stub (89 failures in the reviewer's `check-red-phase.log`,
+  28 in one of three `elements-browser` runs). See "Review round 1: the fixture-page `laterTask()` test" below for
+  the stricter replacement and its runs against the stubs. The four `Error: promise resolved "[]" instead of rejecting`
   lines and the two `expected [Function] to throw error matching …` lines are assertion failures of `rejects.toThrow`
   and `toThrow` (the stub's `stop` resolves with no snapshot; the stub's reading returns `""`), not setup errors.
 
@@ -63,7 +68,7 @@ The failing tests, per test file (85):
 | the driver steps on the strict-CSP fixture pages insert with template puts the markup into the container, the element constructed connected: true | `AssertionError: expected { seen: { html: '', …(3) }, …(1) } to deeply equal { seen: { …(4) }, recorded: { …(4) } }` |
 | the driver steps on the strict-CSP fixture pages insert with domparser puts the markup into the container, the element constructed connected: true | `AssertionError: expected { seen: { html: '', …(3) }, …(1) } to deeply equal { seen: { …(4) }, recorded: { …(4) } }` |
 | the driver steps on the strict-CSP fixture pages insert with createElement puts the markup into the container, the element constructed connected: false | `AssertionError: expected { seen: { html: '', …(3) }, …(1) } to deeply equal { seen: { …(4) }, recorded: { …(4) } }` |
-| the driver steps on the strict-CSP fixture pages laterTask() returns after a message posted before it and a rendering update | `AssertionError: expected { before: [ 'message' ], …(1) } to deeply equal { Object (before, recorded) }` |
+| the driver steps on the strict-CSP fixture pages laterTask() returns after a message posted before it and a rendering update of its own | `AssertionError: expected { before: null, returned: null, …(1) } to deeply equal { before: [ 'frame', …(2) ], …(2) }` (review round 1 fix; the row as first recorded read `expected { before: [ 'message' ], …(1) } …`, see below) |
 | the driver steps on the strict-CSP fixture pages insertInteractive(containerId, markup) inserts from a DOMContentLoaded handler under startDocument, the element defined by the browser build | `AssertionError: expected { inserted: undefined, …(2) } to deeply equal { inserted: { …(5) }, …(2) }` |
 | the driver steps on the strict-CSP fixture pages after(ms) returns no earlier than ms after the previous step's end, with the gap measured in the page | `AssertionError: expected { atLeast: false, matches: true, …(1) } to deeply equal { atLeast: true, matches: true, …(1) }` |
 | the driver steps on the strict-CSP fixture pages the W in force is Chromium's: 300 ms loaded, 700 ms loading | `AssertionError: expected { Object (W, recorded) } to deeply equal { …(2) }` |
@@ -174,6 +179,32 @@ The failing tests, per test file (85):
 | plants (elements project) oracle reading: visits an img's descendants turns an img's name taken and its descendants… red | `Error: expected [Function] to throw error matching /expected 'Disk full Star inner now' t…/ but got 'expected \'\' to be \'Disk full Star …'` |
 | plants (elements project) oracle reading: ignores the keeping rule turns a state set and cleared in one task is … red | `Error: promise rejected "AssertionError: expected { Object (flicke… { …(4) }" instead of resolving` |
 | plants (elements project) capture bounds: an element that mutates its own attribu… turns a capture over the container (in proces… red | `Error: promise resolved "[]" instead of rejecting` |
+
+### Review round 1: the fixture-page `laterTask()` test
+
+The test of `packages/elements/test/browser/driver.test.ts` was replaced by a stricter one (Principle VIII, "a test
+that turns out wrong is replaced by a stricter one with the reason recorded"; the reason is R1-01 above). The page's
+`evaluate` calls are now marked in the page (`marked`: `"start"` when a call's function starts, `"end"` when it has
+finished, and a rendering update asked for at the first start that pushes `"step frame"`), and the test asserts the
+page's order at the step's own end: the message and the frame posted before the step, and the step's own rendering
+update, all come before the step's last `"end"`, and nothing after it. A no-op step makes no `evaluate`, so there is
+no `"end"` and the test fails whatever the timing; a step that returns at once from one `evaluate` ends before the
+rendering update it was given, so it fails too (checked three times by hand with `laterTask` set to
+`page.evaluate(() => undefined)`: `before: [ 'message' ]` or `before: [ 'frame', 'message' ]`, never with
+`"step frame"`; the change was reverted and is not committed).
+
+Runs of the final tests against the red commit's stubs, in a worktree at `306bd2b` with the new test file overlaid
+(the other 24 test files are the same at the red and final commits), `OCELLE_CHROMIUM_PATH` set:
+
+| Run | Log | Result | The fixture-page `laterTask()` test |
+|---|---|---|---|
+| `pnpm test`, 1 | `fix-1-final-tests-on-stubs-full-1.log` | exit 1, 90 of 3197 failed | fails: `before: null, returned: null` |
+| `pnpm test`, 2 | `fix-1-final-tests-on-stubs-full-2.log` | exit 1, 90 of 3197 failed | fails, the same |
+| `pnpm test`, 3, with runs 4 to 8 at the same time | `fix-1-final-tests-on-stubs-full-3.log` | exit 1, 90 of 3197 failed | fails, the same |
+| `vitest run --project elements-browser`, 4 to 8, beside run 3 | `fix-1-final-tests-on-stubs-browser-1.log` to `-5.log` | exit 1, 29 of 116 failed each | fails in each |
+
+The 90 are the 85 tests of T001 to T001c and the 5 environment-only visual-gate tests, as before; the set of failing
+tests is the one of `check-final-tests-on-stubs.log`.
 
 ## (2) How `tdd-check.sh` reads in phase 1
 

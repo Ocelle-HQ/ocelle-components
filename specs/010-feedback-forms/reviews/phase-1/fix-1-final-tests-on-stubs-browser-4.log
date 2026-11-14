@@ -1,0 +1,835 @@
+
+ RUN  v5.0.5 /tmp/claude-0/-home-user-ocelle-components/79c78b0d-80ff-5b88-8075-84f5d1e656cb/scratchpad/wt
+
+ ❯ |elements-browser| packages/elements/test/browser/plants.test.ts (1 test | 1 failed) 1716ms
+   ❯ plants (elements-browser project) (1)
+     × capture bounds: an element that mutates its own attribu… turns a capture over the container (fixture p… red 857ms
+ ❯ |elements-browser| packages/elements/test/browser/live-capture.test.ts (8 tests | 8 failed) 6492ms
+   ❯ liveCapture on the strict-CSP fixture pages (8)
+     × observes the container's subtree: a region added and written W later counts one under both rules; a region outside is not read 1264ms
+     × observes the shadow roots in the container when it is armed: a text set and cleared within a task is seen at a mutation pause 833ms
+     × observes shadow roots attached after it is armed, nested ones included (the attachShadow patch) 680ms
+     × takes snapshots with at, frame, lifecycle, loaded, regions and hosts; lifecycle snapshots count the rendering updates 402ms
+     × startDocument(url) sees the document from its first node: the region parsed late is absent from the first snapshot and appears holding its text 499ms
+     × stop() waits the quiet window (700 + 700 + 350 ms) after the last mutation, then two rendering updates 801ms
+     × stop({ atLeast }) first waits until atLeast has passed since the capture started 348ms
+     × a capture over an element that mutates in a loop ends with "capture exceeded …", not a timeout 675ms
+ ❯ |elements-browser| packages/elements/test/browser/driver.test.ts (20 tests | 20 failed) 14368ms
+   ❯ the driver steps on the strict-CSP fixture pages (20)
+     × insert with innerHTML puts the markup into the container, the element constructed connected: true 653ms
+     × insert with template puts the markup into the container, the element constructed connected: true 473ms
+     × insert with domparser puts the markup into the container, the element constructed connected: true 574ms
+     × insert with createElement puts the markup into the container, the element constructed connected: false 766ms
+     × laterTask() returns after a message posted before it and a rendering update of its own 560ms
+     × insertInteractive(containerId, markup) inserts from a DOMContentLoaded handler under startDocument, the element defined by the browser build 732ms
+     × after(ms) returns no earlier than ms after the previous step's end, with the gap measured in the page 647ms
+     × the W in force is Chromium's: 300 ms loaded, 700 ms loading 654ms
+     × hostRole(id) reads the role of a host in the final snapshot of the last capture 753ms
+     ❯ forms (11)
+       × formData(formId) returns the form's entries 484ms
+       × submit(formId) submits through the form's submitter and returns the request body the server received 663ms
+       × submit(formId) returns null when no request arrives (a required field empty) 670ms
+       × after a key step, submit(formId) takes that step's submission, or null when it made none 674ms
+       × reset(formId) resets the form 631ms
+       × type(id, text) focuses the control and types the text key by key 763ms
+       × press(id, key) focuses the element and presses the key 640ms
+       × blur() moves focus away from the focused element, through shadow roots 793ms
+       × click(id, at) clicks at that point of the element's box 1025ms
+       × focusPath() lists the focused element through shadow roots 504ms
+       × navigateAwayAndBack() on a no-store route shows the page again from the network and returns pageshow.persisted 860ms
+
+⎯⎯⎯⎯⎯⎯ Failed Tests 29 ⎯⎯⎯⎯⎯⎯⎯
+
+ FAIL  |elements-browser| packages/elements/test/browser/driver.test.ts > the driver steps on the strict-CSP fixture pages > insert with innerHTML puts the markup into the container, the element constructed connected: true
+ FAIL  |elements-browser| packages/elements/test/browser/driver.test.ts > the driver steps on the strict-CSP fixture pages > insert with template puts the markup into the container, the element constructed connected: true
+ FAIL  |elements-browser| packages/elements/test/browser/driver.test.ts > the driver steps on the strict-CSP fixture pages > insert with domparser puts the markup into the container, the element constructed connected: true
+AssertionError: expected { seen: { html: '', …(3) }, …(1) } to deeply equal { seen: { …(4) }, recorded: { …(4) } }
+
+- Expected
++ Received
+
+@@ -4,11 +4,11 @@
+      "failed": [],
+      "outside": [],
+      "violations": [],
+    },
+    "seen": {
+-     "connected": true,
+-     "document": true,
+-     "html": "<ocelle-test-probe id=\"p\" data-x=\"1\"><span>child</span> text</ocelle-test-probe>",
+-     "upgraded": true,
++     "connected": undefined,
++     "document": false,
++     "html": "",
++     "upgraded": undefined,
+    },
+  }
+
+ ❯ packages/elements/test/browser/driver.test.ts:78:53
+     76|       return { html: document.getElementById("c")?.innerHTML, upgraded…
+     77|     });
+     78|     expect({ seen, recorded: await page.finish() }).toEqual({ seen: { …
+       |                                                     ^
+     79|   });
+     80|
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[1/29]⎯
+
+ FAIL  |elements-browser| packages/elements/test/browser/driver.test.ts > the driver steps on the strict-CSP fixture pages > insert with createElement puts the markup into the container, the element constructed connected: false
+AssertionError: expected { seen: { html: '', …(3) }, …(1) } to deeply equal { seen: { …(4) }, recorded: { …(4) } }
+
+- Expected
++ Received
+
+@@ -4,11 +4,11 @@
+      "failed": [],
+      "outside": [],
+      "violations": [],
+    },
+    "seen": {
+-     "connected": false,
+-     "document": true,
+-     "html": "<ocelle-test-probe id=\"p\" data-x=\"1\"><span>child</span> text</ocelle-test-probe>",
+-     "upgraded": true,
++     "connected": undefined,
++     "document": false,
++     "html": "",
++     "upgraded": undefined,
+    },
+  }
+
+ ❯ packages/elements/test/browser/driver.test.ts:78:53
+     76|       return { html: document.getElementById("c")?.innerHTML, upgraded…
+     77|     });
+     78|     expect({ seen, recorded: await page.finish() }).toEqual({ seen: { …
+       |                                                     ^
+     79|   });
+     80|
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[2/29]⎯
+
+ FAIL  |elements-browser| packages/elements/test/browser/driver.test.ts > the driver steps on the strict-CSP fixture pages > laterTask() returns after a message posted before it and a rendering update of its own
+AssertionError: expected { before: null, returned: null, …(1) } to deeply equal { before: [ 'frame', …(2) ], …(2) }
+
+- Expected
++ Received
+
+  {
+-   "before": [
+-     "frame",
+-     "message",
+-     "step frame",
+-   ],
++   "before": null,
+    "recorded": {
+      "console": [],
+      "failed": [],
+      "outside": [],
+      "violations": [],
+    },
+-   "returned": [
+-     "end",
+-   ],
++   "returned": null,
+  }
+
+ ❯ packages/elements/test/browser/driver.test.ts:107:8
+    105|       returned: end < 0 ? null : marks.slice(end),
+    106|       recorded: await page.finish(),
+    107|     }).toEqual({ before: ["frame", "message", "step frame"], returned:…
+       |        ^
+    108|   });
+    109|
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[3/29]⎯
+
+ FAIL  |elements-browser| packages/elements/test/browser/driver.test.ts > the driver steps on the strict-CSP fixture pages > insertInteractive(containerId, markup) inserts from a DOMContentLoaded handler under startDocument, the element defined by the browser build
+AssertionError: expected { inserted: undefined, …(2) } to deeply equal { inserted: { …(5) }, …(2) }
+
+- Expected
++ Received
+
+  {
+    "before": true,
+    "hosts": {
+-     "final": [
+-       "i",
+-     ],
+-     "first": [],
++     "final": null,
++     "first": null,
+    },
+-   "inserted": {
+-     "at": 0,
+-     "defined": true,
+-     "readyState": "interactive",
+-     "tags": [
+-       "ocelle-icon",
+-     ],
+-     "upgraded": true,
+-   },
++   "inserted": undefined,
+  }
+
+ ❯ packages/elements/test/browser/driver.test.ts:115:176
+    113|     const seen = await page.page.evaluate(() => ({ inserted: (globalTh…
+    114|     const snapshots = await driver.liveCapture.stop();
+    115|     expect({ inserted: seen.inserted, before: at <= seen.now, hosts: {…
+       |                                                                                                                                                                                ^
+    116|       inserted: { readyState: "interactive", defined: true, tags: ["oc…
+    117|       before: true,
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[4/29]⎯
+
+ FAIL  |elements-browser| packages/elements/test/browser/driver.test.ts > the driver steps on the strict-CSP fixture pages > after(ms) returns no earlier than ms after the previous step's end, with the gap measured in the page
+AssertionError: expected { atLeast: false, matches: true, …(1) } to deeply equal { atLeast: true, matches: true, …(1) }
+
+- Expected
++ Received
+
+@@ -1,7 +1,7 @@
+  {
+-   "atLeast": true,
++   "atLeast": false,
+    "matches": true,
+    "recorded": {
+      "console": [],
+      "failed": [],
+      "outside": [],
+
+ ❯ packages/elements/test/browser/driver.test.ts:129:114
+    127|     const gap = await driver.after(100);
+    128|     const after = await page.page.evaluate(() => performance.now());
+    129|     expect({ atLeast: gap >= 100, matches: Math.abs(after - before - g…
+       |                                                                                                                  ^
+    130|   });
+    131|
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[5/29]⎯
+
+ FAIL  |elements-browser| packages/elements/test/browser/driver.test.ts > the driver steps on the strict-CSP fixture pages > the W in force is Chromium's: 300 ms loaded, 700 ms loading
+AssertionError: expected { Object (W, recorded) } to deeply equal { …(2) }
+
+- Expected
++ Received
+
+@@ -1,9 +1,9 @@
+  {
+    "W": {
+-     "loaded": 300,
+-     "loading": 700,
++     "loaded": 0,
++     "loading": 0,
+    },
+    "recorded": {
+      "console": [],
+      "failed": [],
+      "outside": [],
+
+ ❯ packages/elements/test/browser/driver.test.ts:134:60
+    132|   it("the W in force is Chromium's: 300 ms loaded, 700 ms loading", as…
+    133|     const { visit: page, driver } = await open();
+    134|     expect({ W: driver.W, recorded: await page.finish() }).toEqual({ W…
+       |                                                            ^
+    135|   });
+    136|
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[6/29]⎯
+
+ FAIL  |elements-browser| packages/elements/test/browser/driver.test.ts > the driver steps on the strict-CSP fixture pages > hostRole(id) reads the role of a host in the final snapshot of the last capture
+AssertionError: expected { roles: [ 'none', 'none' ], …(1) } to deeply equal { roles: [ 'alert', 'status' ], …(1) }
+
+- Expected
++ Received
+
+@@ -4,9 +4,9 @@
+      "failed": [],
+      "outside": [],
+      "violations": [],
+    },
+    "roles": [
+-     "alert",
+-     "status",
++     "none",
++     "none",
+    ],
+  }
+
+ ❯ packages/elements/test/browser/driver.test.ts:143:112
+    141|     await driver.setAttribute("a", "data-changed", "");
+    142|     await driver.liveCapture.stop();
+    143|     expect({ roles: [await driver.hostRole("a"), await driver.hostRole…
+       |                                                                                                                ^
+    144|   });
+    145|
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[7/29]⎯
+
+ FAIL  |elements-browser| packages/elements/test/browser/driver.test.ts > the driver steps on the strict-CSP fixture pages > forms > formData(formId) returns the form's entries
+AssertionError: expected { data: [], recorded: { …(4) } } to deeply equal { data: [ …(2) ], recorded: { …(4) } }
+
+- Expected
++ Received
+
+@@ -1,16 +1,7 @@
+  {
+-   "data": [
+-     [
+-       "title",
+-       "draft",
+-     ],
+-     [
+-       "note",
+-       "",
+-     ],
+-   ],
++   "data": [],
+    "recorded": {
+      "console": [],
+      "failed": [],
+      "outside": [],
+      "violations": [],
+
+ ❯ packages/elements/test/browser/driver.test.ts:152:83
+    150|       const { visit: page, driver } = await open();
+    151|       await driver.mount(form);
+    152|       expect({ data: await driver.formData("f"), recorded: await page.…
+       |                                                                                   ^
+    153|         data: [
+    154|           ["title", "draft"],
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[8/29]⎯
+
+ FAIL  |elements-browser| packages/elements/test/browser/driver.test.ts > the driver steps on the strict-CSP fixture pages > forms > submit(formId) submits through the form's submitter and returns the request body the server received
+AssertionError: expected { submitted: null, url: true, …(1) } to deeply equal { Object (submitted, url, ...) }
+
+- Expected
++ Received
+
+@@ -3,21 +3,8 @@
+      "console": [],
+      "failed": [],
+      "outside": [],
+      "violations": [],
+    },
+-   "submitted": [
+-     [
+-       "title",
+-       "draft",
+-     ],
+-     [
+-       "note",
+-       "",
+-     ],
+-     [
+-       "via",
+-       "button",
+-     ],
+-   ],
++   "submitted": null,
+    "url": true,
+  }
+
+ ❯ packages/elements/test/browser/driver.test.ts:165:105
+    163|       await driver.mount(form);
+    164|       const submitted = await driver.submit("f");
+    165|       expect({ submitted, url: page.page.url().endsWith("/live.html"),…
+       |                                                                                                         ^
+    166|         submitted: [
+    167|           ["title", "draft"],
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[9/29]⎯
+
+ FAIL  |elements-browser| packages/elements/test/browser/driver.test.ts > the driver steps on the strict-CSP fixture pages > forms > submit(formId) returns null when no request arrives (a required field empty)
+AssertionError: expected { empty: null, filled: null, …(1) } to deeply equal { empty: null, …(2) }
+
+- Expected
++ Received
+
+@@ -1,17 +1,8 @@
+  {
+    "empty": null,
+-   "filled": [
+-     [
+-       "title",
+-       "Fix lane",
+-     ],
+-     [
+-       "x",
+-       "1",
+-     ],
+-   ],
++   "filled": null,
+    "recorded": {
+      "console": [],
+      "failed": [],
+      "outside": [],
+      "violations": [],
+
+ ❯ packages/elements/test/browser/driver.test.ts:181:90
+    179|       const empty = await driver.submit("f");
+    180|       await driver.setProperty("t", "value", "Fix lane");
+    181|       expect({ empty, filled: await driver.submit("f"), recorded: awai…
+       |                                                                                          ^
+    182|         empty: null,
+    183|         filled: [
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[10/29]⎯
+
+ FAIL  |elements-browser| packages/elements/test/browser/driver.test.ts > the driver steps on the strict-CSP fixture pages > forms > after a key step, submit(formId) takes that step's submission, or null when it made none
+AssertionError: expected { one: null, two: null, …(1) } to deeply equal { …(3) }
+
+- Expected
++ Received
+
+@@ -1,12 +1,7 @@
+  {
+-   "one": [
+-     [
+-       "title",
+-       "Fix lane",
+-     ],
+-   ],
++   "one": null,
+    "recorded": {
+      "console": [],
+      "failed": [],
+      "outside": [],
+      "violations": [],
+
+ ❯ packages/elements/test/browser/driver.test.ts:198:85
+    196|       await driver.mount('<form id="f" action="/submit" method="post">…
+    197|       await driver.press("t", "Enter");
+    198|       expect({ one, two: await driver.submit("f"), recorded: await pag…
+       |                                                                                     ^
+    199|     });
+    200|
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[11/29]⎯
+
+ FAIL  |elements-browser| packages/elements/test/browser/driver.test.ts > the driver steps on the strict-CSP fixture pages > forms > reset(formId) resets the form
+AssertionError: expected { value: 'Fix lane', …(1) } to deeply equal { value: 'draft', recorded: { …(4) } }
+
+- Expected
++ Received
+
+@@ -3,7 +3,7 @@
+      "console": [],
+      "failed": [],
+      "outside": [],
+      "violations": [],
+    },
+-   "value": "draft",
++   "value": "Fix lane",
+  }
+
+ ❯ packages/elements/test/browser/driver.test.ts:206:146
+    204|       await driver.setProperty("t", "value", "Fix lane");
+    205|       await driver.reset("f");
+    206|       expect({ value: await page.page.evaluate(() => (document.getElem…
+       |                                                                                                                                                  ^
+    207|     });
+    208|
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[12/29]⎯
+
+ FAIL  |elements-browser| packages/elements/test/browser/driver.test.ts > the driver steps on the strict-CSP fixture pages > forms > type(id, text) focuses the control and types the text key by key
+AssertionError: expected { seen: { value: '', …(2) }, …(1) } to deeply equal { seen: { …(3) }, recorded: { …(4) } }
+
+- Expected
++ Received
+
+@@ -4,10 +4,10 @@
+      "failed": [],
+      "outside": [],
+      "violations": [],
+    },
+    "seen": {
+-     "focused": "t",
+-     "inputs": 10,
+-     "value": "Fix {lane}",
++     "focused": "",
++     "inputs": 0,
++     "value": "",
+    },
+  }
+
+ ❯ packages/elements/test/browser/driver.test.ts:224:55
+    222|         focused: document.activeElement?.id,
+    223|       }));
+    224|       expect({ seen, recorded: await page.finish() }).toEqual({ seen: …
+       |                                                       ^
+    225|     });
+    226|
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[13/29]⎯
+
+ FAIL  |elements-browser| packages/elements/test/browser/driver.test.ts > the driver steps on the strict-CSP fixture pages > forms > press(id, key) focuses the element and presses the key
+AssertionError: expected { seen: { keys: [], …(2) }, …(1) } to deeply equal { seen: { …(3) }, recorded: { …(4) } }
+
+- Expected
++ Received
+
+@@ -4,13 +4,10 @@
+      "failed": [],
+      "outside": [],
+      "violations": [],
+    },
+    "seen": {
+-     "focused": "t",
+-     "keys": [
+-       "End",
+-       "Backspace",
+-     ],
+-     "value": "a",
++     "focused": "",
++     "keys": [],
++     "value": "ab",
+    },
+  }
+
+ ❯ packages/elements/test/browser/driver.test.ts:242:55
+    240|         focused: document.activeElement?.id,
+    241|       }));
+    242|       expect({ seen, recorded: await page.finish() }).toEqual({ seen: …
+       |                                                       ^
+    243|     });
+    244|
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[14/29]⎯
+
+ FAIL  |elements-browser| packages/elements/test/browser/driver.test.ts > the driver steps on the strict-CSP fixture pages > forms > blur() moves focus away from the focused element, through shadow roots
+AssertionError: expected { focused: 'f', seen: { …(2) }, …(1) } to deeply equal { focused: 'f', seen: { …(2) }, …(1) }
+
+- Expected
++ Received
+
+@@ -5,11 +5,9 @@
+      "failed": [],
+      "outside": [],
+      "violations": [],
+    },
+    "seen": {
+-     "blurred": [
+-       "input",
+-     ],
+-     "body": true,
++     "blurred": [],
++     "body": false,
+    },
+  }
+
+ ❯ packages/elements/test/browser/driver.test.ts:258:64
+    256|       await driver.blur();
+    257|       const seen = await page.page.evaluate(() => ({ blurred: (globalT…
+    258|       expect({ focused, seen, recorded: await page.finish() }).toEqual…
+       |                                                                ^
+    259|     });
+    260|
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[15/29]⎯
+
+ FAIL  |elements-browser| packages/elements/test/browser/driver.test.ts > the driver steps on the strict-CSP fixture pages > forms > click(id, at) clicks at that point of the element's box
+AssertionError: expected { points: [], recorded: { …(4) } } to deeply equal { points: [ { x: 150, y: 30 } ], …(1) }
+
+- Expected
++ Received
+
+@@ -1,12 +1,7 @@
+  {
+-   "points": [
+-     {
+-       "x": 150,
+-       "y": 30,
+-     },
+-   ],
++   "points": [],
+    "recorded": {
+      "console": [],
+      "failed": [],
+      "outside": [],
+      "violations": [],
+
+ ❯ packages/elements/test/browser/driver.test.ts:275:144
+
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[16/29]⎯
+
+ FAIL  |elements-browser| packages/elements/test/browser/driver.test.ts > the driver steps on the strict-CSP fixture pages > forms > focusPath() lists the focused element through shadow roots
+AssertionError: expected { empty: [], field: [], …(1) } to deeply equal { empty: [], field: [ …(2) ], …(1) }
+
+- Expected
++ Received
+
+@@ -1,11 +1,8 @@
+  {
+    "empty": [],
+-   "field": [
+-     "ocelle-test-field#f",
+-     "input",
+-   ],
++   "field": [],
+    "recorded": {
+      "console": [],
+      "failed": [],
+      "outside": [],
+      "violations": [],
+
+ ❯ packages/elements/test/browser/driver.test.ts:283:89
+    281|       const empty = await driver.focusPath();
+    282|       await page.page.evaluate(() => document.getElementById("f")?.foc…
+    283|       expect({ empty, field: await driver.focusPath(), recorded: await…
+       |                                                                                         ^
+    284|     });
+    285|
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[17/29]⎯
+
+ FAIL  |elements-browser| packages/elements/test/browser/driver.test.ts > the driver steps on the strict-CSP fixture pages > forms > navigateAwayAndBack() on a no-store route shows the page again from the network and returns pageshow.persisted
+AssertionError: expected { Object (status, cacheControl) } to deeply equal { status: 200, …(1) }
+
+- Expected
++ Received
+
+  {
+-   "cacheControl": "no-store",
+-   "status": 200,
++   "cacheControl": undefined,
++   "status": 404,
+  }
+
+ ❯ packages/elements/test/browser/driver.test.ts:290:21
+    288|       const response = await page.page.request.get(new URL("/no-store/…
+    289|       const route = { status: response.status(), cacheControl: respons…
+    290|       expect(route).toEqual({ status: 200, cacheControl: "no-store" });
+       |                     ^
+    291|       await page.page.goto(new URL("/no-store/live.html", page.page.ur…
+    292|       await driver.mount('<form id="f" action="/submit" method="post">…
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[18/29]⎯
+
+ FAIL  |elements-browser| packages/elements/test/browser/live-capture.test.ts > liveCapture on the strict-CSP fixture pages > observes the container's subtree: a region added and written W later counts one under both rules; a region outside is not read
+AssertionError: expected { paused: false, lifecycle: false } to deeply equal { paused: true, lifecycle: true }
+
+- Expected
++ Received
+
+  {
+-   "lifecycle": true,
+-   "paused": true,
++   "lifecycle": false,
++   "paused": false,
+  }
+
+ ❯ packages/elements/test/browser/live-capture.test.ts:61:132
+
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[19/29]⎯
+
+ FAIL  |elements-browser| packages/elements/test/browser/live-capture.test.ts > liveCapture on the strict-CSP fixture pages > observes the shadow roots in the container when it is armed: a text set and cleared within a task is seen at a mutation pause
+AssertionError: expected { paused: false, …(3) } to deeply equal { Object (paused, lifecycle, ...) }
+
+- Expected
++ Received
+
+@@ -1,9 +1,9 @@
+  {
+-   "frames": true,
++   "frames": false,
+    "lifecycle": false,
+-   "paused": true,
++   "paused": false,
+    "recorded": {
+      "console": [],
+      "failed": [],
+      "outside": [],
+      "violations": [],
+
+ ❯ packages/elements/test/browser/live-capture.test.ts:77:209
+
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[20/29]⎯
+
+ FAIL  |elements-browser| packages/elements/test/browser/live-capture.test.ts > liveCapture on the strict-CSP fixture pages > observes shadow roots attached after it is armed, nested ones included (the attachShadow patch)
+AssertionError: expected { paused: false, …(2) } to deeply equal { paused: true, …(2) }
+
+- Expected
++ Received
+
+@@ -1,11 +1,8 @@
+  {
+-   "hosts": [
+-     "n",
+-     "inner",
+-   ],
+-   "paused": true,
++   "hosts": undefined,
++   "paused": false,
+    "recorded": {
+      "console": [],
+      "failed": [],
+      "outside": [],
+      "violations": [],
+
+ ❯ packages/elements/test/browser/live-capture.test.ts:99:163
+     97|     });
+     98|     const snapshots = await driver.liveCapture.stop();
+     99|     expect({ paused: texts(snapshots, "inner", false).includes("Saved"…
+       |                                                                                                                                                                   ^
+    100|       paused: true,
+    101|       hosts: ["n", "inner"],
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[21/29]⎯
+
+ FAIL  |elements-browser| packages/elements/test/browser/live-capture.test.ts > liveCapture on the strict-CSP fixture pages > takes snapshots with at, frame, lifecycle, loaded, regions and hosts; lifecycle snapshots count the rendering updates
+AssertionError: expected 0 to be greater than or equal to 3
+ ❯ packages/elements/test/browser/live-capture.test.ts:115:30
+    113|     const snapshots = await driver.liveCapture.stop();
+    114|     const lifecycle = snapshots.filter((snapshot) => snapshot.lifecycl…
+    115|     expect(lifecycle.length).toBeGreaterThanOrEqual(3);
+       |                              ^
+    116|     expect(lifecycle.map((snapshot) => snapshot.frame)).toEqual(lifecy…
+    117|     expect(snapshots.map((snapshot) => snapshot.at)).toEqual([...snaps…
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[22/29]⎯
+
+ FAIL  |elements-browser| packages/elements/test/browser/live-capture.test.ts > liveCapture on the strict-CSP fixture pages > startDocument(url) sees the document from its first node: the region parsed late is absent from the first snapshot and appears holding its text
+AssertionError: expected { first: [ 'no snapshot' ], …(3) } to deeply equal { first: [], loading: true, …(2) }
+
+- Expected
++ Received
+
+  {
+    "final": [
+-     "Ready",
++     "no snapshot",
+    ],
+-   "first": [],
+-   "loading": true,
+-   "url": true,
++   "first": [
++     "no snapshot",
++   ],
++   "loading": false,
++   "url": false,
+  }
+
+ ❯ packages/elements/test/browser/live-capture.test.ts:137:185
+    135|     const snapshots = await driver.liveCapture.stop();
+    136|     const late = (snapshot: Snapshot | undefined): string[] => snapsho…
+    137|     expect({ first: late(snapshots[0]), loading: snapshots.some((snaps…
+       |                                                                                                                                                                                         ^
+    138|       first: [],
+    139|       loading: true,
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[23/29]⎯
+
+ FAIL  |elements-browser| packages/elements/test/browser/live-capture.test.ts > liveCapture on the strict-CSP fixture pages > stop() waits the quiet window (700 + 700 + 350 ms) after the last mutation, then two rendering updates
+AssertionError: expected { waited: false, bounded: false, …(2) } to deeply equal { waited: true, bounded: true, …(2) }
+
+- Expected
++ Received
+
+  {
+-   "bounded": true,
+-   "frames": true,
++   "bounded": false,
++   "frames": 0,
+    "recorded": {
+      "console": [],
+      "failed": [],
+      "outside": [],
+      "violations": [],
+    },
+-   "waited": true,
++   "waited": false,
+  }
+
+ ❯ packages/elements/test/browser/live-capture.test.ts:163:8
+    161|       frames: written === undefined ? 0 : snapshots.filter((snapshot) …
+    162|       recorded: await page.finish(),
+    163|     }).toEqual({ waited: true, bounded: true, frames: true, recorded: …
+       |        ^
+    164|   });
+    165|
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[24/29]⎯
+
+ FAIL  |elements-browser| packages/elements/test/browser/live-capture.test.ts > liveCapture on the strict-CSP fixture pages > stop({ atLeast }) first waits until atLeast has passed since the capture started
+AssertionError: expected { waited: false, bounded: false, …(1) } to deeply equal { waited: true, bounded: true, …(1) }
+
+- Expected
++ Received
+
+  {
+-   "bounded": true,
++   "bounded": false,
+    "recorded": {
+      "console": [],
+      "failed": [],
+      "outside": [],
+      "violations": [],
+    },
+-   "waited": true,
++   "waited": false,
+  }
+
+ ❯ packages/elements/test/browser/live-capture.test.ts:173:108
+    171|     const snapshots = await driver.liveCapture.stop({ atLeast });
+    172|     const waited = (snapshots.at(-1)?.at ?? Number.NaN) - (snapshots[0…
+    173|     expect({ waited: waited >= atLeast, bounded: waited < atLeast + 15…
+       |                                                                                                            ^
+    174|   });
+    175|
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[25/29]⎯
+
+ FAIL  |elements-browser| packages/elements/test/browser/live-capture.test.ts > liveCapture on the strict-CSP fixture pages > a capture over an element that mutates in a loop ends with "capture exceeded …", not a timeout
+AssertionError: promise resolved "[]" instead of rejecting
+
+- Expected:
+Error {
+  "message": "rejected promise",
+}
+
++ Received:
+[]
+
+ ❯ packages/elements/test/browser/live-capture.test.ts:182:44
+    180|     await driver.insert("c", '<ocelle-test-loop id="loop"></ocelle-tes…
+    181|     const started = Date.now();
+    182|     await expect(driver.liveCapture.stop()).rejects.toThrow(/^capture …
+       |                                            ^
+    183|     expect(Date.now() - started).toBeLessThan(15_000);
+    184|     await page.page.evaluate(() => document.getElementById("loop")?.re…
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[26/29]⎯
+
+ FAIL  |elements-browser| packages/elements/test/browser/plants.test.ts > plants (elements-browser project) > capture bounds: an element that mutates its own attribu… turns a capture over the container (fixture p… red
+AssertionError: promise resolved "[]" instead of rejecting
+
+- Expected:
+Error {
+  "message": "rejected promise",
+}
+
++ Received:
+[]
+
+ ❯ packages/elements/test/browser/plants.test.ts:71:28
+     69|   it.each(rows)("$family: $plant turns $body red", async ({ planted, u…
+     70|     recorded.length = 0;
+     71|     await expect(planted()).rejects.toThrow(message);
+       |                            ^
+     72|     await expect(unplanted()).resolves.not.toEqual([]);
+     73|     expect(recorded).toEqual([clean, clean]);
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[27/29]⎯
+
+
+ Test Files  3 failed | 4 passed (7)
+      Tests  29 failed | 87 passed (116)
+   Start at  03:22:54
+   Duration  46.63s (tests 91%, import 9%)
+
+exit 1
