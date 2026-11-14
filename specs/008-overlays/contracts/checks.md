@@ -12,7 +12,7 @@ No new gate. The existing gates cover this feature as follows.
 | `prefix` | No `sk-` names, no monospace. |
 | `contrast` | No new colour pairs: the bubble uses `color-chrome-ink` on `color-chrome`, already checked. |
 | `brand-rules` | Rule (f) is unchanged: `tooltip-delay` is not zeroed under reduced motion (R-09). |
-| `manifest` | The three new entries are generated and committed. `no-description` covers every new member. A manifest test asserts each entry's events (two per overlay with detail types, none for the tooltip), slots, parts and CSS property (R-01, SC-003). |
+| `manifest` | The three new entries are generated and committed. `no-description` covers every new member. A manifest test asserts each entry's events (two per overlay with detail types, none for the tooltip), slots, parts and CSS property (R-01, SC-003). The generator reads every `src/ocelle-*.ts` and `src/overlay.ts` and nothing else; `ocelle-dialog` and `ocelle-drawer` list `open`, `label` and `closeLabel` with `inheritedFrom` naming `OcelleOverlay`, and the published manifest has no `src/overlay.ts` module and no `OcelleOverlay` declaration (operator decision, 2026-11-14, R-01). |
 | `storybook-build`, `visual`, `axe` (from #10) | The stories of data-model § Stories, with baselines in light and dark and axe clean. **Recheck when #10 lands** (research R-16). Baselines are not the evidence for motion, forced colours or geometry; the matrix below is. |
 
 ## Test matrix (FR-043, SC-001, SC-002, SPEC-1-09, SPEC-1-11, SPEC-2-04)
@@ -56,14 +56,32 @@ modal, level. Device: the default context (`elements`, `visit()`) matches `(hove
     root holding two buttons (c1, c2; no `delegatesFocus`), and a slotted `<iframe srcdoc>` holding two buttons (f1,
     f2; `focusPath()` reads the frame's element plus its inner active element), each placed (i) between two slotted
     buttons and (ii) as the last body content with no footer; Tab and Shift+Tab, n + 2 presses each, started from the
-    close control. The exact `focusPath()` lists are measured in Chromium in Phase 2's first dialog task and written
-    into the rows before the code (the round 3 probe's native list for (i), `b1 xc xc fr[f1] fr[f2] b2`, is the
-    reference). Each list must hold: in (i), both directions, every inner button appears once per cycle in native
+    close control. The exact `focusPath()` lists, measured in Chromium 153 in T014 (`reviews/phase-2/measure.md`;
+    `close` is the close control, `xc[c1]` the closed host with c1 focused inside it, `fr[f1]` the frame with f1
+    focused inside it; the round 3 probe's native list for (i), `b1 xc xc fr[f1] fr[f2] b2`, is confirmed):
+    - (i) closed host, with and without `delegatesFocus` (n = 5): Tab `b1 xc[c1] xc[c2] b2 close b1 xc[c1]`,
+      Shift+Tab `b2 xc[c2] xc[c1] b1 close b2 xc[c2]`;
+    - (i) iframe (n = 5): Tab `b1 fr[f1] fr[f2] b2 close b1 fr[f1]`, Shift+Tab `b2 fr[f2] fr[f1] b1 close b2 fr[f2]`;
+    - (ii) closed host, with and without `delegatesFocus` (n = 4, the sentinel wrap backward): Tab
+      `b1 xc[c1] xc[c2] close b1 xc[c1] xc[c2]` (the closed root signals the move onto the body, so the repair leaves
+      no `body` entry), Shift+Tab `xc[c2] xc[c1] b1 close xc[c2] xc[c1] b1`;
+    - (ii) iframe (n = 4, the sentinel wrap backward): Tab `b1 fr[f1] fr[f2] body close b1 fr[f1]` (one `body`
+      entry, the stated extra press: the engine gives no signal for focus leaving the frame), Shift+Tab
+      `fr[f2] fr[f1] b1 close fr[f2] fr[f1] b1`.
+
+    Each list must hold: in (i), both directions, every inner button appears once per cycle in native
     order and there is no `body` entry; in (ii) forward, every inner button appears in order, followed by the close
-    control, with at most one `body` entry (the stated extra press, R-04's repair); in (ii) backward, the iframe's
-    inner buttons are reached from the frame and the closed root is skipped by the wrap (the stated reverse-wrap
-    limit). No list holds a page element outside the overlay. A host with `delegatesFocus` in (ii) backward: its
-    inner buttons are reached.
+    control, with at most one `body` entry (the stated extra press, R-04's repair; measured only for the iframe); in
+    (ii) backward (the sentinel wrap, operator decision, 2026-11-14, R-04), every inner button of the closed host,
+    with and without `delegatesFocus`, and of the iframe appears once per cycle in reverse native order, entered from
+    its end, followed by b1 and the close control, with no `body` entry and no bare frame entry (measured with the
+    stand-in: `xc[c2] xc[c1] b1 close xc[c2] xc[c1] b1`, `fr[f2] fr[f1] b1 close fr[f2] fr[f1] b1`). No list holds a
+    page element outside the overlay, and no list holds the end sentinel.
+  - **End sentinel** (R-04, FR-008): in each (ii) backward case, after every press `focusPath()` does not end on the
+    sentinel; with the overlay open, the sentinel has `tabindex="-1"`, `aria-hidden="true"`, no text, no
+    `aria-label` and no role, and a box of zero block size (`getBoundingClientRect().height` 0, nothing painted); its absence from
+    the accessibility tree is asserted in the accessibility-tree row. Native Tab and Shift+Tab never reach it: in
+    the (i), (ii) forward and positive-`tabindex` rows, and in the basic Tab cycle, no list holds it.
   - **Middle moves are native** (R-04): a slotted button with `tabindex="2"` between two plain buttons: the middle
     moves and the wraps follow the engine's navigation order (the stop list's order, R-04), every button once per
     cycle, no `body`.
@@ -71,9 +89,11 @@ modal, level. Device: the default context (`elements`, `visit()`) matches `(hove
     the close control. (i) Slotted b1, b2, b3 with `tabindex="2"` on b3 (flat-tree last): Tab gives
     `b3 b1 b2 close b3 …`, Shift+Tab gives `b2 b1 b3 close b2 …` (the verify probe's native order `b3 b1 b2` is the
     reference). (ii) The same with `tabindex="2"` on b1 (flat-tree first content stop) and on b3: Tab gives
-    `b1 b3 b2 close b1 …`, Shift+Tab `b2 b3 b1 close b2 …`. (iii) Case (i) with a footer of two buttons, the first
-    with `tabindex="1"`: the list is measured in Chromium in Phase 2's first dialog task and written into the row
-    before the code; it must hold every button once per cycle, no `body`, and wrap at the navigation order's ends.
+    `b1 b3 b2 close b1 …`, Shift+Tab `b2 b3 b1 close b2 …`. (iii) Case (i) with a footer of two buttons, g1 with
+    `tabindex="1"` and g2: it must hold every button once per cycle, no `body`, and wrap at the navigation order's
+    ends. Measured in Chromium 153 in T014 (n = 6; the footer slot is its own focus navigation scope, so g1's
+    `tabindex="1"` orders it only before g2, not before b3): Tab gives `b3 b1 b2 g1 g2 close b3 b1`, Shift+Tab gives
+    `g2 g1 b2 b1 b3 close g2 g1`.
     Each list is checked against the engine's native order between the ends.
 - **Escape in a slotted iframe** (R-02, FR-010): focus on f1 inside a slotted iframe, Escape × {no veto, veto}: no
   `…-close-request`, no `cancel`, the dialog stays open and `:modal`.
@@ -89,8 +109,14 @@ modal, level. Device: the default context (`elements`, `visit()`) matches `(hove
   `<dialog>`), after that click and a Shift+Tab, and after the host removed a focused slotted button (focus on the
   body): one request per press, never a `cancel:false` close, open with focus inside under veto (R-02, R-04).
 - **Escape with slotted content**: a focused slotted control that stops Escape's propagation × {no veto, veto, veto
-  then Escape twice}: no veto closes with `escape`; veto keeps it open on the first press; the second press closes
-  with reason `host` (the stated limit, R-02). A slotted control that calls `preventDefault()` on Escape: no request,
+  then Escape twice}: no veto closes with `escape`; veto keeps it open on the first press. Veto then Escape twice
+  (operator decision, 2026-11-14, R-02; both harnesses): in the same page and before its own presses, the case runs
+  one unasserted warm-up sequence on a stand-in native `<dialog>` (opened with `showModal()` after a click, holding a
+  button that stops Escape's propagation and has focus, its `cancel` vetoed, Escape pressed twice; its result is not
+  asserted), because the platform may let the veto hold on both presses in a page's first vetoed sequence. Then, with
+  the opener clicked and the dialog open: the first Escape gives exactly one `…-close-request` with reason `escape`,
+  and the dialog stays open and `:modal`; the second Escape, with nothing in between, gives `…-close` with reason
+  `host` (the stated limit), and focus returns to the opener. A slotted control that calls `preventDefault()` on Escape: no request,
   the dialog stays open. A slotted `<input type=search>` with a value: Escape clears the value, no request, open. An
   Escape with `isComposing`: no request.
   - **Slotted close watchers** (R-02, PLAN-FRESH-3-002): a slotted `popover="auto"` menu opened by a click on its
@@ -99,8 +125,11 @@ modal, level. Device: the default context (`elements`, `visit()`) matches `(hove
     overlay, the overlay stays open and `:modal`; the second Escape requests with reason `escape` (then closes without
     a veto, stays open with focus inside under veto). The same with `popover="hint"` where the engine supports it. A
     slotted native modal `<dialog>` with two buttons shown above the overlay from slotted content: Escape closes it
-    alone with no request and no `cancel` on the overlay; before that, Tab and Shift+Tab, n + 2 presses each, keep
-    `focusPath()` inside the nested dialog; a further Escape then requests the overlay's close with `escape`.
+    alone with no request and no `cancel` on the overlay; before that, from focus on its first button n1 (buttons n1,
+    n2), n + 2 presses give the platform's `focusPath()` lists, measured in Chromium 153 (operator decision,
+    2026-11-14): Tab `n2 body n1 n2`, Shift+Tab `body n2 n1 body`. No entry is page content or one of the overlay's
+    own stops; the `body` entries are the platform's and are asserted, not repaired (R-02), and the row does not
+    claim containment. A further Escape then requests the overlay's close with `escape`.
   - **Slotted non-modal dialogs** (R-02, squad round 3 verify 1 to verify 5; all cases run without user activation,
     as probed, each × {no veto, veto then Escape twice} and, where not stated otherwise, with focus on the slotted
     dialog's button and with focus on a sibling slotted button):
@@ -190,14 +219,15 @@ modal, level. Device: the default context (`elements`, `visit()`) matches `(hove
 - **Forced colours** (`emulateForcedColors`, both palettes): panel border visible in `CanvasText`, panel ground
   `Canvas`, close control focus indicator visible (outline), backdrop does not cover the border.
 - **Accessibility tree**: one modal `dialog` named by `label`, heading level 2, close control a button named by
-  `close-label`, icon hidden. Host `aria-label` (with and without `label`): while open exactly one named node for the
+  `close-label`, icon hidden, and no node for the end sentinel (no unnamed or extra node under the dialog, R-04).
+  Host `aria-label` (with and without `label`): while open exactly one named node for the
   overlay, the modal dialog, named by the host `aria-label`; while closed the host as measured (a named `generic`),
   recorded in the README § Host ARIA (R-08).
 
 ### Drawer
 
 - The dialog's rows with `ocelle-drawer-` events (initial focus, Tab cycle with its non-stop, body, scroller and
-  opaque-content starts, its native middle moves and positive `tabindex` at the ends, Escape and its
+  opaque-content starts and the end sentinel, its native middle moves and positive `tabindex` at the ends, Escape and its
   slotted-content rows including the slotted close watchers and slotted non-modal dialogs, Escape in a slotted iframe, close control, host and platform close, focus return, nested, open at first render (in process
   `test/drawer-upgrade.test.ts`, on the fixture `overlays-upgrade.html`), removed, moved, rapid toggle, input during the exit, stale native `close` event, forced colours,
   accessibility tree). The dialog's "one-line body", "long body" and "styles" rows are not inherited: their expected

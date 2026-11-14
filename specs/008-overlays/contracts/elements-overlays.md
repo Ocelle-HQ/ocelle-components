@@ -38,7 +38,8 @@ an event's `detail`, is MAJOR.
   - a slotted `<form method="dialog">` does nothing to the overlay; close it with `open = false` in the form's submit
     handler;
   - a slotted widget that handles Escape calls `preventDefault()`, not `stopPropagation()`; if it stops propagation,
-    a vetoed overlay can be closed by the platform on a repeated Escape, with reason `host`;
+    a vetoed overlay can be closed by the platform on a repeated Escape, with reason `host`; the first vetoed sequence
+    in a page may hold the veto on a second press as well (the platform's, operator decision, 2026-11-14);
   - removing an open overlay from the document (a move, a morph, a portal) closes it with no event and sets `open` to
     false; the host reopens it after re-inserting it (also in the same task; a reopen there, or in the `…-close`
     listener, stays open, R-03);
@@ -48,10 +49,10 @@ an event's `detail`, is MAJOR.
   - an overflowing scroller in slotted content with nothing focusable inside (a wide prose table) is a Tab stop where
     the engine focuses scrollers (Chromium 130 and later); elsewhere it is skipped (R-04);
   - between the cycle's ends Tab moves as the engine does, so content with a closed shadow root, an iframe or media
-    controls keeps its inner focusable parts reachable; leaving such content past the cycle's end can cost one extra
-    press, a closed shadow root at the end that does not use `delegatesFocus` is skipped by the Shift+Tab wrap (it is
-    reached going forward); positive `tabindex` in slotted content is followed as the engine follows it, and the
-    cycle wraps where that order ends (operator decision, R-04);
+    controls keeps its inner focusable parts reachable in both directions; Shift+Tab from the close control onto
+    such content at the end of the dialog enters it from its end, with or without `delegatesFocus`; leaving a slotted
+    iframe past the cycle's end with Tab can cost one extra press; positive `tabindex` in slotted content is followed
+    as the engine follows it, and the cycle wraps where that order ends (operator decisions, R-04);
   - Escape with focus inside a slotted iframe does nothing to the overlay (R-02);
   - while a slotted popover (`popover="auto"` or `"hint"`, a menu), a native `<dialog>` shown modally from slotted
     content, or a non-modal `<dialog>` opened after the overlay (by `show()` or the `open` attribute) whose `closedby`
@@ -65,7 +66,10 @@ an event's `detail`, is MAJOR.
     platform then closes the overlay on Escape, the close comes with reason `host` (R-02);
   - during the exit, Escape, the close control and the backdrop request nothing; only `open = true` stops a close
     (R-02, R-06).
-- Manifest: the events, slots, parts and CSS property are declared with JSDoc on the concrete class (R-01).
+- Manifest: the events, slots, parts and CSS property are declared with JSDoc on the concrete class (R-01). `open`,
+  `label` and `closeLabel` (and their attributes) are listed on the element with `inheritedFrom` naming the internal
+  base `OcelleOverlay`; the manifest holds no `src/overlay.ts` module and no `OcelleOverlay` declaration (operator
+  decision, 2026-11-14, R-01).
 
 ### Host pattern
 

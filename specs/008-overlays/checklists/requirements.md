@@ -45,3 +45,8 @@
   written at runtime, with an assertion after each placement (FR-047, US3 scenario 13, SC-007). The operator's answer
   to SPEC-1-04 adds the drawer's `heading-hidden` (FR-048, US2 scenario 6), recorded under "Operator decisions while
   specifying". The `:focus-visible` and `style` names are kept as the observable platform conditions the tests check.
+- Phase 2 operator decisions (2026-11-14, `reviews/analysis/fixes-4.md`), recorded under "Operator decisions in
+  Phase 2": the reverse-wrap limit is removed from FR-008, SC-002 and US1 scenario 14, and FR-008 states testably
+  that whatever the overlay adds for the wrap is not a Tab stop, unnamed and absent from the accessibility tree;
+  FR-045 states that inherited members are declared and marked inherited and the internal base is not published.
+  Both are stated as outcomes; the mechanisms (an end sentinel, the analyzer's module list) are left to research.
