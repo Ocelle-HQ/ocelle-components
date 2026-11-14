@@ -1,0 +1,4 @@
+# History fold phase-1 of claude/014-selection-input: old commit -> new commit (pre-fold head kept as refs/ocelle/prefold/phase-1/claude/014-selection-input, d4ca010d9ff00e643801f14e7556bf20f82cbe22).
+1087ff100183eb2184cf8595c4e0cddc72562c8b 5f81b887b2a211691690e1d5e22c13a792ffe8fd
+3cf8b513e3adc85936c19572c4d69f823911c18b 62b9be8a0272a5b39382d5bbde77da7d5cba66c7
+d4ca010d9ff00e643801f14e7556bf20f82cbe22 8b3ce7cd457c7d4a480ea79abbfc243281a91f47
