@@ -459,6 +459,7 @@ const initialRows: DialogScenario[] = [
     content: '<button id="b1">B1</button><input type="radio" name="g" id="r1" aria-label="One"><input type="radio" name="g" id="r2" aria-label="Two" checked>',
     focus: "b1",
   },
+  { label: "a closed shadow root with delegatesFocus first: its first inner button", content: '<ocelle-test-closed-delegating id="xc"></ocelle-test-closed-delegating><button id="b1">B1</button>', focus: "xc[c1]" },
   { label: "a vertical scroller with no stop inside, first: the scroller", content: '<div id="sy"><p>Line 1.</p><p>Line 2.</p><p>Line 3.</p><p>Line 4.</p></div><button id="b1">B1</button>', rules: "#sy { overflow-y: auto; block-size: 40px; }", focus: "sy" },
   {
     label: "a scroller holding a button inside a block, first: the button",
