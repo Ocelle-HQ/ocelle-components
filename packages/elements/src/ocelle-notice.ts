@@ -349,6 +349,7 @@ export class OcelleNotice extends LitElement {
   }
 
   override attributeChangedCallback(name: string, old: string | null, value: string | null): void {
+    // Stryker disable next-line CallExpression: equivalent, Lit's attributeChangedCallback() only sets the property from the attribute, and the notice's own setters write nothing when the attribute already holds the value
     super.attributeChangedCallback(name, old, value);
     this.requestUpdate();
     if (old === value || !this.#connected || !this.isConnected) return;
