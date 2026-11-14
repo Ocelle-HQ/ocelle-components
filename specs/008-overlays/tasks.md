@@ -325,7 +325,7 @@ the driver as it was.
 
 ### Stories (green, after T037)
 
-- [ ] T039 [US2] Green: `storybook/stories/drawer.stories.ts`.
+- [X] T039 [US2] Green: `storybook/stories/drawer.stories.ts`.
 - [ ] T040 [US2] Produce the baselines; run `gate:storybook-build` (`built 35 stories`), `gate:visual` (70 captures match) and `gate:axe` (70 story-theme runs, 0 serious or critical); commit the baselines (70 files in `storybook/baselines/`, so T038's `plant-repo.test.ts` count passes, and the axe plant run gives 72). Then add a `differs` line to `gates/plants/visual/fail-token-changed/plant.json` for each new light story-theme that shows `color-ink`, measured in the pinned container as 006 T046s did (R-16), commit it with the baselines, and run `gate:plants`.
 
 **Checkpoint**: `tdd-check.sh 3` reports `pass`.
