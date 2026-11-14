@@ -52,3 +52,39 @@ No sibling (#16, #15, #9) had changed these lists by the phase base.
   is the heading column's gap below the heading only when it is drawn as a block. The heading is left out of the
   group: the `heading` slot takes a heading element, which is a block already, so `display: block` there would be a
   declaration no plant could catch.
+
+## Baselines (T031), under operator decision 4
+
+Made in #10's pinned container as #10 designed, `pnpm run visual:update -- --engine docker`: "baselines: wrote 10
+files (10 added, 0 changed, 0 removed), 257798 bytes in total", the five new story-themes in light and dark
+(`elements-ocelle-page-header--{heading-only,filled,compact,empty-heading,long-heading}`). No other baseline changed,
+so there is no unexpected PNG to report. The visual plant `fail-token-changed` gains the four new light story-themes
+that show `color-ink` (all but `elements-ocelle-page-header--empty-heading`, which has no heading); `gate:plants` judged
+it as expected in the pinned container. No cross-engine comparison was possible: podman is absent here, so
+`gate:visual` ran under docker alone ("docker only: no cross-engine comparison"). CI, which runs the gate under docker
+and podman, confirms these baselines at landing.
+
+## Gate plants changed by the new element (part of the green commit)
+
+- `gates/plants/manifest/{fail-lost-attribute,fail-undescribed-*,pass-reordered}`: their copies of the committed
+  manifest regenerated with the page header (the same derivation as phase 2's: the repository's manifest with the
+  plant's source, minus the icon's `label` attribute, or with its keys reversed; the derivation reproduces the copies at
+  the phase base byte for byte).
+- `gates/plants/storybook-build/fail-empty-index`: the new story file replaced by one with no story export.
+- `gates/plants/visual/fail-token-changed`: the four light story-themes above.
+
+## Checks at the green state
+
+OCELLE_CHROMIUM_PATH set to Chromium 1243; docker 29.9.2 as the engine (podman absent).
+
+| Check | Result |
+|---|---|
+| `red.sh 3 phase` on `39df391` | tests only, red: 86 of 3379 failed, every one on an assertion (`red-phase.log`) |
+| `gate:typecheck`, `gate:lint` (289 files), `gate:style-lint` (17), `gate:test-lint` (194), `gate:csp` (21), `gate:prefix` (250), `gate:pins` (5 manifests), `gate:config-copies` | pass |
+| `gate:manifest` | "manifest: 5 elements checked, no finding" |
+| `gate:storybook-build` | "built 38 stories" |
+| `gate:axe` | "axe: 76 story-theme runs, 0 serious or critical; 10 notes (0 incomplete, 10 excepted)" |
+| `gate:visual -- --engine docker` | "visual: 76 captures match their baselines (docker only: no cross-engine comparison)" |
+| `gate:mutation -- --base a9a46eb` | 29 mutants, none survived; 3 compile errors, 1 zero-mutant entry (`src/index.ts`), 0 equivalent records |
+| `gate:plants` (no `--skip-container`, `OCELLE_VISUAL_ENGINE=docker`) | "301 plants of 17 gates and the registry judged, every plant as expected" |
+| `pnpm test` (dockerd running) | "3379 tests passed in 152 files" |
