@@ -1,3 +1,6 @@
+import { readdirSync } from "node:fs";
+import { join } from "node:path";
+import { fileURLToPath } from "node:url";
 import { describe, expect, it } from "vitest";
 import type { Plant } from "../lib/plant-judge.ts";
 import { aloneDecision, containerDecision, engineValue, errorText, failedOwn, gateRunsAtOnce, keptPlantDir, limiter, needsEngine, outputLines, otherShardSize, plantShards, plantTimeNote, plantValues, resolveLocations, runPlant, shardSize } from "../lib/plant-runner.ts";
@@ -726,10 +729,35 @@ describe("plantShards and shardSize (plan decision 23)", () => {
     expect(otherShardSize).toBe(80);
   });
 
-  // Plan decision 30 (operator's answer to tasks.md T046l, "A' size 3"): the approved size, no longer the measuring
-  // run's provisional 4.
-  it("is 3 in the repository, approved by plan decision 30", () => {
-    expect(shardSize).toBe(3);
+  // 012 research.md R-13 and plan decision 15: size 1, so a `visual` shard stays under 10 minutes at about 58 stories
+  // (size 3, approved by 006 plan decision 30 up to its split count of 25 stories, would take about 875 s). Size 1 is
+  // the floor: plantShards keeps each plant whole.
+  it("is 1 in the repository (012 research.md R-13), the floor of a shard", () => {
+    expect(shardSize).toBe(1);
+  });
+
+  // 012 tasks.md T006: the repository's own plants (every case directory under gates/plants/<gate>/, as gate:plants
+  // lists them) at the repository's sizes: one visual or axe plant per shard, the other plants dealt over shards of at
+  // most 80.
+  it("deals the repository's plants into one visual or axe plant per shard and the other plants into shards of at most 80", () => {
+    const root = fileURLToPath(new URL("../plants", import.meta.url));
+    const cases = (gate: string): string[] => readdirSync(join(root, gate), { withFileTypes: true }).filter((entry) => entry.isDirectory()).map((entry) => `${gate}/${entry.name}`);
+    const plants = readdirSync(root, { withFileTypes: true }).filter((entry) => entry.isDirectory()).flatMap((entry) => cases(entry.name));
+    const visualAndAxe = plants.filter((plant) => plant.startsWith("visual/") || plant.startsWith("axe/"));
+    const others = plants.length - visualAndAxe.length;
+    const shards = plantShards(plants, shardSize, otherShardSize);
+    const otherShards = Math.ceil(others / 80);
+    expect({
+      counts: { visual: plants.filter((plant) => plant.startsWith("visual/")).length, axe: plants.filter((plant) => plant.startsWith("axe/")).length, others },
+      shards: shards.length,
+      otherSizes: shards.slice(0, otherShards).map((shard) => shard.length <= 80 && shard.every((plant) => !plant.startsWith("visual/") && !plant.startsWith("axe/"))),
+      visualAndAxe: shards.slice(otherShards),
+    }).toEqual({
+      counts: { visual: 48, axe: 25, others: 228 },
+      shards: 3 + 48 + 25,
+      otherSizes: [true, true, true],
+      visualAndAxe: [...visualAndAxe.filter((plant) => plant.startsWith("visual/")).sort(), ...visualAndAxe.filter((plant) => plant.startsWith("axe/")).sort()].map((plant) => [plant]),
+    });
   });
 });
 
