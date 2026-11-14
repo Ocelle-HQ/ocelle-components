@@ -621,6 +621,7 @@ export class OcelleOverlay extends LitElement {
     // A `close` event's target is a dialog: the panel, or one in the content, which leaves the below record.
     const dialog = event.target as HTMLDialogElement;
     if (dialog !== this.#dialog) {
+      // Stryker disable next-line CallExpression: equivalent, the toggle with oldState open of the same close leaves the below record as well (T025, reviews/phase-2/notes.md)
       this.#below.delete(dialog);
       return;
     }
@@ -650,6 +651,7 @@ export class OcelleOverlay extends LitElement {
    * A slotted dialog leaves the below record on a `toggle` whose `oldState` is `open` (R-02); one whose `oldState` is
    * `closed` is the late event of an opening before the overlay and leaves it there.
    */
+  // Stryker disable next-line BlockStatement: equivalent, every close of a slotted dialog also fires its close event, which leaves the below record (T025, reviews/phase-2/notes.md)
   #onToggle(event: Event): void {
     const target = event.target;
     // Stryker disable next-line ConditionalExpression, LogicalOperator, EqualityOperator: equivalent, the panel is never in the below record and deleting any other target changes nothing (T025, reviews/phase-2/notes.md)
@@ -689,6 +691,7 @@ export class OcelleOverlay extends LitElement {
     // Focus in opaque content: the engine moves it (R-04).
     if (isOpaqueContent(active)) return;
     if (back && active === first.element) {
+      // Stryker disable next-line ConditionalExpression: equivalent, the native backward move from the end sentinel also reaches the last candidate in navigation order, as every Shift+Tab wrap row measures; R-04 keeps the explicit move where the last candidate is a stop (T025, reviews/phase-2/notes.md)
       if (isOpaqueContent(last.element)) {
         // The sentinel wrap: the native move runs from the panel's end into the content, from its end.
         this.#sentinel?.focus();
@@ -728,9 +731,9 @@ export class OcelleOverlay extends LitElement {
 
   // Body and footer ----------------------------------------------------------------------------------------------
 
+  /** New content is observed; the observer reports each newly observed element at once, which measures the body. */
   #onBodySlot = (): void => {
     this.#observeContent();
-    this.#measure();
   };
 
   #onFooterSlot = (event: Event): void => {
