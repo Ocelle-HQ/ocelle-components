@@ -39,3 +39,8 @@ Recorded by the orchestrator; each is the operator's answer (human:jeroennouwsde
    for the sidebar, with its assertion in T035: in a flex column or flex row the container or the page sets the
    sidebar's inline size (an `inline-size`, a `flex` value, a grid track, or `align-self: stretch` on the host).
    No scenario is added.
+7. **2026-11-14, clarification of decision 6** (the probe, `reviews/phase-4/flex-column-probe.log`): "Tighten the
+   wording". `align-self: stretch` on the host widens the sidebar only in a flex column; in a flex row it acts on
+   the block axis and the sidebar keeps its content's inline size. FR-036 and T035 state it so: in a flex row or a
+   flex column the container sets the sidebar's inline size (an `inline-size`, a `flex` value, a grid track); in a
+   flex column `align-self: stretch` on the host also gives it the container's inline size.
