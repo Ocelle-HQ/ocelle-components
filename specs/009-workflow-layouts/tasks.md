@@ -650,7 +650,7 @@ with three columns.
 - [X] T059 [US3] Produce the baselines with `visual:update` and confirm them in CI, as in T028. Run `gate:axe`.
 - [X] T060 [US3] README sections of T052, and changelog entries for `ocelle-list-detail`, its entry point,
   `remeasure()` and the container-tier convention. The `@ocelle/tokens` changelog names the six tokens (FR-035).
-- [ ] T061 [US3] Run each pairing plant of T047 to T049 once and record them in
+- [X] T061 [US3] Run each pairing plant of T047 to T049 once and record them in
   `specs/009-workflow-layouts/reviews/phase-4/plants.md`. Then run the gates as in T030.
 
 **Checkpoint**: `tdd-check.sh 4` reports `pass`; the review approves.
