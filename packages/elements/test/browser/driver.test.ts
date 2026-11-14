@@ -129,6 +129,11 @@ describe("the driver steps on the strict-CSP fixture pages", { timeout: 60_000 }
     expect({ atLeast: gap >= 100, matches: Math.abs(after - before - gap) < 30, recorded: await page.finish() }).toEqual({ atLeast: true, matches: true, recorded: clean });
   });
 
+  it("the H in force is the shipped hold, 5000 ms (specs/010-feedback-forms phase 2)", async () => {
+    const { visit: page, driver } = await open();
+    expect({ H: driver.H, recorded: await page.finish() }).toEqual({ H: 5000, recorded: clean });
+  });
+
   it("the W in force is Chromium's: 300 ms loaded, 700 ms loading", async () => {
     const { visit: page, driver } = await open();
     expect({ W: driver.W, recorded: await page.finish() }).toEqual({ W: { loaded: 300, loading: 700 }, recorded: clean });
@@ -141,6 +146,100 @@ describe("the driver steps on the strict-CSP fixture pages", { timeout: 60_000 }
     await driver.setAttribute("a", "data-changed", "");
     await driver.liveCapture.stop();
     expect({ roles: [await driver.hostRole("a"), await driver.hostRole("s")], recorded: await page.finish() }).toEqual({ roles: ["alert", "status"], recorded: clean });
+  });
+
+  // The phase 2 steps (specs/010-feedback-forms T011), as test/driver.test.ts tests them in process.
+  it("batch(operations) runs every operation in order in one task: one MutationObserver delivery holds all their records", async () => {
+    const { visit: page, driver } = await open();
+    await driver.mount('<main id="c"><span id="s">old</span><input id="i"><div id="from"><b id="m">moved</b></div><div id="to"></div><i id="r">gone</i></main>');
+    await page.page.evaluate(() => {
+      const deliveries: number[] = [];
+      new MutationObserver((records) => deliveries.push(records.length)).observe(document.getElementById("c") as HTMLElement, { childList: true, characterData: true, attributes: true, subtree: true });
+      (globalThis as unknown as { ocelleDeliveries: number[] }).ocelleDeliveries = deliveries;
+    });
+    await driver.batch([
+      { op: "insert", container: "c", markup: '<p id="new">fresh</p>' },
+      { op: "text", id: "s", text: "new" },
+      { op: "attribute", id: "s", name: "data-x", value: "1" },
+      { op: "property", id: "i", name: "value", value: "typed" },
+      { op: "move", id: "m", to: "to" },
+      { op: "remove", id: "r" },
+      { op: "focus", id: "i" },
+    ]);
+    const seen = await page.page.evaluate(() => ({
+      deliveries: [...(globalThis as unknown as { ocelleDeliveries: number[] }).ocelleDeliveries],
+      inserted: document.getElementById("new")?.textContent ?? null,
+      text: document.getElementById("s")?.textContent ?? null,
+      attribute: document.getElementById("s")?.getAttribute("data-x") ?? null,
+      value: (document.getElementById("i") as HTMLInputElement).value,
+      moved: document.getElementById("m")?.parentElement?.id ?? null,
+      removed: document.getElementById("r") === null,
+      focused: document.activeElement?.id ?? null,
+    }));
+    expect({ seen, recorded: await page.finish() }).toEqual({
+      seen: { deliveries: [6], inserted: "fresh", text: "new", attribute: "1", value: "typed", moved: "to", removed: true, focused: "i" },
+      recorded: clean,
+    });
+  });
+
+  it("property(id, name) reads a property as the page has it", async () => {
+    const { visit: page, driver } = await open();
+    await driver.mount('<input id="i" value="x" type="checkbox" checked>');
+    expect({ read: [await driver.property("i", "value"), await driver.property("i", "checked"), await driver.property("i", "tabIndex")], recorded: await page.finish() }).toEqual({ read: ["x", true, 0], recorded: clean });
+  });
+
+  it("computedIn(id, inner, property) reads a computed value in the element's shadow root, and \"\" without the element", async () => {
+    const { visit: page, driver } = await open();
+    await driver.mount('<ocelle-test-region id="r"></ocelle-test-region>');
+    expect({ read: [await driver.computedIn("r", "div", "display"), await driver.computedIn("r", "p", "display")], recorded: await page.finish() }).toEqual({ read: ["block", ""], recorded: clean });
+  });
+
+  it("contentBox(id, inner) is the shadow element's border box less its borders and padding", async () => {
+    const { visit: page, driver } = await open();
+    await driver.mount('<ocelle-test-field id="f"></ocelle-test-field>');
+    const box = await driver.box("f", "input");
+    const px = await page.page.evaluate(() => {
+      const input = document.getElementById("f")?.shadowRoot?.querySelector("input");
+      const style = input === null || input === undefined ? null : getComputedStyle(input);
+      const read = (property: string): number => Number.parseFloat(style?.getPropertyValue(property) ?? "0");
+      return { left: read("border-left-width") + read("padding-left"), right: read("border-right-width") + read("padding-right"), top: read("border-top-width") + read("padding-top"), bottom: read("border-bottom-width") + read("padding-bottom") };
+    });
+    const content = await driver.contentBox("f", "input");
+    expect({ content, positive: content.width > 0, recorded: await page.finish() }).toEqual({
+      content: { x: box.x + px.left, y: box.y + px.top, width: box.width - px.left - px.right, height: box.height - px.top - px.bottom },
+      positive: true,
+      recorded: clean,
+    });
+  });
+
+  it("firstLoad(containerId, markup, tag) navigates afresh under startDocument and the parser writes the markup with the tag, while the document is loading", async () => {
+    const { visit: page, driver } = await open("first-load.html", ["first-load.html", "first-load.js", "live-regions.js", "ocelle-elements.js"]);
+    await driver.firstLoad("c", '<ocelle-first-load id="f"></ocelle-first-load>', "ocelle-test-probe");
+    const seen = await page.page.evaluate(() => {
+      const found = document.getElementById("f") as (HTMLElement & { connectedReadyState?: string }) | null;
+      return { name: found?.localName ?? null, readyState: found?.connectedReadyState ?? null, parent: found?.parentElement?.id ?? null };
+    });
+    const snapshots = await driver.liveCapture.stop();
+    expect({ seen, first: snapshots[0]?.loaded ?? null, recorded: await page.finish() }).toEqual({
+      seen: { name: "ocelle-test-probe", readyState: "loading", parent: "c" },
+      first: false,
+      recorded: clean,
+    });
+  });
+
+  it("defineSecond(tag) defines a free tag and leaves a defined tag's first class in place without throwing", async () => {
+    const { visit: page, driver } = await open();
+    const first = await page.page.evaluate(() => {
+      (globalThis as unknown as { ocelleFirst: unknown }).ocelleFirst = customElements.get("ocelle-test-region");
+      return customElements.get("ocelle-test-region") !== undefined;
+    });
+    await driver.defineSecond("ocelle-test-second");
+    await driver.defineSecond("ocelle-test-region");
+    const seen = await page.page.evaluate(() => ({
+      defined: customElements.get("ocelle-test-second") !== undefined,
+      kept: customElements.get("ocelle-test-region") === (globalThis as unknown as { ocelleFirst: unknown }).ocelleFirst,
+    }));
+    expect({ first, seen, recorded: await page.finish() }).toEqual({ first: true, seen: { defined: true, kept: true }, recorded: clean });
   });
 
   describe("forms", () => {

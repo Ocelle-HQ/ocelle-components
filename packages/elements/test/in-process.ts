@@ -14,6 +14,7 @@ import baseText from "../../styles/src/base.css?raw";
 import { css } from "../../tokens/src/generate.ts";
 import { source } from "../../tokens/src/source.ts";
 import { define } from "../src/define.ts";
+import type { AnnouncerTiming } from "../src/live.ts";
 import type { Delays, Snapshot } from "./live-reading.ts";
 import { decodePng } from "./pixels.ts";
 import type { Box, Drawing, Entries, InProcessDriver, InsertHow, Paint, Part, Placement, Sheets } from "./scenarios/driver.ts";
@@ -28,6 +29,15 @@ export const timing = { delayLoaded: 50, delayLoading: 50, hold: 500 } as const;
 
 /** The capture's delays in process: `D` of `timing`. */
 export const delays: Delays = { loaded: timing.delayLoaded, loading: timing.delayLoading };
+
+/**
+ * The timing the first `setAnnouncerTimingForTests` call of this test file replaced (the shipped `announcerDefaults`),
+ * read-only, for test/live-timing.test.ts (contracts/testing.md § Timing; T014). Stub until T020a wires the call:
+ * undefined.
+ */
+export function firstTimingReturn(): AnnouncerTiming | undefined {
+  return undefined;
+}
 
 function sheet(text: string): CSSStyleSheet {
   const made = new CSSStyleSheet();
@@ -296,7 +306,21 @@ export function inProcessDriver(): InProcessDriver {
       return performance.now() - from;
     },
     W: { loaded: 2 * timing.delayLoaded, loading: 2 * timing.delayLoading },
+    // Stub until green (specs/010-feedback-forms phase 2): the hold of `timing`.
+    H: 0,
     hostRole: (id) => Promise.resolve(last.at(-1)?.hosts.find((host) => host.host === id)?.role ?? "none"),
+    // Stubs of the phase 2 steps (specs/010-feedback-forms T011): neutral values until green; `firstLoad` arms the
+    // capture and inserts the markup after load, an insertion, not the page as first loaded.
+    batch: () => Promise.resolve(),
+    property: () => Promise.resolve(null),
+    computedIn: () => Promise.resolve(""),
+    contentBox: () => Promise.resolve({ x: 0, y: 0, width: 0, height: 0 }),
+    firstLoad: async (containerId, markup, tag) => {
+      await driver.liveCapture.start(containerId);
+      element(containerId).innerHTML = markup.replaceAll("ocelle-first-load", tag);
+      await settle();
+    },
+    defineSecond: () => Promise.resolve(),
     formData: (formId) => Promise.resolve(entries(new FormData(form(formId)))),
     submit: async (formId) => {
       const target = form(formId);

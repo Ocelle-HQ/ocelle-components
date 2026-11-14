@@ -292,7 +292,21 @@ export function fixtureDriver(page: Page, log: readonly string[], withBase = fal
         return performance.now() - from;
       }, { from: lastEnd, ms }),
     W: { loaded: 300, loading: 700 },
+    // Stub until green (specs/010-feedback-forms phase 2): the shipped hold, 5000 ms.
+    H: 0,
     hostRole: (id) => Promise.resolve(last.at(-1)?.hosts.find((host) => host.host === id)?.role ?? "none"),
+    // Stubs of the phase 2 steps (specs/010-feedback-forms T011): neutral values until green; `firstLoad` arms the
+    // capture on a fresh document and inserts the markup after load, an insertion, not the page as first loaded.
+    batch: () => Promise.resolve(),
+    property: () => Promise.resolve(null),
+    computedIn: () => Promise.resolve(""),
+    contentBox: () => Promise.resolve({ x: 0, y: 0, width: 0, height: 0 }),
+    firstLoad: async (containerId, markup, tag) => {
+      await driver.liveCapture.startDocument(page.url());
+      await insertIn(page, containerId, markup.replaceAll("ocelle-first-load", tag), "innerHTML");
+      await settle(page);
+    },
+    defineSecond: () => Promise.resolve(),
     formData: (formId) =>
       page.evaluate((formId) => {
         const form = document.getElementById(formId);
