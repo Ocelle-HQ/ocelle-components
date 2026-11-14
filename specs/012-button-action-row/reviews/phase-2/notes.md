@@ -67,3 +67,8 @@ captures, docker), `gate:axe` (76 story-theme runs, 0 serious or critical, the 1
 (3346 tests), and `gate:plants` shard by shard (`--shard 1` to `--shard 76`, one at a time, docker): every plant as
 expected after the manifest plant copies were regenerated (shards 1 to 3 re-run); the slowest shard took 130 s, the
 three other-plant shards 100 to 131 s, the visual shards about 105 to 130 s, the axe shards about 55 s.
+
+`gate:mutation -- --base 48cdc95` first found nine surviving mutants, all on `ocelle-button`'s property options (the
+reflection of `variant`, `size`, `flush`, `ground` and `disabled` was never asserted: the scenarios set attributes
+only). Two tests were added to `test/button.test.ts` (9caad44); the second run: 134 mutants on the changed lines of 5
+files, none survived (48 compile errors, 2 zero-mutant entries, 1 equivalent record).
