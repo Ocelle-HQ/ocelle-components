@@ -262,3 +262,37 @@ export const laneScenarios: readonly BoardScenario[] = [
     expected: { counted: named("Ready 4", "Ready, 4"), labelled: named("Ready 4", "Ready, 4 work packages"), live: 0, announcing: 0 },
   },
 ];
+
+// ---------------------------------------------------------------------------------------------------------------
+// Guards added after the green implementation, on paths no red scenario reached (the mutants of the lane's observed
+// host `aria-label` and of `variant`'s reflection that survived the first mutation run; reviews/phase-3/plants.md
+// § Guards). The surviving mutants are their proof that they can fail.
+
+export const laneGuards: readonly BoardScenario[] = [
+  {
+    name: "US2 guard: a host aria-label set on a lane after it renders names its group at once, and a blank or removed one falls back to the title and count (FR-019)",
+    base: false,
+    run: async (driver) => {
+      await page(driver, "W", `<div data-frame="W">${lane("l", ' label="Ready" count="3"')}</div>`);
+      await driver.setAttribute("l", "aria-label", "Ready column");
+      const named = await laneState(driver, "l");
+      await driver.setAttribute("l", "aria-label", " ");
+      const blank = await laneState(driver, "l");
+      await driver.setAttribute("l", "aria-label", null);
+      return { named, blank, removed: await laneState(driver, "l") };
+    },
+    expected: { named: named("Ready 3", "Ready column"), blank: named("Ready 3", "Ready, 3"), removed: named("Ready 3", "Ready, 3") },
+  },
+  {
+    name: "US2 guard: variant set by property is reflected to the attribute, so the flat lane drops its ground, and deleting it restores the default lane's ground (FR-017)",
+    base: false,
+    run: async (driver) => {
+      await page(driver, "W", `<div data-frame="W">${lane("l", ' label="Ready" count="3"')}</div>`);
+      await driver.setProperty("l", "variant", "flat");
+      const flat = { attribute: await driver.attribute("l", "variant"), ground: await driver.computed("l", "background-color") };
+      await driver.setProperty("l", "variant", undefined);
+      return { flat, restored: { attribute: await driver.attribute("l", "variant"), ground: await driver.computed("l", "background-color") } };
+    },
+    expected: { flat: { attribute: "flat", ground: "rgba(0, 0, 0, 0)" }, restored: { attribute: null, ground: tokenColour("color-sheet", "light") } },
+  },
+];

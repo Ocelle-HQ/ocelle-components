@@ -157,10 +157,12 @@ export class OcelleWorkflowLane extends LitElement {
     const title = resolveName(null, this.label);
     const count = validCount(this.count);
     const name = laneName(this.getAttribute("aria-label"), this.label, count, this.countLabel);
-    const shown = title !== undefined || count !== undefined;
-    const header = shown
-      ? html`<div class="header" aria-hidden="true">${title === undefined ? nothing : html`<span class="title">${title}</span>`}${title !== undefined && count !== undefined ? " " : nothing}${count === undefined ? nothing : html`<span class="count">${String(count)}</span>`}</div>`
-      : nothing;
+    // Stryker disable next-line ConditionalExpression: equivalent, an untitled lane's title span is then empty, which shows nothing and adds no text
+    const titled = title === undefined ? nothing : html`<span class="title">${title}</span>`;
+    // Stryker disable next-line ConditionalExpression,LogicalOperator: equivalent, a space beside only the title or only the count lies at the end or the start of the header's line, where it collapses
+    const separator = title !== undefined && count !== undefined ? " " : nothing;
+    const counted = count === undefined ? nothing : html`<span class="count">${String(count)}</span>`;
+    const header = title !== undefined || count !== undefined ? html`<div class="header" aria-hidden="true">${titled}${separator}${counted}</div>` : nothing;
     return html`<div class="lane" role=${ifDefined(name === undefined ? undefined : "group")} aria-label=${ifDefined(name)}>${header}<slot></slot></div>`;
   }
 }

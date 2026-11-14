@@ -9,6 +9,7 @@ import { resolveName } from "./overflow-region.ts";
 
 /** The count an attribute value gives: decimal digits only after trimming, at most `Number.MAX_SAFE_INTEGER`. */
 export function parseCount(value: string | null): number | undefined {
+  // Stryker disable next-line StringLiteral: equivalent, an absent attribute and any text that is not digits alone are rejected alike
   const digits = value?.trim() ?? "";
   if (!/^[0-9]+$/.test(digits)) return undefined;
   return validCount(Number(digits));

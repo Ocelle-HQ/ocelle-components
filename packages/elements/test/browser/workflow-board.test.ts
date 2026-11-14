@@ -1,7 +1,7 @@
 import type { Browser } from "playwright";
 import { afterAll, beforeAll, describe, expect, inject, it } from "vitest";
-import { boardScenarios } from "../scenarios/board.ts";
-import { laneScenarios } from "../scenarios/lane.ts";
+import { boardGuards, boardScenarios } from "../scenarios/board.ts";
+import { laneGuards, laneScenarios } from "../scenarios/lane.ts";
 import { fixtureDriver } from "./driver.ts";
 import { clean, launch, serve, visit } from "./serve.ts";
 import type { Served } from "./serve.ts";
@@ -32,7 +32,7 @@ function started(): { readonly browser: Browser; readonly origin: string } {
 }
 
 describe("ocelle-workflow-board and ocelle-workflow-lane on the strict-CSP fixture with the browser build (US2)", { timeout: 120_000 }, () => {
-  it.each([...boardScenarios, ...laneScenarios])("$name", async ({ run, expected, base }) => {
+  it.each([...boardScenarios, ...boardGuards, ...laneScenarios, ...laneGuards])("$name", async ({ run, expected, base }) => {
     const { browser, origin } = started();
     const page = await visit(browser, origin, base ? "board-base.html" : "board.html");
     const observed = await run(fixtureDriver(page.page, page.log, base));

@@ -609,3 +609,29 @@ export const boardScenarios: readonly BoardScenario[] = [
     },
   },
 ];
+
+// ---------------------------------------------------------------------------------------------------------------
+// Guards added after the green implementation, on paths no red scenario reached (the mutants of the board's observed
+// host `aria-label` that survived the first mutation run; reviews/phase-3/plants.md § Guards). The surviving mutants
+// are their proof that they can fail.
+
+export const boardGuards: readonly BoardScenario[] = [
+  {
+    name: "US2 guard: a host aria-label set on an overflowing board after it renders renames its region at once, and a blank or removed one falls back to its label (FR-010, FR-014)",
+    base: false,
+    run: async (driver) => {
+      await page(driver, "N", board("b", lanes("l"), ' label="Workflow"', "N"));
+      await driver.setAttribute("b", "aria-label", "Release board");
+      const named = await boxAttributes(driver, "b");
+      await driver.setAttribute("b", "aria-label", " ");
+      const blank = await boxAttributes(driver, "b");
+      await driver.setAttribute("b", "aria-label", null);
+      return { named, blank, removed: await boxAttributes(driver, "b") };
+    },
+    expected: {
+      named: { tabindex: "0", role: "region", "aria-label": "Release board" },
+      blank: { tabindex: "0", role: "region", "aria-label": "Workflow" },
+      removed: { tabindex: "0", role: "region", "aria-label": "Workflow" },
+    },
+  },
+];
