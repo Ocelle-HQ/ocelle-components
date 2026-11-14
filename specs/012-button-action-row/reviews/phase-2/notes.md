@@ -36,7 +36,8 @@ name) `[button "Save"]`, so a named host `generic` fails both.
 - **Icon-only gap.** The slot convention puts the icon's gap on the slotted icon (`margin-inline-end`), so an icon-only
   button keeps an 8 px gap after its icon, so the icon sits 4 px towards the inline start of the centre and the button
   is 8 px wider than its padding and icon need (still within FR-011: at least 24 px, and smaller than the default
-  size). Not in the plan; left as it is.
+  size). Not in the plan; left as it is. Fixed in review round 1 (R1-01, round-1-fixes.md): with no label the icon
+  takes no gap and is centred.
 
 ## Visual baselines
 

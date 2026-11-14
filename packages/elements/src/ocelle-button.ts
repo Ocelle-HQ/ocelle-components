@@ -15,7 +15,10 @@
 // `:host(:where(...)) .control:where(...)`, so every colour rule has the same specificity and the later rule wins:
 // variants, then grounds, then hover and active, then flush, then disabled. Sizes follow R-09: `default` at least
 // `--ocelle-target-min` in both dimensions, `compact` at least `--ocelle-space-6` (24 px) with the compact text scale;
-// `flush` drops the inline padding, the border and the fill and puts the content at the inline start.
+// `flush` drops the inline padding, the border and the fill and puts the content at the inline start. With no label (no
+// non-whitespace text in the default slot's flattened assignment, read on `slotchange` and on text changes inside the
+// element) the row takes the class `bare`, which drops the slotted icon's gap, so an icon-only button centres its icon
+// (review round 1, R1-01).
 // Importing this module defines `ocelle-button` and no other element.
 import { LitElement, css, html, nothing } from "lit";
 import { controlStyles, guardHost } from "./control.ts";
@@ -86,6 +89,10 @@ export class OcelleButton extends LitElement {
       .label {
         min-inline-size: 0;
         overflow-wrap: anywhere;
+      }
+
+      .icon-row.bare slot[name="icon"]::slotted(*) {
+        margin-inline-end: 0 !important;
       }
 
       :host([size="compact"]) .control {
@@ -265,11 +272,33 @@ export class OcelleButton extends LitElement {
    */
   declare disabled: boolean;
 
+  /** Whether the default slot holds a label: non-whitespace text in its flattened assignment. */
+  #labelled = false;
+
+  /**
+   * Rereads the label when text inside the element changes, which fires no `slotchange`. It observes the element for
+   * its lifetime: an observer holds its target only weakly, so it needs no disconnecting.
+   */
+  readonly #text = new MutationObserver(() => {
+    this.#readLabel();
+  });
+
   constructor() {
     super();
     this.flush = false;
     this.disabled = false;
     guardHost(this, () => this.#control(), () => !this.disabled);
+    this.#text.observe(this, { characterData: true, subtree: true });
+  }
+
+  /**
+   * Reads whether the default slot holds a label, as FR-031 defines an empty slot: non-whitespace text in its
+   * flattened assignment. Without one the icon is the only content and takes no gap, so it is centred (review R1-01).
+   */
+  #readLabel(): void {
+    const slot = this.renderRoot.querySelector<HTMLSlotElement>(".label slot");
+    this.#labelled = (slot?.assignedNodes({ flatten: true }) ?? []).map((node) => node.textContent).join("").trim() !== "";
+    this.requestUpdate();
   }
 
   /** The inner `<button>`, once rendered. */
@@ -294,7 +323,7 @@ export class OcelleButton extends LitElement {
 
   protected override render(): unknown {
     const label = this.label?.trim() ?? "";
-    return html`<button part="control" class="control" type="button" ?disabled=${this.disabled} aria-label=${label === "" ? nothing : label} @click=${this.#activate}><span class="icon-row"><span class="icon-slot"><slot name="icon"></slot></span><span class="label"><slot></slot></span></span></button>`;
+    return html`<button part="control" class="control" type="button" ?disabled=${this.disabled} aria-label=${label === "" ? nothing : label} @click=${this.#activate}><span class=${this.#labelled ? "icon-row" : "icon-row bare"}><span class="icon-slot"><slot name="icon"></slot></span><span class="label"><slot @slotchange=${this.#readLabel}></slot></span></span></button>`;
   }
 }
 

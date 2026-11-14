@@ -136,7 +136,8 @@ function pointerLook(kind: Kind, chrome: boolean, state: "hover" | "active", the
 /**
  * The grounds on which a flush control's hover fill equals the ground, so its hover shows no change (FR-019, plan
  * decision 6), written by hand per theme: `hover-bg` in both themes, `inset` in light (light `inset` and `hover-bg` are
- * both #E2DDD3), and `chrome-hover` (with `ground="chrome"`) in both themes.
+ * both #E2DDD3), `neutral-bg` in dark (the operator's addition at phase 2) and `chrome-hover` (with `ground="chrome"`)
+ * in both themes.
  */
 const flushHoverUnchanged: Readonly<Record<Palette, readonly Ground[]>> = { light: ["inset", "hover-bg", "chrome-hover"], dark: ["hover-bg", "neutral-bg", "chrome-hover"] };
 
