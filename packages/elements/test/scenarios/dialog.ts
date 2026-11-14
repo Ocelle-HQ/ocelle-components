@@ -2370,6 +2370,37 @@ const t025Rows = [
   ),
 ];
 
+const closedPanelRows = [
+  row(
+    "Synthetic close: a close event dispatched on the inner dialog after the close changes nothing: no second close event (FR-014, R-03)",
+    async (driver) => {
+      await driver.mount(page(basic));
+      await open(driver);
+      await driver.press("Escape");
+      await events(driver, 2);
+      await pause(100);
+      await act(driver, { op: "dispatch", id: "dlg", inner: "dialog", type: "close", cancelable: false });
+      return { recorded: (await after(driver)).map((each) => each.type), state: await state(driver) };
+    },
+    { recorded: [requestName, closeName], state: gone },
+  ),
+  row(
+    "Footer (FR-017): content assigned to no slot that the host gives the footer slot after open makes the footer box; given another name again, no footer box",
+    async (driver) => {
+      await driver.mount(page('<button id="b1">B1</button><button id="late" slot="later">Later</button>'));
+      await open(driver);
+      const footerHeight = async (): Promise<number> => (await driver.box("dlg", '[part="footer"]')).height;
+      const empty = await footerHeight();
+      await act(driver, { op: "attr", id: "late", name: "slot", value: "footer" });
+      const filled = await eventually(async () => (await footerHeight()) > 0);
+      await act(driver, { op: "attr", id: "late", name: "slot", value: "later" });
+      const emptied = await eventually(async () => (await footerHeight()) === 0);
+      return { empty, filled, emptied };
+    },
+    { empty: 0, filled: true, emptied: true },
+  ),
+];
+
 const shortBodyRows = [
   row(
     "Short viewport 320 × 256 (FR-018, R-18): the body held at its minimum block size becomes a Tab stop when the host adds content that overflows it, and stops being one when the host shortens that content",
@@ -2580,6 +2611,7 @@ export const dialogScenarios: readonly DialogScenario[] = [
   ...lifecycleRows,
   ...t025Rows,
   ...nativeEventRows,
+  ...closedPanelRows,
   ...shortBodyRows,
   ...unitlessMotionRows,
   ...footerSlotRows,
