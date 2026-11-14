@@ -627,6 +627,75 @@ const edgeRows = borderEdges.map(({ label: where, attrs: attributes, rules, poin
   ),
 );
 
+// The press of a backdrop click (R-07, T036): the primary button's pointerdown of the primary pointer, its own -------
+
+const pressRows = [
+  row(
+    'Backdrop, the press (FR-012, R-07): side="end", a script click() on the panel with no press before it: nothing is requested (a backdrop click needs its own press outside the border box)',
+    async (driver) => {
+      await driver.mount(page(basic, { attrs: ' side="end"' }));
+      await openSettled(driver);
+      await act(driver, { op: "call", id: "dlg", inner: "dialog", method: "click" });
+      return { recorded: await after(driver), state: await state(driver) };
+    },
+    { recorded: [], state: shown },
+  ),
+  row(
+    'Backdrop, the press (FR-012, R-07): side="end", veto, a primary click on the backdrop, then a script click() on the panel: one request only (the second click has no press of its own)',
+    async (driver) => {
+      await driver.mount(page(basic, { attrs: ' side="end"' }));
+      await openSettled(driver);
+      await act(driver, { op: "veto", id: "dlg", event: requestName });
+      await driver.pointer([{ ...backdropPoint("right"), down: true, up: true }]);
+      await act(driver, { op: "call", id: "dlg", inner: "dialog", method: "click" });
+      return { recorded: await after(driver), state: await state(driver) };
+    },
+    { recorded: [request("backdrop", "dlg[dialog]")], state: shown },
+  ),
+  row(
+    "Backdrop, the press (FR-012, R-07): a secondary-button press on the backdrop, then a primary click there while it is held: nothing is requested (the press began with the secondary button)",
+    async (driver) => {
+      await driver.mount(page(basic));
+      await openSettled(driver);
+      const point = backdropPoint("left");
+      await driver.pointer([
+        { ...point, down: true, button: "right" },
+        { ...point, down: true },
+        { ...point, up: true },
+        { ...point, up: true, button: "right" },
+      ]);
+      return { recorded: await after(driver), state: await state(driver) };
+    },
+    { recorded: [], state: shown },
+  ),
+  row(
+    "Backdrop, the press (FR-012, R-07): a primary press on the backdrop, a second, non-primary pointer pressed on body prose, then the primary click released on the backdrop: the request and the close carry reason backdrop (only the primary pointer's press counts)",
+    async (driver) => {
+      await driver.mount(page(prose));
+      await openSettled(driver);
+      const inside = await prosePoint(driver);
+      await driver.pointer([{ ...backdropPoint("left"), down: true }]);
+      await act(driver, { op: "pointerdown", id: "dlg", inner: "dialog", ...inside, isPrimary: false });
+      await driver.pointer([{ ...backdropPoint("left"), up: true }]);
+      return { recorded: await events(driver, 2), state: await state(driver) };
+    },
+    { recorded: [request("backdrop", "dlg[dialog]"), closeEvent("backdrop", "opener")], state: gone },
+  ),
+  row(
+    "Backdrop, the press (FR-012, R-07): a primary press on body prose, a second, non-primary pointer pressed on the backdrop, then the primary click released on the backdrop: nothing is requested (only the primary pointer's press counts)",
+    async (driver) => {
+      await driver.mount(page(prose));
+      await openSettled(driver);
+      const inside = await prosePoint(driver);
+      await driver.pointer([{ ...inside, down: true }]);
+      await act(driver, { op: "pointerdown", id: "dlg", inner: "dialog", ...backdropPoint("left"), isPrimary: false });
+      await driver.pointer([{ ...backdropPoint("left"), up: true }]);
+      return { recorded: await after(driver), state: await state(driver) };
+    },
+    { recorded: [], state: shown },
+  ),
+];
+
 // Motion (US2-5, FR-020, FR-028) -------------------------------------------------------------------------------------
 
 const motionRows = [
@@ -768,7 +837,7 @@ const headingRows = [
 ];
 
 /** Every row of matrix § Drawer but the repeated-Escape case, which runs on a page of its own. */
-export const drawerScenarios: readonly DialogScenario[] = [...inheritedRows, ...placementRows, ...styleRows, ...bodyRows, ...backdropRows, ...edgeRows, ...motionRows, ...groundRows, ...headingRows];
+export const drawerScenarios: readonly DialogScenario[] = [...inheritedRows, ...placementRows, ...styleRows, ...bodyRows, ...backdropRows, ...edgeRows, ...pressRows, ...motionRows, ...groundRows, ...headingRows];
 
 /**
  * The veto-then-Escape-twice case with slotted content (matrix § Dialog "Escape with slotted content", inherited), with
