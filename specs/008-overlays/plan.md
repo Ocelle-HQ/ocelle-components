@@ -228,12 +228,13 @@ packages/elements/
 ├── test/in-process.ts             # in-process driver implementation of the additions
 ├── test/{dialog,drawer,tooltip,harness}.test.ts   # in process
 ├── test/tooltip-no-popover.test.ts                # in process, Popover API removed (R-10)
+├── test/{dialog,drawer}-upgrade.test.ts          # in process, `open` set before the element is defined
 ├── test/browser/driver.ts         # fixture driver implementation of the additions
 ├── test/browser/serve.ts          # visit(…, { touch: true }): a separate hasTouch context for the touch rows only
 ├── test/*.touch.test.ts           # in-process touch rows: elements-touch only (R-14)
 ├── test/browser/*.touch.test.ts   # fixture touch rows: elements-browser only, touch context (R-14)
 ├── test/browser/{dialog,drawer,tooltip,harness}.test.ts   # strict-CSP fixture
-├── test/browser/fixtures/{overlays,tooltip}.html
+├── test/browser/fixtures/{overlays,overlays-upgrade,tooltip}.html   # overlays-upgrade: no element script until the test adds it
 ├── test/commands.ts               # + emulateReducedMotion, pointerPath, touchTap; axTree with description, modal, level
 ├── test/commands.test.ts          # + the new commands
 ├── test/entry-{dialog,drawer,tooltip}.test.ts     # each entry defines its tag (+ ocelle-icon for the overlays)
