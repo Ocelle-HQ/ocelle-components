@@ -2126,6 +2126,53 @@ async function bodyTabindexGone(driver: Driver): Promise<string | null> {
 
 /** The footer of the short-viewport rows, which holds the body at its minimum block size at 320 × 256. */
 const shortFooter = '<button id="f1">F1</button><button id="f2">Second action</button>';
+const nativeEventRows = [
+  row(
+    "Synthetic close: a close event dispatched on the inner dialog while it is open changes nothing: no event, open and :modal (R-03)",
+    async (driver) => {
+      await driver.mount(page(basic));
+      await open(driver);
+      const dispatched = await act(driver, { op: "dispatch", id: "dlg", inner: "dialog", type: "close", cancelable: false });
+      return { dispatched, recorded: await after(driver), state: await state(driver), focus: await driver.focusPath() };
+    },
+    { dispatched: true, recorded: [], state: shown, focus: "b1" },
+  ),
+  row(
+    "Stale native close event, then a platform close: the host reopens in the …-close listener, then the inner close() through the shadow root: a second close, with reason host (FR-014, FR-016, R-03)",
+    async (driver) => {
+      await driver.reducedMotion(true);
+      await driver.mount(page(basic));
+      await open(driver);
+      await act(driver, { op: "on", id: "dlg", event: closeName, then: [{ op: "set", id: "dlg", name: "open", value: true }] });
+      await driver.press("Escape");
+      await events(driver, 2);
+      await pause(100);
+      await driver.setAttribute("act", "data-wait", "");
+      const reopened = await state(driver);
+      await act(driver, { op: "call", id: "dlg", inner: "dialog", method: "close" });
+      const recorded = await events(driver, 3);
+      return { reopened, recorded: recorded.map((each) => [each.type, (each.detail as { reason: string }).reason]) };
+    },
+    { reopened: shown, recorded: [[requestName, "escape"], [closeName, "escape"], [closeName, "host"]] },
+  ),
+  row(
+    'Slotted non-modal dialogs (US1-16, R-02): opened with show() in the same task as the overlay\'s open, closedby="any": below the overlay, ordinary content: Escape requests with escape, the slotted dialog stays open',
+    async (driver) => {
+      await driver.mount(page(nonModal(' closedby="any"')));
+      await act(driver, { op: "focus", id: "opener" });
+      await driver.record("dlg", both);
+      await act(driver, { op: "seq", ops: [{ op: "call", id: "nm", method: "show" }, { op: "set", id: "dlg", name: "open", value: true }] });
+      await pause(100);
+      await act(driver, { op: "focus", id: "nb" });
+      await driver.press("Escape");
+      return { recorded: await events(driver, 2), slotted: (await inspect(driver, "nm")).open, state: await state(driver) };
+    },
+    // show() focused nb, the slotted dialog's button, which is then the opener: hidden with the overlay, it cannot take
+    // focus back, so focus goes to the body (FR-009).
+    { recorded: [request("escape", "nb"), closeEvent("escape", "body")], slotted: true, state: gone },
+  ),
+];
+
 const shortBodyRows = [
   row(
     "Short viewport 320 × 256 (FR-018, R-18): the body held at its minimum block size becomes a Tab stop when the host adds content that overflows it, and stops being one when the host shortens that content",
@@ -2333,6 +2380,7 @@ export const dialogScenarios: readonly DialogScenario[] = [
   ...fieldEscapeRows,
   ...entryExitRows,
   ...lifecycleRows,
+  ...nativeEventRows,
   ...shortBodyRows,
   ...unitlessMotionRows,
   ...footerSlotRows,
