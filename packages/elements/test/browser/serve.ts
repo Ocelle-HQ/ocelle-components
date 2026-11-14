@@ -9,8 +9,13 @@
 // violations through 002's `addInitScript` collector
 // (packages/tokens/test/browser/serve.ts), requests and their responses through Playwright's `request` and
 // `response` events, and console messages and uncaught errors through its `console` and `pageerror` events.
+//
+// 012 (research.md R-11): axe-core's `axe.min.js` is served as `axe.js` from node_modules, the server records each
+// request for `link-target.html` (`Served.visits`), the page a link navigates to, and each visit records the pages its
+// context opens after it (`Visit.tabs`, from `context.on("page")`), the new tabs of a modified or middle click.
 import { cpSync, existsSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { createServer } from "node:http";
+import { createRequire } from "node:module";
 import type { AddressInfo } from "node:net";
 import { tmpdir } from "node:os";
 import { extname, join, normalize } from "node:path";
@@ -30,6 +35,10 @@ export const policy = "default-src 'none'; script-src 'self'; style-src 'self'; 
 const fixtures = fileURLToPath(new URL("./fixtures", import.meta.url));
 const baseSheet = fileURLToPath(new URL("../../../styles/src/base.css", import.meta.url));
 const fonts = fileURLToPath(new URL("../../../tokens/fonts", import.meta.url));
+const axeScript = createRequire(import.meta.url).resolve("axe-core/axe.min.js");
+
+/** The page a link of the harness navigates to; the server records each request for it. */
+const linkTarget = "link-target.html";
 
 /** The built files each page may load, by served name, and where the global setup put them. */
 const builtFiles: Readonly<Record<string, string>> = {
@@ -50,6 +59,8 @@ const types: Readonly<Record<string, string>> = {
 export interface Served {
   /** `http://127.0.0.1:<port>`. */
   readonly origin: string;
+  /** The requests for `link-target.html` so far, by path, in order. */
+  readonly visits: () => string[];
   readonly close: () => Promise<void>;
 }
 
@@ -60,6 +71,8 @@ export async function serve(built: Built | undefined): Promise<Served> {
   writeFileSync(join(dir, "tokens.css"), css(source));
   cpSync(baseSheet, join(dir, "base.css"));
   if (existsSync(fonts)) cpSync(fonts, join(dir, "fonts"), { recursive: true });
+  cpSync(axeScript, join(dir, "axe.js"));
+  const visits: string[] = [];
   if (built !== undefined && "dir" in built) {
     for (const [name, path] of Object.entries(builtFiles)) if (existsSync(join(built.dir, path))) cpSync(join(built.dir, path), join(dir, name));
   }
@@ -69,6 +82,7 @@ export async function serve(built: Built | undefined): Promise<Served> {
     try {
       if (path.startsWith("..")) throw new Error("outside the served directory");
       body = readFileSync(join(dir, path));
+      if (path === linkTarget) visits.push(path);
     } catch {
       response.writeHead(404, { "Content-Security-Policy": policy }).end();
       return;
@@ -79,6 +93,7 @@ export async function serve(built: Built | undefined): Promise<Served> {
   const { port } = server.address() as AddressInfo;
   return {
     origin: `http://127.0.0.1:${String(port)}`,
+    visits: () => [...visits],
     close: async () => {
       await new Promise<void>((resolve) => server.close(() => {
         resolve();
@@ -104,6 +119,8 @@ export interface Visit {
   readonly page: Page;
   /** Every console message and uncaught error since the page opened (the driver reads its own share). */
   readonly log: readonly string[];
+  /** The pages the page's context opened after it (new tabs), in order. */
+  readonly tabs: readonly Page[];
   /** Stops recording, closes the page's context and returns what the recorders saw. */
   readonly finish: () => Promise<Recorded>;
 }
@@ -126,6 +143,8 @@ function allowed(origin: string, page: string, scripts: readonly string[]): (url
 export async function visit(browser: Browser, origin: string, page: string, scripts: readonly string[] = ["ocelle-elements.js"]): Promise<Visit> {
   const context = await browser.newContext({ viewport: { width: 1280, height: 800 }, colorScheme: "light" });
   const opened = await context.newPage();
+  const tabs: Page[] = [];
+  context.on("page", (tab) => tabs.push(tab));
   const log: string[] = [];
   const requests: string[] = [];
   const failed: string[] = [];
@@ -142,6 +161,7 @@ export async function visit(browser: Browser, origin: string, page: string, scri
   return {
     page: opened,
     log,
+    tabs,
     finish: async () => {
       const seen = await violations(opened);
       await context.close();

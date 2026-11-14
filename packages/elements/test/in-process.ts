@@ -6,6 +6,13 @@
 // go through the `axTree` and `emulateForcedColors` browser commands (vitest.config.ts, test/commands.ts). Console
 // messages are recorded from each mount on; Lit's development build, which Vite resolves here, warns once at import,
 // before any mount, so the console outcome of FR-016 on the built output is the fixture's (test/browser/).
+//
+// 012 (research.md R-11): keys, the mouse, one accessibility node, reduced motion and axe go through the `press`,
+// `hover`, `pointer`, `axState`, `emulateReducedMotion` and `axe` commands; the event recorder and the other page reads
+// are page-side.ts's functions, called here in the test's frame. The **navigation sink** is the last bubble-phase
+// listener on `window` for `click` and `auxclick` (put back at the end after each recorder listener on `window`): for
+// an activation of a link (an `a` or `area` with `href` on the event's composed path) it records whether it was already
+// prevented, the button, the modifier flags and the `href` attribute, then prevents it, so the runner never navigates.
 /// <reference types="vite/client" />
 import type { LitElement } from "lit";
 import { vi } from "vitest";
@@ -13,8 +20,9 @@ import { commands, page } from "vitest/browser";
 import baseText from "../../styles/src/base.css?raw";
 import { css } from "../../tokens/src/generate.ts";
 import { source } from "../../tokens/src/source.ts";
+import { activeInnerOf, activePath, computedOf, currentOf, endOrder, focusElement, preventNextEvent, recordEvents, resetPage, sentinelId, startOrder, takeRecords } from "./page-side.ts";
 import { decodePng } from "./pixels.ts";
-import type { Box, Driver, Drawing, Paint, Part, Placement, Sheets } from "./scenarios/driver.ts";
+import type { Box, Driver, Drawing, NavigationRecord, Paint, Part, Placement, Sheets } from "./scenarios/driver.ts";
 
 function sheet(text: string): CSSStyleSheet {
   const made = new CSSStyleSheet();
@@ -62,11 +70,45 @@ window.addEventListener("error", (event) => {
   messages.push(`error: ${event.message}`);
 });
 
+const navigations: NavigationRecord[] = [];
+
+function sink(event: Event): void {
+  const mouse = event as MouseEvent;
+  const link = event.composedPath().find((node): node is Element => node instanceof Element && (node.localName === "a" || node.localName === "area") && node.hasAttribute("href"));
+  if (link === undefined) return;
+  navigations.push({
+    type: event.type === "auxclick" ? "auxclick" : "click",
+    defaultPrevented: event.defaultPrevented,
+    button: mouse.button,
+    altKey: mouse.altKey,
+    ctrlKey: mouse.ctrlKey,
+    metaKey: mouse.metaKey,
+    shiftKey: mouse.shiftKey,
+    href: link.getAttribute("href") ?? "",
+  });
+  event.preventDefault();
+}
+
+/** Puts the sink after every other listener of `window` for `click` and `auxclick`. */
+function lastSink(): void {
+  for (const type of ["click", "auxclick"]) {
+    window.removeEventListener(type, sink);
+    window.addEventListener(type, sink);
+  }
+}
+lastSink();
+
+/** The most Tab presses `tabOrder` makes before it stops. */
+const maxSteps = 64;
+
 export function inProcessDriver(): Driver {
   return {
     mount: async (markup, options = {}) => {
       document.adoptedStyleSheets = options.base === true ? [tokens, base] : [tokens];
       messages.length = 0;
+      navigations.length = 0;
+      resetPage();
+      lastSink();
       document.documentElement.removeAttribute("data-theme");
       document.body.innerHTML = markup;
       await settle();
@@ -148,7 +190,7 @@ export function inProcessDriver(): Driver {
       const rect = svg.getBoundingClientRect();
       return Promise.resolve({ scaleX: round(matrix.a), scaleY: round(matrix.d), offsetX: round(matrix.e - rect.x), offsetY: round(matrix.f - rect.y) });
     },
-    computed: (id, property) => Promise.resolve(getComputedStyle(element(id)).getPropertyValue(property)),
+    computed: (id, property, inner) => Promise.resolve(computedOf({ id, property, inner })),
     resolveColour: (value) => {
       const probe = document.createElement("span");
       probe.style.color = value;
@@ -179,5 +221,58 @@ export function inProcessDriver(): Driver {
       });
     },
     messages: () => Promise.resolve([...messages]),
+    focus: (id) => {
+      focusElement(id);
+      return Promise.resolve();
+    },
+    press: (key, modifiers) => commands.press(key, modifiers),
+    click: async (id, options) => {
+      await commands.pointer("click", id, options);
+      await settle();
+    },
+    hover: async (id, options) => {
+      await commands.hover(id, options?.inner);
+      await settle();
+    },
+    pointerDown: async (id, options) => {
+      await commands.pointer("down", id, options);
+      await settle();
+    },
+    pointerUp: async (id) => {
+      await commands.pointer("up", id);
+      await settle();
+    },
+    tabOrder: async (options = {}) => {
+      const reverse = options.reverse === true;
+      const order: string[][] = [];
+      startOrder(reverse);
+      for (let step = 0; step < maxSteps; step += 1) {
+        await commands.press("Tab", reverse ? ["Shift"] : []);
+        const path = activePath();
+        if (path.length === 0 || path[0] === `span#${sentinelId}` || JSON.stringify(path) === JSON.stringify(order[0])) break;
+        order.push(path);
+      }
+      endOrder();
+      return order;
+    },
+    activeInner: (id) => Promise.resolve(activeInnerOf(id)),
+    events: (id, types) => {
+      recordEvents({ id, types });
+      lastSink();
+      return Promise.resolve();
+    },
+    takeEvents: () => Promise.resolve(takeRecords()),
+    preventNext: (type) => {
+      preventNextEvent(type);
+      return Promise.resolve();
+    },
+    navigations: () => Promise.resolve([...navigations]),
+    reducedMotion: async (mode) => {
+      await commands.emulateReducedMotion(mode);
+      await settle();
+    },
+    axState: (id, inner) => commands.axState(id, inner),
+    current: (id, inner) => Promise.resolve(currentOf({ id, inner })),
+    axe: (scope) => commands.axe(scope),
   };
 }

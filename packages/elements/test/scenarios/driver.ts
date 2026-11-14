@@ -71,6 +71,96 @@ export interface Sheets {
   readonly styleElements: number;
 }
 
+/** A modifier key held for a press or a click (Playwright's names). */
+export type Modifier = "Alt" | "Control" | "Meta" | "Shift";
+
+/** A mouse button. */
+export type MouseButton = "left" | "middle" | "right";
+
+/** Where a pointer action lands: the element with the `id`, or the first element matching `inner` in its shadow root. */
+export interface Target {
+  readonly inner?: string;
+}
+
+/** A click (012 research.md R-06, R-11): always sent with `force: true`, so a click on an unusable control is sent. */
+export interface ClickOptions extends Target {
+  readonly modifiers?: readonly Modifier[];
+  readonly button?: MouseButton;
+}
+
+/**
+ * One event as one listener of the recorder saw it (012 research.md R-11): `at` and `target` are the listener's node
+ * and the event's target there, each `window`, `document`, `#shadow-root` or an element's local name with `#<id>` when
+ * it has one; `detail` is the event's `detail` (a UI event's count, a custom event's payload) or null; `serial` is one
+ * number per event object, from 1 at each mount, so the records of one dispatch share it.
+ */
+export interface EventRecord {
+  readonly type: string;
+  readonly at: string;
+  readonly target: string | null;
+  readonly isTrusted: boolean;
+  readonly bubbles: boolean;
+  readonly composed: boolean;
+  readonly cancelable: boolean;
+  readonly defaultPrevented: boolean;
+  readonly detail: unknown;
+  readonly serial: number;
+}
+
+/**
+ * One activation of a link as the in-process navigation sink saw it (012 research.md R-11): whether something prevented
+ * it before the sink, the button, the modifier flags and the link's `href` attribute.
+ */
+export interface NavigationRecord {
+  readonly type: "click" | "auxclick";
+  readonly defaultPrevented: boolean;
+  readonly button: number;
+  readonly altKey: boolean;
+  readonly ctrlKey: boolean;
+  readonly metaKey: boolean;
+  readonly shiftKey: boolean;
+  readonly href: string;
+}
+
+/**
+ * The accessibility node of one element as Chromium computes it (012 research.md R-11): its role and name, its
+ * description (empty when none), the states (expanded, pressed and hasPopup null when the element states none), and the
+ * ids of the elements it controls. `aria-current` is not here: CDP never reports it (`current`).
+ */
+export interface AxState {
+  readonly role: string;
+  readonly name: string;
+  readonly description: string;
+  readonly disabled: boolean;
+  readonly expanded: boolean | null;
+  readonly pressed: string | null;
+  readonly hasPopup: string | null;
+  readonly busy: boolean;
+  readonly focusable: boolean;
+  readonly controls: readonly string[];
+}
+
+/** An element's `aria-current`, as its attribute and as its `ariaCurrent` reflection (null when absent). */
+export interface Current {
+  readonly attribute: string | null;
+  readonly property: string | null;
+}
+
+/** The reduced-motion preference the page emulates. */
+export type Motion = "reduce" | "no-preference";
+
+/**
+ * One axe result (012 research.md R-11): the rule, its impact, whether a violation or an incomplete result, and each
+ * node's target (shadow levels joined by ` >>> `). Every impact is reported, so a test can see that a moderate rule
+ * 006's selection leaves out (`region`) gives nothing; 006's gate fails on the serious and critical ones.
+ */
+export interface AxeResult {
+  readonly id: string;
+  readonly impact: string;
+  readonly kind: "violation" | "incomplete";
+  readonly targets: readonly string[];
+}
+
 export interface MountOptions {
   /** Links `@ocelle/styles`' `base.css` (after `tokens.css`) on the page. */
   readonly base?: boolean;
@@ -121,8 +211,8 @@ export interface Driver {
   placement(id: string): Promise<Placement>;
   /** The placement of the drawing of the light-DOM `svg` with `id` (its own screen CTM) in that `svg`'s own box. */
   ownPlacement(id: string): Promise<Placement>;
-  /** The computed value of a CSS property of the element with `id`. */
-  computed(id: string, property: string): Promise<string>;
+  /** The computed value of a CSS property of the element with `id`, or of the first element matching `inner` in its shadow root. */
+  computed(id: string, property: string, inner?: string): Promise<string>;
   /** The computed `color` a probe element takes from the CSS colour `value` (a system colour, say). */
   resolveColour(value: string): Promise<string>;
   /** The unignored accessibility nodes of the element with `id` and of its shadow subtree. */
@@ -144,4 +234,47 @@ export interface Driver {
   sheets(selector: string): Promise<Sheets>;
   /** The console messages and uncaught errors the page reported since the last `mount`. */
   messages(): Promise<string[]>;
+  // 012 (research.md R-11; contracts/checks.md § Test harness): interaction, events, navigation, states and axe.
+  /** Focuses the element with `id` (`focus()`). */
+  focus(id: string): Promise<void>;
+  /** Presses `key` (Playwright's key names; `" "` is Space) through the browser's keyboard, `modifiers` held. */
+  press(key: string, modifiers?: readonly Modifier[]): Promise<void>;
+  /** Clicks the element with `id` (or its shadow element `inner`) at its centre with the mouse, with `force: true`. */
+  click(id: string, options?: ClickOptions): Promise<void>;
+  /** Moves the mouse to the centre of the element with `id` (or its shadow element `inner`). */
+  hover(id: string, options?: Target): Promise<void>;
+  /** Moves the mouse to the element with `id` (or its shadow element `inner`) and presses the left button there. */
+  pointerDown(id: string, options?: Target): Promise<void>;
+  /** Moves the mouse to the element with `id` and releases the left button there. */
+  pointerUp(id: string): Promise<void>;
+  /**
+   * The sequential focus order: Tab from the start of the page (or, with `reverse`, Shift+Tab from its end) until
+   * focus leaves the page or comes round again; each step the path of focused elements from the document's active
+   * element down through each shadow root's (described as `EventRecord.at` is).
+   */
+  tabOrder(options?: { readonly reverse?: boolean }): Promise<string[][]>;
+  /** The focused element inside the shadow root of the element with `id`, described as `EventRecord.at` is, or null. */
+  activeInner(id: string): Promise<string | null>;
+  /**
+   * Starts recording the events of `types` at the element with `id`, each of its ancestors, `document` and `window`,
+   * in the bubble phase (each listener once, whatever the number of calls); the next `mount` stops it.
+   */
+  events(id: string, types: readonly string[]): Promise<void>;
+  /** The records since the last `takeEvents` (or `mount`), in the order the listeners ran; empties the record. */
+  takeEvents(): Promise<EventRecord[]>;
+  /** Makes the next event of `type` call `preventDefault()` before any other listener of the page sees it. */
+  preventNext(type: string): Promise<void>;
+  /** In process, the navigation sink's records since the last `mount`; the fixture navigates for real instead and throws. */
+  navigations(): Promise<NavigationRecord[]>;
+  /** Emulates the reduced-motion preference; `forcedColors("none")` also resets it to `no-preference`. */
+  reducedMotion(mode: Motion): Promise<void>;
+  /** The accessibility node of the element with `id`, or of the first element matching `inner` in its shadow root. */
+  axState(id: string, inner?: string): Promise<AxState>;
+  /** The `aria-current` of the element with `id`, or of the first element matching `inner` in its shadow root. */
+  current(id: string, inner?: string): Promise<Current>;
+  /**
+   * The violations and incomplete results, every impact, of axe-core on the whole page, or on the element with `scope`,
+   * with 006's rule selection (gates/lib/axe-rules.ts `ruleMeta` and `ruleOptions`, as gates/bin/axe.ts).
+   */
+  axe(scope?: string): Promise<AxeResult[]>;
 }
