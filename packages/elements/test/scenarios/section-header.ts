@@ -382,6 +382,41 @@ export const sectionHeaderScenarios: Scenario[] = [
     expected: { labelled: { actionsAtInlineEnd: 0, eyebrowToActions: "space-1" }, described: "space-1", alone: { height: 0, top: 0 }, full: partsExpected },
   },
   {
+    name: "FR-005, FR-010, narrow (phase 2 review R1-02): in 300 px containers, two 140 px actions that do not fit beside an --ocelle-space-4 gap stay on one line at the inline end with no heading or description: with actions only, and in the eyebrow variant with a slotted description it does not render, they start at the host's block start and the host is as tall as they are, under an eyebrow they start --ocelle-space-1 below it; beside a twin with a heading whose actions wrap --ocelle-space-2 under it at its inline start",
+    run: async (driver) => {
+      const ids = ["only", "variant", "labelled", "full"];
+      const narrow = (id: string, inner: string, attributes = ""): string => `<div id="${id}-box">${header(id, inner, attributes)}</div>`;
+      await driver.mount(narrow("only", actions("only")) + narrow("variant", description("variant") + actions("variant"), ' variant="eyebrow"') + narrow("labelled", eyebrow("labelled") + actions("labelled")) + narrow("full", heading("full", "Release planning overview") + actions("full")) + probe);
+      for (const id of ids) {
+        await driver.size(`${id}-box`, 300, null);
+        await driver.size(`${id}-edit`, 140, null);
+        await driver.size(`${id}-share`, 140, null);
+      }
+      const parts = await boxes(driver, ids.flatMap((id) => [id, `${id}-edit`, `${id}-share`]).concat(["labelled-eyebrow", "full-heading"]));
+      const at = (key: string): Box => pick(parts, key);
+      const end = (id: string): number => tenth(at(id).x + at(id).width - (at(`${id}-share`).x + at(`${id}-share`).width));
+      const bottom = (box: Box): number => box.y + box.height;
+      return {
+        ...Object.fromEntries(
+          ["only", "variant"].map((id) => [id, { top: tenth(at(`${id}-edit`).y - at(id).y), height: tenth(at(id).height - at(`${id}-edit`).height), oneLine: tenth(at(`${id}-share`).y - at(`${id}-edit`).y), end: end(id) }]),
+        ),
+        labelled: {
+          eyebrowToActions: await lengthIs(driver, below(at("labelled-eyebrow"), at("labelled-edit")), "space-1"),
+          bottom: tenth(bottom(at("labelled")) - bottom(at("labelled-edit"))),
+          oneLine: tenth(at("labelled-share").y - at("labelled-edit").y),
+          end: end("labelled"),
+        },
+        full: { actionsBelow: await lengthIs(driver, below(at("full-heading"), at("full-edit")), "space-2"), actionsAtStart: tenth(at("full-edit").x - at("full-heading").x) },
+      };
+    },
+    expected: {
+      only: { top: 0, height: 0, oneLine: 0, end: 0 },
+      variant: { top: 0, height: 0, oneLine: 0, end: 0 },
+      labelled: { eyebrowToActions: "space-1", bottom: 0, oneLine: 0, end: 0 },
+      full: { actionsBelow: "space-2", actionsAtStart: 0 },
+    },
+  },
+  {
     name: "US1-17, outside a card: size=\"\" and size=\"bogus\" draw the heading at the default size and keep the value the page wrote, beside a size=\"compact\" twin drawn compact (FR-006, FR-012)",
     run: async (driver) => {
       await driver.mount(header("blank", heading("blank"), ' size=""') + header("bogus", heading("bogus"), ' size="bogus"') + header("compact", heading("compact"), ' size="compact"') + probe);
