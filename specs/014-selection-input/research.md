@@ -330,7 +330,8 @@ SPEC-1-19), inside it `<span part="value">` (the text, `white-space: pre-wrap; o
 tokens with `font-variant-numeric: tabular-nums`, `--ocelle-color-inset` ground), `<span role="status"
 aria-live="polite" class="status">` (the live region, present and empty from first render, FR-041), and
 `<button part="copy-control">` with `<ocelle-icon name="copy">` in an `icon-row` per the slot convention and an
-`aria-label` from `copy-label`. `ocelle-copy-field.ts` imports `ocelle-icon.ts`, so the copy field's entry defines
+`aria-label` from `copy-label`; the button's shadow rule sets `font: inherit`, as 006's contributor note asks of every
+form control in a shadow root (006 FR-025, FR-027; recheck T001). `ocelle-copy-field.ts` imports `ocelle-icon.ts`, so the copy field's entry defines
 `ocelle-icon` (R-16). No slot (SPEC-2-10).
 
 **Lines and grounds** (operator decision PLAN-CORRECTNESS-1-010 (a), SPEC-1-14). The field's outer border is
@@ -603,6 +604,22 @@ commit (analysis I1, operator decision Q1 (a)); the implementer makes it before 
 scheme, the pointer and focus parameters, the baseline command, the contributor note (006 FR-025) and
 `contracts/gates.md` / `contracts/container.md`. Differences are fixed in the plan and tasks before phase 2's red commit
 (FR-053).
+
+**Recheck result** (T001, `reviews/phase-1/recheck-10.md`; #10 as merged at `3828d2f`, no spec outcome changed):
+
+- *Titles and story ids.* Each stories file is titled `Elements/ocelle-<control>` (`Elements/ocelle-listbox`,
+  `Elements/ocelle-tabs`, `Elements/ocelle-segmented-choice`, `Elements/ocelle-copy-field`, `Elements/ocelle-link`),
+  as 005's `Elements/ocelle-icon` and `Elements/ocelle-brand-mark` are, so the story ids are
+  `elements-ocelle-<control>--<story>` and the baselines `storybook/baselines/elements-ocelle-<control>--<story>.light.png`
+  and `.dark.png`. The children's stories (option, tab, tab panel, segment) are stories of their parent's file.
+- *Pointer.* A hover story declares `parameters: { ocelle: { pointer: { hover: "<selector>" } } }`, one key, its
+  Playwright CSS selector (open shadow roots pierced) matching exactly one element, whose box lies wholly inside the
+  1280 × 800 viewport at scroll (0, 0); the gates move the mouse to the centre of that box after the render (006
+  FR-031, `pointer-target` otherwise). The scrolling listbox story declares no pointer state.
+- *Focus.* #10 has no focus parameter. A focus story focuses its target in a `play` function (or in its render):
+  Storybook 10.6.5 emits the render signal `STORY_RENDERED` after `play` has finished, and both gates then scroll the
+  page back to (0, 0) before the pointer, the capture and the axe run, so a focused target stays inside the initial
+  viewport too.
 
 ## R-13 Mutation testing under #23
 
