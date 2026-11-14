@@ -18,3 +18,12 @@ Recorded by the orchestrator; each is the operator's answer (human:jeroennouwsde
    "Apply it at landing". A baseline PNG that conflicts in a merge of main is left out, the merge is finished, and
    the gap is recorded. The token stories' baselines (`tokens--colour`, `tokens--type`, which list the eyebrow
    tokens) and the new elements' baselines are regenerated from CI's captures at `/ocelle-land`, under decision 2.
+4. **2026-11-14, a container engine after all** (the operator's final baseline rule, relayed by the orchestrator,
+   session_01NUfZSc26YwQLeow31d6R6X): "Adopt new rule". It supersedes decisions 2 and 3. `dockerd` runs in these
+   sessions once started as root (`nohup dockerd > <log> 2>&1 &`; docker 29.9.2 answers here; podman is absent).
+   From phase 2 on (and anything phase 1 needs), baselines are made in #10's pinned container as #10 designed
+   (`pnpm run visual:update`) and checked with `pnpm run gate:visual`; the record states that no cross-engine
+   (podman) comparison was possible, and CI confirms the baselines at landing. When a merge of main conflicts on a
+   baseline PNG, neither side is taken: the merge is finished, the affected baselines are regenerated in the pinned
+   container and committed in the merge. The five container-engine tests of `gates/test/integration/visual.test.ts`
+   are re-run with the engine and are expected to pass.
