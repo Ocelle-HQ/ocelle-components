@@ -35,3 +35,12 @@ Not done because of this stop: T019 to T022 and T020a stay open (their fixture-p
 suites pass alone, but the phase-end checks are not green), and T025's phase-end gates and the mutation run with its
 shard timing (the in-process tests are the mutation run's tests, so a flaky cell would also make its dry run or its
 mutants unreliable).
+
+## Other phase-end checks run before the stop
+
+At `2070cc8`: `gate:typecheck`, `gate:lint`, `gate:style-lint`, `gate:test-lint`, `gate:csp`, `gate:prefix`,
+`gate:contrast` (165 / 173 pairs, 154 required) and `gate:manifest` ("3 elements checked, no finding") green;
+`gate:unit-tests` red on the timing failures above. `gate:plants` was started with `OCELLE_VISUAL_ENGINE=docker`
+(podman is absent from this container; dockerd running) and stopped by the implementer's 30-minute time limit after
+248 plant timings (all twelve manifest plants among them), before its verdict: no result is recorded for it, and it is
+to be re-run with T025. `gate:mutation` (the plan and the `src/live.ts` shard timings) was not started.
