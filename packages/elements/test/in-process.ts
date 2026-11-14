@@ -209,7 +209,11 @@ export function inProcessDriver(): Driver {
       await settle();
     },
     click: async (target, options = {}) => {
-      await userEvent.click(resolve(target), { button: options.button ?? "left", modifiers: [...(options.modifiers ?? [])], clickCount: options.count ?? 1 });
+      await userEvent.click(resolve(target), { button: options.button ?? "left", modifiers: [...(options.modifiers ?? [])], clickCount: options.count ?? 1, force: options.force ?? false });
+      await settle();
+    },
+    hover: async (target) => {
+      await userEvent.hover(resolve(target));
       await settle();
     },
     activeElement: () => {

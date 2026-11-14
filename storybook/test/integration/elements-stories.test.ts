@@ -3,9 +3,12 @@ import { createServer } from "node:http";
 import type { Server } from "node:http";
 import type { AddressInfo } from "node:net";
 import { extname, join, normalize } from "node:path";
+import { fileURLToPath } from "node:url";
 import { chromium } from "playwright";
 import type { Browser, Page } from "playwright";
 import { afterAll, beforeAll, describe, expect, inject, it } from "vitest";
+import { axeContext, ruleMeta, ruleOptions } from "../../../gates/lib/axe-rules.ts";
+import type { AxeRule } from "../../../gates/lib/axe-rules.ts";
 
 // The element stories in the built Storybook (005 US1 scenario 13, FR-019; research.md R-14; analysis G4 and L14;
 // T020a). The global setup (setup.ts) built the Storybook; this test serves it, as render.test.ts does, and opens
@@ -167,6 +170,105 @@ describe("the ocelle-brand-mark stories in the built Storybook (US4-11, FR-019)"
           marks,
           outside: [],
         });
+        await page.close();
+      });
+    }
+  }
+});
+
+/** axe-core's script, injected into a story page as the axe gate injects it (gates/bin/axe.ts). */
+const axeScript = readFileSync(fileURLToPath(new URL("../../../node_modules/axe-core/axe.js", import.meta.url)), "utf8");
+
+/**
+ * Runs axe-core on a story page with the axe gate's rule set and context (gates/lib/axe-rules.ts: the default rules and
+ * the WCAG 2.x A and AA rules, less the experimental and the harness-document rules; Storybook's harness nodes
+ * excluded), and returns each violation's rule id and impact.
+ */
+async function axeViolations(page: Page): Promise<{ readonly id: string; readonly impact: string | null }[]> {
+  await page.addScriptTag({ content: axeScript });
+  const rules = await page.evaluate(() => (window as unknown as { axe: { _audit: { rules: AxeRule[] } } }).axe._audit.rules.map((rule) => ({ id: rule.id, tags: [...rule.tags], enabled: rule.enabled, ...(rule.selector === undefined ? {} : { selector: rule.selector }) })));
+  const options = { rules: ruleOptions(ruleMeta(rules)), context: axeContext() };
+  return page.evaluate(async ({ rules, context }) => {
+    const axe = (window as unknown as { axe: { run: (context: unknown, options: unknown) => Promise<{ violations: { id: string; impact?: string | null }[] }> } }).axe;
+    const results = await axe.run(context, { rules, resultTypes: ["violations"] });
+    return results.violations.map((violation) => ({ id: violation.id, impact: violation.impact ?? null }));
+  }, options);
+}
+
+/** What a listbox story's page shows: its theme, whether both elements are defined, its listboxes and their options. */
+function observeListboxes(page: Page): Promise<unknown> {
+  return page.evaluate(() => {
+    let active: Element | null = document.activeElement;
+    while (active?.shadowRoot?.activeElement) active = active.shadowRoot.activeElement;
+    return {
+      theme: document.documentElement.dataset.theme,
+      defined: [customElements.get("ocelle-listbox") !== undefined, customElements.get("ocelle-option") !== undefined],
+      listboxes: [...document.querySelectorAll("#storybook-root ocelle-listbox")].map((listbox) => {
+        const list = listbox.shadowRoot?.querySelector('[part="list"]');
+        return {
+          value: (listbox as unknown as { value?: unknown }).value,
+          scrolls: list === null || list === undefined ? null : list.scrollHeight > list.clientHeight,
+          options: [...listbox.querySelectorAll("ocelle-option")].map((option) => ({
+            text: option.textContent.trim(),
+            selected: option.getAttribute("aria-selected"),
+            disabled: option.getAttribute("aria-disabled") === "true",
+            focused: option === active,
+          })),
+        };
+      }),
+    };
+  });
+}
+
+/** The options of a five-folder story: `selected` the selected one, `disabled` the disabled one, `focused` the focused one. */
+function folderOptions(selected: string | null, disabled = "", focused = ""): unknown[] {
+  return ["alpha", "beta", "gamma", "delta", "epsilon"].map((text) => ({ text, selected: text === selected ? "true" : "false", disabled: text === disabled, focused: text === focused }));
+}
+
+const tenFolders = ["alpha", "beta", "gamma", "delta", "epsilon", "zeta", "eta", "theta", "iota", "kappa"];
+
+// The listbox stories (014 FR-050, FR-051; research.md R-01, R-12; T019): each story renders its options with the
+// states the listbox writes, in light and dark, and axe with the axe gate's rule set reports no `aria-allowed-attr`
+// violation (the internals kept where axe-core reads them; plant: the internals in a private field) and no serious or
+// critical violation. The scrolling listbox scrolls; the focused story's option has focus after its `play`.
+const listboxStories = [
+  { id: "elements-ocelle-listbox--no-selection", listboxes: [{ value: "", scrolls: false, options: folderOptions(null) }] },
+  { id: "elements-ocelle-listbox--selected", listboxes: [{ value: "gamma", scrolls: false, options: folderOptions("gamma") }] },
+  { id: "elements-ocelle-listbox--disabled-option", listboxes: [{ value: "gamma", scrolls: false, options: folderOptions("gamma", "beta") }] },
+  { id: "elements-ocelle-listbox--focused-option", listboxes: [{ value: "gamma", scrolls: false, options: folderOptions("gamma", "", "delta") }] },
+  { id: "elements-ocelle-listbox--hovered-option", listboxes: [{ value: "gamma", scrolls: false, options: folderOptions("gamma") }] },
+  {
+    id: "elements-ocelle-listbox--scrolling-listbox",
+    listboxes: [{ value: "delta", scrolls: true, options: tenFolders.map((text) => ({ text, selected: text === "delta" ? "true" : "false", disabled: false, focused: false })) }],
+  },
+  {
+    id: "elements-ocelle-listbox--option-with-icon",
+    listboxes: [
+      {
+        value: "projects",
+        scrolls: false,
+        options: [
+          { text: "Projects", selected: "true", disabled: false, focused: false },
+          { text: "Notes", selected: "false", disabled: false, focused: false },
+        ],
+      },
+    ],
+  },
+] as const;
+
+describe("the ocelle-listbox stories in the built Storybook (014 FR-050, FR-051)", { timeout: 60_000 }, () => {
+  for (const { id, listboxes } of listboxStories) {
+    for (const theme of ["light", "dark"] as const) {
+      it(`${id} in ${theme}: renders its options with the states the listbox writes, and axe reports no aria-allowed-attr and no serious or critical violation`, async () => {
+        const { page, outside } = await open(id, theme, "ocelle-option");
+        const observed = await observeListboxes(page);
+        const violations = await axeViolations(page);
+        expect({
+          observed,
+          allowedAttr: violations.filter((violation) => violation.id === "aria-allowed-attr"),
+          serious: violations.filter((violation) => violation.impact === "serious" || violation.impact === "critical"),
+          outside,
+        }).toEqual({ observed: { theme, defined: [true, true], listboxes }, allowedAttr: [], serious: [], outside: [] });
         await page.close();
       });
     }

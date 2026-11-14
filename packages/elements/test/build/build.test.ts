@@ -3,6 +3,7 @@ import { join } from "node:path";
 import { beforeAll, describe, expect, it } from "vitest";
 import { brandPairs, fr026Foregrounds, styleTemplate } from "../node/brand-pairs-check.ts";
 import type { PairEntry } from "../node/brand-pairs-check.ts";
+import { listboxRows, optionRows, selectionPairs } from "../node/selection-pairs-check.ts";
 import { buildPackage, elements } from "./package-build.ts";
 
 // The two builds as the package ships them (005 FR-001, FR-002, FR-004, FR-016, FR-029, FR-033; US1 scenario 17's
@@ -17,6 +18,10 @@ import { buildPackage, elements } from "./package-build.ts";
 //   test/node/brand-pairs-check.ts on the `css` template of the built dist/ocelle-brand-mark.js finds exactly FR-026's
 //   tokens per variant and every FR-026 pair checked in pairs.json, and dist/ocelle-brand-mark.js imports neither the
 //   package root nor ocelle-icon.js.
+// - since 014 phase 2 (research.md R-16, R-17; T017, T018): dist/ocelle-listbox.js imports ./ocelle-option.js (a parent's
+//   entry defines its children) and dist/ocelle-option.js imports no other element; the selection pairs check of
+//   test/node/selection-pairs-check.ts on the `css` templates of the built option and listbox finds R-15's tokens and
+//   every pair checked; the browser build defines ocelle-listbox and ocelle-option.
 const dist = join(elements, "dist");
 const browserBuild = join(dist, "browser", "ocelle-elements.js");
 
@@ -77,18 +82,45 @@ describe("the module build (dist/*.js)", () => {
   });
 });
 
+describe("the module build of the listbox (dist/ocelle-listbox.js, dist/ocelle-option.js)", () => {
+  const read = (name: string): string => (existsSync(join(dist, name)) ? readFileSync(join(dist, name), "utf8") : "");
+
+  it("dist/ocelle-listbox.js imports lit, the registration helper and ./ocelle-option.js, and not the package root; dist/ocelle-option.js imports no other element", () => {
+    const listbox = specifiers(read("ocelle-listbox.js"));
+    const option = specifiers(read("ocelle-option.js"));
+    expect({
+      lit: listbox.includes("lit"),
+      define: listbox.includes("./define.js"),
+      root: listbox.includes("./index.js"),
+      elements: listbox.filter((specifier) => specifier.startsWith("./ocelle-")),
+      optionElements: option.filter((specifier) => specifier.startsWith("./ocelle-")),
+      optionDefine: option.includes("./define.js"),
+    }).toEqual({ lit: true, define: true, root: false, elements: ["./ocelle-option.js"], optionElements: [], optionDefine: true });
+  });
+
+  it("the css templates of the built option and listbox paint R-15's tokens, each R-15 pair a checked row of pairs.json (the stylesheets as shipped)", () => {
+    const pairs = JSON.parse(readFileSync(join(elements, "..", "tokens", "contrast", "pairs.json"), "utf8")) as PairEntry[];
+    expect({
+      option: selectionPairs(styleTemplate(read("ocelle-option.js")), optionRows.pairs, pairs),
+      listbox: selectionPairs(styleTemplate(read("ocelle-listbox.js")), listboxRows.pairs, pairs),
+      listboxSheet: styleTemplate(read("ocelle-listbox.js")) !== "",
+    }).toEqual({ option: { painted: optionRows.painted, missing: [] }, listbox: { painted: listboxRows.painted, missing: [] }, listboxSheet: true });
+  });
+});
+
 describe("the browser build (dist/browser/ocelle-elements.js)", () => {
   const text = (): string => (existsSync(browserBuild) ? readFileSync(browserBuild, "utf8") : "");
 
-  it("is self-contained: it defines ocelle-icon and ocelle-brand-mark, with no import statement and no dynamic import", () => {
+  it("is self-contained: it defines ocelle-icon, ocelle-brand-mark, ocelle-listbox and ocelle-option, with no import statement and no dynamic import", () => {
     const code = text();
     expect({
       exists: code !== "",
       definesIcon: code.includes('"ocelle-icon"'),
       definesMark: code.includes('"ocelle-brand-mark"'),
+      definesListbox: code.includes('"ocelle-listbox"') && code.includes('"ocelle-option"'),
       specifiers: specifiers(code),
       dynamicImport: /\bimport\s*\(/.test(code),
-    }).toEqual({ exists: true, definesIcon: true, definesMark: true, specifiers: [], dynamicImport: false });
+    }).toEqual({ exists: true, definesIcon: true, definesMark: true, definesListbox: true, specifiers: [], dynamicImport: false });
   });
 
   it("holds Lit's production build at the locked versions, not its development build, no ssr-dom-shim and no console call", () => {

@@ -2,7 +2,8 @@ import { readFileSync } from "node:fs";
 import { describe, expect, it } from "vitest";
 
 // The repository's pair list packages/tokens/contrast/pairs.json (002 FR-016, FR-017, data-model.md § Contrast
-// pair, spec Appendix A.7 to A.9), read as plain JSON: 160 entries in light and 168 in dark; the figures #5 records
+// pair, spec Appendix A.7 to A.9), read as plain JSON: 166 entries in light and 174 in dark (since 014 research.md R-17:
+// the six `color-accent-strong` non-text pairs on the main grounds in each theme, the selected bars); the figures #5 records
 // (A.7) entered by hand with source "#5", and no other entry claims #5; the excluded pairs exactly those of A.9, each
 // with a reason; the state colours on their own grounds recorded from first computation within #5's range 5.3 to 9.4
 // (FR-017: [5.25, 9.45)). The gate's own check of every figure is gates/test/contrast.test.ts.
@@ -56,15 +57,15 @@ const excluded = [
 ].sort();
 
 describe("packages/tokens/contrast/pairs.json", () => {
-  it("has 160 entries in light and 168 in dark, one entry per line", () => {
+  it("has 166 entries in light and 174 in dark, one entry per line", () => {
     const counts = ["light", "dark"].map((theme) => entries.filter((entry) => entry.theme === theme).length);
-    expect(counts).toEqual([160, 168]);
+    expect(counts).toEqual([166, 174]);
     const lines = text.split("\n");
-    expect(lines.filter((line) => line.trimStart().startsWith("{"))).toHaveLength(328);
+    expect(lines.filter((line) => line.trimStart().startsWith("{"))).toHaveLength(340);
   });
 
   it("names each (theme, fg, bg) once", () => {
-    expect([entries.length, new Set(entries.map(key)).size]).toEqual([328, 328]);
+    expect([entries.length, new Set(entries.map(key)).size]).toEqual([340, 340]);
   });
 
   it("records every A.7 figure as written in #5, with source #5", () => {

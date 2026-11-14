@@ -215,7 +215,16 @@ export function fixtureDriver(page: Page, log: readonly string[], withBase = fal
     click: async (target, options = {}) => {
       const handle = await page.evaluateHandle((target) => (window as unknown as { __ocelleDriver: Helpers }).__ocelleDriver.resolve(target), target);
       try {
-        await handle.click({ button: options.button ?? "left", modifiers: [...(options.modifiers ?? [])], clickCount: options.count ?? 1 });
+        await handle.click({ button: options.button ?? "left", modifiers: [...(options.modifiers ?? [])], clickCount: options.count ?? 1, force: options.force ?? false });
+      } finally {
+        await handle.dispose();
+      }
+      await settle(page);
+    },
+    hover: async (target) => {
+      const handle = await page.evaluateHandle((target) => (window as unknown as { __ocelleDriver: Helpers }).__ocelleDriver.resolve(target), target);
+      try {
+        await handle.hover();
       } finally {
         await handle.dispose();
       }

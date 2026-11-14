@@ -303,6 +303,41 @@ export const driverCommandScenarios: readonly DriverScenario[] = [
     },
     expected: { scrolled: { x: 40, y: 120 }, size: [500, 400], back: { x: 0, y: 0 } },
   },
+  {
+    // Plant: `hover` that does not move the pointer (the target then never matches :hover and sees no mouse event).
+    // Since 014 phase 2, for the hover paint of the listbox (spec Edge Cases "Hover").
+    name: "hover moves the pointer onto the target with real input, so it matches :hover, and presses no button",
+    fixture: true,
+    run: async (driver, inPage) => {
+      await driver.mount('<div id="away"></div><div id="c" tabindex="-1">Target</div>');
+      await driver.rules("#away { block-size: 200px; } #c { inline-size: 120px; block-size: 40px; }");
+      await inPage(() => {
+        const events: unknown[] = [];
+        (window as unknown as { __hover: unknown[] }).__hover = events;
+        for (const type of ["mouseover", "mousedown", "mouseup", "click"]) {
+          document.getElementById("c")?.addEventListener(type, (event) => events.push({ type, trusted: event.isTrusted, buttons: (event as MouseEvent).buttons }));
+        }
+      }, null);
+      const before = await inPage(() => document.getElementById("c")?.matches(":hover") ?? null, null);
+      await driver.hover("c");
+      const after = await inPage(() => document.getElementById("c")?.matches(":hover") ?? null, null);
+      return { before, after, events: await inPage(recorded, "__hover"), focused: await driver.activeElement() };
+    },
+    expected: { before: false, after: true, events: [{ type: "mouseover", trusted: true, buttons: 0 }], focused: null },
+  },
+  {
+    // Plant: `click` ignoring `force` (Playwright then waits for an aria-disabled target to be enabled, and the click
+    // times out). Since 014 phase 2, for the clicks on disabled options (US1-10, US1-18, US1-20).
+    name: "click with force clicks a target Playwright counts as disabled, an aria-disabled element, with real input",
+    fixture: true,
+    run: async (driver, inPage) => {
+      await driver.mount('<div id="c" role="option" aria-selected="false" aria-disabled="true" tabindex="-1">Disabled</div>');
+      await inPage(recordMouse, "c");
+      await driver.click("c", { force: true });
+      return inPage(recorded, "__mouse");
+    },
+    expected: [mouse("mousedown", 0, 1), mouse("mouseup", 0, 1), mouse("click", 0, 1)],
+  },
 ];
 
 /**

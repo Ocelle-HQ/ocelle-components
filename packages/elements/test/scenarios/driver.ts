@@ -21,11 +21,16 @@ export type { Pixels } from "../pixels.ts";
 /** A modifier key held during a key press or a click. */
 export type Modifier = "Alt" | "Control" | "Meta" | "Shift";
 
-/** How `click` clicks: the mouse button (left by default), the modifiers held, and the number of clicks (1 by default). */
+/**
+ * How `click` clicks: the mouse button (left by default), the modifiers held, and the number of clicks (1 by default).
+ * With `force` the click skips Playwright's actionability checks, so a target it counts as disabled (an
+ * `aria-disabled="true"` element) is still clicked with real input (014 phase 2).
+ */
 export interface ClickOptions {
   readonly button?: "left" | "middle" | "right";
   readonly modifiers?: readonly Modifier[];
   readonly count?: number;
+  readonly force?: boolean;
 }
 
 /**
@@ -236,6 +241,8 @@ export interface Driver {
   press(key: string, modifiers?: readonly Modifier[]): Promise<void>;
   /** Clicks the centre of the target with real mouse input. */
   click(target: Target, options?: ClickOptions): Promise<void>;
+  /** Moves the mouse to the centre of the target with real input, pressing no button (014 phase 2). */
+  hover(target: Target): Promise<void>;
   /** The focused element, through shadow roots, or null when nothing but the body is focused. */
   activeElement(): Promise<Focused | null>;
   /** Applies `steps` to the target's children synchronously, in one task, then waits for every element to render. */

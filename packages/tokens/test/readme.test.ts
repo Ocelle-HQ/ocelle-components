@@ -63,6 +63,12 @@ describe("packages/tokens/CHANGELOG.md", () => {
     expect([...named].sort()).toEqual(expectedTokens.map((token) => `--ocelle-${token.name}`).sort());
   });
 
+  it("names the contrast pairs of color-accent-strong on the six main grounds under Unreleased / Added (014 FR-058, research.md R-17)", () => {
+    expect(added.replace(/\s+/g, " ")).toContain(
+      "The contrast pair list checks `color-accent-strong` as a non-text colour on `color-canvas`, `color-sheet`, `color-pane`, `color-panel`, `color-inspector` and `color-rail` in both themes, for the selected bars of the selection elements of `@ocelle/elements`; no token name or value changes.",
+    );
+  });
+
   it("names no excluded token (A.6)", () => {
     expect(excludedNames.filter((name) => changelog.includes(`--ocelle-${name}\``))).toEqual([]);
     expect(changelog).toContain("## Unreleased");
