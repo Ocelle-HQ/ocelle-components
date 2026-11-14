@@ -42,6 +42,8 @@ const fragments = [
   "The top bar, the icon rail and the personal rail use the chrome tokens in both themes",
   "Digests are shown in groups of four",
   "In light mode the ochre fill is never the only mark of a state",
+  // 008 (tasks.md T033, T035): the drawer's inline size
+  "`--ocelle-drawer-inline` is the inline size of `ocelle-drawer`, the sidebar width `--ocelle-shell-sidebar-width`",
   "A control drawn on `color-accent-low`, `color-inset`, `color-hover-bg`, `color-danger-bg`, `color-warning-bg`, `color-success-bg`, `color-info-bg` or `color-neutral-bg` is bordered with `color-accent-strong`",
 ];
 

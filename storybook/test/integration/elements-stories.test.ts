@@ -21,7 +21,9 @@ import { afterAll, beforeAll, describe, expect, inject, it } from "vitest";
 // mono and labelled, each rendering its `ocelle-brand-mark` with the story's `ground`, `tone` and `label`, drawn, in
 // light and dark, with no request outside the origin. 008 (tasks.md T027; data-model.md § Stories) adds the dialog's
 // stories: each renders one open, modal `ocelle-dialog` (its inner `<dialog>` open and `:modal`) with the story's
-// `label` or host `aria-label`, in light and dark, with base.css applied and no request outside the origin.
+// `label` or host `aria-label`, in light and dark, with base.css applied and no request outside the origin. Phase 3
+// (T038) adds the drawer's: each renders one open, modal `ocelle-drawer` with the story's label, side, ground,
+// heading-hidden and direction, in light and dark, with base.css applied and no request outside the origin.
 const types: Readonly<Record<string, string>> = {
   ".html": "text/html; charset=utf-8",
   ".js": "text/javascript; charset=utf-8",
@@ -215,6 +217,63 @@ describe("the ocelle-dialog stories in the built Storybook (008 FR-042)", { time
           base: { linked: true, scheme: theme },
           defined: true,
           dialogs,
+          outside: [],
+        });
+        await page.close();
+      });
+    }
+  }
+});
+
+/** What a drawer story's page shows: its theme, the base stylesheet and its drawers. */
+function observeDrawers(page: Page): Promise<unknown> {
+  return page.evaluate(() => ({
+    theme: document.documentElement.dataset.theme,
+    base: {
+      linked: [...document.querySelectorAll<HTMLLinkElement>('link[rel="stylesheet"]')].some((link) => link.href.endsWith("/base.css") && link.sheet !== null),
+      scheme: getComputedStyle(document.documentElement).colorScheme,
+    },
+    defined: customElements.get("ocelle-drawer") !== undefined,
+    drawers: [...document.querySelectorAll("#storybook-root ocelle-drawer")].map((drawer) => {
+      const panel = drawer.shadowRoot?.querySelector("dialog") ?? null;
+      return {
+        label: drawer.getAttribute("label"),
+        side: drawer.getAttribute("side"),
+        ground: drawer.getAttribute("ground"),
+        headingHidden: drawer.hasAttribute("heading-hidden"),
+        direction: drawer.matches(":dir(rtl)") ? "rtl" : "ltr",
+        open: drawer.hasAttribute("open"),
+        shown: panel?.open === true,
+        modal: panel?.matches(":modal") === true,
+      };
+    }),
+  }));
+}
+
+/** An open, modal drawer with `label` on `side` and `ground`, under `direction`. */
+const shownDrawer = (label: string, side: "start" | "end", ground: "sheet" | "chrome", headingHidden = false, direction: "ltr" | "rtl" = "ltr"): unknown => ({ label, side, ground, headingHidden, direction, open: true, shown: true, modal: true });
+
+// 008 (tasks.md T038; data-model.md § Stories): start; end; rtl start; chrome ground; chrome ground with heading-hidden;
+// long scrolling body.
+const drawerStories = [
+  { id: "elements-ocelle-drawer--start", drawers: [shownDrawer("Filters", "start", "sheet")] },
+  { id: "elements-ocelle-drawer--end", drawers: [shownDrawer("Details", "end", "sheet")] },
+  { id: "elements-ocelle-drawer--rtl-start", drawers: [shownDrawer("Filters", "start", "sheet", false, "rtl")] },
+  { id: "elements-ocelle-drawer--chrome-ground", drawers: [shownDrawer("Personal", "start", "chrome")] },
+  { id: "elements-ocelle-drawer--chrome-ground-heading-hidden", drawers: [shownDrawer("Personal", "start", "chrome", true)] },
+  { id: "elements-ocelle-drawer--long-scrolling-body", drawers: [shownDrawer("Licence", "end", "sheet")] },
+] as const;
+
+describe("the ocelle-drawer stories in the built Storybook (008 FR-042)", { timeout: 60_000 }, () => {
+  for (const { id, drawers } of drawerStories) {
+    for (const theme of ["light", "dark"] as const) {
+      it(`${id} in ${theme}: renders an open, modal ocelle-drawer with the story's label, side, ground, heading-hidden and direction, with base.css applied and no request outside the origin`, async () => {
+        const { page, outside } = await open(id, theme, "ocelle-drawer");
+        expect({ ...((await observeDrawers(page)) as object), outside }).toEqual({
+          theme,
+          base: { linked: true, scheme: theme },
+          defined: true,
+          drawers,
           outside: [],
         });
         await page.close();

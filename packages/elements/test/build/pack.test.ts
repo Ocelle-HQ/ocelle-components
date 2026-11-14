@@ -28,4 +28,10 @@ describe("pnpm pack of @ocelle/elements", () => {
     const manifest = JSON.parse(await readFile(join(elements, "package.json"), "utf8")) as { exports?: Record<string, string> };
     expect({ dialog: packed.includes("dist/ocelle-dialog.js"), base: packed.includes("dist/overlay.js"), entry: manifest.exports?.["./ocelle-dialog.js"] }).toEqual({ dialog: true, base: true, entry: "./dist/ocelle-dialog.js" });
   });
+
+  // 008 tasks.md T032: the drawer's entry point is packed, and package.json maps it.
+  it("lists dist/ocelle-drawer.js, and the packed package.json maps ./ocelle-drawer.js to dist/ocelle-drawer.js", async () => {
+    const manifest = JSON.parse(await readFile(join(elements, "package.json"), "utf8")) as { exports?: Record<string, string> };
+    expect({ drawer: packed.includes("dist/ocelle-drawer.js"), entry: manifest.exports?.["./ocelle-drawer.js"] }).toEqual({ drawer: true, entry: "./dist/ocelle-drawer.js" });
+  });
 });
