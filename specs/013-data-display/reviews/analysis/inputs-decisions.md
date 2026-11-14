@@ -20,3 +20,12 @@ Questions: `reviews/analysis/inputs-questions.md` (IQ-01 to IQ-15), from the ope
 | IQ-13 Label, bar and percent layout | b | The value text sits at the inline end of the labelled row, the label at the start. |
 | IQ-14 #498's label slot | a | Keep the `label` property only. |
 | IQ-15 Fallback text inside the bar | b | The README states it, and a browser test proves the fallback text is neither shown nor exposed after upgrade. |
+
+## After applying the decisions (2026-11-14, human:jeroennouwsdev)
+
+- **Re-check of the new design** (FR-014 grid layout, FR-025 eyebrow, FR-026 body spacing, commit 5ff7abe): "Re-run
+  analysis only". The analysis after tasks runs again on the updated artifacts, then the tasks gate is asked again.
+  No extra squad round.
+- **Grid limits:** "Accept, README states". FR-007 is unchanged, so a long unbroken value in `layout="grid"` overflows
+  its cell without `wrap="anywhere"`, and #280's no-overlap holds only with the policy. A grid sheet in a shrink-to-fit
+  host is four cells wide unless given an inline size. The README tells consumers to do both.
