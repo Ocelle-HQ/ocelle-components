@@ -97,7 +97,13 @@ unmerged). Results marked "squad probe" were measured by the plan squad's round 
   the overlay behaves the same way. The platform's close-watcher stack already orders these, so while such an element
   is open the overlay stands aside: its Escape keydown neither prevents nor requests (the platform closes that element
   alone, as natively), its `document` listener below does nothing, and R-04 handles no Tab (a nested native modal keeps
-  its own sequential navigation). How the overlay knows is the implementer's choice, for example capture-phase
+  its own sequential navigation). **Measured** (phase 2, Chromium 153; operator decision 2026-11-14 keeps this design):
+  with a slotted native modal `<dialog>` holding two buttons n1 and n2 shown above the overlay and focus on n1, n + 2
+  presses give `focusPath()` lists `n2 body n1 n2` for Tab and `body n2 n1 body` for Shift+Tab. Focus passes through
+  the document body at the nested dialog's ends; the page's content and the overlay's own stops are never reached.
+  That is the platform's behaviour, stated as such (US1 scenario 13), not a containment the overlay guarantees, and
+  neither R-04's repair nor the `document` body path below acts on those `body` entries while the nested modal is
+  open. How the overlay knows is the implementer's choice, for example capture-phase
   `toggle` and `close` listeners on its `<dialog>` (these events do not bubble, but a slotted descendant's pass the
   `<dialog>` in capture) followed by a check of `:popover-open`, `:modal`, `open` and `closedBy`, or a check of the
   flat tree at keydown; for a non-modal dialog the opening order also counts (below). For a non-modal dialog the stand-aside covers Escape only: the platform keeps no focus trap
@@ -713,9 +719,17 @@ Rechecked (T026) against #10 as merged into `claude/016-overlays` (merge commit 
   `aria-label` (R-08). The tooltip's description node is `hidden`. No exception entry is planned. Text clipped at a
   scroll edge gives `color-contrast-incomplete` (`elmPartiallyObscured`), as base.css's prose table does
   (`storybook/a11y-exceptions.json:1-91`), so (operator decision C) the long-scrolling-body and prose-with-a-table
-  dialog stories are designed so no text is clipped at a scroll edge (a table narrow enough for the panel; body
-  content whose scroll edge does not cut a line of text in the capture). If T029 still measures a
-  `color-contrast-incomplete` node, stop for the operator.
+  dialog stories are designed so no text is clipped at a scroll edge (a table narrow enough for the panel; for the
+  long body, see below). **Measured at T029** (phase 2): on the long-scrolling-body story axe reports
+  `color-contrast-incomplete` (`elmPartiallyObscured`) for whichever paragraph's box lies across the body's scroll
+  edge inside the 800 px viewport, so spacing the paragraphs does not remove it. **Decision** (operator, 2026-11-14):
+  the story places a block without text across that scroll edge, an empty `<div data-story="dialog-scroll-edge">` in
+  the slotted body between two paragraphs, styled only by a `[data-story="dialog-scroll-edge"]` rule in
+  `storybook/.storybook/stories-layout.css` (layout only: a block size large enough that the body's scroll edge in
+  the 1280 × 800 capture falls inside it; no text, no role, no name, no `style` attribute), so no paragraph's box
+  crosses the edge. No entry is added to `storybook/a11y-exceptions.json` and no Complexity Tracking row; the axe gate
+  expectation stays zero serious or critical findings. If T029 still measures a `color-contrast-incomplete` node
+  after that, stop for the operator.
 - **Baselines**: `storybook/baselines/<story-id>.<theme>.png`, produced by `pnpm run visual:update` in the pinned
   container (README:32-36). CI's captures win over local ones (006 FR-005): CI's files are taken from the `visual`
   artifact of the "Visual regression" job (README:41-43). Each new story and theme needs its baseline.

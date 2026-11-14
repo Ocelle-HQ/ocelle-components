@@ -112,6 +112,9 @@ Token-only CSS with no new `token-only` allowance. No I/O. No ID reference acros
 7. **Story delay override** (R-16): tooltip stories wrap their markup in `<div data-story="tooltip">`, and
    `stories-layout.css` sets `[data-story="tooltip"] { --ocelle-tooltip-delay: 0ms; }` (operator decision A at T026),
    because #10 runs axe two frames after the pointer move and takes the screenshot at no fixed time after it.
+   The long-scrolling-body dialog story places an empty `<div data-story="dialog-scroll-edge">` across the body's
+   scroll edge, sized by a `[data-story="dialog-scroll-edge"]` rule in the same file, so no paragraph is partly
+   hidden there and axe stays clean with no exception (operator decision, 2026-11-14, measured at T029).
 8. **Heading level 2**, fixed (R-08).
 
 Settled in the squad's round 1 (9 to 13 by the operator at the forks, 14 a confirmed fix):
@@ -153,7 +156,10 @@ Settled in the squad's round 3 (18 by the operator at the fork, 19 and 20 confir
     modally from slotted content, or a non-modal `<dialog>` opened after the overlay's `showModal()` (by `show()` or
     by the `open` attribute) whose `closedby` state is Close Request or Any is open, the overlay neither prevents nor
     requests on Escape, and it handles no Tab while the popover or the nested modal dialog is open (a non-modal
-    dialog keeps R-04's Tab); the platform closes that element alone. The platform's outcome for a non-modal dialog
+    dialog keeps R-04's Tab); the platform closes that element alone. Inside the nested modal the platform's Tab
+    order passes through the document body (measured, Chromium 153: `n2 body n1 n2` for Tab and `body n2 n1 body` for
+    Shift+Tab from n1); the overlay keeps this design and states it as platform behaviour, not a containment it
+    guarantees (operator decision, 2026-11-14). The platform's outcome for a non-modal dialog
     depends on opening order, not on the method (verify probes v6 to v9): a slotted non-modal `<dialog>` already open
     when the overlay opened, whatever its `closedby`, or opened after it with `closedby` absent, `auto` or `none`, is
     not above the overlay and is ordinary content: Escape requests the overlay's close on every press through the
@@ -255,7 +261,7 @@ packages/elements/
 ├── test/build/build.test.ts, test/build/pack.test.ts   # + the three dist files
 storybook/
 ├── stories/{dialog,drawer,tooltip}.stories.ts     # after #10 (R-16)
-├── .storybook/stories-layout.css  # tooltip delay override, [data-story="tooltip"] (R-16)
+├── .storybook/stories-layout.css  # [data-story="tooltip"] delay override, [data-story="dialog-scroll-edge"] block (R-16)
 └── baselines/…                    # after #10
 vitest.config.ts                   # elements: 1280 × 800, no touch; + elements-touch project (only *.touch.test.ts,
                                    #   same excludes as elements: not test/node, test/build, test/browser); commands (R-14)

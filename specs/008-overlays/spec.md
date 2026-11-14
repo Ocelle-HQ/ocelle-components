@@ -51,6 +51,12 @@ sources of the requirements below. `#450` and `#503` are spec-kitty/spec-kitty-d
   do this is never announced, named or reachable by Tab (FR-008).
 - Manifest, "analyse, then drop it": the published manifest lists the properties and attributes each overlay inherits
   from the shared internal base, marked as inherited, and lists no internal base of its own (FR-045, research R-01).
+- Tab inside a slotted native modal `<dialog>`, keep the design: while it is open, Tab and Shift+Tab stay the
+  platform's (FR-010). The measured sequence, which passes through the document body, is stated in US1 scenario 13
+  as platform behaviour, not as a containment the overlay guarantees.
+- axe on the long-scrolling-body dialog story: the story places a block without text across the body's scroll edge,
+  so no paragraph is partly hidden there, laid out by the storybook's story layout stylesheet; no axe exception is
+  added (FR-042, research R-16).
 
 ## Consumer need
 
@@ -134,7 +140,10 @@ stories pass the visual and axe gates.
     modal `<dialog>` shown from slotted content, **When** the user presses Escape, **Then** that menu or dialog closes
     alone, no `ocelle-dialog-close-request` is dispatched and the dialog stays open; **When** the user presses Escape
     again, **Then** the dialog's close is requested with `detail.reason === "escape"`; while the nested native dialog
-    is open, Tab stays inside it (FR-010).
+    is open, Tab and Shift+Tab are left to the platform (FR-010): with that dialog holding two buttons n1 and n2 and
+    focus on n1, Chromium 153 gives the focus sequence `n2 body n1 n2` for Tab and `body n2 n1 body` for Shift+Tab
+    (`body`: the document body), so neither the page's content nor the dialog's own controls are reached. This is
+    the platform's behaviour as measured, not a containment the dialog guarantees.
 14. **Given** an open dialog whose body holds, between two buttons or as its last content, an element with a closed
     shadow root holding two buttons, or an iframe holding two buttons, **When** the user presses Tab or Shift+Tab
     repeatedly, **Then** focus reaches each inner button in its native order and never leaves the dialog, with at
@@ -301,8 +310,9 @@ pointer and keyboard. It is complete when the scenarios below pass in process an
   the documentation states.
 - **Content the overlay cannot see into.** Slotted content with a closed shadow root, an iframe, or a video or audio
   element with controls keeps its own focusable parts reachable by Tab and Shift+Tab inside the overlay; leaving it
-  past the cycle's end may cost one extra press, and a closed shadow root at the end that does not delegate focus is
-  skipped by the Shift+Tab wrap and reached in the forward direction (FR-008). Escape with focus inside a slotted
+  past the cycle's end may cost one extra press where the engine gives no signal (an iframe), and a Shift+Tab wrap
+  onto such content at the cycle's end enters it from its end, so its focusable parts are reached in reverse native
+  order whether or not it can take focus itself (FR-008). Escape with focus inside a slotted
   iframe does nothing to the overlay (FR-010). Slotted content with a positive `tabindex` is visited in the engine's
   order, and the cycle wraps where that order ends, so no element is left out (FR-008).
 - **`open` toggled quickly.** Setting `open` true and false in one task, or twice while an exit animation runs,
@@ -388,7 +398,9 @@ pointer and keyboard. It is complete when the scenarios below pass in process an
   in its content (an open `popover="auto"` or `"hint"` element, such as a slotted menu, a native `<dialog>` other
   than its own shown modally, or a non-modal `<dialog>` opened after the overlay, by `show()` or by the `open`
   attribute, whose `closedby` state is Close Request or Any); then the overlay does nothing, and the platform closes
-  that popover or dialog alone, as it does outside an overlay, while Tab inside a nested native modal is left to it.
+  that popover or dialog alone, as it does outside an overlay, while Tab inside a nested native modal is left to it
+  (the platform's sequence, which can pass through the document body, is stated in US1 scenario 13; the overlay
+  guarantees no containment there).
   A non-modal `<dialog>` already open when the overlay opened, whatever its `closedby`, or opened after it with
   `closedby` absent, `auto` or `none`, is not such a close watcher: Escape requests the overlay's close as usual on
   every press and leaves that dialog open, and Tab treats the content of any non-modal dialog as ordinary stops. With focus inside a slotted iframe,

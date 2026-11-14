@@ -119,8 +119,11 @@ modal, level. Device: the default context (`elements`, `visit()`) matches `(hove
     overlay, the overlay stays open and `:modal`; the second Escape requests with reason `escape` (then closes without
     a veto, stays open with focus inside under veto). The same with `popover="hint"` where the engine supports it. A
     slotted native modal `<dialog>` with two buttons shown above the overlay from slotted content: Escape closes it
-    alone with no request and no `cancel` on the overlay; before that, Tab and Shift+Tab, n + 2 presses each, keep
-    `focusPath()` inside the nested dialog; a further Escape then requests the overlay's close with `escape`.
+    alone with no request and no `cancel` on the overlay; before that, from focus on its first button n1 (buttons n1,
+    n2), n + 2 presses give the platform's `focusPath()` lists, measured in Chromium 153 (operator decision,
+    2026-11-14): Tab `n2 body n1 n2`, Shift+Tab `body n2 n1 body`. No entry is page content or one of the overlay's
+    own stops; the `body` entries are the platform's and are asserted, not repaired (R-02), and the row does not
+    claim containment. A further Escape then requests the overlay's close with `escape`.
   - **Slotted non-modal dialogs** (R-02, squad round 3 verify 1 to verify 5; all cases run without user activation,
     as probed, each × {no veto, veto then Escape twice} and, where not stated otherwise, with focus on the slotted
     dialog's button and with focus on a sibling slotted button):
