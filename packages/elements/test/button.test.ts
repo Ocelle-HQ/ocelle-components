@@ -58,3 +58,69 @@ describe("ocelle-button's reflected properties", () => {
     expect({ flush: host?.flush, disabled: host?.disabled, variant: host?.variant, size: host?.size, ground: host?.ground }).toEqual({ flush: true, disabled: true, variant: "primary", size: "compact", ground: "state" });
   });
 });
+
+// The icon-only gap (review round 1, R1-01; research.md R-09): with no label content the slotted icon takes no gap and
+// is centred in the inner control. A template that renders the label as a text binding changes the data of the text
+// node it already slotted, which fires no `slotchange`; the gap must still follow the text. "No label" is no
+// non-whitespace text in the default slot's flattened assignment, as FR-031 defines an empty row slot, so an empty
+// `<span>` is no label and a label forwarded through another shadow root's `<slot>` is one. In process only: the
+// driver reaches no text node and no shadow root of the page's own.
+describe("ocelle-button's icon gap follows the label text", () => {
+  /** The slotted icon's inline-end margin and whether its centre is the inner control's inline centre within 0.5 px. */
+  function layout(host: HTMLElement): { readonly margin: string; readonly centred: boolean } {
+    const icon = host.querySelector("ocelle-icon");
+    const inner = host.shadowRoot?.querySelector('[part="control"]');
+    if (icon === null || inner === null || inner === undefined) throw new Error("no icon or inner control");
+    const [glyph, box] = [icon.getBoundingClientRect(), inner.getBoundingClientRect()];
+    return { margin: getComputedStyle(icon).marginInlineEnd, centred: Math.abs(glyph.x + glyph.width / 2 - (box.x + box.width / 2)) <= 0.5 };
+  }
+
+  const frame = (): Promise<unknown> => new Promise((resolve) => requestAnimationFrame(resolve));
+
+  it("drops the gap while the default slot's only text is whitespace and brings it back when text is written into that text node, and drops it when the text is emptied again", async () => {
+    await driver.mount('<ocelle-button id="b" label="Close"><ocelle-icon slot="icon" name="close"></ocelle-icon> </ocelle-button>');
+    const host = document.querySelector("ocelle-button");
+    if (host === null) throw new Error("no button");
+    await host.updateComplete;
+    await frame();
+    const text = host.lastChild as Text;
+    const whitespace = layout(host);
+    text.data = "Close";
+    await frame();
+    await host.updateComplete;
+    const written = layout(host);
+    text.data = "  ";
+    await frame();
+    await host.updateComplete;
+    const emptied = layout(host);
+    expect({ whitespace, written: written.margin, emptied }).toEqual({ whitespace: { margin: "0px", centred: true }, written: "8px", emptied: { margin: "0px", centred: true } });
+  });
+
+  it("treats a slotted element with no text as no label (the icon is centred), and one with text as a label (the gap stays)", async () => {
+    await driver.mount(
+      '<ocelle-button id="e" label="Close"><ocelle-icon slot="icon" name="close"></ocelle-icon><span> </span></ocelle-button>' +
+        '<ocelle-button id="t" label="Close"><ocelle-icon slot="icon" name="close"></ocelle-icon><span>Close</span></ocelle-button>',
+    );
+    const [empty, texted] = [document.getElementById("e"), document.getElementById("t")];
+    if (empty === null || texted === null) throw new Error("no buttons");
+    expect({ empty: layout(empty), texted: layout(texted).margin }).toEqual({ empty: { margin: "0px", centred: true }, texted: "8px" });
+  });
+
+  it("reads a label forwarded through another shadow root's slot (the flattened assignment): a forwarded text keeps the gap, none centres the icon", async () => {
+    await driver.mount('<div id="t">Close</div><div id="e"></div>');
+    const forward = (id: string): HTMLElementTagNameMap["ocelle-button"] => {
+      const outer = document.getElementById(id);
+      if (outer === null) throw new Error(`no #${id}`);
+      outer.attachShadow({ mode: "open" }).innerHTML = '<ocelle-button label="Close"><ocelle-icon slot="icon" name="close"></ocelle-icon><slot></slot></ocelle-button>';
+      const host = outer.shadowRoot?.querySelector("ocelle-button");
+      if (host === null || host === undefined) throw new Error("no button");
+      return host;
+    };
+    const [texted, empty] = [forward("t"), forward("e")];
+    await frame();
+    await texted.updateComplete;
+    await empty.updateComplete;
+    await frame();
+    expect({ texted: layout(texted).margin, empty: layout(empty) }).toEqual({ texted: "8px", empty: { margin: "0px", centred: true } });
+  });
+});
