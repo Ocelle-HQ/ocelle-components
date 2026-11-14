@@ -33,19 +33,20 @@ default.
 | Kind | Name | Type / value | Default | Description (manifest) |
 |---|---|---|---|---|
 | property / attribute | `density` / `density` (reflected) | `"compact" \| undefined` | `undefined` | Row spacing: `compact` tightens the gaps for dense screens. Unset gives the default spacing. It does not change the type: in a `data-ocelle-density="compact"` region the values take the region's scale. |
-| property / attribute | `layout` / `layout` (reflected) | `"columns" \| "stacked" \| undefined` | `undefined` | `columns` keeps two columns and `stacked` one column at any size. Unset switches automatically on the sheet's own two-column inline size; set it for a sheet in a dialog, popover or other shrink-to-fit host, where a short sheet would otherwise stack. |
+| property / attribute | `layout` / `layout` (reflected) | `"columns" \| "stacked" \| "grid" \| undefined` | `undefined` | `columns` keeps two columns and `stacked` one column at any size. `grid` shows each pair as a cell, label above value, in four, two or one columns from the sheet's own inline size (four from twice `--ocelle-facts-stack-below`, two from it, one below it). Unset switches automatically on the sheet's own two-column inline size; set it for a sheet in a dialog, popover or other shrink-to-fit host, where a short sheet would otherwise stack. |
 | slot | (default) | `ocelle-fact` elements | none | The pairs, in source order. Other children, and facts with `hidden` or `aria-hidden="true"`, are not shown. |
-| part | `list` | `<dl>` | none | The description list grid. |
+| part | `list` | `<dl>` | none | The description list grid. Do not set its columns: a `grid-template-columns` rule here overrides every layout (IQ-01 (a)). |
 | part | `label` | `<dt>` | none | Each term (label). Carries the fact's `lang` and `dir`. |
 | part | `value` | `<dd>` | none | Each definition (value) box. |
-| CSS property | `--ocelle-facts-stack-below` | absolute length | 24rem from tokens | With `layout` unset, below this inline size (the sheet's own, as laid out in two columns) each value stacks under its label. A percentage, 0 or an invalid value falls back to the default. |
+| CSS property | `--ocelle-facts-stack-below` | absolute length | 24rem from tokens | With `layout` unset, below this inline size (the sheet's own, as laid out in two columns) each value stacks under its label. With `layout="grid"`, below it the cells take one column, and from twice it four (the sheet's own size as laid out in four columns). A percentage, 0 or an invalid value falls back to the default. |
 | CSS property | `--ocelle-facts-value-size` | length | `--ocelle-font-size-fact` | The values' font size. Set by `@ocelle/styles`' density hook (`--ocelle-font-size-sm` in a compact region). |
 | CSS property | `--ocelle-facts-value-line-height` | number | `--ocelle-line-height-normal` | The values' line height. Set by `@ocelle/styles`' density hook (`--ocelle-line-height-compact` in a compact region). |
 | events | none | | | |
 
 Tokens read (README, not manifest): `font-sans`, `font-size-sm`, `font-size-fact`, `font-weight-medium`,
 `font-weight-regular`, `color-ink`, `color-ink-muted`, `figures`, `line-height-normal`, `space-1`, `space-3`,
-`space-4`, `space-10` (the threshold's default is `calc(var(--ocelle-space-10) * 6)`, R-02).
+`space-4`, `space-10` (the threshold's default is `calc(var(--ocelle-space-10) * 6)`, R-02). The grid layout reads no
+other token (R-03). No part, slot or hook is added for the grid: its cell groups carry an internal class.
 
 ## `ocelle-fact`
 
@@ -65,8 +66,9 @@ Tokens read (README, not manifest): `font-sans`, `font-size-sm`, `font-size-fact
 |---|---|---|---|---|
 | property / attribute | `variant` / `variant` (reflected) | `"panel" \| undefined` | `undefined` | `panel` fills a list or inspector panel with a larger rhythm and lighter heading. Unset gives the default variant. |
 | slot | `visual` | nodes | none | An icon or an `ocelle-progress` above the heading. A progress bar spans the column up to the reading measure. |
+| slot | `eyebrow` | text, a `<p>` | none | A short line above the heading (for example "Refused"), shown small, medium weight, muted and in upper case. Not a heading. |
 | slot | `heading` | a heading element | none | The consumer's heading. Its level is the consumer's. |
-| slot | (default) | nodes | none | The explanation. |
+| slot | (default) | nodes | none | The explanation. Each element is a block with no margins, separated from the next by a small gap; put inline content in one `<p>`. |
 | slot | `actions` | buttons or links | none | Actions. They wrap when narrow. |
 | part | `body` | `<div>` | none | The centred column. |
 | CSS properties | none | | | |
@@ -79,7 +81,7 @@ Tokens read (README, not manifest): `font-sans`, `font-size-sm`, `font-size-fact
 | property / attribute | `value` / `value` | `number \| undefined` | `undefined` | Current amount. Unset, empty, `null` or not a number means indeterminate. Clamped to 0 to max. |
 | property / attribute | `max` / `max` | `number \| undefined` | `undefined` | Maximum. Unset, not a number, or 0 or less means 100. |
 | property / attribute | `valueText` / `value-text` | `string \| undefined` | `undefined` | Words for the current value, for example "7 of 12". Exposed while determinate. |
-| property / attribute | `label` / `label` | `string \| undefined` | `undefined` | Accessible name. Required unless the host has an `aria-label`; prefer `label`. |
+| property / attribute | `label` / `label` | `string \| undefined` | `undefined` | Accessible name, as text (no rich label). Required unless the host has an `aria-label`; prefer `label`. To name the bar after a nearby heading, pass the heading's text. |
 | property / attribute | `showLabel` / `show-label` | `boolean \| undefined` | `undefined` | Shows the label (and value text) as text. Unset hides it. |
 | property / attribute | `size` / `size` (reflected) | `"compact" \| undefined` | `undefined` | `compact` is a thin bar with the label beside it. Unset gives the default size. |
 | property / attribute | `ground` / `ground` (reflected) | `"tinted" \| undefined` | `undefined` | `tinted` draws the track boundary in the accent-strong colour, for a bar on an inset, accent-low, hover-bg or state ground. Unset is for canvas, sheet, pane, panel, inspector and rail. |
@@ -87,7 +89,8 @@ Tokens read (README, not manifest): `font-sans`, `font-size-sm`, `font-size-fact
 | part | `track` | `<div>` | none | The track. |
 | part | `fill` | `<div>` | none | The filled part, the sweeping mark or the still mark. |
 | part | `label` | `<span>` | none | The visible label (with `show-label`). |
-| part | `value-text` | `<span>` | none | The visible value text (with `show-label`). |
+| part | `value-text` | `<span>` | none | The visible value text (with `show-label`), at the inline end of the label row. |
+| slot | none | | | The element has no slot: content inside it shows only before upgrade and is neither shown nor exposed after it. |
 | CSS properties | none | | | |
 | events | none | | | |
 
@@ -104,10 +107,21 @@ Tokens read (README, not manifest): `font-sans`, `font-size-sm`, `font-size-fact
   consumer sets `layout` or gives the sheet an inline size (FR-009, PLAN-FRESH-3-001 (c)); density: `density="compact"` tightens gaps, a
   compact region sets the value scale (#531); before upgrade (each value on its own line through `@ocelle/styles`, a
   hidden fact stays hidden, labels only after upgrade); tokens read; the `.sk-facts` mapping rows (FR-058, phase 1).
+  From the input decisions: `layout="grid"`, its four, two and one columns from the threshold and twice it, its
+  `<div>` groups inside the one description list, the wrap policy on machine values in a grid cell (IQ-05 (b)); do not
+  restyle the list's columns through `::part(list)` (IQ-01 (a)); in a grid parent set `min-inline-size: 0` on the
+  host (IQ-02 (a)); labels are at weight 500, and `::part(label)` sets another (IQ-03 (a)); the element never truncates
+  a value, and `break-word`, break-anywhere and an ellipsis all map to `wrap="anywhere"` with the full value shown
+  (IQ-04 (b)).
 - **`ocelle-empty-state`**: the heading rule (the consumer's own heading, no `level`), slots, variants, the gaps
   between present parts (a part with only hidden or whitespace content is absent; hide slotted content with `hidden`
   or remove it, since a class or style rule is not observed), a progress bar in `visual`, the cascade note, the
-  loading panel, tokens read, and the `.sk-empty-state` mapping rows (FR-058, phase 2).
+  loading panel, tokens read, and the `.sk-empty-state` mapping rows (FR-058, phase 2). From the input decisions: the
+  `eyebrow` slot (a short line, not a heading; its type and gaps; IQ-08 (c)); the body's margins reset and
+  `--ocelle-space-2` between its children, each a block, so inline content goes in one `<p>` (IQ-09 (b)); the panel's
+  heading at 500 (#510's text, IQ-06 (a)); no card, border or busy look on the element: a card around it is the
+  consumer's, the dashed card is the #509 family's (IQ-07 (a)); a focusable loading heading is the consumer's `<h2
+  tabindex="-1">` in `heading` with the bar in `visual` (IQ-11 (b)).
 - **`ocelle-progress`**: naming (`label` recommended, or a host `aria-label`; an unnamed bar is a consumer error); axe
   does not check the name, and a host `aria-label` makes axe report a false `aria-prohibited-attr` in a consumer's own
   audit (R-05); the value rules; `value-text`; the bounded sweep (under 5 s, then the still mark, WCAG 2.2.2;
@@ -118,6 +132,11 @@ Tokens read (README, not manifest): `font-sans`, `font-size-sm`, `font-size-fact
   (PLAN-FRESH-2-005 (a), PLAN-FRESH-3-004 (a)); the fill has no width transition (PLAN-FRESH-3-003 (b)); reduced
   motion; `ground="tinted"` and which
   grounds need it; the busy vocabulary (FR-033); tokens read; the `.sk-progress` mapping rows (FR-058, phase 3).
+  From the input decisions: a bar named after a nearby heading takes the heading's text as `label` (IQ-10 (a)); a
+  `role` or `tabindex` on the host replaces or alters the progressbar, so set neither (IQ-11 (b)); the host is a
+  block, and a bar placed inline gets its `display` and inline size from the consumer (IQ-12 (a)); the value text sits
+  at the inline end of the label row (IQ-13 (b)); the label is text only (IQ-14 (a)); text inside the element shows
+  only before upgrade and is neither shown nor exposed after it (IQ-15 (b)).
 - **Element conventions**: one paragraph each for slotted items (FR-056, with the container-imports-its-item rule) and
   for the identifier wrap property; the `undefined` defaults are unchanged from 005.
 - **Builds**: the sentence "until then its box is empty" corrected for elements with light-DOM content (R-01).

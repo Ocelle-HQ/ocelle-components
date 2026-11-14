@@ -12,11 +12,12 @@ option taken, for example "PLAN-CORRECTNESS-1-003 (a)", "PLAN-FRESH-2-001 (c)" o
 operator's plan-gate decisions (2026-11-13, `reviews/plan/operator-gate.md`) changed R-01 (FR-004 confirmed), R-08
 and R-09 (#10 merged) and R-11 (the inventory to follow). The operator's inputs
 ([sources/013-inputs.md](sources/013-inputs.md)) then filled R-11 and the reading of #280, #498, #510 and #523 in
-R-03; the gaps and conflicts they show are open questions for the operator
-([reviews/analysis/inputs-questions.md](reviews/analysis/inputs-questions.md)), and no decision of this file is
-changed by them.
+R-03; the gaps and conflicts they showed were open questions for the operator
+([reviews/analysis/inputs-questions.md](reviews/analysis/inputs-questions.md), IQ-01 to IQ-15). The operator decided
+them on 2026-11-14 ([reviews/analysis/inputs-decisions.md](reviews/analysis/inputs-decisions.md)); the decisions are
+cited as "IQ-05 (b)" and so on, and changed R-01 to R-06 and R-08 to R-11 as each section says.
 
-## R-01 `ocelle-facts`: description list through manual slot assignment (FR-003, FR-004, FR-005)
+## R-01 `ocelle-facts`: description list through manual slot assignment (FR-003, FR-004, FR-005, FR-014)
 
 **Decision.**
 - `ocelle-facts` attaches an open shadow root with `slotAssignment: "manual"` and renders one `<dl part="list">`.
@@ -96,6 +97,28 @@ root, outside the fact, so the sheet carries the fact's host attributes that con
   user-agent `display: none` before upgrade as after. The styles test includes a hidden fact (no box, `display:
   none`), and the plant "`:not([hidden])` removed" must fail it.
 
+**The grid layout's structure (IQ-05 (b), FR-014).** With `layout="grid"` the template groups each pair: `<dl
+part="list">` holds, per pair, `<div class="item"><dt part="label" lang=… dir=…>…</dt><dd part="value"><slot></slot>
+</dd></div>`, with the same manual assignment of the fact to that `<dd>`'s slot. HTML allows a `<dl>`'s pairs to be
+wrapped in `<div>` elements, and axe's `definition-list` and `dlitem` rules accept `<dt>` and `<dd>` whose parent is a
+`<div>` child of a `<dl>`; #280 asks for "each item groups one term/value pair while preserving native
+description-list semantics". The group is what makes a pair a cell that a grid track can hold, label above value,
+without `display: contents` (which would put the `<dt>` and `<dd>` in separate grid cells). The other layouts keep the
+ungrouped A5 structure measured above, so their result does not move; the template switches structure on `layout`
+(a reactive property), and the slots are re-assigned after the render that switches it. The group carries an internal
+class, not a part: no `item` part is added (the surface the operator chose is the `grid` value only), and a
+consumer reaches the cells' content through the existing `label` and `value` parts.
+- **Not measured yet; measured in phase 1's spike.** The spike builds the grouped structure under Lit 3.3.3 and reads
+  the Chromium tree (expected `DescriptionList > term, definition, …` with the groups ignored or generic, each
+  definition after its term, an empty `<dt>` still a term) and axe-core 4.14.0 (`definition-list`, `dlitem`, full run,
+  no serious or critical finding). Any failure (an axe violation, a group exposed as a node that separates a term from
+  its list in a way that fails FR-004, or a pruned empty term) stops the flow for the operator before the red commit;
+  FR-004 and FR-014 are not reworded by review.
+- **Oracle.** US1-13's body asserts the same AX description list as US1-6, and the flat-tree structure axe reads: the
+  `<dl>`'s element children are only `<div>` groups, each holding exactly one `<dt>` followed by one `<dd>`, one group
+  per visible fact. Plant: the groups not rendered in the grid layout (the A5 structure with the grid's columns),
+  which must fail the structure assertion and US1-13's cell geometry.
+
 **Operator decision (spec SPEC-1-04 "D"): confirmed.** The measurement shows FR-004 can be met as written with Q1
 (b). The operator confirmed FR-004 as written at the plan gate ("Confirm FR-004", 2026-11-13).
 
@@ -107,7 +130,7 @@ tree that is not `DescriptionList > term, definition, …`, or an empty term pru
 the operator before the red commit. FR-003, FR-004 and US1-10 are the operator's to change; review does not reword
 them. Whatever the operator decides, US1-6, US1-7 and US1-10 keep an accessibility-tree oracle (contracts/checks.md).
 
-## R-02 `ocelle-facts`: stacking on its own two-column size, with a `layout` override (FR-005, FR-009, FR-013)
+## R-02 `ocelle-facts`: stacking on its own two-column size, with a `layout` override (FR-005, FR-009, FR-013, FR-014)
 
 **Problem.** A size container query on the host needs `container-type: inline-size`. The spike (C) measured that host
 at 0 px inline size inside a `showModal()` dialog and inside a default flex item. This is the collapse FR-009 forbids,
@@ -227,6 +250,45 @@ choose where that is not what they want.
   conventions: `--ocelle-<element>-<property>`). A consumer with a wider inspector can lower it. It is declared in the
   manifest's CSS custom properties.
 
+**The grid layout's column count (IQ-05 (b), FR-014).** The grid reuses this mechanism rather than adding one:
+- **Measure.** With `layout="grid"` the measure pass removes the column classes from the `<dl>` (so the rule without
+  a class, four equal columns, applies), reads the host's content-box inline size, and sets one class from the
+  decision (`cols-2` or `cols-1`; none for four), unconditionally, as for `stacked`. The measure is therefore the
+  sheet's own inline size as laid out in four columns: in a block container the container's inline size, in a
+  shrink-to-fit host the four-column max-content (four times the widest cell's max-content, plus three column gaps,
+  since the four tracks are equal) capped by the space the host offers. It never reads the two- or one-column layout,
+  so for every change the pass observes the column count depends only on the content and the space. In a
+  shrink-to-fit host a grid sheet with few pairs is therefore wide (four equal tracks as wide as its widest cell); the
+  README tells consumers to give a grid sheet in such a host an inline size.
+- **Thresholds.** With T the resolved threshold of the probes above (`--ocelle-facts-stack-below`, 24rem by default):
+  four columns when the measure is at least 2 × T, two when it is at least T, one below T. 2 × T is computed in the
+  pass from the same probe reading, so no probe, hook or token is added and the hook moves both points. At the
+  default (384 px) a cell in four columns at 768 px and a cell in two columns at 384 px have about the same inline
+  size (less the gaps), so a cell never gets narrower when the column count rises. The class names are internal, not
+  public surface.
+- **Triggers and narrowing.** The same triggers as the stacking (the host and probe `ResizeObserver`, `updated()`,
+  value text changed in place, window resize), and the same narrowing for the changes the pass does not observe: the
+  phase 1 spike runs the grid in the same hosts and unobserved cases, and the README's remedy is the same (an inline
+  size on the sheet; a set `layout` other than `grid` gives another layout, so for the grid the remedy is the inline
+  size).
+- **Why not a container query or `auto-fit`.** A container query needs inline-size containment, which collapses the
+  sheet to 0 px in shrink-to-fit hosts (above). `repeat(auto-fit, minmax(<length>, 1fr))` gives every column count
+  from one to many, not four, two or one as #280 asks, and in a shrink-to-fit host its count follows the content's
+  intrinsic size; it would also need a new `token-only` allowance.
+- **To measure in phase 1's spike.** The four-column measure in each host of FR-009 and the shared hosts (FR-009's
+  bound, the column count against a fresh load), the column count at 300, 600, 800 and 1280 px block containers
+  (one, two, four, four at the default threshold; 800 px gives four, 600 px two), the widen case of US1-18 in a dialog,
+  a hook changed at a fixed width moving both points, and whether a flip raises the `ResizeObserver` loop error.
+
+**A sheet as a `1fr` grid item (IQ-02 (a)).** A sheet that is the item of a `1fr` grid track has that track's
+automatic minimum, its min-content, so a long unbroken value without the wrap policy, or a long label, can widen the
+track past the space the page offers. FR-009's lower bound stays as it is: the element sets no `min-inline-size` on
+its host. The consumer sets `min-inline-size: 0` on the `ocelle-facts` host in its own grid (host styles are the
+consumer's), and the README says so. Phase 1's spike adds the case to its host list: a sheet with a long value as the
+item of a `1fr` track at 320 and 600 px, with and without the consumer's rule; with it, neither the track nor the page
+overflows. The README statement is a readme test (T010); the case needs no element behaviour and no body beyond the
+spike's record.
+
 **Alternatives rejected.**
 - A container query on the host (the collapse above).
 - A container query on a consumer's container: it needs the consumer to set one up.
@@ -273,17 +335,36 @@ after the first layout.
 - the 300 px sheet resized to 290 px, stacked after the pass (PLAN-FRESH-3-002);
 - the stacked and two-column states at 300 px and 600 px, `layout="columns"` at 320 px with no page overflow, and the
   layout-settle wait in both harnesses;
+- the grid layout's structure (R-01) and column count (above), and the `1fr` grid item (IQ-02 (a), above);
 - the probes with an invalid hook, a percentage hook and a 0 hook at 320 px (stacked), with a valid 15rem hook at
   300 px (two columns) and a valid 40rem hook at 600 px (stacked), and a hook changed at a fixed 450 px width;
 - right-to-left mirroring of the columns (SPEC-2-08).
 
-## R-03 `ocelle-facts`: grid, type and density (FR-005 to FR-008)
+## R-03 `ocelle-facts`: grid, type and density (FR-005 to FR-008, FR-014)
 
 - **Columns.** `<dl>` is `display: grid; grid-template-columns: fit-content(50%) minmax(0, 1fr)`. The label column is
   the widest label's max-content, capped at 50%, and longer labels wrap between words inside the cap. The value column
   takes the rest and is never widened by content. Spike A5 measured both: 176 px for the widest normal label in 600 px,
   and 300 px (the cap) for a very long label. `minmax(auto, 50%)` was rejected because it always gives 50%. Both
   functions need a recorded `token-only` allowance (R-10, PLAN-CORRECTNESS-1-001 (a)).
+- **Restyled columns (IQ-01 (a)).** These tracks stay; no hook sets them. kitty-mission-ui's two-column sheets replace
+  the tracks (label about 0.8fr, value about 1.2fr); with this element the consumer drops that override and takes
+  `layout="columns"` (or the automatic layout). The README says not to set `grid-template-columns` through
+  `ocelle-facts::part(list)`: an outer `::part()` rule wins over the element's own in every layout, so it would also
+  break the stacking and the grid.
+- **Grid layout (IQ-05 (b), FR-014).** With `layout="grid"` the `<dl>` is `display: grid` with four tracks written
+  out, `grid-template-columns: minmax(0, 1fr) minmax(0, 1fr) minmax(0, 1fr) minmax(0, 1fr)`; the internal classes set
+  two such tracks (`cols-2`) or one (`cols-1`). Every track is a `minmax(0, <flex>)` value, which R-10's allowance
+  already admits in `grid-template-columns`, so the gate gains nothing. Each group (`.item`) is a cell holding its
+  `<dt>` above its `<dd>` (block flow), with `min-inline-size: 0` so a cell never widens its track. Column gap
+  `--ocelle-space-4`, row gap `--ocelle-space-3` (`--ocelle-space-1` with `density="compact"`), label-to-value gap
+  `--ocelle-space-1` (a `margin-block-end` on the `<dt>`, a logical property). The type is the other layouts'. No
+  divider or border is drawn and no ground is painted: #280's dividers and surface are the container's ("Surface/tone
+  remains container-owned"), and the gaps are direction-neutral, so right-to-left needs no rule of its own (the grid
+  fills each row from the inline start). With fewer pairs than columns the row ends with empty tracks; cells are not
+  stretched. A long unbroken value breaks in its cell with `wrap="anywhere"`; without it, it wraps between words only
+  (FR-007, IQ-04 (b)) and can overflow its cell, which the README tells consumers to avoid by setting the policy on
+  machine values.
 - **Gaps.** Column gap `--ocelle-space-4`. Row gap `--ocelle-space-3`, or `--ocelle-space-1` with
   `density="compact"`. When stacked, a pair's label-to-value gap is `--ocelle-space-1` and the gap between pairs is
   the row gap. `<dt>` and `<dd>` have no margins (`margin: 0`).
@@ -324,8 +405,9 @@ after the first layout.
     scope, and the orchestrator's request for read access was denied. At the plan gate the operator chose "Proceed,
     inputs later" (plan Decision 5). They are now read: the operator supplied their bodies, comments and timelines
     verbatim in [sources/013-inputs.md](sources/013-inputs.md) (Part B). What each states for this mission is below.
-    Nothing here changes a requirement: every gap or conflict with the spec or plan is an open question for the
-    operator in [reviews/analysis/inputs-questions.md](reviews/analysis/inputs-questions.md) (IQ-01 to IQ-15).
+    Every gap or conflict with the spec or plan was an open question for the operator in
+    [reviews/analysis/inputs-questions.md](reviews/analysis/inputs-questions.md) (IQ-01 to IQ-15), decided on
+    2026-11-14 as each item below says.
     - **#280** (responsive facts grid, open; no comments). It asks to extend the class family `.sk-facts` with a grid
       modifier whose items each group one pair and reflow between four, two and one columns on the available space,
       with native description-list semantics in source order; terms visible at every width; long machine values
@@ -335,15 +417,18 @@ after the first layout.
       and "a custom `sk-facts` element". For this mission: FR-003, FR-004, FR-005, FR-009 and FR-010 already meet the
       semantics, the visible terms, the consumer's missing values and the no-overflow rule; US1-8 has the sheet paint
       no ground. The custom-element non-goal is overruled by #523 and the mission's input ("every class family
-      replaced by an element"). Open: the four/two/one-column strip, which FR-005's label and value columns do not
-      give (IQ-05), and the hidden-truncation non-goal against a consumer's ellipsis (IQ-04). kitty-mission-ui cites
-      #280 nowhere (R-11).
+      replaced by an element"). The four/two/one-column strip is `layout="grid"` (IQ-05 (b), FR-014, above and R-01,
+      R-02), and the hidden-truncation non-goal holds: the element has no truncation, and a consumer's ellipsis maps
+      to `wrap="anywhere"` with the full value shown (IQ-04 (b)). #280's "existing stacked, compact and two-column
+      output unchanged" holds too: the grid is a separate value of `layout`. Of #280's required stories, those that
+      fit this library are in R-08 (forced colours is proven by US1-8's browser body, as for the other layouts).
+      kitty-mission-ui cites #280 nowhere (R-11).
     - **#498** (no progress element, open; no comments). It asks for a progress element with `value`/`max`
       (determinate) or no value (indeterminate), `compact`, a label slot, its accessible name from the label, and
       reduced motion respected, so that a shadow-DOM consumer stops adopting the stylesheet and writing class markup;
       and, separately, a default marker for a pulsing status indicator. For this mission: FR-030 to FR-034 meet the
       value, indeterminate, compact, naming and motion asks (R-05, R-06). The label is a `label` property, not a slot
-      (IQ-14). The status-indicator marker is #7's (mission 012), out of scope as the spec says.
+      (IQ-14 (a)): every inventoried label is text, and the README says rich labels are not supported. The status-indicator marker is #7's (mission 012), out of scope as the spec says.
     - **#510** (loading and empty panel spacing and weight, open; no comments). Its text: the prototype's loading and
       empty panels have a larger vertical rhythm and a lighter heading weight than the library; the ask is panel
       tokens for block padding and heading weight, or a page variant for the empty state and the progress panel; the
@@ -351,7 +436,9 @@ after the first layout.
       text (`variant="panel"`, larger padding and gaps, lighter heading, existing tokens by operator decision Q2;
       R-04). But the E-13 code on kitty-mission-ui's `main` does not match the text: it sets a bold heading in the
       display face, card fill, radius, inline padding and a dashed or solid border keyed on the parent's busy state
-      (R-11's "empty-state card", "message" and "ops card" rows). Which is wanted is IQ-06 and IQ-07.
+      (R-11's "empty-state card", "message" and "ops card" rows). The operator kept #510's text (IQ-06 (a): the panel
+      heading at 500 with the larger rhythm) and no chrome on the element (IQ-07 (a): the card, the message card and
+      the ops card are the consumer's own card around the element; the dashed card is the #509 family's).
     - **#523** (no facts or empty-state elements, open; one comment). It asks for facts and empty-state elements that
       carry the family looks, so screens compose elements instead of classes and stop re-implementing the structure;
       progress is the same gap, tracked in #498. Its comment (2026-10-11, from the Drift screen) names three defaults
@@ -360,7 +447,8 @@ after the first layout.
       rule. For this mission: the four elements answer the ask (FR-002). The wrap is FR-007's `wrap="anywhere"` and
       003's `data-ocelle-wrap` (#535). The value face stays sans (constitution II: no monospace). The small value size
       is the consumer's through `--ocelle-facts-value-size` or a compact region (FR-008, #531); the default stays
-      `--ocelle-font-size-fact`, which the mission's input fixed from #531. Open: the term weight default (IQ-03).
+      `--ocelle-font-size-fact`, which the mission's input fixed from #531. The term weight stays 500 (IQ-03 (a)): a
+      consumer that wants 400 sets it through `ocelle-facts::part(label)`.
   - The kitty-mission-ui variant inventory the README mapping needs is R-11.
 - **Wrap policy (FR-007, SPEC-2-10, PLAN-CORRECTNESS-1-015).** `ocelle-fact` has a `wrap` property, reflected and
   taking only `"anywhere"`. With it, the fact's shadow rule `:host([wrap="anywhere"]) slot { overflow-wrap: anywhere; }`
@@ -370,6 +458,10 @@ after the first layout.
   `data-ocelle-wrap="anywhere"` keeps 003's base-style behaviour, because it is light DOM styled by `base.css`.
   Without either, values wrap between words (`overflow-wrap: normal`). Copying gives the text unchanged (US1-4):
   nothing is inserted.
+- **Long values in the README (IQ-04 (b)).** The element has no truncation and no ellipsis. The README maps the
+  consumers' three long-value rules: `break-word` (Work Package) and break-anywhere (Drift) both to `wrap="anywhere"`,
+  which in a value column whose minimum is 0 breaks at the same places; the inspector's words-with-ellipsis to
+  `wrap="anywhere"` too, so the full value is shown, with any tooltip the consumer's own `title` on its value content.
 - **Digests (SPEC-2-04).** A digest in a facts value is the consumer's text. The element does not group or rewrite it
   (FR-003). The README says digests are grouped by the consumer, or by follow-on 2's code-block digest mode once it
   exists.
@@ -377,18 +469,19 @@ after the first layout.
   a 640 px viewport for "200% zoom" and a 320 px viewport for the reflow test (FR-053, which is also 400% of 1280).
 - **Focus.** Facts adds no tab stop. A link in a value keeps its own focus ring from `base.css` (FR-011).
 
-## R-04 `ocelle-empty-state` (FR-020 to FR-024)
+## R-04 `ocelle-empty-state` (FR-020 to FR-026)
 
 - **Structure.** The shadow root renders `<div part="body" class="stack">` holding `<div class="visual"><slot
-  name="visual"></slot></div>`, `<div class="heading"><slot name="heading"></slot></div>`, `<div class="text"><slot>
-  </slot></div>` and `<div class="actions"><slot name="actions"></slot></div>`. None of these wrappers has a role:
+  name="visual"></slot></div>`, `<div class="eyebrow"><slot name="eyebrow"></slot></div>` (IQ-08 (c)), `<div
+  class="heading"><slot name="heading"></slot></div>`, `<div class="text"><slot></slot></div>` and `<div
+  class="actions"><slot name="actions"></slot></div>`. None of these wrappers has a role:
   they are generic and ignored. There is no heading, landmark, live region or tab stop.
 - **Present parts (FR-023, SPEC-2-06, PLAN-FRESH-2-007 (a)).** A part is present while something assigned to its slot
   renders: an assigned element whose computed `display` is not `none` (it generates a box, or `display: contents`), or
   an assigned text node with non-whitespace text. Measured in round 2: a slotted `<div hidden>` is in
   `assignedNodes()`, and removing `hidden` fires no `slotchange`, so counting assigned nodes alone would keep a hidden
   part present (its neighbour keeping a `margin-block-end`, a gap FR-023 forbids) and miss a later toggle. The flags
-  (`has.visual`, `has.heading`, `has.text`, `has.actions`) are therefore recomputed:
+  (`has.visual`, `has.eyebrow`, `has.heading`, `has.text`, `has.actions`) are therefore recomputed:
   - on `slotchange` of each slot, which also re-targets the observer below at the new assigned nodes;
   - from one `MutationObserver` on the assigned nodes: `attributes` with `attributeFilter: ["hidden"]` on assigned
     elements, and `characterData` on assigned text nodes.
@@ -408,12 +501,22 @@ after the first layout.
 
   | Adjacent pair (upper, lower) | Default | Panel |
   |---|---|---|
+  | visual, eyebrow | `--ocelle-space-3` | `--ocelle-space-5` |
   | visual, heading | `--ocelle-space-3` | `--ocelle-space-5` |
   | visual, text | `--ocelle-space-3` | `--ocelle-space-5` |
   | visual, actions | `--ocelle-space-3` | `--ocelle-space-5` |
+  | eyebrow, heading | `--ocelle-space-1` | `--ocelle-space-2` |
+  | eyebrow, text | `--ocelle-space-2` | `--ocelle-space-3` |
+  | eyebrow, actions | `--ocelle-space-2` | `--ocelle-space-3` |
   | heading, text | `--ocelle-space-2` | `--ocelle-space-3` |
   | heading, actions | `--ocelle-space-2` | `--ocelle-space-3` |
   | text, actions | `--ocelle-space-4` | `--ocelle-space-6` |
+
+  The visual's margin is the same whichever part follows it, so the eyebrow rows add no rule to the visual. The
+  eyebrow's margin is the only one that depends on the part below it (the heading, or the text or actions), so the
+  element marks the eyebrow wrapper with an internal class from the `has` flags when a heading is present, as it marks
+  the last present part. The eyebrow sits close to the heading it introduces (`space-1`, panel `space-2`), and with no heading it is followed by
+  the heading's gaps to the text and actions (IQ-08 (c), FR-025). Each panel value is larger than the default's.
 
 - **Default variant (FR-021).**
   - Centred column (`display: flex; flex-direction: column; align-items: center; text-align: center`), block padding
@@ -422,6 +525,20 @@ after the first layout.
   - Heading: `::slotted([slot="heading"])` at `--ocelle-font-size-lg`, `--ocelle-font-weight-strong`,
     `--ocelle-color-ink`, `margin: 0`.
   - Text: `--ocelle-color-ink-muted`, `--ocelle-font-size-md`, with the measure capped by `--ocelle-measure-reading`.
+  - Eyebrow (IQ-08 (c), FR-025): `::slotted([slot="eyebrow"])` at `--ocelle-font-sans`, `--ocelle-font-size-xs`
+    (12 px), `--ocelle-font-weight-medium`, `--ocelle-color-ink-muted`, `text-transform: uppercase` and `margin: 0`.
+    `ink-muted` is declared as text on every main ground, so no contrast row is added (SC-004). No letter spacing:
+    the tokens have only `--ocelle-tracking-display` (a negative display tracking), which does not fit, and 011's or
+    012's eyebrow tokens do not exist yet; switching to them later is a baseline change in its own pull request. The
+    inventory's mono eyebrow stays sans (constitution II). The same values in the panel variant.
+  - Body (IQ-09 (b), FR-026): `::slotted(:not([slot]))` has `margin-block: 0`, which removes the user agent's 1em
+    paragraph margins (`base.css` resets them only inside `[data-ocelle-prose]`). The text wrapper is `display: flex;
+    flex-direction: column; gap: var(--ocelle-space-2)`, in both variants: `::slotted()` takes a compound selector
+    only, so no sibling rule can put a margin between two slotted children, and a flex gap separates the children
+    without a margin on the first or last. Each assigned element, and each run of assigned text, is then a block of
+    its own (a flex item); inline content meant to flow together (text with a link, an identifier span) goes in one
+    element, which the README says. The gap is `--ocelle-space-2`, the smallest step that separates two paragraphs
+    visibly at the body size, and the same in the panel (the panel's rhythm is between parts, FR-022).
 - **Panel variant (FR-022, operator Q2: existing tokens).**
   - Block padding `--ocelle-space-10`.
   - Gaps as in the table.
@@ -437,12 +554,24 @@ after the first layout.
   var(--ocelle-space-2)`. Several buttons wrap at 320 px without horizontal overflow.
 - **Ground.** Neither variant paints a background (FR-021). It sits on its container's ground.
 - **Cascade.** The heading's look comes from `::slotted()`, which beats the user-agent heading styles but not a
-  page's own author rules on the heading. `base.css` styles headings only inside `[data-ocelle-prose]` (a
+  page's own author rules on the heading. The same holds for the eyebrow's type and the body's margin reset: a page
+  rule on the slotted content wins. `base.css` styles headings only inside `[data-ocelle-prose]` (a
   zero-specificity `:where()`), so outside prose the element's rules apply. The README says a page rule on the slotted
   heading wins, by design: the consumer owns its heading. This is not `!important` (unlike the icon slot), because
   overriding a heading's look is a legitimate consumer need.
 - **Loading panel (US2-7).** The README's mapping gives `.sk-empty-state` loading as `variant="panel"` with an
   indeterminate `ocelle-progress` in `visual`.
+- **Card chrome (IQ-07 (a)).** Neither variant paints a ground or a border (FR-021). The consumers' card, message card
+  and ops card (card fill, radius, padding, a border dashed or solid with the parent's `aria-busy`) stay the
+  consumer's own card around the element; the busy cue inside it is the slotted `ocelle-progress`. The dashed card of
+  the refusal and state blocks belongs to the #509 panel-paint family, not this mission. The README mapping says so.
+- **Panel heading (IQ-06 (a)).** FR-022 follows #510's text: `--ocelle-font-weight-medium` (500), lighter than the
+  default's 600, not the E-13 code's bold display face. A consumer whose card heading was bold sees it change; the
+  README mapping says so.
+- **A focusable loading heading (IQ-11 (b)).** The consumer's own `<h2 tabindex="-1">` goes in the `heading` slot,
+  with the bar in `visual`, and the consumer moves focus to the heading. The element adds no tab stop (FR-024); the
+  slotted heading keeps its own. The README's progress section warns against a `role` or `tabindex` on the bar's
+  host (R-05).
 
 ## R-05 `ocelle-progress`: ElementInternals progressbar (FR-030 to FR-032)
 
@@ -490,6 +619,20 @@ children are presentational.
   makes axe report `aria-prohibited-attr` in a consumer's own audit, a false positive of axe with ElementInternals,
   and says that axe does not check the bar's name, so a consumer's tests should.
 - #10's `axe` gate (on `main`) runs on the progress stories and passes, but without testing the name.
+- **A bar named by a nearby heading (IQ-10 (a)).** The consumer passes the heading's text as `label`; no ID reference
+  is used, and a host `aria-labelledby` is neither specified nor measured. The README says so beside `label` and the
+  host `aria-label`.
+- **No role or tab stop on the host (IQ-11 (b)).** The host is the progressbar through ElementInternals, so a `role`
+  attribute on it replaces the progressbar role (the bar is lost), and a `tabindex` makes the bar a tab stop, against
+  FR-039. The README warns against both and points to the empty state's `heading` slot for a focusable loading
+  heading (R-04); a readme-test statement proves the wording.
+- **Content inside the element (IQ-15 (b)).** The shadow root has no `<slot>`, so light-DOM content (a consumer's
+  "7/12" fallback text) is not assigned: after upgrade it is neither rendered nor in the accessibility tree, and the
+  bar's name and value are the element's own. Before upgrade the element is an unknown inline element and its text
+  shows. The README states both halves. A browser body proves the second: a bar with `label="Tasks done"` holding the
+  text "7/12" has, after upgrade, no client rect for that text node, its text absent from the page's `innerText`, and
+  no accessibility node with the text "7/12", paired in the same body with the bar's progressbar node named "Tasks
+  done" with value 7. Plant: a default `<slot>` added to the shadow root (the text shown and exposed).
 
 **`value-text` (FR-031, SPEC-2-01, SPEC-2-02).** It is exposed only while the bar is determinate. An indeterminate
 bar exposes no value text, even when `value-text` is set, because there is no value to describe. When the value is
@@ -681,16 +824,32 @@ track's ground token is `color-inset`, and the boundary tokens are `color-contro
   would otherwise be painted inside the user's palette;
 - the moving and still marks use the same rule.
 
-**Labelled variant (FR-035, PLAN-CORRECTNESS-1-015).**
+**Host display (IQ-12 (a)).** `:host { display: block }`, so the bar fills its container's inline size by
+default. A consumer that places a bar inside a line of text (a list row while a project loads) sets the host's
+`display` (for example `inline-block`) and inline size from outside (host styles are the consumer's); the track keeps
+its `min-inline-size: var(--ocelle-measure-cell)`. The README says so. A body reads the host's computed `display` as
+`block`, and, in the same body, a host given `display: inline-block; inline-size: 12rem` by the page's own rule sits
+on the line of the text around it at 12rem.
+
+**Labelled variant (FR-035, PLAN-CORRECTNESS-1-015, IQ-13 (b)).**
 - With `label` and `show-label`, a row above the bar (default size) or beside it (compact) shows `<span part="label">`
   in `--ocelle-color-ink` at `--ocelle-font-size-sm` with `font-variant-numeric: var(--ocelle-figures)`.
 - When determinate and `value-text` is set, `<span part="value-text">` follows in `--ocelle-color-ink-muted` with
-  `--ocelle-figures`.
+  `--ocelle-figures`, at the row's inline end (IQ-13 (b)). At the default size the row is `display: flex; flex-wrap:
+  wrap; align-items: baseline; gap: var(--ocelle-space-2)` and the value text has `margin-inline-start: auto`, so the
+  label sits at the inline start and the value text at the inline end, aligned with the track's inline end below it,
+  and on its own line at the inline end when the row wraps. These are the shell's and Pipeline's arrangement (R-11,
+  "progress grid layout"). Logical properties mirror it under `dir="rtl"`.
 - Both are `aria-hidden="true"`, because the host already carries the name and value text, and the visible text must
   not be read twice.
 - Without `value-text`, no number is shown: the element does not format numbers (SPEC-2-01).
-- In compact, the row is `display: flex; flex-wrap: wrap; align-items: center; gap: var(--ocelle-space-2)`. A long
-  label wraps and the bar keeps `min-inline-size: var(--ocelle-measure-cell)`.
+- In compact, the row is `display: flex; flex-wrap: wrap; align-items: center; gap: var(--ocelle-space-2)`, holding
+  the label, the track (`flex: 1`) and the value text, in that order, so the value text is at the row's inline end
+  (IQ-13 (b)). A long label wraps and the bar keeps `min-inline-size: var(--ocelle-measure-cell)`.
+- Bodies: US3-10 asserts, at the default size with `value-text`, the label's inline start at the track's inline start
+  and the value text's inline end at the track's inline end; US3-9 asserts, in compact, the value text's box after the
+  track's on the same line. Plant: the value text's `margin-inline-start: auto` removed (it follows the label), which
+  US3-10 must fail.
 
 **Busy vocabulary (FR-033).** This goes in the README, as the spec words it. #7's status indicator is coordinated
 through 012's spec. Nothing here depends on it.
@@ -739,9 +898,15 @@ Both are additions to documented base-style behaviour (MINOR, constitution VII).
 - **Stories.** In `storybook/stories/<element>.stories.ts`, in light and dark (#10's harness captures both):
   - **facts**: default, compact, stacked (a 300 px wrapper), `layout="columns"` in a shrink-to-fit wrapper,
     `layout="stacked"` in a wide wrapper, identifier wrap, missing label, missing value, link in value, right-to-left,
-    inside a compact region;
+    inside a compact region; and for `layout="grid"` (IQ-05 (b), #280's required stories that fit this library): the
+    four-field strip (a wide wrapper), two columns (a 600 px wrapper), one column (a 300 px wrapper), one fact, three
+    facts, eight facts, a long label and a long identifier value with `wrap="anywhere"`, a link and a status value, the
+    consumer's explicit unavailable value ("Not recorded"), compact density, and right-to-left. #280's forced-colours
+    case is US1-8's browser body (#10's gates capture no forced-colours context), its dark and light modes are the
+    theme global, and its 200% zoom is US1-16's 640 px body;
   - **empty-state**: default, panel, panel loading (with an indeterminate `ocelle-progress`), heading only, actions
-    only, several actions at 320 px;
+    only, several actions at 320 px, refusal with an eyebrow (an eyebrow, an `<h1>`, a sentence, a path with
+    `data-ocelle-wrap="anywhere"` and an action; IQ-08 (c)), several body paragraphs (IQ-09 (b));
   - **progress**: determinate, zero, full, indeterminate, compact, labelled, labelled compact, value text,
     right-to-left, on a tinted ground (`ground="tinted"` on `color-inset`). The indeterminate story is captured with
     reduced motion by #10's `visual` and `axe` contexts, which gives a still, deterministic baseline.
@@ -836,7 +1001,8 @@ Both are additions to documented base-style behaviour (MINOR, constitution VII).
 - **#15 (`ocelle-scroller`, overflow region):** not needed. None of the four elements has a scroll region. Follow-on
   2's `ocelle-code-block` needs it. No part of this mission waits for #15.
 - **#10:** merged on `main` (3828d2f) and into this branch; its gates and baselines apply to every phase (R-08).
-- **011 / 012 eyebrow tokens:** not needed (facts labels are not eyebrows).
+- **011 / 012 eyebrow tokens:** not needed (facts labels are not eyebrows). The empty state's `eyebrow` slot (IQ-08
+  (c)) uses existing type tokens (R-04); adopting the eyebrow tokens once they exist is a later baseline change.
 - **012 (#7):** the busy vocabulary sentence in the README only.
 - **014 (#14):** none. Facts values are not copy fields.
 
@@ -853,6 +1019,9 @@ values it rejects today, and no existing element uses them. Redesigning around t
 | `minmax(0, <flex>)` (an `fr` value) | a track of `grid-template-columns` | R-02, R-03 value column |
 | `translateX(<percentage>)` | `transform`, in a rule or in `@keyframes` | R-06 sweep |
 | a bare positive integer | `animation-iteration-count` | R-06 bounded sweep (PLAN-A11Y-SECURITY-1-001 (a)) |
+
+The grid layout (IQ-05 (b), R-03) uses four `minmax(0, 1fr)` tracks written out, each the allowed `minmax(0,
+<flex>)` form, so it needs no further allowance; `repeat()` stays raw and is not used.
 
 Anything else stays raw: `fit-content(200px)`, `minmax(auto, 50%)`, `minmax(0, 200px)`, `translateX(8px)`,
 `translateY(…)`, a percentage translate in any other property, and `animation-iteration-count: 2.5`. (`infinite` is an
@@ -883,8 +1052,9 @@ operator has since supplied the inventory, read at kitty-mission-ui `c994c8ea` (
 [sources/013-inputs.md](sources/013-inputs.md) Part A: the three families' modifiers and states as kitty-mission-ui
 uses them, with counts, role names only and no code (constitution VI). The rows below record it, one per role name
 as the source gives it (without the `sk-` prefix), with the element and variant of this mission that covers it, or
-"gap", "consumer's" or "not this mission" with the reason. A gap names its open question in
-[reviews/analysis/inputs-questions.md](reviews/analysis/inputs-questions.md).
+"consumer's" or "not this mission" with the reason. The rows that were gaps name the question of
+[reviews/analysis/inputs-questions.md](reviews/analysis/inputs-questions.md) and the operator's decision on it
+(2026-11-14, [reviews/analysis/inputs-decisions.md](reviews/analysis/inputs-decisions.md)).
 
 **Corrected counts.** The triage figures (34, 75 and 74, 183 in all) are raw text matches in kitty-mission-ui's
 `packages/mission-ui/src`: they count comments, local CSS selectors and every child class separately, so they are not
@@ -896,75 +1066,76 @@ changes only by template branch.
 
 | Family | Modifier or state (role name) | Uses | Element and variant | Phase |
 |---|---|---|---|---|
-| `.sk-facts` | facts stacked | 2 | `ocelle-facts` with `layout` unset (it stacks below the threshold) or `layout="stacked"`, each pair an `ocelle-fact`. The inspector's shrinking inside its grid (`min-width: 0`) is open: IQ-02. | 1 |
-| `.sk-facts` | facts two-col | 6 | `ocelle-facts` with `layout="columns"` (or unset, at or above the threshold). Gap: every use replaces the column tracks (label about 0.8fr with its longest word as minimum, value about 1.2fr with minimum 0), which FR-005 does not offer: IQ-01. | 1 |
+| `.sk-facts` | facts stacked | 2 | `ocelle-facts` with `layout` unset (it stacks below the threshold) or `layout="stacked"`, each pair an `ocelle-fact`. The inspector's shrinking inside its grid: the consumer sets `min-inline-size: 0` on the `ocelle-facts` host, as the README says (IQ-02 (a)). | 1 |
+| `.sk-facts` | facts two-col | 6 | `ocelle-facts` with `layout="columns"` (or unset, at or above the threshold). The consumer drops its track override (label about 0.8fr, value about 1.2fr) and takes FR-005's columns; the README says not to restyle the columns through `::part(list)` (IQ-01 (a)). | 1 |
 | `.sk-facts` | facts compact | 0 | `ocelle-facts density="compact"`. Unused by the consumer. | 1 |
 | `.sk-facts` | facts term | 8 | `ocelle-fact`'s `label`, rendered as the sheet's term (`part="label"`). | 1 |
-| `.sk-facts` | facts term regular | 1 | Consumer's: `ocelle-facts::part(label)` with the consumer's weight. Whether the default becomes 400 (#523's comment) is IQ-03. | 1 |
+| `.sk-facts` | facts term regular | 1 | Consumer's: `ocelle-facts::part(label)` with `font-weight: var(--ocelle-font-weight-regular)`. The default stays 500 (IQ-03 (a)). | 1 |
 | `.sk-facts` | facts value mono | 2 | Not this mission: no monospace (constitution II). The value stays sans with tabular figures; the small size is the consumer's through `--ocelle-facts-value-size` or a compact region (FR-008); the inspector's code-wrapped path is the consumer's value content. | 1 |
-| `.sk-facts` | facts value wrap | 2 | `ocelle-fact wrap="anywhere"` for both rules (Work Package `break-word`, Drift break-anywhere, #535). Whether `break-word` keeps a rule of its own, or becomes the default, is IQ-04. | 1 |
-| `.sk-facts` | facts value ellipsis | 1 | Gap: no ellipsis policy (FR-007 offers words and `anywhere`), and #280 rules out truncation that hides values: IQ-04. | 1 |
+| `.sk-facts` | facts value wrap | 2 | `ocelle-fact wrap="anywhere"` for both rules (Work Package `break-word`, Drift break-anywhere, #535); no rule of its own for `break-word` and no change of the default (IQ-04 (b)). | 1 |
+| `.sk-facts` | facts value ellipsis | 1 | `ocelle-fact wrap="anywhere"`, with the full value shown: the element has no truncation, as #280 asks, and the README says so (IQ-04 (b)). | 1 |
 | `.sk-facts` | facts value identifier | 3 | `ocelle-fact wrap="anywhere"`, or a value element with `data-ocelle-wrap="anywhere"` (FR-007). The consumer's break hints are value content, which the element does not change (FR-003). | 1 |
-| `.sk-facts` | facts value tooltip | 1 | Consumer's: a `title` on the consumer's own value content. It pairs with the ellipsis gap (IQ-04). | 1 |
+| `.sk-facts` | facts value tooltip | 1 | Consumer's: a `title` on the consumer's own value content; with the full value shown (IQ-04 (b)) it is optional. | 1 |
 | `.sk-facts` | facts value pill | 2 | Consumer's: pills are inline content in the fact's value (FR-003). | 1 |
 | `.sk-facts` | facts value action | 1 | Consumer's: a button is inline content in the value and keeps its own tab stop (FR-003, FR-011). | 1 |
 | `.sk-facts` | facts row optional | 2 | Consumer's: the consumer leaves the `ocelle-fact` out, or sets `hidden` on it (FR-003). The element adds no fallback, as #280 asks. | 1 |
 | `.sk-facts` | facts group heading | 2 | Consumer's: the heading stays outside the sheet, in the consumer's wrapper. | 1 |
 | `.sk-facts` | facts group omitted | 2 | Consumer's: the consumer leaves the sheet out or renders an `ocelle-empty-state` instead; a sheet with no pairs renders nothing visible (FR-010). | 1 |
 | `.sk-facts` | facts workspace marker | 1 | Consumer's: a `data-*` attribute on the `ocelle-facts` host. | 1 |
-| `.sk-empty-state` | empty-state panel | 15 | `ocelle-empty-state variant="panel"`. The state wrapper and its `aria-busy` stay the consumer's. Its look (#510's text against the E-13 code) is open: IQ-06, IQ-07. | 2 |
+| `.sk-empty-state` | empty-state panel | 15 | `ocelle-empty-state variant="panel"`, with #510's lighter heading (500) and larger rhythm (IQ-06 (a)) and no chrome of its own (IQ-07 (a)). The state wrapper and its `aria-busy` stay the consumer's. | 2 |
 | `.sk-empty-state` | empty-state regional | 9 | `ocelle-empty-state`, default variant, with only the default slot (FR-023). | 2 |
-| `.sk-empty-state` | empty-state refusal | 1 | `ocelle-empty-state` with an `h1` heading, a body and an action. Gap: the eyebrow and the path have no slot (IQ-08); the dashed card is IQ-07. | 2 |
+| `.sk-empty-state` | empty-state refusal | 1 | `ocelle-empty-state` with the eyebrow in the `eyebrow` slot (IQ-08 (c)), an `h1` heading, a body (the sentence and the path, in sans with `data-ocelle-wrap="anywhere"`, as the consumer's body content) and an action. The dashed card is the #509 family's, not this mission (IQ-07 (a)). | 2 |
 | `.sk-empty-state` | empty-state heading h1 | 2 | The `heading` slot holding the consumer's `<h1>` (FR-020). | 2 |
 | `.sk-empty-state` | empty-state heading h2 | 9 | The `heading` slot holding the consumer's `<h2>` (FR-020). | 2 |
-| `.sk-empty-state` | empty-state heading paragraph | 1 | The `heading` slot holding the consumer's `<p>` (edge case "slotted heading of a different element"). Its id naming the progress bar is IQ-10. | 2 |
+| `.sk-empty-state` | empty-state heading paragraph | 1 | The `heading` slot holding the consumer's `<p>` (edge case "slotted heading of a different element"). The bar takes the paragraph's text as `label` instead of its id (IQ-10 (a)). | 2 |
 | `.sk-empty-state` | empty-state no heading | 14 | The `heading` slot left empty (FR-023): a loading panel with `ocelle-progress` in `visual` (5), or a body-only notice (9). | 2 |
-| `.sk-empty-state` | empty-state body multiple | 2 | The default slot holding both paragraphs. The spacing of paragraphs in the body is open: IQ-09. | 2 |
+| `.sk-empty-state` | empty-state body multiple | 2 | The default slot holding both paragraphs: the element zeroes their margins and separates them by `--ocelle-space-2` (IQ-09 (b), FR-026). | 2 |
 | `.sk-empty-state` | empty-state body optional | 2 | The default slot filled or left empty (FR-023). | 2 |
 | `.sk-empty-state` | empty-state action | 4 | The `actions` slot; the element gives the body-to-actions gap (FR-021), so the consumer's own top margin goes. Disabling the button while the screen is inert stays the consumer's. | 2 |
 | `.sk-empty-state` | empty-state action wrapper | 0 | The `actions` slot. Unused by the consumer. | 2 |
 | `.sk-empty-state` | empty-state inline | 0 | Not this mission: never used, and the regional notices use the centred block; no left-aligned inline variant is added. | 2 |
-| `.sk-empty-state` | empty-state busy | 6 | `ocelle-empty-state` with an indeterminate `ocelle-progress size="compact"` in `visual` (FR-021, US2-7); `aria-busy` stays on the consumer's wrapper. The look keyed on busy is IQ-07. | 2 |
-| `.sk-empty-state` | empty-state message | 3 | Gap: no dashed message card; neither variant paints a ground or border (FR-021): IQ-07. | 2 |
-| `.sk-empty-state` | empty-state card | 5 | Gap: no card fill, radius, inline padding or busy-keyed border (FR-021): IQ-07; its bold display-face heading is IQ-06. | 2 |
-| `.sk-empty-state` | empty-state card dashed | 2 | Not this mission: panel and card paint, the #509 family (E-45); see IQ-07. | 2 |
-| `.sk-empty-state` | empty-state ops card | 2 | Gap: as "empty-state card" (busy-keyed border, padding, heading): IQ-06, IQ-07. Its selector tests are the consumer's. | 2 |
+| `.sk-empty-state` | empty-state busy | 6 | `ocelle-empty-state` with an indeterminate `ocelle-progress size="compact"` in `visual` (FR-021, US2-7); `aria-busy` stays on the consumer's wrapper. A look keyed on busy is the consumer's own card (IQ-07 (a)). | 2 |
+| `.sk-empty-state` | empty-state message | 3 | Consumer's: the consumer's own dashed card around an `ocelle-empty-state` (default variant); neither variant paints a ground or border (FR-021, IQ-07 (a)). | 2 |
+| `.sk-empty-state` | empty-state card | 5 | Consumer's: the card fill, radius, inline padding and busy-keyed border are the consumer's own card around `ocelle-empty-state variant="panel"` (IQ-07 (a)); its heading becomes the panel's 500, not the bold display face (IQ-06 (a)). | 2 |
+| `.sk-empty-state` | empty-state card dashed | 2 | Not this mission: panel and card paint, the #509 family (E-45) (IQ-07 (a)). | 2 |
+| `.sk-empty-state` | empty-state ops card | 2 | Consumer's: as "empty-state card", the consumer's own card with its busy-keyed border and padding around the element, the heading at the element's weight (IQ-06 (a), IQ-07 (a)). Its selector tests are the consumer's. | 2 |
 | `.sk-empty-state` | empty-state identifier | 3 | Consumer's: the value in the body, with `data-ocelle-wrap="anywhere"` and its own `title`; no mono (constitution II). | 2 |
-| `.sk-empty-state` | empty-state focus target | 2 | Consumer's: `tabindex="-1"` on the consumer's slotted heading (the element adds no tab stop, FR-024). The focusable progress block is IQ-11. | 2 |
+| `.sk-empty-state` | empty-state focus target | 2 | Consumer's: `tabindex="-1"` on the consumer's slotted heading (the element adds no tab stop, FR-024). For the loading block, the consumer's `<h2 tabindex="-1">` in the `heading` slot with the bar in `visual` (IQ-11 (b)). | 2 |
 | `.sk-progress` | progress default | 1 | `ocelle-progress` with `value`, `max`, `label` and `show-label`. | 3 |
 | `.sk-progress` | progress narrow | 3 | `ocelle-progress`; the track fills the host's inline size (R-06). The two uses with their own grid are "progress grid layout". | 3 |
 | `.sk-progress` | progress compact | 10 | `ocelle-progress size="compact"`. In the consumer always without `value`. | 3 |
 | `.sk-progress` | progress indeterminate | 10 | `ocelle-progress` with no `value` (FR-032). | 3 |
 | `.sk-progress` | progress determinate | 4 | `ocelle-progress` with `value` and `max`. | 3 |
-| `.sk-progress` | progress meta | 2 | `value-text` with `show-label`: the consumer passes the formatted percentage, since the element formats no numbers (Assumptions). Its place in the row is IQ-13. | 3 |
+| `.sk-progress` | progress meta | 2 | `value-text` with `show-label`: the consumer passes the formatted percentage, since the element formats no numbers (Assumptions). It sits at the inline end of the label row (IQ-13 (b)). | 3 |
 | `.sk-progress` | progress external text | 1 | `value-text` with `show-label`, or the consumer's own text beside the element. | 3 |
-| `.sk-progress` | progress label | 12 | `ocelle-progress` with `label` and `show-label` (FR-035). | 3 |
-| `.sk-progress` | progress labelled by heading | 1 | Gap: naming from an outside heading by reference is not in FR-030: IQ-10. | 3 |
+| `.sk-progress` | progress label | 12 | `ocelle-progress` with `label` and `show-label` (FR-035). The label is text only, with no slot (IQ-14 (a)). | 3 |
+| `.sk-progress` | progress labelled by heading | 1 | Consumer's: the consumer passes the heading's text as `label`, with no reference (IQ-10 (a)). | 3 |
 | `.sk-progress` | progress aria-label | 1 | `label` without `show-label`, or a host `aria-label` (FR-030). | 3 |
-| `.sk-progress` | progress fallback text | 2 | Consumer's: the element draws the bar itself; text the consumer puts inside it is not slotted. Whether the README states this is IQ-15. | 3 |
-| `.sk-progress` | progress heading | 1 | Gap: the host is the progressbar (R-05), so a role or tab stop on it would replace the bar: IQ-11. | 3 |
-| `.sk-progress` | progress inline | 1 | Gap: the plan states no host display for a bar inside a row: IQ-12. | 3 |
+| `.sk-progress` | progress fallback text | 2 | Consumer's: the element draws the bar itself; text the consumer puts inside it shows only before upgrade and is neither shown nor exposed after it, as the README states and a browser body proves (IQ-15 (b), R-05). | 3 |
+| `.sk-progress` | progress heading | 1 | Consumer's: the consumer's own `<h2 tabindex="-1">` in the empty state's `heading` slot with the bar in `visual`; the README warns against a `role` or `tabindex` on the host (IQ-11 (b), R-05). | 3 |
+| `.sk-progress` | progress inline | 1 | `ocelle-progress`, whose host is `display: block`; the consumer sets `display: inline-block` and an inline size on the host from outside (IQ-12 (a), R-06). | 3 |
 | `.sk-progress` | progress in empty-state | 6 | `ocelle-empty-state`'s `visual` slot (FR-021, US2-7). | 3 |
 | `.sk-progress` | progress in busy region | 3 | `ocelle-progress` placed directly; `aria-busy` stays on the consumer's region. | 3 |
 | `.sk-progress` | progress slotted | 2 | `ocelle-progress` in another element's slot; nothing is needed from the element. | 3 |
-| `.sk-progress` | progress grid layout | 2 | `ocelle-progress` with `show-label` in the default size: label and value text in a row above, the bar across the full width below (R-06). A consumer cannot place the shadow parts in its own grid: IQ-13. | 3 |
+| `.sk-progress` | progress grid layout | 2 | `ocelle-progress` with `show-label` in the default size: the label at the inline start and the value text at the inline end of the row above, the bar across the full width below (R-06, IQ-13 (b)). The consumer no longer places the parts itself. | 3 |
 | `.sk-progress` | progress centred | 1 | `ocelle-empty-state`'s `visual` slot, which centres the bar and spans it up to the reading measure (FR-021). | 3 |
 
-Each family is recorded in full. Its gap rows go to the operator: the phase's red commit (T012, T028, T045) waits for
-the answers to the questions its rows name, and a row whose answer changes the element changes this table, the spec
-or the plan first, as the operator decides.
+Each family is recorded in full. Its gap rows went to the operator, who decided them on 2026-11-14 (IQ-01 to IQ-15);
+the rows above give the decided element, variant or consumer remedy, and the spec and plan carry the changes (FR-013,
+FR-014, FR-020, FR-025, FR-026, FR-035, FR-039). The red commits (T012, T028, T045) no longer wait on these questions.
 
 **Gaps.** A variant that no element, property or slot of this plan covers goes to the operator before the red commit
-of its element's phase; the surface is not widened by review. The gaps and conflicts the inputs show are listed, with options, in
-[reviews/analysis/inputs-questions.md](reviews/analysis/inputs-questions.md).
+of its element's phase; the surface is not widened by review. The gaps and conflicts the inputs showed are listed, with options, in
+[reviews/analysis/inputs-questions.md](reviews/analysis/inputs-questions.md), and the operator's choices in
+[reviews/analysis/inputs-decisions.md](reviews/analysis/inputs-decisions.md); the two surface additions (`layout="grid"`,
+the `eyebrow` slot) were the operator's.
 
 **Who records it, and when (analysis U1).** For each family an operator step precedes the phase's red tasks: the
 operator supplies the family's rows and the planner records them in the table above, in a documentation commit of
 their own before the phase's red commit (tasks T002a, T022a, T036a). A family still pending is a known blocker of
 that phase's red commit (T012, T028, T045): the implementer stops and asks; it does not write the mapping statements
 from anything else. All three families are now recorded (T002a, T022a and T036a done, from
-[sources/013-inputs.md](sources/013-inputs.md)); the open questions their gap rows name still block the red commits
-as stated above the table.
+[sources/013-inputs.md](sources/013-inputs.md)), and the questions their gap rows named are decided.
 
 **Where the mapping is written.** Each element's mapping rows (FR-058) are written in that element's phase, red
 first: the readme-test statements for the rows in the phase's red commit, the rows in its green commit (facts in

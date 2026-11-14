@@ -51,6 +51,9 @@ something only the element gives:
 | US2-6 | the button's tab stop | the button sits in the actions part, below the text, centred in the column |
 | FR-011 link in a fact | the link's tab stop | the link's box is inside the value column (`<dd>`), right of the label column |
 | US1-4 | the value's text is unchanged | the copy oracle below, paired with US1-3's wrap |
+| US1-19 | the link's tab stop and the consumer's text | each value's box is inside its own cell, below its label, in the grid's column for its source position |
+| US2-10 | the eyebrow `<p>` before the heading in AX order | the eyebrow's computed type (12 px, 500, ink-muted, upper case) and its gap to the heading, written in markup after the heading |
+| US2-11 | two paragraphs one after the other | no user-agent margin on either and the `--ocelle-space-2` gap between them (the light DOM alone gives 1em margins) |
 
 ## Oracles
 
@@ -95,6 +98,26 @@ something only the element gives:
   identifier. The same body asserts US1-3's wrap (the value spans more than one line box). Plant: a copy of
   `ocelle-fact` that inserts U+200B every 16 characters into its value; US1-4 must fail.
 
+- **Grid structure (US1-13, FR-014, IQ-05 (b)).** US1-13 asserts the AX description list as US1-6 does (four terms
+  and four definitions, each definition after its term, each definition holding its own fact's value) and the
+  flat-tree structure axe reads in the grid: the `<dl>`'s element children are only `<div>` groups, each holding
+  exactly one `<dt>` followed by one `<dd>`, one group per visible fact, in source order. Plant: the groups not
+  rendered (the ungrouped A5 structure with the grid's tracks); US1-13 must fail on the structure and on the cell
+  geometry.
+- **Grid geometry (US1-13 to US1-18).** Read after the layout wait: the `<dl>`'s computed `grid-template-columns`
+  track count (4, 2 or 1) and equal track sizes; each group's box (its row and column from its block and inline
+  start), each `<dt>`'s box above its `<dd>`'s box in the same cell (block end at or above the value's block start,
+  inline starts aligned); no two groups' boxes intersecting; the page scroll width against the viewport. US1-14
+  asserts two columns at 600 px and one at 320 px in one body, so the plants below fail on a count, not on timing.
+  US1-15 asserts the empty tracks of the one- and three-fact sheets at 1280 px (the first cell a quarter of the
+  sheet's content box less the gaps). US1-17 asserts the first group's inline-end edge at the sheet's right edge under
+  `dir="rtl"`, beside the left edge in a left-to-right sheet in the same body. US1-18 compares the widened dialog with
+  a fresh load at 1280 px and asserts the fresh load's column count (four) as well, so it cannot pass on a sheet that
+  is one column everywhere; the content is the one phase 1's spike fixes for US1-12 (its four-column size at 1280 px
+  is at least 2 × T and its size at 360 px below T; the spike lengthens it if not).
+  Plants: the four-column rule removed (US1-13 fails), the two-column grid rule removed (US1-14 fails), the
+  four-column point at T instead of 2 × T (the 600 px half of US1-14 fails: four columns at 600 px), and the grid
+  measure read in the decided layout instead of four columns (US1-18 fails).
 - **Label type (US1-5, FR-006; analysis G4).** The US1-5 body also reads a label's computed style in the same sheet:
   font family through `--ocelle-font-sans`, size `--ocelle-font-size-sm`, weight `--ocelle-font-weight-medium`,
   colour `--ocelle-color-ink-muted` (R-03), and asserts the label's size and weight each differ from the value's
@@ -147,6 +170,21 @@ something only the element gives:
   `show-label`: at the default size the track's block size is 8 px and the label's box is above the track (its block
   end at or above the track's block start, their inline starts aligned); with `size="compact"` the track is 4 px and
   the label's box is beside the track on the same line (their block ranges overlap and their inline ranges do not).
+  With a determinate value and `value-text` on the compact bar, the value text's box is on the same line after the
+  track's inline end (IQ-13 (b)).
+- **Value text at the row's inline end (US3-10, FR-035, IQ-13 (b)).** With `label`, `show-label`, a determinate
+  value and `value-text` at the default size, in a 400 px host: the label's inline start equals the track's, the
+  value text's inline end equals the track's, and both boxes are above the track; under `dir="rtl"` in the same body
+  the label's box is at the right and the value text's at the left. Plant: the value text's `margin-inline-start:
+  auto` removed (it follows the label); US3-10 must fail.
+- **Fallback text (FR-039, IQ-15 (b)).** A bar with `label="Tasks done"`, `value="7"`, `max="12"` and the text
+  "7/12" as its content: after upgrade the text node has no client rect, the page's `innerText` does not contain
+  "7/12", and no accessibility node in the page has the name or text "7/12"; paired in the same body with the
+  progressbar node named "Tasks done" with value 7. Plant: a default `<slot>` added to the shadow root (the text shown
+  and exposed); this body must fail.
+- **Inline placement (IQ-12 (a)).** In one body: a bar's host computes `display: block`; a second bar inside a
+  paragraph, given `display: inline-block; inline-size: 12rem` by a page rule, has a 12rem box whose block range
+  overlaps the paragraph's first line box, beside the text before it.
 - **No tab stop (FR-039; analysis G7).** A button before and a button after a bar: from the first button, one Tab
   moves focus to the second (the driver's `pressTab` and `focused`), paired in the same body with the bar's
   progressbar node exposed with its name, so the bar is present and skipped.
@@ -187,7 +225,12 @@ From the spec check notes and squad round 1:
   - `layout` (US1-11, FR-013, PLAN-FRESH-2-001 (c)): a short sheet in a dialog at 1280 px, one column without
     `layout` and two columns with `layout="columns"`; `layout="stacked"` in a 600 px block container, one column;
     `layout="columns"` at a 320 px viewport, two columns with the page scroll width equal to the viewport width; an
-    unknown value (`layout="grid"`) acting as unset; removing `layout` returning to the automatic layout;
+    unknown value (`layout="table"`; `grid` is now a value, FR-014) acting as unset; removing `layout` returning to
+    the automatic layout;
+  - the grid layout (US1-13 to US1-19, FR-014, IQ-05 (b)) with the oracles of § Oracles; also: `layout` changed from
+    `grid` to `columns` and back after render (structure and slots re-assigned, AX list unchanged); `density="compact"`
+    with `layout="grid"` (row gap `--ocelle-space-1`, column gap unchanged); a hidden fact in the grid (no cell); the
+    probes' hook at 15rem on a 600 px grid sheet (four columns, 600 ≥ 2 × 240) to show both points move with the hook;
   - the resize body (600 → 300 → 600 px);
   - the hook fallbacks: invalid (`24 rem`), a percentage and 0, each at 320 px, stacked; and the page scroll width at
     320 px with the probes present (PLAN-A11Y-SECURITY-1-004);
@@ -212,6 +255,9 @@ From the spec check notes and squad round 1:
     present part (no gap below it), and removing `hidden` brings the action back with the body-to-actions gap; a
     slotted `<div hidden>` as the only visual leaves the heading at the block padding edge; default-slot text changed
     from whitespace to words makes the text part present. Plant: the `hidden` observer removed;
+  - eyebrow only, and eyebrow plus actions: the eyebrow at the block padding edge and, with no heading, the
+    eyebrow-to-actions gap; with a heading, the eyebrow-to-heading gap (R-04's table, both variants) (IQ-08 (c));
+  - US2-10 and US2-11 as § Bodies that the platform alone could pass;
   - unset `variant` writes no attribute.
 - **progress:**
   - `value-text` ignored while indeterminate and kept when clamped (SPEC-2-02);
@@ -229,7 +275,8 @@ From the spec check notes and squad round 1:
     of several sentences, at a 320 px viewport: the track's inline size is at least the `--ocelle-measure-cell` value
     (from `source.ts`), the label wraps between words, and the page scroll width equals the viewport width;
   - no tab stop (FR-039), as in § Oracles;
-  - unset properties write no attribute (`size`, `ground`).
+  - unset properties write no attribute (`size`, `ground`);
+  - the fallback-text body and the inline-placement body of § Oracles (IQ-15 (b), IQ-12 (a)).
 
 ## CSS-only behaviours (PLAN-TESTABILITY-1-008)
 
@@ -258,6 +305,16 @@ a stated reason why its expected value differs from the browser default and from
 | heading weights | US2-3, US2-4 | reason: 600 and 500 differ from each other and from the user-agent heading's 700 |
 | progress bar width in `visual` | US2-7 (phase 3, real bar) | plant: the `::slotted(ocelle-progress)` rule removed, run in phase 3 only (T052): phase 2's stand-in is not an `ocelle-progress`, so the rule cannot match it (analysis U2) |
 | empty-state forced colours | US2-8 | reason: system colours differ from the token colours |
+| eyebrow type | US2-10 | plant: the `::slotted([slot="eyebrow"])` type rule removed (16 px, 400, ink, no upper case) |
+| eyebrow gaps | US2-10, eyebrow present-parts bodies | plant: the eyebrow's heading-dependent class ignored (the `space-2` gap before a heading); reason: default and panel are asserted in one body |
+| body margins reset | US2-11 | plant: the `::slotted(:not([slot]))` `margin-block: 0` removed (1em user-agent margins return) |
+| body gap | US2-11 | plant: the text wrapper's `gap` removed (the two paragraphs touch) |
+| grid tracks | US1-13, US1-14 | plants: the four-column rule removed; the two-column grid rule removed |
+| grid cell (label above value) | US1-13 | plant: the groups not rendered (§ Oracles, grid structure) |
+| grid compact row gap | grid compact body | reason: the compact and default row gaps are asserted in one body and differ |
+| grid right-to-left | US1-17 | reason: the first cell's edge is asserted at the left in LTR and the right in RTL in one body |
+| value text at the inline end | US3-10 | plant: the value text's `margin-inline-start: auto` removed |
+| content inside the bar not shown | fallback-text body | plant: a default `<slot>` added to the shadow root |
 | track clip | 320 px sweep body | plant: `overflow: clip` removed |
 | block sizes | US3-9 | reason: default 8 px and compact 4 px in one body |
 | label above or beside the bar | US3-9 | reason: the label's box is above the track at the default size and on the same line at compact size, in one body |
@@ -323,8 +380,8 @@ commit. Each new story must be present in the built index, render its element in
 request. Since #10 the Storybook is served with no CSP and the test counts no violation (006 FR-020); run-time strict
 CSP is proven on the element package's fixture pages (FR-055). It also checks, on every story of the four elements (PLAN-TESTABILITY-1-010,
 PLAN-A11Y-SECURITY-1-005):
-- every facts story at a 320 px viewport: page scroll width equals the viewport width (SC-002), paired with the
-  sheet's rendered inline size above 0;
+- every facts story at a 320 px viewport, the grid stories included: page scroll width equals the viewport width
+  (SC-002), paired with the sheet's rendered inline size above 0;
 - every story under reduced motion: no running animation or transition (SC-005), paired with a running animation on
   the indeterminate progress story without reduced motion (PLAN-FRESH-2-009). In phases 1 and 2 no story animates
   yet, so the facts and empty-state reduced-motion reads are paired only with the `matchMedia` assertion; the

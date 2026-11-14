@@ -40,9 +40,10 @@ here (#531 for FR-008, #510 for FR-022 and US2, #535 for FR-007, #498 for US3). 
 for #280, #498, #510 and #523 was denied, and the operator decided at the plan gate to proceed without them ("Proceed,
 inputs later", below). Anything in them read later that changes a requirement goes to the operator. The operator has
 since supplied #280, #498, #510 and #523 verbatim, with the kitty-mission-ui inventory, in `sources/013-inputs.md`;
-research R-03 records what each states for this mission and R-11 the inventory. No requirement below is changed by
-them yet: their gaps and conflicts with this spec are open questions for the operator in
-`reviews/analysis/inputs-questions.md`.
+research R-03 records what each states for this mission and R-11 the inventory. Their gaps and conflicts with this
+spec were open questions for the operator (`reviews/analysis/inputs-questions.md`, IQ-01 to IQ-15), which the
+operator has decided (below, "Operator decisions on the input questions"). #280's grouped grid that reflows across
+four, two and one columns is answered in this mission by `layout="grid"` (FR-014, US1-13 to US1-19).
 Spec Kitty's `sk-*` names are kitty-mission-ui roles, not names in this library.
 
 **Consumers** (constitution VI): kitty-mission-ui (Kitty Desktop and Kitty Dashboard) replaces its `.sk-facts` (8
@@ -137,6 +138,38 @@ uses them in server-rendered pages under a strict CSP.
   gate); the readme tests assert the mapping rows by their role names, with no `sk-` string in test code (FR-002,
   FR-058).
 
+**Operator decisions on the input questions** (2026-11-14, human:jeroennouwsdev;
+`reviews/analysis/inputs-decisions.md`, questions in `reviews/analysis/inputs-questions.md`, inputs in
+`sources/013-inputs.md`):
+
+- IQ-01, (a): FR-005's tracks stay; the README warns against restyling the list's columns through `::part(list)`.
+- IQ-02, (a): in a grid parent the consumer sets `min-inline-size: 0` on the `ocelle-facts` host; the README says so,
+  and phase 1's spike adds a sheet as the item of a `1fr` grid track with a long value.
+- IQ-03, (a): labels stay at `--ocelle-font-weight-medium` (500); a consumer sets another weight through
+  `::part(label)`.
+- IQ-04, (b): `break-word` and break-anywhere both map to `wrap="anywhere"` (FR-007 unchanged); the README states that
+  the element has no truncation and that an ellipsis maps to `wrap="anywhere"`, the full value shown.
+- IQ-05, (b): a third `layout` value, `grid`, for #280's grouped term and value cells that reflow across four, two and
+  one columns on the sheet's own inline size (FR-013, FR-014, US1-13 to US1-19). This widens the public surface.
+- IQ-06, (a): FR-022 stays as #510's text: the panel heading is lighter (500) with the larger rhythm.
+- IQ-07, (a): no chrome (FR-021): the card, the message card and the ops card stay the consumer's; the dashed card
+  belongs to the #509 panel-paint family, not this mission.
+- IQ-08, (c): an `eyebrow` slot above the heading (FR-020, FR-025, US2-10). This widens the public surface. The path
+  stays the consumer's body content.
+- IQ-09, (b): the element zeroes the block margins of slotted body content and separates body children by
+  `--ocelle-space-2` (FR-026, US2-11).
+- IQ-10, (a): a bar named by a nearby heading takes the heading's text as `label`; the README says so.
+- IQ-11, (b): a focusable loading heading is the consumer's own `<h2 tabindex="-1">` in the empty state's `heading`
+  slot with the bar in `visual`; the README warns against a `role` or `tabindex` on the progress host.
+- IQ-12, (a): the progress host is `display: block`; a consumer that places a bar inline sets its display and inline
+  size from outside; the README says so.
+- IQ-13, (b): the visible value text sits at the inline end of the labelled row, the label at its inline start
+  (FR-035, US3-9, US3-10).
+- IQ-14, (a): the label stays a `label` property, with no slot; the README says rich labels are not supported.
+- IQ-15, (b): content inside `ocelle-progress` shows only before upgrade and is neither shown nor exposed after it;
+  the README says so and a browser test proves the second half (FR-039, edge case "Text inside the progress
+  element").
+
 ## Scope
 
 **In scope:** four new custom elements in `@ocelle/elements` (`ocelle-facts` with its child `ocelle-fact`,
@@ -149,7 +182,7 @@ on: the compact region's value scale (FR-008) and the pre-upgrade rule (FR-012).
 
 - the other five elements of #13;
 - copying text to the clipboard (constitution I; #14 and the host);
-- the eyebrow tokens (added by 011 or 012);
+- the eyebrow tokens (added by 011 or 012); the empty state's `eyebrow` slot uses existing type tokens (FR-025);
 - the `storybook-build`, `visual` and `axe` gates themselves and the pinned container. Those are #10's, merged on
   `main`. This mission writes the stories #10's gates read, commits their baselines, and holds to #10's contributor
   note (`specs/006-storybook-workbench` FR-025, `storybook/README.md`). See FR-051.
@@ -165,7 +198,9 @@ A Kitty Desktop screen shows a mission's facts: status, owner, created date, mis
 developer writes an `ocelle-facts` element with its pairs inside it instead of a `<dl class="sk-facts">`. In a wide
 column the labels and values sit in a two-column grid. In a narrow column (a 320 px viewport, or a narrow inspector) the
 same pairs stack, label above value. A long identifier breaks inside its own value and never widens the grid or makes
-the page scroll sideways. A screen-reader user hears each label with its value, as a description list.
+the page scroll sideways. A screen-reader user hears each label with its value, as a description list. A Work
+Package summary shows four facts as a strip of cells, each label above its value (#280's grid): four cells across a
+wide column, two across a narrow one, one per row at 320 px, from the same markup with `layout="grid"`.
 
 **Why this priority**: it replaces 8 rendered uses (34 text matches, R-11) and is the first element of the "every class family is an element"
 rule for display content. It sets the slotted-item pattern the follow-on missions (timeline, chain) reuse.
@@ -215,6 +250,30 @@ px, check the layout, the absence of horizontal overflow, the computed type of t
     layout is the layout of the same sheet loaded at 1200 px; and **Given** a stacked sheet in a 1280 px dialog with
     the label "Id" and the same value, **When** the label is changed to "Created by operator", or the value's text is
     changed in place, **Then** its layout is the layout of a fresh load of the changed content (FR-005, FR-009).
+13. **Given** an `ocelle-facts` with `layout="grid"` and four pairs in a block container 1280 px wide, **When** it
+    renders, **Then** the four pairs are four cells in one row, in source order from the inline start, each cell's
+    label directly above its value, the cells of equal inline size; and the accessibility tree holds one description
+    list with four terms and four definitions, each definition following its term, in source order (FR-004, FR-014).
+14. **Given** the same sheet in a block container 600 px wide, **When** it renders, **Then** the cells are in two
+    columns and two rows, in source order row by row; **Given** a block container 320 px wide, **Then** the cells are
+    in one column, with no horizontal overflow of the element or the page (FR-014).
+15. **Given** a grid sheet with one, three and eight pairs, each in a block container 1280 px wide, **When** it
+    renders, **Then** the cells are in four columns of equal inline size: one cell in the first column; three cells in
+    the first three columns of one row; eight cells in two rows of four. No cell spans more than one column (FR-014).
+16. **Given** a grid sheet in a 600 px block container whose second pair has a label of several sentences and whose
+    third pair holds the 64-character identifier with `wrap="anywhere"`, **When** it renders, **Then** the label wraps
+    between words inside its cell, the identifier wraps inside its cell, no cell's box overlaps another, and the
+    page's scroll width equals the viewport width; at a 640 px viewport (200% zoom of 1280 px) the same holds (FR-007,
+    FR-009, FR-014).
+17. **Given** a grid sheet with four pairs under `dir="rtl"` in a block container 1280 px wide, **When** it renders,
+    **Then** the first pair's cell is at the inline start (the right edge) and the cells follow source order towards
+    the left (FR-014).
+18. **Given** a grid sheet with "Created by op" / "Ada Lovelace and Charles Babbage" (the content US1-12 fixes) in a
+    `<dialog>`, loaded at a 360 px viewport, **When** the viewport is widened to 1280 px, **Then** its column count is
+    that of the same sheet loaded at 1280 px (FR-009, FR-014).
+19. **Given** a grid sheet whose values are a link, a status text and the consumer's explicit unavailable text
+    ("Not recorded"), **When** it renders, **Then** each value is shown as the consumer gave it in its cell, the link
+    keeps its own tab stop inside its value box, and the element adds no text of its own (FR-003, FR-011).
 
 ---
 
@@ -224,7 +283,8 @@ A list screen has no items yet. The developer places an `ocelle-empty-state` wit
 missions yet"), one sentence of explanation and a button. Inside a card it is a quiet block. In the `panel` variant,
 which fills a list or inspector panel, it has the larger vertical rhythm and lighter heading weight of the prototype's
 empty and loading panels. The same panel variant with an `ocelle-progress` inside is the loading panel. The page's
-heading outline stays the page's: the element never forces a heading level.
+heading outline stays the page's: the element never forces a heading level. A refusal block adds a short eyebrow line
+above its heading ("Refused") and a body of two paragraphs, a sentence and a file path, spaced by the element.
 
 **Why this priority**: 25 rendered uses (75 text matches, R-11). It depends on nothing from P1, but its panel variant pairs with P3 for the
 loading panel, so it comes before P3.
@@ -261,6 +321,16 @@ button stays in the tab order.
    the body is the last present part and ends at the block padding, with no gap below it; **When** `hidden` is removed
    from the action, **Then** the action is shown below the body, separated by the body-to-actions gap, without any
    other change to the slots (FR-023).
+10. **Given** an empty state with a `<p slot="eyebrow">Refused</p>`, a slotted `<h1>`, a body paragraph and an
+    action, and no visual, **When** it renders, **Then** the eyebrow is the first present part, starting at the block
+    padding, above the heading at the eyebrow-to-heading gap; its computed type is FR-025's (`--ocelle-font-sans`,
+    `--ocelle-font-size-xs`, `--ocelle-font-weight-medium`, `--ocelle-color-ink-muted`, uppercase); and the
+    accessibility tree holds the eyebrow's text, the level 1 heading, the paragraph and the button, in that order, with
+    no role added by the element. **Given** `variant="panel"`, **Then** the eyebrow's gaps are the panel's (FR-025).
+11. **Given** an empty state with a heading, two `<p>` body paragraphs and an action, **When** it renders, **Then** the
+    first paragraph starts at the body part's block start and the last ends at its block end (no user-agent paragraph
+    margin), the two paragraphs are separated by `--ocelle-space-2`, and the body-to-actions gap is FR-021's; with one
+    body paragraph, it starts and ends at the body part's edges (FR-026).
 
 ---
 
@@ -301,9 +371,13 @@ non-text contrast of the fill's mark against the track and the ground in light a
 8. **Given** forced colours, **When** it renders, **Then** the track's outline and the filled part are both visible
    in system colours.
 9. **Given** `size="compact"`, **When** it renders, **Then** the bar's block size is the compact size FR-034 names,
-   and the label, if shown, is beside or above the bar as FR-035 states.
+   and the label, if shown, is beside or above the bar as FR-035 states; with a determinate value and `value-text`,
+   the compact row holds the label at its inline start, then the bar, and the value text at its inline end (FR-035).
 10. **Given** the labelled variant (`label` and `show-label`), **When** it renders, **Then** the visible label text is the
-    progressbar's accessible name. A host `aria-label` overrides it, as in the library's Host ARIA rule.
+    progressbar's accessible name. A host `aria-label` overrides it, as in the library's Host ARIA rule. **Given** also a
+    determinate value and `value-text` at the default size, **Then** the label row above the bar holds the label at its
+    inline start and the value text at its inline end, the value text's inline end aligned with the track's (mirrored
+    under `dir="rtl"`) (FR-035).
 11. **Given** a bar with neither `label` nor a host `aria-label`, **When** the accessibility tree is read, **Then**
     the progressbar has no name: the element does not invent one. The README and the manifest description of `label`
     say a name is required. This state is proven by a browser test only and has no story (FR-050), since axe's
@@ -352,6 +426,26 @@ non-text contrast of the fill's mark against the track and the ground in light a
   (FR-003).
 - **Facts before the elements are defined.** See FR-012.
 - **Facts at 200% zoom and 320 px.** One column, no horizontal scroll, no cut text (WCAG 1.4.10).
+- **Facts in a grid parent.** A sheet that is the item of a `1fr` grid track has the track's automatic minimum, its
+  min-content, so a long value can widen the track. The consumer sets `min-inline-size: 0` on the `ocelle-facts` host
+  (host styles are the consumer's); the README says so (operator decision IQ-02 (a)).
+- **Restyled columns.** A consumer rule on `ocelle-facts::part(list)` that sets `grid-template-columns` beats the
+  element's own rules in every layout and so breaks the automatic switch; the README says not to restyle the list's
+  columns (operator decision IQ-01 (a)).
+- **Grid layout with few or many facts** (`layout="grid"`, FR-014). One, three or eight pairs keep the column count
+  the sheet's inline size gives; the cells keep equal inline sizes and fill rows from the inline start, so a row may
+  end with empty columns. Nothing is stretched to fill them.
+- **Grid layout with long labels or values.** A long label wraps between words inside its cell. A long unbroken value
+  breaks inside its cell with `wrap="anywhere"` (FR-007); without the policy it wraps between words only, as in the
+  other layouts (operator decision IQ-04 (b)), so an unbroken word wider than its cell overflows the cell, and the
+  README tells consumers to set the policy on machine values in every layout.
+  With the policy, no cell overlaps another and the page does not scroll sideways at 320 px or 200% zoom.
+- **Grid layout right-to-left.** Cells fill each row from the inline start (the right under `dir="rtl"`); the gaps
+  are logical and need no mirroring.
+- **Grid layout at 200% zoom and 320 px.** At a 640 px viewport a block container gives two columns; at 320 px, one;
+  no horizontal scroll, no cut text (WCAG 1.4.10).
+- **Values cut short.** The element never truncates a value: there is no ellipsis policy. A consumer that ended a long
+  word in an ellipsis sets `wrap="anywhere"` and shows the full value (operator decision IQ-04 (b), #280's non-goal).
 - **Very long label.** Labels wrap between words. The label column is sized by FR-005's rule (its widest label, up
   to a cap), so a long label wraps inside the cap and never takes the value column's space beyond it.
 - **Long empty-state heading or body at 320 px.** Heading and body wrap between words inside the element; nothing
@@ -363,10 +457,29 @@ non-text contrast of the fill's mark against the track and the ground in light a
 - **Empty-state with a slotted heading of a different element** (for example a `<p>` styled as a heading). The
   element styles the slot's content and does not change its role. The consumer owns the heading semantics.
 - **Empty-state with only actions.** Allowed. The actions keep their own names.
+- **Empty-state with an eyebrow and no heading.** Allowed: the eyebrow is a present part like any other, and the gap
+  below it is the one FR-025 names for the next present part. The eyebrow is the consumer's text and has no heading
+  role; the README says to keep it a short line (a `<p>`), not a heading.
+- **Empty-state body with inline content.** The body part lays out each assigned element, and each run of assigned
+  text, as its own block, separated by `--ocelle-space-2` (FR-026). Text meant to flow as one paragraph with a link or
+  an identifier span inside it goes in one element (a `<p>`); the README says so. A page rule that sets margins on the
+  slotted body content wins over the element's reset, as for the heading (the consumer owns its content).
+- **A focusable loading heading.** A screen that moves focus to the loading block slots its own `<h2 tabindex="-1">`
+  in the `heading` slot and the bar in `visual`, and focuses the heading. A `role` or `tabindex` on the
+  `ocelle-progress` host would replace or alter the progressbar; the README warns against both (operator decision
+  IQ-11 (b)).
 - **Empty-state with hidden slotted content.** A slotted element with `hidden`, or only whitespace, makes its part
   absent (no space, no gap); removing `hidden` brings the part back (FR-023). Content hidden by the consumer's own
   class or style rule is not observed; the README says to use `hidden` or remove the node.
 - **Progress `value` greater than `max`.** Clamped to `max`, see FR-032.
+- **Text inside the progress element** (a "7/12" fallback). The element has no slot: such text shows only before
+  upgrade and, after it, is neither shown nor exposed in the accessibility tree; the bar keeps its own name and value
+  (FR-039, operator decision IQ-15 (b)).
+- **Progress named by a nearby heading.** The consumer passes the heading's text as `label`; no ID reference is used
+  (FR-030, operator decision IQ-10 (a)).
+- **Progress inline in a row.** The host is a block (`display: block`). A consumer that places a bar inside a line of
+  text sets the host's `display` (for example `inline-block`) and inline size from outside; the README says so
+  (operator decision IQ-12 (a)).
 - **Progress `max` absent.** It defaults to 100.
 - **Progress inside an `ocelle-empty-state` panel that is removed.** Nothing keeps running: the indeterminate motion
   is a CSS animation that ends with the node.
@@ -380,7 +493,8 @@ non-text contrast of the fill's mark against the track and the ground in light a
   value number, and the fill has no width transition: its inline size jumps to each new value (operator decision
   PLAN-FRESH-3-003 (b)).
 - **Right-to-left.** The progress fill grows from the inline start (right under `dir="rtl"`), and the indeterminate
-  mark moves from the inline start to the inline end. The facts columns mirror.
+  mark moves from the inline start to the inline end. The facts columns mirror, and grid cells fill each row from the
+  inline start (FR-014).
 - **Two copies of the package on a page.** As the library's existing rule: the first definition wins.
 
 ## Requirements *(mandatory)*
@@ -418,7 +532,8 @@ the exceptions FR-050 and FR-054 name.
   cleanly with `ocelle-fact` children (Q1 b) and the consumer's content unchanged (FR-003), and reports the result to
   the operator before tasks are generated. The operator then confirms this requirement or replaces it; tasks are not
   generated against FR-004 until then. Confirmed as written by the operator at the plan gate ("Confirm FR-004",
-  2026-11-13).
+  2026-11-13). It holds in every `layout`, `grid` included (FR-014): there each pair is one item of the list, and the
+  plan's phase 1 spike measures that structure against this requirement and stops for the operator if it fails.
 - **FR-005**: Unless `layout` is set (FR-013), the element MUST lay its pairs out as a two-column grid (labels in the
   first, values in the second) while its own inline size, as laid out in two columns (not the viewport's, and never
   its stacked size), is at least a threshold, and as one column (each value directly below its label) below it. In a
@@ -439,7 +554,9 @@ the exceptions FR-050 and FR-054 name.
 - **FR-007**: A value MUST be able to take 003's identifier wrap policy (`overflow-wrap: anywhere`) in a way the
   manifest documents: a property or attribute on the pair or value, or a part the consumer styles. A value holding
   `data-ocelle-wrap="anywhere"` (003's base-style hook) MUST keep that behaviour inside the element. Without the
-  policy, values wrap between words.
+  policy, values wrap between words. The element never truncates a value (no ellipsis); the README says so, and maps
+  both a "break where the word cannot fit" rule and a "break anywhere" rule to `wrap="anywhere"` (operator decision
+  IQ-04 (b); #280's non-goal "truncation that hides values").
 - **FR-008**: The element MUST offer a default and a `compact` density (`density="compact"`). Compact reduces the row
   gap to a smaller `--ocelle-space-*` step and changes no type. Inside a `data-ocelle-density="compact"` region
   (003's compact scale), values MUST take the region's font size and line height (`--ocelle-font-size-sm` at
@@ -470,25 +587,41 @@ the exceptions FR-050 and FR-054 name.
   MUST show each `ocelle-fact` child of an undefined `ocelle-facts` on its own line, so a server-rendered page does
   not run the values together. Labels are attributes and appear only after upgrade; the README MUST say so. Operator
   decision PLAN-FRESH-1-009 (a). An `ocelle-fact` with `hidden` stays hidden before upgrade as after it (FR-003).
-- **FR-013**: `ocelle-facts` MUST offer a `layout` property (`"columns" | "stacked"`, unset by default). `columns`
-  keeps two columns and `stacked` keeps one column at any size; unset, or any other value, gives FR-005's automatic
-  switch. Either set value keeps FR-009's no-horizontal-scroll rule. Operator decision PLAN-FRESH-2-001 (c).
+- **FR-013**: `ocelle-facts` MUST offer a `layout` property (`"columns" | "stacked" | "grid"`, unset by default).
+  `columns` keeps two columns and `stacked` keeps one column at any size; `grid` gives FR-014's grouped cells; unset,
+  or any other value, gives FR-005's automatic switch. Every set value keeps FR-009's no-horizontal-scroll rule and
+  FR-009's lower bound in shrink-to-fit hosts. Operator decisions PLAN-FRESH-2-001 (c) and IQ-05 (b).
+- **FR-014**: With `layout="grid"` (spec-kitty-design #280), each pair MUST be one cell holding its label directly
+  above its value, and the cells MUST sit in a grid of four, two or one columns of equal inline size, filled row by
+  row from the inline start in source order, with no cell spanning more than one column and no empty cell added. The
+  column count MUST be decided on the sheet's own inline size as laid out in four columns (never its two- or
+  one-column size), with no size containment, under the same triggers, the same history independence and the same
+  narrowing as FR-005 and FR-009: four columns while that size is at least twice the threshold of FR-005, two
+  columns while it is at least the threshold, one column below it. The description-list semantics of FR-004 MUST hold
+  (one list, each term followed by its definition, in source order, with no serious or critical axe finding,
+  `definition-list` and `dlitem` included). A long label MUST wrap between words inside its cell; a value with the
+  wrap policy (FR-007) MUST break inside its cell; spacing between cells and between a label and its value MUST come
+  from `--ocelle-space-*` tokens and logical properties; `density="compact"` tightens the gap between rows of cells as
+  it does between pairs (FR-008); the sheet paints no ground, divider or border (the surface is the container's, as
+  #280 asks). Operator decision IQ-05 (b).
 
 ### `ocelle-empty-state` (P2)
 
 - **FR-020**: `ocelle-empty-state` MUST offer slots for a heading (`heading`), a body (default slot), actions
-  (`actions`) and an optional visual above the heading (`visual`, for an icon or an `ocelle-progress`). The heading
+  (`actions`), an optional visual above the heading (`visual`, for an icon or an `ocelle-progress`) and an optional
+  eyebrow between the visual and the heading (`eyebrow`, a short line of text, FR-025; operator decision IQ-08 (c)). The heading
   level is the consumer's: the consumer slots its own heading element, and the element has no `level` property and
   never adds a heading role (the same rule as 011's page header).
-- **FR-021**: The default variant MUST lay out visual, heading, body and actions in one centred column with token gaps
-  and block padding from the `--ocelle-space-*` scale: a visual-to-heading gap, a heading-to-body gap and a
-  body-to-actions gap. The heading is at `--ocelle-font-weight-strong` and the body in `--ocelle-color-ink-muted`,
+- **FR-021**: The default variant MUST lay out visual, eyebrow, heading, body and actions in one centred column with
+  token gaps and block padding from the `--ocelle-space-*` scale: a visual-to-heading gap, a heading-to-body gap and a
+  body-to-actions gap (the eyebrow's gaps are FR-025's). The heading is at `--ocelle-font-weight-strong` and the body in `--ocelle-color-ink-muted`,
   with each value (padding, each gap, weight) named in the plan. Neither variant paints a ground (background) of its
   own: it sits on its container's ground. An `ocelle-progress` in `visual` spans the column, up to the reading measure
   (`--ocelle-measure-reading`), in both variants (operator decision PLAN-FRESH-1-005 (a)).
-- **FR-022**: `variant="panel"` MUST use a larger block padding and larger gaps (each of FR-021's three) than the
-  default variant, and a
-  lighter heading weight than the default (#510). Its values come from the existing `--ocelle-space-*` and `--ocelle-font-weight-*` tokens only, with no new panel
+- **FR-022**: `variant="panel"` MUST use a larger block padding and larger gaps (each of FR-021's three, and each of
+  FR-025's) than the default variant, and a
+  lighter heading weight than the default (#510; operator decision IQ-06 (a): #510's text, not the E-13 code). Its
+  values come from the existing `--ocelle-space-*` and `--ocelle-font-weight-*` tokens only, with no new panel
   token (operator decision Q2); the plan names the steps.
 - **FR-023**: An empty slot MUST take no space and add no gap, wherever it is: the first present part starts at the
   block padding, the last ends at it, and two present parts are separated by the gap the plan names for that pair
@@ -497,6 +630,15 @@ the exceptions FR-050 and FR-054 name.
   therefore empty content, and adding or removing `hidden` on slotted content, or changing slotted text, updates the
   layout. Operator decision PLAN-FRESH-2-007 (a).
 - **FR-024**: The element MUST NOT add a landmark, live region, heading or tab stop of its own. It emits no event.
+- **FR-025**: The `eyebrow` slot's content MUST be laid out between the visual and the heading, in
+  `--ocelle-font-sans` at `--ocelle-font-size-xs`, `--ocelle-font-weight-medium`, `--ocelle-color-ink-muted`, in upper
+  case, from existing tokens only (011's or 012's eyebrow tokens do not exist yet; none is added here, FR-040). It is a
+  part like the others for FR-023: absent when nothing assigned to it renders, and separated from each part that can
+  follow it by a gap the plan names from the `--ocelle-space-*` scale, in both variants, the panel's gaps larger. The
+  element adds no role to it. Operator decision IQ-08 (c).
+- **FR-026**: The element MUST set the block margins of the elements assigned to the default slot to 0 and separate
+  the body's children by `--ocelle-space-2`, in both variants, so the body's first line starts at the body part's
+  block start and its last line ends at its block end, one paragraph or several. Operator decision IQ-09 (b).
 
 ### `ocelle-progress` (P3)
 
@@ -530,8 +672,10 @@ the exceptions FR-050 and FR-054 name.
 - **FR-034**: The element MUST offer a default and a `compact` size (`size="compact"`) with block sizes from tokens,
   the compact one thinner.
 - **FR-035**: With `label` set and the boolean attribute `show-label` present (the labelled variant), the label MUST be shown
-  as text above the bar (default size) or beside it (compact). A determinate bar MAY show its value text beside the
-  label. Visible label and value text use `--ocelle-figures`.
+  as text above the bar (default size) or beside it (compact). A determinate bar with `value-text` MUST show its value
+  text in the same row: at the default size the row above the bar holds the label at its inline start and the value
+  text at its inline end; in compact the row holds the label, the bar and the value text at the row's inline end
+  (operator decision IQ-13 (b)). Visible label and value text use `--ocelle-figures`.
 - **FR-036**: The fill MUST be `--ocelle-color-accent` on a track drawn in a token colour. In light mode the filled
   part (the determinate extent, the indeterminate moving mark and the reduced-motion still mark) MUST always also be
   marked by `--ocelle-color-accent-strong` (an edge, an outline or the fill's end), so its boundary meets 3:1 non-text
@@ -544,7 +688,12 @@ the exceptions FR-050 and FR-054 name.
 - **FR-037**: In forced colours the track MUST have a visible outline and the fill MUST use a system colour distinct
   from the track.
 - **FR-038**: The fill MUST grow from the inline start, mirrored under `dir="rtl"`.
-- **FR-039**: The element emits no event and adds no tab stop.
+- **FR-039**: The element emits no event and adds no tab stop. It has no slot: content the consumer puts inside it
+  (a fallback text) shows only before upgrade and MUST be neither shown nor exposed after it. The README MUST say so,
+  and that a `role` or `tabindex` on the host replaces or alters the progressbar, that a bar named by a nearby heading
+  takes the heading's text as `label`, that the label is text only (no rich label), and that the host is a block whose
+  display and inline size a consumer sets from outside to place it inline (operator decisions IQ-15 (b), IQ-11 (b),
+  IQ-10 (a), IQ-14 (a), IQ-12 (a)).
 
 ### Tokens
 
@@ -588,11 +737,20 @@ the exceptions FR-050 and FR-054 name.
   the element and variant that replaces it (SC-001). The mapping names the roles only and copies no code
   (constitution VI). The variants are those of the inventory the plan's research records (modifiers and states, with
   counts, role names only), supplied by the operator; a variant no element or variant covers goes to the operator.
+  The operator's decisions on the inventory's gaps (IQ-01 to IQ-15) set the rows: among them "facts two-col" to
+  `layout="columns"` with no track override, "facts term regular" to the consumer's `::part(label)` weight, "facts
+  value ellipsis" to `wrap="anywhere"`, the empty-state card, message and ops card to the consumer's own card around
+  the element, "empty-state card dashed" to the #509 family, "empty-state refusal" to the `eyebrow` slot, and "progress
+  labelled by heading", "progress heading", "progress inline" and "progress fallback text" to the README statements of
+  FR-039. The facts section of the README also states FR-005's column tracks are not to be restyled (IQ-01 (a)) and
+  that a sheet in a grid parent takes `min-inline-size: 0` from the consumer (IQ-02 (a)).
 
 ### Key Entities
 
 - **Fact pair** (`ocelle-fact`): one label (short text) and one value (text, an identifier, a number, a date or inline content).
-- **Empty state**: an optional visual, a consumer heading, an optional body, optional actions; a variant.
+- **Fact sheet** (`ocelle-facts`): its pairs, a density and a layout (automatic, `columns`, `stacked` or `grid`).
+- **Empty state**: an optional visual, an optional eyebrow, a consumer heading, an optional body, optional actions; a
+  variant.
 - **Progress**: a value (optional), a maximum, a value text (optional), a name, a size, label visibility.
 
 ## Success Criteria *(mandatory)*
@@ -621,7 +779,9 @@ the exceptions FR-050 and FR-054 name.
   existing scale. The spec fixes only their order (panel larger than default, compact smaller).
 - The progress bar's percentage text, when the platform computes it, is the platform's. The element does not format
   numbers.
-- 011's eyebrow tokens are not needed here. Facts labels are not eyebrows.
+- 011's eyebrow tokens are not needed here. Facts labels are not eyebrows. The empty state's `eyebrow` slot uses
+  existing type tokens (FR-025); a later change to 011's or 012's eyebrow tokens, once they exist, is a baseline
+  change made in a pull request that says why.
 - #15 is not needed by any of the four elements: none has a scroll region.
 - #10 (`specs/006-storybook-workbench`) is merged on `main` (3828d2f) and into this branch; the stories are written
   to its merged contributor note and gates.

@@ -33,8 +33,8 @@ its own line; no label is shown until upgrade (R-01, PLAN-FRESH-2-002).
 | Input | Type | Effective default | Rule |
 |---|---|---|---|
 | `density` (attribute, reflected) | `"compact" \| undefined` | default spacing | `compact` sets the row gap to `--ocelle-space-1`. It changes no type. Any other value acts as unset. |
-| `layout` (attribute, reflected) | `"columns" \| "stacked" \| undefined` | automatic | `columns` keeps two columns and `stacked` one column at any size; unset or any other value gives the automatic switch (R-02, FR-013, PLAN-FRESH-2-001 (c)). |
-| `--ocelle-facts-stack-below` (CSS hook) | absolute length | `calc(var(--ocelle-space-10) * 6)` (24rem) | The threshold below which pairs stack automatically. A percentage, 0 or an invalid value falls back to the default (R-02). |
+| `layout` (attribute, reflected) | `"columns" \| "stacked" \| "grid" \| undefined` | automatic | `columns` keeps two columns and `stacked` one column at any size; `grid` gives cells (label above value) in four, two or one columns (FR-014, IQ-05 (b)); unset or any other value gives the automatic switch (R-02, FR-013, PLAN-FRESH-2-001 (c)). |
+| `--ocelle-facts-stack-below` (CSS hook) | absolute length | `calc(var(--ocelle-space-10) * 6)` (24rem) | The threshold below which pairs stack automatically, and, with `layout="grid"`, below which cells take one column; twice it is the grid's four-column point. A percentage, 0 or an invalid value falls back to the default (R-02). |
 | `--ocelle-facts-value-size` (CSS hook, inherited) | length | `--ocelle-font-size-fact` | The values' font size. `@ocelle/styles` sets it to `--ocelle-font-size-sm` in a `data-ocelle-density="compact"` region and back in a `regular` one (R-03). |
 | `--ocelle-facts-value-line-height` (CSS hook, inherited) | number | `--ocelle-line-height-normal` | The values' line height. `@ocelle/styles` sets it to `--ocelle-line-height-compact` in a compact region and back in a `regular` one. |
 | children | nodes | none | Only `ocelle-fact` children without `hidden` or `aria-hidden="true"` are pairs, in source order. |
@@ -58,6 +58,10 @@ its own line; no label is shown until upgrade (R-01, PLAN-FRESH-2-002).
   - on `window` `resize` (PLAN-FRESH-3-001 (c)).
   Changes of the offered space that none of these reports (named by phase 1's spike, R-02 § Changes the pass does not
   observe) are outside the history-independence guarantee; there the README asks for `layout` or an inline size.
+- `columns` (with `layout === "grid"` only): `gridMeasure` is the sheet's own content-box inline size as laid out in
+  four columns (no column class on the `<dl>`); 4 when `gridMeasure >= 2 × threshold`, 2 when `gridMeasure >=
+  threshold`, else 1. Decided by the same measure pass, on the same triggers, with the same narrowing (R-02 § The
+  grid layout's column count). The pass sets the internal class `cols-2` or `cols-1` (none for 4) unconditionally.
 - `stacked` is not a reactive property and is not bound in the template. The measure pass removes the `stacked` class,
   reads the measure, and sets the class from the decision unconditionally, so the DOM never differs from the decision
   (PLAN-FRESH-3-002).
@@ -71,9 +75,18 @@ its own line; no label is shown until upgrade (R-01, PLAN-FRESH-2-002).
               with the slot assigned to that pair
   </dl>
   ```
+  With `layout="grid"` (IQ-05 (b), R-01):
+  ```text
+  <dl part="list">        (class "cols-2" or "cols-1" set by the measure pass only; none for four columns)
+    per pair: <div class="item"><dt part="label" lang=… dir=…>{label}</dt><dd part="value"><slot/></dd></div>,
+              with the slot assigned to that pair
+  </dl>
+  ```
   The probes are in a zero-size, hidden holder that is a sibling of the `<dl>`.
 
-**Exposed:** one description list, with term and definition per pair (R-01).
+**Exposed:** one description list, with term and definition per pair (R-01), in every layout; in the grid the `<div>`
+groups add no node that separates a term from its definition (measured in phase 1's spike; a failure goes to the
+operator).
 
 **Transitions:**
 - A child is added, removed or reordered, or hidden or shown: the element re-renders and re-assigns the slots.
@@ -83,7 +96,10 @@ its own line; no label is shown until upgrade (R-01, PLAN-FRESH-2-002).
   any history, for every change one of the pass's triggers reports (above).
 - Value text changes in place, a label changes, or the window is resized: the measure pass re-runs, so a stacked sheet
   in a shrink-to-fit host whose two-column size has crossed the threshold leaves the stacked state.
-- `layout` is set or removed: the layout follows it at once.
+- `layout` is set or removed: the layout follows it at once. A change into or out of `grid` re-renders the `<dl>`'s
+  structure (grouped or not) and re-assigns the slots.
+- With `layout="grid"`, the four-column measure crosses T or 2 × T: the column count changes at the next run of the
+  measure pass, from any history, for every change one of its triggers reports.
 
 None of these emits an event.
 
@@ -93,19 +109,21 @@ None of these emits an event.
 |---|---|---|---|
 | `variant` (attribute, reflected) | `"panel" \| undefined` | default variant | `panel` sets the larger padding and gaps and the lighter heading weight (R-04). Any other value acts as unset. |
 | slot `visual` | nodes | none | An icon or an `ocelle-progress`. A slotted `ocelle-progress` is as wide as the column, capped at `--ocelle-measure-reading`. |
+| slot `eyebrow` | nodes | none | A short line above the heading (IQ-08 (c), FR-025): sans, `--ocelle-font-size-xs`, medium, ink-muted, upper case, margins 0. No role added. |
 | slot `heading` | nodes | none | The consumer's own heading element. Its level is the consumer's. |
-| default slot | nodes | none | The body text. |
+| default slot | nodes | none | The body. Assigned elements have block margins 0 and are separated by `--ocelle-space-2`; each assigned element or run of text is its own block (IQ-09 (b), FR-026). |
 | slot `actions` | nodes | none | Buttons or links. |
 
 **Derived values:**
-- `has.visual`, `has.heading`, `has.text` and `has.actions`, each true when something assigned to the slot renders:
+- `has.visual`, `has.eyebrow`, `has.heading`, `has.text` and `has.actions`, each true when something assigned to the slot renders:
   an assigned element whose computed `display` is not `none`, or an assigned text node with non-whitespace text.
   Recomputed on `slotchange` and from a `MutationObserver` on the assigned nodes (`hidden` on elements, character data
   on text nodes), so toggling `hidden` on slotted content updates them (R-04, PLAN-FRESH-2-007 (a)). A part whose flag
   is false is `display: none`.
 - `last`: the last present part. Each present part but `last` carries the `margin-block-end` R-04's table names for it;
   `last` carries none, and no part has a block-start margin. An absent part therefore adds no space and no gap, at
-  the start, in the middle or at the end.
+  the start, in the middle or at the end. The eyebrow's margin depends on whether the heading is present (R-04's
+  table), marked by an internal class from the flags.
 
 **Exposed:** only the slotted content. The element has no role of its own.
 
@@ -121,6 +139,8 @@ None of these emits an event.
 | `size` (attribute, reflected) | `"compact" \| undefined` | default size | `compact` makes the bar thinner and puts the label beside it. |
 | `ground` (attribute, reflected) | `"tinted" \| undefined` | main grounds | `tinted` draws the track boundary in `--ocelle-color-accent-strong`, for inset, accent-low, hover-bg and the state grounds (R-06). |
 | host `aria-label` (observed) | string | none | Overrides `label` for the name (Host ARIA rule). |
+| light-DOM content | nodes | none | Not slotted: shown only before upgrade, neither shown nor exposed after it (IQ-15 (b)). |
+| host `display` | CSS | `block` | The consumer sets it (and an inline size) from outside to place the bar inline (IQ-12 (a)). |
 
 **Derived values:**
 - `effectiveMax`, `effectiveValue` (R-05);
@@ -150,7 +170,9 @@ None of these emits an event.
   still mark;
 - indeterminate, after the sweep, and under reduced motion: the still mark, 30% to 70% of the track, with no running
   animation;
-- each in two sizes, two grounds (`ground` unset or `tinted`), with or without the visible label.
+- each in two sizes, two grounds (`ground` unset or `tinted`), with or without the visible label. With the visible
+  label and a determinate `value-text`, the label is at the row's inline start and the value text at its inline end:
+  the row above the track at the default size, the row holding label, track and value text in compact (IQ-13 (b)).
 
 **Loading episode** (R-06, PLAN-FRESH-2-005 (a), amended by PLAN-FRESH-3-004 (a)): kept on the `document` (not
 public surface), shared by every copy of the package:
