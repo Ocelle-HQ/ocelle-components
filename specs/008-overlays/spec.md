@@ -261,8 +261,9 @@ pointer and keyboard. It is complete when the scenarios below pass in process an
   keeps that choice.
 - **Opener in a shadow root.** The opener is a button inside another element's shadow root (#12's nav item, #7's
   button): focus returns to that inner button, not to its host only.
-- **Opened by the host without an opener.** `open` is set at first render or by a script with focus on the body:
-  initial focus follows FR-007; on close, focus goes back to whatever had it at open.
+- **Opened by the host without an opener.** `open` is set at first render (in the parsed markup, also before the
+  element is defined and upgrades) or by a script with focus on the body: the overlay is shown modally, initial focus
+  follows FR-007; on close, focus goes back to whatever had it at open.
 - **Removed while open.** An open dialog or drawer removed from the document leaves the page with no inert content,
   no top-layer entry and no backdrop; `open` becomes false and no close event is dispatched (FR-022).
 - **Moved while open.** An open overlay removed and re-inserted (a morph, a keyed reorder, a portal), in the same task

@@ -153,18 +153,19 @@ the driver as it was.
   - host close;
   - platform close and the `method="dialog"` form (nothing);
   - focus return and conditional focus return (a), (b), (c);
-  - nested in a drawer (stand-in `ocelle-drawer`-like host built in the test file, replaced by the real drawer in T036);
+  - nested: an inner `ocelle-dialog` slotted inside an open outer `ocelle-dialog`, so the row runs in both harnesses (a stand-in host cannot join the internal overlay stack on the strict-CSP fixture, since the base class is not exported from the browser build); the drawer-under-dialog case is added in T031;
+  - open at first render: `open` in the mounted markup, and `open` set before the element is defined (focus returns to the page button that had it);
   - removed and moved while open;
   - rapid toggle;
   - input during the exit;
   - stale native `close` event;
   - motion read from `animations()`;
-  - computed styles and sizes;
+  - computed styles and sizes: the panel's computed `inline-size` equals the computed `--ocelle-dialog-inline-size` at 1280 × 800 and the computed `dialog-max-inline` (288 px) at the capped 320 × 800;
   - forced colours, both palettes;
   - accessibility tree, including the host `aria-label` open and closed.
 
   Event rows read the state at dispatch from `record()`, and every row ends with the FR-047 counts.
-- [ ] T016 [P] [US1] Write the runners `packages/elements/test/dialog.test.ts` (in process) and `packages/elements/test/browser/dialog.test.ts` (fixture `overlays.html`) over T015.
+- [ ] T016 [P] [US1] Write the runners `packages/elements/test/dialog.test.ts` (in process) and `packages/elements/test/browser/dialog.test.ts` (fixture `overlays.html`) over T015. For the before-definition case of the open-at-first-render row: `packages/elements/test/dialog-upgrade.test.ts` (in process, imports `src/ocelle-dialog.ts` only after the mount) and the fixture page `packages/elements/test/browser/fixtures/overlays-upgrade.html` (like `overlays.html` but loading no element script; the test adds `ocelle-elements.js` by URL as a module script), run from `test/browser/dialog.test.ts`.
 - [ ] T017 [P] [US1] Write `packages/elements/test/entry-dialog.test.ts`: `@ocelle/elements/ocelle-dialog.js` defines `ocelle-dialog` and `ocelle-icon` and no other tag. Add `OcelleDialog` to the sorted keys in `packages/elements/test/exports.test.ts`.
 - [ ] T018 [P] [US1] In `packages/elements/test/node/manifest.test.ts`, the `ocelle-dialog` entry must list:
   - properties and attributes `open` (reflected, default `false`), `label`, `closeLabel`/`close-label` (default "Close");
@@ -177,7 +178,8 @@ the driver as it was.
   - the intro line naming the element;
   - the section with the tokens read (data-model § `ocelle-dialog`);
   - the host pattern;
-  - the R-02, R-03, R-04, R-05 and R-08 statements: the stated limits, focus moves in the `…-close` listener, the `method="dialog"` advice, a label being required, and the closed-host `aria-label` behaviour.
+  - the R-02, R-03, R-04, R-05 and R-08 statements: the stated limits, focus moves in the `…-close` listener, the `method="dialog"` advice, a label being required, and the closed-host `aria-label` behaviour;
+  - where focus lands when the opener is gone (edge case "Opener gone", R-05): the opener while it is connected, not `disabled` and not inert; otherwise the initial focus target of the overlay beneath, if one is open; otherwise the document body.
 - [ ] T027 [P] [US1] Red, in `storybook/test/integration/elements-stories.test.ts` (`open(id, theme, "ocelle-dialog")`): the dialog stories of data-model § Stories exist in light and dark, each renders an open, modal `ocelle-dialog` with base.css applied and no request outside the origin (the Storybook is not a CSP target, R-16). The red commit also holds the story-count updates of R-16 (operator decision D), written by hand from the story files: `gates/test/integration/storybook-build.test.ts` (`built 29 stories`), `gates/test/integration/axe.test.ts` and `gates/test/integration/visual.test.ts` (58 story-themes), counted again after any merge of `main` (R-17). Part of T020's red commit; T026 first.
 - [ ] T020 [US1] Make the red commit of T015 to T019 and T027 (test files only). `red.sh 2 phase` must show each failing because `ocelle-dialog` is undefined, its entry, manifest or README section is missing, or the dialog stories are missing.
 
@@ -262,11 +264,11 @@ the driver as it was.
   - backdrop on each side under `ltr` and `rtl` × veto;
   - panel-padding click, press inside released outside, press outside released inside, and a secondary-button click: nothing;
   - placement `side` × `dir`;
-  - size: `--ocelle-drawer-inline` uncapped, ≤ `dialog-max-inline` capped, unchanged by `--ocelle-dialog-inline-size` on the host;
+  - size, the panel's computed `inline-size`, each `side`: equal to the computed `--ocelle-drawer-inline` uncapped at 1280 × 800, equal to the computed `dialog-max-inline` (288 px) at the capped 320 × 800, unchanged by `--ocelle-dialog-inline-size` on the host;
   - motion `translate` sign by side and direction;
   - `ground`;
   - `heading-hidden`.
-- [ ] T031 [P] [US2] Write the runners `packages/elements/test/drawer.test.ts` and `packages/elements/test/browser/drawer.test.ts`. In `test/scenarios/dialog.ts`, the nested row now uses the real `ocelle-drawer`.
+- [ ] T031 [P] [US2] Write the runners `packages/elements/test/drawer.test.ts` and `packages/elements/test/browser/drawer.test.ts`. Write `packages/elements/test/drawer-upgrade.test.ts` (in process) for the inherited open-at-first-render row's before-definition case, and run it on `overlays-upgrade.html` from `test/browser/drawer.test.ts`. In `test/scenarios/dialog.ts`, add to the nested row the case with an open `ocelle-drawer` as the outer overlay (the dialog slotted inside it); the dialog-in-dialog case stays.
 - [ ] T032 [P] [US2] Write `packages/elements/test/entry-drawer.test.ts` and update the exports test keys. The `manifest.test.ts` entry for `ocelle-drawer` must list:
   - the dialog's members;
   - `side` (`"start" | "end"`, default `"start"`, reflected), `ground` (`"sheet" | "chrome"`, default `"sheet"`, reflected), `headingHidden`/`heading-hidden` (boolean, default `false`, reflected);
