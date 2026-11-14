@@ -24,6 +24,7 @@ import { readScrollWidth, readTextBoxes } from "../../../packages/elements/test/
 // decision PLAN-CORRECTNESS-1-009 (a)) adds the section-header and card stories: each renders its elements with their
 // slotted content in light and dark, and, loaded at 320 × 800 px, the document does not scroll horizontally and no
 // slotted text node is clipped (packages/elements/test/commands.ts `readTextBoxes`), beside the same content rendered.
+// Phase 3 (T028) adds the page-header stories, with the same checks.
 const types: Readonly<Record<string, string>> = {
   ".html": "text/html; charset=utf-8",
   ".js": "text/javascript; charset=utf-8",
@@ -193,6 +194,16 @@ const layoutStories = [
   })),
   { id: "elements-ocelle-card--no-header", tag: "ocelle-card", count: 1, texts: ["Twelve runs this week, ten passed.", "The last run finished an hour ago."] },
   { id: "elements-ocelle-card--nested", tag: "ocelle-card", count: 2, texts: ["Mission", "Runs", "New run", "The outer card holds an inset compact card.", "Mission", "Runs", "New run", "The nested card."] },
+  // 011 phase 3 (T028; US2, FR-033): the page-header stories.
+  { id: "elements-ocelle-page-header--heading-only", tag: "ocelle-page-header", count: 1, texts: ["Missions"] },
+  ...["filled", "compact"].map((name) => ({
+    id: `elements-ocelle-page-header--${name}`,
+    tag: "ocelle-page-header",
+    count: 1,
+    texts: ["Workspace", "Missions", "Every mission of the workspace, newest first.", "Import", "New mission"],
+  })),
+  { id: "elements-ocelle-page-header--empty-heading", tag: "ocelle-page-header", count: 1, texts: ["Workspace", "A page header whose heading slot is empty.", "Import", "New mission"] },
+  { id: "elements-ocelle-page-header--long-heading", tag: "ocelle-page-header", count: 1, texts: ["Workspace", `Missions${"x".repeat(60)}end`, "An unbroken heading wraps inside the band.", "Import", "New mission", "Export"] },
 ] as const;
 
 /** What a layout story's page shows: its theme, its elements, each defined and upgraded, and the slotted text it draws. */
@@ -206,7 +217,7 @@ async function observeLayout(page: Page, tag: string): Promise<unknown> {
   return { ...shown, texts };
 }
 
-describe("the ocelle-section-header and ocelle-card stories in the built Storybook (011 US1, FR-033)", { timeout: 60_000 }, () => {
+describe("the ocelle-section-header, ocelle-card and ocelle-page-header stories in the built Storybook (011 US1, US2, FR-033)", { timeout: 60_000 }, () => {
   for (const { id, tag, count, texts } of layoutStories) {
     for (const theme of ["light", "dark"] as const) {
       it(`${id} in ${theme}: renders its ${tag} elements with their slotted content, with no request outside the origin`, async () => {
@@ -215,17 +226,19 @@ describe("the ocelle-section-header and ocelle-card stories in the built Storybo
         await page.close();
       });
     }
-    it(`${id} at 320 × 800 px: no horizontal scroll and no clipped text, its content rendered (SC-002, FR-004)`, async () => {
+    it(`${id} at 320 × 800 px: no horizontal scroll and no clipped text, its elements upgraded and its content rendered (SC-002, FR-004)`, async () => {
       const { page } = await open(id, "light", tag);
       await page.setViewportSize({ width: 320, height: 800 });
       await page.evaluate(() => new Promise((resolve) => requestAnimationFrame(resolve)));
       const boxes = await readTextBoxes(page.mainFrame(), "storybook-root");
+      const upgraded = await page.evaluate((tag) => [...document.querySelectorAll(`#storybook-root ${tag}`)].filter((each) => each.shadowRoot !== null).length, tag);
       expect({
+        upgraded,
         scrollWidth: (await readScrollWidth(page.mainFrame())) <= 320,
         clipped: boxes.filter((box) => box.clipped).map((box) => box.text),
         insideViewport: boxes.filter((box) => box.box.x < -0.5 || box.box.x + box.box.width > 320.5).map((box) => box.text),
         texts: boxes.map((box) => box.text.trim()),
-      }).toEqual({ scrollWidth: true, clipped: [], insideViewport: [], texts: [...texts] });
+      }).toEqual({ upgraded: count, scrollWidth: true, clipped: [], insideViewport: [], texts: [...texts] });
       await page.close();
     });
   }
