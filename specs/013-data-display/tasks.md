@@ -290,7 +290,7 @@ order 1 → 2 → 3 → 4:
 
   Also a `packages/elements/CHANGELOG.md` entry for `ocelle-facts` and `ocelle-fact`.
 - [X] T020a [US1] `packages/elements/README.md`: the facts statements of T010a (the grid layout, the wrap policy on machine values in every layout, the columns not restyled, `min-inline-size: 0` in a consumer's CSS grid, the label weight, no truncation and the wrap mapping) and the updated `.sk-facts` mapping rows of research R-11; the `packages/elements/CHANGELOG.md` entry names `layout="grid"`.
-- [ ] T021 [US1] Checks, one heavy job at a time:
+- [X] T021 [US1] Checks, one heavy job at a time:
   1. Run each facts plant of contracts/checks.md once (§ Oracles and § CSS-only behaviours: the A1 `<dl><slot>` structure, slots in reverse order, the U+200B copy, the extra triggers removed, `characterData` removed, class not restored after the measure, the pass run synchronously inside the observer callback (T006a), `fit-content(50%)`→`auto`, `minmax(0, 1fr)`→`1fr`, the `stacked` rule removed, the hook probe ignored, the default probe removed, probes not observed, probe `block-size: 1px`, the compact hooks removed, the `wrap` rule removed, the styles rule removed, `:not([hidden])` removed) and record the results in `specs/013-data-display/reviews/phase-1/plants.md`.
   2. Run `pnpm run gate:manifest`, `gate:style-lint`, `gate:csp`, `gate:prefix`, `gate:test-lint`, `gate:contrast` (unchanged; US1-8 relies on the existing text rows), `gate:storybook-build`, `gate:visual`, `gate:axe` (no `storybook/a11y-exceptions.json` entry added), `gate:plants`, then `gate:mutation -- --base <phase base>`.
   3. Record the three Storybook gates' summary lines and the `visual:update` line in the phase review.

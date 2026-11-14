@@ -72,6 +72,34 @@ declarations), and the pinned counts of `gates/test/manifest.test.ts` and `integ
 No podman cross-engine check was possible in this container. CI's "Visual regression" captures stay the record
 (`storybook/README.md` § Baselines).
 
+## T021 after the operator's plant decision (2026-11-14)
+
+Operator decision (b) "Add test, keep R-03" (`operator-plant-decisions.md`). The unbroken-value body landed in a test
+commit (`3578f88`); it passes against the source and bites under the redefined plant (`plants.md`). Then step 2:
+
+- `gate:contrast`: `contrast: 160 pairs checked in light, 168 in dark (149 required per theme)` (unchanged).
+- `gate:plants` (with `OCELLE_VISUAL_ENGINE=docker`: the gate's default `both` also needs podman, which this
+  container lacks; without it the 46 visual plants are "not run (no container engine)"): the first full run gave
+  `plants: 1 problem in 304 plants`, after the plant trees were brought up to the repository (below); the one problem,
+  `visual/fail-token-changed`, listed the 22 light facts story-themes as unexpected `differs`, which its `why` asks a
+  later story to add. With them added, its shard 16 gave `plants: shard 16 of 28: 3 plants judged, every plant as
+  expected`, and after the last source change shards 1 to 3 (the other gates' 231 plants) each gave `77 plants
+  judged, every plant as expected`. The plant trees brought up to the repository: the eight `manifest` plant
+  manifests gained the two facts declarations (their committed copies were stale against the source); the two
+  `style-lint` element-property plant manifests declare the three facts hooks the facts source references;
+  `storybook-build/fail-empty-index` replaces the facts story file too.
+- `gate:mutation -- --base 30e5130`: the first run left 37 survivors. Bodies were added for those with observable
+  behaviour (test commits `f05c389` and `c932aec`): a standalone fact without a label, aria-hidden, lang and dir
+  changed after render, the content-box measure, the threshold boundaries, a moved sheet's hook, a reconnection with
+  changed children (in process only), and three token-only cases. The rest are recorded as equivalent in the source
+  (16 `Stryker disable next-line` records with reasons: the disconnection cleanup of a sheet out of the document,
+  the observer's render-or-measure choice and frame coalescing, which only add idempotent passes, re-observing
+  probes, the initial `#inSheet`, and `cols-2` below the threshold, which `cols-1` overrides). Final:
+  `mutation: 300 mutants on the changed lines of 4 files, none survived; 0 timeouts, 66 compile errors, 1 zero-mutant
+  entry; 16 equivalent records`. The only source change besides the records is `#mutated`'s `else if` split into
+  `if … return` and `if`, so a record can sit above the measure branch.
+- `pnpm test`: 3429 tests passed.
+
 ## Gate lines recorded so far (T021 step 3, partial)
 
 Run before the plant stop, on the green tree: `axe: 86 story-theme runs, 0 serious or critical; 10 notes (0 incomplete,
@@ -83,4 +111,4 @@ because the phase stopped at T021 step 1 (`plants.md`): `gate:contrast`, `gate:p
 
 ## Left open
 
-- **T021**: stopped at step 1, the `minmax(0, 1fr)` → `1fr` plant does not bite (`plants.md`, question with options).
+Nothing in phase 1. T021 was stopped at step 1 (the value-track plant) until the operator's decision above.

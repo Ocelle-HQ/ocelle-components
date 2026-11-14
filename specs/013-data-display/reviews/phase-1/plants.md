@@ -16,7 +16,8 @@ plant is committed.
 | class not restored after the measure (toggled only when the decision changes) | the 300 → 290 px body | bites: fails |
 | the measure pass run synchronously inside the `ResizeObserver` callback (T006a) | the no-loop-error test | bites: fails |
 | `fit-content(50%)` replaced by `auto` | the very long label body | bites: fails |
-| **`minmax(0, 1fr)` replaced by `1fr`** (two-column value track and stacked track) | US1-3 | **does not bite: US1-3 passes** (stop-and-ask, below) |
+| `minmax(0, 1fr)` replaced by `1fr` (two-column value track and stacked track), as first written | US1-3 | did not bite (stop-and-ask, below); redefined by the operator's decision (b) |
+| **the value track `1fr` and the `<dd>`'s `min-inline-size: 0` removed** (redefined plant, operator decision (b)) | the unbroken-value body (600 px, 64-character value without `wrap`) | **bites: that body fails; the other 52 pass** |
 | the `stacked` one-column rule removed | US1-2, resize | bites: both fail |
 | the hook probe ignored | the valid-hook body | bites: fails |
 | the default probe removed | the hook-fallback body | bites: fails |
@@ -67,3 +68,20 @@ value column).
 - **(c) Add the body of (b) and keep the plant as written.** The body asserts the column; the plant as named would
   still not bite (the `<dd>` rule holds), so this also needs the `<dd>` rule dropped from the element (relying on the
   track function alone) — a source change against R-03's "cells with `min-inline-size: 0`".
+
+## Resolution: operator decision (b) "Add test, keep R-03" (2026-11-14)
+
+Recorded in `operator-plant-decisions.md`. The `<dd>` keeps `min-inline-size: 0` (R-03). A body was added in its own
+test commit (`3578f88`, test files only): a 600 px two-column sheet whose value is an unbroken 64-character identifier
+without `wrap`, asserting that the value column ends at the sheet's edge, starts `--ocelle-space-4` after the label
+column, is shared by a short pair, and that the value overflows its box. It passes against the current source, which
+already keeps the column, so no source change follows it and no `fix-1` red record was made (`red.sh` records only a
+red commit). Run once on 2026-11-14, all 53 facts bodies in process:
+
+| Plant | Result |
+|---|---|
+| the value track `1fr` (two-column and stacked) and the `<dd>`'s `min-inline-size: 0` removed | bites: the unbroken-value body fails (column widened past the sheet); 52 pass |
+| the value track `1fr` alone | 53 pass: equivalent while the `<dd>` keeps `min-inline-size: 0` (its automatic minimum is 0) |
+| the `<dd>`'s `min-inline-size: 0` removed alone | 53 pass: equivalent while the track is `minmax(0, 1fr)` (its minimum is 0) |
+
+Each of the two rules alone keeps the column; the redefined plant removes both and is the one that bites.

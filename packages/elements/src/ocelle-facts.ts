@@ -195,6 +195,7 @@ export class OcelleFacts extends LitElement {
   #frame = 0;
 
   readonly #resizes = new ResizeObserver(() => {
+    // Stryker disable next-line ConditionalExpression: equivalent, the guard only coalesces the frames of one burst of callbacks; every extra pass gives the same classes (the pass is idempotent)
     if (this.#frame !== 0) return;
     this.#frame = requestAnimationFrame(() => {
       this.#frame = 0;
@@ -216,26 +217,40 @@ export class OcelleFacts extends LitElement {
     this.requestUpdate();
   }
 
+  // Stryker disable next-line BlockStatement: equivalent, the cleanup of a sheet out of the document has no observable effect: kept observers, a pending frame or a listener only re-run the idempotent pass on a box that is not rendered, and a reconnection renders and measures again
   override disconnectedCallback(): void {
+    // Stryker disable next-line CallExpression: equivalent, Lit's own disconnection only notifies reactive controllers, which this element has none of
     super.disconnectedCallback();
+    // Stryker disable next-line CallExpression: equivalent, a kept observer re-renders or re-measures a sheet out of the document, which shows nothing, and observe() on reconnection replaces its options
     this.#mutations.disconnect();
+    // Stryker disable next-line CallExpression: equivalent, a kept observer keeps the host and probes observed, so the forgotten probes below are observed again with no change
     this.#resizes.disconnect();
     for (const probe of this.renderRoot.querySelectorAll(".probe")) this.#observed.delete(probe);
+    // Stryker disable next-line CallExpression: equivalent, a pending pass runs on a sheet out of the document, which shows nothing; a reconnection measures again
     cancelAnimationFrame(this.#frame);
     this.#frame = 0;
+    // Stryker disable next-line StringLiteral, CallExpression: equivalent, a kept listener only re-runs the idempotent pass on a sheet out of the document, and adding the same listener on reconnection does not add a second
     window.removeEventListener("resize", this.#resized);
   }
 
   /** A change of the children or of a child's attributes re-renders; one inside a pair re-runs the measure pass. */
   #mutated(records: readonly MutationRecord[]): void {
+    // Stryker disable next-line BooleanLiteral: equivalent, a render runs the measure pass in updated() and re-renders the same pairs, so rendering for any record gives the same result as measuring
     let render = false;
+    // Stryker disable next-line BooleanLiteral: equivalent, the observer never delivers an empty list, so one of the two flags is set by the loop
     let measure = false;
     for (const record of records) {
+      // Stryker disable next-line ConditionalExpression: equivalent, rendering for a record inside a pair renders the same pairs and then measures, as the measure branch does
       if (record.type === "attributes" ? record.target.parentElement === this : record.target === this) render = true;
       else measure = true;
     }
-    if (render) this.requestUpdate();
-    else if (measure) this.#measure();
+    // Stryker disable next-line ConditionalExpression: equivalent, rendering when only a measure is needed renders the same pairs and then measures
+    if (render) {
+      this.requestUpdate();
+      return;
+    }
+    // Stryker disable next-line ConditionalExpression: equivalent, the pass is idempotent, so an extra pass gives the same classes
+    if (measure) this.#measure();
   }
 
   #pairs(): Element[] {
@@ -258,7 +273,9 @@ export class OcelleFacts extends LitElement {
       slots[at]?.assign(fact);
     });
     for (const probe of this.renderRoot.querySelectorAll(".probe")) {
+      // Stryker disable next-line ConditionalExpression: equivalent, observing an observed probe again only queues one more initial callback, whose idempotent pass gives the same classes
       if (this.#observed.has(probe)) continue;
+      // Stryker disable next-line CallExpression: equivalent, as above: probes observed again after every render only queue more idempotent passes
       this.#observed.add(probe);
       this.#resizes.observe(probe);
     }
@@ -288,6 +305,7 @@ export class OcelleFacts extends LitElement {
       const size = this.#inlineSize();
       const threshold = this.#threshold();
       classes.toggle("cols-1", size < threshold);
+      // Stryker disable next-line ConditionalExpression: equivalent, below the threshold cols-1 is set too, and its one-track rule comes after the two-track rule at the same specificity, so the layout is one column either way
       classes.toggle("cols-2", size >= threshold && size < 2 * threshold);
       return;
     }

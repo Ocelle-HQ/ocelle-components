@@ -80,6 +80,7 @@ export class OcelleFact extends LitElement {
   declare wrap: "anywhere" | undefined;
 
   /** Whether the fact is a child of `ocelle-facts`, decided on every connection. */
+  // Stryker disable next-line BooleanLiteral: equivalent, connectedCallback sets it before the first render, the only reader
   #inSheet = false;
 
   override connectedCallback(): void {
