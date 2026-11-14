@@ -113,12 +113,15 @@ export class OcelleDrawer extends OcelleOverlay {
     this.side = "start";
     this.ground = "sheet";
     this.headingHidden = false;
+    // Only the primary pointer's press is recorded; another pointer's leaves the record as it is.
     this.addEventListener("pointerdown", (event) => {
-      this.#pressedOutside = event.button === 0 && event.isPrimary && this.#outside(event);
+      if (event.isPrimary) this.#pressedOutside = event.button === 0 && this.#outside(event);
     });
-    // A `click` comes from the primary button, after its own press.
+    // A click consumes its press: one with no press of its own (a script's click()) is no backdrop click.
     this.addEventListener("click", (event) => {
-      if (this.#pressedOutside && this.#outside(event)) this.requestClose("backdrop");
+      const pressed = this.#pressedOutside;
+      this.#pressedOutside = false;
+      if (pressed && this.#outside(event)) this.requestClose("backdrop");
     });
   }
 
