@@ -393,7 +393,13 @@ export class OverflowRegion implements ReactiveController {
     // moves to the box inside it, both ends are in the host's shadow root, so the event does not reach the host.
     const frame = box.closest<HTMLElement>(".region-frame");
     frame?.setAttribute("tabindex", "-1");
-    frame?.addEventListener("focusout", () => frame.removeAttribute("tabindex"), { once: true });
+    frame?.addEventListener(
+      "focusout",
+      () => {
+        frame.removeAttribute("tabindex");
+      },
+      { once: true },
+    );
     frame?.focus();
   }
 
