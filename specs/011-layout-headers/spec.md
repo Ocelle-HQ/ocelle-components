@@ -103,13 +103,15 @@ the personal drawer itself stay with #12 and #16."
   `align-self` still wins, and the README says so (FR-023, FR-025, FR-036, US3-4, US4-2).
 
 **Operator decision in phase 4** (2026-11-14, human:jeroennouwsdev; `reviews/operator-decisions-implementation.md`
-decision 6, measured in `reviews/phase-4/flex-column-probe.log`):
+decisions 6 and 7, measured in `reviews/phase-4/flex-column-probe.log`):
 
 - Sidebar in a flex column or flex row, "README statement": with `align-self: start` the sidebar fills a block or grid
   container's inline size but takes its content's inline size in a flex column or flex row (95 of 800 px); a page
-  rule `align-self: stretch` on the host gives a flex column's full inline size, and block size and the footer at the
-  block end hold in every case. `align-self: start` stays, no scenario changes, and FR-036 gains a README statement
-  for the sidebar that the container or the page sets its inline size there (FR-023, FR-036).
+  rule `align-self: stretch` on the host gives it the container's inline size in a flex column only (in a flex row it
+  acts on the block axis), and block size and the footer at the block end hold in every case. `align-self: start`
+  stays, no scenario changes, and FR-036 gains a README statement for the sidebar that the container sets its inline
+  size there, and in a flex column `align-self: stretch` on the host also does (decision 7, "Tighten the wording")
+  (FR-023, FR-036).
 
 **Constitution decision recorded by triage**: #8 and spec-kitty-design#529 ask for a "12 px mono uppercase" eyebrow.
 Constitution II says "No monospace anywhere", so the eyebrow is set in Schibsted Grotesk, uppercase and tracked
@@ -813,9 +815,10 @@ orientation with focus inside, and reflow at 320 px.
     content when taller, scrolling being the container's, in a block, flex-row or grid container alike, because the
     host is `align-self: start`; a page rule on the host's `align-self` wins (so a page that sets it to `stretch`
     in a flex row or grid of definite block size keeps the element at the container's size) (FR-023, FR-025);
-  - sidebar: in a flex column or flex row the container or the page sets its inline size (an `inline-size`, a `flex`
-    value, a grid track, or `align-self: stretch` on the host), since `align-self: start` leaves it at its content's
-    inline size there (FR-023; operator decision in phase 4);
+  - sidebar: in a flex row or a flex column the container sets its inline size (an `inline-size`, a `flex` value, a
+    grid track), since `align-self: start` leaves it at its content's inline size there; in a flex column
+    `align-self: stretch` on the host also gives it the container's inline size (FR-023; operator decision in
+    phase 4);
   - rail: the orientation example of US4-10, a viewport media query with an exclusive bound
     (`matchMedia("(width < Npx)")`); that items are sized by themselves (`--ocelle-size-rail-item`); and that `<a>`
     items need `color: inherit` (or are `ocelle-nav-item` elements) and a target of at least 24 px (FR-027).

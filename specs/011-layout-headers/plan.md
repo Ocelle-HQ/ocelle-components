@@ -92,8 +92,9 @@ exception.*
    so it fills its container or grows past it in a block, flex-row or grid container (operator decision at the
    phase-1 spike, option (a): without `align-self: start` it stayed at a shorter flex-row or grid container's size;
    a page rule on the host's `align-self` wins, stated in the README; in a flex column or flex row it takes its
-   content's inline size, and the README states that the container or the page sets it there, operator decision 6
-   of `reviews/operator-decisions-implementation.md`); sections `display: block`; each section's `border-block-start` except the first by
+   content's inline size, and the README states that the container sets it there and that in a flex column
+   `align-self: stretch` on the host also does, operator decisions 6 and 7 of
+   `reviews/operator-decisions-implementation.md`); sections `display: block`; each section's `border-block-start` except the first by
    `::slotted(:nth-child(1 of :not([slot]):not([hidden])))`, every section rule excluding `[hidden]` so a hidden
    section (an `ocelle-section-header` included) draws nothing (PLAN-FRESH-2-001); a section's padding, inline
    margins, divider and display are `!important`, as the slot convention's slotted box rules are, so a page reset

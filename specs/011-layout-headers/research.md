@@ -322,9 +322,10 @@ ones skipped), so a `<p>` footer sits `--ocelle-space-4` from every side of its 
   container but 95 px (its content's) in a flex column and a flex row, 800 px in a flex column with a page rule
   `align-self: stretch` on the host (not in a flex row, where it acts on the block axis) or with content wider than
   the container, and 600 px tall in every case. The sidebar's inline size
-  is the container's concern (FR-023); the README says that in a flex column or flex row the container or the page
-  sets it (an `inline-size`, a `flex` value, a grid track, or `align-self: stretch` on the host; FR-036, operator
-  decision 6 of `reviews/operator-decisions-implementation.md`). The declaration is covered by US3-4's flex-row and
+  is the container's concern (FR-023); the README says that in a flex row or a flex column the container sets it (an
+  `inline-size`, a `flex` value, a grid track) and that in a flex column `align-self: stretch` on the host also gives
+  it the container's inline size (FR-036, operator decisions 6 and 7 of
+  `reviews/operator-decisions-implementation.md`). The declaration is covered by US3-4's flex-row and
   grid variants (contracts/checks.md § Pairing plants, the US3-4 row) and by its R-17 style plant.
 
 **Rationale**: the spec's divider placement (FR-022 as fixed for SPEC-3-01 and for PLAN-CORRECTNESS-1-004) with no
