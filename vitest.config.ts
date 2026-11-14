@@ -85,11 +85,15 @@ export default defineConfig({
         // stryker.elements.config.json (R-12). The node, build and fixture tests run in their own projects below. The
         // axTree and emulateForcedColors commands read Chromium's accessibility tree over CDP and switch forced colours
         // for the shared scenario bodies (packages/elements/test/commands.ts). Each test file keeps its own iframe and
-        // custom-element registry (isolate, the default).
+        // custom-element registry (isolate, the default). Its files run one at a time (specs/010-feedback-forms phase 2
+        // stop 1, operator decision (b), reviews/phase-2/decision-stop-1.md): the in-process timing files (the notice
+        // suites, the plants file, the capture and timing files) measure gaps in fractions of the test W = 100 ms, and
+        // two pages of this project running at once overshot drive.after by more than 2W/3.
         test: {
           name: "elements",
           include: ["packages/elements/**/*.test.ts"],
           exclude: [...excluded, "packages/elements/test/node/**", "packages/elements/test/build/**", "packages/elements/test/browser/**"],
+          fileParallelism: false,
           browser: {
             enabled: true,
             provider: playwright({ launchOptions }),
