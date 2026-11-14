@@ -270,6 +270,79 @@
     {
       "declarations": [
         {
+          "attributes": [
+            {
+              "default": "undefined",
+              "description": "The heading's size: `regular` or `compact`. Not set, or any other value, draws regular, the heading at\n`--ocelle-font-size-2xl`; `compact` draws it at `--ocelle-font-size-xl`. Reflected.",
+              "fieldName": "size",
+              "name": "size",
+              "type": {
+                "text": "\"regular\" | \"compact\" | undefined"
+              }
+            }
+          ],
+          "cssParts": [],
+          "cssProperties": [],
+          "customElement": true,
+          "description": "A screen's page header: a band around a heading the page slots, with an optional eyebrow above, a description under\nthe heading and actions at its inline end, ruled off below.",
+          "events": [],
+          "kind": "class",
+          "members": [
+            {
+              "attribute": "size",
+              "default": "undefined",
+              "description": "The heading's size: `regular` or `compact`. Not set, or any other value, draws regular, the heading at\n`--ocelle-font-size-2xl`; `compact` draws it at `--ocelle-font-size-xl`. Reflected.",
+              "kind": "field",
+              "name": "size",
+              "privacy": "public",
+              "reflects": true,
+              "type": {
+                "text": "\"regular\" | \"compact\" | undefined"
+              }
+            }
+          ],
+          "name": "OcellePageHeader",
+          "slots": [
+            {
+              "description": "The page's own heading element (`h1` to `h6`, usually the screen's `h1`), drawn with the display style; its level is the page's.",
+              "name": "heading"
+            },
+            {
+              "description": "A short label above the heading naming the area, drawn with the eyebrow style.",
+              "name": "eyebrow"
+            },
+            {
+              "description": "A subtitle under the heading.",
+              "name": "description"
+            },
+            {
+              "description": "The screen's controls at the inline end of the heading's first line, wrapping under the description when they do not fit beside the heading.",
+              "name": "actions"
+            }
+          ],
+          "superclass": {
+            "name": "LitElement",
+            "package": "lit"
+          },
+          "tagName": "ocelle-page-header"
+        }
+      ],
+      "exports": [
+        {
+          "declaration": {
+            "module": "src/ocelle-page-header.ts",
+            "name": "OcellePageHeader"
+          },
+          "kind": "js",
+          "name": "OcellePageHeader"
+        }
+      ],
+      "kind": "javascript-module",
+      "path": "src/ocelle-page-header.ts"
+    },
+    {
+      "declarations": [
+        {
           "attributes": [],
           "cssParts": [],
           "cssProperties": [],
