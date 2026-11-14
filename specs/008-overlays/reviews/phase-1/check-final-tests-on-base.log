@@ -1,5 +1,5 @@
 Scope: all 5 workspace projects
-✓ Lockfile passes supply-chain policies (verified 39m ago)
+✓ Lockfile passes supply-chain policies (verified 2h ago)
 Lockfile is up to date, resolution step is skipped
 Packages are hard linked from the content-addressable store to the virtual store.
   Content-addressable store is at: /root/.local/share/pnpm/store/v11
@@ -35,7 +35,7 @@ devDependencies:
 + vite 8.3.5
 + vitest 5.0.5
 
-Done in 390ms using pnpm v12.16.1
+Done in 457ms using pnpm v12.16.1
 $ node gates/bin/setup-offline.ts
 setup: installed offline; Chromium at /opt/pw-browsers/chromium-1243/chrome-linux64/chrome
 $ node gates/bin/test.ts
@@ -55,5 +55,5 @@ packages/elements/test/harness.test.ts:20: unit-tests: the harness self-tests, i
 packages/elements/test/harness.test.ts:20: unit-tests: the harness self-tests, in process (R-14) reducedMotion(on): off by default, set,…: TypeError: commands.emulateReducedMotion is not a function
 packages/elements/test/harness.touch.test.ts:13: unit-tests: the harness self-tests of the touch context, in process (R-14) device(): the touch context has maxTouc…: AssertionError: expected { touch: false } to deeply equal { touch: true }
 packages/elements/test/harness.touch.test.ts:13: unit-tests: the harness self-tests of the touch context, in process (R-14) touchTap(): a tap on a pad gives a poin…: TypeError: commands.touchTap is not a function
-unit-tests: 16 of 3148 tests failed
+unit-tests: 16 of 3152 tests failed
 [ELIFECYCLE] Test failed. See above for more details.
