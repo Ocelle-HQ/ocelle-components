@@ -186,6 +186,38 @@
     {
       "declarations": [
         {
+          "attributes": [],
+          "cssParts": [],
+          "cssProperties": [],
+          "customElement": true,
+          "description": "A context sidebar: a navigation landmark holding a head, sections and a footer.",
+          "events": [],
+          "kind": "class",
+          "members": [],
+          "name": "OcelleContextSidebar",
+          "slots": [],
+          "superclass": {
+            "name": "LitElement",
+            "package": "lit"
+          }
+        }
+      ],
+      "exports": [
+        {
+          "declaration": {
+            "module": "src/ocelle-context-sidebar.ts",
+            "name": "OcelleContextSidebar"
+          },
+          "kind": "js",
+          "name": "OcelleContextSidebar"
+        }
+      ],
+      "kind": "javascript-module",
+      "path": "src/ocelle-context-sidebar.ts"
+    },
+    {
+      "declarations": [
+        {
           "attributes": [
             {
               "default": "undefined",
