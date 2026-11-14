@@ -24,7 +24,13 @@ import { describe, expect, it } from "vitest";
 // `ocelle-workflow-board` (its layout, attribute, slot, tokens, tree, lane content, ground, wide content, nested images,
 // shrink-to-fit hosts and the width-only change) and `ocelle-workflow-lane` (its attributes, the name rule with no
 // built-in word, the hidden visible text, no live region, the `color-sheet` ground, the flat variant, its tokens and
-// the title wrapping), their entry points and their CHANGELOG entries.
+// the title wrapping), their entry points and their CHANGELOG entries. Since 009 phase 4 (T052, T060):
+// `ocelle-list-detail` (its attributes, slots, `remeasure()`, tokens, widths and borders, the focus rule, the upgrade
+// rule and the host's own landmarks), the container-tier convention under the element conventions (one assertion per
+// item of FR-034: the own measured size, the grammar and its resolution, the token default and its fallback, exclusive
+// bounds, the forcing boolean, no `container-type`, tier-independent intrinsic sizes, the re-measure triggers, the
+// unseen changes and `remeasure()`, the cost of one pass, the loop message and setting the attributes from a task),
+// its entry point and its CHANGELOG entries.
 /** A file's text, relative to the package; empty while it does not exist, so each assertion reports what is missing. */
 function read(file: string): string {
   const url = new URL(`../../${file}`, import.meta.url);
@@ -186,6 +192,35 @@ const fragments = [
   "`ocelle-workflow-lane` reads the tokens `--ocelle-color-sheet`, `--ocelle-radius-row`, `--ocelle-space-3`, `--ocelle-font-size-sm`, `--ocelle-font-size-xs`, `--ocelle-font-weight-strong`, `--ocelle-color-ink`, `--ocelle-color-ink-soft`, `--ocelle-color-ink-muted`, `--ocelle-tracking-caps`, `--ocelle-font-sans`, `--ocelle-figures` and `--ocelle-border-width`; the board gives it `--ocelle-lane-min-width`",
   "A long title wraps between words, and a word wider than the lane breaks inside it; the lane does not widen for it, and the count stays visible",
   "`ocelle-workflow-lane` has no event, CSS part or CSS custom property",
+  // ocelle-list-detail (009 FR-022 to FR-029, FR-034; contracts/elements.md § `ocelle-list-detail`; research.md R-11,
+  // R-13, R-14; Edge Cases; T052)
+  "`ocelle-list-detail` lays out a list beside the selected record's detail, with an optional inspector: three columns when there is room for them, two with the inspector stacked under the detail, and one pane at a time below its threshold or when the host sets `narrow`",
+  "`collapse-below` (attribute, and property `collapseBelow`, not reflected): one column below this length; the default is `--ocelle-list-detail-collapse` (40rem) as computed on the element",
+  "`inspector-below` (attribute, and property `inspectorBelow`, not reflected): the inspector stacks under the detail below this length; the default is `--ocelle-list-detail-inspector-collapse` (60rem) as computed on the element",
+  "`narrow` (attribute and property, reflected): forces the one-column layout whatever the element's size",
+  "`detail-open` (attribute, and property `detailOpen`, reflected): in one column, shows the detail pane, with the inspector stacked under it, instead of the list; in two or three columns it has no effect",
+  "`remeasure()`: requests a measurement of the element's intrinsic sizes for the next animation frame, for a change the element cannot see",
+  "It has three slots: `list`, the list pane; the default slot, the detail pane; and `inspector`, the optional inspector pane. An empty `inspector` slot adds no track, no border and no space",
+  "`ocelle-list-detail` reads the tokens `--ocelle-list-track-width`, `--ocelle-shell-inspector-width`, `--ocelle-list-detail-collapse`, `--ocelle-list-detail-inspector-collapse`, `--ocelle-color-rule`, `--ocelle-border-width`, `--ocelle-focus-width` and `--ocelle-color-focus`",
+  "The list pane is `--ocelle-list-track-width` wide, the inspector `--ocelle-shell-inspector-width`, its border included, and the detail takes the rest; a 1 px `--ocelle-color-rule` border, decorative only, runs between adjacent panes, in `CanvasText` in forced colours",
+  "When a layout or `detail-open` change hides the pane that holds focus, the element moves focus to the start of the pane that is shown: that pane takes focus by script only, never as a tab stop, and shows the focus ring inset, in `Highlight` in forced colours. Focus outside the hidden pane is not moved. The way back to the list is the host's own control; the element emits no event",
+  "At upgrade, focus is moved only when it is inside a pane that the first layout hides",
+  "The element adds no role, landmark or name of its own: the host names its own landmarks or headings in the panes",
+  "`ocelle-list-detail` has no event, CSS part or CSS custom property",
+  // the container-tier convention, under the element conventions (009 FR-025, FR-034, SC-009; contracts/elements.md
+  // § Container-tier convention; research.md R-12, R-13; T052)
+  "The container-tier convention: a tier is chosen from the element's own border-box inline size, measured by a `ResizeObserver`, never from the viewport. `ocelle-list-detail` follows it, and so does any later element with tiers",
+  "A threshold is a `*-below` attribute. After trimming ASCII whitespace it accepts exactly `^(?:0|[0-9]+(?:\\.[0-9]+)?(?:px|rem|em))$`, units in any ASCII letter case: `rem` resolves at the root's computed font size and `em` at the host's, and every other value counts as absent",
+  "Without the attribute, the threshold is its token as computed on the element, parsed with the same grammar, so a host that sets the token on the element or an ancestor moves it; a token value that is not an accepted form gives the token's published value",
+  "Bounds are exclusive: the narrower tier applies only below the threshold, and at exactly the threshold the wider tier applies",
+  "A boolean attribute set by the host, such as `narrow`, forces the narrowest tier",
+  "No `container-type` is set on a host that may shrink to fit, such as a flex item, a dialog or a table cell: it would collapse to 0 px there",
+  "The element's intrinsic inline sizes do not depend on the tier it shows: its max-content size is that of its widest tier and its min-content size that of its narrowest, so a shrink-to-fit host cannot make the tier alternate",
+  "The intrinsic sizes are measured in one pass, at most once per animation frame and never inside a `ResizeObserver` callback, after a slot change or a light-DOM node or text change in any pane, shown or hidden, after a call of `remeasure()`, and, synchronously, before a tier change the host sets through an attribute or a property",
+  "Changes with no light-DOM node or text change are not seen and wait for the next of these: an image or a font loading, content a slotted element renders in its own shadow root, and an attribute-only change such as a class swap; the host calls `remeasure()` after one",
+  "One pass renders every pane in the measurement grid twice and restores it: about 10 ms (7 to 19 ms) with a 1000-row list. Attribute changes, such as a selection's `class` or `aria-selected`, run none; light-DOM swaps and text changes run at most one per frame",
+  "Content a consumer mutates inside its own `ResizeObserver` callback can still make the browser report \"ResizeObserver loop completed with undelivered notifications.\" through layout alone, when the shown layout grows a shrink-to-fit host; the element does not cause it and cannot prevent it",
+  "Hosts set `narrow`, `detail-open` and the `*-below` thresholds from a task, not from a `ResizeObserver` callback",
   // two copies on a page (FR-006, Edge Cases)
   "Two copies of the package on one page, two versions or the browser build beside a bundle of the module build, cannot both define an element: the first definition wins and the second import throws nothing",
 ];
@@ -198,6 +233,7 @@ const entryRows = [
   "| `@ocelle/elements/ocelle-scroller.js` | `dist/ocelle-scroller.js` | `ocelle-scroller` only; for hosts with a bundler |",
   "| `@ocelle/elements/ocelle-workflow-board.js` | `dist/ocelle-workflow-board.js` | `ocelle-workflow-board` only, not the lane; for hosts with a bundler |",
   "| `@ocelle/elements/ocelle-workflow-lane.js` | `dist/ocelle-workflow-lane.js` | `ocelle-workflow-lane` only; for hosts with a bundler |",
+  "| `@ocelle/elements/ocelle-list-detail.js` | `dist/ocelle-list-detail.js` | `ocelle-list-detail` only; for hosts with a bundler |",
   "| `@ocelle/elements/browser.js` | `dist/browser/ocelle-elements.js` | every element, Lit inside; for hosts without a bundler |",
   "| `@ocelle/elements/custom-elements.json` | `custom-elements.json` | the manifest, also named by the `customElements` field |",
 ];
@@ -242,7 +278,7 @@ describe("packages/elements/README.md", () => {
   it("lists exactly the entry points of package.json's exports in its Entry points table (FR-002)", () => {
     const manifest = JSON.parse(read("package.json")) as { exports?: Record<string, string> };
     expect(tableRows(read("README.md"), "Entry points")).toEqual(entryRows);
-    expect(Object.keys(manifest.exports ?? {})).toEqual([".", "./ocelle-icon.js", "./ocelle-brand-mark.js", "./ocelle-scroller.js", "./ocelle-workflow-board.js", "./ocelle-workflow-lane.js", "./browser.js", "./custom-elements.json"]);
+    expect(Object.keys(manifest.exports ?? {})).toEqual([".", "./ocelle-icon.js", "./ocelle-brand-mark.js", "./ocelle-scroller.js", "./ocelle-workflow-board.js", "./ocelle-workflow-lane.js", "./ocelle-list-detail.js", "./browser.js", "./custom-elements.json"]);
   });
 
   it("lists the thirteen names of the set, whether each mirrors and the consumer need it meets, in its Icons table (US2-1, FR-018, SC-007)", () => {
@@ -284,6 +320,12 @@ describe("packages/elements/CHANGELOG.md", () => {
     "`@ocelle/elements/ocelle-workflow-board.js`",
     "`@ocelle/elements/ocelle-workflow-lane.js`",
     "`label`, `count`, `count-label` and `variant` (reflected)",
+    // since 009 phase 4 (T060, FR-035)
+    "`ocelle-list-detail`",
+    "`@ocelle/elements/ocelle-list-detail.js`",
+    "`collapse-below`, `inspector-below`, `narrow` (reflected) and `detail-open` (reflected)",
+    "`remeasure()`",
+    "the container-tier convention",
     ...["chevron-start", "chevron-end", "chevron-up", "chevron-down", "arrow-start", "arrow-end", "menu", "close", "folder", "file", "search", "table", "copy"].map((name) => `\`${name}\``),
   ])("names %s under Unreleased / Added (constitution VII, FR-031, SC-008)", (surface) => {
     expect(added).toContain(surface);

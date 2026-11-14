@@ -187,6 +187,24 @@ describe("the fixture driver", { timeout: 60_000 }, () => {
     });
   });
 
+  it("call(id, name) calls the element's method with no argument, then settles: focus() of a button focuses it, and the call returns after at least two animation frames (009 phase 4)", async () => {
+    const page = await open();
+    const driver = fixtureDriver(page.page, page.log);
+    await driver.mount('<button id="a" type="button">A</button><button id="b" type="button">B</button>');
+    await page.page.evaluate(() => {
+      const counted = window as unknown as { ocelleFrames: number };
+      counted.ocelleFrames = 0;
+      const count = (): void => {
+        counted.ocelleFrames += 1;
+        requestAnimationFrame(count);
+      };
+      requestAnimationFrame(count);
+    });
+    await driver.call("b", "focus");
+    const observed = await page.page.evaluate(() => ({ active: document.activeElement?.id, settled: (window as unknown as { ocelleFrames: number }).ocelleFrames >= 2 }));
+    expect({ observed, recorded: await page.finish() }).toEqual({ observed: { active: "b", settled: true }, recorded: clean });
+  });
+
   it("activeElement() names the deep active element: a shadow node under its host's id, a light-DOM element by id, else body", async () => {
     const page = await open();
     const driver = fixtureDriver(page.page, page.log);

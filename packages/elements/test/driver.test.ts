@@ -121,6 +121,18 @@ describe("the in-process driver", () => {
     });
   });
 
+  it("call(id, name) calls the element's method with no argument, then settles: focus() of a button focuses it, and the call returns after at least two animation frames (009 phase 4)", async () => {
+    await driver.mount('<button id="a" type="button">A</button><button id="b" type="button">B</button>');
+    let frames = 0;
+    const count = (): void => {
+      frames += 1;
+      requestAnimationFrame(count);
+    };
+    requestAnimationFrame(count);
+    await driver.call("b", "focus");
+    expect({ active: document.activeElement?.id, settled: frames >= 2 }).toEqual({ active: "b", settled: true });
+  });
+
   it("activeElement() names the deep active element: a shadow node under its host's id, a light-DOM element by id, else body", async () => {
     await driver.mount('<button id="a" type="button">A</button><driver-host id="h"></driver-host><span id="plain"></span>');
     const atRest = await driver.activeElement();

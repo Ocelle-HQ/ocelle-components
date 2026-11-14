@@ -116,6 +116,11 @@ export interface Driver {
   setProperty(id: string, name: string, value: string | undefined): Promise<void>;
   /** Sets an attribute of the element with `id` (null removes it) and waits for it to render. */
   setAttribute(id: string, name: string, value: string | null): Promise<void>;
+  /**
+   * Calls the method `name` of the element with `id` with no argument, then settles (`settle`): since 009 phase 4,
+   * list-detail's `remeasure()` (research.md R-13).
+   */
+  call(id: string, name: string): Promise<void>;
   /** An attribute of the element with `id`, or null. */
   attribute(id: string, name: string): Promise<string | null>;
   /** Sets a CSS property on the element with `id` through the CSSOM (not governed by the CSP), as a host rule does. */
