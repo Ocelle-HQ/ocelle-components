@@ -1,0 +1,11 @@
+{
+  "expect": "fail",
+  "why": "fit-content() with a length (fit-content(200px)) is raw: the allowance takes a percentage only, so a change admitting every fit-content() argument is caught (013 research.md R-10).",
+  "findings": [
+    {
+      "location": "packages/elements/src/x.ts:6",
+      "rule": "ocelle/token-only",
+      "message": "fit-content(200px)"
+    }
+  ]
+}

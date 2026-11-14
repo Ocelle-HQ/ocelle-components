@@ -5,7 +5,7 @@
  * the rest in :where(), (0,1,0). No motion, no @import, no url(), no class. See README.md for the host contract.
  */
 
-/* Base layer: the reset, the body, the root color-scheme, the focus ring, code elements, forced colours. */
+/* Base layer: the reset, the body, the root color-scheme, code elements, ocelle-facts before upgrade, the focus ring, forced colours. */
 
 /* Pseudo-elements are invalid inside :where(), so they follow it: (0,0,0), (0,0,1), (0,0,1). */
 :where(*),
@@ -43,6 +43,14 @@
   font-variant-numeric: var(--ocelle-figures);
 }
 
+/*
+ * ocelle-facts before upgrade (013 research.md R-01, R-07): each value on its own line until the elements are defined.
+ * The whole selector is in :where(), (0,0,0); a hidden fact keeps the user-agent display: none.
+ */
+:where(ocelle-facts:not(:defined) > ocelle-fact:not([hidden])) {
+  display: block;
+}
+
 /* Longhands, so outline-style stays solid when a token is missing (research.md R-05). */
 :where(:focus-visible) {
   outline-style: solid;
@@ -58,13 +66,15 @@
   }
 }
 
-/* Compact scale: the density hook (data-ocelle-density) and the value text style (data-ocelle-value). */
+/* Compact scale: the density hook (data-ocelle-density), which also sets ocelle-facts' value hooks (013 R-03), and the value text style (data-ocelle-value). */
 
 /* On <html> the hook sets the body, never the root, so every rem token keeps its value (research.md R-04). */
 [data-ocelle-density="compact"]:where(:not(html)),
 [data-ocelle-density="compact"] > :where(body) {
   font-size: var(--ocelle-font-size-sm);
   line-height: var(--ocelle-line-height-compact);
+  --ocelle-facts-value-size: var(--ocelle-font-size-sm);
+  --ocelle-facts-value-line-height: var(--ocelle-line-height-compact);
 }
 
 /* Returns a region nested in a compact one to the regular scale. */
@@ -72,6 +82,8 @@
 [data-ocelle-density="regular"] > :where(body) {
   font-size: var(--ocelle-font-size-md);
   line-height: var(--ocelle-line-height-normal);
+  --ocelle-facts-value-size: var(--ocelle-font-size-fact);
+  --ocelle-facts-value-line-height: var(--ocelle-line-height-normal);
 }
 
 /* The value text style, for the main grounds only (README): ids, timestamps, commands and fact values. */

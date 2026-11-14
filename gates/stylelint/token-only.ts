@@ -13,7 +13,8 @@
 // R-03, R-08) `scale` takes only the bare numbers -1 and 1, and any function in its value is raw; and (R-03, R-10) the
 // unit `lh` passes only as `1lh`, as the whole value or, inside `calc()`, once per expression as an operand of `+` or
 // `-` in an expression that references an `--ocelle-*` token, a group that holds only `1lh` counting as that `1lh`
-// (OP4-01); and (R-03, R-09) `aspect-ratio` takes only the bare number 1 as its whole value.
+// (OP4-01); and (R-03, R-09) `aspect-ratio` takes only the bare number 1 as its whole value. Since 013 (research.md R-10)
+// `grid-template-columns` takes the tracks `fit-content(<percentage>)` and `minmax(0, <flex>)`, nothing else nested.
 import stylelint from "stylelint";
 import type { Rule } from "stylelint";
 import valueParser from "postcss-value-parser";
@@ -128,7 +129,27 @@ function admittedLine(calc: valueParser.FunctionNode): Node | undefined {
 }
 
 /**
- * The raw parts of a function: a var() fallback and calc() operands are checked; any other function is raw. `line`
+ * Whether a function is a grid track that 013's allowance admits in `grid-template-columns` (research.md R-10,
+ * PLAN-CORRECTNESS-1-001 (a)): `fit-content(<percentage>)`, one percentage argument, or `minmax(0, <flex>)`, the
+ * number 0 and one `fr` length. Nothing nested, no other argument, no other function (`repeat()` stays raw).
+ */
+function gridTrack(node: valueParser.FunctionNode): boolean {
+  const name = node.value.toLowerCase();
+  const args = node.nodes.filter((child) => child.type !== "space" && child.type !== "comment");
+  const unit = (child: Node | undefined): string | undefined => {
+    if (child?.type !== "word") return undefined;
+    const number = valueParser.unit(child.value);
+    return number === false ? undefined : number.unit.toLowerCase();
+  };
+  if (name === "fit-content") return args.length === 1 && unit(args[0]) === "%";
+  if (name !== "minmax" || args.length !== 3) return false;
+  const [min, comma, max] = args;
+  return min?.type === "word" && min.value === "0" && comma?.type === "div" && comma.value === "," && unit(max) === "fr";
+}
+
+/**
+ * The raw parts of a function: a var() fallback and calc() operands are checked; in `grid-template-columns` (outside
+ * calc()) the two grid tracks of gridTrack() pass (013 R-10); any other function is raw. `line`
  * is the `1lh` the enclosing calc() expression admits; an outermost calc() works out its own.
  */
 function functionRaw(node: valueParser.FunctionNode, property: string, inCalc: boolean, line: Node | undefined): string[] {
@@ -138,6 +159,7 @@ function functionRaw(node: valueParser.FunctionNode, property: string, inCalc: b
     return comma === -1 ? [] : classify(node.nodes.slice(comma + 1), property, inCalc);
   }
   if (name === "calc" || (name === "" && inCalc)) return classify(node.nodes, property, true, inCalc ? line : admittedLine(node));
+  if (property === "grid-template-columns" && !inCalc && gridTrack(node)) return [];
   return [valueParser.stringify(node)];
 }
 

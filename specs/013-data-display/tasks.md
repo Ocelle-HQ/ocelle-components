@@ -165,11 +165,11 @@ order 1 → 2 → 3 → 4:
 
 ### Tests (red, one commit, test files only)
 
-- [ ] T003 [P] [US1] Driver additions `viewport`, `scrollWidth`, `layout`, `copy`, `move`, `text`, as contracts/checks.md § Driver additions specifies:
+- [X] T003 [P] [US1] Driver additions `viewport`, `scrollWidth`, `layout`, `copy`, `move`, `text`, as contracts/checks.md § Driver additions specifies:
   - declared in `packages/elements/test/scenarios/driver.ts`;
   - implemented in `packages/elements/test/in-process.ts` and `packages/elements/test/browser/driver.ts`;
   - their own tests in `packages/elements/test/commands.test.ts` and the driver tests. Behaviour to test: `layout` waits at least 2 animation frames before it compares, then polls once per frame until two consecutive equal frames and fails after 10; a geometry change made in a `requestAnimationFrame` scheduled from a `ResizeObserver` callback (the deferred pass's shape) is read by the wait, never the geometry before it; `copy` returns the copy event's `text/plain`; `text` makes a `characterData` change.
-- [ ] T004 [US1] `packages/elements/test/scenarios/facts.ts`: the facts scenario bodies with the oracles of contracts/checks.md § Oracles (Facts). Every "does not" is paired:
+- [X] T004 [US1] `packages/elements/test/scenarios/facts.ts`: the facts scenario bodies with the oracles of contracts/checks.md § Oracles (Facts). Every "does not" is paired:
   - US1 scenarios 1 to 10 as shared bodies:
     - US1-6 asserts the AX description list and the flat-tree `<dl>` children (`<dt>`/`<dd>` alternating, one pair per visible fact);
     - US1-6, US1-7, US1-10 and the reorder body read `axSubtree` with a distinct value per pair;
@@ -182,7 +182,7 @@ order 1 → 2 → 3 → 4:
   - US1-12's re-decide bodies (widen, relabel, value text, each compared with a fresh load), with the content T001b fixed: each two-column size at least 16 px either side of the 384 px threshold (at most 368 px where one column is expected, at least 400 px where two are), as recorded in `spike.md` and research R-02; the plant bodies wait for the first decision before they act.
   - The 300 → 290 px measure-pass body.
   - The unobserved-change bodies for the case T001 recorded (research R-02 § The unobserved case the spike found): a sheet in the `auto` track of a 600 px consumer CSS grid whose neighbour is removed, once with `layout="columns"` and once with an inline size on the sheet, each giving two columns after the change, paired with a fresh load without the neighbour (two columns).
-- [ ] T004a [US1] `packages/elements/test/scenarios/facts.ts` (continued): the `layout="grid"` bodies (FR-014, IQ-05 (b)) with the oracles of contracts/checks.md § Oracles (grid structure, grid geometry), every "does not" paired:
+- [X] T004a [US1] `packages/elements/test/scenarios/facts.ts` (continued): the `layout="grid"` bodies (FR-014, IQ-05 (b)) with the oracles of contracts/checks.md § Oracles (grid structure, grid geometry), every "does not" paired:
   - US1-13 (four cells at 1280 px; the AX description list; the flat-tree `<dl>` children only `<div>` groups, each one `<dt>` then one `<dd>`; the label-to-value gap exactly `--ocelle-space-1` (the `<dt>`'s block end to the `<dd>`'s block start) and the column gap exactly `--ocelle-space-4` (one group's inline end to the next one's inline start), each value from `packages/tokens/src/source.ts`; the `<dl>`, each group, `<dt>` and `<dd>` with a transparent computed `background-color` and every border style `none`, beside a sibling `<div>` given a ground and a border by a page rule in the same body, read as non-default, FR-014);
   - US1-14 (two columns at 600 px and one at 320 px in one body, page scroll width equal to the viewport width);
   - US1-15 (one, three and eight facts at 1280 px: four equal tracks, empty tracks kept, no spanning);
@@ -192,7 +192,7 @@ order 1 → 2 → 3 → 4:
   - US1-19 (a link, a status text and "Not recorded" as values: shown as given, each inside its own cell; the link's tab stop);
   - the extra grid bodies of contracts/checks.md § Extra scenario bodies: `layout` from `grid` to `columns` and back, `density="compact"` with `grid`, a hidden fact in the grid, the 15rem hook on a 600 px grid sheet;
   - the unobserved change T001a recorded for the grid (research R-02): a `layout="grid"` sheet with the US1-18 content in a consumer CSS grid `auto` track at a 1000 px viewport whose neighbour is removed, with an inline size on the sheet (at least 2 × T): four columns after the change, paired with a fresh load without the neighbour (four columns).
-- [ ] T005 [US1] `packages/elements/test/scenarios/facts.ts` (continued): the extra facts bodies of contracts/checks.md § Extra scenario bodies:
+- [X] T005 [US1] `packages/elements/test/scenarios/facts.ts` (continued): the extra facts bodies of contracts/checks.md § Extra scenario bodies:
   - no pairs (FR-010): empty and whitespace-only sheets render no sized box, expose no list, term or definition, and report no error, paired in the same body with one `ocelle-fact` added giving one description list with one term and one definition;
   - a very long label (FR-005, edge case): in a 600 px two-column sheet, the label column equals 50% of the sheet's content box, the label wraps between words inside it, and the value column takes the rest, beside a short-label pair in the same columns (the guard of T021's `fit-content(50%)`→`auto` plant);
   - dynamic add, remove, reorder and label change;
@@ -210,23 +210,23 @@ order 1 → 2 → 3 → 4:
   - the hook changed at 450 px with no resize;
   - the compact-region bodies (14 px and 1.5 in a compact region, 17 px and 1.45 in a nested regular region, `density="compact"` alone with 17 px and a row gap of `--ocelle-space-1`);
   - unset properties write no attribute (`density`, `layout`, `label`, `wrap`).
-- [ ] T006 [P] [US1] Test files for facts:
+- [X] T006 [P] [US1] Test files for facts:
   - `packages/elements/test/facts.test.ts`: the in-process harness over T004/T005;
   - `packages/elements/test/browser/facts.test.ts`: the fixture harness over T004/T005, which also asserts zero violations, allowed requests and no console message;
   - `packages/elements/test/entry-facts.test.ts`: importing `src/ocelle-facts.ts` alone defines `ocelle-facts` and `ocelle-fact` and no other element;
   - `packages/elements/test/entry-fact.test.ts`: importing `src/ocelle-fact.ts` defines `ocelle-fact` only;
   - `packages/elements/test/entry-root.test.ts`: extended to the two tags and their exported classes.
-- [ ] T006a [US1] `packages/elements/test/facts.test.ts` (in-process harness only; Playwright's `console` and `pageerror` events do not record the error): the no-`ResizeObserver`-loop-error test of contracts/checks.md § Oracles. Around the flips (600 → 300 → 600 px block resize, the dialog widen 360 → 1200 px, the hook 15rem → 40rem → 15rem at 450 px, a grid sheet 300 → 600 → 800 px), each read with the `layout` wait, record `window` `error` events (capture) and `console.error` calls and assert none carries "ResizeObserver loop"; paired with each flip's layout asserted and a synthetic `ErrorEvent` with that message seen by the recorder. Its plant (T021 step 1): the measure pass run synchronously inside the observer callback; the test must fail.
-- [ ] T007 [P] [US1] `packages/elements/test/build/build.test.ts`: the container import rule. `dist/ocelle-facts.js` imports `./ocelle-fact.js` and no other element module, and `dist/ocelle-fact.js` imports no element module (PLAN-CORRECTNESS-1-012 (a)).
-- [ ] T008 [P] [US1] `gates/test/` `token-only` unit tests for the R-10 grid allowance, plus the `gates/README.md` statement test:
+- [X] T006a [US1] `packages/elements/test/facts.test.ts` (in-process harness only; Playwright's `console` and `pageerror` events do not record the error): the no-`ResizeObserver`-loop-error test of contracts/checks.md § Oracles. Around the flips (600 → 300 → 600 px block resize, the dialog widen 360 → 1200 px, the hook 15rem → 40rem → 15rem at 450 px, a grid sheet 300 → 600 → 800 px), each read with the `layout` wait, record `window` `error` events (capture) and `console.error` calls and assert none carries "ResizeObserver loop"; paired with each flip's layout asserted and a synthetic `ErrorEvent` with that message seen by the recorder. Its plant (T021 step 1): the measure pass run synchronously inside the observer callback; the test must fail.
+- [X] T007 [P] [US1] `packages/elements/test/build/build.test.ts`: the container import rule. `dist/ocelle-facts.js` imports `./ocelle-fact.js` and no other element module, and `dist/ocelle-fact.js` imports no element module (PLAN-CORRECTNESS-1-012 (a)).
+- [X] T008 [P] [US1] `gates/test/` `token-only` unit tests for the R-10 grid allowance, plus the `gates/README.md` statement test:
   - `fit-content(<percentage>)` and `minmax(0, <flex>)` in `grid-template-columns` pass;
   - other arguments, other properties, and nested functions are each a finding.
-- [ ] T008a [US1] `gates/test/token-only.test.ts`: four `minmax(0, 1fr)` tracks in one `grid-template-columns` value pass (the grid layout needs no further allowance, research R-10), and `repeat(4, minmax(0, 1fr))` is a finding.
-- [ ] T009 [P] [US1] `@ocelle/styles` tests (contracts/checks.md § `@ocelle/styles` tests):
+- [X] T008a [US1] `gates/test/token-only.test.ts`: four `minmax(0, 1fr)` tracks in one `grid-template-columns` value pass (the grid layout needs no further allowance, research R-10), and `repeat(4, minmax(0, 1fr))` is a finding.
+- [X] T009 [P] [US1] `@ocelle/styles` tests (contracts/checks.md § `@ocelle/styles` tests):
   - `packages/styles/test/browser/compact.test.ts`: the facts hooks inside compact and nested regular regions;
   - a browser test on an undefined `ocelle-facts`: each `ocelle-fact` is a block; a `hidden` child computes `display: none`, has no client rects and is absent from `innerText`; the rule stops matching once the elements are defined;
   - `packages/styles/test/readme.test.ts`: statements for both rules.
-- [ ] T010 [P] [US1] `packages/elements/test/node/readme.test.ts`: statements for the `ocelle-facts` section, one assertion per statement:
+- [X] T010 [P] [US1] `packages/elements/test/node/readme.test.ts`: statements for the `ocelle-facts` section, one assertion per statement:
   - usage, `layout` and the threshold hook `--ocelle-facts-stack-below` (absolute lengths only, with the fallback);
   - FR-009's narrowing as recorded by T001 (research R-02 § The unobserved case the spike found): in a consumer's CSS grid `auto` track whose neighbour can be removed, the layout may stay as it was; set `layout` or give the sheet an inline size there (for `layout="grid"`, an inline size);
   - only `ocelle-fact` children; the wrap policy; digests are the consumer's; compact regions; before upgrade; tokens read;
@@ -234,26 +234,26 @@ order 1 → 2 → 3 → 4:
   - the Builds correction, and the Engines line for manual slot assignment (Chromium 86, WebKit 16.4, floor unchanged).
 
   Also the facts mapping-row statements (FR-058), one per row of the `.sk-facts` inventory in research R-11 (T002a), each keyed by the row's role name (for example "facts compact" names `ocelle-facts` and `density="compact"`). No `sk-` string appears in test code, built directly or indirectly; the README table holds the `.sk-*` names, Markdown being outside `gate:prefix` (operator decision I1, research R-11, contracts/checks.md § Gates touched). If the inventory is missing or has a gap, stop and ask the operator (Decision 5).
-- [ ] T010a [US1] `packages/elements/test/node/readme.test.ts`: statements for the facts input decisions, one assertion per statement (contracts/elements.md § README sections):
+- [X] T010a [US1] `packages/elements/test/node/readme.test.ts`: statements for the facts input decisions, one assertion per statement (contracts/elements.md § README sections):
   - `layout="grid"`: cells with the label above the value, four columns from twice `--ocelle-facts-stack-below`, two from it, one below it; one description list; give a grid sheet in a shrink-to-fit host an inline size; set `wrap="anywhere"` on machine values in a cell (IQ-05 (b)); in every layout, an unbroken value without the policy can overflow its value box or cell, so machine values take `wrap="anywhere"` (FR-009 as qualified, operator decision "Grid limits");
   - do not set `grid-template-columns` through `ocelle-facts::part(list)` (IQ-01 (a));
   - in a consumer's CSS grid, set `min-inline-size: 0` on the `ocelle-facts` host (IQ-02 (a));
   - labels at weight 500; `::part(label)` sets another weight (IQ-03 (a));
   - no truncation; `break-word`, break-anywhere and an ellipsis map to `wrap="anywhere"` with the full value shown (IQ-04 (b));
   - the updated facts mapping rows of research R-11 ("facts stacked", "facts two-col", "facts term regular", "facts value wrap", "facts value ellipsis", "facts value tooltip"), keyed by role name with no `sk-` string in test code.
-- [ ] T011 [P] [US1] `storybook/test/integration/elements-stories.test.ts` (I3, contracts/checks.md § Story test): each facts story of research R-08 is in the built index and renders its `ocelle-facts` in light and dark with no outside request. Each facts story at a 320 px viewport has a page scroll width equal to the viewport width, paired with a non-zero sheet size. Each facts story under reduced motion has no running animation, read on a fresh load and timed by the clock with the `matchMedia` assertion. No facts story animates, so this check is paired only with the `matchMedia` assertion until the animation positive on the indeterminate progress story arrives in T044 (contracts/checks.md § Story test).
-- [ ] T012 [US1] Red commit of T003 to T011 with T004a, T006a, T008a and T010a (test files only). Run `.specify/extensions/story/scripts/red.sh 1 phase` and confirm per body in the red log that each fails on an assertion against the scaffold.
+- [X] T011 [P] [US1] `storybook/test/integration/elements-stories.test.ts` (I3, contracts/checks.md § Story test): each facts story of research R-08 is in the built index and renders its `ocelle-facts` in light and dark with no outside request. Each facts story at a 320 px viewport has a page scroll width equal to the viewport width, paired with a non-zero sheet size. Each facts story under reduced motion has no running animation, read on a fresh load and timed by the clock with the `matchMedia` assertion. No facts story animates, so this check is paired only with the `matchMedia` assertion until the animation positive on the indeterminate progress story arrives in T044 (contracts/checks.md § Story test).
+- [X] T012 [US1] Red commit of T003 to T011 with T004a, T006a, T008a and T010a (test files only). Run `.specify/extensions/story/scripts/red.sh 1 phase` and confirm per body in the red log that each fails on an assertion against the scaffold.
 
 ### Implementation (green)
 
-- [ ] T013 [US1] `packages/elements/src/ocelle-fact.ts` (R-01, R-03, data-model § `ocelle-fact`):
+- [X] T013 [US1] `packages/elements/src/ocelle-fact.ts` (R-01, R-03, data-model § `ocelle-fact`):
   - `label` reflected; `wrap` reflected (`"anywhere" | undefined`);
   - inside `ocelle-facts`, a single `<slot>`; outside it, `<span part="label">` plus the slot as two blocks;
   - placement decided in `connectedCallback`;
   - `:host([wrap="anywhere"]) { overflow-wrap: anywhere }`;
   - `:host([hidden]) { display: none; }`;
   - static styles from tokens only.
-- [ ] T014 [US1] `packages/elements/src/ocelle-facts.ts` (R-01, R-02, R-03, data-model § `ocelle-facts`):
+- [X] T014 [US1] `packages/elements/src/ocelle-facts.ts` (R-01, R-02, R-03, data-model § `ocelle-facts`):
   - shadow root and pairs:
     - `slotAssignment: "manual"`;
     - `<dl part="list">` with `<dt part="label">{label}</dt><dd part="value"><slot></slot></dd>` per visible `ocelle-fact` child;
@@ -270,32 +270,32 @@ order 1 → 2 → 3 → 4:
   - The two-column tracks `fit-content(50%) minmax(0, 1fr)` on the `<dl>`, row gaps `--ocelle-space-3` (compact `--ocelle-space-1`).
   - Label and value type and colours per R-03; values read `--ocelle-facts-value-size` and `--ocelle-facts-value-line-height`.
   - Forced-colours rules; `:host([hidden])`.
-- [ ] T014a [US1] `packages/elements/src/ocelle-facts.ts`: `layout="grid"` (research R-01, R-02, R-03, data-model § `ocelle-facts`):
+- [X] T014a [US1] `packages/elements/src/ocelle-facts.ts`: `layout="grid"` (research R-01, R-02, R-03, data-model § `ocelle-facts`):
   - the grouped template (`<div class="item">` holding the `<dt>` and `<dd>`) when `layout` is `grid`, the slots re-assigned after a structure change;
   - the measure pass in grid: column classes removed, the host read as laid out in four columns, `cols-2` or `cols-1` set unconditionally from T and 2 × T, on the existing triggers;
   - four `minmax(0, 1fr)` tracks (two with `cols-2`, one with `cols-1`), cells with `min-inline-size: 0`, label-to-value gap `--ocelle-space-1`, column gap `--ocelle-space-4`, row gap `--ocelle-space-3` (compact `--ocelle-space-1`); no divider or ground.
-- [ ] T015 [US1] `gates/stylelint/token-only.ts`: the R-10 allowance for `fit-content(<percentage>)` and `minmax(0, <flex>)` in `grid-template-columns`. Add its style-lint plants in `gates/plants/style-lint/` (a pass plant and fail plants for other arguments and properties) and its `gates/README.md` row.
-- [ ] T016 [US1] `packages/styles/src/base.css`: in the density rules, the compact and regular `--ocelle-facts-value-size`/`--ocelle-facts-value-line-height` hooks; the pre-upgrade rule `:where(ocelle-facts:not(:defined) > ocelle-fact:not([hidden])) { display: block; }`; plus `packages/styles/README.md` and `packages/styles/CHANGELOG.md` (R-07, FR-012).
-- [ ] T017 [US1] Manifest: run `pnpm --filter @ocelle/elements run manifest` and commit `packages/elements/custom-elements.json` with the two declarations of contracts/elements.md (`layout` typed `"columns" | "stacked" | "grid" | undefined`). Every list is stated and every member described.
-- [ ] T018 [US1] `storybook/stories/facts.stories.ts`, the facts stories of research R-08 (`title: "Elements/ocelle-facts"`):
+- [X] T015 [US1] `gates/stylelint/token-only.ts`: the R-10 allowance for `fit-content(<percentage>)` and `minmax(0, <flex>)` in `grid-template-columns`. Add its style-lint plants in `gates/plants/style-lint/` (a pass plant and fail plants for other arguments and properties) and its `gates/README.md` row.
+- [X] T016 [US1] `packages/styles/src/base.css`: in the density rules, the compact and regular `--ocelle-facts-value-size`/`--ocelle-facts-value-line-height` hooks; the pre-upgrade rule `:where(ocelle-facts:not(:defined) > ocelle-fact:not([hidden])) { display: block; }`; plus `packages/styles/README.md` and `packages/styles/CHANGELOG.md` (R-07, FR-012).
+- [X] T017 [US1] Manifest: run `pnpm --filter @ocelle/elements run manifest` and commit `packages/elements/custom-elements.json` with the two declarations of contracts/elements.md (`layout` typed `"columns" | "stacked" | "grid" | undefined`). Every list is stated and every member described.
+- [X] T018 [US1] `storybook/stories/facts.stories.ts`, the facts stories of research R-08 (`title: "Elements/ocelle-facts"`):
   - Latin text only;
   - right-to-left stories with `dir="rtl"`;
   - wrapper widths from `data-story` rules in `storybook/.storybook/stories-layout.css`;
   - no `style` attribute, no pointer state.
-- [ ] T018a [US1] `storybook/stories/facts.stories.ts`: the `layout="grid"` stories of research R-08 (four-field strip, two columns, one column, one fact, three facts, eight facts, long label and identifier, link and status value, explicit unavailable value, compact, right-to-left), with their wrapper widths as `data-story` rules in `storybook/.storybook/stories-layout.css`; Latin text only, no `style` attribute, no pointer state. Their baselines are part of T019's `visual:update` run.
-- [ ] T019 [US1] Baselines: run `pnpm run visual:update` in the pinned container. It must print `(<n> added, 0 changed, 0 removed)`, with `<n>` twice the new facts stories. Commit `storybook/baselines/elements-ocelle-facts--*.{light,dark}.png`. If CI's "Visual regression" captures differ, commit CI's artifact instead (`storybook/README.md` § Baselines).
-- [ ] T020 [US1] Documentation in `packages/elements/README.md`:
+- [X] T018a [US1] `storybook/stories/facts.stories.ts`: the `layout="grid"` stories of research R-08 (four-field strip, two columns, one column, one fact, three facts, eight facts, long label and identifier, link and status value, explicit unavailable value, compact, right-to-left), with their wrapper widths as `data-story` rules in `storybook/.storybook/stories-layout.css`; Latin text only, no `style` attribute, no pointer state. Their baselines are part of T019's `visual:update` run.
+- [X] T019 [US1] Baselines: run `pnpm run visual:update` in the pinned container. It must print `(<n> added, 0 changed, 0 removed)`, with `<n>` twice the new facts stories. Commit `storybook/baselines/elements-ocelle-facts--*.{light,dark}.png`. If CI's "Visual regression" captures differ, commit CI's artifact instead (`storybook/README.md` § Baselines).
+- [X] T020 [US1] Documentation in `packages/elements/README.md`:
   - the `ocelle-facts` section, the slotted-item convention, the Builds correction and the Engines line, with the statements of T010;
   - the `.sk-facts` mapping rows (roles only, no code).
 
   Also a `packages/elements/CHANGELOG.md` entry for `ocelle-facts` and `ocelle-fact`.
-- [ ] T020a [US1] `packages/elements/README.md`: the facts statements of T010a (the grid layout, the wrap policy on machine values in every layout, the columns not restyled, `min-inline-size: 0` in a consumer's CSS grid, the label weight, no truncation and the wrap mapping) and the updated `.sk-facts` mapping rows of research R-11; the `packages/elements/CHANGELOG.md` entry names `layout="grid"`.
+- [X] T020a [US1] `packages/elements/README.md`: the facts statements of T010a (the grid layout, the wrap policy on machine values in every layout, the columns not restyled, `min-inline-size: 0` in a consumer's CSS grid, the label weight, no truncation and the wrap mapping) and the updated `.sk-facts` mapping rows of research R-11; the `packages/elements/CHANGELOG.md` entry names `layout="grid"`.
 - [ ] T021 [US1] Checks, one heavy job at a time:
   1. Run each facts plant of contracts/checks.md once (§ Oracles and § CSS-only behaviours: the A1 `<dl><slot>` structure, slots in reverse order, the U+200B copy, the extra triggers removed, `characterData` removed, class not restored after the measure, the pass run synchronously inside the observer callback (T006a), `fit-content(50%)`→`auto`, `minmax(0, 1fr)`→`1fr`, the `stacked` rule removed, the hook probe ignored, the default probe removed, probes not observed, probe `block-size: 1px`, the compact hooks removed, the `wrap` rule removed, the styles rule removed, `:not([hidden])` removed) and record the results in `specs/013-data-display/reviews/phase-1/plants.md`.
   2. Run `pnpm run gate:manifest`, `gate:style-lint`, `gate:csp`, `gate:prefix`, `gate:test-lint`, `gate:contrast` (unchanged; US1-8 relies on the existing text rows), `gate:storybook-build`, `gate:visual`, `gate:axe` (no `storybook/a11y-exceptions.json` entry added), `gate:plants`, then `gate:mutation -- --base <phase base>`.
   3. Record the three Storybook gates' summary lines and the `visual:update` line in the phase review.
 
-- [ ] T021a [US1] Run the grid plants of contracts/checks.md once (the groups not rendered, the four-column rule removed, the grid layout's two-column rule removed, the four-column point at T instead of 2 × T, the grid measure read in the decided layout, the grid `<dt>`'s `margin-block-end` removed, a divider added as a `border-block-end` on each group) and record them in `specs/013-data-display/reviews/phase-1/plants.md`, with T021's step 1 and before its gate runs.
+- [X] T021a [US1] Run the grid plants of contracts/checks.md once (the groups not rendered, the four-column rule removed, the grid layout's two-column rule removed, the four-column point at T instead of 2 × T, the grid measure read in the decided layout, the grid `<dt>`'s `margin-block-end` removed, a divider added as a `border-block-end` on each group) and record them in `specs/013-data-display/reviews/phase-1/plants.md`, with T021's step 1 and before its gate runs.
 
 **Checkpoint**: `tdd-check.sh 1` reports `pass`; quickstart steps 1 to 6 pass for facts.
 

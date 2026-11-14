@@ -15,6 +15,15 @@ entry points and the browser build's file path (constitution VII).
 - `ocelle-brand-mark`, the Ocelle rosette drawn inline from tokens at the `--ocelle-icon-size` token, for the main
   grounds, the chrome (`ground="chrome"`) or in one colour (`tone="mono"`), decorative unless a `label` or a host
   `aria-label` names it; its properties `ground` and `tone` (reflected) and `label`.
+- `ocelle-facts`, a label and value sheet exposed as one description list of its `ocelle-fact` children, two columns
+  or stacked by its own inline size against the hook `--ocelle-facts-stack-below`; its properties `density` and
+  `layout` (reflected), `layout="columns"`, `layout="stacked"` and `layout="grid"` (cells, label above value, in four,
+  two or one columns); its parts `list`, `label` and `value`; the value hooks `--ocelle-facts-value-size` and
+  `--ocelle-facts-value-line-height`.
+- `ocelle-fact`, one pair: its properties `label` and `wrap` (reflected, `wrap="anywhere"` for identifiers); outside a
+  sheet it shows its label above its value. Importing `@ocelle/elements/ocelle-facts.js` also defines it.
+- Entry points `@ocelle/elements/ocelle-facts.js` (defines `ocelle-facts` and `ocelle-fact`) and
+  `@ocelle/elements/ocelle-fact.js` (defines `ocelle-fact` only).
 - In the README, the slot convention for icons in controls that later controls follow: the `icon` and `trailing`
   slots, their size, alignment, gap and colour rules and the naming rule.
 - Entry points: `@ocelle/elements` (the package root, defines every element), `@ocelle/elements/ocelle-icon.js`
