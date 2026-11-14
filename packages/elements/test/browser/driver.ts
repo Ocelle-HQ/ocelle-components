@@ -100,6 +100,7 @@ export function fixtureDriver(page: Page, log: readonly string[], withBase = fal
       }, { id, name, value });
       await settle(page);
     },
+    call: () => Promise.reject(new Error("not implemented")),
     attribute: (id, name) => page.evaluate(({ id, name }) => document.getElementById(id)?.getAttribute(name) ?? null, { id, name }),
     style: async (id, property, value) => {
       await page.evaluate(({ id, property, value }) => {

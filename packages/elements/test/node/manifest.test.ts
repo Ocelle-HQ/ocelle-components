@@ -247,7 +247,7 @@ describe("generate(root) on the repository's element source", () => {
     const manifest = await generate(repo);
     const modules = manifest.modules as { path: string; declarations: Record<string, unknown>[] }[];
     expect(manifest.schemaVersion).toBe("1.0.0");
-    expect(modules.map((module) => module.path)).toEqual(["src/ocelle-brand-mark.ts", "src/ocelle-icon.ts", "src/ocelle-scroller.ts", "src/ocelle-workflow-board.ts", "src/ocelle-workflow-lane.ts"]);
+    expect(modules.map((module) => module.path)).toEqual(["src/ocelle-brand-mark.ts", "src/ocelle-icon.ts", "src/ocelle-list-detail.ts", "src/ocelle-scroller.ts", "src/ocelle-workflow-board.ts", "src/ocelle-workflow-lane.ts"]);
     const [icon] = modules.find((module) => module.path === "src/ocelle-icon.ts")?.declarations ?? [];
     expect(icon).toMatchObject({
       kind: "class",
@@ -343,6 +343,33 @@ describe("generate(root) on the repository's element source", () => {
       { name: "variant", fieldName: "variant", type: { text: '"flat" | undefined' }, default: "undefined", described: true },
     ]);
     expect(described(lane?.slots)).toEqual([{ name: "", described: true }]);
+  });
+
+  it("declares ocelle-list-detail with its tag name, class, collapse-below / collapseBelow and inspector-below / inspectorBelow (string | undefined, not reflected, default undefined), narrow and detail-open / detailOpen (boolean, reflected, default false), the method remeasure(): void, each described, the list, default and inspector slots, described, and no event, part or CSS property (009 contracts/elements.md, FR-025, FR-030, T051)", async () => {
+    const manifest = await generate(repo);
+    const modules = manifest.modules as { path: string; declarations: Record<string, unknown>[] }[];
+    const [listDetail] = modules.find((module) => module.path === "src/ocelle-list-detail.ts")?.declarations ?? [];
+    expect(listDetail).toMatchObject({ kind: "class", name: "OcelleListDetail", tagName: "ocelle-list-detail", customElement: true, events: [], cssParts: [], cssProperties: [] });
+    const described = (list: unknown): Record<string, unknown>[] =>
+      ((list ?? []) as Record<string, unknown>[]).map(({ description, ...rest }) => ({ ...rest, described: typeof description === "string" && description !== "" }));
+    expect(described(listDetail?.members)).toEqual([
+      { kind: "field", name: "collapseBelow", privacy: "public", type: { text: "string | undefined" }, default: "undefined", attribute: "collapse-below", described: true },
+      { kind: "field", name: "inspectorBelow", privacy: "public", type: { text: "string | undefined" }, default: "undefined", attribute: "inspector-below", described: true },
+      { kind: "field", name: "narrow", privacy: "public", type: { text: "boolean" }, default: "false", attribute: "narrow", reflects: true, described: true },
+      { kind: "field", name: "detailOpen", privacy: "public", type: { text: "boolean" }, default: "false", attribute: "detail-open", reflects: true, described: true },
+      { kind: "method", name: "remeasure", privacy: "public", return: { type: { text: "void" } }, described: true },
+    ]);
+    expect(described(listDetail?.attributes)).toEqual([
+      { name: "collapse-below", fieldName: "collapseBelow", type: { text: "string | undefined" }, default: "undefined", described: true },
+      { name: "inspector-below", fieldName: "inspectorBelow", type: { text: "string | undefined" }, default: "undefined", described: true },
+      { name: "narrow", fieldName: "narrow", type: { text: "boolean" }, default: "false", described: true },
+      { name: "detail-open", fieldName: "detailOpen", type: { text: "boolean" }, default: "false", described: true },
+    ]);
+    expect(described(listDetail?.slots)).toEqual([
+      { name: "list", described: true },
+      { name: "", described: true },
+      { name: "inspector", described: true },
+    ]);
   });
 
   it("rejects a root without an element module, naming the directory", async () => {

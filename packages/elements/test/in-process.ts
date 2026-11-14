@@ -139,6 +139,7 @@ export function inProcessDriver(): Driver {
       else element(id).setAttribute(name, value);
       await settle();
     },
+    call: () => Promise.reject(new Error("not implemented")),
     attribute: (id, name) => Promise.resolve(element(id).getAttribute(name)),
     style: async (id, property, value) => {
       element(id).style.setProperty(property, value);

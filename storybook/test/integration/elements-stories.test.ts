@@ -29,7 +29,10 @@ import { afterAll, beforeAll, describe, expect, inject, it } from "vitest";
 // `ocelle-workflow-board` and six `ocelle-workflow-lane` stories of contracts/elements.md § Stories, each in light and
 // dark rendering its boards (defined, with the story's label, direction, lanes, tab stop, region and scroll position)
 // or its lane (with the story's title, count and variant, and its group's name), with no `style` attribute and no class
-// on the story's markup and no request outside the origin.
+// on the story's markup and no request outside the origin. Since 009 phase 4 (T053): the six `ocelle-list-detail` stories
+// of contracts/elements.md § Stories, each in light and dark rendering its list-detail (defined, with the story's
+// direction, `detail-open` and `narrow`, and the layout its panes show), with no `style` attribute and no class on the
+// story's markup and no request outside the origin.
 const types: Readonly<Record<string, string>> = {
   ".html": "text/html; charset=utf-8",
   ".js": "text/javascript; charset=utf-8",
@@ -311,6 +314,61 @@ describe("the ocelle-workflow-lane stories in the built Storybook (009 FR-032, T
       it(`${id} in ${theme}: renders its ocelle-workflow-lane with the story's title, count and variant and its group's name, with no style attribute or class on its markup and no request outside the origin`, async () => {
         const { page, outside } = await open(id, theme, "ocelle-workflow-lane");
         expect({ ...((await observeWorkflow(page, "ocelle-workflow-lane")) as object), outside }).toEqual({ theme, defined: true, styled: [], boards: [], lanes, outside: [] });
+        await page.close();
+      });
+    }
+  }
+});
+
+/** What a list-detail story's page shows: its theme, each list-detail's direction, attributes and layout, and any style attribute or class on its markup. */
+function observeListDetail(page: Page): Promise<unknown> {
+  return page.evaluate(async () => {
+    // Two animation frames first: the element's ResizeObserver and measurement pass run in the first.
+    await new Promise((resolve) => requestAnimationFrame(resolve));
+    await new Promise((resolve) => requestAnimationFrame(resolve));
+    const root = document.getElementById("storybook-root");
+    const markup = [...(root?.querySelectorAll("*") ?? [])];
+    return {
+      theme: document.documentElement.dataset.theme,
+      defined: customElements.get("ocelle-list-detail") !== undefined,
+      styled: markup.filter((element) => element.hasAttribute("style") || element.hasAttribute("class")).map((element) => element.localName),
+      listDetails: [...(root?.querySelectorAll("ocelle-list-detail") ?? [])].map((element) => {
+        const box = (pane: string): DOMRect | null => {
+          const wrapper = element.shadowRoot?.querySelector(`.pane.${pane}`);
+          return wrapper === null || wrapper === undefined || getComputedStyle(wrapper).display === "none" ? null : wrapper.getBoundingClientRect();
+        };
+        const [list, detail, inspector] = [box("list"), box("detail"), box("inspector")];
+        const stacked = inspector !== null && detail !== null && inspector.y >= detail.y + detail.height - 0.5;
+        const layout = list !== null && detail !== null ? (inspector !== null && !stacked ? "three" : "two") : list !== null ? "one: list" : detail !== null ? "one: detail" : "none";
+        return {
+          direction: getComputedStyle(element).direction,
+          detailOpen: element.hasAttribute("detail-open"),
+          narrow: element.hasAttribute("narrow"),
+          inspector: element.querySelector(':scope > [slot="inspector"]') !== null,
+          layout,
+        };
+      }),
+    };
+  });
+}
+
+const listDetail = (layout: string, extra: Record<string, unknown> = {}): Record<string, unknown> => ({ direction: "ltr", detailOpen: false, narrow: false, inspector: true, layout, ...extra });
+
+const listDetailStories = [
+  { id: "elements-ocelle-list-detail--three-columns", listDetails: [listDetail("three")] },
+  { id: "elements-ocelle-list-detail--two-columns-inspector-stacked", listDetails: [listDetail("two")] },
+  { id: "elements-ocelle-list-detail--one-column-list", listDetails: [listDetail("one: list")] },
+  { id: "elements-ocelle-list-detail--one-column-detail", listDetails: [listDetail("one: detail", { detailOpen: true })] },
+  { id: "elements-ocelle-list-detail--no-inspector", listDetails: [listDetail("two", { inspector: false })] },
+  { id: "elements-ocelle-list-detail--right-to-left", listDetails: [listDetail("three", { direction: "rtl" })] },
+] as const;
+
+describe("the ocelle-list-detail stories in the built Storybook (009 FR-032, T053)", { timeout: 60_000 }, () => {
+  for (const { id, listDetails } of listDetailStories) {
+    for (const theme of ["light", "dark"] as const) {
+      it(`${id} in ${theme}: renders its ocelle-list-detail with the story's direction, detail-open and layout, with no style attribute or class on its markup and no request outside the origin`, async () => {
+        const { page, outside } = await open(id, theme, "ocelle-list-detail");
+        expect({ ...((await observeListDetail(page)) as object), outside }).toEqual({ theme, defined: true, styled: [], listDetails, outside: [] });
         await page.close();
       });
     }
