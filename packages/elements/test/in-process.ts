@@ -9,10 +9,11 @@
 /// <reference types="vite/client" />
 import type { LitElement } from "lit";
 import { vi } from "vitest";
-import { commands, page } from "vitest/browser";
+import { commands, page, userEvent } from "vitest/browser";
 import baseText from "../../styles/src/base.css?raw";
 import { css } from "../../tokens/src/generate.ts";
 import { source } from "../../tokens/src/source.ts";
+import { installPageHelpers, pageHelpers } from "./page-helpers.ts";
 import { decodePng } from "./pixels.ts";
 import type { Box, Driver, Drawing, Paint, Part, Placement, Sheets, Target } from "./scenarios/driver.ts";
 
@@ -31,14 +32,23 @@ function element(id: string): HTMLElement {
   return found;
 }
 
-/** The element a target names; child targets are not implemented yet (014 T006). */
+/** The element a target names (test/page-helpers.ts). */
 function resolve(target: Target): HTMLElement {
-  if (typeof target === "string") return element(target);
-  throw new Error("child targets: not implemented");
+  installPageHelpers();
+  return pageHelpers().resolve(target);
 }
 
-/** A driver method not implemented yet (014 T006). */
-const notImplemented = (name: string) => (): Promise<never> => Promise.reject(new Error(`${name}: not implemented`));
+/** The `userEvent.keyboard` text for `key` pressed with `modifiers` held, then released in reverse order. */
+function keyboardText(key: string, modifiers: readonly string[]): string {
+  const token = key.length === 1 ? key.replace(/^[{[]$/, (char) => char + char) : `{${key}}`;
+  return `${modifiers.map((modifier) => `{${modifier}>}`).join("")}${token}${[...modifiers].reverse().map((modifier) => `{/${modifier}}`).join("")}`;
+}
+
+/** Two animation frames, then a task. */
+async function framesAndTask(): Promise<void> {
+  await new Promise((done) => requestAnimationFrame(() => requestAnimationFrame(done)));
+  await new Promise((done) => setTimeout(done, 0));
+}
 
 /** Waits until every `ocelle-*` element of the page has rendered, then for a frame. */
 async function settle(): Promise<void> {
@@ -74,6 +84,8 @@ window.addEventListener("error", (event) => {
 export function inProcessDriver(): Driver {
   return {
     mount: async (markup, options = {}) => {
+      installPageHelpers();
+      pageHelpers().reset();
       document.adoptedStyleSheets = options.base === true ? [tokens, base] : [tokens];
       messages.length = 0;
       document.documentElement.removeAttribute("data-theme");
@@ -188,20 +200,75 @@ export function inProcessDriver(): Driver {
       });
     },
     messages: () => Promise.resolve([...messages]),
-    focus: notImplemented("focus"),
-    press: notImplemented("press"),
-    click: notImplemented("click"),
-    activeElement: notImplemented("activeElement"),
-    mutate: notImplemented("mutate"),
-    resize: notImplemented("resize"),
-    afterResizeDelivery: notImplemented("afterResizeDelivery"),
-    computedPart: notImplemented("computedPart"),
-    scrollOffset: notImplemented("scrollOffset"),
-    viewportSize: notImplemented("viewportSize"),
-    keydownRecord: notImplemented("keydownRecord"),
-    clipboardCalls: notImplemented("clipboardCalls"),
-    activationRecord: notImplemented("activationRecord"),
-    axStates: notImplemented("axStates"),
-    axUpdates: notImplemented("axUpdates"),
+    focus: async (target) => {
+      resolve(target).focus();
+      await settle();
+    },
+    press: async (key, modifiers = []) => {
+      await userEvent.keyboard(keyboardText(key, modifiers));
+      await settle();
+    },
+    click: async (target, options = {}) => {
+      await userEvent.click(resolve(target), { button: options.button ?? "left", modifiers: [...(options.modifiers ?? [])], clickCount: options.count ?? 1 });
+      await settle();
+    },
+    activeElement: () => {
+      installPageHelpers();
+      return Promise.resolve(pageHelpers().focused());
+    },
+    mutate: async (target, steps) => {
+      resolve(target);
+      pageHelpers().mutate(target, steps);
+      await settle();
+    },
+    resize: (target, inlineSize) => {
+      resolve(target).style.setProperty("inline-size", `${String(inlineSize)}px`);
+      return Promise.resolve();
+    },
+    afterResizeDelivery: (target) => {
+      const observed = resolve(target);
+      return new Promise((done) => {
+        const observer = new ResizeObserver(() => {
+          observer.disconnect();
+          done();
+        });
+        observer.observe(observed);
+      });
+    },
+    computedPart: (target, which, property) => {
+      const host = resolve(target);
+      const at = which.indexOf("::");
+      const name = at === -1 ? which : which.slice(0, at);
+      const pseudo = at === -1 ? null : which.slice(at);
+      const part = name === "" ? host : host.shadowRoot?.querySelector(`[part~="${name}"]`);
+      if (part === null || part === undefined) throw new Error(`no part ${name} in the shadow root`);
+      return Promise.resolve(getComputedStyle(part, pseudo).getPropertyValue(property));
+    },
+    scrollOffset: () => Promise.resolve({ x: window.scrollX, y: window.scrollY }),
+    viewportSize: async (width, height) => {
+      await page.viewport(width, height);
+      await settle();
+    },
+    keydownRecord: () => {
+      installPageHelpers();
+      return Promise.resolve([...pageHelpers().keydowns]);
+    },
+    clipboardCalls: () => {
+      installPageHelpers();
+      return Promise.resolve([...pageHelpers().clipboard]);
+    },
+    activationRecord: (target, options) => {
+      resolve(target);
+      pageHelpers().activation(target, options);
+      return Promise.resolve(async () => {
+        await framesAndTask();
+        return [...pageHelpers().activations];
+      });
+    },
+    axStates: (target, scope) => commands.axStates(target, scope),
+    axUpdates: async (target) => {
+      await commands.axUpdatesStart(target);
+      return () => commands.axUpdatesStop();
+    },
   };
 }

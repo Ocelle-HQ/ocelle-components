@@ -7,18 +7,12 @@
 // (`<page>-base.html`), so `mount` with `base` must be called on such a page.
 import { inflateSync } from "node:zlib";
 import type { Page } from "playwright";
-import { axNodes, axSubtree, emulate } from "../commands.ts";
+import { axNodes, axStatesOf, axSubtree, emulate, recordAxUpdates } from "../commands.ts";
 import { decodePng } from "../pixels.ts";
-import type { Bounds, Box, Driver, Drawing, Paint, Part, Placement, Sheets, Target } from "../scenarios/driver.ts";
+import type { Bounds, Box, Driver, Drawing, Paint, Part, Placement, Sheets } from "../scenarios/driver.ts";
 
-/** The id a target names; child targets are not implemented yet (014 T006). */
-function idOf(target: Target): string {
-  if (typeof target === "string") return target;
-  throw new Error("child targets: not implemented");
-}
-
-/** A driver method not implemented yet (014 T006). */
-const notImplemented = (name: string) => (): Promise<never> => Promise.reject(new Error(`${name}: not implemented`));
+/** The page's helpers (test/page-helpers.ts), which the fixture's init script installed; inside `page.evaluate` only. */
+type Helpers = import("../page-helpers.ts").PageHelpers;
 
 /**
  * Waits in the page until every `ocelle-*` element has rendered and the fonts the page uses have loaded (a font that
@@ -41,6 +35,7 @@ export function fixtureDriver(page: Page, log: readonly string[], withBase = fal
       if ((options.base === true) !== withBase) throw new Error(`mount ${options.base === true ? "with" : "without"} base.css on a page ${withBase ? "with" : "without"} it`);
       since = log.length;
       await page.evaluate((html) => {
+        (window as unknown as { __ocelleDriver: Helpers }).__ocelleDriver.reset();
         document.adoptedStyleSheets = [];
         document.documentElement.removeAttribute("data-theme");
         document.body.innerHTML = html;
@@ -88,14 +83,13 @@ export function fixtureDriver(page: Page, log: readonly string[], withBase = fal
         return [...element.getClientRects()].map((rect) => ({ x: rect.x, y: rect.y, width: rect.width, height: rect.height }));
       }, id),
     box: (target, inner) =>
-      page.evaluate(({ id, inner }): Box => {
-        const host = document.getElementById(id);
-        if (host === null) throw new Error(`no #${id} on the page`);
+      page.evaluate(({ target, inner }): Box => {
+        const host = (window as unknown as { __ocelleDriver: Helpers }).__ocelleDriver.resolve(target);
         const measured = inner === undefined ? host : host.shadowRoot?.querySelector(inner);
         if (measured === null || measured === undefined) return { x: 0, y: 0, width: 0, height: 0, display: "absent" };
         const rect = measured.getBoundingClientRect();
         return { x: rect.x, y: rect.y, width: rect.width, height: rect.height, display: getComputedStyle(measured).display };
-      }, { id: idOf(target), inner }),
+      }, { target, inner }),
     drawing: (id) =>
       page.evaluate((id): Drawing => {
         const host = document.getElementById(id);
@@ -159,11 +153,7 @@ export function fixtureDriver(page: Page, log: readonly string[], withBase = fal
         return { scaleX: round(matrix.a), scaleY: round(matrix.d), offsetX: round(matrix.e - rect.x), offsetY: round(matrix.f - rect.y) };
       }, id),
     computed: (target, property) =>
-      page.evaluate(({ id, property }) => {
-        const element = document.getElementById(id);
-        if (element === null) throw new Error(`no #${id} on the page`);
-        return getComputedStyle(element).getPropertyValue(property);
-      }, { id: idOf(target), property }),
+      page.evaluate(({ target, property }) => getComputedStyle((window as unknown as { __ocelleDriver: Helpers }).__ocelleDriver.resolve(target)).getPropertyValue(property), { target, property }),
     resolveColour: (value) =>
       page.evaluate((value) => {
         const probe = document.createElement("span");
@@ -212,20 +202,94 @@ export function fixtureDriver(page: Page, log: readonly string[], withBase = fal
         };
       }, selector),
     messages: () => Promise.resolve(log.slice(since)),
-    focus: notImplemented("focus"),
-    press: notImplemented("press"),
-    click: notImplemented("click"),
-    activeElement: notImplemented("activeElement"),
-    mutate: notImplemented("mutate"),
-    resize: notImplemented("resize"),
-    afterResizeDelivery: notImplemented("afterResizeDelivery"),
-    computedPart: notImplemented("computedPart"),
-    scrollOffset: notImplemented("scrollOffset"),
-    viewportSize: notImplemented("viewportSize"),
-    keydownRecord: notImplemented("keydownRecord"),
-    clipboardCalls: notImplemented("clipboardCalls"),
-    activationRecord: notImplemented("activationRecord"),
-    axStates: notImplemented("axStates"),
-    axUpdates: notImplemented("axUpdates"),
+    focus: async (target) => {
+      await page.evaluate((target) => {
+        (window as unknown as { __ocelleDriver: Helpers }).__ocelleDriver.resolve(target).focus();
+      }, target);
+      await settle(page);
+    },
+    press: async (key, modifiers = []) => {
+      await page.keyboard.press([...modifiers, key].join("+"));
+      await settle(page);
+    },
+    click: async (target, options = {}) => {
+      const handle = await page.evaluateHandle((target) => (window as unknown as { __ocelleDriver: Helpers }).__ocelleDriver.resolve(target), target);
+      try {
+        await handle.click({ button: options.button ?? "left", modifiers: [...(options.modifiers ?? [])], clickCount: options.count ?? 1 });
+      } finally {
+        await handle.dispose();
+      }
+      await settle(page);
+    },
+    activeElement: () => page.evaluate(() => (window as unknown as { __ocelleDriver: Helpers }).__ocelleDriver.focused()),
+    mutate: async (target, steps) => {
+      await page.evaluate(({ target, steps }) => {
+        (window as unknown as { __ocelleDriver: Helpers }).__ocelleDriver.mutate(target, steps);
+      }, { target, steps });
+      await settle(page);
+    },
+    resize: async (target, inlineSize) => {
+      await page.evaluate(({ target, inlineSize }) => {
+        (window as unknown as { __ocelleDriver: Helpers }).__ocelleDriver.resolve(target).style.setProperty("inline-size", `${String(inlineSize)}px`);
+      }, { target, inlineSize });
+    },
+    afterResizeDelivery: (target) =>
+      page.evaluate((target) => {
+        const observed = (window as unknown as { __ocelleDriver: Helpers }).__ocelleDriver.resolve(target);
+        return new Promise<void>((done) => {
+          const observer = new ResizeObserver(() => {
+            observer.disconnect();
+            done();
+          });
+          observer.observe(observed);
+        });
+      }, target),
+    computedPart: (target, which, property) =>
+      page.evaluate(({ target, which, property }) => {
+        const host = (window as unknown as { __ocelleDriver: Helpers }).__ocelleDriver.resolve(target);
+        const at = which.indexOf("::");
+        const name = at === -1 ? which : which.slice(0, at);
+        const pseudo = at === -1 ? null : which.slice(at);
+        const part = name === "" ? host : host.shadowRoot?.querySelector(`[part~="${name}"]`);
+        if (part === null || part === undefined) throw new Error(`no part ${name} in the shadow root`);
+        return getComputedStyle(part, pseudo).getPropertyValue(property);
+      }, { target, which, property }),
+    scrollOffset: () => page.evaluate(() => ({ x: window.scrollX, y: window.scrollY })),
+    viewportSize: async (width, height) => {
+      await page.setViewportSize({ width, height });
+      await settle(page);
+    },
+    keydownRecord: () => page.evaluate(() => [...(window as unknown as { __ocelleDriver: Helpers }).__ocelleDriver.keydowns]),
+    clipboardCalls: () => page.evaluate(() => [...(window as unknown as { __ocelleDriver: Helpers }).__ocelleDriver.clipboard]),
+    activationRecord: async (target, options) => {
+      await page.evaluate(({ target, options }) => {
+        (window as unknown as { __ocelleDriver: Helpers }).__ocelleDriver.activation(target, options);
+      }, { target, options });
+      return () =>
+        page.evaluate(async () => {
+          await new Promise((done) => requestAnimationFrame(() => requestAnimationFrame(done)));
+          await new Promise((done) => setTimeout(done, 0));
+          return [...(window as unknown as { __ocelleDriver: Helpers }).__ocelleDriver.activations];
+        });
+    },
+    axStates: async (target, scope) => {
+      const session = await page.context().newCDPSession(page);
+      try {
+        return await axStatesOf(session, target, scope);
+      } finally {
+        await session.detach();
+      }
+    },
+    axUpdates: async (target) => {
+      const session = await page.context().newCDPSession(page);
+      const stop = await recordAxUpdates(session, target);
+      return async () => {
+        try {
+          return await stop();
+        } finally {
+          await session.detach();
+        }
+      };
+    },
   };
 }

@@ -5,9 +5,15 @@ import type { BrowserCommand, BrowserCommandContext } from "vitest/node";
 // The element tests' browser commands (005 research.md R-11; packages/elements/test/commands.ts), loaded when a command
 // runs: the plant trees of the gates copy this file without the element test code (research.md R-10), so neither
 // loading nor type-checking the configuration may depend on it.
+// Since 014 (research.md R-07, R-11): axStates, axUpdatesStart and axUpdatesStop, whose target is an id or a child of a
+// parent with an id.
+type Target = string | { readonly parent: string; readonly kind: string; readonly index: number };
 interface ElementCommands {
   readonly axTree: (context: BrowserCommandContext, id: string, scope?: "element" | "subtree") => Promise<unknown>;
   readonly emulateForcedColors: (context: BrowserCommandContext, mode: "active" | "none", palette?: "light" | "dark") => Promise<void>;
+  readonly axStates: (context: BrowserCommandContext, target: Target, scope?: "element" | "subtree") => Promise<unknown>;
+  readonly axUpdatesStart: (context: BrowserCommandContext, target: Target) => Promise<void>;
+  readonly axUpdatesStop: (context: BrowserCommandContext) => Promise<unknown>;
 }
 const elementCommandsUrl = new URL("./packages/elements/test/commands.ts", import.meta.url).href;
 const elementCommands = async (): Promise<ElementCommands> => (await import(elementCommandsUrl)) as ElementCommands;
@@ -15,6 +21,19 @@ const axTree: BrowserCommand<[id: string, scope?: "element" | "subtree"]> = asyn
 const emulateForcedColors: BrowserCommand<[mode: "active" | "none", palette?: "light" | "dark"]> = async (context, mode, palette) => {
   await (await elementCommands()).emulateForcedColors(context, mode, palette);
 };
+const axStates: BrowserCommand<[target: Target, scope?: "element" | "subtree"]> = async (context, target, scope) => (await elementCommands()).axStates(context, target, scope);
+const axUpdatesStart: BrowserCommand<[target: Target]> = async (context, target) => {
+  await (await elementCommands()).axUpdatesStart(context, target);
+};
+const axUpdatesStop: BrowserCommand = async (context) => (await elementCommands()).axUpdatesStop(context);
+
+// The Chromium arguments the elements-browser-file tests launch with (014 research.md R-09): a file: document may load
+// module scripts from file: URLs.
+declare module "vitest" {
+  export interface ProvidedContext {
+    chromiumArgs: string[];
+  }
+}
 
 // Plants and gate-test fixtures are inputs of the gates and their tests, never tests of this repository
 // (FR-028, research.md R-10): every project excludes them.
@@ -73,13 +92,13 @@ export default defineConfig({
         test: {
           name: "elements",
           include: ["packages/elements/**/*.test.ts"],
-          exclude: [...excluded, "packages/elements/test/node/**", "packages/elements/test/build/**", "packages/elements/test/browser/**"],
+          exclude: [...excluded, "packages/elements/test/node/**", "packages/elements/test/build/**", "packages/elements/test/browser/**", "packages/elements/test/browser-file/**"],
           browser: {
             enabled: true,
             provider: playwright({ launchOptions }),
             headless: true,
             instances: [{ browser: "chromium" }],
-            commands: { axTree, emulateForcedColors },
+            commands: { axTree, emulateForcedColors, axStates, axUpdatesStart, axUpdatesStop },
           },
         },
       },
@@ -114,6 +133,18 @@ export default defineConfig({
           include: ["packages/elements/test/browser/**/*.test.ts"],
           exclude: excluded,
           globalSetup: ["packages/elements/test/browser/global-setup.ts"],
+        },
+      },
+      {
+        // The element file: suite (014 research.md R-09, PLAN-CORRECTNESS-1-013): User Story 5 scenario 12, a node test
+        // that launches Chromium itself with `--allow-file-access-from-files` (provided here) on a file: copy of the
+        // link fixture whose policy is a <meta> element. Not mutated (vitest.mutation.config.ts).
+        test: {
+          name: "elements-browser-file",
+          environment: "node",
+          include: ["packages/elements/test/browser-file/**/*.test.ts"],
+          exclude: excluded,
+          provide: { chromiumArgs: ["--allow-file-access-from-files"] },
         },
       },
       {
