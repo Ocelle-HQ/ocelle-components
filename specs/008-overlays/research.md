@@ -410,6 +410,12 @@ unmerged). Results marked "squad probe" were measured by the plan squad's round 
 - **Squad probe**: a click 5 px inside a padded modal dialog and a click on the backdrop both have `target` = the
   dialog, so only the coordinate check separates them; the matrix clicks the panel's padding.
 - The dialog has no backdrop handler.
+- **A dialog stacked over the drawer** (FR-023, analysis C4): a click on the backdrop of an `ocelle-dialog` slotted
+  in an open drawer is composed and passes through the drawer's slot and inner `<dialog>`, so the drawer's listeners
+  see it. It is not the drawer's backdrop click: the drawer is not the topmost overlay, and its target there is
+  retargeted to the slotted `ocelle-dialog` host, not the drawer's `<dialog>`. The click moves focus to the dialog's
+  inner `<dialog>` (measured for a single dialog in Phase 2), which is inside the drawer. Asserted in the matrix's
+  nested row (T031).
 
 ## R-08 Name, heading and `heading-hidden` (FR-005, FR-048, SPEC-1-13, SPEC-1-17)
 

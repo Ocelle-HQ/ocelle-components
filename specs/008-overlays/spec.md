@@ -294,7 +294,8 @@ pointer and keyboard. It is complete when the scenarios below pass in process an
   or later, is closed after the move, with `open` false and no event; the host sets `open` again to show it (operator
   decision).
 - **Two overlays.** A dialog opened from inside an open drawer stacks above it; Escape and its close affect only the
-  topmost; focus returns into the drawer.
+  topmost; focus returns into the drawer. A click on the dialog's backdrop, which lies over the drawer, closes
+  neither and dispatches no request on either (FR-012, FR-023).
 - **Repeated Escape with a veto.** The platform's own protection against dialogs that refuse to close (a second
   Escape without user activation closes a dialog regardless of a cancelled `cancel` event) must not close an
   overlay whose host cancelled the request (US1 scenario 4). The stated limit: when slotted content stops Escape's

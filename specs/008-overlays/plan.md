@@ -254,6 +254,7 @@ packages/elements/
 ├── test/{dialog,drawer,tooltip,harness}.test.ts   # in process
 ├── test/tooltip-no-popover.test.ts                # in process, Popover API removed (R-10)
 ├── test/{dialog,drawer}-upgrade.test.ts          # in process, `open` set before the element is defined
+├── test/{dialog,drawer}-repeated-escape.test.ts  # in process, the veto-then-Escape-twice case on a page of its own (R-02)
 ├── test/browser/driver.ts         # fixture driver implementation of the additions
 ├── test/browser/serve.ts          # visit(…, { touch: true }): a separate hasTouch context for the touch rows only
 ├── test/*.touch.test.ts           # in-process touch rows: elements-touch only (R-14)
