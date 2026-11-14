@@ -323,7 +323,7 @@ export async function scrollBack(page: Page): Promise<void> {
   }
 }
 
-/** Applies the story's declared pointer state with page.mouse only; the pointer-target problem, or undefined (research.md R-15). */
+/** Applies the story's declared pointer state with page.mouse only, settling between the move and a press; the pointer-target problem, or undefined (research.md R-15). */
 // Stryker disable next-line all: process boundary, covered by the visual plants pass-hover-and-press, fail-hover-style-changed, fail-press-style-changed, fail-pointer-target-missing and fail-pointer-target-below-fold
 export async function applyPointer(page: Page, theme: Theme): Promise<string | undefined> {
   // Stryker disable next-line all: process boundary, covered by the visual plants pass-hover-and-press and fail-pointer-target-missing
@@ -351,8 +351,12 @@ export async function applyPointer(page: Page, theme: Theme): Promise<string | u
   if (problem !== undefined || box === null) return problem;
   // Stryker disable next-line all: process boundary, covered by the visual plants pass-hover-and-press and fail-hover-style-changed
   await page.mouse.move(box.x + box.width / 2, box.y + box.height / 2);
-  // Stryker disable next-line all: process boundary, covered by the visual plants pass-hover-and-press and fail-press-style-changed
-  if (pointer.kind === "press") await page.mouse.down();
+  // A press waits for the fonts and two frames after the move, so the hover paint is done before the press paint and the
+  // pressed capture is the same in both runs (012 phase 2 review round 3, R3-02). Mutated: gates/test/story-page.test.ts.
+  if (pointer.kind === "press") {
+    await settle(page);
+    await page.mouse.down();
+  }
   // Stryker disable next-line all: process boundary, covered by the visual plants pass-hover-and-press
   return undefined;
 }

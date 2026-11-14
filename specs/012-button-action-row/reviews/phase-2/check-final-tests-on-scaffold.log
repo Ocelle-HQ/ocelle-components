@@ -1,5 +1,5 @@
 Scope: all 5 workspace projects
-✓ Lockfile passes supply-chain policies (verified 17h ago)
+✓ Lockfile passes supply-chain policies (verified 21h ago)
 Lockfile is up to date, resolution step is skipped
 Packages are hard linked from the content-addressable store to the virtual store.
   Content-addressable store is at: /root/.local/share/pnpm/store/v11
@@ -35,7 +35,7 @@ devDependencies:
 + vite 8.3.5
 + vitest 5.0.5
 
-Done in 259ms using pnpm v12.16.1
+Done in 248ms using pnpm v12.16.1
 $ node gates/bin/setup-offline.ts
 setup: installed offline; Chromium at /opt/pw-browsers/chromium-1248/chrome-linux64/chrome
 $ node gates/bin/test.ts
@@ -224,6 +224,7 @@ gates/test/manifest.test.ts:89: unit-tests: manifest gate on a root exits 0 when
 gates/test/manifest.test.ts:94: unit-tests: manifest gate on a root reports the label attribute lost from the committed manifest as one stale finding naming ocelle-icon and the attribute (fail-lost-attribute): AssertionError: expected { code: 1, out: [ …(3) ], err: [] } to deeply equal { code: 1, out: [ …(2) ], err: [] }
 gates/test/manifest.test.ts:106: unit-tests: manifest gate on a root reports a property added in source without regenerating as stale findings for the property and its attribute (fail-stale-property): AssertionError: expected { code: 1, out: [ …(4) ], err: [] } to deeply equal { code: 1, out: [ …(3) ], err: [] }
 gates/test/manifest.test.ts:123: unit-tests: manifest gate on a root reports a difference outside every element as one whole-file stale finding: AssertionError: expected { code: 1, out: [ …(2) ], err: [] } to deeply equal { code: 1, out: [ …(2) ], err: [] }
+gates/test/story-page.test.ts:56: unit-tests: applyPointer (research.md R-15) presses only after the fonts and two frames have settled the move (012 phase 2 review round 3, R3-02): AssertionError: expected [ 'count ocelle-button', …(2) ] to deeply equal [ 'count ocelle-button', …(5) ]
 packages/elements/test/button.test.ts:20: unit-tests: ocelle-button, in process (US1) US1-1: <ocelle-button>Save</ocelle-butt…: Error: empty
 packages/elements/test/button.test.ts:20: unit-tests: ocelle-button, in process (US1) US1-2, a pointer click: exactly one oce…: AssertionError: expected { …(4) } to deeply equal { types: [ …(12) ], …(3) }
 packages/elements/test/button.test.ts:20: unit-tests: ocelle-button, in process (US1) US1-2, Enter on the focused button: exa…: AssertionError: expected { types: [], …(3) } to deeply equal { types: [ …(12) ], …(3) }
@@ -299,5 +300,5 @@ packages/elements/test/entry-root.test.ts:9: unit-tests: importing src/index.ts 
 packages/elements/test/exports.test.ts:7: unit-tests: @ocelle/elements root exports exports OcelleBrandMark, OcelleButton and OcelleIcon and nothing else: AssertionError: expected [ 'OcelleBrandMark', 'OcelleIcon' ] to deeply equal [ 'OcelleBrandMark', …(2) ]
 packages/elements/test/slot.test.ts:20: unit-tests: the slot convention on ocelle-test-host, in process (US3) 012 R-10, without base.css: a block ele…: AssertionError: expected { …(4) } to deeply equal { Object (default, description, ...) }
 packages/elements/test/slot.test.ts:20: unit-tests: the slot convention on ocelle-test-host, in process (US3) 012 R-10, with base.css: a block elemen…: AssertionError: expected { …(4) } to deeply equal { Object (default, description, ...) }
-unit-tests: 260 of 3360 tests failed
+unit-tests: 261 of 3362 tests failed
 [ELIFECYCLE] Test failed. See above for more details.
