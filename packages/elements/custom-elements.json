@@ -270,6 +270,38 @@
     {
       "declarations": [
         {
+          "attributes": [],
+          "cssParts": [],
+          "cssProperties": [],
+          "customElement": true,
+          "description": "A page header around a heading the page slots.",
+          "events": [],
+          "kind": "class",
+          "members": [],
+          "name": "OcellePageHeader",
+          "slots": [],
+          "superclass": {
+            "name": "LitElement",
+            "package": "lit"
+          }
+        }
+      ],
+      "exports": [
+        {
+          "declaration": {
+            "module": "src/ocelle-page-header.ts",
+            "name": "OcellePageHeader"
+          },
+          "kind": "js",
+          "name": "OcellePageHeader"
+        }
+      ],
+      "kind": "javascript-module",
+      "path": "src/ocelle-page-header.ts"
+    },
+    {
+      "declarations": [
+        {
           "attributes": [
             {
               "default": "undefined",
