@@ -64,8 +64,8 @@ can fail (they are its plants, run by Stryker), or shown equivalent and simplifi
 | a unitless number inside `linear-gradient()` is raw | `gates/test/token-only.test.ts` | `token-only.ts:146` `false` / `true` (the gradient's arguments read as inside `calc()`) |
 | `driver.focus(target)`, the script focus the last guard needs | `test/driver.test.ts`, `test/browser/driver.test.ts` | (driver; not mutated) |
 
-The final run (`gate:mutation -- --base 247991d` on the green head): 432 mutants on the changed lines of 4 files, none
-survived; 0 timeouts, 130 compile errors, 1 zero-mutant entry (`src/index.ts`, an export line); 20 equivalent records,
+The final run (`gate:mutation -- --base 247991d` on `a363d50`): 438 mutants on the changed lines of 4 files, none
+survived; 0 timeouts, 130 compile errors, 1 zero-mutant entry (`src/index.ts`, an export line); 23 equivalent records,
 each with its reason in the source. The whole run took about 10 minutes on this machine for all 18 CI shards together,
 so no shard comes near the 10-minute stop-and-ask bound.
 
