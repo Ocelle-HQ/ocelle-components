@@ -101,3 +101,22 @@ written and before any test or code:
   here.
 
 T014's commit (checks.md and this file) waits for that decision; nothing else of Phase 2 has started.
+
+## Decision and the lists written into checks.md
+
+Decided by the operator, 2026-11-14 (`reviews/analysis/fixes-4.md`): option (b), the sentinel wrap. The stand-in
+(`sentinel` variant: the end sentinel last in the `<dialog>`, focused on a Shift+Tab from the first stop when the
+cycle's last candidate is opaque, with no `preventDefault()`) was run again before this commit, with and without
+`delegatesFocus` for every closed-host case. (i) with `delegatesFocus` gives the same lists as without it. The lists
+written into contracts/checks.md § Dialog "Opaque content" and "Positive `tabindex` at the ends" (iii) are:
+
+| Case | Tab, n + 2 from the close control | Shift+Tab, n + 2 from the close control |
+|---|---|---|
+| (i) closed host, with or without `delegatesFocus` (n = 5) | `b1 xc[c1] xc[c2] b2 close b1 xc[c1]` | `b2 xc[c2] xc[c1] b1 close b2 xc[c2]` |
+| (i) iframe (n = 5) | `b1 fr[f1] fr[f2] b2 close b1 fr[f1]` | `b2 fr[f2] fr[f1] b1 close b2 fr[f2]` |
+| (ii) closed host, with or without `delegatesFocus` (n = 4) | `b1 xc[c1] xc[c2] close b1 xc[c1] xc[c2]` | `xc[c2] xc[c1] b1 close xc[c2] xc[c1] b1` |
+| (ii) iframe (n = 4) | `b1 fr[f1] fr[f2] body close b1 fr[f1]` | `fr[f2] fr[f1] b1 close fr[f2] fr[f1] b1` |
+| tabindex (iii) (n = 6) | `b3 b1 b2 g1 g2 close b3 b1` | `g2 g1 b2 b1 b3 close g2 g1` |
+
+Every list holds its row's updated rules: no `body` in (i) and (iii), at most one in (ii) forward (the iframe only),
+every inner button reached once per cycle in reverse native order in (ii) backward, and no sentinel in any list.

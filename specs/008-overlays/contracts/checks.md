@@ -56,9 +56,20 @@ modal, level. Device: the default context (`elements`, `visit()`) matches `(hove
     root holding two buttons (c1, c2; no `delegatesFocus`), and a slotted `<iframe srcdoc>` holding two buttons (f1,
     f2; `focusPath()` reads the frame's element plus its inner active element), each placed (i) between two slotted
     buttons and (ii) as the last body content with no footer; Tab and Shift+Tab, n + 2 presses each, started from the
-    close control. The exact `focusPath()` lists are measured in Chromium in Phase 2's first dialog task and written
-    into the rows before the code (the round 3 probe's native list for (i), `b1 xc xc fr[f1] fr[f2] b2`, is the
-    reference). Each list must hold: in (i), both directions, every inner button appears once per cycle in native
+    close control. The exact `focusPath()` lists, measured in Chromium 153 in T014 (`reviews/phase-2/measure.md`;
+    `close` is the close control, `xc[c1]` the closed host with c1 focused inside it, `fr[f1]` the frame with f1
+    focused inside it; the round 3 probe's native list for (i), `b1 xc xc fr[f1] fr[f2] b2`, is confirmed):
+    - (i) closed host, with and without `delegatesFocus` (n = 5): Tab `b1 xc[c1] xc[c2] b2 close b1 xc[c1]`,
+      Shift+Tab `b2 xc[c2] xc[c1] b1 close b2 xc[c2]`;
+    - (i) iframe (n = 5): Tab `b1 fr[f1] fr[f2] b2 close b1 fr[f1]`, Shift+Tab `b2 fr[f2] fr[f1] b1 close b2 fr[f2]`;
+    - (ii) closed host, with and without `delegatesFocus` (n = 4, the sentinel wrap backward): Tab
+      `b1 xc[c1] xc[c2] close b1 xc[c1] xc[c2]` (the closed root signals the move onto the body, so the repair leaves
+      no `body` entry), Shift+Tab `xc[c2] xc[c1] b1 close xc[c2] xc[c1] b1`;
+    - (ii) iframe (n = 4, the sentinel wrap backward): Tab `b1 fr[f1] fr[f2] body close b1 fr[f1]` (one `body`
+      entry, the stated extra press: the engine gives no signal for focus leaving the frame), Shift+Tab
+      `fr[f2] fr[f1] b1 close fr[f2] fr[f1] b1`.
+
+    Each list must hold: in (i), both directions, every inner button appears once per cycle in native
     order and there is no `body` entry; in (ii) forward, every inner button appears in order, followed by the close
     control, with at most one `body` entry (the stated extra press, R-04's repair; measured only for the iframe); in
     (ii) backward (the sentinel wrap, operator decision, 2026-11-14, R-04), every inner button of the closed host,
@@ -78,9 +89,11 @@ modal, level. Device: the default context (`elements`, `visit()`) matches `(hove
     the close control. (i) Slotted b1, b2, b3 with `tabindex="2"` on b3 (flat-tree last): Tab gives
     `b3 b1 b2 close b3 …`, Shift+Tab gives `b2 b1 b3 close b2 …` (the verify probe's native order `b3 b1 b2` is the
     reference). (ii) The same with `tabindex="2"` on b1 (flat-tree first content stop) and on b3: Tab gives
-    `b1 b3 b2 close b1 …`, Shift+Tab `b2 b3 b1 close b2 …`. (iii) Case (i) with a footer of two buttons, the first
-    with `tabindex="1"`: the list is measured in Chromium in Phase 2's first dialog task and written into the row
-    before the code; it must hold every button once per cycle, no `body`, and wrap at the navigation order's ends.
+    `b1 b3 b2 close b1 …`, Shift+Tab `b2 b3 b1 close b2 …`. (iii) Case (i) with a footer of two buttons, g1 with
+    `tabindex="1"` and g2: it must hold every button once per cycle, no `body`, and wrap at the navigation order's
+    ends. Measured in Chromium 153 in T014 (n = 6; the footer slot is its own focus navigation scope, so g1's
+    `tabindex="1"` orders it only before g2, not before b3): Tab gives `b3 b1 b2 g1 g2 close b3 b1`, Shift+Tab gives
+    `g2 g1 b2 b1 b3 close g2 g1`.
     Each list is checked against the engine's native order between the ends.
 - **Escape in a slotted iframe** (R-02, FR-010): focus on f1 inside a slotted iframe, Escape × {no veto, veto}: no
   `…-close-request`, no `cancel`, the dialog stays open and `:modal`.
