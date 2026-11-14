@@ -1,0 +1,5 @@
+# History fold phase-1 of claude/008-layout-headers: old commit -> new commit (pre-fold head kept as refs/ocelle/prefold/phase-1/claude/008-layout-headers, 4d74c90a474b7b4b984b36d78896ef14b02bc9fd).
+401986805310e93cac10caa900849845a3a5a00f a7f3f820744ac1709eec063186ae2e3589329a4a
+cab41f903be7821da0a9f00d2b30faa10440eb7f 37cdf8efe02aafb0e7afee6c5260f4e46c64d9a5
+c983351130ca3eed516ae4605a5a581b1f2fe108 acda1d413af2fdff2e23444bae61210bda8d053e
+4d74c90a474b7b4b984b36d78896ef14b02bc9fd f1832e658aa8dbb69ef3cbb686fabe477ab4f097
