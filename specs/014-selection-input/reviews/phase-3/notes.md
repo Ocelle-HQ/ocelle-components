@@ -99,3 +99,22 @@ The first run of `pnpm run gate:mutation -- --base 83a6f8b` on the green commit 
   - the `false` passed for a shadow root's children (no shadow host is their parent).
 
 The final run is recorded in the gate run below.
+
+## The gate run (T050)
+
+The gates were run one at a time on `9dffb23` with `OCELLE_CHROMIUM_PATH=/opt/pw-browsers/chromium-1243/chrome-linux64/chrome`,
+and with `OCELLE_VISUAL_ENGINE=docker` for `visual` and `plants`. Each exited 0:
+
+| Gate | Result |
+|---|---|
+| typecheck, lint, test-lint, style-lint, brand-rules, pins, config-copies, prefix | exit 0 |
+| contrast | 166 pairs in light, 174 in dark, 155 required per theme (the tabs add no pair) |
+| manifest | 7 elements |
+| csp | 25 files |
+| storybook-build | 36 stories |
+| unit-tests | 3640 tests in 155 files |
+| visual | 72 captures match their baselines, docker only, no cross-engine comparison |
+| axe | 72 story-theme runs, 0 serious or critical; 22 notes, all excepted (the Prose document's 10 and the scrolling listbox story's 12). The tabs stories add no exception |
+| plants | 301 plants of 17 gates and the registry, every plant as expected; `visual/fail-token-changed` with its 35 light findings, the eight tabs stories included |
+| `mutation -- --base 83a6f8b` | 401 mutants on the changed lines of 7 files, none survived; 1 timeout (`ocelle-tabs.ts:369`, a report under #23), 123 compile errors, 1 zero-mutant entry (`src/index.ts`), 14 equivalent records |
+| `signoff -- --range 83a6f8b..HEAD` | no finding |

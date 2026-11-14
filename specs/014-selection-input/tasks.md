@@ -209,7 +209,7 @@ unselected panel node; the tabs stories pass #10's full axe rule set.
 - [X] T047 [US2] `packages/elements/src/ocelle-tab.ts`, `ocelle-tab-panel.ts`, `ocelle-tabs.ts`: `role="tablist"` on `part="tablist"` named from `label` only (no host `aria-label` read, forwarded or in `observedAttributes`; no host attribute written; FR-006's tabs exception, R-01), manual slot assignment per batch, generated ids, `aria-controls` on every paired tab, `aria-labelledby` on the assigned panel only, panel focusability observer (R-03), wrapped rows (FR-022), raised `::after` ring with the host unraised (R-06)
 - [X] T048 [US2] Manifest; README tabs section (name the tabs with `label`; a host `aria-label` does not name the tablist); CHANGELOG
 - [X] T049 [US2] Baselines for the tabs stories with `pnpm run visual:update` in #10's pinned container under docker (`storybook/baselines/`), with any shared baseline (the token stories included) that changes, inspected and committed with the reason in the commit message; move the story-theme counts of `gates/test/integration/visual.test.ts` and add the new light stories that show `color-ink` to `gates/plants/visual/fail-token-changed/plant.json`; record in `reviews/phase-3/notes.md` that no podman cross-engine check was possible and CI confirms the baselines at landing (operator decision 2026-11-14, `reviews/phase-2/operator-decisions.md`; FR-053, SC-007)
-- [ ] T050 [US2] Plants recorded in `reviews/phase-3/plants.md`; the gates of T028 one at a time
+- [X] T050 [US2] Plants recorded in `reviews/phase-3/plants.md`; the gates of T028 one at a time
 
 **Checkpoint**: `tdd-check.sh 3` reports `pass`.
 
