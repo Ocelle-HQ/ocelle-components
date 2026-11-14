@@ -170,7 +170,9 @@ button.
 - `disabled` (boolean attribute and property, reflected): the disabled state of the control conventions.
 - The default slot is the label; the `icon` slot holds one icon before it (the slot convention). With no label in
   the default slot (no non-whitespace text in what it holds), the icon takes no gap and is centred in the button; a
-  `flush` button still starts it at its inline start. Name such an icon-only button with `label`.
+  `flush` button still starts it at its inline start. Name such an icon-only button with `label`. The button follows
+  text written into or removed from its own content; a label forwarded through another component's shadow-root
+  `<slot>` is read when that slot's assignment changes, not when the forwarded text changes.
 
 On a container whose surface changes (a list or table row that takes `color-hover-bg` on hover, or `color-accent-low`
 when selected), set `ground` for the changed surface statically (`hover-bg` or `accent-low`):
