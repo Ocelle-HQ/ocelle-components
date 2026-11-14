@@ -1,3 +1,5 @@
+import { readFile } from "node:fs/promises";
+import { join } from "node:path";
 import { beforeAll, describe, expect, it } from "vitest";
 import { buildPackage, elements, run } from "./package-build.ts";
 
@@ -19,5 +21,11 @@ describe("pnpm pack of @ocelle/elements", () => {
     expect(wanted.filter((path) => !packed.includes(path))).toEqual([]);
     expect(packed).toContain("dist/ocelle-icon.js");
     expect(packed).toContain("dist/ocelle-brand-mark.js");
+  });
+
+  // 008 tasks.md T019: the dialog's entry point is packed, and package.json maps it.
+  it("lists dist/ocelle-dialog.js and dist/overlay.js, and the packed package.json maps ./ocelle-dialog.js to dist/ocelle-dialog.js", async () => {
+    const manifest = JSON.parse(await readFile(join(elements, "package.json"), "utf8")) as { exports?: Record<string, string> };
+    expect({ dialog: packed.includes("dist/ocelle-dialog.js"), base: packed.includes("dist/overlay.js"), entry: manifest.exports?.["./ocelle-dialog.js"] }).toEqual({ dialog: true, base: true, entry: "./dist/ocelle-dialog.js" });
   });
 });

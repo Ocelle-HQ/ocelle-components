@@ -126,6 +126,7 @@ const entryRows = [
   "| `@ocelle/elements` | `dist/index.js` | every element; for hosts with a bundler |",
   "| `@ocelle/elements/ocelle-icon.js` | `dist/ocelle-icon.js` | `ocelle-icon` only; for hosts with a bundler |",
   "| `@ocelle/elements/ocelle-brand-mark.js` | `dist/ocelle-brand-mark.js` | `ocelle-brand-mark` only; for hosts with a bundler |",
+  "| `@ocelle/elements/ocelle-dialog.js` | `dist/ocelle-dialog.js` | `ocelle-dialog` and the `ocelle-icon` it renders; for hosts with a bundler |",
   "| `@ocelle/elements/browser.js` | `dist/browser/ocelle-elements.js` | every element, Lit inside; for hosts without a bundler |",
   "| `@ocelle/elements/custom-elements.json` | `custom-elements.json` | the manifest, also named by the `customElements` field |",
 ];
@@ -170,7 +171,7 @@ describe("packages/elements/README.md", () => {
   it("lists exactly the entry points of package.json's exports in its Entry points table (FR-002)", () => {
     const manifest = JSON.parse(read("package.json")) as { exports?: Record<string, string> };
     expect(tableRows(read("README.md"), "Entry points")).toEqual(entryRows);
-    expect(Object.keys(manifest.exports ?? {})).toEqual([".", "./ocelle-icon.js", "./ocelle-brand-mark.js", "./browser.js", "./custom-elements.json"]);
+    expect(Object.keys(manifest.exports ?? {})).toEqual([".", "./ocelle-icon.js", "./ocelle-brand-mark.js", "./ocelle-dialog.js", "./browser.js", "./custom-elements.json"]);
   });
 
   it("lists the thirteen names of the set, whether each mirrors and the consumer need it meets, in its Icons table (US2-1, FR-018, SC-007)", () => {
@@ -182,6 +183,85 @@ describe("packages/elements/README.md", () => {
     const pin = manifest.peerDependencies?.["@ocelle/tokens"];
     expect(pin).toBe("workspace:0.0.0");
     expect(readme).toContain(`"@ocelle/tokens": "${String(pin)}"`);
+  });
+});
+
+/**
+ * The `ocelle-dialog` section and the statements about it (008 tasks.md T019; contracts/elements-overlays.md; research.md
+ * R-02 to R-05, R-08, R-18; data-model.md § `ocelle-dialog`): what it is, its surface, the tokens it reads, the host
+ * pattern, the stated limits, where focus lands when the opener is gone, the opaque-content Tab statement and the
+ * closed host's exposure with a host `aria-label` (§ Host ARIA).
+ */
+const dialogFragments = [
+  // the element and its surface
+  "`ocelle-dialog` shows its content modally over the page in a native `<dialog>`: the page behind is inert to pointer, keyboard and the accessibility tree until it closes",
+  "`open` (attribute and property, reflected): whether the dialog is shown; setting it shows or closes the dialog, and the dialog sets it to false whenever it closes",
+  "`label` (attribute and property): the visible heading (level 2) and the dialog's accessible name",
+  "`close-label` (attribute; property `closeLabel`): the name of the close control, \"Close\" by default; set it in the host's language",
+  "Slots: the default slot is the body; `footer` holds the actions, at the end of the panel, and is not rendered while empty",
+  "Parts: `panel` (the `<dialog>`), `heading`, `body`, `footer` and `close-button`",
+  "`--ocelle-dialog-inline-size`: the dialog's preferred inline size, `--ocelle-measure-reading` by default; the dialog is never wider than `--ocelle-dialog-max-inline` nor taller than `--ocelle-dialog-max-block`",
+  "Events: `ocelle-dialog-close-request` (cancelable; `detail.reason` is `\"escape\"` or `\"close-button\"`) when the user asks to close it, and `ocelle-dialog-close` (`detail.reason` is the request's reason, or `\"host\"` when the host set `open` to false or the platform closed it) once it has left the top layer and focus has returned; both bubble and are composed, and opening dispatches nothing",
+  "Cancelling `ocelle-dialog-close-request` keeps the dialog open, with focus inside, on every repetition",
+  "A click on the backdrop does nothing",
+  // the tokens it reads
+  "`ocelle-dialog` reads the tokens `--ocelle-color-sheet`, `--ocelle-color-ink`, `--ocelle-color-overlay`, `--ocelle-elevation-raised`, `--ocelle-radius-2`, `--ocelle-border-width`, `--ocelle-dialog-max-inline`, `--ocelle-dialog-max-block`, `--ocelle-measure-reading`, `--ocelle-font-sans`, `--ocelle-font-size-md`, `--ocelle-font-size-lg`, `--ocelle-font-weight-strong`, `--ocelle-line-height-normal`, `--ocelle-line-height-tight`, `--ocelle-space-2`, `--ocelle-space-3`, `--ocelle-space-4`, `--ocelle-space-6`, `--ocelle-target-min`, `--ocelle-focus-width`, `--ocelle-focus-offset`, `--ocelle-color-focus`, `--ocelle-motion-base` and `--ocelle-easing-standard`, and its close icon `--ocelle-icon-size`",
+  // the host pattern
+  'opener.addEventListener("click", () => { dialog.open = true; });',
+  'dialog.addEventListener("ocelle-dialog-close-request", (e) => { if (hasUnsavedInput()) e.preventDefault(); });',
+  'dialog.addEventListener("ocelle-dialog-close", (e) => { /* e.detail.reason */ });',
+  // focus and the opener (R-05)
+  "On open, focus moves to the first slotted element marked `autofocus` in the body, else to the body's first focusable element, else to the close control",
+  "On close, focus returns to the element that had it when the dialog opened, inside shadow roots too, as long as focus is still inside the dialog or on the body; focus another dialog has taken is kept",
+  "Where focus lands when the opener is gone: the opener while it is connected, not `disabled` and not inert; otherwise the initial focus target of the overlay beneath, if one is open; otherwise the document body",
+  "To move focus elsewhere after a close, move it in the `ocelle-dialog-close` listener, which runs after focus returned: the page stays inert until the exit ends, so a move to page content between `open = false` and `ocelle-dialog-close` has no effect",
+  // the label (R-08)
+  "A label is required: without a `label` or a host `aria-label` the dialog has no accessible name, and it invents none",
+  // the stated limits (R-02, R-03, R-04, R-05a, R-18)
+  "A slotted `<form method=\"dialog\">` does nothing to the dialog: close it with `open = false` from the form's submit handler",
+  "A slotted widget that handles Escape calls `preventDefault()`, not `stopPropagation()`: if it stops Escape's propagation, the dialog does not see the key, and the platform can close a vetoed dialog on a repeated Escape, with reason `\"host\"`; the first vetoed sequence in a page may hold the veto on a second press as well",
+  "Escape with focus inside a slotted iframe does nothing to the dialog",
+  "Removing an open dialog from the document (a move, a morph, a portal) closes it with no event and sets `open` to false; set `open` again after re-inserting it",
+  "The body is at least three times `--ocelle-target-min` tall (132 px by default) at every size, so a one-line confirmation has space below its text; while the body overflows it is a Tab stop, so it scrolls by keyboard",
+  "An overflowing scroller in slotted content with nothing focusable inside (a wide prose table) is a Tab stop where the engine focuses scrollers (Chromium 130 and later); elsewhere it is skipped",
+  // the opaque-content Tab statement (R-04)
+  "Between the cycle's ends Tab moves as the engine does, so content with a closed shadow root, an iframe or media controls keeps its inner focusable parts reachable by Tab and Shift+Tab in both directions: Shift+Tab from the close control onto such content at the dialog's end enters it from its end, with or without `delegatesFocus`",
+  "Leaving a slotted iframe past the cycle's end with Tab can cost one extra press",
+  "Slotted content with a positive `tabindex` is visited in the engine's order, and the cycle wraps where that order ends",
+  // slotted close watchers and non-modal dialogs (R-02)
+  "While a slotted popover (`popover=\"auto\"` or `\"hint\"`, a menu), a native `<dialog>` shown modally from slotted content, or a non-modal `<dialog>` opened after the dialog (by `show()` or the `open` attribute) whose `closedby` is `closerequest` or `any` is open, Escape closes it alone, as the platform does, and the dialog requests nothing; Tab inside a nested native modal is left to the platform",
+  "A slotted non-modal `<dialog>` that was already open when the dialog opened, whatever its `closedby`, or one opened after it with `closedby` absent, `auto` or `none`, is ordinary content: Escape requests the dialog's close on every press and leaves it open, so close it yourself if needed",
+  "Such a dialog reopened by removing and setting its `open` attribute stays ordinary content (the change fires no event the dialog can see); reopen it with `close()` and then `show()` or the attribute to have Escape close it alone",
+  "An open `<dialog>` moved into an already open dialog is outside what was measured: if the platform then closes the dialog on Escape, the close comes with reason `\"host\"`",
+  "During the exit, Escape, the close control and the backdrop request nothing; only `open = true` stops a close",
+  // reduced motion and forced colours (FR-020, FR-021)
+  "The dialog fades in and out over `--ocelle-motion-base` with `--ocelle-easing-standard`, and not at all under `prefers-reduced-motion: reduce`, whatever an ancestor sets on those tokens",
+  "In forced colours the panel has a `CanvasText` border on a `Canvas` ground, the backdrop is `Canvas`, and the close control's focus ring is a `Highlight` outline",
+  // host ARIA for the overlays (R-08)
+  "With a host `aria-label`, an open `ocelle-dialog` exposes one named node, its modal dialog, named by the host `aria-label`; while it is closed, Chromium exposes the host itself as a named generic node",
+];
+
+describe("packages/elements/README.md: ocelle-dialog (008)", () => {
+  const text = read("README.md");
+  const readme = flat(text);
+
+  it.each(dialogFragments)("states: %s", (fragment) => {
+    expect(readme).toContain(flat(fragment));
+  });
+
+  it("names ocelle-dialog in its intro, before the first section", () => {
+    expect(flat(text.split(/^## /m)[0] ?? "")).toContain("`ocelle-dialog`, a modal dialog");
+  });
+
+  it("has an `ocelle-dialog` section", () => {
+    expect(text).toMatch(/^## `ocelle-dialog`$/m);
+  });
+
+  // Operator decision of 2026-11-14 (R-04, the sentinel wrap): the former reverse-wrap limit is gone, so the README
+  // states no sentence that a closed shadow root is skipped by the Shift+Tab wrap.
+  it("states no reverse-wrap limit: no closed shadow root skipped by the Shift+Tab wrap", () => {
+    expect(readme.match(/[^.]*\bskipped by the Shift\+Tab wrap[^.]*/g) ?? []).toEqual([]);
+    expect(readme.match(/[^.]*closed shadow root[^.]*\bskipped\b[^.]*/g) ?? []).toEqual([]);
   });
 });
 
@@ -202,6 +282,13 @@ describe("packages/elements/CHANGELOG.md", () => {
     "`@ocelle/elements/ocelle-brand-mark.js`",
     "`ground` and `tone` (reflected) and `label`",
     "the slot convention for icons in controls",
+    // 008 (T019, T024): the dialog's surface
+    "`ocelle-dialog`",
+    "`@ocelle/elements/ocelle-dialog.js`",
+    "`ocelle-dialog-close-request`",
+    "`ocelle-dialog-close`",
+    "`--ocelle-dialog-inline-size`",
+    "`open` (reflected), `label` and `close-label`",
     ...["chevron-start", "chevron-end", "chevron-up", "chevron-down", "arrow-start", "arrow-end", "menu", "close", "folder", "file", "search", "table", "copy"].map((name) => `\`${name}\``),
   ])("names %s under Unreleased / Added (constitution VII, FR-031, SC-008)", (surface) => {
     expect(added).toContain(surface);
