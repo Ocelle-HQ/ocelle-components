@@ -3,9 +3,9 @@
 // to tokens. It owns `open`, `label` and `close-label`, the heading, the close control, the body and footer slots,
 // initial focus and the Tab cycle (R-04), Escape and the veto (R-02), platform closes (R-03), focus return (R-05),
 // disconnection (R-05a), the close order and motion (R-06). A subclass names its event prefix and adds its layout.
-// Internal, not an entry point, and no tag: `ocelle-dialog` (and later `ocelle-drawer`) extend it.
+// Internal, not an entry point, and no tag: `ocelle-dialog` and `ocelle-drawer` extend it.
 import { LitElement, css, html, nothing } from "lit";
-import type { CSSResultGroup } from "lit";
+import type { CSSResultGroup, PropertyDeclarations } from "lit";
 import { deepActive, flatChildren, isOpaqueContent, walk } from "./focusable.ts";
 import type { Walk } from "./focusable.ts";
 import { accessibleName } from "./naming.ts";
@@ -82,7 +82,7 @@ function still(duration: number): boolean {
  * while `open` is true.
  */
 export class OcelleOverlay extends LitElement {
-  static override properties = {
+  static override properties: PropertyDeclarations = {
     open: { type: Boolean, reflect: true },
     // Stryker disable next-line ObjectLiteral: equivalent, {} gives Lit's default options, which are type String's (attribute "label", the default converter, not reflected)
     label: { type: String },
@@ -446,6 +446,14 @@ export class OcelleOverlay extends LitElement {
 
   // Closing ------------------------------------------------------------------------------------------------------
 
+  /**
+   * A subclass's own close request, such as the drawer's backdrop click (R-07): asked only while the overlay is open,
+   * so a request during the exit, or once closed, dispatches nothing (R-02, R-06).
+   */
+  protected requestClose(reason: CloseReason): void {
+    if (this.#state === "opening" || this.#state === "shown") this.#request(reason);
+  }
+
   /** Asks the host whether to close (FR-013); closes when the request is not cancelled. */
   #request(reason: CloseReason): void {
     if (dispatch(this, `${this.eventPrefix}-close-request`, reason, true) && (this.#state === "opening" || this.#state === "shown")) this.#begin(reason);
@@ -546,7 +554,7 @@ export class OcelleOverlay extends LitElement {
   // Input --------------------------------------------------------------------------------------------------------
 
   #onCloseClick = (): void => {
-    if (this.#state === "opening" || this.#state === "shown") this.#request("close-button");
+    this.requestClose("close-button");
   };
 
   #onKeydown = (event: KeyboardEvent): void => {

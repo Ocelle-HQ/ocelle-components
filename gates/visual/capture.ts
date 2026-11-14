@@ -23,7 +23,7 @@ import { serve } from "../lib/storybook-serve.ts";
 import { baselineName, storyThemes } from "../lib/visual-verdict.ts";
 import type { CaptureEntry, CaptureRequest, StoryTheme } from "../lib/visual-verdict.ts";
 
-// Stryker disable next-line all: process boundary, covered by gates-integration: gates/test/integration/visual.test.ts "captures the repository's 58 story-themes twice under docker and exits 0 naming them and the engine (US2 scenario 1)"
+// Stryker disable next-line all: process boundary, covered by gates-integration: gates/test/integration/visual.test.ts "captures the repository's 70 story-themes twice under docker and exits 0 naming them and the engine (US2 scenario 1)"
 const repo = resolve(dirname(fileURLToPath(import.meta.url)), "../..");
 
 /** The request.json the host writes: the build, the output directory and the story-themes. */
@@ -48,37 +48,37 @@ function headlessShell(): string {
 }
 
 /** One story-theme in a fresh context: its result entry, and the PNG written when captured. */
-// Stryker disable next-line all: process boundary, covered by gates-integration: gates/test/integration/visual.test.ts "captures the repository's 58 story-themes twice under docker and exits 0 naming them and the engine (US2 scenario 1)"
+// Stryker disable next-line all: process boundary, covered by gates-integration: gates/test/integration/visual.test.ts "captures the repository's 70 story-themes twice under docker and exits 0 naming them and the engine (US2 scenario 1)"
 async function captureOne(browser: Browser, origin: string, request: Request, at: StoryTheme): Promise<CaptureEntry> {
-  // Stryker disable next-line all: process boundary, covered by gates-integration: gates/test/integration/visual.test.ts "captures the repository's 58 story-themes twice under docker and exits 0 naming them and the engine (US2 scenario 1)"
+  // Stryker disable next-line all: process boundary, covered by gates-integration: gates/test/integration/visual.test.ts "captures the repository's 70 story-themes twice under docker and exits 0 naming them and the engine (US2 scenario 1)"
   const context = await browser.newContext(contextOptions(at.theme));
-  // Stryker disable next-line all: process boundary, covered by gates-integration: gates/test/integration/visual.test.ts "captures the repository's 58 story-themes twice under docker and exits 0 naming them and the engine (US2 scenario 1)"
+  // Stryker disable next-line all: process boundary, covered by gates-integration: gates/test/integration/visual.test.ts "captures the repository's 70 story-themes twice under docker and exits 0 naming them and the engine (US2 scenario 1)"
   const work = async (): Promise<CaptureEntry> => {
-    // Stryker disable next-line all: process boundary, covered by gates-integration: gates/test/integration/visual.test.ts "captures the repository's 58 story-themes twice under docker and exits 0 naming them and the engine (US2 scenario 1)"
+    // Stryker disable next-line all: process boundary, covered by gates-integration: gates/test/integration/visual.test.ts "captures the repository's 70 story-themes twice under docker and exits 0 naming them and the engine (US2 scenario 1)"
     const { page, requests } = await openStory(context, origin, request.dist, at.story, at.theme);
     // Stryker disable next-line all: process boundary, covered by the visual plants fail-throws-on-load and fail-render-throws
     const ready = await waitForRender(page);
     // Stryker disable next-line all: process boundary, covered by the visual plants fail-throws-on-load and fail-render-throws
     const conditions: Conditions = ready.ready ? await conditionsAfterRender(page, context, at.theme, requests) : ready.status === "render-failed" ? { renderFailed: ready.message } : { renderTimeout: ready.message };
-    // Stryker disable next-line all: process boundary, covered by gates-integration: gates/test/integration/visual.test.ts "captures the repository's 58 story-themes twice under docker and exits 0 naming them and the engine (US2 scenario 1)"
+    // Stryker disable next-line all: process boundary, covered by gates-integration: gates/test/integration/visual.test.ts "captures the repository's 70 story-themes twice under docker and exits 0 naming them and the engine (US2 scenario 1)"
     const status = captureStatus(conditions);
-    // Stryker disable next-line all: process boundary, covered by gates-integration: gates/test/integration/visual.test.ts "captures the repository's 58 story-themes twice under docker and exits 0 naming them and the engine (US2 scenario 1)"
+    // Stryker disable next-line all: process boundary, covered by gates-integration: gates/test/integration/visual.test.ts "captures the repository's 70 story-themes twice under docker and exits 0 naming them and the engine (US2 scenario 1)"
     if (status.status !== "captured") return { ...at, ...status };
     // Stryker disable next-line all: process boundary, covered by the visual plant pass-focus-below-fold
     await scrollBack(page);
-    // Stryker disable next-line all: process boundary, covered by gates-integration: gates/test/integration/visual.test.ts "captures the repository's 58 story-themes twice under docker and exits 0 naming them and the engine (US2 scenario 1)"
+    // Stryker disable next-line all: process boundary, covered by gates-integration: gates/test/integration/visual.test.ts "captures the repository's 70 story-themes twice under docker and exits 0 naming them and the engine (US2 scenario 1)"
     const file = baselineName(at.story, at.theme);
-    // Stryker disable next-line all: process boundary, covered by gates-integration: gates/test/integration/visual.test.ts "captures the repository's 58 story-themes twice under docker and exits 0 naming them and the engine (US2 scenario 1)"
+    // Stryker disable next-line all: process boundary, covered by gates-integration: gates/test/integration/visual.test.ts "captures the repository's 70 story-themes twice under docker and exits 0 naming them and the engine (US2 scenario 1)"
     await writeFile(join(request.out, file), normalise(await page.screenshot(screenshotOptions())));
-    // Stryker disable next-line all: process boundary, covered by gates-integration: gates/test/integration/visual.test.ts "captures the repository's 58 story-themes twice under docker and exits 0 naming them and the engine (US2 scenario 1)"
+    // Stryker disable next-line all: process boundary, covered by gates-integration: gates/test/integration/visual.test.ts "captures the repository's 70 story-themes twice under docker and exits 0 naming them and the engine (US2 scenario 1)"
     return { ...at, status: "captured", file };
   };
-  // Stryker disable next-line all: process boundary, covered by gates-integration: gates/test/integration/visual.test.ts "captures the repository's 58 story-themes twice under docker and exits 0 naming them and the engine (US2 scenario 1)"
+  // Stryker disable next-line all: process boundary, covered by gates-integration: gates/test/integration/visual.test.ts "captures the repository's 70 story-themes twice under docker and exits 0 naming them and the engine (US2 scenario 1)"
   return work().finally(() => context.close());
 }
 
 /** The capture's process: exit 0 with result.json written, 2 with one stderr line naming the cause. */
-// Stryker disable next-line all: process boundary, covered by gates-integration: gates/test/integration/visual.test.ts "captures the repository's 58 story-themes twice under docker and exits 0 naming them and the engine (US2 scenario 1)"
+// Stryker disable next-line all: process boundary, covered by gates-integration: gates/test/integration/visual.test.ts "captures the repository's 70 story-themes twice under docker and exits 0 naming them and the engine (US2 scenario 1)"
 async function capture(requestPath: string): Promise<number> {
   // Stryker disable next-line all: process boundary, covered by gates-integration: gates/test/integration/visual.test.ts "exits 2 for the host engine, naming the capture's refusal (FR-009, US2 scenario 7)"
   const pin = parsePin(readFileSync(join(repo, "storybook/visual/container.json"), "utf8"));
@@ -93,36 +93,36 @@ async function capture(requestPath: string): Promise<number> {
     // Stryker disable next-line all: process boundary, covered by gates-integration: gates/test/integration/visual.test.ts "exits 2 for the host engine, naming the capture's refusal (FR-009, US2 scenario 7)"
     return 2;
   }
-  // Stryker disable next-line all: process boundary, covered by gates-integration: gates/test/integration/visual.test.ts "captures the repository's 58 story-themes twice under docker and exits 0 naming them and the engine (US2 scenario 1)"
+  // Stryker disable next-line all: process boundary, covered by gates-integration: gates/test/integration/visual.test.ts "captures the repository's 70 story-themes twice under docker and exits 0 naming them and the engine (US2 scenario 1)"
   const request = JSON.parse(readFileSync(requestPath, "utf8")) as Request;
-  // Stryker disable next-line all: process boundary, covered by gates-integration: gates/test/integration/visual.test.ts "captures the repository's 58 story-themes twice under docker and exits 0 naming them and the engine (US2 scenario 1)"
+  // Stryker disable next-line all: process boundary, covered by gates-integration: gates/test/integration/visual.test.ts "captures the repository's 70 story-themes twice under docker and exits 0 naming them and the engine (US2 scenario 1)"
   await mkdir(request.out, { recursive: true });
-  // Stryker disable next-line all: process boundary, covered by gates-integration: gates/test/integration/visual.test.ts "captures the repository's 58 story-themes twice under docker and exits 0 naming them and the engine (US2 scenario 1)"
+  // Stryker disable next-line all: process boundary, covered by gates-integration: gates/test/integration/visual.test.ts "captures the repository's 70 story-themes twice under docker and exits 0 naming them and the engine (US2 scenario 1)"
   const browser = await chromium.launch({ executablePath: executable });
-  // Stryker disable next-line all: process boundary, covered by gates-integration: gates/test/integration/visual.test.ts "captures the repository's 58 story-themes twice under docker and exits 0 naming them and the engine (US2 scenario 1)"
+  // Stryker disable next-line all: process boundary, covered by gates-integration: gates/test/integration/visual.test.ts "captures the repository's 70 story-themes twice under docker and exits 0 naming them and the engine (US2 scenario 1)"
   const server = await serve(request.dist);
-  // Stryker disable next-line all: process boundary, covered by gates-integration: gates/test/integration/visual.test.ts "captures the repository's 58 story-themes twice under docker and exits 0 naming them and the engine (US2 scenario 1)"
+  // Stryker disable next-line all: process boundary, covered by gates-integration: gates/test/integration/visual.test.ts "captures the repository's 70 story-themes twice under docker and exits 0 naming them and the engine (US2 scenario 1)"
   const work = async (): Promise<void> => {
-    // Stryker disable next-line all: process boundary, covered by gates-integration: gates/test/integration/visual.test.ts "captures the repository's 58 story-themes twice under docker and exits 0 naming them and the engine (US2 scenario 1)"
+    // Stryker disable next-line all: process boundary, covered by gates-integration: gates/test/integration/visual.test.ts "captures the repository's 70 story-themes twice under docker and exits 0 naming them and the engine (US2 scenario 1)"
     const entries: CaptureEntry[] = [];
-    // Stryker disable next-line all: process boundary, covered by gates-integration: gates/test/integration/visual.test.ts "captures the repository's 58 story-themes twice under docker and exits 0 naming them and the engine (US2 scenario 1)"
+    // Stryker disable next-line all: process boundary, covered by gates-integration: gates/test/integration/visual.test.ts "captures the repository's 70 story-themes twice under docker and exits 0 naming them and the engine (US2 scenario 1)"
     for (const at of storyThemes(request)) entries.push(await captureOne(browser, server.origin, request, at));
-    // Stryker disable next-line all: process boundary, covered by gates-integration: gates/test/integration/visual.test.ts "captures the repository's 58 story-themes twice under docker and exits 0 naming them and the engine (US2 scenario 1)"
+    // Stryker disable next-line all: process boundary, covered by gates-integration: gates/test/integration/visual.test.ts "captures the repository's 70 story-themes twice under docker and exits 0 naming them and the engine (US2 scenario 1)"
     await writeFile(join(request.out, "result.json"), `${JSON.stringify(entries, null, 2)}\n`);
   };
-  // Stryker disable next-line all: process boundary, covered by gates-integration: gates/test/integration/visual.test.ts "captures the repository's 58 story-themes twice under docker and exits 0 naming them and the engine (US2 scenario 1)"
+  // Stryker disable next-line all: process boundary, covered by gates-integration: gates/test/integration/visual.test.ts "captures the repository's 70 story-themes twice under docker and exits 0 naming them and the engine (US2 scenario 1)"
   await work().finally(() => Promise.all([browser.close(), server.close()]));
-  // Stryker disable next-line all: process boundary, covered by gates-integration: gates/test/integration/visual.test.ts "captures the repository's 58 story-themes twice under docker and exits 0 naming them and the engine (US2 scenario 1)"
+  // Stryker disable next-line all: process boundary, covered by gates-integration: gates/test/integration/visual.test.ts "captures the repository's 70 story-themes twice under docker and exits 0 naming them and the engine (US2 scenario 1)"
   return 0;
 }
 
-// Stryker disable next-line all: process boundary, covered by gates-integration: gates/test/integration/visual.test.ts "captures the repository's 58 story-themes twice under docker and exits 0 naming them and the engine (US2 scenario 1)"
+// Stryker disable next-line all: process boundary, covered by gates-integration: gates/test/integration/visual.test.ts "captures the repository's 70 story-themes twice under docker and exits 0 naming them and the engine (US2 scenario 1)"
 if (import.meta.main) {
-  // Stryker disable next-line all: process boundary, covered by gates-integration: gates/test/integration/visual.test.ts "captures the repository's 58 story-themes twice under docker and exits 0 naming them and the engine (US2 scenario 1)"
+  // Stryker disable next-line all: process boundary, covered by gates-integration: gates/test/integration/visual.test.ts "captures the repository's 70 story-themes twice under docker and exits 0 naming them and the engine (US2 scenario 1)"
   process.exitCode = await capture(String(process.argv[2])).catch((error: unknown) => {
-    // Stryker disable next-line all: process boundary, covered by gates-integration: gates/test/integration/visual.test.ts "captures the repository's 58 story-themes twice under docker and exits 0 naming them and the engine (US2 scenario 1)"
+    // Stryker disable next-line all: process boundary, covered by gates-integration: gates/test/integration/visual.test.ts "captures the repository's 70 story-themes twice under docker and exits 0 naming them and the engine (US2 scenario 1)"
     process.stderr.write(`the capture could not run: ${(error instanceof Error ? error.message : String(error)).replace(/\s*\n\s*/g, " ")}\n`);
-    // Stryker disable next-line all: process boundary, covered by gates-integration: gates/test/integration/visual.test.ts "captures the repository's 58 story-themes twice under docker and exits 0 naming them and the engine (US2 scenario 1)"
+    // Stryker disable next-line all: process boundary, covered by gates-integration: gates/test/integration/visual.test.ts "captures the repository's 70 story-themes twice under docker and exits 0 naming them and the engine (US2 scenario 1)"
     return 2;
   });
 }
