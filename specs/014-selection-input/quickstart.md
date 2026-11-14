@@ -17,8 +17,12 @@ Playwright's own Chromium). Run one heavy job at a time.
    tests (`test/roving.test.ts`, `test/selection.test.ts`, `test/link-target.test.ts`) run in `elements`.
 3. Manifest: `pnpm --filter @ocelle/elements run manifest && git diff --exit-code packages/elements/custom-elements.json`;
    `pnpm run gate:manifest` → exit 0 (contracts/elements.md).
-4. Storybook (#10's gates): `pnpm run gate:storybook-build`, `pnpm run gate:visual` (pinned container; light and dark
-   baselines for every new story match), `pnpm run gate:axe` → 0 serious or critical.
+4. Storybook (#10's gates): `pnpm run gate:storybook-build`, `pnpm run gate:axe` → 0 serious or critical. Not during
+   implementation: `pnpm run gate:visual` and the baselines are a recorded known gap (operator decision 2026-11-14,
+   `reviews/phase-1/operator-decisions.md`; FR-053, SC-007). This session has no docker or podman for the pinned
+   container; no baseline, including the shared token-story baselines, is committed here. At `/ocelle-land` the light
+   and dark baselines of every new story are committed from CI's pinned-container captures and `gate:visual` passes.
+   Container-engine tests that also fail at the phase base are environment-only.
 5. Other gates, one at a time: `gate:typecheck`, `gate:lint`, `gate:test-lint`, `gate:style-lint`, `gate:brand-rules`
    (the checked brand rules of constitution II; the copy field uses tabular figures, not monospace), `gate:unit-tests`,
    `gate:signoff` (DCO), `gate:pins`, `gate:config-copies`, `gate:contrast` (with `color-accent-strong`'s new pairs on

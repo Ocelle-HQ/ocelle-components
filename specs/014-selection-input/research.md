@@ -581,7 +581,7 @@ document URL.
 setup that makes it falsifiable. Each phase's review runs every plant of the phase and records, per plant, the test
 that failed on it in `reviews/phase-N/plants.md` (as 005's phases did).
 
-## R-12 Stories, baselines and axe on #10 (recheck when #10 merges; implementation waits for it)
+## R-12 Stories, baselines and axe on #10 (recheck when #10 merges; implementation waits for it; baselines at landing)
 
 **Decision.** One stories file per control, `storybook/stories/<control>.stories.ts` (listbox, tabs,
 segmented-choice, copy-field, link), covering its children (FR-050; the files carry no `ocelle-` prefix, like the
@@ -595,8 +595,17 @@ parameter: the hovered link, option and tab, and the hovered segment in the defa
 `hover-bg` fill, and the joined segment's `accent-strong` lines). These hover and focus stories give each state of
 R-15 that has its own paint a baseline (constitution V; analysis C1, operator decision Q3 (a)). Per operator decision
 I3, the stories and the story test (`storybook/test/integration/elements-stories.test.ts`, extended) are written in the
-phase's red commit; the baselines are produced in the green commit (a capture of a story that does not render yet is
-meaningless).
+phase's red commit. The baselines are not produced in the green commit: see the amendment below.
+
+**Amendment: baselines at landing** (operator decision 2026-11-14, `reviews/phase-1/operator-decisions.md`; FR-053,
+SC-007). The implementing sessions have no docker or podman, so `visual:update` and the `visual` gate cannot run in
+#10's pinned container there. No visual baseline (including the shared token-story baselines) is committed during
+implementation, and no phase runs the `visual` gate; each phase's review records the gap. At `/ocelle-land` the
+baselines of every story named above (and any shared baseline that changes) are produced from CI's pinned-container
+captures and committed under `storybook/baselines/`, and the `visual` gate passes before the pull request merges.
+Container-engine tests that also fail at the phase base are environment-only, not a red/green or review finding. The
+stories, the story test in the red commit and the `axe` gate in every phase are unchanged. Not chosen: capturing
+outside the pinned container (pixels would differ from CI's and the baselines would be replaced at landing anyway).
 
 **Recheck.** Phase 1's first task first merges `origin/main` (`3828d2f` or later) into the branch as a recorded merge
 commit (analysis I1, operator decision Q1 (a)); the implementer makes it before `base.sh 1`, as an exception to

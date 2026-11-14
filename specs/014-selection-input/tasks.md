@@ -20,8 +20,13 @@ only merge of `main` during the run. `/ocelle-land` merges `main` again at landi
 (new modules with signatures and no behaviour), one red commit of test-only files proven by `red.sh` (one red record
 per phase, operator decision I3), then green, the mutation gate, `tdd-check.sh` and an independent review. **Story
 tests are in the red commit** (operator decision I3): the phase's `storybook/stories/*.stories.ts` and the story test
-(`storybook/test/integration/elements-stories.test.ts`) are written before green. Baselines are produced in green
-with #10's baseline command in the pinned container (a capture of a story that does not render yet is meaningless).
+(`storybook/test/integration/elements-stories.test.ts`) are written before green. **No visual baselines during
+implementation** (operator decision 2026-11-14, `reviews/phase-1/operator-decisions.md`; FR-053, SC-007, R-12): these
+sessions have no docker or podman, so #10's pinned container cannot run. No baseline, including the shared
+token-story baselines, is committed in any phase, and no phase runs `gate:visual`; each phase records both as a known
+gap, closed during `/ocelle-land` with baselines from CI's pinned-container captures. Container-engine tests that
+also fail at the phase base are environment-only (not a red/green or review finding). The stories, the story test
+and `gate:axe` per phase are unchanged.
 
 Expected values are written by hand from the spec, the data model and research, never read from the source under
 test. Guard rules, as in mission 005:
@@ -158,8 +163,8 @@ with every key, selected and activated; tree, focus, paint and events are read a
 - [ ] T024 [US1] `packages/tokens/src/source.ts`, `packages/tokens/contrast/pairs.json`, `packages/tokens/CHANGELOG.md`: `color-accent-strong` non-text pairs on the main grounds (R-17), figures from `gates/lib/wcag.ts`
 - [ ] T025 [US1] `pnpm --filter @ocelle/elements run manifest`: `packages/elements/custom-elements.json` per contracts § `ocelle-listbox`, § `ocelle-option`
 - [ ] T026 [US1] `packages/elements/README.md` listbox section and amended module rule; `packages/elements/CHANGELOG.md` entry
-- [ ] T027 [US1] Baselines for the listbox stories with #10's baseline command in the pinned container (`storybook/baselines/`), inspected and committed with the reason in the commit message
-- [ ] T028 [US1] Run each US1 plant once, record in `specs/014-selection-input/reviews/phase-2/plants.md`; then `gate:typecheck`, `gate:lint`, `gate:test-lint`, `gate:style-lint`, `gate:brand-rules`, `gate:unit-tests`, `gate:signoff`, `gate:pins`, `gate:config-copies`, `gate:contrast`, `gate:manifest`, `gate:csp`, `gate:prefix`, `gate:storybook-build`, `gate:visual`, `gate:axe`, `gate:plants`, `gate:mutation -- --base <phase base>` one at a time (the constitution's merge gates as the repository defines them; analysis G4)
+- [ ] T027 [US1] Baselines for the listbox stories: no baseline is produced or committed in this phase, including the shared token-story baselines; record in `reviews/phase-2/` that the stories' light and dark baselines and the `visual` gate are a known gap, to be produced from CI's pinned-container captures during `/ocelle-land` (operator decision 2026-11-14, `reviews/phase-1/operator-decisions.md`; FR-053, SC-007)
+- [ ] T028 [US1] Run each US1 plant once, record in `specs/014-selection-input/reviews/phase-2/plants.md`; then `gate:typecheck`, `gate:lint`, `gate:test-lint`, `gate:style-lint`, `gate:brand-rules`, `gate:unit-tests`, `gate:signoff`, `gate:pins`, `gate:config-copies`, `gate:contrast`, `gate:manifest`, `gate:csp`, `gate:prefix`, `gate:storybook-build`, `gate:axe`, `gate:plants`, `gate:mutation -- --base <phase base>` one at a time (the constitution's merge gates as the repository defines them; analysis G4). `gate:visual` is not run: a recorded known gap until `/ocelle-land` (T027; operator decision 2026-11-14); a container-engine test that also fails at the phase base is environment-only
 
 **Checkpoint**: `tdd-check.sh 2` reports `pass`; quickstart steps 1 to 6 pass for the listbox.
 
@@ -194,7 +199,7 @@ unselected panel node; the tabs stories pass #10's full axe rule set.
 
 - [ ] T047 [US2] `packages/elements/src/ocelle-tab.ts`, `ocelle-tab-panel.ts`, `ocelle-tabs.ts`: `role="tablist"` on `part="tablist"` with the forwarded name, manual slot assignment per batch, generated ids, `aria-controls` on every paired tab, `aria-labelledby` on the assigned panel only, panel focusability observer (R-03), wrapped rows (FR-022), raised `::after` ring with the host unraised (R-06)
 - [ ] T048 [US2] Manifest; README tabs section; CHANGELOG
-- [ ] T049 [US2] Baselines for the tabs stories in the pinned container, committed with the reason
+- [ ] T049 [US2] Baselines for the tabs stories: no baseline is produced or committed in this phase, including the shared token-story baselines; record in `reviews/phase-3/` that the stories' light and dark baselines and the `visual` gate are a known gap, to be produced from CI's pinned-container captures during `/ocelle-land` (operator decision 2026-11-14, `reviews/phase-1/operator-decisions.md`; FR-053, SC-007)
 - [ ] T050 [US2] Plants recorded in `reviews/phase-3/plants.md`; the gates of T028 one at a time
 
 **Checkpoint**: `tdd-check.sh 3` reports `pass`.
@@ -239,7 +244,7 @@ stay `accent-strong` with a focused neighbour on either side.
 - [ ] T066a [US3] Only if decision 1 was answered no at the stop (T059a), instead of T066's custom states: the parent writes the row attributes on segment hosts at each regroup and overwrites host-written ones, and the segment's CSS rounds with `:host([data-ocelle-row-start])` and so on; no internal row method on the segment, no `:state()` (R-06 Status; passes T062a)
 - [ ] T067 [US3] Manifest; README segmented-choice section and engines section; CHANGELOG
 - [ ] T067a [US3] Only if decision 1 was answered no at the stop (T059a), instead of T067's engines section: README segmented-choice section with the row attributes as element-owned, internal, not a styling hook and subject to change in a PATCH (T064a; second analysis U2), no manifest entry for them, engines section unchanged (Chromium 120 / WebKit 16.4); CHANGELOG without a floor raise
-- [ ] T068 [US3] Baselines in the pinned container, committed with the reason
+- [ ] T068 [US3] Baselines for the segmented-choice stories: no baseline is produced or committed in this phase, including the shared token-story baselines; record in `reviews/phase-4/` that the stories' light and dark baselines and the `visual` gate are a known gap, to be produced from CI's pinned-container captures during `/ocelle-land` (operator decision 2026-11-14, `reviews/phase-1/operator-decisions.md`; FR-053, SC-007)
 - [ ] T069 [US3] Plants recorded in `reviews/phase-4/plants.md`; the gates of T028
 
 **Checkpoint**: `tdd-check.sh 4` reports `pass`.
@@ -274,7 +279,7 @@ reaches the tree as empty → text.
 
 - [ ] T081 [US4] `packages/elements/src/ocelle-copy-field.ts` (R-07): group role, `part="value"` text, imperative live-region text, native button `part="copy-control"` with `ocelle-icon name="copy"`, deferred request with status cleared first
 - [ ] T082 [US4] Manifest; README copy-field section; CHANGELOG
-- [ ] T083 [US4] Baselines in the pinned container, committed with the reason
+- [ ] T083 [US4] Baselines for the copy-field stories: no baseline is produced or committed in this phase, including the shared token-story baselines; record in `reviews/phase-5/` that the stories' light and dark baselines and the `visual` gate are a known gap, to be produced from CI's pinned-container captures during `/ocelle-land` (operator decision 2026-11-14, `reviews/phase-1/operator-decisions.md`; FR-053, SC-007)
 - [ ] T084 [US4] Plants recorded in `reviews/phase-5/plants.md`; the gates of T028
 
 **Checkpoint**: `tdd-check.sh 5` reports `pass`.
@@ -310,7 +315,7 @@ the `file:` copy navigates to its `file:` target.
 
 - [ ] T097 [US5] `packages/elements/src/link-target.ts` and `packages/elements/src/ocelle-link.ts` (R-08): `part="anchor"`, `delegatesFocus`, `href` on the anchor only when allowed, `role="link"` and `tabindex="0"` otherwise, plain-activation interception (Alt included) with Enter handled on keydown for anchors without `href`, cancelable event, `location.assign` of the allowed target, host `aria-label` forwarded
 - [ ] T098 [US5] Manifest; README link section with every statement T095 checks (the `detail.href` warning, the label-in-name rule, FR-047's resolved-protocol check for hosts, US5-9's other schemes, FR-049's three statements); CHANGELOG
-- [ ] T099 [US5] Baselines in the pinned container, committed with the reason
+- [ ] T099 [US5] Baselines for the link stories: no baseline is produced or committed in this phase, including the shared token-story baselines; record in `reviews/phase-6/` that the stories' light and dark baselines and the `visual` gate are a known gap, to be produced from CI's pinned-container captures during `/ocelle-land` (operator decision 2026-11-14, `reviews/phase-1/operator-decisions.md`; FR-053, SC-007)
 - [ ] T100 [US5] Plants recorded in `reviews/phase-6/plants.md`; the gates of T028 plus `vitest run --project elements-browser-file`
 
 **Checkpoint**: `tdd-check.sh 6` reports `pass`.
@@ -323,8 +328,8 @@ the `file:` copy navigates to its `file:` target.
 
 - [ ] T110 `packages/elements/test/node/readme.test.ts` (red first): the README overview names the nine elements and the entry-point table lists every new specifier (contracts § Entry points); the README has one example per SC-009 use: the Open project folder picker (listbox), tabbed screens (tabs), segmented choices (segmented choice), in-text links (link) and copy fields (copy field), each built from the elements' public surface with no ARIA attribute, `ResizeObserver` or clipboard call of the host's own (SC-009, R-14; analysis G3)
 - [ ] T111 `packages/elements/README.md` overview, entry-point table and the SC-009 examples of T110; `packages/elements/CHANGELOG.md` MINOR entry naming the nine elements, six events and the engine floor as decided at the phase 4 stop, T059a (raised, or unchanged with the row attributes)
-- [ ] T112 If #16 (mission 008) has merged before this feature lands: the composed `ocelle-dialog` + `ocelle-listbox` story with its baselines (FR-054); otherwise record in `reviews/phase-7/notes.md` that 008 adds it
-- [ ] T113 Full gate run per `specs/014-selection-input/quickstart.md`, one heavy job at a time; record in `reviews/phase-7/gates.md`
+- [ ] T112 If #16 (mission 008) has merged before this feature lands: the composed `ocelle-dialog` + `ocelle-listbox` story (FR-054; its baselines, like every baseline, are a known gap produced during `/ocelle-land`, operator decision 2026-11-14); otherwise record in `reviews/phase-7/notes.md` that 008 adds it
+- [ ] T113 Full gate run per `specs/014-selection-input/quickstart.md` (without `gate:visual`, quickstart step 4), one heavy job at a time; record in `reviews/phase-7/gates.md`, with the `visual` gate and the baselines listed as the known gap `/ocelle-land` closes
 
 **Checkpoint**: `tdd-check.sh 7` reports `pass` (or the review records the documentation exemption for T111 to T113).
 
