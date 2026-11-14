@@ -111,18 +111,34 @@ column; gap: var(--ocelle-space-1)`) with two children: the eyebrow wrapper, on 
 inline size, and the row container (`display: flex; flex-wrap: wrap; column-gap: var(--ocelle-space-4); row-gap:
 var(--ocelle-space-2); align-items: flex-start`). The row has two children: the heading column (`display: flex;
 flex-direction: column; gap: var(--ocelle-space-1); flex: 1 1 min-content; min-inline-size: 0`) holding the heading
-and description wrappers, and the actions wrapper (`flex: 0 0 auto; display: flex; flex-wrap: wrap; gap:
-var(--ocelle-space-2)`). The eyebrow is therefore outside the row: the actions' block start is the heading's (FR-010,
-US1-2), and the eyebrow's words take no part in the side-by-side test. When the eyebrow slot is empty its wrapper is
-`display: none` (R-03), so the outer gap collapses. In the eyebrow variant the eyebrow and description wrappers are
-not rendered. Text wraps with `overflow-wrap: break-word`, so a word's min-content is the whole word (the column wraps
-the actions under it only when its longest word and the actions do not fit side by side) and a word longer than the
-line still breaks inside itself once the column is on its own line. The page header uses the same structure with its
-own padding and rule (R-07).
+and description wrappers, and the actions wrapper (`display: flex; flex-wrap: wrap; gap: var(--ocelle-space-2)`,
+keeping the initial `flex: 0 1 auto`). The eyebrow is therefore outside the row: the actions' block start is the
+heading's (FR-010, US1-2), and the eyebrow's words take no part in the side-by-side test. When the eyebrow slot is
+empty its wrapper is `display: none` (R-03), so the outer gap collapses. In the eyebrow variant the eyebrow and
+description wrappers are not rendered. Text wraps with `overflow-wrap: break-word`, so a word's min-content is the
+whole word (the column wraps the actions under it only when its longest word and the actions do not fit side by side)
+and a word longer than the line still breaks inside itself once the column is on its own line.
+
+The actions wrapper is shrinkable (`flex: 0 1 auto`, not `0 0 auto`; amended after phase 2, operator decision 5 of
+`reviews/operator-decisions-implementation.md`): on a line of its own and wider than that line, it shrinks to the
+line and its actions wrap onto further lines, `--ocelle-space-2` apart, rather than overflow the header (FR-004; with
+`0 0 auto`, six actions at 320 px stay on one line and overflow). Side by side with the heading nothing changes, since
+flex line breaking uses the unshrunk sizes, so the row wraps before any item shrinks and FR-010's side-by-side test is
+the same.
+
+The heading column is hidden (`display: none`, its `empty` class) while it shows nothing: the `heading` slot is
+empty and either the `description` slot is empty or the variant is `eyebrow` (which renders no description). An
+empty column then takes no line and no `row-gap` when the actions wrap (FR-005), and the actions, now the row's only
+item, take `margin-inline-start: auto` (`.heading-column.empty + .actions`) so they stay at the inline end (FR-010).
+The row itself is hidden when heading, description and actions are all empty, so an eyebrow alone takes no gap under
+it (FR-005). The page header uses the same structure, including these rules, with its own padding and rule
+(R-07).
 
 **Rationale**: FR-010's rule and US1-2, US1-14, US2-2, US2-5 (PLAN-CORRECTNESS-1-001: with the eyebrow inside the
 heading column, the actions aligned with the eyebrow, 22 px above the heading). With an empty part the wrappers are
-`display: none` (R-03), so no gap remains.
+`display: none` (R-03), so no gap remains. The shrinkable actions wrapper and the hidden empty column are phase 2's
+departures 4 and 6 as fixed (`reviews/phase-2/notes.md`, `round-1-fixes.md`; reviews R1-04, R2-03, R3-02), judged
+right against FR-004, FR-005 and FR-010.
 
 Measure before red: `flex-basis: min-content` with `min-inline-size: 0` and `overflow-wrap: break-word` gives (a) the
 actions beside the heading when the longest word plus actions fit, (b) the actions under the column when they do
@@ -211,7 +227,10 @@ squad round 3: about 8 px instead of 4 px); a flex `gap` is dropped with the hid
 section header and US2-8 in the page header. The eyebrow-to-heading gap is the outer column's `--ocelle-space-1`
 (R-04: the eyebrow sits above the row, so the actions' block start is the heading's, US2-2). The host also sets
 `box-sizing: border-box` (R-01). The actions follow R-04's wrap rule, `--ocelle-space-2` under the
-column. The `<header>` element is not used in the shadow root (a `header` not inside sectioning content maps to a
+column, with R-04's actions wrapper as amended: it keeps `flex: 0 1 auto` (not `0 0 auto`), so actions on a line of
+their own wrap rather than overflow at 320 px (FR-004); and the heading column is hidden while the `heading`
+and `description` slots are both empty (the page header has no eyebrow variant), the actions then taking
+`margin-inline-start: auto` to stay at the inline end (FR-005, FR-010). The `<header>` element is not used in the shadow root (a `header` not inside sectioning content maps to a
 banner landmark); the band is a plain `div` (US2-1).
 
 **Rationale**: #529 names no ground; a ground of its own would differ from the pane a header sits on in Kitty Desktop
